@@ -1,11 +1,13 @@
 # distutils: language = c
 # cython: wraparound=False, cdivision=True, boundscheck=False
 
+import operator
+
 import numpy as np
 cimport numpy as np
 
-from metricspeed cimport Metric, Streamline, Features
-from metricspeed cimport Shape, tuple2shape, shape2tuple
+from cythonutils cimport Data2D, Shape, shape2tuple, tuple2shape
+
 
 cdef extern from "stdlib.h" nogil:
     ctypedef unsigned long size_t
@@ -14,22 +16,38 @@ cdef extern from "stdlib.h" nogil:
     void *realloc(void *ptr, size_t elsize)
     void *memset(void *ptr, int value, size_t num)
 
-DEF biggest_double = 1.7976931348623157e+308  # np.finfo('f8').max
-DEF biggest_float = 3.4028235e+38  # np.finfo('f4').max
-DEF biggest_int = 2147483647  # np.iinfo('i4').max
 
 cdef struct Centroid:
-    Features features
+    Data2D features
     int size
 
-cdef class identity:
+
+cdef class Identity:
     def __getitem__(self, idx):
         return idx
 
 
 cdef class Cluster:
-    cdef int _id
-    cdef ClusterMap _cluster_map
+    """ Provides functionalities to interact with a cluster.
+
+    Useful container to retrieve index of elements grouped together. If
+    a reference to the data is provided to `cluster_map`, elements will
+    be returned instead of their index when applicable.
+
+    Parameters
+    ----------
+    cluster_map : `ClusterMap` object
+        reference to the set of clusters this cluster is being part of
+    id : int
+        id of this cluster in its associated `cluster_map`
+
+    Notes
+    -----
+    A cluster does not contain actual data but instead knows how to
+    retrieves them using its `ClusterMap` object.
+    """
+    #cdef int _id
+    #cdef ClusterMap _cluster_map
 
     def __init__(Cluster self, ClusterMap cluster_map, int id):
         self._id = id
@@ -75,6 +93,8 @@ cdef class Cluster:
             return cluster_map.refdata[indices[idx]]
         elif type(idx) is slice:
             return [cluster_map.refdata[indices[i]] for i in xrange(*idx.indices(len(self)))]
+        elif type(idx) is list:
+            return [self[i] for i in idx]
 
         raise TypeError("Index must be a int or a slice! Not " + str(type(idx)))
 
@@ -92,36 +112,70 @@ cdef class Cluster:
     def __richcmp__(self, other, op):
         # See http://docs.cython.org/src/userguide/special_methods.html#rich-comparisons
         if op == 2:
-            return isinstance(other, Cluster) and self.id == other.id and self.cluster_map == other.cluster_map
+            return isinstance(other, Cluster) and self.id == other.id and self.cluster_map is other.cluster_map
         elif op == 3:
             return not self == other
         else:
             return NotImplemented("Cluster does not support this type of comparison!")
 
     def add(self, *indices):
+        """ Adds indices to this cluster.
+
+        Parameters
+        ----------
+        *indices : list of indices
+            indices to add to this cluster
+        """
+        cdef ClusterMap cluster_map = <ClusterMap> self.cluster_map
         for id_data in indices:
-            self.cluster_map.add(self.id, id_data)
+            cluster_map.c_add(self.id, id_data, None)
 
 
 cdef class ClusterCentroid(Cluster):
+    """ Provides functionalities to interact with a cluster.
+
+    Useful container to retrieve index of elements grouped together and
+    the cluster's centroid. If a reference to the data is provided to
+    `cluster_map`, elements will be returned instead of their index when
+    applicable.
+
+    Parameters
+    ----------
+    cluster_map : `ClusterMapCentroid` object
+        reference to the set of clusters this cluster is being part of
+    id : int
+        id of this cluster in its associated `cluster_map`
+
+    Notes
+    -----
+    A cluster does not contain actual data but instead knows how to
+    retrieves them using its `ClusterMapCentroid` object.
+    """
+    def __init__(ClusterCentroid self, ClusterMapCentroid cluster_map, int id):
+        super(ClusterCentroid, self).__init__(cluster_map, id)
+
     property centroid:
         def __get__(self):
             cdef ClusterMapCentroid cluster_map = <ClusterMapCentroid> self.cluster_map
             shape = shape2tuple(cluster_map._features_shape)
             return np.asarray(cluster_map._centroids[self.id].features)
 
-    def add(self, int id_features, features):
-        self.cluster_map.add(self.id, id_features, features)
+    def add(self, id_data, data):
+        cdef ClusterMapCentroid cluster_map = <ClusterMapCentroid> self.cluster_map
+        if shape2tuple(cluster_map._features_shape) != data.shape:
+            raise ValueError("The shape of the centroid and the data to add must be the same!")
+
+        cluster_map.c_add(self.id, id_data, data)
 
 
 cdef class ClusterMap:
-    cdef object _cluster_class
-    cdef object refdata
-    cdef int _nb_clusters
-    cdef int** _clusters_indices
-    cdef int* _clusters_size
+    #cdef object _cluster_class
+    #cdef object refdata
+    #cdef int _nb_clusters
+    #cdef int** _clusters_indices
+    #cdef int* _clusters_size
 
-    def __init__(ClusterMap self, refdata=identity()):
+    def __init__(ClusterMap self, refdata=Identity()):
         self._nb_clusters = 0
         self._clusters_indices = NULL
         self._clusters_size = NULL
@@ -152,6 +206,10 @@ cdef class ClusterMap:
             return self._cluster_class(self, idx)
         elif type(idx) is slice:
             return [self._cluster_class(self, i) for i in xrange(*idx.indices(len(self)))]
+        elif type(idx) is list:
+            return [self[i] for i in idx]
+        elif isinstance(idx, np.ndarray) and idx.dtype == np.bool:
+            return [self._cluster_class(self, i) for i in np.arange(len(self))[idx]]
 
         raise TypeError("Index must be a int or a slice! Not " + str(type(idx)))
 
@@ -174,11 +232,43 @@ cdef class ClusterMap:
         free(self._clusters_size)
         self._clusters_size = NULL
 
-    cdef void c_add(ClusterMap self, int id_cluster, int id_features) nogil except *:
+    def __richcmp__(self, other, op):
+        # See http://docs.cython.org/src/userguide/special_methods.html#rich-comparisons
+        # Comparisons operators are: {0: "<", 1: "<=", 2: "==", 3: "!=", 4: ">", 5: ">=""}
+
+        if isinstance(other, ClusterMap):
+            if op == 2:  # ==
+                #return len(self) == len(other) and all([cluster1 == cluster2 for cluster1, cluster2 in zip(self.clusters, other.clusters)])
+                return len(self) == len(other) and self.clusters == other.clusters
+            elif op == 3:  # !=
+                return not self == other
+            else:
+                return NotImplemented("ClusterMap does not support this type of comparison!")
+
+        elif isinstance(other, int):
+            if op == 0:  # <
+                op = operator.lt
+            elif op == 1:  # <=
+                op = operator.le
+            elif op == 2:  # ==
+                op = operator.eq
+            elif op == 3:  # !=
+                op = operator.ne
+            elif op == 4:  # >
+                op = operator.gt
+            elif op == 5:  # >=
+                op = operator.ge
+
+            return np.array([op(len(cluster), other) for cluster in self])
+
+        else:
+            return NotImplemented("Cluster does not support this type of comparison!")
+
+    cdef void c_add(ClusterMap self, int id_cluster, int id_data, Data2D data) nogil except *:
         # Keep streamline's index in the given cluster
         cdef int C = self._clusters_size[id_cluster]
         self._clusters_indices[id_cluster] = <int*> realloc(self._clusters_indices[id_cluster], (C+1)*sizeof(int))
-        self._clusters_indices[id_cluster][C] = id_features
+        self._clusters_indices[id_cluster][C] = id_data
         self._clusters_size[id_cluster] += 1
 
     cdef int c_create_cluster(ClusterMap self) nogil except -1:
@@ -193,20 +283,14 @@ cdef class ClusterMap:
     cdef int c_size(ClusterMap self) nogil:
         return self._nb_clusters
 
-    def create_cluster(ClusterMap self):
+    def add_cluster(ClusterMap self):
         id_cluster = self.c_create_cluster()
         return self[id_cluster]
 
-    def add(self, int id_cluster, int id_features):
-        if id_cluster >= len(self):
-            raise IndexError("Index out of bound: id_cluster={0}".format(id_cluster))
-
-        self.c_add(id_cluster, id_features)
-
 
 cdef class ClusterMapCentroid(ClusterMap):
-    cdef Centroid* _centroids
-    cdef Shape _features_shape
+    #cdef Centroid* _centroids
+    #cdef Shape _features_shape
 
     def __init__(ClusterMapCentroid self, feature_shape, *args, **kwargs):
         ClusterMap.__init__(self, *args, **kwargs)
@@ -235,16 +319,16 @@ cdef class ClusterMapCentroid(ClusterMap):
         free(self._centroids)
         self._centroids = NULL
 
-    cdef void c_add(ClusterMapCentroid self, int id_cluster, int id_features, Features features=None) nogil except *:
-        cdef Features centroid = self._centroids[id_cluster].features
+    cdef void c_add(ClusterMapCentroid self, int id_cluster, int id_data, Data2D data) nogil:
+        cdef Data2D centroid = self._centroids[id_cluster].features
         cdef int C = self._clusters_size[id_cluster]
 
         cdef int N = centroid.shape[0], D = centroid.shape[1]
         for n in range(N):
             for d in range(D):
-                centroid[n, d] = ((centroid[n, d] * C) + features[n, d]) / (C+1)
+                centroid[n, d] = ((centroid[n, d] * C) + data[n, d]) / (C+1)
 
-        ClusterMap.c_add(self, id_cluster, id_features)
+        ClusterMap.c_add(self, id_cluster, id_data, data)
 
     cdef int c_create_cluster(ClusterMapCentroid self) nogil except -1:
         self._centroids = <Centroid*> realloc(self._centroids, (self._nb_clusters+1)*sizeof(Centroid))
@@ -258,91 +342,3 @@ cdef class ClusterMapCentroid(ClusterMap):
     cdef Centroid* c_get_centroid(ClusterMapCentroid self, int idx) nogil:
         return &self._centroids[idx]
 
-    def create_cluster(ClusterMapCentroid self):
-        id_cluster = self.c_create_cluster()
-        return self[id_cluster]
-
-    def add(self, int id_cluster, int id_features, features):
-        if id_cluster >= len(self):
-            raise IndexError("Index out of bound: id_cluster={0}".format(id_cluster))
-
-        if shape2tuple(self._features_shape) != features.shape:
-            raise ValueError("The shape of the centroid and the features to add must be the same!")
-
-        self.c_add(id_cluster, id_features, features)
-
-
-cpdef quickbundles(streamlines, Metric metric, double threshold=10., int max_nb_clusters=biggest_int, ordering=None):
-    if ordering is None:
-        ordering = np.arange(len(streamlines), dtype="int32")
-
-    # Threshold of np.inf is not supported, set it to 'biggest_float'
-    threshold = min(threshold, biggest_float)
-    # Threshold of -np.inf is not supported, set it to 0
-    threshold = max(threshold, 0)
-
-    dtype = streamlines[0].dtype
-    features_shape = metric.feature_type.infer_shape(streamlines[0])
-    cdef:
-        int idx
-        ClusterMapCentroid clusters = ClusterMapCentroid(features_shape)
-        Features features_s_i = np.empty(features_shape, dtype=dtype)
-        Features features_s_i_flip = np.empty(features_shape, dtype=dtype)
-
-    for idx in ordering:
-        writeable = streamlines[idx].flags.writeable
-        streamlines[idx].setflags(write=True)
-        _quickbundles(streamlines[idx], idx, metric, clusters, features_s_i, features_s_i_flip, threshold, max_nb_clusters)
-        streamlines[idx].setflags(write=writeable)
-
-    return clusters
-
-
-cdef void _quickbundles(Streamline s_i, int streamline_idx, Metric metric, ClusterMapCentroid clusters, Features features_s_i, Features features_s_i_flip, double threshold=10, int max_nb_clusters=biggest_int) nogil except *:
-    cdef:
-        Centroid* centroid
-        int closest_cluster
-        double dist, dist_min, dist_min_flip
-        Features features_to_add = features_s_i
-
-    # Find closest cluster to s_i
-    metric.feature_type.c_extract(s_i, features_s_i)
-    dist_min = biggest_double
-    for k in range(clusters.c_size()):
-        #centroid = clusters.c_get_centroid(k)
-        #dist = metric.c_dist(centroid.features, features_s_i)
-        dist = metric.c_dist(clusters._centroids[k].features, features_s_i)
-
-        # Keep track of the closest cluster
-        if dist < dist_min:
-            dist_min = dist
-            closest_cluster = k
-
-    # Find closest cluster to s_i_flip if metric is not order invariant
-    if not metric.feature_type.is_order_invariant:
-        dist_min_flip = dist_min  # Initialize to the min distance not flipped.
-        metric.feature_type.c_extract(s_i[::-1], features_s_i_flip)
-        for k in range(clusters.c_size()):
-            #centroid = clusters.c_get_centroid(k)
-            #dist = metric.c_dist(centroid.features, features_s_i_flip)
-            dist = metric.c_dist(clusters._centroids[k].features, features_s_i_flip)
-
-            # Keep track of the closest cluster
-            if dist < dist_min_flip:
-                dist_min_flip = dist
-                closest_cluster = k
-
-        # If we found a lower distance using a flipped streamline,
-        #  add the flipped version instead
-        if dist_min_flip < dist_min:
-            dist_min = dist_min_flip
-            features_to_add = features_s_i_flip
-
-    # Check if distance with the closest cluster is below some threshold
-    # or if we already have the maximum number of clusters.
-    # If the former or the latter is true, assign streamline to its closest cluster
-    # otherwise create a new cluster and assign the streamline to it.
-    if not (dist_min < threshold or clusters.c_size() >= max_nb_clusters):
-        closest_cluster = clusters.c_create_cluster()
-
-    clusters.c_add(closest_cluster, streamline_idx, features_to_add)

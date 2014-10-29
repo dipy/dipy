@@ -4,10 +4,10 @@ import itertools
 from dipy.segment.clustering import QuickBundles
 
 import dipy.segment.metric as dipymetric
-from dipy.segment.clusteringspeed import quickbundles
+from dipy.segment.clustering_algorithms import quickbundles
 
 from nose.tools import assert_equal, assert_items_equal
-from numpy.testing import assert_array_equal
+from numpy.testing import assert_array_equal, run_module_suite
 
 dtype = "float32"
 threshold = 7
@@ -104,3 +104,7 @@ def test_quickbundles_with_not_order_invariant_metric():
     clusters = qb.cluster(streamlines)
     assert_equal(len(clusters), 1)
     assert_array_equal(clusters[0].centroid, streamline)
+
+
+if __name__ == '__main__':
+    run_module_suite()

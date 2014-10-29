@@ -22,16 +22,20 @@ ext: recspeed.so propspeed.so vox2track.so \
     distances.so streamlinespeed.so denspeed.so \
     vec_val_sum.so quick_squash.so vector_fields.so \
     crosscorr.so sumsqdiff.so expectmax.so bundlemin.so \
-    metricspeed.so clusteringspeed.so
+    cythonutils.so featurespeed.so metricspeed.so \
+    clusteringspeed.so clustering_algorithms.so
 
 test: ext
 	nosetests .
 
-cython-html:  ${PKGDIR}/reconst/recspeed.html ${PKGDIR}/tracking/propspeed.html ${PKGDIR}/tracking/vox2track.html ${PKGDIR}/tracking/distances.html ${PKGDIR}/tracking/streamlinespeed.html ${PKGDIR}/segment/metricspeed.html ${PKGDIR}/segment/clusteringspeed.html
+cython-html:  ${PKGDIR}/reconst/recspeed.html ${PKGDIR}/tracking/propspeed.html ${PKGDIR}/tracking/vox2track.html ${PKGDIR}/tracking/distances.html ${PKGDIR}/tracking/streamlinespeed.html ${PKGDIR}/segment/cythonutils.html ${PKGDIR}/segment/featurespeed.html ${PKGDIR}/segment/metricspeed.html ${PKGDIR}/segment/clusteringspeed.html ${PKGDIR}/segment/clustering_algorithms.html
 
 recspeed.so: ${PKGDIR}/reconst/recspeed.pyx
+cythonutils.so: ${PKGDIR}/segment/cythonutils.pyx
+featurespeed.so: ${PKGDIR}/segment/featurespeed.pyx
 metricspeed.so: ${PKGDIR}/segment/metricspeed.pyx
 clusteringspeed.so: ${PKGDIR}/segment/clusteringspeed.pyx
+clustering_algorithms.so: ${PKGDIR}/segment/clustering_algorithms.pyx
 propspeed.so: ${PKGDIR}/tracking/propspeed.pyx
 vox2track.so: ${PKGDIR}/tracking/vox2track.pyx
 distances.so: ${PKGDIR}/tracking/distances.pyx

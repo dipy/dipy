@@ -11,8 +11,10 @@ First import the necessary modules.
 
 import numpy as np
 from nibabel import trackvis as tv
-from dipy.tracking import metrics as tm
-from dipy.segment.quickbundles import QuickBundles
+from dipy.tracking.streamline import set_number_of_points
+from dipy.segment.clustering import QuickBundles
+from dipy.segment.metric import MDF
+#from dipy.segment.quickbundles import QuickBundles
 from dipy.io.pickles import save_pickle
 from dipy.data import get_data
 from dipy.viz import fvtk
@@ -33,10 +35,10 @@ streams, hdr = tv.read(fname)
 streamlines = [i[0] for i in streams]
 
 """
-Perform QuickBundles clustering with a 10mm distance threshold after having
-downsampled the streamlines to have only 12 points.
+Perform QuickBundles clustering using the MDF metric and a 10mm distance threshold
+after having downsampled the streamlines to have only 18 points.
 """
-
+streamlines = set_number_of_points(streamlines, nb_points=18)
 qb = QuickBundles(streamlines, dist_thr=10., pts=18)
 
 """
