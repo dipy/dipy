@@ -525,14 +525,17 @@ def test_restore():
              # RESTORE estimates should be robust to dropping
              this_y = Y.copy()
              this_y[:, drop_this] = 1.0
-             tensor_model = dti.TensorModel(gtab, fit_method='restore',
+             for sigma in [67.0, np.ones(this_y.shape[-1]) *67.0]:
+                 tensor_model = dti.TensorModel(gtab, fit_method='restore',
                                             jac=jac,
                                             sigma=67.0)
 
-             tensor_est = tensor_model.fit(this_y)
-             assert_array_almost_equal(tensor_est.evals[0], evals, decimal=3)
-             assert_array_almost_equal(tensor_est.quadratic_form[0], tensor,
+                 tensor_est = tensor_model.fit(this_y)
+                 assert_array_almost_equal(tensor_est.evals[0], evals, decimal=3)
+                 assert_array_almost_equal(tensor_est.quadratic_form[0], tensor,
                                        decimal=3)
+
+
 
      # If sigma is very small, it still needs to work:
      tensor_model = dti.TensorModel(gtab, fit_method='restore', sigma=0.0001)
