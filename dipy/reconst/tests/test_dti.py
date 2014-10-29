@@ -466,6 +466,7 @@ def test_nlls_fit_tensor():
      assert_array_almost_equal(tensor_est.quadratic_form[0], tensor)
      assert_almost_equal(tensor_est.md[0], md)
 
+
      # You can also do this without the Jacobian (though it's slower):
      tensor_model = dti.TensorModel(gtab, fit_method='NLLS', jac=False)
      tensor_est = tensor_model.fit(Y)
@@ -520,20 +521,22 @@ def test_restore():
      Y = np.exp(np.dot(X,D))
      Y.shape = (-1,) + Y.shape
      for drop_this in range(1, Y.shape[-1]):
-         # RESTORE estimates should be robust to dropping
-         this_y = Y.copy()
-         this_y[:, drop_this] = 1.0
-         tensor_model = dti.TensorModel(gtab, fit_method='restore',
-                                        sigma=67.0)
+         for jac in [True, False]:
+             # RESTORE estimates should be robust to dropping
+             this_y = Y.copy()
+             this_y[:, drop_this] = 1.0
+             tensor_model = dti.TensorModel(gtab, fit_method='restore',
+                                            jac=jac,
+                                            sigma=67.0)
 
-         tensor_est = tensor_model.fit(this_y)
-         assert_array_almost_equal(tensor_est.evals[0], evals, decimal=3)
-         assert_array_almost_equal(tensor_est.quadratic_form[0], tensor,
-                                   decimal=3)
+             tensor_est = tensor_model.fit(this_y)
+             assert_array_almost_equal(tensor_est.evals[0], evals, decimal=3)
+             assert_array_almost_equal(tensor_est.quadratic_form[0], tensor,
+                                       decimal=3)
 
-     y_with_zeros = Y.copy()
-     y_with_zeros[:, ~gtab.b0s_mask] = np.nan
-     tensor_model.fit(y_with_zeros)
+     # If sigma is very small, it still needs to work:
+     tensor_model = dti.TensorModel(gtab, fit_method='restore', sigma=0.0001)
+     tensor_model.fit(Y.copy())
 
 
 def test_adc():

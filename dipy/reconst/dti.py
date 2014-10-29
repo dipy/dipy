@@ -1612,38 +1612,6 @@ def lower_triangular(tensor, b0=None):
         return D
 
 
-def eig_from_lo_tri(data):
-    """Calculates parameters for creating a Tensor instance
-
-    Calculates tensor parameters from the six unique tensor elements. This
-    function can be passed to the Tensor class as a fit_method for creating a
-    Tensor instance from tensors stored in a nifti file.
-
-    Parameters
-    ----------
-    data : array_like (..., 6)
-        diffusion tensors elements stored in lower triangular order
-
-    Returns
-    -------
-    dti_params
-        Eigen values and vectors, used by the Tensor class to create an
-        instance
-    """
-    data = np.asarray(data)
-    data_flat = data.reshape((-1, data.shape[-1]))
-    dti_params = np.empty((len(data_flat), 4, 3))
-
-    for ii in range(len(data_flat)):
-        tensor = from_lower_triangular(data_flat[ii])
-        eigvals, eigvecs = decompose_tensor(tensor)
-        dti_params[ii, 0] = eigvals
-        dti_params[ii, 1:] = eigvecs
-
-    dti_params.shape = data.shape[:-1] + (12,)
-    return dti_params
-
-
 def decompose_tensor(tensor, min_diffusivity=0):
     """ Returns eigenvalues and eigenvectors given a diffusion tensor
 
