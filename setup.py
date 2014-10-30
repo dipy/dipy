@@ -119,7 +119,10 @@ else: # We have nibabel
     # up pyx and c files.
     build_ext = cyproc_exts(EXTS, CYTHON_MIN_VERSION, 'pyx-stamps')
     # Add openmp flags if they work
-    extbuilder = add_flag_checking(build_ext, [('-fopenmp', 'HAVE_OPENMP')])
+    omp_test_c = """#include <omp.h>
+    int main(int argc, char** argv) { return(0); }"""
+    extbuilder = add_flag_checking(
+        build_ext, [[['-fopenmp'], ['-fopenmp'], omp_test_c, 'HAVE_OPENMP']])
 
 # Installer that checks for install-time dependencies
 class installer(install.install):
