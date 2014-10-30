@@ -1031,7 +1031,7 @@ class TensorFit(object):
         return tensor_prediction(self.model_params, gtab, S0=S0)
 
 
-def wls_fit_tensor(design_matrix, data, min_signal=1):
+def wls_fit_tensor(design_matrix, data, min_signal=0.0001):
     r"""
     Computes weighted least squares (WLS) fit to calculate self-diffusion
     tensor using a linear regression model [1]_.
@@ -1044,7 +1044,7 @@ def wls_fit_tensor(design_matrix, data, min_signal=1):
     data : array ([X, Y, Z, ...], g)
         Data or response variables holding the data. Note that the last
         dimension should contain the data. It makes no copies of data.
-    min_signal : default = 1
+    min_signal : default = 0.0001
         All values below min_signal are repalced with min_signal. This is done
         in order to avaid taking log(0) durring the tensor fitting.
 
@@ -1137,7 +1137,7 @@ def _ols_iter(inv_design, sig, min_signal, min_diffusivity):
     return decompose_tensor(tensor, min_diffusivity=min_diffusivity)
 
 
-def ols_fit_tensor(design_matrix, data, min_signal=1):
+def ols_fit_tensor(design_matrix, data, min_signal=0.0001):
     r"""
     Computes ordinary least squares (OLS) fit to calculate self-diffusion
     tensor using a linear regression model [1]_.
@@ -1150,7 +1150,7 @@ def ols_fit_tensor(design_matrix, data, min_signal=1):
     data : array ([X, Y, Z, ...], g)
         Data or response variables holding the data. Note that the last
         dimension should contain the data. It makes no copies of data.
-    min_signal : default = 1
+    min_signal : default = 0.0001
         All values below min_signal are repalced with min_signal. This is done
         in order to avaid taking log(0) durring the tensor fitting.
 
@@ -1336,7 +1336,7 @@ def _nlls_jacobian_func(tensor, design_matrix, data, *arg, **kwargs):
     return -pred[:, None] * design_matrix
 
 
-def nlls_fit_tensor(design_matrix, data, min_signal=1, weighting=None,
+def nlls_fit_tensor(design_matrix, data, min_signal=0.0001, weighting=None,
                     sigma=None, jac=True):
     """
     Fit the tensor params using non-linear least-squares.
@@ -1353,7 +1353,8 @@ def nlls_fit_tensor(design_matrix, data, min_signal=1, weighting=None,
 
     min_signal : float, optional
         All values below min_signal are repalced with min_signal. This is done
-        in order to avaid taking log(0) durring the tensor fitting. Default = 1
+        in order to avaid taking log(0) durring the tensor fitting.
+        Default = 0.0001
 
     weighting: str
            the weighting scheme to use in considering the
@@ -1419,7 +1420,7 @@ def nlls_fit_tensor(design_matrix, data, min_signal=1, weighting=None,
     return dti_params
 
 
-def restore_fit_tensor(design_matrix, data, min_signal=1.0, sigma=None,
+def restore_fit_tensor(design_matrix, data, min_signal=0.0001, sigma=None,
                        jac=True):
     """
     Use the RESTORE algorithm [Chang2005]_ to calculate a robust tensor fit
@@ -1437,7 +1438,8 @@ def restore_fit_tensor(design_matrix, data, min_signal=1.0, sigma=None,
 
     min_signal : float, optional
         All values below min_signal are repalced with min_signal. This is done
-        in order to avaid taking log(0) durring the tensor fitting. Default = 1
+        in order to avaid taking log(0) durring the tensor fitting.
+        Default = 0.0001
 
     sigma : float
         An estimate of the variance. [Chang2005]_ recommend to use
