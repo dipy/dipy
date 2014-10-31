@@ -22,6 +22,9 @@ DEF biggest_int = 2147483647  # np.iinfo('i4').max
 
 
 cpdef quickbundles(streamlines, Metric metric, double threshold=10., long max_nb_clusters=biggest_int, ordering=None):
+    if len(streamlines) == 0:
+        return ClusterMapCentroid((0, 0))
+
     if ordering is None:
         ordering = range(len(streamlines))
 
