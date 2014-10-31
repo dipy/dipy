@@ -2,10 +2,10 @@
 import numpy as np
 import itertools
 
-from dipy.segment.clusteringspeed import Cluster, ClusterCentroid
+from dipy.segment.clustering import Cluster, ClusterCentroid
 from dipy.segment.clusteringspeed import ClusterMap, ClusterMapCentroid
 
-from nose.tools import assert_equal
+from nose.tools import assert_equal, assert_false
 from numpy.testing import assert_array_equal, assert_raises, run_module_suite
 from dipy.testing import assert_arrays_equal
 
@@ -24,28 +24,23 @@ expected_clusters = [[2, 4], [0, 3], [1]]
 
 
 def test_cluster_attributes_and_constructor():
-    clusters = ClusterMap()
-    cluster = clusters.add_cluster()
+    cluster = Cluster()
     assert_equal(type(cluster), Cluster)
 
     assert_equal(cluster.id, 0)
-    assert_raises(AttributeError, setattr, cluster, 'id', 0)
-    assert_raises(AttributeError, setattr, cluster, 'indices', [])
     assert_array_equal(cluster.indices, [])
     assert_equal(len(cluster), 0)
 
-    # Cannot create cluster that unexists in cluster map.
-    assert_raises(ValueError, Cluster, None, 0)
-    assert_raises(ValueError, Cluster, clusters, -1)
-    assert_raises(ValueError, Cluster, clusters, 42)
-
     # Duplicate
-    assert_equal(cluster, Cluster(clusters, cluster.id))
+    assert_equal(cluster, Cluster(cluster.id, cluster.indices, cluster.refdata))
+    assert_false(cluster != Cluster(cluster.id, cluster.indices, cluster.refdata))
+
+    # Invalid comparison
+    assert_raises(TypeError, cluster.__cmp__, cluster)
 
 
 def test_cluster_add():
-    clusters = ClusterMap()
-    cluster = clusters.add_cluster()
+    cluster = Cluster()
 
     indices = []
     for idx in range(1, 10):
@@ -55,7 +50,7 @@ def test_cluster_add():
         assert_array_equal(cluster.indices, indices)
 
     # Test add multiples indices at the same time
-    cluster = clusters.add_cluster()
+    cluster = Cluster()
     cluster.add(*range(1, 10))
     assert_array_equal(cluster.indices, indices)
 
@@ -64,15 +59,14 @@ def test_cluster_iter():
     indices = range(len(data))
     np.random.shuffle(indices)  # None trivial ordering
 
-    # Test without specifying refdata in ClusterMap
-    clusters = ClusterMap()
-    cluster = clusters.add_cluster()
+    # Test without specifying refdata
+    cluster = Cluster()
     cluster.add(*indices)
     assert_array_equal(cluster.indices, indices)
     assert_array_equal(list(cluster), indices)
 
     # Test with specifying refdata in ClusterMap
-    clusters.refdata = data
+    cluster.refdata = data
     assert_arrays_equal(list(cluster), [data[i] for i in indices])
 
 
@@ -82,8 +76,7 @@ def test_cluster_getitem():
     advanced_indices = indices + [0, 1, 2, -1, -2, -3]
 
     # Test without specifying refdata in ClusterMap
-    clusters = ClusterMap()
-    cluster = clusters.add_cluster()
+    cluster = Cluster()
     cluster.add(*indices)
 
     # Test indexing
@@ -105,7 +98,7 @@ def test_cluster_getitem():
     assert_arrays_equal(cluster[1:], indices[1:])
 
     # Test with specifying refdata in ClusterMap
-    clusters.refdata = data
+    cluster.refdata = data
 
     # Test indexing
     for i in advanced_indices:
@@ -127,30 +120,27 @@ def test_cluster_getitem():
 
 
 def test_cluster_centroid_attributes_and_constructor():
-    clusters = ClusterMapCentroid(features_shape)
-    cluster = clusters.add_cluster()
+    centroid = np.zeros(features_shape)
+    cluster = ClusterCentroid(centroid)
     assert_equal(type(cluster), ClusterCentroid)
 
     assert_equal(cluster.id, 0)
-    assert_raises(AttributeError, setattr, cluster, 'id', 0)
-    assert_raises(AttributeError, setattr, cluster, 'indices', [])
-    assert_raises(AttributeError, setattr, cluster, 'centroid', [])
     assert_array_equal(cluster.indices, [])
     assert_array_equal(cluster.centroid, np.zeros(features_shape))
     assert_equal(len(cluster), 0)
 
-    # Cannot create cluster that unexists in cluster map.
-    assert_raises(ValueError, ClusterCentroid, None, 0)
-    assert_raises(ValueError, ClusterCentroid, clusters, -1)
-    assert_raises(ValueError, ClusterCentroid, clusters, 42)
-
     # Duplicate
-    assert_equal(cluster, ClusterCentroid(clusters, cluster.id))
+    assert_equal(cluster, ClusterCentroid(centroid))
+    assert_false(cluster != ClusterCentroid(centroid))
+    assert_false(cluster == ClusterCentroid(centroid+1))
+
+    # Invalid comparison
+    assert_raises(TypeError, cluster.__cmp__, cluster)
 
 
 def test_cluster_centroid_add():
-    clusters = ClusterMapCentroid(features_shape)
-    cluster = clusters.add_cluster()
+    centroid = np.zeros(features_shape)
+    cluster = ClusterCentroid(centroid)
 
     indices = []
     centroid = np.zeros(features_shape, dtype=dtype)
@@ -167,17 +157,17 @@ def test_cluster_centroid_iter():
     indices = range(len(data))
     np.random.shuffle(indices)  # None trivial ordering
 
-    # Test without specifying refdata in ClusterMapCentroid
-    clusters = ClusterMapCentroid(features_shape)
-    cluster = clusters.add_cluster()
+    # Test without specifying refdata in ClusterCentroid
+    centroid = np.zeros(features_shape)
+    cluster = ClusterCentroid(centroid)
     for idx in indices:
         cluster.add(idx, (idx+1)*features)
 
     assert_array_equal(cluster.indices, indices)
     assert_array_equal(list(cluster), indices)
 
-    # Test with specifying refdata in ClusterMapCentroid
-    clusters.refdata = data
+    # Test with specifying refdata in ClusterCentroid
+    cluster.refdata = data
     assert_arrays_equal(list(cluster), [data[i] for i in indices])
 
 
@@ -186,9 +176,9 @@ def test_cluster_centroid_getitem():
     np.random.shuffle(indices)  # None trivial ordering
     advanced_indices = indices + [0, 1, 2, -1, -2, -3]
 
-    # Test without specifying refdata in ClusterMapCentroid
-    clusters = ClusterMapCentroid(features_shape)
-    cluster = clusters.add_cluster()
+    # Test without specifying refdata in ClusterCentroid
+    centroid = np.zeros(features_shape)
+    cluster = ClusterCentroid(centroid)
     for idx in indices:
         cluster.add(idx, (idx+1)*features)
 
@@ -210,8 +200,8 @@ def test_cluster_centroid_getitem():
     assert_arrays_equal(cluster[:-1], indices[:-1])
     assert_arrays_equal(cluster[1:], indices[1:])
 
-    # Test with specifying refdata in ClusterMapCentroid
-    clusters.refdata = data
+    # Test with specifying refdata in ClusterCentroid
+    cluster.refdata = data
 
     # Test indexing
     for i in advanced_indices:

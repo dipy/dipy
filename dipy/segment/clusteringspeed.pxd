@@ -9,17 +9,16 @@ cdef struct Centroid:
     int size
 
 
-cdef class Cluster:
-    cdef int _id
-    cdef ClusterMap _cluster_map
+#cdef class Cluster:
+#    cdef int _id
+#    cdef ClusterMap _cluster_map
 
 
-cdef class ClusterCentroid(Cluster):
-    pass
+#cdef class ClusterCentroid(Cluster):
+#    pass
 
 
 cdef class ClusterMap:
-    cdef object _cluster_class
     cdef object refdata
     cdef int _nb_clusters
     cdef int** _clusters_indices

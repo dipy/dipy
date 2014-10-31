@@ -1,7 +1,123 @@
 import numpy as np
-from dipy.segment.clustering_algorithms import quickbundles
 from dipy.segment.metric import Metric
 from dipy.segment.metric import AveragePointwiseEuclideanMetric
+
+
+class Identity:
+    def __getitem__(self, idx):
+        return idx
+
+
+class Cluster(object):
+    """ Provides functionalities to interact with a cluster.
+
+    Useful container to retrieve index of elements grouped together. If
+    a reference to the data is provided to `cluster_map`, elements will
+    be returned instead of their index when possible.
+
+    Parameters
+    ----------
+    cluster_map : `ClusterMap` object
+        reference to the set of clusters this cluster is being part of
+    id : int
+        id of this cluster in its associated `cluster_map`
+
+    Notes
+    -----
+    A cluster does not contain actual data but instead knows how to
+    retrieves them using its `ClusterMap` object.
+    """
+    def __init__(self, id=0, indices=None, refdata=Identity()):
+        self.id = id
+        self.refdata = refdata
+        self.indices = indices if indices is not None else []
+
+    def __len__(self):
+        return len(self.indices)
+
+    def __getitem__(self, idx):
+        if isinstance(idx, int) or isinstance(idx, np.integer):
+            return self.refdata[self.indices[idx]]
+        elif type(idx) is slice:
+            return [self.refdata[i] for i in self.indices[idx]]
+        elif type(idx) is list:
+            return [self[i] for i in idx]
+
+        raise TypeError("Index must be a int or a slice! Not " + str(type(idx)))
+
+    def __iter__(self):
+        return (self[i] for i in range(len(self)))
+
+    def __str__(self):
+        return "[" + ", ".join(map(str, self.indices)) + "]"
+
+    def __repr__(self):
+        return "Cluster(" + str(self) + ")"
+
+    def __eq__(self, other):
+        return isinstance(other, Cluster) \
+            and self.id == other.id \
+            and self.indices == other.indices
+
+    def __ne__(self, other):
+        return not self == other
+
+    def __cmp__(self, other):
+        raise TypeError("Cannot compare Cluster objects.")
+
+    def add(self, *indices):
+        """ Adds indices to this cluster.
+
+        Parameters
+        ----------
+        *indices : list of indices
+            indices to add to this cluster
+        """
+        self.indices += indices
+
+
+class ClusterCentroid(Cluster):
+    """ Provides functionalities to interact with a cluster.
+
+    Useful container to retrieve index of elements grouped together and
+    the cluster's centroid. If a reference to the data is provided to
+    `cluster_map`, elements will be returned instead of their index when
+    possible.
+
+    Parameters
+    ----------
+    cluster_map : `ClusterMapCentroid` object
+        reference to the set of clusters this cluster is being part of
+    id : int
+        id of this cluster in its associated `cluster_map`
+
+    Notes
+    -----
+    A cluster does not contain actual data but instead knows how to
+    retrieves them using its `ClusterMapCentroid` object.
+    """
+    def __init__(self, centroid, id=0, indices=None, refdata=Identity()):
+        super(ClusterCentroid, self).__init__(id, indices, refdata)
+        self.centroid = centroid
+
+    def __eq__(self, other):
+        return isinstance(other, ClusterCentroid) \
+            and np.all(self.centroid == other.centroid) \
+            and super(ClusterCentroid, self).__eq__(other)
+
+    def add(self, id_datum, features):
+        """ Adds a data point to this cluster.
+
+        Parameters
+        ----------
+        id_datum : int
+            index of the data point to add to this cluster
+        features : 2D array
+            data point's features to modify this cluster's centroid
+        """
+        N = len(self)
+        self.centroid = ((self.centroid * N) + features) / (N+1.)
+        super(ClusterCentroid, self).add(id_datum)
 
 
 class Clustering:
@@ -80,6 +196,7 @@ class QuickBundles(Clustering):
         clusters : `ClusterMapCentroid` object
             result of the clustering
         """
+        from dipy.segment.clustering_algorithms import quickbundles
         return quickbundles(streamlines, self.metric,
                             threshold=self.threshold,
                             max_nb_clusters=self.max_nb_clusters,
