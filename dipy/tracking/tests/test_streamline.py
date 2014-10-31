@@ -323,14 +323,14 @@ def test_length():
         streamlines_readonly.append(s.copy())
         streamlines_readonly[-1].setflags(write=False)
 
-    assert_array_equal(dipystreamline.length(streamlines_readonly), [length_python(s) for s in streamlines_readonly])
+    assert_array_almost_equal(dipystreamline.length(streamlines_readonly), [length_python(s) for s in streamlines_readonly])
 
     streamlines_readonly = []
     for s in streamlines_64bit:
         streamlines_readonly.append(s.copy())
         streamlines_readonly[-1].setflags(write=False)
 
-    assert_array_equal(dipystreamline.length(streamlines_readonly), [length_python(s) for s in streamlines_readonly])
+    assert_array_almost_equal(dipystreamline.length(streamlines_readonly), [length_python(s) for s in streamlines_readonly])
 
 
 def test_unlist_relist_streamlines():
