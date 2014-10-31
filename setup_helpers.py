@@ -92,8 +92,9 @@ def add_flag_checking(build_ext_class, flag_defines):
         ``extra_compile_args`` and ``link_flags`` to ``extra_link_args`` of
         each extension when we build the extensions.  If ``defvar`` is not
         None, it is the name of Cython variable to be defined in
-        ``build/config.pxi`` with True if the combination of ``flags``,
-        ``code`` will compile, False otherwise. If None, do not write variable.
+        ``build/config.pxi`` with True if the combination of
+        (``compile_flags``, ``link_flags``, ``code``) will compile and link,
+        False otherwise. If None, do not write variable.
 
     Returns
     -------
