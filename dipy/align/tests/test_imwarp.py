@@ -4,7 +4,6 @@ from numpy.testing import (assert_equal,
                            assert_array_equal,
                            assert_array_almost_equal,
                            assert_raises)
-import matplotlib.pyplot as plt
 import dipy.align.imwarp as imwarp
 import dipy.align.metrics as metrics
 import dipy.align.vector_fields as vfu
@@ -368,8 +367,8 @@ def test_ssd_2d_demons():
     fname_moving = get_data('reg_o')
     fname_static = get_data('reg_c')
 
-    moving = plt.imread(fname_moving)
-    static = plt.imread(fname_static)
+    moving = np.load(fname_moving)
+    static = np.load(fname_static)
     moving = np.array(moving, dtype=floating)
     static = np.array(static, dtype=floating)
     moving = (moving-moving.min())/(moving.max() - moving.min())
@@ -446,8 +445,8 @@ def test_ssd_2d_gauss_newton():
     fname_moving = get_data('reg_o')
     fname_static = get_data('reg_c')
 
-    moving = plt.imread(fname_moving)
-    static = plt.imread(fname_static)
+    moving = np.load(fname_moving)
+    static = np.load(fname_static)
     moving = np.array(moving, dtype=floating)
     static = np.array(static, dtype=floating)
     moving = (moving-moving.min())/(moving.max() - moving.min())
@@ -505,7 +504,7 @@ def test_ssd_2d_gauss_newton():
 def get_synthetic_warped_circle(nslices):
     #get a subsampled circle
     fname_cicle = get_data('reg_o')
-    circle = plt.imread(fname_cicle)[::4,::4].astype(floating)
+    circle = np.load(fname_cicle)[::4,::4].astype(floating)
 
     #create a synthetic invertible map and warp the circle
     d, dinv = vfu.create_harmonic_fields_2d(64, 64, 0.1, 4)
