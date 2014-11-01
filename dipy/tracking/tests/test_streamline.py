@@ -6,9 +6,12 @@ from nose.tools import assert_true, assert_equal, assert_almost_equal
 from numpy.testing import (assert_array_equal, assert_array_almost_equal,
                            assert_raises, run_module_suite)
 
-import dipy.tracking.streamline as dipystreamline
-from dipy.tracking.streamline import (relist_streamlines, unlist_streamlines,
-                                      center_streamlines, transform_streamlines,
+from dipy.tracking.streamline import (set_number_of_points,
+                                      length as ds_length,
+                                      relist_streamlines,
+                                      unlist_streamlines,
+                                      center_streamlines,
+                                      transform_streamlines,
                                       select_random_set_of_streamlines)
 
 
@@ -183,72 +186,90 @@ def set_number_of_points_python(xyz, n_pols=3):
 def test_set_number_of_points():
     # Test resampling of only one streamline
     nb_points = 12
-    modified_streamline_cython = dipystreamline.set_number_of_points(streamline, nb_points)
-    modified_streamline_python = set_number_of_points_python(streamline, nb_points)
+    modified_streamline_cython = set_number_of_points(
+        streamline, nb_points)
+    modified_streamline_python = set_number_of_points_python(
+        streamline, nb_points)
     assert_equal(len(modified_streamline_cython), nb_points)
     # Using a 5 digits precision because of streamline is in float32.
-    assert_array_almost_equal(modified_streamline_cython, modified_streamline_python, 5)
+    assert_array_almost_equal(modified_streamline_cython,
+                              modified_streamline_python, 5)
 
-    modified_streamline_cython = dipystreamline.set_number_of_points(streamline_64bit, nb_points)
-    modified_streamline_python = set_number_of_points_python(streamline_64bit, nb_points)
+    modified_streamline_cython = set_number_of_points(
+        streamline_64bit, nb_points)
+    modified_streamline_python = set_number_of_points_python(
+        streamline_64bit, nb_points)
     assert_equal(len(modified_streamline_cython), nb_points)
-    assert_array_almost_equal(modified_streamline_cython, modified_streamline_python)
+    assert_array_almost_equal(modified_streamline_cython,
+                              modified_streamline_python)
 
     res = []
     simple_streamline = np.array([[0, 0, 0], [1, 1, 1], [2, 2, 2]], 'f4')
     for nb_points in range(2, 200):
-        modified_streamline_cython = dipystreamline.set_number_of_points(simple_streamline, nb_points)
+        modified_streamline_cython = set_number_of_points(
+            simple_streamline, nb_points)
         res.append(nb_points - len(modified_streamline_cython))
-
     assert_equal(np.sum(res), 0)
 
     # Test resampling of multiple streamlines of different nb_points
     nb_points = 12
-    modified_streamlines_cython = dipystreamline.set_number_of_points(streamlines, nb_points)
+    modified_streamlines_cython = set_number_of_points(
+        streamlines, nb_points)
 
     for i, s in enumerate(streamlines):
         modified_streamline_python = set_number_of_points_python(s, nb_points)
         # Using a 5 digits precision because of streamline is in float32.
-        assert_array_almost_equal(modified_streamlines_cython[i], modified_streamline_python, 5)
+        assert_array_almost_equal(modified_streamlines_cython[i],
+                                  modified_streamline_python, 5)
 
-    modified_streamlines_cython = dipystreamline.set_number_of_points(streamlines_64bit, nb_points)
+    modified_streamlines_cython = set_number_of_points(
+        streamlines_64bit, nb_points)
 
     for i, s in enumerate(streamlines_64bit):
         modified_streamline_python = set_number_of_points_python(s, nb_points)
-        assert_array_almost_equal(modified_streamlines_cython[i], modified_streamline_python)
+        assert_array_almost_equal(modified_streamlines_cython[i],
+                                  modified_streamline_python)
 
     # Test streamlines with mixed dtype
-    streamlines_mixed_dtype = [streamline, streamline.astype(np.float64), streamline.astype(np.int32), streamline.astype(np.int64)]
-    nb_points_mixed_dtype = [len(s) for s in dipystreamline.set_number_of_points(streamlines_mixed_dtype, nb_points)]
-    assert_array_equal(nb_points_mixed_dtype, [nb_points]*len(streamlines_mixed_dtype))
+    streamlines_mixed_dtype = [streamline,
+                               streamline.astype(np.float64),
+                               streamline.astype(np.int32),
+                               streamline.astype(np.int64)]
+    nb_points_mixed_dtype = [len(s) for s in set_number_of_points(
+        streamlines_mixed_dtype, nb_points)]
+    assert_array_equal(nb_points_mixed_dtype,
+                       [nb_points] * len(streamlines_mixed_dtype))
 
-    # Test streamlines with differente shape
-    modified_streamlines_cython = dipystreamline.set_number_of_points(heterogeneous_streamlines, nb_points)
+    # Test streamlines with different shape
+    modified_streamlines_cython = set_number_of_points(
+        heterogeneous_streamlines, nb_points)
 
     for i, s in enumerate(heterogeneous_streamlines):
         modified_streamline_python = set_number_of_points_python(s, nb_points)
-        assert_array_almost_equal(modified_streamlines_cython[i], modified_streamline_python)
+        assert_array_almost_equal(modified_streamlines_cython[i],
+                                  modified_streamline_python)
 
     # Test streamline with integer dtype
-    modified_streamline = dipystreamline.set_number_of_points(streamline.astype(np.int32))
+    modified_streamline = set_number_of_points(streamline.astype(np.int32))
     assert_true(modified_streamline.dtype == np.float32)
-    modified_streamline = dipystreamline.set_number_of_points(streamline.astype(np.int64))
+    modified_streamline = set_number_of_points(streamline.astype(np.int64))
     assert_true(modified_streamline.dtype == np.float64)
 
     # Test empty list
-    assert_equal(dipystreamline.set_number_of_points([]), [])
+    assert_equal(set_number_of_points([]), [])
 
     # Test streamline having only one point
-    assert_raises(ValueError, dipystreamline.set_number_of_points, np.array([[1, 2, 3]]))
+    assert_raises(ValueError, set_number_of_points, np.array([[1, 2, 3]]))
 
     # We do not support list of lists, it should be numpy ndarray.
     streamline_unsupported = [[1, 2, 3], [4, 5, 5], [2, 1, 3], [4, 2, 1]]
-    assert_raises(AttributeError, dipystreamline.set_number_of_points, streamline_unsupported)
+    assert_raises(AttributeError, set_number_of_points, streamline_unsupported)
 
     # Test setting number of points of a numpy with flag WRITABLE=False
     streamline_readonly = streamline.copy()
     streamline_readonly.setflags(write=False)
-    assert_equal(len(dipystreamline.set_number_of_points(streamline_readonly, nb_points=42)), 42)
+    assert_equal(len(set_number_of_points(streamline_readonly, nb_points=42)),
+                 42)
 
     # Test setting computing length of a numpy with flag WRITABLE=False
     streamlines_readonly = []
@@ -256,7 +277,7 @@ def test_set_number_of_points():
         streamlines_readonly.append(s.copy())
         streamlines_readonly[-1].setflags(write=False)
 
-    assert_equal(len(dipystreamline.set_number_of_points(streamlines_readonly, nb_points=42)),
+    assert_equal(len(set_number_of_points(streamlines_readonly, nb_points=42)),
                  len(streamlines_readonly))
 
     streamlines_readonly = []
@@ -264,58 +285,68 @@ def test_set_number_of_points():
         streamlines_readonly.append(s.copy())
         streamlines_readonly[-1].setflags(write=False)
 
-    assert_equal(len(dipystreamline.set_number_of_points(streamlines_readonly, nb_points=42)),
+    assert_equal(len(set_number_of_points(streamlines_readonly, nb_points=42)),
                  len(streamlines_readonly))
 
 
 def test_length():
     # Test length of only one streamline
-    length_streamline_cython = dipystreamline.length(streamline)
+    length_streamline_cython = ds_length(streamline)
     length_streamline_python = length_python(streamline)
     assert_almost_equal(length_streamline_cython, length_streamline_python)
 
-    length_streamline_cython = dipystreamline.length(streamline_64bit)
+    length_streamline_cython = ds_length(streamline_64bit)
     length_streamline_python = length_python(streamline_64bit)
     assert_almost_equal(length_streamline_cython, length_streamline_python)
 
     # Test computing length of multiple streamlines of different nb_points
-    length_streamlines_cython = dipystreamline.length(streamlines)
+    length_streamlines_cython = ds_length(streamlines)
 
     for i, s in enumerate(streamlines):
         length_streamline_python = length_python(s)
-        assert_array_almost_equal(length_streamlines_cython[i], length_streamline_python)
+        assert_array_almost_equal(length_streamlines_cython[i],
+                                  length_streamline_python)
 
-    length_streamlines_cython = dipystreamline.length(streamlines_64bit)
+    length_streamlines_cython = ds_length(streamlines_64bit)
 
     for i, s in enumerate(streamlines_64bit):
         length_streamline_python = length_python(s)
-        assert_array_almost_equal(length_streamlines_cython[i], length_streamline_python)
+        assert_array_almost_equal(length_streamlines_cython[i],
+                                  length_streamline_python)
 
     # Test streamlines having mixed dtype
-    streamlines_mixed_dtype = [streamline, streamline.astype(np.float64), streamline.astype(np.int32), streamline.astype(np.int64)]
-    lengths_mixed_dtype = [dipystreamline.length(s) for s in streamlines_mixed_dtype]
-    assert_array_equal(dipystreamline.length(streamlines_mixed_dtype), lengths_mixed_dtype)
+    streamlines_mixed_dtype = [streamline,
+                               streamline.astype(np.float64),
+                               streamline.astype(np.int32),
+                               streamline.astype(np.int64)]
+    lengths_mixed_dtype = [ds_length(s)
+                           for s in streamlines_mixed_dtype]
+    assert_array_equal(ds_length(streamlines_mixed_dtype),
+                       lengths_mixed_dtype)
 
-    # Test streamlines with differente shape
-    length_streamlines_cython = dipystreamline.length(heterogeneous_streamlines)
+    # Test streamlines with different shape
+    length_streamlines_cython = ds_length(
+        heterogeneous_streamlines)
 
     for i, s in enumerate(heterogeneous_streamlines):
         length_streamline_python = length_python(s)
-        assert_array_almost_equal(length_streamlines_cython[i], length_streamline_python)
+        assert_array_almost_equal(length_streamlines_cython[i],
+                                  length_streamline_python)
 
     # Test streamline having integer dtype
-    length_streamline = dipystreamline.length(streamline.astype('int'))
+    length_streamline = ds_length(streamline.astype('int'))
     assert_true(length_streamline.dtype == np.float64)
 
     # Test empty list
-    assert_equal(dipystreamline.length([]), 0.0)
+    assert_equal(ds_length([]), 0.0)
 
     # Test streamline having only one point
-    assert_equal(dipystreamline.length(np.array([[1, 2, 3]])), 0.0)
+    assert_equal(ds_length(np.array([[1, 2, 3]])), 0.0)
 
     # We do not support list of lists, it should be numpy ndarray.
     streamline_unsupported = [[1, 2, 3], [4, 5, 5], [2, 1, 3], [4, 2, 1]]
-    assert_raises(AttributeError, dipystreamline.length, streamline_unsupported)
+    assert_raises(AttributeError, ds_length,
+                  streamline_unsupported)
 
     # Test setting computing length of a numpy with flag WRITABLE=False
     streamlines_readonly = []
@@ -323,45 +354,36 @@ def test_length():
         streamlines_readonly.append(s.copy())
         streamlines_readonly[-1].setflags(write=False)
 
-    assert_array_equal(dipystreamline.length(streamlines_readonly), [length_python(s) for s in streamlines_readonly])
-
+    assert_array_almost_equal(ds_length(streamlines_readonly),
+                              [length_python(s) for s in streamlines_readonly])
     streamlines_readonly = []
     for s in streamlines_64bit:
         streamlines_readonly.append(s.copy())
         streamlines_readonly[-1].setflags(write=False)
 
-    assert_array_equal(dipystreamline.length(streamlines_readonly), [length_python(s) for s in streamlines_readonly])
+    assert_array_almost_equal(ds_length(streamlines_readonly),
+                              [length_python(s) for s in streamlines_readonly])
 
 
 def test_unlist_relist_streamlines():
-
     streamlines = [np.random.rand(10, 3),
                    np.random.rand(20, 3),
                    np.random.rand(5, 3)]
-
     points, offsets = unlist_streamlines(streamlines)
-
     assert_equal(offsets.dtype, np.dtype('i8'))
-
     assert_equal(points.shape, (35, 3))
     assert_equal(len(offsets), len(streamlines))
 
     streamlines2 = relist_streamlines(points, offsets)
-
     assert_equal(len(streamlines), len(streamlines2))
-
     for i in range(len(streamlines)):
         assert_array_equal(streamlines[i], streamlines2[i])
 
 
 def test_center_and_transform():
-
     A = np.array([[1, 2, 3], [1, 2, 3.]])
-
     streamlines = [A for i in range(10)]
-
     streamlines2, center = center_streamlines(streamlines)
-
     B = np.zeros((2, 3))
     assert_array_equal(streamlines2[0], B)
     assert_array_equal(center, A[0])
@@ -369,27 +391,20 @@ def test_center_and_transform():
     affine = np.eye(4)
     affine[0, 0] = 2
     affine[:3, -1] = - np.array([2, 1, 1]) * center
-
     streamlines3 = transform_streamlines(streamlines, affine)
     assert_array_equal(streamlines3[0], B)
 
 
 def test_select_streamlines():
-
     streamlines = [np.random.rand(10, 3),
                    np.random.rand(20, 3),
                    np.random.rand(5, 3)]
-
     new_streamlines = select_random_set_of_streamlines(streamlines, 2)
-
     assert_equal(len(new_streamlines), 2)
 
     new_streamlines = select_random_set_of_streamlines(streamlines, 4)
-
     assert_equal(len(new_streamlines), 3)
 
 
-
 if __name__ == '__main__':
-
     run_module_suite()
