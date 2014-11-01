@@ -377,11 +377,21 @@ def test_from_lower_triangular():
 def test_all_constant():
     bvecs, bvals = read_bvec_file(get_data('55dir_grad.bvec'))
     gtab = grad.gradient_table_from_bvals_bvecs(bvals, bvecs.T)
-    fit_methods = ['LS', 'OLS', 'NNLS']
+    fit_methods = ['LS', 'OLS', 'NNLS', 'RESTORE']
     for fit_method in fit_methods:
         dm = dti.TensorModel(gtab)
-        assert_almost_equal(dm.fit(np.zeros(bvals.shape[0])).fa, 0)
         assert_almost_equal(dm.fit(100 * np.ones(bvals.shape[0])).fa, 0)
+        # Doesn't matter if the signal is smaller than 1:
+        assert_almost_equal(dm.fit(0.4 * np.ones(bvals.shape[0])).fa, 0)
+
+def test_all_zeros():
+    bvecs, bvals = read_bvec_file(get_data('55dir_grad.bvec'))
+    gtab = grad.gradient_table_from_bvals_bvecs(bvals, bvecs.T)
+    fit_methods = ['LS', 'OLS', 'NNLS', 'RESTORE']
+    for fit_method in fit_methods:
+        dm = dti.TensorModel(gtab)
+        assert_raises(ValueError, dm.fit, np.zeros(bvals.shape[0]))
+
 
 
 def test_mask():
