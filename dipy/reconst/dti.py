@@ -1031,7 +1031,7 @@ class TensorFit(object):
         return tensor_prediction(self.model_params, gtab, S0=S0)
 
 
-def wls_fit_tensor(design_matrix, data, min_signal=1):
+def wls_fit_tensor(design_matrix, data, min_signal=None):
     r"""
     Computes weighted least squares (WLS) fit to calculate self-diffusion
     tensor using a linear regression model [1]_.
@@ -1044,9 +1044,10 @@ def wls_fit_tensor(design_matrix, data, min_signal=1):
     data : array ([X, Y, Z, ...], g)
         Data or response variables holding the data. Note that the last
         dimension should contain the data. It makes no copies of data.
-    min_signal : default = 1
+    min_signal : float, optional
         All values below min_signal are repalced with min_signal. This is done
-        in order to avaid taking log(0) durring the tensor fitting.
+        in order to avaid taking log(0) durring the tensor fitting. Defaults to
+        the smallest non-0 signal in the data
 
     Returns
     -------
@@ -1092,7 +1093,7 @@ def wls_fit_tensor(design_matrix, data, min_signal=1):
        NeuroImage 33, 531-541.
     """
     tol = 1e-6
-    if min_signal <= 0:
+    if min_signal is not None and min_signal <= 0:
         raise ValueError('min_signal must be > 0')
 
     data = np.asarray(data)
@@ -1110,6 +1111,7 @@ def wls_fit_tensor(design_matrix, data, min_signal=1):
     for param, sig in zip(dti_params, data_flat):
         param[0], param[1:] = _wls_iter(ols_fit, design_matrix, sig,
                                         min_signal, min_diffusivity)
+
     dti_params.shape = data.shape[:-1] + (12,)
     dti_params = dti_params
     return dti_params
@@ -1118,6 +1120,12 @@ def wls_fit_tensor(design_matrix, data, min_signal=1):
 def _wls_iter(ols_fit, design_matrix, sig, min_signal, min_diffusivity):
     ''' Helper function used by wls_fit_tensor.
     '''
+    if np.all(sig==0):
+            raise ValueError("The data in this voxel contains only zeros")
+
+    if min_signal is None:
+        min_signal = sig[sig > 0].min()
+
     sig = np.maximum(sig, min_signal)  # throw out zero signals
     log_s = np.log(sig)
     w = np.exp(np.dot(ols_fit, log_s))
@@ -1130,6 +1138,11 @@ def _wls_iter(ols_fit, design_matrix, sig, min_signal, min_diffusivity):
 def _ols_iter(inv_design, sig, min_signal, min_diffusivity):
     ''' Helper function used by ols_fit_tensor.
     '''
+    if np.all(sig==0):
+            raise ValueError("The data in this voxel contains only zeros")
+
+    if min_signal is None:
+        min_signal = sig[sig > 0].min()
     sig = np.maximum(sig, min_signal)  # throw out zero signals
     log_s = np.log(sig)
     D = np.dot(inv_design, log_s)
@@ -1137,7 +1150,7 @@ def _ols_iter(inv_design, sig, min_signal, min_diffusivity):
     return decompose_tensor(tensor, min_diffusivity=min_diffusivity)
 
 
-def ols_fit_tensor(design_matrix, data, min_signal=1):
+def ols_fit_tensor(design_matrix, data, min_signal=None):
     r"""
     Computes ordinary least squares (OLS) fit to calculate self-diffusion
     tensor using a linear regression model [1]_.
@@ -1150,9 +1163,10 @@ def ols_fit_tensor(design_matrix, data, min_signal=1):
     data : array ([X, Y, Z, ...], g)
         Data or response variables holding the data. Note that the last
         dimension should contain the data. It makes no copies of data.
-    min_signal : default = 1
+    min_signal : float, optional
         All values below min_signal are repalced with min_signal. This is done
-        in order to avaid taking log(0) durring the tensor fitting.
+        in order to avaid taking log(0) durring the tensor fitting. Defaults to
+        the smallest non-0 signal in the data
 
     Returns
     -------
@@ -1336,7 +1350,7 @@ def _nlls_jacobian_func(tensor, design_matrix, data, *arg, **kwargs):
     return -pred[:, None] * design_matrix
 
 
-def nlls_fit_tensor(design_matrix, data, min_signal=1, weighting=None,
+def nlls_fit_tensor(design_matrix, data, min_signal=None, weighting=None,
                     sigma=None, jac=True):
     """
     Fit the tensor params using non-linear least-squares.
@@ -1353,7 +1367,8 @@ def nlls_fit_tensor(design_matrix, data, min_signal=1, weighting=None,
 
     min_signal : float, optional
         All values below min_signal are repalced with min_signal. This is done
-        in order to avaid taking log(0) durring the tensor fitting. Default = 1
+        in order to avaid taking log(0) durring the tensor fitting. Defaults to
+        the smallest non-0 signal in the data
 
     weighting: str
            the weighting scheme to use in considering the
@@ -1378,6 +1393,8 @@ def nlls_fit_tensor(design_matrix, data, min_signal=1, weighting=None,
     flat_data = data.reshape((-1, data.shape[-1]))
     # Use the OLS method parameters as the starting point for the optimization:
     inv_design = np.linalg.pinv(design_matrix)
+    if min_signal is None:
+        min_signal = flat_data[flat_data > 0].min()
     sig = np.maximum(flat_data, min_signal)
     log_s = np.log(sig)
     D = np.dot(inv_design, log_s.T).T
@@ -1387,6 +1404,9 @@ def nlls_fit_tensor(design_matrix, data, min_signal=1, weighting=None,
     # 12 parameters per voxel (evals + evecs):
     dti_params = np.empty((flat_data.shape[0], 12))
     for vox in range(flat_data.shape[0]):
+        if np.all(flat_data[vox] == 0):
+            raise ValueError("The data in this voxel contains only zeros")
+
         start_params = ols_params[vox]
         # Do the optimization in this voxel:
         if jac:
@@ -1411,13 +1431,15 @@ def nlls_fit_tensor(design_matrix, data, min_signal=1, weighting=None,
         # If leastsq failed to converge and produced nans, we'll resort to the
         # OLS solution in this voxel:
         except np.linalg.LinAlgError:
-            dti_params[vox, :] = start_params
+            evals,evecs=decompose_tensor(from_lower_triangular(start_params[:6]))
+            dti_params[vox, :3] = evals
+            dti_params[vox, 3:] = evecs.ravel()
 
     dti_params.shape = data.shape[:-1] + (12,)
     return dti_params
 
 
-def restore_fit_tensor(design_matrix, data, min_signal=1.0, sigma=None,
+def restore_fit_tensor(design_matrix, data, min_signal=None, sigma=None,
                        jac=True):
     """
     Use the RESTORE algorithm [Chang2005]_ to calculate a robust tensor fit
@@ -1435,7 +1457,8 @@ def restore_fit_tensor(design_matrix, data, min_signal=1.0, sigma=None,
 
     min_signal : float, optional
         All values below min_signal are repalced with min_signal. This is done
-        in order to avaid taking log(0) durring the tensor fitting. Default = 1
+        in order to avaid taking log(0) durring the tensor fitting.
+        Default = 0.0001
 
     sigma : float
         An estimate of the variance. [Chang2005]_ recommend to use
@@ -1463,6 +1486,10 @@ def restore_fit_tensor(design_matrix, data, min_signal=1.0, sigma=None,
     flat_data = data.reshape((-1, data.shape[-1]))
     # Use the OLS method parameters as the starting point for the optimization:
     inv_design = np.linalg.pinv(design_matrix)
+
+    if min_signal is None:
+        min_signal = flat_data[flat_data > 0].min()
+
     sig = np.maximum(flat_data, min_signal)
     log_s = np.log(sig)
     D = np.dot(inv_design, log_s.T).T
@@ -1470,6 +1497,9 @@ def restore_fit_tensor(design_matrix, data, min_signal=1.0, sigma=None,
     # 12 parameters per voxel (evals + evecs):
     dti_params = np.empty((flat_data.shape[0], 12))
     for vox in range(flat_data.shape[0]):
+        if np.all(flat_data[vox] == 0):
+            raise ValueError("The data in this voxel contains only zeros")
+
         start_params = ols_params[vox]
         # Do nlls using sigma weighting in this voxel:
         if jac:
@@ -1540,8 +1570,10 @@ def restore_fit_tensor(design_matrix, data, min_signal=1.0, sigma=None,
         # If leastsq failed to converge and produced nans, we'll resort to the
         # OLS solution in this voxel:
         except np.linalg.LinAlgError:
-            print(vox)
-            dti_params[vox, :] = start_params
+            evals,evecs=decompose_tensor(from_lower_triangular(start_params[:6]))
+            dti_params[vox, :3] = evals
+            dti_params[vox, 3:] = evecs.ravel()
+
     dti_params.shape = data.shape[:-1] + (12,)
     restore_params = dti_params
     return restore_params
@@ -1606,38 +1638,6 @@ def lower_triangular(tensor, b0=None):
         D[..., 6] = -np.log(b0)
         D[..., :6] = tensor[..., _lt_rows, _lt_cols]
         return D
-
-
-def eig_from_lo_tri(data):
-    """Calculates parameters for creating a Tensor instance
-
-    Calculates tensor parameters from the six unique tensor elements. This
-    function can be passed to the Tensor class as a fit_method for creating a
-    Tensor instance from tensors stored in a nifti file.
-
-    Parameters
-    ----------
-    data : array_like (..., 6)
-        diffusion tensors elements stored in lower triangular order
-
-    Returns
-    -------
-    dti_params
-        Eigen values and vectors, used by the Tensor class to create an
-        instance
-    """
-    data = np.asarray(data)
-    data_flat = data.reshape((-1, data.shape[-1]))
-    dti_params = np.empty((len(data_flat), 4, 3))
-
-    for ii in range(len(data_flat)):
-        tensor = from_lower_triangular(data_flat[ii])
-        eigvals, eigvecs = decompose_tensor(tensor)
-        dti_params[ii, 0] = eigvals
-        dti_params[ii, 1:] = eigvecs
-
-    dti_params.shape = data.shape[:-1] + (12,)
-    return dti_params
 
 
 def decompose_tensor(tensor, min_diffusivity=0):

@@ -377,11 +377,21 @@ def test_from_lower_triangular():
 def test_all_constant():
     bvecs, bvals = read_bvec_file(get_data('55dir_grad.bvec'))
     gtab = grad.gradient_table_from_bvals_bvecs(bvals, bvecs.T)
-    fit_methods = ['LS', 'OLS', 'NNLS']
+    fit_methods = ['LS', 'OLS', 'NNLS', 'RESTORE']
     for fit_method in fit_methods:
         dm = dti.TensorModel(gtab)
-        assert_almost_equal(dm.fit(np.zeros(bvals.shape[0])).fa, 0)
         assert_almost_equal(dm.fit(100 * np.ones(bvals.shape[0])).fa, 0)
+        # Doesn't matter if the signal is smaller than 1:
+        assert_almost_equal(dm.fit(0.4 * np.ones(bvals.shape[0])).fa, 0)
+
+
+def test_all_zeros():
+    bvecs, bvals = read_bvec_file(get_data('55dir_grad.bvec'))
+    gtab = grad.gradient_table_from_bvals_bvecs(bvals, bvecs.T)
+    fit_methods = ['LS', 'OLS', 'NNLS', 'RESTORE']
+    for fit_method in fit_methods:
+        dm = dti.TensorModel(gtab)
+        assert_raises(ValueError, dm.fit, np.zeros(bvals.shape[0]))
 
 
 def test_mask():
@@ -466,6 +476,7 @@ def test_nlls_fit_tensor():
      assert_array_almost_equal(tensor_est.quadratic_form[0], tensor)
      assert_almost_equal(tensor_est.md[0], md)
 
+
      # You can also do this without the Jacobian (though it's slower):
      tensor_model = dti.TensorModel(gtab, fit_method='NLLS', jac=False)
      tensor_est = tensor_model.fit(Y)
@@ -520,16 +531,26 @@ def test_restore():
      Y = np.exp(np.dot(X,D))
      Y.shape = (-1,) + Y.shape
      for drop_this in range(1, Y.shape[-1]):
-         # RESTORE estimates should be robust to dropping
-         this_y = Y.copy()
-         this_y[:, drop_this] = 1.0
-         tensor_model = dti.TensorModel(gtab, fit_method='restore',
-                                        sigma=67.0)
+         for jac in [True, False]:
+             # RESTORE estimates should be robust to dropping
+             this_y = Y.copy()
+             this_y[:, drop_this] = 1.0
+             for sigma in [67.0, np.ones(this_y.shape[-1]) *67.0]:
+                 tensor_model = dti.TensorModel(gtab, fit_method='restore',
+                                            jac=jac,
+                                            sigma=67.0)
 
-         tensor_est = tensor_model.fit(this_y)
-         assert_array_almost_equal(tensor_est.evals[0], evals, decimal=3)
-         assert_array_almost_equal(tensor_est.quadratic_form[0], tensor,
-                                   decimal=3)
+                 tensor_est = tensor_model.fit(this_y)
+                 assert_array_almost_equal(tensor_est.evals[0], evals, decimal=3)
+                 assert_array_almost_equal(tensor_est.quadratic_form[0], tensor,
+                                       decimal=3)
+
+
+
+     # If sigma is very small, it still needs to work:
+     tensor_model = dti.TensorModel(gtab, fit_method='restore', sigma=0.0001)
+     tensor_model.fit(Y.copy())
+
 
 def test_adc():
     """
