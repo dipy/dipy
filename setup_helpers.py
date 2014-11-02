@@ -29,6 +29,8 @@ call %py_exe% %pyscript% %*
 
 # File to which to write Cython conditional DEF vars
 CONFIG_PXI = pjoin('build', 'config.pxi')
+# Directory to which to write libraries for building
+LIB_DIR_TMP = pjoin('build', 'extra_libs')
 
 
 class install_scripts_bat(install_scripts):
@@ -168,3 +170,65 @@ def add_flag_checking(build_ext_class, flag_defines):
             build_ext_class.build_extensions(self)
 
     return Checker
+
+
+def check_npymath(build_ext_class):
+    """ Override input `build_ext_class` to modify ``npymath`` library
+
+    If compilation needs 'npymath.lib' (VC format) library, and it doesn't
+    exist, and the mingw 'libnpymath.a' version does exist, copy the mingw
+    version to a temporary path and add this path to the library directories.
+
+    Parameters
+    ----------
+    build_ext_class : class
+        Class implementing ``distutils.command.build_ext.build_ext`` interface,
+        with a ``build_extensions`` method.
+
+    Returns
+    -------
+    libfixed_class : class
+        A class with similar interface to
+        ``distutils.command.build_ext.build_ext``, that has fixed any
+        references to ``npymath``.
+    """
+
+    class LibModder(build_ext_class):
+        lib_name = 'npymath'
+
+        def _copy_lib(self, lib_dirs):
+            mw_name = 'lib{0}.a'.format(self.lib_name)
+            for lib_dir in lib_dirs:
+                mingw_path = pjoin(lib_dir, mw_name)
+                if exists(mingw_path):
+                    break
+            else:
+                return
+            if not exists(LIB_DIR_TMP):
+                os.makedirs(LIB_DIR_TMP)
+            vc_path = pjoin(LIB_DIR_TMP, self.lib_name + '.lib')
+            shutil.copyfile(mingw_path, vc_path)
+
+        def fix_ext_libs(self):
+            cc = self.compiler
+            lib_name = self.lib_name
+            if cc.library_option(lib_name) != lib_name + '.lib':
+                return # not VC format library name
+            lib_copied = False
+            for ext in self.extensions:
+                if not lib_name in ext.libraries:
+                    continue
+                if cc.find_library_file(ext.library_dirs, lib_name) != None:
+                    continue
+                # Need to copy library and / or fix library paths
+                if not lib_copied:
+                    self._copy_lib(ext.library_dirs)
+                    lib_copied = True
+                ext.library_dirs.append(LIB_DIR_TMP)
+
+        def build_extensions(self):
+            """ Hook into extension building to fix npymath lib """
+            self.fix_ext_libs()
+            build_ext_class.build_extensions(self)
+
+    return LibModder
