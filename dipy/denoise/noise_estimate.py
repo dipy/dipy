@@ -187,9 +187,11 @@ def estimate_sigma(arr, disable_background_masking=False):
         mask = arr[..., 0].astype(np.bool)
     else:
         mask = np.ones_like(arr[..., 0], dtype=np.bool)
-
+        
+    conv_out = np.zeros(arr[...,0].shape, dtype=np.float32)
     for i in range(sigma.size):
-        mean_block = np.sqrt(6/7) * (arr[..., i] - 1/6 * convolve(arr[..., i], k))
+        convolve(arr[..., i], k, output=conv_out)
+        mean_block = np.sqrt(6/7) * (arr[..., i] - 1/6 * conv_out)
         sigma[i] = np.sqrt(np.mean(mean_block[mask]**2))
 
     return sigma
