@@ -108,6 +108,9 @@ cdef class CythonFeature(Feature):
         shape : tuple
             features' shape
         """
+        if not datum.flags.writeable:
+            datum = datum.astype(np.float32)
+
         return shape2tuple(self.c_infer_shape(datum))
 
     cpdef extract(CythonFeature self, datum):
@@ -126,6 +129,9 @@ cdef class CythonFeature(Feature):
         features : 2D array
             features extracted from `datum`
         """
+        if not datum.flags.writeable:
+            datum = datum.astype(np.float32)
+
         shape = shape2tuple(self.c_infer_shape(datum))
         cdef Data2D out = np.empty(shape, dtype=datum.dtype)
         self.c_extract(datum, out)

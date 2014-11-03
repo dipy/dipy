@@ -56,7 +56,6 @@ class Cluster(object):
 
     def __eq__(self, other):
         return isinstance(other, Cluster) \
-            and self.id == other.id \
             and self.indices == other.indices
 
     def __ne__(self, other):
@@ -65,8 +64,8 @@ class Cluster(object):
     def __cmp__(self, other):
         raise TypeError("Cannot compare Cluster objects.")
 
-    def add(self, *indices):
-        """ Adds indices to this cluster.
+    def assign(self, *indices):
+        """ Assigns indices to this cluster.
 
         Parameters
         ----------
@@ -98,15 +97,16 @@ class ClusterCentroid(Cluster):
     """
     def __init__(self, centroid, id=0, indices=None, refdata=Identity()):
         super(ClusterCentroid, self).__init__(id, indices, refdata)
-        self.centroid = centroid
+        self.centroid = centroid.copy()
+        self.new_centroid = centroid.copy()
 
     def __eq__(self, other):
         return isinstance(other, ClusterCentroid) \
             and np.all(self.centroid == other.centroid) \
             and super(ClusterCentroid, self).__eq__(other)
 
-    def add(self, id_datum, features):
-        """ Adds a data point to this cluster.
+    def assign(self, id_datum, features):
+        """ Assigns a data point to this cluster.
 
         Parameters
         ----------
@@ -116,8 +116,20 @@ class ClusterCentroid(Cluster):
             data point's features to modify this cluster's centroid
         """
         N = len(self)
-        self.centroid = ((self.centroid * N) + features) / (N+1.)
-        super(ClusterCentroid, self).add(id_datum)
+        self.new_centroid = ((self.new_centroid * N) + features) / (N+1.)
+        super(ClusterCentroid, self).assign(id_datum)
+
+    def update(self):
+        """ Update centroid of this cluster.
+
+        Returns
+        -------
+        converged : bool
+            tells if the centroid has moved
+        """
+        converged = np.equal(self.centroid, self.new_centroid)
+        self.centroid = self.new_centroid.copy()
+        return converged
 
 
 class Clustering:

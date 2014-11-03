@@ -20,6 +20,15 @@ data = [np.arange(3*05, dtype=dtype).reshape((-1, 3)) + 2*threshold,
 clusters_truth = [[0, 1], [2, 4], [3]]
 
 
+def test_quickbundles_empty_data():
+    data = []
+    threshold = 10
+    metric = dipymetric.SumPointwiseEuclideanMetric()
+    clusters = quickbundles(data, metric, threshold)
+    assert_equal(len(clusters), 0)
+    assert_equal(len(clusters.centroids), 0)
+
+
 def test_quickbundles_2D():
     # Test quickbundles clustering using 2D points and the Eulidean metric.
     rng = np.random.RandomState(42)
@@ -57,7 +66,6 @@ def test_quickbundles_2D():
     ordering = np.arange(len(data))
     for i in range(100):
         rng.shuffle(ordering)
-
         clusters = quickbundles(data, metric, threshold, ordering=ordering)
 
         # Check if clusters are the same as 'clusters_truth'
@@ -66,6 +74,12 @@ def test_quickbundles_2D():
             for cluster_truth in clusters_truth:
                 if cluster_truth[0] in cluster.indices:
                     assert_items_equal(cluster.indices, cluster_truth)
+
+    # Cluster each cluster again using a small threshold
+    for cluster in clusters:
+        subclusters = quickbundles(data, metric, threshold=0, ordering=cluster.indices)
+        assert_equal(len(subclusters), len(cluster))
+        assert_items_equal(itertools.chain(*subclusters), cluster.indices)
 
     # A very large threshold should produce only 1 cluster
     clusters = quickbundles(data, metric, threshold=np.inf)
@@ -87,9 +101,13 @@ def test_quickbundles_streamlines():
     clusters = qb.cluster(data)
     assert_array_equal(list(itertools.chain(*clusters)), list(itertools.chain(*clusters_truth)))
 
-    # Test
+    # Cluster from a generator
+    clusters = qb.cluster(iter(data))
+    assert_array_equal(list(itertools.chain(*clusters)), list(itertools.chain(*clusters_truth)))
+
+    # Cluster read-only data
     for datum in data:
-        datum.setflags()
+        datum.setflags(write=False)
 
     clusters = qb.cluster(data)
 

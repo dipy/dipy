@@ -138,13 +138,24 @@ cdef class ClusterMap:
             return np.array([op(len(cluster), other) for cluster in self])
 
         else:
-            return NotImplemented("Cluster does not support this type of comparison!")
+            return NotImplemented("ClusterMap does not support this type of comparison!")
 
-    cdef void c_add(ClusterMap self, int id_cluster, int id_data, Data2D data) nogil except *:
+    cdef void c_assign(ClusterMap self, int id_cluster, int id_data, Data2D data) nogil except *:
         cdef int C = self._clusters_size[id_cluster]
         self._clusters_indices[id_cluster] = <int*> realloc(self._clusters_indices[id_cluster], (C+1)*sizeof(int))
         self._clusters_indices[id_cluster][C] = id_data
         self._clusters_size[id_cluster] += 1
+
+    cdef void c_remove_cluster(ClusterMap self, int id_cluster) nogil except *:
+        # Overwrite cluster to be removed with last one
+        free(self._clusters_indices[id_cluster])
+        self._clusters_indices[id_cluster] = self._clusters_indices[self._nb_clusters-1]
+        self._clusters_size[id_cluster] = self._clusters_size[self._nb_clusters-1]
+
+        # Remove last cluster
+        self._clusters_indices = <int**> realloc(self._clusters_indices, (self._nb_clusters-1)*sizeof(int*))
+        self._clusters_size = <int*> realloc(self._clusters_size, (self._nb_clusters-1)*sizeof(int))
+        self._nb_clusters -= 1
 
     cdef int c_create_cluster(ClusterMap self) nogil except -1:
         self._clusters_indices = <int**> realloc(self._clusters_indices, (self._nb_clusters+1)*sizeof(int*))
@@ -155,10 +166,16 @@ cdef class ClusterMap:
         self._nb_clusters += 1
         return self._nb_clusters - 1
 
+    cdef void c_clear(ClusterMap self) nogil except *:
+        cdef int i
+        for i in range(self._nb_clusters):
+            self._clusters_indices[i] = <int*> realloc(self._clusters_indices[i], 0*sizeof(int))
+            self._clusters_size[i] = 0
+
     cdef int c_size(ClusterMap self) nogil:
         return self._nb_clusters
 
-    def add_cluster(ClusterMap self):
+    def add_cluster(ClusterMap self, cluster):
         """ Adds a new cluster to this cluster map.
 
         Returns
@@ -167,7 +184,21 @@ cdef class ClusterMap:
             newly created cluster
         """
         id_cluster = self.c_create_cluster()
-        return self[id_cluster]
+
+        for i in cluster.indices:
+            self.c_assign(id_cluster, i, None)
+
+        return id_cluster
+
+    def remove_cluster(ClusterMap self, index):
+        """ Remove a cluster from this cluster map using its index.
+
+        Parameters
+        ----------
+        index : int
+            index of the cluster to remove
+        """
+        self.c_remove_cluster(index)
 
 
 cdef class ClusterMapCentroid(ClusterMap):
@@ -197,11 +228,12 @@ cdef class ClusterMapCentroid(ClusterMap):
         self._features_shape = tuple2shape(feature_shape)
 
         self._centroids = NULL
+        self._new_centroids = NULL
 
     property centroids:
         def __get__(self):
             shape = shape2tuple(self._features_shape)
-            return [np.asarray(self.c_get_centroid(i).features) for i in range(self._nb_clusters)]
+            return [np.asarray(self._centroids[i].features) for i in range(self._nb_clusters)]
 
     def __dealloc__(ClusterMapCentroid self):
         # __dealloc__ method of the superclass is automatically called.
@@ -211,6 +243,8 @@ cdef class ClusterMapCentroid(ClusterMap):
 
         free(self._centroids)
         self._centroids = NULL
+        free(self._new_centroids)
+        self._new_centroids = NULL
 
     def get_cluster(self, cluster_id):
         cluster = super(ClusterMapCentroid, self).get_cluster(cluster_id)
@@ -218,26 +252,82 @@ cdef class ClusterMapCentroid(ClusterMap):
 
         return ClusterCentroid(id=cluster_id, centroid=centroid, indices=cluster.indices, refdata=self.refdata)
 
-    cdef void c_add(ClusterMapCentroid self, int id_cluster, int id_data, Data2D data) nogil:
-        cdef Data2D centroid = self._centroids[id_cluster].features
+    cdef void c_assign(ClusterMapCentroid self, int id_cluster, int id_data, Data2D data) nogil:
+        cdef Data2D new_centroid = self._new_centroids[id_cluster].features
         cdef int C = self._clusters_size[id_cluster]
+        cdef int n, d
 
-        cdef int N = centroid.shape[0], D = centroid.shape[1]
+        cdef int N = new_centroid.shape[0], D = new_centroid.shape[1]
         for n in range(N):
             for d in range(D):
-                centroid[n, d] = ((centroid[n, d] * C) + data[n, d]) / (C+1)
+                new_centroid[n, d] = ((new_centroid[n, d] * C) + data[n, d]) / (C+1)
 
-        ClusterMap.c_add(self, id_cluster, id_data, data)
+        ClusterMap.c_assign(self, id_cluster, id_data, data)
+
+    cdef int c_update(ClusterMapCentroid self, int id_cluster) nogil:
+        cdef Data2D centroid = self._centroids[id_cluster].features
+        cdef Data2D new_centroid = self._new_centroids[id_cluster].features
+        cdef int N = new_centroid.shape[0], D = centroid.shape[1]
+        cdef int n, d
+        cdef int converged = 1
+
+        for n in range(N):
+            for d in range(D):
+                converged &= centroid[n, d] == new_centroid[n, d]
+                centroid[n, d] = new_centroid[n, d]
+
+        return converged
 
     cdef int c_create_cluster(ClusterMapCentroid self) nogil except -1:
         self._centroids = <Centroid*> realloc(self._centroids, (self._nb_clusters+1)*sizeof(Centroid))
-        memset(&self._centroids[self._nb_clusters], 0, sizeof(Centroid))  # Zero-initialize the new centroid
+        memset(&self._centroids[self._nb_clusters], 0, sizeof(Centroid))  # Zero-initialize the Centroid structure
+
+        self._new_centroids = <Centroid*> realloc(self._new_centroids, (self._nb_clusters+1)*sizeof(Centroid))
+        memset(&self._new_centroids[self._nb_clusters], 0, sizeof(Centroid))  # Zero-initialize the new Centroid structure
 
         with gil:
             self._centroids[self._nb_clusters].features = <float[:self._features_shape.dims[0], :self._features_shape.dims[1]]> calloc(self._features_shape.size, sizeof(float))
+            self._new_centroids[self._nb_clusters].features = <float[:self._features_shape.dims[0], :self._features_shape.dims[1]]> calloc(self._features_shape.size, sizeof(float))
 
         return ClusterMap.c_create_cluster(self)
 
-    cdef Centroid* c_get_centroid(ClusterMapCentroid self, int idx) nogil:
-        return &self._centroids[idx]
+    cdef void c_remove_cluster(ClusterMapCentroid self, int id_cluster) nogil except *:
+        # Overwrite cluster's centroid to be removed with last one
+        free(&(self._centroids[id_cluster].features[0, 0]))
+        free(&(self._new_centroids[id_cluster].features[0, 0]))
+        self._centroids[id_cluster] = self._centroids[self._nb_clusters-1]
+        self._new_centroids[id_cluster] = self._new_centroids[self._nb_clusters-1]
 
+        # Remove last cluster's centroid
+        self._centroids = <Centroid*> realloc(self._centroids, (self._nb_clusters-1)*sizeof(Centroid))
+        self._new_centroids = <Centroid*> realloc(self._new_centroids, (self._nb_clusters-1)*sizeof(Centroid))
+
+        ClusterMap.c_remove_cluster(self, id_cluster)
+
+    def add_cluster(ClusterMapCentroid self, cluster):
+        """ Adds a new cluster to this cluster map.
+
+        Parameters
+        ----------
+        cluster : `ClusterCentroid` object
+            cluster to add
+
+        Returns
+        -------
+        id_cluster : int
+            index of the newly added cluster
+        """
+        cdef int id_cluster = self.c_create_cluster()
+        cdef int N = cluster.centroid.shape[0], D = cluster.centroid.shape[1]
+        cdef int idx, n, d
+        cdef Data2D new_centroid = self._new_centroids[id_cluster].features
+
+        for idx in cluster.indices:
+            ClusterMap.c_assign(self, id_cluster, idx, None)
+
+        for n in range(N):
+            for d in range(D):
+                new_centroid[n, d] = cluster.centroid[n, d]
+
+        self.c_update(id_cluster)
+        return id_cluster
