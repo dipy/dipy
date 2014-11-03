@@ -37,7 +37,7 @@ def precompute_cc_factors_3d(floating[:, :, :] static, floating[:, :, :] moving,
     Pre-computes the separate terms of the cross correlation metric and image
     norms at each voxel considering a neighborhood of the given radius to
     efficiently compute the gradient of the metric with respect to the
-    deformation field [Avants09][Avants11]
+    deformation field [Avants08][Avants11]
 
     Parameters
     ----------
@@ -53,18 +53,18 @@ def precompute_cc_factors_3d(floating[:, :, :] static, floating[:, :, :] moving,
     factors : array, shape (S, R, C, 5)
         the precomputed cross correlation terms:
         factors[:,:,:,0] : static minus its mean value along the neighborhood
-        factors[:,:,:,1] : sum of sq. values of static along the neighborhood
-        factors[:,:,:,2] : moving minus its mean value along the neighborhood
-        factors[:,:,:,3] : sum of sq. values of moving along the neighborhood
-        factors[:,:,:,4] : sum of the pointwise products of static and moving
+        factors[:,:,:,1] : moving minus its mean value along the neighborhood
+        factors[:,:,:,2] : sum of the pointwise products of static and moving
                            along the neighborhood
+        factors[:,:,:,3] : sum of sq. values of static along the neighborhood
+        factors[:,:,:,4] : sum of sq. values of moving along the neighborhood
 
     References
     ----------
-    [Avants09] Avants, B. B., Epstein, C. L., Grossman, M., & Gee, J. C. (2009)
+    [Avants08] Avants, B. B., Epstein, C. L., Grossman, M., & Gee, J. C. (2008)
                Symmetric Diffeomorphic Image Registration with
                Cross-Correlation: Evaluating Automated Labeling of Elderly and
-               Neurodegenerative Brain, 12(1), 26-41.
+               Neurodegenerative Brain, Med Image Anal. 12(1), 26-41.
     [Avants11] Avants, B. B., Tustison, N., & Song, G. (2011).
                Advanced Normalization Tools ( ANTS ), 1-35.
     """
@@ -212,7 +212,7 @@ def compute_cc_forward_step_3d(floating[:, :, :, :] grad_static,
     r"""Gradient of the CC Metric w.r.t. the forward transformation
 
     Computes the gradient of the Cross Correlation metric for symmetric
-    registration (SyN) [Avants09] w.r.t. the displacement associated to
+    registration (SyN) [Avants08] w.r.t. the displacement associated to
     the moving volume ('forward' step) as in [Avants11]
 
     Parameters
@@ -236,10 +236,10 @@ def compute_cc_forward_step_3d(floating[:, :, :, :] grad_static,
 
     References
     ----------
-    [Avants09] Avants, B. B., Epstein, C. L., Grossman, M., & Gee, J. C. (2009)
+    [Avants08] Avants, B. B., Epstein, C. L., Grossman, M., & Gee, J. C. (2008)
                Symmetric Diffeomorphic Image Registration with
                Cross-Correlation: Evaluating Automated Labeling of Elderly and
-               Neurodegenerative Brain, 12(1), 26-41.
+               Neurodegenerative Brain, Med Image Anal. 12(1), 26-41.
     [Avants11] Avants, B. B., Tustison, N., & Song, G. (2011).
                Advanced Normalization Tools ( ANTS ), 1-35.
     """
@@ -284,7 +284,7 @@ def compute_cc_backward_step_3d(floating[:, :, :, :] grad_moving,
     r"""Gradient of the CC Metric w.r.t. the backward transformation
 
     Computes the gradient of the Cross Correlation metric for symmetric
-    registration (SyN) [Avants09] w.r.t. the displacement associated to
+    registration (SyN) [Avants08] w.r.t. the displacement associated to
     the static volume ('backward' step) as in [Avants11]
 
     Parameters
@@ -308,10 +308,10 @@ def compute_cc_backward_step_3d(floating[:, :, :, :] grad_moving,
 
     References
     ----------
-    [Avants09] Avants, B. B., Epstein, C. L., Grossman, M., & Gee, J. C. (2009)
+    [Avants08] Avants, B. B., Epstein, C. L., Grossman, M., & Gee, J. C. (2008)
                Symmetric Diffeomorphic Image Registration with
                Cross-Correlation: Evaluating Automated Labeling of Elderly and
-               Neurodegenerative Brain, 12(1), 26-41.
+               Neurodegenerative Brain, Med Image Anal. 12(1), 26-41.
     [Avants11] Avants, B. B., Tustison, N., & Song, G. (2011).
                Advanced Normalization Tools ( ANTS ), 1-35.
     """
@@ -356,7 +356,7 @@ def precompute_cc_factors_2d(floating[:, :] static, floating[:, :] moving,
                              cnp.npy_intp radius):
     r"""Precomputations to quickly compute the gradient of the CC Metric
 
-    Pre-computes the separate terms of the cross correlation metric [Avants09]
+    Pre-computes the separate terms of the cross correlation metric [Avants08]
     and image norms at each voxel considering a neighborhood of the given
     radius to efficiently [Avants11] compute the gradient of the metric with
     respect to the deformation field.
@@ -375,18 +375,18 @@ def precompute_cc_factors_2d(floating[:, :] static, floating[:, :] moving,
     factors : array, shape (R, C, 5)
         the precomputed cross correlation terms:
         factors[:,:,0] : static minus its mean value along the neighborhood
-        factors[:,:,1] : sum of squared values of static along the neighborhood
-        factors[:,:,2] : moving minus its mean value along the neighborhood
-        factors[:,:,3] : sum of squared values of moving along the neighborhood
-        factors[:,:,4] : sum of the pointwise products of static and moving
+        factors[:,:,1] : moving minus its mean value along the neighborhood
+        factors[:,:,2] : sum of the pointwise products of static and moving
                            along the neighborhood
+        factors[:,:,3] : sum of sq. values of static along the neighborhood
+        factors[:,:,4] : sum of sq. values of moving along the neighborhood
 
     References
     ----------
-    [Avants09] Avants, B. B., Epstein, C. L., Grossman, M., & Gee, J. C. (2009)
+    [Avants08] Avants, B. B., Epstein, C. L., Grossman, M., & Gee, J. C. (2008)
                Symmetric Diffeomorphic Image Registration with
                Cross-Correlation: Evaluating Automated Labeling of Elderly and
-               Neurodegenerative Brain, 12(1), 26-41.
+               Neurodegenerative Brain, Med Image Anal. 12(1), 26-41.
     [Avants11] Avants, B. B., Tustison, N., & Song, G. (2011).
                Advanced Normalization Tools ( ANTS ), 1-35.
     """
@@ -523,7 +523,7 @@ def compute_cc_forward_step_2d(floating[:, :, :] grad_static,
     r"""Gradient of the CC Metric w.r.t. the forward transformation
 
     Computes the gradient of the Cross Correlation metric for symmetric
-    registration (SyN) [Avants09] w.r.t. the displacement associated to
+    registration (SyN) [Avants08] w.r.t. the displacement associated to
     the moving image ('backward' step) as in [Avants11]
 
     Parameters
@@ -550,10 +550,10 @@ def compute_cc_forward_step_2d(floating[:, :, :] grad_static,
 
     References
     ----------
-    [Avants09] Avants, B. B., Epstein, C. L., Grossman, M., & Gee, J. C. (2009)
+    [Avants08] Avants, B. B., Epstein, C. L., Grossman, M., & Gee, J. C. (2008)
                Symmetric Diffeomorphic Image Registration with
                Cross-Correlation: Evaluating Automated Labeling of Elderly and
-               Neurodegenerative Brain, 12(1), 26-41.
+               Neurodegenerative Brain, Med Image Anal. 12(1), 26-41.
     [Avants11] Avants, B. B., Tustison, N., & Song, G. (2011).
                Advanced Normalization Tools ( ANTS ), 1-35.
     """
@@ -596,7 +596,7 @@ def compute_cc_backward_step_2d(floating[:, :, :] grad_moving,
     r"""Gradient of the CC Metric w.r.t. the backward transformation
 
     Computes the gradient of the Cross Correlation metric for symmetric
-    registration (SyN) [Avants09] w.r.t. the displacement associated to
+    registration (SyN) [Avants08] w.r.t. the displacement associated to
     the static image ('forward' step) as in [Avants11]
 
     Parameters
@@ -616,10 +616,10 @@ def compute_cc_backward_step_2d(floating[:, :, :] grad_moving,
 
     References
     ----------
-    [Avants09] Avants, B. B., Epstein, C. L., Grossman, M., & Gee, J. C. (2009)
+    [Avants08] Avants, B. B., Epstein, C. L., Grossman, M., & Gee, J. C. (2008)
                Symmetric Diffeomorphic Image Registration with
                Cross-Correlation: Evaluating Automated Labeling of Elderly and
-               Neurodegenerative Brain, 12(1), 26-41.
+               Neurodegenerative Brain, Med Image Anal. 12(1), 26-41.
     [Avants11] Avants, B. B., Tustison, N., & Song, G. (2011).
                Advanced Normalization Tools ( ANTS ), 1-35.
     """
