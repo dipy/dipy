@@ -10,6 +10,7 @@ from dipy.segment.metricspeed import (Metric,
                                       MinimumPointwiseEuclideanMetric,
                                       MaximumPointwiseEuclideanMetric,
                                       MinimumAverageDirectFlipMetric,
+                                      HausdorffMetric,
                                       ArcLengthMetric)
 
 from dipy.segment.metricspeed import dist

@@ -383,6 +383,56 @@ cdef class MinimumAverageDirectFlipMetric(AveragePointwiseEuclideanMetric):
         return min(dist_direct, dist_flipped)
 
 
+cdef class HausdorffMetric(CythonMetric):
+    r""" Provides basic functionalities to compute Hausdorff distance.
+
+    A sequence of N-dimensional points is represented as 2D array of
+    shape (points, coordinates).
+
+    Parameters
+    ----------
+    feature : `Feature` object
+        type of features that will be used for computing the distance between data
+    """
+    def __init__(self):
+        super(HausdorffMetric, self).__init__(IdentityFeature())
+
+    cdef double c_dist(HausdorffMetric self, Data2D features1, Data2D features2) nogil:
+        cdef double min_d, max_d1, max_d2, dd, dist
+        cdef int N1 = features1.shape[0], N2 = features2.shape[0]
+        cdef int D = features1.shape[1]  # Assume features have the same number of dimensions
+        cdef int n1, n2, d
+
+        max_d1 = 0.0
+        for n1 in range(N1):
+            min_d = biggest_double
+            for n2 in range(N2):
+                dist = 0.0
+                for d in range(D):
+                    dd = features1[n1, d] - features2[n2, d]
+                    dist += dd * dd
+
+                min_d = min(min_d, sqrt(dist))
+            max_d1 = max(max_d1, min_d)
+
+        max_d2 = 0.0
+        for n2 in range(N2):
+            min_d = biggest_double
+            for n1 in range(N1):
+                dist = 0.0
+                for d in range(D):
+                    dd = features1[n1, d] - features2[n2, d]
+                    dist += dd * dd
+
+                min_d = min(min_d, sqrt(dist))
+            max_d2 = max(max_d2, min_d)
+
+        return max(max_d1, max_d2)
+
+    cdef int c_compatible(HausdorffMetric self, Shape shape1, Shape shape2) nogil:
+        return shape1.dims[1] == shape2.dims[1]
+
+
 cdef class ArcLengthMetric(CythonMetric):
     r""" Provides functionalities to compute a distance between sequential
     data using their arc length.

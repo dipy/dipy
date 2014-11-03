@@ -149,6 +149,36 @@ def test_metric_minimum_average_direct_flip():
     assert_raises(ValueError, dipymetric.dist, metric, s1, s4)
 
 
+def test_metric_hausdorff():
+    metric = dipymetric.HausdorffMetric()
+
+    assert_equal(metric.feature.infer_shape(s1), s1.shape)
+
+    features = metric.feature.extract(s1)
+    assert_equal(features.shape, s1.shape)
+    assert_array_equal(features, s1)
+
+    # Test dist()
+    features1 = metric.feature.extract(s1)
+    assert_true(metric.compatible(features1.shape, features1.shape))
+    dist = metric.dist(features1, features1)
+    assert_equal(dist, 0.0)
+
+    # Features 1 and 2 do have the same number of points and dimensions
+    featuresA = np.array([[-1, -1], [0, 0], [1, 1]]).astype(dtype)
+    featuresB = np.array([[-1, 1], [0, 0], [1, -1]]).astype(dtype)
+    assert_true(metric.compatible(featuresA.shape, featuresB.shape))
+    dist = metric.dist(featuresA, featuresB)
+    assert_equal(dist, np.sqrt(2))
+
+    # Features 1 and 2 do have the same number of points and dimensions
+    featuresA = np.array([[-1, -1], [0, 0]]).astype(dtype)
+    featuresB = np.array([[-1, 1], [0, 0], [1, -1]]).astype(dtype)
+    assert_true(metric.compatible(featuresA.shape, featuresB.shape))
+    dist = metric.dist(featuresA, featuresB)
+    assert_equal(dist, np.sqrt(2))
+
+
 def test_subclassing_feature():
     class EmptyFeature(dipymetric.Feature):
         pass
