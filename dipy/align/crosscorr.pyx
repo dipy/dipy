@@ -53,11 +53,11 @@ def precompute_cc_factors_3d(floating[:, :, :] static, floating[:, :, :] moving,
     factors : array, shape (S, R, C, 5)
         the precomputed cross correlation terms:
         factors[:,:,:,0] : static minus its mean value along the neighborhood
-        factors[:,:,:,1] : sum of sq. values of static along the neighborhood
-        factors[:,:,:,2] : moving minus its mean value along the neighborhood
-        factors[:,:,:,3] : sum of sq. values of moving along the neighborhood
-        factors[:,:,:,4] : sum of the pointwise products of static and moving
+        factors[:,:,:,1] : moving minus its mean value along the neighborhood
+        factors[:,:,:,2] : sum of the pointwise products of static and moving
                            along the neighborhood
+        factors[:,:,:,3] : sum of sq. values of static along the neighborhood
+        factors[:,:,:,4] : sum of sq. values of moving along the neighborhood
 
     References
     ----------
@@ -375,11 +375,11 @@ def precompute_cc_factors_2d(floating[:, :] static, floating[:, :] moving,
     factors : array, shape (R, C, 5)
         the precomputed cross correlation terms:
         factors[:,:,0] : static minus its mean value along the neighborhood
-        factors[:,:,1] : sum of squared values of static along the neighborhood
-        factors[:,:,2] : moving minus its mean value along the neighborhood
-        factors[:,:,3] : sum of squared values of moving along the neighborhood
-        factors[:,:,4] : sum of the pointwise products of static and moving
+        factors[:,:,1] : moving minus its mean value along the neighborhood
+        factors[:,:,2] : sum of the pointwise products of static and moving
                            along the neighborhood
+        factors[:,:,3] : sum of sq. values of static along the neighborhood
+        factors[:,:,4] : sum of sq. values of moving along the neighborhood
 
     References
     ----------
