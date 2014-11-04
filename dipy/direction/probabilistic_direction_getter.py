@@ -3,8 +3,8 @@ discrete distribution (pmf) at each step of the tracking."""
 import numpy as np
 from dipy.reconst.peaks import peak_directions, default_sphere
 from dipy.reconst.shm import order_from_ncoef, real_sym_sh_basis
-from .direction_getter import DirectionGetter
-from .interpolation import trilinear_interpolate4d
+from dipy.tracking.local.direction_getter import DirectionGetter
+from dipy.tracking.local.interpolation import trilinear_interpolate4d
 
 
 def _asarray(cython_memview):

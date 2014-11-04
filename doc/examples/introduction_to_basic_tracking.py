@@ -157,7 +157,7 @@ will randomly sample directions from the FOD each time the tracking algorithm
 needs to take another step.
 """
 
-from dipy.tracking.local import ProbabilisticDirectionGetter
+from dipy.direction import ProbabilisticDirectionGetter
 
 prob_dg = ProbabilisticDirectionGetter.from_shcoeff(csd_fit.shm_coeff,
                                                     max_angle=30.,

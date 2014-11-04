@@ -163,6 +163,7 @@ def main(**extra_args):
                           'dipy.align.tests',
                           'dipy.core',
                           'dipy.core.tests',
+                          'dipy.direction',
                           'dipy.tracking',
                           'dipy.tracking.local',
                           'dipy.tracking.tests',

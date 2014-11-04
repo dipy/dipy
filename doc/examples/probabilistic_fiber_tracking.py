@@ -42,7 +42,7 @@ represent the FOD using a discrete sphere. This discrete FOD can be used
 by the Probabilistic Direction Getter as a PMF to pick tracking directions.
 """
 
-from dipy.tracking.local import ProbabilisticDirectionGetter
+from dipy.direction import ProbabilisticDirectionGetter
 from dipy.data import small_sphere
 
 fod = csd_fit.odf(small_sphere)
