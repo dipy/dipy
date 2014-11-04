@@ -78,7 +78,7 @@ from setup_helpers import install_scripts_bat, add_flag_checking
 # Define extensions
 EXTS = []
 for modulename, other_sources, language in (
-    ('dipy.reconst.peak_directiongetter', [], 'c'),
+    ('dipy.reconst.peak_direction_getter', [], 'c'),
     ('dipy.reconst.recspeed', [], 'c'),
     ('dipy.reconst.vec_val_sum', [], 'c'),
     ('dipy.reconst.quick_squash', [], 'c'),
