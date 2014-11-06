@@ -70,7 +70,6 @@ def quickbundles(streamlines, Metric metric, double threshold=10., long max_nb_c
 
     return clusters
 
-
 cdef int _quickbundles_assignment_step(Data2D s_i, int streamline_idx, Metric metric, ClusterMapCentroid clusters, Data2D features_s_i, Data2D features_s_i_flip, double threshold=10, int max_nb_clusters=biggest_int) nogil except -1:
     cdef:
         Centroid* centroid

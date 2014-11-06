@@ -191,7 +191,7 @@ class QuickBundles(Clustering):
         elif metric.lower() == "mdf":
             self.metric = AveragePointwiseEuclideanMetric()
 
-    def cluster(self, streamlines, ordering=None):
+    def cluster(self, streamlines, ordering=None, set_refdata=True):
         """ Clusters `streamlines` into bundles.
 
         Performs quickbundles algorithm using predefined metric and threshold.
@@ -209,7 +209,11 @@ class QuickBundles(Clustering):
             result of the clustering
         """
         from dipy.segment.clustering_algorithms import quickbundles
-        return quickbundles(streamlines, self.metric,
-                            threshold=self.threshold,
-                            max_nb_clusters=self.max_nb_clusters,
-                            ordering=ordering)
+        cluster_map = quickbundles(streamlines, self.metric,
+                                   threshold=self.threshold,
+                                   max_nb_clusters=self.max_nb_clusters,
+                                   ordering=ordering)
+        if set_refdata:
+            cluster_map.refdata = streamlines
+
+        return cluster_map
