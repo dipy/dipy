@@ -3,6 +3,7 @@ from __future__ import division, print_function
 import numpy as np
 
 from scipy.special import gammainccinv
+from scipy.ndimage.filters import convolve
 
 
 def _inv_nchi_cdf(N, K, alpha):
@@ -147,3 +148,50 @@ def piesno(data, N=1, alpha=0.01, l=100, itermax=100, eps=1e-5, return_mask=Fals
     
     return sigma[pos]
     
+
+def estimate_sigma(arr, disable_background_masking=False):
+    """Standard deviation estimation from local patches
+
+    Parameters
+    ----------
+    arr : 3D or 4D ndarray
+        The array to be estimated
+
+    disable_background_masking : bool, default False
+        If True, uses all voxels for the estimation, otherwise, only non-zeros voxels are used.
+        Useful if the background is masked by the scanner.
+
+    Returns
+    -------
+    sigma : ndarray
+        standard deviation of the noise, one estimation per volume.
+    """
+    k = np.zeros((3, 3, 3), dtype=np.int8)
+
+    k[0, 1, 1] = 1
+    k[2, 1, 1] = 1
+    k[1, 0, 1] = 1
+    k[1, 2, 1] = 1
+    k[1, 1, 0] = 1
+    k[1, 1, 2] = 1
+
+    if arr.ndim == 3:
+        sigma = np.zeros(1, dtype=np.float32)
+        arr = arr[..., None]
+    elif arr.ndim == 4:
+        sigma = np.zeros(arr.shape[-1], dtype=np.float32)
+    else:
+        raise ValueError("Array shape is not supported!", arr.shape)
+
+    if disable_background_masking:
+        mask = arr[..., 0].astype(np.bool)
+    else:
+        mask = np.ones_like(arr[..., 0], dtype=np.bool)
+        
+    conv_out = np.zeros(arr[...,0].shape, dtype=np.float32)
+    for i in range(sigma.size):
+        convolve(arr[..., i], k, output=conv_out)
+        mean_block = np.sqrt(6/7) * (arr[..., i] - 1/6 * conv_out)
+        sigma[i] = np.sqrt(np.mean(mean_block[mask]**2))
+
+    return sigma

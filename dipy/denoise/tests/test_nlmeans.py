@@ -4,7 +4,7 @@ from numpy.testing import (run_module_suite,
                            assert_equal,
                            assert_raises,
                            assert_array_almost_equal)
-from dipy.denoise.nlmeans import nlmeans, estimate_sigma
+from dipy.denoise.nlmeans import nlmeans
 from dipy.denoise.denspeed import add_padding_reflection, remove_padding
 
 
@@ -80,41 +80,6 @@ def test_nlmeans_dtype():
     mask[10:14, 10:14, 10:14] = 1
     S0n = nlmeans(S0, sigma=1, mask=mask, rician=True)
     assert_equal(S0.dtype, S0n.dtype)
-
-
-def test_estimate_sigma():
-
-    sigma = estimate_sigma(np.ones((7, 7, 7)), disable_background_masking=True)
-    assert_equal(sigma, 0.)
-
-    sigma = estimate_sigma(np.ones((7, 7, 7, 3)), disable_background_masking=True)
-    assert_equal(sigma, np.array([0., 0., 0.]))
-
-    sigma = estimate_sigma(5 * np.ones((7, 7, 7)), disable_background_masking=False)
-    assert_equal(sigma, 0.)
-
-    sigma = estimate_sigma(5 * np.ones((7, 7, 7, 3)), disable_background_masking=False)
-    assert_equal(sigma, np.array([0., 0., 0.]))
-
-    arr = np.zeros((3, 3, 3))
-    arr[0, 0, 0] = 1
-    sigma = estimate_sigma(arr, disable_background_masking=False)
-    assert_array_almost_equal(sigma, 0.10286889997472792)
-
-    arr = np.zeros((3, 3, 3, 3))
-    arr[0, 0, 0] = 1
-    sigma = estimate_sigma(arr, disable_background_masking=False)
-    assert_array_almost_equal(sigma, np.array([0.10286889997472792, 0.10286889997472792, 0.10286889997472792]))
-
-    arr = np.zeros((3, 3, 3))
-    arr[0, 0, 0] = 1
-    sigma = estimate_sigma(arr, disable_background_masking=True)
-    assert_array_almost_equal(sigma, 0.46291005)
-
-    arr = np.zeros((3, 3, 3, 3))
-    arr[0, 0, 0] = 1
-    sigma = estimate_sigma(arr, disable_background_masking=True)
-    assert_array_almost_equal(sigma, np.array([0.46291005, 0.46291005, 0.46291005]))
 
 
 if __name__ == '__main__':
