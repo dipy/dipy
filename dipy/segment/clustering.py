@@ -191,7 +191,7 @@ class QuickBundles(Clustering):
         elif metric.lower() == "mdf":
             self.metric = AveragePointwiseEuclideanMetric()
 
-    def cluster(self, streamlines, ordering=None, set_refdata=True):
+    def cluster(self, streamlines, ordering=None, refdata=None):
         """ Clusters `streamlines` into bundles.
 
         Performs quickbundles algorithm using predefined metric and threshold.
@@ -213,7 +213,7 @@ class QuickBundles(Clustering):
                                    threshold=self.threshold,
                                    max_nb_clusters=self.max_nb_clusters,
                                    ordering=ordering)
-        if set_refdata:
+        if refdata is not None:
             cluster_map.refdata = streamlines
 
         return cluster_map
