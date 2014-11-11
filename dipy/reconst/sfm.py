@@ -136,11 +136,12 @@ class SparseFascicleModel(ReconstModel):
                 params_in_mask[vox], _ = self.solver(self.design_matrix,
                                              fit_it)
 
-        model_params = np.zeros(data.shape[:-1] +
+        beta = np.zeros(data.shape[:-1] +
                                 (self.design_matrix.shape[-1], ))
 
-        model_params[mask, :] = params_in_mask
-        return SparseFascicleFit(self, model_params)
+        beta[mask, :] = params_in_mask
+        return SparseFascicleFit(self, beta)
+
 
 class SparseFascicleFit(ReconstFit):
     def __init__(self, model, beta):
@@ -149,3 +150,38 @@ class SparseFascicleFit(ReconstFit):
         """
         self.model = model
         self.beta = beta
+
+
+    def predict(self, gtab=None, S0=None):
+        """
+        Predict the signal based on the SFM parameters
+
+        Parameters
+        ----------
+
+        """
+        # We generate the prediction and in each voxel, we add the
+        # offset, according to the isotropic part of the signal, which was
+        # removed prior to fitting:
+
+        if gtab is None:
+            _matrix = self.life_matrix
+            gtab = self.model.gtab
+        else:
+            _model = FiberModel(gtab)
+            _matrix, _ = self.model.setup(self.streamline,
+                                          self.affine,
+                                          self.evals)
+        pred_weighted = np.reshape(opt.spdot(_matrix, self.beta),
+                                   (self.vox_coords.shape[0],
+                                    np.sum(~gtab.b0s_mask)))
+
+        pred = np.empty((self.vox_coords.shape[0], gtab.bvals.shape[0]))
+        if S0 is None:
+            S0 = self.b0_signal
+
+        pred[..., gtab.b0s_mask] = S0[:, None]
+        pred[..., ~gtab.b0s_mask] =\
+            (pred_weighted + self.mean_signal[:, None]) * S0[:, None]
+
+        return pred
