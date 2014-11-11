@@ -8,14 +8,15 @@ _[Rokem2014]
 """
 
 import numpy as np
-import sklearn.linear_model as lm
+
+from dipy.utils.optpkg import optional_package
 import dipy.core.geometry as geo
 import dipy.sims.voxel as sims
 import dipy.reconst.dti as dti
 import dipy.data as dpd
 from dipy.reconst.base import ReconstModel, ReconstFit
 from dipy.core.onetime import auto_attr
-
+lm, have_sklearn, _ = optional_package('sklearn.linear_model')
 
 class SparseFascicleModel(ReconstModel):
     def __init__(self, gtab, sphere=None, response=[0.0015, 0.0005, 0.0005],
