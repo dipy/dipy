@@ -17,7 +17,7 @@ from dipy.tracking.vox2track import _voxel2streamline
 import dipy.data as dpd
 
 
-def gradient(f, *varargs):
+def gradient(f):
     """
     Return the gradient of an N-dimensional array.
 
@@ -29,10 +29,6 @@ def gradient(f, *varargs):
     ----------
     f : array_like
       An N-dimensional array containing samples of a scalar function.
-    `*varargs` : scalars
-      0, 1, or N scalars specifying the sample distances in each direction,
-      that is: `dx`, `dy`, `dz`, ... The default distance is 1.
-
 
     Returns
     -------
@@ -45,8 +41,6 @@ def gradient(f, *varargs):
     >>> x = np.array([1, 2, 4, 7, 11, 16], dtype=np.float)
     >>> gradient(x)
     array([ 1. ,  1.5,  2.5,  3.5,  4.5,  5. ])
-    >>> gradient(x, 2)
-    array([ 0.5 ,  0.75,  1.25,  1.75,  2.25,  2.5 ])
 
     >>> gradient(np.array([[1, 2, 6], [3, 4, 5]], dtype=np.float))
     [array([[ 2.,  2., -1.],
@@ -55,23 +49,13 @@ def gradient(f, *varargs):
 
     Note
     ----
-    This is the implementation of gradient that is part of numpy 1.8. In order
-    to mitigate the effects of changes added to this implementation in version
-    1.9 of numpy, we include this implementation here.
-
+    This is a simplified implementation of gradient that is part of numpy
+    1.8. In order to mitigate the effects of changes added to this
+    implementation in version 1.9 of numpy, we include this implementation here.
     """
     f = np.asanyarray(f)
     N = len(f.shape)  # number of dimensions
-    n = len(varargs)
-    if n == 0:
-        dx = [1.0]*N
-    elif n == 1:
-        dx = [varargs[0]]*N
-    elif n == N:
-        dx = list(varargs)
-    else:
-        raise SyntaxError(
-          "invalid number of arguments")
+    dx = [1.0]*N
 
     # use central differences on interior and first differences on endpoints
     outvals = []
@@ -284,7 +268,7 @@ def streamline_gradients(streamline):
     streamline.
 
     """
-    return np.array(gradient(np.asarray(streamline), 1)[0])
+    return np.array(gradient(np.asarray(streamline))[0])
 
 
 def grad_tensor(grad, evals):
