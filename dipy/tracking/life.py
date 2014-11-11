@@ -13,7 +13,7 @@ import scipy.linalg as la
 from dipy.reconst.base import ReconstModel, ReconstFit
 import dipy.core.sphere as dps
 from dipy.tracking.utils import unique_rows, transform_sl
-from dipy.tracking.vox2track import _voxel2fiber
+from dipy.tracking.vox2track import _voxel2streamline
 import dipy.data as dpd
 
 
@@ -446,9 +446,9 @@ class LifeSignalMaker(object):
         return [self.calc_signal(g) for g in grad]
 
 
-def voxel2fiber(streamline, transformed=False, affine=None, unique_idx=None):
+def voxel2streamline(streamline, transformed=False, affine=None, unique_idx=None):
     """
-    Maps voxels to stream-lines and stream-lines to voxels, for setting up
+    Maps voxels to streamlines and streamlines to voxels, for setting up
     the LiFE equations matrix
 
     Parameters
@@ -477,8 +477,6 @@ def voxel2fiber(streamline, transformed=False, affine=None, unique_idx=None):
 
     The second answers the question: Given a voxel, for each fiber, which
     nodes are in that voxel? Shape: (n_voxels, max(n_nodes per fiber)).
-
-
     """
     if transformed:
         transformed_streamline = streamline
@@ -491,7 +489,7 @@ def voxel2fiber(streamline, transformed=False, affine=None, unique_idx=None):
     else:
         unique_idx = unique_idx
 
-    return _voxel2fiber(transformed_streamline, unique_idx)
+    return _voxel2streamline(transformed_streamline, unique_idx)
 
 
 class FiberModel(ReconstModel):
@@ -553,7 +551,7 @@ class FiberModel(ReconstModel):
         # We only consider the diffusion-weighted signals:
         n_bvecs = self.gtab.bvals[~self.gtab.b0s_mask].shape[0]
 
-        v2f, v2fn = voxel2fiber(streamline, transformed=True, affine=affine,
+        v2f, v2fn = voxel2streamline(streamline, transformed=True, affine=affine,
                                 unique_idx=vox_coords)
 
         # How many fibers in each voxel (this will determine how many
