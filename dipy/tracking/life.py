@@ -15,6 +15,7 @@ import dipy.core.sphere as dps
 from dipy.tracking.utils import unique_rows, transform_sl
 from dipy.tracking.vox2track import _voxel2streamline
 import dipy.data as dpd
+import dipy.core.optimize as opt
 
 
 def gradient(f):
@@ -97,161 +98,6 @@ def gradient(f):
         return outvals
 
 
-def spdot(A, B):
-    """The same as np.dot(A, B), except it works even if A or B or both
-    are sparse matrices.
-
-    Parameters
-    ----------
-    A, B : arrays of shape (m, n), (n, k)
-
-    Returns
-    -------
-    The matrix product AB. If both A and B are sparse, the result will be a
-    sparse matrix. Otherwise, a dense result is returned
-
-    See discussion here:
-    http://mail.scipy.org/pipermail/scipy-user/2010-November/027700.html
-    """
-    if sps.issparse(A) and sps.issparse(B):
-        return A * B
-    elif sps.issparse(A) and not sps.issparse(B):
-        return (A * B).view(type=B.__class__)
-    elif not sps.issparse(A) and sps.issparse(B):
-        return (B.T * A.T).T.view(type=A.__class__)
-    else:
-        return np.dot(A, B)
-
-
-def rsq(ss_residuals, ss_residuals_to_mean):
-    """
-    Calculate: $R^2 = \frac{1-SSE}{\sigma^2}$
-
-    Parameters
-    ----------
-    ss_residuals : array
-        Model fit errors relative to the data
-    ss_residuals_to_mean : array
-        Residuals of the data relative to the mean of the data (variance)
-
-    Returns
-    -------
-    rsq : the variance explained.
-    """
-    return 100 * (1 - ss_residuals/ss_residuals_to_mean)
-
-
-def sparse_nnls(y, X,
-                momentum=0,
-                step_size=0.1,
-                non_neg=True,
-                prop_bad_checks=0.1,
-                check_error_iter=10,
-                max_error_checks=10,
-                converge_on_r=0.2):
-    """
-
-    Solve y=Xh for h, using gradient descent, with X a sparse matrix
-
-    Parameters
-    ----------
-
-    y : 1-d array of shape (N)
-        The data. Needs to be dense.
-
-    X : ndarray. May be either sparse or dense. Shape (N, M)
-       The regressors
-
-    momentum : float, optional (default: 0).
-        The persistence of the gradient.
-
-    step_size : float, optional (default: 0.05).
-        The increment of parameter update in each iteration
-
-    non_neg : Boolean, optional (default: True)
-        Whether to enforce non-negativity of the solution.
-
-    prop_bad_checks : float (default: 0.1)
-       If this proportion of error checks so far has not yielded an improvement
-       in r squared, we halt the optimization.
-
-    check_error_iter : int (default:10)
-        How many rounds to run between error evaluation for
-        convergence-checking.
-
-    max_error_checks : int (default: 10)
-        Don't check errors more than this number of times if no improvement in
-        r-squared is seen.
-
-    converge_on_r : float (default: 1)
-      a percentage improvement in rsquared that is required each time to say
-      that things are still going well.
-
-    Returns
-    -------
-    h_best : The best estimate of the parameters.
-
-    """
-    num_data = y.shape[0]
-    num_regressors = X.shape[1]
-    # Initialize the parameters at the origin:
-    h = np.zeros(num_regressors)
-    # If nothing good happens, we'll return that in the end:
-    h_best = np.zeros(num_regressors)
-    gradient = np.zeros(num_regressors)
-    iteration = 1
-    count = 1
-    ss_residuals_min = np.inf  # This will keep track of the best solution
-    ss_residuals_to_mean = np.sum((y - np.mean(y)) ** 2)  # The variance of y
-    rsq_max = -np.inf   # This will keep track of the best r squared so far
-    count_bad = 0  # Number of times estimation error has gone up.
-    error_checks = 0  # How many error checks have we done so far
-
-    while 1:
-        if iteration > 1:
-            # The sum of squared error given the current parameter setting:
-            sse = np.sum((y - spdot(X, h)) ** 2)
-            # The gradient is (Kay 2008 supplemental page 27):
-            gradient = spdot(X.T, spdot(X, h) - y)
-            gradient += momentum * gradient
-            # Normalize to unit-length
-            unit_length_gradient = (gradient /
-                                    np.sqrt(np.dot(gradient, gradient)))
-            # Update the parameters in the direction of the gradient:
-            h -= step_size * unit_length_gradient
-            if non_neg:
-                # Set negative values to 0:
-                h[h < 0] = 0
-
-        # Every once in a while check whether it's converged:
-        if np.mod(iteration, check_error_iter):
-            # This calculates the sum of squared residuals at this point:
-            this_ss_resid = (np.sum(np.power(y - spdot(X, h), 2)))
-            rsq_est = rsq(this_ss_resid, ss_residuals_to_mean)
-
-            # Did we do better this time around?
-            if this_ss_resid < ss_residuals_min:
-                # Update your expectations about the minimum error:
-                ss_residuals_min = this_ss_resid
-                n_iterations = iteration  # This holds the number of iterations
-                                          # for the best solution so far.
-                h_best = h  # This holds the best params we have so far
-
-                # Are we generally (over iterations) converging on
-                # improvement in r-squared?
-                if rsq_est > (rsq_max * (1 + converge_on_r / 100)):
-                    rsq_max = rsq_est
-                    count_bad = 0  # We're doing good. Null this count for now
-                else:
-                    count_bad += 1
-            else:
-                count_bad += 1
-
-            if count_bad >= np.max([max_error_checks,
-                                    np.round(prop_bad_checks * error_checks)]):
-                return h_best
-            error_checks += 1
-        iteration += 1
 
 
 def streamline_gradients(streamline):
@@ -654,7 +500,7 @@ class FiberModel(ReconstModel):
 
         to_fit, weighted_signal, b0_signal, relative_signal, mean_sig, vox_data=\
             self._signals(data, vox_coords)
-        beta = sparse_nnls(to_fit, life_matrix)
+        beta = opt.sparse_nnls(to_fit, life_matrix)
         return FiberFit(self, life_matrix, vox_coords, to_fit, beta,
                         weighted_signal, b0_signal, relative_signal, mean_sig,
                         vox_data, streamline, affine, evals)
@@ -708,7 +554,7 @@ class FiberFit(ReconstFit):
             _matrix, _ = self.model.setup(self.streamline,
                                           self.affine,
                                           self.evals)
-        pred_weighted = np.reshape(spdot(_matrix, self.beta),
+        pred_weighted = np.reshape(opt.spdot(_matrix, self.beta),
                                    (self.vox_coords.shape[0],
                                     np.sum(~gtab.b0s_mask)))
 

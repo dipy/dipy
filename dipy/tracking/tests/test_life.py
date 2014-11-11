@@ -12,38 +12,10 @@ import dipy.tracking.life as life
 import dipy.core.sphere as dps
 import dipy.core.gradients as dpg
 from dipy.data import get_data, get_sphere
-
+import dipy.core.optimize as opt
 
 import numpy as np
 import numpy.testing as npt
-
-
-def test_spdot():
-    n = 100
-    m = 20
-    k = 10
-    A = np.random.randn(n,m)
-    B = np.random.randn(m,k)
-    A_sparse = sps.csr_matrix(A)
-    B_sparse = sps.csr_matrix(B)
-
-    dense_dot = np.dot(A, B)
-    # Try all the different variations:
-    npt.assert_array_equal(dense_dot, life.spdot(A_sparse, B_sparse).todense())
-    npt.assert_array_equal(dense_dot, life.spdot(A, B_sparse))
-    npt.assert_array_equal(dense_dot, life.spdot(A_sparse, B))
-
-
-def test_nnls():
-    # Set up the regression:
-    beta = np.random.rand(10)
-    X = np.random.randn(1000, 10)
-    y = np.dot(X, beta)
-    beta_hat = life.sparse_nnls(y, X)
-    beta_hat_sparse = life.sparse_nnls(y, sps.csr_matrix(X))
-    # We should be able to get back the right answer for this simple case
-    npt.assert_array_almost_equal(beta, beta_hat, decimal=1)
-    npt.assert_array_almost_equal(beta, beta_hat_sparse, decimal=1)
 
 
 def test_streamline_gradients():
@@ -162,7 +134,7 @@ def test_FiberFit():
     fiber_matrix, vox_coords = FM.setup(streamline, None, evals)
 
     w = np.array([0.5, 0.5])
-    sig = life.spdot(fiber_matrix, w) + 1.0  # Add some isotropic stuff
+    sig = opt.spdot(fiber_matrix, w) + 1.0  # Add some isotropic stuff
     S0 = data[..., gtab.b0s_mask]
     rel_sig = data[..., ~gtab.b0s_mask]/data[..., gtab.b0s_mask]
     this_data = np.zeros((10, 10, 10, 64))
