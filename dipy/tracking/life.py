@@ -107,7 +107,8 @@ def spdot(A, B):
 
     Returns
     -------
-    The matrix product AB.
+    The matrix product AB. If both A and B are sparse, the result will be a
+    sparse matrix. Otherwise, a dense result is returned
 
     See discussion here:
     http://mail.scipy.org/pipermail/scipy-user/2010-November/027700.html
@@ -156,7 +157,7 @@ def sparse_nnls(y, X,
     ----------
 
     y : 1-d array of shape (N)
-        The data
+        The data. Needs to be dense.
 
     X : ndarray. May be either sparse or dense. Shape (N, M)
        The regressors

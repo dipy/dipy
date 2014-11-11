@@ -18,6 +18,22 @@ import numpy as np
 import numpy.testing as npt
 
 
+def test_spdot():
+    n = 100
+    m = 20
+    k = 10
+    A = np.random.randn(n,m)
+    B = np.random.randn(m,k)
+    A_sparse = sps.csr_matrix(A)
+    B_sparse = sps.csr_matrix(B)
+
+    dense_dot = np.dot(A, B)
+    # Try all the different variations:
+    npt.assert_array_equal(dense_dot, life.spdot(A_sparse, B_sparse).todense())
+    npt.assert_array_equal(dense_dot, life.spdot(A, B_sparse))
+    npt.assert_array_equal(dense_dot, life.spdot(A_sparse, B))
+
+
 def test_nnls():
     # Set up the regression:
     beta = np.random.rand(10)
