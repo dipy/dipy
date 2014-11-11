@@ -221,16 +221,11 @@ model_rmse = np.sqrt(np.mean(model_error[:, 10:] ** 2, -1))
 """
 
 As a baseline against which we can compare, we calculate another error term
-based on the naive prediction that all the tracks are necessary and they each
-contribute equally to the signal. In each voxel, the predictions are divided by
-the number of tracks in that voxel, so that things would not get out of hand
+based on the naive prediction of the mean signal in each voxel.
 
 """
 
-sum_signals = np.asarray(FF.life_matrix.sum(-1)).squeeze()
-tracks_per_voxel = np.asarray(FF.life_matrix.astype(bool).sum(axis=-1)).squeeze()
-
-tracks_prediction = sum_signals/tracks_per_voxel
+mean_prediction = sum_signals/tracks_per_voxel
 
 
 
