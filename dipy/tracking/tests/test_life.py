@@ -121,8 +121,8 @@ def test_FiberModel_init():
 
     affine = np.eye(4)
 
-    for approx in [724, False, get_sphere('symmetric362')]:
-        fiber_matrix, vox_coords = FM.setup(streamline, affine, approx=approx)
+    for sphere in [None, False, get_sphere('symmetric362')]:
+        fiber_matrix, vox_coords = FM.setup(streamline, affine, sphere=sphere)
         npt.assert_array_equal(np.array(vox_coords),
                                np.array([[1, 2, 3], [4, 5, 3],
                                          [5, 6, 3], [6, 7, 3]]))

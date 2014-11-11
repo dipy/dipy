@@ -12,9 +12,7 @@ import scipy.linalg as la
 
 from dipy.reconst.base import ReconstModel, ReconstFit
 import dipy.core.sphere as dps
-from dipy.tracking.utils import unique_rows, move_streamlines, transform_sl
-import dipy.reconst.dti as dti
-import dipy.sims.voxel as sims
+from dipy.tracking.utils import unique_rows, transform_sl
 from dipy.tracking.vox2track import _voxel2fiber
 import dipy.data as dpd
 
@@ -54,6 +52,12 @@ def gradient(f, *varargs):
     [array([[ 2.,  2., -1.],
            [ 2.,  2., -1.]]), array([[ 1. ,  2.5,  4. ],
            [ 1. ,  1. ,  1. ]])]
+
+    Note
+    ----
+    This is the implementation of gradient that is part of numpy 1.8. In order
+    to mitigate the effects of changes added to this implementation in version
+    1.9 of numpy, we include this implementation here.
 
     """
     f = np.asanyarray(f)
@@ -119,7 +123,7 @@ def spdot(A, B):
 
     Returns
     -------
-    The matrix product A @ B.
+    The matrix product AB.
 
     See discussion here:
     http://mail.scipy.org/pipermail/scipy-user/2010-November/027700.html
@@ -267,7 +271,7 @@ def sparse_nnls(y, X,
 
 def streamline_gradients(streamline):
     """
-    Calculate the gradients of the stream-line along the spatial dimension
+    Calculate the gradients of the streamline along the spatial dimension
 
     Parameters
     ----------
@@ -339,7 +343,7 @@ def streamline_tensors(streamline, evals=[0.001, 0, 0]):
     return tensors
 
 
-def streamline_signal(streamline, gtab, evals=[0.0015, 0.0005, 0.0005]):
+def streamline_signal(streamline, gtab, evals=[0.001, 0, 0]):
     """
     The signal from a single streamline estimate along each of its nodes.
 
@@ -371,7 +375,7 @@ class LifeSignalMaker(object):
     A class for generating signals from streamlines in an efficient and speedy
     manner.
     """
-    def __init__(self, gtab, evals=[0.0015, 0.0005, 0.0005], n_points=724):
+    def __init__(self, gtab, evals=[0.0015, 0.0005, 0.0005], sphere=None):
         """
         Initialize a signal maker
 
@@ -382,17 +386,19 @@ class LifeSignalMaker(object):
         evals : list of 3 items
             The eigenvalues of the canonical tensor to use in calculating the
             signal.
-        n_points : int {362, 642, 724}, or `dipy.core.Sphere` class instace
+        n_points : `dipy.core.Sphere` class instance
             The discrete sphere to use as an approximation for the continuous
             sphere on which the signal is represented. If integer - we will use
             an instance of one of the symmetric spheres cached in
             `dps.get_sphere`. If a 'dipy.core.Sphere' class instance is
-            provided, we will use this object.
+            provided, we will use this object. Default: the :mod:`dipy.data`
+            symmetric sphere with 724 vertices
         """
-        if isinstance(n_points, dps.Sphere):
-            self.sphere = n_points
+        if sphere is None:
+            self.sphere = dpd.get_sphere('symmetric724')
         else:
-            self.sphere = dpd.get_sphere('symmetric%s' % n_points)
+            self.sphere = sphere
+
         self.gtab = gtab
         self.evals = evals
         # Initialize an empty dict to fill with signals for each of the sphere
@@ -511,7 +517,7 @@ class FiberModel(ReconstModel):
         # Initialize the super-class:
         ReconstModel.__init__(self, gtab)
 
-    def setup(self, streamline, affine, evals=[0.001, 0, 0], approx=724):
+    def setup(self, streamline, affine, evals=[0.001, 0, 0], sphere=None):
         """
         Set up the necessary components for the LiFE model: the matrix of
         fiber-contributions to the DWI signal, and the coordinates of voxels
@@ -526,17 +532,18 @@ class FiberModel(ReconstModel):
         evals : list (3 items, optional)
             The eigenvalues of the canonical tensor used as a response function
 
-        approx: int  {362, 642, 724}, `dipy.core.Sphere` instance, or False
+        sphere: `dipy.core.Sphere` instance.
             Whether to approximate (and cache) the signal on a discrete
             sphere. This may confer a significant speed-up in setting up the
             problem, but is not as accurate. If `False`, we use the exact
             gradients along the streamlines to calculate the matrix, instead of
-            an approximation.
+            an approximation. Defaults to use the 724-vertex symmetric sphere
+            from :mod:`dipy.data`
         """
-        if approx:
+        if sphere is not False:
             SignalMaker = LifeSignalMaker(self.gtab,
                                           evals=evals,
-                                          n_points=approx)
+                                          sphere=sphere)
 
         streamline = transform_sl(streamline, affine)
         # Assign some local variables, for shorthand:
@@ -562,7 +569,7 @@ class FiberModel(ReconstModel):
         f_matrix_col = np.zeros(n_unique_f * n_bvecs)
 
         keep_ct = 0
-        if approx:
+        if sphere is not False:
             fiber_signal = [SignalMaker.streamline_signal(s) for s in streamline]
         else:
             fiber_signal = [streamline_signal(s, self.gtab, evals) for s in streamline]
@@ -624,7 +631,7 @@ class FiberModel(ReconstModel):
                 vox_data)
 
     def fit(self, data, streamline, affine=None, evals=[0.001, 0, 0],
-            approx=724):
+            sphere=None):
         """
         Fit the LiFE FiberModel for data and a set of streamlines associated
         with this data
@@ -645,7 +652,7 @@ class FiberModel(ReconstModel):
            The eigenvalues of the tensor response function used in constructing
            the model signal. Default: [0.0015, 0.0005, 0.0005]
 
-        approx: int  {362, 642, 724}, `dipy.core.Sphere` instance, or False
+        sphere: `dipy.core.Sphere` instance, or False
             Whether to approximate (and cache) the signal on a discrete
             sphere. This may confer a significant speed-up in setting up the
             problem, but is not as accurate. If `False`, we use the exact
@@ -657,7 +664,7 @@ class FiberModel(ReconstModel):
         FiberFit class instance
         """
         life_matrix, vox_coords = \
-            self.setup(streamline, affine, evals=evals, approx=approx)
+            self.setup(streamline, affine, evals=evals, sphere=sphere)
 
         to_fit, weighted_signal, b0_signal, relative_signal, mean_sig, vox_data=\
             self._signals(data, vox_coords)
