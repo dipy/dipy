@@ -129,7 +129,7 @@ def test_spdot():
 
     dense_dot = np.dot(A, B)
     # Try all the different variations:
-    assert_array_equal(dense_dot, spdot(A_sparse, B_sparse).todense())
+    assert_array_almost_equal(dense_dot, spdot(A_sparse, B_sparse).todense())
     assert_array_equal(dense_dot, spdot(A, B_sparse))
     assert_array_equal(dense_dot, spdot(A_sparse, B))
 
