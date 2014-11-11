@@ -6,6 +6,7 @@ This is an implementation of the sparse fascicle model described in
 _[Rokem2014]
 
 """
+import warnings
 
 import numpy as np
 
@@ -16,7 +17,15 @@ import dipy.reconst.dti as dti
 import dipy.data as dpd
 from dipy.reconst.base import ReconstModel, ReconstFit
 from dipy.core.onetime import auto_attr
-lm, have_sklearn, _ = optional_package('sklearn.linear_model')
+lm, has_sklearn, _ = optional_package('sklearn.linear_model')
+
+# If sklearn is unavailable, we can fall back on nnls (but we also warn the
+# user that we are about to do that):
+if not has_sklearn:
+    w = "sklearn is not available, we will fit the SFM using the KKT NNLS"
+    w += "algorithm instead"
+    warnings.warn(w)
+    import scipy.optimize as opt
 
 class SparseFascicleModel(ReconstModel):
     def __init__(self, gtab, sphere=None, response=[0.0015, 0.0005, 0.0005],
@@ -55,6 +64,12 @@ class SparseFascicleModel(ReconstModel):
             sphere = dpd.get_sphere()
         self.sphere = sphere
         self.response = np.asarray(response)
+        if has_sklearn:
+            self.solver = lm.ElasticNet(l1_ratio=l1_ratio, alpha=alpha,
+                                        positive=True)
+        else:
+            self.solver = opt.nnls
+
 
     @auto_attr
     def design_matrix(self):
@@ -81,6 +96,51 @@ class SparseFascicleModel(ReconstModel):
 
         return mat
 
+
+    def fit(self, data, mask=None):
+        """
+
+        Parameters
+        ----------
+        data : array
+            The measured signal from one voxel.
+
+        mask : array
+            A boolean array used to mark the coordinates in the data that
+            should be analyzed that has the shape data.shape[-1]
+
+        Returns
+        -------
+        SparseFascicleFit object
+
+        """
+        if mask is not None:
+            if mask.shape != data.shape[:-1]:
+                raise ValueError("Mask is not the same shape as data.")
+            mask = np.array(mask, dtype=bool, copy=False)
+            data_in_mask = data[mask]
+        else:
+            data_in_mask = data
+
+        data_in_mask = data_in_mask.reshape((-1, data_in_mask.shape[-1]))
+
+        params_in_mask = np.zeros((data_in_mask.shape[0],
+                                   self.design_matrix.shape[-1]))
+
+        for vox, dd in enumerate(data_in_mask):
+            fit_it = dd - np.mean(dd)
+            if has_sklearn:
+                params_in_mask[vox] = self.solver.fit(self.design_matrix,
+                                              fit_it).coef_
+            else:
+                params_in_mask[vox], _ = self.solver(self.design_matrix,
+                                             fit_it)
+
+        model_params = np.zeros(data.shape[:-1] +
+                                (self.design_matrix.shape[-1], ))
+
+        model_params[mask, :] = params_in_mask
+        return SparseFascicleFit(self, model_params)
 
 class SparseFascicleFit(ReconstFit):
     def __init__(self, model, beta):
