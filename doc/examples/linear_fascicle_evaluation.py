@@ -6,23 +6,24 @@ Linear fascicle evaluation (LiFE)
 Evaluating the results of tractography algorithms is one of the biggest
 challenges for diffusion MRI. One proposal for evaluation of tractography
 results is to use a forward model that predicts the signal from each of a set of
-tracks, and then fit a linear model to these simultaneous predictions
+streamlines, and then fit a linear model to these simultaneous predictions
 [Pestilli2014]_.
 
-We will use tracks generated using probabilistic tracking on CSA peaks. For
-brevity, we will include in this example only tracks going through the corpus
-callosum connecting left to right superior frontal cortex. The process of
-tracking and finding these tracks is fully demonstrated in the
-`streamline_tools.py` example. If this example has been run, we can read the
-streamlines from file. Otherwise, we'll run that example first, by importing
-it. This provides us with all of the variables that were created in that
-example:
+We will use streamlines generated using probabilistic tracking on CSA
+peaks. For brevity, we will include in this example only streamlines going
+through the corpus callosum connecting left to right superior frontal
+cortex. The process of tracking and finding these streamlines is fully
+demonstrated in the `streamline_tools.py` example. If this example has been
+run, we can read the streamlines from file. Otherwise, we'll run that example
+first, by importing it. This provides us with all of the variables that were
+created in that example:
 
 """
 
 import numpy as np
 import os.path as op
 import nibabel as nib
+import dipy.core.optimize as opt
 
 if not op.exists('lr-superiorfrontal.trk'):
     from streamline_tools import *
@@ -43,18 +44,17 @@ else:
 candidate_sl = [s[0] for s in nib.trackvis.read('lr-superiorfrontal.trk',
                                                   points_space='voxel')[0]]
 
+"""
+
+The streamlines that are entered into the model are termed 'candidate
+streamliness' (or a 'candidate connectome'):
 
 """
 
-The tracks that are entered into the model are termed 'candidate tracks' (or a
-'candidate connectome'):
 
 """
 
-
-"""
-
-Let's visualize the initial candidate group of tracks in 3D, relative to the
+Let's visualize the initial candidate group of streamlines in 3D, relative to the
 anatomical structure of this brain:
 
 """
@@ -96,12 +96,12 @@ which contains the classes and functions that implement the model:
 """
 
 import dipy.tracking.life as life
-FM = life.FiberModel(gtab)
+fiber_model = life.FiberModel(gtab)
 
 """
 
-Since we read the tracks from a file, already in the voxel space, we do not
-need to transform them into this space. Otherwise, if the track coordinates
+Since we read the streamlines from a file, already in the voxel space, we do not
+need to transform them into this space. Otherwise, if the streamline coordinates
 were in the world space (relative to the scanner iso-center, or relative to the
 mid-point of the AC-PC-connecting line), we would use this::
 
@@ -114,7 +114,7 @@ The next step is to fit the model, producing a `FiberFit` class instance, that
 stores the data, as well as the results of the fitting procedure.
 
 The LiFE model posits that the signal in the diffusion MRI volume can be
-explained by the tracks, by the equation
+explained by the streamlines, by the equation
 
 .. math::
 
@@ -122,27 +122,27 @@ explained by the tracks, by the equation
 
 
 Where $y$ is the diffusion MRI signal, $\beta$ are a set of weights on the
-tracks and $X$ is a design matrix. This matrix has the dimensions $m$ by $n$,
-where $m=n_{voxels} \cdot n_{directions}$, and $n_{voxels}$ is the set of
-voxels in the ROI that contains the tracks considered in this model. The
+streamlines and $X$ is a design matrix. This matrix has the dimensions $m$ by
+$n$, where $m=n_{voxels} \cdot n_{directions}$, and $n_{voxels}$ is the set of
+voxels in the ROI that contains the streamlines considered in this model. The
 $i^{th}$ column of the matrix contains the expected contributions of the
-$i^{th}$ track (arbitrarly ordered) to each of the voxels. $X$ is a sparse
-matrix, becasue each track traverses only a small percentage of the voxels. The
-expected contributions of the track are calculated using a forward model, where
-each node of the track is modeled as a cylindrical fiber compartment with
-Gaussian diffusion, using the diffusion tensor model. See [Pestilli2014]_ for
-more detail on the model, and variations of this model.
+$i^{th}$ streamline (arbitrarly ordered) to each of the voxels. $X$ is a sparse
+matrix, because each streamline traverses only a small percentage of the
+voxels. The  expected contributions of the streamline are calculated using a
+forward model, where each node of the streamline is modeled as a cylindrical
+fiber compartment with Gaussian diffusion, using the diffusion tensor model. See
+[Pestilli2014]_ for more detail on the model, and variations of this model.
 
 """
 
-FF = FM.fit(data, candidate_sl, affine=np.eye(4))
+fiber_fit = fiber_model.fit(data, candidate_sl, affine=np.eye(4))
 
 """
 
 The `FiberFit` class instance holds various properties of the model fit. For
-example, it has the weights $\beta$, that are assigned to each track. In most
-cases, a tractography through some region will include redundant tracks, and
-these tracks will have $\beta_i$ that are 0.
+example, it has the weights $\beta$, that are assigned to each streamline. In
+most cases, a tractography through some region will include redundant
+streamlines, and these streamlines will have $\beta_i$ that are 0.
 
 """
 
@@ -150,11 +150,10 @@ import matplotlib.pyplot as plt
 import matplotlib
 
 fig, ax = plt.subplots(1)
-ax.hist(FF.beta, bins=100, histtype='step')
+ax.hist(fiber_fit.beta, bins=100, histtype='step')
 ax.set_xlabel('Fiber weights')
 ax.set_ylabel('# fibers')
 fig.savefig('beta_histogram.png')
-
 
 """
 
@@ -162,18 +161,18 @@ fig.savefig('beta_histogram.png')
 .. figure:: beta_histogram.png
    :align: center
 
-   **LiFE fiber weights**
+   **LiFE streamline weights**
 
 """
 
 """
 
-We use $\beta$ to filter out these redundant tracks, and generate an optimized
-group of streamlines:
+We use $\beta$ to filter out these redundant streamlines, and generate an
+optimized group of streamlines:
 
 """
 
-optimized_sl = list(np.array(candidate_sl)[np.where(FF.beta>0)[0]])
+optimized_sl = list(np.array(candidate_sl)[np.where(fiber_fit.beta>0)[0]])
 ren = fvtk.ren()
 fvtk.add(ren, fvtk.streamtube(optimized_sl, line_colors(optimized_sl)))
 fvtk.add(ren, cc_ROI_actor)
@@ -186,26 +185,31 @@ fvtk.record(ren, n_frames=1, out_path='life_optimized.png',
 .. figure:: life_optimized.png
    :align: center
 
-   **Tracks selected via life optimization**
+   **Streamlines selected via LiFE optimization**
 
 """
 
 
 """
 
-How well does the model do in explaining the diffusion data? The `FiberFit`
-class instance has a `predict` method, which can be used to invert the model
-and predict back either the data that was used to fit the model, or other
-unseen data (e.g. in cross-validation, see :ref:`kfold_xval`).
+The new set of streamlines should do well in fitting the data, and redundant
+streamlines have presumably been removed (in this case, about 50% of the
+streamlines).
+
+But how well does the model do in explaining the diffusion data? We can
+quantify that: the `FiberFit` class instance has a `predict` method, which can
+be used to invert the model and predict back either the data that was used to
+fit the model, or other unseen data (e.g. in cross-validation, see
+:ref:`kfold_xval`).
 
 Without arguments, the `.predict()` method will predict the diffusion signal
 for the same gradient table that was used in the fit data, but `gtab` and `S0`
 key-word arguments can be used to predict for other acquisition schemes and
-other non diffusion-weighted signals.
+other baseline non-diffusion-weighted signals.
 
 """
 
-model_predict = FF.predict()
+model_predict = fiber_fit.predict()
 
 """
 
@@ -214,23 +218,25 @@ calculate the root of the mean squared error.
 
 """
 
-model_error = model_predict - FF.data
+model_error = model_predict - fiber_fit.data
 model_rmse = np.sqrt(np.mean(model_error[:, 10:] ** 2, -1))
 
-
 """
 
-As a baseline against which we can compare, we calculate another error term
-based on the naive prediction of the mean signal in each voxel.
+As a baseline against which we can compare, we calculate another error term. In
+this case, we assume that the weight for each streamline is equal
+to zero. This produces the naive prediction of the mean of the signal in each
+voxel.
 
 """
+beta_baseline = np.zeros(fiber_fit.beta.shape[0])
 
-mean_prediction = sum_signals/tracks_per_voxel
+pred_weighted = np.reshape(opt.spdot(fiber_fit.life_matrix, beta_baseline),
+                                     (fiber_fit.vox_coords.shape[0],
+                                      np.sum(~gtab.b0s_mask)))
 
-
-
-tracks_prediction = np.reshape(tracks_prediction,
-                              (FF.vox_coords.shape[0],np.sum(~gtab.b0s_mask)))
+mean_pred = np.empty((fiber_fit.vox_coords.shape[0], gtab.bvals.shape[0]))
+S0 = fiber_fit.b0_signal
 
 
 """
@@ -240,11 +246,13 @@ to add back the mean and then multiply by S0 in every voxel:
 
 """
 
-tracks_prediction = ( (tracks_prediction + FF.mean_signal[:, None]) *
-                      FF.b0_signal[:, None])
+mean_pred[..., gtab.b0s_mask] = S0[:, None]
+mean_pred[..., ~gtab.b0s_mask] =\
+        (pred_weighted + fiber_fit.mean_signal[:, None]) * S0[:, None]
 
-tracks_error = tracks_prediction - FF.data[:, ~gtab.b0s_mask]
-tracks_rmse = np.sqrt(np.mean(tracks_error ** 2, -1))
+
+mean_error = mean_pred - fiber_fit.data
+mean_rmse = np.sqrt(np.mean(mean_error ** 2, -1))
 
 """
 
@@ -257,8 +265,8 @@ without the model fit.
 """
 
 fig, ax = plt.subplots(1)
-ax.hist(tracks_rmse - model_rmse, bins=100, histtype='step')
-ax.text(0.2, 0.9,'Median RMSE, tracks: %.2f' % np.median(tracks_rmse),
+ax.hist(mean_rmse - model_rmse, bins=100, histtype='step')
+ax.text(0.2, 0.9,'Median RMSE, mean model: %.2f' % np.median(mean_rmse),
      horizontalalignment='left',
      verticalalignment='center', transform=ax.transAxes)
 ax.text(0.2, 0.8,'Median RMSE, LiFE: %.2f' % np.median(model_rmse),
@@ -268,7 +276,6 @@ ax.text(0.2, 0.8,'Median RMSE, LiFE: %.2f' % np.median(model_rmse),
 ax.set_xlabel('RMS Error')
 ax.set_ylabel('# voxels')
 fig.savefig('error_histograms.png')
-
 
 """
 
@@ -288,15 +295,18 @@ and of the improvement with the model fit:
 """
 
 vol_model = np.ones(data.shape[:3]) * np.nan
-vol_model[FF.vox_coords[:, 0], FF.vox_coords[:, 1], FF.vox_coords[:, 2]] =\
-                                                                  model_rmse
-vol_tracks = np.ones(data.shape[:3]) * np.nan
-vol_tracks[FF.vox_coords[:, 0], FF.vox_coords[:, 1], FF.vox_coords[:, 2]] =\
-                                                                  tracks_rmse
+vol_model[fiber_fit.vox_coords[:, 0],
+          fiber_fit.vox_coords[:, 1],
+          fiber_fit.vox_coords[:, 2]] = model_rmse
+vol_mean = np.ones(data.shape[:3]) * np.nan
+vol_mean[fiber_fit.vox_coords[:, 0],
+         fiber_fit.vox_coords[:, 1],
+         fiber_fit.vox_coords[:, 2]] = mean_rmse
 
 vol_improve = np.ones(data.shape[:3]) * np.nan
-vol_improve[FF.vox_coords[:, 0], FF.vox_coords[:, 1], FF.vox_coords[:, 2]] =\
-                                                        tracks_rmse - model_rmse
+vol_improve[fiber_fit.vox_coords[:, 0],
+            fiber_fit.vox_coords[:, 1],
+            fiber_fit.vox_coords[:, 2]] = mean_rmse - model_rmse
 
 
 sl_idx = 49
@@ -316,12 +326,11 @@ ax[0].matshow(np.rot90(t1_data[sl_idx, :, :]), cmap=matplotlib.cm.bone)
 im = ax[0].matshow(np.rot90(vol_model[sl_idx, :, :]), cmap=matplotlib.cm.hot)
 ax.cbar_axes[0].colorbar(im)
 ax[1].matshow(np.rot90(t1_data[sl_idx, :, :]), cmap=matplotlib.cm.bone)
-im = ax[1].matshow(np.rot90(vol_tracks[sl_idx, :, :]), cmap=matplotlib.cm.hot)
+im = ax[1].matshow(np.rot90(vol_mean[sl_idx, :, :]), cmap=matplotlib.cm.hot)
 ax.cbar_axes[1].colorbar(im)
 ax[2].matshow(np.rot90(t1_data[sl_idx, :, :]), cmap=matplotlib.cm.bone)
 im = ax[2].matshow(np.rot90(vol_improve[sl_idx, :, :]), cmap=matplotlib.cm.RdBu)
 ax.cbar_axes[2].colorbar(im)
-
 
 for lax in ax:
     lax.set_xticks([])
@@ -338,8 +347,6 @@ fig.savefig("spatial_errors.png")
    **Spatial distribution of error and improvement**
 
 """
-
-
 
 """
 

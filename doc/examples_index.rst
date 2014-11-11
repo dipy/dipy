@@ -96,7 +96,7 @@ Statistical evaluation and validation
 -------------------------------------
 
 - :ref:`example_kfold_xval`
-- :ref:`example_life`
+- :ref:`example_linear_fasicle_evaluation`
 
 
 --------------
