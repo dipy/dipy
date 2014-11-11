@@ -548,11 +548,20 @@ class FiberFit(ReconstFit):
 
         Parameters
         ----------
+        gtab : GradientTable
+            Default: use self.gtab
+        S0 : float or array
+            The non-diffusion-weighted signal in the voxels for which a
+            prediction is made. Default: use self.b0_signal
+
+        Returns
+        -------
+        prediction : ndarray of shape (voxels, bvecs)
+            An array with a prediction of the signal in each voxel/direction
         """
         # We generate the prediction and in each voxel, we add the
         # offset, according to the isotropic part of the signal, which was
         # removed prior to fitting:
-
         if gtab is None:
             _matrix = self.life_matrix
             gtab = self.model.gtab
