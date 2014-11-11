@@ -612,25 +612,6 @@ def length(streamlines, affine=None):
     return map(metrics.length, streamlines)
 
 
-def transform_sl(sl, affine=None):
-    """
-    Helper function that moves and generates the streamline. Thin wrapper
-    around move_streamlines
-
-    Parameters
-    ----------
-    sl : list
-        A list of streamline coordinates
-
-    affine : 4 by 4 array
-        Affine mapping from fibers to data
-    """
-    if affine is None:
-        affine = np.eye(4)
-    # Generate these immediately:
-    return [s for s in move_streamlines(sl, affine)]
-
-
 def unique_rows(in_array, dtype='f4'):
     """
     This (quickly) finds the unique rows in an array

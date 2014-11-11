@@ -12,7 +12,8 @@ import scipy.linalg as la
 
 from dipy.reconst.base import ReconstModel, ReconstFit
 import dipy.core.sphere as dps
-from dipy.tracking.utils import unique_rows, transform_sl
+from dipy.tracking.utils import unique_rows
+from dipy.tracking.streamline import transform_streamlines
 from dipy.tracking.vox2track import _voxel2streamline
 import dipy.data as dpd
 import dipy.core.optimize as opt
@@ -314,7 +315,9 @@ def voxel2streamline(streamline, transformed=False, affine=None,
     if transformed:
         transformed_streamline = streamline
     else:
-        transformed_streamline = transform_sl(streamline, affine=affine)
+        if affine is None:
+            affine = np.eye(4)
+        transformed_streamline = transform_streamlines(streamline, affine)
 
     if unique_idx is None:
         all_coords = np.concatenate(transformed_streamline)
@@ -376,7 +379,9 @@ class FiberModel(ReconstModel):
                                           evals=evals,
                                           sphere=sphere)
 
-        streamline = transform_sl(streamline, affine)
+        if affine is None:
+            affine = np.eye(4)
+        streamline = transform_streamlines(streamline, affine)
         # Assign some local variables, for shorthand:
         all_coords = np.concatenate(streamline)
         vox_coords = unique_rows(all_coords.astype(int))
@@ -495,6 +500,8 @@ class FiberModel(ReconstModel):
         -------
         FiberFit class instance
         """
+        if affine is None:
+            affine = np.eye(4)
         life_matrix, vox_coords = \
             self.setup(streamline, affine, evals=evals, sphere=sphere)
 
