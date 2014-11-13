@@ -33,8 +33,8 @@ def nlmeans_3d(arr, mask=None, sigma=None, patch_radius=1,
     -------
     denoised_arr : ndarray
         the denoised ``arr`` which has the same shape as ``arr``.
-
     """
+
     if arr.ndim != 3:
         raise ValueError('arr needs to be a 3D ndarray')
 
@@ -47,12 +47,8 @@ def nlmeans_3d(arr, mask=None, sigma=None, patch_radius=1,
         raise ValueError('arr needs to be a 3D ndarray')
 
     arr = np.ascontiguousarray(arr, dtype='f8')
-
     arr = add_padding_reflection(arr, block_radius)
-
-
     mask = add_padding_reflection(mask.astype('f8'), block_radius)
-
     arrnlm = _nlmeans_3d(arr, mask, sigma, patch_radius, block_radius, rician)
 
     return remove_padding(arrnlm, block_radius)
@@ -86,7 +82,7 @@ def _nlmeans_3d(double [:, :, ::1] arr, double [:, :, ::1] mask,
     #move the block
     with nogil, parallel():
         for i in prange(B, I - B):
-            for j in range(B , J - B):
+            for j in range(B, J - B):
                 for k in range(B, K - B):
 
                     if mask[i, j, k] == 0:
@@ -136,12 +132,12 @@ cdef double process_block(double [:, :, ::1] arr,
         double * cache
         double denom
         cnp.npy_intp BS = B * 2 + 1
-
+        double sqrt2 = 1.4142135623730951
 
     cnt = 0
     sumw = 0
     patch_vol_size = (P + P + 1) * (P + P + 1) * (P + P + 1)
-    denom = sigma * sigma
+    denom = sigma * sigma * sqrt2
 
     W = <double *> malloc(BS * BS * BS * sizeof(double))
     cache = <double *> malloc(BS * BS * BS * sizeof(double))
@@ -174,7 +170,6 @@ cdef double process_block(double [:, :, ::1] arr,
                 cnt += 1
 
     cnt = 0
-
     sum_out = 0
 
     # calculate normalized weights and sums of the weights with the positions
@@ -189,9 +184,7 @@ cdef double process_block(double [:, :, ::1] arr,
                     w = 0
 
                 x = cache[m * BS * BS + n * BS + o]
-
                 sum_out += w * x * x
-
                 cnt += 1
 
     free(W)
@@ -236,13 +229,13 @@ def remove_padding(arr, padding):
 @cython.wraparound(False)
 @cython.boundscheck(False)
 cdef cnp.npy_intp copy_block_3d(double * dest,
-                                 cnp.npy_intp I,
-                                 cnp.npy_intp J,
-                                 cnp.npy_intp K,
-                                 double [:, :, ::1] source,
-                                 cnp.npy_intp min_i,
-                                 cnp.npy_intp min_j,
-                                 cnp.npy_intp min_k) nogil:
+                                cnp.npy_intp I,
+                                cnp.npy_intp J,
+                                cnp.npy_intp K,
+                                double [:, :, ::1] source,
+                                cnp.npy_intp min_i,
+                                cnp.npy_intp min_j,
+                                cnp.npy_intp min_k) nogil:
 
     cdef cnp.npy_intp i, j
 
@@ -251,7 +244,3 @@ cdef cnp.npy_intp copy_block_3d(double * dest,
             memcpy(&dest[i * J * K  + j * K], &source[i + min_i, j + min_j, min_k], K * sizeof(double))
 
     return 1
-
-
-
-

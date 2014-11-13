@@ -26,7 +26,6 @@ def nlmeans(arr, sigma, mask=None, patch_radius=1, block_radius=5, rician=True):
     -------
     denoised_arr : ndarray
         the denoised ``arr`` which has the same shape as ``arr``.
-
     """
 
     if arr.ndim == 3:
@@ -38,8 +37,10 @@ def nlmeans(arr, sigma, mask=None, patch_radius=1, block_radius=5, rician=True):
     if arr.ndim == 4:
 
         denoised_arr = np.zeros_like(arr)
+        sigma_arr = np.ones(arr.shape[-1], dtype=np.float32) * sigma
 
         for i in range(arr.shape[-1]):
+            sigma = sigma_arr[i]
             denoised_arr[..., i] = nlmeans_3d(arr[..., i],
                                               mask,
                                               sigma,
@@ -48,5 +49,3 @@ def nlmeans(arr, sigma, mask=None, patch_radius=1, block_radius=5, rician=True):
                                               rician).astype(arr.dtype)
 
         return denoised_arr
-
-
