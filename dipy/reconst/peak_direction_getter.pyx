@@ -29,11 +29,15 @@ cdef class PAMDirectionGetter(DirectionGetter):
         int initialized
 
     def __cinit__(self):
+        initialized = False
         self.qa_thr = 0.0239
         self.ang_thr = 60
         self.total_weight = .5
 
     def _initialize(self):
+        """First time that a PAM instance is used as a direction getter,
+        initialize all the memoryviews.
+        """
         if self.peak_values.shape != self.peak_indices.shape:
             msg = "shapes of peak_values and peak_indices do not match"
             raise ValueError(msg)
@@ -44,7 +48,7 @@ cdef class PAMDirectionGetter(DirectionGetter):
         self._odf_vertices = np.array(self.sphere.vertices, copy=False,
                                       dtype='double', order='C')
 
-        self.initialized = 1
+        self.initialized = True
 
     def initial_direction(self, double[::1] point):
         """The best starting directions for fiber tracking from point
@@ -53,6 +57,9 @@ cdef class PAMDirectionGetter(DirectionGetter):
         initial directions.
 
         """
+        if not self.initialized:
+            self._initialize()
+
         cdef:
             np.npy_intp numpeaks, i
             np.npy_intp ijk[3]
@@ -87,14 +94,14 @@ cdef class PAMDirectionGetter(DirectionGetter):
         could be found, return 1.
 
         """
+        if not self.initialized:
+            self._initialize()
+
         cdef:
             np.npy_intp s
             double newdirection[3]
             np.npy_intp qa_shape[4]
             np.npy_intp qa_strides[4]
-
-        if not self.initialized:
-            return -1
 
         for i in range(4):
             qa_shape[i] = self._qa.shape[i]
