@@ -6,7 +6,7 @@ from numpy.testing import (assert_equal,
                            run_module_suite)
 
 
-from dipy.core.optimize import Optimizer, SCIPY_LESS_0_11
+from dipy.core.optimize import Optimizer, SCIPY_LESS_0_12
 
 
 def test_optimize():
@@ -19,7 +19,7 @@ def test_optimize():
 
         return x[0]**2 + 0.5 * x[1]**2 + 0.2 * x[2]**2 + 0.2 * x[3]**2
 
-    if not SCIPY_LESS_0_11:
+    if not SCIPY_LESS_0_12:
 
         opt = Optimizer(fun=func, x0=np.array([1., 1., 1.]), method='Powell')
 
@@ -77,7 +77,7 @@ def test_optimize():
         for fname in tmp_files:
             assert_equal(os.path.isfile(fname), False)
 
-    if SCIPY_LESS_0_11:
+    if SCIPY_LESS_0_12:
 
         opt = Optimizer(fun=func, x0=np.array([1., 1., 1.]),
                         method='L-BFGS-B',

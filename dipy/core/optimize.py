@@ -12,16 +12,16 @@ import scipy
 
 scipy_version = scipy.__version__
 scipy_version = StrictVersion(scipy_version.split('.dev')[0])
-minimize_version = StrictVersion('0.11')
+minimize_version = StrictVersion('0.12')
 
 if scipy_version >= minimize_version:
 
-    SCIPY_LESS_0_11 = False
+    SCIPY_LESS_0_12 = False
     from scipy.optimize import minimize
 
 else:
 
-    SCIPY_LESS_0_11 = True
+    SCIPY_LESS_0_12 = True
     from scipy.optimize import fmin_l_bfgs_b, fmin_powell
 
 
@@ -132,7 +132,7 @@ class Optimizer(object):
         self.size_of_x = len(x0)
         self.tmp_files = []
 
-        if SCIPY_LESS_0_11:
+        if SCIPY_LESS_0_12:
 
             if method == 'L-BFGS-B':
 
@@ -175,7 +175,7 @@ class Optimizer(object):
                 msg += 'for versions of Scipy < 0.11.'
                 raise ValueError(msg)
 
-        if not SCIPY_LESS_0_11:
+        if not SCIPY_LESS_0_12:
 
             if evolution is True:
 

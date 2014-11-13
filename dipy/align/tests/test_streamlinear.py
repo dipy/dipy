@@ -336,9 +336,9 @@ def test_evolution_of_previous_iterations():
 
     slr = StreamlineLinearRegistration(evolution=True)
 
-    from dipy.core.optimize import SCIPY_LESS_0_11
+    from dipy.core.optimize import SCIPY_LESS_0_12
 
-    if not SCIPY_LESS_0_11:
+    if not SCIPY_LESS_0_12:
 
         slm = slr.optimize(static, moving)
 
