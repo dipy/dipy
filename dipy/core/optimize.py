@@ -183,9 +183,8 @@ class Optimizer(object):
                 self.tmp_files.append(fname)
 
                 def history_of_x(kx):
-                    f = open(fname, 'a')
-                    np.savetxt(f, kx)
-                    f.close()
+                    with open(fname, 'ab') as f:
+                        np.savetxt(f, kx)
 
                 res = minimize(fun, x0, args, method, jac, hess, hessp, bounds,
                                constraints, tol, callback=history_of_x,
