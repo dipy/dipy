@@ -1,7 +1,9 @@
 import numpy as np
 import numpy.testing as npt
+import nibabel as nib
 import dipy.reconst.sfm as sfm
 import dipy.data as dpd
+import dipy.core.gradients as grad
 
 
 def test_design_matrix():
@@ -14,6 +16,9 @@ def test_design_matrix():
 
 
 def test_SparseFascicleModel():
-    data, gtab = dpd.dsi_voxels()
+    fdata, fbvals, fbvecs = dpd.get_data()
+    data = nib.load(fdata).get_data()
+    gtab = grad.gradient_table(fbvals, fbvecs)
     sfmodel = sfm.SparseFascicleModel(gtab)
     sffit = sfmodel.fit(data[0, 0, 0])
+    pred = sffit.predict(gtab)

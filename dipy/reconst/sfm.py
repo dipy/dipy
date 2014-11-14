@@ -12,6 +12,7 @@ import numpy as np
 
 from dipy.utils.optpkg import optional_package
 import dipy.core.geometry as geo
+import dipy.core.gradients as grad
 import dipy.sims.voxel as sims
 import dipy.reconst.dti as dti
 import dipy.data as dpd
@@ -26,6 +27,47 @@ if not has_sklearn:
     w += "algorithm instead"
     warnings.warn(w)
     import scipy.optimize as opt
+
+def sfm_design_matrix(gtab, sphere, response):
+    """
+    Construct the SFM design matrix
+
+    Parameters
+    ----------
+    gtab : GradientTable
+        Sets the rows of the matrix
+
+    sphere : Sphere
+        Sets the columns of the matrix
+
+    response : list of 3 elements
+        The eigenvalues of a tensor which will serve as a kernel function
+    """
+    # Preallocate:
+    mat = np.empty((np.sum(~gtab.b0s_mask),
+                   sphere.vertices.shape[0]))
+
+    # Each column of the matrix is the signal in each measurement, as
+    # predicted by a "canonical", symmetrical tensor rotated towards this
+    # vertex of the sphere:
+    canonical_tensor = np.array([[response[0], 0, 0],
+                                     [0, response[1], 0],
+                                     [0, 0, response[2]]])
+
+    mat_gtab = grad.gradient_table(gtab.bvals[~gtab.b0s_mask],
+                                   gtab.bvecs[~gtab.b0s_mask])
+    # Calculate column-wise:
+    for ii, this_dir in enumerate(sphere.vertices):
+        # Rotate the canonical tensor towards this vertex and calculate the
+        # signal you would have gotten in the direction
+        rot_matrix = geo.vec2vec_rotmat(np.array([1,0,0]), this_dir)
+        this_tensor = np.dot(rot_matrix, canonical_tensor)
+        evals, evecs = dti.decompose_tensor(this_tensor)
+        sig = sims.single_tensor(mat_gtab, evals=response, evecs=evecs)
+        mat[:, ii] = sig - np.mean(sig)
+
+    return mat
+
 
 class SparseFascicleModel(ReconstModel):
     def __init__(self, gtab, sphere=None, response=[0.0015, 0.0005, 0.0005],
@@ -66,35 +108,14 @@ class SparseFascicleModel(ReconstModel):
         self.response = np.asarray(response)
         if has_sklearn:
             self.solver = lm.ElasticNet(l1_ratio=l1_ratio, alpha=alpha,
-                                        positive=True)
+                                        positive=True, warm_start=True)
         else:
             self.solver = opt.nnls
 
 
     @auto_attr
     def design_matrix(self):
-        # Preallocate:
-        mat = np.empty((np.sum(~self.gtab.b0s_mask),
-                       self.sphere.vertices.shape[0]))
-
-        # Each column of the matrix is the signal in each measurement, as
-        # predicted by a "canonical", symmetrical tensor rotated towards this
-        # vertex of the sphere:
-        canonical_tensor = np.array([[self.response[0], 0, 0],
-                                         [0, self.response[1], 0],
-                                         [0, 0, self.response[2]]])
-
-        # Calculate column-wise:
-        for ii, this_dir in enumerate(self.sphere.vertices):
-            # Rotate the canonical tensor towards this vertex and calculate the
-            # signal you would have gotten in the direction
-            rot_matrix = geo.vec2vec_rotmat(np.array([1,0,0]), this_dir)
-            this_tensor = np.dot(rot_matrix, canonical_tensor)
-            evals, evecs = dti.decompose_tensor(this_tensor)
-            sig = sims.single_tensor(self.gtab, evals=self.response)
-            mat[:, ii] = sig - np.mean(sig)
-
-        return mat
+        return sfm_design_matrix(self.gtab, self.sphere, self.response)
 
 
     def fit(self, data, mask=None):
@@ -114,13 +135,21 @@ class SparseFascicleModel(ReconstModel):
         SparseFascicleFit object
 
         """
+        # Fitting is done on the relative signal (S/S0):
+        S0 = np.mean(data[..., self.gtab.b0s_mask], -1)
+        S = data[..., ~self.gtab.b0s_mask]/S0[...,None]
+        mean_signal = np.mean(S, -1)
+
+        if len(mean_signal.shape) <= 1:
+            mean_signal = np.reshape(mean_signal, (1,-1))
+
         if mask is not None:
             if mask.shape != data.shape[:-1]:
                 raise ValueError("Mask is not the same shape as data.")
             mask = np.array(mask, dtype=bool, copy=False)
-            data_in_mask = data[mask]
+            data_in_mask = S[mask]
         else:
-            data_in_mask = data
+            data_in_mask = S
 
         data_in_mask = data_in_mask.reshape((-1, data_in_mask.shape[-1]))
 
@@ -128,31 +157,51 @@ class SparseFascicleModel(ReconstModel):
                                    self.design_matrix.shape[-1]))
 
         for vox, dd in enumerate(data_in_mask):
-            fit_it = dd - np.mean(dd)
-            if has_sklearn:
-                params_in_mask[vox] = self.solver.fit(self.design_matrix,
-                                              fit_it).coef_
+            # dbg:
+            #if not np.mod(vox, 1000):
+            #    print(100 * float(vox)/len(data_in_mask))
+            if np.any(np.isnan(dd)):
+                params_in_mask[vox] = (np.ones(self.design_matrix.shape[-1]) *
+                                       np.nan)
             else:
-                params_in_mask[vox], _ = self.solver(self.design_matrix,
-                                             fit_it)
+                fit_it = dd - mean_signal[vox]
+                if has_sklearn:
+                    params_in_mask[vox] = self.solver.fit(self.design_matrix,
+                                                  fit_it).coef_
+                else:
+                    params_in_mask[vox], _ = self.solver(self.design_matrix,
+                                                 fit_it)
 
-        beta = np.zeros(data.shape[:-1] +
-                                (self.design_matrix.shape[-1], ))
+        if mask is not None:
+            beta = np.zeros(data.shape[:-1] +
+                            (self.design_matrix.shape[-1], ))
 
-        beta[mask, :] = params_in_mask
-        return SparseFascicleFit(self, beta)
+            beta[mask, :] = params_in_mask
+        else:
+            beta = params_in_mask
+
+        return SparseFascicleFit(self, beta, S0, mean_signal)
 
 
 class SparseFascicleFit(ReconstFit):
-    def __init__(self, model, beta):
+    def __init__(self, model, beta, S0, mean_signal):
         """
         Initalize a SparseFascicleFit class instance
         """
         self.model = model
         self.beta = beta
+        self.S0 = S0
+        self.mean_signal = mean_signal
 
 
-    def predict(self, gtab=None, S0=None):
+    def odf(self):
+        """
+        The orientation distribution function (identical to the model parameters)
+        """
+        return self.beta
+
+
+    def predict(self, gtab=None, response=None, S0=None):
         """
         Predict the signal based on the SFM parameters
 
@@ -160,28 +209,26 @@ class SparseFascicleFit(ReconstFit):
         ----------
 
         """
-        # We generate the prediction and in each voxel, we add the
-        # offset, according to the isotropic part of the signal, which was
-        # removed prior to fitting:
-
+        if response is None:
+            response=self.model.response
         if gtab is None:
-            _matrix = self.life_matrix
+            _matrix = self.model.design_matrix
             gtab = self.model.gtab
+
+        # The only thing we can't change now is the sphere we use:
         else:
-            _model = FiberModel(gtab)
-            _matrix, _ = self.model.setup(self.streamline,
-                                          self.affine,
-                                          self.evals)
-        pred_weighted = np.reshape(opt.spdot(_matrix, self.beta),
-                                   (self.vox_coords.shape[0],
-                                    np.sum(~gtab.b0s_mask)))
+            _matrix = sfm_design_matrix(gtab, self.model.sphere, response)
 
-        pred = np.empty((self.vox_coords.shape[0], gtab.bvals.shape[0]))
+        # Get them all at once:
+        pred_weighted = np.dot(_matrix, self.beta.T).T
+
+        pred = np.empty(self.beta.shape[:-1] + (gtab.bvals.shape[0], ))
+
         if S0 is None:
-            S0 = self.b0_signal
+            S0 = self.S0
 
-        pred[..., gtab.b0s_mask] = S0[:, None]
+        pred[..., gtab.b0s_mask] = S0
         pred[..., ~gtab.b0s_mask] =\
-            (pred_weighted + self.mean_signal[:, None]) * S0[:, None]
+            (pred_weighted + self.mean_signal[:, None]) * S0
 
         return pred
