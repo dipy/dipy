@@ -138,7 +138,7 @@ class SparseFascicleModel(ReconstModel):
         # Fitting is done on the relative signal (S/S0):
         S0 = np.mean(data[..., self.gtab.b0s_mask], -1)
         S = data[..., ~self.gtab.b0s_mask]/S0[...,None]
-        mean_signal = np.mean(S, -1)
+        mean_signal = np.mean(data, -1)
 
         if len(mean_signal.shape) <= 1:
             mean_signal = np.reshape(mean_signal, (1,-1))
@@ -184,7 +184,7 @@ class SparseFascicleModel(ReconstModel):
             beta = params_in_mask.reshape(data.shape[:-1] + (-1, ))
             mean_out = mean_in_mask.reshape(data.shape[:-1] + (-1, ))
 
-        return SparseFascicleFit(self, beta, S0, mean_out)
+        return SparseFascicleFit(self, beta, S0, mean_out.squeeze())
 
 
 class SparseFascicleFit(ReconstFit):
@@ -236,6 +236,7 @@ class SparseFascicleFit(ReconstFit):
 
         if isinstance(S0, np.ndarray):
             S0 = S0[..., None]
+
         if isinstance(self.mean_signal, np.ndarray):
             mean_signal = self.mean_signal[..., None]
 
@@ -245,4 +246,4 @@ class SparseFascicleFit(ReconstFit):
         pred_sig[..., ~gtab.b0s_mask] = pre_pred_sig
         pred_sig[..., gtab.b0s_mask] = S0
 
-        return pred_sig
+        return pred_sig.squeeze()

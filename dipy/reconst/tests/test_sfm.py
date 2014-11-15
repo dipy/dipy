@@ -4,13 +4,12 @@ import nibabel as nib
 import dipy.reconst.sfm as sfm
 import dipy.data as dpd
 import dipy.core.gradients as grad
-
+import dipy.sims.voxel as sims
 
 def test_design_matrix():
     data, gtab = dpd.dsi_voxels()
     sphere = dpd.get_sphere()
     sparse_fascicle_model = sfm.SparseFascicleModel(gtab, sphere)
-
     npt.assert_equal(sparse_fascicle_model.design_matrix.shape,
                      (np.sum(~gtab.b0s_mask), sphere.vertices.shape[0]))
 
@@ -27,3 +26,23 @@ def test_SparseFascicleModel():
     pred2 = sffit2.predict(gtab)
     sffit3 = sfmodel.fit(data)
     pred3 = sffit3.predict(gtab)
+    npt.assert_almost_equal(pred3, pred2, decimal=2)
+
+
+def test_predict():
+    SNR = 1000
+    S0 = 1
+    _, fbvals, fbvecs = dpd.get_data('small_64D')
+    bvals = np.load(fbvals)
+    bvecs = np.load(fbvecs)
+    gtab = grad.gradient_table(bvals, bvecs)
+    mevals = np.array(([0.0015, 0.0003, 0.0003],
+                       [0.0015, 0.0003, 0.0003]))
+    angles = [(0, 0), (60, 0)]
+    S, sticks = sims.multi_tensor(gtab, mevals, S0, angles=angles,
+                             fractions=[50, 50], snr=SNR)
+
+    sfmodel = sfm.SparseFascicleModel(gtab)
+    sffit = sfmodel.fit(S)
+    pred = sffit.predict()
+    npt.assert_almost_equal(pred, S, decimal=1)
