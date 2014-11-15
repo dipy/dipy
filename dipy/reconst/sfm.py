@@ -24,7 +24,7 @@ lm, has_sklearn, _ = optional_package('sklearn.linear_model')
 # user that we are about to do that):
 if not has_sklearn:
     w = "sklearn is not available, we will fit the SFM using the KKT NNLS"
-    w += "algorithm instead"
+    w += " algorithm instead"
     warnings.warn(w)
     import scipy.optimize as opt
 
@@ -196,10 +196,15 @@ class SparseFascicleFit(ReconstFit):
         self.mean_signal = mean_signal
 
 
-    def odf(self):
+    def odf(self, sphere):
         """
         The orientation distribution function (identical to the model parameters)
         """
+        if self.beta.shape[-1] != sphere.x.shape[0]:
+            e_s = "ODF must be evaluated on the sphere used for fitting "
+            e_s = "The SFM model"
+            return ValueError(e_s)
+
         return self.beta
 
 
