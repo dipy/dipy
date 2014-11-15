@@ -143,8 +143,6 @@ class SparseFascicleModel(ReconstModel):
         if len(mean_signal.shape) <= 1:
             mean_signal = np.reshape(mean_signal, (1,-1))
         if mask is not None:
-            if mask.shape != data.shape[:-1]:
-                raise ValueError("Mask is not the same shape as data.")
             mask = np.array(mask, dtype=bool, copy=False)
             data_in_mask = S[mask]
             mean_in_mask = mean_signal[mask]

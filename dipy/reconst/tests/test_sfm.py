@@ -27,6 +27,13 @@ def test_SparseFascicleModel():
     sffit3 = sfmodel.fit(data)
     pred3 = sffit3.predict(gtab)
     npt.assert_almost_equal(pred3, pred2, decimal=2)
+    npt.assert_almost_equal(pred3[0,0,0], pred1, decimal=2)
+    # Fit zeros and you will get back nans:
+    npt.assert_almost_equal(sfmodel.fit(np.zeros(data[0,0,0].shape)).beta,
+                            np.nan * np.ones(sfmodel.design_matrix.shape[-1]))
+
+    # The ODF is the betas:
+    npt.assert_almost_equal(sffit3.odf(), sffit3.beta)
 
 
 def test_predict():
