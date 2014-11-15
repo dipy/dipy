@@ -112,11 +112,9 @@ class SparseFascicleModel(ReconstModel):
         else:
             self.solver = opt.nnls
 
-
     @auto_attr
     def design_matrix(self):
         return sfm_design_matrix(self.gtab, self.sphere, self.response)
-
 
     def fit(self, data, mask=None):
         """
@@ -159,8 +157,7 @@ class SparseFascicleModel(ReconstModel):
 
         for vox, dd in enumerate(data_in_mask):
             if np.any(np.isnan(dd)):
-                params_in_mask[vox] = (np.ones(self.design_matrix.shape[-1]) *
-                                       np.nan)
+                params_in_mask[vox] = (np.zeros(self.design_matrix.shape[-1]))
             else:
                 fit_it = dd - mean_in_mask[vox]
                 if has_sklearn:
