@@ -132,10 +132,10 @@ class ScriptRunner(object):
             # Need .bat file extension for windows
             cmd[0] += '.bat'
         if os.name == 'nt':
-            # Quote all arguments because they might be files with spaces
-            # The quotes delimit the arguments on Windows.  On Unix the list
-            # elements are each separate arguments.
-            cmd = ['"{0}"'.format(c) for c in cmd]
+            # Quote any arguments with spaces. The quotes delimit the arguments
+            # on Windows, and the arguments might be files paths with spaces.
+            # On Unix the list elements are each separate arguments.
+            cmd = ['"{0}"'.format(c) if ' ' in c else c for c in cmd]
         if self.debug_print:
             print("Running command '%s'" % cmd)
         env = os.environ
