@@ -126,12 +126,13 @@ else: # We have nibabel
     # up pyx and c files.
     build_ext = cyproc_exts(EXTS, CYTHON_MIN_VERSION, 'pyx-stamps')
     # Add openmp flags if they work
+    simple_test_c = """int main(int argc, char** argv) { return(0); }"""
     omp_test_c = """#include <omp.h>
     int main(int argc, char** argv) { return(0); }"""
     extbuilder = add_flag_checking(
-        build_ext,
-        [[['-fopenmp'], ['-fopenmp'], omp_test_c, 'HAVE_OPENMP']],
-        'dipy')
+        build_ext, [[['/arch:SSE2'], [], simple_test_c, 'USING_VC_SSE2'],
+            [['-msse2', '-mfpmath=sse'], [], simple_test_c, 'USING_GCC_SSE2'],
+            [['-fopenmp'], ['-fopenmp'], omp_test_c, 'HAVE_OPENMP']], 'dipy')
     # Fix npymath libraries for Windows
     if os.name == 'nt':
         extbuilder = check_npymath(extbuilder)

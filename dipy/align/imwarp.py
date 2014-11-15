@@ -1452,8 +1452,11 @@ class SymmetricDiffeomorphicRegistration(DiffeomorphicRegistration):
         #set zero displacements at the boundary
         fw_step[0, ...] = 0
         fw_step[:, 0, ...] = 0
+        fw_step[-1, ...] = 0
+        fw_step[:, -1, ...] = 0
         if(self.dim == 3):
             fw_step[:, :, 0, ...] = 0
+            fw_step[:, :, -1, ...] = 0
 
         #Normalize the forward step
         nrm = np.sqrt(np.sum((fw_step/current_disp_spacing)**2, -1)).max()

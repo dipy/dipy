@@ -240,24 +240,40 @@ def test_interpolate_scalar_2d():
     target_shape = (sz, sz)
     image = np.ndarray(target_shape, dtype=floating)
     image[...] = np.random.randint(0, 10, np.size(image)).reshape(target_shape)
-    #Select some coordinates to interpolate at
+
+    extended_image = np.zeros((sz+2, sz+2), dtype=floating)
+    extended_image[1:sz+1, 1:sz+1] = image[...]
+
+    #Select some coordinates inside the image to interpolate at
     nsamples = 200
     locations = np.random.ranf(2 * nsamples).reshape((nsamples,2)) * (sz+2) - 1.0
+    extended_locations = locations + 1.0 # shift coordinates one voxel
 
     #Call the implementation under test
     interp, inside = vfu.interpolate_scalar_2d(image, locations)
 
     #Call the reference implementation
-    expected = map_coordinates(image, locations.transpose(), order=1)
+    expected = map_coordinates(extended_image, extended_locations.transpose(), order=1)
 
     assert_array_almost_equal(expected, interp)
 
-    #Test the 'inside' flag
-    for i in range(nsamples):
-        if (locations[i, 0]<0 or locations[i, 0]>(sz-1)) or (locations[i, 1]<0 or locations[i, 1]>(sz-1)):
-            assert_equal(inside[i], 0)
-        else:
-            assert_equal(inside[i], 1)
+    #Test interpolation stability along the boundary
+    epsilon = 5e-8
+    for k in range(2):
+        for offset in [0, sz-1]:
+            delta = ((np.random.ranf(nsamples) * 2) -1) * epsilon
+            locations[:, k] = delta + offset
+            locations[:, (k+1)%2] = np.random.ranf(nsamples) * (sz-1)
+            interp, inside = vfu.interpolate_scalar_2d(image, locations)
+
+            locations[:, k] = offset
+            expected = map_coordinates(image, locations.transpose(), order=1)
+            assert_array_almost_equal(expected, interp)
+            if offset == 0:
+                expected_flag = np.array(delta>=0, dtype = np.int32)
+            else:
+                expected_flag = np.array(delta<=0, dtype = np.int32)
+            assert_array_almost_equal(expected_flag, inside)
 
 
 def test_interpolate_scalar_nn_2d():
@@ -320,26 +336,42 @@ def test_interpolate_scalar_3d():
     target_shape = (sz, sz, sz)
     image = np.ndarray(target_shape, dtype=floating)
     image[...] = np.random.randint(0, 10, np.size(image)).reshape(target_shape)
-    #Select some coordinates to interpolate at
-    nsamples = 200
+
+    extended_image = np.zeros((sz+2, sz+2, sz+2), dtype=floating)
+    extended_image[1:sz+1, 1:sz+1, 1:sz+1] = image[...]
+
+    #Select some coordinates inside the image to interpolate at
+    nsamples = 800
     locations = np.random.ranf(3 * nsamples).reshape((nsamples,3)) * (sz+2) - 1.0
+    extended_locations = locations + 1.0 # shift coordinates one voxel
 
     #Call the implementation under test
     interp, inside = vfu.interpolate_scalar_3d(image, locations)
 
     #Call the reference implementation
-    expected = map_coordinates(image, locations.transpose(), order=1)
+    expected = map_coordinates(extended_image, extended_locations.transpose(), order=1)
 
     assert_array_almost_equal(expected, interp)
 
-    #Test the 'inside' flag
-    for i in range(nsamples):
-        expected_inside = 1
-        for axis in range(3):
-            if (locations[i, axis]<0 or locations[i, axis]>(sz-1)):
-                expected_inside = 0
-                break
-        assert_equal(inside[i], expected_inside)
+    #Test interpolation stability along the boundary
+    epsilon = 5e-8
+    for k in range(3):
+        for offset in [0, sz-1]:
+            delta = ((np.random.ranf(nsamples) * 2) -1) * epsilon
+            locations[:, k] = delta + offset
+            locations[:, (k+1)%3] = np.random.ranf(nsamples) * (sz-1)
+            locations[:, (k+2)%3] = np.random.ranf(nsamples) * (sz-1)
+            interp, inside = vfu.interpolate_scalar_3d(image, locations)
+
+            locations[:, k] = offset
+            expected = map_coordinates(image, locations.transpose(), order=1)
+            assert_array_almost_equal(expected, interp)
+
+            if offset == 0:
+                expected_flag = np.array(delta>=0, dtype = np.int32)
+            else:
+                expected_flag = np.array(delta<=0, dtype = np.int32)
+            assert_array_almost_equal(expected_flag, inside)
 
 
 def test_interpolate_vector_3d():
@@ -348,9 +380,13 @@ def test_interpolate_vector_3d():
     target_shape = (sz, sz, sz)
     field = np.ndarray(target_shape+(3,), dtype=floating)
     field[...] = np.random.randint(0, 10, np.size(field)).reshape(target_shape+(3,))
+
+    extended_field = np.zeros((sz+2, sz+2, sz+2, 3), dtype=floating)
+    extended_field[1:sz+1, 1:sz+1, 1:sz+1] = field
     #Select some coordinates to interpolate at
-    nsamples = 200
+    nsamples = 800
     locations = np.random.ranf(3 * nsamples).reshape((nsamples,3)) * (sz+2) - 1.0
+    extended_locations = locations + 1
 
     #Call the implementation under test
     interp, inside = vfu.interpolate_vector_3d(field, locations)
@@ -358,18 +394,30 @@ def test_interpolate_vector_3d():
     #Call the reference implementation
     expected = np.zeros_like(interp)
     for i in range(3):
-        expected[...,i] = map_coordinates(field[...,i], locations.transpose(), order=1)
+        expected[...,i] = map_coordinates(extended_field[...,i], extended_locations.transpose(), order=1)
 
     assert_array_almost_equal(expected, interp)
 
-    #Test the 'inside' flag
-    for i in range(nsamples):
-        expected_inside = 1
-        for axis in range(3):
-            if (locations[i, axis]<0 or locations[i, axis]>(sz-1)):
-                expected_inside = 0
-                break
-        assert_equal(inside[i], expected_inside)
+    #Test interpolation stability along the boundary
+    epsilon = 5e-8
+    for k in range(3):
+        for offset in [0, sz-1]:
+            delta = ((np.random.ranf(nsamples) * 2) -1) * epsilon
+            locations[:, k] = delta + offset
+            locations[:, (k+1)%3] = np.random.ranf(nsamples) * (sz-1)
+            locations[:, (k+2)%3] = np.random.ranf(nsamples) * (sz-1)
+            interp, inside = vfu.interpolate_vector_3d(field, locations)
+
+            locations[:, k] = offset
+            for i in range(3):
+                expected[...,i] = map_coordinates(field[...,i], locations.transpose(), order=1)
+            assert_array_almost_equal(expected, interp)
+
+            if offset == 0:
+                expected_flag = np.array(delta>=0, dtype = np.int32)
+            else:
+                expected_flag = np.array(delta<=0, dtype = np.int32)
+            assert_array_almost_equal(expected_flag, inside)
 
 
 def test_interpolate_vector_2d():
@@ -378,9 +426,12 @@ def test_interpolate_vector_2d():
     target_shape = (sz, sz)
     field = np.ndarray(target_shape+(2,), dtype=floating)
     field[...] = np.random.randint(0, 10, np.size(field)).reshape(target_shape+(2,))
+    extended_field = np.zeros((sz+2, sz+2, 2), dtype=floating)
+    extended_field[1:sz+1, 1:sz+1] = field
     #Select some coordinates to interpolate at
     nsamples = 200
     locations = np.random.ranf(2 * nsamples).reshape((nsamples,2)) * (sz+2) - 1.0
+    extended_locations = locations + 1
 
     #Call the implementation under test
     interp, inside = vfu.interpolate_vector_2d(field, locations)
@@ -388,18 +439,30 @@ def test_interpolate_vector_2d():
     #Call the reference implementation
     expected = np.zeros_like(interp)
     for i in range(2):
-        expected[...,i] = map_coordinates(field[...,i], locations.transpose(), order=1)
+        expected[...,i] = map_coordinates(extended_field[...,i], extended_locations.transpose(), order=1)
 
     assert_array_almost_equal(expected, interp)
 
-    #Test the 'inside' flag
-    for i in range(nsamples):
-        expected_inside = 1
-        for axis in range(2):
-            if (locations[i, axis]<0 or locations[i, axis]>(sz-1)):
-                expected_inside = 0
-                break
-        assert_equal(inside[i], expected_inside)
+    #Test interpolation stability along the boundary
+    epsilon = 5e-8
+    for k in range(2):
+        for offset in [0, sz-1]:
+            delta = ((np.random.ranf(nsamples) * 2) -1) * epsilon
+            locations[:, k] = delta + offset
+            locations[:, (k+1)%2] = np.random.ranf(nsamples) * (sz-1)
+            interp, inside = vfu.interpolate_vector_2d(field, locations)
+
+            locations[:, k] = offset
+            for i in range(2):
+                expected[...,i] = map_coordinates(field[...,i], locations.transpose(), order=1)
+            assert_array_almost_equal(expected, interp)
+
+            if offset == 0:
+                expected_flag = np.array(delta>=0, dtype = np.int32)
+            else:
+                expected_flag = np.array(delta<=0, dtype = np.int32)
+            assert_array_almost_equal(expected_flag, inside)
+
 
 
 def test_warping_2d():
@@ -466,12 +529,14 @@ def test_warping_2d():
             # Reorient the displacement field according to its grid-to-space transform
             dcopy = np.copy(d)
             vfu.reorient_vector_field_2d(dcopy, field_affine)
+            extended_dcopy = np.zeros((nr+2, nc+2, 2), dtype=floating)
+            extended_dcopy[1:nr+1, 1:nc+1, :] = dcopy
 
             # Compute the warping coordinates (see warp_2d documentation)
             Y = np.apply_along_axis(A.dot, 0, X)[0:2,...]
             Z = np.zeros_like(X)
-            Z[0,...] = map_coordinates(dcopy[...,0], Y, order=1)
-            Z[1,...] = map_coordinates(dcopy[...,1], Y, order=1)
+            Z[0,...] = map_coordinates(extended_dcopy[...,0], Y + 1, order=1)
+            Z[1,...] = map_coordinates(extended_dcopy[...,1], Y + 1, order=1)
             Z[2,...] = 0
             Z = np.apply_along_axis(C.dot, 0, Z)[0:2,...]
             T = np.apply_along_axis(B.dot, 0, X)[0:2,...]
@@ -557,12 +622,15 @@ def test_warping_3d():
             dcopy = np.copy(d)
             vfu.reorient_vector_field_3d(dcopy, field_affine)
 
+            extended_dcopy = np.zeros((ns+2, nr+2, nc+2, 3), dtype=floating)
+            extended_dcopy[1:ns+1, 1:nr+1, 1:nc+1, :] = dcopy
+
             # Compute the warping coordinates (see warp_2d documentation)
             Y = np.apply_along_axis(A.dot, 0, X)[0:3,...]
             Z = np.zeros_like(X)
-            Z[0,...] = map_coordinates(dcopy[...,0], Y, order=1)
-            Z[1,...] = map_coordinates(dcopy[...,1], Y, order=1)
-            Z[2,...] = map_coordinates(dcopy[...,2], Y, order=1)
+            Z[0,...] = map_coordinates(extended_dcopy[...,0], Y + 1, order=1)
+            Z[1,...] = map_coordinates(extended_dcopy[...,1], Y + 1, order=1)
+            Z[2,...] = map_coordinates(extended_dcopy[...,2], Y + 1, order=1)
             Z[3,...] = 0
             Z = np.apply_along_axis(C.dot, 0, Z)[0:3,...]
             T = np.apply_along_axis(B.dot, 0, X)[0:3,...]

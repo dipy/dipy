@@ -7,6 +7,7 @@ from numpy.testing import (assert_equal,
 import dipy.align.imwarp as imwarp
 import dipy.align.metrics as metrics
 import dipy.align.vector_fields as vfu
+from dipy.align.vector_fields import using_vc_sse2
 from dipy.data import get_data
 from dipy.align import floating
 import nibabel.eulerangles as eulerangles
@@ -356,6 +357,14 @@ def simple_callback(sdr, status):
         sdr.ITER_END_CALLED = 1
 
 
+def subsample_profile(profile, nsamples):
+    plen = len(profile)
+    stride = np.max([1, (plen - 1) // (nsamples - 1)])
+    subsampled = np.array(
+        profile[:(1 + (nsamples - 1) * stride):stride])
+    return subsampled
+
+
 def test_ssd_2d_demons():
     r'''
     Classical Circle-To-C experiment for 2D Monomodal registration. This test
@@ -406,32 +415,28 @@ def test_ssd_2d_demons():
     m = optimizer.get_map()
     assert_equal(mapping, m)
 
-    subsampled_energy_profile = np.array(optimizer.full_energy_profile[::10])
-    if floating is np.float32:
+    subsampled_energy_profile = subsample_profile(
+        optimizer.full_energy_profile, 10)
+    print(subsampled_energy_profile)
+
+    if using_vc_sse2():
         expected_profile = \
-            np.array([312.6813333, 162.57756447, 99.2766679, 77.38698935,
-                      61.75415204, 55.37420428, 46.36872571, 41.81811505,
-                      36.38683617, 33.03952963, 30.91409901, 54.41447237,
-                      23.40232241, 12.75092466, 10.19231733, 9.21058037,
-                      57.4636143, 38.94004856, 36.26093212, 108.0136453,
-                      81.35521049, 74.61956833])
+            np.array([312.6813333, 80.74625551, 49.43591374, 34.08871301,
+                      25.18286981, 17.78955273, 25.91334939, 20.16932281,
+                      43.86083145, 79.0966558 ])
     else:
         expected_profile = \
-            np.array([312.68133361, 162.57744066, 99.27669798, 77.38683186,
-                      61.75391429, 55.3740711, 46.36870776, 41.81809239,
-                      36.3898153, 32.78365961, 30.69843811, 53.67073767,
-                      21.74630524, 11.98102583, 11.51086685, 55.30707781,
-                      39.88467545, 34.29444978, 33.10822964, 122.64743831,
-                      84.18144073, 75.60088687])
+            np.array([312.6813333, 98.17321941, 60.98300837, 47.75387157,
+                      34.11067498, 122.91901409, 19.75599298, 14.28763847,
+                      36.33599718, 88.62426913])
 
-    assert_array_almost_equal(subsampled_energy_profile, expected_profile)
+    assert_array_almost_equal(subsampled_energy_profile, expected_profile, decimal = 5)
     assert_equal(optimizer.OPT_START_CALLED, 1)
     assert_equal(optimizer.OPT_END_CALLED, 1)
     assert_equal(optimizer.SCALE_START_CALLED, 1)
     assert_equal(optimizer.SCALE_END_CALLED, 1)
     assert_equal(optimizer.ITER_START_CALLED, 1)
     assert_equal(optimizer.ITER_END_CALLED, 1)
-
 
 
 def test_ssd_2d_gauss_newton():
@@ -481,18 +486,22 @@ def test_ssd_2d_gauss_newton():
     mapping = optimizer.optimize(static, moving, np.eye(3), np.eye(3), np.eye(3))
     m = optimizer.get_map()
     assert_equal(mapping, m)
-    subsampled_energy_profile = np.array(optimizer.full_energy_profile[::10])
-    if floating is np.float32:
+
+    subsampled_energy_profile = subsample_profile(
+        optimizer.full_energy_profile, 10)
+    print(subsampled_energy_profile)
+
+    if using_vc_sse2():
         expected_profile = \
-            np.array([312.68133316, 79.40404517, 23.3715698, 125.02700267,
-                      59.79982213, 34.64971733, 23.37131446, 171.28250576,
-                      62.22266377, 125.24392168])
+            np.array([312.68133316, 70.17782995, 21.38508088, 96.41054776,
+                      49.990781, 43.11867579, 24.53952718, 51.0786643, 
+                      143.24848252, 150.48349573])
     else:
         expected_profile = \
-            np.array([312.68133361, 79.40404354, 23.34588446, 124.3247997,
-                      61.69601973, 38.15047181, 23.53315113, 80.0791295,
-                      57.21700113, 143.73270476])
-    assert_array_almost_equal(subsampled_energy_profile, expected_profile)
+            np.array([312.68133316, 70.17782938, 21.26798507, 96.51765054,
+                      51.1495088, 37.86204803, 21.62425293, 49.44868302,
+                      121.6643917, 137.91427228])
+    assert_array_almost_equal(subsampled_energy_profile, expected_profile, decimal = 5)
     assert_equal(optimizer.OPT_START_CALLED, 0)
     assert_equal(optimizer.OPT_END_CALLED, 0)
     assert_equal(optimizer.SCALE_START_CALLED, 0)
@@ -569,20 +578,22 @@ def test_ssd_3d_demons():
     mapping = optimizer.optimize(static, moving, None)
     m = optimizer.get_map()
     assert_equal(mapping, m)
-    energy_profile = np.array(optimizer.full_energy_profile)
-    if floating is np.float32:
+
+    energy_profile = subsample_profile(
+        optimizer.full_energy_profile, 10)
+    print(energy_profile)
+
+    if using_vc_sse2():
         expected_profile = \
-            np.array([312.22706987, 154.65556885, 53.88594419, 9.22626825,
-                      36.50370933, 13.54829978, 49.57619437, 15.71122527,
-                      53.45897119, 15.62018739, 521.95785712, 158.16217928,
-                      182.49116432, 144.91081752, 176.6810387])
+            np.array([312.22706987, 154.65556884, 53.88543188, 9.11484007,
+                      36.46592407, 13.20522299, 48.65663399, 14.91579802,
+                      49.82954704, 14.92646254])
     else:
         expected_profile = \
-            np.array([312.22709468, 154.65706498, 53.8856324, 8.90160898,
-                      34.91911552, 12.66043296, 49.61341791, 15.14198327,
-                      52.25467529, 18.88243845, 490.48088231, 149.29027701,
-                      192.26219053, 137.5291187, 187.2795753])
-    assert_array_almost_equal(energy_profile, expected_profile, decimal=6)
+            np.array([312.22706987, 154.65556885, 53.88455398, 9.11770682,
+                      36.48642824, 13.21706748, 48.67710635, 14.91782047,
+                      49.84142899, 14.92531294])
+    assert_array_almost_equal(energy_profile, expected_profile, decimal=4)
 
 
 def test_ssd_3d_gauss_newton():
@@ -622,22 +633,22 @@ def test_ssd_3d_gauss_newton():
     mapping = optimizer.optimize(static, moving, None)
     m = optimizer.get_map()
     assert_equal(mapping, m)
-    energy_profile = np.array(optimizer.full_energy_profile)
-    if floating is np.float32:
+
+    energy_profile = subsample_profile(
+        optimizer.full_energy_profile, 10)
+    print(energy_profile)
+
+    if using_vc_sse2():
         expected_profile = \
-            np.array([348.32047209927373, 143.49111863234222, 44.328151771258206,
-                      8.759564367010988, 3.1378191742723662, 14.846951961939153,
-                      6.405154727081836, 20.437036950018083, 17.399044912417597,
-                      49.072929423423496, 269.2553956858318, 80.72079256138973,
-                      200.242742072974, 68.21238489882822, 208.28730597575378])
+            np.array([348.3204721, 143.480757, 44.30003405, 8.73624842,
+                      3.13227203, 14.70806563, 6.48360268, 23.52491883,
+                      17.25669088, 48.99709064])
     else:
         expected_profile = \
-            np.array([348.32049916992855, 143.49111631974688, 44.328145727486174,
-                      8.759562612294948, 3.137819214539283, 14.846929648490525,
-                      6.405154001052728, 20.437123731745928, 17.39892098642616,
-                      49.07339619667625, 269.2533380585498, 80.72162511785703,
-                      200.24505477294477, 68.21183884286609, 208.29025925025073])
-    assert_array_almost_equal(energy_profile, expected_profile, decimal=6)
+            np.array([348.3204721, 143.48075646, 44.30003413, 8.73624841,
+                      3.13227181, 14.70806845, 6.48360884, 23.52499421,
+                      17.25667176, 48.997691])
+    assert_array_almost_equal(energy_profile, expected_profile, decimal=4)
 
 
 def test_cc_2d():
@@ -662,21 +673,23 @@ def test_cc_2d():
     mapping = optimizer.optimize(static, moving, None)
     m = optimizer.get_map()
     assert_equal(mapping, m)
-    energy_profile = np.array(optimizer.full_energy_profile)
-    if floating is np.float32:
+
+    energy_profile = subsample_profile(
+        optimizer.full_energy_profile, 10)
+    print(energy_profile)
+
+    if using_vc_sse2():
         expected_profile = \
-            [-681.02276236, -920.57714783, -1006.81657463, -1025.83920278,
-             -1018.48108319, -1018.45000627, -1005.09703188, -1012.69584487,
-             -1016.42673146, -998.88289898, -2788.28110913, -2829.93521983,
-             -2823.50737329, -2840.70676978, -2805.36486487]
+            [-681.02276193, -910.57721051, -1012.76781394, -1021.24181308,
+             -1016.97233745, -977.35458126, -1013.90114894, -989.04516449,
+             -1021.72431465, -988.46698723]
     else:
         expected_profile = \
-            [-685.02275452, -928.57719958, -1018.81655195, -1025.39899865,
-             -1002.72673624, -1009.50734392, -1017.17915308, -999.55456055,
-             -1025.76154939, -994.94755395, -2784.70111646, -2820.40702267,
-             -2801.45275665, -2822.69658715, -2813.39864684]
+            [-681.02276236, -920.57714783, -1008.82241171, -1021.91021701,
+             -994.86961164, -1026.52978164, -1015.83587405, -1020.02780802,
+             -993.8576053, -1026.4369566 ]
     expected_profile = np.asarray(expected_profile)
-    assert_array_almost_equal(energy_profile, expected_profile)
+    assert_array_almost_equal(energy_profile, expected_profile, decimal=5)
 
 
 def test_cc_3d():
@@ -715,25 +728,21 @@ def test_cc_3d():
     mapping = optimizer.optimize(static, moving, None, None, None)
     m = optimizer.get_map()
     assert_equal(mapping, m)
-    energy_profile = np.array(optimizer.full_energy_profile)*1e-4
-    if floating is np.float32:
+
+    energy_profile = subsample_profile(
+        optimizer.full_energy_profile, 10)*1e-4
+    print(energy_profile)
+
+    if using_vc_sse2():
         expected_profile = \
-            [-0.17136006, -0.1927569, -0.20436096, -0.20785162, -0.20389074,
-             -0.20924245, -0.20703476, -0.20914331, -0.20797673, -0.20894931,
-             -0.20861396, -0.20884857, -0.20867266, -0.20892447, -0.20721796,
-             -0.20964756, -3.03669258, -3.08002058, -3.07073973, -3.06754953,
-             -3.06459596, -3.08409787, -3.08325558, -3.08083075, -3.08227744,
-             -3.08802501]
+            [-0.17336006, -0.20516197, -0.20448353, -0.20630727, -0.20652892,
+             -0.2073403, -3.0046531, -3.43771429, -3.47262116, -3.51383381]
     else:
         expected_profile = \
-            [-0.17416006, -0.1937569, -0.20776097, -0.21125163, -0.20709075,
-             -0.21184246, -0.21003478, -0.21214333, -0.21117674, -0.21194933,
-             -0.21141397, -0.21184858, -0.21147268, -0.21232447, -0.211618,
-             -0.21264758, -3.13589338, -3.29324761, -3.3906351, -3.46849833,
-             -3.51429254, -3.51747425, -3.5175145, -3.52346059, -3.51608344,
-             -3.53157882]
+            [-0.17136006, -0.20632291, -0.2038927, -0.20688352, -0.20821154,
+             -0.20909298, -0.20872891, -0.20933514, -3.06861497, -3.07851062]
     expected_profile = np.asarray(expected_profile)
-    assert_array_almost_equal(energy_profile, expected_profile, decimal=6)
+    assert_array_almost_equal(energy_profile, expected_profile, decimal=4)
 
 
 def test_em_3d_gauss_newton():
@@ -779,20 +788,22 @@ def test_em_3d_gauss_newton():
     mapping = optimizer.optimize(static, moving, None)
     m = optimizer.get_map()
     assert_equal(mapping, m)
-    energy_profile = np.array(optimizer.full_energy_profile)
-    if floating is np.float32:
+
+    energy_profile = subsample_profile(
+        optimizer.full_energy_profile, 10)
+    print(energy_profile)
+
+    if using_vc_sse2():
         expected_profile = \
-            np.array([144.03694724, 63.06898905, 51.84577681, 39.75409677,
-                      32.10342869, 44.84663951, 38.48587153, 36.64351228, 
-                      37.14853803, 40.07766093, 1686.24351443, 1500.19633766,
-                      1302.04852831, 1148.19549508, 1032.820053])
+            np.array([144.03694724, 63.06874155, 51.84694887, 39.6374044,
+                      31.84981429, 44.3778833, 37.84961761, 38.00509734,
+                      38.67423812, 38.47003306])
     else:
         expected_profile = \
-            np.array([144.03695787, 63.06894122, 51.84575143, 39.75308705,
-                      32.13062096, 44.15214831, 40.71952511, 37.26523679,
-                      37.86654915, 34.92844873, 1644.56890565, 1408.15872151,
-                      1274.1339093, 1131.38037004, 1004.71854514])
-    assert_array_almost_equal(energy_profile, expected_profile, decimal=6)
+            np.array([144.03694724, 63.06874148, 51.84694881, 39.63740417,
+                      31.84981481, 44.37788414, 37.84961844, 38.00509881,
+                      38.67423954, 38.47003339])
+    assert_array_almost_equal(energy_profile, expected_profile, decimal=4)
 
 
 def test_em_2d_gauss_newton():
@@ -822,19 +833,20 @@ def test_em_2d_gauss_newton():
     mapping = optimizer.optimize(static, moving, None)
     m = optimizer.get_map()
     assert_equal(mapping, m)
-    energy_profile = np.array(optimizer.full_energy_profile)[::4]
-    if floating is np.float32:
+
+    energy_profile = subsample_profile(
+        optimizer.full_energy_profile, 10)
+    print(energy_profile)
+
+    if using_vc_sse2():
         expected_profile = \
-            [2.50773392e+00, 1.19082175e+00, 3.44192871e-01, 4.26320783e-01,
-             3.77910892e-02, 3.34404847e-01, 3.00400618e+00, 2.56292691e+00,
-             2.10458398e+00, 2.45479897e+00, 6.14513257e+01, 5.38091115e+01,
-             5.27868250e+01]
+            [2.50773392, 0.41762978, 0.30900322, 0.14818498, 0.44620725,
+             1.53134054, 1.42115728, 1.66358267, 1.184265, 46.13635772]
     else:
         expected_profile = \
-            [2.50773436, 1.19082577, 0.34422934, 0.19543193, 0.23659461,
-             0.41145348, 3.56414698, 3.02325691, 1.74649377, 1.8172007,
-             2.09930208, 53.06513917, 49.4088898 ]
-    assert_array_almost_equal(energy_profile, np.array(expected_profile))
+            [2.50773392, 0.41763383, 0.30908578, 0.06241115, 0.11573476,
+             2.48475885, 1.10053769, 0.9270271, 49.37186785, 44.72643467]
+    assert_array_almost_equal(energy_profile, np.array(expected_profile), decimal=5)
 
 
 def test_em_3d_demons():
@@ -880,22 +892,22 @@ def test_em_3d_demons():
     mapping = optimizer.optimize(static, moving, None)
     m = optimizer.get_map()
     assert_equal(mapping, m)
-    energy_profile = np.array(optimizer.full_energy_profile)
-    if floating is np.float32:
+
+    energy_profile = subsample_profile(
+        optimizer.full_energy_profile, 10)
+    print(energy_profile)
+
+    if using_vc_sse2():
         expected_profile = \
-            np.array([144.0369470764622, 122.39543007604394, 112.43783718421119,
-                      85.46819602604248, 101.15549228031932, 119.62429965589826,
-                      124.00100190950647, 118.94404608675168, 112.57666071129853,
-                      117.84424645441413, 4470.2719430621, 4138.201850019068,
-                      4007.225585554024, 4074.8853855654797, 3833.6272345908865])
+            np.array([144.03694708, 122.39512307, 111.31925381, 90.9100989,
+                      93.93705232, 104.22993997, 110.57817867, 140.45262039,
+                      133.87804571, 119.20794977])
     else:
         expected_profile = \
-            np.array([144.03695786872666, 121.73922862297613, 107.41132697303448,
-                      90.70731102557508, 97.4295175632117, 112.78404966709469,
-                      103.29910157963684, 111.83865866152108, 121.26265581989485,
-                      118.19913094423933, 4222.003181977351, 4418.042311441615,
-                      4508.671160627819, 4761.251133428944, 4292.8507317299245])
-    assert_array_almost_equal(energy_profile, expected_profile, decimal=6)
+            np.array([144.03694708, 122.39512227, 111.31924572, 90.91010482,
+                      93.93707059, 104.22996918, 110.57822649, 140.45298465,
+                      133.87831302, 119.20826433])
+    assert_array_almost_equal(energy_profile, expected_profile, decimal=4)
 
 
 def test_em_2d_demons():
@@ -925,20 +937,20 @@ def test_em_2d_demons():
     mapping = optimizer.optimize(static, moving, None)
     m = optimizer.get_map()
     assert_equal(mapping, m)
-    energy_profile = np.array(optimizer.full_energy_profile)[::2]
-    if floating is np.float32:
+
+    energy_profile = subsample_profile(
+        optimizer.full_energy_profile, 10)
+    print(energy_profile)
+
+    if using_vc_sse2():
         expected_profile = \
-            [2.50773393, 4.59842633, 3.94307794, 3.09777134, 2.57982865,
-             3.24937725, 0.42507437, 2.59523238, 29.8114103, 34.94621044,
-             27.49480758, 38.64567224, 28.14442977, 25.34123425, 36.95076494,
-             192.36444764, 202.90168694, 188.44310016, 199.73662253, 193.81159141]
+            [2.50773393, 3.26942324, 1.81684393, 5.44878881, 40.0195918,
+             31.87030788, 25.15710409, 29.82206485, 196.33114499, 213.86419995]
     else:
         expected_profile = \
-            [2.50773436, 4.59843299, 3.94307817, 3.09777401, 2.57983375,
-             3.24936765, 0.42506361, 2.5952175, 29.81143768, 33.42148555,
-             29.04341476, 29.44541313, 27.39435491, 27.62029669, 187.34889413,
-             206.57998934, 198.48724278, 188.65410869, 177.83943006]
-    assert_array_almost_equal(energy_profile, np.array(expected_profile))
+            [2.50773393, 3.26942352, 1.8168445, 5.44879264, 40.01956373,
+             31.65616398, 32.43115903, 35.24130742, 192.89072697, 195.456909]
+    assert_array_almost_equal(energy_profile, np.array(expected_profile), decimal=5)
 
 if __name__=='__main__':
     test_scale_space_exceptions()
