@@ -142,29 +142,29 @@ class SparseFascicleModel(ReconstModel):
 
         if len(mean_signal.shape) <= 1:
             mean_signal = np.reshape(mean_signal, (1,-1))
-
         if mask is not None:
             if mask.shape != data.shape[:-1]:
                 raise ValueError("Mask is not the same shape as data.")
             mask = np.array(mask, dtype=bool, copy=False)
             data_in_mask = S[mask]
+            mean_in_mask = mean_signal[mask]
         else:
             data_in_mask = S
+            mean_in_mask = mean_signal
 
         data_in_mask = data_in_mask.reshape((-1, data_in_mask.shape[-1]))
+        mean_in_mask = mean_in_mask.reshape((-1, 1))
+        S0_in_mask = S0.reshape((-1, 1))
 
         params_in_mask = np.zeros((data_in_mask.shape[0],
                                    self.design_matrix.shape[-1]))
 
         for vox, dd in enumerate(data_in_mask):
-            # dbg:
-            #if not np.mod(vox, 1000):
-            #    print(100 * float(vox)/len(data_in_mask))
             if np.any(np.isnan(dd)):
                 params_in_mask[vox] = (np.ones(self.design_matrix.shape[-1]) *
                                        np.nan)
             else:
-                fit_it = dd - mean_signal[vox]
+                fit_it = dd - mean_in_mask[vox]
                 if has_sklearn:
                     params_in_mask[vox] = self.solver.fit(self.design_matrix,
                                                   fit_it).coef_
@@ -177,10 +177,14 @@ class SparseFascicleModel(ReconstModel):
                             (self.design_matrix.shape[-1], ))
 
             beta[mask, :] = params_in_mask
-        else:
-            beta = params_in_mask
+            mean_out = np.zeros(data.shape[:-1])
+            mean_out[mask, ...] = mean_in_mask.squeeze()
 
-        return SparseFascicleFit(self, beta, S0, mean_signal)
+        else:
+            beta = params_in_mask.reshape(data.shape[:-1] + (-1, ))
+            mean_out = mean_in_mask.reshape(data.shape[:-1] + (-1, ))
+
+        return SparseFascicleFit(self, beta, S0, mean_out)
 
 
 class SparseFascicleFit(ReconstFit):
@@ -215,20 +219,30 @@ class SparseFascicleFit(ReconstFit):
             _matrix = self.model.design_matrix
             gtab = self.model.gtab
 
-        # The only thing we can't change now is the sphere we use:
+        # The only thing we can't change at this point iss the sphere we use
+        # (which sets the width of our design matrix):
         else:
             _matrix = sfm_design_matrix(gtab, self.model.sphere, response)
 
-        # Get them all at once:
-        pred_weighted = np.dot(_matrix, self.beta.T).T
 
-        pred = np.empty(self.beta.shape[:-1] + (gtab.bvals.shape[0], ))
+        # Get them all at once:
+        beta_all = self.beta.reshape(-1, self.beta.shape[-1])
+        pred_weighted = np.dot(_matrix, beta_all.T).T
+        pred_weighted = pred_weighted.reshape(self.beta.shape[:-1] +
+                                              (_matrix.shape[0],))
 
         if S0 is None:
             S0 = self.S0
 
-        pred[..., gtab.b0s_mask] = S0
-        pred[..., ~gtab.b0s_mask] =\
-            (pred_weighted + self.mean_signal[:, None]) * S0
+        if isinstance(S0, np.ndarray):
+            S0 = S0[..., None]
+        if isinstance(self.mean_signal, np.ndarray):
+            mean_signal = self.mean_signal[..., None]
 
-        return pred
+        pre_pred_sig = (S0 * pred_weighted) + mean_signal
+
+        pred_sig = np.zeros(pre_pred_sig.shape[:-1] + (gtab.bvals.shape[0],))
+        pred_sig[..., ~gtab.b0s_mask] = pre_pred_sig
+        pred_sig[..., gtab.b0s_mask] = S0
+
+        return pred_sig
