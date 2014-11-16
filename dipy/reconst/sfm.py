@@ -17,6 +17,7 @@ import dipy.sims.voxel as sims
 import dipy.reconst.dti as dti
 import dipy.data as dpd
 from dipy.reconst.base import ReconstModel, ReconstFit
+from dipy.reconst.cache import Cache
 from dipy.core.onetime import auto_attr
 lm, has_sklearn, _ = optional_package('sklearn.linear_model')
 
@@ -86,8 +87,7 @@ def sfm_design_matrix(gtab, sphere, response, mode='sig'):
     return mat
 
 
-
-class SparseFascicleModel(ReconstModel):
+class SparseFascicleModel(ReconstModel, Cache):
     def __init__(self, gtab, sphere=None, response=[0.0015, 0.0005, 0.0005],
                  l1_ratio=0.5, alpha=0.001):
         """
@@ -227,9 +227,11 @@ class SparseFascicleFit(ReconstFit):
 
         ndarray
         """
-
-        odf_matrix = sfm_design_matrix(sphere, self.model.sphere,
-                                       self.model.response, mode='odf')
+        odf_matrix = self.model.cache_get('odf_matrix', key=sphere)
+        if odf_matrix is None:
+            odf_matrix = sfm_design_matrix(sphere, self.model.sphere,
+                                           self.model.response, mode='odf')
+            self.model.cache_set('odf_matrix', key=sphere, value=odf_matrix)
 
         flat_beta = self.beta.reshape(-1, self.beta.shape[-1])
         flat_odf = np.dot(odf_matrix, flat_beta.T)
