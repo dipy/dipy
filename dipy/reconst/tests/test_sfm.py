@@ -20,21 +20,25 @@ def test_SparseFascicleModel():
     gtab = grad.gradient_table(fbvals, fbvecs)
     sfmodel = sfm.SparseFascicleModel(gtab)
     sffit1 = sfmodel.fit(data[0, 0, 0])
+    sphere = dpd.get_sphere('symmetric642')
+    odf1 = sffit1.odf(sphere)
     pred1 = sffit1.predict(gtab)
     mask = np.ones(data.shape[:-1])
     sffit2 = sfmodel.fit(data, mask)
     pred2 = sffit2.predict(gtab)
+    odf2 = sffit2.odf(sphere)
     sffit3 = sfmodel.fit(data)
     pred3 = sffit3.predict(gtab)
+    odf3 = sffit3.odf(sphere)
+
     npt.assert_almost_equal(pred3, pred2, decimal=2)
     npt.assert_almost_equal(pred3[0,0,0], pred1, decimal=2)
+    npt.assert_almost_equal(odf3[0,0,0], odf1, decimal=2)
+
     # Fit zeros and you will get back zeros
     npt.assert_almost_equal(sfmodel.fit(np.zeros(data[0,0,0].shape)).beta,
                             np.zeros(sfmodel.design_matrix[0].shape[-1]))
 
-    # The ODF is the betas:
-    sphere = dpd.get_sphere()
-    npt.assert_almost_equal(sffit3.odf(sphere), sffit3.beta)
 
 
 def test_predict():
