@@ -28,25 +28,31 @@ if not has_sklearn:
     warnings.warn(w)
     import scipy.optimize as opt
 
-def sfm_design_matrix(gtab, sphere, response):
+def sfm_design_matrix(gtab, sphere, response, mode='sig'):
     """
     Construct the SFM design matrix
 
     Parameters
     ----------
-    gtab : GradientTable
-        Sets the rows of the matrix
+    gtab : GradientTable or Sphere
+        Sets the rows of the matrix, if the mode is 'sig', this should be a
+        GradientTable. If mode is 'odf' this should be a Sphere
 
     sphere : Sphere
         Sets the columns of the matrix
 
     response : list of 3 elements
         The eigenvalues of a tensor which will serve as a kernel function
-    """
-    # Preallocate:
-    mat = np.empty((np.sum(~gtab.b0s_mask),
-                   sphere.vertices.shape[0]))
 
+    mode : str
+        'sig' : for a signal design matrix. 'odf' for an odf convolution matrix
+
+    Returns
+    -------
+    mat : ndarray
+        A matrix either for deconvolution with the signal, or for reconvolution
+        to form an ODF
+    """
     # Each column of the matrix is the signal in each measurement, as
     # predicted by a "canonical", symmetrical tensor rotated towards this
     # vertex of the sphere:
@@ -54,8 +60,15 @@ def sfm_design_matrix(gtab, sphere, response):
                                      [0, response[1], 0],
                                      [0, 0, response[2]]])
 
-    mat_gtab = grad.gradient_table(gtab.bvals[~gtab.b0s_mask],
-                                   gtab.bvecs[~gtab.b0s_mask])
+    if mode == 'sig':
+        mat_gtab = grad.gradient_table(gtab.bvals[~gtab.b0s_mask],
+                                       gtab.bvecs[~gtab.b0s_mask])
+        # Preallocate:
+        mat = np.empty((np.sum(~gtab.b0s_mask),
+                        sphere.vertices.shape[0]))
+    elif mode == 'odf':
+        mat = np.empty((gtab.x.shape[0], sphere.vertices.shape[0]))
+
     # Calculate column-wise:
     for ii, this_dir in enumerate(sphere.vertices):
         # Rotate the canonical tensor towards this vertex and calculate the
@@ -63,10 +76,15 @@ def sfm_design_matrix(gtab, sphere, response):
         rot_matrix = geo.vec2vec_rotmat(np.array([1,0,0]), this_dir)
         this_tensor = np.dot(rot_matrix, canonical_tensor)
         evals, evecs = dti.decompose_tensor(this_tensor)
-        sig = sims.single_tensor(mat_gtab, evals=response, evecs=evecs)
-        mat[:, ii] = sig - np.mean(sig)
-
+        if mode == 'sig':
+            sig = sims.single_tensor(mat_gtab, evals=response, evecs=evecs)
+            mat[:, ii] = sig - np.mean(sig)
+        elif mode == 'odf':
+            odf = sims.single_tensor_odf(gtab.vertices,
+                                         evals=response, evecs=evecs)
+            mat[:, ii] = odf
     return mat
+
 
 
 class SparseFascicleModel(ReconstModel):
@@ -112,9 +130,11 @@ class SparseFascicleModel(ReconstModel):
         else:
             self.solver = opt.nnls
 
+
     @auto_attr
     def design_matrix(self):
         return sfm_design_matrix(self.gtab, self.sphere, self.response)
+
 
     def fit(self, data, mask=None):
         """
@@ -195,14 +215,26 @@ class SparseFascicleFit(ReconstFit):
 
     def odf(self, sphere):
         """
-        The orientation distribution function (identical to the model parameters)
-        """
-        if self.beta.shape[-1] != sphere.x.shape[0]:
-            e_s = "ODF must be evaluated on the sphere used for fitting "
-            e_s = "The SFM model"
-            return ValueError(e_s)
+        The orientation distribution function of the SFM
 
-        return self.beta
+        Parameters
+        ----------
+        sphere : Sphere
+            The points in which the ODF is evaluated
+
+        Returns
+        -------
+
+        ndarray
+        """
+
+        odf_matrix = sfm_design_matrix(sphere, self.model.sphere,
+                                       self.model.response, mode='odf')
+
+        flat_beta = self.beta.reshape(-1, self.beta.shape[-1])
+        flat_odf = np.dot(odf_matrix, flat_beta.T)
+        return flat_odf.T.reshape(self.beta.shape[:-1] +
+                                  (odf_matrix.shape[0], ))
 
 
     def predict(self, gtab=None, response=None, S0=None):
@@ -211,7 +243,19 @@ class SparseFascicleFit(ReconstFit):
 
         Parameters
         ----------
+        gtab : GradientTable.
+            The bvecs/bvals to predict the signal on. Default: the gtab from
+            the model object
+        response : list of 3 elements.
+            The eigenvalues of a tensor which will serve as a kernel
+            function. Default: the response of the model object
+        S0 : float or array.
+             The non-diffusion-weighted signal. Default: use the S0 of the dtat
 
+        Returns
+        -------
+        pred_sig : ndarray
+            The signal predicted in each voxel/direction
         """
         if response is None:
             response=self.model.response
@@ -219,7 +263,7 @@ class SparseFascicleFit(ReconstFit):
             _matrix = self.model.design_matrix
             gtab = self.model.gtab
 
-        # The only thing we can't change at this point iss the sphere we use
+        # The only thing we can't change at this point is the sphere we use
         # (which sets the width of our design matrix):
         else:
             _matrix = sfm_design_matrix(gtab, self.model.sphere, response)
