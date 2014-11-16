@@ -206,6 +206,16 @@ class SparseFascicleFit(ReconstFit):
     def __init__(self, model, beta, S0, mean_signal):
         """
         Initalize a SparseFascicleFit class instance
+
+        Parameters
+        ----------
+        model : a SparseFascicleModel object.
+        beta : ndarray
+            The parameters of fit to data.
+        S0 : ndarray
+            The mean non-diffusion-weighted signal.
+        mean_signal : ndarray
+            The mean of the diffusion-weighted signal
         """
         self.model = model
         self.beta = beta
@@ -224,8 +234,8 @@ class SparseFascicleFit(ReconstFit):
 
         Returns
         -------
+        odf :  ndarray of shape (x, y, z, sphere.vertices.shape[0])
 
-        ndarray
         """
         odf_matrix = self.model.cache_get('odf_matrix', key=sphere)
         if odf_matrix is None:
