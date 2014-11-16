@@ -3,7 +3,10 @@ This is an implementation of the sparse fascicle model described in
 [Rokem2014]_.
 
 
-_[Rokem2014]
+.. [Rokem2014] Ariel Rokem, Jason D. Yeatman, Franco Pestilli, Kendrick
+   N. Kay, Aviv Mezer, Stefan van der Walt, Brian A. Wandell
+   (2014). Evaluating the accuracy of diffusion MRI models in white
+   matter. http://arxiv.org/abs/1411.0721
 
 """
 import warnings
