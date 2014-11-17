@@ -20,7 +20,7 @@ def make_nd(array, N):
     return array.reshape(new_shape)
 
 
-cdef class PAMDirectionGetter(DirectionGetter):
+cdef class PeaksAndMetricsDirectionGetter(DirectionGetter):
 
     cdef:
         public double qa_thr, ang_thr, total_weight

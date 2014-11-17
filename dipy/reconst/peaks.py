@@ -17,7 +17,7 @@ from dipy.core.sphere import HemiSphere, Sphere
 from dipy.data import default_sphere
 from dipy.core.ndindex import ndindex
 from dipy.reconst.shm import sh_to_sf_matrix
-from .peak_direction_getter import PAMDirectionGetter
+from .peak_direction_getter import PeaksAndMetricsDirectionGetter
 
 
 def peak_directions_nl(sphere_eval, relative_peak_threshold=.25,
@@ -156,7 +156,7 @@ def peak_directions(odf, sphere, relative_peak_threshold=.5,
     return directions, values, indices
 
 
-class PeaksAndMetrics(PAMDirectionGetter):
+class PeaksAndMetrics(PeaksAndMetricsDirectionGetter):
     pass
 
 

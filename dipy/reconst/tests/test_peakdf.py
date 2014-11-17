@@ -4,7 +4,7 @@ import numpy.testing as npt
 from dipy.reconst.peaks import default_sphere, peaks_from_model
 
 
-def test_PAMDirectionGetter():
+def test_PeaksAndMetricsDirectionGetter():
 
     class SillyModel(object):
         def fit(self, data, mask=None):
@@ -22,7 +22,7 @@ def test_PAMDirectionGetter():
             return odf
 
     def get_direction(dg, point, dir):
-        newdir = dir.copy()    
+        newdir = dir.copy()
         state = dg.get_direction(point, newdir)
         return (state, np.array(newdir))
 
