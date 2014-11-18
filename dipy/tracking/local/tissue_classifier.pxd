@@ -6,6 +6,8 @@ cdef enum TissueClass:
     ENDPOINT = 2
 
 cdef class TissueClassifier:
+    # Please update doc-string in tissue_classifer.pyx if you change these
+    # declarations
     cdef:
         double threshold, interp_out_double[1]
         double[::1]  interp_out_view

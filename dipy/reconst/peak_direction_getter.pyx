@@ -21,7 +21,11 @@ def make_nd(array, N):
 
 
 cdef class PeaksAndMetricsDirectionGetter(DirectionGetter):
+    """Deterministic Direction Getter based on peak directions.
 
+    This class contains the cython portion of the code for PeaksAndMetrics and
+    is not meant to be used on its own.
+    """
     cdef:
         public double qa_thr, ang_thr, total_weight
         public double[:, :, :, ::1] _qa, _ind

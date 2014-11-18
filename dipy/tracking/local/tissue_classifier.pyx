@@ -12,6 +12,7 @@ cdef class TissueClassifier:
 
 cdef class ThresholdTissueClassifier(TissueClassifier):
     """
+    # Declarations from tissue_classifier.pxd bellow
     cdef:
         double threshold, interp_out_double[1]
         double[:]  interp_out_view = interp_out_view
