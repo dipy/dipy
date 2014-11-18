@@ -124,8 +124,8 @@ file so it can be loaded into other software for visualization or further
 analysis.
 """
 
-from dipy.io.trackvis import save_as_trk
-save_as_trk("CSA_detr.trk", streamlines, affine, labels.shape)
+from dipy.io.trackvis import save_trk
+save_trk("CSA_detr.trk", streamlines, affine, labels.shape)
 
 """
 Next let's try some probabilistic fiber tracking. For this, we'll be using the
@@ -194,5 +194,5 @@ fvtk.record(r, n_frames=1, out_path='probabilistic.png',
    **Corpus Callosum Probabilistic**
 """
 
-save_as_trk("CSD_prob.trk", streamlines, affine, labels.shape)
+save_trk("CSD_prob.trk", streamlines, affine, labels.shape)
 

@@ -3,7 +3,7 @@ import numpy as np
 
 from dipy.tracking import utils
 
-def save_as_trk(filename, points, vox_to_ras, shape):
+def save_trk(filename, points, vox_to_ras, shape):
     """A temporary helper function for saving trk files.
 
     This function will soon be replaced by better trk file support in nibabel.
