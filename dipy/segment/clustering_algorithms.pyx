@@ -55,8 +55,8 @@ def quickbundles(streamlines, Metric metric, double threshold=10., long max_nb_c
     if streamline0 is None:
         return ClusterMapCentroid((0, 0))
 
-    dtype = streamline0.dtype
-    features_shape = metric.feature.infer_shape(streamline0)
+    dtype = np.float32
+    features_shape = metric.feature.infer_shape(streamline0.astype(dtype))
     cdef:
         int idx
         ClusterMapCentroid clusters = ClusterMapCentroid(features_shape)
@@ -64,7 +64,9 @@ def quickbundles(streamlines, Metric metric, double threshold=10., long max_nb_c
         Data2D features_s_i_flip = np.empty(features_shape, dtype=dtype)
 
     for streamline, idx in itertools.izip(streamlines, ordering):
-        streamline = streamline if streamline.flags.writeable else streamline.astype(dtype)
+        if not streamline.flags.writeable or streamline.dtype != dtype:
+            streamline = streamline.astype(dtype)
+
         cluster_id = _quickbundles_assignment_step(streamline, idx, metric, clusters, features_s_i, features_s_i_flip, threshold, max_nb_clusters)
         clusters.c_update(cluster_id)
 

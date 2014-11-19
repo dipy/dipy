@@ -59,7 +59,7 @@ cdef class Feature(object):
         shape : tuple
             features' shape
         """
-        raise NotImplementedError("Subclass must implement this method!")
+        raise NotImplementedError("Feature subclasses must implement method `infer_shape(self, datum)`!")
 
     cpdef extract(Feature self, datum):
         """ Extracts features from a sequence of N-dimensional points
@@ -75,7 +75,7 @@ cdef class Feature(object):
         features : 2D array
             features extracted from `datum`
         """
-        raise NotImplementedError("Subclass must implement this method!")
+        raise NotImplementedError("Feature subclasses must implement method `extract(self, datum)`!")
 
 
 cdef class CythonFeature(Feature):

@@ -68,7 +68,7 @@ cdef class Metric(object):
         is_compatible : bool
             features extracted from a data point.
         """
-        raise NotImplementedError("Subclass must implement this method!")
+        raise NotImplementedError("Metric subclasses must implement method `compatible(self, shape1, shape2)`!")
 
     cpdef double dist(Metric self, features1, features2):
         """ Computes distance between two data points based on their features.
@@ -85,7 +85,7 @@ cdef class Metric(object):
         dist : double
             distance measured between two data points using their features representation
         """
-        raise NotImplementedError("Subclass must implement this method!")
+        raise NotImplementedError("Metric subclasses must implement method `dist(self, features1, features2)`!")
 
 
 cdef class CythonMetric(Metric):
@@ -159,7 +159,7 @@ cdef class PointwiseEuclideanMetric(CythonMetric):
     """
     cdef double c_dist(PointwiseEuclideanMetric self, Data2D features1, Data2D features2) nogil:
         with gil:
-            raise NotImplementedError("Subclass must implement this method!")
+            raise NotImplementedError("PointwiseEuclideanMetric subclasses must implement method `c_dist(self, Data2D features1, Data2D features2)`!")
 
     cdef int c_compatible(PointwiseEuclideanMetric self, Shape shape1, Shape shape2) nogil:
         return same_shape(shape1, shape2)

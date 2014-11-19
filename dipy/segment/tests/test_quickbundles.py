@@ -118,6 +118,12 @@ def test_quickbundles_streamlines():
 
     clusters = qb.cluster(data)
 
+    # Cluster data with different dtype (should be converted into float32)
+    for datatype in [np.float64, np.int32, np.int64]:
+        newdata = [datum.astype(datatype) for datum in data]
+        clusters = qb.cluster(newdata)
+        assert_equal(clusters.centroids[0].dtype, np.float32)
+
 
 def test_quickbundles_with_not_order_invariant_metric():
     metric = dipymetric.AveragePointwiseEuclideanMetric()

@@ -423,5 +423,20 @@ def test_feature_extract():
     features = extract(feature, streamlines)
 
 
+def test_distance_matrix():
+    metric = dipymetric.ArcLengthMetric()
+
+    data1 = [s1, s2, s3, s4]
+    data2 = [s1, s2, s3, s4]
+    D = dipymetric.distance_matrix(metric, data1, data2)
+    # Distance matrix using `ArcLengthMetric` is symmetric.
+    assert_array_equal(D, D.T)
+    assert_array_equal(np.diag(D), np.zeros(len(data1)))
+
+    for i in range(1, len(data1)):
+        for j in range(i+1, len(data1)):
+            assert_equal(D[i, j], dipymetric.dist(metric, data1[i], data1[j]))
+
+
 if __name__ == '__main__':
     run_module_suite()
