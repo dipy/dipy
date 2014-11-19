@@ -96,8 +96,7 @@ class ClusterCentroid(Cluster):
     retrieves them using its `ClusterMapCentroid` object.
     """
     def __init__(self, centroid, id=0, indices=None, refdata=Identity()):
-        #super(ClusterCentroid, self).__init__(id, indices, refdata)
-        Cluster.__init__(self, id, indices, refdata)
+        super(ClusterCentroid, self).__init__(id, indices, refdata)
         self.centroid = centroid.copy()
         self.new_centroid = centroid.copy()
 
