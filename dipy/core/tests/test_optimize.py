@@ -116,6 +116,7 @@ def test_optimize_old_scipy():
 
     assert_array_almost_equal(opt.xopt, np.array([0, 0, 0, 0.]))
 
+
 def test_SKLearnLinearSolver():
     class SillySolver(opt.SKLearnLinearSolver):
         def fit(self, X, y):
