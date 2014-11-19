@@ -124,9 +124,9 @@ class Optimizer(object):
         scipy.optimize.minimize
         """
 
-        self.evolution_fname = None
         self.size_of_x = len(x0)
         self.tmp_files = []
+        self._evol_kx = None
 
         if SCIPY_LESS_0_12:
 
@@ -175,17 +175,14 @@ class Optimizer(object):
 
             if evolution is True:
 
-                _, fname = mkstemp()
-                self.tmp_files.append(fname)
+                self._evol_kx = []
 
                 def history_of_x(kx):
-                    with open(fname, 'ab') as f:
-                        np.savetxt(f, kx)
+                    self._evol_kx.append(kx)
 
                 res = minimize(fun, x0, args, method, jac, hess, hessp, bounds,
                                constraints, tol, callback=history_of_x,
                                options=options)
-                self.evolution_fname = fname
 
             else:
 
@@ -225,15 +222,7 @@ class Optimizer(object):
 
     @property
     def evolution(self):
-
-        fname = self.evolution_fname
-        if fname is not None:
-            f = open(fname, 'r')
-            history = np.loadtxt(f).reshape((self.res['nit'], self.size_of_x))
-            f.close()
-            return history
-
-    def __del__(self):
-
-        for fname in self.tmp_files:
-            os.remove(fname)
+        if self._evol_kx is not None:
+            return np.asarray(self._evol_kx)
+        else:
+            return None
