@@ -112,22 +112,14 @@ def test_rigid_partial_real_bundles():
     moving_center, shift2 = center_streamlines(moving)
 
     print(shift2)
-    #mat = compose_matrix44([0, 0, 0, 40, 0, 0])
-    #print(mat)
     mat = compose_matrix(translate=np.array([0, 0, 0.]),
                          angles=np.deg2rad([40, 0, 0.]))
-    #print(mat)
     moved = transform_streamlines(moving_center, mat)
 
     srr = StreamlineLinearRegistration()
 
     srm = srr.optimize(static_center, moved)
     print(srm.fopt)
-
-    #    bmd = BundleMinDistanceMetric()
-    #    bmd.setup(static_center, moving)
-    #    print(bmd.distance(np.array([0, 0, 0, 0., 0., 0])))
-
     print(srm.iterations)
     print(srm.funcs)
 
@@ -154,7 +146,6 @@ def test_rigid_partial_real_bundles():
         vol2[i, j, k] = 1
 
     overlap = np.sum(np.logical_and(vol, vol2)) / float(np.sum(vol2))
-    #print(overlap)
 
     assert_equal(overlap * 100 > 40, True)
 
@@ -169,17 +160,12 @@ def test_stream_rigid():
     moving = transform_streamlines(moving, mat)
 
     srr = StreamlineLinearRegistration()
-
     sr_params = srr.optimize(static, moving)
-
     moved = transform_streamlines(moving, sr_params.matrix)
 
     srr = StreamlineLinearRegistration(verbose=True)
-
     srm = srr.optimize(static, moving)
-
     moved2 = transform_streamlines(moving, srm.matrix)
-
     moved3 = srm.transform(moving)
 
     assert_array_equal(moved[0], moved2[0])
@@ -452,7 +438,65 @@ def test_compose_decompose_matrix44():
 
     assert_raises(ValueError, decompose_matrix44, mat, 20)
 
+from dipy.viz import fvtk
+
+def show_bundles(static, moving):
+
+    ren = fvtk.ren()
+    fvtk.add(ren, fvtk.line(static, fvtk.colors.red))
+    fvtk.add(ren, fvtk.line(moving, fvtk.colors.green))
+    fvtk.show(ren)
+
+
+def test_cascade_of_optimizations():
+
+    cingulum_bundles = two_cingulum_bundles()
+
+    cb1 = cingulum_bundles[0]
+    cb1 = set_number_of_points(cb1, 20)
+
+    test_x0 = np.array([10, 4, 3, 0, 20, 10, 1., 1.3, 0.9, 0.1, 0.2, -0.2])
+
+    cb2 = transform_streamlines(cingulum_bundles[0],
+                                compose_matrix44(test_x0))
+    cb2 = set_number_of_points(cb2, 20)
+
+    slr = StreamlineLinearRegistration(x0=6)
+    slm = slr.optimize(cb1, cb2)
+
+    np.set_printoptions(3, suppress=True)
+    print(slm.matrix)
+
+    show_bundles(cb1, cb2)
+    show_bundles(cb1, transform_streamlines(cb2, slm.matrix))
+
+    slr2 = StreamlineLinearRegistration(x0=7)
+    slm2 = slr2.optimize(cb1, cb2, slm.matrix)
+    print(slm2.matrix)
+
+    show_bundles(cb1, transform_streamlines(cb2, slm2.matrix))
+
+    slr3 = StreamlineLinearRegistration(x0=12, options={'maxiter': 1000})
+    slm3 = slr3.optimize(cb1, cb2, slm2.matrix)
+    print(slm3.matrix)
+    print(slm3.iterations)
+
+    show_bundles(cb1, transform_streamlines(cb2, slm3.matrix))
+
+    print(test_x0)
+    print(decompose_matrix44(slm3.matrix))
+
+    slr4 = StreamlineLinearRegistration(x0=12, method='Powell')
+    slm4 = slr4.optimize(cb1, cb2, slm3.matrix)
+    print(slm4.matrix)
+    print(slm4.iterations)
+
+    show_bundles(cb1, transform_streamlines(cb2, slm4.matrix))
+
+    pass
+
 
 if __name__ == '__main__':
 
-    run_module_suite()
+    #run_module_suite()
+    test_cascade_of_optimizations()
