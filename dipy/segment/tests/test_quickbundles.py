@@ -5,8 +5,9 @@ from dipy.segment.clustering import QuickBundles
 
 import dipy.segment.metric as dipymetric
 from dipy.segment.clustering_algorithms import quickbundles
+import dipy.tracking.streamline as streamline_utils
 
-from nose.tools import assert_equal, assert_items_equal
+from nose.tools import assert_equal, assert_items_equal, assert_raises
 from numpy.testing import assert_array_equal, run_module_suite
 
 dtype = "float32"
@@ -21,12 +22,18 @@ clusters_truth = [[0, 1], [2, 4], [3]]
 
 
 def test_quickbundles_empty_data():
-    data = []
     threshold = 10
     metric = dipymetric.SumPointwiseEuclideanMetric()
-    clusters = quickbundles(data, metric, threshold)
+    clusters = quickbundles([], metric, threshold)
     assert_equal(len(clusters), 0)
     assert_equal(len(clusters.centroids), 0)
+
+
+def test_quickbundles_shape_uncompatibility():
+    # QuickBundles' default metric (AveragePointwiseEuclideanMetric, aka MDF)
+    # requires that all streamlines have the same number of points.
+    qb = QuickBundles(threshold=20.)
+    assert_raises(ValueError, qb.cluster, data)
 
 
 def test_quickbundles_2D():

@@ -77,6 +77,11 @@ cdef int _quickbundles_assignment_step(Data2D s_i, int streamline_idx, Metric me
         double dist, dist_min, dist_min_flip
         Data2D features_to_add = features_s_i
 
+    # Check if streamline is compatible with the metric
+    if not metric.c_compatible(metric.feature.c_infer_shape(s_i), clusters._features_shape):
+        with gil:
+            raise ValueError("Streamlines features' shapes must be compatible according to the metric used!")
+
     # Find closest cluster to s_i
     metric.feature.c_extract(s_i, features_s_i)
     dist_min = biggest_double

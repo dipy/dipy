@@ -233,7 +233,7 @@ cdef class ClusterMapCentroid(ClusterMap):
     property centroids:
         def __get__(self):
             shape = shape2tuple(self._features_shape)
-            return [np.asarray(self._centroids[i].features) for i in range(self._nb_clusters)]
+            return [np.asarray(self._centroids[i].features).copy() for i in range(self._nb_clusters)]
 
     def __dealloc__(ClusterMapCentroid self):
         # __dealloc__ method of the superclass is automatically called.

@@ -1,6 +1,7 @@
 
 import numpy as np
 import itertools
+import copy
 
 from dipy.segment.clustering import Cluster, ClusterCentroid
 from dipy.segment.clusteringspeed import ClusterMap, ClusterMapCentroid
@@ -403,6 +404,12 @@ def test_cluster_map_centroid_add_cluster():
 
     assert_equal(type(clusters.centroids), list)
     assert_array_equal(list(itertools.chain(*clusters.centroids)), list(itertools.chain(*centroids)))
+
+    # Check that even though we deleted `clusters`, `centroids` is not deallocated.
+    centroids_bak = copy.deepcopy(clusters.centroids)
+    centroids = clusters.centroids
+    del clusters
+    assert_array_equal(centroids, centroids_bak)
 
     # Check adding features of different sizes (shorter and longer)
     features_shape_short = (1, features_shape[1]-3)

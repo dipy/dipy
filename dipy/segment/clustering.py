@@ -198,7 +198,7 @@ class QuickBundles(Clustering):
 
         Parameters
         ----------
-        streamlines : list of 2D array
+        streamlines : list (or generator) of 2D array
             each 2D array represents a sequence of 3D points (points, 3).
         ordering : iterable of indices
             change `streamlines` ordering when applying QuickBundles
