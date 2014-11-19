@@ -5,6 +5,7 @@ import dipy.reconst.sfm as sfm
 import dipy.data as dpd
 import dipy.core.gradients as grad
 import dipy.sims.voxel as sims
+import dipy.core.optimize as opt
 
 
 def test_design_matrix():
@@ -72,3 +73,21 @@ def test_SparseFascicleModel_NNLS():
     sphere = dpd.get_sphere('symmetric642')
     odf1 = sffit1.odf(sphere)
     pred1 = sffit1.predict(gtab)
+
+
+def test_SparseFascicleModel_SKLearnlinearsolver():
+    class SillySolver(opt.SKLearnLinearSolver):
+        def fit(self, X, y):
+            self.coef_ = np.ones(X.shape[-1])
+
+    class EvenSillierSolver(object):
+        def fit(self, X, y):
+            self.coef_ = np.ones(X.shape[-1])
+
+    fdata, fbvals, fbvecs = dpd.get_data()
+    data = nib.load(fdata).get_data()
+    gtab = grad.gradient_table(fbvals, fbvecs)
+    sfmodel = sfm.SparseFascicleModel(gtab, solver=SillySolver)
+    npt.assert_(isinstance(sfmodel.solver, SillySolver))
+    npt.assert_raises(ValueError,
+                      sfm.SparseFascicleModel(gtab, solver=EvenSillierSolver))
