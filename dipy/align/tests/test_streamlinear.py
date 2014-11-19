@@ -461,37 +461,54 @@ def test_cascade_of_optimizations():
                                 compose_matrix44(test_x0))
     cb2 = set_number_of_points(cb2, 20)
 
+    print('rigid')
     slr = StreamlineLinearRegistration(x0=6)
     slm = slr.optimize(cb1, cb2)
 
     np.set_printoptions(3, suppress=True)
     print(slm.matrix)
+    print(slm.iterations)
 
     show_bundles(cb1, cb2)
     show_bundles(cb1, transform_streamlines(cb2, slm.matrix))
 
+    print('similarity')
     slr2 = StreamlineLinearRegistration(x0=7)
     slm2 = slr2.optimize(cb1, cb2, slm.matrix)
     print(slm2.matrix)
+    print(slm2.iterations)
 
     show_bundles(cb1, transform_streamlines(cb2, slm2.matrix))
 
+    print('affine BFGS')
     slr3 = StreamlineLinearRegistration(x0=12, options={'maxiter': 1000})
     slm3 = slr3.optimize(cb1, cb2, slm2.matrix)
     print(slm3.matrix)
     print(slm3.iterations)
+    print(slm3.funcs)
 
     show_bundles(cb1, transform_streamlines(cb2, slm3.matrix))
 
     print(test_x0)
     print(decompose_matrix44(slm3.matrix))
 
+    print('affine Powell')
     slr4 = StreamlineLinearRegistration(x0=12, method='Powell')
     slm4 = slr4.optimize(cb1, cb2, slm3.matrix)
     print(slm4.matrix)
     print(slm4.iterations)
+    print(slm4.funcs)
 
     show_bundles(cb1, transform_streamlines(cb2, slm4.matrix))
+
+    print('Affine Powell all')
+    slr5 = StreamlineLinearRegistration(x0=12, method='Powell')
+    slm5 = slr5.optimize(cb1, cb2)
+    print(slm5.matrix)
+    print(slm5.iterations)
+    print(slm5.funcs)
+
+    show_bundles(cb1, transform_streamlines(cb2, slm5.matrix))
 
     pass
 
