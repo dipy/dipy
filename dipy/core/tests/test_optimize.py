@@ -35,6 +35,8 @@ def test_optimize():
 
         assert_almost_equal(opt.fopt, 0)
 
+        assert_equal(opt.evolution, None)
+
         opt = Optimizer(fun=func, x0=np.array([1., 1., 1.]), method='L-BFGS-B',
                         options={'maxcor': 10, 'ftol': 1e-7,
                                  'gtol': 1e-5, 'eps': 1e-8},
@@ -68,14 +70,11 @@ def test_optimize():
         print(opt.fopt)
         print(opt.nfev)
         print(opt.message)
+        print(opt.evolution)
 
         assert_array_almost_equal(opt.xopt, np.array([0, 0, 0, 0.]))
 
-        tmp_files = opt.tmp_files
         del opt
-
-        for fname in tmp_files:
-            assert_equal(os.path.isfile(fname), False)
 
     if SCIPY_LESS_0_12:
 
@@ -105,4 +104,5 @@ def test_optimize():
 
 
 if __name__ == '__main__':
+
     run_module_suite()
