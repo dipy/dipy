@@ -6,14 +6,17 @@ import dipy.data as dpd
 import dipy.core.gradients as grad
 import dipy.sims.voxel as sims
 
+
 def test_design_matrix():
     data, gtab = dpd.dsi_voxels()
     sphere = dpd.get_sphere()
-    sparse_fascicle_model = sfm.SparseFascicleModel(gtab, sphere)
+    # Make it with NNLS, so that it gets tested regardless of sklearn
+    sparse_fascicle_model = sfm.SparseFascicleModel(gtab, sphere, solver='NNLS')
     npt.assert_equal(sparse_fascicle_model.design_matrix.shape,
                      (np.sum(~gtab.b0s_mask), sphere.vertices.shape[0]))
 
 
+@npt.dec.skipif(not sfm.has_sklearn)
 def test_SparseFascicleModel():
     fdata, fbvals, fbvecs = dpd.get_data()
     data = nib.load(fdata).get_data()
@@ -40,7 +43,7 @@ def test_SparseFascicleModel():
                             np.zeros(sfmodel.design_matrix[0].shape[-1]))
 
 
-
+@npt.dec.skipif(not sfm.has_sklearn)
 def test_predict():
     SNR = 1000
     S0 = 1
@@ -58,3 +61,14 @@ def test_predict():
     sffit = sfmodel.fit(S)
     pred = sffit.predict()
     npt.assert_almost_equal(pred, S, decimal=1)
+
+
+def test_SparseFascicleModel_NNLS():
+    fdata, fbvals, fbvecs = dpd.get_data()
+    data = nib.load(fdata).get_data()
+    gtab = grad.gradient_table(fbvals, fbvecs)
+    sfmodel = sfm.SparseFascicleModel(gtab, solver='NNLS')
+    sffit1 = sfmodel.fit(data[0, 0, 0])
+    sphere = dpd.get_sphere('symmetric642')
+    odf1 = sffit1.odf(sphere)
+    pred1 = sffit1.predict(gtab)

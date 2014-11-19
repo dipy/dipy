@@ -12,25 +12,26 @@ This is an implementation of the sparse fascicle model described in
 import warnings
 
 import numpy as np
-
 from dipy.utils.optpkg import optional_package
 import dipy.core.geometry as geo
 import dipy.core.gradients as grad
+import dipy.core.optimize as opt
 import dipy.sims.voxel as sims
 import dipy.reconst.dti as dti
 import dipy.data as dpd
 from dipy.reconst.base import ReconstModel, ReconstFit
 from dipy.reconst.cache import Cache
 from dipy.core.onetime import auto_attr
+
 lm, has_sklearn, _ = optional_package('sklearn.linear_model')
 
 # If sklearn is unavailable, we can fall back on nnls (but we also warn the
 # user that we are about to do that):
 if not has_sklearn:
-    w = "sklearn is not available, we will fit the SFM using the KKT NNLS"
-    w += " algorithm instead"
+    w = "sklearn is not available, you can use 'nnls' method to fit"
+    w += " the SparseFascicleModel"
     warnings.warn(w)
-    import scipy.optimize as opt
+
 
 def sfm_design_matrix(gtab, sphere, response, mode='sig'):
     """
@@ -90,19 +91,26 @@ def sfm_design_matrix(gtab, sphere, response, mode='sig'):
     return mat
 
 
+
 class SparseFascicleModel(ReconstModel, Cache):
     def __init__(self, gtab, sphere=None, response=[0.0015, 0.0005, 0.0005],
-                 l1_ratio=0.5, alpha=0.001):
+                 solver='ElasticNet', l1_ratio=0.5, alpha=0.001):
         """
         Initialize a Sparse Fascicle Model
 
         Parameters
         ----------
-        gtab: GradienTable class instance
-        sphere: Sphere class instance
+        gtab : GradienTable class instance
+        sphere : Sphere class instance
         response : (3,) array-like
             The eigenvalues of a canonical tensor to be used as the response
-            function of single-fascicle signals.
+            function of single-fascicle signals. Default:[0.0015, 0.0005, 0.0005]
+
+        solver : string or callable.
+            This will determine the algorithm used to solve the set of linear
+            equations underlying this model. If it is a string it needs to be
+            one of the following: {'ElasticNet'}
+
         l1_ratio : float
             Sets the balance betwee L1 and L2 regularization in ElasticNet
             [Zou2005]_.
@@ -122,16 +130,20 @@ class SparseFascicleModel(ReconstModel, Cache):
         .. [Zou2005] Zou H, Hastie T (2005). Regularization and variable
            selection via the elastic net. J R Stat Soc B:301-320
         """
+
+
         ReconstModel.__init__(self, gtab)
         if sphere is None:
             sphere = dpd.get_sphere()
         self.sphere = sphere
         self.response = np.asarray(response)
-        if has_sklearn:
+
+        if solver == 'ElasticNet':
             self.solver = lm.ElasticNet(l1_ratio=l1_ratio, alpha=alpha,
                                         positive=True, warm_start=True)
-        else:
-            self.solver = opt.nnls
+
+        elif solver == 'NNLS' or solver == 'nnls':
+            self.solver = opt.NNLS()
 
 
     @auto_attr
@@ -183,12 +195,8 @@ class SparseFascicleModel(ReconstModel, Cache):
                 params_in_mask[vox] = (np.zeros(self.design_matrix.shape[-1]))
             else:
                 fit_it = dd - mean_in_mask[vox]
-                if has_sklearn:
-                    params_in_mask[vox] = self.solver.fit(self.design_matrix,
+                params_in_mask[vox] = self.solver.fit(self.design_matrix,
                                                   fit_it).coef_
-                else:
-                    params_in_mask[vox], _ = self.solver(self.design_matrix,
-                                                 fit_it)
 
         if mask is not None:
             beta = np.zeros(data.shape[:-1] +

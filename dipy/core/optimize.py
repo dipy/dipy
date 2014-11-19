@@ -460,3 +460,4 @@ class NNLS(SKLearnLinearSolver):
         """
         coef, rnorm = opt.nnls(X, y)
         self.coef_ = coef
+        return self
