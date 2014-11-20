@@ -389,8 +389,6 @@ class StreamlineLinearRegistration(object):
                 if x0 == 12:
                     return np.array([0, 0, 0, 0, 0, 0, 1., 1., 1., 0, 0, 0])
 
-            return x0
-
         raise ValueError('Wrong input')
 
 

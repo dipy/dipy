@@ -1,5 +1,6 @@
 import numpy as np
 from numpy.testing import (run_module_suite,
+                           assert_,
                            assert_equal,
                            assert_almost_equal,
                            assert_array_equal,
@@ -421,8 +422,10 @@ def test_x0_input():
         StreamlineLinearRegistration(x0=x0)
 
     for x0 in [8, 20, "Whatever", np.random.rand(20), np.random.rand(20, 3)]:
-
         assert_raises(ValueError, StreamlineLinearRegistration, x0=x0)
+
+    x0 = np.random.rand(4, 3)
+    assert_raises(ValueError, StreamlineLinearRegistration, x0=x0)
 
 
 def test_compose_decompose_matrix44():
@@ -438,15 +441,6 @@ def test_compose_decompose_matrix44():
 
     assert_raises(ValueError, decompose_matrix44, mat, 20)
 
-from dipy.viz import fvtk
-
-def show_bundles(static, moving):
-
-    ren = fvtk.ren()
-    fvtk.add(ren, fvtk.line(static, fvtk.colors.red))
-    fvtk.add(ren, fvtk.line(moving, fvtk.colors.green))
-    fvtk.show(ren)
-
 
 def test_cascade_of_optimizations():
 
@@ -461,59 +455,31 @@ def test_cascade_of_optimizations():
                                 compose_matrix44(test_x0))
     cb2 = set_number_of_points(cb2, 20)
 
-    print('rigid')
+    # first rigid
     slr = StreamlineLinearRegistration(x0=6)
     slm = slr.optimize(cb1, cb2)
 
-    np.set_printoptions(3, suppress=True)
-    print(slm.matrix)
-    print(slm.iterations)
-
-    show_bundles(cb1, cb2)
-    show_bundles(cb1, transform_streamlines(cb2, slm.matrix))
-
-    print('similarity')
+    # then similarity
     slr2 = StreamlineLinearRegistration(x0=7)
     slm2 = slr2.optimize(cb1, cb2, slm.matrix)
-    print(slm2.matrix)
-    print(slm2.iterations)
 
-    show_bundles(cb1, transform_streamlines(cb2, slm2.matrix))
-
-    print('affine BFGS')
-    slr3 = StreamlineLinearRegistration(x0=12, options={'maxiter': 1000})
+    # then affine
+    slr3 = StreamlineLinearRegistration(x0=12, options={'maxiter': 400})
     slm3 = slr3.optimize(cb1, cb2, slm2.matrix)
-    print(slm3.matrix)
-    print(slm3.iterations)
-    print(slm3.funcs)
 
-    show_bundles(cb1, transform_streamlines(cb2, slm3.matrix))
+    # all affine params at once
+    slr4 = StreamlineLinearRegistration(x0=12, options={'maxiter': 400})
+    slm4 = slr4.optimize(cb1, cb2)
 
-    print(test_x0)
-    print(decompose_matrix44(slm3.matrix))
-
-    print('affine Powell')
-    slr4 = StreamlineLinearRegistration(x0=12, method='Powell')
-    slm4 = slr4.optimize(cb1, cb2, slm3.matrix)
-    print(slm4.matrix)
-    print(slm4.iterations)
-    print(slm4.funcs)
-
-    show_bundles(cb1, transform_streamlines(cb2, slm4.matrix))
-
-    print('Affine Powell all')
-    slr5 = StreamlineLinearRegistration(x0=12, method='Powell')
-    slm5 = slr5.optimize(cb1, cb2)
-    print(slm5.matrix)
-    print(slm5.iterations)
-    print(slm5.funcs)
-
-    show_bundles(cb1, transform_streamlines(cb2, slm5.matrix))
-
-    pass
+    assert_array_almost_equal(slm4.matrix, slm3.matrix, 2)
+    assert_(slm2.fopt < slm.fopt)
+    assert_(slm3.fopt < slm2.fopt)
+    assert_almost_equal(slm4.fopt, slm3.fopt, 4)
+    assert_(slm3.iterations < slm4.iterations)
+    assert_(slm3.funcs < slm4.funcs)
 
 
 if __name__ == '__main__':
 
-    #run_module_suite()
-    test_cascade_of_optimizations()
+    run_module_suite()
+
