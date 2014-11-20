@@ -77,6 +77,8 @@ def test_SparseFascicleModel_NNLS():
 
 def test_SparseFascicleModel_SKLearnlinearsolver():
     class SillySolver(opt.SKLearnLinearSolver):
+        def __init__():
+            opt.SKLearnLinearSolver.__init__(self)
         def fit(self, X, y):
             self.coef_ = np.ones(X.shape[-1])
 

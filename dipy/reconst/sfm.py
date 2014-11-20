@@ -144,12 +144,12 @@ class SparseFascicleModel(ReconstModel, Cache):
                                         positive=True, warm_start=True)
         elif solver == 'NNLS' or solver == 'nnls':
             self.solver = opt.NNLS()
-        elif super(solver).__class__ == opt.SKLearnLinearSolver:
+        elif isinstance(solver, opt.SKLearnLinearSolver):
             self.solver
         else:
             e_s = "The `solver` key-word argument needs to be: "
-            e_s = "'ElasticNet', 'NNLS', or a "
-            e_s = "`dipy.optimize.SKLearnLinearSolver` object"
+            e_s += "'ElasticNet', 'NNLS', or a "
+            e_s += "`dipy.optimize.SKLearnLinearSolver` object"
             raise ValueError(e_s)
 
     @auto_attr
