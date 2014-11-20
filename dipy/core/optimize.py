@@ -13,11 +13,8 @@ import scipy
 SCIPY_LESS_0_12 = LooseVersion(scipy.__version__) < '0.12'
 
 if not SCIPY_LESS_0_12:
-
     from scipy.optimize import minimize
-
 else:
-
     from scipy.optimize import fmin_l_bfgs_b, fmin_powell
 
 
@@ -128,6 +125,8 @@ class Optimizer(object):
         self.tmp_files = []
         self._evol_kx = None
 
+        _eps = np.finfo(float).eps
+
         if SCIPY_LESS_0_12:
 
             if method == 'L-BFGS-B':
@@ -147,14 +146,27 @@ class Optimizer(object):
                         default_options[key] = options[key]
                     options = default_options
 
-                out = fmin_l_bfgs_b(fun, x0, args,
-                                    approx_grad=approx_grad,
-                                    bounds=bounds,
-                                    m=options['maxcor'],
-                                    factr=options['ftol']/np.finfo(float).eps,
-                                    pgtol=options['gtol'],
-                                    epsilon=options['eps'],
-                                    maxiter=options['maxiter'])
+                try:
+                    out = fmin_l_bfgs_b(fun, x0, args,
+                                        approx_grad=approx_grad,
+                                        bounds=bounds,
+                                        m=options['maxcor'],
+                                        factr=options['ftol']/_eps,
+                                        pgtol=options['gtol'],
+                                        epsilon=options['eps'],
+                                        maxiter=options['maxiter'])
+                except TypeError:
+
+                    msg = 'In current version of Scipy `maxiter` parameter is'
+                    msg += ' not available for L-BFGS-B.'
+                    print(msg)
+                    out = fmin_l_bfgs_b(fun, x0, args,
+                                        approx_grad=approx_grad,
+                                        bounds=bounds,
+                                        m=options['maxcor'],
+                                        factr=options['ftol']/_eps,
+                                        pgtol=options['gtol'],
+                                        epsilon=options['eps'])
 
                 res = {'x': out[0], 'fun': out[1], 'nfev': out[2]['funcalls']}
                 try:
