@@ -482,4 +482,3 @@ def test_cascade_of_optimizations():
 if __name__ == '__main__':
 
     run_module_suite()
-
