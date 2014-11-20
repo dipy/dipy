@@ -130,6 +130,17 @@ def test_optimize():
 
         assert_array_almost_equal(opt.xopt, np.array([0, 0, 0, 0.]))
 
+        opt = Optimizer(fun=func2, x0=np.array([1., 1., 1., 5.]),
+                        method='Powell',
+                        options={'maxiter': 1e6},
+                        evolution=True)
+
+        print(opt.nit)
+        print(opt.fopt)
+        print(opt.nfev)
+
+        assert_array_almost_equal(opt.xopt, np.array([0, 0, 0, 0.]))
+
 
 if __name__ == '__main__':
 
