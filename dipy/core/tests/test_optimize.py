@@ -24,7 +24,6 @@ def test_optimize():
         opt = Optimizer(fun=func, x0=np.array([1., 1., 1.]), method='Powell')
 
         assert_array_almost_equal(opt.xopt, np.array([0, 0, 0]))
-
         assert_almost_equal(opt.fopt, 0)
 
         opt = Optimizer(fun=func, x0=np.array([1., 1., 1.]), method='L-BFGS-B',
@@ -32,9 +31,7 @@ def test_optimize():
                                  'gtol': 1e-5, 'eps': 1e-8})
 
         assert_array_almost_equal(opt.xopt, np.array([0, 0, 0]))
-
         assert_almost_equal(opt.fopt, 0)
-
         assert_equal(opt.evolution, None)
 
         opt = Optimizer(fun=func, x0=np.array([1., 1., 1.]), method='L-BFGS-B',
@@ -43,7 +40,6 @@ def test_optimize():
                         evolution=False)
 
         assert_array_almost_equal(opt.xopt, np.array([0, 0, 0]))
-
         assert_almost_equal(opt.fopt, 0)
 
         opt.print_summary()
@@ -84,7 +80,6 @@ def test_optimize():
                                  'gtol': 1e-5, 'eps': 1e-8})
 
         assert_array_almost_equal(opt.xopt, np.array([0, 0, 0]))
-
         assert_almost_equal(opt.fopt, 0)
 
         print(opt.nit)
