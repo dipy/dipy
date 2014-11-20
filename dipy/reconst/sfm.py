@@ -145,7 +145,7 @@ class SparseFascicleModel(ReconstModel, Cache):
         elif solver == 'NNLS' or solver == 'nnls':
             self.solver = opt.NNLS()
         elif isinstance(solver, opt.SKLearnLinearSolver):
-            self.solver
+            self.solver = solver
         else:
             e_s = "The `solver` key-word argument needs to be: "
             e_s += "'ElasticNet', 'NNLS', or a "

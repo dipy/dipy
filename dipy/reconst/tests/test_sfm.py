@@ -77,8 +77,6 @@ def test_SparseFascicleModel_NNLS():
 
 def test_SparseFascicleModel_SKLearnlinearsolver():
     class SillySolver(opt.SKLearnLinearSolver):
-        def __init__():
-            opt.SKLearnLinearSolver.__init__(self)
         def fit(self, X, y):
             self.coef_ = np.ones(X.shape[-1])
 
@@ -89,7 +87,8 @@ def test_SparseFascicleModel_SKLearnlinearsolver():
     fdata, fbvals, fbvecs = dpd.get_data()
     data = nib.load(fdata).get_data()
     gtab = grad.gradient_table(fbvals, fbvecs)
-    sfmodel = sfm.SparseFascicleModel(gtab, solver=SillySolver)
+    sfmodel = sfm.SparseFascicleModel(gtab, solver=SillySolver())
+
     npt.assert_(isinstance(sfmodel.solver, SillySolver))
     npt.assert_raises(ValueError,
-                      sfm.SparseFascicleModel(gtab, solver=EvenSillierSolver))
+                      sfm.SparseFascicleModel, gtab, solver=EvenSillierSolver())
