@@ -131,19 +131,30 @@ class Optimizer(object):
         if SCIPY_LESS_0_12:
 
             if method == 'L-BFGS-B':
+                default_options = {'maxcor': 10, 'ftol': 1e-7, 'gtol': 1e-5,
+                                   'eps': 1e-8, 'maxiter': 15000}
 
                 if jac is None:
                     approx_grad = True
                 else:
                     approx_grad = False
 
+                if options is None:
+                    options = default_options
+
+                if options is not None:
+                    for key in options:
+                        default_options[key] = options[key]
+                    options = default_options
+
                 out = fmin_l_bfgs_b(fun, x0, args,
                                     approx_grad=approx_grad,
                                     bounds=bounds,
                                     m=options['maxcor'],
-                                    factr=options['ftol'] / np.finfo(float).eps,
+                                    factr=options['ftol']/np.finfo(float).eps,
                                     pgtol=options['gtol'],
-                                    epsilon=options['eps'])
+                                    epsilon=options['eps'],
+                                    maxiter=options['maxiter'])
 
                 res = {'x': out[0], 'fun': out[1], 'nfev': out[2]['funcalls']}
                 try:
@@ -152,6 +163,17 @@ class Optimizer(object):
                     res['nit'] = None
 
             elif method == 'Powell':
+
+                default_options = {'xtol': 0.0001, 'ftol': 0.0001,
+                                   'maxiter': None}
+
+                if options is None:
+                    options = default_options
+
+                if options is not None:
+                    for key in options:
+                        default_options[key] = options[key]
+                    options = default_options
 
                 out = fmin_powell(fun, x0, args,
                                   xtol=options['xtol'],
