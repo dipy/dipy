@@ -179,9 +179,9 @@ def test_qvalues():
                       [sq2, sq2, 0],
                       [sq2, 0, sq2],
                       [0, sq2, sq2]])
-    qvals = np.sqrt(1500 / 6) / (2 * np.pi)
-    bt = gradient_table(bvals, bvecs, big_delta=8, small_delta=2)
-    npt.assert_equal(bt.small_delta, 2)
+    qvals = np.sqrt(bvals / 6) / (2 * np.pi)
+    bt = gradient_table(bvals, bvecs, big_delta=8, small_delta=6)
+    npt.assert_almost_equal(bt.qvals, qvals)
 
 if __name__ == "__main__":
     from numpy.testing import run_module_suite
