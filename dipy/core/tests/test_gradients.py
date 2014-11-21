@@ -8,18 +8,19 @@ from dipy.core.gradients import (gradient_table, GradientTable,
                                  gradient_table_from_bvals_bvecs)
 from dipy.io.gradients import read_bvals_bvecs
 
+
 def test_btable_prepare():
 
-    sq2=np.sqrt(2)/2.
-    bvals=1500*np.ones(7)
-    bvals[0]=0
-    bvecs=np.array([[0, 0, 0],
-                    [1, 0, 0],
-                    [0, 1, 0],
-                    [0, 0, 1],
-                    [sq2, sq2, 0],
-                    [sq2, 0, sq2],
-                    [0, sq2, sq2]])
+    sq2 = np.sqrt(2) / 2.
+    bvals = 1500 * np.ones(7)
+    bvals[0] = 0
+    bvecs = np.array([[0, 0, 0],
+                      [1, 0, 0],
+                      [0, 1, 0],
+                      [0, 0, 1],
+                      [sq2, sq2, 0],
+                      [sq2, 0, sq2],
+                      [0, sq2, sq2]])
     bt = gradient_table(bvals, bvecs)
     npt.assert_array_equal(bt.bvecs, bvecs)
     bt.info
@@ -27,11 +28,11 @@ def test_btable_prepare():
     bvals = np.load(fbvals)
     bvecs = np.load(fbvecs)
     bvecs = np.where(np.isnan(bvecs), 0, bvecs)
-    bt = gradient_table(bvals,bvecs)
-    npt.assert_array_equal(bt.bvecs,bvecs)
-    bt2 = gradient_table(bvals,bvecs.T)
+    bt = gradient_table(bvals, bvecs)
+    npt.assert_array_equal(bt.bvecs, bvecs)
+    bt2 = gradient_table(bvals, bvecs.T)
     npt.assert_array_equal(bt2.bvecs, bvecs)
-    btab = np.concatenate((bvals[:,None], bvecs),axis=1)
+    btab = np.concatenate((bvals[:, None], bvecs), axis=1)
     bt3 = gradient_table(btab)
     npt.assert_array_equal(bt3.bvecs, bvecs)
     npt.assert_array_equal(bt3.bvals, bvals)
@@ -66,18 +67,19 @@ def test_GradientTable():
     npt.assert_raises(ValueError, GradientTable, np.ones((6, 2)))
     npt.assert_raises(ValueError, GradientTable, np.ones((6,)))
 
+
 def test_gradient_table_from_bvals_bvecs():
 
     sq2 = np.sqrt(2) / 2
     bvals = [0, 1, 2, 3, 4, 5, 6, 0]
-    bvecs=np.array([[0, 0, 0],\
-                    [1, 0, 0],\
-                    [0, 1, 0],\
-                    [0, 0, 1],\
-                    [sq2, sq2, 0],\
-                    [sq2, 0, sq2],\
-                    [0, sq2, sq2],\
-                    [0, 0, 0]])
+    bvecs = np.array([[0, 0, 0],
+                      [1, 0, 0],
+                      [0, 1, 0],
+                      [0, 0, 1],
+                      [sq2, sq2, 0],
+                      [sq2, 0, sq2],
+                      [0, sq2, sq2],
+                      [0, 0, 0]])
 
     gt = gradient_table_from_bvals_bvecs(bvals, bvecs, b0_threshold=0)
     npt.assert_array_equal(gt.bvecs, bvecs)
@@ -92,7 +94,7 @@ def test_gradient_table_from_bvals_bvecs():
     npt.assert_array_equal(gt.bvecs, bvecs)
 
     # Bvalue > 0 for non-unit vector
-    bad_bvals =  [2, 1, 2, 3, 4, 5, 6, 0]
+    bad_bvals = [2, 1, 2, 3, 4, 5, 6, 0]
     npt.assert_raises(ValueError, gradient_table_from_bvals_bvecs, bad_bvals,
                       bvecs, b0_threshold=0.)
     # num_gard inconsistent bvals, bvecs
@@ -118,28 +120,28 @@ def test_gradient_table_from_bvals_bvecs():
 
     # Test **kargs get passed along
     gt = gradient_table_from_bvals_bvecs(bvals, bvecs, b0_threshold=0,
-                                        big_delta=5, small_delta=2)
+                                         big_delta=5, small_delta=2)
     npt.assert_equal(gt.big_delta, 5)
     npt.assert_equal(gt.small_delta, 2)
 
 
 def test_b0s():
 
-    sq2=np.sqrt(2)/2.
-    bvals=1500*np.ones(8)
-    bvals[0]=0
-    bvals[7]=0
-    bvecs=np.array([[0, 0, 0],\
-                    [1, 0, 0],\
-                    [0, 1, 0],\
-                    [0, 0, 1],\
-                    [sq2, sq2, 0],\
-                    [sq2, 0, sq2],\
-                    [0, sq2, sq2],\
-                    [0, 0, 0]])
-    bt = gradient_table(bvals,bvecs)
-    npt.assert_array_equal(np.where(bt.b0s_mask>0)[0], np.array([0,7]))
-    npt.assert_array_equal(np.where(bt.b0s_mask==0)[0], np.arange(1,7))
+    sq2 = np.sqrt(2) / 2.
+    bvals = 1500 * np.ones(8)
+    bvals[0] = 0
+    bvals[7] = 0
+    bvecs = np.array([[0, 0, 0],
+                      [1, 0, 0],
+                      [0, 1, 0],
+                      [0, 0, 1],
+                      [sq2, sq2, 0],
+                      [sq2, 0, sq2],
+                      [0, sq2, sq2],
+                      [0, 0, 0]])
+    bt = gradient_table(bvals, bvecs)
+    npt.assert_array_equal(np.where(bt.b0s_mask > 0)[0], np.array([0, 7]))
+    npt.assert_array_equal(np.where(bt.b0s_mask == 0)[0], np.arange(1, 7))
 
 
 def test_gtable_from_files():
@@ -149,32 +151,34 @@ def test_gtable_from_files():
     npt.assert_array_equal(gt.bvals, bvals)
     npt.assert_array_equal(gt.bvecs, bvecs)
 
+
 def test_deltas():
-    sq2=np.sqrt(2)/2.
-    bvals=1500*np.ones(7)
-    bvals[0]=0
-    bvecs=np.array([[0, 0, 0],
-                    [1, 0, 0],
-                    [0, 1, 0],
-                    [0, 0, 1],
-                    [sq2, sq2, 0],
-                    [sq2, 0, sq2],
-                    [0, sq2, sq2]])
+    sq2 = np.sqrt(2) / 2.
+    bvals = 1500 * np.ones(7)
+    bvals[0] = 0
+    bvecs = np.array([[0, 0, 0],
+                      [1, 0, 0],
+                      [0, 1, 0],
+                      [0, 0, 1],
+                      [sq2, sq2, 0],
+                      [sq2, 0, sq2],
+                      [0, sq2, sq2]])
     bt = gradient_table(bvals, bvecs, big_delta=5, small_delta=2)
     npt.assert_equal(bt.big_delta, 5)
     npt.assert_equal(bt.small_delta, 2)
 
+
 def test_qvalues():
-    sq2 = np.sqrt(2)/2.
-    bvals = 1500*np.ones(7)
+    sq2 = np.sqrt(2) / 2.
+    bvals = 1500 * np.ones(7)
     bvals[0] = 0
     bvecs = np.array([[0, 0, 0],
-                    [1, 0, 0],
-                    [0, 1, 0],
-                    [0, 0, 1],
-                    [sq2, sq2, 0],
-                    [sq2, 0, sq2],
-                    [0, sq2, sq2]])
+                      [1, 0, 0],
+                      [0, 1, 0],
+                      [0, 0, 1],
+                      [sq2, sq2, 0],
+                      [sq2, 0, sq2],
+                      [0, sq2, sq2]])
     qvals = np.sqrt(1500 / 6) / (2 * np.pi)
     bt = gradient_table(bvals, bvecs, big_delta=8, small_delta=2)
     npt.assert_equal(bt.small_delta, 2)
