@@ -10,7 +10,7 @@ env:
     - PYTHON=python PYSUF=''
     - PYTHON=python3 PYSUF=3
 install:
-   # Add takluyver's python3 matplotlib PPA: 
+   # Add takluyver's python3 matplotlib PPA:
     - sudo add-apt-repository -y ppa:takluyver/python3
     - sudo apt-get update
     - sudo apt-get install $PYTHON-dev
@@ -51,5 +51,5 @@ script:
         nosetests$PYSUF --with-doctest `$PYTHON -c "import os; import dipy; print(os.path.dirname(dipy.__file__))"`	;
       else
         cp ../.coveragerc . ;
-        nosetests$PYSUF --with-doctest --with-coverage `$PYTHON -c "import os; import dipy; print(os.path.dirname(dipy.__file__))"` ;
+        nosetests$PYSUF --with-doctest --with-coverage --verbosity=10 `$PYTHON -c "import os; import dipy; print(os.path.dirname(dipy.__file__))"` ;
       fi
