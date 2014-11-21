@@ -6,7 +6,7 @@ from numpy.testing import (assert_equal,
                            run_module_suite)
 
 
-from dipy.core.optimize import Optimizer, SCIPY_LESS_0_11
+from dipy.core.optimize import Optimizer, SCIPY_LESS_0_12
 
 
 def test_optimize():
@@ -19,12 +19,11 @@ def test_optimize():
 
         return x[0]**2 + 0.5 * x[1]**2 + 0.2 * x[2]**2 + 0.2 * x[3]**2
 
-    if not SCIPY_LESS_0_11:
+    if not SCIPY_LESS_0_12:
 
         opt = Optimizer(fun=func, x0=np.array([1., 1., 1.]), method='Powell')
 
         assert_array_almost_equal(opt.xopt, np.array([0, 0, 0]))
-
         assert_almost_equal(opt.fopt, 0)
 
         opt = Optimizer(fun=func, x0=np.array([1., 1., 1.]), method='L-BFGS-B',
@@ -32,8 +31,8 @@ def test_optimize():
                                  'gtol': 1e-5, 'eps': 1e-8})
 
         assert_array_almost_equal(opt.xopt, np.array([0, 0, 0]))
-
         assert_almost_equal(opt.fopt, 0)
+        assert_equal(opt.evolution, None)
 
         opt = Optimizer(fun=func, x0=np.array([1., 1., 1.]), method='L-BFGS-B',
                         options={'maxcor': 10, 'ftol': 1e-7,
@@ -41,7 +40,6 @@ def test_optimize():
                         evolution=False)
 
         assert_array_almost_equal(opt.xopt, np.array([0, 0, 0]))
-
         assert_almost_equal(opt.fopt, 0)
 
         opt.print_summary()
@@ -68,16 +66,13 @@ def test_optimize():
         print(opt.fopt)
         print(opt.nfev)
         print(opt.message)
+        print(opt.evolution)
 
         assert_array_almost_equal(opt.xopt, np.array([0, 0, 0, 0.]))
 
-        tmp_files = opt.tmp_files
         del opt
 
-        for fname in tmp_files:
-            assert_equal(os.path.isfile(fname), False)
-
-    if SCIPY_LESS_0_11:
+    if SCIPY_LESS_0_12:
 
         opt = Optimizer(fun=func, x0=np.array([1., 1., 1.]),
                         method='L-BFGS-B',
@@ -85,7 +80,6 @@ def test_optimize():
                                  'gtol': 1e-5, 'eps': 1e-8})
 
         assert_array_almost_equal(opt.xopt, np.array([0, 0, 0]))
-
         assert_almost_equal(opt.fopt, 0)
 
         print(opt.nit)
@@ -103,6 +97,62 @@ def test_optimize():
 
         assert_array_almost_equal(opt.xopt, np.array([0, 0, 0, 0.]))
 
+        opt = Optimizer(fun=func, x0=np.array([1., 1., 1.]),
+                        method='L-BFGS-B',
+                        options={'maxcor': 10, 'eps': 1e-8})
+
+        assert_array_almost_equal(opt.xopt, np.array([0, 0, 0]))
+        assert_almost_equal(opt.fopt, 0)
+
+        print(opt.nit)
+        print(opt.fopt)
+        print(opt.nfev)
+
+        opt = Optimizer(fun=func, x0=np.array([1., 1., 1.]),
+                        method='L-BFGS-B',
+                        options=None)
+
+        assert_array_almost_equal(opt.xopt, np.array([0, 0, 0]))
+        assert_almost_equal(opt.fopt, 0)
+
+        print(opt.nit)
+        print(opt.fopt)
+        print(opt.nfev)
+
+        opt = Optimizer(fun=func2, x0=np.array([1., 1., 1., 5.]),
+                        method='L-BFGS-B',
+                        options={'maxiter': 1000})
+
+        assert_array_almost_equal(opt.xopt, np.array([0, 0, 0, 0.]))
+        assert_almost_equal(opt.fopt, 0)
+
+        print(opt.nit)
+        print(opt.fopt)
+        print(opt.nfev)
+
+        opt = Optimizer(fun=func2, x0=np.array([1., 1., 1., 5.]),
+                        method='Powell',
+                        options={'maxiter': 1e6},
+                        evolution=True)
+
+        print(opt.nit)
+        print(opt.fopt)
+        print(opt.nfev)
+
+        assert_array_almost_equal(opt.xopt, np.array([0, 0, 0, 0.]))
+
+        opt = Optimizer(fun=func2, x0=np.array([1., 1., 1., 5.]),
+                        method='Powell',
+                        options={'maxiter': 1e6},
+                        evolution=True)
+
+        print(opt.nit)
+        print(opt.fopt)
+        print(opt.nfev)
+
+        assert_array_almost_equal(opt.xopt, np.array([0, 0, 0, 0.]))
+
 
 if __name__ == '__main__':
+
     run_module_suite()
