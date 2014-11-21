@@ -1,5 +1,6 @@
 import numpy as np
 from numpy.testing import (run_module_suite,
+                           assert_,
                            assert_equal,
                            assert_almost_equal,
                            assert_array_equal,
@@ -112,22 +113,14 @@ def test_rigid_partial_real_bundles():
     moving_center, shift2 = center_streamlines(moving)
 
     print(shift2)
-    #mat = compose_matrix44([0, 0, 0, 40, 0, 0])
-    #print(mat)
     mat = compose_matrix(translate=np.array([0, 0, 0.]),
                          angles=np.deg2rad([40, 0, 0.]))
-    #print(mat)
     moved = transform_streamlines(moving_center, mat)
 
     srr = StreamlineLinearRegistration()
 
     srm = srr.optimize(static_center, moved)
     print(srm.fopt)
-
-    #    bmd = BundleMinDistanceMetric()
-    #    bmd.setup(static_center, moving)
-    #    print(bmd.distance(np.array([0, 0, 0, 0., 0., 0])))
-
     print(srm.iterations)
     print(srm.funcs)
 
@@ -154,7 +147,6 @@ def test_rigid_partial_real_bundles():
         vol2[i, j, k] = 1
 
     overlap = np.sum(np.logical_and(vol, vol2)) / float(np.sum(vol2))
-    #print(overlap)
 
     assert_equal(overlap * 100 > 40, True)
 
@@ -169,17 +161,12 @@ def test_stream_rigid():
     moving = transform_streamlines(moving, mat)
 
     srr = StreamlineLinearRegistration()
-
     sr_params = srr.optimize(static, moving)
-
     moved = transform_streamlines(moving, sr_params.matrix)
 
     srr = StreamlineLinearRegistration(verbose=True)
-
     srm = srr.optimize(static, moving)
-
     moved2 = transform_streamlines(moving, srm.matrix)
-
     moved3 = srm.transform(moving)
 
     assert_array_equal(moved[0], moved2[0])
@@ -435,8 +422,10 @@ def test_x0_input():
         StreamlineLinearRegistration(x0=x0)
 
     for x0 in [8, 20, "Whatever", np.random.rand(20), np.random.rand(20, 3)]:
-
         assert_raises(ValueError, StreamlineLinearRegistration, x0=x0)
+
+    x0 = np.random.rand(4, 3)
+    assert_raises(ValueError, StreamlineLinearRegistration, x0=x0)
 
 
 def test_compose_decompose_matrix44():
@@ -453,6 +442,45 @@ def test_compose_decompose_matrix44():
     assert_raises(ValueError, decompose_matrix44, mat, 20)
 
 
+def test_cascade_of_optimizations():
+
+    cingulum_bundles = two_cingulum_bundles()
+
+    cb1 = cingulum_bundles[0]
+    cb1 = set_number_of_points(cb1, 20)
+
+    test_x0 = np.array([10, 4, 3, 0, 20, 10, 1., 1.3, 0.9, 0.1, 0.2, -0.2])
+
+    cb2 = transform_streamlines(cingulum_bundles[0],
+                                compose_matrix44(test_x0))
+    cb2 = set_number_of_points(cb2, 20)
+
+    print('first rigid')
+    slr = StreamlineLinearRegistration(x0=6)
+    slm = slr.optimize(cb1, cb2)
+
+    # then similarity
+    slr2 = StreamlineLinearRegistration(x0=7)
+    slm2 = slr2.optimize(cb1, cb2, slm.matrix)
+
+    # then affine
+    slr3 = StreamlineLinearRegistration(x0=12, options={'maxiter': 400})
+    slm3 = slr3.optimize(cb1, cb2, slm2.matrix)
+
+    # all affine params at once
+    slr4 = StreamlineLinearRegistration(x0=12, options={'maxiter': 400})
+    slm4 = slr4.optimize(cb1, cb2)
+
+    assert_array_almost_equal(slm4.matrix, slm3.matrix, 2)
+    assert_(slm2.fopt < slm.fopt)
+    assert_(slm3.fopt < slm2.fopt)
+    assert_almost_equal(slm4.fopt, slm3.fopt, 4)
+
+    # assert_(slm3.iterations <= slm4.iterations)
+    # assert_(slm3.funcs < slm4.funcs)
+
+
 if __name__ == '__main__':
 
-    run_module_suite()
+    #run_module_suite()
+    test_cascade_of_optimizations()
