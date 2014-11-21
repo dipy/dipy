@@ -157,9 +157,9 @@ class Optimizer(object):
                                         maxiter=options['maxiter'])
                 except TypeError:
 
-                    msg = 'In ' + scipy.__version__ + ' `maxiter` parameter is'
-                    msg += 'not available for L-BFGS-B. Using `maxfun`'
-                    msg += ' instead.'
+                    msg = 'In Scipy ' + scipy.__version__ + ' `maxiter` '
+                    msg += 'parameter is not available for L-BFGS-B. Using '
+                    msg += '`maxfun` instead with value twice of maxiter.'
 
                     print(msg)
                     out = fmin_l_bfgs_b(fun, x0, args,
@@ -169,7 +169,7 @@ class Optimizer(object):
                                         factr=options['ftol']/_eps,
                                         pgtol=options['gtol'],
                                         epsilon=options['eps'],
-                                        maxfun=options['maxiter'])
+                                        maxfun=options['maxiter'] * 2)
 
                 res = {'x': out[0], 'fun': out[1], 'nfev': out[2]['funcalls']}
                 try:
