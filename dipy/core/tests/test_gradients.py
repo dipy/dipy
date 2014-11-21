@@ -164,7 +164,21 @@ def test_deltas():
     npt.assert_equal(bt.big_delta, 5)
     npt.assert_equal(bt.small_delta, 2)
 
+def test_qvalues():
+    sq2 = np.sqrt(2)/2.
+    bvals = 1500*np.ones(7)
+    bvals[0] = 0
+    bvecs = np.array([[0, 0, 0],
+                    [1, 0, 0],
+                    [0, 1, 0],
+                    [0, 0, 1],
+                    [sq2, sq2, 0],
+                    [sq2, 0, sq2],
+                    [0, sq2, sq2]])
+    qvals = np.sqrt(1500 / 6) / (2 * np.pi)
+    bt = gradient_table(bvals, bvecs, big_delta=8, small_delta=2)
+    npt.assert_equal(bt.small_delta, 2)
+
 if __name__ == "__main__":
     from numpy.testing import run_module_suite
     run_module_suite()
-
