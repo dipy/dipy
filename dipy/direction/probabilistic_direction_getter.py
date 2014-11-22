@@ -2,7 +2,7 @@
 discrete distribution (pmf) at each step of the tracking."""
 import numpy as np
 from dipy.reconst.peaks import peak_directions, default_sphere
-from dipy.reconst.shm import order_from_ncoef, real_sym_sh_basis
+from dipy.reconst.shm import order_from_ncoef, sph_harm_lookup
 from dipy.tracking.local.direction_getter import DirectionGetter
 from dipy.tracking.local.interpolation import trilinear_interpolate4d
 
@@ -31,11 +31,15 @@ class SimplePmfGen(PmfGen):
 
 class SHCoeffPmfGen(PmfGen):
 
-    def __init__(self, shcoeff, sphere):
+    def __init__(self, shcoeff, sphere, basis_type):
         self.shcoeff = shcoeff
         self.sphere = sphere
         sh_order = order_from_ncoef(shcoeff.shape[-1])
-        self._B, m, n = real_sym_sh_basis(sh_order, sphere.theta, sphere.phi)
+        try:
+            basis = sph_harm_lookup[basis_type]
+        except KeyError:
+            raise ValueError("%s is not a known basis type." % basis_type)
+        self._B, m, n = basis(sh_order, sphere.theta, sphere.phi)
 
     def get_pmf(self, point):
         coeff = trilinear_interpolate4d(self.shcoeff, point)
@@ -112,7 +116,8 @@ class ProbabilisticDirectionGetter(PeakDirectionGetter):
         return klass(pmf_gen, max_angle, sphere, **kwargs)
 
     @classmethod
-    def from_shcoeff(klass, shcoeff, max_angle, sphere, **kwargs):
+    def from_shcoeff(klass, shcoeff, max_angle, sphere, basis_type=None,
+                     **kwargs):
         """Probabilistic direction getter from a distribution of directions
         on the sphere.
 
@@ -130,6 +135,9 @@ class ProbabilisticDirectionGetter(PeakDirectionGetter):
             direction.
         sphere : Sphere
             The set of directions to be used for tracking.
+        basis_type : name of basis
+            The basis that ``shcoeff`` are associated with.
+            ``dipy.reconst.shm.real_sym_sh_basis`` is used by default.
         relative_peak_threshold : float in [0., 1.]
             Used for extracting initial tracking directions. Passed to
             peak_directions.
@@ -142,7 +150,7 @@ class ProbabilisticDirectionGetter(PeakDirectionGetter):
         dipy.reconst.peaks.peak_directions
 
         """
-        pmf_gen = SHCoeffPmfGen(shcoeff, sphere)
+        pmf_gen = SHCoeffPmfGen(shcoeff, sphere, basis_type)
         return klass(pmf_gen, max_angle, sphere, **kwargs)
 
     def __init__(self, pmf_gen, max_angle, sphere=None, **kwargs):
