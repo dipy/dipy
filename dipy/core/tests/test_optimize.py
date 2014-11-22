@@ -1,4 +1,3 @@
-import os
 import numpy as np
 from numpy.testing import (assert_equal,
                            assert_almost_equal,
@@ -20,6 +19,8 @@ def test_optimize():
         return x[0]**2 + 0.5 * x[1]**2 + 0.2 * x[2]**2 + 0.2 * x[3]**2
 
     if not SCIPY_LESS_0_12:
+
+        print('Scipy >= 0.12')
 
         opt = Optimizer(fun=func, x0=np.array([1., 1., 1.]), method='Powell')
 
@@ -74,6 +75,8 @@ def test_optimize():
 
     if SCIPY_LESS_0_12:
 
+        print('Scipy < 0.12')
+
         opt = Optimizer(fun=func, x0=np.array([1., 1., 1.]),
                         method='L-BFGS-B',
                         options={'maxcor': 10, 'ftol': 1e-7,
@@ -121,9 +124,9 @@ def test_optimize():
 
         opt = Optimizer(fun=func2, x0=np.array([1., 1., 1., 5.]),
                         method='L-BFGS-B',
-                        options={'maxiter': 1000})
+                        options={'gtol': 1e-7, 'ftol': 1e-7, 'maxiter': 10000})
 
-        assert_array_almost_equal(opt.xopt, np.array([0, 0, 0, 0.]))
+        assert_array_almost_equal(opt.xopt, np.array([0, 0, 0, 0.]), 4)
         assert_almost_equal(opt.fopt, 0)
 
         print(opt.nit)
@@ -156,3 +159,4 @@ def test_optimize():
 if __name__ == '__main__':
 
     run_module_suite()
+    #test_optimize()

@@ -101,7 +101,7 @@ class Optimizer(object):
 
         callback : callable, optional
             Called after each iteration, as ``callback(xk)``, where ``xk`` is
-            the current parameter vector.
+            the current parameter vector. Only available using Scipy 0.12+.
 
         options : dict, optional
             A dictionary of solver options. All methods accept the following
@@ -114,7 +114,8 @@ class Optimizer(object):
             `show_options('minimize', method)`.
 
         evolution : bool, optional
-            save history of x for each iteration
+            save history of x for each iteration. Only available using Scipy
+            0.12+.
 
         See also
         ---------
@@ -122,12 +123,14 @@ class Optimizer(object):
         """
 
         self.size_of_x = len(x0)
-        self.tmp_files = []
         self._evol_kx = None
 
         _eps = np.finfo(float).eps
 
         if SCIPY_LESS_0_12:
+
+            if evolution is True:
+                print('Saving the history is only available with Scipy 0.12+.')
 
             if method == 'L-BFGS-B':
                 default_options = {'maxcor': 10, 'ftol': 1e-7, 'gtol': 1e-5,
@@ -158,7 +161,7 @@ class Optimizer(object):
                 except TypeError:
 
                     msg = 'In Scipy ' + scipy.__version__ + ' `maxiter` '
-                    msg += 'parameter is not available for L-BFGS-B. Using '
+                    msg += 'parameter is not available for L-BFGS-B. \n Using '
                     msg += '`maxfun` instead with value twice of maxiter.'
 
                     print(msg)
