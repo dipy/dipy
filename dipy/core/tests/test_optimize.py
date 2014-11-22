@@ -35,6 +35,8 @@ def test_optimize():
         assert_almost_equal(opt.fopt, 0)
         assert_equal(opt.evolution, None)
 
+        assert_equal(opt.evolution, None)
+
         opt = Optimizer(fun=func, x0=np.array([1., 1., 1.]), method='L-BFGS-B',
                         options={'maxcor': 10, 'ftol': 1e-7,
                                  'gtol': 1e-5, 'eps': 1e-8},
@@ -159,4 +161,3 @@ def test_optimize():
 if __name__ == '__main__':
 
     run_module_suite()
-    #test_optimize()

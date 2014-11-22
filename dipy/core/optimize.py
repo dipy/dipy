@@ -4,8 +4,6 @@ Only L-BFGS-B and Powell is supported in this class for versions of
 Scipy < 0.12. All optimizers are available for scipy >= 0.12.
 """
 
-import os
-from tempfile import mkstemp
 from distutils.version import LooseVersion
 import numpy as np
 import scipy

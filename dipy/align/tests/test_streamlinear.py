@@ -61,6 +61,7 @@ def test_rigid_parallel_lines():
     bundle_initial = simulated_bundle()
     bundle, shift = center_streamlines(bundle_initial)
     mat = compose_matrix44([20, 0, 10, 0, 40, 0])
+
     bundle2 = transform_streamlines(bundle, mat)
 
     bundle_sum_distance = BundleSumDistanceMatrixMetric()
@@ -336,9 +337,9 @@ def test_evolution_of_previous_iterations():
 
     slr = StreamlineLinearRegistration(evolution=True)
 
-    from dipy.core.optimize import SCIPY_LESS_0_11
+    from dipy.core.optimize import SCIPY_LESS_0_12
 
-    if not SCIPY_LESS_0_11:
+    if not SCIPY_LESS_0_12:
 
         slm = slr.optimize(static, moving)
 
@@ -438,9 +439,20 @@ def test_x0_input():
         assert_raises(ValueError, StreamlineLinearRegistration, x0=x0)
 
 
+def test_compose_decompose_matrix44():
+
+    for i in range(20):
+        x0 = np.random.rand(12)
+        mat = compose_matrix44(x0[:6])
+        assert_array_almost_equal(x0[:6], decompose_matrix44(mat, size=6))
+        mat = compose_matrix44(x0[:7])
+        assert_array_almost_equal(x0[:7], decompose_matrix44(mat, size=7))
+        mat = compose_matrix44(x0[:12])
+        assert_array_almost_equal(x0[:12], decompose_matrix44(mat, size=12))
+
+    assert_raises(ValueError, decompose_matrix44, mat, 20)
+
+
 if __name__ == '__main__':
 
     run_module_suite()
-    #compose_matrix_matrix44_compatibility()
-    #test_stream_rigid()
-    #test_rigid_partial_real_bundles()
