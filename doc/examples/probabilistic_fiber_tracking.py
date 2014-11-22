@@ -1,4 +1,7 @@
 """
+=====================================================
+An introduction to the Probabilistic Direction Getter
+=====================================================
 
 Probabilistic fiber tracking is a way of reconstructing white matter
 connections using diffusion MR imaging. Like deterministic fiber tracking, the
@@ -7,13 +10,13 @@ step starting at a seed, however, unlike deterministic tracking, the tracking
 direction at each point along the path is chosen at random from a distribution.
 The distribution at each point is different and depends on the observed
 diffusion data at that point. The distribution of tracking directions at each
-point can be represented as a PMF (probability mass function) if the possible
+point can be represented as a probability mass function (PMF) if the possible
 tracking directions are restricted to discrete number of well distributed
 points on a sphere.
 
 This example picks up where "introduction to basic tracking" leaves off.
 We'll begin by repeating a few steps from that example, loading the data and
-fitting a CSD model.
+fitting a constrained spherical deconvolution (CSD) model.
 """
 
 from dipy.data import read_stanford_labels
@@ -35,21 +38,26 @@ csd_fit = csd_model.fit(data, mask=white_matter)
 classifier = ThresholdTissueClassifier(csd_fit.gfa, .25)
 
 """
-The FOD, fiber orientation distribution, of the CSD model estimates the
+The fiber orientation distribution (FOD) of the CSD model estimates the
 distribution of small fiber bundles within each voxel. We can use this
 distribution for probabilistic fiber tracking. One way to do this is to
-represent the FOD using a discrete sphere. This discrete FOD can be used
-by the Probabilistic Direction Getter as a PMF to pick tracking directions.
+represent the FOD using a discrete sphere. This discrete FOD can be used by the
+Probabilistic Direction Getter as a PMF for sampling tracking directions. We
+need to clip the FOD to use it as a PMF because the latter cannot have negative
+values. (Ideally the FOD should be strictly positive, but because of noise
+and/or model failures sometimes it can have negative values).
 """
 
 from dipy.direction import ProbabilisticDirectionGetter
 from dipy.data import small_sphere
+from dipy.io.trackvis import save_trk
 
 fod = csd_fit.odf(small_sphere)
-fod.clip(0, out=fod)
-prob_dg = ProbabilisticDirectionGetter.from_pmf(fod, max_angle=30.,
+pmf = fod.clip(min=0)
+prob_dg = ProbabilisticDirectionGetter.from_pmf(pmf, max_angle=30.,
                                                 sphere=small_sphere)
 streamlines = LocalTracking(prob_dg, classifier, seeds, affine, step_size=.5)
+save_trk("probabilistic_small_sphere.trk", streamlines, affine, labels.shape)
 
 """
 One disadvantage of using a discrete PMF to represent possible tracking
@@ -71,6 +79,8 @@ prob_dg = ProbabilisticDirectionGetter.from_shcoeff(csd_fit.shm_coeff,
                                                     sphere=default_sphere)
 streamlines = LocalTracking(prob_dg, classifier, seeds, affine, step_size=.5)
 
+save_trk("probabilistic_shm_coeff.trk", streamlines, affine, labels.shape)
+
 """
 Not all model fits have the ``shm_coeff`` attribute because not all models use
 this basis to represent the data internally. However we can fit the ODF of any
@@ -85,4 +95,6 @@ fod_coeff = peaks.shm_coeff
 prob_dg = ProbabilisticDirectionGetter.from_shcoeff(fod_coeff, max_angle=30.,
                                                     sphere=default_sphere)
 streamlines = LocalTracking(prob_dg, classifier, seeds, affine, step_size=.5)
+save_trk("probabilistic_peaks_from_model.trk", streamlines, affine,
+         labels.shape)
 
