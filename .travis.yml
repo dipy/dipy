@@ -43,6 +43,6 @@ script:
       cp ../.coveragerc .;
       COVER_ARGS="--with-coverage --cover-package dipy";
       fi
-    - $PYTHON ../tools/dipnost $COVER_ARGS `python -c "import os; import dipy; print(os.path.dirname(dipy.__file__))"`
+    - nosetests --with-doctest --verbose $COVER_ARGS dipy
 after_success:
     - if [ "${COVERAGE}" == "1" ]; then coveralls; fi
