@@ -17,7 +17,7 @@ matrix:
   include:
     - python: 2.7
       env:
-        - COVERAGE=--with-coverage
+        - COVERAGE=1
     # To test minimum dependencies
     - python: 2.7
       env:
@@ -28,7 +28,7 @@ before_install:
     - pip install nose # always
     - sudo apt-get install libblas-dev liblapack-dev libatlas3gf-base
     - pip install --no-index -f http://travis-wheels.scikit-image.org $DEPENDS
-    - if [ "${COVERAGE}" == "--with-coverage" ]; then
+    - if [ "${COVERAGE}" == "1" ]; then
       pip install coverage;
       pip install coveralls;
       fi
@@ -39,7 +39,10 @@ script:
     # Change into an innocuous directory and find tests from installation
     - mkdir for_testing
     - cd for_testing
-    - if [ "${COVERAGE}" == "--with-coverage" ]; then cp ../.coveragerc .; fi
-    - $PYTHON ../tools/dipnost $COVERAGE `python -c "import os; import dipy; print(os.path.dirname(dipy.__file__))"`
+    - if [ "${COVERAGE}" == "1" ]; then
+      cp ../.coveragerc .;
+      COVER_ARGS="--with-coverage --cover-package dipy";
+      fi
+    - $PYTHON ../tools/dipnost $COVER_ARGS `python -c "import os; import dipy; print(os.path.dirname(dipy.__file__))"`
 after_success:
-    - if [ "${COVERAGE}" == "--with-coverage" ]; then coveralls; fi
+    - if [ "${COVERAGE}" == "1" ]; then coveralls; fi
