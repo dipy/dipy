@@ -20,7 +20,7 @@ from dipy.tracking.streamline import (center_streamlines,
                                       transform_streamlines,
                                       set_number_of_points)
 
-from dipy.core.geometry import compose_matrix, decompose_matrix
+from dipy.core.geometry import compose_matrix
 
 from dipy.data import get_data, two_cingulum_bundles
 from nibabel import trackvis as tv
@@ -449,7 +449,7 @@ def test_cascade_of_optimizations():
     cb1 = cingulum_bundles[0]
     cb1 = set_number_of_points(cb1, 20)
 
-    test_x0 = np.array([10, 4, 3, 0, 20, 10, 1., 1.3, 0.9, 0.1, 0.2, -0.2])
+    test_x0 = np.array([10, 4, 3, 0, 20, 10, 1.5, 1.5, 1.5, 0., 0.2, 0])
 
     cb2 = transform_streamlines(cingulum_bundles[0],
                                 compose_matrix44(test_x0))
@@ -459,28 +459,18 @@ def test_cascade_of_optimizations():
     slr = StreamlineLinearRegistration(x0=6)
     slm = slr.optimize(cb1, cb2)
 
-    # then similarity
+    print('then similarity')
     slr2 = StreamlineLinearRegistration(x0=7)
     slm2 = slr2.optimize(cb1, cb2, slm.matrix)
 
-    # then affine
-    slr3 = StreamlineLinearRegistration(x0=12, options={'maxiter': 400})
+    print('then affine')
+    slr3 = StreamlineLinearRegistration(x0=12, options={'maxiter': 50})
     slm3 = slr3.optimize(cb1, cb2, slm2.matrix)
 
-    # all affine params at once
-    slr4 = StreamlineLinearRegistration(x0=12, options={'maxiter': 400})
-    slm4 = slr4.optimize(cb1, cb2)
-
-    assert_array_almost_equal(slm4.matrix, slm3.matrix, 2)
     assert_(slm2.fopt < slm.fopt)
     assert_(slm3.fopt < slm2.fopt)
-    assert_almost_equal(slm4.fopt, slm3.fopt, 4)
-
-    # assert_(slm3.iterations <= slm4.iterations)
-    # assert_(slm3.funcs < slm4.funcs)
 
 
 if __name__ == '__main__':
 
-    #run_module_suite()
-    test_cascade_of_optimizations()
+    run_module_suite()
