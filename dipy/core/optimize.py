@@ -4,8 +4,6 @@ Only L-BFGS-B and Powell is supported in this class for versions of
 Scipy < 0.12. All optimizers are available for scipy >= 0.12.
 """
 
-import os
-from tempfile import mkstemp
 from distutils.version import LooseVersion
 import numpy as np
 import scipy
@@ -13,11 +11,8 @@ import scipy
 SCIPY_LESS_0_12 = LooseVersion(scipy.__version__) < '0.12'
 
 if not SCIPY_LESS_0_12:
-
     from scipy.optimize import minimize
-
 else:
-
     from scipy.optimize import fmin_l_bfgs_b, fmin_powell
 
 
@@ -104,7 +99,7 @@ class Optimizer(object):
 
         callback : callable, optional
             Called after each iteration, as ``callback(xk)``, where ``xk`` is
-            the current parameter vector.
+            the current parameter vector. Only available using Scipy >= 0.12.
 
         options : dict, optional
             A dictionary of solver options. All methods accept the following
@@ -117,7 +112,8 @@ class Optimizer(object):
             `show_options('minimize', method)`.
 
         evolution : bool, optional
-            save history of x for each iteration
+            save history of x for each iteration. Only available using Scipy
+            >= 0.12.
 
         See also
         ---------
@@ -125,25 +121,56 @@ class Optimizer(object):
         """
 
         self.size_of_x = len(x0)
-        self.tmp_files = []
         self._evol_kx = None
+
+        _eps = np.finfo(float).eps
 
         if SCIPY_LESS_0_12:
 
+            if evolution is True:
+                print('Saving history is available only with Scipy >= 0.12.')
+
             if method == 'L-BFGS-B':
+                default_options = {'maxcor': 10, 'ftol': 1e-7, 'gtol': 1e-5,
+                                   'eps': 1e-8, 'maxiter': 1000}
 
                 if jac is None:
                     approx_grad = True
                 else:
                     approx_grad = False
 
-                out = fmin_l_bfgs_b(fun, x0, args,
-                                    approx_grad=approx_grad,
-                                    bounds=bounds,
-                                    m=options['maxcor'],
-                                    factr=options['ftol'] / np.finfo(float).eps,
-                                    pgtol=options['gtol'],
-                                    epsilon=options['eps'])
+                if options is None:
+                    options = default_options
+
+                if options is not None:
+                    for key in options:
+                        default_options[key] = options[key]
+                    options = default_options
+
+                try:
+                    out = fmin_l_bfgs_b(fun, x0, args,
+                                        approx_grad=approx_grad,
+                                        bounds=bounds,
+                                        m=options['maxcor'],
+                                        factr=options['ftol']/_eps,
+                                        pgtol=options['gtol'],
+                                        epsilon=options['eps'],
+                                        maxiter=options['maxiter'])
+                except TypeError:
+
+                    msg = 'In Scipy ' + scipy.__version__ + ' `maxiter` '
+                    msg += 'parameter is not available for L-BFGS-B. \n Using '
+                    msg += '`maxfun` instead with value twice of maxiter.'
+
+                    print(msg)
+                    out = fmin_l_bfgs_b(fun, x0, args,
+                                        approx_grad=approx_grad,
+                                        bounds=bounds,
+                                        m=options['maxcor'],
+                                        factr=options['ftol']/_eps,
+                                        pgtol=options['gtol'],
+                                        epsilon=options['eps'],
+                                        maxfun=options['maxiter'] * 2)
 
                 res = {'x': out[0], 'fun': out[1], 'nfev': out[2]['funcalls']}
                 try:
@@ -152,6 +179,17 @@ class Optimizer(object):
                     res['nit'] = None
 
             elif method == 'Powell':
+
+                default_options = {'xtol': 0.0001, 'ftol': 0.0001,
+                                   'maxiter': None}
+
+                if options is None:
+                    options = default_options
+
+                if options is not None:
+                    for key in options:
+                        default_options[key] = options[key]
+                    options = default_options
 
                 out = fmin_powell(fun, x0, args,
                                   xtol=options['xtol'],
@@ -168,7 +206,7 @@ class Optimizer(object):
             else:
 
                 msg = 'Only L-BFGS-B and Powell is supported in this class '
-                msg += 'for versions of Scipy < 0.11.'
+                msg += 'for versions of Scipy < 0.12.'
                 raise ValueError(msg)
 
         if not SCIPY_LESS_0_12:
