@@ -99,7 +99,7 @@ class Optimizer(object):
 
         callback : callable, optional
             Called after each iteration, as ``callback(xk)``, where ``xk`` is
-            the current parameter vector. Only available using Scipy 0.12+.
+            the current parameter vector. Only available using Scipy >= 0.12.
 
         options : dict, optional
             A dictionary of solver options. All methods accept the following
@@ -113,7 +113,7 @@ class Optimizer(object):
 
         evolution : bool, optional
             save history of x for each iteration. Only available using Scipy
-            0.12+.
+            >= 0.12.
 
         See also
         ---------
@@ -128,7 +128,7 @@ class Optimizer(object):
         if SCIPY_LESS_0_12:
 
             if evolution is True:
-                print('Saving the history is only available with Scipy 0.12+.')
+                print('Saving history is available only with Scipy >= 0.12.')
 
             if method == 'L-BFGS-B':
                 default_options = {'maxcor': 10, 'ftol': 1e-7, 'gtol': 1e-5,
@@ -206,7 +206,7 @@ class Optimizer(object):
             else:
 
                 msg = 'Only L-BFGS-B and Powell is supported in this class '
-                msg += 'for versions of Scipy < 0.11.'
+                msg += 'for versions of Scipy < 0.12.'
                 raise ValueError(msg)
 
         if not SCIPY_LESS_0_12:
