@@ -21,6 +21,7 @@ matrix:
     # To test minimum dependencies
     - python: 2.7
       env:
+        - COVERAGE=1
         - DEPENDS="cython==0.18 numpy==1.6.0 scipy==0.9.0 nibabel==1.2.0"
 before_install:
     - virtualenv venv
