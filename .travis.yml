@@ -27,7 +27,7 @@ before_install:
     - source venv/bin/activate
     - pip install nose # always
     - sudo apt-get install libblas-dev liblapack-dev libatlas3gf-base
-    - pip install --no-index -f http://travis-wheels.scikit-image.org $DEPENDS
+    - pip install --timeout=60 --no-index -f http://travis-wheels.scikit-image.org $DEPENDS
     - if [ "${COVERAGE}" == "1" ]; then
       pip install coverage;
       pip install coveralls;
