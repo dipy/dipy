@@ -422,7 +422,6 @@ class SKLearnLinearSolver(with_metaclass(abc.ABCMeta, object)):
         """Implement for all derived classes """
 
 
-    @abc.abstractmethod
     def predict(self, X):
         """
         Predict using the result of the model
