@@ -56,7 +56,7 @@ def test_predict():
                        [0.0015, 0.0003, 0.0003]))
     angles = [(0, 0), (60, 0)]
     S, sticks = sims.multi_tensor(gtab, mevals, S0, angles=angles,
-                             fractions=[50, 50], snr=SNR)
+                                  fractions=[50, 50], snr=SNR)
 
     sfmodel = sfm.SparseFascicleModel(gtab)
     sffit = sfmodel.fit(S)

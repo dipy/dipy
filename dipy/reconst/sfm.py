@@ -42,28 +42,82 @@ def sfm_design_matrix(gtab, sphere, response, mode='sig'):
     gtab : GradientTable or Sphere
         Sets the rows of the matrix, if the mode is 'sig', this should be a
         GradientTable. If mode is 'odf' this should be a Sphere
-
     sphere : Sphere
         Sets the columns of the matrix
-
     response : list of 3 elements
-        The eigenvalues of a tensor which will serve as a kernel function
-
+        The eigenvalues of a tensor which will serve as a kernel
+        function.
     mode : str
-        'sig' : for a signal design matrix. 'odf' for an odf convolution matrix
+        'signal' : for a design matrix containing predicted signal in the
+        measurements defined by the gradient table for putative fascicles
+        oriented along the vertices of the sphere. 'odf' for an odf convolution
+        matrix, with values of the odf calculated from a tensor with the
+        provided response eigenvalues, evaluated at the b-vectors in the
+        gradient table, for the tensors with prinicipal diffusion directions
+        along the vertices of the sphere.
 
     Returns
     -------
     mat : ndarray
         A matrix either for deconvolution with the signal, or for reconvolution
         to form an ODF
+
+    Examples
+    --------
+    >>> import dipy.data as dpd
+    >>> data, gtab = dpd.dsi_voxels()
+    >>> sphere = dpd.get_sphere()
+    >>> from dipy.reconst.sfm import sfm_design_matrix
+
+    A canonical tensor approximating corpus-callosum voxels [Rokem2014]_:
+
+    >>> sfm_design_matrix(gtab, sphere, [0.0015, 0.0005, 0.0005])
+    array([[ 0.76842254,  0.75938817,  0.75884697, ...,  0.7611445 ,
+             0.76578534,  0.7685799 ],
+           [ 0.63242191,  0.62976149,  0.63177615, ...,  0.48330471,
+             0.41364983,  0.5097526 ],
+           [ 0.49801141,  0.52324215,  0.51548453, ...,  0.53704403,
+             0.61846186,  0.50978638],
+           ...,
+           [-0.10975827, -0.22059101, -0.22082276, ..., -0.17722235,
+            -0.10481981, -0.19026632],
+           [-0.2211229 , -0.11570565, -0.11058335, ..., -0.13996664,
+            -0.10137036, -0.1512813 ],
+           [-0.09995966, -0.22071206, -0.22065269, ..., -0.13875122,
+            -0.09348944, -0.15029945]])
+
+    A 'stick' function ([Behrens2007]_):
+
+    >>> sfm_design_matrix(gtab, sphere, [0.001, 0, 0])
+    array([[ 0.42358044,  0.41247553,  0.41230958, ...,  0.41486196,
+             0.41712477,  0.42279325],
+           [ 0.4236697 ,  0.41855944,  0.42129421, ...,  0.2346016 ,
+             0.17116434,  0.27950465],
+           [ 0.26672421,  0.29548055,  0.28215821, ...,  0.32548391,
+             0.39414367,  0.2795441 ],
+           ...,
+           [ 0.25014093, -0.55352269, -0.55576478, ..., -0.18484694,
+             0.21603778, -0.33326226],
+           [-0.55538212,  0.24151593,  0.30314369, ...,  0.10403695,
+             0.32690238, -0.02253488],
+           [ 0.30996345, -0.5550364 , -0.55395643, ...,  0.07451676,
+             0.3215973 , -0.05041879]])
+
+    Notes
+    -----
+    .. [Rokem2014] Ariel Rokem, Jason D. Yeatman, Franco Pestilli, Kendrick
+       N. Kay, Aviv Mezer, Stefan van der Walt, Brian A. Wandell
+       (2014). Evaluating the accuracy of diffusion MRI models in white
+       matter. http://arxiv.org/abs/1411.0721
+
+    .. [Behrens2007] Behrens TEJ, Berg HJ, Jbabdi S, Rushworth MFS, Woolrich MW
+       (2007): Probabilistic diffusion tractography with multiple fibre
+       orientations: What can we gain? Neuroimage 34:144–55.
     """
     # Each column of the matrix is the signal in each measurement, as
     # predicted by a "canonical", symmetrical tensor rotated towards this
     # vertex of the sphere:
-    canonical_tensor = np.array([[response[0], 0, 0],
-                                     [0, response[1], 0],
-                                     [0, 0, response[2]]])
+    canonical_tensor = np.diag(response)
 
     if mode == 'sig':
         mat_gtab = grad.gradient_table(gtab.bvals[~gtab.b0s_mask],
@@ -100,7 +154,7 @@ class SparseFascicleModel(ReconstModel, Cache):
 
         Parameters
         ----------
-        gtab : GradienTable class instance
+        gtab : GradientTable class instance
         sphere : Sphere class instance
         response : (3,) array-like
             The eigenvalues of a canonical tensor to be used as the response
@@ -159,6 +213,7 @@ class SparseFascicleModel(ReconstModel, Cache):
 
     def fit(self, data, mask=None):
         """
+        Fit the SparseFascicleModel object to data
 
         Parameters
         ----------
@@ -279,7 +334,7 @@ class SparseFascicleFit(ReconstFit):
             The eigenvalues of a tensor which will serve as a kernel
             function. Default: the response of the model object
         S0 : float or array.
-             The non-diffusion-weighted signal. Default: use the S0 of the dtat
+             The non-diffusion-weighted signal. Default: use the S0 of the data
 
         Returns
         -------
