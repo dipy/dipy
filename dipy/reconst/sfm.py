@@ -112,7 +112,7 @@ def sfm_design_matrix(gtab, sphere, response, mode='sig'):
 
     .. [Behrens2007] Behrens TEJ, Berg HJ, Jbabdi S, Rushworth MFS, Woolrich MW
        (2007): Probabilistic diffusion tractography with multiple fibre
-       orientations: What can we gain? Neuroimage 34:144–55.
+       orientations: What can we gain? Neuroimage 34:144-55.
     """
     # Each column of the matrix is the signal in each measurement, as
     # predicted by a "canonical", symmetrical tensor rotated towards this
