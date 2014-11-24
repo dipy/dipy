@@ -4,7 +4,7 @@ Deterministic Tracking with the Sparse Fascicle Model and EuDX
 ==============================================================
 
 In this example, we will use the Sparse Fascicle Model [Rokem2014]_, together
-with the EuDX[Garyfallidis12]_ deterministic tracking algorithm.
+with the EuDX [Garyfallidis12]_ deterministic tracking algorithm.
 
 First, we import the modules we will use in this example:
 """
@@ -49,7 +49,7 @@ written as:
 
     y = X\beta
 
-Where y is the signal and \beta are weights on different points in the
+Where $y$ is the signal and $\beta$ are weights on different points in the
 sphere. The columns of the design matrix, $X$ are the signals in each point in
 the measurement that would be predicted if there was a fascicle. Typically,
 this will be a prolate tensor with axial diffusivity 3-5 times higher than its
@@ -148,10 +148,10 @@ The peaks of the ODFs are extracted using the `peaks_from_model` function
 """
 
 pnm = dpp.peaks_from_model(sf_model, maskdata, sphere,
-                            mask=mask,
-                            relative_peak_threshold=.5,
-                            min_separation_angle=25,
-                            return_sh=False)
+                           mask=mask,
+                           relative_peak_threshold=.5,
+                           min_separation_angle=25,
+                           return_sh=False)
 
 
 """

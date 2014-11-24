@@ -405,17 +405,12 @@ def sparse_nnls(y, X,
 class SKLearnLinearSolver(with_metaclass(abc.ABCMeta, object)):
     """
     Provide a sklearn-like uniform interface to algorithms that solve problems
-    of the form:
-
-    .. math::
-        y = Ax
-
-    for x
+    of the form: $y = Ax$ for $x$
 
     Sub-classes of SKLearnLinearSolver should provide a 'fit' method that have
     the following signature: `SKLearnLinearSolver.fit(X, y)`, which would set
     an attribute `SKLearnLinearSolver.coef_`, with the shape (X.shape[1],),
-    such that an estimate of y can be calculated as: SKLearnLinearSolver
+    such that an estimate of y can be calculated as: `y_hat = np.dot(X, SKLearnLinearSolver.coef_.T)`
     """
     def __init__(self, *args, **kwargs):
         self._args = args
@@ -427,6 +422,7 @@ class SKLearnLinearSolver(with_metaclass(abc.ABCMeta, object)):
         """Implement for all derived classes """
 
 
+    @abc.abstractmethod
     def predict(self, X):
         """
         Predict using the result of the model
