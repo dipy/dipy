@@ -203,48 +203,40 @@ class SparseFascicleModel(ReconstModel, Cache):
         SparseFascicleFit object
 
         """
+        if mask is None:
+            flat_data = np.reshape(data, (-1, data.shape[-1]))
+        else:
+            mask = np.array(mask, dtype=bool, copy=False)
+            flat_data = np.reshape(data[mask], (-1, data.shape[-1]))
 
         # Fitting is done on the relative signal (S/S0):
-        S0 = np.mean(data[..., self.gtab.b0s_mask], -1)
-        S = data[..., ~self.gtab.b0s_mask]/S0[...,None]
-        mean_signal = np.mean(S, -1)
+        flat_S0 = np.mean(flat_data[..., self.gtab.b0s_mask], -1)
+        flat_S = flat_data[..., ~self.gtab.b0s_mask]/flat_S0[...,None]
+        flat_mean = np.mean(flat_S, -1)
+        flat_params = np.zeros((flat_data.shape[0],
+                                self.design_matrix.shape[-1]))
 
-        if len(mean_signal.shape) <= 1:
-            mean_signal = np.reshape(mean_signal, (1,-1))
-        if mask is not None:
-            mask = np.array(mask, dtype=bool, copy=False)
-            data_in_mask = S[mask]
-            mean_in_mask = mean_signal[mask]
-        else:
-            data_in_mask = S
-            mean_in_mask = mean_signal
-
-        data_in_mask = data_in_mask.reshape((-1, data_in_mask.shape[-1]))
-        mean_in_mask = mean_in_mask.reshape((-1, 1))
-        S0_in_mask = S0.reshape((-1, 1))
-
-        params_in_mask = np.zeros((data_in_mask.shape[0],
-                                   self.design_matrix.shape[-1]))
-
-        for vox, dd in enumerate(data_in_mask):
+        for vox, dd in enumerate(flat_S):
             if np.any(np.isnan(dd)):
-                params_in_mask[vox] = (np.zeros(self.design_matrix.shape[-1]))
+                flat_params[vox] = (np.zeros(self.design_matrix.shape[-1]))
             else:
-                fit_it = dd - mean_in_mask[vox]
-                params_in_mask[vox] = self.solver.fit(self.design_matrix,
-                                                  fit_it).coef_
+                fit_it = dd - flat_mean[vox]
+                flat_params[vox] = self.solver.fit(self.design_matrix,
+                                                   fit_it).coef_
 
-        if mask is not None:
-            beta = np.zeros(data.shape[:-1] +
-                            (self.design_matrix.shape[-1], ))
-
-            beta[mask, :] = params_in_mask
-            mean_out = np.zeros(data.shape[:-1])
-            mean_out[mask, ...] = mean_in_mask.squeeze()
-
+        if mask is None:
+            out_shape = data.shape[:-1] + (-1, )
+            beta = flat_params.reshape(out_shape)
+            mean_out = flat_mean.reshape(out_shape)
+            S0 = flat_S0.reshape(out_shape).squeeze()
         else:
-            beta = params_in_mask.reshape(data.shape[:-1] + (-1, ))
-            mean_out = mean_in_mask.reshape(data.shape[:-1] + (-1, ))
+            beta = np.zeros(data.shape[:-1] +
+                            (self.design_matrix.shape[-1],))
+            beta[mask, :] = flat_params
+            mean_out = np.zeros(data.shape[:-1])
+            mean_out[mask, ...] = flat_mean.squeeze()
+            S0 = np.zeros(data.shape[:-1])
+            S0[mask] = flat_S0
 
         return SparseFascicleFit(self, beta, S0, mean_out.squeeze())
 
