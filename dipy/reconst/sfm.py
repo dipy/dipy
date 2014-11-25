@@ -203,10 +203,11 @@ class SparseFascicleModel(ReconstModel, Cache):
         SparseFascicleFit object
 
         """
+
         # Fitting is done on the relative signal (S/S0):
         S0 = np.mean(data[..., self.gtab.b0s_mask], -1)
         S = data[..., ~self.gtab.b0s_mask]/S0[...,None]
-        mean_signal = np.mean(data, -1)
+        mean_signal = np.mean(S, -1)
 
         if len(mean_signal.shape) <= 1:
             mean_signal = np.reshape(mean_signal, (1,-1))
@@ -342,7 +343,7 @@ class SparseFascicleFit(ReconstFit):
         if isinstance(self.mean_signal, np.ndarray):
             mean_signal = self.mean_signal[..., None]
 
-        pre_pred_sig = (S0 * pred_weighted) + mean_signal
+        pre_pred_sig = S0 * (pred_weighted + mean_signal)
 
         pred_sig = np.zeros(pre_pred_sig.shape[:-1] + (gtab.bvals.shape[0],))
         pred_sig[..., ~gtab.b0s_mask] = pre_pred_sig
