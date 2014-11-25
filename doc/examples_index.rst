@@ -14,7 +14,7 @@ Quick Start
 -----------
 
 - :ref:`example_quick_start`
-- :ref:`example_tracking_quick_start`
+- :ref:`example_introduction_to_basic_tracking`
 
 -------------
 Preprocessing
@@ -100,6 +100,13 @@ Model Comparison with K-fold Cross-Validation
 Fiber tracking
 --------------
 
+- :ref:`example_introduction_to_basic_tracking`
+- :ref:`example_probabilistic_fiber_tracking`
+
+Old tracking examples
+~~~~~~~~~~~~~~~~~~~~~
+
+- :ref:`example_tracking_quick_start`
 - :ref:`example_tracking_eudx_tensor`
 - :ref:`example_tracking_eudx_odf`
 - :ref:`example_probabilistic_tracking_odfs`

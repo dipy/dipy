@@ -3,6 +3,12 @@
 Tracking Quick Start
 ====================
 
+.. NOTE::
+    Dipy has updated tools for fiber tracking. Our new machinery for fiber
+    tracking is featured in the example titled introduction to basic tracking.
+    The tools demonstrated in this example are no longer actively being
+    maintained and will likely be deprecated at some point.
+
 This example shows how to perform fiber tracking using Dipy.
 
 We will use Constrained Spherical Deconvolution (CSD) [Tournier07]_ for local
