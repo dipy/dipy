@@ -427,6 +427,16 @@ def test_x0_input():
     x0 = np.random.rand(4, 3)
     assert_raises(ValueError, StreamlineLinearRegistration, x0=x0)
 
+    x0_6 = np.zeros(6)
+    x0_7 = np.array([0, 0, 0, 0, 0, 0, 1.])
+    x0_12 = np.array([0, 0, 0, 0, 0, 0, 1., 1., 1., 0, 0, 0])
+
+    x0_s = [x0_6, x0_7, x0_12, x0_6, x0_7, x0_12]
+
+    for i, x0 in enumerate([6, 7, 12, "Rigid", "similarity", "Affine"]):
+        slr = StreamlineLinearRegistration(x0=x0)
+        assert_equal(slr.x0, x0_s[i])
+
 
 def test_compose_decompose_matrix44():
 
