@@ -259,6 +259,24 @@ class Sphere(object):
             faces = np.asarray(faces, dtype='uint16')
         return Sphere(xyz=vertices, faces=faces)
 
+    def find_closest(self, xyz):
+        """
+        Find the index of the vertex in the Sphere closest to the input vector
+
+        Parameters
+        ----------
+        xyz : array-like, 3 elements
+            A unit vector
+
+        Return
+        ------
+        idx : int
+            The index into the Sphere.vertices array that gives the closest
+            vertex (in angle).
+        """
+        ang = np.arccos(np.dot(self.vertices, xyz))
+        ang = np.min(np.vstack([ang, np.pi - ang]), 0)
+        return np.argmin(ang)
 
 class HemiSphere(Sphere):
     """Points on the unit sphere.
