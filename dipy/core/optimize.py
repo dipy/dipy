@@ -312,13 +312,13 @@ def rsq(ss_residuals, ss_residuals_to_mean):
 
 
 def sparse_nnls(y, X,
-                momentum=0,
-                step_size=0.1,
+                momentum=1,
+                step_size=0.01,
                 non_neg=True,
                 prop_bad_checks=0.1,
                 check_error_iter=10,
                 max_error_checks=10,
-                converge_on_r=0.2):
+                converge_on_r=0.01):
     """
 
     Solve y=Xh for h, using gradient descent, with X a sparse matrix
@@ -332,10 +332,10 @@ def sparse_nnls(y, X,
     X : ndarray. May be either sparse or dense. Shape (N, M)
        The regressors
 
-    momentum : float, optional (default: 0).
+    momentum : float, optional (default: 1).
         The persistence of the gradient.
 
-    step_size : float, optional (default: 0.05).
+    step_size : float, optional (default: 0.01).
         The increment of parameter update in each iteration
 
     non_neg : Boolean, optional (default: True)
@@ -353,7 +353,7 @@ def sparse_nnls(y, X,
         Don't check errors more than this number of times if no improvement in
         r-squared is seen.
 
-    converge_on_r : float (default: 1)
+    converge_on_r : float (default: 0.01)
       a percentage improvement in rsquared that is required each time to say
       that things are still going well.
 

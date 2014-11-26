@@ -100,8 +100,6 @@ def gradient(f):
         return outvals
 
 
-
-
 def streamline_gradients(streamline):
     """
     Calculate the gradients of the streamline along the spatial dimension

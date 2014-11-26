@@ -1,4 +1,5 @@
 import os
+import os.path as op
 
 import numpy as np
 import numpy.testing as npt
@@ -9,14 +10,16 @@ import scipy.linalg as la
 import nibabel as nib
 
 import dipy.tracking.life as life
+import dipy.tracking.eudx as edx
 import dipy.core.sphere as dps
 import dipy.core.gradients as dpg
-from dipy.data import get_data, get_sphere
+import dipy.data as dpd
 import dipy.core.optimize as opt
+import dipy.core.ndindex as nd
+import dipy.core.gradients as grad
+import dipy.reconst.dti as dti
 
-import numpy as np
-import numpy.testing as npt
-
+THIS_DIR = op.dirname(__file__)
 
 def test_streamline_gradients():
     streamline = [[1, 2, 3], [4, 5, 6], [5, 6, 7], [8, 9, 10]]
@@ -70,7 +73,7 @@ def test_streamline_tensors():
 
 
 def test_streamline_signal():
-    data_file, bval_file, bvec_file = get_data('small_64D')
+    data_file, bval_file, bvec_file = dpd.get_data('small_64D')
     gtab = dpg.gradient_table(bval_file, bvec_file)
     evals = [0.0015, 0.0005, 0.0005]
     streamline1 = [[[1, 2, 3], [4, 5, 3], [5, 6, 3], [6, 7, 3]],
@@ -96,7 +99,7 @@ def test_voxel2streamline():
 
 def test_FiberModel_init():
     # Get some small amount of data:
-    data_file, bval_file, bvec_file = get_data('small_64D')
+    data_file, bval_file, bvec_file = dpd.get_data('small_64D')
     data_ni = nib.load(data_file)
     data = data_ni.get_data()
     data_aff = data_ni.get_affine()
@@ -109,7 +112,7 @@ def test_FiberModel_init():
 
     affine = np.eye(4)
 
-    for sphere in [None, False, get_sphere('symmetric362')]:
+    for sphere in [None, False, dpd.get_sphere('symmetric362')]:
         fiber_matrix, vox_coords = FM.setup(streamline, affine, sphere=sphere)
         npt.assert_array_equal(np.array(vox_coords),
                                np.array([[1, 2, 3], [4, 5, 3],
@@ -119,7 +122,7 @@ def test_FiberModel_init():
 
 
 def test_FiberFit():
-    data_file, bval_file, bvec_file = get_data('small_64D')
+    data_file, bval_file, bvec_file = dpd.get_data('small_64D')
     data_ni = nib.load(data_file)
     data = data_ni.get_data()
     data_aff = data_ni.get_affine()
@@ -156,3 +159,28 @@ def test_FiberFit():
     npt.assert_almost_equal(
         this_data[vox_coords[:, 0], vox_coords[:, 1], vox_coords[:, 2]],
         fit.data)
+
+def test_fit_data():
+    fdata, fbval, fbvec = dpd.get_data('small_25')
+    gtab = grad.gradient_table(fbval, fbvec)
+    ni_data = nib.load(fdata)
+    data = ni_data.get_data()
+    dtmodel = dti.TensorModel(gtab)
+    dtfit = dtmodel.fit(data)
+    sphere = dpd.get_sphere()
+    peak_idx = dti.quantize_evecs(dtfit.evecs, sphere.vertices)
+    eu = edx.EuDX(dtfit.fa.astype('f8'), peak_idx,
+                  seeds=list(nd.ndindex(data.shape[:-1])),
+                  odf_vertices=sphere.vertices, a_low=0)
+    tensor_streamlines = [streamline for streamline in eu]
+    life_model = life.FiberModel(gtab)
+    life_fit = life_model.fit(data, tensor_streamlines)
+    model_error = life_fit.predict() - life_fit.data
+    model_rmse = np.sqrt(np.mean(model_error ** 2, -1))
+
+    # Lower error than the matlab implementation for these data:
+    matlab_rmse = np.load(op.join(THIS_DIR, 'life_matlab_rmse.npy'))
+    npt.assert_(np.median(model_rmse) < np.median(matlab_rmse))
+    # And a moderate correlation with the Matlab implementation weights:
+    matlab_weights = np.load(op.join(THIS_DIR, 'life_matlab_weights.npy'))
+    npt.assert_(np.corrcoef(matlab_weights, life_fit.beta)[0, 1] > 0.68)
