@@ -408,3 +408,7 @@ def two_cingulum_bundles():
     cb2 = relist_streamlines(res['points2'], res['offsets2'])
     return cb1, cb2
 
+def matlab_life_results():
+    matlab_rmse = np.load(pjoin(THIS_DIR, 'life_matlab_rmse.npy'))
+    matlab_weights = np.load(pjoin(THIS_DIR, 'life_matlab_weights.npy'))
+    return matlab_rmse, matlab_weights

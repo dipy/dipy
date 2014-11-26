@@ -177,10 +177,8 @@ def test_fit_data():
     life_fit = life_model.fit(data, tensor_streamlines)
     model_error = life_fit.predict() - life_fit.data
     model_rmse = np.sqrt(np.mean(model_error ** 2, -1))
-
+    matlab_rmse, matlab_weights = dpd.matlab_life_results()
     # Lower error than the matlab implementation for these data:
-    matlab_rmse = np.load(op.join(THIS_DIR, 'life_matlab_rmse.npy'))
     npt.assert_(np.median(model_rmse) < np.median(matlab_rmse))
     # And a moderate correlation with the Matlab implementation weights:
-    matlab_weights = np.load(op.join(THIS_DIR, 'life_matlab_weights.npy'))
     npt.assert_(np.corrcoef(matlab_weights, life_fit.beta)[0, 1] > 0.68)
