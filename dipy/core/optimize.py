@@ -453,6 +453,9 @@ class NNLS(SKLearnLinearSolver):
         ----------
 
         """
-        coef, rnorm = opt.nnls(X, y)
-        self.coef_ = coef
+        if np.any(np.isnan(X)) or np.any(np.isnan(y)):
+            self.coef_ = np.zeros(X.shape[-1])
+        else:
+            coef, rnorm = opt.nnls(X, y)
+            self.coef_ = coef
         return self
