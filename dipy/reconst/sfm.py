@@ -33,34 +33,41 @@ if not has_sklearn:
     warnings.warn(w)
 
 
-def sfm_design_matrix(gtab, sphere, response, mode='sig'):
+def sfm_design_matrix(gtab, sphere, response, mode='signal'):
     """
     Construct the SFM design matrix
 
     Parameters
     ----------
     gtab : GradientTable or Sphere
-        Sets the rows of the matrix, if the mode is 'sig', this should be a
+        Sets the rows of the matrix, if the mode is 'signal', this should be a
         GradientTable. If mode is 'odf' this should be a Sphere
     sphere : Sphere
         Sets the columns of the matrix
     response : list of 3 elements
         The eigenvalues of a tensor which will serve as a kernel
         function.
-    mode : str
-        'signal' : for a design matrix containing predicted signal in the
-        measurements defined by the gradient table for putative fascicles
-        oriented along the vertices of the sphere. 'odf' for an odf convolution
-        matrix, with values of the odf calculated from a tensor with the
-        provided response eigenvalues, evaluated at the b-vectors in the
-        gradient table, for the tensors with prinicipal diffusion directions
-        along the vertices of the sphere.
+    mode : str {'signal' | 'odf'}
+        Choose the (default) 'signal' for a design matrix containing predicted
+        signal in the measurements defined by the gradient table for putative
+        fascicles oriented along the vertices of the sphere. Otherwise, choose
+        'odf' for an odf convolution matrix, with values of the odf calculated
+        from a tensor with the provided response eigenvalues, evaluated at the
+        b-vectors in the gradient table, for the tensors with prinicipal
+        diffusion directions along the vertices of the sphere.
 
     Returns
     -------
     mat : ndarray
-        A matrix either for deconvolution with the signal, or for reconvolution
-        to form an ODF
+        A design matrix that can be used for one of the following operations:
+        when the 'signal' mode is used, each column contains the putative
+        signal in each of the bvectors of the `gtab` if a fascicle is oriented
+        in the direction encoded by the sphere vertex corresponding to this
+        column. This is used for deconvolution with a measured DWI signal. If
+        the 'odf' mode is chosen, each column instead contains the values of
+        the tensor ODF for a tensor with a principal diffusion direction
+        corresponding to this vertex. This is used to generate odfs from the
+        fits of the SFM for the purpose of tracking.
 
     Examples
     --------
@@ -93,7 +100,7 @@ def sfm_design_matrix(gtab, sphere, response, mode='sig'):
     # vertex of the sphere:
     canonical_tensor = np.diag(response)
 
-    if mode == 'sig':
+    if mode == 'signal':
         mat_gtab = grad.gradient_table(gtab.bvals[~gtab.b0s_mask],
                                        gtab.bvecs[~gtab.b0s_mask])
         # Preallocate:
