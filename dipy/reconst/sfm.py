@@ -116,7 +116,7 @@ def sfm_design_matrix(gtab, sphere, response, mode='signal'):
         rot_matrix = geo.vec2vec_rotmat(np.array([1,0,0]), this_dir)
         this_tensor = np.dot(rot_matrix, canonical_tensor)
         evals, evecs = dti.decompose_tensor(this_tensor)
-        if mode == 'sig':
+        if mode == 'signal':
             sig = sims.single_tensor(mat_gtab, evals=response, evecs=evecs)
             mat[:, ii] = sig - np.mean(sig)
         elif mode == 'odf':
