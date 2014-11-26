@@ -161,7 +161,6 @@ def test_sphere_subdivide():
     # It might be good to also test the vertices somehow if we can think of a
     # good test for them.
 
-
 def test_sphere_find_closest():
     sphere1 = unit_octahedron.subdivide(4)
     for ii in range(sphere1.vertices.shape[0]):
@@ -173,7 +172,8 @@ def test_hemisphere_find_closest():
     for ii in range(hemisphere1.vertices.shape[0]):
         nt.assert_equal(hemisphere1.find_closest(hemisphere1.vertices[ii]), ii)
         nt.assert_equal(hemisphere1.find_closest(-hemisphere1.vertices[ii]), ii)
-
+        nt.assert_equal(hemisphere1.find_closest(hemisphere1.vertices[ii] * 2),
+                        ii)
 
 @needs_delaunay
 def test_hemisphere_subdivide():
