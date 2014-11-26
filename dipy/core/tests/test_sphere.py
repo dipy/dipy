@@ -175,6 +175,7 @@ def test_hemisphere_find_closest():
         nt.assert_equal(hemisphere1.find_closest(hemisphere1.vertices[ii] * 2),
                         ii)
 
+
 @needs_delaunay
 def test_hemisphere_subdivide():
 
