@@ -64,11 +64,30 @@ def test_predict():
     npt.assert_almost_equal(pred, S, decimal=1)
 
 
-def test_SparseFascicleModel_NNLS():
+def test_predict():
+    SNR = 1000
+    S0 = 1
+    _, fbvals, fbvecs = dpd.get_data('small_64D')
+    bvals = np.load(fbvals)
+    bvecs = np.load(fbvecs)
+    gtab = grad.gradient_table(bvals, bvecs)
+    mevals = np.array(([0.0015, 0.0003, 0.0003],
+                       [0.0015, 0.0003, 0.0003]))
+    angles = [(0, 0), (60, 0)]
+    S, sticks = sims.multi_tensor(gtab, mevals, S0, angles=angles,
+                                  fractions=[50, 50], snr=SNR)
+
+    sfmodel = sfm.SparseFascicleModel(gtab)
+    sffit = sfmodel.fit(S)
+    pred = sffit.predict()
+    npt.assert_almost_equal(pred, S, decimal=1)
+
+
+def test_SparseFascicleModel_stick():
     fdata, fbvals, fbvecs = dpd.get_data()
     data = nib.load(fdata).get_data()
     gtab = grad.gradient_table(fbvals, fbvecs)
-    sfmodel = sfm.SparseFascicleModel(gtab, solver='NNLS')
+    sfmodel = sfm.SparseFascicleModel(gtab, solver='NNLS', response=[1, 0, 0])
     sffit1 = sfmodel.fit(data[0, 0, 0])
     sphere = dpd.get_sphere('symmetric642')
     odf1 = sffit1.odf(sphere)
