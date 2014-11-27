@@ -22,8 +22,6 @@ def func2(x):
 @npt.dec.skipif(SCIPY_LESS_0_12)
 def test_optimize_new_scipy():
 
-    print('Scipy >= 0.12')
-
     opt = Optimizer(fun=func, x0=np.array([1., 1., 1.]), method='Powell')
 
     assert_array_almost_equal(opt.xopt, np.array([0, 0, 0]))
@@ -75,13 +73,9 @@ def test_optimize_new_scipy():
 
     assert_array_almost_equal(opt.xopt, np.array([0, 0, 0, 0.]))
 
-    del opt
-
 
 @npt.dec.skipif(not SCIPY_LESS_0_12)
 def test_optimize_old_scipy():
-
-    print('Scipy < 0.12')
 
     opt = Optimizer(fun=func, x0=np.array([1., 1., 1.]),
                     method='L-BFGS-B',
