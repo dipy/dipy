@@ -1,4 +1,6 @@
+import operator
 import numpy as np
+
 from dipy.segment.metric import Metric
 from dipy.segment.metric import AveragePointwiseEuclideanMetric
 
@@ -130,6 +132,139 @@ class ClusterCentroid(Cluster):
         converged = np.equal(self.centroid, self.new_centroid)
         self.centroid = self.new_centroid.copy()
         return converged
+
+
+class ClusterMap(object):
+    """ Provides functionalities to interact with clustering outputs.
+
+    Useful container to create, remove, retrieve and filter clusters.
+    If `refdata` is given, elements will be returned instead of their
+    index when using `Cluster` objects.
+
+    Parameters
+    ----------
+    refdata : list
+        actual elements that clustered indices refer to
+    """
+    def __init__(self, refdata=Identity()):
+        self._clusters = []
+        self.refdata = refdata
+
+    @property
+    def clusters(self):
+        return self._clusters
+
+    @property
+    def refdata(self):
+        return self._refdata
+
+    @refdata.setter
+    def refdata(self, value):
+        self._refdata = value
+        for cluster in self.clusters:
+            cluster.refdata = self._refdata
+
+    def __len__(self):
+        return len(self.clusters)
+
+    def __getitem__(self, idx):
+        if isinstance(idx, np.ndarray) and idx.dtype == np.bool:
+            return [self.clusters[i] for i, take_it in enumerate(idx) if take_it]
+        elif type(idx) is list:
+            return [self.clusters[i] for i in idx]
+
+        return self.clusters[idx]
+
+    def __iter__(self):
+        return iter(self.clusters)
+
+    def __str__(self):
+        return "[" + ", ".join(map(str, self)) + "]"
+
+    def __repr__(self):
+        return "ClusterMap(" + str(self) + ")"
+
+    def _richcmp(self, other, op):
+        """ Compare
+        Parameters
+        ----------
+        other:
+        op: rich comparison operators
+            lt, le, eq, ne, gt or ge (see module `operator`)
+        """
+        if isinstance(other, ClusterMap):
+            if op is operator.eq:
+                return isinstance(other, ClusterMap) \
+                    and len(self) == len(other) \
+                    and self.clusters == other.clusters
+            elif op is operator.ne:
+                return not self == other
+
+            raise NotImplemented("Can only check if two ClusterMap instances are equal or not.")
+
+        elif isinstance(other, int):
+            return np.array([op(len(cluster), other) for cluster in self])
+
+        raise NotImplemented("ClusterMap only supports comparison with a int or another instance of Clustermap.")
+
+    def __eq__(self, other):
+        return self._richcmp(other, operator.eq)
+
+    def __ne__(self, other):
+        return self._richcmp(other, operator.ne)
+
+    def __lt__(self, other):
+        return self._richcmp(other, operator.lt)
+
+    def __le__(self, other):
+        return self._richcmp(other, operator.le)
+
+    def __gt__(self, other):
+        return self._richcmp(other, operator.gt)
+
+    def __ge__(self, other):
+        return self._richcmp(other, operator.ge)
+
+    def add_cluster(self, cluster):
+        """ Adds a new cluster to this cluster map.
+
+        Parameters
+        ----------
+        cluster : `Cluster` object
+        """
+        self.clusters.append(cluster)
+        cluster.refdata = self.refdata
+
+    def remove_cluster(self, cluster):
+        """ Remove a cluster from this cluster map.
+
+        Parameters
+        ----------
+        cluster : `Cluster` object
+        """
+        self.clusters.remove(cluster)
+
+    def clear(self):
+        """ Remove all clusters from this cluster map. """
+        self.clusters.clear()
+
+
+class ClusterMapCentroid(ClusterMap):
+    """ Provides functionalities to interact with clustering outputs.
+
+    Useful container to create, remove, retrieve and filter clusters.
+    It allows also to retrieve easely the centroid of every clusters.
+    If `refdata` is given, elements will be returned instead of their
+    index when using `ClusterCentroid` objects.
+
+    Parameters
+    ----------
+    refdata : list
+        actual elements that clustered indices refer to
+    """
+    @property
+    def centroids(self):
+        return [cluster.centroid for cluster in self.clusters]
 
 
 class Clustering:

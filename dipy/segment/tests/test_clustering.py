@@ -4,9 +4,10 @@ import itertools
 import copy
 
 from dipy.segment.clustering import Cluster, ClusterCentroid
-from dipy.segment.clusteringspeed import ClusterMap, ClusterMapCentroid
+#from dipy.segment.clusteringspeed import ClusterMap, ClusterMapCentroid
+from dipy.segment.clustering import ClusterMap, ClusterMapCentroid
 
-from nose.tools import assert_equal, assert_false
+from nose.tools import assert_equal, assert_true, assert_false
 from numpy.testing import assert_array_equal, assert_raises, run_module_suite
 from dipy.testing import assert_arrays_equal
 
@@ -248,10 +249,10 @@ def test_cluster_map_add_cluster():
             list_of_indices[-1].append(id_data)
             cluster.assign(id_data)
 
-        cluster.id = clusters.add_cluster(cluster)
+        clusters.add_cluster(cluster)
         assert_equal(type(cluster), Cluster)
         assert_equal(len(clusters), i+1)
-        assert_equal(cluster, clusters[cluster.id])
+        assert_equal(cluster, clusters[-1])
 
     assert_array_equal(list(itertools.chain(*clusters)), list(itertools.chain(*list_of_indices)))
 
@@ -270,16 +271,20 @@ def test_cluster_map_remove_cluster():
 
     assert_equal(len(clusters), 3)
 
-    clusters.remove_cluster(1)
+    clusters.remove_cluster(cluster2)
     assert_equal(len(clusters), 2)
     assert_array_equal(list(itertools.chain(*clusters)), list(itertools.chain(*[cluster1, cluster3])))
     assert_equal(clusters[0], cluster1)
     assert_equal(clusters[1], cluster3)
 
-    clusters.remove_cluster(1)
+    clusters.remove_cluster(cluster3)
     assert_equal(len(clusters), 1)
     assert_array_equal(list(itertools.chain(*clusters)), list(cluster1))
     assert_equal(clusters[0], cluster1)
+
+    clusters.remove_cluster(cluster1)
+    assert_equal(len(clusters), 0)
+    assert_array_equal(list(itertools.chain(*clusters)), [])
 
 
 def test_cluster_map_iter():
@@ -289,14 +294,18 @@ def test_cluster_map_iter():
     cluster_map = ClusterMap()
     clusters = []
     for i in range(nb_clusters):
-        new_cluster = Cluster()
+        new_cluster = Cluster(indices=np.random.randint(0, len(data), size=10))
         cluster_map.add_cluster(new_cluster)
         clusters.append(new_cluster)
 
-    assert_array_equal([cluster.id for cluster in cluster_map.clusters], range(nb_clusters))
-    assert_array_equal([cluster.id for cluster in cluster_map], range(nb_clusters))
-    assert_array_equal(cluster_map.clusters, clusters)
+    assert_true(all([c1 is c2 for c1, c2 in zip(cluster_map.clusters, clusters)]))
     assert_array_equal(cluster_map, clusters)
+    assert_array_equal(cluster_map.clusters, clusters)
+    assert_array_equal(cluster_map, [cluster.indices for cluster in clusters])
+
+    # Set refdata
+    cluster_map.refdata = data
+    assert_array_equal(cluster_map, [[data[i] for i in cluster.indices] for cluster in clusters])
 
 
 def test_cluster_map_getitem():
@@ -309,7 +318,7 @@ def test_cluster_map_getitem():
     clusters = []
     for i in range(nb_clusters):
         new_cluster = Cluster()
-        new_cluster.id = cluster_map.add_cluster(new_cluster)
+        cluster_map.add_cluster(new_cluster)
         clusters.append(new_cluster)
 
     # Test indexing
@@ -379,13 +388,13 @@ def test_cluster_map_comparison_with_int():
 
 
 def test_cluster_map_centroid_attributes_and_constructor():
-    clusters = ClusterMapCentroid(features_shape)
+    clusters = ClusterMapCentroid()
     assert_array_equal(clusters.centroids, [])
     assert_raises(AttributeError, setattr, clusters, 'centroids', [])
 
 
 def test_cluster_map_centroid_add_cluster():
-    clusters = ClusterMapCentroid(features_shape)
+    clusters = ClusterMapCentroid()
 
     centroids = []
     for i in range(3):
@@ -397,19 +406,13 @@ def test_cluster_map_centroid_add_cluster():
             cluster.assign(id_data, (id_data+1)*features)
             cluster.update()
 
-        cluster.id = clusters.add_cluster(cluster)
+        clusters.add_cluster(cluster)
         assert_array_equal(cluster.centroid, centroids[-1])
         assert_equal(type(cluster), ClusterCentroid)
-        assert_equal(cluster, clusters[cluster.id])
+        assert_equal(cluster, clusters[-1])
 
     assert_equal(type(clusters.centroids), list)
     assert_array_equal(list(itertools.chain(*clusters.centroids)), list(itertools.chain(*centroids)))
-
-    # Check that even though we deleted `clusters`, `centroids` is not deallocated.
-    centroids_bak = copy.deepcopy(clusters.centroids)
-    centroids = clusters.centroids
-    del clusters
-    assert_array_equal(centroids, centroids_bak)
 
     # Check adding features of different sizes (shorter and longer)
     features_shape_short = (1, features_shape[1]-3)
@@ -422,7 +425,7 @@ def test_cluster_map_centroid_add_cluster():
 
 
 def test_cluster_map_centroid_remove_cluster():
-    clusters = ClusterMapCentroid(features_shape)
+    clusters = ClusterMapCentroid()
 
     centroid1 = np.random.rand(*features_shape).astype(dtype)
     cluster1 = ClusterCentroid(centroid1, indices=[1])
@@ -438,35 +441,44 @@ def test_cluster_map_centroid_remove_cluster():
 
     assert_equal(len(clusters), 3)
 
-    clusters.remove_cluster(1)
+    clusters.remove_cluster(cluster2)
     assert_equal(len(clusters), 2)
     assert_array_equal(list(itertools.chain(*clusters)), list(itertools.chain(*[cluster1, cluster3])))
     assert_array_equal(clusters.centroids, np.array([centroid1, centroid3]))
     assert_equal(clusters[0], cluster1)
     assert_equal(clusters[1], cluster3)
 
-    clusters.remove_cluster(1)
+    clusters.remove_cluster(cluster3)
     assert_equal(len(clusters), 1)
     assert_array_equal(list(itertools.chain(*clusters)), list(cluster1))
     assert_array_equal(clusters.centroids, np.array([centroid1]))
     assert_equal(clusters[0], cluster1)
 
+    clusters.remove_cluster(cluster1)
+    assert_equal(len(clusters), 0)
+    assert_array_equal(list(itertools.chain(*clusters)), [])
+    assert_array_equal(clusters.centroids, [])
+
 
 def test_cluster_map_centroid_iter():
     nb_clusters = 11
 
-    cluster_map = ClusterMapCentroid(features_shape)
+    cluster_map = ClusterMapCentroid()
     clusters = []
     for i in range(nb_clusters):
         new_centroid = np.zeros_like(features)
-        new_cluster = ClusterCentroid(new_centroid)
+        new_cluster = ClusterCentroid(new_centroid, indices=np.random.randint(0, len(data), size=10))
         cluster_map.add_cluster(new_cluster)
         clusters.append(new_cluster)
 
-    assert_array_equal([cluster.id for cluster in cluster_map.clusters], range(nb_clusters))
-    assert_array_equal([cluster.id for cluster in cluster_map], range(nb_clusters))
-    assert_array_equal(cluster_map.clusters, clusters)
+    assert_true(all([c1 is c2 for c1, c2 in zip(cluster_map.clusters, clusters)]))
     assert_array_equal(cluster_map, clusters)
+    assert_array_equal(cluster_map.clusters, clusters)
+    assert_array_equal(cluster_map, [cluster.indices for cluster in clusters])
+
+    # Set refdata
+    cluster_map.refdata = data
+    assert_array_equal(cluster_map, [[data[i] for i in cluster.indices] for cluster in clusters])
 
 
 def test_cluster_map_centroid_getitem():
@@ -475,7 +487,7 @@ def test_cluster_map_centroid_getitem():
     np.random.shuffle(indices)  # None trivial ordering
     advanced_indices = indices + [0, 1, 2, -1, -2, -3]
 
-    cluster_map = ClusterMapCentroid(features_shape)
+    cluster_map = ClusterMapCentroid()
     clusters = []
     for i in range(nb_clusters):
         centroid = np.zeros_like(features)
@@ -526,7 +538,7 @@ def test_cluster_map_centroid_comparison_with_int():
     cluster2.update()
     cluster3.update()
 
-    clusters = ClusterMapCentroid(features_shape)
+    clusters = ClusterMapCentroid()
     clusters.add_cluster(cluster1)
     clusters.add_cluster(cluster2)
     clusters.add_cluster(cluster3)

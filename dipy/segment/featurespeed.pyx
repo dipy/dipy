@@ -36,14 +36,32 @@ cdef class Feature(object):
 
     cdef Shape c_infer_shape(Feature self, Data2D datum) nogil:
         with gil:
-            return tuple2shape(self.infer_shape(np.asarray(datum)))
+            shape = self.infer_shape(np.asarray(datum))
+            if type(shape) is int:
+                return tuple2shape((1, shape))
+            elif len(shape) == 1:
+                return tuple2shape((1,) + shape)
+            elif len(shape) == 2:
+                return tuple2shape(shape)
+            else:
+                raise TypeError("Only scalar, 1D or 2D array features are supported!")
 
     cdef void c_extract(Feature self, Data2D datum, Data2D out) nogil:
-        cdef Data2D features
+        cdef Data2D c_features
         with gil:
-            features = self.extract(np.asarray(datum)).astype(np.float32)
+            features = np.asarray(self.extract(np.asarray(datum))).astype(np.float32)
+            if features.ndim == 0:
+                features = features[np.newaxis, np.newaxis]
+            elif features.ndim == 1:
+                features = features[np.newaxis]
+            elif features.ndim == 2:
+                pass
+            else:
+                raise TypeError("Only scalar, 1D or 2D array features are supported!")
 
-        out[:] = features
+            c_features = features
+
+        out[:] = c_features
 
     cpdef infer_shape(Feature self, datum):
         """ Infers features' shape from a sequence of N-dimensional points
@@ -264,9 +282,9 @@ cpdef extract(Feature feature, streamlines):
 
     cdef int i
     all_same_shapes = True
-    shapes = [feature.infer_shape(streamlines[0])]
+    shapes = [shape2tuple(feature.c_infer_shape(streamlines[0]))]
     for i in range(1, len(streamlines)):
-        shapes.append(feature.infer_shape(streamlines[i]))
+        shapes.append(shape2tuple(feature.c_infer_shape(streamlines[i])))
         if shapes[0] != shapes[i]:
             all_same_shapes = False
 

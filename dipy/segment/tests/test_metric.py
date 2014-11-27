@@ -2,7 +2,6 @@
 import numpy as np
 import dipy.segment.metric as dipymetric
 from dipy.tracking.streamline import length
-from dipy.segment.featurespeed import extract
 
 from nose.tools import assert_true, assert_false, assert_equal, assert_almost_equal
 from numpy.testing import assert_array_equal, assert_raises, run_module_suite
@@ -27,55 +26,6 @@ s1 = np.array([np.arange(10, dtype=dtype)]*3).T  # 10x3
 s2 = np.arange(3*10, dtype=dtype).reshape((-1, 3))[::-1]  # 10x3
 s3 = np.array([np.arange(5, dtype=dtype)]*4)  # 5x4
 s4 = np.array([np.arange(5, dtype=dtype)]*3)  # 5x3
-
-
-def test_feature_identity():
-    feature = dipymetric.IdentityFeature()
-    assert_equal(feature.infer_shape(s1), s1.shape)
-
-    features = feature.extract(s1)
-    assert_equal(features.shape, s1.shape)
-    assert_array_equal(features, s1)
-
-    # This feature type is not order invariant
-    assert_false(feature.is_order_invariant)
-    for s in [s1, s2]:
-        features = feature.extract(s)
-        features_flip = feature.extract(s[::-1])
-        assert_array_equal(features_flip, s[::-1])
-        assert_true(np.any(np.not_equal(features, features_flip)))
-
-
-def test_feature_midpoint():
-    feature_SHAPE = (1, 3)  # One N-dimensional point
-    feature = dipymetric.MidpointFeature()
-
-    assert_equal(feature.infer_shape(s1), feature_SHAPE)
-
-    features = feature.extract(s1)
-    assert_equal(features.shape, feature_SHAPE)
-    assert_array_equal(features, s1[[len(s1)//2], :])
-
-    # This feature type is not order invariant
-    assert_false(feature.is_order_invariant)
-    for s in [s1, s2]:
-        features = feature.extract(s)
-        features_flip = feature.extract(s[::-1])
-        assert_array_equal(features_flip, s[::-1][[len(s)//2], :])
-        assert_true(np.any(np.not_equal(features, features_flip)))
-
-
-def test_feature_center_of_mass():
-    feature_SHAPE = (1, 3)
-    feature = dipymetric.CenterOfMassFeature()
-
-    assert_equal(feature.infer_shape(s1), feature_SHAPE)
-
-    assert_true(feature.is_order_invariant)
-    for s in [s1, s2]:
-        features = feature.extract(s)
-        assert_equal(features.shape, feature_SHAPE)
-        assert_array_equal(features, np.mean(s, axis=0, keepdims=True))
 
 
 def test_metric_pointwise_euclidean():
@@ -235,52 +185,6 @@ def test_subclassing_metric():
     assert_equal(d1, d3)
 
 
-def test_subclassing_metric_and_feature():
-    class Identity(dipymetric.Feature):
-        def infer_shape(self, streamline):
-            return streamline.shape
-
-        def extract(self, streamline):
-            return streamline
-
-    class MDF(dipymetric.Metric):
-        def compatible(self, shape1, shape2):
-            return shape1 == shape2
-
-        def dist(self, features1, features2):
-            return MDF_distance(features1, features2)
-
-    # Test using Python Feature with Cython Metric
-    feature = Identity()
-    metric = dipymetric.AveragePointwiseEuclideanMetric(feature)
-    d1 = dipymetric.dist(metric, s1, s2)
-
-    features1 = metric.feature.extract(s1)
-    features2 = metric.feature.extract(s2)
-    d2 = metric.dist(features1, features2)
-    assert_equal(d1, d2)
-
-    # Test using Cython Feature with Python Metric
-    feature = Identity()
-    metric = MDF(dipymetric.IdentityFeature())
-    d1 = dipymetric.dist(metric, s1, s2)
-
-    features1 = metric.feature.extract(s1)
-    features2 = metric.feature.extract(s2)
-    d2 = metric.dist(features1, features2)
-    assert_equal(d1, d2)
-
-    # Test using Python Feature with Python Metric
-    feature = Identity()
-    metric = MDF(feature)
-    d1 = dipymetric.dist(metric, s1, s2)
-
-    features1 = metric.feature.extract(s1)
-    features2 = metric.feature.extract(s2)
-    d2 = metric.dist(features1, features2)
-    assert_equal(d1, d2)
-
-
 def test_metric_arclength():
     metric = dipymetric.ArcLengthMetric()
     shape = metric.feature.infer_shape(s1)
@@ -403,24 +307,6 @@ def test_weighted_sum_metric():
     # d1 = metric.dist_between_features(features1, features2)
     # d2 = metric.dist(streamline1, streamline2)
     # assert_equal(d1, d2)
-
-
-def test_feature_extract():
-    # Test that features are automatically cast into float32 when coming from Python space
-    class CenterOfMass64bit(dipymetric.Feature):
-        def infer_shape(self, streamline):
-            return (1, streamline.shape[1])
-
-        def extract(self, streamline):
-            return np.mean(streamline.astype(np.float64), axis=0, keepdims=True)
-
-    nb_streamlines = 100
-    feature_SHAPE = (1, 3)  # One N-dimensional point
-    #feature = dipymetric.MidpointFeature()
-    feature = CenterOfMass64bit()
-
-    streamlines = [np.arange(np.random.randint(20, 30) * 3).reshape((-1, 3)).astype(np.float32) for i in range(nb_streamlines)]
-    features = extract(feature, streamlines)
 
 
 def test_distance_matrix():
