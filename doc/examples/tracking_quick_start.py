@@ -178,7 +178,7 @@ nib.save(nib.Nifti1Image(FA, img.get_affine()), 'FA_map.nii.gz')
 """
 
 In Windows if you get a runtime error about frozen executable please start
-your script by adding your code above in a ``main`` function and using:
+your script by adding your code above in a ``main`` function and use:
 
 if __name__ == '__main__':
     import multiprocessing
