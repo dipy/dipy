@@ -224,7 +224,9 @@ def main(**extra_args):
                           pjoin('bin', 'dipy_quickbundles')],
           cmdclass = cmdclass,
           **extra_args
-         )
+        )
+    from setup_helpers import DipyConfig
+    DipyConfig.generate_config_py()
 
 #simple way to test what setup will do
 #python setup.py install --prefix=/tmp
