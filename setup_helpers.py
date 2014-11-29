@@ -73,7 +73,7 @@ class DipyConfig(object):
             its __repr__ can effectively produce an instance of the same object
             with the exact same value.
         """
-        if not DipyConfig.exported_info.has_key(cls.__name__):
+        if cls.__name__ not in DipyConfig.exported_info.keys():
             DipyConfig.exported_info[cls.__name__] = {}
         DipyConfig.exported_info[cls.__name__][key] = value
 
