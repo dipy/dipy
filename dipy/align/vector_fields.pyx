@@ -11,11 +11,6 @@ cdef extern from "dpy_math.h" nogil:
     double floor(double)
     double sqrt(double)
 
-include "../../build/config.pxi"
-def using_vc_sse2():
-    return USING_VC_SSE2
-
-
 cdef inline double _apply_affine_3d_x0(double x0, double x1, double x2,
                                        double h, double[:, :] aff) nogil:
     r"""Multiplies aff by (x0, x1, x2, h), returns the 1st element of product

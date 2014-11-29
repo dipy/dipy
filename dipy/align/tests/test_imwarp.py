@@ -7,12 +7,12 @@ from numpy.testing import (assert_equal,
 import dipy.align.imwarp as imwarp
 import dipy.align.metrics as metrics
 import dipy.align.vector_fields as vfu
-from dipy.align.vector_fields import using_vc_sse2
 from dipy.data import get_data
 from dipy.align import floating
 import nibabel.eulerangles as eulerangles
 from dipy.align.imwarp import DiffeomorphicMap
 from dipy.align import VerbosityLevels
+import dipy.__config__ as config
 
 def test_mult_aff():
     r"""mult_aff from imwarp returns the matrix product A.dot(B) considering None
@@ -419,16 +419,20 @@ def test_ssd_2d_demons():
         optimizer.full_energy_profile, 10)
     print(subsampled_energy_profile)
 
-    if using_vc_sse2():
+    build_flags = config.get_info('build_flags')
+
+    if build_flags['USING_VC_SSE2']:
         expected_profile = \
             np.array([312.6813333, 80.74625551, 49.43591374, 34.08871301,
                       25.18286981, 17.78955273, 25.91334939, 20.16932281,
                       43.86083145, 79.0966558 ])
-    else:
+    elif build_flags['USING_GCC_SSE2']:
         expected_profile = \
             np.array([312.6813333, 98.17321941, 60.98300837, 47.75387157,
                       34.11067498, 122.91901409, 19.75599298, 14.28763847,
                       36.33599718, 88.62426913])
+    else:
+        return
 
     assert_array_almost_equal(subsampled_energy_profile, expected_profile, decimal = 5)
     assert_equal(optimizer.OPT_START_CALLED, 1)
@@ -491,16 +495,21 @@ def test_ssd_2d_gauss_newton():
         optimizer.full_energy_profile, 10)
     print(subsampled_energy_profile)
 
-    if using_vc_sse2():
+    build_flags = config.get_info('build_flags')
+
+    if build_flags['USING_VC_SSE2']:
         expected_profile = \
             np.array([312.68133316, 70.17782995, 21.38508088, 96.41054776,
-                      49.990781, 43.11867579, 24.53952718, 51.0786643, 
+                      49.990781, 43.11867579, 24.53952718, 51.0786643,
                       143.24848252, 150.48349573])
-    else:
+    elif build_flags['USING_GCC_SSE2']:
         expected_profile = \
             np.array([312.68133316, 70.17782938, 21.26798507, 96.51765054,
                       51.1495088, 37.86204803, 21.62425293, 49.44868302,
                       121.6643917, 137.91427228])
+    else:
+        return
+
     assert_array_almost_equal(subsampled_energy_profile, expected_profile, decimal = 5)
     assert_equal(optimizer.OPT_START_CALLED, 0)
     assert_equal(optimizer.OPT_END_CALLED, 0)
@@ -583,16 +592,21 @@ def test_ssd_3d_demons():
         optimizer.full_energy_profile, 10)
     print(energy_profile)
 
-    if using_vc_sse2():
+    build_flags = config.get_info('build_flags')
+
+    if build_flags['USING_VC_SSE2']:
         expected_profile = \
             np.array([312.22706987, 154.65556884, 53.88543188, 9.11484007,
                       36.46592407, 13.20522299, 48.65663399, 14.91579802,
                       49.82954704, 14.92646254])
-    else:
+    elif build_flags['USING_GCC_SSE2']:
         expected_profile = \
             np.array([312.22706987, 154.65556885, 53.88455398, 9.11770682,
                       36.48642824, 13.21706748, 48.67710635, 14.91782047,
                       49.84142899, 14.92531294])
+    else:
+        return
+
     assert_array_almost_equal(energy_profile, expected_profile, decimal=4)
 
 
@@ -638,16 +652,21 @@ def test_ssd_3d_gauss_newton():
         optimizer.full_energy_profile, 10)
     print(energy_profile)
 
-    if using_vc_sse2():
+    build_flags = config.get_info('build_flags')
+
+    if build_flags['USING_VC_SSE2']:
         expected_profile = \
             np.array([348.3204721, 143.480757, 44.30003405, 8.73624842,
                       3.13227203, 14.70806563, 6.48360268, 23.52491883,
                       17.25669088, 48.99709064])
-    else:
+    elif build_flags['USING_GCC_SSE2']:
         expected_profile = \
             np.array([348.3204721, 143.48075646, 44.30003413, 8.73624841,
                       3.13227181, 14.70806845, 6.48360884, 23.52499421,
                       17.25667176, 48.997691])
+    else:
+        return
+
     assert_array_almost_equal(energy_profile, expected_profile, decimal=4)
 
 
@@ -678,16 +697,21 @@ def test_cc_2d():
         optimizer.full_energy_profile, 10)
     print(energy_profile)
 
-    if using_vc_sse2():
+    build_flags = config.get_info('build_flags')
+
+    if build_flags['USING_VC_SSE2']:
         expected_profile = \
             [-681.02276193, -910.57721051, -1012.76781394, -1021.24181308,
              -1016.97233745, -977.35458126, -1013.90114894, -989.04516449,
              -1021.72431465, -988.46698723]
-    else:
+    elif build_flags['USING_GCC_SSE2']:
         expected_profile = \
             [-681.02276236, -920.57714783, -1008.82241171, -1021.91021701,
              -994.86961164, -1026.52978164, -1015.83587405, -1020.02780802,
              -993.8576053, -1026.4369566 ]
+    else:
+        return
+
     expected_profile = np.asarray(expected_profile)
     assert_array_almost_equal(energy_profile, expected_profile, decimal=5)
 
@@ -733,14 +757,18 @@ def test_cc_3d():
         optimizer.full_energy_profile, 10)*1e-4
     print(energy_profile)
 
-    if using_vc_sse2():
+    build_flags = config.get_info('build_flags')
+
+    if build_flags['USING_VC_SSE2']:
         expected_profile = \
             [-0.17336006, -0.20516197, -0.20448353, -0.20630727, -0.20652892,
              -0.2073403, -3.0046531, -3.43771429, -3.47262116, -3.51383381]
-    else:
+    elif build_flags['USING_GCC_SSE2']:
         expected_profile = \
             [-0.17136006, -0.20632291, -0.2038927, -0.20688352, -0.20821154,
              -0.20909298, -0.20872891, -0.20933514, -3.06861497, -3.07851062]
+    else:
+        return
     expected_profile = np.asarray(expected_profile)
     assert_array_almost_equal(energy_profile, expected_profile, decimal=4)
 
@@ -793,16 +821,21 @@ def test_em_3d_gauss_newton():
         optimizer.full_energy_profile, 10)
     print(energy_profile)
 
-    if using_vc_sse2():
+    build_flags = config.get_info('build_flags')
+
+    if build_flags['USING_VC_SSE2']:
         expected_profile = \
             np.array([144.03694724, 63.06874155, 51.84694887, 39.6374044,
                       31.84981429, 44.3778833, 37.84961761, 38.00509734,
                       38.67423812, 38.47003306])
-    else:
+    elif build_flags['USING_GCC_SSE2']:
         expected_profile = \
             np.array([144.03694724, 63.06874148, 51.84694881, 39.63740417,
                       31.84981481, 44.37788414, 37.84961844, 38.00509881,
                       38.67423954, 38.47003339])
+    else:
+        return
+
     assert_array_almost_equal(energy_profile, expected_profile, decimal=4)
 
 
@@ -838,14 +871,19 @@ def test_em_2d_gauss_newton():
         optimizer.full_energy_profile, 10)
     print(energy_profile)
 
-    if using_vc_sse2():
+    build_flags = config.get_info('build_flags')
+
+    if build_flags['USING_VC_SSE2']:
         expected_profile = \
             [2.50773392, 0.41762978, 0.30900322, 0.14818498, 0.44620725,
              1.53134054, 1.42115728, 1.66358267, 1.184265, 46.13635772]
-    else:
+    elif build_flags['USING_GCC_SSE2']:
         expected_profile = \
             [2.50773392, 0.41763383, 0.30908578, 0.06241115, 0.11573476,
              2.48475885, 1.10053769, 0.9270271, 49.37186785, 44.72643467]
+    else:
+        return
+
     assert_array_almost_equal(energy_profile, np.array(expected_profile), decimal=5)
 
 
@@ -897,16 +935,21 @@ def test_em_3d_demons():
         optimizer.full_energy_profile, 10)
     print(energy_profile)
 
-    if using_vc_sse2():
+    build_flags = config.get_info('build_flags')
+
+    if build_flags['USING_VC_SSE2']:
         expected_profile = \
             np.array([144.03694708, 122.39512307, 111.31925381, 90.9100989,
                       93.93705232, 104.22993997, 110.57817867, 140.45262039,
                       133.87804571, 119.20794977])
-    else:
+    elif build_flags['USING_GCC_SSE2']:
         expected_profile = \
             np.array([144.03694708, 122.39512227, 111.31924572, 90.91010482,
                       93.93707059, 104.22996918, 110.57822649, 140.45298465,
                       133.87831302, 119.20826433])
+    else:
+        return
+
     assert_array_almost_equal(energy_profile, expected_profile, decimal=4)
 
 
@@ -942,14 +985,19 @@ def test_em_2d_demons():
         optimizer.full_energy_profile, 10)
     print(energy_profile)
 
-    if using_vc_sse2():
+    build_flags = config.get_info('build_flags')
+
+    if build_flags['USING_VC_SSE2']:
         expected_profile = \
             [2.50773393, 3.26942324, 1.81684393, 5.44878881, 40.0195918,
              31.87030788, 25.15710409, 29.82206485, 196.33114499, 213.86419995]
-    else:
+    elif build_flags['USING_GCC_SSE2']:
         expected_profile = \
             [2.50773393, 3.26942352, 1.8168445, 5.44879264, 40.01956373,
              31.65616398, 32.43115903, 35.24130742, 192.89072697, 195.456909]
+    else:
+        return
+
     assert_array_almost_equal(energy_profile, np.array(expected_profile), decimal=5)
 
 if __name__=='__main__':
