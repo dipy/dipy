@@ -1,5 +1,6 @@
 from __future__ import print_function
 import numpy as np
+import numpy.testing as npt
 from numpy.testing import (assert_equal,
                            assert_array_equal,
                            assert_array_almost_equal,
@@ -13,6 +14,9 @@ import nibabel.eulerangles as eulerangles
 from dipy.align.imwarp import DiffeomorphicMap
 from dipy.align import VerbosityLevels
 import dipy.__config__ as config
+
+NO_SSE2 = (not config.get_info('build_flags')['USING_VC_SSE2']) and \
+	  (not config.get_info('build_flags')['USING_GCC_SSE2'])
 
 def test_mult_aff():
     r"""mult_aff from imwarp returns the matrix product A.dot(B) considering None
@@ -364,7 +368,7 @@ def subsample_profile(profile, nsamples):
         profile[:(1 + (nsamples - 1) * stride):stride])
     return subsampled
 
-
+@npt.dec.skipif(NO_SSE2)
 def test_ssd_2d_demons():
     r'''
     Classical Circle-To-C experiment for 2D Monomodal registration. This test
@@ -431,8 +435,6 @@ def test_ssd_2d_demons():
             np.array([312.6813333, 98.17321941, 60.98300837, 47.75387157,
                       34.11067498, 122.91901409, 19.75599298, 14.28763847,
                       36.33599718, 88.62426913])
-    else:
-        return
 
     assert_array_almost_equal(subsampled_energy_profile, expected_profile, decimal = 5)
     assert_equal(optimizer.OPT_START_CALLED, 1)
@@ -443,6 +445,7 @@ def test_ssd_2d_demons():
     assert_equal(optimizer.ITER_END_CALLED, 1)
 
 
+@npt.dec.skipif(NO_SSE2)
 def test_ssd_2d_gauss_newton():
     r'''
     Classical Circle-To-C experiment for 2D Monomodal registration. This test
@@ -507,8 +510,6 @@ def test_ssd_2d_gauss_newton():
             np.array([312.68133316, 70.17782938, 21.26798507, 96.51765054,
                       51.1495088, 37.86204803, 21.62425293, 49.44868302,
                       121.6643917, 137.91427228])
-    else:
-        return
 
     assert_array_almost_equal(subsampled_energy_profile, expected_profile, decimal = 5)
     assert_equal(optimizer.OPT_START_CALLED, 0)
@@ -552,6 +553,7 @@ def get_synthetic_warped_circle(nslices):
     return circle_3d, wcircle_3d
 
 
+@npt.dec.skipif(NO_SSE2)
 def test_ssd_3d_demons():
     r'''
     Register a stack of circles ('cylinder') before and after warping them with
@@ -604,12 +606,11 @@ def test_ssd_3d_demons():
             np.array([312.22706987, 154.65556885, 53.88455398, 9.11770682,
                       36.48642824, 13.21706748, 48.67710635, 14.91782047,
                       49.84142899, 14.92531294])
-    else:
-        return
 
     assert_array_almost_equal(energy_profile, expected_profile, decimal=4)
 
 
+@npt.dec.skipif(NO_SSE2)
 def test_ssd_3d_gauss_newton():
     r'''
     Register a stack of circles ('cylinder') before and after warping them with
@@ -664,12 +665,11 @@ def test_ssd_3d_gauss_newton():
             np.array([348.3204721, 143.48075646, 44.30003413, 8.73624841,
                       3.13227181, 14.70806845, 6.48360884, 23.52499421,
                       17.25667176, 48.997691])
-    else:
-        return
 
     assert_array_almost_equal(energy_profile, expected_profile, decimal=4)
 
 
+@npt.dec.skipif(NO_SSE2)
 def test_cc_2d():
     r'''
     Register a circle to itself after warping it under a synthetic invertible
@@ -709,13 +709,12 @@ def test_cc_2d():
             [-681.02276236, -920.57714783, -1008.82241171, -1021.91021701,
              -994.86961164, -1026.52978164, -1015.83587405, -1020.02780802,
              -993.8576053, -1026.4369566 ]
-    else:
-        return
 
     expected_profile = np.asarray(expected_profile)
     assert_array_almost_equal(energy_profile, expected_profile, decimal=5)
 
 
+@npt.dec.skipif(NO_SSE2)
 def test_cc_3d():
     r'''
     Register a stack of circles ('cylinder') before and after warping them with
@@ -767,12 +766,12 @@ def test_cc_3d():
         expected_profile = \
             [-0.17136006, -0.20632291, -0.2038927, -0.20688352, -0.20821154,
              -0.20909298, -0.20872891, -0.20933514, -3.06861497, -3.07851062]
-    else:
-        return
+
     expected_profile = np.asarray(expected_profile)
     assert_array_almost_equal(energy_profile, expected_profile, decimal=4)
 
 
+@npt.dec.skipif(NO_SSE2)
 def test_em_3d_gauss_newton():
     r'''
     Register a stack of circles ('cylinder') before and after warping them with
@@ -833,12 +832,11 @@ def test_em_3d_gauss_newton():
             np.array([144.03694724, 63.06874148, 51.84694881, 39.63740417,
                       31.84981481, 44.37788414, 37.84961844, 38.00509881,
                       38.67423954, 38.47003339])
-    else:
-        return
 
     assert_array_almost_equal(energy_profile, expected_profile, decimal=4)
 
 
+@npt.dec.skipif(NO_SSE2)
 def test_em_2d_gauss_newton():
     r'''
     Register a circle to itself after warping it under a synthetic invertible
@@ -881,12 +879,11 @@ def test_em_2d_gauss_newton():
         expected_profile = \
             [2.50773392, 0.41763383, 0.30908578, 0.06241115, 0.11573476,
              2.48475885, 1.10053769, 0.9270271, 49.37186785, 44.72643467]
-    else:
-        return
 
     assert_array_almost_equal(energy_profile, np.array(expected_profile), decimal=5)
 
 
+@npt.dec.skipif(NO_SSE2)
 def test_em_3d_demons():
     r'''
     Register a stack of circles ('cylinder') before and after warping them with
@@ -947,12 +944,11 @@ def test_em_3d_demons():
             np.array([144.03694708, 122.39512227, 111.31924572, 90.91010482,
                       93.93707059, 104.22996918, 110.57822649, 140.45298465,
                       133.87831302, 119.20826433])
-    else:
-        return
 
     assert_array_almost_equal(energy_profile, expected_profile, decimal=4)
 
 
+@npt.dec.skipif(NO_SSE2)
 def test_em_2d_demons():
     r'''
     Register a circle to itself after warping it under a synthetic invertible
@@ -995,8 +991,6 @@ def test_em_2d_demons():
         expected_profile = \
             [2.50773393, 3.26942352, 1.8168445, 5.44879264, 40.01956373,
              31.65616398, 32.43115903, 35.24130742, 192.89072697, 195.456909]
-    else:
-        return
 
     assert_array_almost_equal(energy_profile, np.array(expected_profile), decimal=5)
 
