@@ -24,8 +24,9 @@ matrix:
         - COVERAGE=1
         - DEPENDS="cython==0.18 numpy==1.6.0 scipy==0.9.0 nibabel==1.2.0"
 before_install:
-    - virtualenv venv
+    - virtualenv --python=python venv
     - source venv/bin/activate
+    - python --version # just to check
     - pip install nose # always
     - sudo apt-get install libblas-dev liblapack-dev libatlas3gf-base
     - pip install --timeout=60 --no-index -f http://travis-wheels.scikit-image.org $DEPENDS
