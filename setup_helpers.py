@@ -274,6 +274,7 @@ def add_flag_checking(build_ext_class, flag_defines, top_package_dir=''):
                     if def_vars:
                         ext.include_dirs.append(config_dir)
             build_ext_class.build_extensions(self)
+            DipyConfig.generate_config_py()
 
     return Checker
 
