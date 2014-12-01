@@ -78,7 +78,7 @@ class DipyConfig(object):
         DipyConfig.exported_info[cls.__name__][key] = value
 
     @staticmethod
-    def generate_config_py(target=None):
+    def generate_config_pyx(target=None):
         """Generate config.py file containing system_info information
         used during building the package.
 
@@ -88,7 +88,7 @@ class DipyConfig(object):
             the name of the file to write the configuration info
         """
         if target is None:
-            target = pjoin('dipy', '__config__.py')
+            target = pjoin('dipy', '__config__.pyx')
 
         from distutils.dir_util import mkpath
         import sys
@@ -110,7 +110,7 @@ class DipyConfig(object):
         code_str += '            print("  NOT AVAILABLE")\n'
         code_str += '        for k,v in info_dict.items():\n'
         code_str += '            v = str(v)\n'
-        code_str += '        print("    %s = %s" % (k,v))\n'
+        code_str += '            print("    %s = %s" % (k,v))\n'
         f.write(code_str)
         f.close()
         return target
@@ -273,8 +273,8 @@ def add_flag_checking(build_ext_class, flag_defines, top_package_dir=''):
                     ext.extra_link_args += good_link_flags
                     if def_vars:
                         ext.include_dirs.append(config_dir)
+            DipyConfig.generate_config_pyx()
             build_ext_class.build_extensions(self)
-            DipyConfig.generate_config_py()
 
     return Checker
 
