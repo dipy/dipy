@@ -65,14 +65,14 @@ Elastic Net optimizes the following cost function:
 
 .. math::
 
-    \sum_{i=1}^{n}{(y_i - \hat{y}_i)^2} + \alpha (\Lambda \sum_{j=1}^{m}{w_j} +
-(1-\Lambda) \sum_{j=1}^{m}{w^2_j}
+    \sum_{i=1}^{n}{(y_i - \hat{y}_i)^2} + \alpha (\lambda \sum_{j=1}^{m}{w_j} +
+(1-\lambda) \sum_{j=1}^{m}{w^2_j}
 
 where $\hat{y}$ is the signal predicted for a particular setting of $\beta$,
 such that the left part of this expression is the squared loss function;
-$alpha$ is a parameter that sets the balance between the squared loss on
+$\alpha$ is a parameter that sets the balance between the squared loss on
 the data, and the regularization constraints. The regularization parameter
-$\Lambda$ sets the `l1_ratio`, which controls the balance between L1-sparsity
+$\lambda$ sets the `l1_ratio`, which controls the balance between L1-sparsity
 (low sum of weights), and low L2-sparsity (low sum-of-squares of the weights).
 
 We start by considering a small volume of data.
