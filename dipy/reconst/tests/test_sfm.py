@@ -83,7 +83,8 @@ def test_SparseFascicleModel_stick():
     S, sticks = sims.multi_tensor(gtab, mevals, S0, angles=angles,
                                   fractions=[50, 50], snr=SNR)
 
-    sfmodel = sfm.SparseFascicleModel(gtab, response=[0.001, 0, 0])
+    sfmodel = sfm.SparseFascicleModel(gtab, solver='NNLS',
+                                      response=[0.001, 0, 0])
     sffit = sfmodel.fit(S)
     pred = sffit.predict()
     npt.assert_almost_equal(pred, S, decimal=1)
