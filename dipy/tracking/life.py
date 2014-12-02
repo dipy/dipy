@@ -239,26 +239,8 @@ class LifeSignalMaker(object):
         # We'll need to keep track of what we've already calculated:
         self._calculated = []
 
-    def find_closest(self, xyz):
-        """
-        Find the index of the closest point on the discrete sphere to an input
-        vector
-
-        Parameters
-        ----------
-        xyz : 1d array, shape (3,)
-
-        Returns
-        -------
-        The index into `self.sphere.vertices` to the vertex closest to the
-        input vector, taking into account antipodal symmetry.
-        """
-        ang = np.arccos(np.dot(self.sphere.vertices, xyz))
-        ang = np.min(np.vstack([ang, np.pi - ang]), 0)
-        return np.argmin(ang)
-
     def calc_signal(self, xyz):
-        idx = self.find_closest(xyz)
+        idx = self.sphere.find_closest(xyz)
         if idx not in self._calculated:
             bvecs = self.gtab.bvecs[~self.gtab.b0s_mask]
             bvals = self.gtab.bvals[~self.gtab.b0s_mask]
