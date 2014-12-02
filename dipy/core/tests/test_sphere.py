@@ -9,7 +9,8 @@ from ...utils.six.moves import xrange
 from dipy.core.sphere import (Sphere, HemiSphere, unique_edges, unique_sets,
                               faces_from_sphere_vertices, HemiSphere,
                               disperse_charges, _get_forces,
-                              unit_octahedron, unit_icosahedron)
+                              unit_octahedron, unit_icosahedron,
+                              hemi_icosahedron)
 from dipy.core.subdivide_octahedron import create_unit_sphere
 from dipy.core.geometry import cart2sphere, sphere2cart, vector_norm
 
@@ -159,6 +160,20 @@ def test_sphere_subdivide():
 
     # It might be good to also test the vertices somehow if we can think of a
     # good test for them.
+
+def test_sphere_find_closest():
+    sphere1 = unit_octahedron.subdivide(4)
+    for ii in range(sphere1.vertices.shape[0]):
+        nt.assert_equal(sphere1.find_closest(sphere1.vertices[ii]), ii)
+
+
+def test_hemisphere_find_closest():
+    hemisphere1 = hemi_icosahedron.subdivide(4)
+    for ii in range(hemisphere1.vertices.shape[0]):
+        nt.assert_equal(hemisphere1.find_closest(hemisphere1.vertices[ii]), ii)
+        nt.assert_equal(hemisphere1.find_closest(-hemisphere1.vertices[ii]), ii)
+        nt.assert_equal(hemisphere1.find_closest(hemisphere1.vertices[ii] * 2),
+                        ii)
 
 
 @needs_delaunay

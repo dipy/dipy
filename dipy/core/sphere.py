@@ -259,6 +259,24 @@ class Sphere(object):
             faces = np.asarray(faces, dtype='uint16')
         return Sphere(xyz=vertices, faces=faces)
 
+    def find_closest(self, xyz):
+        """
+        Find the index of the vertex in the Sphere closest to the input vector
+
+        Parameters
+        ----------
+        xyz : array-like, 3 elements
+            A unit vector
+
+        Return
+        ------
+        idx : int
+            The index into the Sphere.vertices array that gives the closest
+            vertex (in angle).
+        """
+        cos_sim = np.dot(self.vertices, xyz)
+        return np.argmax(cos_sim)
+
 
 class HemiSphere(Sphere):
     """Points on the unit sphere.
@@ -351,6 +369,26 @@ class HemiSphere(Sphere):
         sphere = self.mirror()
         sphere = sphere.subdivide(n)
         return HemiSphere.from_sphere(sphere)
+
+
+    def find_closest(self, xyz):
+        """
+        Find the index of the vertex in the Sphere closest to the input vector,
+        taking into account antipodal symmetry
+
+        Parameters
+        ----------
+        xyz : array-like, 3 elements
+            A unit vector
+
+        Return
+        ------
+        idx : int
+            The index into the Sphere.vertices array that gives the closest
+            vertex (in angle).
+        """
+        cos_sim = abs(np.dot(self.vertices, xyz))
+        return np.argmax(cos_sim)
 
 
 def _switch_vertex(index1, index2, vertices):
