@@ -120,9 +120,14 @@ def sfm_design_matrix(gtab, sphere, response, mode='signal'):
             sig = sims.single_tensor(mat_gtab, evals=response, evecs=evecs)
             mat[:, ii] = sig - np.mean(sig)
         elif mode == 'odf':
-            odf = sims.single_tensor_odf(gtab.vertices,
-                                         evals=response, evecs=evecs)
-            mat[:, ii] = odf
+            # Stick function
+            if response[1] == 0 or response[2] == 0:
+                jj = sphere.find_closest(evecs[0])
+                mat[jj, ii] = 1
+            else:
+                odf = sims.single_tensor_odf(gtab.vertices,
+                                             evals=response, evecs=evecs)
+                mat[:, ii] = odf
     return mat
 
 
