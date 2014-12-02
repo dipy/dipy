@@ -51,9 +51,10 @@ written as:
 
 Where $y$ is the signal and $\beta$ are weights on different points in the
 sphere. The columns of the design matrix, $X$ are the signals in each point in
-the measurement that would be predicted if there was a fascicle. Typically,
-this will be a prolate tensor with axial diffusivity 3-5 times higher than its
-radial diffusivity. The exact numbers can also be estimated from examining
+the measurement that would be predicted if there was a fascicle oriented in the
+direction represented by that column. Typically, the signal used for this
+kernel will be a prolate tensor with axial diffusivity 3-5 times higher than
+its radial diffusivity. The exact numbers can also be estimated from examining
 parts of the brain in which there is known to be only one fascicle (e.g. in
 corpus callosum).
 
