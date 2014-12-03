@@ -1,6 +1,6 @@
 """
 ====================
-Local Fiber Tracking
+Introduction to Basic Tracking
 ====================
 
 Local fiber tracking is an approach used to model white matter fibers by
@@ -163,12 +163,23 @@ prob_dg = ProbabilisticDirectionGetter.from_shcoeff(csd_fit.shm_coeff,
                                                     sphere=default_sphere)
 
 """
-Just as we did in the deterministic example, we can pass this direction getter,
-along with the ``classifier`` and ``seeds``, to ``LocalTracking`` to get a
-probabilistic model of the corpus callosum.
+As with deterministic tracking, we'll need to use a tissue classifier to
+restrict the tracking to the white matter of the brain. One might be tempted
+to use the GFA of the CSD FODs to build a tissue classifier, however the GFA
+values of these FODs don't classify gray matter and white matter well. We will
+therefore use the GFA from the CSA model which we fit for the first section of
+this example. Alternatively, one could fit a ``TensoModel`` to the data and use
+the fractional anisotropy (FA) to build a tissue classifier.
 """
 
-classifier = ThresholdTissueClassifier(csd_fit.gfa, .25)
+classifier = ThresholdTissueClassifier(csa_peaks.gfa, .25)
+
+"""
+Next we can pass this direction getter, along with the ``classifier`` and
+``seeds``, to ``LocalTracking`` to get a probabilistic model of the corpus
+callosum.
+"""
+
 streamlines = LocalTracking(prob_dg, classifier, seeds, affine,
                             step_size=.5, max_cross=1)
 
@@ -195,4 +206,3 @@ fvtk.record(r, n_frames=1, out_path='probabilistic.png',
 """
 
 save_trk("CSD_prob.trk", streamlines, affine, labels.shape)
-

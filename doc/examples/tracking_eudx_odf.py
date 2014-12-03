@@ -4,6 +4,12 @@
 Deterministic Tracking with EuDX on ODF Peaks
 =============================================
 
+.. NOTE::
+    Dipy has updated tools for fiber tracking. Our new machinery for fiber
+    tracking is featured in the example titled Introduction to Basic Tracking.
+    The tools demonstrated in this example are no longer actively being
+    maintained and will likely be deprecated at some point.
+
 In this example we do deterministic fiber tracking on fields of ODF peaks. EuDX
 [Garyfallidis12]_ will be used for this.
 

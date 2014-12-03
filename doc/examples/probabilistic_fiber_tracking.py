@@ -35,7 +35,16 @@ seeds = utils.seeds_from_mask(seed_mask, density=1, affine=affine)
 
 csd_model = ConstrainedSphericalDeconvModel(gtab, None, sh_order=6)
 csd_fit = csd_model.fit(data, mask=white_matter)
-classifier = ThresholdTissueClassifier(csd_fit.gfa, .25)
+
+"""
+We use the GFA of the CSA model to build a tissue classifier.
+"""
+
+from dipy.reconst.shm import CsaOdfModel
+
+csa_model = CsaOdfModel(gtab, sh_order=6)
+gfa = csa_model.fit(data, mask=white_matter).gfa
+classifier = ThresholdTissueClassifier(gfa, .25)
 
 """
 The fiber orientation distribution (FOD) of the CSD model estimates the

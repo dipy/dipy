@@ -5,7 +5,7 @@ Tracking Quick Start
 
 .. NOTE::
     Dipy has updated tools for fiber tracking. Our new machinery for fiber
-    tracking is featured in the example titled introduction to basic tracking.
+    tracking is featured in the example titled Introduction to Basic Tracking.
     The tools demonstrated in this example are no longer actively being
     maintained and will likely be deprecated at some point.
 
