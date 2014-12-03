@@ -7,7 +7,7 @@ cimport numpy as np
 
 from cythonutils cimport Data2D, shape2tuple
 from metricspeed cimport Metric
-from clusteringspeed cimport ClustersListCentroid, Centroid
+from clusteringspeed cimport ClustersCentroid, Centroid
 from dipy.segment.clustering import ClusterMapCentroid, ClusterCentroid
 
 cdef extern from "stdlib.h" nogil:
@@ -22,7 +22,7 @@ DEF biggest_float = 3.4028235e+38  # np.finfo('f4').max
 DEF biggest_int = 2147483647  # np.iinfo('i4').max
 
 
-def clusterslist2clustermap(ClustersListCentroid clusters_list):
+def clusterslist2clustermap(ClustersCentroid clusters_list):
     clusters = ClusterMapCentroid()
     for i in range(clusters_list._nb_clusters):
         centroid = np.asarray(clusters_list._centroids[i].features)
@@ -75,7 +75,7 @@ def quickbundles(streamlines, Metric metric, double threshold=10., long max_nb_c
     features_shape = shape2tuple(metric.feature.c_infer_shape(streamline0.astype(dtype)))
     cdef:
         int idx
-        ClustersListCentroid clusters = ClustersListCentroid(features_shape)
+        ClustersCentroid clusters = ClustersCentroid(features_shape)
         Data2D features_s_i = np.empty(features_shape, dtype=dtype)
         Data2D features_s_i_flip = np.empty(features_shape, dtype=dtype)
 
@@ -89,7 +89,7 @@ def quickbundles(streamlines, Metric metric, double threshold=10., long max_nb_c
     return clusterslist2clustermap(clusters)
 
 
-cdef NearestCluster _find_nearest_cluster(Data2D features, Metric metric, ClustersListCentroid clusters) nogil except *:
+cdef NearestCluster _find_nearest_cluster(Data2D features, Metric metric, ClustersCentroid clusters) nogil except *:
     """ Finds the nearest cluster given a `features` vector. """
     cdef:
         np.npy_intp k
@@ -110,7 +110,7 @@ cdef NearestCluster _find_nearest_cluster(Data2D features, Metric metric, Cluste
     return nearest_cluster
 
 
-cdef int _quickbundles_assignment_step(Data2D s_i, int streamline_idx, Metric metric, ClustersListCentroid clusters, Data2D features_s_i, Data2D features_s_i_flip, double threshold=10, int max_nb_clusters=biggest_int) nogil except -1:
+cdef int _quickbundles_assignment_step(Data2D s_i, int streamline_idx, Metric metric, ClustersCentroid clusters, Data2D features_s_i, Data2D features_s_i_flip, double threshold=10, int max_nb_clusters=biggest_int) nogil except -1:
     cdef:
         Data2D features_to_add = features_s_i
         NearestCluster nearest_cluster, nearest_cluster_flip
@@ -149,7 +149,7 @@ cdef int _quickbundles_assignment_step(Data2D s_i, int streamline_idx, Metric me
 
 def kmeans(streamlines, Metric metric, int K, ordering=None, max_nb_iterations=biggest_int):
     if len(streamlines) == 0:
-        return ClustersListCentroid((0, 0))
+        return ClustersCentroid((0, 0))
 
     if ordering is None:
         ordering = range(len(streamlines))
@@ -160,7 +160,7 @@ def kmeans(streamlines, Metric metric, int K, ordering=None, max_nb_iterations=b
     features_shape = shape2tuple(metric.feature.c_infer_shape(streamline0))
     cdef:
         int idx
-        ClustersListCentroid clusters = ClustersListCentroid(features_shape)
+        ClustersCentroid clusters = ClustersCentroid(features_shape)
         Data2D features_s_i = np.empty(features_shape, dtype=dtype)
         Data2D features_s_i_flip = np.empty(features_shape, dtype=dtype)
 
@@ -184,12 +184,12 @@ def kmeans(streamlines, Metric metric, int K, ordering=None, max_nb_iterations=b
 
     return clusters
 
-cdef void _kmeans_assignment_step(Data2D s_i, int streamline_idx, Metric metric, ClustersListCentroid clusters, Data2D features_s_i, Data2D features_s_i_flip) nogil except *:
+cdef void _kmeans_assignment_step(Data2D s_i, int streamline_idx, Metric metric, ClustersCentroid clusters, Data2D features_s_i, Data2D features_s_i_flip) nogil except *:
     threshold = biggest_double
     max_nb_clusters = 0
     _quickbundles_assignment_step(s_i, streamline_idx, metric, clusters, features_s_i, features_s_i_flip, threshold, max_nb_clusters)
 
-cdef int _kmeans_update_step(ClustersListCentroid clusters) nogil except -1:
+cdef int _kmeans_update_step(ClustersCentroid clusters) nogil except -1:
     cdef int cluster_id
     cdef int converged = 1
     for cluster_id in range(clusters.c_size()):

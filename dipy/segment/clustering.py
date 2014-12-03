@@ -301,15 +301,12 @@ class QuickBundles(Clustering):
     Parameters
     ----------
     threshold : float
-        criterion to consider a streamline as being part of a bundle
+        The maximum distance from a bundle for a streamline to be still
+        considered as part of it.
     metric : str or `Metric` object
-        will be used to compute distance between two streamlines
+        The distance metric to use. The metric can be 'mdf'.
     max_nb_clusters : int
-        limits the creation of the bundles
-
-    Metric names
-    ------------
-    *mdf* : Minimum Average Direct-Flip
+        Limits the creation of bundles.
 
     References
     ----------
