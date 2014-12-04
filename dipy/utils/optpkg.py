@@ -3,6 +3,11 @@
 import importlib
 
 try:
+    import importlib
+except ImportError:
+    import _importlib as importlib
+
+try:
     import nose
 except ImportError:
     have_nose = False
