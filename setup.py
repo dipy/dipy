@@ -129,7 +129,9 @@ else: # We have nibabel
     omp_test_c = """#include <omp.h>
     int main(int argc, char** argv) { return(0); }"""
     extbuilder = add_flag_checking(
-        build_ext, [[['-fopenmp'], ['-fopenmp'], omp_test_c, 'HAVE_OPENMP']])
+        build_ext,
+        [[['-fopenmp'], ['-fopenmp'], omp_test_c, 'HAVE_OPENMP']],
+        'dipy')
     # Fix npymath libraries for Windows
     if os.name == 'nt':
         extbuilder = check_npymath(extbuilder)
