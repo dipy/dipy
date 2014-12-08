@@ -18,8 +18,8 @@ from dipy.__config__ import USING_VC_SSE2, USING_GCC_SSE2
 NO_SSE2 = not (USING_VC_SSE2 or USING_GCC_SSE2)
 
 def test_mult_aff():
-    r"""mult_aff from imwarp returns the matrix product A.dot(B) considering None
-    as the identity
+    r"""mult_aff from imwarp returns the matrix product A.dot(B) considering
+    None as the identity
     """
     A = np.array([[1.0, 2.0], [3.0, 4.0]])
     B = np.array([[2.0, 0.0], [0.0, 2.0]])
@@ -44,10 +44,10 @@ def test_diffeomorphic_map_2d():
     image to an output image. First a discrete random assignment between the
     images is generated, then each pair of mapped points are transformed to
     the physical space by assigning a pair of arbitrary, fixed affine matrices
-    to input and output images, and finaly the difference between their positions
-    is taken as the displacement vector. The resulting displacement, although
-    operating in physical space, maps the points exactly (up to numerical
-    precision).
+    to input and output images, and finaly the difference between their
+    positions is taken as the displacement vector. The resulting displacement,
+    although operating in physical space, maps the points exactly (up to
+    numerical precision).
     """
     np.random.seed(2022966)
     domain_shape = (10, 10)
@@ -69,16 +69,18 @@ def test_diffeomorphic_map_2d():
     #create the random displacement field
     domain_affine = gt_affine
     codomain_affine = gt_affine
-    disp, assign = vfu.create_random_displacement_2d(np.array(domain_shape, dtype=np.int32),
-                                                     domain_affine,
-                                                     np.array(codomain_shape, dtype=np.int32),
-                                                     codomain_affine)
+    disp, assign = vfu.create_random_displacement_2d(
+                        np.array(domain_shape, dtype=np.int32),
+                        domain_affine,np.array(codomain_shape, dtype=np.int32),
+                        codomain_affine)
     disp = np.array(disp, dtype=floating)
     assign = np.array(assign)
     #create a random image (with decimal digits) to warp
     moving_image = np.ndarray(codomain_shape, dtype=floating)
-    moving_image[...] = np.random.randint(0, 10, np.size(moving_image)).reshape(tuple(codomain_shape))
-    #set boundary values to zero so we don't test wrong interpolation due to floating point precision
+    ns = np.size(moving_image)
+    moving_image[...] = np.random.randint(0, 10, ns).reshape(codomain_shape)
+    #set boundary values to zero so we don't test wrong interpolation due
+    #to floating point precision
     moving_image[0,:] = 0
     moving_image[-1,:] = 0
     moving_image[:,0] = 0
@@ -101,12 +103,14 @@ def test_diffeomorphic_map_2d():
 
         #warp using linear interpolation
         warped = diff_map.transform(moving_image, 'linear')
-        #compare the images (the linear interpolation may introduce slight precision errors)
+        #compare the images (the linear interpolation may introduce slight
+        #precision errors)
         assert_array_almost_equal(warped, expected, decimal=5)
 
         #Now test the nearest neighbor interpolation
         warped = diff_map.transform(moving_image, 'nearest')
-        #compare the images (now we dont have to worry about precision, it is n.n.)
+        #compare the images (now we dont have to worry about precision,
+        #it is n.n.)
         assert_array_almost_equal(warped, expected)
 
         #verify the is_inverse flag
@@ -127,12 +131,14 @@ def test_diffeomorphic_map_2d():
 
         #warp using linear interpolation
         warped = diff_map.transform_inverse(moving_image, 'linear')
-        #compare the images (the linear interpolation may introduce slight precision errors)
+        #compare the images (the linear interpolation may introduce slight
+        #precision errors)
         assert_array_almost_equal(warped, expected, decimal=5)
 
         #Now test the nearest neighbor interpolation
         warped = diff_map.transform_inverse(moving_image, 'nearest')
-        #compare the images (now we dont have to worry about precision, it is n.n.)
+        #compare the images (now we don't have to worry about precision,
+        #it is nearest neighbour)
         assert_array_almost_equal(warped, expected)
 
     #Verify that DiffeomorphicMap raises the appropriate exceptions when
@@ -143,7 +149,8 @@ def test_diffeomorphic_map_2d():
                                           None)
     diff_map.forward = disp
     diff_map.domain_shape = None
-    #If we don't provide the sampling info, it should try to use the map's info, but it's None...
+    #If we don't provide the sampling info, it should try to use the map's
+    #info, but it's None...
     assert_raises(ValueError, diff_map.transform, moving_image, 'linear')
 
     #Same test for diff_map.transform_inverse
@@ -153,8 +160,10 @@ def test_diffeomorphic_map_2d():
                                           None)
     diff_map.forward = disp
     diff_map.codomain_shape = None
-    #If we don't provide the sampling info, it should try to use the map's info, but it's None...
-    assert_raises(ValueError, diff_map.transform_inverse, moving_image, 'linear')
+    #If we don't provide the sampling info, it should try to use the map's
+    #info, but it's None...
+    assert_raises(ValueError, diff_map.transform_inverse,
+                  moving_image, 'linear')
 
     #We must provide, at least, the reference grid shape
     assert_raises(ValueError, imwarp.DiffeomorphicMap, 2, None)
@@ -171,10 +180,10 @@ def test_diffeomorphic_map_simplification_2d():
     numerical precision.
     """
     #create a simple affine transformation
-    domain_shape = (64, 64)
-    codomain_shape = (80, 80)
-    nr = domain_shape[0]
-    nc = domain_shape[1]
+    dom_shape = (64, 64)
+    cod_shape = (80, 80)
+    nr = dom_shape[0]
+    nc = dom_shape[1]
     s = 1.1
     t = 0.25
     trans = np.array([[1, 0, -t*nr],
@@ -187,19 +196,19 @@ def test_diffeomorphic_map_simplification_2d():
     gt_affine = trans_inv.dot(scale.dot(trans))
     # Create the invertible displacement fields and the circle
     radius = 16
-    circle = vfu.create_circle(codomain_shape[0], codomain_shape[1], radius)
-    d, dinv = vfu.create_harmonic_fields_2d(domain_shape[0], domain_shape[1], 0.3, 6)
-    #Define different voxel-to-space transforms for domain, codomain and reference grid,
-    #also, use a non-identity pre-align transform
+    circle = vfu.create_circle(cod_shape[0], cod_shape[1], radius)
+    d, dinv = vfu.create_harmonic_fields_2d(dom_shape[0], dom_shape[1], 0.3, 6)
+    #Define different voxel-to-space transforms for domain, codomain and
+    #reference grid, also, use a non-identity pre-align transform
     D = gt_affine
     C = imwarp.mult_aff(gt_affine, gt_affine)
     R = np.eye(3)
     P = gt_affine
 
     #Create the original diffeomorphic map
-    diff_map = imwarp.DiffeomorphicMap(2, domain_shape, R,
-                                          domain_shape, D,
-                                          codomain_shape, C,
+    diff_map = imwarp.DiffeomorphicMap(2, dom_shape, R,
+                                          dom_shape, D,
+                                          cod_shape, C,
                                           P)
     diff_map.forward = np.array(d, dtype = floating)
     diff_map.backward = np.array(dinv, dtype = floating)
@@ -252,10 +261,12 @@ def test_diffeomorphic_map_simplification_3d():
     gt_affine = trans_inv.dot(scale.dot(trans))
     # Create the invertible displacement fields and the sphere
     radius = 16
-    sphere = vfu.create_sphere(codomain_shape[0], codomain_shape[1], codomain_shape[2], radius)
-    d, dinv = vfu.create_harmonic_fields_3d(domain_shape[0], domain_shape[1], domain_shape[2], 0.3, 6)
-    #Define different voxel-to-space transforms for domain, codomain and reference grid,
-    #also, use a non-identity pre-align transform
+    sphere = vfu.create_sphere(codomain_shape[0], codomain_shape[1],
+                               codomain_shape[2], radius)
+    d, dinv = vfu.create_harmonic_fields_3d(domain_shape[0], domain_shape[1],
+                                            domain_shape[2], 0.3, 6)
+    #Define different voxel-to-space transforms for domain, codomain and
+    #reference grid, also, use a non-identity pre-align transform
     D = gt_affine
     C = imwarp.mult_aff(gt_affine, gt_affine)
     R = np.eye(4)
@@ -292,13 +303,15 @@ def test_optimizer_exceptions():
     # The metric must not be None
     assert_raises(ValueError, imwarp.SymmetricDiffeomorphicRegistration, None)
     # The iterations list must not be empty
-    assert_raises(ValueError, imwarp.SymmetricDiffeomorphicRegistration, metric, [])
+    assert_raises(ValueError, imwarp.SymmetricDiffeomorphicRegistration,
+                  metric, [])
 
     optimizer = imwarp.SymmetricDiffeomorphicRegistration(metric, None)
     #Verify the default iterations list
     assert_array_equal(optimizer.level_iters, [100,100,25])
 
-    #Verify exception thrown when attepting to fit the energy profile without enough data
+    #Verify exception thrown when attepting to fit the energy profile without
+    #enough data
     assert_raises(ValueError, optimizer._get_energy_derivative)
 
 
@@ -308,7 +321,8 @@ def test_scale_space_exceptions():
     target_shape = (32, 32)
     #create a random image
     image = np.ndarray(target_shape, dtype=floating)
-    image[...] = np.random.randint(0, 10, np.size(image)).reshape(tuple(target_shape))
+    ns = np.size(image)
+    image[...] = np.random.randint(0, 10, ns).reshape(tuple(target_shape))
     zeros = (image == 0).astype(np.int32)
 
     ss = imwarp.ScaleSpace(image,3)
@@ -417,11 +431,9 @@ def test_ssd_2d_demons():
     mapping = optimizer.optimize(static, moving, None)
     m = optimizer.get_map()
     assert_equal(mapping, m)
-
     subsampled_energy_profile = subsample_profile(
         optimizer.full_energy_profile, 10)
     print(subsampled_energy_profile)
-
 
     if USING_VC_SSE2:
         expected_profile = \
@@ -434,7 +446,8 @@ def test_ssd_2d_demons():
                       34.11067498, 122.91901409, 19.75599298, 14.28763847,
                       36.33599718, 88.62426913])
 
-    assert_array_almost_equal(subsampled_energy_profile, expected_profile, decimal = 5)
+    assert_array_almost_equal(subsampled_energy_profile,
+                              expected_profile, decimal=5)
     assert_equal(optimizer.OPT_START_CALLED, 1)
     assert_equal(optimizer.OPT_END_CALLED, 1)
     assert_equal(optimizer.SCALE_START_CALLED, 1)
@@ -448,9 +461,9 @@ def test_ssd_2d_gauss_newton():
     r'''
     Classical Circle-To-C experiment for 2D Monomodal registration. This test
     is intended to detect regressions only: we saved the energy profile (the
-    sequence of energy values at each iteration) of a working version of SSD in
-    2D using the Gauss Newton step, and this test checks that the current energy
-    profile matches the saved one.
+    sequence of energy values at each iteration) of a working version of SSD
+    in 2D using the Gauss Newton step, and this test checks that the current
+    energy profile matches the saved one.
     '''
     fname_moving = get_data('reg_o')
     fname_static = get_data('reg_c')
@@ -488,14 +501,13 @@ def test_ssd_2d_gauss_newton():
     optimizer.ITER_END_CALLED = 0
 
     optimizer.verbosity = VerbosityLevels.DEBUG
-    mapping = optimizer.optimize(static, moving, np.eye(3), np.eye(3), np.eye(3))
+    id = np.eye(3)
+    mapping = optimizer.optimize(static, moving, id, id, id)
     m = optimizer.get_map()
     assert_equal(mapping, m)
-
     subsampled_energy_profile = subsample_profile(
         optimizer.full_energy_profile, 10)
     print(subsampled_energy_profile)
-
 
     if USING_VC_SSE2:
         expected_profile = \
@@ -508,7 +520,8 @@ def test_ssd_2d_gauss_newton():
                       51.1495088, 37.86204803, 21.62425293, 49.44868302,
                       121.6643917, 137.91427228])
 
-    assert_array_almost_equal(subsampled_energy_profile, expected_profile, decimal = 5)
+    assert_array_almost_equal(subsampled_energy_profile, expected_profile,
+                              decimal = 5)
     assert_equal(optimizer.OPT_START_CALLED, 0)
     assert_equal(optimizer.OPT_END_CALLED, 0)
     assert_equal(optimizer.SCALE_START_CALLED, 0)
@@ -553,14 +566,14 @@ def get_synthetic_warped_circle(nslices):
 @npt.dec.skipif(NO_SSE2)
 def test_ssd_3d_demons():
     r'''
-    Register a stack of circles ('cylinder') before and after warping them with
-    a synthetic diffeomorphism. This test is intended to detect regressions
-    only: we saved the energy profile (the sequence of energy values at each
-    iteration) of a working version of SSD in 3D using the Demons step, and this
-    test checks that the current energy profile matches the saved one. The
-    validation of the "working version" was done by registering the 18 manually
-    annotated T1 brain MRI database IBSR with each other and computing the
-    jaccard index for all 31 common anatomical regions.
+    Register a stack of circles ('cylinder') before and after warping them
+    with a synthetic diffeomorphism. This test is intended to detect
+    regressions only: we saved the energy profile (the sequence of energy
+    values at each iteration) of a working version of SSD in 3D using the
+    Demons step, and this test checks that the current energy profile matches
+    the saved one. The validation of the "working version" was done by
+    registering the 18 manually annotated T1 brain MRI database IBSR with each
+    other and computing the jaccard index for all 31 common anatomical regions.
     '''
     moving, static = get_synthetic_warped_circle(30)
     moving[...,:8] = 0
@@ -571,7 +584,8 @@ def test_ssd_3d_demons():
     #Create the SSD metric
     smooth = 4
     step_type = 'demons'
-    similarity_metric = metrics.SSDMetric(3, smooth=smooth, step_type=step_type)
+    similarity_metric = metrics.SSDMetric(3, smooth=smooth,
+                                          step_type=step_type)
 
     #Create the optimizer
     level_iters = [10, 5]
@@ -586,11 +600,9 @@ def test_ssd_3d_demons():
     mapping = optimizer.optimize(static, moving, None)
     m = optimizer.get_map()
     assert_equal(mapping, m)
-
     energy_profile = subsample_profile(
         optimizer.full_energy_profile, 10)
     print(energy_profile)
-
 
     if USING_VC_SSE2:
         expected_profile = \
@@ -616,8 +628,8 @@ def test_ssd_3d_gauss_newton():
     and this test checks that the current energy profile matches the saved
     one. The validation of the "working version" was
     done by registering the 18 manually annotated T1 brain MRI database IBSR
-    with each other and computing the jaccard index for all 31 common anatomical
-    regions.
+    with each other and computing the jaccard index for all 31 common
+    anatomical regions.
     '''
     moving, static = get_synthetic_warped_circle(35)
     moving[...,:10] = 0
@@ -644,11 +656,9 @@ def test_ssd_3d_gauss_newton():
     mapping = optimizer.optimize(static, moving, None)
     m = optimizer.get_map()
     assert_equal(mapping, m)
-
     energy_profile = subsample_profile(
         optimizer.full_energy_profile, 10)
     print(energy_profile)
-
 
     if USING_VC_SSE2:
         expected_profile = \
@@ -687,11 +697,9 @@ def test_cc_2d():
     mapping = optimizer.optimize(static, moving, None)
     m = optimizer.get_map()
     assert_equal(mapping, m)
-
     energy_profile = subsample_profile(
         optimizer.full_energy_profile, 10)
     print(energy_profile)
-
 
     if USING_VC_SSE2:
         expected_profile = \
@@ -716,10 +724,10 @@ def test_cc_3d():
     is intended to detect regressions only: we saved the energy profile (the
     sequence of energy values at each iteration) of a working version of CC in
     3D, and this test checks that the current energy profile matches the saved
-    one. The validation of the "working version" was
-    done by registering the 18 manually annotated T1 brain MRI database IBSR
-    with each other and computing the jaccard index for all 31 common anatomical
-    regions. The "working version" of CC in 3D obtains very similar results as
+    one. The validation of the "working version" was done by registering the
+    18 manually annotated T1 brain MRI database IBSR with each other and
+    computing the jaccard index for all 31 common anatomical regions. The
+    "working version" of CC in 3D obtains very similar results as
     those reported for ANTS on the same database with the same number of
     iterations. Any modification that produces a change in the energy profile
     should be carefully validated to ensure no accuracy loss.
@@ -745,11 +753,9 @@ def test_cc_3d():
     mapping = optimizer.optimize(static, moving, None, None, None)
     m = optimizer.get_map()
     assert_equal(mapping, m)
-
     energy_profile = subsample_profile(
         optimizer.full_energy_profile, 10)*1e-4
     print(energy_profile)
-
 
     if USING_VC_SSE2:
         expected_profile = \
@@ -774,11 +780,11 @@ def test_em_3d_gauss_newton():
     3D, and this test checks that the current energy profile matches the saved
     one. The validation of the "working version" was
     done by registering the 18 manually annotated T1 brain MRI database IBSR
-    with each other and computing the jaccard index for all 31 common anatomical
-    regions. The "working version" of EM in 3D obtains very similar results as
-    those reported for ANTS on the same database. Any modification that produces
-    a change in the energy profile should be carefully validated to ensure no
-    accuracy loss.
+    with each other and computing the jaccard index for all 31 common
+    anatomical regions. The "working version" of EM in 3D obtains very similar
+    results as those reported for ANTS on the same database. Any modification
+    that produces a change in the energy profile should be carefully validated
+    to ensure no accuracy loss.
     '''
     moving, static = get_synthetic_warped_circle(30)
     moving[...,:8] = 0
@@ -808,11 +814,9 @@ def test_em_3d_gauss_newton():
     mapping = optimizer.optimize(static, moving, None)
     m = optimizer.get_map()
     assert_equal(mapping, m)
-
     energy_profile = subsample_profile(
         optimizer.full_energy_profile, 10)
     print(energy_profile)
-
 
     if USING_VC_SSE2:
         expected_profile = \
@@ -856,11 +860,9 @@ def test_em_2d_gauss_newton():
     mapping = optimizer.optimize(static, moving, None)
     m = optimizer.get_map()
     assert_equal(mapping, m)
-
     energy_profile = subsample_profile(
         optimizer.full_energy_profile, 10)
     print(energy_profile)
-
 
     if USING_VC_SSE2:
         expected_profile = \
@@ -871,7 +873,8 @@ def test_em_2d_gauss_newton():
             [2.50773392, 0.41763383, 0.30908578, 0.06241115, 0.11573476,
              2.48475885, 1.10053769, 0.9270271, 49.37186785, 44.72643467]
 
-    assert_array_almost_equal(energy_profile, np.array(expected_profile), decimal=5)
+    assert_array_almost_equal(energy_profile, np.array(expected_profile),
+                              decimal=5)
 
 
 @npt.dec.skipif(NO_SSE2)
@@ -884,11 +887,11 @@ def test_em_3d_demons():
     3D, and this test checks that the current energy profile matches the saved
     one. The validation of the "working version" was
     done by registering the 18 manually annotated T1 brain MRI database IBSR
-    with each other and computing the jaccard index for all 31 common anatomical
-    regions. The "working version" of EM in 3D obtains very similar results as
-    those reported for ANTS on the same database. Any modification that produces
-    a change in the energy profile should be carefully validated to ensure no
-    accuracy loss.
+    with each other and computing the jaccard index for all 31 common
+    anatomical regions. The "working version" of EM in 3D obtains very similar
+    results as those reported for ANTS on the same database. Any modification
+    that produces a change in the energy profile should be carefully validated
+    to ensure no accuracy loss.
     '''
     moving, static = get_synthetic_warped_circle(30)
     moving[...,:8] = 0
@@ -918,11 +921,9 @@ def test_em_3d_demons():
     mapping = optimizer.optimize(static, moving, None)
     m = optimizer.get_map()
     assert_equal(mapping, m)
-
     energy_profile = subsample_profile(
         optimizer.full_energy_profile, 10)
     print(energy_profile)
-
 
     if USING_VC_SSE2:
         expected_profile = \
@@ -966,11 +967,9 @@ def test_em_2d_demons():
     mapping = optimizer.optimize(static, moving, None)
     m = optimizer.get_map()
     assert_equal(mapping, m)
-
     energy_profile = subsample_profile(
         optimizer.full_energy_profile, 10)
     print(energy_profile)
-
 
     if USING_VC_SSE2:
         expected_profile = \
@@ -981,7 +980,8 @@ def test_em_2d_demons():
             [2.50773393, 3.26942352, 1.8168445, 5.44879264, 40.01956373,
              31.65616398, 32.43115903, 35.24130742, 192.89072697, 195.456909]
 
-    assert_array_almost_equal(energy_profile, np.array(expected_profile), decimal=5)
+    assert_array_almost_equal(energy_profile, np.array(expected_profile),
+                              decimal=5)
 
 if __name__=='__main__':
     test_scale_space_exceptions()
