@@ -49,7 +49,7 @@ Compute the CSD-based ODFs using ``peaks_from_model``. This function has a
 parameter called ``parallel`` which allows for the voxels to be processed in
 parallel. If ``nbr_processes`` is None it will figure out automatically the
 number of CPUs available in your system. Alternatively, you can set
-``nbr_processes`` manually. Here, we show an example were we compare the
+``nbr_processes`` manually. Here, we show an example where we compare the
 duration of execution with or without parallelism.
 """
 

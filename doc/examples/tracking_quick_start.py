@@ -150,7 +150,7 @@ tutorial but you can visualize the same objects in 3D using
 ``fvtk.show(ren)``.
 
 To learn more about this process you could start playing with the number of
-seed points or even better specify seeds to be in specific regions of interest
+seed points or, even better, specify seeds to be in specific regions of interest
 in the brain.
 
 ``fvtk`` gives some minimal interactivity however you can save the resulting
