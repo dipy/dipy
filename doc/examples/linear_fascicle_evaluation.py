@@ -24,7 +24,6 @@ import numpy as np
 import os.path as op
 import nibabel as nib
 import dipy.core.optimize as opt
-
 if not op.exists('lr-superiorfrontal.trk'):
     from streamline_tools import *
 else:
@@ -39,7 +38,6 @@ else:
     t1 = read_stanford_t1()
     t1_data = t1.get_data()
     data = hardi_img.get_data()
-
 # Read the candidates from file in voxel space:
 candidate_sl = [s[0] for s in nib.trackvis.read('lr-superiorfrontal.trk',
                                                   points_space='voxel')[0]]
@@ -65,16 +63,13 @@ candidate_streamlines_actor = fvtk.streamtube(candidate_sl,
                                        line_colors(candidate_sl))
 cc_ROI_actor = fvtk.contour(cc_slice, levels=[1], colors=[(1., 1., 0.)],
                             opacities=[1.])
-
 vol_actor = fvtk.slicer(t1_data, voxsz=(1.0, 1.0, 1.0), plane_i=[40],
                         plane_j=None, plane_k=[35], outline=False)
-
 # Add display objects to canvas
 ren = fvtk.ren()
 fvtk.add(ren, candidate_streamlines_actor)
 fvtk.add(ren, cc_ROI_actor)
 fvtk.add(ren, vol_actor)
-
 fvtk.record(ren, n_frames=1, out_path='life_candidates.png',
             size=(800, 800))
 
@@ -120,7 +115,6 @@ explained by the streamlines, by the equation
 
     y = X\beta
 
-
 Where $y$ is the diffusion MRI signal, $\beta$ are a set of weights on the
 streamlines and $X$ is a design matrix. This matrix has the dimensions $m$ by
 $n$, where $m=n_{voxels} \cdot n_{directions}$, and $n_{voxels}$ is the set of
@@ -148,7 +142,6 @@ streamlines, and these streamlines will have $\beta_i$ that are 0.
 
 import matplotlib.pyplot as plt
 import matplotlib
-
 fig, ax = plt.subplots(1)
 ax.hist(fiber_fit.beta, bins=100, histtype='step')
 ax.set_xlabel('Fiber weights')
@@ -230,14 +223,11 @@ voxel.
 
 """
 beta_baseline = np.zeros(fiber_fit.beta.shape[0])
-
 pred_weighted = np.reshape(opt.spdot(fiber_fit.life_matrix, beta_baseline),
                                      (fiber_fit.vox_coords.shape[0],
                                       np.sum(~gtab.b0s_mask)))
-
 mean_pred = np.empty((fiber_fit.vox_coords.shape[0], gtab.bvals.shape[0]))
 S0 = fiber_fit.b0_signal
-
 
 """
 
@@ -249,8 +239,6 @@ to add back the mean and then multiply by S0 in every voxel:
 mean_pred[..., gtab.b0s_mask] = S0[:, None]
 mean_pred[..., ~gtab.b0s_mask] =\
         (pred_weighted + fiber_fit.mean_signal[:, None]) * S0[:, None]
-
-
 mean_error = mean_pred - fiber_fit.data
 mean_rmse = np.sqrt(np.mean(mean_error ** 2, -1))
 
@@ -272,7 +260,6 @@ ax.text(0.2, 0.9,'Median RMSE, mean model: %.2f' % np.median(mean_rmse),
 ax.text(0.2, 0.8,'Median RMSE, LiFE: %.2f' % np.median(model_rmse),
      horizontalalignment='left',
      verticalalignment='center', transform=ax.transAxes)
-
 ax.set_xlabel('RMS Error')
 ax.set_ylabel('# voxels')
 fig.savefig('error_histograms.png')
@@ -302,13 +289,10 @@ vol_mean = np.ones(data.shape[:3]) * np.nan
 vol_mean[fiber_fit.vox_coords[:, 0],
          fiber_fit.vox_coords[:, 1],
          fiber_fit.vox_coords[:, 2]] = mean_rmse
-
 vol_improve = np.ones(data.shape[:3]) * np.nan
 vol_improve[fiber_fit.vox_coords[:, 0],
             fiber_fit.vox_coords[:, 1],
             fiber_fit.vox_coords[:, 2]] = mean_rmse - model_rmse
-
-
 sl_idx = 49
 from mpl_toolkits.axes_grid1 import AxesGrid
 fig = plt.figure()
@@ -321,7 +305,6 @@ ax = AxesGrid(fig, 111,
               cbar_mode="each",
               cbar_size="10%",
               cbar_pad="5%")
-
 ax[0].matshow(np.rot90(t1_data[sl_idx, :, :]), cmap=matplotlib.cm.bone)
 im = ax[0].matshow(np.rot90(vol_model[sl_idx, :, :]), cmap=matplotlib.cm.hot)
 ax.cbar_axes[0].colorbar(im)
@@ -331,11 +314,9 @@ ax.cbar_axes[1].colorbar(im)
 ax[2].matshow(np.rot90(t1_data[sl_idx, :, :]), cmap=matplotlib.cm.bone)
 im = ax[2].matshow(np.rot90(vol_improve[sl_idx, :, :]), cmap=matplotlib.cm.RdBu)
 ax.cbar_axes[2].colorbar(im)
-
 for lax in ax:
     lax.set_xticks([])
     lax.set_yticks([])
-
 fig.savefig("spatial_errors.png")
 
 """
