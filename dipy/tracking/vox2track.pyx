@@ -18,7 +18,7 @@ cdef extern from "dpy_math.h":
 @cython.profile(False)
 def _voxel2streamline(sl, unique_idx):
     """
-    Maps voxels to stream-lines and stream-lines to voxels, for setting up
+    Maps voxels to streamlines and streamlines to voxels, for setting up
     the LiFE equations matrix
 
     Parameters
