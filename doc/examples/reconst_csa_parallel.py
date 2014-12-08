@@ -12,7 +12,7 @@ Import modules, fetch and read data, and compute the mask.
 import time
 from dipy.data import fetch_stanford_hardi, read_stanford_hardi, get_sphere
 from dipy.reconst.shm import CsaOdfModel
-from dipy.reconst.peaks import peaks_from_model
+from dipy.direction import peaks_from_model
 from dipy.segment.mask import median_otsu
 
 fetch_stanford_hardi()

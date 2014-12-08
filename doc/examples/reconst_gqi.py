@@ -13,7 +13,7 @@ First import the necessary modules:
 import numpy as np
 from dipy.data import fetch_taiwan_ntu_dsi, read_taiwan_ntu_dsi, get_sphere
 from dipy.reconst.gqi import GeneralizedQSamplingModel
-from dipy.reconst.peaks import peaks_from_model
+from dipy.direction import peaks_from_model
 
 """
 Download and read the data for this tutorial.

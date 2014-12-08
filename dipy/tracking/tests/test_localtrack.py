@@ -2,7 +2,8 @@ import numpy as np
 import numpy.testing as npt
 
 from dipy.tracking.local.tissue_classifier import ThresholdTissueClassifier
-from dipy.reconst.peaks import default_sphere, peaks_from_model
+from dipy.data import default_sphere
+from dipy.direction import peaks_from_model
 
 def test_ThresholdTissueClassifier():
     a = np.random.random((3, 5, 7))
