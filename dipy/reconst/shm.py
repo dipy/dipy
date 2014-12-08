@@ -459,8 +459,35 @@ def _gfa_sh(coef, sh0_index=0):
 
 
 class SphHarmModel(OdfModel, Cache):
-    """The base class to sub-classed by specific spherical harmonic models of
-    diffusion data"""
+    """To be subclassed by all models that return a SphHarmFit when fit."""
+
+    def sampling_matrix(self, sphere):
+        """The matrix needed to sample ODFs from coefficients of the model.
+
+        Parameters
+        ----------
+        sphere : Sphere
+            Points used to sample ODF.
+
+        Returns
+        -------
+        sampling_matrix : array
+            The size of the matrix will be (N, M) where N is the number of
+            vertices on sphere and M is the number of coefficients needed by
+            the model.
+        """
+        sampling_matrix = self.cache_get("sampling_matrix", sphere)
+        if sampling_matrix is None:
+            sh_order = self.sh_order
+            theta = sphere.theta
+            phi = sphere.phi
+            sampling_matrix, m, n = real_sym_sh_basis(sh_order, theta, phi)
+            self.cache_set("sampling_matrix", sphere, sampling_matrix)
+        return sampling_matrix
+
+
+class QballBaseModel(SphHarmModel):
+    """To be subclassed by Qball type models."""
     def __init__(self, gtab, sh_order, smooth=0.006, min_signal=1.,
                  assume_normed=False):
         """Creates a model that can be used to fit or sample diffusion data
@@ -487,7 +514,7 @@ class SphHarmModel(OdfModel, Cache):
         normalize_data
 
         """
-        OdfModel.__init__(self, gtab)
+        SphHarmModel.__init__(self, gtab)
         self._where_b0s = lazy_index(gtab.b0s_mask)
         self._where_dwi = lazy_index(~gtab.b0s_mask)
         self.assume_normed = assume_normed
@@ -555,7 +582,6 @@ class SphHarmFit(OdfFit):
 
         return SphHarmFit(self.model, new_coef, new_mask)
 
-
     def odf(self, sphere):
         """Samples the odf function on the points of a sphere
 
@@ -570,20 +596,12 @@ class SphHarmFit(OdfFit):
             The value of the odf on each point of `sphere`.
 
         """
-        sampling_matrix = self.model.cache_get("sampling_matrix", sphere)
-        if sampling_matrix is None:
-            phi = sphere.phi.reshape((-1, 1))
-            theta = sphere.theta.reshape((-1, 1))
-            sh_order = self.model.sh_order
-            sampling_matrix, m, n = real_sym_sh_basis(sh_order, theta, phi)
-            self.model.cache_set("sampling_matrix", sphere, sampling_matrix)
-        return dot(self._shm_coef, sampling_matrix.T)
-
+        B = self.model.sampling_matrix(sphere)
+        return dot(self._shm_coef, B.T)
 
     @auto_attr
     def gfa(self):
         return _gfa_sh(self._shm_coef, 0)
-
 
     @property
     def shm_coeff(self):
@@ -616,7 +634,7 @@ class SphHarmFit(OdfFit):
         return self.model.predict(self.shm_coeff, gtab, S0)
 
 
-class CsaOdfModel(SphHarmModel):
+class CsaOdfModel(QballBaseModel):
     """Implementation of Constant Solid Angle reconstruction method.
 
     References
@@ -646,7 +664,7 @@ class CsaOdfModel(SphHarmModel):
         return sh_coef
 
 
-class OpdtModel(SphHarmModel):
+class OpdtModel(QballBaseModel):
     """Implementation of Orientation Probability Density Transform
     reconstruction method.
 
@@ -679,7 +697,7 @@ def _slowadc_formula(data, delta_b, delta_q):
     return dot(logd * (1.5 - logd) * data, delta_q.T) - dot(data, delta_b.T)
 
 
-class QballModel(SphHarmModel):
+class QballModel(QballBaseModel):
     """Implementation of regularized Qball reconstruction method.
 
     References

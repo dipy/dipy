@@ -81,11 +81,16 @@ EXTS = []
 ext_kwargs = get_info('npymath')
 ext_kwargs['include_dirs'].append('src')
 for modulename, other_sources, language in (
+    ('dipy.reconst.peak_direction_getter', [], 'c'),
     ('dipy.reconst.recspeed', [], 'c'),
     ('dipy.reconst.vec_val_sum', [], 'c'),
     ('dipy.reconst.quick_squash', [], 'c'),
     ('dipy.tracking.distances', [], 'c'),
     ('dipy.tracking.streamlinespeed', [], 'c'),
+    ('dipy.tracking.local.localtrack', [], 'c'),
+    ('dipy.tracking.local.direction_getter', [], 'c'),
+    ('dipy.tracking.local.tissue_classifier', [], 'c'),
+    ('dipy.tracking.local.interpolation', [], 'c'),
     ('dipy.tracking.vox2track', [], 'c'),
     ('dipy.tracking.propspeed', [], 'c'),
     ('dipy.denoise.denspeed', [], 'c'),
@@ -168,7 +173,11 @@ def main(**extra_args):
                           'dipy.align.tests',
                           'dipy.core',
                           'dipy.core.tests',
+                          'dipy.direction',
+                          'dipy.direction.tests',
                           'dipy.tracking',
+                          'dipy.tracking.local',
+                          'dipy.tracking.local.tests',
                           'dipy.tracking.tests',
                           'dipy.tracking.benchmarks',
                           'dipy.reconst',

@@ -1,7 +1,6 @@
  quick_start.py
  tracking_quick_start.py
  brain_extraction_dwi.py
- probabilistic_tracking_odfs.py
  reconst_csa_parallel.py
  reconst_csa.py
  reconst_csd_parallel.py
@@ -26,6 +25,8 @@
  reconst_shore_metrics.py
  streamline_tools.py
  denoise_nlmeans.py
+ introduction_to_basic_tracking.py
+ probabilistic_fiber_tracking.py
  syn_registration_2d.py
  syn_registration_3d.py
  bundle_registration.py
