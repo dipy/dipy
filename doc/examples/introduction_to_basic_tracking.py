@@ -1,7 +1,7 @@
 """
-====================
+==============================
 Introduction to Basic Tracking
-====================
+==============================
 
 Local fiber tracking is an approach used to model white matter fibers by
 creating streamlines from local directional information. The idea is as
@@ -168,7 +168,7 @@ restrict the tracking to the white matter of the brain. One might be tempted
 to use the GFA of the CSD FODs to build a tissue classifier, however the GFA
 values of these FODs don't classify gray matter and white matter well. We will
 therefore use the GFA from the CSA model which we fit for the first section of
-this example. Alternatively, one could fit a ``TensoModel`` to the data and use
+this example. Alternatively, one could fit a ``TensorModel`` to the data and use
 the fractional anisotropy (FA) to build a tissue classifier.
 """
 

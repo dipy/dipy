@@ -11,10 +11,10 @@ direction at each point along the path is chosen at random from a distribution.
 The distribution at each point is different and depends on the observed
 diffusion data at that point. The distribution of tracking directions at each
 point can be represented as a probability mass function (PMF) if the possible
-tracking directions are restricted to discrete number of well distributed
+tracking directions are restricted to discrete numbers of well distributed
 points on a sphere.
 
-This example picks up where "introduction to basic tracking" leaves off.
+This example is an extension of the "introduction to basic tracking" example.
 We'll begin by repeating a few steps from that example, loading the data and
 fitting a constrained spherical deconvolution (CSD) model.
 """
