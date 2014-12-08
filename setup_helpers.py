@@ -29,6 +29,8 @@ call %py_exe% %pyscript% %*
 
 # File to which to write Cython conditional DEF vars
 CONFIG_PXI = pjoin('build', 'config.pxi')
+# File name (no directory) to which to write Python conditional vars
+CONFIG_PY = '__config__.py'
 # Directory to which to write libraries for building
 LIB_DIR_TMP = pjoin('build', 'extra_libs')
 
@@ -75,7 +77,7 @@ class install_scripts_bat(install_scripts):
                 fobj.write(bat_contents)
 
 
-def add_flag_checking(build_ext_class, flag_defines):
+def add_flag_checking(build_ext_class, flag_defines, top_package_dir=''):
     """ Override input `build_ext_class` to check compiler `flag_defines`
 
     Parameters
@@ -97,6 +99,11 @@ def add_flag_checking(build_ext_class, flag_defines):
         ``build/config.pxi`` with True if the combination of
         (``compile_flags``, ``link_flags``, ``code``) will compile and link,
         False otherwise. If None, do not write variable.
+    top_package_dir : str
+        String giving name of top-level package, for writing Python file
+        containing configuration variables.  If empty, do not write this file.
+        Variables written are the same as the Cython variables generated via
+        the `flag_defines` setting.
 
     Returns
     -------
@@ -147,7 +154,7 @@ def add_flag_checking(build_ext_class, flag_defines):
                                                    link_flags,
                                                    code)
                 if def_var:
-                    def_vars.append('DEF {0} = {1}'.format(
+                    def_vars.append('{0} = {1}'.format(
                         def_var, flags_good))
                 if flags_good:
                     good_compile_flags += compile_flags
@@ -155,12 +162,24 @@ def add_flag_checking(build_ext_class, flag_defines):
                 else:
                     log.warn("Flags {0} omitted because of compile or link "
                              "error".format(compile_flags + link_flags))
-            if def_vars:
+            if def_vars:  # write config.pxi file
                 if not exists(config_dir):
-                    os.mkdir(config_dir)
+                    self.mkpath(config_dir)
                 with open(CONFIG_PXI, 'wt') as fobj:
                     fobj.write('# Automatically generated; do not edit\n')
-                    fobj.write('\n'.join(def_vars))
+                    fobj.write('# Cython defines from compile checks\n')
+                    for vdef in def_vars:
+                        fobj.write('DEF {0}\n'.format(vdef))
+            if def_vars and top_package_dir:  # write __config__.py file
+                config_py_dir = (top_package_dir if self.inplace else
+                                 pjoin(self.build_lib, top_package_dir))
+                if not exists(config_py_dir):
+                    self.mkpath(config_py_dir)
+                config_py = pjoin(config_py_dir, CONFIG_PY)
+                with open(config_py, 'wt') as fobj:
+                    fobj.write('# Automatically generated; do not edit\n')
+                    fobj.write('# Variables from compile checks\n')
+                    fobj.write('\n'.join(def_vars) + '\n')
             if def_vars or good_compile_flags or good_link_flags:
                 for ext in self.extensions:
                     ext.extra_compile_args += good_compile_flags
