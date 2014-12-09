@@ -396,13 +396,13 @@ def sparse_nnls(y, X,
         # Every once in a while check whether it's converged:
         if np.mod(iteration, check_error_iter):
             # This calculates the sum of squared residuals at this point:
-            this_ss_resid = (np.sum(np.power(y - spdot(X, h), 2)))
-            rsq_est = rsq(this_ss_resid, ss_residuals_to_mean)
+            sse = np.sum((y - spdot(X, h)) ** 2)
+            rsq_est = rsq(sse, ss_residuals_to_mean)
 
             # Did we do better this time around?
-            if this_ss_resid < ss_residuals_min:
+            if sse < ss_residuals_min:
                 # Update your expectations about the minimum error:
-                ss_residuals_min = this_ss_resid
+                ss_residuals_min = sse
                 n_iterations = iteration  # This holds the number of iterations
                                           # for the best solution so far.
                 h_best = h  # This holds the best params we have so far
