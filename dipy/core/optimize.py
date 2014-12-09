@@ -315,10 +315,9 @@ def sparse_nnls(y, X,
                 momentum=1,
                 step_size=0.01,
                 non_neg=True,
-                prop_bad_checks=0.1,
                 check_error_iter=10,
                 max_error_checks=10,
-                converge_on_r=0.01):
+                converge_on_sse=0.99):
     """
 
     Solve y=Xh for h, using gradient descent, with X a sparse matrix
@@ -341,10 +340,6 @@ def sparse_nnls(y, X,
     non_neg : Boolean, optional (default: True)
         Whether to enforce non-negativity of the solution.
 
-    prop_bad_checks : float (default: 0.1)
-       If this proportion of error checks so far has not yielded an improvement
-       in r squared, we halt the optimization.
-
     check_error_iter : int (default:10)
         How many rounds to run between error evaluation for
         convergence-checking.
@@ -353,8 +348,8 @@ def sparse_nnls(y, X,
         Don't check errors more than this number of times if no improvement in
         r-squared is seen.
 
-    converge_on_r : float (default: 0.01)
-      a percentage improvement in rsquared that is required each time to say
+    converge_on_sse : float (default: 0.99)
+      a percentage improvement in SSE that is required each time to say
       that things are still going well.
 
     Returns
@@ -366,14 +361,14 @@ def sparse_nnls(y, X,
     num_regressors = X.shape[1]
     # Initialize the parameters at the origin:
     h = np.zeros(num_regressors)
-    # If nothing good happens, we'll return that in the end:
-    h_best = np.zeros(num_regressors)
+    # If nothing good happens, we'll return that:
+    h_best = h
     gradient = np.zeros(num_regressors)
     iteration = 1
     count = 1
     ss_residuals_min = np.inf  # This will keep track of the best solution
     ss_residuals_to_mean = np.sum((y - np.mean(y)) ** 2)  # The variance of y
-    rsq_max = -np.inf   # This will keep track of the best r squared so far
+    sse_best = np.inf   # This will keep track of the best performance so far
     count_bad = 0  # Number of times estimation error has gone up.
     error_checks = 0  # How many error checks have we done so far
 
@@ -397,8 +392,6 @@ def sparse_nnls(y, X,
         if np.mod(iteration, check_error_iter):
             # This calculates the sum of squared residuals at this point:
             sse = np.sum((y - spdot(X, h)) ** 2)
-            rsq_est = rsq(sse, ss_residuals_to_mean)
-
             # Did we do better this time around?
             if sse < ss_residuals_min:
                 # Update your expectations about the minimum error:
@@ -408,17 +401,16 @@ def sparse_nnls(y, X,
                 h_best = h  # This holds the best params we have so far
 
                 # Are we generally (over iterations) converging on
-                # improvement in r-squared?
-                if rsq_est > (rsq_max * (1 + converge_on_r / 100)):
-                    rsq_max = rsq_est
-                    count_bad = 0  # We're doing good. Null this count for now
+                # sufficient improvement in r-squared?
+                if sse < converge_on_sse * sse_best:
+                    sse_best = sse
+                    count_bad = 0
                 else:
-                    count_bad += 1
+                    count_bad +=1 
             else:
                 count_bad += 1
 
-            if count_bad >= np.max([max_error_checks,
-                                    np.round(prop_bad_checks * error_checks)]):
+            if count_bad >= max_error_checks:
                 return h_best
             error_checks += 1
         iteration += 1
