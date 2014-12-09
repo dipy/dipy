@@ -1,8 +1,6 @@
 cimport cython
 cimport numpy as np
 
-from libc.math cimport round
-
 from .interpolation cimport trilinear_interpolate4d, _trilinear_interpolate_c_4d
 
 cdef class TissueClassifier:
