@@ -6,7 +6,7 @@ from dipy.tracking.propspeed cimport _propagation_direction
 from dipy.tracking.local.direction_getter cimport DirectionGetter
 
 cdef extern from "dpy_math.h" nogil:
-    double round(double x)
+    double dpy_round(double x)
 
 def make_nd(array, N):
     """Makes an array that's less than Nd - Nd
@@ -70,7 +70,7 @@ cdef class PeaksAndMetricsDirectionGetter(DirectionGetter):
 
         # ijk is the closest voxel to point
         for i in range(3):
-            ijk[i] = <np.npy_intp> round(point[i])
+            ijk[i] = <np.npy_intp> dpy_round(point[i])
             if ijk[i] < 0 or ijk[i] >= self._ind.shape[i]:
                 raise IndexError("point outside data")
 

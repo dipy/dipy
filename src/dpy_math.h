@@ -17,3 +17,5 @@ double dpy_log2(double x)
     return NPY_LOG2E*log(x);
 }
 #endif
+
+#define dpy_round(x) floor((x) + 0.5)
