@@ -7,6 +7,7 @@
 #include "numpy/npy_math.h"
 
 #define dpy_isnan npy_isnan
+#define dpy_signbit npy_signbit
 #define DPY_PI NPY_PI
 
 /* From numpy npy_math.c.src */
