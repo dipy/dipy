@@ -5,8 +5,8 @@ import numpy as np
 from dipy.tracking.propspeed cimport _propagation_direction
 from dipy.tracking.local.direction_getter cimport DirectionGetter
 
-from libc.math cimport round
-
+cdef extern from "dpy_math.h" nogil:
+    double round(double x)
 
 def make_nd(array, N):
     """Makes an array that's less than Nd - Nd
