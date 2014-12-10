@@ -3,18 +3,19 @@
 An introduction to the Deterministic Maximum Direction Getter
 =============================================================
 
-Deterministic maximum fiber tracking is an alternative way to look at 
-deterministic tractography. Unlike EuDx, which follows the peaks of the local 
-models, deterministic maximum fiber tracking follows the trajectory of the most
-probable pathway. It follows the direction corresponding to the highest value 
-of a distribution. The distribution at each point is different and depends on 
-the observed diffusion data at that point. The maximum deterministic direction 
-getter is equivalent to the probabilistic direction getter returning always the 
-maximum value of the distribution.
+Deterministic maximum fiber tracking is an alternative to EuDX deterministic
+tractography. Unlike EuDx, which follows the peaks of the local models, 
+deterministic maximum fiber tracking follows the trajectory of the most
+probable pathway with the tracking constraint (e.g. max angle). It follows the 
+direction corresponding to the highest value of a distribution. The distribution 
+at each point is different and depends on the observed diffusion data at that 
+point. The maximum deterministic direction getter is equivalent to the 
+probabilistic direction getter returning always the maximum value of the 
+distribution.
 
 This example is an extension of the "probabilistic fiber tracking" example.
-We'll begin by repeating a few steps from that example, loading the data and
-fitting a constrained spherical deconvolution (CSD) model.
+We'll begin by loading the data and fitting a constrained spherical 
+deconvolution (CSD) model.
 """
 
 from dipy.data import read_stanford_labels
