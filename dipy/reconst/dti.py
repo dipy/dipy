@@ -1121,16 +1121,14 @@ def _wls_iter(ols_fit, design_matrix, sig, min_signal, min_diffusivity):
     ''' Helper function used by wls_fit_tensor.
     '''
     if np.all(sig==0):
-            raise ValueError("The data in this voxel contains only zeros")
-
-    if min_signal is None:
-        min_signal = sig[sig > 0].min()
-
-    sig = np.maximum(sig, min_signal)  # throw out zero signals
-    log_s = np.log(sig)
-    w = np.exp(np.dot(ols_fit, log_s))
-    D = np.dot(np.linalg.pinv(design_matrix * w[:, None]), w * log_s)
-    # D, _, _, _ = np.linalg.lstsq(design_matrix * w[:, None], log_s)
+        D = np.zeros(7)
+    else:
+        if min_signal is None:
+            min_signal = sig[sig > 0].min()
+        sig = np.maximum(sig, min_signal)  # throw out zero signals
+        log_s = np.log(sig)
+        w = np.exp(np.dot(ols_fit, log_s))
+        D = np.dot(np.linalg.pinv(design_matrix * w[:, None]), w * log_s)
     tensor = from_lower_triangular(D)
     return decompose_tensor(tensor, min_diffusivity=min_diffusivity)
 
@@ -1139,13 +1137,13 @@ def _ols_iter(inv_design, sig, min_signal, min_diffusivity):
     ''' Helper function used by ols_fit_tensor.
     '''
     if np.all(sig==0):
-            raise ValueError("The data in this voxel contains only zeros")
-
-    if min_signal is None:
-        min_signal = sig[sig > 0].min()
-    sig = np.maximum(sig, min_signal)  # throw out zero signals
-    log_s = np.log(sig)
-    D = np.dot(inv_design, log_s)
+        D = np.zeros(7)
+    else:
+        if min_signal is None:
+            min_signal = sig[sig > 0].min()
+        sig = np.maximum(sig, min_signal)  # throw out zero signals
+        log_s = np.log(sig)
+        D = np.dot(inv_design, log_s)
     tensor = from_lower_triangular(D)
     return decompose_tensor(tensor, min_diffusivity=min_diffusivity)
 

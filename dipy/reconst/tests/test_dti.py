@@ -131,7 +131,7 @@ def test_TensorModel():
     data[0] = Y
     # High diffusion voxel, all diffusing weighted signal equal to zero
     data[1, gtab.b0s_mask] = b0
-    data[1, ~gtab.b0s_mask] = 0.
+    data[1, ~gtab.b0s_mask] = 0.001
     # Masked voxel, all data set to zero
     data[2] = 0.
 
@@ -411,7 +411,7 @@ def test_all_zeros():
     fit_methods = ['LS', 'OLS', 'NNLS', 'RESTORE']
     for fit_method in fit_methods:
         dm = dti.TensorModel(gtab)
-        assert_raises(ValueError, dm.fit, np.zeros(bvals.shape[0]))
+        assert_array_almost_equal(dm.fit(np.zeros(bvals.shape[0])).evals, 0)
 
 
 def test_mask():
