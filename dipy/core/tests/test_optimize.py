@@ -1,12 +1,13 @@
 import numpy as np
+import scipy.sparse as sps
 from numpy.testing import (assert_equal,
                            assert_almost_equal,
                            assert_array_almost_equal,
+                           assert_array_equal,
                            run_module_suite)
 
-
-from dipy.core.optimize import Optimizer, SCIPY_LESS_0_12
 import numpy.testing as npt
+from dipy.core.optimize import Optimizer, SCIPY_LESS_0_12, sparse_nnls, spdot
 
 
 def func(x):
@@ -115,6 +116,34 @@ def test_optimize_old_scipy():
                     evolution=True)
 
     assert_array_almost_equal(opt.xopt, np.array([0, 0, 0, 0.]))
+
+
+def test_spdot():
+    n = 100
+    m = 20
+    k = 10
+    A = np.random.randn(n,m)
+    B = np.random.randn(m,k)
+    A_sparse = sps.csr_matrix(A)
+    B_sparse = sps.csr_matrix(B)
+
+    dense_dot = np.dot(A, B)
+    # Try all the different variations:
+    assert_array_almost_equal(dense_dot, spdot(A_sparse, B_sparse).todense())
+    assert_array_almost_equal(dense_dot, spdot(A, B_sparse))
+    assert_array_almost_equal(dense_dot, spdot(A_sparse, B))
+
+
+def test_nnls():
+    # Set up the regression:
+    beta = np.random.rand(10)
+    X = np.random.randn(1000, 10)
+    y = np.dot(X, beta)
+    beta_hat = sparse_nnls(y, X)
+    beta_hat_sparse = sparse_nnls(y, sps.csr_matrix(X))
+    # We should be able to get back the right answer for this simple case
+    assert_array_almost_equal(beta, beta_hat, decimal=1)
+    assert_array_almost_equal(beta, beta_hat_sparse, decimal=1)
 
 
 if __name__ == '__main__':

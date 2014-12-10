@@ -41,7 +41,9 @@ from dipy.data.fetcher import (fetch_scil_b0,
                                read_isbi2013_2shell,
                                read_stanford_labels,
                                fetch_syn_data,
-                               read_syn_data)
+                               read_syn_data,
+                               fetch_stanford_t1,
+	                       read_stanford_t1)
 
 from ..utils.arrfuncs import as_native_array
 from dipy.tracking.streamline import relist_streamlines
@@ -406,3 +408,7 @@ def two_cingulum_bundles():
     cb2 = relist_streamlines(res['points2'], res['offsets2'])
     return cb1, cb2
 
+def matlab_life_results():
+    matlab_rmse = np.load(pjoin(THIS_DIR, 'life_matlab_rmse.npy'))
+    matlab_weights = np.load(pjoin(THIS_DIR, 'life_matlab_weights.npy'))
+    return matlab_rmse, matlab_weights
