@@ -5,6 +5,7 @@ from __future__ import division, print_function, absolute_import
 import warnings
 
 import numpy as np
+import numpy.lib.arraysetops as so
 
 import scipy.optimize as opt
 
@@ -660,25 +661,48 @@ class TensorModel(ReconstModel):
             A boolean array used to mark the coordinates in the data that
             should be analyzed that has the shape data.shape[-1]
         """
-        # If a mask is provided, we will use it to access the data
-        if mask is not None:
-
+        if mask is None:
+            # Flatten it to 2D either way:
+            data_in_mask = np.reshape(data, (-1, data.shape[-1]))
+        else:
             # Check for valid shape of the mask
             if mask.shape != data.shape[:-1]:
                 raise ValueError("Mask is not the same shape as data.")
-
-            # Make sure it's boolean, so that it can be used to mask
             mask = np.array(mask, dtype=bool, copy=False)
-            data_in_mask = data[mask]
+            data_in_mask = np.reshape(data[mask], (-1, data.shape[-1]))
+
+        max_d = self.kwargs.get('max_d', 3.0)
+        # preallocate:
+        params_in_mask = np.zeros((data_in_mask.shape[0], 12))
+        # We'll start by dealing with voxels that have no signal (s0 and d_sig
+        # are both all equal to 0), and with voxels with very large diffusivity
+        # (s0 is non-zero, but d_sig is all 0):
+        nz_s0 = np.nonzero(data_in_mask[..., self.gtab.b0s_mask])[0]
+        nz_d_sig = np.nonzero(data_in_mask[..., ~self.gtab.b0s_mask])[0]
+        # These are the actually interesting (non-zero d_sig and non-zero b0):
+        idx_to_fit = so.intersect1d(nz_s0, nz_d_sig)
+        if len(idx_to_fit)>0:
+            params_in_mask[idx_to_fit, :] =\
+                self.fit_method(self.design_matrix, data_in_mask[idx_to_fit],
+                            *self.args, **self.kwargs)
+        idx_high_diffusion = so.setdiff1d(nz_s0, nz_d_sig)
+        if len(idx_high_diffusion)>0:
+            # Set it to the diffusivity of water in water at 37 deg C (per
+            # default):
+            params_in_mask[idx_high_diffusion, :3]=np.array([max_d,
+                                                             max_d,
+                                                             max_d])
+            params_in_mask[idx_high_diffusion, 3:] = np.eye(3)
+
+        # The remaining voxels (zero d_sig and zero s0, remain with the
+        # parameters set to 0)
+
+        if mask is None:
+            out_shape = data.shape[:-1] + (-1, )
+            dti_params = params_in_mask.reshape(out_shape)
         else:
-            data_in_mask = data
-
-        params_in_mask = self.fit_method(self.design_matrix, data_in_mask,
-                                         *self.args, **self.kwargs)
-
-        dti_params = np.zeros(data.shape[:-1] + (12,))
-
-        dti_params[mask, :] = params_in_mask
+            dti_params = np.zeros(data.shape[:-1] + (12,))
+            dti_params[mask, :] = params_in_mask
 
         return TensorFit(self, dti_params)
 

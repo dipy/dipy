@@ -131,7 +131,7 @@ def test_TensorModel():
     data[0] = Y
     # High diffusion voxel, all diffusing weighted signal equal to zero
     data[1, gtab.b0s_mask] = b0
-    data[1, ~gtab.b0s_mask] = 0.001
+    data[1, ~gtab.b0s_mask] = 0
     # Masked voxel, all data set to zero
     data[2] = 0.
 
