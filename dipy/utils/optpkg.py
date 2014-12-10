@@ -5,7 +5,7 @@ import importlib
 try:
     import importlib
 except ImportError:
-    import ._importlib as importlib
+    import dipy.utils._importlib as importlib
 
 try:
     import nose
