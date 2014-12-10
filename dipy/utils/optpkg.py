@@ -1,7 +1,5 @@
 """ Routines to support optional packages """
 
-import importlib
-
 try:
     import importlib
 except ImportError:
