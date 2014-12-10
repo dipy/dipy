@@ -1,6 +1,11 @@
 """ Routines to support optional packages """
 
 try:
+    import importlib
+except ImportError:
+    import dipy.utils._importlib as importlib
+
+try:
     import nose
 except ImportError:
     have_nose = False
@@ -71,11 +76,8 @@ def optional_package(name, trip_msg=None):
     >>> hasattr(subpkg, 'dirname')
     True
     """
-    # fromlist=[''] results in submodule being returned, rather than the top
-    # level module.  See help(__import__)
-    fromlist = [''] if '.' in name else []
     try:
-        pkg = __import__(name, fromlist=fromlist)
+        pkg = importlib.import_module(name)
     except ImportError:
         pass
     else: # import worked
