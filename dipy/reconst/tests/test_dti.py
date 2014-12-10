@@ -125,6 +125,26 @@ def test_TensorModel():
                   gtab,
                   fit_method='crazy_method')
 
+    # Test multi-voxel data
+    data = np.zeros((3, Y.shape[1]))
+    # Normal voxel
+    data[0] = Y
+    # High diffusion voxel, all diffusing weighted signal equal to zero
+    data[1, gtab.b0s_mask] = b0
+    data[1, ~gtab.b0s_mask] = 0.
+    # Masked voxel, all data set to zero
+    data[2] = 0.
+
+    tensor_model = dti.TensorModel(gtab)
+    fit = tensor_model.fit(data)
+    assert_array_almost_equal(fit[0].evals, evals)
+
+    # Evals should be high for high diffusion voxel
+    assert_(all(fit[1].evals > evals[0] * .9))
+
+    # Evals should be zero where data is masked
+    assert_array_almost_equal(fit[2].evals, 0.)
+
 
 def test_indexing_on_TensorFit():
     params = np.zeros([2, 3, 4, 12])
