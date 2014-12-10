@@ -1031,6 +1031,11 @@ class TensorFit(object):
         return tensor_prediction(self.model_params, gtab, S0=S0)
 
 
+def _min_positive_signal(data):
+    data = data.ravel()
+    return data[data > 0].min()
+
+
 def wls_fit_tensor(design_matrix, data, min_signal=None):
     r"""
     Computes weighted least squares (WLS) fit to calculate self-diffusion
@@ -1093,7 +1098,9 @@ def wls_fit_tensor(design_matrix, data, min_signal=None):
        NeuroImage 33, 531-541.
     """
     tol = 1e-6
-    if min_signal is not None and min_signal <= 0:
+    if min_signal is None:
+        min_signal = _min_positive_signal(data)
+    elif min_signal <= 0:
         raise ValueError('min_signal must be > 0')
 
     data = np.asarray(data)
