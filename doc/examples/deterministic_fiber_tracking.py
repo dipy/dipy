@@ -6,7 +6,7 @@ An introduction to the Deterministic Maximum Direction Getter
 Deterministic maximum fiber tracking is an alternative to EuDX deterministic
 tractography. Unlike EuDx, which follows the peaks of the local models, 
 deterministic maximum fiber tracking follows the trajectory of the most
-probable pathway with the tracking constraint (e.g. max angle). It follows the 
+probable pathway within the tracking constraint (e.g. max angle). It follows the 
 direction corresponding to the highest value of a distribution. The distribution 
 at each point is different and depends on the observed diffusion data at that 
 point. The maximum deterministic direction getter is equivalent to the 
@@ -48,9 +48,9 @@ classifier = ThresholdTissueClassifier(gfa, .25)
 """
 The fiber orientation distribution (FOD) of the CSD model estimates the
 distribution of small fiber bundles within each voxel. This distribution 
-can be use for deterministic fiber tracking. As for probabilistic tracking, 
-there are many ways to provide the deterministic maximum direction getter 
-those distributions. Here, the spherical harmonic represnetation of the FOD 
+can be used for deterministic fiber tracking. As for prob abilistic tracking, 
+there are many ways to provide those distributions tothe deterministic maximum 
+direction getter. Here, the spherical harmonic representation of the FOD 
 is used.
 """
 
