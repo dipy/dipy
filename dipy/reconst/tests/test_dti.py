@@ -66,6 +66,16 @@ def test_TensorModel():
     # Check that the multivoxel case works:
     dtifit = dm.fit(data)
 
+    # Check that it works on signal that has already been normalized to S0:
+    dm_to_relative = dti.TensorModel(
+                                grad.gradient_table(gtab.bvals[~gtab.b0s_mask],
+                                                    gtab.bvecs[~gtab.b0s_mask]))
+    relative_data = (data[0, 0, 0, ~gtab.b0s_mask]/
+                     np.mean(data[0, 0, 0, gtab.b0s_mask]))
+    dtifit_to_relative = dm_to_relative.fit(relative_data)
+
+    npt.assert_almost_equal(dtifit.fa, dtifit_to_relative.fa)
+
     # And smoke-test that all these operations return sensibly-shaped arrays:
     assert_equal(dtifit.fa.shape, data.shape[:3])
     assert_equal(dtifit.ad.shape, data.shape[:3])
