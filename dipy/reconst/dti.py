@@ -647,6 +647,9 @@ class TensorModel(ReconstModel):
         self.design_matrix = design_matrix(self.gtab)
         self.args = args
         self.kwargs = kwargs
+        self.min_signal = self.kwargs.get('min_signal', 0)
+        if self.min_signal < 0:
+            raise ValueError('min_signal must be >= 0')
 
 
     def fit(self, data, mask=None):
@@ -671,9 +674,10 @@ class TensorModel(ReconstModel):
             mask = np.array(mask, dtype=bool, copy=False)
             data_in_mask = np.reshape(data[mask], (-1, data.shape[-1]))
 
-        max_d = self.kwargs.get('max_d', 3.0)
+        max_d = self.kwargs.get('max_d', 0.003)
         # preallocate:
         params_in_mask = np.zeros((data_in_mask.shape[0], 12))
+        params_in_mask[:, 3:] = np.eye(3).ravel()
         # We'll start by dealing with voxels that have no signal (s0 and d_sig
         # are both all equal to 0), and with voxels with very large diffusivity
         # (s0 is non-zero, but d_sig is all 0):
@@ -681,9 +685,8 @@ class TensorModel(ReconstModel):
         nz_d_sig = np.nonzero(data_in_mask[..., ~self.gtab.b0s_mask])[0]
         # These are the actually interesting (non-zero d_sig and non-zero b0):
         idx_to_fit = so.intersect1d(nz_s0, nz_d_sig)
-        if len(idx_to_fit)>0:
-            params_in_mask[idx_to_fit, :] =\
-                self.fit_method(self.design_matrix, data_in_mask[idx_to_fit],
+        params_in_mask[idx_to_fit, :] =\
+            self.fit_method(self.design_matrix, data_in_mask[idx_to_fit],
                             *self.args, **self.kwargs)
         idx_high_diffusion = so.setdiff1d(nz_s0, nz_d_sig)
         if len(idx_high_diffusion)>0:
@@ -692,7 +695,7 @@ class TensorModel(ReconstModel):
             params_in_mask[idx_high_diffusion, :3]=np.array([max_d,
                                                              max_d,
                                                              max_d])
-            params_in_mask[idx_high_diffusion, 3:] = np.eye(3)
+            params_in_mask[idx_high_diffusion, 3:] = np.eye(3).ravel()
 
         # The remaining voxels (zero d_sig and zero s0, remain with the
         # parameters set to 0)
@@ -1055,11 +1058,6 @@ class TensorFit(object):
         return tensor_prediction(self.model_params, gtab, S0=S0)
 
 
-def _min_positive_signal(data):
-    data = data.ravel()
-    return data[data > 0].min()
-
-
 def wls_fit_tensor(design_matrix, data, min_signal=None):
     r"""
     Computes weighted least squares (WLS) fit to calculate self-diffusion
@@ -1122,11 +1120,6 @@ def wls_fit_tensor(design_matrix, data, min_signal=None):
        NeuroImage 33, 531-541.
     """
     tol = 1e-6
-    if min_signal is None:
-        min_signal = _min_positive_signal(data)
-    elif min_signal <= 0:
-        raise ValueError('min_signal must be > 0')
-
     data = np.asarray(data)
     data_flat = data.reshape((-1, data.shape[-1]))
     dti_params = np.empty((len(data_flat), 4, 3))
