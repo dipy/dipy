@@ -293,13 +293,8 @@ def test_WLS_and_LS_fit():
     Y.shape = (-1,) + Y.shape
 
     ### Testing WLS Fit on Single Voxel ###
-    # If you do something wonky, you should get an error:
     #Estimate tensor from test signals
-    npt.assert_raises(ValueError, TensorModel, gtab, min_signal=-1,
-                      fit_method='WLS')
-
-    #Estimate tensor from test signals
-    model = TensorModel(gtab, min_signal=1e-8, fit_method='WLS')
+    model = TensorModel(gtab, fit_method='WLS')
     tensor_est = model.fit(Y)
     assert_equal(tensor_est.shape, Y.shape[:-1])
     assert_array_almost_equal(tensor_est.evals[0], evals)
@@ -318,7 +313,7 @@ def test_WLS_and_LS_fit():
     assert_array_almost_equal(tensor_est.lower_triangular(b0), D)
 
     # Test using fit_method='LS'
-    model = TensorModel(gtab, min_signal=1e-8, fit_method='LS')
+    model = TensorModel(gtab, fit_method='LS')
     tensor_est = model.fit(y)
     assert_equal(tensor_est.shape, tuple())
     assert_array_almost_equal(tensor_est.evals, evals)
@@ -339,7 +334,7 @@ def test_masked_array_with_Tensor():
     bvec, bval = read_bvec_file(get_data('55dir_grad.bvec'))
     gtab = grad.gradient_table_from_bvals_bvecs(bval, bvec.T)
 
-    tensor_model = TensorModel(gtab, min_signal=1e-9)
+    tensor_model = TensorModel(gtab)
     tensor = tensor_model.fit(data, mask=mask)
     assert_equal(tensor.shape, (2, 4))
     assert_equal(tensor.fa.shape, (2, 4))
