@@ -87,7 +87,7 @@ if mask is not None:
 else:
     mask = np.ones(data.shape[:-1], dtype=bool)
 
-ten_model = TensorModel(gtab,  min_signal=opts.min_signal)
+ten_model = TensorModel(gtab, min_signal=opts.min_signal)
 ten = ten_model.fit(data, mask=mask)
 
 if opts.save_tensor:
