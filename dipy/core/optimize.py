@@ -4,10 +4,14 @@ Only L-BFGS-B and Powell is supported in this class for versions of
 Scipy < 0.12. All optimizers are available for scipy >= 0.12.
 """
 
+import os
+import abc
 from distutils.version import LooseVersion
 import numpy as np
 import scipy
 import scipy.sparse as sps
+import scipy.optimize as opt
+from dipy.utils.six import with_metaclass
 
 SCIPY_LESS_0_12 = LooseVersion(scipy.__version__) < '0.12'
 
@@ -293,24 +297,6 @@ def spdot(A, B):
         return np.dot(A, B)
 
 
-def rsq(ss_residuals, ss_residuals_to_mean):
-    """
-    Calculate: $R^2 = \frac{1-SSE}{\sigma^2}$
-
-    Parameters
-    ----------
-    ss_residuals : array
-        Model fit errors relative to the data
-    ss_residuals_to_mean : array
-        Residuals of the data relative to the mean of the data (variance)
-
-    Returns
-    -------
-    rsq : the variance explained.
-    """
-    return 100 * (1 - ss_residuals/ss_residuals_to_mean)
-
-
 def sparse_nnls(y, X,
                 momentum=1,
                 step_size=0.01,
@@ -414,3 +400,59 @@ def sparse_nnls(y, X,
                 return h_best
             error_checks += 1
         iteration += 1
+
+
+class SKLearnLinearSolver(with_metaclass(abc.ABCMeta, object)):
+    """
+    Provide a sklearn-like uniform interface to algorithms that solve problems
+    of the form: $y = Ax$ for $x$
+
+    Sub-classes of SKLearnLinearSolver should provide a 'fit' method that have
+    the following signature: `SKLearnLinearSolver.fit(X, y)`, which would set
+    an attribute `SKLearnLinearSolver.coef_`, with the shape (X.shape[1],),
+    such that an estimate of y can be calculated as: `y_hat = np.dot(X, SKLearnLinearSolver.coef_.T)`
+    """
+    def __init__(self, *args, **kwargs):
+        self._args = args
+        self._kwargs = kwargs
+
+
+    @abc.abstractmethod
+    def fit(self, X, y):
+        """Implement for all derived classes """
+
+
+    def predict(self, X):
+        """
+        Predict using the result of the model
+
+        Parameters
+        ----------
+        X : array-like (n_samples, n_features)
+            Samples.
+
+        Returns
+        -------
+        C : array, shape = (n_samples,)
+            Predicted values.
+        """
+        X = np.asarray(X)
+        return np.dot(X, self.coef_.T)
+
+
+class NNLS(SKLearnLinearSolver):
+    """
+    A sklearn-like interface to scipy.optimize.nnls
+
+    """
+    def fit(self, X, y):
+        """
+        Fit the NNLS linear model to data
+
+        Parameters
+        ----------
+
+        """
+        coef, rnorm = opt.nnls(X, y)
+        self.coef_ = coef
+        return self
