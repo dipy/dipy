@@ -305,7 +305,13 @@ def streamtube(lines, colors, opacity=1, linewidth=0.15, tube_sides=8,
     # Add thickness to the resulting line.
     profileTubes = vtk.vtkTubeFilter()
     profileTubes.SetNumberOfSides(tube_sides)
-    profileTubes.SetInput(profileData)
+    
+    if major_version <= 5:
+        profileTubes.SetInput(profileData)
+    else:
+        profileTubes.SetInputData(profileData)
+
+    #profileTubes.SetInput(profileData)
     profileTubes.SetRadius(linewidth)
 
     profileMapper = vtk.vtkPolyDataMapper()
@@ -829,12 +835,17 @@ def volume(vol, voxsz=(1.0, 1.0, 1.0), affine=None, center_origin=1,
         print('colormap', colormap)
 
     im = vtk.vtkImageData()
-    im.SetScalarTypeToUnsignedChar()
+    
+    if major_version <= 5:
+        im.SetScalarTypeToUnsignedChar()
     im.SetDimensions(vol.shape[0], vol.shape[1], vol.shape[2])
     # im.SetOrigin(0,0,0)
     # im.SetSpacing(voxsz[2],voxsz[0],voxsz[1])
-    im.AllocateScalars()
-
+    if major_version <= 5:
+        im.AllocateScalars()
+    else:
+        im.AllocateScalars(vtk.VTK_UNSIGNED_CHAR, 3)
+        
     for i in range(vol.shape[0]):
         for j in range(vol.shape[1]):
             for k in range(vol.shape[2]):
@@ -1484,12 +1495,16 @@ def slicer(vol, voxsz=(1.0, 1.0, 1.0), plane_i=[0], plane_j=None,
     vol = vol.astype('uint8')
 
     im = vtk.vtkImageData()
-    im.SetScalarTypeToUnsignedChar()
+    if major_version <= 5:
+        im.SetScalarTypeToUnsignedChar()
     I, J, K = vol.shape[:3]
     im.SetDimensions(I, J, K)
     # im.SetOrigin(0,0,0)
     im.SetSpacing(voxsz[2], voxsz[0], voxsz[1])
-    im.AllocateScalars()
+    if major_version <= 5:
+        im.AllocateScalars()
+    else:
+        im.AllocateScalars(vtk.VTK_UNSIGNED_CHAR, 3)
 
     # copy data
     for i in range(vol.shape[0]):
@@ -1781,10 +1796,7 @@ def record(ren=None, cam_pos=None, cam_focal=None, cam_view=None,
     ren.ResetCamera()
 
     renderLarge = vtk.vtkRenderLargeImage()
-    if major_version <= 5:
-        renderLarge.SetInput(ren)
-    else:
-        renderLarge.SetInputData(ren)
+    renderLarge.SetInput(ren)
     renderLarge.SetMagnification(magnification)
     renderLarge.Update()
 
