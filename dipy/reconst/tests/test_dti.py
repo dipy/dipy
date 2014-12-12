@@ -50,20 +50,28 @@ def test_tensor_algebra():
         assert_almost_equal(np.linalg.norm(x), t_norm[i])
 
 
-def test_TensorModel():
-    data, gtab = dsi_voxels()
+def test_tensor_model():
+    fdata, fbval, fbvec = get_data('small_25')
+    data = nib.load(fdata).get_data()
+    gtab = grad.gradient_table(fbval, fbvec)
     dm = dti.TensorModel(gtab, 'LS')
     dtifit = dm.fit(data[0, 0, 0])
-    assert_equal(dtifit.fa < 0.5, True)
+    assert_equal(dtifit.fa < 0.9, True)
     dm = dti.TensorModel(gtab, 'WLS')
     dtifit = dm.fit(data[0, 0, 0])
-    assert_equal(dtifit.fa < 0.5, True)
+    assert_equal(dtifit.fa < 0.9, True)
+    assert_equal(dtifit.fa > 0, True)
     sphere = create_unit_sphere(4)
     assert_equal(len(dtifit.odf(sphere)), len(sphere.vertices))
-    assert_almost_equal(dtifit.fa, gfa(dtifit.odf(sphere)), 1)
-
     # Check that the multivoxel case works:
     dtifit = dm.fit(data)
+
+    # Check that it works on signal that has already been normalized to S0:
+    dm_to_relative = dti.TensorModel(gtab)
+    relative_data = (data[0, 0, 0]/np.mean(data[0, 0, 0, gtab.b0s_mask]))
+
+    dtifit_to_relative = dm_to_relative.fit(relative_data)
+    npt.assert_almost_equal(dtifit.fa[0,0,0], dtifit_to_relative.fa, decimal=3)
 
     # And smoke-test that all these operations return sensibly-shaped arrays:
     assert_equal(dtifit.fa.shape, data.shape[:3])
@@ -125,8 +133,28 @@ def test_TensorModel():
                   gtab,
                   fit_method='crazy_method')
 
+    # Test multi-voxel data
+    data = np.zeros((3, Y.shape[1]))
+    # Normal voxel
+    data[0] = Y
+    # High diffusion voxel, all diffusing weighted signal equal to zero
+    data[1, gtab.b0s_mask] = b0
+    data[1, ~gtab.b0s_mask] = 0
+    # Masked voxel, all data set to zero
+    data[2] = 0.
 
-def test_indexing_on_TensorFit():
+    tensor_model = dti.TensorModel(gtab)
+    fit = tensor_model.fit(data)
+    assert_array_almost_equal(fit[0].evals, evals)
+
+    # Evals should be high for high diffusion voxel
+    assert_(all(fit[1].evals > evals[0] * .9))
+
+    # Evals should be zero where data is masked
+    assert_array_almost_equal(fit[2].evals, 0.)
+
+
+def test_indexing_on_tensor_fit():
     params = np.zeros([2, 3, 4, 12])
     fit = dti.TensorFit(None, params)
 
@@ -232,7 +260,7 @@ def test_color_fa():
     assert_array_equal(cfa, true_cfa)
 
 
-def test_WLS_and_LS_fit():
+def test_wls_and_ls_fit():
     """
     Tests the WLS and LS fitting functions to see if they returns the correct
     eigenvalues and eigenvectors.
@@ -262,13 +290,13 @@ def test_WLS_and_LS_fit():
     Y.shape = (-1,) + Y.shape
 
     ### Testing WLS Fit on Single Voxel ###
-    # If you do something wonky, you should get an error:
-    #Estimate tensor from test signals
-    model = TensorModel(gtab, min_signal=-1, fit_method='WLS')
-    npt.assert_raises(ValueError, model.fit, Y)
+    # If you do something wonky (passing min_signal<0), you should get an
+    # error:
+    npt.assert_raises(ValueError, TensorModel, gtab, fit_method='WLS',
+                      min_signal=-1)
 
     #Estimate tensor from test signals
-    model = TensorModel(gtab, min_signal=1e-8, fit_method='WLS')
+    model = TensorModel(gtab, fit_method='WLS')
     tensor_est = model.fit(Y)
     assert_equal(tensor_est.shape, Y.shape[:-1])
     assert_array_almost_equal(tensor_est.evals[0], evals)
@@ -287,7 +315,7 @@ def test_WLS_and_LS_fit():
     assert_array_almost_equal(tensor_est.lower_triangular(b0), D)
 
     # Test using fit_method='LS'
-    model = TensorModel(gtab, min_signal=1e-8, fit_method='LS')
+    model = TensorModel(gtab, fit_method='LS')
     tensor_est = model.fit(y)
     assert_equal(tensor_est.shape, tuple())
     assert_array_almost_equal(tensor_est.evals, evals)
@@ -299,8 +327,7 @@ def test_WLS_and_LS_fit():
     assert_array_almost_equal(tensor_est.sphericity, sphericity(evals))
 
 
-
-def test_masked_array_with_Tensor():
+def test_masked_array_with_tensor():
     data = np.ones((2, 4, 56))
     mask = np.array([[True, False, False, True],
                      [True, False, True, False]])
@@ -308,7 +335,7 @@ def test_masked_array_with_Tensor():
     bvec, bval = read_bvec_file(get_data('55dir_grad.bvec'))
     gtab = grad.gradient_table_from_bvals_bvecs(bval, bvec.T)
 
-    tensor_model = TensorModel(gtab, min_signal=1e-9)
+    tensor_model = TensorModel(gtab)
     tensor = tensor_model.fit(data, mask=mask)
     assert_equal(tensor.shape, (2, 4))
     assert_equal(tensor.fa.shape, (2, 4))
@@ -391,7 +418,7 @@ def test_all_zeros():
     fit_methods = ['LS', 'OLS', 'NNLS', 'RESTORE']
     for fit_method in fit_methods:
         dm = dti.TensorModel(gtab)
-        assert_raises(ValueError, dm.fit, np.zeros(bvals.shape[0]))
+        assert_array_almost_equal(dm.fit(np.zeros(bvals.shape[0])).evals, 0)
 
 
 def test_mask():
