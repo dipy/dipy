@@ -651,7 +651,7 @@ class TensorModel(ReconstModel):
         self.design_matrix = design_matrix(self.gtab)
         self.args = args
         self.kwargs = kwargs
-        self.min_signal = self.kwargs.get('min_signal', None)
+        self.min_signal = self.kwargs.pop('min_signal', None)
         if self.min_signal is not None and self.min_signal <= 0:
             e_s = "The `min_signal` key-word argument needs to be strictly"
             e_s += " positive."
