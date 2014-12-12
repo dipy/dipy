@@ -224,6 +224,11 @@ class ShoreModel(Cache):
             if not have_cvxopt:
                 raise ValueError(
                     'CVXOPT package needed to enforce constraints')
+            w_s = "The implementation of SHORE depends on CVXOPT "
+            w_s += " (http://cvxopt.org/). This software is licensed "
+            w_s += "under the GPL (see: http://cvxopt.org/copyright.html). "
+            w_s += " and you may be subject to this license when using SHORE."
+            warn(w_s)
             import cvxopt.solvers
             M0 = M[self.gtab.b0s_mask, :]
             M0_mean = M0.mean(0)[None, :]
