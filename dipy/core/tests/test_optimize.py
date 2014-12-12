@@ -118,7 +118,7 @@ def test_optimize_old_scipy():
     assert_array_almost_equal(opt.xopt, np.array([0, 0, 0, 0.]))
 
 
-def test_SKLearnLinearSolver():
+def test_sklearn_linear_solver():
     class SillySolver(opt.SKLearnLinearSolver):
         def fit(self, X, y):
             self.coef_ = np.ones(X.shape[-1])
@@ -134,8 +134,7 @@ def test_SKLearnLinearSolver():
     npt.assert_equal(MySillySolver.predict(X), np.ones(n_samples) * 20)
 
 
-def test_NNLS():
-
+def test_nnls():
     n = 100
     X = np.eye(n)
     beta = np.random.rand(n)
