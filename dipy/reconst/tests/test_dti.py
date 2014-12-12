@@ -50,7 +50,7 @@ def test_tensor_algebra():
         assert_almost_equal(np.linalg.norm(x), t_norm[i])
 
 
-def test_TensorModel():
+def test_tensor_model():
     fdata, fbval, fbvec = get_data('small_25')
     data = nib.load(fdata).get_data()
     gtab = grad.gradient_table(fbval, fbvec)
@@ -154,7 +154,7 @@ def test_TensorModel():
     assert_array_almost_equal(fit[2].evals, 0.)
 
 
-def test_indexing_on_TensorFit():
+def test_indexing_on_tensor_fit():
     params = np.zeros([2, 3, 4, 12])
     fit = dti.TensorFit(None, params)
 
@@ -260,7 +260,7 @@ def test_color_fa():
     assert_array_equal(cfa, true_cfa)
 
 
-def test_WLS_and_LS_fit():
+def test_wls_and_ls_fit():
     """
     Tests the WLS and LS fitting functions to see if they returns the correct
     eigenvalues and eigenvectors.
@@ -327,8 +327,7 @@ def test_WLS_and_LS_fit():
     assert_array_almost_equal(tensor_est.sphericity, sphericity(evals))
 
 
-
-def test_masked_array_with_Tensor():
+def test_masked_array_with_tensor():
     data = np.ones((2, 4, 56))
     mask = np.array([[True, False, False, True],
                      [True, False, True, False]])
