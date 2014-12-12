@@ -71,7 +71,7 @@ def test_tensor_model():
     relative_data = (data[0, 0, 0]/np.mean(data[0, 0, 0, gtab.b0s_mask]))
 
     dtifit_to_relative = dm_to_relative.fit(relative_data)
-    npt.assert_almost_equal(dtifit.fa[0,0,0], dtifit_to_relative.fa)
+    npt.assert_almost_equal(dtifit.fa[0,0,0], dtifit_to_relative.fa, decimal=3)
 
     # And smoke-test that all these operations return sensibly-shaped arrays:
     assert_equal(dtifit.fa.shape, data.shape[:3])
@@ -292,8 +292,8 @@ def test_wls_and_ls_fit():
     ### Testing WLS Fit on Single Voxel ###
     # If you do something wonky (passing min_signal<0), you should get an
     # error:
-    model = TensorModel(gtab, fit_method='WLS')
-    npt.assert_raises(ValueError, model.fit, Y, min_signal=-1,)
+    npt.assert_raises(ValueError, TensorModel, gtab, fit_method='WLS',
+                      min_signal=-1)
 
     #Estimate tensor from test signals
     model = TensorModel(gtab, fit_method='WLS')

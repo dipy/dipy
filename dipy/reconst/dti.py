@@ -622,6 +622,10 @@ class TensorModel(ReconstModel):
         args, kwargs : arguments and key-word arguments passed to the
            fit_method. See dti.wls_fit_tensor, dti.ols_fit_tensor for details
 
+        min_signal : float
+            The minimum signal value. Needs to be a strictly positive
+            number. Default: minimal signal in the data provided to `fit`.
+
         References
         ----------
         .. [1] Basser, P.J., Mattiello, J., LeBihan, D., 1994. Estimation of
@@ -647,8 +651,20 @@ class TensorModel(ReconstModel):
         self.design_matrix = design_matrix(self.gtab)
         self.args = args
         self.kwargs = kwargs
+        self.min_signal = self.kwargs.get('min_signal', None)
+        if self.min_signal is not None and self.min_signal <= 0:
+            e_s = "The `min_signal` key-word argument needs to be strictly"
+            e_s += " positive."
+            raise ValueError(e_s)
 
-    def fit(self, data, mask=None, min_signal=None):
+    def _min_positive_signal(self, data):
+        data = data.ravel()
+        if np.all(data==0):
+            return 0.0001
+        else:
+            return data[data > 0].min()
+
+    def fit(self, data, mask=None):
         """ Fit method of the DTI model class
 
         Parameters
@@ -660,12 +676,7 @@ class TensorModel(ReconstModel):
             A boolean array used to mark the coordinates in the data that
             should be analyzed that has the shape data.shape[-1]
 
-        min_signal : float
-            The minimum signal value. Needs to be a strictly positive
-            number. Default: 0.0001
-
         """
-
         if mask is None:
             # Flatten it to 2D either way:
             data_in_mask = np.reshape(data, (-1, data.shape[-1]))
@@ -676,41 +687,15 @@ class TensorModel(ReconstModel):
             mask = np.array(mask, dtype=bool, copy=False)
             data_in_mask = np.reshape(data[mask], (-1, data.shape[-1]))
 
-        if min_signal is None:
-            min_signal = 0.0001
-        if min_signal <= 0:
-            e_s = "The `min_signal` key-word argument needs to be strictly"
-            e_s += " positive."
-            raise ValueError(e_s)
-
-        max_d = self.kwargs.get('max_d', 0.003)
-        # preallocate:
-        params_in_mask = np.zeros((data_in_mask.shape[0], 12))
-        params_in_mask[:, 3:] = np.eye(3).ravel()
-        # We'll start by dealing with voxels that have no signal (s0 and d_sig
-        # are both all equal to 0), and with voxels with very large diffusivity
-        # (s0 is non-zero, but d_sig is all 0):
-        nz_s0 = np.nonzero(data_in_mask[..., self.gtab.b0s_mask])[0]
-        nz_d_sig = np.nonzero(data_in_mask[..., ~self.gtab.b0s_mask])[0]
-        # These are the actually interesting (non-zero d_sig and non-zero b0):
-        idx_to_fit = so.intersect1d(nz_s0, nz_d_sig)
-        to_fit = data_in_mask[idx_to_fit]
-        to_fit = np.maximum(to_fit, min_signal)
-        params_in_mask[idx_to_fit, :] =\
-            self.fit_method(self.design_matrix, to_fit,
-                            *self.args, **self.kwargs)
-
-        idx_high_diffusion = so.setdiff1d(nz_s0, nz_d_sig)
-        if len(idx_high_diffusion)>0:
-            # Set it to the diffusivity of water in water at 37 deg C (per
-            # default):
-            params_in_mask[idx_high_diffusion, :3]=np.array([max_d,
-                                                             max_d,
-                                                             max_d])
-            params_in_mask[idx_high_diffusion, 3:] = np.eye(3).ravel()
-
-        # The remaining voxels (zero d_sig and zero s0, remain with the
-        # parameters set to 0)
+        
+        if self.min_signal is None:
+            min_signal = self._min_positive_signal(data)
+        else:
+            min_signal = self.min_signal
+        
+        data_in_mask = np.maximum(data_in_mask, min_signal)
+        params_in_mask = self.fit_method(self.design_matrix, data_in_mask,
+                                         *self.args, **self.kwargs)
 
         if mask is None:
             out_shape = data.shape[:-1] + (-1, )
