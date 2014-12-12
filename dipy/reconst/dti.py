@@ -5,7 +5,6 @@ from __future__ import division, print_function, absolute_import
 import warnings
 
 import numpy as np
-import numpy.lib.arraysetops as so
 
 import scipy.optimize as opt
 
