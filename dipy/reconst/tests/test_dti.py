@@ -51,30 +51,27 @@ def test_tensor_algebra():
 
 
 def test_TensorModel():
-    data, gtab = dsi_voxels()
+    fdata, fbval, fbvec = get_data('small_25')
+    data = nib.load(fdata).get_data()
+    gtab = grad.gradient_table(fbval, fbvec)
     dm = dti.TensorModel(gtab, 'LS')
     dtifit = dm.fit(data[0, 0, 0])
-    assert_equal(dtifit.fa < 0.5, True)
+    assert_equal(dtifit.fa < 0.9, True)
     dm = dti.TensorModel(gtab, 'WLS')
     dtifit = dm.fit(data[0, 0, 0])
-    assert_equal(dtifit.fa < 0.5, True)
-    #assert_equal(dtifit.fa > 0, True)
+    assert_equal(dtifit.fa < 0.9, True)
+    assert_equal(dtifit.fa > 0, True)
     sphere = create_unit_sphere(4)
     assert_equal(len(dtifit.odf(sphere)), len(sphere.vertices))
-    #assert_almost_equal(dtifit.fa, gfa(dtifit.odf(sphere)), 1)
-
     # Check that the multivoxel case works:
     dtifit = dm.fit(data)
 
     # Check that it works on signal that has already been normalized to S0:
-    dm_to_relative = dti.TensorModel(
-                                grad.gradient_table(gtab.bvals[~gtab.b0s_mask],
-                                                    gtab.bvecs[~gtab.b0s_mask]))
-    relative_data = (data[0, 0, 0, ~gtab.b0s_mask]/
-                     np.mean(data[0, 0, 0, gtab.b0s_mask]))
-    dtifit_to_relative = dm_to_relative.fit(relative_data)
+    dm_to_relative = dti.TensorModel(gtab)
+    relative_data = (data[0, 0, 0]/np.mean(data[0, 0, 0, gtab.b0s_mask]))
 
-    npt.assert_almost_equal(dtifit.fa, dtifit_to_relative.fa)
+    dtifit_to_relative = dm_to_relative.fit(relative_data)
+    npt.assert_almost_equal(dtifit.fa[0,0,0], dtifit_to_relative.fa)
 
     # And smoke-test that all these operations return sensibly-shaped arrays:
     assert_equal(dtifit.fa.shape, data.shape[:3])
@@ -293,6 +290,11 @@ def test_WLS_and_LS_fit():
     Y.shape = (-1,) + Y.shape
 
     ### Testing WLS Fit on Single Voxel ###
+    # If you do something wonky (passing min_signal<0), you should get an
+    # error:
+    model = TensorModel(gtab, fit_method='WLS')
+    npt.assert_raises(ValueError, model.fit, Y, min_signal=-1,)
+
     #Estimate tensor from test signals
     model = TensorModel(gtab, fit_method='WLS')
     tensor_est = model.fit(Y)

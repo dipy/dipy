@@ -648,7 +648,7 @@ class TensorModel(ReconstModel):
         self.args = args
         self.kwargs = kwargs
 
-    def fit(self, data, mask=None):
+    def fit(self, data, mask=None, min_signal=None):
         """ Fit method of the DTI model class
 
         Parameters
@@ -659,7 +659,13 @@ class TensorModel(ReconstModel):
         mask : array
             A boolean array used to mark the coordinates in the data that
             should be analyzed that has the shape data.shape[-1]
+
+        min_signal : float
+            The minimum signal value. Needs to be a strictly positive
+            number. Default: 0.0001
+
         """
+
         if mask is None:
             # Flatten it to 2D either way:
             data_in_mask = np.reshape(data, (-1, data.shape[-1]))
@@ -669,6 +675,13 @@ class TensorModel(ReconstModel):
                 raise ValueError("Mask is not the same shape as data.")
             mask = np.array(mask, dtype=bool, copy=False)
             data_in_mask = np.reshape(data[mask], (-1, data.shape[-1]))
+
+        if min_signal is None:
+            min_signal = 0.0001
+        if min_signal <= 0:
+            e_s = "The `min_signal` key-word argument needs to be strictly"
+            e_s += " positive."
+            raise ValueError(e_s)
 
         max_d = self.kwargs.get('max_d', 0.003)
         # preallocate:
@@ -681,9 +694,12 @@ class TensorModel(ReconstModel):
         nz_d_sig = np.nonzero(data_in_mask[..., ~self.gtab.b0s_mask])[0]
         # These are the actually interesting (non-zero d_sig and non-zero b0):
         idx_to_fit = so.intersect1d(nz_s0, nz_d_sig)
+        to_fit = data_in_mask[idx_to_fit]
+        to_fit = np.maximum(to_fit, min_signal)
         params_in_mask[idx_to_fit, :] =\
-            self.fit_method(self.design_matrix, data_in_mask[idx_to_fit],
+            self.fit_method(self.design_matrix, to_fit,
                             *self.args, **self.kwargs)
+
         idx_high_diffusion = so.setdiff1d(nz_s0, nz_d_sig)
         if len(idx_high_diffusion)>0:
             # Set it to the diffusivity of water in water at 37 deg C (per
@@ -1129,7 +1145,6 @@ def wls_fit_tensor(design_matrix, data):
                                         min_diffusivity)
 
     dti_params.shape = data.shape[:-1] + (12,)
-    dti_params = dti_params
     return dti_params
 
 
