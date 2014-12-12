@@ -59,6 +59,13 @@ class ShoreModel(Cache):
     .. [5] Ozarslan E. et. al, "Mean apparent propagator (MAP) MRI: A novel
            diffusion imaging method for mapping tissue microstructure",
            NeuroImage, 2013.
+
+    Notes
+    -----
+    The implementation of SHORE depends on CVXOPT (http://cvxopt.org/). This
+    software is licensed under the GPL (see:
+    http://cvxopt.org/copyright.html).and you may be subject to this license
+    when using SHORE.
     """
 
     def __init__(self,
