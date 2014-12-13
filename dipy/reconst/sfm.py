@@ -180,7 +180,7 @@ class SparseFascicleModel(ReconstModel, Cache):
             self.solver = lm.ElasticNet(l1_ratio=l1_ratio, alpha=alpha,
                                         positive=True, warm_start=True)
         elif solver == 'NNLS' or solver == 'nnls':
-            self.solver = opt.NNLS()
+            self.solver = opt.NonNegativeLeastSquares()
         elif isinstance(solver, opt.SKLearnLinearSolver):
             self.solver = solver
         else:

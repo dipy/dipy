@@ -134,12 +134,12 @@ def test_sklearn_linear_solver():
     npt.assert_equal(MySillySolver.predict(X), np.ones(n_samples) * 20)
 
 
-def test_nnls():
+def test_nonnegativeleastsquares():
     n = 100
     X = np.eye(n)
     beta = np.random.rand(n)
     y = np.dot(X, beta)
-    my_nnls = opt.NNLS()
+    my_nnls = opt.NonNegativeLeastSquares()
     my_nnls.fit(X, y)
     npt.assert_equal(my_nnls.coef_, beta)
     npt.assert_equal(my_nnls.predict(X), y)

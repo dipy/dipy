@@ -440,14 +440,14 @@ class SKLearnLinearSolver(with_metaclass(abc.ABCMeta, object)):
         return np.dot(X, self.coef_.T)
 
 
-class NNLS(SKLearnLinearSolver):
+class NonNegativeLeastSquares(SKLearnLinearSolver):
     """
     A sklearn-like interface to scipy.optimize.nnls
 
     """
     def fit(self, X, y):
         """
-        Fit the NNLS linear model to data
+        Fit the NonNegativeLeastSquares linear model to data
 
         Parameters
         ----------
