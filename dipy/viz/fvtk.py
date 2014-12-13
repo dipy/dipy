@@ -47,7 +47,6 @@ tmp_ren = None
 
 if have_vtk:
 
-    version = vtk.vtkVersion.GetVTKSourceVersion().split(' ')[-1]
     major_version = vtk.vtkVersion.GetVTKMajorVersion()
 
     # Create a text mapper and actor to display the results of picking.
@@ -305,7 +304,7 @@ def streamtube(lines, colors, opacity=1, linewidth=0.15, tube_sides=8,
     # Add thickness to the resulting line.
     profileTubes = vtk.vtkTubeFilter()
     profileTubes.SetNumberOfSides(tube_sides)
-    
+
     if major_version <= 5:
         profileTubes.SetInput(profileData)
     else:
@@ -835,7 +834,7 @@ def volume(vol, voxsz=(1.0, 1.0, 1.0), affine=None, center_origin=1,
         print('colormap', colormap)
 
     im = vtk.vtkImageData()
-    
+
     if major_version <= 5:
         im.SetScalarTypeToUnsignedChar()
     im.SetDimensions(vol.shape[0], vol.shape[1], vol.shape[2])
@@ -845,7 +844,7 @@ def volume(vol, voxsz=(1.0, 1.0, 1.0), affine=None, center_origin=1,
         im.AllocateScalars()
     else:
         im.AllocateScalars(vtk.VTK_UNSIGNED_CHAR, 3)
-        
+
     for i in range(vol.shape[0]):
         for j in range(vol.shape[1]):
             for k in range(vol.shape[2]):
