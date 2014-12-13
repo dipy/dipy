@@ -130,7 +130,6 @@ def sfm_design_matrix(gtab, sphere, response, mode='signal'):
     return mat
 
 
-
 class SparseFascicleModel(ReconstModel, Cache):
     def __init__(self, gtab, sphere=None, response=[0.0015, 0.0005, 0.0005],
                  solver='ElasticNet', l1_ratio=0.5, alpha=0.001):
@@ -193,7 +192,6 @@ class SparseFascicleModel(ReconstModel, Cache):
     def design_matrix(self):
         return sfm_design_matrix(self.gtab, self.sphere, self.response)
 
-
     def fit(self, data, mask=None):
         """
         Fit the SparseFascicleModel object to data
@@ -232,7 +230,6 @@ class SparseFascicleModel(ReconstModel, Cache):
                 fit_it = dd - flat_mean[vox]
                 flat_params[vox] = self.solver.fit(self.design_matrix,
                                                    fit_it).coef_
-
         if mask is None:
             out_shape = data.shape[:-1] + (-1, )
             beta = flat_params.reshape(out_shape)
@@ -320,7 +317,6 @@ class SparseFascicleFit(ReconstFit):
         if gtab is None:
             _matrix = self.model.design_matrix
             gtab = self.model.gtab
-
         # The only thing we can't change at this point is the sphere we use
         # (which sets the width of our design matrix):
         else:
@@ -330,20 +326,14 @@ class SparseFascicleFit(ReconstFit):
         pred_weighted = np.dot(_matrix, beta_all.T).T
         pred_weighted = pred_weighted.reshape(self.beta.shape[:-1] +
                                               (_matrix.shape[0],))
-
         if S0 is None:
             S0 = self.S0
-
         if isinstance(S0, np.ndarray):
             S0 = S0[..., None]
-
         if isinstance(self.mean_signal, np.ndarray):
             mean_signal = self.mean_signal[..., None]
-
         pre_pred_sig = S0 * (pred_weighted + mean_signal)
-
         pred_sig = np.zeros(pre_pred_sig.shape[:-1] + (gtab.bvals.shape[0],))
         pred_sig[..., ~gtab.b0s_mask] = pre_pred_sig
         pred_sig[..., gtab.b0s_mask] = S0
-
         return pred_sig.squeeze()
