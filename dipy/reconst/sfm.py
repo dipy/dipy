@@ -32,7 +32,6 @@ if not has_sklearn:
     w += " the SparseFascicleModel"
     warnings.warn(w)
 
-
 def sfm_design_matrix(gtab, sphere, response, mode='signal'):
     """
     Construct the SFM design matrix
@@ -113,7 +112,7 @@ def sfm_design_matrix(gtab, sphere, response, mode='signal'):
     for ii, this_dir in enumerate(sphere.vertices):
         # Rotate the canonical tensor towards this vertex and calculate the
         # signal you would have gotten in the direction
-        rot_matrix = geo.vec2vec_rotmat(np.array([1,0,0]), this_dir)
+        rot_matrix = geo.vec2vec_rotmat(np.array([1, 0, 0]), this_dir)
         this_tensor = np.dot(rot_matrix, canonical_tensor)
         evals, evecs = dti.decompose_tensor(this_tensor)
         if mode == 'signal':
@@ -171,8 +170,6 @@ class SparseFascicleModel(ReconstModel, Cache):
         .. [Zou2005] Zou H, Hastie T (2005). Regularization and variable
            selection via the elastic net. J R Stat Soc B:301-320
         """
-
-
         ReconstModel.__init__(self, gtab)
         if sphere is None:
             sphere = dpd.get_sphere()
@@ -223,7 +220,7 @@ class SparseFascicleModel(ReconstModel, Cache):
 
         # Fitting is done on the relative signal (S/S0):
         flat_S0 = np.mean(flat_data[..., self.gtab.b0s_mask], -1)
-        flat_S = flat_data[..., ~self.gtab.b0s_mask]/flat_S0[...,None]
+        flat_S = flat_data[..., ~self.gtab.b0s_mask] / flat_S0[..., None]
         flat_mean = np.mean(flat_S, -1)
         flat_params = np.zeros((flat_data.shape[0],
                                 self.design_matrix.shape[-1]))
@@ -273,7 +270,6 @@ class SparseFascicleFit(ReconstFit):
         self.S0 = S0
         self.mean_signal = mean_signal
 
-
     def odf(self, sphere):
         """
         The orientation distribution function of the SFM
@@ -298,7 +294,6 @@ class SparseFascicleFit(ReconstFit):
         flat_odf = np.dot(odf_matrix, flat_beta.T)
         return flat_odf.T.reshape(self.beta.shape[:-1] +
                                   (odf_matrix.shape[0], ))
-
 
     def predict(self, gtab=None, response=None, S0=None):
         """
@@ -330,8 +325,6 @@ class SparseFascicleFit(ReconstFit):
         # (which sets the width of our design matrix):
         else:
             _matrix = sfm_design_matrix(gtab, self.model.sphere, response)
-
-
         # Get them all at once:
         beta_all = self.beta.reshape(-1, self.beta.shape[-1])
         pred_weighted = np.dot(_matrix, beta_all.T).T

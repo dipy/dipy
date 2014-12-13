@@ -109,7 +109,8 @@ sf_peaks = dpp.peaks_from_model(sf_model,
                                 sphere,
                                 relative_peak_threshold=.5,
                                 min_separation_angle=25,
-                                return_sh=False)
+                                return_sh=False,
+                                parallel=True)
 
 
 fvtk.clear(ren)
@@ -139,7 +140,7 @@ data that can be segmented using the median Otsu filter in the b=0 volumes:
 """
 
 maskdata, mask = median_otsu(data, 3, 1, True,
-                             vol_idx=range(10), dilate=2)
+                             vol_idx=range(10, 50), dilate=2)
 
 """
 The peaks of the ODFs are extracted using the `peaks_from_model` function
@@ -150,7 +151,8 @@ pnm = dpp.peaks_from_model(sf_model, maskdata, sphere,
                            mask=mask,
                            relative_peak_threshold=.5,
                            min_separation_angle=25,
-                           return_sh=False)
+                           return_sh=False,
+                           parallel=True)
 
 
 """
@@ -171,10 +173,10 @@ sfm_streamlines = [streamline for streamline in eu]
 We visualize the resulting tracks, using fvtk:
 """
 
-r = fvtk.ren()
-fvtk.add(r, fvtk.line(sfm_streamlines, line_colors(sfm_streamlines)))
+ren = fvtk.ren()
+fvtk.add(ren, fvtk.line(sfm_streamlines, line_colors(sfm_streamlines)))
 print('Saving illustration as sfm_tracks.png')
-fvtk.record(r, n_frames=1, out_path='sfm_tracks.png', size=(1000, 1000))
+fvtk.record(ren, n_frames=1, out_path='sfm_tracks.png', size=(1000, 1000))
 
 """
 References
