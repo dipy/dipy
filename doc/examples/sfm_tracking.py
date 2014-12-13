@@ -9,8 +9,6 @@ with the EuDX [Garyfallidis12]_ deterministic tracking algorithm.
 First, we import the modules we will use in this example:
 """
 
-import numpy as np
-import nibabel as nib
 import dipy.reconst.sfm as sfm
 import dipy.data as dpd
 from dipy.data import fetch_stanford_hardi
@@ -167,7 +165,7 @@ eu = EuDX(pnm.gfa,
           a_low=0.2)
 
 
-sfm_streamlines =[streamline for streamline in eu]
+sfm_streamlines = [streamline for streamline in eu]
 
 """
 We visualize the resulting tracks, using fvtk:
