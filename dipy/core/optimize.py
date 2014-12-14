@@ -347,7 +347,7 @@ def sparse_nnls(y, X,
     h_best = h
     gradient = np.zeros(num_regressors)
     iteration = 1
-    ss_residuals_to_mean = np.sum((y - np.mean(y)) ** 2)  # The variance of y
+    ss_residuals_min = np.inf  # This will keep track of the best solution
     sse_best = np.inf   # This will keep track of the best performance so far
     count_bad = 0  # Number of times estimation error has gone up.
     error_checks = 0  # How many error checks have we done so far
