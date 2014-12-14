@@ -32,6 +32,7 @@ if not has_sklearn:
     w += " the SparseFascicleModel"
     warnings.warn(w)
 
+
 def sfm_design_matrix(gtab, sphere, response, mode='signal'):
     """
     Construct the SFM design matrix
@@ -77,7 +78,7 @@ def sfm_design_matrix(gtab, sphere, response, mode='signal'):
 
     A canonical tensor approximating corpus-callosum voxels [Rokem2014]_:
 
-    >>> tensor_matrix = sfm_design_matrix(gtab, sphere, [0.0015, 0.0005, 0.0005])
+    >>> tensor_matrix=sfm_design_matrix(gtab, sphere, [0.0015, 0.0005, 0.0005])
 
     A 'stick' function ([Behrens2007]_):
 
@@ -142,7 +143,8 @@ class SparseFascicleModel(ReconstModel, Cache):
         sphere : Sphere class instance
         response : (3,) array-like
             The eigenvalues of a canonical tensor to be used as the response
-            function of single-fascicle signals. Default:[0.0015, 0.0005, 0.0005]
+            function of single-fascicle signals.
+            Default:[0.0015, 0.0005, 0.0005]
 
         solver : string or SKLearnLinearSolver object.
             This will determine the algorithm used to solve the set of linear
@@ -313,7 +315,7 @@ class SparseFascicleFit(ReconstFit):
             The signal predicted in each voxel/direction
         """
         if response is None:
-            response=self.model.response
+            response = self.model.response
         if gtab is None:
             _matrix = self.model.design_matrix
             gtab = self.model.gtab
