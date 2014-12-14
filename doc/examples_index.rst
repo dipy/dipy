@@ -91,6 +91,12 @@ DSI with Deconvolution
 
 - :ref:`example_reconst_dsid`
 
+Sparse Fascicle Model
+~~~~~~~~~~~~~~~~~~~~~~
+
+- :ref:`example_sfm_tracking`
+
+
 -------------------------------------
 Statistical evaluation and validation
 -------------------------------------
