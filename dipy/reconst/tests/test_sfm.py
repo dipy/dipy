@@ -19,7 +19,7 @@ def test_design_matrix():
 
 
 @npt.dec.skipif(not sfm.has_sklearn)
-def test_SparseFascicleModel():
+def test_sfm():
     fdata, fbvals, fbvecs = dpd.get_data()
     data = nib.load(fdata).get_data()
     gtab = grad.gradient_table(fbvals, fbvecs)
@@ -65,7 +65,7 @@ def test_predict():
     npt.assert_almost_equal(pred, S, decimal=1)
 
 
-def test_SparseFascicleModel_stick():
+def test_sfm_stick():
     fdata, fbvals, fbvecs = dpd.get_data()
     data = nib.load(fdata).get_data()
     gtab = grad.gradient_table(fbvals, fbvecs)
@@ -91,7 +91,7 @@ def test_SparseFascicleModel_stick():
     npt.assert_almost_equal(pred, S, decimal=1)
 
 
-def test_SparseFascicleModel_SKLearnlinearsolver():
+def test_sfm_sklearnlinearsolver():
     class SillySolver(opt.SKLearnLinearSolver):
         def fit(self, X, y):
             self.coef_ = np.ones(X.shape[-1])
