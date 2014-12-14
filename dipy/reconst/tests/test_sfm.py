@@ -12,7 +12,8 @@ def test_design_matrix():
     data, gtab = dpd.dsi_voxels()
     sphere = dpd.get_sphere()
     # Make it with NNLS, so that it gets tested regardless of sklearn
-    sparse_fascicle_model = sfm.SparseFascicleModel(gtab, sphere, solver='NNLS')
+    sparse_fascicle_model = sfm.SparseFascicleModel(gtab, sphere,
+                                                    solver='NNLS')
     npt.assert_equal(sparse_fascicle_model.design_matrix.shape,
                      (np.sum(~gtab.b0s_mask), sphere.vertices.shape[0]))
 
@@ -34,13 +35,13 @@ def test_SparseFascicleModel():
     sffit3 = sfmodel.fit(data)
     pred3 = sffit3.predict(gtab)
     odf3 = sffit3.odf(sphere)
-
     npt.assert_almost_equal(pred3, pred2, decimal=2)
-    npt.assert_almost_equal(pred3[0,0,0], pred1, decimal=2)
-    npt.assert_almost_equal(odf3[0,0,0], odf1, decimal=2)
+    npt.assert_almost_equal(pred3[0, 0, 0], pred1, decimal=2)
+    npt.assert_almost_equal(odf3[0, 0, 0], odf1, decimal=2)
+    npt.assert_almost_equal(odf3[0, 0, 0], odf2[0, 0, 0], decimal=2)
 
     # Fit zeros and you will get back zeros
-    npt.assert_almost_equal(sfmodel.fit(np.zeros(data[0,0,0].shape)).beta,
+    npt.assert_almost_equal(sfmodel.fit(np.zeros(data[0, 0, 0].shape)).beta,
                             np.zeros(sfmodel.design_matrix[0].shape[-1]))
 
 
@@ -100,10 +101,11 @@ def test_SparseFascicleModel_SKLearnlinearsolver():
             self.coef_ = np.ones(X.shape[-1])
 
     fdata, fbvals, fbvecs = dpd.get_data()
-    data = nib.load(fdata).get_data()
     gtab = grad.gradient_table(fbvals, fbvecs)
     sfmodel = sfm.SparseFascicleModel(gtab, solver=SillySolver())
 
     npt.assert_(isinstance(sfmodel.solver, SillySolver))
     npt.assert_raises(ValueError,
-                      sfm.SparseFascicleModel, gtab, solver=EvenSillierSolver())
+                      sfm.SparseFascicleModel,
+                      gtab,
+                      solver=EvenSillierSolver())
