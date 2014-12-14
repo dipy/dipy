@@ -223,11 +223,11 @@ class SparseFascicleModel(ReconstModel, Cache):
         flat_params = np.zeros((flat_data.shape[0],
                                 self.design_matrix.shape[-1]))
 
-        for vox, dd in enumerate(flat_S):
-            if np.any(np.isnan(dd)):
+        for vox, vox_data in enumerate(flat_S):
+            if np.any(np.isnan(vox_data)):
                 flat_params[vox] = (np.zeros(self.design_matrix.shape[-1]))
             else:
-                fit_it = dd - flat_mean[vox]
+                fit_it = vox_data - flat_mean[vox]
                 flat_params[vox] = self.solver.fit(self.design_matrix,
                                                    fit_it).coef_
         if mask is None:
