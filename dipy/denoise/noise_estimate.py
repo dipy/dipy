@@ -43,7 +43,7 @@ def piesno(data, N=1, alpha=0.01, l=100, itermax=100, eps=1e-5, return_mask=Fals
     eps : float
         Tolerance for the convergence criterion. Convergence is
         reached if two subsequent estimates are smaller than eps.
-    
+
     return_mask : bool
         If True, return a mask identyfing all the pure noise voxel
         that were found.
@@ -145,9 +145,9 @@ def piesno(data, N=1, alpha=0.01, l=100, itermax=100, eps=1e-5, return_mask=Fals
 
     if return_mask:
         return sigma[pos], mask[pos]
-    
+
     return sigma[pos]
-    
+
 
 def estimate_sigma(arr, disable_background_masking=False):
     """Standard deviation estimation from local patches
@@ -187,8 +187,8 @@ def estimate_sigma(arr, disable_background_masking=False):
         mask = arr[..., 0].astype(np.bool)
     else:
         mask = np.ones_like(arr[..., 0], dtype=np.bool)
-        
-    conv_out = np.zeros(arr[...,0].shape, dtype=np.float32)
+
+    conv_out = np.zeros(arr[...,0].shape, dtype=np.float64)
     for i in range(sigma.size):
         convolve(arr[..., i], k, output=conv_out)
         mean_block = np.sqrt(6/7) * (arr[..., i] - 1/6 * conv_out)
