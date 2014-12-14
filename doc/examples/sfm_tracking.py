@@ -116,7 +116,6 @@ sf_peaks = dpp.peaks_from_model(sf_model,
 fvtk.clear(ren)
 fodf_peaks = fvtk.peaks(sf_peaks.peak_dirs, sf_peaks.peak_values, scale=1.5)
 fvtk.add(ren, fodf_peaks)
-#fvtk.show(ren)
 
 print('Saving illustration as sf_peaks.png')
 fvtk.record(ren, out_path='sf_peaks.png', size=(1000, 1000))
