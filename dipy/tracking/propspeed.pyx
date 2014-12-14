@@ -17,7 +17,7 @@ cdef extern from "dpy_math.h" nogil:
     double sin(double x)
     float acos(float x )
     double sqrt(double x)
-    double DPY_PI
+    double NPY_PI
 
 
 DEF PEAK_NO=5
@@ -217,7 +217,7 @@ cdef  cnp.npy_intp _nearest_direction(double* dx,double* qa,\
         cnp.npy_intp i,j,max_doti=0
 
     #calculate the cos with radians
-    angl=cos((DPY_PI*ang_thr)/180.)
+    angl=cos((NPY_PI*ang_thr)/180.)
     #if the maximum peak is lower than the threshold then there is no point continuing tracking
     if qa[0] <= qa_thr:
         return 0
