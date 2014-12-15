@@ -612,7 +612,7 @@ def length(streamlines, affine=None):
     return map(metrics.length, streamlines)
 
 
-def unique_rows(in_array, dtype='f4'):
+def unique_rows(in_array, dtype='i4'):
     """
     This (quickly) finds the unique rows in an array
 
