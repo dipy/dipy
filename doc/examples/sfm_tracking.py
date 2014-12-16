@@ -103,7 +103,6 @@ from dipy.viz import fvtk
 from dipy.viz.colormap import line_colors
 from dipy.data import read_stanford_t1
 from dipy.tracking.utils import move_streamlines
-from numpy import linalg
 from numpy.linalg import inv
 t1 = read_stanford_t1()
 t1_data = t1.get_data()
