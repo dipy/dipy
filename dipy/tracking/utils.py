@@ -631,18 +631,18 @@ def unique_rows(in_array, dtype='f4'):
        Array with the unique rows of the original array.
 
     """
-    x = np.array([tuple(in_array.T[:,i]) for i in
-                  xrange(in_array.shape[0])],
-        dtype=(''.join(['%s,'%dtype]* in_array.shape[-1])[:-1]))
+    # Sort input array
+    order = np.lexsort(in_array.T)
 
-    u,i = np.unique(x, return_index=True)
-    u_i = x[np.sort(i)]
-    u_return = np.empty((in_array.shape[-1],len(u_i)))
-    for j in xrange(len(u_i)):
-        u_return[:,j] = np.array([x for x in u_i[j]])
+    # Apply sort and compare neighbors
+    x = in_array[order]
+    diff_x = np.ones(len(x), dtype=bool)
+    diff_x[1:] = (x[1:] != x[:-1]).any(-1)
 
-    # Return back the same dtype as you originally had:
-    return u_return.T.astype(in_array.dtype)
+    # Reverse sort and return unique rows
+    un_order = order.argsort()
+    diff_in_array = diff_x[un_order]
+    return in_array[diff_in_array]
 
 
 @_with_initialize
