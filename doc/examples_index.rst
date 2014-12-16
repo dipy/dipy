@@ -94,7 +94,7 @@ DSI with Deconvolution
 Sparse Fascicle Model
 ~~~~~~~~~~~~~~~~~~~~~~
 
-- :ref:`example_sfm_tracking`
+- :ref:`example_sfm_reconst`
 
 
 -------------------------------------
@@ -111,6 +111,7 @@ Fiber tracking
 
 - :ref:`example_introduction_to_basic_tracking`
 - :ref:`example_probabilistic_fiber_tracking`
+- :ref:`example_sfm_tracking`
 
 Old tracking examples
 ~~~~~~~~~~~~~~~~~~~~~
