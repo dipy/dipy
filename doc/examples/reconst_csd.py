@@ -148,7 +148,7 @@ In Dipy we also provide tools for finding the peak directions (maxima) of the
 ODFs. For this purpose we strongly recommend using ``peaks_from_model``.
 """
 
-from dipy.reconst.peaks import peaks_from_model
+from dipy.direction import peaks_from_model
 
 csd_peaks = peaks_from_model(model=csd_model,
                              data=data_small,

@@ -96,7 +96,7 @@ this basis to represent the data internally. However we can fit the ODF of any
 model to the spherical harmonic basis using the ``peaks_from_model`` function.
 """
 
-from dipy.reconst.peaks import peaks_from_model
+from dipy.direction import peaks_from_model
 
 peaks = peaks_from_model(csd_model, data, default_sphere, .5, 25,
                          mask=white_matter, return_sh=True, parallel=True)

@@ -24,7 +24,7 @@ import numpy as np
 from dipy.reconst.dti import TensorModel, fractional_anisotropy
 from dipy.reconst.csdeconv import (ConstrainedSphericalDeconvModel,
                                    auto_response)
-from dipy.reconst.peaks import peaks_from_model
+from dipy.direction import peaks_from_model
 from dipy.tracking.eudx import EuDX
 from dipy.data import fetch_stanford_hardi, read_stanford_hardi, get_sphere
 from dipy.segment.mask import median_otsu
