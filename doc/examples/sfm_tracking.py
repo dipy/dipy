@@ -102,12 +102,16 @@ subjects T1-weighted anatomy:
 from dipy.viz import fvtk
 from dipy.viz.colormap import line_colors
 from dipy.data import read_stanford_t1
+from dipy.tracking.utils import move_streamlines
+from numpy import linalg
+from numpy.linalg import inv
 t1 = read_stanford_t1()
 t1_data = t1.get_data()
-
+t1_aff = t1.get_affine()
 color = line_colors(streamlines)
 
-streamlines_actor = fvtk.streamtube(streamlines,
+streamlines_actor = fvtk.streamtube(
+                    list(move_streamlines(streamlines, inv(t1_aff))),
                                     line_colors(streamlines))
 
 cc_actor = fvtk.contour(seed_mask, levels=[1], colors=[(1., 1., 0.)],
