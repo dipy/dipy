@@ -1,4 +1,7 @@
 """
+
+.. _reconst-csd:
+
 =======================================================
 Reconstruction with Constrained Spherical Deconvolution
 =======================================================
