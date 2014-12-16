@@ -10,7 +10,7 @@ Model, described in [Rokem2014]_. This model reconstructs the diffusion signal
 as a combination of the signals from different fascicles (see also
 :ref:`sfm-reconst`).
 
-To begin, we read the Stanford HARDI data-set into memory: 
+To begin, we read the Stanford HARDI data-set into memory:
 """
 
 from dipy.data import read_stanford_labels
@@ -110,15 +110,15 @@ color = line_colors(streamlines)
 streamlines_actor = fvtk.streamtube(streamlines,
                                     line_colors(streamlines))
 
-cc_ROI_actor = fvtk.contour(cc_slice, levels=[1], colors=[(1., 1., 0.)],
-                            opacities=[1.])
+cc_actor = fvtk.contour(seed_mask, levels=[1], colors=[(1., 1., 0.)],
+                        opacities=[1.])
 
 vol_actor = fvtk.slicer(t1_data, voxsz=(1.0, 1.0, 1.0), plane_i=[40],
                         plane_j=None, plane_k=[35], outline=False)
 
 ren = fvtk.ren()
-fvtk.add(ren, candidate_streamlines_actor)
-fvtk.add(ren, cc_ROI_actor)
+fvtk.add(ren, streamlines_actor)
+fvtk.add(ren, cc_actor)
 fvtk.add(ren, vol_actor)
 fvtk.record(ren, n_frames=1, out_path='sfm_streamlines.png',
             size=(800, 800))
@@ -144,5 +144,5 @@ References
    N. Kay, Aviv Mezer, Stefan van der Walt, Brian A. Wandell
    (2014). Evaluating the accuracy of diffusion MRI models in white
    matter. http://arxiv.org/abs/1411.0721
-   
+
 """
