@@ -47,23 +47,24 @@ default sphere (362  vertices, symmetrically distributed on the surface of the
 sphere):
 """
 
-sphere = dpd.get_sphere()
+from dipy.data import get_sphere
+sphere = get_sphere()
+from dipy.reconst import sfm
 sf_model = sfm.SparseFascicleModel(gtab, sphere=sphere,
                                    l1_ratio=0.5, alpha=0.001,
                                    response=response[0])
-
 
 """
 We fit this model to the data in each voxel in the white-matter mask, so that
 we can use these directions in tracking:
 """
 
-pnm = dpp.peaks_from_model(sf_model, sphere,
-                           mask=white_matter,
-                           relative_peak_threshold=.5,
-                           min_separation_angle=25,
-                           return_sh=False,
-                           parallel=True)
+from dipy.reconst.peaks import peaks_from_model
+
+pnm = peaks_from_model(sf_model, data, sphere,
+                       relative_peak_threshold=.5,
+                       min_separation_angle=25,
+                       mask=white_matter)
 
 """
 A ThresholdTissueClassifier object is used to segment the data to track only
@@ -100,7 +101,7 @@ subjects T1-weighted anatomy:
 """
 from dipy.viz import fvtk
 from dipy.viz.colormap import line_colors
-from dipy.data import read_stanford_t1()
+from dipy.data import read_stanford_t1
 t1 = read_stanford_t1()
 t1_data = t1.get_data()
 
