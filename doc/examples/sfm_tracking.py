@@ -14,12 +14,10 @@ To begin, we read the Stanford HARDI data-set into memory:
 """
 
 from dipy.data import read_stanford_labels
-
 hardi_img, gtab, labels_img = read_stanford_labels()
 data = hardi_img.get_data()
 labels = labels_img.get_data()
 affine = hardi_img.get_affine()
-
 
 """
 This dataset provides a label map (generated using Freesurfer), in which the
@@ -27,7 +25,6 @@ white matter voxels are labeled as either 1 or 2:
 """
 
 white_matter = (labels == 1) | (labels == 2)
-
 
 """
 The first step in tracking is generating a model from which tracking directions
@@ -97,8 +94,9 @@ streamlines = list(streamlines)
 
 """
 Next, we will create a visualization of these streamlines, relative to this
-subjects T1-weighted anatomy:
+subject's T1-weighted anatomy:
 """
+
 from dipy.viz import fvtk
 from dipy.viz.colormap import line_colors
 from dipy.data import read_stanford_t1
