@@ -52,26 +52,32 @@ def test_tensor_algebra():
 
 def test_tensor_model():
     fdata, fbval, fbvec = get_data('small_25')
-    data = nib.load(fdata).get_data()
-    gtab = grad.gradient_table(fbval, fbvec)
-    dm = dti.TensorModel(gtab, 'LS')
-    dtifit = dm.fit(data[0, 0, 0])
-    assert_equal(dtifit.fa < 0.9, True)
-    dm = dti.TensorModel(gtab, 'WLS')
-    dtifit = dm.fit(data[0, 0, 0])
-    assert_equal(dtifit.fa < 0.9, True)
-    assert_equal(dtifit.fa > 0, True)
-    sphere = create_unit_sphere(4)
-    assert_equal(len(dtifit.odf(sphere)), len(sphere.vertices))
-    # Check that the multivoxel case works:
-    dtifit = dm.fit(data)
+    data1 = nib.load(fdata).get_data()
+    gtab1 = grad.gradient_table(fbval, fbvec)
+    data2, gtab2 = dsi_voxels()
+    for data, gtab in zip([data1, data2], [gtab1, gtab2]):
+        dm = dti.TensorModel(gtab, 'LS')
+        dtifit = dm.fit(data[0, 0, 0])
+        assert_equal(dtifit.fa < 0.9, True)
+        dm = dti.TensorModel(gtab, 'WLS')
+        dtifit = dm.fit(data[0, 0, 0])
+        assert_equal(dtifit.fa < 0.9, True)
+        assert_equal(dtifit.fa > 0, True)
+        sphere = create_unit_sphere(4)
+        assert_equal(len(dtifit.odf(sphere)), len(sphere.vertices))
+        # Check that the multivoxel case works:
+        dtifit = dm.fit(data)
 
-    # Check that it works on signal that has already been normalized to S0:
-    dm_to_relative = dti.TensorModel(gtab)
-    relative_data = (data[0, 0, 0]/np.mean(data[0, 0, 0, gtab.b0s_mask]))
+        # Check that it works on signal that has already been normalized to S0:
+        dm_to_relative = dti.TensorModel(gtab)
+        if np.any(gtab.b0s_mask):
+            relative_data = (data[0, 0, 0]/np.mean(data[0, 0, 0,
+                                                        gtab.b0s_mask]))
+        
 
-    dtifit_to_relative = dm_to_relative.fit(relative_data)
-    npt.assert_almost_equal(dtifit.fa[0,0,0], dtifit_to_relative.fa, decimal=3)
+            dtifit_to_relative = dm_to_relative.fit(relative_data)
+            npt.assert_almost_equal(dtifit.fa[0,0,0], dtifit_to_relative.fa,
+                                    decimal=3)
 
     # And smoke-test that all these operations return sensibly-shaped arrays:
     assert_equal(dtifit.fa.shape, data.shape[:3])
