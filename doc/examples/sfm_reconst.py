@@ -2,11 +2,11 @@
 .. _sfm-reconst:
 
 ==============================================
-Reconstruction with the Sparse Fascicle Model 
+Reconstruction with the Sparse Fascicle Model
 ==============================================
 
 In this example, we will use the Sparse Fascicle Model [Rokem2014]_, to
-reconstruct the fiber orientation distribution function (fODF) in every voxel. 
+reconstruct the fiber orientation distribution function (fODF) in every voxel.
 
 First, we import the modules we will use in this example:
 """
@@ -15,8 +15,6 @@ import dipy.reconst.sfm as sfm
 import dipy.data as dpd
 import dipy.reconst.peaks as dpp
 from dipy.viz import fvtk
-from dipy.viz.colormap import line_colors
-
 
 """
 For the purpose of this example, we will use the Stanford HARDI dataset (150
@@ -24,7 +22,7 @@ directions, single b-value of 2000 s/mm$^2$) that can be automatically
 downloaded. If you have not yet downloaded this data-set in one of the other
 examples, you will need to be connected to the internet the first time you run
 this example. The data will be stored for subsequent runs, and for use with
-other examples. 
+other examples.
 
 """
 
@@ -90,7 +88,7 @@ this purpose we can print it and have a look at its values.
 print(response)
 
 """
-(array([ 0.0014,  0.00029,  0.00029]), 416.206) 
+(array([ 0.0014,  0.00029,  0.00029]), 416.206)
 
 We initialize an SFM model object, using these values. We will use the default
 sphere (362  vertices, symmetrically distributed on the surface of the sphere),
@@ -109,7 +107,7 @@ containing parts of the corpus callosum and of the centrum semiovale
 
 data_small = data[20:50, 55:85, 38:39]
 
-""" 
+"""
 Fitting the model to this small volume of data, we calculate the ODF of this
 model on the sphere, and plot it.
 """
