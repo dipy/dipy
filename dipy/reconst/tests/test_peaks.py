@@ -522,7 +522,7 @@ def test_peaks_shm_coeff():
 
     from dipy.data import get_sphere
 
-    sphere = get_sphere('symmetric724')
+    sphere = get_sphere('repulsion724')
 
     bvals = np.load(fbvals)
     bvecs = np.load(fbvecs)
