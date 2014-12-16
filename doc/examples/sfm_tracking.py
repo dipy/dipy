@@ -2,7 +2,7 @@
 .. _sfm-track:
 
 ==================================================
-Tracking with the Sparse Fascicle Model and EuDX
+Tracking with the Sparse Fascicle Model
 ==================================================
 
 Tracking requires a per-voxel model. Here, the model is the Sparse Fascicle
@@ -61,7 +61,9 @@ from dipy.reconst.peaks import peaks_from_model
 pnm = peaks_from_model(sf_model, data, sphere,
                        relative_peak_threshold=.5,
                        min_separation_angle=25,
-                       mask=white_matter)
+                       mask=white_matter,
+                       #parallel=True
+                       )
 
 """
 A ThresholdTissueClassifier object is used to segment the data to track only
@@ -73,14 +75,20 @@ from dipy.tracking.local import ThresholdTissueClassifier
 classifier = ThresholdTissueClassifier(pnm.gfa, .25)
 
 """
-Tracking will be started from a set of 2x2x2 seeds per voxel in the center of
-the Corpus Callosum, here labeled with a 2 in the labels image:
+Tracking will be started from a set of seeds evenly distributed in the white
+matter:
 """
 
 from dipy.tracking import utils
+seeds = utils.seeds_from_mask(white_matter, density=[2, 2, 2], affine=affine)
 
-seed_mask = labels == 2
-seeds = utils.seeds_from_mask(seed_mask, density=[2, 2, 2], affine=affine)
+"""
+For the sake of brevity, we will take only the first 1000 seeds, generating
+only 1000 streamlines. Remove this line to track from many more points in all of
+the white matter
+"""
+
+seeds = seeds[:1000]
 
 """
 We now have the necessary components to construct a tracking pipeline and
@@ -111,15 +119,11 @@ streamlines_actor = fvtk.streamtube(
                     list(move_streamlines(streamlines, inv(t1_aff))),
                                     line_colors(streamlines))
 
-cc_actor = fvtk.contour(seed_mask, levels=[1], colors=[(1., 1., 0.)],
-                        opacities=[1.])
-
 vol_actor = fvtk.slicer(t1_data, voxsz=(1.0, 1.0, 1.0), plane_i=[40],
                         plane_j=None, plane_k=[35], outline=False)
 
 ren = fvtk.ren()
 fvtk.add(ren, streamlines_actor)
-fvtk.add(ren, cc_actor)
 fvtk.add(ren, vol_actor)
 fvtk.record(ren, n_frames=1, out_path='sfm_streamlines.png',
             size=(800, 800))
