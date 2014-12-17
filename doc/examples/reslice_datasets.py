@@ -9,8 +9,8 @@ Overview
 --------
 Often in imaging it is common to reslice images in different resolutions.
 Especially in dMRI we usually want images with isotropic voxel size as they
-facilitate most tractography algorithms. In this example we show how you 
-can reslice a dMRI dataset to have isotropic voxel size. 
+facilitate most tractography algorithms. In this example we show how you
+can reslice a dMRI dataset to have isotropic voxel size.
 """
 
 import nibabel as nib
@@ -19,7 +19,7 @@ import nibabel as nib
 The function we need to use is called resample.
 """
 
-from dipy.align.aniso2iso import resample
+from dipy.align.reslice import reslice
 from dipy.data import get_data
 
 """
@@ -40,7 +40,7 @@ data.shape
 """
 ``(58, 58, 24)``
 
-Load the affine of the image. The affine is the transformation matrix 
+Load the affine of the image. The affine is the transformation matrix
 which maps image coordinates to world (mm) coordinates.
 """
 
@@ -68,7 +68,7 @@ new_zooms
 Start resampling (reslicing). Trilinear interpolation is used by default.
 """
 
-data2, affine2 = resample(data, affine, zooms, new_zooms)
+data2, affine2 = reslice(data, affine, zooms, new_zooms)
 data2.shape
 
 """
@@ -88,7 +88,7 @@ img3 = nib.Spm2AnalyzeImage(data2, affine2)
 nib.save(img3,'iso_vox.img')
 
 """
-Done. Check your datasets. As you may have already realized the same 
+Done. Check your datasets. As you may have already realized the same
 code can be used for general reslicing problems not only for dMRI data.
- 
+
 """
