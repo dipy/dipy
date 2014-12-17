@@ -115,8 +115,17 @@ t1_data = t1.get_data()
 t1_aff = t1.get_affine()
 color = line_colors(streamlines)
 
+"""
+To speed up visualization, we will select a random sub-set of streamlines to
+display. This is particularly important, if you track from seeds throughout the
+entire white matter, generating many streamlines.
+"""
+
+from dipy.tracking.streamline import select_random_set_of_streamlines
+plot_streamlines = select_random_set_of_streamlines(streamlines)
+
 streamlines_actor = fvtk.streamtube(
-                    list(move_streamlines(streamlines, inv(t1_aff))),
+                    list(move_streamlines(plot_streamlines, inv(t1_aff))),
                                     line_colors(streamlines))
 
 vol_actor = fvtk.slicer(t1_data, voxsz=(1.0, 1.0, 1.0), plane_i=[40],
