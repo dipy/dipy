@@ -118,11 +118,12 @@ color = line_colors(streamlines)
 """
 To speed up visualization, we will select a random sub-set of streamlines to
 display. This is particularly important, if you track from seeds throughout the
-entire white matter, generating many streamlines.
+entire white matter, generating many streamlines. In this case, for
+demonstration purposes, we subselect 900 streamlines.
 """
 
 from dipy.tracking.streamline import select_random_set_of_streamlines
-plot_streamlines = select_random_set_of_streamlines(streamlines)
+plot_streamlines = select_random_set_of_streamlines(streamlines, 900)
 
 streamlines_actor = fvtk.streamtube(
                     list(move_streamlines(plot_streamlines, inv(t1_aff))),
