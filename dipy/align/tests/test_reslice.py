@@ -1,6 +1,7 @@
 import numpy as np
 import nibabel as nib
 from numpy.testing import (run_module_suite,
+                           assert_,
                            assert_equal,
                            assert_almost_equal)
 from dipy.data import get_data
@@ -11,17 +12,12 @@ from dipy.denoise.noise_estimate import estimate_sigma
 def test_resample():
 
     fimg, _, _ = get_data("small_25")
-    #fimg, _, _ = get_data("small_101D")
 
     img = nib.load(fimg)
 
     data = img.get_data()
     affine = img.get_affine()
     zooms = img.get_header().get_zooms()[:3]
-
-    print(data.shape)
-    print(affine)
-    print(zooms)
 
     # test that new zooms are correctly from the affine (check with 3D volume)
     new_zooms = (1, 1.2, 2.1)
@@ -37,8 +33,8 @@ def test_resample():
     # test that shape changes correctly for the first 3 dimensions (check 4D)
     new_zooms = (1, 1, 1.)
 
-    data2, affine2 = reslice(data, affine, zooms, new_zooms, order=1,
-                             mode='constant')
+    data2, affine2 = reslice(data, affine, zooms, new_zooms, order=0,
+                             mode='reflect')
 
     assert_equal(2 * np.array(data.shape[:3]), data2.shape[:3])
     assert_equal(data2.shape[-1], data.shape[-1])
@@ -48,29 +44,18 @@ def test_resample():
     new_zooms = (1, 1, 1.)
 
     data3, affine2 = reslice(data, affine, zooms, new_zooms, order=5,
-                             mode='constant')
+                             mode='reflect')
 
     assert_equal(2 * np.array(data.shape[:3]), data3.shape[:3])
     assert_equal(data3.shape[-1], data.shape[-1])
 
-    sigmas = estimate_sigma(data, True)
-    sigmas2 = estimate_sigma(data2, True)
-    sigmas3 = estimate_sigma(data3, True)
+    # test that the std will be reduced with interpolation
+    sigmas = estimate_sigma(data)
+    sigmas2 = estimate_sigma(data2)
+    sigmas3 = estimate_sigma(data3)
 
-    print(sigmas)
-    print(sigmas2)
-    print(sigmas3)
-
-    print(data.shape)
-    print(data2.shape)
-    print(data3.shape)
-
-    imshow(data[:, :,  1, 0])
-    show()
-    imshow(data2[:, :, 2, 0])
-    show()
-    imshow(data3[:, :, 2, 0])
-    show()
+    assert_(np.all(sigmas > sigmas2))
+    assert_(np.all(sigmas2 > sigmas3))
 
 
 if __name__ == '__main__':
