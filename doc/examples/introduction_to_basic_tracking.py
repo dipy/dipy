@@ -50,7 +50,8 @@ image.
 """
 
 from dipy.reconst.shm import CsaOdfModel
-from dipy.reconst.peaks import peaks_from_model, default_sphere
+from dipy.data import default_sphere
+from dipy.direction import peaks_from_model
 
 csa_model = CsaOdfModel(gtab, sh_order=6)
 csa_peaks = peaks_from_model(csa_model, data, default_sphere,

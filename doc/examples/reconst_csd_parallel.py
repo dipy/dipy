@@ -54,7 +54,7 @@ duration of execution with or without parallelism.
 """
 
 import time
-from dipy.reconst.peaks import peaks_from_model
+from dipy.direction import peaks_from_model
 
 start_time = time.time()
 csd_peaks_parallel = peaks_from_model(model=csd_model,
