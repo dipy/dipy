@@ -17,6 +17,8 @@
  streamline_formats.py
  tracking_eudx_odf.py
  tracking_eudx_tensor.py
+ sfm_tracking.py
+ sfm_reconst.py
  gradients_spheres.py
  simulate_multi_tensor.py
  restore_dti.py

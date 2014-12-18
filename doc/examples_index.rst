@@ -91,6 +91,12 @@ DSI with Deconvolution
 
 - :ref:`example_reconst_dsid`
 
+Sparse Fascicle Model
+~~~~~~~~~~~~~~~~~~~~~~
+
+- :ref:`example_sfm_reconst`
+
+
 -------------------------------------
 Statistical evaluation and validation
 -------------------------------------
@@ -105,6 +111,7 @@ Fiber tracking
 
 - :ref:`example_introduction_to_basic_tracking`
 - :ref:`example_probabilistic_fiber_tracking`
+- :ref:`example_sfm_tracking`
 
 Old tracking examples
 ~~~~~~~~~~~~~~~~~~~~~
