@@ -40,7 +40,6 @@ def test_resample():
     assert_equal(data2.shape[-1], data.shape[-1])
 
     # same with different interpolation order
-
     new_zooms = (1, 1, 1.)
 
     data3, affine2 = reslice(data, affine, zooms, new_zooms, order=5,
@@ -49,7 +48,7 @@ def test_resample():
     assert_equal(2 * np.array(data.shape[:3]), data3.shape[:3])
     assert_equal(data3.shape[-1], data.shape[-1])
 
-    # test that the std will be reduced with interpolation
+    # test that the sigma will be reduced with interpolation
     sigmas = estimate_sigma(data)
     sigmas2 = estimate_sigma(data2)
     sigmas3 = estimate_sigma(data3)
@@ -60,5 +59,4 @@ def test_resample():
 
 if __name__ == '__main__':
 
-    #run_module_suite()
-    test_resample()
+    run_module_suite()
