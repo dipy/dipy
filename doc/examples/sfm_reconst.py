@@ -56,8 +56,7 @@ Elastic Net optimizes the following cost function:
 
 .. math::
 
-    \sum_{i=1}^{n}{(y_i - \hat{y}_i)^2} + \alpha (\lambda \sum_{j=1}^{m}{w_j} +
-(1-\lambda) \sum_{j=1}^{m}{w^2_j}
+    \sum_{i=1}^{n}{(y_i - \hat{y}_i)^2} + \alpha (\lambda \sum_{j=1}^{m}{w_j}+(1-\lambda) \sum_{j=1}^{m}{w^2_j}
 
 where $\hat{y}$ is the signal predicted for a particular setting of $\beta$,
 such that the left part of this expression is the squared loss function;
@@ -126,6 +125,7 @@ fvtk.record(ren, out_path='sf_odfs.png', size=(1000, 1000))
 """
 We can extract the peaks from the ODF, and plot these as well
 """
+
 sf_peaks = dpp.peaks_from_model(sf_model,
                                 data_small,
                                 sphere,
@@ -152,6 +152,10 @@ print('Saving illustration as sf_both.png')
 fvtk.record(ren, out_path='sf_both.png', size=(1000, 1000))
 
 """
+.. figure:: sf_both.png
+   :align: center
+
+   **SFM Peaks and ODFs**.
 
 To see how to use this information in tracking, proceed to :ref:`sfm-track`.
 
