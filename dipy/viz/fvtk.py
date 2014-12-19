@@ -1032,11 +1032,16 @@ def contour(vol, voxsz=(1.0, 1.0, 1.0), affine=None, levels=[50],
     """
 
     im = vtk.vtkImageData()
-    im.SetScalarTypeToUnsignedChar()
+    if major_version <= 5:
+        im.SetScalarTypeToUnsignedChar()
+
     im.SetDimensions(vol.shape[0], vol.shape[1], vol.shape[2])
     # im.SetOrigin(0,0,0)
     # im.SetSpacing(voxsz[2],voxsz[0],voxsz[1])
-    im.AllocateScalars()
+    if major_version <= 5:
+        im.AllocateScalars()
+    else:
+        im.AllocateScalars(vtk.VTK_UNSIGNED_CHAR, 3)
 
     for i in range(vol.shape[0]):
         for j in range(vol.shape[1]):
