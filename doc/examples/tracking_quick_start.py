@@ -189,9 +189,8 @@ if __name__ == '__main__':
 .. [Tournier07] J-D. Tournier, F. Calamante and A. Connelly, "Robust determination of the fibre orientation distribution in diffusion MRI: Non-negativity constrained super-resolved spherical deconvolution", Neuroimage, vol. 35, no. 4, pp. 1459-1472, 2007.
 
 .. NOTE::
-    Dipy has a new very modular fiber tracking API (experimental). Our new
-    machinery for fiber tracking is featured in the example
-    :ref:`example_tracking_quick_start`.
+    Dipy has a new and very modular fiber tracking machinery. Our new machinery
+    for fiber tracking is featured in the example :ref:`example_tracking_quick_start`.
 
 
 .. include:: ../links_names.inc

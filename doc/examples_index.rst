@@ -9,6 +9,10 @@ Examples
 
    note_about_examples
 
+.. contents::
+   :depth: 2
+
+
 -----------
 Quick Start
 -----------
@@ -96,17 +100,14 @@ Sparse Fascicle Model
 
 - :ref:`example_sfm_reconst`
 
-
--------------------------------------
-Statistical evaluation and validation
--------------------------------------
+Statistical evaluation
+~~~~~~~~~~~~~~~~~~~~~~
 
 - :ref:`example_kfold_xval`
-- :ref:`example_linear_fascicle_evaluation`
 
 
 ------------------------------------
-Fiber tracking (New - Experimental)
+Fiber tracking (NEW - Experimental)
 ------------------------------------
 
 - :ref:`example_introduction_to_basic_tracking`
@@ -121,15 +122,23 @@ Fiber tracking
 - :ref:`example_tracking_eudx_odf`
 
 -------------------------------------
+Fiber tracking validation (NEW)
+-------------------------------------
+
+- :ref:`example_linear_fascicle_evaluation`
+
+
+------------------------------------
 Streamline analysis and connectivity
 ------------------------------------
 
 - :ref:`example_streamline_tools`
 - :ref:`example_streamline_length`
 
-------------
-Registration
-------------
+
+------------------
+Registration (NEW)
+------------------
 
 Image-based Registration
 ~~~~~~~~~~~~~~~~~~~~~~~~~
