@@ -3,12 +3,6 @@
 Tracking Quick Start
 ====================
 
-.. NOTE::
-    Dipy has updated tools for fiber tracking. Our new machinery for fiber
-    tracking is featured in the example titled Introduction to Basic Tracking.
-    The tools demonstrated in this example are no longer actively being
-    maintained and will likely be deprecated at some point.
-
 This example shows how to perform fiber tracking using Dipy.
 
 We will use Constrained Spherical Deconvolution (CSD) [Tournier07]_ for local
@@ -193,6 +187,12 @@ if __name__ == '__main__':
 
 .. [Garyfallidis12] Garyfallidis E., "Towards an accurate brain tractography", PhD thesis, University of Cambridge, 2012.
 .. [Tournier07] J-D. Tournier, F. Calamante and A. Connelly, "Robust determination of the fibre orientation distribution in diffusion MRI: Non-negativity constrained super-resolved spherical deconvolution", Neuroimage, vol. 35, no. 4, pp. 1459-1472, 2007.
+
+.. NOTE::
+    Dipy has a new very modular fiber tracking API (experimental). Our new
+    machinery for fiber tracking is featured in the example
+    :ref:`example_tracking_quick_start`.
+
 
 .. include:: ../links_names.inc
 
