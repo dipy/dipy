@@ -14,7 +14,7 @@ Quick Start
 -----------
 
 - :ref:`example_quick_start`
-- :ref:`example_introduction_to_basic_tracking`
+- :ref:`example_tracking_quick_start`
 
 -------------
 Preprocessing
@@ -105,25 +105,24 @@ Statistical evaluation and validation
 - :ref:`example_linear_fascicle_evaluation`
 
 
---------------
-Fiber tracking
---------------
+------------------------------------
+Fiber tracking (New - Experimental)
+------------------------------------
 
 - :ref:`example_introduction_to_basic_tracking`
 - :ref:`example_probabilistic_fiber_tracking`
 - :ref:`example_sfm_tracking`
 
-Old tracking examples
-~~~~~~~~~~~~~~~~~~~~~
+---------------
+Fiber tracking
+---------------
 
-- :ref:`example_tracking_quick_start`
 - :ref:`example_tracking_eudx_tensor`
 - :ref:`example_tracking_eudx_odf`
-- :ref:`example_probabilistic_tracking_odfs`
 
--------------------
-Streamline analysis
--------------------
+-------------------------------------
+Streamline analysis and connectivity
+------------------------------------
 
 - :ref:`example_streamline_tools`
 - :ref:`example_streamline_length`
@@ -132,8 +131,13 @@ Streamline analysis
 Registration
 ------------
 
+Image-based Registration
+~~~~~~~~~~~~~~~~~~~~~~~~~
 - :ref:`example_syn_registration_2d`
 - :ref:`example_syn_registration_3d`
+
+Streamline-based Registration
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 - :ref:`example_bundle_registration`
 
 ------------
@@ -147,6 +151,7 @@ Streamline Clustering
 
 Brain Segmentation
 ~~~~~~~~~~~~~~~~~~
+
 - :ref:`example_brain_extraction_dwi`
 
 -----------
