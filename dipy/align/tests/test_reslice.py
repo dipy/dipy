@@ -7,6 +7,7 @@ from numpy.testing import (run_module_suite,
 from dipy.data import get_data
 from dipy.align.reslice import reslice
 from dipy.denoise.noise_estimate import estimate_sigma
+from dipy.align.aniso2iso import resample
 
 
 def test_resample():
@@ -24,6 +25,17 @@ def test_resample():
 
     data2, affine2 = reslice(data[..., 0], affine, zooms, new_zooms, order=1,
                              mode='constant')
+
+    img2 = nib.Nifti1Image(data2, affine2)
+    new_zooms_confirmed = img2.get_header().get_zooms()[:3]
+
+    assert_almost_equal(new_zooms, new_zooms_confirmed)
+
+    # same with resample
+    new_zooms = (1, 1.2, 2.1)
+
+    data2, affine2 = resample(data[..., 0], affine, zooms, new_zooms, order=1,
+                              mode='constant')
 
     img2 = nib.Nifti1Image(data2, affine2)
     new_zooms_confirmed = img2.get_header().get_zooms()[:3]

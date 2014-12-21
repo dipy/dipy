@@ -1,11 +1,11 @@
 ''' Anisotropic to isotropic voxel conversion '''
-
-import numpy as np
-from scipy.ndimage import affine_transform
+from __future__ import division, print_function, absolute_import
+from dipy.align.reslice import reslice
+from warnings import warn
 
 
 def resample(data, affine, zooms, new_zooms, order=1, mode='constant', cval=0):
-    """Reslice data with new resolution defined by ``new_zooms``
+    """Reslice data with new voxel resolution defined by ``new_zooms``
 
     Parameters
     ----------
@@ -56,26 +56,9 @@ def resample(data, affine, zooms, new_zooms, order=1, mode='constant', cval=0):
     >>> data2.shape
     (77, 77, 40)
     """
-    R = np.diag(np.array(new_zooms)/np.array(zooms))
-    new_shape = np.array(zooms)/np.array(new_zooms) * np.array(data.shape[:3])
-    new_shape = np.round(new_shape).astype('i8')
-    if data.ndim == 3:
-        data2 = affine_transform(input=data, matrix=R, offset=np.zeros(3,),
-                                 output_shape=tuple(new_shape),
-                                 order=order, mode=mode, cval=cval)
-    if data.ndim == 4:
-        data2l=[]
-        for i in range(data.shape[-1]):
-            tmp = affine_transform(input=data[..., i], matrix=R,
-                                   offset=np.zeros(3,),
-                                   output_shape=tuple(new_shape),
-                                   order=order, mode=mode, cval=cval)
-            data2l.append(tmp)
-        data2 = np.zeros(tmp.shape+(data.shape[-1],), data.dtype)
-        for i in range(data.shape[-1]):
-            data2[..., i] = data2l[i]
 
-    Rx = np.eye(4)
-    Rx[:3, :3] = R
-    affine2 = np.dot(affine, Rx)
-    return data2, affine2
+    msg = "This function is deprecated please use dipy.aling.reslice.reslice"
+    msg += " instead."
+    warn(msg)
+    return reslice(data, affine, zooms, new_zooms, order, mode, cval)
+
