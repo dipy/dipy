@@ -33,7 +33,13 @@ if not has_sklearn:
     warnings.warn(w)
 
 
-def sfm_design_matrix(gtab, sphere, response, mode='signal'):
+#def exponential_isotropic(gtab, data):
+    #return
+
+def mean_isotropic(gtab, data):
+    return np.mean(data)
+
+def sfm_design_matrix(gtab, sphere, response, mode='signal', isotropic=None):
     """
     Construct the SFM design matrix
 
@@ -55,6 +61,7 @@ def sfm_design_matrix(gtab, sphere, response, mode='signal'):
         from a tensor with the provided response eigenvalues, evaluated at the
         b-vectors in the gradient table, for the tensors with prinicipal
         diffusion directions along the vertices of the sphere.
+    isotropic : callable
 
     Returns
     -------
@@ -118,7 +125,7 @@ def sfm_design_matrix(gtab, sphere, response, mode='signal'):
         evals, evecs = dti.decompose_tensor(this_tensor)
         if mode == 'signal':
             sig = sims.single_tensor(mat_gtab, evals=response, evecs=evecs)
-            mat[:, ii] = sig - np.mean(sig)
+            mat[:, ii] = sig - mean_isotropic(gtab, sig)
         elif mode == 'odf':
             # Stick function
             if response[1] == 0 or response[2] == 0:
@@ -133,7 +140,7 @@ def sfm_design_matrix(gtab, sphere, response, mode='signal'):
 
 class SparseFascicleModel(ReconstModel, Cache):
     def __init__(self, gtab, sphere=None, response=[0.0015, 0.0005, 0.0005],
-                 solver='ElasticNet', l1_ratio=0.5, alpha=0.001):
+                 solver='ElasticNet', l1_ratio=0.5, alpha=0.001, isotropic=None):
         """
         Initialize a Sparse Fascicle Model
 
@@ -147,20 +154,22 @@ class SparseFascicleModel(ReconstModel, Cache):
             The eigenvalues of a canonical tensor to be used as the response
             function of single-fascicle signals.
             Default:[0.0015, 0.0005, 0.0005]
-
         solver : string or SKLearnLinearSolver object, optional
             This will determine the algorithm used to solve the set of linear
             equations underlying this model. If it is a string it needs to be
             one of the following: {'ElasticNet', 'NNLS'}. Otherwise, it can be
             an object that inherits from `dipy.optimize.SKLearnLinearSolver`.
             Default: 'ElasticNet'.
-
         l1_ratio : float, optional
             Sets the balance betwee L1 and L2 regularization in ElasticNet
             [Zou2005]_. Default: 0.5
         alpha : float, optional
             Sets the balance between least-squares error and L1/L2
             regularization in ElasticNet [Zou2005]_. Default: 0.001
+        isotropic : callable
+            The function used to calculate the istotropic signal. Has the
+            signature: `isotropic(gtab, data)` and returns an estimated value
+            of the isotropic signal for each entry in the gtab.
 
         Notes
         -----
@@ -179,6 +188,7 @@ class SparseFascicleModel(ReconstModel, Cache):
             sphere = dpd.get_sphere()
         self.sphere = sphere
         self.response = np.asarray(response)
+        self.isotropic = mean_isotropic
 
         if solver == 'ElasticNet':
             self.solver = lm.ElasticNet(l1_ratio=l1_ratio, alpha=alpha,
@@ -195,7 +205,8 @@ class SparseFascicleModel(ReconstModel, Cache):
 
     @auto_attr
     def design_matrix(self):
-        return sfm_design_matrix(self.gtab, self.sphere, self.response)
+        return sfm_design_matrix(self.gtab, self.sphere, self.response,
+                                 'signal', self.isotropic)
 
     def fit(self, data, mask=None):
         """
@@ -225,32 +236,34 @@ class SparseFascicleModel(ReconstModel, Cache):
         # Fitting is done on the relative signal (S/S0):
         flat_S0 = np.mean(flat_data[..., self.gtab.b0s_mask], -1)
         flat_S = flat_data[..., ~self.gtab.b0s_mask] / flat_S0[..., None]
-        flat_mean = np.mean(flat_S, -1)
+        flat_isotropic = np.zeros((flat_data.shape[0],
+                                   self.design_matrix.shape[0]))
         flat_params = np.zeros((flat_data.shape[0],
                                 self.design_matrix.shape[-1]))
 
         for vox, vox_data in enumerate(flat_S):
             if np.any(np.isnan(vox_data)):
-                flat_params[vox] = (np.zeros(self.design_matrix.shape[-1]))
+                pass
             else:
-                fit_it = vox_data - flat_mean[vox]
+                flat_isotropic[vox] = self.isotropic(self.gtab, vox_data)
+                fit_it = vox_data - flat_isotropic[vox]
                 flat_params[vox] = self.solver.fit(self.design_matrix,
                                                    fit_it).coef_
         if mask is None:
             out_shape = data.shape[:-1] + (-1, )
             beta = flat_params.reshape(out_shape)
-            mean_out = flat_mean.reshape(out_shape)
+            iso_out = flat_isotropic.reshape(out_shape)
             S0 = flat_S0.reshape(out_shape).squeeze()
         else:
             beta = np.zeros(data.shape[:-1] +
                             (self.design_matrix.shape[-1],))
             beta[mask, :] = flat_params
-            mean_out = np.zeros(data.shape[:-1])
-            mean_out[mask, ...] = flat_mean.squeeze()
+            iso_out = np.zeros(data[..., ~self.gtab.b0s_mask].shape)
+            iso_out[mask, ...] = flat_isotropic.squeeze()
             S0 = np.zeros(data.shape[:-1])
             S0[mask] = flat_S0
 
-        return SparseFascicleFit(self, beta, S0, mean_out.squeeze())
+        return SparseFascicleFit(self, beta, S0, iso_out.squeeze())
 
 
 class SparseFascicleFit(ReconstFit):
@@ -339,7 +352,7 @@ class SparseFascicleFit(ReconstFit):
             S0 = S0[..., None]
         if isinstance(self.mean_signal, np.ndarray):
             mean_signal = self.mean_signal[..., None]
-        pre_pred_sig = S0 * (pred_weighted + mean_signal)
+        pre_pred_sig = S0 * (pred_weighted + mean_signal.squeeze())
         pred_sig = np.zeros(pre_pred_sig.shape[:-1] + (gtab.bvals.shape[0],))
         pred_sig[..., ~gtab.b0s_mask] = pre_pred_sig
         pred_sig[..., gtab.b0s_mask] = S0
