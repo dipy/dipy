@@ -1710,6 +1710,36 @@ def quantize_evecs(evecs, odf_vertices=None):
     IN = IN.reshape(tup)
     return IN
 
+
+def eig_from_lo_tri(data):
+    """
+    Calculates tensor eigenvalues/eigenvectors from an array containing the
+    lower diagonal form of the six unique tensor elements.
+
+    Parameters
+    ----------
+    data : array_like (..., 6)
+        diffusion tensors elements stored in lower triangular order
+
+    Returns
+    -------
+    dti_params (..., 12)
+        Eigen-values and eigen-vectors of the same array.
+    """
+    data = np.asarray(data)
+    data_flat = data.reshape((-1, data.shape[-1]))
+    dti_params = np.empty((len(data_flat), 4, 3))
+
+    for ii in range(len(data_flat)):
+        tensor = from_lower_triangular(data_flat[ii])
+        eigvals, eigvecs = decompose_tensor(tensor)
+        dti_params[ii, 0] = eigvals
+        dti_params[ii, 1:] = eigvecs
+
+    dti_params.shape = data.shape[:-1] + (12,)
+    return dti_params
+
+
 common_fit_methods = {'WLS': wls_fit_tensor,
                       'LS': ols_fit_tensor,
                       'OLS': ols_fit_tensor,
