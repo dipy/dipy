@@ -33,11 +33,37 @@ if not has_sklearn:
     warnings.warn(w)
 
 
-#def exponential_isotropic(gtab, data):
-    #return
+def exponential_isotropic(data, gtab):
+    """
+    The isotropic is calculated in each voxel as the mean diffusivity
+    """
+    # Fitting to the log-transformed data:
+    log_data = np.log(data)
+    # Is just a single division:
+    MD = np.mean(log_data/-gtab.bvals, -1)
+    return np.exp(-gtab.bvals * MD)
 
-def mean_isotropic(gtab, data):
-    return np.mean(data)
+
+def mean_isotropic(data, gtab):
+    """
+    The isotropic is calculated as the mean of the diffusion-weighted data
+
+    Parameters
+    ----------
+    data : ndarray
+        The data to be averaged, b-values on the last dimension
+    gtab: GradientTable class instance
+        Contains the b-values corresponding to the last dimension of the data
+
+    Returns
+    -------
+    mean_isotropic : array
+        In each voxel, the mean of the diffusion-weighted signal in that voxel.
+    """
+    data_no_b0 = data[..., ~gtab.b0s_mask]
+    # Broadcast to the generic size upon return:
+    return np.zeros(data_no_b0.shape) + np.mean(data_no_b0, -1)[..., np.newaxis]
+
 
 def sfm_design_matrix(gtab, sphere, response, mode='signal', isotropic=None):
     """
@@ -102,6 +128,9 @@ def sfm_design_matrix(gtab, sphere, response, mode='signal', isotropic=None):
        (2007): Probabilistic diffusion tractography with multiple fibre
        orientations: What can we gain? Neuroimage 34:144-55.
     """
+    if isotropic is None:
+         isotropic = mean_isotropic
+
     # Each column of the matrix is the signal in each measurement, as
     # predicted by a "canonical", symmetrical tensor rotated towards this
     # vertex of the sphere:
@@ -125,7 +154,7 @@ def sfm_design_matrix(gtab, sphere, response, mode='signal', isotropic=None):
         evals, evecs = dti.decompose_tensor(this_tensor)
         if mode == 'signal':
             sig = sims.single_tensor(mat_gtab, evals=response, evecs=evecs)
-            mat[:, ii] = sig - mean_isotropic(gtab, sig)
+            mat[:, ii] = sig - isotropic(sig, mat_gtab)
         elif mode == 'odf':
             # Stick function
             if response[1] == 0 or response[2] == 0:
@@ -236,8 +265,7 @@ class SparseFascicleModel(ReconstModel, Cache):
         # Fitting is done on the relative signal (S/S0):
         flat_S0 = np.mean(flat_data[..., self.gtab.b0s_mask], -1)
         flat_S = flat_data[..., ~self.gtab.b0s_mask] / flat_S0[..., None]
-        flat_isotropic = np.zeros((flat_data.shape[0],
-                                   self.design_matrix.shape[0]))
+        flat_isotropic = self.isotropic(flat_data, self.gtab)
         flat_params = np.zeros((flat_data.shape[0],
                                 self.design_matrix.shape[-1]))
 
@@ -245,7 +273,6 @@ class SparseFascicleModel(ReconstModel, Cache):
             if np.any(np.isnan(vox_data)):
                 pass
             else:
-                flat_isotropic[vox] = self.isotropic(self.gtab, vox_data)
                 fit_it = vox_data - flat_isotropic[vox]
                 flat_params[vox] = self.solver.fit(self.design_matrix,
                                                    fit_it).coef_
@@ -267,7 +294,7 @@ class SparseFascicleModel(ReconstModel, Cache):
 
 
 class SparseFascicleFit(ReconstFit):
-    def __init__(self, model, beta, S0, mean_signal):
+    def __init__(self, model, beta, S0, iso):
         """
         Initalize a SparseFascicleFit class instance
 
@@ -278,13 +305,13 @@ class SparseFascicleFit(ReconstFit):
             The parameters of fit to data.
         S0 : ndarray
             The mean non-diffusion-weighted signal.
-        mean_signal : ndarray
-            The mean of the diffusion-weighted signal
+        iso : ndarray
+            The isotropic signal.
         """
         self.model = model
         self.beta = beta
         self.S0 = S0
-        self.mean_signal = mean_signal
+        self.iso = iso
 
     def odf(self, sphere):
         """
@@ -350,8 +377,8 @@ class SparseFascicleFit(ReconstFit):
             S0 = self.S0
         if isinstance(S0, np.ndarray):
             S0 = S0[..., None]
-        if isinstance(self.mean_signal, np.ndarray):
-            mean_signal = self.mean_signal[..., None]
+        if isinstance(self.iso, np.ndarray):
+            mean_signal = self.iso[..., None]
         pre_pred_sig = S0 * (pred_weighted + mean_signal.squeeze())
         pred_sig = np.zeros(pre_pred_sig.shape[:-1] + (gtab.bvals.shape[0],))
         pred_sig[..., ~gtab.b0s_mask] = pre_pred_sig
