@@ -3,18 +3,21 @@
 An introduction to the Deterministic Maximum Direction Getter
 =============================================================
 
+Deterministic maximum direction getter is the deterministic version of the
+probabilistic direction getter. It can be used with the same local models
+and has the same parameters. Deterministic maximum fiber tracking follows
+the trajectory of the most probable pathway within the tracking constraint
+(e.g. max angle). i.e. It follows the direction with the highest probability
+from a distribution, as opposed to the probabilistic direction getter which
+draw the direction from the distribution. The maximum deterministic direction
+getter is equivalent to the probabilistic direction getter returning always
+the maximum value of the distribution.
+
 Deterministic maximum fiber tracking is an alternative to EuDX deterministic
-tractography. Unlike EuDx, which follows the peaks of the local models, 
-deterministic maximum fiber tracking follows the trajectory of the most
-probable pathway within the tracking constraint (e.g. max angle). It follows the 
-direction corresponding to the highest value of a distribution. The distribution 
-at each point is different and depends on the observed diffusion data at that 
-point. The maximum deterministic direction getter is equivalent to the 
-probabilistic direction getter returning always the maximum value of the 
-distribution.
+tractography, which unlike EuDx, do not follows the peaks of the local models.
 
 This example is an extension of the "probabilistic fiber tracking" example.
-We'll begin by loading the data and fitting a constrained spherical 
+We'll begin by loading the data and fitting a constrained spherical
 deconvolution (CSD) model.
 """
 
@@ -36,21 +39,24 @@ csd_model = ConstrainedSphericalDeconvModel(gtab, None, sh_order=6)
 csd_fit = csd_model.fit(data, mask=white_matter)
 
 """
-We use the GFA of the CSA model to build a tissue classifier.
+We use the fractional anisotropy (FA) of the DTI model to build a tissue classifier.
 """
 
-from dipy.reconst.shm import CsaOdfModel
+import dipy.reconst.dti as dti
+from dipy.reconst.dti import fractional_anisotropy
 
-csa_model = CsaOdfModel(gtab, sh_order=6)
-gfa = csa_model.fit(data, mask=white_matter).gfa
-classifier = ThresholdTissueClassifier(gfa, .25)
+tensor_model = dti.TensorModel(gtab)
+tenfit = tensor_model.fit(data, mask=white_matter)
+
+FA = fractional_anisotropy(tenfit.evals)
+classifier = ThresholdTissueClassifier(FA, .2)
 
 """
 The fiber orientation distribution (FOD) of the CSD model estimates the
-distribution of small fiber bundles within each voxel. This distribution 
-can be used for deterministic fiber tracking. As for prob abilistic tracking, 
-there are many ways to provide those distributions tothe deterministic maximum 
-direction getter. Here, the spherical harmonic representation of the FOD 
+distribution of small fiber bundles within each voxel. This distribution
+can be used for deterministic fiber tracking. As for probabilistic tracking,
+there are many ways to provide those distributions to the deterministic maximum
+direction getter. Here, the spherical harmonic representation of the FOD
 is used.
 """
 
@@ -59,11 +65,8 @@ from dipy.direction import DeterministicMaximumDirectionGetter
 from dipy.io.trackvis import save_trk
 
 detmax_dg = DeterministicMaximumDirectionGetter.from_shcoeff(csd_fit.shm_coeff,
-                                                    max_angle=30.,
-                                                    sphere=default_sphere)
+                                                             max_angle=30.,
+                                                             sphere=default_sphere)
 streamlines = LocalTracking(detmax_dg, classifier, seeds, affine, step_size=.5)
 
 save_trk("deterministic_maximum_shm_coeff.trk", streamlines, affine, labels.shape)
-
-
-
