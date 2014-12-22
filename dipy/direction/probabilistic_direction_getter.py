@@ -248,3 +248,38 @@ class ProbabilisticDirectionGetter(PeakDirectionGetter):
             direction[:] = -newdir
         return 0
 
+
+class DeterministicMaximumDirectionGetter(ProbabilisticDirectionGetter):
+    """Return direction of a sphere with the highest probability mass
+    function (pmf).
+    """
+    def get_direction(self, point, direction):
+        """Find direction with the highest pmf to updates ``direction`` array 
+        with a new direction.
+        Parameters
+        ----------
+        point : memory-view (or ndarray), shape (3,)
+            The point in an image at which to lookup tracking directions.
+        direction : memory-view (or ndarray), shape (3,)
+            Previous tracking direction.
+        Returns
+        -------
+        status : int
+            Returns 0 `direction` was updated with a new tracking direction, or
+            1 otherwise.
+        """
+        # point and direction are passed in as cython memory views
+        pmf = self.pmf_gen.get_pmf(point)
+        cdf = self._adj_matrix[tuple(direction)] * pmf
+        idx = np.argmax(cdf)
+
+        if pmf[idx] == 0:
+            return 1
+        
+        newdir = self.vertices[idx]
+        # Update direction and return 0 for error
+        if np.dot(newdir, _asarray(direction)) > 0:
+            direction[:] = newdir
+        else:
+            direction[:] = -newdir
+        return 0

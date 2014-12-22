@@ -5,7 +5,8 @@ from dipy.core.sphere import HemiSphere, unit_octahedron
 from dipy.core.gradients import gradient_table
 from dipy.tracking.local import (LocalTracking, ThresholdTissueClassifier,
                                  DirectionGetter, TissueClassifier)
-from dipy.direction import ProbabilisticDirectionGetter
+from dipy.direction import (ProbabilisticDirectionGetter, 
+                            DeterministicMaximumDirectionGetter)
 from dipy.tracking.local.interpolation import trilinear_interpolate4d
 
 def test_stop_conditions():
@@ -200,6 +201,66 @@ def test_ProbabilisticOdfWeightedTracker():
 
     # The first path is not possible if 90 degree turns are excluded
     dg = ProbabilisticDirectionGetter.from_pmf(pmf, 80, sphere)
+    streamlines = LocalTracking(dg, tc, seeds, np.eye(4), 1.)
+
+    for sl in streamlines:
+        npt.assert_(np.allclose(sl, expected[1]))
+
+        
+def test_MaximumDeterministicTracker():
+    """This tests that the Maximum Deterministic Direction Getter plays nice
+    LocalTracking and produces reasonable streamlines in a simple example.
+    """
+    sphere = HemiSphere.from_sphere(unit_octahedron)
+
+    # A simple image with three possible configurations, a vertical tract,
+    # a horizontal tract and a crossing
+    pmf_lookup = np.array([[0., 0., 1.],
+                           [1., 0., 0.],
+                           [0., 1., 0.],
+                           [.4, .6, 0.]])
+    simple_image = np.array([[0, 1, 0, 0, 0, 0],
+                             [0, 1, 0, 0, 0, 0],
+                             [0, 3, 2, 2, 2, 0],
+                             [0, 1, 0, 0, 0, 0],
+                             [0, 1, 0, 0, 0, 0],
+                             ])
+
+    simple_image = simple_image[..., None]
+    pmf = pmf_lookup[simple_image]
+
+    seeds = [np.array([1., 1., 0.])] * 30
+
+    mask = (simple_image > 0).astype(float)
+    tc = ThresholdTissueClassifier(mask, .5)
+
+    dg = DeterministicMaximumDirectionGetter.from_pmf(pmf, 90, sphere)
+    streamlines = LocalTracking(dg, tc, seeds, np.eye(4), 1.)
+
+    expected = [np.array([[ 0.,  1.,  0.],
+                          [ 1.,  1.,  0.],
+                          [ 2.,  1.,  0.],
+                          [ 2.,  2.,  0.],
+                          [ 2.,  3.,  0.],
+                          [ 2.,  4.,  0.],
+                          [ 2.,  5.,  0.]]),
+                np.array([[ 0.,  1.,  0.],
+                          [ 1.,  1.,  0.],
+                          [ 2.,  1.,  0.],
+                          [ 3.,  1.,  0.],
+                          [ 4.,  1.,  0.]])
+               ]
+
+    def allclose(x, y):
+        return x.shape == y.shape and np.allclose(x, y)
+
+    for sl in streamlines:
+        dir = ( -sphere.vertices[0] ).copy()
+        if not allclose(sl, expected[0]):
+            raise AssertionError()
+
+    # The first path is not possible if 90 degree turns are excluded
+    dg = DeterministicMaximumDirectionGetter.from_pmf(pmf, 80, sphere)
     streamlines = LocalTracking(dg, tc, seeds, np.eye(4), 1.)
 
     for sl in streamlines:
