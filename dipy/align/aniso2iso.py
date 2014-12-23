@@ -57,7 +57,7 @@ def resample(data, affine, zooms, new_zooms, order=1, mode='constant', cval=0):
     (77, 77, 40)
     """
 
-    msg = "This function is deprecated please use dipy.aling.reslice.reslice"
+    msg = "This function is deprecated please use dipy.align.reslice.reslice"
     msg += " instead."
     warn(msg)
     return reslice(data, affine, zooms, new_zooms, order, mode, cval)
