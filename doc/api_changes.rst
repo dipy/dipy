@@ -2,6 +2,24 @@
 API changes
 ============
 
+Here we provide information about functions or classes that have been removed,
+renamed or are deprecated (not recommended) during different release circles.
+
+Dipy 0.8 Changes
+----------------
+
+**Peaks**
+
+The file ``peaks`` is now available from ``dipy.direction`` and it can still be
+accessed from ``dipy.reconst`` but this may change in future releases.
+
+**Resample**
+
+The function ``resample`` from ``dipy.align.aniso2iso`` is deprecated. Please,
+use instead ``reslice`` from ``dipy.align.reslice``.
+
+
+
 Changes between 0.7.1 and 0.6
 ------------------------------
 
