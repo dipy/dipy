@@ -109,3 +109,29 @@ def test_sfm_sklearnlinearsolver():
                       sfm.SparseFascicleModel,
                       gtab,
                       solver=EvenSillierSolver())
+
+
+def test_exponential_iso():
+    fdata, fbvals, fbvecs = dpd.get_data()
+    data_dti = nib.load(fdata).get_data()
+    gtab_dti = grad.gradient_table(fbvals, fbvecs)
+    data_dsi, gtab_dsi = dpd.dsi_voxels()
+    for data, gtab in zip([data_dsi, data_dti], [gtab_dsi, gtab_dti]):
+        sfmodel = sfm.SparseFascicleModel(gtab,
+                                        isotropic=sfm.ExponentialIsotropicModel)
+
+        sffit1 = sfmodel.fit(data[0, 0, 0])
+        sphere = dpd.get_sphere('symmetric642')
+        odf1 = sffit1.odf(sphere)
+        pred1 = sffit1.predict(gtab)
+
+        SNR = 1000
+        S0 = 1
+        mevals = np.array(([0.0015, 0.0005, 0.0005],
+                           [0.0015, 0.0005, 0.0005]))
+        angles = [(0, 0), (60, 0)]
+        S, sticks = sims.multi_tensor(gtab, mevals, S0, angles=angles,
+                                      fractions=[50, 50], snr=SNR)
+        sffit = sfmodel.fit(S)
+        pred = sffit.predict()
+        npt.assert_almost_equal(pred, S, decimal=1)
