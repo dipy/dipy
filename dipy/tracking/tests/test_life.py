@@ -33,6 +33,10 @@ def test_streamline_tensors():
     # Non-default eigenvalues:
     evals = [0.0012, 0.0006, 0.0004]
     streamline_tensors = life.streamline_tensors(streamline, evals=evals)
+    npt.assert_array_almost_equal(streamline_tensors[0],
+                                  np.array([[ 0.0009,  0.0003,  0.    ],
+                                            [ 0.0003,  0.0009,  0.    ],
+                                            [ 0.    ,  0.    ,  0.0004]]))
     # Get the resulting eigenvalues:
     eigvals = la.eigvals(streamline_tensors[0])
     # la.eigvals returns things in a strange order, so reorder them:
