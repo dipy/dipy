@@ -40,6 +40,11 @@ def test_streamline_tensors():
     # The eigenvalues are the same:
     npt.assert_array_almost_equal(eigvals[idx], evals)
     eigvecs = la.eig(streamline_tensors[0])[1][idx]
+    npt.assert_array_almost_equal(eigvecs[0],
+                                  np.array([1/np.sqrt(2), -1/np.sqrt(2), 0]))
+    npt.assert_array_almost_equal(eigvecs[1],
+                                  np.array([-1/np.sqrt(2), -1/np.sqrt(2), 0]))
+
     # The rotation on the first vector is 45 degrees:
     npt.assert_almost_equal(np.rad2deg(np.arccos(np.dot(eigvecs[0], [1, 0, 0]))),
                             45)
