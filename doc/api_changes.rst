@@ -10,14 +10,15 @@ Dipy 0.8 Changes
 
 **Peaks**
 
-The file ``peaks`` is now available from ``dipy.direction`` and it can still be
-accessed from ``dipy.reconst`` but this may change in future releases.
+The module ``peaks`` is now available from ``dipy.direction`` and it can still
+be accessed from ``dipy.reconst`` but it will be completelly removed in version
+0.10.
 
 **Resample**
 
 The function ``resample`` from ``dipy.align.aniso2iso`` is deprecated. Please,
-use instead ``reslice`` from ``dipy.align.reslice``.
-
+use instead ``reslice`` from ``dipy.align.reslice``. The module ``aniso2iso``
+will be completely removed in version 0.10.
 
 
 Changes between 0.7.1 and 0.6
