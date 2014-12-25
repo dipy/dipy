@@ -636,3 +636,22 @@ def test_predict():
     dtif = dtim.fit(data)
     S0 = np.mean(data[...,gtab.b0s_mask], -1)
     p = dtif.predict(gtab, S0)
+
+
+def test_eig_from_lo_tri():
+    psphere = get_sphere('symmetric362')
+    bvecs = np.concatenate(([[0, 0, 0]], psphere.vertices))
+    bvals = np.zeros(len(bvecs)) + 1000
+    bvals[0] = 0
+    gtab = grad.gradient_table(bvals, bvecs)
+    mevals = np.array(([0.0015, 0.0003, 0.0001], [0.0015, 0.0003, 0.0003]))
+    mevecs = [ np.array( [ [1, 0, 0], [0, 1, 0], [0, 0, 1] ] ),
+               np.array( [ [0, 0, 1], [0, 1, 0], [1, 0, 0] ] ) ]
+    S = np.array([[single_tensor( gtab, 100, mevals[0], mevecs[0], snr=None ),
+                 single_tensor( gtab, 100, mevals[0], mevecs[0], snr=None )]])
+
+    dm = dti.TensorModel(gtab, 'LS')
+    dmfit = dm.fit(S)
+    
+    lo_tri = lower_triangular(dmfit.quadratic_form)
+    assert_array_almost_equal(dti.eig_from_lo_tri(lo_tri), dmfit.model_params)
