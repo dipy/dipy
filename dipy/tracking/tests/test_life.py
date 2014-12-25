@@ -38,16 +38,14 @@ def test_streamline_tensors():
                                             [ 0.0003,  0.0009,  0.    ],
                                             [ 0.    ,  0.    ,  0.0004]]))
     # Get the eigenvalues/eigenvectors:
-    eigvals, eigvecs = la.eig(streamline_tensors[0])
-    # The rotation on the first and second vectors is 135 degrees:
-    npt.assert_almost_equal(np.rad2deg(np.arccos(np.dot(eigvecs[0], [1, 0, 0]))),
-                            135)
+    eigvals, eigvecs = la.eigh(streamline_tensors[0])
+    eigvecs = eigvecs.T
+    # The rotations are:
+    npt.assert_almost_equal(np.rad2deg(np.arccos(np.dot(eigvecs[2],[1, 0, 0]))),
+                            45)
     npt.assert_almost_equal(np.rad2deg(np.arccos(np.dot(eigvecs[1], [0, 1, 0]))),
-                            135)
-
-    # The rotation on the last vector is 0 degrees (the same coordinate in all
-    # three z components):
-    npt.assert_almost_equal(np.rad2deg(np.arccos(np.dot(eigvecs[2], [0, 0, 1]))),
+                            45)
+    npt.assert_almost_equal(np.rad2deg(np.arccos(np.dot(eigvecs[0], [0, 0, 1]))),
                             0)
 
     # Another small streamline
@@ -55,14 +53,15 @@ def test_streamline_tensors():
     streamline_tensors = life.streamline_tensors(streamline, evals=evals)
 
     for t in streamline_tensors:
-        eigvals, eigvecs = la.eig(t)
+        eigvals, eigvecs = la.eigh(t)
+        eigvecs = eigvecs.T
         # This one has no rotations - all tensors are simply the canonical:
         npt.assert_almost_equal(np.rad2deg(np.arccos(
-            np.dot(eigvecs[0], [1, 0, 0]))), 0)
+            np.dot(eigvecs[0], [0, 0, 1]))), 0)
         npt.assert_almost_equal(np.rad2deg(np.arccos(
             np.dot(eigvecs[1], [0, 1, 0]))), 0)
         npt.assert_almost_equal(np.rad2deg(np.arccos(
-            np.dot(eigvecs[2], [0, 0, 1]))), 0)
+            np.dot(eigvecs[2], [1, 0, 0]))), 0)
 
 
 def test_streamline_signal():
