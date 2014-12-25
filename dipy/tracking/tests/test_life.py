@@ -39,6 +39,7 @@ def test_streamline_tensors():
                                             [ 0.    ,  0.    ,  0.0004]]))
     # Get the resulting eigenvalues:
     eigvals = la.eigvals(streamline_tensors[0])
+    npt.assert_array_almost_equal(eigvals, np.array([ 0.0006,  0.0012,  0.0004]))
     # la.eigvals returns things in a strange order, so reorder them:
     idx = np.argsort(eigvals)[::-1]
     # The eigenvalues are the same:
