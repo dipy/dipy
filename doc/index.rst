@@ -44,6 +44,8 @@ Announcements
 - A team of Dipy developers **wins** the `IEEE ISBI HARDI challenge <http://hardi.epfl.ch/static/events/2013_ISBI/workshop.html#results>`_, 7 April, 2013.
 - **Dipy 0.6.0** Released!, 30 March, 2013.
 
+See some of our :ref:`past announcements <old_news>`
+
 
 ***************
 Getting Started
