@@ -40,8 +40,19 @@ def test_streamline_tensors():
     # Get the eigenvalues/eigenvectors:
     eigvals, eigvecs = la.eig(streamline_tensors[0])
     eigvecs = eigvecs[np.argsort(eigvals)[::-1]]
-    eigvals = eigvecs[np.argsort(eigvals)[::-1]]
+    eigvals = eigvals[np.argsort(eigvals)[::-1]]
+
+    npt.assert_array_almost_equal(eigvals,
+                                  np.array([ 0.0012, 0.0006, 0.0004]))
+
+    npt.assert_array_almost_equal(eigvecs,
+                                  np.array([[0.70710678, -0.70710678,  0.],
+                                            [-0.70710678, -0.70710678, 0.],
+                                            [ 0.,  0., 1.]]))
+
+
     # The rotations are:
+    
     npt.assert_almost_equal(np.rad2deg(np.arccos(np.dot(eigvecs[0],[1, 0, 0]))),
                             45)
     npt.assert_almost_equal(np.rad2deg(np.arccos(np.dot(eigvecs[1], [0, 1, 0]))),
@@ -56,7 +67,7 @@ def test_streamline_tensors():
     for t in streamline_tensors:
         eigvals, eigvecs = la.eig(t)
         eigvecs = eigvecs[np.argsort(eigvals)[::-1]]
-        eigvals = eigvecs[np.argsort(eigvals)[::-1]]
+        eigvals = eigvals[np.argsort(eigvals)[::-1]]
         # This one has no rotations - all tensors are simply the canonical:
         npt.assert_almost_equal(np.rad2deg(np.arccos(
             np.dot(eigvecs[0], [1, 0, 0]))), 0)
