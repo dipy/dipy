@@ -33,42 +33,31 @@ def test_streamline_tensors():
     # Non-default eigenvalues:
     evals = [0.0012, 0.0006, 0.0004]
     streamline_tensors = life.streamline_tensors(streamline, evals=evals)
-    # Get the resulting eigenvalues:
-    eigvals = la.eigvals(streamline_tensors[0])
-    # la.eigvals returns things in a strange order, so reorder them:
-    idx = np.argsort(eigvals)[::-1]
-    # The eigenvalues are the same:
-    npt.assert_array_almost_equal(eigvals[idx], evals)
-    eigvecs = la.eig(streamline_tensors[0])[1][idx]
+    npt.assert_array_almost_equal(streamline_tensors[0],
+                                  np.array([[ 0.0009,  0.0003,  0.    ],
+                                            [ 0.0003,  0.0009,  0.    ],
+                                            [ 0.    ,  0.    ,  0.0004]]))
+
+    
+    # Get the eigenvalues/eigenvectors:
+    eigvals, eigvecs = la.eig(streamline_tensors[0])
+    eigvecs = eigvecs[np.argsort(eigvals)[::-1]]
+    eigvals = eigvals[np.argsort(eigvals)[::-1]]
+
+    npt.assert_array_almost_equal(eigvals,
+                                  np.array([ 0.0012, 0.0006, 0.0004]))
+
     npt.assert_array_almost_equal(eigvecs[0],
-                                  np.array([1/np.sqrt(2), -1/np.sqrt(2), 0]))
-    npt.assert_array_almost_equal(eigvecs[1],
-                                  np.array([-1/np.sqrt(2), -1/np.sqrt(2), 0]))
-
-    # The rotation on the first vector is 45 degrees:
-    npt.assert_almost_equal(np.rad2deg(np.arccos(np.dot(eigvecs[0], [1, 0, 0]))),
-                            45)
-
-    # The rotation on the first vector is 135 degrees:
-    npt.assert_almost_equal(np.rad2deg(np.arccos(np.dot(eigvecs[1], [0, 1, 0]))),
-                            135)
-
-    # The rotation on the last vector is 0 degrees (the same coordinate in all
-    # three z components):
-    npt.assert_almost_equal(np.rad2deg(np.arccos(np.dot(eigvecs[2], [0, 0, 1]))),
-                            0)
-
+                                  np.array([0.70710678, -0.70710678, 0.]))
     # Another small streamline
     streamline = [[1, 0, 0], [2, 0, 0], [3, 0, 0]]
     streamline_tensors = life.streamline_tensors(streamline, evals=evals)
 
     for t in streamline_tensors:
-        eigvals = la.eigvals(t)
-        idx = np.argsort(eigvals)[::-1]
-        # The eigenvalues are the same:
-        npt.assert_array_almost_equal(eigvals[idx], evals)
+        eigvals, eigvecs = la.eig(t)
+        eigvecs = eigvecs[np.argsort(eigvals)[::-1]]
+        eigvals = eigvals[np.argsort(eigvals)[::-1]]
         # This one has no rotations - all tensors are simply the canonical:
-        eigvecs = la.eig(streamline_tensors[0])[1][idx]
         npt.assert_almost_equal(np.rad2deg(np.arccos(
             np.dot(eigvecs[0], [1, 0, 0]))), 0)
         npt.assert_almost_equal(np.rad2deg(np.arccos(
