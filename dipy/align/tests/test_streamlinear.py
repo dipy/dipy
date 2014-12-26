@@ -169,8 +169,8 @@ def test_stream_rigid():
     moved2 = transform_streamlines(moving, srm.matrix)
     moved3 = srm.transform(moving)
 
-    assert_array_almost_equal(moved[0], moved2[0], decimal=4)
-    assert_array_almost_equal(moved2[0], moved3[0], decimal=4)
+    assert_array_almost_equal(moved[0], moved2[0], decimal=3)
+    assert_array_almost_equal(moved2[0], moved3[0], decimal=3)
 
 
 def test_min_vs_min_fast_precision():
