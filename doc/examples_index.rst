@@ -112,6 +112,7 @@ Fiber tracking (NEW - Experimental)
 
 - :ref:`example_introduction_to_basic_tracking`
 - :ref:`example_probabilistic_fiber_tracking`
+- :ref:`example_deterministic_fiber_tracking`
 - :ref:`example_sfm_tracking`
 
 ---------------

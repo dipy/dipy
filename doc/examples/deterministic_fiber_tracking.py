@@ -7,18 +7,20 @@ Deterministic maximum direction getter is the deterministic version of the
 probabilistic direction getter. It can be used with the same local models
 and has the same parameters. Deterministic maximum fiber tracking follows
 the trajectory of the most probable pathway within the tracking constraint
-(e.g. max angle). i.e. It follows the direction with the highest probability
-from a distribution, as opposed to the probabilistic direction getter which
-draw the direction from the distribution. The maximum deterministic direction
-getter is equivalent to the probabilistic direction getter returning always
-the maximum value of the distribution.
+(e.g. max angle). In other words, it follows the direction with the highest
+probability from a distribution, as opposed to the probabilistic direction
+getter which draws the direction from the distribution. Therefore, the maximum
+deterministic direction getter is equivalent to the probabilistic direction
+getter returning always the maximum value of the distribution.
 
 Deterministic maximum fiber tracking is an alternative to EuDX deterministic
-tractography, which unlike EuDx, do not follows the peaks of the local models.
+tractography and unlike EuDX does not follow the peaks of the local models but
+uses the entire orientation distributions.
 
-This example is an extension of the "probabilistic fiber tracking" example.
-We'll begin by loading the data and fitting a constrained spherical
-deconvolution (CSD) model.
+This example is an extension of the
+:ref:``example_probabilistic_fiber_tracking`` example. We begin by loading the
+data and fitting a constrained spherical deconvolution (CSD) reconstruction
+model.
 """
 
 from dipy.data import read_stanford_labels
@@ -39,7 +41,8 @@ csd_model = ConstrainedSphericalDeconvModel(gtab, None, sh_order=6)
 csd_fit = csd_model.fit(data, mask=white_matter)
 
 """
-We use the fractional anisotropy (FA) of the DTI model to build a tissue classifier.
+We use the fractional anisotropy (FA) of the DTI model to build a tissue
+classifier.
 """
 
 import dipy.reconst.dti as dti
@@ -69,4 +72,5 @@ detmax_dg = DeterministicMaximumDirectionGetter.from_shcoeff(csd_fit.shm_coeff,
                                                              sphere=default_sphere)
 streamlines = LocalTracking(detmax_dg, classifier, seeds, affine, step_size=.5)
 
-save_trk("deterministic_maximum_shm_coeff.trk", streamlines, affine, labels.shape)
+save_trk("deterministic_maximum_shm_coeff.trk", streamlines, affine,
+         labels.shape)
