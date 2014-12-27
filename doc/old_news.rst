@@ -4,7 +4,9 @@
 **********************
 Past announcements
 **********************
-
+- **Dipy 0.7.1** is available for :ref:`download <installation>` with **3X**
+    more tutorials than 0.6.0! In addition, a `journal paper`_ focusing on
+    teaching the fundamentals of Dipy is available in Frontiers of Neuroinformatics.
 - A new **hands on Dipy** seminar to 50 neuroscientists from Canada, as part of QBIN's "Do's and dont's of diffusion MRI" workshop, 8 April, 2014.
 - The creators of Dipy will attend both ISMRM and HBM 2015. Come and meet us!
 - `Dipy paper`_ accepted in Frontiers of Neuroinformatics, 22 January, 2014.
