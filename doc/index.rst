@@ -4,9 +4,7 @@
 Diffusion Imaging In Python
 ###########################
 
-Dipy_ is a **free** and **open source** software project for
-**diffusion** *magnetic resonance imaging* (dMRI) **analysis** and multi-modal
-MRI **registration**.
+Dipy_ is a **free** and **open source** software project for **diffusion** *magnetic resonance imaging* (dMRI) **analysis**.
 
 
 **********
@@ -37,7 +35,7 @@ Announcements
 *************
 
 - The creators of Dipy will attend both ISMRM and HBM 2015. Come and meet us!
-- **dipy 0.8.0** released, 27 December 2014.
+- **dipy 0.8.0** released, January 2015.
 - `Dipy paper`_ accepted in Frontiers of Neuroinformatics, 22 January, 2014.
 - **Dipy 0.7.1** Released!, 16 January, 2014.
 - **Dipy 0.7.0** Released!, 23 December, 2013.
