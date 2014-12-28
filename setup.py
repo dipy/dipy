@@ -3,6 +3,7 @@
 
 import os
 import sys
+from copy import deepcopy
 from os.path import join as pjoin, dirname
 from glob import glob
 
@@ -103,7 +104,7 @@ for modulename, other_sources, language in (
     pyx_src = pjoin(*modulename.split('.')) + '.pyx'
     EXTS.append(Extension(modulename, [pyx_src] + other_sources,
                           language=language,
-                          **ext_kwargs))
+                          **deepcopy(ext_kwargs)))  # deepcopy lists
 
 
 # Do our own build and install time dependency checking. setup.py gets called in
