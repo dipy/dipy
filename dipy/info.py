@@ -44,13 +44,13 @@ clinical decisions.
 Website
 =======
 
-Current information can always be found at the NIPY dipy website -
-http://nipy.org/dipy - or directly from the DIPY website - http://dipy.org
+Current information can always be found from the dipy website - http://dipy.org
 
 Mailing Lists
 =============
 
-Please see the developer's list at http://mail.scipy.org/mailman/listinfo/nipy-devel
+Please see the developer's list at
+http://mail.scipy.org/mailman/listinfo/nipy-devel
 
 Code
 ====
@@ -63,13 +63,13 @@ You can find our sources and single-click downloads:
 
 .. _main repository: http://github.com/nipy/dipy
 .. _Documentation: http://dipy.org
-.. _current trunk: https://github.com/nipy/dipy/archive/master.zip
+.. _current trunk: http://github.com/nipy/dipy/archives/master
 
 License
 =======
 
-dipy is licensed under the terms of the BSD license. Some code included with
-dipy is also licensed under the BSD license.  Please the LICENSE file in the
+Dipy is licensed under the terms of the BSD license. Some code included with
+dipy is also licensed under the BSD license. Please see the LICENSE file in the
 dipy distribution.
 """
 
