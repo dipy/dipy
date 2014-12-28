@@ -36,7 +36,7 @@ License
 
 Dipy is licensed under the terms of the BSD license.
 Some code included with dipy is also licensed under the BSD license.
-The shore implementation included with dipy depends on CVXOPT,
+The SHORE implementation included with dipy depends on CVXOPT,
 which is licensed under the GPL license :
 you may be subject to this license when using SHORE.
 Please see the LICENSE file in the dipy distribution.
