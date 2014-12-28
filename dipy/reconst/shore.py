@@ -233,7 +233,7 @@ class ShoreModel(Cache):
                     'CVXOPT package needed to enforce constraints')
             w_s = "The implementation of SHORE depends on CVXOPT "
             w_s += " (http://cvxopt.org/). This software is licensed "
-            w_s += "under the GPL (see: http://cvxopt.org/copyright.html). "
+            w_s += "under the GPL (see: http://cvxopt.org/copyright.html) "
             w_s += " and you may be subject to this license when using SHORE."
             warn(w_s)
             import cvxopt.solvers
