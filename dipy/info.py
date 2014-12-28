@@ -33,7 +33,7 @@ description  = 'Diffusion MRI utilities in python'
 # it only in one place and sync it correctly.
 long_description = """
 ======
- DiPy
+ DIPY
 ======
 
 Dipy is a python toolbox for analysis of MR diffusion imaging.

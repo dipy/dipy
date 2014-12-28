@@ -1,5 +1,5 @@
 ======
- DiPy
+ DIPY
 ======
 
 Dipy is a python toolbox for analysis of MR diffusion imaging.
