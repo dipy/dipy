@@ -18,8 +18,8 @@ cdef extern from "dpy_math.h" nogil:
     float sqrt(float x)
     float fabs(float x)
     float acos(float x )
-    bint npy_isnan(double x)
-    double npy_log2(double x)
+    bint dpy_isnan(double x)
+    double dpy_log2(double x)
 
 #cdef extern from "stdio.h":
 #    void printf ( const char * format, ... )
@@ -1075,7 +1075,7 @@ def approx_polygon_track(xyz,alpha=0.392):
         csub_3vecs(fvec1,fvec0,vec0)
         csub_3vecs(fvec2,fvec1,vec1)
         tmp=<double>fabs(acos(cinner_3vecs(vec0,vec1)/(cnorm_3vec(vec0)*cnorm_3vec(vec1))))
-        if npy_isnan(tmp) :
+        if dpy_isnan(tmp) :
             angle+=0.
         else:
             angle+=tmp
@@ -1130,7 +1130,7 @@ def approximate_mdl_trajectory(xyz, alpha=1.):
         fvec2 = as_float_3vec(track[current_index])
         # L(H)
         csub_3vecs(<float *>fvec2.data,<float *>fvec1.data,tmp)
-        cost_par=npy_log2(sqrt(cinner_3vecs(tmp,tmp)))
+        cost_par=dpy_log2(sqrt(cinner_3vecs(tmp,tmp)))
         cost_nopar=0
         #print start_index,current_index
         # L(D|H)
@@ -1139,10 +1139,10 @@ def approximate_mdl_trajectory(xyz, alpha=1.):
             #print i
             fvec3 = as_float_3vec(track[i])
             fvec4 = as_float_3vec(track[i+1])
-            cost_par += npy_log2(clee_perpendicular_distance(<float *>fvec3.data,<float *>fvec4.data,<float *>fvec1.data,<float *>fvec2.data))
-            cost_par += npy_log2(clee_angle_distance(<float *>fvec3.data,<float *>fvec4.data,<float *>fvec1.data,<float *>fvec2.data))
+            cost_par += dpy_log2(clee_perpendicular_distance(<float *>fvec3.data,<float *>fvec4.data,<float *>fvec1.data,<float *>fvec2.data))
+            cost_par += dpy_log2(clee_angle_distance(<float *>fvec3.data,<float *>fvec4.data,<float *>fvec1.data,<float *>fvec2.data))
             csub_3vecs(<float *>fvec4.data,<float *>fvec3.data,tmp)
-            cost_nopar += npy_log2(cinner_3vecs(tmp,tmp))
+            cost_nopar += dpy_log2(cinner_3vecs(tmp,tmp))
         cost_nopar /= 2
         #print cost_par, cost_nopar, start_index,length
         if alphac*cost_par>cost_nopar:

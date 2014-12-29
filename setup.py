@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 ''' Installation script for dipy package '''
 
+import numpy as np
 import os
 import sys
 from copy import deepcopy
@@ -11,7 +12,6 @@ from glob import glob
 # update it when the contents of directories change.
 if os.path.exists('MANIFEST'): os.remove('MANIFEST')
 
-from numpy.distutils.misc_util import get_info
 
 # Get version and release info, which is all stored in dipy/info.py
 ver_file = os.path.join('dipy', 'info.py')
@@ -74,13 +74,15 @@ from distutils.extension import Extension
 from distutils.command import build_py, build_ext
 
 from cythexts import cyproc_exts, get_pyx_sdist, derror_maker
-from setup_helpers import install_scripts_bat, add_flag_checking, check_npymath
+from setup_helpers import install_scripts_bat, add_flag_checking
 
 # Define extensions
 EXTS = []
-# Add flags for linking to npymath library
-ext_kwargs = get_info('npymath')
+
+# We use some defs from npymath, but we don't want to link against npymath lib
+ext_kwargs = {'include_dirs':[np.get_include()]}
 ext_kwargs['include_dirs'].append('src')
+
 for modulename, other_sources, language in (
     ('dipy.reconst.peak_direction_getter', [], 'c'),
     ('dipy.reconst.recspeed', [], 'c'),
@@ -134,9 +136,6 @@ else: # We have nibabel
         build_ext, [[['/arch:SSE2'], [], simple_test_c, 'USING_VC_SSE2'],
             [['-msse2', '-mfpmath=sse'], [], simple_test_c, 'USING_GCC_SSE2'],
             [['-fopenmp'], ['-fopenmp'], omp_test_c, 'HAVE_OPENMP']], 'dipy')
-    # Fix npymath libraries for Windows
-    if os.name == 'nt':
-        extbuilder = check_npymath(extbuilder)
 
 # Installer that checks for install-time dependencies
 class installer(install.install):

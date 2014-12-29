@@ -6,8 +6,8 @@ from .tissue_classifier cimport (TissueClassifier, TissueClass, TRACKPOINT,
 
 
 cdef extern from "dpy_math.h" nogil:
-    int npy_signbit(double x)
-    double npy_rint(double x)
+    int dpy_signbit(double x)
+    double dpy_rint(double x)
     double abs(double)
 
 
@@ -16,7 +16,7 @@ cdef inline double stepsize(double point, double increment) nogil:
     """Compute the step size to the closest boundary in units of increment."""
     cdef:
         double dist
-    dist = npy_rint(point) + .5 - npy_signbit(increment) - point
+    dist = dpy_rint(point) + .5 - dpy_signbit(increment) - point
     if dist == 0:
         # Point is on an edge, return step size to next edge.  This is most
         # likely to come up if overstep is set to 0.
