@@ -48,7 +48,8 @@ double dpy_rint(double x)
 
 int dpy_signbit(double x)
 {
-#ifdef NPY_HAVE_DECL_SIGNBIT
+/*#ifdef NPY_HAVE_DECL_SIGNBIT*/
+#if 0
     return signbit(x);
 #else
     union
