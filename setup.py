@@ -78,10 +78,11 @@ from setup_helpers import install_scripts_bat, add_flag_checking, check_npymath
 
 # Define extensions
 EXTS = []
-# Add flags for linking to npymath library
-ext_kwargs = get_info('npymath')
+
+# We use some defs from npymath, but we don't want to link against npymath lib
+ext_kwargs = {'include_dirs':get_info('npymath')['include_dirs']}
 ext_kwargs['include_dirs'].append('src')
-ext_kwargs['libraries'] = []
+
 for modulename, other_sources, language in (
     ('dipy.reconst.peak_direction_getter', [], 'c'),
     ('dipy.reconst.recspeed', [], 'c'),
@@ -135,9 +136,6 @@ else: # We have nibabel
         build_ext, [[['/arch:SSE2'], [], simple_test_c, 'USING_VC_SSE2'],
             [['-msse2', '-mfpmath=sse'], [], simple_test_c, 'USING_GCC_SSE2'],
             [['-fopenmp'], ['-fopenmp'], omp_test_c, 'HAVE_OPENMP']], 'dipy')
-    # Fix npymath libraries for Windows
-    if os.name == 'nt':
-        extbuilder = check_npymath(extbuilder)
 
 # Installer that checks for install-time dependencies
 class installer(install.install):
