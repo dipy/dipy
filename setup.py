@@ -79,9 +79,9 @@ from setup_helpers import install_scripts_bat, add_flag_checking, check_npymath
 # Define extensions
 EXTS = []
 # Add flags for linking to npymath library
-#ext_kwargs = get_info('npymath')
-#ext_kwargs['include_dirs'].append('src')
-ext_kwargs = {'include_dirs':['src']}
+ext_kwargs = get_info('npymath')
+ext_kwargs['include_dirs'].append('src')
+ext_kwargs['libraries'] = []
 for modulename, other_sources, language in (
     ('dipy.reconst.peak_direction_getter', [], 'c'),
     ('dipy.reconst.recspeed', [], 'c'),
