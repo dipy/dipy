@@ -82,7 +82,6 @@ int dpy_signbit(double x)
 }
 
 
-
 #ifndef NPY_HAVE_DECL_ISNAN
     #define dpy_isnan(x) ((x) != (x))
 #else
@@ -114,4 +113,3 @@ int dpy_signbit(double x)
         #define dpy_isinf(x) isinf((x))
     #endif
 #endif
-

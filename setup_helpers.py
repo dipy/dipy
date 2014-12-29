@@ -192,4 +192,3 @@ def add_flag_checking(build_ext_class, flag_defines, top_package_dir=''):
             build_ext_class.build_extensions(self)
 
     return Checker
-
