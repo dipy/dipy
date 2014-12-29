@@ -7,15 +7,8 @@ import numpy as np
 cimport numpy as cnp
 cimport cython
 
-include "../../build/config.pxi"
-
-IF HAVE_OPENMP:
-    cimport openmp
-ELSE:
-    msg = 'OpenMP is not available with your compiler.\n'
-    msg += 'Disabled OpenMP based multithreading.'
-    print(msg)
-
+cimport safe_openmp as openmp
+from safe_openmp cimport have_openmp
 
 from cython.parallel import prange
 from libc.stdlib cimport malloc, free
@@ -171,12 +164,11 @@ def _bundle_minimum_distance(double [:, ::1] stat,
         double dist=0
         double * min_j
         double * min_i
-        IF HAVE_OPENMP:
-            openmp.omp_lock_t lock
+        cdef openmp.omp_lock_t lock
 
     with nogil:
 
-        IF HAVE_OPENMP:
+        if have_openmp:
             openmp.omp_init_lock(&lock)
 
         min_j = <double *> malloc(static_size * sizeof(double))
@@ -195,17 +187,17 @@ def _bundle_minimum_distance(double [:, ::1] stat,
                 tmp = min_direct_flip_dist(&stat[i * rows, 0],
                                        &mov[j * rows, 0], rows)
 
-                IF HAVE_OPENMP:
+                if have_openmp:
                     openmp.omp_set_lock(&lock)
                 if tmp < min_j[i]:
                     min_j[i] = tmp
 
                 if tmp < min_i[j]:
                     min_i[j] = tmp
-                IF HAVE_OPENMP:
+                if have_openmp:
                     openmp.omp_unset_lock(&lock)
 
-        IF HAVE_OPENMP:
+        if have_openmp:
             openmp.omp_destroy_lock(&lock)
 
         for i in range(static_size):
