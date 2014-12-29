@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 ''' Installation script for dipy package '''
 
+import numpy as np
 import os
 import sys
 from copy import deepcopy
@@ -11,7 +12,6 @@ from glob import glob
 # update it when the contents of directories change.
 if os.path.exists('MANIFEST'): os.remove('MANIFEST')
 
-from numpy.distutils.misc_util import get_info
 
 # Get version and release info, which is all stored in dipy/info.py
 ver_file = os.path.join('dipy', 'info.py')
@@ -80,7 +80,7 @@ from setup_helpers import install_scripts_bat, add_flag_checking
 EXTS = []
 
 # We use some defs from npymath, but we don't want to link against npymath lib
-ext_kwargs = {'include_dirs':get_info('npymath')['include_dirs']}
+ext_kwargs = {'include_dirs':[np.get_include()]}
 ext_kwargs['include_dirs'].append('src')
 
 for modulename, other_sources, language in (
