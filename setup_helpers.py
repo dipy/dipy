@@ -119,6 +119,8 @@ def add_flag_checking(build_ext_class, flag_defines, top_package_dir=''):
 
         def can_compile_link(self, compile_flags, link_flags, code):
             cc = self.compiler
+            if cc.compiler_type == 'msvc':
+                link_flags += ['/MANIFEST']
             fname = 'test.c'
             cwd = os.getcwd()
             tmpdir = tempfile.mkdtemp()
@@ -192,3 +194,4 @@ def add_flag_checking(build_ext_class, flag_defines, top_package_dir=''):
             build_ext_class.build_extensions(self)
 
     return Checker
+

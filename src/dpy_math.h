@@ -8,7 +8,7 @@
 
 #define DPY_PI NPY_PI
 
-/* From numpy npy_math.c.src */
+/* From numpy npy_math.c.src commit b2f6792d284b0e9383093c30d51ec3a82e8312fd*/
 double dpy_log2(double x)
 {
 #ifdef HAVE_LOG2
@@ -114,3 +114,4 @@ int dpy_signbit(double x)
         #define dpy_isinf(x) isinf((x))
     #endif
 #endif
+

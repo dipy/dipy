@@ -74,7 +74,7 @@ from distutils.extension import Extension
 from distutils.command import build_py, build_ext
 
 from cythexts import cyproc_exts, get_pyx_sdist, derror_maker
-from setup_helpers import install_scripts_bat, add_flag_checking, check_npymath
+from setup_helpers import install_scripts_bat, add_flag_checking
 
 # Define extensions
 EXTS = []
