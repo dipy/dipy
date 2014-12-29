@@ -152,7 +152,7 @@ cmdclass = dict(
     build_ext=extbuilder,
     install=installer,
     install_scripts=install_scripts_bat,
-    sdist=get_pyx_sdist())
+    sdist=get_pyx_sdist(include_dirs=['src']))
 
 
 def main(**extra_args):

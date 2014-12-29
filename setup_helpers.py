@@ -27,9 +27,9 @@ set py_exe="%py_exe%"
 call %py_exe% %pyscript% %*
 """
 
-# File to which to write Cython conditional DEF vars
-CONFIG_PXI = pjoin('build', 'config.pxi')
-# File name (no directory) to which to write Python conditional vars
+# Path of file to which to write C conditional vars from build-time checks
+CONFIG_H = pjoin('build', 'config.h')
+# File name (no directory) to which to write Python vars from build-time checks
 CONFIG_PY = '__config__.py'
 # Directory to which to write libraries for building
 LIB_DIR_TMP = pjoin('build', 'extra_libs')
@@ -95,10 +95,10 @@ def add_flag_checking(build_ext_class, flag_defines, top_package_dir=''):
         will link.  If both compile and link works, we add ``compile_flags`` to
         ``extra_compile_args`` and ``link_flags`` to ``extra_link_args`` of
         each extension when we build the extensions.  If ``defvar`` is not
-        None, it is the name of Cython variable to be defined in
-        ``build/config.pxi`` with True if the combination of
-        (``compile_flags``, ``link_flags``, ``code``) will compile and link,
-        False otherwise. If None, do not write variable.
+        None, it is the name of C variable to be defined in ``build/config.h``
+        with 1 if the combination of (``compile_flags``, ``link_flags``,
+        ``code``) will compile and link, 0 otherwise. If None, do not write
+        variable.
     top_package_dir : str
         String giving name of top-level package, for writing Python file
         containing configuration variables.  If empty, do not write this file.
@@ -148,7 +148,7 @@ def add_flag_checking(build_ext_class, flag_defines, top_package_dir=''):
             def_vars = []
             good_compile_flags = []
             good_link_flags = []
-            config_dir = dirname(CONFIG_PXI)
+            config_dir = dirname(CONFIG_H)
             for compile_flags, link_flags, code, def_var in self.flag_defs:
                 compile_flags = list(compile_flags)
                 link_flags = list(link_flags)
@@ -156,22 +156,22 @@ def add_flag_checking(build_ext_class, flag_defines, top_package_dir=''):
                                                    link_flags,
                                                    code)
                 if def_var:
-                    def_vars.append('{0} = {1}'.format(
-                        def_var, flags_good))
+                    def_vars.append((def_var, flags_good))
                 if flags_good:
                     good_compile_flags += compile_flags
                     good_link_flags += link_flags
                 else:
                     log.warn("Flags {0} omitted because of compile or link "
                              "error".format(compile_flags + link_flags))
-            if def_vars:  # write config.pxi file
+            if def_vars:  # write config.h file
                 if not exists(config_dir):
                     self.mkpath(config_dir)
-                with open(CONFIG_PXI, 'wt') as fobj:
-                    fobj.write('# Automatically generated; do not edit\n')
-                    fobj.write('# Cython defines from compile checks\n')
-                    for vdef in def_vars:
-                        fobj.write('DEF {0}\n'.format(vdef))
+                with open(CONFIG_H, 'wt') as fobj:
+                    fobj.write('/* Automatically generated; do not edit\n')
+                    fobj.write('   C defines from build-time checks */\n')
+                    for v_name, v_value in def_vars:
+                        fobj.write('int {0} = {1};\n'.format(
+                            v_name, 1 if v_value else 0))
             if def_vars and top_package_dir:  # write __config__.py file
                 config_py_dir = (top_package_dir if self.inplace else
                                  pjoin(self.build_lib, top_package_dir))
@@ -181,7 +181,8 @@ def add_flag_checking(build_ext_class, flag_defines, top_package_dir=''):
                 with open(config_py, 'wt') as fobj:
                     fobj.write('# Automatically generated; do not edit\n')
                     fobj.write('# Variables from compile checks\n')
-                    fobj.write('\n'.join(def_vars) + '\n')
+                    for v_name, v_value in def_vars:
+                        fobj.write('{0} = {1}\n'.format(v_name, v_value))
             if def_vars or good_compile_flags or good_link_flags:
                 for ext in self.extensions:
                     ext.extra_compile_args += good_compile_flags

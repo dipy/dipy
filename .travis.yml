@@ -27,12 +27,13 @@ matrix:
       env:
         - DEPENDS="cython numpy scipy matplotlib h5py nibabel cvxopt scikit_learn"
 before_install:
+    - source tools/travis_tools.sh
     - virtualenv --python=python venv
     - source venv/bin/activate
     - python --version # just to check
-    - pip install nose # always
+    - retry pip install nose # always
     - sudo apt-get install libblas-dev liblapack-dev libatlas3gf-base
-    - pip install --timeout=60 --no-index -f http://travis-wheels.scikit-image.org $DEPENDS
+    - wheelhouse_pip_install $DEPENDS
     - if [ "${COVERAGE}" == "1" ]; then
       pip install coverage;
       pip install coveralls;
