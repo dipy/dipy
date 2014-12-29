@@ -132,7 +132,9 @@ def add_flag_checking(build_ext_class, flag_defines, top_package_dir=''):
                 except CompileError:
                     return False
                 try:
-                    cc.link_executable(objects, "a.out",
+                    # Link shared lib rather then executable to avoid
+                    # http://bugs.python.org/issue4431 with MSVC 10+
+                    cc.link_shared_lib(objects, "testlib",
                                        extra_postargs=link_flags)
                 except (LinkError, TypeError):
                     return False
