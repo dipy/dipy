@@ -12,9 +12,9 @@ cdef extern from "dpy_math.h" nogil:
 @cython.boundscheck(False)
 @cython.wraparound(False)
 @cython.cdivision(True)
-cdef void _solve_2d_symmetric_positive_definite(double[:] A, double[:] y,
-                                               double det,
-                                               double[:] out) nogil:
+cdef void _solve_2d_symmetric_positive_definite(double* A, double* y,
+                                                double det,
+                                                double* out) nogil:
     r"""Solves a 2-variable symmetric positive-definite linear system
 
     Solves the symmetric positive-definite linear system Mx = y given by
@@ -34,20 +34,40 @@ cdef void _solve_2d_symmetric_positive_definite(double[:] A, double[:] y,
     out[0] = (y[0] - A[1] * out[1]) / A[0]
 
 
-def solve_2d_symmetric_positive_definite(double[:] A, double[:] y,
-                                               double det,
-                                               double[:] out):
+def solve_2d_symmetric_positive_definite(A, y, double det):
     r"""
-    Wrapper for _solve_2d_symmetric_positive_definite (see documentation above)
+    Wrapper for _solve_2d_symmetric_positive_definite
+
+    Parameters
+    ----------
+    A : array, shape (3,)
+        the array containing the entries of the symmetric 2x2 matrix
+    y : array, shape (2,)
+        right-hand side of the system to be solved
+
+    Returns
+    -------
+    out : array, shape (2,)
+        the array the output will be stored in
     """
-    _solve_2d_symmetric_positive_definite(A, y, det, out)
+    cdef:
+        cnp.ndarray out = np.zeros(2, dtype=float)
+
+    _solve_2d_symmetric_positive_definite(
+        <double*> cnp.PyArray_DATA(np.ascontiguousarray(A, float)),
+        <double*> cnp.PyArray_DATA(np.ascontiguousarray(y, float)),
+        det,
+        <double*> cnp.PyArray_DATA(out))
+    return out
 
 
 @cython.boundscheck(False)
 @cython.wraparound(False)
 @cython.cdivision(True)
-cdef int _solve_3d_symmetric_positive_definite(double[:] g, double[:] y, double tau,
-                                               double[:] out) nogil:
+cdef int _solve_3d_symmetric_positive_definite(double* g,
+                                               double* y,
+                                               double tau,
+                                               double* out) nogil:
     r"""Solves a 3-variable symmetric positive-definite linear system
 
     Solves the symmetric semi-positive-definite linear system $Mx = y$ given by
@@ -59,6 +79,8 @@ cdef int _solve_3d_symmetric_positive_definite(double[:] g, double[:] y, double 
         the vector in the outer product above
     y : array, shape (3,)
         right-hand side of the system to be solved
+    tau : double
+        $\tau$ in $M = (g g^{T} + \tau I)$
     out : array, shape (3,)
         the array the output will be stored in
 
@@ -91,12 +113,35 @@ cdef int _solve_3d_symmetric_positive_definite(double[:] g, double[:] y, double 
     return 0
 
 
-def solve_3d_symmetric_positive_definite(double[:] g, double[:] y, double tau,
-                                         double[:] out):
+def solve_3d_symmetric_positive_definite(g, y, double tau):
     r"""
     Wrapper for _solve_3d_symmetric_positive_definite (see documentation above)
+
+    Parameters
+    ----------
+    g : array, shape (3,)
+        the vector in the outer product above
+    y : array, shape (3,)
+        right-hand side of the system to be solved
+    tau : double
+        $\tau$ in $M = (g g^{T} + \tau I)$
+
+    Returns
+    -------
+    out : array, shape (3,)
+        the array the output will be stored in
+    is_singular : int
+        1 if M is singular, otherwise 0
     """
-    return _solve_3d_symmetric_positive_definite(g, y, tau, out)
+    cdef:
+        cnp.ndarray out = np.zeros(3, dtype=float)
+        int is_singular
+    is_singular = _solve_3d_symmetric_positive_definite(
+        <double*> cnp.PyArray_DATA(np.ascontiguousarray(g, float)),
+        <double*> cnp.PyArray_DATA(np.ascontiguousarray(y, float)),
+        tau,
+        <double*> cnp.PyArray_DATA(out))
+    return out, is_singular
 
 
 @cython.boundscheck(False)
@@ -146,16 +191,17 @@ cpdef double iterate_residual_displacement_field_ssd_2d(
     ftype = np.asarray(delta_field).dtype
     cdef:
         int NUM_NEIGHBORS = 4
-        int[:] dRow = np.array([-1, 0, 1,  0], dtype=np.int32)
-        int[:] dCol = np.array([0, 1, 0, -1], dtype=np.int32)
+        int* dRow = [-1, 0, 1,  0]
+        int* dCol = [0, 1, 0, -1]
         cnp.npy_intp nrows = delta_field.shape[0]
         cnp.npy_intp ncols = delta_field.shape[1]
         cnp.npy_intp r, c, dr, dc, nn, k
 
-        double[:] b = np.ndarray(shape=(2,), dtype=np.float64)
-        double[:] d = np.ndarray(shape=(2,), dtype=np.float64)
-        double[:] y = np.ndarray(shape=(2,), dtype=np.float64)
-        double[:] A = np.ndarray(shape=(3,), dtype=np.float64)
+        double* b = [0, 0]
+        double* d = [0, 0]
+        double* y = [0, 0]
+        double* A = [0, 0, 0]
+        int yi
         double xx, yy, opt, nrm2, delta, sigmasq, max_displacement, det
     max_displacement = 0
 
@@ -172,7 +218,8 @@ cpdef double iterate_residual_displacement_field_ssd_2d(
                     b[0] = target[r, c, 0]
                     b[1] = target[r, c, 1]
                 nn = 0
-                y[:] = 0
+                y[0] = 0
+                y[1] = 0
                 for k in range(NUM_NEIGHBORS):
                     dr = r + dRow[k]
                     if((dr < 0) or (dr >= nrows)):
@@ -316,18 +363,18 @@ cpdef double iterate_residual_displacement_field_ssd_3d(
     ftype = np.asarray(delta_field).dtype
     cdef:
         int NUM_NEIGHBORS = 6
-        int[:] dSlice = np.array([-1,  0, 0, 0,  0, 1], dtype=np.int32)
-        int[:] dRow = np.array([0, -1, 0, 1,  0, 0], dtype=np.int32)
-        int[:] dCol = np.array([0,  0, 1, 0, -1, 0], dtype=np.int32)
+        int* dSlice = [-1, 0, 0, 0,  0, 1]
+        int* dRow = [0, -1, 0, 1,  0, 0]
+        int* dCol = [0,  0, 1, 0, -1, 0]
         cnp.npy_intp nslices = delta_field.shape[0]
         cnp.npy_intp nrows = delta_field.shape[1]
         cnp.npy_intp ncols = delta_field.shape[2]
         int nn
-        double[:] g = np.ndarray(shape=(3,), dtype=np.float64)
-        double[:] b = np.ndarray(shape=(3,), dtype=np.float64)
-        double[:] d = np.ndarray(shape=(3,), dtype=np.float64)
-        double[:] y = np.ndarray(shape=(3,), dtype=np.float64)
-        double[:] A = np.ndarray(shape=(6,), dtype=np.float64)
+        double* g = [0, 0, 0]
+        double* b = [0, 0, 0]
+        double* d = [0, 0, 0]
+        double* y = [0, 0, 0]
+        double* A = [0, 0, 0, 0, 0, 0]
         double xx, yy, zz, opt, nrm2, delta, sigmasq, max_displacement
         cnp.npy_intp dr, ds, dc, s, r, c
     max_displacement = 0
@@ -518,11 +565,12 @@ def compute_residual_displacement_field_ssd_3d(
     ftype = np.asarray(delta_field).dtype
     cdef:
         int NUM_NEIGHBORS = 6
-        int[:] dSlice = np.array([-1,  0, 0, 0,  0, 1], dtype=np.int32)
-        int[:] dRow = np.array([0, -1, 0, 1,  0, 0], dtype=np.int32)
-        int[:] dCol = np.array([0,  0, 1, 0, -1, 0], dtype=np.int32)
-        double[:] b = np.ndarray(shape=(3,), dtype=np.float64)
-        double[:] y = np.ndarray(shape=(3,), dtype=np.float64)
+        int* dSlice = [-1,  0, 0, 0,  0, 1]
+        int* dRow = [0, -1, 0, 1,  0, 0]
+        int* dCol = [0,  0, 1, 0, -1, 0]
+        double* b = [0, 0, 0]
+        double* y = [0, 0, 0]
+        int yi
         cnp.npy_intp nslices = delta_field.shape[0]
         cnp.npy_intp nrows = delta_field.shape[1]
         cnp.npy_intp ncols = delta_field.shape[2]
@@ -546,7 +594,9 @@ def compute_residual_displacement_field_ssd_3d(
                         b[0] = target[s, r, c, 0]
                         b[1] = target[s, r, c, 1]
                         b[2] = target[s, r, c, 2]
-                    y[:] = 0
+                    y[0] = 0
+                    y[1] = 0
+                    y[2] = 0
                     for k in range(NUM_NEIGHBORS):
                         ds = s + dSlice[k]
                         if((ds < 0) or (ds >= nslices)):
@@ -630,10 +680,11 @@ cpdef compute_residual_displacement_field_ssd_2d(
     ftype = np.asarray(delta_field).dtype
     cdef:
         int NUM_NEIGHBORS = 4
-        int[:] dRow = np.array([-1, 0, 1,  0], dtype=np.int32)
-        int[:] dCol = np.array([0, 1, 0, -1], dtype=np.int32)
-        double[:] b = np.ndarray(shape=(2,), dtype=np.float64)
-        double[:] y = np.ndarray(shape=(2,), dtype=np.float64)
+        int* dRow = [-1, 0, 1,  0]
+        int* dCol = [0, 1, 0, -1]
+        double* b = [0, 0]
+        double* y = [0, 0]
+        int yi
         cnp.npy_intp nrows = delta_field.shape[0]
         cnp.npy_intp ncols = delta_field.shape[1]
         double delta, sigmasq, dotP
@@ -653,7 +704,8 @@ cpdef compute_residual_displacement_field_ssd_2d(
                 else:
                     b[0] = target[r, c, 0]
                     b[1] = target[r, c, 1]
-                y[:] = 0
+                y[0] = 0  # reset y
+                y[1] = 0
                 nn=0
                 for k in range(NUM_NEIGHBORS):
                     dr = r + dRow[k]
