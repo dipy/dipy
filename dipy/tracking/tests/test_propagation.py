@@ -119,5 +119,25 @@ def test_eudx_bad_seed():
     assert_raises(ValueError, list, eu)
 
 
+def test_eudx_boundaries():
+
+    fa = np.ones((50, 60, 40))
+    ind = np.zeros(fa.shape)
+    sphere = get_sphere('repulsion724')
+
+    seed = [49., 0, 0]
+    seed2 = [0., 0, 0]
+    seed3 = [48., 0, 0]
+    seed4 = [1., 0, 0]
+    seed5 = [5., 5, 5]
+
+    eu = EuDX(a=fa, ind=ind, seeds=[seed, seed2, seed3, seed4, seed5],
+              odf_vertices=sphere.vertices, a_low=.2,
+              total_weight=0.)
+    track = list(eu)
+
+    assert_equal(len(track), 3)
+
+
 if __name__ == '__main__':
     run_module_suite()

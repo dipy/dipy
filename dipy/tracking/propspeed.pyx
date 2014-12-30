@@ -400,7 +400,7 @@ def eudx_both_directions(cnp.ndarray[double,ndim=1] seed,\
             #check for boundaries
             tmp=ps[i]+step_sz*dx[i]
             #ftmp=floor(tmp+.5)
-            if ftmp > qa_shape[i]-1 or tmp < 0.:
+            if tmp > qa_shape[i]-1 or tmp < 0.:
                  d=0
                  break
             #propagate
