@@ -54,10 +54,11 @@ cdef void splitoffset(float *offset, size_t *index, size_t shape) nogil:
 def trilinear_interp(cnp.ndarray[cnp.float32_t, ndim=4, mode='strided'] data,
                      cnp.ndarray[cnp.float_t, ndim=1, mode='strided'] index,
                      cnp.ndarray[cnp.float_t, ndim=1, mode='c'] voxel_size):
-    """Interpolates data at index
+    """ Interpolates vector from 4D `data` at 3D point given by `index`
 
-    Interpolates data from a 4d volume, first 3 dimensions are x, y, z the
-    last dimension holds data.
+    Interpolates a vector of length T from a 4D volume of shape (I, J, K, T),
+    given point (x, y, z) where (x, y, z) are the coordinates of the point in
+    real units (not yet adjusted for voxel size).
     """
     cdef:
         float x = index[0] / voxel_size[0]
@@ -99,35 +100,50 @@ cdef float wght(int i, float r) nogil:
 
 @cython.boundscheck(False)
 @cython.wraparound(False)
-def remove_similar_vertices(cnp.ndarray[cnp.float_t, ndim=2, mode='strided'] vertices,
-                            double theta,
-                            bint return_mapping=False,
-                            bint return_index=False):
-    """remove_similar_vertices(vertices, theta)
+def remove_similar_vertices(
+    cnp.ndarray[cnp.float_t, ndim=2, mode='strided'] vertices,
+    double theta,
+    bint return_mapping=False,
+    bint return_index=False):
+    """ Remove vertices that are less than `theta` degrees from any other
 
-    Returns vertices that are separated by at least theta degrees from all
-    other vertices. Vertex v and -v are considered the same so if v and -v are
-    both in `vertices` only one is kept. Also if v and w are both in vertices,
-    w must be separated by theta degrees from both v and -v to be unique.
+    Returns vertices that are at least theta degrees from any other vertex.
+    Vertex v and -v are considered the same so if v and -v are both in
+    `vertices` only one is kept. Also if v and w are both in vertices, w must
+    be separated by theta degrees from both v and -v to be unique.
 
     Parameters
     ----------
     vertices : (N, 3) ndarray
-        N unit vectors
+        N unit vectors.
     theta : float
         The minimum separation between vertices in degrees.
+    return_mapping : {False, True}, optional
+        If True, return `mapping` as well as `vertices` and maybe `indices`
+        (see below).
+    return_indices : {False, True}, optional
+        If True, return `indices` as well as `vertices` and maybe `mapping`
+        (see below).
 
     Returns
     -------
     unique_vertices : (M, 3) ndarray
         Vertices sufficiently separated from one another.
     mapping : (N,) ndarray
-        Indices into unique_vertices. For each vertex in `vertices` the index
-        of a vertex in `unique_vertices` that is less than theta degrees away.
-
+        For each element ``vertices[i]`` ($i \in 0..N-1$), the index $j$ to a
+        vertex in `unique_vertices` that is less than `theta` degrees from
+        ``vertices[i]``.  Only returned if `return_mapping` is True.
+    indices : (N,) ndarray
+        `indices` gives the reverse of `mapping`.  For each element
+        ``unique_vertices[j]`` ($j \in 0..M-1$), the index $i$ to a vertex in
+        `vertices` that is less than `theta` degrees from
+        ``unique_vertices[j]``.  If there is more than one element of
+        `vertices` that is less than theta degrees from `unique_vertices[j]`,
+        return the first (lowest index) matching value.  Only return if
+        `return_indices` is True.
     """
     if vertices.shape[1] != 3:
-        raise ValueError()
+        raise ValueError('Vertices should be 2D with second dim length 3')
     cdef:
         cnp.ndarray[cnp.float_t, ndim=2, mode='c'] unique_vertices
         cnp.ndarray[cnp.uint16_t, ndim=1, mode='c'] mapping
@@ -187,9 +203,11 @@ def remove_similar_vertices(cnp.ndarray[cnp.float_t, ndim=2, mode='strided'] ver
 @cython.boundscheck(False)
 @cython.wraparound(False)
 def search_descending(cnp.ndarray[cnp.float_t, ndim=1, mode='c'] a,
-                       double relative_threshould):
-    """Searches a descending array for the first element smaller than some
-    threshold
+                      double relative_threshould):
+    """ `i` in descending array `a` so `a[i] < a[0] * relative_threshold`
+
+    Smallest index `i` in descending array `a` such that ``a[i] < a[0] *
+    relative_threshold``.
 
     Parameters
     ----------
@@ -222,12 +240,12 @@ def search_descending(cnp.ndarray[cnp.float_t, ndim=1, mode='c'] a,
             right = mid
     return left
 
+
 @cython.wraparound(False)
 @cython.boundscheck(False)
 @cython.profile(True)
 def local_maxima(cnp.ndarray odf, cnp.ndarray edges):
-    """local_maxima(odf, edges)
-    Finds the local maxima of a function evaluated on a discrete set of points.
+    """ Local maxima of a function evaluated on a discrete set of points.
 
     If a function is evaluated on some set of points where each pair of
     neighboring points is an edge in edges, find the local maxima.
@@ -252,8 +270,8 @@ def local_maxima(cnp.ndarray odf, cnp.ndarray edges):
     Note
     ----
     A point is a local maximum if it is > at least one neighbor and >= all
-    neighbors. If no points meets the above criteria, 1 maximum is returned
-    such that `odf[maximum] == max(odf)`.
+    neighbors. If no points meet the above criteria, 1 maximum is returned such
+    that `odf[maximum] == max(odf)`.
 
     See Also
     --------
@@ -278,7 +296,7 @@ def local_maxima(cnp.ndarray odf, cnp.ndarray edges):
 @cython.wraparound(False)
 @cython.boundscheck(False)
 cdef void _cosort(double[::1] A, cnp.npy_intp[::1] B) nogil:
-    """Sorts A inplace and applies the same reording to B"""
+    """ Sorts `A` in-place and applies the same reordering to `B`"""
     cdef:
         size_t n = A.shape[0]
         size_t hole
@@ -305,9 +323,9 @@ cdef long _compare_neighbors(double[:] odf, cnp.uint16_t[:, :] edges,
 
     Parameters
     ----------
-    odf :
+    odf : array of double
         values of points on sphere.
-    edges :
+    edges : array of uint16
         neighbor relationships on sphere. Every set of neighbors on the sphere
         should be an edge.
     wpeak_ptr : pointer
@@ -389,11 +407,11 @@ def le_to_odf(cnp.ndarray[double, ndim=1] odf, \
                  int odfn,\
                  int radiusn,\
                  int anglesn):
-    """ Expecting interpolated laplacian normalized signal and  then calculates the odf for that.
-    """    
-    cdef int m,i,j    
-    
-    with nogil:    
+    """ odf for interpolated laplacian normalized signal
+    """
+    cdef int m, i, j
+
+    with nogil:
         for m in range(odfn):
             for i in range(radiusn):
                 for j in range(anglesn):
@@ -401,21 +419,21 @@ def le_to_odf(cnp.ndarray[double, ndim=1] odf, \
 
     return
 
+
 @cython.boundscheck(False)
 @cython.wraparound(False)
 def sum_on_blocks_1d(cnp.ndarray[double, ndim=1] arr,\
     cnp.ndarray[long, ndim=1] blocks,\
     cnp.ndarray[double, ndim=1] out,int outn):
     """ Summations on blocks of 1d array
-    
     """
     cdef:
         int m,i,j
-        double sum    
-	
+        double sum
+
     with nogil:
         j=0
-        for m in range(outn):    		
+        for m in range(outn):
             sum=0
             for i in range(j,j+blocks[m]):
                 sum+=arr[i]
@@ -423,11 +441,12 @@ def sum_on_blocks_1d(cnp.ndarray[double, ndim=1] arr,\
             j+=blocks[m]
     return
 
+
 def argmax_from_adj(vals, vertex_inds, adj_inds):
     """ Indices of local maxima from `vals` given adjacent points
 
     Parameters
-    ------------
+    ----------
     vals : (N,) array, dtype np.float64
        values at all vertices referred to in either of `vertex_inds` or
        `adj_inds`'
@@ -438,7 +457,7 @@ def argmax_from_adj(vals, vertex_inds, adj_inds):
        the neighboring points
 
     Returns
-    ---------
+    -------
     inds : (M,) array
        Indices into `vals` giving local maxima of vals, given topology
        from `adj_inds`, and restrictions from `vertex_inds`.  Inds are
@@ -496,7 +515,7 @@ def argmax_from_countarrs(cnp.ndarray vals,
     """ Indices of local maxima from `vals` from count, array neighbors
 
     Parameters
-    ------------
+    ----------
     vals : (N,) array, dtype float
        values at all vertices referred to in either of `vertex_inds` or
        `adj_inds`'
@@ -509,7 +528,7 @@ def argmax_from_countarrs(cnp.ndarray vals,
        Indices for neighbors for each point.  ``P=sum(adj_counts)`` 
 
     Returns
-    ---------
+    -------
     inds : (M,) array
        Indices into `vals` giving local maxima of vals, given topology
        from `adj_counts` and `adj_inds`, and restrictions from
@@ -571,4 +590,3 @@ def argmax_from_countarrs(cnp.ndarray vals,
         return np.array([])
     # fancy indexing always produces a copy
     return maxinds[argsort(maxes[:n_maxes])]
-
