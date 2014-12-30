@@ -21,5 +21,5 @@ retry () {
 
 wheelhouse_pip_install() {
     # Install pip requirements via travis wheelhouse
-    retry pip install --no-index --find-links $WHEELHOUSE $@
+    retry pip install --timeout=60 --no-index --find-links $WHEELHOUSE $@
 }
