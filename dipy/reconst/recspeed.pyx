@@ -149,55 +149,57 @@ def remove_similar_vertices(
         cnp.ndarray[cnp.uint16_t, ndim=1, mode='c'] mapping
         cnp.ndarray[cnp.uint16_t, ndim=1, mode='c'] index
         char pass_all
-        size_t i, j
-        size_t count = 0
-        size_t n = vertices.shape[0]
+        # Variable has to be large enough for all valid sizes of vertices
+        cnp.npy_int32 i, j
+        cnp.npy_int32 n_unique = 0
+        # Large enough for all possible sizes of vertices
+        cnp.npy_intp n = vertices.shape[0]
         double a, b, c, sim
         double cos_similarity = cos(DPY_PI/180 * theta)
-    if n > 2**16:
+    if n >= 2**16:  # constrained by input data type
         raise ValueError("too many vertices")
     unique_vertices = np.empty((n, 3), dtype=np.float)
     if return_mapping:
         mapping = np.empty(n, dtype=np.uint16)
-    else:
-        mapping = None
     if return_index:
         index = np.empty(n, dtype=np.uint16)
-    else:
-        index = None
 
     for i in range(n):
         pass_all = 1
         a = vertices[i, 0]
         b = vertices[i, 1]
         c = vertices[i, 2]
-        for j in range(count):
+        # Check all other accepted vertices for similarity to this one
+        for j in range(n_unique):
             sim = fabs(a * unique_vertices[j, 0] +
                        b * unique_vertices[j, 1] +
                        c * unique_vertices[j, 2])
-            if sim > cos_similarity:
+            if sim > cos_similarity:  # too similar, drop
                 pass_all = 0
                 if return_mapping:
                     mapping[i] = j
+                # This point unique_vertices[j] already has an entry in index,
+                # so we do not need to update.
                 break
-        if pass_all:
-            unique_vertices[count, 0] = a
-            unique_vertices[count, 1] = b
-            unique_vertices[count, 2] = c
+        if pass_all:  # none similar, keep
+            unique_vertices[n_unique, 0] = a
+            unique_vertices[n_unique, 1] = b
+            unique_vertices[n_unique, 2] = c
             if return_mapping:
-                mapping[i] = count
+                mapping[i] = n_unique
             if return_index:
-                index[count] = i
-            count += 1
+                index[n_unique] = i
+            n_unique += 1
 
-    if return_mapping and return_index:
-        return unique_vertices[:count].copy(), mapping, index[:count].copy()
-    elif return_mapping:
-        return unique_vertices[:count].copy(), mapping
-    elif return_index:
-        return unique_vertices[:count].copy(), index[:count].copy()
-    else:
-        return unique_vertices[:count].copy()
+    verts = unique_vertices[:n_unique].copy()
+    if not return_mapping and not return_index:
+        return verts
+    out = [verts]
+    if return_mapping:
+        out.append(mapping)
+    if return_index:
+        out.append(index[:n_unique].copy())
+    return out
 
 
 @cython.boundscheck(False)
