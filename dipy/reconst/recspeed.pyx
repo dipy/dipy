@@ -205,7 +205,7 @@ def remove_similar_vertices(
 @cython.boundscheck(False)
 @cython.wraparound(False)
 def search_descending(cnp.ndarray[cnp.float_t, ndim=1, mode='c'] a,
-                      double relative_threshould):
+                      double relative_threshold):
     """ `i` in descending array `a` so `a[i] < a[0] * relative_threshold`
 
     Smallest index `i` in descending array `a` such that ``a[i] < a[0] *
@@ -223,16 +223,15 @@ def search_descending(cnp.ndarray[cnp.float_t, ndim=1, mode='c'] a,
     i : int
         The greatest index such that ``all(a[:i] >= relative_threshold *
         a[0])``.
-
     """
     if a.shape[0] == 0:
         return 0
 
     cdef:
-        size_t left = 0
-        size_t right = a.shape[0]
-        size_t mid
-        double threshold = relative_threshould * a[0]
+        cnp.npy_intp left = 0
+        cnp.npy_intp right = a.shape[0]
+        cnp.npy_intp mid
+        double threshold = relative_threshold * a[0]
 
     while left != right:
         mid = (left + right) // 2
