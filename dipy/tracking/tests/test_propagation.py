@@ -120,6 +120,14 @@ def test_eudx_bad_seed():
 
 
 def test_eudx_boundaries():
+    """
+    This test checks that the tracking will exclude seeds in both directions.
+    Here we create a volume of shape (50, 60, 40) and we will add 2 seeds
+    exactly at the volume's boundaries (49, 0, 0) and (0, 0, 0). Those should
+    not generate any streamlines as EuDX does not interpolate on the boundary
+    voxels. We also add 3 seeds not in the boundaries which should generate
+    streamlines without a problem.
+    """
 
     fa = np.ones((50, 60, 40))
     ind = np.zeros(fa.shape)
