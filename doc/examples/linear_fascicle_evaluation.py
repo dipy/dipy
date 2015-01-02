@@ -222,6 +222,7 @@ to zero. This produces the naive prediction of the mean of the signal in each
 voxel.
 
 """
+
 beta_baseline = np.zeros(fiber_fit.beta.shape[0])
 pred_weighted = np.reshape(opt.spdot(fiber_fit.life_matrix, beta_baseline),
                                      (fiber_fit.vox_coords.shape[0],
