@@ -64,7 +64,7 @@ Christopher Nguyen.
 * Spherical Harmonic Models
   * Opdt (Tristan-Vega et. al)
   * CSA odf (Aganj et. al)
-  * Analytical Q-ball (Descoteuax et. al)
+  * Analytical Q-ball (Descoteaux et. al)
   * Tuch's Q-ball (Tuch et. al)
 * Visualization of spherical functions
 * Peak finding in odfs
