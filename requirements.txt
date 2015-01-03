@@ -1,0 +1,4 @@
+numpy>=1.6
+scipy>=0.9
+cython>=0.18
+nibabel>=1.2
