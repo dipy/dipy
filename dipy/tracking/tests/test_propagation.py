@@ -119,5 +119,33 @@ def test_eudx_bad_seed():
     assert_raises(ValueError, list, eu)
 
 
+def test_eudx_boundaries():
+    """
+    This test checks that the tracking will exclude seeds in both directions.
+    Here we create a volume of shape (50, 60, 40) and we will add 2 seeds
+    exactly at the volume's boundaries (49, 0, 0) and (0, 0, 0). Those should
+    not generate any streamlines as EuDX does not interpolate on the boundary
+    voxels. We also add 3 seeds not in the boundaries which should generate
+    streamlines without a problem.
+    """
+
+    fa = np.ones((50, 60, 40))
+    ind = np.zeros(fa.shape)
+    sphere = get_sphere('repulsion724')
+
+    seed = [49., 0, 0]
+    seed2 = [0., 0, 0]
+    seed3 = [48., 0, 0]
+    seed4 = [1., 0, 0]
+    seed5 = [5., 5, 5]
+
+    eu = EuDX(a=fa, ind=ind, seeds=[seed, seed2, seed3, seed4, seed5],
+              odf_vertices=sphere.vertices, a_low=.2,
+              total_weight=0.)
+    track = list(eu)
+
+    assert_equal(len(track), 3)
+
+
 if __name__ == '__main__':
     run_module_suite()
