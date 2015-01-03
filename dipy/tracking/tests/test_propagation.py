@@ -86,7 +86,7 @@ def test_eudx_further():
                                         input_space=affine2)
     # Check that the tracks are the same
     for sl1, sl2 in zip(eu1, eu2_to_eu1):
-        assert_array_almost_equal(sl1, sl2)
+        assert_array_almost_equal(sl1, sl2, 4)
 
 
 def test_eudx_bad_seed():
