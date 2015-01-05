@@ -245,9 +245,9 @@ def plot_2d_diffeomorphic_map(mapping, delta=10, fname=None,
         plt.imshow(warped_backward, cmap=plt.cm.gray)
         plt.title('Inverse transform')
 
-    # Finally, save the figure to disk
-    if fname is not None:
-        plt.savefig(fname, bbox_inches='tight')
+        # Finally, save the figure to disk
+        if fname is not None:
+            plt.savefig(fname, bbox_inches='tight')
 
     # Return the deformed grids
     return warped_forward, warped_backward
