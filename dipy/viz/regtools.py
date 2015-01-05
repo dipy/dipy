@@ -204,7 +204,6 @@ def plot_2d_diffeomorphic_map(mapping, delta=10, fname=None,
         world_to_image = np.linalg.inv(inverse_grid_affine)
 
     # Draw the squares on the output grid
-    X1, X0 = np.mgrid[0:inverse_grid_shape[0], 0:inverse_grid_shape[1]]
     lattice_out = draw_lattice_2d(
         (inverse_grid_shape[0] + delta) / (delta + 1),
         (inverse_grid_shape[1] + delta) / (delta + 1),
@@ -222,7 +221,6 @@ def plot_2d_diffeomorphic_map(mapping, delta=10, fname=None,
         world_to_image = np.linalg.inv(direct_grid_affine)
 
     # Draw the squares on the input grid
-    X1, X0 = np.mgrid[0:direct_grid_shape[0], 0:direct_grid_shape[1]]
     lattice_in = draw_lattice_2d((direct_grid_shape[0] + delta) / (delta + 1),
                                  (direct_grid_shape[1] + delta) / (delta + 1),
                                  delta)
