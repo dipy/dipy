@@ -801,12 +801,14 @@ class DiffeomorphicMap(object):
         See _warp_forward and _warp_backward documentation for further
         information.
         """
+        if sampling_shape is not None:
+            sampling_shape = np.asarray(sampling_shape, dtype=np.int32)
         if self.is_inverse:
             warped = self._warp_backward(image, interpolation, world_to_image,
-                                       sampling_shape, sampling_affine)
+                                         sampling_shape, sampling_affine)
         else:
             warped = self._warp_forward(image, interpolation, world_to_image,
-                                       sampling_shape, sampling_affine)
+                                        sampling_shape, sampling_affine)
         return np.asarray(warped)
 
     def transform_inverse(self, image, interpolation='linear', world_to_image=None,
