@@ -25,13 +25,6 @@ DEF PEAK_NO=5
 # initialize numpy runtime
 cnp.import_array()
 
-#numpy pointers
-cdef inline float* asfp(cnp.ndarray pt):
-    return <float *>pt.data
-
-cdef inline double* asdp(cnp.ndarray pt):
-    return <double *>pt.data
-
 @cython.cdivision(True)
 cdef cnp.npy_intp offset(cnp.npy_intp *indices,
                          cnp.npy_intp *strides,
