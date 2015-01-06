@@ -611,7 +611,6 @@ class DiffeomorphicMap(object):
         space we need to bring via interpolation). So, S is the matrix that
         converts the sampling grid (whose shape is given as parameter
         'sampling_shape' ) to space coordinates.
-
         """
         #if no world-to-image transform is provided, we use the codomain info
         if world_to_image is None:
@@ -619,8 +618,11 @@ class DiffeomorphicMap(object):
         #if no sampling info is provided, we use the domain info
         if sampling_shape is None:
             if self.domain_shape is None:
-                raise ValueError('Unable to infer sampling info. Provide a valid sampling_shape.')
+                raise ValueError('Unable to infer sampling info. '
+                                 'Provide a valid sampling_shape.')
             sampling_shape = self.domain_shape
+        else:
+            sampling_shape = np.asarray(sampling_shape, dtype=np.int32)
         if sampling_affine is None:
             sampling_affine = self.domain_affine
 
@@ -801,12 +803,14 @@ class DiffeomorphicMap(object):
         See _warp_forward and _warp_backward documentation for further
         information.
         """
+        if sampling_shape is not None:
+            sampling_shape = np.asarray(sampling_shape, dtype=np.int32)
         if self.is_inverse:
             warped = self._warp_backward(image, interpolation, world_to_image,
-                                       sampling_shape, sampling_affine)
+                                         sampling_shape, sampling_affine)
         else:
             warped = self._warp_forward(image, interpolation, world_to_image,
-                                       sampling_shape, sampling_affine)
+                                        sampling_shape, sampling_affine)
         return np.asarray(warped)
 
     def transform_inverse(self, image, interpolation='linear', world_to_image=None,
