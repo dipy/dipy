@@ -100,12 +100,11 @@ def ndarray_offset(cnp.ndarray[cnp.npy_intp, ndim=1] indices,
 
 @cython.boundscheck(False)
 @cython.wraparound(False)
-def map_coordinates_trilinear_iso(
-    cnp.ndarray[double, ndim=3] data,
-    cnp.ndarray[double, ndim=2] points,
-    cnp.ndarray[cnp.npy_intp, ndim=1] data_strides,
-    cnp.npy_intp len_points,
-    cnp.ndarray[double, ndim=1] result):
+def map_coordinates_trilinear_iso(cnp.ndarray[double, ndim=3] data,
+                                  cnp.ndarray[double, ndim=2] points,
+                                  cnp.ndarray[cnp.npy_intp, ndim=1] data_strides,
+                                  cnp.npy_intp len_points,
+                                  cnp.ndarray[double, ndim=1] result):
     ''' Trilinear interpolation (isotropic voxel size)
 
     Has similar behavior to ``map_coordinates`` from ``scipy.ndimage``
@@ -149,10 +148,9 @@ def map_coordinates_trilinear_iso(
         raise ValueError(u"result is not C contiguous")
     with nogil:
         for i in range(len_points):
-            _trilinear_interpolation_iso(
-                &ps[i * 3],
-                <double *> w,
-                <cnp.npy_intp *> index)
+            _trilinear_interpolation_iso(&ps[i * 3],
+                                         <double *> w,
+                                         <cnp.npy_intp *> index)
             rs[i] = 0
             for j in range(8):
                 weight = w[j]
@@ -162,10 +160,9 @@ def map_coordinates_trilinear_iso(
     return
 
 
-cdef void _trilinear_interpolation_iso(
-    double *X,
-    double *W,
-    cnp.npy_intp *IN) nogil:
+cdef void _trilinear_interpolation_iso(double *X,
+                                       double *W,
+                                       cnp.npy_intp *IN) nogil:
     ''' Interpolate in 3d volumes given point X
 
     Returns
@@ -208,14 +205,13 @@ cdef void _trilinear_interpolation_iso(
     return
 
 
-cdef cnp.npy_intp _nearest_direction(
-    double* dx,
-    double* qa,
-    double *ind,
-    cnp.npy_intp peaks,
-    double *odf_vertices,
-    double qa_thr, double ang_thr,
-    double *direction) nogil:
+cdef cnp.npy_intp _nearest_direction(double* dx,
+                                     double* qa,
+                                     double *ind,
+                                     cnp.npy_intp peaks,
+                                     double *odf_vertices,
+                                     double qa_thr, double ang_thr,
+                                     double *direction) nogil:
     ''' Give the nearest direction to a point, checking threshold and angle
 
     Parameters
@@ -292,21 +288,20 @@ cdef cnp.npy_intp _nearest_direction(
 
 
 @cython.cdivision(True)
-cdef cnp.npy_intp _propagation_direction(
-    double *point,
-    double* dx,
-    double* qa,
-    double *ind,
-    double *odf_vertices,
-    double qa_thr,
-    double ang_thr,
-    cnp.npy_intp *qa_shape,
-    cnp.npy_intp* strides,
-    double *direction,
-    double total_weight) nogil:
+cdef cnp.npy_intp _propagation_direction(double *point,
+                                         double* dx,
+                                         double* qa,
+                                         double *ind,
+                                         double *odf_vertices,
+                                         double qa_thr,
+                                         double ang_thr,
+                                         cnp.npy_intp *qa_shape,
+                                         cnp.npy_intp* strides,
+                                         double *direction,
+                                         double total_weight) nogil:
     cdef:
-        double total_w=0 # total weighting useful for interpolation
-        double delta=0 # store delta function (stopping function) result
+        double total_w = 0 # total weighting useful for interpolation
+        double delta = 0 # store delta function (stopping function) result
         double new_direction[3] # new propagation direction
         double w[8], qa_tmp[PEAK_NO], ind_tmp[PEAK_NO]
         cnp.npy_intp index[24], xyz[4]
