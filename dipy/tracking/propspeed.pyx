@@ -88,11 +88,14 @@ def ndarray_offset(cnp.ndarray[cnp.npy_intp, ndim=1] indices,
     >>> A.ravel()[4]==A[1,1]
     True
     '''
-    return offset(
-        <cnp.npy_intp*> indices.data,
-        <cnp.npy_intp*> strides.data,
-        lenind,
-        typesize)
+    if not cnp.PyArray_CHKFLAGS(indices, cnp.NPY_C_CONTIGUOUS):
+        raise ValueError(u"indices is not C contiguous")
+    if not cnp.PyArray_CHKFLAGS(strides, cnp.NPY_C_CONTIGUOUS):
+        raise ValueError(u"strides is not C contiguous")
+    return offset(<cnp.npy_intp*> cnp.PyArray_DATA(indices),
+                  <cnp.npy_intp*> cnp.PyArray_DATA(strides),
+                  lenind,
+                  typesize)
 
 
 @cython.boundscheck(False)
@@ -111,7 +114,7 @@ def map_coordinates_trilinear_iso(
     ----------
     data : array, float64 shape (X, Y, Z)
     points : array, float64 shape(N, 3)
-    strides : array npy_intp shape (3,)
+    data_strides : array npy_intp shape (3,)
         Strides sequence for `data` array
     len_points : cnp.npy_intp
         Number of points to interpolate
@@ -131,11 +134,19 @@ def map_coordinates_trilinear_iso(
     cdef:
         double w[8], values[24]
         cnp.npy_intp index[24], off, i, j
-        double *ds=<double *> data.data
-        double *ps=<double *> points.data
-        double *rs=<double *> result.data
-        cnp.npy_intp *strides = <cnp.npy_intp *> data_strides.data
+        double *ds=<double *> cnp.PyArray_DATA(data)
+        double *ps=<double *> cnp.PyArray_DATA(points)
+        cnp.npy_intp *strides = <cnp.npy_intp *> cnp.PyArray_DATA(data_strides)
+        double *rs=<double *> cnp.PyArray_DATA(result)
 
+    if not cnp.PyArray_CHKFLAGS(data, cnp.NPY_C_CONTIGUOUS):
+        raise ValueError(u"data is not C contiguous")
+    if not cnp.PyArray_CHKFLAGS(points, cnp.NPY_C_CONTIGUOUS):
+        raise ValueError(u"points is not C contiguous")
+    if not cnp.PyArray_CHKFLAGS(data_strides, cnp.NPY_C_CONTIGUOUS):
+        raise ValueError(u"data_strides is not C contiguous")
+    if not cnp.PyArray_CHKFLAGS(result, cnp.NPY_C_CONTIGUOUS):
+        raise ValueError(u"result is not C contiguous")
     with nogil:
         for i in range(len_points):
             _trilinear_interpolation_iso(
@@ -403,25 +414,41 @@ def eudx_both_directions(cnp.ndarray[double, ndim=1] seed,
         Index of peak to follow first.
     qa : array, float64 shape (X, Y, Z, Np)
         Anisotropy matrix, where ``Np`` is the number of maximum allowed peaks.
-    ind : array, float64 shape (Np,)
+    ind : array, float64 shape(x, y, z, Np)
         Index of the track orientation.
+    odf_vertices : double array shape (N, 3)
+        Sampling directions on the sphere.
+    qa_thr : float
+        Threshold for QA, we want everything higher than this threshold.
+    ang_thr : float
+        Angle theshold, we only select fiber orientation within this range.
+    step_sz : double
     total_weight : double
+    max_points : cnp.npy_intp
 
     Returns
     -------
     track : array, shape (N,3)
     '''
     cdef:
-        double *ps = <double *> seed.data
-        double *pqa = <double*> qa.data
-        double *pin = <double*> ind.data
-        double *pverts = <double*> odf_vertices.data
+        double *ps = <double *> cnp.PyArray_DATA(seed)
+        double *pqa = <double*> cnp.PyArray_DATA(qa)
+        double *pin = <double*> cnp.PyArray_DATA(ind)
+        double *pverts = <double*> cnp.PyArray_DATA(odf_vertices)
         cnp.npy_intp *pstr = <cnp.npy_intp *> qa.strides
         cnp.npy_intp *qa_shape = <cnp.npy_intp *> qa.shape
         cnp.npy_intp *pvstr = <cnp.npy_intp *> odf_vertices.strides
         cnp.npy_intp d, i, j, cnt
         double direction[3], dx[3], idirection[3], ps2[3]
-        double tmp,ftmp
+        double tmp, ftmp
+    if not cnp.PyArray_CHKFLAGS(seed, cnp.NPY_C_CONTIGUOUS):
+        raise ValueError(u"seed is not C contiguous")
+    if not cnp.PyArray_CHKFLAGS(qa, cnp.NPY_C_CONTIGUOUS):
+        raise ValueError(u"qa is not C contiguous")
+    if not cnp.PyArray_CHKFLAGS(ind, cnp.NPY_C_CONTIGUOUS):
+        raise ValueError(u"ind is not C contiguous")
+    if not cnp.PyArray_CHKFLAGS(odf_vertices, cnp.NPY_C_CONTIGUOUS):
+        raise ValueError(u"odf_vertices is not C contiguous")
 
     cnt = 0
     d = _initial_direction(ps, pqa, pin, pverts, qa_thr, pstr, ref, idirection)
