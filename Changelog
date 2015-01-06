@@ -33,7 +33,7 @@ The code found in Dipy was created by the people found in the AUTHOR file.
 * Sparse Fascicle Model (SFM)
 * New modular tracking machinery
 * Closed 388 issues and merged 155 pull requests
-* A variaty of bug-fixes and speed improvements
+* A variety of bug-fixes and speed improvements
 
 * 0.7.1 (Thursday, 16 Jan 2014)
 
