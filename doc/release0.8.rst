@@ -27,12 +27,28 @@ The following 19 authors contributed 1176 commits.
 * Stefan van der Walt
 
 
-We closed a total of 347 issues, 139 pull requests and 208 regular issues;
+We closed a total of 388 issues, 155 pull requests and 233 regular issues;
 this is the full list (generated with the script 
 :file:`tools/github_stats.py`):
 
-Pull Requests (139):
+Pull Requests (155):
 
+* :ghpull:`544`: Refactor propspeed - updated
+* :ghpull:`543`: MRG: update to plot_2d fixes and tests
+* :ghpull:`537`: NF: add requirements.txt file
+* :ghpull:`534`: BF: removed ftmp variable
+* :ghpull:`536`: Update Changelog
+* :ghpull:`535`: Happy New Year PR!
+* :ghpull:`531`: BF: extend pip timeout to reduce install failures
+* :ghpull:`527`: Remove npymath library from cython extensions
+* :ghpull:`528`: MRG: move conditional compiling to C
+* :ghpull:`530`: BF: work round ugly MSVC manifest bug
+* :ghpull:`529`: MRG: a couple of small cleanup fixes
+* :ghpull:`526`: Readme.rst and info.py update about the license
+* :ghpull:`525`: Added shore gpl warning in the readme
+* :ghpull:`524`: Replaced DiPy with DIPY in readme.rst and info.py
+* :ghpull:`523`: RF: copy includes list for extensions
+* :ghpull:`522`: DOC: Web-site release notes, and some updates on front page.
 * :ghpull:`521`: Life bots
 * :ghpull:`520`: Relaxing precision for win32
 * :ghpull:`519`: Christmas PR! Correcting typos, linking and language for max odf tracking
@@ -173,8 +189,33 @@ Pull Requests (139):
 * :ghpull:`298`: TST - rework tests so that we do not need to download any data
 * :ghpull:`290`: DOC: Started generating 0.7 release notes.
 
-Issues (208):
+Issues (233):
 
+* :ghissue:`544`: Refactor propspeed - updated
+* :ghissue:`540`: MRG: refactor propspeed
+* :ghissue:`542`: TST: Testing regtools
+* :ghissue:`543`: MRG: update to plot_2d fixes and tests
+* :ghissue:`541`: BUG:   plot_2d_diffeomorphic_map
+* :ghissue:`439`: ValueError in RESTORE
+* :ghissue:`538`: WIP: TEST: relaxed precision
+* :ghissue:`449`: local variable 'ftmp' referenced before assignment
+* :ghissue:`537`: NF: add requirements.txt file
+* :ghissue:`534`: BF: removed ftmp variable
+* :ghissue:`536`: Update Changelog
+* :ghissue:`535`: Happy New Year PR!
+* :ghissue:`512`: reconst.dti.eig_from_lo_tri
+* :ghissue:`467`: Optimize failure on Windows
+* :ghissue:`464`: Diffeomorphic registration test failures on PPC
+* :ghissue:`531`: BF: extend pip timeout to reduce install failures
+* :ghissue:`527`: Remove npymath library from cython extensions
+* :ghissue:`528`: MRG: move conditional compiling to C
+* :ghissue:`530`: BF: work round ugly MSVC manifest bug
+* :ghissue:`529`: MRG: a couple of small cleanup fixes
+* :ghissue:`526`: Readme.rst and info.py update about the license
+* :ghissue:`525`: Added shore gpl warning in the readme
+* :ghissue:`524`: Replaced DiPy with DIPY in readme.rst and info.py
+* :ghissue:`523`: RF: copy includes list for extensions
+* :ghissue:`522`: DOC: Web-site release notes, and some updates on front page.
 * :ghissue:`521`: Life bots
 * :ghissue:`520`: Relaxing precision for win32
 * :ghissue:`519`: Christmas PR! Correcting typos, linking and language for max odf tracking
