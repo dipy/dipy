@@ -58,7 +58,7 @@ def ndarray_offset(cnp.ndarray[cnp.npy_intp, ndim=1] indices,
                    cnp.ndarray[cnp.npy_intp, ndim=1] strides,
                    int lenind,
                    int typesize):
-    ''' Find offset in an ndarray using strides
+    ''' Find offset in an N-dimensional ndarray using strides
 
     Parameters
     ----------
@@ -74,7 +74,7 @@ def ndarray_offset(cnp.ndarray[cnp.npy_intp, ndim=1] indices,
     Returns
     -------
     offset : integer
-        Element position in array
+        Index position in flattened array
 
     Examples
     --------
@@ -213,10 +213,10 @@ cdef cnp.npy_intp _nearest_direction(
         Moving direction of the current tracking.
     qa : double array shape (Np,)
         Quantitative anisotropy matrix, where ``Np`` is the number of peaks.
-    ind : double array shape (Np,)
+    ind : array, float64 shape(x, y, z, Np)
         Index of the track orientation.
     peaks : npy_intp
-    odf_vertices : dobule array shape (N,3)
+    odf_vertices : double array shape (N, 3)
         Sampling directions on the sphere.
     qa_thr : float
         Threshold for QA, we want everything higher than this threshold.
@@ -392,7 +392,8 @@ def eudx_both_directions(cnp.ndarray[double, ndim=1] seed,
                          double qa_thr,
                          double ang_thr,
                          double step_sz,
-                         double total_weight,cnp.npy_intp max_points):
+                         double total_weight,
+                         cnp.npy_intp max_points):
     '''
     Parameters
     ------------
