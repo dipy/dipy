@@ -23,6 +23,7 @@ from numpy.testing import (assert_array_equal,
 
 
 def stepped_1d(arr_1d):
+    # Make a version of `arr_1d` which is not contiguous
     return np.vstack((arr_1d, arr_1d)).ravel(order='F')[::2]
 
 
@@ -35,7 +36,8 @@ def test_offset():
         i_size = A.dtype.itemsize
         assert_equal(ndarray_offset(index, strides, 2, i_size), 4)
         assert_equal(A.ravel()[4], A[1,1])
-        # Index and strides arrays must be continuous
+        # Index and strides arrays must be C-continuous. Test this is enforced
+        # by using non-contiguous versions of the input arrays.
         assert_raises(ValueError, ndarray_offset,
                       stepped_1d(index), strides, 2, i_size)
         assert_raises(ValueError, ndarray_offset,
@@ -50,14 +52,16 @@ def test_trilinear_interp_cubic_voxels():
     points=np.array([[0,0,0],[7.,7.5,7.],[3.5,3.5,3.5]])
     map_coordinates_trilinear_iso(A,points,strides,3,B)
     assert_array_almost_equal(B,np.array([ 1. ,  1.5,  1. ]))
+    # All of the input array, points array, strides array and output array must
+    # be C-contiguous.  Check by passing in versions that aren't C contiguous
     assert_raises(ValueError, map_coordinates_trilinear_iso,
                   A.copy(order='F'), points, strides, 3, B)
     assert_raises(ValueError, map_coordinates_trilinear_iso,
                   A, points.copy(order='F'), strides, 3, B)
     assert_raises(ValueError, map_coordinates_trilinear_iso,
-                  A, points, strides, 3, np.zeros(6)[::2])
-    assert_raises(ValueError, map_coordinates_trilinear_iso,
                   A, points, stepped_1d(strides), 3, B)
+    assert_raises(ValueError, map_coordinates_trilinear_iso,
+                  A, points, strides, 3, stepped_1d(B))
 
 
 def test_eudx_further():
@@ -181,6 +185,8 @@ def test_eudx_both_directions_errors():
     seed = np.zeros(3, np.float64)
     qa = np.zeros((4, 5, 6, 7), np.float64)
     ind = qa.copy()
+    # All of seed, qa, ind, odf_vertices must be C-contiguous.  Check by
+    # passing in versions that aren't C contiguous
     assert_raises(ValueError, eudx_both_directions,
                   stepped_1d(seed), 0, qa, ind, sphere.vertices, 0.5, 0.1,
                   1., 1., 2)
