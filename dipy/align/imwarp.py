@@ -621,6 +621,8 @@ class DiffeomorphicMap(object):
                 raise ValueError('Unable to infer sampling info. '
                                  'Provide a valid sampling_shape.')
             sampling_shape = self.domain_shape
+        else:
+            sampling_shape = np.asarray(sampling_shape, dtype=np.int32)
         if sampling_affine is None:
             sampling_affine = self.domain_affine
 
