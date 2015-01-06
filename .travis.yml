@@ -45,6 +45,8 @@ script:
     # Change into an innocuous directory and find tests from installation
     - mkdir for_testing
     - cd for_testing
+    # No figure windows for mpl; quote to hide : from travis-ci yaml parsing
+    - 'echo "backend : agg" > matplotlibrc'
     - if [ "${COVERAGE}" == "1" ]; then
       cp ../.coveragerc .;
       COVER_ARGS="--with-coverage --cover-package dipy";
