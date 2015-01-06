@@ -22,8 +22,18 @@ Releases
 Dipy
 ++++
 
-The code found in Dipy was created by the following people: Eleftherios Garyfallidis, Matthew Brett, Bago Amirbekian, Ian Nimmo-Smith, Ariel Rokem, Stefan van der Walt, Maxime Descoteaux, Yaroslav Halchenko, Emanuele Olivetti, Michael Paquette, Samuel St-Jean, Endolith, Maria Luisa Mandelli, Mauro Zucchelli, Gabriel Girard, Matthieu Dumont, Kimberly Chan, Erik Ziegler, Emmanuel Caruyer, Matthias Ekman, Jean-Christophe Houde, Sylvain Merlet and
-Christopher Nguyen.
+The code found in Dipy was created by the people found in the AUTHOR file.
+
+* 0.8.0 (Tuesday, 6 Jan 2015)
+
+* Nonlinear Image-based Registration (SyN)
+* Streamline-based Linear Registration (SLR)
+* Linear Fascicle Evaluation (LiFE)
+* Cross-validation for reconstruction models
+* Sparse Fascicle Model (SFM)
+* New modular tracking machinery
+* Closed 388 issues and merged 155 pull requests
+* A variaty of bug-fixes and speed improvements
 
 * 0.7.1 (Thursday, 16 Jan 2014)
 
