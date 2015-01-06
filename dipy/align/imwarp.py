@@ -611,7 +611,6 @@ class DiffeomorphicMap(object):
         space we need to bring via interpolation). So, S is the matrix that
         converts the sampling grid (whose shape is given as parameter
         'sampling_shape' ) to space coordinates.
-
         """
         #if no world-to-image transform is provided, we use the codomain info
         if world_to_image is None:
@@ -619,7 +618,8 @@ class DiffeomorphicMap(object):
         #if no sampling info is provided, we use the domain info
         if sampling_shape is None:
             if self.domain_shape is None:
-                raise ValueError('Unable to infer sampling info. Provide a valid sampling_shape.')
+                raise ValueError('Unable to infer sampling info. '
+                                 'Provide a valid sampling_shape.')
             sampling_shape = self.domain_shape
         if sampling_affine is None:
             sampling_affine = self.domain_affine
