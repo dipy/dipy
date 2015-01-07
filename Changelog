@@ -31,6 +31,7 @@ The code found in Dipy was created by the people found in the AUTHOR file.
 * Linear Fascicle Evaluation (LiFE)
 * Cross-validation for reconstruction models
 * Sparse Fascicle Model (SFM)
+* Non-local means denoising (NLMEANS)
 * New modular tracking machinery
 * Closed 388 issues and merged 155 pull requests
 * A variety of bug-fixes and speed improvements
