@@ -1,6 +1,3 @@
-# distutils: language = c
-# cython: wraparound=False, cdivision=True, boundscheck=False
-
 from cythonutils cimport Data2D, Shape
 from featurespeed cimport Feature
 

@@ -1,6 +1,3 @@
-# distutils: language = c
-# cython: wraparound=False, cdivision=True, boundscheck=False
-
 from cythonutils cimport Data2D, Shape
 
 
@@ -19,8 +16,4 @@ cdef class CythonFeature(Feature):
 
 
 cdef class IdentityFeature(CythonFeature):
-    pass
-
-
-cdef class ArcLengthFeature(CythonFeature):
     pass

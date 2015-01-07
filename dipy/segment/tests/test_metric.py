@@ -28,40 +28,6 @@ s3 = np.array([np.arange(5, dtype=dtype)]*4)  # 5x4
 s4 = np.array([np.arange(5, dtype=dtype)]*3)  # 5x3
 
 
-def test_metric_pointwise_euclidean():
-    metric_classes = [dipymetric.SumPointwiseEuclideanMetric,
-                      dipymetric.AveragePointwiseEuclideanMetric,
-                      dipymetric.MinimumPointwiseEuclideanMetric,
-                      dipymetric.MaximumPointwiseEuclideanMetric]
-
-    reducers = [np.sum, np.mean, np.min, np.max]
-
-    for metric_class, reducer in zip(metric_classes, reducers):
-        for feature_class in [dipymetric.IdentityFeature, dipymetric.CenterOfMassFeature, dipymetric.MidpointFeature]:
-            print "Testing {0} with {1}".format(metric_class.__name__, feature_class.__name__)
-            metric = metric_class(feature_class())
-
-            features1 = metric.feature.extract(s1)
-            dist = metric.dist(features1, features1)
-            assert_equal(dist, 0.0)
-
-            features2 = metric.feature.extract(s2)
-            assert_almost_equal(metric.dist(features1, features2), reducer(norm_L2(features1-features2)))
-            assert_almost_equal(dipymetric.dist(metric, s1, s2), reducer(norm_L2(features1-features2)))
-
-            # Features 1 and 3 do not have the same number of dimensions
-            features3 = metric.feature.extract(s3)
-            if not metric.compatible(features1.shape, features3.shape):
-                assert_raises(ValueError, metric.dist, features1, features3)
-                assert_raises(ValueError, dipymetric.dist, metric, s1, s3)
-
-            # Features 1 and 4 do not have the same number of points
-            features4 = metric.feature.extract(s4)
-            if not metric.compatible(features1.shape, features4.shape):
-                assert_raises(ValueError, metric.dist, features1, features4)
-                assert_raises(ValueError, dipymetric.dist, metric, s1, s4)
-
-
 def test_metric_minimum_average_direct_flip():
     metric = dipymetric.MinimumAverageDirectFlipMetric()
 
@@ -97,66 +63,6 @@ def test_metric_minimum_average_direct_flip():
     assert_false(metric.compatible(features1.shape, features4.shape))
     assert_raises(ValueError, metric.dist, features1, features4)
     assert_raises(ValueError, dipymetric.dist, metric, s1, s4)
-
-
-def test_metric_hausdorff():
-    metric = dipymetric.HausdorffMetric()
-
-    assert_equal(metric.feature.infer_shape(s1), s1.shape)
-
-    features = metric.feature.extract(s1)
-    assert_equal(features.shape, s1.shape)
-    assert_array_equal(features, s1)
-
-    # Test dist()
-    features1 = metric.feature.extract(s1)
-    assert_true(metric.compatible(features1.shape, features1.shape))
-    dist = metric.dist(features1, features1)
-    assert_equal(dist, 0.0)
-
-    # Features 1 and 2 do have the same number of points and dimensions
-    featuresA = np.array([[-1, -1], [0, 0], [1, 1]]).astype(dtype)
-    featuresB = np.array([[-1, 1], [0, 0], [1, -1]]).astype(dtype)
-    assert_true(metric.compatible(featuresA.shape, featuresB.shape))
-    dist = metric.dist(featuresA, featuresB)
-    assert_equal(dist, np.sqrt(2))
-
-    # Features 1 and 2 do have the same number of points and dimensions
-    featuresA = np.array([[-1, -1], [0, 0]]).astype(dtype)
-    featuresB = np.array([[-1, 1], [0, 0], [1, -1]]).astype(dtype)
-    assert_true(metric.compatible(featuresA.shape, featuresB.shape))
-    dist = metric.dist(featuresA, featuresB)
-    assert_equal(dist, np.sqrt(2))
-
-
-def test_subclassing_feature():
-    class EmptyFeature(dipymetric.Feature):
-        pass
-
-    feature = EmptyFeature()
-    assert_raises(NotImplementedError, feature.infer_shape, None)
-    assert_raises(NotImplementedError, feature.extract, None)
-
-    class CenterOfMass(dipymetric.Feature):
-        def infer_shape(self, streamline):
-            return (1, streamline.shape[1])
-
-        def extract(self, streamline):
-            return np.mean(streamline, axis=0, keepdims=True)
-
-    feature = CenterOfMass()
-    assert_equal(feature.infer_shape(s1), np.mean(s1, axis=0, keepdims=True).shape)
-    assert_array_equal(feature.extract(s1), np.mean(s1, axis=0, keepdims=True))
-
-    # # Test that features are automatically cast into float32 when coming from Python space
-    # class CenterOfMass64bit(dipymetric.Feature):
-    #     def infer_shape(self, streamline):
-    #         return (1, streamline.shape[1])
-
-    #     def extract(self, streamline):
-    #         return np.mean(streamline.astype(np.float64), axis=0, keepdims=True)
-
-    # assert_equal(CenterOfMass64bit().extract(s1).dtype, np.float32)
 
 
 def test_subclassing_metric():

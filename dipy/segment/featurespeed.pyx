@@ -4,8 +4,6 @@
 import numpy as np
 cimport numpy as np
 
-from libc.math cimport sqrt
-
 from cythonutils cimport tuple2shape, shape2tuple, shape_from_memview
 
 
@@ -178,97 +176,36 @@ cdef class IdentityFeature(CythonFeature):
                 out[n, d] = datum[n, d]
 
 
-cdef class CenterOfMassFeature(CythonFeature):
-    """ Provides functionalities to extract features from a sequence of
-    N-dimensional points represented as 2D array of shape (points, coordinates).
+cpdef infer_shape(Feature feature, streamlines):
+    only_one_streamlines = False
+    if type(streamlines) is np.ndarray:
+        only_one_streamlines = True
+        streamlines = [streamlines]
 
-    The feature being extracted consists in one N-dimensional point representing
-    the mean of the points.
-    """
-    def __init__(CenterOfMassFeature self):
-        super(CenterOfMassFeature, self).__init__(is_order_invariant=True)
+    if len(streamlines) == 0:
+        return []
 
-    cdef Shape c_infer_shape(CenterOfMassFeature self, Data2D datum) nogil:
-        cdef Shape shape
-        shape.ndim = 2
-        shape.dims[0] = 1
-        shape.dims[1] = datum.shape[1]
-        shape.size = datum.shape[1]
-        return shape
+    cdef int i
+    all_same_shapes = True
+    shapes = [shape2tuple(feature.c_infer_shape(streamlines[0]))]
+    for i in range(1, len(streamlines)):
+        shapes.append(shape2tuple(feature.c_infer_shape(streamlines[i])))
+        if shapes[0] != shapes[i]:
+            all_same_shapes = False
 
-    cdef void c_extract(CenterOfMassFeature self, Data2D datum, Data2D out) nogil:
-        cdef int N = datum.shape[0], D = datum.shape[1]
-        cdef int i, d
+    if all_same_shapes:
+        features = np.empty((len(shapes),) + shapes[0], dtype=np.float32)
+    else:
+        features = [np.empty(shape, dtype=np.float32) for shape in shapes]
 
-        for d in range(D):
-            out[0, d] = 0
+    for i in range(len(streamlines)):
+        streamline = streamlines[i] if streamlines[i].flags.writeable else streamlines[i].astype(np.float32)
+        feature.c_extract(streamline, features[i])
 
-        for i in range(N):
-            for d in range(D):
-                out[0, d] += datum[i, d]
-
-        for d in range(D):
-            out[0, d] /= N
-
-
-cdef class MidpointFeature(CythonFeature):
-    """ Provides functionalities to extract features from a sequence of
-    N-dimensional points represented as 2D array of shape (points, coordinates).
-
-    The feature being extracted consist in one N-dimensional point representing
-    the sequence's middle point.
-    """
-    def __init__(MidpointFeature self):
-        super(MidpointFeature, self).__init__(is_order_invariant=False)
-
-    cdef Shape c_infer_shape(MidpointFeature self, Data2D datum) nogil:
-        cdef Shape shape = shape_from_memview(datum)
-        shape.size /= shape.dims[0]
-        shape.dims[0] = 1  # Features boil down to only one point.
-        return shape
-
-    cdef void c_extract(MidpointFeature self, Data2D datum, Data2D out) nogil:
-        cdef:
-            int N = datum.shape[0], D = datum.shape[1]
-            int mid = N/2
-            int d
-
-        for d in range(D):
-            out[0, d] = datum[mid, d]
-
-
-cdef class ArcLengthFeature(CythonFeature):
-    """ Provides functionalities to extract features from a sequence of
-    N-dimensional points represented as 2D array of shape (points, coordinates).
-
-    The feature being extracted consists in one scalars (i.e. array of shape (1, 1))
-    representing the sequence's arc length.
-    """
-    def __init__(ArcLengthFeature self):
-        super(ArcLengthFeature, self).__init__(is_order_invariant=True)
-
-    cdef Shape c_infer_shape(ArcLengthFeature self, Data2D datum) nogil:
-        cdef Shape shape
-        shape.ndim = 2
-        shape.dims[0] = 1
-        shape.dims[1] = 1
-        shape.size = 1
-        return shape
-
-    cdef void c_extract(ArcLengthFeature self, Data2D datum, Data2D out) nogil:
-        cdef:
-            int N = datum.shape[0], D = datum.shape[1]
-            int n, d
-            double dn, sum_dn_sqr
-
-        out[0, 0] = 0.
-        for n in range(1, N):
-            sum_dn_sqr = 0.0
-            for d in range(D):
-                dn = datum[n, d] - datum[n-1, d]
-                sum_dn_sqr += dn * dn
-
-            out[0, 0] += sqrt(sum_dn_sqr)
+    if only_one_streamlines:
+        return features[0]
+    else:
+        return features
 
 
 cpdef extract(Feature feature, streamlines):

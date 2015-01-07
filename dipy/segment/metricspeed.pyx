@@ -7,7 +7,7 @@ cimport numpy as np
 from libc.math cimport sqrt
 
 from cythonutils cimport tuple2shape, shape2tuple, same_shape
-from featurespeed cimport IdentityFeature, ArcLengthFeature
+from featurespeed cimport IdentityFeature
 
 DEF biggest_double = 1.7976931348623157e+308  #  np.finfo('f8').max
 
@@ -248,100 +248,6 @@ cdef class AveragePointwiseEuclideanMetric(SumPointwiseEuclideanMetric):
         return dist / N
 
 
-cdef class MinimumPointwiseEuclideanMetric(PointwiseEuclideanMetric):
-    r""" Provides functionalities to compute the minimum of pointwise euclidean
-    distances between sequential data.
-
-    A sequence of N-dimensional points is represented as 2D array of
-    shape (points, coordinates).
-
-    Parameters
-    ----------
-    feature : `Feature` object
-        type of feature that will be used for computing the distance between data
-
-    Notes
-    -----
-    The distance calculated between two 2D sequences::
-
-        s1       s2
-
-        0*   a    *0
-          \       |
-           \      |
-           1*     |
-            |  b  *1
-            |      \
-            2*      \
-                c    *2
-
-    is equal to $\min(a, b, c)$ where $a$ is the euclidean distance between s1[0] and
-    s2[0], $b$ between s1[1] and s2[1] and $c$ between s1[2] and s2[2].
-    """
-    cdef double c_dist(MinimumPointwiseEuclideanMetric self, Data2D features1, Data2D features2) nogil:
-        cdef :
-            int N = features1.shape[0], D = features1.shape[1]
-            int n, d
-            double dd, dist_n, dist = biggest_double
-
-        for n in range(N):
-            dist_n = 0.0
-            for d in range(D):
-                dd = features1[n, d] - features2[n, d]
-                dist_n += dd*dd
-
-            dist = min(dist, sqrt(dist_n))
-
-        return dist
-
-
-cdef class MaximumPointwiseEuclideanMetric(PointwiseEuclideanMetric):
-    r""" Provides functionalities to compute the maximum of pointwise euclidean
-    distances between sequential data.
-
-    A sequence of N-dimensional points is represented as 2D array of
-    shape (points, coordinates).
-
-    Parameters
-    ----------
-    feature : `Feature` object
-        type of feature that will be used for computing the distance between data
-
-    Notes
-    -----
-    The distance calculated between two 2D sequences::
-
-        s1       s2
-
-        0*   a    *0
-          \       |
-           \      |
-           1*     |
-            |  b  *1
-            |      \
-            2*      \
-                c    *2
-
-    is equal to $\max(a, b, c)$ where $a$ is the euclidean distance between s1[0] and
-    s2[0], $b$ between s1[1] and s2[1] and $c$ between s1[2] and s2[2].
-    """
-    cdef double c_dist(MaximumPointwiseEuclideanMetric self, Data2D features1, Data2D features2) nogil:
-        cdef :
-            int N = features1.shape[0], D = features1.shape[1]
-            int n, d
-            double dd, dist_n, dist = 0
-
-        for n in range(N):
-            dist_n = 0.0
-            for d in range(D):
-                dd = features1[n, d] - features2[n, d]
-                dist_n += dd*dd
-
-            dist = max(dist, sqrt(dist_n))
-
-        return dist
-
-
 cdef class MinimumAverageDirectFlipMetric(AveragePointwiseEuclideanMetric):
     r""" Provides functionalities to compute the sum of pointwise euclidean
     distances between sequential data.
@@ -383,93 +289,6 @@ cdef class MinimumAverageDirectFlipMetric(AveragePointwiseEuclideanMetric):
         return min(dist_direct, dist_flipped)
 
 
-cdef class HausdorffMetric(CythonMetric):
-    r""" Provides basic functionalities to compute Hausdorff distance.
-
-    A sequence of N-dimensional points is represented as 2D array of
-    shape (points, coordinates).
-
-    Parameters
-    ----------
-    feature : `Feature` object
-        type of features that will be used for computing the distance between data
-    """
-    def __init__(self):
-        super(HausdorffMetric, self).__init__(IdentityFeature())
-
-    cdef double c_dist(HausdorffMetric self, Data2D features1, Data2D features2) nogil:
-        cdef double min_d, max_d1, max_d2, dd, dist
-        cdef int N1 = features1.shape[0], N2 = features2.shape[0]
-        cdef int D = features1.shape[1]  # Assume features have the same number of dimensions
-        cdef int n1, n2, d
-
-        max_d1 = 0.0
-        for n1 in range(N1):
-            min_d = biggest_double
-            for n2 in range(N2):
-                dist = 0.0
-                for d in range(D):
-                    dd = features1[n1, d] - features2[n2, d]
-                    dist += dd * dd
-
-                min_d = min(min_d, sqrt(dist))
-            max_d1 = max(max_d1, min_d)
-
-        max_d2 = 0.0
-        for n2 in range(N2):
-            min_d = biggest_double
-            for n1 in range(N1):
-                dist = 0.0
-                for d in range(D):
-                    dd = features1[n1, d] - features2[n2, d]
-                    dist += dd * dd
-
-                min_d = min(min_d, sqrt(dist))
-            max_d2 = max(max_d2, min_d)
-
-        return max(max_d1, max_d2)
-
-    cdef int c_compatible(HausdorffMetric self, Shape shape1, Shape shape2) nogil:
-        return shape1.dims[1] == shape2.dims[1]
-
-
-cdef class ArcLengthMetric(CythonMetric):
-    r""" Provides functionalities to compute a distance between sequential
-    data using their arc length.
-
-    A sequence of N-dimensional points is represented as 2D array of
-    shape (points, coordinates).
-
-    Notes
-    -----
-    The distance calculated between two 2D sequences::
-
-        s1       s2
-
-        0*        *0
-          \       |
-         a \      | c
-           1*     |
-            |     *1
-          b |      \ d
-            2*      \
-                     *2
-
-    is equal to $|(a+b)-(c+d)|$ where $a$ is the euclidean distance
-    between s1[0] and s1[1], $b$ between s1[1] and s1[2], $c$ between s2[0]
-    and s2[1] and $d$ between s2[1] and s2[2].
-    """
-    def __init__(ArcLengthMetric self):
-        super(ArcLengthMetric, self).__init__(feature=ArcLengthFeature())
-
-    cdef int c_compatible(ArcLengthMetric self, Shape shape1, Shape shape2) nogil:
-        return shape1.dims[0] == 1 & shape1.dims[1] == 1 & same_shape(shape1, shape2)
-
-    cdef double c_dist(ArcLengthMetric self, Data2D features1, Data2D features2) nogil:
-        cdef double dist = features1[0, 0] - features2[0, 0]
-        return max(dist, -dist)  # Absolute value
-
-
 cpdef distance_matrix(Metric metric, streamlines1, streamlines2):
     cdef int i, j
     shape = metric.feature.infer_shape(streamlines1[0])
@@ -508,27 +327,3 @@ cdef double c_dist(Metric metric, Data2D s1, Data2D s2) nogil except -1.0:
 
 cpdef double dist(Metric metric, Data2D s1, Data2D s2) except -1.0:
     return c_dist(metric, s1, s2)
-
-
-#cdef double mdf(Data2D s1, Data2D s2) nogil except -1.0:
-#    cdef:
-#        Data2D features1, features2
-#        Shape shape1 = AveragePointwiseEuclideanMetric.c_infer_features_shape(s1)
-#        Shape shape2 = metric.c_infer_features_shape(s2)
-#        double dist_direct, dist_flipped
-
-#    with gil:
-#        if not metric.c_compatible(shape1, shape2):
-#            raise ValueError("Features' shape extracted from streamlines must match!")
-
-#        features1 = np.empty(shape2tuple(shape1), s1.base.dtype)
-#        features2 = np.empty(shape2tuple(shape2), s2.base.dtype)
-
-#    metric.c_extract_features(s1, features1)
-#    metric.c_extract_features(s2, features2)
-#    dist_direct = metric.c_dist(features1, features2)
-
-#    metric.c_extract_features(s2[::-1], features2)
-#    dist_flipped = metric.c_dist(features1, features2)
-
-#    return min(dist_direct, dist_flipped)
