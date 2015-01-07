@@ -12,11 +12,9 @@ Highlights
 **********
 
 **Dipy 0.8** is now available for :ref:`download <installation>`. The new
-  release contains state-of-the-art algorithms for diffusion MRI registration,
-  reconstruction, statistical evaluation, tractography, and tract evaluation.
+release contains state-of-the-art algorithms for diffusion MRI registration, reconstruction, denoising, statistical evaluation, fiber tracking and validation of tracking.
 
-
- For more information, read the `dipy paper`_  in Frontiers in Neuroinformatics.
+For more information about Dipy_, read the `dipy paper`_  in Frontiers in Neuroinformatics.
 
 .. raw :: html
 
@@ -34,8 +32,9 @@ See :ref:`older highlights <old_highlights>`.
 Announcements
 *************
 
-- The creators of Dipy will attend both ISMRM and HBM 2015. Come and meet us!
-- **dipy 0.8.0** released, January 2015.
+- The creators of Dipy_ will attend both ISMRM and HBM 2015. Come and meet us!
+- **dipy 0.8.0** released, 6 January, 2015.
+- Dipy_ will be an exhibitor in HBM 2015.
 - `Dipy paper`_ accepted in Frontiers of Neuroinformatics, 22 January, 2014.
 - **Dipy 0.7.1** Released!, 16 January, 2014.
 - **Dipy 0.7.0** Released!, 23 December, 2013.
