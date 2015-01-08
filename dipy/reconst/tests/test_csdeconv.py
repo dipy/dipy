@@ -18,8 +18,8 @@ from dipy.reconst.csdeconv import (ConstrainedSphericalDeconvModel,
                                    auto_response)
 from dipy.reconst.peaks import peak_directions
 from dipy.core.sphere_stats import angular_similarity
-from dipy.reconst.shm import (sf_to_sh, sh_to_sf, QballModel,
-                              CsaOdfModel, sph_harm_ind_list)
+from dipy.reconst.shm import (CsaOdfModel, QballModel, sf_to_sh, sh_to_sf,
+                              real_sym_sh_basis, sph_harm_ind_list)
 
 
 def test_csdeconv():
@@ -360,7 +360,8 @@ def test_default_lambda_csdmodel():
         model_full = ConstrainedSphericalDeconvModel(gtab, response,
                                                      sh_order=sh_order,
                                                      reg_sphere=sphere)
-        assert_almost_equal(model_full.lambda_, expected)
+        B_reg, _, _ = real_sym_sh_basis(sh_order, sphere.theta, sphere.phi)
+        npt.assert_array_almost_equal(model_full.B_reg, expected * B_reg)
 
 
 def test_csd_superres():

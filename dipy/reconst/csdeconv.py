@@ -120,18 +120,20 @@ class ConstrainedSphericalDeconvModel(SphHarmModel):
         # scale lambda_ to account for differences in the number of
         # SH coefficients and number of mapped directions
         # This is exactly what is done in [4]_
-        self.lambda_ = (lambda_  * self.R.shape[0] * r_rh[0] /
-                        (np.sqrt(self.B_reg.shape[0]) * np.sqrt(362.))
-                       )
+
+        lambda_ = (lambda_  * self.R.shape[0] * r_rh[0] /
+                   (np.sqrt(self.B_reg.shape[0]) * np.sqrt(362.)))
+        self.B_reg *= lambda_
         self.sh_order = sh_order
         self.tau = tau
+        self._X = X = self.R.diagonal() * self.B_dwi
+        self._P = np.dot(X.T, X)
 
     @multi_voxel_fit
     def fit(self, data):
         dwi_data = data[self._where_dwi]
-        X = self.R.diagonal() * self.B_dwi
-        shm_coeff, num_it = csdeconv(dwi_data, self.sh_order, X, self.B_reg,
-                                     self.lambda_, self.tau)
+        shm_coeff, _ = csdeconv(dwi_data, self.sh_order, self._X, self.B_reg,
+                                self.tau, P=self._P)
         return SphHarmFit(self, shm_coeff, None)
 
 
@@ -357,8 +359,7 @@ def _solve_cholesky(Q, z):
     return f
 
 
-def csdeconv(dwsignal, sh_order, X, B_reg, lambda_=1., tau=0.1,
-             convergence=50):
+def csdeconv(dwsignal, sh_order, X, B_reg, tau=0.1, convergence=50, P=None):
     r""" Constrained-regularized spherical deconvolution (CSD) [1]_
 
     Deconvolves the axially symmetric single fiber response function `r_rh` in
@@ -376,9 +377,7 @@ def csdeconv(dwsignal, sh_order, X, B_reg, lambda_=1., tau=0.1,
         coefficients.
     B_reg : array (N, B)
         SH basis matrix which maps FOD coefficients to FOD values on the
-        surface of the sphere.
-    lambda_ : float
-        lambda parameter in minimization equation (default 1.0)
+        surface of the sphere. B_reg should be scaled to account for lambda.
     tau : float
         Threshold controlling the amplitude below which the corresponding fODF
         is assumed to be zero.  Ideally, tau should be set to zero. However, to
@@ -390,6 +389,10 @@ def csdeconv(dwsignal, sh_order, X, B_reg, lambda_=1., tau=0.1,
         more stable.
     convergence : int
         Maximum number of iterations to allow the deconvolution to converge.
+    P : ndarray
+        This is an optimization to avoid computing ``dot(X.T, X)`` many times.
+        If the same ``X`` is used many times, ``P`` can be precomputed and
+        passed to this function.
 
     Returns
     -------
@@ -408,13 +411,14 @@ def csdeconv(dwsignal, sh_order, X, B_reg, lambda_=1., tau=0.1,
 
     """
     mu = 1e-5
-    P = np.dot(X.T, X)
+    if P is None:
+        P = np.dot(X.T, X)
     z = np.dot(X.T, dwsignal)
 
     try:
         fodf_sh = _solve_cholesky(P, z)
     except la.LinAlgError:
-        P += mu * np.eye(P.shape[0])
+        P = P + mu * np.eye(P.shape[0])
         fodf_sh = _solve_cholesky(P, z)
     # For the first iteration we use a smooth FOD that only uses SH orders up
     # to 4 (the first 15 coefficients.
@@ -427,8 +431,6 @@ def csdeconv(dwsignal, sh_order, X, B_reg, lambda_=1., tau=0.1,
     if not k_last.any():
         return fodf_sh, 0
 
-    lambda2 = lambda_ ** 2
-
     for num_it in range(1, convergence + 1):
         # This is the super-resolved trick.  Wherever there is a negative
         # amplitude value on the fODF, it concatenates a value to the S vector
@@ -439,7 +441,7 @@ def csdeconv(dwsignal, sh_order, X, B_reg, lambda_=1., tau=0.1,
         H = B_reg[k_last]
 
         # We use the Cholesky decomposition to solve for the SH coefficients.
-        Q = P + lambda2 * np.dot(H.T, H)
+        Q = P + np.dot(H.T, H)
         fodf_sh = _solve_cholesky(Q, z)
 
         # Sample the FOD using the regularization sphere and compute k.
