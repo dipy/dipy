@@ -82,6 +82,61 @@ def fractional_anisotropy(evals, axis=-1):
 
     return fa
 
+def geodesic_anisotropy(evals, axis=-1):
+    r"""
+    Geodesic anisotropy (FA) of a diffusion tensor.
+
+    Parameters
+    ----------
+    evals : array-like
+        Eigenvalues of a diffusion tensor.
+    axis : int
+        Axis of `evals` which contains 3 eigenvalues.
+
+    Returns
+    -------
+    ga : array
+        Calculated GA. In the range [0, +infty)
+
+    Notes
+    --------
+    GA is calculated using the following equation [1]_ and [2]_:
+
+    .. math::
+
+        GA = \sqrt{\sum_{i=1}^3 \log^2{\left ( \lambda_i/<\mathbf{D}> \right )}, 
+        \quad \textrm{where} \quad <\mathbf{D}> = \frac{\lambda_1+\lambda_2+\lambda_3}{3}
+
+
+    References
+    ----------
+
+    .. [1] P. G. Batchelor, M. Moakher, D. Atkinson, F. Calamante, A. Connelly, 
+        "A rigorous framework for diffusion tensor calculus", Magnetic Resonance 
+        in Medicine, vol. 53, pp. 221-225, 2005.
+    """
+
+    evals = _roll_evals(evals, axis)
+
+    all_zero = (evals == 0).all(axis=0)
+    ev1, ev2, ev3 = evals
+
+    md = (ev1 + ev2 + ev3)/3
+    
+    log1 = np.zeros(md.shape)
+    log2 = np.zeros(md.shape)
+    log3 = np.zeros(md.shape)
+
+    # to make sure we do not divide by 0
+    idx = np.nonzero(md)
+    log1[idx] = np.log(ev1[idx]/md[idx])
+    log2[idx] = np.log(ev2[idx]/md[idx])
+    log3[idx] = np.log(ev3[idx]/md[idx])
+    
+    ga = np.sqrt(log1**2 + log2**2 + log3**2)
+    
+    return ga
+
 
 def mean_diffusivity(evals, axis=-1):
     r"""
@@ -405,6 +460,7 @@ def mode(q_form):
     A_s_norm = norm(A_squiggle)
     # Add two dims for the (3,3), so that it can broadcast on A_squiggle:
     A_s_norm = A_s_norm.reshape(A_s_norm.shape + (1, 1))
+
     return 3 * np.sqrt(6) * determinant((A_squiggle / A_s_norm))
 
 
@@ -781,6 +837,11 @@ class TensorFit(object):
     def fa(self):
         """Fractional anisotropy (FA) calculated from cached eigenvalues."""
         return fractional_anisotropy(self.evals)
+
+    @auto_attr
+    def ga(self):
+        """Geodesic anisotropy (GA) calculated from cached eigenvalues."""
+        return geodesic_anisotropy(self.evals)
 
     @auto_attr
     def mode(self):
