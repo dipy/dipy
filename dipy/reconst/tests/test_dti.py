@@ -14,7 +14,7 @@ import scipy.optimize as opt
 
 import dipy.reconst.dti as dti
 from dipy.reconst.dti import (axial_diffusivity, color_fa,
-                              fractional_anisotropy, from_lower_triangular,
+                              fractional_anisotropy, from_lower_triangular, geodesic_anisotropy, 
                               lower_triangular, mean_diffusivity,
                               radial_diffusivity, TensorModel, trace,
                               linearity, planarity, sphericity)
@@ -184,6 +184,11 @@ def test_fa_of_zero():
     evals = np.zeros((4, 3))
     fa = fractional_anisotropy(evals)
     assert_array_equal(fa, 0)
+
+def test_ga_of_zero():
+    evals = np.zeros((4, 3))
+    ga = geodesic_anisotropy(evals)
+    assert_array_equal(ga, 0)
 
 
 def test_diffusivities():
