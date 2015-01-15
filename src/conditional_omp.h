@@ -4,7 +4,7 @@
  */
 #if defined(_OPENMP)
 #include <omp.h>
-int have_openmp = 1;
+#define have_openmp 1
 #else
 /* These are fake defines to make these symbols valid in the c / pyx file
  *
@@ -22,5 +22,5 @@ void omp_destroy_lock(omp_lock_t *lock) {};
 void omp_set_lock(omp_lock_t *lock) {};
 void omp_unset_lock(omp_lock_t *lock) {};
 int omp_test_lock(omp_lock_t *lock) {};
-int have_openmp = 0;
+#define have_openmp 0
 #endif
