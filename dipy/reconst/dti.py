@@ -96,11 +96,12 @@ def geodesic_anisotropy(evals, axis=-1):
     Returns
     -------
     ga : array
-        Calculated GA. In the range [0, +infty)
+        Calculated GA. In the range 0 to +infinity
 
     Notes
     --------
-    GA is calculated using the following equation [1]_ and [2]_:
+    GA is calculated using the following equation 
+    (conflicting definitions in [1]_ and [2]_):
 
     .. math::
 
@@ -114,29 +115,35 @@ def geodesic_anisotropy(evals, axis=-1):
     .. [1] P. G. Batchelor, M. Moakher, D. Atkinson, F. Calamante, A. Connelly, 
         "A rigorous framework for diffusion tensor calculus", Magnetic Resonance 
         in Medicine, vol. 53, pp. 221-225, 2005.
+
+    .. [2] M. Morgado Correia, V.F.J. Newcombe, Guy B. Williams. "Contrast-to-noise 
+       ratios for indices of anisotropy obtained from diffusion MRI: A study with 
+       standard clinical b-values at 3 T", NeuroImage, vol. 57, pp. 1103-1115, 2011. 
     """
 
     evals = _roll_evals(evals, axis)
-
-    all_zero = (evals == 0).all(axis=0)
     ev1, ev2, ev3 = evals
 
-    md = (ev1 + ev2 + ev3)/3
-    
-    log1 = np.zeros(md.shape)
-    log2 = np.zeros(md.shape)
-    log3 = np.zeros(md.shape)
+    log1 = np.zeros(ev1.shape)
+    log2 = np.zeros(ev1.shape)
+    log3 = np.zeros(ev1.shape)
+    idx = np.nonzero(ev1)
 
-    # to make sure we do not divide by 0
-    idx = np.nonzero(md)
-    log1[idx] = np.log(ev1[idx]/md[idx])
-    log2[idx] = np.log(ev2[idx]/md[idx])
-    log3[idx] = np.log(ev3[idx]/md[idx])
+    # this is the definition in [2]_
+    md = (ev1 + ev2 + ev3) / 3
+    log1[idx] = np.log(ev1[idx] / md[idx])
+    log2[idx] = np.log(ev2[idx] / md[idx])
+    log3[idx] = np.log(ev3[idx] / md[idx])
     
-    ga = np.sqrt(log1**2 + log2**2 + log3**2)
+    # this is the definition in [1]_
+    detD = np.power(ev1 * ev2 * ev3, 1/3.)
+    log1[idx] = np.log(ev1[idx] / detD[idx])
+    log2[idx] = np.log(ev2[idx] / detD[idx])
+    log3[idx] = np.log(ev3[idx] / detD[idx])
+
+    ga = np.sqrt(log1 ** 2 + log2 ** 2 + log3 ** 2)
     
     return ga
-
 
 def mean_diffusivity(evals, axis=-1):
     r"""
