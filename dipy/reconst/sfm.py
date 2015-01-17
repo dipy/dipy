@@ -418,7 +418,7 @@ class SparseFascicleFit(ReconstFit):
             S0 = S0[..., None]
         if isinstance(self.iso, np.ndarray):
             iso_signal = self.iso[..., None]
-        pre_pred_sig = S0 * (pred_weighted + iso_signal.squeeze())
+        pre_pred_sig = S0 * pred_weighted + iso_signal.squeeze()
         pred_sig = np.zeros(pre_pred_sig.shape[:-1] + (gtab.bvals.shape[0],))
         pred_sig[..., ~gtab.b0s_mask] = pre_pred_sig
         pred_sig[..., gtab.b0s_mask] = S0
