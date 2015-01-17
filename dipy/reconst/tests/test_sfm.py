@@ -118,9 +118,8 @@ def test_exponential_iso():
     data_multi, gtab_multi = dpd.dsi_deconv_voxels()
 
     for data, gtab in zip([data_dti, data_multi], [gtab_dti, gtab_multi]):
-        sfmodel = sfm.SparseFascicleModel(gtab,
-                                          isotropic=
-                                          sfm.ExponentialIsotropicModel)
+        sfmodel = sfm.SparseFascicleModel(
+                  gtab, isotropic=sfm.ExponentialIsotropicModel)
 
         sffit1 = sfmodel.fit(data[0, 0, 0])
         sphere = dpd.get_sphere()
