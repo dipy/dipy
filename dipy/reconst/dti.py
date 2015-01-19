@@ -100,14 +100,12 @@ def geodesic_anisotropy(evals, axis=-1):
 
     Notes
     --------
-    GA is calculated using the following equation 
-    (conflicting definitions in [1]_ and [2]_):
+    GA is calculated using the following equation given in [1]_:
 
     .. math::
 
-        GA = \sqrt{\sum_{i=1}^3 \log^2{\left ( \lambda_i/<\mathbf{D}> \right )}, 
-        \quad \textrm{where} \quad <\mathbf{D}> = \frac{\lambda_1+\lambda_2+\lambda_3}{3}
-
+        GA = \sqrt{\sum_{i=1}^3 \log^2{\left ( \lambda_i/<\mathbf{D}> \right )}}, 
+        \quad \textrm{where} \quad <\mathbf{D}> = (\lambda_1\lambda_2\lambda_3)^{1/3}
 
     References
     ----------
@@ -115,10 +113,6 @@ def geodesic_anisotropy(evals, axis=-1):
     .. [1] P. G. Batchelor, M. Moakher, D. Atkinson, F. Calamante, A. Connelly, 
         "A rigorous framework for diffusion tensor calculus", Magnetic Resonance 
         in Medicine, vol. 53, pp. 221-225, 2005.
-
-    .. [2] M. Morgado Correia, V.F.J. Newcombe, Guy B. Williams. "Contrast-to-noise 
-       ratios for indices of anisotropy obtained from diffusion MRI: A study with 
-       standard clinical b-values at 3 T", NeuroImage, vol. 57, pp. 1103-1115, 2011. 
     """
 
     evals = _roll_evals(evals, axis)
@@ -128,12 +122,6 @@ def geodesic_anisotropy(evals, axis=-1):
     log2 = np.zeros(ev1.shape)
     log3 = np.zeros(ev1.shape)
     idx = np.nonzero(ev1)
-
-    # this is the definition in [2]_
-    md = (ev1 + ev2 + ev3) / 3
-    log1[idx] = np.log(ev1[idx] / md[idx])
-    log2[idx] = np.log(ev2[idx] / md[idx])
-    log3[idx] = np.log(ev3[idx] / md[idx])
     
     # this is the definition in [1]_
     detD = np.power(ev1 * ev2 * ev3, 1/3.)
