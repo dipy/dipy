@@ -88,7 +88,7 @@ class ExponentialIsotropicFit(IsotropicFit):
         if gtab is None:
             gtab = self.model.gtab
         return np.exp(-gtab.bvals[~gtab.b0s_mask] *
-                      (np.zeros((self.n_vox,np.sum(~gtab.b0s_mask))) +
+                      (np.zeros((self.n_vox, np.sum(~gtab.b0s_mask))) +
                        self.params[..., np.newaxis]))
 
 
