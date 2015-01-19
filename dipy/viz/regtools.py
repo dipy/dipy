@@ -4,12 +4,12 @@ matplotlib, has_mpl, setup_module = optional_package("matplotlib")
 plt, _, _ = optional_package("matplotlib.pyplot")
 
 
-def _three_plot(imgs, titles, **kwargs):
+def _tile_plot(imgs, titles, **kwargs):
     """
     Helper function
     """
     # Create a new figure and plot the three images
-    fig, ax = plt.subplots(1, 3)
+    fig, ax = plt.subplots(1, len(imgs))
     for ii, a in enumerate(ax):
         a.set_axis_off()
         a.imshow(imgs[ii], **kwargs)
