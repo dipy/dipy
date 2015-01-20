@@ -614,7 +614,7 @@ def odf_sh_to_sharp(odfs_sh, sphere, basis=None, ratio=3 / 15., sh_order=8,
 
 def auto_response(gtab, data, roi_center=None, roi_radius=10, fa_thr=0.7,
                   return_number_of_voxels=False):
-    """ Automatic estimation of response function using FA
+    """ Automatic estimation of response function using FA.
 
     Parameters
     ----------
@@ -638,7 +638,7 @@ def auto_response(gtab, data, roi_center=None, roi_radius=10, fa_thr=0.7,
         (`evals`, `S0`)
     ratio : float
         The ratio between smallest versus largest eigenvalue of the response.
-    number of voxels : int
+    number of voxels : int (optional)
         The number of voxels used for estimating the response function.
 
     Notes
@@ -663,7 +663,13 @@ def auto_response(gtab, data, roi_center=None, roi_radius=10, fa_thr=0.7,
     the number of voxels used for estimating the response function is also
     returned, which can be used to judge the fidelity of the response function.
     As a rule of thumb, at least 300 voxels should be used to estimate a good
-    response function.
+    response function (see [1]_).
+    
+    References
+    ----------
+    .. [1] Tournier, J.D., et al. NeuroImage 2004. Direct estimation of the
+    fiber orientation density function from diffusion-weighted MRI
+    data using spherical deconvolution
     """
 
     ten = TensorModel(gtab)
