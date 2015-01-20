@@ -13,6 +13,7 @@ def _tile_plot(imgs, titles, **kwargs):
     for ii, a in enumerate(ax):
         a.set_axis_off()
         a.imshow(imgs[ii], **kwargs)
+        a.set_aspect('auto', 'box')
         a.set_title(titles[ii])
 
     return fig
@@ -64,7 +65,7 @@ def overlay_images(img0, img1, title0='', title_mid='', title1='', fname=None):
     overlay[..., 0] = img0
     overlay[..., 1] = img1
 
-    fig = _three_plot([img0_red, overlay, img1_green],
+    fig = _tile_plot([img0_red, overlay, img1_green],
                       [title0, title_mid, title1])
 
     # If a file name was given, save the figure
@@ -298,7 +299,7 @@ def plot_slices(V, slice_indices=None, fname=None):
     coronal = np.asarray(V[:, slice_indices[1], :]).astype(np.uint8).T
     sagittal = np.asarray(V[slice_indices[0], :, :]).astype(np.uint8).T
 
-    fig = _three_plot([axial, coronal, sagittal],
+    fig = _tile_plot([axial, coronal, sagittal],
                       ['Axial', 'Coronal', 'Sagittal'],
                       cmap=plt.cm.gray, origin='lower')
 
@@ -382,7 +383,7 @@ def overlay_slices(L, R, slice_index=None, slice_type=1, ltitle='Left',
     colorImage[..., 0] = ll * (ll > ll[0, 0])
     colorImage[..., 1] = rr * (rr > rr[0, 0])
 
-    fig = _three_plot([ll, colorImage, rr],
+    fig = _tile_plot([ll, colorImage, rr],
                       [ltitle, 'Overlay', rtitle],
                       cmap=plt.cm.gray, origin='lower')
 
