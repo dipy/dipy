@@ -10,13 +10,15 @@ reconstructions and then generate deterministic streamlines using the fiber
 directions (peaks) from CSD and fractional anisotropic (FA) as a
 stopping criterion.
 
-First, let's load the necessary modules.
+Let's load the necessary modules.
 """
+
+import numpy as np
 
 from dipy.reconst.dti import TensorModel, fractional_anisotropy
 from dipy.reconst.csdeconv import (ConstrainedSphericalDeconvModel,
                                    auto_response)
-from dipy.reconst.peaks import peaks_from_model
+from dipy.direction import peaks_from_model
 from dipy.tracking.eudx import EuDX
 from dipy.data import fetch_stanford_hardi, read_stanford_hardi, get_sphere
 from dipy.segment.mask import median_otsu
@@ -33,9 +35,9 @@ img, gtab = read_stanford_hardi()
 data = img.get_data()
 
 """
-Create a brain mask. This dataset is a bit difficult to segment with the default
-``median_otsu`` parameters (see :ref:`example_brain_extraction_dwi`) therefore we use
-here a bit more advanced options.
+Create a brain mask. This dataset is a bit difficult to segment with the
+default ``median_otsu`` parameters (see :ref:`example_brain_extraction_dwi`)
+therefore we use here a bit more advanced options.
 """
 
 maskdata, mask = median_otsu(data, 3, 1, False,
@@ -104,9 +106,9 @@ fvtk.record(ren, out_path='csd_direction_field.png', size=(900, 900))
 
 """
 .. figure:: csd_direction_field.png
-   :align: center
+ :align: center
 
-   **Direction Field (peaks)**
+ **Direction Field (peaks)**
 
 ``EuDX`` [Garyfallidis12]_ is a fast algorithm that we use here to generate
 streamlines. If the parameter ``seeds`` is a positive integer it will generate
@@ -139,15 +141,16 @@ fvtk.record(ren, out_path='csd_streamlines_eudx.png', size=(900, 900))
 
 """
 .. figure:: csd_streamlines_eudx.png
-   :align: center
+ :align: center
 
-   **CSD-based streamlines using EuDX**
+ **CSD-based streamlines using EuDX**
 
-We used above ``fvtk.record`` because we want to create a figure for the tutorial
-but you can visualize the same objects in 3D using ``fvtk.show(ren)``.
+We used above ``fvtk.record`` because we want to create a figure for the
+tutorial but you can visualize the same objects in 3D using
+``fvtk.show(ren)``.
 
 To learn more about this process you could start playing with the number of
-seed points or even better specify seeds to be in specific regions of interest
+seed points or, even better, specify seeds to be in specific regions of interest
 in the brain.
 
 ``fvtk`` gives some minimal interactivity however you can save the resulting
@@ -173,9 +176,23 @@ nib.trackvis.write(csd_sl_fname, csd_streamlines_trk, hdr, points_space='voxel')
 nib.save(nib.Nifti1Image(FA, img.get_affine()), 'FA_map.nii.gz')
 
 """
+
+In Windows if you get a runtime error about frozen executable please start
+your script by adding your code above in a ``main`` function and use:
+
+if __name__ == '__main__':
+    import multiprocessing
+    multiprocessing.freeze_support()
+    main()
+
 .. [Garyfallidis12] Garyfallidis E., "Towards an accurate brain tractography", PhD thesis, University of Cambridge, 2012.
 .. [Tournier07] J-D. Tournier, F. Calamante and A. Connelly, "Robust determination of the fibre orientation distribution in diffusion MRI: Non-negativity constrained super-resolved spherical deconvolution", Neuroimage, vol. 35, no. 4, pp. 1459-1472, 2007.
 
-.. include:: ../links_names.inc
-"""
+.. NOTE::
+    Dipy has a new and very modular fiber tracking machinery. Our new machinery
+    for fiber tracking is featured in the example :ref:`example_tracking_quick_start`.
 
+
+.. include:: ../links_names.inc
+
+"""

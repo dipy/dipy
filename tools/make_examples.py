@@ -64,8 +64,6 @@ if not os.getcwd().endswith(pjoin('doc','examples_built')):
 
 # Copy the py files; check they are in the examples list and warn if not
 eg_index_contents = open(EG_INDEX_FNAME, 'rt').read()
-pyfilelist = [fname for fname in os.listdir(EG_SRC_DIR)
-              if fname.endswith('.py')]
 
 # Here I am adding an extra step. The list of examples to be executed need
 # also to be added in the following file (valid_examples.txt). This helps
@@ -76,22 +74,29 @@ flist = open(flist_name, "r")
 validated_examples = flist.readlines()
 flist.close()
 
-def check_enabled(froot, example):
-    if froot in example:
-        if example.startswith('#'):
-            return False
-        return True
-    return False
+# Parse "#" in lines
+validated_examples = [line.split("#", 1)[0] for line in validated_examples]
+# Remove leading and trailing white space from example names
+validated_examples = [line.strip() for line in validated_examples]
+# Remove blank lines
+validated_examples = filter(None, validated_examples)
 
-for fname in pyfilelist:
+for example in validated_examples:
+    fullpath = pjoin(EG_SRC_DIR, example)
+    if not example.endswith(".py"):
+        print ("%s not a python file, skipping." % example)
+        continue
+    elif not os.path.isfile(fullpath):
+        print ("Cannot find file, %s, skipping." % example)
+        continue
+    shutil.copyfile(fullpath, example)
 
-    froot, _ = splitext(fname)
-    if np.sum([1 for example in validated_examples if check_enabled(froot, example)]) > 0:
-
-        shutil.copyfile(pjoin(EG_SRC_DIR, fname), fname)
-
-        if froot not in eg_index_contents:
-            print 'Example %s not in index file %s' % (EG_SRC_DIR, EG_INDEX_FNAME)
+    # Check that example file is included in the docs
+    file_root = example[:-3]
+    if file_root not in eg_index_contents:
+        msg = "Example, %s, not in index file %s."
+        msg = msg % (example, EG_INDEX_FNAME)
+        print(msg)
 
 # Run the conversion from .py to rst file
 check_call('python ../../tools/ex2rst --project dipy --outdir . .',

@@ -65,3 +65,4 @@ def _to_voxel_coordinates(streamline, lin_T, offset):
                          ' indices')
     return inds.astype(int)
 
+

@@ -13,7 +13,6 @@ function.
 """
 
 import multiprocessing
-import numpy as np
 
 from dipy.data import fetch_stanford_hardi, read_stanford_hardi
 
@@ -33,8 +32,6 @@ response, ratio = auto_response(gtab, maskdata, roi_radius=10, fa_thr=0.7)
 data = maskdata[:, :, 33:37]
 mask = mask[:, :, 33:37]
 
-print('data.shape (%d, %d, %d, %d)' % data.shape)
-
 """
 Now we are ready to import the CSD model and fit the datasets.
 """
@@ -52,12 +49,12 @@ Compute the CSD-based ODFs using ``peaks_from_model``. This function has a
 parameter called ``parallel`` which allows for the voxels to be processed in
 parallel. If ``nbr_processes`` is None it will figure out automatically the
 number of CPUs available in your system. Alternatively, you can set
-``nbr_processes`` manually. Here, we show an example were we compare the
+``nbr_processes`` manually. Here, we show an example where we compare the
 duration of execution with or without parallelism.
 """
 
 import time
-from dipy.reconst.peaks import peaks_from_model
+from dipy.direction import peaks_from_model
 
 start_time = time.time()
 csd_peaks_parallel = peaks_from_model(model=csd_model,
@@ -106,4 +103,12 @@ print("Speedup factor : " + str(time_single / time_parallel))
 
 """
 Speedup factor : 2.12166099088
+
+In Windows if you get a runtime error about frozen executable please start
+your script by adding your code above in a ``main`` function and use:
+
+if __name__ == '__main__':
+    import multiprocessing
+    multiprocessing.freeze_support()
+    main()
 """

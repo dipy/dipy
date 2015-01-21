@@ -149,7 +149,7 @@ print(bvecs)
      [-0.48938584 -0.43780086  0.75420946]
      [ 0.          0.          0.        ]]
 
-Both b-values and b-vectors look correct. Let's know create the 
+Both b-values and b-vectors look correct. Let's now create the 
 ``GradientTable``.
 """
 

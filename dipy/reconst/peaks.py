@@ -17,6 +17,7 @@ from dipy.core.sphere import HemiSphere, Sphere
 from dipy.data import default_sphere
 from dipy.core.ndindex import ndindex
 from dipy.reconst.shm import sh_to_sf_matrix
+from .peak_direction_getter import PeaksAndMetricsDirectionGetter
 
 
 def peak_directions_nl(sphere_eval, relative_peak_threshold=.25,
@@ -155,8 +156,7 @@ def peak_directions(odf, sphere, relative_peak_threshold=.5,
     return directions, values, indices
 
 
-from ._peakdg import PAMDirectionGetter
-class PeaksAndMetrics(PAMDirectionGetter):
+class PeaksAndMetrics(PeaksAndMetricsDirectionGetter):
     pass
 
 
@@ -289,7 +289,6 @@ def _peaks_from_model_parallel(model, data, sphere, relative_peak_threshold,
         # manager in order to prevent temporary file deletion errors in windows
         pool.join()
 
-    pam._initialize()
     return pam
 
 
@@ -371,9 +370,11 @@ def peaks_from_model(model, data, sphere, relative_peak_threshold,
         Inverse of B.
     parallel: bool
         If True, use multiprocessing to compute peaks and metric
-        (default False).
+        (default False). Temporary files are saved in the default temporary
+        directory of the system. It can be changed using ``import tempfile``
+        and ``tempfile.tempdir = '/path/to/tempdir'``.
     nbr_processes: int
-        If `parallel == True`, the number of subprocesses to use
+        If `parallel` is True, the number of subprocesses to use
         (default multiprocessing.cpu_count()).
 
     Returns
@@ -489,7 +490,6 @@ def peaks_from_model(model, data, sphere, relative_peak_threshold,
     else:
         pam.odf = None
 
-    pam._initialize()
     return pam
 
 

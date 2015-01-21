@@ -6,39 +6,19 @@ Parallel reconstruction using Q-Ball
 We show an example of parallel reconstruction using a Q-Ball Constant Solid
 Angle model (see Aganj et. al (MRM 2010)) and `peaks_from_model`.
 
-First import the necessary modules:
+Import modules, fetch and read data, and compute the mask.
 """
 
 import time
 from dipy.data import fetch_stanford_hardi, read_stanford_hardi, get_sphere
 from dipy.reconst.shm import CsaOdfModel
-from dipy.reconst.peaks import peaks_from_model
-
-"""
-Download and read the data for this tutorial.
-"""
+from dipy.direction import peaks_from_model
+from dipy.segment.mask import median_otsu
 
 fetch_stanford_hardi()
 img, gtab = read_stanford_hardi()
 
-"""
-img contains a nibabel Nifti1Image object (data) and gtab contains a GradientTable
-object (gradient information e.g. b-values). For example to read the b-values
-it is possible to write print(gtab.bvals).
-
-Load the raw diffusion data and the affine.
-"""
-
 data = img.get_data()
-print('data.shape (%d, %d, %d, %d)' % data.shape)
-
-"""
-data.shape ``(81, 106, 76, 160)``
-
-Remove most of the background using dipy's mask module.
-"""
-
-from dipy.segment.mask import median_otsu
 
 maskdata, mask = median_otsu(data, 3, 1, True,
                              vol_idx=range(10, 50), dilate=2)
@@ -88,7 +68,8 @@ print("peaks_from_model using 2 processes ran in : " +
       str(time_parallel) + " seconds")
 
 """
-peaks_from_model using 2 process ran in  : 114.333221912 seconds, using 2 process
+peaks_from_model using 2 process ran in  : 114.333221912 seconds, using 2
+process
 
 If we don't use parallelism then we need to set `parallel=False`:
 """
@@ -117,4 +98,12 @@ print("Speedup factor : " + str(time_single / time_parallel))
 
 """
 Speedup factor : 1.72191839533
+
+In Windows if you get a runtime error about frozen executable please start
+your script by adding your code above in a ``main`` function and use:
+
+if __name__ == '__main__':
+    import multiprocessing
+    multiprocessing.freeze_support()
+    main()
 """

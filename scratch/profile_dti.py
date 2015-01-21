@@ -7,7 +7,6 @@ lprun -f dti.restore_fit_tensor -f p.tm.fit_method p.func()
 
 """
 
-
 import nibabel as nib
 import dipy.core.gradients as grad
 import dipy.data as dpd

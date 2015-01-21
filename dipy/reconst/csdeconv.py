@@ -2,21 +2,20 @@ from __future__ import division, print_function, absolute_import
 import warnings
 import numpy as np
 from scipy.integrate import quad
-from dipy.reconst.cache import Cache
+from scipy.special import lpn, gamma
+
 from dipy.reconst.multi_voxel import multi_voxel_fit
-from dipy.reconst.shm import (sph_harm_ind_list, real_sph_harm, order_from_ncoef,
-                              sph_harm_lookup, lazy_index, SphHarmFit,
-                              real_sym_sh_basis, sh_to_rh, gen_dirac,
-                              forward_sdeconv_mat, SphHarmModel)
-from dipy.data import get_sphere
+from dipy.data import small_sphere, get_sphere
 from dipy.core.geometry import cart2sphere
 from dipy.core.ndindex import ndindex
 from dipy.sims.voxel import single_tensor
 from dipy.utils.six.moves import range
 
-from scipy.special import lpn, gamma
 from dipy.reconst.dti import TensorModel, fractional_anisotropy
-from scipy.integrate import quad
+from dipy.reconst.shm import (sph_harm_ind_list, real_sph_harm,
+                              sph_harm_lookup, lazy_index, SphHarmFit,
+                              real_sym_sh_basis, sh_to_rh, forward_sdeconv_mat,
+                              SphHarmModel)
 
 
 class ConstrainedSphericalDeconvModel(SphHarmModel):
@@ -96,7 +95,7 @@ class ConstrainedSphericalDeconvModel(SphHarmModel):
 
         # for the sphere used in the regularization positivity constraint
         if reg_sphere is None:
-            self.sphere = get_sphere('symmetric362')
+            self.sphere = small_sphere
         else:
             self.sphere = reg_sphere
 
@@ -109,7 +108,7 @@ class ConstrainedSphericalDeconvModel(SphHarmModel):
             self.response = response
 
         self.S_r = estimate_response(gtab, self.response[0], self.response[1])
-        self.response_scaling = response[1]
+        self.response_scaling = self.response[1]
 
         r_sh = np.linalg.lstsq(self.B_dwi, self.S_r[self._where_dwi])[0]
         r_rh = sh_to_rh(r_sh, m, n)
@@ -613,8 +612,9 @@ def odf_sh_to_sharp(odfs_sh, sphere, basis=None, ratio=3 / 15., sh_order=8,
     return fodf_sh
 
 
-def auto_response(gtab, data, roi_center=None, roi_radius=10, fa_thr=0.7):
-    """ Automatic estimation of response function using FA
+def auto_response(gtab, data, roi_center=None, roi_radius=10, fa_thr=0.7,
+                  return_number_of_voxels=False):
+    """ Automatic estimation of response function using FA.
 
     Parameters
     ----------
@@ -628,13 +628,18 @@ def auto_response(gtab, data, roi_center=None, roi_radius=10, fa_thr=0.7):
         radius of cubic ROI
     fa_thr : float
         FA threshold
+    return_number_of_voxels : bool
+        If True, returns the number of voxels used for estimating the response
+        function.
 
     Returns
     -------
     response : tuple, (2,)
         (`evals`, `S0`)
     ratio : float
-        the ratio between smallest versus largest eigenvalue of the response
+        The ratio between smallest versus largest eigenvalue of the response.
+    number of voxels : int (optional)
+        The number of voxels used for estimating the response function.
 
     Notes
     -----
@@ -643,7 +648,7 @@ def auto_response(gtab, data, roi_center=None, roi_radius=10, fa_thr=0.7):
     anisotropic configurations. For example we can use an ROI (20x20x20) at
     the center of the volume and store the signal values for the voxels with
     FA values higher than 0.7. Of course, if we haven't precalculated FA we
-    need to fit a Tensor model to the datasets. Which is what we do  in this
+    need to fit a Tensor model to the datasets. Which is what we do in this
     function.
 
     For the response we also need to find the average S0 in the ROI. This is
@@ -654,7 +659,17 @@ def auto_response(gtab, data, roi_center=None, roi_radius=10, fa_thr=0.7):
     the highest and second highest eigenvalues in the ROI with FA higher than
     threshold. We also include the average S0s.
 
-    Finally, we also return the `ratio` which is used for the SDT models.
+    We also return the `ratio` which is used for the SDT models. If requested,
+    the number of voxels used for estimating the response function is also
+    returned, which can be used to judge the fidelity of the response function.
+    As a rule of thumb, at least 300 voxels should be used to estimate a good
+    response function (see [1]_).
+    
+    References
+    ----------
+    .. [1] Tournier, J.D., et al. NeuroImage 2004. Direct estimation of the
+    fiber orientation density function from diffusion-weighted MRI
+    data using spherical deconvolution
     """
 
     ten = TensorModel(gtab)
@@ -668,12 +683,21 @@ def auto_response(gtab, data, roi_center=None, roi_radius=10, fa_thr=0.7):
     FA = fractional_anisotropy(tenfit.evals)
     FA[np.isnan(FA)] = 0
     indices = np.where(FA > fa_thr)
+
+    if indices[0].size == 0:
+        msg = "No voxel with a FA higher than " + str(fa_thr) + " were found."
+        msg += " Try a larger roi or a lower threshold."
+        warnings.warn(msg, UserWarning)
+
     lambdas = tenfit.evals[indices][:, :2]
     S0s = roi[indices][:, np.nonzero(gtab.b0s_mask)[0]]
     S0 = np.mean(S0s)
     l01 = np.mean(lambdas, axis=0)
     evals = np.array([l01[0], l01[1], l01[1]])
     response = (evals, S0)
-    ratio = evals[1]/evals[0]
-    return response, ratio
+    ratio = evals[1] / evals[0]
 
+    if return_number_of_voxels:
+        return response, ratio, indices[0].size
+
+    return response, ratio

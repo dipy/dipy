@@ -9,7 +9,7 @@ from dipy.tracking.utils import (affine_for_trackvis, connectivity_matrix,
                                  density_map, length, move_streamlines,
                                  ndbincount, reduce_labels,
                                  reorder_voxels_affine, seeds_from_mask,
-                                 target, _rmi)
+                                 target, _rmi, unique_rows)
 
 import dipy.tracking.metrics as metrix 
 
@@ -425,4 +425,27 @@ def test_connectivity_matrix_shape():
                              [0., 1., 0.]])]
     matrix = connectivity_matrix(streamlines, labels, affine=np.eye(4))
     assert_equal(matrix.shape, (3, 3))
+
+
+def test_unique_rows():
+    """
+    Testing the function unique_coords
+    """
+    arr = np.array([[1,2,3],[1,2,3],[2,3,4],[3,4,5]])
+    arr_w_unique = np.array([[1,2,3],[2,3,4],[3,4,5]])
+    assert_array_equal(unique_rows(arr), arr_w_unique)
+
+    # Should preserve order:
+    arr = np.array([[2,3,4],[1,2,3],[1,2,3],[3,4,5]])
+    arr_w_unique = np.array([[2,3,4],[1,2,3],[3,4,5]])
+    assert_array_equal(unique_rows(arr), arr_w_unique)
+
+
+    # Should work even with longer arrays:
+    arr = np.array([[2,3,4],[1,2,3],[1,2,3],[3,4,5],
+                    [6,7,8],[0,1,0],[1,0,1]])
+    arr_w_unique = np.array([[2,3,4],[1,2,3],[3,4,5],
+                             [6,7,8],[0,1,0],[1,0,1]])
+
+    assert_array_equal(unique_rows(arr), arr_w_unique)
 

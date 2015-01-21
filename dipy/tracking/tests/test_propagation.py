@@ -8,7 +8,7 @@ from dipy.reconst.gqi import GeneralizedQSamplingModel
 from dipy.reconst.dti import TensorModel, quantize_evecs
 from dipy.tracking import utils
 from dipy.tracking.eudx import EuDX
-from dipy.tracking.propspeed import ndarray_offset
+from dipy.tracking.propspeed import ndarray_offset, eudx_both_directions
 from dipy.tracking.metrics import length
 from dipy.tracking.propspeed import map_coordinates_trilinear_iso
 
@@ -22,6 +22,28 @@ from numpy.testing import (assert_array_equal,
                            run_module_suite)
 
 
+def stepped_1d(arr_1d):
+    # Make a version of `arr_1d` which is not contiguous
+    return np.vstack((arr_1d, arr_1d)).ravel(order='F')[::2]
+
+
+def test_offset():
+    # Test ndarray_offset function
+    for dt in (np.int32, np.float64):
+        index = np.array([1, 1], dtype=np.intp)
+        A = np.array([[1,0,0],[0,2,0],[0,0,3]], dtype=dt)
+        strides = np.array(A.strides, np.intp)
+        i_size = A.dtype.itemsize
+        assert_equal(ndarray_offset(index, strides, 2, i_size), 4)
+        assert_equal(A.ravel()[4], A[1,1])
+        # Index and strides arrays must be C-continuous. Test this is enforced
+        # by using non-contiguous versions of the input arrays.
+        assert_raises(ValueError, ndarray_offset,
+                      stepped_1d(index), strides, 2, i_size)
+        assert_raises(ValueError, ndarray_offset,
+                      index, stepped_1d(strides), 2, i_size)
+
+
 def test_trilinear_interp_cubic_voxels():
     A=np.ones((17,17,17))
     B=np.zeros(3)
@@ -30,6 +52,16 @@ def test_trilinear_interp_cubic_voxels():
     points=np.array([[0,0,0],[7.,7.5,7.],[3.5,3.5,3.5]])
     map_coordinates_trilinear_iso(A,points,strides,3,B)
     assert_array_almost_equal(B,np.array([ 1. ,  1.5,  1. ]))
+    # All of the input array, points array, strides array and output array must
+    # be C-contiguous.  Check by passing in versions that aren't C contiguous
+    assert_raises(ValueError, map_coordinates_trilinear_iso,
+                  A.copy(order='F'), points, strides, 3, B)
+    assert_raises(ValueError, map_coordinates_trilinear_iso,
+                  A, points.copy(order='F'), strides, 3, B)
+    assert_raises(ValueError, map_coordinates_trilinear_iso,
+                  A, points, stepped_1d(strides), 3, B)
+    assert_raises(ValueError, map_coordinates_trilinear_iso,
+                  A, points, strides, 3, stepped_1d(B))
 
 
 def test_eudx_further():
@@ -117,6 +149,56 @@ def test_eudx_bad_seed():
     eu = EuDX(a=ten.fa, ind=ind, seeds=[seed],
               odf_vertices=sphere.vertices, a_low=.2)
     assert_raises(ValueError, list, eu)
+
+
+def test_eudx_boundaries():
+    """
+    This test checks that the tracking will exclude seeds in both directions.
+    Here we create a volume of shape (50, 60, 40) and we will add 2 seeds
+    exactly at the volume's boundaries (49, 0, 0) and (0, 0, 0). Those should
+    not generate any streamlines as EuDX does not interpolate on the boundary
+    voxels. We also add 3 seeds not in the boundaries which should generate
+    streamlines without a problem.
+    """
+
+    fa = np.ones((50, 60, 40))
+    ind = np.zeros(fa.shape)
+    sphere = get_sphere('repulsion724')
+
+    seed = [49., 0, 0]
+    seed2 = [0., 0, 0]
+    seed3 = [48., 0, 0]
+    seed4 = [1., 0, 0]
+    seed5 = [5., 5, 5]
+
+    eu = EuDX(a=fa, ind=ind, seeds=[seed, seed2, seed3, seed4, seed5],
+              odf_vertices=sphere.vertices, a_low=.2,
+              total_weight=0.)
+    track = list(eu)
+
+    assert_equal(len(track), 3)
+
+
+def test_eudx_both_directions_errors():
+    # Test error conditions for both directions function
+    sphere = get_sphere('symmetric724')
+    seed = np.zeros(3, np.float64)
+    qa = np.zeros((4, 5, 6, 7), np.float64)
+    ind = qa.copy()
+    # All of seed, qa, ind, odf_vertices must be C-contiguous.  Check by
+    # passing in versions that aren't C contiguous
+    assert_raises(ValueError, eudx_both_directions,
+                  stepped_1d(seed), 0, qa, ind, sphere.vertices, 0.5, 0.1,
+                  1., 1., 2)
+    assert_raises(ValueError, eudx_both_directions,
+                  seed, 0, qa[..., ::2], ind, sphere.vertices, 0.5, 0.1,
+                  1., 1., 2)
+    assert_raises(ValueError, eudx_both_directions,
+                  seed, 0, qa, ind[..., ::2], sphere.vertices, 0.5, 0.1,
+                  1., 1., 2)
+    assert_raises(ValueError, eudx_both_directions,
+                  seed, 0, qa, ind, sphere.vertices[::2], 0.5, 0.1,
+                  1., 1., 2)
 
 
 if __name__ == '__main__':

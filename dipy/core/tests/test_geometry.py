@@ -12,17 +12,18 @@ from dipy.core.geometry import (sphere2cart, cart2sphere,
                                 lambert_equal_area_projection_polar,
                                 circumradius,
                                 vec2vec_rotmat,
-                                vector_norm
-                                )
+                                vector_norm,
+                                compose_transformations,
+                                compose_matrix,
+                                decompose_matrix)
 
+from nose.tools import assert_false, assert_equal, assert_raises
 
-
-from nose.tools import assert_true, assert_false, \
-     assert_equal, assert_raises
-
-from numpy.testing import assert_array_equal, assert_array_almost_equal
+from numpy.testing import (assert_array_equal, assert_array_almost_equal,
+                           run_module_suite)
 
 from dipy.testing import sphere_points
+from itertools import permutations
 
 
 def test_vector_norm():
@@ -196,3 +197,45 @@ def test_vec2vec_rotmat():
     for b in np.array([[0, 0, 1], [-1, 0, 0], [1, 0, 0]]):
         R = vec2vec_rotmat(a, b)
         assert_array_almost_equal(np.dot(R, a), b)
+
+
+def test_compose_transformations():
+
+    A = np.eye(4)
+    A[0, -1] = 10
+
+    B = np.eye(4)
+    B[0, -1] = -20
+
+    C = np.eye(4)
+    C[0, -1] = 10
+
+    CBA = compose_transformations(A, B, C)
+
+    assert_array_equal(CBA, np.eye(4))
+
+    assert_raises(ValueError, compose_transformations, A)
+
+
+def test_compose_decompose_matrix():
+
+    for translate in permutations(40 * np.random.rand(3), 3):
+        for angles in permutations(np.deg2rad(90 * np.random.rand(3)), 3):
+            for shears in permutations(3 * np.random.rand(3), 3):
+                for scale in permutations(3 * np.random.rand(3), 3):
+
+                    mat = compose_matrix(translate=translate, angles=angles,
+                                         shear=shears, scale=scale)
+                    sc, sh, ang, trans, _ = decompose_matrix(mat)
+
+                    assert_array_almost_equal(translate, trans)
+                    assert_array_almost_equal(angles, ang)
+
+                    assert_array_almost_equal(shears, sh)
+                    assert_array_almost_equal(scale, sc)
+
+
+if __name__ == '__main__':
+
+    run_module_suite()
+

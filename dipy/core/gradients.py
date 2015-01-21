@@ -26,6 +26,9 @@ class GradientTable(object):
         diffusion gradients
     bvals : (N,) ndarray
         The b-value, or magnitude, of each gradient direction.
+    qvals: (N,) ndarray
+        The q-value for each gradient direction. Needs big and small
+        delta.
     bvecs : (N,3) ndarray
         The direction, represented as a unit vector, of each gradient.
     b0s_mask : (N,) ndarray
@@ -56,6 +59,11 @@ class GradientTable(object):
     @auto_attr
     def bvals(self):
         return vector_norm(self.gradients)
+
+    @auto_attr
+    def qvals(self):
+        tau = self.big_delta - self.small_delta / 3.0
+        return np.sqrt(self.bvals / tau) / (2 * np.pi)
 
     @auto_attr
     def b0s_mask(self):

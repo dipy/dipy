@@ -846,7 +846,7 @@ def vec2vec_rotmat(u, v):
     # This is the case of two antipodal vectors:
     if norm_u_v == 2.0:
         return -np.eye(3)
-    
+
     w = np.cross(u, v)
     w = w / np.linalg.norm(w)
 
@@ -873,3 +873,31 @@ def vec2vec_rotmat(u, v):
     Rp = Rp * sign_reverser[:, np.newaxis]
 
     return Rp
+
+
+def compose_transformations(*mats):
+    """ Compose multiple 4x4 affine transformations in one 4x4 matrix
+
+    Parameters
+    -----------
+
+    mat1 : array, (4, 4)
+    mat2 : array, (4, 4)
+    ...
+    matN : array, (4, 4)
+
+    Returns
+    -------
+    matN x ... x mat2 x mat1 : array, (4, 4)
+    """
+
+    prev = mats[0]
+    if len(mats) < 2:
+        raise ValueError('At least two or more matrices are needed')
+
+    for mat in mats[1:]:
+
+        prev = np.dot(mat, prev)
+
+    return prev
+

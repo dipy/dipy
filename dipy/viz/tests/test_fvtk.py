@@ -7,6 +7,7 @@ from dipy import data
 
 import numpy.testing as npt
 
+
 @npt.dec.skipif(not fvtk.have_vtk)
 @npt.dec.skipif(not fvtk.have_vtk_colors)
 def test_fvtk_functions():
@@ -52,8 +53,8 @@ def test_fvtk_functions():
     fvtk.add(r, p)
 
     p2 = fvtk.peaks(np.random.rand(3, 3, 3, 5, 3),
-                   np.random.rand(3, 3, 3, 5),
-                   colors=(0, 1, 0))
+                    np.random.rand(3, 3, 3, 5),
+                    colors=(0, 1, 0))
     fvtk.add(r, p2)
 
     # Show everything

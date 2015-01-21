@@ -6,8 +6,8 @@ from .tissue_classifier cimport (TissueClassifier, TissueClass, TRACKPOINT,
 
 
 cdef extern from "dpy_math.h" nogil:
-    int signbit(double x)
-    double round(double x)
+    int dpy_signbit(double x)
+    double dpy_rint(double x)
     double abs(double)
 
 
@@ -16,7 +16,7 @@ cdef inline double stepsize(double point, double increment) nogil:
     """Compute the step size to the closest boundary in units of increment."""
     cdef:
         double dist
-    dist = round(point) + .5 - signbit(increment) - point
+    dist = dpy_rint(point) + .5 - dpy_signbit(increment) - point
     if dist == 0:
         # Point is on an edge, return step size to next edge.  This is most
         # likely to come up if overstep is set to 0.
@@ -25,7 +25,7 @@ cdef inline double stepsize(double point, double increment) nogil:
         return dist / increment
 
 
-cdef void step_to_boundry(double *point, double *direction,
+cdef void step_to_boundary(double *point, double *direction,
                           double overstep) nogil:
     """Takes a step from point in along direction just past a voxel boundary.
 
@@ -91,7 +91,58 @@ def local_tracker(DirectionGetter dg, TissueClassifier tc,
                   np.ndarray[np.float_t, ndim=2, mode='c'] streamline,
                   double stepsize,
                   int fixedstep):
+    """Tracks one direction from a seed.
 
+    This function is the main workhorse of the ``LocalTracking`` class defined
+    in ``dipy.tracking.local.localtracking``.
+
+    Parameters
+    ----------
+    dg : DirectionGetter
+        Used to choosing tracking directions.
+    tc : TissueClassifier
+        Used to check tissue type along path.
+    seed : array, float, 1d, (3,)
+        First point of the (partial) streamline.
+    first_step : array, float, 1d, (3,)
+        Used as ``prev_dir`` for selecting the step direction from the seed
+        point.
+    voxel_size : array, float, 1d, (3,)
+        Size of voxels in the data set.
+    streamline : array, float, 2d, (N, 3)
+        Output of tracking will be put into this array. The length of this
+        array, ``N``, will set the maximum allowable length of the streamline.
+    stepsize : float
+        Size of tracking steps in mm if ``fixed_step``.
+    fixedstep : bool
+        If true, a fixed stepsize is used, otherwise a variable step size is
+        used.
+
+    Returns
+    -------
+    end : int
+        This function updates the ``streamline`` array with points as it
+        tracks. Points in ``streamline[:abs(end)]`` were updated by the
+        function. The sign of ``end`` and whether the last point was included
+        depend on the reason that the streamline was terminated.
+
+        End reasons:
+            1) maximum length of the streamline was reached.
+                ``end == N``
+            2) ``direction_getter`` could not return a direction.
+                ``end > 0``
+                Last point is the point at which no direction could be found.
+            3) Streamline encountered an ENDPOINT.
+                ``end > 0``
+                Last point is the ENDPOINT.
+            3) Streamline encountered an OUTSIDEIMAGE.
+                ``end > 0``
+                Last point is the point before OUTSIDEIMAGE.
+            5) Streamline encountered an INVALIDPOINT.
+                ``end < 0``
+                Last point is INVALIDPOINT.
+
+    """
     if (seed.shape[0] != 3 or first_step.shape[0] != 3 or
         voxel_size.shape[0] != 3 or streamline.shape[1] != 3):
         raise ValueError()
@@ -106,7 +157,7 @@ def local_tracker(DirectionGetter dg, TissueClassifier tc,
     if fixedstep:
         step = fixed_step
     else:
-        step = step_to_boundry
+        step = step_to_boundary
 
     for i in range(3):
         streamline[0, i] = point[i] = seed[i]

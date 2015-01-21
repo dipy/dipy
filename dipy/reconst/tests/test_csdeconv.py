@@ -16,7 +16,7 @@ from dipy.reconst.csdeconv import (ConstrainedSphericalDeconvModel,
                                    odf_deconv,
                                    odf_sh_to_sharp,
                                    auto_response)
-from dipy.reconst.peaks import peak_directions, default_sphere
+from dipy.reconst.peaks import peak_directions
 from dipy.core.sphere_stats import angular_similarity
 from dipy.reconst.shm import (sf_to_sh, sh_to_sf, QballModel,
                               CsaOdfModel, sph_harm_ind_list)
@@ -88,6 +88,13 @@ def test_csdeconv():
 
     aresponse2, aratio2 = auto_response(gtab, big_S, roi_radius=3, fa_thr=0.5)
     assert_array_almost_equal(aresponse[0], response[0])
+
+    _, _, nvoxels = auto_response(gtab, big_S, roi_center=(5, 5, 4),
+                                  roi_radius=30, fa_thr=0.5, return_number_of_voxels=True)
+    assert_equal(nvoxels, 1000)
+    _, _, nvoxels = auto_response(gtab, big_S, roi_center=(5, 5, 4),
+                                  roi_radius=30, fa_thr=1, return_number_of_voxels=True)
+    assert_equal(nvoxels, 0)
 
 
 def test_odfdeconv():
@@ -231,7 +238,7 @@ def test_r2_term_odf_sharp():
     angles = [(0, 0), (angle, 0)]
 
     S, sticks = multi_tensor(gtab, mevals, S0, angles=angles,
-                             fractions=[50, 50], snr=SNR)    
+                             fractions=[50, 50], snr=SNR)
 
     odf_gt = multi_tensor_odf(sphere.vertices, mevals, angles, [50, 50])
     odfs_sh = sf_to_sh(odf_gt, sphere, sh_order=8, basis_type=None)
@@ -250,7 +257,7 @@ def test_r2_term_odf_sharp():
     sdt_model = ConstrainedSDTModel(gtab, ratio=3/15., sh_order=8)
     sdt_fit = sdt_model.fit(S)
     fodf = sdt_fit.odf(sphere)
-    
+
     directions_gt, _, _ = peak_directions(odf_gt, sphere)
     directions, _, _ = peak_directions(fodf, sphere)
     ang_sim = angular_similarity(directions_gt, directions)
@@ -388,4 +395,3 @@ def test_csd_superres():
 
 if __name__ == '__main__':
     run_module_suite()
-

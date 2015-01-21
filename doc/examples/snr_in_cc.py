@@ -51,7 +51,7 @@ print('Computing tensors...')
 tenmodel = TensorModel(gtab)
 tensorfit = tenmodel.fit(data, mask=mask)
 
-"""Next, we set our red-blue-green thresholds to (0.6, 1) in the x axis
+"""Next, we set our red-green-blue thresholds to (0.6, 1) in the x axis
 and (0, 0.1) in the y and z axes respectively.
 These values work well in practice to isolate the very RED voxels of the cfa map.
 

@@ -13,7 +13,7 @@ import numpy as np
 import nibabel as nib
 from dipy.data import fetch_stanford_hardi, read_stanford_hardi, get_sphere
 from dipy.reconst.shm import CsaOdfModel, normalize_data
-from dipy.reconst.peaks import peaks_from_model
+from dipy.direction import peaks_from_model
 
 """
 Download and read the data for this tutorial.

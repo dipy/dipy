@@ -39,15 +39,23 @@ from dipy.data.fetcher import (fetch_scil_b0,
                                read_sherbrooke_3shell,
                                fetch_isbi2013_2shell,
                                read_isbi2013_2shell,
-                               read_stanford_labels)
+                               read_stanford_labels,
+                               fetch_syn_data,
+                               read_syn_data,
+                               fetch_stanford_t1,
+	                       read_stanford_t1)
 
 from ..utils.arrfuncs import as_native_array
+from dipy.tracking.streamline import relist_streamlines
+
 
 THIS_DIR = dirname(__file__)
 SPHERE_FILES = {
     'symmetric362': pjoin(THIS_DIR, 'evenly_distributed_sphere_362.npz'),
     'symmetric642': pjoin(THIS_DIR, 'evenly_distributed_sphere_642.npz'),
-    'symmetric724': pjoin(THIS_DIR, 'evenly_distributed_sphere_724.npz')
+    'symmetric724': pjoin(THIS_DIR, 'evenly_distributed_sphere_724.npz'),
+    'repulsion724': pjoin(THIS_DIR, 'repulsion724.npz'),
+    'repulsion100': pjoin(THIS_DIR, 'repulsion100.npz')
 }
 
 
@@ -139,6 +147,8 @@ def get_sphere(name='symmetric362'):
         * 'symmetric362'
         * 'symmetric642'
         * 'symmetric724'
+        * 'repulsion724'
+        * 'repulsion100'
 
     Returns
     -------
@@ -187,6 +197,9 @@ def get_data(name='small_64D'):
         'gqi_vectors' the scanner wave vectors needed for a GQI acquisitions of 101 directions tested on Siemens 3T Trio
         'small_25' small ROI (10x8x2) DTI data (b value 2000, 25 directions)
         'test_piesno' slice of N=8, K=14 diffusion data
+        'reg_c' small 2D image used for validating registration
+        'reg_o' small 2D image used for validation registration
+        'cb_2' two vectorized cingulum bundles
 
     Returns
     -------
@@ -243,19 +256,15 @@ def get_data(name='small_64D'):
     if name == "S0_10":
         fimg = pjoin(THIS_DIR, 'S0_10slices.nii.gz')
         return fimg
-    if name == 'ISBI_testing_2shells_table':
-        fbvals = pjoin(THIS_DIR, '2shells-1500-2500-N64.bval')
-        fbvecs = pjoin(THIS_DIR, '2shells-1500-2500-N64.bvec')
-        fimg = pjoin(THIS_DIR, 'MS-SNR-30.nii.gz')
-        return fimg, fbvals, fbvecs
-    if name == '3shells_data':
-        fbvals = pjoin(THIS_DIR, '3shells-1000-2000-3500-N193.bval')
-        fbvecs = pjoin(THIS_DIR, '3shells-1000-2000-3500-N193.bvec')
-        fimg = pjoin(THIS_DIR, '3shells-1000-2000-3500-N193.nii.gz')
-        return fimg, fbvals, fbvecs
     if name == "test_piesno":
         fimg = pjoin(THIS_DIR, 'test_piesno.nii.gz')
         return fimg
+    if name == "reg_c":
+        return pjoin(THIS_DIR, 'C.npy')
+    if name == "reg_o":
+        return pjoin(THIS_DIR, 'circle.npy')
+    if name == 'cb_2':
+        return pjoin(THIS_DIR, 'cb_2.npz')
 
 
 def _gradient_from_file(filename):
@@ -329,35 +338,6 @@ def mrtrix_spherical_functions():
     return func_coef, func_discrete[..., 1:], sphere
 
 
-def two_shells_voxels(xmin,xmax,ymin,ymax,zmin,zmax):
-    fimg, fbvals, fbvecs = get_data('ISBI_testing_2shells_table')
-    bvals = np.loadtxt(fbvals)
-    bvecs = np.loadtxt(fbvecs).T
-    gtab = gradient_table(bvals[1:], bvecs[1:,:])
-    img = load(fimg)
-    data = img.get_data()
-    b0 = data[:,:,:,0]
-    data = data[xmin:xmax,ymin:ymax,zmin:zmax,1:]/b0[xmin:xmax,ymin:ymax,zmin:zmax,None]
-    affine = img.get_affine()
-    return data, affine, gtab
-
-
-def three_shells_voxels(xmin,xmax,ymin,ymax,zmin,zmax):
-    fimg, fbvals, fbvecs = get_data('3shells_data')
-    bvals = np.loadtxt(fbvals)
-    bvecs = np.loadtxt(fbvecs).T
-    bvecs[:,0] = -bvecs[:,0]
-    bvecs[:,1] = bvecs[:,1]
-    bvecs[:,2] = bvecs[:,2]
-    gtab = gradient_table(bvals[1:], bvecs[1:,:])
-    img = load(fimg)
-    data = np.double(img.get_data())
-    b0 = np.double(data[:,:,:,0])
-    data = data[xmin:xmax,ymin:ymax,zmin:zmax,1:]/b0[xmin:xmax,ymin:ymax,zmin:zmax,None]
-    affine = img.get_affine()
-    return data, affine, gtab
-
-
 dipy_cmaps = None
 def get_cmap(name):
     """Makes a callable, similar to maptlotlib.pyplot.get_cmap"""
@@ -384,3 +364,16 @@ def get_cmap(name):
         return rgba
 
     return simple_cmap
+
+
+def two_cingulum_bundles():
+    fname = get_data('cb_2')
+    res = np.load(fname)
+    cb1 = relist_streamlines(res['points'], res['offsets'])
+    cb2 = relist_streamlines(res['points2'], res['offsets2'])
+    return cb1, cb2
+
+def matlab_life_results():
+    matlab_rmse = np.load(pjoin(THIS_DIR, 'life_matlab_rmse.npy'))
+    matlab_weights = np.load(pjoin(THIS_DIR, 'life_matlab_weights.npy'))
+    return matlab_rmse, matlab_weights

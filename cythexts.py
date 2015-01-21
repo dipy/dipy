@@ -125,13 +125,15 @@ def cyproc_exts(exts, cython_min_version,
                         cython_min_version, cyversion))
 
 
-def build_stamp(pyxes):
+def build_stamp(pyxes, include_dirs=()):
     """ Cythonize files in `pyxes`, return pyx, C filenames, hashes
 
     Parameters
     ----------
     pyxes : sequence
         sequence of filenames of files on which to run Cython
+    include_dirs : sequence
+        Any extra include directories in which to find Cython files.
 
     Returns
     -------
@@ -141,11 +143,12 @@ def build_stamp(pyxes):
         hash>; "c_filename", <c filemane>; "c_hash", <c file SHA1 hash>.
     """
     pyx_defs = {}
+    includes = sum([['--include-dir', d] for d in include_dirs], [])
     for source in pyxes:
         base, ext = splitext(source)
         pyx_hash = sha1(open(source, 'rt').read()).hexdigest()
         c_filename = base + '.c'
-        check_call('cython ' + source, shell=True)
+        check_call(['cython'] + includes + [source])
         c_hash = sha1(open(c_filename, 'rt').read()).hexdigest()
         pyx_defs[source] = dict(pyx_hash=pyx_hash,
                                 c_filename=c_filename,
@@ -175,22 +178,19 @@ def write_stamps(pyx_defs, stamp_fname='pyx-stamps'):
                                            pyx_info['c_hash']))
 
 
-def find_pyx(root_dir=None):
+def find_pyx(root_dir):
     """ Recursively find files with extension '.pyx' starting at `root_dir`
 
     Parameters
     ----------
-    root_dir : None or str, optional
-        Directory from which to search for pyx files.  If None, use current
-        working directory.
+    root_dir : str
+        Directory from which to search for pyx files.
 
     Returns
     -------
     pyxes : list
         list of filenames relative to `root_dir`
     """
-    if root_dir is None:
-        root_dir = os.getcwd()
     pyxes = []
     for dirpath, dirnames, filenames in os.walk(root_dir):
         for filename in filenames:
@@ -201,7 +201,8 @@ def find_pyx(root_dir=None):
     return pyxes
 
 
-def get_pyx_sdist(sdist_like=sdist, hash_stamps_fname='pyx-stamps'):
+def get_pyx_sdist(sdist_like=sdist, hash_stamps_fname='pyx-stamps',
+                  include_dirs=()):
     """ Add pyx->c conversion, hash recording to sdist command `sdist_like`
 
     Parameters
@@ -212,6 +213,8 @@ def get_pyx_sdist(sdist_like=sdist, hash_stamps_fname='pyx-stamps'):
     hash_stamps_fname : str, optional
         filename to which to write hashes of pyx / py and c files.  Default is
         ``pyx-stamps``
+    include_dirs : sequence
+        Any extra include directories in which to find Cython files.
 
     Returns
     -------
@@ -242,7 +245,7 @@ def get_pyx_sdist(sdist_like=sdist, hash_stamps_fname='pyx-stamps'):
                     base, ext = splitext(source)
                     if ext in ('.pyx', '.py'):
                         pyxes.append(source)
-            self.pyx_defs = build_stamp(pyxes)
+            self.pyx_defs = build_stamp(pyxes, include_dirs)
             for pyx_fname, pyx_info in self.pyx_defs.items():
                 self.filelist.append(pyx_info['c_filename'])
             sdist_like.make_distribution(self)
@@ -256,7 +259,8 @@ def get_pyx_sdist(sdist_like=sdist, hash_stamps_fname='pyx-stamps'):
     return PyxSDist
 
 
-def build_stamp_source(root_dir=None, stamp_fname='pyx-stamps'):
+def build_stamp_source(root_dir=None, stamp_fname='pyx-stamps',
+                       include_dirs=None):
     """ Build cython c files, make stamp file in source tree `root_dir`
 
     Parameters
@@ -266,7 +270,13 @@ def build_stamp_source(root_dir=None, stamp_fname='pyx-stamps'):
         working directory.
     stamp_fname : str, optional
         Filename for stamp file we will write
+    include_dirs : None or sequence
+        Any extra Cython include directories
     """
+    if root_dir is None:
+        root_dir = os.getcwd()
+    if include_dirs is None:
+        include_dirs = [pjoin(root_dir, 'src')]
     pyxes = find_pyx(root_dir)
-    pyx_defs = build_stamp(pyxes)
+    pyx_defs = build_stamp(pyxes, include_dirs=include_dirs)
     write_stamps(pyx_defs, stamp_fname)

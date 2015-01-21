@@ -48,10 +48,11 @@ And the letters A-D represent the following points in
 """
 from __future__ import division, print_function, absolute_import
 
+from functools import wraps
+
 # Import tools writen in cython
 from .vox2track import *
 
-from functools import wraps
 from collections import defaultdict
 from ..utils.six.moves import xrange, map
 
@@ -61,7 +62,7 @@ from dipy.io.bvectxt import ornt_mapping
 from . import metrics
 
 # Import helper functions shared with vox2track
-from ._utils import _mapping_to_voxel, _to_voxel_coordinates
+from ._utils import (_mapping_to_voxel, _to_voxel_coordinates)
 
 def _rmi(index, dims):
     """An alternate implementation of numpy.ravel_multi_index for older
@@ -483,44 +484,6 @@ def target(streamlines, target_mask, affine, include=True):
             yield sl
 
 
-@_with_initialize
-def move_streamlines(streamlines, output_space, input_space=None):
-    """Applies a linear transformation, given by affine, to streamlines.
-
-    Parameters
-    ----------
-    streamlines : sequence
-        A set of streamlines to be transformed.
-    output_space : array (4, 4)
-        An affine matrix describing the target space to which the streamlines
-        will be transformed.
-    input_space : array (4, 4), optional
-        An affine matrix describing the current space of the streamlines, if no
-        ``input_space`` is specified, it's assumed the streamlines are in the
-        reference space. The reference space is the same as the space
-        associated with the affine matrix ``np.eye(4)``.
-
-    Returns
-    -------
-    streamlines : generator
-        A sequence of transformed streamlines.
-
-    """
-    if input_space is None:
-        affine = output_space
-    else:
-        inv = np.linalg.inv(input_space)
-        affine = np.dot(output_space, inv)
-
-    lin_T = affine[:3, :3].T.copy()
-    offset = affine[:3, 3].copy()
-    yield
-    # End of initialization
-
-    for sl in streamlines:
-        yield np.dot(sl, lin_T) + offset
-
-
 def reorder_voxels_affine(input_ornt, output_ornt, shape, voxel_size):
     """Calculates a linear transformation equivalent to changing voxel order.
 
@@ -648,3 +611,73 @@ def length(streamlines, affine=None):
         streamlines = move_streamlines(streamlines, affine)
     return map(metrics.length, streamlines)
 
+
+def unique_rows(in_array, dtype='f4'):
+    """
+    This (quickly) finds the unique rows in an array
+
+    Parameters
+    ----------
+    in_array: ndarray
+        The array for which the unique rows should be found
+
+    dtype: str, optional
+        This determines the intermediate representation used for the
+        values. Should at least preserve the values of the input array.
+
+    Returns
+    -------
+    u_return: ndarray
+       Array with the unique rows of the original array.
+
+    """
+    # Sort input array
+    order = np.lexsort(in_array.T)
+
+    # Apply sort and compare neighbors
+    x = in_array[order]
+    diff_x = np.ones(len(x), dtype=bool)
+    diff_x[1:] = (x[1:] != x[:-1]).any(-1)
+
+    # Reverse sort and return unique rows
+    un_order = order.argsort()
+    diff_in_array = diff_x[un_order]
+    return in_array[diff_in_array]
+
+
+@_with_initialize
+def move_streamlines(streamlines, output_space, input_space=None):
+    """Applies a linear transformation, given by affine, to streamlines.
+
+    Parameters
+    ----------
+    streamlines : sequence
+        A set of streamlines to be transformed.
+    output_space : array (4, 4)
+        An affine matrix describing the target space to which the streamlines
+        will be transformed.
+    input_space : array (4, 4), optional
+        An affine matrix describing the current space of the streamlines, if no
+        ``input_space`` is specified, it's assumed the streamlines are in the
+        reference space. The reference space is the same as the space
+        associated with the affine matrix ``np.eye(4)``.
+
+    Returns
+    -------
+    streamlines : generator
+        A sequence of transformed streamlines.
+
+    """
+    if input_space is None:
+        affine = output_space
+    else:
+        inv = np.linalg.inv(input_space)
+        affine = np.dot(output_space, inv)
+
+    lin_T = affine[:3, :3].T.copy()
+    offset = affine[:3, 3].copy()
+    yield
+    # End of initialization
+
+    for sl in streamlines:
+        yield np.dot(sl, lin_T) + offset

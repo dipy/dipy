@@ -1,8 +1,10 @@
 #!/usr/bin/env python
 ''' Installation script for dipy package '''
 
+import numpy as np
 import os
 import sys
+from copy import deepcopy
 from os.path import join as pjoin, dirname
 from glob import glob
 
@@ -10,7 +12,6 @@ from glob import glob
 # update it when the contents of directories change.
 if os.path.exists('MANIFEST'): os.remove('MANIFEST')
 
-import numpy as np
 
 # Get version and release info, which is all stored in dipy/info.py
 ver_file = os.path.join('dipy', 'info.py')
@@ -77,26 +78,35 @@ from setup_helpers import install_scripts_bat, add_flag_checking
 
 # Define extensions
 EXTS = []
+
+# We use some defs from npymath, but we don't want to link against npymath lib
+ext_kwargs = {'include_dirs':[np.get_include()]}
+ext_kwargs['include_dirs'].append('src')
+
 for modulename, other_sources, language in (
-    ('dipy.reconst._peakdg', [], 'c'),
+    ('dipy.reconst.peak_direction_getter', [], 'c'),
     ('dipy.reconst.recspeed', [], 'c'),
     ('dipy.reconst.vec_val_sum', [], 'c'),
     ('dipy.reconst.quick_squash', [], 'c'),
     ('dipy.tracking.distances', [], 'c'),
     ('dipy.tracking.streamlinespeed', [], 'c'),
-    ('dipy.tracking.local.benchmarks', [], 'c'),
     ('dipy.tracking.local.localtrack', [], 'c'),
     ('dipy.tracking.local.direction_getter', [], 'c'),
     ('dipy.tracking.local.tissue_classifier', [], 'c'),
     ('dipy.tracking.local.interpolation', [], 'c'),
     ('dipy.tracking.vox2track', [], 'c'),
     ('dipy.tracking.propspeed', [], 'c'),
-    ('dipy.denoise.denspeed', [], 'c')
-    ):
+    ('dipy.denoise.denspeed', [], 'c'),
+    ('dipy.align.vector_fields', [], 'c'),
+    ('dipy.align.sumsqdiff', [], 'c'),
+    ('dipy.align.expectmax', [], 'c'),
+    ('dipy.align.crosscorr', [], 'c'),
+    ('dipy.align.bundlemin', [], 'c')):
+
     pyx_src = pjoin(*modulename.split('.')) + '.pyx'
     EXTS.append(Extension(modulename, [pyx_src] + other_sources,
                           language=language,
-                          include_dirs=[np.get_include(), "src"]))
+                          **deepcopy(ext_kwargs)))  # deepcopy lists
 
 
 # Do our own build and install time dependency checking. setup.py gets called in
@@ -119,7 +129,13 @@ else: # We have nibabel
     # up pyx and c files.
     build_ext = cyproc_exts(EXTS, CYTHON_MIN_VERSION, 'pyx-stamps')
     # Add openmp flags if they work
-    extbuilder = add_flag_checking(build_ext, ['-fopenmp'])
+    simple_test_c = """int main(int argc, char** argv) { return(0); }"""
+    omp_test_c = """#include <omp.h>
+    int main(int argc, char** argv) { return(0); }"""
+    extbuilder = add_flag_checking(
+        build_ext, [[['/arch:SSE2'], [], simple_test_c, 'USING_VC_SSE2'],
+            [['-msse2', '-mfpmath=sse'], [], simple_test_c, 'USING_GCC_SSE2'],
+            [['-fopenmp'], ['-fopenmp'], omp_test_c, 'HAVE_OPENMP']], 'dipy')
 
 # Installer that checks for install-time dependencies
 class installer(install.install):
@@ -135,7 +151,7 @@ cmdclass = dict(
     build_ext=extbuilder,
     install=installer,
     install_scripts=install_scripts_bat,
-    sdist=get_pyx_sdist())
+    sdist=get_pyx_sdist(include_dirs=['src']))
 
 
 def main(**extra_args):
@@ -157,10 +173,14 @@ def main(**extra_args):
           packages     = ['dipy',
                           'dipy.tests',
                           'dipy.align',
+                          'dipy.align.tests',
                           'dipy.core',
                           'dipy.core.tests',
+                          'dipy.direction',
+                          'dipy.direction.tests',
                           'dipy.tracking',
                           'dipy.tracking.local',
+                          'dipy.tracking.local.tests',
                           'dipy.tracking.tests',
                           'dipy.tracking.benchmarks',
                           'dipy.reconst',
@@ -185,6 +205,7 @@ def main(**extra_args):
                           'dipy.sims.tests',
                           'dipy.denoise',
                           'dipy.denoise.tests'],
+
           ext_modules = EXTS,
           # The package_data spec has no effect for me (on python 2.6) -- even
           # changing to data_files doesn't get this stuff included in the source
@@ -203,7 +224,8 @@ def main(**extra_args):
                           pjoin('bin', 'dipy_quickbundles')],
           cmdclass = cmdclass,
           **extra_args
-         )
+        )
+
 
 #simple way to test what setup will do
 #python setup.py install --prefix=/tmp

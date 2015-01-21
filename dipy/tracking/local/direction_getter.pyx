@@ -1,7 +1,7 @@
 cimport numpy as np
 
 """
-# DirectionGetter decleration:
+# DirectionGetter declaration:
 
 cdef class DirectionGetter:
     cdef int get_direction(self, double *point, double *direction) except -1
