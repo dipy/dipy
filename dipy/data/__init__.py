@@ -256,16 +256,6 @@ def get_data(name='small_64D'):
     if name == "S0_10":
         fimg = pjoin(THIS_DIR, 'S0_10slices.nii.gz')
         return fimg
-    if name == 'ISBI_testing_2shells_table':
-        fbvals = pjoin(THIS_DIR, '2shells-1500-2500-N64.bval')
-        fbvecs = pjoin(THIS_DIR, '2shells-1500-2500-N64.bvec')
-        fimg = pjoin(THIS_DIR, 'MS-SNR-30.nii.gz')
-        return fimg, fbvals, fbvecs
-    if name == '3shells_data':
-        fbvals = pjoin(THIS_DIR, '3shells-1000-2000-3500-N193.bval')
-        fbvecs = pjoin(THIS_DIR, '3shells-1000-2000-3500-N193.bvec')
-        fimg = pjoin(THIS_DIR, '3shells-1000-2000-3500-N193.nii.gz')
-        return fimg, fbvals, fbvecs
     if name == "test_piesno":
         fimg = pjoin(THIS_DIR, 'test_piesno.nii.gz')
         return fimg
@@ -346,35 +336,6 @@ def mrtrix_spherical_functions():
     # gradients[:, 3] are the b-values for each gradient/volume.
     sphere = Sphere(xyz=gradients[1:, :3])
     return func_coef, func_discrete[..., 1:], sphere
-
-
-def two_shells_voxels(xmin,xmax,ymin,ymax,zmin,zmax):
-    fimg, fbvals, fbvecs = get_data('ISBI_testing_2shells_table')
-    bvals = np.loadtxt(fbvals)
-    bvecs = np.loadtxt(fbvecs).T
-    gtab = gradient_table(bvals[1:], bvecs[1:,:])
-    img = load(fimg)
-    data = img.get_data()
-    b0 = data[:,:,:,0]
-    data = data[xmin:xmax,ymin:ymax,zmin:zmax,1:]/b0[xmin:xmax,ymin:ymax,zmin:zmax,None]
-    affine = img.get_affine()
-    return data, affine, gtab
-
-
-def three_shells_voxels(xmin,xmax,ymin,ymax,zmin,zmax):
-    fimg, fbvals, fbvecs = get_data('3shells_data')
-    bvals = np.loadtxt(fbvals)
-    bvecs = np.loadtxt(fbvecs).T
-    bvecs[:,0] = -bvecs[:,0]
-    bvecs[:,1] = bvecs[:,1]
-    bvecs[:,2] = bvecs[:,2]
-    gtab = gradient_table(bvals[1:], bvecs[1:,:])
-    img = load(fimg)
-    data = np.double(img.get_data())
-    b0 = np.double(data[:,:,:,0])
-    data = data[xmin:xmax,ymin:ymax,zmin:zmax,1:]/b0[xmin:xmax,ymin:ymax,zmin:zmax,None]
-    affine = img.get_affine()
-    return data, affine, gtab
 
 
 dipy_cmaps = None
