@@ -20,13 +20,13 @@ def mdf(s1, s2):
     Parameters
     ----------
     s1 : 2D array
-        a streamline (sequence of N-dimensional points)
+        A streamline (sequence of N-dimensional points).
     s2 : 2D array
-        a streamline (sequence of N-dimensional points)
+        A streamline (sequence of N-dimensional points).
 
     Returns
     -------
-    distance : double
-        distance between two streamlines
+    double
+        Distance between two streamlines.
     """
     return dist(MinimumAverageDirectFlipMetric(), s1, s2)
