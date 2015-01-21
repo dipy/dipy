@@ -17,7 +17,8 @@ def test_identity_feature():
     # Test subclassing Feature
     class Identity(dipymetric.Feature):
         def __init__(self):
-            self.is_order_invariant = False
+            dipymetric.Feature.__init__(self, is_order_invariant=False)
+            #self.is_order_invariant = False
 
         def infer_shape(self, streamline):
             return streamline.shape

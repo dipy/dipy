@@ -1,7 +1,6 @@
 
 import numpy as np
 import dipy.segment.metric as dipymetric
-from dipy.tracking.streamline import length
 
 from nose.tools import assert_true, assert_false, assert_equal, assert_almost_equal
 from numpy.testing import assert_array_equal, assert_raises, run_module_suite
@@ -39,14 +38,14 @@ def test_metric_minimum_average_direct_flip():
 
     # Test dist()
     features1 = metric.feature.extract(s1)
-    assert_true(metric.compatible(features1.shape, features1.shape))
+    assert_true(metric.are_compatible(features1.shape, features1.shape))
     dist = metric.dist(features1, features1)
     assert_equal(dist, 0.0)
     assert_equal(dipymetric.mdf(s1, s1), 0.0)
 
     # Features 1 and 2 do have the same number of points and dimensions
     features2 = metric.feature.extract(s2)
-    assert_true(metric.compatible(features1.shape, features2.shape))
+    assert_true(metric.are_compatible(features1.shape, features2.shape))
     dist = metric.dist(features1, features2)
     ground_truth = MDF_distance(s1, s2)
     assert_almost_equal(dist, ground_truth)
@@ -54,13 +53,13 @@ def test_metric_minimum_average_direct_flip():
 
     # Features 1 and 3 do not have the same number of dimensions
     features3 = metric.feature.extract(s3)
-    assert_false(metric.compatible(features1.shape, features3.shape))
+    assert_false(metric.are_compatible(features1.shape, features3.shape))
     assert_raises(ValueError, metric.dist, features1, features3)
     assert_raises(ValueError, dipymetric.mdf, s1, s3)
 
     # Features 1 and 4 do not have the same number of points
     features4 = metric.feature.extract(s4)
-    assert_false(metric.compatible(features1.shape, features4.shape))
+    assert_false(metric.are_compatible(features1.shape, features4.shape))
     assert_raises(ValueError, metric.dist, features1, features4)
     assert_raises(ValueError, dipymetric.dist, metric, s1, s4)
 
@@ -70,11 +69,11 @@ def test_subclassing_metric():
         pass
 
     metric = EmptyMetric()
-    assert_raises(NotImplementedError, metric.compatible, None, None)
+    assert_raises(NotImplementedError, metric.are_compatible, None, None)
     assert_raises(NotImplementedError, metric.dist, None, None)
 
     class MDF(dipymetric.Metric):
-        def compatible(self, shape1, shape2):
+        def are_compatible(self, shape1, shape2):
             return shape1 == shape2
 
         def dist(self, features1, features2):
@@ -91,143 +90,34 @@ def test_subclassing_metric():
     assert_equal(d1, d3)
 
 
-def test_metric_arclength():
-    metric = dipymetric.ArcLengthMetric()
-    shape = metric.feature.infer_shape(s1)
-    features = metric.feature.extract(s1)
-
-    assert_equal(shape, (1, 1))
-    assert_equal(np.float32(length(s1)), features[0, 0])
-    assert_equal(metric.dist(features, features), 0)
-
-    f1 = metric.feature.extract(s1)
-    f2 = metric.feature.extract(2 * s1)
-
-    dist = metric.dist(f1, f2)
-    assert_equal(f1, f2 - f1)
-
-    compatibility = metric.compatible(f1.shape, f2.shape)
-    assert_true(compatibility)
-
-    class ArcLengthFeature(dipymetric.Feature):
-        def infer_shape(self, streamline):
-            return (1, 1)
-
-        def extract(self, streamline):
-            length_ = length(streamline).astype('f4')
-            return np.array([[length_]])
-
-    class ArcLengthMetric(dipymetric.Metric):
-        def __init__(self):
-            dipymetric.Metric.__init__(self, ArcLengthFeature())
-
-        def dist(self, features1, features2):
-            return np.abs(features1 - features2)[0, 0]
-
-    metric_python = ArcLengthMetric()
-    dist_python = metric.dist(metric_python.feature.extract(s1),
-                              metric_python.feature.extract(2 * s1))
-
-    assert_equal(dist, dist_python)
-
-
-def test_weighted_sum_metric():
-    class WeightedSumFeature(dipymetric.Feature):
-        def __init__(self):
-            self.features = []
-            self.shapes = []
-
-        def add_feature(self, feature):
-            self.features.append(feature)
-            self.is_order_invariant &= feature.is_order_invariant
-
-        def infer_shape(self, streamline):
-            nb_scalars = 0
-            for feature in self.features:
-                feature_shape = feature.infer_shape(streamline)
-                nb_scalars += feature_shape[0] * feature_shape[1]
-
-            return (1, nb_scalars)
-
-        def extract(self, streamline):
-            features_list = []
-            self.shapes = []
-            for feature in self.features:
-                features = feature.extract(streamline)
-                features_list.append(features.flatten())
-                self.shapes.append(features.shape)
-
-            return np.concatenate(features_list)
-
-    class WeightedSumMetric(dipymetric.Metric):
-        def __init__(self):
-            super(WeightedSumMetric, self).__init__(WeightedSumFeature())
-            self.metrics = []
-            self.weights = []
-            self.shapes = []
-
-        def add_metric(self, metric, weight):
-            self.metrics.append(metric)
-            self.weights.append(weight)
-            self.feature.add_feature(metric.feature)
-
-        def dist(self, features1, features2):
-            d = 0.0
-            features_offset = 0
-            for shape, metric, weight in zip(self.feature.shapes, self.metrics, self.weights):
-                nb_scalars = shape[0] * shape[1]
-                features1_reshaped = features1[features_offset:features_offset+nb_scalars].reshape(shape)
-                features2_reshaped = features2[features_offset:features_offset+nb_scalars].reshape(shape)
-                features_offset += nb_scalars
-
-                d += weight * metric.dist(features1_reshaped, features2_reshaped)
-
-            return d
-
-    streamline1, streamline2 = s1, s2
-
-    weight1 = 0.5
-    weight2 = 0.25
-    metric1 = dipymetric.AveragePointwiseEuclideanMetric()
-    metric2 = dipymetric.ArcLengthMetric()
-
-    metric = WeightedSumMetric()
-    metric.add_metric(metric1, weight1)
-    metric.add_metric(metric2, weight2)
-    #metric.add_metric(dipymetric.SpatialMetric())
-    #metric.add_metric(dipymetric.OrientationMetric())
-    #metric.add_metric(dipymetric.ShapeMetric())
-
-    metric1_features1 = metric1.feature.extract(streamline1)
-    metric1_features2 = metric1.feature.extract(streamline2)
-    metric2_features1 = metric2.feature.extract(streamline1)
-    metric2_features2 = metric2.feature.extract(streamline2)
-    features1 = metric.feature.extract(streamline1)
-    features2 = metric.feature.extract(streamline2)
-
-    metric1_dist = metric1.dist(metric1_features1, metric1_features2)
-    metric2_dist = metric2.dist(metric2_features1, metric2_features2)
-    metric_dist = metric.dist(features1, features2)
-    assert_equal(metric_dist, weight1*metric1_dist + weight2*metric2_dist)
-
-    # d1 = metric.dist_between_features(features1, features2)
-    # d2 = metric.dist(streamline1, streamline2)
-    # assert_equal(d1, d2)
-
-
 def test_distance_matrix():
-    metric = dipymetric.ArcLengthMetric()
+    metric = dipymetric.SumPointwiseEuclideanMetric()
 
-    data1 = [s1, s2, s3, s4]
-    data2 = [s1, s2, s3, s4]
-    D = dipymetric.distance_matrix(metric, data1, data2)
-    # Distance matrix using `ArcLengthMetric` is symmetric.
-    assert_array_equal(D, D.T)
-    assert_array_equal(np.diag(D), np.zeros(len(data1)))
+    for dtype in [np.int32, np.int64, np.float32, np.float64]:
+        # Compute distances of all tuples spawn by the Cartesian product
+        # of `data` with itself.
+        data = (np.random.rand(4, 10, 3)*10).astype(dtype)
+        D = dipymetric.distance_matrix(metric, data)
+        assert_equal(D.shape, (len(data), len(data)))
+        assert_array_equal(np.diag(D), np.zeros(len(data)))
 
-    for i in range(1, len(data1)):
-        for j in range(i+1, len(data1)):
-            assert_equal(D[i, j], dipymetric.dist(metric, data1[i], data1[j]))
+        if metric.is_order_invariant:
+            # Distance matrix should be symmetric
+            assert_array_equal(D, D.T)
+
+        for i in range(len(data)):
+            for j in range(len(data)):
+                assert_equal(D[i, j], dipymetric.dist(metric, data[i], data[j]))
+
+        # Compute distances of all tuples spawn by the Cartesian product
+        # of `data` with `data2`.
+        data2 = (np.random.rand(3, 10, 3)*10).astype(dtype)
+        D = dipymetric.distance_matrix(metric, data, data2)
+        assert_equal(D.shape, (len(data), len(data2)))
+
+        for i in range(len(data)):
+            for j in range(len(data2)):
+                assert_equal(D[i, j], dipymetric.dist(metric, data[i], data2[j]))
 
 
 if __name__ == '__main__':

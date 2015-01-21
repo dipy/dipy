@@ -28,6 +28,10 @@ def test_quickbundles_empty_data():
     assert_equal(len(clusters), 0)
     assert_equal(len(clusters.centroids), 0)
 
+    clusters = quickbundles([], metric, threshold, ordering=[])
+    assert_equal(len(clusters), 0)
+    assert_equal(len(clusters.centroids), 0)
+
 
 def test_quickbundles_shape_uncompatibility():
     # QuickBundles' default metric (AveragePointwiseEuclideanMetric, aka MDF)
@@ -56,20 +60,12 @@ def test_quickbundles_2D():
     # plt.plot(*zip(*data[3:6, 0]), linestyle='None', marker='+')
     # plt.plot(*zip(*data[6:10, 0]), linestyle='None', marker='.')
     # plt.plot(*zip(*data[10:, 0]), linestyle='None', marker='*')
-
-    # from dipy.segment.metric import distance_matrix
-    # metric = dipymetric.Euclidean(dipymetric.CenterOfMass())
-    # dM = distance_matrix(metric, data, data)
-    # plt.figure()
-    # plt.imshow(dM, interpolation="nearest")
-    # plt.colorbar()
-
-    # plt.show(False)
+    # plt.show()
 
     # Theorically using a threshold above the following value will not
     # produce expected results.
     threshold = np.sqrt(2*(10**2))-np.sqrt(2)
-    metric = dipymetric.SumPointwiseEuclideanMetric(dipymetric.CenterOfMassFeature())
+    metric = dipymetric.SumPointwiseEuclideanMetric()
     ordering = np.arange(len(data))
     for i in range(100):
         rng.shuffle(ordering)
@@ -102,25 +98,21 @@ def test_quickbundles_2D():
 
 
 def test_quickbundles_streamlines():
-    metric = dipymetric.SumPointwiseEuclideanMetric(dipymetric.CenterOfMassFeature())
-    qb = QuickBundles(threshold=2*threshold, metric=metric)
+    rdata = streamline_utils.set_number_of_points(data, 10)
+    qb = QuickBundles(threshold=2*threshold)
 
-    clusters = qb.cluster(data)
-    assert_array_equal(list(itertools.chain(*clusters)), list(itertools.chain(*clusters_truth)))
-
-    # Cluster from a generator
-    clusters = qb.cluster(iter(data))
+    clusters = qb.cluster(rdata)
     assert_array_equal(list(itertools.chain(*clusters)), list(itertools.chain(*clusters_truth)))
 
     # Cluster read-only data
-    for datum in data:
+    for datum in rdata:
         datum.setflags(write=False)
 
-    clusters = qb.cluster(data)
+    clusters = qb.cluster(rdata)
 
     # Cluster data with different dtype (should be converted into float32)
     for datatype in [np.float64, np.int32, np.int64]:
-        newdata = [datum.astype(datatype) for datum in data]
+        newdata = [datum.astype(datatype) for datum in rdata]
         clusters = qb.cluster(newdata)
         assert_equal(clusters.centroids[0].dtype, np.float32)
 

@@ -20,9 +20,9 @@ class Cluster(object):
     Parameters
     ----------
     cluster_map : `ClusterMap` object
-        reference to the set of clusters this cluster is being part of
+        Reference to the set of clusters this cluster is being part of.
     id : int
-        id of this cluster in its associated `cluster_map`
+        Id of this cluster in its associated `cluster_map` object.
 
     Notes
     -----
@@ -57,8 +57,7 @@ class Cluster(object):
         return "Cluster(" + str(self) + ")"
 
     def __eq__(self, other):
-        return isinstance(other, Cluster) \
-            and self.indices == other.indices
+        return isinstance(other, Cluster) and self.indices == other.indices
 
     def __ne__(self, other):
         return not self == other
@@ -72,7 +71,7 @@ class Cluster(object):
         Parameters
         ----------
         *indices : list of indices
-            indices to add to this cluster
+            Indices to add to this cluster.
         """
         self.indices += indices
 
@@ -88,9 +87,9 @@ class ClusterCentroid(Cluster):
     Parameters
     ----------
     cluster_map : `ClusterMapCentroid` object
-        reference to the set of clusters this cluster is being part of
+        Reference to the set of clusters this cluster is being part of.
     id : int
-        id of this cluster in its associated `cluster_map`
+        Id of this cluster in its associated `cluster_map` object.
 
     Notes
     -----
@@ -113,9 +112,9 @@ class ClusterCentroid(Cluster):
         Parameters
         ----------
         id_datum : int
-            index of the data point to add to this cluster
+            Index of the data point to add to this cluster.
         features : 2D array
-            data point's features to modify this cluster's centroid
+            Data point's features to modify this cluster's centroid.
         """
         N = len(self)
         self.new_centroid = ((self.new_centroid * N) + features) / (N+1.)
@@ -127,7 +126,7 @@ class ClusterCentroid(Cluster):
         Returns
         -------
         converged : bool
-            tells if the centroid has moved
+            Tells if the centroid has moved.
         """
         converged = np.equal(self.centroid, self.new_centroid)
         self.centroid = self.new_centroid.copy()
@@ -144,7 +143,7 @@ class ClusterMap(object):
     Parameters
     ----------
     refdata : list
-        actual elements that clustered indices refer to
+        Actual elements that clustered indices refer to.
     """
     def __init__(self, refdata=Identity()):
         self._clusters = []
@@ -185,12 +184,27 @@ class ClusterMap(object):
         return "ClusterMap(" + str(self) + ")"
 
     def _richcmp(self, other, op):
-        """ Compare
+        """ Compares a cluster map with another cluster map or an integer.
+
+        Two `ClusterMap` objects are equal if they contains the same clusters.
+        When comparing a `ClusterMap` object with an integer, the comparison
+        will be performed on the size of the clusters instead.
+
         Parameters
         ----------
-        other:
-        op: rich comparison operators
-            lt, le, eq, ne, gt or ge (see module `operator`)
+        other: `ClusterMap` object or int
+            Object to compare to.
+        op: rich comparison operators (see module `operator`)
+            Valid operators are: lt, le, eq, ne, gt or ge.
+
+        Returns
+        -------
+        bool or 1D array (bool)
+            When comparing to another `ClusterMap` object, it returns whether
+            the two `ClusterMap` objects contain the same clusters or not.
+
+            When comparing to an integer the comparison is performed on the
+            clusters sizes, it returns an array of boolean.
         """
         if isinstance(other, ClusterMap):
             if op is operator.eq:
@@ -231,6 +245,7 @@ class ClusterMap(object):
         Parameters
         ----------
         cluster : `Cluster` object
+            Cluster to be added in this cluster map.
         """
         self.clusters.append(cluster)
         cluster.refdata = self.refdata
@@ -241,6 +256,7 @@ class ClusterMap(object):
         Parameters
         ----------
         cluster : `Cluster` object
+            Cluster to be removed from this cluster map.
         """
         self.clusters.remove(cluster)
 
@@ -260,7 +276,7 @@ class ClusterMapCentroid(ClusterMap):
     Parameters
     ----------
     refdata : list
-        actual elements that clustered indices refer to
+        Actual elements that clustered indices refer to.
     """
     @property
     def centroids(self):
@@ -276,16 +292,16 @@ class Clustering:
         Parameters
         ----------
         data : list of N-dimensional array
-            each array represents a data point.
-        ordering : iterable of indices
-            change `data` ordering when applying the clustering algorithm
+            Each array represents a data point.
+        ordering : iterable of indices, optional
+            Specifies the order in which data points will be clustered.
 
         Returns
         -------
-        clusters : `ClusterMap` object
-            result of the clustering
+        `ClusterMap` object
+            Result of the clustering.
         """
-        raise NotImplementedError("Subclass has to define this function!")
+        raise NotImplementedError("Subclass has to define method 'cluster(data, ordering)'!")
 
 
 class QuickBundles(Clustering):
@@ -304,7 +320,7 @@ class QuickBundles(Clustering):
         The maximum distance from a bundle for a streamline to be still
         considered as part of it.
     metric : str or `Metric` object
-        The distance metric to use. The metric can be 'mdf'.
+        The distance metric to use when comparing two streamlines.
     max_nb_clusters : int
         Limits the creation of bundles.
 
@@ -331,14 +347,14 @@ class QuickBundles(Clustering):
         Parameters
         ----------
         streamlines : list (or generator) of 2D array
-            each 2D array represents a sequence of 3D points (points, 3).
+            Each 2D array represents a sequence of 3D points (points, 3).
         ordering : iterable of indices
-            change `streamlines` ordering when applying QuickBundles
+            Specifies the order in which data points will be clustered.
 
         Returns
         -------
-        clusters : `ClusterMapCentroid` object
-            result of the clustering
+        `ClusterMapCentroid` object
+            Result of the clustering.
         """
         from dipy.segment.clustering_algorithms import quickbundles
         cluster_map = quickbundles(streamlines, self.metric,

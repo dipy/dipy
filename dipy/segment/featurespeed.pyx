@@ -8,31 +8,34 @@ from cythonutils cimport tuple2shape, shape2tuple, shape_from_memview
 
 
 cdef class Feature(object):
-    """ Provides functionalities to extract features from a sequence of
-    N-dimensional points represented as 2D array of shape (points, coordinates).
+    """ Extracts features from a sequential datum.
+
+    A sequence of N-dimensional points is represented as a 2D array with
+    shape (nb_points, nb_dimensions).
 
     Parameters
     ----------
     is_order_invariant : bool
-        tells if the sequence's ordering matters for extracting features
+        tells if this feature is invariant to the sequence's ordering (Default: True)
 
     Notes
     -----
-    By default, when inheriting from `Feature`, Python methods will call their
-    Python version (e.g. `Feature.c_extract` -> `self.extract`).
+    When subclassing `Feature`, one only needs to override the `extract` and
+    `infer_shape` methods.
     """
     def __init__(Feature self, is_order_invariant=True):
         # By default every features are order invariant.
         self.is_order_invariant = is_order_invariant
 
     property is_order_invariant:
-        """ Tells if the sequence's ordering matters for extracting features """
+        """ Is this feature invariant to the sequence's ordering """
         def __get__(Feature self):
             return bool(self.is_order_invariant)
         def __set__(self, int value):
             self.is_order_invariant = bool(value)
 
     cdef Shape c_infer_shape(Feature self, Data2D datum) nogil:
+        """ Cython version of `Feature.infer_shape`. """
         with gil:
             shape = self.infer_shape(np.asarray(datum))
             if type(shape) is int:
@@ -45,6 +48,7 @@ cdef class Feature(object):
                 raise TypeError("Only scalar, 1D or 2D array features are supported!")
 
     cdef void c_extract(Feature self, Data2D datum, Data2D out) nogil:
+        """ Cython version of `Feature.extract`. """
         cdef Data2D c_features
         with gil:
             features = np.asarray(self.extract(np.asarray(datum))).astype(np.float32)
@@ -62,46 +66,46 @@ cdef class Feature(object):
         out[:] = c_features
 
     cpdef infer_shape(Feature self, datum):
-        """ Infers features' shape from a sequence of N-dimensional points
-        represented as 2D array of shape (points, coordinates).
+        """ Infers the shape of features extracted from a sequential datum.
 
         Parameters
         ----------
         datum : 2D array
-            sequence of N-dimensional points
+            Sequence of N-dimensional points.
 
         Returns
         -------
-        shape : tuple
-            features' shape
+        tuple
+            Shape of the features.
         """
-        raise NotImplementedError("Feature subclasses must implement method `infer_shape(self, datum)`!")
+        raise NotImplementedError("Feature's subclasses must implement method `infer_shape(self, datum)`!")
 
     cpdef extract(Feature self, datum):
-        """ Extracts features from a sequence of N-dimensional points
-        represented as 2D array of shape (points, coordinates)
+        """ Extracts features from a sequential datum.
 
         Parameters
         ----------
         datum : 2D array
-            sequence of N-dimensional points
+            Sequence of N-dimensional points.
 
         Returns
         -------
-        features : 2D array
-            features extracted from `datum`
+        2D array
+            Features extracted from `datum`.
         """
-        raise NotImplementedError("Feature subclasses must implement method `extract(self, datum)`!")
+        raise NotImplementedError("Feature's subclasses must implement method `extract(self, datum)`!")
 
 
 cdef class CythonFeature(Feature):
-    """ Provides functionalities to extract features from a sequence of
-    N-dimensional points represented as 2D array of shape (points, coordinates).
+    """ Extracts features from a sequential datum.
+
+    A sequence of N-dimensional points is represented as a 2D array with
+    shape (nb_points, nb_dimensions).
 
     Parameters
     ----------
-    is_order_invariant : bool
-        tells if the sequence's ordering matters for extracting features
+    is_order_invariant : bool, optional
+        Tells if this feature is invariant to the sequence's ordering (Default: True).
 
     Notes
     -----
@@ -109,43 +113,45 @@ cdef class CythonFeature(Feature):
     C version (e.g. `CythonFeature.extract` -> `self.c_extract`).
     """
     cpdef infer_shape(CythonFeature self, datum):
-        """ Infers features' shape from a sequence of N-dimensional points
-        represented as 2D array of shape (points, coordinates).
-
-        *This method is calling the C version: `self.c_infer_shape`.*
+        """ Infers the shape of features extracted from a sequential datum.
 
         Parameters
         ----------
         datum : 2D array
-            sequence of N-dimensional points
+            Sequence of N-dimensional points.
 
         Returns
         -------
-        shape : tuple
-            features' shape
+        tuple
+            Shape of the features.
+
+        Notes
+        -----
+        This method calls its Cython version `self.c_infer_shape` accordingly.
         """
-        if not datum.flags.writeable:
+        if not datum.flags.writeable or datum.dtype is not np.float32:
             datum = datum.astype(np.float32)
 
         return shape2tuple(self.c_infer_shape(datum))
 
     cpdef extract(CythonFeature self, datum):
-        """ Extracts features from a sequence of N-dimensional points
-        represented as 2D array of shape (points, coordinates)
-
-        *This method is calling the C version: `self.c_extract`.*
+        """ Extracts features from a sequential datum.
 
         Parameters
         ----------
         datum : 2D array
-            sequence of N-dimensional points
+            Sequence of N-dimensional points.
 
         Returns
         -------
-        features : 2D array
-            features extracted from `datum`
+        2D array
+            Features extracted from `datum`.
+
+        Notes
+        -----
+        This method calls its Cython version `self.c_extract` accordingly.
         """
-        if not datum.flags.writeable:
+        if not datum.flags.writeable or datum.dtype is not np.float32:
             datum = datum.astype(np.float32)
 
         shape = shape2tuple(self.c_infer_shape(datum))
@@ -155,8 +161,10 @@ cdef class CythonFeature(Feature):
 
 
 cdef class IdentityFeature(CythonFeature):
-    """ Provides functionalities to extract features from a sequence of
-    N-dimensional points represented as 2D array of shape (points, coordinates).
+    """ Extracts features from a sequential datum.
+
+    A sequence of N-dimensional points is represented as a 2D array with
+    shape (nb_points, nb_dimensions).
 
     The features being extracted are the actual sequence's points.
     """
@@ -177,6 +185,20 @@ cdef class IdentityFeature(CythonFeature):
 
 
 cpdef infer_shape(Feature feature, streamlines):
+    """ Infers shape of the features extracted from streamlines.
+
+    Parameters
+    ----------
+    feature : `Feature` object
+        Tells how to infer shape of the features.
+    streamlines : list of 2D array
+        List of sequences of N-dimensional points.
+
+    Returns
+    -------
+    list of tuple
+        Shapes of the features inferred from `streamlines`.
+    """
     only_one_streamlines = False
     if type(streamlines) is np.ndarray:
         only_one_streamlines = True
@@ -209,6 +231,24 @@ cpdef infer_shape(Feature feature, streamlines):
 
 
 cpdef extract(Feature feature, streamlines):
+    """ Extracts features from streamlines.
+
+    Parameters
+    ----------
+    feature : `Feature` object
+        Tells how to extract features from the streamlines.
+    datum : list of 2D array
+        List of sequence of N-dimensional points.
+
+    Returns
+    -------
+    list of 2D array
+        List of features extracted from `streamlines`.
+
+    Notes
+    -----
+    This method calls its Cython version `self.c_extract` accordingly.
+    """
     only_one_streamlines = False
     if type(streamlines) is np.ndarray:
         only_one_streamlines = True

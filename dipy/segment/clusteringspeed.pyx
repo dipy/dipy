@@ -1,8 +1,10 @@
 # distutils: language = c
 # cython: wraparound=False, cdivision=True, boundscheck=False
 
+import numpy as np
 cimport numpy as np
 
+from libc.math cimport fabs
 from cythonutils cimport Data2D, Shape, shape2tuple, tuple2shape
 
 
@@ -13,133 +15,305 @@ cdef extern from "stdlib.h" nogil:
     void *realloc(void *ptr, size_t elsize)
     void *memset(void *ptr, int value, size_t num)
 
-
-#cdef struct Centroid:
-#    Data2D features
-#    int size
+DTYPE = np.float32
+DEF BIGGEST_DOUBLE = 1.7976931348623157e+308  # np.finfo('f8').max
+DEF BIGGEST_INT = 2147483647  # np.iinfo('i4').max
 
 
 cdef class Clusters:
-    """ Provides functionalities to interact with clustering outputs.
+    """ Provides Cython functionalities to interact with clustering outputs.
 
-    Useful container to create, remove, retrieve and filter clusters.
-    If `refdata` is given, elements will be returned instead of their
-    index when using `Cluster` objects.
-
-    Parameters
-    ----------
-    refdata : list
-        actual elements that clustered indices refer to
+    This class allows to create clusters and assign elements to them.
+    Assignements of a cluster are represented as a list of element indices.
     """
     def __init__(Clusters self):
         self._nb_clusters = 0
-        self._clusters_indices = NULL
-        self._clusters_size = NULL
+        self.clusters_indices = NULL
+        self.clusters_size = NULL
 
     def __dealloc__(Clusters self):
+        """ Deallocates memory created with `c_create_cluster` and `c_assign`. """
         for i in range(self._nb_clusters):
-            free(self._clusters_indices[i])
-            self._clusters_indices[i] = NULL
+            free(self.clusters_indices[i])
+            self.clusters_indices[i] = NULL
 
-        free(self._clusters_indices)
-        self._clusters_indices = NULL
-        free(self._clusters_size)
-        self._clusters_size = NULL
+        free(self.clusters_indices)
+        self.clusters_indices = NULL
+        free(self.clusters_size)
+        self.clusters_size = NULL
 
     cdef int c_size(Clusters self) nogil:
+        """ Returns the number of clusters. """
         return self._nb_clusters
 
-    cdef void c_assign(Clusters self, int id_cluster, int id_data, Data2D data) nogil except *:
-        cdef np.npy_intp C = self._clusters_size[id_cluster]
-        self._clusters_indices[id_cluster] = <int*> realloc(self._clusters_indices[id_cluster], (C+1)*sizeof(int))
-        self._clusters_indices[id_cluster][C] = id_data
-        self._clusters_size[id_cluster] += 1
+    cdef void c_assign(Clusters self, int id_cluster, int id_element, Data2D element) nogil except *:
+        """ Assigns an element to a cluster.
+
+        Parameters
+        ----------
+        id_cluster : int
+            Index of the cluster to which the element will be assigned.
+        id_element : int
+            Index of the element to assign.
+        element : 2d array (float)
+            Data of the element to assign.
+        """
+        cdef np.npy_intp C = self.clusters_size[id_cluster]
+        self.clusters_indices[id_cluster] = <int*> realloc(self.clusters_indices[id_cluster], (C+1)*sizeof(int))
+        self.clusters_indices[id_cluster][C] = id_element
+        self.clusters_size[id_cluster] += 1
 
     cdef int c_create_cluster(Clusters self) nogil except -1:
-        self._clusters_indices = <int**> realloc(self._clusters_indices, (self._nb_clusters+1)*sizeof(int*))
-        self._clusters_indices[self._nb_clusters] = <int*> calloc(0, sizeof(int))
-        self._clusters_size = <int*> realloc(self._clusters_size, (self._nb_clusters+1)*sizeof(int))
-        self._clusters_size[self._nb_clusters] = 0
+        """ Creates a cluster and adds it at the end of the list.
+
+        Returns
+        -------
+        id_cluster : int
+            Index of the new cluster.
+        """
+        self.clusters_indices = <int**> realloc(self.clusters_indices, (self._nb_clusters+1)*sizeof(int*))
+        self.clusters_indices[self._nb_clusters] = <int*> calloc(0, sizeof(int))
+        self.clusters_size = <int*> realloc(self.clusters_size, (self._nb_clusters+1)*sizeof(int))
+        self.clusters_size[self._nb_clusters] = 0
 
         self._nb_clusters += 1
         return self._nb_clusters - 1
 
 
 cdef class ClustersCentroid(Clusters):
-    """ Provides functionalities to interact with clustering outputs.
+    """ Provides Cython functionalities to interact with clustering outputs
+    having the notion of cluster's centroid.
 
-    Useful container to create, remove, retrieve and filter clusters.
-    It allows also to retrieve easely the centroid of every clusters.
-    If `refdata` is given, elements will be returned instead of their
-    index when using `ClusterCentroid` objects.
+    This class allows to create clusters, assign elements to them and
+    update their centroid.
 
     Parameters
     ----------
-    refdata : list
-        actual elements that clustered indices refer to
+    centroid_shape : int, tuple of int
+        Information about the shape of the centroid.
+    eps : float, optional
+        Consider the centroid has not changed if the changes per dimension
+        are less than this epsilon. (Default: 1e-6)
     """
-    def __init__(ClustersCentroid self, feature_shape, *args, **kwargs):
+    def __init__(ClustersCentroid self, centroid_shape, float eps=1e-6, *args, **kwargs):
         Clusters.__init__(self, *args, **kwargs)
-        if isinstance(feature_shape, int):
-            feature_shape = (1, feature_shape)
+        if isinstance(centroid_shape, int):
+            centroid_shape = (1, centroid_shape)
 
-        if not isinstance(feature_shape, tuple):
-            raise ValueError("'feature_shape' must be a tuple or a int.")
+        if not isinstance(centroid_shape, tuple):
+            raise ValueError("'centroid_shape' must be a tuple or a int.")
 
-        self._features_shape = tuple2shape(feature_shape)
+        self._centroid_shape = tuple2shape(centroid_shape)
 
-        self._centroids = NULL
-        self._new_centroids = NULL
+        self.centroids = NULL
+        self._updated_centroids = NULL
+        self.eps = eps
 
     def __dealloc__(ClustersCentroid self):
-        # __dealloc__ method of the superclass is automatically called.
-        # see: http://docs.cython.org/src/userguide/special_methods.html#finalization-method-dealloc
+        """ Deallocates memory created with `c_create_cluster` and `c_assign`.
+
+        Notes
+        -----
+        The `__dealloc__` method of the superclass is automatically called:
+        http://docs.cython.org/src/userguide/special_methods.html#finalization-method-dealloc
+        """
         cdef np.npy_intp i
         for i in range(self._nb_clusters):
-            free(&(self._centroids[i].features[0, 0]))
+            free(&(self.centroids[i].features[0, 0]))
 
-        free(self._centroids)
-        self._centroids = NULL
-        free(self._new_centroids)
-        self._new_centroids = NULL
+        free(self.centroids)
+        self.centroids = NULL
+        free(self._updated_centroids)
+        self._updated_centroids = NULL
 
-    cdef void c_assign(ClustersCentroid self, int id_cluster, int id_data, Data2D data) nogil except *:
-        cdef Data2D new_centroid = self._new_centroids[id_cluster].features
-        cdef np.npy_intp C = self._clusters_size[id_cluster]
+    cdef void c_assign(ClustersCentroid self, int id_cluster, int id_element, Data2D element) nogil except *:
+        """ Assigns an element to a cluster.
+
+        In addition of keeping element's index, an updated version of the
+        cluster's centroid is computed. The centroid is the average of all
+        elements in a cluster.
+
+        Parameters
+        ----------
+        id_cluster : int
+            Index of the cluster to which the element will be assigned.
+        id_element : int
+            Index of the element to assign.
+        element : 2d array (float)
+            Data of the element to assign.
+        """
+        cdef Data2D updated_centroid = self._updated_centroids[id_cluster].features
+        cdef np.npy_intp C = self.clusters_size[id_cluster]
         cdef np.npy_intp n, d
 
-        cdef np.npy_intp N = new_centroid.shape[0], D = new_centroid.shape[1]
+        cdef np.npy_intp N = updated_centroid.shape[0], D = updated_centroid.shape[1]
         for n in range(N):
             for d in range(D):
-                new_centroid[n, d] = ((new_centroid[n, d] * C) + data[n, d]) / (C+1)
+                updated_centroid[n, d] = ((updated_centroid[n, d] * C) + element[n, d]) / (C+1)
 
-        Clusters.c_assign(self, id_cluster, id_data, data)
+        Clusters.c_assign(self, id_cluster, id_element, element)
 
     cdef int c_update(ClustersCentroid self, np.npy_intp id_cluster) nogil:
-        cdef Data2D centroid = self._centroids[id_cluster].features
-        cdef Data2D new_centroid = self._new_centroids[id_cluster].features
-        cdef np.npy_intp N = new_centroid.shape[0], D = centroid.shape[1]
+        """ Update the centroid of a cluster.
+
+        Parameters
+        ----------
+        id_cluster : int
+            Index of the cluster of which its centroid will be updated.
+
+        Returns
+        -------
+        int
+            Tells whether the centroid has changed or not, i.e. converged.
+        """
+        cdef Data2D centroid = self.centroids[id_cluster].features
+        cdef Data2D updated_centroid = self._updated_centroids[id_cluster].features
+        cdef np.npy_intp N = updated_centroid.shape[0], D = centroid.shape[1]
         cdef np.npy_intp n, d
         cdef int converged = 1
 
         for n in range(N):
             for d in range(D):
-                converged &= centroid[n, d] == new_centroid[n, d]
-                centroid[n, d] = new_centroid[n, d]
+                converged &= fabs(centroid[n, d] - updated_centroid[n, d]) < self.eps
+                centroid[n, d] = updated_centroid[n, d]
 
         return converged
 
     cdef int c_create_cluster(ClustersCentroid self) nogil except -1:
-        self._centroids = <Centroid*> realloc(self._centroids, (self._nb_clusters+1)*sizeof(Centroid))
-        # Zero-initialize the Centroid structure
-        memset(&self._centroids[self._nb_clusters], 0, sizeof(Centroid))
+        """ Creates a cluster and adds it at the end of the list.
 
-        self._new_centroids = <Centroid*> realloc(self._new_centroids, (self._nb_clusters+1)*sizeof(Centroid))
+        Returns
+        -------
+        id_cluster : int
+            Index of the new cluster.
+        """
+        self.centroids = <Centroid*> realloc(self.centroids, (self._nb_clusters+1)*sizeof(Centroid))
+        # Zero-initialize the Centroid structure
+        memset(&self.centroids[self._nb_clusters], 0, sizeof(Centroid))
+
+        self._updated_centroids = <Centroid*> realloc(self._updated_centroids, (self._nb_clusters+1)*sizeof(Centroid))
         # Zero-initialize the new Centroid structure
-        memset(&self._new_centroids[self._nb_clusters], 0, sizeof(Centroid))
+        memset(&self._updated_centroids[self._nb_clusters], 0, sizeof(Centroid))
 
         with gil:
-            self._centroids[self._nb_clusters].features = <float[:self._features_shape.dims[0], :self._features_shape.dims[1]]> calloc(self._features_shape.size, sizeof(float))
-            self._new_centroids[self._nb_clusters].features = <float[:self._features_shape.dims[0], :self._features_shape.dims[1]]> calloc(self._features_shape.size, sizeof(float))
+            self.centroids[self._nb_clusters].features = <float[:self._centroid_shape.dims[0], :self._centroid_shape.dims[1]]> calloc(self._centroid_shape.size, sizeof(float))
+            self._updated_centroids[self._nb_clusters].features = <float[:self._centroid_shape.dims[0], :self._centroid_shape.dims[1]]> calloc(self._centroid_shape.size, sizeof(float))
 
         return Clusters.c_create_cluster(self)
+
+
+cdef class QuickBundles(object):
+    #cdef Data2D features
+    #cdef Data2D features_flip
+    #cdef ClustersCentroid clusters
+    #cdef Metric metric
+    #cdef double threshold
+    #cdef max_nb_clusters
+
+    def __init__(QuickBundles self, features_shape, Metric metric, double threshold, int max_nb_clusters=BIGGEST_INT):
+        self.metric = metric
+        self.features_shape = tuple2shape(features_shape)
+        self.threshold = threshold
+        self.max_nb_clusters=max_nb_clusters
+        self.clusters = ClustersCentroid(features_shape)
+        self.features = np.empty(features_shape, dtype=DTYPE)
+        self.features_flip = np.empty(features_shape, dtype=DTYPE)
+
+    cdef NearestCluster find_nearest_cluster(QuickBundles self, Data2D features) nogil except *:
+        """ Finds the nearest cluster of a streamline given its `features` vector.
+
+        Parameters
+        ----------
+        features : 2D array
+            Features of a streamline.
+
+        Returns
+        -------
+        `NearestCluster` object
+            Nearest cluster to `features` according to the given metric.
+        """
+        cdef:
+            np.npy_intp k
+            double dist
+            NearestCluster nearest_cluster
+
+        nearest_cluster.id = -1
+        nearest_cluster.dist = BIGGEST_DOUBLE
+
+        for k in range(self.clusters.c_size()):
+            dist = self.metric.c_dist(self.clusters.centroids[k].features, features)
+
+            # Keep track of the nearest cluster
+            if dist < nearest_cluster.dist:
+                nearest_cluster.dist = dist
+                nearest_cluster.id = k
+
+        return nearest_cluster
+
+    cdef int assignment_step(QuickBundles self, Data2D streamline, int streamline_id) nogil except -1:
+        """ Compute the assignment step of the QuickBundles algorithm.
+
+        It will assign a streamline to its closest cluster according to a given
+        metric. If the distance between the streamline and its closest cluster is
+        greater than the specified threshold, a new cluster is created and the
+        streamline is assigned to it.
+
+        Parameters
+        ----------
+        streamline : 2D array
+            The streamline to assign.
+        streamline_id : int
+            ID of the streamlines, usually its index.
+
+        Returns
+        -------
+        int
+            Index of the cluster the streamline has been assigned to.
+        """
+        cdef:
+            Data2D features_to_add = self.features
+            NearestCluster nearest_cluster, nearest_cluster_flip
+
+        # Check if streamline is compatible with the metric
+        if not self.metric.c_are_compatible(self.metric.feature.c_infer_shape(streamline), self.features_shape):
+            with gil:
+                raise ValueError("Streamlines features' shapes must be compatible according to the metric used!")
+
+        # Find nearest cluster to streamline
+        self.metric.feature.c_extract(streamline, self.features)
+        nearest_cluster = self.find_nearest_cluster(self.features)
+
+        # Find nearest cluster to s_i_flip if metric is not order invariant
+        if not self.metric.feature.is_order_invariant:
+            self.metric.feature.c_extract(streamline[::-1], self.features_flip)
+            nearest_cluster_flip = self.find_nearest_cluster(self.features_flip)
+
+            # If we found a lower distance using a flipped streamline,
+            #  add the flipped version instead
+            if nearest_cluster_flip.dist < nearest_cluster.dist:
+                nearest_cluster.id = nearest_cluster_flip.id
+                nearest_cluster.dist = nearest_cluster_flip.dist
+                features_to_add = self.features_flip
+
+        # Check if distance with the nearest cluster is below some threshold
+        # or if we already have the maximum number of clusters.
+        # If the former or the latter is true, assign streamline to its nearest cluster
+        # otherwise create a new cluster and assign the streamline to it.
+        if not (nearest_cluster.dist < self.threshold or self.clusters.c_size() >= self.max_nb_clusters):
+            nearest_cluster.id = self.clusters.c_create_cluster()
+
+        self.clusters.c_assign(nearest_cluster.id, streamline_id, features_to_add)
+        return nearest_cluster.id
+
+    cdef void update_step(QuickBundles self, int cluster_id) nogil except *:
+        """ Compute the update step of the QuickBundles algorithm.
+
+        It will update the centroid of a cluster given its index.
+
+        Parameters
+        ----------
+        cluster_id : int
+            ID of the cluster to update.
+
+        """
+        self.clusters.c_update(cluster_id)

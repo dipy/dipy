@@ -1,21 +1,31 @@
-from itertools import izip
-
 from dipy.segment.featurespeed import (Feature,
                                        IdentityFeature)
 
 from dipy.segment.metricspeed import (Metric,
+                                      SumPointwiseEuclideanMetric,
                                       AveragePointwiseEuclideanMetric,
                                       MinimumAverageDirectFlipMetric)
 
-from dipy.segment.metricspeed import dist
-# from dipy.segment.metricspeed import distance_matrix
+from dipy.segment.metricspeed import (dist,
+                                      distance_matrix)
 
 
 def mdf(s1, s2):
-    if type(s1) == list and type(s2) == list:
-        if len(s1) != len(s2):
-            raise ValueError("Lists of streamlines must have the same length.")
+    """ Computes the MDF (Minimum average Direct-Flip) distance between two
+    streamlines.
 
-        return [dist(MinimumAverageDirectFlipMetric(), e1, e2) for e1, e2 in izip(s1, s2)]
+    Streamlines must have the same number of points.
 
+    Parameters
+    ----------
+    s1 : 2D array
+        a streamline (sequence of N-dimensional points)
+    s2 : 2D array
+        a streamline (sequence of N-dimensional points)
+
+    Returns
+    -------
+    distance : double
+        distance between two streamlines
+    """
     return dist(MinimumAverageDirectFlipMetric(), s1, s2)

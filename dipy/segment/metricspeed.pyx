@@ -13,44 +13,48 @@ DEF biggest_double = 1.7976931348623157e+308  #  np.finfo('f8').max
 
 
 cdef class Metric(object):
-    """ Provides functionalities to compute distance between sequences of
-    N-dimensional features represented as 2D array of shape (points, coordinates).
+    """ Computes distance between two sequential data.
+
+    A sequence of N-dimensional points is represented as a 2D array with
+    shape (nb_points, nb_dimensions). A `feature` object can be specified
+    in order to calculate the distance between extracted features, rather
+    than directly between the sequential data.
 
     Parameters
     ----------
-    feature : `Feature` object
-        type of features that will be used for computing the distance between data
+    feature : `Feature` object, optional
+        It is used to extract features before computing the distance.
 
     Notes
     -----
-    By default, when inheriting from `Metric`, Python methods will call their
-    Python version (e.g. `Metric.c_dist` -> `self.dist`).
+    When subclassing `Metric`, one only needs to override the `dist` and
+    `are_compatible` methods.
     """
     def __init__(Metric self, Feature feature=IdentityFeature()):
-        # By default every metric will used data as its features representation.
         self.feature = feature
+        self.is_order_invariant = self.feature.is_order_invariant
 
     property feature:
-        """ type of features that will be used for computing distances between data """
+        """ `Feature` object used to extract features from sequential data """
         def __get__(Metric self):
             return self.feature
 
     property is_order_invariant:
-        """ does the sequence's ordering matter for computing distances between data """
+        """ Is this metric invariant to the sequence's ordering """
         def __get__(Metric self):
             return bool(self.is_order_invariant)
 
-    cdef int c_compatible(Metric self, Shape shape1, Shape shape2) nogil:
-        """ C version of `metric.compatible`. """
+    cdef int c_are_compatible(Metric self, Shape shape1, Shape shape2) nogil:
+        """ Cython version of `Metric.are_compatible`. """
         with gil:
-            return self.compatible(shape2tuple(shape1), shape2tuple(shape2))
+            return self.are_compatible(shape2tuple(shape1), shape2tuple(shape2))
 
     cdef double c_dist(Metric self, Data2D features1, Data2D features2) nogil:
-        """ C version of `metric.dist`. """
+        """ Cython version of `Metric.dist`. """
         with gil:
             return self.dist(np.asarray(features1), np.asarray(features2))
 
-    cpdef compatible(Metric self, shape1, shape2):
+    cpdef are_compatible(Metric self, shape1, shape2):
         """ Checks if features can be used by `metric.dist` based on their shape.
 
         Basically this method exists so we don't have to do this check
@@ -65,10 +69,10 @@ cdef class Metric(object):
 
         Returns
         -------
-        is_compatible : bool
-            features extracted from a data point.
+        are_compatible : bool
+            whether or not shapes are compatible
         """
-        raise NotImplementedError("Metric subclasses must implement method `compatible(self, shape1, shape2)`!")
+        raise NotImplementedError("Metric's subclasses must implement method `are_compatible(self, shape1, shape2)`!")
 
     cpdef double dist(Metric self, features1, features2):
         """ Computes distance between two data points based on their features.
@@ -76,110 +80,102 @@ cdef class Metric(object):
         Parameters
         ----------
         features1 : 2D array
-            features of the first data point
+            Features of the first data point.
         features2 : 2D array
-            features of the second data point
+            Features of the second data point.
 
         Returns
         -------
-        dist : double
-            distance measured between two data points using their features representation
+        double
+            Distance between two data points.
         """
-        raise NotImplementedError("Metric subclasses must implement method `dist(self, features1, features2)`!")
+        raise NotImplementedError("Metric's subclasses must implement method `dist(self, features1, features2)`!")
 
 
 cdef class CythonMetric(Metric):
-    """ Provides functionalities to compute distance between sequences
-    of N-dimensional features represented as 2D array of shape (points, coordinates).
+    """ Computes distance between two sequential data.
+
+    A sequence of N-dimensional points is represented as a 2D array with
+    shape (nb_points, nb_dimensions). A `feature` object can be specified
+    in order to calculate the distance between extracted features, rather
+    than directly between the sequential data.
 
     Parameters
     ----------
-    feature : `Feature` object
-        type of features that will be used for computing the distance between data
+    feature : `Feature` object, optional
+        It is used to extract features before computing the distance.
 
-    By default, when inheriting from `CythonMetric`, Python methods will call their
-    C version (e.g. `CythonMetric.dist` -> `self.c_dist`).
+    Notes
+    -----
+    When subclassing `CythonMetric`, one only needs to override the `c_dist` and
+    `c_are_compatible` methods.
     """
-    cpdef compatible(CythonMetric self, shape1, shape2):
+    cpdef are_compatible(CythonMetric self, shape1, shape2):
         """ Checks if features can be used by `metric.dist` based on their shape.
 
         Basically this method exists so we don't have to do this check
-        inside the `metric.dist` function (speedup).
-
-        *This method is calling the C version: `self.c_compatible`.*
+        inside method `dist` (speedup).
 
         Parameters
         ----------
         shape1 : tuple
-            shape of the first data point's features
+            Shape of the first data point's features.
         shape2 : tuple
-            shape of the second data point's features
+            Shape of the second data point's features.
 
         Returns
         -------
-        is_compatible : bool
-            features extracted from a data point.
+        bool
+            Whether or not shapes are compatible.
+
+        Notes
+        -----
+        This method calls its Cython version `self.c_are_compatible` accordingly.
         """
-        return self.c_compatible(tuple2shape(shape1), tuple2shape(shape2)) == 1
+        return self.c_are_compatible(tuple2shape(shape1), tuple2shape(shape2)) == 1
 
     cpdef double dist(CythonMetric self, features1, features2):
         """ Computes distance between two data points based on their features.
 
-        *This method is calling the C version: `self.c_dist`.*
-
         Parameters
         ----------
-        features1 : ndarray
-            features of the first data point
-        features2 : ndarray
-            features of the second data point
+        features1 : 2D array
+            Features of the first data point.
+        features2 : 2D array
+            Features of the second data point.
 
         Returns
         -------
-        is_compatible : bool
-            features extracted from a data point.
+        double
+            Distance between two data points.
+
+        Notes
+        -----
+        This method calls its Cython version `self.c_dist` accordingly.
         """
-        if not self.compatible(features1.shape, features2.shape):
-            raise ValueError("Features are not compatible to be used by this metric!")
+        if not self.are_compatible(features1.shape, features2.shape):
+            raise ValueError("Features are not compatible according to this metric!")
 
         return self.c_dist(features1, features2)
 
 
-cdef class PointwiseEuclideanMetric(CythonMetric):
-    r""" Provides basic functionalities for subclasses working with pointwise
-    euclidean distances between sequential data.
+cdef class SumPointwiseEuclideanMetric(CythonMetric):
+    r""" Computes the sum of pointwise Euclidean distances between two
+    sequential data.
 
-    A sequence of N-dimensional points is represented as 2D array of
-    shape (points, coordinates).
-
-    Parameters
-    ----------
-    feature : `Feature` object
-        type of features that will be used for computing the distance between data
-    """
-    cdef double c_dist(PointwiseEuclideanMetric self, Data2D features1, Data2D features2) nogil:
-        with gil:
-            raise NotImplementedError("PointwiseEuclideanMetric subclasses must implement method `c_dist(self, Data2D features1, Data2D features2)`!")
-
-    cdef int c_compatible(PointwiseEuclideanMetric self, Shape shape1, Shape shape2) nogil:
-        return same_shape(shape1, shape2)
-
-
-cdef class SumPointwiseEuclideanMetric(PointwiseEuclideanMetric):
-    r""" Provides functionalities to compute the sum of pointwise euclidean
-    distances between sequential data.
-
-    A sequence of N-dimensional points is represented as 2D array of
-    shape (points, coordinates).
+    A sequence of N-dimensional points is represented as a 2D array with
+    shape (nb_points, nb_dimensions). A `feature` object can be specified
+    in order to calculate the distance between the features, rather than
+    directly between the sequential data.
 
     Parameters
     ----------
-    feature : `Feature` object
-        type of features that will be used for computing the distance between data
+    feature : `Feature` object, optional
+        It is used to extract features before computing the distance.
 
     Notes
     -----
-    The distance calculated between two 2D sequences::
+    The distance between two 2D sequential data::
 
         s1       s2
 
@@ -192,7 +188,7 @@ cdef class SumPointwiseEuclideanMetric(PointwiseEuclideanMetric):
             2*      \
                 c    *2
 
-    is equal to $a+b+c$ where $a$ is the euclidean distance between s1[0] and
+    is equal to $a+b+c$ where $a$ is the Euclidean distance between s1[0] and
     s2[0], $b$ between s1[1] and s2[1] and $c$ between s1[2] and s2[2].
     """
     cdef double c_dist(SumPointwiseEuclideanMetric self, Data2D features1, Data2D features2) nogil:
@@ -211,22 +207,27 @@ cdef class SumPointwiseEuclideanMetric(PointwiseEuclideanMetric):
 
         return dist
 
+    cdef int c_are_compatible(SumPointwiseEuclideanMetric self, Shape shape1, Shape shape2) nogil:
+        return same_shape(shape1, shape2)
+
 
 cdef class AveragePointwiseEuclideanMetric(SumPointwiseEuclideanMetric):
-    r""" Provides functionalities to compute the average of pointwise euclidean
-    distances between sequential data.
+    r""" Computes the average of pointwise Euclidean distances between two
+    sequential data.
 
-    A sequence of N-dimensional points is represented as 2D array of
-    shape (points, coordinates).
+    A sequence of N-dimensional points is represented as a 2D array with
+    shape (nb_points, nb_dimensions). A `feature` object can be specified
+    in order to calculate the distance between the features, rather than
+    directly between the sequential data.
 
     Parameters
     ----------
-    feature : `Feature` object
-        type of feature that will be used for computing the distance between data
+    feature : `Feature` object, optional
+        It is used to extract features before computing the distance.
 
     Notes
     -----
-    The distance calculated between two 2D sequences::
+    The distance between two 2D sequential data::
 
         s1       s2
 
@@ -239,7 +240,7 @@ cdef class AveragePointwiseEuclideanMetric(SumPointwiseEuclideanMetric):
             2*      \
                 c    *2
 
-    is equal to $(a+b+c)/3$ where $a$ is the euclidean distance between s1[0] and
+    is equal to $(a+b+c)/3$ where $a$ is the Euclidean distance between s1[0] and
     s2[0], $b$ between s1[1] and s2[1] and $c$ between s1[2] and s2[2].
     """
     cdef double c_dist(AveragePointwiseEuclideanMetric self, Data2D features1, Data2D features2) nogil:
@@ -249,15 +250,15 @@ cdef class AveragePointwiseEuclideanMetric(SumPointwiseEuclideanMetric):
 
 
 cdef class MinimumAverageDirectFlipMetric(AveragePointwiseEuclideanMetric):
-    r""" Provides functionalities to compute the sum of pointwise euclidean
-    distances between sequential data.
+    r""" Computes the ADF distance (minimum average direct-flip) between two
+    sequential data.
 
-    A sequence of N-dimensional points is represented as 2D array of
-    shape (points, coordinates).
+    A sequence of N-dimensional points is represented as a 2D array with
+    shape (nb_points, nb_dimensions).
 
     Notes
     -----
-    The distance calculated between two 2D sequences::
+    The distance between two 2D sequential data::
 
         s1       s2
 
@@ -270,7 +271,7 @@ cdef class MinimumAverageDirectFlipMetric(AveragePointwiseEuclideanMetric):
             2*      \
                 c    *2
 
-    is equal to $\min((a+b+c)/3, (a'+b'+c')/3)$ where $a$ is the euclidean distance
+    is equal to $\min((a+b+c)/3, (a'+b'+c')/3)$ where $a$ is the Euclidean distance
     between s1[0] and s2[0], $b$ between s1[1] and s2[1], $c$ between s1[2]
     and s2[2], $a'$ between s1[0] and s2[2], $b'$ between s1[1] and s2[1]
     and $c'$ between s1[2] and s2[0].
@@ -279,7 +280,7 @@ cdef class MinimumAverageDirectFlipMetric(AveragePointwiseEuclideanMetric):
         super(MinimumAverageDirectFlipMetric, self).__init__(feature=IdentityFeature())
 
     property is_order_invariant:
-        """ does the sequence's ordering matter for computing distances between data """
+        """ Is this metric invariant to the sequence's ordering """
         def __get__(MinimumAverageDirectFlipMetric self):
             return True  # Ordering is handled in the distance computation
 
@@ -289,41 +290,83 @@ cdef class MinimumAverageDirectFlipMetric(AveragePointwiseEuclideanMetric):
         return min(dist_direct, dist_flipped)
 
 
-cpdef distance_matrix(Metric metric, streamlines1, streamlines2):
+cpdef distance_matrix(Metric metric, data1, data2=None):
+    """ Computes the distance matrix between two lists of sequential data.
+
+    The distance matrix is obtained by computing the pairwise distance of all
+    tuples spawn by the Cartesian product of `data1` with `data2`. If `data2`
+    is not provided, the Cartesian product of `data1` with itself is used
+    instead. A sequence of N-dimensional points is represented as a 2D array with
+    shape (nb_points, nb_dimensions).
+
+    Parameters
+    ----------
+    metric : `Metric` object
+        Tells how to compute the distance between two sequential data.
+    data1 : list of 2D array
+        List of sequences of N-dimensional points.
+    data2 : list of 2D array
+        Llist of sequences of N-dimensional points.
+
+    Returns
+    -------
+    2D array (double)
+        Distance matrix.
+    """
     cdef int i, j
-    shape = metric.feature.infer_shape(streamlines1[0])
-    distance_matrix = np.zeros((len(streamlines1), len(streamlines2)), dtype=np.float64)
+    if data2 is None:
+        data2 = data1
+
+    shape = metric.feature.infer_shape(data1[0].astype(np.float32))
+    distance_matrix = np.zeros((len(data1), len(data2)), dtype=np.float64)
     cdef:
         Data2D features1 = np.empty(shape, np.float32)
         Data2D features2 = np.empty(shape, np.float32)
 
-    for i in range(len(streamlines1)):
-        streamline1 = streamlines1[i] if streamlines1[i].flags.writeable else streamlines1[i].astype(np.float32)
-        metric.feature.c_extract(streamline1, features1)
-        for j in range(len(streamlines2)):
-            streamline2 = streamlines2[j] if streamlines2[j].flags.writeable else streamlines2[j].astype(np.float32)
-            metric.feature.c_extract(streamline2, features2)
+    for i in range(len(data1)):
+        datum1 = data1[i] if data1[i].flags.writeable and data1[i].dtype is np.float32 else data1[i].astype(np.float32)
+        metric.feature.c_extract(datum1, features1)
+        for j in range(len(data2)):
+            datum2 = data2[j] if data2[j].flags.writeable and data2[j].dtype is np.float32 else data2[j].astype(np.float32)
+            metric.feature.c_extract(datum2, features2)
             distance_matrix[i, j] = metric.c_dist(features1, features2)
 
     return distance_matrix
 
 
-cdef double c_dist(Metric metric, Data2D s1, Data2D s2) nogil except -1.0:
-    cdef Data2D features1, features2
-    cdef Shape shape1 = metric.feature.c_infer_shape(s1)
-    cdef Shape shape2 = metric.feature.c_infer_shape(s2)
+cpdef double dist(Metric metric, datum1, datum2) except -1.0:
+    """ Computes distance between two sequential data.
 
-    with gil:
-        if not metric.c_compatible(shape1, shape2):
-            raise ValueError("Features' shapes must match!")
+    A sequence of N-dimensional points is represented as a 2D array with
+    shape (nb_points, nb_dimensions).
 
-        features1 = np.empty(shape2tuple(shape1), s1.base.dtype)
-        features2 = np.empty(shape2tuple(shape2), s2.base.dtype)
+    Parameters
+    ----------
+    metric : `Metric` object
+        Tells how to compute the distance between `datum1` and `datum2`.
+    datum1 : 2D array
+        Sequence of N-dimensional points.
+    datum2 : 2D array
+        Sequence of N-dimensional points.
 
-    metric.feature.c_extract(s1, features1)
-    metric.feature.c_extract(s2, features2)
+    Returns
+    -------
+    double
+        Distance between two data points.
+    """
+    shape1 = metric.feature.infer_shape(datum1)
+    shape2 = metric.feature.infer_shape(datum2)
+
+    if not metric.are_compatible(shape1, shape2):
+        raise ValueError("Data features' shapes must be compatible!")
+
+    datum1 = datum1 if datum1.flags.writeable and datum1.dtype is np.float32 else datum1.astype(np.float32)
+    datum2 = datum2 if datum2.flags.writeable and datum2.dtype is np.float32 else datum2.astype(np.float32)
+
+    cdef:
+        Data2D features1 = np.empty(shape1, np.float32)
+        Data2D features2 = np.empty(shape2, np.float32)
+
+    metric.feature.c_extract(datum1, features1)
+    metric.feature.c_extract(datum2, features2)
     return metric.c_dist(features1, features2)
-
-
-cpdef double dist(Metric metric, Data2D s1, Data2D s2) except -1.0:
-    return c_dist(metric, s1, s2)

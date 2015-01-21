@@ -6,7 +6,18 @@ cimport numpy as np
 
 
 cdef Shape shape_from_memview(Data data) nogil:
-    """ Retrieves shape from a memoryview """
+    """ Retrieves shape from a memoryview object.
+
+    Parameters
+    ----------
+    data : memoryview object (float)
+        array for which the shape informations are retrieved
+
+    Returns
+    -------
+    shape : `Shape` struct
+        structure containing informations about the shape of `data`
+    """
     cdef Shape shape
     cdef int i
     shape.ndim = 0
@@ -21,7 +32,19 @@ cdef Shape shape_from_memview(Data data) nogil:
 
 
 cdef Shape tuple2shape(dims):
-    """ Converts a tuple to a shape """
+    """ Converts a Python's tuple into a `Shape` Cython's struct.
+
+    Parameters
+    ----------
+    dims : tuple of int
+        size of each dimension
+
+    Returns
+    -------
+    shape : `Shape` struct
+        structure containing shape informations obtained from `dims`
+    """
+    assert len(dims) < MAX_NDIM
     cdef Shape shape
     cdef int i
     shape.ndim = len(dims)
@@ -33,7 +56,18 @@ cdef Shape tuple2shape(dims):
 
 
 cdef shape2tuple(Shape shape):
-    """ Converts a shape to a tuple """
+    """ Converts a `Shape` Cython's struct into a Python's tuple.
+
+    Parameters
+    ----------
+    shape : `Shape` struct
+        structure containing shape informations
+
+    Returns
+    -------
+    dims : tuple of int
+        size of each dimension
+    """
     cdef int i
     dims = []
     for i in range(shape.ndim):
@@ -43,7 +77,25 @@ cdef shape2tuple(Shape shape):
 
 
 cdef int same_shape(Shape shape1, Shape shape2) nogil:
-    """ Checks if shape1 and shape2 has the same ndim and same dims """
+    """ Checks if two shapes are the same.
+
+    Two shapes are equals if they have the same number of dimensions
+    and that each dimension's size matches.
+
+    Parameters
+    ----------
+    shape1 : `Shape` struct
+        structure containing shape informations
+    shape2 : `Shape` struct
+        structure containing shape informations
+
+    Returns
+    -------
+    same_shape : int (0 or 1)
+        tells if the shape are equals
+    """
+
+    """  """
     cdef int i
     cdef int same_shape = True
 
