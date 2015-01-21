@@ -184,6 +184,41 @@ cdef class IdentityFeature(CythonFeature):
                 out[n, d] = datum[n, d]
 
 
+cdef class CenterOfMassFeature(CythonFeature):
+    """ Extracts features from a sequential datum.
+
+    A sequence of N-dimensional points is represented as a 2D array with
+    shape (nb_points, nb_dimensions).
+
+    The feature being extracted consists in one N-dimensional point representing
+    the mean of the points, i.e. the center of mass.
+    """
+    def __init__(CenterOfMassFeature self):
+        super(CenterOfMassFeature, self).__init__(is_order_invariant=True)
+
+    cdef Shape c_infer_shape(CenterOfMassFeature self, Data2D datum) nogil:
+        cdef Shape shape
+        shape.ndim = 2
+        shape.dims[0] = 1
+        shape.dims[1] = datum.shape[1]
+        shape.size = datum.shape[1]
+        return shape
+
+    cdef void c_extract(CenterOfMassFeature self, Data2D datum, Data2D out) nogil:
+        cdef int N = datum.shape[0], D = datum.shape[1]
+        cdef int i, d
+
+        for d in range(D):
+            out[0, d] = 0
+
+        for i in range(N):
+            for d in range(D):
+                out[0, d] += datum[i, d]
+
+        for d in range(D):
+            out[0, d] /= N
+
+
 cpdef infer_shape(Feature feature, streamlines):
     """ Infers shape of the features extracted from streamlines.
 

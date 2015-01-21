@@ -1,5 +1,6 @@
 from dipy.segment.featurespeed import (Feature,
-                                       IdentityFeature)
+                                       IdentityFeature,
+                                       CenterOfMassFeature)
 
 from dipy.segment.metricspeed import (Metric,
                                       SumPointwiseEuclideanMetric,

@@ -3,7 +3,8 @@ import dipy.segment.metric as dipymetric
 from dipy.segment.featurespeed import extract
 
 from nose.tools import assert_true, assert_false, assert_equal
-from numpy.testing import assert_array_equal, assert_raises, run_module_suite
+from numpy.testing import (assert_array_equal, assert_array_almost_equal,
+                           assert_raises, run_module_suite)
 
 
 dtype = "float32"
@@ -18,7 +19,6 @@ def test_identity_feature():
     class Identity(dipymetric.Feature):
         def __init__(self):
             dipymetric.Feature.__init__(self, is_order_invariant=False)
-            #self.is_order_invariant = False
 
         def infer_shape(self, streamline):
             return streamline.shape
@@ -29,7 +29,7 @@ def test_identity_feature():
     for feature in [dipymetric.IdentityFeature(), Identity()]:
         for s in [s1, s2, s3, s4]:
             # Test method infer_shape
-            assert_equal(feature.infer_shape(s1), s1.shape)
+            assert_equal(feature.infer_shape(s), s.shape)
 
             # Test method extract
             features = feature.extract(s)
@@ -43,6 +43,36 @@ def test_identity_feature():
             features_flip = feature.extract(s[::-1])
             assert_array_equal(features_flip, s[::-1])
             assert_true(np.any(np.not_equal(features, features_flip)))
+
+
+def test_feature_center_of_mass():
+    # Test subclassing Feature
+    class CenterOfMass(dipymetric.Feature):
+        def __init__(self):
+            dipymetric.Feature.__init__(self, is_order_invariant=True)
+
+        def infer_shape(self, streamline):
+            return (1, streamline.shape[1])
+
+        def extract(self, streamline):
+            return np.mean(streamline, axis=0, keepdims=True)
+
+    for feature in [dipymetric.CenterOfMassFeature(), CenterOfMass()]:
+        for s in [s1, s2, s3, s4]:
+            # Test method infer_shape
+            assert_equal(feature.infer_shape(s), (1, s.shape[1]))
+
+            # Test method extract
+            features = feature.extract(s)
+            assert_equal(features.shape, (1, s.shape[1]))
+            assert_array_equal(features, np.mean(s, axis=0, keepdims=True))
+
+        # This feature type is order invariant
+        assert_true(feature.is_order_invariant)
+        for s in [s1, s2, s3, s4]:
+            features = feature.extract(s)
+            features_flip = feature.extract(s[::-1])
+            assert_array_almost_equal(features, features_flip)
 
 
 def test_feature_extract():
