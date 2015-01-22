@@ -204,7 +204,7 @@ class SparseFascicleModel(ReconstModel, Cache):
         Parameters
         ----------
         data : array
-            The measured signal from one voxel.
+            The measured signal.
 
         mask : array, optional
             A boolean array used to mark the coordinates in the data that
