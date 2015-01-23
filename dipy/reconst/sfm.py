@@ -47,7 +47,7 @@ def sfm_design_matrix(gtab, sphere, response, mode='signal'):
     response : list of 3 elements
         The eigenvalues of a tensor which will serve as a kernel
         function.
-    mode : str {'signal' | 'odf'}
+    mode : str {'signal' | 'odf'}, optional
         Choose the (default) 'signal' for a design matrix containing predicted
         signal in the measurements defined by the gradient table for putative
         fascicles oriented along the vertices of the sphere. Otherwise, choose
@@ -140,24 +140,27 @@ class SparseFascicleModel(ReconstModel, Cache):
         Parameters
         ----------
         gtab : GradientTable class instance
-        sphere : Sphere class instance
-        response : (3,) array-like
+        sphere : Sphere class instance, optional
+            A sphere on which coefficients will be estimated. Default:
+        symmetric sphere with 362 points (from :mod:`dipy.data`).
+        response : (3,) array-like, optional
             The eigenvalues of a canonical tensor to be used as the response
             function of single-fascicle signals.
             Default:[0.0015, 0.0005, 0.0005]
 
-        solver : string or SKLearnLinearSolver object.
+        solver : string or SKLearnLinearSolver object, optional
             This will determine the algorithm used to solve the set of linear
             equations underlying this model. If it is a string it needs to be
             one of the following: {'ElasticNet', 'NNLS'}. Otherwise, it can be
-            an object that inherits from `dipy.optimize.SKLearnLinearSolver`
+            an object that inherits from `dipy.optimize.SKLearnLinearSolver`.
+            Default: 'ElasticNet'.
 
-        l1_ratio : float
+        l1_ratio : float, optional
             Sets the balance betwee L1 and L2 regularization in ElasticNet
-            [Zou2005]_.
-        alpha : float
+            [Zou2005]_. Default: 0.5
+        alpha : float, optional
             Sets the balance between least-squares error and L1/L2
-            regularization in ElasticNet [Zou2005]_.
+            regularization in ElasticNet [Zou2005]_. Default: 0.001
 
         Notes
         -----
@@ -201,11 +204,12 @@ class SparseFascicleModel(ReconstModel, Cache):
         Parameters
         ----------
         data : array
-            The measured signal from one voxel.
+            The measured signal.
 
-        mask : array
+        mask : array, optional
             A boolean array used to mark the coordinates in the data that
-            should be analyzed that has the shape data.shape[-1]
+            should be analyzed. Has the shape `data.shape[:-1]`. Default: None,
+            which implies that all points should be analyzed.
 
         Returns
         -------
@@ -300,13 +304,14 @@ class SparseFascicleFit(ReconstFit):
 
         Parameters
         ----------
-        gtab : GradientTable.
+        gtab : GradientTable, optional
             The bvecs/bvals to predict the signal on. Default: the gtab from
-            the model object
-        response : list of 3 elements.
+            the model object.
+        response : list of 3 elements, optional
             The eigenvalues of a tensor which will serve as a kernel
-            function. Default: the response of the model object
-        S0 : float or array.
+            function. Default: the response of the model object. Default to use
+            `model.response`.
+        S0 : float or array, optional
              The non-diffusion-weighted signal. Default: use the S0 of the data
 
         Returns
