@@ -132,8 +132,8 @@ class ConstrainedSphericalDeconvModel(SphHarmModel):
     @multi_voxel_fit
     def fit(self, data):
         dwi_data = data[self._where_dwi]
-        shm_coeff, _ = csdeconv(dwi_data, self.sh_order, self._X, self.B_reg,
-                                self.tau, P=self._P)
+        shm_coeff, _ = csdeconv(dwi_data, self._X, self.B_reg, self.tau,
+                                P=self._P)
         return SphHarmFit(self, shm_coeff, None)
 
 
@@ -359,7 +359,7 @@ def _solve_cholesky(Q, z):
     return f
 
 
-def csdeconv(dwsignal, sh_order, X, B_reg, tau=0.1, convergence=50, P=None):
+def csdeconv(dwsignal, X, B_reg, tau=0.1, convergence=50, P=None):
     r""" Constrained-regularized spherical deconvolution (CSD) [1]_
 
     Deconvolves the axially symmetric single fiber response function `r_rh` in
@@ -370,8 +370,6 @@ def csdeconv(dwsignal, sh_order, X, B_reg, tau=0.1, convergence=50, P=None):
     ----------
     dwsignal, : array
         Diffusion weighted signals to be deconvolved.
-    sh_order : int
-         maximal SH order of the SH representation
     X : array
         Prediction matrix which estimates diffusion weighted signals from FOD
         coefficients.
