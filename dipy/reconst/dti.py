@@ -84,7 +84,7 @@ def fractional_anisotropy(evals, axis=-1):
 
 def geodesic_anisotropy(evals, axis=-1):
     r"""
-    Geodesic anisotropy (FA) of a diffusion tensor.
+    Geodesic anisotropy (GA) of a diffusion tensor.
 
     Parameters
     ----------
@@ -107,12 +107,38 @@ def geodesic_anisotropy(evals, axis=-1):
         GA = \sqrt{\sum_{i=1}^3 \log^2{\left ( \lambda_i/<\mathbf{D}> \right )}}, 
         \quad \textrm{where} \quad <\mathbf{D}> = (\lambda_1\lambda_2\lambda_3)^{1/3}
 
+    Note that the notation, <D>, is often used as the mean diffusivity (MD) of the diffusion tensor 
+    and can lead to confusions in the literature (see [1]_ versus [2]_ versus [3]_ for example).
+
+    Reference [2]_ defines geodesic anisotropy (GA) with <D> as the MD in the denominator of the sum. 
+    This is wrong. The original paper [1]_ defines GA with <D> = det(D)^(1/3), as the 
+    isotropic part of the distance. This might be an explanation for the confusion.
+    The isotropic part of the diffusion tensor in Euclideau space is
+    the MD whereas the isotropic part of the tensor in log-Euclidean space is det(D)^(1/3). 
+    The Appendix of [1]_ and log-Euclidean derivations from [3]_ are clear on this.
+
+    Hence, all that to say that <D> = det(D)^(1/3) here for the GA definition and not MD.
+
     References
     ----------
 
     .. [1] P. G. Batchelor, M. Moakher, D. Atkinson, F. Calamante, A. Connelly, 
         "A rigorous framework for diffusion tensor calculus", Magnetic Resonance 
         in Medicine, vol. 53, pp. 221-225, 2005.
+
+    .. [2] M. M. Correia, V. F. Newcombe, G.B. Williams.
+        "Contrast-to-noise ratios for indices of anisotropy obtained from diffusion MRI: 
+        a study with standard clinical b-values at 3T". NeuroImage, vol. 57, pp. 1103-1115, 2011.
+
+    .. [3] A. D. Lee, etal, P. M. Thompson.  
+        "Comparison of fractional and geodesic anisotropy in diffusion tensor images 
+        of 90 monozygotic and dizygotic twins". 5th IEEE International Symposium on 
+        Biomedical Imaging (ISBI), pp. 943-946, May 2008.
+
+    .. [4] V. Arsigny, P. Fillard, X. Pennec, N. Ayache. 
+        "Log-Euclidean metrics for fast and simple calculus on diffusion tensors."
+        Magnetic Resonance in Medecine, vol 56, pp. 411-421, 2006. 
+
     """
 
     evals = _roll_evals(evals, axis)
