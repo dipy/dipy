@@ -368,7 +368,7 @@ def csdeconv(dwsignal, X, B_reg, tau=0.1, convergence=50, P=None):
 
     Parameters
     ----------
-    dwsignal, : array
+    dwsignal : array
         Diffusion weighted signals to be deconvolved.
     X : array
         Prediction matrix which estimates diffusion weighted signals from FOD
@@ -396,10 +396,74 @@ def csdeconv(dwsignal, X, B_reg, tau=0.1, convergence=50, P=None):
     -------
     fodf_sh : ndarray (``(sh_order + 1)*(sh_order + 2)/2``,)
          Spherical harmonics coefficients of the constrained-regularized fiber
-         ODF
+         ODF.
     num_it : int
          Number of iterations in the constrained-regularization used for
-         convergence
+         convergence.
+
+    Notes
+    -----
+    This section describes how the fitting of the SH coefficients is done.
+    Problem is to minimise per iteration:
+
+    $F(f_n) = ||Xf_n - S||^2 + \lambda^2 ||H_{n-1} f_n||^2$
+
+    Where $X$ maps current FOD SH coefficients $f_n$ to DW signals $s$ and
+    $H_n-1$ maps FOD SH coefficients $f_n$ to amplitudes along set of negative
+    directions identified in previous iteration, i.e. the matrix formed by the
+    rows of $B_{reg}$ for which $Hf_{n-1}<0$ where $B_{reg}$ maps $f_n$ to FOD
+    amplitude on a sphere.
+
+    Solve by differentiating and setting to zero:
+
+    $\Rightarrow \frac{\delta F}{\delta f_n} = 2X^T(Xf_n - S) + 2 \lambda^2
+    H_{n-1}^TH_{n-1}f_n=0$
+
+    Or:
+
+    $(X^TX + \lambda^2 H_{n-1}^TH_{n-1})f_n = X^Ts$
+
+    Define $Q = X^TX + \lambda^2 H_{n-1}^TH_{n-1}$ , which by construction is a
+    square positive definite symmetric matrix of size $(n_{SH} n_{SH})$. If
+    needed, positive definiteness can be enforced with a small minimum norm
+    regulariser (helps a lot with poorly conditioned direction sets and/or
+    superresolution):
+
+    $Q = X^TX + (\lambda H_{n-1}^T) (\lambda H_{n-1}) + \mu I$
+
+    Solve $Qf_n = X^Ts$ using Cholesky decomposition:
+
+    $Q = LL^T$
+
+    where $L$ is lower triangular. Then problem can be solved by
+    back-substitution:
+
+    $L_y = X^Ts$
+
+    $L^Tf_n = y$
+
+    To speeds things up further, form $P = X^TX + \mu I$, and update to form
+    $Q$ by rankn update with $H_{n-1}$. The dipy implementation looks like:
+
+        form initially $P = X^T X + \mu I$ and $\lambda B_{reg}$
+
+        for each voxel: form $z = X^Ts$
+
+            estimate $f_0$ by solving $Pf_0=z$. We use a simplified $l_max=4$
+            solution here, but it might not make a big difference.
+
+            Then iterate until no change in rows of $H$ used in $H_n$
+
+                form $H_{n}$ given $f_{n-1}$
+
+                form $Q = P + (\lambda H_{n-1}^T) (\lambda H_{n-1}$) (this can
+                be done by rankn update, but we currently do not use rankn
+                update).
+
+                solve $Qf_n = z$ using Cholesky decomposition
+
+    We'd like to thanks Donald Tournier for his help with describing and
+    implementing this algorithm.
 
     References
     ----------
@@ -419,7 +483,7 @@ def csdeconv(dwsignal, X, B_reg, tau=0.1, convergence=50, P=None):
         P = P + mu * np.eye(P.shape[0])
         fodf_sh = _solve_cholesky(P, z)
     # For the first iteration we use a smooth FOD that only uses SH orders up
-    # to 4 (the first 15 coefficients.
+    # to 4 (the first 15 coefficients).
     fodf = np.dot(B_reg[:, :15], fodf_sh[:15])
     # set threshold on FOD amplitude used to identify 'negative' values
     threshold = tau * np.mean(fodf)
