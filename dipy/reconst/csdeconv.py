@@ -499,10 +499,10 @@ def csdeconv(dwsignal, X, B_reg, tau=0.1, convergence=50, P=None):
     fodf = np.dot(B_reg[:, :15], fodf_sh[:15])
     # set threshold on FOD amplitude used to identify 'negative' values
     threshold = tau * np.mean(fodf)
-    k_last = (fodf < threshold)
+    where_fodf_small = (fodf < threshold).nonzero()[0]
 
     # If all fodf values are greater than zero
-    if not k_last.any():
+    if len(where_fodf_small) == 0:
         return fodf_sh, 0
 
     for num_it in range(1, convergence + 1):
@@ -512,8 +512,7 @@ def csdeconv(dwsignal, X, B_reg, tau=0.1, convergence=50, P=None):
         # sense, this "adds" a measurement, which can help to better estimate
         # the fodf_sh, even if you have more SH coefficients to estimate than
         # actual S measurements.
-        index = k_last.nonzero()[0]
-        H = B_reg.take(index, axis=0)
+        H = B_reg.take(where_fodf_small, axis=0)
 
         # We use the Cholesky decomposition to solve for the SH coefficients.
         Q = P + np.dot(H.T, H)
@@ -521,11 +520,12 @@ def csdeconv(dwsignal, X, B_reg, tau=0.1, convergence=50, P=None):
 
         # Sample the FOD using the regularization sphere and compute k.
         fodf = np.dot(B_reg, fodf_sh)
-        k = (fodf < threshold)
+        where_fodf_small_last = where_fodf_small
+        where_fodf_small = (fodf < threshold).nonzero()[0]
 
-        if (k == k_last).all():
+        if (len(where_fodf_small) == len(where_fodf_small_last) and
+            (where_fodf_small == where_fodf_small_last).all()):
             break
-        k_last = k
     else:
         msg = 'maximum number of iterations exceeded - failed to converge'
         warnings.warn(msg)
