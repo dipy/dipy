@@ -159,6 +159,9 @@ class ClusterMap(object):
 
     @refdata.setter
     def refdata(self, value):
+        if value is None:
+            value = Identity()
+
         self._refdata = value
         for cluster in self.clusters:
             cluster.refdata = self._refdata

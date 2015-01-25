@@ -59,7 +59,7 @@ def test_cluster_assign():
 
 
 def test_cluster_iter():
-    indices = range(len(data))
+    indices = list(range(len(data)))
     np.random.shuffle(indices)  # None trivial ordering
 
     # Test without specifying refdata
@@ -74,7 +74,7 @@ def test_cluster_iter():
 
 
 def test_cluster_getitem():
-    indices = range(len(data))
+    indices = list(range(len(data)))
     np.random.shuffle(indices)  # None trivial ordering
     advanced_indices = indices + [0, 1, 2, -1, -2, -3]
 
@@ -160,7 +160,7 @@ def test_cluster_centroid_assign():
 
 
 def test_cluster_centroid_iter():
-    indices = range(len(data))
+    indices = list(range(len(data)))
     np.random.shuffle(indices)  # None trivial ordering
 
     # Test without specifying refdata in ClusterCentroid
@@ -178,7 +178,7 @@ def test_cluster_centroid_iter():
 
 
 def test_cluster_centroid_getitem():
-    indices = range(len(data))
+    indices = list(range(len(data)))
     np.random.shuffle(indices)  # None trivial ordering
     advanced_indices = indices + [0, 1, 2, -1, -2, -3]
 
@@ -310,7 +310,7 @@ def test_cluster_map_iter():
 
 def test_cluster_map_getitem():
     nb_clusters = 11
-    indices = range(len(data))
+    indices = list(range(len(data)))
     np.random.shuffle(indices)  # None trivial ordering
     advanced_indices = indices + [0, 1, 2, -1, -2, -3]
 
@@ -483,7 +483,7 @@ def test_cluster_map_centroid_iter():
 
 def test_cluster_map_centroid_getitem():
     nb_clusters = 11
-    indices = range(len(data))
+    indices = list(range(len(data)))
     np.random.shuffle(indices)  # None trivial ordering
     advanced_indices = indices + [0, 1, 2, -1, -2, -3]
 

@@ -7,12 +7,12 @@ import dipy.segment.metric as dipymetric
 from dipy.segment.clustering_algorithms import quickbundles
 import dipy.tracking.streamline as streamline_utils
 
-from nose.tools import assert_equal, assert_items_equal, assert_raises
+from nose.tools import assert_equal, assert_raises
 from numpy.testing import assert_array_equal, run_module_suite
 
 dtype = "float32"
 threshold = 7
-data = [np.arange(3*05, dtype=dtype).reshape((-1, 3)) + 2*threshold,
+data = [np.arange(3*5, dtype=dtype).reshape((-1, 3)) + 2*threshold,
         np.arange(3*10, dtype=dtype).reshape((-1, 3)) + 0*threshold,
         np.arange(3*15, dtype=dtype).reshape((-1, 3)) + 8*threshold,
         np.arange(3*17, dtype=dtype).reshape((-1, 3)) + 2*threshold,
@@ -76,13 +76,13 @@ def test_quickbundles_2D():
             # Find the corresponding cluster in 'clusters_truth'
             for cluster_truth in clusters_truth:
                 if cluster_truth[0] in cluster.indices:
-                    assert_items_equal(cluster.indices, cluster_truth)
+                    assert_equal(sorted(cluster.indices), sorted(cluster_truth))
 
     # Cluster each cluster again using a small threshold
     for cluster in clusters:
         subclusters = quickbundles(data, metric, threshold=0, ordering=cluster.indices)
         assert_equal(len(subclusters), len(cluster))
-        assert_items_equal(itertools.chain(*subclusters), cluster.indices)
+        assert_equal(sorted(itertools.chain(*subclusters)), sorted(cluster.indices))
 
     # A very large threshold should produce only 1 cluster
     clusters = quickbundles(data, metric, threshold=np.inf)
@@ -93,7 +93,7 @@ def test_quickbundles_2D():
     # A very small threshold should produce only N clusters where N=len(data)
     clusters = quickbundles(data, metric, threshold=0)
     assert_equal(len(clusters), len(data))
-    assert_array_equal(map(len, clusters), np.ones(len(data)))
+    assert_array_equal(list(map(len, clusters)), np.ones(len(data)))
     assert_array_equal([idx for cluster in clusters for idx in cluster.indices], range(len(data)))
 
 
@@ -102,6 +102,10 @@ def test_quickbundles_streamlines():
     qb = QuickBundles(threshold=2*threshold)
 
     clusters = qb.cluster(rdata)
+    # By default `refdata` refers to data being clustered.
+    assert_equal(clusters.refdata, rdata)
+    # Set `refdata` to return indices instead of actual data points.
+    clusters.refdata = None
     assert_array_equal(list(itertools.chain(*clusters)), list(itertools.chain(*clusters_truth)))
 
     # Cluster read-only data
