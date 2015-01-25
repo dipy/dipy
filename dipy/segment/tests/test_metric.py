@@ -82,12 +82,12 @@ def test_subclassing_metric():
     metric = MDF()
     d1 = dipymetric.dist(metric, s1, s2)
     d2 = dipymetric.mdf(s1, s2)
-    assert_equal(d1, d2)
+    assert_almost_equal(d1, d2)
 
     features1 = metric.feature.extract(s1)
     features2 = metric.feature.extract(s2)
     d3 = metric.dist(features1, features2)
-    assert_equal(d1, d3)
+    assert_almost_equal(d1, d3)
 
 
 def test_distance_matrix():
