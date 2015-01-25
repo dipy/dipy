@@ -353,9 +353,21 @@ def forward_sdt_deconv_mat(ratio, n, r2_term=False):
     return np.diag(b), np.diag(bb)
 
 
+potrf, = la.lapack.get_lapack_funcs(('potrf',))
+potrs, = la.lapack.get_lapack_funcs(('potrs',))
+
 def _solve_cholesky(Q, z):
-    L = la.cho_factor(Q)
-    f = la.cho_solve(L, z)
+    L, info = potrf(Q, lower=False, overwrite_a=False, clean=False)
+    if info > 0:
+        msg = "%d-th leading minor not positive definite" % info
+        raise la.LinAlgError(msg)
+    if info < 0:
+        msg = 'illegal value in %d-th argument of internal potrf' % -info
+        raise ValueError(msg)
+    f, info = potrs(L, z, lower=False, overwrite_b=False)
+    if info != 0:
+        msg = 'illegal value in %d-th argument of internal potrs' % -info
+        raise ValueError(msg)
     return f
 
 
@@ -500,7 +512,8 @@ def csdeconv(dwsignal, X, B_reg, tau=0.1, convergence=50, P=None):
         # sense, this "adds" a measurement, which can help to better estimate
         # the fodf_sh, even if you have more SH coefficients to estimate than
         # actual S measurements.
-        H = B_reg[k_last]
+        index = k_last.nonzero()[0]
+        H = B_reg.take(index, axis=0)
 
         # We use the Cholesky decomposition to solve for the SH coefficients.
         Q = P + np.dot(H.T, H)
