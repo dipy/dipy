@@ -13,8 +13,6 @@ import numpy as np
 from nibabel import trackvis as tv
 from dipy.tracking.streamline import set_number_of_points
 from dipy.segment.clustering import QuickBundles
-#from dipy.segment.metric import MDF
-#from dipy.segment.quickbundles import QuickBundles
 from dipy.io.pickles import save_pickle
 from dipy.data import get_data
 from dipy.viz import fvtk
@@ -40,6 +38,7 @@ threshold. Since the MDF metric requires streamlines to have the same number
 of points, we first downsample them so they have only 18 points and then run
 the clustering algorithm.
 """
+
 qb = QuickBundles(threshold=10.)
 streamlines = set_number_of_points(streamlines, nb_points=18)
 clusters = qb.cluster(streamlines)
@@ -56,38 +55,41 @@ print("Streamlines indices of the first cluster:\n", clusters[0].indices)
 print("Centroid of the last cluster:\n", clusters[-1].centroid)
 
 """
+
 ::
-Nb. clusters: 4
 
-Cluster sizes: [64, 191, 44, 1]
+    Nb. clusters: 4
 
-Small clusters: array([False, False, False,  True], dtype=bool)
+    Cluster sizes: [64, 191, 44, 1]
 
-Streamlines indices of the first cluster:
-[0, 7, 8, 10, 11, 12, 13, 14, 15, 18, 26, 30, 33, 35, 41, 42, 45, 65, 66, 75,
- 85, 100, 101, 105, 115, 116, 119, 122, 123, 124, 125, 126, 128, 129, 135, 139,
- 142, 143, 144, 148, 151, 159, 167, 175, 180, 181, 185, 200, 208, 210, 224, 237,
- 246, 249, 251, 256, 267, 270, 280, 284, 293, 296, 297, 299]
+    Small clusters: array([False, False, False, True], dtype=bool)
 
-Centroid of the last cluster:
-array([[  84.83773804,  117.92590332,   77.32278442],
-       [  85.89845276,  116.67261505,   80.27609253],
-       [  86.2130661 ,  114.88985443,   83.13295746],
-       [  86.40007019,  112.50982666,   85.55088043],
-       [  86.54071045,  109.60722351,   87.31826019],
-       [  86.39044189,  106.43745422,   88.54563904],
-       [  86.29808807,  103.12637329,   89.29672241],
-       [  85.72164154,   99.78807068,   89.04328918],
-       [  84.6943512 ,   96.6314621 ,   88.31369781],
-       [  83.09349823,   93.83686066,   87.22660065],
-       [  81.00836945,   91.42190552,   86.07907867],
-       [  78.49610138,   89.20231628,   85.63204193],
-       [  75.75254822,   87.23584747,   85.22332001],
-       [  72.96138   ,   85.69472504,   84.09647369],
-       [  70.16287231,   85.14102173,   82.26060486],
-       [  67.67449188,   85.57660675,   79.98880005],
-       [  65.69326782,   86.66771698,   77.44818115],
-       [  64.02451324,   88.43942261,   75.0697403 ]], dtype=float32)
+    Streamlines indices of the first cluster:
+    [0, 7, 8, 10, 11, 12, 13, 14, 15, 18, 26, 30, 33, 35, 41, 42, 45, 65, 66, 75,
+     85, 100, 101, 105, 115, 116, 119, 122, 123, 124, 125, 126, 128, 129, 135, 139,
+     142, 143, 144, 148, 151, 159, 167, 175, 180, 181, 185, 200, 208, 210, 224, 237,
+     246, 249, 251, 256, 267, 270, 280, 284, 293, 296, 297, 299]
+
+    Centroid of the last cluster:
+    array([[  84.83773804,  117.92590332,   77.32278442],
+           [  85.89845276,  116.67261505,   80.27609253],
+           [  86.2130661 ,  114.88985443,   83.13295746],
+           [  86.40007019,  112.50982666,   85.55088043],
+           [  86.54071045,  109.60722351,   87.31826019],
+           [  86.39044189,  106.43745422,   88.54563904],
+           [  86.29808807,  103.12637329,   89.29672241],
+           [  85.72164154,   99.78807068,   89.04328918],
+           [  84.6943512 ,   96.6314621 ,   88.31369781],
+           [  83.09349823,   93.83686066,   87.22660065],
+           [  81.00836945,   91.42190552,   86.07907867],
+           [  78.49610138,   89.20231628,   85.63204193],
+           [  75.75254822,   87.23584747,   85.22332001],
+           [  72.96138   ,   85.69472504,   84.09647369],
+           [  70.16287231,   85.14102173,   82.26060486],
+           [  67.67449188,   85.57660675,   79.98880005],
+           [  65.69326782,   86.66771698,   77.44818115],
+           [  64.02451324,   88.43942261,   75.0697403 ]], dtype=float32)
+
 """
 
 """
