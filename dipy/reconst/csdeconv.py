@@ -353,8 +353,7 @@ def forward_sdt_deconv_mat(ratio, n, r2_term=False):
     return np.diag(b), np.diag(bb)
 
 
-potrf, = la.lapack.get_lapack_funcs(('potrf',))
-potrs, = la.lapack.get_lapack_funcs(('potrs',))
+potrf, potrs = la.get_lapack_funcs(('potrf', 'potrs'))
 
 def _solve_cholesky(Q, z):
     L, info = potrf(Q, lower=False, overwrite_a=False, clean=False)
