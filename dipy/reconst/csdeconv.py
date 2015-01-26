@@ -421,7 +421,7 @@ def csdeconv(dwsignal, X, B_reg, tau=0.1, convergence=50, P=None):
     $F(f_n) = ||Xf_n - S||^2 + \lambda^2 ||H_{n-1} f_n||^2$
 
     Where $X$ maps current FOD SH coefficients $f_n$ to DW signals $s$ and
-    $H_n-1$ maps FOD SH coefficients $f_n$ to amplitudes along set of negative
+    $H_{n-1}$ maps FOD SH coefficients $f_n$ to amplitudes along set of negative
     directions identified in previous iteration, i.e. the matrix formed by the
     rows of $B_{reg}$ for which $Hf_{n-1}<0$ where $B_{reg}$ maps $f_n$ to FOD
     amplitude on a sphere.
@@ -436,7 +436,7 @@ def csdeconv(dwsignal, X, B_reg, tau=0.1, convergence=50, P=None):
     $(X^TX + \lambda^2 H_{n-1}^TH_{n-1})f_n = X^Ts$
 
     Define $Q = X^TX + \lambda^2 H_{n-1}^TH_{n-1}$ , which by construction is a
-    square positive definite symmetric matrix of size $(n_{SH} n_{SH})$. If
+    square positive definite symmetric matrix of size $n_{SH} by n_{SH}$. If
     needed, positive definiteness can be enforced with a small minimum norm
     regulariser (helps a lot with poorly conditioned direction sets and/or
     superresolution):
@@ -461,7 +461,7 @@ def csdeconv(dwsignal, X, B_reg, tau=0.1, convergence=50, P=None):
 
         for each voxel: form $z = X^Ts$
 
-            estimate $f_0$ by solving $Pf_0=z$. We use a simplified $l_max=4$
+            estimate $f_0$ by solving $Pf_0=z$. We use a simplified $l_{max}=4$
             solution here, but it might not make a big difference.
 
             Then iterate until no change in rows of $H$ used in $H_n$
