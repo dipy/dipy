@@ -64,6 +64,10 @@ def test_sphere_cart():
     xyz = sphere2cart(r, theta, phi)
     yield assert_array_almost_equal, xyz, pt
 
+    # Test full circle on x=0, y=0, z=0
+    x, y, z = sphere2cart(*cart2sphere(0., 0., 0.))
+    yield assert_array_equal, (x, y, z), (0., 0., 0.)
+
 def test_invert_transform():
     n = 100.
     theta = np.arange(n)/n * np.pi   # Limited to 0,pi
