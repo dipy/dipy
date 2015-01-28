@@ -4,8 +4,7 @@ import scipy.ndimage
 
 from dipy.tracking.local import (BinaryTissueClassifier,
                                  ThresholdTissueClassifier,
-                                 ActTissueClassifier,
-                                 TissueClassifier)
+                                 ActTissueClassifier)
 
 
 def test_binary_tissue_classifier():
@@ -19,7 +18,7 @@ def test_binary_tissue_classifier():
     """
 
     mask = np.random.random((4, 4, 4))
-    mask[mask<0.4] = 0.0
+    mask[mask < 0.4] = 0.0
 
     btc_boolean = BinaryTissueClassifier(mask > 0)
     btc_float64 = BinaryTissueClassifier(mask)
