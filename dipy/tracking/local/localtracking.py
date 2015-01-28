@@ -104,14 +104,12 @@ class LocalTracking(object):
                 if not (self.return_all or
                         tissue_class == 2 or  # ENDPOINT
                         tissue_class == -1):  # OUTSIDEIMAGE
-                    print "invalid 1", tissue_class
                     continue
                 first_step = -first_step
                 stepsB, tissue_class = local_tracker(dg, tc, s, first_step, vs, B, ss, fixed)
                 if not (self.return_all or
                         tissue_class == 2 or  # ENDPOINT
                         tissue_class == -1):  # OUTSIDEIMAGE
-                    print "invalid 2", tissue_class
                     continue
 
                 if stepsB == 1:

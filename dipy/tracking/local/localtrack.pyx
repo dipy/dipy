@@ -175,13 +175,11 @@ def local_tracker(DirectionGetter dg, TissueClassifier tc,
         tissue_class = tc.check_point(pview)
         if tissue_class == TRACKPOINT:
             continue
-        elif tissue_class == ENDPOINT:
+        elif (tissue_class == ENDPOINT or
+              tissue_class == INVALIDPOINT):
             i += 1
             break
         elif tissue_class == OUTSIDEIMAGE:
-            break
-        elif tissue_class == INVALIDPOINT:
-            i = - (i + 1)
             break
     else:
         # maximum length of streamline has been reached, return everything
