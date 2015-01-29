@@ -17,6 +17,7 @@ from .vec_val_sum import vec_val_vect
 from ..core.onetime import auto_attr
 from .base import ReconstModel, ReconstFit
 
+
 def _roll_evals(evals, axis=-1):
     """
     Helper function to check that the evals provided to functions calculating
@@ -618,6 +619,56 @@ def apparent_diffusion_coef(q_form, sphere):
     return -np.dot(lower_triangular(q_form), D.T)
 
 
+def tensor_prediction(dti_params, gtab, S0):
+    """
+    Predict a signal given tensor parameters.
+
+    Parameters
+    ----------
+    dti_params : ndarray
+        Tensor parameters. The last dimension should have 12 tensor parameters: 3
+        eigenvalues, followed by the 3 corresponding eigenvectors
+
+    gtab : a GradientTable class instance
+        The gradient table for this prediction
+
+    S0 : float or ndarray
+        The non diffusion-weighted signal in every voxel, or across all
+        voxels. Default: 1
+
+    Notes
+    -----
+    The predicted signal is given by: $S(\theta, b) = S_0 * e^{-b ADC}$, where
+    $ADC = \theta Q \theta^T$, $\theta$ is a unit vector pointing at any
+    direction on the sphere for which a signal is to be predicted, $b$ is the b
+    value provided in the GradientTable input for that direction, $Q$ is the
+    quadratic form of the tensor determined by the input parameters.
+    """
+    evals = dti_params[..., :3]
+    evecs = dti_params[..., 3:].reshape(dti_params.shape[:-1] + (3, 3))
+    qform = vec_val_vect(evecs, evals)
+    sphere = Sphere(xyz=gtab.bvecs[~gtab.b0s_mask])
+    adc = apparent_diffusion_coef(qform, sphere)
+
+    if isinstance(S0, np.ndarray):
+        # If it's an array, we need to give it one more dimension:
+        S0 = S0[..., None]
+
+    # First do the calculation for the diffusion weighted measurements:
+    pre_pred_sig = S0 * np.exp(-gtab.bvals[~gtab.b0s_mask] * adc)
+
+    # Then we need to sort out what goes where:
+    pred_sig = np.zeros(pre_pred_sig.shape[:-1] + (gtab.bvals.shape[0],))
+
+    # These are the diffusion-weighted values
+    pred_sig[..., ~gtab.b0s_mask] = pre_pred_sig
+
+    # For completeness, we predict the mean S0 for the non-diffusion
+    # weighted measurements, which is our best guess:
+    pred_sig[..., gtab.b0s_mask] = S0
+    return pred_sig
+
+
 class TensorModel(ReconstModel):
     """ Diffusion Tensor
     """
@@ -645,6 +696,10 @@ class TensorModel(ReconstModel):
         args, kwargs : arguments and key-word arguments passed to the
            fit_method. See dti.wls_fit_tensor, dti.ols_fit_tensor for details
 
+        min_signal : float
+            The minimum signal value. Needs to be a strictly positive
+            number. Default: minimal signal in the data provided to `fit`.
+
         References
         ----------
         .. [1] Basser, P.J., Mattiello, J., LeBihan, D., 1994. Estimation of
@@ -670,7 +725,18 @@ class TensorModel(ReconstModel):
         self.design_matrix = design_matrix(self.gtab)
         self.args = args
         self.kwargs = kwargs
+        self.min_signal = self.kwargs.pop('min_signal', None)
+        if self.min_signal is not None and self.min_signal <= 0:
+            e_s = "The `min_signal` key-word argument needs to be strictly"
+            e_s += " positive."
+            raise ValueError(e_s)
 
+    def _min_positive_signal(self, data):
+        data = data.ravel()
+        if np.all(data==0):
+            return 0.0001
+        else:
+            return data[data > 0].min()
 
     def fit(self, data, mask=None):
         """ Fit method of the DTI model class
@@ -683,23 +749,53 @@ class TensorModel(ReconstModel):
         mask : array
             A boolean array used to mark the coordinates in the data that
             should be analyzed that has the shape data.shape[-1]
-        """
-        # If a mask is provided, we will use it to access the data
-        if mask is not None:
-            # Make sure it's boolean, so that it can be used to mask
-            mask = np.array(mask, dtype=bool, copy=False)
-            data_in_mask = data[mask]
-        else:
-            data_in_mask = data
 
+        """
+        if mask is None:
+            # Flatten it to 2D either way:
+            data_in_mask = np.reshape(data, (-1, data.shape[-1]))
+        else:
+            # Check for valid shape of the mask
+            if mask.shape != data.shape[:-1]:
+                raise ValueError("Mask is not the same shape as data.")
+            mask = np.array(mask, dtype=bool, copy=False)
+            data_in_mask = np.reshape(data[mask], (-1, data.shape[-1]))
+
+
+        if self.min_signal is None:
+            min_signal = self._min_positive_signal(data)
+        else:
+            min_signal = self.min_signal
+
+        data_in_mask = np.maximum(data_in_mask, min_signal)
         params_in_mask = self.fit_method(self.design_matrix, data_in_mask,
                                          *self.args, **self.kwargs)
 
-        dti_params = np.zeros(data.shape[:-1] + (12,))
-
-        dti_params[mask, :] = params_in_mask
+        if mask is None:
+            out_shape = data.shape[:-1] + (-1, )
+            dti_params = params_in_mask.reshape(out_shape)
+        else:
+            dti_params = np.zeros(data.shape[:-1] + (12,))
+            dti_params[mask, :] = params_in_mask
 
         return TensorFit(self, dti_params)
+
+
+    def predict(self, dti_params, S0=1):
+        """
+        Predict a signal for this TensorModel class instance given parameters.
+
+        Parameters
+        ----------
+        dti_params : ndarray
+            The last dimension should have 12 tensor parameters: 3
+            eigenvalues, followed by the 3 eigenvectors
+
+        S0 : float or ndarray
+            The non diffusion-weighted signal in every voxel, or across all
+            voxels. Default: 1
+        """
+        return tensor_prediction(dti_params, self.gtab, S0)
 
 
 class TensorFit(object):
@@ -949,6 +1045,21 @@ class TensorFit(object):
             The diffusion distance in every direction of the sphere in every
             voxel in the input data.
 
+        Notes
+        -----
+        This is based on equation 3 in [Aganj2010]_. To re-derive it from
+        scratch, follow steps in [Descoteaux2008]_, Section 7.9 Equation
+        7.24 but with an $r^2$ term in the integral.
+
+        .. [Aganj2010] Aganj, I., Lenglet, C., Sapiro, G., Yacoub, E., Ugurbil,
+            K., & Harel, N. (2010). Reconstruction of the orientation
+            distribution function in single- and multiple-shell q-ball imaging
+            within constant solid angle. Magnetic Resonance in Medicine, 64(2),
+            554-566. doi:DOI: 10.1002/mrm.22365
+
+        .. [Descoteaux2008] Descoteaux, M. (2008). PhD Thesis: High Angular
+           Resolution Diffusion MRI: from Local Estimation to Segmentation and
+           Tractography. ftp://ftp-sop.inria.fr/athena/Publications/PhDs/descoteaux_thesis.pdf
         """
         lower = 4 * np.pi * np.sqrt(np.prod(self.evals, -1))
         projection = np.dot(sphere.vertices, self.evecs)
@@ -963,7 +1074,6 @@ class TensorFit(object):
         odf = np.rollaxis(odf, 0, odf.ndim)
         return odf
 
-
     def adc(self, sphere):
         r"""
         Calculate the apparent diffusion coefficient (ADC) in each direction on
@@ -972,7 +1082,6 @@ class TensorFit(object):
         Parameters
         ----------
         sphere : Sphere class instance
-            The ADC will be calculated for each of the vertices in the sphere
 
         Returns
         -------
@@ -1016,35 +1125,16 @@ class TensorFit(object):
 
         Where:
         .. math ::
-            ADC = -b \theta Q \theta^T
+            ADC = \theta Q \theta^T
 
         $\theta$ is a unit vector pointing at any direction on the sphere for
         which a signal is to be predicted and $b$ is the b value provided in
         the GradientTable input for that direction
         """
-        # Get a sphere to pass to the object's ADC function. The b0 vectors
-        # will not be on the unit sphere, but we still want them to be there,
-        # so that we have a consistent index for these, so that we can fill
-        # that in later on, so we suppress the warning here:
-        with warnings.catch_warnings():
-            warnings.simplefilter("ignore")
-            sphere = Sphere(xyz=gtab.bvecs)
-
-        adc = self.adc(sphere)
-        # Predict!
-        if np.iterable(S0):
-            # If it's an array, we need to give it one more dimension:
-            S0 = S0[...,None]
-        pred_sig = S0 * np.exp(-gtab.bvals * adc)
-
-        # The above evaluates to nan for the b0 vectors, so we predict the mean
-        # S0 for those, which is our best guess:
-        pred_sig[...,gtab.b0s_mask] = S0
-
-        return pred_sig
+        return tensor_prediction(self.model_params, gtab, S0=S0)
 
 
-def wls_fit_tensor(design_matrix, data, min_signal=1):
+def wls_fit_tensor(design_matrix, data):
     r"""
     Computes weighted least squares (WLS) fit to calculate self-diffusion
     tensor using a linear regression model [1]_.
@@ -1057,9 +1147,6 @@ def wls_fit_tensor(design_matrix, data, min_signal=1):
     data : array ([X, Y, Z, ...], g)
         Data or response variables holding the data. Note that the last
         dimension should contain the data. It makes no copies of data.
-    min_signal : default = 1
-        All values below min_signal are repalced with min_signal. This is done
-        in order to avaid taking log(0) durring the tensor fitting.
 
     Returns
     -------
@@ -1105,9 +1192,6 @@ def wls_fit_tensor(design_matrix, data, min_signal=1):
        NeuroImage 33, 531-541.
     """
     tol = 1e-6
-    if min_signal <= 0:
-        raise ValueError('min_signal must be > 0')
-
     data = np.asarray(data)
     data_flat = data.reshape((-1, data.shape[-1]))
     dti_params = np.empty((len(data_flat), 4, 3))
@@ -1122,35 +1206,32 @@ def wls_fit_tensor(design_matrix, data, min_signal=1):
 
     for param, sig in zip(dti_params, data_flat):
         param[0], param[1:] = _wls_iter(ols_fit, design_matrix, sig,
-                                        min_signal, min_diffusivity)
+                                        min_diffusivity)
+
     dti_params.shape = data.shape[:-1] + (12,)
-    dti_params = dti_params
     return dti_params
 
 
-def _wls_iter(ols_fit, design_matrix, sig, min_signal, min_diffusivity):
+def _wls_iter(ols_fit, design_matrix, sig, min_diffusivity):
     ''' Helper function used by wls_fit_tensor.
     '''
-    sig = np.maximum(sig, min_signal)  # throw out zero signals
     log_s = np.log(sig)
     w = np.exp(np.dot(ols_fit, log_s))
     D = np.dot(np.linalg.pinv(design_matrix * w[:, None]), w * log_s)
-    # D, _, _, _ = np.linalg.lstsq(design_matrix * w[:, None], log_s)
     tensor = from_lower_triangular(D)
     return decompose_tensor(tensor, min_diffusivity=min_diffusivity)
 
 
-def _ols_iter(inv_design, sig, min_signal, min_diffusivity):
+def _ols_iter(inv_design, sig, min_diffusivity):
     ''' Helper function used by ols_fit_tensor.
     '''
-    sig = np.maximum(sig, min_signal)  # throw out zero signals
     log_s = np.log(sig)
     D = np.dot(inv_design, log_s)
     tensor = from_lower_triangular(D)
     return decompose_tensor(tensor, min_diffusivity=min_diffusivity)
 
 
-def ols_fit_tensor(design_matrix, data, min_signal=1):
+def ols_fit_tensor(design_matrix, data):
     r"""
     Computes ordinary least squares (OLS) fit to calculate self-diffusion
     tensor using a linear regression model [1]_.
@@ -1163,9 +1244,6 @@ def ols_fit_tensor(design_matrix, data, min_signal=1):
     data : array ([X, Y, Z, ...], g)
         Data or response variables holding the data. Note that the last
         dimension should contain the data. It makes no copies of data.
-    min_signal : default = 1
-        All values below min_signal are repalced with min_signal. This is done
-        in order to avaid taking log(0) durring the tensor fitting.
 
     Returns
     -------
@@ -1214,8 +1292,7 @@ def ols_fit_tensor(design_matrix, data, min_signal=1):
     inv_design = np.linalg.pinv(design_matrix)
 
     for param, sig in zip(dti_params, data_flat):
-        param[0], param[1:] = _ols_iter(inv_design, sig,
-            min_signal, min_diffusivity)
+        param[0], param[1:] = _ols_iter(inv_design, sig, min_diffusivity)
 
     dti_params.shape = data.shape[:-1] + (12,)
     dti_params = dti_params
@@ -1349,7 +1426,7 @@ def _nlls_jacobian_func(tensor, design_matrix, data, *arg, **kwargs):
     return -pred[:, None] * design_matrix
 
 
-def nlls_fit_tensor(design_matrix, data, min_signal=1, weighting=None,
+def nlls_fit_tensor(design_matrix, data, weighting=None,
                     sigma=None, jac=True):
     """
     Fit the tensor params using non-linear least-squares.
@@ -1363,10 +1440,6 @@ def nlls_fit_tensor(design_matrix, data, min_signal=1, weighting=None,
     data : array ([X, Y, Z, ...], g)
         Data or response variables holding the data. Note that the last
         dimension should contain the data. It makes no copies of data.
-
-    min_signal : float, optional
-        All values below min_signal are repalced with min_signal. This is done
-        in order to avaid taking log(0) durring the tensor fitting. Default = 1
 
     weighting: str
            the weighting scheme to use in considering the
@@ -1391,8 +1464,7 @@ def nlls_fit_tensor(design_matrix, data, min_signal=1, weighting=None,
     flat_data = data.reshape((-1, data.shape[-1]))
     # Use the OLS method parameters as the starting point for the optimization:
     inv_design = np.linalg.pinv(design_matrix)
-    sig = np.maximum(flat_data, min_signal)
-    log_s = np.log(sig)
+    log_s = np.log(flat_data)
     D = np.dot(inv_design, log_s.T).T
 
     # Flatten for the iteration over voxels:
@@ -1400,6 +1472,9 @@ def nlls_fit_tensor(design_matrix, data, min_signal=1, weighting=None,
     # 12 parameters per voxel (evals + evecs):
     dti_params = np.empty((flat_data.shape[0], 12))
     for vox in range(flat_data.shape[0]):
+        if np.all(flat_data[vox] == 0):
+            raise ValueError("The data in this voxel contains only zeros")
+
         start_params = ols_params[vox]
         # Do the optimization in this voxel:
         if jac:
@@ -1424,14 +1499,15 @@ def nlls_fit_tensor(design_matrix, data, min_signal=1, weighting=None,
         # If leastsq failed to converge and produced nans, we'll resort to the
         # OLS solution in this voxel:
         except np.linalg.LinAlgError:
-            print(vox)
-            dti_params[vox, :] = start_params
+            evals,evecs=decompose_tensor(from_lower_triangular(start_params[:6]))
+            dti_params[vox, :3] = evals
+            dti_params[vox, 3:] = evecs.ravel()
+
     dti_params.shape = data.shape[:-1] + (12,)
     return dti_params
 
 
-def restore_fit_tensor(design_matrix, data, min_signal=1.0, sigma=None,
-                       jac=True):
+def restore_fit_tensor(design_matrix, data, sigma=None, jac=True):
     """
     Use the RESTORE algorithm [Chang2005]_ to calculate a robust tensor fit
 
@@ -1445,10 +1521,6 @@ def restore_fit_tensor(design_matrix, data, min_signal=1.0, sigma=None,
     data : array of shape ([X, Y, Z, n_directions], g)
         Data or response variables holding the data. Note that the last
         dimension should contain the data. It makes no copies of data.
-
-    min_signal : float, optional
-        All values below min_signal are repalced with min_signal. This is done
-        in order to avaid taking log(0) durring the tensor fitting. Default = 1
 
     sigma : float
         An estimate of the variance. [Chang2005]_ recommend to use
@@ -1476,13 +1548,15 @@ def restore_fit_tensor(design_matrix, data, min_signal=1.0, sigma=None,
     flat_data = data.reshape((-1, data.shape[-1]))
     # Use the OLS method parameters as the starting point for the optimization:
     inv_design = np.linalg.pinv(design_matrix)
-    sig = np.maximum(flat_data, min_signal)
-    log_s = np.log(sig)
+    log_s = np.log(flat_data)
     D = np.dot(inv_design, log_s.T).T
     ols_params = np.reshape(D, (-1, D.shape[-1]))
     # 12 parameters per voxel (evals + evecs):
     dti_params = np.empty((flat_data.shape[0], 12))
     for vox in range(flat_data.shape[0]):
+        if np.all(flat_data[vox] == 0):
+            raise ValueError("The data in this voxel contains only zeros")
+
         start_params = ols_params[vox]
         # Do nlls using sigma weighting in this voxel:
         if jac:
@@ -1553,8 +1627,10 @@ def restore_fit_tensor(design_matrix, data, min_signal=1.0, sigma=None,
         # If leastsq failed to converge and produced nans, we'll resort to the
         # OLS solution in this voxel:
         except np.linalg.LinAlgError:
-            print(vox)
-            dti_params[vox, :] = start_params
+            evals,evecs=decompose_tensor(from_lower_triangular(start_params[:6]))
+            dti_params[vox, :3] = evals
+            dti_params[vox, 3:] = evecs.ravel()
+
     dti_params.shape = data.shape[:-1] + (12,)
     restore_params = dti_params
     return restore_params
@@ -1619,38 +1695,6 @@ def lower_triangular(tensor, b0=None):
         D[..., 6] = -np.log(b0)
         D[..., :6] = tensor[..., _lt_rows, _lt_cols]
         return D
-
-
-def eig_from_lo_tri(data):
-    """Calculates parameters for creating a Tensor instance
-
-    Calculates tensor parameters from the six unique tensor elements. This
-    function can be passed to the Tensor class as a fit_method for creating a
-    Tensor instance from tensors stored in a nifti file.
-
-    Parameters
-    ----------
-    data : array_like (..., 6)
-        diffusion tensors elements stored in lower triangular order
-
-    Returns
-    -------
-    dti_params
-        Eigen values and vectors, used by the Tensor class to create an
-        instance
-    """
-    data = np.asarray(data)
-    data_flat = data.reshape((-1, data.shape[-1]))
-    dti_params = np.empty((len(data_flat), 4, 3))
-
-    for ii in range(len(data_flat)):
-        tensor = from_lower_triangular(data_flat[ii])
-        eigvals, eigvecs = decompose_tensor(tensor)
-        dti_params[ii, 0] = eigvals
-        dti_params[ii, 1:] = eigvecs
-
-    dti_params.shape = data.shape[:-1] + (12,)
-    return dti_params
 
 
 def decompose_tensor(tensor, min_diffusivity=0):
@@ -1745,6 +1789,36 @@ def quantize_evecs(evecs, odf_vertices=None):
     IN = np.array([np.argmin(np.dot(odf_vertices, m)) for m in mec])
     IN = IN.reshape(tup)
     return IN
+
+
+def eig_from_lo_tri(data):
+    """
+    Calculates tensor eigenvalues/eigenvectors from an array containing the
+    lower diagonal form of the six unique tensor elements.
+
+    Parameters
+    ----------
+    data : array_like (..., 6)
+        diffusion tensors elements stored in lower triangular order
+
+    Returns
+    -------
+    dti_params (..., 12)
+        Eigen-values and eigen-vectors of the same array.
+    """
+    data = np.asarray(data)
+    data_flat = data.reshape((-1, data.shape[-1]))
+    dti_params = np.empty((len(data_flat), 4, 3))
+
+    for ii in range(len(data_flat)):
+        tensor = from_lower_triangular(data_flat[ii])
+        eigvals, eigvecs = decompose_tensor(tensor)
+        dti_params[ii, 0] = eigvals
+        dti_params[ii, 1:] = eigvecs
+
+    dti_params.shape = data.shape[:-1] + (12,)
+    return dti_params
+
 
 common_fit_methods = {'WLS': wls_fit_tensor,
                       'LS': ols_fit_tensor,
