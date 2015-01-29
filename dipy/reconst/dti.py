@@ -82,6 +82,80 @@ def fractional_anisotropy(evals, axis=-1):
 
     return fa
 
+def geodesic_anisotropy(evals, axis=-1):
+    r"""
+    Geodesic anisotropy (GA) of a diffusion tensor.
+
+    Parameters
+    ----------
+    evals : array-like
+        Eigenvalues of a diffusion tensor.
+    axis : int
+        Axis of `evals` which contains 3 eigenvalues.
+
+    Returns
+    -------
+    ga : array
+        Calculated GA. In the range 0 to +infinity
+
+    Notes
+    --------
+    GA is calculated using the following equation given in [1]_:
+
+    .. math::
+
+        GA = \sqrt{\sum_{i=1}^3 \log^2{\left ( \lambda_i/<\mathbf{D}> \right )}}, 
+        \quad \textrm{where} \quad <\mathbf{D}> = (\lambda_1\lambda_2\lambda_3)^{1/3}
+
+    Note that the notation, $<D>$, is often used as the mean diffusivity (MD) of the diffusion tensor 
+    and can lead to confusions in the literature (see [1]_ versus [2]_ versus [3]_ for example).    
+    Reference [2]_ defines geodesic anisotropy (GA) with $<D>$ as the MD in the denominator of the sum. 
+    This is wrong. The original paper [1]_ defines GA with $<D> = det(D)^{1/3}$, as the 
+    isotropic part of the distance. This might be an explanation for the confusion.
+    The isotropic part of the diffusion tensor in Euclidean space is
+    the MD whereas the isotropic part of the tensor in log-Euclidean space is $det(D)^{1/3}$. 
+    The Appendix of [1]_ and log-Euclidean derivations from [3]_ are clear on this.
+    Hence, all that to say that $<D> = det(D)^{1/3}$ here for the GA definition and not MD.
+
+    References
+    ----------
+
+    .. [1] P. G. Batchelor, M. Moakher, D. Atkinson, F. Calamante, A. Connelly, 
+        "A rigorous framework for diffusion tensor calculus", Magnetic Resonance 
+        in Medicine, vol. 53, pp. 221-225, 2005.
+
+    .. [2] M. M. Correia, V. F. Newcombe, G.B. Williams.
+        "Contrast-to-noise ratios for indices of anisotropy obtained from diffusion MRI: 
+        a study with standard clinical b-values at 3T". NeuroImage, vol. 57, pp. 1103-1115, 2011.
+
+    .. [3] A. D. Lee, etal, P. M. Thompson.  
+        "Comparison of fractional and geodesic anisotropy in diffusion tensor images 
+        of 90 monozygotic and dizygotic twins". 5th IEEE International Symposium on 
+        Biomedical Imaging (ISBI), pp. 943-946, May 2008.
+
+    .. [4] V. Arsigny, P. Fillard, X. Pennec, N. Ayache. 
+        "Log-Euclidean metrics for fast and simple calculus on diffusion tensors."
+        Magnetic Resonance in Medecine, vol 56, pp. 411-421, 2006. 
+
+    """
+
+    evals = _roll_evals(evals, axis)
+    ev1, ev2, ev3 = evals
+
+    log1 = np.zeros(ev1.shape)
+    log2 = np.zeros(ev1.shape)
+    log3 = np.zeros(ev1.shape)
+    idx = np.nonzero(ev1)
+    
+    # this is the definition in [1]_
+    detD = np.power(ev1 * ev2 * ev3, 1/3.)
+    log1[idx] = np.log(ev1[idx] / detD[idx])
+    log2[idx] = np.log(ev2[idx] / detD[idx])
+    log3[idx] = np.log(ev3[idx] / detD[idx])
+
+    ga = np.sqrt(log1 ** 2 + log2 ** 2 + log3 ** 2)
+    
+    return ga
 
 def mean_diffusivity(evals, axis=-1):
     r"""
@@ -405,6 +479,7 @@ def mode(q_form):
     A_s_norm = norm(A_squiggle)
     # Add two dims for the (3,3), so that it can broadcast on A_squiggle:
     A_s_norm = A_s_norm.reshape(A_s_norm.shape + (1, 1))
+
     return 3 * np.sqrt(6) * determinant((A_squiggle / A_s_norm))
 
 
@@ -781,6 +856,11 @@ class TensorFit(object):
     def fa(self):
         """Fractional anisotropy (FA) calculated from cached eigenvalues."""
         return fractional_anisotropy(self.evals)
+
+    @auto_attr
+    def ga(self):
+        """Geodesic anisotropy (GA) calculated from cached eigenvalues."""
+        return geodesic_anisotropy(self.evals)
 
     @auto_attr
     def mode(self):
