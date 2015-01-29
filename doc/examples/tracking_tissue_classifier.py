@@ -7,10 +7,10 @@ tracking position. If the tracking stops, it can either be because it reaches
 an ending region (e.g. low FA, gray matter or corticospinal fluid regions),
 because it exit the image boundary or because the direction getter has no
 direction to follow. Each tissue classifier determines if the stoping is 'valid'
-or 'invalid'. A streamline is 'valid' when the tissue classifier determine the
-streamline stops at a position classified as 'ENDPOINT' or 'OUTSIDEIMAGE'. A
-streamline is 'invalid' when it stops at a position classified as 'TRACKPOINT'
-or 'INVALIDPOINT'. These conditions are description below. The 'LocalTracking'
+or 'invalid'. A streamline is 'valid' when the tissue classifier determines the
+streamline stops in a position classified as 'ENDPOINT' or 'OUTSIDEIMAGE'. A
+streamline is 'invalid' when it stops in a position classified as 'TRACKPOINT'
+or 'INVALIDPOINT'. These conditions are described below. The 'LocalTracking'
 generator can be set to output all generated streamlines or only the 'valid'
 ones.
 

@@ -93,11 +93,11 @@ cdef class ThresholdTissueClassifier(TissueClassifier):
 
 cdef class ActTissueClassifier(TissueClassifier):
     r"""
-    Anatomically-Constained Tractography (ACT) stopping criteria from [1]_.
+    Anatomically-Constrained Tractography (ACT) stopping criteria from [1]_.
     This implements the uses of partial volume fraction (PVE) maps to
     determine when the tracking stops. The proposed ([1]_) method that
-    cut streamlines going throught subcortical gray matter regions is
-    not implemented here. The back tracking technique for
+    cut streamlines going through subcortical gray matter regions is
+    not implemented here. The backtracking technique for
     streamlines reaching INVALIDPOINT is neither implemented.
     cdef:
         double interp_out_double[1]
