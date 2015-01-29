@@ -107,17 +107,15 @@ def geodesic_anisotropy(evals, axis=-1):
         GA = \sqrt{\sum_{i=1}^3 \log^2{\left ( \lambda_i/<\mathbf{D}> \right )}}, 
         \quad \textrm{where} \quad <\mathbf{D}> = (\lambda_1\lambda_2\lambda_3)^{1/3}
 
-    Note that the notation, <D>, is often used as the mean diffusivity (MD) of the diffusion tensor 
-    and can lead to confusions in the literature (see [1]_ versus [2]_ versus [3]_ for example).
-
-    Reference [2]_ defines geodesic anisotropy (GA) with <D> as the MD in the denominator of the sum. 
-    This is wrong. The original paper [1]_ defines GA with <D> = det(D)^(1/3), as the 
+    Note that the notation, $<D>$, is often used as the mean diffusivity (MD) of the diffusion tensor 
+    and can lead to confusions in the literature (see [1]_ versus [2]_ versus [3]_ for example).    
+    Reference [2]_ defines geodesic anisotropy (GA) with $<D>$ as the MD in the denominator of the sum. 
+    This is wrong. The original paper [1]_ defines GA with $<D> = det(D)^{1/3}$, as the 
     isotropic part of the distance. This might be an explanation for the confusion.
     The isotropic part of the diffusion tensor in Euclidean space is
-    the MD whereas the isotropic part of the tensor in log-Euclidean space is det(D)^(1/3). 
+    the MD whereas the isotropic part of the tensor in log-Euclidean space is $det(D)^{1/3}$. 
     The Appendix of [1]_ and log-Euclidean derivations from [3]_ are clear on this.
-
-    Hence, all that to say that <D> = det(D)^(1/3) here for the GA definition and not MD.
+    Hence, all that to say that $<D> = det(D)^{1/3}$ here for the GA definition and not MD.
 
     References
     ----------
