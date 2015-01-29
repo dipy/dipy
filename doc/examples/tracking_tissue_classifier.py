@@ -2,11 +2,11 @@
 ================================================
 Using Various Tissue Classifier for Tractography
 ================================================
-The tissue classifier determine if the tracking stops or continues at each
-tracking position. If the tracking stops, it can be either because it reaches
+The tissue classifier determines if the tracking stops or continues at each
+tracking position. If the tracking stops, it can either be because it reaches
 an ending region (e.g. low FA, gray matter or corticospinal fluid regions),
 because it exit the image boundary or because the direction getter has no
-direction to follow. Each tissue classifier determine if the stoping is 'valid'
+direction to follow. Each tissue classifier determines if the stoping is 'valid'
 or 'invalid'. A streamline is 'valid' when the tissue classifier determine the
 streamline stops at a position classified as 'ENDPOINT' or 'OUTSIDEIMAGE'. A
 streamline is 'invalid' when it stops at a position classified as 'TRACKPOINT'
@@ -122,7 +122,7 @@ act_classifier = ActTissueClassifier(include_map, exclude_map)
 
 """
 We used the DeterministicMaximumDirectionGetter for tractography as in the
-example ``deterministic_fiber_tracking``. We used various tissue classifier
+example ``deterministic_fiber_tracking``. Various tissue classifier are used
 to determine when the tractography stops.
 """
 
