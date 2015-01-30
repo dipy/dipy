@@ -600,11 +600,11 @@ class SphHarmFit(OdfFit):
 
         """
         B = self.model.sampling_matrix(sphere)
-        return dot(self._shm_coef, B.T)
+        return dot(self.shm_coeff, B.T)
 
     @auto_attr
     def gfa(self):
-        return _gfa_sh(self._shm_coef, 0)
+        return _gfa_sh(self.shm_coeff, 0)
 
     @property
     def shm_coeff(self):
