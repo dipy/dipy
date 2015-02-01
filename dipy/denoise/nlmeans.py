@@ -29,18 +29,17 @@ def nlmeans(arr, sigma, mask=None, patch_radius=1, block_radius=5, rician=True):
     """
 
     if arr.ndim == 3:
-
+        sigma = np.ones(arr.shape, dtype=np.float64) * sigma
         return nlmeans_3d(arr, mask, sigma,
                           patch_radius, block_radius,
                           rician).astype(arr.dtype)
 
-    if arr.ndim == 4:
+    elif arr.ndim == 4:
 
         denoised_arr = np.zeros_like(arr)
-        sigma_arr = np.ones(arr.shape[-1], dtype=np.float32) * sigma
+        sigma = np.ones(arr.shape[:-1], dtype=np.float64) * sigma
 
         for i in range(arr.shape[-1]):
-            sigma = sigma_arr[i]
             denoised_arr[..., i] = nlmeans_3d(arr[..., i],
                                               mask,
                                               sigma,
@@ -49,3 +48,6 @@ def nlmeans(arr, sigma, mask=None, patch_radius=1, block_radius=5, rician=True):
                                               rician).astype(arr.dtype)
 
         return denoised_arr
+
+    else:
+        raise ValueError("Only 3D or 4D array are supported!", arr.shape)
