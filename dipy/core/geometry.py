@@ -126,6 +126,7 @@ def cart2sphere(x, y, z):
     '''
     r = np.sqrt(x * x + y * y + z * z)
     theta = np.arccos(z / r)
+    theta = np.where(r > 0, theta, 0.)
     phi = np.arctan2(y, x)
     r, theta, phi = np.broadcast_arrays(r, theta, phi)
     return r, theta, phi
