@@ -496,13 +496,18 @@ def csdeconv(dwsignal, X, B_reg, tau=0.1, convergence=50, P=None):
     # For the first iteration we use a smooth FOD that only uses SH orders up
     # to 4 (the first 15 coefficients).
     fodf = np.dot(B_reg[:, :15], fodf_sh[:15])
-    # set threshold on FOD amplitude used to identify 'negative' values
-    threshold = tau * np.mean(fodf)
+    # The mean of an fodf can be computed by taking $Y_{0,0} * coeff_{0,0}$
+    threshold = B_reg[0, 0] * fodf_sh[0] * tau
     where_fodf_small = (fodf < threshold).nonzero()[0]
 
-    # If all fodf values are greater than zero
+    # If the low-order fodf does not have any values less than threshold, the
+    # full-order fodf is used.
     if len(where_fodf_small) == 0:
-        return fodf_sh, 0
+        fodf = np.dot(B_reg, fodf_sh)
+        where_fodf_small = (fodf < threshold).nonzero()[0]
+        # If the fodf still has no values less than threshold, return the fodf.
+        if len(where_fodf_small) == 0:
+            return fodf_sh, 0
 
     for num_it in range(1, convergence + 1):
         # This is the super-resolved trick.  Wherever there is a negative
