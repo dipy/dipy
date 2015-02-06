@@ -13,7 +13,6 @@ def _tile_plot(imgs, titles, **kwargs):
     for ii, a in enumerate(ax):
         a.set_axis_off()
         a.imshow(imgs[ii], **kwargs)
-        a.set_aspect('auto', 'box')
         a.set_title(titles[ii])
 
     return fig
