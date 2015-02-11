@@ -16,6 +16,10 @@ def test_binary_tissue_classifier():
         TRACKPOINT = 1
         ENDPOINT = 2
     """
+    # enum TissueClass (tissue_classifier.pxd) is not accessible
+    # from here. To be changed when minimal cyhton version > 0.21.
+    # cython 0.21 - cpdef enum to export values into Python-level namespace
+    # https://github.com/cython/cython/commit/50133b5a91eea348eddaaad22a606a7fa1c7c457
 
     mask = np.random.random((4, 4, 4))
     mask[mask < 0.4] = 0.0
@@ -67,6 +71,10 @@ def test_threshold_tissue_classifier():
         TRACKPOINT = 1
         ENDPOINT = 2
     """
+    # enum TissueClass (tissue_classifier.pxd) is not accessible
+    # from here. To be changed when minimal cyhton version > 0.21.
+    # cython 0.21 - cpdef enum to export values into Python-level namespace
+    # https://github.com/cython/cython/commit/50133b5a91eea348eddaaad22a606a7fa1c7c457
 
     tissue_map = np.random.random((4, 4, 4))
 
@@ -111,6 +119,10 @@ def test_act_tissue_classifier():
         TRACKPOINT = 1
         ENDPOINT = 2
     """
+    # enum TissueClass (tissue_classifier.pxd) is not accessible
+    # from here. To be changed when minimal cyhton version > 0.21.
+    # cython 0.21 - cpdef enum to export values into Python-level namespace
+    # https://github.com/cython/cython/commit/50133b5a91eea348eddaaad22a606a7fa1c7c457
 
     gm = np.random.random((4, 4, 4))
     wm = np.random.random((4, 4, 4))
