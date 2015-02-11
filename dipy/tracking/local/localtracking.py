@@ -102,7 +102,7 @@ class LocalTracking(object):
             for first_step in directions:
                 stepsF, tissue_class = local_tracker(dg, tc, s, first_step,
                                                      vs, F, ss, fixed)
-                # enum TissueClass (tissue_classifier.pyd) is not accessible
+                # enum TissueClass (tissue_classifier.pxd) is not accessible
                 # from here. To be changed when minimal cyhton version > 0.21.
                 # cython 0.21 - cpdef enum to export values into Python-level namespace
                 # https://github.com/cython/cython/commit/50133b5a91eea348eddaaad22a606a7fa1c7c457

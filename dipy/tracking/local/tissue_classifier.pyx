@@ -6,6 +6,8 @@ from libc.math cimport round
 from .interpolation cimport(trilinear_interpolate4d,
                             _trilinear_interpolate_c_4d)
 
+import numpy as np
+
 cdef class TissueClassifier:
     cpdef TissueClass check_point(self, double[::1] point) except PYERROR:
         pass
@@ -26,7 +28,7 @@ cdef class BinaryTissueClassifier(TissueClassifier):
     @cython.initializedcheck(False)
     cpdef TissueClass check_point(self, double[::1] point):
         cdef:
-            double result
+            unsigned char result
             int err
             int voxel[3]
 
@@ -61,7 +63,7 @@ cdef class ThresholdTissueClassifier(TissueClassifier):
 
     def __cinit__(self, metric_map, threshold):
         self.interp_out_view = self.interp_out_double
-        self.metric_map = metric_map.astype('float64')
+        self.metric_map = np.asarray(metric_map, 'float64')
         self.threshold = threshold
 
     @cython.boundscheck(False)
@@ -94,11 +96,11 @@ cdef class ThresholdTissueClassifier(TissueClassifier):
 cdef class ActTissueClassifier(TissueClassifier):
     r"""
     Anatomically-Constrained Tractography (ACT) stopping criteria from [1]_.
-    This implements the uses of partial volume fraction (PVE) maps to
+    This implements the use of partial volume fraction (PVE) maps to
     determine when the tracking stops. The proposed ([1]_) method that
-    cut streamlines going through subcortical gray matter regions is
+    cuts streamlines going through subcortical gray matter regions is
     not implemented here. The backtracking technique for
-    streamlines reaching INVALIDPOINT is neither implemented.
+    streamlines reaching INVALIDPOINT is not implemented either.
     cdef:
         double interp_out_double[1]
         double[:]  interp_out_view = interp_out_view
@@ -114,8 +116,8 @@ cdef class ActTissueClassifier(TissueClassifier):
 
     def __cinit__(self, include_map, exclude_map):
         self.interp_out_view = self.interp_out_double
-        self.include_map = include_map.astype('float64')
-        self.exclude_map = exclude_map.astype('float64')
+        self.include_map = np.asarray(include_map, 'float64')
+        self.exclude_map = np.asarray(exclude_map, 'float64')
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
@@ -123,7 +125,7 @@ cdef class ActTissueClassifier(TissueClassifier):
     cpdef TissueClass check_point(self, double[::1] point):
         cdef:
             double include_result, exclude_result
-            int err
+            int include_err, exclude_err
 
         include_err = _trilinear_interpolate_c_4d(self.include_map[..., None],
                                                   point, self.interp_out_view)
@@ -137,10 +139,14 @@ cdef class ActTissueClassifier(TissueClassifier):
             return OUTSIDEIMAGE
         elif include_err == -2 or exclude_err == -2:
             raise ValueError("Point has wrong shape")
-        elif include_err != 0 or exclude_err != 0:
+        elif include_err != 0:
             # This should never happen
-            raise RuntimeError(
-                "Unexpected interpolation error (code:%i)" % err)
+            raise RuntimeError("Unexpected interpolation error " +
+                               "(include_map - code:%i)" % include_err)
+        elif exclude_err != 0:
+            # This should never happen
+            raise RuntimeError("Unexpected interpolation error " +
+                               "(exclude_map - code:%i)" % exclude_err)
 
         if include_result > 0.5:
             return ENDPOINT
