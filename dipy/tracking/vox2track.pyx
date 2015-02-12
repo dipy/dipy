@@ -44,11 +44,10 @@ def _voxel2streamline(sl, unique_idx):
 
     """
     cdef:
-        cnp.ndarray[cnp.int_t, ndim=2, mode='strided'] v2f
         cnp.ndarray[cnp.int_t, ndim=1, mode='strided'] v2fn
 
     # Given a voxel (from the unique coords, is the fiber in here?)
-    v2f = np.zeros((len(unique_idx), len(sl)), dtype=np.int)
+    v2f = np.zeros((len(unique_idx), len(sl)), dtype=bool)
 
     # This is a grid of size (fibers, maximal length of a fiber), so that
     # we can capture the voxel number in each fiber/node combination:
@@ -73,7 +72,7 @@ def _voxel2streamline(sl, unique_idx):
                                     (node[2] == unique_idx[:, 2]))[0])
 
             # Add that combination to the grid:
-            v2f[voxel_id, s_idx] = v2f[voxel_id, s_idx] + 1
+            v2f[voxel_id, s_idx] = 1
 
             # All the nodes going through this voxel get its number:
             v2fn[sl_idx0:sl_idx1][
