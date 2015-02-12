@@ -49,8 +49,9 @@ def _voxel2streamline(sl, unique_idx):
     # Given a voxel (from the unique coords, is the fiber in here?)
     v2f = np.zeros((len(unique_idx), len(sl)), dtype=bool)
 
-    # This is a grid of size (fibers, maximal length of a fiber), so that
-    # we can capture the voxel number in each fiber/node combination:
+    # This is a 1D grid with length of the total number of nodes. This lets us
+    # go from a node in a specific streamline to the voxel in which this node
+    # is.
     nodes_per_fiber = [len(s) for s in sl]
     total_nodes = np.sum(nodes_per_fiber)
     v2fn = np.empty(total_nodes, dtype=np.int)
@@ -81,7 +82,6 @@ def _voxel2streamline(sl, unique_idx):
                          (sl_as_idx[:, 2] == node[2]))] = voxel_id
 
     return v2f ,v2fn
-
 
 
 def streamline_mapping(streamlines, voxel_size=None, affine=None,

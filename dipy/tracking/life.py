@@ -345,8 +345,8 @@ class FiberModel(ReconstModel):
         affine : 4 by 4 array
             Mapping from the streamline coordinates to the data
         evals : list (3 items, optional)
-            The eigenvalues of the canonical tensor used as a response function
-
+            The eigenvalues of the canonical tensor used as a response function.
+            Default:[0.001, 0, 0].
         sphere: `dipy.core.Sphere` instance.
             Whether to approximate (and cache) the signal on a discrete
             sphere. This may confer a significant speed-up in setting up the
