@@ -386,11 +386,15 @@ class FiberModel(ReconstModel):
         f_matrix_col = np.zeros(n_unique_f * n_bvecs)
 
         keep_ct = 0
-        if sphere is not False:
-            fiber_signal = [SignalMaker.streamline_signal(s) for s in streamline]
-        else:
-            fiber_signal = [streamline_signal(s, self.gtab, evals)
-                            for s in streamline]
+        nodes_per_fiber = np.zeros(len(streamline), dtype=np.int)
+        fiber_signal = []
+        for s_idx, s in enumerate(streamline):
+            if sphere is not False:
+                fiber_signal.append(SignalMaker.streamline_signal(s))
+            else:
+                fiber_signal.append(streamline_signal(s, self.gtab, evals))
+
+            nodes_per_fiber[s_idx] = s.shape[0]
 
         # In each voxel:
         for v_idx, vox in enumerate(vox_coords):
@@ -400,7 +404,10 @@ class FiberModel(ReconstModel):
             for f_idx in np.where(v2f[v_idx])[0]:
                 # Sum the signal from each node of the fiber in that voxel:
                 vox_fiber_sig = np.zeros(n_bvecs)
-                for node_idx in np.where(v2fn[f_idx] == v_idx)[0]:
+                n0 = np.sum(nodes_per_fiber[:f_idx])
+                n1 = n0 + nodes_per_fiber[f_idx]
+                this_v2fn = v2fn[n0:n1]
+                for node_idx in np.where(this_v2fn == v_idx)[0]:
                     this_signal = fiber_signal[f_idx][node_idx]
                     vox_fiber_sig += (this_signal - np.mean(this_signal))
                 # For each fiber-voxel combination, we now store the row/column

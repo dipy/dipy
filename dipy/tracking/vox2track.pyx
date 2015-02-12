@@ -38,43 +38,48 @@ def _voxel2streamline(sl, unique_idx):
     the unique indices in this model), which fibers pass through it? Shape:
     (n_voxels, n_fibers).
 
-    The second answers the question: Given a voxel, for each fiber, which
-    nodes are in that voxel? Shape: (n_voxels, max(n_nodes per fiber)).
+    The second answers the question: Given a voxel, for each fiber in that
+    voxel, which nodes of that fiber are in that voxel? Shape: (n_voxels,
+    max(n_nodes per fiber)).
 
     """
     cdef:
         cnp.ndarray[cnp.int_t, ndim=2, mode='strided'] v2f
-        cnp.ndarray[cnp.int_t, ndim=2, mode='strided'] v2fn
+        cnp.ndarray[cnp.int_t, ndim=1, mode='strided'] v2fn
 
     # Given a voxel (from the unique coords, is the fiber in here?)
     v2f = np.zeros((len(unique_idx), len(sl)), dtype=np.int)
 
     # This is a grid of size (fibers, maximal length of a fiber), so that
     # we can capture the voxel number in each fiber/node combination:
-    v2fn = np.ones((len(sl), np.max([len(s) for s in sl])),
-                   dtype=np.int) * -1
+    nodes_per_fiber = [len(s) for s in sl]
+    total_nodes = np.sum(nodes_per_fiber)
+    v2fn = np.empty(total_nodes, dtype=np.int)
 
     # Define local counters:
-    cdef int s_idx, vv_idx, voxel_id
+    cdef int s_idx, node_idx, voxel_id
     # In each fiber:
     for s_idx in range(len(sl)):
         s = sl[s_idx]
         sl_as_idx = np.array(s).astype(int)
+        sl_idx0 = np.int(np.sum(nodes_per_fiber[:s_idx]))
+        sl_idx1 = np.int(sl_idx0 + nodes_per_fiber[s_idx])
         # In each voxel present in there:
-        for vv_idx in range(len(sl_as_idx)):
-            vv = sl_as_idx[vv_idx]
+        for node_idx in range(len(sl_as_idx)):
+            node = sl_as_idx[node_idx]
             # What serial number is this voxel in the unique streamline indices:
-            voxel_id = int(np.where((vv[0] == unique_idx[:, 0]) *
-                                    (vv[1] == unique_idx[:, 1]) *
-                                    (vv[2] == unique_idx[:, 2]))[0])
+            voxel_id = int(np.where((node[0] == unique_idx[:, 0]) *
+                                    (node[1] == unique_idx[:, 1]) *
+                                    (node[2] == unique_idx[:, 2]))[0])
 
             # Add that combination to the grid:
             v2f[voxel_id, s_idx] = v2f[voxel_id, s_idx] + 1
 
             # All the nodes going through this voxel get its number:
-            v2fn[s_idx][np.where((sl_as_idx[:, 0] == vv[0]) *
-                                 (sl_as_idx[:, 1] == vv[1]) *
-                                 (sl_as_idx[:, 2] == vv[2]))] = voxel_id
+            v2fn[sl_idx0:sl_idx1][
+                np.where((sl_as_idx[:, 0] == node[0]) *
+                         (sl_as_idx[:, 1] == node[1]) *
+                         (sl_as_idx[:, 2] == node[2]))] = voxel_id
 
     return v2f ,v2fn
 
