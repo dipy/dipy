@@ -290,8 +290,8 @@ def voxel2streamline(streamline, transformed=False, affine=None,
     the unique indices in this model), which fibers pass through it? Shape:
     (n_voxels, n_fibers).
 
-    The second answers the question: Given a voxel, for each fiber, which
-    nodes are in that voxel? Shape: (n_voxels, max(n_nodes per fiber)).
+    The second answers the question: Given a voxel, for each fiber in that
+    voxel, which nodes of that fiber are in that voxel? Shape (total_nodes).
     """
     if transformed:
         transformed_streamline = streamline

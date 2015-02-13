@@ -9,6 +9,8 @@ import numpy as np
 cimport numpy as cnp
 from ._utils import _mapping_to_voxel, _to_voxel_coordinates
 
+from ..utils.six.moves import xrange
+
 cdef extern from "dpy_math.h":
     double floor(double x)
 
@@ -16,7 +18,8 @@ cdef extern from "dpy_math.h":
 @cython.boundscheck(False)
 @cython.wraparound(False)
 @cython.profile(False)
-def _voxel2streamline(sl, unique_idx):
+def _voxel2streamline(sl,
+                      cnp.ndarray[cnp.npy_intp, ndim=2] unique_idx):
     """
     Maps voxels to streamlines and streamlines to voxels, for setting up
     the LiFE equations matrix
@@ -39,35 +42,38 @@ def _voxel2streamline(sl, unique_idx):
     (n_voxels, n_fibers).
 
     The second answers the question: Given a voxel, for each fiber in that
-    voxel, which nodes of that fiber are in that voxel? Shape: (n_voxels,
-    max(n_nodes per fiber)).
-
+    voxel, which nodes of that fiber are in that voxel? Shape (total_nodes,).
     """
     cdef:
         cnp.ndarray[cnp.int_t, ndim=1, mode='strided'] v2fn
+        cnp.ndarray[cnp.int_t, ndim=1, mode='strided'] nodes_per_fiber
 
     # Given a voxel (from the unique coords, is the fiber in here?)
     v2f = np.zeros((len(unique_idx), len(sl)), dtype=bool)
 
+    # Define local counters:
+    cdef int s_idx, node_idx, voxel_id, sl_idx0, sl_idx1
+
     # This is a 1D grid with length of the total number of nodes. This lets us
     # go from a node in a specific streamline to the voxel in which this node
     # is.
-    nodes_per_fiber = [len(s) for s in sl]
+    nodes_per_fiber = np.empty(len(sl), dtype=np.int)
+    for s_idx in range(len(sl)):
+        nodes_per_fiber[s_idx] = len(sl[s_idx])
+
     total_nodes = np.sum(nodes_per_fiber)
     v2fn = np.empty(total_nodes, dtype=np.int)
 
-    # Define local counters:
-    cdef int s_idx, node_idx, voxel_id
     # In each fiber:
-    for s_idx in range(len(sl)):
+    for s_idx in xrange(len(sl)):
         s = sl[s_idx]
         sl_as_idx = np.array(s).astype(int)
         sl_idx0 = np.int(np.sum(nodes_per_fiber[:s_idx]))
         sl_idx1 = np.int(sl_idx0 + nodes_per_fiber[s_idx])
         # In each voxel present in there:
-        for node_idx in range(len(sl_as_idx)):
+        for node_idx in xrange(len(sl_as_idx)):
             node = sl_as_idx[node_idx]
-            # What serial number is this voxel in the unique streamline indices:
+            # What serial number is this voxel in the unique voxel indices:
             voxel_id = int(np.where((node[0] == unique_idx[:, 0]) *
                                     (node[1] == unique_idx[:, 1]) *
                                     (node[2] == unique_idx[:, 2]))[0])
