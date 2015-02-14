@@ -52,7 +52,7 @@ def _voxel2streamline(sl,
     v2f = np.zeros((len(unique_idx), len(sl)), dtype=bool)
 
     # Define local counters:
-    cdef int s_idx, node_idx, voxel_id, sl_idx0, sl_idx1
+    cdef int s_idx, node_idx, voxel_id, sl_idx0, sl_idx1, ii
 
     # This is a 1D grid with length of the total number of nodes. This lets us
     # go from a node in a specific streamline to the voxel in which this node
@@ -64,6 +64,11 @@ def _voxel2streamline(sl,
     total_nodes = np.sum(nodes_per_fiber)
     v2fn = np.empty(total_nodes, dtype=np.int)
 
+    vox_dict = {}
+    for ii in xrange(len(unique_idx)):
+        vox = unique_idx[ii]
+        vox_dict[vox[0], vox[1], vox[2]] = ii
+
     # In each fiber:
     for s_idx in xrange(len(sl)):
         s = sl[s_idx]
@@ -74,18 +79,11 @@ def _voxel2streamline(sl,
         for node_idx in xrange(len(sl_as_idx)):
             node = sl_as_idx[node_idx]
             # What serial number is this voxel in the unique voxel indices:
-            voxel_id = int(np.where((node[0] == unique_idx[:, 0]) *
-                                    (node[1] == unique_idx[:, 1]) *
-                                    (node[2] == unique_idx[:, 2]))[0])
-
+            voxel_id = vox_dict[node[0], node[1], node[2]]
             # Add that combination to the grid:
             v2f[voxel_id, s_idx] = 1
-
             # All the nodes going through this voxel get its number:
-            v2fn[sl_idx0:sl_idx1][
-                np.where((sl_as_idx[:, 0] == node[0]) *
-                         (sl_as_idx[:, 1] == node[1]) *
-                         (sl_as_idx[:, 2] == node[2]))] = voxel_id
+            v2fn[sl_idx0:sl_idx1][node_idx] = voxel_id
 
     return v2f ,v2fn
 
