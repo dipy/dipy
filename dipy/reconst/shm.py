@@ -632,7 +632,7 @@ class SphHarmFit(OdfFit):
         if not hasattr(self.model, 'predict'):
             msg = "This model does not have prediction implemented yet"
             raise NotImplementedError(msg)
-        return self.model.predict(self.shm_coeff, gtab, S0)
+        return self.model.predict(self._shm_coef, gtab, S0)
 
 
 class CsaOdfModel(QballBaseModel):
