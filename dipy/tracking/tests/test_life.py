@@ -88,8 +88,8 @@ def test_voxel2streamline():
     affine = np.eye(4)
     v2f, v2fn = life.voxel2streamline(streamline, False, affine)
     npt.assert_equal(v2f, {0:[0,1], 1:[0,1], 2:[0,1], 3:[0]})
-    npt.assert_equal(v2fn,{0: {0:[0], 1:[1], 2:[2], 3:[3]},
-                           1: {0:[0], 1:[1], 2:[2]}})
+    npt.assert_equal(v2fn, {0: {0:[0], 1:[1], 2:[2], 3:[3]},
+                            1: {0:[0], 1:[1], 2:[2]}})
 
 
 def test_FiberModel_init():
