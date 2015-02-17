@@ -44,14 +44,9 @@ def _voxel2streamline(sl,
     The second answers the question: Given a voxel, for each fiber in that
     voxel, which nodes of that fiber are in that voxel? Shape (total_nodes,).
     """
-    cdef:
-        cnp.ndarray[cnp.int_t, ndim=1, mode='strided'] v2fn
-        cnp.ndarray[cnp.int_t, ndim=1, mode='strided'] nodes_per_fiber
 
     # Given a voxel (from the unique coords, is the fiber in here?)
     v2f = {}
-    #v2f = np.zeros((len(unique_idx), len(sl)), dtype=bool)
-
     # Define local counters:
     cdef int s_idx, node_idx, voxel_id, sl_idx0, sl_idx1, ii
 
@@ -63,9 +58,9 @@ def _voxel2streamline(sl,
         nodes_per_fiber[s_idx] = len(sl[s_idx])
 
     total_nodes = np.sum(nodes_per_fiber)
-    v2fn = np.empty(total_nodes, dtype=np.int)
-
+    v2fn = {}
     vox_dict = {}
+
     for ii in xrange(len(unique_idx)):
         vox = unique_idx[ii]
         vox_dict[vox[0], vox[1], vox[2]] = ii
@@ -74,10 +69,8 @@ def _voxel2streamline(sl,
     for s_idx in xrange(len(sl)):
         if not np.mod(s_idx, 10000):
             print("streamline: %s"%(100*float(s_idx)/len(sl)))
-        s = sl[s_idx]
-        sl_as_idx = np.array(s).astype(int)
-        sl_idx0 = np.int(np.sum(nodes_per_fiber[:s_idx]))
-        sl_idx1 = np.int(sl_idx0 + nodes_per_fiber[s_idx])
+        sl_as_idx = np.array(sl[s_idx]).astype(int)
+        v2fn[s_idx] = {}
         # In each voxel present in there:
         for node_idx in xrange(len(sl_as_idx)):
             node = sl_as_idx[node_idx]
@@ -89,10 +82,11 @@ def _voxel2streamline(sl,
                     v2f[voxel_id].append(s_idx)
             else:
                 v2f[voxel_id] = [s_idx]
-            #v2f[voxel_id, s_idx] = 1
             # All the nodes going through this voxel get its number:
-            v2fn[sl_idx0:sl_idx1][node_idx] = voxel_id
-
+            if voxel_id in v2fn[s_idx]:
+                v2fn[s_idx][voxel_id].append(node_idx)
+            else:
+                v2fn[s_idx][voxel_id] = [node_idx]
     return v2f ,v2fn
 
 

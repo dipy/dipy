@@ -8,7 +8,6 @@ and statistical inference in living connectomes. Nature Methods 11:
 1058-1063. doi:10.1038/nmeth.3098
 """
 import time
-import gc
 
 import numpy as np
 import scipy.sparse as sps
@@ -389,7 +388,6 @@ class FiberModel(ReconstModel):
         f_matrix_row = np.empty(n_unique_f * n_bvecs)
         f_matrix_col = np.empty(n_unique_f * n_bvecs)
 
-        keep_ct = 0
         nodes_per_fiber = np.zeros(len(streamline), dtype=np.int)
         sum_nodes = np.zeros_like(nodes_per_fiber)
         fiber_signal = []
@@ -407,6 +405,7 @@ class FiberModel(ReconstModel):
         del streamline
         print(time.time())
 
+        keep_ct = 0
         ones_bvecs = np.ones(n_bvecs)
         range_bvecs = np.arange(n_bvecs)
         # In each voxel:
@@ -414,14 +413,9 @@ class FiberModel(ReconstModel):
             # dbg:
             #if not np.mod(v_idx, 10000):
             #    print("voxel %s"%(100*float(v_idx)/n_vox))
-            # For each fiber:
-            this_v2f = v2f[v_idx]
-            for f_idx in this_v2f:
-                this_v2fn = v2fn[sum_nodes[f_idx]:
-                                 sum_nodes[f_idx] + nodes_per_fiber[f_idx]]
-                this_v2fn_idx = np.where(this_v2fn == v_idx)[0]
-                del this_v2fn
-                for node_idx in this_v2fn_idx:
+            # For each fiber in that voxel:
+            for f_idx in v2f[v_idx]:
+                for node_idx in v2fn[f_idx][v_idx]:
                     # Sum the signal from each node of the fiber in that voxel:
                     f_matrix_sig[keep_ct:keep_ct+n_bvecs] = \
         f_matrix_sig[keep_ct:keep_ct+n_bvecs] + fiber_signal[f_idx][node_idx]
