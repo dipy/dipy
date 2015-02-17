@@ -49,7 +49,8 @@ def _voxel2streamline(sl,
         cnp.ndarray[cnp.int_t, ndim=1, mode='strided'] nodes_per_fiber
 
     # Given a voxel (from the unique coords, is the fiber in here?)
-    v2f = np.zeros((len(unique_idx), len(sl)), dtype=bool)
+    v2f = {}
+    #v2f = np.zeros((len(unique_idx), len(sl)), dtype=bool)
 
     # Define local counters:
     cdef int s_idx, node_idx, voxel_id, sl_idx0, sl_idx1, ii
@@ -71,6 +72,8 @@ def _voxel2streamline(sl,
 
     # In each fiber:
     for s_idx in xrange(len(sl)):
+        if not np.mod(s_idx, 10000):
+            print("streamline: %s"%(100*float(s_idx)/len(sl)))
         s = sl[s_idx]
         sl_as_idx = np.array(s).astype(int)
         sl_idx0 = np.int(np.sum(nodes_per_fiber[:s_idx]))
@@ -81,7 +84,12 @@ def _voxel2streamline(sl,
             # What serial number is this voxel in the unique voxel indices:
             voxel_id = vox_dict[node[0], node[1], node[2]]
             # Add that combination to the grid:
-            v2f[voxel_id, s_idx] = 1
+            if voxel_id in v2f:
+                if s_idx not in v2f[voxel_id]:
+                    v2f[voxel_id].append(s_idx)
+            else:
+                v2f[voxel_id] = [s_idx]
+            #v2f[voxel_id, s_idx] = 1
             # All the nodes going through this voxel get its number:
             v2fn[sl_idx0:sl_idx1][node_idx] = voxel_id
 

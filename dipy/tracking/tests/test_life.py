@@ -87,7 +87,7 @@ def test_voxel2streamline():
           [[1, 2, 3], [4, 5, 3], [5, 6, 3]]]
     affine = np.eye(4)
     v2f, v2fn = life.voxel2streamline(streamline, False, affine)
-    npt.assert_array_equal(v2f, np.array([[1, 1], [1, 1], [1,  1], [1, 0]]))
+    npt.assert_equal(v2f, {0:[0,1], 1:[0,1], 2:[0,1], 3:[0]})
     npt.assert_array_equal(v2fn, np.array([0, 1, 2, 3, 0, 1, 2]))
 
 
