@@ -6,8 +6,6 @@ Pestilli, F., Yeatman, J, Rokem, A. Kay, K. and Wandell B.A. (2014). Validation
 and statistical inference in living connectomes. Nature Methods 11:
 1058-1063. doi:10.1038/nmeth.3098
 """
-import time
-
 import numpy as np
 import scipy.sparse as sps
 import scipy.linalg as la
@@ -376,18 +374,16 @@ class FiberModel(ReconstModel):
         n_vox = vox_coords.shape[0]
         # We only consider the diffusion-weighted signals:
         n_bvecs = self.gtab.bvals[~self.gtab.b0s_mask].shape[0]
-        print(time.time())
         v2f, v2fn = voxel2streamline(streamline, transformed=True,
                                      affine=affine, unique_idx=vox_coords)
-        print(time.time())
         # How many fibers in each voxel (this will determine how many
         # components are in the matrix):
         n_unique_f = len(np.hstack(v2f.values()))
         # Preallocate these, which will be used to generate the sparse
         # matrix:
         f_matrix_sig = np.zeros(n_unique_f * n_bvecs, dtype=np.float)
-        f_matrix_row = np.zeros(n_unique_f * n_bvecs, dtype=np.int32)
-        f_matrix_col = np.zeros(n_unique_f * n_bvecs, dtype=np.int32)
+        f_matrix_row = np.empty(n_unique_f * n_bvecs, dtype=np.int32)
+        f_matrix_col = np.empty(n_unique_f * n_bvecs, dtype=np.int32)
 
         nodes_per_fiber = np.zeros(len(streamline), dtype=np.int)
         sum_nodes = np.zeros_like(nodes_per_fiber)
@@ -403,8 +399,8 @@ class FiberModel(ReconstModel):
         # In each voxel:
         for v_idx in range(vox_coords.shape[0]):
             # dbg:
-            if not np.mod(v_idx, 10000):
-                print("voxel %s"%(100*float(v_idx)/n_vox))
+            #if not np.mod(v_idx, 10000):
+            #    print("voxel %s"%(100*float(v_idx)/n_vox))
             mat_row_idx = (range_bvecs + v_idx * n_bvecs).astype(np.int32)
             #For each fiber in that voxel:
             for f_idx in v2f[v_idx]:
@@ -426,8 +422,6 @@ class FiberModel(ReconstModel):
         life_matrix = sps.coo_matrix((f_matrix_sig,
                                       [f_matrix_row, f_matrix_col])).tocsr()
 
-        print("Matrix allocated")
-        print(time.time())
         del f_matrix_col, f_matrix_row, f_matrix_sig
         return life_matrix, vox_coords
 
