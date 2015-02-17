@@ -35,48 +35,34 @@ def _voxel2streamline(sl,
 
     Returns
     -------
-    v2f, v2fn : tuple of arrays
+    v2f, v2fn : tuple of dicts
 
-    The first array in the tuple answers the question: Given a voxel (from
-    the unique indices in this model), which fibers pass through it? Shape:
-    (n_voxels, n_fibers).
+    The first dict in the tuple answers the question: Given a voxel (from
+    the unique indices in this model), which fibers pass through it?
 
-    The second answers the question: Given a voxel, for each fiber in that
-    voxel, which nodes of that fiber are in that voxel? Shape (total_nodes,).
+    The second answers the question: Given a streamline, for each voxel that
+    this streamline passes through, which nodes of that streamline are in that
+    voxel?
     """
-
-    # Given a voxel (from the unique coords, is the fiber in here?)
-    v2f = {}
     # Define local counters:
-    cdef int s_idx, node_idx, voxel_id, sl_idx0, sl_idx1, ii
-
-    # This is a 1D grid with length of the total number of nodes. This lets us
-    # go from a node in a specific streamline to the voxel in which this node
-    # is.
-    nodes_per_fiber = np.empty(len(sl), dtype=np.int)
-    for s_idx in range(len(sl)):
-        nodes_per_fiber[s_idx] = len(sl[s_idx])
-
-    total_nodes = np.sum(nodes_per_fiber)
-    v2fn = {}
-    vox_dict = {}
-
-    for ii in xrange(len(unique_idx)):
+    cdef int s_idx, node_idx, voxel_id, ii
+    cdef dict vox_dict = {}
+    for ii in range(len(unique_idx)):
         vox = unique_idx[ii]
         vox_dict[vox[0], vox[1], vox[2]] = ii
-
+    # Outputs are these dicts:
+    cdef dict v2f = {}
+    cdef dict v2fn = {}
     # In each fiber:
-    for s_idx in xrange(len(sl)):
-        if not np.mod(s_idx, 10000):
-            print("streamline: %s"%(100*float(s_idx)/len(sl)))
+    for s_idx in range(len(sl)):
         sl_as_idx = np.array(sl[s_idx]).astype(int)
         v2fn[s_idx] = {}
         # In each voxel present in there:
-        for node_idx in xrange(len(sl_as_idx)):
+        for node_idx in range(len(sl_as_idx)):
             node = sl_as_idx[node_idx]
             # What serial number is this voxel in the unique voxel indices:
             voxel_id = vox_dict[node[0], node[1], node[2]]
-            # Add that combination to the grid:
+            # Add that combination to the dict:
             if voxel_id in v2f:
                 if s_idx not in v2f[voxel_id]:
                     v2f[voxel_id].append(s_idx)

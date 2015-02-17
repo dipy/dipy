@@ -1,4 +1,3 @@
-
 """
 This is an implementation of the Linear Fascicle Evaluation (LiFE) algorithm
 described in:
@@ -261,7 +260,10 @@ class LifeSignalMaker(object):
         Approximate the signal for a given streamline
         """
         grad = streamline_gradients(streamline)
-        return [self.calc_signal(g) for g in grad]
+        sig_out = np.zeros((grad.shape[0], self.signal.shape[-1]))
+        for ii, g in enumerate(grad):
+            sig_out[ii] = self.calc_signal(g)
+        return sig_out
 
 
 def voxel2streamline(streamline, transformed=False, affine=None,
@@ -289,14 +291,14 @@ def voxel2streamline(streamline, transformed=False, affine=None,
 
     Returns
     -------
-    v2f, v2fn : tuple of arrays
+    v2f, v2fn : tuple of dicts
 
-    The first array in the tuple answers the question: Given a voxel (from
-    the unique indices in this model), which fibers pass through it? Shape:
-    (n_voxels, n_fibers).
+    The first dict in the tuple answers the question: Given a voxel (from
+    the unique indices in this model), which fibers pass through it?
 
-    The second answers the question: Given a voxel, for each fiber in that
-    voxel, which nodes of that fiber are in that voxel? Shape (total_nodes).
+    The second answers the question: Given a streamline, for each voxel that
+    this streamline passes through, which nodes of that streamline are in that
+    voxel?
     """
     if transformed:
         transformed_streamline = streamline
@@ -360,7 +362,6 @@ class FiberModel(ReconstModel):
             an approximation. Defaults to use the 724-vertex symmetric sphere
             from :mod:`dipy.data`
         """
-        print(time.time())
         if sphere is not False:
             SignalMaker = LifeSignalMaker(self.gtab,
                                           evals=evals,
@@ -385,49 +386,38 @@ class FiberModel(ReconstModel):
         # Preallocate these, which will be used to generate the sparse
         # matrix:
         f_matrix_sig = np.zeros(n_unique_f * n_bvecs, dtype=np.float)
-        f_matrix_row = np.empty(n_unique_f * n_bvecs, dtype=np.int)
-        f_matrix_col = np.empty(n_unique_f * n_bvecs, dtype=np.int)
+        f_matrix_row = np.zeros(n_unique_f * n_bvecs, dtype=np.int32)
+        f_matrix_col = np.zeros(n_unique_f * n_bvecs, dtype=np.int32)
 
         nodes_per_fiber = np.zeros(len(streamline), dtype=np.int)
         sum_nodes = np.zeros_like(nodes_per_fiber)
         fiber_signal = []
         for s_idx, s in enumerate(streamline):
-            if not np.mod(s_idx, 1000):
-                print("signal %s"%(100*float(s_idx)/len(streamline)))
             if sphere is not False:
                 fiber_signal.append(SignalMaker.streamline_signal(s))
             else:
                 fiber_signal.append(streamline_signal(s, self.gtab, evals))
 
-            nodes_per_fiber[s_idx] = s.shape[0]
-            sum_nodes[s_idx] = np.sum(nodes_per_fiber[:s_idx])
-
-        del streamline
-        print(time.time())
-
         keep_ct = 0
-        ones_bvecs = np.ones(n_bvecs).astype(int)
         range_bvecs = np.arange(n_bvecs).astype(int)
         # In each voxel:
-        for v_idx in xrange(vox_coords.shape[0]):
+        for v_idx in range(vox_coords.shape[0]):
             # dbg:
             if not np.mod(v_idx, 10000):
                 print("voxel %s"%(100*float(v_idx)/n_vox))
+            mat_row_idx = (range_bvecs + v_idx * n_bvecs).astype(np.int32)
             #For each fiber in that voxel:
-
             for f_idx in v2f[v_idx]:
+                # For each fiber-voxel combination, store the row/column
+                # indices in the pre-allocated linear arrays
+                f_matrix_row[keep_ct:keep_ct+n_bvecs] = mat_row_idx
+                f_matrix_col[keep_ct:keep_ct+n_bvecs] = f_idx
                 vox_fiber_sig = np.zeros(n_bvecs)
                 for node_idx in v2fn[f_idx][v_idx]:
                     # Sum the signal from each node of the fiber in that voxel:
                     vox_fiber_sig += fiber_signal[f_idx][node_idx]
                 # And add the summed thing into the corresponding rows:
                 f_matrix_sig[keep_ct:keep_ct+n_bvecs] += vox_fiber_sig
-                # For each fiber-voxel combination, we now store the row/column
-                # indices in the pre-allocated linear arrays
-                f_matrix_row[keep_ct:keep_ct+n_bvecs] =\
-                    (range_bvecs + v_idx * n_bvecs).astype(int)
-                f_matrix_col[keep_ct:keep_ct+n_bvecs] =\
-                    (ones_bvecs * f_idx).astype(int)
                 keep_ct = keep_ct + n_bvecs
 
         # Allocate the sparse matrix, using the more memory-efficient 'csr'
@@ -465,7 +455,6 @@ class FiberModel(ReconstModel):
         # The mean of the relative signal across directions in each voxel:
         mean_sig = np.mean(relative_signal, -1)
         to_fit = (relative_signal - mean_sig[:, None]).ravel()
-
         return (to_fit, weighted_signal, b0_signal, relative_signal, mean_sig,
                 vox_data)
 
@@ -506,14 +495,9 @@ class FiberModel(ReconstModel):
             affine = np.eye(4)
         life_matrix, vox_coords = \
             self.setup(streamline, affine, evals=evals, sphere=sphere)
-
         to_fit, weighted_signal, b0_signal, relative_signal, mean_sig, vox_data=\
             self._signals(data, vox_coords)
-        print("Signals extracted!")
-        print(time.time())
         beta = opt.sparse_nnls(to_fit, life_matrix)
-        print("NNLS done!")
-        print(time.time())
         return FiberFit(self, life_matrix, vox_coords, to_fit, beta,
                         weighted_signal, b0_signal, relative_signal, mean_sig,
                         vox_data, streamline, affine, evals)
