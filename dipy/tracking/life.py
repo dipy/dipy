@@ -15,7 +15,7 @@ import scipy.linalg as la
 
 from dipy.reconst.base import ReconstModel, ReconstFit
 import dipy.core.sphere as dps
-from dipy.utils.six.moves import range
+from dipy.utils.six.moves import range, xrange
 from dipy.tracking.utils import unique_rows
 from dipy.tracking.streamline import transform_streamlines
 from dipy.tracking.vox2track import _voxel2streamline
