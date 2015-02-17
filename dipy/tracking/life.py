@@ -384,9 +384,9 @@ class FiberModel(ReconstModel):
         n_unique_f = len(np.hstack(v2f.values()))
         # Preallocate these, which will be used to generate the sparse
         # matrix:
-        f_matrix_sig = np.zeros(n_unique_f * n_bvecs)
-        f_matrix_row = np.empty(n_unique_f * n_bvecs)
-        f_matrix_col = np.empty(n_unique_f * n_bvecs)
+        f_matrix_sig = np.zeros(n_unique_f * n_bvecs, dtype=np.float)
+        f_matrix_row = np.empty(n_unique_f * n_bvecs, dtype=np.int)
+        f_matrix_col = np.empty(n_unique_f * n_bvecs, dtype=np.int)
 
         nodes_per_fiber = np.zeros(len(streamline), dtype=np.int)
         sum_nodes = np.zeros_like(nodes_per_fiber)
@@ -406,25 +406,28 @@ class FiberModel(ReconstModel):
         print(time.time())
 
         keep_ct = 0
-        ones_bvecs = np.ones(n_bvecs)
-        range_bvecs = np.arange(n_bvecs)
+        ones_bvecs = np.ones(n_bvecs).astype(int)
+        range_bvecs = np.arange(n_bvecs).astype(int)
         # In each voxel:
         for v_idx in xrange(vox_coords.shape[0]):
             # dbg:
-            #if not np.mod(v_idx, 10000):
-            #    print("voxel %s"%(100*float(v_idx)/n_vox))
-            # For each fiber in that voxel:
+            if not np.mod(v_idx, 10000):
+                print("voxel %s"%(100*float(v_idx)/n_vox))
+            #For each fiber in that voxel:
+
             for f_idx in v2f[v_idx]:
+                vox_fiber_sig = np.zeros(n_bvecs)
                 for node_idx in v2fn[f_idx][v_idx]:
                     # Sum the signal from each node of the fiber in that voxel:
-                    f_matrix_sig[keep_ct:keep_ct+n_bvecs] = \
-        f_matrix_sig[keep_ct:keep_ct+n_bvecs] + fiber_signal[f_idx][node_idx]
+                    vox_fiber_sig += fiber_signal[f_idx][node_idx]
+                # And add the summed thing into the corresponding rows:
+                f_matrix_sig[keep_ct:keep_ct+n_bvecs] += vox_fiber_sig
                 # For each fiber-voxel combination, we now store the row/column
                 # indices in the pre-allocated linear arrays
                 f_matrix_row[keep_ct:keep_ct+n_bvecs] =\
-                    range_bvecs + v_idx * n_bvecs
+                    (range_bvecs + v_idx * n_bvecs).astype(int)
                 f_matrix_col[keep_ct:keep_ct+n_bvecs] =\
-                    ones_bvecs * f_idx
+                    (ones_bvecs * f_idx).astype(int)
                 keep_ct = keep_ct + n_bvecs
 
         # Allocate the sparse matrix, using the more memory-efficient 'csr'
