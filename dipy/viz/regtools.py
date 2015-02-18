@@ -4,6 +4,19 @@ matplotlib, has_mpl, setup_module = optional_package("matplotlib")
 plt, _, _ = optional_package("matplotlib.pyplot")
 
 
+def _tile_plot(imgs, titles, **kwargs):
+    """
+    Helper function
+    """
+    # Create a new figure and plot the three images
+    fig, ax = plt.subplots(1, len(imgs))
+    for ii, a in enumerate(ax):
+        a.set_axis_off()
+        a.imshow(imgs[ii], **kwargs)
+        a.set_title(titles[ii])
+
+    return fig
+
 def overlay_images(img0, img1, title0='', title_mid='', title1='', fname=None):
     r""" Plot two images one on top of the other using red and green channels.
 
@@ -51,22 +64,14 @@ def overlay_images(img0, img1, title0='', title_mid='', title1='', fname=None):
     overlay[..., 0] = img0
     overlay[..., 1] = img1
 
-    # Create a new figure and plot the three images
-    plt.figure()
-    plt.subplot(1, 3, 1).set_axis_off()
-    plt.imshow(img0_red)
-    plt.title(title0)
-    plt.subplot(1, 3, 2).set_axis_off()
-    plt.imshow(overlay)
-    plt.title(title_mid)
-    plt.subplot(1, 3, 3).set_axis_off()
-    plt.imshow(img1_green)
-    plt.title(title1)
+    fig = _tile_plot([img0_red, overlay, img1_green],
+                      [title0, title_mid, title1])
 
     # If a file name was given, save the figure
     if fname is not None:
-        plt.savefig(fname, bbox_inches='tight')
+        fig.savefig(fname, bbox_inches='tight')
 
+    return fig
 
 def draw_lattice_2d(nrows, ncols, delta):
     r"""Create a regular lattice of nrows x ncols squares.
@@ -291,24 +296,17 @@ def plot_slices(V, slice_indices=None, fname=None):
     # Extract the middle slices
     axial = np.asarray(V[:, :, slice_indices[2]]).astype(np.uint8).T
     coronal = np.asarray(V[:, slice_indices[1], :]).astype(np.uint8).T
-    sagital = np.asarray(V[slice_indices[0], :, :]).astype(np.uint8).T
+    sagittal = np.asarray(V[slice_indices[0], :, :]).astype(np.uint8).T
 
-    # Plot the slices
-    plt.figure()
-    plt.subplot(1, 3, 1).set_axis_off()
-    plt.imshow(axial, cmap=plt.cm.gray, origin='lower')
-    plt.title('Axial')
-    plt.subplot(1, 3, 2).set_axis_off()
-    plt.imshow(coronal, cmap=plt.cm.gray, origin='lower')
-    plt.title('Coronal')
-    plt.subplot(1, 3, 3).set_axis_off()
-    plt.imshow(sagital, cmap=plt.cm.gray, origin='lower')
-    plt.title('Sagittal')
+    fig = _tile_plot([axial, coronal, sagittal],
+                      ['Axial', 'Coronal', 'Sagittal'],
+                      cmap=plt.cm.gray, origin='lower')
 
     # Save the figure if requested
     if fname is not None:
-        plt.savefig(fname, bbox_inches='tight')
+        fig.savefig(fname, bbox_inches='tight')
 
+    return fig
 
 def overlay_slices(L, R, slice_index=None, slice_type=1, ltitle='Left',
                    rtitle='Right', fname=None):
@@ -384,18 +382,12 @@ def overlay_slices(L, R, slice_index=None, slice_type=1, ltitle='Left',
     colorImage[..., 0] = ll * (ll > ll[0, 0])
     colorImage[..., 1] = rr * (rr > rr[0, 0])
 
-    # Create the figure
-    plt.figure()
-    plt.subplot(1, 3, 1).set_axis_off()
-    plt.imshow(ll, cmap=plt.cm.gray, origin='lower')
-    plt.title(ltitle)
-    plt.subplot(1, 3, 2).set_axis_off()
-    plt.imshow(colorImage, origin='lower')
-    plt.title('Overlay')
-    plt.subplot(1, 3, 3).set_axis_off()
-    plt.imshow(rr, cmap=plt.cm.gray, origin='lower')
-    plt.title(rtitle)
+    fig = _tile_plot([ll, colorImage, rr],
+                      [ltitle, 'Overlay', rtitle],
+                      cmap=plt.cm.gray, origin='lower')
 
     # Save the figure to disk, if requested
     if fname is not None:
-        plt.savefig(fname, bbox_inches='tight')
+        fig.savefig(fname, bbox_inches='tight')
+
+    return fig
