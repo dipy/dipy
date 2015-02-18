@@ -381,9 +381,9 @@ class FiberModel(ReconstModel):
         n_unique_f = len(np.hstack(v2f.values()))
         # Preallocate these, which will be used to generate the sparse
         # matrix:
-        f_matrix_sig = np.zeros(n_unique_f * n_bvecs, dtype=np.float)
-        f_matrix_row = np.empty(n_unique_f * n_bvecs, dtype=np.int32)
-        f_matrix_col = np.empty(n_unique_f * n_bvecs, dtype=np.int32)
+        f_matrix_sig = []# np.zeros(n_unique_f * n_bvecs, dtype=np.float)
+        f_matrix_row = []#np.empty(n_unique_f * n_bvecs, dtype=np.int32)
+        f_matrix_col = []#np.empty(n_unique_f * n_bvecs, dtype=np.int32)
 
         nodes_per_fiber = np.zeros(len(streamline), dtype=np.int)
         sum_nodes = np.zeros_like(nodes_per_fiber)
@@ -396,6 +396,7 @@ class FiberModel(ReconstModel):
 
         keep_ct = 0
         range_bvecs = np.arange(n_bvecs).astype(int)
+        my_ones = np.ones(n_bvecs).astype(int)
         # In each voxel:
         for v_idx in range(vox_coords.shape[0]):
             # dbg:
@@ -406,20 +407,25 @@ class FiberModel(ReconstModel):
             for f_idx in v2f[v_idx]:
                 # For each fiber-voxel combination, store the row/column
                 # indices in the pre-allocated linear arrays
-                f_matrix_row[keep_ct:keep_ct+n_bvecs] = mat_row_idx
-                f_matrix_col[keep_ct:keep_ct+n_bvecs] = f_idx
+                # f_matrix_row[keep_ct:keep_ct+n_bvecs] = mat_row_idx
+                # f_matrix_col[keep_ct:keep_ct+n_bvecs] = f_idx
+                f_matrix_row.append(mat_row_idx)
+                f_matrix_col.append(f_idx * my_ones)
+
                 vox_fiber_sig = np.zeros(n_bvecs)
                 for node_idx in v2fn[f_idx][v_idx]:
                     # Sum the signal from each node of the fiber in that voxel:
                     vox_fiber_sig += fiber_signal[f_idx][node_idx]
                 # And add the summed thing into the corresponding rows:
-                f_matrix_sig[keep_ct:keep_ct+n_bvecs] += vox_fiber_sig
+                #f_matrix_sig[keep_ct:keep_ct+n_bvecs] += vox_fiber_sig
+                f_matrix_sig.append(vox_fiber_sig)
                 keep_ct = keep_ct + n_bvecs
 
         # Allocate the sparse matrix, using the more memory-efficient 'csr'
         # format:
-        life_matrix = sps.csr_matrix((f_matrix_sig,
-                                      [f_matrix_row, f_matrix_col]))
+        life_matrix = sps.csr_matrix((np.hstack(f_matrix_sig),
+                                      [np.hstack(f_matrix_row),
+                                       np.hstack(f_matrix_col)]))
 
         return life_matrix, vox_coords
 
