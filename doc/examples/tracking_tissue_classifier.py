@@ -16,7 +16,7 @@ ones.
 
 This example is an extension of the
 :ref:``example_deterministic_fiber_tracking`` example. We begin by loading the
-data, fitting a constrained spherical deconvolution (CSD) reconstruction
+data, fitting a constant solid angle (CSA) reconstruction
 model and creating the maximum determnistic direction getter.
 """
 
@@ -32,15 +32,16 @@ from dipy.viz import fvtk
 from dipy.viz.colormap import line_colors
 
 ren = fvtk.ren()
+
 hardi_img, gtab, labels_img = read_stanford_labels()
 data = hardi_img.get_data()
 labels = labels_img.get_data()
 affine = hardi_img.get_affine()
-sli = data.shape[2] / 2
+z_sli = data.shape[2] / 2
 
 seed_mask = labels == 2
 white_matter = (labels == 1) | (labels == 2)
-seeds = utils.seeds_from_mask(seed_mask, density=1, affine=affine)
+seeds = utils.seeds_from_mask(seed_mask, density=2, affine=affine)
 
 
 csa_model = CsaOdfModel(gtab, 4)
@@ -82,18 +83,21 @@ FA = fractional_anisotropy(tenfit.evals)
 
 threshold_classifier = ThresholdTissueClassifier(FA, .2)
 
+fig = plt.figure()
 mask_fa = FA.copy()
 mask_fa[mask_fa < 0.2] = 0
 plt.xticks([])
 plt.yticks([])
-plt.imshow(mask_fa[:, :, sli].T, cmap='gray', origin='lower')
-plt.savefig('threshold_fa.png')
+plt.imshow(mask_fa[:, :, z_sli].T, cmap='gray', origin='lower',
+           interpolation='nearest')
+fig.tight_layout()
+fig.savefig('threshold_fa.png')
 
 """
 .. figure:: threshold_fa.png
  :align: center
 
- **Thresholded fractional anysotropy map**
+ **Thresholded fractional anisotropy map.**
 """
 
 all_streamlines_threshold_classifier = LocalTracking(dg,
@@ -113,7 +117,7 @@ streamlines = [sl for sl in all_streamlines_threshold_classifier]
 fvtk.clear(ren)
 fvtk.add(ren, fvtk.line(streamlines, line_colors(streamlines)))
 fvtk.record(ren, out_path='all_streamlines_threshold_classifier.png',
-            size=(400, 400))
+            size=(600, 600))
 
 """
 .. figure:: all_streamlines_threshold_classifier.png
@@ -147,17 +151,19 @@ from dipy.tracking.local import BinaryTissueClassifier
 
 binary_classifier = BinaryTissueClassifier(white_matter)
 
-
+fig = plt.figure()
 plt.xticks([])
 plt.yticks([])
-plt.imshow(white_matter[:, :, sli].T, cmap='gray', origin='lower')
-plt.savefig('white_matter_mask.png')
+fig.tight_layout()
+plt.imshow(white_matter[:, :, z_sli].T, cmap='gray', origin='lower',
+           interpolation='nearest')
+fig.savefig('white_matter_mask.png')
 
 """
 .. figure:: white_matter_mask.png
  :align: center
 
- **White matter binary mask**
+ **White matter binary mask.**
 """
 
 all_streamlines_binary_classifier = LocalTracking(dg,
@@ -176,7 +182,7 @@ streamlines = [sl for sl in all_streamlines_binary_classifier]
 fvtk.clear(ren)
 fvtk.add(ren, fvtk.line(streamlines, line_colors(streamlines)))
 fvtk.record(ren, out_path='all_streamlines_binary_classifier.png',
-            size=(400, 400))
+            size=(600, 600))
 
 """
 .. figure:: all_streamlines_binary_classifier.png
@@ -186,7 +192,7 @@ fvtk.record(ren, out_path='all_streamlines_binary_classifier.png',
 """
 
 """
-Act Tissue Classifier
+ACT Tissue Classifier
 ---------------------
 Anatomically-constrained tractography (ACT) [Smith2012]_ uses information from
 anatomical images to determine when the tractography stops. The 'include_map'
@@ -206,7 +212,7 @@ implemented either.
 - include_map: numpy array [:, :, :],
 - exclude_map: numpy array [:, :, :],
 
-**Stopping criterions**
+**Stopping criterion**
 
 - 'ENDPOINT': include_map > 0.5,
 - 'OUTSIDEIMAGE': tracking point outside of include_map or exclude_map,
@@ -229,16 +235,20 @@ include_map[background > 0] = 1
 exclude_map = img_pve_csf.get_data()
 
 act_classifier = ActTissueClassifier(include_map, exclude_map)
-plt.figure()
+
+fig = plt.figure()
 plt.subplot(121)
 plt.xticks([])
 plt.yticks([])
-plt.imshow(include_map[:, :, sli].T, cmap='gray', origin='lower')
+plt.imshow(include_map[:, :, z_sli].T, cmap='gray', origin='lower',
+           interpolation='nearest')
 plt.subplot(122)
 plt.xticks([])
 plt.yticks([])
-plt.imshow(exclude_map[:, :, sli].T, cmap='gray', origin='lower')
-plt.savefig('act_maps.png')
+plt.imshow(exclude_map[:, :, z_sli].T, cmap='gray', origin='lower',
+           interpolation='nearest')
+fig.tight_layout()
+fig.savefig('act_maps.png')
 
 """
 .. figure:: act_maps.png
@@ -264,14 +274,13 @@ streamlines = [sl for sl in all_streamlines_act_classifier]
 fvtk.clear(ren)
 fvtk.add(ren, fvtk.line(streamlines, line_colors(streamlines)))
 fvtk.record(ren, out_path='all_streamlines_act_classifier.png',
-            size=(400, 400))
+            size=(600, 600))
 
 """
 .. figure:: all_streamlines_act_classifier.png
  :align: center
 
- **Deterministic tractography using a anatomically-constrained tractography
- stopping criterion.**
+ **Deterministic tractography using ACT stopping criterion.**
 """
 
 valid_streamlines_act_classifier = LocalTracking(dg,
@@ -291,7 +300,7 @@ streamlines = [sl for sl in valid_streamlines_act_classifier]
 fvtk.clear(ren)
 fvtk.add(ren, fvtk.line(streamlines, line_colors(streamlines)))
 fvtk.record(ren, out_path='valid_streamlines_act_classifier.png',
-            size=(400, 400))
+            size=(600, 600))
 
 """
 .. figure:: valid_streamlines_act_classifier.png
