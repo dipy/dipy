@@ -399,8 +399,8 @@ class FiberModel(ReconstModel):
         # In each voxel:
         for v_idx in range(vox_coords.shape[0]):
             # dbg:
-            #if not np.mod(v_idx, 10000):
-            #    print("voxel %s"%(100*float(v_idx)/n_vox))
+            if not np.mod(v_idx, 1000):
+                print("voxel %s"%(100*float(v_idx)/n_vox))
             mat_row_idx = (range_bvecs + v_idx * n_bvecs).astype(np.int32)
             #For each fiber in that voxel:
             for f_idx in v2f[v_idx]:
@@ -417,12 +417,10 @@ class FiberModel(ReconstModel):
                 keep_ct = keep_ct + n_bvecs
 
         # Allocate the sparse matrix, using the more memory-efficient 'csr'
-        # format (converted from the coo format, which we rely on for the
-        # initial allocation):
-        life_matrix = sps.coo_matrix((f_matrix_sig,
-                                      [f_matrix_row, f_matrix_col])).tocsr()
+        # format:
+        life_matrix = sps.csr_matrix((f_matrix_sig,
+                                      [f_matrix_row, f_matrix_col]))
 
-        del f_matrix_col, f_matrix_row, f_matrix_sig
         return life_matrix, vox_coords
 
     def _signals(self, data, vox_coords):
