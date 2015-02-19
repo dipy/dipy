@@ -405,8 +405,8 @@ class FiberModel(ReconstModel):
         # In each voxel:
         for v_idx in range(vox_coords.shape[0]):
             # dbg:
-            if not np.mod(v_idx, 1000):
-                print("voxel %s"%(100*float(v_idx)/n_vox))
+            #if not np.mod(v_idx, 1000):
+            #    print("voxel %s"%(100*float(v_idx)/n_vox))
             mat_row_idx = (range_bvecs + v_idx * n_bvecs).astype(np.int32)
             #For each fiber in that voxel:
             for f_idx in v2f[v_idx]:
