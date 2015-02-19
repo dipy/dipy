@@ -11,8 +11,7 @@ import scipy.sparse as sps
 import scipy.linalg as la
 
 from dipy.reconst.base import ReconstModel, ReconstFit
-import dipy.core.sphere as dps
-from dipy.utils.six.moves import range, xrange
+from dipy.utils.six.moves import range
 from dipy.tracking.utils import unique_rows
 from dipy.tracking.streamline import transform_streamlines
 from dipy.tracking.vox2track import _voxel2streamline
@@ -372,7 +371,6 @@ class FiberModel(ReconstModel):
         all_coords = np.concatenate(streamline)
         vox_coords = unique_rows(all_coords.astype(int))
         del all_coords
-        n_vox = vox_coords.shape[0]
         # We only consider the diffusion-weighted signals:
         n_bvecs = self.gtab.bvals[~self.gtab.b0s_mask].shape[0]
         v2f, v2fn = voxel2streamline(streamline, transformed=True,
@@ -386,8 +384,6 @@ class FiberModel(ReconstModel):
         f_matrix_row = np.zeros(n_unique_f * n_bvecs, dtype=np.int)
         f_matrix_col = np.zeros(n_unique_f * n_bvecs, dtype=np.int)
 
-        nodes_per_fiber = np.zeros(len(streamline), dtype=np.int)
-        sum_nodes = np.zeros_like(nodes_per_fiber)
         fiber_signal = []
         for s_idx, s in enumerate(streamline):
             if sphere is not False:
@@ -401,7 +397,6 @@ class FiberModel(ReconstModel):
 
         keep_ct = 0
         range_bvecs = np.arange(n_bvecs).astype(int)
-        my_ones = np.ones(n_bvecs).astype(int)
         # In each voxel:
         for v_idx in range(vox_coords.shape[0]):
             # dbg:
@@ -557,9 +552,10 @@ class FiberFit(ReconstFit):
             gtab = self.model.gtab
         else:
             _model = FiberModel(gtab)
-            _matrix, _ = self.model.setup(self.streamline,
-                                          self.affine,
-                                          self.evals)
+            _matrix, _ = _model.setup(self.streamline,
+                                      self.affine,
+                                      self.evals)
+
         pred_weighted = np.reshape(opt.spdot(_matrix, self.beta),
                                    (self.vox_coords.shape[0],
                                     np.sum(~gtab.b0s_mask)))
