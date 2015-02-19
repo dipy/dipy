@@ -5,6 +5,7 @@ cdef enum TissueClass:
     TRACKPOINT = 1
     ENDPOINT = 2
 
+
 cdef class TissueClassifier:
     # Please update doc-string in tissue_classifer.pyx if you change these
     # declarations
