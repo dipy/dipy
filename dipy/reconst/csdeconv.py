@@ -1,16 +1,18 @@
 from __future__ import division, print_function, absolute_import
 import warnings
+
 import numpy as np
 from scipy.integrate import quad
 from scipy.special import lpn, gamma
+import scipy.linalg as la
 
-from dipy.reconst.multi_voxel import multi_voxel_fit
 from dipy.data import small_sphere, get_sphere
 from dipy.core.geometry import cart2sphere
 from dipy.core.ndindex import ndindex
 from dipy.sims.voxel import single_tensor
 from dipy.utils.six.moves import range
 
+from dipy.reconst.multi_voxel import multi_voxel_fit
 from dipy.reconst.dti import TensorModel, fractional_anisotropy
 from dipy.reconst.shm import (sph_harm_ind_list, real_sph_harm,
                               sph_harm_lookup, lazy_index, SphHarmFit,
@@ -118,18 +120,20 @@ class ConstrainedSphericalDeconvModel(SphHarmModel):
         # scale lambda_ to account for differences in the number of
         # SH coefficients and number of mapped directions
         # This is exactly what is done in [4]_
-        self.lambda_ = (lambda_  * self.R.shape[0] * r_rh[0] /
-                        (np.sqrt(self.B_reg.shape[0]) * np.sqrt(362.))
-                       )
+
+        lambda_ = (lambda_  * self.R.shape[0] * r_rh[0] /
+                   (np.sqrt(self.B_reg.shape[0]) * np.sqrt(362.)))
+        self.B_reg *= lambda_
         self.sh_order = sh_order
         self.tau = tau
+        self._X = X = self.R.diagonal() * self.B_dwi
+        self._P = np.dot(X.T, X)
 
     @multi_voxel_fit
     def fit(self, data):
         dwi_data = data[self._where_dwi]
-        X = self.R.diagonal() * self.B_dwi
-        shm_coeff, num_it = csdeconv(dwi_data, self.sh_order, X, self.B_reg,
-                                     self.lambda_, self.tau)
+        shm_coeff, _ = csdeconv(dwi_data, self._X, self.B_reg, self.tau,
+                                P=self._P)
         return SphHarmFit(self, shm_coeff, None)
 
 
@@ -349,7 +353,24 @@ def forward_sdt_deconv_mat(ratio, n, r2_term=False):
     return np.diag(b), np.diag(bb)
 
 
-def csdeconv(dwsignal, sh_order, X, B_reg, lambda_=1., tau=0.1):
+potrf, potrs = la.get_lapack_funcs(('potrf', 'potrs'))
+
+def _solve_cholesky(Q, z):
+    L, info = potrf(Q, lower=False, overwrite_a=False, clean=False)
+    if info > 0:
+        msg = "%d-th leading minor not positive definite" % info
+        raise la.LinAlgError(msg)
+    if info < 0:
+        msg = 'illegal value in %d-th argument of internal potrf' % -info
+        raise ValueError(msg)
+    f, info = potrs(L, z, lower=False, overwrite_b=False)
+    if info != 0:
+        msg = 'illegal value in %d-th argument of internal potrs' % -info
+        raise ValueError(msg)
+    return f
+
+
+def csdeconv(dwsignal, X, B_reg, tau=0.1, convergence=50, P=None):
     r""" Constrained-regularized spherical deconvolution (CSD) [1]_
 
     Deconvolves the axially symmetric single fiber response function `r_rh` in
@@ -358,18 +379,14 @@ def csdeconv(dwsignal, sh_order, X, B_reg, lambda_=1., tau=0.1):
 
     Parameters
     ----------
-    dwsignal, : array
+    dwsignal : array
         Diffusion weighted signals to be deconvolved.
-    sh_order : int
-         maximal SH order of the SH representation
     X : array
         Prediction matrix which estimates diffusion weighted signals from FOD
         coefficients.
     B_reg : array (N, B)
         SH basis matrix which maps FOD coefficients to FOD values on the
-        surface of the sphere.
-    lambda_ : float
-        lambda parameter in minimization equation (default 1.0)
+        surface of the sphere. B_reg should be scaled to account for lambda.
     tau : float
         Threshold controlling the amplitude below which the corresponding fODF
         is assumed to be zero.  Ideally, tau should be set to zero. However, to
@@ -379,15 +396,85 @@ def csdeconv(dwsignal, sh_order, X, B_reg, lambda_=1., tau=0.1):
         peaks. Because SDT is based on a q-ball ODF deconvolution, and not
         signal deconvolution, using the max instead of mean (as in CSD), is
         more stable.
+    convergence : int
+        Maximum number of iterations to allow the deconvolution to converge.
+    P : ndarray
+        This is an optimization to avoid computing ``dot(X.T, X)`` many times.
+        If the same ``X`` is used many times, ``P`` can be precomputed and
+        passed to this function.
 
     Returns
     -------
     fodf_sh : ndarray (``(sh_order + 1)*(sh_order + 2)/2``,)
          Spherical harmonics coefficients of the constrained-regularized fiber
-         ODF
+         ODF.
     num_it : int
          Number of iterations in the constrained-regularization used for
-         convergence
+         convergence.
+
+    Notes
+    -----
+    This section describes how the fitting of the SH coefficients is done.
+    Problem is to minimise per iteration:
+
+    $F(f_n) = ||Xf_n - S||^2 + \lambda^2 ||H_{n-1} f_n||^2$
+
+    Where $X$ maps current FOD SH coefficients $f_n$ to DW signals $s$ and
+    $H_{n-1}$ maps FOD SH coefficients $f_n$ to amplitudes along set of negative
+    directions identified in previous iteration, i.e. the matrix formed by the
+    rows of $B_{reg}$ for which $Hf_{n-1}<0$ where $B_{reg}$ maps $f_n$ to FOD
+    amplitude on a sphere.
+
+    Solve by differentiating and setting to zero:
+
+    $\Rightarrow \frac{\delta F}{\delta f_n} = 2X^T(Xf_n - S) + 2 \lambda^2
+    H_{n-1}^TH_{n-1}f_n=0$
+
+    Or:
+
+    $(X^TX + \lambda^2 H_{n-1}^TH_{n-1})f_n = X^Ts$
+
+    Define $Q = X^TX + \lambda^2 H_{n-1}^TH_{n-1}$ , which by construction is a
+    square positive definite symmetric matrix of size $n_{SH} by n_{SH}$. If
+    needed, positive definiteness can be enforced with a small minimum norm
+    regulariser (helps a lot with poorly conditioned direction sets and/or
+    superresolution):
+
+    $Q = X^TX + (\lambda H_{n-1}^T) (\lambda H_{n-1}) + \mu I$
+
+    Solve $Qf_n = X^Ts$ using Cholesky decomposition:
+
+    $Q = LL^T$
+
+    where $L$ is lower triangular. Then problem can be solved by
+    back-substitution:
+
+    $L_y = X^Ts$
+
+    $L^Tf_n = y$
+
+    To speeds things up further, form $P = X^TX + \mu I$, and update to form
+    $Q$ by rankn update with $H_{n-1}$. The dipy implementation looks like:
+
+        form initially $P = X^T X + \mu I$ and $\lambda B_{reg}$
+
+        for each voxel: form $z = X^Ts$
+
+            estimate $f_0$ by solving $Pf_0=z$. We use a simplified $l_{max}=4$
+            solution here, but it might not make a big difference.
+
+            Then iterate until no change in rows of $H$ used in $H_n$
+
+                form $H_{n}$ given $f_{n-1}$
+
+                form $Q = P + (\lambda H_{n-1}^T) (\lambda H_{n-1}$) (this can
+                be done by rankn update, but we currently do not use rankn
+                update).
+
+                solve $Qf_n = z$ using Cholesky decomposition
+
+    We'd like to thanks Donald Tournier for his help with describing and
+    implementing this algorithm.
 
     References
     ----------
@@ -396,48 +483,57 @@ def csdeconv(dwsignal, sh_order, X, B_reg, lambda_=1., tau=0.1):
            constrained super-resolved spherical deconvolution.
 
     """
-    # generate initial fODF estimate, truncated at SH order 4
-    fodf_sh = np.linalg.lstsq(X, dwsignal)[0]
-    fodf_sh[15:] = 0
+    mu = 1e-5
+    if P is None:
+        P = np.dot(X.T, X)
+    z = np.dot(X.T, dwsignal)
 
-    fodf = np.dot(B_reg, fodf_sh)
-    # set threshold on FOD amplitude used to identify 'negative' values
-    threshold = tau * np.mean(np.dot(B_reg, fodf_sh))
+    try:
+        fodf_sh = _solve_cholesky(P, z)
+    except la.LinAlgError:
+        P = P + mu * np.eye(P.shape[0])
+        fodf_sh = _solve_cholesky(P, z)
+    # For the first iteration we use a smooth FOD that only uses SH orders up
+    # to 4 (the first 15 coefficients).
+    fodf = np.dot(B_reg[:, :15], fodf_sh[:15])
+    # The mean of an fodf can be computed by taking $Y_{0,0} * coeff_{0,0}$
+    threshold = B_reg[0, 0] * fodf_sh[0] * tau
+    where_fodf_small = (fodf < threshold).nonzero()[0]
 
-    k = []
-    convergence = 50
-    for num_it in range(1, convergence + 1):
+    # If the low-order fodf does not have any values less than threshold, the
+    # full-order fodf is used.
+    if len(where_fodf_small) == 0:
         fodf = np.dot(B_reg, fodf_sh)
+        where_fodf_small = (fodf < threshold).nonzero()[0]
+        # If the fodf still has no values less than threshold, return the fodf.
+        if len(where_fodf_small) == 0:
+            return fodf_sh, 0
 
-        k2 = np.nonzero(fodf < threshold)[0]
+    for num_it in range(1, convergence + 1):
+        # This is the super-resolved trick.  Wherever there is a negative
+        # amplitude value on the fODF, it concatenates a value to the S vector
+        # so that the estimation can focus on trying to eliminate it. In a
+        # sense, this "adds" a measurement, which can help to better estimate
+        # the fodf_sh, even if you have more SH coefficients to estimate than
+        # actual S measurements.
+        H = B_reg.take(where_fodf_small, axis=0)
 
-        if (k2.shape[0] + X.shape[0]) < B_reg.shape[1]:
-            warnings.warn(
-            'too few negative directions identified - failed to converge')
-            return fodf_sh, num_it
+        # We use the Cholesky decomposition to solve for the SH coefficients.
+        Q = P + np.dot(H.T, H)
+        fodf_sh = _solve_cholesky(Q, z)
 
-        if num_it > 1 and k.shape[0] == k2.shape[0]:
-            if (k == k2).all():
-                return fodf_sh, num_it
+        # Sample the FOD using the regularization sphere and compute k.
+        fodf = np.dot(B_reg, fodf_sh)
+        where_fodf_small_last = where_fodf_small
+        where_fodf_small = (fodf < threshold).nonzero()[0]
 
-        k = k2
+        if (len(where_fodf_small) == len(where_fodf_small_last) and
+            (where_fodf_small == where_fodf_small_last).all()):
+            break
+    else:
+        msg = 'maximum number of iterations exceeded - failed to converge'
+        warnings.warn(msg)
 
-        # This is the super-resolved trick.
-        # Wherever there is a negative amplitude value on the fODF, it
-        # concatenates a value to the S vector so that the estimation can
-        # focus on trying to eliminate it. In a sense, this "adds" a
-        # measurement, which can help to better estimate the fodf_sh, even if
-        # you have more SH coeffcients to estimate than actual S measurements.
-        M = np.concatenate((X, lambda_ * B_reg[k, :]))
-        S = np.concatenate((dwsignal, np.zeros(k.shape)))
-        try:
-            fodf_sh = np.linalg.lstsq(M, S)[0]
-        except np.linalg.LinAlgError as lae:
-            # SVD did not converge in Linear Least Squares in current
-            # voxel. Proceeding with initial SH estimate for this voxel.
-            pass
-
-    warnings.warn('maximum number of iterations exceeded - failed to converge')
     return fodf_sh, num_it
 
 
