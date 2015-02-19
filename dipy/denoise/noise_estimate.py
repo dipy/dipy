@@ -92,7 +92,6 @@ def piesno(data, N, alpha=0.01, l=100, itermax=100, eps=1e-5, return_mask=False)
     if data.ndim < 3:
         e_s = "This function only works on datasets of at least 3 dimensions."
         raise ValueError(e_s)
-by iterating slice by slice along the direction of acquisition
 
     if data.ndim == 4:
 
@@ -100,16 +99,21 @@ by iterating slice by slice along the direction of acquisition
         mask_noise = np.zeros(data.shape[:-1], dtype=np.bool)
 
         for idx in range(data.shape[-2]):
-            sigma[idx], mask_noise[idx] = _piesno_3D(data[idx], N, alpha=alpha,
-                                                     l=l, itermax=itermax,
-                                                     eps=eps)
+            sigma[idx], mask_noise[..., idx] = piesno_3D(data[..., idx, :],
+                                                         N,
+                                                         alpha=alpha,
+                                                         l=l,
+                                                         itermax=itermax,
+                                                         eps=eps)
 
         # Take the mode of all the sigmas from each slice as the best estimate,
-        # this should be stable with more or less 50% of the guesses at the same value.
+        # this should be stable with more or less 50% of the guesses at the
+        # same value.
         sigma, num = mode(sigma, axis=None)
 
     else:
-        sigma, mask_noise = piesno_3D(data, N, alpha=alpha, l=l, itermax=itermax, eps=eps)
+        sigma, mask_noise = piesno_3D(data, N, alpha=alpha, l=l,
+                                      itermax=itermax, eps=eps)
 
     if return_mask:
         return sigma, mask_noise
