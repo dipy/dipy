@@ -2,6 +2,7 @@ from __future__ import division, print_function
 
 import numpy as np
 
+from scipy.ndimage.filters import convolve
 from scipy.special import gammainccinv
 from scipy.ndimage.filters import convolve
 from scipy.stats import mode
