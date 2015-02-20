@@ -4,7 +4,7 @@ cimport numpy as np
 from .interpolation cimport trilinear_interpolate4d, _trilinear_interpolate_c_4d
 
 cdef class TissueClassifier:
-    cpdef TissueClass check_point(self, double[::1] point):
+    cpdef TissueClass check_point(self, double[::1] point) except PYERROR:
         pass
 
 
@@ -25,7 +25,7 @@ cdef class ThresholdTissueClassifier(TissueClassifier):
     @cython.boundscheck(False)
     @cython.wraparound(False)
     @cython.initializedcheck(False)
-    cpdef TissueClass check_point(self, double[::1] point):
+    cpdef TissueClass check_point(self, double[::1] point) except PYERROR:
         cdef:
             double result
             int err
@@ -54,4 +54,3 @@ cdef class ThresholdTissueClassifier(TissueClassifier):
             return TRACKPOINT
         else:
             return ENDPOINT
-
