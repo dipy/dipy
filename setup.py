@@ -8,6 +8,8 @@ from copy import deepcopy
 from os.path import join as pjoin, dirname
 from glob import glob
 
+LINETRACE = os.environ.get('DIPY_LINETRACE', False)
+
 # BEFORE importing distutils, remove MANIFEST. distutils doesn't properly
 # update it when the contents of directories change.
 if os.path.exists('MANIFEST'): os.remove('MANIFEST')
@@ -82,6 +84,8 @@ EXTS = []
 # We use some defs from npymath, but we don't want to link against npymath lib
 ext_kwargs = {'include_dirs':[np.get_include()]}
 ext_kwargs['include_dirs'].append('src')
+if LINETRACE:
+    ext_kwargs['define_macros'] = [('CYTHON_TRACE', '1')]
 
 for modulename, other_sources, language in (
     ('dipy.reconst.peak_direction_getter', [], 'c'),
@@ -108,6 +112,9 @@ for modulename, other_sources, language in (
                           language=language,
                           **deepcopy(ext_kwargs)))  # deepcopy lists
 
+if LINETRACE:
+    for ext in EXTS:
+        ext.cython_directives = dict(linetrace=True)
 
 # Do our own build and install time dependency checking. setup.py gets called in
 # many different ways, and may be called just to collect information (egg_info).
