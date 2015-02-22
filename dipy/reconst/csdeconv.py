@@ -5,6 +5,7 @@ import numpy as np
 from scipy.integrate import quad
 from scipy.special import lpn, gamma
 import scipy.linalg as la
+import scipy.linalg.lapack as ll
 
 from dipy.data import small_sphere, get_sphere
 from dipy.core.geometry import cart2sphere
@@ -353,7 +354,7 @@ def forward_sdt_deconv_mat(ratio, n, r2_term=False):
     return np.diag(b), np.diag(bb)
 
 
-potrf, potrs = la.get_lapack_funcs(('potrf', 'potrs'))
+potrf, potrs = ll.get_lapack_funcs(('potrf', 'potrs'))
 
 def _solve_cholesky(Q, z):
     L, info = potrf(Q, lower=False, overwrite_a=False, clean=False)
