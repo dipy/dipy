@@ -6,6 +6,7 @@ import dipy.data as dpd
 import dipy.core.gradients as grad
 import dipy.sims.voxel as sims
 import dipy.core.optimize as opt
+import dipy.reconst.cross_validation as xval
 
 
 def test_design_matrix():
@@ -23,26 +24,27 @@ def test_sfm():
     fdata, fbvals, fbvecs = dpd.get_data()
     data = nib.load(fdata).get_data()
     gtab = grad.gradient_table(fbvals, fbvecs)
-    sfmodel = sfm.SparseFascicleModel(gtab)
-    sffit1 = sfmodel.fit(data[0, 0, 0])
-    sphere = dpd.get_sphere()
-    odf1 = sffit1.odf(sphere)
-    pred1 = sffit1.predict(gtab)
-    mask = np.ones(data.shape[:-1])
-    sffit2 = sfmodel.fit(data, mask)
-    pred2 = sffit2.predict(gtab)
-    odf2 = sffit2.odf(sphere)
-    sffit3 = sfmodel.fit(data)
-    pred3 = sffit3.predict(gtab)
-    odf3 = sffit3.odf(sphere)
-    npt.assert_almost_equal(pred3, pred2, decimal=2)
-    npt.assert_almost_equal(pred3[0, 0, 0], pred1, decimal=2)
-    npt.assert_almost_equal(odf3[0, 0, 0], odf1, decimal=2)
-    npt.assert_almost_equal(odf3[0, 0, 0], odf2[0, 0, 0], decimal=2)
+    for iso in [sfm.ExponentialIsotropicModel, None]:
+        sfmodel = sfm.SparseFascicleModel(gtab, isotropic=iso)
+        sffit1 = sfmodel.fit(data[0, 0, 0])
+        sphere = dpd.get_sphere()
+        odf1 = sffit1.odf(sphere)
+        pred1 = sffit1.predict(gtab)
+        mask = np.ones(data.shape[:-1])
+        sffit2 = sfmodel.fit(data, mask)
+        pred2 = sffit2.predict(gtab)
+        odf2 = sffit2.odf(sphere)
+        sffit3 = sfmodel.fit(data)
+        pred3 = sffit3.predict(gtab)
+        odf3 = sffit3.odf(sphere)
+        npt.assert_almost_equal(pred3, pred2, decimal=2)
+        npt.assert_almost_equal(pred3[0, 0, 0], pred1, decimal=2)
+        npt.assert_almost_equal(odf3[0, 0, 0], odf1, decimal=2)
+        npt.assert_almost_equal(odf3[0, 0, 0], odf2[0, 0, 0], decimal=2)
 
-    # Fit zeros and you will get back zeros
-    npt.assert_almost_equal(sfmodel.fit(np.zeros(data[0, 0, 0].shape)).beta,
-                            np.zeros(sfmodel.design_matrix[0].shape[-1]))
+        # Fit zeros and you will get back zeros
+        npt.assert_almost_equal(sfmodel.fit(np.zeros(data[0, 0, 0].shape)).beta,
+                                np.zeros(sfmodel.design_matrix[0].shape[-1]))
 
 
 @npt.dec.skipif(not sfm.has_sklearn)
@@ -62,7 +64,7 @@ def test_predict():
     sfmodel = sfm.SparseFascicleModel(gtab, response=[0.0015, 0.0003, 0.0003])
     sffit = sfmodel.fit(S)
     pred = sffit.predict()
-    npt.assert_almost_equal(pred, S, decimal=1)
+    npt.assert_(xval.coeff_of_determination(pred, S) > 98)
 
 
 def test_sfm_stick():
@@ -88,7 +90,7 @@ def test_sfm_stick():
                                       response=[0.001, 0, 0])
     sffit = sfmodel.fit(S)
     pred = sffit.predict()
-    npt.assert_almost_equal(pred, S, decimal=1)
+    npt.assert_(xval.coeff_of_determination(pred, S) > 98)
 
 
 def test_sfm_sklearnlinearsolver():
@@ -127,7 +129,7 @@ def test_exponential_iso():
         pred1 = sffit1.predict(gtab)
 
         SNR = 1000
-        S0 = 10
+        S0 = 100
         mevals = np.array(([0.0015, 0.0005, 0.0005],
                            [0.0015, 0.0005, 0.0005]))
         angles = [(0, 0), (60, 0)]
@@ -135,4 +137,4 @@ def test_exponential_iso():
                                       fractions=[50, 50], snr=SNR)
         sffit = sfmodel.fit(S)
         pred = sffit.predict()
-        npt.assert_almost_equal(pred, S, decimal=1)
+        npt.assert_(xval.coeff_of_determination(pred, S) > 96)

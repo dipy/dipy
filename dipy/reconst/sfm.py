@@ -73,7 +73,6 @@ class IsotropicFit(ReconstFit):
         return self.params[..., np.newaxis] + np.zeros((self.n_vox,
                                                         np.sum(~gtab.b0s_mask)))
 
-
 class ExponentialIsotropicModel(IsotropicModel):
     def fit(self, data):
         if len(data.shape) == 1:
@@ -81,10 +80,15 @@ class ExponentialIsotropicModel(IsotropicModel):
         else:
             n_vox = data.shape[0]
 
+        if np.sum(self.gtab.b0s_mask) > 0:
+            s0 = np.mean(data[..., self.gtab.b0s_mask], -1)
+            to_fit = np.log(data / s0[..., None])
+        else:
+            to_fit = np.log(data)
+
         # Fitting to the log-transformed relative data:
-        log_data = np.log(data)
-        p = np.polyfit(self.gtab.bvals, log_data.T, 1)
-        params = -p[0]
+        p = np.nanmean(to_fit / self.gtab.bvals, -1)
+        params = -p
         return ExponentialIsotropicFit(self, params, n_vox)
 
 
