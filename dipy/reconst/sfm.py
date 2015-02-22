@@ -80,14 +80,15 @@ class ExponentialIsotropicModel(IsotropicModel):
         else:
             n_vox = data.shape[0]
 
+        data_no_b0 = data[..., ~self.gtab.b0s_mask]
         if np.sum(self.gtab.b0s_mask) > 0:
             s0 = np.mean(data[..., self.gtab.b0s_mask], -1)
-            to_fit = np.log(data / s0[..., None])
+            to_fit = np.log(data_no_b0 / s0[..., None])
         else:
-            to_fit = np.log(data)
+            to_fit = np.log(data_no_b0)
 
         # Fitting to the log-transformed relative data:
-        p = np.nanmean(to_fit / self.gtab.bvals, -1)
+        p = np.nanmean(to_fit / self.gtab.bvals[~self.gtab.b0s_mask], -1)
         params = -p
         return ExponentialIsotropicFit(self, params, n_vox)
 
