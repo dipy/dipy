@@ -5,7 +5,6 @@ import numpy as np
 
 from scipy.special import gammainccinv
 from scipy.ndimage.filters import convolve
-from scipy.stats import mode
 
 
 def _inv_nchi_cdf(N, K, alpha):
