@@ -84,7 +84,8 @@ def piesno(data, N, alpha=0.01, l=100, itermax=100, eps=1e-5, return_mask=False)
     # This method works on a 2D array with repetitions as the third dimension,
     # so process the dataset slice by slice.
     if data.ndim < 3:
-        raise ValueError("This function only works on datasets of at least 3 dimensions.")
+        e_s = "This function only works on datasets of at least 3 dimensions."
+        raise ValueError(e_s)
 
     if data.ndim == 4:
 
@@ -113,7 +114,8 @@ def piesno(data, N, alpha=0.01, l=100, itermax=100, eps=1e-5, return_mask=False)
     return sigma
 
 
-def _piesno_3D(data, N, alpha=0.01, l=100, itermax=100, eps=1e-5, return_mask=False):
+def _piesno_3D(data, N, alpha=0.01, l=100, itermax=100, eps=1e-5,
+               return_mask=False):
     """
     Probabilistic Identification and Estimation of Noise (PIESNO).
     This is the slice by slice version for working on a 4D array.
@@ -127,23 +129,25 @@ def _piesno_3D(data, N, alpha=0.01, l=100, itermax=100, eps=1e-5, return_mask=Fa
     N : int
         The number of phase array coils of the MRI scanner.
 
-    alpha : float
+    alpha : float (optional)
         Probabilistic estimation threshold for the gamma function.
+        Default: 0.01.
 
-    l : int
-        number of initial estimates for sigma to try.
+    l : int (optional)
+        number of initial estimates for sigma to try. Default: 100.
 
-    itermax : int
+    itermax : int (optional)
         Maximum number of iterations to execute if convergence
-        is not reached.
+        is not reached. Default: 100.
 
-    eps : float
+    eps : float (optional)
         Tolerance for the convergence criterion. Convergence is
         reached if two subsequent estimates are smaller than eps.
+        Default: 1e-5.
 
-    return_mask : bool
+    return_mask : bool (optiona)
         If True, return a mask identyfing all the pure noise voxel
-        that were found.
+        that were found. Default: False.
 
     Returns
     --------
@@ -172,8 +176,6 @@ def _piesno_3D(data, N, alpha=0.01, l=100, itermax=100, eps=1e-5, return_mask=Fa
     and its applications in MRI."
     Journal of Magnetic Resonance 2009; 197: 108-119.
     """
-
->>>>>>> Force merged mdesco example branch on top of arokem branch
     # Get optimal quantile for N if available, else use the median.
     opt_quantile = {1: 0.79681213002002,
                     2: 0.7306303027491917,
@@ -186,6 +188,7 @@ def _piesno_3D(data, N, alpha=0.01, l=100, itermax=100, eps=1e-5, return_mask=Fa
 
     if N in opt_quantile:
         q = opt_quantile[N]
+
     else:
         q = 0.5
 
@@ -193,7 +196,8 @@ def _piesno_3D(data, N, alpha=0.01, l=100, itermax=100, eps=1e-5, return_mask=Fa
     denom = np.sqrt(2 * _inv_nchi_cdf(N, 1, q))
     m = np.percentile(data, q * 100) / denom
 
-    # if the percentile is 0, then more than half of the slice is zero and give up
+    # if the percentile is 0, then more than half of the slice is zero and give
+    # up:
     if m == 0:
         warnings.warn("Initial estmated value of noise is 0 for current slice")
         if return_mask:
