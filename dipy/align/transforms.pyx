@@ -19,8 +19,7 @@ transform_type = {'TRANSLATION':TRANSLATION,
                   'SCALING':SCALING,
                   'AFFINE':AFFINE}
 
-
-cpdef int number_of_parameters(int ttype, int dim):
+def number_of_parameters(int ttype, int dim):
     r""" Number of parameters of the specified transform type
 
     Parameters
@@ -36,6 +35,15 @@ cpdef int number_of_parameters(int ttype, int dim):
     n : int
         the number of parameters of the specified transform type
     """
+    cdef:
+        int n = _number_of_parameters(ttype, dim)
+    if n < 0:
+        raise ValueError("Invalid (transform, dimension) combination: " + \
+                         "(%d, %d)"%(ttype, dim))
+    return n
+
+
+cdef int _number_of_parameters(int ttype, int dim):
     if dim == 2:
         if ttype == TRANSLATION:
             return 2
@@ -61,8 +69,7 @@ cpdef int number_of_parameters(int ttype, int dim):
     return -1
 
 
-def eval_jacobian_function(int ttype, int dim, double[:] theta, double[:] x,
-                           double[:,:] J):
+def eval_jacobian_function(int ttype, double[:] theta, double[:] x):
     r""" Compute the Jacobian of a transformation with given parameters at x
 
     Parameters
@@ -70,19 +77,31 @@ def eval_jacobian_function(int ttype, int dim, double[:] theta, double[:] x,
     ttype : int
         the type of the transformation (use transform_type dictionary to map
         transformation name to the associated int )
-    dim : int
-        the domain dimension of the transformation (either 2 or 3)
     theta : array, shape (n,)
         the parameters of the transformation at which to evaluate the Jacobian
     x : array, shape (dim,)
         the point at which to evaluate the Jacobian
-    J : array, shape (dim, n)
-        the destination matrix for the Jacobian
     """
-    get_jacobian_function(ttype, dim)(theta, x, J)
+    cdef:
+        double[:,:] J
+        int n, m
+        int dim = len(x)
+        jacobian_function jac = get_jacobian_function(ttype, dim)
+
+    if jac == NULL:
+        raise ValueError("Jacobian function not defined for " + \
+                         "(transform, dimension) = (%d, %d)"%(ttype, dim))
+    n = number_of_parameters(ttype, dim)
+    m = len(theta)
+    J = np.ndarray((dim, n), dtype=np.float64)
+    if n != len(theta):
+        raise ValueError("Invalid theta parameter. " + \
+                         "Expected length: %d, received: %d"%(n,m))
+    jac(theta, x, J)
+    return J
 
 
-def param_to_matrix(int ttype, int dim, double[:] theta, double[:,:] T):
+def param_to_matrix(int ttype, int dim, double[:] theta):
     r""" Compute the matrix associated with the given transform and parameters
 
     Parameters
@@ -94,13 +113,24 @@ def param_to_matrix(int ttype, int dim, double[:] theta, double[:,:] T):
         the domain dimension of the transformation (either 2 or 3)
     theta : array, shape (n,)
         the transformation parameters
-    T : array, shape (dim + 1, dim + 1)
-        the buffer to write the transform matrix
     """
-    get_param_to_matrix_function(ttype, dim)(theta, T)
+    cdef:
+        param_to_matrix_function p_to_m
+        double[:,:] T
+        int n, m
+
+    n = number_of_parameters(ttype, dim)
+    m = 0 if theta is None else len(theta)
+    if n != m :
+        raise ValueError("Invalid theta parameter. " + \
+                         "Expected length: %d, received: %d"%(n,m))
+    T = np.ndarray((dim + 1, dim + 1), dtype=np.float64)
+    p_to_m = get_param_to_matrix_function(ttype, dim)
+    p_to_m(theta, T)
+    return T
 
 
-cpdef get_identity_parameters(int ttype, int dim, double[:] theta):
+def get_identity_parameters(int ttype, int dim):
     r""" Gets the parameters corresponding to the identity transform
 
     Parameters
@@ -113,6 +143,16 @@ cpdef get_identity_parameters(int ttype, int dim, double[:] theta):
     theta : array, shape (n,)
         the buffer to write the identity parameters into
     """
+    cdef:
+        int n
+        double[:] theta
+    n = number_of_parameters(ttype, dim)
+    theta = np.ndarray(n, dtype=np.float64)
+    _get_identity_parameters(ttype, dim, theta)
+    return theta
+
+
+cdef _get_identity_parameters(int ttype, int dim, double[:] theta):
     if dim == 2:
         if ttype == TRANSLATION:
             theta[:2] = 0
