@@ -1,13 +1,17 @@
 """
 This is an implementation of the sparse fascicle model described in
-[Rokem2014]_.
+[Rokem2014a]_. The multi b-value version of this model is described in
+[Rokem2014b]_.
 
 
-.. [Rokem2014] Ariel Rokem, Jason D. Yeatman, Franco Pestilli, Kendrick
+.. [Rokem2014a] Ariel Rokem, Jason D. Yeatman, Franco Pestilli, Kendrick
    N. Kay, Aviv Mezer, Stefan van der Walt, Brian A. Wandell
    (2014). Evaluating the accuracy of diffusion MRI models in white
    matter. http://arxiv.org/abs/1411.0721
 
+.. [Rokem2014b] Ariel Rokem, Kimberly L. Chan, Jason D. Yeatman, Franco
+   Pestilli,  Brian A. Wandell (2014). Evaluating the accuracy of diffusion
+   models at multiple b-values with cross-validation. ISMRM 2014.
 """
 import warnings
 
@@ -163,10 +167,14 @@ def sfm_design_matrix(gtab, sphere, response, mode='signal', isotropic=None):
 
     Notes
     -----
-    .. [Rokem2014] Ariel Rokem, Jason D. Yeatman, Franco Pestilli, Kendrick
+    .. [Rokem2014a] Ariel Rokem, Jason D. Yeatman, Franco Pestilli, Kendrick
        N. Kay, Aviv Mezer, Stefan van der Walt, Brian A. Wandell
        (2014). Evaluating the accuracy of diffusion MRI models in white
        matter. http://arxiv.org/abs/1411.0721
+
+    .. [Rokem2014b] Ariel Rokem, Kimberly L. Chan, Jason D. Yeatman, Franco
+       Pestilli,  Brian A. Wandell (2014). Evaluating the accuracy of diffusion
+       models at multiple b-values with cross-validation. ISMRM 2014.
 
     .. [Behrens2007] Behrens TEJ, Berg HJ, Jbabdi S, Rushworth MFS, Woolrich MW
        (2007): Probabilistic diffusion tractography with multiple fibre
