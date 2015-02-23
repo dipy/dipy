@@ -54,7 +54,7 @@ def piesno(data, N, alpha=0.01, l=100, itermax=100, eps=1e-5, return_mask=False)
     sigma : float
         The estimated standard deviation of the gaussian noise.
 
-    mask : ndarray
+    mask : ndarray (optional)
         A boolean mask indicating the voxels identified as pure noise.
 
     Note
