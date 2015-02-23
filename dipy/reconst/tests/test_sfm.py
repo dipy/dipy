@@ -113,6 +113,7 @@ def test_sfm_sklearnlinearsolver():
                       solver=EvenSillierSolver())
 
 
+@npt.dec.skipif(not sfm.has_sklearn)
 def test_exponential_iso():
     fdata, fbvals, fbvecs = dpd.get_data()
     data_dti = nib.load(fdata).get_data()
