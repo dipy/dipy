@@ -68,8 +68,6 @@ ax[1].set_title('Background voxels from the data')
 for a in ax:
     a.set_axis_off()
 
-# Uncomment the coming line if you want a window to show the images.
-#plt.show()
 plt.savefig('piesno.png', bbox_inches='tight')
 
 """
@@ -95,7 +93,9 @@ example :ref:`example_snr_in_cc`) gives a value of 6.1.
 
 """
 
-.. [Koay2009] Koay C.G., E. Ozarslan, C. Pierpaoli. Probabilistic Identification and Estimation of Noise (PIESNO): A self-consistent approach and its applications in MRI. JMR, 199(1):94-103, 2009.
+.. [Koay2009] Koay C.G., E. Ozarslan, C. Pierpaoli. Probabilistic
+   Identification and Estimation of Noise (PIESNO): A self-consistent approach
+   and its applications in MRI. JMR, 199(1):94-103, 2009.
 
 .. include:: ../links_names.inc
 
