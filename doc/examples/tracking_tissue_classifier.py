@@ -197,7 +197,7 @@ anatomical images to determine when the tractography stops. The 'include_map'
 defines when the streamline reached a 'valid' stopping region (e.g. gray
 matter partial volume estimation (PVE) map) and the 'exclude_map' defines when
 the streamline reached an 'invalid' stopping region (e.g. corticospinal fluid
-(PVE) map). The background of the anatomical image should be added to the
+PVE map). The background of the anatomical image should be added to the
 'include_map' to keep streamlines exiting the brain (e.g. through the
 brain stem). The ACT tissue classifier uses a trilinear interpolation method
 at the tracking position. The proposed method that cuts streamlines going
