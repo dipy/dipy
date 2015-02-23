@@ -81,6 +81,12 @@ def eval_jacobian_function(int ttype, double[:] theta, double[:] x):
         the parameters of the transformation at which to evaluate the Jacobian
     x : array, shape (dim,)
         the point at which to evaluate the Jacobian
+
+    Returns
+    -------
+    J : array, shape (dim, n)
+        the Jacobian function of the requested transform, where dim = len(x),
+        and n = len(theta)
     """
     cdef:
         double[:,:] J
@@ -113,6 +119,11 @@ def param_to_matrix(int ttype, int dim, double[:] theta):
         the domain dimension of the transformation (either 2 or 3)
     theta : array, shape (n,)
         the transformation parameters
+
+    Returns
+    -------
+    T : array, shape (dim + 1, dim + 1)
+        the matrix representation of the requested transform with given parameters
     """
     cdef:
         param_to_matrix_function p_to_m
@@ -140,8 +151,13 @@ def get_identity_parameters(int ttype, int dim):
         transformation name to the associated int )
     dim : int
         the domain dimension of the transformation (either 2 or 3)
+
+    Returns
+    -------
     theta : array, shape (n,)
-        the buffer to write the identity parameters into
+        the parameters corresponding to the identity transform for the
+        requested transform type (n is the number of parameters of the
+        given transform type)
     """
     cdef:
         int n
@@ -190,6 +206,12 @@ cdef jacobian_function get_jacobian_function(int ttype, int dim) nogil:
         transformation name to the associated int )
     dim : int
         the domain dimension of the transformation (either 2 or 3)
+
+    Returns
+    -------
+    transform_pointer : jacobian_function
+        the pointer to the requested Jacobian function, or NULL if the
+        requested transform is invalid
     """
     if dim == 2:
         if ttype == TRANSLATION:
@@ -227,6 +249,12 @@ cdef param_to_matrix_function get_param_to_matrix_function(int ttype,
         transformation name to the associated int )
     dim : int
         the domain dimension of the transformation (either 2 or 3)
+
+    Returns
+    -------
+    param_to_matrix_pointer : param_to_matrix_function
+        the pointer to the requested parameter-to-matrix function, or NULL
+        if the requested transform is invalid
     """
     if dim == 2:
         if ttype == TRANSLATION:
