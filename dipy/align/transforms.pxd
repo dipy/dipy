@@ -29,13 +29,13 @@ can make this call inside a nogil loop
 """
 
 ctypedef void (*param_to_matrix_function)(double[:], double[:,:]) nogil
-r""" Type of a function that computes the matrix associated to an
+r""" Type of a function that computes the matrix associated with an
 affine transform in canonical coordinates.
 
 Note: this function should be called only O(1) times per iteration of the
-optimization method, as opposed to once per static/moving voxel pair
-that jacobian_functions are called. So, it is not crucial for this type
-to be declared as nogil.
+optimization method, as opposed to the jacobian_functions, which are called
+once per static/moving voxel pair. So, it is not crucial for this type to be
+declared as nogil.
 """
 
 cdef jacobian_function get_jacobian_function(int transform_type, int dim) nogil

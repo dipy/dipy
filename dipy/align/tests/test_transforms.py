@@ -1,4 +1,9 @@
-from dipy.align.transforms import *
+from dipy.align.transforms import (transform_type,
+                                   number_of_parameters,
+                                   param_to_matrix,
+                                   eval_jacobian_function,
+                                   get_identity_parameters)
+import numpy as np
 from numpy.testing import (assert_array_equal,
                            assert_array_almost_equal,
                            assert_almost_equal,
@@ -191,8 +196,7 @@ def test_get_identity_parameters():
 
 
 def test_eval_jacobian_function():
-    r""" Compare the analytical Jacobians with their numerical approximations
-    """
+    #Compare the analytical Jacobians with their numerical approximations
     transforms = transform_type.keys()
     h = 1e-8
     nsamples = 50

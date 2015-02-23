@@ -20,7 +20,7 @@ transform_type = {'TRANSLATION':TRANSLATION,
                   'AFFINE':AFFINE}
 
 
-def number_of_parameters(int ttype, int dim):
+cpdef int number_of_parameters(int ttype, int dim):
     r""" Number of parameters of the specified transform type
 
     Parameters
@@ -36,10 +36,6 @@ def number_of_parameters(int ttype, int dim):
     n : int
         the number of parameters of the specified transform type
     """
-    return _number_of_parameters(ttype, dim)
-
-
-cdef int _number_of_parameters(int ttype, int dim) nogil:
     if dim == 2:
         if ttype == TRANSLATION:
             return 2
@@ -83,12 +79,11 @@ def eval_jacobian_function(int ttype, int dim, double[:] theta, double[:] x,
     J : array, shape (dim, n)
         the destination matrix for the Jacobian
     """
-    with nogil:
-        get_jacobian_function(ttype, dim)(theta, x, J)
+    get_jacobian_function(ttype, dim)(theta, x, J)
 
 
 def param_to_matrix(int ttype, int dim, double[:] theta, double[:,:] T):
-    r""" Compute the matrix associated to the given transform and parameters
+    r""" Compute the matrix associated with the given transform and parameters
 
     Parameters
     ----------
@@ -102,11 +97,10 @@ def param_to_matrix(int ttype, int dim, double[:] theta, double[:,:] T):
     T : array, shape (dim + 1, dim + 1)
         the buffer to write the transform matrix
     """
-    with nogil:
-        get_param_to_matrix_function(ttype, dim)(theta, T)
+    get_param_to_matrix_function(ttype, dim)(theta, T)
 
 
-def get_identity_parameters(int ttype, int dim, double[:] theta):
+cpdef get_identity_parameters(int ttype, int dim, double[:] theta):
     r""" Gets the parameters corresponding to the identity transform
 
     Parameters
@@ -119,10 +113,6 @@ def get_identity_parameters(int ttype, int dim, double[:] theta):
     theta : array, shape (n,)
         the buffer to write the identity parameters into
     """
-    _get_identity_parameters(ttype, dim, theta)
-
-
-cdef void _get_identity_parameters(int ttype, int dim, double[:] theta) nogil:
     if dim == 2:
         if ttype == TRANSLATION:
             theta[:2] = 0
@@ -224,7 +214,7 @@ cdef param_to_matrix_function get_param_to_matrix_function(int ttype,
 
 
 cdef void _translation_matrix_2d(double[:] theta, double[:,:] R) nogil:
-    r""" Matrix associated to the 2D translation transform
+    r""" Matrix associated with the 2D translation transform
 
     Parameters
     ----------
@@ -239,7 +229,7 @@ cdef void _translation_matrix_2d(double[:] theta, double[:,:] R) nogil:
 
 
 cdef void _translation_matrix_3d(double[:] theta, double[:,:] R) nogil:
-    r""" Matrix associated to the 3D translation transform
+    r""" Matrix associated with the 3D translation transform
 
     Parameters
     ----------
@@ -278,6 +268,12 @@ cdef int _translation_jacobian_2d(double[:] theta, double[:] x,
         receive the same parameters)
     J : array, shape(2, 2)
         the buffer in which to write the Jacobian
+
+    Returns
+    -------
+    is_constant : int
+        always returns 1, indicating that the Jacobian is constant
+        (independent of x)
     """
     J[0,0], J[0, 1] = 1.0, 0.0
     J[1,0], J[1, 1] = 0.0, 1.0
@@ -309,6 +305,12 @@ cdef int _translation_jacobian_3d(double[:] theta, double[:] x,
         receive the same parameters)
     J : array, shape(3, 3)
         the buffer in which to write the Jacobian
+
+    Returns
+    -------
+    is_constant : int
+        always returns 1, indicating that the Jacobian is constant
+        (independent of x)
     """
     J[0,0], J[0,1], J[0,2] = 1.0, 0.0, 0.0
     J[1,0], J[1,1], J[1,2] = 0.0, 1.0, 0.0
@@ -318,7 +320,7 @@ cdef int _translation_jacobian_3d(double[:] theta, double[:] x,
 
 
 cdef void _rotation_matrix_2d(double[:] theta, double[:,:] R) nogil:
-    r""" Matrix associated to the 2D rotation transform
+    r""" Matrix associated with the 2D rotation transform
 
     Parameters
     ----------
@@ -356,6 +358,12 @@ cdef int _rotation_jacobian_2d(double[:] theta, double[:] x,
         the point at which to compute the Jacobian
     J : array, shape(2, 1)
         the buffer in which to write the Jacobian
+
+    Returns
+    -------
+    is_constant : int
+        always returns 0, indicating that the Jacobian is not
+        constant (it depends on the value of x)
     '''
     cdef:
         double st = sin(theta[0])
@@ -369,7 +377,7 @@ cdef int _rotation_jacobian_2d(double[:] theta, double[:] x,
 
 
 cdef void _rotation_matrix_3d(double[:] theta, double[:,:] R) nogil:
-    r""" Matrix associated to the 3D rotation transform
+    r""" Matrix associated with the 3D rotation transform
 
     The matrix is the product of rotation matrices of angles theta[0], theta[1],
     theta[2] around axes x, y, z applied in the following order: y, x, z.
@@ -411,6 +419,12 @@ cdef int _rotation_jacobian_3d(double[:] theta, double[:] x,
         the point at which to compute the Jacobian
     J : array, shape(3, 3)
         the buffer in which to write the Jacobian
+
+    Returns
+    -------
+    is_constant : int
+        always returns 0, indicating that the Jacobian is not
+        constant (it depends on the value of x)
     '''
     cdef:
         double sa = sin(theta[0])
@@ -439,7 +453,7 @@ cdef int _rotation_jacobian_3d(double[:] theta, double[:] x,
 
 
 cdef void _rigid_matrix_2d(double[:] theta, double[:,:] R) nogil:
-    r""" Matrix associated to the 2D rigid transform (rotation + translation)
+    r""" Matrix associated with the 2D rigid transform (rotation + translation)
 
     Parameters
     ----------
@@ -482,6 +496,12 @@ cdef int _rigid_jacobian_2d(double[:] theta, double[:] x, double[:,:] J) nogil:
         the point at which to compute the Jacobian
     J : array, shape(2, 3)
         the buffer in which to write the Jacobian
+
+    Returns
+    -------
+    is_constant : int
+        always returns 0, indicating that the Jacobian is not
+        constant (it depends on the value of x)
     '''
     cdef:
         double st = sin(theta[0])
@@ -495,7 +515,7 @@ cdef int _rigid_jacobian_2d(double[:] theta, double[:] x, double[:,:] J) nogil:
 
 
 cdef void _rigid_matrix_3d(double[:] theta, double[:,:] R) nogil:
-    r""" Matrix associated to the 3D rigid transform (rotation + translation)
+    r""" Matrix associated with the 3D rigid transform (rotation + translation)
 
     Parameters
     ----------
@@ -544,6 +564,12 @@ cdef int _rigid_jacobian_3d(double[:] theta, double[:] x, double[:,:] J) nogil:
         the point at which to compute the Jacobian
     J : array, shape(3, 6)
         the buffer in which to write the Jacobian
+
+    Returns
+    -------
+    is_constant : int
+        always returns 0, indicating that the Jacobian is not
+        constant (it depends on the value of x)
     '''
     cdef:
         double sa = sin(theta[0])
@@ -577,7 +603,7 @@ cdef int _rigid_jacobian_3d(double[:] theta, double[:] x, double[:,:] J) nogil:
 
 
 cdef void _scaling_matrix_2d(double[:] theta, double[:,:] R) nogil:
-    r""" Matrix associated to the 2D (isotropic) scaling transform
+    r""" Matrix associated with the 2D (isotropic) scaling transform
 
     Parameters
     ----------
@@ -592,7 +618,7 @@ cdef void _scaling_matrix_2d(double[:] theta, double[:,:] R) nogil:
 
 
 cdef void _scaling_matrix_3d(double[:] theta, double[:,:] R) nogil:
-    r""" Matrix associated to the 3D (isotropic) scaling transform
+    r""" Matrix associated with the 3D (isotropic) scaling transform
 
     Parameters
     ----------
@@ -626,6 +652,12 @@ cdef int _scaling_jacobian_2d(double[:] theta, double[:] x,
         the point at which to compute the Jacobian
     J : array, shape(2, 1)
         the buffer in which to write the Jacobian
+
+    Returns
+    -------
+    is_constant : int
+        always returns 0, indicating that the Jacobian is not
+        constant (it depends on the value of x)
     """
     J[0,0], J[1,0] = x[0], x[1]
     # This Jacobian depends on x (it's not constant): return 0
@@ -651,6 +683,12 @@ cdef int _scaling_jacobian_3d(double[:] theta, double[:] x,
         the point at which to compute the Jacobian
     J : array, shape(3, 1)
         the buffer in which to write the Jacobian
+
+    Returns
+    -------
+    is_constant : int
+        always returns 0, indicating that the Jacobian is not
+        constant (it depends on the value of x)
     """
     J[0,0], J[1,0], J[2,0]= x[0], x[1], x[2]
     # This Jacobian depends on x (it's not constant): return 0
@@ -658,7 +696,7 @@ cdef int _scaling_jacobian_3d(double[:] theta, double[:] x,
 
 
 cdef void _affine_matrix_2d(double[:] theta, double[:,:] R) nogil:
-    r""" Matrix associated to a general 2D affine transform
+    r""" Matrix associated with a general 2D affine transform
 
     The transformation is given by the matrix:
 
@@ -679,7 +717,7 @@ cdef void _affine_matrix_2d(double[:] theta, double[:,:] R) nogil:
 
 
 cdef void _affine_matrix_3d(double[:] theta, double[:,:] R) nogil:
-    r""" Matrix associated to a general 3D affine transform
+    r""" Matrix associated with a general 3D affine transform
 
     The transformation is given by the matrix:
 
@@ -728,6 +766,12 @@ cdef int _affine_jacobian_2d(double[:] theta, double[:] x, double[:,:] J) nogil:
         the point at which to compute the Jacobian
     J : array, shape(2, 6)
         the buffer in which to write the Jacobian
+
+    Returns
+    -------
+    is_constant : int
+        always returns 0, indicating that the Jacobian is not
+        constant (it depends on the value of x)
     """
     J[0,:6] = 0
     J[1,:6] = 0
@@ -774,6 +818,12 @@ cdef int _affine_jacobian_3d(double[:] theta, double[:] x, double[:,:] J) nogil:
         the point at which to compute the Jacobian
     J : array, shape(3, 12)
         the buffer in which to write the Jacobian
+
+    Returns
+    -------
+    is_constant : int
+        always returns 0, indicating that the Jacobian is not
+        constant (it depends on the value of x)
     """
     cdef:
         cnp.npy_intp j
@@ -788,23 +838,3 @@ cdef int _affine_jacobian_3d(double[:] theta, double[:] x, double[:,:] J) nogil:
     J[2, 11] = 1
     # This Jacobian depends on x (it's not constant): return 0
     return 0
-
-
-cdef void _dot_prod(double[:,:] A, double[:,:] B, double[:,:] C):
-    cdef:
-        int r = A.shape[0]
-        int c = B.shape[1]
-        int m = A.shape[1]
-        double s
-        double[:,:] tmp = np.empty(shape=(r, c), dtype=np.float64)
-    with nogil:
-        for i in range(r):
-            for j in range(c):
-                s = 0
-                for k in range(m):
-                    s += A[i, k] * B[k, j]
-                tmp[i, j] = s
-
-        for i in range(r):
-            for j in range(c):
-                C[i, j] = tmp[i, j]
