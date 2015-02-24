@@ -43,14 +43,34 @@ if not has_sklearn:
 class IsotropicModel(ReconstModel):
     """
     A base-class for the representation of isotropic signals.
+
     The default behavior, suitable for single b-value data is to calculate the
     mean in each voxel as an estimate of the signal that does not depend on
     direction.
     """
     def __init__(self, gtab):
+        """
+        Initialize an IsotropicModel
+
+        Parameters
+        ----------
+        gtab : a GradientTable class instance
+        """
         ReconstModel.__init__(self, gtab)
 
     def fit(self, data):
+        """
+        Fit an IsotropicModel. This boils down to finding the mean
+        diffusion-weighted signal in each voxel
+
+        Parameters
+        ----------
+        data : ndarray
+
+        Returns
+        -------
+        IsotropicFit class instance.
+        """
         data_no_b0 = data[..., ~self.gtab.b0s_mask]
         if np.sum(self.gtab.b0s_mask) > 0:
             s0 = np.mean(data[..., self.gtab.b0s_mask], -1)
@@ -66,19 +86,59 @@ class IsotropicModel(ReconstModel):
 
 
 class IsotropicFit(ReconstFit):
+    """
+    A fit object for representing the isotropic signal as the mean of the
+    diffusion-weighted signal
+    """
     def __init__(self, model, params, n_vox):
+        """
+        Initialize an IsotropicFit object
+
+        Parameters
+        ----------
+        model : IsotropicModel class instance
+        params : ndarray
+            The mean isotropic model parameters (the mean diffusion-weighted
+            signal in each voxel).
+        n_vox : int
+            The number of voxels for which the fit was done.
+        """
         self.model = model
         self.params = params
         self.n_vox = n_vox
 
     def predict(self, gtab=None):
+        """
+        Predict the isotropic signal, based on a gradient table. In this case,
+        the (naive!) prediction will be the mean of the diffusion-weighted
+        signal in the voxels.
+
+        Parameters
+        ----------
+        gtab : a GradientTable class instance (optional)
+            Defaults to use the gtab from the IsotropicModel from which this
+            fit was derived.
+        """
         if gtab is None:
             gtab = self.model.gtab
         return self.params[..., np.newaxis] + np.zeros((self.n_vox,
                                                         np.sum(~gtab.b0s_mask)))
 
 class ExponentialIsotropicModel(IsotropicModel):
+    """
+    Representing the isotropic signal as a fit to an exponential decay function
+    with b-values
+    """
     def fit(self, data):
+        """
+        Parameters
+        ----------
+        data : ndarray
+
+        Returns
+        -------
+        ExponentialIsotropicFit class instance.
+        """
         if len(data.shape) == 1:
             n_vox = 1
         else:
@@ -98,7 +158,21 @@ class ExponentialIsotropicModel(IsotropicModel):
 
 
 class ExponentialIsotropicFit(IsotropicFit):
+    """
+    A fit to the ExponentialIsotropicModel object, based on data.
+    """
     def predict(self, gtab=None):
+        """
+        Predict the isotropic signal, based on a gradient table. In this case,
+        the prediction will be for an exponential decay with the mean
+        diffusivity derived from the data that was fit.
+
+        Parameters
+        ----------
+        gtab : a GradientTable class instance (optional)
+            Defaults to use the gtab from the IsotropicModel from which this
+            fit was derived.
+        """
         if gtab is None:
             gtab = self.model.gtab
         return np.exp(-gtab.bvals[~gtab.b0s_mask] *
@@ -318,10 +392,12 @@ class SparseFascicleModel(ReconstModel, Cache):
 
         for vox, vox_data in enumerate(flat_S):
             if np.any(np.isnan(vox_data)):
-                pass
-            else:
-                fit_it = vox_data - isotropic.predict()[vox]
-                flat_params[vox] = self.solver.fit(self.design_matrix,
+                # In voxels in which S0 is 0, we just want to keep the
+                # parameters at all-zeros, and avoid nasty sklearn errors:
+                break
+
+            fit_it = vox_data - isotropic.predict()[vox]
+            flat_params[vox] = self.solver.fit(self.design_matrix,
                                                    fit_it).coef_
         if mask is None:
             out_shape = data.shape[:-1] + (-1, )
