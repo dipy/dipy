@@ -66,6 +66,11 @@ def test_predict():
     pred = sffit.predict()
     npt.assert_(xval.coeff_of_determination(pred, S) > 97)
 
+    # Should be possible to predict using a different gtab:
+    new_gtab = grad.gradient_table(bvals[::2], bvecs[::2])
+    new_pred = sffit.predict(new_gtab)
+    npt.assert_(xval.coeff_of_determination(new_pred, S[::2]) > 97)
+
 
 def test_sfm_stick():
     fdata, fbvals, fbvecs = dpd.get_data()

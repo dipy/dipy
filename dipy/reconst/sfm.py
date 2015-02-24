@@ -312,7 +312,7 @@ class SparseFascicleModel(ReconstModel, Cache):
         # Fitting is done on the relative signal (S/S0):
         flat_S0 = np.mean(flat_data[..., self.gtab.b0s_mask], -1)
         flat_S = flat_data[..., ~self.gtab.b0s_mask] / flat_S0[..., None]
-        flat_isotropic = self.isotropic(self.gtab).fit(flat_data).predict()
+        isotropic = self.isotropic(self.gtab).fit(flat_data)
         flat_params = np.zeros((flat_data.shape[0],
                                 self.design_matrix.shape[-1]))
 
@@ -320,24 +320,21 @@ class SparseFascicleModel(ReconstModel, Cache):
             if np.any(np.isnan(vox_data)):
                 pass
             else:
-                fit_it = vox_data - flat_isotropic[vox]
+                fit_it = vox_data - isotropic.predict()[vox]
                 flat_params[vox] = self.solver.fit(self.design_matrix,
                                                    fit_it).coef_
         if mask is None:
             out_shape = data.shape[:-1] + (-1, )
             beta = flat_params.reshape(out_shape)
-            iso_out = flat_isotropic.reshape(out_shape)
             S0 = flat_S0.reshape(out_shape).squeeze()
         else:
             beta = np.zeros(data.shape[:-1] +
                             (self.design_matrix.shape[-1],))
             beta[mask, :] = flat_params
-            iso_out = np.zeros(data[..., ~self.gtab.b0s_mask].shape)
-            iso_out[mask, ...] = flat_isotropic.squeeze()
             S0 = np.zeros(data.shape[:-1])
             S0[mask] = flat_S0
 
-        return SparseFascicleFit(self, beta, S0, iso_out.squeeze())
+        return SparseFascicleFit(self, beta, S0, isotropic)
 
 
 class SparseFascicleFit(ReconstFit):
@@ -424,9 +421,11 @@ class SparseFascicleFit(ReconstFit):
             S0 = self.S0
         if isinstance(S0, np.ndarray):
             S0 = S0[..., None]
-        if isinstance(self.iso, np.ndarray):
-            iso_signal = self.iso[..., None]
-        pre_pred_sig = S0 * (pred_weighted + iso_signal.squeeze())
+
+        iso_signal = self.iso.predict(gtab)
+
+        pre_pred_sig = S0 * (pred_weighted +
+                             iso_signal.reshape(pred_weighted.shape))
         pred_sig = np.zeros(pre_pred_sig.shape[:-1] + (gtab.bvals.shape[0],))
         pred_sig[..., ~gtab.b0s_mask] = pre_pred_sig
         pred_sig[..., gtab.b0s_mask] = S0
