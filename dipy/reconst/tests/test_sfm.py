@@ -71,14 +71,16 @@ def test_predict():
     new_pred = sffit.predict(new_gtab)
     npt.assert_(xval.coeff_of_determination(new_pred, S[::2]) > 97)
 
+
 def test_sfm_background():
     fdata, fbvals, fbvecs = dpd.get_data()
     data = nib.load(fdata).get_data()
     gtab = grad.gradient_table(fbvals, fbvecs)
     to_fit = data[0,0,0]
     to_fit[gtab.b0s_mask] = 0
-    beta = sfm.SparseFascicleModel(gtab).fit(to_fit).beta
+    beta = sfm.SparseFascicleModel(gtab, solver='NNLS').fit(to_fit).beta
     npt.assert_equal(beta, np.zeros_like(beta))
+
 
 def test_sfm_stick():
     fdata, fbvals, fbvecs = dpd.get_data()
