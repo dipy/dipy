@@ -50,7 +50,7 @@ def test_sfm():
 @npt.dec.skipif(not sfm.has_sklearn)
 def test_predict():
     SNR = 1000
-    S0 = 1
+    S0 = 100
     _, fbvals, fbvecs = dpd.get_data('small_64D')
     bvals = np.load(fbvals)
     bvecs = np.load(fbvecs)
@@ -59,12 +59,12 @@ def test_predict():
                        [0.0015, 0.0003, 0.0003]))
     angles = [(0, 0), (60, 0)]
     S, sticks = sims.multi_tensor(gtab, mevals, S0, angles=angles,
-                                  fractions=[50, 50], snr=SNR)
+                                  fractions=[10, 90], snr=SNR)
 
     sfmodel = sfm.SparseFascicleModel(gtab, response=[0.0015, 0.0003, 0.0003])
     sffit = sfmodel.fit(S)
     pred = sffit.predict()
-    npt.assert_(xval.coeff_of_determination(pred, S) > 98)
+    npt.assert_(xval.coeff_of_determination(pred, S) > 97)
 
 
 def test_sfm_stick():
@@ -79,7 +79,7 @@ def test_sfm_stick():
     pred1 = sffit1.predict(gtab)
 
     SNR = 1000
-    S0 = 10
+    S0 = 100
     mevals = np.array(([0.001, 0, 0],
                        [0.001, 0, 0]))
     angles = [(0, 0), (60, 0)]
@@ -90,7 +90,7 @@ def test_sfm_stick():
                                       response=[0.001, 0, 0])
     sffit = sfmodel.fit(S)
     pred = sffit.predict()
-    npt.assert_(xval.coeff_of_determination(pred, S) > 98)
+    npt.assert_(xval.coeff_of_determination(pred, S) > 96)
 
 
 def test_sfm_sklearnlinearsolver():

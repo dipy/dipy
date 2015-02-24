@@ -106,7 +106,7 @@ class ExponentialIsotropicFit(IsotropicFit):
                        self.params[..., np.newaxis]))
 
 
-def sfm_design_matrix(gtab, sphere, response, mode='signal', isotropic=None):
+def sfm_design_matrix(gtab, sphere, response, mode='signal'):
     """
     Construct the SFM design matrix
 
@@ -128,14 +128,6 @@ def sfm_design_matrix(gtab, sphere, response, mode='signal', isotropic=None):
         from a tensor with the provided response eigenvalues, evaluated at the
         b-vectors in the gradient table, for the tensors with prinicipal
         diffusion directions along the vertices of the sphere.
-    isotropic : IsotropicModel class instance
-        This is a class that implements the function that calculates the value
-        of the isotropic signal. This is a value of the signal that is
-        independent of direction, and therefore removed from both sides of the
-        SFM equation. The default is an instance of IsotropicModel, but other
-        functions can be inherited from IsotropicModel to implement other fits
-        to the aspects of the data that depend on b-value, but not on
-        direction.
 
     Returns
     -------
@@ -180,9 +172,6 @@ def sfm_design_matrix(gtab, sphere, response, mode='signal', isotropic=None):
        (2007): Probabilistic diffusion tractography with multiple fibre
        orientations: What can we gain? Neuroimage 34:144-55.
     """
-    if isotropic is None:
-         isotropic = IsotropicModel
-
     # Each column of the matrix is the signal in each measurement, as
     # predicted by a "canonical", symmetrical tensor rotated towards this
     # vertex of the sphere:
@@ -201,12 +190,11 @@ def sfm_design_matrix(gtab, sphere, response, mode='signal', isotropic=None):
     for ii, this_dir in enumerate(sphere.vertices):
         # Rotate the canonical tensor towards this vertex and calculate the
         # signal you would have gotten in the direction
-        rot_matrix = geo.vec2vec_rotmat(np.array([1, 0, 0]), this_dir)
-        this_tensor = np.dot(rot_matrix, canonical_tensor)
-        evals, evecs = dti.decompose_tensor(this_tensor)
+        evecs = sims.all_tensor_evecs(this_dir)
         if mode == 'signal':
             sig = sims.single_tensor(mat_gtab, evals=response, evecs=evecs)
-            iso_sig = isotropic(mat_gtab).fit(sig).predict()
+            # For regressors based on the single tensor, remove $e^{-bD}$
+            iso_sig = np.exp(-mat_gtab.bvals * np.mean(response))
             mat[:, ii] = sig - iso_sig
         elif mode == 'odf':
             # Stick function
@@ -294,7 +282,7 @@ class SparseFascicleModel(ReconstModel, Cache):
     @auto_attr
     def design_matrix(self):
         return sfm_design_matrix(self.gtab, self.sphere, self.response,
-                                 'signal', self.isotropic)
+                                 'signal')
 
     def fit(self, data, mask=None):
         """
