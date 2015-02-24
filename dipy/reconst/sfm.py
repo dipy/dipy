@@ -425,8 +425,10 @@ class SparseFascicleFit(ReconstFit):
             The parameters of fit to data.
         S0 : ndarray
             The mean non-diffusion-weighted signal.
-        iso : ndarray
-            The isotropic signal.
+        iso : IsotropicFit class instance
+            A representation of the isotropic signal, together with parameters
+            of the isotropic signal in each voxel, that is capable of
+            deriving/predicting an isotropic signal, based on a gradient-table.
         """
         self.model = model
         self.beta = beta
