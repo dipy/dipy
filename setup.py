@@ -85,7 +85,7 @@ EXTS = []
 ext_kwargs = {'include_dirs':[np.get_include()]}
 ext_kwargs['include_dirs'].append('src')
 if LINETRACE:
-    ext_kwargs['define_macros'] = [('CYTHON_TRACE', '1')]
+    ext_kwargs['define_macros'] = [('CYTHON_TRACE_NOGIL', '1')]
 
 for modulename, other_sources, language in (
     ('dipy.reconst.peak_direction_getter', [], 'c'),
