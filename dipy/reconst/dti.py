@@ -748,7 +748,7 @@ class TensorModel(ReconstModel):
 
         mask : array
             A boolean array used to mark the coordinates in the data that
-            should be analyzed that has the shape data.shape[-1]
+            should be analyzed that has the shape data.shape[:-1]
 
         """
         if mask is None:
