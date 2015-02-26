@@ -208,21 +208,40 @@ def search_descending(cnp.ndarray[cnp.float_t, ndim=1, mode='c'] a,
                       double relative_threshold):
     """ `i` in descending array `a` so `a[i] < a[0] * relative_threshold`
 
-    Smallest index `i` in descending array `a` such that ``a[i] < a[0] *
-    relative_threshold``.
+    Call ``T = a[0] * relative_threshold``. Return value `i` will be the
+    smallest index in the descending array `a` such that ``a[i] < T``.
+    Equivalently, `i` will be the largest index such that ``all(a[:i] >= T)``.
+    If all values in `a` are >= T, return the length of array `a`.
 
     Parameters
     ----------
     a : ndarray, ndim=1, c-contiguous
-        Array to be searched.
+        Array to be searched.  We assume `a` is in descending order.
     relative_threshold : float
-        Threshold relative to `a[0]`.
+        Applied threshold will be ``T`` with ``T = a[0] * relative_threshold``.
 
     Returns
     -------
-    i : int
-        The greatest index such that ``all(a[:i] >= relative_threshold *
-        a[0])``.
+    i : np.intp
+        If ``T = a[0] * relative_threshold`` then `i` will be the largest index
+        such that ``all(a[:i] >= T)``.  If all values in `a` are >= T then
+        `i` will be `len(a)`.
+
+    Examples
+    --------
+    >>> a = np.arange(10, 0, -1, dtype=float)
+    >>> a
+    array([ 10.,   9.,   8.,   7.,   6.,   5.,   4.,   3.,   2.,   1.])
+    >>> search_descending(a, 0.5)
+    6
+    >>> a < 10 * 0.5
+    array([False, False, False, False, False, False,  True,  True,  True,  True], dtype=bool)
+    >>> search_descending(a, 1)
+    1
+    >>> search_descending(a, 2)
+    0
+    >>> search_descending(a, 0)
+    10
     """
     if a.shape[0] == 0:
         return 0
