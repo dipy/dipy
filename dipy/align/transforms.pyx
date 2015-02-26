@@ -67,10 +67,10 @@ cdef class Transform:
         J : array, shape (dim, n)
             Jacobian matrix of the transform with parameters theta at point x
         """
-        n = len(theta)
+        n = theta.shape[0]
         if n != self.number_of_parameters:
             raise ValueError("Invalid number of parameters: %d"%(n,))
-        m = len(x)
+        m = x.shape[0]
         if m < self.dim:
             raise ValueError("Invalid point dimension: %d"%(m,))
         J = np.zeros((self.dim, n))

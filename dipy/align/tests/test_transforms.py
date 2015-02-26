@@ -18,7 +18,7 @@ def test_number_of_parameters():
                        ('AFFINE', 2) : 6,
                        ('AFFINE', 3) : 12}
 
-    for ttype, transform in regtransforms.iteritems():
+    for ttype, transform in regtransforms.items():
         assert_equal(transform.get_number_of_parameters(), expected_params[ttype])
 
 
