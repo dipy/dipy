@@ -391,7 +391,7 @@ class SparseFascicleModel(ReconstModel, Cache):
                                 self.design_matrix.shape[-1]))
 
         for vox, vox_data in enumerate(flat_S):
-            if np.any(np.isnan(vox_data)):
+            if np.any(~np.isfinite(vox_data)) or np.all(vox_data==0) :
                 # In voxels in which S0 is 0, we just want to keep the
                 # parameters at all-zeros, and avoid nasty sklearn errors:
                 break

@@ -78,8 +78,9 @@ def test_sfm_background():
     gtab = grad.gradient_table(fbvals, fbvecs)
     to_fit = data[0,0,0]
     to_fit[gtab.b0s_mask] = 0
-    beta = sfm.SparseFascicleModel(gtab, solver='NNLS').fit(to_fit).beta
-    npt.assert_equal(beta, np.zeros_like(beta))
+    sfmodel = sfm.SparseFascicleModel(gtab, solver='NNLS')
+    sffit = sfmodel.fit(to_fit)
+    npt.assert_equal(sffit.beta, np.zeros_like(sffit.beta))
 
 
 def test_sfm_stick():
