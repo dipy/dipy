@@ -43,13 +43,13 @@ cdef class Transform:
         self.dim = -1
         self.number_of_parameters = -1
 
-    cdef int _jacobian(self, double[:] theta, double[:] x, double[:,:] J)nogil:
+    cdef int _jacobian(self, double[:] theta, double[:] x, double[:, :] J)nogil:
         return -1
 
     cdef void _get_identity_parameters(self, double[:] theta) nogil:
         return
 
-    cdef void _param_to_matrix(self, double[:] theta, double[:,:] T)nogil:
+    cdef void _param_to_matrix(self, double[:] theta, double[:, :] T)nogil:
         return
 
     def jacobian(self, double[:] theta, double[:] x):
@@ -125,7 +125,7 @@ cdef class TranslationTransform2D(Transform):
         self.dim = 2
         self.number_of_parameters = 2
 
-    cdef int _jacobian(self, double[:] theta, double[:] x, double[:,:] J) nogil:
+    cdef int _jacobian(self, double[:] theta, double[:] x, double[:, :] J)nogil:
         r""" Jacobian matrix of the 2D translation transform
         The transformation is given by:
 
@@ -139,9 +139,9 @@ cdef class TranslationTransform2D(Transform):
         Parameters
         ----------
         theta : array, shape(2,)
-            the parameters of the 2D translation transform (the Jacobian does not
-            depend on the parameters, but we receive the buffer so all Jacobian
-            functions receive the same parameters)
+            the parameters of the 2D translation transform (the Jacobian does
+            not depend on the parameters, but we receive the buffer so all
+            Jacobian functions receive the same parameters)
         x : array, shape(2,)
             the point at which to compute the Jacobian (the Jacobian does not
             depend on x, but we receive the buffer so all Jacobian functions
@@ -155,8 +155,8 @@ cdef class TranslationTransform2D(Transform):
             always returns 1, indicating that the Jacobian is constant
             (independent of x)
         """
-        J[0,0], J[0, 1] = 1.0, 0.0
-        J[1,0], J[1, 1] = 0.0, 1.0
+        J[0, 0], J[0, 1] = 1.0, 0.0
+        J[1, 0], J[1, 1] = 0.0, 1.0
         # This Jacobian does not depend on x (it's constant): return 1
         return 1
 
@@ -172,7 +172,7 @@ cdef class TranslationTransform2D(Transform):
         """
         theta[:2] = 0
 
-    cdef void _param_to_matrix(self, double[:] theta, double[:,:] R) nogil:
+    cdef void _param_to_matrix(self, double[:] theta, double[:, :] R) nogil:
         r""" Matrix associated with the 2D translation transform
 
         Parameters
@@ -182,9 +182,9 @@ cdef class TranslationTransform2D(Transform):
         R : array, shape(3, 3)
             the buffer in which to write the translation matrix
         """
-        R[0,0], R[0,1], R[0, 2] = 1, 0, theta[0]
-        R[1,0], R[1,1], R[1, 2] = 0, 1, theta[1]
-        R[2,0], R[2,1], R[2, 2] = 0, 0, 1
+        R[0, 0], R[0, 1], R[0, 2] = 1, 0, theta[0]
+        R[1, 0], R[1, 1], R[1, 2] = 0, 1, theta[1]
+        R[2, 0], R[2, 1], R[2, 2] = 0, 0, 1
 
 
 cdef class TranslationTransform3D(Transform):
@@ -194,7 +194,7 @@ cdef class TranslationTransform3D(Transform):
         self.dim = 3
         self.number_of_parameters = 3
 
-    cdef int _jacobian(self, double[:] theta, double[:] x, double[:,:] J) nogil:
+    cdef int _jacobian(self, double[:] theta, double[:] x, double[:, :] J)nogil:
         r""" Jacobian matrix of the 3D translation transform
         The transformation is given by:
 
@@ -208,9 +208,9 @@ cdef class TranslationTransform3D(Transform):
         Parameters
         ----------
         theta : array, shape(3,)
-            the parameters of the 3D translation transform (the Jacobian does not
-            depend on the parameters, but we receive the buffer so all Jacobian
-            functions receive the same parameters)
+            the parameters of the 3D translation transform (the Jacobian does
+            not depend on the parameters, but we receive the buffer so all
+            Jacobian functions receive the same parameters)
         x : array, shape(3,)
             the point at which to compute the Jacobian (the Jacobian does not
             depend on x, but we receive the buffer so all Jacobian functions
@@ -224,9 +224,9 @@ cdef class TranslationTransform3D(Transform):
             always returns 1, indicating that the Jacobian is constant
             (independent of x)
         """
-        J[0,0], J[0,1], J[0,2] = 1.0, 0.0, 0.0
-        J[1,0], J[1,1], J[1,2] = 0.0, 1.0, 0.0
-        J[2,0], J[2,1], J[2,2] = 0.0, 0.0, 1.0
+        J[0, 0], J[0, 1], J[0, 2] = 1.0, 0.0, 0.0
+        J[1, 0], J[1, 1], J[1, 2] = 0.0, 1.0, 0.0
+        J[2, 0], J[2, 1], J[2, 2] = 0.0, 0.0, 1.0
         # This Jacobian does not depend on x (it's constant): return 1
         return 1
 
@@ -242,7 +242,7 @@ cdef class TranslationTransform3D(Transform):
         """
         theta[:3] = 0
 
-    cdef void _param_to_matrix(self, double[:] theta, double[:,:] R) nogil:
+    cdef void _param_to_matrix(self, double[:] theta, double[:, :] R) nogil:
         r""" Matrix associated with the 3D translation transform
 
         Parameters
@@ -252,10 +252,10 @@ cdef class TranslationTransform3D(Transform):
         R : array, shape(4, 4)
             the buffer in which to write the translation matrix
         """
-        R[0,0], R[0,1], R[0,2], R[0,3] = 1, 0, 0, theta[0]
-        R[1,0], R[1,1], R[1,2], R[1,3] = 0, 1, 0, theta[1]
-        R[2,0], R[2,1], R[2,2], R[2,3] = 0, 0, 1, theta[2]
-        R[3,0], R[3,1], R[3,2], R[3,3] = 0, 0, 0, 1
+        R[0, 0], R[0, 1], R[0, 2], R[0, 3] = 1, 0, 0, theta[0]
+        R[1, 0], R[1, 1], R[1, 2], R[1, 3] = 0, 1, 0, theta[1]
+        R[2, 0], R[2, 1], R[2, 2], R[2, 3] = 0, 0, 1, theta[2]
+        R[3, 0], R[3, 1], R[3, 2], R[3, 3] = 0, 0, 0, 1
 
 
 cdef class RotationTransform2D(Transform):
@@ -265,8 +265,8 @@ cdef class RotationTransform2D(Transform):
         self.dim = 2
         self.number_of_parameters = 1
 
-    cdef int _jacobian(self, double[:] theta, double[:] x, double[:,:] J) nogil:
-        r''' Jacobian matrix of a 2D rotation transform with parameter theta, at x
+    cdef int _jacobian(self, double[:] theta, double[:] x, double[:, :] J)nogil:
+        r''' Jacobian matrix of a 2D rotation with parameter theta, at x
 
         The transformation is given by:
 
@@ -314,7 +314,7 @@ cdef class RotationTransform2D(Transform):
         """
         theta[0] = 0
 
-    cdef void _param_to_matrix(self, double[:] theta, double[:,:] R) nogil:
+    cdef void _param_to_matrix(self, double[:] theta, double[:, :] R) nogil:
         r""" Matrix associated with the 2D rotation transform
 
         Parameters
@@ -327,9 +327,9 @@ cdef class RotationTransform2D(Transform):
         cdef:
             double ct = cos(theta[0])
             double st = sin(theta[0])
-        R[0,0], R[0,1], R[0,2] = ct, -st, 0
-        R[1,0], R[1,1], R[1,2] = st, ct, 0
-        R[2,0], R[2,1], R[2,2] = 0, 0, 1
+        R[0, 0], R[0, 1], R[0, 2] = ct, -st, 0
+        R[1, 0], R[1, 1], R[1, 2] = st, ct, 0
+        R[2, 0], R[2, 1], R[2, 2] = 0, 0, 1
 
 
 cdef class RotationTransform3D(Transform):
@@ -339,8 +339,8 @@ cdef class RotationTransform3D(Transform):
         self.dim = 3
         self.number_of_parameters = 3
 
-    cdef int _jacobian(self, double[:] theta, double[:] x, double[:,:] J) nogil:
-        r''' Jacobian matrix of a 3D rotation transform with parameters theta, at x
+    cdef int _jacobian(self, double[:] theta, double[:] x, double[:, :] J)nogil:
+        r''' Jacobian matrix of a 3D rotation with parameters theta, at x
 
         Parameters
         ----------
@@ -366,18 +366,18 @@ cdef class RotationTransform3D(Transform):
             double cc = cos(theta[2])
             double px = x[0], py = x[1], pz = x[2]
 
-        J[0, 0] = ( -sc * ca * sb ) * px + ( sc * sa ) * py + ( sc * ca * cb ) * pz
-        J[1, 0] = ( cc * ca * sb ) * px + ( -cc * sa ) * py + ( -cc * ca * cb ) * pz
-        J[2, 0] = ( sa * sb ) * px + ( ca ) * py + ( -sa * cb ) * pz
+        J[0, 0] = (-sc * ca * sb) * px + (sc * sa) * py + (sc * ca * cb) * pz
+        J[1, 0] = (cc * ca * sb) * px + (-cc * sa) * py + (-cc * ca * cb) * pz
+        J[2, 0] = (sa * sb) * px + ca * py + (-sa * cb) * pz
 
-        J[0, 1] = ( -cc * sb - sc * sa * cb ) * px + ( cc * cb - sc * sa * sb ) * pz
-        J[1, 1] = ( -sc * sb + cc * sa * cb ) * px + ( sc * cb + cc * sa * sb ) * pz
-        J[2, 1] = ( -ca * cb ) * px + ( -ca * sb ) * pz
+        J[0, 1] = (-cc * sb - sc * sa * cb) * px + (cc * cb - sc * sa * sb) * pz
+        J[1, 1] = (-sc * sb + cc * sa * cb) * px + (sc * cb + cc * sa * sb) * pz
+        J[2, 1] = (-ca * cb) * px + (-ca * sb) * pz
 
-        J[0, 2] = ( -sc * cb - cc * sa * sb ) * px + ( -cc * ca ) * py + \
-                  ( -sc * sb + cc * sa * cb ) * pz
-        J[1, 2] = ( cc * cb - sc * sa * sb ) * px + ( -sc * ca ) * py + \
-                  ( cc * sb + sc * sa * cb ) * pz
+        J[0, 2] = (-sc * cb - cc * sa * sb) * px + (-cc * ca) * py + \
+                  (-sc * sb + cc * sa * cb) * pz
+        J[1, 2] = (cc * cb - sc * sa * sb) * px + (-sc * ca) * py + \
+                  (cc * sb + sc * sa * cb) * pz
         J[2, 2] = 0
         # This Jacobian depends on x (it's not constant): return 0
         return 0
@@ -394,12 +394,12 @@ cdef class RotationTransform3D(Transform):
         """
         theta[:3] = 0
 
-    cdef void _param_to_matrix(self, double[:] theta, double[:,:] R) nogil:
+    cdef void _param_to_matrix(self, double[:] theta, double[:, :] R) nogil:
         r""" Matrix associated with the 3D rotation transform
 
-        The matrix is the product of rotation matrices of angles theta[0], theta[1],
-        theta[2] around axes x, y, z applied in the following order: y, x, z.
-        This order was chosen for consistency with ANTS.
+        The matrix is the product of rotation matrices of angles theta[0],
+        theta[1], theta[2] around axes x, y, z applied in the following
+        order: y, x, z. This order was chosen for consistency with ANTS.
 
         Parameters
         ----------
@@ -436,12 +436,12 @@ cdef class RigidTransform2D(Transform):
         self.dim = 2
         self.number_of_parameters = 3
 
-    cdef int _jacobian(self, double[:] theta, double[:] x, double[:,:] J) nogil:
+    cdef int _jacobian(self, double[:] theta, double[:] x, double[:, :] J)nogil:
         r''' Jacobian matrix of a 2D rigid transform (rotation + translation)
 
         The transformation is given by:
 
-        T(x,y) = (T1(x,y), T2(x,y)) = (x cost - y sint + dx, x sint + y cost + dy)
+        T(x,y)= (T1(x,y), T2(x,y))= (x cost - y sint + dx, x sint + y cost + dy)
 
         The derivatives w.r.t. t, dx and dy are:
 
@@ -491,8 +491,8 @@ cdef class RigidTransform2D(Transform):
         """
         theta[:3] = 0
 
-    cdef void _param_to_matrix(self, double[:] theta, double[:,:] R) nogil:
-        r""" Matrix associated with the 2D rigid transform (rotation + translation)
+    cdef void _param_to_matrix(self, double[:] theta, double[:, :] R) nogil:
+        r""" Matrix associated with the 2D rigid transform
 
         Parameters
         ----------
@@ -507,9 +507,9 @@ cdef class RigidTransform2D(Transform):
         cdef:
             double ct = cos(theta[0])
             double st = sin(theta[0])
-        R[0,0], R[0,1], R[0,2] = ct, -st, theta[1]
-        R[1,0], R[1,1], R[1,2] = st, ct, theta[2]
-        R[2,0], R[2,1], R[2,2] = 0, 0, 1
+        R[0, 0], R[0, 1], R[0, 2] = ct, -st, theta[1]
+        R[1, 0], R[1, 1], R[1, 2] = st, ct, theta[2]
+        R[2, 0], R[2, 1], R[2, 2] = 0, 0, 1
 
 
 cdef class RigidTransform3D(Transform):
@@ -526,7 +526,7 @@ cdef class RigidTransform3D(Transform):
         self.dim = 3
         self.number_of_parameters = 6
 
-    cdef int _jacobian(self, double[:] theta, double[:] x, double[:,:] J) nogil:
+    cdef int _jacobian(self, double[:] theta, double[:] x, double[:, :] J)nogil:
         r''' Jacobian matrix of a 3D rigid transform (rotation + translation)
 
         Parameters
@@ -559,24 +559,24 @@ cdef class RigidTransform3D(Transform):
             double cc = cos(theta[2])
             double px = x[0], py = x[1], pz = x[2]
 
-        J[0, 0] = ( -sc * ca * sb ) * px + ( sc * sa ) * py + ( sc * ca * cb ) * pz
-        J[1, 0] = ( cc * ca * sb ) * px + ( -cc * sa ) * py + ( -cc * ca * cb ) * pz
-        J[2, 0] = ( sa * sb ) * px + ( ca ) * py + ( -sa * cb ) * pz
+        J[0, 0] = (-sc * ca * sb) * px + (sc * sa) * py + (sc * ca * cb) * pz
+        J[1, 0] = (cc * ca * sb) * px + (-cc * sa) * py + (-cc * ca * cb) * pz
+        J[2, 0] = (sa * sb) * px + ca * py + (-sa * cb) * pz
 
-        J[0, 1] = ( -cc * sb - sc * sa * cb ) * px + ( cc * cb - sc * sa * sb ) * pz
-        J[1, 1] = ( -sc * sb + cc * sa * cb ) * px + ( sc * cb + cc * sa * sb ) * pz
-        J[2, 1] = ( -ca * cb ) * px + ( -ca * sb ) * pz
+        J[0, 1] = (-cc * sb - sc * sa * cb) * px + (cc * cb - sc * sa * sb) * pz
+        J[1, 1] = (-sc * sb + cc * sa * cb) * px + (sc * cb + cc * sa * sb) * pz
+        J[2, 1] = (-ca * cb) * px + (-ca * sb) * pz
 
-        J[0, 2] = ( -sc * cb - cc * sa * sb ) * px + ( -cc * ca ) * py + \
-                  ( -sc * sb + cc * sa * cb ) * pz
-        J[1, 2] = ( cc * cb - sc * sa * sb ) * px + ( -sc * ca ) * py + \
-                  ( cc * sb + sc * sa * cb ) * pz
+        J[0, 2] = (-sc * cb - cc * sa * sb) * px + (-cc * ca) * py + \
+                  (-sc * sb + cc * sa * cb) * pz
+        J[1, 2] = (cc * cb - sc * sa * sb) * px + (-sc * ca) * py + \
+                  (cc * sb + sc * sa * cb) * pz
         J[2, 2] = 0
 
-        J[0,3:6] = 0
-        J[1,3:6] = 0
-        J[2,3:6] = 0
-        J[0,3], J[1,4], J[2,5] = 1, 1, 1
+        J[0, 3:6] = 0
+        J[1, 3:6] = 0
+        J[2, 3:6] = 0
+        J[0, 3], J[1, 4], J[2, 5] = 1, 1, 1
         # This Jacobian depends on x (it's not constant): return 0
         return 0
 
@@ -598,8 +598,8 @@ cdef class RigidTransform3D(Transform):
         """
         theta[:6] = 0
 
-    cdef void _param_to_matrix(self, double[:] theta, double[:,:] R) nogil:
-        r""" Matrix associated with the 3D rigid transform (rotation + translation)
+    cdef void _param_to_matrix(self, double[:] theta, double[:, :] R) nogil:
+        r""" Matrix associated with the 3D rigid transform
 
         Parameters
         ----------
@@ -638,7 +638,7 @@ cdef class ScalingTransform2D(Transform):
         self.dim = 2
         self.number_of_parameters = 1
 
-    cdef int _jacobian(self, double[:] theta, double[:] x, double[:,:] J) nogil:
+    cdef int _jacobian(self, double[:] theta, double[:] x, double[:, :] J)nogil:
         r""" Jacobian matrix of the isotropic 2D scale transform
         The transformation is given by:
 
@@ -663,7 +663,7 @@ cdef class ScalingTransform2D(Transform):
             always returns 0, indicating that the Jacobian is not
             constant (it depends on the value of x)
         """
-        J[0,0], J[1,0] = x[0], x[1]
+        J[0, 0], J[1, 0] = x[0], x[1]
         # This Jacobian depends on x (it's not constant): return 0
         return 0
 
@@ -679,7 +679,7 @@ cdef class ScalingTransform2D(Transform):
         """
         theta[0] = 1
 
-    cdef void _param_to_matrix(self, double[:] theta, double[:,:] R) nogil:
+    cdef void _param_to_matrix(self, double[:] theta, double[:, :] R) nogil:
         r""" Matrix associated with the 2D (isotropic) scaling transform
 
         Parameters
@@ -689,9 +689,9 @@ cdef class ScalingTransform2D(Transform):
         R : array, shape(3, 3)
             the buffer in which to write the scaling matrix
         """
-        R[0,0], R[0,1], R[0, 2] = theta[0], 0, 0
-        R[1,0], R[1,1], R[1, 2] = 0, theta[0], 0
-        R[2,0], R[2,1], R[2, 2] = 0, 0, 1
+        R[0, 0], R[0, 1], R[0, 2] = theta[0], 0, 0
+        R[1, 0], R[1, 1], R[1, 2] = 0, theta[0], 0
+        R[2, 0], R[2, 1], R[2, 2] = 0, 0, 1
 
 
 cdef class ScalingTransform3D(Transform):
@@ -701,7 +701,7 @@ cdef class ScalingTransform3D(Transform):
         self.dim = 3
         self.number_of_parameters = 1
 
-    cdef int _jacobian(self, double[:] theta, double[:] x, double[:,:] J) nogil:
+    cdef int _jacobian(self, double[:] theta, double[:] x, double[:, :] J)nogil:
         r""" Jacobian matrix of the isotropic 3D scale transform
         The transformation is given by:
 
@@ -726,7 +726,7 @@ cdef class ScalingTransform3D(Transform):
             always returns 0, indicating that the Jacobian is not
             constant (it depends on the value of x)
         """
-        J[0,0], J[1,0], J[2,0]= x[0], x[1], x[2]
+        J[0, 0], J[1, 0], J[2, 0]= x[0], x[1], x[2]
         # This Jacobian depends on x (it's not constant): return 0
         return 0
 
@@ -742,7 +742,7 @@ cdef class ScalingTransform3D(Transform):
         """
         theta[0] = 1
 
-    cdef void _param_to_matrix(self, double[:] theta, double[:,:] R) nogil:
+    cdef void _param_to_matrix(self, double[:] theta, double[:, :] R) nogil:
         r""" Matrix associated with the 3D (isotropic) scaling transform
 
         Parameters
@@ -752,10 +752,10 @@ cdef class ScalingTransform3D(Transform):
         R : array, shape(4, 4)
             the buffer in which to write the scaling matrix
         """
-        R[0,0], R[0,1], R[0,2], R[0,3] = theta[0], 0, 0, 0
-        R[1,0], R[1,1], R[1,2], R[1,3] = 0, theta[0], 0, 0
-        R[2,0], R[2,1], R[2,2], R[2,3] = 0, 0, theta[0], 0
-        R[3,0], R[3,1], R[3,2], R[3,3] = 0, 0, 0, 1
+        R[0, 0], R[0, 1], R[0, 2], R[0, 3] = theta[0], 0, 0, 0
+        R[1, 0], R[1, 1], R[1, 2], R[1, 3] = 0, theta[0], 0, 0
+        R[2, 0], R[2, 1], R[2, 2], R[2, 3] = 0, 0, theta[0], 0
+        R[3, 0], R[3, 1], R[3, 2], R[3, 3] = 0, 0, 0, 1
 
 
 cdef class AffineTransform2D(Transform):
@@ -765,7 +765,7 @@ cdef class AffineTransform2D(Transform):
         self.dim = 2
         self.number_of_parameters = 6
 
-    cdef int _jacobian(self, double[:] theta, double[:] x, double[:,:] J) nogil:
+    cdef int _jacobian(self, double[:] theta, double[:] x, double[:, :] J)nogil:
         r""" Jacobian matrix of the 2D affine transform
         The transformation is given by:
 
@@ -799,8 +799,8 @@ cdef class AffineTransform2D(Transform):
             always returns 0, indicating that the Jacobian is not
             constant (it depends on the value of x)
         """
-        J[0,:6] = 0
-        J[1,:6] = 0
+        J[0, :6] = 0
+        J[1, :6] = 0
 
         J[0, :2] = x[:2]
         J[0, 2] = 1
@@ -822,7 +822,7 @@ cdef class AffineTransform2D(Transform):
         theta[0], theta[1], theta[2] = 1, 0, 0
         theta[3], theta[4], theta[5] = 0, 1, 0
 
-    cdef void _param_to_matrix(self, double[:] theta, double[:,:] R) nogil:
+    cdef void _param_to_matrix(self, double[:] theta, double[:, :] R) nogil:
         r""" Matrix associated with a general 2D affine transform
 
         The transformation is given by the matrix:
@@ -838,9 +838,9 @@ cdef class AffineTransform2D(Transform):
         R : array, shape(3,3)
             the buffer in which to write the matrix
         """
-        R[0,0], R[0,1], R[0, 2] = theta[0], theta[1], theta[2]
-        R[1,0], R[1,1], R[1, 2] = theta[3], theta[4], theta[5]
-        R[2,0], R[2,1], R[2, 2] = 0, 0, 1
+        R[0, 0], R[0, 1], R[0, 2] = theta[0], theta[1], theta[2]
+        R[1, 0], R[1, 1], R[1, 2] = theta[3], theta[4], theta[5]
+        R[2, 0], R[2, 1], R[2, 2] = 0, 0, 1
 
 
 cdef class AffineTransform3D(Transform):
@@ -850,7 +850,7 @@ cdef class AffineTransform3D(Transform):
         self.dim = 3
         self.number_of_parameters = 12
 
-    cdef int _jacobian(self, double[:] theta, double[:] x, double[:,:] J) nogil:
+    cdef int _jacobian(self, double[:] theta, double[:] x, double[:, :] J)nogil:
         r""" Jacobian matrix of the 3D affine transform
         The transformation is given by:
 
@@ -895,7 +895,7 @@ cdef class AffineTransform3D(Transform):
             cnp.npy_intp j
 
         for j in range(3):
-            J[j,:12] = 0
+            J[j, :12] = 0
         J[0, :3] = x[:3]
         J[0, 3] = 1
         J[1, 4:7] = x[:3]
@@ -919,7 +919,7 @@ cdef class AffineTransform3D(Transform):
         theta[4], theta[5], theta[6], theta[7] = 0, 1, 0, 0
         theta[8], theta[9], theta[10], theta[11] = 0, 0, 1, 0
 
-    cdef void _param_to_matrix(self, double[:] theta, double[:,:] R) nogil:
+    cdef void _param_to_matrix(self, double[:] theta, double[:, :] R) nogil:
         r""" Matrix associated with a general 3D affine transform
 
         The transformation is given by the matrix:

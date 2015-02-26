@@ -23,9 +23,10 @@ def test_number_of_parameters():
 
 
 def test_param_to_matrix_2d():
+    rng = np.random.RandomState()
     # Test translation matrix 2D
     transform = regtransforms[('TRANSLATION', 2)]
-    dx, dy = np.random.rand(), np.random.rand()
+    dx, dy = rng.uniform(size=(2,))
     theta = np.array([dx, dy])
     expected = np.array([[1, 0, dx], [0, 1, dy], [0, 0, 1]])
     actual = transform.param_to_matrix(theta)
@@ -33,7 +34,7 @@ def test_param_to_matrix_2d():
 
     # Test rotation matrix 2D
     transform = regtransforms[('ROTATION', 2)]
-    angle = np.random.rand()
+    angle = rng.uniform()
     theta = np.array([angle])
     ct = np.cos(angle)
     st = np.sin(angle)
@@ -43,7 +44,7 @@ def test_param_to_matrix_2d():
 
     # Test rigid matrix 2D
     transform = regtransforms[('RIGID', 2)]
-    angle, dx, dy = np.random.rand(), np.random.rand(), np.random.rand()
+    angle, dx, dy = rng.uniform(size=(3,))
     theta = np.array([angle, dx, dy])
     ct = np.cos(angle)
     st = np.sin(angle)
@@ -53,7 +54,7 @@ def test_param_to_matrix_2d():
 
     # Test rigid matrix 2D
     transform = regtransforms[('SCALING', 2)]
-    factor = np.random.rand()
+    factor = rng.uniform()
     theta = np.array([factor])
     expected = np.array([[factor, 0, 0], [0, factor, 0], [0, 0, 1]])
     actual = transform.param_to_matrix(theta)
@@ -61,7 +62,7 @@ def test_param_to_matrix_2d():
 
     # Test affine 2D
     transform = regtransforms[('AFFINE', 2)]
-    theta = np.random.rand(6)
+    theta = rng.uniform(size=(6,))
     expected = np.eye(3)
     expected[0,:] = theta[:3]
     expected[1,:] = theta[3:6]
@@ -78,9 +79,10 @@ def test_param_to_matrix_2d():
 
 
 def test_param_to_matrix_3d():
+    rng = np.random.RandomState()
     # Test translation matrix 3D
     transform = regtransforms[('TRANSLATION', 3)]
-    dx, dy, dz = np.random.rand(3)
+    dx, dy, dz = rng.uniform(size=(3,))
     theta = np.array([dx, dy, dz])
     expected = np.array([[1, 0, 0, dx],
                          [0, 1, 0, dy],
@@ -91,7 +93,7 @@ def test_param_to_matrix_3d():
 
     # Test rotation matrix 3D
     transform = regtransforms[('ROTATION', 3)]
-    theta = np.random.rand(3)
+    theta = rng.uniform(size=(3,))
     ca = np.cos(theta[0])
     sa = np.sin(theta[0])
     cb = np.cos(theta[1])
@@ -117,7 +119,7 @@ def test_param_to_matrix_3d():
 
     # Test rigid matrix 3D
     transform = regtransforms[('RIGID', 3)]
-    theta = np.random.rand(6)
+    theta = rng.uniform(size=(6,))
     ca = np.cos(theta[0])
     sa = np.sin(theta[0])
     cb = np.cos(theta[1])
@@ -142,9 +144,9 @@ def test_param_to_matrix_3d():
     actual = transform.param_to_matrix(theta)
     assert_array_almost_equal(actual, expected)
 
-    # Test scaling matrix 2D
+    # Test scaling matrix 3D
     transform = regtransforms[('SCALING', 3)]
-    factor = np.random.rand()
+    factor = rng.uniform()
     theta = np.array([factor])
     expected = np.array([[factor, 0, 0, 0],
                          [0, factor, 0, 0],
@@ -153,9 +155,9 @@ def test_param_to_matrix_3d():
     actual = transform.param_to_matrix(theta)
     assert_array_almost_equal(actual, expected)
 
-    # Test affine 2D
+    # Test affine 3D
     transform = regtransforms[('AFFINE', 3)]
-    theta = np.random.rand(12)
+    theta = rng.uniform(size=(12,))
     expected = np.eye(4)
     expected[0,:] = theta[:4]
     expected[1,:] = theta[4:8]
@@ -184,6 +186,7 @@ def test_get_identity_parameters():
 
 
 def test_jacobian_functions():
+    rng = np.random.RandomState()
     #Compare the analytical Jacobians with their numerical approximations
     h = 1e-8
     nsamples = 50
@@ -193,11 +196,11 @@ def test_jacobian_functions():
         dim = transform.get_dim()
 
         expected = np.empty((dim, n))
-        theta = np.random.rand(n)
+        theta = rng.uniform(size=(n,))
         T = transform.param_to_matrix(theta)
 
         for j in range(nsamples):
-            x = 255 * (np.random.rand(dim) - 0.5)
+            x = 255 * (rng.uniform(size=(dim,)) - 0.5)
             actual = transform.jacobian(theta, x)
 
             # Approximate with finite differences
