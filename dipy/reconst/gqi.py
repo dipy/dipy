@@ -104,7 +104,7 @@ class GeneralizedQSamplingFit(OdfFit):
             if self.model.method == 'gqi2':
                 H=squared_radial_component
                 #print self.gqi_vector.shape
-                self.gqi_vector = np.real(H(np.dot(self.model.b_vector,                                         sphere.vertices.T) * self.model.Lambda / np.pi))
+                self.gqi_vector = np.real(H(np.dot(self.model.b_vector,                                         sphere.vertices.T) * self.model.Lambda))
             if self.model.method == 'standard':
                 self.gqi_vector = np.real(np.sinc(np.dot(self.model.b_vector,                                   sphere.vertices.T) * self.model.Lambda / np.pi))
             self.model.cache_set('gqi_vector', sphere, self.gqi_vector)
