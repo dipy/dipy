@@ -1,4 +1,4 @@
-from dipy.align.transforms import regtransforms
+from dipy.align.transforms import regtransforms, Transform
 import numpy as np
 from numpy.testing import (assert_array_equal,
                            assert_array_almost_equal,
@@ -174,7 +174,7 @@ def test_param_to_matrix_3d():
         assert_raises(ValueError, transform.param_to_matrix, theta)
 
 
-def test_get_identity_parameters():
+def test_identity_parameters():
     for transform in regtransforms.values():
         n = transform.get_number_of_parameters()
         dim = transform.get_dim()
@@ -225,9 +225,33 @@ def test_jacobian_functions():
         assert_raises(ValueError, transform.jacobian, theta, x)
 
 
+def test_invalid_transform():
+    # Note: users should not attempt to use the base class Transform:
+    # they should get an instance of one of its derived classes from the
+    # regtransforms dictionary (the base class is not contained there)
+    # If for some reason the user instanciates it and attempts to use it,
+    # however, it will raise exceptions when attempting to retrieve its
+    # jacobian, identity parameters or its matrix representation. It will
+    # return -1 if queried about its dimension or number of parameters
+    transform = Transform()
+    theta = np.ndarray(3)
+    x = np.ndarray(3)
+    assert_raises(ValueError, transform.jacobian, theta, x)
+    assert_raises(ValueError, transform.get_identity_parameters)
+    assert_raises(ValueError, transform.param_to_matrix, theta)
+
+    expected = -1
+    actual = transform.get_number_of_parameters()
+    assert_equal(actual, expected)
+
+    actual = transform.get_dim()
+    assert_equal(actual, expected)
+
+
 if __name__=='__main__':
     test_number_of_parameters()
-    test_eval_jacobian_function()
+    test_jacobian_functions()
     test_param_to_matrix_2d()
     test_param_to_matrix_3d()
-    test_get_identity_parameters()
+    test_identity_parameters()
+    test_invalid_transform()
