@@ -136,7 +136,7 @@ def show(ren, title='Dipy', size=(300, 300), png_magnify=1):
     style = vtk.vtkInteractorStyleTrackballCamera()
     iren = vtk.vtkRenderWindowInteractor()
     iren.SetRenderWindow(window)
-    #iren.SetPicker(picker)
+    # iren.SetPicker(picker)
 
     def key_press(obj, event):
 
@@ -219,7 +219,8 @@ def record(ren=None, cam_pos=None, cam_focal=None, cam_view=None,
 
     # ren.GetActiveCamera().Azimuth(180)
 
-    ren.ResetCamera()
+    if ren is None:
+     ren.ResetCamera()
 
     renderLarge = vtk.vtkRenderLargeImage()
     if major_version <= 5:
