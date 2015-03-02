@@ -1516,6 +1516,9 @@ def slicer(vol, voxsz=(1.0, 1.0, 1.0), plane_i=[0], plane_j=None,
             for k in range(vol.shape[2]):
                 im.SetScalarComponentFromFloat(i, j, k, 0, vol[i, j, k])
 
+    #from dipy.viz.utils import ndarray_to_vtkimagedata
+    #im = ndarray_to_vtkimagedata(vol)
+
     # An outline provides context around the data.
     outlineData = vtk.vtkOutlineFilter()
     if major_version <= 5:

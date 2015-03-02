@@ -17,20 +17,35 @@ def analyze_output(renderer, fname, cleanup=True):
     else:
         raise ValueError('The background of the renderer is not black')
 
-    #if cleanup:
-    #    os.remove(fname)
-
     return True
+
+
+@npt.dec.skipif(not actor.have_vtk)
+@npt.dec.skipif(not actor.have_vtk_colors)
+def test_butcher():
+
+    renderer = window.renderer()
+
+    # data = np.random.randint(0, 255, (50, 50, 50))
+    data = (255 * np.random.rand(50, 50, 50))
+    affine = np.eye(4)
+
+    from dipy.viz import fvtk
+    #slicer = fvtk.slicer(data)
+
+    slicer = actor.butcher(data, affine)
+
+    window.add(renderer, slicer)
+
+    window.show(renderer)
 
 
 @npt.dec.skipif(not actor.have_vtk)
 @npt.dec.skipif(not actor.have_vtk_colors)
 def test_streamtube_and_line_actors():
 
-    # Create a renderer
     renderer = window.renderer()
 
-    # Create 2 lines with 2 different colors
     lines = [np.random.rand(10, 3), np.random.rand(20, 3)]
     colors = np.random.rand(2, 3)
     c = actor.line(lines, colors)
@@ -41,18 +56,15 @@ def test_streamtube_and_line_actors():
     c2.SetPosition(2, 0, 0)
     window.add(renderer, c2)
 
-    window.show(renderer)
+    # window.show(renderer)
 
-    #with TemporaryDirectory() as tmpdir:
-    tmpdir = ''
-    fname = os.path.join(tmpdir, 'streamtube.png')
-    print(fname)
-    window.record(renderer, out_path=fname)
-    npt.assert_(analyze_output(renderer, fname))
-
+    with TemporaryDirectory() as tmpdir:
+        fname = os.path.join(tmpdir, 'streamtube.png')
+        window.record(renderer, out_path=fname)
+        npt.assert_(analyze_output(renderer, fname))
 
 
 if __name__ == "__main__":
 
     # npt.run_module_suite()
-    test_streamtube_and_line_actors()
+    test_butcher()
