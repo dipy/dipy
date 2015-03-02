@@ -5,16 +5,97 @@ import numpy as np
 
 from dipy.viz.colormap import line_colors
 from dipy.viz.utils import numpy_to_vtk_points, numpy_to_vtk_colors
-from dipy.viz.utils import set_input, trilinear_interp
+from dipy.viz.utils import set_input, trilinear_interp, ndarray_to_vtkimagedata
 
 # Conditional import machinery for vtk
 from dipy.utils.optpkg import optional_package
 
-#import vtk
 # Allow import, but disable doctests if we don't have vtk
 vtk, have_vtk, setup_module = optional_package('vtk')
 colors, have_vtk_colors, _ = optional_package('vtk.util.colors')
 numpy_support, have_ns, _ = optional_package('vtk.util.numpy_support')
+
+if have_vtk:
+
+    version = vtk.vtkVersion.GetVTKSourceVersion().split(' ')[-1]
+    major_version = vtk.vtkVersion.GetVTKMajorVersion()
+
+def butcher(data, affine):
+
+    image_data = ndarray_to_vtkimagedata(data)
+
+    # Set the transform (identity if none given)
+#    transform = vtk.vtkTransform()
+#    if affine is not None:
+#        transform_matrix = vtk.vtkMatrix4x4()
+#        transform_matrix.DeepCopy((
+#            affine[0][0], affine[0][1], affine[0][2], affine[0][3],
+#            affine[1][0], affine[1][1], affine[1][2], affine[1][3],
+#            affine[2][0], affine[2][1], affine[2][2], affine[2][3],
+#            affine[3][0], affine[3][1], affine[3][2], affine[3][3]))
+#        transform.SetMatrix(transform_matrix)
+#        transform.Inverse()
+
+    # Set the reslicing
+#    image_resliced = vtk.vtkImageReslice()
+#    set_input(image_resliced, image_data)
+#    image_resliced.SetResliceTransform(transform)
+#    image_resliced.AutoCropOutputOn()
+#    image_resliced.SetInterpolationModeToLinear()
+#    image_resliced.Update()
+
+    # Get back resliced image
+    im = image_data #image_resliced.GetOutput()
+
+# An outline provides context around the data.
+#    outline_data = vtk.vtkOutlineFilter()
+#    set_input(outline_data, im)
+#
+#    mapOutline = vtk.vtkPolyDataMapper()
+#    mapOutline.SetInputConnection(outline_data.GetOutputPort())
+#    outline_ = vtk.vtkActor()
+#    outline_.SetMapper(mapOutline)
+#    outline_.GetProperty().SetColor(1, 0, 0)
+
+    # Now we are creating three orthogonal planes passing through the
+    # volume. Each plane uses a different texture map and therefore has
+    # diferent coloration.
+
+    # Start by creatin a black/white lookup table.
+    lut = vtk.vtkLookupTable()
+    lut.SetTableRange(data.min(), data.max())
+    lut.SetSaturationRange(0, 0)
+    lut.SetHueRange(0, 0)
+    lut.SetValueRange(0, 1)
+    lut.SetRampToLinear()
+    lut.Build()
+
+    x1, x2, y1, y2, z1, z2 = im.GetExtent()
+
+    print(x1, x2, y1, y2, z1, z2)
+
+    # Create the first of the three planes. The filter vtkImageMapToColors
+    # maps the data through the corresponding lookup table created above.
+    # The vtkImageActor is a type of vtkProp and conveniently displays an
+    # image on a single quadrilateral plane. It does this using texture
+    # mapping and as a result is quite fast. (Note: the input image has to
+    # be unsigned char values, which the vtkImageMapToColors produces.)
+    # Note also that by specifying the DisplayExtent, the pipeline
+    # requests data of this extent and the vtkImageMapToColors only
+    # processes a slice of data.
+    plane_colors = vtk.vtkImageMapToColors()
+    plane_colors.SetLookupTable(lut)
+    set_input(plane_colors, im)
+    plane_colors.Update()
+
+    saggital = vtk.vtkImageActor()
+    # set_input(saggital, plane_colors.GetOutput())
+    saggital.GetMapper().SetInputConnection(plane_colors.GetOutputPort())
+    saggital.SetDisplayExtent(0, 0, y1, y2, z1, z2)
+    # saggital.SetDisplayExtent(25, 25, 0, 49, 0, 49)
+    saggital.Update()
+
+    return saggital
 
 
 def streamtube(lines, colors=None, opacity=1, linewidth=0.01, tube_sides=9,
@@ -132,7 +213,8 @@ def streamtube(lines, colors=None, opacity=1, linewidth=0.01, tube_sides=9,
 
 
 def line(lines, colors=None, opacity=1, linewidth=1,
-         spline_subdiv=None, lookup_colormap=None):
+         spline_subdiv=None, lod=True, lod_points=10 ** 4, lod_points_size=3,
+         lookup_colormap=None):
     """ Create an actor for one or more lines.
 
     Parameters
@@ -211,6 +293,13 @@ def line(lines, colors=None, opacity=1, linewidth=1,
         poly_mapper.Update()
 
     # Set Actor
+    if lod:
+        actor = vtk.vtkLODActor()
+        actor.SetNumberOfCloudPoints(lod_points)
+        actor.GetProperty().SetPointSize(lod_points_size)
+    else:
+        actor = vtk.vtkActor()
+
     actor = vtk.vtkActor()
     actor.SetMapper(poly_mapper)
     actor.GetProperty().SetLineWidth(linewidth)
@@ -336,7 +425,6 @@ def scalar_bar(lookup_table):
     return scalar_bar
 
 
-
 def plot_stats( values, names=None, colors=np.array([0,0,0,255]),
                 lookup_table=None, scalar_bar=None):
     """ Plots statstics in a new windows
@@ -344,9 +432,9 @@ def plot_stats( values, names=None, colors=np.array([0,0,0,255]),
 
     nb_lines = len(values)
     if colors.ndim == 1:
-        colors = np.repeat(colors.reshape((1,-1)),nb_lines,axis=0)
+        colors = np.repeat(colors.reshape((1, -1)), nb_lines, axis=0)
 
-    chart =  vtk.vtkChartXY()
+    chart = vtk.vtkChartXY()
     chart.SetShowLegend(True)
 
     table = vtk.vtkTable()
@@ -354,15 +442,15 @@ def plot_stats( values, names=None, colors=np.array([0,0,0,255]),
 
     for i in range(nb_lines):
         value = values[i]
-        vtk_array= numpy_support.numpy_to_vtk(value,deep=1)
+        vtk_array = numpy_support.numpy_to_vtk(value, deep=1)
         vtk_array.SetName(names[i])
         table.AddColumn(vtk_array)
 
         color = colors[i] * 255
-        if i>0:
+        if i > 0:
             graph_line = chart.AddPlot(vtk.vtkChart.LINE)
             graph_line.SetInput(table, 0, i)
-            graph_line.SetColor(color[0],color[1],color[2],color[3])
+            graph_line.SetColor(color[0], color[1], color[2], color[3])
             #graph_line.GetPen().SetLineType(vtk.vtkPen.SOLID_LINE)
             graph_line.SetWidth(2.0)
 
@@ -372,13 +460,13 @@ def plot_stats( values, names=None, colors=np.array([0,0,0,255]),
                 graph_line.SetLookupTable(lookup_table)
                 graph_line.SelectColorArray(i)
 
-    #render plot
+    # render plot
     view = vtk.vtkContextView()
     view.GetRenderer().SetBackground(colors[0][0], colors[0][1], colors[0][2])
     view.GetRenderWindow().SetSize(400, 300)
     view.GetScene().AddItem(chart)
 
-    if scalar_bar is not None :
+    if scalar_bar is not None:
         view.GetRenderer().AddActor2D(scalar_bar)
 
     return view
