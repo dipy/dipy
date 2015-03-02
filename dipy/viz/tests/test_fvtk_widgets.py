@@ -30,6 +30,7 @@ def test_slider_widget():
     def print_status(obj, event):
         print(obj)
         print(event)
+        renderer.SetBackground(np.random.rand(3))
 
     slider = widget.slider(iren=iren, callback=print_status)
 
