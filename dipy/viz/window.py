@@ -220,7 +220,7 @@ def record(ren=None, cam_pos=None, cam_focal=None, cam_view=None,
     # ren.GetActiveCamera().Azimuth(180)
 
     if ren is None:
-     ren.ResetCamera()
+        ren.ResetCamera()
 
     renderLarge = vtk.vtkRenderLargeImage()
     if major_version <= 5:
