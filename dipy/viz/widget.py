@@ -45,3 +45,5 @@ def slider(iren, callback, min_value=0, max_value=255, value=125,
     slider.AddObserver("InteractionEvent", callback)
     slider.SetEnabled(True)
     return slider
+
+
