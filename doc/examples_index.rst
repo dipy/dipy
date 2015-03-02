@@ -41,7 +41,7 @@ Basic SNR estimation
 
 PIESNO
 ~~~~~~
-- :ref:`example_piesno_sherbrooke`
+- :ref:`example_piesno`
 
 Denoising
 ~~~~~~~~~
