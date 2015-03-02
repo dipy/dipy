@@ -48,6 +48,7 @@ def renderer(background=None):
 
 ren = renderer()
 
+
 def add(ren, a):
     """ Add a specific actor
     """
@@ -224,7 +225,7 @@ def record(ren=None, cam_pos=None, cam_focal=None, cam_view=None,
     if major_version <= 5:
         renderLarge.SetInput(ren)
     else:
-        renderLarge.SetInputData(ren)
+        renderLarge.SetInput(ren)
     renderLarge.SetMagnification(magnification)
     renderLarge.Update()
 

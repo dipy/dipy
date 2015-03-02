@@ -4,8 +4,8 @@ from __future__ import division, print_function, absolute_import
 import numpy as np
 
 from dipy.viz.colormap import line_colors
-from dipy.viz.fvtk.util import numpy_to_vtk_points, numpy_to_vtk_colors
-from dipy.viz.fvtk.util import set_input, trilinear_interp
+from dipy.viz.utils import numpy_to_vtk_points, numpy_to_vtk_colors
+from dipy.viz.utils import set_input, trilinear_interp
 
 # Conditional import machinery for vtk
 from dipy.utils.optpkg import optional_package
@@ -15,7 +15,6 @@ from dipy.utils.optpkg import optional_package
 vtk, have_vtk, setup_module = optional_package('vtk')
 colors, have_vtk_colors, _ = optional_package('vtk.util.colors')
 numpy_support, have_ns, _ = optional_package('vtk.util.numpy_support')
-
 
 
 def streamtube(lines, colors=None, opacity=1, linewidth=0.01, tube_sides=9,
