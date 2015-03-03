@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 import os
 import numpy as np
 import scipy as sp
@@ -30,7 +31,7 @@ def test_butcher():
     data = (255 * np.random.rand(50, 50, 50))
     affine = np.eye(4)
 
-    from dipy.viz import fvtk
+    #from dipy.viz import fvtk
     #slicer = fvtk.slicer(data)
 
     slicer = actor.butcher(data, affine)

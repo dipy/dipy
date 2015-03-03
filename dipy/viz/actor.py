@@ -1,5 +1,5 @@
 
-from __future__ import division, print_function, absolute_import
+#from __future__ import division, print_function, absolute_import
 
 import numpy as np
 
@@ -22,30 +22,53 @@ if have_vtk:
 
 def butcher(data, affine):
 
-    image_data = ndarray_to_vtkimagedata(data)
+    # im = ndarray_to_vtkimagedata(data)
+
+    vol = np.interp(data, xp=[data.min(), data.max()], fp=[0, 255])
+    vol = vol.astype('uint8')
+
+    im = vtk.vtkImageData()
+    if major_version <= 5:
+        im.SetScalarTypeToUnsignedChar()
+    I, J, K = vol.shape[:3]
+    im.SetDimensions(I, J, K)
+    voxsz = (1., 1., 1)
+    # im.SetOrigin(0,0,0)
+    im.SetSpacing(voxsz[2], voxsz[0], voxsz[1])
+    if major_version <= 5:
+        im.AllocateScalars()
+    else:
+        im.AllocateScalars(vtk.VTK_UNSIGNED_CHAR, 3)
+
+    # copy data
+    # replace with ndindex
+    for i in range(vol.shape[0]):
+        for j in range(vol.shape[1]):
+            for k in range(vol.shape[2]):
+                im.SetScalarComponentFromFloat(i, j, k, 0, vol[i, j, k])
 
     # Set the transform (identity if none given)
-#    transform = vtk.vtkTransform()
-#    if affine is not None:
-#        transform_matrix = vtk.vtkMatrix4x4()
-#        transform_matrix.DeepCopy((
-#            affine[0][0], affine[0][1], affine[0][2], affine[0][3],
-#            affine[1][0], affine[1][1], affine[1][2], affine[1][3],
-#            affine[2][0], affine[2][1], affine[2][2], affine[2][3],
-#            affine[3][0], affine[3][1], affine[3][2], affine[3][3]))
-#        transform.SetMatrix(transform_matrix)
-#        transform.Inverse()
+    transform = vtk.vtkTransform()
+    if affine is not None:
+        transform_matrix = vtk.vtkMatrix4x4()
+        transform_matrix.DeepCopy((
+            affine[0][0], affine[0][1], affine[0][2], affine[0][3],
+            affine[1][0], affine[1][1], affine[1][2], affine[1][3],
+            affine[2][0], affine[2][1], affine[2][2], affine[2][3],
+            affine[3][0], affine[3][1], affine[3][2], affine[3][3]))
+        transform.SetMatrix(transform_matrix)
+        transform.Inverse()
 
     # Set the reslicing
-#    image_resliced = vtk.vtkImageReslice()
-#    set_input(image_resliced, image_data)
-#    image_resliced.SetResliceTransform(transform)
-#    image_resliced.AutoCropOutputOn()
-#    image_resliced.SetInterpolationModeToLinear()
-#    image_resliced.Update()
+    image_resliced = vtk.vtkImageReslice()
+    image_resliced.SetInputData(im)
+    image_resliced.SetResliceTransform(transform)
+    image_resliced.AutoCropOutputOn()
+    image_resliced.SetInterpolationModeToLinear()
+    image_resliced.Update()
 
     # Get back resliced image
-    im = image_data #image_resliced.GetOutput()
+    #im = image_data #image_resliced.GetOutput()
 
 # An outline provides context around the data.
 #    outline_data = vtk.vtkOutlineFilter()
@@ -63,7 +86,8 @@ def butcher(data, affine):
 
     # Start by creatin a black/white lookup table.
     lut = vtk.vtkLookupTable()
-    lut.SetTableRange(data.min(), data.max())
+    lut.SetTableRange(0, 255)
+    #print(data.min(), data.max())
     lut.SetSaturationRange(0, 0)
     lut.SetHueRange(0, 0)
     lut.SetValueRange(0, 1)
@@ -85,13 +109,14 @@ def butcher(data, affine):
     # processes a slice of data.
     plane_colors = vtk.vtkImageMapToColors()
     plane_colors.SetLookupTable(lut)
-    set_input(plane_colors, im)
+    plane_colors.SetInputConnection(image_resliced.GetOutputPort())
     plane_colors.Update()
 
     saggital = vtk.vtkImageActor()
     # set_input(saggital, plane_colors.GetOutput())
     saggital.GetMapper().SetInputConnection(plane_colors.GetOutputPort())
-    saggital.SetDisplayExtent(0, 0, y1, y2, z1, z2)
+    #saggital.SetDisplayExtent(0, 0, y1, y2, z1, z2)
+    saggital.SetDisplayExtent(x1, x2, y1, y2, 25, 25)
     # saggital.SetDisplayExtent(25, 25, 0, 49, 0, 49)
     saggital.Update()
 

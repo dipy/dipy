@@ -202,46 +202,4 @@ def rescale_to_uint8(data):
     return temp
 
 
-def ndarray_to_vtkimagedata(data):
-    r""" Transforms ndarray into VTK tangible object
-
-    Transforms an ndarray into a uint8 vtkImageData object. This
-    function uses rescale_to_uint8 so it can be streamed as a unsigned
-    char string to vtk.
-
-    Parameters
-    ----------
-    data : ndarray
-
-    Return
-    ------
-    vtkImageData
-    """
-
-    nb_composites = len(data.shape)
-
-    if nb_composites == 3:
-        [sx, sy, sz] = data.shape
-        nb_channels = 1
-    elif nb_composites == 4:
-        [sx, sy, sz, nb_channels] = data.shape
-    else:
-        raise ValueError('Only 3D and 4D arrays are supported')
-
-    # Convert data to uint8 properly
-    uint8_data = rescale_to_uint8(data)
-    uint8_data = np.swapaxes(uint8_data, 0, 2)
-    string_data = uint8_data.tostring()
-
-    # Set data importer
-    data_source = vtk.vtkImageImport()
-    data_source.CopyImportVoidPointer(string_data, len(string_data))
-    data_source.SetDataScalarTypeToUnsignedChar()
-    data_source.SetNumberOfScalarComponents(nb_channels)
-    data_source.SetDataExtent(0, sx-1, 0, sy-1, 0, sz-1)
-    data_source.SetWholeExtent(0, sx-1, 0, sy-1, 0, sz-1)
-    #data_source.SetDataExtentToWholeExtent()
-
-    data_source.Update()
-
-    return data_source.GetOutput()
+s
