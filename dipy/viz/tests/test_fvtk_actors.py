@@ -31,12 +31,24 @@ def test_butcher():
     data = (255 * np.random.rand(50, 50, 50))
     affine = np.eye(4)
 
-    #from dipy.viz import fvtk
-    #slicer = fvtk.slicer(data)
+    stream_actor = actor.line(streamlines)
 
     slicer = actor.butcher(data, affine)
 
     window.add(renderer, slicer)
+    window.add(renderer, stream_actor)
+
+    window.show(renderer)
+
+    with TemporaryDirectory() as tmpdir:
+        fname = os.path.join(tmpdir, 'butcher.png')
+        window.record(renderer, out_path=fname)
+        npt.assert_(analyze_output(renderer, fname))
+
+    slicer.SetDisplayExtent(0, 255, 0, 255, 149/3, 149/3)
+    # print(slicer.GetExtent())
+
+    slicer.Update()
 
     window.show(renderer)
 
