@@ -200,6 +200,3 @@ def rescale_to_uint8(data):
     temp = np.array(np.round(temp), dtype=np.uint8)
 
     return temp
-
-
-s

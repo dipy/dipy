@@ -5,7 +5,8 @@ import numpy as np
 
 from dipy.viz.colormap import line_colors
 from dipy.viz.utils import numpy_to_vtk_points, numpy_to_vtk_colors
-from dipy.viz.utils import set_input, trilinear_interp, ndarray_to_vtkimagedata
+from dipy.viz.utils import set_input, trilinear_interp
+from dipy.core.ndindex import ndindex
 
 # Conditional import machinery for vtk
 from dipy.utils.optpkg import optional_package
@@ -41,11 +42,9 @@ def butcher(data, affine):
         im.AllocateScalars(vtk.VTK_UNSIGNED_CHAR, 3)
 
     # copy data
-    # replace with ndindex
-    for i in range(vol.shape[0]):
-        for j in range(vol.shape[1]):
-            for k in range(vol.shape[2]):
-                im.SetScalarComponentFromFloat(i, j, k, 0, vol[i, j, k])
+    for index in ndindex(vol.shape):
+        i, j, k = index
+        im.SetScalarComponentFromFloat(i, j, k, 0, vol[i, j, k])
 
     # Set the transform (identity if none given)
     transform = vtk.vtkTransform()
@@ -116,7 +115,7 @@ def butcher(data, affine):
     # set_input(saggital, plane_colors.GetOutput())
     saggital.GetMapper().SetInputConnection(plane_colors.GetOutputPort())
     #saggital.SetDisplayExtent(0, 0, y1, y2, z1, z2)
-    saggital.SetDisplayExtent(x1, x2, y1, y2, 25, 25)
+    saggital.SetDisplayExtent(x1, x2, y1, y2, z2/2, z2/2)
     # saggital.SetDisplayExtent(25, 25, 0, 49, 0, 49)
     saggital.Update()
 
