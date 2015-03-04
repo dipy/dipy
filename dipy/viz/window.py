@@ -3,6 +3,8 @@ from __future__ import division, print_function, absolute_import
 # Conditional import machinery for vtk
 from dipy.utils.optpkg import optional_package
 
+from dipy import __version__ as dipy_version
+
 #import vtk
 # Allow import, but disable doctests if we don't have vtk
 vtk, have_vtk, setup_module = optional_package('vtk')
@@ -131,7 +133,8 @@ def show(ren, title='Dipy', size=(300, 300), png_magnify=1):
     window = vtk.vtkRenderWindow()
     window.AddRenderer(ren)
     # window.SetAAFrames(6)
-    window.SetWindowName(title)
+
+    window.SetWindowName(title + ' ' + dipy_version)
     window.SetSize(size[0], size[1])
     style = vtk.vtkInteractorStyleTrackballCamera()
     iren = vtk.vtkRenderWindowInteractor()
@@ -147,7 +150,7 @@ def show(ren, title='Dipy', size=(300, 300), png_magnify=1):
             if major_version <= 5:
                 renderLarge.SetInput(ren)
             else:
-                renderLarge.SetInputData(ren)
+                renderLarge.SetInput(ren)
             renderLarge.SetMagnification(png_magnify)
             renderLarge.Update()
             writer = vtk.vtkPNGWriter()
