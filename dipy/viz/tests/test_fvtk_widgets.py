@@ -6,7 +6,6 @@ from dipy.viz import widget
 
 import numpy.testing as npt
 
-
 @npt.dec.skipif(not actor.have_vtk)
 @npt.dec.skipif(not actor.have_vtk_colors)
 def test_slider_widget():
@@ -39,5 +38,43 @@ def test_slider_widget():
     ren_win.Render()
     iren.Start()
 
+@npt.dec.skipif(not actor.have_vtk)
+@npt.dec.skipif(not actor.have_vtk_colors)
+def test_button_widget():
 
-test_slider_widget()
+    from dipy.viz.window import vtk
+
+    renderer = window.renderer()
+
+    lines = [np.random.rand(10, 3), np.random.rand(20, 3)]
+    colors = np.array([[1., 0., 0.], [0.8, 0., 0.]])
+    stream_actor = actor.streamtube(lines, colors)
+
+    window.add(renderer, stream_actor)
+
+    renderer.ResetCamera()
+
+    ren_win = vtk.vtkRenderWindow()
+    ren_win.AddRenderer(renderer)
+
+    iren = vtk.vtkRenderWindowInteractor()
+    iren.SetRenderWindow(ren_win)
+
+    def callback(obj, event):
+        print(obj)
+        print('Pressed')
+
+    button = widget.button(iren=iren, callback=callback)
+
+    iren.Initialize()
+
+    ren_win.Render()
+    iren.Start()
+
+
+
+
+if __name__ == '__main__':
+
+    #test_slider_widget()
+    test_button_widget()
