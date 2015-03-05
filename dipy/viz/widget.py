@@ -76,7 +76,8 @@ def button(iren, callback):
 
     button_rep.SetPlaceFactor(1)
 
-
+    #READ THIS!
+    #http://www.vtk.org/Wiki/VTK/Examples/Cxx/Widgets/TexturedButtonWidget
 
     #bds = compute_bounds(ren, (1.5, 1.5), (100, 100))
     #print(bds)
