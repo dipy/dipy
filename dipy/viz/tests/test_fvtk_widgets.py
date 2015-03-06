@@ -66,9 +66,17 @@ def test_button_widget():
 
     button = widget.button(iren=iren, callback=callback)
 
+    from dipy.viz.widget import compute_bounds
+
     iren.Initialize()
 
     ren_win.Render()
+
+    bds = compute_bounds(renderer, (0.5, 0.5), (200, 100))
+
+    button.GetRepresentation().PlaceWidget(bds)
+    button.On()
+
     iren.Start()
 
 
