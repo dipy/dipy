@@ -1,23 +1,23 @@
 """
 ================================================
-Using Various Tissue Classifier for Tractography
+Using Various Tissue Classifiers for Tractography
 ================================================
 The tissue classifier determines if the tracking stops or continues at each
-tracking position. If the tracking stops, it can either be because it reaches
-an ending region (e.g. low FA, gray matter or corticospinal fluid regions),
-because it exit the image boundary or because the direction getter has no
-direction to follow. Each tissue classifier determines if the stoping is 'valid'
-or 'invalid'. A streamline is 'valid' when the tissue classifier determines the
-streamline stops in a position classified as 'ENDPOINT' or 'OUTSIDEIMAGE'. A
-streamline is 'invalid' when it stops in a position classified as 'TRACKPOINT'
-or 'INVALIDPOINT'. These conditions are described below. The 'LocalTracking'
-generator can be set to output all generated streamlines or only the 'valid'
-ones.
+tracking position. The tracking stops when it reaches an ending region
+(e.g. low FA, gray matter or corticospinal fluid regions) or exits the image
+boundaries. The tracking also stops if the direction getter has no direction
+to follow. Each tissue classifier determines if the stopping is 'valid' or
+'invalid'. A streamline is 'valid' when the tissue classifier determines if
+the streamline stops in a position classified as 'ENDPOINT' or 'OUTSIDEIMAGE'.
+A streamline is 'invalid' when it stops in a position classified as
+'TRACKPOINT' or 'INVALIDPOINT'. These conditions are described below. The
+'LocalTracking' generator can be set to output all generated streamlines
+or only the 'valid' ones.
 
 This example is an extension of the
 :ref:``example_deterministic_fiber_tracking`` example. We begin by loading the
-data, fitting a constant solid angle (CSA) reconstruction
-model and creating the maximum determnistic direction getter.
+data, fitting a Constrained Spherical Deconvolution (CSD) reconstruction
+model and creating the maximum deterministic direction getter.
 """
 
 import numpy as np
@@ -25,7 +25,8 @@ import numpy as np
 from dipy.data import read_stanford_labels, default_sphere
 from dipy.direction import DeterministicMaximumDirectionGetter
 from dipy.io.trackvis import save_trk
-from dipy.reconst.shm import CsaOdfModel
+from dipy.reconst.csdeconv import (ConstrainedSphericalDeconvModel,
+                                   auto_response)
 from dipy.tracking.local import LocalTracking
 from dipy.tracking import utils
 from dipy.viz import fvtk
@@ -42,20 +43,23 @@ seed_mask = labels == 2
 white_matter = (labels == 1) | (labels == 2)
 seeds = utils.seeds_from_mask(seed_mask, density=2, affine=affine)
 
-csa_model = CsaOdfModel(gtab, 4)
-csa_fit = csa_model.fit(data, mask=white_matter)
+response, ratio = auto_response(gtab, data, roi_radius=10, fa_thr=0.7)
+csd_model = ConstrainedSphericalDeconvModel(gtab, response)
+csd_fit = csd_model.fit(data, mask=white_matter)
 
-dg = DeterministicMaximumDirectionGetter.from_shcoeff(csa_fit.shm_coeff,
+dg = DeterministicMaximumDirectionGetter.from_shcoeff(csd_fit.shm_coeff,
                                                       max_angle=30.,
                                                       sphere=default_sphere)
 
 """
 Threshold Tissue Classifier
 ---------------------------
-A scalar map can be used to build a tissue classifier by thresholding it to a
-fixed value. Here, we show an example using the fractional anisotropy (FA) map
-of the DTI model. The threshold tissue classifier uses a trilinear
-interpolation method at the tracking position.
+A scalar map can be used to define where the tracking stops. The threshold
+tissue classifier uses a scalar map to stop the tracking whenever the
+interpolated scalar value is lower than a fixed threshold. Here, we show
+an example using the fractional anisotropy (FA) map of the DTI model.
+The threshold tissue classifier uses a trilinear interpolation at the
+tracking position.
 
 **Parameters**
 
@@ -128,10 +132,11 @@ fvtk.record(ren, out_path='all_streamlines_threshold_classifier.png',
 """
 Binary Tissue Classifier
 ------------------------
-A binary mask can be used as tissue classifier for the tractography.
-Here, we show how to obtain the binary tissue classifier from
+A binary mask can be used to define where the tracking stops. The binary
+tissue classifier stop the tracking whenever the tracking position is outside
+of the mask. Here, we show how to obtain the binary tissue classifier from
 the white matter mask defined above. The binary tissue classifier uses a
-nearest-neighbourhood interpolation method at the tracking position.
+nearest-neighbourhood interpolation at the tracking position.
 
 **Parameters**
 
@@ -199,7 +204,7 @@ matter partial volume estimation (PVE) map) and the 'exclude_map' defines when
 the streamline reached an 'invalid' stopping region (e.g. corticospinal fluid
 PVE map). The background of the anatomical image should be added to the
 'include_map' to keep streamlines exiting the brain (e.g. through the
-brain stem). The ACT tissue classifier uses a trilinear interpolation method
+brain stem). The ACT tissue classifier uses a trilinear interpolation
 at the tracking position. The proposed method that cuts streamlines going
 through subcortical gray matter regions is not implemented.
 The backtracking technique for streamlines reaching INVALIDPOINT is not
@@ -307,6 +312,17 @@ fvtk.record(ren, out_path='valid_streamlines_act_classifier.png',
  **Deterministic tractography using a anatomically-constrained tractography
  stopping criterion. Streamlines ending in gray matter region only.**
 """
+
+"""
+The threshold and binary tissue classifiers use respectively a scalar map and a
+binary mask to define when the tracking stops. The ACT tissue classifier use
+partial volume fraction (PVE) maps from an anatomical image to define when
+the tracking stops. Additionaly, the ACT tissue classifier determines if the
+tracking stop in expected regions (e.g. gray matter) and allow the user to get
+only streamlines stopping in those regions.
+
+"""
+
 
 """
 References
