@@ -5,19 +5,19 @@ from dipy.core.sphere import HemiSphere, unit_octahedron
 from dipy.core.gradients import gradient_table
 from dipy.tracking.local import (LocalTracking, ThresholdTissueClassifier,
                                  DirectionGetter, TissueClassifier)
-from dipy.direction import (ProbabilisticDirectionGetter, 
+from dipy.direction import (ProbabilisticDirectionGetter,
                             DeterministicMaximumDirectionGetter)
 from dipy.tracking.local.interpolation import trilinear_interpolate4d
 
+from dipy.tracking.local.tests import TissueTypes
+
 def test_stop_conditions():
     """This tests that the Local Tracker behaves as expected for the
-    following tissue types:
-
-        OUTSIDEIMAGE = -1
-        INVALIDPOINT = 0
-        TRACKPOINT = 1
-        ENDPOINT = 2
+    following tissue types.
     """
+    # TissueTypes.TRACKPOINT = 1
+    # TissueTypes.ENDPOINT = 2
+    # TissueType.INVALIDPOINT = 0
     tissue = np.array([[2, 1, 1, 2, 1],
                        [2, 2, 1, 1, 2],
                        [1, 1, 1, 1, 1],
@@ -30,7 +30,7 @@ def test_stop_conditions():
         def check_point(self, point):
             p = np.round(point)
             if any(p < 0) or any(p >= tissue.shape):
-                return -1  # OUTSIDEIMAGE
+                return TissueTypes.OUTSIDEIMAGE
             return tissue[p[0], p[1], p[2]]
 
     class SimpleDirectionGetter(DirectionGetter):
