@@ -7,7 +7,7 @@ from dipy.core.ndindex import ndindex
 from dipy.tracking.local import (BinaryTissueClassifier,
                                  ThresholdTissueClassifier,
                                  ActTissueClassifier)
-from dipy.tracking.local import TissueTypes
+from dipy.tracking.local.localtracking import TissueTypes
 
 
 def test_binary_tissue_classifier():

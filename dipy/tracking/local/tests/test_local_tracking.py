@@ -9,7 +9,8 @@ from dipy.direction import (ProbabilisticDirectionGetter,
                             DeterministicMaximumDirectionGetter)
 from dipy.tracking.local.interpolation import trilinear_interpolate4d
 
-from dipy.tracking.local import TissueTypes
+from dipy.tracking.local.localtracking import TissueTypes
+
 
 def test_stop_conditions():
     """This tests that the Local Tracker behaves as expected for the
