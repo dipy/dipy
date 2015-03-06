@@ -315,11 +315,11 @@ fvtk.record(ren, out_path='valid_streamlines_act_classifier.png',
 
 """
 The threshold and binary tissue classifiers use respectively a scalar map and a
-binary mask to define when the tracking stops. The ACT tissue classifier use
-partial volume fraction (PVE) maps from an anatomical image to define when
-the tracking stops. Additionaly, the ACT tissue classifier determines if the
-tracking stop in expected regions (e.g. gray matter) and allow the user to get
-only streamlines stopping in those regions.
+binary mask to stop the tracking. The ACT tissue classifier use partial volume
+fraction (PVE) maps from an anatomical image to stop the tracking. Additionaly,
+the ACT tissue classifier determines if the tracking stop in expected regions
+(e.g. gray matter) and allow the user to get only streamlines stopping in those
+regions.
 
 """
 
