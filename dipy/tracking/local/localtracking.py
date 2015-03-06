@@ -2,6 +2,7 @@ import numpy as np
 
 from .localtrack import local_tracker
 from dipy.tracking import utils
+from dipy.tracking.local import TissueTypes
 
 
 class LocalTracking(object):
@@ -26,7 +27,8 @@ class LocalTracking(object):
         return np.sqrt(dotlin.diagonal())
 
     def __init__(self, direction_getter, tissue_classifier, seeds, affine,
-                 step_size, max_cross=None, maxlen=500, fixedstep=True, return_all=True):
+                 step_size, max_cross=None, maxlen=500, fixedstep=True,
+                 return_all=True):
         """Creates streamlines by using local fiber-tracking.
 
         Parameters
@@ -102,20 +104,16 @@ class LocalTracking(object):
             for first_step in directions:
                 stepsF, tissue_class = local_tracker(dg, tc, s, first_step,
                                                      vs, F, ss, fixed)
-                # enum TissueClass (tissue_classifier.pxd) is not accessible
-                # from here. To be changed when minimal cyhton version > 0.21.
-                # cython 0.21 - cpdef enum to export values into Python-level namespace
-                # https://github.com/cython/cython/commit/50133b5a91eea348eddaaad22a606a7fa1c7c457
                 if not (self.return_all or
-                        tissue_class == 2 or  # ENDPOINT
-                        tissue_class == -1):  # OUTSIDEIMAGE
+                        tissue_class == TissueTypes.ENDPOINT or
+                        tissue_class == TissueTypes.OUTSIDEIMAGE):
                     continue
                 first_step = -first_step
                 stepsB, tissue_class = local_tracker(dg, tc, s, first_step,
                                                      vs, B, ss, fixed)
                 if not (self.return_all or
-                        tissue_class == 2 or  # ENDPOINT
-                        tissue_class == -1):  # OUTSIDEIMAGE
+                        tissue_class == TissueTypes.ENDPOINT or
+                        tissue_class == TissueTypes.OUTSIDEIMAGE):
                     continue
 
                 if stepsB == 1:
