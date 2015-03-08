@@ -70,7 +70,7 @@ tracking position.
 
 - 'ENDPOINT': metric_map < threshold,
 - 'OUTSIDEIMAGE': tracking point outside of metric_map,
-- 'TRACKPOINT': stopped because no direction are available,
+- 'TRACKPOINT': stopped because no direction is available,
 - 'INVALIDPOINT': N/A.
 """
 
@@ -146,7 +146,7 @@ nearest-neighbourhood interpolation at the tracking position.
 
 - 'ENDPOINT': mask = 0
 - 'OUTSIDEIMAGE': tracking point outside of mask
-- 'TRACKPOINT': stopped because no direction are available
+- 'TRACKPOINT': stopped because no direction is available
 - 'INVALIDPOINT': N/A
 """
 
@@ -219,7 +219,7 @@ implemented either.
 
 - 'ENDPOINT': include_map > 0.5,
 - 'OUTSIDEIMAGE': tracking point outside of include_map or exclude_map,
-- 'TRACKPOINT': stopped because no direction are available,
+- 'TRACKPOINT': stopped because no direction is available,
 - 'INVALIDPOINT': exclude_map > 0.5.
 """
 
