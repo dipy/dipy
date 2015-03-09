@@ -89,7 +89,7 @@ def test_cluster_getitem():
     # Test advanced indexing
     assert_array_equal(cluster[advanced_indices], [indices[i] for i in advanced_indices])
 
-    # Test index out of bound
+    # Test index out of bounds
     assert_raises(IndexError, cluster.__getitem__, len(cluster))
     assert_raises(IndexError, cluster.__getitem__, -len(cluster)-1)
 
@@ -110,7 +110,7 @@ def test_cluster_getitem():
     # Test advanced indexing
     assert_array_equal(cluster[advanced_indices], [data[indices[i]] for i in advanced_indices])
 
-    # Test index out of bound
+    # Test index out of bounds
     assert_raises(IndexError, cluster.__getitem__, len(cluster))
     assert_raises(IndexError, cluster.__getitem__, -len(cluster)-1)
 
@@ -195,7 +195,7 @@ def test_cluster_centroid_getitem():
     # Test advanced indexing
     assert_array_equal(cluster[advanced_indices], [indices[i] for i in advanced_indices])
 
-    # Test index out of bound
+    # Test index out of bounds
     assert_raises(IndexError, cluster.__getitem__, len(cluster))
     assert_raises(IndexError, cluster.__getitem__, -len(cluster)-1)
 
@@ -216,7 +216,7 @@ def test_cluster_centroid_getitem():
     # Test advanced indexing
     assert_array_equal(cluster[advanced_indices], [data[indices[i]] for i in advanced_indices])
 
-    # Test index out of bound
+    # Test index out of bounds
     assert_raises(IndexError, cluster.__getitem__, len(cluster))
     assert_raises(IndexError, cluster.__getitem__, -len(cluster)-1)
 
@@ -317,7 +317,7 @@ def test_cluster_map_iter():
     cluster_map = ClusterMap()
     clusters = []
     for i in range(nb_clusters):
-        new_cluster = Cluster(indices=np.random.randint(0, len(data), size=10))
+        new_cluster = Cluster(indices=randint(0, len(data), size=10))
         cluster_map.add_cluster(new_cluster)
         clusters.append(new_cluster)
 
@@ -361,6 +361,51 @@ def test_cluster_map_getitem():
     assert_arrays_equal(cluster_map[::-1], clusters[::-1])
     assert_arrays_equal(cluster_map[:-1], clusters[:-1])
     assert_arrays_equal(cluster_map[1:], clusters[1:])
+
+
+def test_cluster_map_get_size():
+    nb_clusters = 11
+    cluster_map = ClusterMap()
+    clusters = [Cluster() for i in range(nb_clusters)]
+    cluster_map.add_cluster(*clusters)
+
+    assert_equal(len(cluster_map), nb_clusters)
+    assert_equal(cluster_map.get_size(), nb_clusters)
+
+
+def test_cluster_map_get_clusters_sizes():
+    rng = np.random.RandomState(42)
+    nb_clusters = 11
+    # Generate random indices
+    indices = [range(rng.randint(1, 10)) for i in range(nb_clusters)]
+
+    cluster_map = ClusterMap()
+    clusters = [Cluster(indices=indices[i]) for i in range(nb_clusters)]
+    cluster_map.add_cluster(*clusters)
+
+    assert_equal(cluster_map.get_clusters_sizes(), map(len, indices))
+
+
+def test_cluster_map_get_small_and_large_clusters():
+    rng = np.random.RandomState(42)
+    nb_clusters = 11
+    cluster_map = ClusterMap()
+
+    # Randomly generate small clusters
+    indices = [rng.randint(0, 10, size=i) for i in range(1, nb_clusters+1)]
+    small_clusters = [Cluster(indices=indices[i]) for i in range(nb_clusters)]
+    cluster_map.add_cluster(*small_clusters)
+
+    # Randomly generate small clusters
+    indices = [rng.randint(0, 10, size=i) for i in range(nb_clusters+1, 2*nb_clusters+1)]
+    large_clusters = [Cluster(indices=indices[i]) for i in range(nb_clusters)]
+    cluster_map.add_cluster(*large_clusters)
+
+    assert_equal(len(cluster_map), 2*nb_clusters)
+    assert_equal(len(cluster_map.get_small_clusters(nb_clusters)), len(small_clusters))
+    assert_arrays_equal(cluster_map.get_small_clusters(nb_clusters), small_clusters)
+    assert_equal(len(cluster_map.get_large_clusters(nb_clusters+1)), len(large_clusters))
+    assert_arrays_equal(cluster_map.get_large_clusters(nb_clusters+1), large_clusters)
 
 
 def test_cluster_map_comparison_with_int():
@@ -525,7 +570,7 @@ def test_cluster_map_centroid_getitem():
     # Test advanced indexing
     assert_array_equal(cluster_map[advanced_indices], [clusters[i] for i in advanced_indices])
 
-    # Test index out of bound
+    # Test index out of bounds
     assert_raises(IndexError, cluster_map.__getitem__, len(clusters))
     assert_raises(IndexError, cluster_map.__getitem__, -len(clusters)-1)
 

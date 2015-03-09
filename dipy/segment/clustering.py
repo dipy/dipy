@@ -287,24 +287,24 @@ class ClusterMap(object):
         return self._richcmp(other, operator.ge)
 
     def add_cluster(self, *clusters):
-        """ Adds a new cluster to this cluster map.
+        """ Adds one or multiple clusters to this cluster map.
 
         Parameters
         ----------
         *clusters : `Cluster` object, ...
-            Cluster to be added in this cluster map.
+            Cluster(s) to be added in this cluster map.
         """
         for cluster in clusters:
             self.clusters.append(cluster)
             cluster.refdata = self.refdata
 
     def remove_cluster(self, *clusters):
-        """ Remove a cluster from this cluster map.
+        """ Remove one or multiple clusters from this cluster map.
 
         Parameters
         ----------
         *clusters : `Cluster` object, ...
-            Cluster to be removed from this cluster map.
+            Cluster(s) to be removed from this cluster map.
         """
         for cluster in clusters:
             self.clusters.remove(cluster)
@@ -312,6 +312,50 @@ class ClusterMap(object):
     def clear(self):
         """ Remove all clusters from this cluster map. """
         self.clusters.clear()
+
+    def get_size(self):
+        """ Gets number of clusters contained in this cluster map. """
+        return len(self)
+
+    def get_clusters_sizes(self):
+        """ Gets the size of every clusters contained in this cluster map.
+
+        Returns
+        -------
+        list of int
+            Sizes of every clusters in this cluster map.
+        """
+        return map(len, self)
+
+    def get_large_clusters(self, min_size):
+        """ Gets clusters which contains at least `min_size` elements.
+
+        Parameters
+        ----------
+        min_size : int
+            Minimum number of elements a cluster needs to have to be selected.
+
+        Returns
+        -------
+        list of `Cluster` objects
+            Clusters having at least `min_size` elements.
+        """
+        return self[self >= min_size]
+
+    def get_small_clusters(self, max_size):
+        """ Gets clusters which contains at most `max_size` elements.
+
+        Parameters
+        ----------
+        max_size : int
+            Maximum number of elements a cluster can have to be selected.
+
+        Returns
+        -------
+        list of `Cluster` objects
+            Clusters having at most `max_size` elements.
+        """
+        return self[self <= max_size]
 
 
 class ClusterMapCentroid(ClusterMap):
