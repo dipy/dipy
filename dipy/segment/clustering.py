@@ -6,12 +6,18 @@ from dipy.segment.metric import AveragePointwiseEuclideanMetric
 
 
 class Identity:
+    """ Provides identity indexing functionnality.
+
+    This can replace any class supporting indexing used for referencing
+    (e.g. list, tuple). Indexing an instance of this class will return the
+    index provided instead of the element. It does not support slicing.
+    """
     def __getitem__(self, idx):
         return idx
 
 
 class Cluster(object):
-    """ Provides functionalities to interact with a cluster.
+    """ Provides functionalities for interacting with a cluster.
 
     Useful container to retrieve index of elements grouped together. If
     a reference to the data is provided to `cluster_map`, elements will
@@ -23,11 +29,13 @@ class Cluster(object):
         Reference to the set of clusters this cluster is being part of.
     id : int
         Id of this cluster in its associated `cluster_map` object.
+    refdata : list (optional)
+        Actual elements that clustered indices refer to.
 
     Notes
     -----
     A cluster does not contain actual data but instead knows how to
-    retrieves them using its `ClusterMap` object.
+    retrieve them using its `ClusterMap` object.
     """
     def __init__(self, id=0, indices=None, refdata=Identity()):
         self.id = id
@@ -38,6 +46,23 @@ class Cluster(object):
         return len(self.indices)
 
     def __getitem__(self, idx):
+        """ Gets element(s) through indexing.
+
+        If a reference to the data was provided (via refdata property)
+        elements will be returned instead of their index.
+
+        Parameters
+        ----------
+        idx : int, slice or list
+            Index of the element(s) to get.
+
+        Returns
+        -------
+        `Cluster` object(s)
+            When `idx` is a int, returns a single element.
+
+            When `idx` is either a slice or a list, returns a list of elements.
+        """
         if isinstance(idx, int) or isinstance(idx, np.integer):
             return self.refdata[self.indices[idx]]
         elif type(idx) is slice:
@@ -77,9 +102,9 @@ class Cluster(object):
 
 
 class ClusterCentroid(Cluster):
-    """ Provides functionalities to interact with a cluster.
+    """ Provides functionalities for interacting with a cluster.
 
-    Useful container to retrieve index of elements grouped together and
+    Useful container to retrieve the indices of elements grouped together and
     the cluster's centroid. If a reference to the data is provided to
     `cluster_map`, elements will be returned instead of their index when
     possible.
@@ -90,11 +115,13 @@ class ClusterCentroid(Cluster):
         Reference to the set of clusters this cluster is being part of.
     id : int
         Id of this cluster in its associated `cluster_map` object.
+    refdata : list (optional)
+        Actual elements that clustered indices refer to.
 
     Notes
     -----
     A cluster does not contain actual data but instead knows how to
-    retrieves them using its `ClusterMapCentroid` object.
+    retrieve them using its `ClusterMapCentroid` object.
     """
     def __init__(self, centroid, id=0, indices=None, refdata=Identity()):
         super(ClusterCentroid, self).__init__(id, indices, refdata)
@@ -134,7 +161,7 @@ class ClusterCentroid(Cluster):
 
 
 class ClusterMap(object):
-    """ Provides functionalities to interact with clustering outputs.
+    """ Provides functionalities for interacting with clustering outputs.
 
     Useful container to create, remove, retrieve and filter clusters.
     If `refdata` is given, elements will be returned instead of their
@@ -170,8 +197,25 @@ class ClusterMap(object):
         return len(self.clusters)
 
     def __getitem__(self, idx):
+        """ Gets cluster(s) through indexing.
+
+        Parameters
+        ----------
+        idx : int, slice, list or boolean array
+            Index of the element(s) to get.
+
+        Returns
+        -------
+        `Cluster` object(s)
+            When `idx` is a int, returns a single `Cluster` object.
+
+            When `idx`is either a slice, list or boolean array, returns
+            a list of `Cluster` objects.
+        """
         if isinstance(idx, np.ndarray) and idx.dtype == np.bool:
             return [self.clusters[i] for i, take_it in enumerate(idx) if take_it]
+        elif type(idx) is slice:
+            return [self.clusters[i] for i in range(*idx.indices(len(self)))]
         elif type(idx) is list:
             return [self.clusters[i] for i in idx]
 
@@ -187,17 +231,17 @@ class ClusterMap(object):
         return "ClusterMap(" + str(self) + ")"
 
     def _richcmp(self, other, op):
-        """ Compares a cluster map with another cluster map or an integer.
+        """ Compares this cluster map with another cluster map or an integer.
 
-        Two `ClusterMap` objects are equal if they contains the same clusters.
+        Two `ClusterMap` objects are equal if they contain the same clusters.
         When comparing a `ClusterMap` object with an integer, the comparison
         will be performed on the size of the clusters instead.
 
         Parameters
         ----------
-        other: `ClusterMap` object or int
+        other : `ClusterMap` object or int
             Object to compare to.
-        op: rich comparison operators (see module `operator`)
+        op : rich comparison operators (see module `operator`)
             Valid operators are: lt, le, eq, ne, gt or ge.
 
         Returns
@@ -242,26 +286,28 @@ class ClusterMap(object):
     def __ge__(self, other):
         return self._richcmp(other, operator.ge)
 
-    def add_cluster(self, cluster):
+    def add_cluster(self, *clusters):
         """ Adds a new cluster to this cluster map.
 
         Parameters
         ----------
-        cluster : `Cluster` object
+        *clusters : `Cluster` object, ...
             Cluster to be added in this cluster map.
         """
-        self.clusters.append(cluster)
-        cluster.refdata = self.refdata
+        for cluster in clusters:
+            self.clusters.append(cluster)
+            cluster.refdata = self.refdata
 
-    def remove_cluster(self, cluster):
+    def remove_cluster(self, *clusters):
         """ Remove a cluster from this cluster map.
 
         Parameters
         ----------
-        cluster : `Cluster` object
+        *clusters : `Cluster` object, ...
             Cluster to be removed from this cluster map.
         """
-        self.clusters.remove(cluster)
+        for cluster in clusters:
+            self.clusters.remove(cluster)
 
     def clear(self):
         """ Remove all clusters from this cluster map. """
@@ -269,10 +315,11 @@ class ClusterMap(object):
 
 
 class ClusterMapCentroid(ClusterMap):
-    """ Provides functionalities to interact with clustering outputs.
+    """ Provides functionalities for interacting with clustering outputs
+    that have centroids.
 
-    Useful container to create, remove, retrieve and filter clusters.
-    It allows also to retrieve easely the centroid of every clusters.
+    Allows to retrieve easely the centroid of every clusters. Also, it is
+    a useful container to create, remove, retrieve and filter clusters.
     If `refdata` is given, elements will be returned instead of their
     index when using `ClusterCentroid` objects.
 
@@ -294,7 +341,7 @@ class Clustering:
 
         Parameters
         ----------
-        data : list of N-dimensional array
+        data : list of N-dimensional arrays
             Each array represents a data point.
         ordering : iterable of indices, optional
             Specifies the order in which data points will be clustered.
@@ -308,7 +355,7 @@ class Clustering:
 
 
 class QuickBundles(Clustering):
-    r""" Clusters streamlines using QuickBundles algorithm.
+    r""" Clusters streamlines using QuickBundles [Garyfallidis12]_.
 
     Given a list of streamlines, the QuickBundles algorithm sequentially
     assigns each streamline to its closest bundle in $\mathcal{O}(Nk)$ where
@@ -322,8 +369,10 @@ class QuickBundles(Clustering):
     threshold : float
         The maximum distance from a bundle for a streamline to be still
         considered as part of it.
-    metric : str or `Metric` object
-        The distance metric to use when comparing two streamlines.
+    metric : str or `Metric` object (optional)
+        The distance metric to use when comparing two streamlines. By default,
+        the Minimum average Direct-Flip (MDF) distance [Garyfallidis12]_ is
+        used and requires streamlines to have the same number of points.
     max_nb_clusters : int
         Limits the creation of bundles.
 
@@ -333,13 +382,13 @@ class QuickBundles(Clustering):
                         tractography simplification, Frontiers in Neuroscience,
                         vol 6, no 175, 2012.
     """
-    def __init__(self, threshold, metric="mdf", max_nb_clusters=np.iinfo('i4').max):
+    def __init__(self, threshold, metric="MDF", max_nb_clusters=np.iinfo('i4').max):
         self.threshold = threshold
         self.max_nb_clusters = max_nb_clusters
 
         if isinstance(metric, Metric):
             self.metric = metric
-        elif metric.lower() == "mdf":
+        elif metric.upper() == "MDF":
             self.metric = AveragePointwiseEuclideanMetric()
 
     def cluster(self, streamlines, ordering=None, refdata=None):
@@ -349,7 +398,7 @@ class QuickBundles(Clustering):
 
         Parameters
         ----------
-        streamlines : list (or generator) of 2D array
+        streamlines : list of 2D arrays
             Each 2D array represents a sequence of 3D points (points, 3).
         ordering : iterable of indices
             Specifies the order in which data points will be clustered.

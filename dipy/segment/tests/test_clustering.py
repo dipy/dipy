@@ -148,10 +148,10 @@ def test_cluster_centroid_assign():
     indices = []
     centroid = np.zeros(features_shape, dtype=dtype)
     for idx in range(1, 10):
-        cluster.assign(idx, (idx+1)*features)
+        cluster.assign(idx, (idx+1) * features)
         cluster.update()
         indices.append(idx)
-        centroid = (centroid * (idx-1) + (idx+1)*features) / idx
+        centroid = (centroid * (idx-1) + (idx+1) * features) / idx
         assert_equal(len(cluster), idx)
         assert_equal(type(cluster.indices), list)
         assert_array_equal(cluster.indices, indices)
@@ -240,12 +240,14 @@ def test_cluster_map_attributes_and_constructor():
 def test_cluster_map_add_cluster():
     clusters = ClusterMap()
 
+    list_of_cluster_objects = []
     list_of_indices = []
     for i in range(3):
         cluster = Cluster()
+        list_of_cluster_objects.append(cluster)
         list_of_indices.append([])
 
-        for id_data in range(2*i):
+        for id_data in range(2 * i):
             list_of_indices[-1].append(id_data)
             cluster.assign(id_data)
 
@@ -254,6 +256,11 @@ def test_cluster_map_add_cluster():
         assert_equal(len(clusters), i+1)
         assert_equal(cluster, clusters[-1])
 
+    assert_array_equal(list(itertools.chain(*clusters)), list(itertools.chain(*list_of_indices)))
+
+    # Test adding multiple clusters at once.
+    clusters = ClusterMap()
+    clusters.add_cluster(*list_of_cluster_objects)
     assert_array_equal(list(itertools.chain(*clusters)), list(itertools.chain(*list_of_indices)))
 
 
@@ -283,6 +290,22 @@ def test_cluster_map_remove_cluster():
     assert_equal(clusters[0], cluster1)
 
     clusters.remove_cluster(cluster1)
+    assert_equal(len(clusters), 0)
+    assert_array_equal(list(itertools.chain(*clusters)), [])
+
+    # Test removing multiple clusters at once.
+    clusters = ClusterMap()
+    clusters.add_cluster(cluster1, cluster2, cluster3)
+
+    clusters.remove_cluster(cluster3, cluster2)
+    assert_equal(len(clusters), 1)
+    assert_array_equal(list(itertools.chain(*clusters)), list(cluster1))
+    assert_equal(clusters[0], cluster1)
+
+    clusters = ClusterMap()
+    clusters.add_cluster(cluster2, cluster1, cluster3)
+
+    clusters.remove_cluster(cluster1, cluster3, cluster2)
     assert_equal(len(clusters), 0)
     assert_array_equal(list(itertools.chain(*clusters)), [])
 
@@ -328,7 +351,7 @@ def test_cluster_map_getitem():
     # Test advanced indexing
     assert_array_equal(cluster_map[advanced_indices], [clusters[i] for i in advanced_indices])
 
-    # Test index out of bound
+    # Test index out of bounds
     assert_raises(IndexError, cluster_map.__getitem__, len(clusters))
     assert_raises(IndexError, cluster_map.__getitem__, -len(clusters)-1)
 

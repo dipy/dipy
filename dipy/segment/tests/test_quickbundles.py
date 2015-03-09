@@ -12,11 +12,11 @@ from numpy.testing import assert_array_equal, run_module_suite
 
 dtype = "float32"
 threshold = 7
-data = [np.arange(3*5, dtype=dtype).reshape((-1, 3)) + 2*threshold,
-        np.arange(3*10, dtype=dtype).reshape((-1, 3)) + 0*threshold,
-        np.arange(3*15, dtype=dtype).reshape((-1, 3)) + 8*threshold,
-        np.arange(3*17, dtype=dtype).reshape((-1, 3)) + 2*threshold,
-        np.arange(3*20, dtype=dtype).reshape((-1, 3)) + 8*threshold]
+data = [np.arange(3 * 5, dtype=dtype).reshape((-1, 3)) + 2 * threshold,
+        np.arange(3 * 10, dtype=dtype).reshape((-1, 3)) + 0 * threshold,
+        np.arange(3 * 15, dtype=dtype).reshape((-1, 3)) + 8 * threshold,
+        np.arange(3 * 17, dtype=dtype).reshape((-1, 3)) + 2 * threshold,
+        np.arange(3 * 20, dtype=dtype).reshape((-1, 3)) + 8 * threshold]
 
 clusters_truth = [[0, 1], [2, 4], [3]]
 

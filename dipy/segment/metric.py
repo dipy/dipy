@@ -12,8 +12,8 @@ from dipy.segment.metricspeed import (dist,
 
 
 def mdf(s1, s2):
-    """ Computes the MDF (Minimum average Direct-Flip) distance between two
-    streamlines.
+    """ Computes the MDF (Minimum average Direct-Flip) distance
+    [Garyfallidis12]_ between two streamlines.
 
     Streamlines must have the same number of points.
 
@@ -28,5 +28,11 @@ def mdf(s1, s2):
     -------
     double
         Distance between two streamlines.
+
+    References
+    ----------
+    .. [Garyfallidis12] Garyfallidis E. et al., QuickBundles a method for
+                        tractography simplification, Frontiers in Neuroscience,
+                        vol 6, no 175, 2012.
     """
     return dist(MinimumAverageDirectFlipMetric(), s1, s2)

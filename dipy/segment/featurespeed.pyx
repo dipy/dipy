@@ -15,8 +15,10 @@ cdef class Feature(object):
 
     Parameters
     ----------
-    is_order_invariant : bool
-        tells if this feature is invariant to the sequence's ordering (Default: True)
+    is_order_invariant : bool (optional)
+        tells if this feature is invariant to the sequence's ordering. This
+        means starting from either extremities produces the same features.
+        (Default: True)
 
     Notes
     -----
@@ -166,7 +168,8 @@ cdef class IdentityFeature(CythonFeature):
     A sequence of N-dimensional points is represented as a 2D array with
     shape (nb_points, nb_dimensions).
 
-    The features being extracted are the actual sequence's points.
+    The features being extracted are the actual sequence's points. This is
+    useful for metric that does not require any pre-processing.
     """
     def __init__(IdentityFeature self):
         super(IdentityFeature, self).__init__(is_order_invariant=False)
@@ -219,34 +222,34 @@ cdef class CenterOfMassFeature(CythonFeature):
             out[0, d] /= N
 
 
-cpdef infer_shape(Feature feature, streamlines):
-    """ Infers shape of the features extracted from streamlines.
+cpdef infer_shape(Feature feature, data):
+    """ Infers shape of the features extracted from data.
 
     Parameters
     ----------
     feature : `Feature` object
         Tells how to infer shape of the features.
-    streamlines : list of 2D array
+    data : list of 2D arrays
         List of sequences of N-dimensional points.
 
     Returns
     -------
-    list of tuple
-        Shapes of the features inferred from `streamlines`.
+    list of tuples
+        Shapes of the features inferred from `data`.
     """
-    only_one_streamlines = False
-    if type(streamlines) is np.ndarray:
-        only_one_streamlines = True
-        streamlines = [streamlines]
+    single_datum = False
+    if type(data) is np.ndarray:
+        single_datum = True
+        data = [data]
 
-    if len(streamlines) == 0:
+    if len(data) == 0:
         return []
 
     cdef int i
     all_same_shapes = True
-    shapes = [shape2tuple(feature.c_infer_shape(streamlines[0]))]
-    for i in range(1, len(streamlines)):
-        shapes.append(shape2tuple(feature.c_infer_shape(streamlines[i])))
+    shapes = [shape2tuple(feature.c_infer_shape(data[0]))]
+    for i in range(1, len(data)):
+        shapes.append(shape2tuple(feature.c_infer_shape(data[i])))
         if shapes[0] != shapes[i]:
             all_same_shapes = False
 
@@ -255,48 +258,48 @@ cpdef infer_shape(Feature feature, streamlines):
     else:
         features = [np.empty(shape, dtype=np.float32) for shape in shapes]
 
-    for i in range(len(streamlines)):
-        streamline = streamlines[i] if streamlines[i].flags.writeable else streamlines[i].astype(np.float32)
-        feature.c_extract(streamline, features[i])
+    for i in range(len(data)):
+        datum = data[i] if data[i].flags.writeable else data[i].astype(np.float32)
+        feature.c_extract(datum, features[i])
 
-    if only_one_streamlines:
+    if single_datum:
         return features[0]
     else:
         return features
 
 
-cpdef extract(Feature feature, streamlines):
-    """ Extracts features from streamlines.
+cpdef extract(Feature feature, data):
+    """ Extracts features from data.
 
     Parameters
     ----------
     feature : `Feature` object
-        Tells how to extract features from the streamlines.
-    datum : list of 2D array
+        Tells how to extract features from the data.
+    datum : list of 2D arrays
         List of sequence of N-dimensional points.
 
     Returns
     -------
-    list of 2D array
-        List of features extracted from `streamlines`.
+    list of 2D arrays
+        List of features extracted from `data`.
 
     Notes
     -----
     This method calls its Cython version `self.c_extract` accordingly.
     """
-    only_one_streamlines = False
-    if type(streamlines) is np.ndarray:
-        only_one_streamlines = True
-        streamlines = [streamlines]
+    single_datum = False
+    if type(data) is np.ndarray:
+        single_datum = True
+        data = [data]
 
-    if len(streamlines) == 0:
+    if len(data) == 0:
         return []
 
     cdef int i
     all_same_shapes = True
-    shapes = [shape2tuple(feature.c_infer_shape(streamlines[0]))]
-    for i in range(1, len(streamlines)):
-        shapes.append(shape2tuple(feature.c_infer_shape(streamlines[i])))
+    shapes = [shape2tuple(feature.c_infer_shape(data[0]))]
+    for i in range(1, len(data)):
+        shapes.append(shape2tuple(feature.c_infer_shape(data[i])))
         if shapes[0] != shapes[i]:
             all_same_shapes = False
 
@@ -305,11 +308,11 @@ cpdef extract(Feature feature, streamlines):
     else:
         features = [np.empty(shape, dtype=np.float32) for shape in shapes]
 
-    for i in range(len(streamlines)):
-        streamline = streamlines[i] if streamlines[i].flags.writeable else streamlines[i].astype(np.float32)
-        feature.c_extract(streamline, features[i])
+    for i in range(len(data)):
+        datum = data[i] if data[i].flags.writeable else data[i].astype(np.float32)
+        feature.c_extract(datum, features[i])
 
-    if only_one_streamlines:
+    if single_datum:
         return features[0]
     else:
         return features

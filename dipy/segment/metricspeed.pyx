@@ -13,7 +13,7 @@ DEF biggest_double = 1.7976931348623157e+308  #  np.finfo('f8').max
 
 
 cdef class Metric(object):
-    """ Computes distance between two sequential data.
+    """ Computes a distance between two sequential data.
 
     A sequence of N-dimensional points is represented as a 2D array with
     shape (nb_points, nb_dimensions). A `feature` object can be specified
@@ -75,7 +75,7 @@ cdef class Metric(object):
         raise NotImplementedError("Metric's subclasses must implement method `are_compatible(self, shape1, shape2)`!")
 
     cpdef double dist(Metric self, features1, features2):
-        """ Computes distance between two data points based on their features.
+        """ Computes a distance between two data points based on their features.
 
         Parameters
         ----------
@@ -93,7 +93,7 @@ cdef class Metric(object):
 
 
 cdef class CythonMetric(Metric):
-    """ Computes distance between two sequential data.
+    """ Computes a distance between two sequential data.
 
     A sequence of N-dimensional points is represented as a 2D array with
     shape (nb_points, nb_dimensions). A `feature` object can be specified
@@ -135,7 +135,7 @@ cdef class CythonMetric(Metric):
         return self.c_are_compatible(tuple2shape(shape1), tuple2shape(shape2)) == 1
 
     cpdef double dist(CythonMetric self, features1, features2):
-        """ Computes distance between two data points based on their features.
+        """ Computes a distance between two data points based on their features.
 
         Parameters
         ----------
@@ -250,7 +250,7 @@ cdef class AveragePointwiseEuclideanMetric(SumPointwiseEuclideanMetric):
 
 
 cdef class MinimumAverageDirectFlipMetric(AveragePointwiseEuclideanMetric):
-    r""" Computes the ADF distance (minimum average direct-flip) between two
+    r""" Computes the MDF distance (minimum average direct-flip) between two
     sequential data.
 
     A sequence of N-dimensional points is represented as a 2D array with
@@ -303,9 +303,9 @@ cpdef distance_matrix(Metric metric, data1, data2=None):
     ----------
     metric : `Metric` object
         Tells how to compute the distance between two sequential data.
-    data1 : list of 2D array
+    data1 : list of 2D arrays
         List of sequences of N-dimensional points.
-    data2 : list of 2D array
+    data2 : list of 2D arrays
         Llist of sequences of N-dimensional points.
 
     Returns
@@ -335,7 +335,7 @@ cpdef distance_matrix(Metric metric, data1, data2=None):
 
 
 cpdef double dist(Metric metric, datum1, datum2) except -1.0:
-    """ Computes distance between two sequential data.
+    """ Computes a distance between `datum1` and `datum2`.
 
     A sequence of N-dimensional points is represented as a 2D array with
     shape (nb_points, nb_dimensions).

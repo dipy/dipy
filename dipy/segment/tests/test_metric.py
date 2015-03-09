@@ -14,7 +14,7 @@ def average_euclidean(x, y):
     return np.mean(norm_L2(x-y))
 
 
-def MDF_distance(x, y):
+def mdf_distance(x, y):
     dist_direct = average_euclidean(x, y)
     dist_flipped = average_euclidean(x, y[::-1])
     return np.min(np.array([dist_direct, dist_flipped]))
@@ -47,7 +47,7 @@ def test_metric_minimum_average_direct_flip():
     features2 = metric.feature.extract(s2)
     assert_true(metric.are_compatible(features1.shape, features2.shape))
     dist = metric.dist(features1, features2)
-    ground_truth = MDF_distance(s1, s2)
+    ground_truth = mdf_distance(s1, s2)
     assert_almost_equal(dist, ground_truth)
     assert_almost_equal(dipymetric.mdf(s1, s2), ground_truth)
 
@@ -77,7 +77,7 @@ def test_subclassing_metric():
             return shape1 == shape2
 
         def dist(self, features1, features2):
-            return MDF_distance(features1, features2)
+            return mdf_distance(features1, features2)
 
     metric = MDF()
     d1 = dipymetric.dist(metric, s1, s2)

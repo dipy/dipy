@@ -85,14 +85,14 @@ def test_feature_extract():
             return np.mean(streamline.astype(np.float64), axis=0)
 
     nb_streamlines = 100
-    feature_SHAPE = (1, 3)  # One N-dimensional point
+    feature_shape = (1, 3)  # One N-dimensional point
     feature = CenterOfMass64bit()
 
     streamlines = [np.arange(np.random.randint(20, 30) * 3).reshape((-1, 3)).astype(np.float32) for i in range(nb_streamlines)]
     features = extract(feature, streamlines)
 
     assert_equal(len(features), len(streamlines))
-    assert_equal(features.shape[1:], feature_SHAPE)
+    assert_equal(features.shape[1:], feature_shape)
 
     # Test that scalar features
     class ArcLengthFeature(dipymetric.Feature):
@@ -103,14 +103,14 @@ def test_feature_extract():
             return np.sum(np.sqrt(np.sum((streamline[1:] - streamline[:-1]) ** 2)))
 
     nb_streamlines = 100
-    feature_SHAPE = (1, 1)  # One scalar represented as a 2D array
+    feature_shape = (1, 1)  # One scalar represented as a 2D array
     feature = ArcLengthFeature()
 
     streamlines = [np.arange(np.random.randint(20, 30) * 3).reshape((-1, 3)).astype(np.float32) for i in range(nb_streamlines)]
     features = extract(feature, streamlines)
 
     assert_equal(len(features), len(streamlines))
-    assert_equal(features.shape[1:], feature_SHAPE)
+    assert_equal(features.shape[1:], feature_shape)
 
 
 def test_subclassing_feature():

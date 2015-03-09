@@ -43,5 +43,5 @@ cdef class QuickBundles(object):
     cdef int max_nb_clusters
 
     cdef NearestCluster find_nearest_cluster(QuickBundles self, Data2D features) nogil except *
-    cdef int assignment_step(QuickBundles self, Data2D streamline, int streamline_id) nogil except -1
+    cdef int assignment_step(QuickBundles self, Data2D datum, int datum_id) nogil except -1
     cdef void update_step(QuickBundles self, int cluster_id) nogil except *

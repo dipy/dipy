@@ -44,7 +44,7 @@ streamlines = set_number_of_points(streamlines, nb_points=18)
 clusters = qb.cluster(streamlines)
 
 """
-`clusters` is a `ClusterMap` object which contains intuitive fonctionnalies to
+`clusters` is a `ClusterMap` object which contains intuitive functionnalies to
 interact with the clustering result.
 """
 

@@ -24,6 +24,23 @@ DEF BIGGEST_INT = 2147483647  # np.iinfo('i4').max
 
 
 def clusters_centroid2clustermap_centroid(ClustersCentroid clusters_list):
+    """ Converts a `ClustersCentroid` object (Cython) to a `ClusterMapCentroid`
+    object (Python).
+
+    Only basic functionalities are provided with a `Clusters` object. To have
+    more flexibility, one should use `ClusterMap` object, hence this conversion
+    function.
+
+    Parameters
+    ----------
+    clusters_list : `ClustersCentroid` object
+        Result of the clustering contained in a Cython's object.
+
+    Returns
+    -------
+    `ClusterMapCentroid` object
+        Result of the clustering contained in a Python's object.
+    """
     clusters = ClusterMapCentroid()
     for i in range(clusters_list._nb_clusters):
         centroid = np.asarray(clusters_list.centroids[i].features)
@@ -46,7 +63,7 @@ def quickbundles(streamlines, Metric metric, double threshold, long max_nb_clust
 
     Parameters
     ----------
-    streamlines : list of 2d array
+    streamlines : list of 2D arrays
         List of streamlines to cluster.
     metric : `Metric` object
         Tells how to compute the distance between two streamlines.

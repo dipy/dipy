@@ -203,29 +203,22 @@ cdef class ClustersCentroid(Clusters):
 
 
 cdef class QuickBundles(object):
-    #cdef Data2D features
-    #cdef Data2D features_flip
-    #cdef ClustersCentroid clusters
-    #cdef Metric metric
-    #cdef double threshold
-    #cdef max_nb_clusters
-
     def __init__(QuickBundles self, features_shape, Metric metric, double threshold, int max_nb_clusters=BIGGEST_INT):
         self.metric = metric
         self.features_shape = tuple2shape(features_shape)
         self.threshold = threshold
-        self.max_nb_clusters=max_nb_clusters
+        self.max_nb_clusters = max_nb_clusters
         self.clusters = ClustersCentroid(features_shape)
         self.features = np.empty(features_shape, dtype=DTYPE)
         self.features_flip = np.empty(features_shape, dtype=DTYPE)
 
     cdef NearestCluster find_nearest_cluster(QuickBundles self, Data2D features) nogil except *:
-        """ Finds the nearest cluster of a streamline given its `features` vector.
+        """ Finds the nearest cluster of a datum given its `features` vector.
 
         Parameters
         ----------
         features : 2D array
-            Features of a streamline.
+            Features of a datum.
 
         Returns
         -------
@@ -250,45 +243,45 @@ cdef class QuickBundles(object):
 
         return nearest_cluster
 
-    cdef int assignment_step(QuickBundles self, Data2D streamline, int streamline_id) nogil except -1:
+    cdef int assignment_step(QuickBundles self, Data2D datum, int datum_id) nogil except -1:
         """ Compute the assignment step of the QuickBundles algorithm.
 
-        It will assign a streamline to its closest cluster according to a given
-        metric. If the distance between the streamline and its closest cluster is
+        It will assign a datum to its closest cluster according to a given
+        metric. If the distance between the datum and its closest cluster is
         greater than the specified threshold, a new cluster is created and the
-        streamline is assigned to it.
+        datum is assigned to it.
 
         Parameters
         ----------
-        streamline : 2D array
-            The streamline to assign.
-        streamline_id : int
-            ID of the streamlines, usually its index.
+        datum : 2D array
+            The datum to assign.
+        datum_id : int
+            ID of the datum, usually its index.
 
         Returns
         -------
         int
-            Index of the cluster the streamline has been assigned to.
+            Index of the cluster the datum has been assigned to.
         """
         cdef:
             Data2D features_to_add = self.features
             NearestCluster nearest_cluster, nearest_cluster_flip
 
-        # Check if streamline is compatible with the metric
-        if not self.metric.c_are_compatible(self.metric.feature.c_infer_shape(streamline), self.features_shape):
+        # Check if datum is compatible with the metric
+        if not self.metric.c_are_compatible(self.metric.feature.c_infer_shape(datum), self.features_shape):
             with gil:
-                raise ValueError("Streamlines features' shapes must be compatible according to the metric used!")
+                raise ValueError("Data features' shapes must be compatible according to the metric used!")
 
-        # Find nearest cluster to streamline
-        self.metric.feature.c_extract(streamline, self.features)
+        # Find nearest cluster to datum
+        self.metric.feature.c_extract(datum, self.features)
         nearest_cluster = self.find_nearest_cluster(self.features)
 
         # Find nearest cluster to s_i_flip if metric is not order invariant
         if not self.metric.feature.is_order_invariant:
-            self.metric.feature.c_extract(streamline[::-1], self.features_flip)
+            self.metric.feature.c_extract(datum[::-1], self.features_flip)
             nearest_cluster_flip = self.find_nearest_cluster(self.features_flip)
 
-            # If we found a lower distance using a flipped streamline,
+            # If we found a lower distance using a flipped datum,
             #  add the flipped version instead
             if nearest_cluster_flip.dist < nearest_cluster.dist:
                 nearest_cluster.id = nearest_cluster_flip.id
@@ -297,12 +290,12 @@ cdef class QuickBundles(object):
 
         # Check if distance with the nearest cluster is below some threshold
         # or if we already have the maximum number of clusters.
-        # If the former or the latter is true, assign streamline to its nearest cluster
-        # otherwise create a new cluster and assign the streamline to it.
+        # If the former or the latter is true, assign datum to its nearest cluster
+        # otherwise create a new cluster and assign the datum to it.
         if not (nearest_cluster.dist < self.threshold or self.clusters.c_size() >= self.max_nb_clusters):
             nearest_cluster.id = self.clusters.c_create_cluster()
 
-        self.clusters.c_assign(nearest_cluster.id, streamline_id, features_to_add)
+        self.clusters.c_assign(nearest_cluster.id, datum_id, features_to_add)
         return nearest_cluster.id
 
     cdef void update_step(QuickBundles self, int cluster_id) nogil except *:
