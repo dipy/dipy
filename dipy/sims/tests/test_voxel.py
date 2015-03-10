@@ -102,6 +102,16 @@ def test_snr():
         assert_array_almost_equal(np.var(s_noise - s), sigma ** 2, decimal=2)
 
 
+def test_all_tensor_evecs():
+    e0 = np.array([1/np.sqrt(2), 1/np.sqrt(2), 0])
+
+    desired = np.array([[1/np.sqrt(2), 1/np.sqrt(2), 0],
+                        [-1/np.sqrt(2), 1/np.sqrt(2), 0],
+                        [0, 0, 1]])
+
+    assert_array_almost_equal(all_tensor_evecs(e0), desired)
+
+
 if __name__ == "__main__":
 
     test_multi_tensor()
