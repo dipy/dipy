@@ -4,6 +4,7 @@ from __future__ import division, print_function, absolute_import
 from dipy.utils.optpkg import optional_package
 
 from dipy import __version__ as dipy_version
+from time import sleep
 
 #import vtk
 # Allow import, but disable doctests if we don't have vtk
@@ -47,8 +48,8 @@ def renderer(background=None):
 
     return ren
 
-
-ren = renderer()
+if have_vtk:
+    ren = renderer()
 
 
 def add(ren, a):
@@ -211,8 +212,11 @@ def record(ren=None, cam_pos=None, cam_focal=None, cam_view=None,
     >>> #fvtk.record(r)
     >>> #check for new images in current directory
     """
+
     if ren is None:
         ren = vtk.vtkRenderer()
+    else:
+        sleep(1)
 
     renWin = vtk.vtkRenderWindow()
     renWin.AddRenderer(ren)
