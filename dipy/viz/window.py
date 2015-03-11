@@ -5,6 +5,8 @@ from dipy.utils.optpkg import optional_package
 
 from dipy import __version__ as dipy_version
 from time import sleep
+from dipy.viz.utils import set_input
+from scipy.misc import imread
 
 #import vtk
 # Allow import, but disable doctests if we don't have vtk
@@ -16,6 +18,7 @@ if have_vtk:
 
     version = vtk.vtkVersion.GetVTKSourceVersion().split(' ')[-1]
     major_version = vtk.vtkVersion.GetVTKMajorVersion()
+    from vtk.util.numpy_support import vtk_to_numpy
 
 
 def renderer(background=None):
@@ -201,6 +204,13 @@ def record(ren=None, cam_pos=None, cam_focal=None, cam_view=None,
         azimuthal angle of camera rotation.
     magnification : int, optional
         how much to magnify the saved frame
+    size : (int, int)
+        ``(width, height)`` of the window
+    verbose : bool
+        print information about the camera
+    sleep_time : float
+        Creates a small delay in seconds so that the renderer has enough
+        time to save the figure correctly.
 
     Examples
     ---------
@@ -215,8 +225,6 @@ def record(ren=None, cam_pos=None, cam_focal=None, cam_view=None,
 
     if ren is None:
         ren = vtk.vtkRenderer()
-    else:
-        sleep(1)
 
     renWin = vtk.vtkRenderWindow()
     renWin.AddRenderer(ren)
@@ -275,3 +283,52 @@ def record(ren=None, cam_pos=None, cam_focal=None, cam_view=None,
         writer.Write()
 
         ang = +az_ang
+
+
+def snapshot(ren, fname=None, size=(300, 300)):
+    """ Saves a snapshot of the renderer in a file or in memory
+
+    Parameters
+    -----------
+    ren : vtkRenderer
+        as returned from function renderer()
+    fname : str or None
+        If None return numpy array otherwise save png file.
+    size : (int, int)
+        ``(width, height)`` of the window
+
+    Returns
+    -------
+    arr : ndarray or bool
+        If fname is None returns array or True otherwise.
+    """
+
+    width, height = size
+
+    graphics_factory = vtk.vtkGraphicsFactory()
+    graphics_factory.SetOffScreenOnlyMode(1)
+    graphics_factory.SetUseMesaClasses(1)
+
+    render_window = vtk.vtkRenderWindow()
+    render_window.SetOffScreenRendering(1)
+    render_window.AddRenderer(ren)
+    render_window.SetSize(width, height)
+    render_window.Render()
+
+    window_to_image_filter = vtk.vtkWindowToImageFilter()
+    window_to_image_filter.SetInput(render_window)
+    window_to_image_filter.Update()
+
+    if fname is None:
+        vtk_image = window_to_image_filter.GetOutput()
+        h, w, _ = vtk_image.GetDimensions()
+        vtk_array = vtk_image.GetPointData().GetScalars()
+        components = vtk_array.GetNumberOfComponents()
+        arr = vtk_to_numpy(vtk_array).reshape(h, w, components)
+        return arr
+
+    writer = vtk.vtkPNGWriter()
+    writer.SetFileName(fname)
+    writer.SetInputConnection(window_to_image_filter.GetOutputPort())
+    writer.Write()
+    return True
