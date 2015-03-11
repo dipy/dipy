@@ -28,7 +28,6 @@ import numpy as np
 from dipy.core.gradients import GradientTable, gradient_table
 from dipy.core.sphere import Sphere, HemiSphere
 from dipy.sims.voxel import SticksAndBall
-import numpy as np
 from dipy.data.fetcher import (fetch_scil_b0,
                                read_scil_b0,
                                fetch_stanford_hardi,
@@ -43,7 +42,7 @@ from dipy.data.fetcher import (fetch_scil_b0,
                                fetch_syn_data,
                                read_syn_data,
                                fetch_stanford_t1,
-	                       read_stanford_t1)
+                               read_stanford_t1)
 
 from ..utils.arrfuncs import as_native_array
 from dipy.tracking.streamline import relist_streamlines
