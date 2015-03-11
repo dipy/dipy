@@ -21,9 +21,8 @@ if have_vtk:
     version = vtk.vtkVersion.GetVTKSourceVersion().split(' ')[-1]
     major_version = vtk.vtkVersion.GetVTKMajorVersion()
 
-def butcher(data, affine):
 
-    # im = ndarray_to_vtkimagedata(data)
+def butcher(data, affine):
 
     vol = np.interp(data, xp=[data.min(), data.max()], fp=[0, 255])
     vol = vol.astype('uint8')
@@ -69,15 +68,15 @@ def butcher(data, affine):
     # Get back resliced image
     #im = image_data #image_resliced.GetOutput()
 
-# An outline provides context around the data.
-#    outline_data = vtk.vtkOutlineFilter()
-#    set_input(outline_data, im)
-#
-#    mapOutline = vtk.vtkPolyDataMapper()
-#    mapOutline.SetInputConnection(outline_data.GetOutputPort())
-#    outline_ = vtk.vtkActor()
-#    outline_.SetMapper(mapOutline)
-#    outline_.GetProperty().SetColor(1, 0, 0)
+    # An outline provides context around the data.
+    #    outline_data = vtk.vtkOutlineFilter()
+    #    set_input(outline_data, im)
+    #
+    #    mapOutline = vtk.vtkPolyDataMapper()
+    #    mapOutline.SetInputConnection(outline_data.GetOutputPort())
+    #    outline_ = vtk.vtkActor()
+    #    outline_.SetMapper(mapOutline)
+    #    outline_.GetProperty().SetColor(1, 0, 0)
 
     # Now we are creating three orthogonal planes passing through the
     # volume. Each plane uses a different texture map and therefore has
@@ -86,7 +85,7 @@ def butcher(data, affine):
     # Start by creatin a black/white lookup table.
     lut = vtk.vtkLookupTable()
     lut.SetTableRange(0, 255)
-    #print(data.min(), data.max())
+    # print(data.min(), data.max())
     lut.SetSaturationRange(0, 0)
     lut.SetHueRange(0, 0)
     lut.SetValueRange(0, 1)
@@ -94,8 +93,6 @@ def butcher(data, affine):
     lut.Build()
 
     x1, x2, y1, y2, z1, z2 = im.GetExtent()
-
-    print(x1, x2, y1, y2, z1, z2)
 
     # Create the first of the three planes. The filter vtkImageMapToColors
     # maps the data through the corresponding lookup table created above.
