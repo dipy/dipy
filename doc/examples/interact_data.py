@@ -7,7 +7,7 @@ dname = '/home/eleftherios/Data/Cunnane_Elef/08-111-609-AC15/work/'
 import nibabel as nib
 from nibabel import trackvis as tv
 
-world_coords = True
+world_coords = False
 
 img = nib.load(dname + 't1_brain_warp.nii.gz')
 data = img.get_data()
@@ -31,7 +31,9 @@ if not world_coords:
     streamlines = transform_streamlines(streamlines, np.linalg.inv(affine))
 
 renderer = window.renderer()
-stream_actor = actor.line(streamlines)
+
+# LOAD FA HERE
+stream_actor = actor.line(streamlines, data)
 
 if not world_coords:
     slicer = actor.butcher(data, affine=np.eye(4))
@@ -64,8 +66,9 @@ slider = widget.slider(iren=iren, callback=change_slice)
 
 iren.Initialize()
 
-
-
 ren_win.Render()
 iren.Start()
 
+
+ren_win.RemoveRenderer(renderer)
+renderer.SetRenderWindow(None)
