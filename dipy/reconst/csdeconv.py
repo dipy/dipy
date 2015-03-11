@@ -903,7 +903,7 @@ def recursive_response(gtab, data, mask=None, sh_order=8, peak_thr=0.01,
         response[sh_mask] = 0
 
         change = abs((response_p[~sh_mask] - response[~sh_mask])/response_p[~sh_mask])
-        if change.all() < convergence:
+        if all(change < convergence):
             break
 
         response_p = response
