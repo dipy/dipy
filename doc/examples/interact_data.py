@@ -8,10 +8,19 @@ import nibabel as nib
 from nibabel import trackvis as tv
 
 world_coords = False
+streamline_opacity = .5
+slicer_opacity = .5
+depth_peeling = False
+
 
 img = nib.load(dname + 't1_brain_warp.nii.gz')
 data = img.get_data()
 affine = img.get_affine()
+
+
+img_fa = nib.load(dname + 'results/metrics/fa.nii')
+fa = img_fa.get_data()
+affine_fa = img_fa.get_affine()
 
 
 streams, hdr = tv.read(dname + 'results/bundles/cst.right.trk',
@@ -32,13 +41,15 @@ if not world_coords:
 
 renderer = window.renderer()
 
-# LOAD FA HERE
-stream_actor = actor.line(streamlines, data)
+stream_actor = actor.streamtube(streamlines, fa)
 
 if not world_coords:
     slicer = actor.butcher(data, affine=np.eye(4))
 else:
     slicer = actor.butcher(data, affine)
+
+slicer.GetProperty().SetOpacity(slicer_opacity)
+stream_actor.GetProperty().SetOpacity(streamline_opacity)
 
 window.add(renderer, stream_actor)
 window.add(renderer, slicer)
@@ -59,6 +70,15 @@ import vtk
 ren_win = vtk.vtkRenderWindow()
 ren_win.AddRenderer(renderer)
 
+if depth_peeling:
+    # http://www.vtk.org/Wiki/VTK/Depth_Peeling
+    ren_win.SetAlphaBitPlanes(1)
+    ren_win.SetMultiSamples(0)
+    renderer.SetUseDepthPeeling(1)
+    renderer.SetMaximumNumberOfPeels(10)
+    renderer.SetOcclusionRatio(0.1)
+
+
 iren = vtk.vtkRenderWindowInteractor()
 iren.SetRenderWindow(ren_win)
 
@@ -67,8 +87,13 @@ slider = widget.slider(iren=iren, callback=change_slice)
 iren.Initialize()
 
 ren_win.Render()
+
+if depth_peeling:
+    dp_bool = str(bool(renderer.GetLastRenderingUsedDepthPeeling()))
+    print('Depth peeling used? ' + dp_bool)
+
 iren.Start()
 
 
-ren_win.RemoveRenderer(renderer)
-renderer.SetRenderWindow(None)
+# ren_win.RemoveRenderer(renderer)
+# renderer.SetRenderWindow(None)
