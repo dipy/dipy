@@ -311,13 +311,14 @@ def test_cluster_map_remove_cluster():
 
 
 def test_cluster_map_iter():
+    rng = np.random.RandomState(42)
     nb_clusters = 11
 
     # Test without specifying refdata in ClusterMap
     cluster_map = ClusterMap()
     clusters = []
     for i in range(nb_clusters):
-        new_cluster = Cluster(indices=randint(0, len(data), size=10))
+        new_cluster = Cluster(indices=rng.randint(0, len(data), size=10))
         cluster_map.add_cluster(new_cluster)
         clusters.append(new_cluster)
 
@@ -529,13 +530,14 @@ def test_cluster_map_centroid_remove_cluster():
 
 
 def test_cluster_map_centroid_iter():
+    rng = np.random.RandomState(42)
     nb_clusters = 11
 
     cluster_map = ClusterMapCentroid()
     clusters = []
     for i in range(nb_clusters):
         new_centroid = np.zeros_like(features)
-        new_cluster = ClusterCentroid(new_centroid, indices=np.random.randint(0, len(data), size=10))
+        new_cluster = ClusterCentroid(new_centroid, indices=rng.randint(0, len(data), size=10))
         cluster_map.add_cluster(new_cluster)
         clusters.append(new_cluster)
 
