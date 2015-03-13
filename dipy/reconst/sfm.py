@@ -77,12 +77,9 @@ class IsotropicModel(ReconstModel):
             to_fit = data_no_b0 / s0[..., None]
         else:
             to_fit = data_no_b0
-        params = np.mean(to_fit, -1)
-        if len(data_no_b0.shape) == 1:
-            n_vox = 1
-        else:
-            n_vox = data_no_b0.shape[0]
-        return IsotropicFit(self, params, n_vox)
+        params = np.mean(np.reshape(to_fit, (-1, to_fit.shape[-1])), -1)
+
+        return IsotropicFit(self, params)
 
 
 class IsotropicFit(ReconstFit):
@@ -90,7 +87,7 @@ class IsotropicFit(ReconstFit):
     A fit object for representing the isotropic signal as the mean of the
     diffusion-weighted signal
     """
-    def __init__(self, model, params, n_vox):
+    def __init__(self, model, params):
         """
         Initialize an IsotropicFit object
 
@@ -105,7 +102,6 @@ class IsotropicFit(ReconstFit):
         """
         self.model = model
         self.params = params
-        self.n_vox = n_vox
 
     def predict(self, gtab=None):
         """
@@ -121,7 +117,7 @@ class IsotropicFit(ReconstFit):
         """
         if gtab is None:
             gtab = self.model.gtab
-        return self.params[..., np.newaxis] + np.zeros((self.n_vox,
+        return self.params[..., np.newaxis] + np.zeros((self.params.shape[0],
                                                         np.sum(~gtab.b0s_mask)))
 
 class ExponentialIsotropicModel(IsotropicModel):
@@ -139,10 +135,7 @@ class ExponentialIsotropicModel(IsotropicModel):
         -------
         ExponentialIsotropicFit class instance.
         """
-        if len(data.shape) == 1:
-            n_vox = 1
-        else:
-            n_vox = data.shape[0]
+        data = np.reshape(data, (-1, data.shape[-1]))
 
         data_no_b0 = data[..., ~self.gtab.b0s_mask]
         if np.sum(self.gtab.b0s_mask) > 0:
@@ -154,7 +147,7 @@ class ExponentialIsotropicModel(IsotropicModel):
         # Fitting to the log-transformed relative data:
         p = np.nanmean(to_fit / self.gtab.bvals[~self.gtab.b0s_mask], -1)
         params = -p
-        return ExponentialIsotropicFit(self, params, n_vox)
+        return ExponentialIsotropicFit(self, params)
 
 
 class ExponentialIsotropicFit(IsotropicFit):
@@ -176,7 +169,7 @@ class ExponentialIsotropicFit(IsotropicFit):
         if gtab is None:
             gtab = self.model.gtab
         return np.exp(-gtab.bvals[~gtab.b0s_mask] *
-                      (np.zeros((self.n_vox, np.sum(~gtab.b0s_mask))) +
+                      (np.zeros((self.params.shape[0], np.sum(~gtab.b0s_mask))) +
                        self.params[..., np.newaxis]))
 
 
@@ -225,7 +218,7 @@ def sfm_design_matrix(gtab, sphere, response, mode='signal'):
 
     A canonical tensor approximating corpus-callosum voxels [Rokem2014]_:
 
-    >>> tensor_matrix=sfm_design_matrix(gtab, sphere, [0.0015, 0.0005, 0.0005])
+    >>> tensor_matrix = sfm_design_matrix(gtab, sphere, [0.0015, 0.0005, 0.0005])
 
     A 'stick' function ([Behrens2007]_):
 
