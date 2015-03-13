@@ -7,24 +7,22 @@ from scipy.special import lpn, gamma
 import scipy.linalg as la
 import scipy.linalg.lapack as ll
 
-from dipy.data import small_sphere, get_sphere
-from dipy.reconst.multi_voxel import multi_voxel_fit
-from dipy.reconst.shm import (sph_harm_ind_list, real_sph_harm,
-                              order_from_ncoef, sph_harm_lookup, lazy_index,
-                              SphHarmFit, real_sym_sh_basis, sh_to_rh,
-                              gen_dirac, forward_sdeconv_mat, SphHarmModel,
-                              sh_to_sf)
-from dipy.data import get_sphere
+from dipy.data import small_sphere, get_sphere, default_sphere
+
 from dipy.core.geometry import cart2sphere
 from dipy.core.ndindex import ndindex
 from dipy.sims.voxel import single_tensor
 from dipy.utils.six.moves import range
 
+from dipy.reconst.multi_voxel import multi_voxel_fit
 from dipy.reconst.dti import TensorModel, fractional_anisotropy
+from dipy.reconst.shm import (sph_harm_ind_list, real_sph_harm,
+                              sph_harm_lookup, lazy_index, SphHarmFit,
+                              real_sym_sh_basis, sh_to_rh, forward_sdeconv_mat,
+                              SphHarmModel)
 
 from dipy.reconst.peaks import peaks_from_model
 from dipy.core.geometry import vec2vec_rotmat
-from dipy.core.sphere import HemiSphere
 
 
 class AxSymShResponse(object):
@@ -61,6 +59,7 @@ class AxSymShResponse(object):
 
 
 class ConstrainedSphericalDeconvModel(SphHarmModel):
+
     def __init__(self, gtab, response, reg_sphere=None, sh_order=8, lambda_=1,
                  tau=0.1):
         r""" Constrained Spherical Deconvolution (CSD) [1]_.
@@ -844,7 +843,8 @@ def auto_response(gtab, data, roi_center=None, roi_radius=10, fa_thr=0.7,
 
 def recursive_response(gtab, data, mask=None, sh_order=8, peak_thr=0.01,
                        init_fa=0.08, init_trace=0.0021, iter=8,
-                       convergence=0.001, parallel=True):
+                       convergence=0.001, parallel=True,
+                       sphere=default_sphere):
     """ Recursive calibration of response function using peak threshold
 
     Parameters
@@ -868,6 +868,8 @@ def recursive_response(gtab, data, mask=None, sh_order=8, peak_thr=0.01,
         maximum number of iterations for calibration
     convergence : float
         convergence criterion, maximum relative change of SH coefficients
+    sphere : Sphere
+        The sphere used for peak finding.
 
     Returns
     -------
@@ -892,7 +894,6 @@ def recursive_response(gtab, data, mask=None, sh_order=8, peak_thr=0.01,
     S0 = 1
     evals = fa_trace_to_lambdas(init_fa, init_trace)
     res_obj = (evals, S0)
-    sphere = get_sphere('symmetric724')
 
     if mask is None:
         data = data.reshape(-1, data.shape[-1])
