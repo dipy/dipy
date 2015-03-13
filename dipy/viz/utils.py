@@ -7,7 +7,7 @@ from dipy.core.ndindex import ndindex
 # Conditional import machinery for vtk
 from dipy.utils.optpkg import optional_package
 
-#import vtk
+# import vtk
 # Allow import, but disable doctests if we don't have vtk
 vtk, have_vtk, setup_module = optional_package('vtk')
 ns, have_numpy_support, _ = optional_package('vtk.util.numpy_support')
@@ -44,12 +44,12 @@ def set_input(vtk_object, input):
     ----------
     >>> poly_mapper = set_input(vtk.vtkPolyDataMapper(), poly_data)
     """
-    if isinstance(input,vtk.vtkPolyData):
+    if isinstance(input, vtk.vtkPolyData):
         if vtk.VTK_MAJOR_VERSION <= 5:
             vtk_object.SetInput(input)
         else:
             vtk_object.SetInputData(input)
-    elif isinstance(input,vtk.vtkAlgorithmOutput):
+    elif isinstance(input, vtk.vtkAlgorithmOutput):
         vtk_object.SetInputConnection(input)
 
     vtk_object.Update()
@@ -71,8 +71,8 @@ def evec_from_lines(lines, use_line_dir=True):
         directions = np.vstack(lines_dir)
     else:
         points = np.vstack(lines)
-        centered_points = points - np.mean(points,axis=0)
-        norm = np.sqrt(np.sum(centered_points**2,axis=1, keepdims=True))
+        centered_points = points - np.mean(points, axis=0)
+        norm = np.sqrt(np.sum(centered_points**2, axis=1, keepdims=True))
         directions = centered_points/norm
 
     U, e_val, e_vec = np.linalg.svd(directions, full_matrices=False)

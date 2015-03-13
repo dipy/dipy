@@ -4,21 +4,23 @@ from __future__ import division, print_function, absolute_import
 from dipy.utils.optpkg import optional_package
 
 from dipy import __version__ as dipy_version
-from time import sleep
-from dipy.viz.utils import set_input
-from scipy.misc import imread
+from dipy.utils.six import string_types
 
-#import vtk
+# import vtk
 # Allow import, but disable doctests if we don't have vtk
 vtk, have_vtk, setup_module = optional_package('vtk')
 colors, have_vtk_colors, _ = optional_package('vtk.util.colors')
 numpy_support, have_ns, _ = optional_package('vtk.util.numpy_support')
+_, have_imread, _ = optional_package('Image')
 
 if have_vtk:
 
     version = vtk.vtkVersion.GetVTKSourceVersion().split(' ')[-1]
     major_version = vtk.vtkVersion.GetVTKMajorVersion()
     from vtk.util.numpy_support import vtk_to_numpy
+
+if have_imread:
+    from scipy.misc import imread
 
 
 def renderer(background=None):
@@ -166,7 +168,7 @@ def show(ren, title='Dipy', size=(300, 300), png_magnify=1):
     iren.AddObserver('KeyPressEvent', key_press)
     iren.SetInteractorStyle(style)
     iren.Initialize()
-    #picker.Pick(85, 126, 0, ren)
+    # picker.Pick(85, 126, 0, ren)
     window.Render()
     iren.Start()
 
@@ -331,4 +333,17 @@ def snapshot(ren, fname=None, size=(300, 300)):
     writer.SetFileName(fname)
     writer.SetInputConnection(window_to_image_filter.GetOutputPort())
     writer.Write()
+    return True
+
+
+def analyze_snapshot(renderer, im):
+    if isinstance(im, string_types):
+        im = imread(im)
+
+    bg = renderer.GetBackground()
+    if bg == (0, 0, 0):
+        import numpy.testing as npt
+        npt.assert_equal(im.sum() > 0, True)
+    else:
+        raise ValueError('The background of the renderer is not black')
     return True
