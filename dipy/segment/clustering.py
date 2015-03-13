@@ -325,7 +325,7 @@ class ClusterMap(object):
         list of int
             Sizes of every clusters in this cluster map.
         """
-        return map(len, self)
+        return list(map(len, self))
 
     def get_large_clusters(self, min_size):
         """ Gets clusters which contains at least `min_size` elements.

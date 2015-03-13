@@ -384,7 +384,7 @@ def test_cluster_map_get_clusters_sizes():
     clusters = [Cluster(indices=indices[i]) for i in range(nb_clusters)]
     cluster_map.add_cluster(*clusters)
 
-    assert_equal(cluster_map.get_clusters_sizes(), map(len, indices))
+    assert_equal(cluster_map.get_clusters_sizes(), list(map(len, indices)))
 
 
 def test_cluster_map_get_small_and_large_clusters():
