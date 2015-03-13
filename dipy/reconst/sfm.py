@@ -286,8 +286,7 @@ class SparseFascicleModel(ReconstModel, Cache):
             The eigenvalues of a canonical tensor to be used as the response
             function of single-fascicle signals.
             Default:[0.0015, 0.0005, 0.0005]
-        solver : string, dipy.core.optimize.SKLearnLinearSolver object, or
-            sklearn.linear_model.base.LinearModel object, optional.
+        solver : string, dipy.core.optimize.SKLearnLinearSolver object, or sklearn.linear_model.base.LinearModel object, optional.
             This will determine the algorithm used to solve the set of linear
             equations underlying this model. If it is a string it needs to be
             one of the following: {'ElasticNet', 'NNLS'}. Otherwise, it can be
