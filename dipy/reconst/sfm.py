@@ -293,7 +293,8 @@ class SparseFascicleModel(ReconstModel, Cache):
             The eigenvalues of a canonical tensor to be used as the response
             function of single-fascicle signals.
             Default:[0.0015, 0.0005, 0.0005]
-        solver : string or SKLearnLinearSolver object, optional
+        solver : string, dipy.core.optimize.SKLearnLinearSolver object, or
+            sklearn.linear_model.base.LinearModel object, optional.
             This will determine the algorithm used to solve the set of linear
             equations underlying this model. If it is a string it needs to be
             one of the following: {'ElasticNet', 'NNLS'}. Otherwise, it can be
@@ -340,8 +341,11 @@ class SparseFascicleModel(ReconstModel, Cache):
                                         positive=True, warm_start=True)
         elif solver == 'NNLS' or solver == 'nnls':
             self.solver = opt.NonNegativeLeastSquares()
-        elif isinstance(solver, opt.SKLearnLinearSolver):
+
+        elif (isinstance(solver, opt.SKLearnLinearSolver) or
+            has_sklearn and isinstance(solver, lm.base.LinearModel)):
             self.solver = solver
+
         else:
             e_s = "The `solver` key-word argument needs to be: "
             e_s += "'ElasticNet', 'NNLS', or a "
