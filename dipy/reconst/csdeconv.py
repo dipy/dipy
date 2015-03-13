@@ -114,15 +114,18 @@ class ConstrainedSphericalDeconvModel(SphHarmModel):
         self.B_reg = real_sph_harm(m, n, theta[:, None], phi[:, None])
 
         if response is None:
-            S_r = estimate_response(gtab, np.array([0.0015, 0.0003, 0.0003]), 1)
-            r_sh = np.linalg.lstsq(self.B_dwi, S_r[self._where_dwi])[0]
+            self.response = (np.array([0.0015, 0.0003, 0.0003]), 1)
+            self.S_r = estimate_response(gtab, self.response)
+            r_sh = np.linalg.lstsq(self.B_dwi, self.S_r[self._where_dwi])[0]
             r_rh = sh_to_rh(r_sh, m, n)
         elif isinstance(response, tuple):
-            S_r = estimate_response(gtab, response[0], response[1])
-            r_sh = np.linalg.lstsq(self.B_dwi, S_r[self._where_dwi])[0]
+            self.response = response
+            self.S_r = estimate_response(gtab, self.response[0], self.response[1])
+            r_sh = np.linalg.lstsq(self.B_dwi, self.S_r[self._where_dwi])[0]
             r_rh = sh_to_rh(r_sh, m, n)
         else:
-            r_rh = sh_to_rh(response, m, n)
+            self.response = response
+            r_rh = sh_to_rh(self.response, m, n)
 
         self.R = forward_sdeconv_mat(r_rh, n)
 
