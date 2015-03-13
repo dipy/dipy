@@ -336,11 +336,11 @@ def snapshot(ren, fname=None, size=(300, 300)):
     return True
 
 
-def analyze_snapshot(renderer, im):
+def analyze_snapshot(ren, im):
     if isinstance(im, string_types):
         im = imread(im)
 
-    bg = renderer.GetBackground()
+    bg = ren.GetBackground()
     if bg == (0, 0, 0):
         import numpy.testing as npt
         npt.assert_equal(im.sum() > 0, True)
