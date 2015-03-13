@@ -127,6 +127,7 @@ class ConstrainedSphericalDeconvModel(SphHarmModel):
             self.response = response
             r_rh = sh_to_rh(self.response, m, n)
 
+        self.response_scaling = self.response[1]
         self.R = forward_sdeconv_mat(r_rh, n)
 
         # scale lambda_ to account for differences in the number of
