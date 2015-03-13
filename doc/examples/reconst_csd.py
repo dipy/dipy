@@ -154,10 +154,7 @@ We can check the shape of the signal of the response function, which should be l
 a pancake:
 """
 
-from dipy.reconst.shm import sh_to_sf
-
-response_signal = sh_to_sf(response, sphere, sh_order=8, basis_type=None)
-
+response_signal = response.on_sphere(sphere)
 response_actor = fvtk.sphere_funcs(response_signal, sphere)
 
 ren = fvtk.ren()

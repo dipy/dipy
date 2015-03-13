@@ -27,6 +27,39 @@ from dipy.core.geometry import vec2vec_rotmat
 from dipy.core.sphere import HemiSphere
 
 
+class AxSymShResponse(object):
+    """A simple wrapper for response functions represented using only axially
+    symmetric, even spherical harmonic functions (ie, m == 0 and n even).
+
+    Parameters:
+    -----------
+    S0 : float
+        Signal with no diffusion weighting.
+    dwi_response : array
+        Response function signal as coefficients to axially symmetric, even
+        spherical harmonic.
+
+    """
+    def __init__(self, S0, dwi_response, bvalue=None):
+        self.S0 = S0
+        self.dwi_response = dwi_response
+        self.bvalue = bvalue
+        self.m = np.zeros(len(dwi_response))
+        self.sh_order = 2 * (len(dwi_response) - 1)
+        self.n = np.arange(0, self.sh_order + 1, 2)
+
+    def basis(self, sphere):
+        """A basis that maps the response coefficients onto a sphere."""
+        theta = sphere.theta[:, None]
+        phi = sphere.phi[:, None]
+        return real_sph_harm(self.m, self.n, theta, phi)
+
+    def on_sphere(self, sphere):
+        """Evaluates the response function on sphere."""
+        B = self.basis(sphere)
+        return np.dot(self.dwi_response, B.T)
+
+
 class ConstrainedSphericalDeconvModel(SphHarmModel):
     def __init__(self, gtab, response, reg_sphere=None, sh_order=8, lambda_=1,
                  tau=0.1):
@@ -111,26 +144,26 @@ class ConstrainedSphericalDeconvModel(SphHarmModel):
         self.B_reg = real_sph_harm(m, n, theta[:, None], phi[:, None])
 
         if response is None:
-            self.response = (np.array([0.0015, 0.0003, 0.0003]), 1)
-            self.S_r = estimate_response(gtab, self.response)
-            r_sh = np.linalg.lstsq(self.B_dwi, self.S_r[self._where_dwi])[0]
-            r_rh = sh_to_rh(r_sh, m, n)
-        elif isinstance(response, tuple):
-            self.response = response
+            response = (np.array([0.0015, 0.0003, 0.0003]), 1)
+
+        self.response = response
+        if isinstance(response, AxSymShResponse):
+            r_sh = response.dwi_response
+            self.response_scaling = response.S0
+            n_response = response.n
+            m_response = response.m
+        else:
             self.S_r = estimate_response(gtab, self.response[0], self.response[1])
             r_sh = np.linalg.lstsq(self.B_dwi, self.S_r[self._where_dwi])[0]
-            r_rh = sh_to_rh(r_sh, m, n)
-        else:
-            self.response = response
-            r_rh = sh_to_rh(self.response, m, n)
-
-        self.response_scaling = self.response[1]
+            n_response = n
+            m_response = m
+            self.response_scaling = response[1]
+        r_rh = sh_to_rh(r_sh, m_response, n_response)
         self.R = forward_sdeconv_mat(r_rh, n)
 
         # scale lambda_ to account for differences in the number of
         # SH coefficients and number of mapped directions
         # This is exactly what is done in [4]_
-
         lambda_ = (lambda_  * self.R.shape[0] * r_rh[0] /
                    (np.sqrt(self.B_reg.shape[0]) * np.sqrt(362.)))
         self.B_reg *= lambda_
@@ -858,25 +891,22 @@ def recursive_response(gtab, data, mask=None, sh_order=8, peak_thr=0.01,
     """
     S0 = 1
     evals = fa_trace_to_lambdas(init_fa, init_trace)
-    response = (evals, S0)
+    res_obj = (evals, S0)
     sphere = get_sphere('symmetric724')
 
-    no_params = ((sh_order + 1) * (sh_order + 2)) / 2
-    response_p = np.ones(no_params)
     if mask is None:
         data = data.reshape(-1, data.shape[-1])
-#        data = data[np.ones(data.shape[0:(data.ndim-1)], dtype=bool)]
     else:
         data = data[mask]
 
-    m, n = sph_harm_ind_list(sh_order)
-    sh_mask = m != 0
+    n = np.arange(0, sh_order + 1, 2)
     where_dwi = lazy_index(~gtab.b0s_mask)
+    response_p = np.ones(len(n))
 
     for num_it in range(1, iter):
-        r_sh_all = np.zeros(no_params)
-        csd_model = ConstrainedSphericalDeconvModel(gtab, response,
-                                                    None, sh_order)
+        r_sh_all = np.zeros(len(n))
+        csd_model = ConstrainedSphericalDeconvModel(gtab, res_obj,
+                                                    sh_order=sh_order)
 
         csd_peaks = peaks_from_model(model=csd_model,
                                      data=data,
@@ -899,20 +929,19 @@ def recursive_response(gtab, data, mask=None, sh_order=8, peak_thr=0.01,
             x, y, z = rot_gradients[where_dwi].T
             r, theta, phi = cart2sphere(x, y, z)
             # for the gradient sphere
-            B_dwi = real_sph_harm(m, n, theta[:, None], phi[:, None])
-            r_sh_all = r_sh_all + np.linalg.lstsq(B_dwi,
-                                                  data[num_vox, where_dwi])[0]
+            B_dwi = real_sph_harm(0, n, theta[:, None], phi[:, None])
+            r_sh_all += np.linalg.lstsq(B_dwi, data[num_vox, where_dwi])[0]
 
-        response = r_sh_all/data.shape[0]
-        response[sh_mask] = 0
+        response = r_sh_all / data.shape[0]
+        res_obj = AxSymShResponse(data[:, gtab.b0s_mask].mean(), response)
 
-        change = abs((response_p[~sh_mask] - response[~sh_mask])/response_p[~sh_mask])
+        change = abs((response_p - response) / response_p)
         if all(change < convergence):
             break
 
         response_p = response
 
-    return response
+    return res_obj
 
 
 def fa_trace_to_lambdas(fa=0.08, trace=0.0021):
