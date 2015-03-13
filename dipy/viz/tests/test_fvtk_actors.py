@@ -3,28 +3,15 @@ import os
 import numpy as np
 import scipy as sp
 
-from dipy.viz import actor
-from dipy.viz import window
+from dipy.viz import actor, window, utils
 
 import numpy.testing as npt
 from nibabel.tmpdirs import TemporaryDirectory
-from dipy.utils.six import string_types
-
-
-def analyze_output(renderer, im):
-    if isinstance(im, string_types):
-        im = sp.misc.imread(im)
-
-    bg = renderer.GetBackground()
-    if bg == (0, 0, 0):
-        npt.assert_equal(im.sum() > 0, True)
-    else:
-        raise ValueError('The background of the renderer is not black')
-    return True
 
 
 @npt.dec.skipif(not actor.have_vtk)
 @npt.dec.skipif(not actor.have_vtk_colors)
+@npt.dec.skipif(not window.have_imread)
 def test_butcher():
 
     renderer = window.renderer()
@@ -38,7 +25,7 @@ def test_butcher():
 
     # copy pixels in numpy array directly
     arr = window.snapshot(renderer, None)
-    npt.assert_(analyze_output(renderer, arr))
+    npt.assert_(window.analyze_snapshot(renderer, arr))
 
     # The slicer can cut directly a smaller part of the image
     slicer.SetDisplayExtent(10, 30, 10, 30, 35, 35)
@@ -50,12 +37,15 @@ def test_butcher():
     # save pixels in png file not a numpy array
     with TemporaryDirectory() as tmpdir:
         fname = os.path.join(tmpdir, 'butcher.png')
+        # window.show(renderer)
         window.snapshot(renderer, fname)
-        npt.assert_(analyze_output(renderer, fname))
+        # imshow(window.snapshot(renderer), origin='lower')
+        npt.assert_(window.analyze_snapshot(renderer, fname))
 
 
 @npt.dec.skipif(not actor.have_vtk)
 @npt.dec.skipif(not actor.have_vtk_colors)
+@npt.dec.skipif(not window.have_imread)
 def test_streamtube_and_line_actors():
 
     renderer = window.renderer()
@@ -71,11 +61,11 @@ def test_streamtube_and_line_actors():
     window.add(renderer, c2)
 
     # window.show(renderer)
-
     arr = window.snapshot(renderer)
-    npt.assert_(analyze_output(renderer, arr))
+    npt.assert_(window.analyze_snapshot(renderer, arr))
 
 
 if __name__ == "__main__":
 
     npt.run_module_suite()
+    # test_butcher()
