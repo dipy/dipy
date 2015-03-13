@@ -33,6 +33,7 @@ vtk, have_vtk, setup_module = optional_package('vtk')
 colors, have_vtk_colors, _ = optional_package('vtk.util.colors')
 
 cm, have_matplotlib, _ = optional_package('matplotlib.cm')
+
 if have_matplotlib:
     get_cmap = cm.get_cmap
 else:
