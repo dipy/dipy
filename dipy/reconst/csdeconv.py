@@ -8,21 +8,29 @@ import scipy.linalg as la
 import scipy.linalg.lapack as ll
 
 from dipy.data import small_sphere, get_sphere
+from dipy.reconst.odf import OdfModel
+from dipy.reconst.cache import Cache
+from dipy.reconst.multi_voxel import multi_voxel_fit
+from dipy.reconst.shm import (sph_harm_ind_list, real_sph_harm, order_from_ncoef,
+                              sph_harm_lookup, lazy_index, SphHarmFit,
+                              real_sym_sh_basis, sh_to_rh, gen_dirac,
+                              forward_sdeconv_mat, real_sph_harm2, sph_harm2, SphHarmModel,
+                              sh_to_sf)
+from dipy.data import get_sphere
 from dipy.core.geometry import cart2sphere
 from dipy.core.ndindex import ndindex
-from dipy.sims.voxel import single_tensor
+from dipy.sims.voxel import (single_tensor, single_tensor_odf)
 from dipy.utils.six.moves import range
 
-from dipy.reconst.multi_voxel import multi_voxel_fit
 from dipy.reconst.dti import TensorModel, fractional_anisotropy
-from dipy.reconst.shm import (sph_harm_ind_list, real_sph_harm,
-                              sph_harm_lookup, lazy_index, SphHarmFit,
-                              real_sym_sh_basis, sh_to_rh, forward_sdeconv_mat,
-                              SphHarmModel)
+
+from dipy.reconst.peaks import peaks_from_model
+from dipy.core.geometry import vec2vec_rotmat
+from scipy.special import sph_harm
+from dipy.core.sphere import HemiSphere
 
 
 class ConstrainedSphericalDeconvModel(SphHarmModel):
-
     def __init__(self, gtab, response, reg_sphere=None, sh_order=8, lambda_=1,
                  tau=0.1):
         r""" Constrained Spherical Deconvolution (CSD) [1]_.
@@ -47,7 +55,7 @@ class ConstrainedSphericalDeconvModel(SphHarmModel):
             ndarray and the second is the signal value for the response
             function without diffusion weighting.  This is to be able to
             generate a single fiber synthetic signal. The response function
-            will be used as deconvolution kernel ([1]_)
+            will be used as deconvolution git pull nipy-dipy masterkernel ([1]_)
         reg_sphere : Sphere (optional)
             sphere used to build the regularization B matrix.
             Default: 'symmetric362'.
@@ -107,15 +115,19 @@ class ConstrainedSphericalDeconvModel(SphHarmModel):
 
         if response is None:
             self.response = (np.array([0.0015, 0.0003, 0.0003]), 1)
+            self.S_r = estimate_response(gtab, self.response)
+            r_sh = np.linalg.lstsq(self.B_dwi, self.S_r[self._where_dwi])[0]
+            r_rh = sh_to_rh(r_sh, m, n)
+        elif isinstance(response, tuple):
+            self.response = response
+            self.S_r = estimate_response(gtab, self.response[0], self.response[1])
+            r_sh = np.linalg.lstsq(self.B_dwi, self.S_r[self._where_dwi])[0]
+            r_rh = sh_to_rh(r_sh, m, n)
         else:
             self.response = response
+            r_rh = sh_to_rh(self.response, m, n)
 
-        self.S_r = estimate_response(gtab, self.response[0], self.response[1])
         self.response_scaling = self.response[1]
-
-        r_sh = np.linalg.lstsq(self.B_dwi, self.S_r[self._where_dwi])[0]
-        r_rh = sh_to_rh(r_sh, m, n)
-
         self.R = forward_sdeconv_mat(r_rh, n)
 
         # scale lambda_ to account for differences in the number of
@@ -761,7 +773,7 @@ def auto_response(gtab, data, roi_center=None, roi_radius=10, fa_thr=0.7,
     returned, which can be used to judge the fidelity of the response function.
     As a rule of thumb, at least 300 voxels should be used to estimate a good
     response function (see [1]_).
-    
+
     References
     ----------
     .. [1] Tournier, J.D., et al. NeuroImage 2004. Direct estimation of the
@@ -798,3 +810,116 @@ def auto_response(gtab, data, roi_center=None, roi_radius=10, fa_thr=0.7,
         return response, ratio, indices[0].size
 
     return response, ratio
+
+
+def recursive_response(gtab, data, mask=None, sh_order=8, peak_thr=0.01,
+                       init_fa=0.08, init_trace=0.0021, iter=8,
+                       convergence=0.001, parallel=True):
+    """ Recursive calibration of response function using peak threshold
+
+    Parameters
+    ----------
+    gtab : GradientTable
+    data : ndarray
+        diffusion data
+    mask : ndarray
+        mask for recursive calibration, for example a white matter mask. It has
+        shape `data.shape[0:3]` and dtype=bool.
+    sh_order : int
+        maximal spherical harmonics order
+    peak_thr : float
+        peak threshold, how large the second peak can be relative to the first
+        peak in order to call it a single fiber population [1]
+    init_fa : float
+        FA of the initial 'fat' response function (tensor)
+    init_trace : float
+        trace of the initial 'fat' response function (tensor)
+    iter : int
+        maximum number of iterations for calibration
+    convergence : float
+        convergence criterion, maximum relative change of SH coefficients
+
+    Returns
+    -------
+    response : ndarray
+        response function in SH coefficients
+
+    Notes
+    -----
+    In CSD there is an important pre-processing step: the estimation of the
+    fiber response function. Using an FA threshold is not a very robust method.
+    It is dependent on the dataset (non-informed used subjectivity), and still
+    depends on the diffusion tensor (FA and first eigenvector),
+    which has low accuracy at high b-value. This function recursively
+    calibrates the response function, for more information see [1].
+
+    References
+    ----------
+    .. [1] Tax, C.M.W., et al. NeuroImage 2014. Recursive calibration of
+           the fiber response function for spherical deconvolution of
+           diffusion MRI data.
+    """
+    S0 = 1
+    evals = fa_trace_to_lambdas(init_fa, init_trace)
+    response = (evals, S0)
+    sphere = get_sphere('symmetric724')
+
+    no_params = ((sh_order + 1) * (sh_order + 2)) / 2
+    response_p = np.ones(no_params)
+    if mask is None:
+        data = data.reshape(-1, data.shape[-1])
+#        data = data[np.ones(data.shape[0:(data.ndim-1)], dtype=bool)]
+    else:
+        data = data[mask]
+
+    m, n = sph_harm_ind_list(sh_order)
+    sh_mask = m != 0
+    where_dwi = lazy_index(~gtab.b0s_mask)
+
+    for num_it in range(1, iter):
+        r_sh_all = np.zeros(no_params)
+        csd_model = ConstrainedSphericalDeconvModel(gtab, response,
+                                                    None, sh_order)
+
+        csd_peaks = peaks_from_model(model=csd_model,
+                                     data=data,
+                                     sphere=sphere,
+                                     relative_peak_threshold=peak_thr,
+                                     min_separation_angle=25,
+                                     parallel=parallel)
+
+        dirs = csd_peaks.peak_dirs
+        vals = csd_peaks.peak_values
+        single_peak_mask = (vals[:, 1] / vals[:, 0]) < peak_thr
+        data = data[single_peak_mask]
+        dirs = dirs[single_peak_mask]
+
+        for num_vox in range(0, data.shape[0]):
+            rotmat = vec2vec_rotmat(dirs[num_vox, 0], np.array([0, 0, 1]))
+
+            rot_gradients = np.dot(rotmat, gtab.gradients.T).T
+
+            x, y, z = rot_gradients[where_dwi].T
+            r, theta, phi = cart2sphere(x, y, z)
+            # for the gradient sphere
+            B_dwi = real_sph_harm(m, n, theta[:, None], phi[:, None])
+            r_sh_all = r_sh_all + np.linalg.lstsq(B_dwi,
+                                                  data[num_vox, where_dwi])[0]
+
+        response = r_sh_all/data.shape[0]
+        response[sh_mask] = 0
+
+        change = abs((response_p[~sh_mask] - response[~sh_mask])/response_p[~sh_mask])
+        if all(change < convergence):
+            break
+
+        response_p = response
+
+    return response
+
+
+def fa_trace_to_lambdas(fa=0.08, trace=0.0021):
+    lambda1 = (trace / 3.) * (1 + 2 * fa / (3 - 2 * fa ** 2) ** (1 / 2.))
+    lambda2 = (trace / 3.) * (1 - fa / (3 - 2 * fa ** 2) ** (1 / 2.))
+    evals = np.array([lambda1, lambda2, lambda2])
+    return evals

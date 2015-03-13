@@ -8,18 +8,95 @@ from dipy.data import get_sphere, get_data, default_sphere, small_sphere
 from dipy.sims.voxel import (multi_tensor,
                              single_tensor,
                              multi_tensor_odf,
-                             all_tensor_evecs)
+                             all_tensor_evecs, single_tensor_odf)
 from dipy.core.gradients import gradient_table
 from dipy.reconst.csdeconv import (ConstrainedSphericalDeconvModel,
                                    ConstrainedSDTModel,
                                    forward_sdeconv_mat,
                                    odf_deconv,
                                    odf_sh_to_sharp,
-                                   auto_response)
+                                   auto_response, recursive_response)
 from dipy.reconst.peaks import peak_directions
 from dipy.core.sphere_stats import angular_similarity
 from dipy.reconst.shm import (CsaOdfModel, QballModel, sf_to_sh, sh_to_sf,
-                              real_sym_sh_basis, sph_harm_ind_list)
+                              real_sym_sh_basis, sph_harm_ind_list, real_sph_harm)
+from dipy.reconst.shm import lazy_index
+from dipy.core.geometry import cart2sphere
+import dipy.reconst.dti as dti
+from dipy.reconst.dti import fractional_anisotropy
+from dipy.core.sphere import Sphere
+
+
+def test_recursive_response_calibration():
+    SNR = 100
+    S0 = 1
+    sh_order = 8
+
+    _, fbvals, fbvecs = get_data('small_64D')
+
+    bvals = np.load(fbvals)
+    bvecs = np.load(fbvecs)
+    sphere = get_sphere('symmetric724')
+
+    gtab = gradient_table(bvals, bvecs)
+    evals = np.array([0.0015, 0.0003, 0.0003])
+    evecs = np.array([[0, 1, 0], [0, 0, 1], [1, 0, 0]]).T
+#    evecs = np.array([[1, 0, 0], [0, 1, 0], [0, 0, 1]]).T
+    mevals = np.array(([0.0015, 0.0003, 0.0003],
+                       [0.0015, 0.0003, 0.0003]))
+    angles = [(0, 0), (90, 0)]
+
+    where_dwi = lazy_index(~gtab.b0s_mask)
+
+    S_cross, sticks_cross = multi_tensor(gtab, mevals, S0, angles=angles,
+                                         fractions=[50, 50], snr=SNR)
+
+    S_single = single_tensor(gtab, S0, evals, evecs, snr=SNR)
+
+    data = np.concatenate((np.tile(S_cross, (8, 1)), np.tile(S_single, (2, 1))),
+                          axis=0)
+
+    odf_gt_cross = multi_tensor_odf(sphere.vertices, mevals, angles, [50, 50])
+
+    odf_gt_single = single_tensor_odf(sphere.vertices, evals, evecs)
+
+    response = recursive_response(gtab, data, mask=None, sh_order=8,
+                                  peak_thr=0.01, init_fa=0.05,
+                                  init_trace=0.0021, iter=8, convergence=0.001,
+                                  parallel=False)
+
+    csd = ConstrainedSphericalDeconvModel(gtab, response)
+
+    csd_fit = csd.fit(data)
+
+    assert_equal(np.all(csd_fit.shm_coeff[:, 0] >= 0), True)
+
+    fodf = csd_fit.odf(sphere)
+
+    directions_gt_single, _, _ = peak_directions(odf_gt_single, sphere)
+    directions_gt_cross, _, _ = peak_directions(odf_gt_cross, sphere)
+    directions_single, _, _ = peak_directions(fodf[8, :], sphere)
+    directions_cross, _, _ = peak_directions(fodf[0, :], sphere)
+
+    ang_sim = angular_similarity(directions_cross, directions_gt_cross)
+    assert_equal(ang_sim > 1.9, True)
+    assert_equal(directions_cross.shape[0], 2)
+    assert_equal(directions_gt_cross.shape[0], 2)
+
+    ang_sim = angular_similarity(directions_single, directions_gt_single)
+    assert_equal(ang_sim > 0.9, True)
+    assert_equal(directions_single.shape[0], 1)
+    assert_equal(directions_gt_single.shape[0], 1)
+
+    sf = sh_to_sf(response, Sphere(xyz=gtab.gradients[where_dwi]), sh_order, None)
+    sf = np.concatenate((np.array([S0]), sf))
+
+    tenmodel = dti.TensorModel(gtab, min_signal=0.001)
+
+    tenfit = tenmodel.fit(sf)
+    FA = fractional_anisotropy(tenfit.evals)
+    FA_gt = fractional_anisotropy(evals)
+    assert_almost_equal(FA, FA_gt, 1)
 
 
 def test_csdeconv():
