@@ -44,8 +44,8 @@ streamlines = set_number_of_points(streamlines, nb_points=18)
 clusters = qb.cluster(streamlines)
 
 """
-`clusters` is a `ClusterMap` object which contains intuitive functionnalies to
-interact with the clustering result.
+`clusters` is a `ClusterMap` object which contains attributes that
+provide information about the clustering result.
 """
 
 print("Nb. clusters:", len(clusters))
@@ -137,13 +137,13 @@ for cluster, color in zip(clusters, colormap):
 fvtk.clear(ren)
 ren.SetBackground(1, 1, 1)
 fvtk.add(ren, fvtk.streamtube(streamlines, colormap_full))
-fvtk.record(ren, n_frames=1, out_path='fornix_clust.png', size=(600, 600))
+fvtk.record(ren, n_frames=1, out_path='fornix_clusters.png', size=(600, 600))
 
 """
-.. figure:: fornix_clust.png
+.. figure:: fornix_clusters.png
    :align: center
 
-   **Showing the different clusters with random colors**.
+   **Showing the different clusters**.
 
 It is also possible to save the complete `ClusterMap` object with pickling.
 """
