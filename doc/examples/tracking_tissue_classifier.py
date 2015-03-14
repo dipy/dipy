@@ -1,12 +1,14 @@
 """
-================================================
+=================================================
 Using Various Tissue Classifiers for Tractography
-================================================
+=================================================
 The tissue classifier determines if the tracking stops or continues at each
 tracking position. The tracking stops when it reaches an ending region
 (e.g. low FA, gray matter or corticospinal fluid regions) or exits the image
 boundaries. The tracking also stops if the direction getter has no direction
-to follow. Each tissue classifier determines if the stopping is 'valid' or
+to follow.
+
+Each tissue classifier determines if the stopping is 'valid' or
 'invalid'. A streamline is 'valid' when the tissue classifier determines if
 the streamline stops in a position classified as 'ENDPOINT' or 'OUTSIDEIMAGE'.
 A streamline is 'invalid' when it stops in a position classified as
@@ -70,7 +72,7 @@ tracking position.
 
 - 'ENDPOINT': metric_map < threshold,
 - 'OUTSIDEIMAGE': tracking point outside of metric_map,
-- 'TRACKPOINT': stopped because no direction is available,
+- 'TRACKPOINT': stop because no direction is available,
 - 'INVALIDPOINT': N/A.
 """
 
@@ -125,7 +127,7 @@ fvtk.record(ren, out_path='all_streamlines_threshold_classifier.png',
 .. figure:: all_streamlines_threshold_classifier.png
  :align: center
 
- **Deterministic tractography using a thresholded fractional anisotropy map.**
+ **Deterministic tractography using a thresholded fractional anisotropy.**
 """
 
 
@@ -133,10 +135,10 @@ fvtk.record(ren, out_path='all_streamlines_threshold_classifier.png',
 Binary Tissue Classifier
 ------------------------
 A binary mask can be used to define where the tracking stops. The binary
-tissue classifier stop the tracking whenever the tracking position is outside
-of the mask. Here, we show how to obtain the binary tissue classifier from
+tissue classifier stops the tracking whenever the tracking position is outside
+the mask. Here, we show how to obtain the binary tissue classifier from
 the white matter mask defined above. The binary tissue classifier uses a
-nearest-neighbourhood interpolation at the tracking position.
+nearest-neighborhood interpolation at the tracking position.
 
 **Parameters**
 
@@ -146,7 +148,7 @@ nearest-neighbourhood interpolation at the tracking position.
 
 - 'ENDPOINT': mask = 0
 - 'OUTSIDEIMAGE': tracking point outside of mask
-- 'TRACKPOINT': stopped because no direction is available
+- 'TRACKPOINT': no direction is available
 - 'INVALIDPOINT': N/A
 """
 
@@ -205,10 +207,7 @@ the streamline reached an 'invalid' stopping region (e.g. corticospinal fluid
 PVE map). The background of the anatomical image should be added to the
 'include_map' to keep streamlines exiting the brain (e.g. through the
 brain stem). The ACT tissue classifier uses a trilinear interpolation
-at the tracking position. The proposed method that cuts streamlines going
-through subcortical gray matter regions is not implemented.
-The backtracking technique for streamlines reaching INVALIDPOINT is not
-implemented either.
+at the tracking position.
 
 **Parameters**
 
@@ -219,7 +218,7 @@ implemented either.
 
 - 'ENDPOINT': include_map > 0.5,
 - 'OUTSIDEIMAGE': tracking point outside of include_map or exclude_map,
-- 'TRACKPOINT': stopped because no direction is available,
+- 'TRACKPOINT': no direction is available,
 - 'INVALIDPOINT': exclude_map > 0.5.
 """
 
@@ -321,10 +320,13 @@ the ACT tissue classifier determines if the tracking stopped in expected regions
 (e.g. gray matter) and allows the user to get only streamlines stopping in those
 regions.
 
-"""
+Notes
+------
+Currently in ACT the proposed method that cuts streamlines going through subcortical gray matter regions is not implemented.
+The backtracking technique for streamlines reaching INVALIDPOINT is not
+implemented either.
 
 
-"""
 References
 ----------
 
