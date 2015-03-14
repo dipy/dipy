@@ -149,7 +149,7 @@ def local_tracker(DirectionGetter dg, TissueClassifier tc,
 
     cdef:
         int i
-        TissueClass tssuclass
+        TissueClass tissue_class
         double point[3], dir[3], vs[3], voxdir[3]
         double[::1] pview = point, dview = dir
         void (*step)(double*, double*, double) nogil
@@ -164,6 +164,7 @@ def local_tracker(DirectionGetter dg, TissueClassifier tc,
         dir[i] = first_step[i]
         vs[i] = voxel_size[i]
 
+    tissue_class = TRACKPOINT
     for i in range(1, streamline.shape[0]):
         if dg.get_direction(pview, dview):
             break
@@ -171,20 +172,16 @@ def local_tracker(DirectionGetter dg, TissueClassifier tc,
             voxdir[j] = dir[j] / vs[j]
         step(point, voxdir, stepsize)
         copypoint(point, &streamline[i, 0])
-        tssuclass = tc.check_point(pview)
-        if tssuclass == TRACKPOINT:
+        tissue_class = tc.check_point(pview)
+        if tissue_class == TRACKPOINT:
             continue
-        elif tssuclass == ENDPOINT:
+        elif (tissue_class == ENDPOINT or
+              tissue_class == INVALIDPOINT):
             i += 1
             break
-        elif tssuclass == OUTSIDEIMAGE:
-            break
-        elif tssuclass == INVALIDPOINT:
-            i = - (i + 1)
+        elif tissue_class == OUTSIDEIMAGE:
             break
     else:
         # maximum length of streamline has been reached, return everything
         i = streamline.shape[0]
-
-    return i
-
+    return i, tissue_class

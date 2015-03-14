@@ -254,7 +254,7 @@ class DeterministicMaximumDirectionGetter(ProbabilisticDirectionGetter):
     function (pmf).
     """
     def get_direction(self, point, direction):
-        """Find direction with the highest pmf to updates ``direction`` array 
+        """Find direction with the highest pmf to updates ``direction`` array
         with a new direction.
         Parameters
         ----------
@@ -275,7 +275,7 @@ class DeterministicMaximumDirectionGetter(ProbabilisticDirectionGetter):
 
         if pmf[idx] == 0:
             return 1
-        
+
         newdir = self.vertices[idx]
         # Update direction and return 0 for error
         if np.dot(newdir, _asarray(direction)) > 0:

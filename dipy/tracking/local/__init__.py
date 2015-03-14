@@ -1,7 +1,8 @@
 from .localtracking import LocalTracking
-from .tissue_classifier import ThresholdTissueClassifier, TissueClassifier
+from .tissue_classifier import (ActTissueClassifier, BinaryTissueClassifier,
+                                ThresholdTissueClassifier, TissueClassifier)
 from .direction_getter import DirectionGetter
 from dipy.tracking import utils
 
-__all__ = ["LocalTracking", "ThresholdTissueClassifier"]
-
+__all__ = ["LocalTracking", "ActTissueClassifier",
+           "BinaryTissueClassifier", "ThresholdTissueClassifier", "TissueTypes"]

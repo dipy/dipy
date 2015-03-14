@@ -384,7 +384,7 @@ def fetch_stanford_t1():
     url_t1 = url + 't1.nii.gz'
     folder = pjoin(dipy_home, 'stanford_hardi')
     file_md5 = 'a6a140da6a947d4131b2368752951b0a'
-    files = {"t1.nii.gz" : (url_t1, file_md5)}
+    files = {"t1.nii.gz": (url_t1, file_md5)}
     fetch_data(files, folder)
     return files, folder
 
@@ -394,6 +394,33 @@ def read_stanford_t1():
     f_t1 = pjoin(folder, 't1.nii.gz')
     img = nib.load(f_t1)
     return img
+
+
+def fetch_stanford_pve_maps():
+    url = 'https://stacks.stanford.edu/file/druid:yx282xq2090/'
+    url_pve_csf = url + 'pve_csf.nii.gz'
+    url_pve_gm = url + 'pve_gm.nii.gz'
+    url_pve_wm = url + 'pve_wm.nii.gz'
+    folder = pjoin(dipy_home, 'stanford_hardi')
+    file_csf_md5 = '2c498e4fed32bca7f726e28aa86e9c18'
+    file_gm_md5 = '1654b20aeb35fc2734a0d7928b713874'
+    file_wm_md5 = '2e244983cf92aaf9f9d37bc7716b37d5'
+    files = {"pve_csf.nii.gz": (url_pve_csf, file_csf_md5),
+             "pve_gm.nii.gz": (url_pve_gm, file_gm_md5),
+             "pve_wm.nii.gz": (url_pve_wm, file_wm_md5)}
+    fetch_data(files, folder)
+    return files, folder
+
+
+def read_stanford_pve_maps():
+    files, folder = fetch_stanford_pve_maps()
+    f_pve_csf = pjoin(folder, 'pve_csf.nii.gz')
+    f_pve_gm = pjoin(folder, 'pve_gm.nii.gz')
+    f_pve_wm = pjoin(folder, 'pve_wm.nii.gz')
+    img_pve_csf = nib.load(f_pve_csf)
+    img_pve_gm = nib.load(f_pve_gm)
+    img_pve_wm = nib.load(f_pve_wm)
+    return (img_pve_csf, img_pve_gm, img_pve_wm)
 
 
 def fetch_taiwan_ntu_dsi():
