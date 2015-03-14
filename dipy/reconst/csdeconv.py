@@ -843,7 +843,7 @@ def auto_response(gtab, data, roi_center=None, roi_radius=10, fa_thr=0.7,
 
 def recursive_response(gtab, data, mask=None, sh_order=8, peak_thr=0.01,
                        init_fa=0.08, init_trace=0.0021, iter=8,
-                       convergence=0.001, parallel=True,
+                       convergence=0.001, parallel=True, nbr_processes=None,
                        sphere=default_sphere):
     """ Recursive calibration of response function using peak threshold
 
@@ -873,6 +873,9 @@ def recursive_response(gtab, data, mask=None, sh_order=8, peak_thr=0.01,
     parallel : bool, optional
         Whether to use parallelization in peak-finding during the calibration
         procedure. Default: True
+    nbr_processes: int
+        If `parallel` is True, the number of subprocesses to use
+        (default multiprocessing.cpu_count()).
     sphere : Sphere, optional.
         The sphere used for peak finding. Default: default_sphere.
     
@@ -919,7 +922,8 @@ def recursive_response(gtab, data, mask=None, sh_order=8, peak_thr=0.01,
                                      sphere=sphere,
                                      relative_peak_threshold=peak_thr,
                                      min_separation_angle=25,
-                                     parallel=parallel)
+                                     parallel=parallel,
+                                     nbr_processes=nbr_processes)
 
         dirs = csd_peaks.peak_dirs
         vals = csd_peaks.peak_values

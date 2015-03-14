@@ -145,7 +145,7 @@ response_actor = fvtk.sphere_funcs(response_signal, sphere)
 ren = fvtk.ren()
 
 fvtk.add(ren, response_actor)
-print('Saving illustration as csd_response.png')
+print('Saving illustration as csd_recursive_response.png')
 fvtk.record(ren, out_path='csd_recursive_response.png', size=(200, 200))
 
 """
