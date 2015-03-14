@@ -75,25 +75,15 @@ response's function's ODF. Here is how:
 """
 
 from dipy.viz import fvtk
-
 ren = fvtk.ren()
-
 evals = response[0]
-
 evecs = np.array([[0, 1, 0], [0, 0, 1], [1, 0, 0]]).T
-
 from dipy.data import get_sphere
-
 sphere = get_sphere('symmetric724')
-
 from dipy.sims.voxel import single_tensor_odf
-
 response_odf = single_tensor_odf(sphere.vertices, evals, evecs)
-
 response_actor = fvtk.sphere_funcs(response_odf, sphere)
-
 fvtk.add(ren, response_actor)
-
 print('Saving illustration as csd_response.png')
 fvtk.record(ren, out_path='csd_response.png', size=(200, 200))
 
@@ -109,9 +99,11 @@ fvtk.rm(ren, response_actor)
 
 """
 However, using an FA threshold is not a very robust method. It is dependent on
-the dataset (non-informed used subjectivity), and still depends on the diffusion tensor
-(FA and first eigenvector), which has low accuracy at high b-value. Alternatively,
-one can calibrate the response function directly from the data according to [Tax2014]_.
+the dataset (non-informed used subjectivity), and still depends on the
+diffusion tensor (FA and first eigenvector), which has low accuracy at high
+b-value. Alternatively, one can calibrate the response function directly from
+the data according to [Tax2014]_. 
+
 First, the data is deconvolved with a 'fat' response function. All voxels that
 contain only one peak (as determined by the peak threshold which gives an upper
 limit of the ratio of the second peak to the first peak) are maintained, and from
@@ -119,8 +111,6 @@ these voxels a new response function is determined. This process is repeated
 until convergence is reached. Here we calibrate the response function on a small
 part of the data.
 """
-
-data_small = data[20:50, 55:85, 38:39]
 
 from dipy.reconst.csdeconv import recursive_response
 
@@ -130,17 +120,12 @@ based on the DTI fit.
 """
 
 import dipy.reconst.dti as dti
-
 tenmodel = dti.TensorModel(gtab)
-
 tenfit = tenmodel.fit(data, mask=data[..., 0] > 200)
 
 from dipy.reconst.dti import fractional_anisotropy
-
 FA = fractional_anisotropy(tenfit.evals)
-
 MD = dti.mean_diffusivity(tenfit.evals)
-
 wm_mask = (np.logical_or(FA >= 0.4, (np.logical_and(FA >= 0.15, MD >= 0.0011))))
 
 response = recursive_response(gtab, data, mask=wm_mask, sh_order=8,
@@ -150,8 +135,8 @@ response = recursive_response(gtab, data, mask=wm_mask, sh_order=8,
 
 
 """
-We can check the shape of the signal of the response function, which should be like
-a pancake:
+We can check the shape of the signal of the response function, which should be
+like  a pancake:
 """
 
 response_signal = response.on_sphere(sphere)
@@ -160,7 +145,7 @@ response_actor = fvtk.sphere_funcs(response_signal, sphere)
 ren = fvtk.ren()
 
 fvtk.add(ren, response_actor)
-
+print('Saving illustration as csd_response.png')
 fvtk.record(ren, out_path='csd_recursive_response.png', size=(200, 200))
 
 """
@@ -179,13 +164,12 @@ process. Let's import the CSD model and fit the datasets.
 """
 
 from dipy.reconst.csdeconv import ConstrainedSphericalDeconvModel
-
 csd_model = ConstrainedSphericalDeconvModel(gtab, response)
 
 """
-For illustration purposes we will fit only a slice of the datasets.
+For illustration purposes we will fit only a small portion of the data.
 """
-
+data_small = data[20:50, 55:85, 38:39]
 csd_fit = csd_model.fit(data_small)
 
 """
@@ -212,7 +196,7 @@ fvtk.record(ren, out_path='csd_odfs.png', size=(600, 600))
    **CSD ODFs**.
 
 In Dipy we also provide tools for finding the peak directions (maxima) of the
-ODFs. For this purpose we strongly recommend using ``peaks_from_model``.
+ODFs. For this purpose we recommend using ``peaks_from_model``.
 """
 
 from dipy.direction import peaks_from_model
@@ -225,9 +209,7 @@ csd_peaks = peaks_from_model(model=csd_model,
                              parallel=True)
 
 fvtk.clear(ren)
-
 fodf_peaks = fvtk.peaks(csd_peaks.peak_dirs, csd_peaks.peak_values, scale=1.3)
-
 fvtk.add(ren, fodf_peaks)
 
 print('Saving illustration as csd_peaks.png')

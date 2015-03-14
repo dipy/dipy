@@ -79,7 +79,7 @@ class ConstrainedSphericalDeconvModel(SphHarmModel):
         Parameters
         ----------
         gtab : GradientTable
-        response : tuple
+        response : tuple or AxSymShResponse object
             A tuple with two elements. The first is the eigen-values as an (3,)
             ndarray and the second is the signal value for the response
             function without diffusion weighting.  This is to be able to
@@ -852,25 +852,30 @@ def recursive_response(gtab, data, mask=None, sh_order=8, peak_thr=0.01,
     gtab : GradientTable
     data : ndarray
         diffusion data
-    mask : ndarray
+    mask : ndarray, optional
         mask for recursive calibration, for example a white matter mask. It has
-        shape `data.shape[0:3]` and dtype=bool.
-    sh_order : int
-        maximal spherical harmonics order
-    peak_thr : float
+        shape `data.shape[0:3]` and dtype=bool. Default: use the entire data
+        array. 
+    sh_order : int, optional
+        maximal spherical harmonics order. Default: 8
+    peak_thr : float, optional
         peak threshold, how large the second peak can be relative to the first
-        peak in order to call it a single fiber population [1]
-    init_fa : float
-        FA of the initial 'fat' response function (tensor)
-    init_trace : float
-        trace of the initial 'fat' response function (tensor)
-    iter : int
-        maximum number of iterations for calibration
-    convergence : float
-        convergence criterion, maximum relative change of SH coefficients
-    sphere : Sphere
-        The sphere used for peak finding.
-
+        peak in order to call it a single fiber population [1]. Default: 0.01
+    init_fa : float, optional
+        FA of the initial 'fat' response function (tensor). Default: 0.08
+    init_trace : float, optional
+        trace of the initial 'fat' response function (tensor). Default: 0.0021
+    iter : int, optional
+        maximum number of iterations for calibration. Default: 8.
+    convergence : float, optional
+        convergence criterion, maximum relative change of SH
+        coefficients. Default: 0.001.
+    parallel : bool, optional
+        Whether to use parallelization in peak-finding during the calibration
+        procedure. Default: True
+    sphere : Sphere, optional.
+        The sphere used for peak finding. Default: default_sphere.
+    
     Returns
     -------
     response : ndarray
