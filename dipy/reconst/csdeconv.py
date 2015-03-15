@@ -213,7 +213,6 @@ class ConstrainedSphericalDeconvModel(SphHarmModel):
         predict_matrix = SH_basis * self.R.diagonal()
         S0 = np.asarray(S0)[..., None]
         scaling = S0 / self.response_scaling
-
         # This is the key operation: convolve and multiply by S0:
         pre_pred_sig = scaling * np.dot(predict_matrix, sh_coeff)
 

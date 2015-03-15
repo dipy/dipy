@@ -344,7 +344,7 @@ def test_r2_term_odf_sharp():
 
 def test_csd_predict():
     """
-
+    Test prediction API
     """
     SNR = 100
     S0 = 1
@@ -384,6 +384,35 @@ def test_csd_predict():
     S = csd.predict(coeff)
     csd_fit = csd.fit(S)
     npt.assert_array_almost_equal(coeff, csd_fit.shm_coeff)
+
+
+def test_csd_predict_multi():
+    """
+    Check that we can predict reasonably from multi-voxel fits:
+
+    """
+    SNR = 100
+    S0 = 1
+    _, fbvals, fbvecs = get_data('small_64D')
+    bvals = np.load(fbvals)
+    bvecs = np.load(fbvecs)
+    gtab = gradient_table(bvals, bvecs)
+    mevals = np.array(([0.0015, 0.0003, 0.0003],
+                       [0.0015, 0.0003, 0.0003]))
+    angles = [(0, 0), (60, 0)]
+    S, sticks = multi_tensor(gtab, mevals, S0, angles=angles,
+                             fractions=[50, 50], snr=SNR)
+    sphere = small_sphere
+    odf_gt = multi_tensor_odf(sphere.vertices, mevals, angles, [50, 50])
+    response = (np.array([0.0015, 0.0003, 0.0003]), S0)
+
+    csd = ConstrainedSphericalDeconvModel(gtab, response)
+    multi_S = np.array([[S, S], [S, S]]) * 123.
+    csd_fit_multi = csd.fit(multi_S)
+    S0_multi = np.mean(multi_S[..., gtab.b0s_mask], -1)
+    pred_multi = csd_fit_multi.predict(S0=S0_multi)
+    npt.assert_equal(pred_multi.shape, multi_S.shape)
+    npt.assert_array_almost_equal(pred_multi, multi_S)
 
 
 def test_sphere_scaling_csdmodel():
