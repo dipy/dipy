@@ -152,7 +152,8 @@ class ConstrainedSphericalDeconvModel(SphHarmModel):
             n_response = response.n
             m_response = response.m
         else:
-            self.S_r = estimate_response(gtab, self.response[0], self.response[1])
+            self.S_r = estimate_response(gtab, self.response[0],
+                                         self.response[1])
             r_sh = np.linalg.lstsq(self.B_dwi, self.S_r[self._where_dwi])[0]
             n_response = n
             m_response = m
