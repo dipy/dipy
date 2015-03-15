@@ -72,7 +72,7 @@ class MultiVoxelFit(ReconstFit):
 
         S0 = kwargs.get('S0', np.ones(self.fit_array.shape))
         idx = ndindex(self.fit_array.shape)
-        ijk = idx.next()
+        ijk = next(idx)
         def gimme_S0(S0, ijk):
             if isinstance(S0, np.ndarray):
                 return S0[ijk]
