@@ -392,26 +392,20 @@ def test_csd_predict_multi():
 
     """
     SNR = 100
-    S0 = 1
+    S0 = 123.
     _, fbvals, fbvecs = get_data('small_64D')
     bvals = np.load(fbvals)
     bvecs = np.load(fbvecs)
     gtab = gradient_table(bvals, bvecs)
-    mevals = np.array(([0.0015, 0.0003, 0.0003],
-                       [0.0015, 0.0003, 0.0003]))
-    angles = [(0, 0), (60, 0)]
-    S, sticks = multi_tensor(gtab, mevals, S0, angles=angles,
-                             fractions=[50, 50], snr=SNR)
-    sphere = small_sphere
-    odf_gt = multi_tensor_odf(sphere.vertices, mevals, angles, [50, 50])
     response = (np.array([0.0015, 0.0003, 0.0003]), S0)
-
     csd = ConstrainedSphericalDeconvModel(gtab, response)
-    multi_S = np.array([[S, S], [S, S]]) * 123.
+    coeff = np.random.random(45) - .5
+    coeff[..., 0] = 10.
+    S = csd.predict(coeff, S0=123.)
+    multi_S = np.array([[S, S], [S, S]])
     csd_fit_multi = csd.fit(multi_S)
     S0_multi = np.mean(multi_S[..., gtab.b0s_mask], -1)
     pred_multi = csd_fit_multi.predict(S0=S0_multi)
-    npt.assert_equal(pred_multi.shape, multi_S.shape)
     npt.assert_array_almost_equal(pred_multi, multi_S)
 
 

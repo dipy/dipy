@@ -152,7 +152,8 @@ class ConstrainedSphericalDeconvModel(SphHarmModel):
             n_response = response.n
             m_response = response.m
         else:
-            self.S_r = estimate_response(gtab, self.response[0], self.response[1])
+            self.S_r = estimate_response(gtab, self.response[0],
+                                         self.response[1])
             r_sh = np.linalg.lstsq(self.B_dwi, self.S_r[self._where_dwi])[0]
             n_response = n
             m_response = m
@@ -181,8 +182,7 @@ class ConstrainedSphericalDeconvModel(SphHarmModel):
 
     def predict(self, sh_coeff, gtab=None, S0=1):
         """Compute a signal prediction given spherical harmonic coefficients
-        and (optionally) a response function for the provided GradientTable
-        class instance.
+        for the provided GradientTable class instance.
 
         Parameters
         ----------
@@ -232,7 +232,7 @@ class ConstrainedSDTModel(SphHarmModel):
 
         The SDT computes a fiber orientation distribution (FOD) as opposed to a
         diffusion ODF as the QballModel or the CsaOdfModel. This results in a
-        sharper angular profile with better angular resolution. The Contrained
+        sharper angular profile with better angular resolution. The Constrained
         SDTModel is similar to the Constrained CSDModel but mathematically it
         deconvolves the q-ball ODF as oppposed to the HARDI signal (see [1]_
         for a comparison and a through discussion).

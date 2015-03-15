@@ -613,7 +613,6 @@ class SphHarmFit(OdfFit):
         """
         return self._shm_coef
 
-
     def predict(self, gtab=None, S0=1.0):
         """
         Predict the diffusion signal from the model coefficients.
@@ -624,9 +623,8 @@ class SphHarmFit(OdfFit):
             The directions and bvalues on which prediction is desired
 
         S0 : float array
-           The mean non-diffusion-weighted signal in each voxel. Default: 1 in
-           all voxels
-
+           The mean non-diffusion-weighted signal in each voxel.
+           Default: 1.0 in all voxels
         """
         if not hasattr(self.model, 'predict'):
             msg = "This model does not have prediction implemented yet"
