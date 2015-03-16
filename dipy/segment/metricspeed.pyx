@@ -44,12 +44,12 @@ cdef class Metric(object):
         def __get__(Metric self):
             return bool(self.is_order_invariant)
 
-    cdef int c_are_compatible(Metric self, Shape shape1, Shape shape2) nogil:
+    cdef int c_are_compatible(Metric self, Shape shape1, Shape shape2) nogil except -1:
         """ Cython version of `Metric.are_compatible`. """
         with gil:
             return self.are_compatible(shape2tuple(shape1), shape2tuple(shape2))
 
-    cdef double c_dist(Metric self, Data2D features1, Data2D features2) nogil:
+    cdef double c_dist(Metric self, Data2D features1, Data2D features2) nogil except -1.0:
         """ Cython version of `Metric.dist`. """
         with gil:
             return self.dist(np.asarray(features1), np.asarray(features2))
@@ -74,7 +74,7 @@ cdef class Metric(object):
         """
         raise NotImplementedError("Metric's subclasses must implement method `are_compatible(self, shape1, shape2)`!")
 
-    cpdef double dist(Metric self, features1, features2):
+    cpdef double dist(Metric self, features1, features2) except -1.0:
         """ Computes a distance between two data points based on their features.
 
         Parameters
@@ -134,7 +134,7 @@ cdef class CythonMetric(Metric):
         """
         return self.c_are_compatible(tuple2shape(shape1), tuple2shape(shape2)) == 1
 
-    cpdef double dist(CythonMetric self, features1, features2):
+    cpdef double dist(CythonMetric self, features1, features2) except -1.0:
         """ Computes a distance between two data points based on their features.
 
         Parameters
@@ -191,7 +191,7 @@ cdef class SumPointwiseEuclideanMetric(CythonMetric):
     is equal to $a+b+c$ where $a$ is the Euclidean distance between s1[0] and
     s2[0], $b$ between s1[1] and s2[1] and $c$ between s1[2] and s2[2].
     """
-    cdef double c_dist(SumPointwiseEuclideanMetric self, Data2D features1, Data2D features2) nogil:
+    cdef double c_dist(SumPointwiseEuclideanMetric self, Data2D features1, Data2D features2) nogil except -1.0:
         cdef :
             int N = features1.shape[0], D = features1.shape[1]
             int n, d
@@ -207,7 +207,7 @@ cdef class SumPointwiseEuclideanMetric(CythonMetric):
 
         return dist
 
-    cdef int c_are_compatible(SumPointwiseEuclideanMetric self, Shape shape1, Shape shape2) nogil:
+    cdef int c_are_compatible(SumPointwiseEuclideanMetric self, Shape shape1, Shape shape2) nogil except -1:
         return same_shape(shape1, shape2)
 
 
@@ -243,7 +243,7 @@ cdef class AveragePointwiseEuclideanMetric(SumPointwiseEuclideanMetric):
     is equal to $(a+b+c)/3$ where $a$ is the Euclidean distance between s1[0] and
     s2[0], $b$ between s1[1] and s2[1] and $c$ between s1[2] and s2[2].
     """
-    cdef double c_dist(AveragePointwiseEuclideanMetric self, Data2D features1, Data2D features2) nogil:
+    cdef double c_dist(AveragePointwiseEuclideanMetric self, Data2D features1, Data2D features2) nogil except -1.0:
         cdef int N = features1.shape[0]
         cdef double dist = SumPointwiseEuclideanMetric.c_dist(self, features1, features2)
         return dist / N
@@ -284,7 +284,7 @@ cdef class MinimumAverageDirectFlipMetric(AveragePointwiseEuclideanMetric):
         def __get__(MinimumAverageDirectFlipMetric self):
             return True  # Ordering is handled in the distance computation
 
-    cdef double c_dist(MinimumAverageDirectFlipMetric self, Data2D features1, Data2D features2) nogil:
+    cdef double c_dist(MinimumAverageDirectFlipMetric self, Data2D features1, Data2D features2) nogil except -1.0:
         cdef double dist_direct = AveragePointwiseEuclideanMetric.c_dist(self, features1, features2)
         cdef double dist_flipped = AveragePointwiseEuclideanMetric.c_dist(self, features1, features2[::-1])
         return min(dist_direct, dist_flipped)

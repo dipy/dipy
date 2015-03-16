@@ -36,7 +36,7 @@ cdef class Feature(object):
         def __set__(self, int value):
             self.is_order_invariant = bool(value)
 
-    cdef Shape c_infer_shape(Feature self, Data2D datum) nogil:
+    cdef Shape c_infer_shape(Feature self, Data2D datum) nogil  except *:
         """ Cython version of `Feature.infer_shape`. """
         with gil:
             shape = self.infer_shape(np.asarray(datum))
@@ -49,7 +49,7 @@ cdef class Feature(object):
             else:
                 raise TypeError("Only scalar, 1D or 2D array features are supported!")
 
-    cdef void c_extract(Feature self, Data2D datum, Data2D out) nogil:
+    cdef void c_extract(Feature self, Data2D datum, Data2D out) nogil  except *:
         """ Cython version of `Feature.extract`. """
         cdef Data2D c_features
         with gil:
@@ -174,10 +174,10 @@ cdef class IdentityFeature(CythonFeature):
     def __init__(IdentityFeature self):
         super(IdentityFeature, self).__init__(is_order_invariant=False)
 
-    cdef Shape c_infer_shape(IdentityFeature self, Data2D datum) nogil:
+    cdef Shape c_infer_shape(IdentityFeature self, Data2D datum) nogil except *:
         return shape_from_memview(datum)
 
-    cdef void c_extract(IdentityFeature self, Data2D datum, Data2D out) nogil:
+    cdef void c_extract(IdentityFeature self, Data2D datum, Data2D out) nogil except *:
         cdef:
             int N = datum.shape[0], D = datum.shape[1]
             int n, d
@@ -199,7 +199,7 @@ cdef class CenterOfMassFeature(CythonFeature):
     def __init__(CenterOfMassFeature self):
         super(CenterOfMassFeature, self).__init__(is_order_invariant=True)
 
-    cdef Shape c_infer_shape(CenterOfMassFeature self, Data2D datum) nogil:
+    cdef Shape c_infer_shape(CenterOfMassFeature self, Data2D datum) nogil except *:
         cdef Shape shape
         shape.ndim = 2
         shape.dims[0] = 1
@@ -207,7 +207,7 @@ cdef class CenterOfMassFeature(CythonFeature):
         shape.size = datum.shape[1]
         return shape
 
-    cdef void c_extract(CenterOfMassFeature self, Data2D datum, Data2D out) nogil:
+    cdef void c_extract(CenterOfMassFeature self, Data2D datum, Data2D out) nogil except *:
         cdef int N = datum.shape[0], D = datum.shape[1]
         cdef int i, d
 
