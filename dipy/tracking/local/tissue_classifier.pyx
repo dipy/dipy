@@ -26,7 +26,7 @@ cdef class BinaryTissueClassifier(TissueClassifier):
     @cython.boundscheck(False)
     @cython.wraparound(False)
     @cython.initializedcheck(False)
-    cpdef TissueClass check_point(self, double[::1] point):
+    cpdef TissueClass check_point(self, double[::1] point) except PYERROR:
         cdef:
             unsigned char result
             int err
@@ -122,7 +122,7 @@ cdef class ActTissueClassifier(TissueClassifier):
     @cython.boundscheck(False)
     @cython.wraparound(False)
     @cython.initializedcheck(False)
-    cpdef TissueClass check_point(self, double[::1] point):
+    cpdef TissueClass check_point(self, double[::1] point) except PYERROR:
         cdef:
             double include_result, exclude_result
             int include_err, exclude_err

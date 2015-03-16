@@ -153,7 +153,7 @@ cdef class ClustersCentroid(Clusters):
 
         Clusters.c_assign(self, id_cluster, id_element, element)
 
-    cdef int c_update(ClustersCentroid self, np.npy_intp id_cluster) nogil:
+    cdef int c_update(ClustersCentroid self, np.npy_intp id_cluster) nogil except -1:
         """ Update the centroid of a cluster.
 
         Parameters
