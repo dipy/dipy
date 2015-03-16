@@ -74,7 +74,7 @@ print(ratio)
 0.21197
 
 We can double-check that we have a good response function by visualizing the
-response's function's ODF. Here is how you would do that:
+response function's ODF. Here is how you would do that:
 """
 
 from dipy.viz import fvtk
@@ -101,10 +101,11 @@ fvtk.record(ren, out_path='csd_response.png', size=(200, 200))
 fvtk.rm(ren, response_actor)
 
 """
-Depending on the dataset, FA threshold may not be the best way to divine the
-correct response function. For one, it depends on the diffusion tensor (FA and
-first eigenvector), which has lower accuracy at high b-values. Alternatively,
-the response function can be calibrated in a data-driven manner [Tax2014]_.
+Depending on the dataset, FA threshold may not be the best way to find the
+best possible response function. For one, it depends on the diffusion tensor
+(FA and first eigenvector), which has lower accuracy at high
+b-values. Alternatively, the response function can be calibrated in a
+data-driven manner [Tax2014]_.
 
 First, the data is deconvolved with a 'fat' response function. All voxels that
 are considered to contain only one peak in this deconvolution (as determined by
