@@ -28,6 +28,9 @@ from dipy.core.sphere import Sphere
 
 
 def test_recursive_response_calibration():
+    """
+    Test the recursive response calibration method.
+    """
     SNR = 100
     S0 = 1
     sh_order = 8
@@ -41,7 +44,6 @@ def test_recursive_response_calibration():
     gtab = gradient_table(bvals, bvecs)
     evals = np.array([0.0015, 0.0003, 0.0003])
     evecs = np.array([[0, 1, 0], [0, 0, 1], [1, 0, 0]]).T
-#    evecs = np.array([[1, 0, 0], [0, 1, 0], [0, 0, 1]]).T
     mevals = np.array(([0.0015, 0.0003, 0.0003],
                        [0.0015, 0.0003, 0.0003]))
     angles = [(0, 0), (90, 0)]
@@ -108,7 +110,6 @@ def test_csdeconv():
 
     bvals = np.load(fbvals)
     bvecs = np.load(fbvecs)
-
     gtab = gradient_table(bvals, bvecs)
     mevals = np.array(([0.0015, 0.0003, 0.0003],
                        [0.0015, 0.0003, 0.0003]))
@@ -119,17 +120,11 @@ def test_csdeconv():
                              fractions=[50, 50], snr=SNR)
 
     sphere = get_sphere('symmetric362')
-
     odf_gt = multi_tensor_odf(sphere.vertices, mevals, angles, [50, 50])
-
     response = (np.array([0.0015, 0.0003, 0.0003]), S0)
-
     csd = ConstrainedSphericalDeconvModel(gtab, response)
-
     csd_fit = csd.fit(S)
-
     assert_equal(csd_fit.shm_coeff[0] > 0, True)
-
     fodf = csd_fit.odf(sphere)
 
     directions, _, _ = peak_directions(odf_gt, sphere)
@@ -142,12 +137,10 @@ def test_csdeconv():
     assert_equal(directions2.shape[0], 2)
 
     with warnings.catch_warnings(record=True) as w:
-
         ConstrainedSphericalDeconvModel(gtab, response, sh_order=10)
         assert_equal(len(w) > 0, True)
 
     with warnings.catch_warnings(record=True) as w:
-
         ConstrainedSphericalDeconvModel(gtab, response, sh_order=8)
         assert_equal(len(w) > 0, False)
 
@@ -159,7 +152,8 @@ def test_csdeconv():
     big_S = np.zeros((10, 10, 10, len(S2)))
     big_S[:] = S2
 
-    aresponse, aratio = auto_response(gtab, big_S, roi_center=(5, 5, 4), roi_radius=3, fa_thr=0.5)
+    aresponse, aratio = auto_response(gtab, big_S, roi_center=(5, 5, 4),
+                                      roi_radius=3, fa_thr=0.5)
     assert_array_almost_equal(aresponse[0], response[0])
     assert_almost_equal(aresponse[1], 100)
     assert_almost_equal(aratio, response[0][1]/response[0][0])
@@ -168,10 +162,12 @@ def test_csdeconv():
     assert_array_almost_equal(aresponse[0], response[0])
 
     _, _, nvoxels = auto_response(gtab, big_S, roi_center=(5, 5, 4),
-                                  roi_radius=30, fa_thr=0.5, return_number_of_voxels=True)
+                                  roi_radius=30, fa_thr=0.5,
+                                  return_number_of_voxels=True)
     assert_equal(nvoxels, 1000)
     _, _, nvoxels = auto_response(gtab, big_S, roi_center=(5, 5, 4),
-                                  roi_radius=30, fa_thr=1, return_number_of_voxels=True)
+                                  roi_radius=30, fa_thr=1,
+                                  return_number_of_voxels=True)
     assert_equal(nvoxels, 0)
 
 
@@ -180,10 +176,8 @@ def test_odfdeconv():
     S0 = 1
 
     _, fbvals, fbvecs = get_data('small_64D')
-
     bvals = np.load(fbvals)
     bvecs = np.load(fbvecs)
-
     gtab = gradient_table(bvals, bvecs)
     mevals = np.array(([0.0015, 0.0003, 0.0003],
                        [0.0015, 0.0003, 0.0003]))
@@ -237,15 +231,11 @@ def test_odfdeconv():
 
 
 def test_odf_sh_to_sharp():
-
     SNR = None
     S0 = 1
-
     _, fbvals, fbvecs = get_data('small_64D')
-
     bvals = np.load(fbvals)
     bvecs = np.load(fbvecs)
-
     gtab = gradient_table(bvals, bvecs)
     mevals = np.array(([0.0015, 0.0003, 0.0003],
                        [0.0015, 0.0003, 0.0003]))
@@ -387,8 +377,8 @@ def test_csd_predict():
 
 
 def test_sphere_scaling_csdmodel():
-    """Check that mirroring regulization sphere does not change the result of
-    csddeconv model"""
+    """Check that mirroring regularization sphere does not change the result of
+    the model"""
     _, fbvals, fbvecs = get_data('small_64D')
 
     bvals = np.load(fbvals)
@@ -420,8 +410,7 @@ expected_lambda = {4:27.5230088, 8:82.5713865, 16:216.0843135}
 def test_default_lambda_csdmodel():
     """We check that the default value of lambda is the expected value with
     the symmetric362 sphere. This value has empirically been found to work well
-    and changes to this default value should be discusses with the dipy team.
-
+    and changes to this default value should be discussed with the dipy team.
     """
     sphere = get_sphere('symmetric362')
 
@@ -444,12 +433,9 @@ def test_default_lambda_csdmodel():
 
 def test_csd_superres():
     """ Check the quality of csdfit with high SH order. """
-
     _, fbvals, fbvecs = get_data('small_64D')
-
     bvals = np.load(fbvals)
     bvecs = np.load(fbvecs)
-
     gtab = gradient_table(bvals, bvecs)
 
     # img, gtab = read_stanford_hardi()
