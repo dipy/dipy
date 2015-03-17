@@ -1,7 +1,8 @@
 cimport cython
 cimport numpy as np
 
-from libc.math cimport round
+cdef extern from "dpy_math.h" nogil:
+    int dpy_rint(double)
 
 from .interpolation cimport(trilinear_interpolate4d,
                             _trilinear_interpolate_c_4d)
@@ -35,9 +36,9 @@ cdef class BinaryTissueClassifier(TissueClassifier):
         if point.shape[0] != 3:
             raise ValueError("Point has wrong shape")
 
-        voxel[0] = int(round(point[0]))
-        voxel[1] = int(round(point[1]))
-        voxel[2] = int(round(point[2]))
+        voxel[0] = int(dpy_rint(point[0]))
+        voxel[1] = int(dpy_rint(point[1]))
+        voxel[2] = int(dpy_rint(point[2]))
 
         if (voxel[0] < 0 or voxel[0] > self.mask.shape[0]
                 or voxel[1] < 0 or voxel[1] > self.mask.shape[1]
