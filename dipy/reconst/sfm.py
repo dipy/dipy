@@ -16,6 +16,12 @@ This is an implementation of the sparse fascicle model described in
 import warnings
 
 import numpy as np
+
+try:
+    from numpy import nanmean
+except ImportError:
+    from scipy.stats import nanmean
+
 from dipy.utils.optpkg import optional_package
 import dipy.core.geometry as geo
 import dipy.core.gradients as grad
@@ -145,7 +151,7 @@ class ExponentialIsotropicModel(IsotropicModel):
             to_fit = np.log(data_no_b0)
 
         # Fitting to the log-transformed relative data:
-        p = np.nanmean(to_fit / self.gtab.bvals[~self.gtab.b0s_mask], -1)
+        p = nanmean(to_fit / self.gtab.bvals[~self.gtab.b0s_mask], -1)
         params = -p
         return ExponentialIsotropicFit(self, params)
 
