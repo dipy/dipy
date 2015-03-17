@@ -65,7 +65,7 @@ def test_feature_center_of_mass():
             # Test method extract
             features = feature.extract(s)
             assert_equal(features.shape, (1, s.shape[1]))
-            assert_array_equal(features, np.mean(s, axis=0)[None, :])
+            assert_array_almost_equal(features, np.mean(s, axis=0)[None, :])
 
         # This feature type is order invariant
         assert_true(feature.is_order_invariant)
