@@ -82,6 +82,7 @@ EXTS = []
 # We use some defs from npymath, but we don't want to link against npymath lib
 ext_kwargs = {'include_dirs':[np.get_include()]}
 ext_kwargs['include_dirs'].append('src')
+ext_kwargs['include_dirs'].append(pjoin('dipy', 'segment'))
 
 for modulename, other_sources, language in (
     ('dipy.reconst.peak_direction_getter', [], 'c'),
