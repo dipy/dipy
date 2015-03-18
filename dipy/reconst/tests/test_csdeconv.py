@@ -435,7 +435,7 @@ def test_default_lambda_csdmodel():
     the symmetric362 sphere. This value has empirically been found to work well
     and changes to this default value should be discussed with the dipy team.
     """
-    sphere = get_sphere('symmetric362')
+    sphere = default_sphere
 
     # Create gradient table
     _, fbvals, fbvecs = get_data('small_64D')
@@ -451,7 +451,8 @@ def test_default_lambda_csdmodel():
                                                      sh_order=sh_order,
                                                      reg_sphere=sphere)
         B_reg, _, _ = real_sym_sh_basis(sh_order, sphere.theta, sphere.phi)
-        npt.assert_array_almost_equal(model_full.B_reg, expected * B_reg)
+        npt.assert_array_almost_equal(model_full.B_reg, expected * B_reg,
+                                      decimal=4)
 
 
 def test_csd_superres():
