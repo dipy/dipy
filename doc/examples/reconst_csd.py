@@ -12,9 +12,9 @@ introduced by Tournier et al. [Tournier2007]_.
 This method is mainly useful with datasets with gradient directions acquired on
 a spherical grid.
 
-The basic idea with this method is that if we could estimate the response function of a
-single fiber then we could deconvolve the measured signal and obtain the underlying
-fiber distribution.
+The basic idea with this method is that if we could estimate the response
+function of a single fiber then we could deconvolve the measured signal and
+obtain the underlying fiber distribution.
 
 Let's first load the data. We will use a dataset with 10 b0s and 150 non-b0s
 with b-value 2000.
@@ -30,15 +30,17 @@ img, gtab = read_stanford_hardi()
 data = img.get_data()
 
 """
-You can verify the b-values of the datasets by looking at the attribute `gtab.bvals`.
+You can verify the b-values of the datasets by looking at the attribute
+`gtab.bvals`.
 
 In CSD there is an important pre-processing step: the estimation of the fiber
 response function. In order to do this we look for regions of the brain where
-it is known to have single fibers. For example if we use an ROI at the center of
-the brain, we will find single fibers from the corpus callosum. The
-``auto_response`` function will calculate FA for an ROI of radius equal to
-``roi_radius`` in the center of the volume and return the response function
-estimated in that region for the voxels with FA higher than 0.7.
+it is known that there are single coherent fiber populations. For example if we
+use an ROI at the center of the brain, we will find single fibers from the
+corpus callosum. The ``auto_response`` function will calculate FA for an ROI of
+radius equal to ``roi_radius`` in the center of the volume and return the
+response function estimated in that region for the voxels with FA higher than
+0.7.
 """
 
 from dipy.reconst.csdeconv import auto_response
@@ -46,12 +48,13 @@ from dipy.reconst.csdeconv import auto_response
 response, ratio = auto_response(gtab, data, roi_radius=10, fa_thr=0.7)
 
 """
-The ``response`` parameter contains two parameters. The first is an array with
+The ``response`` tuple contains two elements. The first is an array with
 the eigenvalues of the response function and the second is the average S0 for
 this response.
 
-It is a very good practice to always validate the result of auto_response. For,
-this purpose we can print it and have a look at its values.
+It is good practice to always validate the result of auto_response. For
+this purpose we can print the elements of ``response`` and have a look at their
+values.
 """
 
 print(response)
@@ -60,9 +63,9 @@ print(response)
 (array([ 0.0014,  0.00029,  0.00029]), 416.206)
 
 The tensor generated from the response must be prolate (two smaller eigenvalues
-should be equal) and look anisotropic with ratio of second to first eigenvalue
-of about 0.2. Or in other words the maximum eigenvalue must be around 5 times
-larger than the second maximum eigenvalue.
+should be equal) and look anisotropic with a ratio of second to first eigenvalue
+of about 0.2. Or in other words, the axial diffusivity of this tensor should
+be around 5 times larger than the radial diffusivity.
 """
 
 print(ratio)
@@ -70,8 +73,8 @@ print(ratio)
 """
 0.21197
 
-We can double check that we have a good response function by visualizing the
-response's function's ODF. Here is how:
+We can double-check that we have a good response function by visualizing the
+response function's ODF. Here is how you would do that:
 """
 
 from dipy.viz import fvtk
@@ -98,18 +101,18 @@ fvtk.record(ren, out_path='csd_response.png', size=(200, 200))
 fvtk.rm(ren, response_actor)
 
 """
-However, using an FA threshold is not a very robust method. It is dependent on
-the dataset (non-informed used subjectivity), and still depends on the
-diffusion tensor (FA and first eigenvector), which has low accuracy at high
-b-value. Alternatively, one can calibrate the response function directly from
-the data according to [Tax2014]_. 
+Depending on the dataset, FA threshold may not be the best way to find the
+best possible response function. For one, it depends on the diffusion tensor
+(FA and first eigenvector), which has lower accuracy at high
+b-values. Alternatively, the response function can be calibrated in a
+data-driven manner [Tax2014]_.
 
 First, the data is deconvolved with a 'fat' response function. All voxels that
-contain only one peak (as determined by the peak threshold which gives an upper
-limit of the ratio of the second peak to the first peak) are maintained, and from
-these voxels a new response function is determined. This process is repeated
-until convergence is reached. Here we calibrate the response function on a small
-part of the data.
+are considered to contain only one peak in this deconvolution (as determined by
+the peak threshold which gives an upper limit of the ratio of the second peak
+to the first peak) are maintained, and from these voxels a new response
+function is determined. This process is repeated until convergence is
+reached. Here we calibrate the response function on a small part of the data.
 """
 
 from dipy.reconst.csdeconv import recursive_response
