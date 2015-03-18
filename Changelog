@@ -27,14 +27,14 @@ The code found in Dipy was created by the people found in the AUTHOR file.
 * 0.9.0 (Wednesday, 18 March 2015)
 
 * Anatomically Constrained Tissue Classifiers for Tracking
-* Massive speedup (1.5X to 6X depending on data) of Constrained Spherical Deconvolution (CSD)
+* Massive speedup of Constrained Spherical Deconvolution (CSD)
+* Recursive calibration of response function for CSD
 * New experimental framework for clustering
 * Improvements and 10X speedup for Quickbundles
-* Recursive calibration of response function for CSD
-* Improvements in Linear Fascicle Evaluation
-* Geodesic Anisotropy
-* New transformation functions for registration
-* Multi b-value Sparse Fascicle Model
+* Improvements in Linear Fascicle Evaluation (LiFE)
+* New implementation of Geodesic Anisotropy 
+* New efficient transformation functions for registration
+* Sparse Fascicle Model now supports multiple b-values too
 
 
 * 0.8.0 (Tuesday, 6 Jan 2015)
