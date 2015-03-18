@@ -34,7 +34,7 @@ The code found in Dipy was created by the people found in the AUTHOR file.
 * Improvements in Linear Fascicle Evaluation (LiFE)
 * New implementation of Geodesic Anisotropy 
 * New efficient transformation functions for registration
-* Sparse Fascicle Model now supports multiple b-values too
+* Sparse Fascicle Model now supports acquisitions with multiple b-values
 
 
 * 0.8.0 (Tuesday, 6 Jan 2015)
