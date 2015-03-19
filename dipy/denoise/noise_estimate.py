@@ -156,7 +156,7 @@ def _piesno_3D(data, N, alpha=0.01, l=100, itermax=100, eps=1e-5,
     mask : ndarray
         A boolean mask indicating the voxels identified as pure noise.
 
-    Note
+    Notes
     ------
     This function assumes two things : 1. The data has a noisy, non-masked
     background and 2. The data is a repetition of the same measurements
@@ -194,15 +194,6 @@ def _piesno_3D(data, N, alpha=0.01, l=100, itermax=100, eps=1e-5,
     # Initial estimation of sigma
     denom = np.sqrt(2 * _inv_nchi_cdf(N, 1, q))
     m = np.percentile(data, q * 100) / denom
-
-    # if the percentile is 0, then more than half of the slice is zero and give
-    # up:
-    if m == 0:
-        warnings.warn("Initial estmated value of noise is 0 for current slice")
-        if return_mask:
-            return 0, np.zeros(data.shape[:-1], dtype=np.bool)
-
-        return 0
 
     phi = np.arange(1, l + 1) * m / l
     K = data.shape[-1]
