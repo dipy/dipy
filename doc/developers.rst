@@ -8,11 +8,13 @@ The core development team consists of the following individuals:
 - **Eleftherios Garyfallidis**, University of Sherbrooke, QC, CA
 - **Bago Amirbekian**, University of California, San Francisco, CA, USA
 - **Ariel Rokem**, University of Washington, WA, USA
-- **Stefan Van der Walt**, University of California, Berkeley, CA, USA
 - **Matthew Brett**, University of California, Berkeley, CA, USA
+- **Omar Ocagueda**, Center for Research in Mathematics, Valenciana, Gto., Mexico.
+- **Stefan Van der Walt**, University of California, Berkeley, CA, USA
+- **Marc-Alexandre Cote**, University of Sherbrooke, QC, CA
 - **Ian Nimmo-Smith**, MRC Cognition and Brain Sciences Unit, Cambridge, UK
 - **Maxime Descoteaux**, University of Sherbrooke, QC, CA
-- **Omar Ocagueda**, Center for Research in Mathematics, Valenciana, Gto., Mexico.
+
 
 And here is the rest of the wonderful contributors:
 
