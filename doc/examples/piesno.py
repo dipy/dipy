@@ -53,12 +53,7 @@ the Tim Trio Siemens, for which the 12 coil elements are combined into 4 groups
 of 3 coil elements each. The signal is therefore received through 4 distinct
 groups of receiver channels, yielding N = 4. Had we used a GE acquisition, we
 would have used N=1 even if multiple channel coils are used because GE uses a
-SENSE acceleration, which has a Rician noise nature and thus N is always 1.
-
-As a convenience, we will estimate the noise for the whole volume in one go,
-but it is also possible to get a slice by slice estimation of the noise if
-it is more desirable through the :func:`dipy.denoise.noise_estimate.piesno_3D`
-function.
+SENSE reconstruction, which has a Rician noise nature and thus N is always 1.
 """
 
 sigma, mask = piesno(data, N=4, return_mask=True)
