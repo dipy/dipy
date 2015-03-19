@@ -12,6 +12,17 @@ See for example our registration and denoising tutorials.
 **********
 Highlights
 **********
+
+**Dipy** is an **official exhibitor** for OHBM 2015. Come and meet us!
+
+.. raw :: html
+
+	<div style="width: 80% max-width=800px">
+		<a href="http://www.frontiersin.org/Neuroinformatics/10.3389/fninf.2014.00008/abstract" target="_blank"><img alt=" " class="align-center" src="_static/hbm2015_exhibitors.jpg" style="width: 90%;max-height: 90%">
+        </a>
+	</div>
+
+
 **Dipy 0.9.2** is now available for :ref:`download <installation>`. Here is a summary of the new features.
 
 * Anatomically Constrained Tissue Classifiers for Tracking
@@ -23,7 +34,6 @@ Highlights
 * New implementation of Geodesic Anisotropy 
 * New efficient transformation functions for registration
 * Sparse Fascicle Model supports acquisitions with multiple b-values
-
 
 See :ref:`older highlights <old_highlights>`.
 
