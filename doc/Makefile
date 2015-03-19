@@ -4,7 +4,7 @@
 # download".  To use, set your sourceforge username with 'export
 # SF_USER=garyfallidis' or similar, then 'make upload-website'
 #SF_USER ?= matthewbrett
-SF_USER ?= arokem
+SF_USER ?= garyfallidis
 WWW_SF=nipy@web.sourceforge.net:/home/groups/n/ni/nipy/htdocs/dipy
 RSYNC_SF=rsync -rzhvp --delete --chmod=Dg+s,g+rw
 
