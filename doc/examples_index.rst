@@ -124,7 +124,7 @@ Fiber tracking
 - :ref:`example_tracking_eudx_odf`
 
 -------------------------------------
-Fiber tracking validation (NEW)
+Fiber tracking validation
 -------------------------------------
 
 - :ref:`example_linear_fascicle_evaluation`
@@ -139,7 +139,7 @@ Streamline analysis and connectivity
 
 
 ------------------
-Registration (NEW)
+Registration
 ------------------
 
 Image-based Registration

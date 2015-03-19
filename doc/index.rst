@@ -13,7 +13,7 @@ See for example our registration and denoising tutorials.
 Highlights
 **********
 
-**Dipy 0.8** is now available for :ref:`download <installation>`. The new
+**Dipy 0.9** is now available for :ref:`download <installation>`. The new
 release contains state-of-the-art algorithms for diffusion MRI registration, reconstruction, denoising, statistical evaluation, fiber tracking and validation of tracking.
 
 For more information about Dipy_, read the `dipy paper`_  in Frontiers in Neuroinformatics.
@@ -34,15 +34,15 @@ See :ref:`older highlights <old_highlights>`.
 Announcements
 *************
 
+- **Dipy 0.9** released, March 18th, 2015.
 - The creators of Dipy_ will attend both ISMRM and HBM 2015. Come and meet us!
 - **Dipy 0.8.0** released, 6 January, 2015.
 - Dipy_ will be an official exhibitor in `HBM 2015 <http://ohbm.loni.usc.edu>`_. Don't miss our booth!
 - Dipy was featured in `The Scientist Magazine <http://www.the-scientist.com/?articles.view/articleNo/41266/title/White-s-the-Matter>`_, Nov, 2014.
-- `Dipy paper`_ accepted in Frontiers of Neuroinformatics, 22 January, 2014.
-- **Dipy 0.7.1** Released!, 16 January, 2014.
-- **Dipy 0.7.0** Released!, 23 December, 2013.
+- `Dipy paper`_ accepted in Frontiers of Neuroinformatics, January 22nd, 2014.
+- **Dipy 0.7.1** Released!, January 16th, 2014.
+- **Dipy 0.7.0** Released!, December 23rd, 2013.
 - A team of Dipy developers **wins** the `IEEE ISBI HARDI challenge <http://hardi.epfl.ch/static/events/2013_ISBI/workshop.html#results>`_, 7 April, 2013.
-- **Dipy 0.6.0** Released!, 30 March, 2013.
 
 See some of our :ref:`past announcements <old_news>`
 
