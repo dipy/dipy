@@ -12,20 +12,18 @@ See for example our registration and denoising tutorials.
 **********
 Highlights
 **********
+**Dipy 0.9.2** is now available for :ref:`download <installation>`. Here is a summary of the new features.
 
-**Dipy 0.8** is now available for :ref:`download <installation>`. The new
-release contains state-of-the-art algorithms for diffusion MRI registration, reconstruction, denoising, statistical evaluation, fiber tracking and validation of tracking.
+* Anatomically Constrained Tissue Classifiers for Tracking
+* Massive speedup of Constrained Spherical Deconvolution (CSD)
+* Recursive calibration of response function for CSD
+* New experimental framework for clustering
+* Improvements and 10X speedup for Quickbundles
+* Improvements in Linear Fascicle Evaluation (LiFE)
+* New implementation of Geodesic Anisotropy 
+* New efficient transformation functions for registration
+* Sparse Fascicle Model supports acquisitions with multiple b-values
 
-For more information about Dipy_, read the `dipy paper`_  in Frontiers in Neuroinformatics.
-
-.. raw :: html
-
-	<div style="width: 80% max-width=800px">
-		<a href="http://www.frontiersin.org/Neuroinformatics/10.3389/fninf.2014.00008/abstract" target="_blank"><img alt=" " class="align-center" src="_static/dipy_paper_logo.jpg" style="width: 90%;max-height: 90%">
-        </a>
-	</div>
-
-So, how similar are your bundles to the real anatomy? Learn how to optimize your analysis as we did to create the fornix of the figure above, by reading the tutorials in our :ref:`gallery <examples>`.
 
 See :ref:`older highlights <old_highlights>`.
 
@@ -34,15 +32,15 @@ See :ref:`older highlights <old_highlights>`.
 Announcements
 *************
 
+- **Dipy 0.9.2** released, March 18th, 2015.
 - The creators of Dipy_ will attend both ISMRM and HBM 2015. Come and meet us!
 - **Dipy 0.8.0** released, 6 January, 2015.
 - Dipy_ will be an official exhibitor in `HBM 2015 <http://ohbm.loni.usc.edu>`_. Don't miss our booth!
 - Dipy was featured in `The Scientist Magazine <http://www.the-scientist.com/?articles.view/articleNo/41266/title/White-s-the-Matter>`_, Nov, 2014.
-- `Dipy paper`_ accepted in Frontiers of Neuroinformatics, 22 January, 2014.
-- **Dipy 0.7.1** Released!, 16 January, 2014.
-- **Dipy 0.7.0** Released!, 23 December, 2013.
+- `Dipy paper`_ accepted in Frontiers of Neuroinformatics, January 22nd, 2014.
+- **Dipy 0.7.1** Released!, January 16th, 2014.
+- **Dipy 0.7.0** Released!, December 23rd, 2013.
 - A team of Dipy developers **wins** the `IEEE ISBI HARDI challenge <http://hardi.epfl.ch/static/events/2013_ISBI/workshop.html#results>`_, 7 April, 2013.
-- **Dipy 0.6.0** Released!, 30 March, 2013.
 
 See some of our :ref:`past announcements <old_news>`
 

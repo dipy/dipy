@@ -17,7 +17,7 @@ A streamline is 'invalid' when it stops in a position classified as
 or only the 'valid' ones.
 
 This example is an extension of the
-:ref:``example_deterministic_fiber_tracking`` example. We begin by loading the
+:ref:`example_deterministic_fiber_tracking` example. We begin by loading the
 data, fitting a Constrained Spherical Deconvolution (CSD) reconstruction
 model and creating the maximum deterministic direction getter.
 """
