@@ -144,7 +144,7 @@ def _piesno_3D(data, N, alpha=0.01, l=100, itermax=100, eps=1e-5,
         reached if two subsequent estimates are smaller than eps.
         Default: 1e-5.
 
-    return_mask : bool (optiona)
+    return_mask : bool (optional)
         If True, return a mask identyfing all the pure noise voxel
         that were found. Default: False.
 
