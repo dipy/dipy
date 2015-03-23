@@ -407,7 +407,9 @@ def seeds_from_mask(mask, density=[1, 1, 1], voxel_size=None, affine=None, rando
         grid = grid / density
         grid += (.5 / density - .5)
     else:
-        pass
+        grid = np.random.random(3, density[0], density[1], density[2])
+        grid = grid.T.reshape((-1, 3))
+        grid = grid - .5
 
     # Add the grid of points to each voxel in mask
     where = np.argwhere(mask)
