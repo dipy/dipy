@@ -343,7 +343,7 @@ def subsegment(streamlines, max_segment_length):
         yield output_sl
 
 
-def seeds_from_mask(mask, density=[1, 1, 1], voxel_size=None, affine=None):
+def seeds_from_mask(mask, density=[1, 1, 1], voxel_size=None, affine=None, random=False):
     """Creates seeds for fiber tracking from a binary mask.
 
     Seeds points are placed evenly distributed in all voxels of ``mask`` which
@@ -363,6 +363,9 @@ def seeds_from_mask(mask, density=[1, 1, 1], voxel_size=None, affine=None):
         The mapping between voxel indices and the point space for seeds. A
         seed point at the center the voxel ``[i, j, k]`` will be represented as
         ``[x, y, z]`` where ``[x, y, z, 1] == np.dot(affine, [i, j, k , 1])``.
+    random : bool
+        Set this to true if you would like to generate random points in
+        each voxel, rather than have equally-spaced points
 
     Examples
     --------
@@ -398,10 +401,13 @@ def seeds_from_mask(mask, density=[1, 1, 1], voxel_size=None, affine=None):
         raise ValueError("density should be in integer array of shape (3,)")
 
     # Grid of points between -.5 and .5, centered at 0, with given density
-    grid = np.mgrid[0:density[0], 0:density[1], 0:density[2]]
-    grid = grid.T.reshape((-1, 3))
-    grid = grid / density
-    grid += (.5 / density - .5)
+    if random is False:
+        grid = np.mgrid[0:density[0], 0:density[1], 0:density[2]]
+        grid = grid.T.reshape((-1, 3))
+        grid = grid / density
+        grid += (.5 / density - .5)
+    else:
+        pass
 
     # Add the grid of points to each voxel in mask
     where = np.argwhere(mask)
