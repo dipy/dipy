@@ -9,7 +9,8 @@ from dipy.tracking.utils import (affine_for_trackvis, connectivity_matrix,
                                  density_map, length, move_streamlines,
                                  ndbincount, reduce_labels,
                                  reorder_voxels_affine, seeds_from_mask,
-                                 target, _rmi, unique_rows)
+                                 random_seeds_from_mask, target,
+                                 _rmi, unique_rows)
 
 import dipy.tracking.metrics as metrix
 
@@ -409,16 +410,21 @@ def test_seeds_from_mask():
     in_444 = ((seeds > 3.5) & (seeds < 4.5)).all(1)
     assert_equal(in_444.sum(), 3 * 4 * 5)
 
+
+def test_random_seeds_from_mask():
+
     mask = mask = np.random.random_integers(0, 1, size=(4, 6, 3))
-    seeds = seeds_from_mask(mask, density=[3,4,2], random=True)
-    assert_equal(mask.sum() * 3 * 4 * 2, len(seeds))
+    seeds = random_seeds_from_mask(mask, seeds_per_voxel=24)
+    assert_equal(mask.sum() * 24, len(seeds))
 
     mask[:] = False
     mask[2,2,2] = True
     voxel_size = 2
-    seeds = seeds_from_mask(mask, density=[4,1,2], random=True, voxel_size=voxel_size)
-    assert_equal(mask.sum() * 4 * 1* 2, len(seeds))
+    seeds = random_seeds_from_mask(mask, seeds_per_voxel=8, voxel_size=voxel_size)
+    assert_equal(mask.sum() * 8, len(seeds))
     assert_true(np.all((seeds > 2*voxel_size) & (seeds < 3*voxel_size)))
+
+
 
 def test_connectivity_matrix_shape():
 
