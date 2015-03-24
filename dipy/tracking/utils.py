@@ -368,6 +368,11 @@ def seeds_from_mask(mask, density=[1, 1, 1], voxel_size=None, affine=None):
     --------
     random_seeds_from_mask
 
+    Raises
+    ------
+    ValueError
+        When ``mask`` is not a three-dimensional array
+
     Examples
     --------
     >>> mask = np.zeros((3,3,3), 'bool')
@@ -450,6 +455,11 @@ def random_seeds_from_mask(mask, seeds_per_voxel=1, voxel_size=None, affine=None
     See Also
     --------
     seeds_from_mask
+
+    Raises
+    ------
+    ValueError
+        When ``mask`` is not a three-dimensional array
 
     Examples
     --------
