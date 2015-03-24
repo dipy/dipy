@@ -364,8 +364,10 @@ def seeds_from_mask(mask, density=[1, 1, 1], voxel_size=None, affine=None, rando
         seed point at the center the voxel ``[i, j, k]`` will be represented as
         ``[x, y, z]`` where ``[x, y, z, 1] == np.dot(affine, [i, j, k , 1])``.
     random : bool
-        Set this to true if you would like to generate random points in
-        each voxel, rather than have equally-spaced points
+        Set this to True if you would like to generate random points in
+        each voxel, rather than have equally-spaced points. If this is True,
+        each voxel contains density[0]*density[1]*density[2] number of
+        randomly placed seeds
 
     Examples
     --------
@@ -400,21 +402,27 @@ def seeds_from_mask(mask, density=[1, 1, 1], voxel_size=None, affine=None, rando
     elif density.shape != (3,):
         raise ValueError("density should be in integer array of shape (3,)")
 
-    # Grid of points between -.5 and .5, centered at 0, with given density
-    if random is False:
+    where = np.argwhere(mask)
+    seeds = None
+
+    if random:
+        seeds_per_voxel = density[0] * density[1] * density[2]
+        num_voxels = len(where)
+        # Generate as many random triplets as the number of seeds needed
+        grid = np.random.random([seeds_per_voxel * num_voxels, 3])
+        # Repeat elements of 'where' so that it can be added to grid
+        where = np.repeat(where, seeds_per_voxel, axis=0)
+        seeds = where + grid - .5
+        seeds = asarray(seeds)
+    else:
+        # Grid of points between -.5 and .5, centered at 0, with given density
         grid = np.mgrid[0:density[0], 0:density[1], 0:density[2]]
         grid = grid.T.reshape((-1, 3))
         grid = grid / density
         grid += (.5 / density - .5)
-    else:
-        grid = np.random.random(3, density[0], density[1], density[2])
-        grid = grid.T.reshape((-1, 3))
-        grid = grid - .5
-
-    # Add the grid of points to each voxel in mask
-    where = np.argwhere(mask)
-    seeds = where[:, np.newaxis, :] + grid[np.newaxis, :, :]
-    seeds = seeds.reshape((-1, 3))
+        # Add the grid of points to each voxel in mask
+        seeds = where[:, np.newaxis, :] + grid[np.newaxis, :, :]
+        seeds = seeds.reshape((-1, 3))
 
     # Apply the spacial transform
     if affine is not None:
