@@ -419,10 +419,9 @@ def test_random_seeds_from_mask():
 
     mask[:] = False
     mask[2,2,2] = True
-    voxel_size = 2
-    seeds = random_seeds_from_mask(mask, seeds_per_voxel=8, voxel_size=voxel_size)
+    seeds = random_seeds_from_mask(mask, seeds_per_voxel=8)
     assert_equal(mask.sum() * 8, len(seeds))
-    assert_true(np.all((seeds > 2*voxel_size) & (seeds < 3*voxel_size)))
+    assert_true(np.all((seeds > 1.5) & (seeds < 2.5)))
 
 
 
@@ -465,3 +464,4 @@ def test_unique_rows():
 
     assert_array_equal(unique_rows(arr), arr_w_unique)
 
+test_random_seeds_from_mask()
