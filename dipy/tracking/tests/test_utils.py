@@ -464,4 +464,3 @@ def test_unique_rows():
 
     assert_array_equal(unique_rows(arr), arr_w_unique)
 
-test_random_seeds_from_mask()
