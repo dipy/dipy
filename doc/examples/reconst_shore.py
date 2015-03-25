@@ -97,9 +97,9 @@ fvtk.record(r, n_frames=1, out_path='odfs.png', size=(600, 600))
 				estimation via Compressive Sensing in diffusion MRI", Medical
 				Image Analysis, 2013.
 
-.. [Cheng2011] Cheng J. et. al , "Theoretical Analysis and Pratical Insights
+.. [Cheng2011] Cheng J. et. al, "Theoretical Analysis and Pratical Insights
 			   on EAP Estimation via Unified HARDI Framework", MICCAI
-			   workshop workshop on Computational Diffusion MRI, 2011.
+			   workshop on Computational Diffusion MRI, 2011.
 
 .. include:: ../links_names.inc
 
