@@ -419,9 +419,9 @@ def seeds_from_mask(mask, density=[1, 1, 1], voxel_size=None, affine=None):
     seeds = where[:, np.newaxis, :] + grid[np.newaxis, :, :]
     seeds = seeds.reshape((-1, 3))
 
-    # Apply the spacial transform
+    # Apply the spatial transform
     if affine is not None:
-        # Use affine to move seeds int real world coordinates
+        # Use affine to move seeds into real world coordinates
         seeds = np.dot(seeds, affine[:3, :3].T)
         seeds += affine[:3, 3]
     elif voxel_size is not None:
@@ -495,9 +495,9 @@ def random_seeds_from_mask(mask, seeds_per_voxel=1, affine=None):
     seeds = where + grid - .5
     seeds = asarray(seeds)
 
-    # Apply the spacial transform
+    # Apply the spatial transform
     if affine is not None:
-        # Use affine to move seeds int real world coordinates
+        # Use affine to move seeds into real world coordinates
         seeds = np.dot(seeds, affine[:3, :3].T)
         seeds += affine[:3, 3]
 
