@@ -377,22 +377,22 @@ def seeds_from_mask(mask, density=[1, 1, 1], voxel_size=None, affine=None):
     --------
     >>> mask = np.zeros((3,3,3), 'bool')
     >>> mask[0,0,0] = 1
-    >>> random_seeds_from_mask(mask, seeds_per_voxel=1, voxel_size=[1,1,1])
-    array([[ 0.71053559,  0.05168337,  0.48654568]])
+    >>> seeds_from_mask(mask, [1,1,1], [1,1,1])
+    array([[ 0.5,  0.5,  0.5]])
 
-    >>> random_seeds_from_mask(mask, [1,2,3], [1,1,1])
-    array([[ 0.08188854,  0.40319033,  0.84630056],
-       [ 0.08940035,  0.41582405,  0.65676128],
-       [ 0.97432992,  0.28168557,  0.69551443],
-       [ 0.57777984,  0.41734416,  0.0895282 ],
-       [ 0.78436853,  0.28008557,  0.06566543],
-       [ 0.69205442,  0.30394494,  0.6671411 ]])
+    >>> seeds_from_mask(mask, [1,2,3], [1,1,1])
+    array([[ 0.5       ,  0.25      ,  0.16666667],
+           [ 0.5       ,  0.75      ,  0.16666667],
+           [ 0.5       ,  0.25      ,  0.5       ],
+           [ 0.5       ,  0.75      ,  0.5       ],
+           [ 0.5       ,  0.25      ,  0.83333333],
+           [ 0.5       ,  0.75      ,  0.83333333]])
     >>> mask[0,1,2] = 1
-    >>> random_seeds_from_mask(mask, seeds_per_voxel=2, voxel_size=[1.1,1.1,2.5])
-    array([[ 0.61486437,  0.09713903,  1.39425452],
-       [ 0.40882663,  0.93938287,  1.7448215 ],
-       [ 0.76580326,  1.61601651,  5.85175788],
-       [ 0.1885236 ,  1.65511974,  6.84443735]])
+    >>> seeds_from_mask(mask, [1,1,2], [1.1,1.1,2.5])
+    array([[ 0.55 ,  0.55 ,  0.625],
+           [ 0.55 ,  0.55 ,  1.875],
+           [ 0.55 ,  1.65 ,  5.625],
+           [ 0.55 ,  1.65 ,  6.875]])
 
     """
     mask = np.array(mask, dtype=bool, copy=False, ndmin=3)
@@ -431,7 +431,7 @@ def seeds_from_mask(mask, density=[1, 1, 1], voxel_size=None, affine=None):
 
     return seeds
 
-def random_seeds_from_mask(mask, seeds_per_voxel=1, voxel_size=None, affine=None):
+def random_seeds_from_mask(mask, seeds_per_voxel=1, affine=None):
     """Creates randomly placed seeds for fiber tracking from a binary mask.
 
     Seeds points are placed randomly distributed in all voxels of ``mask`` which
@@ -445,8 +445,6 @@ def random_seeds_from_mask(mask, seeds_per_voxel=1, voxel_size=None, affine=None
         A binary array specifying where to place the seeds for fiber tracking.
     seeds_per_voxel : int
         Specifies the number of seeds to place in each voxel.
-    voxel_size :
-        This argument is deprecated.
     affine : array, (4, 4)
         The mapping between voxel indices and the point space for seeds. A
         seed point at the center the voxel ``[i, j, k]`` will be represented as
@@ -466,13 +464,21 @@ def random_seeds_from_mask(mask, seeds_per_voxel=1, voxel_size=None, affine=None
     >>> mask = np.zeros((3,3,3), 'bool')
     >>> mask[0,0,0] = 1
     >>> random_seeds_from_mask(mask, seeds_per_voxel=1, voxel_size=[1,1,1])
-    TODO
+    array([[ 0.71053559,  0.05168337,  0.48654568]])
 
     >>> random_seeds_from_mask(mask, [1,2,3], [1,1,1])
-    TODO
+    array([[ 0.08188854,  0.40319033,  0.84630056],
+       [ 0.08940035,  0.41582405,  0.65676128],
+       [ 0.97432992,  0.28168557,  0.69551443],
+       [ 0.57777984,  0.41734416,  0.0895282 ],
+       [ 0.78436853,  0.28008557,  0.06566543],
+       [ 0.69205442,  0.30394494,  0.6671411 ]])
     >>> mask[0,1,2] = 1
-    >>> random_seeds_from_mask(mask, [1,1,2], [1.1,1.1,2.5])
-    TODO
+    >>> random_seeds_from_mask(mask, seeds_per_voxel=2, voxel_size=[1.1,1.1,2.5])
+    array([[ 0.61486437,  0.09713903,  1.39425452],
+       [ 0.40882663,  0.93938287,  1.7448215 ],
+       [ 0.76580326,  1.61601651,  5.85175788],
+       [ 0.1885236 ,  1.65511974,  6.84443735]])
 
     """
     mask = np.array(mask, dtype=bool, copy=False, ndmin=3)
@@ -494,10 +500,6 @@ def random_seeds_from_mask(mask, seeds_per_voxel=1, voxel_size=None, affine=None
         # Use affine to move seeds int real world coordinates
         seeds = np.dot(seeds, affine[:3, :3].T)
         seeds += affine[:3, 3]
-    elif voxel_size is not None:
-        # Use voxel_size to move seeds into trackvis space
-        seeds += .5
-        seeds *= voxel_size
 
     return seeds
 
