@@ -1304,8 +1304,10 @@ class SymmetricDiffeomorphicRegistration(DiffeomorphicRegistration):
             get_direction_and_spacings(moving_affine, self.dim)
 
         #the images' directions don't change with scale
-        self.static_direction = static_direction
-        self.moving_direction = moving_direction
+        self.static_direction = np.eye(self.dim + 1)
+        self.moving_direction = np.eye(self.dim + 1)
+        self.static_direction[:self.dim, :self.dim] = static_direction
+        self.moving_direction[:self.dim, :self.dim] = moving_direction
 
         #Build the scale space of the input images
         if self.verbosity >= VerbosityLevels.DIAGNOSE:

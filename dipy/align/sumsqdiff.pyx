@@ -165,7 +165,7 @@ cpdef double iterate_residual_displacement_field_ssd_2d(
             for c in range(ncols):
                 delta = delta_field[r, c]
                 sigmasq = sigmasq_field[r, c] if sigmasq_field != None else 1
-                if(target == None):
+                if(target is None):
                     b[0] = delta_field[r, c] * grad[r, c, 0]
                     b[1] = delta_field[r, c] * grad[r, c, 1]
                 else:
@@ -342,7 +342,7 @@ cpdef double iterate_residual_displacement_field_ssd_3d(
                     g[2] = grad[s, r, c, 2]
                     delta = delta_field[s, r, c]
                     sigmasq = sigmasq_field[s, r, c] if sigmasq_field != None else 1
-                    if(target == None):
+                    if(target is None):
                         b[0] = delta_field[s, r, c] * g[0]
                         b[1] = delta_field[s, r, c] * g[1]
                         b[2] = delta_field[s, r, c] * g[2]
@@ -528,7 +528,7 @@ def compute_residual_displacement_field_ssd_3d(
         cnp.npy_intp ncols = delta_field.shape[2]
         double delta, sigmasq, dotP
         cnp.npy_intp s, r, c, ds, dr, dc
-    if residual == None:
+    if residual is None:
         residual = np.empty(shape=(nslices, nrows, ncols, 3), dtype=ftype)
 
     with nogil:
@@ -538,7 +538,7 @@ def compute_residual_displacement_field_ssd_3d(
                 for c in range(ncols):
                     delta = delta_field[s, r, c]
                     sigmasq = sigmasq_field[s, r, c] if sigmasq_field != None else 1
-                    if(target == None):
+                    if(target is None):
                         b[0] = delta * gradient_field[s, r, c, 0]
                         b[1] = delta * gradient_field[s, r, c, 1]
                         b[2] = delta * gradient_field[s, r, c, 2]
@@ -638,7 +638,7 @@ cpdef compute_residual_displacement_field_ssd_2d(
         cnp.npy_intp ncols = delta_field.shape[1]
         double delta, sigmasq, dotP
         cnp.npy_intp r, c, dr, dc
-    if residual == None:
+    if residual is None:
         residual = np.empty(shape=(nrows, ncols, 2), dtype=ftype)
 
     with nogil:

@@ -60,6 +60,14 @@ cdef inline double _apply_affine_2d_x1(double x0, double x1, double h,
     return aff[1, 0] * x0 + aff[1, 1] * x1 + h*aff[1, 2]
 
 
+def is_valid_affine(double[:,:] M, int dim):
+    if M is None:
+        return True
+    if M.shape[0] < dim or M.shape[1] < dim + 1:
+        return False
+    return True
+
+
 def interpolate_vector_2d(floating[:,:,:] field, double[:,:] locations):
     r"""Bilinear interpolation of a 2D vector field
 
@@ -938,6 +946,10 @@ def compose_vector_fields_2d(floating[:, :, :] d1, floating[:, :, :] d2,
     if comp is None:
         comp = np.zeros_like(d1)
 
+    if not is_valid_affine(premult_index, 2):
+        raise ValueError("Invalid index multiplication matrix")
+    if not is_valid_affine(premult_disp, 2):
+        raise ValueError("Invalid displacement multiplication matrix")
 
     _compose_vector_fields_2d(d1, d2, premult_index, premult_disp,
                               time_scaling, comp, stats)
@@ -1146,6 +1158,11 @@ def compose_vector_fields_3d(floating[:, :, :, :] d1, floating[:, :, :, :] d2,
     if comp is None:
         comp = np.zeros_like(d1)
 
+    if not is_valid_affine(premult_index, 3):
+        raise ValueError("Invalid index pre-multiplication matrix")
+    if not is_valid_affine(premult_disp, 3):
+        raise ValueError("Invalid displacement pre-multiplication matrix")
+
     _compose_vector_fields_3d(d1, d2, premult_index, premult_disp,
                               time_scaling, comp, stats)
     return comp, stats
@@ -1214,6 +1231,9 @@ def invert_vector_field_fixed_point_2d(floating[:, :, :] d,
         double[:, :] norms = np.zeros(shape=(nr, nc), dtype=np.float64)
         floating[:, :, :] p = np.zeros(shape=(nr, nc, 2), dtype=ftype)
         floating[:, :, :] q = np.zeros(shape=(nr, nc, 2), dtype=ftype)
+
+    if not is_valid_affine(w_to_img, 2):
+        raise ValueError("Invalid world-to-image transform")
 
     if start is not None:
         p[...] = start
@@ -1315,6 +1335,9 @@ def invert_vector_field_fixed_point_3d(floating[:, :, :, :] d,
         double[:, :, :] norms = np.zeros(shape=(ns, nr, nc), dtype=np.float64)
         floating[:, :, :, :] p = np.zeros(shape=(ns, nr, nc, 3), dtype=ftype)
         floating[:, :, :, :] q = np.zeros(shape=(ns, nr, nc, 3), dtype=ftype)
+
+    if not is_valid_affine(w_to_img, 3):
+        raise ValueError("Invalid world-to-image transform")
 
     if start is not None:
         p[...] = start
@@ -1430,6 +1453,14 @@ def simplify_warp_function_2d(floating[:,:,:] d,
         floating[:] tmp = np.zeros((2,), dtype=np.asarray(d).dtype)
         floating[:,:,:] out= np.zeros(shape=(nrows, ncols, 2),
                                       dtype=np.asarray(d).dtype)
+
+    if not is_valid_affine(affine_idx_in, 2):
+        raise ValueError("Invalid inner index multiplication matrix")
+    if not is_valid_affine(affine_idx_out, 2):
+        raise ValueError("Invalid outer index multiplication matrix")
+    if not is_valid_affine(affine_disp, 2):
+        raise ValueError("Invalid displacement multiplication matrix")
+
     with nogil:
 
         for i in range(nrows):
@@ -1537,6 +1568,14 @@ def simplify_warp_function_3d(floating[:,:,:,:] d,
         floating[:] tmp = np.zeros((3,), dtype=np.asarray(d).dtype)
         floating[:,:,:,:] out= np.zeros(shape=(nslices, nrows, ncols, 3),
                                         dtype=np.asarray(d).dtype)
+
+    if not is_valid_affine(affine_idx_in, 3):
+        raise ValueError("Invalid inner index multiplication matrix")
+    if not is_valid_affine(affine_idx_out, 3):
+        raise ValueError("Invalid outer index multiplication matrix")
+    if not is_valid_affine(affine_disp, 3):
+        raise ValueError("Invalid displacement multiplication matrix")
+
     with nogil:
 
         for k in range(nslices):
@@ -1608,6 +1647,9 @@ def reorient_vector_field_2d(floating[:, :, :] d,
         cnp.npy_intp i,j
         double di, dj
 
+    if not is_valid_affine(affine, 2):
+        raise ValueError("Invalid affine transform matrix")
+
     if affine is None:
         return
 
@@ -1643,6 +1685,9 @@ def reorient_vector_field_3d(floating[:, :, :, :] d,
         cnp.npy_intp ncols = d.shape[2]
         cnp.npy_intp i, j, k
         double di, dj, dk
+
+    if not is_valid_affine(affine, 3):
+        raise ValueError("Invalid affine transform matrix")
 
     if affine is None:
         return
@@ -1900,6 +1945,14 @@ def warp_3d(floating[:, :, :] volume, floating[:, :, :, :] d1,
         cnp.npy_intp i, j, k
         int inside
         double dkk, dii, djj, dk, di, dj
+
+    if not is_valid_affine(affine_idx_in, 3):
+        raise ValueError("Invalid inner index multiplication matrix")
+    if not is_valid_affine(affine_idx_out, 3):
+        raise ValueError("Invalid outer index multiplication matrix")
+    if not is_valid_affine(affine_disp, 3):
+        raise ValueError("Invalid displacement multiplication matrix")
+
     if sampling_shape is not None:
         nslices = sampling_shape[0]
         nrows = sampling_shape[1]
@@ -2008,6 +2061,10 @@ def warp_3d_affine(floating[:, :, :] volume, int[:] ref_shape,
         double alpha, beta, gamma, calpha, cbeta, cgamma
         floating[:, :, :] warped = np.zeros(shape=(nslices, nrows, ncols),
                                             dtype=np.asarray(volume).dtype)
+
+    if not is_valid_affine(affine, 3):
+        raise ValueError("Invalid affine transform matrix")
+
     with nogil:
 
         for k in range(nslices):
@@ -2084,6 +2141,14 @@ def warp_3d_nn(number[:, :, :] volume, floating[:, :, :, :] d1,
         cnp.npy_intp i, j, k
         int inside
         double dkk, dii, djj, dk, di, dj
+
+    if not is_valid_affine(affine_idx_in, 3):
+        raise ValueError("Invalid inner index multiplication matrix")
+    if not is_valid_affine(affine_idx_out, 3):
+        raise ValueError("Invalid outer index multiplication matrix")
+    if not is_valid_affine(affine_disp, 3):
+        raise ValueError("Invalid displacement multiplication matrix")
+
     if sampling_shape is not None:
         nslices = sampling_shape[0]
         nrows = sampling_shape[1]
@@ -2192,6 +2257,9 @@ def warp_3d_affine_nn(number[:, :, :] volume, int[:] ref_shape,
         number[:, :, :] warped = np.zeros((nslices, nrows, ncols),
                                           dtype=np.asarray(volume).dtype)
 
+    if not is_valid_affine(affine, 3):
+        raise ValueError("Invalid affine transform matrix")
+
     with nogil:
 
         for k in range(nslices):
@@ -2265,6 +2333,14 @@ def warp_2d(floating[:, :] image, floating[:, :, :] d1,
         cnp.npy_intp ncVol = image.shape[1]
         cnp.npy_intp i, j, ii, jj
         double di, dj, dii, djj
+
+    if not is_valid_affine(affine_idx_in, 2):
+        raise ValueError("Invalid inner index multiplication matrix")
+    if not is_valid_affine(affine_idx_out, 2):
+        raise ValueError("Invalid outer index multiplication matrix")
+    if not is_valid_affine(affine_disp, 2):
+        raise ValueError("Invalid displacement multiplication matrix")
+
     if sampling_shape is not None:
         nrows = sampling_shape[0]
         ncols = sampling_shape[1]
@@ -2358,6 +2434,9 @@ def warp_2d_affine(floating[:, :] image, int[:] ref_shape,
         floating[:, :] warped = np.zeros(shape=(nrows, ncols),
                                          dtype=np.asarray(image).dtype)
 
+    if not is_valid_affine(affine, 2):
+        raise ValueError("Invalid affine transform matrix")
+
     with nogil:
 
         for i in range(nrows):
@@ -2427,6 +2506,14 @@ def warp_2d_nn(number[:, :] image, floating[:, :, :] d1,
         cnp.npy_intp ncVol = image.shape[1]
         cnp.npy_intp i, j, ii, jj
         double di, dj, dii, djj
+
+    if not is_valid_affine(affine_idx_in, 2):
+        raise ValueError("Invalid inner index multiplication matrix")
+    if not is_valid_affine(affine_idx_out, 2):
+        raise ValueError("Invalid outer index multiplication matrix")
+    if not is_valid_affine(affine_disp, 2):
+        raise ValueError("Invalid displacement multiplication matrix")
+
     if sampling_shape is not None:
         nrows = sampling_shape[0]
         ncols = sampling_shape[1]
@@ -2518,6 +2605,10 @@ def warp_2d_affine_nn(number[:, :] image, int[:] ref_shape,
         cnp.npy_intp i, j, ii, jj
         number[:, :] warped = np.zeros((nrows, ncols),
                                        dtype=np.asarray(image).dtype)
+
+    if not is_valid_affine(affine, 2):
+        raise ValueError("Invalid affine transform matrix")
+
     with nogil:
 
         for i in range(nrows):
@@ -2659,6 +2750,11 @@ def create_random_displacement_2d(int[:] from_shape,
                                           dtype=np.float64)
         cnp.npy_intp dom_size = from_shape[0]*from_shape[1]
 
+    if not is_valid_affine(from_affine, 2):
+        raise ValueError("Invalid 'from' affine transform matrix")
+    if not is_valid_affine(to_affine, 2):
+        raise ValueError("Invalid 'to' affine transform matrix")
+
     #compute the actual displacement field in the physical space
     for i in range(from_shape[0]):
         for j in range(from_shape[1]):
@@ -2733,6 +2829,11 @@ def create_random_displacement_3d(int[:] from_shape, double[:,:] from_affine,
         double[:,:,:,:] output = np.zeros(tuple(from_shape) + (3,),
                                           dtype=np.float64)
         cnp.npy_intp dom_size = from_shape[0]*from_shape[1]*from_shape[2]
+
+    if not is_valid_affine(from_affine, 3):
+        raise ValueError("Invalid 'from' affine transform matrix")
+    if not is_valid_affine(to_affine, 3):
+        raise ValueError("Invalid 'to' affine transform matrix")
 
     #compute the actual displacement field in the physical space
     for k in range(from_shape[0]):
