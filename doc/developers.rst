@@ -9,7 +9,7 @@ The core development team consists of the following individuals:
 - **Bago Amirbekian**, University of California, San Francisco, CA, USA
 - **Ariel Rokem**, University of Washington, WA, USA
 - **Matthew Brett**, University of California, Berkeley, CA, USA
-- **Omar Ocagueda**, Center for Research in Mathematics, Valenciana, Gto., Mexico.
+- **Omar Ocegueda**, Center for Research in Mathematics, Guanajuato, Mexico
 - **Stefan Van der Walt**, University of California, Berkeley, CA, USA
 - **Marc-Alexandre Cote**, University of Sherbrooke, QC, CA
 - **Ian Nimmo-Smith**, MRC Cognition and Brain Sciences Unit, Cambridge, UK
