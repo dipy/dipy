@@ -17,7 +17,7 @@ Mailing Lists
 
 Please see the developers' list at
 http://mail.scipy.org/mailman/listinfo/nipy-devel
-Please see the users' list at
+Please see the users' forum at
 https://neurostars.org
 
 Code
