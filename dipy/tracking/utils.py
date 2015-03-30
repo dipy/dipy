@@ -463,7 +463,7 @@ def random_seeds_from_mask(mask, seeds_per_voxel=1, affine=None):
     --------
     >>> mask = np.zeros((3,3,3), 'bool')
     >>> mask[0,0,0] = 1
-    >>> random_seeds_from_mask(mask, seeds_per_voxel=1, voxel_size=[1,1,1])
+    >>> random_seeds_from_mask(mask, seeds_per_voxel=1)
     array([[ 0.71053559,  0.05168337,  0.48654568]])
 
     >>> random_seeds_from_mask(mask, [1,2,3], [1,1,1])
@@ -474,7 +474,7 @@ def random_seeds_from_mask(mask, seeds_per_voxel=1, affine=None):
        [ 0.78436853,  0.28008557,  0.06566543],
        [ 0.69205442,  0.30394494,  0.6671411 ]])
     >>> mask[0,1,2] = 1
-    >>> random_seeds_from_mask(mask, seeds_per_voxel=2, voxel_size=[1.1,1.1,2.5])
+    >>> random_seeds_from_mask(mask, seeds_per_voxel=2)
     array([[ 0.61486437,  0.09713903,  1.39425452],
        [ 0.40882663,  0.93938287,  1.7448215 ],
        [ 0.76580326,  1.61601651,  5.85175788],
