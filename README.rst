@@ -2,21 +2,23 @@
  DIPY
 ======
 
-Dipy is a python toolbox for analysis of MR diffusion imaging.
+DIPY is a python toolbox for analysis of MR diffusion imaging.
 
-Dipy is for research only; please do not use results from dipy for
+DIPY is for research only; please do not use results from DIPY for
 clinical decisions.
 
 Website
 =======
 
-Current information can always be found from the dipy website - http://dipy.org
+Current information can always be found from the DIPY website - http://dipy.org
 
 Mailing Lists
 =============
 
-Please see the developer's list at
+Please see the developers' list at
 http://mail.scipy.org/mailman/listinfo/nipy-devel
+Please see the users' forum at
+https://neurostars.org
 
 Code
 ====
@@ -34,10 +36,10 @@ You can find our sources and single-click downloads:
 License
 =======
 
-Dipy is licensed under the terms of the BSD license.
+DIPY is licensed under the terms of the BSD license.
 Please see the LICENSE file in the dipy distribution.
 
-Dipy uses other libraries also licensed under the BSD or the
+DIPY uses other libraries also licensed under the BSD or the
 MIT licenses, with the only exception of the SHORE module which
 optionally uses the cvxopt library. Cvxopt is licensed
 under the GPL license.
