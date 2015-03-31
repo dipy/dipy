@@ -413,7 +413,7 @@ def test_seeds_from_mask():
 
 def test_random_seeds_from_mask():
 
-    mask = mask = np.random.random_integers(0, 1, size=(4, 6, 3))
+    mask = np.random.random_integers(0, 1, size=(4, 6, 3))
     seeds = random_seeds_from_mask(mask, seeds_per_voxel=24)
     assert_equal(mask.sum() * 24, len(seeds))
 
