@@ -30,8 +30,17 @@ And here is the rest of the wonderful contributors:
 - **Emmanuel Caruyer**, University of Pensylvania, USA
 - **Sylvain Merlet**, INRIA, Sophia-Antipolis, FR
 - **Erick Ziegler**, Université de Liège, BE
-- **Kimberly Chan**, Stanford University, CA, US
+- **Kimberly Chan**, Stanford University, CA, USA
 - **Chantal Tax**, University Medical Center, Utrecht, NL
+- **Demian Wassermann**, INRIA, Sophia Antipolis, FR
+- **Gregory R. Lee**, Cincinnati Children's Hospital Medical Center, Cincinnati, OH, US
+- **Endolith**, New-York, NY, USA
+- **Matthias Ekman**, Donders Institute for Brain, Cognition and Behaviour, Nijmegen, NL
+- **Andrew Lawrence**
+- **Kesshi Jordan**, University of California, San Francisco, CA, USA
+- **Maria Luisa Mandelli**, University of California, San Francisco, CA, USA
+- **Adam Rybinski**, Jagiellonian University, Krakow, PL
+- **Qiyuan Tian**, Stanford University, Stanford, CA, USA
 
 Boundless collaboration is in the heart of Dipy_. We encourage everyone from anywhere in the world to join the team. You can start sharing your code `here`__. If you want to contribute but you don't know in area to focus, please send us an e-mail. We will be more than happy to help.
 
