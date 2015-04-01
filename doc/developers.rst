@@ -23,6 +23,7 @@ And here is the rest of the wonderful contributors:
 - **Samuel St-Jean**, University of Sherbrooke, QC, CA
 - **Gabriel Girard**, University of Sherbrooke, QC, CA
 - **Michael Paquette**, University of Sherbrooke, QC, CA
+- **Jean-Christophe Houde**, University of Sherbrooke, QC, CA
 - **Christopher Nguyen**, University of California, Los Angeles, CA, USA
 - **Emanuele Olivetti**, NeuroInformatics Laboratory (NILab), Trento, IT
 - **Yaroslav Halchenco**, PBS Department, Dartmouth, NH, USA
