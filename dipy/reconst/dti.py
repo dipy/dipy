@@ -1345,7 +1345,7 @@ def _nlls_err_func(tensor, design_matrix, data, weighting=None,
         all directions (when a float is provided), or to an estimate of the
         noise in each diffusion-weighting direction (if an array is
         provided). If 'gmm', the Geman-Mclure M-estimator is used for
-        weighting (see Notes.
+        weighting (see Notes).
 
     Notes
     -----

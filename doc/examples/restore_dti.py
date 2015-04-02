@@ -8,7 +8,7 @@ but not other kinds, such as "physiological" noise. For example, if a subject
 moves during the acquisition of one of the diffusion-weighted samples, this
 might have a substantial effect on the parameters of the tensor fit calculated
 in all voxels in the brain for that subject. One of the pernicious consequences
-of this is that it can lead to wrong interepertation of group differences. For
+of this is that it can lead to wrong interpretation of group differences. For
 example, some groups of participants (e.g. young children, patient groups,
 etc.) are particularly prone to motion and differences in tensor parameters and
 derived statistics (such as FA) due to motion would be confounded with actual
@@ -85,7 +85,7 @@ And use them to index into the data:
 data = img.get_data()[roi_idx]
 
 """
-This data-set is not very noisy, so we will artificially corrupt it to simulate
+This dataset is not very noisy, so we will artificially corrupt it to simulate
 the effects of "physiological" noise, such as subject motion. But first, let's
 establish a baseline, using the data as it is:
 """
