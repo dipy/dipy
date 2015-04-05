@@ -38,6 +38,7 @@ def test_slider_widget():
     ren_win.Render()
     iren.Start()
 
+
 @npt.dec.skipif(not actor.have_vtk)
 @npt.dec.skipif(not actor.have_vtk_colors)
 def test_button_widget():
@@ -57,9 +58,6 @@ def test_button_widget():
     ren_win = vtk.vtkRenderWindow()
     ren_win.AddRenderer(renderer)
 
-
-
-
     iren = vtk.vtkRenderWindowInteractor()
     iren.SetRenderWindow(ren_win)
 
@@ -67,7 +65,10 @@ def test_button_widget():
         print(obj)
         print('Pressed')
 
-    button = widget.button(iren=iren, callback=callback)
+    button_png = '/home/eleftherios/Downloads/dipy-running-high-res.png'
+    # button_png = '/home/eleftherios/Devel/icons/antique-glowing-copper-orbs/antique-copper-orbs/antique-copper-orbs-netvibes-logo.png'
+    button = widget.button(iren=iren, callback=callback,
+                           fname=button_png)
 
     from dipy.viz.widget import compute_bounds
 
@@ -75,25 +76,27 @@ def test_button_widget():
 
     ren_win.Render()
 
-    bds = compute_bounds(renderer, (.5, .5), (200, 50))
+    button_norm_coords = (.9, 1.2)
+    button_size = (100, 100)
+
+    bds = compute_bounds(renderer, button_norm_coords, button_size)
     button.GetRepresentation().PlaceWidget(bds)
     button.On()
 
     def win_callback(obj, event):
+        # print(obj)
+        print(event)
+        print(obj.GetSize())
 
-        bds = compute_bounds(renderer, (.5, .5), (200, 50))
+        bds = compute_bounds(renderer, button_norm_coords, button_size)
         button.GetRepresentation().PlaceWidget(bds)
         button.On()
-
-    #win_callback(None, None)
 
     ren_win.AddObserver(vtk.vtkCommand.ModifiedEvent, win_callback)
 
     ren_win.Render()
 
     iren.Start()
-
-
 
 
 if __name__ == '__main__':

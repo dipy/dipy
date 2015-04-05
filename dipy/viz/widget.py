@@ -62,10 +62,10 @@ def compute_bounds(renderer, normalized_display_position, size):
     return bds
 
 
-def button(iren, callback):
+def button(iren, callback, fname):
 
     image1 = vtk.vtkPNGReader()
-    image1.SetFileName('/home/eleftherios/Downloads/dipy-running-high-res.png')
+    image1.SetFileName(fname)
     image1.Update()
 
     #image2 = vtk.vtkPNGReader()
