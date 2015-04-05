@@ -11,7 +11,7 @@ import scipy.sparse as sps
 import scipy.optimize as opt
 from dipy.utils.six import with_metaclass
 
-SCIPY_LESS_0_12 = LooseVersion(scipy.__version__) < '0.12'
+SCIPY_LESS_0_12 = LooseVersion(scipy.version.short_version) < '0.12'
 
 if not SCIPY_LESS_0_12:
     from scipy.optimize import minimize
