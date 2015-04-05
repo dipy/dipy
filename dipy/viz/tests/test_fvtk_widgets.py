@@ -57,6 +57,9 @@ def test_button_widget():
     ren_win = vtk.vtkRenderWindow()
     ren_win.AddRenderer(renderer)
 
+
+
+
     iren = vtk.vtkRenderWindowInteractor()
     iren.SetRenderWindow(ren_win)
 
@@ -72,10 +75,21 @@ def test_button_widget():
 
     ren_win.Render()
 
-    bds = compute_bounds(renderer, (0.5, 0.5), (200, 100))
-
+    bds = compute_bounds(renderer, (.5, .5), (200, 50))
     button.GetRepresentation().PlaceWidget(bds)
     button.On()
+
+    def win_callback(obj, event):
+
+        bds = compute_bounds(renderer, (.5, .5), (200, 50))
+        button.GetRepresentation().PlaceWidget(bds)
+        button.On()
+
+    #win_callback(None, None)
+
+    ren_win.AddObserver(vtk.vtkCommand.ModifiedEvent, win_callback)
+
+    ren_win.Render()
 
     iren.Start()
 
