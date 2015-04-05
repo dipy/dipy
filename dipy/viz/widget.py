@@ -57,6 +57,8 @@ def compute_bounds(renderer, normalized_display_position, size):
     bds[1] = bds[0] + size[0]
     bds[2] = upperRight.GetComputedDisplayValue(renderer)[1] - size[1]
     bds[3] = bds[2] + size[1]
+
+    print(bds)
     return bds
 
 
