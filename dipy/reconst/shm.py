@@ -37,10 +37,10 @@ from dipy.core.geometry import cart2sphere
 from dipy.core.onetime import auto_attr
 from dipy.reconst.cache import Cache
 
-from distutils.version import StrictVersion
+from distutils.version import LooseVersion
 import scipy
 
-if StrictVersion(scipy.version.short_version) >= StrictVersion('0.15.0'):
+if LooseVersion(scipy.version.short_version) >= LooseVersion('0.15.0'):
     SCIPY_15_PLUS = True
 else:
     SCIPY_15_PLUS = False
