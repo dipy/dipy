@@ -50,8 +50,10 @@ def compute_bounds(renderer, normalized_display_position, size):
     upperRight = vtk.vtkCoordinate()
     upperRight.SetCoordinateSystemToNormalizedDisplay()
     upperRight.SetValue(normalized_display_position[0], normalized_display_position[1])
-    bds = [0.0]*6
+    bds = [0.0] * 6
     bds[0] = upperRight.GetComputedDisplayValue(renderer)[0] - size[0]
+    print(upperRight.GetComputedDisplayValue(renderer)[0])
+    print(upperRight.GetComputedDisplayValue(renderer)[1])
     bds[1] = bds[0] + size[0]
     bds[2] = upperRight.GetComputedDisplayValue(renderer)[1] - size[1]
     bds[3] = bds[2] + size[1]
@@ -64,14 +66,15 @@ def button(iren, callback):
     image1.SetFileName('/home/eleftherios/Downloads/dipy-running-high-res.png')
     image1.Update()
 
-    image2 = vtk.vtkPNGReader()
-    image2.SetFileName('/home/eleftherios/Downloads/dipy-running-high-res2.png')
-    image2.Update()
+    #image2 = vtk.vtkPNGReader()
+    #image2.SetFileName('/home/eleftherios/Downloads/dipy-running-high-res2.png')
+    #image2.Update()
 
     #button_rep = vtk.vtkProp3DButtonRepresentation()
     button_rep = vtk.vtkTexturedButtonRepresentation2D()
-    button_rep.SetNumberOfStates(1)
+    button_rep.SetNumberOfStates(2)
     button_rep.SetButtonTexture(0, image1.GetOutput())
+    button_rep.SetButtonTexture(1, image1.GetOutput())
     #button_rep.SetButtonTexture(1, image2.GetOutput())
 
     button_rep.SetPlaceFactor(1)
@@ -79,28 +82,12 @@ def button(iren, callback):
     #READ THIS!
     #http://www.vtk.org/Wiki/VTK/Examples/Cxx/Widgets/TexturedButtonWidget
 
-    #bds = compute_bounds(ren, (1.5, 1.5), (100, 100))
-    #print(bds)
-    button_rep.PlaceWidget([0., 100, 50, 500, 0, 0])
-
-    #button_rep.PlaceWidget(bds)
-
     button = vtk.vtkButtonWidget()
     button.SetInteractor(iren)
     button.SetRepresentation(button_rep)
-    button.On()
     button.AddObserver(vtk.vtkCommand.StateChangedEvent, callback)
 
-    #ren = iren.GetRenderWindow().GetRenderers().GetFirstRenderer()
-    #bds = compute_bounds(ren, (.5, .5), (100, 100))
-    #button_rep.PlaceWidget(bds)
-
-    #button_rep.SetPlaceFactor(1)
-
-    #button_rep.PlaceWidget((0.75, 0, 0), (250, 450))
-    # see state changed
     #http://vtk.org/gitweb?p=VTK.git;a=blob;f=Interaction/Widgets/Testing/Cxx/TestButtonWidget.cxx
     #http://vtk.org/Wiki/VTK/Examples/Cxx/Widgets/TexturedButtonWidget
-    button.SetEnabled(True)
 
     return button
