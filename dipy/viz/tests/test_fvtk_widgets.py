@@ -57,6 +57,7 @@ def test_button_widget():
 
     ren_win = vtk.vtkRenderWindow()
     ren_win.AddRenderer(renderer)
+    ren_win.SetSize(600, 600)
 
     iren = vtk.vtkRenderWindowInteractor()
     iren.SetRenderWindow(ren_win)
@@ -69,13 +70,23 @@ def test_button_widget():
     button_png = '/home/eleftherios/Devel/icons/icomoon/PNG/home3.png'
     # button_png = '/home/eleftherios/Devel/icons/antique-glowing-copper-orbs/antique-copper-orbs/antique-copper-orbs-netvibes-logo.png'
     button = widget.button(iren, callback,
-                           button_png, (.9, 1.2), (50, 50))
+                           button_png, (.8, 1.2), (50, 50))
     button_png_plus = '/home/eleftherios/Devel/icons/icomoon/PNG/plus.png'
-    # button_png = '/home/eleftherios/Devel/icons/antique-glowing-copper-orbs/antique-copper-orbs/antique-copper-orbs-netvibes-logo.png'
     button_plus = widget.button(iren, callback,
-                                button_png_plus, (.9, .8), (50, 50))
+                                button_png_plus, (.7, .8), (50, 50))
+    button_png_minus = '/home/eleftherios/Devel/icons/icomoon/PNG/minus.png'
+    button_minus = widget.button(iren, callback,
+                                 button_png_minus, (.9, .8), (50, 50))
+
 
     from dipy.viz.widget import compute_bounds
+
+    def print_status(obj, event):
+        print(obj)
+        print(event)
+        renderer.SetBackground(np.random.rand(3))
+
+    slider = widget.slider(iren=iren, callback=print_status)
 
     iren.Initialize()
 
@@ -84,15 +95,9 @@ def test_button_widget():
     button_norm_coords = (.9, 1.2)
     button_size = (50, 50)
 
-    # bds = compute_bounds(renderer, button_norm_coords, button_size)
-    # button.GetRepresentation().PlaceWidget(bds)
-    # button.On()
     button.place(renderer)
-
-    # bds = compute_bounds(renderer, (.9, .8), button_size)
-    # button_plus.GetRepresentation().PlaceWidget(bds)
-    # button_plus.On()
     button_plus.place(renderer)
+    button_minus.place(renderer)
 
     def win_callback(obj, event):
         # print(obj)
@@ -100,15 +105,8 @@ def test_button_widget():
         print(obj.GetSize())
 
         button.place(renderer)
-        # bds = compute_bounds(renderer, button_norm_coords, button_size)
-        # button.GetRepresentation().PlaceWidget(bds)
-        # button.On()
-
         button_plus.place(renderer)
-
-        # bds = compute_bounds(renderer, (.9, .8), button_size)
-        # button_plus.GetRepresentation().PlaceWidget(bds)
-        # button_plus.On()
+        button_minus.place(renderer)
 
     ren_win.AddObserver(vtk.vtkCommand.ModifiedEvent, win_callback)
 
