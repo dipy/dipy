@@ -62,15 +62,12 @@ def compute_bounds(renderer, normalized_display_position, size):
     return bds
 
 
-def button(iren, callback, fname):
+def button(iren, callback, fname, button_norm_coords, button_size):
 
     image1 = vtk.vtkPNGReader()
     image1.SetFileName(fname)
     image1.Update()
 
-    #image2 = vtk.vtkPNGReader()
-    #image2.SetFileName('/home/eleftherios/Downloads/dipy-running-high-res2.png')
-    #image2.Update()
 
     #button_rep = vtk.vtkProp3DButtonRepresentation()
     button_rep = vtk.vtkTexturedButtonRepresentation2D()
@@ -84,7 +81,15 @@ def button(iren, callback, fname):
     #READ THIS!
     #http://www.vtk.org/Wiki/VTK/Examples/Cxx/Widgets/TexturedButtonWidget
 
-    button = vtk.vtkButtonWidget()
+    class ButtonWidget(vtk.vtkButtonWidget):
+
+        def place(self, renderer):
+
+            bds = compute_bounds(renderer, button_norm_coords, button_size)
+            self.GetRepresentation().PlaceWidget(bds)
+            self.On()
+
+    button = ButtonWidget() # vtk.vtkButtonWidget()
     button.SetInteractor(iren)
     button.SetRepresentation(button_rep)
     button.AddObserver(vtk.vtkCommand.StateChangedEvent, callback)
@@ -93,3 +98,5 @@ def button(iren, callback, fname):
     #http://vtk.org/Wiki/VTK/Examples/Cxx/Widgets/TexturedButtonWidget
 
     return button
+
+
