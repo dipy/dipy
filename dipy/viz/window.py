@@ -337,6 +337,15 @@ def snapshot(ren, fname=None, size=(300, 300)):
 
 
 def analyze_snapshot(ren, im):
+    """ Analyze snapshot from memory or file
+
+    Parameters
+    ----------
+    ren: vtkRenderer
+    im: str or array
+        If string then image is read from a file otherwise the image is read
+        from a numpy array.
+    """
     if isinstance(im, string_types):
         im = imread(im)
 
