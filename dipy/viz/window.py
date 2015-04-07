@@ -1,5 +1,8 @@
 from __future__ import division, print_function, absolute_import
 
+import numpy as np
+from scipy import ndimage
+
 # Conditional import machinery for vtk
 from dipy.utils.optpkg import optional_package
 
@@ -336,23 +339,71 @@ def snapshot(ren, fname=None, size=(300, 300)):
     return True
 
 
-def analyze_snapshot(ren, im):
+def analyze_snapshot(ren, im, bg_color=(0, 0, 0), colors=None,
+                     find_objects=False,
+                     strel=None):
     """ Analyze snapshot from memory or file
 
     Parameters
     ----------
     ren: vtkRenderer
     im: str or array
-        If string then image is read from a file otherwise the image is read
-        from a numpy array.
+        If string then the image is read from a file otherwise the image is
+        read from a numpy array. The array is expected to be of shape (X, Y, 3)
+        where the last dimensions are the RGB values.
+    colors: tuple (3,) or list of tuples (3,)
+        List of colors to search in the image
+    find_objects: bool
+        If True it will calculate the number of objects that are different
+        from the background and return their position in a new image.
+    strel: array
+        Structure element to use for finding the objects.
+
+    Returns
+    -------
+    report : ReportSnapshot
+        This is an object with attibutes like ``bg_color_check`` or
+        ``colors_check`` that give information about the result of the analysis
+        of the current ``im``.
+
     """
     if isinstance(im, string_types):
         im = imread(im)
 
-    bg = ren.GetBackground()
-    if bg == (0, 0, 0):
-        import numpy.testing as npt
-        npt.assert_equal(im.sum() > 0, True)
-    else:
-        raise ValueError('The background of the renderer is not black')
-    return True
+    class ReportSnapshot(object):
+        objects = None
+        labels = None
+        bg_color_check = False
+        colors_found = False
+
+    report = ReportSnapshot()
+
+    if bg_color is not None:
+        bg = ren.GetBackground()
+        if bg == bg_color:
+            report.bg_color_check = True
+        else:
+            report.bg_color_check = False
+
+    if colors is not None:
+        if isinstance(im, tuple):
+            colors = [colors]
+        flags = [False] * len(colors)
+        for (i, col) in enumerate(colors):
+            flags[i] = np.sum(im == np.array(col)) > 0
+
+        report.colors_found = flags
+
+    if find_objects is True:
+        weights = [0.299, 0.587, 0.144]
+        gray = np.dot(im[..., :3], weights)
+        mask_threshold = np.dot(bg_color, weights)
+        if strel is None:
+            strel = np.array([[0, 1, 0],
+                              [1, 1, 1],
+                              [0, 1, 0]])
+        labels, objects = ndimage.label(gray > mask_threshold, strel)
+        report.labels = labels
+        report.objects = objects
+
+    return report

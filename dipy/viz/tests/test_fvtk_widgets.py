@@ -6,6 +6,7 @@ from dipy.viz import widget
 
 import numpy.testing as npt
 
+
 @npt.dec.skipif(not actor.have_vtk)
 @npt.dec.skipif(not actor.have_vtk_colors)
 def test_slider_widget():
@@ -38,6 +39,9 @@ def test_slider_widget():
     ren_win.Render()
     # iren.Start()
     arr = window.snapshot(renderer, size=(600, 600))
+    report = window.analyze_snapshot(renderer, arr)
+
+
 
 
 @npt.dec.skipif(not actor.have_vtk)

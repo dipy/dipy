@@ -24,8 +24,9 @@ def test_butcher():
     # window.show(renderer)
 
     # copy pixels in numpy array directly
-    arr = window.snapshot(renderer, None)
-    npt.assert_(window.analyze_snapshot(renderer, arr))
+    arr = window.snapshot(renderer)
+    report = window.analyze_snapshot(renderer, arr, find_objects=True)
+    npt.assert_equal(report.objects, 1)
 
     # The slicer can cut directly a smaller part of the image
     slicer.SetDisplayExtent(10, 30, 10, 30, 35, 35)
@@ -40,7 +41,7 @@ def test_butcher():
         # window.show(renderer)
         window.snapshot(renderer, fname)
         # imshow(window.snapshot(renderer), origin='lower')
-        npt.assert_(window.analyze_snapshot(renderer, fname))
+        npt.assert_equal(window.analyze_snapshot(renderer, fname).objects, 1)
 
 
 @npt.dec.skipif(not actor.have_vtk)
@@ -50,22 +51,35 @@ def test_streamtube_and_line_actors():
 
     renderer = window.renderer()
 
-    lines = [np.random.rand(10, 3), np.random.rand(20, 3)]
-    colors = np.random.rand(2, 3)
-    c = actor.line(lines, colors)
+    line1 = np.array([[0, 0, 0], [1, 1, 1], [2, 2, 2.]])
+    line2 = line1 + np.array([0.5, 0., 0.])
+
+    lines = [line1, line2]
+    colors = np.array([[1, 0, 0], [0, 0, 1.]])
+    c = actor.line(lines, colors, linewidth=3)
     window.add(renderer, c)
 
     # create streamtubes of the same lines and shift them a bit
-    c2 = actor.streamtube(lines, colors)
+    c2 = actor.streamtube(lines, colors, linewidth=.1)
     c2.SetPosition(2, 0, 0)
     window.add(renderer, c2)
 
-    # window.show(renderer)
+    window.show(renderer)
     arr = window.snapshot(renderer)
-    npt.assert_(window.analyze_snapshot(renderer, arr))
+    # npt.assert_(window.analyze_snapshot(renderer, arr))
+    report = window.analyze_snapshot(renderer, arr,
+                                     colors=[(255, 0, 0), (0, 0, 255)],
+                                     find_objects=True)
+
+
+    imshow(arr)
+    imshow(report.labels)
+    print(report.objects)
+    print(report.colors_found)
 
 
 if __name__ == "__main__":
 
-    npt.run_module_suite()
+    # npt.run_module_suite()
     # test_butcher()
+    test_streamtube_and_line_actors()
