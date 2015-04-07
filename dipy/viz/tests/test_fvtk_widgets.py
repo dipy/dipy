@@ -36,7 +36,8 @@ def test_slider_widget():
     iren.Initialize()
 
     ren_win.Render()
-    iren.Start()
+    # iren.Start()
+    arr = window.snapshot(renderer, size=(600, 600))
 
 
 @npt.dec.skipif(not actor.have_vtk)
@@ -111,11 +112,12 @@ def test_button_widget():
     ren_win.AddObserver(vtk.vtkCommand.ModifiedEvent, win_callback)
 
     ren_win.Render()
+    # iren.Start()
 
-    iren.Start()
-
+    arr = window.snapshot(renderer, size=(600, 600))
 
 if __name__ == '__main__':
 
-    #test_slider_widget()
-    test_button_widget()
+    # test_slider_widget()
+    # test_button_widget()
+    npt.run_module_suite()
