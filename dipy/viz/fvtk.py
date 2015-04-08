@@ -623,6 +623,7 @@ def point(points, colors, opacity=1, point_radius=0.1, theta=8, phi=8):
         mapper.SetInputData(glyph.GetOutput())
     actor = vtk.vtkActor()
     actor.SetMapper(mapper)
+    actor.GetProperty().SetOpacity(opacity)
 
     return actor
 
