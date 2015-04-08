@@ -42,8 +42,6 @@ def test_slider_widget():
     report = window.analyze_snapshot(renderer, arr)
 
 
-
-
 @npt.dec.skipif(not actor.have_vtk)
 @npt.dec.skipif(not actor.have_vtk_colors)
 def test_button_widget():
