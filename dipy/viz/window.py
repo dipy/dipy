@@ -265,9 +265,9 @@ def record(ren=None, cam_pos=None, cam_focal=None, cam_view=None,
 
     cam = ren.GetActiveCamera()
     if verbose:
-        print('Camera Position (%.2f,%.2f,%.2f)' % cam.GetPosition())
-        print('Camera Focal Point (%.2f,%.2f,%.2f)' % cam.GetFocalPoint())
-        print('Camera View Up (%.2f,%.2f,%.2f)' % cam.GetViewUp())
+        print('Camera Position (%.2f, %.2f, %.2f)' % cam.GetPosition())
+        print('Camera Focal Point (%.2f, %.2f, %.2f)' % cam.GetFocalPoint())
+        print('Camera View Up (%.2f, %.2f, %.2f)' % cam.GetViewUp())
 
     for i in range(n_frames):
         ren.GetActiveCamera().Azimuth(ang)
@@ -276,12 +276,12 @@ def record(ren=None, cam_pos=None, cam_focal=None, cam_view=None,
         renderLarge.SetMagnification(magnification)
         renderLarge.Update()
         writer.SetInputConnection(renderLarge.GetOutputPort())
-        # filename='/tmp/'+str(3000000+i)+'.png'
+
         if path_numbering:
             if out_path is None:
-                filename = str(1000000 + i) + '.png'
+                filename = str(i).zfill(6) + '.png'
             else:
-                filename = out_path + str(1000000 + i) + '.png'
+                filename = out_path + str(i).zfill(6) + '.png'
         else:
             filename = out_path
         writer.SetFileName(filename)
