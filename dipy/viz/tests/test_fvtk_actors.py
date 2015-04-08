@@ -1,9 +1,8 @@
 # -*- coding: utf-8 -*-
 import os
 import numpy as np
-import scipy as sp
 
-from dipy.viz import actor, window, utils
+from dipy.viz import actor, window
 
 import numpy.testing as npt
 from nibabel.tmpdirs import TemporaryDirectory
@@ -20,8 +19,7 @@ def test_butcher():
     affine = np.eye(4)
     slicer = actor.butcher(data, affine)
     window.add(renderer, slicer)
-
-    window.show(renderer)
+    # window.show(renderer)
 
     # copy pixels in numpy array directly
     arr = window.snapshot(renderer)
@@ -37,15 +35,11 @@ def test_butcher():
 
     # save pixels in png file not a numpy array
     with TemporaryDirectory() as tmpdir:
-        #fname = os.path.join(tmpdir, 'butcher.png')
-        fname='butcher.png'
-        print(fname)
-
+        fname = os.path.join(tmpdir, 'butcher.png')
         # window.show(renderer)
-        window.snapshot(renderer, fname)
-        1/0
-        # imshow(window.snapshot(renderer), origin='lower')
-        npt.assert_equal(window.analyze_snapshot(fname).objects, 1)
+        arr = window.snapshot(renderer, fname)
+        report = window.analyze_snapshot(fname, find_objects=True)
+        npt.assert_equal(report.objects, 1)
 
 
 @npt.dec.skipif(not actor.have_vtk)
@@ -70,20 +64,15 @@ def test_streamtube_and_line_actors():
 
     window.show(renderer)
     arr = window.snapshot(renderer)
-    # npt.assert_(window.analyze_snapshot(renderer, arr))
+
     report = window.analyze_snapshot(arr,
                                      colors=[(255, 0, 0), (0, 0, 255)],
                                      find_objects=True)
 
-
-    imshow(arr)
-    imshow(report.labels)
-    print(report.objects)
-    print(report.colors_found)
+    npt.assert_equal(report.objects, 4)
+    npt.assert_equal(report.colors_found, [True, True])
 
 
 if __name__ == "__main__":
 
-    # npt.run_module_suite()
-    test_butcher()
-    # test_streamtube_and_line_actors()
+    npt.run_module_suite()

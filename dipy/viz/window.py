@@ -324,19 +324,20 @@ def snapshot(ren, fname=None, size=(300, 300)):
     window_to_image_filter.SetInput(render_window)
     window_to_image_filter.Update()
 
+    vtk_image = window_to_image_filter.GetOutput()
+    h, w, _ = vtk_image.GetDimensions()
+    vtk_array = vtk_image.GetPointData().GetScalars()
+    components = vtk_array.GetNumberOfComponents()
+    arr = vtk_to_numpy(vtk_array).reshape(h, w, components)
+
     if fname is None:
-        vtk_image = window_to_image_filter.GetOutput()
-        h, w, _ = vtk_image.GetDimensions()
-        vtk_array = vtk_image.GetPointData().GetScalars()
-        components = vtk_array.GetNumberOfComponents()
-        arr = vtk_to_numpy(vtk_array).reshape(h, w, components)
         return arr
 
     writer = vtk.vtkPNGWriter()
     writer.SetFileName(fname)
     writer.SetInputConnection(window_to_image_filter.GetOutputPort())
     writer.Write()
-    return True
+    return arr
 
 
 def analyze_renderer(ren):
@@ -351,8 +352,9 @@ def analyze_renderer(ren):
 
     return report
 
+
 def analyze_snapshot(im, bg_color=(0, 0, 0), colors=None,
-                     find_objects=False,
+                     find_objects=True,
                      strel=None):
     """ Analyze snapshot from memory or file
 
@@ -367,7 +369,7 @@ def analyze_snapshot(im, bg_color=(0, 0, 0), colors=None,
     find_objects: bool
         If True it will calculate the number of objects that are different
         from the background and return their position in a new image.
-    strel: array
+    strel: 2d array
         Structure element to use for finding the objects.
 
     Returns
