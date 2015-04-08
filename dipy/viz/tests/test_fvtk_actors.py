@@ -21,11 +21,11 @@ def test_butcher():
     slicer = actor.butcher(data, affine)
     window.add(renderer, slicer)
 
-    # window.show(renderer)
+    window.show(renderer)
 
     # copy pixels in numpy array directly
     arr = window.snapshot(renderer)
-    report = window.analyze_snapshot(renderer, arr, find_objects=True)
+    report = window.analyze_snapshot(arr, find_objects=True)
     npt.assert_equal(report.objects, 1)
 
     # The slicer can cut directly a smaller part of the image
@@ -37,11 +37,15 @@ def test_butcher():
 
     # save pixels in png file not a numpy array
     with TemporaryDirectory() as tmpdir:
-        fname = os.path.join(tmpdir, 'butcher.png')
+        #fname = os.path.join(tmpdir, 'butcher.png')
+        fname='butcher.png'
+        print(fname)
+
         # window.show(renderer)
         window.snapshot(renderer, fname)
+        1/0
         # imshow(window.snapshot(renderer), origin='lower')
-        npt.assert_equal(window.analyze_snapshot(renderer, fname).objects, 1)
+        npt.assert_equal(window.analyze_snapshot(fname).objects, 1)
 
 
 @npt.dec.skipif(not actor.have_vtk)
@@ -67,7 +71,7 @@ def test_streamtube_and_line_actors():
     window.show(renderer)
     arr = window.snapshot(renderer)
     # npt.assert_(window.analyze_snapshot(renderer, arr))
-    report = window.analyze_snapshot(renderer, arr,
+    report = window.analyze_snapshot(arr,
                                      colors=[(255, 0, 0), (0, 0, 255)],
                                      find_objects=True)
 
@@ -81,5 +85,5 @@ def test_streamtube_and_line_actors():
 if __name__ == "__main__":
 
     # npt.run_module_suite()
-    # test_butcher()
-    test_streamtube_and_line_actors()
+    test_butcher()
+    # test_streamtube_and_line_actors()
