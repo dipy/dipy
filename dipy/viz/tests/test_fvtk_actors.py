@@ -19,7 +19,7 @@ def test_butcher():
     affine = np.eye(4)
     slicer = actor.butcher(data, affine)
     window.add(renderer, slicer)
-    # window.show(renderer)
+    window.show(renderer)
 
     # copy pixels in numpy array directly
     arr = window.snapshot(renderer)

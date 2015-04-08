@@ -16,7 +16,7 @@ def test_slider_widget():
     # Create 2 lines with 2 different colors
     lines = [np.random.rand(10, 3), np.random.rand(20, 3)]
     colors = np.array([[1., 0., 0.], [0.8, 0., 0.]])
-    c = actor.streamtube(lines, colors)
+    c = actor.line(lines, colors, linewidth=3)
     window.add(renderer, c)
 
     from dipy.viz.window import vtk
@@ -37,7 +37,7 @@ def test_slider_widget():
     iren.Initialize()
 
     ren_win.Render()
-    # iren.Start()
+    iren.Start()
     arr = window.snapshot(renderer, size=(600, 600))
     report = window.analyze_snapshot(renderer, arr)
 
@@ -120,6 +120,6 @@ def test_button_widget():
 
 if __name__ == '__main__':
 
-    # test_slider_widget()
+    test_slider_widget()
     # test_button_widget()
-    npt.run_module_suite()
+    # npt.run_module_suite()
