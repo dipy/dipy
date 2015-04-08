@@ -339,14 +339,25 @@ def snapshot(ren, fname=None, size=(300, 300)):
     return True
 
 
-def analyze_snapshot(ren, im, bg_color=(0, 0, 0), colors=None,
+def analyze_renderer(ren):
+
+    class ReportRenderer(object):
+        bg_color = None
+
+    report = ReportRenderer()
+
+    report.bg_color = ren.GetBackground()
+    report.collection = ren.GetActors()
+
+    return report
+
+def analyze_snapshot(im, bg_color=(0, 0, 0), colors=None,
                      find_objects=False,
                      strel=None):
     """ Analyze snapshot from memory or file
 
     Parameters
     ----------
-    ren: vtkRenderer
     im: str or array
         If string then the image is read from a file otherwise the image is
         read from a numpy array. The array is expected to be of shape (X, Y, 3)
@@ -378,13 +389,6 @@ def analyze_snapshot(ren, im, bg_color=(0, 0, 0), colors=None,
 
     report = ReportSnapshot()
 
-    if bg_color is not None:
-        bg = ren.GetBackground()
-        if bg == bg_color:
-            report.bg_color_check = True
-        else:
-            report.bg_color_check = False
-
     if colors is not None:
         if isinstance(im, tuple):
             colors = [colors]
@@ -398,6 +402,7 @@ def analyze_snapshot(ren, im, bg_color=(0, 0, 0), colors=None,
         weights = [0.299, 0.587, 0.144]
         gray = np.dot(im[..., :3], weights)
         mask_threshold = np.dot(bg_color, weights)
+
         if strel is None:
             strel = np.array([[0, 1, 0],
                               [1, 1, 1],
@@ -407,3 +412,6 @@ def analyze_snapshot(ren, im, bg_color=(0, 0, 0), colors=None,
         report.objects = objects
 
     return report
+
+
+
