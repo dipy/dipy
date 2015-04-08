@@ -164,7 +164,16 @@ def show(ren, title='Dipy', size=(300, 300), png_magnify=1):
             renderLarge.Update()
             writer = vtk.vtkPNGWriter()
             writer.SetInputConnection(renderLarge.GetOutputPort())
-            writer.SetFileName('fvtk.png')
+
+            import Tkinter, tkFileDialog
+            root = Tkinter.Tk()
+            root.withdraw()
+
+            file_path = tkFileDialog.asksaveasfilename(initialfile='fvtk.png',
+                                                       defaultextension='.png',
+                                                       filetypes=(("PNG file", "*.png"),("All Files", "*.*")))
+            print(file_path)
+            writer.SetFileName(file_path)
             writer.Write()
             print('Look for fvtk.png in your current working directory.')
 
