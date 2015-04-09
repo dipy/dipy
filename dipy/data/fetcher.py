@@ -161,9 +161,12 @@ def check_md5(filename, stored_md5):
     """
     computed_md5 = _get_file_md5(filename)
     if stored_md5 != computed_md5:
-        print ("MD5 checksum of filename", filename, "failed. Expected MD5 was", stored_md5,
-               "but computed MD5 was", computed_md5, '\n',
-               "Please check if the data has been downloaded correctly or if the upstream data has changed.")
+        msg = "MD5 checksum of filename " + filename + " failed.\n"
+        msg += "Expected MD5 was " + stored_md5 + "\n"
+        msg += "Current MD5 is " + computed_md5 + "\n"
+        msg += "Please check if the data has been downloaded "
+        msg += "correctly or if the upstream data has changed."
+        print (msg)
 
 
 def _get_file_data(fname, url):
