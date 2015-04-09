@@ -13,6 +13,7 @@ else:
 from os.path import join as pjoin
 from hashlib import md5
 from shutil import copyfileobj
+import tarfile
 
 import numpy as np
 import nibabel as nib
@@ -469,7 +470,7 @@ def fetch_syn_data():
     url = 'https://dl.dropboxusercontent.com/u/5918983/'
     t1 = url + 't1.nii.gz'
     b0 = url + 'b0.nii.gz'
-    
+
     folder = pjoin(dipy_home, 'syn_test')
 
     md5_list = ['701bda02bb769655c7d4a9b1df2b73a6', # t1
@@ -516,3 +517,41 @@ def read_syn_data():
     t1 = nib.load(t1_name)
     b0 = nib.load(b0_name)
     return t1, b0
+
+
+def fetch_viz_icons():
+    """ Download icons for visualization
+    """
+    url = 'https://dl.dropboxusercontent.com/u/2481924/'
+    fname = 'icomoon.tar.gz'
+    icomoon = url + fname
+    folder = pjoin(dipy_home, 'icons')
+
+    url_list = [icomoon]
+    md5_list = ['94a07cba06b4136b6687396426f1e380']
+    fname_list = [fname]
+
+    if not os.path.exists(folder):
+        print('Creating new directory %s' % folder)
+        os.makedirs(folder)
+        print('Downloading icons ...')
+        for i in range(len(md5_list)):
+            _get_file_data(pjoin(folder, fname_list[i]), url_list[i])
+            new_path = pjoin(folder, fname_list[i])
+            check_md5(new_path, md5_list[i])
+            ar = tarfile.open(new_path)
+            ar.extractall(path=folder)
+            ar.close()
+
+        print('Done.')
+        print('Files copied in folder %s' % folder)
+    else:
+        msg = 'Dataset is already in place. If you want to fetch it again, '
+        msg += 'please first remove the folder %s '
+        print(msg % folder)
+
+
+def read_viz_icons(style='icomoon', fname='infinity.png'):
+
+    folder = pjoin(dipy_home, 'icons', style)
+    return pjoin(folder, fname)

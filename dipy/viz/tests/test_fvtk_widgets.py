@@ -1,9 +1,8 @@
 import numpy as np
-
 from dipy.viz import actor
 from dipy.viz import window
 from dipy.viz import widget
-
+from dipy.data import fetch_viz_icons, read_viz_icons
 import numpy.testing as npt
 
 
@@ -69,20 +68,19 @@ def test_button_widget():
         print(obj)
         print('Pressed')
 
-    # button_png = '/home/eleftherios/Downloads/dipy-running-high-res.png'
-    button_png = '/home/eleftherios/Devel/icons/icomoon/PNG/home3.png'
-    # button_png = '/home/eleftherios/Devel/icons/antique-glowing-copper-orbs/antique-copper-orbs/antique-copper-orbs-netvibes-logo.png'
+    fetch_viz_icons()
+    button_png = read_viz_icons(fname='home3.png')
+
     button = widget.button(iren, callback,
                            button_png, (.8, 1.2), (50, 50))
-    button_png_plus = '/home/eleftherios/Devel/icons/icomoon/PNG/plus.png'
+
+    button_png_plus = read_viz_icons(fname='plus.png')
     button_plus = widget.button(iren, callback,
                                 button_png_plus, (.7, .8), (50, 50))
-    button_png_minus = '/home/eleftherios/Devel/icons/icomoon/PNG/minus.png'
+
+    button_png_minus = read_viz_icons(fname='minus.png')
     button_minus = widget.button(iren, callback,
                                  button_png_minus, (.9, .8), (50, 50))
-
-
-    from dipy.viz.widget import compute_bounds
 
     def print_status(obj, event):
         print(obj)
@@ -114,12 +112,12 @@ def test_button_widget():
     ren_win.AddObserver(vtk.vtkCommand.ModifiedEvent, win_callback)
 
     ren_win.Render()
-    # iren.Start()
+    iren.Start()
 
     arr = window.snapshot(renderer, size=(600, 600))
 
 if __name__ == '__main__':
 
-    test_slider_widget()
-    # test_button_widget()
+    # test_slider_widget()
+    test_button_widget()
     # npt.run_module_suite()

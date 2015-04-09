@@ -91,16 +91,12 @@ def save_file_dialog(initial_file='dipy.png', default_extension='.png',
                      filetypes=(("PNG file", "*.png"), ("All Files", "*.*"))):
     """ Simple Tk file dialog
     """
-
     import Tkinter, tkFileDialog
     root = Tkinter.Tk()
     root.withdraw()
-
-
     filepath = tkFileDialog.asksaveasfilename(initialfile='dipy.png',
                                               defaultextension='.png',
                                               filetypes=filetypes)
-
     return filepath
 
 
