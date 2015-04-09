@@ -181,9 +181,9 @@ def fetch_isbi2013_2shell():
     ubvec = url + '2shells-1500-2500-N64.bvec'
     folder = pjoin(dipy_home, 'isbi2013')
 
-    md5_list = ['42911a70f232321cf246315192d69c42', # data
-                '90e8cf66e0f4d9737a3b3c0da24df5ea', # bval
-                '4b7aa2757a1ccab140667b76e8075cb1'] # bvec
+    md5_list = ['42911a70f232321cf246315192d69c42',  # data
+                '90e8cf66e0f4d9737a3b3c0da24df5ea',  # bval
+                '4b7aa2757a1ccab140667b76e8075cb1']  # bvec
 
     url_list = [uraw, ubval, ubvec]
     fname_list = ['phantom64.nii.gz', 'phantom64.bval', 'phantom64.bvec']
@@ -200,7 +200,9 @@ def fetch_isbi2013_2shell():
         print('Done.')
         print('Files copied in folder %s' % folder)
     else:
-        print('Dataset is already in place. If you want to fetch it again, please first remove the folder %s ' % folder)
+        msg = 'Dataset is already in place. If you want to fetch it again, '
+        msg += 'please first remove the folder %s '
+        print(msg % folder)
 
 
 def read_isbi2013_2shell():
@@ -242,9 +244,9 @@ def fetch_sherbrooke_3shell():
     ubvec = url + '3shells-1000-2000-3500-N193.bvec'
     folder = pjoin(dipy_home, 'sherbrooke_3shell')
 
-    md5_list = ['0b735e8f16695a37bfbd66aab136eb66', # data
-                'e9b9bb56252503ea49d31fb30a0ac637', # bval
-                '0c83f7e8b917cd677ad58a078658ebb7'] # bvec
+    md5_list = ['0b735e8f16695a37bfbd66aab136eb66',  # data
+                'e9b9bb56252503ea49d31fb30a0ac637',  # bval
+                '0c83f7e8b917cd677ad58a078658ebb7']  # bvec
 
     url_list = [uraw, ubval, ubvec]
     fname_list = ['HARDI193.nii.gz', 'HARDI193.bval', 'HARDI193.bvec']
@@ -261,7 +263,9 @@ def fetch_sherbrooke_3shell():
         print('Done.')
         print('Files copied in folder %s' % folder)
     else:
-        print('Dataset is already in place. If you want to fetch it again, please first remove the folder %s ' % folder)
+        msg = 'Dataset is already in place. If you want to fetch it again, '
+        msg += 'please first remove the folder %s '
+        print(msg % folder)
 
 
 def read_sherbrooke_3shell():
@@ -329,9 +333,9 @@ def fetch_stanford_hardi():
     ubvec = url + 'dwi.bvecs'
     folder = pjoin(dipy_home, 'stanford_hardi')
 
-    md5_list = ['0b18513b46132b4d1051ed3364f2acbc', # data
-                '4e08ee9e2b1d2ec3fddb68c70ae23c36', # bval
-                '4c63a586f29afc6a48a5809524a76cb4'] # bvec
+    md5_list = ['0b18513b46132b4d1051ed3364f2acbc',  # data
+                '4e08ee9e2b1d2ec3fddb68c70ae23c36',  # bval
+                '4c63a586f29afc6a48a5809524a76cb4']  # bvec
 
     url_list = [uraw, ubval, ubvec]
     fname_list = ['HARDI150.nii.gz', 'HARDI150.bval', 'HARDI150.bvec']
@@ -348,7 +352,9 @@ def fetch_stanford_hardi():
         print('Done.')
         print('Files copied in folder %s' % folder)
     else:
-        print('Dataset is already in place. If you want to fetch it again, please first remove the folder %s ' % folder)
+        msg = 'Dataset is already in place. If you want to fetch it again, '
+        msg += 'please first remove the folder %s '
+        print(msg % folder)
 
 
 def read_stanford_hardi():
@@ -406,10 +412,10 @@ def fetch_taiwan_ntu_dsi():
     ureadme = 'http://dl.dropbox.com/u/2481924/license_taiwan_ntu_dsi.txt'
     folder = pjoin(dipy_home, 'taiwan_ntu_dsi')
 
-    md5_list = ['950408c0980a7154cb188666a885a91f', # data
-                '602e5cb5fad2e7163e8025011d8a6755', # bval
-                'a95eb1be44748c20214dc7aa654f9e6b', # bvec
-                '7fa1d5e272533e832cc7453eeba23f44'] # license
+    md5_list = ['950408c0980a7154cb188666a885a91f',  # data
+                '602e5cb5fad2e7163e8025011d8a6755',  # bval
+                'a95eb1be44748c20214dc7aa654f9e6b',  # bvec
+                '7fa1d5e272533e832cc7453eeba23f44']  # license
 
     url_list = [uraw, ubval, ubvec, ureadme]
     fname_list = ['DSI203.nii.gz', 'DSI203.bval', 'DSI203.bvec', 'DSI203_license.txt']
@@ -430,7 +436,9 @@ def fetch_taiwan_ntu_dsi():
         print('http://dsi-studio.labsolver.org')
 
     else:
-        print('Dataset is already in place. If you want to fetch it again, please first remove the folder %s ' % folder)
+        msg = 'Dataset is already in place. If you want to fetch it again, '
+        msg += 'please first remove the folder %s '
+        print(msg % folder)
 
 
 def read_taiwan_ntu_dsi():
@@ -464,6 +472,7 @@ def read_taiwan_ntu_dsi():
     img = nib.load(fraw)
     return img, gtab
 
+
 def fetch_syn_data():
     """ Download t1 and b0 volumes from the same session
     """
@@ -473,8 +482,8 @@ def fetch_syn_data():
 
     folder = pjoin(dipy_home, 'syn_test')
 
-    md5_list = ['701bda02bb769655c7d4a9b1df2b73a6', # t1
-                'e4b741f0c77b6039e67abb2885c97a78'] # b0
+    md5_list = ['701bda02bb769655c7d4a9b1df2b73a6',  # t1
+                'e4b741f0c77b6039e67abb2885c97a78']  # b0
 
     url_list = [t1, b0]
     fname_list = ['t1.nii.gz', 'b0.nii.gz']
@@ -491,7 +500,9 @@ def fetch_syn_data():
         print('Done.')
         print('Files copied in folder %s' % folder)
     else:
-        print('Dataset is already in place. If you want to fetch it again, please first remove the folder %s ' % folder)
+        msg = 'Dataset is already in place. If you want to fetch it again, '
+        msg += 'please first remove the folder %s '
+        print(msg % folder)
 
 
 def read_syn_data():
