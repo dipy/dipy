@@ -45,6 +45,47 @@ def test_identity_feature():
             assert_true(np.any(np.not_equal(features, features_flip)))
 
 
+def test_feature_resample():
+    from dipy.tracking.streamline import set_number_of_points
+
+    # Test subclassing Feature
+    class Resample(dipymetric.Feature):
+        def __init__(self, nb_points):
+            dipymetric.Feature.__init__(self, is_order_invariant=False)
+            self.nb_points = nb_points
+            if nb_points <= 0:
+                raise ValueError("Resample: `nb_points` must be strictly positive: {0}".format(nb_points))
+
+        def infer_shape(self, streamline):
+            return (self.nb_points, streamline.shape[1])
+
+        def extract(self, streamline):
+            return set_number_of_points(streamline, self.nb_points)
+
+    assert_raises(ValueError, dipymetric.ResampleFeature, nb_points=0)
+    assert_raises(ValueError, Resample, nb_points=0)
+
+    max_points = max(map(len, [s1, s2, s3, s4]))
+    for nb_points in [1, 5, 2*max_points]:
+        for feature in [dipymetric.ResampleFeature(nb_points), Resample(nb_points)]:
+            for s in [s1, s2, s3, s4]:
+                # Test method infer_shape
+                assert_equal(feature.infer_shape(s), (nb_points, s.shape[1]))
+
+                # Test method extract
+                features = feature.extract(s)
+                assert_equal(features.shape, (nb_points, s.shape[1]))
+                assert_array_almost_equal(features, set_number_of_points(s, nb_points))
+
+            # This feature type is not order invariant
+            assert_false(feature.is_order_invariant)
+            for s in [s1, s2, s3, s4]:
+                features = feature.extract(s)
+                features_flip = feature.extract(s[::-1])
+                assert_array_equal(features_flip, set_number_of_points(s[::-1], nb_points))
+                assert_true(np.any(np.not_equal(features, features_flip)))
+
+
 def test_feature_center_of_mass():
     # Test subclassing Feature
     class CenterOfMass(dipymetric.Feature):

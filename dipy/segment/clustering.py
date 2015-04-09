@@ -2,6 +2,7 @@ import operator
 import numpy as np
 
 from dipy.segment.metric import Metric
+from dipy.segment.metric import ResampleFeature
 from dipy.segment.metric import AveragePointwiseEuclideanMetric
 
 
@@ -416,7 +417,7 @@ class QuickBundles(Clustering):
     metric : str or `Metric` object (optional)
         The distance metric to use when comparing two streamlines. By default,
         the Minimum average Direct-Flip (MDF) distance [Garyfallidis12]_ is
-        used and requires streamlines to have the same number of points.
+        used and streamlines are automatically resampled so they have 18 points.
     max_nb_clusters : int
         Limits the creation of bundles.
 
@@ -433,7 +434,8 @@ class QuickBundles(Clustering):
         if isinstance(metric, Metric):
             self.metric = metric
         elif metric.upper() == "MDF":
-            self.metric = AveragePointwiseEuclideanMetric()
+            feature = ResampleFeature(nb_points=18)
+            self.metric = AveragePointwiseEuclideanMetric(feature)
 
     def cluster(self, streamlines, ordering=None, refdata=None):
         """ Clusters `streamlines` into bundles.

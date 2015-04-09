@@ -5,6 +5,7 @@ import numpy as np
 cimport numpy as np
 
 from cythonutils cimport tuple2shape, shape2tuple, shape_from_memview
+from dipy.tracking.streamlinespeed cimport c_set_number_of_points
 
 
 cdef class Feature(object):
@@ -185,6 +186,34 @@ cdef class IdentityFeature(CythonFeature):
         for n in range(N):
             for d in range(D):
                 out[n, d] = datum[n, d]
+
+
+cdef class ResampleFeature(CythonFeature):
+    """ Extracts features from a sequential datum.
+
+    A sequence of N-dimensional points is represented as a 2D array with
+    shape (nb_points, nb_dimensions).
+
+    The features being extracted are the points of the sequence once resampled.
+    This is useful for metrics requiring a constant number of points for all
+     streamlines.
+    """
+    cdef np.npy_intp nb_points
+
+    def __init__(ResampleFeature self, np.npy_intp nb_points):
+        super(ResampleFeature, self).__init__(is_order_invariant=False)
+        self.nb_points = nb_points
+
+        if nb_points <= 0:
+            raise ValueError("ResampleFeature: `nb_points` must be strictly positive: {0}".format(nb_points))
+
+    cdef Shape c_infer_shape(ResampleFeature self, Data2D datum) nogil except *:
+        cdef Shape shape = shape_from_memview(datum)
+        shape.dims[0] = self.nb_points
+        return shape
+
+    cdef void c_extract(ResampleFeature self, Data2D datum, Data2D out) nogil except *:
+        c_set_number_of_points(datum, out)
 
 
 cdef class CenterOfMassFeature(CythonFeature):

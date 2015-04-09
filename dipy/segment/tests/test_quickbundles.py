@@ -34,10 +34,24 @@ def test_quickbundles_empty_data():
 
 
 def test_quickbundles_shape_uncompatibility():
-    # QuickBundles' default metric (AveragePointwiseEuclideanMetric, aka MDF)
+    # QuickBundles' old default metric (AveragePointwiseEuclideanMetric, aka MDF)
     # requires that all streamlines have the same number of points.
-    qb = QuickBundles(threshold=20.)
+    metric = dipymetric.AveragePointwiseEuclideanMetric()
+    qb = QuickBundles(threshold=20., metric=metric)
     assert_raises(ValueError, qb.cluster, data)
+
+    # QuickBundles' new default metric (AveragePointwiseEuclideanMetric, aka MDF
+    #  combined with ResampleFeature) will automatically resample streamlines so
+    #  they all have 18 points.
+    qb = QuickBundles(threshold=20.)
+    clusters1 = qb.cluster(data)
+
+    feature = dipymetric.ResampleFeature(nb_points=18)
+    metric = dipymetric.AveragePointwiseEuclideanMetric(feature)
+    qb = QuickBundles(threshold=20., metric=metric)
+    clusters2 = qb.cluster(data)
+
+    assert_array_equal(list(itertools.chain(*clusters1)), list(itertools.chain(*clusters2)))
 
 
 def test_quickbundles_2D():
