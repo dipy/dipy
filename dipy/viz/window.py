@@ -87,6 +87,23 @@ def rm_all(ren):
     clear(ren)
 
 
+def save_file_dialog(initial_file='dipy.png', default_extension='.png',
+                     filetypes=(("PNG file", "*.png"), ("All Files", "*.*"))):
+    """ Simple Tk file dialog
+    """
+
+    import Tkinter, tkFileDialog
+    root = Tkinter.Tk()
+    root.withdraw()
+
+
+    filepath = tkFileDialog.asksaveasfilename(initialfile='dipy.png',
+                                              defaultextension='.png',
+                                              filetypes=filetypes)
+
+    return filepath
+
+
 def show(ren, title='Dipy', size=(300, 300), png_magnify=1):
     """ Show window
 
@@ -162,20 +179,19 @@ def show(ren, title='Dipy', size=(300, 300), png_magnify=1):
                 renderLarge.SetInput(ren)
             renderLarge.SetMagnification(png_magnify)
             renderLarge.Update()
-            writer = vtk.vtkPNGWriter()
-            writer.SetInputConnection(renderLarge.GetOutputPort())
 
-            import Tkinter, tkFileDialog
-            root = Tkinter.Tk()
-            root.withdraw()
-
-            file_path = tkFileDialog.asksaveasfilename(initialfile='fvtk.png',
-                                                       defaultextension='.png',
-                                                       filetypes=(("PNG file", "*.png"),("All Files", "*.*")))
-            print(file_path)
-            writer.SetFileName(file_path)
-            writer.Write()
-            print('Look for fvtk.png in your current working directory.')
+            file_types = (("PNG file", "*.png"), ("All Files", "*.*"))
+            filepath = save_file_dialog(initial_file='dipy.png',
+                                        default_extension='.png',
+                                        filetypes=file_types)
+            if filepath == '':
+                print('No file was provided in the dialog')
+            else:
+                writer = vtk.vtkPNGWriter()
+                writer.SetInputConnection(renderLarge.GetOutputPort())
+                writer.SetFileName(filepath)
+                writer.Write()
+                print('File ' + filepath + ' is saved.')
 
     iren.AddObserver('KeyPressEvent', key_press)
     iren.SetInteractorStyle(style)
