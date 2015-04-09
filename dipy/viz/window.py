@@ -2,12 +2,15 @@ from __future__ import division, print_function, absolute_import
 
 import numpy as np
 from scipy import ndimage
+import Tkinter
+import tkFileDialog
 
 # Conditional import machinery for vtk
 from dipy.utils.optpkg import optional_package
 
 from dipy import __version__ as dipy_version
 from dipy.utils.six import string_types
+
 
 # import vtk
 # Allow import, but disable doctests if we don't have vtk
@@ -17,7 +20,6 @@ numpy_support, have_ns, _ = optional_package('vtk.util.numpy_support')
 _, have_imread, _ = optional_package('Image')
 
 if have_vtk:
-
     version = vtk.vtkVersion.GetVTKSourceVersion().split(' ')[-1]
     major_version = vtk.vtkVersion.GetVTKMajorVersion()
     from vtk.util.numpy_support import vtk_to_numpy
@@ -91,7 +93,6 @@ def save_file_dialog(initial_file='dipy.png', default_extension='.png',
                      filetypes=(("PNG file", "*.png"), ("All Files", "*.*"))):
     """ Simple Tk file dialog
     """
-    import Tkinter, tkFileDialog
     root = Tkinter.Tk()
     root.withdraw()
     filepath = tkFileDialog.asksaveasfilename(initialfile='dipy.png',
@@ -100,7 +101,80 @@ def save_file_dialog(initial_file='dipy.png', default_extension='.png',
     return filepath
 
 
-def show(ren, title='Dipy', size=(300, 300), png_magnify=1):
+class ShowManager(object):
+
+    def __init__(self, ren, title='Dipy', size=(300, 300), png_magnify=1):
+
+        self.title = title
+        self.size = size
+        self.png_magnify = png_magnify
+
+        ren.ResetCamera()
+        window = vtk.vtkRenderWindow()
+        window.AddRenderer(ren)
+        # window.SetAAFrames(6)
+        window.SetWindowName(title + ' ' + dipy_version)
+        window.SetSize(size[0], size[1])
+
+        style = vtk.vtkInteractorStyleTrackballCamera()
+        iren = vtk.vtkRenderWindowInteractor()
+        iren.SetRenderWindow(window)
+
+        def key_press_standard(obj, event):
+
+            key = obj.GetKeySym()
+            if key == 's' or key == 'S':
+                print('Saving image...')
+                renderLarge = vtk.vtkRenderLargeImage()
+                if major_version <= 5:
+                    renderLarge.SetInput(ren)
+                else:
+                    renderLarge.SetInput(ren)
+                renderLarge.SetMagnification(png_magnify)
+                renderLarge.Update()
+
+                file_types = (("PNG file", "*.png"), ("All Files", "*.*"))
+                filepath = save_file_dialog(initial_file='dipy.png',
+                                            default_extension='.png',
+                                            filetypes=file_types)
+                if filepath == '':
+                    print('No file was provided in the dialog')
+                else:
+                    writer = vtk.vtkPNGWriter()
+                    writer.SetInputConnection(renderLarge.GetOutputPort())
+                    writer.SetFileName(filepath)
+                    writer.Write()
+                    print('File ' + filepath + ' is saved.')
+
+        self.window = window
+        self.ren = ren
+        self.iren = iren
+        self.style = style
+
+        self.iren.AddObserver('KeyPressEvent', key_press_standard)
+
+        self.iren.SetInteractorStyle(self.style)
+
+    def initialize(self):
+        self.iren.Initialize()
+        # picker.Pick(85, 126, 0, ren)
+
+    def render(self):
+        self.window.Render()
+
+    def start(self):
+        self.iren.Start()
+        # window.RemoveAllObservers()
+        # ren.SetRenderWindow(None)
+        self.window.RemoveRenderer(self.ren)
+        self.ren.SetRenderWindow(None)
+
+    def add_window_callback(self, win_callback):
+        self.window.AddObserver(vtk.vtkCommand.ModifiedEvent, win_callback)
+        self.window.Render()
+
+
+def show(ren, title='Dipy', size=(300, 300), png_magnify=1, widgets=None):
     """ Show window
 
     Notes

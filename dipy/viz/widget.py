@@ -57,8 +57,7 @@ def compute_bounds(renderer, normalized_display_position, size):
     bds[1] = bds[0] + size[0]
     bds[2] = upperRight.GetComputedDisplayValue(renderer)[1] - size[1]
     bds[3] = bds[2] + size[1]
-
-    print(bds)
+    # print(bds)
     return bds
 
 
@@ -67,7 +66,6 @@ def button(iren, callback, fname, button_norm_coords, button_size):
     image1 = vtk.vtkPNGReader()
     image1.SetFileName(fname)
     image1.Update()
-
 
     #button_rep = vtk.vtkProp3DButtonRepresentation()
     button_rep = vtk.vtkTexturedButtonRepresentation2D()
@@ -78,8 +76,7 @@ def button(iren, callback, fname, button_norm_coords, button_size):
 
     button_rep.SetPlaceFactor(1)
 
-    #READ THIS!
-    #http://www.vtk.org/Wiki/VTK/Examples/Cxx/Widgets/TexturedButtonWidget
+    # http://www.vtk.org/Wiki/VTK/Examples/Cxx/Widgets/TexturedButtonWidget
 
     class ButtonWidget(vtk.vtkButtonWidget):
 
@@ -89,7 +86,7 @@ def button(iren, callback, fname, button_norm_coords, button_size):
             self.GetRepresentation().PlaceWidget(bds)
             self.On()
 
-    button = ButtonWidget() # vtk.vtkButtonWidget()
+    button = ButtonWidget()
     button.SetInteractor(iren)
     button.SetRepresentation(button_rep)
     button.AddObserver(vtk.vtkCommand.StateChangedEvent, callback)
@@ -100,3 +97,46 @@ def button(iren, callback, fname, button_norm_coords, button_size):
     return button
 
 
+def text(iren, callback, message="LOLz",
+         coord1=(0.15, 0.15), coord2=(0.7, 0.2),
+         color=(0, 1, 1),
+         opacity=1.):
+
+
+    widget = vtk.vtkTextWidget()
+    widget.SetInteractor(iren)
+    widget.On()
+    widget.GetTextActor().SetInput("This is a test")
+    widget.GetTextActor().GetTextProperty().SetColor(0, 1, 0)
+    widget.GetRepresentation().GetPositionCoordinate().SetValue(.15, .15)
+    widget.GetRepresentation().GetPosition2Coordinate().SetValue(.7, .2)
+    widget.SelectableOn()
+
+    # Create the TextActor
+    # text_actor = vtk.vtkTextActor()
+    # text_actor.SetInput("This is a test")
+    #text_actor.GetTextProperty().SetColor(color)
+    # text_actor.GetTextProperty().SetOpacity(opacity)
+
+    # Create the text representation. Used for positioning the text_actor
+    # text_representation = vtk.vtkTextRepresentation()
+    # text_representation.GetPositionCoordinate().SetValue(*coord1)
+    # text_representation.GetPosition2Coordinate().SetValue(*coord2)
+
+    # Create the TextWidget
+    # Note that the SelectableOff method MUST be invoked!
+    # According to the documentation :
+    #
+    # SelectableOn/Off indicates whether the interior region of the widget can
+    # be selected or not. If not, then events (such as left mouse down) allow
+    # the user to "move" the widget, and no selection is possible. Otherwise
+    # the SelectRegion() method is invoked.
+
+#    text_widget = vtk.vtkTextWidget()
+#    text_widget.SetRepresentation(text_representation)
+#    text_widget.SetInteractor(iren)
+#    text_widget.SetTextActor(text_actor)
+#    text_widget.SelectableOn()
+#    text_widget.On()
+
+    return widget

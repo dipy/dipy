@@ -32,6 +32,7 @@ def test_slider_widget():
         renderer.SetBackground(np.random.rand(3))
 
     slider = widget.slider(iren=iren, callback=print_status)
+    # text = widget.text(iren, None)
 
     iren.Initialize()
 
@@ -112,12 +113,69 @@ def test_button_widget():
     ren_win.AddObserver(vtk.vtkCommand.ModifiedEvent, win_callback)
 
     ren_win.Render()
-    iren.Start()
+    # iren.Start()
 
     arr = window.snapshot(renderer, size=(600, 600))
+
+
+@npt.dec.skipif(not actor.have_vtk)
+@npt.dec.skipif(not actor.have_vtk_colors)
+def test_button_widget_show():
+
+    renderer = window.renderer()
+
+    lines = [np.random.rand(10, 3), np.random.rand(20, 3)]
+    colors = np.array([[1., 0., 0.], [0.8, 0., 0.]])
+    stream_actor = actor.streamtube(lines, colors)
+
+    window.add(renderer, stream_actor)
+
+    # renderer.ResetCamera()
+
+    from dipy.viz.window import ShowManager
+
+    show_manager = ShowManager(renderer)
+
+    def button_callback(obj, event):
+        print('Button Pressed')
+
+    show_manager.initialize()
+
+    """
+    fetch_viz_icons()
+    button_png = read_viz_icons(fname='home3.png')
+
+    button = widget.button(show_manager.iren, button_callback,
+                           button_png, (.8, 1.2), (40, 40))
+
+    button.place(renderer)
+
+    def win_callback(obj, event):
+        print('Window modified')
+        button.place(renderer)
+
+
+    show_manager.add_window_callback(win_callback)
+
+    """
+    show_manager.render()
+
+    text = widget.text(show_manager.iren, None)
+
+    show_manager.render()
+    show_manager.start()
+
+    # show(renderer)
+
+    arr = window.snapshot(renderer, size=(600, 600))
+
+    report = window.analyze_snapshot(arr)
+
+    print(report)
 
 if __name__ == '__main__':
 
     # test_slider_widget()
-    test_button_widget()
+    # test_button_widget()
     # npt.run_module_suite()
+    test_button_widget_show()
