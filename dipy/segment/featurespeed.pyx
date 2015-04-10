@@ -5,7 +5,7 @@ import numpy as np
 cimport numpy as np
 
 from cythonutils cimport tuple2shape, shape2tuple, shape_from_memview
-from dipy.tracking.streamlinespeed cimport c_set_number_of_points
+from dipy.tracking.streamlinespeed cimport c_set_number_of_points, c_length
 
 
 cdef class Feature(object):
@@ -249,6 +249,89 @@ cdef class CenterOfMassFeature(CythonFeature):
 
         for d in range(D):
             out[0, d] /= N
+
+
+cdef class MidpointFeature(CythonFeature):
+    """ Extracts features from a sequential datum.
+
+    A sequence of N-dimensional points is represented as a 2D array with
+    shape (nb_points, nb_dimensions).
+
+    The feature being extracted consists in one N-dimensional point representing
+    the middle point of the sequence (i.e. `nb_points//2`th point).
+    """
+    def __init__(MidpointFeature self):
+        super(MidpointFeature, self).__init__(is_order_invariant=False)
+
+    cdef Shape c_infer_shape(MidpointFeature self, Data2D datum) nogil except *:
+        cdef Shape shape
+        shape.ndim = 2
+        shape.dims[0] = 1
+        shape.dims[1] = datum.shape[1]
+        shape.size = datum.shape[1]
+        return shape
+
+    cdef void c_extract(MidpointFeature self, Data2D datum, Data2D out) nogil:
+        cdef:
+            int N = datum.shape[0], D = datum.shape[1]
+            int mid = N/2
+            int d
+
+        for d in range(D):
+            out[0, d] = datum[mid, d]
+
+
+cdef class ArcLengthFeature(CythonFeature):
+    """ Extracts features from a sequential datum.
+
+    A sequence of N-dimensional points is represented as a 2D array with
+    shape (nb_points, nb_dimensions).
+
+    The feature being extracted consists in one scalar representing
+    the arc length of the sequence (i.e. the sum of the length of all segments).
+    """
+    def __init__(ArcLengthFeature self):
+        super(ArcLengthFeature, self).__init__(is_order_invariant=True)
+
+    cdef Shape c_infer_shape(ArcLengthFeature self, Data2D datum) nogil:
+        cdef Shape shape
+        shape.ndim = 2
+        shape.dims[0] = 1
+        shape.dims[1] = 1
+        shape.size = 1
+        return shape
+
+    cdef void c_extract(ArcLengthFeature self, Data2D datum, Data2D out) nogil:
+        out[0, 0] = c_length(datum)
+
+
+cdef class VectorBetweenEndpointsFeature(CythonFeature):
+    """ Extracts features from a sequential datum.
+
+    A sequence of N-dimensional points is represented as a 2D array with
+    shape (nb_points, nb_dimensions).
+
+    The feature being extracted consists in one N-dimensional point representing
+    the vector between the extremities of the sequence (i.e. `S[-1]-S[0]`).
+    """
+    def __init__(VectorBetweenEndpointsFeature self):
+        super(VectorBetweenEndpointsFeature, self).__init__(is_order_invariant=False)
+
+    cdef Shape c_infer_shape(VectorBetweenEndpointsFeature self, Data2D datum) nogil except *:
+        cdef Shape shape
+        shape.ndim = 2
+        shape.dims[0] = 1
+        shape.dims[1] = datum.shape[1]
+        shape.size = datum.shape[1]
+        return shape
+
+    cdef void c_extract(VectorBetweenEndpointsFeature self, Data2D datum, Data2D out) nogil:
+        cdef:
+            int N = datum.shape[0], D = datum.shape[1]
+            int d
+
+        for d in range(D):
+            out[0, d] = datum[N-1, d] - datum[0, d]
 
 
 cpdef infer_shape(Feature feature, data):

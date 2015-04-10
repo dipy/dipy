@@ -5,7 +5,7 @@ import numpy as np
 cimport numpy as np
 
 from libc.math cimport fabs
-from cythonutils cimport Data2D, Shape, shape2tuple, tuple2shape
+from cythonutils cimport Data2D, Shape, shape2tuple, tuple2shape, same_shape
 
 
 cdef extern from "stdlib.h" nogil:
@@ -266,9 +266,15 @@ cdef class QuickBundles(object):
         cdef:
             Data2D features_to_add = self.features
             NearestCluster nearest_cluster, nearest_cluster_flip
+            Shape features_shape = self.metric.feature.c_infer_shape(datum)
 
         # Check if datum is compatible with the metric
-        if not self.metric.c_are_compatible(self.metric.feature.c_infer_shape(datum), self.features_shape):
+        if not same_shape(features_shape, self.features_shape):
+            with gil:
+                raise ValueError("All features do not have the same shape! QuickBundles requires this to compute centroids!")
+
+        # Check if datum is compatible with the metric
+        if not self.metric.c_are_compatible(features_shape, self.features_shape):
             with gil:
                 raise ValueError("Data features' shapes must be compatible according to the metric used!")
 
