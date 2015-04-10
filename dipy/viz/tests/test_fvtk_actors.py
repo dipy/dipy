@@ -6,6 +6,8 @@ from dipy.viz import actor, window
 
 import numpy.testing as npt
 from nibabel.tmpdirs import TemporaryDirectory
+from dipy.tracking.streamline import center_streamlines, transform_streamlines
+from dipy.align.tests.test_streamlinear import fornix_streamlines
 
 
 @npt.dec.skipif(not actor.have_vtk)
@@ -62,7 +64,6 @@ def test_streamtube_and_line_actors():
     c2.SetPosition(2, 0, 0)
     window.add(renderer, c2)
 
-    window.show(renderer)
     arr = window.snapshot(renderer)
 
     report = window.analyze_snapshot(arr,
@@ -73,6 +74,43 @@ def test_streamtube_and_line_actors():
     npt.assert_equal(report.colors_found, [True, True])
 
 
+@npt.dec.skipif(not actor.have_vtk)
+@npt.dec.skipif(not actor.have_vtk_colors)
+@npt.dec.skipif(not window.have_imread)
+def test_bundle_maps():
+
+    renderer = window.renderer()
+    bundle = fornix_streamlines()
+    bundle, shift = center_streamlines(bundle)
+
+    mat = np.array([[1, 0, 0, 100],
+                    [0, 1, 0, 100],
+                    [0, 0, 1, 100],
+                    [0, 0, 0, 1.]])
+
+    bundle = transform_streamlines(bundle, mat)
+
+    # metric = np.random.rand(*(200, 200, 200))
+    metric = 100 * np.ones((200, 200, 200))
+
+    # add lower values
+    metric[100, :, :] = 100 * 0.5
+
+    # create a nice orange-red colormap
+    lut = actor.colormap_lookup_table(scale_range=(0., 100.),
+                                      hue_range=(0., 0.1),
+                                      saturation_range=(1, 1),
+                                      value_range=(1., 1))
+
+    line = actor.streamtube(bundle, metric, linewidth=0.1, lookup_colormap=lut)
+    window.add(renderer, line)
+    window.add(renderer, actor.scalar_bar(lut, ' '))
+
+    report = window.analyze_renderer(renderer)
+
+
 if __name__ == "__main__":
 
-    npt.run_module_suite()
+    #npt.run_module_suite()
+    test_bundle_maps()
+    # test_streamtube_and_line_actors()

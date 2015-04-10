@@ -113,7 +113,7 @@ def test_button_widget():
     ren_win.AddObserver(vtk.vtkCommand.ModifiedEvent, win_callback)
 
     ren_win.Render()
-    # iren.Start()
+    iren.Start()
 
     arr = window.snapshot(renderer, size=(600, 600))
 
@@ -153,7 +153,6 @@ def test_button_widget_show():
         print('Window modified')
         button.place(renderer)
 
-
     show_manager.add_window_callback(win_callback)
 
     show_manager.render()
@@ -177,7 +176,6 @@ def test_button_widget_show():
     report = window.analyze_snapshot(arr)
 
     print(report.objects)
-    imshow(report.labels)
 
 
 if __name__ == '__main__':
