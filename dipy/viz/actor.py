@@ -66,7 +66,7 @@ def butcher(data, affine):
     image_resliced.Update()
 
     # Get back resliced image
-    #im = image_data #image_resliced.GetOutput()
+    # im = image_data #image_resliced.GetOutput()
 
     # An outline provides context around the data.
     #    outline_data = vtk.vtkOutlineFilter()
@@ -345,7 +345,7 @@ def lines_to_vtk_polydata(lines, colors=None):
     is_colormap : bool, true if the input color array was a colormap
     """
 
-    #Get the 3d points_array
+    # Get the 3d points_array
     points_array = np.vstack(lines)
 
     nb_lines = len(lines)
@@ -355,7 +355,7 @@ def lines_to_vtk_polydata(lines, colors=None):
 
     # Get lines_array in vtk input format
     lines_array = []
-    points_per_line = np.zeros([nb_lines],np.int64)
+    points_per_line = np.zeros([nb_lines], np.int64)
     current_position = 0
     for i in lines_range:
         current_len = len(lines[i])
@@ -363,7 +363,7 @@ def lines_to_vtk_polydata(lines, colors=None):
 
         end_position = current_position + current_len
         lines_array += [current_len]
-        lines_array += range(current_position,end_position)
+        lines_array += range(current_position, end_position)
         current_position = end_position
 
     lines_array = np.array(lines_array)
@@ -379,36 +379,35 @@ def lines_to_vtk_polydata(lines, colors=None):
     is_colormap = False
     # Get colors_array (reformat to have colors for each points)
     #           - if/else tested and work in normal simple case
-    if colors is None: #set automatic rgb colors
+    if colors is None:  # set automatic rgb colors
         cols_arr = line_colors(lines)
         colors_mapper = np.repeat(lines_range, points_per_line, axis=0)
         vtk_colors = numpy_to_vtk_colors(255 * cols_arr[colors_mapper])
     else:
         cols_arr = np.asarray(colors)
-        if cols_arr.dtype == np.object: # colors is a list of colors
+        if cols_arr.dtype == np.object:  # colors is a list of colors
             vtk_colors = numpy_to_vtk_colors(255 * np.vstack(colors))
         else:
-            if len(cols_arr) == nb_points: # one colors per points / colormap way
+            if len(cols_arr) == nb_points:
                 vtk_colors = numpy_support.numpy_to_vtk(cols_arr, deep=True)
                 is_colormap = True
 
-            elif cols_arr.ndim == 1: # the same colors for all points
+            elif cols_arr.ndim == 1:  # the same colors for all points
                 vtk_colors = numpy_to_vtk_colors(
-                                np.tile(255 * cols_arr, (nb_points, 1)) )
+                    np.tile(255 * cols_arr, (nb_points, 1)))
 
-
-            elif cols_arr.ndim == 2: # map color to each line
+            elif cols_arr.ndim == 2:  # map color to each line
                 colors_mapper = np.repeat(lines_range, points_per_line, axis=0)
                 vtk_colors = numpy_to_vtk_colors(255 * cols_arr[colors_mapper])
-            else: # colormap
-                # get colors for each vertex
+            else:  # colormap
+                #  get colors for each vertex
                 cols_arr = trilinear_interp(cols_arr, points_array)
                 vtk_colors = numpy_support.numpy_to_vtk(cols_arr, deep=True)
                 is_colormap = True
 
     vtk_colors.SetName("Colors")
 
-    #Create the poly_data
+    # Create the poly_data
     poly_data = vtk.vtkPolyData()
     poly_data.SetPoints(vtk_points)
     poly_data.SetLines(vtk_lines)
@@ -416,8 +415,8 @@ def lines_to_vtk_polydata(lines, colors=None):
     return poly_data, is_colormap
 
 
-def colormap_lookup_table(scale_range=(0,1), hue_range=(0.8,0),
-                          saturation_range=(1,1),  value_range=(0.8,0.8)):
+def colormap_lookup_table(scale_range=(0, 1), hue_range=(0.8, 0),
+                          saturation_range=(1, 1),  value_range=(0.8, 0.8)):
     """ Default Lookup table for the colormap
     """
     vtk_lookup_table = vtk.vtkLookupTable()
@@ -446,8 +445,8 @@ def scalar_bar(lookup_table):
     return scalar_bar
 
 
-def plot_stats( values, names=None, colors=np.array([0,0,0,255]),
-                lookup_table=None, scalar_bar=None):
+def plot_stats(values, names=None, colors=np.array([0, 0, 0, 255]),
+               lookup_table=None, scalar_bar=None):
     """ Plots statstics in a new windows
     """
 
@@ -472,10 +471,10 @@ def plot_stats( values, names=None, colors=np.array([0,0,0,255]),
             graph_line = chart.AddPlot(vtk.vtkChart.LINE)
             graph_line.SetInput(table, 0, i)
             graph_line.SetColor(color[0], color[1], color[2], color[3])
-            #graph_line.GetPen().SetLineType(vtk.vtkPen.SOLID_LINE)
+            # graph_line.GetPen().SetLineType(vtk.vtkPen.SOLID_LINE)
             graph_line.SetWidth(2.0)
 
-            if lookup_table is not None :
+            if lookup_table is not None:
                 graph_line.SetMarkerStyle(vtk.vtkPlotPoints.CIRCLE)
                 graph_line.ScalarVisibilityOn()
                 graph_line.SetLookupTable(lookup_table)
