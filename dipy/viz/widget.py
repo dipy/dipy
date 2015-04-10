@@ -97,31 +97,27 @@ def button(iren, callback, fname, button_norm_coords, button_size):
     return button
 
 
-def text(iren, callback, message="LOLz",
-         coord1=(0.15, 0.15), coord2=(0.7, 0.2),
-         color=(0, 1, 1),
-         opacity=1.):
-
-
-    widget = vtk.vtkTextWidget()
-    widget.SetInteractor(iren)
-    widget.On()
-    widget.GetTextActor().SetInput("This is a test")
-    widget.GetTextActor().GetTextProperty().SetColor(0, 1, 0)
-    widget.GetRepresentation().GetPositionCoordinate().SetValue(.15, .15)
-    widget.GetRepresentation().GetPosition2Coordinate().SetValue(.7, .2)
-    widget.SelectableOn()
+def text(iren, callback, message="Accelerating computational anatomy...",
+         coord1=(.2, .2), coord2=(.7, .2),
+         color=(.9, .9, .9),
+         opacity=1.,
+         selectable=True,
+         border=True):
 
     # Create the TextActor
-    # text_actor = vtk.vtkTextActor()
-    # text_actor.SetInput("This is a test")
-    #text_actor.GetTextProperty().SetColor(color)
-    # text_actor.GetTextProperty().SetOpacity(opacity)
+    text_actor = vtk.vtkTextActor()
+    text_actor.SetInput(message)
+    text_actor.GetTextProperty().SetColor(color)
+    text_actor.GetTextProperty().SetOpacity(opacity)
 
     # Create the text representation. Used for positioning the text_actor
-    # text_representation = vtk.vtkTextRepresentation()
-    # text_representation.GetPositionCoordinate().SetValue(*coord1)
-    # text_representation.GetPosition2Coordinate().SetValue(*coord2)
+    text_representation = vtk.vtkTextRepresentation()
+    text_representation.GetPositionCoordinate().SetValue(*coord1)
+    text_representation.GetPosition2Coordinate().SetValue(*coord2)
+    if border:
+        text_representation.SetShowBorderToOn()
+    else:
+        text_representation.SetShowBorderToOff()
 
     # Create the TextWidget
     # Note that the SelectableOff method MUST be invoked!
@@ -132,11 +128,24 @@ def text(iren, callback, message="LOLz",
     # the user to "move" the widget, and no selection is possible. Otherwise
     # the SelectRegion() method is invoked.
 
-#    text_widget = vtk.vtkTextWidget()
-#    text_widget.SetRepresentation(text_representation)
-#    text_widget.SetInteractor(iren)
-#    text_widget.SetTextActor(text_actor)
-#    text_widget.SelectableOn()
-#    text_widget.On()
+    text_widget = vtk.vtkTextWidget()
+    text_widget.SetRepresentation(text_representation)
+    text_widget.SetInteractor(iren)
+    text_widget.SetTextActor(text_actor)
+    if selectable:
+        text_widget.SelectableOn()
+    else:
+        text_widget.SelectableOff()
+    text_widget.On()
 
-    return widget
+    text_widget.AddObserver(vtk.vtkCommand.InteractionEvent, callback)
+
+    # This is a hack for avoiding not plotting the text widget when
+    # backface culling in On on a different actor
+    ss = vtk.vtkSphereSource()
+    mapper = vtk.vtkPolyDataMapper()
+    mapper.SetInputConnection(ss.GetOutputPort())
+    actor = vtk.vtkActor()
+    actor.GetProperty().BackfaceCullingOff()
+
+    return text_widget

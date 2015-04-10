@@ -111,7 +111,7 @@ def butcher(data, affine):
     saggital = vtk.vtkImageActor()
     # set_input(saggital, plane_colors.GetOutput())
     saggital.GetMapper().SetInputConnection(plane_colors.GetOutputPort())
-    #saggital.SetDisplayExtent(0, 0, y1, y2, z1, z2)
+    # saggital.SetDisplayExtent(0, 0, y1, y2, z1, z2)
     saggital.SetDisplayExtent(x1, x2, y1, y2, z2/2, z2/2)
     # saggital.SetDisplayExtent(25, 25, 0, 49, 0, 49)
     saggital.Update()
@@ -225,7 +225,7 @@ def streamtube(lines, colors=None, opacity=1, linewidth=0.01, tube_sides=9,
     actor.GetProperty().SetDiffuse(0.15)  # .3
     actor.GetProperty().SetSpecular(0.05)  # .3
     actor.GetProperty().SetSpecularPower(6)
-    #actor.GetProperty().SetInterpolationToGouraud()
+    # actor.GetProperty().SetInterpolationToGouraud()
     actor.GetProperty().SetInterpolationToPhong()
     actor.GetProperty().BackfaceCullingOn()
     actor.GetProperty().SetOpacity(opacity)

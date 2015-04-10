@@ -126,7 +126,7 @@ def test_button_widget_show():
 
     lines = [np.random.rand(10, 3), np.random.rand(20, 3)]
     colors = np.array([[1., 0., 0.], [0.8, 0., 0.]])
-    stream_actor = actor.streamtube(lines, colors)
+    stream_actor = actor.line(lines, colors)
 
     window.add(renderer, stream_actor)
 
@@ -141,7 +141,6 @@ def test_button_widget_show():
 
     show_manager.initialize()
 
-    """
     fetch_viz_icons()
     button_png = read_viz_icons(fname='home3.png')
 
@@ -157,10 +156,16 @@ def test_button_widget_show():
 
     show_manager.add_window_callback(win_callback)
 
-    """
     show_manager.render()
 
-    text = widget.text(show_manager.iren, None)
+    def text_callback(obj, event):
+        print(event)
+        print('Text moved')
+        print(obj)
+        print('Rep')
+        print(obj.GetRepresentation())
+
+    text = widget.text(show_manager.iren, text_callback, opacity=1., selectable=False, border=True)
 
     show_manager.render()
     show_manager.start()
@@ -171,7 +176,9 @@ def test_button_widget_show():
 
     report = window.analyze_snapshot(arr)
 
-    print(report)
+    print(report.objects)
+    imshow(report.labels)
+
 
 if __name__ == '__main__':
 
