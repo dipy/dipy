@@ -155,12 +155,12 @@ def streamtube(lines, colors=None, opacity=1, linewidth=0.01, tube_sides=9,
 
     Notes
     -----
-    Streamtubes can be heavy on GPU when loading many streamlines and therefore,
-    you may experience slow rendering time depending on system GPU. A solution
-    to this problem is to reduce the number of points in each streamline. In Dipy
-    we provide an algorithm that will reduce the number of points on the straighter
-    parts of the streamline but keep more points on the curvier parts. This can
-    be used in the following way
+    Streamtubes can be heavy on GPU when loading many streamlines and
+    therefore, you may experience slow rendering time depending on system GPU.
+    A solution to this problem is to reduce the number of points in each
+    streamline. In Dipy we provide an algorithm that will reduce the number of
+    points on the straighter parts of the streamline but keep more points on
+    the curvier parts. This can be used in the following way
 
     from dipy.tracking.distances import approx_polygon_track
     lines = [approx_polygon_track(line, 0.2) for line in lines]
@@ -179,7 +179,7 @@ def streamtube(lines, colors=None, opacity=1, linewidth=0.01, tube_sides=9,
     next_input = poly_normals.GetOutputPort()
 
     # Spline interpolation
-    if (spline_subdiv is not None) and (spline_subdiv > 0) :
+    if (spline_subdiv is not None) and (spline_subdiv > 0):
         spline_filter = set_input(vtk.vtkSplineFilter(), next_input)
         spline_filter.SetSubdivideToSpecified()
         spline_filter.SetNumberOfSubdivisions(spline_subdiv)
@@ -190,7 +190,7 @@ def streamtube(lines, colors=None, opacity=1, linewidth=0.01, tube_sides=9,
     tube_filter = set_input(vtk.vtkTubeFilter(), next_input)
     tube_filter.SetNumberOfSides(tube_sides)
     tube_filter.SetRadius(linewidth)
-    #tube_filter.SetVaryRadiusToVaryRadiusByScalar()
+    # tube_filter.SetVaryRadiusToVaryRadiusByScalar()
     tube_filter.CappingOn()
     tube_filter.Update()
     next_input = tube_filter.GetOutputPort()
@@ -201,7 +201,7 @@ def streamtube(lines, colors=None, opacity=1, linewidth=0.01, tube_sides=9,
     poly_mapper.SetScalarModeToUsePointFieldData()
     poly_mapper.SelectColorArray("Colors")
     poly_mapper.GlobalImmediateModeRenderingOn()
-    #poly_mapper.SetColorModeToMapScalars()
+    # poly_mapper.SetColorModeToMapScalars()
     poly_mapper.Update()
 
     # Color Scale with a lookup table
@@ -289,7 +289,7 @@ def line(lines, colors=None, opacity=1, linewidth=1,
     next_input = poly_data
 
     # use spline interpolation
-    if (spline_subdiv is not None) and (spline_subdiv > 0) :
+    if (spline_subdiv is not None) and (spline_subdiv > 0):
         spline_filter = set_input(vtk.vtkSplineFilter(), next_input)
         spline_filter.SetSubdivideToSpecified()
         spline_filter.SetNumberOfSubdivisions(spline_subdiv)
@@ -300,7 +300,7 @@ def line(lines, colors=None, opacity=1, linewidth=1,
     poly_mapper.ScalarVisibilityOn()
     poly_mapper.SetScalarModeToUsePointFieldData()
     poly_mapper.SelectColorArray("Colors")
-    #poly_mapper.SetColorModeToMapScalars()
+    # poly_mapper.SetColorModeToMapScalars()
     poly_mapper.Update()
 
     # Color Scale with a lookup table
