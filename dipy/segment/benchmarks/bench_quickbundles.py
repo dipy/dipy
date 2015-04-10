@@ -41,7 +41,7 @@ class MDFpy(Metric):
 def bench_quickbundles():
     dtype = "float32"
     repeat = 10
-    nb_points = 12
+    nb_points = 18
 
     streams, hdr = nib.trackvis.read(get_data('fornix'))
     fornix = [s[0].astype(dtype) for s in streams]

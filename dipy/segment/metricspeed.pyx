@@ -62,9 +62,9 @@ cdef class Metric(object):
 
         Parameters
         ----------
-        shape1 : tuple
+        shape1 : int, 1-tuple or 2-tuple
             shape of the first data point's features
-        shape2 : tuple
+        shape2 : int, 1-tuple or 2-tuple
             shape of the second data point's features
 
         Returns
@@ -118,9 +118,9 @@ cdef class CythonMetric(Metric):
 
         Parameters
         ----------
-        shape1 : tuple
+        shape1 : int, 1-tuple or 2-tuple
             Shape of the first data point's features.
-        shape2 : tuple
+        shape2 : int, 1-tuple or 2-tuple
             Shape of the second data point's features.
 
         Returns
@@ -132,6 +132,16 @@ cdef class CythonMetric(Metric):
         -----
         This method calls its Cython version `self.c_are_compatible` accordingly.
         """
+        if type(shape1) is int:
+            shape1 = (1, shape1)
+        elif len(shape1) == 1:
+            shape1 = (1,) + shape1
+
+        if type(shape2) is int:
+            shape2 = (1, shape2)
+        elif len(shape2) == 1:
+            shape2 = (1,) + shape2
+
         return self.c_are_compatible(tuple2shape(shape1), tuple2shape(shape2)) == 1
 
     cpdef double dist(CythonMetric self, features1, features2) except -1:

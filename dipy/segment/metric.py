@@ -11,6 +11,9 @@ from dipy.segment.metricspeed import (Metric,
 from dipy.segment.metricspeed import (dist,
                                       distance_matrix)
 
+# Creates aliases
+EuclideanMetric = SumPointwiseEuclideanMetric
+
 
 def mdf(s1, s2):
     """ Computes the MDF (Minimum average Direct-Flip) distance

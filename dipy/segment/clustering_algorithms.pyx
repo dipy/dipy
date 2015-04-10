@@ -99,7 +99,7 @@ def quickbundles(streamlines, Metric metric, double threshold, long max_nb_clust
     if first_idx is None or len(streamlines) == 0:
         return ClusterMapCentroid()
 
-    features_shape = metric.feature.infer_shape(streamlines[first_idx])
+    features_shape = shape2tuple(metric.feature.c_infer_shape(streamlines[first_idx].astype(DTYPE)))
     cdef QuickBundles qb = QuickBundles(features_shape, metric, threshold, max_nb_clusters)
     cdef int idx
 

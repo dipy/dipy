@@ -133,7 +133,7 @@ def test_feature_extract():
     features = extract(feature, streamlines)
 
     assert_equal(len(features), len(streamlines))
-    assert_equal(features.shape[1:], feature_shape)
+    assert_equal(features[0].shape, feature_shape)
 
     # Test that scalar features
     class ArcLengthFeature(dipymetric.Feature):
@@ -151,7 +151,12 @@ def test_feature_extract():
     features = extract(feature, streamlines)
 
     assert_equal(len(features), len(streamlines))
-    assert_equal(features.shape[1:], feature_shape)
+    assert_equal(features[0].shape, feature_shape)
+
+    # Try if streamlines are readonly
+    for s in streamlines:
+        s.setflags(write=False)
+    features = extract(feature, streamlines)
 
 
 def test_subclassing_feature():

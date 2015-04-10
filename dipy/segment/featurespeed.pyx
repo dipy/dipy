@@ -37,7 +37,7 @@ cdef class Feature(object):
         def __set__(self, int value):
             self.is_order_invariant = bool(value)
 
-    cdef Shape c_infer_shape(Feature self, Data2D datum) nogil  except *:
+    cdef Shape c_infer_shape(Feature self, Data2D datum) nogil except *:
         """ Cython version of `Feature.infer_shape`. """
         with gil:
             shape = self.infer_shape(np.asarray(datum))
@@ -50,7 +50,7 @@ cdef class Feature(object):
             else:
                 raise TypeError("Only scalar, 1D or 2D array features are supported!")
 
-    cdef void c_extract(Feature self, Data2D datum, Data2D out) nogil  except *:
+    cdef void c_extract(Feature self, Data2D datum, Data2D out) nogil except *:
         """ Cython version of `Feature.extract`. """
         cdef Data2D c_features
         with gil:
@@ -78,7 +78,7 @@ cdef class Feature(object):
 
         Returns
         -------
-        tuple
+        int, 1-tuple or 2-tuple
             Shape of the features.
         """
         raise NotImplementedError("Feature's subclasses must implement method `infer_shape(self, datum)`!")
@@ -274,27 +274,16 @@ cpdef infer_shape(Feature feature, data):
     if len(data) == 0:
         return []
 
+    shapes = []
     cdef int i
-    all_same_shapes = True
-    shapes = [shape2tuple(feature.c_infer_shape(data[0]))]
-    for i in range(1, len(data)):
-        shapes.append(shape2tuple(feature.c_infer_shape(data[i])))
-        if shapes[0] != shapes[i]:
-            all_same_shapes = False
-
-    if all_same_shapes:
-        features = np.empty((len(shapes),) + shapes[0], dtype=np.float32)
-    else:
-        features = [np.empty(shape, dtype=np.float32) for shape in shapes]
-
-    for i in range(len(data)):
+    for i in range(0, len(data)):
         datum = data[i] if data[i].flags.writeable else data[i].astype(np.float32)
-        feature.c_extract(datum, features[i])
+        shapes.append(shape2tuple(feature.c_infer_shape(datum)))
 
     if single_datum:
-        return features[0]
+        return shapes[0]
     else:
-        return features
+        return shapes
 
 
 cpdef extract(Feature feature, data):
@@ -324,19 +313,10 @@ cpdef extract(Feature feature, data):
     if len(data) == 0:
         return []
 
+    shapes = infer_shape(feature, data)
+    features = [np.empty(shape, dtype=np.float32) for shape in shapes]
+
     cdef int i
-    all_same_shapes = True
-    shapes = [shape2tuple(feature.c_infer_shape(data[0]))]
-    for i in range(1, len(data)):
-        shapes.append(shape2tuple(feature.c_infer_shape(data[i])))
-        if shapes[0] != shapes[i]:
-            all_same_shapes = False
-
-    if all_same_shapes:
-        features = np.empty((len(shapes),) + shapes[0], dtype=np.float32)
-    else:
-        features = [np.empty(shape, dtype=np.float32) for shape in shapes]
-
     for i in range(len(data)):
         datum = data[i] if data[i].flags.writeable else data[i].astype(np.float32)
         feature.c_extract(datum, features[i])
