@@ -444,6 +444,13 @@ def analyze_renderer(ren):
 
     report.bg_color = ren.GetBackground()
     report.collection = ren.GetActors()
+    report.actors = report.collection.GetNumberOfItems()
+
+    report.collection.InitTraversal()
+    report.actors_classnames = []
+    for i in range(report.actors):
+        class_name = report.collection.GetNextActor().GetClassName()
+        report.actors_classnames.append(class_name)
 
     return report
 

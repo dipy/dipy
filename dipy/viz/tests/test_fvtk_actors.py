@@ -102,15 +102,17 @@ def test_bundle_maps():
                                       saturation_range=(1, 1),
                                       value_range=(1., 1))
 
-    line = actor.streamtube(bundle, metric, linewidth=0.1, lookup_colormap=lut)
+    line = actor.line(bundle, metric, linewidth=0.1, lookup_colormap=lut)
     window.add(renderer, line)
     window.add(renderer, actor.scalar_bar(lut, ' '))
 
     report = window.analyze_renderer(renderer)
 
+    npt.assert_almost_equal(report.actors, 1)
+    # window.show(renderer)
 
 if __name__ == "__main__":
 
-    #npt.run_module_suite()
+    # npt.run_module_suite()
     test_bundle_maps()
     # test_streamtube_and_line_actors()
