@@ -134,9 +134,9 @@ def trilinear_interp(input_array, indices):
     assert (input_array.ndim > 2 )," array need to be at least 3dimensions"
     assert (input_array.ndim < 5 )," dont support array with more than 4 dims"
 
-    x_indices = indices[:,0]
-    y_indices = indices[:,1]
-    z_indices = indices[:,2]
+    x_indices = indices[:, 0]
+    y_indices = indices[:, 1]
+    z_indices = indices[:, 2]
 
     x0 = x_indices.astype(np.integer)
     y0 = y_indices.astype(np.integer)
@@ -145,28 +145,28 @@ def trilinear_interp(input_array, indices):
     y1 = y0 + 1
     z1 = z0 + 1
 
-    #Check if xyz1 is beyond array boundary:
-    x1[np.where(x1==input_array.shape[0])] = x0.max()
-    y1[np.where(y1==input_array.shape[1])] = y0.max()
-    z1[np.where(z1==input_array.shape[2])] = z0.max()
+    # Check if xyz1 is beyond array boundary:
+    x1[np.where(x1 == input_array.shape[0])] = x0.max()
+    y1[np.where(y1 == input_array.shape[1])] = y0.max()
+    z1[np.where(z1 == input_array.shape[2])] = z0.max()
 
     if input_array.ndim == 3:
         x = x_indices - x0
         y = y_indices - y0
         z = z_indices - z0
     elif input_array.ndim == 4:
-        x = np.expand_dims(x_indices - x0, axis = 1)
-        y = np.expand_dims(y_indices - y0, axis = 1)
-        z = np.expand_dims(z_indices - z0, axis = 1)
+        x = np.expand_dims(x_indices - x0, axis=1)
+        y = np.expand_dims(y_indices - y0, axis=1)
+        z = np.expand_dims(z_indices - z0, axis=1)
 
-    output = (input_array[x0,y0,z0]*(1-x)*(1-y)*(1-z) +
-                 input_array[x1,y0,z0]*x*(1-y)*(1-z) +
-                 input_array[x0,y1,z0]*(1-x)*y*(1-z) +
-                 input_array[x0,y0,z1]*(1-x)*(1-y)*z +
-                 input_array[x1,y0,z1]*x*(1-y)*z +
-                 input_array[x0,y1,z1]*(1-x)*y*z +
-                 input_array[x1,y1,z0]*x*y*(1-z) +
-                 input_array[x1,y1,z1]*x*y*z)
+    output = (input_array[x0, y0, z0] * (1 - x) * (1 - y) * (1 - z) +
+              input_array[x1, y0, z0] * x * (1 - y) * (1 - z) +
+              input_array[x0, y1, z0] * (1 - x) * y * (1-z) +
+              input_array[x0, y0, z1] * (1 - x) * (1 - y) * z +
+              input_array[x1, y0, z1] * x * (1 - y) * z +
+              input_array[x0, y1, z1] * (1 - x) * y * z +
+              input_array[x1, y1, z0] * x * y * (1 - z) +
+              input_array[x1, y1, z1] * x * y * z)
 
     return output
 
