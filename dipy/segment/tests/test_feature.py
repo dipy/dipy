@@ -16,9 +16,9 @@ s4 = np.random.rand(5, 3).astype(dtype)  # 5x3
 
 def test_identity_feature():
     # Test subclassing Feature
-    class Identity(dipymetric.Feature):
+    class IdentityFeature(dipymetric.Feature):
         def __init__(self):
-            super(Identity, self).__init__(is_order_invariant=False)
+            super(IdentityFeature, self).__init__(is_order_invariant=False)
 
         def infer_shape(self, streamline):
             return streamline.shape
@@ -26,7 +26,7 @@ def test_identity_feature():
         def extract(self, streamline):
             return streamline
 
-    for feature in [dipymetric.IdentityFeature(), Identity()]:
+    for feature in [dipymetric.IdentityFeature(), IdentityFeature()]:
         for s in [s1, s2, s3, s4]:
             # Test method infer_shape
             assert_equal(feature.infer_shape(s), s.shape)
@@ -49,12 +49,12 @@ def test_feature_resample():
     from dipy.tracking.streamline import set_number_of_points
 
     # Test subclassing Feature
-    class Resample(dipymetric.Feature):
+    class ResampleFeature(dipymetric.Feature):
         def __init__(self, nb_points):
-            super(Resample, self).__init__(is_order_invariant=False)
+            super(ResampleFeature, self).__init__(is_order_invariant=False)
             self.nb_points = nb_points
             if nb_points <= 0:
-                raise ValueError("Resample: `nb_points` must be strictly positive: {0}".format(nb_points))
+                raise ValueError("ResampleFeature: `nb_points` must be strictly positive: {0}".format(nb_points))
 
         def infer_shape(self, streamline):
             return (self.nb_points, streamline.shape[1])
@@ -63,11 +63,11 @@ def test_feature_resample():
             return set_number_of_points(streamline, self.nb_points)
 
     assert_raises(ValueError, dipymetric.ResampleFeature, nb_points=0)
-    assert_raises(ValueError, Resample, nb_points=0)
+    assert_raises(ValueError, ResampleFeature, nb_points=0)
 
     max_points = max(map(len, [s1, s2, s3, s4]))
     for nb_points in [1, 5, 2*max_points]:
-        for feature in [dipymetric.ResampleFeature(nb_points), Resample(nb_points)]:
+        for feature in [dipymetric.ResampleFeature(nb_points), ResampleFeature(nb_points)]:
             for s in [s1, s2, s3, s4]:
                 # Test method infer_shape
                 assert_equal(feature.infer_shape(s), (nb_points, s.shape[1]))
@@ -88,9 +88,9 @@ def test_feature_resample():
 
 def test_feature_center_of_mass():
     # Test subclassing Feature
-    class CenterOfMass(dipymetric.Feature):
+    class CenterOfMassFeature(dipymetric.Feature):
         def __init__(self):
-            super(CenterOfMass, self).__init__(is_order_invariant=True)
+            super(CenterOfMassFeature, self).__init__(is_order_invariant=True)
 
         def infer_shape(self, streamline):
             return (1, streamline.shape[1])
@@ -98,7 +98,7 @@ def test_feature_center_of_mass():
         def extract(self, streamline):
             return np.mean(streamline, axis=0)[None, :]
 
-    for feature in [dipymetric.CenterOfMassFeature(), CenterOfMass()]:
+    for feature in [dipymetric.CenterOfMassFeature(), CenterOfMassFeature()]:
         for s in [s1, s2, s3, s4]:
             # Test method infer_shape
             assert_equal(feature.infer_shape(s), (1, s.shape[1]))
@@ -118,9 +118,9 @@ def test_feature_center_of_mass():
 
 def test_feature_midpoint():
     # Test subclassing Feature
-    class Midpoint(dipymetric.Feature):
+    class MidpointFeature(dipymetric.Feature):
         def __init__(self):
-            super(Midpoint, self).__init__(is_order_invariant=False)
+            super(MidpointFeature, self).__init__(is_order_invariant=False)
 
         def infer_shape(self, streamline):
             return (1, streamline.shape[1])
@@ -128,7 +128,7 @@ def test_feature_midpoint():
         def extract(self, streamline):
             return streamline[[len(streamline)//2]]
 
-    for feature in [dipymetric.MidpointFeature(), Midpoint()]:
+    for feature in [dipymetric.MidpointFeature(), MidpointFeature()]:
         for s in [s1, s2, s3, s4]:
             # Test method infer_shape
             assert_equal(feature.infer_shape(s), (1, s.shape[1]))
@@ -153,9 +153,9 @@ def test_feature_arclength():
     from dipy.tracking.streamline import length
 
     # Test subclassing Feature
-    class ArcLength(dipymetric.Feature):
+    class ArcLengthFeature(dipymetric.Feature):
         def __init__(self):
-            super(ArcLength, self).__init__(is_order_invariant=True)
+            super(ArcLengthFeature, self).__init__(is_order_invariant=True)
 
         def infer_shape(self, streamline):
             return (1, 1)
@@ -163,7 +163,7 @@ def test_feature_arclength():
         def extract(self, streamline):
             return length(streamline)[None, None]
 
-    for feature in [dipymetric.ArcLengthFeature(), ArcLength()]:
+    for feature in [dipymetric.ArcLengthFeature(), ArcLengthFeature()]:
         for s in [s1, s2, s3, s4]:
             # Test method infer_shape
             assert_equal(feature.infer_shape(s), (1, 1))
@@ -183,9 +183,9 @@ def test_feature_arclength():
 
 def test_feature_vector_between_endpoints():
     # Test subclassing Feature
-    class VectorBetweenEndpoints(dipymetric.Feature):
+    class VectorBetweenEndpointsFeature(dipymetric.Feature):
         def __init__(self):
-            super(VectorBetweenEndpoints, self).__init__(is_order_invariant=False)
+            super(VectorBetweenEndpointsFeature, self).__init__(False)
 
         def infer_shape(self, streamline):
             return (1, streamline.shape[1])
@@ -193,7 +193,9 @@ def test_feature_vector_between_endpoints():
         def extract(self, streamline):
             return streamline[[-1]] - streamline[[0]]
 
-    for feature in [dipymetric.VectorBetweenEndpointsFeature(), VectorBetweenEndpoints()]:
+    feature_types = [dipymetric.VectorBetweenEndpointsFeature(),
+                     VectorBetweenEndpointsFeature()]
+    for feature in feature_types:
         for s in [s1, s2, s3, s4]:
             # Test method infer_shape
             assert_equal(feature.infer_shape(s), (1, s.shape[1]))

@@ -9,7 +9,8 @@ from dipy.segment.featurespeed import (Feature,
 from dipy.segment.metricspeed import (Metric,
                                       SumPointwiseEuclideanMetric,
                                       AveragePointwiseEuclideanMetric,
-                                      MinimumAverageDirectFlipMetric)
+                                      MinimumAverageDirectFlipMetric,
+                                      CosineMetric)
 
 from dipy.segment.metricspeed import (dist,
                                       distance_matrix)

@@ -198,8 +198,6 @@ cdef class ResampleFeature(CythonFeature):
     This is useful for metrics requiring a constant number of points for all
      streamlines.
     """
-    cdef np.npy_intp nb_points
-
     def __init__(ResampleFeature self, np.npy_intp nb_points):
         super(ResampleFeature, self).__init__(is_order_invariant=False)
         self.nb_points = nb_points
