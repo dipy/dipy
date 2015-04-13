@@ -131,8 +131,8 @@ def trilinear_interp(input_array, indices):
     """ Evaluate the input_array data at the given indices
     """
 
-    assert (input_array.ndim > 2 )," array need to be at least 3dimensions"
-    assert (input_array.ndim < 5 )," dont support array with more than 4 dims"
+    if input_array.ndim <= 2  or input_array.ndim >= 5:
+        raise ValueError("Input array can only be 3d or 4d")
 
     x_indices = indices[:, 0]
     y_indices = indices[:, 1]
@@ -154,6 +154,7 @@ def trilinear_interp(input_array, indices):
         x = x_indices - x0
         y = y_indices - y0
         z = z_indices - z0
+
     elif input_array.ndim == 4:
         x = np.expand_dims(x_indices - x0, axis=1)
         y = np.expand_dims(y_indices - y0, axis=1)
