@@ -3065,3 +3065,201 @@ def create_sphere(cnp.npy_intp nslices, cnp.npy_intp nrows,
                 else:
                     s[k,i,j] = 0
     return s
+
+
+cdef void _gradient_3d(floating[:,:,:] img, double[:,:] img_affine_inv,
+                       double[:] img_spacing, double[:,:] domain_affine,
+                       floating[:,:,:,:] out):
+    r""" Gradient of a 3D image in physical space coordinates
+
+    Each grid cell (i, j, k) in the sampling domain (determined by
+    out.shape) is mapped to its corresponding physical point (x, y, z) by
+    multiplying domain_affine (its grid-to-space transform) by (i, j, k), then
+    the image is interpolated, at
+
+    P1=(x + h, y, z), Q1=(x - h, y, z)
+    P2=(x, y + h, z), Q2=(x, y - h, z) 
+    P3=(x, y, z + h), Q3=(x, y, z - h) 
+
+    (by mapping Pi and Qi to the grid using img_affine_inv: the inverse of the
+    grid-to-space transform of img). The displacement parameter h is of
+    magnitude 0.5 (in physical space units), therefore the approximated partial
+    derivatives are given by the difference between the image interpolated at
+    Pi and Qi.
+
+    Parameters
+    ----------
+    img : array, shape (S, R, C)
+        the input volume whose gradient will be computed
+    img_affine_inv : array, shape (4, 4)
+        the space-to-grid transform matrix associated to img
+    img_spacing : array, shape (3,)
+        the spacing between voxels (voxel size along each axis) of the input
+        volume
+    domain_affine : array, shape (4, 4)
+        the grid-to-space transform associated to the sampling grid
+    out : array, shape (S', R', C', 3)
+        the buffer in which to store the image gradient
+    """
+    cdef:
+        int nslices = out.shape[0]
+        int nrows = out.shape[1]
+        int ncols = out.shape[2]
+        int i, j, k, inside
+        double tmp
+        double[:] x = np.ndarray(shape=(3,), dtype=np.float64)
+        double[:] dx = np.ndarray(shape=(3,), dtype=np.float64)
+        double[:] h = np.ndarray(shape=(3,), dtype=np.float64)
+        double[:] q = np.ndarray(shape=(3,), dtype=np.float64)
+    with nogil:
+        h[0] = 0.5 * img_spacing[0]
+        h[1] = 0.5 * img_spacing[1]
+        h[2] = 0.5 * img_spacing[2]
+        for k in range(nslices):
+            for i in range(nrows):
+                for j in range(ncols):
+                    # Compute coordinates of index (k, i, j) in physical space
+                    x[0] = _apply_affine_3d_x0(k, i, j, 1, domain_affine)
+                    x[1] = _apply_affine_3d_x1(k, i, j, 1, domain_affine)
+                    x[2] = _apply_affine_3d_x2(k, i, j, 1, domain_affine)
+                    dx[:] = x[:]
+                    for p in range(3):
+                        # Compute coordinates of point dx on img's grid
+                        dx[p] = x[p] - h[p]
+                        q[0] = _apply_affine_3d_x0(dx[0], dx[1], dx[2], 1, img_affine_inv)
+                        q[1] = _apply_affine_3d_x1(dx[0], dx[1], dx[2], 1, img_affine_inv)
+                        q[2] = _apply_affine_3d_x2(dx[0], dx[1], dx[2], 1, img_affine_inv)
+                        # Interpolate img at q
+                        inside = _interpolate_scalar_3d(img, q[0], q[1], q[2],
+                                                        &out[k, i, j, p])
+                        if inside == 0:
+                            out[k, i, j, p] = 0
+                            continue
+                        tmp = out[k, i, j, p]
+                        # Compute coordinates of point dx on img's grid
+                        dx[p] = x[p] + h[p]
+                        q[0] = _apply_affine_3d_x0(dx[0], dx[1], dx[2], 1, img_affine_inv)
+                        q[1] = _apply_affine_3d_x1(dx[0], dx[1], dx[2], 1, img_affine_inv)
+                        q[2] = _apply_affine_3d_x2(dx[0], dx[1], dx[2], 1, img_affine_inv)
+                        # Interpolate img at q
+                        inside = _interpolate_scalar_3d(img, q[0], q[1], q[2],
+                                                        &out[k, i, j, p])
+                        if inside == 0:
+                            out[k, i, j, p] = 0
+                            continue
+                        out[k, i, j, p] = (out[k, i, j, p] - tmp) / img_spacing[p]
+                        dx[p] = x[p]
+
+
+cdef void _gradient_2d(floating[:,:] img, double[:,:] img_affine_inv,
+                       double[:] img_spacing, double[:,:] domain_affine,
+                       floating[:,:,:] out):
+    r""" Gradient of a 2D image in physical space coordinates
+
+    Each grid cell (i, j) in the sampling domain (determined by
+    out.shape) is mapped to its corresponding physical point (x, y) by
+    multiplying domain_affine (its grid-to-space transform) by (i, j), then
+    the image is interpolated, at
+
+    P1=(x + h, y), Q1=(x - h, y)
+    P2=(x, y + h), Q2=(x, y - h) 
+
+    (by mapping Pi and Qi to the grid using img_affine_inv: the inverse of the
+    grid-to-space transform of img). The displacement parameter h is of
+    magnitude 0.5 (in physical space units), therefore the approximated partial
+    derivatives are given by the difference between the image interpolated at
+    Pi and Qi.
+
+    Parameters
+    ----------
+    img : array, shape (R, C)
+        the input image whose gradient will be computed
+    img_affine_inv : array, shape (3, 3)
+        the space-to-grid transform matrix associated to img
+    img_spacing : array, shape (2,)
+        the spacing between pixels (pixel size along each axis) of the input
+        image
+    domain_affine : array, shape (3, 3)
+        the grid-to-space transform associated to the sampling grid
+    out : array, shape (S', R', 2)
+        the buffer in which to store the image gradient
+    """
+    cdef:
+        int nrows = out.shape[0]
+        int ncols = out.shape[1]
+        int i, j, k, inside
+        double tmp
+        double[:] x = np.ndarray(shape=(2,), dtype=np.float64)
+        double[:] dx = np.ndarray(shape=(2,), dtype=np.float64)
+        double[:] h = np.ndarray(shape=(2,), dtype=np.float64)
+        double[:] q = np.ndarray(shape=(2,), dtype=np.float64)
+    with nogil:
+        h[0] = 0.5 * img_spacing[0]
+        h[1] = 0.5 * img_spacing[1]
+        for i in range(nrows):
+            for j in range(ncols):
+                # Compute coordinates of index (i, j) in physical space
+                x[0] = _apply_affine_2d_x0(i, j, 1, domain_affine)
+                x[1] = _apply_affine_2d_x1(i, j, 1, domain_affine)
+                dx[:] = x[:]
+                for p in range(2):
+                    # Compute coordinates of point dx on img's grid
+                    dx[p] = x[p] - h[p]
+                    q[0] = _apply_affine_2d_x0(dx[0], dx[1], 1, img_affine_inv)
+                    q[1] = _apply_affine_2d_x1(dx[0], dx[1], 1, img_affine_inv)
+                    # Interpolate img at q
+                    inside = _interpolate_scalar_2d(img, q[0], q[1],
+                                                    &out[i, j, p])
+                    #if inside == 0:
+                    #    out[i, j, p] = 0
+                    #    continue
+                    tmp = out[i, j, p]
+                    # Compute coordinates of point dx on img's grid
+                    dx[p] = x[p] + h[p]
+                    q[0] = _apply_affine_2d_x0(dx[0], dx[1], 1, img_affine_inv)
+                    q[1] = _apply_affine_2d_x1(dx[0], dx[1], 1, img_affine_inv)
+                    # Interpolate img at q
+                    inside = _interpolate_scalar_2d(img, q[0], q[1],
+                                                    &out[i, j, p])
+                    #if inside == 0:
+                    #    out[i, j, p] = 0
+                    #    continue
+                    out[i, j, p] = (out[i, j, p] - tmp) / img_spacing[p]
+                    dx[p] = x[p]
+
+
+def gradient(img, img_affine_inv, img_spacing, domain_shape, domain_affine):
+    r""" Gradient of an image in physical space
+
+    Parameters
+    ----------
+    img : 2D or 3D array, shape (R, C) or (S, R, C)
+        the input image whose gradient will be computed
+    img_affine_inv : array, shape (dim+1, dim+1)
+        the space-to-grid transform matrix associated to img
+    img_spacing : array, shape (dim,)
+        the spacing between voxels (voxel size along each axis) of the input
+        image
+    domain_shape : array, shape (dim,)
+        the number of (slices), rows and columns of the sampling grid
+    domain_affine : array, shape (dim+1, dim+1)
+        the grid-to-space transform associated to the sampling grid
+    
+    Returns
+    -------
+    out : array, shape (R', C', 2) or (S', R', C', 3)
+        the buffer in which to store the image gradient, where
+        (S'), R', C' are given by domain_shape
+    """
+    ftype = img.dtype
+    dim = len(img.shape)
+    out = np.ndarray(shape=img.shape+(dim,), dtype=ftype)
+    if dim == 2:
+        _gradient_2d(img, img_affine_inv.astype(np.float64),
+                     img_spacing.astype(np.float64),
+                     domain_affine.astype(np.float64), out)
+    else:
+        _gradient_3d(img, img_affine_inv.astype(np.float64),
+                     img_spacing.astype(np.float64),
+                     domain_affine.astype(np.float64), out)
+    return out
