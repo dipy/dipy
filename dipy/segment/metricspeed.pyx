@@ -319,7 +319,7 @@ cdef class CosineMetric(CythonMetric):
         super(CosineMetric, self).__init__(feature=feature)
 
     cdef int c_are_compatible(CosineMetric self, Shape shape1, Shape shape2) nogil except -1:
-        return same_shape(shape1, shape2) and shape1.dims[0] == 1
+        return same_shape(shape1, shape2) != 0 and shape1.dims[0] == 1
 
     cdef double c_dist(CosineMetric self, Data2D features1, Data2D features2) nogil except -1:
         cdef :
