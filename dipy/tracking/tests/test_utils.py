@@ -10,7 +10,7 @@ from dipy.tracking.utils import (affine_for_trackvis, connectivity_matrix,
                                  ndbincount, reduce_labels,
                                  reorder_voxels_affine, seeds_from_mask,
                                  random_seeds_from_mask, target,
-                                 _rmi, unique_rows)
+                                 _rmi, unique_rows, near_roi)
 
 import dipy.tracking.metrics as metrix
 
@@ -246,6 +246,26 @@ def test_target():
     assert_true(include[0] is streamlines[0])
     assert_equal(len(exclude), 1)
     assert_true(exclude[0] is streamlines[1])
+
+
+def test_near_roi():
+    streamlines = [np.array([[0.5, 0., 0.],
+                             [1.5, 0., 0.]]),
+                   np.array([[0., 0., 0],
+                             [0, 1., 1.],
+                             [0, 2., 2.]]),
+                   np.array([[2, 2, 2],
+                             [3, 3, 3]])
+                  ]
+    affine = np.eye(4)
+    mask = np.zeros((4, 4, 4), dtype=bool)
+    mask[0, 0, 0] = True
+    mask[1, 0, 0] = True
+
+    assert_array_equal(near_roi(streamlines, mask, tol=0.5),
+                 np.array([True, True, False]))
+    assert_array_equal(near_roi(streamlines, mask, tol=0),
+                 np.array([False, True, False]))
 
 
 def test_voxel_ornt():

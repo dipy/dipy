@@ -50,8 +50,12 @@ from __future__ import division, print_function, absolute_import
 
 from functools import wraps
 
+from nibabel.affines import apply_affine
+
 # Import tools writen in cython
 from .vox2track import *
+
+from dipy.tracking.streamline import transform_streamlines
 
 from collections import defaultdict
 from ..utils.six.moves import xrange, map
@@ -530,7 +534,8 @@ def target(streamlines, target_mask, affine, include=True):
         A sequence of streamlines. Each streamline should be a (N, 3) array,
         where N is the length of the streamline.
     target_mask : array-like
-        A mask used as a target.
+        A mask used as a target. Non-zero values are considered to be within
+        the target region.
     affine : array (4, 4)
         The affine transform from voxel indices to streamline points.
     include : bool, default True
@@ -566,6 +571,45 @@ def target(streamlines, target_mask, affine, include=True):
             raise ValueError("streamlines points are outside of target_mask")
         if state.any() == include:
             yield sl
+
+
+def near_roi(streamlines, target_mask, affine=None, tol=0):
+    """
+    Provide filtering criteria for a set of streamlines based on whether they
+    fall within a tolerance distance from an ROI
+
+    Parameters
+    ----------
+    streamlines: list
+        A sequence of streamlines. Each streamline should be a (N, 3) array,
+        where N is the length of the streamline.
+    target_mask: ndarray
+        A mask used as a target. Non-zero values are considered to be within
+        the target region.
+    affine: ndarray
+        Affine transformation from voxels to streamlines. Default: identity.
+    tol: float
+        Distance (in the units of the streamlines, usually mm). If any
+        coordinate in the streamline is within this distance from any voxel in
+        the ROI, the filtering criterion is set to True for this streamlin,
+        otherwise False. Default: 0
+
+    Returns
+    -------
+    Boolean array. Set to True in each streamline
+    """
+    if affine is None:
+        affine = np.eye(4)
+    roi_coords = np.array(np.where(target_mask)).T
+    x_roi_coords = apply_affine(affine, roi_coords)
+    out = np.zeros(len(streamlines), dtype=bool)
+    for ii, sl in enumerate(streamlines):
+        for coord in sl:
+            dist = np.sqrt(np.sum((x_roi_coords - coord) ** 2, -1))
+            if np.any(dist <= tol):
+                out[ii] = True
+                break
+    return out
 
 
 def reorder_voxels_affine(input_ornt, output_ornt, shape, voxel_size):
