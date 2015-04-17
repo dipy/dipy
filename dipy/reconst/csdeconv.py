@@ -828,15 +828,36 @@ def auto_response(gtab, data, roi_center=None, roi_radius=10, fa_thr=0.7,
 
     lambdas = tenfit.evals[indices][:, :2]
     S0s = roi[indices][:, np.nonzero(gtab.b0s_mask)[0]]
+
+    response, ratio = _get_response(S0s, lambdas)
+
+    if return_number_of_voxels:
+        return response, ratio, indices[0].size
+
+    return response, ratio
+
+
+def response_from_mask(gtab, data, mask):
+    ten = TensorModel(gtab)
+    indices = mask > 0
+    tenfit = ten.fit(data[indices])
+
+    if indices[0].size == 0:
+        msg = "No voxel in mask with value > 0 were found."
+        warnings.warn(msg, UserWarning)
+
+    lambdas = tenfit.evals[indices][:, :2]
+    S0s = data[indices][:, np.nonzero(gtab.b0s_mask)[0]]
+
+    return _get_response(S0s, lambdas)
+
+
+def _get_response(S0s, lambdas):
     S0 = np.mean(S0s)
     l01 = np.mean(lambdas, axis=0)
     evals = np.array([l01[0], l01[1], l01[1]])
     response = (evals, S0)
     ratio = evals[1] / evals[0]
-
-    if return_number_of_voxels:
-        return response, ratio, indices[0].size
-
     return response, ratio
 
 
@@ -854,7 +875,7 @@ def recursive_response(gtab, data, mask=None, sh_order=8, peak_thr=0.01,
     mask : ndarray, optional
         mask for recursive calibration, for example a white matter mask. It has
         shape `data.shape[0:3]` and dtype=bool. Default: use the entire data
-        array. 
+        array.
     sh_order : int, optional
         maximal spherical harmonics order. Default: 8
     peak_thr : float, optional
@@ -877,7 +898,7 @@ def recursive_response(gtab, data, mask=None, sh_order=8, peak_thr=0.01,
         (default multiprocessing.cpu_count()).
     sphere : Sphere, optional.
         The sphere used for peak finding. Default: default_sphere.
-    
+
     Returns
     -------
     response : ndarray
