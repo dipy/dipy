@@ -257,6 +257,7 @@ def test_near_roi():
                    np.array([[2, 2, 2],
                              [3, 3, 3]])
                   ]
+
     affine = np.eye(4)
     mask = np.zeros((4, 4, 4), dtype=bool)
     mask[0, 0, 0] = True
@@ -265,6 +266,15 @@ def test_near_roi():
     assert_array_equal(near_roi(streamlines, mask, tol=0.5),
                  np.array([True, True, False]))
     assert_array_equal(near_roi(streamlines, mask, tol=0),
+                 np.array([False, True, False]))
+
+    # If there is an affine, we need to use it:
+    affine[:, 3] = [-1, 100, -20, 1]
+    # Transform the streamlines:
+    x_streamlines = [sl + affine[:3, 3] for sl in streamlines]
+    assert_array_equal(near_roi(x_streamlines, mask, affine=affine, tol=0.5),
+                 np.array([True, True, False]))
+    assert_array_equal(near_roi(x_streamlines, mask, affine=affine, tol=0),
                  np.array([False, True, False]))
 
 
