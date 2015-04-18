@@ -19,7 +19,7 @@ def multi_voxel_fit(single_voxel_fit):
     """Method decorator to turn a single voxel model fit
     definition into a multi voxel model fit definition
     """
-    def new_fit(self, data, mask=None, nbr_processes=2):
+    def new_fit(self, data, mask=None, nbr_processes=1):
         """Fit method for every voxel in data"""
 
         # If only one voxel just return a normal fit
@@ -36,7 +36,7 @@ def multi_voxel_fit(single_voxel_fit):
             raise ValueError("mask and data shape do not match")
 
         # Lauch mutliprocessing is nbr_processes != 1
-        if not nbr_processes == 1 and np.sum(mask > 0) > nbr_processes:
+        if not nbr_processes == 1:
             return parallel_fit(self, data, mask, nbr_processes)
 
         # Fit data where mask is True
@@ -47,7 +47,6 @@ def multi_voxel_fit(single_voxel_fit):
         return MultiVoxelFit(self, fit_array, mask)
 
     def parallel_fit(self, data, mask, nbr_processes):
-
         if nbr_processes is None or nbr_processes == 0:
             try:
                 nbr_processes = cpu_count()
