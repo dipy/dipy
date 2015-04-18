@@ -21,7 +21,6 @@ def multi_voxel_fit(single_voxel_fit):
     """
     def new_fit(self, data, mask=None, nbr_processes=1):
         """Fit method for every voxel in data"""
-
         # If only one voxel just return a normal fit
         if data.ndim == 1:
             return single_voxel_fit(self, data)
