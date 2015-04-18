@@ -29,7 +29,7 @@ from numpy import concatenate, diag, diff, empty, eye, sqrt, unique, dot
 from numpy.linalg import pinv, svd
 from numpy.random import randint
 from dipy.reconst.odf import OdfModel, OdfFit
-from scipy.special import sph_harm, lpn, lpmv, gammaln
+from scipy.special import lpn, lpmv, gammaln
 from dipy.core.sphere import Sphere
 import dipy.core.gradients as grad
 from dipy.sims.voxel import single_tensor, all_tensor_evecs
@@ -185,8 +185,6 @@ def spherical_harmonics(m, n, theta, phi):
     scipy version < 0.15.0.
 
     """
-    if SCIPY_15_PLUS:
-        return sph_harm(m, n, theta, phi)
     x = np.cos(phi)
     val = lpmv(m, n, x).astype(complex)
     val *= np.sqrt((2 * n + 1) / 4.0 / np.pi)

@@ -451,8 +451,7 @@ def test_default_lambda_csdmodel():
                                                      sh_order=sh_order,
                                                      reg_sphere=sphere)
         B_reg, _, _ = real_sym_sh_basis(sh_order, sphere.theta, sphere.phi)
-        npt.assert_array_almost_equal(model_full.B_reg, expected * B_reg,
-                                      decimal=4)
+        npt.assert_array_almost_equal(model_full.B_reg, expected * B_reg)
 
 
 def test_csd_superres():
