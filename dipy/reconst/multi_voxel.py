@@ -46,7 +46,7 @@ def multi_voxel_fit(single_voxel_fit):
         return MultiVoxelFit(self, fit_array, mask)
 
     def parallel_fit(self, data, mask, nbr_processes):
-        if nbr_processes is None or nbr_processes == 0:
+        if nbr_processes < 1:
             try:
                 nbr_processes = cpu_count()
             except NotImplementedError:
