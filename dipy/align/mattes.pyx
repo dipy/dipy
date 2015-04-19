@@ -26,7 +26,7 @@ cdef extern from "dpy_math.h" nogil:
 class MattesBase(object):
     def __init__(self, nbins):
         r""" MattesBase
-        Base class for the Mattes' Mutual Information metric.
+        Base class for the Mattes Mutual Information metric [Mattes03].
         This implementation is not tied to any optimization (registration)
         method, the idea is that a registration metric based on MI should
         inherit from this class to perform the low-level computations of
@@ -46,8 +46,15 @@ class MattesBase(object):
         Parameters
         ----------
         nbins : int
-            the number of bins of the joint and margianl probability density
-            functions (the actual number of bins of the joint PDF is nbins^2)
+            the number of bins of the joint and marginal probability density
+            functions (the actual number of bins of the joint PDF is nbins**2)
+
+        References
+        ----------
+        [Mattes03] Mattes, D., Haynor, D. R., Vesselle, H., Lewellen, T. K.,
+                   & Eubank, W. PET-CT image registration in the chest using
+                   free-form deformations. IEEE Transactions on Medical Imaging,
+                   22(1), 120-8, 2003.
         """
         self.nbins = nbins
         # Since the kernel used to compute the Parzen histogram covers more than
@@ -56,7 +63,7 @@ class MattesBase(object):
         # intensities. Padding is the number of extra bins used at each side
         # of the histogram (a total of [2 * padding] extra bins). Since the
         # support of the cubic spline is 5 bins (the center plus 2 bins at each
-        # side) we need a padding of 2, in this case.
+        # side) we need a padding of 2, in the case of cubic splines.
         self.padding = 2
 
     def setup(self, static, moving, smask=None, mmask=None):
@@ -423,11 +430,14 @@ def cubic_spline(double[:] x):
 
 cdef inline double _cubic_spline(double x) nogil:
     r''' Cubic B-Spline evaluated at x
-    See eq. (3) of [1].
+    See eq. (3) of [Matttes03].
 
-    [1] Mattes, D., Haynor, D. R., Vesselle, H., Lewellen, T. K., & Eubank, W.
-        PET-CT image registration in the chest using free-form deformations.
-        IEEE Transactions on Medical Imaging, 22(1), 120–8, 2003.
+    References
+    ----------
+    [Mattes03] Mattes, D., Haynor, D. R., Vesselle, H., Lewellen, T. K.,
+               & Eubank, W. PET-CT image registration in the chest using
+               free-form deformations. IEEE Transactions on Medical Imaging,
+               22(1), 120-8, 2003.
     '''
     cdef:
         double absx = -x if x < 0.0 else x
@@ -460,11 +470,14 @@ def cubic_spline_derivative(double[:] x):
 
 cdef inline double _cubic_spline_derivative(double x) nogil:
     r''' Derivative of cubic B-Spline evaluated at x
-    See eq. (3) of [1].
+    See eq. (3) of [Mattes03].
 
-    [1] Mattes, D., Haynor, D. R., Vesselle, H., Lewellen, T. K., & Eubank, W.
-        PET-CT image registration in the chest using free-form deformations.
-        IEEE Transactions on Medical Imaging, 22(1), 120–8, 2003.
+    References
+    ----------
+    [Mattes03] Mattes, D., Haynor, D. R., Vesselle, H., Lewellen, T. K.,
+               & Eubank, W. PET-CT image registration in the chest using
+               free-form deformations. IEEE Transactions on Medical Imaging,
+               22(1), 120-8, 2003.
     '''
     cdef:
         double absx = -x if x < 0.0 else x

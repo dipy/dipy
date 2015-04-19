@@ -53,11 +53,12 @@ def create_random_image_pair_3d(ns, nr, nc, nvals):
 
 
 def test_cubic_spline():
-    #Cubic spline as defined in [1] eq. (3)
+    #Cubic spline as defined in [Mattes03] eq. (3)
     #
-    #[1] Mattes, D., Haynor, D. R., Vesselle, H., Lewellen, T. K., & Eubank, W.
-    #    PET-CT image registration in the chest using free-form deformations.
-    #    IEEE Transactions on Medical Imaging, 22(1), 120-8, 2003.
+    # [Mattes03] Mattes, D., Haynor, D. R., Vesselle, H., Lewellen, T. K.,
+    #            & Eubank, W. PET-CT image registration in the chest using
+    #            free-form deformations. IEEE Transactions on Medical Imaging,
+    #            22(1), 120-8, 2003.
     input = []
     expected = []
     epsilon = 1e-9
@@ -78,12 +79,13 @@ def test_cubic_spline():
 
 
 def test_cubic_spline_derivative():
-    # Test derivative of the cubic spline, as defined in [1] eq. (3) by
+    # Test derivative of the cubic spline, as defined in [Mattes03] eq. (3) by
     # comparing the analytical and numerical derivatives
     #
-    #[1] Mattes, D., Haynor, D. R., Vesselle, H., Lewellen, T. K., & Eubank, W.
-    #    PET-CT image registration in the chest using free-form deformations.
-    #    IEEE Transactions on Medical Imaging, 22(1), 120-8, 2003.
+    # [Mattes03] Mattes, D., Haynor, D. R., Vesselle, H., Lewellen, T. K.,
+    #            & Eubank, W. PET-CT image registration in the chest using
+    #            free-form deformations. IEEE Transactions on Medical Imaging,
+    #            22(1), 120-8, 2003.
     input = []
     expected = []
     epsilon = 1e-9
