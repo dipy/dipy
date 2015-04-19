@@ -1,6 +1,8 @@
 import numpy as np
 from dipy.align import floating
 import dipy.align.vector_fields as vfu
+import dipy.align.mattes as mattes
+from dipy.align.transforms import regtransforms
 from numpy.testing import (assert_array_equal,
                            assert_array_almost_equal,
                            assert_almost_equal,
@@ -10,6 +12,7 @@ import dipy.align.imwarp as imwarp
 from nibabel.affines import apply_affine, from_matvec
 from scipy.ndimage.interpolation import map_coordinates
 import dipy.core.geometry as geometry
+
 
 
 def test_random_displacement_field_2d():
@@ -1502,6 +1505,153 @@ def test_reorient_random_vector_fields():
         assert_raises(ValueError, func, arr_32, invalid)
 
 
+def test_gradient_2d():
+    np.random.seed(3921116)
+    shape = (25, 32)
+    # Create grid coordinates
+    x_0 = np.asarray(range(shape[0]))
+    x_1 = np.asarray(range(shape[1]))
+    X = np.ndarray(shape+(3,), dtype = np.float64)
+    O = np.ones(shape)
+    X[..., 0]= x_0[:, None] * O
+    X[..., 1]= x_1[None, :] * O
+    X[..., 2]= 1
+
+    transform = regtransforms[('RIGID', 2)]
+    theta = np.array([0.1, 5.0, 2.5])
+    T = transform.param_to_matrix(theta)
+    TX = X.dot(T.T)
+    # Eval an arbitrary (known) function at TX
+    # f(x, y) = ax^2 + bxy + cy^{2}
+    # df/dx = 2ax + by
+    # df/dy = 2cy + bx
+    a = 2e-3
+    b = 5e-3
+    c = 7e-3
+    img = a*TX[...,0]**2 + b*TX[...,0]*TX[...,1] + c*TX[...,1]**2
+    img = img.astype(np.float32)
+    # img is an image sampled at X with grid-to-space transform T
+
+    # Test sparse gradient: choose some sample points (in space)
+    sample = mattes.sample_domain_regular(20, np.array(shape, dtype=np.int32), T)
+    sample = np.array(sample)
+    # Compute the analytical gradient at all points
+    expected = np.ndarray((sample.shape[0], 2), dtype=np.float32)
+    expected[...,0] = 2*a*sample[:,0] + b*sample[:,1]
+    expected[...,1] = 2*c*sample[:,1] + b*sample[:,0]
+    # Get the numerical gradient with the implementation under test
+    sp_to_grid = np.linalg.inv(T)
+    img_spacing = np.ones(2)
+    actual, inside = vfu.sparse_gradient(img, sp_to_grid, img_spacing, sample)
+    diff = np.abs(expected - actual).mean(1) * inside
+    # The finite differences are really not accurate, especially with float32
+    assert_equal(diff.max() < 1e-3, True)
+    # Verify exception is raised when passing invalid affine or spacings
+    invalid_affine=np.eye(2)
+    invalid_spacings = np.ones(1)
+    assert_raises(ValueError, vfu.sparse_gradient, img, invalid_affine,
+                  img_spacing, sample)
+    assert_raises(ValueError, vfu.sparse_gradient, img, sp_to_grid,
+                  invalid_spacings, sample)
+
+    # Test dense gradient
+    # Compute the analytical gradient at all points
+    expected = np.ndarray(shape + (2,), dtype=np.float32)
+    expected[...,0] = 2*a*TX[...,0] + b*TX[...,1]
+    expected[...,1] = 2*c*TX[...,1] + b*TX[...,0]
+    # Get the numerical gradient with the implementation under test
+    sp_to_grid = np.linalg.inv(T)
+    img_spacing = np.ones(2)
+    actual, inside = vfu.gradient(img, sp_to_grid, img_spacing, shape, T)
+    diff = np.abs(expected - actual).mean(2) * inside
+    # In the dense case, we are evaluating at the exact points (sample points
+    # are not slightly moved like in the sparse case), so we have more precision
+    assert_equal(diff.max() < 1e-5, True)
+    # Verify exception is raised when passing invalid affine or spacings
+    assert_raises(ValueError, vfu.gradient, img, invalid_affine, img_spacing,
+                  shape, T)
+    assert_raises(ValueError, vfu.gradient, img, sp_to_grid, img_spacing,
+                  shape, invalid_affine)
+    assert_raises(ValueError, vfu.gradient, img, sp_to_grid, invalid_spacings,
+                  shape, T)
+
+
+def test_gradient_3d():
+    np.random.seed(3921116)
+    shape = (25, 32, 15)
+    # Create grid coordinates
+    x_0 = np.asarray(range(shape[0]))
+    x_1 = np.asarray(range(shape[1]))
+    x_2 = np.asarray(range(shape[2]))
+    X = np.ndarray(shape+(4,), dtype = np.float64)
+    O = np.ones(shape)
+    X[..., 0]= x_0[:, None, None] * O
+    X[..., 1]= x_1[None, :, None] * O
+    X[..., 2]= x_2[None, None, :] * O
+    X[..., 3]= 1
+
+    transform = regtransforms[('RIGID', 3)]
+    theta = np.array([0.1, 0.05, 0.12, -12.0, -15.5, -7.2])
+    T = transform.param_to_matrix(theta)
+
+    TX = X.dot(T.T)
+    # Eval an arbitrary (known) function at TX
+    # f(x, y, z) = ax^2 + by^2 + cz^2 + dxy + exz + fyz
+    # df/dx = 2ax + dy + ez
+    # df/dy = 2by + dx + fz
+    # df/dz = 2cz + ex + fy
+    a, b, c = 2e-3, 3e-3, 1e-3
+    d, e, f = 1e-3, 2e-3, 3e-3
+    img = a*TX[...,0]**2 + b*TX[...,1]**2 + c*TX[...,2]**2 + \
+          d*TX[...,0]*TX[...,1] + e*TX[...,0]*TX[...,2] + f*TX[...,1]*TX[...,2]
+
+    img = img.astype(np.float32)
+    # Test sparse gradient: choose some sample points (in space)
+    sample = mattes.sample_domain_regular(100, np.array(shape, dtype=np.int32), T)
+    sample = np.array(sample)
+    # Compute the analytical gradient at all points
+    expected = np.ndarray((sample.shape[0], 3), dtype=np.float32)
+    expected[...,0] = 2*a*sample[:,0] + d*sample[:,1] + e*sample[:,2]
+    expected[...,1] = 2*b*sample[:,1] + d*sample[:,0] + f*sample[:,2]
+    expected[...,2] = 2*c*sample[:,2] + e*sample[:,0] + f*sample[:,1]
+    # Get the numerical gradient with the implementation under test
+    sp_to_grid = np.linalg.inv(T)
+    img_spacing = np.ones(3)
+    actual, inside = vfu.sparse_gradient(img, sp_to_grid, img_spacing, sample)
+    # Discard points outside the image domain
+    diff = np.abs(expected - actual).mean(1) * inside
+    # The finite differences are really not accurate, especially with float32
+    assert_equal(diff.max() < 1e-3, True)
+    # Verify exception is raised when passing invalid affine or spacings
+    invalid_affine=np.eye(3)
+    invalid_spacings = np.ones(2)
+    assert_raises(ValueError, vfu.sparse_gradient, img, invalid_affine,
+                  img_spacing, sample)
+    assert_raises(ValueError, vfu.sparse_gradient, img, sp_to_grid,
+                  invalid_spacings, sample)
+
+    # Test dense gradient
+    # Compute the analytical gradient at all points
+    expected = np.ndarray(shape + (3,), dtype=np.float32)
+    expected[...,0] = 2*a*TX[...,0] + d*TX[...,1] + e*TX[...,2]
+    expected[...,1] = 2*b*TX[...,1] + d*TX[...,0] + f*TX[...,2]
+    expected[...,2] = 2*c*TX[...,2] + e*TX[...,0] + f*TX[...,1]
+    # Get the numerical gradient with the implementation under test
+    sp_to_grid = np.linalg.inv(T)
+    img_spacing = np.ones(3)
+    actual, inside = vfu.gradient(img, sp_to_grid, img_spacing, shape, T)
+    diff = np.abs(expected - actual).mean(3) * inside
+    # In the dense case, we are evaluating at the exact points (sample points
+    # are not slightly moved like in the sparse case), so we have more precision
+    assert_equal(diff.max() < 1e-5, True)
+    # Verify exception is raised when passing invalid affine or spacings
+    assert_raises(ValueError, vfu.gradient, img, invalid_affine, img_spacing,
+                  shape, T)
+    assert_raises(ValueError, vfu.gradient, img, sp_to_grid, img_spacing,
+                  shape, invalid_affine)
+    assert_raises(ValueError, vfu.gradient, img, sp_to_grid, invalid_spacings,
+                  shape, T)
+
 
 if __name__=='__main__':
     test_random_displacement_field_2d()
@@ -1531,3 +1681,5 @@ if __name__=='__main__':
     test_reorient_vector_field_2d()
     test_reorient_vector_field_3d()
     test_reorient_random_vector_fields()
+    test_gradient_2d()
+    test_gradient_3d()

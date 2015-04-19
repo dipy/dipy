@@ -6,7 +6,9 @@
 import numpy as np
 cimport numpy as cnp
 cimport cython
+import numpy.random as random
 from fused_types cimport floating
+import dipy.align.vector_fields as vf
 
 from dipy.align.vector_fields cimport(_apply_affine_3d_x0,
                                       _apply_affine_3d_x1,
@@ -250,7 +252,7 @@ class MattesBase(object):
         nbins = self.nbins
 
         if (self.joint_grad is None) or (self.joint_grad.shape[2] != n):
-                self.joint_grad = np.ndarray((nbins, nbins, n))
+            self.joint_grad = np.ndarray((nbins, nbins, n))
         if dim == 2:
             _joint_pdf_gradient_dense_2d(theta, transform, static, moving,
                                          grid_to_space, mgradient, smask, mmask,
@@ -292,7 +294,7 @@ class MattesBase(object):
         mgradient: array, shape (m, 3)
             the gradient of the moving image at the sample points
         '''
-        dim = len(sample_points.shape[1])
+        dim = sample_points.shape[1]
         n = theta.shape[0]
         nbins = self.nbins
 
@@ -703,8 +705,9 @@ cdef _compute_pdfs_sparse(double[:] sval, double[:] mval, double smin,
 
     joint[...] = 0
     sum = 0
-    valid_points = 0
+
     with nogil:
+        valid_points = 0
         smarginal[:] = 0
         for i in range(n):
             valid_points += 1
@@ -998,7 +1001,7 @@ cdef _joint_pdf_gradient_sparse_2d(double[:] theta, Transform transform,
         int n = theta.shape[0]
         int m = sval.shape[0]
         int offset, constant_jacobian=0
-        cnp.npy_intp i, j, r, c
+        cnp.npy_intp i, j, r, c, valid_points
         double rn, cn
         double val, spline_arg
         double[:,:] J = np.ndarray(shape=(2, n), dtype=np.float64)
@@ -1006,10 +1009,12 @@ cdef _joint_pdf_gradient_sparse_2d(double[:] theta, Transform transform,
 
     grad_pdf[...] = 0
     with nogil:
-
+        valid_points = 0
         for i in range(m):
+            valid_points += 1
             if constant_jacobian == 0:
-                constant_jacobian = transform._jacobian(theta, sample_points[i], J)
+                constant_jacobian = transform._jacobian(theta,
+                                                        sample_points[i], J)
 
             for j in range(n):
                 prod[j] = J[0,j] * mgradient[i,0] +\
@@ -1026,6 +1031,12 @@ cdef _joint_pdf_gradient_sparse_2d(double[:] theta, Transform transform,
                 for j in range(n):
                     grad_pdf[r, c + offset,j] -= val * prod[j]
                 spline_arg += 1.0
+
+        if valid_points * mdelta > 0:
+            for i in range(nbins):
+                for j in range(nbins):
+                    for k in range(n):
+                        grad_pdf[i, j, k] /= (valid_points * mdelta)
 
 
 cdef _joint_pdf_gradient_sparse_3d(double[:] theta, Transform transform,
@@ -1077,7 +1088,7 @@ cdef _joint_pdf_gradient_sparse_3d(double[:] theta, Transform transform,
     cdef:
         int n = theta.shape[0]
         int m = sval.shape[0]
-        int offset, constant_jacobian=0
+        int offset, valid_points, constant_jacobian=0
         cnp.npy_intp i, j, r, c
         double rn, cn
         double val, spline_arg
@@ -1086,10 +1097,13 @@ cdef _joint_pdf_gradient_sparse_3d(double[:] theta, Transform transform,
 
     grad_pdf[...] = 0
     with nogil:
-
+        valid_points = 0
         for i in range(m):
+            valid_points += 1
+
             if constant_jacobian == 0:
-                constant_jacobian = transform._jacobian(theta, sample_points[i], J)
+                constant_jacobian = transform._jacobian(theta,
+                                                        sample_points[i], J)
 
             for j in range(n):
                 prod[j] = J[0,j] * mgradient[i,0] +\
@@ -1107,6 +1121,12 @@ cdef _joint_pdf_gradient_sparse_3d(double[:] theta, Transform transform,
                 for j in range(n):
                     grad_pdf[r, c + offset,j] -= val * prod[j]
                 spline_arg += 1.0
+
+        if valid_points * mdelta > 0:
+            for i in range(nbins):
+                for j in range(nbins):
+                    for k in range(n):
+                        grad_pdf[i, j, k] /= (valid_points * mdelta)
 
 
 cdef double _compute_mattes_mi(double[:,:] joint, double[:,:,:] joint_gradient,
@@ -1212,6 +1232,87 @@ def sample_domain_2d(int[:] shape, int n, double[:,:] samples,
         samples[i,0] = selected[i] // shape[1]
         samples[i,1] = selected[i] % shape[1]
     return n
+
+
+def sample_domain_regular(int k, int[:] shape, double[:,:] affine,
+                          double sigma=0.25, int seed=1234):
+    r""" Take floor(total_voxels/k) samples from a (2D or 3D) grid
+
+    The sampling is made by taking all pixels whose index (in lexicographical
+    order) is a multiple of k. Each selected point is slightly perturbed by
+    adding a realization of a normally distributed random variable and then
+    mapped to physical space by the given grid-to-space transform.
+
+    Parameters
+    ----------
+    k : int
+        the sampling rate, as described before
+    shape : array, shape (dim,)
+        the shape of the grid to be sampled
+    affine : array, shape (dim+1, dim+1)
+        the grid-to-space transform
+    sigma : float
+        the standard deviation of the Normal random distortion to be applied
+        to the sampled points
+
+    Returns
+    -------
+    samples : array, shape (total_pixels//k, dim)
+        the matrix whose rows are the sampled points
+
+    Example
+    -------
+    >>> from dipy.align.mattes import sample_domain_2d_regular
+    >>> import dipy.align.vector_fields as vf
+    >>> shape = np.array((10, 10), dtype=np.int32)
+    >>> affine = np.eye(2)
+    >>> sigma = 0
+    >>> dim = len(shape)
+    >>> n = shape[0]*shape[1]
+    >>> k = 2
+    >>> samples = sample_domain_2d_regular(k, shape, affine, sigma)
+    >>> (samples.shape[0], samples.shape[1]) == (n//k, dim)
+    True
+    >>> isamples = np.array(samples, dtype=np.int32)
+    >>> indices = (isamples[:, 0] * shape[1] + isamples[:, 1])
+    >>> len(set(indices)) == len(indices)
+    True
+    >>> (indices%k).sum()
+    0
+    """
+    cdef:
+        int i, dim, n, m, slice_size
+        double s, r, c
+        double[:,:] samples
+    dim = len(shape)
+    if not vf.is_valid_affine(affine, dim):
+        raise ValueError("Invalid affine transform matrix")
+
+    random.seed(seed)
+    if dim == 2:
+        n = shape[0] * shape[1]
+        m = n // k
+        samples = random.randn(m, dim) * sigma
+        with nogil:
+            for i in range(m):
+                r = ((i * k) / shape[1]) + samples[i, 0]
+                c = ((i * k) % shape[1]) + samples[i, 1]
+                samples[i,0] = _apply_affine_2d_x0(r, c, 1, affine)
+                samples[i,1] = _apply_affine_2d_x1(r, c, 1, affine)
+    else:
+        slice_size = shape[1] * shape[2]
+        n = shape[0] * slice_size
+        m = n // k
+        samples = random.randn(m, dim) * sigma
+        with nogil:
+            for i in range(m):
+                s = ((i * k) / slice_size) + samples[i, 0]
+                r = (((i * k) % slice_size) / shape[2]) + samples[i, 1]
+                c = (((i * k) % slice_size) % shape[2]) + samples[i, 2]
+                samples[i,0] = _apply_affine_3d_x0(s, r, c, 1, affine)
+                samples[i,1] = _apply_affine_3d_x1(s, r, c, 1, affine)
+                samples[i,2] = _apply_affine_3d_x2(s, r, c, 1, affine)
+    return samples
 
 
 def sample_domain_3d(int[:] shape, int n, double[:,:] samples,
