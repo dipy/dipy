@@ -2,6 +2,10 @@ import numpy as np
 from dipy.tracking.metrics import downsample
 from dipy.tracking.distances import local_skeleton_clustering
 from dipy.tracking.distances import bundles_distances_mdf
+from warnings import warn
+
+warn(DeprecationWarning("Module 'dipy.segment.quickbundles' is deprecated,"
+			" use module 'dipy.segment.clustering' instead"))
 
 
 class QuickBundles(object):
@@ -31,6 +35,11 @@ class QuickBundles(object):
         E.Garyfallidis, "Towards an accurate brain tractography", PhD thesis, 2012 
         
         """
+        warn(DeprecationWarning("Class 'dipy.segment.quickbundles.QuickBundles'"
+                                " is deprecated, use module "
+                                "'dipy.segment.clustering.QuickBundles'"
+                                " instead"))
+
         self.dist_thr = dist_thr
         self.pts = pts
         if pts!=None:                        

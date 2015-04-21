@@ -1,17 +1,27 @@
 """
 This is an implementation of the sparse fascicle model described in
-[Rokem2014]_.
+[Rokem2014a]_. The multi b-value version of this model is described in
+[Rokem2014b]_.
 
 
-.. [Rokem2014] Ariel Rokem, Jason D. Yeatman, Franco Pestilli, Kendrick
+.. [Rokem2014a] Ariel Rokem, Jason D. Yeatman, Franco Pestilli, Kendrick
    N. Kay, Aviv Mezer, Stefan van der Walt, Brian A. Wandell
    (2014). Evaluating the accuracy of diffusion MRI models in white
    matter. http://arxiv.org/abs/1411.0721
 
+.. [Rokem2014b] Ariel Rokem, Kimberly L. Chan, Jason D. Yeatman, Franco
+   Pestilli,  Brian A. Wandell (2014). Evaluating the accuracy of diffusion
+   models at multiple b-values with cross-validation. ISMRM 2014.
 """
 import warnings
 
 import numpy as np
+
+try:
+    from numpy import nanmean
+except ImportError:
+    from scipy.stats import nanmean
+
 from dipy.utils.optpkg import optional_package
 import dipy.core.geometry as geo
 import dipy.core.gradients as grad
@@ -31,6 +41,142 @@ if not has_sklearn:
     w = "sklearn is not available, you can use 'nnls' method to fit"
     w += " the SparseFascicleModel"
     warnings.warn(w)
+
+
+# Isotropic signal models: these are models of the part of the signal that
+# changes with b-value, but does not change with direction. This collection is
+# extensible, by inheriting from IsotropicModel/IsotropicFit below:
+class IsotropicModel(ReconstModel):
+    """
+    A base-class for the representation of isotropic signals.
+
+    The default behavior, suitable for single b-value data is to calculate the
+    mean in each voxel as an estimate of the signal that does not depend on
+    direction.
+    """
+    def __init__(self, gtab):
+        """
+        Initialize an IsotropicModel
+
+        Parameters
+        ----------
+        gtab : a GradientTable class instance
+        """
+        ReconstModel.__init__(self, gtab)
+
+    def fit(self, data):
+        """
+        Fit an IsotropicModel. This boils down to finding the mean
+        diffusion-weighted signal in each voxel
+
+        Parameters
+        ----------
+        data : ndarray
+
+        Returns
+        -------
+        IsotropicFit class instance.
+        """
+        data_no_b0 = data[..., ~self.gtab.b0s_mask]
+        if np.sum(self.gtab.b0s_mask) > 0:
+            s0 = np.mean(data[..., self.gtab.b0s_mask], -1)
+            to_fit = data_no_b0 / s0[..., None]
+        else:
+            to_fit = data_no_b0
+        params = np.mean(np.reshape(to_fit, (-1, to_fit.shape[-1])), -1)
+
+        return IsotropicFit(self, params)
+
+
+class IsotropicFit(ReconstFit):
+    """
+    A fit object for representing the isotropic signal as the mean of the
+    diffusion-weighted signal
+    """
+    def __init__(self, model, params):
+        """
+        Initialize an IsotropicFit object
+
+        Parameters
+        ----------
+        model : IsotropicModel class instance
+        params : ndarray
+            The mean isotropic model parameters (the mean diffusion-weighted
+            signal in each voxel).
+        n_vox : int
+            The number of voxels for which the fit was done.
+        """
+        self.model = model
+        self.params = params
+
+    def predict(self, gtab=None):
+        """
+        Predict the isotropic signal, based on a gradient table. In this case,
+        the (naive!) prediction will be the mean of the diffusion-weighted
+        signal in the voxels.
+
+        Parameters
+        ----------
+        gtab : a GradientTable class instance (optional)
+            Defaults to use the gtab from the IsotropicModel from which this
+            fit was derived.
+        """
+        if gtab is None:
+            gtab = self.model.gtab
+        return self.params[..., np.newaxis] + np.zeros((self.params.shape[0],
+                                                        np.sum(~gtab.b0s_mask)))
+
+class ExponentialIsotropicModel(IsotropicModel):
+    """
+    Representing the isotropic signal as a fit to an exponential decay function
+    with b-values
+    """
+    def fit(self, data):
+        """
+        Parameters
+        ----------
+        data : ndarray
+
+        Returns
+        -------
+        ExponentialIsotropicFit class instance.
+        """
+        data = np.reshape(data, (-1, data.shape[-1]))
+
+        data_no_b0 = data[..., ~self.gtab.b0s_mask]
+        if np.sum(self.gtab.b0s_mask) > 0:
+            s0 = np.mean(data[..., self.gtab.b0s_mask], -1)
+            to_fit = np.log(data_no_b0 / s0[..., None])
+        else:
+            to_fit = np.log(data_no_b0)
+
+        # Fitting to the log-transformed relative data:
+        p = nanmean(to_fit / self.gtab.bvals[~self.gtab.b0s_mask], -1)
+        params = -p
+        return ExponentialIsotropicFit(self, params)
+
+
+class ExponentialIsotropicFit(IsotropicFit):
+    """
+    A fit to the ExponentialIsotropicModel object, based on data.
+    """
+    def predict(self, gtab=None):
+        """
+        Predict the isotropic signal, based on a gradient table. In this case,
+        the prediction will be for an exponential decay with the mean
+        diffusivity derived from the data that was fit.
+
+        Parameters
+        ----------
+        gtab : a GradientTable class instance (optional)
+            Defaults to use the gtab from the IsotropicModel from which this
+            fit was derived.
+        """
+        if gtab is None:
+            gtab = self.model.gtab
+        return np.exp(-gtab.bvals[~gtab.b0s_mask] *
+                      (np.zeros((self.params.shape[0], np.sum(~gtab.b0s_mask))) +
+                       self.params[..., np.newaxis]))
 
 
 def sfm_design_matrix(gtab, sphere, response, mode='signal'):
@@ -78,7 +224,7 @@ def sfm_design_matrix(gtab, sphere, response, mode='signal'):
 
     A canonical tensor approximating corpus-callosum voxels [Rokem2014]_:
 
-    >>> tensor_matrix=sfm_design_matrix(gtab, sphere, [0.0015, 0.0005, 0.0005])
+    >>> tensor_matrix = sfm_design_matrix(gtab, sphere, [0.0015, 0.0005, 0.0005])
 
     A 'stick' function ([Behrens2007]_):
 
@@ -86,20 +232,19 @@ def sfm_design_matrix(gtab, sphere, response, mode='signal'):
 
     Notes
     -----
-    .. [Rokem2014] Ariel Rokem, Jason D. Yeatman, Franco Pestilli, Kendrick
+    .. [Rokem2014a] Ariel Rokem, Jason D. Yeatman, Franco Pestilli, Kendrick
        N. Kay, Aviv Mezer, Stefan van der Walt, Brian A. Wandell
        (2014). Evaluating the accuracy of diffusion MRI models in white
        matter. http://arxiv.org/abs/1411.0721
+
+    .. [Rokem2014b] Ariel Rokem, Kimberly L. Chan, Jason D. Yeatman, Franco
+       Pestilli,  Brian A. Wandell (2014). Evaluating the accuracy of diffusion
+       models at multiple b-values with cross-validation. ISMRM 2014.
 
     .. [Behrens2007] Behrens TEJ, Berg HJ, Jbabdi S, Rushworth MFS, Woolrich MW
        (2007): Probabilistic diffusion tractography with multiple fibre
        orientations: What can we gain? Neuroimage 34:144-55.
     """
-    # Each column of the matrix is the signal in each measurement, as
-    # predicted by a "canonical", symmetrical tensor rotated towards this
-    # vertex of the sphere:
-    canonical_tensor = np.diag(response)
-
     if mode == 'signal':
         mat_gtab = grad.gradient_table(gtab.bvals[~gtab.b0s_mask],
                                        gtab.bvecs[~gtab.b0s_mask])
@@ -113,12 +258,12 @@ def sfm_design_matrix(gtab, sphere, response, mode='signal'):
     for ii, this_dir in enumerate(sphere.vertices):
         # Rotate the canonical tensor towards this vertex and calculate the
         # signal you would have gotten in the direction
-        rot_matrix = geo.vec2vec_rotmat(np.array([1, 0, 0]), this_dir)
-        this_tensor = np.dot(rot_matrix, canonical_tensor)
-        evals, evecs = dti.decompose_tensor(this_tensor)
+        evecs = sims.all_tensor_evecs(this_dir)
         if mode == 'signal':
             sig = sims.single_tensor(mat_gtab, evals=response, evecs=evecs)
-            mat[:, ii] = sig - np.mean(sig)
+            # For regressors based on the single tensor, remove $e^{-bD}$
+            iso_sig = np.exp(-mat_gtab.bvals * np.mean(response))
+            mat[:, ii] = sig - iso_sig
         elif mode == 'odf':
             # Stick function
             if response[1] == 0 or response[2] == 0:
@@ -133,7 +278,7 @@ def sfm_design_matrix(gtab, sphere, response, mode='signal'):
 
 class SparseFascicleModel(ReconstModel, Cache):
     def __init__(self, gtab, sphere=None, response=[0.0015, 0.0005, 0.0005],
-                 solver='ElasticNet', l1_ratio=0.5, alpha=0.001):
+                 solver='ElasticNet', l1_ratio=0.5, alpha=0.001, isotropic=None):
         """
         Initialize a Sparse Fascicle Model
 
@@ -147,20 +292,26 @@ class SparseFascicleModel(ReconstModel, Cache):
             The eigenvalues of a canonical tensor to be used as the response
             function of single-fascicle signals.
             Default:[0.0015, 0.0005, 0.0005]
-
-        solver : string or SKLearnLinearSolver object, optional
+        solver : string, dipy.core.optimize.SKLearnLinearSolver object, or sklearn.linear_model.base.LinearModel object, optional.
             This will determine the algorithm used to solve the set of linear
             equations underlying this model. If it is a string it needs to be
             one of the following: {'ElasticNet', 'NNLS'}. Otherwise, it can be
             an object that inherits from `dipy.optimize.SKLearnLinearSolver`.
             Default: 'ElasticNet'.
-
         l1_ratio : float, optional
             Sets the balance betwee L1 and L2 regularization in ElasticNet
             [Zou2005]_. Default: 0.5
         alpha : float, optional
             Sets the balance between least-squares error and L1/L2
             regularization in ElasticNet [Zou2005]_. Default: 0.001
+        isotropic : IsotropicModel class instance
+            This is a class that implements the function that calculates the
+            value of the isotropic signal. This is a value of the signal that is
+            independent of direction, and therefore removed from both sides of
+            the SFM equation. The default is an instance of IsotropicModel, but
+            other functions can be inherited from IsotropicModel to implement
+            other fits to the aspects of the data that depend on b-value, but
+            not on direction.
 
         Notes
         -----
@@ -179,14 +330,20 @@ class SparseFascicleModel(ReconstModel, Cache):
             sphere = dpd.get_sphere()
         self.sphere = sphere
         self.response = np.asarray(response)
+        if isotropic is None:
+            isotropic = IsotropicModel
 
+        self.isotropic = isotropic
         if solver == 'ElasticNet':
             self.solver = lm.ElasticNet(l1_ratio=l1_ratio, alpha=alpha,
                                         positive=True, warm_start=True)
         elif solver == 'NNLS' or solver == 'nnls':
             self.solver = opt.NonNegativeLeastSquares()
-        elif isinstance(solver, opt.SKLearnLinearSolver):
+
+        elif (isinstance(solver, opt.SKLearnLinearSolver) or
+            has_sklearn and isinstance(solver, lm.base.LinearModel)):
             self.solver = solver
+
         else:
             e_s = "The `solver` key-word argument needs to be: "
             e_s += "'ElasticNet', 'NNLS', or a "
@@ -195,7 +352,8 @@ class SparseFascicleModel(ReconstModel, Cache):
 
     @auto_attr
     def design_matrix(self):
-        return sfm_design_matrix(self.gtab, self.sphere, self.response)
+        return sfm_design_matrix(self.gtab, self.sphere, self.response,
+                                 'signal')
 
     def fit(self, data, mask=None):
         """
@@ -225,36 +383,35 @@ class SparseFascicleModel(ReconstModel, Cache):
         # Fitting is done on the relative signal (S/S0):
         flat_S0 = np.mean(flat_data[..., self.gtab.b0s_mask], -1)
         flat_S = flat_data[..., ~self.gtab.b0s_mask] / flat_S0[..., None]
-        flat_mean = np.mean(flat_S, -1)
+        isotropic = self.isotropic(self.gtab).fit(flat_data)
         flat_params = np.zeros((flat_data.shape[0],
                                 self.design_matrix.shape[-1]))
 
         for vox, vox_data in enumerate(flat_S):
-            if np.any(np.isnan(vox_data)):
-                flat_params[vox] = (np.zeros(self.design_matrix.shape[-1]))
-            else:
-                fit_it = vox_data - flat_mean[vox]
-                flat_params[vox] = self.solver.fit(self.design_matrix,
+            if np.any(~np.isfinite(vox_data)) or np.all(vox_data==0) :
+                # In voxels in which S0 is 0, we just want to keep the
+                # parameters at all-zeros, and avoid nasty sklearn errors:
+                break
+
+            fit_it = vox_data - isotropic.predict()[vox]
+            flat_params[vox] = self.solver.fit(self.design_matrix,
                                                    fit_it).coef_
         if mask is None:
             out_shape = data.shape[:-1] + (-1, )
             beta = flat_params.reshape(out_shape)
-            mean_out = flat_mean.reshape(out_shape)
             S0 = flat_S0.reshape(out_shape).squeeze()
         else:
             beta = np.zeros(data.shape[:-1] +
                             (self.design_matrix.shape[-1],))
             beta[mask, :] = flat_params
-            mean_out = np.zeros(data.shape[:-1])
-            mean_out[mask, ...] = flat_mean.squeeze()
             S0 = np.zeros(data.shape[:-1])
             S0[mask] = flat_S0
 
-        return SparseFascicleFit(self, beta, S0, mean_out.squeeze())
+        return SparseFascicleFit(self, beta, S0, isotropic)
 
 
 class SparseFascicleFit(ReconstFit):
-    def __init__(self, model, beta, S0, mean_signal):
+    def __init__(self, model, beta, S0, iso):
         """
         Initalize a SparseFascicleFit class instance
 
@@ -265,13 +422,15 @@ class SparseFascicleFit(ReconstFit):
             The parameters of fit to data.
         S0 : ndarray
             The mean non-diffusion-weighted signal.
-        mean_signal : ndarray
-            The mean of the diffusion-weighted signal
+        iso : IsotropicFit class instance
+            A representation of the isotropic signal, together with parameters
+            of the isotropic signal in each voxel, that is capable of
+            deriving/predicting an isotropic signal, based on a gradient-table.
         """
         self.model = model
         self.beta = beta
         self.S0 = S0
-        self.mean_signal = mean_signal
+        self.iso = iso
 
     def odf(self, sphere):
         """
@@ -337,9 +496,11 @@ class SparseFascicleFit(ReconstFit):
             S0 = self.S0
         if isinstance(S0, np.ndarray):
             S0 = S0[..., None]
-        if isinstance(self.mean_signal, np.ndarray):
-            mean_signal = self.mean_signal[..., None]
-        pre_pred_sig = S0 * (pred_weighted + mean_signal)
+
+        iso_signal = self.iso.predict(gtab)
+
+        pre_pred_sig = S0 * (pred_weighted +
+                             iso_signal.reshape(pred_weighted.shape))
         pred_sig = np.zeros(pre_pred_sig.shape[:-1] + (gtab.bvals.shape[0],))
         pred_sig[..., ~gtab.b0s_mask] = pre_pred_sig
         pred_sig[..., gtab.b0s_mask] = S0

@@ -20,7 +20,7 @@ fetch_sherbrooke_3shell()
 img, gtab = read_sherbrooke_3shell()
 
 data = img.get_data()
-aff = img.get_affine()
+affine = img.get_affine()
 
 mask = data[..., 0] > 80
 
@@ -71,7 +71,7 @@ plt.savefig('denoised_S0.png', bbox_inches='tight')
    **Showing the middle axial slice without (left) and with (right) NLMEANS denoising**.
 """
 
-nib.save(nib.Nifti1Image(den, aff), 'denoised.nii.gz')
+nib.save(nib.Nifti1Image(den, affine), 'denoised.nii.gz')
 
 """
 

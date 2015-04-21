@@ -867,12 +867,6 @@ def vec2vec_rotmat(u, v):
     if np.sum(np.isnan(Rp)) > 0:
         return np.eye(3)
 
-    # Everything's fine, up to a sign reversal:
-    rot_back = np.dot(Rp, v)
-    sign_reverser = np.sign((np.sign(rot_back) == np.sign(u)) - 0.5).squeeze()
-    # Multiply each line by it's reverser and reassemble the matrix:
-    Rp = Rp * sign_reverser[:, np.newaxis]
-
     return Rp
 
 

@@ -11,7 +11,6 @@ import scipy.sparse as sps
 import scipy.linalg as la
 
 from dipy.reconst.base import ReconstModel, ReconstFit
-import dipy.core.sphere as dps
 from dipy.utils.six.moves import range
 from dipy.tracking.utils import unique_rows
 from dipy.tracking.streamline import transform_streamlines
@@ -198,7 +197,7 @@ def streamline_signal(streamline, gtab, evals=[0.001, 0, 0]):
         ADC = np.diag(np.dot(np.dot(bvecs, tensor), bvecs.T))
         # Use the Stejskal-Tanner equation with the ADC as input, and S0 = 1:
         sig[ii] = np.exp(-bvals * ADC)
-    return sig
+    return sig - np.mean(sig)
 
 
 class LifeSignalMaker(object):
@@ -246,7 +245,9 @@ class LifeSignalMaker(object):
             bvals = self.gtab.bvals[~self.gtab.b0s_mask]
             tensor = grad_tensor(self.sphere.vertices[idx], self.evals)
             ADC = np.diag(np.dot(np.dot(bvecs, tensor), bvecs.T))
-            self.signal[idx] = np.exp(-bvals * ADC)
+            sig = np.exp(-bvals * ADC)
+            sig = sig - np.mean(sig)
+            self.signal[idx] = sig
             self._calculated.append(idx)
 
         return self.signal[idx]
@@ -256,7 +257,10 @@ class LifeSignalMaker(object):
         Approximate the signal for a given streamline
         """
         grad = streamline_gradients(streamline)
-        return [self.calc_signal(g) for g in grad]
+        sig_out = np.zeros((grad.shape[0], self.signal.shape[-1]))
+        for ii, g in enumerate(grad):
+            sig_out[ii] = self.calc_signal(g)
+        return sig_out
 
 
 def voxel2streamline(streamline, transformed=False, affine=None,
@@ -284,14 +288,14 @@ def voxel2streamline(streamline, transformed=False, affine=None,
 
     Returns
     -------
-    v2f, v2fn : tuple of arrays
+    v2f, v2fn : tuple of dicts
 
-    The first array in the tuple answers the question: Given a voxel (from
-    the unique indices in this model), which fibers pass through it? Shape:
-    (n_voxels, n_fibers).
+    The first dict in the tuple answers the question: Given a voxel (from
+    the unique indices in this model), which fibers pass through it?
 
-    The second answers the question: Given a voxel, for each fiber, which
-    nodes are in that voxel? Shape: (n_voxels, max(n_nodes per fiber)).
+    The second answers the question: Given a streamline, for each voxel that
+    this streamline passes through, which nodes of that streamline are in that
+    voxel?
     """
     if transformed:
         transformed_streamline = streamline
@@ -345,8 +349,8 @@ class FiberModel(ReconstModel):
         affine : 4 by 4 array
             Mapping from the streamline coordinates to the data
         evals : list (3 items, optional)
-            The eigenvalues of the canonical tensor used as a response function
-
+            The eigenvalues of the canonical tensor used as a response function.
+            Default:[0.001, 0, 0].
         sphere: `dipy.core.Sphere` instance.
             Whether to approximate (and cache) the signal on a discrete
             sphere. This may confer a significant speed-up in setting up the
@@ -366,57 +370,59 @@ class FiberModel(ReconstModel):
         # Assign some local variables, for shorthand:
         all_coords = np.concatenate(streamline)
         vox_coords = unique_rows(all_coords.astype(int))
-        n_vox = vox_coords.shape[0]
+        del all_coords
         # We only consider the diffusion-weighted signals:
         n_bvecs = self.gtab.bvals[~self.gtab.b0s_mask].shape[0]
-
         v2f, v2fn = voxel2streamline(streamline, transformed=True,
                                      affine=affine, unique_idx=vox_coords)
-
         # How many fibers in each voxel (this will determine how many
-        # components are in the fiber part of the matrix):
-        n_unique_f = np.sum(v2f)
+        # components are in the matrix):
+        n_unique_f = len(np.hstack(v2f.values()))
+        # Preallocate these, which will be used to generate the sparse
+        # matrix:
+        f_matrix_sig = np.zeros(n_unique_f * n_bvecs, dtype=np.float)
+        f_matrix_row = np.zeros(n_unique_f * n_bvecs, dtype=np.int)
+        f_matrix_col = np.zeros(n_unique_f * n_bvecs, dtype=np.int)
 
-        # Preallocate these, which will be used to generate the two sparse
-        # matrices:
+        fiber_signal = []
+        for s_idx, s in enumerate(streamline):
+            if sphere is not False:
+                fiber_signal.append(SignalMaker.streamline_signal(s))
+            else:
+                fiber_signal.append(streamline_signal(s, self.gtab, evals))
 
-        # This one will hold the fiber-predicted signal
-        f_matrix_sig = np.zeros(n_unique_f * n_bvecs)
-        f_matrix_row = np.zeros(n_unique_f * n_bvecs)
-        f_matrix_col = np.zeros(n_unique_f * n_bvecs)
+        del streamline
+        if sphere is not False:
+            del SignalMaker
 
         keep_ct = 0
-        if sphere is not False:
-            fiber_signal = [SignalMaker.streamline_signal(s) for s in streamline]
-        else:
-            fiber_signal = [streamline_signal(s, self.gtab, evals)
-                            for s in streamline]
-
+        range_bvecs = np.arange(n_bvecs).astype(int)
         # In each voxel:
-        for v_idx, vox in enumerate(vox_coords):
+        for v_idx in range(vox_coords.shape[0]):
             # dbg:
-            # print(100*float(v_idx)/n_vox)
-            # For each fiber:
-            for f_idx in np.where(v2f[v_idx])[0]:
-                # Sum the signal from each node of the fiber in that voxel:
-                vox_fiber_sig = np.zeros(n_bvecs)
-                for node_idx in np.where(v2fn[f_idx] == v_idx)[0]:
-                    this_signal = fiber_signal[f_idx][node_idx]
-                    vox_fiber_sig += (this_signal - np.mean(this_signal))
-                # For each fiber-voxel combination, we now store the row/column
-                # indices and the signal in the pre-allocated linear arrays
-                f_matrix_row[keep_ct:keep_ct+n_bvecs] =\
-                    np.arange(n_bvecs) + v_idx * n_bvecs
-                f_matrix_col[keep_ct:keep_ct+n_bvecs] =\
-                    np.ones(n_bvecs) * f_idx
-                f_matrix_sig[keep_ct:keep_ct+n_bvecs] = vox_fiber_sig
-                keep_ct += n_bvecs
+            #if not np.mod(v_idx, 1000):
+            #    print("voxel %s"%(100*float(v_idx)/n_vox))
+            mat_row_idx = (range_bvecs + v_idx * n_bvecs).astype(np.int32)
+            #For each fiber in that voxel:
+            for f_idx in v2f[v_idx]:
+                # For each fiber-voxel combination, store the row/column
+                # indices in the pre-allocated linear arrays
+                f_matrix_row[keep_ct:keep_ct+n_bvecs] = mat_row_idx
+                f_matrix_col[keep_ct:keep_ct+n_bvecs] = f_idx
 
+                vox_fiber_sig = np.zeros(n_bvecs)
+                for node_idx in v2fn[f_idx][v_idx]:
+                    # Sum the signal from each node of the fiber in that voxel:
+                    vox_fiber_sig += fiber_signal[f_idx][node_idx]
+                # And add the summed thing into the corresponding rows:
+                f_matrix_sig[keep_ct:keep_ct+n_bvecs] += vox_fiber_sig
+                keep_ct = keep_ct + n_bvecs
+
+        del v2f, v2fn
         # Allocate the sparse matrix, using the more memory-efficient 'csr'
-        # format (converted from the coo format, which we rely on for the
-        # initial allocation):
-        life_matrix = sps.coo_matrix((f_matrix_sig,
-                                      [f_matrix_row, f_matrix_col])).tocsr()
+        # format:
+        life_matrix = sps.csr_matrix((f_matrix_sig,
+                                     [f_matrix_row, f_matrix_col]))
 
         return life_matrix, vox_coords
 
@@ -444,7 +450,6 @@ class FiberModel(ReconstModel):
         # The mean of the relative signal across directions in each voxel:
         mean_sig = np.mean(relative_signal, -1)
         to_fit = (relative_signal - mean_sig[:, None]).ravel()
-
         return (to_fit, weighted_signal, b0_signal, relative_signal, mean_sig,
                 vox_data)
 
@@ -485,7 +490,6 @@ class FiberModel(ReconstModel):
             affine = np.eye(4)
         life_matrix, vox_coords = \
             self.setup(streamline, affine, evals=evals, sphere=sphere)
-
         to_fit, weighted_signal, b0_signal, relative_signal, mean_sig, vox_data=\
             self._signals(data, vox_coords)
         beta = opt.sparse_nnls(to_fit, life_matrix)
@@ -548,9 +552,10 @@ class FiberFit(ReconstFit):
             gtab = self.model.gtab
         else:
             _model = FiberModel(gtab)
-            _matrix, _ = self.model.setup(self.streamline,
-                                          self.affine,
-                                          self.evals)
+            _matrix, _ = _model.setup(self.streamline,
+                                      self.affine,
+                                      self.evals)
+
         pred_weighted = np.reshape(opt.spdot(_matrix, self.beta),
                                    (self.vox_coords.shape[0],
                                     np.sum(~gtab.b0s_mask)))

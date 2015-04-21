@@ -5,19 +5,20 @@ from dipy.core.sphere import HemiSphere, unit_octahedron
 from dipy.core.gradients import gradient_table
 from dipy.tracking.local import (LocalTracking, ThresholdTissueClassifier,
                                  DirectionGetter, TissueClassifier)
-from dipy.direction import (ProbabilisticDirectionGetter, 
+from dipy.direction import (ProbabilisticDirectionGetter,
                             DeterministicMaximumDirectionGetter)
 from dipy.tracking.local.interpolation import trilinear_interpolate4d
 
+from dipy.tracking.local.localtracking import TissueTypes
+
+
 def test_stop_conditions():
     """This tests that the Local Tracker behaves as expected for the
-    following tissue types:
-
-        OUTSIDEIMAGE = -1
-        INVALIDPOINT = 0
-        TRACKPOINT = 1
-        ENDPOINT = 2
+    following tissue types.
     """
+    # TissueTypes.TRACKPOINT = 1
+    # TissueTypes.ENDPOINT = 2
+    # TissueType.INVALIDPOINT = 0
     tissue = np.array([[2, 1, 1, 2, 1],
                        [2, 2, 1, 1, 2],
                        [1, 1, 1, 1, 1],
@@ -30,7 +31,7 @@ def test_stop_conditions():
         def check_point(self, point):
             p = np.round(point)
             if any(p < 0) or any(p >= tissue.shape):
-                return -1 # OUTSIDEIMAGE
+                return TissueTypes.OUTSIDEIMAGE
             return tissue[p[0], p[1], p[2]]
 
     class SimpleDirectionGetter(DirectionGetter):
@@ -38,6 +39,7 @@ def test_stop_conditions():
             # Test tracking along the rows (z direction)
             # of the tissue array above
             return np.array([[0., 0., 1.]])
+
         def get_direction(self, p, d):
             # Always keep previous direction
             return 0
@@ -51,7 +53,7 @@ def test_stop_conditions():
     # Set up tracking
     dg = SimpleDirectionGetter()
     tc = SimpleTissueClassifier()
-    streamlines = LocalTracking(dg, tc, seeds, np.eye(4), 1.)
+    streamlines = LocalTracking(dg, tc, seeds, np.eye(4), 1., return_all=False)
     streamlines = iter(streamlines)
 
     # Check that the first streamline stops at 0 and 3 (ENDPOINT)
@@ -94,13 +96,11 @@ def test_stop_conditions():
     bad_affine[0, 1] = 1.
     npt.assert_raises(ValueError, LocalTracking, dg, tc, seeds, bad_affine, 1.)
 
-    lin = bad_affine[:3, :3]
-    dotlin = np.dot(lin.T, lin)
-
 
 def test_trilinear_interpolate():
 
     a, b, c = np.random.random(3)
+
     def linear_function(x, y, z):
         return a * x + b * y + c * z
 
@@ -171,26 +171,24 @@ def test_ProbabilisticOdfWeightedTracker():
     dg = ProbabilisticDirectionGetter.from_pmf(pmf, 90, sphere)
     streamlines = LocalTracking(dg, tc, seeds, np.eye(4), 1.)
 
-    expected = [np.array([[ 0.,  1.,  0.],
-                          [ 1.,  1.,  0.],
-                          [ 2.,  1.,  0.],
-                          [ 2.,  2.,  0.],
-                          [ 2.,  3.,  0.],
-                          [ 2.,  4.,  0.],
-                          [ 2.,  5.,  0.]]),
-                np.array([[ 0.,  1.,  0.],
-                          [ 1.,  1.,  0.],
-                          [ 2.,  1.,  0.],
-                          [ 3.,  1.,  0.],
-                          [ 4.,  1.,  0.]])
-               ]
+    expected = [np.array([[0.,  1.,  0.],
+                          [1.,  1.,  0.],
+                          [2.,  1.,  0.],
+                          [2.,  2.,  0.],
+                          [2.,  3.,  0.],
+                          [2.,  4.,  0.],
+                          [2.,  5.,  0.]]),
+                np.array([[0.,  1.,  0.],
+                          [1.,  1.,  0.],
+                          [2.,  1.,  0.],
+                          [3.,  1.,  0.],
+                          [4.,  1.,  0.]])]
 
     def allclose(x, y):
         return x.shape == y.shape and np.allclose(x, y)
 
     path = [False, False]
     for sl in streamlines:
-        dir = ( -sphere.vertices[0] ).copy()
         if allclose(sl, expected[0]):
             path[0] = True
         elif allclose(sl, expected[1]):
@@ -206,7 +204,7 @@ def test_ProbabilisticOdfWeightedTracker():
     for sl in streamlines:
         npt.assert_(np.allclose(sl, expected[1]))
 
-        
+
 def test_MaximumDeterministicTracker():
     """This tests that the Maximum Deterministic Direction Getter plays nice
     LocalTracking and produces reasonable streamlines in a simple example.
@@ -237,25 +235,23 @@ def test_MaximumDeterministicTracker():
     dg = DeterministicMaximumDirectionGetter.from_pmf(pmf, 90, sphere)
     streamlines = LocalTracking(dg, tc, seeds, np.eye(4), 1.)
 
-    expected = [np.array([[ 0.,  1.,  0.],
-                          [ 1.,  1.,  0.],
-                          [ 2.,  1.,  0.],
-                          [ 2.,  2.,  0.],
-                          [ 2.,  3.,  0.],
-                          [ 2.,  4.,  0.],
-                          [ 2.,  5.,  0.]]),
-                np.array([[ 0.,  1.,  0.],
-                          [ 1.,  1.,  0.],
-                          [ 2.,  1.,  0.],
-                          [ 3.,  1.,  0.],
-                          [ 4.,  1.,  0.]])
-               ]
+    expected = [np.array([[0.,  1.,  0.],
+                          [1.,  1.,  0.],
+                          [2.,  1.,  0.],
+                          [2.,  2.,  0.],
+                          [2.,  3.,  0.],
+                          [2.,  4.,  0.],
+                          [2.,  5.,  0.]]),
+                np.array([[0.,  1.,  0.],
+                          [1.,  1.,  0.],
+                          [2.,  1.,  0.],
+                          [3.,  1.,  0.],
+                          [4.,  1.,  0.]])]
 
     def allclose(x, y):
         return x.shape == y.shape and np.allclose(x, y)
 
     for sl in streamlines:
-        dir = ( -sphere.vertices[0] ).copy()
         if not allclose(sl, expected[0]):
             raise AssertionError()
 
@@ -268,4 +264,3 @@ def test_MaximumDeterministicTracker():
 
 if __name__ == "__main__":
     npt.run_module_suite()
-

@@ -335,7 +335,14 @@ fig.savefig("spatial_errors.png")
 This image demonstrates that in many places, fitting the LiFE model results in
 substantial reduction of the error.
 
-For the Matlab implementation of LiFE, head over to `Franco Pestilli's github webpage <http://francopestilli.github.io/life/>`_.
+Note that for full-brain tractographies *LiFE* can require large amounts of
+memory. For detailed memory profiling of the algorithm, based on the
+streamlines generated in :ref:`example_probabilistic_fiber_tracking`, see `this
+IPython notebook
+<http://nbviewer.ipython.org/gist/arokem/bc29f34ebc97510d9def>`_.
+
+For the Matlab implementation of LiFE, head over to `Franco Pestilli's github
+webpage <http://francopestilli.github.io/life/>`_.
 
 References
 ~~~~~~~~~~~~~~~~~~~~~~

@@ -4,7 +4,8 @@ import dipy.align.vector_fields as vfu
 from numpy.testing import (assert_array_equal,
                            assert_array_almost_equal,
                            assert_almost_equal,
-                           assert_equal)
+                           assert_equal,
+                           assert_raises)
 import dipy.align.imwarp as imwarp
 from nibabel.affines import apply_affine, from_matvec
 from scipy.ndimage.interpolation import map_coordinates
@@ -72,6 +73,16 @@ def test_random_displacement_field_2d():
             # Verify the claimed assignments are correct
             assert_array_almost_equal(W[0,...], assignment[...,0], 5)
             assert_array_almost_equal(W[1,...], assignment[...,1], 5)
+
+    # Test exception is raised when the affine transform matrix is not valid
+    valid = np.zeros((2, 3), dtype=np.float64)
+    invalid = np.zeros((2, 2), dtype=np.float64)
+    shape = np.array(from_shape, dtype=np.int32)
+    assert_raises(ValueError, vfu.create_random_displacement_2d,
+                  shape, invalid, shape, valid)
+    assert_raises(ValueError, vfu.create_random_displacement_2d,
+                  shape, valid, shape, invalid)
+
 
 
 def test_random_displacement_field_3d():
@@ -141,6 +152,15 @@ def test_random_displacement_field_3d():
             assert_array_almost_equal(W[0,...], assignment[...,0], 5)
             assert_array_almost_equal(W[1,...], assignment[...,1], 5)
             assert_array_almost_equal(W[2,...], assignment[...,2], 5)
+
+    # Test exception is raised when the affine transform matrix is not valid
+    valid = np.zeros((3, 4), dtype=np.float64)
+    invalid = np.zeros((3, 3), dtype=np.float64)
+    shape = np.array(from_shape, dtype=np.int32)
+    assert_raises(ValueError, vfu.create_random_displacement_2d,
+                  shape, invalid, shape, valid)
+    assert_raises(ValueError, vfu.create_random_displacement_2d,
+                  shape, valid, shape, invalid)
 
 
 def test_harmonic_fields_2d():
@@ -552,6 +572,19 @@ def test_warping_2d():
             warped = vfu.warp_2d_nn(circle, dcopy, A, B, C, np.array(sh, dtype=np.int32))
             assert_array_almost_equal(warped, expected)
 
+    # Test exception is raised when the affine transform matrix is not valid
+    valid = np.zeros((2, 3), dtype=np.float64)
+    invalid = np.zeros((2, 2), dtype=np.float64)
+    shape = np.array(sh, dtype=np.int32)
+    # Exceptions from warp_2d
+    assert_raises(ValueError, vfu.warp_2d, circle, d, invalid, valid, valid, shape)
+    assert_raises(ValueError, vfu.warp_2d, circle, d, valid, invalid, valid, shape)
+    assert_raises(ValueError, vfu.warp_2d, circle, d, valid, valid, invalid, shape)
+    # Exceptions from warp_2d_nn
+    assert_raises(ValueError, vfu.warp_2d_nn, circle, d, invalid, valid, valid, shape)
+    assert_raises(ValueError, vfu.warp_2d_nn, circle, d, valid, invalid, valid, shape)
+    assert_raises(ValueError, vfu.warp_2d_nn, circle, d, valid, valid, invalid, shape)
+
 
 def test_warping_3d():
     r"""
@@ -646,6 +679,19 @@ def test_warping_3d():
             warped = vfu.warp_3d_nn(sphere, dcopy, A, B, C, np.array(sh, dtype=np.int32))
             assert_array_almost_equal(warped, expected, decimal=5)
 
+    # Test exception is raised when the affine transform matrix is not valid
+    valid = np.zeros((3, 4), dtype=np.float64)
+    invalid = np.zeros((3, 3), dtype=np.float64)
+    shape = np.array(sh, dtype=np.int32)
+    # Exceptions from warp_3d
+    assert_raises(ValueError, vfu.warp_3d, sphere, d, invalid, valid, valid, shape)
+    assert_raises(ValueError, vfu.warp_3d, sphere, d, valid, invalid, valid, shape)
+    assert_raises(ValueError, vfu.warp_3d, sphere, d, valid, valid, invalid, shape)
+    # Exceptions from warp_3d_nn
+    assert_raises(ValueError, vfu.warp_3d_nn, sphere, d, invalid, valid, valid, shape)
+    assert_raises(ValueError, vfu.warp_3d_nn, sphere, d, valid, invalid, valid, shape)
+    assert_raises(ValueError, vfu.warp_3d_nn, sphere, d, valid, valid, invalid, shape)
+
 
 def test_affine_warping_2d():
     r"""
@@ -710,6 +756,18 @@ def test_affine_warping_2d():
 
     warped = vfu.warp_2d_affine_nn(circle, np.array(codomain_shape, dtype = np.int32), None)
     assert_array_equal(warped, circle)
+
+    # Test exception is raised when the affine transform matrix is not valid
+    invalid = np.zeros((2, 2), dtype=np.float64)
+    shape = np.array(codomain_shape, dtype=np.int32)
+    # Exceptions from warp_2d
+    assert_raises(ValueError, vfu.warp_2d_affine, circle, shape, invalid)
+    assert_raises(ValueError, vfu.warp_2d_affine, circle, shape, invalid)
+    assert_raises(ValueError, vfu.warp_2d_affine, circle, shape, invalid)
+    # Exceptions from warp_2d_nn
+    assert_raises(ValueError, vfu.warp_2d_affine_nn, circle, shape, invalid)
+    assert_raises(ValueError, vfu.warp_2d_affine_nn, circle, shape, invalid)
+    assert_raises(ValueError, vfu.warp_2d_affine_nn, circle, shape, invalid)
 
 
 def test_affine_warping_3d():
@@ -780,6 +838,17 @@ def test_affine_warping_3d():
     warped = vfu.warp_3d_affine_nn(sphere, np.array(codomain_shape, dtype = np.int32), None)
     assert_array_equal(warped, sphere)
 
+    # Test exception is raised when the affine transform matrix is not valid
+    invalid = np.zeros((3, 3), dtype=np.float64)
+    shape = np.array(codomain_shape, dtype=np.int32)
+    # Exceptions from warp_2d
+    assert_raises(ValueError, vfu.warp_3d_affine, sphere, shape, invalid)
+    assert_raises(ValueError, vfu.warp_3d_affine, sphere, shape, invalid)
+    assert_raises(ValueError, vfu.warp_3d_affine, sphere, shape, invalid)
+    # Exceptions from warp_2d_nn
+    assert_raises(ValueError, vfu.warp_3d_affine_nn, sphere, shape, invalid)
+    assert_raises(ValueError, vfu.warp_3d_affine_nn, sphere, shape, invalid)
+    assert_raises(ValueError, vfu.warp_3d_affine_nn, sphere, shape, invalid)
 
 
 def test_compose_vector_fields_2d():
@@ -901,6 +970,12 @@ def test_compose_vector_fields_2d():
     composition = disp1.copy()
     vfu.compose_vector_fields_2d(composition, disp2, None, None, 1.0, composition)
     assert_array_almost_equal(composition, np.zeros_like(composition))
+
+    # Test exception is raised when the affine transform matrix is not valid
+    valid = np.zeros((2, 3), dtype=np.float64)
+    invalid = np.zeros((2, 2), dtype=np.float64)
+    assert_raises(ValueError, vfu.compose_vector_fields_2d, disp1, disp2, invalid, valid, 1.0, None)
+    assert_raises(ValueError, vfu.compose_vector_fields_2d, disp1, disp2, valid, invalid, 1.0, None)
 
 
 def test_compose_vector_fields_3d():
@@ -1032,6 +1107,12 @@ def test_compose_vector_fields_3d():
     vfu.compose_vector_fields_3d(composition, disp2, None, None, 1.0, composition)
     assert_array_almost_equal(composition, np.zeros_like(composition))
 
+    # Test exception is raised when the affine transform matrix is not valid
+    valid = np.zeros((3, 4), dtype=np.float64)
+    invalid = np.zeros((3, 3), dtype=np.float64)
+    assert_raises(ValueError, vfu.compose_vector_fields_3d, disp1, disp2, invalid, valid, 1.0, None)
+    assert_raises(ValueError, vfu.compose_vector_fields_3d, disp1, disp2, valid, invalid, 1.0, None)
+
 
 def test_invert_vector_field_2d():
     r"""
@@ -1082,6 +1163,12 @@ def test_invert_vector_field_2d():
             residual, stats = mapping.compute_inversion_error()
             assert_almost_equal(stats[1], 0, decimal=4)
             assert_almost_equal(stats[2], 0, decimal=4)
+
+    # Test exception is raised when the affine transform matrix is not valid
+    invalid = np.zeros((2, 2), dtype=np.float64)
+    spacing = np.array([1.0, 1.0])
+    assert_raises(ValueError, vfu.invert_vector_field_fixed_point_2d,
+                  d, invalid, spacing, 40, 1e-7, None)
 
 
 def test_invert_vector_field_3d():
@@ -1142,6 +1229,12 @@ def test_invert_vector_field_3d():
             residual, stats = mapping.compute_inversion_error()
             assert_almost_equal(stats[1], 0, decimal=3)
             assert_almost_equal(stats[2], 0, decimal=3)
+
+    # Test exception is raised when the affine transform matrix is not valid
+    invalid = np.zeros((3, 3), dtype=np.float64)
+    spacing = np.array([1.0, 1.0, 1.0])
+    assert_raises(ValueError, vfu.invert_vector_field_fixed_point_3d,
+                  d, invalid, spacing, 40, 1e-7, None)
 
 
 def test_resample_vector_field_2d():
@@ -1334,12 +1427,16 @@ def test_reorient_vector_field_2d():
 
     #rotate 45 degrees twice
     c = np.sqrt(0.5)
-    affine = np.array([[c, -c],[c, c]])
+    affine = np.array([[c, -c, 0.0],[c, c, 0.0]])
     vfu.reorient_vector_field_2d(d, affine)
     vfu.reorient_vector_field_2d(d, affine)
 
     #verify almost equal
     assert_array_almost_equal(d, expected)
+
+    # Test exception is raised when the affine transform matrix is not valid
+    invalid = np.zeros((2, 2), dtype=np.float64)
+    assert_raises(ValueError, vfu.reorient_vector_field_2d, d, invalid)
 
 
 def test_reorient_vector_field_3d():
@@ -1356,7 +1453,7 @@ def test_reorient_vector_field_3d():
 
     #rotate 45 degrees twice around the last axis
     c = np.sqrt(0.5)
-    affine = np.array([[c, -c, 0],[c, c, 0], [0, 0, 1]])
+    affine = np.array([[c, -c, 0, 0],[c, c, 0, 0], [0, 0, 1, 0]])
     vfu.reorient_vector_field_3d(d, affine)
     vfu.reorient_vector_field_3d(d, affine)
 
@@ -1369,12 +1466,16 @@ def test_reorient_vector_field_3d():
     expected[...,2] =  dinv[...,1]
 
     #rotate 45 degrees twice around the first axis
-    affine = np.array([[1, 0, 0], [0, c, -c], [0, c, c]])
+    affine = np.array([[1, 0, 0, 0], [0, c, -c, 0], [0, c, c, 0]])
     vfu.reorient_vector_field_3d(dinv, affine)
     vfu.reorient_vector_field_3d(dinv, affine)
 
     #verify almost equal
     assert_array_almost_equal(dinv, expected)
+
+    # Test exception is raised when the affine transform matrix is not valid
+    invalid = np.zeros((3, 3), dtype=np.float64)
+    assert_raises(ValueError, vfu.reorient_vector_field_3d, d, invalid)
 
 
 def test_reorient_random_vector_fields():
@@ -1395,6 +1496,11 @@ def test_reorient_random_vector_fields():
         arr_32 = arr.astype(np.float32)
         func(arr_32, affine)
         assert_almost_equal(arr_32, apply_affine(affine, arr) - trans, 6)
+
+        # Test exception is raised when the affine transform matrix is not valid
+        invalid = np.eye(n_dims)
+        assert_raises(ValueError, func, arr_32, invalid)
+
 
 
 if __name__=='__main__':

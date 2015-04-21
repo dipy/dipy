@@ -24,6 +24,19 @@ Dipy
 
 The code found in Dipy was created by the people found in the AUTHOR file.
 
+* 0.9.2 (Wednesday, 18 March 2015)
+
+* Anatomically Constrained Tissue Classifiers for Tracking
+* Massive speedup of Constrained Spherical Deconvolution (CSD)
+* Recursive calibration of response function for CSD
+* New experimental framework for clustering
+* Improvements and 10X speedup for Quickbundles
+* Improvements in Linear Fascicle Evaluation (LiFE)
+* New implementation of Geodesic Anisotropy 
+* New efficient transformation functions for registration
+* Sparse Fascicle Model supports acquisitions with multiple b-values
+
+
 * 0.8.0 (Tuesday, 6 Jan 2015)
 
 * Nonlinear Image-based Registration (SyN)

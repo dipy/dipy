@@ -61,6 +61,33 @@ class MultiVoxelFit(ReconstFit):
         else:
             return item
 
+    def predict(self, *args, **kwargs):
+        """
+        Predict for the multi-voxel object using each single-object's
+        prediction API, with S0 provided from an array.
+        """
+        if not hasattr(self.model, 'predict'):
+            msg = "This model does not have prediction implemented yet"
+            raise NotImplementedError(msg)
+
+        S0 = kwargs.get('S0', np.ones(self.fit_array.shape))
+        idx = ndindex(self.fit_array.shape)
+        ijk = next(idx)
+        def gimme_S0(S0, ijk):
+            if isinstance(S0, np.ndarray):
+                return S0[ijk]
+            else:
+                return S0
+
+        kwargs['S0'] = gimme_S0(S0, ijk)
+        first_pred = self.fit_array[ijk].predict(*args, **kwargs)
+        result = np.empty(self.fit_array.shape + (first_pred.shape[-1],))
+        result[ijk] = first_pred
+        for ijk in idx:
+            kwargs['S0'] = gimme_S0(S0, ijk)
+            result[ijk] = self.fit_array[ijk].predict(*args, **kwargs)
+
+        return result
 
 class CallableArray(np.ndarray):
     """An array which can be called like a function"""
