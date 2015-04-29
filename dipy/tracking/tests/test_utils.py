@@ -9,9 +9,10 @@ from dipy.tracking.utils import (affine_for_trackvis, connectivity_matrix,
                                  density_map, length, move_streamlines,
                                  ndbincount, reduce_labels,
                                  reorder_voxels_affine, seeds_from_mask,
-                                 target, _rmi, unique_rows)
+                                 random_seeds_from_mask, target,
+                                 _rmi, unique_rows)
 
-import dipy.tracking.metrics as metrix 
+import dipy.tracking.metrics as metrix
 
 from dipy.tracking.vox2track import streamline_mapping
 from numpy.testing import assert_array_almost_equal, assert_array_equal
@@ -115,7 +116,7 @@ def test_connectivity_matrix():
     # In the symmetrical case, the matrix should be, well, symmetric:
     assert_equal(matrix[4,3], matrix[4,3])
 
-    
+
 def test_ndbincount():
     def check(expected):
         assert_equal(bc[0, 0], expected[0])
@@ -384,7 +385,7 @@ def test_length():
 
     bundle_lengths = length(bundle)
     for idx, this_length in enumerate(bundle_lengths):
-        assert_equal(this_length, metrix.length(bundle[idx])) 
+        assert_equal(this_length, metrix.length(bundle[idx]))
 
 
 def test_seeds_from_mask():
@@ -410,12 +411,25 @@ def test_seeds_from_mask():
     assert_equal(in_444.sum(), 3 * 4 * 5)
 
 
+def test_random_seeds_from_mask():
+
+    mask = np.random.random_integers(0, 1, size=(4, 6, 3))
+    seeds = random_seeds_from_mask(mask, seeds_per_voxel=24)
+    assert_equal(mask.sum() * 24, len(seeds))
+
+    mask[:] = False
+    mask[2,2,2] = True
+    seeds = random_seeds_from_mask(mask, seeds_per_voxel=8)
+    assert_equal(mask.sum() * 8, len(seeds))
+    assert_true(np.all((seeds > 1.5) & (seeds < 2.5)))
+
+
 def test_connectivity_matrix_shape():
-    
+
     # Labels: z-planes have labels 0,1,2
     labels = np.zeros((3, 3, 3), dtype=int)
     labels[:, :, 1] = 1
-    labels[:, :, 2] = 2  
+    labels[:, :, 2] = 2
     # Streamline set, only moves between first two z-planes.
     streamlines = [np.array([[0., 0., 0.],
                              [0., 0., 0.5],
