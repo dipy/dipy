@@ -28,6 +28,33 @@ if have_imread:
     from scipy.misc import imread
 
 
+class Renderer(vtk.vtkRenderer):
+
+    def background(self, color):
+        self.SetBackground(color)
+
+    def add(self, actor):
+        if isinstance(actor, vtk.vtkVolume):
+            self.AddVolume(actor)
+        else:
+            self.AddActor(actor)
+
+    def rm(self, actor):
+        """ Remove a specific actor
+        """
+        self.RemoveActor(actor)
+
+    def clear(self):
+        """ Remove all actors from the renderer
+        """
+        self.RemoveAllViewProps()
+
+    def rm_all(self):
+        """ Remove all actors from the renderer
+        """
+        self.RemoveAllViewProps()
+
+
 def renderer(background=None):
     """ Create a renderer.
 
