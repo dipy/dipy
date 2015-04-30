@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 import os
 import numpy as np
 
@@ -21,7 +20,7 @@ def test_butcher():
     affine = np.eye(4)
     slicer = actor.butcher(data, affine)
     window.add(renderer, slicer)
-    window.show(renderer)
+    # window.show(renderer)
 
     # copy pixels in numpy array directly
     arr = window.snapshot(renderer)
@@ -113,6 +112,6 @@ def test_bundle_maps():
 
 if __name__ == "__main__":
 
-    # npt.run_module_suite()
-    test_bundle_maps()
+    npt.run_module_suite()
+    # test_bundle_maps()
     # test_streamtube_and_line_actors()
