@@ -39,7 +39,14 @@ class MapmriModel():
            Image Analysis, 2013.
     """
 
-    def __init__(self, gtab, radial_order=4, lambd=1e-09,  eap_cons = False, anisotropic_scaling = True):
+    def __init__(self,
+                 gtab,
+                 radial_order=4,
+                 lambd=1e-16,
+                 eap_cons = False,
+                 anisotropic_scaling = True,
+                 eigenvalue_threshold = 1e-04,
+                 bmax_threshold = 2000):
         r""" Analytical and continuous modeling of the diffusion signal with
         respect to the MAPMRI basis [1]_.
 
@@ -69,6 +76,11 @@ class MapmriModel():
         anisotropic_scaling : bool,
             If false, force the basis function to be identical in the three
             dimensions (SHORE like).
+        eigenvalue_threshold : float,
+            set the minimum of the tensor eigenvalues in order to avoid 
+            stability problem
+        bmax_threshold : float,
+            set the maximum b-value for the tensor estimation
 
         References
         ----------
@@ -80,9 +92,8 @@ class MapmriModel():
                and estimation for one-dimensional q-space magnetic resonance
                1D-SHORE)", eapoc Intl Soc Mag Reson Med, vol. 16, p. 35., 2008.
 
-        .. [3] Merlet S. et. al, "Continuous diffusion signal, EAP and ODF
-               estimation via Compressive Sensing in diffusion MRI", Medical
-               Image Analysis, 2013.
+        .. [3] Ozarslan E. et. al, "Simple harmonic oscillator based reconstruction
+               and estimation for three-dimensional q-space mri", ISMRM 2009.
 
         Examples
         --------
@@ -118,11 +129,12 @@ class MapmriModel():
             self.tau = 1 / (4 * np.pi ** 2)
         else:
             self.tau = gtab.big_delta - gtab.small_delta / 3.0
-
+        self.eigenvalue_threshold = eigenvalue_threshold
+        self.bmax_threshold = bmax_threshold
 
     @multi_voxel_fit
     def fit(self, data):
-        ind=self.gtab.bvals<=2000
+        ind=self.gtab.bvals<=self.bmax_threshold
         gtab2 = gradient_table(self.gtab.bvals[ind], self.gtab.bvecs[ind,:])
         tenmodel=dti.TensorModel(gtab2)
         tenfit=tenmodel.fit(data[...,ind])
@@ -134,7 +146,7 @@ class MapmriModel():
         evals = evals[ind_evals]
         R = R[ind_evals,:]
         
-        evals = np.clip(evals,1e-04,evals.max())
+        evals = np.clip(evals,self.eigenvalue_threshold,evals.max())
         
         if self.anisotropic_scaling:
             mu = np.sqrt(evals*2*self.tau)
@@ -152,14 +164,14 @@ class MapmriModel():
         ind_mat = mapmri_index_matrix(self.radial_order)
 
         # This is a simple empirical regularization, to be replaced
-        I = np.diag(ind_mat.sum(1)**2)
+        I = np.eye(ind_mat.shape[0])
 
         if self.eap_cons:
             if not have_cvxopt:
                 raise ValueError(
                     'CVXOPT package needed to enforce constraints')
             import cvxopt.solvers
-            rmax = 2* np.sqrt(10 * evals.max()*self.tau)
+            rmax = 2 * np.sqrt(10 * evals.max()*self.tau)
             r_index, r_grad = create_rspace(11, rmax)
             K = mapmri_psi_matrix(self.radial_order,  mu, r_grad[0:len(r_grad)/2,:])
 
