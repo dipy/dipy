@@ -189,6 +189,12 @@ File Formats
 
 - :ref:`example_streamline_formats`
 
+-------------
+Visualization
+-------------
+
+- :ref:`example_introduction_to_visualization`
+
 
 .. In order to build the examples, you'll need (on Debian)
     sudo apt-get install python-tables python-matplotib python-vtk
