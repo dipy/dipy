@@ -11,13 +11,13 @@ from nibabel.tmpdirs import TemporaryDirectory
 @npt.dec.skipif(not actor.have_vtk)
 @npt.dec.skipif(not actor.have_vtk_colors)
 @npt.dec.skipif(not window.have_imread)
-def test_butcher():
+def test_slice():
 
     renderer = window.renderer()
 
     data = (255 * np.random.rand(50, 50, 50))
     affine = np.eye(4)
-    slicer = actor.butcher(data, affine)
+    slicer = actor.slice(data, affine)
     window.add(renderer, slicer)
     window.show(renderer)
 
@@ -35,7 +35,7 @@ def test_butcher():
 
     # save pixels in png file not a numpy array
     with TemporaryDirectory() as tmpdir:
-        fname = os.path.join(tmpdir, 'butcher.png')
+        fname = os.path.join(tmpdir, 'slice.png')
         # window.show(renderer)
         arr = window.snapshot(renderer, fname)
         report = window.analyze_snapshot(fname, find_objects=True)
