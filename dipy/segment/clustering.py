@@ -6,7 +6,7 @@ from dipy.segment.metric import AveragePointwiseEuclideanMetric
 
 
 class Identity:
-    """ Provides identity indexing functionnality.
+    """ Provides identity indexing functionality.
 
     This can replace any class supporting indexing used for referencing
     (e.g. list, tuple). Indexing an instance of this class will return the
