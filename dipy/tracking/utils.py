@@ -53,7 +53,7 @@ from functools import wraps
 from nibabel.affines import apply_affine
 
 # Import tools writen in cython
-from .vox2track import *
+from dipy.tracking.vox2track import _near_roi
 
 from dipy.tracking.streamline import transform_streamlines
 
@@ -67,6 +67,7 @@ from . import metrics
 
 # Import helper functions shared with vox2track
 from ._utils import (_mapping_to_voxel, _to_voxel_coordinates)
+
 
 def _rmi(index, dims):
     """An alternate implementation of numpy.ravel_multi_index for older
@@ -580,15 +581,15 @@ def near_roi(streamlines, target_mask, affine=None, tol=0):
 
     Parameters
     ----------
-    streamlines: list
+    streamlines : list
         A sequence of streamlines. Each streamline should be a (N, 3) array,
         where N is the length of the streamline.
-    target_mask: ndarray
+    target_mask : ndarray
         A mask used as a target. Non-zero values are considered to be within
         the target region.
-    affine: ndarray
+    affine : ndarray
         Affine transformation from voxels to streamlines. Default: identity.
-    tol: float
+    tol : float
         Distance (in the units of the streamlines, usually mm). If any
         coordinate in the streamline is within this distance from any voxel in
         the ROI, the filtering criterion is set to True for this streamlin,
@@ -596,20 +597,16 @@ def near_roi(streamlines, target_mask, affine=None, tol=0):
 
     Returns
     -------
-    Boolean array. Set to True in each streamline
+    Boolean array. Set to `True` in the index corresponding to each streamline
+    that passes within a tolerance distance from the target ROI, `False`
+    otherwise.
     """
+
     if affine is None:
         affine = np.eye(4)
     roi_coords = np.array(np.where(target_mask)).T
     x_roi_coords = apply_affine(affine, roi_coords)
-    out = np.zeros(len(streamlines), dtype=bool)
-    for ii, sl in enumerate(streamlines):
-        for coord in sl:
-            dist = np.sqrt(np.sum((x_roi_coords - coord) ** 2, -1))
-            if np.any(dist <= tol):
-                out[ii] = True
-                break
-    return out
+    return _near_roi(streamlines, x_roi_coords, tol=tol)
 
 
 def reorder_voxels_affine(input_ornt, output_ornt, shape, voxel_size):
