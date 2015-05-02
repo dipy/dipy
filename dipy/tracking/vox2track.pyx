@@ -321,7 +321,7 @@ def _near_roi(streamlines, x_roi_coords, tol=0):
     cdef int ii
     cdef cnp.ndarray[cnp.float_t, ndim=2] sl
     for ii in range(len(streamlines)):
-        sl = streamlines[ii]
+        sl = streamlines[ii].astype(float)
         for coord in sl:
             dist = np.sqrt(np.sum((x_roi_coords - coord) ** 2, -1))
             if np.any(dist <= tol):
