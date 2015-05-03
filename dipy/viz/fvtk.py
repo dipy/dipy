@@ -64,53 +64,7 @@ if have_vtk:
     # Create a cell picker.
     picker = vtk.vtkCellPicker()
 
-
-def ren():
-    '''Create a renderer.
-
-    Returns
-    -------
-    v : vtkRenderer() object
-        Renderer.
-
-    Examples
-    --------
-    >>> from dipy.viz import fvtk
-    >>> import numpy as np
-    >>> r=fvtk.ren()
-    >>> lines=[np.random.rand(10,3)]
-    >>> c=fvtk.line(lines, fvtk.colors.red)
-    >>> fvtk.add(r,c)
-    >>> #fvtk.show(r)
-    '''
-    return vtk.vtkRenderer()
-
-
-def add(ren, a):
-    ''' Add a specific actor
-    '''
-    if isinstance(a, vtk.vtkVolume):
-        ren.AddVolume(a)
-    else:
-        ren.AddActor(a)
-
-
-def rm(ren, a):
-    ''' Remove a specific actor
-    '''
-    ren.RemoveActor(a)
-
-
-def clear(ren):
-    ''' Remove all actors from the renderer
-    '''
-    ren.RemoveAllViewProps()
-
-
-def rm_all(ren):
-    ''' Remove all actors from the renderer
-    '''
-    clear(ren)
+    from dipy.viz.window import ren, renderer, add, clear, rm, rm_all
 
 
 def _arrow(pos=(0, 0, 0), color=(1, 0, 0), scale=(1, 1, 1), opacity=1):
