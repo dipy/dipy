@@ -29,6 +29,15 @@ if have_imread:
 
 
 class Renderer(vtk.vtkRenderer):
+    """ The key rendering preparation object
+
+    This is an important object that is responsible for preparing objects
+    e.g. actors and volumes for rendering. This is a more pythonic version
+    of ``vtkRenderer`` proving simple methods for adding and removing actors
+    but also it provides access to all the functionality
+    available in ``vtkRenderer``.
+
+    """
 
     def background(self, color):
         self.SetBackground(color)
@@ -79,41 +88,38 @@ def renderer(background=None):
     >>> fvtk.add(r,c)
     >>> #fvtk.show(r)
     """
-    ren = vtk.vtkRenderer()
+    ren = Renderer()
     if background is not None:
         ren.SetBackground(background)
 
     return ren
 
 if have_vtk:
-    ren = renderer()
+    ren = renderer
 
 
 def add(ren, a):
     """ Add a specific actor
     """
-    if isinstance(a, vtk.vtkVolume):
-        ren.AddVolume(a)
-    else:
-        ren.AddActor(a)
+    ren.add(a)
 
 
 def rm(ren, a):
     """ Remove a specific actor
     """
-    ren.RemoveActor(a)
+    ren.rm(a)
 
 
 def clear(ren):
     """ Remove all actors from the renderer
     """
-    ren.RemoveAllViewProps()
+    ren.clear()
 
 
 def rm_all(ren):
     """ Remove all actors from the renderer
     """
-    clear(ren)
+    ren.rm_all()
 
 
 def save_file_dialog(initial_file='dipy.png', default_extension='.png',
