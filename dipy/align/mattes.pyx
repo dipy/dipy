@@ -145,7 +145,7 @@ class MattesBase(object):
         return _bin_normalize(x, self.mmin, self.mdelta)
 
     def bin_index(self, xnorm):
-        r""" Bin index associated to the given normalized intensity
+        r""" Bin index associated with the given normalized intensity
 
         The return value is an integer in [padding, nbins - 1 - padding]
 
@@ -157,7 +157,7 @@ class MattesBase(object):
         Returns
         -------
         bin : int
-            the bin index associated to the given normalized intensity
+            the bin index associated with the given normalized intensity
         """
         return _bin_index(xnorm, self.nbins, self.padding)
 
@@ -272,7 +272,7 @@ class MattesBase(object):
         nbins = self.nbins
 
         if (self.joint_grad is None) or (self.joint_grad.shape[2] != n):
-            self.joint_grad = np.ndarray((nbins, nbins, n))
+            self.joint_grad = np.zeros((nbins, nbins, n))
         if dim == 2:
             _joint_pdf_gradient_dense_2d(theta, transform, static, moving,
                                          grid_to_space, mgradient, smask,
@@ -328,7 +328,7 @@ class MattesBase(object):
         nbins = self.nbins
 
         if (self.joint_grad is None) or (self.joint_grad.shape[2] != n):
-            self.joint_grad = np.ndarray(shape=(nbins, nbins, n))
+            self.joint_grad = np.zeros(shape=(nbins, nbins, n))
 
         if dim == 2:
             _joint_pdf_gradient_sparse_2d(theta, transform, sval, mval,
@@ -410,7 +410,7 @@ cdef inline cnp.npy_intp _bin_index(double normalized, int nbins,
 
     The intensity is assumed to have been normalized to the range of
     intensities covered by the histogram: the bin index is the integer part of
-    the argument, which must be within the interval
+    `normalized`, which must be within the interval
     [padding, nbins - 1 - padding].
 
     Parameters
@@ -448,8 +448,8 @@ def cubic_spline(double[:] x):
         input values
     '''
     cdef:
-        int i
-        int n = x.shape[0]
+        cnp.npy_intp i
+        cnp.npy_intp n = x.shape[0]
         double[:] sx = np.zeros(n, dtype=np.float64)
     with nogil:
         for i in range(n):
@@ -488,8 +488,8 @@ def cubic_spline_derivative(double[:] x):
         input values
     '''
     cdef:
-        int i
-        int n = x.shape[0]
+        cnp.npy_intp i
+        cnp.npy_intp n = x.shape[0]
         double[:] sx = np.zeros(n, dtype=np.float64)
     with nogil:
         for i in range(n):
@@ -510,7 +510,6 @@ cdef inline double _cubic_spline_derivative(double x) nogil:
     '''
     cdef:
         double absx = -x if x < 0.0 else x
-        double sqrx = x * x
     if absx < 1.0:
         if x >= 0.0:
             return -2.0 * x + 1.5 * x * x
@@ -545,15 +544,15 @@ cdef _compute_pdfs_dense_2d(double[:, :] static, double[:, :] moving,
         mask of moving object being registered (a binary array with 1's inside
         the object of interest and 0's along the background)
     smin: float
-        the minimum observed intensity associated to the static image, which
+        the minimum observed intensity associated with the static image, which
         was used to define the joint PDF
     sdelta: float
-        bin size associated to the intensities of the static image
+        bin size associated with the intensities of the static image
     mmin: float
-        the minimum observed intensity associated to the moving image, which
+        the minimum observed intensity associated with the moving image, which
         was used to define the joint PDF
     mdelta: float
-        bin size associated to the intensities of the moving image
+        bin size associated with the intensities of the moving image
     nbins: int
         number of histogram bins
     padding: int
@@ -562,14 +561,14 @@ cdef _compute_pdfs_dense_2d(double[:, :] static, double[:, :] moving,
     joint: array, shape (nbins, nbins)
         the array to write the joint PDF
     smarginal: array, shape (nbins,)
-        the array to write the marginal PDF associated to the static image
+        the array to write the marginal PDF associated with the static image
     mmarginal: array, shape (nbins,)
-        the array to write the marginal PDF associated to the moving image
+        the array to write the marginal PDF associated with the moving image
     '''
     cdef:
-        int nrows = static.shape[0]
-        int ncols = static.shape[1]
-        int offset, valid_points
+        cnp.npy_intp nrows = static.shape[0]
+        cnp.npy_intp ncols = static.shape[1]
+        cnp.npy_intp offset, valid_points
         cnp.npy_intp i, j, r, c
         double rn, cn
         double val, spline_arg, sum
@@ -633,15 +632,15 @@ cdef _compute_pdfs_dense_3d(double[:, :, :] static, double[:, :, :] moving,
         mask of moving object being registered (a binary array with 1's inside
         the object of interest and 0's along the background)
     smin: float
-        the minimum observed intensity associated to the static image, which
+        the minimum observed intensity associated with the static image, which
         was used to define the joint PDF
     sdelta: float
-        bin size associated to the intensities of the static image
+        bin size associated with the intensities of the static image
     mmin: float
-        the minimum observed intensity associated to the moving image, which
+        the minimum observed intensity associated with the moving image, which
         was used to define the joint PDF
     mdelta: float
-        bin size associated to the intensities of the moving image
+        bin size associated with the intensities of the moving image
     nbins: int
         number of histogram bins
     padding: int
@@ -650,15 +649,15 @@ cdef _compute_pdfs_dense_3d(double[:, :, :] static, double[:, :, :] moving,
     joint: array, shape(nbins, nbins)
         the array to write the joint PDF to
     smarginal: array, shape (nbins,)
-        the array to write the marginal PDF associated to the static image
+        the array to write the marginal PDF associated with the static image
     mmarginal: array, shape (nbins,)
-        the array to write the marginal PDF associated to the moving image
+        the array to write the marginal PDF associated with the moving image
     '''
     cdef:
-        int nslices = static.shape[0]
-        int nrows = static.shape[1]
-        int ncols = static.shape[2]
-        int offset, valid_points
+        cnp.npy_intp nslices = static.shape[0]
+        cnp.npy_intp nrows = static.shape[1]
+        cnp.npy_intp ncols = static.shape[2]
+        cnp.npy_intp offset, valid_points
         cnp.npy_intp k, i, j, r, c
         double rn, cn
         double val, spline_arg, sum
@@ -716,15 +715,15 @@ cdef _compute_pdfs_sparse(double[:] sval, double[:] mval, double smin,
     mval: array, shape (n,)
         sampled intensities from the moving image at sampled_points
     smin: float
-        the minimum observed intensity associated to the static image, which
+        the minimum observed intensity associated with the static image, which
         was used to define the joint PDF
     sdelta: float
-        bin size associated to the intensities of the static image
+        bin size associated with the intensities of the static image
     mmin: float
-        the minimum observed intensity associated to the moving image, which
+        the minimum observed intensity associated with the moving image, which
         was used to define the joint PDF
     mdelta: float
-        bin size associated to the intensities of the moving image
+        bin size associated with the intensities of the moving image
     nbins: int
         number of histogram bins
     padding: int
@@ -733,13 +732,13 @@ cdef _compute_pdfs_sparse(double[:] sval, double[:] mval, double smin,
     joint: array, shape(nbins, nbins)
         the array to write the joint PDF to
     smarginal: array, shape (nbins,)
-        the array to write the marginal PDF associated to the static image
+        the array to write the marginal PDF associated with the static image
     mmarginal: array, shape (nbins,)
-        the array to write the marginal PDF associated to the moving image
+        the array to write the marginal PDF associated with the moving image
     '''
     cdef:
-        int n = sval.shape[0]
-        int offset, valid_points
+        cnp.npy_intp n = sval.shape[0]
+        cnp.npy_intp offset, valid_points
         cnp.npy_intp i, r, c
         double rn, cn
         double val, spline_arg, sum
@@ -804,7 +803,7 @@ cdef _joint_pdf_gradient_dense_2d(double[:] theta, Transform transform,
     moving: array, shape (R, C)
         moving image
     grid_to_space: array, shape (3, 3)
-        the grid-to-space transform associated to images static and moving
+        the grid-to-space transform associated with images static and moving
         (we assume that both images have already been sampled at a common grid)
     mgradient: array, shape (R, C, 2)
         the gradient of the moving image
@@ -815,15 +814,15 @@ cdef _joint_pdf_gradient_dense_2d(double[:] theta, Transform transform,
         mask of moving object being registered (a binary array with 1's inside
         the object of interest and 0's along the background)
     smin: float
-        the minimum observed intensity associated to the static image, which
+        the minimum observed intensity associated with the static image, which
         was used to define the joint PDF
     sdelta: float
-        bin size associated to the intensities of the static image
+        bin size associated with the intensities of the static image
     mmin: float
-        the minimum observed intensity associated to the moving image, which
+        the minimum observed intensity associated with the moving image, which
         was used to define the joint PDF
     mdelta: float
-        bin size associated to the intensities of the moving image
+        bin size associated with the intensities of the moving image
     nbins: int
         number of histogram bins
     padding: int
@@ -833,16 +832,17 @@ cdef _joint_pdf_gradient_dense_2d(double[:] theta, Transform transform,
         the array to write the gradient to
     '''
     cdef:
-        int nrows = static.shape[0]
-        int ncols = static.shape[1]
-        int n = theta.shape[0]
-        int offset, valid_points, constant_jacobian = 0
+        cnp.npy_intp nrows = static.shape[0]
+        cnp.npy_intp ncols = static.shape[1]
+        cnp.npy_intp n = theta.shape[0]
+        cnp.npy_intp offset, valid_points
+        int constant_jacobian = 0
         cnp.npy_intp k, i, j, r, c
         double rn, cn
-        double val, spline_arg
-        double[:, :] J = np.ndarray(shape=(2, n), dtype=np.float64)
-        double[:] prod = np.ndarray(shape=(n,), dtype=np.float64)
-        double[:] x = np.ndarray(shape=(2,), dtype=np.float64)
+        double val, spline_arg, norm_factor
+        double[:, :] J = np.empty(shape=(2, n), dtype=np.float64)
+        double[:] prod = np.empty(shape=(n,), dtype=np.float64)
+        double[:] x = np.empty(shape=(2,), dtype=np.float64)
 
     grad_pdf[...] = 0
     with nogil:
@@ -862,8 +862,8 @@ cdef _joint_pdf_gradient_dense_2d(double[:] theta, Transform transform,
                     constant_jacobian = transform._jacobian(theta, x, J)
 
                 for k in range(n):
-                    prod[k] = J[0, k] * mgradient[i, j, 0] +\
-                              J[1, k] * mgradient[i, j, 1]
+                    prod[k] = (J[0, k] * mgradient[i, j, 0] +
+                               J[1, k] * mgradient[i, j, 1])
 
                 rn = _bin_normalize(static[i, j], smin, sdelta)
                 r = _bin_index(rn, nbins, padding)
@@ -877,11 +877,12 @@ cdef _joint_pdf_gradient_dense_2d(double[:] theta, Transform transform,
                         grad_pdf[r, c + offset, k] -= val * prod[k]
                     spline_arg += 1.0
 
-        if valid_points * mdelta > 0:
+        norm_factor = valid_points * mdelta
+        if norm_factor > 0:
             for i in range(nbins):
                 for j in range(nbins):
                     for k in range(n):
-                        grad_pdf[i, j, k] /= (valid_points * mdelta)
+                        grad_pdf[i, j, k] /= norm_factor
 
 
 cdef _joint_pdf_gradient_dense_3d(double[:] theta, Transform transform,
@@ -912,7 +913,7 @@ cdef _joint_pdf_gradient_dense_3d(double[:] theta, Transform transform,
     moving: array, shape (S, R, C)
         moving image
     grid_to_space: array, shape (4, 4)
-        the grid-to-space transform associated to images static and moving
+        the grid-to-space transform associated with images static and moving
         (we assume that both images have already been sampled at a common grid)
     mgradient: array, shape (S, R, C, 3)
         the gradient of the moving image
@@ -923,15 +924,15 @@ cdef _joint_pdf_gradient_dense_3d(double[:] theta, Transform transform,
         mask of moving object being registered (a binary array with 1's inside
         the object of interest and 0's along the background)
     smin: float
-        the minimum observed intensity associated to the static image, which
+        the minimum observed intensity associated with the static image, which
         was used to define the joint PDF
     sdelta: float
-        bin size associated to the intensities of the static image
+        bin size associated with the intensities of the static image
     mmin: float
-        the minimum observed intensity associated to the moving image, which
+        the minimum observed intensity associated with the moving image, which
         was used to define the joint PDF
     mdelta: float
-        bin size associated to the intensities of the moving image
+        bin size associated with the intensities of the moving image
     nbins: int
         number of histogram bins
     padding: int
@@ -941,17 +942,18 @@ cdef _joint_pdf_gradient_dense_3d(double[:] theta, Transform transform,
         the array to write the gradient to
     '''
     cdef:
-        int nslices = static.shape[0]
-        int nrows = static.shape[1]
-        int ncols = static.shape[2]
-        int n = theta.shape[0]
-        int offset, valid_points, constant_jacobian = 0
+        cnp.npy_intp nslices = static.shape[0]
+        cnp.npy_intp nrows = static.shape[1]
+        cnp.npy_intp ncols = static.shape[2]
+        cnp.npy_intp n = theta.shape[0]
+        cnp.npy_intp offset, valid_points
+        int constant_jacobian = 0
         cnp.npy_intp l, k, i, j, r, c
         double rn, cn
-        double val, spline_arg
-        double[:, :] J = np.ndarray(shape=(3, n), dtype=np.float64)
-        double[:] prod = np.ndarray(shape=(n,), dtype=np.float64)
-        double[:] x = np.ndarray(shape=(3,), dtype=np.float64)
+        double val, spline_arg, norm_factor
+        double[:, :] J = np.empty(shape=(3, n), dtype=np.float64)
+        double[:] prod = np.empty(shape=(n,), dtype=np.float64)
+        double[:] x = np.empty(shape=(3,), dtype=np.float64)
 
     grad_pdf[...] = 0
     with nogil:
@@ -972,9 +974,9 @@ cdef _joint_pdf_gradient_dense_3d(double[:] theta, Transform transform,
                         constant_jacobian = transform._jacobian(theta, x, J)
 
                     for l in range(n):
-                        prod[l] = J[0, l] * mgradient[k, i, j, 0] +\
-                                  J[1, l] * mgradient[k, i, j, 1] +\
-                                  J[2, l] * mgradient[k, i, j, 2]
+                        prod[l] = (J[0, l] * mgradient[k, i, j, 0] +
+                                   J[1, l] * mgradient[k, i, j, 1] +
+                                   J[2, l] * mgradient[k, i, j, 2])
 
                     rn = _bin_normalize(static[k, i, j], smin, sdelta)
                     r = _bin_index(rn, nbins, padding)
@@ -988,11 +990,12 @@ cdef _joint_pdf_gradient_dense_3d(double[:] theta, Transform transform,
                             grad_pdf[r, c + offset, l] -= val * prod[l]
                         spline_arg += 1.0
 
-        if valid_points * mdelta > 0:
+        norm_factor = valid_points * mdelta
+        if norm_factor > 0:
             for i in range(nbins):
                 for j in range(nbins):
                     for k in range(n):
-                        grad_pdf[i, j, k] /= (valid_points * mdelta)
+                        grad_pdf[i, j, k] /= norm_factor
 
 
 cdef _joint_pdf_gradient_sparse_2d(double[:] theta, Transform transform,
@@ -1024,15 +1027,15 @@ cdef _joint_pdf_gradient_sparse_2d(double[:] theta, Transform transform,
     mgradient: array, shape (m, 2)
         the gradient of the moving image at the sample points
     smin: float
-        the minimum observed intensity associated to the static image, which
+        the minimum observed intensity associated with the static image, which
         was used to define the joint PDF
     sdelta: float
-        bin size associated to the intensities of the static image
+        bin size associated with the intensities of the static image
     mmin: float
-        the minimum observed intensity associated to the moving image, which
+        the minimum observed intensity associated with the moving image, which
         was used to define the joint PDF
     mdelta: float
-        bin size associated to the intensities of the moving image
+        bin size associated with the intensities of the moving image
     nbins: int
         number of histogram bins
     padding: int
@@ -1042,14 +1045,15 @@ cdef _joint_pdf_gradient_sparse_2d(double[:] theta, Transform transform,
         the array to write the gradient to
     '''
     cdef:
-        int n = theta.shape[0]
-        int m = sval.shape[0]
-        int offset, constant_jacobian = 0
+        cnp.npy_intp n = theta.shape[0]
+        cnp.npy_intp m = sval.shape[0]
+        cnp.npy_intp offset
+        int constant_jacobian = 0
         cnp.npy_intp i, j, r, c, valid_points
         double rn, cn
-        double val, spline_arg
-        double[:, :] J = np.ndarray(shape=(2, n), dtype=np.float64)
-        double[:] prod = np.ndarray(shape=(n,), dtype=np.float64)
+        double val, spline_arg, norm_factor
+        double[:, :] J = np.empty(shape=(2, n), dtype=np.float64)
+        double[:] prod = np.empty(shape=(n,), dtype=np.float64)
 
     grad_pdf[...] = 0
     with nogil:
@@ -1061,8 +1065,8 @@ cdef _joint_pdf_gradient_sparse_2d(double[:] theta, Transform transform,
                                                         sample_points[i], J)
 
             for j in range(n):
-                prod[j] = J[0, j] * mgradient[i, 0] +\
-                          J[1, j] * mgradient[i, 1]
+                prod[j] = (J[0, j] * mgradient[i, 0] +
+                           J[1, j] * mgradient[i, 1])
 
             rn = _bin_normalize(sval[i], smin, sdelta)
             r = _bin_index(rn, nbins, padding)
@@ -1076,11 +1080,12 @@ cdef _joint_pdf_gradient_sparse_2d(double[:] theta, Transform transform,
                     grad_pdf[r, c + offset, j] -= val * prod[j]
                 spline_arg += 1.0
 
-        if valid_points * mdelta > 0:
+        norm_factor = valid_points * mdelta
+        if norm_factor > 0:
             for i in range(nbins):
                 for j in range(nbins):
                     for k in range(n):
-                        grad_pdf[i, j, k] /= (valid_points * mdelta)
+                        grad_pdf[i, j, k] /= norm_factor
 
 
 cdef _joint_pdf_gradient_sparse_3d(double[:] theta, Transform transform,
@@ -1112,15 +1117,15 @@ cdef _joint_pdf_gradient_sparse_3d(double[:] theta, Transform transform,
     mgradient: array, shape (m, 3)
         the gradient of the moving image at the sample points
     smin: float
-        the minimum observed intensity associated to the static image, which
+        the minimum observed intensity associated with the static image, which
         was used to define the joint PDF
     sdelta: float
-        bin size associated to the intensities of the static image
+        bin size associated with the intensities of the static image
     mmin: float
-        the minimum observed intensity associated to the moving image, which
+        the minimum observed intensity associated with the moving image, which
         was used to define the joint PDF
     mdelta: float
-        bin size associated to the intensities of the moving image
+        bin size associated with the intensities of the moving image
     nbins: int
         number of histogram bins
     padding: int
@@ -1130,14 +1135,15 @@ cdef _joint_pdf_gradient_sparse_3d(double[:] theta, Transform transform,
         the array to write the gradient to
     '''
     cdef:
-        int n = theta.shape[0]
-        int m = sval.shape[0]
-        int offset, valid_points, constant_jacobian = 0
+        cnp.npy_intp n = theta.shape[0]
+        cnp.npy_intp m = sval.shape[0]
+        cnp.npy_intp offset, valid_points
+        int constant_jacobian = 0
         cnp.npy_intp i, j, r, c
         double rn, cn
-        double val, spline_arg
-        double[:, :] J = np.ndarray(shape=(3, n), dtype=np.float64)
-        double[:] prod = np.ndarray(shape=(n,), dtype=np.float64)
+        double val, spline_arg, norm_factor
+        double[:, :] J = np.empty(shape=(3, n), dtype=np.float64)
+        double[:] prod = np.empty(shape=(n,), dtype=np.float64)
 
     grad_pdf[...] = 0
     with nogil:
@@ -1150,9 +1156,9 @@ cdef _joint_pdf_gradient_sparse_3d(double[:] theta, Transform transform,
                                                         sample_points[i], J)
 
             for j in range(n):
-                prod[j] = J[0, j] * mgradient[i, 0] +\
-                          J[1, j] * mgradient[i, 1] +\
-                          J[2, j] * mgradient[i, 2]
+                prod[j] = (J[0, j] * mgradient[i, 0] +
+                           J[1, j] * mgradient[i, 1] +
+                           J[2, j] * mgradient[i, 2])
 
             rn = _bin_normalize(sval[i], smin, sdelta)
             r = _bin_index(rn, nbins, padding)
@@ -1166,11 +1172,12 @@ cdef _joint_pdf_gradient_sparse_3d(double[:] theta, Transform transform,
                     grad_pdf[r, c + offset, j] -= val * prod[j]
                 spline_arg += 1.0
 
-        if valid_points * mdelta > 0:
+        norm_factor = valid_points * mdelta
+        if norm_factor > 0:
             for i in range(nbins):
                 for j in range(nbins):
                     for k in range(n):
-                        grad_pdf[i, j, k] /= (valid_points * mdelta)
+                        grad_pdf[i, j, k] /= norm_factor
 
 
 cdef double _compute_mattes_mi(double[:, :] joint,
@@ -1197,9 +1204,9 @@ cdef double _compute_mattes_mi(double[:, :] joint,
     cdef:
         double epsilon = 2.2204460492503131e-016
         double metric_value
-        int nrows = joint_gradient.shape[0]
-        int ncols = joint_gradient.shape[1]
-        int n = joint_gradient.shape[2]
+        cnp.npy_intp nrows = joint_gradient.shape[0]
+        cnp.npy_intp ncols = joint_gradient.shape[1]
+        cnp.npy_intp n = joint_gradient.shape[2]
 
     mi_gradient[:] = 0
     metric_value = 0
@@ -1259,8 +1266,7 @@ def sample_domain_2d(int[:] shape, int n, double[:, :] samples,
     [1, 1, 1, 1, 1]
     """
     cdef:
-        int tmp, m, r, i, j
-        double p, q
+        cnp.npy_intp m, i, j
         int[:] index = np.empty(shape=(shape[0]*shape[1], ), dtype=np.int32)
     with nogil:
         # make an array of all avalable indices
@@ -1287,6 +1293,13 @@ def sample_domain_regular(int k, int[:] shape, double[:, :] affine,
     order) is a multiple of k. Each selected point is slightly perturbed by
     adding a realization of a normally distributed random variable and then
     mapped to physical space by the given grid-to-space transform.
+
+    The lexicographical order of a pixels in a grid of shape (a, b, c) is
+    defined by assigning to each voxel position (i, j, k) the integer index
+
+    F((i, j, k)) = i * (b * c) + j * (c) + k
+
+    and sorting increasingly by this index.
 
     Parameters
     ----------
@@ -1326,7 +1339,7 @@ def sample_domain_regular(int k, int[:] shape, double[:, :] affine,
     0
     """
     cdef:
-        int i, dim, n, m, slice_size
+        cnp.npy_intp i, dim, n, m, slice_size
         double s, r, c
         double[:, :] samples
     dim = len(shape)
@@ -1340,7 +1353,7 @@ def sample_domain_regular(int k, int[:] shape, double[:, :] affine,
         samples = random.randn(m, dim) * sigma
         with nogil:
             for i in range(m):
-                r = ((i * k) / shape[1]) + samples[i, 0]
+                r = ((i * k) // shape[1]) + samples[i, 0]
                 c = ((i * k) % shape[1]) + samples[i, 1]
                 samples[i, 0] = _apply_affine_2d_x0(r, c, 1, affine)
                 samples[i, 1] = _apply_affine_2d_x1(r, c, 1, affine)
@@ -1351,8 +1364,8 @@ def sample_domain_regular(int k, int[:] shape, double[:, :] affine,
         samples = random.randn(m, dim) * sigma
         with nogil:
             for i in range(m):
-                s = ((i * k) / slice_size) + samples[i, 0]
-                r = (((i * k) % slice_size) / shape[2]) + samples[i, 1]
+                s = ((i * k) // slice_size) + samples[i, 0]
+                r = (((i * k) % slice_size) // shape[2]) + samples[i, 1]
                 c = (((i * k) % slice_size) % shape[2]) + samples[i, 2]
                 samples[i, 0] = _apply_affine_3d_x0(s, r, c, 1, affine)
                 samples[i, 1] = _apply_affine_3d_x1(s, r, c, 1, affine)
@@ -1399,8 +1412,7 @@ def sample_domain_3d(int[:] shape, int n, double[:, :] samples,
     [1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
     """
     cdef:
-        int tmp, m, r, i, j, k, ss
-        double p, q
+        cnp.npy_intp m, i, j, k, ss
         int[:] index = np.empty((shape[0]*shape[1]*shape[2], ), dtype=np.int32)
     with nogil:
         # make an array of all avalable indices

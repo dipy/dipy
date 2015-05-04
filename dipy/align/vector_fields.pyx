@@ -97,7 +97,7 @@ def interpolate_vector_2d(floating[:, :, :] field, double[:, :] locations):
     cdef:
         cnp.npy_intp n = locations.shape[0]
         floating[:, :] out = np.zeros(shape=(n, 2), dtype=ftype)
-        int[:] inside = np.ndarray(shape=(n,), dtype=np.int32)
+        int[:] inside = np.empty(shape=(n,), dtype=np.int32)
     with nogil:
         for i in range(n):
             inside[i] = _interpolate_vector_2d(field, locations[i, 0],
@@ -207,7 +207,7 @@ def interpolate_scalar_2d(floating[:, :] image, double[:, :] locations):
     cdef:
         cnp.npy_intp n = locations.shape[0]
         floating[:] out = np.zeros(shape=(n,), dtype=ftype)
-        int[:] inside = np.ndarray(shape=(n,), dtype=np.int32)
+        int[:] inside = np.empty(shape=(n,), dtype=np.int32)
     with nogil:
         for i in range(n):
             inside[i] = _interpolate_scalar_2d(image, locations[i, 0],
@@ -311,7 +311,7 @@ def interpolate_scalar_nn_2d(number[:, :] image, double[:, :] locations):
     cdef:
         cnp.npy_intp n = locations.shape[0]
         number[:] out = np.zeros(shape=(n,), dtype=ftype)
-        int[:] inside = np.ndarray(shape=(n,), dtype=np.int32)
+        int[:] inside = np.empty(shape=(n,), dtype=np.int32)
     with nogil:
         for i in range(n):
             inside[i] = _interpolate_scalar_nn_2d(image, locations[i, 0],
@@ -404,7 +404,7 @@ def interpolate_scalar_nn_3d(number[:, :, :] image, double[:, :] locations):
     cdef:
         cnp.npy_intp n = locations.shape[0]
         number[:] out = np.zeros(shape=(n,), dtype=ftype)
-        int[:] inside = np.ndarray(shape=(n,), dtype=np.int32)
+        int[:] inside = np.empty(shape=(n,), dtype=np.int32)
     with nogil:
         for i in range(n):
             inside[i] = _interpolate_scalar_nn_3d(image, locations[i, 0],
@@ -508,7 +508,7 @@ def interpolate_scalar_3d(floating[:, :, :] image, double[:, :] locations):
     cdef:
         cnp.npy_intp n = locations.shape[0]
         floating[:] out = np.zeros(shape=(n,), dtype=ftype)
-        int[:] inside = np.ndarray(shape=(n,), dtype=np.int32)
+        int[:] inside = np.empty(shape=(n,), dtype=np.int32)
     with nogil:
         for i in range(n):
             inside[i] = _interpolate_scalar_3d(image, locations[i, 0],
@@ -643,7 +643,7 @@ def interpolate_vector_3d(floating[:, :, :, :] field, double[:, :] locations):
     cdef:
         cnp.npy_intp n = locations.shape[0]
         floating[:, :] out = np.zeros(shape=(n, 3), dtype=ftype)
-        int[:] inside = np.ndarray(shape=(n,), dtype=np.int32)
+        int[:] inside = np.empty(shape=(n,), dtype=np.int32)
     with nogil:
         for i in range(n):
             inside[i] = _interpolate_vector_3d(field, locations[i, 0],
@@ -2753,7 +2753,7 @@ def create_random_displacement_2d(int[:] from_shape,
     cdef:
         cnp.npy_intp i, j, ri, rj
         double di, dj, dii, djj
-        int[:, :, :] int_field = np.ndarray(tuple(from_shape) + (2,),
+        int[:, :, :] int_field = np.empty(tuple(from_shape) + (2,),
                                             dtype=np.int32)
         double[:, :, :] output = np.zeros(tuple(from_shape) + (2,),
                                           dtype=np.float64)
@@ -2833,7 +2833,7 @@ def create_random_displacement_3d(int[:] from_shape, double[:, :] from_affine,
     cdef:
         cnp.npy_intp i, j, k, ri, rj, rk
         double di, dj, dii, djj
-        int[:, :, :, :] int_field = np.ndarray(tuple(from_shape) + (3,),
+        int[:, :, :, :] int_field = np.empty(tuple(from_shape) + (3,),
                                                dtype=np.int32)
         double[:, :, :, :] output = np.zeros(tuple(from_shape) + (3,),
                                              dtype=np.float64)
@@ -3119,10 +3119,10 @@ cdef void _gradient_3d(floating[:, :, :] img, double[:, :] img_affine_inv,
         int ncols = out.shape[2]
         int i, j, k, in_flag
         double tmp
-        double[:] x = np.ndarray(shape=(3,), dtype=np.float64)
-        double[:] dx = np.ndarray(shape=(3,), dtype=np.float64)
-        double[:] h = np.ndarray(shape=(3,), dtype=np.float64)
-        double[:] q = np.ndarray(shape=(3,), dtype=np.float64)
+        double[:] x = np.empty(shape=(3,), dtype=np.float64)
+        double[:] dx = np.empty(shape=(3,), dtype=np.float64)
+        double[:] h = np.empty(shape=(3,), dtype=np.float64)
+        double[:] q = np.empty(shape=(3,), dtype=np.float64)
     with nogil:
         h[0] = 0.5 * img_spacing[0]
         h[1] = 0.5 * img_spacing[1]
@@ -3209,9 +3209,9 @@ cdef void _sparse_gradient_3d(floating[:, :, :] img,
         int n = sample_points.shape[0]
         int i, in_flag
         double tmp
-        double[:] dx = np.ndarray(shape=(3,), dtype=np.float64)
-        double[:] h = np.ndarray(shape=(3,), dtype=np.float64)
-        double[:] q = np.ndarray(shape=(3,), dtype=np.float64)
+        double[:] dx = np.empty(shape=(3,), dtype=np.float64)
+        double[:] h = np.empty(shape=(3,), dtype=np.float64)
+        double[:] q = np.empty(shape=(3,), dtype=np.float64)
     with nogil:
         h[0] = 0.5 * img_spacing[0]
         h[1] = 0.5 * img_spacing[1]
@@ -3296,10 +3296,10 @@ cdef void _gradient_2d(floating[:, :] img, double[:, :] img_affine_inv,
         int ncols = out.shape[1]
         int i, j, k, in_flag
         double tmp
-        double[:] x = np.ndarray(shape=(2,), dtype=np.float64)
-        double[:] dx = np.ndarray(shape=(2,), dtype=np.float64)
-        double[:] h = np.ndarray(shape=(2,), dtype=np.float64)
-        double[:] q = np.ndarray(shape=(2,), dtype=np.float64)
+        double[:] x = np.empty(shape=(2,), dtype=np.float64)
+        double[:] dx = np.empty(shape=(2,), dtype=np.float64)
+        double[:] h = np.empty(shape=(2,), dtype=np.float64)
+        double[:] q = np.empty(shape=(2,), dtype=np.float64)
     with nogil:
         h[0] = 0.5 * img_spacing[0]
         h[1] = 0.5 * img_spacing[1]
@@ -3376,9 +3376,9 @@ cdef void _sparse_gradient_2d(floating[:, :] img, double[:, :] img_affine_inv,
         int n = sample_points.shape[0]
         int i, in_flag
         double tmp
-        double[:] dx = np.ndarray(shape=(2,), dtype=np.float64)
-        double[:] h = np.ndarray(shape=(2,), dtype=np.float64)
-        double[:] q = np.ndarray(shape=(2,), dtype=np.float64)
+        double[:] dx = np.empty(shape=(2,), dtype=np.float64)
+        double[:] h = np.empty(shape=(2,), dtype=np.float64)
+        double[:] q = np.empty(shape=(2,), dtype=np.float64)
     with nogil:
         h[0] = 0.5 * img_spacing[0]
         h[1] = 0.5 * img_spacing[1]
@@ -3445,8 +3445,8 @@ def gradient(img, img_affine_inv, img_spacing, sampling_shape,
     if len(img_spacing) < dim:
         raise ValueError("Invalid spacings")
     ftype = img.dtype
-    out = np.ndarray(tuple(sampling_shape)+(dim,), dtype=ftype)
-    inside = np.ndarray(tuple(sampling_shape), dtype=np.int32)
+    out = np.empty(tuple(sampling_shape)+(dim,), dtype=ftype)
+    inside = np.empty(tuple(sampling_shape), dtype=np.int32)
     if dim == 2:
         _gradient_2d(img, img_affine_inv.astype(np.float64),
                      img_spacing.astype(np.float64),
@@ -3487,8 +3487,8 @@ def sparse_gradient(img, img_affine_inv, img_spacing, sample_points):
 
     ftype = img.dtype
     n = sample_points.shape[0]
-    out = np.ndarray(shape=(n, dim), dtype=ftype)
-    inside = np.ndarray(shape=(n,), dtype=np.int32)
+    out = np.empty(shape=(n, dim), dtype=ftype)
+    inside = np.empty(shape=(n,), dtype=np.int32)
     if dim == 2:
         _sparse_gradient_2d(img, img_affine_inv.astype(np.float64),
                             img_spacing.astype(np.float64), sample_points,
