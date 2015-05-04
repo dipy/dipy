@@ -22,7 +22,7 @@ def test_random_displacement_field_2d():
     # Create grid coordinates
     x_0 = np.asarray(range(from_shape[0]))
     x_1 = np.asarray(range(from_shape[1]))
-    X = np.ndarray((3,) + from_shape, dtype=np.float64)
+    X = np.empty((3,) + from_shape, dtype=np.float64)
     O = np.ones(from_shape)
     X[0, ...] = x_0[:, None] * O
     X[1, ...] = x_1[None, :] * O
@@ -94,7 +94,7 @@ def test_random_displacement_field_3d():
     x_0 = np.asarray(range(from_shape[0]))
     x_1 = np.asarray(range(from_shape[1]))
     x_2 = np.asarray(range(from_shape[2]))
-    X = np.ndarray((4,) + from_shape, dtype=np.float64)
+    X = np.empty((4,) + from_shape, dtype=np.float64)
     O = np.ones(from_shape)
     X[0, ...] = x_0[:, None, None] * O
     X[1, ...] = x_1[None, :, None] * O
@@ -167,8 +167,8 @@ def test_harmonic_fields_2d():
     ncols = 67
     mid_row = nrows//2
     mid_col = ncols//2
-    expected_d = np.ndarray(shape=(nrows, ncols, 2))
-    expected_d_inv = np.ndarray(shape=(nrows, ncols, 2))
+    expected_d = np.empty(shape=(nrows, ncols, 2))
+    expected_d_inv = np.empty(shape=(nrows, ncols, 2))
     for b in [0.1, 0.3, 0.7]:
         for m in [2, 4, 7]:
             for i in range(nrows):
@@ -196,8 +196,8 @@ def test_harmonic_fields_3d():
     mid_slice = nslices//2
     mid_row = nrows//2
     mid_col = ncols//2
-    expected_d = np.ndarray(shape=(nslices, nrows, ncols, 3))
-    expected_d_inv = np.ndarray(shape=(nslices, nrows, ncols, 3))
+    expected_d = np.empty(shape=(nslices, nrows, ncols, 3))
+    expected_d_inv = np.empty(shape=(nslices, nrows, ncols, 3))
     for b in [0.3, 0.7]:
         for m in [2, 5]:
             for k in range(nslices):
@@ -229,7 +229,7 @@ def test_circle():
     cc = sh[1]//2
     x_0 = np.asarray(range(sh[0]))
     x_1 = np.asarray(range(sh[1]))
-    X = np.ndarray((2,) + sh, dtype=np.float64)
+    X = np.empty((2,) + sh, dtype=np.float64)
     O = np.ones(sh)
     X[0, ...] = x_0[:, None] * O - cr
     X[1, ...] = x_1[None, :] * O - cc
@@ -248,7 +248,7 @@ def test_sphere():
     x_0 = np.asarray(range(sh[0]))
     x_1 = np.asarray(range(sh[1]))
     x_2 = np.asarray(range(sh[2]))
-    X = np.ndarray((3,) + sh, dtype=np.float64)
+    X = np.empty((3,) + sh, dtype=np.float64)
     O = np.ones(sh)
     X[0, ...] = x_0[:, None, None] * O - cs
     X[1, ...] = x_1[None, :, None] * O - cr
@@ -264,7 +264,7 @@ def test_interpolate_scalar_2d():
     np.random.seed(5324989)
     sz = 64
     target_shape = (sz, sz)
-    image = np.ndarray(target_shape, dtype=floating)
+    image = np.empty(target_shape, dtype=floating)
     image[...] = np.random.randint(0, 10, np.size(image)).reshape(target_shape)
 
     extended_image = np.zeros((sz+2, sz+2), dtype=floating)
@@ -308,7 +308,7 @@ def test_interpolate_scalar_nn_2d():
     np.random.seed(1924781)
     sz = 64
     target_shape = (sz, sz)
-    image = np.ndarray(target_shape, dtype=floating)
+    image = np.empty(target_shape, dtype=floating)
     image[...] = np.random.randint(0, 10, np.size(image)).reshape(target_shape)
     # Select some coordinates to interpolate at
     nsamples = 200
@@ -336,7 +336,7 @@ def test_interpolate_scalar_nn_3d():
     np.random.seed(3121121)
     sz = 64
     target_shape = (sz, sz, sz)
-    image = np.ndarray(target_shape, dtype=floating)
+    image = np.empty(target_shape, dtype=floating)
     image[...] = np.random.randint(0, 10, np.size(image)).reshape(target_shape)
     # Select some coordinates to interpolate at
     nsamples = 200
@@ -365,7 +365,7 @@ def test_interpolate_scalar_3d():
     np.random.seed(9216326)
     sz = 64
     target_shape = (sz, sz, sz)
-    image = np.ndarray(target_shape, dtype=floating)
+    image = np.empty(target_shape, dtype=floating)
     image[...] = np.random.randint(0, 10, np.size(image)).reshape(target_shape)
 
     extended_image = np.zeros((sz+2, sz+2, sz+2), dtype=floating)
@@ -411,7 +411,7 @@ def test_interpolate_vector_3d():
     np.random.seed(7711219)
     sz = 64
     target_shape = (sz, sz, sz)
-    field = np.ndarray(target_shape+(3,), dtype=floating)
+    field = np.empty(target_shape+(3,), dtype=floating)
     field[...] =\
         np.random.randint(0, 10, np.size(field)).reshape(target_shape+(3,))
 
@@ -463,7 +463,7 @@ def test_interpolate_vector_2d():
     np.random.seed(1271244)
     sz = 64
     target_shape = (sz, sz)
-    field = np.ndarray(target_shape+(2,), dtype=floating)
+    field = np.empty(target_shape+(2,), dtype=floating)
     field[...] =\
         np.random.randint(0, 10, np.size(field)).reshape(target_shape + (2,))
     extended_field = np.zeros((sz+2, sz+2, 2), dtype=floating)
@@ -530,7 +530,7 @@ def test_warping_2d():
     # Create grid coordinates
     x_0 = np.asarray(range(sh[0]))
     x_1 = np.asarray(range(sh[1]))
-    X = np.ndarray((3,)+sh, dtype=np.float64)
+    X = np.empty((3,)+sh, dtype=np.float64)
     O = np.ones(sh)
     X[0, ...] = x_0[:, None] * O
     X[1, ...] = x_1[None, :] * O
@@ -636,7 +636,7 @@ def test_warping_3d():
     x_0 = np.asarray(range(sh[0]))
     x_1 = np.asarray(range(sh[1]))
     x_2 = np.asarray(range(sh[2]))
-    X = np.ndarray((4,) + sh, dtype=np.float64)
+    X = np.empty((4,) + sh, dtype=np.float64)
     O = np.ones(sh)
     X[0, ...] = x_0[:, None, None] * O
     X[1, ...] = x_1[None, :, None] * O
@@ -741,7 +741,7 @@ def test_affine_warping_2d():
     # Create grid coordinates
     x_0 = np.asarray(range(d_shape[0]))
     x_1 = np.asarray(range(d_shape[1]))
-    X = np.ndarray((3,) + d_shape, dtype=np.float64)
+    X = np.empty((3,) + d_shape, dtype=np.float64)
     O = np.ones(d_shape)
     X[0, ...] = x_0[:, None] * O
     X[1, ...] = x_1[None, :] * O
@@ -828,7 +828,7 @@ def test_affine_warping_3d():
     x_0 = np.asarray(range(d_shape[0]))
     x_1 = np.asarray(range(d_shape[1]))
     x_2 = np.asarray(range(d_shape[2]))
-    X = np.ndarray((4,)+d_shape, dtype=np.float64)
+    X = np.empty((4,)+d_shape, dtype=np.float64)
     O = np.ones(d_shape)
     X[0, ...] = x_0[:, None, None] * O
     X[1, ...] = x_1[None, :, None] * O
@@ -943,7 +943,7 @@ def test_compose_vector_fields_2d():
     assign2 = np.array(assign2)
 
     # create a random image (with decimal digits) to warp
-    moving_image = np.ndarray(tgt_sh, dtype=floating)
+    moving_image = np.empty(tgt_sh, dtype=floating)
     moving_image[...] =\
         np.random.randint(0, 10, np.size(moving_image)).reshape(tuple(tgt_sh))
     # set boundary values to zero so we don't test wrong interpolation due to
@@ -999,7 +999,7 @@ def test_compose_vector_fields_2d():
     # Test non-overlapping case
     x_0 = np.asarray(range(input_shape[0]))
     x_1 = np.asarray(range(input_shape[1]))
-    X = np.ndarray(input_shape + (2,), dtype=np.float64)
+    X = np.empty(input_shape + (2,), dtype=np.float64)
     O = np.ones(input_shape)
     X[..., 0] = x_0[:, None] * O
     X[..., 1] = x_1[None, :] * O
@@ -1079,7 +1079,7 @@ def test_compose_vector_fields_3d():
     assign2 = np.array(assign2)
 
     # create a random image (with decimal digits) to warp
-    moving_image = np.ndarray(tgt_sh, dtype=floating)
+    moving_image = np.empty(tgt_sh, dtype=floating)
     moving_image[...] =\
         np.random.randint(0, 10, np.size(moving_image)).reshape(tuple(tgt_sh))
     # set boundary values to zero so we don't test wrong interpolation due to
@@ -1139,7 +1139,7 @@ def test_compose_vector_fields_3d():
     x_0 = np.asarray(range(input_shape[0]))
     x_1 = np.asarray(range(input_shape[1]))
     x_2 = np.asarray(range(input_shape[2]))
-    X = np.ndarray(input_shape + (3,), dtype=np.float64)
+    X = np.empty(input_shape + (3,), dtype=np.float64)
     O = np.ones(input_shape)
     X[..., 0] = x_0[:, None, None] * O
     X[..., 1] = x_1[None, :, None] * O
@@ -1341,7 +1341,7 @@ def test_downsample_scalar_field_2d():
         nr = size - 1 if reduce_r else size
         for reduce_c in [True, False]:
             nc = size - 1 if reduce_c else size
-            image = np.ndarray((size, size), dtype=floating)
+            image = np.empty((size, size), dtype=floating)
             image[...] = np.random.randint(0, 10, np.size(image)).reshape(sh)
 
             if reduce_r:
@@ -1373,7 +1373,7 @@ def test_downsample_displacement_field_2d():
         nr = size - 1 if reduce_r else size
         for reduce_c in [True, False]:
             nc = size - 1 if reduce_c else size
-            field = np.ndarray((size, size, 2), dtype=floating)
+            field = np.empty((size, size, 2), dtype=floating)
             field[...] = np.random.randint(0, 10, np.size(field)).reshape(sh)
 
             if reduce_r:
@@ -1407,7 +1407,7 @@ def test_downsample_scalar_field_3d():
             nr = size - 1 if reduce_r else size
             for reduce_c in [True, False]:
                 nc = size - 1 if reduce_c else size
-                image = np.ndarray((size, size, size), dtype=floating)
+                image = np.empty((size, size, size), dtype=floating)
                 image[...] =\
                     np.random.randint(0, 10, np.size(image)).reshape(sh)
 
@@ -1450,7 +1450,7 @@ def test_downsample_displacement_field_3d():
             nr = size - 1 if reduce_r else size
             for reduce_c in [True, False]:
                 nc = size - 1 if reduce_c else size
-                field = np.ndarray((size, size, size, 3), dtype=floating)
+                field = np.empty((size, size, size, 3), dtype=floating)
                 field[...] =\
                     np.random.randint(0, 10, np.size(field)).reshape(sh)
 
@@ -1490,7 +1490,7 @@ def test_reorient_vector_field_2d():
     d = np.array(d, dtype=floating)
 
     # the vector field rotated 90 degrees
-    expected = np.ndarray(shape=shape + (2,), dtype=floating)
+    expected = np.empty(shape=shape + (2,), dtype=floating)
     expected[..., 0] = -1 * d[..., 1]
     expected[..., 1] = d[..., 0]
 
@@ -1515,7 +1515,7 @@ def test_reorient_vector_field_3d():
     dinv = np.array(dinv, dtype=floating)
 
     # the vector field rotated 90 degrees around the last axis
-    expected = np.ndarray(shape=sh + (3,), dtype=floating)
+    expected = np.empty(shape=sh + (3,), dtype=floating)
     expected[..., 0] = -1 * d[..., 1]
     expected[..., 1] = d[..., 0]
     expected[..., 2] = d[..., 2]
@@ -1577,7 +1577,7 @@ def test_gradient_2d():
     # Create grid coordinates
     x_0 = np.asarray(range(sh[0]))
     x_1 = np.asarray(range(sh[1]))
-    X = np.ndarray(sh + (3,), dtype=np.float64)
+    X = np.empty(sh + (3,), dtype=np.float64)
     O = np.ones(sh)
     X[..., 0] = x_0[:, None] * O
     X[..., 1] = x_1[None, :] * O
@@ -1604,7 +1604,7 @@ def test_gradient_2d():
     sample = mattes.sample_domain_regular(20, np.array(sh, dtype=np.int32), T)
     sample = np.array(sample)
     # Compute the analytical gradient at all points
-    expected = np.ndarray((sample.shape[0], 2), dtype=np.float32)
+    expected = np.empty((sample.shape[0], 2), dtype=np.float32)
     expected[..., 0] = 2 * a * sample[:, 0] + b * sample[:, 1]
     expected[..., 1] = 2 * c * sample[:, 1] + b * sample[:, 0]
     # Get the numerical gradient with the implementation under test
@@ -1624,7 +1624,7 @@ def test_gradient_2d():
 
     # Test dense gradient
     # Compute the analytical gradient at all points
-    expected = np.ndarray(sh + (2,), dtype=np.float32)
+    expected = np.empty(sh + (2,), dtype=np.float32)
     expected[..., 0] = 2 * a * TX[..., 0] + b * TX[..., 1]
     expected[..., 1] = 2 * c * TX[..., 1] + b * TX[..., 0]
     # Get the numerical gradient with the implementation under test
@@ -1680,7 +1680,7 @@ def test_gradient_3d():
         mattes.sample_domain_regular(100, np.array(shape, dtype=np.int32), T)
     sample = np.array(sample)
     # Compute the analytical gradient at all points
-    expected = np.ndarray((sample.shape[0], 3), dtype=np.float32)
+    expected = np.empty((sample.shape[0], 3), dtype=np.float32)
     expected[..., 0] =\
         2 * a * sample[:, 0] + d * sample[:, 1] + e * sample[:, 2]
     expected[..., 1] =\
@@ -1705,7 +1705,7 @@ def test_gradient_3d():
 
     # Test dense gradient
     # Compute the analytical gradient at all points
-    expected = np.ndarray(shape + (3,), dtype=np.float32)
+    expected = np.empty(shape + (3,), dtype=np.float32)
     expected[..., 0] = 2 * a * TX[..., 0] + d * TX[..., 1] + e * TX[..., 2]
     expected[..., 1] = 2 * b * TX[..., 1] + d * TX[..., 0] + f * TX[..., 2]
     expected[..., 2] = 2 * c * TX[..., 2] + e * TX[..., 0] + f * TX[..., 1]
