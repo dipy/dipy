@@ -25,23 +25,13 @@ cdef extern from "dpy_math.h" nogil:
 
 class MattesBase(object):
     def __init__(self, nbins):
-        r""" MattesBase
-        Base class for the Mattes Mutual Information metric [Mattes03].
+        r""" Base class for the Mattes Mutual Information metric [Mattes03].
         This implementation is not tied to any optimization (registration)
         method, the idea is that a registration metric based on MI should
         inherit from this class to perform the low-level computations of
         the joint intensity distributions and its gradient w.r.t. the
         transform parameters, and then communicate the results to the
         appropriate optimizer.
-
-        Notes: we need this class in cython to allow
-        _joint_pdf_gradient_dense_2d and _joint_pdf_gradient_dense_3d to
-        use a nogil Jacobian function (obtained from an instance of the
-        Transform class), which allows us to evaluate Jacobians at all
-        the sampling points (maybe the full grid) inside a nogil loop.
-
-        The reason we need a class is to encapsulate all the parameters
-        related to the joint and marginal distributions.
 
         Parameters
         ----------
@@ -53,13 +43,24 @@ class MattesBase(object):
         ----------
         [Mattes03] Mattes, D., Haynor, D. R., Vesselle, H., Lewellen, T. K.,
                    & Eubank, W. PET-CT image registration in the chest using
-                   free-form deformations. IEEE Transactions on Medical Imaging,
-                   22(1), 120-8, 2003.
+                   free-form deformations. IEEE Transactions on Medical
+                   Imaging, 22(1), 120-8, 2003.
+
+        Notes
+        --------
+        We need this class in cython to allow _joint_pdf_gradient_dense_2d and
+        _joint_pdf_gradient_dense_3d to use a nogil Jacobian function (obtained
+        from an instance of the Transform class), which allows us to evaluate
+        Jacobians at all the sampling points (maybe the full grid) inside a
+        nogil loop.
+
+        The reason we need a class is to encapsulate all the parameters related
+        to the joint and marginal distributions.
         """
         self.nbins = nbins
-        # Since the kernel used to compute the Parzen histogram covers more than
-        # one bin, we need to add extra bins to both sides of the histogram
-        # to account for the contributions of the minimum and maximum
+        # Since the kernel used to compute the Parzen histogram covers more
+        # than one bin, we need to add extra bins to both sides of the
+        # histogram to account for the contributions of the minimum and maximum
         # intensities. Padding is the number of extra bins used at each side
         # of the histogram (a total of [2 * padding] extra bins). Since the
         # support of the cubic spline is 5 bins (the center plus 2 bins at each
@@ -90,10 +91,10 @@ class MattesBase(object):
         if mmask is None:
             mmask = np.ones_like(moving)
 
-        self.smin = np.min(static[smask!=0])
-        self.smax = np.max(static[smask!=0])
-        self.mmin = np.min(moving[mmask!=0])
-        self.mmax = np.max(moving[mmask!=0])
+        self.smin = np.min(static[smask != 0])
+        self.smax = np.max(static[smask != 0])
+        self.mmin = np.min(moving[mmask != 0])
+        self.mmax = np.max(moving[mmask != 0])
 
         self.sdelta = (self.smax - self.smin)/(self.nbins - 2 * self.padding)
         self.mdelta = (self.mmax - self.mmin)/(self.nbins - 2 * self.padding)
@@ -103,13 +104,12 @@ class MattesBase(object):
         self.joint_grad = None
         self.metric_grad = None
         self.metric_val = 0
-        self.joint = np.ndarray(shape = (self.nbins, self.nbins))
-        self.smarginal = np.ndarray(shape = (self.nbins,), dtype = np.float64)
-        self.mmarginal = np.ndarray(shape = (self.nbins,), dtype = np.float64)
-
+        self.joint = np.zeros(shape=(self.nbins, self.nbins))
+        self.smarginal = np.zeros(shape=(self.nbins,), dtype=np.float64)
+        self.mmarginal = np.zeros(shape=(self.nbins,), dtype=np.float64)
 
     def bin_normalize_static(self, x):
-        r""" Normalizes intensity x to the range covered by the static histogram
+        r""" Maps intensity x to the range covered by the static histogram
 
         If the input intensity is in [self.smin, self.smax] then the normalized
         intensity will be in [self.padding, self.nbins - self.padding]
@@ -126,9 +126,8 @@ class MattesBase(object):
         """
         return _bin_normalize(x, self.smin, self.sdelta)
 
-
     def bin_normalize_moving(self, x):
-        r""" Normalizes intensity x to the range covered by the moving histogram
+        r""" Maps intensity x to the range covered by the moving histogram
 
         If the input intensity is in [self.mmin, self.mmax] then the normalized
         intensity will be in [self.padding, self.nbins - self.padding]
@@ -144,7 +143,6 @@ class MattesBase(object):
             normalized intensity to the range covered by the moving histogram
         """
         return _bin_normalize(x, self.mmin, self.mdelta)
-
 
     def bin_index(self, xnorm):
         r""" Bin index associated to the given normalized intensity
@@ -163,9 +161,12 @@ class MattesBase(object):
         """
         return _bin_index(xnorm, self.nbins, self.padding)
 
-
     def update_pdfs_dense(self, static, moving, smask=None, mmask=None):
-        r''' Computes the Joint Probability Density Function of two images
+        r''' Computes the Probability Density Functions of two images
+
+        The joint PDF is stored in self.joint. The marginal distributions
+        corresponding to the static and moving images are computed and
+        stored in self.smarginal and self.mmarginal, respectively.
 
         Parameters
         ----------
@@ -194,12 +195,23 @@ class MattesBase(object):
                                    self.nbins, self.padding, self.joint,
                                    self.smarginal, self.mmarginal)
         else:
-            msg = 'Only dimensions 2 and 3 are supported. '+str(dim)+' received'
+            msg = 'Only dimensions 2 and 3 are supported. ' +\
+                str(dim) + ' received'
             raise ValueError(msg)
 
-
     def update_pdfs_sparse(self, sval, mval):
-        r''' Computes the Probability Density Functions of paired intensities
+        r''' Computes the Probability Density Functions from a set of samples
+
+        The list of intensities `sval` and `mval` are assumed to be sampled
+        from the static and moving images, respectively, at the same
+        physical points. Of course, the images may not be perfectly aligned
+        at the moment the sampling was performed. The resulting  distributions
+        corresponds to the paired intensities according to the alignment at the
+        moment the images were sampled.
+
+        The joint PDF is stored in self.joint. The marginal distributions
+        corresponding to the static and moving images are computed and
+        stored in self.smarginal and self.mmarginal, respectively.
 
         Parameters
         ----------
@@ -210,16 +222,17 @@ class MattesBase(object):
         '''
         energy = _compute_pdfs_sparse(sval, mval, self.smin, self.sdelta,
                                       self.mmin, self.mdelta, self.nbins,
-                                      self.padding, self.joint, self.smarginal,
-                                      self.mmarginal)
-
+                                      self.padding, self.joint,
+                                      self.smarginal, self.mmarginal)
 
     def update_gradient_dense(self, theta, transform, static, moving,
                               grid_to_space, mgradient, smask, mmask):
         r''' Computes the Gradient of the joint PDF w.r.t. transform parameters
 
-        Computes the vector of partial derivatives of the joint histogram w.r.t.
-        each transformation parameter.
+        Computes the vector of partial derivatives of the joint histogram
+        w.r.t. each transformation parameter.
+
+        The gradient is stored in self.joint_grad.
 
         Parameters
         ----------
@@ -262,27 +275,36 @@ class MattesBase(object):
             self.joint_grad = np.ndarray((nbins, nbins, n))
         if dim == 2:
             _joint_pdf_gradient_dense_2d(theta, transform, static, moving,
-                                         grid_to_space, mgradient, smask, mmask,
-                                         self.smin, self.sdelta, self.mmin,
-                                         self.mdelta, self.nbins, self.padding,
-                                         self.joint_grad)
-        elif dim ==3:
+                                         grid_to_space, mgradient, smask,
+                                         mmask, self.smin, self.sdelta,
+                                         self.mmin, self.mdelta, self.nbins,
+                                         self.padding, self.joint_grad)
+        elif dim == 3:
             _joint_pdf_gradient_dense_3d(theta, transform, static, moving,
-                                         grid_to_space, mgradient, smask, mmask,
-                                         self.smin, self.sdelta, self.mmin,
-                                         self.mdelta, self.nbins, self.padding,
-                                         self.joint_grad)
+                                         grid_to_space, mgradient, smask,
+                                         mmask, self.smin, self.sdelta,
+                                         self.mmin, self.mdelta, self.nbins,
+                                         self.padding, self.joint_grad)
         else:
-            msg = 'Only dimensions 2 and 3 are supported. '+str(dim)+' received'
+            msg = 'Only dimensions 2 and 3 are supported. ' +\
+                str(dim) + ' received'
             raise ValueError(msg)
-
 
     def update_gradient_sparse(self, theta, transform, sval, mval,
                                sample_points, mgradient):
         r''' Computes the Gradient of the joint PDF w.r.t. transform parameters
 
-        Computes the vector of partial derivatives of the joint histogram w.r.t.
-        each transformation parameter.
+        Computes the vector of partial derivatives of the joint histogram
+        w.r.t. each transformation parameter.
+
+        The list of intensities `sval` and `mval` are assumed to be sampled
+        from the static and moving images, respectively, at the same
+        physical points. Of course, the images may not be perfectly aligned
+        at the moment the sampling was performed. The resulting  gradient
+        corresponds to the paired intensities according to the alignment at the
+        moment the images were sampled.
+
+        The gradient is stored in self.joint_grad.
 
         Parameters
         ----------
@@ -306,27 +328,32 @@ class MattesBase(object):
         nbins = self.nbins
 
         if (self.joint_grad is None) or (self.joint_grad.shape[2] != n):
-            self.joint_grad = np.ndarray(shape = (nbins, nbins, n))
+            self.joint_grad = np.ndarray(shape=(nbins, nbins, n))
 
         if dim == 2:
             _joint_pdf_gradient_sparse_2d(theta, transform, sval, mval,
-                                          sample_points, mgradient, self.smin,
-                                          self.sdelta, self.mmin, self.mdelta,
+                                          sample_points, mgradient,
+                                          self.smin, self.sdelta,
+                                          self.mmin, self.mdelta,
                                           self.nbins, self.padding,
                                           self.joint_grad)
-        elif dim ==3:
+        elif dim == 3:
             _joint_pdf_gradient_sparse_3d(theta, transform, sval, mval,
-                                          sample_points, mgradient, self.smin,
-                                          self.sdelta, self.mmin, self.mdelta,
+                                          sample_points, mgradient,
+                                          self.smin, self.sdelta,
+                                          self.mmin, self.mdelta,
                                           self.nbins, self.padding,
                                           self.joint_grad)
         else:
-            msg = 'Only dimensions 2 and 3 are supported. '+str(dim)+' received'
+            msg = 'Only dimensions 2 and 3 are supported. ' + str(dim) +\
+                ' received'
             raise ValueError(msg)
 
-
     def update_mi_metric(self, update_gradient=True):
-        r""" Computes current value and gradient (if requested) of the MI metric
+        r""" Computes current value and gradient of the MI metric
+
+        The value of the metric will be computed, but the gradient will
+        only be computed if `update_gradient` is True.
 
         Parameters
         ----------
@@ -379,10 +406,12 @@ cdef inline double _bin_normalize(double x, double mval, double delta) nogil:
 
 cdef inline cnp.npy_intp _bin_index(double normalized, int nbins,
                                     int padding) nogil:
-    r''' Index of the bin in which the normalized intensity 'normalized' lies
-    The intensity is assumed to have been normalized to the range of intensities
-    covered by the histogram: the bin index is the integer part of the argument,
-    which must be within the interval [padding, nbins - 1 - padding].
+    r''' Index of the bin in which the normalized intensity `normalized` lies.
+
+    The intensity is assumed to have been normalized to the range of
+    intensities covered by the histogram: the bin index is the integer part of
+    the argument, which must be within the interval
+    [padding, nbins - 1 - padding].
 
     Parameters
     ----------
@@ -424,7 +453,7 @@ def cubic_spline(double[:] x):
         double[:] sx = np.zeros(n, dtype=np.float64)
     with nogil:
         for i in range(n):
-            sx[i] =  _cubic_spline(x[i])
+            sx[i] = _cubic_spline(x[i])
     return sx
 
 
@@ -444,9 +473,9 @@ cdef inline double _cubic_spline(double x) nogil:
         double sqrx = x * x
 
     if absx < 1.0:
-        return ( 4.0 - 6.0 * sqrx + 3.0 * sqrx * absx ) / 6.0
+        return (4.0 - 6.0 * sqrx + 3.0 * sqrx * absx) / 6.0
     elif absx < 2.0:
-        return ( 8.0 - 12 * absx + 6.0 * sqrx - sqrx * absx ) / 6.0
+        return (8.0 - 12 * absx + 6.0 * sqrx - sqrx * absx) / 6.0
     return 0.0
 
 
@@ -464,7 +493,7 @@ def cubic_spline_derivative(double[:] x):
         double[:] sx = np.zeros(n, dtype=np.float64)
     with nogil:
         for i in range(n):
-            sx[i] =  _cubic_spline_derivative(x[i])
+            sx[i] = _cubic_spline_derivative(x[i])
     return sx
 
 
@@ -495,11 +524,11 @@ cdef inline double _cubic_spline_derivative(double x) nogil:
     return 0.0
 
 
-cdef _compute_pdfs_dense_2d(double[:,:] static, double[:,:] moving,
-                            int[:,:] smask, int[:,:] mmask,
+cdef _compute_pdfs_dense_2d(double[:, :] static, double[:, :] moving,
+                            int[:, :] smask, int[:, :] mmask,
                             double smin, double sdelta,
                             double mmin, double mdelta,
-                            int nbins, int padding, double[:,:] joint,
+                            int nbins, int padding, double[:, :] joint,
                             double[:] smarginal, double[:] mmarginal):
     r''' Joint Probability Density Function of intensities of two 2D images
 
@@ -583,12 +612,11 @@ cdef _compute_pdfs_dense_2d(double[:,:] static, double[:,:] moving,
                     mmarginal[j] += joint[i, j]
 
 
-
-cdef _compute_pdfs_dense_3d(double[:,:,:] static, double[:,:,:] moving,
-                            int[:,:,:] smask, int[:,:,:] mmask,
+cdef _compute_pdfs_dense_3d(double[:, :, :] static, double[:, :, :] moving,
+                            int[:, :, :] smask, int[:, :, :] mmask,
                             double smin, double sdelta,
                             double mmin, double mdelta,
-                            int nbins, int padding, double[:,:] joint,
+                            int nbins, int padding, double[:, :] joint,
                             double[:] smarginal, double[:] mmarginal):
     r''' Joint Probability Density Function of intensities of two 3D images
 
@@ -677,7 +705,7 @@ cdef _compute_pdfs_dense_3d(double[:,:,:] static, double[:,:,:] moving,
 
 cdef _compute_pdfs_sparse(double[:] sval, double[:] mval, double smin,
                           double sdelta, double mmin, double mdelta,
-                          int nbins, int padding, double[:,:] joint,
+                          int nbins, int padding, double[:, :] joint,
                           double[:] smarginal, double[:] mmarginal):
     r''' Probability Density Functions of paired intensities
 
@@ -752,12 +780,12 @@ cdef _compute_pdfs_sparse(double[:] sval, double[:] mval, double smin,
 
 
 cdef _joint_pdf_gradient_dense_2d(double[:] theta, Transform transform,
-                                  double[:,:] static, double[:,:] moving,
-                                  double[:,:] grid_to_space,
-                                  floating[:,:,:] mgradient, int[:,:] smask,
-                                  int[:,:] mmask, double smin, double sdelta,
+                                  double[:, :] static, double[:, :] moving,
+                                  double[:, :] grid_to_space,
+                                  floating[:, :, :] mgradient, int[:, :] smask,
+                                  int[:, :] mmask, double smin, double sdelta,
                                   double mmin, double mdelta, int nbins,
-                                  int padding, double[:,:,:] grad_pdf):
+                                  int padding, double[:, :, :] grad_pdf):
     r''' Gradient of the joint PDF w.r.t. transform parameters theta
 
     Computes the vector of partial derivatives of the joint histogram w.r.t.
@@ -808,11 +836,11 @@ cdef _joint_pdf_gradient_dense_2d(double[:] theta, Transform transform,
         int nrows = static.shape[0]
         int ncols = static.shape[1]
         int n = theta.shape[0]
-        int offset, valid_points, constant_jacobian=0
+        int offset, valid_points, constant_jacobian = 0
         cnp.npy_intp k, i, j, r, c
         double rn, cn
         double val, spline_arg
-        double[:,:] J = np.ndarray(shape=(2, n), dtype=np.float64)
+        double[:, :] J = np.ndarray(shape=(2, n), dtype=np.float64)
         double[:] prod = np.ndarray(shape=(n,), dtype=np.float64)
         double[:] x = np.ndarray(shape=(2,), dtype=np.float64)
 
@@ -834,8 +862,8 @@ cdef _joint_pdf_gradient_dense_2d(double[:] theta, Transform transform,
                     constant_jacobian = transform._jacobian(theta, x, J)
 
                 for k in range(n):
-                    prod[k] = J[0,k] * mgradient[i,j,0] +\
-                              J[1,k] * mgradient[i,j,1]
+                    prod[k] = J[0, k] * mgradient[i, j, 0] +\
+                              J[1, k] * mgradient[i, j, 1]
 
                 rn = _bin_normalize(static[i, j], smin, sdelta)
                 r = _bin_index(rn, nbins, padding)
@@ -846,7 +874,7 @@ cdef _joint_pdf_gradient_dense_2d(double[:] theta, Transform transform,
                 for offset in range(-2, 3):
                     val = _cubic_spline_derivative(spline_arg)
                     for k in range(n):
-                        grad_pdf[r, c + offset,k] -= val * prod[k]
+                        grad_pdf[r, c + offset, k] -= val * prod[k]
                     spline_arg += 1.0
 
         if valid_points * mdelta > 0:
@@ -857,12 +885,15 @@ cdef _joint_pdf_gradient_dense_2d(double[:] theta, Transform transform,
 
 
 cdef _joint_pdf_gradient_dense_3d(double[:] theta, Transform transform,
-                                  double[:,:,:] static, double[:,:,:] moving,
-                                  double[:,:] grid_to_space,
-                                  floating[:,:,:,:] mgradient, int[:,:,:] smask,
-                                  int[:,:,:] mmask, double smin, double sdelta,
-                                  double mmin, double mdelta, int nbins,
-                                  int padding, double[:,:,:] grad_pdf):
+                                  double[:, :, :] static,
+                                  double[:, :, :] moving,
+                                  double[:, :] grid_to_space,
+                                  floating[:, :, :, :] mgradient,
+                                  int[:, :, :] smask,
+                                  int[:, :, :] mmask, double smin,
+                                  double sdelta, double mmin, double mdelta,
+                                  int nbins, int padding,
+                                  double[:, :, :] grad_pdf):
     r''' Gradient of the joint PDF w.r.t. transform parameters theta
 
     Computes the vector of partial derivatives of the joint histogram w.r.t.
@@ -914,11 +945,11 @@ cdef _joint_pdf_gradient_dense_3d(double[:] theta, Transform transform,
         int nrows = static.shape[1]
         int ncols = static.shape[2]
         int n = theta.shape[0]
-        int offset, valid_points, constant_jacobian=0
+        int offset, valid_points, constant_jacobian = 0
         cnp.npy_intp l, k, i, j, r, c
         double rn, cn
         double val, spline_arg
-        double[:,:] J = np.ndarray(shape=(3, n), dtype=np.float64)
+        double[:, :] J = np.ndarray(shape=(3, n), dtype=np.float64)
         double[:] prod = np.ndarray(shape=(n,), dtype=np.float64)
         double[:] x = np.ndarray(shape=(3,), dtype=np.float64)
 
@@ -941,9 +972,9 @@ cdef _joint_pdf_gradient_dense_3d(double[:] theta, Transform transform,
                         constant_jacobian = transform._jacobian(theta, x, J)
 
                     for l in range(n):
-                        prod[l] = J[0,l] * mgradient[k,i,j,0] +\
-                                  J[1,l] * mgradient[k,i,j,1] +\
-                                  J[2,l] * mgradient[k,i,j,2]
+                        prod[l] = J[0, l] * mgradient[k, i, j, 0] +\
+                                  J[1, l] * mgradient[k, i, j, 1] +\
+                                  J[2, l] * mgradient[k, i, j, 2]
 
                     rn = _bin_normalize(static[k, i, j], smin, sdelta)
                     r = _bin_index(rn, nbins, padding)
@@ -954,7 +985,7 @@ cdef _joint_pdf_gradient_dense_3d(double[:] theta, Transform transform,
                     for offset in range(-2, 3):
                         val = _cubic_spline_derivative(spline_arg)
                         for l in range(n):
-                            grad_pdf[r, c + offset,l] -= val * prod[l]
+                            grad_pdf[r, c + offset, l] -= val * prod[l]
                         spline_arg += 1.0
 
         if valid_points * mdelta > 0:
@@ -966,11 +997,11 @@ cdef _joint_pdf_gradient_dense_3d(double[:] theta, Transform transform,
 
 cdef _joint_pdf_gradient_sparse_2d(double[:] theta, Transform transform,
                                    double[:] sval, double[:] mval,
-                                   double[:,:] sample_points,
-                                   floating[:,:] mgradient, double smin,
-                                   double sdelta, double mmin, double mdelta,
-                                   int nbins, int padding,
-                                   double[:,:,:] grad_pdf):
+                                   double[:, :] sample_points,
+                                   floating[:, :] mgradient, double smin,
+                                   double sdelta, double mmin,
+                                   double mdelta, int nbins, int padding,
+                                   double[:, :, :] grad_pdf):
     r''' Gradient of the joint PDF w.r.t. transform parameters theta
 
     Computes the vector of partial derivatives of the joint histogram w.r.t.
@@ -989,7 +1020,7 @@ cdef _joint_pdf_gradient_sparse_2d(double[:] theta, Transform transform,
     mval: array, shape (m,)
         sampled intensities from the moving image at sampled_points
     sample_points: array, shape (m, 2)
-        coordinates (in physical space) of the points the images were sampled at
+        positions (in physical space) of the points the images were sampled at
     mgradient: array, shape (m, 2)
         the gradient of the moving image at the sample points
     smin: float
@@ -1013,11 +1044,11 @@ cdef _joint_pdf_gradient_sparse_2d(double[:] theta, Transform transform,
     cdef:
         int n = theta.shape[0]
         int m = sval.shape[0]
-        int offset, constant_jacobian=0
+        int offset, constant_jacobian = 0
         cnp.npy_intp i, j, r, c, valid_points
         double rn, cn
         double val, spline_arg
-        double[:,:] J = np.ndarray(shape=(2, n), dtype=np.float64)
+        double[:, :] J = np.ndarray(shape=(2, n), dtype=np.float64)
         double[:] prod = np.ndarray(shape=(n,), dtype=np.float64)
 
     grad_pdf[...] = 0
@@ -1030,8 +1061,8 @@ cdef _joint_pdf_gradient_sparse_2d(double[:] theta, Transform transform,
                                                         sample_points[i], J)
 
             for j in range(n):
-                prod[j] = J[0,j] * mgradient[i,0] +\
-                          J[1,j] * mgradient[i,1]
+                prod[j] = J[0, j] * mgradient[i, 0] +\
+                          J[1, j] * mgradient[i, 1]
 
             rn = _bin_normalize(sval[i], smin, sdelta)
             r = _bin_index(rn, nbins, padding)
@@ -1042,7 +1073,7 @@ cdef _joint_pdf_gradient_sparse_2d(double[:] theta, Transform transform,
             for offset in range(-2, 3):
                 val = _cubic_spline_derivative(spline_arg)
                 for j in range(n):
-                    grad_pdf[r, c + offset,j] -= val * prod[j]
+                    grad_pdf[r, c + offset, j] -= val * prod[j]
                 spline_arg += 1.0
 
         if valid_points * mdelta > 0:
@@ -1054,11 +1085,11 @@ cdef _joint_pdf_gradient_sparse_2d(double[:] theta, Transform transform,
 
 cdef _joint_pdf_gradient_sparse_3d(double[:] theta, Transform transform,
                                    double[:] sval, double[:] mval,
-                                   double[:,:] sample_points,
-                                   floating[:,:] mgradient, double smin,
-                                   double sdelta, double mmin, double mdelta,
-                                   int nbins, int padding,
-                                   double[:,:,:] grad_pdf):
+                                   double[:, :] sample_points,
+                                   floating[:, :] mgradient, double smin,
+                                   double sdelta, double mmin,
+                                   double mdelta, int nbins, int padding,
+                                   double[:, :, :] grad_pdf):
     r''' Gradient of the joint PDF w.r.t. transform parameters theta
 
     Computes the vector of partial derivatives of the joint histogram w.r.t.
@@ -1077,7 +1108,7 @@ cdef _joint_pdf_gradient_sparse_3d(double[:] theta, Transform transform,
     mval: array, shape (m,)
         sampled intensities from the moving image at sampled_points
     sample_points: array, shape (m, 3)
-        coordinates (in physical space) of the points the images were sampled at
+        positions (in physical space) of the points the images were sampled at
     mgradient: array, shape (m, 3)
         the gradient of the moving image at the sample points
     smin: float
@@ -1101,11 +1132,11 @@ cdef _joint_pdf_gradient_sparse_3d(double[:] theta, Transform transform,
     cdef:
         int n = theta.shape[0]
         int m = sval.shape[0]
-        int offset, valid_points, constant_jacobian=0
+        int offset, valid_points, constant_jacobian = 0
         cnp.npy_intp i, j, r, c
         double rn, cn
         double val, spline_arg
-        double[:,:] J = np.ndarray(shape=(3, n), dtype=np.float64)
+        double[:, :] J = np.ndarray(shape=(3, n), dtype=np.float64)
         double[:] prod = np.ndarray(shape=(n,), dtype=np.float64)
 
     grad_pdf[...] = 0
@@ -1119,9 +1150,9 @@ cdef _joint_pdf_gradient_sparse_3d(double[:] theta, Transform transform,
                                                         sample_points[i], J)
 
             for j in range(n):
-                prod[j] = J[0,j] * mgradient[i,0] +\
-                          J[1,j] * mgradient[i,1] +\
-                          J[2,j] * mgradient[i,2]
+                prod[j] = J[0, j] * mgradient[i, 0] +\
+                          J[1, j] * mgradient[i, 1] +\
+                          J[2, j] * mgradient[i, 2]
 
             rn = _bin_normalize(sval[i], smin, sdelta)
             r = _bin_index(rn, nbins, padding)
@@ -1132,7 +1163,7 @@ cdef _joint_pdf_gradient_sparse_3d(double[:] theta, Transform transform,
             for offset in range(-2, 3):
                 val = _cubic_spline_derivative(spline_arg)
                 for j in range(n):
-                    grad_pdf[r, c + offset,j] -= val * prod[j]
+                    grad_pdf[r, c + offset, j] -= val * prod[j]
                 spline_arg += 1.0
 
         if valid_points * mdelta > 0:
@@ -1142,7 +1173,8 @@ cdef _joint_pdf_gradient_sparse_3d(double[:] theta, Transform transform,
                         grad_pdf[i, j, k] /= (valid_points * mdelta)
 
 
-cdef double _compute_mattes_mi(double[:,:] joint, double[:,:,:] joint_gradient,
+cdef double _compute_mattes_mi(double[:, :] joint,
+                               double[:, :, :] joint_gradient,
                                double[:] smarginal, double[:] mmarginal,
                                double[:] mi_gradient) nogil:
     r""" Computes the mutual information and its gradient (if requested)
@@ -1173,23 +1205,23 @@ cdef double _compute_mattes_mi(double[:,:] joint, double[:,:,:] joint_gradient,
     metric_value = 0
     for i in range(nrows):
         for j in range(ncols):
-            if joint[i,j] < epsilon or mmarginal[j] < epsilon:
+            if joint[i, j] < epsilon or mmarginal[j] < epsilon:
                 continue
 
-            factor = log(joint[i,j] / mmarginal[j])
+            factor = log(joint[i, j] / mmarginal[j])
 
             if mi_gradient is not None:
                 for k in range(n):
                     mi_gradient[k] -= joint_gradient[i, j, k] * factor
 
             if smarginal[i] > epsilon:
-                metric_value -= joint[i,j] * (factor - log(smarginal[i]))
+                metric_value -= joint[i, j] * (factor - log(smarginal[i]))
 
     return metric_value
 
 
-def sample_domain_2d(int[:] shape, int n, double[:,:] samples,
-                     int[:,:] mask=None):
+def sample_domain_2d(int[:] shape, int n, double[:, :] samples,
+                     int[:, :] mask=None):
     r""" Take n samples from a grid of the given shape where mask is not zero
 
     The sampling is made without replacement. If the number of grid cells is
@@ -1220,10 +1252,10 @@ def sample_domain_2d(int[:] shape, int n, double[:,:] samples,
     >>> mask = np.array(vf.create_circle(10, 10, 3), dtype=np.int32)
     >>> n = 5
     >>> dim = 2
-    >>> samples = np.empty((n, dim))
-    >>> sample_domain_2d(np.array(mask.shape, dtype=np.int32), n, samples, mask)
+    >>> samp = np.empty((n, dim))
+    >>> sample_domain_2d(np.array(mask.shape, dtype=np.int32), n, samp, mask)
     5
-    >>> [mask[tuple(x)] for x in samples]
+    >>> [mask[tuple(x)] for x in samp]
     [1, 1, 1, 1, 1]
     """
     cdef:
@@ -1242,12 +1274,12 @@ def sample_domain_2d(int[:] shape, int n, double[:,:] samples,
             n = m
     selected = np.random.choice(index[:m], n)
     for i in range(n):
-        samples[i,0] = selected[i] // shape[1]
-        samples[i,1] = selected[i] % shape[1]
+        samples[i, 0] = selected[i] // shape[1]
+        samples[i, 1] = selected[i] % shape[1]
     return n
 
 
-def sample_domain_regular(int k, int[:] shape, double[:,:] affine,
+def sample_domain_regular(int k, int[:] shape, double[:, :] affine,
                           double sigma=0.25, int seed=1234):
     r""" Take floor(total_voxels/k) samples from a (2D or 3D) grid
 
@@ -1296,7 +1328,7 @@ def sample_domain_regular(int k, int[:] shape, double[:,:] affine,
     cdef:
         int i, dim, n, m, slice_size
         double s, r, c
-        double[:,:] samples
+        double[:, :] samples
     dim = len(shape)
     if not vf.is_valid_affine(affine, dim):
         raise ValueError("Invalid affine transform matrix")
@@ -1310,8 +1342,8 @@ def sample_domain_regular(int k, int[:] shape, double[:,:] affine,
             for i in range(m):
                 r = ((i * k) / shape[1]) + samples[i, 0]
                 c = ((i * k) % shape[1]) + samples[i, 1]
-                samples[i,0] = _apply_affine_2d_x0(r, c, 1, affine)
-                samples[i,1] = _apply_affine_2d_x1(r, c, 1, affine)
+                samples[i, 0] = _apply_affine_2d_x0(r, c, 1, affine)
+                samples[i, 1] = _apply_affine_2d_x1(r, c, 1, affine)
     else:
         slice_size = shape[1] * shape[2]
         n = shape[0] * slice_size
@@ -1322,14 +1354,14 @@ def sample_domain_regular(int k, int[:] shape, double[:,:] affine,
                 s = ((i * k) / slice_size) + samples[i, 0]
                 r = (((i * k) % slice_size) / shape[2]) + samples[i, 1]
                 c = (((i * k) % slice_size) % shape[2]) + samples[i, 2]
-                samples[i,0] = _apply_affine_3d_x0(s, r, c, 1, affine)
-                samples[i,1] = _apply_affine_3d_x1(s, r, c, 1, affine)
-                samples[i,2] = _apply_affine_3d_x2(s, r, c, 1, affine)
+                samples[i, 0] = _apply_affine_3d_x0(s, r, c, 1, affine)
+                samples[i, 1] = _apply_affine_3d_x1(s, r, c, 1, affine)
+                samples[i, 2] = _apply_affine_3d_x2(s, r, c, 1, affine)
     return samples
 
 
-def sample_domain_3d(int[:] shape, int n, double[:,:] samples,
-                     int[:,:,:] mask=None):
+def sample_domain_3d(int[:] shape, int n, double[:, :] samples,
+                     int[:, :, :] mask=None):
     r""" Take n samples from a grid of the given shape where mask is not zero
 
     The sampling is made without replacement. If the number of grid cells is
@@ -1360,10 +1392,10 @@ def sample_domain_3d(int[:] shape, int n, double[:,:] samples,
     >>> mask = np.array(vf.create_sphere(10, 10, 10, 3), dtype=np.int32)
     >>> n = 10
     >>> dim = 3
-    >>> samples = np.empty((n, dim))
-    >>> sample_domain_3d(np.array(mask.shape, dtype=np.int32), n, samples, mask)
+    >>> samp = np.empty((n, dim))
+    >>> sample_domain_3d(np.array(mask.shape, dtype=np.int32), n, samp, mask)
     10
-    >>> [mask[tuple(x)] for x in samples]
+    >>> [mask[tuple(x)] for x in samp]
     [1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
     """
     cdef:
@@ -1384,7 +1416,7 @@ def sample_domain_3d(int[:] shape, int n, double[:,:] samples,
             n = m
     selected = np.random.choice(index[:m], n)
     for i in range(n):
-        samples[i,2] = selected[i] % shape[2]
-        samples[i,1] = (selected[i] % ss) // shape[2]
-        samples[i,0] = selected[i] // ss
+        samples[i, 2] = selected[i] % shape[2]
+        samples[i, 1] = (selected[i] % ss) // shape[2]
+        samples[i, 0] = selected[i] // ss
     return n
