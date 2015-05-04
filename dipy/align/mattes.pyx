@@ -1414,6 +1414,7 @@ def sample_domain_3d(int[:] shape, int n, double[:, :] samples,
     cdef:
         cnp.npy_intp m, i, j, k, ss
         int[:] index = np.empty((shape[0]*shape[1]*shape[2], ), dtype=np.int32)
+        int[:] selected
     with nogil:
         # make an array of all avalable indices
         m = 0
@@ -1427,8 +1428,9 @@ def sample_domain_3d(int[:] shape, int n, double[:, :] samples,
         if n > m:
             n = m
     selected = np.random.choice(index[:m], n)
-    for i in range(n):
-        samples[i, 2] = selected[i] % shape[2]
-        samples[i, 1] = (selected[i] % ss) // shape[2]
-        samples[i, 0] = selected[i] // ss
+    with nogil:
+        for i in range(n):
+            samples[i, 2] = selected[i] % shape[2]
+            samples[i, 1] = (selected[i] % ss) // shape[2]
+            samples[i, 0] = selected[i] // ss
     return n
