@@ -39,7 +39,7 @@ def test_slider_widget():
     ren_win.Render()
     iren.Start()
     arr = window.snapshot(renderer, size=(600, 600))
-    report = window.analyze_snapshot(renderer, arr)
+    report = window.analyze_snapshot(arr)
 
 
 @npt.dec.skipif(not actor.have_vtk)
@@ -182,5 +182,5 @@ if __name__ == '__main__':
 
     # test_slider_widget()
     # test_button_widget()
-    # npt.run_module_suite()
-    test_button_widget_show()
+    npt.run_module_suite()
+    # test_button_widget_show()
