@@ -4,7 +4,7 @@ import scipy.ndimage as ndimage
 from dipy.core.ndindex import ndindex
 from dipy.data import get_data
 import dipy.align.vector_fields as vf
-from dipy.align.transforms import regtransforms, Transform
+from dipy.align.transforms import regtransforms
 from dipy.align.mattes import (MattesBase,
                                cubic_spline,
                                cubic_spline_derivative,
@@ -17,17 +17,34 @@ from numpy.testing import (assert_array_equal,
 
 
 def create_random_image_pair_2d(nr, nc, nvals):
-    r""" Create a pair of images with an arbitrary, non-uniform joint
-    distribution
+    r""" Create a pair of 2D images with an arbitrary, non-uniform joint PDF
+
+    Parameters
+    ----------
+    nr : int
+        number of rows
+    nc : int
+        number of columns
+    nvals : int
+        maximum number of different values in the generated 2D images.
+        The pixel intensities of the returned images will be in
+        {0, 1, ..., nvals-1}
+
+    Returns
+    -------
+    static : array, shape (nr, nc)
+        first image in the image pair
+    moving : array, shape (nr, nc)
+        second image in the image pair
     """
     sh = (nr, nc)
     static = np.random.randint(0, nvals, nr*nc).reshape(sh)
 
-    # This is just a simple way of making joint the distribution non-uniform
+    # This is just a simple way of making the joint distribution non-uniform
     moving = static.copy()
     moving += np.random.randint(0, nvals//2, nr*nc).reshape(sh) - nvals//4
 
-    # This is just a simple way of making joint the distribution non-uniform
+    # This is just a simple way of making the joint distribution non-uniform
     static = moving.copy()
     static += np.random.randint(0, nvals//2, nr*nc).reshape(sh) - nvals//4
 
@@ -35,8 +52,30 @@ def create_random_image_pair_2d(nr, nc, nvals):
 
 
 def create_random_image_pair_3d(ns, nr, nc, nvals):
-    r""" Create a pair of images with an arbitrary, non-uniform joint
-    distribution
+    r""" Create a pair of 3D images with an arbitrary, non-uniform joint PDF
+
+    Parameters
+    ----------
+    ns : int
+        number of slices (considering the first index of the returned arrays
+        as the slice index)
+    nr : int
+        number of rows (considering the second index of the returned arrays
+        as the row index)
+    nc : int
+        number of columns (considering the third index of the returned arrays
+        as the column index)
+    nvals : int
+        maximum number of different values in the generated 2D images.
+        The pixel intensities of the returned images will be in
+        {0, 1, ..., nvals-1}
+
+    Returns
+    -------
+    static : array, shape (ns, nr, nc)
+        first image in the image pair
+    moving : array, shape (ns, nr, nc)
+        second image in the image pair
     """
     sh = (ns, nr, nc)
     static = np.random.randint(0, nvals, ns*nr*nc).reshape(sh)
@@ -53,19 +92,19 @@ def create_random_image_pair_3d(ns, nr, nc, nvals):
 
 
 def test_cubic_spline():
-    #Cubic spline as defined in [Mattes03] eq. (3)
+    # Cubic spline as defined in [Mattes03] eq. (3)
     #
     # [Mattes03] Mattes, D., Haynor, D. R., Vesselle, H., Lewellen, T. K.,
     #            & Eubank, W. PET-CT image registration in the chest using
     #            free-form deformations. IEEE Transactions on Medical Imaging,
     #            22(1), 120-8, 2003.
-    input = []
+    in_list = []
     expected = []
     epsilon = 1e-9
     for epsilon in [-1e-9, 0.0, 1e-9]:
         for t in [-2.0, -1.0, 0.0, 1.0, 2.0]:
             x = t + epsilon
-            input.append(x)
+            in_list.append(x)
             absx = np.abs(x)
             sqrx = x * x
             if absx < 1:
@@ -74,7 +113,7 @@ def test_cubic_spline():
                 expected.append(((2 - absx)**3)/6.0)
             else:
                 expected.append(0.0)
-    actual = cubic_spline(np.array(input, dtype=np.float64))
+    actual = cubic_spline(np.array(in_list, dtype=np.float64))
     assert_array_almost_equal(actual, np.array(expected, dtype=np.float64))
 
 
@@ -86,20 +125,20 @@ def test_cubic_spline_derivative():
     #            & Eubank, W. PET-CT image registration in the chest using
     #            free-form deformations. IEEE Transactions on Medical Imaging,
     #            22(1), 120-8, 2003.
-    input = []
+    in_list = []
     expected = []
     epsilon = 1e-9
     for epsilon in [-1e-9, 0.0, 1e-9]:
         for t in [-2.0, -1.0, 0.0, 1.0, 2.0]:
             x = t + epsilon
-            input.append(x)
+            in_list.append(x)
     h = 1e-6
-    input = np.array(input)
-    input_h = input + h
-    s = np.array(cubic_spline(input))
+    in_list = np.array(in_list)
+    input_h = in_list + h
+    s = np.array(cubic_spline(in_list))
     s_h = np.array(cubic_spline(input_h))
     expected = (s_h - s)/h
-    actual = cubic_spline_derivative(input)
+    actual = cubic_spline_derivative(in_list)
     assert_array_almost_equal(actual, expected)
 
 
@@ -110,7 +149,7 @@ def test_mattes_base():
     for nbins in [15, 30, 50]:
         for min_int in [-10.0, 0.0, 10.0]:
             for intensity_range in [0.1, 1.0, 10.0]:
-                factor = 1
+                fact = 1
                 max_int = min_int + intensity_range
                 M = MattesBase(nbins)
                 # Make a pair of 4-pixel images, introduce +/- 1 values
@@ -118,8 +157,8 @@ def test_mattes_base():
                 static = np.array([min_int - 1.0, min_int,
                                    max_int, max_int + 1.0])
                 # Multiply by an arbitrary value (make the ranges different)
-                moving = factor * np.array([min_int, min_int - 1.0,
-                                  max_int + 1.0, max_int])
+                moving = fact * np.array([min_int, min_int - 1.0,
+                                          max_int + 1.0, max_int])
                 # Create a mask to exclude the invalid values (beyond min and
                 # max computed above)
                 static_mask = np.array([0, 1, 1, 0])
@@ -138,26 +177,26 @@ def test_mattes_base():
                 assert_equal(index, nbins - 1 - M.padding)
 
                 # Test bin_normalize_moving at the boundary
-                normalized = M.bin_normalize_moving(factor * min_int)
+                normalized = M.bin_normalize_moving(fact * min_int)
                 assert_almost_equal(normalized, M.padding)
                 index = M.bin_index(normalized)
                 assert_equal(index, M.padding)
-                normalized = M.bin_normalize_moving(factor * max_int)
+                normalized = M.bin_normalize_moving(fact * max_int)
                 assert_almost_equal(normalized, nbins - M.padding)
                 index = M.bin_index(normalized)
                 assert_equal(index, nbins - 1 - M.padding)
 
                 # Test bin_index not at the boundary
-                delta_s = (max_int - min_int)/(nbins - 2*M.padding)
-                delta_m = factor * (max_int - min_int)/(nbins - 2*M.padding)
-                for i in range(nbins - 2*M.padding):
+                delta_s = (max_int - min_int) / (nbins - 2 * M.padding)
+                delta_m = fact * (max_int - min_int) / (nbins - 2 * M.padding)
+                for i in range(nbins - 2 * M.padding):
                     normalized = M.bin_normalize_static(min_int +
-                                                        (i+0.5)*delta_s)
+                                                        (i + 0.5) * delta_s)
                     index = M.bin_index(normalized)
                     assert_equal(index, M.padding + i)
 
-                    normalized = M.bin_normalize_moving(factor*min_int +
-                                                        (i+0.5)*delta_m)
+                    normalized = M.bin_normalize_moving(fact * min_int +
+                                                        (i + 0.5) * delta_m)
                     index = M.bin_index(normalized)
                     assert_equal(index, M.padding + i)
 
@@ -194,7 +233,6 @@ def test_mattes_densities_dense():
             sval = mbase.bin_normalize_static(static[index])
             mval = mbase.bin_normalize_moving(moving[index])
             sbin = mbase.bin_index(sval)
-            mbin = mbase.bin_index(mval)
             # The spline is centered at mval, will evaluate for all row
             spline_arg = np.array([i - mval for i in range(nbins)])
             contribution = cubic_spline(spline_arg)
@@ -209,7 +247,7 @@ def test_mattes_densities_dense():
         expected_mmarginal /= expected_mmarginal.sum()
         assert_array_almost_equal(actual_mmarginal, expected_mmarginal)
 
-        # Verivy static marginal
+        # Verify static marginal
         expected_smarginal = expected_joint.sum(1)
         expected_smarginal /= expected_smarginal.sum()
         assert_array_almost_equal(actual_smarginal, expected_smarginal)
@@ -224,7 +262,6 @@ def test_mattes_densities_sparse():
     nc = 35
     nvals = 50
 
-    shape = (nr, nc)
     static, moving = create_random_image_pair_2d(nr, nc, nvals)
     sval = static.reshape(-1)
     mval = moving.reshape(-1)
@@ -243,7 +280,6 @@ def test_mattes_densities_sparse():
         sv = mbase.bin_normalize_static(sval[index])
         mv = mbase.bin_normalize_moving(mval[index])
         sbin = mbase.bin_index(sv)
-        mbin = mbase.bin_index(mv)
         # The spline is centered at mval, will evaluate for all row
         spline_arg = np.array([i - mv for i in range(nbins)])
         contribution = cubic_spline(spline_arg)
@@ -258,7 +294,7 @@ def test_mattes_densities_sparse():
     expected_mmarginal /= expected_mmarginal.sum()
     assert_array_almost_equal(actual_mmarginal, expected_mmarginal)
 
-    # Verivy static marginal
+    # Verify static marginal
     expected_smarginal = expected_joint.sum(1)
     expected_smarginal /= expected_smarginal.sum()
     assert_array_almost_equal(actual_smarginal, expected_smarginal)
@@ -283,11 +319,11 @@ def setup_random_transform(transform, rfactor, nslices=45, sigma=1):
     nslices: int
         number of slices to be stacked to form the volumes
     """
-    dim = 2 if nslices ==1 else 3
-    if transform.get_dim() !=dim:
+    dim = 2 if nslices == 1 else 3
+    if transform.get_dim() != dim:
         raise ValueError("Transform and requested volume have different dims.")
     np.random.seed(3147702)
-    zero_slices = nslices//3
+    zero_slices = nslices // 3
 
     fname = get_data('t1_coronal_slice')
     moving_slice = np.load(fname)
@@ -335,19 +371,19 @@ def test_joint_pdf_gradients_dense():
     # not taken into account by the analytical derivatives). Thus, we need to
     # relax the verification. Instead of looking for the analytical and
     # numerical gradients to be very close to each other, we will verify that
-    # they approximately point in the same direction by testing the angle they
-    # form is close to zero.
+    # they approximately point in the same direction by testing if the angle
+    # they form is close to zero.
     h = 1e-4
-    factors = {('TRANSLATION', 2):2.0,
-               ('ROTATION', 2):0.1,
-               ('RIGID', 2):0.1,
-               ('SCALING', 2):0.01,
-               ('AFFINE', 2):0.1,
-               ('TRANSLATION', 3):2.0,
-               ('ROTATION', 3):0.2,
-               ('RIGID', 3):0.1,
-               ('SCALING', 3):0.1,
-               ('AFFINE', 3):0.1}
+    factors = {('TRANSLATION', 2): 2.0,
+               ('ROTATION', 2): 0.1,
+               ('RIGID', 2): 0.1,
+               ('SCALING', 2): 0.01,
+               ('AFFINE', 2): 0.1,
+               ('TRANSLATION', 3): 2.0,
+               ('ROTATION', 3): 0.2,
+               ('RIGID', 3): 0.1,
+               ('SCALING', 3): 0.1,
+               ('AFFINE', 3): 0.1}
     for ttype in factors.keys():
         dim = ttype[1]
         if dim == 2:
@@ -362,7 +398,7 @@ def test_joint_pdf_gradients_dense():
         theta = transform.get_identity_parameters()
 
         static, moving, static_aff, moving_aff, smask, mmask, T = \
-                        setup_random_transform(transform, factor, nslices, 5.0)
+            setup_random_transform(transform, factor, nslices, 5.0)
         metric = MattesBase(32)
         metric.setup(static, moving, smask, mmask)
 
@@ -379,7 +415,7 @@ def test_joint_pdf_gradients_dense():
         grid_to_space = np.eye(dim + 1)
         spacing = np.ones(dim, dtype=np.float64)
         mgrad, inside = vf.gradient(moving.astype(np.float32), moving_aff,
-                            spacing, shape, grid_to_space)
+                                    spacing, shape, grid_to_space)
         id = transform.get_identity_parameters()
         metric.update_gradient_dense(id, transform, static.astype(np.float64),
                                      warped.astype(np.float64), grid_to_space,
@@ -401,39 +437,39 @@ def test_joint_pdf_gradients_dense():
             warped = np.array(warped)
             metric.update_pdfs_dense(static.astype(np.float64),
                                      warped.astype(np.float64))
-            J1 =  np.copy(metric.joint)
-            expected[...,i] = (J1 - J0) / h
+            J1 = np.copy(metric.joint)
+            expected[..., i] = (J1 - J0) / h
 
         # Dot product and norms of gradients of each joint histogram cell
         # i.e. the derivatives of each cell w.r.t. all parameters
-        P = (expected*actual).sum(2)
-        enorms = np.sqrt((expected**2).sum(2))
-        anorms = np.sqrt((actual**2).sum(2))
-        prodnorms = enorms*anorms
+        P = (expected * actual).sum(2)
+        enorms = np.sqrt((expected ** 2).sum(2))
+        anorms = np.sqrt((actual ** 2).sum(2))
+        prodnorms = enorms * anorms
         # Cosine of angle between the expected and actual gradients.
         # Exclude very small gradients
         P[prodnorms > 1e-6] /= (prodnorms[prodnorms > 1e-6])
-        P[prodnorms <= 1e-6]=0
+        P[prodnorms <= 1e-6] = 0
         # Verify that a large proportion of the gradients point almost in
         # the same direction. Disregard very small gradients
-        mean_cosine = P[P!=0].mean()
-        std_cosine = P[P!=0].std()
+        mean_cosine = P[P != 0].mean()
+        std_cosine = P[P != 0].std()
         assert_equal(mean_cosine > 0.9, True)
         assert_equal(std_cosine < 0.25, True)
 
 
 def test_joint_pdf_gradients_sparse():
     h = 1e-4
-    factors = {('TRANSLATION', 2):2.0,
-               ('ROTATION', 2):0.1,
-               ('RIGID', 2):0.1,
-               ('SCALING', 2):0.01,
-               ('AFFINE', 2):0.1,
-               ('TRANSLATION', 3):2.0,
-               ('ROTATION', 3):0.2,
-               ('RIGID', 3):0.1,
-               ('SCALING', 3):0.1,
-               ('AFFINE', 3):0.1}
+    factors = {('TRANSLATION', 2): 2.0,
+               ('ROTATION', 2): 0.1,
+               ('RIGID', 2): 0.1,
+               ('SCALING', 2): 0.01,
+               ('AFFINE', 2): 0.1,
+               ('TRANSLATION', 3): 2.0,
+               ('ROTATION', 3): 0.2,
+               ('RIGID', 3): 0.1,
+               ('SCALING', 3): 0.1,
+               ('AFFINE', 3): 0.1}
     for ttype in factors.keys():
         dim = ttype[1]
         if dim == 2:
@@ -448,7 +484,7 @@ def test_joint_pdf_gradients_sparse():
         theta = transform.get_identity_parameters()
 
         static, moving, static_aff, moving_aff, smask, mmask, T = \
-                        setup_random_transform(transform, factor, nslices, 5.0)
+            setup_random_transform(transform, factor, nslices, 5.0)
         metric = MattesBase(32)
         metric.setup(static, moving, smask, mmask)
 
@@ -459,9 +495,9 @@ def test_joint_pdf_gradients_sparse():
         shape = np.array(static.shape, dtype=np.int32)
         samples = sample_domain_regular(k, shape, static_aff, sigma, seed)
         samples = np.array(samples)
-        samples = np.hstack((samples, np.ones(samples.shape[0])[:,None]))
+        samples = np.hstack((samples, np.ones(samples.shape[0])[:, None]))
         sp_to_static = np.linalg.inv(static_aff)
-        samples_static_grid = (sp_to_static.dot(samples.T).T)[...,:dim]
+        samples_static_grid = (sp_to_static.dot(samples.T).T)[..., :dim]
         intensities_static, inside = interp_method(static.astype(np.float32),
                                                    samples_static_grid)
         # The routines in vector_fields operate, mostly, with float32 because
@@ -473,22 +509,23 @@ def test_joint_pdf_gradients_sparse():
         # Compute the gradient at theta with the implementation under test
         T = transform.param_to_matrix(theta)
         sp_to_moving = np.linalg.inv(moving_aff).dot(T)
-        samples_moving_grid = (sp_to_moving.dot(samples.T).T)[...,:dim]
+        samples_moving_grid = (sp_to_moving.dot(samples.T).T)[..., :dim]
         intensities_moving, inside = interp_method(moving.astype(np.float32),
                                                    samples_moving_grid)
         intensities_moving = np.array(intensities_moving, dtype=np.float64)
         metric.update_pdfs_sparse(intensities_static, intensities_moving)
+        # Get the joint distribution evaluated at theta
         J0 = np.copy(metric.joint)
-        # Now we have the joint distribution evaluated at theta
+
         spacing = np.ones(dim+1, dtype=np.float64)
         mgrad, inside = vf.sparse_gradient(moving.astype(np.float32),
                                            sp_to_moving, spacing, samples)
         metric.update_gradient_sparse(theta, transform, intensities_static,
-                                      intensities_moving, samples[...,:dim],
+                                      intensities_moving, samples[..., :dim],
                                       mgrad)
+        # Get the gradient of the joint distribution w.r.t. the transform
+        # parameters
         actual = np.copy(metric.joint_grad)
-        # Now we have the gradient of the joint distribution w.r.t. the
-        # transform parameters
 
         # Compute the gradient using finite-diferences
         n = transform.get_number_of_parameters()
@@ -500,12 +537,12 @@ def test_joint_pdf_gradients_sparse():
             T = transform.param_to_matrix(dtheta)
             sp_to_moving = np.linalg.inv(moving_aff).dot(T)
             samples_moving_grid = sp_to_moving.dot(samples.T).T
-            intensities_moving, inside = interp_method(moving.astype(np.float32),
-                                                       samples_moving_grid)
+            intensities_moving, inside = \
+                interp_method(moving.astype(np.float32), samples_moving_grid)
             intensities_moving = np.array(intensities_moving, dtype=np.float64)
             metric.update_pdfs_sparse(intensities_static, intensities_moving)
-            J1 =  np.copy(metric.joint)
-            expected[...,i] = (J1 - J0) / h
+            J1 = np.copy(metric.joint)
+            expected[..., i] = (J1 - J0) / h
 
         # Dot product and norms of gradients of each joint histogram cell
         # i.e. the derivatives of each cell w.r.t. all parameters
@@ -516,11 +553,11 @@ def test_joint_pdf_gradients_sparse():
         # Cosine of angle between the expected and actual gradients.
         # Exclude very small gradients
         P[prodnorms > 1e-6] /= (prodnorms[prodnorms > 1e-6])
-        P[prodnorms <= 1e-6]=0
+        P[prodnorms <= 1e-6] = 0
         # Verify that a large proportion of the gradients point almost in
         # the same direction. Disregard very small gradients
-        mean_cosine = P[P!=0].mean()
-        std_cosine = P[P!=0].std()
+        mean_cosine = P[P != 0].mean()
+        std_cosine = P[P != 0].std()
         assert_equal(mean_cosine > 0.99, True)
         assert_equal(std_cosine < 0.15, True)
 
@@ -528,16 +565,16 @@ def test_joint_pdf_gradients_sparse():
 def test_mi_gradient_dense():
     # Test the gradient of mutual information
     h = 1e-5
-    factors = {('TRANSLATION', 2):2.0,
-               ('ROTATION', 2):0.1,
-               ('RIGID', 2):0.1,
-               ('SCALING', 2):0.01,
-               ('AFFINE', 2):0.1,
-               ('TRANSLATION', 3):2.0,
-               ('ROTATION', 3):0.2,
-               ('RIGID', 3):0.1,
-               ('SCALING', 3):0.1,
-               ('AFFINE', 3):0.1}
+    factors = {('TRANSLATION', 2): 2.0,
+               ('ROTATION', 2): 0.1,
+               ('RIGID', 2): 0.1,
+               ('SCALING', 2): 0.01,
+               ('AFFINE', 2): 0.1,
+               ('TRANSLATION', 3): 2.0,
+               ('ROTATION', 3): 0.2,
+               ('RIGID', 3): 0.1,
+               ('SCALING', 3): 0.1,
+               ('AFFINE', 3): 0.1}
     for ttype in factors.keys():
         transform = regtransforms[ttype]
         dim = ttype[1]
@@ -550,9 +587,9 @@ def test_mi_gradient_dense():
         # Get data (pair of images related to each other by an known transform)
         factor = factors[ttype]
         static, moving, static_aff, moving_aff, smask, mmask, T = \
-                        setup_random_transform(transform, factor, nslices, 5.0)
-        smask=None
-        mmask=None
+            setup_random_transform(transform, factor, nslices, 5.0)
+        smask = None
+        mmask = None
 
         # Prepare a MattesBase instance
         # The computation of the metric is done in 3 steps:
@@ -575,9 +612,10 @@ def test_mi_gradient_dense():
         shape = np.array(static.shape, dtype=np.int32)
         mgrad, inside = vf.gradient(moving.astype(np.float32), moving_aff,
                                     spacing, shape, grid_to_space)
-        metric.update_gradient_dense(theta, transform, static.astype(np.float64),
-                                     moving.astype(np.float64), grid_to_space,
-                                     mgrad, smask, mmask)
+        metric.update_gradient_dense(theta, transform,
+                                     static.astype(np.float64),
+                                     moving.astype(np.float64),
+                                     grid_to_space, mgrad, smask, mmask)
 
         # 3. Update the metric (in this case, the Mutual Information) and its
         # gradient, which is computed from the joint density and its gradient
@@ -614,16 +652,16 @@ def test_mi_gradient_dense():
 def test_mi_gradient_sparse():
     # Test the gradient of mutual information
     h = 1e-5
-    factors = {('TRANSLATION', 2):2.0,
-               ('ROTATION', 2):0.1,
-               ('RIGID', 2):0.1,
-               ('SCALING', 2):0.01,
-               ('AFFINE', 2):0.1,
-               ('TRANSLATION', 3):2.0,
-               ('ROTATION', 3):0.1,
-               ('RIGID', 3):0.1,
-               ('SCALING', 3):0.1,
-               ('AFFINE', 3):0.1}
+    factors = {('TRANSLATION', 2): 2.0,
+               ('ROTATION', 2): 0.1,
+               ('RIGID', 2): 0.1,
+               ('SCALING', 2): 0.01,
+               ('AFFINE', 2): 0.1,
+               ('TRANSLATION', 3): 2.0,
+               ('ROTATION', 3): 0.1,
+               ('RIGID', 3): 0.1,
+               ('SCALING', 3): 0.1,
+               ('AFFINE', 3): 0.1}
     for ttype in factors.keys():
         transform = regtransforms[ttype]
         dim = ttype[1]
@@ -636,9 +674,9 @@ def test_mi_gradient_sparse():
         # Get data (pair of images related to each other by an known transform)
         factor = factors[ttype]
         static, moving, static_aff, moving_aff, smask, mmask, T = \
-                        setup_random_transform(transform, factor, nslices, 5.0)
-        smask=None
-        mmask=None
+            setup_random_transform(transform, factor, nslices, 5.0)
+        smask = None
+        mmask = None
 
         # Sample static domain
         k = 3
@@ -647,9 +685,9 @@ def test_mi_gradient_sparse():
         shape = np.array(static.shape, dtype=np.int32)
         samples = sample_domain_regular(k, shape, static_aff, sigma, seed)
         samples = np.array(samples)
-        samples = np.hstack((samples, np.ones(samples.shape[0])[:,None]))
+        samples = np.hstack((samples, np.ones(samples.shape[0])[:, None]))
         sp_to_static = np.linalg.inv(static_aff)
-        samples_static_grid = (sp_to_static.dot(samples.T).T)[...,:dim]
+        samples_static_grid = (sp_to_static.dot(samples.T).T)[..., :dim]
         intensities_static, inside = interp_method(static.astype(np.float32),
                                                    samples_static_grid)
         intensities_static = np.array(intensities_static, dtype=np.float64)
@@ -664,12 +702,11 @@ def test_mi_gradient_sparse():
 
         # 1. Update the joint distribution
         sp_to_moving = np.linalg.inv(moving_aff)
-        samples_moving_grid = (sp_to_moving.dot(samples.T).T)[...,:dim]
+        samples_moving_grid = (sp_to_moving.dot(samples.T).T)[..., :dim]
         intensities_moving, inside = interp_method(moving.astype(np.float32),
                                                    samples_moving_grid)
         intensities_moving = np.array(intensities_moving, dtype=np.float64)
         metric.update_pdfs_sparse(intensities_static, intensities_moving)
-        J0 = np.copy(metric.joint)
 
         # 2. Update the joint distribution gradient (the derivative of each
         # histogram cell w.r.t. the transform parameters). This requires
@@ -680,9 +717,10 @@ def test_mi_gradient_sparse():
         shape = np.array(static.shape, dtype=np.int32)
         mgrad, inside = vf.gradient(moving.astype(np.float32), moving_aff,
                                     spacing, shape, grid_to_space)
-        metric.update_gradient_dense(theta, transform, static.astype(np.float64),
-                                     moving.astype(np.float64), grid_to_space,
-                                     mgrad, smask, mmask)
+        metric.update_gradient_dense(theta, transform,
+                                     static.astype(np.float64),
+                                     moving.astype(np.float64),
+                                     grid_to_space, mgrad, smask, mmask)
 
         # 3. Update the metric (in this case, the Mutual Information) and its
         # gradient, which is computed from the joint density and its gradient
@@ -703,9 +741,9 @@ def test_mi_gradient_sparse():
             T = transform.param_to_matrix(dtheta)
             shape = np.array(static.shape, dtype=np.int32)
             sp_to_moving = np.linalg.inv(moving_aff).dot(T)
-            samples_moving_grid = (sp_to_moving.dot(samples.T).T)[...,:dim]
-            intensities_moving, inside = interp_method(moving.astype(np.float32),
-                                                       samples_moving_grid)
+            samples_moving_grid = (sp_to_moving.dot(samples.T).T)[..., :dim]
+            intensities_moving, inside =\
+                interp_method(moving.astype(np.float32), samples_moving_grid)
             intensities_moving = np.array(intensities_moving, dtype=np.float64)
             metric.update_pdfs_sparse(intensities_static, intensities_moving)
             metric.update_mi_metric(update_gradient=False)
@@ -739,7 +777,7 @@ def test_sample_domain_regular():
     # Verify all sampled points are different
     assert_equal(len(set(indices)), len(indices))
     # Verify the sampling was regular at rate k
-    assert_equal((indices%k).sum(), 0)
+    assert_equal((indices % k).sum(), 0)
 
     # Test 3D sampling
     shape = np.array((5, 10, 10), dtype=np.int32)
@@ -754,23 +792,12 @@ def test_sample_domain_regular():
                   invalid_affine, sigma)
     samples = sample_domain_regular(k, shape, affine, sigma)
     isamples = np.array(samples, dtype=np.int32)
-    indices = (isamples[:, 0] * shape[1] * shape[2] + \
-               isamples[:, 1] * shape[2] + \
+    indices = (isamples[:, 0] * shape[1] * shape[2] +
+               isamples[:, 1] * shape[2] +
                isamples[:, 2])
     # Verify correct number of points sampled
     assert_array_equal(samples.shape, [n//k, dim])
     # Verify all sampled points are different
     assert_equal(len(set(indices)), len(indices))
     # Verify the sampling was regular at rate k
-    assert_equal((indices%k).sum(), 0)
-
-
-if __name__ == '__main__':
-    test_cubic_spline()
-    test_cubic_spline_derivative()
-    test_mattes_base()
-    test_mattes_densities_dense()
-    test_mattes_densities_sparse()
-    test_joint_pdf_gradients_dense()
-    test_mi_gradient_dense()
-    test_sample_domain_regular()
+    assert_equal((indices % k).sum(), 0)
