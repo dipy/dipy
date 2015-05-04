@@ -29,7 +29,7 @@ class MultiVoxelFuntion(object):
         pass
 
     @abstractmethod
-    def _defalut_values(self, data, mask, *args, **kwargs):
+    def _default_values(self, data, mask, *args, **kwargs):
         pass
 
     def _setup_outputs(self, data, mask, *args, **kwargs):
