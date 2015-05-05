@@ -15,10 +15,7 @@ def median_otsu_bet(input_file, out_dir, save_masked=False, median_radius=4,
     inputs = glob(input_file)
     out_dirs = glob(out_dir)
     if len(out_dirs) == 1:
-        out_dirs = [out_dirs] * len(inputs)
-
-    print(out_dirs)
-    #print(inputs, out_dirs)
+        out_dirs = list(out_dirs) * len(inputs)
 
     for (fpath, out_dir_path) in zip(inputs, out_dirs):
         img = nib.load(fpath)
@@ -31,11 +28,9 @@ def median_otsu_bet(input_file, out_dir, save_masked=False, median_radius=4,
             fname, _ = splitext(fname)
             ext = '.nii.gz'
 
-
         mask_fname = fname + '_mask' + ext
 
         mask_img = nib.Nifti1Image(mask.astype(np.float32), img.get_affine())
-        print(out_dir_path)
         mask_img.to_filename(join(out_dir_path, mask_fname))
 
         if save_masked:
