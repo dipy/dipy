@@ -425,15 +425,16 @@ def snapshot(ren, fname=None, size=(300, 300)):
     -----------
     ren : vtkRenderer
         as returned from function renderer()
-    fname : str or None
-        If None return numpy array otherwise save png file.
+    fname : str
+        Save PNG file.
     size : (int, int)
         ``(width, height)`` of the window
 
     Returns
     -------
-    arr : ndarray or bool
-        If fname is None returns array or True otherwise.
+    arr : array
+        Color array of size (width, height, 3) where the last dimension
+        holds the RGB values.
     """
 
     width, height = size
@@ -527,11 +528,12 @@ def analyze_snapshot(im, bg_color=(0, 0, 0), colors=None,
     report = ReportSnapshot()
 
     if colors is not None:
-        if isinstance(im, tuple):
+        if isinstance(colors, tuple):
             colors = [colors]
         flags = [False] * len(colors)
         for (i, col) in enumerate(colors):
-            flags[i] = np.sum(im == np.array(col)) > 0
+            # find if the current color exist in the array
+            flags[i] = np.any(np.all(im == col, axis = -1))
 
         report.colors_found = flags
 
