@@ -26,11 +26,11 @@ class MultiVoxelFuntion(object):
 
     @abstractmethod
     def _main(self, single_voxel_data, *args, **kwargs):
-        pass
+        raise NotImplementedError("Implement this method in a subclass.")
 
     @abstractmethod
     def _default_values(self, data, mask, *args, **kwargs):
-        pass
+        raise NotImplementedError("Implement this method in a subclass.")
 
     def _setup_outputs(self, data, mask, *args, **kwargs):
         default_values = self._default_values(data, mask, *args, **kwargs)
@@ -65,10 +65,9 @@ class UpdateCallback(MultiVoxelFuntion):
         self.errors = errors
 
     def __call__(self, result):
-        if isinstance(result, Exception):
-            self.errors.append(result)
-        else:
-            update_outputs(self.index, result, self.outputs)
+        update_outputs(self.index, result, self.outputs)
+        # Remove from errors to indicate successful completion and free memory.
+        self.errors.pop(repr(self.index))
 
 
 def _array_split_points(mask, num_chunks):
@@ -80,10 +79,7 @@ def _array_split_points(mask, num_chunks):
 
 
 def call_remotly(parallel_function, *args, **kwargs):
-    try:
-        return parallel_function._serial(*args, **kwargs)
-    except Exception as e:
-        return e
+    return parallel_function._serial(*args, **kwargs)
 
 
 class ParallelFunction(MultiVoxelFuntion):
@@ -106,20 +102,30 @@ class ParallelFunction(MultiVoxelFuntion):
 
         pool = Pool(num_cpu)
         start = 0
-        errors = []
+        errors = {}
         for end in end_points:
             index = slice(start, end)
             chunk_args = (self, data[index], mask[index]) + args
             callback = UpdateCallback(index, outputs, errors)
-            pool.apply_async(call_remotly, chunk_args, kwargs,
-                             callback=callback)
+            r = pool.apply_async(call_remotly, chunk_args, kwargs,
+                                 callback=callback)
+            # As of python 2.7, the async_result is the only way to track
+            # errors, in python 3 an error callback can be used.
+            errors[repr(index)] = r
             start = end
 
+        del r
         pool.close()
         pool.join()
 
         if errors:
-            raise errors[0]
+            index, r = errors.popitem()
+            # If errors is not empty, callbacks did not all execute, r.get()
+            # should raise an error.
+            r.get()
+            # If r.get() does not raise an error, something else went wrong.
+            msg = "Parallel function did not execute successfully."
+            raise RuntimeError(msg)
 
         # Un-ravel the outputs
         for key in outputs:
