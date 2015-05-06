@@ -10,35 +10,46 @@ def test_renderer():
 
     ren = window.Renderer()
 
-    ren.background((1, 0.5, 0))
+    bg_float = (1, 0.5, 0)
+
+    bg_color = tuple((np.round(255 * np.array(bg_float))).astype('uint8'))
+
+    ren.background(bg_float)
 
     # window.show(ren)
-
     arr = window.snapshot(ren)
-
     report = window.analyze_snapshot(arr,
-                                     colors=[(255, 128, 0), (0, 127, 0)])
-
-    npt.assert_equal(report.objects, 1)
+                                     bg_color=bg_color,
+                                     colors=[bg_color, (0, 127, 0)])
+    npt.assert_equal(report.objects, 0)
     npt.assert_equal(report.colors_found, [True, False])
 
     axes = fvtk.axes()
-
     ren.add(axes)
-
-    window.show(ren)
+    arr = window.snapshot(ren)
+    report = window.analyze_snapshot(arr, bg_color)
+    npt.assert_equal(report.objects, 1)
 
     ren.rm(axes)
-
-    window.show(ren)
+    arr = window.snapshot(ren)
+    report = window.analyze_snapshot(arr, bg_color)
+    npt.assert_equal(report.objects, 0)
 
     window.add(ren, axes)
-
-    window.show(ren)
+    arr = window.snapshot(ren)
+    report = window.analyze_snapshot(arr, bg_color)
+    npt.assert_equal(report.objects, 1)
 
     ren.rm_all()
+    arr = window.snapshot(ren)
+    report = window.analyze_snapshot(arr, bg_color)
+    npt.assert_equal(report.objects, 0)
 
-    window.show(ren)
+    ren2 = window.renderer(bg_float)
+    ren2.background((0, 0, 0.))
+
+    report = window.analyze_renderer(ren2)
+    npt.assert_equal(report.bg_color, (0, 0, 0))
 
 
 
