@@ -511,9 +511,8 @@ def analyze_snapshot(im, bg_color=(0, 0, 0), colors=None,
     Returns
     -------
     report : ReportSnapshot
-        This is an object with attibutes like ``bg_color_check`` or
-        ``colors_check`` that give information about the result of the analysis
-        of the current ``im``.
+        This is an object with attibutes like ``colors_found`` that give
+        information about what was found in the current snapshot array ``im``.
 
     """
     if isinstance(im, string_types):
@@ -522,7 +521,6 @@ def analyze_snapshot(im, bg_color=(0, 0, 0), colors=None,
     class ReportSnapshot(object):
         objects = None
         labels = None
-        bg_color_check = False
         colors_found = False
 
     report = ReportSnapshot()
@@ -540,13 +538,14 @@ def analyze_snapshot(im, bg_color=(0, 0, 0), colors=None,
     if find_objects is True:
         weights = [0.299, 0.587, 0.144]
         gray = np.dot(im[..., :3], weights)
-        mask_threshold = np.dot(bg_color, weights)
+        background = np.dot(bg_color, weights)
 
         if strel is None:
             strel = np.array([[0, 1, 0],
                               [1, 1, 1],
                               [0, 1, 0]])
-        labels, objects = ndimage.label(gray > mask_threshold, strel)
+
+        labels, objects = ndimage.label(gray != background, strel)
         report.labels = labels
         report.objects = objects
 
