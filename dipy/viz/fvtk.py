@@ -78,7 +78,7 @@ def _arrow(pos=(0, 0, 0), color=(1, 0, 0), scale=(1, 1, 1), opacity=1):
     if major_version <= 5:
         arrowm.SetInput(arrow.GetOutput())
     else:
-        arrowm.SetInputData(arrow.GetOutput())
+        arrowm.SetInputConnection(arrow.GetOutputPort())
 
     arrowa = vtk.vtkActor()
     arrowa.SetMapper(arrowm)
@@ -93,7 +93,7 @@ def _arrow(pos=(0, 0, 0), color=(1, 0, 0), scale=(1, 1, 1), opacity=1):
 def axes(scale=(1, 1, 1), colorx=(1, 0, 0), colory=(0, 1, 0), colorz=(0, 0, 1),
          opacity=1):
     """ Create an actor with the coordinate's system axes where
-    red = x, green = y, blue =z.
+    red = x, green = y, blue = z.
 
     Parameters
     ----------
