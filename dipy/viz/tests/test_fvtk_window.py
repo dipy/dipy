@@ -26,6 +26,9 @@ def test_renderer():
 
     axes = fvtk.axes()
     ren.add(axes)
+
+    # window.show(ren)
+
     arr = window.snapshot(ren)
     report = window.analyze_snapshot(arr, bg_color)
     npt.assert_equal(report.objects, 1)
@@ -50,6 +53,15 @@ def test_renderer():
 
     report = window.analyze_renderer(ren2)
     npt.assert_equal(report.bg_color, (0, 0, 0))
+
+    ren2.add(axes)
+
+    report = window.analyze_renderer(ren2)
+    npt.assert_equal(report.actors, 3)
+
+    window.rm(ren2, axes)
+    report = window.analyze_renderer(ren2)
+    npt.assert_equal(report.actors, 0)
 
 
 

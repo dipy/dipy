@@ -146,7 +146,10 @@ class ShowManager(object):
         window = vtk.vtkRenderWindow()
         window.AddRenderer(ren)
         # window.SetAAFrames(6)
-        window.SetWindowName(title + ' ' + dipy_version)
+        if title == 'Dipy':
+            window.SetWindowName(title + ' ' + dipy_version)
+        else:
+            window.SetWindowName(title)
         window.SetSize(size[0], size[1])
 
         style = vtk.vtkInteractorStyleTrackballCamera()
@@ -207,7 +210,7 @@ class ShowManager(object):
         self.window.Render()
 
 
-def show(ren, title='Dipy', size=(300, 300), png_magnify=1, widgets=None):
+def show(ren, title='Dipy', size=(300, 300), png_magnify=1):
     """ Show window
 
     Notes
@@ -258,55 +261,10 @@ def show(ren, title='Dipy', size=(300, 300), png_magnify=1, widgets=None):
 
     """
 
-    ren.ResetCamera()
-    window = vtk.vtkRenderWindow()
-    window.AddRenderer(ren)
-    # window.SetAAFrames(6)
-
-    window.SetWindowName(title + ' ' + dipy_version)
-    window.SetSize(size[0], size[1])
-    style = vtk.vtkInteractorStyleTrackballCamera()
-    iren = vtk.vtkRenderWindowInteractor()
-    iren.SetRenderWindow(window)
-    # iren.SetPicker(picker)
-
-    def key_press(obj, event):
-
-        key = obj.GetKeySym()
-        if key == 's' or key == 'S':
-            print('Saving image...')
-            renderLarge = vtk.vtkRenderLargeImage()
-            if major_version <= 5:
-                renderLarge.SetInput(ren)
-            else:
-                renderLarge.SetInput(ren)
-            renderLarge.SetMagnification(png_magnify)
-            renderLarge.Update()
-
-            file_types = (("PNG file", "*.png"), ("All Files", "*.*"))
-            filepath = save_file_dialog(initial_file='dipy.png',
-                                        default_extension='.png',
-                                        filetypes=file_types)
-            if filepath == '':
-                print('No file was provided in the dialog')
-            else:
-                writer = vtk.vtkPNGWriter()
-                writer.SetInputConnection(renderLarge.GetOutputPort())
-                writer.SetFileName(filepath)
-                writer.Write()
-                print('File ' + filepath + ' is saved.')
-
-    iren.AddObserver('KeyPressEvent', key_press)
-    iren.SetInteractorStyle(style)
-    iren.Initialize()
-    # picker.Pick(85, 126, 0, ren)
-    window.Render()
-    iren.Start()
-
-    # window.RemoveAllObservers()
-    # ren.SetRenderWindow(None)
-    window.RemoveRenderer(ren)
-    ren.SetRenderWindow(None)
+    show_manager = ShowManager(ren, title, size, png_magnify)
+    show_manager.initialize()
+    show_manager.render()
+    show_manager.start()
 
 
 def record(ren=None, cam_pos=None, cam_focal=None, cam_view=None,
