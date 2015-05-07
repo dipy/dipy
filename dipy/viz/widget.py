@@ -27,6 +27,7 @@ def slider(iren, callback, min_value=0, max_value=255, value=125,
     slider_rep.GetPoint1Coordinate().SetCoordinateSystemToNormalizedDisplay()
     slider_rep.GetPoint1Coordinate().SetValue(*coord1)
     slider_rep.GetPoint2Coordinate().SetCoordinateSystemToNormalizedDisplay()
+
     slider_rep.GetPoint2Coordinate().SetValue(*coord2)
     slider_rep.SetSliderLength(length)
     slider_rep.SetSliderWidth(length)

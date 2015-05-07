@@ -1,7 +1,5 @@
 import numpy as np
-from dipy.viz import actor
-from dipy.viz import window
-from dipy.viz import widget
+from dipy.viz import actor, window, widget
 from dipy.data import fetch_viz_icons, read_viz_icons
 import numpy.testing as npt
 
@@ -10,34 +8,30 @@ import numpy.testing as npt
 @npt.dec.skipif(not actor.have_vtk_colors)
 def test_slider_widget():
 
-    renderer = window.renderer()
+    renderer = window.Renderer()
 
     # Create 2 lines with 2 different colors
     lines = [np.random.rand(10, 3), np.random.rand(20, 3)]
     colors = np.array([[1., 0., 0.], [0.8, 0., 0.]])
     c = actor.line(lines, colors, linewidth=3)
-    window.add(renderer, c)
 
-    from dipy.viz.window import vtk
+    renderer.add(c)
 
-    ren_win = vtk.vtkRenderWindow()
-    ren_win.AddRenderer(renderer)
+    show_manager = window.ShowManager(renderer)
+    show_manager.initialize()
 
-    iren = vtk.vtkRenderWindowInteractor()
-    iren.SetRenderWindow(ren_win)
-
-    def print_status(obj, event):
+    def slider_callback(obj, event):
         print(obj)
         print(event)
         renderer.SetBackground(np.random.rand(3))
 
-    slider = widget.slider(iren=iren, callback=print_status)
-    # text = widget.text(iren, None)
+    slider = widget.slider(iren=show_manager.iren,
+                           callback=slider_callback)
+    # text = widget.text(slider.iren, None)
 
-    iren.Initialize()
+    show_manager.render()
+    show_manager.start()
 
-    ren_win.Render()
-    iren.Start()
     arr = window.snapshot(renderer, size=(600, 600))
     report = window.analyze_snapshot(arr)
 
@@ -48,22 +42,16 @@ def test_button_widget():
 
     from dipy.viz.window import vtk
 
-    renderer = window.renderer()
+    renderer = window.Renderer()
 
     lines = [np.random.rand(10, 3), np.random.rand(20, 3)]
-    colors = np.array([[1., 0., 0.], [0.8, 0., 0.]])
+    colors = np.array([[1., 0., 0.], [0.3, 0.7, 0.]])
     stream_actor = actor.streamtube(lines, colors)
 
-    window.add(renderer, stream_actor)
+    renderer.add(stream_actor)
 
-    renderer.ResetCamera()
+    show_manager= window.ShowManager(renderer, size=(600, 600))
 
-    ren_win = vtk.vtkRenderWindow()
-    ren_win.AddRenderer(renderer)
-    ren_win.SetSize(600, 600)
-
-    iren = vtk.vtkRenderWindowInteractor()
-    iren.SetRenderWindow(ren_win)
 
     def callback(obj, event):
         print(obj)
@@ -72,15 +60,15 @@ def test_button_widget():
     fetch_viz_icons()
     button_png = read_viz_icons(fname='home3.png')
 
-    button = widget.button(iren, callback,
+    button = widget.button(show_manager.iren, callback,
                            button_png, (.8, 1.2), (50, 50))
 
     button_png_plus = read_viz_icons(fname='plus.png')
-    button_plus = widget.button(iren, callback,
+    button_plus = widget.button(show_manager.iren, callback,
                                 button_png_plus, (.7, .8), (50, 50))
 
     button_png_minus = read_viz_icons(fname='minus.png')
-    button_minus = widget.button(iren, callback,
+    button_minus = widget.button(show_manager.iren, callback,
                                  button_png_minus, (.9, .8), (50, 50))
 
     def print_status(obj, event):
@@ -88,11 +76,10 @@ def test_button_widget():
         print(event)
         renderer.SetBackground(np.random.rand(3))
 
-    slider = widget.slider(iren=iren, callback=print_status)
+    slider = widget.slider(iren=show_manager.iren, callback=print_status)
 
-    iren.Initialize()
-
-    ren_win.Render()
+    show_manager.initialize()
+    show_manager.render()
 
     button_norm_coords = (.9, 1.2)
     button_size = (50, 50)
@@ -110,10 +97,11 @@ def test_button_widget():
         button_plus.place(renderer)
         button_minus.place(renderer)
 
-    ren_win.AddObserver(vtk.vtkCommand.ModifiedEvent, win_callback)
+    # ren_win.AddObserver(vtk.vtkCommand.ModifiedEvent, win_callback)
+    show_manager.add_window_callback(win_callback)
 
-    ren_win.Render()
-    iren.Start()
+    show_manager.render()
+    show_manager.start()
 
     arr = window.snapshot(renderer, size=(600, 600))
 
@@ -181,6 +169,6 @@ def test_button_widget_show():
 if __name__ == '__main__':
 
     # test_slider_widget()
-    # test_button_widget()
-    npt.run_module_suite()
+    test_button_widget()
+    # npt.run_module_suite()
     # test_button_widget_show()
