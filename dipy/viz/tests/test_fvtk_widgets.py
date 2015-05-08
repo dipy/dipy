@@ -52,7 +52,6 @@ def test_button_widget():
 
     show_manager= window.ShowManager(renderer, size=(600, 600))
 
-
     def callback(obj, event):
         print(obj)
         print('Pressed')
@@ -98,9 +97,9 @@ def test_button_widget():
         button_plus.place(renderer)
         button_minus.place(renderer)
         # TODO
-        # GET SLICER REPRESENTATION HERE AND SET THE COORDINATES TO ALIGN
+        # GET SLIDER REPRESENTATION HERE AND SET THE COORDINATES TO ALIGN
         # WITH BUTTONS
-
+        slider.place
     # ren_win.AddObserver(vtk.vtkCommand.ModifiedEvent, win_callback)
     show_manager.add_window_callback(win_callback)
 

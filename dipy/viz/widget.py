@@ -40,7 +40,20 @@ def slider(iren, callback, min_value=0, max_value=255, value=125,
 
     slider_rep.SetLabelFormat(label_format)
 
-    slider = vtk.vtkSliderWidget()
+    class SliderWidget(vtk.vtkSliderWidget):
+
+        def place(self, coord1=None, coord2=None):
+
+            slider_rep = slider.GetRepresentation()
+            if coord1 is not None:
+                slider_rep.GetPoint1Coordinate().SetCoordinateSystemToNormalizedDisplay()
+                slider_rep.GetPoint1Coordinate().SetValue(*coord1)
+
+            if coord1 is not None:
+                slider_rep.GetPoint2Coordinate().SetCoordinateSystemToNormalizedDisplay()
+                slider_rep.GetPoint2Coordinate().SetValue(*coord2)
+
+    slider = SliderWidget()
     slider.SetInteractor(iren)
     slider.SetRepresentation(slider_rep)
     slider.SetAnimationModeToAnimate()
