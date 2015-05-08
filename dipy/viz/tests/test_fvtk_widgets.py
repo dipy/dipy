@@ -61,22 +61,23 @@ def test_button_widget():
     button_png = read_viz_icons(fname='home3.png')
 
     button = widget.button(show_manager.iren, callback,
-                           button_png, (.8, 1.2), (50, 50))
+                           button_png, (1., 1.), (80, 50))
 
     button_png_plus = read_viz_icons(fname='plus.png')
     button_plus = widget.button(show_manager.iren, callback,
-                                button_png_plus, (.7, .8), (50, 50))
+                                button_png_plus, (1., .8), (120, 50))
 
     button_png_minus = read_viz_icons(fname='minus.png')
     button_minus = widget.button(show_manager.iren, callback,
-                                 button_png_minus, (.9, .8), (50, 50))
+                                 button_png_minus, (1., .8), (50, 50))
 
     def print_status(obj, event):
         print(obj)
         print(event)
         renderer.SetBackground(np.random.rand(3))
 
-    slider = widget.slider(iren=show_manager.iren, callback=print_status)
+    slider = widget.slider(iren=show_manager.iren, callback=print_status,
+                           coord1=(0.9, 0.5), coord2=(1., 0.5))
 
     show_manager.initialize()
     show_manager.render()
@@ -96,6 +97,9 @@ def test_button_widget():
         button.place(renderer)
         button_plus.place(renderer)
         button_minus.place(renderer)
+        # TODO
+        # GET SLICER REPRESENTATION HERE AND SET THE COORDINATES TO ALIGN
+        # WITH BUTTONS
 
     # ren_win.AddObserver(vtk.vtkCommand.ModifiedEvent, win_callback)
     show_manager.add_window_callback(win_callback)

@@ -24,11 +24,14 @@ def slider(iren, callback, min_value=0, max_value=255, value=125,
     slider_rep.SetMaximumValue(max_value)
     slider_rep.SetValue(value)
     slider_rep.SetTitleText(label)
+
     slider_rep.GetPoint1Coordinate().SetCoordinateSystemToNormalizedDisplay()
     slider_rep.GetPoint1Coordinate().SetValue(*coord1)
+    #1/0
+    #test = slider_rep.GetPoint1Coordinate().GetDisplayValue()
     slider_rep.GetPoint2Coordinate().SetCoordinateSystemToNormalizedDisplay()
-
     slider_rep.GetPoint2Coordinate().SetValue(*coord2)
+
     slider_rep.SetSliderLength(length)
     slider_rep.SetSliderWidth(length)
     slider_rep.SetEndCapLength(cap_length)
@@ -44,17 +47,20 @@ def slider(iren, callback, min_value=0, max_value=255, value=125,
     slider.KeyPressActivationOff()
     slider.AddObserver("InteractionEvent", callback)
     slider.SetEnabled(True)
+
     return slider
 
 
-def compute_bounds(renderer, normalized_display_position, size):
+def button_display_coordinates(renderer, normalized_display_position, size):
     upperRight = vtk.vtkCoordinate()
     upperRight.SetCoordinateSystemToNormalizedDisplay()
     upperRight.SetValue(normalized_display_position[0], normalized_display_position[1])
     bds = [0.0] * 6
+    #1/0
     bds[0] = upperRight.GetComputedDisplayValue(renderer)[0] - size[0]
-    print(upperRight.GetComputedDisplayValue(renderer)[0])
-    print(upperRight.GetComputedDisplayValue(renderer)[1])
+    print(upperRight.GetComputedDisplayValue(renderer)[0],
+          upperRight.GetComputedDisplayValue(renderer)[1])
+    print(renderer.GetSize())
     bds[1] = bds[0] + size[0]
     bds[2] = upperRight.GetComputedDisplayValue(renderer)[1] - size[1]
     bds[3] = bds[2] + size[1]
@@ -75,15 +81,14 @@ def button(iren, callback, fname, button_norm_coords, button_size):
     button_rep.SetButtonTexture(1, image1.GetOutput())
     #button_rep.SetButtonTexture(1, image2.GetOutput())
 
-    button_rep.SetPlaceFactor(1)
-
     # http://www.vtk.org/Wiki/VTK/Examples/Cxx/Widgets/TexturedButtonWidget
 
     class ButtonWidget(vtk.vtkButtonWidget):
 
         def place(self, renderer):
 
-            bds = compute_bounds(renderer, button_norm_coords, button_size)
+            bds = button_display_coordinates(renderer, button_norm_coords, button_size)
+            self.GetRepresentation().SetPlaceFactor(1)
             self.GetRepresentation().PlaceWidget(bds)
             self.On()
 
