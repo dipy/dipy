@@ -6,8 +6,11 @@ from nose.tools import assert_true, assert_false, assert_equal, assert_almost_eq
 from numpy.testing import assert_array_equal, assert_raises, run_module_suite
 
 
-def norm(x, *args, **kwargs):
-    return np.linalg.norm(x.astype(np.float64), *args, **kwargs)
+def norm(x, ord=None, axis=None):
+    if axis is not None:
+        return np.apply_along_axis(np.linalg.norm, axis, x.astype(np.float64), ord)
+
+    return np.linalg.norm(x.astype(np.float64), ord=ord)
 
 
 dtype = "float32"
