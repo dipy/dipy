@@ -55,21 +55,20 @@ def test_metric_minimum_average_direct_flip():
                    dipymetric.MinimumAverageDirectFlipMetric(feature)]:
 
         # Test special cases of the MDF distance.
-        assert_equal(metric.dist(s, s), 0.)   # same streamlines
-        assert_equal(metric.dist(s, s[::-1]), 0.)  # streamline with its reversed version
+        assert_equal(metric.dist(s, s), 0.)
+        assert_equal(metric.dist(s, s[::-1]), 0.)
 
         # Translation
         offset = np.array([0.8, 1.3, 5], dtype=dtype)
-        assert_almost_equal(metric.dist(s, s+offset), norm(offset))
+        assert_almost_equal(metric.dist(s, s+offset), norm(offset), 5)
 
         # Scaling
         M_scaling = np.diag([1.2, 2.8, 3]).astype(dtype)
         s_mean = np.mean(s, axis=0)
         s_zero_mean = s - s_mean
         s_scaled = np.dot(M_scaling, s_zero_mean.T).T + s_mean
-
-        d = np.mean(norm((np.diag(M_scaling)-1)*s_zero_mean, axis=1))  # Analytical result.
-        assert_almost_equal(metric.dist(s, s_scaled), d)
+        d = np.mean(norm((np.diag(M_scaling)-1)*s_zero_mean, axis=1))
+        assert_almost_equal(metric.dist(s, s_scaled), d, 5)
 
         # Rotation
         from dipy.core.geometry import rodrigues_axis_rotation
@@ -82,7 +81,7 @@ def test_metric_minimum_average_direct_flip():
         opposite = norm(np.cross(rot_axis, s_zero_mean), axis=1) / norm(rot_axis)
         distances = np.sqrt(2*opposite**2 * (1 - np.cos(60.*np.pi/180.))).astype(dtype)
         d = np.mean(distances)
-        assert_almost_equal(metric.dist(s, s_rotated), d)
+        assert_almost_equal(metric.dist(s, s_rotated), d, 5)
 
         for s1, s2 in itertools.product(*[streamlines]*2):  # All possible pairs
             # Extract features since metric doesn't work directly on streamlines
@@ -168,7 +167,8 @@ def test_metric_cosine():
             # Test method are_compatible
             are_vectors = f1.shape[0] == 1 and f2.shape[0] == 1
             same_dimension = f1.shape[1] == f2.shape[1]
-            assert_equal(metric.are_compatible(f1.shape, f2.shape), are_vectors and same_dimension)
+            assert_equal(metric.are_compatible(f1.shape, f2.shape),
+                         are_vectors and same_dimension)
 
             # Test method dist if features are compatible
             if metric.are_compatible(f1.shape, f2.shape):
@@ -198,7 +198,6 @@ def test_metric_cosine():
             if not np.all(f1_flip == f2_flip):
                 assert_false(metric.dist(f1, f2_flip) == distance)
                 assert_false(metric.dist(f1_flip, f2) == distance)
-
 
 
 def test_subclassing_metric():
