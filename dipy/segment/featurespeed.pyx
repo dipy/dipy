@@ -220,7 +220,7 @@ cdef class CenterOfMassFeature(CythonFeature):
     A sequence of N-dimensional points is represented as a 2D array with
     shape (nb_points, nb_dimensions).
 
-    The feature being extracted consists in one N-dimensional point representing
+    The feature being extracted consists of one N-dimensional point representing
     the mean of the points, i.e. the center of mass.
     """
     def __init__(CenterOfMassFeature self):
@@ -255,7 +255,7 @@ cdef class MidpointFeature(CythonFeature):
     A sequence of N-dimensional points is represented as a 2D array with
     shape (nb_points, nb_dimensions).
 
-    The feature being extracted consists in one N-dimensional point representing
+    The feature being extracted consists of one N-dimensional point representing
     the middle point of the sequence (i.e. `nb_points//2`th point).
     """
     def __init__(MidpointFeature self):
@@ -285,7 +285,7 @@ cdef class ArcLengthFeature(CythonFeature):
     A sequence of N-dimensional points is represented as a 2D array with
     shape (nb_points, nb_dimensions).
 
-    The feature being extracted consists in one scalar representing
+    The feature being extracted consists of one scalar representing
     the arc length of the sequence (i.e. the sum of the length of all segments).
     """
     def __init__(ArcLengthFeature self):
@@ -309,8 +309,9 @@ cdef class VectorBetweenEndpointsFeature(CythonFeature):
     A sequence of N-dimensional points is represented as a 2D array with
     shape (nb_points, nb_dimensions).
 
-    The feature being extracted consists in one N-dimensional point representing
-    the vector between the extremities of the sequence (i.e. `S[-1]-S[0]`).
+    The feature being extracted consists of one vector in the N-dimensional
+    space pointing from one end-point of the sequence to the other
+    (i.e. `S[-1]-S[0]`).
     """
     def __init__(VectorBetweenEndpointsFeature self):
         super(VectorBetweenEndpointsFeature, self).__init__(is_order_invariant=False)

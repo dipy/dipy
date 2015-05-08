@@ -204,9 +204,6 @@ cdef class SumPointwiseEuclideanMetric(CythonMetric):
     is equal to $a+b+c$ where $a$ is the Euclidean distance between s1[0] and
     s2[0], $b$ between s1[1] and s2[1] and $c$ between s1[2] and s2[2].
     """
-    #def __init__(SumPointwiseEuclideanMetric self, Feature feature=ResampleFeature(18)):
-    #    super(SumPointwiseEuclideanMetric, self).__init__(feature=feature)
-
     cdef double c_dist(SumPointwiseEuclideanMetric self, Data2D features1, Data2D features2) nogil except -1:
         cdef :
             int N = features1.shape[0], D = features1.shape[1]
@@ -306,7 +303,7 @@ cdef class MinimumAverageDirectFlipMetric(AveragePointwiseEuclideanMetric):
 cdef class CosineMetric(CythonMetric):
     r""" Computes the cosine distance between two vectors.
 
-    A vector of N-dimensional points is represented as a 2D array with
+    A vector (i.e. a N-dimensional point) is represented as a 2D array with
     shape (1, nb_dimensions).
 
     Notes
