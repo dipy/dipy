@@ -9,12 +9,10 @@ vtk, have_vtk, setup_module = optional_package('vtk')
 colors, have_vtk_colors, _ = optional_package('vtk.util.colors')
 numpy_support, have_ns, _ = optional_package('vtk.util.numpy_support')
 
-def slider(iren, callback, min_value=0, max_value=255, value=125,
+def slider(iren, ren, callback, min_value=0, max_value=255, value=125,
            label="Slider",
-           coord1=(0.8, 0.5), coord2=(0.9, 0.5),
-           length=0.04, width=0.02,
-           cap_length=0.01, cap_width=0.01,
-           tube_width=0.005,
+           right_normalized_pos=(0.9, 0.5),
+           size=(50, 0),
            label_format="%0.0lf"):
     """ Create a 2D slider with normalized window coordinates
     """
@@ -25,15 +23,21 @@ def slider(iren, callback, min_value=0, max_value=255, value=125,
     slider_rep.SetValue(value)
     slider_rep.SetTitleText(label)
 
-    slider_rep.GetPoint1Coordinate().SetCoordinateSystemToNormalizedDisplay()
-    slider_rep.GetPoint1Coordinate().SetValue(*coord1)
-    #1/0
-    #test = slider_rep.GetPoint1Coordinate().GetDisplayValue()
     slider_rep.GetPoint2Coordinate().SetCoordinateSystemToNormalizedDisplay()
-    slider_rep.GetPoint2Coordinate().SetValue(*coord2)
+    slider_rep.GetPoint2Coordinate().SetValue(*right_normalized_pos)
+
+    coord2_display = slider_rep.GetPoint2Coordinate().GetComputedDisplayValue(ren)
+    slider_rep.GetPoint1Coordinate().SetCoordinateSystemToDisplay()
+    slider_rep.GetPoint1Coordinate().SetValue(coord2_display[0] - size[0], coord2_display[1] - size[1])
+
+    length=0.04
+    width=0.04
+    cap_length=0.01
+    cap_width=0.01
+    tube_width=0.005
 
     slider_rep.SetSliderLength(length)
-    slider_rep.SetSliderWidth(length)
+    slider_rep.SetSliderWidth(width)
     slider_rep.SetEndCapLength(cap_length)
     slider_rep.SetEndCapWidth(cap_width)
     slider_rep.SetTubeWidth(tube_width)
@@ -42,16 +46,18 @@ def slider(iren, callback, min_value=0, max_value=255, value=125,
 
     class SliderWidget(vtk.vtkSliderWidget):
 
-        def place(self, coord1=None, coord2=None):
+        def place(self, renderer):
 
-            slider_rep = slider.GetRepresentation()
-            if coord1 is not None:
-                slider_rep.GetPoint1Coordinate().SetCoordinateSystemToNormalizedDisplay()
-                slider_rep.GetPoint1Coordinate().SetValue(*coord1)
+            slider_rep = self.GetRepresentation()
+            slider_rep.GetPoint2Coordinate().SetCoordinateSystemToNormalizedDisplay()
+            slider_rep.GetPoint2Coordinate().SetValue(*right_normalized_pos)
 
-            if coord1 is not None:
-                slider_rep.GetPoint2Coordinate().SetCoordinateSystemToNormalizedDisplay()
-                slider_rep.GetPoint2Coordinate().SetValue(*coord2)
+            coord2_display = slider_rep.GetPoint2Coordinate().GetComputedDisplayValue(renderer)
+            slider_rep.GetPoint1Coordinate().SetCoordinateSystemToDisplay()
+            slider_rep.GetPoint1Coordinate().SetValue(coord2_display[0] - size[0], coord2_display[1] - size[1])
+
+            # slider_rep.SetLabelFormat(label_format)
+
 
     slider = SliderWidget()
     slider.SetInteractor(iren)
@@ -131,7 +137,9 @@ def text(iren, callback, message="Accelerating computational anatomy...",
 
     # Create the text representation. Used for positioning the text_actor
     text_representation = vtk.vtkTextRepresentation()
+    text_representation.GetPositionCoordinate().SetCoordinateSystemToNormalizedDisplay()
     text_representation.GetPositionCoordinate().SetValue(*coord1)
+    text_representation.GetPosition2Coordinate().SetCoordinateSystemToNormalizedDisplay()
     text_representation.GetPosition2Coordinate().SetValue(*coord2)
     if border:
         text_representation.SetShowBorderToOn()
