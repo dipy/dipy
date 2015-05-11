@@ -148,7 +148,7 @@ def test_text_widget():
     text = widget.text(show_manager.iren,
                        show_manager.ren,
                        text_callback,
-                       message="Expected",
+                       message="Diffusion Imaging in Python",
                        left_down_pos=(0.15, 0.15), # (.2, 0.5),
                        right_top_pos=(0.7, 0.2), # (.7, 0.6),
                        opacity=.5,
