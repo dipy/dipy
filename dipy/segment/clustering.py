@@ -421,6 +421,33 @@ class QuickBundles(Clustering):
     max_nb_clusters : int
         Limits the creation of bundles.
 
+    Examples
+    --------
+    >>> from dipy.segment.clustering import QuickBundles
+    >>> from dipy.data import get_data
+    >>> from nibabel import trackvis as tv
+    >>> streams, hdr = tv.read(get_data('fornix'))
+    >>> streamlines = [i[0] for i in streams]
+    >>> # Segment fornix with a treshold of 10mm and streamlines resampled to 18 points.
+    >>> qb = QuickBundles(threshold=10.)
+    >>> clusters = qb.cluster(streamlines)
+    >>> len(clusters)
+    4
+    >>> map(len, clusters)
+    [64, 191, 44, 1]
+    >>> # Segment fornix with a treshold of 10mm and streamlines resampled to 2 points.
+    >>> from dipy.segment.metric import ResampleFeature
+    >>> from dipy.segment.metric import AveragePointwiseEuclideanMetric
+    >>> feature = ResampleFeature(nb_points=2)
+    >>> metric = AveragePointwiseEuclideanMetric(feature)
+    >>> qb = QuickBundles(threshold=10., metric=metric)
+    >>> clusters = qb.cluster(streamlines)
+    >>> len(clusters)
+    4
+    >>> map(len, clusters)
+    [58, 142, 72, 28]
+
+
     References
     ----------
     .. [Garyfallidis12] Garyfallidis E. et al., QuickBundles a method for
