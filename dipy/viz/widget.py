@@ -122,40 +122,38 @@ def button(iren, callback, fname, button_norm_coords, button_size):
     return button
 
 
-def text(iren, ren, callback, message="Accelerating computational anatomy...",
-         # coord1=(.2, .2), coord2=(.7, .2),
-         right_normalized_pos=(0.9, 0.5),
-         size=(50, 0),
-         color=(.9, .9, .9),
+def text(iren, ren, callback, message="DIPY",
+         left_down_pos=(0.8, 0.5),
+         right_top_pos=(0.9, 0.5),
+         color=(1., .5, .0),
          opacity=1.,
-         selectable=True,
-         border=True):
+         font_size=10.,
+         border=False):
 
     # Create the TextActor
     text_actor = vtk.vtkTextActor()
     text_actor.SetInput(message)
     text_actor.GetTextProperty().SetColor(color)
     text_actor.GetTextProperty().SetOpacity(opacity)
+    #text_actor.GetTextProperty().SetJustificationToLeft()
+    #text_actor.GetTextProperty().SetFontSize(int(font_size))
+    #text_actor.GetTextProperty().SetFontFamilyToArial()
 
     # Create the text representation. Used for positioning the text_actor
-    text_representation = vtk.vtkTextRepresentation()
+    text_rep = vtk.vtkTextRepresentation()
 
-    text_representation.GetPosition2Coordinate().SetCoordinateSystemToNormalizedDisplay()
-    text_representation.GetPosition2Coordinate().SetValue(*right_normalized_pos)
+    text_rep.GetPositionCoordinate().SetCoordinateSystemToNormalizedDisplay()
+    text_rep.GetPositionCoordinate().SetValue(*left_down_pos)
 
-    coord2_display = text_representation.GetPosition2Coordinate().GetComputedDisplayValue(ren)
-    text_representation.GetPositionCoordinate().SetCoordinateSystemToDisplay()
-    text_representation.GetPositionCoordinate().SetValue(coord2_display[0] - size[0], coord2_display[1] - size[1])
+    text_rep.GetPosition2Coordinate().SetCoordinateSystemToNormalizedDisplay()
+    text_rep.GetPosition2Coordinate().SetValue(*right_top_pos)
 
-    # text_representation.GetPositionCoordinate().SetCoordinateSystemToNormalizedDisplay()
-    # text_representation.GetPositionCoordinate().SetValue(*coord1)
-    # text_representation.GetPosition2Coordinate().SetCoordinateSystemToNormalizedDisplay()
-    # text_representation.GetPosition2Coordinate().SetValue(*coord2)
+    text_rep.SetPlaceFactor(1)
 
     if border:
-        text_representation.SetShowBorderToOn()
+        text_rep.SetShowBorderToOn()
     else:
-        text_representation.SetShowBorderToOff()
+        text_rep.SetShowBorderToOff()
 
     # Create the TextWidget
     # Note that the SelectableOff method MUST be invoked!
@@ -169,28 +167,28 @@ def text(iren, ren, callback, message="Accelerating computational anatomy...",
     class TextWidget(vtk.vtkTextWidget):
 
         def place(self, renderer):
+            text_rep = self.GetRepresentation()
 
-            slider_rep = self.GetRepresentation()
-            slider_rep.GetPosition2Coordinate().SetCoordinateSystemToNormalizedDisplay()
-            slider_rep.GetPosition2Coordinate().SetValue(*right_normalized_pos)
+            text_rep.GetPositionCoordinate().SetCoordinateSystemToNormalizedDisplay()
+            text_rep.GetPositionCoordinate().SetValue(*left_down_pos)
 
-            coord2_display = slider_rep.GetPosition2Coordinate().GetComputedDisplayValue(renderer)
-            slider_rep.GetPositionCoordinate().SetCoordinateSystemToDisplay()
-            slider_rep.GetPositionCoordinate().SetValue(coord2_display[0] - size[0], coord2_display[1] - size[1])
-            slider_rep.SetPlaceFactor(1)
+            text_rep.GetPosition2Coordinate().SetCoordinateSystemToNormalizedDisplay()
+            text_rep.GetPosition2Coordinate().SetValue(*right_top_pos)
+            text_rep.SetPlaceFactor(1)
             self.On()
 
+
     text_widget = TextWidget()
-    text_widget.SetRepresentation(text_representation)
+    text_widget.SetRepresentation(text_rep)
     text_widget.SetInteractor(iren)
     text_widget.SetTextActor(text_actor)
-    if selectable:
-        text_widget.SelectableOn()
-    else:
-        text_widget.SelectableOff()
-    text_widget.On()
+    text_widget.SelectableOn()
 
-    text_widget.AddObserver(vtk.vtkCommand.InteractionEvent, callback)
+    # text_widget.AddObserver(vtk.vtkCommand.InteractionEvent, callback)
+    text_widget.AddObserver(vtk.vtkCommand.WidgetActivateEvent, callback)
+    # text_widget.AddObserver(vtk.vtkCommand.KeyPressEvent, callback)
+
+    text_widget.On()
 
     # This is a hack for avoiding not plotting the text widget when
     # backface culling in On on a different actor

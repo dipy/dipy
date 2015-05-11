@@ -2,6 +2,7 @@ import numpy as np
 from dipy.viz import actor, window, widget
 from dipy.data import fetch_viz_icons, read_viz_icons
 import numpy.testing as npt
+from Tkinter import *
 
 
 @npt.dec.skipif(not actor.have_vtk)
@@ -123,51 +124,50 @@ def test_text_widget():
 
     window.add(renderer, stream_actor)
 
-    # renderer.ResetCamera()
+    renderer.ResetCamera()
 
     show_manager = window.ShowManager(renderer)
-
-    def button_callback(obj, event):
-        print('Button Pressed')
-
     show_manager.initialize()
+    show_manager.render()
 
     fetch_viz_icons()
     button_png = read_viz_icons(fname='home3.png')
 
+    def button_callback(obj, event):
+        print('Button Pressed')
+
     button = widget.button(show_manager.iren, button_callback,
                            button_png, (.8, 1.2), (40, 40))
 
-    button.place(renderer)
-
-    def win_callback(obj, event):
-        print('Window modified')
-        button.place(renderer)
-
-    show_manager.add_window_callback(win_callback)
-
-    show_manager.render()
-
     def text_callback(obj, event):
-        print(event)
-        print('Text moved')
-        print(obj)
-        print('Rep')
-        print(obj.GetRepresentation())
+
+        print('Text selected')
+        obj.GetTextActor().SetInput("DIPY!")
+        show_manager.render()
 
     text = widget.text(show_manager.iren,
                        show_manager.ren,
                        text_callback,
-                       message="Accelerating anatomy...",
-                       right_normalized_pos=(0.9, 0.5),
-                       size=(100, 0),
-                       opacity=1.,
-                       selectable=False, border=True)
+                       message="Expected",
+                       left_down_pos=(0.15, 0.15), # (.2, 0.5),
+                       right_top_pos=(0.7, 0.2), # (.7, 0.6),
+                       opacity=.5,
+                       border=True)
+
+    button.place(renderer)
+    text.place(renderer)
+
+    show_manager.render()
+
+    def win_callback(obj, event):
+        print('Window modified')
+        button.place(renderer)
+        text.place(renderer)
+
+    show_manager.add_window_callback(win_callback)
 
     show_manager.render()
     show_manager.start()
-
-    # show(renderer)
 
     arr = window.snapshot(renderer, size=(600, 600))
 
