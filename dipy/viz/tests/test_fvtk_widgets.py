@@ -155,9 +155,12 @@ def test_text_widget():
         print('Rep')
         print(obj.GetRepresentation())
 
-    text = widget.text(show_manager.iren, text_callback,
+    text = widget.text(show_manager.iren,
+                       show_manager.ren,
+                       text_callback,
                        message="Accelerating anatomy...",
-                       coord1=(.4, .2), coord2=(.5, .2),
+                       right_normalized_pos=(0.9, 0.5),
+                       size=(100, 0),
                        opacity=1.,
                        selectable=False, border=True)
 

@@ -122,8 +122,10 @@ def button(iren, callback, fname, button_norm_coords, button_size):
     return button
 
 
-def text(iren, callback, message="Accelerating computational anatomy...",
-         coord1=(.2, .2), coord2=(.7, .2),
+def text(iren, ren, callback, message="Accelerating computational anatomy...",
+         # coord1=(.2, .2), coord2=(.7, .2),
+         right_normalized_pos=(0.9, 0.5),
+         size=(50, 0),
          color=(.9, .9, .9),
          opacity=1.,
          selectable=True,
@@ -137,10 +139,19 @@ def text(iren, callback, message="Accelerating computational anatomy...",
 
     # Create the text representation. Used for positioning the text_actor
     text_representation = vtk.vtkTextRepresentation()
-    text_representation.GetPositionCoordinate().SetCoordinateSystemToNormalizedDisplay()
-    text_representation.GetPositionCoordinate().SetValue(*coord1)
+
     text_representation.GetPosition2Coordinate().SetCoordinateSystemToNormalizedDisplay()
-    text_representation.GetPosition2Coordinate().SetValue(*coord2)
+    text_representation.GetPosition2Coordinate().SetValue(*right_normalized_pos)
+
+    coord2_display = text_representation.GetPosition2Coordinate().GetComputedDisplayValue(ren)
+    text_representation.GetPositionCoordinate().SetCoordinateSystemToDisplay()
+    text_representation.GetPositionCoordinate().SetValue(coord2_display[0] - size[0], coord2_display[1] - size[1])
+
+    # text_representation.GetPositionCoordinate().SetCoordinateSystemToNormalizedDisplay()
+    # text_representation.GetPositionCoordinate().SetValue(*coord1)
+    # text_representation.GetPosition2Coordinate().SetCoordinateSystemToNormalizedDisplay()
+    # text_representation.GetPosition2Coordinate().SetValue(*coord2)
+
     if border:
         text_representation.SetShowBorderToOn()
     else:
@@ -155,7 +166,21 @@ def text(iren, callback, message="Accelerating computational anatomy...",
     # the user to "move" the widget, and no selection is possible. Otherwise
     # the SelectRegion() method is invoked.
 
-    text_widget = vtk.vtkTextWidget()
+    class TextWidget(vtk.vtkTextWidget):
+
+        def place(self, renderer):
+
+            slider_rep = self.GetRepresentation()
+            slider_rep.GetPosition2Coordinate().SetCoordinateSystemToNormalizedDisplay()
+            slider_rep.GetPosition2Coordinate().SetValue(*right_normalized_pos)
+
+            coord2_display = slider_rep.GetPosition2Coordinate().GetComputedDisplayValue(renderer)
+            slider_rep.GetPositionCoordinate().SetCoordinateSystemToDisplay()
+            slider_rep.GetPositionCoordinate().SetValue(coord2_display[0] - size[0], coord2_display[1] - size[1])
+            slider_rep.SetPlaceFactor(1)
+            self.On()
+
+    text_widget = TextWidget()
     text_widget.SetRepresentation(text_representation)
     text_widget.SetInteractor(iren)
     text_widget.SetTextActor(text_actor)
