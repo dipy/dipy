@@ -20,10 +20,11 @@ def slider(iren, ren, callback, min_value=0, max_value=255, value=125,
     Parameters
     ----------
     iren : vtkRenderWindowInteractor
-        Can also be given by the ``ShowManager``as ``iren``. Used to process
-        events and handle them to the slider.
+        Used to process events and handle them to the slider. Can also be given
+        by the ``ShowManager``as ``iren``.
     ren :  vtkRenderer or Renderer
-        Used to update the slider's position when the window changes.
+        Used to update the slider's position when the window changes. Can also be given
+        by the ``ShowManager``as ``ren``.
     callback : function
         Function that has at least ``obj`` and ``event`` as parameters and
         can be called when a specific event is being triggered.
@@ -45,10 +46,12 @@ def slider(iren, ren, callback, min_value=0, max_value=255, value=125,
 
     Returns
     -------
-
+    slider : obj
+        This object has a method called ``place`` which allows to update the
+        position of the slider if necessary.
     """
 
-    slider_rep  = vtk.vtkSliderRepresentation2D()
+    slider_rep = vtk.vtkSliderRepresentation2D()
     slider_rep.SetMinimumValue(min_value)
     slider_rep.SetMaximumValue(max_value)
     slider_rep.SetValue(value)
@@ -57,22 +60,22 @@ def slider(iren, ren, callback, min_value=0, max_value=255, value=125,
     slider_rep.GetPoint2Coordinate().SetCoordinateSystemToNormalizedDisplay()
     slider_rep.GetPoint2Coordinate().SetValue(*right_normalized_pos)
 
-    coord2_display = slider_rep.GetPoint2Coordinate().GetComputedDisplayValue(ren)
+    coord2 = slider_rep.GetPoint2Coordinate().GetComputedDisplayValue(ren)
     slider_rep.GetPoint1Coordinate().SetCoordinateSystemToDisplay()
-    slider_rep.GetPoint1Coordinate().SetValue(coord2_display[0] - size[0], coord2_display[1] - size[1])
+    slider_rep.GetPoint1Coordinate().SetValue(coord2[0] - size[0],
+                                              coord2[1] - size[1])
 
-    length=0.04
-    width=0.04
-    cap_length=0.01
-    cap_width=0.01
-    tube_width=0.005
+    length = 0.04
+    width = 0.04
+    cap_length = 0.01
+    cap_width = 0.01
+    tube_width = 0.005
 
     slider_rep.SetSliderLength(length)
     slider_rep.SetSliderWidth(width)
     slider_rep.SetEndCapLength(cap_length)
     slider_rep.SetEndCapWidth(cap_width)
     slider_rep.SetTubeWidth(tube_width)
-
     slider_rep.SetLabelFormat(label_format)
 
     class SliderWidget(vtk.vtkSliderWidget):
@@ -80,15 +83,14 @@ def slider(iren, ren, callback, min_value=0, max_value=255, value=125,
         def place(self, renderer):
 
             slider_rep = self.GetRepresentation()
-            slider_rep.GetPoint2Coordinate().SetCoordinateSystemToNormalizedDisplay()
-            slider_rep.GetPoint2Coordinate().SetValue(*right_normalized_pos)
+            coord2_norm = slider_rep.GetPoint2Coordinate()
+            coord2_norm.SetCoordinateSystemToNormalizedDisplay()
+            coord2_norm.SetValue(*right_normalized_pos)
 
-            coord2_display = slider_rep.GetPoint2Coordinate().GetComputedDisplayValue(renderer)
+            coord2 = coord2_norm.GetComputedDisplayValue(renderer)
             slider_rep.GetPoint1Coordinate().SetCoordinateSystemToDisplay()
-            slider_rep.GetPoint1Coordinate().SetValue(coord2_display[0] - size[0], coord2_display[1] - size[1])
-
-            # slider_rep.SetLabelFormat(label_format)
-
+            slider_rep.GetPoint1Coordinate().SetValue(coord2[0] - size[0],
+                                                      coord2[1] - size[1])
 
     slider = SliderWidget()
     slider.SetInteractor(iren)
@@ -104,17 +106,14 @@ def slider(iren, ren, callback, min_value=0, max_value=255, value=125,
 def button_display_coordinates(renderer, normalized_display_position, size):
     upperRight = vtk.vtkCoordinate()
     upperRight.SetCoordinateSystemToNormalizedDisplay()
-    upperRight.SetValue(normalized_display_position[0], normalized_display_position[1])
+    upperRight.SetValue(normalized_display_position[0],
+                        normalized_display_position[1])
     bds = [0.0] * 6
-    #1/0
     bds[0] = upperRight.GetComputedDisplayValue(renderer)[0] - size[0]
-    print(upperRight.GetComputedDisplayValue(renderer)[0],
-          upperRight.GetComputedDisplayValue(renderer)[1])
-    print(renderer.GetSize())
     bds[1] = bds[0] + size[0]
     bds[2] = upperRight.GetComputedDisplayValue(renderer)[1] - size[1]
     bds[3] = bds[2] + size[1]
-    # print(bds)
+
     return bds
 
 
@@ -124,20 +123,17 @@ def button(iren, callback, fname, button_norm_coords, button_size):
     image1.SetFileName(fname)
     image1.Update()
 
-    #button_rep = vtk.vtkProp3DButtonRepresentation()
     button_rep = vtk.vtkTexturedButtonRepresentation2D()
     button_rep.SetNumberOfStates(2)
     button_rep.SetButtonTexture(0, image1.GetOutput())
     button_rep.SetButtonTexture(1, image1.GetOutput())
-    #button_rep.SetButtonTexture(1, image2.GetOutput())
-
-    # http://www.vtk.org/Wiki/VTK/Examples/Cxx/Widgets/TexturedButtonWidget
 
     class ButtonWidget(vtk.vtkButtonWidget):
 
         def place(self, renderer):
 
-            bds = button_display_coordinates(renderer, button_norm_coords, button_size)
+            bds = button_display_coordinates(renderer, button_norm_coords,
+                                             button_size)
             self.GetRepresentation().SetPlaceFactor(1)
             self.GetRepresentation().PlaceWidget(bds)
             self.On()
@@ -146,9 +142,6 @@ def button(iren, callback, fname, button_norm_coords, button_size):
     button.SetInteractor(iren)
     button.SetRepresentation(button_rep)
     button.AddObserver(vtk.vtkCommand.StateChangedEvent, callback)
-
-    #http://vtk.org/gitweb?p=VTK.git;a=blob;f=Interaction/Widgets/Testing/Cxx/TestButtonWidget.cxx
-    #http://vtk.org/Wiki/VTK/Examples/Cxx/Widgets/TexturedButtonWidget
 
     return button
 
