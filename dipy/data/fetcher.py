@@ -593,6 +593,22 @@ def fetch_viz_icons():
 
 
 def read_viz_icons(style='icomoon', fname='infinity.png'):
+    """ Read specific icon from specific style
+
+    Parameters
+    ----------
+    style: str
+        Current icon style. Default is icomoon.
+    fname: str
+        Filename of icon. This should be found in folder HOME/.dipy/style/.
+        Default is infinity.png.
+
+    Returns
+    --------
+    path: str
+        Complete path of icon.
+
+    """
 
     folder = pjoin(dipy_home, 'icons', style)
     return pjoin(folder, fname)
