@@ -8,10 +8,12 @@ import numpy.testing as npt
 @npt.dec.skipif(not actor.have_vtk_colors)
 def test_button_and_slider_widgets():
 
+    interactive = False
     renderer = window.Renderer()
 
-    # create some random streamlines
-    lines = [np.random.rand(2, 3), np.random.rand(3, 3)]
+    # create some minimalistic streamlines
+    lines = [np.array([[-1, 0, 0.], [1, 0, 0.]]),
+             np.array([[-1, 1, 0.], [1, 1, 0.]])]
     colors = np.array([[1., 0., 0.], [0.3, 0.7, 0.]])
     stream_actor = actor.streamtube(lines, colors)
 
@@ -21,8 +23,9 @@ def test_button_and_slider_widgets():
     # in steps so that the widgets can be added properly
     show_manager = window.ShowManager(renderer, size=(800, 800))
 
-    show_manager.initialize()
-    show_manager.render()
+    if interactive:
+        show_manager.initialize()
+        show_manager.render()
 
     def button_callback(obj, event):
         print('Camera pressed')
@@ -48,7 +51,6 @@ def test_button_and_slider_widgets():
                                  button_png_minus, (.98, .9), (50, 50))
 
     def print_status(obj, event):
-        print(obj)
         rep = obj.GetRepresentation()
         stream_actor.SetPosition((rep.GetValue(), 0, 0))
 
@@ -57,6 +59,7 @@ def test_button_and_slider_widgets():
                            min_value=-1,
                            max_value=1,
                            value=0.5,
+                           label="X",
                            right_normalized_pos=(.98, 0.7),
                            size=(120, 0), label_format="%0.2lf")
 
@@ -80,15 +83,28 @@ def test_button_and_slider_widgets():
             button_plus.place(renderer)
             button_minus.place(renderer)
             slider.place(renderer)
-
             size = obj.GetSize()
 
-    # ren_win.AddObserver(vtk.vtkCommand.ModifiedEvent, win_callback)
-    show_manager.add_window_callback(win_callback)
-    show_manager.render()
-    show_manager.start()
+    if interactive:
+        show_manager.add_window_callback(win_callback)
+        # you can also register any callback in a vtk way like this
+        # show_manager.window.AddObserver(vtk.vtkCommand.ModifiedEvent,
+        #                                 win_callback)
 
-    arr = window.snapshot(renderer, size=(800, 800))
+        show_manager.render()
+        show_manager.start()
+
+    if not interactive:
+        button.Off()
+        slider.Off()
+
+        arr = window.snapshot(renderer, size=(800, 800))
+        report = window.analyze_snapshot(arr)
+        npt.assert_equal(report.objects, 4)
+        # imshow(report.labels, origin='lower')
+
+    report = window.analyze_renderer(renderer)
+    npt.assert_equal(report.actors, 1)
 
 
 @npt.dec.skipif(not actor.have_vtk)
@@ -161,10 +177,10 @@ def test_text_widget():
     report = window.analyze_snapshot(arr)
     npt.assert_equal(report.objects, 30)
 
-    # To see the segmented objects after the analysis is done
+    # If you want to see the segmented objects after the analysis is finished
     # you can use imshow(report.labels, origin='lower')
 
 
 if __name__ == '__main__':
-    test_button_and_slider_widgets()
-    # npt.run_module_suite()
+
+    npt.run_module_suite()
