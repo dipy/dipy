@@ -2,59 +2,24 @@ import numpy as np
 from dipy.viz import actor, window, widget, fvtk
 from dipy.data import fetch_viz_icons, read_viz_icons
 import numpy.testing as npt
-from Tkinter import *
-
-
-@npt.dec.skipif(not actor.have_vtk)
-@npt.dec.skipif(not actor.have_vtk_colors)
-def test_slider_widget():
-
-    renderer = window.Renderer()
-
-    # Create 2 lines with 2 different colors
-    lines = [np.random.rand(10, 3), np.random.rand(20, 3)]
-    colors = np.array([[1., 0., 0.], [0.8, 0., 0.]])
-    c = actor.line(lines, colors, linewidth=3)
-
-    renderer.add(c)
-
-    show_manager = window.ShowManager(renderer, size=(400, 400))
-    show_manager.initialize()
-
-    def slider_callback(obj, event):
-        print(obj)
-        print(event)
-        renderer.SetBackground(np.random.rand(3))
-
-    slider = widget.slider(iren=show_manager.iren,
-                           ren=show_manager.ren,
-                           right_normalized_pos=(.98, 0.5),
-                           size=(120, 0),
-                           callback=slider_callback)
-    # text = widget.text(slider.iren, None)
-
-    show_manager.render()
-    show_manager.start()
-
-    arr = window.snapshot(renderer, size=(600, 600))
-    report = window.analyze_snapshot(arr)
 
 
 @npt.dec.skipif(not actor.have_vtk)
 @npt.dec.skipif(not actor.have_vtk_colors)
 def test_button_and_slider_widgets():
 
-    from dipy.viz.window import vtk
-
     renderer = window.Renderer()
 
+    # create some random streamlines
     lines = [np.random.rand(10, 3), np.random.rand(20, 3)]
     colors = np.array([[1., 0., 0.], [0.3, 0.7, 0.]])
     stream_actor = actor.streamtube(lines, colors)
 
     renderer.add(stream_actor)
 
-    show_manager= window.ShowManager(renderer, size=(800, 800))
+    # the show manager allows to break the rendering process
+    # in steps so that the widgets can be added properly
+    show_manager = window.ShowManager(renderer, size=(800, 800))
 
     def callback(obj, event):
         print(obj)
@@ -116,7 +81,9 @@ def test_button_and_slider_widgets():
 @npt.dec.skipif(not actor.have_vtk_colors)
 def test_text_widget():
 
-    renderer = window.renderer()
+    interactive = False
+
+    renderer = window.Renderer()
 
     axes = fvtk.axes()
 
@@ -125,8 +92,10 @@ def test_text_widget():
     renderer.ResetCamera()
 
     show_manager = window.ShowManager(renderer, size=(1200, 1200))
-    show_manager.initialize()
-    show_manager.render()
+
+    if interactive:
+        show_manager.initialize()
+        show_manager.render()
 
     fetch_viz_icons()
     button_png = read_viz_icons(fname='home3.png')
@@ -156,37 +125,34 @@ def test_text_widget():
                        show_manager.ren,
                        text_callback,
                        message="Diffusion Imaging in Python",
-                       left_down_pos=(0., 0.), # (.2, 0.5),
-                       right_top_pos=(0.4, 0.05), # (.7, 0.6),
+                       left_down_pos=(0., 0.),
+                       right_top_pos=(0.4, 0.05),
                        opacity=1.,
                        border=False)
 
     button.place(renderer)
     text.place(renderer)
 
-    show_manager.render()
+    if interactive:
+        show_manager.render()
 
     def win_callback(obj, event):
         print('Window modified')
         button.place(renderer)
         text.place(renderer)
 
-    show_manager.add_window_callback(win_callback)
+    if interactive:
+        show_manager.add_window_callback(win_callback)
+        show_manager.render()
+        show_manager.start()
 
-    show_manager.render()
-    show_manager.start()
-
-    arr = window.snapshot(renderer, size=(600, 600))
-
+    arr = window.snapshot(renderer, size=(1200, 1200))
     report = window.analyze_snapshot(arr)
+    npt.assert_equal(report.objects, 30)
 
-    print(report.objects)
+    # imshow(report.labels, origin='lower')
 
 
 if __name__ == '__main__':
 
-    # test_slider_widget()
-    # test_button_and_slider_widgets()
-    test_text_widget()
-    # test_button_widget_show()
-    # npt.run_module_suite()
+    npt.run_module_suite()
