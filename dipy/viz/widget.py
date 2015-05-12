@@ -24,10 +24,10 @@ def slider(iren, ren, callback, min_value=0, max_value=255, value=125,
         by the attribute ``ShowManager.iren``.
     ren :  vtkRenderer or Renderer
         Used to update the slider's position when the window changes. Can also be given
-        by the ``ShowManager``as ``ren``.
+        by the ``ShowManager.ren`` attribute.
     callback : function
-        Function that has at least ``obj`` and ``event`` as parameters and
-        can be called when a specific event is being triggered.
+        Function that has at least ``obj`` and ``event`` as parameters. It will
+        be called when the slider's bar has changed.
     min_value : float
         Minimum value of slider.
     max_value : float
@@ -119,23 +119,38 @@ def button_display_coordinates(renderer, normalized_display_position, size):
 
 def button(iren, ren, callback, fname, right_normalized_pos=(.98, .9),
            size=(50, 50)):
-    """ A textured button widget
+    """ A textured two state button widget
 
     Parameters
     ----------
     iren : vtkRenderWindowInteractor
         Used to process events and handle them to the button. Can also be given
         by the attribute ``ShowManager.iren``.
-    ren :
-    callback :
-    fname :
-    right_normalized_pos :
-    size :
+    ren :  vtkRenderer or Renderer
+        Used to update the slider's position when the window changes. Can also be given
+        by the ``ShowManager.ren`` attribute.
+    callback : function
+        Function that has at least ``obj`` and ``event`` as parameters. It will
+        be called when the button is pressed.
+    fname : str
+        PNG file path of the icon used for the button.
+    right_normalized_pos : tuple
+        2d tuple holding the normalized right (X, Y) position of the slider.
+    size: tuple
+        2d tuple holding the size of the slider in pixels.
 
     Returns
     -------
+    button : obj
+        This object has a method called ``place`` which allows to update the
+        position of the slider if necessary.
 
-
+    Notes
+    ------
+    The button and slider widgets have similar positioning system. This enables
+    the developers to create a HUD-like collections of buttons and sliders on
+    the right side of the window that always stays in place when the dimensions
+    of the window change.
     """
 
     image1 = vtk.vtkPNGReader()
