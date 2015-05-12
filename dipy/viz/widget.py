@@ -15,13 +15,13 @@ def slider(iren, ren, callback, min_value=0, max_value=255, value=125,
            right_normalized_pos=(0.9, 0.5),
            size=(50, 0),
            label_format="%0.0lf"):
-    """ A 2D slider
+    """ A 2D slider widget
 
     Parameters
     ----------
     iren : vtkRenderWindowInteractor
         Used to process events and handle them to the slider. Can also be given
-        by the ``ShowManager``as ``iren``.
+        by the attribute ``ShowManager.iren``.
     ren :  vtkRenderer or Renderer
         Used to update the slider's position when the window changes. Can also be given
         by the ``ShowManager``as ``ren``.
@@ -117,7 +117,26 @@ def button_display_coordinates(renderer, normalized_display_position, size):
     return bds
 
 
-def button(iren, callback, fname, button_norm_coords, button_size):
+def button(iren, ren, callback, fname, right_normalized_pos=(.98, .9),
+           size=(50, 50)):
+    """ A textured button widget
+
+    Parameters
+    ----------
+    iren : vtkRenderWindowInteractor
+        Used to process events and handle them to the button. Can also be given
+        by the attribute ``ShowManager.iren``.
+    ren :
+    callback :
+    fname :
+    right_normalized_pos :
+    size :
+
+    Returns
+    -------
+
+
+    """
 
     image1 = vtk.vtkPNGReader()
     image1.SetFileName(fname)
@@ -132,8 +151,8 @@ def button(iren, callback, fname, button_norm_coords, button_size):
 
         def place(self, renderer):
 
-            bds = button_display_coordinates(renderer, button_norm_coords,
-                                             button_size)
+            bds = button_display_coordinates(renderer, right_normalized_pos,
+                                             size)
             self.GetRepresentation().SetPlaceFactor(1)
             self.GetRepresentation().PlaceWidget(bds)
             self.On()
@@ -142,6 +161,7 @@ def button(iren, callback, fname, button_norm_coords, button_size):
     button.SetInteractor(iren)
     button.SetRepresentation(button_rep)
     button.AddObserver(vtk.vtkCommand.StateChangedEvent, callback)
+    button.place(ren)
 
     return button
 

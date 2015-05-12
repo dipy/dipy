@@ -8,7 +8,7 @@ import numpy.testing as npt
 @npt.dec.skipif(not actor.have_vtk_colors)
 def test_button_and_slider_widgets():
 
-    interactive = False
+    interactive = True
     renderer = window.Renderer()
 
     # create some minimalistic streamlines
@@ -39,15 +39,21 @@ def test_button_and_slider_widgets():
     fetch_viz_icons()
     button_png = read_viz_icons(fname='camera.png')
 
-    button = widget.button(show_manager.iren, button_callback,
+    button = widget.button(show_manager.iren,
+                           show_manager.ren,
+                           button_callback,
                            button_png, (.98, 1.), (80, 50))
 
     button_png_plus = read_viz_icons(fname='plus.png')
-    button_plus = widget.button(show_manager.iren, button_plus_callback,
+    button_plus = widget.button(show_manager.iren,
+                                show_manager.ren,
+                                button_plus_callback,
                                 button_png_plus, (.98, .9), (120, 50))
 
     button_png_minus = read_viz_icons(fname='minus.png')
-    button_minus = widget.button(show_manager.iren, button_minus_callback,
+    button_minus = widget.button(show_manager.iren,
+                                 show_manager.ren,
+                                 button_minus_callback,
                                  button_png_minus, (.98, .9), (50, 50))
 
     def print_status(obj, event):
@@ -58,15 +64,10 @@ def test_button_and_slider_widgets():
                            callback=print_status,
                            min_value=-1,
                            max_value=1,
-                           value=0.5,
+                           value=0.,
                            label="X",
-                           right_normalized_pos=(.98, 0.7),
+                           right_normalized_pos=(.98, 0.6),
                            size=(120, 0), label_format="%0.2lf")
-
-    button.place(renderer)
-    button_plus.place(renderer)
-    button_minus.place(renderer)
-    slider.place(renderer)
 
     # This callback is used to update the buttons/sliders' position
     # so they can stay on the right side of the window when the window
@@ -130,7 +131,9 @@ def test_text_widget():
     def button_callback(obj, event):
         print('Button Pressed')
 
-    button = widget.button(show_manager.iren, button_callback,
+    button = widget.button(show_manager.iren,
+                           show_manager.ren,
+                           button_callback,
                            button_png, (.8, 1.2), (100, 100))
 
     global rulez
