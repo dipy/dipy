@@ -141,6 +141,7 @@ def text(iren, ren, callback, message="DIPY",
 
     # Create the text representation. Used for positioning the text_actor
     text_rep = vtk.vtkTextRepresentation()
+    text_rep.SetPlaceFactor(1)
 
     text_rep.GetPositionCoordinate().SetCoordinateSystemToNormalizedDisplay()
     text_rep.GetPositionCoordinate().SetValue(*left_down_pos)
@@ -148,17 +149,12 @@ def text(iren, ren, callback, message="DIPY",
     text_rep.GetPosition2Coordinate().SetCoordinateSystemToNormalizedDisplay()
     text_rep.GetPosition2Coordinate().SetValue(*right_top_pos)
 
-    text_rep.SetPlaceFactor(1)
 
     if border:
         text_rep.SetShowBorderToOn()
     else:
         text_rep.SetShowBorderToOff()
 
-    # Create the TextWidget
-    # Note that the SelectableOff method MUST be invoked!
-    # According to the documentation :
-    #
     # SelectableOn/Off indicates whether the interior region of the widget can
     # be selected or not. If not, then events (such as left mouse down) allow
     # the user to "move" the widget, and no selection is possible. Otherwise
@@ -167,6 +163,7 @@ def text(iren, ren, callback, message="DIPY",
     class TextWidget(vtk.vtkTextWidget):
 
         def place(self, renderer):
+
             text_rep = self.GetRepresentation()
 
             text_rep.GetPositionCoordinate().SetCoordinateSystemToNormalizedDisplay()
@@ -174,7 +171,12 @@ def text(iren, ren, callback, message="DIPY",
 
             text_rep.GetPosition2Coordinate().SetCoordinateSystemToNormalizedDisplay()
             text_rep.GetPosition2Coordinate().SetValue(*right_top_pos)
-            text_rep.SetPlaceFactor(1)
+
+            #text_rep.SetPlaceFactor(1)
+            self.SelectableOn()
+            self.ResizableOff()
+            text_rep.ProportionalResizeOn()
+
             self.On()
 
 
@@ -183,6 +185,10 @@ def text(iren, ren, callback, message="DIPY",
     text_widget.SetInteractor(iren)
     text_widget.SetTextActor(text_actor)
     text_widget.SelectableOn()
+    text_widget.ResizableOff()
+    text_widget.GetRepresentation().ProportionalResizeOn()
+
+    #1/0
 
     # text_widget.AddObserver(vtk.vtkCommand.InteractionEvent, callback)
     text_widget.AddObserver(vtk.vtkCommand.WidgetActivateEvent, callback)

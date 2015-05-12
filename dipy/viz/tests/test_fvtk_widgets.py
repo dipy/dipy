@@ -1,5 +1,5 @@
 import numpy as np
-from dipy.viz import actor, window, widget
+from dipy.viz import actor, window, widget, fvtk
 from dipy.data import fetch_viz_icons, read_viz_icons
 import numpy.testing as npt
 from Tkinter import *
@@ -118,15 +118,13 @@ def test_text_widget():
 
     renderer = window.renderer()
 
-    lines = [np.random.rand(10, 3), np.random.rand(20, 3)]
-    colors = np.array([[1., 0., 0.], [0.8, 0., 0.]])
-    stream_actor = actor.line(lines, colors)
+    axes = fvtk.axes()
 
-    window.add(renderer, stream_actor)
+    window.add(renderer, axes)
 
     renderer.ResetCamera()
 
-    show_manager = window.ShowManager(renderer)
+    show_manager = window.ShowManager(renderer, size=(1200, 1200))
     show_manager.initialize()
     show_manager.render()
 
@@ -137,22 +135,31 @@ def test_text_widget():
         print('Button Pressed')
 
     button = widget.button(show_manager.iren, button_callback,
-                           button_png, (.8, 1.2), (40, 40))
+                           button_png, (.8, 1.2), (100, 100))
+
+    global rulez
+    rulez = True
 
     def text_callback(obj, event):
 
+        global rulez
         print('Text selected')
-        obj.GetTextActor().SetInput("DIPY!")
+        if rulez:
+            obj.GetTextActor().SetInput("Diffusion Imaging Rulez!!")
+            rulez = False
+        else:
+            obj.GetTextActor().SetInput("Diffusion Imaging in Python")
+            rulez = True
         show_manager.render()
 
     text = widget.text(show_manager.iren,
                        show_manager.ren,
                        text_callback,
                        message="Diffusion Imaging in Python",
-                       left_down_pos=(0.15, 0.15), # (.2, 0.5),
-                       right_top_pos=(0.7, 0.2), # (.7, 0.6),
-                       opacity=.5,
-                       border=True)
+                       left_down_pos=(0., 0.), # (.2, 0.5),
+                       right_top_pos=(0.4, 0.05), # (.7, 0.6),
+                       opacity=1.,
+                       border=False)
 
     button.place(renderer)
     text.place(renderer)
