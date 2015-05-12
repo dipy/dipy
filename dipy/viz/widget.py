@@ -1,4 +1,5 @@
-
+# Widgets are different than actors in that they can interact with events
+# To do so they need as input a vtkRenderWindowInteractor also known as iren.
 
 # Conditional import machinery for vtk
 from dipy.utils.optpkg import optional_package
@@ -16,7 +17,37 @@ def slider(iren, callback, min_value=0, max_value=255, value=125,
            cap_length=0.01, cap_width=0.01,
            tube_width=0.005,
            label_format="%0.0lf"):
-    """ Create a 2D slider with normalized window coordinates
+    """ A 2D slider
+
+    Parameters
+    ----------
+    iren : vtkRenderWindowInteractor
+        Can also be given by the ``ShowManager``as ``iren``. Used to process
+        events and handle them to the slider.
+    ren :  vtkRenderer or Renderer
+        Used to update the slider's position when the window changes.
+    callback : function
+        Function that has at least ``obj`` and ``event`` as parameters and
+        can be called when a specific event is being triggered.
+    min_value : float
+        Minimum value of slider.
+    max_value : float
+        Maximum value of slider.
+    value :
+        Default value of slider.
+    label : str
+        Slider's caption.
+    right_normalized_pos : tuple
+        2d tuple holding the normalized right (X, Y) position of the slider.
+    size: tuple
+        2d tuple holding the size of the slider in pixels.
+    label_format: str
+        Formating in which the slider's value will appear for example "%0.2lf"
+        allows for 2 decimal values.
+
+    Returns
+    -------
+
     """
 
     slider_rep  = vtk.vtkSliderRepresentation2D()
