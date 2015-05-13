@@ -62,14 +62,14 @@ signals simulated from the DKI model can be obtain using the function
 ``multi_tensor_dki``.
 """
 
-dt, kt, signal = multi_tensor_dki(gtab, mevals, S0=200, angles=angles,
+signal, dt, kt = multi_tensor_dki(gtab, mevals, S0=200, angles=angles,
                          fractions=fractions, snr=None)
 
 """
 We can also add rician noise with a specific SNR.
 """
 
-dt, kt, signal_noisy = multi_tensor_dki(gtab, mevals, S0=200, 
+signal_noisy, dt, kt  = multi_tensor_dki(gtab, mevals, S0=200, 
                          angles=angles, fractions=fractions, snr=10)
 
 
