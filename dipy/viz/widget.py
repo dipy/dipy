@@ -4,11 +4,11 @@
 # Conditional import machinery for vtk
 from dipy.utils.optpkg import optional_package
 
-#import vtk
 # Allow import, but disable doctests if we don't have vtk
 vtk, have_vtk, setup_module = optional_package('vtk')
 colors, have_vtk_colors, _ = optional_package('vtk.util.colors')
 numpy_support, have_ns, _ = optional_package('vtk.util.numpy_support')
+
 
 def slider(iren, ren, callback, min_value=0, max_value=255, value=125,
            label="Slider",
@@ -46,9 +46,10 @@ def slider(iren, ren, callback, min_value=0, max_value=255, value=125,
 
     Returns
     -------
-    slider : obj
-        This object has a method called ``place`` which allows to update the
-        position of the slider if necessary.
+    slider : SliderObject
+        This object inherits from vtkSliderWidget and has additional method
+        called ``place`` which allows to update the position of the slider
+        when for example the window is resized.
     """
 
     slider_rep = vtk.vtkSliderRepresentation2D()
@@ -141,9 +142,10 @@ def button(iren, ren, callback, fname, right_normalized_pos=(.98, .9),
 
     Returns
     -------
-    button : obj
-        This object has a method called ``place`` which allows to update the
-        position of the slider if necessary.
+    button : ButtonWidget
+        This object inherits from vtkButtonWidget and has an additional  method
+        called ``place`` which allows to update the position of the slider
+        if necessary. For example when the renderer size changes.
 
     Notes
     ------
@@ -182,21 +184,50 @@ def button(iren, ren, callback, fname, right_normalized_pos=(.98, .9),
 
 
 def text(iren, ren, callback, message="DIPY",
-         left_down_pos=(0.8, 0.5),
-         right_top_pos=(0.9, 0.5),
-         color=(1., .5, .0),
-         opacity=1.,
-         font_size=10.,
-         border=False):
+         left_down_pos=(0.8, 0.5), right_top_pos=(0.9, 0.5),
+         color=(1., .5, .0), opacity=1., border=False):
+    """ 2D text that can be clicked and process events
+
+    Parameters
+    ----------
+    iren : vtkRenderWindowInteractor
+        Used to process events and handle them to the button. Can also be given
+        by the attribute ``ShowManager.iren``.
+    ren :  vtkRenderer or Renderer
+        Used to update the slider's position when the window changes. Can also be given
+        by the ``ShowManager.ren`` attribute.
+    callback : function
+        Function that has at least ``obj`` and ``event`` as parameters. It will
+        be called when the button is pressed.
+    message : str
+        Message to be shown in the text widget
+    left_down_pos : tuple
+        Normalized coordinates for left down corner of text. Default is
+        (0.8, 0.5).
+    right_top_pos : tuple
+        Normalized coordinates for left down corner of text. Default is
+        (0.9, 0.5).
+    color : tuple
+        Foreground RGB color of text. Default is (1., .5, .0).
+    opacity : float
+        Takes values from 0 to 1. Default is 1.
+    border : bool
+        Show text border. Default is False.
+
+    Returns
+    -------
+    text : TextWidget
+        This object inherits from ``vtkTextWidget`` has an additional method
+        called ``place`` which allows to update the position of the text if
+        necessary.
+
+    """
 
     # Create the TextActor
     text_actor = vtk.vtkTextActor()
     text_actor.SetInput(message)
     text_actor.GetTextProperty().SetColor(color)
     text_actor.GetTextProperty().SetOpacity(opacity)
-    #text_actor.GetTextProperty().SetJustificationToLeft()
-    #text_actor.GetTextProperty().SetFontSize(int(font_size))
-    #text_actor.GetTextProperty().SetFontFamilyToArial()
 
     # Create the text representation. Used for positioning the text_actor
     text_rep = vtk.vtkTextRepresentation()
@@ -208,16 +239,10 @@ def text(iren, ren, callback, message="DIPY",
     text_rep.GetPosition2Coordinate().SetCoordinateSystemToNormalizedDisplay()
     text_rep.GetPosition2Coordinate().SetValue(*right_top_pos)
 
-
     if border:
         text_rep.SetShowBorderToOn()
     else:
         text_rep.SetShowBorderToOff()
-
-    # SelectableOn/Off indicates whether the interior region of the widget can
-    # be selected or not. If not, then events (such as left mouse down) allow
-    # the user to "move" the widget, and no selection is possible. Otherwise
-    # the SelectRegion() method is invoked.
 
     class TextWidget(vtk.vtkTextWidget):
 
@@ -231,13 +256,11 @@ def text(iren, ren, callback, message="DIPY",
             text_rep.GetPosition2Coordinate().SetCoordinateSystemToNormalizedDisplay()
             text_rep.GetPosition2Coordinate().SetValue(*right_top_pos)
 
-            #text_rep.SetPlaceFactor(1)
             self.SelectableOn()
             self.ResizableOff()
             text_rep.ProportionalResizeOn()
 
             self.On()
-
 
     text_widget = TextWidget()
     text_widget.SetRepresentation(text_rep)
