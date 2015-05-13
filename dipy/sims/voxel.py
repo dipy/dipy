@@ -236,7 +236,7 @@ def single_tensor(gtab, S0=1, evals=None, evecs=None, snr=None):
 
 def multi_tensor(gtab, mevals, S0=100, angles=[(0, 0), (90, 0)],
                  fractions=[50, 50], snr=20):
-    r"""Simulate a Multi-Tensor signal.
+    r""" Simulate a Multi-Tensor signal.
 
     Parameters
     -----------
@@ -308,14 +308,14 @@ def multi_tensor_dki(gtab, mevals, S0=100, angles=[(0., 0.), (90., 0.)],
     Parameters
     -----------
     gtab : GradientTable
-    mevals : array (K, 3)
+    mevals : array (K,3)
         eigenvalues of the diffusion tensor for each individual compartment
     S0 : float
         Unweighted signal value (b0 signal).
     angles : array (K,2) or (K,3)
         List of K tensor directions of the diffusion tensor of each compartment
         in polar angles (in degrees) or unit vectors
-    fractions : float
+    fractions : float (K,)
         Percentage of the contribution of each tensor. The sum of fractions
         should be equal to 100%.
     snr : float
@@ -336,7 +336,7 @@ def multi_tensor_dki(gtab, mevals, S0=100, angles=[(0., 0.), (90., 0.)],
     Simulations are based on multicompartmental models which assumes that 
     tissue is well described by impermeable diffusion compartments 
     characterized by their only diffusion tensor. Since simulations are based 
-    on the SKI model, coefficients larger than the fourth order of the signal´s
+    on the DKI model, coefficients larger than the fourth order of the signal's
     taylor expansion approximation are neglected.
 
     Examples
@@ -413,41 +413,47 @@ def multi_tensor_dki(gtab, mevals, S0=100, angles=[(0., 0.), (90., 0.)],
     return S, dt, kt
     
 def compute_Wijkl(Dc,frac,i,j,k,el,DT=None):
-    r""" # function that computes the elements of KT by especifying their 
-    four indexes i, j, k and el. Each index can be equal to x, y or z which are 
-    codified respectively by 0, 1 and 2. Simulations are based on 
-    multicompartment models. Implementation of this function is based on 
-    equation 8 of:
-    
-    [1] R. Neto Henriques et al., "Exploring the 3D geometriy of the diffusion 
-        kurtosis tensor - Impact on the development of robust tractography 
-        procedures and novel biomarkers", NeuroImage (2015) 111, 85-99.
+    r""" Computes the diffusion kurtosis tensor element (with indexes i, j, k 
+    and el) based on the individual diffusion tensor components of a 
+    multicompartmental model. 
     
     Parameters
     -----------
-    Dc : (6,) ndarray
-        Elements of the diffusion tensor for each individual compartment on the
+    Dc : (K,3,3) ndarray
+        Elements of the diffusion tensor for each individual compartment of the
         multicompartmental model. Assumes the order Dxx, Dyy, Dzz, Dxy, Dxz, 
         Dyz.
     frac : float
         Percentage of the contribution of each tensor. The sum of fractions
         should be equal to 100%.
     i : int
-        first element index (0 for x, 1 for y, 2 for z)
+        First element index (0 for x, 1 for y, 2 for z)
     j : int
         Second element index (0 for x, 1 for y, 2 for z)
     k : int
         Third element index (0 for x, 1 for y, 2 for z)
     el: int
         Fourth elements index (0 for x, 1 for y, 2 for z)
-    DT : (6,) ndarray
+    DT : (3,3) ndarray (optional)
         Elements of the global diffusion tensor.
 
     Returns
     --------
-    wijkl : Kurtosis tensor element
+    wijkl : float
+            kurtosis tensor element of index i, j, k, el
+            
+    Notes
+    --------
+    wijkl is calculated using equation 8 given in [1]_
     
+    References
+    ----------
+    .. [1] R. Neto Henriques et al., "Exploring the 3D geometriy of the 
+           diffusion kurtosis tensor - Impact on the development of robust 
+           tractography procedures and novel biomarkers", NeuroImage (2015) 
+           111, 85-99.
     """
+    
     if DT is None:
         DT=np.zeros((3,3))
         for i in range(len(frac)):
@@ -485,7 +491,19 @@ def single_diffkurt_tensors(gtab, S0=150, dt=None, kt=None, snr=None):
     Returns
     --------
     S : (N,) ndarray
-        Simulated signal based on the DKI model S=S0*exp(-b*D+1/6*b**2*D**2*K)
+        Simulated signal based on the DKI model:
+        S=S0*exp(-b*D+1/6*b**2*D**2*K)
+        
+    .. math::
+
+        S=S_{0}e^{-bD+\frac{1}{6}b^{2}D^{2}K}
+        
+    References
+    ----------
+    .. [1] R. Neto Henriques et al., "Exploring the 3D geometriy of the 
+           diffusion kurtosis tensor - Impact on the development of robust 
+           tractography procedures and novel biomarkers", NeuroImage (2015) 
+           111, 85-99.
     """
     
     if dt is None:
