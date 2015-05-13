@@ -194,8 +194,8 @@ def text(iren, ren, callback, message="DIPY",
         Used to process events and handle them to the button. Can also be given
         by the attribute ``ShowManager.iren``.
     ren :  vtkRenderer or Renderer
-        Used to update the slider's position when the window changes. Can also be given
-        by the ``ShowManager.ren`` attribute.
+        Used to update the slider's position when the window changes. Can also
+        be given by the ``ShowManager.ren`` attribute.
     callback : function
         Function that has at least ``obj`` and ``event`` as parameters. It will
         be called when the button is pressed.
@@ -220,7 +220,6 @@ def text(iren, ren, callback, message="DIPY",
         This object inherits from ``vtkTextWidget`` has an additional method
         called ``place`` which allows to update the position of the text if
         necessary.
-
     """
 
     # Create the TextActor
@@ -250,11 +249,13 @@ def text(iren, ren, callback, message="DIPY",
 
             text_rep = self.GetRepresentation()
 
-            text_rep.GetPositionCoordinate().SetCoordinateSystemToNormalizedDisplay()
-            text_rep.GetPositionCoordinate().SetValue(*left_down_pos)
+            position = text_rep.GetPositionCoordinate()
+            position.SetCoordinateSystemToNormalizedDisplay()
+            position.SetValue(*left_down_pos)
 
-            text_rep.GetPosition2Coordinate().SetCoordinateSystemToNormalizedDisplay()
-            text_rep.GetPosition2Coordinate().SetValue(*right_top_pos)
+            position2 = text_rep.GetPosition2Coordinate()
+            position2.SetCoordinateSystemToNormalizedDisplay()
+            position2.SetValue(*right_top_pos)
 
             self.SelectableOn()
             self.ResizableOff()
@@ -270,12 +271,7 @@ def text(iren, ren, callback, message="DIPY",
     text_widget.ResizableOff()
     text_widget.GetRepresentation().ProportionalResizeOn()
 
-    #1/0
-
-    # text_widget.AddObserver(vtk.vtkCommand.InteractionEvent, callback)
     text_widget.AddObserver(vtk.vtkCommand.WidgetActivateEvent, callback)
-    # text_widget.AddObserver(vtk.vtkCommand.KeyPressEvent, callback)
-
     text_widget.On()
 
     # This is a hack for avoiding not plotting the text widget when

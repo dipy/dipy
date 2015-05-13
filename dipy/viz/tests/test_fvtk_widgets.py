@@ -8,7 +8,7 @@ import numpy.testing as npt
 @npt.dec.skipif(not actor.have_vtk_colors)
 def test_button_and_slider_widgets():
 
-    interactive = True
+    interactive = False
     renderer = window.Renderer()
 
     # create some minimalistic streamlines
