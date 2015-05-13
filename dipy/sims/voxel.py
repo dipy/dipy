@@ -303,12 +303,7 @@ def multi_tensor(gtab, mevals, S0=100, angles=[(0, 0), (90, 0)],
 def multi_tensor_dki(gtab, mevals, S0=100, angles=[(0., 0.), (90., 0.)],
                          fractions=[50, 50], snr=20):
     
-    r"""Simulate the elements of the diffusion and diffusion kurtosis tensor as
-    well as the diffusion signal S based on the DKI model (i.e. taylor 
-    accumulante larger than the fourth order are ignored). Simulations are 
-    based on multicompartmental models which assumes that tissue are described
-    by impermeable diffusion compartments characterized by their only diffusion
-    tensor.
+    r""" Simulate the diffusion-weight signal based on the DKI model
 
     Parameters
     -----------
@@ -329,18 +324,20 @@ def multi_tensor_dki(gtab, mevals, S0=100, angles=[(0., 0.), (90., 0.)],
 
     Returns
     --------
+    S : (N,) ndarray
+        Simulated signal based on the DKI model.    
     dt : (6,)
         elements of the diffusion tensor.
     kt : (15,)
-        elements of the kurtosis tensor
-    S : (N,) ndarray
-        Simulated signal based on the dki model.
-            Note: This simulated signal ignores the DW taylor accumulantes 
-                  higher than the 4th order. This simulations are useful to 
-                  test dki fit procedures, since tensors fitted on S have to 
-                  match the diffusion and kurtosis tensor produced here. For 
-                  simulations of S with the higher accumulates please refer to 
-                  the multi_tensor function.
+        elements of the kurtosis tensor.
+                               
+    Notes
+    -----
+    Simulations are based on multicompartmental models which assumes that 
+    tissue is well described by impermeable diffusion compartments 
+    characterized by their only diffusion tensor. Since simulations are based 
+    on the SKI model, coefficients larger than the fourth order of the signal´s
+    taylor expansion approximation are neglected.
 
     Examples
     --------
@@ -355,7 +352,7 @@ def multi_tensor_dki(gtab, mevals, S0=100, angles=[(0., 0.), (90., 0.)],
     >>> mevals=np.array(([0.0015, 0.0003, 0.0003],[0.0015, 0.0003, 0.0003]))
     >>> e0 = np.array([1, 0, 0.])
     >>> e1 = np.array([0., 1, 0])
-    >>> dt, kt, S =  multi_tensor_dki(gtab, mevals)
+    >>> S, dt, kt =  multi_tensor_dki(gtab, mevals)
     
     References
     ----------
@@ -380,19 +377,19 @@ def multi_tensor_dki(gtab, mevals, S0=100, angles=[(0., 0.), (90., 0.)],
                   for pair in angles]
         sticks = np.array(sticks)
     
-    # computing a 3D matrice containing the individual DT components 
+    # computing a 3D matrix containing the individual DT components 
     mD=np.zeros((len(fractions),3,3))
     for i in range(len(fractions)):
         R = all_tensor_evecs(sticks[i])
         mD[i] = dot(dot(R, np.diag(mevals[i])), R.T)
         
-    # compute DT
+    # compute voxel's DT
     D=np.zeros((3,3))
     for i in range(len(fractions)):
         D=D+fractions[i]*mD[i]    
     dt=np.array([D[0][0],D[1][1],D[2][2],D[0][1],D[0][2],D[1][2]])
     
-    # compute KT
+    # compute voxel's KT
     kt=np.zeros((15))
     kt[0] = compute_Wijkl(mD, fractions, 0,0,0,0, D)
     kt[1] = compute_Wijkl(mD, fractions, 1,1,1,1, D)
@@ -413,7 +410,7 @@ def multi_tensor_dki(gtab, mevals, S0=100, angles=[(0., 0.), (90., 0.)],
     # compute S based on the DT and KT
     S=single_diffkurt_tensors(gtab, S0, dt, kt, snr)
 
-    return dt, kt, S
+    return S, dt, kt
     
 def compute_Wijkl(Dc,frac,i,j,k,el,DT=None):
     r""" # function that computes the elements of KT by especifying their 
