@@ -843,7 +843,7 @@ def vec2vec_rotmat(u, v):
     w = np.cross(u, v)
     wn = np.linalg.norm(w)
 
-    if wn < np.finfo(float).eps:
+    if np.isnan(wn) or wn < np.finfo(float).eps:
         norm_u_v = np.linalg.norm(u - v)
         # This is the case of two antipodal vectors:
         if norm_u_v > np.linalg.norm(u):
@@ -865,7 +865,7 @@ def vec2vec_rotmat(u, v):
     Rp = np.dot(Pt, np.dot(R, P))
 
     # make sure that you don't return any Nans
-    if np.sum(np.isnan(Rp)) > 0:
+    if np.any(np.isnan(Rp)):
         return np.eye(3)
 
     return Rp
