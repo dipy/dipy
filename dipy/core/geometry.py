@@ -840,16 +840,17 @@ def vec2vec_rotmat(u, v):
     array([ 1.,  0.,  0.])
 
     """
-    norm_u_v = np.linalg.norm(u - v)
-    # return eye when u is the same with v
-    if np.linalg.norm(u - v) < np.finfo(float).eps:
-        return np.eye(3)
-    # This is the case of two antipodal vectors:
-    if norm_u_v == 2.0:
-        return -np.eye(3)
-
     w = np.cross(u, v)
-    w = w / np.linalg.norm(w)
+    wn = np.linalg.norm(w)
+
+    if wn < np.finfo(float).eps:
+        norm_u_v = np.linalg.norm(u - v)
+        # This is the case of two antipodal vectors:
+        if norm_u_v > np.linalg.norm(u):
+            return -np.eye(3)
+        return np.eye(3)
+
+    w /= wn
 
     # vp is in plane of u,v,  perpendicular to u
     vp = (v - (np.dot(u, v) * u))
