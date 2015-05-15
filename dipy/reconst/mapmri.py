@@ -11,10 +11,11 @@ cvxopt, have_cvxopt, _ = optional_package("cvxopt")
 
 
 class MapmriModel():
+
     r"""Mean Apparent Propagator MRI (MAPMRI) [1]_ of the diffusion signal.
 
     The main idea is to model the diffusion signal as a linear combination of
-    the continuous functions presented in [2]_ but extending it in three
+    the continuous function presented in [2]_ but extending it in three
     dimension.
     The main difference with the SHORE proposed in [3]_ is that MAPMRI 3D
     extension is provided using a set of three basis function for the radial
@@ -43,10 +44,10 @@ class MapmriModel():
                  gtab,
                  radial_order=4,
                  lambd=1e-16,
-                 eap_cons = False,
-                 anisotropic_scaling = True,
-                 eigenvalue_threshold = 1e-04,
-                 bmax_threshold = 2000):
+                 eap_cons=False,
+                 anisotropic_scaling=True,
+                 eigenvalue_threshold=1e-04,
+                 bmax_threshold=2000):
         r""" Analytical and continuous modeling of the diffusion signal with
         respect to the MAPMRI basis [1]_.
 
@@ -102,20 +103,17 @@ class MapmriModel():
         with respect to the MAPMRI model and compute the real and analytical
         ODF.
 
-        from dipy.data import get_data,get_sphere
-        sphere = get_sphere('symmetric724')
-        fimg, fbvals, fbvecs = get_data('ISBI_testing_2shells_table')
-        bvals, bvecs = read_bvals_bvecs(fbvals, fbvecs)
-        gtab = gradient_table(bvals, bvecs)
-        from dipy.sims.voxel import SticksAndBall
-        data, golden_directions = SticksAndBall(gtab, d=0.0015,
-                                                S0=1, angles=[(0, 0), (90, 0)],
-                                                fractions=[50, 50], snr=None)
-        from dipy.reconst.mapmri import MapmriModel
-        radial_order = 4
-        map_model = MapmriModel(gtab, radial_order=radial_order)
-        mapfit = map_model.fit(data)
-        odf= mapfit.odf(sphere)
+        >>> from dipy.core.gradients import gradient_table
+        >>> from dipy.data import dsi_voxels, get_sphere
+        >>> data, gtab = dsi_voxels()
+        >>> sphere = get_sphere('symmetric724')
+        >>> from dipy.sims.voxel import SticksAndBall
+        >>> data, golden_directions = SticksAndBall(gtab, d=0.0015, S0=1, angles=[(0, 0), (90, 0)], fractions=[50, 50], snr=None)
+        >>> from dipy.reconst.mapmri import MapmriModel
+        >>> radial_order = 4
+        >>> map_model = MapmriModel(gtab, radial_order=radial_order)
+        >>> mapfit = map_model.fit(data)
+        >>> odf= mapfit.odf(sphere)
         """
 
         self.bvals = gtab.bvals
@@ -124,79 +122,81 @@ class MapmriModel():
         self.radial_order = radial_order
         self.lambd = lambd
         self.eap_cons = eap_cons
-        self.anisotropic_scaling=anisotropic_scaling
+        self.anisotropic_scaling = anisotropic_scaling
         if (gtab.big_delta is None) or (gtab.small_delta is None):
             self.tau = 1 / (4 * np.pi ** 2)
         else:
             self.tau = gtab.big_delta - gtab.small_delta / 3.0
         self.eigenvalue_threshold = eigenvalue_threshold
-        self.bmax_threshold = bmax_threshold
+
+        self.ind = self.gtab.bvals <= bmax_threshold
+        gtab_dti = gradient_table(
+            self.gtab.bvals[self.ind], self.gtab.bvecs[self.ind, :])
+        self.tenmodel = dti.TensorModel(gtab_dti)
+        self.ind_mat = mapmri_index_matrix(self.radial_order)
+        self.Bm = Bmat(self.ind_mat)
 
     @multi_voxel_fit
     def fit(self, data):
-        ind=self.gtab.bvals<=self.bmax_threshold
-        gtab2 = gradient_table(self.gtab.bvals[ind], self.gtab.bvecs[ind,:])
-        tenmodel=dti.TensorModel(gtab2)
-        tenfit=tenmodel.fit(data[...,ind])
-        
+
+        tenfit = self.tenmodel.fit(data[..., self.ind])
+
         evals = tenfit.evals
-        R=tenfit.evecs
+        R = tenfit.evecs
 
         ind_evals = np.argsort(evals)[::-1]
         evals = evals[ind_evals]
-        R = R[ind_evals,:]
-        
-        evals = np.clip(evals,self.eigenvalue_threshold,evals.max())
-        
-        if self.anisotropic_scaling:
-            mu = np.sqrt(evals*2*self.tau)
-            
-        else:
-            mumean=np.sqrt(evals.mean()*2*self.tau)
-            mu=np.array([mumean,mumean,mumean])
-        
-        qvals=np.sqrt(self.gtab.bvals/self.tau) / (2 * np.pi)
-        qvecs=np.dot(self.gtab.bvecs,R)
-        q=qvecs*qvals[:,None]
+        R = R[ind_evals, :]
 
+        evals = np.clip(evals, self.eigenvalue_threshold, evals.max())
+
+        if self.anisotropic_scaling:
+            mu = np.sqrt(evals * 2 * self.tau)
+
+        else:
+            mumean = np.sqrt(evals.mean() * 2 * self.tau)
+            mu = np.array([mumean, mumean, mumean])
+
+        qvals = np.sqrt(self.gtab.bvals / self.tau) / (2 * np.pi)
+        qvecs = np.dot(self.gtab.bvecs, R)
+        q = qvecs * qvals[:, None]
         M = mapmri_phi_matrix(self.radial_order, mu, q.T)
-        
-        ind_mat = mapmri_index_matrix(self.radial_order)
 
         # This is a simple empirical regularization, to be replaced
-        I = np.eye(ind_mat.shape[0])
+        I = np.eye(self.ind_mat.shape[0])
 
         if self.eap_cons:
             if not have_cvxopt:
                 raise ValueError(
                     'CVXOPT package needed to enforce constraints')
             import cvxopt.solvers
-            rmax = 2 * np.sqrt(10 * evals.max()*self.tau)
+            rmax = 2 * np.sqrt(10 * evals.max() * self.tau)
             r_index, r_grad = create_rspace(11, rmax)
-            K = mapmri_psi_matrix(self.radial_order,  mu, r_grad[0:len(r_grad)/2,:])
+            K = mapmri_psi_matrix(
+                self.radial_order,  mu, r_grad[0:len(r_grad) / 2, :])
 
-            Q = cvxopt.matrix(np.dot(M.T,M)+ self.lambd * I)
-            p = cvxopt.matrix(-1*np.dot(M.T,data))
-            G = cvxopt.matrix(-1*K)
-            h = cvxopt.matrix(np.zeros((K.shape[0])),(K.shape[0],1))
+            Q = cvxopt.matrix(np.dot(M.T, M) + self.lambd * I)
+            p = cvxopt.matrix(-1 * np.dot(M.T, data))
+            G = cvxopt.matrix(-1 * K)
+            h = cvxopt.matrix(np.zeros((K.shape[0])), (K.shape[0], 1))
             cvxopt.solvers.options['show_progress'] = False
             sol = cvxopt.solvers.qp(Q, p, G, h)
             if sol['status'] != 'optimal':
                 warn('Optimization did not find a solution')
 
-            coef = np.array(sol['x'])[:,0]
+            coef = np.array(sol['x'])[:, 0]
         else:
-            pseudoInv = np.dot(np.linalg.inv(np.dot(M.T, M) + self.lambd * I), M.T)
+            pseudoInv = np.dot(
+                np.linalg.inv(np.dot(M.T, M) + self.lambd * I), M.T)
             coef = np.dot(pseudoInv, data)
 
-        Bm=Bmat(ind_mat)
-
         E0 = 0
-        for i in range(ind_mat.shape[0]):
-            E0 = E0 + coef[i] * Bm[i]
+        for i in range(self.ind_mat.shape[0]):
+            E0 = E0 + coef[i] * self.Bm[i]
         coef = coef / E0
 
-        return MapmriFit(self, coef, mu, R, ind_mat)
+        return MapmriFit(self, coef, mu, R, self.ind_mat)
+
 
 class MapmriFit():
 
@@ -235,7 +235,7 @@ class MapmriFit():
     def mapmri_R(self):
         """The MAPMRI rotation matrix
         """
-        return self.R    
+        return self.R
 
     @property
     def mapmri_coeff(self):
@@ -260,11 +260,38 @@ class MapmriFit():
         """
 
         v_ = sphere.vertices
-        v = np.dot(v_,self.R)
-        I_s = mapmri_odf_matrix(self.radial_order,self.mu, s, v)
+        v = np.dot(v_, self.R)
+        I_s = mapmri_odf_matrix(self.radial_order, self.mu, s, v)
         odf = np.dot(I_s, self._mapmri_coef)
-        return np.clip(odf,0,odf.max())
+        return np.clip(odf, 0, odf.max())
 
+    def predict(self, gtab, S0=1.0):
+        """
+        Predict a signal for this MapmriModel class instance given a gradient
+        table.
+
+        Parameters
+        ----------
+        gtab : GradientTable,
+            gradient directions and bvalues container class
+
+        S0 : float or ndarray
+            The non diffusion-weighted signal in every voxel, or across all
+            voxels. Default: 1
+        """
+        if (gtab.big_delta is None) or (gtab.small_delta is None):
+            tau = 1 / (4 * np.pi ** 2)
+        else:
+            tau = gtab.big_delta - gtab.small_delta / 3.0
+
+        qvals = np.sqrt(gtab.bvals / tau) / (2 * np.pi)
+        qvecs = np.dot(gtab.bvecs, self.R)
+        q = qvecs * qvals[:, None]
+
+        s_mat = mapmri_phi_matrix(self.radial_order, self.mu, q.T)
+        S_reconst = S0 * np.dot(s_mat, self._mapmri_coef)
+
+        return S_reconst
 
 
 def mapmri_index_matrix(radial_order):
@@ -294,6 +321,7 @@ def mapmri_index_matrix(radial_order):
 
     return np.array(index_matrix)
 
+
 def Bmat(ind_mat):
     r""" Calculates the B coefficients from [1]_ Eq. 27.
 
@@ -315,12 +343,14 @@ def Bmat(ind_mat):
     """
 
     B = np.zeros(ind_mat.shape[0])
-    for i in range (ind_mat.shape[0]):
+    for i in range(ind_mat.shape[0]):
         n1, n2, n3 = ind_mat[i]
-        K = int(not(n1%2) and not(n2%2) and not(n3%2))
-        B[i] = K * np.sqrt(factorial(n1)*factorial(n2)*factorial(n3)) /(factorial2(n1)*factorial2(n2)*factorial2(n3))
-        
+        K = int(not(n1 % 2) and not(n2 % 2) and not(n3 % 2))
+        B[i] = K * np.sqrt(factorial(n1) * factorial(n2) * factorial(n3)
+                           ) / (factorial2(n1) * factorial2(n2) * factorial2(n3))
+
     return B
+
 
 def mapmri_phi_1d(n, q, mu):
     r""" One dimensional MAPMRI basis function from [1]_ Eq. 4.
@@ -376,13 +406,12 @@ def mapmri_phi_3d(n, q, mu):
     n1, n2, n3 = n
     qx, qy, qz = q
     mux, muy, muz = mu
-
     phi = mapmri_phi_1d
     return np.real(phi(n1, qx, mux) * phi(n2, qy, muy) * phi(n3, qz, muz))
 
+
 def mapmri_phi_matrix(radial_order, mu, q_gradients):
     r"""Compute the MAPMRI phi matrix for the signal [1]_
-
 
     Parameters
     ----------
@@ -402,17 +431,14 @@ def mapmri_phi_matrix(radial_order, mu, q_gradients):
     """
 
     ind_mat = mapmri_index_matrix(radial_order)
-
     n_elem = ind_mat.shape[0]
-
     n_qgrad = q_gradients.shape[1]
-
     M = np.zeros((n_qgrad, n_elem))
-
     for j in range(n_elem):
         M[:, j] = mapmri_phi_3d(ind_mat[j], q_gradients, mu)
 
     return M
+
 
 def mapmri_psi_1d(n, x, mu):
     r""" One dimensional MAPMRI propagator basis function from [1]_ Eq. 10.
@@ -436,7 +462,6 @@ def mapmri_psi_1d(n, x, mu):
 
     H = hermite(n)(x / mu)
     f = factorial(n)
-
     k = 1 / (np.sqrt(2 ** (n + 1) * np.pi * f) * mu)
     psi = k * np.exp(- x ** 2 / (2 * mu ** 2)) * H
 
@@ -465,7 +490,6 @@ def mapmri_psi_3d(n, r, mu):
     n1, n2, n3 = n
     x, y, z = r.T
     mux, muy, muz = mu
-
     psi = mapmri_psi_1d
     return psi(n1, x, mux) * psi(n2, y, muy) * psi(n3, z, muz)
 
@@ -492,13 +516,9 @@ def mapmri_psi_matrix(radial_order, mu, rgrad):
     """
 
     ind_mat = mapmri_index_matrix(radial_order)
-
     n_elem = ind_mat.shape[0]
-
     n_rgrad = rgrad.shape[0]
-
     K = np.zeros((n_rgrad, n_elem))
-
     for j in range(n_elem):
         K[:, j] = mapmri_psi_3d(ind_mat[j], rgrad, mu)
 
@@ -528,30 +548,26 @@ def mapmri_odf_matrix(radial_order, mu, s, vertices):
     """
 
     ind_mat = mapmri_index_matrix(radial_order)
-
     n_vert = vertices.shape[0]
-
     n_elem = ind_mat.shape[0]
-
     odf_mat = np.zeros((n_vert, n_elem))
-
-    mux,muy,muz = mu
-
+    mux, muy, muz = mu
     # Eq, 35a
-    rho=1.0/np.sqrt((vertices[:,0]/mux)**2 + (vertices[:,1]/muy)**2 + (vertices[:,2]/muz)**2)
+    rho = 1.0 / np.sqrt((vertices[:, 0] / mux) ** 2 +
+                        (vertices[:, 1] / muy) ** 2 + (vertices[:, 2] / muz) ** 2)
     # Eq, 35b
-    alpha = 2 * rho * (vertices[:,0]/mux)
+    alpha = 2 * rho * (vertices[:, 0] / mux)
     # Eq, 35c
-    beta = 2 * rho * (vertices[:,1]/muy)
+    beta = 2 * rho * (vertices[:, 1] / muy)
     # Eq, 35d
-    gamma = 2 * rho * (vertices[:,2]/muz)
-
-    const= rho ** (3 + s) / np.sqrt(2 ** (2 - s) * np.pi ** 3 * (mux ** 2 * muy ** 2 * muz ** 2))
-
+    gamma = 2 * rho * (vertices[:, 2] / muz)
+    const = rho ** (3 + s) / np.sqrt(2 ** (2 - s) * np.pi **
+                                     3 * (mux ** 2 * muy ** 2 * muz ** 2))
     for j in range(n_elem):
         n1, n2, n3 = ind_mat[j]
         f = np.sqrt(factorial(n1) * factorial(n2) * factorial(n3))
-        odf_mat[:, j] = const * f * _odf_cfunc(n1, n2, n3, alpha, beta, gamma, s)
+        odf_mat[:, j] = const * f * \
+            _odf_cfunc(n1, n2, n3, alpha, beta, gamma, s)
 
     return odf_mat
 
@@ -566,67 +582,26 @@ def _odf_cfunc(n1, n2, n3, a, b, g, s):
     NeuroImage, 2013.
     """
 
-
     f = factorial
     f2 = factorial2
-
     sumc = 0
     for i in range(0, n1 + 1, 2):
         for j in range(0, n2 + 1, 2):
             for k in range(0, n3 + 1, 2):
 
                 nn = n1 + n2 + n3 - i - j - k
-
                 gam = (-1) ** ((i + j + k) / 2.0) * gamma((3 + s + nn) / 2.0)
-
                 num1 = a ** (n1 - i)
-
                 num2 = b ** (n2 - j)
-
                 num3 = g ** (n3 - k)
-
                 num = gam * num1 * num2 * num3
 
                 denom = f(n1 - i) * f(n2 - j) * f(
                     n3 - k) * f2(i) * f2(j) * f2(k)
 
                 sumc += num / denom
-
     return sumc
 
-
-
-def mapmri_signal(q_list, radial_order, coeff, mu, R):
-    r"""Evaluate the MAPMRI signal in a set of points of the q-space.
-
-    Parameters
-    ----------
-    q_list: array, shape (N,3)
-        points of the q-space in which evaluate the signal
-    radial_order : unsigned int,
-        an even integer that represent the order of the basis
-    coeff: array, shape (N,)
-        the MAPMRI coefficients
-    mu: array, shape (3,)
-        scale factors of the basis for x, y, z
-    R: array, shape (3,3)
-        MAPMRI rotation matrix
-    """
-
-    q_list = np.dot(q_list, R)
-
-    ind_mat = mapmri_index_matrix(radial_order)
-
-    n_elem = ind_mat.shape[0]
-
-    n_qgrad = q_list.shape[0]
-
-    data_out = np.zeros(n_qgrad)
-
-    for j in range(n_elem):
-        data_out[:] += coeff[j] * mapmri_phi_3d(ind_mat[j], q_list.T, mu)
-
-    return data_out
 
 def mapmri_EAP(r_list, radial_order, coeff, mu, R):
     r"""Evaluate the MAPMRI propagator in a set of points of the r-space.
@@ -646,19 +621,15 @@ def mapmri_EAP(r_list, radial_order, coeff, mu, R):
     """
 
     r_list = np.dot(r_list, R)
-
     ind_mat = mapmri_index_matrix(radial_order)
-    
     n_elem = ind_mat.shape[0]
-
     n_rgrad = r_list.shape[0]
-
     data_out = np.zeros(n_rgrad)
-
     for j in range(n_elem):
         data_out[:] += coeff[j] * mapmri_psi_3d(ind_mat[j], r_list, mu)
 
     return data_out
+
 
 def create_rspace(gridsize, radius_max):
     """ Create the real space table, that contains the points in which

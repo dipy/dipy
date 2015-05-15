@@ -3,7 +3,7 @@ from dipy.data import get_gtab_taiwan_dsi
 from numpy.testing import (assert_almost_equal,
                            assert_equal,
                            run_module_suite)
-from dipy.reconst.mapmri import MapmriModel, mapmri_index_matrix, mapmri_signal, mapmri_EAP
+from dipy.reconst.mapmri import MapmriModel, mapmri_index_matrix, mapmri_EAP
 from dipy.sims.voxel import (MultiTensor, all_tensor_evecs,  multi_tensor_pdf)
 from scipy.special import gamma
 from scipy.misc import factorial
@@ -40,12 +40,8 @@ def test_shore_metrics():
 
     R = mapfit.mapmri_R
     mu = mapfit.mapmri_mu
-    tau = 1 / (4 * np.pi ** 2)
 
-    qvals=np.sqrt(gtab.bvals/tau) / (2 * np.pi)
-    q=gtab.bvecs*qvals[:,None]
-
-    S_reconst = mapmri_signal(q, radial_order, c_map, mu, R)
+    S_reconst = mapfit.predict(gtab, 1.0)
 
     # test the signal reconstruction
     S = S / S[0]
