@@ -163,7 +163,7 @@ class MapmriModel():
         M = mapmri_phi_matrix(self.radial_order, mu, q.T)
 
         # This is a simple empirical regularization, to be replaced
-        I = np.eye(self.ind_mat.shape[0])
+        I = np.diag(self.ind_mat.sum(1)**2)
 
         if self.eap_cons:
             if not have_cvxopt:
@@ -263,7 +263,7 @@ class MapmriFit():
         v = np.dot(v_, self.R)
         I_s = mapmri_odf_matrix(self.radial_order, self.mu, s, v)
         odf = np.dot(I_s, self._mapmri_coef)
-        return np.clip(odf, 0, odf.max())
+        return np.clip(odf, 0, None)
 
     def predict(self, gtab, S0=1.0):
         """

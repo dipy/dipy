@@ -12,7 +12,7 @@ First import the necessary modules:
 
 from dipy.reconst.mapmri import MapmriModel
 from dipy.viz import fvtk
-from dipy.data import fetch_isbi2013_2shell, read_isbi2013_2shell, get_sphere
+from dipy.data import fetch_sherbrooke_3shell, read_sherbrooke_3shell, get_sphere
 from dipy.core.gradients import gradient_table
 
 """
@@ -26,10 +26,10 @@ the data. They respectively correspond to (xmin,xmax,ymin,ymax,zmin,zmax)
 with x, y, z and the three axis defining the spatial positions of the voxels.
 """
 
-fetch_isbi2013_2shell()
-img, gtab = read_isbi2013_2shell()
+fetch_sherbrooke_3shell()
+img, gtab = read_sherbrooke_3shell()
 data = img.get_data()
-data_small = data[10:40, 22, 10:40]
+data_small = data[50:80,64:65,25:50]
 
 print('data.shape (%d, %d, %d, %d)' % data.shape)
 
@@ -46,7 +46,7 @@ For details regarding the parameters see [Ozarslan2013]_.
 """
 
 radial_order = 4
-map_model = MapmriModel(gtab, radial_order=radial_order)
+map_model = MapmriModel(gtab, radial_order=radial_order,lambd=2e-1, eap_cons=True)
 
 """
 Fit the MAPMRI model to the data
@@ -65,16 +65,17 @@ Compute the ODFs
 """
 
 odf = mapfit.odf(sphere)
-print('odf.shape (%d, %d, %d)' % odf.shape)
+print('odf.shape (%d, %d, %d, %d)' % odf.shape)
 
 """
 Display the ODFs
 """
 
 r = fvtk.ren()
-sfu = fvtk.sphere_funcs(odf[:, None, :], sphere, colormap='jet')
+sfu = fvtk.sphere_funcs(odf, sphere, colormap='jet')
 sfu.RotateX(-90)
 fvtk.add(r, sfu)
+fvtk.show(r)
 fvtk.record(r, n_frames=1, out_path='odfs.png', size=(600, 600))
 
 """
