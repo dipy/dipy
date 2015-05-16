@@ -28,6 +28,7 @@ factors = {('TRANSLATION', 2): 2.0,
            ('SCALING', 3): 0.1,
            ('AFFINE', 3): 0.1}
 
+
 def create_random_image_pair(sh, nvals, seed):
     r""" Create a pair of images with an arbitrary, non-uniform joint PDF
 
@@ -48,7 +49,6 @@ def create_random_image_pair(sh, nvals, seed):
         second image in the image pair
     """
     np.random.seed(seed)
-    dim = len(sh)
     sz = reduce(mul, sh, 1)
     sh = tuple(sh)
     static = np.random.randint(0, nvals, sz).reshape(sh)
@@ -80,9 +80,9 @@ def test_cubic_spline():
             absx = np.abs(x)
             sqrx = x * x
             if absx < 1:
-                expected.append((4.0 - 6*sqrx + 3.0 * (absx**3))/6.0)
+                expected.append((4.0 - 6 * sqrx + 3.0 * (absx ** 3)) / 6.0)
             elif absx < 2:
-                expected.append(((2 - absx)**3)/6.0)
+                expected.append(((2 - absx) ** 3) / 6.0)
             else:
                 expected.append(0.0)
     actual = cubic_spline(np.array(in_list, dtype=np.float64))
@@ -108,7 +108,7 @@ def test_cubic_spline_derivative():
     input_h = in_list + h
     s = np.array(cubic_spline(in_list))
     s_h = np.array(cubic_spline(input_h))
-    expected = (s_h - s)/h
+    expected = (s_h - s) / h
     actual = cubic_spline_derivative(in_list)
     assert_array_almost_equal(actual, expected)
 
@@ -240,16 +240,20 @@ def test_mattes_densities():
         expected_mmarginal_dense /= expected_mmarginal_dense.sum()
         expected_mmarginal_sparse = expected_joint_sparse.sum(0)
         expected_mmarginal_sparse /= expected_mmarginal_sparse.sum()
-        assert_array_almost_equal(actual_mmarginal_dense, expected_mmarginal_dense)
-        assert_array_almost_equal(actual_mmarginal_sparse, expected_mmarginal_sparse)
+        assert_array_almost_equal(actual_mmarginal_dense,
+                                  expected_mmarginal_dense)
+        assert_array_almost_equal(actual_mmarginal_sparse,
+                                  expected_mmarginal_sparse)
 
         # Verify static marginals
         expected_smarginal_dense = expected_joint_dense.sum(1)
         expected_smarginal_dense /= expected_smarginal_dense.sum()
         expected_smarginal_sparse = expected_joint_sparse.sum(1)
         expected_smarginal_sparse /= expected_smarginal_sparse.sum()
-        assert_array_almost_equal(actual_smarginal_dense, expected_smarginal_dense)
-        assert_array_almost_equal(actual_smarginal_sparse, expected_smarginal_sparse)
+        assert_array_almost_equal(actual_smarginal_dense,
+                                  expected_smarginal_dense)
+        assert_array_almost_equal(actual_smarginal_sparse,
+                                  expected_smarginal_sparse)
 
 
 def setup_random_transform(transform, rfactor, nslices=45, sigma=1):
@@ -449,7 +453,7 @@ def test_joint_pdf_gradients_sparse():
         # Get the joint distribution evaluated at theta
         J0 = np.copy(metric.joint)
 
-        spacing = np.ones(dim+1, dtype=np.float64)
+        spacing = np.ones(dim + 1, dtype=np.float64)
         mgrad, inside = vf.sparse_gradient(moving.astype(np.float32),
                                            sp_to_moving, spacing, samples)
         metric.update_gradient_sparse(theta, transform, intensities_static,
@@ -478,9 +482,9 @@ def test_joint_pdf_gradients_sparse():
 
         # Dot product and norms of gradients of each joint histogram cell
         # i.e. the derivatives of each cell w.r.t. all parameters
-        P = (expected*actual).sum(2)
-        enorms = np.sqrt((expected**2).sum(2))
-        anorms = np.sqrt((actual**2).sum(2))
+        P = (expected * actual).sum(2)
+        enorms = np.sqrt((expected ** 2).sum(2))
+        anorms = np.sqrt((actual ** 2).sum(2))
         prodnorms = enorms*anorms
         # Cosine of angle between the expected and actual gradients.
         # Exclude very small gradients
@@ -629,10 +633,10 @@ def test_mi_gradient_sparse():
         mgrad, inside = vf.sparse_gradient(moving.astype(np.float32),
                                            sp_to_moving,
                                            spacing,
-                                           samples[...,:dim])
+                                           samples[..., :dim])
         metric.update_gradient_sparse(theta, transform, intensities_static,
                                       intensities_moving,
-                                      samples[...,:dim],
+                                      samples[..., :dim],
                                       mgrad)
 
         # 3. Update the metric (in this case, the Mutual Information) and its
@@ -686,7 +690,7 @@ def test_sample_domain_regular():
     isamples = np.array(samples, dtype=np.int32)
     indices = (isamples[:, 0] * shape[1] + isamples[:, 1])
     # Verify correct number of points sampled
-    assert_array_equal(samples.shape, [n//k, dim])
+    assert_array_equal(samples.shape, [n // k, dim])
     # Verify all sampled points are different
     assert_equal(len(set(indices)), len(indices))
     # Verify the sampling was regular at rate k
@@ -709,7 +713,7 @@ def test_sample_domain_regular():
                isamples[:, 1] * shape[2] +
                isamples[:, 2])
     # Verify correct number of points sampled
-    assert_array_equal(samples.shape, [n//k, dim])
+    assert_array_equal(samples.shape, [n // k, dim])
     # Verify all sampled points are different
     assert_equal(len(set(indices)), len(indices))
     # Verify the sampling was regular at rate k

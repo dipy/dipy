@@ -96,10 +96,10 @@ class MattesBase(object):
         self.mmin = np.min(moving[mmask != 0])
         self.mmax = np.max(moving[mmask != 0])
 
-        self.sdelta = (self.smax - self.smin)/(self.nbins - 2 * self.padding)
-        self.mdelta = (self.mmax - self.mmin)/(self.nbins - 2 * self.padding)
-        self.smin = self.smin/self.sdelta - self.padding
-        self.mmin = self.mmin/self.mdelta - self.padding
+        self.sdelta = (self.smax - self.smin) / (self.nbins - 2 * self.padding)
+        self.mdelta = (self.mmax - self.mmin) / (self.nbins - 2 * self.padding)
+        self.smin = self.smin / self.sdelta - self.padding
+        self.mmin = self.mmin / self.mdelta - self.padding
 
         self.joint_grad = None
         self.metric_grad = None
@@ -589,7 +589,7 @@ cdef _compute_pdfs_dense_2d(double[:, :] static, double[:, :] moving,
                 r = _bin_index(rn, nbins, padding)
                 cn = _bin_normalize(moving[i, j], mmin, mdelta)
                 c = _bin_index(cn, nbins, padding)
-                spline_arg = (c-2) - cn
+                spline_arg = (c - 2) - cn
 
                 smarginal[r] += 1
                 for offset in range(-2, 3):
@@ -679,7 +679,7 @@ cdef _compute_pdfs_dense_3d(double[:, :, :] static, double[:, :, :] moving,
                     r = _bin_index(rn, nbins, padding)
                     cn = _bin_normalize(moving[k, i, j], mmin, mdelta)
                     c = _bin_index(cn, nbins, padding)
-                    spline_arg = (c-2) - cn
+                    spline_arg = (c - 2) - cn
 
                     smarginal[r] += 1
                     for offset in range(-2, 3):
@@ -755,7 +755,7 @@ cdef _compute_pdfs_sparse(double[:] sval, double[:] mval, double smin,
             r = _bin_index(rn, nbins, padding)
             cn = _bin_normalize(mval[i], mmin, mdelta)
             c = _bin_index(cn, nbins, padding)
-            spline_arg = (c-2) - cn
+            spline_arg = (c - 2) - cn
 
             smarginal[r] += 1
             for offset in range(-2, 3):
@@ -869,7 +869,7 @@ cdef _joint_pdf_gradient_dense_2d(double[:] theta, Transform transform,
                 r = _bin_index(rn, nbins, padding)
                 cn = _bin_normalize(moving[i, j], mmin, mdelta)
                 c = _bin_index(cn, nbins, padding)
-                spline_arg = (c-2) - cn
+                spline_arg = (c - 2) - cn
 
                 for offset in range(-2, 3):
                     val = _cubic_spline_derivative(spline_arg)
@@ -982,7 +982,7 @@ cdef _joint_pdf_gradient_dense_3d(double[:] theta, Transform transform,
                     r = _bin_index(rn, nbins, padding)
                     cn = _bin_normalize(moving[k, i, j], mmin, mdelta)
                     c = _bin_index(cn, nbins, padding)
-                    spline_arg = (c-2) - cn
+                    spline_arg = (c - 2) - cn
 
                     for offset in range(-2, 3):
                         val = _cubic_spline_derivative(spline_arg)
@@ -1072,7 +1072,7 @@ cdef _joint_pdf_gradient_sparse_2d(double[:] theta, Transform transform,
             r = _bin_index(rn, nbins, padding)
             cn = _bin_normalize(mval[i], mmin, mdelta)
             c = _bin_index(cn, nbins, padding)
-            spline_arg = (c-2) - cn
+            spline_arg = (c - 2) - cn
 
             for offset in range(-2, 3):
                 val = _cubic_spline_derivative(spline_arg)
@@ -1164,7 +1164,7 @@ cdef _joint_pdf_gradient_sparse_3d(double[:] theta, Transform transform,
             r = _bin_index(rn, nbins, padding)
             cn = _bin_normalize(mval[i], mmin, mdelta)
             c = _bin_index(cn, nbins, padding)
-            spline_arg = (c-2) - cn
+            spline_arg = (c - 2) - cn
 
             for offset in range(-2, 3):
                 val = _cubic_spline_derivative(spline_arg)
@@ -1267,7 +1267,7 @@ def sample_domain_2d(int[:] shape, int n, double[:, :] samples,
     """
     cdef:
         cnp.npy_intp m, i, j
-        int[:] index = np.empty(shape=(shape[0]*shape[1], ), dtype=np.int32)
+        int[:] index = np.empty(shape=(shape[0] * shape[1], ), dtype=np.int32)
     with nogil:
         # make an array of all avalable indices
         m = 0
@@ -1412,13 +1412,14 @@ def sample_domain_3d(int[:] shape, int n, double[:, :] samples,
     [1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
     """
     cdef:
-        cnp.npy_intp m, i, j, k, ss
-        int[:] index = np.empty((shape[0]*shape[1]*shape[2], ), dtype=np.int32)
+        cnp.npy_intp ss = shape[1] * shape[2]
+        cnp.npy_intp nvox = shape[0] * ss
+        cnp.npy_intp m, i, j, k
+        int[:] index = np.empty((nvox, ), dtype=np.int32)
         int[:] selected
     with nogil:
         # make an array of all avalable indices
         m = 0
-        ss = shape[1] * shape[2]
         for i in range(shape[0]):
             for j in range(shape[1]):
                 for k in range(shape[2]):

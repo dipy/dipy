@@ -367,7 +367,6 @@ def overlay_slices(L, R, slice_index=None, slice_type=1, ltitle='Left',
     elif slice_type is 2:
         if slice_index is None:
             slice_index = sh[2]//2
-        slice_index = sh[2]//2
         colorImage = np.zeros(shape=(sh[1], sh[0], 3), dtype=np.uint8)
         ll = np.asarray(L[:, :, slice_index]).astype(np.uint8).T
         rr = np.asarray(R[:, :, slice_index]).astype(np.uint8).T
