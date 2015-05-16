@@ -28,47 +28,62 @@ In the ``widget`` we have some other objects which allow to add buttons
 and sliders and these interact both with windows and actors. Because of this
 they need input from the operating system so they can process events.
 
-So, let's get started. In this tutorial we will create a
+So, let's get started. In this tutorial we will visualize some bundles and a
+slicer. We will be able to change the slices using a ``slider`` widget.
 
 """
 
+def read_bundles_2_subjects(subj_id='subj_1', metrics=['fa'],
+                            bundles=['af.left', 'cst.right', 'cc_1']):
 
-import numpy as np
 
-# Change with Stanford data
-#dname = '/home/eleftherios/Data/Cunnane_Elef/08-111-609-AC15/work/'
-dname = '/home/eleftherios/Data/fancy_data/2013_02_08_Gabriel_Girard/'
+    dname = '/home/eleftherios/Data/bundles_2_subjects'
 
-import nibabel as nib
-from nibabel import trackvis as tv
+    import nibabel as nib
+    from nibabel import trackvis as tv
+    from os.path import join as pjoin
 
-world_coords = False
+    res = {}
+
+    if 't1' in metrics:
+        img = nib.load(pjoin(dname, subj_id, 't1_warped.nii.gz'))
+        data = img.get_data()
+        affine = img.get_affine()
+        res['t1'] = data
+
+    if 'fa' in metrics:
+        img_fa = nib.load(pjoin(dname, subj_id, 'fa_1x1x1.nii.gz'))
+        fa = img_fa.get_data()
+        affine = img_fa.get_affine()
+        res['fa'] = fa
+
+
+    res['affine'] = affine
+
+    for bun in bundles:
+
+        streams, hdr = tv.read(pjoin(dname, subj_id,
+                                     'bundles', 'bundles_' + bun + '.trk'),
+                               points_space="rasmm")
+        streamlines = [s[0] for s in streams]
+        res[bun] = streamlines
+
+    return res
+
+
+world_coords = True
 streamline_opacity = 1.
 slicer_opacity = 1.
 depth_peeling = False
 
-
-img = nib.load(dname + 't1_warped.nii.gz')
-data = img.get_data()
-affine = img.get_affine()
+res = read_bundles_2_subjects('subj_1', ['t1', 'fa'],
+                              ['af.left', 'cst.right', 'cc_1'])
 
 
-img_fa = nib.load(dname + 'fa_1x1x1.nii.gz')
-fa = img_fa.get_data()
-affine_fa = img_fa.get_affine()
-
-
-streams, hdr = tv.read(dname + 'TRK_files/bundles_cst.right.trk',
-                       points_space="rasmm")
-streamlines = [s[0] for s in streams]
-
-streams, hdr = tv.read(dname + 'TRK_files/bundles_af.left.trk',
-                       points_space="rasmm")
-streamlines += [s[0] for s in streams]
-
-streams, hdr = tv.read(dname + 'TRK_files/bundles_cc_1.trk',
-                       points_space="rasmm")
-streamlines += [s[0] for s in streams]
+streamlines = res['af.left'] + res['cst.right'] + res['cc_1']
+data = res['fa']
+shape = data.shape
+affine = res['affine']
 
 if not world_coords:
     from dipy.tracking.streamline import transform_streamlines
@@ -76,65 +91,57 @@ if not world_coords:
 
 ren = window.Renderer()
 
-stream_actor = actor.streamtube(streamlines, fa)
+stream_actor = actor.line(streamlines)
 
 if not world_coords:
-    slicer = actor.slice(data, affine=np.eye(4))
+    image = actor.slice(data, affine=np.eye(4))
 else:
-    slicer = actor.slice(data, affine)
+    image = actor.slice(data, affine)
 
-slicer.GetProperty().SetOpacity(slicer_opacity)
-stream_actor.GetProperty().SetOpacity(streamline_opacity)
+# slicer.GetProperty().SetOpacity(slicer_opacity)
+# stream_actor.GetProperty().SetOpacity(streamline_opacity)
 
 ren.add(stream_actor)
-ren.add(slicer)
+ren.add(image)
+
+show_m = window.ShowManager(ren, size=(1200, 900))
+show_m.initialize()
 
 def change_slice(obj, event):
-    global slicer
     z = int(np.round(obj.GetSliderRepresentation().GetValue()))
-
-    print(obj)
-    print(event)
     print(z)
-    slicer.SetDisplayExtent(0, 255, 0, 255, z, z)
-    slicer.Update()
 
-import vtk
+    image.SetDisplayExtent(0, shape[0] - 1,
+                           0, shape[1] - 1, z, z)
+    image.Update()
 
-ren_win = vtk.vtkRenderWindow()
-ren_win.AddRenderer(renderer)
+slider = widget.slider(show_m.iren, show_m.ren,
+                       callback=change_slice,
+                       min_value=0,
+                       max_value=shape[2] - 1,
+                       value=shape[2] / 2,
+                       label="Z-axis",
+                       right_normalized_pos=(.98, 0.6),
+                       size=(120, 0), label_format="%0.lf")
 
-if depth_peeling:
-    # http://www.vtk.org/Wiki/VTK/Depth_Peeling
-    ren_win.SetAlphaBitPlanes(1)
-    ren_win.SetMultiSamples(0)
-    renderer.SetUseDepthPeeling(1)
-    renderer.SetMaximumNumberOfPeels(10)
-    renderer.SetOcclusionRatio(0.1)
-
-
-iren = vtk.vtkRenderWindowInteractor()
-iren.SetRenderWindow(ren_win)
-
-slider = widget.slider(iren=iren, ren=renderer, callback=change_slice)
-
-iren.Initialize()
-
-ren_win.Render()
-
-if depth_peeling:
-    dp_bool = str(bool(renderer.GetLastRenderingUsedDepthPeeling()))
-    print('Depth peeling used? ' + dp_bool)
-
-iren.Start()
-
-
-# ren_win.RemoveRenderer(renderer)
-# renderer.SetRenderWindow(None)
+show_m.render()
+show_m.start()
 
 
 
 
+
+# if depth_peeling:
+#    # http://www.vtk.org/Wiki/VTK/Depth_Peeling
+#    ren_win.SetAlphaBitPlanes(1)
+#    ren_win.SetMultiSamples(0)
+#    renderer.SetUseDepthPeeling(1)
+#    renderer.SetMaximumNumberOfPeels(10)
+#    renderer.SetOcclusionRatio(0.1)
+
+#if depth_peeling:
+#    dp_bool = str(bool(renderer.GetLastRenderingUsedDepthPeeling()))
+#    print('Depth peeling used? ' + dp_bool)
 
 
 
