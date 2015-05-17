@@ -15,15 +15,15 @@ from dipy.core.geometry import vec2vec_rotmat
 #
 diffusion_evals = np.array([1500e-6, 400e-6, 400e-6])
 
-# DT and KT for a voxel of well aligned fibers 
+# DT and KT for a voxel of well aligned fibers
 # parameters are based on the simulations from:
 #
-#    Neto Henriques et al., "Exploring the 3D geometriy of the diffusion 
-#    kurtosis tensor - Impact on the development of robust tractography 
+#    Neto Henriques et al., "Exploring the 3D geometriy of the diffusion
+#    kurtosis tensor - Impact on the development of robust tractography
 #    procedures and novel biomarkers", NeuroImage, 2015; 111:85-99.
 #
 diffusion_tensor = np.array([1638e-6, 444e-6, 444e-6, 0, 0, 0])
-kurtosis_tensor = np.array([1.7068, 0.8010, 0.8010, 0, 0, 0, 0, 0, 0, 0.3897, 
+kurtosis_tensor = np.array([1.7068, 0.8010, 0.8010, 0, 0, 0, 0, 0, 0, 0.3897,
                             0.3897, 0.2670, 0, 0, 0])
 
 
@@ -166,8 +166,8 @@ def sticks_and_ball(gtab, d=0.0015, S0=100, angles=[(0, 0), (90, 0)],
         sticks = np.array(sticks)
 
     for (i, g) in enumerate(gtab.bvecs[1:]):
-        S[i + 1] = f0 * np.exp(-gtab.bvals[i + 1] * d) + \
-            np.sum([fractions[j] * np.exp(-gtab.bvals[i + 1] * d * np.dot(s, g) ** 2)
+        S[i + 1] = f0*np.exp(-gtab.bvals[i + 1]*d) + \
+            np.sum([fractions[j]*np.exp(-gtab.bvals[i + 1]*d*np.dot(s, g)**2)
                    for (j, s) in enumerate(sticks)])
 
         S[i + 1] = S0 * S[i + 1]
@@ -246,7 +246,8 @@ def multi_tensor(gtab, mevals, S0=100, angles=[(0, 0), (90, 0)],
     S0 : float
         Unweighted signal value (b0 signal).
     angles : array (K,2) or (K,3)
-        List of K tensor directions in polar angles (in degrees) or unit vectors
+        List of K tensor directions in polar angles (in degrees) or unit
+        vectors
     fractions : float
         Percentage of the contribution of each tensor. The sum of fractions
         should be equal to 100%.
@@ -299,10 +300,11 @@ def multi_tensor(gtab, mevals, S0=100, angles=[(0, 0), (90, 0)],
                                                  snr=None)
 
     return add_noise(S, snr, S0), sticks
-    
+
+
 def multi_tensor_dki(gtab, mevals, S0=100, angles=[(0., 0.), (90., 0.)],
-                         fractions=[50, 50], snr=20):
-    
+                     fractions=[50, 50], snr=20):
+
     r""" Simulate the diffusion-weight signal based on the DKI model
 
     Parameters
@@ -325,17 +327,17 @@ def multi_tensor_dki(gtab, mevals, S0=100, angles=[(0., 0.), (90., 0.)],
     Returns
     --------
     S : (N,) ndarray
-        Simulated signal based on the DKI model.    
+        Simulated signal based on the DKI model.
     dt : (6,)
         elements of the diffusion tensor.
     kt : (15,)
         elements of the kurtosis tensor.
-                               
+
     Notes
     -----
-    Simulations are based on multicompartmental models which assumes that 
-    tissue is well described by impermeable diffusion compartments 
-    characterized by their only diffusion tensor. Since simulations are based 
+    Simulations are based on multicompartmental models which assumes that
+    tissue is well described by impermeable diffusion compartments
+    characterized by their only diffusion tensor. Since simulations are based
     on the DKI model, coefficients larger than the fourth order of the signal's
     taylor expansion approximation are neglected.
 
@@ -353,22 +355,22 @@ def multi_tensor_dki(gtab, mevals, S0=100, angles=[(0., 0.), (90., 0.)],
     >>> e0 = np.array([1, 0, 0.])
     >>> e1 = np.array([0., 1, 0])
     >>> S, dt, kt =  multi_tensor_dki(gtab, mevals)
-    
+
     References
     ----------
-    .. [1] R. Neto Henriques et al., "Exploring the 3D geometriy of the 
-           diffusion kurtosis tensor - Impact on the development of robust 
-           tractography procedures and novel biomarkers", NeuroImage (2015) 
+    .. [1] R. Neto Henriques et al., "Exploring the 3D geometriy of the
+           diffusion kurtosis tensor - Impact on the development of robust
+           tractography procedures and novel biomarkers", NeuroImage (2015)
            111, 85-99.
     """
-                             
+
     if np.round(np.sum(fractions), 2) != 100.0:
         raise ValueError('Fractions should sum to 100')
 
     fractions = [f / 100. for f in fractions]
 
     S = np.zeros(len(gtab.bvals))
-    
+
     angles = np.array(angles)
     if angles.shape[-1] == 3:
         sticks = angles
@@ -376,52 +378,53 @@ def multi_tensor_dki(gtab, mevals, S0=100, angles=[(0., 0.), (90., 0.)],
         sticks = [sphere2cart(1, np.deg2rad(pair[0]), np.deg2rad(pair[1]))
                   for pair in angles]
         sticks = np.array(sticks)
-    
-    # computing a 3D matrix containing the individual DT components 
-    mD=np.zeros((len(fractions),3,3))
+
+    # computing a 3D matrix containing the individual DT components
+    mD = np.zeros((len(fractions), 3, 3))
     for i in range(len(fractions)):
         R = all_tensor_evecs(sticks[i])
         mD[i] = dot(dot(R, np.diag(mevals[i])), R.T)
-        
+
     # compute voxel's DT
-    D=np.zeros((3,3))
+    D = np.zeros((3, 3))
     for i in range(len(fractions)):
-        D=D+fractions[i]*mD[i]    
-    dt=np.array([D[0][0],D[1][1],D[2][2],D[0][1],D[0][2],D[1][2]])
-    
+        D = D + fractions[i]*mD[i]
+    dt = np.array([D[0][0], D[1][1], D[2][2], D[0][1], D[0][2], D[1][2]])
+
     # compute voxel's KT
-    kt=np.zeros((15))
-    kt[0] = compute_Wijkl(mD, fractions, 0,0,0,0, D)
-    kt[1] = compute_Wijkl(mD, fractions, 1,1,1,1, D)
-    kt[2] = compute_Wijkl(mD, fractions, 2,2,2,2, D)
-    kt[3] = compute_Wijkl(mD, fractions, 0,0,0,1, D)
-    kt[4] = compute_Wijkl(mD, fractions, 0,0,0,2, D)
-    kt[5] = compute_Wijkl(mD, fractions, 0,1,1,1, D)
-    kt[6] = compute_Wijkl(mD, fractions, 1,1,1,2, D)
-    kt[7] = compute_Wijkl(mD, fractions, 0,2,2,2, D)
-    kt[8] = compute_Wijkl(mD, fractions, 1,2,2,2, D)
-    kt[9] = compute_Wijkl(mD, fractions, 0,0,1,1, D)
-    kt[10] = compute_Wijkl(mD, fractions, 0,0,2,2, D)
-    kt[11] = compute_Wijkl(mD, fractions, 1,1,2,2, D)
-    kt[12] = compute_Wijkl(mD, fractions, 0,0,1,2, D)
-    kt[13] = compute_Wijkl(mD, fractions, 0,1,1,2, D)
-    kt[14]=  compute_Wijkl(mD, fractions, 0,1,2,2, D)
-    
+    kt = np.zeros((15))
+    kt[0] = compute_Wijkl(mD, fractions, 0, 0, 0, 0, D)
+    kt[1] = compute_Wijkl(mD, fractions, 1, 1, 1, 1, D)
+    kt[2] = compute_Wijkl(mD, fractions, 2, 2, 2, 2, D)
+    kt[3] = compute_Wijkl(mD, fractions, 0, 0, 0, 1, D)
+    kt[4] = compute_Wijkl(mD, fractions, 0, 0, 0, 2, D)
+    kt[5] = compute_Wijkl(mD, fractions, 0, 1, 1, 1, D)
+    kt[6] = compute_Wijkl(mD, fractions, 1, 1, 1, 2, D)
+    kt[7] = compute_Wijkl(mD, fractions, 0, 2, 2, 2, D)
+    kt[8] = compute_Wijkl(mD, fractions, 1, 2, 2, 2, D)
+    kt[9] = compute_Wijkl(mD, fractions, 0, 0, 1, 1, D)
+    kt[10] = compute_Wijkl(mD, fractions, 0, 0, 2, 2, D)
+    kt[11] = compute_Wijkl(mD, fractions, 1, 1, 2, 2, D)
+    kt[12] = compute_Wijkl(mD, fractions, 0, 0, 1, 2, D)
+    kt[13] = compute_Wijkl(mD, fractions, 0, 1, 1, 2, D)
+    kt[14] = compute_Wijkl(mD, fractions, 0, 1, 2, 2, D)
+
     # compute S based on the DT and KT
-    S=single_diffkurt_tensors(gtab, S0, dt, kt, snr)
+    S = single_diffkurt_tensors(gtab, S0, dt, kt, snr)
 
     return S, dt, kt
-    
-def compute_Wijkl(Dc,frac,i,j,k,el,DT=None):
-    r""" Computes the diffusion kurtosis tensor element (with indexes i, j, k 
-    and el) based on the individual diffusion tensor components of a 
-    multicompartmental model. 
-    
+
+
+def compute_Wijkl(Dc, frac, i, j, k, el, DT=None):
+    r""" Computes the diffusion kurtosis tensor element (with indexes i, j, k
+    and el) based on the individual diffusion tensor components of a
+    multicompartmental model.
+
     Parameters
     -----------
     Dc : (K,3,3) ndarray
         Elements of the diffusion tensor for each individual compartment of the
-        multicompartmental model. Assumes the order Dxx, Dyy, Dzz, Dxy, Dxz, 
+        multicompartmental model. Assumes the order Dxx, Dyy, Dzz, Dxy, Dxz,
         Dyz.
     frac : float
         Percentage of the contribution of each tensor. The sum of fractions
@@ -441,141 +444,141 @@ def compute_Wijkl(Dc,frac,i,j,k,el,DT=None):
     --------
     wijkl : float
             kurtosis tensor element of index i, j, k, el
-            
+
     Notes
     --------
     wijkl is calculated using equation 8 given in [1]_
-    
+
     References
     ----------
-    .. [1] R. Neto Henriques et al., "Exploring the 3D geometriy of the 
-           diffusion kurtosis tensor - Impact on the development of robust 
-           tractography procedures and novel biomarkers", NeuroImage (2015) 
+    .. [1] R. Neto Henriques et al., "Exploring the 3D geometriy of the
+           diffusion kurtosis tensor - Impact on the development of robust
+           tractography procedures and novel biomarkers", NeuroImage (2015)
            111, 85-99.
     """
-    
-    if DT is None:
-        DT=np.zeros((3,3))
-        for i in range(len(frac)):
-            DT=DT+frac[i]*Dc[i]
 
-    wijkl=0
-    MD=(DT[0][0]+DT[1][1]+DT[2][2])/3
+    if DT is None:
+        DT = np.zeros((3, 3))
+        for i in range(len(frac)):
+            DT = DT + frac[i]*Dc[i]
+
+    wijkl = 0
+    MD = (DT[0][0] + DT[1][1] + DT[2][2]) / 3
     for f in range(len(frac)):
-        wijkl=wijkl+frac[f]*(Dc[f][i][j]*Dc[f][k][el]+Dc[f][i][k]*Dc[f][j][el]+
-                             Dc[f][i][el]*Dc[f][j][k])
-    wijkl=(wijkl-
-           DT[i][j]*DT[k][el]-DT[i][k]*DT[j][el]-DT[i][el]*DT[j][k])/(MD**2)
-    
+        wijkl = wijkl + frac[f] * (Dc[f][i][j]*Dc[f][k][el] +
+                                   Dc[f][i][k]*Dc[f][j][el] +
+                                   Dc[f][i][el]*Dc[f][j][k])
+
+    wijkl = (wijkl - DT[i][j]*DT[k][el] - DT[i][k]*DT[j][el] -
+             DT[i][el]*DT[j][k]) / (MD**2)
+
     return wijkl
-    
-    
+
+
 def single_diffkurt_tensors(gtab, S0=150, dt=None, kt=None, snr=None):
-    """ Simulated signal based on the diffusion and diffusion kurtosis 
+    r""" Simulated signal based on the diffusion and diffusion kurtosis
     tensors. Simulations are preformed assuming the DKI model.
 
     Parameters
     -----------
     gtab : GradientTable
         Measurement directions.
-    S0 : double,
-        Strength of signal in the presence of no diffusion gradient (also
-        called the ``b=0`` value).
+    S0 : float (optional)
+        Strength of signal in the presence of no diffusion gradient.
     dt : (6,) ndarray
         Elements of the diffusion tensor.
     kt : (15, ) ndarray
-        Elements of the diffusion kurtosis tensor.  
-    snr : float
+        Elements of the diffusion kurtosis tensor.
+    snr : float (optional)
         Signal to noise ratio, assuming Rician noise.  None implies no noise.
 
     Returns
     --------
     S : (N,) ndarray
         Simulated signal based on the DKI model:
-        S=S0*exp(-b*D+1/6*b**2*D**2*K)
-        
+
     .. math::
 
         S=S_{0}e^{-bD+\frac{1}{6}b^{2}D^{2}K}
-        
+
     References
     ----------
-    .. [1] R. Neto Henriques et al., "Exploring the 3D geometriy of the 
-           diffusion kurtosis tensor - Impact on the development of robust 
-           tractography procedures and novel biomarkers", NeuroImage (2015) 
+    .. [1] R. Neto Henriques et al., "Exploring the 3D geometriy of the
+           diffusion kurtosis tensor - Impact on the development of robust
+           tractography procedures and novel biomarkers", NeuroImage (2015)
            111, 85-99.
     """
-    
+
     if dt is None:
         dt = diffusion_tensor
 
     if kt is None:
         kt = kurtosis_tensor
-        
-    A=dki_design_matrix(gtab)
-    
+
+    A = dki_design_matrix(gtab)
+
     # define vector of DKI parameters
-    MD=sum(dt[0:3])/3
-    X=np.concatenate((dt,kt*MD*MD,np.array([np.log(S0)])),axis=0)
-    
+    MD = sum(dt[0:3])/3
+    X = np.concatenate((dt, kt*MD*MD, np.array([np.log(S0)])), axis=0)
+
     # Compute signals based on the DKI model
-    S=np.exp(dot(A,X))
+    S = np.exp(dot(A, X))
 
     S = add_noise(S, snr, S0)
 
     return S
-    
+
+
 def dki_design_matrix(gtab):
-    r"""  
-    Constructs B design matrix for DKI
-    
+    r""" Constructs B design matrix for DKI
+
     Parameters
     ---------
     gtab : GradientTable
         Measurement directions.
-        
+
     Returns
     -------
     design_matrix : array (N,22)
           Design matrix or B matrix for the DKI model
-            design_matrix[j, :] = (Bxx, Byy, Bzz, Bxy, Bxz, Byz, 
+            design_matrix[j, :] = (Bxx, Byy, Bzz, Bxy, Bxz, Byz,
                                    Bxxxx, Byyyy, Bzzzz, Bxxxy, Bxxxz,
                                    Bxyyy, Byyyz, Bxzzz, Byzzz, Bxxyy,
                                    Bxxzz, Byyzz, Bxxyz, Bxyyz, Bxyzz,
                                    BlogS0)
     """
-    b=gtab.bvals
-    bvec=gtab.bvecs
+    b = gtab.bvals
+    bvec = gtab.bvecs
 
     B = np.zeros((len(b), 22))
-    B[:, 0] = -b * bvec[:,0] * bvec[:,0]   
-    B[:, 1] = -b * bvec[:,1] * bvec[:,1]   
-    B[:, 2] = -b * bvec[:,2] * bvec[:,2]   
-    B[:, 3] = -2*b * bvec[:,0] * bvec[:,1]   
-    B[:, 4] = -2*b * bvec[:,0] * bvec[:,2]  
-    B[:, 5] = -2*b * bvec[:,1] * bvec[:,2]  
-    B[:, 6] =  b*b * bvec[:,0]**4 /6 				
-    B[:, 7] =  b*b * bvec[:,1]**4 /6 				
-    B[:, 8] =  b*b * bvec[:,2]**4 /6 				
-    B[:, 9] =  4*b*b * bvec[:,0]**3 * bvec[:,1] /6 	
-    B[:,10] =  4*b*b * bvec[:,0]**3 * bvec[:,2] /6		
-    B[:,11] =  4*b*b * bvec[:,1]**3 * bvec[:,0] /6 		
-    B[:,12] =  4*b*b * bvec[:,1]**3 * bvec[:,2] /6 		
-    B[:,13] =  4*b*b * bvec[:,2]**3 * bvec[:,0] /6 		
-    B[:,14] =  4*b*b * bvec[:,2]**3 * bvec[:,1] /6 		
-    B[:,15] =  b*b * bvec[:,0]**2 * bvec[:,1]**2  		
-    B[:,16] =  b*b * bvec[:,0]**2 * bvec[:,2]**2		
-    B[:,17] =  b*b * bvec[:,1]**2 * bvec[:,2]**2 		
-    B[:,18] =  2*b*b * bvec[:,0]**2 * bvec[:,1] * bvec[:,2] 	
-    B[:,19] =  2*b*b * bvec[:,1]**2 * bvec[:,0] * bvec[:,2] 	
-    B[:,20] =  2*b*b * bvec[:,2]**2 * bvec[:,0] * bvec[:,1]
-    B[:,21] =  np.ones(len(b))	
-				
+    B[:, 0] = -b*bvec[:, 0]*bvec[:, 0]
+    B[:, 1] = -b*bvec[:, 1]*bvec[:, 1]
+    B[:, 2] = -b*bvec[:, 2]*bvec[:, 2]
+    B[:, 3] = -2*b*bvec[:, 0]*bvec[:, 1]
+    B[:, 4] = -2*b*bvec[:, 0]*bvec[:, 2]
+    B[:, 5] = -2*b*bvec[:, 1]*bvec[:, 2]
+    B[:, 6] = b*b*bvec[:, 0]**4/6
+    B[:, 7] = b*b*bvec[:, 1]**4/6
+    B[:, 8] = b*b*bvec[:, 2]**4/6
+    B[:, 9] = 4*b*b*bvec[:, 0]**3*bvec[:, 1]/6
+    B[:, 10] = 4*b*b*bvec[:, 0]**3*bvec[:, 2]/6
+    B[:, 11] = 4*b*b*bvec[:, 1]**3*bvec[:, 0]/6
+    B[:, 12] = 4*b*b*bvec[:, 1]**3*bvec[:, 2]/6
+    B[:, 13] = 4*b*b*bvec[:, 2]**3*bvec[:, 0]/6
+    B[:, 14] = 4*b*b*bvec[:, 2]**3*bvec[:, 1]/6
+    B[:, 15] = b*b*bvec[:, 0]**2*bvec[:, 1]**2
+    B[:, 16] = b*b*bvec[:, 0]**2*bvec[:, 2]**2
+    B[:, 17] = b*b*bvec[:, 1]**2*bvec[:, 2]**2
+    B[:, 18] = 2*b*b*bvec[:, 0]**2*bvec[:, 1]*bvec[:, 2]
+    B[:, 19] = 2*b*b*bvec[:, 1]**2*bvec[:, 0]*bvec[:, 2]
+    B[:, 20] = 2*b*b*bvec[:, 2]**2*bvec[:, 0]*bvec[:, 1]
+    B[:, 21] = np.ones(len(b))
+
     return B
-    
+
 
 def single_tensor_odf(r, evals=None, evecs=None):
-    """Simulated ODF with a single tensor.
+    """ Simulated ODF with a single tensor.
 
     Parameters
     ----------
@@ -718,8 +721,8 @@ def single_tensor_rtop(evals=None, tau=1.0 / (4 * np.pi ** 2)):
 
     References
     ----------
-    .. [1] Cheng J., "Estimation and Processing of Ensemble Average Propagator and
-           Its Features in Diffusion MRI", PhD Thesis, 2012.
+    .. [1] Cheng J., "Estimation and Processing of Ensemble Average Propagator
+           and Its Features in Diffusion MRI", PhD Thesis, 2012.
 
     '''
     if evals is None:
@@ -749,8 +752,8 @@ def multi_tensor_rtop(mf, mevals=None, tau=1 / (4 * np.pi ** 2)):
 
     References
     ----------
-    .. [1] Cheng J., "Estimation and Processing of Ensemble Average Propagator and
-           Its Features in Diffusion MRI", PhD Thesis, 2012.
+    .. [1] Cheng J., "Estimation and Processing of Ensemble Average Propagator
+           and Its Features in Diffusion MRI", PhD Thesis, 2012.
 
     '''
     rtop = 0
@@ -788,8 +791,8 @@ def single_tensor_pdf(r, evals=None, evecs=None, tau=1 / (4 * np.pi ** 2)):
 
     References
     ----------
-    .. [1] Cheng J., "Estimation and Processing of Ensemble Average Propagator and
-           Its Features in Diffusion MRI", PhD Thesis, 2012.
+    .. [1] Cheng J., "Estimation and Processing of Ensemble Average Propagator
+           and Its Features in Diffusion MRI", PhD Thesis, 2012.
 
     """
     if evals is None:
@@ -883,8 +886,8 @@ def single_tensor_msd(evals=None, tau=1 / (4 * np.pi ** 2)):
 
     References
     ----------
-    .. [1] Cheng J., "Estimation and Processing of Ensemble Average Propagator and
-           Its Features in Diffusion MRI", PhD Thesis, 2012.
+    .. [1] Cheng J., "Estimation and Processing of Ensemble Average Propagator
+           and Its Features in Diffusion MRI", PhD Thesis, 2012.
 
     '''
     if evals is None:
@@ -914,8 +917,8 @@ def multi_tensor_msd(mf, mevals=None, tau=1 / (4 * np.pi ** 2)):
 
     References
     ----------
-    .. [1] Cheng J., "Estimation and Processing of Ensemble Average Propagator and
-           Its Features in Diffusion MRI", PhD Thesis, 2012.
+    .. [1] Cheng J., "Estimation and Processing of Ensemble Average Propagator
+           and Its Features in Diffusion MRI", PhD Thesis, 2012.
 
     '''
     msd = 0
