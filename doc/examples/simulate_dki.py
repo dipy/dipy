@@ -3,14 +3,14 @@
 DKI MultiTensor Simulation
 ==========================
 
-In this example we show how someone can simulate the diffusion kurtosis imaging
-(DKI) data of a single voxel. DKI captures information of tissue heterogeneity,
+In this example we show how to simulate the diffusion kurtosis imaging (DKI)
+data of a single voxel. DKI captures information of tissue heterogeneity,
 therefore DKI simulations have to take into account different tissue
 compartments with different diffusion properties. For example, here diffusion
 heterogeneity is taken into account by modeling different compartments for the
 intra- and extra-cellular media. These simulations are performed according to:
 
-[1] R. Neto Henriques et al., "Exploring the 3D geometriy of the diffusion
+[1] R. Neto Henriques et al., "Exploring the 3D geometry of the diffusion
     kurtosis tensor - Impact on the development of robust tractography
     procedures and novel biomarkers", NeuroImage (2015) 111, 85-99.
 """
@@ -36,7 +36,7 @@ mevals = np.array([[0.00099, 0, 0],
 
 """
 In ``angles`` we save in polar coordinates (:math:`\theta, \phi`) the principal
-axis of each compartment tensor. To simulate crossing fibres at 70 degrees
+axis of each compartment tensor. To simulate crossing fibers at 70 degrees
 the compartments of the first fiber are aligned to the x-axis while the
 compartments of the second fiber are aligned to the x-z plane with an angular
 deviation of 70 degrees from the first one.
@@ -46,8 +46,8 @@ angles = [(90, 0), (90, 0), (20, 0), (20, 0)]
 
 """
 In ``fractions`` we save the percentage of the contribution of each
-compartment, which is computed by multipling the percentage of contribution
-of each fiber populatuion and the water fraction of each different medium
+compartment, which is computed by multiplying the percentage of contribution
+of each fiber population and the water fraction of each different medium
 """
 
 fie = 0.49  # intra axonal water fraction

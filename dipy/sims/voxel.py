@@ -18,7 +18,7 @@ diffusion_evals = np.array([1500e-6, 400e-6, 400e-6])
 # DT and KT for a voxel of well aligned fibers
 # parameters are based on the simulations from:
 #
-#    Neto Henriques et al., "Exploring the 3D geometriy of the diffusion
+#    Neto Henriques et al., "Exploring the 3D geometry of the diffusion
 #    kurtosis tensor - Impact on the development of robust tractography
 #    procedures and novel biomarkers", NeuroImage, 2015; 111:85-99.
 #
@@ -358,7 +358,7 @@ def multi_tensor_dki(gtab, mevals, S0=100, angles=[(0., 0.), (90., 0.)],
 
     References
     ----------
-    .. [1] R. Neto Henriques et al., "Exploring the 3D geometriy of the
+    .. [1] R. Neto Henriques et al., "Exploring the 3D geometry of the
            diffusion kurtosis tensor - Impact on the development of robust
            tractography procedures and novel biomarkers", NeuroImage (2015)
            111, 85-99.
@@ -451,7 +451,7 @@ def compute_Wijkl(Dc, frac, i, j, k, el, DT=None):
 
     References
     ----------
-    .. [1] R. Neto Henriques et al., "Exploring the 3D geometriy of the
+    .. [1] R. Neto Henriques et al., "Exploring the 3D geometry of the
            diffusion kurtosis tensor - Impact on the development of robust
            tractography procedures and novel biomarkers", NeuroImage (2015)
            111, 85-99.
@@ -503,7 +503,7 @@ def single_diffkurt_tensors(gtab, S0=150, dt=None, kt=None, snr=None):
 
     References
     ----------
-    .. [1] R. Neto Henriques et al., "Exploring the 3D geometriy of the
+    .. [1] R. Neto Henriques et al., "Exploring the 3D geometry of the
            diffusion kurtosis tensor - Impact on the development of robust
            tractography procedures and novel biomarkers", NeuroImage (2015)
            111, 85-99.
