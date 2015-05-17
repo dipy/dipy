@@ -46,7 +46,9 @@ from dipy.data.fetcher import (fetch_scil_b0,
                                fetch_stanford_pve_maps,
                                read_stanford_pve_maps,
                                fetch_viz_icons,
-                               read_viz_icons)
+                               read_viz_icons,
+                               fetch_bundles_2_subjects,
+                               read_bundles_2_subjects)
 
 
 from ..utils.arrfuncs import as_native_array

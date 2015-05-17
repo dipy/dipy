@@ -612,3 +612,69 @@ def read_viz_icons(style='icomoon', fname='infinity.png'):
 
     folder = pjoin(dipy_home, 'icons', style)
     return pjoin(folder, fname)
+
+
+def fetch_bundles_2_subjects():
+    """ Download 2 subjects with their bundles
+    """
+    url = 'https://dl.dropboxusercontent.com/u/2481924/'
+    fname = 'bundles_2_subjects.tar.gz'
+    url = url + fname
+    folder = pjoin(dipy_home, 'exp_bundles_and_maps')
+
+    url_list = [url]
+    md5_list = ['97756fbef11ce2df31f1bedf1fc7aac7']
+    fname_list = [fname]
+
+    if not os.path.exists(folder):
+        print('Creating new directory %s' % folder)
+        os.makedirs(folder)
+        print('Downloading dataset ...')
+        for i in range(len(md5_list)):
+            _get_file_data(pjoin(folder, fname_list[i]), url_list[i])
+            new_path = pjoin(folder, fname_list[i])
+            check_md5(new_path, md5_list[i])
+            ar = tarfile.open(new_path)
+            ar.extractall(path=folder)
+            ar.close()
+
+        print('Done.')
+        print('Files copied in folder %s' % folder)
+    else:
+        msg = 'Dataset is already in place. If you want to fetch it again, '
+        msg += 'please first remove the folder %s '
+        print(msg % folder)
+
+
+def read_bundles_2_subjects(subj_id='subj_1', metrics=['fa'],
+                            bundles=['af.left', 'cst.right', 'cc_1']):
+
+    dname = pjoin(dipy_home, 'exp_bundles_and_maps', 'bundles_2_subjects')
+
+    from nibabel import trackvis as tv
+
+    res = {}
+
+    if 't1' in metrics:
+        img = nib.load(pjoin(dname, subj_id, 't1_warped.nii.gz'))
+        data = img.get_data()
+        affine = img.get_affine()
+        res['t1'] = data
+
+    if 'fa' in metrics:
+        img_fa = nib.load(pjoin(dname, subj_id, 'fa_1x1x1.nii.gz'))
+        fa = img_fa.get_data()
+        affine = img_fa.get_affine()
+        res['fa'] = fa
+
+    res['affine'] = affine
+
+    for bun in bundles:
+
+        streams, hdr = tv.read(pjoin(dname, subj_id,
+                                     'bundles', 'bundles_' + bun + '.trk'),
+                               points_space="rasmm")
+        streamlines = [s[0] for s in streams]
+        res[bun] = streamlines
+
+    return res
