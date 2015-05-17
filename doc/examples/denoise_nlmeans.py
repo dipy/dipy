@@ -10,9 +10,11 @@ as Gaussian or Rician (default).
 """
 
 import numpy as np
-from time import time
 import nibabel as nib
+import matplotlib.pyplot as plt
+from time import time
 from dipy.denoise.nlmeans import nlmeans
+from dipy.denoise.noise_estimate import estimate_sigma
 from dipy.data import fetch_sherbrooke_3shell, read_sherbrooke_3shell
 
 
@@ -23,8 +25,7 @@ data = img.get_data()
 affine = img.get_affine()
 
 mask = data[..., 0] > 80
-
-data = data[..., 0]
+data = data[..., 1]
 
 print("vol size", data.shape)
 
@@ -32,17 +33,15 @@ t = time()
 
 """
 In order to call ``nlmeans`` first you need to estimate the standard deviation
-of the noise.
+of the noise. We use N=4 since the Sherbrooke dataset was acquired on a 1.5T
+Siemens scanner with a 4 array head coil.
 """
 
-sigma = np.std(data[~mask])
-
+sigma = estimate_sigma(data, N=4)
 den = nlmeans(data, sigma=sigma, mask=mask)
 
 print("total time", time() - t)
 print("vol size", den.shape)
-
-import matplotlib.pyplot as plt
 
 axial_middle = data.shape[2] / 2
 
@@ -62,10 +61,10 @@ for i in range(3):
     ax[i].set_axis_off()
 
 plt.show()
-plt.savefig('denoised_S0.png', bbox_inches='tight')
+plt.savefig('denoised.png', bbox_inches='tight')
 
 """
-.. figure:: denoised_S0.png
+.. figure:: denoised.png
    :align: center
 
    **Showing the middle axial slice without (left) and with (right) NLMEANS denoising**.
@@ -80,6 +79,4 @@ nib.save(nib.Nifti1Image(den, affine), 'denoised.nii.gz')
    Resonance Images", IEEE Transactions on Medical Imaging, 27(4):425-441, 2008.
 
 .. include:: ../links_names.inc
-
-
 """
