@@ -46,20 +46,24 @@ def test_estimate_sigma():
 
     arr = np.zeros((3, 3, 3))
     arr[0, 0, 0] = 1
-    sigma = estimate_sigma(arr, disable_background_masking=False)
-    assert_array_almost_equal(sigma, 0.10286889997472792)
+    sigma = estimate_sigma(arr, disable_background_masking=False, N=1)
+    assert_array_almost_equal(sigma, 0.10286889997472792 / np.sqrt(0.42920367320510366))
 
     arr = np.zeros((3, 3, 3, 3))
     arr[0, 0, 0] = 1
-    sigma = estimate_sigma(arr, disable_background_masking=False)
-    assert_array_almost_equal(sigma, np.array([0.10286889997472792, 0.10286889997472792, 0.10286889997472792]))
+    sigma = estimate_sigma(arr, disable_background_masking=False, N=1)
+    assert_array_almost_equal(sigma, np.array([0.10286889997472792 / np.sqrt(0.42920367320510366),
+                                               0.10286889997472792 / np.sqrt(0.42920367320510366),
+                                               0.10286889997472792 / np.sqrt(0.42920367320510366)]))
 
     arr = np.zeros((3, 3, 3))
     arr[0, 0, 0] = 1
-    sigma = estimate_sigma(arr, disable_background_masking=True)
-    assert_array_almost_equal(sigma, 0.46291005)
+    sigma = estimate_sigma(arr, disable_background_masking=True, N=4)
+    assert_array_almost_equal(sigma, 0.46291005 / np.sqrt(0.4834941393603609))
 
     arr = np.zeros((3, 3, 3, 3))
     arr[0, 0, 0] = 1
-    sigma = estimate_sigma(arr, disable_background_masking=True)
-    assert_array_almost_equal(sigma, np.array([0.46291005, 0.46291005, 0.46291005]))
+    sigma = estimate_sigma(arr, disable_background_masking=True, N=12)
+    assert_array_almost_equal(sigma, np.array([0.46291005 / np.sqrt(0.4946862482541263),
+                                               0.46291005 / np.sqrt(0.4946862482541263),
+                                               0.46291005 / np.sqrt(0.4946862482541263)]))
