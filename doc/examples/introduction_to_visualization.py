@@ -33,43 +33,9 @@ slicer. We will be able to change the slices using a ``slider`` widget.
 
 """
 
-def read_bundles_2_subjects(subj_id='subj_1', metrics=['fa'],
-                            bundles=['af.left', 'cst.right', 'cc_1']):
+from dipy.data.fetcher import fetch_bundles_2_subjects, read_bundles_2_subjects
 
-
-    dname = '/home/eleftherios/Data/bundles_2_subjects'
-
-    import nibabel as nib
-    from nibabel import trackvis as tv
-    from os.path import join as pjoin
-
-    res = {}
-
-    if 't1' in metrics:
-        img = nib.load(pjoin(dname, subj_id, 't1_warped.nii.gz'))
-        data = img.get_data()
-        affine = img.get_affine()
-        res['t1'] = data
-
-    if 'fa' in metrics:
-        img_fa = nib.load(pjoin(dname, subj_id, 'fa_1x1x1.nii.gz'))
-        fa = img_fa.get_data()
-        affine = img_fa.get_affine()
-        res['fa'] = fa
-
-
-    res['affine'] = affine
-
-    for bun in bundles:
-
-        streams, hdr = tv.read(pjoin(dname, subj_id,
-                                     'bundles', 'bundles_' + bun + '.trk'),
-                               points_space="rasmm")
-        streamlines = [s[0] for s in streams]
-        res[bun] = streamlines
-
-    return res
-
+fetch_bundles_2_subjects()
 
 world_coords = True
 streamline_opacity = 1.
