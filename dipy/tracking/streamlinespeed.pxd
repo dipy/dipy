@@ -1,17 +1,6 @@
 # distutils: language = c
 # cython: wraparound=False, cdivision=True, boundscheck=False
 
-#import numpy as np
-#cimport numpy as np
-#import cython
-
-#from libc.math cimport sqrt
-
-#cdef extern from "stdlib.h" nogil:
-#    ctypedef unsigned long size_t
-#    void free(void *ptr)
-#    void *malloc(size_t size)
-
 ctypedef float[:,:] float2d
 ctypedef double[:,:] double2d
 

@@ -417,7 +417,7 @@ class QuickBundles(Clustering):
     metric : str or `Metric` object (optional)
         The distance metric to use when comparing two streamlines. By default,
         the Minimum average Direct-Flip (MDF) distance [Garyfallidis12]_ is
-        used and streamlines are automatically resampled so they have 18 points.
+        used and streamlines are automatically resampled so they have 12 points.
     max_nb_clusters : int
         Limits the creation of bundles.
 
@@ -428,14 +428,15 @@ class QuickBundles(Clustering):
     >>> from nibabel import trackvis as tv
     >>> streams, hdr = tv.read(get_data('fornix'))
     >>> streamlines = [i[0] for i in streams]
-    >>> # Segment fornix with a treshold of 10mm and streamlines resampled to 18 points.
+    >>> # Segment fornix with a treshold of 10mm and streamlines resampled to 12 points.
     >>> qb = QuickBundles(threshold=10.)
     >>> clusters = qb.cluster(streamlines)
     >>> len(clusters)
     4
     >>> map(len, clusters)
-    [64, 191, 44, 1]
-    >>> # Segment fornix with a treshold of 10mm and streamlines resampled to 2 points.
+    [61, 191, 47, 1]
+    >>> # Resampling streamlines differently is done explicitly as follows.
+    >>> # Note this has an impact on the speed and the accuracy (tradeoff).
     >>> from dipy.segment.metric import ResampleFeature
     >>> from dipy.segment.metric import AveragePointwiseEuclideanMetric
     >>> feature = ResampleFeature(nb_points=2)
@@ -454,14 +455,14 @@ class QuickBundles(Clustering):
                         tractography simplification, Frontiers in Neuroscience,
                         vol 6, no 175, 2012.
     """
-    def __init__(self, threshold, metric="MDF", max_nb_clusters=np.iinfo('i4').max):
+    def __init__(self, threshold, metric="MDF_12points", max_nb_clusters=np.iinfo('i4').max):
         self.threshold = threshold
         self.max_nb_clusters = max_nb_clusters
 
         if isinstance(metric, Metric):
             self.metric = metric
-        elif metric.upper() == "MDF":
-            feature = ResampleFeature(nb_points=18)
+        elif metric == "MDF_12points":
+            feature = ResampleFeature(nb_points=12)
             self.metric = AveragePointwiseEuclideanMetric(feature)
 
     def cluster(self, streamlines, ordering=None, refdata=None):

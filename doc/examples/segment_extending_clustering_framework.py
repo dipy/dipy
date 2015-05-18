@@ -1,10 +1,15 @@
 """
-===========================================================
-How to make new `Feature` and new `Metric` for Quickbundles
-===========================================================
+==========================================================
+Enhancing QuickBundles with different metrics and features
+==========================================================
 
-This tutorial shows how to create new `Feature` and new `Metric` classes that
-can be used by QuickBundles.
+QuickBundles is a flexible algorithm that requires only a distance metric and
+an adjacency threshold to perform clustering. There is a wide variety of metrics
+that could be uses to cluster streamlines.
+
+The purpose of this tutorial is to show how to easily create new `Feature` and
+new `Metric` classes that can be used by QuickBundles.
+
 
 Clustering framework
 ====================
@@ -12,33 +17,34 @@ Dipy provides a simple, flexible and fast framework to do clustering of
 sequential data (e.g. streamlines).
 
 A *sequential datum* in Dipy is represented as a numpy array of size
-:math:`(N \times D)` where each row of the array represent a D dimensional
+:math:`(N \times D)` where each row of the array represents a D dimensional
 point of the sequence. A set of these sequences is represented as a list of
 numpy arrays of size :math:`(N_i \times D)` for :math:`i=1:M` where $M$ is the
 number of sequences in the set.
 
 This clustering framework is modular and divided in three parts:
-1) features extraction
+1) feature extraction
 2) distance computation
-3) data partitioning
+3) clustering algorithm
 
-The features extraction part regroups any preprocessing needed to be done on
-the data before computing distances between them. To define new way of
-extracting features, one has to subclass `Feature` (see below).
+The **feature extraction** part includes any preprocessing needed to be done on
+the data before computing distances between them (e.g. resampling the number of
+points of a streamline). To define a new way of extracting features, one has to
+subclass `Feature` (see below).
 
-The distance computation part regroups any metric capable of evaluating a
+The **distance computation** part includes any metric capable of evaluating a
 distance between two set of features previously extracted from the data. To
-define new way of extracting features, one has to subclass `Metric` (see below).
+define a new way of extracting features, one has to subclass `Metric` (see below).
 
-The data partitionning part represents the clustering algorithm itself
+The **clustering algorithm** part represents the clustering algorithm itself
 (e.g. QuickBundles, K-means, Hierarchical Clustering). More precisely, it
-regroups any algorithms taking as input a list of sequential data and
-outputting a `ClusterMap` object. To define new clustering algorithms see tutorial###.
+includes any algorithms taking as input a list of sequential data and
+outputting a `ClusterMap` object.
 
 
 Extending `Feature`
 ===================
-This section will guide you through the creation of a new features extraction
+This section will guide you through the creation of a new feature extraction
 method that can be used in the context of this clustering framework.
 
 Assuming a set of streamlines, the type of features we want to extract is the
@@ -55,7 +61,7 @@ We now define the class 'ArcLengthFeature' that will perform the desired
 feature extraction. When subclassing `Feature`, two methods have to be
 redefined: `infer_shape` and `extract`.
 
-Also, an important property about features extraction is whether or not
+Also, an important property about feature extraction is whether or not
 its process is invariant to the order of the points within a streamline.
 This is needed as there is no way one can tell which extremity of a
 streamline is the beginning and which one is the end.
@@ -99,14 +105,14 @@ streams, hdr = tv.read(fname)
 streamlines = [i[0] for i in streams]
 
 """
-Perform QuickBundles clustering using the metric `EuclideanMetric`
+Perform QuickBundles clustering using the metric `SumPointwiseEuclideanMetric`
 and our `ArcLengthFeature`.
 """
 
 from dipy.segment.clustering import QuickBundles
-from dipy.segment.metric import EuclideanMetric
+from dipy.segment.metric import SumPointwiseEuclideanMetric
 
-metric = EuclideanMetric(feature=ArcLengthFeature())
+metric = SumPointwiseEuclideanMetric(feature=ArcLengthFeature())
 qb = QuickBundles(threshold=2., metric=metric)
 clusters = qb.cluster(streamlines)
 
@@ -183,7 +189,7 @@ class CosineMetric(Metric):
 
 """
 The new distance `CosineMetric` is ready to be used. Let's use
-it to cluster a set of streamlines according the cosine distance of the
+it to cluster a set of streamlines according to the cosine distance of the
 vector between their endpoints. For educational purposes we will try to
 cluster a small streamline bundle known from neuroanatomy as the fornix.
 
