@@ -15,18 +15,6 @@ from dipy.core.geometry import vec2vec_rotmat
 #
 diffusion_evals = np.array([1500e-6, 400e-6, 400e-6])
 
-# DT and KT for a voxel of well aligned fibers
-# parameters are based on the simulations from:
-#
-#    Neto Henriques et al., "Exploring the 3D geometry of the diffusion
-#    kurtosis tensor - Impact on the development of robust tractography
-#    procedures and novel biomarkers", NeuroImage, 2015; 111:85-99.
-#
-diffusion_tensor = np.array([1638e-6, 444e-6, 444e-6, 0, 0, 0])
-kurtosis_tensor = np.array([1.7068, 0.8010, 0.8010, 0, 0, 0, 0, 0, 0, 0.3897,
-                            0.3897, 0.2670, 0, 0, 0])
-
-
 def _add_gaussian(sig, noise1, noise2):
     """
     Helper function to add_noise
@@ -393,29 +381,29 @@ def multi_tensor_dki(gtab, mevals, S0=100, angles=[(0., 0.), (90., 0.)],
 
     # compute voxel's KT
     kt = np.zeros((15))
-    kt[0] = compute_Wijkl(mD, fractions, 0, 0, 0, 0, D)
-    kt[1] = compute_Wijkl(mD, fractions, 1, 1, 1, 1, D)
-    kt[2] = compute_Wijkl(mD, fractions, 2, 2, 2, 2, D)
-    kt[3] = compute_Wijkl(mD, fractions, 0, 0, 0, 1, D)
-    kt[4] = compute_Wijkl(mD, fractions, 0, 0, 0, 2, D)
-    kt[5] = compute_Wijkl(mD, fractions, 0, 1, 1, 1, D)
-    kt[6] = compute_Wijkl(mD, fractions, 1, 1, 1, 2, D)
-    kt[7] = compute_Wijkl(mD, fractions, 0, 2, 2, 2, D)
-    kt[8] = compute_Wijkl(mD, fractions, 1, 2, 2, 2, D)
-    kt[9] = compute_Wijkl(mD, fractions, 0, 0, 1, 1, D)
-    kt[10] = compute_Wijkl(mD, fractions, 0, 0, 2, 2, D)
-    kt[11] = compute_Wijkl(mD, fractions, 1, 1, 2, 2, D)
-    kt[12] = compute_Wijkl(mD, fractions, 0, 0, 1, 2, D)
-    kt[13] = compute_Wijkl(mD, fractions, 0, 1, 1, 2, D)
-    kt[14] = compute_Wijkl(mD, fractions, 0, 1, 2, 2, D)
+    kt[0] = compute_Wijkl(mD, fractions, 0, 0, 0, 0)
+    kt[1] = compute_Wijkl(mD, fractions, 1, 1, 1, 1)
+    kt[2] = compute_Wijkl(mD, fractions, 2, 2, 2, 2)
+    kt[3] = compute_Wijkl(mD, fractions, 0, 0, 0, 1)
+    kt[4] = compute_Wijkl(mD, fractions, 0, 0, 0, 2)
+    kt[5] = compute_Wijkl(mD, fractions, 0, 1, 1, 1)
+    kt[6] = compute_Wijkl(mD, fractions, 1, 1, 1, 2)
+    kt[7] = compute_Wijkl(mD, fractions, 0, 2, 2, 2)
+    kt[8] = compute_Wijkl(mD, fractions, 1, 2, 2, 2)
+    kt[9] = compute_Wijkl(mD, fractions, 0, 0, 1, 1)
+    kt[10] = compute_Wijkl(mD, fractions, 0, 0, 2, 2)
+    kt[11] = compute_Wijkl(mD, fractions, 1, 1, 2, 2)
+    kt[12] = compute_Wijkl(mD, fractions, 0, 0, 1, 2)
+    kt[13] = compute_Wijkl(mD, fractions, 0, 1, 1, 2)
+    kt[14] = compute_Wijkl(mD, fractions, 0, 1, 2, 2)
 
     # compute S based on the DT and KT
-    S = single_diffkurt_tensors(gtab, S0, dt, kt, snr)
+    S = single_diffkurt_tensors(gtab, dt, kt, S0, snr)
 
     return S, dt, kt
 
 
-def compute_Wijkl(Dc, frac, i, j, k, el, DT=None):
+def compute_Wijkl(Dc, frac, ind_i, ind_j, ind_k, ind_l):
     r""" Computes the diffusion kurtosis tensor element (with indexes i, j, k
     and el) based on the individual diffusion tensor components of a
     multicompartmental model.
@@ -429,14 +417,14 @@ def compute_Wijkl(Dc, frac, i, j, k, el, DT=None):
     frac : float
         Percentage of the contribution of each tensor. The sum of fractions
         should be equal to 100%.
-    i : int
-        First element index (0 for x, 1 for y, 2 for z)
-    j : int
-        Second element index (0 for x, 1 for y, 2 for z)
-    k : int
-        Third element index (0 for x, 1 for y, 2 for z)
-    el: int
-        Fourth elements index (0 for x, 1 for y, 2 for z)
+    ind_i : int
+        Element's index i (0 for x, 1 for y, 2 for z)
+    ind_j : int
+        Element's index j (0 for x, 1 for y, 2 for z)
+    ind_k : int
+        Element's index k (0 for x, 1 for y, 2 for z)
+    ind_l: int
+        Elements index l (0 for x, 1 for y, 2 for z)
     DT : (3,3) ndarray (optional)
         Elements of the global diffusion tensor.
 
@@ -456,26 +444,26 @@ def compute_Wijkl(Dc, frac, i, j, k, el, DT=None):
            tractography procedures and novel biomarkers", NeuroImage (2015)
            111, 85-99.
     """
-
-    if DT is None:
-        DT = np.zeros((3, 3))
-        for i in range(len(frac)):
-            DT = DT + frac[i]*Dc[i]
+    
+    DT = np.zeros((3, 3))
+    for i in range(len(frac)):
+        DT = DT + frac[i]*Dc[i]
 
     wijkl = 0
     MD = (DT[0][0] + DT[1][1] + DT[2][2]) / 3
     for f in range(len(frac)):
-        wijkl = wijkl + frac[f] * (Dc[f][i][j]*Dc[f][k][el] +
-                                   Dc[f][i][k]*Dc[f][j][el] +
-                                   Dc[f][i][el]*Dc[f][j][k])
+        wijkl = wijkl + frac[f] * (Dc[f][ind_i][ind_j]*Dc[f][ind_k][ind_l] +
+                                   Dc[f][ind_i][ind_k]*Dc[f][ind_j][ind_l] +
+                                   Dc[f][ind_i][ind_l]*Dc[f][ind_j][ind_k])
 
-    wijkl = (wijkl - DT[i][j]*DT[k][el] - DT[i][k]*DT[j][el] -
-             DT[i][el]*DT[j][k]) / (MD**2)
+    wijkl = (wijkl - DT[ind_i][ind_j]*DT[ind_k][ind_l] -
+             DT[ind_i][ind_k]*DT[ind_j][ind_l] -
+             DT[ind_i][ind_l]*DT[ind_j][ind_k]) / (MD**2)
 
     return wijkl
 
 
-def single_diffkurt_tensors(gtab, S0=150, dt=None, kt=None, snr=None):
+def single_diffkurt_tensors(gtab, dt, kt, S0=150, snr=None):
     r""" Simulated signal based on the diffusion and diffusion kurtosis
     tensors. Simulations are preformed assuming the DKI model.
 
@@ -483,12 +471,12 @@ def single_diffkurt_tensors(gtab, S0=150, dt=None, kt=None, snr=None):
     -----------
     gtab : GradientTable
         Measurement directions.
-    S0 : float (optional)
-        Strength of signal in the presence of no diffusion gradient.
     dt : (6,) ndarray
         Elements of the diffusion tensor.
     kt : (15, ) ndarray
         Elements of the diffusion kurtosis tensor.
+    S0 : float (optional)
+        Strength of signal in the presence of no diffusion gradient.    
     snr : float (optional)
         Signal to noise ratio, assuming Rician noise.  None implies no noise.
 
@@ -508,12 +496,6 @@ def single_diffkurt_tensors(gtab, S0=150, dt=None, kt=None, snr=None):
            tractography procedures and novel biomarkers", NeuroImage (2015)
            111, 85-99.
     """
-
-    if dt is None:
-        dt = diffusion_tensor
-
-    if kt is None:
-        kt = kurtosis_tensor
 
     A = dki_design_matrix(gtab)
 
