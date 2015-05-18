@@ -438,7 +438,7 @@ class QuickBundles(Clustering):
     >>> clusters = qb.cluster(streamlines)
     >>> len(clusters)
     4
-    >>> map(len, clusters)
+    >>> list(map(len, clusters))
     [61, 191, 47, 1]
     >>> # Resampling streamlines differently is done explicitly as follows.
     >>> # Note this has an impact on the speed and the accuracy (tradeoff).
@@ -450,7 +450,7 @@ class QuickBundles(Clustering):
     >>> clusters = qb.cluster(streamlines)
     >>> len(clusters)
     4
-    >>> map(len, clusters)
+    >>> list(map(len, clusters))
     [58, 142, 72, 28]
 
 
