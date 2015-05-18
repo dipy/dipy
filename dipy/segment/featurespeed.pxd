@@ -1,5 +1,5 @@
 from cythonutils cimport Data2D, Shape
-cimport numpy as np
+cimport numpy as cnp
 
 cdef class Feature(object):
     cdef int is_order_invariant
@@ -23,4 +23,4 @@ cdef class IdentityFeature(CythonFeature):
 # metric like SumPointwiseEuclideanMetric that does require a consistent
 # number of points between datum.
 cdef class ResampleFeature(CythonFeature):
-    cdef np.npy_intp nb_points
+    cdef cnp.npy_intp nb_points

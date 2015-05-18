@@ -3,7 +3,6 @@
 
 import itertools
 import numpy as np
-cimport numpy as np
 
 from cythonutils cimport Data2D, shape2tuple
 from metricspeed cimport Metric

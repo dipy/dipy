@@ -2,7 +2,7 @@
 # cython: wraparound=False, cdivision=True, boundscheck=False
 
 import numpy as np
-cimport numpy as np
+cimport numpy as cnp
 
 from cythonutils cimport tuple2shape, shape2tuple, shape_from_memview
 from dipy.tracking.streamlinespeed cimport c_set_number_of_points, c_length
@@ -198,7 +198,7 @@ cdef class ResampleFeature(CythonFeature):
     This is useful for metrics requiring a constant number of points for all
      streamlines.
     """
-    def __init__(ResampleFeature self, np.npy_intp nb_points):
+    def __init__(ResampleFeature self, cnp.npy_intp nb_points):
         super(ResampleFeature, self).__init__(is_order_invariant=False)
         self.nb_points = nb_points
 
@@ -269,7 +269,7 @@ cdef class MidpointFeature(CythonFeature):
         shape.size = datum.shape[1]
         return shape
 
-    cdef void c_extract(MidpointFeature self, Data2D datum, Data2D out) nogil:
+    cdef void c_extract(MidpointFeature self, Data2D datum, Data2D out) nogil except *:
         cdef:
             int N = datum.shape[0], D = datum.shape[1]
             int mid = N/2
@@ -291,7 +291,7 @@ cdef class ArcLengthFeature(CythonFeature):
     def __init__(ArcLengthFeature self):
         super(ArcLengthFeature, self).__init__(is_order_invariant=True)
 
-    cdef Shape c_infer_shape(ArcLengthFeature self, Data2D datum) nogil:
+    cdef Shape c_infer_shape(ArcLengthFeature self, Data2D datum) nogil except *:
         cdef Shape shape
         shape.ndim = 2
         shape.dims[0] = 1
@@ -299,7 +299,7 @@ cdef class ArcLengthFeature(CythonFeature):
         shape.size = 1
         return shape
 
-    cdef void c_extract(ArcLengthFeature self, Data2D datum, Data2D out) nogil:
+    cdef void c_extract(ArcLengthFeature self, Data2D datum, Data2D out) nogil except *:
         out[0, 0] = c_length(datum)
 
 
@@ -324,7 +324,7 @@ cdef class VectorBetweenEndpointsFeature(CythonFeature):
         shape.size = datum.shape[1]
         return shape
 
-    cdef void c_extract(VectorBetweenEndpointsFeature self, Data2D datum, Data2D out) nogil:
+    cdef void c_extract(VectorBetweenEndpointsFeature self, Data2D datum, Data2D out) nogil except *:
         cdef:
             int N = datum.shape[0], D = datum.shape[1]
             int d

@@ -2,7 +2,6 @@
 # cython: wraparound=False, cdivision=True, boundscheck=False
 
 import numpy as np
-cimport numpy as np
 
 
 cdef Shape shape_from_memview(Data data) nogil:
