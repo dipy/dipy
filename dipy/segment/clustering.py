@@ -1,6 +1,8 @@
 import operator
 import numpy as np
 
+from abc import ABCMeta, abstractmethod
+
 from dipy.segment.metric import Metric
 from dipy.segment.metric import ResampleFeature
 from dipy.segment.metric import AveragePointwiseEuclideanMetric
@@ -262,12 +264,12 @@ class ClusterMap(object):
             elif op is operator.ne:
                 return not self == other
 
-            raise NotImplemented("Can only check if two ClusterMap instances are equal or not.")
+            raise NotImplementedError("Can only check if two ClusterMap instances are equal or not.")
 
         elif isinstance(other, int):
             return np.array([op(len(cluster), other) for cluster in self])
 
-        raise NotImplemented("ClusterMap only supports comparison with a int or another instance of Clustermap.")
+        raise NotImplementedError("ClusterMap only supports comparison with a int or another instance of Clustermap.")
 
     def __eq__(self, other):
         return self._richcmp(other, operator.eq)
@@ -312,7 +314,7 @@ class ClusterMap(object):
 
     def clear(self):
         """ Remove all clusters from this cluster map. """
-        self.clusters.clear()
+        del self.clusters[:]
 
     def get_size(self):
         """ Gets number of clusters contained in this cluster map. """
@@ -378,7 +380,10 @@ class ClusterMapCentroid(ClusterMap):
         return [cluster.centroid for cluster in self.clusters]
 
 
-class Clustering:
+class Clustering(object):
+    __metaclass__ = ABCMeta
+
+    @abstractmethod
     def cluster(self, data, ordering=None):
         """ Clusters `data`.
 
@@ -464,8 +469,10 @@ class QuickBundles(Clustering):
         elif metric == "MDF_12points":
             feature = ResampleFeature(nb_points=12)
             self.metric = AveragePointwiseEuclideanMetric(feature)
+        else:
+            raise ValueError("Unknown metric: {0}".format(metric))
 
-    def cluster(self, streamlines, ordering=None, refdata=None):
+    def cluster(self, streamlines, ordering=None):
         """ Clusters `streamlines` into bundles.
 
         Performs quickbundles algorithm using predefined metric and threshold.
@@ -487,9 +494,6 @@ class QuickBundles(Clustering):
                                    threshold=self.threshold,
                                    max_nb_clusters=self.max_nb_clusters,
                                    ordering=ordering)
-        if refdata is None:
-            refdata = streamlines
 
-        cluster_map.refdata = refdata
-
+        cluster_map.refdata = streamlines
         return cluster_map

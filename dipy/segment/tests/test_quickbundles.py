@@ -33,6 +33,10 @@ def test_quickbundles_empty_data():
     assert_equal(len(clusters.centroids), 0)
 
 
+def test_quickbundles_wrong_metric():
+    assert_raises(ValueError, QuickBundles, threshold=10., metric="WrongMetric")
+
+
 def test_quickbundles_shape_uncompatibility():
     # QuickBundles' old default metric (AveragePointwiseEuclideanMetric, aka MDF)
     # requires that all streamlines have the same number of points.
