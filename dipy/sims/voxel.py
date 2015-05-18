@@ -15,6 +15,7 @@ from dipy.core.geometry import vec2vec_rotmat
 #
 diffusion_evals = np.array([1500e-6, 400e-6, 400e-6])
 
+
 def _add_gaussian(sig, noise1, noise2):
     """
     Helper function to add_noise
@@ -405,7 +406,7 @@ def multi_tensor_dki(gtab, mevals, S0=100, angles=[(0., 0.), (90., 0.)],
 
 def compute_Wijkl(Dc, frac, ind_i, ind_j, ind_k, ind_l):
     r""" Computes the diffusion kurtosis tensor element (with indexes i, j, k
-    and el) based on the individual diffusion tensor components of a
+    and l) based on the individual diffusion tensor components of a
     multicompartmental model.
 
     Parameters
@@ -431,7 +432,7 @@ def compute_Wijkl(Dc, frac, ind_i, ind_j, ind_k, ind_l):
     Returns
     --------
     wijkl : float
-            kurtosis tensor element of index i, j, k, el
+            kurtosis tensor element of index i, j, k, l
 
     Notes
     --------
@@ -444,7 +445,7 @@ def compute_Wijkl(Dc, frac, ind_i, ind_j, ind_k, ind_l):
            tractography procedures and novel biomarkers", NeuroImage (2015)
            111, 85-99.
     """
-    
+
     DT = np.zeros((3, 3))
     for i in range(len(frac)):
         DT = DT + frac[i]*Dc[i]
@@ -476,7 +477,7 @@ def single_diffkurt_tensors(gtab, dt, kt, S0=150, snr=None):
     kt : (15, ) ndarray
         Elements of the diffusion kurtosis tensor.
     S0 : float (optional)
-        Strength of signal in the presence of no diffusion gradient.    
+        Strength of signal in the presence of no diffusion gradient.
     snr : float (optional)
         Signal to noise ratio, assuming Rician noise.  None implies no noise.
 
