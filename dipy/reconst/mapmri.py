@@ -15,10 +15,10 @@ class MapmriModel():
     r"""Mean Apparent Propagator MRI (MAPMRI) [1]_ of the diffusion signal.
 
     The main idea is to model the diffusion signal as a linear combination of
-    the continuous function presented in [2]_ but extending it in three
-    dimension.
+    the continuous functions presented in [2]_ but extending it in three
+    dimensions.
     The main difference with the SHORE proposed in [3]_ is that MAPMRI 3D
-    extension is provided using a set of three basis function for the radial
+    extension is provided using a set of three basis functions for the radial
     part, one for the signal along x, one for y and one for z, while [3]_ 
     uses one basis function to model the radial part and real Spherical
     Harmonics to model the angular part.
@@ -53,10 +53,10 @@ class MapmriModel():
 
         The main idea is to model the diffusion signal as a linear combination of
         the continuous functions presented in [2]_ but extending it in three
-        dimension.
+        dimensions.
 
         The main difference with the SHORE proposed in [3]_ is that MAPMRI 3D
-        extension is provided using a set of three basis function for the radial
+        extension is provided using a set of three basis functions for the radial
         part, one for the signal along x, one for y and one for z, while [3]_ 
         uses one basis function to model the radial part and real Spherical
         Harmonics to model the angular part.
@@ -100,8 +100,7 @@ class MapmriModel():
         --------
         In this example, where the data, gradient table and sphere tessellation
         used for reconstruction are provided, we model the diffusion signal
-        with respect to the MAPMRI model and compute the real and analytical
-        ODF.
+        with respect to the MAPMRI model and compute the analytical ODF.
 
         >>> from dipy.core.gradients import gradient_table
         >>> from dipy.data import dsi_voxels, get_sphere
@@ -122,6 +121,12 @@ class MapmriModel():
         self.radial_order = radial_order
         self.lambd = lambd
         self.eap_cons = eap_cons
+        if self.eap_cons:
+            if not have_cvxopt:
+                raise ValueError(
+                    'CVXOPT package needed to enforce constraints')
+            import cvxopt.solvers
+
         self.anisotropic_scaling = anisotropic_scaling
         if (gtab.big_delta is None) or (gtab.small_delta is None):
             self.tau = 1 / (4 * np.pi ** 2)
@@ -134,7 +139,7 @@ class MapmriModel():
             self.gtab.bvals[self.ind], self.gtab.bvecs[self.ind, :])
         self.tenmodel = dti.TensorModel(gtab_dti)
         self.ind_mat = mapmri_index_matrix(self.radial_order)
-        self.Bm = Bmat(self.ind_mat)
+        self.Bm = b_mat(self.ind_mat)
 
     @multi_voxel_fit
     def fit(self, data):
@@ -163,13 +168,9 @@ class MapmriModel():
         M = mapmri_phi_matrix(self.radial_order, mu, q.T)
 
         # This is a simple empirical regularization, to be replaced
-        I = np.diag(self.ind_mat.sum(1)**2)
+        I = np.diag(self.ind_mat.sum(1) ** 2)
 
         if self.eap_cons:
-            if not have_cvxopt:
-                raise ValueError(
-                    'CVXOPT package needed to enforce constraints')
-            import cvxopt.solvers
             rmax = 2 * np.sqrt(10 * evals.max() * self.tau)
             r_index, r_grad = create_rspace(11, rmax)
             K = mapmri_psi_matrix(
@@ -249,7 +250,7 @@ class MapmriFit():
 
         Parameters
         ----------
-        s: unsigned int
+        s : unsigned int
             radial moment of the ODF
 
         References
@@ -299,12 +300,12 @@ def mapmri_index_matrix(radial_order):
 
     Parameters
     ----------
-    radial_order: unsigned int
+    radial_order : unsigned int
         radial order of MAPMRI basis
 
     Returns
     -------
-    index_matrix: array, shape (N,3)
+    index_matrix : array, shape (N,3)
         ordering of the basis in x, y, z
 
     References
@@ -322,17 +323,17 @@ def mapmri_index_matrix(radial_order):
     return np.array(index_matrix)
 
 
-def Bmat(ind_mat):
+def b_mat(ind_mat):
     r""" Calculates the B coefficients from [1]_ Eq. 27.
 
     Parameters
-    -------
-    index_matrix: array, shape (N,3)
+    ----------
+    index_matrix : array, shape (N,3)
         ordering of the basis in x, y, z
 
     Returns
     -------
-    B: array, shape (N,)
+    B : array, shape (N,)
         B coefficients for the basis
 
     References
@@ -357,13 +358,12 @@ def mapmri_phi_1d(n, q, mu):
 
     Parameters
     -------
-    n: unsigned int
+    n : unsigned int
         order of the basis
-    q: array, shape (N,)
+    q : array, shape (N,)
         points in the q-space in which evaluate the basis
-    mu: float
+    mu : float
         scale factor of the basis
-
 
     References
     ----------
@@ -387,14 +387,13 @@ def mapmri_phi_3d(n, q, mu):
     r""" Three dimensional MAPMRI basis function from [1]_ Eq. 23.
 
     Parameters
-    -------
-    n: array, shape (3,)
+    ----------
+    n : array, shape (3,)
         order of the basis function for x, y, z
-    q: array, shape (N,3)
+    q : array, shape (N,3)
         points in the q-space in which evaluate the basis
-    mu: array, shape (3,)
+    mu : array, shape (3,)
         scale factors of the basis for x, y, z
-
 
     References
     ----------
@@ -417,11 +416,10 @@ def mapmri_phi_matrix(radial_order, mu, q_gradients):
     ----------
     radial_order : unsigned int,
         an even integer that represent the order of the basis
-    mu: array, shape (3,)
+    mu : array, shape (3,)
         scale factors of the basis for x, y, z
-    q_gradients: array, shape (N,3)
+    q_gradients : array, shape (N,3)
         points in the q-space in which evaluate the basis
-
 
     References
     ----------
@@ -444,14 +442,13 @@ def mapmri_psi_1d(n, x, mu):
     r""" One dimensional MAPMRI propagator basis function from [1]_ Eq. 10.
 
     Parameters
-    -------
-    n: unsigned int
+    ----------
+    n : unsigned int
         order of the basis
-    x: array, shape (N,)
+    x : array, shape (N,)
         points in the r-space in which evaluate the basis
-    mu: float
+    mu : float
         scale factor of the basis
-
 
     References
     ----------
@@ -472,14 +469,13 @@ def mapmri_psi_3d(n, r, mu):
     r""" Three dimensional MAPMRI propagator basis function from [1]_ Eq. 22.
 
     Parameters
-    -------
-    n: array, shape (3,)
+    ----------
+    n : array, shape (3,)
         order of the basis function for x, y, z
-    q: array, shape (N,3)
+    q : array, shape (N,3)
         points in the q-space in which evaluate the basis
-    mu: array, shape (3,)
+    mu : array, shape (3,)
         scale factors of the basis for x, y, z
-
 
     References
     ----------
@@ -497,16 +493,14 @@ def mapmri_psi_3d(n, r, mu):
 def mapmri_psi_matrix(radial_order, mu, rgrad):
     r"""Compute the MAPMRI psi matrix for the propagator [1]_
 
-
     Parameters
     ----------
     radial_order : unsigned int,
         an even integer that represent the order of the basis
-    mu: array, shape (3,)
+    mu : array, shape (3,)
         scale factors of the basis for x, y, z
-    rgrad: array, shape (N,3)
+    rgrad : array, shape (N,3)
         points in the r-space in which evaluate the EAP
-
 
     References
     ----------
@@ -532,11 +526,11 @@ def mapmri_odf_matrix(radial_order, mu, s, vertices):
     ----------
     radial_order : unsigned int,
         an even integer that represent the order of the basis
-    mu: array, shape (3,)
+    mu : array, shape (3,)
         scale factors of the basis for x, y, z
-    s: unsigned int
+    s : unsigned int
         radial moment of the ODF
-    vertices: array, shape (N,3)
+    vertices : array, shape (N,3)
         points of the sphere shell in the r-space in which evaluate the ODF
 
 
@@ -604,19 +598,19 @@ def _odf_cfunc(n1, n2, n3, a, b, g, s):
 
 
 def mapmri_EAP(r_list, radial_order, coeff, mu, R):
-    r"""Evaluate the MAPMRI propagator in a set of points of the r-space.
+    r""" Evaluate the MAPMRI propagator in a set of points of the r-space.
 
     Parameters
     ----------
-    r_list: array, shape (N,3)
+    r_list : array, shape (N,3)
         points of the r-space in which evaluate the EAP
     radial_order : unsigned int,
         an even integer that represent the order of the basis
-    coeff: array, shape (N,)
+    coeff : array, shape (N,)
         the MAPMRI coefficients
-    mu: array, shape (3,)
+    mu : array, shape (3,)
         scale factors of the basis for x, y, z
-    R: array, shape (3,3)
+    R : array, shape (3,3)
         MAPMRI rotation matrix
     """
 
@@ -633,7 +627,7 @@ def mapmri_EAP(r_list, radial_order, coeff, mu, R):
 
 def create_rspace(gridsize, radius_max):
     """ Create the real space table, that contains the points in which
-        to compute the pdf.
+    to compute the pdf.
 
     Parameters
     ----------
