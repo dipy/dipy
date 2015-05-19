@@ -27,6 +27,7 @@ class MaxCumSum(ParallelFunction):
 
 maxcumsum = MaxCumSum()
 
+
 def testParallelFunction():
 
     data = np.random.random((3, 4, 5)) - .5
@@ -35,7 +36,7 @@ def testParallelFunction():
     data[0, 0, 0] = 0.
     weights = np.random.random(5)
     a = maxcumsum(data, mask, weights, return_cumsum=True)
-    dipy.parallel.config.active_multithreading()
+    dipy.parallel.config.activate_multithreading()
     b = maxcumsum(data, mask, weights, return_cumsum=True)
 
     cumsum = (data * mask[..., None] * weights).cumsum(-1)
@@ -54,22 +55,24 @@ def testParallelFunction():
     b = maxcumsum(data, mask, weights, return_cumsum=False)
     assert("cumsum" not in b)
 
-class BrokenFucntion(ParallelFunction):
+
+class BrokenFunction(ParallelFunction):
 
     def _default_values(self, data, mask):
         return {"out":np.zeros(data.shape[-1], float)}
 
     def _main(self, data):
         raise ValueError
-brokenfucntion = BrokenFucntion()
+
+brokenfunction = BrokenFunction()
 
 def test_error_in_function():
     data = np.random.random((3, 4, 5)) - .5
     mask = np.random.random((3, 4)) > .25
-    npt.assert_raises(ValueError, brokenfucntion, data, mask)
-    dipy.parallel.config.deactive_multithreading()
-    npt.assert_raises(ValueError, brokenfucntion, data, mask)
+    npt.assert_raises(ValueError, brokenfunction, data, mask)
+    dipy.parallel.config.deactivate_multithreading()
+    npt.assert_raises(ValueError, brokenfunction, data, mask)
 
-testParallelFunction()
-test_error_in_function()
-print('done all has run')
+
+if __name__ == "__main__":
+    npt.run_module_suite

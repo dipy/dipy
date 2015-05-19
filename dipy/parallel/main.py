@@ -14,14 +14,14 @@ def update_outputs(index, result, outputs):
         array[index] = result[key]
 
 
-class MultiVoxelFuntion(object):
+class MultiVoxelFunction(object):
     """A function that can be applied to every voxel of a dMRI data set.
 
-    Subclass MultiVoxelFuntion and define the _main and _default_Values methods
-    to create a subclass. Both methods should return a dictionary of outputs,
-    where the keys are the names of the outputs and the values are arrays.
-    _main will be used in voxels where mask is true, and the result from
-    _default_values will be used in voxels where mask is False.
+    Subclass MultiVoxelFunction and define the _main and _default_values
+    methods to create a subclass. Both methods should return a dictionary of
+    outputs, where the keys are the names of the outputs and the values are
+    arrays.  _main will be used in voxels where mask is true, and the result
+    from _default_values will be used in voxels where mask is False.
     """
 
     @abstractmethod
@@ -57,7 +57,7 @@ class MultiVoxelFuntion(object):
         self._serial(self, data, mask, *args, **kwargs)
 
 
-class UpdateCallback(MultiVoxelFuntion):
+class UpdateCallback(MultiVoxelFunction):
 
     def __init__(self, index, outputs, errors):
         self.index = index
@@ -78,11 +78,11 @@ def _array_split_points(mask, num_chunks):
     return np.round(split_points).astype(int)
 
 
-def call_remotly(parallel_function, *args, **kwargs):
+def call_remotely(parallel_function, *args, **kwargs):
     return parallel_function._serial(*args, **kwargs)
 
 
-class ParallelFunction(MultiVoxelFuntion):
+class ParallelFunction(MultiVoxelFunction):
 
     def _parallel(self, data, mask, *args, **kwargs):
         ndim = mask.ndim
@@ -107,7 +107,7 @@ class ParallelFunction(MultiVoxelFuntion):
             index = slice(start, end)
             chunk_args = (self, data[index], mask[index]) + args
             callback = UpdateCallback(index, outputs, errors)
-            r = pool.apply_async(call_remotly, chunk_args, kwargs,
+            r = pool.apply_async(call_remotely, chunk_args, kwargs,
                                  callback=callback)
             # As of python 2.7, the async_result is the only way to track
             # errors, in python 3 an error callback can be used.
