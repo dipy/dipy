@@ -118,7 +118,7 @@ def sh_to_rh(r_sh, m, n):
     mask = m == 0
     # The delta function at theta = phi = 0 is known to have zero coefficients
     # where m != 0, therefore we need only compute the coefficients at m=0.
-    dirac_sh = gen_dirac(0, n[mask], 0, 0)
+    dirac_sh = gen_dirac(0, n[mask], 0, 0.)
     r_rh = r_sh[mask] / dirac_sh
     return r_rh
 
