@@ -204,6 +204,8 @@ class ShowManager(object):
         # ren.SetRenderWindow(None)
         self.window.RemoveRenderer(self.ren)
         self.ren.SetRenderWindow(None)
+        del self.iren
+        del self.window
 
     def add_window_callback(self, win_callback):
         self.window.AddObserver(vtk.vtkCommand.ModifiedEvent, win_callback)
