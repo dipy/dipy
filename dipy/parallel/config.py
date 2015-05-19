@@ -16,10 +16,8 @@ def deactivate_multithreading():
 
 @contextmanager
 def multithreading_on(num_cpu=None):
-    print '{} in'.format(num_cpu)
     previous_state = _dipy_num_cpu
     activate_multithreading(num_cpu)
     yield
     activate_multithreading(previous_state)
-    print '{} out'.format(_dipy_num_cpu)
 
