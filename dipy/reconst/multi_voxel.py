@@ -2,36 +2,67 @@
 import numpy as np
 from numpy.lib.stride_tricks import as_strided
 
+from dipy.parallel.main import ParallelFunction
+
 from ..core.ndindex import ndindex
 from .quick_squash import quick_squash as _squash
 from .base import ReconstFit
 
 
-def multi_voxel_fit(single_voxel_fit):
-    """Method decorator to turn a single voxel model fit
-    definition into a multi voxel model fit definition
-    """
-    def new_fit(self, data, mask=None):
+class ParallelFit(ParallelFunction):
+
+    def _main(self, single_voxel_data, model=None):
         """Fit method for every voxel in data"""
-        # If only one voxel just return a normal fit
+        fit = model.fit(single_voxel_data)
+        return {"fit_array":fit}
+
+    def _default_values(self, data, mask, model=None):
+        return {"fit_array":np.array(None)}
+
+# Function for fitting models in parallel
+parallel_fit = ParallelFit()
+
+def multi_voxel_fit(single_voxel_fit):
+    b"""Wraps single_voxel_fit method to turn a model into a multi voxel model.
+
+    Use this decorator on the fit method of your model to take advantage of the
+    MultiVoxelFit and ParallelFit machinery of dipy.
+
+    Parameters:
+    -----------
+    single_voxel_fit : callable
+        Should have a signature like: model [self when a model method is being
+        wrapped], data [single voxel data].
+
+    Returns:
+    --------
+    multi_voxel_fit_function : callable
+
+    Examples:
+    ---------
+    >>> import numpy as np
+    >>> from dipy.reconst.base import ReconstModel, ReconstFit
+
+    >>> class Model(ReconstModel):
+    ...     @multi_voxel_fit
+    ...     def fit(self, single_voxel_data):
+    ...         return ReconstFit(self, single_voxel_data.sum())
+
+    >>> model = Model(None)
+    >>> data = np.random.random((2, 3, 4, 5))
+    >>> fit = model.fit(data)
+    >>> np.allclose(fit.data, data.sum(-1))
+    True
+
+    """
+    def new_fit(model, data, mask=None):
         if data.ndim == 1:
-            return single_voxel_fit(self, data)
-
-        # Make a mask if mask is None
+            return single_voxel_fit(model, data)
         if mask is None:
-            shape = data.shape[:-1]
-            strides = (0,) * len(shape)
-            mask = as_strided(np.array(True), shape=shape, strides=strides)
-        # Check the shape of the mask if mask is not None
-        elif mask.shape != data.shape[:-1]:
-            raise ValueError("mask and data shape do not match")
+            mask = np.ones(data.shape[:-1], bool)
+        fit = parallel_fit(data, mask, model=model)
+        return MultiVoxelFit(model, fit["fit_array"], mask)
 
-        # Fit data where mask is True
-        fit_array = np.empty(data.shape[:-1], dtype=object)
-        for ijk in ndindex(data.shape[:-1]):
-            if mask[ijk]:
-                fit_array[ijk] = single_voxel_fit(self, data[ijk])
-        return MultiVoxelFit(self, fit_array, mask)
     return new_fit
 
 
