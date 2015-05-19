@@ -11,7 +11,6 @@ First import the necessary modules.
 
 import numpy as np
 from nibabel import trackvis as tv
-from dipy.tracking.streamline import set_number_of_points
 from dipy.segment.clustering import QuickBundles
 from dipy.io.pickles import save_pickle
 from dipy.data import get_data
@@ -34,13 +33,13 @@ streamlines = [i[0] for i in streams]
 
 """
 Perform QuickBundles clustering using the MDF metric and a 10mm distance
-threshold. Since the MDF metric requires streamlines to have the same number
-of points, we first downsample them so they have only 18 points and then run
-the clustering algorithm.
+threshold. Keep in mind that since the MDF metric requires streamlines to have
+the same number of points, the clustering algorithm will internally use a
+representation of streamlines that have been automatically downsampled/upsampled
+so they have only 18 points (See tutorial### to manually set that number of points).
 """
 
 qb = QuickBundles(threshold=10.)
-streamlines = set_number_of_points(streamlines, nb_points=18)
 clusters = qb.cluster(streamlines)
 
 """

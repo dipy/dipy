@@ -1,7 +1,10 @@
 import operator
 import numpy as np
 
+from abc import ABCMeta, abstractmethod
+
 from dipy.segment.metric import Metric
+from dipy.segment.metric import ResampleFeature
 from dipy.segment.metric import AveragePointwiseEuclideanMetric
 
 
@@ -261,12 +264,12 @@ class ClusterMap(object):
             elif op is operator.ne:
                 return not self == other
 
-            raise NotImplemented("Can only check if two ClusterMap instances are equal or not.")
+            raise NotImplementedError("Can only check if two ClusterMap instances are equal or not.")
 
         elif isinstance(other, int):
             return np.array([op(len(cluster), other) for cluster in self])
 
-        raise NotImplemented("ClusterMap only supports comparison with a int or another instance of Clustermap.")
+        raise NotImplementedError("ClusterMap only supports comparison with a int or another instance of Clustermap.")
 
     def __eq__(self, other):
         return self._richcmp(other, operator.eq)
@@ -311,7 +314,7 @@ class ClusterMap(object):
 
     def clear(self):
         """ Remove all clusters from this cluster map. """
-        self.clusters.clear()
+        del self.clusters[:]
 
     def get_size(self):
         """ Gets number of clusters contained in this cluster map. """
@@ -377,7 +380,10 @@ class ClusterMapCentroid(ClusterMap):
         return [cluster.centroid for cluster in self.clusters]
 
 
-class Clustering:
+class Clustering(object):
+    __metaclass__ = ABCMeta
+
+    @abstractmethod
     def cluster(self, data, ordering=None):
         """ Clusters `data`.
 
@@ -416,9 +422,37 @@ class QuickBundles(Clustering):
     metric : str or `Metric` object (optional)
         The distance metric to use when comparing two streamlines. By default,
         the Minimum average Direct-Flip (MDF) distance [Garyfallidis12]_ is
-        used and requires streamlines to have the same number of points.
+        used and streamlines are automatically resampled so they have 12 points.
     max_nb_clusters : int
         Limits the creation of bundles.
+
+    Examples
+    --------
+    >>> from dipy.segment.clustering import QuickBundles
+    >>> from dipy.data import get_data
+    >>> from nibabel import trackvis as tv
+    >>> streams, hdr = tv.read(get_data('fornix'))
+    >>> streamlines = [i[0] for i in streams]
+    >>> # Segment fornix with a treshold of 10mm and streamlines resampled to 12 points.
+    >>> qb = QuickBundles(threshold=10.)
+    >>> clusters = qb.cluster(streamlines)
+    >>> len(clusters)
+    4
+    >>> list(map(len, clusters))
+    [61, 191, 47, 1]
+    >>> # Resampling streamlines differently is done explicitly as follows.
+    >>> # Note this has an impact on the speed and the accuracy (tradeoff).
+    >>> from dipy.segment.metric import ResampleFeature
+    >>> from dipy.segment.metric import AveragePointwiseEuclideanMetric
+    >>> feature = ResampleFeature(nb_points=2)
+    >>> metric = AveragePointwiseEuclideanMetric(feature)
+    >>> qb = QuickBundles(threshold=10., metric=metric)
+    >>> clusters = qb.cluster(streamlines)
+    >>> len(clusters)
+    4
+    >>> list(map(len, clusters))
+    [58, 142, 72, 28]
+
 
     References
     ----------
@@ -426,16 +460,19 @@ class QuickBundles(Clustering):
                         tractography simplification, Frontiers in Neuroscience,
                         vol 6, no 175, 2012.
     """
-    def __init__(self, threshold, metric="MDF", max_nb_clusters=np.iinfo('i4').max):
+    def __init__(self, threshold, metric="MDF_12points", max_nb_clusters=np.iinfo('i4').max):
         self.threshold = threshold
         self.max_nb_clusters = max_nb_clusters
 
         if isinstance(metric, Metric):
             self.metric = metric
-        elif metric.upper() == "MDF":
-            self.metric = AveragePointwiseEuclideanMetric()
+        elif metric == "MDF_12points":
+            feature = ResampleFeature(nb_points=12)
+            self.metric = AveragePointwiseEuclideanMetric(feature)
+        else:
+            raise ValueError("Unknown metric: {0}".format(metric))
 
-    def cluster(self, streamlines, ordering=None, refdata=None):
+    def cluster(self, streamlines, ordering=None):
         """ Clusters `streamlines` into bundles.
 
         Performs quickbundles algorithm using predefined metric and threshold.
@@ -457,9 +494,6 @@ class QuickBundles(Clustering):
                                    threshold=self.threshold,
                                    max_nb_clusters=self.max_nb_clusters,
                                    ordering=ordering)
-        if refdata is None:
-            refdata = streamlines
 
-        cluster_map.refdata = refdata
-
+        cluster_map.refdata = streamlines
         return cluster_map

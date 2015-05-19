@@ -2,14 +2,16 @@
 # cython: wraparound=False, cdivision=True, boundscheck=False
 
 import numpy as np
-cimport numpy as np
 
-from libc.math cimport sqrt
+from libc.math cimport sqrt, acos
 
 from cythonutils cimport tuple2shape, shape2tuple, same_shape
-from featurespeed cimport IdentityFeature
+from featurespeed cimport IdentityFeature, ResampleFeature
 
 DEF biggest_double = 1.7976931348623157e+308  #  np.finfo('f8').max
+
+import math
+cdef double PI = math.pi
 
 
 cdef class Metric(object):
@@ -62,9 +64,9 @@ cdef class Metric(object):
 
         Parameters
         ----------
-        shape1 : tuple
+        shape1 : int, 1-tuple or 2-tuple
             shape of the first data point's features
-        shape2 : tuple
+        shape2 : int, 1-tuple or 2-tuple
             shape of the second data point's features
 
         Returns
@@ -118,9 +120,9 @@ cdef class CythonMetric(Metric):
 
         Parameters
         ----------
-        shape1 : tuple
+        shape1 : int, 1-tuple or 2-tuple
             Shape of the first data point's features.
-        shape2 : tuple
+        shape2 : int, 1-tuple or 2-tuple
             Shape of the second data point's features.
 
         Returns
@@ -132,6 +134,16 @@ cdef class CythonMetric(Metric):
         -----
         This method calls its Cython version `self.c_are_compatible` accordingly.
         """
+        if type(shape1) is int:
+            shape1 = (1, shape1)
+        elif len(shape1) == 1:
+            shape1 = (1,) + shape1
+
+        if type(shape2) is int:
+            shape2 = (1, shape2)
+        elif len(shape2) == 1:
+            shape2 = (1,) + shape2
+
         return self.c_are_compatible(tuple2shape(shape1), tuple2shape(shape2)) == 1
 
     cpdef double dist(CythonMetric self, features1, features2) except -1:
@@ -276,9 +288,6 @@ cdef class MinimumAverageDirectFlipMetric(AveragePointwiseEuclideanMetric):
     and s2[2], $a'$ between s1[0] and s2[2], $b'$ between s1[1] and s2[1]
     and $c'$ between s1[2] and s2[0].
     """
-    def __init__(MinimumAverageDirectFlipMetric self):
-        super(MinimumAverageDirectFlipMetric, self).__init__(feature=IdentityFeature())
-
     property is_order_invariant:
         """ Is this metric invariant to the sequence's ordering """
         def __get__(MinimumAverageDirectFlipMetric self):
@@ -288,6 +297,49 @@ cdef class MinimumAverageDirectFlipMetric(AveragePointwiseEuclideanMetric):
         cdef double dist_direct = AveragePointwiseEuclideanMetric.c_dist(self, features1, features2)
         cdef double dist_flipped = AveragePointwiseEuclideanMetric.c_dist(self, features1, features2[::-1])
         return min(dist_direct, dist_flipped)
+
+
+cdef class CosineMetric(CythonMetric):
+    r""" Computes the cosine distance between two vectors.
+
+    A vector (i.e. a N-dimensional point) is represented as a 2D array with
+    shape (1, nb_dimensions).
+
+    Notes
+    -----
+    The distance between two vectors $v_1$ and $v_2$ is equal to
+    $\frac{1}{\pi} \arccos\left(\frac{v_1 \cdot v_2}{\|v_1\| \|v_2\|}\right)$
+    and is bounded within $[0,1]$.
+    """
+    def __init__(CosineMetric self, Feature feature):
+        super(CosineMetric, self).__init__(feature=feature)
+
+    cdef int c_are_compatible(CosineMetric self, Shape shape1, Shape shape2) nogil except -1:
+        return same_shape(shape1, shape2) != 0 and shape1.dims[0] == 1
+
+    cdef double c_dist(CosineMetric self, Data2D features1, Data2D features2) nogil except -1:
+        cdef :
+            int d, D = features1.shape[1]
+            double sqr_norm_features1 = 0.0, sqr_norm_features2 = 0.0
+            double cos_theta = 0.0
+
+        for d in range(D):
+            cos_theta += features1[0, d] * features2[0, d]
+            sqr_norm_features1 += features1[0, d] * features1[0, d]
+            sqr_norm_features2 += features2[0, d] * features2[0, d]
+
+        if sqr_norm_features1 == 0.:
+            if sqr_norm_features2 == 0.:
+                return 0.
+            else:
+                return 1.
+
+        cos_theta /= sqrt(sqr_norm_features1) * sqrt(sqr_norm_features2)
+
+        # Make sure it's in [-1, 1], i.e. within domain of arccosine
+        cos_theta = min(cos_theta, 1.)
+        cos_theta = max(cos_theta, -1.)
+        return acos(cos_theta) / PI  # Normalized cosine distance
 
 
 cpdef distance_matrix(Metric metric, data1, data2=None):
