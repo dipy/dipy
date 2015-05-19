@@ -93,7 +93,8 @@ slider = widget.slider(show_m.iren, show_m.ren,
 show_m.render()
 show_m.start()
 
-
+# TODO
+# check why the window is not closing
 
 
 
