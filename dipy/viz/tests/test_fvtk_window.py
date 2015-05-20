@@ -16,7 +16,7 @@ def test_renderer():
 
     ren.background(bg_float)
 
-    window.show(ren)
+    # window.show(ren)
     arr = window.snapshot(ren)
     report = window.analyze_snapshot(arr,
                                      bg_color=bg_color,
