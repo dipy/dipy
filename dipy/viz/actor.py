@@ -352,10 +352,9 @@ def lines_to_vtk_polydata(lines, colors=None):
         list of N curves represented as 2D ndarrays
     colors : array (N, 3), tuple (3,) or colormap
 
-
     Returns
-    ----------
-    poly_data :  VTK polydata
+    -------
+    poly_data :  vtkPolyData
     is_colormap : bool, true if the input color array was a colormap
     """
 
