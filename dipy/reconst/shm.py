@@ -42,6 +42,7 @@ import scipy
 
 if LooseVersion(scipy.version.short_version) >= LooseVersion('0.15.0'):
     SCIPY_15_PLUS = True
+    from scipy.special import sph_harm
 else:
     SCIPY_15_PLUS = False
 
