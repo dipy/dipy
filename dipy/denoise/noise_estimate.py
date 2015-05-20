@@ -270,23 +270,28 @@ def estimate_sigma(arr, disable_background_masking=False, N=1):
     sigma : ndarray
         standard deviation of the noise, one estimation per volume.
 
+    Note
+    -------
+    This function is the same as manually taking the standard deviation of the
+    background and gives one value for the whole 3D array.
+    It also includes the coil-dependent correction factor of Koay 2006 (see [1], equation 18)
+    with theta = 0
+    Since this function was introduced in [2] T1 imaging, it is expected to
+    perform ok on diffusion MRI data,  but might oversmooth some regions and
+    leave others un-denoised for spatially varying noise profiles.
+    Consider using :func:`piesno` to estimate sigma instead if visual inacuracies
+    are apparent in the denoised result.
+
     Reference
     -------
     [1] Koay, C. G., & Basser, P. J. (2006). Analytically exact correction
     scheme for signal extraction from noisy magnitude MR signals.
-    Journal of Magnetic Resonance), 179(2), 317–22.
+    Journal of Magnetic Resonance), 179(2), 317-22.
 
-    Note
-    -------
-    This function is the same as manually taking the standard deviation of the
-    background and gives one value for the whole 3D array. Since it was
-    developped for T1 imaging. It is expected to perform ok on diffusion MRI data,
-    but might oversmooth some regions and leave others un-denoised if the noise
-    varies spatially (especially near the middle of the image).
-    Consider using piesno instead if you see visual inacuracies
-    with nlmeans and estimate_sigma.
+    [2] Coupe, P., Yger, P., Prima, S., Hellier, P., Kervrann, C., Barillot, C., 2008.
+    An optimized blockwise nonlocal means denoising filter for 3-D magnetic
+    resonance images, IEEE Trans. Med. Imaging 27, 425-41.
     """
-
     k = np.zeros((3, 3, 3), dtype=np.int8)
 
     k[0, 1, 1] = 1
@@ -311,7 +316,8 @@ def estimate_sigma(arr, disable_background_masking=False, N=1):
     if N in correction_factor:
         factor = correction_factor[N]
     else:
-        factor = correction_factor[1]
+        raise ValueError("N = {0} is not supported! Please choose amongst \
+{1}".format(N, sorted(list(correction_factor.keys()))))
 
     if arr.ndim == 3:
         sigma = np.zeros(1, dtype=np.float32)
