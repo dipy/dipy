@@ -5,9 +5,11 @@ from nose.tools import (assert_true, assert_false, assert_equal,
 from numpy.testing import (assert_array_equal, assert_array_almost_equal,
                            assert_)
 
-from dipy.sims.voxel import (SingleTensor, MultiTensor, multi_tensor_odf, all_tensor_evecs,
-                             add_noise, single_tensor, sticks_and_ball)
-from dipy.core.geometry import vec2vec_rotmat
+from dipy.sims.voxel import (_check_directions, SingleTensor, MultiTensor,
+                             multi_tensor_odf, all_tensor_evecs, add_noise,
+                             single_tensor, sticks_and_ball, multi_tensor_dki,
+                             dki_design_matrix)
+from dipy.core.geometry import (vec2vec_rotmat, sphere2cart)
 from dipy.data import get_data, get_sphere
 from dipy.core.gradients import gradient_table
 from dipy.io.gradients import read_bvals_bvecs
@@ -33,6 +35,45 @@ def diff2eigenvectors(dx, dy, dz):
     eigs[:, 1] = eig1
     eigs[:, 2] = eig2
     return eigs, R
+
+
+def test_check_directions():
+    # Testing spherical angles for two principal coordinate axis
+    angles = [(0, 0)]  # axis z
+    sticks = _check_directions(angles)
+    assert_array_almost_equal(sticks, [[0, 0, 1]])
+    angles = [(0, 90)]  # axis z again (phi can be anything it theta is zero)
+    sticks = _check_directions(angles)
+    assert_array_almost_equal(sticks, [[0, 0, 1]])
+    angles = [(90, 0)]  # axis x
+    sticks = _check_directions(angles)
+    assert_array_almost_equal(sticks, [[1, 0, 0]])
+
+    # Testing if directions are already given in cartesian coordinates
+    angles = [(0, 0, 1)]
+    sticks = _check_directions(angles)
+    assert_array_almost_equal(sticks, [[0, 0, 1]])
+
+    # Testing more than one direction simultaneously
+    angles = np.array([[90, 0], [30, 0]])
+    sticks = _check_directions(angles)
+    ref_vec = [np.sin(np.pi*30/180), 0, np.cos(np.pi*30/180)]
+    assert_array_almost_equal(sticks, [[1, 0, 0], ref_vec])
+
+    # Testing directions not aligned to planes x = 0, y = 0, or z = 0
+    the1 = 0
+    phi1 = 90
+    the2 = 30
+    phi2 = 45
+    angles = np.array([(the1, phi1), (the2, phi2)])
+    sticks = _check_directions(angles)
+    ref_vec1 = (np.sin(np.pi*the1/180) * np.cos(np.pi*phi1/180),
+                np.sin(np.pi*the1/180) * np.sin(np.pi*phi1/180),
+                np.cos(np.pi*the1/180))
+    ref_vec2 = (np.sin(np.pi*the2/180) * np.cos(np.pi*phi2/180),
+                np.sin(np.pi*the2/180) * np.sin(np.pi*phi2/180),
+                np.cos(np.pi*the2/180))
+    assert_array_almost_equal(sticks, [ref_vec1, ref_vec2])
 
 
 def test_sticks_and_ball():
@@ -80,7 +121,7 @@ def test_multi_tensor():
     s1 = single_tensor(gtab, 100, mevals[0], mevecs[0].T, snr=None)
     s2 = single_tensor(gtab, 100, mevals[1], mevecs[1].T, snr=None)
 
-    Ssingle = 0.5 * s1 + 0.5 * s2
+    Ssingle = 0.5*s1 + 0.5*s2
 
     S, sticks = MultiTensor(gtab, mevals, S0=100, angles=[(90, 45), (45, 90)],
                             fractions=[50, 50], snr=None)
@@ -110,6 +151,24 @@ def test_all_tensor_evecs():
                         [0, 0, 1]])
 
     assert_array_almost_equal(all_tensor_evecs(e0), desired)
+
+
+def test_dki():
+    x1, x2, x3 = sphere2cart(1, np.deg2rad(30), np.deg2rad(0))
+    x4, x5, x6 = sphere2cart(1, np.deg2rad(45), np.deg2rad(0))
+    bvals = np.array([0., 0., 1000, 1000, 1000, 1000, 2000, 2000])
+    bvecs = np.asarray([[0, 0, 0], [0, 0, 0], [1, 0, 0], [0, 1, 0], [0, 0, 1],
+                        [x1, x2, x3], [0, 0, 1], [x4, x5, x6]])
+    gtab = gradient_table(bvals, bvecs)
+    A = dki_design_matrix(gtab)
+    dt = np.array([1638e-6, 444e-6, 444e-6, 0, 0, 0])
+    kt = np.array([1.7068, 0.8010, 0.8010, 0, 0, 0, 0, 0, 0, 0.3897, 0.3897,
+                   0.2670, 0, 0, 0])
+    MD = sum(dt[0:3]) / 3
+    S0 = 150
+    X = np.concatenate((dt, kt*MD*MD, np.array([np.log(S0)])), axis=0)
+    S = np.exp(np.dot(A, X))
+    assert 'a' == 'a'
 
 
 if __name__ == "__main__":
