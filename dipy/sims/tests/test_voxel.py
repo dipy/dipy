@@ -8,7 +8,7 @@ from numpy.testing import (assert_array_equal, assert_array_almost_equal,
 from dipy.sims.voxel import (_check_directions, SingleTensor, MultiTensor,
                              multi_tensor_odf, all_tensor_evecs, add_noise,
                              single_tensor, sticks_and_ball, multi_tensor_dki,
-                             dki_design_matrix)
+                             dki_design_matrix, compute_Wijkl)
 from dipy.core.geometry import (vec2vec_rotmat, sphere2cart)
 from dipy.data import get_data, get_sphere
 from dipy.core.gradients import gradient_table
@@ -48,18 +48,15 @@ def test_check_directions():
     angles = [(90, 0)]  # axis x
     sticks = _check_directions(angles)
     assert_array_almost_equal(sticks, [[1, 0, 0]])
-
     # Testing if directions are already given in cartesian coordinates
     angles = [(0, 0, 1)]
     sticks = _check_directions(angles)
     assert_array_almost_equal(sticks, [[0, 0, 1]])
-
     # Testing more than one direction simultaneously
     angles = np.array([[90, 0], [30, 0]])
     sticks = _check_directions(angles)
     ref_vec = [np.sin(np.pi*30/180), 0, np.cos(np.pi*30/180)]
     assert_array_almost_equal(sticks, [[1, 0, 0], ref_vec])
-
     # Testing directions not aligned to planes x = 0, y = 0, or z = 0
     the1 = 0
     phi1 = 90
@@ -110,7 +107,6 @@ def test_multi_tensor():
     e1 = np.array([0, np.sqrt(2) / 2., np.sqrt(2) / 2.])
     mevecs = [all_tensor_evecs(e0), all_tensor_evecs(e1)]
     # odf = multi_tensor_odf(vertices, [0.5, 0.5], mevals, mevecs)
-
     # assert_(odf.shape == (len(vertices),))
     # assert_(np.all(odf <= 1) & np.all(odf >= 0))
 
@@ -155,6 +151,79 @@ def test_all_tensor_evecs():
 
 def test_dki():
     x1, x2, x3 = sphere2cart(1, np.deg2rad(30), np.deg2rad(0))
+
+
+def test_compute_Wijkl():
+    # two fiber not aligned to planes x = 0, y = 0, or z = 0
+    mevals = np.array([[0.00099, 0, 0], [0.00226, 0.00087, 0.00087],
+                       [0.00099, 0, 0], [0.00226, 0.00087, 0.00087]])
+    angles = [(90, 10), (90, 10), (20, 30), (20, 30)]
+    fie = 0.49  # intra axonal water fraction
+    frac = [fie*50, (1 - fie)*50, fie*50, (1 - fie)*50]
+    sticks = _check_directions(angles)
+    mD = np.zeros((len(frac), 3, 3))
+    for i in range(len(frac)):
+        R = all_tensor_evecs(sticks[i])
+        mD[i] = np.dot(np.dot(R, np.diag(mevals[i])), R.T)
+        
+    # Test symmetry of all 81 elements
+
+
+def test_DKI_aligned_fibers():
+    """ 
+    Testing DKI simulations rotating a single fiber.
+    When rotation fiber direction ground truth, if biological parameters
+    don't change, kt[0] of a fiber aligned to axis x has to be equal to kt[1]
+    of a fiber aligned to the axis y and equal to kt[2] of a fiber aligned to 
+    axis z. The same is applicable for dt
+    """
+    # Defining parameters based on Neto Henriques et al., 2015. NeuroImage 111
+    mevals = np.array([[0.00099, 0, 0],               # Intra-cellular 
+                       [0.00226, 0.00087, 0.00087]])  # Extra-cellular
+    frac = [49, 51]
+    ### axis x
+    angles = [(90, 0), (90, 0)]
+    signal_fx, dt_fx, kt_fx = multi_tensor_dki(gtab, mevals, angles=angles,
+                                               fractions=frac)
+    ### axis y
+    angles = [(90, 90), (90, 90)]
+    signal_fy, dt_fy, kt_fy = multi_tensor_dki(gtab, mevals, angles=angles,
+                                               fractions=frac)
+    ### axis z
+    angles = [(0, 0), (0, 0)]
+    signal_fz, dt_fz, kt_fz = multi_tensor_dki(gtab, mevals, angles=angles,
+                                               fractions=frac)
+    
+    assert_array_equal([kt_fx[0], kt_fx[1], kt_fx[2]],
+                       [kt_fy[1], kt_fy[0], kt_fy[2]])
+    assert_array_equal([kt_fx[0], kt_fx[1], kt_fx[2]],
+                       [kt_fz[2], kt_fz[0], kt_fz[1]])
+                       
+    assert_array_equal([dt_fx[0], dt_fx[1], dt_fx[2]],
+                       [dt_fy[1], dt_fy[0], dt_fy[2]])
+    assert_array_equal([dt_fx[0], dt_fx[1], dt_fx[2]],
+                       [dt_fz[2], dt_fz[0], dt_fz[1]])
+
+    
+def test_DKI_crossing_fibers():
+    """ Testing DKI simulations of a crossing fiber
+    """
+    # two fiber not aligned to planes x = 0, y = 0, or z = 0
+    mevals = np.array([[0.00099, 0, 0], [0.00226, 0.00087, 0.00087],
+                       [0.00099, 0, 0], [0.00226, 0.00087, 0.00087]])
+    angles = [(90, 10), (90, 10), (20, 30), (20, 30)]
+    fie = 0.49
+    frac = [fie*50, (1 - fie)*50, fie*50, (1 - fie)*50]
+    signal, dt, kt = multi_tensor_dki(gtab, mevals, angles=angles, 
+                                      fractions=frac)
+    # in this simulations dt and kt cannot have zero elements
+    for i in range(len(dt)):
+        assert dt[i] != 0
+    for i in range(len(kt)):
+        assert kt[i] != 0
+        
+    # testing the single_diffkurt_tensor
+    """x1, x2, x3 = sphere2cart(1, np.deg2rad(30), np.deg2rad(0))
     x4, x5, x6 = sphere2cart(1, np.deg2rad(45), np.deg2rad(0))
     bvals = np.array([0., 0., 1000, 1000, 1000, 1000, 2000, 2000])
     bvecs = np.asarray([[0, 0, 0], [0, 0, 0], [1, 0, 0], [0, 1, 0], [0, 0, 1],
@@ -167,8 +236,7 @@ def test_dki():
     MD = sum(dt[0:3]) / 3
     S0 = 150
     X = np.concatenate((dt, kt*MD*MD, np.array([np.log(S0)])), axis=0)
-    S = np.exp(np.dot(A, X))
-    assert 'a' == 'a'
+    S = np.exp(np.dot(A, X))"""
 
 
 if __name__ == "__main__":
