@@ -67,6 +67,25 @@ class Renderer(vtk.vtkRenderer):
         """
         self.RemoveAllViewProps()
 
+    def projection(self, proj_type='perspective'):
+        """ Deside between parallel or perspective projection
+
+        Parameters
+        ----------
+        proj_type : str
+            Can be 'parallel' or 'perspective' (default).
+
+        """
+        if proj_type == 'parallel':
+            self.GetActiveCamera().ParallelProjectionOn()
+        else:
+            self.GetActiveCamera().ParallelProjectionOff()
+
+    def reset_camera(self):
+        """ Allow the renderer to reset the camera
+        """
+        self.ResetCamera()
+
 
 def renderer(background=None):
     """ Create a renderer.
@@ -78,9 +97,7 @@ def renderer(background=None):
 
     Returns
     -------
-    v : vtkRenderer() object
-        Renderer.
-
+    v : Renderer
 
     Examples
     --------
@@ -175,13 +192,16 @@ def save_file_dialog(initial_file='dipy.png', default_ext='.png',
 
 class ShowManager(object):
 
-    def __init__(self, ren, title='Dipy', size=(300, 300), png_magnify=1):
+    def __init__(self, ren, title='Dipy', size=(300, 300),
+                 png_magnify=1, reset_camera=True):
 
         self.title = title
         self.size = size
         self.png_magnify = png_magnify
 
-        ren.ResetCamera()
+        if reset_camera:
+            ren.ResetCamera()
+
         window = vtk.vtkRenderWindow()
         window.AddRenderer(ren)
         # window.SetAAFrames(6)
@@ -251,13 +271,10 @@ class ShowManager(object):
         self.window.Render()
 
 
-def show(ren, title='Dipy', size=(300, 300), png_magnify=1):
-    """ Show window
+def show(ren, title='Dipy', size=(300, 300),
+         png_magnify=1, reset_camera=True):
+    """ Show window with current renderer
 
-    Notes
-    -----
-    To save a screenshot press's' and check your current directory
-    for ``fvtk.png``.
 
     Parameters
     ------------
@@ -281,7 +298,8 @@ def show(ren, title='Dipy', size=(300, 300), png_magnify=1):
 
     See also
     ---------
-    dipy.viz.fvtk.record
+    dipy.viz.window.record
+    dipy.viz.window.snapshot
 
     Examples
     ----------
@@ -302,7 +320,8 @@ def show(ren, title='Dipy', size=(300, 300), png_magnify=1):
 
     """
 
-    show_manager = ShowManager(ren, title, size, png_magnify)
+    show_manager = ShowManager(ren, title, size,
+                               png_magnify, reset_camera)
     show_manager.initialize()
     show_manager.render()
     show_manager.start()
