@@ -23,6 +23,20 @@ if have_vtk:
 
 
 def slice(data, affine):
+    """ Cuts 3D images
+
+    Parameters
+    ----------
+    data : array, shape (X, Y, Z)
+        A volume as a numpy array.
+    affine : array, shape (3, 3)
+        Grid to space (usually RAS 1mm) transformation matrix
+
+    Returns
+    -------
+    vtkImageActor
+
+    """
 
     vol = np.interp(data, xp=[data.min(), data.max()], fp=[0, 255])
     vol = vol.astype('uint8')
