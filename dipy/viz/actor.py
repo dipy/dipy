@@ -21,19 +21,27 @@ if have_vtk:
     major_version = vtk.vtkVersion.GetVTKMajorVersion()
 
 
-def slice(data, affine):
-    """ Cuts 3D images
+def slice(data, affine=None, opacity=1., lookup_colormap=None):
+    """ Cuts 3D volumes into images
 
     Parameters
     ----------
     data : array, shape (X, Y, Z)
-        A volume as a numpy array.
+        A 3D volume as a numpy array.
     affine : array, shape (3, 3)
         Grid to space (usually RAS 1mm) transformation matrix
+    opacity : float
+        Opacity of 0 means completely transparent and 1 completely visible.
+    lookup_colormap : vtkLookupTable
+        If None (default) then a grayscale map is created.
 
     Returns
     -------
-    vtkImageActor
+    image_actor : ImageActor
+        An object that is capable of displaying different parts of the volume
+        as slices. The key method of this object is ``display_extent`` where
+        one can input grid coordinates and display the slice in space (or grid)
+        coordinates as calculated by the affine parameter.
 
     """
 
@@ -58,17 +66,19 @@ def slice(data, affine):
         i, j, k = index
         im.SetScalarComponentFromFloat(i, j, k, 0, vol[i, j, k])
 
+    if affine is None:
+        affine = np.eye(4)
+
     # Set the transform (identity if none given)
     transform = vtk.vtkTransform()
-    if affine is not None:
-        transform_matrix = vtk.vtkMatrix4x4()
-        transform_matrix.DeepCopy((
-            affine[0][0], affine[0][1], affine[0][2], affine[0][3],
-            affine[1][0], affine[1][1], affine[1][2], affine[1][3],
-            affine[2][0], affine[2][1], affine[2][2], affine[2][3],
-            affine[3][0], affine[3][1], affine[3][2], affine[3][3]))
-        transform.SetMatrix(transform_matrix)
-        transform.Inverse()
+    transform_matrix = vtk.vtkMatrix4x4()
+    transform_matrix.DeepCopy((
+        affine[0][0], affine[0][1], affine[0][2], affine[0][3],
+        affine[1][0], affine[1][1], affine[1][2], affine[1][3],
+        affine[2][0], affine[2][1], affine[2][2], affine[2][3],
+        affine[3][0], affine[3][1], affine[3][2], affine[3][3]))
+    transform.SetMatrix(transform_matrix)
+    transform.Inverse()
 
     # Set the reslicing
     image_resliced = vtk.vtkImageReslice()
@@ -78,58 +88,37 @@ def slice(data, affine):
     image_resliced.SetInterpolationModeToLinear()
     image_resliced.Update()
 
-    # Get back resliced image
-    # im = image_data #image_resliced.GetOutput()
-
-    # An outline provides context around the data.
-    #    outline_data = vtk.vtkOutlineFilter()
-    #    set_input(outline_data, im)
-    #
-    #    mapOutline = vtk.vtkPolyDataMapper()
-    #    mapOutline.SetInputConnection(outline_data.GetOutputPort())
-    #    outline_ = vtk.vtkActor()
-    #    outline_.SetMapper(mapOutline)
-    #    outline_.GetProperty().SetColor(1, 0, 0)
-
-    # Now we are creating three orthogonal planes passing through the
-    # volume. Each plane uses a different texture map and therefore has
-    # diferent coloration.
-
-    # Start by creatin a black/white lookup table.
-    lut = vtk.vtkLookupTable()
-    lut.SetTableRange(0, 255)
-    # print(data.min(), data.max())
-    lut.SetSaturationRange(0, 0)
-    lut.SetHueRange(0, 0)
-    lut.SetValueRange(0, 1)
-    lut.SetRampToLinear()
-    lut.Build()
+    # Start by creating a black/white lookup table.
+    if lookup_colormap is None:
+        lut = colormap_lookup_table((0, 255), (0, 0), (0, 0), (0, 1))
+    else:
+        lut = lookup_colormap
 
     x1, x2, y1, y2, z1, z2 = im.GetExtent()
 
-    # Create the first of the three planes. The filter vtkImageMapToColors
-    # maps the data through the corresponding lookup table created above.
-    # The vtkImageActor is a type of vtkProp and conveniently displays an
-    # image on a single quadrilateral plane. It does this using texture
-    # mapping and as a result is quite fast. (Note: the input image has to
-    # be unsigned char values, which the vtkImageMapToColors produces.)
-    # Note also that by specifying the DisplayExtent, the pipeline
-    # requests data of this extent and the vtkImageMapToColors only
-    # processes a slice of data.
     plane_colors = vtk.vtkImageMapToColors()
     plane_colors.SetLookupTable(lut)
     plane_colors.SetInputConnection(image_resliced.GetOutputPort())
     plane_colors.Update()
 
-    saggital = vtk.vtkImageActor()
-    # set_input(saggital, plane_colors.GetOutput())
-    saggital.GetMapper().SetInputConnection(plane_colors.GetOutputPort())
-    # saggital.SetDisplayExtent(0, 0, y1, y2, z1, z2)
-    saggital.SetDisplayExtent(x1, x2, y1, y2, z2/2, z2/2)
-    # saggital.SetDisplayExtent(25, 25, 0, 49, 0, 49)
-    saggital.Update()
+    class ImageActor(vtk.vtkImageActor):
 
-    return saggital
+        def input_connection(self, output_port):
+            self.GetMapper().SetInputConnection(output_port)
+
+        def display_extent(self, x1, x2, y1, y2, z1, z2):
+            self.SetDisplayExtent(x1, x2, y1, y2, z1, z2)
+            self.Update()
+
+        def opacity(self, value):
+            self.GetProperty().SetOpacity(value)
+
+    image_actor = ImageActor()
+    image_actor.input_connection(plane_colors.GetOutputPort())
+    image_actor.display_extent(x1, x2, y1, y2, z2/2, z2/2)
+    image_actor.opacity(opacity)
+
+    return image_actor
 
 
 def streamtube(lines, colors=None, opacity=1, linewidth=0.01, tube_sides=9,

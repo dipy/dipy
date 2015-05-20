@@ -39,7 +39,7 @@ fetch_bundles_2_subjects()
 
 world_coords = True
 streamline_opacity = 1.
-slicer_opacity = 1.
+slicer_opacity = .6
 depth_peeling = False
 
 res = read_bundles_2_subjects('subj_1', ['t1', 'fa'],
@@ -64,7 +64,7 @@ if not world_coords:
 else:
     image = actor.slice(data, affine)
 
-# slicer.GetProperty().SetOpacity(slicer_opacity)
+image.opacity(slicer_opacity)
 # stream_actor.GetProperty().SetOpacity(streamline_opacity)
 
 ren.add(stream_actor)
@@ -75,11 +75,8 @@ show_m.initialize()
 
 def change_slice(obj, event):
     z = int(np.round(obj.GetSliderRepresentation().GetValue()))
-    print(z)
-
-    image.SetDisplayExtent(0, shape[0] - 1,
-                           0, shape[1] - 1, z, z)
-    image.Update()
+    image.display_extent(0, shape[0] - 1,
+                         0, shape[1] - 1, z, z)
 
 slider = widget.slider(show_m.iren, show_m.ren,
                        callback=change_slice,
