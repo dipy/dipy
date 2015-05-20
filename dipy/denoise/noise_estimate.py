@@ -274,11 +274,11 @@ def estimate_sigma(arr, disable_background_masking=False, N=1):
     -------
     This function is the same as manually taking the standard deviation of the
     background and gives one value for the whole 3D array.
-    It also includes the coil-dependent correction factor of Koay 2006 (see [1], equation 18)
-    with theta = 0
-    Since this function was introduced in [2] T1 imaging, it is expected to
-    perform ok on diffusion MRI data,  but might oversmooth some regions and
-    leave others un-denoised for spatially varying noise profiles.
+    It also includes the coil-dependent correction factor of Koay 2006
+    (see [1], equation 18) with theta = 0.
+    Since this function was introduced in [2] for T1 imaging,
+    it is expected to perform ok on diffusion MRI data, but might oversmooth
+    some regions and leave others un-denoised for spatially varying noise profiles.
     Consider using :func:`piesno` to estimate sigma instead if visual inacuracies
     are apparent in the denoised result.
 
