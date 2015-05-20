@@ -28,28 +28,46 @@ In the ``widget`` we have some other objects which allow to add buttons
 and sliders and these interact both with windows and actors. Because of this
 they need input from the operating system so they can process events.
 
-So, let's get started. In this tutorial we will visualize some bundles and a
-slicer. We will be able to change the slices using a ``slider`` widget.
+So, let's get started. In this tutorial, we will visualize some bundles
+together with FA or T1. We will be able to change the slices using
+a ``slider`` widget.
 
+First we need to fetch and load some datasets.
 """
 
 from dipy.data.fetcher import fetch_bundles_2_subjects, read_bundles_2_subjects
 
 fetch_bundles_2_subjects()
 
-world_coords = True
-streamline_opacity = 1.
-slicer_opacity = .6
-depth_peeling = False
+"""
+The following function outputs a dictionary with the required bundles e.g. af
+left and maps, e.g. FA for a specific subject.
+"""
 
 res = read_bundles_2_subjects('subj_1', ['t1', 'fa'],
                               ['af.left', 'cst.right', 'cc_1'])
 
+"""
+We will use 3 bundles, FA and the affine transformation that brings the voxel
+cordinates to world coordinates (RAS 1mm).
+"""
 
 streamlines = res['af.left'] + res['cst.right'] + res['cc_1']
 data = res['fa']
 shape = data.shape
 affine = res['affine']
+
+"""
+With our current design it is easy to decide in which space you want the
+streamlines and slices to appear. The default we have here is to appear in
+world coordinates (RAS 1mm).
+"""
+
+world_coords = True
+
+"""
+If the
+"""
 
 if not world_coords:
     from dipy.tracking.streamline import transform_streamlines
@@ -59,13 +77,14 @@ ren = window.Renderer()
 
 stream_actor = actor.line(streamlines)
 
+slicer_opacity = .6
+
 if not world_coords:
     image = actor.slice(data, affine=np.eye(4))
 else:
     image = actor.slice(data, affine)
 
 image.opacity(slicer_opacity)
-# stream_actor.GetProperty().SetOpacity(streamline_opacity)
 
 ren.add(stream_actor)
 ren.add(image)
@@ -83,15 +102,12 @@ slider = widget.slider(show_m.iren, show_m.ren,
                        min_value=0,
                        max_value=shape[2] - 1,
                        value=shape[2] / 2,
-                       label="Z-axis",
+                       label="Move slice",
                        right_normalized_pos=(.98, 0.6),
                        size=(120, 0), label_format="%0.lf")
 
 show_m.render()
 show_m.start()
-
-# TODO
-# check why the window is not closing
 
 
 
