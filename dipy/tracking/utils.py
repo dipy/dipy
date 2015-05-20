@@ -49,6 +49,7 @@ And the letters A-D represent the following points in
 from __future__ import division, print_function, absolute_import
 
 from functools import wraps
+from warnings import warn
 
 from nibabel.affines import apply_affine
 
@@ -574,7 +575,7 @@ def target(streamlines, target_mask, affine, include=True):
             yield sl
 
 
-def near_roi(streamlines, target_mask, affine=None, tol=0):
+def near_roi(streamlines, target_mask, affine=None, tol=None):
     """
     Provide filtering criteria for a set of streamlines based on whether they
     fall within a tolerance distance from an ROI
@@ -601,9 +602,18 @@ def near_roi(streamlines, target_mask, affine=None, tol=0):
     that passes within a tolerance distance from the target ROI, `False`
     otherwise.
     """
-
     if affine is None:
         affine = np.eye(4)
+    # This calculates the maximal distance to a corner of the voxel:
+    dist_to_corner = np.sqrt(np.sum((np.diag(affine)[:-1] / 2) ** 2))
+    if tol is None:
+        tol = dist_to_corner
+    elif tol < dist_to_corner:
+        w_s = "Tolerance input provided would create gaps in your"
+        w_s += " inclusion ROI. Setting to: %s"%dist_to_corner
+        warn(w_s)
+        tol = dist_to_corner
+
     roi_coords = np.array(np.where(target_mask)).T
     x_roi_coords = apply_affine(affine, roi_coords)
     return _near_roi(streamlines, x_roi_coords, tol=tol)
