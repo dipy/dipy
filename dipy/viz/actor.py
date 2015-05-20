@@ -88,8 +88,8 @@ def slice(data, affine=None, opacity=1., lookup_colormap=None):
     image_resliced.SetInterpolationModeToLinear()
     image_resliced.Update()
 
-    # Start by creating a black/white lookup table.
     if lookup_colormap is None:
+        # Create a black/white lookup table.
         lut = colormap_lookup_table((0, 255), (0, 0), (0, 0), (0, 1))
     else:
         lut = lookup_colormap
@@ -418,27 +418,43 @@ def lines_to_vtk_polydata(lines, colors=None):
 
 
 def colormap_lookup_table(scale_range=(0, 1), hue_range=(0.8, 0),
-                          saturation_range=(1, 1),  value_range=(0.8, 0.8)):
-    """ Default Lookup table for the colormap
+                          saturation_range=(1, 1), value_range=(0.8, 0.8)):
+    """ Lookup table for the colormap
+
+    Parameters
+    ----------
+    scale_range : tuple
+        It can be anything e.g. (0, 1) or (0, 255). Usually it is the mininum
+        and maximum value of your data.
+    hue_range : tuple of floats
+        HSV values (min 0 and max 1)
+    saturation_range : tuple of floats
+        HSV values (min 0 and max 1)
+    value_range : tuple of floats
+        HSV value (min 0 and max 1)
+
+    Returns
+    -------
+    lookup_table : vtkLookupTable
+
     """
-    vtk_lookup_table = vtk.vtkLookupTable()
-    vtk_lookup_table.SetRange(scale_range)
-    vtk_lookup_table.SetTableRange(scale_range)
+    lookup_table = vtk.vtkLookupTable()
+    lookup_table.SetRange(scale_range)
+    lookup_table.SetTableRange(scale_range)
 
-    vtk_lookup_table.SetHueRange(hue_range)
-    vtk_lookup_table.SetSaturationRange(saturation_range)
-    vtk_lookup_table.SetValueRange(value_range)
+    lookup_table.SetHueRange(hue_range)
+    lookup_table.SetSaturationRange(saturation_range)
+    lookup_table.SetValueRange(value_range)
 
-    vtk_lookup_table.Build()
-    return vtk_lookup_table
+    lookup_table.Build()
+    return lookup_table
 
 
 def scalar_bar(lookup_table, title=" "):
     """ Default Scalar bar actor for the colormap
-
-    Deepcopy the lookup_table because sometimes vtkPolyDataMapper deletes it
     """
     lookup_table_copy = vtk.vtkLookupTable()
+    # Deepcopy the lookup_table because sometimes vtkPolyDataMapper deletes it
     lookup_table_copy.DeepCopy(lookup_table)
     scalar_bar = vtk.vtkScalarBarActor()
     scalar_bar.SetTitle(title)
