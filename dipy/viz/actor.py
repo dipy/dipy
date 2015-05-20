@@ -178,6 +178,13 @@ def streamtube(lines, colors=None, opacity=1, linewidth=0.01, tube_sides=9,
 
     from dipy.tracking.distances import approx_polygon_track
     lines = [approx_polygon_track(line, 0.2) for line in lines]
+
+    Alternatively we suggest using the ``line`` actor which is much more
+    efficient.
+
+    See Also
+    --------
+    dipy.viz.fvtk.line
     """
     # Poly data with lines and colors
     poly_data, is_colormap = lines_to_vtk_polydata(lines, colors)
