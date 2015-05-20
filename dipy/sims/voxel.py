@@ -499,7 +499,7 @@ def single_diffkurt_tensors(gtab, dt, kt, S0=150, snr=None):
     A = dki_design_matrix(gtab)
 
     # define vector of DKI parameters
-    MD = sum(dt[0:3])/3
+    MD = sum(dt[0:3]) / 3
     X = np.concatenate((dt, kt*MD*MD, np.array([np.log(S0)])), axis=0)
 
     # Compute signals based on the DKI model
@@ -532,27 +532,27 @@ def dki_design_matrix(gtab):
     bvec = gtab.bvecs
 
     B = np.zeros((len(b), 22))
-    B[:, 0] = -b*bvec[:, 0]*bvec[:, 0]
-    B[:, 1] = -b*bvec[:, 1]*bvec[:, 1]
-    B[:, 2] = -b*bvec[:, 2]*bvec[:, 2]
-    B[:, 3] = -2*b*bvec[:, 0]*bvec[:, 1]
-    B[:, 4] = -2*b*bvec[:, 0]*bvec[:, 2]
-    B[:, 5] = -2*b*bvec[:, 1]*bvec[:, 2]
-    B[:, 6] = b*b*bvec[:, 0]**4/6
-    B[:, 7] = b*b*bvec[:, 1]**4/6
-    B[:, 8] = b*b*bvec[:, 2]**4/6
-    B[:, 9] = 4*b*b*bvec[:, 0]**3*bvec[:, 1]/6
-    B[:, 10] = 4*b*b*bvec[:, 0]**3*bvec[:, 2]/6
-    B[:, 11] = 4*b*b*bvec[:, 1]**3*bvec[:, 0]/6
-    B[:, 12] = 4*b*b*bvec[:, 1]**3*bvec[:, 2]/6
-    B[:, 13] = 4*b*b*bvec[:, 2]**3*bvec[:, 0]/6
-    B[:, 14] = 4*b*b*bvec[:, 2]**3*bvec[:, 1]/6
-    B[:, 15] = b*b*bvec[:, 0]**2*bvec[:, 1]**2
-    B[:, 16] = b*b*bvec[:, 0]**2*bvec[:, 2]**2
-    B[:, 17] = b*b*bvec[:, 1]**2*bvec[:, 2]**2
-    B[:, 18] = 2*b*b*bvec[:, 0]**2*bvec[:, 1]*bvec[:, 2]
-    B[:, 19] = 2*b*b*bvec[:, 1]**2*bvec[:, 0]*bvec[:, 2]
-    B[:, 20] = 2*b*b*bvec[:, 2]**2*bvec[:, 0]*bvec[:, 1]
+    B[:, 0] = -b * bvec[:, 0] * bvec[:, 0]
+    B[:, 1] = -b * bvec[:, 1] * bvec[:, 1]
+    B[:, 2] = -b * bvec[:, 2] * bvec[:, 2]
+    B[:, 3] = -2 * b * bvec[:, 0] * bvec[:, 1]
+    B[:, 4] = -2 * b * bvec[:, 0] * bvec[:, 2]
+    B[:, 5] = -2 * b * bvec[:, 1] * bvec[:, 2]
+    B[:, 6] = b * b * bvec[:, 0]**4 / 6
+    B[:, 7] = b * b * bvec[:, 1]**4 / 6
+    B[:, 8] = b * b * bvec[:, 2]**4 / 6
+    B[:, 9] = 4 * b * b * bvec[:, 0]**3 * bvec[:, 1] / 6
+    B[:, 10] = 4 * b * b * bvec[:, 0]**3 * bvec[:, 2] / 6
+    B[:, 11] = 4 * b * b * bvec[:, 1]**3 * bvec[:, 0] / 6
+    B[:, 12] = 4 * b * b * bvec[:, 1]**3 * bvec[:, 2] / 6
+    B[:, 13] = 4 * b * b * bvec[:, 2]**3 * bvec[:, 0] / 6
+    B[:, 14] = 4 * b * b * bvec[:, 2]**3 * bvec[:, 1] / 6
+    B[:, 15] = b * b * bvec[:, 0]**2 * bvec[:, 1]**2
+    B[:, 16] = b * b * bvec[:, 0]**2 * bvec[:, 2]**2
+    B[:, 17] = b * b * bvec[:, 1]**2 * bvec[:, 2]**2
+    B[:, 18] = 2 * b * b * bvec[:, 0]**2 * bvec[:, 1] * bvec[:, 2]
+    B[:, 19] = 2 * b * b * bvec[:, 1]**2 * bvec[:, 0] * bvec[:, 2]
+    B[:, 20] = 2 * b * b * bvec[:, 2]**2 * bvec[:, 0] * bvec[:, 1]
     B[:, 21] = np.ones(len(b))
 
     return B
