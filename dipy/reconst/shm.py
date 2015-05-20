@@ -185,6 +185,8 @@ def spherical_harmonics(m, n, theta, phi):
     scipy version < 0.15.0.
 
     """
+    if SCIPY_15_PLUS:
+        return sph_harm(m, n, theta, phi, dtype=complex)
     x = np.cos(phi)
     val = lpmv(m, n, x).astype(complex)
     val *= np.sqrt((2 * n + 1) / 4.0 / np.pi)
