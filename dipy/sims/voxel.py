@@ -16,6 +16,22 @@ from dipy.core.geometry import vec2vec_rotmat
 diffusion_evals = np.array([1500e-6, 400e-6, 400e-6])
 
 
+def _check_directions(angles):
+    """
+    Helper function to check if direction ground truth have the right format
+    and are in cartesian coordinates
+    """
+    angles = np.array(angles)
+    if angles.shape[-1] == 3:
+        sticks = angles
+    else:
+        sticks = [sphere2cart(1, np.deg2rad(pair[0]), np.deg2rad(pair[1]))
+                  for pair in angles]
+        sticks = np.array(sticks)
+
+    return sticks
+
+
 def _add_gaussian(sig, noise1, noise2):
     """
     Helper function to add_noise
@@ -146,13 +162,7 @@ def sticks_and_ball(gtab, d=0.0015, S0=100, angles=[(0, 0), (90, 0)],
     f0 = 1 - np.sum(fractions)
     S = np.zeros(len(gtab.bvals))
 
-    angles = np.array(angles)
-    if angles.shape[-1] == 3:
-        sticks = angles
-    else:
-        sticks = [sphere2cart(1, np.deg2rad(pair[0]), np.deg2rad(pair[1]))
-                  for pair in angles]
-        sticks = np.array(sticks)
+    sticks = _check_directions(angles)
 
     for (i, g) in enumerate(gtab.bvecs[1:]):
         S[i + 1] = f0*np.exp(-gtab.bvals[i + 1]*d) + \
@@ -274,13 +284,7 @@ def multi_tensor(gtab, mevals, S0=100, angles=[(0, 0), (90, 0)],
 
     S = np.zeros(len(gtab.bvals))
 
-    angles = np.array(angles)
-    if angles.shape[-1] == 3:
-        sticks = angles
-    else:
-        sticks = [sphere2cart(1, np.deg2rad(pair[0]), np.deg2rad(pair[1]))
-                  for pair in angles]
-        sticks = np.array(sticks)
+    sticks = _check_directions(angles)
 
     for i in range(len(fractions)):
             S = S + fractions[i] * single_tensor(gtab, S0=S0, evals=mevals[i],
@@ -360,13 +364,7 @@ def multi_tensor_dki(gtab, mevals, S0=100, angles=[(0., 0.), (90., 0.)],
 
     S = np.zeros(len(gtab.bvals))
 
-    angles = np.array(angles)
-    if angles.shape[-1] == 3:
-        sticks = angles
-    else:
-        sticks = [sphere2cart(1, np.deg2rad(pair[0]), np.deg2rad(pair[1]))
-                  for pair in angles]
-        sticks = np.array(sticks)
+    sticks = _check_directions(angles)
 
     # computing a 3D matrix containing the individual DT components
     mD = np.zeros((len(fractions), 3, 3))
@@ -666,13 +664,7 @@ def multi_tensor_odf(odf_verts, mevals, angles, fractions):
 
     mf = [f / 100. for f in fractions]
 
-    angles = np.array(angles)
-    if angles.shape[-1] == 3:
-        sticks = angles
-    else:
-        sticks = [sphere2cart(1, np.deg2rad(pair[0]), np.deg2rad(pair[1]))
-                  for pair in angles]
-        sticks = np.array(sticks)
+    sticks = _check_directions(angles)
 
     odf = np.zeros(len(odf_verts))
 
@@ -831,13 +823,7 @@ def multi_tensor_pdf(pdf_points, mevals, angles, fractions,
     '''
     mf = [f / 100. for f in fractions]
 
-    angles = np.array(angles)
-    if angles.shape[-1] == 3:
-        sticks = angles
-    else:
-        sticks = [sphere2cart(1, np.deg2rad(pair[0]), np.deg2rad(pair[1]))
-                  for pair in angles]
-        sticks = np.array(sticks)
+    sticks = _check_directions(angles)
 
     pdf = np.zeros(len(pdf_points))
 
