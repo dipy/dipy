@@ -40,9 +40,13 @@ class Renderer(vtk.vtkRenderer):
     """
 
     def background(self, color):
+        """ Set a background color
+        """
         self.SetBackground(color)
 
     def add(self, actor):
+        """ Add an actor to the renderer
+        """
         if isinstance(actor, vtk.vtkVolume):
             self.AddVolume(actor)
         else:
@@ -122,16 +126,51 @@ def rm_all(ren):
     ren.rm_all()
 
 
-def save_file_dialog(initial_file='dipy.png', default_extension='.png',
-                     filetypes=(("PNG file", "*.png"), ("All Files", "*.*"))):
-    """ Simple Tk file dialog
+def open_file_dialog(file_types=[("All files", "*")]):
+    """ Simple Tk file dialog for opening files
+
+    Parameters
+    ----------
+    file_types : tuples of tuples
+        Accepted file types.
+
+    Returns
+    -------
+    file_paths : sequence of str
+        Returns the full paths of all selected files
     """
+
     root = Tkinter.Tk()
     root.withdraw()
-    filepath = tkFileDialog.asksaveasfilename(initialfile='dipy.png',
-                                              defaultextension='.png',
-                                              filetypes=filetypes)
-    return filepath
+    file_paths = tkFileDialog.askopenfilenames(filetypes=file_types)
+    return file_paths
+
+
+def save_file_dialog(initial_file='dipy.png', default_ext='.png',
+                     file_types=(("PNG file", "*.png"), ("All Files", "*.*"))):
+    """ Simple Tk file dialog for saving a file
+
+    Parameters
+    ----------
+    initial_file : str
+        For example ``dipy.png``.
+    default_ext : str
+        Default extension to appear in the save dialog.
+    file_types : tuples of tuples
+        Accepted file types.
+
+    Returns
+    -------
+    filepath : str
+        Complete filename of saved file
+    """
+
+    root = Tkinter.Tk()
+    root.withdraw()
+    file_path = tkFileDialog.asksaveasfilename(initialfile=initial_file,
+                                               defaultextension=default_ext,
+                                               filetypes=file_types)
+    return file_path
 
 
 class ShowManager(object):
