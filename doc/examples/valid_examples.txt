@@ -36,4 +36,4 @@
  bundle_registration.py
  tracking_tissue_classifier.py
  piesno.py
- introduction_to_visualization.py
+ advanced_interactive_viz.py

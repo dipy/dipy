@@ -193,7 +193,7 @@ File Formats
 Visualization
 -------------
 
-- :ref:`example_introduction_to_visualization`
+- :ref:`example_advanced_interactive_viz`
 
 
 .. In order to build the examples, you'll need (on Debian)
