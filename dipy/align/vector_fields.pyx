@@ -1176,7 +1176,7 @@ def compose_vector_fields_3d(floating[:, :, :, :] d1, floating[:, :, :, :] d2,
 
 
 def invert_vector_field_fixed_point_2d(floating[:, :, :] d,
-                                       double[:, :] w_to_img,
+                                       double[:, :] d_space2grid,
                                        double[:] spacing,
                                        int max_iter, double tolerance,
                                        floating[:, :, :] start=None):
@@ -1193,8 +1193,8 @@ def invert_vector_field_fixed_point_2d(floating[:, :, :] d,
     ----------
     d : array, shape (R, C, 2)
         the 2-D displacement field to be inverted
-    w_to_img : array, shape (3, 3)
-        the world-to-image transformation associated to the displacement field
+    d_space2grid : array, shape (3, 3)
+        the space-to-grid transformation associated to the displacement field
         d (transforming physical space coordinates to voxel coordinates of the
         displacement field grid)
     spacing :array, shape (2,)
@@ -1239,7 +1239,7 @@ def invert_vector_field_fixed_point_2d(floating[:, :, :] d,
         floating[:, :, :] p = np.zeros(shape=(nr, nc, 2), dtype=ftype)
         floating[:, :, :] q = np.zeros(shape=(nr, nc, 2), dtype=ftype)
 
-    if not is_valid_affine(w_to_img, 2):
+    if not is_valid_affine(d_space2grid, 2):
         raise ValueError("Invalid world-to-image transform")
 
     if start is not None:
@@ -1252,7 +1252,7 @@ def invert_vector_field_fixed_point_2d(floating[:, :, :] d,
                 epsilon = 0.75
             else:
                 epsilon = 0.5
-            _compose_vector_fields_2d(p, d, None, w_to_img, 1.0, q, substats)
+            _compose_vector_fields_2d(p, d, None, d_space2grid, 1.0, q, substats)
             difmag = 0
             error = 0
             for i in range(nr):
@@ -1279,7 +1279,7 @@ def invert_vector_field_fixed_point_2d(floating[:, :, :] d,
 
 
 def invert_vector_field_fixed_point_3d(floating[:, :, :, :] d,
-                                       double[:, :] w_to_img,
+                                       double[:, :] d_space2grid,
                                        double[:] spacing,
                                        int max_iter, double tol,
                                        floating[:, :, :, :] start=None):
@@ -1296,8 +1296,8 @@ def invert_vector_field_fixed_point_3d(floating[:, :, :, :] d,
     ----------
     d : array, shape (S, R, C, 3)
         the 3-D displacement field to be inverted
-    w_to_img : array, shape (4, 4)
-        the world-to-image transformation associated to the displacement field
+    d_space2grid : array, shape (4, 4)
+        the space-to-grid transformation associated to the displacement field
         d (transforming physical space coordinates to voxel coordinates of the
         displacement field grid)
     spacing :array, shape (3,)
@@ -1343,7 +1343,7 @@ def invert_vector_field_fixed_point_3d(floating[:, :, :, :] d,
         floating[:, :, :, :] p = np.zeros(shape=(ns, nr, nc, 3), dtype=ftype)
         floating[:, :, :, :] q = np.zeros(shape=(ns, nr, nc, 3), dtype=ftype)
 
-    if not is_valid_affine(w_to_img, 3):
+    if not is_valid_affine(d_space2grid, 3):
         raise ValueError("Invalid world-to-image transform")
 
     if start is not None:
@@ -1357,7 +1357,7 @@ def invert_vector_field_fixed_point_3d(floating[:, :, :, :] d,
                 epsilon = 0.75
             else:
                 epsilon = 0.5
-            _compose_vector_fields_3d(p, d, None, w_to_img, 1.0, q, substats)
+            _compose_vector_fields_3d(p, d, None, d_space2grid, 1.0, q, substats)
             difmag = 0
             error = 0
             for k in range(ns):
@@ -1395,7 +1395,7 @@ def simplify_warp_function_2d(floating[:, :, :] d,
                               double[:, :] affine_idx_in,
                               double[:, :] affine_idx_out,
                               double[:, :] affine_disp,
-                              int[:] sampling_shape):
+                              int[:] out_shape):
     r"""
     Simplifies a nonlinear warping function combined with an affine transform
 
@@ -1444,17 +1444,17 @@ def simplify_warp_function_2d(floating[:, :, :] d,
         the matrix V in eq. (1) above
     affine_disp : array, shape (3, 3)
         the matrix W in eq. (1) above
-    sampling_shape : array, shape (2,)
+    out_shape : array, shape (2,)
         the number of rows and columns of the sampling grid
 
     Returns
     -------
-    out : array, shape = sampling_shape
+    out : array, shape = out_shape
         the simplified transformation given by one single displacement field
     """
     cdef:
-        cnp.npy_intp nrows = sampling_shape[0]
-        cnp.npy_intp ncols = sampling_shape[1]
+        cnp.npy_intp nrows = out_shape[0]
+        cnp.npy_intp ncols = out_shape[1]
         cnp.npy_intp i, j
         double di, dj, dii, djj
         floating[:] tmp = np.zeros((2,), dtype=np.asarray(d).dtype)
@@ -1511,7 +1511,7 @@ def simplify_warp_function_3d(floating[:, :, :, :] d,
                               double[:, :] affine_idx_in,
                               double[:, :] affine_idx_out,
                               double[:, :] affine_disp,
-                              int[:] sampling_shape):
+                              int[:] out_shape):
     r"""
     Simplifies a nonlinear warping function combined with an affine transform
 
@@ -1560,19 +1560,19 @@ def simplify_warp_function_3d(floating[:, :, :, :] d,
         the matrix V in eq. (1) above
     affine_disp : array, shape (4, 4)
         the matrix W in eq. (1) above
-    sampling_shape : array, shape (3,)
+    out_shape : array, shape (3,)
         the number of slices, rows and columns of the sampling grid
 
     Returns
     -------
-    out : array, shape = sampling_shape
+    out : array, shape = out_shape
         the simplified transformation given by one single displacement field
 
     """
     cdef:
-        cnp.npy_intp nslices = sampling_shape[0]
-        cnp.npy_intp nrows = sampling_shape[1]
-        cnp.npy_intp ncols = sampling_shape[2]
+        cnp.npy_intp nslices = out_shape[0]
+        cnp.npy_intp nrows = out_shape[1]
+        cnp.npy_intp ncols = out_shape[2]
         cnp.npy_intp i, j, k
         double di, dj, dk, dii, djj, dkk
         floating[:] tmp = np.zeros((3,), dtype=np.asarray(d).dtype)
@@ -1901,7 +1901,7 @@ def warp_3d(floating[:, :, :] volume, floating[:, :, :, :] d1,
             double[:, :] affine_idx_in=None,
             double[:, :] affine_idx_out=None,
             double[:, :] affine_disp=None,
-            int[:] sampling_shape=None):
+            int[:] out_shape=None):
     r"""Warps a 3D volume using trilinear interpolation
 
     Deforms the input volume under the given transformation. The warped volume
@@ -1911,7 +1911,7 @@ def warp_3d(floating[:, :, :] volume, floating[:, :, :, :] d1,
 
     where A = affine_idx_in, B = affine_idx_out, C = affine_disp and i denotes
     the discrete coordinates of a voxel in the sampling grid of
-    shape = sampling_shape. To illustrate the use of this function, consider a
+    shape = out_shape. To illustrate the use of this function, consider a
     displacement field d1 with grid-to-space transformation R, a volume with
     grid-to-space transformation T and let's say we want to sample the warped
     volume on a grid with grid-to-space transformation S (sampling grid). For
@@ -1937,12 +1937,12 @@ def warp_3d(floating[:, :, :] volume, floating[:, :, :, :] d1,
         the matrix B in eq. (1) above
     affine_disp : array, shape (4, 4)
         the matrix C in eq. (1) above
-    sampling_shape : array, shape (3,)
+    out_shape : array, shape (3,)
         the number of slices, rows and columns of the sampling grid
 
     Returns
     -------
-    warped : array, shape = sampling_shape
+    warped : array, shape = out_shape
         the transformed volume
     """
     cdef:
@@ -1963,10 +1963,10 @@ def warp_3d(floating[:, :, :] volume, floating[:, :, :, :] d1,
     if not is_valid_affine(affine_disp, 3):
         raise ValueError("Invalid displacement multiplication matrix")
 
-    if sampling_shape is not None:
-        nslices = sampling_shape[0]
-        nrows = sampling_shape[1]
-        ncols = sampling_shape[2]
+    if out_shape is not None:
+        nslices = out_shape[0]
+        nrows = out_shape[1]
+        ncols = out_shape[2]
     elif d1 is not None:
         nslices = d1.shape[0]
         nrows = d1.shape[1]
@@ -2029,7 +2029,7 @@ def warp_3d(floating[:, :, :] volume, floating[:, :, :, :] d1,
 
 def warp_3d_affine(floating[:, :, :] volume, int[:] ref_shape,
                    double[:, :] affine):
-    r"""Warps a 3D volume by a linear transform using trilinear interpolation
+    r"""Warps a 3D volume by an affine transform using trilinear interpolation
 
     Deforms the input volume under the given affine transformation using
     tri-linear interpolation. The shape of the resulting transformation
@@ -2043,7 +2043,7 @@ def warp_3d_affine(floating[:, :, :] volume, int[:] ref_shape,
     ref_shape : array, shape (3,)
         the shape of the resulting warped volume
     affine : array, shape (4, 4)
-        the affine matrix driving the transformation
+        the affine transform to be applied
 
     Returns
     -------
@@ -2097,7 +2097,7 @@ def warp_3d_nn(number[:, :, :] volume, floating[:, :, :, :] d1,
                double[:, :] affine_idx_in=None,
                double[:, :] affine_idx_out=None,
                double[:, :] affine_disp=None,
-               int[:] sampling_shape=None):
+               int[:] out_shape=None):
     r"""Warps a 3D volume using using nearest-neighbor interpolation
 
     Deforms the input volume under the given transformation. The warped volume
@@ -2107,7 +2107,7 @@ def warp_3d_nn(number[:, :, :] volume, floating[:, :, :, :] d1,
 
     where A = affine_idx_in, B = affine_idx_out, C = affine_disp and i denotes
     the discrete coordinates of a voxel in the sampling grid of
-    shape = sampling_shape. To illustrate the use of this function, consider a
+    shape = out_shape. To illustrate the use of this function, consider a
     displacement field d1 with grid-to-space transformation R, a volume with
     grid-to-space transformation T and let's say we want to sample the warped
     volume on a grid with grid-to-space transformation S (sampling grid). For
@@ -2133,12 +2133,12 @@ def warp_3d_nn(number[:, :, :] volume, floating[:, :, :, :] d1,
         the matrix B in eq. (1) above
     affine_disp : array, shape (4, 4)
         the matrix C in eq. (1) above
-    sampling_shape : array, shape (3,)
+    out_shape : array, shape (3,)
         the number of slices, rows and columns of the sampling grid
 
     Returns
     -------
-    warped : array, shape = sampling_shape
+    warped : array, shape = out_shape
         the transformed volume
     """
     cdef:
@@ -2159,10 +2159,10 @@ def warp_3d_nn(number[:, :, :] volume, floating[:, :, :, :] d1,
     if not is_valid_affine(affine_disp, 3):
         raise ValueError("Invalid displacement multiplication matrix")
 
-    if sampling_shape is not None:
-        nslices = sampling_shape[0]
-        nrows = sampling_shape[1]
-        ncols = sampling_shape[2]
+    if out_shape is not None:
+        nslices = out_shape[0]
+        nrows = out_shape[1]
+        ncols = out_shape[2]
     elif d1 is not None:
         nslices = d1.shape[0]
         nrows = d1.shape[1]
@@ -2225,7 +2225,7 @@ def warp_3d_nn(number[:, :, :] volume, floating[:, :, :, :] d1,
 
 def warp_3d_affine_nn(number[:, :, :] volume, int[:] ref_shape,
                       double[:, :] affine=None):
-    r"""Warps a 3D volume by a linear transform using NN interpolation
+    r"""Warps a 3D volume by an affine transform using NN interpolation
 
     Deforms the input volume under the given affine transformation using
     nearest neighbor interpolation. The shape of the resulting transformation
@@ -2239,7 +2239,7 @@ def warp_3d_affine_nn(number[:, :, :] volume, int[:] ref_shape,
     ref_shape : array, shape (3,)
         the shape of the resulting warped volume
     affine : array, shape (4, 4)
-        the affine matrix driving the transformation
+        the affine transform to be applied
 
     Returns
     -------
@@ -2292,7 +2292,7 @@ def warp_2d(floating[:, :] image, floating[:, :, :] d1,
             double[:, :] affine_idx_in=None,
             double[:, :] affine_idx_out=None,
             double[:, :] affine_disp=None,
-            int[:] sampling_shape=None):
+            int[:] out_shape=None):
     r"""Warps a 2D image using bilinear interpolation
 
     Deforms the input image under the given transformation. The warped image
@@ -2302,7 +2302,7 @@ def warp_2d(floating[:, :] image, floating[:, :, :] d1,
 
     where A = affine_idx_in, B = affine_idx_out, C = affine_disp and i denotes
     the discrete coordinates of a voxel in the sampling grid of
-    shape = sampling_shape. To illustrate the use of this function, consider a
+    shape = out_shape. To illustrate the use of this function, consider a
     displacement field d1 with grid-to-space transformation R, an image with
     grid-to-space transformation T and let's say we want to sample the warped
     image on a grid with grid-to-space transformation S (sampling grid). For
@@ -2328,12 +2328,12 @@ def warp_2d(floating[:, :] image, floating[:, :, :] d1,
         the matrix B in eq. (1) above
     affine_disp : array, shape (3, 3)
         the matrix C in eq. (1) above
-    sampling_shape : array, shape (2,)
+    out_shape : array, shape (2,)
         the number of rows and columns of the sampling grid
 
     Returns
     -------
-    warped : array, shape = sampling_shape
+    warped : array, shape = out_shape
         the transformed image
     """
     cdef:
@@ -2351,9 +2351,9 @@ def warp_2d(floating[:, :] image, floating[:, :, :] d1,
     if not is_valid_affine(affine_disp, 2):
         raise ValueError("Invalid displacement multiplication matrix")
 
-    if sampling_shape is not None:
-        nrows = sampling_shape[0]
-        ncols = sampling_shape[1]
+    if out_shape is not None:
+        nrows = out_shape[0]
+        ncols = out_shape[1]
     elif d1 is not None:
         nrows = d1.shape[0]
         ncols = d1.shape[1]
@@ -2403,7 +2403,7 @@ def warp_2d(floating[:, :] image, floating[:, :, :] d1,
 
 def warp_2d_affine(floating[:, :] image, int[:] ref_shape,
                    double[:, :] affine=None):
-    r"""Warps a 2D image by a linear transform using bilinear interpolation
+    r"""Warps a 2D image by an affine transform using bilinear interpolation
 
     Deforms the input image under the given affine transformation using
     tri-linear interpolation. The shape of the resulting transformation
@@ -2417,7 +2417,7 @@ def warp_2d_affine(floating[:, :] image, int[:] ref_shape,
     ref_shape : array, shape (2,)
         the shape of the resulting warped image
     affine : array, shape (3, 3)
-        the affine matrix driving the transformation
+        the affine transform to be applied
 
     Returns
     -------
@@ -2464,7 +2464,7 @@ def warp_2d_nn(number[:, :] image, floating[:, :, :] d1,
                double[:, :] affine_idx_in=None,
                double[:, :] affine_idx_out=None,
                double[:, :] affine_disp=None,
-               int[:] sampling_shape=None):
+               int[:] out_shape=None):
     r"""Warps a 2D image using nearest neighbor interpolation
 
     Deforms the input image under the given transformation. The warped image
@@ -2474,7 +2474,7 @@ def warp_2d_nn(number[:, :] image, floating[:, :, :] d1,
 
     where A = affine_idx_in, B = affine_idx_out, C = affine_disp and i denotes
     the discrete coordinates of a voxel in the sampling grid of
-    shape = sampling_shape. To illustrate the use of this function, consider a
+    shape = out_shape. To illustrate the use of this function, consider a
     displacement field d1 with grid-to-space transformation R, an image with
     grid-to-space transformation T and let's say we want to sample the warped
     image on a grid with grid-to-space transformation S (sampling grid). For
@@ -2500,12 +2500,12 @@ def warp_2d_nn(number[:, :] image, floating[:, :, :] d1,
         the matrix B in eq. (1) above
     affine_disp : array, shape (3, 3)
         the matrix C in eq. (1) above
-    sampling_shape : array, shape (2,)
+    out_shape : array, shape (2,)
         the number of rows and columns of the sampling grid
 
     Returns
     -------
-    warped : array, shape = sampling_shape
+    warped : array, shape = out_shape
         the transformed image
     """
     cdef:
@@ -2523,9 +2523,9 @@ def warp_2d_nn(number[:, :] image, floating[:, :, :] d1,
     if not is_valid_affine(affine_disp, 2):
         raise ValueError("Invalid displacement multiplication matrix")
 
-    if sampling_shape is not None:
-        nrows = sampling_shape[0]
-        ncols = sampling_shape[1]
+    if out_shape is not None:
+        nrows = out_shape[0]
+        ncols = out_shape[1]
     elif d1 is not None:
         nrows = d1.shape[0]
         ncols = d1.shape[1]
@@ -2575,7 +2575,8 @@ def warp_2d_nn(number[:, :] image, floating[:, :, :] d1,
 
 def warp_2d_affine_nn(number[:, :] image, int[:] ref_shape,
                       double[:, :] affine=None):
-    r"""Warps a 2D image by a linear transform using NN interpolation
+    r"""Warps a 2D image by an affine transform using NN interpolation
+
     Deforms the input image under the given affine transformation using
     nearest neighbor interpolation. The shape of the resulting transformation
     is given by ref_shape. If the affine matrix is None, it is taken as the
@@ -2588,7 +2589,7 @@ def warp_2d_affine_nn(number[:, :] image, int[:] ref_shape,
     ref_shape : array, shape (2,)
         the shape of the resulting warped image
     affine : array, shape (3, 3)
-        the affine matrix driving the transformation
+        the affine transform to be applied
 
     Returns
     -------
@@ -2632,7 +2633,7 @@ def warp_2d_affine_nn(number[:, :] image, int[:] ref_shape,
 
 
 def resample_displacement_field_3d(floating[:, :, :, :] field,
-                                   double[:] factors, int[:] target_shape):
+                                   double[:] factors, int[:] out_shape):
     r"""Resamples a 3D vector field to a custom target shape
 
     Resamples the given 3D displacement field on a grid of the requested shape,
@@ -2646,19 +2647,19 @@ def resample_displacement_field_3d(floating[:, :, :, :] field,
     factors : array, shape (3,)
         the scaling factors mapping (integer) grid coordinates in the resampled
         grid to (floating point) grid coordinates in the original grid
-    target_shape : array, shape (3,)
-        the shape of the resulting grid
+    out_shape : array, shape (3,)
+        the desired shape of the resulting grid
 
     Returns
     -------
-    expanded : array, shape = target_shape + (3, )
+    expanded : array, shape = out_shape + (3, )
         the resampled displacement field
     """
     ftype = np.asarray(field).dtype
     cdef:
-        cnp.npy_intp tslices = target_shape[0]
-        cnp.npy_intp trows = target_shape[1]
-        cnp.npy_intp tcols = target_shape[2]
+        cnp.npy_intp tslices = out_shape[0]
+        cnp.npy_intp trows = out_shape[1]
+        cnp.npy_intp tcols = out_shape[2]
         cnp.npy_intp k, i, j
         int inside
         double dkk, dii, djj
@@ -2677,7 +2678,7 @@ def resample_displacement_field_3d(floating[:, :, :, :] field,
 
 
 def resample_displacement_field_2d(floating[:, :, :] field, double[:] factors,
-                                   int[:] target_shape):
+                                   int[:] out_shape):
     r"""Resamples a 2D vector field to a custom target shape
 
     Resamples the given 2D displacement field on a grid of the requested shape,
@@ -2691,18 +2692,18 @@ def resample_displacement_field_2d(floating[:, :, :] field, double[:] factors,
     factors : array, shape (2,)
         the scaling factors mapping (integer) grid coordinates in the resampled
         grid to (floating point) grid coordinates in the original grid
-    target_shape : array, shape (2,)
-        the shape of the resulting grid
+    out_shape : array, shape (2,)
+        the desired shape of the resulting grid
 
     Returns
     -------
-    expanded : array, shape = target_shape + (2, )
+    expanded : array, shape = out_shape + (2, )
         the resampled displacement field
     """
     ftype = np.asarray(field).dtype
     cdef:
-        cnp.npy_intp trows = target_shape[0]
-        cnp.npy_intp tcols = target_shape[1]
+        cnp.npy_intp trows = out_shape[0]
+        cnp.npy_intp tcols = out_shape[1]
         cnp.npy_intp i, j
         int inside
         double dii, djj
@@ -2718,16 +2719,16 @@ def resample_displacement_field_2d(floating[:, :, :] field, double[:] factors,
 
 
 def create_random_displacement_2d(int[:] from_shape,
-                                  double[:, :] from_affine,
+                                  double[:, :] from_grid2space,
                                   int[:] to_shape,
-                                  double[:, :] to_affine):
+                                  double[:, :] to_grid2space):
     r"""Creates a random 2D displacement 'exactly' mapping points of two grids
 
     Creates a random 2D displacement field mapping points of an input discrete
     domain (with dimensions given by from_shape) to points of an output
     discrete domain (with shape given by to_shape). The affine matrices
-    bringing discrete coordinates to physical space are given by from_affine
-    (for the displacement field discretization) and to_affine (for the target
+    bringing discrete coordinates to physical space are given by from_grid2space
+    (for the displacement field discretization) and to_grid2space (for the target
     discretization). Since this function is intended to be used for testing,
     voxels in the input domain will never be assigned to boundary voxels on the
     output domain.
@@ -2736,11 +2737,11 @@ def create_random_displacement_2d(int[:] from_shape,
     ----------
     from_shape : array, shape (2,)
         the grid shape where the displacement field will be defined on.
-    from_affine : array, shape (3,3)
+    from_grid2space : array, shape (3,3)
         the grid-to-space transformation of the displacement field
     to_shape : array, shape (2,)
         the grid shape where the deformation field will map the input grid to.
-    to_affine : array, shape (3,3)
+    to_grid2space : array, shape (3,3)
         the grid-to-space transformation of the mapped grid
 
     Returns
@@ -2759,9 +2760,9 @@ def create_random_displacement_2d(int[:] from_shape,
                                           dtype=np.float64)
         cnp.npy_intp dom_size = from_shape[0]*from_shape[1]
 
-    if not is_valid_affine(from_affine, 2):
+    if not is_valid_affine(from_grid2space, 2):
         raise ValueError("Invalid 'from' affine transform matrix")
-    if not is_valid_affine(to_affine, 2):
+    if not is_valid_affine(to_grid2space, 2):
         raise ValueError("Invalid 'to' affine transform matrix")
 
     # compute the actual displacement field in the physical space
@@ -2775,17 +2776,17 @@ def create_random_displacement_2d(int[:] from_shape,
             int_field[i, j, 1] = rj
 
             # convert the input point to physical coordinates
-            if from_affine is not None:
-                di = _apply_affine_2d_x0(i, j, 1, from_affine)
-                dj = _apply_affine_2d_x1(i, j, 1, from_affine)
+            if from_grid2space is not None:
+                di = _apply_affine_2d_x0(i, j, 1, from_grid2space)
+                dj = _apply_affine_2d_x1(i, j, 1, from_grid2space)
             else:
                 di = i
                 dj = j
 
             # convert the output point to physical coordinates
-            if to_affine is not None:
-                dii = _apply_affine_2d_x0(ri, rj, 1, to_affine)
-                djj = _apply_affine_2d_x1(ri, rj, 1, to_affine)
+            if to_grid2space is not None:
+                dii = _apply_affine_2d_x0(ri, rj, 1, to_grid2space)
+                djj = _apply_affine_2d_x1(ri, rj, 1, to_grid2space)
             else:
                 dii = ri
                 djj = rj
@@ -2799,15 +2800,15 @@ def create_random_displacement_2d(int[:] from_shape,
     return output, int_field
 
 
-def create_random_displacement_3d(int[:] from_shape, double[:, :] from_affine,
-                                  int[:] to_shape, double[:, :] to_affine):
+def create_random_displacement_3d(int[:] from_shape, double[:, :] from_grid2space,
+                                  int[:] to_shape, double[:, :] to_grid2space):
     r"""Creates a random 3D displacement 'exactly' mapping points of two grids
 
     Creates a random 3D displacement field mapping points of an input discrete
     domain (with dimensions given by from_shape) to points of an output
     discrete domain (with shape given by to_shape). The affine matrices
-    bringing discrete coordinates to physical space are given by from_affine
-    (for the displacement field discretization) and to_affine (for the target
+    bringing discrete coordinates to physical space are given by from_grid2space
+    (for the displacement field discretization) and to_grid2space (for the target
     discretization). Since this function is intended to be used for testing,
     voxels in the input domain will never be assigned to boundary voxels on the
     output domain.
@@ -2816,11 +2817,11 @@ def create_random_displacement_3d(int[:] from_shape, double[:, :] from_affine,
     ----------
     from_shape : array, shape (3,)
         the grid shape where the displacement field will be defined on.
-    from_affine : array, shape (4,4)
+    from_grid2space : array, shape (4,4)
         the grid-to-space transformation of the displacement field
     to_shape : array, shape (3,)
         the grid shape where the deformation field will map the input grid to.
-    to_affine : array, shape (4,4)
+    to_grid2space : array, shape (4,4)
         the grid-to-space transformation of the mapped grid
 
     Returns
@@ -2839,9 +2840,9 @@ def create_random_displacement_3d(int[:] from_shape, double[:, :] from_affine,
                                              dtype=np.float64)
         cnp.npy_intp dom_size = from_shape[0]*from_shape[1]*from_shape[2]
 
-    if not is_valid_affine(from_affine, 3):
+    if not is_valid_affine(from_grid2space, 3):
         raise ValueError("Invalid 'from' affine transform matrix")
-    if not is_valid_affine(to_affine, 3):
+    if not is_valid_affine(to_grid2space, 3):
         raise ValueError("Invalid 'to' affine transform matrix")
 
     # compute the actual displacement field in the physical space
@@ -2857,20 +2858,20 @@ def create_random_displacement_3d(int[:] from_shape, double[:, :] from_affine,
                 int_field[k, i, j, 2] = rj
 
                 # convert the input point to physical coordinates
-                if from_affine is not None:
-                    dk = _apply_affine_3d_x0(k, i, j, 1, from_affine)
-                    di = _apply_affine_3d_x1(k, i, j, 1, from_affine)
-                    dj = _apply_affine_3d_x2(k, i, j, 1, from_affine)
+                if from_grid2space is not None:
+                    dk = _apply_affine_3d_x0(k, i, j, 1, from_grid2space)
+                    di = _apply_affine_3d_x1(k, i, j, 1, from_grid2space)
+                    dj = _apply_affine_3d_x2(k, i, j, 1, from_grid2space)
                 else:
                     dk = k
                     di = i
                     dj = j
 
                 # convert the output point to physical coordinates
-                if to_affine is not None:
-                    dkk = _apply_affine_3d_x0(rk, ri, rj, 1, to_affine)
-                    dii = _apply_affine_3d_x1(rk, ri, rj, 1, to_affine)
-                    djj = _apply_affine_3d_x2(rk, ri, rj, 1, to_affine)
+                if to_grid2space is not None:
+                    dkk = _apply_affine_3d_x0(rk, ri, rj, 1, to_grid2space)
+                    dii = _apply_affine_3d_x1(rk, ri, rj, 1, to_grid2space)
+                    djj = _apply_affine_3d_x2(rk, ri, rj, 1, to_grid2space)
                 else:
                     dkk = rk
                     dii = ri
@@ -3076,21 +3077,21 @@ def create_sphere(cnp.npy_intp nslices, cnp.npy_intp nrows,
     return s
 
 
-cdef void _gradient_3d(floating[:, :, :] img, double[:, :] img_affine_inv,
-                       double[:] img_spacing, double[:, :] sampling_affine,
+cdef void _gradient_3d(floating[:, :, :] img, double[:, :] img_space2grid,
+                       double[:] img_spacing, double[:, :] out_grid2space,
                        floating[:, :, :, :] out, int[:, :, :] inside):
     r""" Gradient of a 3D image in physical space coordinates
 
     Each grid cell (i, j, k) in the sampling grid (determined by
     out.shape) is mapped to its corresponding physical point (x, y, z) by
-    multiplying sampling_affine (its grid-to-space transform) by (i, j, k),
+    multiplying out_grid2space (its grid-to-space transform) by (i, j, k),
     then the image is interpolated, at
 
     P1=(x + h, y, z), Q1=(x - h, y, z)
     P2=(x, y + h, z), Q2=(x, y - h, z)
     P3=(x, y, z + h), Q3=(x, y, z - h)
 
-    (by mapping Pi and Qi to the grid using img_affine_inv: the inverse of the
+    (by mapping Pi and Qi to the grid using img_space2grid: the inverse of the
     grid-to-space transform of img). The displacement parameter h is of
     magnitude 0.5 (in physical space units), therefore the approximated partial
     derivatives are given by the difference between the image interpolated at
@@ -3100,12 +3101,12 @@ cdef void _gradient_3d(floating[:, :, :] img, double[:, :] img_affine_inv,
     ----------
     img : array, shape (S, R, C)
         the input volume whose gradient will be computed
-    img_affine_inv : array, shape (4, 4)
+    img_space2grid : array, shape (4, 4)
         the space-to-grid transform matrix associated to img
     img_spacing : array, shape (3,)
         the spacing between voxels (voxel size along each axis) of the input
         volume
-    sampling_affine : array, shape (4, 4)
+    out_grid2space : array, shape (4, 4)
         the grid-to-space transform associated to the sampling grid
     out : array, shape (S', R', C', 3)
         the buffer in which to store the image gradient
@@ -3132,19 +3133,19 @@ cdef void _gradient_3d(floating[:, :, :] img, double[:, :] img_affine_inv,
                 for j in range(ncols):
                     inside[k, i, j] = 1
                     # Compute coordinates of index (k, i, j) in physical space
-                    x[0] = _apply_affine_3d_x0(k, i, j, 1, sampling_affine)
-                    x[1] = _apply_affine_3d_x1(k, i, j, 1, sampling_affine)
-                    x[2] = _apply_affine_3d_x2(k, i, j, 1, sampling_affine)
+                    x[0] = _apply_affine_3d_x0(k, i, j, 1, out_grid2space)
+                    x[1] = _apply_affine_3d_x1(k, i, j, 1, out_grid2space)
+                    x[2] = _apply_affine_3d_x2(k, i, j, 1, out_grid2space)
                     dx[:] = x[:]
                     for p in range(3):
                         # Compute coordinates of point dx on img's grid
                         dx[p] = x[p] - h[p]
                         q[0] = _apply_affine_3d_x0(dx[0], dx[1], dx[2], 1,
-                                                   img_affine_inv)
+                                                   img_space2grid)
                         q[1] = _apply_affine_3d_x1(dx[0], dx[1], dx[2], 1,
-                                                   img_affine_inv)
+                                                   img_space2grid)
                         q[2] = _apply_affine_3d_x2(dx[0], dx[1], dx[2], 1,
-                                                   img_affine_inv)
+                                                   img_space2grid)
                         # Interpolate img at q
                         in_flag = _interpolate_scalar_3d(img, q[0], q[1], q[2],
                                                          &out[k, i, j, p])
@@ -3156,11 +3157,11 @@ cdef void _gradient_3d(floating[:, :, :] img, double[:, :] img_affine_inv,
                         # Compute coordinates of point dx on img's grid
                         dx[p] = x[p] + h[p]
                         q[0] = _apply_affine_3d_x0(dx[0], dx[1], dx[2], 1,
-                                                   img_affine_inv)
+                                                   img_space2grid)
                         q[1] = _apply_affine_3d_x1(dx[0], dx[1], dx[2], 1,
-                                                   img_affine_inv)
+                                                   img_space2grid)
                         q[2] = _apply_affine_3d_x2(dx[0], dx[1], dx[2], 1,
-                                                   img_affine_inv)
+                                                   img_space2grid)
                         # Interpolate img at q
                         in_flag = _interpolate_scalar_3d(img, q[0], q[1], q[2],
                                                          &out[k, i, j, p])
@@ -3173,7 +3174,7 @@ cdef void _gradient_3d(floating[:, :, :] img, double[:, :] img_affine_inv,
 
 
 cdef void _sparse_gradient_3d(floating[:, :, :] img,
-                              double[:, :] img_affine_inv,
+                              double[:, :] img_space2grid,
                               double[:] img_spacing,
                               double[:, :] sample_points,
                               floating[:, :] out, int[:] inside):
@@ -3185,7 +3186,7 @@ cdef void _sparse_gradient_3d(floating[:, :, :] img,
     P2=(x_i, y_i + h, z_i), Q2=(x_i, y_i - h, z_i)
     P3=(x_i, y_i, z_i + h), Q3=(x_i, y_i, z_i - h)
 
-    (by mapping Pi and Qi to the grid using img_affine_inv: the inverse of the
+    (by mapping Pi and Qi to the grid using img_space2grid: the inverse of the
     grid-to-space transform of img). The displacement parameter h is of
     magnitude 0.5 (in physical space units), therefore the approximated partial
     derivatives are given by the difference between the image interpolated at
@@ -3195,7 +3196,7 @@ cdef void _sparse_gradient_3d(floating[:, :, :] img,
     ----------
     img : array, shape (S, R, C)
         the input volume whose gradient will be computed
-    img_affine_inv : array, shape (4, 4)
+    img_space2grid : array, shape (4, 4)
         the space-to-grid transform matrix associated to img
     img_spacing : array, shape (3,)
         the spacing between voxels (voxel size along each axis) of the input
@@ -3223,11 +3224,11 @@ cdef void _sparse_gradient_3d(floating[:, :, :] img,
                 # Compute coordinates of point dx on img's grid
                 dx[p] = sample_points[i, p] - h[p]
                 q[0] = _apply_affine_3d_x0(dx[0], dx[1], dx[2], 1,
-                                           img_affine_inv)
+                                           img_space2grid)
                 q[1] = _apply_affine_3d_x1(dx[0], dx[1], dx[2], 1,
-                                           img_affine_inv)
+                                           img_space2grid)
                 q[2] = _apply_affine_3d_x2(dx[0], dx[1], dx[2], 1,
-                                           img_affine_inv)
+                                           img_space2grid)
                 # Interpolate img at q
                 in_flag = _interpolate_scalar_3d(img, q[0], q[1], q[2],
                                                  &out[i, p])
@@ -3239,11 +3240,11 @@ cdef void _sparse_gradient_3d(floating[:, :, :] img,
                 # Compute coordinates of point dx on img's grid
                 dx[p] = sample_points[i, p] + h[p]
                 q[0] = _apply_affine_3d_x0(dx[0], dx[1], dx[2], 1,
-                                           img_affine_inv)
+                                           img_space2grid)
                 q[1] = _apply_affine_3d_x1(dx[0], dx[1], dx[2], 1,
-                                           img_affine_inv)
+                                           img_space2grid)
                 q[2] = _apply_affine_3d_x2(dx[0], dx[1], dx[2], 1,
-                                           img_affine_inv)
+                                           img_space2grid)
                 # Interpolate img at q
                 in_flag = _interpolate_scalar_3d(img, q[0], q[1], q[2],
                                                  &out[i, p])
@@ -3255,20 +3256,20 @@ cdef void _sparse_gradient_3d(floating[:, :, :] img,
                 dx[p] = sample_points[i, p]
 
 
-cdef void _gradient_2d(floating[:, :] img, double[:, :] img_affine_inv,
-                       double[:] img_spacing, double[:, :] sampling_affine,
+cdef void _gradient_2d(floating[:, :] img, double[:, :] img_space2grid,
+                       double[:] img_spacing, double[:, :] out_grid2space,
                        floating[:, :, :] out, int[:, :] inside):
     r""" Gradient of a 2D image in physical space coordinates
 
     Each grid cell (i, j) in the sampling grid (determined by
     out.shape) is mapped to its corresponding physical point (x, y) by
-    multiplying sampling_affine (its grid-to-space transform) by (i, j), then
+    multiplying out_grid2space (its grid-to-space transform) by (i, j), then
     the image is interpolated, at
 
     P1=(x + h, y), Q1=(x - h, y)
     P2=(x, y + h), Q2=(x, y - h)
 
-    (by mapping Pi and Qi to the grid using img_affine_inv: the inverse of the
+    (by mapping Pi and Qi to the grid using img_space2grid: the inverse of the
     grid-to-space transform of img). The displacement parameter h is of
     magnitude 0.5 (in physical space units), therefore the approximated partial
     derivatives are given by the difference between the image interpolated at
@@ -3278,12 +3279,12 @@ cdef void _gradient_2d(floating[:, :] img, double[:, :] img_affine_inv,
     ----------
     img : array, shape (R, C)
         the input image whose gradient will be computed
-    img_affine_inv : array, shape (3, 3)
+    img_space2grid : array, shape (3, 3)
         the space-to-grid transform matrix associated to img
     img_spacing : array, shape (2,)
         the spacing between pixels (pixel size along each axis) of the input
         image
-    sampling_affine : array, shape (3, 3)
+    out_grid2space : array, shape (3, 3)
         the grid-to-space transform associated to the sampling grid
     out : array, shape (S', R', 2)
         the buffer in which to store the image gradient
@@ -3307,14 +3308,14 @@ cdef void _gradient_2d(floating[:, :] img, double[:, :] img_affine_inv,
             for j in range(ncols):
                 inside[i, j] = 1
                 # Compute coordinates of index (i, j) in physical space
-                x[0] = _apply_affine_2d_x0(i, j, 1, sampling_affine)
-                x[1] = _apply_affine_2d_x1(i, j, 1, sampling_affine)
+                x[0] = _apply_affine_2d_x0(i, j, 1, out_grid2space)
+                x[1] = _apply_affine_2d_x1(i, j, 1, out_grid2space)
                 dx[:] = x[:]
                 for p in range(2):
                     # Compute coordinates of point dx on img's grid
                     dx[p] = x[p] - h[p]
-                    q[0] = _apply_affine_2d_x0(dx[0], dx[1], 1, img_affine_inv)
-                    q[1] = _apply_affine_2d_x1(dx[0], dx[1], 1, img_affine_inv)
+                    q[0] = _apply_affine_2d_x0(dx[0], dx[1], 1, img_space2grid)
+                    q[1] = _apply_affine_2d_x1(dx[0], dx[1], 1, img_space2grid)
                     # Interpolate img at q
                     in_flag = _interpolate_scalar_2d(img, q[0], q[1],
                                                      &out[i, j, p])
@@ -3325,8 +3326,8 @@ cdef void _gradient_2d(floating[:, :] img, double[:, :] img_affine_inv,
                     tmp = out[i, j, p]
                     # Compute coordinates of point dx on img's grid
                     dx[p] = x[p] + h[p]
-                    q[0] = _apply_affine_2d_x0(dx[0], dx[1], 1, img_affine_inv)
-                    q[1] = _apply_affine_2d_x1(dx[0], dx[1], 1, img_affine_inv)
+                    q[0] = _apply_affine_2d_x0(dx[0], dx[1], 1, img_space2grid)
+                    q[1] = _apply_affine_2d_x1(dx[0], dx[1], 1, img_space2grid)
                     # Interpolate img at q
                     in_flag = _interpolate_scalar_2d(img, q[0], q[1],
                                                      &out[i, j, p])
@@ -3338,7 +3339,7 @@ cdef void _gradient_2d(floating[:, :] img, double[:, :] img_affine_inv,
                     dx[p] = x[p]
 
 
-cdef void _sparse_gradient_2d(floating[:, :] img, double[:, :] img_affine_inv,
+cdef void _sparse_gradient_2d(floating[:, :] img, double[:, :] img_space2grid,
                               double[:] img_spacing,
                               double[:, :] sample_points,
                               floating[:, :] out, int[:] inside):
@@ -3349,7 +3350,7 @@ cdef void _sparse_gradient_2d(floating[:, :] img, double[:, :] img_affine_inv,
     P1=(x_i + h, y_i), Q1=(x_i - h, y_i)
     P2=(x_i, y_i + h), Q2=(x_i, y_i - h)
 
-    (by mapping Pi and Qi to the grid using img_affine_inv: the inverse of the
+    (by mapping Pi and Qi to the grid using img_space2grid: the inverse of the
     grid-to-space transform of img). The displacement parameter h is of
     magnitude 0.5 (in physical space units), therefore the approximated partial
     derivatives are given by the difference between the image interpolated at
@@ -3359,7 +3360,7 @@ cdef void _sparse_gradient_2d(floating[:, :] img, double[:, :] img_affine_inv,
     ----------
     img : array, shape (R, C)
         the input volume whose gradient will be computed
-    img_affine_inv : array, shape (3, 3)
+    img_space2grid : array, shape (3, 3)
         the space-to-grid transform matrix associated to img
     img_spacing : array, shape (2,)
         the spacing between pixels (pixel size along each axis) of the input
@@ -3388,8 +3389,8 @@ cdef void _sparse_gradient_2d(floating[:, :] img, double[:, :] img_affine_inv,
             for p in range(2):
                 # Compute coordinates of point dx on img's grid
                 dx[p] = sample_points[i, p] - h[p]
-                q[0] = _apply_affine_2d_x0(dx[0], dx[1], 1, img_affine_inv)
-                q[1] = _apply_affine_2d_x1(dx[0], dx[1], 1, img_affine_inv)
+                q[0] = _apply_affine_2d_x0(dx[0], dx[1], 1, img_space2grid)
+                q[1] = _apply_affine_2d_x1(dx[0], dx[1], 1, img_space2grid)
                 # Interpolate img at q
                 in_flag = _interpolate_scalar_2d(img, q[0], q[1],
                                                  &out[i, p])
@@ -3400,8 +3401,8 @@ cdef void _sparse_gradient_2d(floating[:, :] img, double[:, :] img_affine_inv,
                 tmp = out[i, p]
                 # Compute coordinates of point dx on img's grid
                 dx[p] = sample_points[i, p] + h[p]
-                q[0] = _apply_affine_2d_x0(dx[0], dx[1], 1, img_affine_inv)
-                q[1] = _apply_affine_2d_x1(dx[0], dx[1], 1, img_affine_inv)
+                q[0] = _apply_affine_2d_x0(dx[0], dx[1], 1, img_space2grid)
+                q[1] = _apply_affine_2d_x1(dx[0], dx[1], 1, img_space2grid)
                 # Interpolate img at q
                 in_flag = _interpolate_scalar_2d(img, q[0], q[1],
                                                  &out[i, p])
@@ -3413,59 +3414,59 @@ cdef void _sparse_gradient_2d(floating[:, :] img, double[:, :] img_affine_inv,
                 dx[p] = sample_points[i, p]
 
 
-def gradient(img, img_affine_inv, img_spacing, sampling_shape, 
-             sampling_affine):
+def gradient(img, img_space2grid, img_spacing, out_shape, 
+             out_grid2space):
     r""" Gradient of an image in physical space
 
     Parameters
     ----------
     img : 2D or 3D array, shape (R, C) or (S, R, C)
         the input image whose gradient will be computed
-    img_affine_inv : array, shape (dim+1, dim+1)
+    img_space2grid : array, shape (dim+1, dim+1)
         the space-to-grid transform matrix associated to img
     img_spacing : array, shape (dim,)
         the spacing between voxels (voxel size along each axis) of the input
         image
-    sampling_shape : array, shape (dim,)
+    out_shape : array, shape (dim,)
         the number of (slices), rows and columns of the sampling grid
-    sampling_affine : array, shape (dim+1, dim+1)
+    out_grid2space : array, shape (dim+1, dim+1)
         the grid-to-space transform associated to the sampling grid
 
     Returns
     -------
     out : array, shape (R', C', 2) or (S', R', C', 3)
         the buffer in which to store the image gradient, where
-        (S'), R', C' are given by sampling_shape
+        (S'), R', C' are given by out_shape
     """
     dim = len(img.shape)
-    if not is_valid_affine(img_affine_inv, dim):
+    if not is_valid_affine(img_space2grid, dim):
         raise ValueError("Invalid image affine transform")
-    if not is_valid_affine(sampling_affine, dim):
+    if not is_valid_affine(out_grid2space, dim):
         raise ValueError("Invalid sampling grid affine transform")
     if len(img_spacing) < dim:
         raise ValueError("Invalid spacings")
     ftype = img.dtype
-    out = np.empty(tuple(sampling_shape)+(dim,), dtype=ftype)
-    inside = np.empty(tuple(sampling_shape), dtype=np.int32)
+    out = np.empty(tuple(out_shape)+(dim,), dtype=ftype)
+    inside = np.empty(tuple(out_shape), dtype=np.int32)
     if dim == 2:
-        _gradient_2d(img, img_affine_inv.astype(np.float64),
+        _gradient_2d(img, img_space2grid.astype(np.float64),
                      img_spacing.astype(np.float64),
-                     sampling_affine.astype(np.float64), out, inside)
+                     out_grid2space.astype(np.float64), out, inside)
     else:
-        _gradient_3d(img, img_affine_inv.astype(np.float64),
+        _gradient_3d(img, img_space2grid.astype(np.float64),
                      img_spacing.astype(np.float64),
-                     sampling_affine.astype(np.float64), out, inside)
+                     out_grid2space.astype(np.float64), out, inside)
     return out, inside
 
 
-def sparse_gradient(img, img_affine_inv, img_spacing, sample_points):
+def sparse_gradient(img, img_space2grid, img_spacing, sample_points):
     r""" Gradient of an image in physical space
 
     Parameters
     ----------
     img : 2D or 3D array, shape (R, C) or (S, R, C)
         the input image whose gradient will be computed
-    img_affine_inv : array, shape (dim+1, dim+1)
+    img_space2grid : array, shape (dim+1, dim+1)
         the space-to-grid transform matrix associated to img
     img_spacing : array, shape (dim,)
         the spacing between voxels (voxel size along each axis) of the input
@@ -3480,7 +3481,7 @@ def sparse_gradient(img, img_affine_inv, img_spacing, sample_points):
         the gradient at each point stored at its corresponding row
     """
     dim = len(img.shape)
-    if not is_valid_affine(img_affine_inv, dim):
+    if not is_valid_affine(img_space2grid, dim):
         raise ValueError("Invalid affine transform matrix")
     if len(img_spacing) < dim:
         raise ValueError("Invalid spacings")
@@ -3490,11 +3491,11 @@ def sparse_gradient(img, img_affine_inv, img_spacing, sample_points):
     out = np.empty(shape=(n, dim), dtype=ftype)
     inside = np.empty(shape=(n,), dtype=np.int32)
     if dim == 2:
-        _sparse_gradient_2d(img, img_affine_inv.astype(np.float64),
+        _sparse_gradient_2d(img, img_space2grid.astype(np.float64),
                             img_spacing.astype(np.float64), sample_points,
                             out, inside)
     else:
-        _sparse_gradient_3d(img, img_affine_inv.astype(np.float64),
+        _sparse_gradient_3d(img, img_space2grid.astype(np.float64),
                             img_spacing.astype(np.float64), sample_points,
                             out, inside)
     return out, inside
