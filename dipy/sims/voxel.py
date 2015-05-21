@@ -295,7 +295,7 @@ def multi_tensor(gtab, mevals, S0=100, angles=[(0, 0), (90, 0)],
     return add_noise(S, snr, S0), sticks
 
 
-def multi_tensor_dki(gtab, mevals, S0=100, angles=[(0., 0.), (90., 0.)],
+def multi_tensor_dki(gtab, mevals, S0=100, angles=[(90., 0.), (90., 0.)],
                      fractions=[50, 50], snr=20):
 
     r""" Simulate the diffusion-weight signal based on the DKI model
@@ -303,7 +303,7 @@ def multi_tensor_dki(gtab, mevals, S0=100, angles=[(0., 0.), (90., 0.)],
     Parameters
     -----------
     gtab : GradientTable
-    mevals : array (K,3)
+    mevals : array (K, 3)
         eigenvalues of the diffusion tensor for each individual compartment
     S0 : float
         Unweighted signal value (b0 signal).
@@ -341,12 +341,12 @@ def multi_tensor_dki(gtab, mevals, S0=100, angles=[(0., 0.), (90., 0.)],
     >>> from dipy.data import get_data
     >>> from dipy.core.gradients import gradient_table
     >>> from dipy.io.gradients import read_bvals_bvecs
-    >>> fimg, fbvals, fbvecs = get_data('small_101D')
+    >>> fimg, fbvals, fbvecs = get_data('small_64D')
     >>> bvals, bvecs = read_bvals_bvecs(fbvals, fbvecs)
-    >>> gtab = gradient_table(bvals, bvecs)
-    >>> mevals=np.array(([0.0015, 0.0003, 0.0003],[0.0015, 0.0003, 0.0003]))
-    >>> e0 = np.array([1, 0, 0.])
-    >>> e1 = np.array([0., 1, 0])
+    >>> bvals_2s = np.concatenate((bvals, bvals * 2), axis=0)
+    >>> bvecs_2s = np.concatenate((bvecs, bvecs), axis=0)
+    >>> gtab = gradient_table(bvals_2s, bvecs_2s)
+    >>> mevals = np.array([[0.00099, 0, 0],[0.00226, 0.00087, 0.00087]])
     >>> S, dt, kt =  multi_tensor_dki(gtab, mevals)
 
     References
@@ -495,6 +495,8 @@ def single_diffkurt_tensors(gtab, dt, kt, S0=150, snr=None):
            tractography procedures and novel biomarkers", NeuroImage (2015)
            111, 85-99.
     """
+    dt = np.array(dt)
+    kt = np.array(kt)
 
     A = dki_design_matrix(gtab)
 
