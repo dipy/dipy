@@ -226,7 +226,7 @@ class MattesBase(object):
                                       self.smarginal, self.mmarginal)
 
     def update_gradient_dense(self, theta, transform, static, moving,
-                              grid_to_space, mgradient, smask, mmask):
+                              grid2space, mgradient, smask, mmask):
         r''' Computes the Gradient of the joint PDF w.r.t. transform parameters
 
         Computes the vector of partial derivatives of the joint histogram
@@ -245,7 +245,7 @@ class MattesBase(object):
             static image
         moving: array, shape (S, R, C)
             moving image
-        grid_to_space: array, shape (4, 4)
+        grid2space: array, shape (4, 4)
             we assume that both images have already been sampled at a common
             grid. This transform must map voxel coordinates of this common grid
             to physical coordinates of its corresponding voxel in the moving
@@ -253,7 +253,7 @@ class MattesBase(object):
             image's grid (this is the typical setting) using an aligning
             matrix A, then
 
-            (1) grid_to_space = A.dot(static_affine)
+            (1) grid2space = A.dot(static_affine)
 
             where static_affine is the transformation mapping static image's
             grid coordinates to physical space.
@@ -275,13 +275,13 @@ class MattesBase(object):
             self.joint_grad = np.zeros((nbins, nbins, n))
         if dim == 2:
             _joint_pdf_gradient_dense_2d(theta, transform, static, moving,
-                                         grid_to_space, mgradient, smask,
+                                         grid2space, mgradient, smask,
                                          mmask, self.smin, self.sdelta,
                                          self.mmin, self.mdelta, self.nbins,
                                          self.padding, self.joint_grad)
         elif dim == 3:
             _joint_pdf_gradient_dense_3d(theta, transform, static, moving,
-                                         grid_to_space, mgradient, smask,
+                                         grid2space, mgradient, smask,
                                          mmask, self.smin, self.sdelta,
                                          self.mmin, self.mdelta, self.nbins,
                                          self.padding, self.joint_grad)
@@ -780,7 +780,7 @@ cdef _compute_pdfs_sparse(double[:] sval, double[:] mval, double smin,
 
 cdef _joint_pdf_gradient_dense_2d(double[:] theta, Transform transform,
                                   double[:, :] static, double[:, :] moving,
-                                  double[:, :] grid_to_space,
+                                  double[:, :] grid2space,
                                   floating[:, :, :] mgradient, int[:, :] smask,
                                   int[:, :] mmask, double smin, double sdelta,
                                   double mmin, double mdelta, int nbins,
@@ -802,7 +802,7 @@ cdef _joint_pdf_gradient_dense_2d(double[:] theta, Transform transform,
         static image
     moving: array, shape (R, C)
         moving image
-    grid_to_space: array, shape (3, 3)
+    grid2space: array, shape (3, 3)
         the grid-to-space transform associated with images static and moving
         (we assume that both images have already been sampled at a common grid)
     mgradient: array, shape (R, C, 2)
@@ -855,8 +855,8 @@ cdef _joint_pdf_gradient_dense_2d(double[:] theta, Transform transform,
                     continue
 
                 valid_points += 1
-                x[0] = _apply_affine_2d_x0(i, j, 1, grid_to_space)
-                x[1] = _apply_affine_2d_x1(i, j, 1, grid_to_space)
+                x[0] = _apply_affine_2d_x0(i, j, 1, grid2space)
+                x[1] = _apply_affine_2d_x1(i, j, 1, grid2space)
 
                 if constant_jacobian == 0:
                     constant_jacobian = transform._jacobian(theta, x, J)
@@ -888,7 +888,7 @@ cdef _joint_pdf_gradient_dense_2d(double[:] theta, Transform transform,
 cdef _joint_pdf_gradient_dense_3d(double[:] theta, Transform transform,
                                   double[:, :, :] static,
                                   double[:, :, :] moving,
-                                  double[:, :] grid_to_space,
+                                  double[:, :] grid2space,
                                   floating[:, :, :, :] mgradient,
                                   int[:, :, :] smask,
                                   int[:, :, :] mmask, double smin,
@@ -912,7 +912,7 @@ cdef _joint_pdf_gradient_dense_3d(double[:] theta, Transform transform,
         static image
     moving: array, shape (S, R, C)
         moving image
-    grid_to_space: array, shape (4, 4)
+    grid2space: array, shape (4, 4)
         the grid-to-space transform associated with images static and moving
         (we assume that both images have already been sampled at a common grid)
     mgradient: array, shape (S, R, C, 3)
@@ -966,9 +966,9 @@ cdef _joint_pdf_gradient_dense_3d(double[:] theta, Transform transform,
                     if mmask is not None and mmask[k, i, j] == 0:
                         continue
                     valid_points += 1
-                    x[0] = _apply_affine_3d_x0(k, i, j, 1, grid_to_space)
-                    x[1] = _apply_affine_3d_x1(k, i, j, 1, grid_to_space)
-                    x[2] = _apply_affine_3d_x2(k, i, j, 1, grid_to_space)
+                    x[0] = _apply_affine_3d_x0(k, i, j, 1, grid2space)
+                    x[1] = _apply_affine_3d_x1(k, i, j, 1, grid2space)
+                    x[2] = _apply_affine_3d_x2(k, i, j, 1, grid2space)
 
                     if constant_jacobian == 0:
                         constant_jacobian = transform._jacobian(theta, x, J)
@@ -1285,7 +1285,7 @@ def sample_domain_2d(int[:] shape, int n, double[:, :] samples,
     return n
 
 
-def sample_domain_regular(int k, int[:] shape, double[:, :] affine,
+def sample_domain_regular(int k, int[:] shape, double[:, :] grid2space,
                           double sigma=0.25, int seed=1234):
     r""" Take floor(total_voxels/k) samples from a (2D or 3D) grid
 
@@ -1307,7 +1307,7 @@ def sample_domain_regular(int k, int[:] shape, double[:, :] affine,
         the sampling rate, as described before
     shape : array, shape (dim,)
         the shape of the grid to be sampled
-    affine : array, shape (dim+1, dim+1)
+    grid2space : array, shape (dim+1, dim+1)
         the grid-to-space transform
     sigma : float
         the standard deviation of the Normal random distortion to be applied
@@ -1323,12 +1323,12 @@ def sample_domain_regular(int k, int[:] shape, double[:, :] affine,
     >>> from dipy.align.mattes import sample_domain_2d_regular
     >>> import dipy.align.vector_fields as vf
     >>> shape = np.array((10, 10), dtype=np.int32)
-    >>> affine = np.eye(2)
+    >>> grid2space = np.eye(2)
     >>> sigma = 0
     >>> dim = len(shape)
     >>> n = shape[0]*shape[1]
     >>> k = 2
-    >>> samples = sample_domain_2d_regular(k, shape, affine, sigma)
+    >>> samples = sample_domain_2d_regular(k, shape, grid2space, sigma)
     >>> (samples.shape[0], samples.shape[1]) == (n//k, dim)
     True
     >>> isamples = np.array(samples, dtype=np.int32)
@@ -1343,8 +1343,8 @@ def sample_domain_regular(int k, int[:] shape, double[:, :] affine,
         double s, r, c
         double[:, :] samples
     dim = len(shape)
-    if not vf.is_valid_affine(affine, dim):
-        raise ValueError("Invalid affine transform matrix")
+    if not vf.is_valid_affine(grid2space, dim):
+        raise ValueError("Invalid grid-to-space matrix")
 
     random.seed(seed)
     if dim == 2:
@@ -1355,8 +1355,8 @@ def sample_domain_regular(int k, int[:] shape, double[:, :] affine,
             for i in range(m):
                 r = ((i * k) // shape[1]) + samples[i, 0]
                 c = ((i * k) % shape[1]) + samples[i, 1]
-                samples[i, 0] = _apply_affine_2d_x0(r, c, 1, affine)
-                samples[i, 1] = _apply_affine_2d_x1(r, c, 1, affine)
+                samples[i, 0] = _apply_affine_2d_x0(r, c, 1, grid2space)
+                samples[i, 1] = _apply_affine_2d_x1(r, c, 1, grid2space)
     else:
         slice_size = shape[1] * shape[2]
         n = shape[0] * slice_size
@@ -1367,9 +1367,9 @@ def sample_domain_regular(int k, int[:] shape, double[:, :] affine,
                 s = ((i * k) // slice_size) + samples[i, 0]
                 r = (((i * k) % slice_size) // shape[2]) + samples[i, 1]
                 c = (((i * k) % slice_size) % shape[2]) + samples[i, 2]
-                samples[i, 0] = _apply_affine_3d_x0(s, r, c, 1, affine)
-                samples[i, 1] = _apply_affine_3d_x1(s, r, c, 1, affine)
-                samples[i, 2] = _apply_affine_3d_x2(s, r, c, 1, affine)
+                samples[i, 0] = _apply_affine_3d_x0(s, r, c, 1, grid2space)
+                samples[i, 1] = _apply_affine_3d_x1(s, r, c, 1, grid2space)
+                samples[i, 2] = _apply_affine_3d_x2(s, r, c, 1, grid2space)
     return samples
 
 
