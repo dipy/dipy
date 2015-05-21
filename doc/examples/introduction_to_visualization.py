@@ -1,7 +1,7 @@
 """
-===============================================
-Advanced interactive visualization capabilities
-===============================================
+==================================
+Advanced interactive visualization
+==================================
 
 In DIPY we created a thin interface to access many of the capabilities
 available in the Visualization Toolkit framework (VTK) but tailored to the
@@ -137,7 +137,7 @@ Then, we can render all the widget and everything else in the screen and
 start the interaction using ``show_m.start()``.
 """
 
-show_m.render()
+# show_m.render()
 # show_m.start()
 
 """
@@ -158,8 +158,14 @@ def win_callback(obj, event):
 
 show_m.initialize()
 show_m.add_window_callback(win_callback)
-show_m.render()
-show_m.start()
+
+"""
+Finally, please uncomment the following lines so that you can interact with
+the available 3D and 2D objects.
+"""
+
+# show_m.render()
+# show_m.start()
 
 
 
