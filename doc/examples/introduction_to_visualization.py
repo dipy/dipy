@@ -66,36 +66,62 @@ world coordinates (RAS 1mm).
 world_coords = True
 
 """
-If the
+If we want to see the objects in native space we need to make sure that all
+objects which are currently in world coordinates are transformed back to
+native space using the inverse of the affine.
 """
 
 if not world_coords:
     from dipy.tracking.streamline import transform_streamlines
     streamlines = transform_streamlines(streamlines, np.linalg.inv(affine))
 
-ren = window.Renderer()
+"""
+Now we create, a ``Renderer`` object and add the streamlines using the ``line``
+function and an image plane using the ``slice`` function.
+"""
 
+ren = window.Renderer()
 stream_actor = actor.line(streamlines)
 
-slicer_opacity = .6
-
 if not world_coords:
-    image = actor.slice(data, affine=np.eye(4))
+    image_actor = actor.slice(data, affine=np.eye(4))
 else:
-    image = actor.slice(data, affine)
+    image_actor = actor.slice(data, affine)
 
-image.opacity(slicer_opacity)
+"""
+For fun let's change also the opacity of the slicer
+"""
+
+slicer_opacity = .6
+image_actor.opacity(slicer_opacity)
+
+"""
+Connect the actors with the Renderer.
+"""
 
 ren.add(stream_actor)
-ren.add(image)
+ren.add(image_actor)
+
+"""
+Now we would like to change the position of the ``image_actor`` using a slider.
+The sliders are widgets which require access to different areas of the
+visualization pipeline and therefore we don't recommend using them with
+``show``. The more appropriate way is to use them with the ``ShowManager``
+object which allows accessing the pipeline in different areas. Here is how:
+"""
 
 show_m = window.ShowManager(ren, size=(1200, 900))
 show_m.initialize()
 
+"""
+After we have initialized the ``ShowManager`` we can go ahead and create a
+callback which will be given to the ``slider`` function.
+"""
+
 def change_slice(obj, event):
     z = int(np.round(obj.GetSliderRepresentation().GetValue()))
-    image.display_extent(0, shape[0] - 1,
-                         0, shape[1] - 1, z, z)
+    image_actor.display_extent(0, shape[0] - 1,
+                               0, shape[1] - 1, z, z)
 
 slider = widget.slider(show_m.iren, show_m.ren,
                        callback=change_slice,
@@ -106,23 +132,34 @@ slider = widget.slider(show_m.iren, show_m.ren,
                        right_normalized_pos=(.98, 0.6),
                        size=(120, 0), label_format="%0.lf")
 
+"""
+Then, we can render all the widget and everything else in the screen and
+start the interaction using ``show_m.start()``.
+"""
+
+show_m.render()
+# show_m.start()
+
+"""
+However, if you change the window size, the slider will not update its position
+properly. The solution to this issue is to update the position of the slider
+using its ``place`` method everytime the window size changes.
+"""
+
+global size
+size = ren.GetSize()
+
+def win_callback(obj, event):
+    global size
+    if size != obj.GetSize():
+
+        slider.place(ren)
+        size = obj.GetSize()
+
+show_m.initialize()
+show_m.add_window_callback(win_callback)
 show_m.render()
 show_m.start()
-
-
-
-# if depth_peeling:
-#    # http://www.vtk.org/Wiki/VTK/Depth_Peeling
-#    ren_win.SetAlphaBitPlanes(1)
-#    ren_win.SetMultiSamples(0)
-#    renderer.SetUseDepthPeeling(1)
-#    renderer.SetMaximumNumberOfPeels(10)
-#    renderer.SetOcclusionRatio(0.1)
-
-#if depth_peeling:
-#    dp_bool = str(bool(renderer.GetLastRenderingUsedDepthPeeling()))
-#    print('Depth peeling used? ' + dp_bool)
-
 
 
 
