@@ -8,7 +8,8 @@ from numpy.testing import (assert_array_equal, assert_array_almost_equal,
 from dipy.sims.voxel import (_check_directions, SingleTensor, MultiTensor,
                              multi_tensor_odf, all_tensor_evecs, add_noise,
                              single_tensor, sticks_and_ball, multi_tensor_dki,
-                             dki_design_matrix, compute_Wijkl)
+                             dki_design_matrix, compute_Wijkl,
+                             single_diffkurt_tensors)
 from dipy.core.geometry import (vec2vec_rotmat, sphere2cart)
 from dipy.data import get_data, get_sphere
 from dipy.core.gradients import gradient_table
@@ -16,9 +17,13 @@ from dipy.io.gradients import read_bvals_bvecs
 
 
 fimg, fbvals, fbvecs = get_data('small_64D')
-bvals = np.load(fbvals)
-bvecs = np.load(fbvecs)
+bvals, bvecs = read_bvals_bvecs(fbvals, fbvecs)
 gtab = gradient_table(bvals, bvecs)
+
+# 2 shells for techniques that requires multishell data
+bvals_2s = np.concatenate((bvals, bvals * 2), axis=0)
+bvecs_2s = np.concatenate((bvecs, bvecs), axis=0)
+gtab_2s = gradient_table(bvals_2s, bvecs_2s)
 
 
 def diff2eigenvectors(dx, dy, dz):
@@ -154,89 +159,149 @@ def test_dki():
 
 
 def test_compute_Wijkl():
+    """ Testing symmetry of the elements of the KT
+
+    As an 4th order tensor, KT has 81 elements. However, due to diffusion
+    symmetry the KT is fully characterized by 15 independent elements. This
+    test checks for this property.
+    """
     # two fiber not aligned to planes x = 0, y = 0, or z = 0
     mevals = np.array([[0.00099, 0, 0], [0.00226, 0.00087, 0.00087],
                        [0.00099, 0, 0], [0.00226, 0.00087, 0.00087]])
-    angles = [(90, 10), (90, 10), (20, 30), (20, 30)]
+    angles = [(80, 10), (80, 10), (20, 30), (20, 30)]
     fie = 0.49  # intra axonal water fraction
-    frac = [fie*50, (1 - fie)*50, fie*50, (1 - fie)*50]
+    frac = [fie * 50, (1-fie) * 50, fie * 50, (1-fie) * 50]
     sticks = _check_directions(angles)
     mD = np.zeros((len(frac), 3, 3))
     for i in range(len(frac)):
         R = all_tensor_evecs(sticks[i])
         mD[i] = np.dot(np.dot(R, np.diag(mevals[i])), R.T)
-        
-    # Test symmetry of all 81 elements
+
+    # Reference dictionary with the 15 independent elements.
+    # Note: The multiplication of the indexes (i+1) * (j+1) * (k+1) * (l+1)
+    # for of an elements is only equal to this multiplication for another
+    # element if an only if the element corresponds to an symmetry element.
+    # Thus indexes multiplication is used as key of the reference dictionary
+    kt_ref = {1: compute_Wijkl(mD, frac, 0, 0, 0, 0),
+              16: compute_Wijkl(mD, frac, 1, 1, 1, 1),
+              81: compute_Wijkl(mD, frac, 2, 2, 2, 2),
+              2: compute_Wijkl(mD, frac, 0, 0, 0, 1),
+              3: compute_Wijkl(mD, frac, 0, 0, 0, 2),
+              8: compute_Wijkl(mD, frac, 0, 1, 1, 1),
+              24: compute_Wijkl(mD, frac, 1, 1, 1, 2),
+              27: compute_Wijkl(mD, frac, 0, 2, 2, 2),
+              54: compute_Wijkl(mD, frac, 1, 2, 2, 2),
+              4: compute_Wijkl(mD, frac, 0, 0, 1, 1),
+              9: compute_Wijkl(mD, frac, 0, 0, 2, 2),
+              36: compute_Wijkl(mD, frac, 1, 1, 2, 2),
+              6: compute_Wijkl(mD, frac, 0, 0, 1, 2),
+              12: compute_Wijkl(mD, frac, 0, 1, 1, 2),
+              18: compute_Wijkl(mD, frac, 0, 1, 2, 2)}
+
+    # Testing all 81 possible elements
+    xyz = [0, 1, 2]
+    for i in xyz:
+        for j in xyz:
+            for k in xyz:
+                for l in xyz:
+                    key = (i+1) * (j+1) * (k+1) * (l+1)
+                    assert_almost_equal(compute_Wijkl(mD, frac, i, k, j, l),
+                                        kt_ref[key])
 
 
-def test_DKI_aligned_fibers():
-    """ 
-    Testing DKI simulations rotating a single fiber.
-    When rotation fiber direction ground truth, if biological parameters
-    don't change, kt[0] of a fiber aligned to axis x has to be equal to kt[1]
-    of a fiber aligned to the axis y and equal to kt[2] of a fiber aligned to 
-    axis z. The same is applicable for dt
+def test_DKI_simulations_aligned_fibers():
+    """
+    Testing DKI simulations when aligning the same fiber to different axis.
+
+    If biological parameters don't change, kt[0] of a fiber aligned to axis x
+    has to be equal to kt[1] of a fiber aligned to the axis y and equal to
+    kt[2] of a fiber aligned to axis z. The same is applicable for dt
     """
     # Defining parameters based on Neto Henriques et al., 2015. NeuroImage 111
-    mevals = np.array([[0.00099, 0, 0],               # Intra-cellular 
+    mevals = np.array([[0.00099, 0, 0],               # Intra-cellular
                        [0.00226, 0.00087, 0.00087]])  # Extra-cellular
-    frac = [49, 51]
-    ### axis x
+    frac = [49, 51]  # Compartment volume fraction
+    # axis x
     angles = [(90, 0), (90, 0)]
-    signal_fx, dt_fx, kt_fx = multi_tensor_dki(gtab, mevals, angles=angles,
+    signal_fx, dt_fx, kt_fx = multi_tensor_dki(gtab_2s, mevals, angles=angles,
                                                fractions=frac)
-    ### axis y
+    # axis y
     angles = [(90, 90), (90, 90)]
-    signal_fy, dt_fy, kt_fy = multi_tensor_dki(gtab, mevals, angles=angles,
+    signal_fy, dt_fy, kt_fy = multi_tensor_dki(gtab_2s, mevals, angles=angles,
                                                fractions=frac)
-    ### axis z
+    # axis z
     angles = [(0, 0), (0, 0)]
-    signal_fz, dt_fz, kt_fz = multi_tensor_dki(gtab, mevals, angles=angles,
+    signal_fz, dt_fz, kt_fz = multi_tensor_dki(gtab_2s, mevals, angles=angles,
                                                fractions=frac)
-    
+
     assert_array_equal([kt_fx[0], kt_fx[1], kt_fx[2]],
                        [kt_fy[1], kt_fy[0], kt_fy[2]])
     assert_array_equal([kt_fx[0], kt_fx[1], kt_fx[2]],
                        [kt_fz[2], kt_fz[0], kt_fz[1]])
-                       
+
     assert_array_equal([dt_fx[0], dt_fx[1], dt_fx[2]],
                        [dt_fy[1], dt_fy[0], dt_fy[2]])
     assert_array_equal([dt_fx[0], dt_fx[1], dt_fx[2]],
                        [dt_fz[2], dt_fz[0], dt_fz[1]])
 
-    
-def test_DKI_crossing_fibers():
+    # testing S signal along axis x, y and z
+    bvals = np.array([0, 0, 0, 1000, 1000, 1000, 2000, 2000, 2000])
+    bvecs = np.asarray([[1, 0, 0], [0, 1, 0], [0, 0, 1],
+                        [1, 0, 0], [0, 1, 0], [0, 0, 1],
+                        [1, 0, 0], [0, 1, 0], [0, 0, 1]])
+    gtab_axis = gradient_table(bvals, bvecs)
+    # axis x
+    S_fx = single_diffkurt_tensors(gtab_axis, dt_fx, kt_fx, S0=100)
+    assert_array_almost_equal(S_fx[0:3], [100, 100, 100])  # test S f0r b=0
+    # axis y
+    S_fy = single_diffkurt_tensors(gtab_axis, dt_fy, kt_fy, S0=100)
+    assert_array_almost_equal(S_fy[0:3], [100, 100, 100])  # test S f0r b=0
+    # axis z
+    S_fz = single_diffkurt_tensors(gtab_axis, dt_fz, kt_fz, S0=100)
+    assert_array_almost_equal(S_fz[0:3], [100, 100, 100])  # test S f0r b=0
+
+    # test S for b = 1000
+    assert_array_almost_equal([S_fx[3], S_fx[4], S_fx[5]],
+                              [S_fy[4], S_fy[3], S_fy[5]])
+    assert_array_almost_equal([S_fx[3], S_fx[4], S_fx[5]],
+                              [S_fz[5], S_fz[3], S_fz[4]])
+    # test S for b = 2000
+    assert_array_almost_equal([S_fx[6], S_fx[7], S_fx[8]],
+                              [S_fy[7], S_fy[6], S_fy[8]])
+    assert_array_almost_equal([S_fx[6], S_fx[7], S_fx[8]],
+                              [S_fz[8], S_fz[6], S_fz[7]])
+
+
+def test_DKI_crossing_fibers_simulations():
     """ Testing DKI simulations of a crossing fiber
     """
     # two fiber not aligned to planes x = 0, y = 0, or z = 0
     mevals = np.array([[0.00099, 0, 0], [0.00226, 0.00087, 0.00087],
                        [0.00099, 0, 0], [0.00226, 0.00087, 0.00087]])
-    angles = [(90, 10), (90, 10), (20, 30), (20, 30)]
+    angles = [(80, 10), (80, 10), (20, 30), (20, 30)]
     fie = 0.49
     frac = [fie*50, (1 - fie)*50, fie*50, (1 - fie)*50]
-    signal, dt, kt = multi_tensor_dki(gtab, mevals, angles=angles, 
-                                      fractions=frac)
+    signal, dt, kt = multi_tensor_dki(gtab_2s, mevals, angles=angles,
+                                      fractions=frac, snr=None)
     # in this simulations dt and kt cannot have zero elements
     for i in range(len(dt)):
         assert dt[i] != 0
     for i in range(len(kt)):
         assert kt[i] != 0
-        
-    # testing the single_diffkurt_tensor
-    """x1, x2, x3 = sphere2cart(1, np.deg2rad(30), np.deg2rad(0))
-    x4, x5, x6 = sphere2cart(1, np.deg2rad(45), np.deg2rad(0))
-    bvals = np.array([0., 0., 1000, 1000, 1000, 1000, 2000, 2000])
-    bvecs = np.asarray([[0, 0, 0], [0, 0, 0], [1, 0, 0], [0, 1, 0], [0, 0, 1],
-                        [x1, x2, x3], [0, 0, 1], [x4, x5, x6]])
-    gtab = gradient_table(bvals, bvecs)
-    A = dki_design_matrix(gtab)
-    dt = np.array([1638e-6, 444e-6, 444e-6, 0, 0, 0])
-    kt = np.array([1.7068, 0.8010, 0.8010, 0, 0, 0, 0, 0, 0, 0.3897, 0.3897,
-                   0.2670, 0, 0, 0])
-    MD = sum(dt[0:3]) / 3
-    S0 = 150
-    X = np.concatenate((dt, kt*MD*MD, np.array([np.log(S0)])), axis=0)
-    S = np.exp(np.dot(A, X))"""
+
+    # test S, dt and kt relative to the expected values computed from another
+    # DKI package - UDKI (Neto Henriques et al., 2015)
+    dt_ref = [1.0576161e-3, 0.4786179e-3, 0.9888660e-3,
+              0.1292542e-3, 0.2667081e-3, 0.1136643e-3]
+    kt_ref = [2.3529944, 0.8226448, 2.3011221, 0.2017312, -0.0437535,
+              0.0404011, 0.0355281, 0.2449859, 0.2157668, 0.3495910,
+              0.0413366, 0.3461519, -0.0537046, 0.0133414, -0.017441]
+    assert_array_almost_equal(dt, dt_ref)
+    assert_array_almost_equal(kt, kt_ref)
+    assert_array_almost_equal(signal,
+                              single_diffkurt_tensors(gtab_2s, dt_ref, kt_ref,
+                                                      S0=100, snr=None),
+                              decimal=5)
 
 
 if __name__ == "__main__":
