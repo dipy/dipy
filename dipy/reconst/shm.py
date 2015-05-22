@@ -41,7 +41,7 @@ from scipy.special import lpn, lpmv, gammaln
 
 if LooseVersion(scipy.version.short_version) >= LooseVersion('0.15.0'):
     SCIPY_15_PLUS = True
-    from scipy.special import sph_harm
+    import scipy.special as sps
 else:
     SCIPY_15_PLUS = False
 
@@ -158,7 +158,18 @@ def gen_dirac(m, n, theta, phi):
 
 
 def spherical_harmonics(m, n, theta, phi):
-    r""" Compute spherical harmonics
+    x = np.cos(phi)
+    val = lpmv(m, n, x).astype(complex)
+    val *= np.sqrt((2 * n + 1) / 4.0 / np.pi)
+    val *= np.exp(0.5 * (gammaln(n - m + 1) - gammaln(n + m + 1)))
+    val = val * np.exp(1j * m * theta)
+    return val
+
+if SCIPY_15_PLUS:
+    def spherical_harmonics(m, n, theta, phi):
+        return sps.sph_harm(m, n, theta, phi, dtype=complex)
+
+spherical_harmonics.__doc__ = r""" Compute spherical harmonics
 
     This may take scalar or array arguments. The inputs will be broadcasted
     against each other.
@@ -182,18 +193,9 @@ def spherical_harmonics(m, n, theta, phi):
     Notes
     -----
     This is a faster implementation of scipy.special.sph_harm for
-    scipy version < 0.15.0.
-
+    scipy version < 0.15.0. For scipy 0.15 and onwards, we use the scipy
+    implementation of the function
     """
-    if SCIPY_15_PLUS:
-        return sph_harm(m, n, theta, phi, dtype=complex)
-    x = np.cos(phi)
-    val = lpmv(m, n, x).astype(complex)
-    val *= np.sqrt((2 * n + 1) / 4.0 / np.pi)
-    val *= np.exp(0.5 * (gammaln(n - m + 1) - gammaln(n + m + 1)))
-    val = val * np.exp(1j * m * theta)
-    return val
-
 
 
 def real_sph_harm(m, n, theta, phi):
