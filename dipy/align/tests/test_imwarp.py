@@ -223,12 +223,12 @@ def test_diffeomorphic_map_simplification_2d():
     #original one
     assert_array_almost_equal(warped, expected)
     #And of course, it must be simpler...
-    assert_equal(simplified.domain_affine, None)
-    assert_equal(simplified.codomain_affine, None)
-    assert_equal(simplified.disp_affine, None)
-    assert_equal(simplified.domain_affine_inv, None)
-    assert_equal(simplified.codomain_affine_inv, None)
-    assert_equal(simplified.disp_affine_inv, None)
+    assert_equal(simplified.domain_grid2space, None)
+    assert_equal(simplified.codomain_grid2space, None)
+    assert_equal(simplified.disp_grid2space, None)
+    assert_equal(simplified.domain_space2grid, None)
+    assert_equal(simplified.codomain_space2grid, None)
+    assert_equal(simplified.disp_space2grid, None)
 
 
 def test_diffeomorphic_map_simplification_3d():
@@ -290,12 +290,12 @@ def test_diffeomorphic_map_simplification_3d():
     #original one
     assert_array_almost_equal(warped, expected)
     #And of course, it must be simpler...
-    assert_equal(simplified.domain_affine, None)
-    assert_equal(simplified.codomain_affine, None)
-    assert_equal(simplified.disp_affine, None)
-    assert_equal(simplified.domain_affine_inv, None)
-    assert_equal(simplified.codomain_affine_inv, None)
-    assert_equal(simplified.disp_affine_inv, None)
+    assert_equal(simplified.domain_grid2space, None)
+    assert_equal(simplified.codomain_grid2space, None)
+    assert_equal(simplified.disp_grid2space, None)
+    assert_equal(simplified.domain_space2grid, None)
+    assert_equal(simplified.codomain_space2grid, None)
+    assert_equal(simplified.disp_space2grid, None)
 
 def test_optimizer_exceptions():
     #An arbitrary valid metric

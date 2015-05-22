@@ -902,8 +902,8 @@ def compose_vector_fields_2d(floating[:, :, :] d1, floating[:, :, :] d2,
                              floating[:, :, :] comp):
     r"""Computes the composition of two 2D displacement fields
 
-    Computes the composition of the two 2-D displacemements d1 and d2. The
-    evaluation of d2 at non-lattice points is computed using trilinear
+    Computes the composition of the two 2-D displacements d1 and d2. The
+    evaluation of d2 at non-lattice points is computed using tri-linear
     interpolation. The actual composition is computed as:
 
     comp[i] = d1[i] + t * d2[ A * i + B * d1[i] ]
