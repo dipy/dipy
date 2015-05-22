@@ -24,7 +24,6 @@ keep the data as is and implement the relevant equations rewritten in the
 following form: Y.T = x.T B.T, or in python syntax data = np.dot(sh_coef, B.T)
 where data is Y.T and sh_coef is x.T.
 """
-from functools import wraps
 
 import numpy as np
 from numpy import concatenate, diag, diff, empty, eye, sqrt, unique, dot
@@ -186,6 +185,8 @@ def spherical_harmonics(m, n, theta, phi):
     scipy version < 0.15.0.
 
     """
+    if SCIPY_15_PLUS:
+        return sph_harm(m, n, theta, phi, dtype=complex)
     x = np.cos(phi)
     val = lpmv(m, n, x).astype(complex)
     val *= np.sqrt((2 * n + 1) / 4.0 / np.pi)
@@ -193,12 +194,6 @@ def spherical_harmonics(m, n, theta, phi):
     val = val * np.exp(1j * m * theta)
     return val
 
-if SCIPY_15_PLUS:
-    @wraps(sph_harm)
-    def spherical_harmonics(m, n, theta, phi, dtype=complex):
-        """Dipy wraps this function because of a bug in scipy .15 that causes
-        sph_harm to return a complex64 type instead of a complex128"""
-        return sph_harm(m, n, theta, phi, dtype=dtype)
 
 
 def real_sph_harm(m, n, theta, phi):
