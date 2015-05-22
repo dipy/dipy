@@ -67,12 +67,12 @@ def test_diffeomorphic_map_2d():
     gt_affine = trans_inv.dot(scale.dot(trans))
 
     #create the random displacement field
-    domain_affine = gt_affine
-    codomain_affine = gt_affine
+    domain_grid2space = gt_affine
+    codomain_grid2space = gt_affine
     disp, assign = vfu.create_random_displacement_2d(
                         np.array(domain_shape, dtype=np.int32),
-                        domain_affine,np.array(codomain_shape, dtype=np.int32),
-                        codomain_affine)
+                        domain_grid2space,np.array(codomain_shape, dtype=np.int32),
+                        codomain_grid2space)
     disp = np.array(disp, dtype=floating)
     assign = np.array(assign)
     #create a random image (with decimal digits) to warp
@@ -90,9 +90,9 @@ def test_diffeomorphic_map_2d():
     expected = moving_image[(assign[...,0], assign[...,1])]
 
     #warp using a DiffeomorphicMap instance
-    diff_map = imwarp.DiffeomorphicMap(2, domain_shape, domain_affine,
-                                          domain_shape, domain_affine,
-                                          codomain_shape, codomain_affine,
+    diff_map = imwarp.DiffeomorphicMap(2, domain_shape, domain_grid2space,
+                                          domain_shape, domain_grid2space,
+                                          codomain_shape, codomain_grid2space,
                                           None)
     diff_map.forward = disp
 
@@ -122,9 +122,9 @@ def test_diffeomorphic_map_2d():
         assert_array_almost_equal(warped, expected)
 
     #Now test the inverse functionality
-    diff_map = imwarp.DiffeomorphicMap(2, codomain_shape, codomain_affine,
-                                          codomain_shape, codomain_affine,
-                                          domain_shape, domain_affine, None)
+    diff_map = imwarp.DiffeomorphicMap(2, codomain_shape, codomain_grid2space,
+                                          codomain_shape, codomain_grid2space,
+                                          domain_shape, domain_grid2space, None)
     diff_map.backward = disp
     for type in [floating, np.float64, np.int64, np.int32]:
         moving_image = moving_image.astype(type)
@@ -143,9 +143,9 @@ def test_diffeomorphic_map_2d():
 
     #Verify that DiffeomorphicMap raises the appropriate exceptions when
     #the sampling information is undefined
-    diff_map = imwarp.DiffeomorphicMap(2, domain_shape, domain_affine,
-                                          domain_shape, domain_affine,
-                                          codomain_shape, codomain_affine,
+    diff_map = imwarp.DiffeomorphicMap(2, domain_shape, domain_grid2space,
+                                          domain_shape, domain_grid2space,
+                                          codomain_shape, codomain_grid2space,
                                           None)
     diff_map.forward = disp
     diff_map.domain_shape = None
@@ -154,9 +154,9 @@ def test_diffeomorphic_map_2d():
     assert_raises(ValueError, diff_map.transform, moving_image, 'linear')
 
     #Same test for diff_map.transform_inverse
-    diff_map = imwarp.DiffeomorphicMap(2, domain_shape, domain_affine,
-                                          domain_shape, domain_affine,
-                                          codomain_shape, codomain_affine,
+    diff_map = imwarp.DiffeomorphicMap(2, domain_shape, domain_grid2space,
+                                          domain_shape, domain_grid2space,
+                                          codomain_shape, codomain_grid2space,
                                           None)
     diff_map.forward = disp
     diff_map.codomain_shape = None
