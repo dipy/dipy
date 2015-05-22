@@ -73,7 +73,7 @@ def test_tensor_model():
         if np.any(gtab.b0s_mask):
             relative_data = (data[0, 0, 0]/np.mean(data[0, 0, 0,
                                                         gtab.b0s_mask]))
-        
+
 
             dtifit_to_relative = dm_to_relative.fit(relative_data)
             npt.assert_almost_equal(dtifit.fa[0,0,0], dtifit_to_relative.fa,
@@ -657,6 +657,6 @@ def test_eig_from_lo_tri():
 
     dm = dti.TensorModel(gtab, 'LS')
     dmfit = dm.fit(S)
-    
+
     lo_tri = lower_triangular(dmfit.quadratic_form)
     assert_array_almost_equal(dti.eig_from_lo_tri(lo_tri), dmfit.model_params)

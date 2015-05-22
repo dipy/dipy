@@ -761,12 +761,12 @@ class TensorModel(ReconstModel):
             mask = np.array(mask, dtype=bool, copy=False)
             data_in_mask = np.reshape(data[mask], (-1, data.shape[-1]))
 
-        
+
         if self.min_signal is None:
             min_signal = self._min_positive_signal(data)
         else:
             min_signal = self.min_signal
-        
+
         data_in_mask = np.maximum(data_in_mask, min_signal)
         params_in_mask = self.fit_method(self.design_matrix, data_in_mask,
                                          *self.args, **self.kwargs)
