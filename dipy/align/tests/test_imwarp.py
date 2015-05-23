@@ -315,29 +315,6 @@ def test_optimizer_exceptions():
     assert_raises(ValueError, optimizer._get_energy_derivative)
 
 
-def test_scale_space_exceptions():
-    np.random.seed(2022966)
-
-    target_shape = (32, 32)
-    #create a random image
-    image = np.ndarray(target_shape, dtype=floating)
-    ns = np.size(image)
-    image[...] = np.random.randint(0, 10, ns).reshape(tuple(target_shape))
-    zeros = (image == 0).astype(np.int32)
-
-    ss = imwarp.ScaleSpace(image,3)
-
-    for invalid_level in [-1, 3, 4]:
-        assert_raises(ValueError, ss.get_image, invalid_level)
-
-    # Verify that the mask is correctly applied, when requested
-    ss = imwarp.ScaleSpace(image,3, mask0=True)
-    for level in range(3):
-        img = ss.get_image(level)
-        z = (img == 0).astype(np.int32)
-        assert_array_equal(zeros, z)
-
-
 def test_get_direction_and_spacings():
     xrot = 0.5
     yrot = 0.75

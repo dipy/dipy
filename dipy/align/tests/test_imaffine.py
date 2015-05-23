@@ -50,17 +50,18 @@ def test_aff_centers_of_mass_3d():
                               [0, 0, 1*s, 0],
                               [0, 0, 0, 1]])
 
-            static_affine = trans_inv.dot(scale.dot(rot.dot(trans)))
-            moving_affine = np.linalg.inv(static_affine)
+            static_grid2space = trans_inv.dot(scale.dot(rot.dot(trans)))
+            moving_grid2space = np.linalg.inv(static_grid2space)
 
             # Expected translation
-            c_static = static_affine.dot((32, 32, 32, 1))[:3]
-            c_moving = moving_affine.dot((16, 16, 16, 1))[:3]
+            c_static = static_grid2space.dot((32, 32, 32, 1))[:3]
+            c_moving = moving_grid2space.dot((16, 16, 16, 1))[:3]
             expected = np.eye(4);
             expected[:3, 3] = c_moving - c_static
 
             # Implementation under test
-            actual = imaffine.aff_centers_of_mass(static, static_affine, moving, moving_affine)
+            actual = imaffine.aff_centers_of_mass(static, static_grid2space,
+                                                  moving, moving_grid2space)
             assert_array_almost_equal(actual, expected)
 
 
@@ -71,8 +72,10 @@ def test_aff_geometric_centers_3d():
 
     for theta in [-1 * np.pi/6.0, 0.0, np.pi/5.0]: #rotation angle
         for s in [0.83,  1.3, 2.07]: #scale
-            for shape_moving in [(256, 256, 128), (255, 255, 127), (64, 127, 142)]:
-                for shape_static in [(256, 256, 128), (255, 255, 127), (64, 127, 142)]:
+            m_shapes = [(256, 256, 128), (255, 255, 127), (64, 127, 142)]
+            for shape_moving in m_shapes:
+                s_shapes = [(256, 256, 128), (255, 255, 127), (64, 127, 142)]
+                for shape_static in s_shapes:
                     moving = np.ndarray(shape=shape_moving)
                     static = np.ndarray(shape=shape_static)
                     trans = np.array([[1, 0, 0, -t*shape_static[0]],
@@ -83,24 +86,27 @@ def test_aff_geometric_centers_3d():
                     rot = np.zeros(shape=(4,4))
                     rot[:3, :3] = geometry.rodrigues_axis_rotation(axis, theta)
                     rot[3,3] = 1.0
-                    scale = np.array([[1*s, 0, 0, 0],
-                                      [0, 1*s, 0, 0],
-                                      [0, 0, 1*s, 0],
+                    scale = np.array([[1 * s, 0, 0, 0],
+                                      [0, 1 * s, 0, 0],
+                                      [0, 0, 1 * s, 0],
                                       [0, 0, 0, 1]])
 
-                    static_affine = trans_inv.dot(scale.dot(rot.dot(trans)))
-                    moving_affine = np.linalg.inv(static_affine)
+                    static_grid2space = trans_inv.dot(scale.dot(rot.dot(trans)))
+                    moving_grid2space = np.linalg.inv(static_grid2space)
 
                     # Expected translation
-                    c_static = tuple(np.array(shape_static, dtype = np.float64)*0.5)
-                    c_static = static_affine.dot(c_static+(1,))[:3]
-                    c_moving = tuple(np.array(shape_moving, dtype = np.float64)*0.5)
-                    c_moving = moving_affine.dot(c_moving+(1,))[:3]
+                    c_static = np.array(shape_static, dtype = np.float64) * 0.5
+                    c_static = tuple(c_static)
+                    c_static = static_grid2space.dot(c_static+(1,))[:3]
+                    c_moving = np.array(shape_moving, dtype = np.float64) * 0.5
+                    c_moving = tuple(c_moving)
+                    c_moving = moving_grid2space.dot(c_moving+(1,))[:3]
                     expected = np.eye(4);
                     expected[:3, 3] = c_moving - c_static
 
                     # Implementation under test
-                    actual = imaffine.aff_geometric_centers(static, static_affine, moving, moving_affine)
+                    actual = imaffine.aff_geometric_centers(static,
+                        static_grid2space, moving, moving_grid2space)
                     assert_array_almost_equal(actual, expected)
 
 
@@ -111,8 +117,10 @@ def test_aff_origins_3d():
 
     for theta in [-1 * np.pi/6.0, 0.0, np.pi/5.0]: #rotation angle
         for s in [0.83,  1.3, 2.07]: #scale
-            for shape_moving in [(256, 256, 128), (255, 255, 127), (64, 127, 142)]:
-                for shape_static in [(256, 256, 128), (255, 255, 127), (64, 127, 142)]:
+            m_shapes = [(256, 256, 128), (255, 255, 127), (64, 127, 142)]
+            for shape_moving in m_shapes:
+                s_shapes = [(256, 256, 128), (255, 255, 127), (64, 127, 142)]
+                for shape_static in s_shapes:
                     moving = np.ndarray(shape=shape_moving)
                     static = np.ndarray(shape=shape_static)
                     trans = np.array([[1, 0, 0, -t*shape_static[0]],
@@ -128,17 +136,18 @@ def test_aff_origins_3d():
                                       [0, 0, 1*s, 0],
                                       [0, 0, 0, 1]])
 
-                    static_affine = trans_inv.dot(scale.dot(rot.dot(trans)))
-                    moving_affine = np.linalg.inv(static_affine)
+                    static_grid2space = trans_inv.dot(scale.dot(rot.dot(trans)))
+                    moving_grid2space = np.linalg.inv(static_grid2space)
 
                     # Expected translation
-                    c_static = static_affine[:3, 3]
-                    c_moving = moving_affine[:3, 3]
+                    c_static = static_grid2space[:3, 3]
+                    c_moving = moving_grid2space[:3, 3]
                     expected = np.eye(4);
                     expected[:3, 3] = c_moving - c_static
 
                     # Implementation under test
-                    actual = imaffine.aff_origins(static, static_affine, moving, moving_affine)
+                    actual = imaffine.aff_origins(static, static_grid2space,
+                                                  moving, moving_grid2space)
                     assert_array_almost_equal(actual, expected)
 
 
@@ -147,8 +156,7 @@ def setup_random_transform_2d(transform, rfactor):
     dim = 2
     fname = get_data('t1_coronal_slice')
     moving = np.load(fname)
-    moving_aff = np.eye(dim + 1)
-    mmask = np.ones_like(moving)
+    moving_grid2space = np.eye(dim + 1)
 
     n = transform.get_number_of_parameters()
     theta = transform.get_identity_parameters()
@@ -156,12 +164,11 @@ def setup_random_transform_2d(transform, rfactor):
 
     T = transform.param_to_matrix(theta)
 
-    static = aff_warp(moving, moving_aff, moving, moving_aff, T)
+    static = aff_warp(moving, moving_grid2space, moving, moving_grid2space, T)
     static = static.astype(np.float64)
-    static_aff = moving_aff
-    smask = np.ones_like(static)
+    static_grid2space = moving_grid2space
 
-    return static, moving, static_aff, moving_aff, smask, mmask, T
+    return static, moving, static_grid2space, moving_grid2space, T
 
 
 def test_mattes_mi_registration_2d():
@@ -173,8 +180,9 @@ def test_mattes_mi_registration_2d():
     for ttype in factors.keys():
         factor = factors[ttype]
         transform = regtransforms[ttype]
-        static, moving, static_aff, moving_aff, smask, mmask, T = \
+        static, moving, static_grid2space, moving_grid2space, T = \
                         setup_random_transform_2d(transform, factor)
+        # Sum of absolute differences
         start_sad = np.abs(static - moving).sum().sum()
 
         # In case of failure, it is useful to see the overlaid input images
@@ -186,21 +194,16 @@ def test_mattes_mi_registration_2d():
                                              [4, 2, 1],[3, 1, 0],
                                              options=None)
         x0 = None
-        sol = affreg.optimize(static, moving, transform, x0, static_aff,
-                              moving_aff, smask, mmask)
-        warped = aff_warp(static, static_aff, moving, moving_aff, sol)
+        sol = affreg.optimize(static, moving, transform, x0, static_grid2space,
+                              moving_grid2space)
+        warped = aff_warp(static, static_grid2space, moving,
+                          moving_grid2space, sol)
+        # Sum of absolute differences
         end_sad = np.abs(static - warped).sum().sum()
 
         # In case of failure, it is useful to see the overlaid resulting images
         #rt.overlay_images(static, warped)
 
         reduction = 1 - end_sad / start_sad
-        print("%s>>%f"%(transform, reduction))
+        print("%s>>%f"%(ttype, reduction))
         assert_equal(reduction > 0.99, True)
-
-
-if __name__ == "__main__":
-    test_aff_centers_of_mass_3d()
-    test_aff_geometric_centers_3d()
-    test_aff_origins_3d()
-    test_mattes_mi_registration_2d()
