@@ -107,7 +107,8 @@ for modulename, other_sources, language in (
     ('dipy.align.expectmax', [], 'c'),
     ('dipy.align.crosscorr', [], 'c'),
     ('dipy.align.bundlemin', [], 'c'),
-    ('dipy.align.transforms', [], 'c')):
+    ('dipy.align.transforms', [], 'c'),
+    ('dipy.align.mattes', [], 'c')):
 
     pyx_src = pjoin(*modulename.split('.')) + '.pyx'
     EXTS.append(Extension(modulename, [pyx_src] + other_sources,

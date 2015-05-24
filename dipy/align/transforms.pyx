@@ -32,10 +32,6 @@ cdef class Transform:
     of the above functions, which also do parameter checking and raise
     a ValueError in case the provided parameters are invalid.
     """
-    cdef:
-        int number_of_parameters
-        int dim
-
     def __cinit__(self):
         r""" Default constructor
         Sets transform dimension and number of parameter to invalid values (-1)
