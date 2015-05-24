@@ -279,12 +279,12 @@ class MattesMIMetric(MattesBase):
 class AffineRegistration(object):
     def __init__(self,
                  metric=None,
-                 method = 'BFGS',
                  level_iters=None,
                  opt_tol=1e-5,
-                 ss_sigma_factor=1.0,
-                 factors = None,
                  sigmas = None,
+                 factors = None,
+                 method = 'BFGS',
+                 ss_sigma_factor=None,
                  options=None):
         r""" Initializes an instance of the AffineRegistration class
 
@@ -292,24 +292,24 @@ class AffineRegistration(object):
         ----------
         metric : object
             an instance of a metric
-        method : string
-            optimization method to be used
         level_iters : list
             the number of iterations at each level of the Gaussian pyramid.
             level_iters[0] corresponds to the finest level, level_iters[n-1] the
             coarsest, where n is the length of the list
         opt_tol : float
             tolerance parameter for the optimizer
+        sigmas : list of floats
+            custom smoothing parameter to build the scale space (one parameter
+            for each scale)
+        factors : list of floats
+            custom scale factors to build the scale space (one factor for each
+            scale)
+        method : string
+            optimization method to be used
         ss_sigma_factor : float
             parameter of the scale-space smoothing kernel. For example, the
             std. dev. of the kernel will be factor*(2^i) in the isotropic case
             where i = 0, 1, ..., n_scales is the scale
-        factors : list of floats
-            custom scale factors to build the scale space (one factor for each
-            scale)
-        sigmas : list of floats
-            custom smoothing parameter to build the scale space (one parameter
-            for each scale)
         options : None or dict,
             extra optimization options.
         """
@@ -327,16 +327,22 @@ class AffineRegistration(object):
             raise ValueError('The iterations list cannot be empty')
 
         self.opt_tol = opt_tol
-        self.ss_sigma_factor = ss_sigma_factor
+        
 
         self.options = options
         self.method = method
-
-        self.use_isotropic = False
-        if (factors is not None) and (sigmas is not None):
+        
+        if ss_sigma_factor is not None:
+            self.use_isotropic = False
+            self.ss_sigma_factor = ss_sigma_factor
+        else:
+            self.use_isotropic = True
+            if factors is None:
+                factors = [4, 2, 1]
+            if sigmas is None:
+                sigmas = [3, 1, 0]
             self.factors = factors
             self.sigmas = sigmas
-            self.use_isotropic = True
 
 
     def _init_optimizer(self, static, moving, transform, x0,
@@ -403,8 +409,10 @@ class AffineRegistration(object):
         moving_direction, moving_spacing = \
             get_direction_and_spacings(moving_grid2space, self.dim)
 
-        static = (static - static.min())/(static.max() - static.min())
-        moving = (moving - moving.min())/(moving.max() - moving.min())
+        static = ((static.astype(np.float64) - static.min())/
+                 (static.max() - static.min()))
+        moving = ((moving.astype(np.float64) - moving.min())/
+                  (moving.max() - moving.min()))
         #Build the scale space of the input images
 
         if self.use_isotropic:
