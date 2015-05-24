@@ -292,7 +292,7 @@ class AffineRegistration(object):
                  opt_tol=1e-5,
                  sigmas=None,
                  factors=None,
-                 method='BFGS',
+                 method='L-BFGS-B',
                  ss_sigma_factor=None,
                  options=None):
         r""" Initializes an instance of the AffineRegistration class

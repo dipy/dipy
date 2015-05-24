@@ -193,7 +193,7 @@ def test_mattes_mi_registration_2d():
                                              [10000, 111110, 11110], 1e-5,
                                              [3, 1, 0],
                                              [4, 2, 1],
-                                             'BFGS',
+                                             'L-BFGS-B',
                                              None,
                                              options=None)
         x0 = None
