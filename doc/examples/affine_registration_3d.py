@@ -248,7 +248,7 @@ regtools.overlay_slices(warped, ants_warped, 0, 'Dipy', 'ANTS', 'dipy_ants_0.png
 
    **Aligned image using Dipy (in red) on top of the aligned image using ANTS (in green)**.
 
-.. [Mattes03] Mattes, D., Haynor, D. R., Vesselle, H., Lewellen, T. K., & Eubank, W. (2003). PET-CT image registration in the chest using free-form deformations. IEEE Transactions on Medical Imaging, 22(1), 120–8.
+.. [Mattes03] Mattes, D., Haynor, D. R., Vesselle, H., Lewellen, T. K., & Eubank, W. (2003). PET-CT image registration in the chest using free-form deformations. IEEE Transactions on Medical Imaging, 22(1), 120-8.
 .. [Avants11] Avants, B. B., Tustison, N., & Song, G. (2011). Advanced Normalization Tools ( ANTS ), 1-35.
 
 .. include:: ../links_names.inc
