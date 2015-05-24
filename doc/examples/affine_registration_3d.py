@@ -47,15 +47,21 @@ of the two images
 c_of_mass = aff_centers_of_mass(static, static_grid2space, moving, moving_grid2space)
 
 """
-We can now warp the moving image and draw in on top of the static image, registration
+We can now warp the moving image and draw it on top of the static image, registration
 is not likely to be good, but at least they will occupy roughly the same space
 """
 
 warped = aff_warp(static, static_grid2space, moving, moving_grid2space, c_of_mass)
-regtools.overlay_slices(static, warped, None, 0, "Static", "Warped", "warped_com.png")
+regtools.overlay_slices(static, warped, None, 0, "Static", "Warped", "warped_com_0.png")
+regtools.overlay_slices(static, warped, None, 1, "Static", "Warped", "warped_com_1.png")
+regtools.overlay_slices(static, warped, None, 2, "Static", "Warped", "warped_com_2.png")
 
 """
-.. figure:: warped_com.png
+.. figure:: warped_com_0.png
+   :align: center
+.. figure:: warped_com_1.png
+   :align: center
+.. figure:: warped_com_2.png
    :align: center
 
    **Registration result by simply aligning the centers of mass of the images**.
@@ -68,8 +74,8 @@ refine it by looking for an affine transform. We first create the similarity met
 discretize the joint and marginal probability distribution functions (PDF), a typical
 value is 32. We also need to specify the percentage (an integer in (0, 100])of voxels
 to be used for computing the PDFs, the most accurate registration will be obtained by
-using all of the voxels, but it is also the most time-consuming choice. Here we will
-use full sampling by passing None instead
+using all voxels, but it is also the most time-consuming choice. We specify full
+sampling by passing None instead of an integer
 """
 
 nbins = 32
@@ -84,7 +90,7 @@ is built. First of all, we need to specify how many resolutions we want to use. 
 indirectly specified by just providing a list of the number of iterations we want to
 perform at each resolution. Here we will just specify 3 resolutions and a large number 
 of iterations, 10000 at the coarsest resolution, 1000 at the medium resolution and 100
-at the finest. We also provide a tolerance for the optimization method. This are the 
+at the finest. We also provide a tolerance for the optimization method. These are the 
 default settings
 """
 
@@ -125,9 +131,12 @@ Using AffineRegistration we can register our images in as many stages as we want
 previous results as initialization for the next (the same logic as in ANTS). The reason why
 it is useful is that registration is a non-convex optimization problem (it may have more
 than one local optima), which means that it is very important to initialize as close to the
-solution as possible. For example, lets start with our rough transformation aligning
-the centers of mass of our images, and then refine it in three stages. First look for an 
-optimal translation
+solution as possible. For example, lets start with our (previously computed) rough
+transformation aligning the centers of mass of our images, and then refine it in three
+stages. First look for an optimal translation. The dictionary regtransforms contains all
+available transforms, we obtain one of them by providing its name and the dimension
+(either 2 or 3) of the image we are working with (since we are aligning volumes, the
+dimension is 3)
 """
 
 transform = regtransforms[('TRANSLATION', 3)]
@@ -143,10 +152,16 @@ aligning the centers of mass
 """
 
 warped = aff_warp(static, static_grid2space, moving, moving_grid2space, trans)
-regtools.overlay_slices(static, warped, None, 0, "Static", "Warped", "warped_trans.png")
+regtools.overlay_slices(static, warped, None, 0, "Static", "Warped", "warped_trans_0.png")
+regtools.overlay_slices(static, warped, None, 1, "Static", "Warped", "warped_trans_1.png")
+regtools.overlay_slices(static, warped, None, 2, "Static", "Warped", "warped_trans_2.png")
 
 """
-.. figure:: warped_trans.png
+.. figure:: warped_trans_0.png
+   :align: center
+.. figure:: warped_trans_1.png
+   :align: center
+.. figure:: warped_trans_2.png
    :align: center
 
    **Registration result by just translating the moving image, using Mutual Information**.
@@ -169,10 +184,16 @@ This produces a slight rotation, and the images are now better aligned
 """
 
 warped = aff_warp(static, static_grid2space, moving, moving_grid2space, rigid)
-regtools.overlay_slices(static, warped, None, 0, "Static", "Warped", "warped_rigid.png")
+regtools.overlay_slices(static, warped, None, 0, "Static", "Warped", "warped_rigid_0.png")
+regtools.overlay_slices(static, warped, None, 1, "Static", "Warped", "warped_rigid_1.png")
+regtools.overlay_slices(static, warped, None, 2, "Static", "Warped", "warped_rigid_2.png")
 
 """
-.. figure:: warped_rigid.png
+.. figure:: warped_rigid_0.png
+   :align: center
+.. figure:: warped_rigid_1.png
+   :align: center
+.. figure:: warped_rigid_2.png
    :align: center
 
    **Registration result with a rigid transform, using Mutual Information**.
@@ -196,57 +217,19 @@ This results in a slight shear and scale
 """
 
 warped = aff_warp(static, static_grid2space, moving, moving_grid2space, affine)
-regtools.overlay_slices(static, warped, None, 0, "Static", "Warped", "warped_affine.png")
+regtools.overlay_slices(static, warped, None, 0, "Static", "Warped", "warped_affine_0.png")
+regtools.overlay_slices(static, warped, None, 1, "Static", "Warped", "warped_affine_1.png")
+regtools.overlay_slices(static, warped, None, 2, "Static", "Warped", "warped_affine_2.png")
 
 """
-.. figure:: warped_affine.png
+.. figure:: warped_affine_0.png
+   :align: center
+.. figure:: warped_affine_1.png
+   :align: center
+.. figure:: warped_affine_2.png
    :align: center
 
    **Registration result with an affine transform, using Mutual Information**.
-"""
-
-"""
-The equivalent ANTS command to perform all above operations is
-
-antsRegistration -d 3 -r [ static_name, moving_name, 1 ] \
-                      -m mattes[ static_name, moving_name, 1 , 32, 1] \
-                      -t translation[ 0.1 ] \
-                      -c [ 10000x111110x11110,1.e-8,20 ] \
-                      -s 4x2x1vox \
-                      -f 3x2x1 -l 1 \
-                      -m mattes[ static_name, moving_name, 1 , 32, 1] \
-                      -t rigid[ 0.1 ] \
-                      -c [ 10000x111110x11110,1.e-8,20 ] \
-                      -s 4x2x1vox \
-                      -f 3x2x1 -l 1 \
-                      -m mattes[ static_name, moving_name, 1 , 32, 1] \
-                      -t affine[ 0.1 ] \
-                      -c [ 10000x111110x11110,1.e-8,20 ] \
-                      -s 4x2x1vox \
-                      -f 3x2x1 -l 1 \
-                      -o [out_name]
-                      
-which, after converting to RAS coordinate system (ANTS operates on LPS) yields the 
-following transform
-"""
-
-ants_align = np.array([[1.02783543e+00, -4.83019053e-02, -6.07735639e-02, -2.57654118e+00],
-                       [4.34051706e-03, 9.41918267e-01, -2.66525861e-01, 3.23579799e+01],
-                       [5.34288908e-02, 2.90262026e-01, 9.80820307e-01, -1.46216651e+01],
-                       [0.00000000e+00, 0.00000000e+00, 0.00000000e+00, 1.00000000e+00]])
-
-"""
-After a visual inspection of the results, we can see that they are very similar
-"""
-
-ants_warped = aff_warp(static, static_grid2space, moving, moving_grid2space, ants_align)
-regtools.overlay_slices(warped, ants_warped, None, 0, 'Dipy', 'ANTS', 'dipy_ants_0.png')
-
-"""
-.. figure:: dipy_ants_0.png
-   :align: center
-
-   **Aligned image using Dipy (in red) on top of the aligned image using ANTS (in green)**.
 
 .. [Mattes03] Mattes, D., Haynor, D. R., Vesselle, H., Lewellen, T. K., & Eubank, W. (2003). PET-CT image registration in the chest using free-form deformations. IEEE Transactions on Medical Imaging, 22(1), 120-8.
 .. [Avants11] Avants, B. B., Tustison, N., & Song, G. (2011). Advanced Normalization Tools ( ANTS ), 1-35.

@@ -13,7 +13,7 @@ from dipy.align.scalespace import IsotropicScaleSpace
 
 
 class MattesMIMetric(MattesBase):
-    def __init__(self, nbins=32, sampling_proportion=30):
+    def __init__(self, nbins=32, sampling_proportion=None):
         r""" Initializes an instance of the Mattes MI metric
 
         This class implements the methods required by Optimizer to drive the
@@ -226,7 +226,10 @@ class MattesMIMetric(MattesBase):
 
 
     def distance(self, xopt):
-        r""" Numeric value of the MI metric evaluated at the given parameters
+        r""" Numeric value of the negative Mutual Information
+
+        We need to change the sign so we can use standard minimization
+        algorithms.
 
         Parameters
         ----------
@@ -239,7 +242,7 @@ class MattesMIMetric(MattesBase):
             self._update_dense(xopt, False)
         else:
             self._update_sparse(xopt, False)
-        return self.metric_val
+        return -1 * self.metric_val
 
     def gradient(self, xopt):
         r""" Numeric value of the metric's gradient at the given parameters
@@ -255,7 +258,7 @@ class MattesMIMetric(MattesBase):
             self._update_dense(xopt, True)
         else:
             self._update_dense(xopt, True)
-        return self.metric_grad.copy()
+        return self.metric_grad * (-1)
 
 
 
@@ -273,7 +276,7 @@ class MattesMIMetric(MattesBase):
             self._update_dense(xopt, True)
         else:
             self._update_sparse(xopt, True)
-        return self.metric_val, self.metric_grad.copy()
+        return -1 * self.metric_val, self.metric_grad * (-1)
 
 
 class AffineRegistration(object):

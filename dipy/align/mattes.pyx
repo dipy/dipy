@@ -1219,10 +1219,10 @@ cdef double _compute_mattes_mi(double[:, :] joint,
 
             if mi_gradient is not None:
                 for k in range(n):
-                    mi_gradient[k] -= joint_gradient[i, j, k] * factor
+                    mi_gradient[k] += joint_gradient[i, j, k] * factor
 
             if smarginal[i] > epsilon:
-                metric_value -= joint[i, j] * (factor - log(smarginal[i]))
+                metric_value += joint[i, j] * (factor - log(smarginal[i]))
 
     return metric_value
 
