@@ -297,7 +297,7 @@ def setup_random_transform(transform, rfactor, nslices=45, sigma=1):
 
     moving = sp.ndimage.filters.gaussian_filter(moving, sigma)
 
-    moving_g2s = np.eye(dim + 1)
+    moving_g2w = np.eye(dim + 1)
     mmask = np.ones_like(moving, dtype=np.int32)
 
     # Create a transform by slightly perturbing the identity parameters
@@ -309,10 +309,10 @@ def setup_random_transform(transform, rfactor, nslices=45, sigma=1):
     shape = np.array(moving.shape, dtype=np.int32)
     static = np.array(warp_method(moving.astype(np.float32), shape, M))
     static = static.astype(np.float64)
-    static_g2s = np.eye(dim + 1)
+    static_g2w = np.eye(dim + 1)
     smask = np.ones_like(static, dtype=np.int32)
 
-    return static, moving, static_g2s, moving_g2s, smask, mmask, M
+    return static, moving, static_g2w, moving_g2w, smask, mmask, M
 
 
 def test_joint_pdf_gradients_dense():
@@ -343,7 +343,7 @@ def test_joint_pdf_gradients_dense():
         factor = factors[ttype]
         theta = transform.get_identity_parameters()
 
-        static, moving, static_g2s, moving_g2s, smask, mmask, M = \
+        static, moving, static_g2w, moving_g2w, smask, mmask, M = \
             setup_random_transform(transform, factor, nslices, 5.0)
         metric = MattesBase(32)
         metric.setup(static, moving, smask, mmask)
@@ -360,7 +360,7 @@ def test_joint_pdf_gradients_dense():
         J0 = np.copy(metric.joint)
         grid_to_space = np.eye(dim + 1)
         spacing = np.ones(dim, dtype=np.float64)
-        mgrad, inside = vf.gradient(moving.astype(np.float32), moving_g2s,
+        mgrad, inside = vf.gradient(moving.astype(np.float32), moving_g2w,
                                     spacing, shape, grid_to_space)
         id = transform.get_identity_parameters()
         metric.update_gradient_dense(id, transform, static.astype(np.float64),
@@ -419,7 +419,7 @@ def test_joint_pdf_gradients_sparse():
         factor = factors[ttype]
         theta = transform.get_identity_parameters()
 
-        static, moving, static_g2s, moving_g2s, smask, mmask, M = \
+        static, moving, static_g2w, moving_g2w, smask, mmask, M = \
             setup_random_transform(transform, factor, nslices, 5.0)
         metric = MattesBase(32)
         metric.setup(static, moving, smask, mmask)
@@ -429,10 +429,10 @@ def test_joint_pdf_gradients_sparse():
         sigma = 0.25
         seed = 1234
         shape = np.array(static.shape, dtype=np.int32)
-        samples = sample_domain_regular(k, shape, static_g2s, sigma, seed)
+        samples = sample_domain_regular(k, shape, static_g2w, sigma, seed)
         samples = np.array(samples)
         samples = np.hstack((samples, np.ones(samples.shape[0])[:, None]))
-        sp_to_static = np.linalg.inv(static_g2s)
+        sp_to_static = np.linalg.inv(static_g2w)
         samples_static_grid = (sp_to_static.dot(samples.T).T)[..., :dim]
         intensities_static, inside = interp_method(static.astype(np.float32),
                                                    samples_static_grid)
@@ -444,7 +444,7 @@ def test_joint_pdf_gradients_sparse():
 
         # Compute the gradient at theta with the implementation under test
         M = transform.param_to_matrix(theta)
-        sp_to_moving = np.linalg.inv(moving_g2s).dot(M)
+        sp_to_moving = np.linalg.inv(moving_g2w).dot(M)
         samples_moving_grid = (sp_to_moving.dot(samples.T).T)[..., :dim]
         intensities_moving, inside = interp_method(moving.astype(np.float32),
                                                    samples_moving_grid)
@@ -471,7 +471,7 @@ def test_joint_pdf_gradients_sparse():
             dtheta[i] += h
             # Update the joint distribution with the warped moving image
             M = transform.param_to_matrix(dtheta)
-            sp_to_moving = np.linalg.inv(moving_g2s).dot(M)
+            sp_to_moving = np.linalg.inv(moving_g2w).dot(M)
             samples_moving_grid = sp_to_moving.dot(samples.T).T
             intensities_moving, inside = \
                 interp_method(moving.astype(np.float32), samples_moving_grid)
@@ -512,7 +512,7 @@ def test_mi_gradient_dense():
             warp_method = vf.warp_3d_affine
         # Get data (pair of images related to each other by an known transform)
         factor = factors[ttype]
-        static, moving, static_g2s, moving_g2s, smask, mmask, M = \
+        static, moving, static_g2w, moving_g2w, smask, mmask, M = \
             setup_random_transform(transform, factor, nslices, 5.0)
         smask = None
         mmask = None
@@ -536,7 +536,7 @@ def test_mi_gradient_dense():
         grid_to_space = np.eye(dim + 1)
         spacing = np.ones(dim, dtype=np.float64)
         shape = np.array(static.shape, dtype=np.int32)
-        mgrad, inside = vf.gradient(moving.astype(np.float32), moving_g2s,
+        mgrad, inside = vf.gradient(moving.astype(np.float32), moving_g2w,
                                     spacing, shape, grid_to_space)
         metric.update_gradient_dense(theta, transform,
                                      static.astype(np.float64),
@@ -589,7 +589,7 @@ def test_mi_gradient_sparse():
             interp_method = vf.interpolate_scalar_3d
         # Get data (pair of images related to each other by an known transform)
         factor = factors[ttype]
-        static, moving, static_g2s, moving_g2s, smask, mmask, M = \
+        static, moving, static_g2w, moving_g2w, smask, mmask, M = \
             setup_random_transform(transform, factor, nslices, 5.0)
         smask = None
         mmask = None
@@ -599,10 +599,10 @@ def test_mi_gradient_sparse():
         sigma = 0.25
         seed = 1234
         shape = np.array(static.shape, dtype=np.int32)
-        samples = sample_domain_regular(k, shape, static_g2s, sigma, seed)
+        samples = sample_domain_regular(k, shape, static_g2w, sigma, seed)
         samples = np.array(samples)
         samples = np.hstack((samples, np.ones(samples.shape[0])[:, None]))
-        sp_to_static = np.linalg.inv(static_g2s)
+        sp_to_static = np.linalg.inv(static_g2w)
         samples_static_grid = (sp_to_static.dot(samples.T).T)[..., :dim]
         intensities_static, inside = interp_method(static.astype(np.float32),
                                                    samples_static_grid)
@@ -617,7 +617,7 @@ def test_mi_gradient_sparse():
         metric.setup(static, moving, smask, mmask)
 
         # 1. Update the joint distribution
-        sp_to_moving = np.linalg.inv(moving_g2s)
+        sp_to_moving = np.linalg.inv(moving_g2w)
         samples_moving_grid = (sp_to_moving.dot(samples.T).T)[..., :dim]
         intensities_moving, inside = interp_method(moving.astype(np.float32),
                                                    samples_moving_grid)
@@ -657,7 +657,7 @@ def test_mi_gradient_sparse():
 
             M = transform.param_to_matrix(dtheta)
             shape = np.array(static.shape, dtype=np.int32)
-            sp_to_moving = np.linalg.inv(moving_g2s).dot(M)
+            sp_to_moving = np.linalg.inv(moving_g2w).dot(M)
             samples_moving_grid = (sp_to_moving.dot(samples.T).T)[..., :dim]
             intensities_moving, inside =\
                 interp_method(moving.astype(np.float32), samples_moving_grid)

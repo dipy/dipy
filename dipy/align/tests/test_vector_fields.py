@@ -49,13 +49,13 @@ def test_random_displacement_field_2d():
                               [0, 1*s, 0],
                               [0, 0, 1]])
 
-            from_grid2space = trans_inv.dot(scale.dot(rot.dot(trans)))
-            to_grid2space = from_grid2space.dot(scale)
-            to_space2grid = np.linalg.inv(to_grid2space)
+            from_grid2world = trans_inv.dot(scale.dot(rot.dot(trans)))
+            to_grid2world = from_grid2world.dot(scale)
+            to_world2grid = np.linalg.inv(to_grid2world)
 
             field, assignment = vfu.create_random_displacement_2d(
-                np.array(from_shape, dtype=np.int32), from_grid2space,
-                np.array(to_shape, dtype=np.int32), to_grid2space)
+                np.array(from_shape, dtype=np.int32), from_grid2world,
+                np.array(to_shape, dtype=np.int32), to_grid2world)
             field = np.array(field, dtype=floating)
             assignment = np.array(assignment)
             # Verify the assignments are inside the requested region
@@ -64,12 +64,12 @@ def test_random_displacement_field_2d():
                 assert_equal(0, (assignment[..., i] >= to_shape[i]).sum())
 
             # Compute the warping coordinates (see warp_2d documentation)
-            Y = np.apply_along_axis(from_grid2space.dot, 0, X)[0:2, ...]
+            Y = np.apply_along_axis(from_grid2world.dot, 0, X)[0:2, ...]
             Z = np.zeros_like(X)
             Z[0, ...] = Y[0, ...] + field[..., 0]
             Z[1, ...] = Y[1, ...] + field[..., 1]
             Z[2, ...] = 1
-            W = np.apply_along_axis(to_space2grid.dot, 0, Z)[0:2, ...]
+            W = np.apply_along_axis(to_world2grid.dot, 0, Z)[0:2, ...]
 
             # Verify the claimed assignments are correct
             assert_array_almost_equal(W[0, ...], assignment[..., 0], 5)
@@ -124,13 +124,13 @@ def test_random_displacement_field_3d():
                               [0, 0, 1*s, 0],
                               [0, 0, 0, 1]])
 
-            from_grid2space = trans_inv.dot(scale.dot(rot.dot(trans)))
-            to_grid2space = from_grid2space.dot(scale)
-            to_space2grid = np.linalg.inv(to_grid2space)
+            from_grid2world = trans_inv.dot(scale.dot(rot.dot(trans)))
+            to_grid2world = from_grid2world.dot(scale)
+            to_world2grid = np.linalg.inv(to_grid2world)
 
             field, assignment = vfu.create_random_displacement_3d(
-                np.array(from_shape, dtype=np.int32), from_grid2space,
-                np.array(to_shape, dtype=np.int32), to_grid2space)
+                np.array(from_shape, dtype=np.int32), from_grid2world,
+                np.array(to_shape, dtype=np.int32), to_grid2world)
             field = np.array(field, dtype=floating)
             assignment = np.array(assignment)
             # Verify the assignments are inside the requested region
@@ -139,13 +139,13 @@ def test_random_displacement_field_3d():
                 assert_equal(0, (assignment[..., i] >= to_shape[i]).sum())
 
             # Compute the warping coordinates (see warp_2d documentation)
-            Y = np.apply_along_axis(from_grid2space.dot, 0, X)[0:3, ...]
+            Y = np.apply_along_axis(from_grid2world.dot, 0, X)[0:3, ...]
             Z = np.zeros_like(X)
             Z[0, ...] = Y[0, ...] + field[..., 0]
             Z[1, ...] = Y[1, ...] + field[..., 1]
             Z[2, ...] = Y[2, ...] + field[..., 2]
             Z[3, ...] = 1
-            W = np.apply_along_axis(to_space2grid.dot, 0, Z)[0:3, ...]
+            W = np.apply_along_axis(to_world2grid.dot, 0, Z)[0:3, ...]
 
             # Verify the claimed assignments are correct
             assert_array_almost_equal(W[0, ...], assignment[..., 0], 5)
@@ -560,20 +560,20 @@ def test_warping_2d():
             aff = trans_inv.dot(scale.dot(rot.dot(trans)))
 
             # Select arbitrary (but different) grid-to-space transforms
-            sampling_grid2space = scale
-            field_grid2space = aff
-            field_space2grid = np.linalg.inv(field_grid2space)
-            image_grid2space = aff.dot(scale)
-            image_space2grid = np.linalg.inv(image_grid2space)
+            sampling_grid2world = scale
+            field_grid2world = aff
+            field_world2grid = np.linalg.inv(field_grid2world)
+            image_grid2world = aff.dot(scale)
+            image_world2grid = np.linalg.inv(image_grid2world)
 
-            A = field_space2grid.dot(sampling_grid2space)
-            B = image_space2grid.dot(sampling_grid2space)
-            C = image_space2grid
+            A = field_world2grid.dot(sampling_grid2world)
+            B = image_world2grid.dot(sampling_grid2world)
+            C = image_world2grid
 
             # Reorient the displacement field according to its grid-to-space
             # transform
             dcopy = np.copy(d)
-            vfu.reorient_vector_field_2d(dcopy, field_grid2space)
+            vfu.reorient_vector_field_2d(dcopy, field_grid2world)
             extended_dcopy = np.zeros((nr+2, nc+2, 2), dtype=floating)
             extended_dcopy[1:nr+1, 1:nc+1, :] = dcopy
 
@@ -668,20 +668,20 @@ def test_warping_3d():
             aff = trans_inv.dot(scale.dot(rot.dot(trans)))
 
             # Select arbitrary (but different) grid-to-space transforms
-            sampling_grid2space = scale
-            field_grid2space = aff
-            field_space2grid = np.linalg.inv(field_grid2space)
-            image_grid2space = aff.dot(scale)
-            image_space2grid = np.linalg.inv(image_grid2space)
+            sampling_grid2world = scale
+            field_grid2world = aff
+            field_world2grid = np.linalg.inv(field_grid2world)
+            image_grid2world = aff.dot(scale)
+            image_world2grid = np.linalg.inv(image_grid2world)
 
-            A = field_space2grid.dot(sampling_grid2space)
-            B = image_space2grid.dot(sampling_grid2space)
-            C = image_space2grid
+            A = field_world2grid.dot(sampling_grid2world)
+            B = image_world2grid.dot(sampling_grid2world)
+            C = image_world2grid
 
             # Reorient the displacement field according to its grid-to-space
             # transform
             dcopy = np.copy(d)
-            vfu.reorient_vector_field_3d(dcopy, field_grid2space)
+            vfu.reorient_vector_field_3d(dcopy, field_grid2world)
 
             extended_dcopy = np.zeros((ns+2, nr+2, nc+2, 3), dtype=floating)
             extended_dcopy[1:ns+1, 1:nr+1, 1:nc+1, :] = dcopy
@@ -921,24 +921,24 @@ def test_compose_vector_fields_2d():
     gt_affine = trans_inv.dot(scale.dot(trans))
 
     # create two random displacement fields
-    input_grid2space = gt_affine
-    target_grid2space = gt_affine
+    input_grid2world = gt_affine
+    target_grid2world = gt_affine
 
     disp1, assign1 = vfu.create_random_displacement_2d(np.array(input_shape,
                                                        dtype=np.int32),
-                                                       input_grid2space,
+                                                       input_grid2world,
                                                        np.array(tgt_sh,
                                                        dtype=np.int32),
-                                                       target_grid2space)
+                                                       target_grid2world)
     disp1 = np.array(disp1, dtype=floating)
     assign1 = np.array(assign1)
 
     disp2, assign2 = vfu.create_random_displacement_2d(np.array(input_shape,
                                                        dtype=np.int32),
-                                                       input_grid2space,
+                                                       input_grid2world,
                                                        np.array(tgt_sh,
                                                        dtype=np.int32),
-                                                       target_grid2space)
+                                                       target_grid2world)
     disp2 = np.array(disp2, dtype=floating)
     assign2 = np.array(assign2)
 
@@ -959,11 +959,11 @@ def test_compose_vector_fields_2d():
     expected = warp1[(assign1[..., 0], assign1[..., 1])]
 
     # compose the displacement fields
-    target_space2grid = np.linalg.inv(target_grid2space)
+    target_world2grid = np.linalg.inv(target_grid2world)
 
-    target_space2grid = np.linalg.inv(target_grid2space)
-    premult_index = target_space2grid.dot(input_grid2space)
-    premult_disp = target_space2grid
+    target_world2grid = np.linalg.inv(target_grid2world)
+    premult_index = target_world2grid.dot(input_grid2world)
+    premult_disp = target_world2grid
 
     for time_scaling in [0.25, 0.5, 1.0, 2.0, 4.0]:
         composition, stats = vfu.compose_vector_fields_2d(disp1,
@@ -1057,24 +1057,24 @@ def test_compose_vector_fields_3d():
     gt_affine = trans_inv.dot(scale.dot(trans))
 
     # create two random displacement fields
-    input_grid2space = gt_affine
-    target_grid2space = gt_affine
+    input_grid2world = gt_affine
+    target_grid2world = gt_affine
 
     disp1, assign1 = vfu.create_random_displacement_3d(np.array(input_shape,
                                                        dtype=np.int32),
-                                                       input_grid2space,
+                                                       input_grid2world,
                                                        np.array(tgt_sh,
                                                        dtype=np.int32),
-                                                       target_grid2space)
+                                                       target_grid2world)
     disp1 = np.array(disp1, dtype=floating)
     assign1 = np.array(assign1)
 
     disp2, assign2 = vfu.create_random_displacement_3d(np.array(input_shape,
                                                        dtype=np.int32),
-                                                       input_grid2space,
+                                                       input_grid2world,
                                                        np.array(tgt_sh,
                                                        dtype=np.int32),
-                                                       target_grid2space)
+                                                       target_grid2world)
     disp2 = np.array(disp2, dtype=floating)
     assign2 = np.array(assign2)
 
@@ -1098,11 +1098,11 @@ def test_compose_vector_fields_3d():
     expected = warp1[(assign1[..., 0], assign1[..., 1], assign1[..., 2])]
 
     # compose the displacement fields
-    target_space2grid = np.linalg.inv(target_grid2space)
+    target_world2grid = np.linalg.inv(target_grid2world)
 
-    target_space2grid = np.linalg.inv(target_grid2space)
-    premult_index = target_space2grid.dot(input_grid2space)
-    premult_disp = target_space2grid
+    target_world2grid = np.linalg.inv(target_grid2world)
+    premult_index = target_world2grid.dot(input_grid2world)
+    premult_disp = target_world2grid
 
     for time_scaling in [0.25, 0.5, 1.0, 2.0, 4.0]:
         composition, stats = vfu.compose_vector_fields_3d(disp1,

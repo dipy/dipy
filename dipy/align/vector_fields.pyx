@@ -1176,7 +1176,7 @@ def compose_vector_fields_3d(floating[:, :, :, :] d1, floating[:, :, :, :] d2,
 
 
 def invert_vector_field_fixed_point_2d(floating[:, :, :] d,
-                                       double[:, :] d_space2grid,
+                                       double[:, :] d_world2grid,
                                        double[:] spacing,
                                        int max_iter, double tolerance,
                                        floating[:, :, :] start=None):
@@ -1193,7 +1193,7 @@ def invert_vector_field_fixed_point_2d(floating[:, :, :] d,
     ----------
     d : array, shape (R, C, 2)
         the 2-D displacement field to be inverted
-    d_space2grid : array, shape (3, 3)
+    d_world2grid : array, shape (3, 3)
         the space-to-grid transformation associated to the displacement field
         d (transforming physical space coordinates to voxel coordinates of the
         displacement field grid)
@@ -1239,7 +1239,7 @@ def invert_vector_field_fixed_point_2d(floating[:, :, :] d,
         floating[:, :, :] p = np.zeros(shape=(nr, nc, 2), dtype=ftype)
         floating[:, :, :] q = np.zeros(shape=(nr, nc, 2), dtype=ftype)
 
-    if not is_valid_affine(d_space2grid, 2):
+    if not is_valid_affine(d_world2grid, 2):
         raise ValueError("Invalid world-to-image transform")
 
     if start is not None:
@@ -1252,7 +1252,7 @@ def invert_vector_field_fixed_point_2d(floating[:, :, :] d,
                 epsilon = 0.75
             else:
                 epsilon = 0.5
-            _compose_vector_fields_2d(p, d, None, d_space2grid, 1.0, q, substats)
+            _compose_vector_fields_2d(p, d, None, d_world2grid, 1.0, q, substats)
             difmag = 0
             error = 0
             for i in range(nr):
@@ -1279,7 +1279,7 @@ def invert_vector_field_fixed_point_2d(floating[:, :, :] d,
 
 
 def invert_vector_field_fixed_point_3d(floating[:, :, :, :] d,
-                                       double[:, :] d_space2grid,
+                                       double[:, :] d_world2grid,
                                        double[:] spacing,
                                        int max_iter, double tol,
                                        floating[:, :, :, :] start=None):
@@ -1296,7 +1296,7 @@ def invert_vector_field_fixed_point_3d(floating[:, :, :, :] d,
     ----------
     d : array, shape (S, R, C, 3)
         the 3-D displacement field to be inverted
-    d_space2grid : array, shape (4, 4)
+    d_world2grid : array, shape (4, 4)
         the space-to-grid transformation associated to the displacement field
         d (transforming physical space coordinates to voxel coordinates of the
         displacement field grid)
@@ -1343,7 +1343,7 @@ def invert_vector_field_fixed_point_3d(floating[:, :, :, :] d,
         floating[:, :, :, :] p = np.zeros(shape=(ns, nr, nc, 3), dtype=ftype)
         floating[:, :, :, :] q = np.zeros(shape=(ns, nr, nc, 3), dtype=ftype)
 
-    if not is_valid_affine(d_space2grid, 3):
+    if not is_valid_affine(d_world2grid, 3):
         raise ValueError("Invalid world-to-image transform")
 
     if start is not None:
@@ -1357,7 +1357,7 @@ def invert_vector_field_fixed_point_3d(floating[:, :, :, :] d,
                 epsilon = 0.75
             else:
                 epsilon = 0.5
-            _compose_vector_fields_3d(p, d, None, d_space2grid, 1.0, q, substats)
+            _compose_vector_fields_3d(p, d, None, d_world2grid, 1.0, q, substats)
             difmag = 0
             error = 0
             for k in range(ns):
@@ -2719,16 +2719,16 @@ def resample_displacement_field_2d(floating[:, :, :] field, double[:] factors,
 
 
 def create_random_displacement_2d(int[:] from_shape,
-                                  double[:, :] from_grid2space,
+                                  double[:, :] from_grid2world,
                                   int[:] to_shape,
-                                  double[:, :] to_grid2space):
+                                  double[:, :] to_grid2world):
     r"""Creates a random 2D displacement 'exactly' mapping points of two grids
 
     Creates a random 2D displacement field mapping points of an input discrete
     domain (with dimensions given by from_shape) to points of an output
     discrete domain (with shape given by to_shape). The affine matrices
-    bringing discrete coordinates to physical space are given by from_grid2space
-    (for the displacement field discretization) and to_grid2space (for the target
+    bringing discrete coordinates to physical space are given by from_grid2world
+    (for the displacement field discretization) and to_grid2world (for the target
     discretization). Since this function is intended to be used for testing,
     voxels in the input domain will never be assigned to boundary voxels on the
     output domain.
@@ -2737,11 +2737,11 @@ def create_random_displacement_2d(int[:] from_shape,
     ----------
     from_shape : array, shape (2,)
         the grid shape where the displacement field will be defined on.
-    from_grid2space : array, shape (3,3)
+    from_grid2world : array, shape (3,3)
         the grid-to-space transformation of the displacement field
     to_shape : array, shape (2,)
         the grid shape where the deformation field will map the input grid to.
-    to_grid2space : array, shape (3,3)
+    to_grid2world : array, shape (3,3)
         the grid-to-space transformation of the mapped grid
 
     Returns
@@ -2760,9 +2760,9 @@ def create_random_displacement_2d(int[:] from_shape,
                                           dtype=np.float64)
         cnp.npy_intp dom_size = from_shape[0]*from_shape[1]
 
-    if not is_valid_affine(from_grid2space, 2):
+    if not is_valid_affine(from_grid2world, 2):
         raise ValueError("Invalid 'from' affine transform matrix")
-    if not is_valid_affine(to_grid2space, 2):
+    if not is_valid_affine(to_grid2world, 2):
         raise ValueError("Invalid 'to' affine transform matrix")
 
     # compute the actual displacement field in the physical space
@@ -2776,17 +2776,17 @@ def create_random_displacement_2d(int[:] from_shape,
             int_field[i, j, 1] = rj
 
             # convert the input point to physical coordinates
-            if from_grid2space is not None:
-                di = _apply_affine_2d_x0(i, j, 1, from_grid2space)
-                dj = _apply_affine_2d_x1(i, j, 1, from_grid2space)
+            if from_grid2world is not None:
+                di = _apply_affine_2d_x0(i, j, 1, from_grid2world)
+                dj = _apply_affine_2d_x1(i, j, 1, from_grid2world)
             else:
                 di = i
                 dj = j
 
             # convert the output point to physical coordinates
-            if to_grid2space is not None:
-                dii = _apply_affine_2d_x0(ri, rj, 1, to_grid2space)
-                djj = _apply_affine_2d_x1(ri, rj, 1, to_grid2space)
+            if to_grid2world is not None:
+                dii = _apply_affine_2d_x0(ri, rj, 1, to_grid2world)
+                djj = _apply_affine_2d_x1(ri, rj, 1, to_grid2world)
             else:
                 dii = ri
                 djj = rj
@@ -2800,15 +2800,15 @@ def create_random_displacement_2d(int[:] from_shape,
     return output, int_field
 
 
-def create_random_displacement_3d(int[:] from_shape, double[:, :] from_grid2space,
-                                  int[:] to_shape, double[:, :] to_grid2space):
+def create_random_displacement_3d(int[:] from_shape, double[:, :] from_grid2world,
+                                  int[:] to_shape, double[:, :] to_grid2world):
     r"""Creates a random 3D displacement 'exactly' mapping points of two grids
 
     Creates a random 3D displacement field mapping points of an input discrete
     domain (with dimensions given by from_shape) to points of an output
     discrete domain (with shape given by to_shape). The affine matrices
-    bringing discrete coordinates to physical space are given by from_grid2space
-    (for the displacement field discretization) and to_grid2space (for the target
+    bringing discrete coordinates to physical space are given by from_grid2world
+    (for the displacement field discretization) and to_grid2world (for the target
     discretization). Since this function is intended to be used for testing,
     voxels in the input domain will never be assigned to boundary voxels on the
     output domain.
@@ -2817,11 +2817,11 @@ def create_random_displacement_3d(int[:] from_shape, double[:, :] from_grid2spac
     ----------
     from_shape : array, shape (3,)
         the grid shape where the displacement field will be defined on.
-    from_grid2space : array, shape (4,4)
+    from_grid2world : array, shape (4,4)
         the grid-to-space transformation of the displacement field
     to_shape : array, shape (3,)
         the grid shape where the deformation field will map the input grid to.
-    to_grid2space : array, shape (4,4)
+    to_grid2world : array, shape (4,4)
         the grid-to-space transformation of the mapped grid
 
     Returns
@@ -2840,9 +2840,9 @@ def create_random_displacement_3d(int[:] from_shape, double[:, :] from_grid2spac
                                              dtype=np.float64)
         cnp.npy_intp dom_size = from_shape[0]*from_shape[1]*from_shape[2]
 
-    if not is_valid_affine(from_grid2space, 3):
+    if not is_valid_affine(from_grid2world, 3):
         raise ValueError("Invalid 'from' affine transform matrix")
-    if not is_valid_affine(to_grid2space, 3):
+    if not is_valid_affine(to_grid2world, 3):
         raise ValueError("Invalid 'to' affine transform matrix")
 
     # compute the actual displacement field in the physical space
@@ -2858,20 +2858,20 @@ def create_random_displacement_3d(int[:] from_shape, double[:, :] from_grid2spac
                 int_field[k, i, j, 2] = rj
 
                 # convert the input point to physical coordinates
-                if from_grid2space is not None:
-                    dk = _apply_affine_3d_x0(k, i, j, 1, from_grid2space)
-                    di = _apply_affine_3d_x1(k, i, j, 1, from_grid2space)
-                    dj = _apply_affine_3d_x2(k, i, j, 1, from_grid2space)
+                if from_grid2world is not None:
+                    dk = _apply_affine_3d_x0(k, i, j, 1, from_grid2world)
+                    di = _apply_affine_3d_x1(k, i, j, 1, from_grid2world)
+                    dj = _apply_affine_3d_x2(k, i, j, 1, from_grid2world)
                 else:
                     dk = k
                     di = i
                     dj = j
 
                 # convert the output point to physical coordinates
-                if to_grid2space is not None:
-                    dkk = _apply_affine_3d_x0(rk, ri, rj, 1, to_grid2space)
-                    dii = _apply_affine_3d_x1(rk, ri, rj, 1, to_grid2space)
-                    djj = _apply_affine_3d_x2(rk, ri, rj, 1, to_grid2space)
+                if to_grid2world is not None:
+                    dkk = _apply_affine_3d_x0(rk, ri, rj, 1, to_grid2world)
+                    dii = _apply_affine_3d_x1(rk, ri, rj, 1, to_grid2world)
+                    djj = _apply_affine_3d_x2(rk, ri, rj, 1, to_grid2world)
                 else:
                     dkk = rk
                     dii = ri
@@ -3077,21 +3077,21 @@ def create_sphere(cnp.npy_intp nslices, cnp.npy_intp nrows,
     return s
 
 
-cdef void _gradient_3d(floating[:, :, :] img, double[:, :] img_space2grid,
-                       double[:] img_spacing, double[:, :] out_grid2space,
+cdef void _gradient_3d(floating[:, :, :] img, double[:, :] img_world2grid,
+                       double[:] img_spacing, double[:, :] out_grid2world,
                        floating[:, :, :, :] out, int[:, :, :] inside):
     r""" Gradient of a 3D image in physical space coordinates
 
     Each grid cell (i, j, k) in the sampling grid (determined by
     out.shape) is mapped to its corresponding physical point (x, y, z) by
-    multiplying out_grid2space (its grid-to-space transform) by (i, j, k),
+    multiplying out_grid2world (its grid-to-space transform) by (i, j, k),
     then the image is interpolated, at
 
     P1=(x + h, y, z), Q1=(x - h, y, z)
     P2=(x, y + h, z), Q2=(x, y - h, z)
     P3=(x, y, z + h), Q3=(x, y, z - h)
 
-    (by mapping Pi and Qi to the grid using img_space2grid: the inverse of the
+    (by mapping Pi and Qi to the grid using img_world2grid: the inverse of the
     grid-to-space transform of img). The displacement parameter h is of
     magnitude 0.5 (in physical space units), therefore the approximated partial
     derivatives are given by the difference between the image interpolated at
@@ -3101,12 +3101,12 @@ cdef void _gradient_3d(floating[:, :, :] img, double[:, :] img_space2grid,
     ----------
     img : array, shape (S, R, C)
         the input volume whose gradient will be computed
-    img_space2grid : array, shape (4, 4)
+    img_world2grid : array, shape (4, 4)
         the space-to-grid transform matrix associated to img
     img_spacing : array, shape (3,)
         the spacing between voxels (voxel size along each axis) of the input
         volume
-    out_grid2space : array, shape (4, 4)
+    out_grid2world : array, shape (4, 4)
         the grid-to-space transform associated to the sampling grid
     out : array, shape (S', R', C', 3)
         the buffer in which to store the image gradient
@@ -3133,19 +3133,19 @@ cdef void _gradient_3d(floating[:, :, :] img, double[:, :] img_space2grid,
                 for j in range(ncols):
                     inside[k, i, j] = 1
                     # Compute coordinates of index (k, i, j) in physical space
-                    x[0] = _apply_affine_3d_x0(k, i, j, 1, out_grid2space)
-                    x[1] = _apply_affine_3d_x1(k, i, j, 1, out_grid2space)
-                    x[2] = _apply_affine_3d_x2(k, i, j, 1, out_grid2space)
+                    x[0] = _apply_affine_3d_x0(k, i, j, 1, out_grid2world)
+                    x[1] = _apply_affine_3d_x1(k, i, j, 1, out_grid2world)
+                    x[2] = _apply_affine_3d_x2(k, i, j, 1, out_grid2world)
                     dx[:] = x[:]
                     for p in range(3):
                         # Compute coordinates of point dx on img's grid
                         dx[p] = x[p] - h[p]
                         q[0] = _apply_affine_3d_x0(dx[0], dx[1], dx[2], 1,
-                                                   img_space2grid)
+                                                   img_world2grid)
                         q[1] = _apply_affine_3d_x1(dx[0], dx[1], dx[2], 1,
-                                                   img_space2grid)
+                                                   img_world2grid)
                         q[2] = _apply_affine_3d_x2(dx[0], dx[1], dx[2], 1,
-                                                   img_space2grid)
+                                                   img_world2grid)
                         # Interpolate img at q
                         in_flag = _interpolate_scalar_3d(img, q[0], q[1], q[2],
                                                          &out[k, i, j, p])
@@ -3157,11 +3157,11 @@ cdef void _gradient_3d(floating[:, :, :] img, double[:, :] img_space2grid,
                         # Compute coordinates of point dx on img's grid
                         dx[p] = x[p] + h[p]
                         q[0] = _apply_affine_3d_x0(dx[0], dx[1], dx[2], 1,
-                                                   img_space2grid)
+                                                   img_world2grid)
                         q[1] = _apply_affine_3d_x1(dx[0], dx[1], dx[2], 1,
-                                                   img_space2grid)
+                                                   img_world2grid)
                         q[2] = _apply_affine_3d_x2(dx[0], dx[1], dx[2], 1,
-                                                   img_space2grid)
+                                                   img_world2grid)
                         # Interpolate img at q
                         in_flag = _interpolate_scalar_3d(img, q[0], q[1], q[2],
                                                          &out[k, i, j, p])
@@ -3174,7 +3174,7 @@ cdef void _gradient_3d(floating[:, :, :] img, double[:, :] img_space2grid,
 
 
 cdef void _sparse_gradient_3d(floating[:, :, :] img,
-                              double[:, :] img_space2grid,
+                              double[:, :] img_world2grid,
                               double[:] img_spacing,
                               double[:, :] sample_points,
                               floating[:, :] out, int[:] inside):
@@ -3186,7 +3186,7 @@ cdef void _sparse_gradient_3d(floating[:, :, :] img,
     P2=(x_i, y_i + h, z_i), Q2=(x_i, y_i - h, z_i)
     P3=(x_i, y_i, z_i + h), Q3=(x_i, y_i, z_i - h)
 
-    (by mapping Pi and Qi to the grid using img_space2grid: the inverse of the
+    (by mapping Pi and Qi to the grid using img_world2grid: the inverse of the
     grid-to-space transform of img). The displacement parameter h is of
     magnitude 0.5 (in physical space units), therefore the approximated partial
     derivatives are given by the difference between the image interpolated at
@@ -3196,7 +3196,7 @@ cdef void _sparse_gradient_3d(floating[:, :, :] img,
     ----------
     img : array, shape (S, R, C)
         the input volume whose gradient will be computed
-    img_space2grid : array, shape (4, 4)
+    img_world2grid : array, shape (4, 4)
         the space-to-grid transform matrix associated to img
     img_spacing : array, shape (3,)
         the spacing between voxels (voxel size along each axis) of the input
@@ -3224,11 +3224,11 @@ cdef void _sparse_gradient_3d(floating[:, :, :] img,
                 # Compute coordinates of point dx on img's grid
                 dx[p] = sample_points[i, p] - h[p]
                 q[0] = _apply_affine_3d_x0(dx[0], dx[1], dx[2], 1,
-                                           img_space2grid)
+                                           img_world2grid)
                 q[1] = _apply_affine_3d_x1(dx[0], dx[1], dx[2], 1,
-                                           img_space2grid)
+                                           img_world2grid)
                 q[2] = _apply_affine_3d_x2(dx[0], dx[1], dx[2], 1,
-                                           img_space2grid)
+                                           img_world2grid)
                 # Interpolate img at q
                 in_flag = _interpolate_scalar_3d(img, q[0], q[1], q[2],
                                                  &out[i, p])
@@ -3240,11 +3240,11 @@ cdef void _sparse_gradient_3d(floating[:, :, :] img,
                 # Compute coordinates of point dx on img's grid
                 dx[p] = sample_points[i, p] + h[p]
                 q[0] = _apply_affine_3d_x0(dx[0], dx[1], dx[2], 1,
-                                           img_space2grid)
+                                           img_world2grid)
                 q[1] = _apply_affine_3d_x1(dx[0], dx[1], dx[2], 1,
-                                           img_space2grid)
+                                           img_world2grid)
                 q[2] = _apply_affine_3d_x2(dx[0], dx[1], dx[2], 1,
-                                           img_space2grid)
+                                           img_world2grid)
                 # Interpolate img at q
                 in_flag = _interpolate_scalar_3d(img, q[0], q[1], q[2],
                                                  &out[i, p])
@@ -3256,20 +3256,20 @@ cdef void _sparse_gradient_3d(floating[:, :, :] img,
                 dx[p] = sample_points[i, p]
 
 
-cdef void _gradient_2d(floating[:, :] img, double[:, :] img_space2grid,
-                       double[:] img_spacing, double[:, :] out_grid2space,
+cdef void _gradient_2d(floating[:, :] img, double[:, :] img_world2grid,
+                       double[:] img_spacing, double[:, :] out_grid2world,
                        floating[:, :, :] out, int[:, :] inside):
     r""" Gradient of a 2D image in physical space coordinates
 
     Each grid cell (i, j) in the sampling grid (determined by
     out.shape) is mapped to its corresponding physical point (x, y) by
-    multiplying out_grid2space (its grid-to-space transform) by (i, j), then
+    multiplying out_grid2world (its grid-to-space transform) by (i, j), then
     the image is interpolated, at
 
     P1=(x + h, y), Q1=(x - h, y)
     P2=(x, y + h), Q2=(x, y - h)
 
-    (by mapping Pi and Qi to the grid using img_space2grid: the inverse of the
+    (by mapping Pi and Qi to the grid using img_world2grid: the inverse of the
     grid-to-space transform of img). The displacement parameter h is of
     magnitude 0.5 (in physical space units), therefore the approximated partial
     derivatives are given by the difference between the image interpolated at
@@ -3279,12 +3279,12 @@ cdef void _gradient_2d(floating[:, :] img, double[:, :] img_space2grid,
     ----------
     img : array, shape (R, C)
         the input image whose gradient will be computed
-    img_space2grid : array, shape (3, 3)
+    img_world2grid : array, shape (3, 3)
         the space-to-grid transform matrix associated to img
     img_spacing : array, shape (2,)
         the spacing between pixels (pixel size along each axis) of the input
         image
-    out_grid2space : array, shape (3, 3)
+    out_grid2world : array, shape (3, 3)
         the grid-to-space transform associated to the sampling grid
     out : array, shape (S', R', 2)
         the buffer in which to store the image gradient
@@ -3308,14 +3308,14 @@ cdef void _gradient_2d(floating[:, :] img, double[:, :] img_space2grid,
             for j in range(ncols):
                 inside[i, j] = 1
                 # Compute coordinates of index (i, j) in physical space
-                x[0] = _apply_affine_2d_x0(i, j, 1, out_grid2space)
-                x[1] = _apply_affine_2d_x1(i, j, 1, out_grid2space)
+                x[0] = _apply_affine_2d_x0(i, j, 1, out_grid2world)
+                x[1] = _apply_affine_2d_x1(i, j, 1, out_grid2world)
                 dx[:] = x[:]
                 for p in range(2):
                     # Compute coordinates of point dx on img's grid
                     dx[p] = x[p] - h[p]
-                    q[0] = _apply_affine_2d_x0(dx[0], dx[1], 1, img_space2grid)
-                    q[1] = _apply_affine_2d_x1(dx[0], dx[1], 1, img_space2grid)
+                    q[0] = _apply_affine_2d_x0(dx[0], dx[1], 1, img_world2grid)
+                    q[1] = _apply_affine_2d_x1(dx[0], dx[1], 1, img_world2grid)
                     # Interpolate img at q
                     in_flag = _interpolate_scalar_2d(img, q[0], q[1],
                                                      &out[i, j, p])
@@ -3326,8 +3326,8 @@ cdef void _gradient_2d(floating[:, :] img, double[:, :] img_space2grid,
                     tmp = out[i, j, p]
                     # Compute coordinates of point dx on img's grid
                     dx[p] = x[p] + h[p]
-                    q[0] = _apply_affine_2d_x0(dx[0], dx[1], 1, img_space2grid)
-                    q[1] = _apply_affine_2d_x1(dx[0], dx[1], 1, img_space2grid)
+                    q[0] = _apply_affine_2d_x0(dx[0], dx[1], 1, img_world2grid)
+                    q[1] = _apply_affine_2d_x1(dx[0], dx[1], 1, img_world2grid)
                     # Interpolate img at q
                     in_flag = _interpolate_scalar_2d(img, q[0], q[1],
                                                      &out[i, j, p])
@@ -3339,7 +3339,7 @@ cdef void _gradient_2d(floating[:, :] img, double[:, :] img_space2grid,
                     dx[p] = x[p]
 
 
-cdef void _sparse_gradient_2d(floating[:, :] img, double[:, :] img_space2grid,
+cdef void _sparse_gradient_2d(floating[:, :] img, double[:, :] img_world2grid,
                               double[:] img_spacing,
                               double[:, :] sample_points,
                               floating[:, :] out, int[:] inside):
@@ -3350,7 +3350,7 @@ cdef void _sparse_gradient_2d(floating[:, :] img, double[:, :] img_space2grid,
     P1=(x_i + h, y_i), Q1=(x_i - h, y_i)
     P2=(x_i, y_i + h), Q2=(x_i, y_i - h)
 
-    (by mapping Pi and Qi to the grid using img_space2grid: the inverse of the
+    (by mapping Pi and Qi to the grid using img_world2grid: the inverse of the
     grid-to-space transform of img). The displacement parameter h is of
     magnitude 0.5 (in physical space units), therefore the approximated partial
     derivatives are given by the difference between the image interpolated at
@@ -3360,7 +3360,7 @@ cdef void _sparse_gradient_2d(floating[:, :] img, double[:, :] img_space2grid,
     ----------
     img : array, shape (R, C)
         the input volume whose gradient will be computed
-    img_space2grid : array, shape (3, 3)
+    img_world2grid : array, shape (3, 3)
         the space-to-grid transform matrix associated to img
     img_spacing : array, shape (2,)
         the spacing between pixels (pixel size along each axis) of the input
@@ -3389,8 +3389,8 @@ cdef void _sparse_gradient_2d(floating[:, :] img, double[:, :] img_space2grid,
             for p in range(2):
                 # Compute coordinates of point dx on img's grid
                 dx[p] = sample_points[i, p] - h[p]
-                q[0] = _apply_affine_2d_x0(dx[0], dx[1], 1, img_space2grid)
-                q[1] = _apply_affine_2d_x1(dx[0], dx[1], 1, img_space2grid)
+                q[0] = _apply_affine_2d_x0(dx[0], dx[1], 1, img_world2grid)
+                q[1] = _apply_affine_2d_x1(dx[0], dx[1], 1, img_world2grid)
                 # Interpolate img at q
                 in_flag = _interpolate_scalar_2d(img, q[0], q[1],
                                                  &out[i, p])
@@ -3401,8 +3401,8 @@ cdef void _sparse_gradient_2d(floating[:, :] img, double[:, :] img_space2grid,
                 tmp = out[i, p]
                 # Compute coordinates of point dx on img's grid
                 dx[p] = sample_points[i, p] + h[p]
-                q[0] = _apply_affine_2d_x0(dx[0], dx[1], 1, img_space2grid)
-                q[1] = _apply_affine_2d_x1(dx[0], dx[1], 1, img_space2grid)
+                q[0] = _apply_affine_2d_x0(dx[0], dx[1], 1, img_world2grid)
+                q[1] = _apply_affine_2d_x1(dx[0], dx[1], 1, img_world2grid)
                 # Interpolate img at q
                 in_flag = _interpolate_scalar_2d(img, q[0], q[1],
                                                  &out[i, p])
@@ -3414,22 +3414,22 @@ cdef void _sparse_gradient_2d(floating[:, :] img, double[:, :] img_space2grid,
                 dx[p] = sample_points[i, p]
 
 
-def gradient(img, img_space2grid, img_spacing, out_shape, 
-             out_grid2space):
+def gradient(img, img_world2grid, img_spacing, out_shape, 
+             out_grid2world):
     r""" Gradient of an image in physical space
 
     Parameters
     ----------
     img : 2D or 3D array, shape (R, C) or (S, R, C)
         the input image whose gradient will be computed
-    img_space2grid : array, shape (dim+1, dim+1)
+    img_world2grid : array, shape (dim+1, dim+1)
         the space-to-grid transform matrix associated to img
     img_spacing : array, shape (dim,)
         the spacing between voxels (voxel size along each axis) of the input
         image
     out_shape : array, shape (dim,)
         the number of (slices), rows and columns of the sampling grid
-    out_grid2space : array, shape (dim+1, dim+1)
+    out_grid2world : array, shape (dim+1, dim+1)
         the grid-to-space transform associated to the sampling grid
 
     Returns
@@ -3439,9 +3439,9 @@ def gradient(img, img_space2grid, img_spacing, out_shape,
         (S'), R', C' are given by out_shape
     """
     dim = len(img.shape)
-    if not is_valid_affine(img_space2grid, dim):
+    if not is_valid_affine(img_world2grid, dim):
         raise ValueError("Invalid image affine transform")
-    if not is_valid_affine(out_grid2space, dim):
+    if not is_valid_affine(out_grid2world, dim):
         raise ValueError("Invalid sampling grid affine transform")
     if len(img_spacing) < dim:
         raise ValueError("Invalid spacings")
@@ -3449,24 +3449,24 @@ def gradient(img, img_space2grid, img_spacing, out_shape,
     out = np.empty(tuple(out_shape)+(dim,), dtype=ftype)
     inside = np.empty(tuple(out_shape), dtype=np.int32)
     if dim == 2:
-        _gradient_2d(img, img_space2grid.astype(np.float64),
+        _gradient_2d(img, img_world2grid.astype(np.float64),
                      img_spacing.astype(np.float64),
-                     out_grid2space.astype(np.float64), out, inside)
+                     out_grid2world.astype(np.float64), out, inside)
     else:
-        _gradient_3d(img, img_space2grid.astype(np.float64),
+        _gradient_3d(img, img_world2grid.astype(np.float64),
                      img_spacing.astype(np.float64),
-                     out_grid2space.astype(np.float64), out, inside)
+                     out_grid2world.astype(np.float64), out, inside)
     return out, inside
 
 
-def sparse_gradient(img, img_space2grid, img_spacing, sample_points):
+def sparse_gradient(img, img_world2grid, img_spacing, sample_points):
     r""" Gradient of an image in physical space
 
     Parameters
     ----------
     img : 2D or 3D array, shape (R, C) or (S, R, C)
         the input image whose gradient will be computed
-    img_space2grid : array, shape (dim+1, dim+1)
+    img_world2grid : array, shape (dim+1, dim+1)
         the space-to-grid transform matrix associated to img
     img_spacing : array, shape (dim,)
         the spacing between voxels (voxel size along each axis) of the input
@@ -3481,7 +3481,7 @@ def sparse_gradient(img, img_space2grid, img_spacing, sample_points):
         the gradient at each point stored at its corresponding row
     """
     dim = len(img.shape)
-    if not is_valid_affine(img_space2grid, dim):
+    if not is_valid_affine(img_world2grid, dim):
         raise ValueError("Invalid affine transform matrix")
     if len(img_spacing) < dim:
         raise ValueError("Invalid spacings")
@@ -3491,11 +3491,11 @@ def sparse_gradient(img, img_space2grid, img_spacing, sample_points):
     out = np.empty(shape=(n, dim), dtype=ftype)
     inside = np.empty(shape=(n,), dtype=np.int32)
     if dim == 2:
-        _sparse_gradient_2d(img, img_space2grid.astype(np.float64),
+        _sparse_gradient_2d(img, img_world2grid.astype(np.float64),
                             img_spacing.astype(np.float64), sample_points,
                             out, inside)
     else:
-        _sparse_gradient_3d(img, img_space2grid.astype(np.float64),
+        _sparse_gradient_3d(img, img_world2grid.astype(np.float64),
                             img_spacing.astype(np.float64), sample_points,
                             out, inside)
     return out, inside
