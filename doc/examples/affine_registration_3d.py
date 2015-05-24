@@ -52,7 +52,14 @@ is not likely to be good, but at least they will occupy roughly the same space
 """
 
 warped = aff_warp(static, static_grid2space, moving, moving_grid2space, c_of_mass)
-regtools.overlay_slices(static, warped, slice_type=0)
+regtools.overlay_slices(static, warped, 0, "Static", "Warped", "warped_com.png")
+
+"""
+.. figure:: warped_com.png
+   :align: center
+
+   **Registration result by simply aligning the centers of mass of the images**.
+"""
 
 """
 This was just a translation of the moving image towards the static image, now we will
@@ -136,7 +143,14 @@ aligning the centers of mass
 """
 
 warped = aff_warp(static, static_grid2space, moving, moving_grid2space, trans)
-regtools.overlay_slices(static, warped, slice_type=0)
+regtools.overlay_slices(static, warped, 0, "Static", "Warped", "warped_trans.png")
+
+"""
+.. figure:: warped_trans.png
+   :align: center
+
+   **Registration result by just translating the moving image, using Mutual Information**.
+"""
 
 """
 Now lets refine with a rigid transform (this may even modify our previously found
@@ -155,7 +169,14 @@ This produces a slight rotation, and the images are now better aligned
 """
 
 warped = aff_warp(static, static_grid2space, moving, moving_grid2space, rigid)
-regtools.overlay_slices(static, warped, slice_type=0)
+regtools.overlay_slices(static, warped, 0, "Static", "Warped", "warped_rigid.png")
+
+"""
+.. figure:: warped_rigid.png
+   :align: center
+
+   **Registration result with a rigid transform, using Mutual Information**.
+"""
 
 """
 Finally, lets refine with a full affine transform (translation, rotation, scale and 
@@ -169,8 +190,20 @@ prealign = rigid
 affine = affreg.optimize(static, moving, transform, x0,
                          static_grid2space, moving_grid2space,
                          prealign=prealign)
+
+"""
+This results in a slight shear and scale
+"""
+
 warped = aff_warp(static, static_grid2space, moving, moving_grid2space, affine)
-regtools.overlay_slices(static, warped, slice_type=0)
+regtools.overlay_slices(static, warped, 0, "Static", "Warped", "warped_affine.png")
+
+"""
+.. figure:: warped_affine.png
+   :align: center
+
+   **Registration result with an affine transform, using Mutual Information**.
+"""
 
 """
 The equivalent ANTS command to perform all above operations is
@@ -207,15 +240,14 @@ After a visual inspection of the results, we can see that they are very similar
 """
 
 ants_warped = aff_warp(static, static_grid2space, moving, moving_grid2space, ants_align)
-regtools.overlay_slices(warped, ants_warped, slice_type=0)
-regtools.overlay_slices(warped, ants_warped, slice_type=1)
-regtools.overlay_slices(warped, ants_warped, slice_type=2)
+regtools.overlay_slices(warped, ants_warped, 0, 'Dipy', 'ANTS', 'dipy_ants_0.png')
 
 """
-.. figure:: warped_static.png
+.. figure:: dipy_ants_0.png
    :align: center
 
-   **Static image transformed under the (inverse) transformation in red on top of the moving image (in green). Note that the moving image has lower resolution**.
+   **Aligned image using Dipy (in red) on top of the aligned image using ANTS (in green)**.
+
 .. [Mattes03] Mattes, D., Haynor, D. R., Vesselle, H., Lewellen, T. K., & Eubank, W. (2003). PET-CT image registration in the chest using free-form deformations. IEEE Transactions on Medical Imaging, 22(1), 120–8.
 .. [Avants11] Avants, B. B., Tustison, N., & Song, G. (2011). Advanced Normalization Tools ( ANTS ), 1-35.
 
