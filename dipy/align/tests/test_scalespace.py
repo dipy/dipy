@@ -1,12 +1,15 @@
+import numpy as np
 import scipy as sp
+from dipy.align import floating
 from dipy.align.tests.test_imwarp import get_synthetic_warped_circle
-from dipy.align.imwarp import get_direction_and_spacings                              
+from dipy.align.imwarp import get_direction_and_spacings
 from dipy.align.scalespace import (ScaleSpace,
                                    IsotropicScaleSpace)
 from numpy.testing import (assert_array_equal,
                            assert_array_almost_equal,
                            assert_almost_equal,
-                           assert_equal)
+                           assert_equal,
+                           assert_raises)
 def test_scale_space():
     num_levels = 3
     for test_class in [ScaleSpace, IsotropicScaleSpace]:
@@ -57,7 +60,6 @@ def test_scale_space():
 
 def test_scale_space_exceptions():
     np.random.seed(2022966)
-
     target_shape = (32, 32)
     #create a random image
     image = np.ndarray(target_shape, dtype=floating)
@@ -65,16 +67,13 @@ def test_scale_space_exceptions():
     image[...] = np.random.randint(0, 10, ns).reshape(tuple(target_shape))
     zeros = (image == 0).astype(np.int32)
 
-    ss = imwarp.ScaleSpace(image,3)
-
+    ss = ScaleSpace(image,3)
     for invalid_level in [-1, 3, 4]:
         assert_raises(ValueError, ss.get_image, invalid_level)
 
     # Verify that the mask is correctly applied, when requested
-    ss = imwarp.ScaleSpace(image,3, mask0=True)
+    ss = ScaleSpace(image,3, mask0=True)
     for level in range(3):
         img = ss.get_image(level)
         z = (img == 0).astype(np.int32)
         assert_array_equal(zeros, z)
-
-        
