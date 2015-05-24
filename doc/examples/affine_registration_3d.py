@@ -52,7 +52,7 @@ is not likely to be good, but at least they will occupy roughly the same space
 """
 
 warped = aff_warp(static, static_grid2space, moving, moving_grid2space, c_of_mass)
-regtools.overlay_slices(static, warped, 0, "Static", "Warped", "warped_com.png")
+regtools.overlay_slices(static, warped, None, 0, "Static", "Warped", "warped_com.png")
 
 """
 .. figure:: warped_com.png
@@ -143,7 +143,7 @@ aligning the centers of mass
 """
 
 warped = aff_warp(static, static_grid2space, moving, moving_grid2space, trans)
-regtools.overlay_slices(static, warped, 0, "Static", "Warped", "warped_trans.png")
+regtools.overlay_slices(static, warped, None, 0, "Static", "Warped", "warped_trans.png")
 
 """
 .. figure:: warped_trans.png
@@ -169,7 +169,7 @@ This produces a slight rotation, and the images are now better aligned
 """
 
 warped = aff_warp(static, static_grid2space, moving, moving_grid2space, rigid)
-regtools.overlay_slices(static, warped, 0, "Static", "Warped", "warped_rigid.png")
+regtools.overlay_slices(static, warped, None, 0, "Static", "Warped", "warped_rigid.png")
 
 """
 .. figure:: warped_rigid.png
@@ -196,7 +196,7 @@ This results in a slight shear and scale
 """
 
 warped = aff_warp(static, static_grid2space, moving, moving_grid2space, affine)
-regtools.overlay_slices(static, warped, 0, "Static", "Warped", "warped_affine.png")
+regtools.overlay_slices(static, warped, None, 0, "Static", "Warped", "warped_affine.png")
 
 """
 .. figure:: warped_affine.png
@@ -240,7 +240,7 @@ After a visual inspection of the results, we can see that they are very similar
 """
 
 ants_warped = aff_warp(static, static_grid2space, moving, moving_grid2space, ants_align)
-regtools.overlay_slices(warped, ants_warped, 0, 'Dipy', 'ANTS', 'dipy_ants_0.png')
+regtools.overlay_slices(warped, ants_warped, None, 0, 'Dipy', 'ANTS', 'dipy_ants_0.png')
 
 """
 .. figure:: dipy_ants_0.png
