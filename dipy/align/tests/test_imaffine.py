@@ -16,7 +16,23 @@ from dipy.align.imaffine import *
 import dipy.viz.regtools as rt
 import dipy.align.imaffine as imaffine
 from dipy.data import get_data
+from dipy.align.tests.test_mattes import factors, setup_random_transform
 
+# For each transform type, select a transform factor (indicating how large the
+# true transform between static and moving images will be) and a sampling
+# (either a positive integer less than or equal to 100, or None) indicating
+# the percentage (if int) of voxels to be used for estimating the joint PDFs,
+# or dense sampling (if None)
+factors = {('TRANSLATION', 2): (2.0, 30),
+           ('ROTATION', 2): (0.1, None),
+           ('RIGID', 2): (0.1, 50),
+           ('SCALING', 2): (0.01, None),
+           ('AFFINE', 2): (0.1, 40),
+           ('TRANSLATION', 3): (2.0, None),
+           ('ROTATION', 3): (0.1, 35, 60),
+           ('RIGID', 3): (0.1, None),
+           ('SCALING', 3): (0.1, 30),
+           ('AFFINE', 3): (0.1, None)}
 
 def test_aff_centers_of_mass_3d():
     np.random.seed(1246592)
@@ -151,46 +167,24 @@ def test_aff_origins_3d():
                     assert_array_almost_equal(actual, expected)
 
 
-def setup_random_transform_2d(transform, rfactor):
-    np.random.seed(3147702)
-    dim = 2
-    fname = get_data('t1_coronal_slice')
-    moving = np.load(fname)
-    moving_grid2space = np.eye(dim + 1)
-
-    n = transform.get_number_of_parameters()
-    theta = transform.get_identity_parameters()
-    theta += np.random.rand(n) * rfactor
-
-    T = transform.param_to_matrix(theta)
-
-    static = aff_warp(moving, moving_grid2space, moving, moving_grid2space, T)
-    static = static.astype(np.float64)
-    static_grid2space = moving_grid2space
-
-    return static, moving, static_grid2space, moving_grid2space, T
-
-
-def test_mattes_mi_registration_2d():
-    factors = {('TRANSLATION', 2):25.0,
-               ('ROTATION', 2):0.35,
-               ('RIGID', 2):0.15,
-               ('SCALING', 2):0.3,
-               ('AFFINE', 2):0.2}
+def test_mattes_mi_registration():
     for ttype in factors.keys():
-        factor = factors[ttype]
+        dim = ttype[1]
+        if dim == 2:
+            nslices = 1
+        else:
+            nslices = 45
+        factor = factors[ttype][0]
+        sampling_pc = factors[ttype][1]
         transform = regtransforms[ttype]
-        static, moving, static_grid2space, moving_grid2space, T = \
-                        setup_random_transform_2d(transform, factor)
+
+        static, moving, static_grid2space, moving_grid2space, smask, mmask, T = \
+                        setup_random_transform(transform, factor, nslices, 1.0)
         # Sum of absolute differences
-        start_sad = np.abs(static - moving).sum().sum()
-
-        # In case of failure, it is useful to see the overlaid input images
-        #rt.overlay_images(static, moving)
-
-        metric = imaffine.MattesMIMetric(32, 30)
+        start_sad = np.abs(static - moving).sum()
+        metric = imaffine.MattesMIMetric(32, sampling_pc)
         affreg = imaffine.AffineRegistration(metric,
-                                             [10000, 111110, 11110], 1e-5,
+                                             [10000, 1000, 100], 1e-5,
                                              [3, 1, 0],
                                              [4, 2, 1],
                                              'L-BFGS-B',
@@ -202,11 +196,7 @@ def test_mattes_mi_registration_2d():
         warped = aff_warp(static, static_grid2space, moving,
                           moving_grid2space, sol)
         # Sum of absolute differences
-        end_sad = np.abs(static - warped).sum().sum()
-
-        # In case of failure, it is useful to see the overlaid resulting images
-        #rt.overlay_images(static, warped)
-
+        end_sad = np.abs(static - warped).sum()
         reduction = 1 - end_sad / start_sad
         print("%s>>%f"%(ttype, reduction))
-        assert_equal(reduction > 0.99, True)
+        assert(reduction > 0.9)

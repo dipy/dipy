@@ -517,9 +517,14 @@ class AffineRegistration(object):
 
             # Optimize this level
             if self.options is None:
-                self.options = {'gtol': 1e-4,
-                                'maxiter': max_iter,
-                                'disp': False}
+                if self.method == 'L-BFGS-B':
+                    self.options = {'gtol': 1e-4,
+                                    'maxfun': max_iter,
+                                    'disp': False}
+                else:
+                    self.options = {'gtol': 1e-4,
+                                    'maxiter': max_iter,
+                                    'disp': False}
 
             opt = Optimizer(self.metric.value_and_gradient, self.x0,
                             method=self.method, jac=True,
