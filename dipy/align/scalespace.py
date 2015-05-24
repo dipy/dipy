@@ -1,12 +1,14 @@
 from dipy.align import floating
 import numpy as np
 import numpy.linalg as npl
-import scipy.ndimage as ndimage
 import scipy as sp
+import scipy.ndimage as ndimage
+import scipy.ndimage.filters as filters
+
 
 class ScaleSpace(object):
     def __init__(self, image, num_levels,
-                 image_grid2space=None,
+                 image_grid2world=None,
                  input_spacing=None,
                  sigma_factor=0.2,
                  mask0=False):
@@ -16,19 +18,20 @@ class ScaleSpace(object):
         simply a list of images produced by smoothing the input image with a
         Gaussian kernel with increasing smoothing parameter. If the image's
         voxels are isotropic, the smoothing will be the same along all
-        directions: at level L = 0,1,..., the sigma is given by s * ( 2^L - 1 ).
+        directions: at level L = 0,1,..., the sigma is given by
+        s * ( 2^L - 1 ).
         If the voxel dimensions are not isotropic, then the smoothing is
         weaker along low resolution directions.
 
         Parameters
         ----------
-        image : array, shape (r,c) or (s, r, c) where s is the number of slices,
-            r is the number of rows and c is the number of columns of the input
-            image.
+        image : array, shape (r,c) or (s, r, c) where s is the number of
+            slices, r is the number of rows and c is the number of columns of
+            the input image.
         num_levels : int
             the desired number of levels (resolutions) of the scale space
-        image_grid2space : array, shape (k, k), k=3,4 (for either 2D or 3D images)
-            the grid-to-space transform of the image grid
+        image_grid2world : array, shape (k, k), k=3,4 (for either 2D or 3D
+            images) the grid-to-space transform of the image grid
         input_spacing : array, shape (k-1,)
             the spacing (voxel size) between voxels in physical space
         sigma_factor : float
@@ -43,62 +46,62 @@ class ScaleSpace(object):
         self.num_levels = num_levels
         input_size = np.array(image.shape)
         if mask0:
-            mask = np.asarray(image>0, dtype=np.int32)
+            mask = np.asarray(image > 0, dtype=np.int32)
 
-        #normalize input image to [0,1]
+        # Normalize input image to [0,1]
         img = (image - image.min())/(image.max() - image.min())
         if mask0:
             img *= mask
 
-        #The properties are saved in separate lists. Insert input image
-        #properties at the first level of the scale space
+        # The properties are saved in separate lists. Insert input image
+        # properties at the first level of the scale space
         self.images = [img.astype(floating)]
         self.domain_shapes = [input_size.astype(np.int32)]
         if input_spacing is None:
-            input_spacing = np.ones((self.dim,), dtype = np.int32)
+            input_spacing = np.ones((self.dim,), dtype=np.int32)
         self.spacings = [input_spacing]
         self.scalings = [np.ones(self.dim)]
-        self.affines = [image_grid2space]
+        self.affines = [image_grid2world]
         self.sigmas = [np.zeros(self.dim)]
 
-        if image_grid2space is not None:
-            self.affine_invs = [npl.inv(image_grid2space)]
+        if image_grid2world is not None:
+            self.affine_invs = [npl.inv(image_grid2world)]
         else:
             self.affine_invs = [None]
 
-        #compute the rest of the levels
+        # Compute the rest of the levels
         min_spacing = np.min(input_spacing)
         for i in range(1, num_levels):
             scaling_factor = 2**i
             scaling = np.ndarray((self.dim+1,))
-            #Note: the minimum below is present in ANTS to prevent the scaling
-            #from being too large (making the sub-sampled image to be too small)
-            #this makes the sub-sampled image at least 32 voxels at each
-            #direction it is risky to make this decision based on image size,
-            #though (we need to investigate more the effect of this)
+            # Note: the minimum below is present in ANTS to prevent the scaling
+            # from being too large (making the sub-sampled image to be too
+            # small) this makes the sub-sampled image at least 32 voxels at
+            # each direction it is risky to make this decision based on image
+            # size, though (we need to investigate more the effect of this)
 
-            #scaling = np.minimum(scaling_factor * min_spacing / input_spacing,
+            # scaling = np.minimum(scaling_factor * min_spacing /input_spacing,
             #                     input_size / 32)
 
             scaling = scaling_factor * min_spacing / input_spacing
             output_spacing = input_spacing * scaling
             extended = np.append(scaling, [1])
-            if not image_grid2space is None:
-                affine = image_grid2space.dot(np.diag(extended))
+            if image_grid2world is not None:
+                affine = image_grid2world.dot(np.diag(extended))
             else:
                 affine = np.diag(extended)
             output_size = input_size * (input_spacing / output_spacing) + 0.5
             output_size = output_size.astype(np.int32)
             sigmas = sigma_factor * (output_spacing / input_spacing - 1.0)
 
-            #filter along each direction with the appropriate sigma
-            filtered = sp.ndimage.filters.gaussian_filter(image, sigmas)
-            filtered = ((filtered - filtered.min())/
-                       (filtered.max() - filtered.min()))
+            # Filter along each direction with the appropriate sigma
+            filtered = filters.gaussian_filter(image, sigmas)
+            filtered = ((filtered - filtered.min()) /
+                        (filtered.max() - filtered.min()))
             if mask0:
                 filtered *= mask
 
-            #Add current level to the scale space
+            # Add current level to the scale space
             self.images.append(filtered.astype(floating))
             self.domain_shapes.append(output_size)
             self.spacings.append(output_spacing)
@@ -129,7 +132,7 @@ class ScaleSpace(object):
 
         """
         factors = (np.array(self.spacings[to_level]) /
-                  np.array(self.spacings[from_level]) )
+                   np.array(self.spacings[from_level]))
         return factors
 
     def print_level(self, level):
@@ -192,9 +195,9 @@ class ScaleSpace(object):
         r"""Shape the sub-sampled image must have at a particular level
 
         Returns the shape the sub-sampled image must have at a particular
-        resolution of the scale space (note that this object does not explicitly
-        subsample the smoothed images, but only provides the properties
-        the sub-sampled images must have).
+        resolution of the scale space (note that this object does not
+        explicitly subsample the smoothed images, but only provides the
+        properties the sub-sampled images must have).
 
         Parameters
         ----------
@@ -231,8 +234,8 @@ class ScaleSpace(object):
     def get_scaling(self, level):
         r"""Adjustment factor for input-spacing to reflect voxel sizes at level
 
-        Returns the scaling factor that needs to be applied to the input spacing
-        (the voxel sizes of the image at level 0 of the scale space) to
+        Returns the scaling factor that needs to be applied to the input
+        spacing (the voxel sizes of the image at level 0 of the scale space) to
         transform them to voxel sizes at the requested level.
 
         Parameters
@@ -263,8 +266,8 @@ class ScaleSpace(object):
 
         Returns
         -------
-            the affine (voxel-to-space) transform at the requested resolution or
-            None if an invalid level was requested
+            the affine (voxel-to-space) transform at the requested resolution
+            or None if an invalid level was requested
         """
         return self._get_attribute(self.affines, level)
 
@@ -309,7 +312,7 @@ class ScaleSpace(object):
 
 class IsotropicScaleSpace(ScaleSpace):
     def __init__(self, image, factors, sigmas,
-                 image_grid2space=None,
+                 image_grid2world=None,
                  input_spacing=None,
                  mask0=False):
         r""" IsotropicScaleSpace
@@ -324,16 +327,16 @@ class IsotropicScaleSpace(ScaleSpace):
 
         Parameters
         ----------
-        image : array, shape (r,c) or (s, r, c) where s is the number of slices,
-            r is the number of rows and c is the number of columns of the input
-            image.
+        image : array, shape (r,c) or (s, r, c) where s is the number of
+            slices, r is the number of rows and c is the number of columns of
+            the input image.
         factors : list of floats
-            custom scale factors to build the scale space (one factor for each 
+            custom scale factors to build the scale space (one factor for each
             scale)
         sigmas : list of floats
-            custom smoothing parameter to build the scale space (one parameter 
+            custom smoothing parameter to build the scale space (one parameter
             for each scale)
-        image_grid2space : array, shape (k, k), k=3,4 (for either 2D or 3D images)
+        image_grid2world : array, shape (k, k), k=3,4 (either 2D or 3D images)
             the grid-to-space transform of the image grid
         input_spacing : array, shape (k-1,)
             the spacing (voxel size) between voxels in physical space
@@ -347,32 +350,32 @@ class IsotropicScaleSpace(ScaleSpace):
             raise ValueError("sigmas and factors must have the same length")
         input_size = np.array(image.shape)
         if mask0:
-            mask = np.asarray(image>0, dtype=np.int32)
+            mask = np.asarray(image > 0, dtype=np.int32)
 
-        #normalize input image to [0,1]
-        img = (image.astype(np.float64) - image.min())/(image.max() - image.min())
+        # Normalize input image to [0,1]
+        img = ((image.astype(np.float64) - image.min()) /
+               (image.max() - image.min()))
         if mask0:
             img *= mask
 
-        #The properties are saved in separate lists. Insert input image
-        #properties at the first level of the scale space
+        # The properties are saved in separate lists. Insert input image
+        # properties at the first level of the scale space
         self.images = [img.astype(floating)]
         self.domain_shapes = [input_size.astype(np.int32)]
         if input_spacing is None:
-            input_spacing = np.ones((self.dim,), dtype = np.int32)
+            input_spacing = np.ones((self.dim,), dtype=np.int32)
         self.spacings = [input_spacing]
         self.scalings = [np.ones(self.dim)]
-        self.affines = [image_grid2space]
+        self.affines = [image_grid2world]
         self.sigmas = [np.ones(self.dim) * sigmas[self.num_levels - 1]]
 
-        if image_grid2space is not None:
-            self.affine_invs = [npl.inv(image_grid2space)]
+        if image_grid2world is not None:
+            self.affine_invs = [npl.inv(image_grid2world)]
         else:
             self.affine_invs = [None]
 
-        #compute the rest of the levels
+        # Compute the rest of the levels
         min_index = np.argmin(input_spacing)
-        min_spacing = input_spacing[min_index]
         for i in range(1, self.num_levels):
             factor = factors[self.num_levels - 1 - i]
             shrink_factors = np.zeros(self.dim)
@@ -381,34 +384,35 @@ class IsotropicScaleSpace(ScaleSpace):
             new_spacing[min_index] = input_spacing[min_index] * factor
             for j in range(self.dim):
                 if j != min_index:
-                    #Select the factor that maximizes isotropy
+                    # Select the factor that maximizes isotropy
                     shrink_factors[j] = factor
                     new_spacing[j] = input_spacing[j] * factor
                     min_diff = np.abs(new_spacing[j] - new_spacing[min_index])
                     for f in range(1, factor):
-                        diff = np.abs(input_spacing[j] * f - new_spacing[min_index])
+                        diff = input_spacing[j] * f - new_spacing[min_index]
+                        diff = np.abs(diff)
                         if diff < min_diff:
                             shrink_factors[j] = f
                             new_spacing[j] = input_spacing[j] * f
                             min_diff = diff
 
             extended = np.append(shrink_factors, [1])
-            if not image_grid2space is None:
-                affine = image_grid2space.dot(np.diag(extended))
+            if image_grid2world is not None:
+                affine = image_grid2world.dot(np.diag(extended))
             else:
                 affine = np.diag(extended)
             output_size = (input_size / shrink_factors).astype(np.int32)
             new_sigmas = np.ones(self.dim) * sigmas[self.num_levels - i - 1]
 
-            #filter along each direction with the appropriate sigma
-            filtered = ndimage.filters.gaussian_filter(image.astype(np.float64),
-                                                       new_sigmas)
-            filtered = ((filtered.astype(np.float64) - filtered.min())/
-                       (filtered.max() - filtered.min()))
+            # Filter along each direction with the appropriate sigma
+            filtered = filters.gaussian_filter(image.astype(np.float64),
+                                               new_sigmas)
+            filtered = ((filtered.astype(np.float64) - filtered.min()) /
+                        (filtered.max() - filtered.min()))
             if mask0:
                 filtered *= mask
 
-            #Add current level to the scale space
+            # Add current level to the scale space
             self.images.append(filtered.astype(floating))
             self.domain_shapes.append(output_size)
             self.spacings.append(new_spacing)

@@ -1,13 +1,10 @@
 import numpy as np
 import numpy.linalg as npl
-import scipy as sp
 import scipy.ndimage as ndimage
 from dipy.align import floating
 import dipy.align.vector_fields as vf
 from dipy.align.mattes import MattesBase, sample_domain_regular
 from dipy.core.optimize import Optimizer
-import matplotlib.pyplot as plt
-from dipy.align.transforms import (Transform)
 from dipy.align.imwarp import (get_direction_and_spacings, ScaleSpace)
 from dipy.align.scalespace import IsotropicScaleSpace
 
@@ -23,10 +20,11 @@ class MattesMIMetric(MattesBase):
         Parameters
         ----------
         nbins : int
-            the number of bins to be used for computing the intensity histograms
+            the number of bins to be used for computing the intensity
+            histograms
         sampling_proportion : int in (0,100]
-            the percentage of voxels to be used for estimating the (joint and marginal)
-            intensity histograms. If None, dense sampling is used.
+            the percentage of voxels to be used for estimating the (joint and
+            marginal) intensity histograms. If None, dense sampling is used.
         """
         super(MattesMIMetric, self).__init__(nbins)
         self.sampling_proportion = sampling_proportion
@@ -57,12 +55,12 @@ class MattesMIMetric(MattesBase):
             the grid-to-space transform of the moving image
         prealign : array, shape (dim+1, dim+1)
             the pre-aligning matrix (an affine transform) that roughly aligns
-            the moving image towards the static image. If None, no pre-alignment
-            is performed. If a pre-alignment matrix is available, it is
-            recommended to directly provide the transform to the MattesMIMetric
-            instead of manually warping the moving image and provide None or
-            identity as prealign. This way, the metric avoids performing more
-            than one interpolation.
+            the moving image towards the static image. If None, no
+            pre-alignment is performed. If a pre-alignment matrix is available,
+            it is recommended to directly provide the transform to the
+            MattesMIMetric instead of manually warping the moving image and
+            provide None or identity as prealign. This way, the metric avoids
+            performing more than one interpolation.
         """
         self.dim = len(static.shape)
         self.transform = transform
@@ -75,6 +73,8 @@ class MattesMIMetric(MattesBase):
         self.moving_spacing = moving_spacing
         self.prealign = prealign
         self.param_scales = None
+        static_32 = np.array(static).astype(np.float32)
+        moving_32 = np.array(moving).astype(np.float32)
 
         T = np.eye(self.dim + 1)
         if self.prealign is not None:
@@ -86,27 +86,31 @@ class MattesMIMetric(MattesBase):
             self.interp_method = vf.interpolate_scalar_3d
 
         if self.sampling_proportion is None:
-            self.warped = aff_warp(self.static, self.static_grid2space, self.moving,
-                                   self.moving_grid2space, T).astype(np.float64)
+            self.warped = aff_warp(self.static, self.static_grid2space,
+                                   self.moving, self.moving_grid2space, T)
+            self.warped = self.warped.astype(np.float64)
             self.samples = None
             self.ns = 0
         else:
             self.warped = None
-            k = 100/self.sampling_proportion
+            k = 100 / self.sampling_proportion
             shape = np.array(static.shape, dtype=np.int32)
-            samples = np.array(sample_domain_regular(k, shape, static_grid2space))
+            samples = sample_domain_regular(k, shape, static_grid2space)
+            samples = np.array(samples)
             ns = samples.shape[0]
             # Add a column of ones (homogeneous coordinates)
-            samples = np.hstack((samples, np.ones(ns)[:,None]))
+            samples = np.hstack((samples, np.ones(ns)[:, None]))
             # Sample the static image
-            points_on_static = (self.static_space2grid.dot(samples.T).T)[...,:self.dim]
-            static_vals, inside = self.interp_method(self.static.astype(np.float32),
+            points_on_static = self.static_space2grid.dot(samples.T).T
+            points_on_static = points_on_static[..., :self.dim]
+            static_vals, inside = self.interp_method(static_32,
                                                      points_on_static)
             static_vals = np.array(static_vals, dtype=np.float64)
             # Sample the moving image
             sp_to_moving = self.moving_space2grid.dot(T)
-            points_on_moving = (sp_to_moving.dot(samples.T).T)[...,:self.dim]
-            moving_vals, inside = self.interp_method(self.moving.astype(np.float32),
+            points_on_moving = sp_to_moving.dot(samples.T).T
+            points_on_moving = points_on_moving[..., :self.dim]
+            moving_vals, inside = self.interp_method(moving_32,
                                                      points_on_moving)
             # Store relevant information
             self.samples = samples
@@ -116,7 +120,7 @@ class MattesMIMetric(MattesBase):
 
         MattesBase.setup(self, self.static, self.moving)
 
-    def _update_dense(self, xopt, update_gradient = True):
+    def _update_dense(self, xopt, update_gradient=True):
         r""" Updates marginal and joint distributions and the joint gradient
 
         The distributions are updated according to the static and warped
@@ -142,8 +146,9 @@ class MattesMIMetric(MattesBase):
             T = T.dot(self.prealign)
 
         # Warp the moving image
-        self.warped = aff_warp(self.static, self.static_grid2space, self.moving,
-                               self.moving_grid2space, T).astype(np.float64)
+        self.warped = aff_warp(self.static, self.static_grid2space,
+                               self.moving, self.moving_grid2space, T)
+        self.warped = self.warped.astype(np.float64)
 
         # Update the joint and marginal intensity distributions
         self.update_pdfs_dense(self.static, self.warped, None, None)
@@ -157,8 +162,11 @@ class MattesMIMetric(MattesBase):
 
             # Compute the gradient of the moving image at the current transform
             grid_to_space = T.dot(self.static_grid2space)
-            self.grad_w, inside = vf.gradient(self.moving.astype(floating), self.moving_space2grid,
-                                      self.moving_spacing, self.static.shape, grid_to_space)
+            self.grad_w, inside = vf.gradient(self.moving.astype(np.float32),
+                                              self.moving_space2grid,
+                                              self.moving_spacing,
+                                              self.static.shape,
+                                              grid_to_space)
 
             # Update the gradient of the metric
             self.update_gradient_dense(xopt, self.transform, self.static,
@@ -170,8 +178,7 @@ class MattesMIMetric(MattesBase):
         # ready to be returned from 'distance' and 'gradient'
         self.update_mi_metric(update_gradient)
 
-
-    def _update_sparse(self, xopt, update_gradient = True):
+    def _update_sparse(self, xopt, update_gradient=True):
         r""" Updates the marginal and joint distributions and the joint gradient
 
         The distributions are updated according to the samples taken from the
@@ -199,8 +206,10 @@ class MattesMIMetric(MattesBase):
 
         # Sample the moving image
         sp_to_moving = self.moving_space2grid.dot(T)
-        points_on_moving = (sp_to_moving.dot(self.samples.T).T)[...,:self.dim]
-        self.moving_vals, inside = self.interp_method(self.moving.astype(np.float32),
+        points_on_moving = sp_to_moving.dot(self.samples.T).T
+        points_on_moving = points_on_moving[..., :self.dim]
+        moving_32 = self.moving.astype(np.float32)
+        self.moving_vals, inside = self.interp_method(moving_32,
                                                       points_on_moving)
         self.moving_vals = np.array(self.moving_vals, dtype=np.float64)
 
@@ -216,14 +225,13 @@ class MattesMIMetric(MattesBase):
                                                self.samples)
             self.update_gradient_sparse(xopt, self.transform, self.static_vals,
                                         self.moving_vals,
-                                        self.samples[...,:self.dim],
+                                        self.samples[..., :self.dim],
                                         mgrad)
 
         # Evaluate the mutual information and its gradient
         # The results are in self.metric_val and self.metric_grad
         # ready to be returned from 'distance' and 'gradient'
         self.update_mi_metric(update_gradient)
-
 
     def distance(self, xopt):
         r""" Numeric value of the negative Mutual Information
@@ -260,8 +268,6 @@ class MattesMIMetric(MattesBase):
             self._update_dense(xopt, True)
         return self.metric_grad * (-1)
 
-
-
     def value_and_gradient(self, xopt):
         r""" Numeric value of the metric and its gradient at given parameters
 
@@ -284,9 +290,9 @@ class AffineRegistration(object):
                  metric=None,
                  level_iters=None,
                  opt_tol=1e-5,
-                 sigmas = None,
-                 factors = None,
-                 method = 'BFGS',
+                 sigmas=None,
+                 factors=None,
+                 method='BFGS',
                  ss_sigma_factor=None,
                  options=None):
         r""" Initializes an instance of the AffineRegistration class
@@ -297,8 +303,8 @@ class AffineRegistration(object):
             an instance of a metric
         level_iters : list
             the number of iterations at each level of the Gaussian pyramid.
-            level_iters[0] corresponds to the finest level, level_iters[n-1] the
-            coarsest, where n is the length of the list
+            level_iters[0] corresponds to the finest level, level_iters[n-1]
+            the coarsest, where n is the length of the list
         opt_tol : float
             tolerance parameter for the optimizer
         sigmas : list of floats
@@ -330,11 +336,8 @@ class AffineRegistration(object):
             raise ValueError('The iterations list cannot be empty')
 
         self.opt_tol = opt_tol
-        
-
         self.options = options
         self.method = method
-        
         if ss_sigma_factor is not None:
             self.use_isotropic = False
             self.ss_sigma_factor = ss_sigma_factor
@@ -346,7 +349,6 @@ class AffineRegistration(object):
                 sigmas = [3, 1, 0]
             self.factors = factors
             self.sigmas = sigmas
-
 
     def _init_optimizer(self, static, moving, transform, x0,
                         static_grid2space, moving_grid2space, prealign):
@@ -362,9 +364,10 @@ class AffineRegistration(object):
         moving: array, shape (S, R, C) or (R, C)
             the image to be used as "moving" during optimization. It is
             necessary to pre-align the moving image to ensure its domain
-            lies inside the domain of the deformation fields. This is assumed to
-            be accomplished by "pre-aligning" the moving image towards the
-            static using an affine transformation given by the 'prealign' matrix
+            lies inside the domain of the deformation fields. This is assumed
+            to be accomplished by "pre-aligning" the moving image towards the
+            static using an affine transformation given by the 'prealign'
+            matrix
         transform: instance of Transform
             the transformation with respect to whose parameters the gradient
             must be computed
@@ -396,47 +399,51 @@ class AffineRegistration(object):
         if prealign is None:
             self.prealign = np.eye(self.dim + 1)
         elif prealign == 'mass':
-            self.prealign = aff_centers_of_mass(static, static_grid2space, moving,
-                                                moving_grid2space)
+            self.prealign = aff_centers_of_mass(static, static_grid2space,
+                                                moving, moving_grid2space)
         elif prealign == 'origins':
             self.prealign = aff_origins(static, static_grid2space, moving,
-                                        moving_gris2space)
+                                        moving_grid2space)
         elif prealign == 'centers':
-            self.prealign = aff_geometric_centers(static, static_grid2space, moving,
-                                                  moving_grid2space)
+            self.prealign = aff_geometric_centers(static, static_grid2space,
+                                                  moving, moving_grid2space)
         else:
             self.prealign = prealign
-        #Extract information from the affine matrices to create the scale space
+        # Extract information from affine matrices to create the scale space
         static_direction, static_spacing = \
             get_direction_and_spacings(static_grid2space, self.dim)
         moving_direction, moving_spacing = \
             get_direction_and_spacings(moving_grid2space, self.dim)
 
-        static = ((static.astype(np.float64) - static.min())/
-                 (static.max() - static.min()))
-        moving = ((moving.astype(np.float64) - moving.min())/
+        static = ((static.astype(np.float64) - static.min()) /
+                  (static.max() - static.min()))
+        moving = ((moving.astype(np.float64) - moving.min()) /
                   (moving.max() - moving.min()))
-        #Build the scale space of the input images
 
+        # Build the scale space of the input images
         if self.use_isotropic:
-            self.moving_ss = IsotropicScaleSpace(moving, self.factors, self.sigmas,
-                                    moving_grid2space, moving_spacing, False)
+            self.moving_ss = IsotropicScaleSpace(moving, self.factors,
+                                                 self.sigmas,
+                                                 moving_grid2space,
+                                                 moving_spacing, False)
 
-            self.static_ss = IsotropicScaleSpace(static, self.factors, self.sigmas,
-                                        static_grid2space, static_spacing, False)
+            self.static_ss = IsotropicScaleSpace(static, self.factors,
+                                                 self.sigmas,
+                                                 static_grid2space,
+                                                 static_spacing, False)
         else:
             self.moving_ss = ScaleSpace(moving, self.levels, moving_grid2space,
-                                    moving_spacing, self.ss_sigma_factor,
-                                    False)
+                                        moving_spacing, self.ss_sigma_factor,
+                                        False)
 
             self.static_ss = ScaleSpace(static, self.levels, static_grid2space,
-                                    static_spacing, self.ss_sigma_factor,
-                                    False)
-
+                                        static_spacing, self.ss_sigma_factor,
+                                        False)
 
     def optimize(self, static, moving, transform, x0, static_grid2space=None,
                  moving_grid2space=None, prealign=None):
-        r'''
+        r''' Starts the optimization process
+
         Parameters
         ----------
         static: array, shape (S, R, C) or (R, C)
@@ -444,10 +451,13 @@ class AffineRegistration(object):
         moving: array, shape (S, R, C) or (R, C)
             the image to be used as "moving" during optimization. It is
             necessary to pre-align the moving image to ensure its domain
-            lies inside the domain of the deformation fields. This is assumed to
-            be accomplished by "pre-aligning" the moving image towards the
-            static using an affine transformation given by the 'prealign' matrix
-        transform: string
+            lies inside the domain of the deformation fields. This is assumed
+            to be accomplished by "pre-aligning" the moving image towards the
+            static using an affine transformation given by the 'prealign'
+            matrix
+        transform: instance of Transform
+            the transformation with respect to whose parameters the gradient
+            must be computed
         x0: array, shape (n,)
             parameters from which to start the optimization. If None, the
             optimization will start at the identity transform. n is the
@@ -465,20 +475,24 @@ class AffineRegistration(object):
                 array, shape (dim+1, dim+1)
             If None:
                 Start from identity
+
+        Returns
+        -------
+        T : array, shape(dim+1, dim+1)
+            the matrix representing the optimized affine transform
         '''
         self._init_optimizer(static, moving, transform, x0, static_grid2space,
                              moving_grid2space, prealign)
-        del prealign # now we must refer to self.prealign
+        del prealign  # Now we must refer to self.prealign
 
         # Multi-resolution iterations
         original_static_grid2space = self.static_ss.get_affine(0)
         original_moving_grid2space = self.moving_ss.get_affine(0)
-        original_moving_spacing = self.moving_ss.get_spacing(0)
 
         for level in range(self.levels - 1, -1, -1):
             self.current_level = level
             max_iter = self.level_iters[level]
-            print('Optimizing level %d [max iter: %d]'%(level, max_iter))
+            print('Optimizing level %d [max iter: %d]' % (level, max_iter))
 
             # Resample the smooth static image to the shape of this level
             smooth_static = self.static_ss.get_image(level)
@@ -497,15 +511,18 @@ class AffineRegistration(object):
 
             # Prepare the metric for iterations at this resolution
             self.metric.setup(transform, current_static, current_moving,
-                              current_moving_spacing, current_static_grid2space,
+                              current_moving_spacing,
+                              current_static_grid2space,
                               current_moving_grid2space, self.prealign)
 
-            #optimize this level
+            # Optimize this level
             if self.options is None:
-                self.options = {'gtol':1e-4, 'maxiter': max_iter, 'disp':False}
+                self.options = {'gtol': 1e-4,
+                                'maxiter': max_iter,
+                                'disp': False}
 
             opt = Optimizer(self.metric.value_and_gradient, self.x0,
-                            method=self.method, jac = True,
+                            method=self.method, jac=True,
                             options=self.options)
             xopt = opt.xopt
 
@@ -521,7 +538,8 @@ class AffineRegistration(object):
         return self.prealign
 
 
-def aff_warp(static, static_grid2space, moving, moving_grid2space, transform, nn=False):
+def aff_warp(static, static_grid2space, moving, moving_grid2space, transform,
+             nn=False):
     r""" Warps the moving image towards the static using the given transform
 
     Parameters
@@ -535,6 +553,8 @@ def aff_warp(static, static_grid2space, moving, moving_grid2space, transform, nn
         moving image
     moving_grid2space:
         grid-to-space transform associated to the moving image
+    transform: array, shape (dim+1, dim+1)
+        the matrix representing the affine transform to be applied to `moving`
 
     Returns
     -------
@@ -547,13 +567,13 @@ def aff_warp(static, static_grid2space, moving, moving_grid2space, transform, nn
         dim = len(static.shape)
         shape = np.array(static.shape, dtype=np.int32)
     if nn:
-        input = np.array(moving,dtype=np.int32)
+        input = np.array(moving, dtype=np.int32)
         if dim == 2:
             warp_method = vf.warp_2d_affine_nn
         elif dim == 3:
             warp_method = vf.warp_3d_affine_nn
     else:
-        input = np.array(moving,dtype=floating)
+        input = np.array(moving, dtype=floating)
         if dim == 2:
             warp_method = vf.warp_2d_affine
         elif dim == 3:
@@ -597,11 +617,12 @@ def aff_centers_of_mass(static, static_grid2space, moving, moving_grid2space):
     c_moving = ndimage.measurements.center_of_mass(np.array(moving))
     c_moving = moving_grid2space.dot(c_moving+(1,))
     transform = np.eye(dim + 1)
-    transform[:dim,dim] = (c_moving - c_static)[:dim]
+    transform[:dim, dim] = (c_moving - c_static)[:dim]
     return transform
 
 
-def aff_geometric_centers(static, static_grid2space, moving, moving_grid2space):
+def aff_geometric_centers(static, static_grid2space, moving,
+                          moving_grid2space):
     r""" Transformation to align the geometric center of the input images
 
     With "geometric center" of a volume we mean the physical coordinates of
@@ -626,12 +647,12 @@ def aff_geometric_centers(static, static_grid2space, moving, moving_grid2space):
         image
     """
     dim = len(static.shape)
-    c_static = tuple((np.array(static.shape, dtype = np.float64))*0.5)
+    c_static = tuple((np.array(static.shape, dtype=np.float64)) * 0.5)
     c_static = static_grid2space.dot(c_static+(1,))
-    c_moving = tuple((np.array(moving.shape, dtype = np.float64))*0.5)
+    c_moving = tuple((np.array(moving.shape, dtype=np.float64)) * 0.5)
     c_moving = moving_grid2space.dot(c_moving+(1,))
     transform = np.eye(dim + 1)
-    transform[:dim,dim] = (c_moving - c_static)[:dim]
+    transform[:dim, dim] = (c_moving - c_static)[:dim]
     return transform
 
 
@@ -663,5 +684,5 @@ def aff_origins(static, static_grid2space, moving, moving_grid2space):
     c_static = static_grid2space[:dim, dim]
     c_moving = moving_grid2space[:dim, dim]
     transform = np.eye(dim + 1)
-    transform[:dim,dim] = (c_moving - c_static)[:dim]
+    transform[:dim, dim] = (c_moving - c_static)[:dim]
     return transform
