@@ -16,7 +16,7 @@ from dipy.align.imaffine import *
 import dipy.viz.regtools as rt
 import dipy.align.imaffine as imaffine
 from dipy.data import get_data
-from dipy.align.tests.test_mattes import factors, setup_random_transform
+from dipy.align.tests.test_mattes import setup_random_transform
 
 # For each transform type, select a transform factor (indicating how large the
 # true transform between static and moving images will be) and a sampling
@@ -167,7 +167,8 @@ def test_aff_origins_3d():
                     assert_array_almost_equal(actual, expected)
 
 
-def test_mattes_mi_registration():
+def test_affreg_all_transforms():
+    # Test affine registration using all transforms with typical settings
     for ttype in factors.keys():
         dim = ttype[1]
         if dim == 2:
@@ -190,7 +191,7 @@ def test_mattes_mi_registration():
                                              'L-BFGS-B',
                                              None,
                                              options=None)
-        x0 = None
+        x0 = transform.get_identity_parameters()
         sol = affreg.optimize(static, moving, transform, x0, static_grid2space,
                               moving_grid2space)
         warped = aff_warp(static, static_grid2space, moving,
@@ -200,3 +201,51 @@ def test_mattes_mi_registration():
         reduction = 1 - end_sad / start_sad
         print("%s>>%f"%(ttype, reduction))
         assert(reduction > 0.9)
+
+def test_affreg_defaults():
+    # Test all default arguments with an arbitrary transform
+    # Select an arbitrary transform (all of them are already tested
+    # in test_affreg_all_transforms)
+    transform_name = 'TRANSLATION'
+    dim = 2
+    ttype = (transform_name, dim)
+
+    for prealign in ['mass', 'origins', 'centers', None]:
+        if dim == 2:
+            nslices = 1
+        else:
+            nslices = 45
+        factor = factors[ttype][0]
+        sampling_pc = factors[ttype][1]
+        transform = regtransforms[ttype]
+        id_param = transform.get_identity_parameters()
+
+        static, moving, static_grid2space, moving_grid2space, smask, mmask, T = \
+                        setup_random_transform(transform, factor, nslices, 1.0)
+        # Sum of absolute differences
+        start_sad = np.abs(static - moving).sum()
+
+        metric = None
+        x0 = None
+        sigmas = None
+        scale_factors = None
+        level_iters = None
+        static_grid2space = None
+        moving_grid2space = None
+        for ss_sigma_factor in [1.0, None]:
+            affreg = imaffine.AffineRegistration(metric,
+                                                 level_iters, 1e-5,
+                                                 sigmas,
+                                                 scale_factors,
+                                                 'L-BFGS-B',
+                                                 ss_sigma_factor,
+                                                 options=None)
+            sol = affreg.optimize(static, moving, transform, x0, static_grid2space,
+                                  moving_grid2space, prealign)
+            warped = aff_warp(static, static_grid2space, moving,
+                              moving_grid2space, sol)
+            # Sum of absolute differences
+            end_sad = np.abs(static - warped).sum()
+            reduction = 1 - end_sad / start_sad
+            print("%s>>%f"%(ttype, reduction))
+            assert(reduction > 0.9)

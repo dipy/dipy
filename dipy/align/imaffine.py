@@ -63,6 +63,11 @@ class MattesMIMetric(MattesBase):
             performing more than one interpolation.
         """
         self.dim = len(static.shape)
+        if moving_grid2space is None:
+            moving_grid2space = np.eye(self.dim + 1)
+        if static_grid2space is None:
+            static_grid2space = np.eye(self.dim + 1)
+
         self.transform = transform
         self.static = np.array(static).astype(np.float64)
         self.moving = np.array(moving).astype(np.float64)
@@ -329,7 +334,7 @@ class AffineRegistration(object):
             self.metric = MattesMIMetric()
 
         if level_iters is None:
-            level_iters = [10000, 10000, 2500]
+            level_iters = [10000, 1000, 100]
         self.level_iters = level_iters
         self.levels = len(level_iters)
         if self.levels == 0:
@@ -583,8 +588,14 @@ def aff_warp(static, static_grid2space, moving, moving_grid2space, transform,
             warp_method = vf.warp_2d_affine
         elif dim == 3:
             warp_method = vf.warp_3d_affine
+    if moving_grid2space is not None:
+        m_space2grid = npl.inv(moving_grid2space)
+    else:
+        m_space2grid = np.eye(dim + 1)
 
-    m_space2grid = npl.inv(moving_grid2space)
+    if static_grid2space is None:
+        static_grid2space = np.eye(dim + 1)
+
     if transform is None:
         composition = m_space2grid.dot(static_grid2space)
     else:
@@ -617,6 +628,10 @@ def aff_centers_of_mass(static, static_grid2space, moving, moving_grid2space):
         image
     """
     dim = len(static.shape)
+    if static_grid2space is None:
+        static_grid2space = np.eye(dim + 1)
+    if moving_grid2space is None:
+        moving_grid2space = np.eye(dim + 1)
     c_static = ndimage.measurements.center_of_mass(np.array(static))
     c_static = static_grid2space.dot(c_static+(1,))
     c_moving = ndimage.measurements.center_of_mass(np.array(moving))
@@ -652,6 +667,10 @@ def aff_geometric_centers(static, static_grid2space, moving,
         image
     """
     dim = len(static.shape)
+    if static_grid2space is None:
+        static_grid2space = np.eye(dim + 1)
+    if moving_grid2space is None:
+        moving_grid2space = np.eye(dim + 1)
     c_static = tuple((np.array(static.shape, dtype=np.float64)) * 0.5)
     c_static = static_grid2space.dot(c_static+(1,))
     c_moving = tuple((np.array(moving.shape, dtype=np.float64)) * 0.5)
@@ -686,6 +705,10 @@ def aff_origins(static, static_grid2space, moving, moving_grid2space):
         image
     """
     dim = len(static.shape)
+    if static_grid2space is None:
+        static_grid2space = np.eye(dim + 1)
+    if moving_grid2space is None:
+        moving_grid2space = np.eye(dim + 1)
     c_static = static_grid2space[:dim, dim]
     c_moving = moving_grid2space[:dim, dim]
     transform = np.eye(dim + 1)
