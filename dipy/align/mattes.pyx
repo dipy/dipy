@@ -367,7 +367,6 @@ class MattesBase(object):
             if (self.metric_grad is None) or (self.metric_grad.shape[0] != sh):
                 self.metric_grad = np.empty(sh)
             grad = self.metric_grad
-
         self.metric_val = _compute_mattes_mi(self.joint, self.joint_grad,
                                              self.smarginal, self.mmarginal,
                                              grad)
@@ -1204,8 +1203,8 @@ cdef double _compute_mattes_mi(double[:, :] joint,
     cdef:
         double epsilon = 2.2204460492503131e-016
         double metric_value
-        cnp.npy_intp nrows = joint_gradient.shape[0]
-        cnp.npy_intp ncols = joint_gradient.shape[1]
+        cnp.npy_intp nrows = joint.shape[0]
+        cnp.npy_intp ncols = joint.shape[1]
         cnp.npy_intp n = joint_gradient.shape[2]
 
     mi_gradient[:] = 0

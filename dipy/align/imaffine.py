@@ -29,8 +29,8 @@ class MattesMIMetric(MattesBase):
         super(MattesMIMetric, self).__init__(nbins)
         self.sampling_proportion = sampling_proportion
 
-    def setup(self, transform, static, moving, moving_spacing,
-              static_grid2space=None, moving_grid2space=None, prealign=None):
+    def setup(self, transform, static, moving, static_grid2space=None,
+              moving_grid2space=None, prealign=None):
         r""" Prepares the metric to compute intensity densities and gradients
 
         The histograms will be setup to compute probability densities of
@@ -47,8 +47,6 @@ class MattesMIMetric(MattesBase):
             static image
         moving : array, shape (S', R', C') or (R', C')
             moving image
-        moving_spacing : array, shape (3,) or (2,)
-            the spacing between neighboring voxels along each dimension
         static_grid2space : array (dim+1, dim+1)
             the grid-to-space transform of the static image
         moving_grid2space : array (dim+1, dim+1)
@@ -67,7 +65,6 @@ class MattesMIMetric(MattesBase):
             moving_grid2space = np.eye(self.dim + 1)
         if static_grid2space is None:
             static_grid2space = np.eye(self.dim + 1)
-
         self.transform = transform
         self.static = np.array(static).astype(np.float64)
         self.moving = np.array(moving).astype(np.float64)
@@ -75,7 +72,10 @@ class MattesMIMetric(MattesBase):
         self.static_space2grid = npl.inv(static_grid2space)
         self.moving_grid2space = moving_grid2space
         self.moving_space2grid = npl.inv(moving_grid2space)
-        self.moving_spacing = moving_spacing
+        self.static_direction, self.static_spacing = \
+            get_direction_and_spacings(static_grid2space, self.dim)
+        self.moving_direction, self.moving_spacing = \
+            get_direction_and_spacings(moving_grid2space, self.dim)
         self.prealign = prealign
         self.param_scales = None
         static_32 = np.array(static).astype(np.float32)
@@ -516,7 +516,6 @@ class AffineRegistration(object):
 
             # Prepare the metric for iterations at this resolution
             self.metric.setup(transform, current_static, current_moving,
-                              current_moving_spacing,
                               current_static_grid2space,
                               current_moving_grid2space, self.prealign)
 
