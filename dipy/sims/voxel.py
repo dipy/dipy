@@ -377,24 +377,27 @@ def multi_tensor_dki(gtab, mevals, S0=100, angles=[(90., 0.), (90., 0.)],
     for i in range(len(fractions)):
         D = D + fractions[i]*mD[i]
     dt = np.array([D[0][0], D[1][1], D[2][2], D[0][1], D[0][2], D[1][2]])
+    
+    # compute voxel's MD    
+    MD = (D[0][0] + D[1][1] + D[2][2]) / 3
 
     # compute voxel's KT
     kt = np.zeros((15))
-    kt[0] = compute_Wijkl(mD, fractions, 0, 0, 0, 0)
-    kt[1] = compute_Wijkl(mD, fractions, 1, 1, 1, 1)
-    kt[2] = compute_Wijkl(mD, fractions, 2, 2, 2, 2)
-    kt[3] = compute_Wijkl(mD, fractions, 0, 0, 0, 1)
-    kt[4] = compute_Wijkl(mD, fractions, 0, 0, 0, 2)
-    kt[5] = compute_Wijkl(mD, fractions, 0, 1, 1, 1)
-    kt[6] = compute_Wijkl(mD, fractions, 1, 1, 1, 2)
-    kt[7] = compute_Wijkl(mD, fractions, 0, 2, 2, 2)
-    kt[8] = compute_Wijkl(mD, fractions, 1, 2, 2, 2)
-    kt[9] = compute_Wijkl(mD, fractions, 0, 0, 1, 1)
-    kt[10] = compute_Wijkl(mD, fractions, 0, 0, 2, 2)
-    kt[11] = compute_Wijkl(mD, fractions, 1, 1, 2, 2)
-    kt[12] = compute_Wijkl(mD, fractions, 0, 0, 1, 2)
-    kt[13] = compute_Wijkl(mD, fractions, 0, 1, 1, 2)
-    kt[14] = compute_Wijkl(mD, fractions, 0, 1, 2, 2)
+    kt[0] = compute_Wijkl(mD, fractions, 0, 0, 0, 0, D, MD)
+    kt[1] = compute_Wijkl(mD, fractions, 1, 1, 1, 1, D, MD)
+    kt[2] = compute_Wijkl(mD, fractions, 2, 2, 2, 2, D, MD)
+    kt[3] = compute_Wijkl(mD, fractions, 0, 0, 0, 1, D, MD)
+    kt[4] = compute_Wijkl(mD, fractions, 0, 0, 0, 2, D, MD)
+    kt[5] = compute_Wijkl(mD, fractions, 0, 1, 1, 1, D, MD)
+    kt[6] = compute_Wijkl(mD, fractions, 1, 1, 1, 2, D, MD)
+    kt[7] = compute_Wijkl(mD, fractions, 0, 2, 2, 2, D, MD)
+    kt[8] = compute_Wijkl(mD, fractions, 1, 2, 2, 2, D, MD)
+    kt[9] = compute_Wijkl(mD, fractions, 0, 0, 1, 1, D, MD)
+    kt[10] = compute_Wijkl(mD, fractions, 0, 0, 2, 2, D, MD)
+    kt[11] = compute_Wijkl(mD, fractions, 1, 1, 2, 2, D, MD)
+    kt[12] = compute_Wijkl(mD, fractions, 0, 0, 1, 2, D, MD)
+    kt[13] = compute_Wijkl(mD, fractions, 0, 1, 1, 2, D, MD)
+    kt[14] = compute_Wijkl(mD, fractions, 0, 1, 2, 2, D, MD)
 
     # compute S based on the DT and KT
     S = single_diffkurt_tensors(gtab, dt, kt, S0, snr)
@@ -402,7 +405,7 @@ def multi_tensor_dki(gtab, mevals, S0=100, angles=[(90., 0.), (90., 0.)],
     return S, dt, kt
 
 
-def compute_Wijkl(Dc, frac, ind_i, ind_j, ind_k, ind_l):
+def compute_Wijkl(Dc, frac, ind_i, ind_j, ind_k, ind_l, DT=None, MD=None):
     r""" Computes the diffusion kurtosis tensor element (with indexes i, j, k
     and l) based on the individual diffusion tensor components of a
     multicompartmental model.
@@ -425,7 +428,9 @@ def compute_Wijkl(Dc, frac, ind_i, ind_j, ind_k, ind_l):
     ind_l: int
         Elements index l (0 for x, 1 for y, 2 for z)
     DT : (3,3) ndarray (optional)
-        Elements of the global diffusion tensor.
+        Voxel's global diffusion tensor.
+    MD : float (optional)
+        Voxel's global mean diffusivity.
 
     Returns
     --------
@@ -443,13 +448,17 @@ def compute_Wijkl(Dc, frac, ind_i, ind_j, ind_k, ind_l):
            tractography procedures and novel biomarkers", NeuroImage (2015)
            111, 85-99.
     """
-
-    DT = np.zeros((3, 3))
-    for i in range(len(frac)):
-        DT = DT + frac[i]*Dc[i]
-
+    
+    if DT is None:
+        DT = np.zeros((3, 3))
+        for i in range(len(frac)):
+            DT = DT + frac[i]*Dc[i]
+    
+    if MD is None: 
+        MD = (DT[0][0] + DT[1][1] + DT[2][2]) / 3
+    
     wijkl = 0
-    MD = (DT[0][0] + DT[1][1] + DT[2][2]) / 3
+    
     for f in range(len(frac)):
         wijkl = wijkl + frac[f] * (Dc[f][ind_i][ind_j]*Dc[f][ind_k][ind_l] +
                                    Dc[f][ind_i][ind_k]*Dc[f][ind_j][ind_l] +
