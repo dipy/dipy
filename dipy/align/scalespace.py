@@ -18,8 +18,8 @@ class ScaleSpace(object):
         simply a list of images produced by smoothing the input image with a
         Gaussian kernel with increasing smoothing parameter. If the image's
         voxels are isotropic, the smoothing will be the same along all
-        directions: at level L = 0,1,..., the sigma is given by
-        s * ( 2^L - 1 ).
+        directions: at level L = 0, 1, ..., the sigma is given by
+        $s * ( 2^L - 1 )$.
         If the voxel dimensions are not isotropic, then the smoothing is
         weaker along low resolution directions.
 
@@ -30,16 +30,18 @@ class ScaleSpace(object):
             the input image.
         num_levels : int
             the desired number of levels (resolutions) of the scale space
-        image_grid2world : array, shape (k, k), k=3,4 (for either 2D or 3D
-            images) the grid-to-space transform of the image grid
-        input_spacing : array, shape (k-1,)
-            the spacing (voxel size) between voxels in physical space
-        sigma_factor : float
+        image_grid2world : array, shape (dim + 1, dim + 1), optional
+            the grid-to-space transform of the image grid. The default is
+            the identity matrix
+        input_spacing : array, shape (dim,), optional
+            the spacing (voxel size) between voxels in physical space. The
+            default is 1.0 along all axes
+        sigma_factor : float, optional
             the smoothing factor to be used in the construction of the scale
-            space.
-        mask0 : Boolean
+            space. The default is 0.2
+        mask0 : Boolean, optional
             if True, all smoothed images will be zero at all voxels that are
-            zero in the input image.
+            zero in the input image. The default is False.
 
         """
         self.dim = len(image.shape)
@@ -72,8 +74,8 @@ class ScaleSpace(object):
         # Compute the rest of the levels
         min_spacing = np.min(input_spacing)
         for i in range(1, num_levels):
-            scaling_factor = 2**i
-            scaling = np.ndarray((self.dim+1,))
+            scaling_factor = 2 ** i
+            scaling = np.ndarray((self.dim + 1,))
             # Note: the minimum below is present in ANTS to prevent the scaling
             # from being too large (making the sub-sampled image to be too
             # small) this makes the sub-sampled image at least 32 voxels at
@@ -254,7 +256,7 @@ class ScaleSpace(object):
     def get_affine(self, level):
         r"""Voxel-to-space transformation at a given level
 
-        Returns the voxel-to-space transformation associated to the sub-sampled
+        Returns the voxel-to-space transformation associated with the sub-sampled
         image at a particular resolution of the scale space (note that this
         object does not explicitly subsample the smoothed images, but only
         provides the properties the sub-sampled images must have).
@@ -274,7 +276,7 @@ class ScaleSpace(object):
     def get_affine_inv(self, level):
         r"""Space-to-voxel transformation at a given level
 
-        Returns the space-to-voxel transformation associated to the sub-sampled
+        Returns the space-to-voxel transformation associated with the sub-sampled
         image at a particular resolution of the scale space (note that this
         object does not explicitly subsample the smoothed images, but only
         provides the properties the sub-sampled images must have).
@@ -332,17 +334,19 @@ class IsotropicScaleSpace(ScaleSpace):
             the input image.
         factors : list of floats
             custom scale factors to build the scale space (one factor for each
-            scale)
+            scale).
         sigmas : list of floats
             custom smoothing parameter to build the scale space (one parameter
-            for each scale)
-        image_grid2world : array, shape (k, k), k=3,4 (either 2D or 3D images)
-            the grid-to-space transform of the image grid
-        input_spacing : array, shape (k-1,)
-            the spacing (voxel size) between voxels in physical space
-        mask0 : Boolean
+            for each scale).
+        image_grid2world : array, shape (dim + 1, dim + 1), optional
+            the grid-to-space transform of the image grid. The default is
+            the identity matrix.
+        input_spacing : array, shape (dim,), optional
+            the spacing (voxel size) between voxels in physical space. The
+            default if 1.0 along all axes.
+        mask0 : Boolean, optional
             if True, all smoothed images will be zero at all voxels that are
-            zero in the input image.
+            zero in the input image. The default is False.
         """
         self.dim = len(image.shape)
         self.num_levels = len(factors)

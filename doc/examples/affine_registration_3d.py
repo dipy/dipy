@@ -2,7 +2,7 @@
 ==========================================
 Affine Registration in 3D
 ==========================================
-This example explains how to compute an affine transformation to register two 3D 
+This example explains how to compute an affine transformation to register two 3D
 volumes by maximization of their Mutual Information [Mattes03]_. The optimization
 strategy is similar to that implemented in ANTS [Avants11]_.
 """
@@ -14,7 +14,7 @@ from dipy.viz import regtools
 from dipy.data import fetch_stanford_hardi, read_stanford_hardi
 from dipy.data.fetcher import fetch_syn_data, read_syn_data
 from dipy.segment.mask import median_otsu
-from dipy.align.imaffine import (aff_centers_of_mass, 
+from dipy.align.imaffine import (aff_centers_of_mass,
                                  aff_warp,
                                  MattesMIMetric,
                                  AffineRegistration)
@@ -22,7 +22,7 @@ from dipy.align.transforms import regtransforms
 
 """
 Let's fetch two b0 volumes, the static image will be the b0 from the Stanford
-HARDI dataset 
+HARDI dataset
 """
 
 fetch_stanford_hardi()
@@ -88,9 +88,9 @@ multi-resolution strategy (similar to ANTS [Avants11]_) by building a Gaussian P
 To have as much flexibility as possible, the user can specify how this Gaussian Pyramid
 is built. First of all, we need to specify how many resolutions we want to use. This is
 indirectly specified by just providing a list of the number of iterations we want to
-perform at each resolution. Here we will just specify 3 resolutions and a large number 
+perform at each resolution. Here we will just specify 3 resolutions and a large number
 of iterations, 10000 at the coarsest resolution, 1000 at the medium resolution and 100
-at the finest. We also provide a tolerance for the optimization method. These are the 
+at the finest. We also provide a tolerance for the optimization method. These are the
 default settings
 """
 
@@ -98,8 +98,8 @@ level_iters = [10000, 1000, 100]
 opt_tol = 1e-5
 
 """
-To compute the Gaussian pyramid, the original image is first smoothed at each level 
-of the pyramid using a Gaussian kernel with the requested sigma. A good initial choice 
+To compute the Gaussian pyramid, the original image is first smoothed at each level
+of the pyramid using a Gaussian kernel with the requested sigma. A good initial choice
 is [3.0, 1.0, 0.0], this is the default
 """
 
@@ -123,9 +123,9 @@ prepared
 affreg = AffineRegistration(metric=metric,
                             level_iters=level_iters,
                             opt_tol=opt_tol,
-                            factors = factors,
-                            sigmas = sigmas)
-                                
+                            factors=factors,
+                            sigmas=sigmas)
+
 """
 Using AffineRegistration we can register our images in as many stages as we want, providing
 previous results as initialization for the next (the same logic as in ANTS). The reason why
@@ -200,8 +200,8 @@ regtools.overlay_slices(static, warped, None, 2, "Static", "Warped", "warped_rig
 """
 
 """
-Finally, lets refine with a full affine transform (translation, rotation, scale and 
-shear), it is safer to fit more degrees of freadom now, since we must be very close 
+Finally, lets refine with a full affine transform (translation, rotation, scale and
+shear), it is safer to fit more degrees of freedom now, since we must be very close
 to the optimal transform
 """
 

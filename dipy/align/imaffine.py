@@ -24,7 +24,19 @@ class MattesMIMetric(MattesBase):
             histograms
         sampling_proportion : int in (0,100]
             the percentage of voxels to be used for estimating the (joint and
-            marginal) intensity histograms. If None, dense sampling is used.
+            marginal) intensity histograms. If None, dense sampling is used
+            (see notes regarding the difference between sparse and dense
+            sampling).
+
+        Notes
+        -----
+        Since we use linear interpolation, images are not, in general,
+        differentiable at exact voxel coordinates, but they are differentiable
+        between voxel coordinates. When using sparse sampling, selected voxels
+        are slightly moved by adding a small random displacement within one
+        voxel to prevent sampling points to be located exactly at voxel
+        coordinates. When using dense sampling, this random displacement is
+        not applied.
         """
         super(MattesMIMetric, self).__init__(nbins)
         self.sampling_proportion = sampling_proportion
@@ -78,8 +90,6 @@ class MattesMIMetric(MattesBase):
             get_direction_and_spacings(moving_grid2space, self.dim)
         self.prealign = prealign
         self.param_scales = None
-        static_32 = np.array(static).astype(np.float32)
-        moving_32 = np.array(moving).astype(np.float32)
 
         T = np.eye(self.dim + 1)
         if self.prealign is not None:
@@ -97,6 +107,8 @@ class MattesMIMetric(MattesBase):
             self.samples = None
             self.ns = 0
         else:
+            static_32 = np.array(static).astype(np.float32)
+            moving_32 = np.array(moving).astype(np.float32)
             self.warped = None
             k = 100 / self.sampling_proportion
             shape = np.array(static.shape, dtype=np.int32)
@@ -141,11 +153,12 @@ class MattesMIMetric(MattesBase):
             the parameter vector of the transform currently used by the metric
             (the transform name is provided when self.setup is called), n is
             the number of parameters of the transform
-        update_gradient : Boolean
-            if true, the gradient of the joint PDF will also be computed,
+        update_gradient : Boolean, optional
+            if True, the gradient of the joint PDF will also be computed,
             otherwise, only the marginal and joint PDFs will be computed
+            (the default is True)
         """
-        # Get the matrix associated to the xopt parameter vector
+        # Get the matrix associated with the xopt parameter vector
         T = self.transform.param_to_matrix(xopt)
         if self.prealign is not None:
             T = T.dot(self.prealign)
@@ -204,7 +217,7 @@ class MattesMIMetric(MattesBase):
             if true, the gradient of the joint PDF will also be computed,
             otherwise, only the marginal and joint PDFs will be computed
         """
-        # Get the matrix associated to the xopt parameter vector
+        # Get the matrix associated with the xopt parameter vector
         T = self.transform.param_to_matrix(xopt)
         if self.prealign is not None:
             T = T.dot(self.prealign)
@@ -250,6 +263,13 @@ class MattesMIMetric(MattesBase):
             the parameter vector of the transform currently used by the metric
             (the transform name is provided when self.setup is called), n is
             the number of parameters of the transform
+
+        Returns
+        -------
+        val : float
+            the negative mutual information of the input images after warping
+            the moving image by the currently set transform with `xopt`
+            parameters
         """
         if self.samples is None:
             self._update_dense(xopt, False)
@@ -266,6 +286,11 @@ class MattesMIMetric(MattesBase):
             the parameter vector of the transform currently used by the metric
             (the transform name is provided when self.setup is called), n is
             the number of parameters of the transform
+
+        Returns
+        -------
+        grad : array, shape(n,)
+            the gradient of the negative Mutual Information
         """
         if self.samples is None:
             self._update_dense(xopt, True)
@@ -282,6 +307,15 @@ class MattesMIMetric(MattesBase):
             the parameter vector of the transform currently used by the metric
             (the transform name is provided when self.setup is called), n is
             the number of parameters of the transform
+
+        Returns
+        -------
+        val : float
+            the negative mutual information of the input images after warping
+            the moving image by the currently set transform with `xopt`
+            parameters
+        grad : array, shape(n,)
+            the gradient of the negative Mutual Information
         """
         if self.samples is None:
             self._update_dense(xopt, True)
@@ -294,7 +328,6 @@ class AffineRegistration(object):
     def __init__(self,
                  metric=None,
                  level_iters=None,
-                 opt_tol=1e-5,
                  sigmas=None,
                  factors=None,
                  method='L-BFGS-B',
@@ -308,10 +341,8 @@ class AffineRegistration(object):
             an instance of a metric
         level_iters : list
             the number of iterations at each level of the Gaussian pyramid.
-            level_iters[0] corresponds to the finest level, level_iters[n-1]
-            the coarsest, where n is the length of the list
-        opt_tol : float
-            tolerance parameter for the optimizer
+            `level_iters[0]` corresponds to the coarsest level,
+            `level_iters[-1]` the finest, where n is the length of the list
         sigmas : list of floats
             custom smoothing parameter to build the scale space (one parameter
             for each scale)
@@ -321,9 +352,9 @@ class AffineRegistration(object):
         method : string
             optimization method to be used
         ss_sigma_factor : float
-            parameter of the scale-space smoothing kernel. For example, the
-            std. dev. of the kernel will be factor*(2^i) in the isotropic case
-            where i = 0, 1, ..., n_scales is the scale
+            parameter of the scale-space Gaussian smoothing kernel. For
+            example, the std. dev. of the kernel will be factor*(2^i) in
+            the isotropic case where i = 0, 1, ..., n_scales is the scale
         options : None or dict,
             extra optimization options.
         """
@@ -340,7 +371,6 @@ class AffineRegistration(object):
         if self.levels == 0:
             raise ValueError('The iterations list cannot be empty')
 
-        self.opt_tol = opt_tol
         self.options = options
         self.method = method
         if ss_sigma_factor is not None:
@@ -381,9 +411,9 @@ class AffineRegistration(object):
             optimization will start at the identity transform. n is the
             number of parameters of the specified transformation.
         static_grid2space: array, shape (dim+1, dim+1)
-            the voxel-to-space transformation associated to the static image
+            the voxel-to-space transformation associated with the static image
         moving_grid2space: array, shape (dim+1, dim+1)
-            the voxel-to-space transformation associated to the moving image
+            the voxel-to-space transformation associated with the moving image
         prealign: string, or matrix, or None
             If string:
                 'mass': align centers of gravity
@@ -396,7 +426,8 @@ class AffineRegistration(object):
         """
         self.dim = len(static.shape)
         self.transform = transform
-        self.nparams = transform.get_number_of_parameters()
+        n = transform.get_number_of_parameters()
+        self.nparams = n
 
         if x0 is None:
             x0 = self.transform.get_identity_parameters()
@@ -412,8 +443,10 @@ class AffineRegistration(object):
         elif prealign == 'centers':
             self.prealign = aff_geometric_centers(static, static_grid2space,
                                                   moving, moving_grid2space)
-        else:
+        elif isinstance(prealign, np.ndarray) and prealign.shape == (n,):
             self.prealign = prealign
+        else:
+            raise ValueError('Invalid prealign matrix')
         # Extract information from affine matrices to create the scale space
         static_direction, static_spacing = \
             get_direction_and_spacings(static_grid2space, self.dim)
@@ -468,9 +501,9 @@ class AffineRegistration(object):
             optimization will start at the identity transform. n is the
             number of parameters of the specified transformation.
         static_grid2space: array, shape (dim+1, dim+1)
-            the voxel-to-space transformation associated to the static image
+            the voxel-to-space transformation associated with the static image
         moving_grid2space: array, shape (dim+1, dim+1)
-            the voxel-to-space transformation associated to the moving image
+            the voxel-to-space transformation associated with the moving image
         prealign: string, or matrix, or None
             If string:
                 'mass': align centers of gravity
@@ -521,14 +554,13 @@ class AffineRegistration(object):
 
             # Optimize this level
             if self.options is None:
-                if self.method == 'L-BFGS-B':
-                    self.options = {'gtol': 1e-4,
-                                    'maxfun': max_iter,
-                                    'disp': False}
-                else:
-                    self.options = {'gtol': 1e-4,
-                                    'maxiter': max_iter,
-                                    'disp': False}
+                self.options = {'gtol': 1e-4,
+                                'disp': False}
+
+            if self.method == 'L-BFGS-B':
+                self.options['maxfun'] = max_iter
+            else:
+                self.options['maxiter'] = max_iter
 
             opt = Optimizer(self.metric.value_and_gradient, self.x0,
                             method=self.method, jac=True,
@@ -557,11 +589,11 @@ def aff_warp(static, static_grid2space, moving, moving_grid2space, transform,
         static image: it will provide the grid and grid-to-space transform for
         the warped image
     static_grid2space:
-        grid-to-space transform associated to the static image
+        grid-to-space transform associated with the static image
     moving: array, shape(S', R', C')
         moving image
     moving_grid2space:
-        grid-to-space transform associated to the moving image
+        grid-to-space transform associated with the moving image
     transform: array, shape (dim+1, dim+1)
         the matrix representing the affine transform to be applied to `moving`
 

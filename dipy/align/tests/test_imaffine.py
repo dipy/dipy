@@ -56,14 +56,15 @@ def test_aff_centers_of_mass_3d():
                       [0, 0, 0, 1]])
     trans_inv = np.linalg.inv(trans)
 
-    for theta in [-1 * np.pi/6.0, 0.0, np.pi/5.0]: #rotation angle
-        for s in [0.83,  1.3, 2.07]: #scale
+    for rotation_angle in [-1 * np.pi/6.0, 0.0, np.pi/5.0]:
+        for scale_factor in [0.83,  1.3, 2.07]: #scale
             rot = np.zeros(shape=(4,4))
-            rot[:3, :3] = geometry.rodrigues_axis_rotation(axis, theta)
+            rot[:3, :3] = geometry.rodrigues_axis_rotation(axis,
+                                                           rotation_angle)
             rot[3,3] = 1.0
-            scale = np.array([[1*s, 0, 0, 0],
-                              [0, 1*s, 0, 0],
-                              [0, 0, 1*s, 0],
+            scale = np.array([[1 * scale_factor, 0, 0, 0],
+                              [0, 1 * scale_factor, 0, 0],
+                              [0, 0, 1 * scale_factor, 0],
                               [0, 0, 0, 1]])
 
             static_grid2space = trans_inv.dot(scale.dot(rot.dot(trans)))
@@ -185,7 +186,7 @@ def test_affreg_all_transforms():
         start_sad = np.abs(static - moving).sum()
         metric = imaffine.MattesMIMetric(32, sampling_pc)
         affreg = imaffine.AffineRegistration(metric,
-                                             [10000, 1000, 100], 1e-5,
+                                             [10000, 1000, 100],
                                              [3, 1, 0],
                                              [4, 2, 1],
                                              'L-BFGS-B',
@@ -234,7 +235,7 @@ def test_affreg_defaults():
         moving_grid2space = None
         for ss_sigma_factor in [1.0, None]:
             affreg = imaffine.AffineRegistration(metric,
-                                                 level_iters, 1e-5,
+                                                 level_iters,
                                                  sigmas,
                                                  scale_factors,
                                                  'L-BFGS-B',
