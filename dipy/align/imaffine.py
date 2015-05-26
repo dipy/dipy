@@ -19,14 +19,14 @@ class MattesMIMetric(MattesBase):
 
         Parameters
         ----------
-        nbins : int
+        nbins : int, optional
             the number of bins to be used for computing the intensity
-            histograms
-        sampling_proportion : int in (0,100]
+            histograms. The default is 32.
+        sampling_proportion : int in (0,100], optional
             the percentage of voxels to be used for estimating the (joint and
             marginal) intensity histograms. If None, dense sampling is used
             (see notes regarding the difference between sparse and dense
-            sampling).
+            sampling). The default is None.
 
         Notes
         -----
@@ -49,7 +49,6 @@ class MattesMIMetric(MattesBase):
         intensities within the minimum and maximum values of `static` and
         `moving`
 
-
         Parameters
         ----------
         transform: instance of Transform
@@ -59,18 +58,21 @@ class MattesMIMetric(MattesBase):
             static image
         moving : array, shape (S', R', C') or (R', C')
             moving image
-        static_grid2space : array (dim+1, dim+1)
-            the grid-to-space transform of the static image
+        static_grid2space : array (dim+1, dim+1), optional
+            the grid-to-space transform of the static image. The default is
+            None, implying the transform is the identity.
         moving_grid2space : array (dim+1, dim+1)
-            the grid-to-space transform of the moving image
-        prealign : array, shape (dim+1, dim+1)
+            the grid-to-space transform of the moving image. The default is
+            None, implying the spacing along all axes is 1.
+        prealign : array, shape (dim+1, dim+1), optional
             the pre-aligning matrix (an affine transform) that roughly aligns
             the moving image towards the static image. If None, no
             pre-alignment is performed. If a pre-alignment matrix is available,
             it is recommended to directly provide the transform to the
             MattesMIMetric instead of manually warping the moving image and
             provide None or identity as prealign. This way, the metric avoids
-            performing more than one interpolation.
+            performing more than one interpolation. The default is None,
+            implying no pre-alignment is performed.
         """
         self.dim = len(static.shape)
         if moving_grid2space is None:
@@ -155,8 +157,8 @@ class MattesMIMetric(MattesBase):
             the number of parameters of the transform
         update_gradient : Boolean, optional
             if True, the gradient of the joint PDF will also be computed,
-            otherwise, only the marginal and joint PDFs will be computed
-            (the default is True)
+            otherwise, only the marginal and joint PDFs will be computed.
+            The default is True.
         """
         # Get the matrix associated with the xopt parameter vector
         T = self.transform.param_to_matrix(xopt)
@@ -213,9 +215,10 @@ class MattesMIMetric(MattesBase):
             the parameter vector of the transform currently used by the metric
             (the transform name is provided when self.setup is called), n is
             the number of parameters of the transform
-        update_gradient : Boolean
-            if true, the gradient of the joint PDF will also be computed,
-            otherwise, only the marginal and joint PDFs will be computed
+        update_gradient : Boolean, optional
+            if True, the gradient of the joint PDF will also be computed,
+            otherwise, only the marginal and joint PDFs will be computed.
+            The default is True.
         """
         # Get the matrix associated with the xopt parameter vector
         T = self.transform.param_to_matrix(xopt)
@@ -337,26 +340,36 @@ class AffineRegistration(object):
 
         Parameters
         ----------
-        metric : object
-            an instance of a metric
-        level_iters : list
+        metric : object, optional
+            an instance of a metric. The default is None, implying
+            the Mutual Information metric with default settings.
+        level_iters : list, optional
             the number of iterations at each level of the Gaussian pyramid.
             `level_iters[0]` corresponds to the coarsest level,
-            `level_iters[-1]` the finest, where n is the length of the list
-        sigmas : list of floats
+            `level_iters[-1]` the finest, where n is the length of the list.
+            By default, a 3-level Gaussian pyramid with iterations list
+            equal to [10000, 1000, 100] will be used.
+        sigmas : list of floats, optional
             custom smoothing parameter to build the scale space (one parameter
-            for each scale)
-        factors : list of floats
+            for each scale). By default, the list of sigmas will be [3, 1, 0].
+        factors : list of floats, optional
             custom scale factors to build the scale space (one factor for each
-            scale)
-        method : string
-            optimization method to be used
-        ss_sigma_factor : float
-            parameter of the scale-space Gaussian smoothing kernel. For
-            example, the std. dev. of the kernel will be factor*(2^i) in
-            the isotropic case where i = 0, 1, ..., n_scales is the scale
-        options : None or dict,
-            extra optimization options.
+            scale). By default, the list of factors will be [4, 2, 1].
+        method : string, optional
+            optimization method to be used. The default is 'L-BFGS-B'.
+        ss_sigma_factor : float, optional
+            If None, this parameter is not used and an isotropic Gaussian
+            Pyramid with the given `factors` and `sigmas` will be built.
+            If not None, an anisotropic Gaussian pyramid will be used by
+            automatically selecting the smoothing sigmas along each axis
+            according to the voxel dimensions of the given image.
+            The `ss_sigma_factor` is used to scale automatically computed
+            sigmas. For example, in the isotropic case, the sigma of the
+            kernel will be $factor * (2 ^ i)$ where i = 0, 1, ..., n_scales
+            is the scale. The default is None.
+        options : dict, optional
+            extra optimization options. The default is None, implying
+            no extra options are passed to the optimizer.
         """
 
         self.metric = metric
@@ -500,19 +513,24 @@ class AffineRegistration(object):
             parameters from which to start the optimization. If None, the
             optimization will start at the identity transform. n is the
             number of parameters of the specified transformation.
-        static_grid2space: array, shape (dim+1, dim+1)
-            the voxel-to-space transformation associated with the static image
-        moving_grid2space: array, shape (dim+1, dim+1)
-            the voxel-to-space transformation associated with the moving image
-        prealign: string, or matrix, or None
+        static_grid2space: array, shape (dim+1, dim+1), optional
+            the voxel-to-space transformation associated with the static
+            image. The default is None, implying the transform is the
+            identity.
+        moving_grid2space: array, shape (dim+1, dim+1), optional
+            the voxel-to-space transformation associated with the moving
+            image. The default is None, implying the transform is the
+            identity.
+        prealign: string, or matrix, or None, optional
             If string:
                 'mass': align centers of gravity
                 'origins': align physical coordinates of voxel (0,0,0)
                 'centers': align physical coordinates of central voxels
             If matrix:
-                array, shape (dim+1, dim+1)
+                array, shape (dim+1, dim+1).
             If None:
-                Start from identity
+                Start from identity.
+            The default is None.
 
         Returns
         -------
@@ -596,10 +614,14 @@ def aff_warp(static, static_grid2space, moving, moving_grid2space, transform,
         grid-to-space transform associated with the moving image
     transform: array, shape (dim+1, dim+1)
         the matrix representing the affine transform to be applied to `moving`
-
+    nn : Boolean, optional
+        if False, trilinear interpolation will be used. If True, nearest
+        neighbour interpolation will be used instead. The default is False,
+        implying trilinear interpolation.
     Returns
     -------
     warped: array, shape (S, R, C)
+        the warped image
     """
     if type(static) is tuple:
         dim = len(static)
