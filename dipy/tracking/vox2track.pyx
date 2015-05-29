@@ -2,6 +2,7 @@
 """This module contains the parts of dipy.tracking.utils that need to be
 implemented in cython.
 """
+import math
 
 import cython
 
@@ -322,14 +323,20 @@ def _near_roi(streamlines, x_roi_coords, tol=0, endpoints=False):
     out = np.zeros(len(streamlines), dtype=bool)
     cdef int ii
     cdef cnp.ndarray[cnp.float_t, ndim=2] sl
+    cdef n_roi = len(x_roi_coords)
+    cdef cnp.ndarray[cnp.float_t, ndim=1] coord
+    cdef cnp.ndarray[cnp.float_t, ndim=1] roi_coord
     for ii in range(len(streamlines)):
         sl = streamlines[ii].astype(float)
         if endpoints:
             n = sl.shape[0]
             sl = np.array([sl[0], sl[n-1]])
         for coord in sl:
-            dist = np.sqrt(np.sum((x_roi_coords - coord) ** 2, -1))
-            if np.any(dist <= tol):
-                out[ii] = True
-                break
+            for roi_coord in x_roi_coords:
+               dist = math.sqrt((roi_coord[0] - coord[0]) ** 2 +
+                               (roi_coord[1] - coord[1]) ** 2 +
+                               (roi_coord[2] - coord[2]) ** 2)
+               if dist <= tol:
+                  out[ii] = True
+                  break
     return out
