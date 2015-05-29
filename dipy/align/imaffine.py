@@ -7,6 +7,7 @@ from dipy.align.mattes import MattesBase, sample_domain_regular
 from dipy.core.optimize import Optimizer
 from dipy.align.imwarp import (get_direction_and_spacings, ScaleSpace)
 from dipy.align.scalespace import IsotropicScaleSpace
+from dipy.core.optimize import SCIPY_LESS_0_12
 
 
 class MattesMIMetric(MattesBase):
@@ -580,9 +581,16 @@ class AffineRegistration(object):
             else:
                 self.options['maxiter'] = max_iter
 
-            opt = Optimizer(self.metric.value_and_gradient, self.x0,
-                            method=self.method, jac=True,
-                            options=self.options)
+            if SCIPY_LESS_0_12:
+                # Older versions don't expect value and gradient from
+                # the same function
+                opt = Optimizer(self.metric.distance, self.x0,
+                                method=self.method, jac=self.metric.gradient,
+                                options=self.options)
+            else:
+                opt = Optimizer(self.metric.value_and_gradient, self.x0,
+                                method=self.method, jac=True,
+                                options=self.options)
             xopt = opt.xopt
 
             # Update prealign matrix with optimal parameters
