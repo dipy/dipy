@@ -107,7 +107,7 @@ plt.plot(signal, label='noiseless')
 plt.plot(signal_noisy, label='with noise')
 plt.legend()
 plt.show()
-plt.savefig('simulated_signal.png')
+plt.savefig('simulated_dki_signal.png')
 
 
 """
