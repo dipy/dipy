@@ -4,15 +4,12 @@ DKI MultiTensor Simulation
 ==========================
 
 In this example we show how to simulate the diffusion kurtosis imaging (DKI)
-data of a single voxel. DKI captures information of tissue heterogeneity,
-therefore DKI simulations have to take into account different tissue
+data of a single voxel. DKI captures information about tissue heterogeneity.
+Therefore DKI simulations have to take into account different tissue
 compartments with different diffusion properties. For example, here diffusion
 heterogeneity is taken into account by modeling different compartments for the
-intra- and extra-cellular media. These simulations are performed according to:
-
-[1] R. Neto Henriques et al., "Exploring the 3D geometry of the diffusion
-    kurtosis tensor - Impact on the development of robust tractography
-    procedures and novel biomarkers", NeuroImage (2015) 111, 85-99.
+intra- and extra-cellular media. These simulations are performed according to
+[RNH2015]_.
 """
 
 import numpy as np
@@ -77,3 +74,11 @@ plt.plot(signal_noisy, label='with noise')
 plt.legend()
 plt.show()
 plt.savefig('simulated_signal.png')
+
+"""
+References: 
+
+[RNH2015] R. Neto Henriques et al., "Exploring the 3D geometry of the diffusion
+          kurtosis tensor - Impact on the development of robust tractography
+          procedures and novel biomarkers", NeuroImage (2015) 111, 85-99.
+"""

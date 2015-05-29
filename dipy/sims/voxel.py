@@ -29,7 +29,7 @@ def _check_directions(angles):
 
     Returns
     --------
-    sticks : (M,3)
+    sticks : (K,3)
         Sticks in cartesian coordinates.
     """
     angles = np.array(angles)
@@ -309,22 +309,23 @@ def multi_tensor(gtab, mevals, S0=100, angles=[(0, 0), (90, 0)],
 def multi_tensor_dki(gtab, mevals, S0=100, angles=[(90., 0.), (90., 0.)],
                      fractions=[50, 50], snr=20):
 
-    r""" Simulate the diffusion-weight signal based on the DKI model
+    r""" Simulate the diffusion-weight signal, diffusion and kurtosis tensors
+    based on the DKI model
 
     Parameters
     -----------
     gtab : GradientTable
     mevals : array (K, 3)
         eigenvalues of the diffusion tensor for each individual compartment
-    S0 : float
+    S0 : float (optional)
         Unweighted signal value (b0 signal).
-    angles : array (K,2) or (K,3)
+    angles : array (K,2) or (K,3) (optional)
         List of K tensor directions of the diffusion tensor of each compartment
         in polar angles (in degrees) or unit vectors
-    fractions : float (K,)
+    fractions : float (K,) (optional)
         Percentage of the contribution of each tensor. The sum of fractions
         should be equal to 100%.
-    snr : float
+    snr : float (optional)
         Signal to noise ratio, assuming Rician noise.  If set to None, no
         noise is added.
 
