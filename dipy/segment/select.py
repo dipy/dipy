@@ -2,40 +2,79 @@ import numpy as np
 from dipy.tracking.utils import near_roi
 
 
-def _multi_or(arr):
+def reduce_rois(rois, include):
     """
-    Helper function to compute the logical orness of
+    Reduce multiple ROIs to one inclusion and one exclusion ROI
+
+    Parameters
+    ----------
+    rois : list or ndarray
+        A list of 3D arrays, each with shape (x, y, z) corresponding to the
+        shape of the brain volume, or a 4D array with shape (n_rois, x, y,
+        z). Non-zeros in each volume are considered to be within the region.
+
+    include: array or list
+        A list or 1D array of boolean marking inclusion or exclusion
+        criteria.
+
+    Returns
+    -------
+    include_roi : boolean 3D array
+        An array marking the inclusion mask.
+
+    exclude_roi : boolean 3D array
+        An array marking the exclusion mask
+
+    Note
+    ----
+    The include_roi and exclude_roi can be used to perfom the operation: "(A
+    or B or ...) and not (X or Y or ...)", where A, B are inclusion regions
+    and X, Y are exclusion regions.
     """
-    if len(arr.shape) == 1 or arr.shape[0]<2:
-        return arr
-    if arr.shape[0]==2:
-        return np.logical_or(arr[0], arr[1])
+    include_roi = np.zeros(rois[0].shape, dtype=bool)
+    exclude_roi = np.zeros(rois[0].shape, dtype=bool)
 
-    else:
-        return np.logical_or(_multi_or(arr[1:]), arr[0])
+    for i in range(len(rois)):
+        if include[i]:
+            include_roi |= rois[i]
+        else:
+            exclude_roi |= rois[i]
+
+    return include_roi, exclude_roi
 
 
-def _get_near(streamlines, rois, include, affine=None, tol=0):
+def select(streamlines, include_roi, exclude_roi, affine, tol):
     """
-    Helper function to reduce repeated operations
+    Perform selection of streamlines based on an inclusion ROI and an
+    exclusion ROI.
+
+    Parameters
+    ----------
+    streamlines: list
+        A list of candidate streamlines for selection.
+
+    include_roi : boolean 3D array
+        An array marking the inclusion mask.
+
+    exclude_roi : boolean 3D array
+        An array marking the exclusion mask
+
+    Returns
+    -------
+    to_include : boolean array designating inclusion or exclusion of the
+    streamlines given the ROIs and the inclusion/exclusion criteria.
 
     """
-    if not np.sum(include):
-        return np.zeros(len(streamlines), dtype=bool)
-    n_rois = np.sum(include)
-    idx = np.where(include)
-    is_near = np.zeros((n_rois, len(streamlines)), dtype=bool)
-    for roi_idx, roi in enumerate(rois[idx]):
-        is_near[roi_idx] = near_roi(streamlines, roi, affine=affine,
-                                    tol=tol)
-    return is_near
+    include = near_roi(streamlines, include_roi, affine, tol)
+    exclude = near_roi(streamlines, exclude_roi, affine, tol)
+    return include & (~exclude)
 
 
 def select_by_roi(streamlines, rois, include, affine=None, tol=0):
     """
     Select streamlines based on logical relations with several regions of
-    intererst (ROIs). For example, select streamlines that pass near ROI1, but
-    only if they do not pass near ROI2.
+    interest (ROIs). For example, select streamlines that pass near ROI1,
+    but only if they do not pass near ROI2.
 
     Parameters
     ----------
@@ -45,33 +84,30 @@ def select_by_roi(streamlines, rois, include, affine=None, tol=0):
     rois: list or ndarray
         A list of 3D arrays, each with shape (x, y, z) corresponding to the
         shape of the brain volume, or a 4D array with shape (n_rois, x, y,
-        z). Non-zeros in each volume are considered to be within the regio
+        z). Non-zeros in each volume are considered to be within the region
 
-    include: array
-        A 1D array of boolean marking inclusion or exclusion criteria. If a
-        streamline is near any of the inclusion ROIs, it should evaluate to
-        True, unless it is also near any of the exclusion ROIs.
+    include: array or list
+        A list or 1D array of boolean marking inclusion or exclusion
+        criteria. If a streamline is near any of the inclusion ROIs, it
+        should evaluate to True, unless it is also near any of the exclusion
+        ROIs.
 
     Notes
     -----
-    The only operation currently possible is "(A or B or ...) and not (X or Y or
-    ...)", where A, B are inclusion regions and X, Y are exclusion regions.
+    The only operation currently possible is "(A or B or ...) and not (X or Y
+    or ...)", where A, B are inclusion regions and X, Y are exclusion regions.
 
     Returns
     -------
-    to_include: boolean array designating inclusion or exclusion of the
+    to_include : boolean array designating inclusion or exclusion of the
     streamlines given the ROIs and the inclusion/exclusion criteria.
 
     See also
     --------
-    `func`:dipy.tracking.utils.near_roi:
+    :func:`dipy.tracking.utils.near_roi`
+    :func:`select`
+    :func:`reduce_rois`
     """
-    include_a = np.asarray(include)
-    rois_a = np.asarray(rois)
-    include_near = _get_near(streamlines, rois_a, include_a,
-                             affine=affine, tol=tol)
-    exclude_near = _get_near(streamlines, rois_a, ~include_a,
-                             affine=affine, tol=tol)
-    to_include = _multi_or(include_near)
-    to_exclude = _multi_or(exclude_near)
-    return np.logical_and(to_include, ~to_exclude).squeeze()
+
+    include_roi, exclude_roi = reduce_rois(rois, include)
+    return select(streamlines, include_roi, exclude_roi, affine, tol)
