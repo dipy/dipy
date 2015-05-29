@@ -387,10 +387,10 @@ def multi_tensor_dki(gtab, mevals, S0=100, angles=[(90., 0.), (90., 0.)],
     DT = np.zeros((3, 3))
     for i in range(len(fractions)):
         DT = DT + fractions[i]*D_comps[i]
-    dt = np.array([D[0][0], D[1][1], D[2][2], D[0][1], D[0][2], D[1][2]])
+    dt = np.array([DT[0][0], DT[1][1], DT[2][2], DT[0][1], DT[0][2], DT[1][2]])
 
     # compute voxel's MD
-    MD = (D[0][0] + D[1][1] + D[2][2]) / 3
+    MD = (DT[0][0] + DT[1][1] + DT[2][2]) / 3
 
     # compute voxel's KT
     kt = np.zeros((15))
