@@ -301,7 +301,7 @@ def track_counts(tracks, vol_dims, vox_sizes=(1,1,1), return_elements=True):
 @cython.boundscheck(False)
 @cython.wraparound(False)
 @cython.profile(False)
-def _near_roi(streamlines, x_roi_coords, tol=0):
+def _near_roi(streamlines, x_roi_coords, tol=0, endpoints=False):
     """
     Helper function to speed up the inner loops of the :func:`utils.near_roi`
     function.
@@ -311,17 +311,21 @@ def _near_roi(streamlines, x_roi_coords, tol=0):
     streamlines : list
     x_roi_coords : array
         ROI coordinates transformed to the streamline coordinate frame.
-    tol: float
+    tol : float
         Distance (in the units of the streamlines, usually mm). If any
         coordinate in the streamline is within this distance from any voxel in
         the ROI, the filtering criterion is set to True for this streamlin,
         otherwise False. Default: 0
+	endpoints : bool, optional
+		When set to True, use only the streamline endpoints as criteria.
     """
     out = np.zeros(len(streamlines), dtype=bool)
     cdef int ii
     cdef cnp.ndarray[cnp.float_t, ndim=2] sl
     for ii in range(len(streamlines)):
         sl = streamlines[ii].astype(float)
+        if endpoints:
+            sl = cnp.array([sl[0], sl[1]])
         for coord in sl:
             dist = np.sqrt(np.sum((x_roi_coords - coord) ** 2, -1))
             if np.any(dist <= tol):

@@ -575,7 +575,8 @@ def target(streamlines, target_mask, affine, include=True):
             yield sl
 
 
-def near_roi(streamlines, target_mask, affine=None, tol=None):
+def near_roi(streamlines, target_mask, affine=None, tol=None,
+             endpoints=False):
     """
     Provide filtering criteria for a set of streamlines based on whether they
     fall within a tolerance distance from an ROI
@@ -595,6 +596,9 @@ def near_roi(streamlines, target_mask, affine=None, tol=None):
         coordinate in the streamline is within this distance from any voxel in
         the ROI, the filtering criterion is set to True for this streamlin,
         otherwise False. Default: 0
+
+    endpoints : bool, optional
+        Use only the streamline endpoints as criteria. Default: False
 
     Returns
     -------
@@ -616,7 +620,7 @@ def near_roi(streamlines, target_mask, affine=None, tol=None):
 
     roi_coords = np.array(np.where(target_mask)).T
     x_roi_coords = apply_affine(affine, roi_coords)
-    return _near_roi(streamlines, x_roi_coords, tol=tol)
+    return _near_roi(streamlines, x_roi_coords, tol=tol, endpoints=endpoints)
 
 
 def reorder_voxels_affine(input_ornt, output_ornt, shape, voxel_size):
