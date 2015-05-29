@@ -20,6 +20,17 @@ def _check_directions(angles):
     """
     Helper function to check if direction ground truth have the right format
     and are in cartesian coordinates
+
+    Parameters
+    -----------
+    angles : array (K,2) or (K, 3)
+        List of K polar angles (in degrees) for the sticks or array of K
+        sticks as unit vectors.
+
+    Returns
+    --------
+    sticks : (M,3)
+        Sticks in cartesian coordinates.
     """
     angles = np.array(angles)
     if angles.shape[-1] == 3:
@@ -367,55 +378,55 @@ def multi_tensor_dki(gtab, mevals, S0=100, angles=[(90., 0.), (90., 0.)],
     sticks = _check_directions(angles)
 
     # computing a 3D matrix containing the individual DT components
-    mD = np.zeros((len(fractions), 3, 3))
+    D_comps = np.zeros((len(fractions), 3, 3))
     for i in range(len(fractions)):
         R = all_tensor_evecs(sticks[i])
-        mD[i] = dot(dot(R, np.diag(mevals[i])), R.T)
+        D_comps[i] = dot(dot(R, np.diag(mevals[i])), R.T)
 
     # compute voxel's DT
-    D = np.zeros((3, 3))
+    DT = np.zeros((3, 3))
     for i in range(len(fractions)):
-        D = D + fractions[i]*mD[i]
+        DT = DT + fractions[i]*D_comps[i]
     dt = np.array([D[0][0], D[1][1], D[2][2], D[0][1], D[0][2], D[1][2]])
-    
-    # compute voxel's MD    
+
+    # compute voxel's MD
     MD = (D[0][0] + D[1][1] + D[2][2]) / 3
 
     # compute voxel's KT
     kt = np.zeros((15))
-    kt[0] = compute_Wijkl(mD, fractions, 0, 0, 0, 0, D, MD)
-    kt[1] = compute_Wijkl(mD, fractions, 1, 1, 1, 1, D, MD)
-    kt[2] = compute_Wijkl(mD, fractions, 2, 2, 2, 2, D, MD)
-    kt[3] = compute_Wijkl(mD, fractions, 0, 0, 0, 1, D, MD)
-    kt[4] = compute_Wijkl(mD, fractions, 0, 0, 0, 2, D, MD)
-    kt[5] = compute_Wijkl(mD, fractions, 0, 1, 1, 1, D, MD)
-    kt[6] = compute_Wijkl(mD, fractions, 1, 1, 1, 2, D, MD)
-    kt[7] = compute_Wijkl(mD, fractions, 0, 2, 2, 2, D, MD)
-    kt[8] = compute_Wijkl(mD, fractions, 1, 2, 2, 2, D, MD)
-    kt[9] = compute_Wijkl(mD, fractions, 0, 0, 1, 1, D, MD)
-    kt[10] = compute_Wijkl(mD, fractions, 0, 0, 2, 2, D, MD)
-    kt[11] = compute_Wijkl(mD, fractions, 1, 1, 2, 2, D, MD)
-    kt[12] = compute_Wijkl(mD, fractions, 0, 0, 1, 2, D, MD)
-    kt[13] = compute_Wijkl(mD, fractions, 0, 1, 1, 2, D, MD)
-    kt[14] = compute_Wijkl(mD, fractions, 0, 1, 2, 2, D, MD)
+    kt[0] = kurtosis_element(D_comps, fractions, 0, 0, 0, 0, DT, MD)
+    kt[1] = kurtosis_element(D_comps, fractions, 1, 1, 1, 1, DT, MD)
+    kt[2] = kurtosis_element(D_comps, fractions, 2, 2, 2, 2, DT, MD)
+    kt[3] = kurtosis_element(D_comps, fractions, 0, 0, 0, 1, DT, MD)
+    kt[4] = kurtosis_element(D_comps, fractions, 0, 0, 0, 2, DT, MD)
+    kt[5] = kurtosis_element(D_comps, fractions, 0, 1, 1, 1, DT, MD)
+    kt[6] = kurtosis_element(D_comps, fractions, 1, 1, 1, 2, DT, MD)
+    kt[7] = kurtosis_element(D_comps, fractions, 0, 2, 2, 2, DT, MD)
+    kt[8] = kurtosis_element(D_comps, fractions, 1, 2, 2, 2, DT, MD)
+    kt[9] = kurtosis_element(D_comps, fractions, 0, 0, 1, 1, DT, MD)
+    kt[10] = kurtosis_element(D_comps, fractions, 0, 0, 2, 2, DT, MD)
+    kt[11] = kurtosis_element(D_comps, fractions, 1, 1, 2, 2, DT, MD)
+    kt[12] = kurtosis_element(D_comps, fractions, 0, 0, 1, 2, DT, MD)
+    kt[13] = kurtosis_element(D_comps, fractions, 0, 1, 1, 2, DT, MD)
+    kt[14] = kurtosis_element(D_comps, fractions, 0, 1, 2, 2, DT, MD)
 
     # compute S based on the DT and KT
-    S = single_diffkurt_tensors(gtab, dt, kt, S0, snr)
+    S = DKI_signal(gtab, dt, kt, S0, snr)
 
     return S, dt, kt
 
 
-def compute_Wijkl(Dc, frac, ind_i, ind_j, ind_k, ind_l, DT=None, MD=None):
+def kurtosis_element(D_comps, frac, ind_i, ind_j, ind_k, ind_l, DT=None,
+                     MD=None):
     r""" Computes the diffusion kurtosis tensor element (with indexes i, j, k
     and l) based on the individual diffusion tensor components of a
     multicompartmental model.
 
     Parameters
     -----------
-    Dc : (K,3,3) ndarray
-        Elements of the diffusion tensor for each individual compartment of the
-        multicompartmental model. Assumes the order Dxx, Dyy, Dzz, Dxy, Dxz,
-        Dyz.
+    D_comps : (K,3,3) ndarray
+        Diffusion tensors for all K individual compartment of the
+        multicompartmental model.
     frac : float
         Percentage of the contribution of each tensor. The sum of fractions
         should be equal to 100%.
@@ -448,21 +459,22 @@ def compute_Wijkl(Dc, frac, ind_i, ind_j, ind_k, ind_l, DT=None, MD=None):
            tractography procedures and novel biomarkers", NeuroImage (2015)
            111, 85-99.
     """
-    
+
     if DT is None:
         DT = np.zeros((3, 3))
         for i in range(len(frac)):
-            DT = DT + frac[i]*Dc[i]
-    
-    if MD is None: 
+            DT = DT + frac[i]*D_comps[i]
+
+    if MD is None:
         MD = (DT[0][0] + DT[1][1] + DT[2][2]) / 3
-    
+
     wijkl = 0
-    
+
     for f in range(len(frac)):
-        wijkl = wijkl + frac[f] * (Dc[f][ind_i][ind_j]*Dc[f][ind_k][ind_l] +
-                                   Dc[f][ind_i][ind_k]*Dc[f][ind_j][ind_l] +
-                                   Dc[f][ind_i][ind_l]*Dc[f][ind_j][ind_k])
+        wijkl = wijkl + frac[f] * (
+                D_comps[f][ind_i][ind_j]*D_comps[f][ind_k][ind_l] +
+                D_comps[f][ind_i][ind_k]*D_comps[f][ind_j][ind_l] +
+                D_comps[f][ind_i][ind_l]*D_comps[f][ind_j][ind_k])
 
     wijkl = (wijkl - DT[ind_i][ind_j]*DT[ind_k][ind_l] -
              DT[ind_i][ind_k]*DT[ind_j][ind_l] -
@@ -471,7 +483,7 @@ def compute_Wijkl(Dc, frac, ind_i, ind_j, ind_k, ind_l, DT=None, MD=None):
     return wijkl
 
 
-def single_diffkurt_tensors(gtab, dt, kt, S0=150, snr=None):
+def DKI_signal(gtab, dt, kt, S0=150, snr=None):
     r""" Simulated signal based on the diffusion and diffusion kurtosis
     tensors. Simulations are preformed assuming the DKI model.
 
