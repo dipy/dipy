@@ -22,23 +22,25 @@ def test_select_by_roi():
 
     selection = select_by_roi(streamlines, [mask1, mask2], [True, True], tol=1)
 
-    npt.assert_array_equal(selection, np.array([True, True, False]))
+    npt.assert_array_equal(list(selection), [streamlines[0],
+                                            streamlines[1]])
 
     selection = select_by_roi(streamlines, [mask1, mask2], [True, True],
                                             tol=0.87)
 
-    npt.assert_array_equal(selection, np.array([False, True, False]))
+    npt.assert_array_equal(list(selection), [streamlines[1]])
 
     mask3 = np.zeros_like(mask1)
     mask3[0, 2, 2] = 1
     selection = select_by_roi(streamlines, [mask1, mask2, mask3],
                               [True, True, False], tol=1.0)
 
-    npt.assert_array_equal(selection, np.array([True, False, False]))
+    npt.assert_array_equal(list(selection), [streamlines[0]])
 
     # Select using only one ROI
     selection = select_by_roi(streamlines, [mask1], [True], tol=0.87)
-    npt.assert_array_equal(selection, np.array([False, True, False]))
+    npt.assert_array_equal(list(selection), [streamlines[1]])
 
     selection = select_by_roi(streamlines, [mask1], [True], tol=1.0)
-    npt.assert_array_equal(selection, np.array([True, True, False]))
+    npt.assert_array_equal(list(selection), [streamlines[0],
+                                            streamlines[1]])

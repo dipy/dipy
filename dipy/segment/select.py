@@ -110,4 +110,7 @@ def select_by_roi(streamlines, rois, include, affine=None, tol=0):
     """
 
     include_roi, exclude_roi = reduce_rois(rois, include)
-    return select(streamlines, include_roi, exclude_roi, affine, tol)
+    select_array = select(streamlines, include_roi, exclude_roi, affine, tol)
+    for idx, sl in enumerate(streamlines):
+        if select_array[idx]:
+            yield sl
