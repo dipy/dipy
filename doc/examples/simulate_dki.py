@@ -10,12 +10,41 @@ compartments with different diffusion properties. For example, here diffusion
 heterogeneity is taken into account by modeling different compartments for the
 intra- and extra-cellular media. These simulations are performed according to
 [RNH2015]_.
+
+We first import all relevant modules.
 """
 
 import numpy as np
 import matplotlib.pyplot as plt
 from dipy.sims.voxel import multi_tensor_dki
-from gradients_spheres import gtab
+from dipy.data import get_data
+from dipy.io.gradients import read_bvals_bvecs
+from dipy.core.gradients import gradient_table
+
+"""
+For the simulation we will need a Gradient Table with the b-values and
+b-vectors. Here we use the Gradient table of the sample Dipy dataset
+'small_64D'.
+"""
+
+fimg, fbvals, fbvecs = get_data('small_64D')
+bvals, bvecs = read_bvals_bvecs(fbvals, fbvecs)
+
+"""
+DKI requires data from more than one non-zero b-value. Since the dataset
+'small_64D' was acquired with one non-zero bvalue we artificialy produce a
+second non-zero b-value.
+"""
+
+bvals = np.concatenate((bvals, bvals * 2), axis=0)
+bvecs = np.concatenate((bvecs, bvecs), axis=0)
+
+"""
+The b-values and gradient directions are then converted to Dipy's Gradient
+Table format.
+"""
+
+gtab = gradient_table(bvals, bvecs)
 
 """
 In ``mevals`` we save the eigenvalues of each tensor. To simulate crossing
@@ -68,6 +97,11 @@ signal_noisy, dt, kt = multi_tensor_dki(gtab, mevals, S0=200,
                                         angles=angles, fractions=fractions,
                                         snr=10)
 
+"""
+Finally, we can visualize the values of the signal simulated for the DKI for
+all assumed gradient directions and bvalues.
+"""
+
 plt.plot(signal, label='noiseless')
 
 plt.plot(signal_noisy, label='with noise')
@@ -75,8 +109,14 @@ plt.legend()
 plt.show()
 plt.savefig('simulated_signal.png')
 
+
 """
-References: 
+.. figure:: simulated_dki_signal.png
+   :align: center
+   **Simulated signals obtain from the DKI model**.
+
+
+References:
 
 [RNH2015] R. Neto Henriques et al., "Exploring the 3D geometry of the diffusion
           kurtosis tensor - Impact on the development of robust tractography
