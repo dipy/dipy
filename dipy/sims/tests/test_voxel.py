@@ -8,8 +8,8 @@ from numpy.testing import (assert_array_equal, assert_array_almost_equal,
 from dipy.sims.voxel import (_check_directions, SingleTensor, MultiTensor,
                              multi_tensor_odf, all_tensor_evecs, add_noise,
                              single_tensor, sticks_and_ball, multi_tensor_dki,
-                             dki_design_matrix, compute_Wijkl,
-                             single_diffkurt_tensors)
+                             dki_design_matrix, kurtosis_element,
+                             DKI_signal)
 from dipy.core.geometry import (vec2vec_rotmat, sphere2cart)
 from dipy.data import get_data, get_sphere
 from dipy.core.gradients import gradient_table
@@ -154,11 +154,7 @@ def test_all_tensor_evecs():
     assert_array_almost_equal(all_tensor_evecs(e0), desired)
 
 
-def test_dki():
-    x1, x2, x3 = sphere2cart(1, np.deg2rad(30), np.deg2rad(0))
-
-
-def test_compute_Wijkl():
+def test_kurtosis_elements():
     """ Testing symmetry of the elements of the KT
 
     As an 4th order tensor, KT has 81 elements. However, due to diffusion
@@ -177,26 +173,34 @@ def test_compute_Wijkl():
         R = all_tensor_evecs(sticks[i])
         mD[i] = np.dot(np.dot(R, np.diag(mevals[i])), R.T)
 
+    # compute global DT
+    D = np.zeros((3, 3))
+    for i in range(len(frac)):
+        D = D + frac[i]*mD[i]
+
+    # compute voxel's MD
+    MD = (D[0][0] + D[1][1] + D[2][2]) / 3
+
     # Reference dictionary with the 15 independent elements.
     # Note: The multiplication of the indexes (i+1) * (j+1) * (k+1) * (l+1)
     # for of an elements is only equal to this multiplication for another
     # element if an only if the element corresponds to an symmetry element.
     # Thus indexes multiplication is used as key of the reference dictionary
-    kt_ref = {1: compute_Wijkl(mD, frac, 0, 0, 0, 0),
-              16: compute_Wijkl(mD, frac, 1, 1, 1, 1),
-              81: compute_Wijkl(mD, frac, 2, 2, 2, 2),
-              2: compute_Wijkl(mD, frac, 0, 0, 0, 1),
-              3: compute_Wijkl(mD, frac, 0, 0, 0, 2),
-              8: compute_Wijkl(mD, frac, 0, 1, 1, 1),
-              24: compute_Wijkl(mD, frac, 1, 1, 1, 2),
-              27: compute_Wijkl(mD, frac, 0, 2, 2, 2),
-              54: compute_Wijkl(mD, frac, 1, 2, 2, 2),
-              4: compute_Wijkl(mD, frac, 0, 0, 1, 1),
-              9: compute_Wijkl(mD, frac, 0, 0, 2, 2),
-              36: compute_Wijkl(mD, frac, 1, 1, 2, 2),
-              6: compute_Wijkl(mD, frac, 0, 0, 1, 2),
-              12: compute_Wijkl(mD, frac, 0, 1, 1, 2),
-              18: compute_Wijkl(mD, frac, 0, 1, 2, 2)}
+    kt_ref = {1: kurtosis_element(mD, frac, 0, 0, 0, 0),
+              16: kurtosis_element(mD, frac, 1, 1, 1, 1),
+              81: kurtosis_element(mD, frac, 2, 2, 2, 2),
+              2: kurtosis_element(mD, frac, 0, 0, 0, 1),
+              3: kurtosis_element(mD, frac, 0, 0, 0, 2),
+              8: kurtosis_element(mD, frac, 0, 1, 1, 1),
+              24: kurtosis_element(mD, frac, 1, 1, 1, 2),
+              27: kurtosis_element(mD, frac, 0, 2, 2, 2),
+              54: kurtosis_element(mD, frac, 1, 2, 2, 2),
+              4: kurtosis_element(mD, frac, 0, 0, 1, 1),
+              9: kurtosis_element(mD, frac, 0, 0, 2, 2),
+              36: kurtosis_element(mD, frac, 1, 1, 2, 2),
+              6: kurtosis_element(mD, frac, 0, 0, 1, 2),
+              12: kurtosis_element(mD, frac, 0, 1, 1, 2),
+              18: kurtosis_element(mD, frac, 0, 1, 2, 2)}
 
     # Testing all 81 possible elements
     xyz = [0, 1, 2]
@@ -205,8 +209,12 @@ def test_compute_Wijkl():
             for k in xyz:
                 for l in xyz:
                     key = (i+1) * (j+1) * (k+1) * (l+1)
-                    assert_almost_equal(compute_Wijkl(mD, frac, i, k, j, l),
+                    assert_almost_equal(kurtosis_element(mD, frac, i, k, j, l),
                                         kt_ref[key])
+                    # Testing optional funtion inputs
+                    assert_almost_equal(kurtosis_element(mD, frac, i, k, j, l),
+                                        kurtosis_element(mD, frac, i, k, j, l,
+                                                         D, MD))
 
 
 def test_DKI_simulations_aligned_fibers():
@@ -251,13 +259,13 @@ def test_DKI_simulations_aligned_fibers():
                         [1, 0, 0], [0, 1, 0], [0, 0, 1]])
     gtab_axis = gradient_table(bvals, bvecs)
     # axis x
-    S_fx = single_diffkurt_tensors(gtab_axis, dt_fx, kt_fx, S0=100)
+    S_fx = DKI_signal(gtab_axis, dt_fx, kt_fx, S0=100)
     assert_array_almost_equal(S_fx[0:3], [100, 100, 100])  # test S f0r b=0
     # axis y
-    S_fy = single_diffkurt_tensors(gtab_axis, dt_fy, kt_fy, S0=100)
+    S_fy = DKI_signal(gtab_axis, dt_fy, kt_fy, S0=100)
     assert_array_almost_equal(S_fy[0:3], [100, 100, 100])  # test S f0r b=0
     # axis z
-    S_fz = single_diffkurt_tensors(gtab_axis, dt_fz, kt_fz, S0=100)
+    S_fz = DKI_signal(gtab_axis, dt_fz, kt_fz, S0=100)
     assert_array_almost_equal(S_fz[0:3], [100, 100, 100])  # test S f0r b=0
 
     # test S for b = 1000
@@ -299,8 +307,8 @@ def test_DKI_crossing_fibers_simulations():
     assert_array_almost_equal(dt, dt_ref)
     assert_array_almost_equal(kt, kt_ref)
     assert_array_almost_equal(signal,
-                              single_diffkurt_tensors(gtab_2s, dt_ref, kt_ref,
-                                                      S0=100, snr=None),
+                              DKI_signal(gtab_2s, dt_ref, kt_ref, S0=100,
+                                         snr=None),
                               decimal=5)
 
 
