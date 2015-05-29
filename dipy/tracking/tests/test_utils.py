@@ -249,8 +249,9 @@ def test_target():
 
 
 def test_near_roi():
-    streamlines = [np.array([[0, 0., 0.9],
-                             [1.9, 0., 0.]]),
+    streamlines = [np.array([[0., 0., 0.9],
+                             [1.9, 0., 0.],
+                             [3, 2., 2.]]),
                    np.array([[0., 0., 0],
                              [0, 1., 1.],
                              [0, 2., 2.]]),
@@ -276,6 +277,17 @@ def test_near_roi():
                  np.array([True, True, False]))
     assert_array_equal(near_roi(x_streamlines, mask, affine=affine, tol=None),
                  np.array([False, True, False]))
+
+    # Test for use of endpoints as selection criteria:
+    mask = np.zeros((4, 4, 4), dtype=bool)
+    mask[0, 1, 1] = True
+    mask[3, 2, 2] = True
+
+    assert_array_equal(near_roi(streamlines, mask, tol=0.87, endpoints=True),
+                        np.array([True, False, False]))
+
+    assert_array_equal(near_roi(streamlines, mask, tol=0.87, endpoints=False),
+                        np.array([True, True, False]))
 
 
 def test_voxel_ornt():
