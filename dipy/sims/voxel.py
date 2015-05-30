@@ -388,7 +388,7 @@ def multi_tensor_dki(gtab, mevals, S0=100, angles=[(90., 0.), (90., 0.)],
     DT = np.zeros((3, 3))
     for i in range(len(fractions)):
         DT = DT + fractions[i]*D_comps[i]
-    dt = np.array([DT[0][0], DT[1][1], DT[2][2], DT[0][1], DT[0][2], DT[1][2]])
+    dt = np.array([DT[0][0], DT[0][1], DT[1][1], DT[0][2], DT[1][2], DT[2][2]])
 
     # compute voxel's MD
     MD = (DT[0][0] + DT[1][1] + DT[2][2]) / 3
@@ -523,7 +523,7 @@ def DKI_signal(gtab, dt, kt, S0=150, snr=None):
     A = dki_design_matrix(gtab)
 
     # define vector of DKI parameters
-    MD = sum(dt[0:3]) / 3
+    MD = (dt[0] + dt[2] + dt[5]) / 3
     X = np.concatenate((dt, kt*MD*MD, np.array([np.log(S0)])), axis=0)
 
     # Compute signals based on the DKI model
@@ -546,7 +546,7 @@ def dki_design_matrix(gtab):
     -------
     design_matrix : array (N,22)
           Design matrix or B matrix for the DKI model
-            design_matrix[j, :] = (Bxx, Byy, Bzz, Bxy, Bxz, Byz,
+            design_matrix[j, :] = (Bxx, Bxy, Bzz, Bxz, Byz, Bzz,
                                    Bxxxx, Byyyy, Bzzzz, Bxxxy, Bxxxz,
                                    Bxyyy, Byyyz, Bxzzz, Byzzz, Bxxyy,
                                    Bxxzz, Byyzz, Bxxyz, Bxyyz, Bxyzz,
@@ -557,11 +557,11 @@ def dki_design_matrix(gtab):
 
     B = np.zeros((len(b), 22))
     B[:, 0] = -b * bvec[:, 0] * bvec[:, 0]
-    B[:, 1] = -b * bvec[:, 1] * bvec[:, 1]
-    B[:, 2] = -b * bvec[:, 2] * bvec[:, 2]
-    B[:, 3] = -2 * b * bvec[:, 0] * bvec[:, 1]
-    B[:, 4] = -2 * b * bvec[:, 0] * bvec[:, 2]
-    B[:, 5] = -2 * b * bvec[:, 1] * bvec[:, 2]
+    B[:, 1] = -2 * b * bvec[:, 0] * bvec[:, 1]
+    B[:, 2] = -b * bvec[:, 1] * bvec[:, 1]
+    B[:, 3] = -2 * b * bvec[:, 0] * bvec[:, 2]
+    B[:, 4] = -2 * b * bvec[:, 1] * bvec[:, 2]
+    B[:, 5] = -b * bvec[:, 2] * bvec[:, 2]
     B[:, 6] = b * b * bvec[:, 0]**4 / 6
     B[:, 7] = b * b * bvec[:, 1]**4 / 6
     B[:, 8] = b * b * bvec[:, 2]**4 / 6

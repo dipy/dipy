@@ -247,10 +247,10 @@ def test_DKI_simulations_aligned_fibers():
     assert_array_equal([kt_fx[0], kt_fx[1], kt_fx[2]],
                        [kt_fz[2], kt_fz[0], kt_fz[1]])
 
-    assert_array_equal([dt_fx[0], dt_fx[1], dt_fx[2]],
-                       [dt_fy[1], dt_fy[0], dt_fy[2]])
-    assert_array_equal([dt_fx[0], dt_fx[1], dt_fx[2]],
-                       [dt_fz[2], dt_fz[0], dt_fz[1]])
+    assert_array_equal([dt_fx[0], dt_fx[2], dt_fx[5]],
+                       [dt_fy[2], dt_fy[0], dt_fy[5]])
+    assert_array_equal([dt_fx[0], dt_fx[2], dt_fx[5]],
+                       [dt_fz[5], dt_fz[0], dt_fz[2]])
 
     # testing S signal along axis x, y and z
     bvals = np.array([0, 0, 0, 1000, 1000, 1000, 2000, 2000, 2000])
@@ -299,8 +299,8 @@ def test_DKI_crossing_fibers_simulations():
 
     # test S, dt and kt relative to the expected values computed from another
     # DKI package - UDKI (Neto Henriques et al., 2015)
-    dt_ref = [1.0576161e-3, 0.4786179e-3, 0.9888660e-3,
-              0.1292542e-3, 0.2667081e-3, 0.1136643e-3]
+    dt_ref = [1.0576161e-3, 0.1292542e-3, 0.4786179e-3,
+              0.2667081e-3, 0.1136643e-3, 0.9888660e-3]
     kt_ref = [2.3529944, 0.8226448, 2.3011221, 0.2017312, -0.0437535,
               0.0404011, 0.0355281, 0.2449859, 0.2157668, 0.3495910,
               0.0413366, 0.3461519, -0.0537046, 0.0133414, -0.017441]
