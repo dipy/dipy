@@ -44,3 +44,12 @@ def test_select_by_roi():
     selection = select_by_roi(streamlines, [mask1], [True], tol=1.0)
     npt.assert_array_equal(list(selection), [streamlines[0],
                                             streamlines[1]])
+
+    def generate_sl(streamlines):
+        for sl in streamlines:
+            yield sl
+
+    selection = select_by_roi(generate_sl(streamlines), [mask1], [True],
+                              tol=1.0)
+    npt.assert_array_equal(list(selection), [streamlines[0],
+                                            streamlines[1]])
