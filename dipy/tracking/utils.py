@@ -593,10 +593,10 @@ def near_roi(streamlines, target_mask, affine=None, tol=None,
         Affine transformation from voxels to streamlines. Default: identity.
     tol : float
         Distance (in the units of the streamlines, usually mm). If any
-        coordinate in the streamline is within this distance from any voxel in
-        the ROI, the filtering criterion is set to True for this streamlin,
-        otherwise False. Default: 0
-
+        coordinate in the streamline is within this distance from the center
+        of any voxel in the ROI, the filtering criterion is set to True for
+        this streamline, otherwise False. Defaults to the distance between
+        the center of eaach voxel and the corner of the voxel.
     endpoints : bool, optional
         Use only the streamline endpoints as criteria. Default: False
 

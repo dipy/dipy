@@ -43,7 +43,8 @@ def reduce_rois(rois, include):
     return include_roi, exclude_roi
 
 
-def select(streamlines, include_roi, exclude_roi, affine, tol):
+def select(streamlines, include_roi, exclude_roi, affine, tol=None,
+           endpoints=False):
     """
     Perform selection of streamlines based on an inclusion ROI and an
     exclusion ROI.
@@ -58,6 +59,16 @@ def select(streamlines, include_roi, exclude_roi, affine, tol):
 
     exclude_roi : boolean 3D array
         An array marking the exclusion mask
+    affine : ndarray
+        Affine transformation from voxels to streamlines. Default: identity.
+    tol : float
+        Distance (in the units of the streamlines, usually mm). If any
+        coordinate in the streamline is within this distance from the center
+        of any voxel in the ROI, the filtering criterion is set to True for
+        this streamline, otherwise False. Defaults to the distance between
+        the center of eaach voxel and the corner of the voxel.
+    endpoints : bool, optional
+        Use only the streamline endpoints as criteria. Default: False
 
     Returns
     -------
@@ -65,12 +76,13 @@ def select(streamlines, include_roi, exclude_roi, affine, tol):
     streamlines given the ROIs and the inclusion/exclusion criteria.
 
     """
-    include = near_roi(streamlines, include_roi, affine, tol)
-    exclude = near_roi(streamlines, exclude_roi, affine, tol)
+    include = near_roi(streamlines, include_roi, affine, tol, endpoints)
+    exclude = near_roi(streamlines, exclude_roi, affine, tol, endpoints)
     return include & (~exclude)
 
 
-def select_by_roi(streamlines, rois, include, affine=None, tol=0):
+def select_by_roi(streamlines, rois, include, affine=None, tol=None,
+                  endpoints=False):
     """
     Select streamlines based on logical relations with several regions of
     interest (ROIs). For example, select streamlines that pass near ROI1,
@@ -80,17 +92,26 @@ def select_by_roi(streamlines, rois, include, affine=None, tol=0):
     ----------
     streamlines: list
         A list of candidate streamlines for selection
-
     rois: list or ndarray
         A list of 3D arrays, each with shape (x, y, z) corresponding to the
         shape of the brain volume, or a 4D array with shape (n_rois, x, y,
         z). Non-zeros in each volume are considered to be within the region
-
     include: array or list
         A list or 1D array of boolean marking inclusion or exclusion
         criteria. If a streamline is near any of the inclusion ROIs, it
         should evaluate to True, unless it is also near any of the exclusion
         ROIs.
+    affine : ndarray
+        Affine transformation from voxels to streamlines. Default: identity.
+    tol : float
+        Distance (in the units of the streamlines, usually mm). If any
+        coordinate in the streamline is within this distance from the center
+        of any voxel in the ROI, the filtering criterion is set to True for
+        this streamline, otherwise False. Defaults to the distance between
+        the center of eaach voxel and the corner of the voxel.
+    endpoints : bool, optional
+        Use only the streamline endpoints as criteria. Default: False
+
 
     Notes
     -----
