@@ -300,6 +300,18 @@ def track_counts(tracks, vol_dims, vox_sizes=(1,1,1), return_elements=True):
 
 
 cdef dist3d(y, x):
+    """
+    Calculate distance between two points in 3D
+
+    Parameters
+    ----------
+    x, y : sequences with 3 floats in each
+
+    Returns
+    -------
+    float
+        The Euclidean distance between the points in 3 space.
+    """
     return math.sqrt((x[0] - y[0]) ** 2 +
                      (x[1] - y[1]) ** 2 +
                      (x[2] - y[2]) ** 2)
