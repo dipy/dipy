@@ -6,7 +6,7 @@ from dipy.segment.select import select_by_roi
 def test_select_by_roi():
     streamlines = [np.array([[0, 0., 0.9],
                              [1.9, 0., 0.]]),
-                   np.array([[0., 0., 0],
+                   np.array([[0.1, 0., 0],
                              [0, 1., 1.],
                              [0, 2., 2.]]),
                    np.array([[2, 2, 2],
@@ -19,15 +19,21 @@ def test_select_by_roi():
     mask1[0, 0, 0] = True
     mask2[1, 0, 0] = True
 
-    selection = select_by_roi(streamlines, [mask1, mask2], [True, True], tol=1)
+    selection = select_by_roi(streamlines, [mask1, mask2], [True, True],
+    tol=1)
 
     npt.assert_array_equal(list(selection), [streamlines[0],
                                             streamlines[1]])
 
-    selection = select_by_roi(streamlines, [mask1, mask2], [True, False],
-                              tol=0.87)
+    selection = select_by_roi(streamlines, [mask1, mask2], [True, False])
 
     npt.assert_array_equal(list(selection), [streamlines[1]])
+
+    # Setting tolerance too low gets overridden:
+    selection = select_by_roi(streamlines, [mask1, mask2], [True, False],
+                              tol=0.1)
+    npt.assert_array_equal(list(selection), [streamlines[1]])
+
 
     selection = select_by_roi(streamlines, [mask1, mask2], [True, True],
                                             tol=0.87)
