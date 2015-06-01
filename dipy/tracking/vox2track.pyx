@@ -347,9 +347,23 @@ def _near_roi(sl, x_roi_coords, tol, mode):
                 if dist3d(roi_coord, coord) <= tol:
                     return True
         return False
-    else:
+    elif mode == "both_end" or mode == "all":
         for coord in s:
             for roi_coord in x_roi_coords:
-                if dist3d(roi_coord, coord) > tol:
-                    return False
+                if dist3d(roi_coord, coord) <= tol:
+                    break
+            # If we got here, that means we found no coordinate in
+            # the ROI that is close enough to this streamline point,
+            # so we return a False (Note: the `else` is on the `for` loop,
+            # not on the `if` statement!):
+            else:
+                return False
+        # On the other hand, if we make it here, that means that we found a
+		# corresponding point in the ROI for every streamline point,
+        # so we return a True:
         return True
+    else:
+        e_s = "For determining relationship to an array, you can use "
+        e_s += "one of the following modes: 'any', 'all', 'both_end',"
+        e_s += "'either_end', but you entered: %s."%mode
+        raise ValueError(e_s)

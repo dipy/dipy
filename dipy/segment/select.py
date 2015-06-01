@@ -1,3 +1,5 @@
+from itertools import cycle
+
 import numpy as np
 from nibabel.affines import apply_affine
 from dipy.tracking.vox2track import _near_roi
@@ -44,8 +46,8 @@ def reduce_rois(rois, include):
     return include_roi, exclude_roi
 
 
-def select_by_roi(streamlines, rois, include, affine=None, tol=None,
-                  endpoints=False):
+def select_by_roi(streamlines, rois, include, mode=None, affine=None,
+                  tol=None):
     """
     Select streamlines based on logical relations with several regions of
     interest (ROIs). For example, select streamlines that pass near ROI1,
@@ -60,10 +62,17 @@ def select_by_roi(streamlines, rois, include, affine=None, tol=None,
         shape of the brain volume, or a 4D array with shape (n_rois, x, y,
         z). Non-zeros in each volume are considered to be within the region
     include: array or list
-        A list or 1D array of boolean marking inclusion or exclusion
+        A list or 1D array of boolean values marking inclusion or exclusion
         criteria. If a streamline is near any of the inclusion ROIs, it
         should evaluate to True, unless it is also near any of the exclusion
         ROIs.
+    mode : string, optional
+		One of {"any", "all", "either_end", "both_end"}, where a
+            streamline is associated with an ROI if:
+		"any" : any point is within tol from ROI. Default.
+		"all" : all points are within tol from ROI.
+		"either_end" : either of the end-points is within tol from ROI
+		"both_end" : both end points are within tol from ROI.
     affine : ndarray
         Affine transformation from voxels to streamlines. Default: identity.
     tol : float
@@ -72,8 +81,6 @@ def select_by_roi(streamlines, rois, include, affine=None, tol=None,
         of any voxel in the ROI, the filtering criterion is set to True for
         this streamline, otherwise False. Defaults to the distance between
         the center of each voxel and the corner of the voxel.
-    endpoints : bool, optional
-        Use only the streamline endpoints as criteria. Default: False
 
     Notes
     -----
@@ -89,6 +96,50 @@ def select_by_roi(streamlines, rois, include, affine=None, tol=None,
     --------
     :func:`dipy.tracking.utils.near_roi`
     :func:`reduce_rois`
+
+    Examples
+    --------
+    >>> streamlines = [np.array([[0, 0., 0.9],
+    ...                                  [1.9, 0., 0.]]),
+    ...                        np.array([[0., 0., 0],
+    ...                                  [0, 1., 1.],
+    ...                                  [0, 2., 2.]]),
+    ...                        np.array([[2, 2, 2],
+    ...                                  [3, 3, 3]])]
+    >>> mask1 = np.zeros((4, 4, 4), dtype=bool)
+    >>> mask2 = np.zeros_like(mask1)
+    >>> mask1[0, 0, 0] = True
+    >>> mask2[1, 0, 0] = True
+    >>> selection = select_by_roi(streamlines, [mask1, mask2], [True, True],
+    ...                           tol=1)
+    >>> list(selection) # The result is a generator
+    [array([[ 0. ,  0. ,  0.9],
+           [ 1.9,  0. ,  0. ]]), array([[ 0.,  0.,  0.],
+           [ 0.,  1.,  1.],
+           [ 0.,  2.,  2.]])]
+    >>> selection = select_by_roi(streamlines, [mask1, mask2], [True, False],
+    ...                           tol=0.87)
+    >>> list(selection)
+    [array([[ 0.,  0.,  0.],
+           [ 0.,  1.,  1.],
+           [ 0.,  2.,  2.]])]
+    >>> selection = select_by_roi(streamlines, [mask1, mask2],
+    ...                      [True, True],
+    ...                      mode="both_end",
+    ...                      tol=1.0)
+    >>> list(selection)
+    [array([[ 0. ,  0. ,  0.9],
+           [ 1.9,  0. ,  0. ]])]
+    >>> mask2[0, 2, 2] = True
+    >>> selection = select_by_roi(streamlines, [mask1, mask2],
+    ...                      [True, True],
+    ...                      mode="both_end",
+    ...                      tol=1.0)
+    >>> list(selection)
+    [array([[ 0. ,  0. ,  0.9],
+           [ 1.9,  0. ,  0. ]]), array([[ 0.,  0.,  0.],
+           [ 0.,  1.,  1.],
+           [ 0.,  2.,  2.]])]
     """
     if affine is None:
         affine = np.eye(4)
@@ -107,10 +158,12 @@ def select_by_roi(streamlines, rois, include, affine=None, tol=None,
     exclude_roi_coords = np.array(np.where(exclude_roi)).T
     x_exclude_roi_coords = apply_affine(affine, exclude_roi_coords)
 
-    for idx, sl in enumerate(streamlines):
+    if mode is None:
+        mode = "any"
+    for sl in streamlines:
         include = _near_roi(sl, x_include_roi_coords, tol=tol,
-                                endpoints=endpoints)
+                                mode=mode)
         exclude = _near_roi(sl, x_exclude_roi_coords, tol=tol,
-                                endpoints=endpoints)
+                                mode=mode)
         if include & ~exclude:
             yield sl

@@ -278,6 +278,26 @@ def test_near_roi():
     assert_array_equal(near_roi(x_streamlines, mask, affine=affine, tol=None),
                  np.array([False, True, False]))
 
+    # Test for use of the 'all' mode:
+    assert_array_equal(near_roi(x_streamlines, mask, affine=affine, tol=None,
+                                mode='all'),
+                 np.array([False, False, False]))
+
+    mask[0, 1, 1] = True
+    mask[0, 2, 2] = True
+    # Test for use of the 'all' mode:
+    assert_array_equal(near_roi(x_streamlines, mask, affine=affine, tol=None,
+                                mode='all'),
+                 np.array([False, True, False]))
+
+    mask[2, 2, 2] = True
+    mask[3, 3, 3] = True
+    assert_array_equal(near_roi(x_streamlines, mask, affine=affine, tol=None,
+                                mode='all'),
+                 np.array([False, True, True]))
+
+
+
     # Test for use of endpoints as selection criteria:
     mask = np.zeros((4, 4, 4), dtype=bool)
     mask[0, 1, 1] = True
@@ -287,10 +307,13 @@ def test_near_roi():
                                 mode="either_end"),
                         np.array([True, False, False]))
 
-    assert_array_equal(near_roi(streamlines, mask, tol=0.87, mode="any"),
-                        np.array([True, True, False]))
+    assert_array_equal(near_roi(streamlines, mask, tol=0.87, mode="both_end"),
+                        np.array([False, False, False]))
 
-
+    mask[0, 0, 0] = True
+    mask[0, 2, 2] = True
+    assert_array_equal(near_roi(streamlines, mask, mode="both_end"),
+                        np.array([False, True, False]))
 
 
 def test_voxel_ornt():

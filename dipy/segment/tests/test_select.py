@@ -24,6 +24,11 @@ def test_select_by_roi():
     npt.assert_array_equal(list(selection), [streamlines[0],
                                             streamlines[1]])
 
+    selection = select_by_roi(streamlines, [mask1, mask2], [True, False],
+                              tol=0.87)
+
+    npt.assert_array_equal(list(selection), [streamlines[1]])
+
     selection = select_by_roi(streamlines, [mask1, mask2], [True, True],
                                             tol=0.87)
 
@@ -44,6 +49,37 @@ def test_select_by_roi():
     npt.assert_array_equal(list(selection), [streamlines[0],
                                             streamlines[1]])
 
+    # Use different modes:
+    selection = select_by_roi(streamlines, [mask1, mask2, mask3],
+                              [True, True, False],
+                              mode="all",
+                              tol=1.0)
+    npt.assert_array_equal(list(selection), [streamlines[0]])
+
+
+    selection = select_by_roi(streamlines, [mask1, mask2, mask3],
+                              [True, True, False],
+                              mode="either_end",
+                              tol=1.0)
+    npt.assert_array_equal(list(selection), [streamlines[0]])
+
+    selection = select_by_roi(streamlines, [mask1, mask2, mask3],
+                              [True, True, False],
+                              mode="both_end",
+                              tol=1.0)
+    npt.assert_array_equal(list(selection), [streamlines[0]])
+
+    mask2[0, 2, 2] = True
+    selection = select_by_roi(streamlines, [mask1, mask2, mask3],
+                              [True, True, False],
+                              mode="both_end",
+                              tol=1.0)
+
+    npt.assert_array_equal(list(selection), [streamlines[0],
+                                             streamlines[1]])
+
+
+    # Test with generator input:
     def generate_sl(streamlines):
         for sl in streamlines:
             yield sl
