@@ -302,41 +302,42 @@ def track_counts(tracks, vol_dims, vox_sizes=(1,1,1), return_elements=True):
 @cython.boundscheck(False)
 @cython.wraparound(False)
 @cython.profile(False)
-def _near_roi(streamlines, x_roi_coords, tol=0, endpoints=False):
+def _near_roi(sl, x_roi_coords, tol, endpoints=False):
     """
     Helper function to speed up the inner loops of the :func:`utils.near_roi`
     function.
 
     Parameters
     ----------
-    streamlines : list
+    sl : array, shape (N, 3)
+	    A single streamline
     x_roi_coords : array
         ROI coordinates transformed to the streamline coordinate frame.
     tol : float
         Distance (in the units of the streamlines, usually mm). If any
-        coordinate in the streamline is within this distance from any voxel in
-        the ROI, the filtering criterion is set to True for this streamlin,
-        otherwise False. Default: 0
+        coordinate in the streamline is within this distance from the center
+        of any voxel in the ROI, this function returns True.
 	endpoints : bool, optional
 		When set to True, use only the streamline endpoints as criteria.
+
+	Returns
+	-------
+	out : boolean
+	    Evaluates to True if the streamline coordinates are near the ROI, and
+		False otherwise.
     """
-    out = np.zeros(len(streamlines), dtype=bool)
-    cdef int ii
-    cdef cnp.ndarray[cnp.float_t, ndim=2] sl
-    cdef n_roi = len(x_roi_coords)
     cdef cnp.ndarray[cnp.float_t, ndim=1] coord
     cdef cnp.ndarray[cnp.float_t, ndim=1] roi_coord
-    for ii in range(len(streamlines)):
-        sl = streamlines[ii].astype(float)
-        if endpoints:
-            n = sl.shape[0]
-            sl = np.array([sl[0], sl[n-1]])
-        for coord in sl:
-            for roi_coord in x_roi_coords:
-               dist = math.sqrt((roi_coord[0] - coord[0]) ** 2 +
-                               (roi_coord[1] - coord[1]) ** 2 +
-                               (roi_coord[2] - coord[2]) ** 2)
-               if dist <= tol:
-                  out[ii] = True
-                  break
-    return out
+    cdef cnp.ndarray[cnp.float_t, ndim=2] s = sl.astype(float)
+    cdef int n
+    if endpoints:
+        n = sl.shape[0]
+        s = np.array([s[0], s[n-1]])
+    for coord in s:
+        for roi_coord in x_roi_coords:
+            dist = math.sqrt((roi_coord[0] - coord[0]) ** 2 +
+                             (roi_coord[1] - coord[1]) ** 2 +
+                             (roi_coord[2] - coord[2]) ** 2)
+            if dist <= tol:
+                return True
+    return False

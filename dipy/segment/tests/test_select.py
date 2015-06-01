@@ -3,7 +3,6 @@ import numpy.testing as npt
 
 from dipy.segment.select import select_by_roi
 
-
 def test_select_by_roi():
     streamlines = [np.array([[0, 0., 0.9],
                              [1.9, 0., 0.]]),

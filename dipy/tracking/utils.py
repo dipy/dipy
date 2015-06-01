@@ -583,7 +583,7 @@ def near_roi(streamlines, target_mask, affine=None, tol=None,
 
     Parameters
     ----------
-    streamlines : list
+    streamlines : list or generator
         A sequence of streamlines. Each streamline should be a (N, 3) array,
         where N is the length of the streamline.
     target_mask : ndarray
@@ -596,13 +596,15 @@ def near_roi(streamlines, target_mask, affine=None, tol=None,
         coordinate in the streamline is within this distance from the center
         of any voxel in the ROI, the filtering criterion is set to True for
         this streamline, otherwise False. Defaults to the distance between
-        the center of eaach voxel and the corner of the voxel.
+        the center of each voxel and the corner of the voxel.
     endpoints : bool, optional
         Use only the streamline endpoints as criteria. Default: False
 
     Returns
     -------
-    Boolean array. Set to `True` in the index corresponding to each streamline
+    1D array of boolean dtype, shape (len(streamlines), )
+
+    This contains `True` for indices corresponding to each streamline
     that passes within a tolerance distance from the target ROI, `False`
     otherwise.
     """
@@ -620,7 +622,21 @@ def near_roi(streamlines, target_mask, affine=None, tol=None,
 
     roi_coords = np.array(np.where(target_mask)).T
     x_roi_coords = apply_affine(affine, roi_coords)
-    return _near_roi(streamlines, x_roi_coords, tol=tol, endpoints=endpoints)
+    # If it's already a list, we can save time by preallocating the output
+    if isinstance(streamlines, list):
+        out = np.zeros(len(streamlines), dtype=bool)
+        for ii, sl in enumerate(streamlines):
+            out[ii] = _near_roi(sl, x_roi_coords, tol=tol,
+                                endpoints=endpoints)
+        return out
+    # If it's a generators, we'll need to generate the output into a list
+    else:
+        out = []
+        for sl in streamlines:
+            out.append(_near_roi(sl, x_roi_coords, tol=tol,
+                                 endpoints=endpoints))
+
+        return(np.array(out, dtype=bool))
 
 
 def reorder_voxels_affine(input_ornt, output_ornt, shape, voxel_size):

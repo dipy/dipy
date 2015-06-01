@@ -43,44 +43,6 @@ def reduce_rois(rois, include):
     return include_roi, exclude_roi
 
 
-def select(streamlines, include_roi, exclude_roi, affine, tol=None,
-           endpoints=False):
-    """
-    Perform selection of streamlines based on an inclusion ROI and an
-    exclusion ROI.
-
-    Parameters
-    ----------
-    streamlines: list
-        A list of candidate streamlines for selection.
-
-    include_roi : boolean 3D array
-        An array marking the inclusion mask.
-
-    exclude_roi : boolean 3D array
-        An array marking the exclusion mask
-    affine : ndarray
-        Affine transformation from voxels to streamlines. Default: identity.
-    tol : float
-        Distance (in the units of the streamlines, usually mm). If any
-        coordinate in the streamline is within this distance from the center
-        of any voxel in the ROI, the filtering criterion is set to True for
-        this streamline, otherwise False. Defaults to the distance between
-        the center of eaach voxel and the corner of the voxel.
-    endpoints : bool, optional
-        Use only the streamline endpoints as criteria. Default: False
-
-    Returns
-    -------
-    to_include : boolean array designating inclusion or exclusion of the
-    streamlines given the ROIs and the inclusion/exclusion criteria.
-
-    """
-    include = near_roi(streamlines, include_roi, affine, tol, endpoints)
-    exclude = near_roi(streamlines, exclude_roi, affine, tol, endpoints)
-    return include & (~exclude)
-
-
 def select_by_roi(streamlines, rois, include, affine=None, tol=None,
                   endpoints=False):
     """
@@ -108,10 +70,9 @@ def select_by_roi(streamlines, rois, include, affine=None, tol=None,
         coordinate in the streamline is within this distance from the center
         of any voxel in the ROI, the filtering criterion is set to True for
         this streamline, otherwise False. Defaults to the distance between
-        the center of eaach voxel and the corner of the voxel.
+        the center of each voxel and the corner of the voxel.
     endpoints : bool, optional
         Use only the streamline endpoints as criteria. Default: False
-
 
     Notes
     -----
@@ -120,18 +81,17 @@ def select_by_roi(streamlines, rois, include, affine=None, tol=None,
 
     Returns
     -------
-    to_include : boolean array designating inclusion or exclusion of the
-    streamlines given the ROIs and the inclusion/exclusion criteria.
+    generator
+       Generates the streamlines to be included based on these criteria.
 
     See also
     --------
     :func:`dipy.tracking.utils.near_roi`
-    :func:`select`
     :func:`reduce_rois`
     """
-
     include_roi, exclude_roi = reduce_rois(rois, include)
-    select_array = select(streamlines, include_roi, exclude_roi, affine, tol)
     for idx, sl in enumerate(streamlines):
-        if select_array[idx]:
+        include = near_roi([sl], include_roi, affine, tol, endpoints)
+        exclude = near_roi([sl], exclude_roi, affine, tol, endpoints)
+        if include & ~exclude:
             yield sl
