@@ -252,7 +252,7 @@ def test_near_roi():
     streamlines = [np.array([[0., 0., 0.9],
                              [1.9, 0., 0.],
                              [3, 2., 2.]]),
-                   np.array([[0., 0., 0],
+                   np.array([[0.1, 0., 0],
                              [0, 1., 1.],
                              [0, 2., 2.]]),
                    np.array([[2, 2, 2],
@@ -285,8 +285,9 @@ def test_near_roi():
 
     mask[0, 1, 1] = True
     mask[0, 2, 2] = True
-    # Test for use of the 'all' mode:
-    assert_array_equal(near_roi(x_streamlines, mask, affine=affine, tol=None,
+    # Test for use of the 'all' mode, also testing that setting the tolerance
+    # to a very small number gets overridden:
+    assert_array_equal(near_roi(x_streamlines, mask, affine=affine, tol=0.1,
                                 mode='all'),
                  np.array([False, True, False]))
 
@@ -295,8 +296,6 @@ def test_near_roi():
     assert_array_equal(near_roi(x_streamlines, mask, affine=affine, tol=None,
                                 mode='all'),
                  np.array([False, True, True]))
-
-
 
     # Test for use of endpoints as selection criteria:
     mask = np.zeros((4, 4, 4), dtype=bool)
@@ -313,6 +312,15 @@ def test_near_roi():
     mask[0, 0, 0] = True
     mask[0, 2, 2] = True
     assert_array_equal(near_roi(streamlines, mask, mode="both_end"),
+                        np.array([False, True, False]))
+
+    # Test with a generator input:
+    def generate_sl(streamlines):
+        for sl in streamlines:
+            yield sl
+
+    assert_array_equal(near_roi(generate_sl(streamlines),
+                                mask, mode="both_end"),
                         np.array([False, True, False]))
 
 
