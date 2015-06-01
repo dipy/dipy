@@ -1,5 +1,6 @@
 import numpy as np
-from dipy.tracking.utils import near_roi
+from nibabel.affines import apply_affine
+from dipy.tracking.vox2track import _near_roi
 
 
 def reduce_rois(rois, include):
@@ -89,9 +90,27 @@ def select_by_roi(streamlines, rois, include, affine=None, tol=None,
     :func:`dipy.tracking.utils.near_roi`
     :func:`reduce_rois`
     """
+    if affine is None:
+        affine = np.eye(4)
+    # This calculates the maximal distance to a corner of the voxel:
+    dist_to_corner = np.sqrt(np.sum((np.diag(affine)[:-1] / 2) ** 2))
+    if tol is None:
+        tol = dist_to_corner
+    elif tol < dist_to_corner:
+        w_s = "Tolerance input provided would create gaps in your"
+        w_s += " inclusion ROI. Setting to: %s"%dist_to_corner
+        warn(w_s)
+        tol = dist_to_corner
     include_roi, exclude_roi = reduce_rois(rois, include)
+    include_roi_coords = np.array(np.where(include_roi)).T
+    x_include_roi_coords = apply_affine(affine, include_roi_coords)
+    exclude_roi_coords = np.array(np.where(exclude_roi)).T
+    x_exclude_roi_coords = apply_affine(affine, exclude_roi_coords)
+
     for idx, sl in enumerate(streamlines):
-        include = near_roi([sl], include_roi, affine, tol, endpoints)
-        exclude = near_roi([sl], exclude_roi, affine, tol, endpoints)
+        include = _near_roi(sl, x_include_roi_coords, tol=tol,
+                                endpoints=endpoints)
+        exclude = _near_roi(sl, x_exclude_roi_coords, tol=tol,
+                                endpoints=endpoints)
         if include & ~exclude:
             yield sl
