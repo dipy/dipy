@@ -299,10 +299,16 @@ def track_counts(tracks, vol_dims, vox_sizes=(1,1,1), return_elements=True):
     return tcs.reshape(vol_dims)
 
 
+cdef dist3d(y, x):
+    return math.sqrt((x[0] - y[0]) ** 2 +
+                     (x[1] - y[1]) ** 2 +
+                     (x[2] - y[2]) ** 2)
+
+
 @cython.boundscheck(False)
 @cython.wraparound(False)
 @cython.profile(False)
-def _near_roi(sl, x_roi_coords, tol, endpoints=False):
+def _near_roi(sl, x_roi_coords, tol, mode):
     """
     Helper function to speed up the inner loops of the :func:`utils.near_roi`
     function.
@@ -317,27 +323,33 @@ def _near_roi(sl, x_roi_coords, tol, endpoints=False):
         Distance (in the units of the streamlines, usually mm). If any
         coordinate in the streamline is within this distance from the center
         of any voxel in the ROI, this function returns True.
-	endpoints : bool, optional
-		When set to True, use only the streamline endpoints as criteria.
+	mode : string
+		One of {"any", "all", "either_end", "both_end"}, where return True if:
+		"any" : any point is within tol from ROI.
+		"all" : all points are within tol from ROI.
+		"either_end" : either of the end-points is within tol from ROI
+		"both_end" : both end points are within tol from ROI.
 
 	Returns
 	-------
 	out : boolean
-	    Evaluates to True if the streamline coordinates are near the ROI, and
-		False otherwise.
     """
     cdef cnp.ndarray[cnp.float_t, ndim=1] coord
     cdef cnp.ndarray[cnp.float_t, ndim=1] roi_coord
     cdef cnp.ndarray[cnp.float_t, ndim=2] s = sl.astype(float)
     cdef int n
-    if endpoints:
+    if mode == "either_end" or mode == "both_end":
         n = sl.shape[0]
         s = np.array([s[0], s[n-1]])
-    for coord in s:
-        for roi_coord in x_roi_coords:
-            dist = math.sqrt((roi_coord[0] - coord[0]) ** 2 +
-                             (roi_coord[1] - coord[1]) ** 2 +
-                             (roi_coord[2] - coord[2]) ** 2)
-            if dist <= tol:
-                return True
-    return False
+    if mode == "any" or mode=="either_end":
+        for coord in s:
+            for roi_coord in x_roi_coords:
+                if dist3d(roi_coord, coord) <= tol:
+                    return True
+        return False
+    else:
+        for coord in s:
+            for roi_coord in x_roi_coords:
+                if dist3d(roi_coord, coord) > tol:
+                    return False
+        return True

@@ -576,7 +576,7 @@ def target(streamlines, target_mask, affine, include=True):
 
 
 def near_roi(streamlines, target_mask, affine=None, tol=None,
-             endpoints=False):
+             mode="any"):
     """
     Provide filtering criteria for a set of streamlines based on whether they
     fall within a tolerance distance from an ROI
@@ -597,8 +597,12 @@ def near_roi(streamlines, target_mask, affine=None, tol=None,
         of any voxel in the ROI, the filtering criterion is set to True for
         this streamline, otherwise False. Defaults to the distance between
         the center of each voxel and the corner of the voxel.
-    endpoints : bool, optional
-        Use only the streamline endpoints as criteria. Default: False
+	mode : string, optional
+		One of {"any", "all", "either_end", "both_end"}, where return True if:
+		"any" : any point is within tol from ROI. Default.
+		"all" : all points are within tol from ROI.
+		"either_end" : either of the end-points is within tol from ROI
+		"both_end" : both end points are within tol from ROI.
 
     Returns
     -------
@@ -627,14 +631,14 @@ def near_roi(streamlines, target_mask, affine=None, tol=None,
         out = np.zeros(len(streamlines), dtype=bool)
         for ii, sl in enumerate(streamlines):
             out[ii] = _near_roi(sl, x_roi_coords, tol=tol,
-                                endpoints=endpoints)
+                                mode=mode)
         return out
     # If it's a generators, we'll need to generate the output into a list
     else:
         out = []
         for sl in streamlines:
             out.append(_near_roi(sl, x_roi_coords, tol=tol,
-                                 endpoints=endpoints))
+                                 mode=mode))
 
         return(np.array(out, dtype=bool))
 

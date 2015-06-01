@@ -283,11 +283,14 @@ def test_near_roi():
     mask[0, 1, 1] = True
     mask[3, 2, 2] = True
 
-    assert_array_equal(near_roi(streamlines, mask, tol=0.87, endpoints=True),
+    assert_array_equal(near_roi(streamlines, mask, tol=0.87,
+                                mode="either_end"),
                         np.array([True, False, False]))
 
-    assert_array_equal(near_roi(streamlines, mask, tol=0.87, endpoints=False),
+    assert_array_equal(near_roi(streamlines, mask, tol=0.87, mode="any"),
                         np.array([True, True, False]))
+
+
 
 
 def test_voxel_ornt():
