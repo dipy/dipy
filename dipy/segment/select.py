@@ -1,5 +1,4 @@
-from itertools import cycle
-
+from warnings import warn
 import numpy as np
 from nibabel.affines import apply_affine
 from dipy.tracking.vox2track import _near_roi
