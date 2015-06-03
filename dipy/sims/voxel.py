@@ -382,7 +382,7 @@ def multi_tensor_dki(gtab, mevals, S0=100, angles=[(90., 0.), (90., 0.)],
     D_comps = np.zeros((len(fractions), 3, 3))
     for i in range(len(fractions)):
         R = all_tensor_evecs(sticks[i])
-        D_comps[i] = dot(dot(R, np.diag(mevals[i])), R.T)
+        D_comps[i] = dot(dot(R.T, np.diag(mevals[i])), R)
 
     # compute voxel's DT
     DT = np.zeros((3, 3))
