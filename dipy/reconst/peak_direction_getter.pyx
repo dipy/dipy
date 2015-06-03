@@ -38,6 +38,26 @@ cdef class PeaksAndMetricsDirectionGetter(DirectionGetter):
         self.ang_thr = 60
         self.total_weight = .5
 
+    def __setstate__(self, state):
+        """
+        For unpickling of the object
+        The state should be defined as follows: (qa, ind, odf_vertices)
+        """
+        
+        self._initialize()
+
+        self._qa = state[0]
+        self._ind = state[1]
+        self._odf_vertices = state[2]
+
+    def __reduce__(self):
+        if self.initialized:
+            current_state = (self._qa, self._ind, self._odf_vertices)
+            return (PeaksAndMetricsDirectionGetter, (), current_state)
+        else: 
+            # awesome! not intialized. very straightforward
+            return (PeaksAndMetricsDirectionGetter, ())
+
     def _initialize(self):
         """First time that a PAM instance is used as a direction getter,
         initialize all the memoryviews.
@@ -45,6 +65,7 @@ cdef class PeaksAndMetricsDirectionGetter(DirectionGetter):
         if self.peak_values.shape != self.peak_indices.shape:
             msg = "shapes of peak_values and peak_indices do not match"
             raise ValueError(msg)
+            
         self._qa = make_nd(np.array(self.peak_values, copy=False,
                                    dtype='double', order='C'), 4)
         self._ind = make_nd(np.array(self.peak_indices, copy=False,
