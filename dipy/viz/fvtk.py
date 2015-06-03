@@ -1832,7 +1832,7 @@ def record(ren=None, cam_pos=None, cam_focal=None, cam_view=None,
         renderLarge.Update()
         writer.SetInputConnection(renderLarge.GetOutputPort())
         # filename='/tmp/'+str(3000000+i)+'.png'
-        if path_numbering:
+        if n_frames > 1 or path_numbering:
             if out_path is None:
                 filename = str(1000000 + i) + '.png'
             else:
