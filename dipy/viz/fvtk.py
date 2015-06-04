@@ -1753,29 +1753,30 @@ def record(ren=None, cam_pos=None, cam_focal=None, cam_view=None,
            magnification=1, size=(300, 300), verbose=False):
     ''' This will record a video of your scene
 
-    Records a video as a series of ``.png`` files of your scene by rotating the
-    azimuth angle az_angle in every frame.
+    Records a video as a series of ``.png`` files of your scene by rotating 
+    the azimuth angle az_angle in every frame.
 
     Parameters
     -----------
     ren : vtkRenderer() object
-        as returned from function ren()
+        As returned from :func:`ren`.
     cam_pos : None or sequence (3,), optional
-        camera position
+        Camera position
     cam_focal : None or sequence (3,), optional
-        camera focal point
+        Camera focal point
     cam_view : None or sequence (3,), optional
-        camera view up
+        Camera view up. Default
     out_path : str, optional
-        output directory for the frames
-    path_numbering : bool
-        when recording it changes out_path ot out_path + str(frame number)
+        Output directory for the frames
+    path_numbering : bool, optional
+        when recording it changes out_path to out_path + str(frame number). 
+        If n_frames is larger than 1, this will default to True  
     n_frames : int, optional
-        number of frames to save, default 1
+        number of frames to save. Default: 1
     az_ang : float, optional
-        azimuthal angle of camera rotation.
+        Azimuthal angle of camera rotation (degrees). Default: 10.
     magnification : int, optional
-        how much to magnify the saved frame
+        How much to magnify the saved frame. Default: 1 (no magnification).
 
     Examples
     ---------
