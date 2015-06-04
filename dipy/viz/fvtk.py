@@ -1761,11 +1761,11 @@ def record(ren=None, cam_pos=None, cam_focal=None, cam_view=None,
     ren : vtkRenderer() object
         As returned from :func:`ren`.
     cam_pos : None or sequence (3,), optional
-        Camera position
+        Camera position.
     cam_focal : None or sequence (3,), optional
-        Camera focal point
+        Camera focal point.
     cam_view : None or sequence (3,), optional
-        Camera view up. Default
+        Camera view up. 
     out_path : str, optional
         Output directory for the frames
     path_numbering : bool, optional
