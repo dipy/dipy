@@ -435,7 +435,7 @@ def test_default_lambda_csdmodel():
     the symmetric362 sphere. This value has empirically been found to work well
     and changes to this default value should be discussed with the dipy team.
     """
-    sphere = get_sphere('symmetric362')
+    sphere = default_sphere
 
     # Create gradient table
     _, fbvals, fbvecs = get_data('small_64D')
