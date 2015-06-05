@@ -157,8 +157,56 @@ def peak_directions(odf, sphere, relative_peak_threshold=.5,
 
 
 class PeaksAndMetrics(PeaksAndMetricsDirectionGetter):
-    pass
+    def rebuild_class_state(self, sphere, peak_dirs, peak_values, peak_indices,
+                    gfa_array, qa_array, shm_coeff, B, odf_array):
+        """
+        Helper function which helps unserialize a PeaksAndMetrics objects
+        """
+        self.sphere = sphere
+        self.peak_dirs = peak_dirs
+        self.peak_values = peak_values
+        self.peak_indices = peak_indices
+        self.gfa = gfa_array
+        self.qa = qa_array
+        self.shm_coeff = shm_coeff
+        self.B = B
+        self.odf = odf_array
 
+    def __setstate__(self, state):
+        """
+        For unpickling of the object
+        The state should be defined as follows: (qa, ind, odf_vertices)
+        """
+        print("In __setstate__ method for PeaksAndMetrics dipy/reconst/peaks.py. Got to this method!")
+        
+        self.rebuild_class_state(*state["class_state"])
+
+        if state["is_initialized"]:
+            self._initialize()
+            current_state = state["current_state"]
+            self._qa = current_state["_qa"]
+            self._ind = current_state["_ind"]
+            self._odf_vertices = current_state["_odf_vertices"]
+
+    def __reduce__(self):
+        class_instance_variables = (self.sphere, 
+                                        self.peak_dirs,
+                                        self.peak_values,
+                                        self.peak_indices,
+                                        self.gfa,
+                                        self.qa,
+                                        self.shm_coeff,
+                                        self.B,
+                                        self.odf)
+        the_state = {"class_state": class_instance_variables,
+                        "is_initialized": self.initialized}
+        if self.initialized:
+            the_state["current_state"] = {"_qa":np.asarray(self._qa), 
+                                "_ind":np.asarray(self._ind), 
+                                "_odf_vertices":np.asarray(self._odf_vertices)}
+            return (PeaksAndMetrics, (), the_state)
+        else: 
+            return (PeaksAndMetrics, (), the_state)
 
 def _peaks_from_model_parallel(model, data, sphere, relative_peak_threshold,
                                min_separation_angle, mask, return_odf,

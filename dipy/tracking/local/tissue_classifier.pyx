@@ -64,7 +64,6 @@ cdef class ThresholdTissueClassifier(TissueClassifier):
 
     def __cinit__(self, metric_map, threshold):
         self.interp_out_view = self.interp_out_double
-        print type(metric_map)
         self.metric_map = np.asarray(metric_map, 'float64')
         self.threshold = threshold
 

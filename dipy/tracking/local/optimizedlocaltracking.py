@@ -6,8 +6,8 @@ from dipy.tracking import utils
 
 #import itertools
 import multiprocessing
-#import sys
-#import os
+import sys
+import os
 
 """
 # Configure the environment
@@ -58,11 +58,13 @@ SEEDS = 0
 # run normally
 # see if specific arguments can be "pickled" or passed into Pool
 
+
+
 def streamline_computation_wrapper(streamline_arguments):
-    print "got in wrapper class: "
-    print len(streamline_arguments.seed)
-    print len(streamline_arguments.config_args)
-    print
+    # print "got in wrapper class: "
+    # print len(streamline_arguments.seed)
+    # print len(streamline_arguments.config_args)
+    # print
     return streamline_computation(streamline_arguments.seed, *streamline_arguments.config_args)
 
 class StreamlineArguments():
@@ -80,7 +82,7 @@ def streamline_computation(s, inv_A, lin, offset, F, B, vs, dg, tc, affine,
     """
     Helper function for parallelizing the computation of streamlines
     """
-    print "got in wrapper class: "
+    # print "got in wrapper class: "
 
     global SEEDS
     SEEDS += 1
@@ -312,10 +314,10 @@ class OptimizedLocalTracking(object):
         stream_args = list(StreamlineArguments(s, arguments) for s in self.seeds)                
 #       stream_args = list(tc for s in self.seeds)
 
-        #stream_args = list(1 for i in range(0,10))    
-        #sc_stream_args = sc.parallelize(stream_args)            
-        #streamlines = sc_stream_args.map(streamline_computation_wrapper)
-       
+        # stream_args = list(1 for i in range(0,10))    
+        # sc_stream_args = sc.parallelize(stream_args)            
+        # streamlines = sc_stream_args.map(stupid_function)
+        
         p = multiprocessing.Pool(multiprocessing.cpu_count())
 
         #results = p.map(check_if_tc_is_cool,stream_args)
