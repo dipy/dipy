@@ -92,12 +92,10 @@ def piesno(data, N, alpha=0.01, l=100, itermax=100, eps=1e-5, return_mask=False)
         mask_noise = np.zeros(data.shape[:-1], dtype=np.bool)
 
         for idx in range(data.shape[-2]):
-            sigma[idx], mask_noise[..., idx] = _piesno_3D(data[..., idx, :], N,
-                                                          alpha=alpha,
-                                                          l=l,
-                                                          itermax=itermax,
-                                                          eps=eps,
-                                                          return_mask=True)
+            sigma[idx], mask_noise[..., idx] = _piesno_3D(data[..., idx, :],
+                                                          N, alpha=alpha,
+                                                          l=l, itermax=itermax,
+                                                          eps=eps, return_mask=True)
 
     else:
         sigma, mask_noise = _piesno_3D(data, N,
@@ -248,7 +246,7 @@ def _piesno_3D(data, N, alpha=0.01, l=100, itermax=100, eps=1e-5,
     return sigma[pos]
 
 
-def estimate_sigma(arr, disable_background_masking=False):
+def estimate_sigma(arr, disable_background_masking=False, N=1):
     """Standard deviation estimation from local patches
 
     Parameters
@@ -260,10 +258,37 @@ def estimate_sigma(arr, disable_background_masking=False):
         If True, uses all voxels for the estimation, otherwise, only non-zeros
         voxels are used. Useful if the background is masked by the scanner.
 
+    N : int, default 1
+        Number of coils of the receiver array. Use N = 1 in case of a SENSE
+        reconstruction (Philips scanners) or the number of coils for a GRAPPA
+        reconstruction (Siemens and GE). See [1] for more information.
+
     Returns
     -------
     sigma : ndarray
         standard deviation of the noise, one estimation per volume.
+
+    Note
+    -------
+    This function is the same as manually taking the standard deviation of the
+    background and gives one value for the whole 3D array.
+    It also includes the coil-dependent correction factor of Koay 2006
+    (see [1]_, equation 18) with theta = 0.
+    Since this function was introduced in [2]_ for T1 imaging,
+    it is expected to perform ok on diffusion MRI data, but might oversmooth
+    some regions and leave others un-denoised for spatially varying noise profiles.
+    Consider using :func:`piesno` to estimate sigma instead if visual inacuracies
+    are apparent in the denoised result.
+
+    Reference
+    -------
+    .. [1] Koay, C. G., & Basser, P. J. (2006). Analytically exact correction
+    scheme for signal extraction from noisy magnitude MR signals.
+    Journal of Magnetic Resonance), 179(2), 317-22.
+
+    .. [2] Coupe, P., Yger, P., Prima, S., Hellier, P., Kervrann, C., Barillot, C., 2008.
+    An optimized blockwise nonlocal means denoising filter for 3-D magnetic
+    resonance images, IEEE Trans. Med. Imaging 27, 425-41.
     """
     k = np.zeros((3, 3, 3), dtype=np.int8)
 
@@ -273,6 +298,24 @@ def estimate_sigma(arr, disable_background_masking=False):
     k[1, 2, 1] = 1
     k[1, 1, 0] = 1
     k[1, 1, 2] = 1
+
+    # Precomputed factor from Koay 2006, this corrects the bias of magnitude image
+    correction_factor = {1: 0.42920367320510366,
+                         4: 0.4834941393603609,
+                         6: 0.4891759468548269,
+                         8: 0.49195420135894175,
+                        12: 0.4946862482541263,
+                        16: 0.4960339908122364,
+                        20: 0.4968365823718557,
+                        24: 0.49736907650825657,
+                        32: 0.49803177052530145,
+                        64: 0.49901964176235936}
+
+    if N in correction_factor:
+        factor = correction_factor[N]
+    else:
+        raise ValueError("N = {0} is not supported! Please choose amongst \
+{1}".format(N, sorted(list(correction_factor.keys()))))
 
     if arr.ndim == 3:
         sigma = np.zeros(1, dtype=np.float32)
@@ -292,6 +335,6 @@ def estimate_sigma(arr, disable_background_masking=False):
     for i in range(sigma.size):
         convolve(arr[..., i], k, output=conv_out)
         mean_block = np.sqrt(6/7) * (arr[..., i] - 1/6 * conv_out)
-        sigma[i] = np.sqrt(np.mean(mean_block[mask]**2))
+        sigma[i] = np.sqrt(np.mean(mean_block[mask]**2) / factor)
 
     return sigma
