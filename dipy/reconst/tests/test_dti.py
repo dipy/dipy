@@ -106,7 +106,7 @@ def test_tensor_model():
     tensor = from_lower_triangular(D)
     A_squiggle = tensor - (1 / 3.0) * np.trace(tensor) * np.eye(3)
     mode = 3 * np.sqrt(6) * np.linalg.det(A_squiggle / np.linalg.norm(A_squiggle))
-    evals_eigh, evecs_eigh = np.linalg.eigh(tensor.T)
+    evals_eigh, evecs_eigh = np.linalg.eigh(tensor)
     # Sort according to eigen-value from large to small:
     evecs = evecs_eigh[:, np.argsort(evals_eigh)[::-1]]
     # Check that eigenvalues and eigenvectors are properly sorted through
