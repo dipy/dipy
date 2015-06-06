@@ -136,8 +136,8 @@ def test_tensor_model():
             # so we need to allow for sign flips. One of the following should
             # always be true:
             assert_(
-            np.all(np.abs(tensor_fit.evecs[0][:, 0] - evecs[:, 0]) < 10e-6) or
-            np.all(np.abs(-tensor_fit.evecs[0][:, 0] - evecs[:, 0]) < 10e-6 ))
+            np.all(np.abs(tensor_fit.evecs[0][:, i] - evecs[:, i]) < 10e-6) or
+            np.all(np.abs(-tensor_fit.evecs[0][:, i] - evecs[:, i]) < 10e-6 ))
             # We set a fixed tolerance of 10e-6, similar to array_almost_equal
 
         assert_array_almost_equal(tensor_fit.quadratic_form[0], tensor,
