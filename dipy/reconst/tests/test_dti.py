@@ -131,7 +131,7 @@ def test_tensor_model():
         assert_equal(tensor_fit.shape, Y.shape[:-1])
         assert_array_almost_equal(tensor_fit.evals[0], evals)
         # Test that the eigenvectors are correct, one-by-one:
-        for vv in range(3):
+        for i in range(3):
             # Eigenvectors have intrinsic sign ambiguity (see http://prod.sandia.gov/techlib/access-control.cgi/2007/076422.pdf)
             # so we need to allow for sign flips. One of the following should
             # always be true:
