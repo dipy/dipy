@@ -106,7 +106,14 @@ def test_tensor_model():
     tensor = from_lower_triangular(D)
     A_squiggle = tensor - (1 / 3.0) * np.trace(tensor) * np.eye(3)
     mode = 3 * np.sqrt(6) * np.linalg.det(A_squiggle / np.linalg.norm(A_squiggle))
-    evecs = np.linalg.eigh(tensor)[1]
+    evals_eigh, evecs_eigh = np.linalg.eigh(tensor.T)
+    # Sort according to eigen-value from large to small:
+    evecs = evecs_eigh[:, np.argsort(evals_eigh)[::-1]]
+    # Check that eigenvalues and eigenvectors are properly sorted through
+    # that previous operation:
+    for i in range(3):
+        assert_array_equal(np.dot(tensor, evecs[:, i]),
+                           evals[i] * evecs[:, i])
     # Design Matrix
     X = dti.design_matrix(gtab)
     # Signals
@@ -123,6 +130,15 @@ def test_tensor_model():
         assert_true(tensor_fit.model is tensor_model)
         assert_equal(tensor_fit.shape, Y.shape[:-1])
         assert_array_almost_equal(tensor_fit.evals[0], evals)
+        # Test that the eigenvectors are correct, one-by-one:
+        for vv in range(3):
+            # Eigenvectors have intrinsic sign ambiguity (see http://prod.sandia.gov/techlib/access-control.cgi/2007/076422.pdf)
+            # so we need to allow for sign flips. One of the following should
+            # always be true:
+            assert_(
+            np.all(np.abs(tensor_fit.evecs[0][:, 0] - evecs[:, 0]) < 10e-6) or
+            np.all(np.abs(-tensor_fit.evecs[0][:, 0] - evecs[:, 0]) < 10e-6 ))
+            # We set a fixed tolerance of 10e-6, similar to array_almost_equal
 
         assert_array_almost_equal(tensor_fit.quadratic_form[0], tensor,
                                   err_msg=\
