@@ -1319,15 +1319,15 @@ def sample_domain_regular(int k, int[:] shape, double[:, :] grid2world,
 
     Example
     -------
-    >>> from dipy.align.mattes import sample_domain_2d_regular
+    >>> from dipy.align.mattes import sample_domain_regular
     >>> import dipy.align.vector_fields as vf
     >>> shape = np.array((10, 10), dtype=np.int32)
-    >>> grid2world = np.eye(2)
     >>> sigma = 0
     >>> dim = len(shape)
+    >>> grid2world = np.eye(dim+1)
     >>> n = shape[0]*shape[1]
     >>> k = 2
-    >>> samples = sample_domain_2d_regular(k, shape, grid2world, sigma)
+    >>> samples = sample_domain_regular(k, shape, grid2world, sigma)
     >>> (samples.shape[0], samples.shape[1]) == (n//k, dim)
     True
     >>> isamples = np.array(samples, dtype=np.int32)
