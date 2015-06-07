@@ -1268,10 +1268,10 @@ class SymmetricDiffeomorphicRegistration(DiffeomorphicRegistration):
 
         Parameters
         ----------
-        x : array, shape(n,)
+        x : array, shape (n,)
             increasing array representing the x-coordinates of the points to
             be fit
-        y : array, shape(n,)
+        y : array, shape (n,)
             array representing the y-coordinates of the points to be fit
 
         Returns

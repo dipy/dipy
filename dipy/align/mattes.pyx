@@ -645,7 +645,7 @@ cdef _compute_pdfs_dense_3d(double[:, :, :] static, double[:, :, :] moving,
     padding: int
         number of bins used as padding (the total bins used for padding at both
         sides of the histogram is actually 2*padding)
-    joint: array, shape(nbins, nbins)
+    joint: array, shape (nbins, nbins)
         the array to write the joint PDF to
     smarginal: array, shape (nbins,)
         the array to write the marginal PDF associated with the static image
@@ -728,7 +728,7 @@ cdef _compute_pdfs_sparse(double[:] sval, double[:] mval, double smin,
     padding: int
         number of bins used as padding (the total bins used for padding at both
         sides of the histogram is actually 2*padding)
-    joint: array, shape(nbins, nbins)
+    joint: array, shape (nbins, nbins)
         the array to write the joint PDF to
     smarginal: array, shape (nbins,)
         the array to write the marginal PDF associated with the static image
@@ -1189,7 +1189,7 @@ cdef double _compute_mattes_mi(double[:, :] joint,
     ----------
     joint : array, shape (nbins, nbins)
         the joint intensity distribution
-    joint_gradient : array, shape(nbins, nbins, n)
+    joint_gradient : array, shape (nbins, nbins, n)
         the gradient of the joint distribution w.r.t. the transformation
         parameters
     smarginal : array, shape (nbins,)

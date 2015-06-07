@@ -2860,9 +2860,9 @@ def create_harmonic_fields_2d(cnp.npy_intp nrows, cnp.npy_intp ncols,
 
     Returns
     -------
-    d : array, shape(nrows, ncols, 2)
+    d : array, shape (nrows, ncols, 2)
         the harmonic displacement field
-    inv : array, shape(nrows, ncols, 2)
+    inv : array, shape (nrows, ncols, 2)
         the analitical inverse of the harmonic displacement field
 
     [1] Chen, M., Lu, W., Chen, Q., Ruchala, K. J., & Olivera, G. H. (2008).
@@ -2912,9 +2912,9 @@ def create_harmonic_fields_3d(int nslices, cnp.npy_intp nrows,
 
     Returns
     -------
-    d : array, shape(nslices, nrows, ncols, 3)
+    d : array, shape (nslices, nrows, ncols, 3)
         the harmonic displacement field
-    inv : array, shape(nslices, nrows, ncols, 3)
+    inv : array, shape (nslices, nrows, ncols, 3)
         the analitical inverse of the harmonic displacement field
 
     [1] Chen, M., Lu, W., Chen, Q., Ruchala, K. J., & Olivera, G. H. (2008).
@@ -2964,7 +2964,7 @@ def create_circle(cnp.npy_intp nrows, cnp.npy_intp ncols, cnp.npy_intp radius):
 
     Returns
     -------
-    c : array, shape(nrows, ncols)
+    c : array, shape (nrows, ncols)
         the binary image of the circle with the requested dimensions
     """
     cdef:
@@ -3004,7 +3004,7 @@ def create_sphere(cnp.npy_intp nslices, cnp.npy_intp nrows,
 
     Returns
     -------
-    c : array, shape(nslices, nrows, ncols)
+    c : array, shape (nslices, nrows, ncols)
         the binary image of the sphere with the requested dimensions
     """
     cdef:

@@ -104,7 +104,7 @@ class MattesMIMetric(MattesBase):
             self.interp_method = vf.interpolate_scalar_3d
 
         if self.sampling_proportion is None:
-            self.warped = aff_warp(self.static, self.static_grid2world,
+            self.warped = transform_image(self.static, self.static_grid2world,
                                    self.moving, self.moving_grid2world, T)
             self.warped = self.warped.astype(np.float64)
             self.samples = None
@@ -167,7 +167,7 @@ class MattesMIMetric(MattesBase):
             T = T.dot(self.prealign)
 
         # Warp the moving image
-        self.warped = aff_warp(self.static, self.static_grid2world,
+        self.warped = transform_image(self.static, self.static_grid2world,
                                self.moving, self.moving_grid2world, T)
         self.warped = self.warped.astype(np.float64)
 
@@ -293,7 +293,7 @@ class MattesMIMetric(MattesBase):
 
         Returns
         -------
-        grad : array, shape(n,)
+        grad : array, shape (n,)
             the gradient of the negative Mutual Information
         """
         if self.samples is None:
@@ -318,7 +318,7 @@ class MattesMIMetric(MattesBase):
             the negative mutual information of the input images after warping
             the moving image by the currently set transform with `xopt`
             parameters
-        grad : array, shape(n,)
+        grad : array, shape (n,)
             the gradient of the negative Mutual Information
         """
         if self.samples is None:
@@ -449,14 +449,14 @@ class AffineRegistration(object):
         if prealign is None:
             self.prealign = np.eye(self.dim + 1)
         elif prealign == 'mass':
-            self.prealign = aff_centers_of_mass(static, static_grid2world,
-                                                moving, moving_grid2world)
-        elif prealign == 'origins':
-            self.prealign = aff_origins(static, static_grid2world, moving,
-                                        moving_grid2world)
-        elif prealign == 'centers':
-            self.prealign = aff_geometric_centers(static, static_grid2world,
+            self.prealign = align_centers_of_mass(static, static_grid2world,
                                                   moving, moving_grid2world)
+        elif prealign == 'origins':
+            self.prealign = align_origins(static, static_grid2world, moving,
+                                          moving_grid2world)
+        elif prealign == 'centers':
+            self.prealign = align_geometric_centers(static, static_grid2world,
+                                                    moving, moving_grid2world)
         elif isinstance(prealign, np.ndarray) and prealign.shape == (n,):
             self.prealign = prealign
         else:
@@ -535,7 +535,7 @@ class AffineRegistration(object):
 
         Returns
         -------
-        T : array, shape(dim+1, dim+1)
+        T : array, shape (dim+1, dim+1)
             the matrix representing the optimized affine transform
         '''
         self._init_optimizer(static, moving, transform, x0, static_grid2world,
@@ -556,7 +556,7 @@ class AffineRegistration(object):
             current_static_shape = self.static_ss.get_domain_shape(level)
             current_static_grid2world = self.static_ss.get_affine(level)
 
-            current_static = aff_warp(tuple(current_static_shape),
+            current_static = transform_image(tuple(current_static_shape),
                                       current_static_grid2world, smooth_static,
                                       original_static_grid2world, None, False)
 
@@ -605,18 +605,18 @@ class AffineRegistration(object):
         return self.prealign
 
 
-def aff_warp(static, static_grid2world, moving, moving_grid2world, transform,
+def transform_image(static, static_grid2world, moving, moving_grid2world, transform,
              nn=False):
     r""" Warps the moving image towards the static using the given transform
 
     Parameters
     ----------
-    static: array, shape(S, R, C)
+    static: array, shape (S, R, C)
         static image: it will provide the grid and grid-to-space transform for
         the warped image
     static_grid2world:
         grid-to-space transform associated with the static image
-    moving: array, shape(S', R', C')
+    moving: array, shape (S', R', C')
         moving image
     moving_grid2world:
         grid-to-space transform associated with the moving image
@@ -667,23 +667,23 @@ def aff_warp(static, static_grid2world, moving, moving_grid2world, transform,
     return np.array(warped)
 
 
-def aff_centers_of_mass(static, static_grid2world, moving, moving_grid2world):
+def align_centers_of_mass(static, static_grid2world, moving, moving_grid2world):
     r""" Transformation to align the center of mass of the input images
 
     Parameters
     ----------
-    static: array, shape(S, R, C)
+    static: array, shape (S, R, C)
         static image
     static_grid2world: array, shape (4, 4)
         the voxel-to-space transformation of the static image
-    moving: array, shape(S, R, C)
+    moving: array, shape (S, R, C)
         moving image
     moving_grid2world: array, shape (4, 4)
         the voxel-to-space transformation of the moving image
 
     Returns
     -------
-    transform : array, shape(4, 4)
+    transform : array, shape (4, 4)
         the affine transformation (translation only, in this case) aligning
         the center of mass of the moving image towards the one of the static
         image
@@ -702,7 +702,7 @@ def aff_centers_of_mass(static, static_grid2world, moving, moving_grid2world):
     return transform
 
 
-def aff_geometric_centers(static, static_grid2world, moving,
+def align_geometric_centers(static, static_grid2world, moving,
                           moving_grid2world):
     r""" Transformation to align the geometric center of the input images
 
@@ -711,18 +711,18 @@ def aff_geometric_centers(static, static_grid2world, moving,
 
     Parameters
     ----------
-    static: array, shape(S, R, C)
+    static: array, shape (S, R, C)
         static image
     static_grid2world: array, shape (4, 4)
         the voxel-to-space transformation of the static image
-    moving: array, shape(S, R, C)
+    moving: array, shape (S, R, C)
         moving image
     moving_grid2world: array, shape (4, 4)
         the voxel-to-space transformation of the moving image
 
     Returns
     -------
-    transform : array, shape(4, 4)
+    transform : array, shape (4, 4)
         the affine transformation (translation only, in this case) aligning
         the geometric center of the moving image towards the one of the static
         image
@@ -741,7 +741,7 @@ def aff_geometric_centers(static, static_grid2world, moving,
     return transform
 
 
-def aff_origins(static, static_grid2world, moving, moving_grid2world):
+def align_origins(static, static_grid2world, moving, moving_grid2world):
     r""" Transformation to align the origins of the input images
 
     With "origin" of a volume we mean the physical coordinates of
@@ -749,18 +749,18 @@ def aff_origins(static, static_grid2world, moving, moving_grid2world):
 
     Parameters
     ----------
-    static: array, shape(S, R, C)
+    static: array, shape (S, R, C)
         static image
     static_grid2world: array, shape (4, 4)
         the voxel-to-space transformation of the static image
-    moving: array, shape(S, R, C)
+    moving: array, shape (S, R, C)
         moving image
     moving_grid2world: array, shape (4, 4)
         the voxel-to-space transformation of the moving image
 
     Returns
     -------
-    transform : array, shape(4, 4)
+    transform : array, shape (4, 4)
         the affine transformation (translation only, in this case) aligning
         the origin of the moving image towards the one of the static
         image
