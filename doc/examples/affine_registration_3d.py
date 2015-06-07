@@ -90,12 +90,10 @@ is built. First of all, we need to specify how many resolutions we want to use. 
 indirectly specified by just providing a list of the number of iterations we want to
 perform at each resolution. Here we will just specify 3 resolutions and a large number
 of iterations, 10000 at the coarsest resolution, 1000 at the medium resolution and 100
-at the finest. We also provide a tolerance for the optimization method. These are the
-default settings
+at the finest. These are the default settings
 """
 
 level_iters = [10000, 1000, 100]
-opt_tol = 1e-5
 
 """
 To compute the Gaussian pyramid, the original image is first smoothed at each level
@@ -122,9 +120,8 @@ prepared
 
 affreg = AffineRegistration(metric=metric,
                             level_iters=level_iters,
-                            opt_tol=opt_tol,
-                            factors=factors,
-                            sigmas=sigmas)
+                            sigmas=sigmas,
+                            factors=factors)
 
 """
 Using AffineRegistration we can register our images in as many stages as we want, providing

@@ -42,8 +42,8 @@ class MattesMIMetric(MattesBase):
         super(MattesMIMetric, self).__init__(nbins)
         self.sampling_proportion = sampling_proportion
 
-    def setup(self, transform, static, moving, static_grid2space=None,
-              moving_grid2space=None, prealign=None):
+    def setup(self, transform, static, moving, static_grid2world=None,
+              moving_grid2world=None, prealign=None):
         r""" Prepares the metric to compute intensity densities and gradients
 
         The histograms will be setup to compute probability densities of
@@ -59,10 +59,10 @@ class MattesMIMetric(MattesBase):
             static image
         moving : array, shape (S', R', C') or (R', C')
             moving image
-        static_grid2space : array (dim+1, dim+1), optional
+        static_grid2world : array (dim+1, dim+1), optional
             the grid-to-space transform of the static image. The default is
             None, implying the transform is the identity.
-        moving_grid2space : array (dim+1, dim+1)
+        moving_grid2world : array (dim+1, dim+1)
             the grid-to-space transform of the moving image. The default is
             None, implying the spacing along all axes is 1.
         prealign : array, shape (dim+1, dim+1), optional
@@ -76,21 +76,21 @@ class MattesMIMetric(MattesBase):
             implying no pre-alignment is performed.
         """
         self.dim = len(static.shape)
-        if moving_grid2space is None:
-            moving_grid2space = np.eye(self.dim + 1)
-        if static_grid2space is None:
-            static_grid2space = np.eye(self.dim + 1)
+        if moving_grid2world is None:
+            moving_grid2world = np.eye(self.dim + 1)
+        if static_grid2world is None:
+            static_grid2world = np.eye(self.dim + 1)
         self.transform = transform
         self.static = np.array(static).astype(np.float64)
         self.moving = np.array(moving).astype(np.float64)
-        self.static_grid2space = static_grid2space
-        self.static_space2grid = npl.inv(static_grid2space)
-        self.moving_grid2space = moving_grid2space
-        self.moving_space2grid = npl.inv(moving_grid2space)
+        self.static_grid2world = static_grid2world
+        self.static_world2grid = npl.inv(static_grid2world)
+        self.moving_grid2world = moving_grid2world
+        self.moving_world2grid = npl.inv(moving_grid2world)
         self.static_direction, self.static_spacing = \
-            get_direction_and_spacings(static_grid2space, self.dim)
+            get_direction_and_spacings(static_grid2world, self.dim)
         self.moving_direction, self.moving_spacing = \
-            get_direction_and_spacings(moving_grid2space, self.dim)
+            get_direction_and_spacings(moving_grid2world, self.dim)
         self.prealign = prealign
         self.param_scales = None
 
@@ -104,8 +104,8 @@ class MattesMIMetric(MattesBase):
             self.interp_method = vf.interpolate_scalar_3d
 
         if self.sampling_proportion is None:
-            self.warped = aff_warp(self.static, self.static_grid2space,
-                                   self.moving, self.moving_grid2space, T)
+            self.warped = aff_warp(self.static, self.static_grid2world,
+                                   self.moving, self.moving_grid2world, T)
             self.warped = self.warped.astype(np.float64)
             self.samples = None
             self.ns = 0
@@ -115,19 +115,19 @@ class MattesMIMetric(MattesBase):
             self.warped = None
             k = 100 / self.sampling_proportion
             shape = np.array(static.shape, dtype=np.int32)
-            samples = sample_domain_regular(k, shape, static_grid2space)
+            samples = sample_domain_regular(k, shape, static_grid2world)
             samples = np.array(samples)
             ns = samples.shape[0]
             # Add a column of ones (homogeneous coordinates)
             samples = np.hstack((samples, np.ones(ns)[:, None]))
             # Sample the static image
-            points_on_static = self.static_space2grid.dot(samples.T).T
+            points_on_static = self.static_world2grid.dot(samples.T).T
             points_on_static = points_on_static[..., :self.dim]
             static_vals, inside = self.interp_method(static_32,
                                                      points_on_static)
             static_vals = np.array(static_vals, dtype=np.float64)
             # Sample the moving image
-            sp_to_moving = self.moving_space2grid.dot(T)
+            sp_to_moving = self.moving_world2grid.dot(T)
             points_on_moving = sp_to_moving.dot(samples.T).T
             points_on_moving = points_on_moving[..., :self.dim]
             moving_vals, inside = self.interp_method(moving_32,
@@ -167,8 +167,8 @@ class MattesMIMetric(MattesBase):
             T = T.dot(self.prealign)
 
         # Warp the moving image
-        self.warped = aff_warp(self.static, self.static_grid2space,
-                               self.moving, self.moving_grid2space, T)
+        self.warped = aff_warp(self.static, self.static_grid2world,
+                               self.moving, self.moving_grid2world, T)
         self.warped = self.warped.astype(np.float64)
 
         # Update the joint and marginal intensity distributions
@@ -176,22 +176,22 @@ class MattesMIMetric(MattesBase):
 
         # Compute the gradient of the joint PDF w.r.t. parameters
         if update_gradient:
-            if self.static_grid2space is None:
-                grid_to_space = T
+            if self.static_grid2world is None:
+                grid_to_world = T
             else:
-                grid_to_space = T.dot(self.static_grid2space)
+                grid_to_world = T.dot(self.static_grid2world)
 
             # Compute the gradient of the moving image at the current transform
-            grid_to_space = T.dot(self.static_grid2space)
+            grid_to_world = T.dot(self.static_grid2world)
             self.grad_w, inside = vf.gradient(self.moving.astype(np.float32),
-                                              self.moving_space2grid,
+                                              self.moving_world2grid,
                                               self.moving_spacing,
                                               self.static.shape,
-                                              grid_to_space)
+                                              grid_to_world)
 
             # Update the gradient of the metric
             self.update_gradient_dense(xopt, self.transform, self.static,
-                                       self.warped, grid_to_space, self.grad_w,
+                                       self.warped, grid_to_world, self.grad_w,
                                        None, None)
 
         # Evaluate the mutual information and its gradient
@@ -227,7 +227,7 @@ class MattesMIMetric(MattesBase):
             T = T.dot(self.prealign)
 
         # Sample the moving image
-        sp_to_moving = self.moving_space2grid.dot(T)
+        sp_to_moving = self.moving_world2grid.dot(T)
         points_on_moving = sp_to_moving.dot(self.samples.T).T
         points_on_moving = points_on_moving[..., :self.dim]
         moving_32 = self.moving.astype(np.float32)
@@ -400,7 +400,7 @@ class AffineRegistration(object):
             self.sigmas = sigmas
 
     def _init_optimizer(self, static, moving, transform, x0,
-                        static_grid2space, moving_grid2space, prealign):
+                        static_grid2world, moving_grid2world, prealign):
         r"""Initializes the registration optimizer
 
         Initializes the optimizer by computing the scale space of the input
@@ -424,9 +424,9 @@ class AffineRegistration(object):
             parameters from which to start the optimization. If None, the
             optimization will start at the identity transform. n is the
             number of parameters of the specified transformation.
-        static_grid2space: array, shape (dim+1, dim+1)
+        static_grid2world: array, shape (dim+1, dim+1)
             the voxel-to-space transformation associated with the static image
-        moving_grid2space: array, shape (dim+1, dim+1)
+        moving_grid2world: array, shape (dim+1, dim+1)
             the voxel-to-space transformation associated with the moving image
         prealign: string, or matrix, or None
             If string:
@@ -449,23 +449,23 @@ class AffineRegistration(object):
         if prealign is None:
             self.prealign = np.eye(self.dim + 1)
         elif prealign == 'mass':
-            self.prealign = aff_centers_of_mass(static, static_grid2space,
-                                                moving, moving_grid2space)
+            self.prealign = aff_centers_of_mass(static, static_grid2world,
+                                                moving, moving_grid2world)
         elif prealign == 'origins':
-            self.prealign = aff_origins(static, static_grid2space, moving,
-                                        moving_grid2space)
+            self.prealign = aff_origins(static, static_grid2world, moving,
+                                        moving_grid2world)
         elif prealign == 'centers':
-            self.prealign = aff_geometric_centers(static, static_grid2space,
-                                                  moving, moving_grid2space)
+            self.prealign = aff_geometric_centers(static, static_grid2world,
+                                                  moving, moving_grid2world)
         elif isinstance(prealign, np.ndarray) and prealign.shape == (n,):
             self.prealign = prealign
         else:
             raise ValueError('Invalid prealign matrix')
         # Extract information from affine matrices to create the scale space
         static_direction, static_spacing = \
-            get_direction_and_spacings(static_grid2space, self.dim)
+            get_direction_and_spacings(static_grid2world, self.dim)
         moving_direction, moving_spacing = \
-            get_direction_and_spacings(moving_grid2space, self.dim)
+            get_direction_and_spacings(moving_grid2world, self.dim)
 
         static = ((static.astype(np.float64) - static.min()) /
                   (static.max() - static.min()))
@@ -476,24 +476,24 @@ class AffineRegistration(object):
         if self.use_isotropic:
             self.moving_ss = IsotropicScaleSpace(moving, self.factors,
                                                  self.sigmas,
-                                                 moving_grid2space,
+                                                 moving_grid2world,
                                                  moving_spacing, False)
 
             self.static_ss = IsotropicScaleSpace(static, self.factors,
                                                  self.sigmas,
-                                                 static_grid2space,
+                                                 static_grid2world,
                                                  static_spacing, False)
         else:
-            self.moving_ss = ScaleSpace(moving, self.levels, moving_grid2space,
+            self.moving_ss = ScaleSpace(moving, self.levels, moving_grid2world,
                                         moving_spacing, self.ss_sigma_factor,
                                         False)
 
-            self.static_ss = ScaleSpace(static, self.levels, static_grid2space,
+            self.static_ss = ScaleSpace(static, self.levels, static_grid2world,
                                         static_spacing, self.ss_sigma_factor,
                                         False)
 
-    def optimize(self, static, moving, transform, x0, static_grid2space=None,
-                 moving_grid2space=None, prealign=None):
+    def optimize(self, static, moving, transform, x0, static_grid2world=None,
+                 moving_grid2world=None, prealign=None):
         r''' Starts the optimization process
 
         Parameters
@@ -514,11 +514,11 @@ class AffineRegistration(object):
             parameters from which to start the optimization. If None, the
             optimization will start at the identity transform. n is the
             number of parameters of the specified transformation.
-        static_grid2space: array, shape (dim+1, dim+1), optional
+        static_grid2world: array, shape (dim+1, dim+1), optional
             the voxel-to-space transformation associated with the static
             image. The default is None, implying the transform is the
             identity.
-        moving_grid2space: array, shape (dim+1, dim+1), optional
+        moving_grid2world: array, shape (dim+1, dim+1), optional
             the voxel-to-space transformation associated with the moving
             image. The default is None, implying the transform is the
             identity.
@@ -538,13 +538,13 @@ class AffineRegistration(object):
         T : array, shape(dim+1, dim+1)
             the matrix representing the optimized affine transform
         '''
-        self._init_optimizer(static, moving, transform, x0, static_grid2space,
-                             moving_grid2space, prealign)
+        self._init_optimizer(static, moving, transform, x0, static_grid2world,
+                             moving_grid2world, prealign)
         del prealign  # Now we must refer to self.prealign
 
         # Multi-resolution iterations
-        original_static_grid2space = self.static_ss.get_affine(0)
-        original_moving_grid2space = self.moving_ss.get_affine(0)
+        original_static_grid2world = self.static_ss.get_affine(0)
+        original_moving_grid2world = self.moving_ss.get_affine(0)
 
         for level in range(self.levels - 1, -1, -1):
             self.current_level = level
@@ -554,22 +554,22 @@ class AffineRegistration(object):
             # Resample the smooth static image to the shape of this level
             smooth_static = self.static_ss.get_image(level)
             current_static_shape = self.static_ss.get_domain_shape(level)
-            current_static_grid2space = self.static_ss.get_affine(level)
+            current_static_grid2world = self.static_ss.get_affine(level)
 
             current_static = aff_warp(tuple(current_static_shape),
-                                      current_static_grid2space, smooth_static,
-                                      original_static_grid2space, None, False)
+                                      current_static_grid2world, smooth_static,
+                                      original_static_grid2world, None, False)
 
             # The moving image is full resolution
-            current_moving_grid2space = original_moving_grid2space
+            current_moving_grid2world = original_moving_grid2world
             current_moving_spacing = self.moving_ss.get_spacing(level)
 
             current_moving = self.moving_ss.get_image(level)
 
             # Prepare the metric for iterations at this resolution
             self.metric.setup(transform, current_static, current_moving,
-                              current_static_grid2space,
-                              current_moving_grid2space, self.prealign)
+                              current_static_grid2world,
+                              current_moving_grid2world, self.prealign)
 
             # Optimize this level
             if self.options is None:
@@ -605,7 +605,7 @@ class AffineRegistration(object):
         return self.prealign
 
 
-def aff_warp(static, static_grid2space, moving, moving_grid2space, transform,
+def aff_warp(static, static_grid2world, moving, moving_grid2world, transform,
              nn=False):
     r""" Warps the moving image towards the static using the given transform
 
@@ -614,11 +614,11 @@ def aff_warp(static, static_grid2space, moving, moving_grid2space, transform,
     static: array, shape(S, R, C)
         static image: it will provide the grid and grid-to-space transform for
         the warped image
-    static_grid2space:
+    static_grid2world:
         grid-to-space transform associated with the static image
     moving: array, shape(S', R', C')
         moving image
-    moving_grid2space:
+    moving_grid2world:
         grid-to-space transform associated with the moving image
     transform: array, shape (dim+1, dim+1)
         the matrix representing the affine transform to be applied to `moving`
@@ -649,36 +649,36 @@ def aff_warp(static, static_grid2space, moving, moving_grid2space, transform,
             warp_method = vf.warp_2d_affine
         elif dim == 3:
             warp_method = vf.warp_3d_affine
-    if moving_grid2space is not None:
-        m_space2grid = npl.inv(moving_grid2space)
+    if moving_grid2world is not None:
+        m_world2grid = npl.inv(moving_grid2world)
     else:
-        m_space2grid = np.eye(dim + 1)
+        m_world2grid = np.eye(dim + 1)
 
-    if static_grid2space is None:
-        static_grid2space = np.eye(dim + 1)
+    if static_grid2world is None:
+        static_grid2world = np.eye(dim + 1)
 
     if transform is None:
-        composition = m_space2grid.dot(static_grid2space)
+        composition = m_world2grid.dot(static_grid2world)
     else:
-        composition = m_space2grid.dot(transform.dot(static_grid2space))
+        composition = m_world2grid.dot(transform.dot(static_grid2world))
 
     warped = warp_method(input, shape, composition)
 
     return np.array(warped)
 
 
-def aff_centers_of_mass(static, static_grid2space, moving, moving_grid2space):
+def aff_centers_of_mass(static, static_grid2world, moving, moving_grid2world):
     r""" Transformation to align the center of mass of the input images
 
     Parameters
     ----------
     static: array, shape(S, R, C)
         static image
-    static_grid2space: array, shape (4, 4)
+    static_grid2world: array, shape (4, 4)
         the voxel-to-space transformation of the static image
     moving: array, shape(S, R, C)
         moving image
-    moving_grid2space: array, shape (4, 4)
+    moving_grid2world: array, shape (4, 4)
         the voxel-to-space transformation of the moving image
 
     Returns
@@ -689,21 +689,21 @@ def aff_centers_of_mass(static, static_grid2space, moving, moving_grid2space):
         image
     """
     dim = len(static.shape)
-    if static_grid2space is None:
-        static_grid2space = np.eye(dim + 1)
-    if moving_grid2space is None:
-        moving_grid2space = np.eye(dim + 1)
+    if static_grid2world is None:
+        static_grid2world = np.eye(dim + 1)
+    if moving_grid2world is None:
+        moving_grid2world = np.eye(dim + 1)
     c_static = ndimage.measurements.center_of_mass(np.array(static))
-    c_static = static_grid2space.dot(c_static+(1,))
+    c_static = static_grid2world.dot(c_static+(1,))
     c_moving = ndimage.measurements.center_of_mass(np.array(moving))
-    c_moving = moving_grid2space.dot(c_moving+(1,))
+    c_moving = moving_grid2world.dot(c_moving+(1,))
     transform = np.eye(dim + 1)
     transform[:dim, dim] = (c_moving - c_static)[:dim]
     return transform
 
 
-def aff_geometric_centers(static, static_grid2space, moving,
-                          moving_grid2space):
+def aff_geometric_centers(static, static_grid2world, moving,
+                          moving_grid2world):
     r""" Transformation to align the geometric center of the input images
 
     With "geometric center" of a volume we mean the physical coordinates of
@@ -713,11 +713,11 @@ def aff_geometric_centers(static, static_grid2space, moving,
     ----------
     static: array, shape(S, R, C)
         static image
-    static_grid2space: array, shape (4, 4)
+    static_grid2world: array, shape (4, 4)
         the voxel-to-space transformation of the static image
     moving: array, shape(S, R, C)
         moving image
-    moving_grid2space: array, shape (4, 4)
+    moving_grid2world: array, shape (4, 4)
         the voxel-to-space transformation of the moving image
 
     Returns
@@ -728,20 +728,20 @@ def aff_geometric_centers(static, static_grid2space, moving,
         image
     """
     dim = len(static.shape)
-    if static_grid2space is None:
-        static_grid2space = np.eye(dim + 1)
-    if moving_grid2space is None:
-        moving_grid2space = np.eye(dim + 1)
+    if static_grid2world is None:
+        static_grid2world = np.eye(dim + 1)
+    if moving_grid2world is None:
+        moving_grid2world = np.eye(dim + 1)
     c_static = tuple((np.array(static.shape, dtype=np.float64)) * 0.5)
-    c_static = static_grid2space.dot(c_static+(1,))
+    c_static = static_grid2world.dot(c_static+(1,))
     c_moving = tuple((np.array(moving.shape, dtype=np.float64)) * 0.5)
-    c_moving = moving_grid2space.dot(c_moving+(1,))
+    c_moving = moving_grid2world.dot(c_moving+(1,))
     transform = np.eye(dim + 1)
     transform[:dim, dim] = (c_moving - c_static)[:dim]
     return transform
 
 
-def aff_origins(static, static_grid2space, moving, moving_grid2space):
+def aff_origins(static, static_grid2world, moving, moving_grid2world):
     r""" Transformation to align the origins of the input images
 
     With "origin" of a volume we mean the physical coordinates of
@@ -751,11 +751,11 @@ def aff_origins(static, static_grid2space, moving, moving_grid2space):
     ----------
     static: array, shape(S, R, C)
         static image
-    static_grid2space: array, shape (4, 4)
+    static_grid2world: array, shape (4, 4)
         the voxel-to-space transformation of the static image
     moving: array, shape(S, R, C)
         moving image
-    moving_grid2space: array, shape (4, 4)
+    moving_grid2world: array, shape (4, 4)
         the voxel-to-space transformation of the moving image
 
     Returns
@@ -766,12 +766,12 @@ def aff_origins(static, static_grid2space, moving, moving_grid2space):
         image
     """
     dim = len(static.shape)
-    if static_grid2space is None:
-        static_grid2space = np.eye(dim + 1)
-    if moving_grid2space is None:
-        moving_grid2space = np.eye(dim + 1)
-    c_static = static_grid2space[:dim, dim]
-    c_moving = moving_grid2space[:dim, dim]
+    if static_grid2world is None:
+        static_grid2world = np.eye(dim + 1)
+    if moving_grid2world is None:
+        moving_grid2world = np.eye(dim + 1)
+    c_static = static_grid2world[:dim, dim]
+    c_moving = moving_grid2world[:dim, dim]
     transform = np.eye(dim + 1)
     transform[:dim, dim] = (c_moving - c_static)[:dim]
     return transform

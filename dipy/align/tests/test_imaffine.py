@@ -67,18 +67,18 @@ def test_aff_centers_of_mass_3d():
                               [0, 0, 1 * scale_factor, 0],
                               [0, 0, 0, 1]])
 
-            static_grid2space = trans_inv.dot(scale.dot(rot.dot(trans)))
-            moving_grid2space = np.linalg.inv(static_grid2space)
+            static_grid2world = trans_inv.dot(scale.dot(rot.dot(trans)))
+            moving_grid2world = np.linalg.inv(static_grid2world)
 
             # Expected translation
-            c_static = static_grid2space.dot((32, 32, 32, 1))[:3]
-            c_moving = moving_grid2space.dot((16, 16, 16, 1))[:3]
+            c_static = static_grid2world.dot((32, 32, 32, 1))[:3]
+            c_moving = moving_grid2world.dot((16, 16, 16, 1))[:3]
             expected = np.eye(4);
             expected[:3, 3] = c_moving - c_static
 
             # Implementation under test
-            actual = imaffine.aff_centers_of_mass(static, static_grid2space,
-                                                  moving, moving_grid2space)
+            actual = imaffine.aff_centers_of_mass(static, static_grid2world,
+                                                  moving, moving_grid2world)
             assert_array_almost_equal(actual, expected)
 
 
@@ -108,22 +108,22 @@ def test_aff_geometric_centers_3d():
                                       [0, 0, 1 * s, 0],
                                       [0, 0, 0, 1]])
 
-                    static_grid2space = trans_inv.dot(scale.dot(rot.dot(trans)))
-                    moving_grid2space = np.linalg.inv(static_grid2space)
+                    static_grid2world = trans_inv.dot(scale.dot(rot.dot(trans)))
+                    moving_grid2world = np.linalg.inv(static_grid2world)
 
                     # Expected translation
                     c_static = np.array(shape_static, dtype = np.float64) * 0.5
                     c_static = tuple(c_static)
-                    c_static = static_grid2space.dot(c_static+(1,))[:3]
+                    c_static = static_grid2world.dot(c_static+(1,))[:3]
                     c_moving = np.array(shape_moving, dtype = np.float64) * 0.5
                     c_moving = tuple(c_moving)
-                    c_moving = moving_grid2space.dot(c_moving+(1,))[:3]
+                    c_moving = moving_grid2world.dot(c_moving+(1,))[:3]
                     expected = np.eye(4);
                     expected[:3, 3] = c_moving - c_static
 
                     # Implementation under test
                     actual = imaffine.aff_geometric_centers(static,
-                        static_grid2space, moving, moving_grid2space)
+                        static_grid2world, moving, moving_grid2world)
                     assert_array_almost_equal(actual, expected)
 
 
@@ -153,18 +153,18 @@ def test_aff_origins_3d():
                                       [0, 0, 1*s, 0],
                                       [0, 0, 0, 1]])
 
-                    static_grid2space = trans_inv.dot(scale.dot(rot.dot(trans)))
-                    moving_grid2space = np.linalg.inv(static_grid2space)
+                    static_grid2world = trans_inv.dot(scale.dot(rot.dot(trans)))
+                    moving_grid2world = np.linalg.inv(static_grid2world)
 
                     # Expected translation
-                    c_static = static_grid2space[:3, 3]
-                    c_moving = moving_grid2space[:3, 3]
+                    c_static = static_grid2world[:3, 3]
+                    c_moving = moving_grid2world[:3, 3]
                     expected = np.eye(4);
                     expected[:3, 3] = c_moving - c_static
 
                     # Implementation under test
-                    actual = imaffine.aff_origins(static, static_grid2space,
-                                                  moving, moving_grid2space)
+                    actual = imaffine.aff_origins(static, static_grid2world,
+                                                  moving, moving_grid2world)
                     assert_array_almost_equal(actual, expected)
 
 
@@ -180,7 +180,7 @@ def test_affreg_all_transforms():
         sampling_pc = factors[ttype][1]
         transform = regtransforms[ttype]
 
-        static, moving, static_grid2space, moving_grid2space, smask, mmask, T = \
+        static, moving, static_grid2world, moving_grid2world, smask, mmask, T = \
                         setup_random_transform(transform, factor, nslices, 1.0)
         # Sum of absolute differences
         start_sad = np.abs(static - moving).sum()
@@ -193,10 +193,10 @@ def test_affreg_all_transforms():
                                              None,
                                              options=None)
         x0 = transform.get_identity_parameters()
-        sol = affreg.optimize(static, moving, transform, x0, static_grid2space,
-                              moving_grid2space)
-        warped = aff_warp(static, static_grid2space, moving,
-                          moving_grid2space, sol)
+        sol = affreg.optimize(static, moving, transform, x0, static_grid2world,
+                              moving_grid2world)
+        warped = aff_warp(static, static_grid2world, moving,
+                          moving_grid2world, sol)
         # Sum of absolute differences
         end_sad = np.abs(static - warped).sum()
         reduction = 1 - end_sad / start_sad
@@ -221,7 +221,7 @@ def test_affreg_defaults():
         transform = regtransforms[ttype]
         id_param = transform.get_identity_parameters()
 
-        static, moving, static_grid2space, moving_grid2space, smask, mmask, T = \
+        static, moving, static_grid2world, moving_grid2world, smask, mmask, T = \
                         setup_random_transform(transform, factor, nslices, 1.0)
         # Sum of absolute differences
         start_sad = np.abs(static - moving).sum()
@@ -231,8 +231,8 @@ def test_affreg_defaults():
         sigmas = None
         scale_factors = None
         level_iters = None
-        static_grid2space = None
-        moving_grid2space = None
+        static_grid2world = None
+        moving_grid2world = None
         for ss_sigma_factor in [1.0, None]:
             affreg = imaffine.AffineRegistration(metric,
                                                  level_iters,
@@ -241,10 +241,10 @@ def test_affreg_defaults():
                                                  'L-BFGS-B',
                                                  ss_sigma_factor,
                                                  options=None)
-            sol = affreg.optimize(static, moving, transform, x0, static_grid2space,
-                                  moving_grid2space, prealign)
-            warped = aff_warp(static, static_grid2space, moving,
-                              moving_grid2space, sol)
+            sol = affreg.optimize(static, moving, transform, x0, static_grid2world,
+                                  moving_grid2world, prealign)
+            warped = aff_warp(static, static_grid2world, moving,
+                              moving_grid2world, sol)
             # Sum of absolute differences
             end_sad = np.abs(static - warped).sum()
             reduction = 1 - end_sad / start_sad

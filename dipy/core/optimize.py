@@ -151,7 +151,7 @@ class Optimizer(object):
                     options = default_options
 
                 try:
-                    out = fmin_l_bfgs_b(fun, x0, jac, args,
+                    out = fmin_l_bfgs_b(fun, x0, fprime=jac, args,
                                         approx_grad=approx_grad,
                                         bounds=bounds,
                                         m=options['maxcor'],
@@ -166,7 +166,7 @@ class Optimizer(object):
                     msg += '`maxfun` instead with value twice of maxiter.'
 
                     print(msg)
-                    out = fmin_l_bfgs_b(fun, x0, jac, args,
+                    out = fmin_l_bfgs_b(fun, x0, fprime=jac, args,
                                         approx_grad=approx_grad,
                                         bounds=bounds,
                                         m=options['maxcor'],

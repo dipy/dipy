@@ -20,15 +20,15 @@ def test_scale_space():
             else:
                 moving, static = get_synthetic_warped_circle(30)
             input_spacing = np.array([1.1, 1.2, 1.5])[:dim]
-            grid2space = np.diag(tuple(input_spacing) + (1.0,))
+            grid2world = np.diag(tuple(input_spacing) + (1.0,))
             
             original = moving
             if test_class is ScaleSpace:
-                ss = test_class(original, num_levels, grid2space, input_spacing)
+                ss = test_class(original, num_levels, grid2world, input_spacing)
             elif test_class is IsotropicScaleSpace:
                 factors = [4, 2, 1]
                 sigmas = [3.0, 1.0, 0.0]
-                ss = test_class(original, factors, sigmas, grid2space, input_spacing)
+                ss = test_class(original, factors, sigmas, grid2world, input_spacing)
             for level in range(num_levels):
                 # Verify sigmas and images are consistent
                 sigmas = ss.get_sigmas(level)
