@@ -170,15 +170,15 @@ class MattesBase(object):
 
         Parameters
         ----------
-        static: array, shape (S, R, C)
+        static : array, shape (S, R, C)
             static image
-        moving: array, shape (S, R, C)
+        moving : array, shape (S, R, C)
             moving image
-        smask: array, shape (S, R, C)
+        smask : array, shape (S, R, C)
             mask of static object being registered (a binary array with 1's
             inside the object of interest and 0's along the background).
             If None, ones_like(static) is used as mask.
-        mmask: array, shape (S, R, C)
+        mmask : array, shape (S, R, C)
             mask of moving object being registered (a binary array with 1's
             inside the object of interest and 0's along the background).
             If None, ones_like(moving) is used as mask.
@@ -215,9 +215,9 @@ class MattesBase(object):
 
         Parameters
         ----------
-        sval: array, shape (n,)
+        sval : array, shape (n,)
             sampled intensities from the static image at sampled_points
-        mval: array, shape (n,)
+        mval : array, shape (n,)
             sampled intensities from the moving image at sampled_points
         '''
         energy = _compute_pdfs_sparse(sval, mval, self.smin, self.sdelta,
@@ -236,16 +236,16 @@ class MattesBase(object):
 
         Parameters
         ----------
-        theta: array, shape (n,)
+        theta : array, shape (n,)
             parameters of the transformation to compute the gradient from
-        transform: instance of Transform
+        transform : instance of Transform
             the transformation with respect to whose parameters the gradient
             must be computed
-        static: array, shape (S, R, C)
+        static : array, shape (S, R, C)
             static image
-        moving: array, shape (S, R, C)
+        moving : array, shape (S, R, C)
             moving image
-        grid2world: array, shape (4, 4)
+        grid2world : array, shape (4, 4)
             we assume that both images have already been sampled at a common
             grid. This transform must map voxel coordinates of this common grid
             to physical coordinates of its corresponding voxel in the moving
@@ -258,12 +258,12 @@ class MattesBase(object):
             where static_affine is the transformation mapping static image's
             grid coordinates to physical space.
 
-        mgradient: array, shape (S, R, C, 3)
+        mgradient : array, shape (S, R, C, 3)
             the gradient of the moving image
-        smask: array, shape (S, R, C)
+        smask : array, shape (S, R, C)
             mask of static object being registered (a binary array with 1's
             inside the object of interest and 0's along the background)
-        mmask: array, shape (S, R, C)
+        mmask : array, shape (S, R, C)
             mask of moving object being registered (a binary array with 1's
             inside the object of interest and 0's along the background)
         '''
@@ -308,19 +308,19 @@ class MattesBase(object):
 
         Parameters
         ----------
-        theta: array, shape (n,)
+        theta : array, shape (n,)
             parameters to compute the gradient at
-        transform: instance of Transform
+        transform : instance of Transform
             the transformation with respect to whose parameters the gradient
             must be computed
-        sval: array, shape (m,)
+        sval : array, shape (m,)
             sampled intensities from the static image at sampled_points
-        mval: array, shape (m,)
+        mval : array, shape (m,)
             sampled intensities from the moving image at sampled_points
-        sample_points: array, shape (m, 3)
+        sample_points : array, shape (m, 3)
             coordinates (in physical space) of the points the images were
             sampled at
-        mgradient: array, shape (m, 3)
+        mgradient : array, shape (m, 3)
             the gradient of the moving image at the sample points
         '''
         dim = sample_points.shape[1]
@@ -532,36 +532,36 @@ cdef _compute_pdfs_dense_2d(double[:, :] static, double[:, :] moving,
 
     Parameters
     ----------
-    static: array, shape (R, C)
+    static : array, shape (R, C)
         static image
-    moving: array, shape (R, C)
+    moving : array, shape (R, C)
         moving image
-    smask: array, shape (R, C)
+    smask : array, shape (R, C)
         mask of static object being registered (a binary array with 1's inside
         the object of interest and 0's along the background)
-    mmask: array, shape (R, C)
+    mmask : array, shape (R, C)
         mask of moving object being registered (a binary array with 1's inside
         the object of interest and 0's along the background)
-    smin: float
+    smin : float
         the minimum observed intensity associated with the static image, which
         was used to define the joint PDF
-    sdelta: float
+    sdelta : float
         bin size associated with the intensities of the static image
-    mmin: float
+    mmin : float
         the minimum observed intensity associated with the moving image, which
         was used to define the joint PDF
-    mdelta: float
+    mdelta : float
         bin size associated with the intensities of the moving image
-    nbins: int
+    nbins : int
         number of histogram bins
-    padding: int
+    padding : int
         number of bins used as padding (the total bins used for padding at both
         sides of the histogram is actually 2*padding)
-    joint: array, shape (nbins, nbins)
+    joint : array, shape (nbins, nbins)
         the array to write the joint PDF
-    smarginal: array, shape (nbins,)
+    smarginal : array, shape (nbins,)
         the array to write the marginal PDF associated with the static image
-    mmarginal: array, shape (nbins,)
+    mmarginal : array, shape (nbins,)
         the array to write the marginal PDF associated with the moving image
     '''
     cdef:
@@ -620,36 +620,36 @@ cdef _compute_pdfs_dense_3d(double[:, :, :] static, double[:, :, :] moving,
 
     Parameters
     ----------
-    static: array, shape (S, R, C)
+    static : array, shape (S, R, C)
         static image
-    moving: array, shape (S, R, C)
+    moving : array, shape (S, R, C)
         moving image
-    smask: array, shape (S, R, C)
+    smask : array, shape (S, R, C)
         mask of static object being registered (a binary array with 1's inside
         the object of interest and 0's along the background)
-    mmask: array, shape (S, R, C)
+    mmask : array, shape (S, R, C)
         mask of moving object being registered (a binary array with 1's inside
         the object of interest and 0's along the background)
-    smin: float
+    smin : float
         the minimum observed intensity associated with the static image, which
         was used to define the joint PDF
-    sdelta: float
+    sdelta : float
         bin size associated with the intensities of the static image
-    mmin: float
+    mmin : float
         the minimum observed intensity associated with the moving image, which
         was used to define the joint PDF
-    mdelta: float
+    mdelta : float
         bin size associated with the intensities of the moving image
-    nbins: int
+    nbins : int
         number of histogram bins
-    padding: int
+    padding : int
         number of bins used as padding (the total bins used for padding at both
         sides of the histogram is actually 2*padding)
-    joint: array, shape (nbins, nbins)
+    joint : array, shape (nbins, nbins)
         the array to write the joint PDF to
-    smarginal: array, shape (nbins,)
+    smarginal : array, shape (nbins,)
         the array to write the marginal PDF associated with the static image
-    mmarginal: array, shape (nbins,)
+    mmarginal : array, shape (nbins,)
         the array to write the marginal PDF associated with the moving image
     '''
     cdef:
@@ -709,30 +709,30 @@ cdef _compute_pdfs_sparse(double[:] sval, double[:] mval, double smin,
 
     Parameters
     ----------
-    sval: array, shape (n,)
+    sval : array, shape (n,)
         sampled intensities from the static image at sampled_points
-    mval: array, shape (n,)
+    mval : array, shape (n,)
         sampled intensities from the moving image at sampled_points
-    smin: float
+    smin : float
         the minimum observed intensity associated with the static image, which
         was used to define the joint PDF
-    sdelta: float
+    sdelta : float
         bin size associated with the intensities of the static image
-    mmin: float
+    mmin : float
         the minimum observed intensity associated with the moving image, which
         was used to define the joint PDF
-    mdelta: float
+    mdelta : float
         bin size associated with the intensities of the moving image
-    nbins: int
+    nbins : int
         number of histogram bins
-    padding: int
+    padding : int
         number of bins used as padding (the total bins used for padding at both
         sides of the histogram is actually 2*padding)
-    joint: array, shape (nbins, nbins)
+    joint : array, shape (nbins, nbins)
         the array to write the joint PDF to
-    smarginal: array, shape (nbins,)
+    smarginal : array, shape (nbins,)
         the array to write the marginal PDF associated with the static image
-    mmarginal: array, shape (nbins,)
+    mmarginal : array, shape (nbins,)
         the array to write the marginal PDF associated with the moving image
     '''
     cdef:
@@ -792,42 +792,42 @@ cdef _joint_pdf_gradient_dense_2d(double[:] theta, Transform transform,
 
     Parameters
     ----------
-    theta: array, shape (n,)
+    theta : array, shape (n,)
         parameters of the transformation to compute the gradient from
-    transform: instance of Transform
+    transform : instance of Transform
         the transformation with respect to whose parameters the gradient
         must be computed
-    static: array, shape (R, C)
+    static : array, shape (R, C)
         static image
-    moving: array, shape (R, C)
+    moving : array, shape (R, C)
         moving image
-    grid2world: array, shape (3, 3)
+    grid2world : array, shape (3, 3)
         the grid-to-space transform associated with images static and moving
         (we assume that both images have already been sampled at a common grid)
-    mgradient: array, shape (R, C, 2)
+    mgradient : array, shape (R, C, 2)
         the gradient of the moving image
-    smask: array, shape (R, C)
+    smask : array, shape (R, C)
         mask of static object being registered (a binary array with 1's inside
         the object of interest and 0's along the background)
-    mmask: array, shape (R, C)
+    mmask : array, shape (R, C)
         mask of moving object being registered (a binary array with 1's inside
         the object of interest and 0's along the background)
-    smin: float
+    smin : float
         the minimum observed intensity associated with the static image, which
         was used to define the joint PDF
-    sdelta: float
+    sdelta : float
         bin size associated with the intensities of the static image
-    mmin: float
+    mmin : float
         the minimum observed intensity associated with the moving image, which
         was used to define the joint PDF
-    mdelta: float
+    mdelta : float
         bin size associated with the intensities of the moving image
-    nbins: int
+    nbins : int
         number of histogram bins
-    padding: int
+    padding : int
         number of bins used as padding (the total bins used for padding at both
         sides of the histogram is actually 2*padding)
-    grad_pdf: array, shape (nbins, nbins, len(theta))
+    grad_pdf : array, shape (nbins, nbins, len(theta))
         the array to write the gradient to
     '''
     cdef:
@@ -902,42 +902,42 @@ cdef _joint_pdf_gradient_dense_3d(double[:] theta, Transform transform,
 
     Parameters
     ----------
-    theta: array, shape (n,)
+    theta : array, shape (n,)
         parameters of the transformation to compute the gradient from
-    transform: instance of Transform
+    transform : instance of Transform
         the transformation with respect to whose parameters the gradient
         must be computed
-    static: array, shape (S, R, C)
+    static : array, shape (S, R, C)
         static image
-    moving: array, shape (S, R, C)
+    moving : array, shape (S, R, C)
         moving image
-    grid2world: array, shape (4, 4)
+    grid2world : array, shape (4, 4)
         the grid-to-space transform associated with images static and moving
         (we assume that both images have already been sampled at a common grid)
-    mgradient: array, shape (S, R, C, 3)
+    mgradient : array, shape (S, R, C, 3)
         the gradient of the moving image
-    smask: array, shape (S, R, C)
+    smask : array, shape (S, R, C)
         mask of static object being registered (a binary array with 1's inside
         the object of interest and 0's along the background)
-    mmask: array, shape (S, R, C)
+    mmask : array, shape (S, R, C)
         mask of moving object being registered (a binary array with 1's inside
         the object of interest and 0's along the background)
-    smin: float
+    smin : float
         the minimum observed intensity associated with the static image, which
         was used to define the joint PDF
-    sdelta: float
+    sdelta : float
         bin size associated with the intensities of the static image
-    mmin: float
+    mmin : float
         the minimum observed intensity associated with the moving image, which
         was used to define the joint PDF
-    mdelta: float
+    mdelta : float
         bin size associated with the intensities of the moving image
-    nbins: int
+    nbins : int
         number of histogram bins
-    padding: int
+    padding : int
         number of bins used as padding (the total bins used for padding at both
         sides of the histogram is actually 2*padding)
-    grad_pdf: array, shape (nbins, nbins, len(theta))
+    grad_pdf : array, shape (nbins, nbins, len(theta))
         the array to write the gradient to
     '''
     cdef:
@@ -1012,35 +1012,35 @@ cdef _joint_pdf_gradient_sparse_2d(double[:] theta, Transform transform,
 
     Parameters
     ----------
-    theta: array, shape (n,)
+    theta : array, shape (n,)
         parameters to compute the gradient at
-    transform: instance of Transform
+    transform : instance of Transform
         the transformation with respect to whose parameters the gradient
         must be computed
-    sval: array, shape (m,)
+    sval : array, shape (m,)
         sampled intensities from the static image at sampled_points
-    mval: array, shape (m,)
+    mval : array, shape (m,)
         sampled intensities from the moving image at sampled_points
-    sample_points: array, shape (m, 2)
+    sample_points : array, shape (m, 2)
         positions (in physical space) of the points the images were sampled at
-    mgradient: array, shape (m, 2)
+    mgradient : array, shape (m, 2)
         the gradient of the moving image at the sample points
-    smin: float
+    smin : float
         the minimum observed intensity associated with the static image, which
         was used to define the joint PDF
-    sdelta: float
+    sdelta : float
         bin size associated with the intensities of the static image
-    mmin: float
+    mmin : float
         the minimum observed intensity associated with the moving image, which
         was used to define the joint PDF
-    mdelta: float
+    mdelta : float
         bin size associated with the intensities of the moving image
-    nbins: int
+    nbins : int
         number of histogram bins
-    padding: int
+    padding : int
         number of bins used as padding (the total bins used for padding at both
         sides of the histogram is actually 2*padding)
-    grad_pdf: array, shape (nbins, nbins, len(theta))
+    grad_pdf : array, shape (nbins, nbins, len(theta))
         the array to write the gradient to
     '''
     cdef:
@@ -1102,35 +1102,35 @@ cdef _joint_pdf_gradient_sparse_3d(double[:] theta, Transform transform,
 
     Parameters
     ----------
-    theta: array, shape (n,)
+    theta : array, shape (n,)
         parameters to compute the gradient at
-    transform: instance of Transform
+    transform : instance of Transform
         the transformation with respect to whose parameters the gradient
         must be computed
-    sval: array, shape (m,)
+    sval : array, shape (m,)
         sampled intensities from the static image at sampled_points
-    mval: array, shape (m,)
+    mval : array, shape (m,)
         sampled intensities from the moving image at sampled_points
-    sample_points: array, shape (m, 3)
+    sample_points : array, shape (m, 3)
         positions (in physical space) of the points the images were sampled at
-    mgradient: array, shape (m, 3)
+    mgradient : array, shape (m, 3)
         the gradient of the moving image at the sample points
-    smin: float
+    smin : float
         the minimum observed intensity associated with the static image, which
         was used to define the joint PDF
-    sdelta: float
+    sdelta : float
         bin size associated with the intensities of the static image
-    mmin: float
+    mmin : float
         the minimum observed intensity associated with the moving image, which
         was used to define the joint PDF
-    mdelta: float
+    mdelta : float
         bin size associated with the intensities of the moving image
-    nbins: int
+    nbins : int
         number of histogram bins
-    padding: int
+    padding : int
         number of bins used as padding (the total bins used for padding at both
         sides of the histogram is actually 2*padding)
-    grad_pdf: array, shape (nbins, nbins, len(theta))
+    grad_pdf : array, shape (nbins, nbins, len(theta))
         the array to write the gradient to
     '''
     cdef:

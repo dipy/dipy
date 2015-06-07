@@ -1638,7 +1638,7 @@ def reorient_vector_field_3d(floating[:, :, :, :] d,
     ----------
     d : array, shape (S, R, C, 3)
         the displacement field to be re-oriented
-    affine: array, shape (4, 4)
+    affine : array, shape (4, 4)
         the matrix to be applied
     """
     cdef:

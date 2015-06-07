@@ -984,22 +984,22 @@ class SymmetricDiffeomorphicRegistration(DiffeomorphicRegistration):
 
         Parameters
         ----------
-        static: array, shape (S, R, C) or (R, C)
+        static : array, shape (S, R, C) or (R, C)
             the image to be used as reference during optimization. The
             displacement fields will have the same discretization as the static
             image.
-        moving: array, shape (S, R, C) or (R, C)
+        moving : array, shape (S, R, C) or (R, C)
             the image to be used as "moving" during optimization. Since the
             deformation fields' discretization is the same as the static image,
             it is necessary to pre-align the moving image to ensure its domain
             lies inside the domain of the deformation fields. This is assumed to
             be accomplished by "pre-aligning" the moving image towards the
             static using an affine transformation given by the 'prealign' matrix
-        static_grid2world: array, shape (dim+1, dim+1)
+        static_grid2world : array, shape (dim+1, dim+1)
             the voxel-to-space transformation associated to the static image
-        moving_grid2world: array, shape (dim+1, dim+1)
+        moving_grid2world : array, shape (dim+1, dim+1)
             the voxel-to-space transformation associated to the moving image
-        prealign: array, shape (dim+1, dim+1)
+        prealign : array, shape (dim+1, dim+1)
             the affine transformation (operating on the physical space)
             pre-aligning the moving image towards the static
 
@@ -1379,22 +1379,22 @@ class SymmetricDiffeomorphicRegistration(DiffeomorphicRegistration):
 
         Parameters
         ----------
-        static: array, shape (S, R, C) or (R, C)
+        static : array, shape (S, R, C) or (R, C)
             the image to be used as reference during optimization. The
             displacement fields will have the same discretization as the static
             image.
-        moving: array, shape (S, R, C) or (R, C)
+        moving : array, shape (S, R, C) or (R, C)
             the image to be used as "moving" during optimization. Since the
             deformation fields' discretization is the same as the static image,
             it is necessary to pre-align the moving image to ensure its domain
             lies inside the domain of the deformation fields. This is assumed to
             be accomplished by "pre-aligning" the moving image towards the
             static using an affine transformation given by the 'prealign' matrix
-        static_grid2world: array, shape (dim+1, dim+1)
+        static_grid2world : array, shape (dim+1, dim+1)
             the voxel-to-space transformation associated to the static image
-        moving_grid2world: array, shape (dim+1, dim+1)
+        moving_grid2world : array, shape (dim+1, dim+1)
             the voxel-to-space transformation associated to the moving image
-        prealign: array, shape (dim+1, dim+1)
+        prealign : array, shape (dim+1, dim+1)
             the affine transformation (operating on the physical space)
             pre-aligning the moving image towards the static
 

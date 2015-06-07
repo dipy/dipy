@@ -408,27 +408,27 @@ class AffineRegistration(object):
 
         Parameters
         ----------
-        static: array, shape (S, R, C) or (R, C)
+        static : array, shape (S, R, C) or (R, C)
             the image to be used as reference during optimization.
-        moving: array, shape (S, R, C) or (R, C)
+        moving : array, shape (S, R, C) or (R, C)
             the image to be used as "moving" during optimization. It is
             necessary to pre-align the moving image to ensure its domain
             lies inside the domain of the deformation fields. This is assumed
             to be accomplished by "pre-aligning" the moving image towards the
             static using an affine transformation given by the 'prealign'
             matrix
-        transform: instance of Transform
+        transform : instance of Transform
             the transformation with respect to whose parameters the gradient
             must be computed
-        x0: array, shape (n,)
+        x0 : array, shape (n,)
             parameters from which to start the optimization. If None, the
             optimization will start at the identity transform. n is the
             number of parameters of the specified transformation.
-        static_grid2world: array, shape (dim+1, dim+1)
+        static_grid2world : array, shape (dim+1, dim+1)
             the voxel-to-space transformation associated with the static image
-        moving_grid2world: array, shape (dim+1, dim+1)
+        moving_grid2world : array, shape (dim+1, dim+1)
             the voxel-to-space transformation associated with the moving image
-        prealign: string, or matrix, or None
+        prealign : string, or matrix, or None
             If string:
                 'mass': align centers of gravity
                 'origins': align physical coordinates of voxel (0,0,0)
@@ -498,31 +498,31 @@ class AffineRegistration(object):
 
         Parameters
         ----------
-        static: array, shape (S, R, C) or (R, C)
+        static : array, shape (S, R, C) or (R, C)
             the image to be used as reference during optimization.
-        moving: array, shape (S, R, C) or (R, C)
+        moving : array, shape (S, R, C) or (R, C)
             the image to be used as "moving" during optimization. It is
             necessary to pre-align the moving image to ensure its domain
             lies inside the domain of the deformation fields. This is assumed
             to be accomplished by "pre-aligning" the moving image towards the
             static using an affine transformation given by the 'prealign'
             matrix
-        transform: instance of Transform
+        transform : instance of Transform
             the transformation with respect to whose parameters the gradient
             must be computed
-        x0: array, shape (n,)
+        x0 : array, shape (n,)
             parameters from which to start the optimization. If None, the
             optimization will start at the identity transform. n is the
             number of parameters of the specified transformation.
-        static_grid2world: array, shape (dim+1, dim+1), optional
+        static_grid2world : array, shape (dim+1, dim+1), optional
             the voxel-to-space transformation associated with the static
             image. The default is None, implying the transform is the
             identity.
-        moving_grid2world: array, shape (dim+1, dim+1), optional
+        moving_grid2world : array, shape (dim+1, dim+1), optional
             the voxel-to-space transformation associated with the moving
             image. The default is None, implying the transform is the
             identity.
-        prealign: string, or matrix, or None, optional
+        prealign : string, or matrix, or None, optional
             If string:
                 'mass': align centers of gravity
                 'origins': align physical coordinates of voxel (0,0,0)
@@ -611,16 +611,16 @@ def transform_image(static, static_grid2world, moving, moving_grid2world, transf
 
     Parameters
     ----------
-    static: array, shape (S, R, C)
+    static : array, shape (S, R, C)
         static image: it will provide the grid and grid-to-space transform for
         the warped image
-    static_grid2world:
+    static_grid2world : array, shape (dim+1, dim+1)
         grid-to-space transform associated with the static image
-    moving: array, shape (S', R', C')
+    moving : array, shape (S', R', C')
         moving image
-    moving_grid2world:
+    moving_grid2world : array, shape (dim+1, dim+1)
         grid-to-space transform associated with the moving image
-    transform: array, shape (dim+1, dim+1)
+    transform : array, shape (dim+1, dim+1)
         the matrix representing the affine transform to be applied to `moving`
     nn : Boolean, optional
         if False, trilinear interpolation will be used. If True, nearest
@@ -628,7 +628,7 @@ def transform_image(static, static_grid2world, moving, moving_grid2world, transf
         implying trilinear interpolation.
     Returns
     -------
-    warped: array, shape (S, R, C)
+    warped : array, shape (S, R, C)
         the warped image
     """
     if type(static) is tuple:
@@ -672,18 +672,18 @@ def align_centers_of_mass(static, static_grid2world, moving, moving_grid2world):
 
     Parameters
     ----------
-    static: array, shape (S, R, C)
+    static : array, shape (S, R, C)
         static image
-    static_grid2world: array, shape (4, 4)
+    static_grid2world : array, shape (dim+1, dim+1)
         the voxel-to-space transformation of the static image
-    moving: array, shape (S, R, C)
+    moving : array, shape (S, R, C)
         moving image
-    moving_grid2world: array, shape (4, 4)
+    moving_grid2world : array, shape (dim+1, dim+1)
         the voxel-to-space transformation of the moving image
 
     Returns
     -------
-    transform : array, shape (4, 4)
+    transform : array, shape (dim+1, dim+1)
         the affine transformation (translation only, in this case) aligning
         the center of mass of the moving image towards the one of the static
         image
@@ -711,18 +711,18 @@ def align_geometric_centers(static, static_grid2world, moving,
 
     Parameters
     ----------
-    static: array, shape (S, R, C)
+    static : array, shape (S, R, C)
         static image
-    static_grid2world: array, shape (4, 4)
+    static_grid2world : array, shape (dim+1, dim+1)
         the voxel-to-space transformation of the static image
-    moving: array, shape (S, R, C)
+    moving : array, shape (S, R, C)
         moving image
-    moving_grid2world: array, shape (4, 4)
+    moving_grid2world : array, shape (dim+1, dim+1)
         the voxel-to-space transformation of the moving image
 
     Returns
     -------
-    transform : array, shape (4, 4)
+    transform : array, shape (dim+1, dim+1)
         the affine transformation (translation only, in this case) aligning
         the geometric center of the moving image towards the one of the static
         image
@@ -749,18 +749,18 @@ def align_origins(static, static_grid2world, moving, moving_grid2world):
 
     Parameters
     ----------
-    static: array, shape (S, R, C)
+    static : array, shape (S, R, C)
         static image
-    static_grid2world: array, shape (4, 4)
+    static_grid2world : array, shape (dim+1, dim+1)
         the voxel-to-space transformation of the static image
-    moving: array, shape (S, R, C)
+    moving : array, shape (S, R, C)
         moving image
-    moving_grid2world: array, shape (4, 4)
+    moving_grid2world : array, shape (dim+1, dim+1)
         the voxel-to-space transformation of the moving image
 
     Returns
     -------
-    transform : array, shape (4, 4)
+    transform : array, shape (dim+1, dim+1)
         the affine transformation (translation only, in this case) aligning
         the origin of the moving image towards the one of the static
         image
