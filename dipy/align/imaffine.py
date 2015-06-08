@@ -23,11 +23,14 @@ class MattesMIMetric(MattesBase):
         nbins : int, optional
             the number of bins to be used for computing the intensity
             histograms. The default is 32.
-        sampling_proportion : int in (0,100], optional
-            the percentage of voxels to be used for estimating the (joint and
-            marginal) intensity histograms. If None, dense sampling is used
-            (see notes regarding the difference between sparse and dense
-            sampling). The default is None.
+        sampling_proportion : float in (0,1], optional
+            There are two types of sampling: dense and sparse. Dense sampling
+            uses all voxels for estimating the (joint and marginal) intensity
+            histograms, while sparse sampling uses a subset of them. If
+            sampling_proportion is None, then dense sampling is
+            used. If sampling_proportion is a floating point value in (0,1]
+            then sparse sampling is used, where sampling_proportion specifies
+            the proportion of voxels to be used. The default is None.
 
         Notes
         -----
@@ -92,12 +95,8 @@ class MattesMIMetric(MattesBase):
         self.moving_direction, self.moving_spacing = \
             get_direction_and_spacings(moving_grid2world, self.dim)
         self.prealign = prealign
-        self.param_scales = None
 
-        T = np.eye(self.dim + 1)
-        if self.prealign is not None:
-            T = T.dot(self.prealign)
-
+        P = np.eye(self.dim + 1) if self.prealign is None else self.prealign
         if self.dim == 2:
             self.interp_method = vf.interpolate_scalar_2d
         else:
@@ -105,7 +104,7 @@ class MattesMIMetric(MattesBase):
 
         if self.sampling_proportion is None:
             self.warped = transform_image(self.static, self.static_grid2world,
-                                   self.moving, self.moving_grid2world, T)
+                                   self.moving, self.moving_grid2world, P)
             self.warped = self.warped.astype(np.float64)
             self.samples = None
             self.ns = 0
@@ -113,30 +112,24 @@ class MattesMIMetric(MattesBase):
             static_32 = np.array(static).astype(np.float32)
             moving_32 = np.array(moving).astype(np.float32)
             self.warped = None
-            k = 100 / self.sampling_proportion
+            k = int(np.ceil(1.0 / self.sampling_proportion))
             shape = np.array(static.shape, dtype=np.int32)
-            samples = sample_domain_regular(k, shape, static_grid2world)
-            samples = np.array(samples)
-            ns = samples.shape[0]
+            self.samples = sample_domain_regular(k, shape, static_grid2world)
+            self.samples = np.array(self.samples)
+            self.ns = self.samples.shape[0]
             # Add a column of ones (homogeneous coordinates)
-            samples = np.hstack((samples, np.ones(ns)[:, None]))
+            self.samples = np.hstack((self.samples, np.ones(self.ns)[:, None]))
             # Sample the static image
-            points_on_static = self.static_world2grid.dot(samples.T).T
-            points_on_static = points_on_static[..., :self.dim]
-            static_vals, inside = self.interp_method(static_32,
-                                                     points_on_static)
-            static_vals = np.array(static_vals, dtype=np.float64)
+            static_p = self.static_world2grid.dot(self.samples.T).T
+            static_p = static_p[..., :self.dim]
+            self.static_vals, inside = self.interp_method(static_32, static_p)
+            self.static_vals = np.array(self.static_vals, dtype=np.float64)
             # Sample the moving image
-            sp_to_moving = self.moving_world2grid.dot(T)
-            points_on_moving = sp_to_moving.dot(samples.T).T
-            points_on_moving = points_on_moving[..., :self.dim]
-            moving_vals, inside = self.interp_method(moving_32,
-                                                     points_on_moving)
-            # Store relevant information
-            self.samples = samples
-            self.ns = ns
-            self.static_vals = static_vals
-            self.moving_vals = moving_vals
+            sp_to_moving = self.moving_world2grid.dot(P)
+            moving_p = sp_to_moving.dot(self.samples.T).T
+            moving_p = moving_p[..., :self.dim]
+            self.moving_vals, inside = self.interp_method(moving_32,
+                                                          moving_p)
 
         MattesBase.setup(self, self.static, self.moving)
 

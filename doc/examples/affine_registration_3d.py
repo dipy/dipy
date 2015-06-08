@@ -79,8 +79,8 @@ sampling by passing None instead of an integer
 """
 
 nbins = 32
-sampling_pc = None
-metric = MattesMIMetric(nbins, sampling_pc)
+sampling_prop = None
+metric = MattesMIMetric(nbins, sampling_prop)
 
 """
 To avoid getting stuck at local optima, and to accelerate convergence, we use a

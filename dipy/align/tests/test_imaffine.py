@@ -22,15 +22,15 @@ from .test_mattes import setup_random_transform
 # (either a positive integer less than or equal to 100, or None) indicating
 # the percentage (if int) of voxels to be used for estimating the joint PDFs,
 # or dense sampling (if None)
-factors = {('TRANSLATION', 2): (2.0, 30),
+factors = {('TRANSLATION', 2): (2.0, 0.35),
            ('ROTATION', 2): (0.1, None),
-           ('RIGID', 2): (0.1, 50),
+           ('RIGID', 2): (0.1, .50),
            ('SCALING', 2): (0.01, None),
-           ('AFFINE', 2): (0.1, 40),
+           ('AFFINE', 2): (0.1, .50),
            ('TRANSLATION', 3): (2.0, None),
-           ('ROTATION', 3): (0.1, 35, 60),
+           ('ROTATION', 3): (0.1, 35, 1.0),
            ('RIGID', 3): (0.1, None),
-           ('SCALING', 3): (0.1, 30),
+           ('SCALING', 3): (0.1, .35),
            ('AFFINE', 3): (0.1, None)}
 
 def test_align_centers_of_mass_3d():
