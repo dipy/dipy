@@ -16,6 +16,33 @@ from dipy.core.geometry import vec2vec_rotmat
 diffusion_evals = np.array([1500e-6, 400e-6, 400e-6])
 
 
+def _check_directions(angles):
+    """
+    Helper function to check if direction ground truth have the right format
+    and are in cartesian coordinates
+
+    Parameters
+    -----------
+    angles : array (K,2) or (K, 3)
+        List of K polar angles (in degrees) for the sticks or array of K
+        sticks as unit vectors.
+
+    Returns
+    --------
+    sticks : (K,3)
+        Sticks in cartesian coordinates.
+    """
+    angles = np.array(angles)
+    if angles.shape[-1] == 3:
+        sticks = angles
+    else:
+        sticks = [sphere2cart(1, np.deg2rad(pair[0]), np.deg2rad(pair[1]))
+                  for pair in angles]
+        sticks = np.array(sticks)
+
+    return sticks
+
+
 def _add_gaussian(sig, noise1, noise2):
     """
     Helper function to add_noise
@@ -146,17 +173,11 @@ def sticks_and_ball(gtab, d=0.0015, S0=100, angles=[(0, 0), (90, 0)],
     f0 = 1 - np.sum(fractions)
     S = np.zeros(len(gtab.bvals))
 
-    angles = np.array(angles)
-    if angles.shape[-1] == 3:
-        sticks = angles
-    else:
-        sticks = [sphere2cart(1, np.deg2rad(pair[0]), np.deg2rad(pair[1]))
-                  for pair in angles]
-        sticks = np.array(sticks)
+    sticks = _check_directions(angles)
 
     for (i, g) in enumerate(gtab.bvecs[1:]):
-        S[i + 1] = f0 * np.exp(-gtab.bvals[i + 1] * d) + \
-            np.sum([fractions[j] * np.exp(-gtab.bvals[i + 1] * d * np.dot(s, g) ** 2)
+        S[i + 1] = f0*np.exp(-gtab.bvals[i + 1]*d) + \
+            np.sum([fractions[j]*np.exp(-gtab.bvals[i + 1]*d*np.dot(s, g)**2)
                    for (j, s) in enumerate(sticks)])
 
         S[i + 1] = S0 * S[i + 1]
@@ -225,7 +246,7 @@ def single_tensor(gtab, S0=1, evals=None, evecs=None, snr=None):
 
 def multi_tensor(gtab, mevals, S0=100, angles=[(0, 0), (90, 0)],
                  fractions=[50, 50], snr=20):
-    r"""Simulate a Multi-Tensor signal.
+    r""" Simulate a Multi-Tensor signal.
 
     Parameters
     -----------
@@ -235,7 +256,8 @@ def multi_tensor(gtab, mevals, S0=100, angles=[(0, 0), (90, 0)],
     S0 : float
         Unweighted signal value (b0 signal).
     angles : array (K,2) or (K,3)
-        List of K tensor directions in polar angles (in degrees) or unit vectors
+        List of K tensor directions in polar angles (in degrees) or unit
+        vectors
     fractions : float
         Percentage of the contribution of each tensor. The sum of fractions
         should be equal to 100%.
@@ -273,25 +295,294 @@ def multi_tensor(gtab, mevals, S0=100, angles=[(0, 0), (90, 0)],
 
     S = np.zeros(len(gtab.bvals))
 
-    angles = np.array(angles)
-    if angles.shape[-1] == 3:
-        sticks = angles
-    else:
-        sticks = [sphere2cart(1, np.deg2rad(pair[0]), np.deg2rad(pair[1]))
-                  for pair in angles]
-        sticks = np.array(sticks)
+    sticks = _check_directions(angles)
 
     for i in range(len(fractions)):
             S = S + fractions[i] * single_tensor(gtab, S0=S0, evals=mevals[i],
                                                  evecs=all_tensor_evecs(
-                                                     sticks[i]).T,
-                                                 snr=None)
+                                                     sticks[i]), snr=None)
 
     return add_noise(S, snr, S0), sticks
 
 
+def multi_tensor_dki(gtab, mevals, S0=100, angles=[(90., 0.), (90., 0.)],
+                     fractions=[50, 50], snr=20):
+
+    r""" Simulate the diffusion-weight signal, diffusion and kurtosis tensors
+    based on the DKI model
+
+    Parameters
+    -----------
+    gtab : GradientTable
+    mevals : array (K, 3)
+        eigenvalues of the diffusion tensor for each individual compartment
+    S0 : float (optional)
+        Unweighted signal value (b0 signal).
+    angles : array (K,2) or (K,3) (optional)
+        List of K tensor directions of the diffusion tensor of each compartment
+        in polar angles (in degrees) or unit vectors
+    fractions : float (K,) (optional)
+        Percentage of the contribution of each tensor. The sum of fractions
+        should be equal to 100%.
+    snr : float (optional)
+        Signal to noise ratio, assuming Rician noise.  If set to None, no
+        noise is added.
+
+    Returns
+    --------
+    S : (N,) ndarray
+        Simulated signal based on the DKI model.
+    dt : (6,)
+        elements of the diffusion tensor.
+    kt : (15,)
+        elements of the kurtosis tensor.
+
+    Notes
+    -----
+    Simulations are based on multicompartmental models which assumes that
+    tissue is well described by impermeable diffusion compartments
+    characterized by their only diffusion tensor. Since simulations are based
+    on the DKI model, coefficients larger than the fourth order of the signal's
+    taylor expansion approximation are neglected.
+
+    Examples
+    --------
+    >>> import numpy as np
+    >>> from dipy.sims.voxel import multi_tensor_dki
+    >>> from dipy.data import get_data
+    >>> from dipy.core.gradients import gradient_table
+    >>> from dipy.io.gradients import read_bvals_bvecs
+    >>> fimg, fbvals, fbvecs = get_data('small_64D')
+    >>> bvals, bvecs = read_bvals_bvecs(fbvals, fbvecs)
+    >>> bvals_2s = np.concatenate((bvals, bvals * 2), axis=0)
+    >>> bvecs_2s = np.concatenate((bvecs, bvecs), axis=0)
+    >>> gtab = gradient_table(bvals_2s, bvecs_2s)
+    >>> mevals = np.array([[0.00099, 0, 0],[0.00226, 0.00087, 0.00087]])
+    >>> S, dt, kt =  multi_tensor_dki(gtab, mevals)
+
+    References
+    ----------
+    .. [1] R. Neto Henriques et al., "Exploring the 3D geometry of the
+           diffusion kurtosis tensor - Impact on the development of robust
+           tractography procedures and novel biomarkers", NeuroImage (2015)
+           111, 85-99.
+    """
+
+    if np.round(np.sum(fractions), 2) != 100.0:
+        raise ValueError('Fractions should sum to 100')
+
+    fractions = [f / 100. for f in fractions]
+
+    S = np.zeros(len(gtab.bvals))
+
+    sticks = _check_directions(angles)
+
+    # computing a 3D matrix containing the individual DT components
+    D_comps = np.zeros((len(fractions), 3, 3))
+    for i in range(len(fractions)):
+        R = all_tensor_evecs(sticks[i])
+        D_comps[i] = dot(dot(R, np.diag(mevals[i])), R.T)
+
+    # compute voxel's DT
+    DT = np.zeros((3, 3))
+    for i in range(len(fractions)):
+        DT = DT + fractions[i]*D_comps[i]
+    dt = np.array([DT[0][0], DT[0][1], DT[1][1], DT[0][2], DT[1][2], DT[2][2]])
+
+    # compute voxel's MD
+    MD = (DT[0][0] + DT[1][1] + DT[2][2]) / 3
+
+    # compute voxel's KT
+    kt = np.zeros((15))
+    kt[0] = kurtosis_element(D_comps, fractions, 0, 0, 0, 0, DT, MD)
+    kt[1] = kurtosis_element(D_comps, fractions, 1, 1, 1, 1, DT, MD)
+    kt[2] = kurtosis_element(D_comps, fractions, 2, 2, 2, 2, DT, MD)
+    kt[3] = kurtosis_element(D_comps, fractions, 0, 0, 0, 1, DT, MD)
+    kt[4] = kurtosis_element(D_comps, fractions, 0, 0, 0, 2, DT, MD)
+    kt[5] = kurtosis_element(D_comps, fractions, 0, 1, 1, 1, DT, MD)
+    kt[6] = kurtosis_element(D_comps, fractions, 1, 1, 1, 2, DT, MD)
+    kt[7] = kurtosis_element(D_comps, fractions, 0, 2, 2, 2, DT, MD)
+    kt[8] = kurtosis_element(D_comps, fractions, 1, 2, 2, 2, DT, MD)
+    kt[9] = kurtosis_element(D_comps, fractions, 0, 0, 1, 1, DT, MD)
+    kt[10] = kurtosis_element(D_comps, fractions, 0, 0, 2, 2, DT, MD)
+    kt[11] = kurtosis_element(D_comps, fractions, 1, 1, 2, 2, DT, MD)
+    kt[12] = kurtosis_element(D_comps, fractions, 0, 0, 1, 2, DT, MD)
+    kt[13] = kurtosis_element(D_comps, fractions, 0, 1, 1, 2, DT, MD)
+    kt[14] = kurtosis_element(D_comps, fractions, 0, 1, 2, 2, DT, MD)
+
+    # compute S based on the DT and KT
+    S = DKI_signal(gtab, dt, kt, S0, snr)
+
+    return S, dt, kt
+
+
+def kurtosis_element(D_comps, frac, ind_i, ind_j, ind_k, ind_l, DT=None,
+                     MD=None):
+    r""" Computes the diffusion kurtosis tensor element (with indexes i, j, k
+    and l) based on the individual diffusion tensor components of a
+    multicompartmental model.
+
+    Parameters
+    -----------
+    D_comps : (K,3,3) ndarray
+        Diffusion tensors for all K individual compartment of the
+        multicompartmental model.
+    frac : float
+        Percentage of the contribution of each tensor. The sum of fractions
+        should be equal to 100%.
+    ind_i : int
+        Element's index i (0 for x, 1 for y, 2 for z)
+    ind_j : int
+        Element's index j (0 for x, 1 for y, 2 for z)
+    ind_k : int
+        Element's index k (0 for x, 1 for y, 2 for z)
+    ind_l: int
+        Elements index l (0 for x, 1 for y, 2 for z)
+    DT : (3,3) ndarray (optional)
+        Voxel's global diffusion tensor.
+    MD : float (optional)
+        Voxel's global mean diffusivity.
+
+    Returns
+    --------
+    wijkl : float
+            kurtosis tensor element of index i, j, k, l
+
+    Notes
+    --------
+    wijkl is calculated using equation 8 given in [1]_
+
+    References
+    ----------
+    .. [1] R. Neto Henriques et al., "Exploring the 3D geometry of the
+           diffusion kurtosis tensor - Impact on the development of robust
+           tractography procedures and novel biomarkers", NeuroImage (2015)
+           111, 85-99.
+    """
+
+    if DT is None:
+        DT = np.zeros((3, 3))
+        for i in range(len(frac)):
+            DT = DT + frac[i]*D_comps[i]
+
+    if MD is None:
+        MD = (DT[0][0] + DT[1][1] + DT[2][2]) / 3
+
+    wijkl = 0
+
+    for f in range(len(frac)):
+        wijkl = wijkl + frac[f] * (
+                D_comps[f][ind_i][ind_j]*D_comps[f][ind_k][ind_l] +
+                D_comps[f][ind_i][ind_k]*D_comps[f][ind_j][ind_l] +
+                D_comps[f][ind_i][ind_l]*D_comps[f][ind_j][ind_k])
+
+    wijkl = (wijkl - DT[ind_i][ind_j]*DT[ind_k][ind_l] -
+             DT[ind_i][ind_k]*DT[ind_j][ind_l] -
+             DT[ind_i][ind_l]*DT[ind_j][ind_k]) / (MD**2)
+
+    return wijkl
+
+
+def DKI_signal(gtab, dt, kt, S0=150, snr=None):
+    r""" Simulated signal based on the diffusion and diffusion kurtosis
+    tensors. Simulations are preformed assuming the DKI model.
+
+    Parameters
+    -----------
+    gtab : GradientTable
+        Measurement directions.
+    dt : (6,) ndarray
+        Elements of the diffusion tensor.
+    kt : (15, ) ndarray
+        Elements of the diffusion kurtosis tensor.
+    S0 : float (optional)
+        Strength of signal in the presence of no diffusion gradient.
+    snr : float (optional)
+        Signal to noise ratio, assuming Rician noise.  None implies no noise.
+
+    Returns
+    --------
+    S : (N,) ndarray
+        Simulated signal based on the DKI model:
+
+    .. math::
+
+        S=S_{0}e^{-bD+\frac{1}{6}b^{2}D^{2}K}
+
+    References
+    ----------
+    .. [1] R. Neto Henriques et al., "Exploring the 3D geometry of the
+           diffusion kurtosis tensor - Impact on the development of robust
+           tractography procedures and novel biomarkers", NeuroImage (2015)
+           111, 85-99.
+    """
+    dt = np.array(dt)
+    kt = np.array(kt)
+
+    A = dki_design_matrix(gtab)
+
+    # define vector of DKI parameters
+    MD = (dt[0] + dt[2] + dt[5]) / 3
+    X = np.concatenate((dt, kt*MD*MD, np.array([np.log(S0)])), axis=0)
+
+    # Compute signals based on the DKI model
+    S = np.exp(dot(A, X))
+
+    S = add_noise(S, snr, S0)
+
+    return S
+
+
+def dki_design_matrix(gtab):
+    r""" Constructs B design matrix for DKI
+
+    Parameters
+    ---------
+    gtab : GradientTable
+        Measurement directions.
+
+    Returns
+    -------
+    design_matrix : array (N,22)
+          Design matrix or B matrix for the DKI model
+            design_matrix[j, :] = (Bxx, Bxy, Bzz, Bxz, Byz, Bzz,
+                                   Bxxxx, Byyyy, Bzzzz, Bxxxy, Bxxxz,
+                                   Bxyyy, Byyyz, Bxzzz, Byzzz, Bxxyy,
+                                   Bxxzz, Byyzz, Bxxyz, Bxyyz, Bxyzz,
+                                   BlogS0)
+    """
+    b = gtab.bvals
+    bvec = gtab.bvecs
+
+    B = np.zeros((len(b), 22))
+    B[:, 0] = -b * bvec[:, 0] * bvec[:, 0]
+    B[:, 1] = -2 * b * bvec[:, 0] * bvec[:, 1]
+    B[:, 2] = -b * bvec[:, 1] * bvec[:, 1]
+    B[:, 3] = -2 * b * bvec[:, 0] * bvec[:, 2]
+    B[:, 4] = -2 * b * bvec[:, 1] * bvec[:, 2]
+    B[:, 5] = -b * bvec[:, 2] * bvec[:, 2]
+    B[:, 6] = b * b * bvec[:, 0]**4 / 6
+    B[:, 7] = b * b * bvec[:, 1]**4 / 6
+    B[:, 8] = b * b * bvec[:, 2]**4 / 6
+    B[:, 9] = 4 * b * b * bvec[:, 0]**3 * bvec[:, 1] / 6
+    B[:, 10] = 4 * b * b * bvec[:, 0]**3 * bvec[:, 2] / 6
+    B[:, 11] = 4 * b * b * bvec[:, 1]**3 * bvec[:, 0] / 6
+    B[:, 12] = 4 * b * b * bvec[:, 1]**3 * bvec[:, 2] / 6
+    B[:, 13] = 4 * b * b * bvec[:, 2]**3 * bvec[:, 0] / 6
+    B[:, 14] = 4 * b * b * bvec[:, 2]**3 * bvec[:, 1] / 6
+    B[:, 15] = b * b * bvec[:, 0]**2 * bvec[:, 1]**2
+    B[:, 16] = b * b * bvec[:, 0]**2 * bvec[:, 2]**2
+    B[:, 17] = b * b * bvec[:, 1]**2 * bvec[:, 2]**2
+    B[:, 18] = 2 * b * b * bvec[:, 0]**2 * bvec[:, 1] * bvec[:, 2]
+    B[:, 19] = 2 * b * b * bvec[:, 1]**2 * bvec[:, 0] * bvec[:, 2]
+    B[:, 20] = 2 * b * b * bvec[:, 2]**2 * bvec[:, 0] * bvec[:, 1]
+    B[:, 21] = np.ones(len(b))
+
+    return B
+
+
 def single_tensor_odf(r, evals=None, evecs=None):
-    """Simulated ODF with a single tensor.
+    """ Simulated ODF with a single tensor.
 
     Parameters
     ----------
@@ -339,7 +630,8 @@ def single_tensor_odf(r, evals=None, evecs=None):
 
 def all_tensor_evecs(e0):
     """Given the principle tensor axis, return the array of all
-    eigenvectors (or, the rotation matrix that orientates the tensor).
+    eigenvectors column-wise (or, the rotation matrix that orientates the
+    tensor).
 
     Parameters
     ----------
@@ -356,7 +648,7 @@ def all_tensor_evecs(e0):
     mat = vec2vec_rotmat(axes[0], e0)
     e1 = np.dot(mat, axes[1])
     e2 = np.dot(mat, axes[2])
-    return np.array([e0, e1, e2])
+    return np.array([e0, e1, e2]).T
 
 
 def multi_tensor_odf(odf_verts, mevals, angles, fractions):
@@ -396,19 +688,13 @@ def multi_tensor_odf(odf_verts, mevals, angles, fractions):
 
     mf = [f / 100. for f in fractions]
 
-    angles = np.array(angles)
-    if angles.shape[-1] == 3:
-        sticks = angles
-    else:
-        sticks = [sphere2cart(1, np.deg2rad(pair[0]), np.deg2rad(pair[1]))
-                  for pair in angles]
-        sticks = np.array(sticks)
+    sticks = _check_directions(angles)
 
     odf = np.zeros(len(odf_verts))
 
     mevecs = []
     for s in sticks:
-        mevecs += [all_tensor_evecs(s).T]
+        mevecs += [all_tensor_evecs(s)]
 
     for (j, f) in enumerate(mf):
         odf += f * single_tensor_odf(odf_verts,
@@ -434,8 +720,8 @@ def single_tensor_rtop(evals=None, tau=1.0 / (4 * np.pi ** 2)):
 
     References
     ----------
-    .. [1] Cheng J., "Estimation and Processing of Ensemble Average Propagator and
-           Its Features in Diffusion MRI", PhD Thesis, 2012.
+    .. [1] Cheng J., "Estimation and Processing of Ensemble Average Propagator
+           and Its Features in Diffusion MRI", PhD Thesis, 2012.
 
     '''
     if evals is None:
@@ -465,8 +751,8 @@ def multi_tensor_rtop(mf, mevals=None, tau=1 / (4 * np.pi ** 2)):
 
     References
     ----------
-    .. [1] Cheng J., "Estimation and Processing of Ensemble Average Propagator and
-           Its Features in Diffusion MRI", PhD Thesis, 2012.
+    .. [1] Cheng J., "Estimation and Processing of Ensemble Average Propagator
+           and Its Features in Diffusion MRI", PhD Thesis, 2012.
 
     '''
     rtop = 0
@@ -504,8 +790,8 @@ def single_tensor_pdf(r, evals=None, evecs=None, tau=1 / (4 * np.pi ** 2)):
 
     References
     ----------
-    .. [1] Cheng J., "Estimation and Processing of Ensemble Average Propagator and
-           Its Features in Diffusion MRI", PhD Thesis, 2012.
+    .. [1] Cheng J., "Estimation and Processing of Ensemble Average Propagator
+           and Its Features in Diffusion MRI", PhD Thesis, 2012.
 
     """
     if evals is None:
@@ -561,19 +847,13 @@ def multi_tensor_pdf(pdf_points, mevals, angles, fractions,
     '''
     mf = [f / 100. for f in fractions]
 
-    angles = np.array(angles)
-    if angles.shape[-1] == 3:
-        sticks = angles
-    else:
-        sticks = [sphere2cart(1, np.deg2rad(pair[0]), np.deg2rad(pair[1]))
-                  for pair in angles]
-        sticks = np.array(sticks)
+    sticks = _check_directions(angles)
 
     pdf = np.zeros(len(pdf_points))
 
     mevecs = []
     for s in sticks:
-        mevecs += [all_tensor_evecs(s).T]
+        mevecs += [all_tensor_evecs(s)]
 
     for j, f in enumerate(mf):
         pdf += f * single_tensor_pdf(pdf_points,
@@ -599,8 +879,8 @@ def single_tensor_msd(evals=None, tau=1 / (4 * np.pi ** 2)):
 
     References
     ----------
-    .. [1] Cheng J., "Estimation and Processing of Ensemble Average Propagator and
-           Its Features in Diffusion MRI", PhD Thesis, 2012.
+    .. [1] Cheng J., "Estimation and Processing of Ensemble Average Propagator
+           and Its Features in Diffusion MRI", PhD Thesis, 2012.
 
     '''
     if evals is None:
@@ -630,8 +910,8 @@ def multi_tensor_msd(mf, mevals=None, tau=1 / (4 * np.pi ** 2)):
 
     References
     ----------
-    .. [1] Cheng J., "Estimation and Processing of Ensemble Average Propagator and
-           Its Features in Diffusion MRI", PhD Thesis, 2012.
+    .. [1] Cheng J., "Estimation and Processing of Ensemble Average Propagator
+           and Its Features in Diffusion MRI", PhD Thesis, 2012.
 
     '''
     msd = 0
