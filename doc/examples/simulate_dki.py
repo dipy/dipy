@@ -4,26 +4,27 @@ DKI MultiTensor Simulation
 ==========================
 
 In this example we show how to simulate the diffusion kurtosis imaging (DKI)
-data of a single voxel. DKI captures information about tissue heterogeneity.
-Therefore DKI simulations have to take into account different tissue
-compartments with different diffusion properties. For example, here diffusion
-heterogeneity is taken into account by modeling different compartments for the
-intra- and extra-cellular media. These simulations are performed according to
-[RNH2015]_.
+data of a single voxel. DKI captures information about the non-Gaussian
+properties of water diffusion which is a consequence of the existence of tissue
+barriers and compartments. In this simulations compartmental heterogeneity is
+taken into account by modeling different compartments for the intra- and
+extra-cellular media of two populations of fibers. These simulations are
+performed according to [RNH2015]_.
 
 We first import all relevant modules.
 """
 
 import numpy as np
 import matplotlib.pyplot as plt
-from dipy.sims.voxel import multi_tensor_dki
+from dipy.sims.voxel import (multi_tensor_dki, single_tensor)
 from dipy.data import get_data
 from dipy.io.gradients import read_bvals_bvecs
 from dipy.core.gradients import gradient_table
+from dipy.reconst.dti import (decompose_tensor, from_lower_triangular)
 
 """
-For the simulation we will need a Gradient Table with the b-values and
-b-vectors. Here we use the Gradient table of the sample Dipy dataset
+For the simulation we will need a GradientTable with the b-values and
+b-vectors. Here we use the GradientTable of the sample Dipy dataset
 'small_64D'.
 """
 
@@ -40,8 +41,8 @@ bvals = np.concatenate((bvals, bvals * 2), axis=0)
 bvecs = np.concatenate((bvecs, bvecs), axis=0)
 
 """
-The b-values and gradient directions are then converted to Dipy's Gradient
-Table format.
+The b-values and gradient directions are then converted to Dipy's
+GradientTable format.
 """
 
 gtab = gradient_table(bvals, bvecs)
@@ -81,13 +82,13 @@ fractions = [fie*50, (1 - fie)*50, fie*50, (1 - fie)*50]
 
 """
 Having defined the parameters for all tissue compartments, the elements of the
-diffusion tensor (dt), the elements of the kurtosis tensor (KT) and the DW
+diffusion tensor (dt), the elements of the kurtosis tensor (kt) and the DW
 signals simulated from the DKI model can be obtain using the function
 ``multi_tensor_dki``.
 """
 
-signal, dt, kt = multi_tensor_dki(gtab, mevals, S0=200, angles=angles,
-                                  fractions=fractions, snr=None)
+signal_dki, dt, kt = multi_tensor_dki(gtab, mevals, S0=200, angles=angles,
+                                      fractions=fractions, snr=None)
 
 """
 We can also add rician noise with a specific SNR.
@@ -98,12 +99,23 @@ signal_noisy, dt, kt = multi_tensor_dki(gtab, mevals, S0=200,
                                         snr=10)
 
 """
-Finally, we can visualize the values of the signal simulated for the DKI for
-all assumed gradient directions and bvalues.
+For comparison purposes, we also compute the DW signal if only the diffusion
+tensor components are taken into account. For this we use Dipy's function
+single_tensor which requires that dt is decomposed into its eigenvalues and
+eigenvectors.
 """
 
-plt.plot(signal, label='noiseless')
+dt_evals, dt_evecs = decompose_tensor(from_lower_triangular(dt))
+signal_dti = single_tensor(gtab, S0=200, evals=dt_evals, evecs=dt_evecs,
+                           snr=None)
 
+"""
+Finally, we can visualize the values of the different version of simulated
+signals for all assumed gradient directions and bvalues.
+"""
+
+plt.plot(signal_dti, label='noiseless dti')
+plt.plot(signal_dki, label='noiseless dki')
 plt.plot(signal_noisy, label='with noise')
 plt.legend()
 plt.show()
@@ -113,8 +125,14 @@ plt.savefig('simulated_dki_signal.png')
 """
 .. figure:: simulated_dki_signal.png
    :align: center
-   **Simulated signals obtain from the DKI model**.
+   **Simulated signals obtain from the DTI and DKI models**.
 
+Non-Gaussian diffusion properties in tissues are responsible to smaller signal
+attenuations for larger bvalues when compared to signal attenuations from free
+gaussian water diffusion. This feature can be shown from the figure above,
+since signals simulated from the DKI models reveals larger DW signal
+intensities than the signals obtained only from the diffusion tensor
+components.
 
 References:
 
