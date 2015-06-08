@@ -6,7 +6,7 @@ DKI MultiTensor Simulation
 In this example we show how to simulate the diffusion kurtosis imaging (DKI)
 data of a single voxel. DKI captures information about the non-Gaussian
 properties of water diffusion which is a consequence of the existence of tissue
-barriers and compartments. In this simulations compartmental heterogeneity is
+barriers and compartments. In these simulations compartmental heterogeneity is
 taken into account by modeling different compartments for the intra- and
 extra-cellular media of two populations of fibers. These simulations are
 performed according to [RNH2015]_.
