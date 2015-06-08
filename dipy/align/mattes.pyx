@@ -7,8 +7,8 @@ import numpy as np
 cimport numpy as cnp
 cimport cython
 import numpy.random as random
-from fused_types cimport floating
-import dipy.align.vector_fields as vf
+from .fused_types cimport floating
+from . import vector_fields as vf
 
 from dipy.align.vector_fields cimport(_apply_affine_3d_x0,
                                       _apply_affine_3d_x1,

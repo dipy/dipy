@@ -1,10 +1,11 @@
 import numpy as np
-from dipy.align import floating
+from .. import floating
+from .. import sumsqdiff as ssd
 from numpy.testing import (assert_equal,
                            assert_almost_equal,
                            assert_array_almost_equal,
                            assert_allclose)
-import dipy.align.sumsqdiff as ssd
+
 
 def iterate_residual_field_ssd_2d(delta_field, sigmasq_field, grad, target,
                                   lambda_param, dfield):

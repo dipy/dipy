@@ -1,17 +1,17 @@
 import numpy as np
-from dipy.align import floating
-import dipy.align.vector_fields as vfu
-import dipy.align.mattes as mattes
-from dipy.align.transforms import regtransforms
 from numpy.testing import (assert_array_equal,
                            assert_array_almost_equal,
                            assert_almost_equal,
                            assert_equal,
                            assert_raises)
-import dipy.align.imwarp as imwarp
-from nibabel.affines import apply_affine, from_matvec
 from scipy.ndimage.interpolation import map_coordinates
-import dipy.core.geometry as geometry
+from nibabel.affines import apply_affine, from_matvec
+from ...core import geometry
+from .. import floating
+from .. import mattes
+from .. import imwarp
+from .. import vector_fields as vfu
+from ..transforms import regtransforms
 
 
 def test_random_displacement_field_2d():

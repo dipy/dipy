@@ -1,15 +1,16 @@
 import numpy as np
 import scipy as sp
-from dipy.align import floating
-from dipy.align.tests.test_imwarp import get_synthetic_warped_circle
-from dipy.align.imwarp import get_direction_and_spacings
-from dipy.align.scalespace import (ScaleSpace,
-                                   IsotropicScaleSpace)
 from numpy.testing import (assert_array_equal,
                            assert_array_almost_equal,
                            assert_almost_equal,
                            assert_equal,
                            assert_raises)
+from .. import floating
+from ..imwarp import get_direction_and_spacings
+from ..scalespace import (ScaleSpace,
+                          IsotropicScaleSpace)
+from .test_imwarp import get_synthetic_warped_circle
+
 def test_scale_space():
     num_levels = 3
     for test_class in [ScaleSpace, IsotropicScaleSpace]:

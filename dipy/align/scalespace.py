@@ -1,4 +1,4 @@
-from dipy.align import floating
+from . import floating
 import numpy as np
 import numpy.linalg as npl
 import scipy as sp

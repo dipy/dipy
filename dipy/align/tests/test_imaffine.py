@@ -1,22 +1,21 @@
 import numpy as np
-from dipy.align import floating
-import dipy.align.vector_fields as vf
-import dipy.align.imaffine as imaffine
-import dipy.core.geometry as geometry
+import scipy as sp
+import nibabel as nib
 from numpy.testing import (assert_array_equal,
                            assert_array_almost_equal,
                            assert_almost_equal,
                            assert_equal)
-import nibabel as nib
-import dipy.align.mattes as mattes
-import scipy as sp
-from dipy.align.transforms import (Transform,
-                                   regtransforms)
-from dipy.align.imaffine import *
-import dipy.viz.regtools as rt
-import dipy.align.imaffine as imaffine
-from dipy.data import get_data
-from dipy.align.tests.test_mattes import setup_random_transform
+from ...core import geometry as geometry
+from ...data import get_data
+from ...viz import regtools as rt
+from .. import floating
+from .. import vector_fields as vf
+from .. import imaffine
+from .. import mattes
+from ..imaffine import transform_image
+from ..transforms import (Transform,
+                          regtransforms)
+from .test_mattes import setup_random_transform
 
 # For each transform type, select a transform factor (indicating how large the
 # true transform between static and moving images will be) and a sampling
@@ -34,7 +33,7 @@ factors = {('TRANSLATION', 2): (2.0, 30),
            ('SCALING', 3): (0.1, 30),
            ('AFFINE', 3): (0.1, None)}
 
-def test_aff_centers_of_mass_3d():
+def test_align_centers_of_mass_3d():
     np.random.seed(1246592)
     shape = (64, 64, 64)
     rm = 8
@@ -77,12 +76,12 @@ def test_aff_centers_of_mass_3d():
             expected[:3, 3] = c_moving - c_static
 
             # Implementation under test
-            actual = imaffine.aff_centers_of_mass(static, static_grid2world,
+            actual = imaffine.align_centers_of_mass(static, static_grid2world,
                                                   moving, moving_grid2world)
             assert_array_almost_equal(actual, expected)
 
 
-def test_aff_geometric_centers_3d():
+def test_align_geometric_centers_3d():
     # Create arbitrary image-to-space transforms
     axis = np.array([.5, 2.0, 1.5])
     t = 0.15 #translation factor
@@ -122,12 +121,12 @@ def test_aff_geometric_centers_3d():
                     expected[:3, 3] = c_moving - c_static
 
                     # Implementation under test
-                    actual = imaffine.aff_geometric_centers(static,
+                    actual = imaffine.align_geometric_centers(static,
                         static_grid2world, moving, moving_grid2world)
                     assert_array_almost_equal(actual, expected)
 
 
-def test_aff_origins_3d():
+def test_align_origins_3d():
     # Create arbitrary image-to-space transforms
     axis = np.array([.5, 2.0, 1.5])
     t = 0.15 #translation factor
@@ -163,7 +162,7 @@ def test_aff_origins_3d():
                     expected[:3, 3] = c_moving - c_static
 
                     # Implementation under test
-                    actual = imaffine.aff_origins(static, static_grid2world,
+                    actual = imaffine.align_origins(static, static_grid2world,
                                                   moving, moving_grid2world)
                     assert_array_almost_equal(actual, expected)
 
@@ -195,7 +194,7 @@ def test_affreg_all_transforms():
         x0 = transform.get_identity_parameters()
         sol = affreg.optimize(static, moving, transform, x0, static_grid2world,
                               moving_grid2world)
-        warped = aff_warp(static, static_grid2world, moving,
+        warped = transform_image(static, static_grid2world, moving,
                           moving_grid2world, sol)
         # Sum of absolute differences
         end_sad = np.abs(static - warped).sum()
@@ -243,7 +242,7 @@ def test_affreg_defaults():
                                                  options=None)
             sol = affreg.optimize(static, moving, transform, x0, static_grid2world,
                                   moving_grid2world, prealign)
-            warped = aff_warp(static, static_grid2world, moving,
+            warped = transform_image(static, static_grid2world, moving,
                               moving_grid2world, sol)
             # Sum of absolute differences
             end_sad = np.abs(static - warped).sum()

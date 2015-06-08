@@ -1,13 +1,13 @@
 import numpy as np
 import numpy.linalg as npl
 import scipy.ndimage as ndimage
-from dipy.align import floating
-import dipy.align.vector_fields as vf
-from dipy.align.mattes import MattesBase, sample_domain_regular
-from dipy.core.optimize import Optimizer
-from dipy.align.imwarp import (get_direction_and_spacings, ScaleSpace)
-from dipy.align.scalespace import IsotropicScaleSpace
-from dipy.core.optimize import SCIPY_LESS_0_12
+from ..core.optimize import Optimizer
+from ..core.optimize import SCIPY_LESS_0_12
+from . import floating
+from . import vector_fields as vf
+from .mattes import MattesBase, sample_domain_regular
+from .imwarp import (get_direction_and_spacings, ScaleSpace)
+from .scalespace import IsotropicScaleSpace
 
 
 class MattesMIMetric(MattesBase):

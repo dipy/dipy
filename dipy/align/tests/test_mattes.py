@@ -1,16 +1,16 @@
 import numpy as np
 import scipy as sp
 import scipy.ndimage as ndimage
-from dipy.core.ndindex import ndindex
-from dipy.data import get_data
-import dipy.align.vector_fields as vf
-from dipy.align.transforms import regtransforms
 from functools import reduce
 from operator import mul
-from dipy.align.mattes import (MattesBase,
-                               cubic_spline,
-                               cubic_spline_derivative,
-                               sample_domain_regular)
+from ...core.ndindex import ndindex
+from ...data import get_data
+from .. import vector_fields as vf
+from ..transforms import regtransforms
+from ..mattes import (MattesBase,
+                      cubic_spline,
+                      cubic_spline_derivative,
+                      sample_domain_regular)
 from numpy.testing import (assert_array_equal,
                            assert_array_almost_equal,
                            assert_almost_equal,
