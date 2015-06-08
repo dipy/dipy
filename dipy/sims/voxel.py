@@ -300,8 +300,7 @@ def multi_tensor(gtab, mevals, S0=100, angles=[(0, 0), (90, 0)],
     for i in range(len(fractions)):
             S = S + fractions[i] * single_tensor(gtab, S0=S0, evals=mevals[i],
                                                  evecs=all_tensor_evecs(
-                                                     sticks[i]).T,
-                                                 snr=None)
+                                                     sticks[i]), snr=None)
 
     return add_noise(S, snr, S0), sticks
 
@@ -382,7 +381,7 @@ def multi_tensor_dki(gtab, mevals, S0=100, angles=[(90., 0.), (90., 0.)],
     D_comps = np.zeros((len(fractions), 3, 3))
     for i in range(len(fractions)):
         R = all_tensor_evecs(sticks[i])
-        D_comps[i] = dot(dot(R.T, np.diag(mevals[i])), R)
+        D_comps[i] = dot(dot(R, np.diag(mevals[i])), R.T)
 
     # compute voxel's DT
     DT = np.zeros((3, 3))
@@ -631,7 +630,8 @@ def single_tensor_odf(r, evals=None, evecs=None):
 
 def all_tensor_evecs(e0):
     """Given the principle tensor axis, return the array of all
-    eigenvectors (or, the rotation matrix that orientates the tensor).
+    eigenvectors column-wise (or, the rotation matrix that orientates the
+    tensor).
 
     Parameters
     ----------
@@ -648,7 +648,7 @@ def all_tensor_evecs(e0):
     mat = vec2vec_rotmat(axes[0], e0)
     e1 = np.dot(mat, axes[1])
     e2 = np.dot(mat, axes[2])
-    return np.array([e0, e1, e2])
+    return np.array([e0, e1, e2]).T
 
 
 def multi_tensor_odf(odf_verts, mevals, angles, fractions):
@@ -694,7 +694,7 @@ def multi_tensor_odf(odf_verts, mevals, angles, fractions):
 
     mevecs = []
     for s in sticks:
-        mevecs += [all_tensor_evecs(s).T]
+        mevecs += [all_tensor_evecs(s)]
 
     for (j, f) in enumerate(mf):
         odf += f * single_tensor_odf(odf_verts,
@@ -853,7 +853,7 @@ def multi_tensor_pdf(pdf_points, mevals, angles, fractions,
 
     mevecs = []
     for s in sticks:
-        mevecs += [all_tensor_evecs(s).T]
+        mevecs += [all_tensor_evecs(s)]
 
     for j, f in enumerate(mf):
         pdf += f * single_tensor_pdf(pdf_points,

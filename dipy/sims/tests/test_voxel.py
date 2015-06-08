@@ -119,8 +119,8 @@ def test_multi_tensor():
     bvals, bvecs = read_bvals_bvecs(fbvals, fbvecs)
     gtab = gradient_table(bvals, bvecs)
 
-    s1 = single_tensor(gtab, 100, mevals[0], mevecs[0].T, snr=None)
-    s2 = single_tensor(gtab, 100, mevals[1], mevecs[1].T, snr=None)
+    s1 = single_tensor(gtab, 100, mevals[0], mevecs[0], snr=None)
+    s2 = single_tensor(gtab, 100, mevals[1], mevecs[1], snr=None)
 
     Ssingle = 0.5*s1 + 0.5*s2
 
@@ -149,7 +149,7 @@ def test_all_tensor_evecs():
 
     desired = np.array([[1/np.sqrt(2), 1/np.sqrt(2), 0],
                         [-1/np.sqrt(2), 1/np.sqrt(2), 0],
-                        [0, 0, 1]])
+                        [0, 0, 1]]).T
 
     assert_array_almost_equal(all_tensor_evecs(e0), desired)
 
