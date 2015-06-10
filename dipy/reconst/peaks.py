@@ -177,11 +177,13 @@ class PeaksAndMetrics(PeaksAndMetricsDirectionGetter):
         For unpickling of the object
         The state should be defined as follows: (qa, ind, odf_vertices)
         """
-        print("In __setstate__ method for PeaksAndMetrics dipy/reconst/peaks.py. Got to this method!")
+        #print("In __setstate__ method for PeaksAndMetrics dipy/reconst/peaks.py. Got to this method!")
         
         self.rebuild_class_state(*state["class_state"])
+        self.initialized = state["is_initialized"]
 
-        if state["is_initialized"]:
+
+        if self.initialized:
             self._initialize()
             current_state = state["current_state"]
             self._qa = current_state["_qa"]
@@ -198,6 +200,7 @@ class PeaksAndMetrics(PeaksAndMetricsDirectionGetter):
                                         self.shm_coeff,
                                         self.B,
                                         self.odf)
+        
         the_state = {"class_state": class_instance_variables,
                         "is_initialized": self.initialized}
         if self.initialized:

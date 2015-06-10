@@ -43,7 +43,7 @@ cdef class PeaksAndMetricsDirectionGetter(DirectionGetter):
         For unpickling of the object
         The state should be defined as follows: (qa, ind, odf_vertices)
         """
-        print "In __setstate__ method for PeaksAndMetricsDirectionGetter dipy/reconst/peaks_direction_getter. Got to this method!"
+        #print "In __setstate__ method for PeaksAndMetricsDirectionGetter dipy/reconst/peaks_direction_getter. Got to this method!"
         self._initialize()
 
         self._qa = state[0]
@@ -52,17 +52,17 @@ cdef class PeaksAndMetricsDirectionGetter(DirectionGetter):
 
     def __reduce__(self):
         if self.initialized:
-            current_state = (np.asarray(self._qa), np.asarray(self._ind), np.asarray(self._odf_vertices))
+            current_state = (np.asarray(self._qa), np.asarray(self._ind), np.asarray(self._odf_vertices), self.initialized)
             return (PeaksAndMetricsDirectionGetter, (), current_state)
         else: 
             # awesome! not intialized. very straightforward
-            return (PeaksAndMetricsDirectionGetter, ())
+            return (PeaksAndMetricsDirectionGetter, (), (None,None,None,self.initialized))
 
     def _initialize(self):
         """First time that a PAM instance is used as a direction getter,
         initialize all the memoryviews.
         """
-        print "In _initialize method for PeaksAndMetricsDirectionGetter in dipy/reconst/peaks_direction_getter. Got to this method!"
+        #print "In _initialize method for PeaksAndMetricsDirectionGetter in dipy/reconst/peaks_direction_getter. Got to this method!"
 
         if self.peak_values.shape != self.peak_indices.shape:
             msg = "shapes of peak_values and peak_indices do not match"

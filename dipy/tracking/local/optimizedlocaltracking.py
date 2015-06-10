@@ -52,7 +52,8 @@ TissueTypes = Bunch(OUTSIDEIMAGE=-1, INVALIDPOINT=0, TRACKPOINT=1, ENDPOINT=2)
 #
 #F = np.empty((N + 1, 3), dtype=float)
 #B = F.copy()
-SEEDS = 0
+
+#SEEDS = 0
 
 
 # run normally
@@ -82,12 +83,7 @@ def streamline_computation(s, inv_A, lin, offset, F, B, vs, dg, tc, affine,
     """
     Helper function for parallelizing the computation of streamlines
     """
-    # print "got in wrapper class: "
-
-    global SEEDS
-    SEEDS += 1
-    print "at seed " + str(SEEDS)    
-    
+    # print "got in wrapper class: "    
     s = np.dot(lin, s) + offset
     directions = dg.initial_direction(s)
     directions = directions[:max_cross]
@@ -265,7 +261,7 @@ class OptimizedLocalTracking(object):
     def compute_all_streamlines(self):
         """computes all streamlines using Pool in Python multiprocessing library"""
 
-        print "starting function"        
+        #print "starting function"        
         
         N = self.maxlen
         dg = self.direction_getter
@@ -283,22 +279,22 @@ class OptimizedLocalTracking(object):
         F = np.empty((N + 1, 3), dtype=float)
         B = F.copy()
         
-        print "about to bunch arguments"   
+        #print "about to bunch arguments"   
         
         # TODO: better bunch arguments by using *args
         arguments = self.bunch_arguments(inv_A, lin, offset, F, B, vs, dg, tc, self.affine,
                  ss, max_cross, N, fixed,
                  self.return_all)
         
-        print "arguments bunched here they are: "
-        print str(arguments)
-        for i in range(0,3):
-            print
+        #print "arguments bunched here they are: "
+        #print str(arguments)
+        #for i in range(0,3):
+        #    print
         
         
         
 
-        print "initialized pool about to do streamline"
+        #print "initialized pool about to do streamline"
         #args_lst = list(itertools.izip(self.seeds, itertools.repeat(arguments)))
         
 #        for i in range(0,3):
@@ -318,7 +314,10 @@ class OptimizedLocalTracking(object):
         # sc_stream_args = sc.parallelize(stream_args)            
         # streamlines = sc_stream_args.map(stupid_function)
         
-        p = multiprocessing.Pool(multiprocessing.cpu_count())
+#        p = multiprocessing.Pool(multiprocessing.cpu_count())
+
+        p = multiprocessing.Pool(1)
+
 
         #results = p.map(check_if_tc_is_cool,stream_args)
         
