@@ -19,7 +19,7 @@ The diffusion kurtosis model relates the diffusion-weighted signal,
 $S(\mathbf{n}, b)$, to the applied diffusion weighting, $\mathbf{b}$, the
 signal in the absence of diffusion gradient sensitisation, $S_0$, and the
 values of diffusion, $\mathbf{D(n)}$, and diffusion kurtosis, $\mathbf{K(n)}$,
-along the spatial direction $\mathbf{n}$ [NetoHe2015]: 
+along the spatial direction $\mathbf{n}$ [NetoHe2015]_: 
 
 .. math::
     S(n,b)=S_{0}e^{-bD(n)+\frac{1}{6}b^{2}D(n)^{2}K(n)}
