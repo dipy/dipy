@@ -12,7 +12,8 @@ from dipy.reconst.dti import (fractional_anisotropy, geoderic_anisotropy,
                               mean_diffusivity, axial_diffusivity,
                               radial_diffusivity, trace, color_fa, determinant,
                               isotropic, deviatoric, norm, mode, linearity,
-                              planarity, sphericity, apparent_diffusion_coef)
+                              planarity, sphericity, apparent_diffusion_coef,
+                              from_lower_triangular)
 from dipy.utils.six.moves import range
 from dipy.data import get_sphere
 from ..core.gradients import gradient_table
@@ -388,6 +389,7 @@ def axial_kurtosis(evals, Wrotat, axis=-1):
     AxialKurt=((evals[...,0]+evals[...,1]+evals[...,2])**2/(9*(evals[...,0])**2))*W_xxxx
     return AxialKurt
 
+
 def radial_kurtosis(evals, Wrotat, axis=-1):
     r"""
     Radial Kurtosis (RK) of a diffusion kurtosis tensor. 
@@ -445,9 +447,9 @@ class TensorModel(ReconstModel):
 
         fit_method : str or callable
             str can be one of the following:
-            'OLS_DKI' for unconstrained linear least squares
+            'OLS_DKI' for unconstrained ordinary linear least squares
                 dki.ols_fit_dki
-            'WLS_DKI' for unconstrained weighted linear least squares
+            'WLS_DKI' for unconstrained weighted ordinary linear least squares
                  dki.wls_fit_dki
 
             callable has to have the signature:
@@ -472,7 +474,7 @@ class TensorModel(ReconstModel):
                                  'method, the fit method should either be a '
                                  'function or one of the common fit methods')
 
-        self.design_matrix = design_matrix(self.gtab)
+        self.design_matrix = dki_design_matrix(self.gtab)
         self.args = args
         self.kwargs = kwargs
 
@@ -1242,51 +1244,52 @@ def decompose_tensors(tensor, K_tensor_elements, min_diffusivity=0):
 
 
 
-def design_matrix(gtab, dtype=None):
-        """  
-        Constructs design matrix for DKI weighted least squares or
-        least squares fitting.
+def dki_design_matrix(gtab):
+    r""" Constructs B design matrix for DKI
 
-        Parameters
-        ----------
-        gtab : A GradientTable class instance
+    Parameters
+    ---------
+    gtab : GradientTable
+        Measurement directions.
 
-        dtype : string
-            Parameter to control the dtype of returned designed matrix
+    Returns
+    -------
+    B : array (N,22)
+        Design matrix or B matrix for the DKI model
+        B[j, :] = (Bxx, Bxy, Bzz, Bxz, Byz, Bzz,
+                   Bxxxx, Byyyy, Bzzzz, Bxxxy, Bxxxz,
+                   Bxyyy, Byyyz, Bxzzz, Byzzz, Bxxyy,
+                   Bxxzz, Byyzz, Bxxyz, Bxyyz, Bxyzz,
+                   BlogS0)
+    """
+    b = gtab.bvals
+    bvec = gtab.bvecs
 
-        Returns
-        -------
-        design_matrix : array (g,22)
-            Design matrix or B matrix assuming Gaussian distributed tensor model
-            design_matrix[j, :] = (Bxx,Byy,Bzz,Bxy,Bxz,Byz,Bxxxx,Byyyy,Bzzzz,
-                                   Bxxxy,Bxxxz,Bxyyy,Byyyz,Bxzzz,Byzzz, Bxxyy,
-                                   Bxxzz, Byyzz,Bxxyz, Bxyyz, Bxyzz, dummy)
-        """
+    B = np.zeros((len(b), 22))
+    B[:, 0] = -b * bvec[:, 0] * bvec[:, 0]
+    B[:, 1] = -2 * b * bvec[:, 0] * bvec[:, 1]
+    B[:, 2] = -b * bvec[:, 1] * bvec[:, 1]
+    B[:, 3] = -2 * b * bvec[:, 0] * bvec[:, 2]
+    B[:, 4] = -2 * b * bvec[:, 1] * bvec[:, 2]
+    B[:, 5] = -b * bvec[:, 2] * bvec[:, 2]
+    B[:, 6] = b * b * bvec[:, 0]**4 / 6
+    B[:, 7] = b * b * bvec[:, 1]**4 / 6
+    B[:, 8] = b * b * bvec[:, 2]**4 / 6
+    B[:, 9] = 4 * b * b * bvec[:, 0]**3 * bvec[:, 1] / 6
+    B[:, 10] = 4 * b * b * bvec[:, 0]**3 * bvec[:, 2] / 6
+    B[:, 11] = 4 * b * b * bvec[:, 1]**3 * bvec[:, 0] / 6
+    B[:, 12] = 4 * b * b * bvec[:, 1]**3 * bvec[:, 2] / 6
+    B[:, 13] = 4 * b * b * bvec[:, 2]**3 * bvec[:, 0] / 6
+    B[:, 14] = 4 * b * b * bvec[:, 2]**3 * bvec[:, 1] / 6
+    B[:, 15] = b * b * bvec[:, 0]**2 * bvec[:, 1]**2
+    B[:, 16] = b * b * bvec[:, 0]**2 * bvec[:, 2]**2
+    B[:, 17] = b * b * bvec[:, 1]**2 * bvec[:, 2]**2
+    B[:, 18] = 2 * b * b * bvec[:, 0]**2 * bvec[:, 1] * bvec[:, 2]
+    B[:, 19] = 2 * b * b * bvec[:, 1]**2 * bvec[:, 0] * bvec[:, 2]
+    B[:, 20] = 2 * b * b * bvec[:, 2]**2 * bvec[:, 0] * bvec[:, 1]
+    B[:, 21] = np.ones(len(b))
 
-        B = np.zeros((gtab.gradients.shape[0], 22))
-	B[:, 0] = gtab.bvecs[:, 0] * gtab.bvecs[:, 0] * 1. * gtab.bvals   # Bxx
-	B[:, 1] = gtab.bvecs[:, 0] * gtab.bvecs[:, 1] * 2. * gtab.bvals   # Bxy
-	B[:, 2] = gtab.bvecs[:, 1] * gtab.bvecs[:, 1] * 1. * gtab.bvals   # Byy
-	B[:, 3] = gtab.bvecs[:, 0] * gtab.bvecs[:, 2] * 2. * gtab.bvals   # Bxz
-	B[:, 4] = gtab.bvecs[:, 1] * gtab.bvecs[:, 2] * 2. * gtab.bvals   # Byz
-	B[:, 5] = gtab.bvecs[:, 2] * gtab.bvecs[:, 2] * 1. * gtab.bvals   # Bzz
-	B[:, 6] = -gtab.bvecs[:,0]**4*((gtab.bvals**2)/6.) 				#Bxxxx
-	B[:, 7] = -gtab.bvecs[:,1]**4*((gtab.bvals**2)/6.)  				#Byyyy
-	B[:, 8] = -gtab.bvecs[:,2]**4*((gtab.bvals**2)/6.)  				#Bzzzz
-	B[:, 9] = -gtab.bvecs[:,0]**3*gtab.bvecs[:,1]*4.*((gtab.bvals**2)/6.)	 	#Bxxxy
-	B[:,10] = -gtab.bvecs[:,0]**3*gtab.bvecs[:,2]*4.*((gtab.bvals**2)/6.) 		#Bxxxz
-	B[:,11] = -gtab.bvecs[:,0]*gtab.bvecs[:,1]**3*4.*((gtab.bvals**2)/6.) 		#Bxyyy
-	B[:,12] = -gtab.bvecs[:,1]**3*gtab.bvecs[:,2]*4.*((gtab.bvals**2)/6.) 		#Byyyz
-	B[:,13] = -gtab.bvecs[:,0]*gtab.bvecs[:,2]**3*4.*((gtab.bvals**2)/6.) 		#Bxzzz
-	B[:,14] = -gtab.bvecs[:,1]*gtab.bvecs[:,2]**3*4.*((gtab.bvals**2)/6.) 		#Byzzz
-	B[:,15] = -gtab.bvecs[:,0]**2*gtab.bvecs[:,1]**2*6.*((gtab.bvals**2)/6.)  		#Bxxyy
-	B[:,16] = -gtab.bvecs[:,0]**2*gtab.bvecs[:,2]**2*6.*((gtab.bvals**2)/6.) 		#Bxxzz
-	B[:,17] = -gtab.bvecs[:,1]**2*gtab.bvecs[:,2]**2*6.*((gtab.bvals**2)/6.) 		#Byyzz
-	B[:,18] = -gtab.bvecs[:,0]**2*gtab.bvecs[:,1]*gtab.bvecs[:,2]*12.*((gtab.bvals**2)/6.) 	#Bxxyz
-	B[:,19] = -gtab.bvecs[:,0]*gtab.bvecs[:,1]**2*gtab.bvecs[:,2]*12.*((gtab.bvals**2)/6.) 	#Bxyyz
-	B[:,20] = -gtab.bvecs[:,0]*gtab.bvecs[:,1]*gtab.bvecs[:,2]**2*12.*((gtab.bvals**2)/6.) 	#Bxyzz
-	B[:,21] = np.ones(gtab.bvals.size)					#BlogS0
-	return -B
+    return B
 
 
 def quantize_evecs(evecs, odf_vertices=None):
