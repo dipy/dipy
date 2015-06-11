@@ -13,7 +13,7 @@ from dipy.reconst.dti import (fractional_anisotropy, geoderic_anisotropy,
                               radial_diffusivity, trace, color_fa, determinant,
                               isotropic, deviatoric, norm, mode, linearity,
                               planarity, sphericity, apparent_diffusion_coef,
-                              from_lower_triangular)
+                              from_lower_triangular, lower_triangular)
 from dipy.utils.six.moves import range
 from dipy.data import get_sphere
 from ..core.gradients import gradient_table
@@ -447,9 +447,11 @@ class TensorModel(ReconstModel):
 
         fit_method : str or callable
             str can be one of the following:
-            'OLS_DKI' for unconstrained ordinary linear least squares
+            'OLS_DKI' or 'ULLS_DKI' for unconstrained ordinary linear least 
+            squares
                 dki.ols_fit_dki
-            'WLS_DKI' for unconstrained weighted ordinary linear least squares
+            'WLS_DKI' or 'UWLLS_DKI' for unconstrained weighted ordinary linear
+            least squares
                  dki.wls_fit_dki
 
             callable has to have the signature:
@@ -959,6 +961,7 @@ class DKI_tensors(object):
 
         return pred_sig
 
+
 def ols_fit_dki(design_matrix, data, min_signal=1):
     r"""
     Computes unconstrained ordinary linear least squares (WLS) fit to calculate
@@ -1314,7 +1317,10 @@ def quantize_evecs(evecs, odf_vertices=None):
     IN = np.array([np.argmin(np.dot(odf_vertices, m)) for m in mec])
     IN = IN.reshape(tup)
     return IN
-    
-   
-common_fit_methods = {'WLS_DKIT': wls_fit_dki,
-                      'OLS_DKI' : ols_fit_dki}
+ 
+
+common_fit_methods = {'WLS_DKI': wls_fit_dki,
+                      'OLS_DKI' : ols_fit_dki,
+                      'UWLLS_DKI': wls_fit_dki,
+                      'ULLS_DKI' : ols_fit_dki
+                      }
