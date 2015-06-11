@@ -8,11 +8,11 @@ import numpy as np
 
 import scipy.optimize as opt
 
-from dipy.reconst.dti import (fractional_anisotropy, mean_diffusivity,
-                              axial_diffusivity, radial_diffusivity, trace,
-                              color_fa, determinant, isotropic, deviatoric,
-                              norm, mode, linearity, planarity, sphericity,
-                              apparent_diffusion_coef)
+from dipy.reconst.dti import (fractional_anisotropy, geoderic_anisotropy,
+                              mean_diffusivity, axial_diffusivity,
+                              radial_diffusivity, trace, color_fa, determinant,
+                              isotropic, deviatoric, norm, mode, linearity,
+                              planarity, sphericity, apparent_diffusion_coef)
 from dipy.utils.six.moves import range
 from dipy.data import get_sphere
 from ..core.gradients import gradient_table
@@ -21,7 +21,6 @@ from ..core.sphere import Sphere
 from .vec_val_sum import vec_val_vect
 from ..core.onetime import auto_attr
 from .base import ReconstModel, ReconstFit
-
 
 
 #Definition of quantities necessary to evaluates elements of kurtosis
@@ -1329,7 +1328,5 @@ def quantize_evecs(evecs, odf_vertices=None):
     IN = IN.reshape(tup)
     return IN
     
-
-
-    
+   
 common_fit_methods = {'UWLLS_KURT': uwlls_fit_ktensor,'ULLS_KURT' : ulls_fit_ktensor}
