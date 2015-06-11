@@ -436,8 +436,8 @@ def radial_kurtosis(evals, Wrotat, axis=-1):
 class TensorModel(ReconstModel):
     """ Diffusion Kurtosis Tensor
     """
-    def __init__(self, gtab, fit_method="ULLS_KURT", *args, **kwargs):
-        """ A Diffusion Kurtosis Tensor Model [1]
+    def __init__(self, gtab, fit_method="OLS_DKI", *args, **kwargs):
+        """ Diffusion Kurtosis Tensor Model [1]
 
         Parameters
         ----------
@@ -445,16 +445,16 @@ class TensorModel(ReconstModel):
 
         fit_method : str or callable
             str can be one of the following:
-            'ULLS_KURT' for unconstrained linear least squares
-                dki.ulls_fit_ktensor
-            'UWLLS_KURT' for unconstrained weighted linear least squares
-                 dki.uwlls_fit_ktensor
+            'OLS_DKI' for unconstrained linear least squares
+                dki.ols_fit_dki
+            'WLS_DKI' for unconstrained weighted linear least squares
+                 dki.wls_fit_dki
 
             callable has to have the signature:
               fit_method(design_matrix, data, *args, **kwargs)
 
         args, kwargs : arguments and key-word arguments passed to the
-           fit_method. See dki.ulls_fit_ktensor, dki.uwlls_fit_ktensor for details
+           fit_method. See dki.ols_fit_dki, dki.wls_fit_dki for details
 
         References
         ----------
@@ -504,12 +504,12 @@ class TensorModel(ReconstModel):
 
         dki_params[mask, :] = params_in_mask
 
-        return KTensor(self, dki_params)
+        return DKI_tensors(self, dki_params)
 
         
-class KTensor(object):
+class DKI_tensors(object):
     def __init__(self, model, model_params):
-        """ Initialize a KTensor class instance.
+        """ Initialize a DKI_Tensors class instance.
         """
         self.model = model
         self.model_params = model_params
@@ -957,9 +957,11 @@ class KTensor(object):
 
         return pred_sig
 
-def ulls_fit_ktensor(design_matrix, data, min_signal=1):
+def ols_fit_dki(design_matrix, data, min_signal=1):
     r"""
-    Computes unconstrained linear least squares (ULLS) fit to calculate kurtosis maps using a linear regression model without constrains [1].
+    Computes unconstrained ordinary linear least squares (WLS) fit to calculate
+    the diffusion tensor and kurtosis tensor maps using a weighted linear 
+    regression diffusion kurtosis model without constrains [1].
 
     Parameters
     ----------
@@ -1009,7 +1011,7 @@ def ulls_fit_ktensor(design_matrix, data, min_signal=1):
 
     
     for param, sig in zip(dki_params, data_flat):
-        param[0], param[1:4], param[4], param[5] = _ulls_iter(inv_design, sig,
+        param[0], param[1:4], param[4], param[5] = _ols_iter(inv_design, sig,
 				                  min_signal, min_diffusivity)
         
     dki_params.shape=data.shape[:-1]+(18,)
@@ -1017,8 +1019,8 @@ def ulls_fit_ktensor(design_matrix, data, min_signal=1):
     return dki_params
 
 
-def _ulls_iter(inv_design, sig, min_signal, min_diffusivity):
-    ''' Helper function used by ulls_fit_tensor.
+def _ols_iter(inv_design, sig, min_signal, min_diffusivity):
+    ''' Helper function used by ols_fit_tensor.
     '''
     sig=np.maximum(sig,min_signal)
     log_s = np.log(sig)
@@ -1031,9 +1033,11 @@ def _ulls_iter(inv_design, sig, min_signal, min_diffusivity):
 
 
 
-def uwlls_fit_ktensor(design_matrix, data, min_signal=1):
+def wls_fit_dki(design_matrix, data, min_signal=1):
     r"""
-    Computes unconstrained weighted linear least squares (UWLLS) fit to calculate kurtosis maps using a weighted linear regression model without constrains [1].
+    Computes unconstrained weighted linear least squares (WLS) fit to calculate
+    the diffusion tensor and kurtosis tensor maps using a weighted linear 
+    regression diffusion kurtosis model without constrains [1].
 
     Parameters
     ----------
@@ -1082,7 +1086,7 @@ def uwlls_fit_ktensor(design_matrix, data, min_signal=1):
     ols_fit = _ols_fit_matrix(design_matrix)
    
     for param, sig in zip(dki_params, data_flat):
-        param[0], param[1:4], param[4], param[5] = _uwlls_iter(ols_fit, design_matrix, sig, min_signal, min_diffusivity)
+        param[0], param[1:4], param[4], param[5] = _wls_iter(ols_fit, design_matrix, sig, min_signal, min_diffusivity)
         
     dki_params.shape=data.shape[:-1]+(18,)
     dki_params=dki_params
@@ -1111,7 +1115,7 @@ def _ols_fit_matrix(design_matrix):
 
 
 
-def _uwlls_iter(ols_fit, design_matrix, sig, min_signal, min_diffusivity):
+def _wls_iter(ols_fit, design_matrix, sig, min_signal, min_diffusivity):
     ''' Helper function used by wls_fit_tensor.
     '''
     sig = np.maximum(sig, min_signal)  # throw out zero signals
@@ -1137,8 +1141,8 @@ def _ols_iter(inv_design, sig, min_signal, min_diffusivity):
     return decompose_tensor(tensor, min_diffusivity=min_diffusivity)
 
 
-def _uwlls_iter(weighted_matrix,design_matrix,inv_design,sig,min_signal,min_diffusivity):
-    ''' Helper function used by uwlls_fit_ktensor to calculate the weights' matrix.
+def _wls_iter(weighted_matrix,design_matrix,inv_design,sig,min_signal,min_diffusivity):
+    ''' Helper function used by wls_fit_dki to calculate the weights' matrix.
     '''
     sig=np.maximum(sig,min_signal)  # throw out zero signals
     print('sig.shape',sig.shape)
@@ -1160,7 +1164,7 @@ def _uwlls_iter(weighted_matrix,design_matrix,inv_design,sig,min_signal,min_diff
     return decompose_tensors(tensor, K_tensor_elements, min_diffusivity=min_diffusivity)
 
 def weighted_matrix_form(B):
-    ''' Helper function used by uwlls_fit_ktensor to calculate the weights' matrix.
+    ''' Helper function used by wls_fit_dki to calculate the weights' matrix.
     '''
     A=np.ones((B.shape[0],B.shape[0]))
     C=np.linalg.matrix_power(A,0)
@@ -1329,4 +1333,5 @@ def quantize_evecs(evecs, odf_vertices=None):
     return IN
     
    
-common_fit_methods = {'UWLLS_KURT': uwlls_fit_ktensor,'ULLS_KURT' : ulls_fit_ktensor}
+common_fit_methods = {'WLS_DKIT': wls_fit_dki,
+                      'OLS_DKI' : ols_fit_dki}
