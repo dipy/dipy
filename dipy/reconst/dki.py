@@ -1172,26 +1172,6 @@ def weighted_matrix_form(B):
 
 """
 
-def _ols_fit_matrix(design_matrix):
-    """
-    Helper function to calculate the ordinary least squares (OLS)
-    fit as a matrix multiplication. Mainly used to calculate WLS weights. Can
-    be used to calculate regression coefficients in OLS but not recommended.
-
-    See Also:
-    ---------
-    wls_fit_tensor, ols_fit_tensor
-
-    Example:
-    --------
-    ols_fit = _ols_fit_matrix(design_mat)
-    ols_data = np.dot(ols_fit, data)
-    """
-
-    U, S, V = np.linalg.svd(design_matrix, False)
-    return np.dot(U, U.T)
-
-
 
 def decompose_tensors(tensor, K_tensor_elements, min_diffusivity=0):
     """ Returns eigenvalues and eigenvectors given a diffusion tensor
