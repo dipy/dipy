@@ -435,7 +435,7 @@ def radial_kurtosis(evals, Wrotat, axis=-1):
 #End of the definitions of quantities necessary to evaluates elements of kurtosis
 
 
-class TensorModel(ReconstModel):
+class DKIModel(ReconstModel):
     """ Diffusion Kurtosis Tensor
     """
     def __init__(self, gtab, fit_method="OLS_DKI", *args, **kwargs):
@@ -508,10 +508,10 @@ class TensorModel(ReconstModel):
 
         dki_params[mask, :] = params_in_mask
 
-        return DKI_tensors(self, dki_params)
+        return DKIfit(self, dki_params)
 
         
-class DKI_tensors(object):
+class DKIfit(object):
     def __init__(self, model, model_params):
         """ Initialize a DKI_Tensors class instance.
         """
