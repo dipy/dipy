@@ -315,17 +315,22 @@ class AffineRegistration(object):
             custom scale factors to build the scale space (one factor for each
             scale). By default, the sequence of factors will be [4, 2, 1].
         method : string, optional
-            optimization method to be used. The default is 'L-BFGS-B'.
+            optimization method to be used. If Scipy version < 0.12, then
+            only L-BFGS-B is available. Otherwise, `method` can be any
+            gradient-based method available in `dipy.core.Optimize`: CG, BFGS,
+            Newton-CG, dogleg or trust-ncg.
+            The default is 'L-BFGS-B'.
         ss_sigma_factor : float, optional
             If None, this parameter is not used and an isotropic scale
             space with the given `factors` and `sigmas` will be built.
             If not None, an anisotropic scale space will be used by
             automatically selecting the smoothing sigmas along each axis
             according to the voxel dimensions of the given image.
-            The `ss_sigma_factor` is used to scale automatically computed
+            The `ss_sigma_factor` is used to scale the automatically computed
             sigmas. For example, in the isotropic case, the sigma of the
-            kernel will be $factor * (2 ^ i)$ where i = 0, 1, ..., n_scales
-            is the scale. The default is None.
+            kernel will be $factor * (2 ^ i)$ where
+            $i = 1, 2, ..., n_scales - 1$ is the scale (the finest resolution
+            image $i=0$ is never smoothed). The default is None.
         options : dict, optional
             extra optimization options. The default is None, implying
             no extra options are passed to the optimizer.
@@ -357,7 +362,7 @@ class AffineRegistration(object):
             self.factors = factors
             self.sigmas = sigmas
 
-    def _init_optimizer(self, static, moving, transform, x0,
+    def _init_optimizer(self, static, moving, transform, params0,
                         static_grid2world, moving_grid2world,
                         starting_affine):
         r"""Initializes the registration optimizer
@@ -369,17 +374,14 @@ class AffineRegistration(object):
         ----------
         static : array, shape (S, R, C) or (R, C)
             the image to be used as reference during optimization.
-        moving : array, shape (S, R, C) or (R, C)
-            the image to be used as "moving" during optimization. It is
-            necessary to pre-align the moving image to ensure its domain
-            lies inside the domain of the deformation fields. This is assumed
-            to be accomplished by "pre-aligning" the moving image towards the
-            static using an affine transformation given by the
-            `starting_affine` matrix
+        moving : array, shape (S', R', C') or (R', C')
+            the image to be used as "moving" during optimization. The dimensions
+            of the static (S, R, C) and moving (S', R', C') images do not need to
+            be the same.
         transform : instance of Transform
             the transformation with respect to whose parameters the gradient
             must be computed
-        x0 : array, shape (n,)
+        params0 : array, shape (n,)
             parameters from which to start the optimization. If None, the
             optimization will start at the identity transform. n is the
             number of parameters of the specified transformation.
@@ -390,7 +392,7 @@ class AffineRegistration(object):
         starting_affine : string, or matrix, or None
             If string:
                 'mass': align centers of gravity
-                'origins': align physical coordinates of voxel (0,0,0)
+                'voxel-origin': align physical coordinates of voxel (0,0,0)
                 'centers': align physical coordinates of central voxels
             If matrix:
                 array, shape (dim+1, dim+1)
@@ -402,9 +404,9 @@ class AffineRegistration(object):
         n = transform.get_number_of_parameters()
         self.nparams = n
 
-        if x0 is None:
-            x0 = self.transform.get_identity_parameters()
-        self.x0 = x0
+        if params0 is None:
+            params0 = self.transform.get_identity_parameters()
+        self.params0 = params0
         if starting_affine is None:
             self.starting_affine = np.eye(self.dim + 1)
         elif starting_affine == 'mass':
@@ -412,7 +414,7 @@ class AffineRegistration(object):
                                                          static_grid2world,
                                                          moving,
                                                          moving_grid2world)
-        elif starting_affine == 'origins':
+        elif starting_affine == 'voxel-origin':
             self.starting_affine = align_origins(static, static_grid2world,
                                                  moving, moving_grid2world)
         elif starting_affine == 'centers':
@@ -421,7 +423,7 @@ class AffineRegistration(object):
                                                            moving,
                                                            moving_grid2world)
         elif (isinstance(starting_affine, np.ndarray) and
-              starting_affine.shape == (n,)):
+              starting_affine.shape >= (self.dim, self.dim + 1)):
             self.starting_affine = starting_affine
         else:
             raise ValueError('Invalid starting_affine matrix')
@@ -456,7 +458,7 @@ class AffineRegistration(object):
                                         static_spacing, self.ss_sigma_factor,
                                         False)
 
-    def optimize(self, static, moving, transform, x0, static_grid2world=None,
+    def optimize(self, static, moving, transform, params0, static_grid2world=None,
                  moving_grid2world=None, starting_affine=None):
         r''' Starts the optimization process
 
@@ -464,7 +466,7 @@ class AffineRegistration(object):
         ----------
         static : array, shape (S, R, C) or (R, C)
             the image to be used as reference during optimization.
-        moving : array, shape (S, R, C) or (R, C)
+        moving : array, shape (S', R', C') or (R', C')
             the image to be used as "moving" during optimization. It is
             necessary to pre-align the moving image to ensure its domain
             lies inside the domain of the deformation fields. This is assumed
@@ -474,7 +476,7 @@ class AffineRegistration(object):
         transform : instance of Transform
             the transformation with respect to whose parameters the gradient
             must be computed
-        x0 : array, shape (n,)
+        params0 : array, shape (n,)
             parameters from which to start the optimization. If None, the
             optimization will start at the identity transform. n is the
             number of parameters of the specified transformation.
@@ -489,7 +491,7 @@ class AffineRegistration(object):
         starting_affine : string, or matrix, or None, optional
             If string:
                 'mass': align centers of gravity
-                'origins': align physical coordinates of voxel (0,0,0)
+                'voxel-origin': align physical coordinates of voxel (0,0,0)
                 'centers': align physical coordinates of central voxels
             If matrix:
                 array, shape (dim+1, dim+1).
@@ -502,7 +504,7 @@ class AffineRegistration(object):
         T : array, shape (dim+1, dim+1)
             the matrix representing the optimized affine transform
         '''
-        self._init_optimizer(static, moving, transform, x0, static_grid2world,
+        self._init_optimizer(static, moving, transform, params0, static_grid2world,
                              moving_grid2world, starting_affine)
         del starting_affine  # Now we must refer to self.starting_affine
 
@@ -548,11 +550,11 @@ class AffineRegistration(object):
             if SCIPY_LESS_0_12:
                 # Older versions don't expect value and gradient from
                 # the same function
-                opt = Optimizer(self.metric.distance, self.x0,
+                opt = Optimizer(self.metric.distance, self.params0,
                                 method=self.method, jac=self.metric.gradient,
                                 options=self.options)
             else:
-                opt = Optimizer(self.metric.value_and_gradient, self.x0,
+                opt = Optimizer(self.metric.value_and_gradient, self.params0,
                                 method=self.method, jac=True,
                                 options=self.options)
             params = opt.xopt
@@ -562,7 +564,7 @@ class AffineRegistration(object):
             self.starting_affine = T.dot(self.starting_affine)
 
             # Start next iteration at identity
-            self.x0 = self.transform.get_identity_parameters()
+            self.params0 = self.transform.get_identity_parameters()
 
             # Update the metric to the current solution
             self.metric._update(params, False)

@@ -14,8 +14,8 @@ from dipy.viz import regtools
 from dipy.data import fetch_stanford_hardi, read_stanford_hardi
 from dipy.data.fetcher import fetch_syn_data, read_syn_data
 from dipy.segment.mask import median_otsu
-from dipy.align.imaffine import (aff_centers_of_mass,
-                                 aff_warp,
+from dipy.align.imaffine import (align_centers_of_mass,
+                                 transform_image,
                                  MattesMIMetric,
                                  AffineRegistration)
 from dipy.align.transforms import regtransforms
@@ -44,14 +44,14 @@ We can obtain a very rough (and fast) registration by just aligning the centers 
 of the two images
 """
 
-c_of_mass = aff_centers_of_mass(static, static_grid2space, moving, moving_grid2space)
+c_of_mass = align_centers_of_mass(static, static_grid2space, moving, moving_grid2space)
 
 """
 We can now warp the moving image and draw it on top of the static image, registration
 is not likely to be good, but at least they will occupy roughly the same space
 """
 
-warped = aff_warp(static, static_grid2space, moving, moving_grid2space, c_of_mass)
+warped = transform_image(static, static_grid2space, moving, moving_grid2space, c_of_mass)
 regtools.overlay_slices(static, warped, None, 0, "Static", "Warped", "warped_com_0.png")
 regtools.overlay_slices(static, warped, None, 1, "Static", "Warped", "warped_com_1.png")
 regtools.overlay_slices(static, warped, None, 2, "Static", "Warped", "warped_com_2.png")
@@ -137,18 +137,18 @@ dimension is 3)
 """
 
 transform = regtransforms[('TRANSLATION', 3)]
-x0 = None
-prealign = c_of_mass
-trans = affreg.optimize(static, moving, transform, x0,
+params0 = None
+starting_affine = c_of_mass
+trans = affreg.optimize(static, moving, transform, params0,
                         static_grid2space, moving_grid2space,
-                        prealign=prealign)
+                        starting_affine=starting_affine)
 
 """
 If we look at the result, we can see that this translation is much better than simply
 aligning the centers of mass
 """
 
-warped = aff_warp(static, static_grid2space, moving, moving_grid2space, trans)
+warped = transform_image(static, static_grid2space, moving, moving_grid2space, trans)
 regtools.overlay_slices(static, warped, None, 0, "Static", "Warped", "warped_trans_0.png")
 regtools.overlay_slices(static, warped, None, 1, "Static", "Warped", "warped_trans_1.png")
 regtools.overlay_slices(static, warped, None, 2, "Static", "Warped", "warped_trans_2.png")
@@ -170,17 +170,17 @@ optimal translation)
 """
 
 transform = regtransforms[('RIGID', 3)]
-x0 = None
-prealign = trans
-rigid = affreg.optimize(static, moving, transform, x0,
+params0 = None
+starting_affine = trans
+rigid = affreg.optimize(static, moving, transform, params0,
                         static_grid2space, moving_grid2space,
-                        prealign=prealign)
+                        starting_affine=starting_affine)
 
 """
 This produces a slight rotation, and the images are now better aligned
 """
 
-warped = aff_warp(static, static_grid2space, moving, moving_grid2space, rigid)
+warped = transform_image(static, static_grid2space, moving, moving_grid2space, rigid)
 regtools.overlay_slices(static, warped, None, 0, "Static", "Warped", "warped_rigid_0.png")
 regtools.overlay_slices(static, warped, None, 1, "Static", "Warped", "warped_rigid_1.png")
 regtools.overlay_slices(static, warped, None, 2, "Static", "Warped", "warped_rigid_2.png")
@@ -203,17 +203,17 @@ to the optimal transform
 """
 
 transform = regtransforms[('AFFINE', 3)]
-x0 = None
-prealign = rigid
-affine = affreg.optimize(static, moving, transform, x0,
+params0 = None
+starting_affine = rigid
+affine = affreg.optimize(static, moving, transform, params0,
                          static_grid2space, moving_grid2space,
-                         prealign=prealign)
+                         starting_affine=starting_affine)
 
 """
 This results in a slight shear and scale
 """
 
-warped = aff_warp(static, static_grid2space, moving, moving_grid2space, affine)
+warped = transform_image(static, static_grid2space, moving, moving_grid2space, affine)
 regtools.overlay_slices(static, warped, None, 0, "Static", "Warped", "warped_affine_0.png")
 regtools.overlay_slices(static, warped, None, 1, "Static", "Warped", "warped_affine_1.png")
 regtools.overlay_slices(static, warped, None, 2, "Static", "Warped", "warped_affine_2.png")
