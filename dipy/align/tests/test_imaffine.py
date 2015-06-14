@@ -210,7 +210,7 @@ def test_affreg_defaults():
     dim = 2
     ttype = (transform_name, dim)
 
-    for starting_affine in ['mass', 'origins', 'centers', None]:
+    for starting_affine in ['mass', 'voxel-origin', 'centers', None]:
         if dim == 2:
             nslices = 1
         else:
