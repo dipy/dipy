@@ -241,7 +241,7 @@ class MattesMIMetric(MattesBase):
             transforming the moving image by the currently set transform
             with `params` parameters
         """
-        self._update(False)
+        self._update(params, False)
         return -1 * self.metric_val
 
     def gradient(self, params):
@@ -259,7 +259,7 @@ class MattesMIMetric(MattesBase):
         grad : array, shape (n,)
             the gradient of the negative Mutual Information
         """
-        self._update(True)
+        self._update(params, True)
         return -1 * self.metric_grad
 
     def value_and_gradient(self, params):
@@ -274,11 +274,11 @@ class MattesMIMetric(MattesBase):
 
         Returns
         -------
-        val : float
+        neg_mi : float
             the negative mutual information of the input images after
             transforming the moving image by the currently set transform
             with `params` parameters
-        grad : array, shape (n,)
+        neg_mi_grad : array, shape (n,)
             the gradient of the negative Mutual Information
         """
         self._update(params, True)
@@ -298,27 +298,28 @@ class AffineRegistration(object):
 
         Parameters
         ----------
-        metric : object, optional
+        metric : None or object, optional
             an instance of a metric. The default is None, implying
             the Mutual Information metric with default settings.
-        level_iters : list, optional
-            the number of iterations at each level of the Gaussian pyramid.
-            `level_iters[0]` corresponds to the coarsest level,
-            `level_iters[-1]` the finest, where n is the length of the list.
-            By default, a 3-level Gaussian pyramid with iterations list
-            equal to [10000, 1000, 100] will be used.
-        sigmas : list of floats, optional
+        level_iters : sequence, optional
+            the number of iterations at each scale of the scale space.
+            `level_iters[0]` corresponds to the coarsest scale,
+            `level_iters[-1]` the finest, where n is the length of the
+            sequence. By default, a 3-level scale space with iterations
+            sequence equal to [10000, 1000, 100] will be used.
+        sigmas : sequence of floats, optional
             custom smoothing parameter to build the scale space (one parameter
-            for each scale). By default, the list of sigmas will be [3, 1, 0].
-        factors : list of floats, optional
+            for each scale). By default, the sequence of sigmas will be
+            [3, 1, 0].
+        factors : sequence of floats, optional
             custom scale factors to build the scale space (one factor for each
-            scale). By default, the list of factors will be [4, 2, 1].
+            scale). By default, the sequence of factors will be [4, 2, 1].
         method : string, optional
             optimization method to be used. The default is 'L-BFGS-B'.
         ss_sigma_factor : float, optional
-            If None, this parameter is not used and an isotropic Gaussian
-            Pyramid with the given `factors` and `sigmas` will be built.
-            If not None, an anisotropic Gaussian pyramid will be used by
+            If None, this parameter is not used and an isotropic scale
+            space with the given `factors` and `sigmas` will be built.
+            If not None, an anisotropic scale space will be used by
             automatically selecting the smoothing sigmas along each axis
             according to the voxel dimensions of the given image.
             The `ss_sigma_factor` is used to scale automatically computed
@@ -340,7 +341,7 @@ class AffineRegistration(object):
         self.level_iters = level_iters
         self.levels = len(level_iters)
         if self.levels == 0:
-            raise ValueError('The iterations list cannot be empty')
+            raise ValueError('The iterations sequence cannot be empty')
 
         self.options = options
         self.method = method

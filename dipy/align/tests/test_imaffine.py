@@ -163,7 +163,7 @@ def test_align_origins_3d():
 
                     # Implementation under test
                     actual = imaffine.align_origins(static, static_grid2world,
-                                                  moving, moving_grid2world)
+                                                    moving, moving_grid2world)
                     assert_array_almost_equal(actual, expected)
 
 
