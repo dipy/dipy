@@ -141,19 +141,19 @@ class MattesMIMetric(MattesBase):
 
         MattesBase.setup(self, self.static, self.moving)
 
-    def _update(self, xopt, update_gradient=True):
+    def _update(self, params, update_gradient=True):
         r""" Updates marginal and joint distributions and the joint gradient
 
         The distributions are updated according to the static and transformed
         images. The transformed image is precisely the moving image after
-        transforming it by the transform defined by the xopt parameters.
+        transforming it by the transform defined by the params parameters.
 
         The gradient of the joint PDF is computed only if update_gradient
         is True.
 
         Parameters
         ----------
-        xopt : array, shape (n,)
+        params : array, shape (n,)
             the parameter vector of the transform currently used by the metric
             (the transform name is provided when self.setup is called), n is
             the number of parameters of the transform
@@ -162,8 +162,8 @@ class MattesMIMetric(MattesBase):
             otherwise, only the marginal and joint PDFs will be computed.
             The default is True.
         """
-        # Get the matrix associated with the xopt parameter vector
-        M = self.transform.param_to_matrix(xopt)
+        # Get the matrix associated with the params parameter vector
+        M = self.transform.param_to_matrix(params)
         if self.starting_affine is not None:
             M = M.dot(self.starting_affine)
 
@@ -213,7 +213,7 @@ class MattesMIMetric(MattesBase):
                 # Sparse case: we need to provide the actual coordinates of
                 # all sampling points
                 sampling_info = self.samples[..., :self.dim]
-            self.update_gradient(xopt, self.transform, static_values,
+            self.update_gradient(params, self.transform, static_values,
                                  moving_values, sampling_info, mgrad)
 
         # Evaluate the mutual information and its gradient
@@ -221,7 +221,7 @@ class MattesMIMetric(MattesBase):
         # ready to be returned from 'distance' and 'gradient'
         self.update_mi_metric(update_gradient)
 
-    def distance(self, xopt):
+    def distance(self, params):
         r""" Numeric value of the negative Mutual Information
 
         We need to change the sign so we can use standard minimization
@@ -229,30 +229,27 @@ class MattesMIMetric(MattesBase):
 
         Parameters
         ----------
-        xopt : array, shape (n,)
+        params : array, shape (n,)
             the parameter vector of the transform currently used by the metric
             (the transform name is provided when self.setup is called), n is
             the number of parameters of the transform
 
         Returns
         -------
-        val : float
+        neg_mi : float
             the negative mutual information of the input images after
             transforming the moving image by the currently set transform
-            with `xopt` parameters
+            with `params` parameters
         """
-        if self.samples is None:
-            self._update_dense(xopt, False)
-        else:
-            self._update_sparse(xopt, False)
+        self._update(False)
         return -1 * self.metric_val
 
-    def gradient(self, xopt):
+    def gradient(self, params):
         r""" Numeric value of the metric's gradient at the given parameters
 
         Parameters
         ----------
-        xopt : array, shape (n,)
+        params : array, shape (n,)
             the parameter vector of the transform currently used by the metric
             (the transform name is provided when self.setup is called), n is
             the number of parameters of the transform
@@ -262,18 +259,15 @@ class MattesMIMetric(MattesBase):
         grad : array, shape (n,)
             the gradient of the negative Mutual Information
         """
-        if self.samples is None:
-            self._update_dense(xopt, True)
-        else:
-            self._update_dense(xopt, True)
-        return self.metric_grad * (-1)
+        self._update(True)
+        return -1 * self.metric_grad
 
-    def value_and_gradient(self, xopt):
+    def value_and_gradient(self, params):
         r""" Numeric value of the metric and its gradient at given parameters
 
         Parameters
         ----------
-        xopt : array, shape (n,)
+        params : array, shape (n,)
             the parameter vector of the transform currently used by the metric
             (the transform name is provided when self.setup is called), n is
             the number of parameters of the transform
@@ -283,12 +277,12 @@ class MattesMIMetric(MattesBase):
         val : float
             the negative mutual information of the input images after
             transforming the moving image by the currently set transform
-            with `xopt` parameters
+            with `params` parameters
         grad : array, shape (n,)
             the gradient of the negative Mutual Information
         """
-        self._update(xopt, True)
-        return -1 * self.metric_val, self.metric_grad * (-1)
+        self._update(params, True)
+        return -1 * self.metric_val, -1 * self.metric_grad
 
 
 class AffineRegistration(object):
@@ -560,17 +554,17 @@ class AffineRegistration(object):
                 opt = Optimizer(self.metric.value_and_gradient, self.x0,
                                 method=self.method, jac=True,
                                 options=self.options)
-            xopt = opt.xopt
+            params = opt.xopt
 
             # Update starting_affine matrix with optimal parameters
-            T = self.transform.param_to_matrix(xopt)
+            T = self.transform.param_to_matrix(params)
             self.starting_affine = T.dot(self.starting_affine)
 
             # Start next iteration at identity
             self.x0 = self.transform.get_identity_parameters()
 
             # Update the metric to the current solution
-            self.metric._update(xopt, False)
+            self.metric._update(params, False)
         return self.starting_affine
 
 
