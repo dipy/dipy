@@ -226,7 +226,7 @@ class MattesBase(object):
                                       self.smarginal, self.mmarginal)
 
     def update_gradient_dense(self, theta, transform, static, moving,
-                              grid2world, mgradient, smask, mmask):
+                              grid2world, mgradient, smask=None, mmask=None):
         r''' Computes the Gradient of the joint PDF w.r.t. transform parameters
 
         Computes the vector of partial derivatives of the joint histogram
@@ -260,12 +260,14 @@ class MattesBase(object):
 
         mgradient : array, shape (S, R, C, 3)
             the gradient of the moving image
-        smask : array, shape (S, R, C)
+        smask : array, shape (S, R, C), optional
             mask of static object being registered (a binary array with 1's
-            inside the object of interest and 0's along the background)
-        mmask : array, shape (S, R, C)
+            inside the object of interest and 0's along the background).
+            The default is None, indicating all voxels are considered.
+        mmask : array, shape (S, R, C), optional
             mask of moving object being registered (a binary array with 1's
-            inside the object of interest and 0's along the background)
+            inside the object of interest and 0's along the background).
+            The default is None, indicating all voxels are considered.
         '''
         dim = len(static.shape)
         n = theta.shape[0]

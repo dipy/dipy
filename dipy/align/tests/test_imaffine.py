@@ -194,10 +194,10 @@ def test_affreg_all_transforms():
         x0 = transform.get_identity_parameters()
         sol = affreg.optimize(static, moving, transform, x0, static_grid2world,
                               moving_grid2world)
-        warped = transform_image(static, static_grid2world, moving,
+        transformed = transform_image(static, static_grid2world, moving,
                           moving_grid2world, sol)
         # Sum of absolute differences
-        end_sad = np.abs(static - warped).sum()
+        end_sad = np.abs(static - transformed).sum()
         reduction = 1 - end_sad / start_sad
         print("%s>>%f"%(ttype, reduction))
         assert(reduction > 0.9)
@@ -210,7 +210,7 @@ def test_affreg_defaults():
     dim = 2
     ttype = (transform_name, dim)
 
-    for prealign in ['mass', 'origins', 'centers', None]:
+    for starting_affine in ['mass', 'origins', 'centers', None]:
         if dim == 2:
             nslices = 1
         else:
@@ -241,11 +241,11 @@ def test_affreg_defaults():
                                                  ss_sigma_factor,
                                                  options=None)
             sol = affreg.optimize(static, moving, transform, x0, static_grid2world,
-                                  moving_grid2world, prealign)
-            warped = transform_image(static, static_grid2world, moving,
+                                  moving_grid2world, starting_affine)
+            transformed = transform_image(static, static_grid2world, moving,
                               moving_grid2world, sol)
             # Sum of absolute differences
-            end_sad = np.abs(static - warped).sum()
+            end_sad = np.abs(static - transformed).sum()
             reduction = 1 - end_sad / start_sad
             print("%s>>%f"%(ttype, reduction))
             assert(reduction > 0.9)
