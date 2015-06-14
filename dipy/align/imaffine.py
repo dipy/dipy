@@ -5,6 +5,7 @@ from ..core.optimize import Optimizer
 from ..core.optimize import SCIPY_LESS_0_12
 from . import floating
 from . import vector_fields as vf
+from . import VerbosityLevels
 from .mattes import MattesBase, sample_domain_regular
 from .imwarp import (get_direction_and_spacings, ScaleSpace)
 from .scalespace import IsotropicScaleSpace
@@ -361,6 +362,7 @@ class AffineRegistration(object):
                 sigmas = [3, 1, 0]
             self.factors = factors
             self.sigmas = sigmas
+        self.verbosity = VerbosityLevels.STATUS
 
     def _init_optimizer(self, static, moving, transform, params0,
                         static_grid2world, moving_grid2world,
@@ -515,7 +517,8 @@ class AffineRegistration(object):
         for level in range(self.levels - 1, -1, -1):
             self.current_level = level
             max_iter = self.level_iters[level]
-            print('Optimizing level %d [max iter: %d]' % (level, max_iter))
+            if self.verbosity >= VerbosityLevels.STATUS:
+                print('Optimizing level %d [max iter: %d]' % (level, max_iter))
 
             # Resample the smooth static image to the shape of this level
             smooth_static = self.static_ss.get_image(level)
