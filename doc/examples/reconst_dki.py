@@ -96,6 +96,8 @@ from dipy.data import read_sherbrooke_3shell
 
 img, gtab = read_sherbrooke_3shell()
 
+data = img.get_data()
+
 """
 img contains a nibabel Nifti1Image object (with the data) and gtab contains a
 GradientTable object with information about the b-values and b-vectors. The
@@ -124,12 +126,18 @@ fitting
 """
 
 select_ind = gtab.bvals < 3000
-
 selected_bvals = gtab.bvals[select_ind]
 selected_bvecs = gtab.bvecs[select_ind, :]
-
-data = img.get_data()
 selected_data = data[:, :, :, select_ind]
+
+"""
+The selected b-values and gradient directions are then converted to Dipy's
+GradientTable format.
+"""
+
+from dipy.core.gradients import gradient_table
+
+gtab = gradient_table(selected_bvals, selected_bvecs)
 
 """
 Before fitting the data some data pre-processing is done. First, we mask and
@@ -138,25 +146,22 @@ crop the data to avoid calculating Tensors on the background of the image.
 
 from dipy.segment.mask import median_otsu
 
-maskdata, mask = median_otsu(data, 3, 1, True,
+maskdata, mask = median_otsu(selected_data, 3, 1, True,
                              vol_idx=range(10, 50), dilate=2)
-print('maskdata.shape (%d, %d, %d, %d)' % maskdata.shape)
 
 """
-maskdata.shape ``(72, 87, 59, 160)``
-
 Now that we have prepared the datasets we can go forward with the voxel
 reconstruction. First, we instantiate the Tensor model in the following way.
 """
 
-tenmodel = dti.TensorModel(gtab)
+dkimodel = dki.DKIModel(gtab)
 
 """
 Fitting the data is very simple. We just need to call the fit method of the
 TensorModel in the following way:
 """
 
-tenfit = tenmodel.fit(maskdata)
+dkifit = dkimodel.fit(maskdata)
 
 """
 References:

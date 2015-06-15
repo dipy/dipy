@@ -9,7 +9,7 @@ import numpy as np
 import scipy.optimize as opt
 
 from dipy.reconst.dti import (TensorFit, fractional_anisotropy, 
-                              geoderic_anisotropy, mean_diffusivity,
+                              geodesic_anisotropy, mean_diffusivity,
                               axial_diffusivity, radial_diffusivity, trace,
                               color_fa, determinant, isotropic, deviatoric,
                               norm, mode, linearity, planarity, sphericity,
@@ -509,24 +509,15 @@ class DKIModel(ReconstModel):
 
         dki_params[mask, :] = params_in_mask
 
-        return DKIfit(self, dki_params)
+        return DKIFit(self, dki_params)
 
         
-class DKIfit(TensorFit):
-    def __init__(self, model, model_params):
-        """ Initialize a DKI_Tensors class instance.
-        """
-        TensorFit.__init__(model, model_params)
+class DKIFit(TensorFit):
 
-    def __getitem__(self, index):
-        model_params = self.model_params
-        N = model_params.ndim
-        if type(index) is not tuple:
-            index = (index,)
-        elif len(index) >= model_params.ndim:
-            raise IndexError("IndexError: invalid index")
-        index = index + (slice(None),) * (N - len(index))
-        return type(self)(self.model, model_params[index])
+    def __init__(self, model, model_params):
+        """ Initialize a DKIFit class instance.
+        """
+        TensorFit.__init__(self, model, model_params)
 
     @property
     def Wrotat(self):
@@ -648,7 +639,7 @@ class DKIfit(TensorFit):
 
 def ols_fit_dki(design_matrix, data, min_signal=1):
     r"""
-    Computes unconstrained ordinary linear least squares (WLS) fit to calculate
+    Computes unconstrained ordinary linear least squares (OLS) fit to calculate
     the diffusion tensor and kurtosis tensor maps using a weighted linear 
     regression diffusion kurtosis model without constrains [1].
 
@@ -662,7 +653,7 @@ def ols_fit_dki(design_matrix, data, min_signal=1):
         dimension should contain the data. It makes no copies of data.
     min_signal : default = 1
         All values below min_signal are repalced with min_signal. This is done
-        in order to avaid taking log(0) durring the tensor fitting.
+        in order to avoid taking log(0) durring the tensor fitting.
 
     Returns
     -------
@@ -677,8 +668,7 @@ def ols_fit_dki(design_matrix, data, min_signal=1):
 
     See Also
     --------
-    decompose_tensors
-
+    wls_fit_dki
 
     References
     ----------
@@ -698,7 +688,6 @@ def ols_fit_dki(design_matrix, data, min_signal=1):
     min_diffusivity = tol / -design_matrix.min()
     inv_design = np.linalg.pinv(design_matrix)
 
-    
     for param, sig in zip(dki_params, data_flat):
         param[0], param[1:4], param[4], param[5] = _ols_iter(inv_design, sig,
 				                  min_signal, min_diffusivity)
@@ -711,15 +700,16 @@ def ols_fit_dki(design_matrix, data, min_signal=1):
 def _ols_iter(inv_design, sig, min_signal, min_diffusivity):
     ''' Helper function used by ols_fit_tensor.
     '''
-    sig=np.maximum(sig,min_signal)
+    sig = np.maximum(sig, min_signal)
     log_s = np.log(sig)
-    result=np.dot(inv_design,log_s)
+    result = np.dot(inv_design, log_s)
     D=result[:6]
-    tensor=from_lower_triangular(D)
-    MeanD_square=((tensor[0,0]+tensor[1,1]+tensor[2,2])/3.)**2  
-    K_tensor_elements=result[6:21]/MeanD_square
-    return decompose_tensors(tensor, K_tensor_elements, min_diffusivity=min_diffusivity)
-
+    tensor = from_lower_triangular(D)
+    MD_square = ((tensor[0,0] + tensor[1,1] + tensor[2,2])/3.)**2  
+    K_elements=result[6:21]/MD_square
+    
+    return decompose_tensors(tensor, K_elements,
+                             min_diffusivity=min_diffusivity)
 
 
 def wls_fit_dki(design_matrix, data, min_signal=1):
