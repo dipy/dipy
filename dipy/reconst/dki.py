@@ -14,7 +14,7 @@ from dipy.reconst.dti import (TensorFit, fractional_anisotropy,
                               color_fa, determinant, isotropic, deviatoric,
                               norm, mode, linearity, planarity, sphericity,
                               apparent_diffusion_coef, from_lower_triangular,
-                              lower_triangular)
+                              lower_triangular, decompose_tensor)
 from dipy.utils.six.moves import range
 from dipy.data import get_sphere
 from ..core.gradients import gradient_table
@@ -286,8 +286,9 @@ def G2m(a,b,c):
 
 def _roll_Wrotat(Wrotat, axis=-1):
     """
-    Helper function to check that the values of the W tensors rotated (needed for evaluation of the kurtosis quantities) provided to functions calculating
-    tensor statistics have the right shape
+    Helper function to check that the values of the W tensors rotated (needed
+    for evaluation of the kurtosis quantities) provided to functions
+    calculating tensor statistics have the right shape
 
     Parameters
     ----------
@@ -320,7 +321,8 @@ def mean_kurtosis(evals, Wrotat, axis=-1):
     evals : array-like
         Eigenvalues of a diffusion tensor.
     Wrotat : array-like
-        W tensor elements of interest for the evaluation of the Kurtosis (W_xxxx,W_yyyy,W_zzzz,W_xxyy,W_xxzz,W_yyzz)
+        W tensor elements of interest for the evaluation of the Kurtosis 
+        (W_xxxx,W_yyyy,W_zzzz,W_xxyy,W_xxzz,W_yyzz)
     axis : int
         Axis of `evals` which contains 3 eigenvalues.
 
@@ -368,7 +370,8 @@ def axial_kurtosis(evals, Wrotat, axis=-1):
     evals : array-like
         Eigenvalues of a diffusion tensor.
     Wrotat : array-like
-        W tensor elements of interest for the evaluation of the Kurtosis (W_xxxx,W_yyyy,W_zzzz,W_xxyy,W_xxzz,W_yyzz)
+        W tensor elements of interest for the evaluation of the Kurtosis 
+        (W_xxxx,W_yyyy,W_zzzz,W_xxyy,W_xxzz,W_yyzz)
     axis : int
         Axis of `evals` which contains 3 eigenvalues.
 
@@ -383,7 +386,8 @@ def axial_kurtosis(evals, Wrotat, axis=-1):
 
     .. math::
 
-     K_{||}=\frac{(\lambda_1+\lambda_2+\lambda_3)^2}{9\lambda_1^2}\hat{W}_{1111}
+     K_{||}=\frac{(\lambda_1+\lambda_2+\lambda_3)^2}{9\lambda_1^2}
+     \hat{W}_{1111}
 
     """
     [W_xxxx,W_yyyy,W_zzzz,W_xxyy,W_xxzz,W_yyzz]=[Wrotat[...,0],Wrotat[...,1],Wrotat[...,1],Wrotat[...,3],Wrotat[...,4],Wrotat[...,5]]
@@ -444,13 +448,12 @@ class DKIModel(ReconstModel):
 
         Parameters
         ----------
-        grad_table : GradientTable class instance
+        gtab : GradientTable class instance
 
         fit_method : str or callable
             str can be one of the following:
             'OLS_DKI' or 'ULLS_DKI' for unconstrained ordinary linear least 
-            squares
-                dki.ols_fit_dki
+            squares - dki.ols_fit_dki
             'WLS_DKI' or 'UWLLS_DKI' for unconstrained weighted ordinary linear
             least squares
                  dki.wls_fit_dki
@@ -505,13 +508,16 @@ class DKIModel(ReconstModel):
         params_in_mask = self.fit_method(self.design_matrix, data_in_mask,
                                          *self.args, **self.kwargs)
 
-        dki_params = np.zeros(data.shape[:-1] + (18,))
-
-        dki_params[mask, :] = params_in_mask
+        if mask is None:
+            out_shape = data.shape[:-1] + (-1, )
+            dki_params = params_in_mask.reshape(out_shape)
+        else:
+            dki_params = np.zeros(data.shape[:-1] + (27,))
+            dki_params[mask, :] = params_in_mask
 
         return DKIFit(self, dki_params)
 
-        
+
 class DKIFit(TensorFit):
 
     def __init__(self, model, model_params):
@@ -663,8 +669,8 @@ def ols_fit_dki(design_matrix, data, min_signal=1):
         Associated eigenvectors from eigen decomposition of the tensor.
         Eigenvectors are columnar (e.g. eigvecs[:,j] is associated with
         eigvals[j])
-    Wrotat : array (..., 6)
-        Values of a W tensor rotated. 
+    Wrotat : array (..., 15)
+        Elements of the kurtosis tensor. 
 
     See Also
     --------
@@ -683,17 +689,15 @@ def ols_fit_dki(design_matrix, data, min_signal=1):
 
     data = np.asarray(data)
     data_flat = data.reshape((-1, data.shape[-1]))
-    dki_params = np.empty((len(data_flat), 6, 3))
+    dki_params = np.empty((len(data_flat), 27))
     
     min_diffusivity = tol / -design_matrix.min()
     inv_design = np.linalg.pinv(design_matrix)
 
-    for param, sig in zip(dki_params, data_flat):
-        param[0], param[1:4], param[4], param[5] = _ols_iter(inv_design, sig,
-				                  min_signal, min_diffusivity)
-        
-    dki_params.shape=data.shape[:-1]+(18,)
-    dki_params=dki_params
+    for vox in range(len(data_flat)):
+        dki_params[vox] = _ols_iter(inv_design, data_flat[vox], min_signal,
+                                    min_diffusivity)
+    
     return dki_params
 
 
@@ -703,13 +707,19 @@ def _ols_iter(inv_design, sig, min_signal, min_diffusivity):
     sig = np.maximum(sig, min_signal)
     log_s = np.log(sig)
     result = np.dot(inv_design, log_s)
-    D=result[:6]
-    tensor = from_lower_triangular(D)
-    MD_square = ((tensor[0,0] + tensor[1,1] + tensor[2,2])/3.)**2  
-    K_elements=result[6:21]/MD_square
+
+    # Extracting diffusion tensor
+    DT_elements = result[:6]
+    evals, evecs = decompose_tensor(from_lower_triangular(DT_elements))
+
+    # Extracting kurtosis tensor
+    MD_square = (evals.mean(0))**2  
+    KT_elements = result[6:21] / MD_square
     
-    return decompose_tensors(tensor, K_elements,
-                             min_diffusivity=min_diffusivity)
+    dki_params = np.concatenate((evals, evecs[0], evecs[1], evecs[2], 
+                                 KT_elements), axis=0)
+
+    return dki_params
 
 
 def wls_fit_dki(design_matrix, data, min_signal=1):
@@ -805,7 +815,7 @@ def _wls_iter(ols_fit, design_matrix, sig, min_signal, min_diffusivity):
     tensor=from_lower_triangular(D)
     MeanD_square=((tensor[0,0]+tensor[1,1]+tensor[2,2])/3.)**2  
     K_tensor_elements=result[6:21]/MeanD_square
-    return decompose_tensors(tensor, K_tensor_elements, min_diffusivity=min_diffusivity)
+    return ambiguous_function_decompose_tensors(tensor, K_tensor_elements, min_diffusivity=min_diffusivity)
 
 
 """
@@ -852,7 +862,7 @@ def weighted_matrix_form(B):
 """
 
 
-def decompose_tensors(tensor, K_tensor_elements, min_diffusivity=0):
+def ambiguous_function_decompose_tensors(tensor, K_tensor_elements, min_diffusivity=0):
     """ Returns eigenvalues and eigenvectors given a diffusion tensor
 
     Computes tensor eigen decomposition to calculate eigenvalues and
@@ -992,7 +1002,6 @@ def quantize_evecs(evecs, odf_vertices=None):
     IN = IN.reshape(tup)
     return IN
  
-
 common_fit_methods = {'WLS_DKI': wls_fit_dki,
                       'OLS_DKI' : ols_fit_dki,
                       'UWLLS_DKI': wls_fit_dki,
