@@ -838,7 +838,7 @@ class TensorFit(object):
         """
         Returns the eigenvectors of the tensor as an array
         """
-        evecs = self.model_params[..., 3:]
+        evecs = self.model_params[..., 3:12]
         return evecs.reshape(self.shape + (3, 3))
 
     @property
@@ -1131,7 +1131,7 @@ class TensorFit(object):
         which a signal is to be predicted and $b$ is the b value provided in
         the GradientTable input for that direction
         """
-        return tensor_prediction(self.model_params, gtab, S0=S0)
+        return tensor_prediction(self.model_params[0:12], gtab, S0=S0)
 
 
 def wls_fit_tensor(design_matrix, data):

@@ -8,12 +8,13 @@ import numpy as np
 
 import scipy.optimize as opt
 
-from dipy.reconst.dti import (fractional_anisotropy, geoderic_anisotropy,
-                              mean_diffusivity, axial_diffusivity,
-                              radial_diffusivity, trace, color_fa, determinant,
-                              isotropic, deviatoric, norm, mode, linearity,
-                              planarity, sphericity, apparent_diffusion_coef,
-                              from_lower_triangular, lower_triangular)
+from dipy.reconst.dti import (TensorFit, fractional_anisotropy, 
+                              geoderic_anisotropy, mean_diffusivity,
+                              axial_diffusivity, radial_diffusivity, trace,
+                              color_fa, determinant, isotropic, deviatoric,
+                              norm, mode, linearity, planarity, sphericity,
+                              apparent_diffusion_coef, from_lower_triangular,
+                              lower_triangular)
 from dipy.utils.six.moves import range
 from dipy.data import get_sphere
 from ..core.gradients import gradient_table
@@ -21,7 +22,7 @@ from ..core.geometry import vector_norm
 from ..core.sphere import Sphere
 from .vec_val_sum import vec_val_vect
 from ..core.onetime import auto_attr
-from .base import ReconstModel, ReconstFit
+from .base import ReconstModel
 
 
 #Definition of quantities necessary to evaluates elements of kurtosis
@@ -511,12 +512,11 @@ class DKIModel(ReconstModel):
         return DKIfit(self, dki_params)
 
         
-class DKIfit(object):
+class DKIfit(TensorFit):
     def __init__(self, model, model_params):
         """ Initialize a DKI_Tensors class instance.
         """
-        self.model = model
-        self.model_params = model_params
+        TensorFit.__init__(model, model_params)
 
     def __getitem__(self, index):
         model_params = self.model_params
@@ -529,147 +529,11 @@ class DKIfit(object):
         return type(self)(self.model, model_params[index])
 
     @property
-    def shape(self):
-        return self.model_params.shape[:-1]
-
-    @property
-    def directions(self):
-        """
-        For tracking - return the primary direction in each voxel
-        """
-        return self.evecs[..., None, :, 0]
-
-    @property
-    def evals(self):
-        """
-        Returns the eigenvalues of the tensor as an array
-        """
-        return self.model_params[..., :3]
-
-    @property
-    def evecs(self):
-        """
-        Returns the eigenvectors of the tensor as an array
-        """
-        evecs = self.model_params[..., 3:12]
-        return evecs.reshape(self.shape + (3, 3))
-
-    @property
     def Wrotat(self):
         """
         Returns the values of the k tensors as an array
         """
         return self.model_params[..., 12:]
-
-        
-    @property
-    def quadratic_form(self):
-        """Calculates the 3x3 diffusion tensor for each voxel"""
-        # do `evecs * evals * evecs.T` where * is matrix multiply
-        # einsum does this with:
-        # np.einsum('...ij,...j,...kj->...ik', evecs, evals, evecs)
-        return vec_val_vect(self.evecs, self.evals)
-
-    def lower_triangular(self, b0=None):
-        return lower_triangular(self.quadratic_form, b0)
-
-    @auto_attr
-    def fa(self):
-        """Fractional anisotropy (FA) calculated from cached eigenvalues."""
-        return fractional_anisotropy(self.evals)
-
-    @auto_attr
-    def mode(self):
-        """
-        Tensor mode calculated from cached eigenvalues.
-        """
-        return mode(self.quadratic_form)
-
-    @auto_attr
-    def md(self):
-        r"""
-        Mean diffusitivity (MD) calculated from cached eigenvalues.
-
-        Returns
-        ---------
-        md : array (V, 1)
-            Calculated MD.
-
-        Notes
-        --------
-        MD is calculated with the following equation:
-
-        .. math::
-
-            MD = \frac{\lambda_1+\lambda_2+\lambda_3}{3}
-
-        """
-        return self.trace / 3.0
-
-    @auto_attr
-    def rd(self):
-        r"""
-        Radial diffusitivity (RD) calculated from cached eigenvalues.
-
-        Returns
-        ---------
-        rd : array (V, 1)
-            Calculated RD.
-
-        Notes
-        --------
-        RD is calculated with the following equation:
-
-        .. math::
-
-          RD = \frac{\lambda_2 + \lambda_3}{2}
-
-
-        """
-        return radial_diffusivity(self.evals)
-
-    @auto_attr
-    def ad(self):
-        r"""
-        Axial diffusivity (AD) calculated from cached eigenvalues.
-
-        Returns
-        ---------
-        ad : array (V, 1)
-            Calculated AD.
-
-        Notes
-        --------
-        RD is calculated with the following equation:
-
-        .. math::
-
-          AD = \lambda_1
-
-
-        """
-        return axial_diffusivity(self.evals)
-
-    @auto_attr
-    def trace(self):
-        r"""
-        Trace of the tensor calculated from cached eigenvalues.
-
-        Returns
-        ---------
-        trace : array (V, 1)
-            Calculated trace.
-
-        Notes
-        --------
-        The trace is calculated with the following equation:
-
-        .. math::
-
-          trace = \lambda_1 + \lambda_2 + \lambda_3
-        """
-        return trace(self.evals)
-
 
     @auto_attr
     def mk(self):
@@ -776,190 +640,10 @@ class DKIfit(object):
         """
         return radial_kurtosis(self.evals, self.Wrotat)
 
-
-    @auto_attr
-    def planarity(self):
+    def DKI_predict(self, gtab, S0=1):
         r"""
-        Returns
-        -------
-        sphericity : array
-            Calculated sphericity of the diffusion tensor [1]_.
-
-        Notes
-        --------
-        Sphericity is calculated with the following equation:
-
-        .. math::
-
-            Sphericity = \frac{2 (\lambda2 - \lambda_3)}{\lambda_1+\lambda_2+\lambda_3}
-
-        Notes
-        -----
-        [1] Westin C.-F., Peled S., Gubjartsson H., Kikinis R., Jolesz
-            F., "Geometrical diffusion measures for MRI from tensor basis
-            analysis" in Proc. 5th Annual ISMRM, 1997.
-
+        WIP   
         """
-        return planarity(self.evals)
-
-    @auto_attr
-    def linearity(self):
-        r"""
-        Returns
-        -------
-        linearity : array
-            Calculated linearity of the diffusion tensor [1]_.
-
-        Notes
-        --------
-        Linearity is calculated with the following equation:
-
-        .. math::
-
-            Linearity = \frac{\lambda_1-\lambda_2}{\lambda_1+\lambda_2+\lambda_3}
-
-        Notes
-        -----
-        [1] Westin C.-F., Peled S., Gubjartsson H., Kikinis R., Jolesz
-            F., "Geometrical diffusion measures for MRI from tensor basis
-            analysis" in Proc. 5th Annual ISMRM, 1997.
-
-        """
-        return linearity(self.evals)
-
-    @auto_attr
-    def sphericity(self):
-        r"""
-        Returns
-        -------
-        sphericity : array
-            Calculated sphericity of the diffusion tensor [1]_.
-
-        Notes
-        --------
-        Sphericity is calculated with the following equation:
-
-        .. math::
-
-            Sphericity = \frac{3 \lambda_3}{\lambda_1+\lambda_2+\lambda_3}
-
-        Notes
-        -----
-        [1] Westin C.-F., Peled S., Gubjartsson H., Kikinis R., Jolesz
-            F., "Geometrical diffusion measures for MRI from tensor basis
-            analysis" in Proc. 5th Annual ISMRM, 1997.
-
-        """
-        return sphericity(self.evals)
-
-    def odf(self, sphere):
-        """
-        The diffusion orientation distribution function (dODF). This is an
-        estimate of the diffusion distance in each direction
-
-        Parameters
-        ----------
-        sphere : Sphere class instance.
-            The dODF is calculated in the vertices of this input.
-
-        Returns
-        -------
-        odf : ndarray
-            The diffusion distance in every direction of the sphere in every
-            voxel in the input data.
-        
-        """
-        lower = 4 * np.pi * np.sqrt(np.prod(self.evals, -1))
-        projection = np.dot(sphere.vertices, self.evecs)
-        with warnings.catch_warnings():
-            warnings.simplefilter("ignore")
-            projection /= np.sqrt(self.evals)
-            odf = (vector_norm(projection) ** -3) / lower
-        # Zero evals are non-physical, we replace nans with zeros
-        any_zero = (self.evals == 0).any(-1)
-        odf = np.where(any_zero, 0, odf)
-        # Move odf to be on the last dimension
-        odf = np.rollaxis(odf, 0, odf.ndim)
-        return odf
-
-    def adc(self, sphere):
-        r"""
-        Calculate the apparent diffusion coefficient (ADC) in each direction on
-        the sphere for each voxel in the data
-
-        Parameters
-        ----------
-        sphere : Sphere class instance
-
-        Returns
-        -------
-        adc : ndarray
-           The estimates of the apparent diffusion coefficient in every
-           direction on the input sphere
-
-        Notes
-        -----
-        The calculation of ADC, relies on the following relationship:
-
-        .. math ::
-
-            ADC = \vec{b} Q \vec{b}^T
-
-        Where Q is the quadratic form of the tensor.
-        """
-        return apparent_diffusion_coef(self.quadratic_form, sphere)
-
-
-    def predict(self, gtab, S0=1):
-        r"""
-        Given a model fit, predict the signal on the vertices of a sphere 
-
-        Parameters
-        ----------
-        gtab : a GradientTable class instance
-            This encodes the directions for which a prediction is made
-
-        S0 : float array
-           The mean non-diffusion weighted signal in each voxel. Default: 1 in
-           all voxels.
-           
-        Notes
-        -----
-        The predicted signal is given by:
-
-        .. math ::
-
-            S(\theta, b) = S_0 * e^{-b ADC}
-
-        Where:
-        .. math ::
-            ADC = \theta Q \theta^T
-
-        $\theta$ is a unit vector pointing at any direction on the sphere for
-        which a signal is to be predicted and $b$ is the b value provided in
-        the GradientTable input for that direction   
-        """
-        # Get a sphere to pass to the object's ADC function. The b0 vectors
-        # will not be on the unit sphere, but we still want them to be there,
-        # so that we have a consistent index for these, so that we can fill
-        # that in later on, so we suppress the warning here:
-        with warnings.catch_warnings():
-            warnings.simplefilter("ignore")
-            sphere = Sphere(xyz=gtab.bvecs)
-
-        adc = self.adc(sphere)
-        # Predict!
-        if np.iterable(S0):
-            # If it's an array, we need to give it one more dimension:
-            S0 = S0[...,None] 
-
-        pred_sig = S0 * np.exp(-gtab.bvals * adc)
-
-        # The above evaluates to nan for the b0 vectors, so we predict the mean
-        # S0 for those, which is our best guess:
-        pred_sig[...,gtab.b0s_mask] = S0
-
-        return pred_sig
 
 
 def ols_fit_dki(design_matrix, data, min_signal=1):
