@@ -844,9 +844,10 @@ def wls_fit_dki(design_matrix, data, min_signal=1):
 
     References
     ----------
-       [1] Tabesh, A., Jensen, J.H., Ardekani, B.A., Helpern, J.A., 2011.
-           Estimation of tensors and tensor-derived measures in diffusional
-           kurtosis imaging. Magn Reson Med. 65(3), 823-836
+       [1] Veraart, J., Sijbers, J., Sunaert, S., Leemans, A., Jeurissen, B.,
+           2013. Weighted linear least squares estimation of diffusion MRI
+           parameters: Strengths, limitations, and pitfalls. Magn Reson Med 81,
+           335-346.
     """
 
     tol = 1e-6
@@ -858,46 +859,63 @@ def wls_fit_dki(design_matrix, data, min_signal=1):
     data_flat = data.reshape((-1, data.shape[-1]))
     dki_params = np.empty((len(data_flat), 6, 3))
 
-    # defining minimun diffusion aloud 
+    # defining minimun diffusion aloud
     min_diffusivity = tol / -design_matrix.min()
 
-    ols_fit = _ols_fit_matrix(design_matrix)
-   
-    for param, sig in zip(dki_params, data_flat):
-        param[0], param[1:4], param[4], param[5] = _wls_iter(ols_fit, design_matrix, sig, min_signal, min_diffusivity)
+    #ols_fit = _ols_fit_matrix(design_matrix)
+    # new line:
+    inv_design = np.linalg.pinv(design_matrix)
+
+    # lopping WLS solution on all data voxels
+    for vox in range(len(data_flat)):
+        dki_params[vox] = _wls_iter(design_matrix, inv_design, data_flat[vox],
+                                    min_signal, min_diffusivity)
+
+    # for param, sig in zip(dki_params, data_flat):
+    #    param[0], param[1:4], param[4], param[5] = _wls_iter(ols_fit, design_matrix, sig, min_signal, min_diffusivity)
         
-    dki_params.shape=data.shape[:-1]+(18,)
-    dki_params=dki_params
+    #dki_params.shape=data.shape[:-1]+(18,)
+    #dki_params=dki_params
     return dki_params
 
 
-
-def _ols_fit_matrix(design_matrix):
-    """
-    Helper function to calculate the ordinary least squares (OLS)
-    fit as a matrix multiplication. Mainly used to calculate WLS weights. Can
-    be used to calculate regression coefficients in OLS but not recommended.
-
-    See Also:
-    ---------
-    wls_fit_tensor, ols_fit_tensor
-
-    Example:
-    --------
-    ols_fit = _ols_fit_matrix(design_mat)
-    ols_data = np.dot(ols_fit, data)
-    """
-
-    U, S, V = np.linalg.svd(design_matrix, False)
-    return np.dot(U, U.T)
-
-
-
-def _wls_iter(ols_fit, design_matrix, sig, min_signal, min_diffusivity):
+def _wls_iter(design_matrix, inv_design, sig, min_signal, min_diffusivity):
     ''' Helper function used by wls_fit_tensor.
+    (WIP)
     '''
-    sig = np.maximum(sig, min_signal)  # throw out zero signals
+
+    A = design_matrix
+    
+    # removing small signals
+    sig = np.maximum(sig, min_signal)
+
+    # DKI ordinary linear least square solution
     log_s = np.log(sig)
+    ols_result = np.dot(inv_design, log_s)
+    
+    # Define weights as yn**2
+    w = np.exp(np.dot(A, ols_result))**2
+    inv_W = np.linalg(np.diag(w))
+
+    # DKI weighted linear least square solution
+    result = np.linalg.pinv(np.dot(A.T,))
+
+    # Extracting the diffusion tensor parameters from solution
+    DT_elements = result[:6]
+    evals, evecs = decompose_tensor(from_lower_triangular(DT_elements),
+                                    min_diffusivity=min_diffusivity)
+
+    # Extracting kurtosis tensor parameters from solution
+    MD_square = (evals.mean(0))**2  
+    KT_elements = result[6:21] / MD_square
+
+    # Write output  
+    dki_params = np.concatenate((evals, evecs[0], evecs[1], evecs[2], 
+                                 KT_elements), axis=0)
+
+    return dki_params
+
+"""
     w = np.exp(np.dot(ols_fit, log_s))
     result = np.dot(np.linalg.pinv(design_matrix * w[:, None]), w * log_s)
     D=result[:6]
@@ -905,49 +923,6 @@ def _wls_iter(ols_fit, design_matrix, sig, min_signal, min_diffusivity):
     MeanD_square=((tensor[0,0]+tensor[1,1]+tensor[2,2])/3.)**2  
     K_tensor_elements=result[6:21]/MeanD_square
     return ambiguous_function_decompose_tensors(tensor, K_tensor_elements, min_diffusivity=min_diffusivity)
-
-
-"""
-
-def _ols_iter(inv_design, sig, min_signal, min_diffusivity):
-    ''' Helper function used by ols_fit_tensor.
-    '''
-    sig = np.maximum(sig, min_signal)  # throw out zero signals
-    log_s = np.log(sig)
-    D = np.dot(inv_design, log_s)
-    tensor = from_lower_triangular(D)
-    return decompose_tensor(tensor, min_diffusivity=min_diffusivity)
-
-
-def _wls_iter(weighted_matrix,design_matrix,inv_design,sig,min_signal,min_diffusivity):
-    ''' Helper function used by wls_fit_dki to calculate the weights' matrix.
-    '''
-    sig=np.maximum(sig,min_signal)  # throw out zero signals
-    print('sig.shape',sig.shape)
-    log_s = np.log(sig)
-    betaols=np.dot(inv_design,log_s)
-    print('design_matrix.shape',design_matrix.shape)
-    print('inv_design.shape',inv_design.shape) 
-    print('betaols.shape',betaols.shape)
-    muols=np.dot(design_matrix,betaols)  
-    print('muols.shape',muols.shape)
-    estimated_signals=np.exp(muols)  
-    w=np.dot(weighted_matrix,estimated_signals**2) 
-    weighted_inverseB_matrix=np.linalg.pinv(B*w[:,None])
-    result=np.dot(weighted_inverseB_matrix,w*log_s) 
-    D=result[:6]
-    tensor=from_lower_triangular(D)
-    MeanD_square=((tensor[0,0]+tensor[1,1]+tensor[2,2])/3.)**2  
-    K_tensor_elements=result[6:21]/MeanD_square
-    return decompose_tensors(tensor, K_tensor_elements, min_diffusivity=min_diffusivity)
-
-def weighted_matrix_form(B):
-    ''' Helper function used by wls_fit_dki to calculate the weights' matrix.
-    '''
-    A=np.ones((B.shape[0],B.shape[0]))
-    C=np.linalg.matrix_power(A,0)
-    return C
-
 """
 
 
