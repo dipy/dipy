@@ -56,3 +56,63 @@ def test_dki_ols_fit():
     dkiF = dkiM.fit(signal)
 
     assert_array_almost_equal(dkiF.model_params, ref_params)
+
+
+def wls_fit_dki(design_matrix, data, min_signal=1):
+    r"""
+    WLS fit implemented by Maurizio
+    """
+
+    tol = 1e-6
+    if min_signal <= 0:
+        raise ValueError('min_signal must be > 0')
+
+    data = np.asarray(data)
+    data_flat = data.reshape((-1, data.shape[-1]))
+    dki_params = np.empty((len(data_flat), 6, 3))
+    min_diffusivity = tol / -design_matrix.min()
+
+    ols_fit = _ols_fit_matrix(design_matrix)
+   
+    for param, sig in zip(dki_params, data_flat):
+        param[0], param[1:4], param[4], param[5] = _wls_iter(ols_fit, design_matrix, sig, min_signal, min_diffusivity)
+        
+    dki_params.shape=data.shape[:-1]+(18,)
+    dki_params=dki_params
+    return dki_params
+
+
+def _ols_fit_matrix(design_matrix):
+    """
+    (implemented by Maurizio)
+    Helper function to calculate the ordinary least squares (OLS)
+    fit as a matrix multiplication. Mainly used to calculate WLS weights. Can
+    be used to calculate regression coefficients in OLS but not recommended.
+
+    See Also:
+    ---------
+    wls_fit_tensor, ols_fit_tensor
+
+    Example:
+    --------
+    ols_fit = _ols_fit_matrix(design_mat)
+    ols_data = np.dot(ols_fit, data)
+    """
+
+    U, S, V = np.linalg.svd(design_matrix, False)
+    return np.dot(U, U.T)
+    
+
+def _wls_iter(ols_fit, design_matrix, sig, min_signal, min_diffusivity):
+    ''' Helper function used by wls_fit_tensor.
+    '''
+    sig = np.maximum(sig, min_signal)  # throw out zero signals
+    log_s = np.log(sig)
+    w = np.exp(np.dot(ols_fit, log_s))
+    result = np.dot(np.linalg.pinv(design_matrix * w[:, None]), w * log_s)
+    D=result[:6]
+    tensor=from_lower_triangular(D)
+    MeanD_square=((tensor[0,0]+tensor[1,1]+tensor[2,2])/3.)**2  
+    K_tensor_elements=result[6:21]/MeanD_square
+    return decompose_tensors(tensor, K_tensor_elements, min_diffusivity=min_diffusivity)
+
