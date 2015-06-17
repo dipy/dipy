@@ -8,7 +8,7 @@ import numpy as np
 
 import scipy.optimize as opt
 
-from dipy.reconst.dti import (TensorFit, fractional_anisotropy, 
+from dipy.reconst.dti import (TensorFit, fractional_anisotropy,
                               geodesic_anisotropy, mean_diffusivity,
                               axial_diffusivity, radial_diffusivity, trace,
                               color_fa, determinant, isotropic, deviatoric,
@@ -26,15 +26,16 @@ from ..core.onetime import auto_attr
 from .base import ReconstModel
 
 
-#Definition of quantities necessary to evaluates elements of kurtosis
-#   
+# Definition of quantities necessary to evaluates elements of kurtosis
+#
 #    All the following definitions are needed for the evaluation of the 
 #    Tensor-Derived Kurtosis Measures [1]
 #
 #    Parameters
 #    ----------
 #    a,b,c: array-like
-#        Eigenvalues of a diffusion tensor equivalento to (evals[0],evals[1],evals[2]). shape should be (...,3).
+#        Eigenvalues of a diffusion tensor equivalento to
+#        (evals[0],evals[1],evals[2]). shape should be (...,3).
 #
 #   Returns
 #    -------
