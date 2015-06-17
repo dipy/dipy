@@ -1,12 +1,5 @@
 # Makefile for Sphinx documentation
 #
-# "https://sourceforge.net/apps/trac/sourceforge/wiki/Release files for
-# download".  To use, set your sourceforge username with 'export
-# SF_USER=garyfallidis' or similar, then 'make upload-website'
-#SF_USER ?= matthewbrett
-SF_USER ?= garyfallidis
-WWW_SF=nipy@web.sourceforge.net:/home/groups/n/ni/nipy/htdocs/dipy
-RSYNC_SF=rsync -rzhvp --delete --chmod=Dg+s,g+rw
 
 # You can set these variables from the command line.
 SPHINXOPTS    =
@@ -134,19 +127,5 @@ pdf-stamp: latex
 	cd _build/latex && make all-pdf
 	touch $@
 
-# This one udates for the specific user named at the top of the makefile
-upload-website: upload-website-$(SF_USER)
-
-upload-website-%: html examples-tgz
-	$(RSYNC_SF) _build/html/* _build/latex/*.pdf $*,$(WWW_SF)
-
-# This one udates for the specific user named at the top of the makefile
-upload-examples: upload-examples-$(SF_USER)
-
-upload-examples-%: examples-tgz
-	$(RSYNC_SF) ../dist/*-doc-examples.tar.gz $*,$(WWW_SF)
-
-#upload-website-%: pdf-stamp html
-#	$(RSYNC_SF) _build/html/* _build/latex/*.pdf $*,$(WWW_SF)
 
 
