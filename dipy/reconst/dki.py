@@ -48,134 +48,133 @@ from .base import ReconstModel
 #
 
 def rdpython(x,y,z):
-    """
+    r"""
     WIP
     """
-   d1mach=np.zeros(5)
-   d1mach[0]=1.1*10**(-308)
-   d1mach[1]=8.9e307
-   d1mach[2]=0.22204460*10**(-15)
-   d1mach[3]=0.4440*10**(-15)
-   d1mach[4]=np.log(2.0)
-   errtol = (d1mach[2]/3.0)**(1.0/6.0)
-   lolim  = 2.0/(d1mach[1])**(2.0/3.0)
-   tuplim = d1mach[0]**(1.0/3.0)
-   tuplim = (0.10*errtol)**(1.0/3.0)/tuplim
-   uplim  = tuplim**2.0
-   c1 = 3.0/14.0
-   c2 = 1.0/6.0
-   c3 = 9.0/22.0
-   c4 = 3.0/26.0
+    d1mach=np.zeros(5)
+    d1mach[0]=1.1*10**(-308)
+    d1mach[1]=8.9e307
+    d1mach[2]=0.22204460*10**(-15)
+    d1mach[3]=0.4440*10**(-15)
+    d1mach[4]=np.log(2.0)
+    errtol = (d1mach[2]/3.0)**(1.0/6.0)
+    lolim  = 2.0/(d1mach[1])**(2.0/3.0)
+    tuplim = d1mach[0]**(1.0/3.0)
+    tuplim = (0.10*errtol)**(1.0/3.0)/tuplim
+    uplim  = tuplim**2.0
+    c1 = 3.0/14.0
+    c2 = 1.0/6.0
+    c3 = 9.0/22.0
+    c4 = 3.0/26.0
 
-   xn = x.copy()
-   yn = y.copy()
-   zn = z.copy()
-   sigma = 0.0
-   power4 = 1.0
+    xn = x.copy()
+    yn = y.copy()
+    zn = z.copy()
+    sigma = 0.0
+    power4 = 1.0
 
-   mu = (xn+yn+3.0*zn)*0.20
-   xndev = (mu-xn)/mu
-   yndev = (mu-yn)/mu
-   zndev = (mu-zn)/mu
-   epslon = np.max([np.abs(xndev), np.abs(yndev), np.abs(zndev)])
-   while (epslon >= errtol):
-      xnroot = np.sqrt(xn)
-      ynroot = np.sqrt(yn)
-      znroot = np.sqrt(zn)
-      lamda = xnroot*(ynroot+znroot) + ynroot*znroot
-      sigma = sigma + power4/(znroot*(zn+lamda))
-      power4 = power4*0.250
-      xn = (xn+lamda)*0.250
-      yn = (yn+lamda)*0.250
-      zn = (zn+lamda)*0.250
-      mu = (xn+yn+3.0*zn)*0.20
-      xndev = (mu-xn)/mu
-      yndev = (mu-yn)/mu
-      zndev = (mu-zn)/mu
-      epslon = np.max([np.abs(xndev), np.abs(yndev), np.abs(zndev)])
+    mu = (xn+yn+3.0*zn)*0.20
+    xndev = (mu-xn)/mu
+    yndev = (mu-yn)/mu
+    zndev = (mu-zn)/mu
+    epslon = np.max([np.abs(xndev), np.abs(yndev), np.abs(zndev)])
+    while (epslon >= errtol):
+       xnroot = np.sqrt(xn)
+       ynroot = np.sqrt(yn)
+       znroot = np.sqrt(zn)
+       lamda = xnroot*(ynroot+znroot) + ynroot*znroot
+       sigma = sigma + power4/(znroot*(zn+lamda))
+       power4 = power4*0.250
+       xn = (xn+lamda)*0.250
+       yn = (yn+lamda)*0.250
+       zn = (zn+lamda)*0.250
+       mu = (xn+yn+3.0*zn)*0.20
+       xndev = (mu-xn)/mu
+       yndev = (mu-yn)/mu
+       zndev = (mu-zn)/mu
+       epslon = np.max([np.abs(xndev), np.abs(yndev), np.abs(zndev)])
 
-   ea = xndev*yndev
-   eb = zndev*zndev
-   ec = ea - eb
-   ed = ea - 6.0*eb
-   ef = ed + ec + ec
-   s1 = ed*(-c1+0.250*c3*ed-1.50*c4*zndev*ef)
-   s2 = zndev*(c2*ef+zndev*(-c3*ec+zndev*c4*ea))
-   drd = 3.0*sigma + power4*(1.0+s1+s2)/(mu*np.sqrt(mu))
-   return drd
-
+    ea = xndev*yndev
+    eb = zndev*zndev
+    ec = ea - eb
+    ed = ea - 6.0*eb
+    ef = ed + ec + ec
+    s1 = ed*(-c1+0.250*c3*ed-1.50*c4*zndev*ef)
+    s2 = zndev*(c2*ef+zndev*(-c3*ec+zndev*c4*ea))
+    drd = 3.0*sigma + power4*(1.0+s1+s2)/(mu*np.sqrt(mu))
+    return drd
 
 
 def rfpython(x,y,z):
     """
     WIP
     """
-   d1mach=np.zeros(5)
-   d1mach[0]=1.1*10**(-308)
-   d1mach[1]=8.9e307
-   d1mach[2]=0.22204460*10**(-15)
-   d1mach[3]=0.4440*10**(-15)
-   d1mach[4]=np.log(2.0)
-   errtol = (d1mach[2]/3.0)**(1.0/6.0)
-   lolim  = 2.0/(d1mach[1])**(2.0/3.0)
-   tuplim = d1mach[0]**(1.0/3.0)
-   tuplim = (0.10*errtol)**(1.0/3.0)/tuplim
-   uplim  = tuplim**2.0
-   c1 = 3.0/14.0
-   c2 = 1.0/6.0
-   c3 = 9.0/22.0
-   c4 = 3.0/26.0
+    d1mach=np.zeros(5)
+    d1mach[0]=1.1*10**(-308)
+    d1mach[1]=8.9e307
+    d1mach[2]=0.22204460*10**(-15)
+    d1mach[3]=0.4440*10**(-15)
+    d1mach[4]=np.log(2.0)
+    errtol = (d1mach[2]/3.0)**(1.0/6.0)
+    lolim  = 2.0/(d1mach[1])**(2.0/3.0)
+    tuplim = d1mach[0]**(1.0/3.0)
+    tuplim = (0.10*errtol)**(1.0/3.0)/tuplim
+    uplim  = tuplim**2.0
+    c1 = 3.0/14.0
+    c2 = 1.0/6.0
+    c3 = 9.0/22.0
+    c4 = 3.0/26.0
 
-   xn = x.copy()
-   yn = y.copy()
-   zn = z.copy()
+    xn = x.copy()
+    yn = y.copy()
+    zn = z.copy()
  
-   mu = (xn+yn+zn)/3.0
-   xndev = 2.0 - (mu+xn)/mu
-   yndev = 2.0 - (mu+yn)/mu
-   zndev = 2.0 - (mu+zn)/mu
-   epslon = np.max([np.abs(xndev),np.abs(yndev),np.abs(zndev)])
-   while (epslon >= errtol):
-      xnroot = np.sqrt(xn)
-      ynroot = np.sqrt(yn)
-      znroot = np.sqrt(zn)
-      lamda = xnroot*(ynroot+znroot) + ynroot*znroot
-      xn = (xn+lamda)*0.250
-      yn = (yn+lamda)*0.250
-      zn = (zn+lamda)*0.250
-      mu = (xn+yn+zn)/3.0
-      xndev = 2.0 - (mu+xn)/mu
-      yndev = 2.0 - (mu+yn)/mu
-      zndev = 2.0 - (mu+zn)/mu
-      epslon = np.max([np.abs(xndev),np.abs(yndev),np.abs(zndev)])
+    mu = (xn+yn+zn)/3.0
+    xndev = 2.0 - (mu+xn)/mu
+    yndev = 2.0 - (mu+yn)/mu
+    zndev = 2.0 - (mu+zn)/mu
+    epslon = np.max([np.abs(xndev),np.abs(yndev),np.abs(zndev)])
+    while (epslon >= errtol):
+       xnroot = np.sqrt(xn)
+       ynroot = np.sqrt(yn)
+       znroot = np.sqrt(zn)
+       lamda = xnroot*(ynroot+znroot) + ynroot*znroot
+       xn = (xn+lamda)*0.250
+       yn = (yn+lamda)*0.250
+       zn = (zn+lamda)*0.250
+       mu = (xn+yn+zn)/3.0
+       xndev = 2.0 - (mu+xn)/mu
+       yndev = 2.0 - (mu+yn)/mu
+       zndev = 2.0 - (mu+zn)/mu
+       epslon = np.max([np.abs(xndev),np.abs(yndev),np.abs(zndev)])
 
-   e2 = xndev*yndev - zndev*zndev
-   e3 = xndev*yndev*zndev
-   s  = 1.0 + (c1*e2-0.10-c2*e3)*e2 + c3*e3
-   drf = s/np.sqrt(mu)
-   return drf
+    e2 = xndev*yndev - zndev*zndev
+    e3 = xndev*yndev*zndev
+    s  = 1.0 + (c1*e2-0.10-c2*e3)*e2 + c3*e3
+    drf = s/np.sqrt(mu)
+    return drf
 
 
 def rotatew(winit,r,iv):
     """
     WIP
     """
-      gval=0.
-      for i2 in range(3):
+    gval=0.
+    for i2 in range(3):
         for j2 in range(3):
-          for k2 in range(3):
-            for l2 in range(3):
-              gval=gval+r[i2,iv[0]]*r[j2,iv[1]]*r[k2,iv[2]]*r[l2,iv[3]]*winit[i2,j2,k2,l2]
+            for k2 in range(3):
+                for l2 in range(3):
+                    gval=gval+r[i2,iv[0]]*r[j2,iv[1]]*r[k2,iv[2]]*r[l2,iv[3]]*winit[i2,j2,k2,l2]
       
-      return gval
+    return gval
 
 
 def alpha(a):
     """
     WIP
     """
-   alph=(1./np.sqrt(abs(a))*(np.arctan(np.sqrt(abs(a)))))
-   return alph
+    alph=(1./np.sqrt(abs(a))*(np.arctan(np.sqrt(abs(a)))))
+    return alph
 
 def A1111(a,b,c):
     """
@@ -186,27 +185,27 @@ def A1111(a,b,c):
     
     indexesxcond1=np.logical_and(np.logical_and.reduce(abc>0),np.logical_and(a!=b, b!=c))
     if np.sum(indexesxcond1)!=0:
-      d=np.zeros(a.shape)
-      e=np.zeros(a.shape)
-      f=np.zeros(a.shape)
-      g=np.zeros(a.shape)
-      h=np.zeros(a.shape)
-      d[indexesxcond1]=(((a[indexesxcond1]+b[indexesxcond1]+c[indexesxcond1])**2)/(18*(a[indexesxcond1]-b[indexesxcond1])*(a[indexesxcond1]-c[indexesxcond1])))
-      e[indexesxcond1]=((np.sqrt(b[indexesxcond1]*c[indexesxcond1]))/a[indexesxcond1])
-      f[indexesxcond1]=rfpython(a[indexesxcond1]/b[indexesxcond1],a[indexesxcond1]/c[indexesxcond1],np.ones(len(a[indexesxcond1])))
-      g[indexesxcond1]=((3*a[indexesxcond1]**2-a[indexesxcond1]*b[indexesxcond1]-a[indexesxcond1]*c[indexesxcond1]-b[indexesxcond1]*c[indexesxcond1])/(3*a[indexesxcond1]*np.sqrt(b[indexesxcond1]*c[indexesxcond1])))
-      h[indexesxcond1]=rdpython(a[indexesxcond1]/b[indexesxcond1],a[indexesxcond1]/c[indexesxcond1],np.ones(len(a[indexesxcond1])))
-      Aarray[indexesxcond1]=d[indexesxcond1]*(e[indexesxcond1]*f[indexesxcond1]+g[indexesxcond1]*h[indexesxcond1]-1)
+        d=np.zeros(a.shape)
+        e=np.zeros(a.shape)
+        f=np.zeros(a.shape)
+        g=np.zeros(a.shape)
+        h=np.zeros(a.shape)
+        d[indexesxcond1]=(((a[indexesxcond1]+b[indexesxcond1]+c[indexesxcond1])**2)/(18*(a[indexesxcond1]-b[indexesxcond1])*(a[indexesxcond1]-c[indexesxcond1])))
+        e[indexesxcond1]=((np.sqrt(b[indexesxcond1]*c[indexesxcond1]))/a[indexesxcond1])
+        f[indexesxcond1]=rfpython(a[indexesxcond1]/b[indexesxcond1],a[indexesxcond1]/c[indexesxcond1],np.ones(len(a[indexesxcond1])))
+        g[indexesxcond1]=((3*a[indexesxcond1]**2-a[indexesxcond1]*b[indexesxcond1]-a[indexesxcond1]*c[indexesxcond1]-b[indexesxcond1]*c[indexesxcond1])/(3*a[indexesxcond1]*np.sqrt(b[indexesxcond1]*c[indexesxcond1])))
+        h[indexesxcond1]=rdpython(a[indexesxcond1]/b[indexesxcond1],a[indexesxcond1]/c[indexesxcond1],np.ones(len(a[indexesxcond1])))
+        Aarray[indexesxcond1]=d[indexesxcond1]*(e[indexesxcond1]*f[indexesxcond1]+g[indexesxcond1]*h[indexesxcond1]-1)
 
     indexesxcond2=np.logical_and(np.logical_and.reduce(abc>0),np.logical_and(a==b, b!=c))
     if np.sum(indexesxcond2)!=0:
-      dummy2=A2233(c,a,a)
-      Aarray[indexesxcond2]=3*dummy2[indexesxcond2]
+        dummy2=A2233(c,a,a)
+        Aarray[indexesxcond2]=3*dummy2[indexesxcond2]
 
     indexesxcond3=np.logical_and(np.logical_and.reduce(abc>0),np.logical_and(a==c, a!=b))
     if np.sum(indexesxcond3)!=0:
-      dummy3=A2233(b,a,a)
-      Aarray[indexesxcond3]=3*dummy3[indexesxcond3]
+        dummy3=A2233(b,a,a)
+        Aarray[indexesxcond3]=3*dummy3[indexesxcond3]
 
 ### the following condition has to be checked ###
     indexesxcond4=np.logical_or.reduce(abc<=0)
@@ -296,21 +295,20 @@ def F1m(a,b,c):
     """
     WIP
     """
-        A=A1111(a,b,c)
-        return A
+    A=A1111(a,b,c)
+    return A
 
 def F2m(a,b,c):
     """
     WIP
     """
-        A=6*A2233(a,b,c)
-        return 6*A2233(a,b,c)
+    return 6*A2233(a,b,c)
 
 def G1m(a,b,c):
     """
     WIP
     """
-    	return C2222(a,b,c)
+    return C2222(a,b,c)
 
 def G2m(a,b,c):
     """
@@ -617,7 +615,7 @@ class DKIFit(TensorFit):
       return mean_kurtosis(self.evals, self.Wrotat)
 
     @auto_attr
-    def ak(evals, Wrotat, axis=-1):
+    def ak(self, evals, Wrotat, axis=-1):
         r"""
         (WIP)
         Axial Kurtosis (AK) of a diffusion kurtosis tensor. 
@@ -648,7 +646,7 @@ class DKIFit(TensorFit):
         return axial_kurtosis(self.evals, self.Wrotat)
 
     @auto_attr
-    def rk(evals, Wrotat, axis=-1):
+    def rk(self, evals, Wrotat, axis=-1):
         r"""
         (WIP)
         Radial Kurtosis (RK) of a diffusion kurtosis tensor. 
@@ -880,9 +878,9 @@ def wls_fit_dki(design_matrix, data, min_signal=1):
 
 
 def _wls_iter(design_matrix, inv_design, sig, min_signal, min_diffusivity):
-    ''' Helper function used by wls_fit_tensor.
+    """ Helper function used by wls_fit_tensor.
     (WIP)
-    '''
+    """
 
     A = design_matrix
     
