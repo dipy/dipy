@@ -36,10 +36,10 @@ bvecs_2s = np.concatenate((bvecs, bvecs), axis=0)
 gtab_2s = gradient_table(bvals_2s, bvecs_2s)
 
 
-def test_dki_ols_fit():
-    """DKI ols fit is tested"""
+def test_dki_fits():
+    """DKI fits are tested"""
 
-    # Two crossing fibers are simulated
+    # Signals of two crossing fibers are simulated
     mevals = np.array([[0.00099, 0, 0], [0.00226, 0.00087, 0.00087],
                        [0.00099, 0, 0], [0.00226, 0.00087, 0.00087]])
     angles = [(80, 10), (80, 10), (20, 30), (20, 30)]
@@ -52,10 +52,17 @@ def test_dki_ols_fit():
     ref_params = np.concatenate((evals, evecs[0], evecs[1], evecs[2], kt),
                                 axis=0)
 
+    # OLS fitting
     dkiM = dki.DKIModel(gtab_2s)
     dkiF = dkiM.fit(signal)
 
     assert_array_almost_equal(dkiF.model_params, ref_params)
+    
+    # WLS fitting
+    dki_wlsM = dki.DKIModel(gtab_2s, fit_method="WLS_DKI")
+    dki_wlsF = dki_wlsM.fit(signal)
+
+    assert_array_almost_equal(dki_wlsF.model_params, ref_params)
 
 
 def wls_fit_dki(design_matrix, data, min_signal=1):

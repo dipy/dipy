@@ -15,6 +15,7 @@ from dipy.reconst.dti import (TensorFit, fractional_anisotropy,
                               norm, mode, linearity, planarity, sphericity,
                               apparent_diffusion_coef, from_lower_triangular,
                               lower_triangular, decompose_tensor)
+
 from dipy.utils.six.moves import range
 from dipy.data import get_sphere
 from ..core.gradients import gradient_table
@@ -855,13 +856,10 @@ def wls_fit_dki(design_matrix, data, min_signal=1):
     # preparing data and initializing parametres
     data = np.asarray(data)
     data_flat = data.reshape((-1, data.shape[-1]))
-    dki_params = np.empty((len(data_flat), 6, 3))
+    dki_params = np.empty((len(data_flat), 27))
 
-    # defining minimun diffusion aloud
+    # inverting design matrix and defining minimun diffusion aloud
     min_diffusivity = tol / -design_matrix.min()
-
-    #ols_fit = _ols_fit_matrix(design_matrix)
-    # new line:
     inv_design = np.linalg.pinv(design_matrix)
 
     # lopping WLS solution on all data voxels
@@ -869,17 +867,40 @@ def wls_fit_dki(design_matrix, data, min_signal=1):
         dki_params[vox] = _wls_iter(design_matrix, inv_design, data_flat[vox],
                                     min_signal, min_diffusivity)
 
-    # for param, sig in zip(dki_params, data_flat):
-    #    param[0], param[1:4], param[4], param[5] = _wls_iter(ols_fit, design_matrix, sig, min_signal, min_diffusivity)
-        
-    #dki_params.shape=data.shape[:-1]+(18,)
-    #dki_params=dki_params
     return dki_params
 
 
 def _wls_iter(design_matrix, inv_design, sig, min_signal, min_diffusivity):
-    """ Helper function used by wls_fit_tensor.
-    (WIP)
+    """ Helper function used by wls_fit_dki - Applies WLS fit of the diffusion
+    kurtosis model to single voxel signals.
+    
+    Parameters
+    ----------
+    design_matrix : array (g, 22)
+        Design matrix holding the covariants used to solve for the regression
+        coefficients    
+    inv_design : array (g, 22)
+        Inverse of the design matrix.
+    sig : array (g, ) or array ([N, ...], g)
+        Diffusion-weighted signal for a single voxel data.
+    min_signal : 
+        All values below min_signal are repalced with min_signal. This is done
+        in order to avoid taking log(0) durring the tensor fitting.
+    min_diffusivity : float
+        Because negative eigenvalues are not physical and small eigenvalues,
+        much smaller than the diffusion weighting, cause quite a lot of noise
+        in metrics such as fa, diffusivity values smaller than
+        `min_diffusivity` are replaced with `min_diffusivity`.
+
+    Returns
+    -------
+    dki_params : array (27, )
+        All parameters estimated from the diffusion kurtosis model.
+        Parameters are ordered as follow:
+            1) Three diffusion tensor's eingenvalues
+            2) Three lines of the eigenvector matrix each containing the first
+               second and third cordinates of the eigenvector
+            3) Fifteen elements of the kurtosis tensor
     """
 
     A = design_matrix
@@ -891,37 +912,28 @@ def _wls_iter(design_matrix, inv_design, sig, min_signal, min_diffusivity):
     log_s = np.log(sig)
     ols_result = np.dot(inv_design, log_s)
     
-    # Define weights as yn**2
-    w = np.exp(np.dot(A, ols_result))**2
-    inv_W = np.linalg(np.diag(w))
+    # Define weights as diag(yn**2)
+    W = np.diag(np.exp(2 * np.dot(A, ols_result)))
 
     # DKI weighted linear least square solution
-    result = np.linalg.pinv(np.dot(A.T,))
+    inv_AT_W_A = np.linalg.pinv(np.dot(np.dot(A.T, W), A))
+    AT_W_LS = np.dot(np.dot(A.T, W), log_s)
+    wls_result = np.dot(inv_AT_W_A, AT_W_LS)
 
     # Extracting the diffusion tensor parameters from solution
-    DT_elements = result[:6]
+    DT_elements = wls_result[:6]
     evals, evecs = decompose_tensor(from_lower_triangular(DT_elements),
                                     min_diffusivity=min_diffusivity)
 
     # Extracting kurtosis tensor parameters from solution
     MD_square = (evals.mean(0))**2  
-    KT_elements = result[6:21] / MD_square
+    KT_elements = wls_result[6:21] / MD_square
 
     # Write output  
     dki_params = np.concatenate((evals, evecs[0], evecs[1], evecs[2], 
                                  KT_elements), axis=0)
 
     return dki_params
-
-"""
-    w = np.exp(np.dot(ols_fit, log_s))
-    result = np.dot(np.linalg.pinv(design_matrix * w[:, None]), w * log_s)
-    D=result[:6]
-    tensor=from_lower_triangular(D)
-    MeanD_square=((tensor[0,0]+tensor[1,1]+tensor[2,2])/3.)**2  
-    K_tensor_elements=result[6:21]/MeanD_square
-    return ambiguous_function_decompose_tensors(tensor, K_tensor_elements, min_diffusivity=min_diffusivity)
-"""
 
 
 def ambiguous_function_decompose_tensors(tensor, K_tensor_elements, min_diffusivity=0):
