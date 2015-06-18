@@ -16,6 +16,7 @@ from dipy.reconst.dti import (TensorFit, fractional_anisotropy,
                               apparent_diffusion_coef, from_lower_triangular,
                               lower_triangular, decompose_tensor)
 
+from dipy.sims.voxel import DKI_signal
 from dipy.utils.six.moves import range
 from dipy.data import get_sphere
 from ..core.gradients import gradient_table
@@ -483,6 +484,60 @@ def radial_kurtosis(evals, Wrotat, axis=-1):
     return RadKurt
 #End of the definitions of quantities necessary to evaluates elements of kurtosis
 
+def DKI_prediction(dki_params, gtab, S0=150, snr=None):
+    """
+    Predict a signal given diffusion kurtosis imaging parameters.
+
+    Parameters
+    ----------
+    dki_params : ndarray (..., 27)
+        All parameters estimated from the diffusion kurtosis model.
+        Parameters are ordered as follow:
+            1) Three diffusion tensor's eingenvalues
+            2) Three lines of the eigenvector matrix each containing the first,
+               second and third coordinates of the eigenvector
+            3) Fifteen elements of the kurtosis tensor
+
+    gtab : a GradientTable class instance
+        The gradient table for this prediction
+
+    S0 : float or ndarray (optional)
+        The non diffusion-weighted signal in every voxel, or across all
+        voxels. Default: 150
+
+    snr : float (optional)
+        Signal to noise ratio, assuming Rician noise.  If set to None, no
+        noise is added.
+
+    Returns
+    --------
+    S : (..., N) ndarray
+        Simulated signal based on the DKI model:
+
+    .. math::
+
+        S=S_{0}e^{-bD+\frac{1}{6}b^{2}D^{2}K}
+    """
+    evals = dki_params[..., :3]
+    evecs = dki_params[..., 3:12].reshape(dki_params.shape[:-1] + (3, 3))
+    kt = dki_params[..., 12:]
+
+    # Flat parameters and initialize pred_sig
+    fevals = evals.reshape((-1, evals.shape[-1]))
+    fevecs = evals.reshape((-1, evecs.shape[-2]))
+    fkt = kt.reshape((-1, evals.shape[-1]))
+    pred_sig = np.zeros((len(fevals), len(gtab.bvals)))
+
+    # lopping for all voxels
+    for v in range(len(pred_sig)):
+        DT = np.dot(np.dot(fevecs[v], np.diag(fevals[v])), fevecs[v].T)
+        pred_sig[v] = DKI_signal(gtab, lower_triangular(DT), fkt[v], S0, snr)
+
+    # Reshape data according to the shape of dki_params
+    pred_sig = pred_sig.reshape(dki_params.shape + len(pred_sig))
+
+    return pred_sig
+
 
 class DKIModel(ReconstModel):
     """ Diffusion Kurtosis Tensor
@@ -559,6 +614,30 @@ class DKIModel(ReconstModel):
             dki_params[mask, :] = params_in_mask
 
         return DKIFit(self, dki_params)
+
+
+    def predict(self, dki_params, S0=1):
+        """
+        Predict a signal for this DKI model class instance given parameters.
+
+        Parameters
+        ----------
+        dki_params : ndarray (..., 27)
+            All parameters estimated from the diffusion kurtosis model.
+            Parameters are ordered as follow:
+                1) Three diffusion tensor's eingenvalues
+                2) Three lines of the eigenvector matrix each containing the
+                   first, second and third coordinates of the eigenvector
+                3) Fifteen elements of the kurtosis tensor
+
+        gtab : a GradientTable class instance
+            The gradient table for this prediction
+
+        S0 : float or ndarray (optional)
+            The non diffusion-weighted signal in every voxel, or across all
+            voxels. Default: 1
+        """
+        return DKI_prediction(dki_params, self.gtab, S0)
 
 
 class DKIFit(TensorFit):
@@ -718,8 +797,8 @@ def ols_fit_dki(design_matrix, data, min_signal=1):
         voxels. 
         Parameters are ordered as follow:
             1) Three diffusion tensor's eingenvalues
-            2) Three lines of the eigenvector matrix each containing the first
-               second and third cordinates of the eigenvector
+            2) Three lines of the eigenvector matrix each containing the first,
+               second and third coordinates of the eigenvector
             3) Fifteen elements of the kurtosis tensor
 
     See Also
@@ -780,8 +859,8 @@ def _ols_iter(inv_design, sig, min_signal, min_diffusivity):
         All parameters estimated from the diffusion kurtosis model.
         Parameters are ordered as follow:
             1) Three diffusion tensor's eingenvalues
-            2) Three lines of the eigenvector matrix each containing the first
-               second and third cordinates of the eigenvector
+            2) Three lines of the eigenvector matrix each containing the first,
+               second and third coordinates of the eigenvector
             3) Fifteen elements of the kurtosis tensor
     '''
 
@@ -834,7 +913,7 @@ def wls_fit_dki(design_matrix, data, min_signal=1):
         Parameters are ordered as follow:
             1) Three diffusion tensor's eingenvalues
             2) Three lines of the eigenvector matrix each containing the first
-               second and third cordinates of the eigenvector
+               second and third coordinates of the eigenvector
             3) Fifteen elements of the kurtosis tensor 
 
     See Also
@@ -899,8 +978,8 @@ def _wls_iter(design_matrix, inv_design, sig, min_signal, min_diffusivity):
         All parameters estimated from the diffusion kurtosis model.
         Parameters are ordered as follow:
             1) Three diffusion tensor's eingenvalues
-            2) Three lines of the eigenvector matrix each containing the first
-               second and third cordinates of the eigenvector
+            2) Three lines of the eigenvector matrix each containing the first,
+               second and third coordinates of the eigenvector
             3) Fifteen elements of the kurtosis tensor
     """
 
