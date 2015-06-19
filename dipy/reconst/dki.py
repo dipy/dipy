@@ -27,29 +27,6 @@ from ..core.onetime import auto_attr
 from .base import ReconstModel
 
 
-# Definition of quantities necessary to evaluates elements of kurtosis
-#
-#    All the following definitions are needed for the evaluation of the 
-#    Tensor-Derived Kurtosis Measures [1]
-#
-#    Parameters
-#    ----------
-#    a,b,c: array-like
-#        Eigenvalues of a diffusion tensor equivalento to
-#        (evals[0],evals[1],evals[2]). shape should be (...,3).
-#
-#   Returns
-#    -------
-#    parameters : array-like
-#        Various parameters for the evaluation of the kurtosis tensor.
-#        
-#        References
-#        ----------
-#           [1] Tabesh, A., Jensen, J.H., Ardekani, B.A., Helpern, J.A., 2011.
-#           Estimation of tensors and tensor-derived measures in diffusional
-#           kurtosis imaging. Magn Reson Med. 65(3), 823-836
-#
-
 def rdpython(x,y,z):
     r"""
     WIP
@@ -109,7 +86,7 @@ def rdpython(x,y,z):
 
 
 def rfpython(x,y,z):
-    """
+    r"""
     WIP
     """
     d1mach=np.zeros(5)
@@ -156,20 +133,6 @@ def rfpython(x,y,z):
     s  = 1.0 + (c1*e2-0.10-c2*e3)*e2 + c3*e3
     drf = s/np.sqrt(mu)
     return drf
-
-
-def rotatew(winit,r,iv):
-    """
-    WIP
-    """
-    gval=0.
-    for i2 in range(3):
-        for j2 in range(3):
-            for k2 in range(3):
-                for l2 in range(3):
-                    gval=gval+r[i2,iv[0]]*r[j2,iv[1]]*r[k2,iv[2]]*r[l2,iv[3]]*winit[i2,j2,k2,l2]
-      
-    return gval
 
 
 def alpha(a):
@@ -358,20 +321,19 @@ def _roll_Wrotat(Wrotat, axis=-1):
     return Wrotat
 
 
-def mean_kurtosis(evals, Wrotat, axis=-1):
+def mean_kurtosis(dki_params):
     r"""
-    
     Computes mean Kurtosis (MK) from the kurtosis tensor. 
 
     Parameters
     ----------
-    evals : array-like
-        Eigenvalues of a diffusion tensor.
-    Wrotat : array-like
-        W tensor elements of interest for the evaluation of the Kurtosis 
-        (W_xxxx,W_yyyy,W_zzzz,W_xxyy,W_xxzz,W_yyzz)
-    axis : int
-        Axis of `evals` which contains 3 eigenvalues.
+    dki_params : ndarray (..., 27)
+        All parameters estimated from the diffusion kurtosis model.
+        Parameters are ordered as follow:
+            1) Three diffusion tensor's eingenvalues
+            2) Three lines of the eigenvector matrix each containing the first,
+               second and third coordinates of the eigenvector
+            3) Fifteen elements of the kurtosis tensor
     
     Returns
     -------
@@ -428,12 +390,217 @@ def mean_kurtosis(evals, Wrotat, axis=-1):
            Estimation of tensors and tensor-derived measures in diffusional
            kurtosis imaging. Magn Reson Med. 65(3), 823-836
     """
-    [W_xxxx, W_yyyy, W_zzzz,
-     W_xxyy, W_xxzz, W_yyzz] = [Wrotat[...,0], Wrotat[...,1], Wrotat[...,2], 
-                                Wrotat[...,3], Wrotat[...,4], Wrotat[...,5]]
-                                
-    MeanKurt = F1m(evals[...,0], evals[...,1], evals[...,2]) * W_xxxx + F1m(evals[...,1],evals[...,0],evals[...,2])*W_yyyy+F1m(evals[...,2],evals[...,1],evals[...,0])*W_zzzz+F2m(evals[...,0],evals[...,1],evals[...,2])*W_yyzz+F2m(evals[...,1],evals[...,0],evals[...,2])*W_xxzz+F2m(evals[...,2],evals[...,1],evals[...,0])*W_xxyy
+    
+    # Split the model parameters to three variable containing the evals, evecs,
+    # and kurtosis elements
+
+    evals, evecs, kt = split_dki_param(dki_params)
+
+    # Rotate the kurtosis tensor from the standard Cartesian coordinate system
+    # to another coordinate system in which the 3 orthonormal eigenvectors of
+    # DT are the base coordinate
+    Wxxxx = np.zeros(len(kt), 15)
+    Wyyyy = np.zeros(len(kt), 15)
+    Wzzzz = np.zeros(len(kt), 15)
+    Wxxyy = np.zeros(len(kt), 15)
+    Wxxzz = np.zeros(len(kt), 15)
+    Wyyzz = np.zeros(len(kt), 15)
+    
+    for vox in range(len(kt)): 
+        Wxxxx[vox] = Wrotate(kt[vox], evecs[vox], [0, 0, 0, 0])
+        Wyyyy[vox] = Wrotate(kt[vox], evecs[vox], [1, 1, 1, 1])
+        Wzzzz[vox] = Wrotate(kt[vox], evecs[vox], [2, 2, 2, 2])
+        Wxxyy[vox] = Wrotate(kt[vox], evecs[vox], [0, 0, 1, 1])
+        Wxxzz[vox] = Wrotate(kt[vox], evecs[vox], [0, 0, 2, 2])
+        Wyyzz[vox] = Wrotate(kt[vox], evecs[vox], [1, 1, 2, 2])
+
+    # Compute MK
+    MeanKurt = F1m(evals[..., 0], evals[..., 1], evals[..., 2])*Wxxxx 
+    + F1m(evals[..., 1], evals[..., 0], evals[..., 2])*Wyyyy
+    + F1m(evals[..., 2], evals[..., 1], evals[..., 0])*Wzzzz
+    + F2m(evals[..., 0], evals[..., 1], evals[..., 2])*Wyyzz
+    + F2m(evals[..., 1], evals[..., 0], evals[..., 2])*Wxxzz
+    + F2m(evals[..., 2], evals[..., 1], evals[..., 0])*Wxxyy
+
     return MeanKurt
+    
+
+def Wrotate(kt, Basis, inds = None):
+    r"""
+    Rotate a kurtosis tensor from the standard Cartesian coordinate system
+    to another coordinate system basis
+    
+    Parameters
+    ----------
+    kt : (15,)
+        Vector with the 15 independent elements of the kurtosis tensor
+    Basis : array (3, 3)
+        Vectors of the basis column-wise oriented
+    inds : array(..., 4) (optional)
+        Array of vectors containing the four indexes of the rotated kurtosis.
+        If not specified all 15 elements of the rotated kurtosis tensor are
+        computed
+    
+    Returns
+    --------
+    Wrot : array (15,) or (...,)
+        Vector with the 15 independent elements of the rotated kurtosis tensor.
+        If 'indices' is specified only the specified elements of the rotated
+        kurtosis tensor are computed.
+
+    Note
+    ------
+    KT elements are assumed to be ordered as follows:
+        
+    .. math::
+            
+    \begin{matrix} ( & W_{xxxx} & W_{yyyy} & W_{zzzz} & W_{xxxy} & W_{xxxz}
+                     & ... \\
+                     & W_{xyyy} & W_{yyyz} & W_{xzzz} & W_{yzzz} & W_{xxyy}
+                     & ... \\
+                     & W_{xxzz} & W_{yyzz} & W_{xxyz} & W_{xyyz} & W_{xyzz}
+                     & & )\end{matrix}
+
+    References
+    ----------
+    [1] Hui ES, Cheung MM, Qi L, Wu EX, 2008. Towards better MR
+    characterization of neural tissues using directional diffusion kurtosis
+    analysis. Neuroimage 42(1): 122-34
+    """
+    if inds is None:
+        inds = np.array([[0, 0, 0, 0], [1, 1, 1, 1], [2, 2, 2, 2],
+                         [0, 0, 0, 1], [0, 0, 0, 2], [0, 1, 1, 1],
+                         [1, 1, 1, 2], [0, 2, 2, 2], [1, 2, 2, 2],
+                         [0, 0, 1, 1], [0, 0, 2, 2], [1, 1, 2, 2],
+                         [0, 0, 1, 2], [0, 1, 1, 2], [0, 1, 2, 2]])
+
+    Wrot = np.zeros(len(inds))
+
+    # Construct full 4D tensor
+    W4D = Wcons(kt)
+
+    for e in range(inds):
+        Wrot[e] = _Wrotate_element(W4D, inds[e][0], inds[e][1], inds[e][2],
+                                   inds[e][3], Basis)
+
+    return Wrot
+    
+    
+def _Wrotate_element(W4D, ind_i, ind_j, ind_k, ind_l, Basis):
+    r"""
+    Helper function that returns the element with specified index of a rotated
+    kurtosis tensor from the Cartesian coordinate system to another coordinate
+    system basis
+    
+    Parameters
+    ----------
+    W4D : array(4,4,4,4)
+        Full 4D kutosis tensor in the Cartesian coordinate system
+    ind_i : int
+        Rotated kurtosis tensor element index i (0 for x, 1 for y, 2 for z)
+    ind_j : int
+        Rotated kurtosis tensor element index j (0 for x, 1 for y, 2 for z)
+    ind_k : int
+        Rotated kurtosis tensor element index k (0 for x, 1 for y, 2 for z)
+    ind_l: int
+        Rotated kurtosis tensor element index l (0 for x, 1 for y, 2 for z)
+    Basis: array (3, 3)
+        Vectors of the basis column-wise oriented
+    
+    Returns
+    -------
+    Wre : float
+          rotated kurtosis tensor element of index ind_i, ind_j, ind_k, ind_l
+    
+    References
+    ----------
+    [1] Hui ES, Cheung MM, Qi L, Wu EX, 2008. Towards better MR
+    characterization of neural tissues using directional diffusion kurtosis
+    analysis. Neuroimage 42(1): 122-34
+    """
+
+    Wre = 0
+
+    # These for loops can be avoid using kt symmetry properties. If this
+    # simplification is done we don't need also to reconstruct the full kt
+    # tensor
+    for il in range(3):
+        for jl in range(3):
+            for kl in range(3):
+                for ll in range(3):
+                    Wre = Wre + Basis[ind_i][il]*Basis[ind_j][jl]*Basis[ind_k]
+                    [kl]*Basis[ind_l][ll]*W4D[ind_i][ind_j][ind_k][ind_l]
+    
+    return Wre
+
+
+def Wcons(k_elements):
+    r"""
+    Construct the full 4D kurtosis tensors from its 15 independent elements
+    
+    Parameters
+    ----------
+    k_elements : (15,)
+        elements of the kurtosis tensor in the following order:
+        
+            .. math::
+            
+    \begin{matrix} ( & W_{xxxx} & W_{yyyy} & W_{zzzz} & W_{xxxy} & W_{xxxz}
+                     & ... \\
+                     & W_{xyyy} & W_{yyyz} & W_{xzzz} & W_{yzzz} & W_{xxyy}
+                     & ... \\
+                     & W_{xxzz} & W_{yyzz} & W_{xxyz} & W_{xyyz} & W_{xyzz}
+                     & & )\end{matrix}
+
+    Returns
+    -------
+    W : array(4,4,4,4)
+        Full 4D kutosis tensor
+    """
+
+    # Note: The multiplication of the indexes (i+1) * (j+1) * (k+1) * (l+1)
+    # for of an elements is only equal to this multiplication for another
+    # element if an only if the element corresponds to an symmetry element.
+    # This multiplication is therefore used to fill the other elements of the
+    # full kurtosis elements
+    indep_ele = {1: k_elements[0],
+                 16: k_elements[0],
+                 81: k_elements[0],
+                 2: k_elements[0],
+                 3: k_elements[0],
+                 8: k_elements[0],
+                 24: k_elements[0],
+                 27: k_elements[0],
+                 54: k_elements[0],
+                 4: k_elements[0],
+                 9: k_elements[0],
+                 36: k_elements[0],
+                 6: k_elements[0],
+                 12: k_elements[0],
+                 18: k_elements[0]}
+
+    W = np.zeros((3, 3, 3, 3))
+
+    xyz = [0, 1, 2]
+    for ind_i in xyz:
+        for ind_j in xyz:
+            for ind_k in xyz:
+                for ind_l in xyz:
+                    key = (ind_i+1) * (ind_j+1) * (ind_k+1) * (ind_l+1)
+                    W[ind_i][ind_j][ind_k][ind_l] = indep_ele[key]
+
+    return W
+
+
+def split_dki_param(dki_params):
+    r"""
+    (WIP)    
+    """    
+    evals = 'WIP1'
+    evecs = 'WIP2'
+    kt = 'WIP3'
+    
+    return evals, evecs, kt 
 
 
 def axial_kurtosis(evals, Wrotat, axis=-1):
@@ -516,7 +683,7 @@ def radial_kurtosis(evals, Wrotat, axis=-1):
 
     RadKurt=G1m(evals[...,0],evals[...,1],evals[...,2])*W_yyyy+G1m(evals[...,0],evals[...,2],evals[...,1])*W_zzzz+G2m(evals[...,0],evals[...,1],evals[...,2])*W_yyzz     
     return RadKurt
-#End of the definitions of quantities necessary to evaluates elements of kurtosis
+
 
 def DKI_prediction(dki_params, gtab, S0=150, snr=None):
     """
