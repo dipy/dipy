@@ -179,6 +179,7 @@ def alpha(a):
     alph=(1./np.sqrt(abs(a))*(np.arctan(np.sqrt(abs(a)))))
     return alph
 
+
 def A1111(a,b,c):
     """
     WIP
@@ -214,7 +215,8 @@ def A1111(a,b,c):
     indexesxcond4=np.logical_or.reduce(abc<=0)
     Aarray[indexesxcond4]=0   
     return Aarray
-  
+ 
+ 
 def A2233(a,b,c):
     """
     WIP
@@ -254,6 +256,7 @@ def A2233(a,b,c):
     Aarray[indexesxcond3]=0   
     return Aarray  
 
+
 def C2222(a,b,c):
     """
     WIP
@@ -272,6 +275,7 @@ def C2222(a,b,c):
     indexesxcond3=np.logical_or.reduce(abc<=0)
     Carray[indexesxcond3]=0   
     return Carray  
+
 
 def C2233(a,b,c):
     """
@@ -301,11 +305,13 @@ def F1m(a,b,c):
     A=A1111(a,b,c)
     return A
 
+
 def F2m(a,b,c):
     """
     WIP
     """
     return 6*A2233(a,b,c)
+
 
 def G1m(a,b,c):
     """
@@ -313,12 +319,12 @@ def G1m(a,b,c):
     """
     return C2222(a,b,c)
 
+
 def G2m(a,b,c):
     """
     WIP
     """
     return 6*C2233(a,b,c)
-
 
 
 def _roll_Wrotat(Wrotat, axis=-1):
@@ -351,11 +357,11 @@ def _roll_Wrotat(Wrotat, axis=-1):
 
     return Wrotat
 
+
 def mean_kurtosis(evals, Wrotat, axis=-1):
     r"""
-    (WIP)
     
-    Mean Kurtosis (MK) of a diffusion kurtosis tensor. 
+    Computes mean Kurtosis (MK) from the kurtosis tensor. 
 
     Parameters
     ----------
@@ -366,7 +372,7 @@ def mean_kurtosis(evals, Wrotat, axis=-1):
         (W_xxxx,W_yyyy,W_zzzz,W_xxyy,W_xxzz,W_yyzz)
     axis : int
         Axis of `evals` which contains 3 eigenvalues.
-
+    
     Returns
     -------
     mk : array
@@ -374,31 +380,59 @@ def mean_kurtosis(evals, Wrotat, axis=-1):
 
     Notes
     --------
-    MK is calculated with the following equation:
+    MK is calculated with the following equation [1]_:
 
     .. math::
 
     \begin{multline}
-     MK=F_1(\lambda_1,\lambda_2,\lambda_3)\hat{W}_{1111}+F_1(\lambda_2,\lambda_1,\lambda_3)\hat{W}_{2222}+F_1(\lambda_3,\lambda_2,\lambda_1)\hat{W}_{3333}+ \\
-     F_2(\lambda_1,\lambda_2,\lambda_3)\hat{W}_{2233}+F_2(\lambda_2,\lambda_1,\lambda_3)\hat{W}_{1133}+F_2(\lambda_3,\lambda_2,\lambda_1)\hat{W}_{1122}
-     \end{multline}
-     where $\hat{W}_{ijkl}$ are the components of the $W$ tensor in the coordinates system defined by the eigenvectors of the diffusion tensor $\mathbf{D}$ and 
+    MK=F_1(\lambda_1,\lambda_2,\lambda_3)\hat{W}_{1111}+
+       F_1(\lambda_2,\lambda_1,\lambda_3)\hat{W}_{2222}+
+       F_1(\lambda_3,\lambda_2,\lambda_1)\hat{W}_{3333}+ \\
+       F_2(\lambda_1,\lambda_2,\lambda_3)\hat{W}_{2233}+
+       F_2(\lambda_2,\lambda_1,\lambda_3)\hat{W}_{1133}+
+       F_2(\lambda_3,\lambda_2,\lambda_1)\hat{W}_{1122}
+    \end{multline}
+        
+    where $\hat{W}_{ijkl}$ are the components of the $W$ tensor in the
+    coordinates system defined by the eigenvectors of the diffusion tensor
+    $\mathbf{D}$ and 
  
     \begin{multline}
-     F_1(\lambda_1,\lambda_2,\lambda_3)=\frac{(\lambda_1+\lambda_2+\lambda_3)^2}{18(\lambda_1-\lambda_2)(\lambda_1-\lambda_3)}[\frac{\sqrt{\lambda_2\lambda_3}}{\lambda_1}R_F(\frac{\lambda_1}{\lambda_2},\frac{\lambda_1}{\lambda_3},1)+\\
-     \frac{3\lambda_1^2-\lambda_1\lambda_2-\lambda_2\lambda_3-\lambda_1\lambda_3}{3\lambda_1 \sqrt{\lambda_2 \lambda_3}}R_D(\frac{\lambda_1}{\lambda_2},\frac{\lambda_1}{\lambda_3},1)-1 ]
+    F_1(\lambda_1,\lambda_2,\lambda_3)=
+    \frac{(\lambda_1+\lambda_2+\lambda_3)^2}
+    {18(\lambda_1-\lambda_2)(\lambda_1-\lambda_3)}
+    [\frac{\sqrt{\lambda_2\lambda_3}}{\lambda_1}
+    R_F(\frac{\lambda_1}{\lambda_2},\frac{\lambda_1}{\lambda_3},1)+\\
+    \frac{3\lambda_1^2-\lambda_1\lambda_2-\lambda_2\lambda_3-
+    \lambda_1\lambda_3}
+    {3\lambda_1 \sqrt{\lambda_2 \lambda_3}}
+    R_D(\frac{\lambda_1}{\lambda_2},\frac{\lambda_1}{\lambda_3},1)-1 ]
     \end{multline}
 
     \begin{multline}
-     F_2(\lambda_1,\lambda_2,\lambda_3)=\frac{(\lambda_1+\lambda_2+\lambda_3)^2}{3(\lambda_2-\lambda_3)^2}[\frac{\lambda_2+\lambda_3}{\sqrt{\lambda_2\lambda_3}}R_F(\frac{\lambda_1}{\lambda_2},\frac{\lambda_1}{\lambda_3},1)+\\
-     \frac{2\lambda_1-\lambda_2-\lambda_3}{3\sqrt{\lambda_2 \lambda_3}}R_D(\frac{\lambda_1}{\lambda_2},\frac{\lambda_1}{\lambda_3},1)-2]
+    F_2(\lambda_1,\lambda_2,\lambda_3)=
+    \frac{(\lambda_1+\lambda_2+\lambda_3)^2}
+    {3(\lambda_2-\lambda_3)^2}
+    [\frac{\lambda_2+\lambda_3}{\sqrt{\lambda_2\lambda_3}}
+    R_F(\frac{\lambda_1}{\lambda_2},\frac{\lambda_1}{\lambda_3},1)+\\
+    \frac{2\lambda_1-\lambda_2-\lambda_3}{3\sqrt{\lambda_2 \lambda_3}}
+    R_D(\frac{\lambda_1}{\lambda_2},\frac{\lambda_1}{\lambda_3},1)-2]
     \end{multline}
+    
     where $R_f$ and $R_d$ are the Carlson's elliptic integrals.
+      
+    References
+    ----------
 
-
+    .. [1] Tabesh, A., Jensen, J.H., Ardekani, B.A., Helpern, J.A., 2011.
+           Estimation of tensors and tensor-derived measures in diffusional
+           kurtosis imaging. Magn Reson Med. 65(3), 823-836
     """
-    [W_xxxx,W_yyyy,W_zzzz,W_xxyy,W_xxzz,W_yyzz]=[Wrotat[...,0],Wrotat[...,1],Wrotat[...,2],Wrotat[...,3],Wrotat[...,4],Wrotat[...,5]]
-    MeanKurt=F1m(evals[...,0],evals[...,1],evals[...,2])*W_xxxx+F1m(evals[...,1],evals[...,0],evals[...,2])*W_yyyy+F1m(evals[...,2],evals[...,1],evals[...,0])*W_zzzz+F2m(evals[...,0],evals[...,1],evals[...,2])*W_yyzz+F2m(evals[...,1],evals[...,0],evals[...,2])*W_xxzz+F2m(evals[...,2],evals[...,1],evals[...,0])*W_xxyy
+    [W_xxxx, W_yyyy, W_zzzz,
+     W_xxyy, W_xxzz, W_yyzz] = [Wrotat[...,0], Wrotat[...,1], Wrotat[...,2], 
+                                Wrotat[...,3], Wrotat[...,4], Wrotat[...,5]]
+                                
+    MeanKurt = F1m(evals[...,0], evals[...,1], evals[...,2]) * W_xxxx + F1m(evals[...,1],evals[...,0],evals[...,2])*W_yyyy+F1m(evals[...,2],evals[...,1],evals[...,0])*W_zzzz+F2m(evals[...,0],evals[...,1],evals[...,2])*W_yyzz+F2m(evals[...,1],evals[...,0],evals[...,2])*W_xxzz+F2m(evals[...,2],evals[...,1],evals[...,0])*W_xxyy
     return MeanKurt
 
 
@@ -660,40 +694,64 @@ class DKIFit(TensorFit):
 
     @auto_attr
     def mk(self):
-      r"""
-      (WIP)
-      Mean Kurtosis (MK) of a diffusion kurtosis tensor. 
+        r"""
+        Mean Kurtosis (MK) of a kurtosis tensor. 
 
-      Returns
-      -------
-      mk : array
-          Calculated MK.
+        Returns
+        -------
+        mk : array
+            Calculated MK.
 
-      Notes
-      --------
-      MK is calculated with the following equation:
+        Notes
+        --------
+        MK is calculated with the following equation [1]_:
 
-      .. math::
+        .. math::
 
-      \begin{multline}
-      MK=F_1(\lambda_1,\lambda_2,\lambda_3)\hat{W}_{1111}+F_1(\lambda_2,\lambda_1,\lambda_3)\hat{W}_{2222}+F_1(\lambda_3,\lambda_2,\lambda_1)\hat{W}_{3333}+ \\
-      F_2(\lambda_1,\lambda_2,\lambda_3)\hat{W}_{2233}+F_2(\lambda_2,\lambda_1,\lambda_3)\hat{W}_{1133}+F_2(\lambda_3,\lambda_2,\lambda_1)\hat{W}_{1122}
-      \end{multline}
-      where $\hat{W}_{ijkl}$ are the components of the $W$ tensor in the coordinates system defined by the eigenvectors of the diffusion tensor $\mathbf{D}$ and 
+        \begin{multline}
+        MK=F_1(\lambda_1,\lambda_2,\lambda_3)\hat{W}_{1111}+
+           F_1(\lambda_2,\lambda_1,\lambda_3)\hat{W}_{2222}+
+           F_1(\lambda_3,\lambda_2,\lambda_1)\hat{W}_{3333}+ \\
+           F_2(\lambda_1,\lambda_2,\lambda_3)\hat{W}_{2233}+
+           F_2(\lambda_2,\lambda_1,\lambda_3)\hat{W}_{1133}+
+           F_2(\lambda_3,\lambda_2,\lambda_1)\hat{W}_{1122}
+        \end{multline}
+        
+        where $\hat{W}_{ijkl}$ are the components of the $W$ tensor in the
+        coordinates system defined by the eigenvectors of the diffusion tensor
+        $\mathbf{D}$ and 
  
-      \begin{multline}
-      F_1(\lambda_1,\lambda_2,\lambda_3)=\frac{(\lambda_1+\lambda_2+\lambda_3)^2}{18(\lambda_1-\lambda_2)(\lambda_1-\lambda_3)}[\frac{\sqrt{\lambda_2\lambda_3}}{\lambda_1}R_F(\frac{\lambda_1}{\lambda_2},\frac{\lambda_1}{\lambda_3},1)+\\
-      \frac{3\lambda_1^2-\lambda_1\lambda_2-\lambda_2\lambda_3-\lambda_1\lambda_3}{3\lambda_1 \sqrt{\lambda_2 \lambda_3}}R_D(\frac{\lambda_1}{\lambda_2},\frac{\lambda_1}{\lambda_3},1)-1 ]
-      \end{multline}
+        \begin{multline}
+        F_1(\lambda_1,\lambda_2,\lambda_3)=
+            \frac{(\lambda_1+\lambda_2+\lambda_3)^2}
+            {18(\lambda_1-\lambda_2)(\lambda_1-\lambda_3)}
+            [\frac{\sqrt{\lambda_2\lambda_3}}{\lambda_1}
+            R_F(\frac{\lambda_1}{\lambda_2},\frac{\lambda_1}{\lambda_3},1)+\\
+            \frac{3\lambda_1^2-\lambda_1\lambda_2-\lambda_2\lambda_3-
+            \lambda_1\lambda_3}
+            {3\lambda_1 \sqrt{\lambda_2 \lambda_3}}
+            R_D(\frac{\lambda_1}{\lambda_2},\frac{\lambda_1}{\lambda_3},1)-1 ]
+        \end{multline}
 
-      \begin{multline}
-      F_2(\lambda_1,\lambda_2,\lambda_3)=\frac{(\lambda_1+\lambda_2+\lambda_3)^2}{3(\lambda_2-\lambda_3)^2}[\frac{\lambda_2+\lambda_3}{\sqrt{\lambda_2\lambda_3}}R_F(\frac{\lambda_1}{\lambda_2},\frac{\lambda_1}{\lambda_3},1)+\\
-      \frac{2\lambda_1-\lambda_2-\lambda_3}{3\sqrt{\lambda_2 \lambda_3}}R_D(\frac{\lambda_1}{\lambda_2},\frac{\lambda_1}{\lambda_3},1)-2]
-      \end{multline}
-      where $R_f$ and $R_d$ are the Carlson's elliptic integrals.
+        \begin{multline}
+        F_2(\lambda_1,\lambda_2,\lambda_3)=
+            \frac{(\lambda_1+\lambda_2+\lambda_3)^2}
+            {3(\lambda_2-\lambda_3)^2}
+            [\frac{\lambda_2+\lambda_3}{\sqrt{\lambda_2\lambda_3}}
+            R_F(\frac{\lambda_1}{\lambda_2},\frac{\lambda_1}{\lambda_3},1)+\\
+            \frac{2\lambda_1-\lambda_2-\lambda_3}{3\sqrt{\lambda_2 \lambda_3}}
+            R_D(\frac{\lambda_1}{\lambda_2},\frac{\lambda_1}{\lambda_3},1)-2]
+        \end{multline}
+        where $R_f$ and $R_d$ are the Carlson's elliptic integrals.
+      
+        References
+        ----------
 
-      """
-      return mean_kurtosis(self.evals, self.Wrotat)
+        .. [1] Tabesh, A., Jensen, J.H., Ardekani, B.A., Helpern, J.A., 2011.
+           Estimation of tensors and tensor-derived measures in diffusional
+           kurtosis imaging. Magn Reson Med. 65(3), 823-836
+        """
+        return mean_kurtosis(self.model_params, self.Wrotat)
 
     @auto_attr
     def ak(self, evals, Wrotat, axis=-1):
@@ -768,8 +826,52 @@ class DKIFit(TensorFit):
 
     def DKI_predict(self, gtab, S0=1):
         r"""
-        (WIP)   
+        Given a DKI model fit, predict the signal on the vertices of a sphere  
+
+        Parameters
+        ----------
+        dki_params : ndarray (..., 27)
+            All parameters estimated from the diffusion kurtosis model.
+            Parameters are ordered as follow:
+                1) Three diffusion tensor's eingenvalues
+                2) Three lines of the eigenvector matrix each containing the
+                   first, second and third coordinates of the eigenvector
+                3) Fifteen elements of the kurtosis tensor
+
+        gtab : a GradientTable class instance
+            The gradient table for this prediction
+
+        S0 : float or ndarray (optional)
+            The non diffusion-weighted signal in every voxel, or across all
+            voxels. Default: 1
+
+        Notes
+        -----
+        The predicted signal is given by:
+
+        .. math::
+
+            S(n,b)=S_{0}e^{-bD(n)+\frac{1}{6}b^{2}D(n)^{2}K(n)}
+
+        $\mathbf{D(n)}$ and $\mathbf{K(n)}$ can be computed from the DT and KT
+        using the following equations:
+
+        .. math::
+
+            D(n)=\sum_{i=1}^{3}\sum_{j=1}^{3}n_{i}n_{j}D_{ij}
+
+        and
+
+        .. math::
+
+            K(n)=\frac{MD^{2}}{D(n)^{2}}\sum_{i=1}^{3}\sum_{j=1}^{3}
+            \sum_{k=1}^{3}\sum_{l=1}^{3}n_{i}n_{j}n_{k}n_{l}W_{ijkl}
+
+        where $D_{ij}$ and $W_{ijkl}$ are the elements of the second-order DT
+        and the fourth-order KT tensors, respectively, and $MD$ is the mean
+        diffusivity.
         """
+        return DKI_prediction(self.model_params, self.gtab, S0)
 
 
 def ols_fit_dki(design_matrix, data, min_signal=1):
@@ -1084,7 +1186,6 @@ def ambiguous_function_decompose_tensors(tensor, K_tensor_elements, min_diffusiv
     return eigenvals, eigenvecs, Wrotat[:3],Wrotat[3:]
 
 
-
 def dki_design_matrix(gtab):
     r""" Constructs B design matrix for DKI
 
@@ -1133,30 +1234,11 @@ def dki_design_matrix(gtab):
     return B
 
 
-def quantize_evecs(evecs, odf_vertices=None):
-    """ Find the closest orientation of an evenly distributed sphere
-
-    Parameters
-    ----------
-    evecs : ndarray
-    odf_vertices : None or ndarray
-        If None, then set vertices from symmetric362 sphere.  Otherwise use
-        passed ndarray as vertices
-
-    Returns
-    -------
-    IN : ndarray
-    """
-    max_evecs = evecs[..., :, 0]
-    if odf_vertices == None:
-        odf_vertices = get_sphere('symmetric362').vertices
-    tup = max_evecs.shape[:-1]
-    mec = max_evecs.reshape(np.prod(np.array(tup)), 3)
-    IN = np.array([np.argmin(np.dot(odf_vertices, m)) for m in mec])
-    IN = IN.reshape(tup)
-    return IN
- 
-common_fit_methods = {'WLS_DKI': wls_fit_dki,
+common_fit_methods = {'WLS': wls_fit_dki,
+                      'OLS' : ols_fit_dki,
+                      'UWLLS': wls_fit_dki,
+                      'ULLS' : ols_fit_dki,
+                      'WLS_DKI': wls_fit_dki,
                       'OLS_DKI' : ols_fit_dki,
                       'UWLLS_DKI': wls_fit_dki,
                       'ULLS_DKI' : ols_fit_dki
