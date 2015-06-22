@@ -403,12 +403,12 @@ def mean_kurtosis(dki_params):
     # Rotate the kurtosis tensor from the standard Cartesian coordinate system
     # to another coordinate system in which the 3 orthonormal eigenvectors of
     # DT are the base coordinate
-    Wxxxx = np.zeros((len(kt), 15))
-    Wyyyy = np.zeros((len(kt), 15))
-    Wzzzz = np.zeros((len(kt), 15))
-    Wxxyy = np.zeros((len(kt), 15))
-    Wxxzz = np.zeros((len(kt), 15))
-    Wyyzz = np.zeros((len(kt), 15))
+    Wxxxx = np.zeros((len(kt)))
+    Wyyyy = np.zeros((len(kt)))
+    Wzzzz = np.zeros((len(kt)))
+    Wxxyy = np.zeros((len(kt)))
+    Wxxzz = np.zeros((len(kt)))
+    Wyyzz = np.zeros((len(kt)))
 
     for vox in range(len(kt)): 
         Wxxxx[vox] = Wrotate(kt[vox], evecs[vox], [0, 0, 0, 0])
@@ -479,6 +479,9 @@ def Wrotate(kt, Basis, inds = None):
                          [1, 1, 1, 2], [0, 2, 2, 2], [1, 2, 2, 2],
                          [0, 0, 1, 1], [0, 0, 2, 2], [1, 1, 2, 2],
                          [0, 0, 1, 2], [0, 1, 1, 2], [0, 1, 2, 2]])
+    else:
+        inds = np.array(inds)
+        inds = inds.reshape((-1, inds.shape[-1]))
 
     Wrot = np.zeros(len(inds))
 
@@ -881,10 +884,9 @@ class DKIFit(TensorFit):
         TensorFit.__init__(self, model, model_params)
 
     @property
-    def Wrotat(self):
+    def kt(self):
         """
-        (WIP)
-        Returns the values of the k tensors as an array
+        Returns the 15 independent elements of the kurtosis tensor as an array
         """
         return self.model_params[..., 12:]
 
@@ -947,7 +949,7 @@ class DKIFit(TensorFit):
            Estimation of tensors and tensor-derived measures in diffusional
            kurtosis imaging. Magn Reson Med. 65(3), 823-836
         """
-        return mean_kurtosis(self.model_params, self.Wrotat)
+        return mean_kurtosis(self.model_params)
 
     @auto_attr
     def ak(self, evals, Wrotat, axis=-1):

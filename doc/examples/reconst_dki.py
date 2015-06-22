@@ -247,10 +247,33 @@ fig2.savefig('Diffusion_tensor_measures_from_DTI_and_DKI.png')
 
 From the figure, we can see that the DT standard diffusion measures from DKI
 are noisier than the DTI measurements. This is a well known pitfall of DKI
-[NetoHe2014]_. Since it is involves the fit of a larger number of parameters,
-DKI is more sensitive to noise than DTI. Nevertheless, DT diffusion based
-measures were shown to be have better percision (i.e. less sensitive to bias)
-[Veraa2011]_.
+[NetoHe2014]_. Since it is involves the estimation of a larger number of
+parameters, DKI is more sensitive to noise than DTI. Nevertheless, DT diffusion
+based measures were shown to have better precision (i.e. less sensitive to
+bias) [Veraa2011]_.
+
+The standard kurtosis statistics can be computed from the DKIFit instance
+as the mean kurtosis (MK), the axial kurtosis (AD) and the radial kurtosis
+(RK).
+"""
+
+MK = dkifit.mk
+
+fig3, ax = plt.subplots(1, 3, figsize=(12, 6),
+                        subplot_kw={'xticks': [], 'yticks': []})
+
+fig3.subplots_adjust(hspace=0.3, wspace=0.05)
+
+ax.flat[0].imshow(MK[:, :, axial_middle], cmap='gray')
+ax.flat[0].set_title('MK')
+
+"""
+ax.flat[1].imshow(MD[:, :, axial_middle], cmap='gray')
+ax.flat[1].set_title('MD (DKI)')
+ax.flat[2].imshow(AD[:, :, axial_middle], cmap='gray')
+ax.flat[2].set_title('AD (DKI)')
+ax.flat[3].imshow(RD[:, :, axial_middle], cmap='gray')
+ax.flat[3].set_title('RD (DKI)')
 """
 
 """
