@@ -390,7 +390,11 @@ def mean_kurtosis(dki_params):
            Estimation of tensors and tensor-derived measures in diffusional
            kurtosis imaging. Magn Reson Med. 65(3), 823-836
     """
-    
+
+    # Flat parameters
+    outshape = dki_params.shape[:-1]
+    dki_params = dki_params.reshape((-1, dki_params.shape[-1]))
+
     # Split the model parameters to three variable containing the evals, evecs,
     # and kurtosis elements
 
@@ -399,13 +403,13 @@ def mean_kurtosis(dki_params):
     # Rotate the kurtosis tensor from the standard Cartesian coordinate system
     # to another coordinate system in which the 3 orthonormal eigenvectors of
     # DT are the base coordinate
-    Wxxxx = np.zeros(len(kt), 15)
-    Wyyyy = np.zeros(len(kt), 15)
-    Wzzzz = np.zeros(len(kt), 15)
-    Wxxyy = np.zeros(len(kt), 15)
-    Wxxzz = np.zeros(len(kt), 15)
-    Wyyzz = np.zeros(len(kt), 15)
-    
+    Wxxxx = np.zeros((len(kt), 15))
+    Wyyyy = np.zeros((len(kt), 15))
+    Wzzzz = np.zeros((len(kt), 15))
+    Wxxyy = np.zeros((len(kt), 15))
+    Wxxzz = np.zeros((len(kt), 15))
+    Wyyzz = np.zeros((len(kt), 15))
+
     for vox in range(len(kt)): 
         Wxxxx[vox] = Wrotate(kt[vox], evecs[vox], [0, 0, 0, 0])
         Wyyyy[vox] = Wrotate(kt[vox], evecs[vox], [1, 1, 1, 1])
@@ -421,6 +425,8 @@ def mean_kurtosis(dki_params):
     + F2m(evals[..., 0], evals[..., 1], evals[..., 2])*Wyyzz
     + F2m(evals[..., 1], evals[..., 0], evals[..., 2])*Wxxzz
     + F2m(evals[..., 2], evals[..., 1], evals[..., 0])*Wxxyy
+
+    MeanKurt = MeanKurt.reshape(outshape)
 
     return MeanKurt
     
@@ -479,14 +485,14 @@ def Wrotate(kt, Basis, inds = None):
     # Construct full 4D tensor
     W4D = Wcons(kt)
 
-    for e in range(inds):
+    for e in range(len(inds)):
         Wrot[e] = _Wrotate_element(W4D, inds[e][0], inds[e][1], inds[e][2],
                                    inds[e][3], Basis)
 
     return Wrot
-    
-    
-def _Wrotate_element(W4D, ind_i, ind_j, ind_k, ind_l, Basis):
+
+
+def _Wrotate_element(W4D, indi, indj, indk, indl, B):
     r"""
     Helper function that returns the element with specified index of a rotated
     kurtosis tensor from the Cartesian coordinate system to another coordinate
@@ -496,15 +502,15 @@ def _Wrotate_element(W4D, ind_i, ind_j, ind_k, ind_l, Basis):
     ----------
     W4D : array(4,4,4,4)
         Full 4D kutosis tensor in the Cartesian coordinate system
-    ind_i : int
+    indi : int
         Rotated kurtosis tensor element index i (0 for x, 1 for y, 2 for z)
-    ind_j : int
+    indj : int
         Rotated kurtosis tensor element index j (0 for x, 1 for y, 2 for z)
-    ind_k : int
+    indk : int
         Rotated kurtosis tensor element index k (0 for x, 1 for y, 2 for z)
-    ind_l: int
+    indl: int
         Rotated kurtosis tensor element index l (0 for x, 1 for y, 2 for z)
-    Basis: array (3, 3)
+    B: array (3, 3)
         Vectors of the basis column-wise oriented
     
     Returns
@@ -528,9 +534,9 @@ def _Wrotate_element(W4D, ind_i, ind_j, ind_k, ind_l, Basis):
         for jl in range(3):
             for kl in range(3):
                 for ll in range(3):
-                    Wre = Wre + Basis[ind_i][il]*Basis[ind_j][jl]*Basis[ind_k]
-                    [kl]*Basis[ind_l][ll]*W4D[ind_i][ind_j][ind_k][ind_l]
-    
+                    multiplyB = B[il][indi]*B[jl][indj]*B[kl][indk]*B[ll][indl]
+                    Wre = Wre + multiplyB * W4D[il][jl][kl][ll]
+
     return Wre
 
 
@@ -564,20 +570,20 @@ def Wcons(k_elements):
     # This multiplication is therefore used to fill the other elements of the
     # full kurtosis elements
     indep_ele = {1: k_elements[0],
-                 16: k_elements[0],
-                 81: k_elements[0],
-                 2: k_elements[0],
-                 3: k_elements[0],
-                 8: k_elements[0],
-                 24: k_elements[0],
-                 27: k_elements[0],
-                 54: k_elements[0],
-                 4: k_elements[0],
-                 9: k_elements[0],
-                 36: k_elements[0],
-                 6: k_elements[0],
-                 12: k_elements[0],
-                 18: k_elements[0]}
+                 16: k_elements[1],
+                 81: k_elements[2],
+                 2: k_elements[3],
+                 3: k_elements[4],
+                 8: k_elements[5],
+                 24: k_elements[6],
+                 27: k_elements[7],
+                 54: k_elements[8],
+                 4: k_elements[9],
+                 9: k_elements[10],
+                 36: k_elements[11],
+                 6: k_elements[12],
+                 12: k_elements[13],
+                 18: k_elements[14]}
 
     W = np.zeros((3, 3, 3, 3))
 
@@ -1075,7 +1081,7 @@ def ols_fit_dki(design_matrix, data, min_signal=1):
     design_matrix : array (g, 22)
         Design matrix holding the covariants used to solve for the regression
         coefficients.
-    data : array ([X, Y, Z, ...], g) or array ([N, ...], g)
+    data : array (... , g)
         Data or response variables holding the data. Note that the last
         dimension should contain the data. It makes no copies of data.
     min_signal : default = 1
@@ -1084,9 +1090,8 @@ def ols_fit_dki(design_matrix, data, min_signal=1):
 
     Returns
     -------
-    dki_params : array (N, 27)
-        All parameters estimated from the diffusion kurtosis model for all N
-        voxels. 
+    dki_params : array (... , 27)
+        All parameters estimated from the diffusion kurtosis model. 
         Parameters are ordered as follow:
             1) Three diffusion tensor's eingenvalues
             2) Three lines of the eigenvector matrix each containing the first,
@@ -1193,7 +1198,7 @@ def wls_fit_dki(design_matrix, data, min_signal=1):
     design_matrix : array (g, 22)
         Design matrix holding the covariants used to solve for the regression
         coefficients.
-    data : array ([X, Y, Z, ...], g) or array ([N, ...], g)
+    data : array (..., g)
         Data or response variables holding the data. Note that the last
         dimension should contain the data. It makes no copies of data.
     min_signal : default = 1
@@ -1202,7 +1207,7 @@ def wls_fit_dki(design_matrix, data, min_signal=1):
 
     Returns
     -------
-    dki_params : array (N, 27)
+    dki_params : array (..., 27)
         All parameters estimated from the diffusion kurtosis model for all N
         voxels. 
         Parameters are ordered as follow:

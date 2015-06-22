@@ -74,6 +74,88 @@ def test_dki_fits():
     assert_array_almost_equal(dki_params, ref_params)
 
 
+def test_Wrotate():
+
+    # Rotate the kurtosis tensor of single fiber simulate to the diffusion
+    # tensor diagonal and check that is equal to the kurtosis tensor of the 
+    # same single fiber simulated directly to the x-axis
+
+    # Define single voxel simulate 
+    mevals = np.array([[0.00099, 0, 0], [0.00226, 0.00087, 0.00087]])
+    frac = [fie*100, (1 - fie)*100]
+
+    # simulate it not aligned to the x-axis
+    angles = [(45, 0), (45, 0)]
+    signal, dt, kt = multi_tensor_dki(gtab_2s, mevals, angles=angles,
+                                      fractions=frac, snr=None)
+
+    evals, evecs = decompose_tensor(from_lower_triangular(dt))
+
+    kt_rotated = dki.Wrotate(kt, evecs) # Now coordinate system has diffusion
+                                        # tensor diagnol in x-axis
+
+    # Reference simulate directly aligned to the x-axis
+    angles = (90, 0), (90, 0)
+    signal, dt_ref, kt_ref = multi_tensor_dki(gtab_2s, mevals, angles=angles,
+                                              fractions=frac, snr=None)
+
+    assert_array_almost_equal(kt_rotated, kt_ref)
+
+
+def test_Wcons():
+
+    signal, dt, kt = multi_tensor_dki(gtab_2s, mevals, angles=angles,
+                                      fractions=frac, snr=None)
+
+    Wfit=np.zeros([3,3,3,3])
+
+    Wfit[0,0,0,0] = kt[0]
+
+    Wfit[1,1,1,1] = kt[1]
+
+    Wfit[2,2,2,2] = kt[2]
+
+    Wfit[0,0,0,1] = Wfit[0,0,1,0] = Wfit[0,1,0,0] = Wfit[1,0,0,0] = kt[3]
+
+    Wfit[0,0,0,2] = Wfit[0,0,2,0] = Wfit[0,2,0,0] = Wfit[2,0,0,0] = kt[4]
+
+    Wfit[0,1,1,1] = Wfit[1,0,1,1] = Wfit[1,1,1,0] = Wfit[1,1,0,1] = kt[5]
+
+    Wfit[1,1,1,2] = Wfit[1,2,1,1] = Wfit[2,1,1,1] = Wfit[1,1,2,1] = kt[6]    
+
+    Wfit[0,2,2,2] = Wfit[2,2,2,0] = Wfit[2,0,2,2] = Wfit[2,2,0,2] = kt[7]
+
+    Wfit[1,2,2,2] = Wfit[2,2,2,1] = Wfit[2,1,2,2] = Wfit[2,2,1,2] = kt[8]
+
+    Wfit[0,0,1,1] = Wfit[0,1,0,1] = Wfit[0,1,1,0] = Wfit[1,0,0,1] = kt[9]
+    Wfit[1,0,1,0] = Wfit[1,1,0,0] = kt[9]
+
+    Wfit[0,0,2,2] = Wfit[0,2,0,2] = Wfit[0,2,2,0] = Wfit[2,0,0,2] = kt[10]
+    Wfit[2,0,2,0] = Wfit[2,2,0,0] = kt[10]
+
+    Wfit[1,1,2,2] = Wfit[1,2,1,2] = Wfit[1,2,2,1] = Wfit[2,1,1,2] = kt[11]
+    Wfit[2,2,1,1] = Wfit[2,1,2,1] = kt[11]
+
+    Wfit[0,0,1,2] = Wfit[0,0,2,1] = Wfit[0,1,0,2] = Wfit[0,1,2,0] = kt[12]
+    Wfit[0,2,0,1] = Wfit[0,2,1,0] = Wfit[1,0,0,2] = Wfit[1,0,2,0] = kt[12]
+    Wfit[1,2,0,0] = Wfit[2,0,0,1] = Wfit[2,0,1,0] = Wfit[2,1,0,0] = kt[12]
+
+    Wfit[0,1,1,2] = Wfit[0,1,2,1] = Wfit[0,2,1,1] = Wfit[1,0,1,2] = kt[13]
+    Wfit[1,1,0,2] = Wfit[1,1,2,0] = Wfit[1,2,0,1] = Wfit[1,2,1,0] = kt[13]
+    Wfit[2,0,1,1] = Wfit[2,1,0,1] = Wfit[2,1,1,0] = Wfit[1,0,2,1] = kt[13]
+
+    Wfit[0,1,2,2] = Wfit[0,2,1,2] = Wfit[0,2,2,1] = Wfit[1,0,2,2] = kt[14]
+    Wfit[1,2,0,2] = Wfit[1,2,2,0] = Wfit[2,0,1,2] = Wfit[2,0,2,1] = kt[14]
+    Wfit[2,1,0,2] = Wfit[2,1,2,0] = Wfit[2,2,0,1] = Wfit[2,2,1,0] = kt[14]
+
+    Wcons = dki.Wcons(kt)
+    
+    Wfit = Wfit.reshape(-1)
+    Wcons = Wcons.reshape(-1)
+
+    assert_array_almost_equal(Wcons, Wfit)
+
+
 def wls_fit_dki(design_matrix, data, min_signal=1):
     r"""
     Adaption of the WLS fit implemented by Maurizio with faster all voxel
