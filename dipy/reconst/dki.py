@@ -594,11 +594,34 @@ def Wcons(k_elements):
 
 def split_dki_param(dki_params):
     r"""
-    (WIP)    
+    Extract the diffusion tensor eigenvalues, the diffusion tensor eigenvector
+    matrix, and the 15 independent elements of the kurtosis tensor from the
+    model parameters estimated from the DKI model
+
+    Parameters
+    ----------
+    dki_params : ndarray (..., 27)
+        All parameters estimated from the diffusion kurtosis model.
+        Parameters are ordered as follow:
+            1) Three diffusion tensor's eingenvalues
+            2) Three lines of the eigenvector matrix each containing the first,
+               second and third coordinates of the eigenvector
+            3) Fifteen elements of the kurtosis tensor
+
+    Returns
+    --------
+    eigvals : array (3,)
+        Eigenvalues from eigen decomposition of the tensor.
+    eigvecs : array (3, 3)
+        Associated eigenvectors from eigen decomposition of the tensor.
+        Eigenvectors are columnar (e.g. eigvecs[:,j] is associated with
+        eigvals[j])
+    kt : array (15,)
+        Fifteen elements of the kurtosis tensor
     """    
-    evals = 'WIP1'
-    evecs = 'WIP2'
-    kt = 'WIP3'
+    evals = dki_params[..., :3]
+    evecs = dki_params[..., 3:12].reshape(dki_params.shape[:-1] + (3, 3))
+    kt = dki_params[..., 12:]
     
     return evals, evecs, kt 
 
@@ -1089,7 +1112,7 @@ def ols_fit_dki(design_matrix, data, min_signal=1):
     data = np.asarray(data)
     data_flat = data.reshape((-1, data.shape[-1]))
     dki_params = np.empty((len(data_flat), 27))
-    
+
     # inverting design matrix and defining minimun diffusion aloud
     min_diffusivity = tol / -design_matrix.min()
     inv_design = np.linalg.pinv(design_matrix)
@@ -1098,7 +1121,10 @@ def ols_fit_dki(design_matrix, data, min_signal=1):
     for vox in range(len(data_flat)):
         dki_params[vox] = _ols_iter(inv_design, data_flat[vox], min_signal,
                                     min_diffusivity)
-    
+
+    # Reshape data according to the input data shape
+    dki_params = dki_params.reshape((data.shape[:-1]) + (27,))
+
     return dki_params
 
 
@@ -1215,6 +1241,9 @@ def wls_fit_dki(design_matrix, data, min_signal=1):
     for vox in range(len(data_flat)):
         dki_params[vox] = _wls_iter(design_matrix, inv_design, data_flat[vox],
                                     min_signal, min_diffusivity)
+
+    # Reshape data according to the input data shape
+    dki_params = dki_params.reshape((data.shape[:-1]) + (27,))
 
     return dki_params
 
