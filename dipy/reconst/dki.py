@@ -717,6 +717,114 @@ def radial_kurtosis(evals, Wrotat, axis=-1):
     return RadKurt
 
 
+def apparent_kurtosis_coef(dki_params, sphere):
+    r"""
+    Calculate the apparent kurtosis coefficient (AKC) in each direction of a
+    sphere.
+
+    Parameters
+    ----------
+    dki_params : ndarray (..., 27)
+        All parameters estimated from the diffusion kurtosis model.
+        Parameters are ordered as follow:
+            1) Three diffusion tensor's eingenvalues
+            2) Three lines of the eigenvector matrix each containing the first,
+               second and third coordinates of the eigenvector
+            3) Fifteen elements of the kurtosis tensor
+
+    sphere : a Sphere class instance
+        The AKC will be calculated for each of the vertices in the sphere
+
+    Notes
+    -----
+    For each sphere direction with coordinates $(n_{1}, n_{2}, n_{3})$, the
+    calculation of AKC is done using formula:
+
+    .. math ::
+        AKC(n)=\frac{MD^{2}}{ADC(n)^{2}}\sum_{i=1}^{3}\sum_{j=1}^{3}
+        \sum_{k=1}^{3}\sum_{l=1}^{3}n_{i}n_{j}n_{k}n_{l}W_{ijkl}
+
+    where $W_{ijkl}$ are the elements of the kurtosis tensor, MD the mean
+    diffusivity and ADC the apparent diffusion coefficent computed as:
+
+    .. math ::
+        ADC(n)=\sum_{i=1}^{3}\sum_{j=1}^{3}n_{i}n_{j}D_{ij}
+
+    where $D_{ij}$ are the elements of the diffusion tensor.
+    """
+
+    # Flat parameters
+    outshape = dki_params.shape[:-1]
+    dki_params = dki_params.reshape((-1, dki_params.shape[-1]))
+
+    # Split data
+    evals, evecs, kt = split_dki_param(dki_params)
+
+    # Compute MD
+    MD = mean_diffusivity(evals)
+
+    # Initialize AKC matrix
+    V = sphere.vertices
+    AKC = np.zeros((len(kt), len(V)))
+
+    # loop over all voxels
+    for vox in range(len(kt)):
+        R = evecs[vox]
+        dt = lower_triangular(np.dot(np.dot(R, np.diag(evals[vox])), R.T))
+        AKC[vox] = _directional_kurtosis(dt, MD[vox], kt[vox], V)
+
+    # reshape data according to input data 
+    AKC = AKC.reshape((outshape + (len(V),)))
+
+    return AKC
+
+
+def _directional_kurtosis(dt, MD, kt, V):
+    r"""
+    Helper function that calculate the apparent kurtosis coefficient (AKC)
+    in each direction of a sphere for a single voxel.
+
+    Parameters
+    ----------
+    dt : (6,)
+        elements of the diffusion tensor of the voxel.
+    MD : float 
+        mean diffusivity of the voxel
+    kt : (15,)
+        elements of the kurtosis tensor of the voxel.
+    V : (N, 3)
+        N of directions of a Sphere in Cartesian coordinates 
+
+    See Also
+    --------
+    apparent_kurtosis_coef
+    """
+    ADC = V[:, 0] * V[:, 0] * dt[0] + \
+    2 * V[:, 0] * V[:, 1] * dt[1] + \
+    V[:, 1] * V[:, 1] * dt[2] + \
+    2 * V[:, 0] * V[:, 2] * dt[3] + \
+    2 * V[:, 1] * V[:, 2] * dt[4] + \
+    V[:, 2] * V[:, 2] * dt[5]
+
+    AKC = V[:, 0] * V[:, 0] * V[:, 0] * V[:, 0] * kt[0] + \
+    V[:, 1] * V[:, 1] * V[:, 1] * V[:, 1] * kt[1] + \
+    V[:, 2] * V[:, 2] * V[:, 2] * V[:, 2] * kt[2] + \
+    4 * V[:, 0] * V[:, 0] * V[:, 0] * V[:, 1] * kt[3] + \
+    4 * V[:, 0] * V[:, 0] * V[:, 0] * V[:, 2] * kt[4] + \
+    4 * V[:, 0] * V[:, 1] * V[:, 1] * V[:, 1] * kt[5] + \
+    4 * V[:, 1] * V[:, 1] * V[:, 1] * V[:, 2] * kt[6] + \
+    4 * V[:, 0] * V[:, 2] * V[:, 2] * V[:, 2] * kt[7] + \
+    4 * V[:, 1] * V[:, 2] * V[:, 2] * V[:, 2] * kt[8] + \
+    6 * V[:, 0] * V[:, 0] * V[:, 1] * V[:, 1] * kt[9] + \
+    6 * V[:, 0] * V[:, 0] * V[:, 2] * V[:, 2] * kt[10] + \
+    6 * V[:, 1] * V[:, 1] * V[:, 2] * V[:, 2] * kt[11] + \
+    12 * V[:, 0] * V[:, 0] * V[:, 1] * V[:, 2] * kt[12] + \
+    12 * V[:, 0] * V[:, 1] * V[:, 1] * V[:, 2] * kt[13] + \
+    12 * V[:, 0] * V[:, 1] * V[:, 2] * V[:, 2] * kt[14]
+
+    return (MD/ADC) ** 2 * AKC
+
+
 def DKI_prediction(dki_params, gtab, S0=150, snr=None):
     """
     Predict a signal given diffusion kurtosis imaging parameters.
@@ -751,9 +859,7 @@ def DKI_prediction(dki_params, gtab, S0=150, snr=None):
 
         S=S_{0}e^{-bD+\frac{1}{6}b^{2}D^{2}K}
     """
-    evals = dki_params[..., :3]
-    evecs = dki_params[..., 3:12].reshape(dki_params.shape[:-1] + (3, 3))
-    kt = dki_params[..., 12:]
+    evals, evecs, kt = split_dki_param(dki_params)
 
     # Flat parameters and initialize pred_sig
     fevals = evals.reshape((-1, evals.shape[-1]))
@@ -847,7 +953,6 @@ class DKIModel(ReconstModel):
             dki_params[mask, :] = params_in_mask
 
         return DKIFit(self, dki_params)
-
 
     def predict(self, dki_params, S0=1):
         """
@@ -1021,6 +1126,33 @@ class DKIFit(TensorFit):
 
         """
         return radial_kurtosis(self.evals, self.Wrotat)
+
+    def akc(self, sphere):
+        r"""
+        Calculate the apparent kurtosis coefficient (AKC) in each direction on
+        the sphere for each voxel in the data
+
+        Parameters
+        ----------
+        sphere : Sphere class instance
+
+        Returns
+        -------
+        akc : ndarray
+           The estimates of the apparent kurtosis coefficient in every
+           direction on the input sphere
+
+        Notes
+        -----
+        The calculation of ADC, relies on the following relationship:
+
+        .. math ::
+
+            ADC = \vec{b} Q \vec{b}^T
+
+        Where Q is the quadratic form of the tensor.
+        """
+        return apparent_kurtosis_coef(self.model_params, sphere)
 
     def DKI_predict(self, gtab, S0=1):
         r"""

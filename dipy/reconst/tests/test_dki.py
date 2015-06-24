@@ -25,6 +25,8 @@ from dipy.data import get_data
 
 from dipy.reconst.dti import (from_lower_triangular, decompose_tensor)
 
+from dipy.core.sphere import Sphere
+
 
 fimg, fbvals, fbvecs = get_data('small_64D')
 bvals, bvecs = read_bvals_bvecs(fbvals, fbvecs)
@@ -74,10 +76,36 @@ def test_dki_fits():
     assert_array_almost_equal(dki_params, ref_params)
 
 
+def test_apparent_kurtosis_coef():
+    # simulate a spherical kurtosis tensor
+    Di = 0.00099
+    De = 0.00226
+    mevals = np.array([[Di, Di, Di], [De, De, De]])
+    frac = [50, 50]
+    signal, dt, kt = multi_tensor_dki(gtab_2s, mevals, fractions=frac,
+                                      snr=None)
+    evals, evecs = decompose_tensor(from_lower_triangular(dt))
+    dki_params = np.concatenate((evals, evecs[0], evecs[1], evecs[2], kt),
+                                axis=0)
+
+    # Since KT is spherical, in all directions AKC should be
+    f = 0.5
+    Dg = f*Di + (1-f)*De
+    Kref = 3 * f * (1-f) * ((Di-De) / Dg) ** 2
+
+    # Run apparent_kurtosis_coef function
+    sph = Sphere(xyz=gtab.bvecs[gtab.bvals > 0])
+    AKC = dki.apparent_kurtosis_coef(dki_params, sph)
+
+    # check all direction
+    for d in range(len(gtab.bvecs[gtab.bvals > 0])):
+        assert_array_almost_equal(AKC[d], Kref)
+
+
 def test_Wrotate():
 
     # Rotate the kurtosis tensor of single fiber simulate to the diffusion
-    # tensor diagonal and check that is equal to the kurtosis tensor of the 
+    # tensor diagonal and check that is equal to the kurtosis tensor of the
     # same single fiber simulated directly to the x-axis
 
     # Define single voxel simulate 
@@ -91,8 +119,8 @@ def test_Wrotate():
 
     evals, evecs = decompose_tensor(from_lower_triangular(dt))
 
-    kt_rotated = dki.Wrotate(kt, evecs) # Now coordinate system has diffusion
-                                        # tensor diagnol in x-axis
+    kt_rotated = dki.Wrotate(kt, evecs)  # Now coordinate system has diffusion
+                                         # tensor diagnol in x-axis
 
     # Reference simulate directly aligned to the x-axis
     angles = (90, 0), (90, 0)
@@ -107,7 +135,7 @@ def test_Wcons():
     signal, dt, kt = multi_tensor_dki(gtab_2s, mevals, angles=angles,
                                       fractions=frac, snr=None)
 
-    Wfit=np.zeros([3,3,3,3])
+    Wfit = np.zeros([3, 3, 3, 3])
 
     Wfit[0,0,0,0] = kt[0]
 
@@ -149,11 +177,27 @@ def test_Wcons():
     Wfit[2,1,0,2] = Wfit[2,1,2,0] = Wfit[2,2,0,1] = Wfit[2,2,1,0] = kt[14]
 
     Wcons = dki.Wcons(kt)
-    
+
     Wfit = Wfit.reshape(-1)
     Wcons = Wcons.reshape(-1)
 
     assert_array_almost_equal(Wcons, Wfit)
+
+
+def test_MK():
+    signal, dt, kt = multi_tensor_dki(gtab_2s, mevals, angles=angles,
+                                      fractions=frac, snr=None)
+
+    evals, evecs = decompose_tensor(from_lower_triangular(dt))
+    ref_params = np.concatenate((evals, evecs[0], evecs[1], evecs[2], kt),
+                                axis=0)
+
+    # OLS fitting
+    dkiM = dki.DKIModel(gtab_2s)
+    dkiF = dkiM.fit(signal)
+
+    # MK
+    MK = dkiF.mk
 
 
 def wls_fit_dki(design_matrix, data, min_signal=1):
