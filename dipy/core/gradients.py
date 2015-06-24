@@ -252,8 +252,9 @@ def reorient_bvecs(gtab, rots):
 
     When correcting for motion, rotation of the diffusion-weighted volumes
     might cause systematic bias in rotationally invariant measures, such as FA
-    and MD, and cause , unless the gradient directions are appropriately
-    reoriented to compensate for this effect [Leemans2009]_.
+    and MD, and also cause characteristic biases in tractography, unless the
+    gradient directions are appropriatel reoriented to compensate for this
+    effect [Leemans2009]_.
 
     Parameters
     ----------
