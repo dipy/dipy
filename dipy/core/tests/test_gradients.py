@@ -5,7 +5,8 @@ import numpy.testing as npt
 
 from dipy.data import get_data
 from dipy.core.gradients import (gradient_table, GradientTable,
-                                 gradient_table_from_bvals_bvecs)
+                                 gradient_table_from_bvals_bvecs,
+                                 reorient_bvecs)
 from dipy.io.gradients import read_bvals_bvecs
 
 
@@ -182,6 +183,23 @@ def test_qvalues():
     qvals = np.sqrt(bvals / 6) / (2 * np.pi)
     bt = gradient_table(bvals, bvecs, big_delta=8, small_delta=6)
     npt.assert_almost_equal(bt.qvals, qvals)
+
+def test_reorient_bvecs():
+    sq2 = np.sqrt(2) / 2
+    bvals = np.concatenate([[0], np.ones(6) * 1000])
+    bvecs = np.array([[0, 0, 0],
+                      [1, 0, 0],
+                      [0, 1, 0],
+                      [0, 0, 1],
+                      [sq2, sq2, 0],
+                      [sq2, 0, sq2],
+                      [0, sq2, sq2]])
+
+    gt = gradient_table_from_bvals_bvecs(bvals, bvecs, b0_threshold=0)
+    rots = np.zeros((3, 6))
+    new_gt = reorient_bvecs(gt, rots)
+    npt.assert_equal(gt.bvecs, new_gt.bvecs)
+
 
 if __name__ == "__main__":
     from numpy.testing import run_module_suite

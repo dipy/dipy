@@ -244,3 +244,54 @@ def gradient_table(bvals, bvecs=None, big_delta=None, small_delta=None,
                                            small_delta=small_delta,
                                            b0_threshold=b0_threshold,
                                            atol=atol)
+
+
+def reorient_bvecs(gtab, rots):
+    """
+    Reorient the directions in a GradientTable according
+
+    When correcting for motion, rotation of the diffusion-weighted volumes
+    might cause systematic bias in rotationally invariant measures, such as FA
+    and MD, and cause , unless the gradient directions are appropriately
+    reoriented to compensate for this effect [Leemans2009]_.
+
+    Parameters
+    ----------
+    gtab : a GradientTable class instance.
+        The nominal gradient table with which the data were acquired.
+    rots : (n, 3) array.
+        The x, y, z rotations (in radians) associated with the motion
+        parameters for each of the volumes in the experiment.
+
+    Returns
+    -------
+    gtab : a GradientTable class instance with the reoriented directions
+
+
+    References
+    ----------
+    .. [Leemans2009] The B-Matrix Must Be Rotated When Correcting for
+       Subject Motion in DTI Data. Leemans, A. and Jones, D.K. (2009).
+       MRM, 61: 1336-1349
+    """
+    new_bvecs = gtab.bvecs[~gtab.b0s_mask]
+    for i, r in enumerate(rots):
+        # We compose the rotation matrix from x, y, z rotations (see appendix
+        # in Leemans and Jones 2009):
+        R =   np.array([[1, 0, 0],
+                        [0, np.cos(r[0]), np.sin(r[0])],
+                        [0, -np.sin(r[0]), np.cos(r[0])]])
+
+        R = np.dot(R, np.array([[np.cos(r[1]), 0,np.sin(r[1])],
+                                [0, 1, 0],
+                                [-np.sin(r[1]),0,np.cos(r[1])]]))
+
+        R = np.dot(R, np.array([[np.cos(r[2]), np.sin(r[2]), 0],
+                                [-np.sin(r[2]), np.cos(r[2]), 0],
+                                [0, 0, 1]]))
+        R = np.linalg.inv(R)
+        new_bvecs[i] = np.dot(R, new_bvecs[i])
+
+    return_bvecs = np.zeros(gtab.bvecs.shape)
+    return_bvecs[~gtab.b0s_mask] = new_bvecs
+    return gradient_table(gtab.bvals, return_bvecs)
