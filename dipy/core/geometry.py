@@ -840,16 +840,25 @@ def vec2vec_rotmat(u, v):
     array([ 1.,  0.,  0.])
 
     """
-    norm_u_v = np.linalg.norm(u - v)
-    # return eye when u is the same with v
-    if np.linalg.norm(u - v) < np.finfo(float).eps:
-        return np.eye(3)
-    # This is the case of two antipodal vectors:
-    if norm_u_v == 2.0:
-        return -np.eye(3)
 
+    # Cross product is the first step to find R
+    # Rely on numpy instead of manual checking for failing
+    # cases
     w = np.cross(u, v)
-    w = w / np.linalg.norm(w)
+    wn = np.linalg.norm(w)
+
+    # Check that cross product is OK and vectors 
+    # u, v are not collinear (norm(w)>0.0)
+    if np.isnan(wn) or wn < np.finfo(float).eps:
+        norm_u_v = np.linalg.norm(u - v)
+        # This is the case of two antipodal vectors:
+        # ** former checking assumed norm(u) == norm(v)
+        if norm_u_v > np.linalg.norm(u):
+            return -np.eye(3)
+        return np.eye(3)
+
+    # if everything ok, normalize w
+    w /= wn
 
     # vp is in plane of u,v,  perpendicular to u
     vp = (v - (np.dot(u, v) * u))
@@ -864,7 +873,8 @@ def vec2vec_rotmat(u, v):
     Rp = np.dot(Pt, np.dot(R, P))
 
     # make sure that you don't return any Nans
-    if np.sum(np.isnan(Rp)) > 0:
+    # check using the appropriate tool in numpy
+    if np.any(np.isnan(Rp)):
         return np.eye(3)
 
     return Rp
