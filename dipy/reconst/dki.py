@@ -473,12 +473,12 @@ def _MK_analytical_solution(dki_params):
         Wyyzz[vox] = Wrotate(kt[vox], evecs[vox], [1, 1, 2, 2])
 
     # Compute MK
-    MeanKurt = F1m(evals[..., 0], evals[..., 1], evals[..., 2])*Wxxxx 
-    + F1m(evals[..., 1], evals[..., 0], evals[..., 2])*Wyyyy
-    + F1m(evals[..., 2], evals[..., 1], evals[..., 0])*Wzzzz
-    + F2m(evals[..., 0], evals[..., 1], evals[..., 2])*Wyyzz
-    + F2m(evals[..., 1], evals[..., 0], evals[..., 2])*Wxxzz
-    + F2m(evals[..., 2], evals[..., 1], evals[..., 0])*Wxxyy
+    MeanKurt = F1m(evals[..., 0], evals[..., 1], evals[..., 2])*Wxxxx + \
+               F1m(evals[..., 1], evals[..., 0], evals[..., 2])*Wyyyy + \
+               F1m(evals[..., 2], evals[..., 1], evals[..., 0])*Wzzzz + \
+               F2m(evals[..., 0], evals[..., 1], evals[..., 2])*Wyyzz + \
+               F2m(evals[..., 1], evals[..., 0], evals[..., 2])*Wxxzz + \
+               F2m(evals[..., 2], evals[..., 1], evals[..., 0])*Wxxyy
 
     MeanKurt = MeanKurt.reshape(outshape)
 

@@ -205,6 +205,7 @@ def test_MK():
     MK_nm = mean_kurtosis(dkiF.model_params, sph)
 
     assert_almost_equal(Kref_sphere, MK_nm)
+
 """
     # MK analytical solution
     MK_as = mean_kurtosis(dkiF.model_params)
@@ -213,7 +214,6 @@ def test_MK():
 """
 
 
-''' (this test is failing)
 def test_compare_MK_method():
     """ tests if analytical solution of MK is equal to the exact solution"""
     signal, dt, kt = multi_tensor_dki(gtab_2s, mevals, angles=angles,
@@ -221,7 +221,7 @@ def test_compare_MK_method():
 
     # OLS fitting
     dkiM = dki.DKIModel(gtab_2s)
-    dkiF = dkiM.fit(signal)
+    dkiF = dkiM.fit(signal_crossing)
 
     # MK analytical solution
     MK_as = dkiF.mk
@@ -230,8 +230,8 @@ def test_compare_MK_method():
     sph = Sphere(xyz=gtab.bvecs[gtab.bvals > 0])
     MK_nm = mean_kurtosis(dkiF.model_params, sph)
 
-    assert_almost_equal(MK_as, MK_nm)
-'''
+    assert_almost_equal(MK_as, MK_nm, delta=0.1)
+
 
 def wls_fit_dki(design_matrix, data, min_signal=1):
     r"""

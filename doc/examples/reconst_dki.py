@@ -256,7 +256,9 @@ as the mean kurtosis (MK), the axial kurtosis (AD) and the radial kurtosis
 (RK).
 """
 
-MK = dkifit.mk
+from dipy.core.sphere import Sphere
+
+MK = dkifit.mk(Sphere(xyz=gtab.bvecs[gtab.bvals > 0]))
 
 """
 RK = dkifit.rk
@@ -279,7 +281,7 @@ ax.flat[2].set_title('AK')
 """
 
 plt.show()
-fig2.savefig('Kurtosis_tensor_standard_measures.png')
+fig3.savefig('Kurtosis_tensor_standard_measures.png')
 
 """
 References:
