@@ -1,5 +1,4 @@
 """
-
 =====================================================================
 Reconstruction of the diffusion signal with the kurtosis tensor model
 =====================================================================
@@ -259,6 +258,11 @@ as the mean kurtosis (MK), the axial kurtosis (AD) and the radial kurtosis
 
 MK = dkifit.mk
 
+"""
+RK = dkifit.rk
+AK = dkifit.ak
+"""
+
 fig3, ax = plt.subplots(1, 3, figsize=(12, 6),
                         subplot_kw={'xticks': [], 'yticks': []})
 
@@ -269,12 +273,13 @@ ax.flat[0].set_title('MK')
 
 """
 ax.flat[1].imshow(MD[:, :, axial_middle], cmap='gray')
-ax.flat[1].set_title('MD (DKI)')
+ax.flat[1].set_title('RK')
 ax.flat[2].imshow(AD[:, :, axial_middle], cmap='gray')
-ax.flat[2].set_title('AD (DKI)')
-ax.flat[3].imshow(RD[:, :, axial_middle], cmap='gray')
-ax.flat[3].set_title('RD (DKI)')
+ax.flat[2].set_title('AK')
 """
+
+plt.show()
+fig2.savefig('Kurtosis_tensor_standard_measures.png')
 
 """
 References:
