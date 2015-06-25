@@ -143,83 +143,6 @@ def alpha(a):
     return alph
 
 
-def A1111(a,b,c):
-    """
-    WIP
-    """
-    Aarray=np.ones(a.shape)*1/5.
-    abc= np.array((a, b, c))
-    
-    indexesxcond1=np.logical_and(np.logical_and.reduce(abc>0),np.logical_and(a!=b, b!=c))
-    if np.sum(indexesxcond1)!=0:
-        d=np.zeros(a.shape)
-        e=np.zeros(a.shape)
-        f=np.zeros(a.shape)
-        g=np.zeros(a.shape)
-        h=np.zeros(a.shape)
-        d[indexesxcond1]=(((a[indexesxcond1]+b[indexesxcond1]+c[indexesxcond1])**2)/(18*(a[indexesxcond1]-b[indexesxcond1])*(a[indexesxcond1]-c[indexesxcond1])))
-        e[indexesxcond1]=((np.sqrt(b[indexesxcond1]*c[indexesxcond1]))/a[indexesxcond1])
-        f[indexesxcond1]=rfpython(a[indexesxcond1]/b[indexesxcond1],a[indexesxcond1]/c[indexesxcond1],np.ones(len(a[indexesxcond1])))
-        g[indexesxcond1]=((3*a[indexesxcond1]**2-a[indexesxcond1]*b[indexesxcond1]-a[indexesxcond1]*c[indexesxcond1]-b[indexesxcond1]*c[indexesxcond1])/(3*a[indexesxcond1]*np.sqrt(b[indexesxcond1]*c[indexesxcond1])))
-        h[indexesxcond1]=rdpython(a[indexesxcond1]/b[indexesxcond1],a[indexesxcond1]/c[indexesxcond1],np.ones(len(a[indexesxcond1])))
-        Aarray[indexesxcond1]=d[indexesxcond1]*(e[indexesxcond1]*f[indexesxcond1]+g[indexesxcond1]*h[indexesxcond1]-1)
-
-    indexesxcond2=np.logical_and(np.logical_and.reduce(abc>0),np.logical_and(a==b, b!=c))
-    if np.sum(indexesxcond2)!=0:
-        dummy2=A2233(c,a,a)
-        Aarray[indexesxcond2]=3*dummy2[indexesxcond2]
-
-    indexesxcond3=np.logical_and(np.logical_and.reduce(abc>0),np.logical_and(a==c, a!=b))
-    if np.sum(indexesxcond3)!=0:
-        dummy3=A2233(b,a,a)
-        Aarray[indexesxcond3]=3*dummy3[indexesxcond3]
-
-### the following condition has to be checked ###
-    indexesxcond4=np.logical_or.reduce(abc<=0)
-    Aarray[indexesxcond4]=0   
-    return Aarray
- 
- 
-def A2233(a,b,c):
-    """
-    WIP
-    """
-    Aarray=np.ones(a.shape)*1/15.
-    abc= np.array((a, b, c))
-    
-    indexesxcond1=np.logical_and(np.logical_and.reduce(abc>0),(b!=c))
-    if np.sum(indexesxcond1)!=0:
-      d=np.zeros(a.shape)
-      e=np.zeros(a.shape)
-      f=np.zeros(a.shape)
-      g=np.zeros(a.shape)
-      h=np.zeros(a.shape)
-      d[indexesxcond1]=(((a[indexesxcond1]+b[indexesxcond1]+c[indexesxcond1])**2)/(3*(b[indexesxcond1]-c[indexesxcond1])**2))
-      e[indexesxcond1]=((b[indexesxcond1]+c[indexesxcond1])/(np.sqrt(b[indexesxcond1]*c[indexesxcond1])))
-      f[indexesxcond1]=rfpython(a[indexesxcond1]/b[indexesxcond1],a[indexesxcond1]/c[indexesxcond1],np.ones(len(a[indexesxcond1])))
-      g[indexesxcond1]=((2*a[indexesxcond1]-b[indexesxcond1]-c[indexesxcond1])/(3*np.sqrt(b[indexesxcond1]*c[indexesxcond1])))
-      h[indexesxcond1]=rdpython(a[indexesxcond1]/b[indexesxcond1],a[indexesxcond1]/c[indexesxcond1],np.ones(len(a[indexesxcond1])))
-      Aarray[indexesxcond1]=(1/6.)*d[indexesxcond1]*(e[indexesxcond1]*f[indexesxcond1]+g[indexesxcond1]*h[indexesxcond1]-2)
-
-
-    indexesxcond2=np.logical_and(np.logical_and.reduce(abc>0),np.logical_and(b==c, a!=b))
-    if np.sum(indexesxcond2)!=0:
-      d=np.zeros(a.shape)
-      e=np.zeros(a.shape)
-      f=np.zeros(a.shape)
-      g=np.zeros(a.shape)
-      d[indexesxcond2]=(((a[indexesxcond2]+2.*c[indexesxcond2])**2)/(144.*c[indexesxcond2]**2*(a[indexesxcond2]-c[indexesxcond2])**2))
-      e[indexesxcond2]=c[indexesxcond2]*(a[indexesxcond2]+2.*c[indexesxcond2])
-      f[indexesxcond2]=a[indexesxcond2]*(a[indexesxcond2]-4.*c[indexesxcond2])
-      g[indexesxcond2]=alpha(1.-(a[indexesxcond2]/c[indexesxcond2]))
-      Aarray[indexesxcond2]=d[indexesxcond2]*(e[indexesxcond2]+f[indexesxcond2]*g[indexesxcond2])
-   
-  ### the following condition has to be checked ###
-    indexesxcond3=np.logical_or.reduce(abc<=0)
-    Aarray[indexesxcond3]=0   
-    return Aarray  
-
-
 def C2222(a,b,c):
     """
     WIP
@@ -263,17 +186,153 @@ def C2233(a,b,c):
 
 def F1m(a,b,c):
     """
-    WIP
+    Helper function that computes function $F_1$ which is required to compute
+    the analytical solution of the Mean kurtosis.
+    
+    Parameters
+    ----------
+    a : ndarray (...)
+        Array containing the first variable of function $F_1$ for all signal
+        voxels. This variable will be one of the three diffusion tensor
+        eigenvalues.
+    b : ndarray (...)
+        Array containing the second variable of function $F_1$ for all signal
+        voxels. This variable will be one of the three diffusion tensor
+        eigenvalues.
+    c : ndarray (...)
+        Array containing the thrid variable of function $F_1$ for all signal
+        voxels. This variable will be one of the three diffusion tensor
+        eigenvalues.
+        
+    Returns
+    -------
+    F1 : array
+       Value of the function $F_1$ given the parameters a, b, and c
+
+    Notes
+    --------
+    Function F_1 is defined as [1]_:
+
+    \begin{multline}
+    F_1(\lambda_1,\lambda_2,\lambda_3)=
+    \frac{(\lambda_1+\lambda_2+\lambda_3)^2}
+    {18(\lambda_1-\lambda_2)(\lambda_1-\lambda_3)}
+    [\frac{\sqrt{\lambda_2\lambda_3}}{\lambda_1}
+    R_F(\frac{\lambda_1}{\lambda_2},\frac{\lambda_1}{\lambda_3},1)+\\
+    \frac{3\lambda_1^2-\lambda_1\lambda_2-\lambda_2\lambda_3-
+    \lambda_1\lambda_3}
+    {3\lambda_1 \sqrt{\lambda_2 \lambda_3}}
+    R_D(\frac{\lambda_1}{\lambda_2},\frac{\lambda_1}{\lambda_3},1)-1 ]
+    \end{multline}
     """
-    A=A1111(a,b,c)
-    return A
+    Aarray=np.ones(a.shape)*1/5.
+    abc= np.array((a, b, c))
+    
+    indexesxcond1=np.logical_and(np.logical_and.reduce(abc>0),np.logical_and(a!=b, b!=c))
+    if np.sum(indexesxcond1)!=0:
+        d=np.zeros(a.shape)
+        e=np.zeros(a.shape)
+        f=np.zeros(a.shape)
+        g=np.zeros(a.shape)
+        h=np.zeros(a.shape)
+        d[indexesxcond1]=(((a[indexesxcond1]+b[indexesxcond1]+c[indexesxcond1])**2)/(18*(a[indexesxcond1]-b[indexesxcond1])*(a[indexesxcond1]-c[indexesxcond1])))
+        e[indexesxcond1]=((np.sqrt(b[indexesxcond1]*c[indexesxcond1]))/a[indexesxcond1])
+        f[indexesxcond1]=rfpython(a[indexesxcond1]/b[indexesxcond1],a[indexesxcond1]/c[indexesxcond1],np.ones(len(a[indexesxcond1])))
+        g[indexesxcond1]=((3*a[indexesxcond1]**2-a[indexesxcond1]*b[indexesxcond1]-a[indexesxcond1]*c[indexesxcond1]-b[indexesxcond1]*c[indexesxcond1])/(3*a[indexesxcond1]*np.sqrt(b[indexesxcond1]*c[indexesxcond1])))
+        h[indexesxcond1]=rdpython(a[indexesxcond1]/b[indexesxcond1],a[indexesxcond1]/c[indexesxcond1],np.ones(len(a[indexesxcond1])))
+        Aarray[indexesxcond1]=d[indexesxcond1]*(e[indexesxcond1]*f[indexesxcond1]+g[indexesxcond1]*h[indexesxcond1]-1)
+
+    indexesxcond2=np.logical_and(np.logical_and.reduce(abc>0),np.logical_and(a==b, b!=c))
+    if np.sum(indexesxcond2)!=0:
+        dummy2=A2233(c,a,a)
+        Aarray[indexesxcond2]=3*dummy2[indexesxcond2]
+
+    indexesxcond3=np.logical_and(np.logical_and.reduce(abc>0),np.logical_and(a==c, a!=b))
+    if np.sum(indexesxcond3)!=0:
+        dummy3=A2233(b,a,a)
+        Aarray[indexesxcond3]=3*dummy3[indexesxcond3]
+
+### the following condition has to be checked ###
+    indexesxcond4=np.logical_or.reduce(abc<=0)
+    Aarray[indexesxcond4]=0   
+
+    return Aarray
 
 
 def F2m(a,b,c):
     """
-    WIP
+    Helper function that computes function $F_2$ which is required to compute
+    the analytical solution of the Mean kurtosis.
+    
+    Parameters
+    ----------
+    a : ndarray (...)
+        Array containing the first variable of function $F_1$ for all signal
+        voxels. This variable will be one of the three diffusion tensor
+        eigenvalues.
+    b : ndarray (...)
+        Array containing the second variable of function $F_1$ for all signal
+        voxels. This variable will be one of the three diffusion tensor
+        eigenvalues.
+    c : ndarray (...)
+        Array containing the thrid variable of function $F_1$ for all signal
+        voxels. This variable will be one of the three diffusion tensor
+        eigenvalues.
+        
+    Returns
+    -------
+    F2 : array
+       Value of the function $F_2$ given the parameters a, b, and c
+
+    Notes
+    --------
+    Function F_2 is defined as [1]_:
+
+    \begin{multline}
+    F_2(\lambda_1,\lambda_2,\lambda_3)=
+    \frac{(\lambda_1+\lambda_2+\lambda_3)^2}
+    {3(\lambda_2-\lambda_3)^2}
+    [\frac{\lambda_2+\lambda_3}{\sqrt{\lambda_2\lambda_3}}
+    R_F(\frac{\lambda_1}{\lambda_2},\frac{\lambda_1}{\lambda_3},1)+\\
+    \frac{2\lambda_1-\lambda_2-\lambda_3}{3\sqrt{\lambda_2 \lambda_3}}
+    R_D(\frac{\lambda_1}{\lambda_2},\frac{\lambda_1}{\lambda_3},1)-2]
+    \end{multline}
     """
-    return 6*A2233(a,b,c)
+    Aarray=np.ones(a.shape)*1/15.
+    abc= np.array((a, b, c))
+    
+    indexesxcond1=np.logical_and(np.logical_and.reduce(abc>0),(b!=c))
+    if np.sum(indexesxcond1)!=0:
+      d=np.zeros(a.shape)
+      e=np.zeros(a.shape)
+      f=np.zeros(a.shape)
+      g=np.zeros(a.shape)
+      h=np.zeros(a.shape)
+      d[indexesxcond1]=(((a[indexesxcond1]+b[indexesxcond1]+c[indexesxcond1])**2)/(3*(b[indexesxcond1]-c[indexesxcond1])**2))
+      e[indexesxcond1]=((b[indexesxcond1]+c[indexesxcond1])/(np.sqrt(b[indexesxcond1]*c[indexesxcond1])))
+      f[indexesxcond1]=rfpython(a[indexesxcond1]/b[indexesxcond1],a[indexesxcond1]/c[indexesxcond1],np.ones(len(a[indexesxcond1])))
+      g[indexesxcond1]=((2*a[indexesxcond1]-b[indexesxcond1]-c[indexesxcond1])/(3*np.sqrt(b[indexesxcond1]*c[indexesxcond1])))
+      h[indexesxcond1]=rdpython(a[indexesxcond1]/b[indexesxcond1],a[indexesxcond1]/c[indexesxcond1],np.ones(len(a[indexesxcond1])))
+      Aarray[indexesxcond1]=(1/6.)*d[indexesxcond1]*(e[indexesxcond1]*f[indexesxcond1]+g[indexesxcond1]*h[indexesxcond1]-2)
+
+
+    indexesxcond2=np.logical_and(np.logical_and.reduce(abc>0),np.logical_and(b==c, a!=b))
+    if np.sum(indexesxcond2)!=0:
+      d=np.zeros(a.shape)
+      e=np.zeros(a.shape)
+      f=np.zeros(a.shape)
+      g=np.zeros(a.shape)
+      d[indexesxcond2]=(((a[indexesxcond2]+2.*c[indexesxcond2])**2)/(144.*c[indexesxcond2]**2*(a[indexesxcond2]-c[indexesxcond2])**2))
+      e[indexesxcond2]=c[indexesxcond2]*(a[indexesxcond2]+2.*c[indexesxcond2])
+      f[indexesxcond2]=a[indexesxcond2]*(a[indexesxcond2]-4.*c[indexesxcond2])
+      g[indexesxcond2]=alpha(1.-(a[indexesxcond2]/c[indexesxcond2]))
+      Aarray[indexesxcond2]=d[indexesxcond2]*(e[indexesxcond2]+f[indexesxcond2]*g[indexesxcond2])
+   
+  ### the following condition has to be checked ###
+    indexesxcond3=np.logical_or.reduce(abc<=0)
+    Aarray[indexesxcond3]=0  
+
+    return 6*Aarray
 
 
 def G1m(a,b,c):
@@ -1477,74 +1536,6 @@ def split_dki_param(dki_params):
     kt = dki_params[..., 12:]
     
     return evals, evecs, kt
-
-
-def ambiguous_function_decompose_tensors(tensor, K_tensor_elements, min_diffusivity=0):
-    """ Returns eigenvalues and eigenvectors given a diffusion tensor
-
-    Computes tensor eigen decomposition to calculate eigenvalues and
-    eigenvectors (Basser et al., 1994a).
-
-    Parameters
-    ----------
-    tensor : array (3, 3)
-        Hermitian matrix representing a diffusion tensor.
-    K_tensor_elements : array(15,1)
-        Independent elements of the K tensors
-    min_diffusivity : float
-        Because negative eigenvalues are not physical and small eigenvalues,
-        much smaller than the diffusion weighting, cause quite a lot of noise
-        in metrics such as fa, diffusivity values smaller than
-        `min_diffusivity` are replaced with `min_diffusivity`.
-
-    Returns
-    -------
-    eigvals : array (3,)
-        Eigenvalues from eigen decomposition of the tensor. Negative
-        eigenvalues are replaced by zero. Sorted from largest to smallest.
-    eigvecs : array (3, 3)
-        Associated eigenvectors from eigen decomposition of the tensor.
-        Eigenvectors are columnar (e.g. eigvecs[:,j] is associated with
-        eigvals[j])
-
-    """
-    #outputs multiplicity as well so need to unique
-    eigenvals, eigenvecs = np.linalg.eigh(tensor)
-
-    #need to sort the eigenvalues and associated eigenvectors
-    order = eigenvals.argsort()[::-1]
-    eigenvecs = eigenvecs[:, order]
-    eigenvals = eigenvals[order]
-
-    eigenvals = eigenvals.clip(min=min_diffusivity)
-    # eigenvecs: each vector is columnar
-
-    [Wxxxx,Wyyyy,Wzzzz,Wxxxy,Wxxxz,Wxyyy,Wyyyz,Wxzzz,Wyzzz,Wxxyy,Wxxzz,Wyyzz,Wxxyz,Wxyyz,Wxyzz]=K_tensor_elements
-    Wrot=np.zeros([3,3,3,3])
-    Wfit=np.zeros([3,3,3,3])
-    Wfit[0,0,0,0]=Wxxxx
-    Wfit[1,1,1,1]=Wyyyy
-    Wfit[2,2,2,2]=Wzzzz
-    Wfit[0,0,0,1]=Wfit[0,0,1,0]=Wfit[0,1,0,0]=Wfit[1,0,0,0]=Wxxxy
-    Wfit[0,0,0,2]=Wfit[0,0,2,0]=Wfit[0,2,0,0]=Wfit[2,0,0,0]=Wxxxz
-    Wfit[1,2,2,2]=Wfit[2,2,2,1]=Wfit[2,1,2,2]=Wfit[2,2,1,2]=Wyzzz
-    Wfit[0,2,2,2]=Wfit[2,2,2,0]=Wfit[2,0,2,2]=Wfit[2,2,0,2]=Wxzzz
-    Wfit[0,1,1,1]=Wfit[1,0,1,1]=Wfit[1,1,1,0]=Wfit[1,1,0,1]=Wxyyy
-    Wfit[1,1,1,2]=Wfit[1,2,1,1]=Wfit[2,1,1,1]=Wfit[1,1,2,1]=Wyyyz
-    Wfit[0,0,1,1]=Wfit[0,1,0,1]=Wfit[0,1,1,0]=Wfit[1,0,0,1]=Wfit[1,0,1,0]=Wfit[1,1,0,0]=Wxxyy 
-    Wfit[0,0,2,2]=Wfit[0,2,0,2]=Wfit[0,2,2,0]=Wfit[2,0,0,2]=Wfit[2,0,2,0]=Wfit[2,2,0,0]=Wxxzz 
-    Wfit[1,1,2,2]=Wfit[1,2,1,2]=Wfit[1,2,2,1]=Wfit[2,1,1,2]=Wfit[2,2,1,1]=Wfit[2,1,2,1]=Wyyzz 
-    Wfit[0,0,1,2]=Wfit[0,0,2,1]=Wfit[0,1,0,2]=Wfit[0,1,2,0]=Wfit[0,2,0,1]=Wfit[0,2,1,0]=Wfit[1,0,0,2]=Wfit[1,0,2,0]=Wfit[1,2,0,0]=Wfit[2,0,0,1]=Wfit[2,0,1,0]=Wfit[2,1,0,0]=Wxxyz
-    Wfit[0,1,1,2]=Wfit[0,1,2,1]=Wfit[0,2,1,1]=Wfit[1,0,1,2]=Wfit[1,1,0,2]=Wfit[1,1,2,0]=Wfit[1,2,0,1]=Wfit[1,2,1,0]=Wfit[2,0,1,1]=Wfit[2,1,0,1]=Wfit[2,1,1,0]=Wfit[1,0,2,1]=Wxyyz
-    Wfit[0,1,2,2]=Wfit[0,2,1,2]=Wfit[0,2,2,1]=Wfit[1,0,2,2]=Wfit[1,2,0,2]=Wfit[1,2,2,0]=Wfit[2,0,1,2]=Wfit[2,0,2,1]=Wfit[2,1,0,2]=Wfit[2,1,2,0]=Wfit[2,2,0,1]=Wfit[2,2,1,0]=Wxyzz
-
-    indexarray=[[0,0,0,0],[1,1,1,1],[2,2,2,2],[0,0,1,1],[0,0,2,2],[1,1,2,2]]
-    Wrotat=[0,0,0,0,0,0]
-    for indval in range(len(indexarray)):
-         	Wrotat[indval]=rotatew(Wfit,eigenvecs,indexarray[indval])
-         	[W_xxxx,W_yyyy,W_zzzz,W_xxyy,W_xxzz,W_yyzz]=Wrotat
-
-    return eigenvals, eigenvecs, Wrotat[:3],Wrotat[3:]
 
 
 def dki_design_matrix(gtab):
