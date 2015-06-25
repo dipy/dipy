@@ -290,9 +290,94 @@ def G2m(a,b,c):
     return 6*C2233(a,b,c)
 
 
-def mean_kurtosis(dki_params):
+def mean_kurtosis(dki_params, sphere=None):
     r"""
     Computes mean Kurtosis (MK) from the kurtosis tensor. 
+
+    Parameters
+    ----------
+    dki_params : ndarray (..., 27)
+        All parameters estimated from the diffusion kurtosis model.
+        Parameters are ordered as follow:
+            1) Three diffusion tensor's eingenvalues
+            2) Three lines of the eigenvector matrix each containing the first,
+               second and third coordinates of the eigenvector
+            3) Fifteen elements of the kurtosis tensor
+
+    sphere : a Sphere class instance (optional)
+        If a sphere class instance is given, MK can be estimated faster as the
+        average of the directional kurtosis of the vertices in the sphere [1]_.
+        Otherwise MK is computed from its analytical solution [2]_.
+        
+    Returns
+    -------
+    mk : array
+        Calculated MK.
+
+    Notes
+    --------
+    The MK analytical solution is calculated using the following equation [2]_:
+
+    .. math::
+
+    \begin{multline}
+    MK=F_1(\lambda_1,\lambda_2,\lambda_3)\hat{W}_{1111}+
+       F_1(\lambda_2,\lambda_1,\lambda_3)\hat{W}_{2222}+
+       F_1(\lambda_3,\lambda_2,\lambda_1)\hat{W}_{3333}+ \\
+       F_2(\lambda_1,\lambda_2,\lambda_3)\hat{W}_{2233}+
+       F_2(\lambda_2,\lambda_1,\lambda_3)\hat{W}_{1133}+
+       F_2(\lambda_3,\lambda_2,\lambda_1)\hat{W}_{1122}
+    \end{multline}
+        
+    where $\hat{W}_{ijkl}$ are the components of the $W$ tensor in the
+    coordinates system defined by the eigenvectors of the diffusion tensor
+    $\mathbf{D}$ and 
+ 
+    \begin{multline}
+    F_1(\lambda_1,\lambda_2,\lambda_3)=
+    \frac{(\lambda_1+\lambda_2+\lambda_3)^2}
+    {18(\lambda_1-\lambda_2)(\lambda_1-\lambda_3)}
+    [\frac{\sqrt{\lambda_2\lambda_3}}{\lambda_1}
+    R_F(\frac{\lambda_1}{\lambda_2},\frac{\lambda_1}{\lambda_3},1)+\\
+    \frac{3\lambda_1^2-\lambda_1\lambda_2-\lambda_2\lambda_3-
+    \lambda_1\lambda_3}
+    {3\lambda_1 \sqrt{\lambda_2 \lambda_3}}
+    R_D(\frac{\lambda_1}{\lambda_2},\frac{\lambda_1}{\lambda_3},1)-1 ]
+    \end{multline}
+
+    \begin{multline}
+    F_2(\lambda_1,\lambda_2,\lambda_3)=
+    \frac{(\lambda_1+\lambda_2+\lambda_3)^2}
+    {3(\lambda_2-\lambda_3)^2}
+    [\frac{\lambda_2+\lambda_3}{\sqrt{\lambda_2\lambda_3}}
+    R_F(\frac{\lambda_1}{\lambda_2},\frac{\lambda_1}{\lambda_3},1)+\\
+    \frac{2\lambda_1-\lambda_2-\lambda_3}{3\sqrt{\lambda_2 \lambda_3}}
+    R_D(\frac{\lambda_1}{\lambda_2},\frac{\lambda_1}{\lambda_3},1)-2]
+    \end{multline}
+    
+    where $R_f$ and $R_d$ are the Carlson's elliptic integrals.
+      
+    References
+    ----------
+    .. [1] Hui ES, Cheung MM, Qi L, Wu EX, 2008. Towards better MR
+           characterization of neural tissues using directional diffusion
+           kurtosis analysis. Neuroimage 42(1): 122-34
+       [2] Tabesh, A., Jensen, J.H., Ardekani, B.A., Helpern, J.A., 2011.
+           Estimation of tensors and tensor-derived measures in diffusional
+           kurtosis imaging. Magn Reson Med. 65(3), 823-836
+    """
+    if sphere==None:
+        MK = _MK_analytical_solution(dki_params)
+    else:
+        MK = np.mean(apparent_kurtosis_coef(dki_params, sphere), axis=-1)
+
+    return MK
+
+
+def _MK_analytical_solution(dki_params):
+    r"""
+    Helper function that computes the mean Kurtosis (MK) from the kurtosis
+    tensor using the analyticall solution proposed in [1]_. 
 
     Parameters
     ----------
@@ -761,10 +846,26 @@ class DKIFit(TensorFit):
         return self.model_params[..., 12:]
 
     @auto_attr
-    def mk(self):
+    def mk(self, sphere=None):
         r"""
-        Mean Kurtosis (MK) of a kurtosis tensor. 
+        Computes mean Kurtosis (MK) from the kurtosis tensor. 
 
+        Parameters
+        ----------
+        dki_params : ndarray (..., 27)
+            All parameters estimated from the diffusion kurtosis model.
+            Parameters are ordered as follow:
+                1) Three diffusion tensor's eingenvalues
+                2) Three lines of the eigenvector matrix each containing
+                the first, second and third coordinates of the eigenvector
+                3) Fifteen elements of the kurtosis tensor
+
+        sphere : a Sphere class instance (optional)
+            If a sphere class instance is given, MK can be estimated faster as
+            the average of the directional kurtosis of the vertices in the
+            sphere [1]_. Otherwise MK is computed from its analytical solution
+            [2]_.
+        
         Returns
         -------
         mk : array
@@ -772,7 +873,8 @@ class DKIFit(TensorFit):
 
         Notes
         --------
-        MK is calculated with the following equation [1]_:
+        The MK analytical solution is calculated using the following equation
+        [2]_:
 
         .. math::
 
@@ -791,35 +893,38 @@ class DKIFit(TensorFit):
  
         \begin{multline}
         F_1(\lambda_1,\lambda_2,\lambda_3)=
-            \frac{(\lambda_1+\lambda_2+\lambda_3)^2}
-            {18(\lambda_1-\lambda_2)(\lambda_1-\lambda_3)}
-            [\frac{\sqrt{\lambda_2\lambda_3}}{\lambda_1}
-            R_F(\frac{\lambda_1}{\lambda_2},\frac{\lambda_1}{\lambda_3},1)+\\
-            \frac{3\lambda_1^2-\lambda_1\lambda_2-\lambda_2\lambda_3-
-            \lambda_1\lambda_3}
-            {3\lambda_1 \sqrt{\lambda_2 \lambda_3}}
-            R_D(\frac{\lambda_1}{\lambda_2},\frac{\lambda_1}{\lambda_3},1)-1 ]
+        \frac{(\lambda_1+\lambda_2+\lambda_3)^2}
+        {18(\lambda_1-\lambda_2)(\lambda_1-\lambda_3)}
+        [\frac{\sqrt{\lambda_2\lambda_3}}{\lambda_1}
+        R_F(\frac{\lambda_1}{\lambda_2},\frac{\lambda_1}{\lambda_3},1)+\\
+        \frac{3\lambda_1^2-\lambda_1\lambda_2-\lambda_2\lambda_3-
+        \lambda_1\lambda_3}
+        {3\lambda_1 \sqrt{\lambda_2 \lambda_3}}
+        R_D(\frac{\lambda_1}{\lambda_2},\frac{\lambda_1}{\lambda_3},1)-1 ]
         \end{multline}
 
         \begin{multline}
         F_2(\lambda_1,\lambda_2,\lambda_3)=
-            \frac{(\lambda_1+\lambda_2+\lambda_3)^2}
-            {3(\lambda_2-\lambda_3)^2}
-            [\frac{\lambda_2+\lambda_3}{\sqrt{\lambda_2\lambda_3}}
-            R_F(\frac{\lambda_1}{\lambda_2},\frac{\lambda_1}{\lambda_3},1)+\\
-            \frac{2\lambda_1-\lambda_2-\lambda_3}{3\sqrt{\lambda_2 \lambda_3}}
-            R_D(\frac{\lambda_1}{\lambda_2},\frac{\lambda_1}{\lambda_3},1)-2]
+        \frac{(\lambda_1+\lambda_2+\lambda_3)^2}
+        {3(\lambda_2-\lambda_3)^2}
+        [\frac{\lambda_2+\lambda_3}{\sqrt{\lambda_2\lambda_3}}
+        R_F(\frac{\lambda_1}{\lambda_2},\frac{\lambda_1}{\lambda_3},1)+\\
+        \frac{2\lambda_1-\lambda_2-\lambda_3}{3\sqrt{\lambda_2 \lambda_3}}
+        R_D(\frac{\lambda_1}{\lambda_2},\frac{\lambda_1}{\lambda_3},1)-2]
         \end{multline}
+    
         where $R_f$ and $R_d$ are the Carlson's elliptic integrals.
-      
+
         References
         ----------
-
-        .. [1] Tabesh, A., Jensen, J.H., Ardekani, B.A., Helpern, J.A., 2011.
-           Estimation of tensors and tensor-derived measures in diffusional
-           kurtosis imaging. Magn Reson Med. 65(3), 823-836
+        .. [1] Hui ES, Cheung MM, Qi L, Wu EX, 2008. Towards better MR
+               characterization of neural tissues using directional diffusion
+               kurtosis analysis. Neuroimage 42(1): 122-34
+           [2] Tabesh, A., Jensen, J.H., Ardekani, B.A., Helpern, J.A., 2011.
+               Estimation of tensors and tensor-derived measures in diffusional
+               kurtosis imaging. Magn Reson Med. 65(3), 823-836
         """
-        return mean_kurtosis(self.model_params)
+        return mean_kurtosis(self.model_params, sphere)
 
     @auto_attr
     def ak(self, evals, Wrotat, axis=-1):
