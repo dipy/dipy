@@ -8,8 +8,8 @@ from dipy.core.ndindex import ndindex
 from dipy.segment.rois_stats import seg_stats
 from dipy.segment.energy_mrf import total_energy
 
-# dname = '/Users/jvillalo/Documents/GSoC_2015/Code/Data/'
-dname = '/home/eleftherios/Dropbox/DIPY_GSoC_2015/'
+dname = '/Users/jvillalo/Documents/GSoC_2015/Code/Data/'
+#dname = '/home/eleftherios/Dropbox/DIPY_GSoC_2015/'
 
 img = nib.load(dname + '3587_BL_T1_to_MNI_Linear_6p.nii.gz')
 dataimg = img.get_data()

@@ -4,13 +4,13 @@ import math as m
 
 def total_energy(masked_image, masked_segmentation, mu, var, index, label, beta):
 
-    energytotal = loglikelihood(masked_image, mu, var, index, label) + gibbsenergy(masked_segmentation, mu, var, index, label)
+    energytotal = loglikelihood(masked_image, mu, var, index, label) + gibbsenergy(masked_segmentation, index, label, beta)
 
     return energytotal
 
 def loglikelihood(img, mu, var, index, label):
 
-    loglike = img[index] - mu[label]/m.sqrt(var) + (m.log(2*m.pi*var[label]))/2
+    loglike = img[index] - mu[label]/m.sqrt(var[label]) + (m.log(2*m.pi*var[label]))/2
 
     return loglike
 
