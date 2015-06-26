@@ -20,36 +20,36 @@ def log_likelihood(img, mu, var, index, label):
     return loglike
 
 
-def gibbs_energy(img, index, label, beta):
+def gibbs_energy(seg, index, label, beta):
 
     energy = 0
 
-    if label == img[index[0] - 1, index[1], index[2]]:
+    if label == seg[index[0] - 1, index[1], index[2]]:
         energy = energy - beta
     else:
         energy = energy + beta
 
-    if label == img[index[0] + 1, index[1], index[2]]:
+    if label == seg[index[0] + 1, index[1], index[2]]:
         energy = energy - beta
     else:
         energy = energy + beta
 
-    if label == img[index[0], index[1] - 1, index[2]]:
+    if label == seg[index[0], index[1] - 1, index[2]]:
         energy = energy - beta
     else:
         energy = energy + beta
 
-    if label == img[index[0], index[1] + 1, index[2]]:
+    if label == seg[index[0], index[1] + 1, index[2]]:
         energy = energy - beta
     else:
         energy = energy + beta
 
-    if label == img[index[0], index[1], index[2] - 1]:
+    if label == seg[index[0], index[1], index[2] - 1]:
         energy = energy - beta
     else:
         energy = energy + beta
 
-    if label == img[index[0], index[1], index[2] + 1]:
+    if label == seg[index[0], index[1], index[2] + 1]:
         energy = energy - beta
     else:
         energy = energy + beta
