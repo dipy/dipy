@@ -2,20 +2,35 @@ from __future__ import division, print_function, absolute_import
 import numpy as np
 
 def seg_stats(input_image, seg_image, nclass):
+    r""" Mean and standard variation for 3 tissue classes
 
-    '''
-    To compute the mean and standard variation of each segmented area.
+    1 is CSF
+    2 is gray matter
+    3 is white matter
 
-    '''
-    mu = np.zeros(3)    
-    std = np.zeros(3)    
-    
-    for i in range(0, nclass-1):
+    Parameters
+    ----------
+    input_image : ndarray
+        blah blah
+
+
+
+    Returns
+    -------
+    mu, std : float
+        Mean and standard deviation for every class
+
+
+    """
+    mu = np.zeros(3)
+    std = np.zeros(3)
+
+    for i in range(1, nclass + 1):
 
         H = input_image[seg_image == i]
 
-        mu[i] = np.mean(H, -1)
-        std[i] = np.std(H, -1)
+        mu[i - 1] = np.mean(H, -1)
+        std[i - 1] = np.std(H, -1)
 
 
     return mu, std
