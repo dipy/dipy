@@ -223,18 +223,21 @@ def F1m(a,b,c):
            Estimation of tensors and tensor-derived measures in diffusional
            kurtosis imaging. Magn Reson Med. 65(3), 823-836
     """
+    # Float error used to compare two floats, abs(l1 - l2) < er for l1 = l2 
+    er = 1e-10
 
     # Initialize F1
     F1 = np.empty(a.shape)
 
     # zero for non plausible diffusion values, i.e. a <= 0 or b <= 0 or c <= 0
-    abc = np.array((a, b, c))    
+    abc = np.array((a, b, c))
     cond0 = np.logical_and.reduce(abc<=0)
     if np.sum(cond0)!=0:
         F1[cond0] = 0
 
     # Apply formula for non problematic plaussible cases, i.e. a!=b and b!=c
-    cond1 = np.logical_and(~cond0, np.logical_and(a!=b, b!=c))
+    cond1 = np.logical_and(~cond0, np.logical_and(abs(a - b) > er,
+                                                  abs(b - c) > er))
     if np.sum(cond1)!=0:
         L1 = a[cond1]
         L2 = b[cond1]
@@ -247,21 +250,24 @@ def F1m(a,b,c):
                      (3 * L1 * np.sqrt(L2*L3))) * RDm - 1)
 
     # Resolve possible sigularity a==b
-    cond2 = np.logical_and(~cond0, np.logical_and(a==b, b!=c))
+    cond2 = np.logical_and(~cond0, np.logical_and(abs(a - b) < er,
+                                                  abs(b - c) > er))
     if np.sum(cond2)!=0:
         L1 = a[cond2]
         L3 = c[cond2]
         F1[cond2] = F2m(L3, L1, L1) / 2
 
     # Resolve possible sigularity a==c 
-    cond3 = np.logical_and(~cond0, np.logical_and(a==c, a!=b))
+    cond3 = np.logical_and(~cond0, np.logical_and(abs(a - c) < er,
+                                                  abs(a - b) > er))
     if np.sum(cond3)!=0:
         L1 = a[cond3]
         L2 = b[cond3]
         F1[cond3] = F2m(L2, L1, L1) / 2
 
     # Resolve possible sigularity a==b and a==c
-    cond4 = np.logical_and(~cond0, np.logical_and(a==c, a==b))
+    cond4 = np.logical_and(~cond0, np.logical_and(abs(a - c) < er,
+                                                  abs(a - b) < er))
     if np.sum(cond4)!=0:
         F1[cond4] = 1/5.
 
@@ -313,6 +319,9 @@ def F2m(a,b,c):
            Estimation of tensors and tensor-derived measures in diffusional
            kurtosis imaging. Magn Reson Med. 65(3), 823-836
     """
+    # Float error used to compare two floats, abs(l1 - l2) < er for l1 = l2 
+    er = 1e-10
+
     # Initialize F2
     F2 = np.empty(a.shape)
 
@@ -323,18 +332,19 @@ def F2m(a,b,c):
         F2[cond0] = 0
 
     # Apply formula for non problematic plaussible cases, i.e. b!=c
-    cond1=np.logical_and(~cond0, (b!=c))
+    cond1=np.logical_and(~cond0, (abs(b - c) > er))
     if np.sum(cond1)!=0:
         L1 = a[cond1]
         L2 = b[cond1]
         L3 = c[cond1]
         RF = rfpython(L1/L2, L1/L3, np.ones(len(L1)))
         RD = rdpython(L1/L2, L1/L3, np.ones(len(L1)))
-        F2[cond1] = (((L1+L2+L3) ** 2) / (3 * (L2-L3) ** 2)) * \
+        F2[cond1] = (((L1+L2+L3) ** 2) / (3. * (L2-L3) ** 2)) * \
                     (((L2+L3) / (np.sqrt(L2*L3))) * RF + \
-                     ((2*L1 - L2 - L3) / (3*np.sqrt(L2*L3))) * RD - 2)
+                     ((2.*L1 - L2 - L3) / (3.*np.sqrt(L2*L3))) * RD - 2.)
 
-    cond2=np.logical_and(~cond0, np.logical_and(b==c, a!=b))
+    cond2=np.logical_and(~cond0, np.logical_and(abs(b - c) < er,
+                                                abs(a - b) > er))
     if np.sum(cond2)!=0:
         L1 = a[cond2]
         L2 = b[cond2]
@@ -354,7 +364,8 @@ def F2m(a,b,c):
    
 
     # Resolve possible sigularity a==b and a==c
-    cond3 = np.logical_and(~cond0, np.logical_and(a==c, a==b))
+    cond3 = np.logical_and(~cond0, np.logical_and(abs(a - c) < er,
+                                                  abs(a - b) < er))
     if np.sum(cond3)!=0:
         F2[cond3] = 6/15.
 

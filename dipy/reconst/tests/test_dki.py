@@ -206,12 +206,10 @@ def test_MK():
 
     assert_almost_equal(Kref_sphere, MK_nm)
     
-    """
     # MK analytical solution
     MK_as = mean_kurtosis(dkiF.model_params)
 
     assert_almost_equal(Kref_sphere, MK_as)
-    """
 
 
 def test_compare_MK_method():
