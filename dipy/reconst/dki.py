@@ -135,14 +135,6 @@ def rfpython(x,y,z):
     return drf
 
 
-def alpha(a):
-    """
-    WIP
-    """
-    alph=(1./np.sqrt(abs(a))*(np.arctan(np.sqrt(abs(a)))))
-    return alph
-
-
 def C2222(a,b,c):
     """
     WIP
@@ -224,39 +216,56 @@ def F1m(a,b,c):
     {3\lambda_1 \sqrt{\lambda_2 \lambda_3}}
     R_D(\frac{\lambda_1}{\lambda_2},\frac{\lambda_1}{\lambda_3},1)-1 ]
     \end{multline}
+
+    References
+    ----------
+    .. [1] Tabesh, A., Jensen, J.H., Ardekani, B.A., Helpern, J.A., 2011.
+           Estimation of tensors and tensor-derived measures in diffusional
+           kurtosis imaging. Magn Reson Med. 65(3), 823-836
     """
-    Aarray=np.ones(a.shape)*1/5.
-    abc= np.array((a, b, c))
-    
-    indexesxcond1=np.logical_and(np.logical_and.reduce(abc>0),np.logical_and(a!=b, b!=c))
-    if np.sum(indexesxcond1)!=0:
-        d=np.zeros(a.shape)
-        e=np.zeros(a.shape)
-        f=np.zeros(a.shape)
-        g=np.zeros(a.shape)
-        h=np.zeros(a.shape)
-        d[indexesxcond1]=(((a[indexesxcond1]+b[indexesxcond1]+c[indexesxcond1])**2)/(18*(a[indexesxcond1]-b[indexesxcond1])*(a[indexesxcond1]-c[indexesxcond1])))
-        e[indexesxcond1]=((np.sqrt(b[indexesxcond1]*c[indexesxcond1]))/a[indexesxcond1])
-        f[indexesxcond1]=rfpython(a[indexesxcond1]/b[indexesxcond1],a[indexesxcond1]/c[indexesxcond1],np.ones(len(a[indexesxcond1])))
-        g[indexesxcond1]=((3*a[indexesxcond1]**2-a[indexesxcond1]*b[indexesxcond1]-a[indexesxcond1]*c[indexesxcond1]-b[indexesxcond1]*c[indexesxcond1])/(3*a[indexesxcond1]*np.sqrt(b[indexesxcond1]*c[indexesxcond1])))
-        h[indexesxcond1]=rdpython(a[indexesxcond1]/b[indexesxcond1],a[indexesxcond1]/c[indexesxcond1],np.ones(len(a[indexesxcond1])))
-        Aarray[indexesxcond1]=d[indexesxcond1]*(e[indexesxcond1]*f[indexesxcond1]+g[indexesxcond1]*h[indexesxcond1]-1)
 
-    indexesxcond2=np.logical_and(np.logical_and.reduce(abc>0),np.logical_and(a==b, b!=c))
-    if np.sum(indexesxcond2)!=0:
-        dummy2=A2233(c,a,a)
-        Aarray[indexesxcond2]=3*dummy2[indexesxcond2]
+    # Initialize F1
+    F1 = np.empty(a.shape)
 
-    indexesxcond3=np.logical_and(np.logical_and.reduce(abc>0),np.logical_and(a==c, a!=b))
-    if np.sum(indexesxcond3)!=0:
-        dummy3=A2233(b,a,a)
-        Aarray[indexesxcond3]=3*dummy3[indexesxcond3]
+    # zero for non plausible diffusion values, i.e. a <= 0 or b <= 0 or c <= 0
+    abc = np.array((a, b, c))    
+    cond0 = np.logical_and.reduce(abc<=0)
+    if np.sum(cond0)!=0:
+        F1[cond0] = 0
 
-### the following condition has to be checked ###
-    indexesxcond4=np.logical_or.reduce(abc<=0)
-    Aarray[indexesxcond4]=0   
+    # Apply formula for non problematic plaussible cases, i.e. a!=b and b!=c
+    cond1 = np.logical_and(~cond0, np.logical_and(a!=b, b!=c))
+    if np.sum(cond1)!=0:
+        L1 = a[cond1]
+        L2 = b[cond1]
+        L3 = c[cond1]
+        RFm = rfpython(L1/L2, L1/L3, np.ones(len(L1)))
+        RDm = rdpython(L1/L2, L1/L3, np.ones(len(L1)))
+        F1[cond1] = ((L1+L2+L3) ** 2) / (18 * (L1-L2) * (L1-L3)) * \
+                    (((np.sqrt(L2*L3)) / L1) * RFm + \
+                     ((3 * L1**2 - L1*L2 - L1*L3 - L2*L3) / \
+                     (3 * L1 * np.sqrt(L2*L3))) * RDm - 1)
 
-    return Aarray
+    # Resolve possible sigularity a==b
+    cond2 = np.logical_and(~cond0, np.logical_and(a==b, b!=c))
+    if np.sum(cond2)!=0:
+        L1 = a[cond2]
+        L3 = c[cond2]
+        F1[cond2] = F2m(L3, L1, L1) / 2
+
+    # Resolve possible sigularity a==c 
+    cond3 = np.logical_and(~cond0, np.logical_and(a==c, a!=b))
+    if np.sum(cond3)!=0:
+        L1 = a[cond3]
+        L2 = b[cond3]
+        F1[cond3] = F2m(L2, L1, L1) / 2
+
+    # Resolve possible sigularity a==b and a==c
+    cond4 = np.logical_and(~cond0, np.logical_and(a==c, a==b))
+    if np.sum(cond4)!=0:
+        F1[cond4] = 1/5.
+
+    return F1
 
 
 def F2m(a,b,c):
@@ -297,42 +306,59 @@ def F2m(a,b,c):
     \frac{2\lambda_1-\lambda_2-\lambda_3}{3\sqrt{\lambda_2 \lambda_3}}
     R_D(\frac{\lambda_1}{\lambda_2},\frac{\lambda_1}{\lambda_3},1)-2]
     \end{multline}
+
+    References
+    ----------
+    .. [1] Tabesh, A., Jensen, J.H., Ardekani, B.A., Helpern, J.A., 2011.
+           Estimation of tensors and tensor-derived measures in diffusional
+           kurtosis imaging. Magn Reson Med. 65(3), 823-836
     """
-    Aarray=np.ones(a.shape)*1/15.
-    abc= np.array((a, b, c))
-    
-    indexesxcond1=np.logical_and(np.logical_and.reduce(abc>0),(b!=c))
-    if np.sum(indexesxcond1)!=0:
-      d=np.zeros(a.shape)
-      e=np.zeros(a.shape)
-      f=np.zeros(a.shape)
-      g=np.zeros(a.shape)
-      h=np.zeros(a.shape)
-      d[indexesxcond1]=(((a[indexesxcond1]+b[indexesxcond1]+c[indexesxcond1])**2)/(3*(b[indexesxcond1]-c[indexesxcond1])**2))
-      e[indexesxcond1]=((b[indexesxcond1]+c[indexesxcond1])/(np.sqrt(b[indexesxcond1]*c[indexesxcond1])))
-      f[indexesxcond1]=rfpython(a[indexesxcond1]/b[indexesxcond1],a[indexesxcond1]/c[indexesxcond1],np.ones(len(a[indexesxcond1])))
-      g[indexesxcond1]=((2*a[indexesxcond1]-b[indexesxcond1]-c[indexesxcond1])/(3*np.sqrt(b[indexesxcond1]*c[indexesxcond1])))
-      h[indexesxcond1]=rdpython(a[indexesxcond1]/b[indexesxcond1],a[indexesxcond1]/c[indexesxcond1],np.ones(len(a[indexesxcond1])))
-      Aarray[indexesxcond1]=(1/6.)*d[indexesxcond1]*(e[indexesxcond1]*f[indexesxcond1]+g[indexesxcond1]*h[indexesxcond1]-2)
+    # Initialize F2
+    F2 = np.empty(a.shape)
 
+    # zero for non plausible diffusion values, i.e. a <= 0 or b <= 0 or c <= 0
+    abc = np.array((a, b, c))    
+    cond0 = np.logical_and.reduce(abc<=0)
+    if np.sum(cond0)!=0:
+        F2[cond0] = 0
 
-    indexesxcond2=np.logical_and(np.logical_and.reduce(abc>0),np.logical_and(b==c, a!=b))
-    if np.sum(indexesxcond2)!=0:
-      d=np.zeros(a.shape)
-      e=np.zeros(a.shape)
-      f=np.zeros(a.shape)
-      g=np.zeros(a.shape)
-      d[indexesxcond2]=(((a[indexesxcond2]+2.*c[indexesxcond2])**2)/(144.*c[indexesxcond2]**2*(a[indexesxcond2]-c[indexesxcond2])**2))
-      e[indexesxcond2]=c[indexesxcond2]*(a[indexesxcond2]+2.*c[indexesxcond2])
-      f[indexesxcond2]=a[indexesxcond2]*(a[indexesxcond2]-4.*c[indexesxcond2])
-      g[indexesxcond2]=alpha(1.-(a[indexesxcond2]/c[indexesxcond2]))
-      Aarray[indexesxcond2]=d[indexesxcond2]*(e[indexesxcond2]+f[indexesxcond2]*g[indexesxcond2])
+    # Apply formula for non problematic plaussible cases, i.e. b!=c
+    cond1=np.logical_and(~cond0, (b!=c))
+    if np.sum(cond1)!=0:
+        L1 = a[cond1]
+        L2 = b[cond1]
+        L3 = c[cond1]
+        RF = rfpython(L1/L2, L1/L3, np.ones(len(L1)))
+        RD = rdpython(L1/L2, L1/L3, np.ones(len(L1)))
+        F2[cond1] = (((L1+L2+L3) ** 2) / (3 * (L2-L3) ** 2)) * \
+                    (((L2+L3) / (np.sqrt(L2*L3))) * RF + \
+                     ((2*L1 - L2 - L3) / (3*np.sqrt(L2*L3))) * RD - 2)
+
+    cond2=np.logical_and(~cond0, np.logical_and(b==c, a!=b))
+    if np.sum(cond2)!=0:
+        L1 = a[cond2]
+        L2 = b[cond2]
+        L3 = c[cond2]
+
+        # Cumpute alfa [1]_
+        x = 1. - (L1/L3)
+        alpha = np.zeros(len(L1))
+        for xi in x:
+            if xi>0:
+                alpha[xi] = 1./np.sqrt(xi) * np.arctanh(np.sqrt(xi))
+            else:
+                alpha[xi] = 1./np.sqrt(-xi) * np.arctan(np.sqrt(-xi))
+
+        F2[cond2] = 6. * ((L1 + 2.*L3)**2) / (144. * L3**2 * (L1-L3)**2) * \
+                    (L3 * (L1 + 2.*L3) + L1 * (L1 - 4.*L3) * alpha)
    
-  ### the following condition has to be checked ###
-    indexesxcond3=np.logical_or.reduce(abc<=0)
-    Aarray[indexesxcond3]=0  
 
-    return 6*Aarray
+    # Resolve possible sigularity a==b and a==c
+    cond3 = np.logical_and(~cond0, np.logical_and(a==c, a==b))
+    if np.sum(cond3)!=0:
+        F2[cond3] = 6/15.
+
+    return F2
 
 
 def G1m(a,b,c):
@@ -1403,7 +1429,7 @@ def _Wrotate_element(W4D, indi, indj, indk, indl, B):
     Helper function that returns the element with specified index of a rotated
     kurtosis tensor from the Cartesian coordinate system to another coordinate
     system basis
-    
+
     Parameters
     ----------
     W4D : array(4,4,4,4)
