@@ -10,7 +10,7 @@ module was named ``fvtk``, meaning functions using vtk. This is still available
 for backwards compatibility but now there is a more comprehensive way to access
 the main functions using the following modules.
 """
-
+import numpy as np
 from dipy.viz import actor, window, widget
 
 """
@@ -164,8 +164,8 @@ Finally, please uncomment the following lines so that you can interact with
 the available 3D and 2D objects.
 """
 
-# show_m.render()
-# show_m.start()
+show_m.render()
+show_m.start()
 
 
 
