@@ -25,7 +25,7 @@ seg = nib.load(dname + '3587_BL_T1_to_MNI_Linear_6p_seg.nii.gz')
 seg_init = seg.get_data()
 seg_init_masked = applymask(seg_init, datamask)
 
-print("computing the statistics of the ROIs (WM, GM, CSF)")
+print("computing the statistics of the ROIs (CSF, GM, WM)")
 mu, std = seg_stats(masked_img, seg_init_masked, 3)
 
 print(mu)
@@ -34,7 +34,7 @@ print(std)
 nclass = 3
 L = range(1, nclass + 1)
 niter = 1
-beta = 0.5
+beta = 0.05
 totalE = np.zeros(nclass)
 N = 0
 
@@ -62,7 +62,9 @@ while True:
 
 
 # print('Show results')
-# imshow(seg_init_masked[:, :, 95])
-# imshow(segmented[:, :, 95])
+figure()
+imshow(seg_init_masked[:, :, 95])
+figure()
+imshow(segmented[:, :, 95])
 
 
