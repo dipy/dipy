@@ -8,8 +8,8 @@ import nibabel as nib
 img = nib.load('/Users/jvillalo/Documents/GSoC_2015/Code/Data/3587_BL_T1_to_MNI_Linear_6p.nii.gz')
 dataimg = img.get_data()
 
-mask = nib.load('/Users/jvillalo/Documents/GSoC_2015/Code/Data/3587_mask.nii.gz')
-datamask = mask.get_data()
+mask_image = nib.load('/Users/jvillalo/Documents/GSoC_2015/Code/Data/3587_mask.nii.gz')
+datamask = mask_image.get_data()
 
 from dipy.segment.mask import applymask
 masked_img = applymask(dataimg,datamask)
@@ -28,7 +28,7 @@ nh = 6   #neighborhood
 niter = 1
 totalE = np.zeros((shape[0],shape[1],shape[2],nclass))
 
-from dipy.segment.ROI_stats import seg_stats
+from dipy.segment.rois_stats import seg_stats
 seg_stats(masked_img, seg_initial, 3)
 
 from dipy.core.ndindex import ndindex
@@ -46,7 +46,7 @@ for idx in np.ndindex(shape):
         np.amin(totalE[-1])
         
     N = niter+1        
-    if N = 1:
+    if N == 1:
         break
 
 
