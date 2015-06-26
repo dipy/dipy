@@ -1,6 +1,7 @@
 from __future__ import division, print_function, absolute_import
 import numpy as np
 
+
 def seg_stats(input_image, seg_image, nclass):
     r""" Mean and standard variation for 3 tissue classes
 

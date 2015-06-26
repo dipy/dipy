@@ -8,8 +8,8 @@ from dipy.core.ndindex import ndindex
 from dipy.segment.rois_stats import seg_stats
 from dipy.segment.energy_mrf import total_energy
 
-dname = '/Users/jvillalo/Documents/GSoC_2015/Code/Data/'
-#dname = '/home/eleftherios/Dropbox/DIPY_GSoC_2015/'
+# dname = '/Users/jvillalo/Documents/GSoC_2015/Code/Data/'
+dname = '/home/eleftherios/Dropbox/DIPY_GSoC_2015/'
 
 img = nib.load(dname + '3587_BL_T1_to_MNI_Linear_6p.nii.gz')
 dataimg = img.get_data()
@@ -32,9 +32,9 @@ print(mu)
 print(std)
 
 nclass = 3
-L = range(1, nclass+1)
+L = range(1, nclass + 1)
 niter = 1
-beta = 1000
+beta = 0.5
 totalE = np.zeros(nclass)
 N = 0
 
@@ -43,18 +43,26 @@ segmented = np.zeros(dataimg.shape)
 while True:
 
     mu, std = seg_stats(masked_img, seg_init, 3)
-    var = std**2
+    var = std ** 2
 
     for idx in ndindex(shape):
-        #print(idx)
+        # print(idx)
         if not masked_img[idx]:
             continue
         for l in range(0, nclass):
 
-            totalE[l] = total_energy(masked_img, seg_init_masked, mu, var, idx, l, beta)
+            totalE[l] = total_energy(masked_img, seg_init_masked,
+                                     mu, var, idx, l, beta)
 
         segmented[idx] = L[np.argmin(totalE)]
 
     N = N + 1
     if N == niter:
         break
+
+
+# print('Show results')
+# imshow(seg_init_masked[:, :, 95])
+# imshow(segmented[:, :, 95])
+
+
