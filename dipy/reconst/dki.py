@@ -343,6 +343,7 @@ def F2m(a,b,c):
                     (((L2+L3) / (np.sqrt(L2*L3))) * RF + \
                      ((2.*L1-L2-L3) / (3.*np.sqrt(L2*L3))) * RD - 2.)
 
+    # Resolve possible sigularity b==c
     cond2=np.logical_and(~cond0, np.logical_and(abs(b - c) < er,
                                                 abs(a - b) > er))
     if np.sum(cond2)!=0:
@@ -353,15 +354,14 @@ def F2m(a,b,c):
         # Cumpute alfa [1]_
         x = 1. - (L1/L3)
         alpha = np.zeros(len(L1))
-        for xi in x:
-            if xi>0:
-                alpha[xi] = 1./np.sqrt(xi) * np.arctanh(np.sqrt(xi))
+        for i in range(len(x)):
+            if x[i]>0:
+                alpha[x[i]] = 1./np.sqrt(x[i]) * np.arctanh(np.sqrt(x[i]))
             else:
-                alpha[xi] = 1./np.sqrt(-xi) * np.arctan(np.sqrt(-xi))
+                alpha[x[i]] = 1./np.sqrt(-x[i]) * np.arctan(np.sqrt(-x[i]))
 
         F2[cond2] = 6. * ((L1 + 2.*L3)**2) / (144. * L3**2 * (L1-L3)**2) * \
                     (L3 * (L1 + 2.*L3) + L1 * (L1 - 4.*L3) * alpha)
-   
 
     # Resolve possible sigularity a==b and a==c
     cond3 = np.logical_and(~cond0, np.logical_and(abs(a - c) < er,
