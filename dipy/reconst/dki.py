@@ -27,9 +27,105 @@ from ..core.onetime import auto_attr
 from .base import ReconstModel
 
 
-def rdpython(x,y,z):
+def carlson_rf(x, y, z):
     r"""
-    WIP
+    Computes the Carlson's incomplete elliptic integral of the first kind
+    defined as:
+
+    .. math::
+        R_F = \frac{1}{2} \int_{0}^{\infty} \left [(t+x)(t+y)(t+z)  \right ]
+        ^{-\frac{1}{2}}dt
+        
+    Parameters
+    ----------
+    x : ndarray (...)
+        First independent variable of the integral.
+    y : ndarray (...)
+        Second independent variable of the integral.
+    z : ndarray (...)
+        Third independent variable of the integral.
+    
+    Returns
+    -------
+    RF : ndarray (...)
+        Value of the incomplete first order elliptic integral
+
+    Note
+    -----
+    x, y, and z have to be nonnegative and at most one of them is zero.
+    """
+    d1mach=np.zeros(5)
+    d1mach[0]=1.1*10**(-308)
+    d1mach[1]=8.9e307
+    d1mach[2]=0.22204460*10**(-15)
+    d1mach[3]=0.4440*10**(-15)
+    d1mach[4]=np.log(2.0)
+    errtol = (d1mach[2]/3.0)**(1.0/6.0)
+    lolim  = 2.0/(d1mach[1])**(2.0/3.0)
+    tuplim = d1mach[0]**(1.0/3.0)
+    tuplim = (0.10*errtol)**(1.0/3.0)/tuplim
+    uplim  = tuplim**2.0
+    c1 = 3.0/14.0
+    c2 = 1.0/6.0
+    c3 = 9.0/22.0
+    c4 = 3.0/26.0
+
+    xn = x.copy()
+    yn = y.copy()
+    zn = z.copy()
+ 
+    mu = (xn+yn+zn)/3.0
+    xndev = 2.0 - (mu+xn)/mu
+    yndev = 2.0 - (mu+yn)/mu
+    zndev = 2.0 - (mu+zn)/mu
+    epslon = np.max([np.abs(xndev),np.abs(yndev),np.abs(zndev)])
+    while (epslon >= errtol):
+       xnroot = np.sqrt(xn)
+       ynroot = np.sqrt(yn)
+       znroot = np.sqrt(zn)
+       lamda = xnroot*(ynroot+znroot) + ynroot*znroot
+       xn = (xn+lamda)*0.250
+       yn = (yn+lamda)*0.250
+       zn = (zn+lamda)*0.250
+       mu = (xn+yn+zn)/3.0
+       xndev = 2.0 - (mu+xn)/mu
+       yndev = 2.0 - (mu+yn)/mu
+       zndev = 2.0 - (mu+zn)/mu
+       epslon = np.max([np.abs(xndev),np.abs(yndev),np.abs(zndev)])
+
+    e2 = xndev*yndev - zndev*zndev
+    e3 = xndev*yndev*zndev
+    s  = 1.0 + (c1*e2-0.10-c2*e3)*e2 + c3*e3
+    drf = s/np.sqrt(mu)
+    return drf
+
+
+def carlson_rd(x, y, z):
+    r"""
+    Computes the Carlson's incomplete elliptic integral of the second kind
+    defined as:
+
+    .. math::
+        R_D = \frac{3}{2} \int_{0}^{\infty} (t+x)^{-\frac{1}{2}}
+        (t+y)^{-\frac{1}{2}}(t+z)  ^{-\frac{3}{2}}
+
+    Parameters
+    ----------
+    x : ndarray (...)
+        First independent variable of the integral.
+    y : ndarray (...)
+        Second independent variable of the integral.
+    z : ndarray (...)
+        Third independent variable of the integral.
+    
+    Returns
+    -------
+    RD : ndarray (...)
+        Value of the incomplete second order elliptic integral
+    
+    Note
+    -----
+    x, y, and z have to be nonnegative and at most x or y is zero.
     """
     d1mach=np.zeros(5)
     d1mach[0]=1.1*10**(-308)
@@ -83,56 +179,6 @@ def rdpython(x,y,z):
     s2 = zndev*(c2*ef+zndev*(-c3*ec+zndev*c4*ea))
     drd = 3.0*sigma + power4*(1.0+s1+s2)/(mu*np.sqrt(mu))
     return drd
-
-
-def rfpython(x,y,z):
-    r"""
-    WIP
-    """
-    d1mach=np.zeros(5)
-    d1mach[0]=1.1*10**(-308)
-    d1mach[1]=8.9e307
-    d1mach[2]=0.22204460*10**(-15)
-    d1mach[3]=0.4440*10**(-15)
-    d1mach[4]=np.log(2.0)
-    errtol = (d1mach[2]/3.0)**(1.0/6.0)
-    lolim  = 2.0/(d1mach[1])**(2.0/3.0)
-    tuplim = d1mach[0]**(1.0/3.0)
-    tuplim = (0.10*errtol)**(1.0/3.0)/tuplim
-    uplim  = tuplim**2.0
-    c1 = 3.0/14.0
-    c2 = 1.0/6.0
-    c3 = 9.0/22.0
-    c4 = 3.0/26.0
-
-    xn = x.copy()
-    yn = y.copy()
-    zn = z.copy()
- 
-    mu = (xn+yn+zn)/3.0
-    xndev = 2.0 - (mu+xn)/mu
-    yndev = 2.0 - (mu+yn)/mu
-    zndev = 2.0 - (mu+zn)/mu
-    epslon = np.max([np.abs(xndev),np.abs(yndev),np.abs(zndev)])
-    while (epslon >= errtol):
-       xnroot = np.sqrt(xn)
-       ynroot = np.sqrt(yn)
-       znroot = np.sqrt(zn)
-       lamda = xnroot*(ynroot+znroot) + ynroot*znroot
-       xn = (xn+lamda)*0.250
-       yn = (yn+lamda)*0.250
-       zn = (zn+lamda)*0.250
-       mu = (xn+yn+zn)/3.0
-       xndev = 2.0 - (mu+xn)/mu
-       yndev = 2.0 - (mu+yn)/mu
-       zndev = 2.0 - (mu+zn)/mu
-       epslon = np.max([np.abs(xndev),np.abs(yndev),np.abs(zndev)])
-
-    e2 = xndev*yndev - zndev*zndev
-    e3 = xndev*yndev*zndev
-    s  = 1.0 + (c1*e2-0.10-c2*e3)*e2 + c3*e3
-    drf = s/np.sqrt(mu)
-    return drf
 
 
 def C2222(a,b,c):
@@ -242,8 +288,8 @@ def _F1m(a,b,c):
         L1 = a[cond1]
         L2 = b[cond1]
         L3 = c[cond1]
-        RFm = rfpython(L1/L2, L1/L3, np.ones(len(L1)))
-        RDm = rdpython(L1/L2, L1/L3, np.ones(len(L1)))
+        RFm = carlson_rf(L1/L2, L1/L3, np.ones(len(L1)))
+        RDm = carlson_rd(L1/L2, L1/L3, np.ones(len(L1)))
         F1[cond1] = ((L1+L2+L3) ** 2) / (18 * (L1-L2) * (L1-L3)) * \
                     (((np.sqrt(L2*L3)) / L1) * RFm + \
                      ((3 * L1**2 - L1*L2 - L1*L3 - L2*L3) / \
@@ -337,8 +383,8 @@ def _F2m(a,b,c):
         L1 = a[cond1]
         L2 = b[cond1]
         L3 = c[cond1]
-        RF = rfpython(L1/L2, L1/L3, np.ones(len(L1)))
-        RD = rdpython(L1/L2, L1/L3, np.ones(len(L1)))
+        RF = carlson_rf(L1/L2, L1/L3, np.ones(len(L1)))
+        RD = carlson_rd(L1/L2, L1/L3, np.ones(len(L1)))
         F2[cond1] = (((L1+L2+L3) ** 2) / (3. * (L2-L3) ** 2)) * \
                     (((L2+L3) / (np.sqrt(L2*L3))) * RF + \
                      ((2.*L1-L2-L3) / (3.*np.sqrt(L2*L3))) * RD - 2.)
@@ -780,7 +826,7 @@ def _directional_kurtosis(dt, MD, kt, V, min_diffusivity=0, min_kurtosis=-1):
     V[:, 2] * V[:, 2] * dt[5]
     
     if not min_diffusivity == None:
-        ADC = ADC.clip(min_diffusivity)
+        ADC = ADC.clip(min=min_diffusivity)
 
     AKC = V[:, 0] * V[:, 0] * V[:, 0] * V[:, 0] * kt[0] + \
     V[:, 1] * V[:, 1] * V[:, 1] * V[:, 1] * kt[1] + \
@@ -799,7 +845,7 @@ def _directional_kurtosis(dt, MD, kt, V, min_diffusivity=0, min_kurtosis=-1):
     12 * V[:, 0] * V[:, 1] * V[:, 2] * V[:, 2] * kt[14]
     
     if not min_diffusivity == None:
-        AKC = AKC.clip(min_kurtosis)
+        AKC = AKC.clip(min=min_kurtosis)
 
     return (MD/ADC) ** 2 * AKC
 
