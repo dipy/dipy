@@ -663,7 +663,8 @@ def radial_kurtosis(evals, Wrotat, axis=-1):
     return RadKurt
 
 
-def apparent_kurtosis_coef(dki_params, sphere):
+def apparent_kurtosis_coef(dki_params, sphere, min_diffusivity=0,
+                           min_kurtosis=-1):
     r"""
     Calculate the apparent kurtosis coefficient (AKC) in each direction of a
     sphere.
@@ -680,6 +681,18 @@ def apparent_kurtosis_coef(dki_params, sphere):
 
     sphere : a Sphere class instance
         The AKC will be calculated for each of the vertices in the sphere
+
+    min_diffusivity : float (optional)
+        Because negative eigenvalues are not physical and small eigenvalues
+        cause quite a lot of noise in diffusion based metrics, diffusivity
+        values smaller than `min_diffusivity` are replaced with
+        `min_diffusivity`. defaut = 0
+
+    min_kurtosis : float (optional)
+        Because high amplitude negative values of kurtosis are not physicaly
+        and biologicaly pluasible, and these causes huge artefacts in kurtosis
+        based measures, directional kurtosis values than `min_kurtosis` are
+        replaced with `min_kurtosis`. defaut = -1
 
     Notes
     -----
@@ -717,7 +730,9 @@ def apparent_kurtosis_coef(dki_params, sphere):
     for vox in range(len(kt)):
         R = evecs[vox]
         dt = lower_triangular(np.dot(np.dot(R, np.diag(evals[vox])), R.T))
-        AKC[vox] = _directional_kurtosis(dt, MD[vox], kt[vox], V)
+        AKC[vox] = _directional_kurtosis(dt, MD[vox], kt[vox], V, 
+                                         min_diffusivity=min_diffusivity,
+                                         min_kurtosis=min_kurtosis)
 
     # reshape data according to input data 
     AKC = AKC.reshape((outshape + (len(V),)))
@@ -725,7 +740,7 @@ def apparent_kurtosis_coef(dki_params, sphere):
     return AKC
 
 
-def _directional_kurtosis(dt, MD, kt, V):
+def _directional_kurtosis(dt, MD, kt, V, min_diffusivity=0, min_kurtosis=-1):
     r"""
     Helper function that calculate the apparent kurtosis coefficient (AKC)
     in each direction of a sphere for a single voxel.
@@ -739,7 +754,19 @@ def _directional_kurtosis(dt, MD, kt, V):
     kt : (15,)
         elements of the kurtosis tensor of the voxel.
     V : (N, 3)
-        N of directions of a Sphere in Cartesian coordinates 
+        N of directions of a Sphere in Cartesian coordinates
+
+    min_diffusivity : float (optional)
+        Because negative eigenvalues are not physical and small eigenvalues
+        cause quite a lot of noise in diffusion based metrics, diffusivity
+        values smaller than `min_diffusivity` are replaced with
+        `min_diffusivity`. defaut = 0
+
+    min_kurtosis : float (optional)
+        Because high amplitude negative values of kurtosis are not physicaly
+        and biologicaly pluasible, and these causes huge artefacts in kurtosis
+        based measures, directional kurtosis values than `min_kurtosis` are
+        replaced with `min_kurtosis`. defaut = -1
 
     See Also
     --------
