@@ -149,7 +149,7 @@ def C2222(a,b,c):
     if np.sum(indexesxcond2)!=0:
       Carray[indexesxcond2]=(((a[indexesxcond2]+b[indexesxcond2]+c[indexesxcond2])**2/((18.)*(b[indexesxcond2])*(b[indexesxcond2]-c[indexesxcond2])**2))*(2.*b[indexesxcond2]+((c[indexesxcond2]**2-3.*b[indexesxcond2]*c[indexesxcond2])/(np.sqrt(b[indexesxcond2]*c[indexesxcond2])))))
 
-  ### the following condition has to be checked ###
+    ### the following condition has to be checked ###
     indexesxcond3=np.logical_or.reduce(abc<=0)
     Carray[indexesxcond3]=0   
     return Carray  
@@ -176,7 +176,7 @@ def C2233(a,b,c):
     return Carray  
 
 
-def F1m(a,b,c):
+def _F1m(a,b,c):
     """
     Helper function that computes function $F_1$ which is required to compute
     the analytical solution of the Mean kurtosis.
@@ -255,7 +255,7 @@ def F1m(a,b,c):
     if np.sum(cond2)!=0:
         L1 = a[cond2]
         L3 = c[cond2]
-        F1[cond2] = F2m(L3, L1, L1) / 2
+        F1[cond2] = _F2m(L3, L1, L1) / 2
 
     # Resolve possible sigularity a==c 
     cond3 = np.logical_and(~cond0, np.logical_and(abs(a - c) < er,
@@ -263,7 +263,7 @@ def F1m(a,b,c):
     if np.sum(cond3)!=0:
         L1 = a[cond3]
         L2 = b[cond3]
-        F1[cond3] = F2m(L2, L1, L1) / 2
+        F1[cond3] = _F2m(L2, L1, L1) / 2
 
     # Resolve possible sigularity a==b and a==c
     cond4 = np.logical_and(~cond0, np.logical_and(abs(a - c) < er,
@@ -274,7 +274,7 @@ def F1m(a,b,c):
     return F1
 
 
-def F2m(a,b,c):
+def _F2m(a,b,c):
     """
     Helper function that computes function $F_2$ which is required to compute
     the analytical solution of the Mean kurtosis.
@@ -569,12 +569,12 @@ def _MK_analytical_solution(dki_params):
         Wyyzz[vox] = Wrotate(kt[vox], evecs[vox], [1, 1, 2, 2])
 
     # Compute MK
-    MeanKurt = F1m(evals[..., 0], evals[..., 1], evals[..., 2])*Wxxxx + \
-               F1m(evals[..., 1], evals[..., 0], evals[..., 2])*Wyyyy + \
-               F1m(evals[..., 2], evals[..., 1], evals[..., 0])*Wzzzz + \
-               F2m(evals[..., 0], evals[..., 1], evals[..., 2])*Wyyzz + \
-               F2m(evals[..., 1], evals[..., 0], evals[..., 2])*Wxxzz + \
-               F2m(evals[..., 2], evals[..., 1], evals[..., 0])*Wxxyy
+    MeanKurt = _F1m(evals[..., 0], evals[..., 1], evals[..., 2])*Wxxxx + \
+               _F1m(evals[..., 1], evals[..., 0], evals[..., 2])*Wyyyy + \
+               _F1m(evals[..., 2], evals[..., 1], evals[..., 0])*Wzzzz + \
+               _F2m(evals[..., 0], evals[..., 1], evals[..., 2])*Wyyzz + \
+               _F2m(evals[..., 1], evals[..., 0], evals[..., 2])*Wxxzz + \
+               _F2m(evals[..., 2], evals[..., 1], evals[..., 0])*Wxxyy
 
     MeanKurt = MeanKurt.reshape(outshape)
 
@@ -734,7 +734,7 @@ def apparent_kurtosis_coef(dki_params, sphere, min_diffusivity=0,
                                          min_diffusivity=min_diffusivity,
                                          min_kurtosis=min_kurtosis)
 
-    # reshape data according to input data 
+    # reshape data according to input data
     AKC = AKC.reshape((outshape + (len(V),)))
 
     return AKC
@@ -778,6 +778,9 @@ def _directional_kurtosis(dt, MD, kt, V, min_diffusivity=0, min_kurtosis=-1):
     2 * V[:, 0] * V[:, 2] * dt[3] + \
     2 * V[:, 1] * V[:, 2] * dt[4] + \
     V[:, 2] * V[:, 2] * dt[5]
+    
+    if not min_diffusivity == None:
+        ADC = ADC.clip(min_diffusivity)
 
     AKC = V[:, 0] * V[:, 0] * V[:, 0] * V[:, 0] * kt[0] + \
     V[:, 1] * V[:, 1] * V[:, 1] * V[:, 1] * kt[1] + \
@@ -794,6 +797,9 @@ def _directional_kurtosis(dt, MD, kt, V, min_diffusivity=0, min_kurtosis=-1):
     12 * V[:, 0] * V[:, 0] * V[:, 1] * V[:, 2] * kt[12] + \
     12 * V[:, 0] * V[:, 1] * V[:, 1] * V[:, 2] * kt[13] + \
     12 * V[:, 0] * V[:, 1] * V[:, 2] * V[:, 2] * kt[14]
+    
+    if not min_diffusivity == None:
+        AKC = AKC.clip(min_kurtosis)
 
     return (MD/ADC) ** 2 * AKC
 

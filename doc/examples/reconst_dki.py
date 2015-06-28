@@ -258,9 +258,14 @@ as the mean kurtosis (MK), the axial kurtosis (AD) and the radial kurtosis
 
 from dipy.core.sphere import Sphere
 
-MK = dkifit.mk(Sphere(xyz=gtab.bvecs[gtab.bvals > 0]))
+sph = Sphere(xyz=gtab.bvecs[gtab.bvals>0])
+
+from dipy.reconst.dki import mean_kurtosis
+
+MK = mean_kurtosis(dkifit.model_params, sphere=sph)
 
 """
+MK = dkifit.mk
 RK = dkifit.rk
 AK = dkifit.ak
 """
