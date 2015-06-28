@@ -261,6 +261,7 @@ def test_MK():
     MRef = np.zeros((2, 2, 2))
     MRef[0, 0, 0] = MRef[0, 0, 1] = MRef[0, 1, 0] = Kref_sphere
     MRef[0, 1, 1] = MRef[1, 1, 0] = Kref_sphere
+    MRef[1, 1, 1] = MRef[1, 0, 0] = MRef[1, 0, 1] = float('nan')
 
     MK_multi = mean_kurtosis(MParam)
     assert_array_almost_equal(MK_multi, MRef)
