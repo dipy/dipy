@@ -341,7 +341,7 @@ def F2m(a,b,c):
         RD = rdpython(L1/L2, L1/L3, np.ones(len(L1)))
         F2[cond1] = (((L1+L2+L3) ** 2) / (3. * (L2-L3) ** 2)) * \
                     (((L2+L3) / (np.sqrt(L2*L3))) * RF + \
-                     ((2.*L1 - L2 - L3) / (3.*np.sqrt(L2*L3))) * RD - 2.)
+                     ((2.*L1-L2-L3) / (3.*np.sqrt(L2*L3))) * RD - 2.)
 
     cond2=np.logical_and(~cond0, np.logical_and(abs(b - c) < er,
                                                 abs(a - b) > er))

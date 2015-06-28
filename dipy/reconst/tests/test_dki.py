@@ -46,7 +46,7 @@ mevals = np.array([[0.00099, 0, 0], [0.00226, 0.00087, 0.00087],
                    [0.00099, 0, 0], [0.00226, 0.00087, 0.00087]])
 angles = [(80, 10), (80, 10), (20, 30), (20, 30)]
 fie = 0.49
-frac = [fie*50, (1 - fie)*50, fie*50, (1 - fie)*50]
+frac = [fie*50, (1-fie) * 50, fie*50, (1-fie) * 50]
 
 # Noise free simulates
 signal_crossing, dt, kt = multi_tensor_dki(gtab_2s, mevals, angles=angles,
@@ -63,18 +63,28 @@ simulations"""
 # simulate a spherical kurtosis tensor
 Di = 0.00099
 De = 0.00226
-mevals = np.array([[Di, Di, Di], [De, De, De]])
-frac = [50, 50]
-signal_spherical, dt, kt = multi_tensor_dki(gtab_2s, mevals, fractions=frac,
-                                            snr=None)
-evals, evecs = decompose_tensor(from_lower_triangular(dt))
-spherical_params = np.concatenate((evals, evecs[0], evecs[1], evecs[2], kt),
-                                   axis=0)
+mevals_sph = np.array([[Di, Di, Di], [De, De, De]])
+frac_sph = [50, 50]
+signal_spherical, dt_sph, kt_sph = multi_tensor_dki(gtab_2s, mevals_sph,
+                                                    fractions=frac_sph,
+                                                    snr=None)
+
+evals, evecs = decompose_tensor(from_lower_triangular(dt_sph))
+spherical_params = np.concatenate((evals, evecs[0], evecs[1], evecs[2],
+                                   kt_sph), axis=0)
 
 # Since KT is spherical, in all directions AKC and MK should be
 f = 0.5
 Dg = f*Di + (1-f)*De
 Kref_sphere = 3 * f * (1-f) * ((Di-De) / Dg) ** 2
+
+""" Simulation 3 - Multi-voxel simulations - 4 voxels are simulated """
+DWI = np.zeros((2, 2, 1, len(gtab_2s.bvals)))
+DWI[0, 0, 0] = DWI[0, 1, 0] = DWI[1, 0, 0] = DWI[1, 1, 0] = signal_crossing
+
+multi_params = np.zeros((2, 2, 1, 27))
+multi_params[0, 0, 0] = multi_params[0, 1, 0] = crossing_ref
+multi_params[1, 0, 0] = multi_params[1, 1, 0] = crossing_ref
 
 
 def test_dki_fits():
@@ -99,6 +109,13 @@ def test_dki_fits():
 
     assert_array_almost_equal(dki_params, crossing_ref)
 
+    # testing multi-voxels
+    dkiF_multi = dkiM.fit(DWI)
+    assert_array_almost_equal(dkiF_multi.model_params, multi_params)
+    
+    dkiF_multi = dki_wlsM.fit(DWI)
+    assert_array_almost_equal(dkiF_multi.model_params, multi_params)
+
 
 def test_apparent_kurtosis_coef():
     # Run apparent_kurtosis_coef function
@@ -116,11 +133,11 @@ def test_Wrotate():
     # tensor diagonal and check that is equal to the kurtosis tensor of the
     # same single fiber simulated directly to the x-axis
 
-    # Define single voxel simulate 
+    # Define single fiber simulate 
     mevals = np.array([[0.00099, 0, 0], [0.00226, 0.00087, 0.00087]])
     frac = [fie*100, (1 - fie)*100]
 
-    # simulate it not aligned to the x-axis
+    # simulate single fiber not aligned to the x-axis
     angles = [(45, 0), (45, 0)]
     signal, dt, kt = multi_tensor_dki(gtab_2s, mevals, angles=angles,
                                       fractions=frac, snr=None)
@@ -128,9 +145,10 @@ def test_Wrotate():
     evals, evecs = decompose_tensor(from_lower_triangular(dt))
 
     kt_rotated = dki.Wrotate(kt, evecs)  # Now coordinate system has diffusion
-                                         # tensor diagnol in x-axis
+                                         # tensor diagonal aligned with the
+                                         # x-axis
 
-    # Reference simulate directly aligned to the x-axis
+    # Reference simulation which is simulated directly aligned to the x-axis
     angles = (90, 0), (90, 0)
     signal, dt_ref, kt_ref = multi_tensor_dki(gtab_2s, mevals, angles=angles,
                                               fractions=frac, snr=None)
@@ -140,50 +158,74 @@ def test_Wrotate():
 
 def test_Wcons():
 
-    signal, dt, kt = multi_tensor_dki(gtab_2s, mevals, angles=angles,
-                                      fractions=frac, snr=None)
-
+    # Construct the 4D kurtosis tensor manualy from the crossing fiber kt
+    # simulate
     Wfit = np.zeros([3, 3, 3, 3])
 
-    Wfit[0,0,0,0] = kt[0]
+    # Wxxxx
+    Wfit[0, 0, 0, 0] = kt[0]
 
-    Wfit[1,1,1,1] = kt[1]
+    # Wyyyy
+    Wfit[1, 1, 1, 1] = kt[1]
 
-    Wfit[2,2,2,2] = kt[2]
+    # Wzzzz
+    Wfit[2, 2, 2, 2] = kt[2]
 
-    Wfit[0,0,0,1] = Wfit[0,0,1,0] = Wfit[0,1,0,0] = Wfit[1,0,0,0] = kt[3]
+    # Wxxxy
+    Wfit[0, 0, 0, 1] = Wfit[0, 0, 1, 0] = Wfit[0, 1, 0, 0] = kt[3]
+    Wfit[1, 0, 0, 0] = kt[3]
 
-    Wfit[0,0,0,2] = Wfit[0,0,2,0] = Wfit[0,2,0,0] = Wfit[2,0,0,0] = kt[4]
+    # Wxxxz
+    Wfit[0, 0, 0, 2] = Wfit[0, 0, 2, 0] = Wfit[0, 2, 0, 0] = kt[4]
+    Wfit[2, 0, 0, 0] = kt[4]
 
-    Wfit[0,1,1,1] = Wfit[1,0,1,1] = Wfit[1,1,1,0] = Wfit[1,1,0,1] = kt[5]
+    # Wxyyy
+    Wfit[0, 1, 1, 1] = Wfit[1, 0, 1, 1] = Wfit[1, 1, 1, 0] = kt[5]
+    Wfit[1, 1, 0, 1] = kt[5]
 
-    Wfit[1,1,1,2] = Wfit[1,2,1,1] = Wfit[2,1,1,1] = Wfit[1,1,2,1] = kt[6]    
+    # Wxxxz
+    Wfit[1, 1, 1, 2] = Wfit[1, 2, 1, 1] = Wfit[2, 1, 1, 1] = kt[6]
+    Wfit[1, 1, 2, 1] = kt[6]    
 
-    Wfit[0,2,2,2] = Wfit[2,2,2,0] = Wfit[2,0,2,2] = Wfit[2,2,0,2] = kt[7]
+    # Wxzzz
+    Wfit[0, 2, 2, 2] = Wfit[2, 2, 2, 0] = Wfit[2, 0, 2, 2] = kt[7]
+    Wfit[2, 2, 0, 2] = kt[7]
 
-    Wfit[1,2,2,2] = Wfit[2,2,2,1] = Wfit[2,1,2,2] = Wfit[2,2,1,2] = kt[8]
+    # Wyzzz
+    Wfit[1, 2, 2, 2] = Wfit[2, 2, 2, 1] = Wfit[2, 1, 2, 2] = kt[8]
+    Wfit[2, 2, 1, 2] = kt[8]
 
-    Wfit[0,0,1,1] = Wfit[0,1,0,1] = Wfit[0,1,1,0] = Wfit[1,0,0,1] = kt[9]
-    Wfit[1,0,1,0] = Wfit[1,1,0,0] = kt[9]
+    # Wxxyy
+    Wfit[0, 0, 1, 1] = Wfit[0, 1, 0, 1] = Wfit[0, 1, 1, 0] = kt[9]
+    Wfit[1, 0, 0, 1] = Wfit[1, 0, 1, 0] = Wfit[1, 1, 0, 0] = kt[9]
 
-    Wfit[0,0,2,2] = Wfit[0,2,0,2] = Wfit[0,2,2,0] = Wfit[2,0,0,2] = kt[10]
-    Wfit[2,0,2,0] = Wfit[2,2,0,0] = kt[10]
+    # Wxxzz
+    Wfit[0, 0, 2, 2] = Wfit[0, 2, 0, 2] = Wfit[0, 2, 2, 0] = kt[10]
+    Wfit[2, 0, 0, 2] = Wfit[2, 0, 2, 0] = Wfit[2, 2, 0, 0] = kt[10]
 
-    Wfit[1,1,2,2] = Wfit[1,2,1,2] = Wfit[1,2,2,1] = Wfit[2,1,1,2] = kt[11]
-    Wfit[2,2,1,1] = Wfit[2,1,2,1] = kt[11]
+    # Wyyzz
+    Wfit[1, 1, 2, 2] = Wfit[1, 2, 1, 2] = Wfit[1, 2, 2, 1] = kt[11]
+    Wfit[2, 1, 1, 2] = Wfit[2, 2, 1, 1] = Wfit[2, 1, 2, 1] = kt[11]
 
-    Wfit[0,0,1,2] = Wfit[0,0,2,1] = Wfit[0,1,0,2] = Wfit[0,1,2,0] = kt[12]
-    Wfit[0,2,0,1] = Wfit[0,2,1,0] = Wfit[1,0,0,2] = Wfit[1,0,2,0] = kt[12]
-    Wfit[1,2,0,0] = Wfit[2,0,0,1] = Wfit[2,0,1,0] = Wfit[2,1,0,0] = kt[12]
+    # Wxxyz
+    Wfit[0, 0, 1, 2] = Wfit[0, 0, 2, 1] = Wfit[0, 1, 0, 2] = kt[12]
+    Wfit[0, 1, 2, 0] = Wfit[0, 2, 0, 1] = Wfit[0, 2, 1, 0] = kt[12]
+    Wfit[1, 0, 0, 2] = Wfit[1, 0, 2, 0] = Wfit[1, 2, 0, 0] = kt[12]
+    Wfit[2, 0, 0, 1] = Wfit[2, 0, 1, 0] = Wfit[2, 1, 0, 0] = kt[12]
 
-    Wfit[0,1,1,2] = Wfit[0,1,2,1] = Wfit[0,2,1,1] = Wfit[1,0,1,2] = kt[13]
-    Wfit[1,1,0,2] = Wfit[1,1,2,0] = Wfit[1,2,0,1] = Wfit[1,2,1,0] = kt[13]
-    Wfit[2,0,1,1] = Wfit[2,1,0,1] = Wfit[2,1,1,0] = Wfit[1,0,2,1] = kt[13]
+    # Wxyyz
+    Wfit[0, 1, 1, 2] = Wfit[0, 1, 2, 1] = Wfit[0, 2, 1, 1] = kt[13]
+    Wfit[1, 0, 1, 2] = Wfit[1, 1, 0, 2] = Wfit[1, 1, 2, 0] = kt[13]
+    Wfit[1, 2, 0, 1] = Wfit[1, 2, 1, 0] = Wfit[2, 0, 1, 1] = kt[13]
+    Wfit[2, 1, 0, 1] = Wfit[2, 1, 1, 0] = Wfit[1, 0, 2, 1] = kt[13]
 
-    Wfit[0,1,2,2] = Wfit[0,2,1,2] = Wfit[0,2,2,1] = Wfit[1,0,2,2] = kt[14]
-    Wfit[1,2,0,2] = Wfit[1,2,2,0] = Wfit[2,0,1,2] = Wfit[2,0,2,1] = kt[14]
-    Wfit[2,1,0,2] = Wfit[2,1,2,0] = Wfit[2,2,0,1] = Wfit[2,2,1,0] = kt[14]
+    # Wxyzz
+    Wfit[0, 1, 2, 2] = Wfit[0, 2, 1, 2] = Wfit[0, 2, 2, 1] = kt[14]
+    Wfit[1, 0, 2, 2] = Wfit[1, 2, 0, 2] = Wfit[1, 2, 2, 0] = kt[14]
+    Wfit[2, 0, 1, 2] = Wfit[2, 0, 2, 1] = Wfit[2, 1, 0, 2] = kt[14]
+    Wfit[2, 1, 2, 0] = Wfit[2, 2, 0, 1] = Wfit[2, 2, 1, 0] = kt[14]
 
+    # Function to be tested
     Wcons = dki.Wcons(kt)
 
     Wfit = Wfit.reshape(-1)
@@ -210,12 +252,25 @@ def test_MK():
     MK_as = mean_kurtosis(dkiF.model_params)
 
     assert_almost_equal(Kref_sphere, MK_as)
+    
+    # multi spherical simulations
+    MParam = np.zeros((2, 2, 2, 27))
+    MParam[0, 0, 0] = MParam[0, 0, 1] = MParam[0, 1, 0] = spherical_params
+    MParam[0, 1, 1] = MParam[1, 1, 0] = spherical_params
+    # MParam[1, 1, 1], MParam[1, 0, 0], and MParam[1, 0, 1] remains zero
+    MRef = np.zeros((2, 2, 2))
+    MRef[0, 0, 0] = MRef[0, 0, 1] = MRef[0, 1, 0] = Kref_sphere
+    MRef[0, 1, 1] = MRef[1, 1, 0] = Kref_sphere
+
+    MK_multi = mean_kurtosis(MParam)
+    assert_array_almost_equal(MK_multi, MRef)
+
+    MK_multi = mean_kurtosis(MParam, sph)
+    assert_array_almost_equal(MK_multi, MRef)
 
 
 def test_compare_MK_method():
     """ tests if analytical solution of MK is equal to the exact solution"""
-    signal, dt, kt = multi_tensor_dki(gtab_2s, mevals, angles=angles,
-                                      fractions=frac, snr=None)
 
     # OLS fitting
     dkiM = dki.DKIModel(gtab_2s)
