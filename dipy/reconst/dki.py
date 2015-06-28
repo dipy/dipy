@@ -229,11 +229,11 @@ def F1m(a,b,c):
     # Initialize F1
     F1 = np.empty(a.shape)
 
-    # zero for non plausible diffusion values, i.e. a <= 0 or b <= 0 or c <= 0
+    # NaN for non plausible diffusion values, i.e. a <= 0 or b <= 0 or c <= 0
     abc = np.array((a, b, c))
     cond0 = np.logical_and.reduce(abc<=0)
     if np.sum(cond0)!=0:
-        F1[cond0] = 0
+        F1[cond0] = float('nan')
 
     # Apply formula for non problematic plaussible cases, i.e. a!=b and b!=c
     cond1 = np.logical_and(~cond0, np.logical_and(abs(a - b) > er,
@@ -325,11 +325,11 @@ def F2m(a,b,c):
     # Initialize F2
     F2 = np.empty(a.shape)
 
-    # zero for non plausible diffusion values, i.e. a <= 0 or b <= 0 or c <= 0
+    # NaN for non plausible diffusion values, i.e. a <= 0 or b <= 0 or c <= 0
     abc = np.array((a, b, c))    
     cond0 = np.logical_and.reduce(abc<=0)
     if np.sum(cond0)!=0:
-        F2[cond0] = 0
+        F2[cond0] = float('nan')
 
     # Apply formula for non problematic plaussible cases, i.e. b!=c
     cond1=np.logical_and(~cond0, (abs(b - c) > er))
