@@ -1,6 +1,4 @@
-"""
-Testing DKI
-"""
+""" Testing DKI """
 
 from __future__ import division, print_function, absolute_import
 
@@ -127,7 +125,7 @@ def test_apparent_kurtosis_coef():
         assert_array_almost_equal(AKC[d], Kref_sphere)
 
 
-def test_Wrotate():
+def test_Wrotate_single_fiber():
 
     # Rotate the kurtosis tensor of single fiber simulate to the diffusion
     # tensor diagonal and check that is equal to the kurtosis tensor of the
@@ -135,6 +133,7 @@ def test_Wrotate():
 
     # Define single fiber simulate 
     mevals = np.array([[0.00099, 0, 0], [0.00226, 0.00087, 0.00087]])
+    fie = 0.49
     frac = [fie*100, (1 - fie)*100]
 
     # simulate single fiber not aligned to the x-axis
@@ -152,6 +151,41 @@ def test_Wrotate():
     angles = (90, 0), (90, 0)
     signal, dt_ref, kt_ref = multi_tensor_dki(gtab_2s, mevals, angles=angles,
                                               fractions=frac, snr=None)
+
+    assert_array_almost_equal(kt_rotated, kt_ref)
+
+
+def test_Wrotate_crossing_fibers():
+    
+    # Test 2 - simulate crossing fibers intersecting at 70 degrees.
+    # In this case diffusion tensor principal eigenvector will be aligned in the
+    # middle of the crossing fibers. Thus haver rotating the kurtosis tensor,
+    # this will be equal to a kurtosis tensor simulate of crossing fibers both
+    # deviating 35 degrees from the x-axis. Crossing fibers will be aligned to
+    # the x-y plane because smaller eigenvalue prependicular to crossings
+    # is aligned to the z-axis.
+    
+    # Simulate the crossing fiber
+    angles = [(90, 30), (90, 30), (20, 30), (20, 30)]
+    fie = 0.49
+    frac = [fie*50, (1-fie) * 50, fie*50, (1-fie) * 50]
+    mevals = np.array([[0.00099, 0, 0], [0.00226, 0.00087, 0.00087],
+                       [0.00099, 0, 0], [0.00226, 0.00087, 0.00087]])
+
+    signal, dt, kt = multi_tensor_dki(gtab_2s, mevals, angles=angles,
+                                      fractions=frac, snr=None)
+
+    evals, evecs = decompose_tensor(from_lower_triangular(dt))
+
+    kt_rotated = dki.Wrotate(kt, evecs)  # Now coordinate system has diffusion
+                                         # tensor diagonal aligned with the
+                                         # x-axis
+
+    # Simulate the reference kurtosis tensor
+    angles = [(90, 35), (90, 35), (90, -35), (90, -35)]
+
+    signal, dt, kt_ref = multi_tensor_dki(gtab_2s, mevals, angles=angles,
+                                          fractions=frac, snr=None)
 
     assert_array_almost_equal(kt_rotated, kt_ref)
 

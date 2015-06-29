@@ -76,10 +76,10 @@ def carlson_rf(x, y, z, errtol=3e-4):
         yn = y[v]
         zn = z[v]
         An = (xn + yn + zn) / 3.0
-        Q = (3.*errtol) ** (-1/6) * np.max([np.abs(An - xn), np.abs(An - yn),
+        Q = (3.*errtol) ** (-1/6.) * np.max([np.abs(An - xn), np.abs(An - yn),
                                             np.abs(An - zn)])
         # Convergence condition
-        while 4**(-n) * Q > abs(An):          
+        while 4.**(-n) * Q > abs(An):          
             xnroot = np.sqrt(xn)
             ynroot = np.sqrt(yn)
             znroot = np.sqrt(zn)
