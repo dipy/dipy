@@ -15,7 +15,9 @@ from dipy.align.imaffine import (align_centers_of_mass,
                                  transform_image,
                                  MattesMIMetric,
                                  AffineRegistration)
-from dipy.align.transforms import regtransforms
+from dipy.align.transforms import (TranslationTransform3D,
+                                   RigidTransform3D,
+                                   AffineTransform3D)
 
 """
 Let's fetch two b0 volumes, the static image will be the b0 from the Stanford
@@ -37,6 +39,35 @@ moving = np.array(nib_syn_b0.get_data())
 moving_grid2world = nib_syn_b0.get_affine()
 
 """
+We can see that the images are far from aligned by drawing one on top of
+the other. The images don't even have the same number of voxels, so in order
+to draw one on top of the other we need to resample the moving image on a grid
+of the same dimensions as the static image, we can do this by "transforming"
+the moving image using an identity transform
+"""
+
+identity = np.eye(4)
+resampled = transform_image(static, static_grid2world,
+                            moving, moving_grid2world, identity)
+regtools.overlay_slices(static, resampled, None, 0,
+                        "Static", "Moving", "resampled_0.png")
+regtools.overlay_slices(static, resampled, None, 1,
+                        "Static", "Moving", "resampled_1.png")
+regtools.overlay_slices(static, resampled, None, 2,
+                        "Static", "Moving", "resampled_2.png")
+
+"""
+.. figure:: resampled_0.png
+   :align: center
+.. figure:: resampled_1.png
+   :align: center
+.. figure:: resampled_2.png
+   :align: center
+
+   **Input images before alignment**.
+"""
+
+"""
 We can obtain a very rough (and fast) registration by just aligning the centers
 of mass of the two images
 """
@@ -45,26 +76,26 @@ c_of_mass = align_centers_of_mass(static, static_grid2world,
                                   moving, moving_grid2world)
 
 """
-We can now warp the moving image and draw it on top of the static image,
+We can now transform the moving image and draw it on top of the static image,
 registration is not likely to be good, but at least they will occupy roughly
 the same space
 """
 
-warped = transform_image(static, static_grid2world,
-                         moving, moving_grid2world, c_of_mass)
-regtools.overlay_slices(static, warped, None, 0,
-                        "Static", "Warped", "warped_com_0.png")
-regtools.overlay_slices(static, warped, None, 1,
-                        "Static", "Warped", "warped_com_1.png")
-regtools.overlay_slices(static, warped, None, 2,
-                        "Static", "Warped", "warped_com_2.png")
+transformed = transform_image(static, static_grid2world,
+                              moving, moving_grid2world, c_of_mass)
+regtools.overlay_slices(static, transformed, None, 0,
+                        "Static", "Transformed", "transformed_com_0.png")
+regtools.overlay_slices(static, transformed, None, 1,
+                        "Static", "Transformed", "transformed_com_1.png")
+regtools.overlay_slices(static, transformed, None, 2,
+                        "Static", "Transformed", "transformed_com_2.png")
 
 """
-.. figure:: warped_com_0.png
+.. figure:: transformed_com_0.png
    :align: center
-.. figure:: warped_com_1.png
+.. figure:: transformed_com_1.png
    :align: center
-.. figure:: warped_com_2.png
+.. figure:: transformed_com_2.png
    :align: center
 
    **Registration result by aligning the centers of mass of the images**.
@@ -76,7 +107,7 @@ we will refine it by looking for an affine transform. We first create the
 similarity metric (Mutual Information) to be used. We need to specify the
 number of bins to be used to discretize the joint and marginal probability
 distribution functions (PDF), a typical value is 32. We also need to specify
-the percentage (an integer in (0, 100])of voxels to be used for computing the
+the percentage (an integer in (0, 100]) of voxels to be used for computing the
 PDFs, the most accurate registration will be obtained by using all voxels, but
 it is also the most time-consuming choice. We specify full sampling by passing
 None instead of an integer
@@ -143,7 +174,7 @@ dimension (either 2 or 3) of the image we are working with (since we are
 aligning volumes, the dimension is 3)
 """
 
-transform = regtransforms[('TRANSLATION', 3)]
+transform = TranslationTransform3D()
 params0 = None
 starting_affine = c_of_mass
 trans = affreg.optimize(static, moving, transform, params0,
@@ -155,21 +186,21 @@ If we look at the result, we can see that this translation is much better than
 simply aligning the centers of mass
 """
 
-warped = transform_image(static, static_grid2world,
-                         moving, moving_grid2world, trans)
-regtools.overlay_slices(static, warped, None, 0,
-                        "Static", "Warped", "warped_trans_0.png")
-regtools.overlay_slices(static, warped, None, 1,
-                        "Static", "Warped", "warped_trans_1.png")
-regtools.overlay_slices(static, warped, None, 2,
-                        "Static", "Warped", "warped_trans_2.png")
+transformed = transform_image(static, static_grid2world,
+                              moving, moving_grid2world, trans)
+regtools.overlay_slices(static, transformed, None, 0,
+                        "Static", "Transformed", "transformed_trans_0.png")
+regtools.overlay_slices(static, transformed, None, 1,
+                        "Static", "Transformed", "transformed_trans_1.png")
+regtools.overlay_slices(static, transformed, None, 2,
+                        "Static", "Transformed", "transformed_trans_2.png")
 
 """
-.. figure:: warped_trans_0.png
+.. figure:: transformed_trans_0.png
    :align: center
-.. figure:: warped_trans_1.png
+.. figure:: transformed_trans_1.png
    :align: center
-.. figure:: warped_trans_2.png
+.. figure:: transformed_trans_2.png
    :align: center
 
    **Registration result by translating the moving image, using MI**.
@@ -180,7 +211,7 @@ Now lets refine with a rigid transform (this may even modify our previously
 found optimal translation)
 """
 
-transform = regtransforms[('RIGID', 3)]
+transform = RigidTransform3D()
 params0 = None
 starting_affine = trans
 rigid = affreg.optimize(static, moving, transform, params0,
@@ -191,21 +222,21 @@ rigid = affreg.optimize(static, moving, transform, params0,
 This produces a slight rotation, and the images are now better aligned
 """
 
-warped = transform_image(static, static_grid2world,
-                         moving, moving_grid2world, rigid)
-regtools.overlay_slices(static, warped, None, 0,
-                        "Static", "Warped", "warped_rigid_0.png")
-regtools.overlay_slices(static, warped, None, 1,
-                        "Static", "Warped", "warped_rigid_1.png")
-regtools.overlay_slices(static, warped, None, 2,
-                        "Static", "Warped", "warped_rigid_2.png")
+transformed = transform_image(static, static_grid2world,
+                              moving, moving_grid2world, rigid)
+regtools.overlay_slices(static, transformed, None, 0,
+                        "Static", "Transformed", "transformed_rigid_0.png")
+regtools.overlay_slices(static, transformed, None, 1,
+                        "Static", "Transformed", "transformed_rigid_1.png")
+regtools.overlay_slices(static, transformed, None, 2,
+                        "Static", "Transformed", "transformed_rigid_2.png")
 
 """
-.. figure:: warped_rigid_0.png
+.. figure:: transformed_rigid_0.png
    :align: center
-.. figure:: warped_rigid_1.png
+.. figure:: transformed_rigid_1.png
    :align: center
-.. figure:: warped_rigid_2.png
+.. figure:: transformed_rigid_2.png
    :align: center
 
    **Registration result with a rigid transform, using Mutual Information**.
@@ -217,7 +248,7 @@ and shear), it is safer to fit more degrees of freedom now, since we must be
 very close to the optimal transform
 """
 
-transform = regtransforms[('AFFINE', 3)]
+transform = AffineTransform3D()
 params0 = None
 starting_affine = rigid
 affine = affreg.optimize(static, moving, transform, params0,
@@ -228,21 +259,21 @@ affine = affreg.optimize(static, moving, transform, params0,
 This results in a slight shear and scale
 """
 
-warped = transform_image(static, static_grid2world,
-                         moving, moving_grid2world, affine)
-regtools.overlay_slices(static, warped, None, 0,
-                        "Static", "Warped", "warped_affine_0.png")
-regtools.overlay_slices(static, warped, None, 1,
-                        "Static", "Warped", "warped_affine_1.png")
-regtools.overlay_slices(static, warped, None, 2,
-                        "Static", "Warped", "warped_affine_2.png")
+transformed = transform_image(static, static_grid2world,
+                              moving, moving_grid2world, affine)
+regtools.overlay_slices(static, transformed, None, 0,
+                        "Static", "Transformed", "transformed_affine_0.png")
+regtools.overlay_slices(static, transformed, None, 1,
+                        "Static", "Transformed", "transformed_affine_1.png")
+regtools.overlay_slices(static, transformed, None, 2,
+                        "Static", "Transformed", "transformed_affine_2.png")
 
 """
-.. figure:: warped_affine_0.png
+.. figure:: transformed_affine_0.png
    :align: center
-.. figure:: warped_affine_1.png
+.. figure:: transformed_affine_1.png
    :align: center
-.. figure:: warped_affine_2.png
+.. figure:: transformed_affine_2.png
    :align: center
 
    **Registration result with an affine transform, using Mutual Information**.

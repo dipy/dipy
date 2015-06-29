@@ -266,7 +266,7 @@ class MattesMIMetric(MattesBase):
         self._update(params, True)
         return -1 * self.metric_grad
 
-    def value_and_gradient(self, params):
+    def distance_and_gradient(self, params):
         r""" Numeric value of the metric and its gradient at given parameters
 
         Parameters
@@ -563,7 +563,7 @@ class AffineRegistration(object):
                                 method=self.method, jac=self.metric.gradient,
                                 options=self.options)
             else:
-                opt = Optimizer(self.metric.value_and_gradient, self.params0,
+                opt = Optimizer(self.metric.distance_and_gradient, self.params0,
                                 method=self.method, jac=True,
                                 options=self.options)
             params = opt.xopt
