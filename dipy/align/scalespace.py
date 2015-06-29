@@ -1,8 +1,6 @@
 from . import floating
 import numpy as np
 import numpy.linalg as npl
-import scipy as sp
-import scipy.ndimage as ndimage
 import scipy.ndimage.filters as filters
 
 
@@ -256,10 +254,10 @@ class ScaleSpace(object):
     def get_affine(self, level):
         r"""Voxel-to-space transformation at a given level
 
-        Returns the voxel-to-space transformation associated with the sub-sampled
-        image at a particular resolution of the scale space (note that this
-        object does not explicitly subsample the smoothed images, but only
-        provides the properties the sub-sampled images must have).
+        Returns the voxel-to-space transformation associated with the
+        sub-sampled image at a particular resolution of the scale space (note
+        that this object does not explicitly subsample the smoothed images, but
+        only provides the properties the sub-sampled images must have).
 
         Parameters
         ----------
@@ -276,10 +274,10 @@ class ScaleSpace(object):
     def get_affine_inv(self, level):
         r"""Space-to-voxel transformation at a given level
 
-        Returns the space-to-voxel transformation associated with the sub-sampled
-        image at a particular resolution of the scale space (note that this
-        object does not explicitly subsample the smoothed images, but only
-        provides the properties the sub-sampled images must have).
+        Returns the space-to-voxel transformation associated with the
+        sub-sampled image at a particular resolution of the scale space (note
+        that this object does not explicitly subsample the smoothed images, but
+        only provides the properties the sub-sampled images must have).
 
         Parameters
         ----------

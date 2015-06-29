@@ -171,8 +171,10 @@ class MattesMIMetric(MattesBase):
         # Update the joint and marginal intensity distributions
         if self.samples is None:
             # Warp the moving image (dense case)
-            self.transformed = transform_image(self.static, self.static_grid2world,
-                                   self.moving, self.moving_grid2world, M)
+            self.transformed = transform_image(self.static,
+                                               self.static_grid2world,
+                                               self.moving,
+                                               self.moving_grid2world, M)
             self.transformed = self.transformed.astype(np.float64)
             static_values = self.static
             moving_values = self.transformed
@@ -205,9 +207,10 @@ class MattesMIMetric(MattesBase):
                 # because we know that all grid cells must be processed
                 sampling_info = grid_to_world
             else:
-                # Compute the gradient of the moving img. at the sampling points
+                # Compute the gradient of moving at the sampling points
                 # which are already given in physical space coordinates
-                mgrad, inside = vf.sparse_gradient(self.moving.astype(np.float32),
+                moving32 = self.moving.astype(np.float32)
+                mgrad, inside = vf.sparse_gradient(moving32,
                                                    sp_to_moving,
                                                    self.moving_spacing,
                                                    self.samples)
@@ -377,9 +380,9 @@ class AffineRegistration(object):
         static : array, shape (S, R, C) or (R, C)
             the image to be used as reference during optimization.
         moving : array, shape (S', R', C') or (R', C')
-            the image to be used as "moving" during optimization. The dimensions
-            of the static (S, R, C) and moving (S', R', C') images do not need to
-            be the same.
+            the image to be used as "moving" during optimization. The
+            dimensions of the static (S, R, C) and moving (S', R', C') images
+            do not need to be the same.
         transform : instance of Transform
             the transformation with respect to whose parameters the gradient
             must be computed
@@ -460,8 +463,9 @@ class AffineRegistration(object):
                                         static_spacing, self.ss_sigma_factor,
                                         False)
 
-    def optimize(self, static, moving, transform, params0, static_grid2world=None,
-                 moving_grid2world=None, starting_affine=None):
+    def optimize(self, static, moving, transform, params0,
+                 static_grid2world=None, moving_grid2world=None,
+                 starting_affine=None):
         r''' Starts the optimization process
 
         Parameters
@@ -506,8 +510,9 @@ class AffineRegistration(object):
         T : array, shape (dim+1, dim+1)
             the matrix representing the optimized affine transform
         '''
-        self._init_optimizer(static, moving, transform, params0, static_grid2world,
-                             moving_grid2world, starting_affine)
+        self._init_optimizer(static, moving, transform, params0,
+                             static_grid2world, moving_grid2world,
+                             starting_affine)
         del starting_affine  # Now we must refer to self.starting_affine
 
         # Multi-resolution iterations
@@ -526,12 +531,13 @@ class AffineRegistration(object):
             current_static_grid2world = self.static_ss.get_affine(level)
 
             current_static = transform_image(tuple(current_static_shape),
-                                      current_static_grid2world, smooth_static,
-                                      original_static_grid2world, None, False)
+                                             current_static_grid2world,
+                                             smooth_static,
+                                             original_static_grid2world,
+                                             None, False)
 
             # The moving image is full resolution
             current_moving_grid2world = original_moving_grid2world
-            current_moving_spacing = self.moving_ss.get_spacing(level)
 
             current_moving = self.moving_ss.get_image(level)
 
@@ -673,7 +679,7 @@ def align_centers_of_mass(static, static_grid2world, moving,
 
 
 def align_geometric_centers(static, static_grid2world, moving,
-                          moving_grid2world):
+                            moving_grid2world):
     r""" Transformation to align the geometric center of the input images
 
     With "geometric center" of a volume we mean the physical coordinates of
