@@ -27,9 +27,8 @@ from ..core.onetime import auto_attr
 from .base import ReconstModel
 
 
-def carlson_rf(x, y, z):
-    r"""
-    Computes the Carlson's incomplete elliptic integral of the first kind
+def carlson_rf(x, y, z, errtol=3e-4):
+    r""" Computes the Carlson's incomplete elliptic integral of the first kind
     defined as:
 
     .. math::
@@ -44,6 +43,9 @@ def carlson_rf(x, y, z):
         Second independent variable of the integral.
     z : ndarray (...)
         Third independent variable of the integral.
+    errtol : float
+        Error tolerance. Integral is computed with relative error less in
+        magnitude than the defined value
     
     Returns
     -------
@@ -53,6 +55,11 @@ def carlson_rf(x, y, z):
     Note
     -----
     x, y, and z have to be nonnegative and at most one of them is zero.
+
+    References
+    ----------
+    .. [1] Carlson, B.C., 1994. Numerical computation of real or complex
+           elliptic integrals. arXiv:math/9409227 [math.CA]
     """
     d1mach=np.zeros(5)
     d1mach[0]=1.1*10**(-308)
@@ -101,8 +108,7 @@ def carlson_rf(x, y, z):
 
 
 def carlson_rd(x, y, z):
-    r"""
-    Computes the Carlson's incomplete elliptic integral of the second kind
+    r""" Computes the Carlson's incomplete elliptic integral of the second kind
     defined as:
 
     .. math::
@@ -222,46 +228,38 @@ def C2233(a,b,c):
     return Carray  
 
 
-def _F1m(a,b,c):
-    """
-    Helper function that computes function $F_1$ which is required to compute
-    the analytical solution of the Mean kurtosis.
+def _F1m(a, b, c):
+    """ Helper function that computes function $F_1$ which is required to
+    compute the analytical solution of the Mean kurtosis.
     
     Parameters
     ----------
-    a : ndarray (...)
-        Array containing the first variable of function $F_1$ for all signal
-        voxels. This variable will be one of the three diffusion tensor
-        eigenvalues.
-    b : ndarray (...)
-        Array containing the second variable of function $F_1$ for all signal
-        voxels. This variable will be one of the three diffusion tensor
-        eigenvalues.
-    c : ndarray (...)
-        Array containing the thrid variable of function $F_1$ for all signal
-        voxels. This variable will be one of the three diffusion tensor
-        eigenvalues.
+    a : ndarray (n,)
+        Array containing the values of parameter $\lambda_1$ of function $F_1$ 
+    b : ndarray (n,)
+        Array containing the values of parameter $\lambda_2$ of function $F_1$
+    c : ndarray (n,)
+        Array containing the values of parameter $\lambda_3$ of function $F_1$
         
     Returns
     -------
-    F1 : array
-       Value of the function $F_1$ given the parameters a, b, and c
+    F1 : ndarray (n,)
+       Value of the function $F_1$ for all elements of the arrays a, b, and c
 
     Notes
     --------
-    Function F_1 is defined as [1]_:
+    Function $F_1$ is defined as [1]_:
 
-    \begin{multline}
-    F_1(\lambda_1,\lambda_2,\lambda_3)=
-    \frac{(\lambda_1+\lambda_2+\lambda_3)^2}
-    {18(\lambda_1-\lambda_2)(\lambda_1-\lambda_3)}
-    [\frac{\sqrt{\lambda_2\lambda_3}}{\lambda_1}
-    R_F(\frac{\lambda_1}{\lambda_2},\frac{\lambda_1}{\lambda_3},1)+\\
-    \frac{3\lambda_1^2-\lambda_1\lambda_2-\lambda_2\lambda_3-
-    \lambda_1\lambda_3}
-    {3\lambda_1 \sqrt{\lambda_2 \lambda_3}}
-    R_D(\frac{\lambda_1}{\lambda_2},\frac{\lambda_1}{\lambda_3},1)-1 ]
-    \end{multline}
+    .. math::
+        F_1(\lambda_1,\lambda_2,\lambda_3)=
+        \frac{(\lambda_1+\lambda_2+\lambda_3)^2}
+        {18(\lambda_1-\lambda_2)(\lambda_1-\lambda_3)}
+        [\frac{\sqrt{\lambda_2\lambda_3}}{\lambda_1}
+        R_F(\frac{\lambda_1}{\lambda_2},\frac{\lambda_1}{\lambda_3},1)+\\
+        \frac{3\lambda_1^2-\lambda_1\lambda_2-\lambda_2\lambda_3-
+        \lambda_1\lambda_3}
+        {3\lambda_1 \sqrt{\lambda_2 \lambda_3}}
+        R_D(\frac{\lambda_1}{\lambda_2},\frac{\lambda_1}{\lambda_3},1)-1 ]
 
     References
     ----------
@@ -270,7 +268,8 @@ def _F1m(a,b,c):
            kurtosis imaging. Magn Reson Med. 65(3), 823-836
     """
     # Float error used to compare two floats, abs(l1 - l2) < er for l1 = l2 
-    er = 1e-10
+    er = np.finfo(a[0]).eps * 1e3  # Error defined three order of magnitude of 
+                                   # system's epslon
 
     # Initialize F1
     F1 = np.empty(a.shape)
@@ -320,44 +319,36 @@ def _F1m(a,b,c):
     return F1
 
 
-def _F2m(a,b,c):
-    """
-    Helper function that computes function $F_2$ which is required to compute
-    the analytical solution of the Mean kurtosis.
+def _F2m(a, b, c):
+    """ Helper function that computes function $F_2$ which is required to
+    compute the analytical solution of the Mean kurtosis.
     
     Parameters
     ----------
-    a : ndarray (...)
-        Array containing the first variable of function $F_1$ for all signal
-        voxels. This variable will be one of the three diffusion tensor
-        eigenvalues.
-    b : ndarray (...)
-        Array containing the second variable of function $F_1$ for all signal
-        voxels. This variable will be one of the three diffusion tensor
-        eigenvalues.
-    c : ndarray (...)
-        Array containing the thrid variable of function $F_1$ for all signal
-        voxels. This variable will be one of the three diffusion tensor
-        eigenvalues.
+    a : ndarray (n,)
+        Array containing the values of parameter $\lambda_1$ of function $F_2$ 
+    b : ndarray (n,)
+        Array containing the values of parameter $\lambda_2$ of function $F_2$
+    c : ndarray (n,)
+        Array containing the values of parameter $\lambda_3$ of function $F_2$
         
     Returns
     -------
-    F2 : array
-       Value of the function $F_2$ given the parameters a, b, and c
+    F2 : ndarray (n,)
+       Value of the function $F_2$ for all elements of the arrays a, b, and c
 
     Notes
     --------
-    Function F_2 is defined as [1]_:
+    Function $F_2$ is defined as [1]_:
 
-    \begin{multline}
-    F_2(\lambda_1,\lambda_2,\lambda_3)=
-    \frac{(\lambda_1+\lambda_2+\lambda_3)^2}
-    {3(\lambda_2-\lambda_3)^2}
-    [\frac{\lambda_2+\lambda_3}{\sqrt{\lambda_2\lambda_3}}
-    R_F(\frac{\lambda_1}{\lambda_2},\frac{\lambda_1}{\lambda_3},1)+\\
-    \frac{2\lambda_1-\lambda_2-\lambda_3}{3\sqrt{\lambda_2 \lambda_3}}
-    R_D(\frac{\lambda_1}{\lambda_2},\frac{\lambda_1}{\lambda_3},1)-2]
-    \end{multline}
+    .. math::
+        F_2(\lambda_1,\lambda_2,\lambda_3)=
+        \frac{(\lambda_1+\lambda_2+\lambda_3)^2}
+        {3(\lambda_2-\lambda_3)^2}
+        [\frac{\lambda_2+\lambda_3}{\sqrt{\lambda_2\lambda_3}}
+        R_F(\frac{\lambda_1}{\lambda_2},\frac{\lambda_1}{\lambda_3},1)+\\
+        \frac{2\lambda_1-\lambda_2-\lambda_3}{3\sqrt{\lambda_2 \lambda_3}}
+        R_D(\frac{\lambda_1}{\lambda_2},\frac{\lambda_1}{\lambda_3},1)-2]
 
     References
     ----------
@@ -366,7 +357,8 @@ def _F2m(a,b,c):
            kurtosis imaging. Magn Reson Med. 65(3), 823-836
     """
     # Float error used to compare two floats, abs(l1 - l2) < er for l1 = l2 
-    er = 1e-10
+    er = np.finfo(a[0]).eps * 1e3  # Error defined three order of magnitude of 
+                                   # system's epslon
 
     # Initialize F2
     F2 = np.empty(a.shape)
@@ -402,9 +394,9 @@ def _F2m(a,b,c):
         alpha = np.zeros(len(L1))
         for i in range(len(x)):
             if x[i]>0:
-                alpha[x[i]] = 1./np.sqrt(x[i]) * np.arctanh(np.sqrt(x[i]))
+                alpha[i] = 1./np.sqrt(x[i]) * np.arctanh(np.sqrt(x[i]))
             else:
-                alpha[x[i]] = 1./np.sqrt(-x[i]) * np.arctan(np.sqrt(-x[i]))
+                alpha[i] = 1./np.sqrt(-x[i]) * np.arctan(np.sqrt(-x[i]))
 
         F2[cond2] = 6. * ((L1 + 2.*L3)**2) / (144. * L3**2 * (L1-L3)**2) * \
                     (L3 * (L1 + 2.*L3) + L1 * (L1 - 4.*L3) * alpha)
@@ -433,12 +425,11 @@ def G2m(a,b,c):
 
 
 def mean_kurtosis(dki_params, sphere=None):
-    r"""
-    Computes mean Kurtosis (MK) from the kurtosis tensor. 
+    r""" Computes mean Kurtosis (MK) from the kurtosis tensor. 
 
     Parameters
     ----------
-    dki_params : ndarray (..., 27)
+    dki_params : ndarray (x, y, z, 27) or (n, 27)
         All parameters estimated from the diffusion kurtosis model.
         Parameters are ordered as follow:
             1) Three diffusion tensor's eingenvalues
@@ -509,21 +500,20 @@ def mean_kurtosis(dki_params, sphere=None):
            kurtosis imaging. Magn Reson Med. 65(3), 823-836
     """
     if sphere == None:
-        MK = _MK_analytical_solution(dki_params)
+        MK = _mk_analytical_solution(dki_params)
     else:
         MK = np.mean(apparent_kurtosis_coef(dki_params, sphere), axis=-1)
 
     return MK
 
 
-def _MK_analytical_solution(dki_params):
-    r"""
-    Helper function that computes the mean Kurtosis (MK) from the kurtosis
+def _mk_analytical_solution(dki_params):
+    r""" Helper function that computes the mean Kurtosis (MK) from the kurtosis
     tensor using the analyticall solution proposed in [1]_. 
 
     Parameters
     ----------
-    dki_params : ndarray (..., 27)
+    dki_params : ndarray (x, y, z, 27) or (n, 27)
         All parameters estimated from the diffusion kurtosis model.
         Parameters are ordered as follow:
             1) Three diffusion tensor's eingenvalues
@@ -711,13 +701,12 @@ def radial_kurtosis(evals, Wrotat, axis=-1):
 
 def apparent_kurtosis_coef(dki_params, sphere, min_diffusivity=0,
                            min_kurtosis=-1):
-    r"""
-    Calculate the apparent kurtosis coefficient (AKC) in each direction of a
-    sphere.
+    r""" Calculate the apparent kurtosis coefficient (AKC) in each direction
+    of a sphere.
 
     Parameters
     ----------
-    dki_params : ndarray (..., 27)
+    dki_params : ndarray (x, y, z, 27) or (n, 27)
         All parameters estimated from the diffusion kurtosis model.
         Parameters are ordered as follow:
             1) Three diffusion tensor's eingenvalues
@@ -787,27 +776,24 @@ def apparent_kurtosis_coef(dki_params, sphere, min_diffusivity=0,
 
 
 def _directional_kurtosis(dt, MD, kt, V, min_diffusivity=0, min_kurtosis=-1):
-    r"""
-    Helper function that calculate the apparent kurtosis coefficient (AKC)
+    r""" Helper function that calculate the apparent kurtosis coefficient (AKC)
     in each direction of a sphere for a single voxel.
 
     Parameters
     ----------
-    dt : (6,)
+    dt : array (6,)
         elements of the diffusion tensor of the voxel.
     MD : float 
         mean diffusivity of the voxel
-    kt : (15,)
+    kt : array (15,)
         elements of the kurtosis tensor of the voxel.
-    V : (N, 3)
+    V : array (N, 3)
         N of directions of a Sphere in Cartesian coordinates
-
     min_diffusivity : float (optional)
         Because negative eigenvalues are not physical and small eigenvalues
         cause quite a lot of noise in diffusion based metrics, diffusivity
         values smaller than `min_diffusivity` are replaced with
         `min_diffusivity`. defaut = 0
-
     min_kurtosis : float (optional)
         Because high amplitude negative values of kurtosis are not physicaly
         and biologicaly pluasible, and these causes huge artefacts in kurtosis
@@ -850,13 +836,12 @@ def _directional_kurtosis(dt, MD, kt, V, min_diffusivity=0, min_kurtosis=-1):
     return (MD/ADC) ** 2 * AKC
 
 
-def DKI_prediction(dki_params, gtab, S0=150, snr=None):
-    """
-    Predict a signal given diffusion kurtosis imaging parameters.
+def dki_prediction(dki_params, gtab, S0=150, snr=None):
+    """ Predict a signal given diffusion kurtosis imaging parameters.
 
     Parameters
     ----------
-    dki_params : ndarray (..., 27)
+    dki_params : ndarray (x, y, z, 27) or (n, 27)
         All parameters estimated from the diffusion kurtosis model.
         Parameters are ordered as follow:
             1) Three diffusion tensor's eingenvalues
@@ -903,7 +888,7 @@ def DKI_prediction(dki_params, gtab, S0=150, snr=None):
     return pred_sig
 
 
-class DKIModel(ReconstModel):
+class DiffusionKurtosisModel(ReconstModel):
     """ Diffusion Kurtosis Tensor
     """
     def __init__(self, gtab, fit_method="OLS_DKI", *args, **kwargs):
@@ -942,7 +927,7 @@ class DKIModel(ReconstModel):
                                  'method, the fit method should either be a '
                                  'function or one of the common fit methods')
 
-        self.design_matrix = dki_design_matrix(self.gtab)
+        self.design_matrix = design_matrix(self.gtab)
         self.args = args
         self.kwargs = kwargs
 
@@ -977,15 +962,15 @@ class DKIModel(ReconstModel):
             dki_params = np.zeros(data.shape[:-1] + (27,))
             dki_params[mask, :] = params_in_mask
 
-        return DKIFit(self, dki_params)
+        return DiffusionKurtosisFit(self, dki_params)
 
     def predict(self, dki_params, S0=1):
-        """
-        Predict a signal for this DKI model class instance given parameters.
+        """ Predict a signal for this DKI model class instance given
+        parameters.
 
         Parameters
         ----------
-        dki_params : ndarray (..., 27)
+        dki_params : ndarray (x, y, z, 27) or (n, 27)
             All parameters estimated from the diffusion kurtosis model.
             Parameters are ordered as follow:
                 1) Three diffusion tensor's eingenvalues
@@ -1000,13 +985,13 @@ class DKIModel(ReconstModel):
             The non diffusion-weighted signal in every voxel, or across all
             voxels. Default: 1
         """
-        return DKI_prediction(dki_params, self.gtab, S0)
+        return dki_prediction(dki_params, self.gtab, S0)
 
 
-class DKIFit(TensorFit):
+class DiffusionKurtosisFit(TensorFit):
 
     def __init__(self, model, model_params):
-        """ Initialize a DKIFit class instance. 
+        """ Initialize a DiffusionKurtosisFit class instance. 
         
         Since DKI is an extension of DTI, class instance is defined as a
         subclass of the TensorFit from dti.py
@@ -1022,12 +1007,11 @@ class DKIFit(TensorFit):
 
     @auto_attr
     def mk(self, sphere=None):
-        r"""
-        Computes mean Kurtosis (MK) from the kurtosis tensor. 
+        r""" Computes mean Kurtosis (MK) from the kurtosis tensor. 
 
         Parameters
         ----------
-        dki_params : ndarray (..., 27)
+        dki_params : ndarray (x, y, z, 27) or (n, 27)
             All parameters estimated from the diffusion kurtosis model.
             Parameters are ordered as follow:
                 1) Three diffusion tensor's eingenvalues
@@ -1125,9 +1109,8 @@ class DKIFit(TensorFit):
         return radial_kurtosis(self.evals, self.Wrotat)
 
     def akc(self, sphere):
-        r"""
-        Calculate the apparent kurtosis coefficient (AKC) in each direction on
-        the sphere for each voxel in the data
+        r""" Calculate the apparent kurtosis coefficient (AKC) in each
+        direction on the sphere for each voxel in the data
 
         Parameters
         ----------
@@ -1151,13 +1134,13 @@ class DKIFit(TensorFit):
         """
         return apparent_kurtosis_coef(self.model_params, sphere)
 
-    def DKI_predict(self, gtab, S0=1):
-        r"""
-        Given a DKI model fit, predict the signal on the vertices of a sphere  
+    def dki_predict(self, gtab, S0=1):
+        r""" Given a DKI model fit, predict the signal on the vertices of a
+        sphere  
 
         Parameters
         ----------
-        dki_params : ndarray (..., 27)
+        dki_params : ndarray (x, y, z, 27) or (n, 27)
             All parameters estimated from the diffusion kurtosis model.
             Parameters are ordered as follow:
                 1) Three diffusion tensor's eingenvalues
@@ -1198,12 +1181,11 @@ class DKIFit(TensorFit):
         and the fourth-order KT tensors, respectively, and $MD$ is the mean
         diffusivity.
         """
-        return DKI_prediction(self.model_params, self.gtab, S0)
+        return dki_prediction(self.model_params, self.gtab, S0)
 
 
 def ols_fit_dki(design_matrix, data, min_signal=1):
-    r"""
-    Computes ordinary least squares (OLS) fit to calculate the diffusion
+    r""" Computes ordinary least squares (OLS) fit to calculate the diffusion
     tensor and kurtosis tensor using a linear regression diffusion kurtosis
     model [1]_.
     
@@ -1212,7 +1194,7 @@ def ols_fit_dki(design_matrix, data, min_signal=1):
     design_matrix : array (g, 22)
         Design matrix holding the covariants used to solve for the regression
         coefficients.
-    data : array (... , g)
+    data : array (N, g)
         Data or response variables holding the data. Note that the last
         dimension should contain the data. It makes no copies of data.
     min_signal : default = 1
@@ -1221,7 +1203,7 @@ def ols_fit_dki(design_matrix, data, min_signal=1):
 
     Returns
     -------
-    dki_params : array (... , 27)
+    dki_params : array (N, 27)
         All parameters estimated from the diffusion kurtosis model. 
         Parameters are ordered as follow:
             1) Three diffusion tensor's eingenvalues
@@ -1265,7 +1247,7 @@ def ols_fit_dki(design_matrix, data, min_signal=1):
 
 
 def _ols_iter(inv_design, sig, min_signal, min_diffusivity):
-    ''' Helper function used by ols_fit_dki - Applies OLS fit of the diffusion
+    """ Helper function used by ols_fit_dki - Applies OLS fit of the diffusion
     kurtosis model to single voxel signals.
     
     Parameters
@@ -1273,9 +1255,9 @@ def _ols_iter(inv_design, sig, min_signal, min_diffusivity):
     inv_design : array (g, 22)
         Inverse of the design matrix holding the covariants used to solve for
         the regression coefficients.
-    sig : array (g, ) or array ([N, ...], g)
+    sig : array (g,)
         Diffusion-weighted signal for a single voxel data.
-    min_signal : 
+    min_signal : float
         All values below min_signal are repalced with min_signal. This is done
         in order to avoid taking log(0) durring the tensor fitting.
     min_diffusivity : float
@@ -1286,14 +1268,14 @@ def _ols_iter(inv_design, sig, min_signal, min_diffusivity):
 
     Returns
     -------
-    dki_params : array (27, )
+    dki_params : array (27,)
         All parameters estimated from the diffusion kurtosis model.
         Parameters are ordered as follow:
             1) Three diffusion tensor's eingenvalues
             2) Three lines of the eigenvector matrix each containing the first,
                second and third coordinates of the eigenvector
             3) Fifteen elements of the kurtosis tensor
-    '''
+    """
 
     # removing small signals
     sig = np.maximum(sig, min_signal)
@@ -1319,8 +1301,7 @@ def _ols_iter(inv_design, sig, min_signal, min_diffusivity):
 
 
 def wls_fit_dki(design_matrix, data, min_signal=1):
-    r"""
-    Computes weighted linear least squares (WLS) fit to calculate
+    r""" Computes weighted linear least squares (WLS) fit to calculate
     the diffusion tensor and kurtosis tensor using a weighted linear 
     regression diffusion kurtosis model [1]_.
 
@@ -1329,7 +1310,7 @@ def wls_fit_dki(design_matrix, data, min_signal=1):
     design_matrix : array (g, 22)
         Design matrix holding the covariants used to solve for the regression
         coefficients.
-    data : array (..., g)
+    data : array (N, g)
         Data or response variables holding the data. Note that the last
         dimension should contain the data. It makes no copies of data.
     min_signal : default = 1
@@ -1338,7 +1319,7 @@ def wls_fit_dki(design_matrix, data, min_signal=1):
 
     Returns
     -------
-    dki_params : array (..., 27)
+    dki_params : array (N, 27)
         All parameters estimated from the diffusion kurtosis model for all N
         voxels. 
         Parameters are ordered as follow:
@@ -1350,7 +1331,6 @@ def wls_fit_dki(design_matrix, data, min_signal=1):
     See Also
     --------
     decompose_tensors
-
 
     References
     ----------
@@ -1395,9 +1375,9 @@ def _wls_iter(design_matrix, inv_design, sig, min_signal, min_diffusivity):
         coefficients    
     inv_design : array (g, 22)
         Inverse of the design matrix.
-    sig : array (g, ) or array ([N, ...], g)
+    sig : array (g, )
         Diffusion-weighted signal for a single voxel data.
-    min_signal : 
+    min_signal : float
         All values below min_signal are repalced with min_signal. This is done
         in order to avoid taking log(0) durring the tensor fitting.
     min_diffusivity : float
@@ -1451,8 +1431,7 @@ def _wls_iter(design_matrix, inv_design, sig, min_signal, min_diffusivity):
 
 
 def Wrotate(kt, Basis, inds = None):
-    r"""
-    Rotate a kurtosis tensor from the standard Cartesian coordinate system
+    r""" Rotate a kurtosis tensor from the standard Cartesian coordinate system
     to another coordinate system basis
     
     Parameters
@@ -1461,17 +1440,17 @@ def Wrotate(kt, Basis, inds = None):
         Vector with the 15 independent elements of the kurtosis tensor
     Basis : array (3, 3)
         Vectors of the basis column-wise oriented
-    inds : array(..., 4) (optional)
-        Array of vectors containing the four indexes of the rotated kurtosis.
-        If not specified all 15 elements of the rotated kurtosis tensor are
-        computed
+    inds : array(m, 4) (optional)
+        Array of vectors containing the four indexes of m specific elements of
+        the rotated kurtosis tensor. If not specified all 15 elements of the
+        rotated kurtosis tensor are computed.
     
     Returns
     --------
-    Wrot : array (15,) or (...,)
-        Vector with the 15 independent elements of the rotated kurtosis tensor.
-        If 'indices' is specified only the specified elements of the rotated
-        kurtosis tensor are computed.
+    Wrot : array (m,) or (15,)
+        Vector with the m independent elements of the rotated kurtosis tensor.
+        If 'indices' is not specified all 15 elements of the rotated kurtosis
+        tensor are computed.
 
     Note
     ------
@@ -1515,10 +1494,9 @@ def Wrotate(kt, Basis, inds = None):
 
 
 def _Wrotate_element(W4D, indi, indj, indk, indl, B):
-    r"""
-    Helper function that returns the element with specified index of a rotated
-    kurtosis tensor from the Cartesian coordinate system to another coordinate
-    system basis
+    r""" Helper function that returns the element with specified index of a
+    rotated kurtosis tensor from the Cartesian coordinate system to another
+    coordinate system basis
 
     Parameters
     ----------
@@ -1556,15 +1534,15 @@ def _Wrotate_element(W4D, indi, indj, indk, indl, B):
         for jl in range(3):
             for kl in range(3):
                 for ll in range(3):
-                    multiplyB = B[il][indi]*B[jl][indj]*B[kl][indk]*B[ll][indl]
-                    Wre = Wre + multiplyB * W4D[il][jl][kl][ll]
+                    multiplyB = B[il, indi]*B[jl, indj]*B[kl, indk]*B[ll, indl]
+                    Wre = Wre + multiplyB * W4D[il, jl, kl, ll]
 
     return Wre
 
 
 def Wcons(k_elements):
-    r"""
-    Construct the full 4D kurtosis tensors from its 15 independent elements
+    r""" Construct the full 4D kurtosis tensors from its 15 independent
+    elements
     
     Parameters
     ----------
@@ -1621,14 +1599,13 @@ def Wcons(k_elements):
 
 
 def split_dki_param(dki_params):
-    r"""
-    Extract the diffusion tensor eigenvalues, the diffusion tensor eigenvector
-    matrix, and the 15 independent elements of the kurtosis tensor from the
-    model parameters estimated from the DKI model
+    r""" Extract the diffusion tensor eigenvalues, the diffusion tensor
+    eigenvector matrix, and the 15 independent elements of the kurtosis tensor
+    from the model parameters estimated from the DKI model
 
     Parameters
     ----------
-    dki_params : ndarray (..., 27)
+    dki_params : ndarray (x, y, z, 27) or (n, 27)
         All parameters estimated from the diffusion kurtosis model.
         Parameters are ordered as follow:
             1) Three diffusion tensor's eingenvalues
@@ -1638,13 +1615,13 @@ def split_dki_param(dki_params):
 
     Returns
     --------
-    eigvals : array (3,)
+    eigvals : array (x, y, z, 3) or (n, 3)
         Eigenvalues from eigen decomposition of the tensor.
-    eigvecs : array (3, 3)
+    eigvecs : array (x, y, z, 3, 3) or (n, 3, 3)
         Associated eigenvectors from eigen decomposition of the tensor.
         Eigenvectors are columnar (e.g. eigvecs[:,j] is associated with
         eigvals[j])
-    kt : array (15,)
+    kt : array (x, y, z, 15) or (n, 15)
         Fifteen elements of the kurtosis tensor
     """    
     evals = dki_params[..., :3]
@@ -1654,7 +1631,7 @@ def split_dki_param(dki_params):
     return evals, evecs, kt
 
 
-def dki_design_matrix(gtab):
+def design_matrix(gtab):
     r""" Constructs B design matrix for DKI
 
     Parameters
@@ -1664,7 +1641,7 @@ def dki_design_matrix(gtab):
 
     Returns
     -------
-    B : array (N,22)
+    B : array (N, 22)
         Design matrix or B matrix for the DKI model
         B[j, :] = (Bxx, Bxy, Bzz, Bxz, Byz, Bzz,
                    Bxxxx, Byyyy, Bzzzz, Bxxxy, Bxxxz,

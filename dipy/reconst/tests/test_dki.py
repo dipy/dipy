@@ -17,7 +17,7 @@ import dipy.reconst.dti as dti
 
 import dipy.reconst.dki as dki
 
-from dipy.reconst.dki import mean_kurtosis
+from dipy.reconst.dki import (mean_kurtosis, carlson_rf,  split_dki_param)
 
 from dipy.io.gradients import read_bvals_bvecs
 
@@ -91,13 +91,13 @@ def test_dki_fits():
     """DKI fits are tested on noise free simulates"""
 
     # OLS fitting
-    dkiM = dki.DKIModel(gtab_2s)
+    dkiM = dki.DiffusionKurtosisModel(gtab_2s)
     dkiF = dkiM.fit(signal_crossing)
 
     assert_array_almost_equal(dkiF.model_params, crossing_ref)
 
     # WLS fitting
-    dki_wlsM = dki.DKIModel(gtab_2s, fit_method="WLS_DKI")
+    dki_wlsM = dki.DiffusionKurtosisModel(gtab_2s, fit_method="WLS_DKI")
     dki_wlsF = dki_wlsM.fit(signal_crossing)
 
     assert_array_almost_equal(dki_wlsF.model_params, crossing_ref)
@@ -239,7 +239,7 @@ def test_MK():
     kurtosis tensor"""
 
     # OLS fitting
-    dkiM = dki.DKIModel(gtab_2s)
+    dkiM = dki.DiffusionKurtosisModel(gtab_2s)
     dkiF = dkiM.fit(signal_spherical)
 
     # MK numerical method
@@ -274,7 +274,7 @@ def test_compare_MK_method():
     """ tests if analytical solution of MK is equal to the exact solution"""
 
     # OLS fitting
-    dkiM = dki.DKIModel(gtab_2s)
+    dkiM = dki.DiffusionKurtosisModel(gtab_2s)
     dkiF = dkiM.fit(signal_crossing)
 
     # MK analytical solution
@@ -285,6 +285,22 @@ def test_compare_MK_method():
     MK_nm = mean_kurtosis(dkiF.model_params, sph)
 
     assert_almost_equal(MK_as, MK_nm, delta=0.1)
+
+
+def test_carlson_rf():
+
+    # WIP
+
+    # just to see it running
+    dki_params = multi_params
+    dki_params = dki_params.reshape((-1, dki_params.shape[-1]))
+
+    evals, evecs, kt = split_dki_param(dki_params)
+
+    L1 = evals[..., 0]
+    L2 = evals[..., 1]
+    L3 = evals[..., 2]
+    RFm = carlson_rf(L1/L2, L1/L3, np.ones(len(L1)))
 
 
 def wls_fit_dki(design_matrix, data, min_signal=1):

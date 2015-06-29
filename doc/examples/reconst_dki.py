@@ -4,15 +4,15 @@ Reconstruction of the diffusion signal with the kurtosis tensor model
 =====================================================================
 
 The diffusion kurtois model is an expansion of the diffusion tensor model. In
-addition to the diffusio tensor (DT), the diffusion kurtosis model quantifies
-the diffusion kurtosis tensor (KT) which measures the degree to which water
-diffusion in biologic tissues is non-Gaussian [Jensen2005]_. Measurements of
-non-Gaussian diffusion are of interest since they can be used to charaterize
-tissue microstructural heterogeneity [Jensen2010]_ and to derive concrete
-biophysical parameters as the density of axonal fibres and diffusion tortuosity
-[Fierem2011]_. Moreover, DKI can be used to resolve crossing fibers on
-tractography and to obtain invariant rotational measures not limited to well
-aligned fiber populations [NetoHe2015]_.
+addition to the diffusion tensor (DT), the diffusion kurtosis model quantifies
+the degree to which water diffusion in biologic tissues is non-Gaussian using
+the kurtosis tensor [Jensen2005]_. Measurements of non-Gaussian diffusion are
+of interest because they can be used to charaterize tissue microstructural
+heterogeneity [Jensen2010]_ and to derive concrete biophysical parameters as
+the density of axonal fibres and diffusion tortuosity [Fierem2011]_. Moreover,
+DKI can be used to resolve crossing fibers on tractography and to obtain
+invariant rotational measures not limited to well aligned fiber populations
+[NetoHe2015]_.
 
 The diffusion kurtosis model relates the diffusion-weighted signal,
 $S(\mathbf{n}, b)$, to the applied diffusion weighting, $\mathbf{b}$, the
@@ -155,7 +155,7 @@ reconstruction. This can be done by first instantiate the DKIModel in the
 following way.
 """
 
-dkimodel = dki.DKIModel(gtab)
+dkimodel = dki.DiffusionKurtosisModel(gtab)
 
 """
 Fitting the data is very simple. We just need to call the fit method of the
@@ -256,13 +256,15 @@ as the mean kurtosis (MK), the axial kurtosis (AD) and the radial kurtosis
 (RK).
 """
 
-from dipy.core.sphere import Sphere
+#from dipy.core.sphere import Sphere
 
-sph = Sphere(xyz=gtab.bvecs[gtab.bvals>0])
+#sph = Sphere(xyz=gtab_for_dti.bvecs[gtab_for_dti.bvals>0])
 
-from dipy.reconst.dki import mean_kurtosis
+#from dipy.reconst.dki import mean_kurtosis
 
-MK = mean_kurtosis(dkifit.model_params, sphere=sph)
+#MK = mean_kurtosis(dkifit.model_params, sphere=sph)
+
+MK = dkifit.mk
 
 """
 MK = dkifit.mk
