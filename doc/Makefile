@@ -127,5 +127,5 @@ pdf-stamp: latex
 	cd _build/latex && make all-pdf
 	touch $@
 
-
-
+upload: html
+	sh upload-gh-pages _build/html/ dipy nipy
