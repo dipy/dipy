@@ -37,11 +37,11 @@ def carlson_rf(x, y, z, errtol=3e-4):
         
     Parameters
     ----------
-    x : ndarray (...)
+    x : ndarray (n,)
         First independent variable of the integral.
-    y : ndarray (...)
+    y : ndarray (n,)
         Second independent variable of the integral.
-    z : ndarray (...)
+    z : ndarray (n,)
         Third independent variable of the integral.
     errtol : float
         Error tolerance. Integral is computed with relative error less in
@@ -49,7 +49,7 @@ def carlson_rf(x, y, z, errtol=3e-4):
     
     Returns
     -------
-    RF : ndarray (...)
+    RF : ndarray (n,)
         Value of the incomplete first order elliptic integral
 
     Note
@@ -61,50 +61,44 @@ def carlson_rf(x, y, z, errtol=3e-4):
     .. [1] Carlson, B.C., 1994. Numerical computation of real or complex
            elliptic integrals. arXiv:math/9409227 [math.CA]
     """
-    d1mach=np.zeros(5)
-    d1mach[0]=1.1*10**(-308)
-    d1mach[1]=8.9e307
-    d1mach[2]=0.22204460*10**(-15)
-    d1mach[3]=0.4440*10**(-15)
-    d1mach[4]=np.log(2.0)
-    errtol = (d1mach[2]/3.0)**(1.0/6.0)
-    lolim  = 2.0/(d1mach[1])**(2.0/3.0)
-    tuplim = d1mach[0]**(1.0/3.0)
-    tuplim = (0.10*errtol)**(1.0/3.0)/tuplim
-    uplim  = tuplim**2.0
-    c1 = 3.0/14.0
-    c2 = 1.0/6.0
-    c3 = 9.0/22.0
-    c4 = 3.0/26.0
+    if errtol==None:
+        # Compute errtol from system epslon
+        epslon = np.finfo(x[0]).eps
+        errtol = (epslon / 3.0) ** (1.0/6.0)
 
-    xn = x.copy()
-    yn = y.copy()
-    zn = z.copy()
- 
-    mu = (xn+yn+zn)/3.0
-    xndev = 2.0 - (mu+xn)/mu
-    yndev = 2.0 - (mu+yn)/mu
-    zndev = 2.0 - (mu+zn)/mu
-    epslon = np.max([np.abs(xndev),np.abs(yndev),np.abs(zndev)])
-    while (epslon >= errtol):
-       xnroot = np.sqrt(xn)
-       ynroot = np.sqrt(yn)
-       znroot = np.sqrt(zn)
-       lamda = xnroot*(ynroot+znroot) + ynroot*znroot
-       xn = (xn+lamda)*0.250
-       yn = (yn+lamda)*0.250
-       zn = (zn+lamda)*0.250
-       mu = (xn+yn+zn)/3.0
-       xndev = 2.0 - (mu+xn)/mu
-       yndev = 2.0 - (mu+yn)/mu
-       zndev = 2.0 - (mu+zn)/mu
-       epslon = np.max([np.abs(xndev),np.abs(yndev),np.abs(zndev)])
+    # Initialize RF
+    RF = np.zeros(len(x), dtype=complex)
 
-    e2 = xndev*yndev - zndev*zndev
-    e3 = xndev*yndev*zndev
-    s  = 1.0 + (c1*e2-0.10-c2*e3)*e2 + c3*e3
-    drf = s/np.sqrt(mu)
-    return drf
+    # Convergence has to be done voxel by voxel
+    for v in range(len(x)):
+        n = 0
+        xn = x[v]
+        yn = y[v]
+        zn = z[v]
+        An = (xn + yn + zn) / 3.0
+        Q = (3.*errtol) ** (-1/6) * np.max([np.abs(An - xn), np.abs(An - yn),
+                                            np.abs(An - zn)])
+        # Convergence condition
+        while 4**(-n) * Q > abs(An):          
+            xnroot = np.sqrt(xn)
+            ynroot = np.sqrt(yn)
+            znroot = np.sqrt(zn)
+            lamda = xnroot*(ynroot + znroot) + ynroot*znroot
+            xn = (xn + lamda)*0.250
+            yn = (yn + lamda)*0.250
+            zn = (zn + lamda)*0.250
+            An = (xn + yn + zn) / 3.0
+            n = n + 1
+
+        # post convergence calculation
+        X = 1 - xn/An
+        Y = 1 - yn/An
+        Z = - X - Y
+        E2 = X*Y - Z*Z
+        E3 = X * Y * Z
+        RF[v] = An**(-1/2.) * (1 - E2/10. + E3/14. + (E2**2)/24. - 3/44.*E2*E3)
+
+    return RF
 
 
 def carlson_rd(x, y, z):
@@ -117,16 +111,16 @@ def carlson_rd(x, y, z):
 
     Parameters
     ----------
-    x : ndarray (...)
+    x : ndarray (n,)
         First independent variable of the integral.
-    y : ndarray (...)
+    y : ndarray (n,)
         Second independent variable of the integral.
-    z : ndarray (...)
+    z : ndarray (n,)
         Third independent variable of the integral.
     
     Returns
     -------
-    RD : ndarray (...)
+    RD : ndarray (n,)
         Value of the incomplete second order elliptic integral
     
     Note
@@ -139,7 +133,7 @@ def carlson_rd(x, y, z):
     d1mach[2]=0.22204460*10**(-15)
     d1mach[3]=0.4440*10**(-15)
     d1mach[4]=np.log(2.0)
-    errtol = (d1mach[2]/3.0)**(1.0/6.0)
+    errtol = (d1mach[2]/3.0)**(1.0/6.0) 
     lolim  = 2.0/(d1mach[1])**(2.0/3.0)
     tuplim = d1mach[0]**(1.0/3.0)
     tuplim = (0.10*errtol)**(1.0/3.0)/tuplim

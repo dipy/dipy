@@ -284,23 +284,42 @@ def test_compare_MK_method():
     sph = Sphere(xyz=gtab.bvecs[gtab.bvals > 0])
     MK_nm = mean_kurtosis(dkiF.model_params, sph)
 
-    assert_almost_equal(MK_as, MK_nm, delta=0.1)
+    assert_array_almost_equal(MK_as, MK_nm, decimal=1)
 
 
 def test_carlson_rf():
+    
+    # Define inputs that we know the outputs from:
+    # Carlson, B.C., 1994. Numerical computation of real or complex
+    # elliptic integrals. arXiv:math/9409227 [math.CA]
+    
+    # Real values
+    x = np.array([1.0, 0.5, 2.0])
+    y = np.array([2.0, 1.0, 3.0])
+    z = np.array([0.0, 0.0, 4.0])
+    
+    # Defene reference outputs
+    RF_ref = np.array([1.3110287771461, 1.8540746773014, 0.58408284167715])
+    
+    # Compute integrals
+    RF =  carlson_rf(x, y, z)
 
-    # WIP
+    # Compare
+    assert_array_almost_equal(RF, RF_ref)
+    
+    # Complex values
+    x = np.array([1j, 1j - 1, 1j, 1j - 1])
+    y = np.array([-1j, 1j, -1j, 1j])
+    z = np.array([0.0, 0.0, 2, 1 - 1j])
+    
+    # Defene reference outputs
+    RF_ref = np.array([1.8540746773014, 0.79612586584234 - 1.2138566698365j,
+                       1.0441445654064, 0.93912050218619 - 0.53296252018635j])
+    # Compute integrals
+    RF =  carlson_rf(x, y, z, errtol=3e-5)
 
-    # just to see it running
-    dki_params = multi_params
-    dki_params = dki_params.reshape((-1, dki_params.shape[-1]))
-
-    evals, evecs, kt = split_dki_param(dki_params)
-
-    L1 = evals[..., 0]
-    L2 = evals[..., 1]
-    L3 = evals[..., 2]
-    RFm = carlson_rf(L1/L2, L1/L3, np.ones(len(L1)))
+    # Compare
+    assert_array_almost_equal(RF, RF_ref)
 
 
 def wls_fit_dki(design_matrix, data, min_signal=1):
