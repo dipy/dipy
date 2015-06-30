@@ -162,7 +162,7 @@ RD = dkifit.rd
 Note that these DTI standard measures could also be computed from Dipy's DTI
 module. However, DTI models is only viable for b-values < 1500 $s.mm^{-2}$. For
 comparison purposes, we calculate above FA, MD, AD, and RD from Dipy's DTI
-modules. 
+modules.
 
 We first extract the data for the viable b-value for DTI.
 """
@@ -237,7 +237,7 @@ based measures were shown to have better precision (i.e. less sensitive to
 bias) [Veraa2011]_.
 
 The standard kurtosis statistics can be computed from the DiffusinKurtosisFit
-instance as the mean kurtosis (MK), the axial kurtosis (AD) and the radial 
+instance as the mean kurtosis (MK), the axial kurtosis (AD) and the radial
 kurtosis (RK).
 
 References:

@@ -32,7 +32,7 @@ gtab_2s = gradient_table(bvals_2s, bvecs_2s)
 
 # Simulation 1. signals of two crossing fibers are simulated
 mevals_cross = np.array([[0.00099, 0, 0], [0.00226, 0.00087, 0.00087],
-                   [0.00099, 0, 0], [0.00226, 0.00087, 0.00087]])
+                         [0.00099, 0, 0], [0.00226, 0.00087, 0.00087]])
 angles_cross = [(80, 10), (80, 10), (20, 30), (20, 30)]
 fie = 0.49
 frac_cross = [fie*50, (1-fie) * 50, fie*50, (1-fie) * 50]
@@ -47,11 +47,11 @@ evals_cross, evecs = decompose_tensor(from_lower_triangular(dt_cross))
 crossing_ref = np.concatenate((evals_cross, evecs[0], evecs[1], evecs[2],
                                kt_cross), axis=0)
 
-# Simulation 2. spherical kurtosis tensor. 
-# for white matter, this is biological implaussible scenario, however 
-# this simulation is usefull for a quick test the directional apparent kurtosis
-# and the mean kurtosis, since is trivial to mathematicaly compute directional
-# and mean ground truths
+# Simulation 2. Spherical kurtosis tensor.- for white matter, this can be a
+# biological implaussible scenario, however this simulation is usefull for
+# testing the estimation of directional apparent kurtosis and the mean
+# kurtosis, since its directional and mean kurtosis ground truth are a constant
+# which can be easly mathematicaly calculated
 
 # simulate a spherical kurtosis tensor
 Di = 0.00099
@@ -66,7 +66,7 @@ params_sph = np.concatenate((evals_sph, evecs[0], evecs[1], evecs[2], kt_sph),
                             axis=0)
 
 # Compute ground truth. Since KT is spherical, appparent kurtosic coeficient
-# for all gradient directions and mean kurtosis have to be equal to Kref_sph. 
+# for all gradient directions and mean kurtosis have to be equal to Kref_sph.
 f = 0.5
 Dg = f*Di + (1-f)*De
 Kref_sphere = 3 * f * (1-f) * ((Di-De) / Dg) ** 2
@@ -102,7 +102,7 @@ def test_dki_fits():
     # testing multi-voxels
     dkiF_multi = dkiM.fit(DWI)
     assert_array_almost_equal(dkiF_multi.model_params, multi_params)
-    
+
     dkiF_multi = dki_wlsM.fit(DWI)
     assert_array_almost_equal(dkiF_multi.model_params, multi_params)
 
@@ -117,4 +117,3 @@ def test_apparent_kurtosis_coef():
     # check all direction
     for d in range(len(gtab.bvecs[gtab.bvals > 0])):
         assert_array_almost_equal(AKC[d], Kref_sphere)
-
