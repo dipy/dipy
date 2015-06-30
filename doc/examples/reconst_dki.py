@@ -51,39 +51,20 @@ needed to fully characterize the KT:
 In the following example we show how to reconstruct your diffusion multi-shell
 datasets using the kurtosis tensor model.
 
-First import the necessary modules:
+First import Dipy's DKI module:
 
-``numpy`` is for numerical computation
-
-"""
-
-import numpy as np
-
-"""
-``nibabel`` is for loading imaging datasets
-"""
-
-import nibabel as nib
-
-"""
-``dipy.reconst`` is for the reconstruction algorithms which we use to create
-voxel models from the raw data.
 """
 
 import dipy.reconst.dki as dki
 
 """
-``dipy.data`` is used for small datasets that we use in tests and examples. DKI
-required multi shell data, i.e. data acquired from more than one non-zero
-b-value.
+DKI requires multi shell data, i.e. data acquired from more than one non-zero
+b-value. Here, we use fetch to download the raw HARDI of a dMRI dataset
+cotaining three non-zero b-values. The size of the dataset is 188 MBytes,
+however you only need to fetch it once.
 """
 
 from dipy.data import fetch_sherbrooke_3shell
-
-"""
-Fetch will download the raw HARDI dMRI dataset of a single subject. The size of
-the dataset is 188 MBytes, however you only need to fetch it once.
-"""
 
 fetch_sherbrooke_3shell()
 
@@ -116,7 +97,7 @@ fig1.savefig('HARDI193_bvalues.png')
    :align: center
    **b-values of the loaded dataset**.
 
-From the figure above we can check that the loaded dataset containing three
+From the figure above, we can check that the loaded dataset contains three
 non-zero b-values as required for DKI. However the highest b-value of 3500
 $s.mm^{-2}$ is higher than normally used on DKI. Since DKI negletes diffusion
 signal components higher than the 4th order KT, a upper bound of b-value < 3000
@@ -151,25 +132,25 @@ maskdata, mask = median_otsu(selected_data, 3, 1, True,
 
 """
 Now that we have prepared the datasets we can go forward with the voxel
-reconstruction. This can be done by first instantiate the DKIModel in the
-following way.
+reconstruction. This can be done by first instantiate the DiffusinKurtosisModel
+in the following way.
 """
 
 dkimodel = dki.DiffusionKurtosisModel(gtab)
 
 """
 Fitting the data is very simple. We just need to call the fit method of the
-DKIModel in the following way:
+DiffusinKurtosisModel in the following way:
 """
 
 dkifit = dkimodel.fit(maskdata)
 
 """
-The fit method creates a DKIFit object which contains all the diffusion and
-kurtosis fitting parameters and other DKI attributes. For instance, all DTI's
-standard tensor statistics can be computed from the DKIFit instance as the
-fractional anisotropy (FA), the mean diffusivity (MD), the axial diffusivity
-(AD) and the radial diffusivity (RD).
+The fit method creates a DiffusionKurtosisFit object which contains all the
+diffusion and kurtosis fitting parameters and other DKI attributes. For
+instance, all DTI's standard tensor statistics can be computed from the
+DiffusionKurtosisFit instance as the fractional anisotropy (FA), the mean
+diffusivity (MD), the axial diffusivity (AD) and the radial diffusivity (RD).
 """
 
 FA = dkifit.fa
@@ -179,13 +160,12 @@ RD = dkifit.rd
 
 """
 Note that these DTI standard measures could also be computed from Dipy's DTI
-module. However, the DKI models is applicable to larger b-values than DTI
-which normally should not be applied to a upper bound of b-value < 1500
-$s.mm^{-2}$. For comparison proposes we also calculate FA, MD, AD, and RD after
-selecting data's smaller non-zero b-value shell.
-"""
+module. However, DTI models is only viable for b-values < 1500 $s.mm^{-2}$. For
+comparison purposes, we calculate above FA, MD, AD, and RD from Dipy's DTI
+modules. 
 
-import dipy.reconst.dti as dti
+We first extract the data for the viable b-value for DTI.
+"""
 
 select_dti_ind = gtab.bvals < 1500
 selected_dti_bvals = gtab.bvals[select_dti_ind]
@@ -194,6 +174,11 @@ selected_dti_data = data[:, :, :, select_dti_ind]
 gtab_for_dti = gradient_table(selected_dti_bvals, selected_dti_bvecs)
 maskdata_for_dti, mask = median_otsu(selected_dti_data, 3, 1, True,
                                      vol_idx=range(10, 50), dilate=2)
+
+""" Then, we carry on with the DTI fitting and standard tensor statistics
+using DTI's module """
+
+import dipy.reconst.dti as dti
 
 tenmodel = dti.TensorModel(gtab_for_dti)
 tenfit = tenmodel.fit(maskdata_for_dti)
@@ -246,51 +231,15 @@ fig2.savefig('Diffusion_tensor_measures_from_DTI_and_DKI.png')
 
 From the figure, we can see that the DT standard diffusion measures from DKI
 are noisier than the DTI measurements. This is a well known pitfall of DKI
-[NetoHe2014]_. Since it is involves the estimation of a larger number of
+[NetoHe2014]_. Since it involves the estimation of a larger number of
 parameters, DKI is more sensitive to noise than DTI. Nevertheless, DT diffusion
 based measures were shown to have better precision (i.e. less sensitive to
 bias) [Veraa2011]_.
 
-The standard kurtosis statistics can be computed from the DKIFit instance
-as the mean kurtosis (MK), the axial kurtosis (AD) and the radial kurtosis
-(RK).
-"""
+The standard kurtosis statistics can be computed from the DiffusinKurtosisFit
+instance as the mean kurtosis (MK), the axial kurtosis (AD) and the radial 
+kurtosis (RK).
 
-#from dipy.core.sphere import Sphere
-
-#sph = Sphere(xyz=gtab_for_dti.bvecs[gtab_for_dti.bvals>0])
-
-#from dipy.reconst.dki import mean_kurtosis
-
-#MK = mean_kurtosis(dkifit.model_params, sphere=sph)
-
-MK = dkifit.mk
-
-"""
-MK = dkifit.mk
-RK = dkifit.rk
-AK = dkifit.ak
-"""
-
-fig3, ax = plt.subplots(1, 3, figsize=(12, 6),
-                        subplot_kw={'xticks': [], 'yticks': []})
-
-fig3.subplots_adjust(hspace=0.3, wspace=0.05)
-
-ax.flat[0].imshow(MK[:, :, axial_middle], cmap='gray')
-ax.flat[0].set_title('MK')
-
-"""
-ax.flat[1].imshow(MD[:, :, axial_middle], cmap='gray')
-ax.flat[1].set_title('RK')
-ax.flat[2].imshow(AD[:, :, axial_middle], cmap='gray')
-ax.flat[2].set_title('AK')
-"""
-
-plt.show()
-fig3.savefig('Kurtosis_tensor_standard_measures.png')
-
-"""
 References:
 
 .. [Jensen2005] Jensen JH, Helpern JA, Ramani A, Lu H, Kaczynski K (2005).
