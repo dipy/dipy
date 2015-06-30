@@ -5,17 +5,16 @@ from numpy.testing import (assert_array_equal,
                            assert_array_almost_equal,
                            assert_almost_equal,
                            assert_equal)
-from ...core import geometry as geometry
-from ...data import get_data
-from ...viz import regtools as rt
-from .. import floating
-from .. import vector_fields as vf
-from .. import imaffine
-from .. import mattes
-from ..imaffine import transform_image
-from ..transforms import (Transform,
-                          regtransforms)
-from .test_mattes import setup_random_transform
+from dipy.core import geometry as geometry
+from dipy.data import get_data
+from dipy.viz import regtools as rt
+from dipy.align import floating
+from dipy.align import vector_fields as vf
+from dipy.align import imaffine
+from dipy.align import mattes
+from dipy.align.transforms import (Transform,
+                                   regtransforms)
+from dipy.align.tests.test_mattes import setup_random_transform
 
 # For each transform type, select a transform factor (indicating how large the
 # true transform between static and moving images will be) and a sampling
@@ -77,8 +76,8 @@ def test_align_centers_of_mass_3d():
 
             # Implementation under test
             actual = imaffine.align_centers_of_mass(static, static_grid2world,
-                                                  moving, moving_grid2world)
-            assert_array_almost_equal(actual, expected)
+                                                    moving, moving_grid2world)
+            assert_array_almost_equal(actual.affine, expected)
 
 
 def test_align_geometric_centers_3d():
@@ -123,7 +122,7 @@ def test_align_geometric_centers_3d():
                     # Implementation under test
                     actual = imaffine.align_geometric_centers(static,
                         static_grid2world, moving, moving_grid2world)
-                    assert_array_almost_equal(actual, expected)
+                    assert_array_almost_equal(actual.affine, expected)
 
 
 def test_align_origins_3d():
@@ -164,7 +163,7 @@ def test_align_origins_3d():
                     # Implementation under test
                     actual = imaffine.align_origins(static, static_grid2world,
                                                     moving, moving_grid2world)
-                    assert_array_almost_equal(actual, expected)
+                    assert_array_almost_equal(actual.affine, expected)
 
 
 def test_affreg_all_transforms():
@@ -192,10 +191,9 @@ def test_affreg_all_transforms():
                                              None,
                                              options=None)
         x0 = transform.get_identity_parameters()
-        sol = affreg.optimize(static, moving, transform, x0, static_grid2world,
-                              moving_grid2world)
-        transformed = transform_image(static, static_grid2world, moving,
-                          moving_grid2world, sol)
+        affine_map = affreg.optimize(static, moving, transform, x0,
+                                     static_grid2world, moving_grid2world)
+        transformed = affine_map.transform(moving)
         # Sum of absolute differences
         end_sad = np.abs(static - transformed).sum()
         reduction = 1 - end_sad / start_sad
@@ -240,10 +238,10 @@ def test_affreg_defaults():
                                                  'L-BFGS-B',
                                                  ss_sigma_factor,
                                                  options=None)
-            sol = affreg.optimize(static, moving, transform, x0, static_grid2world,
-                                  moving_grid2world, starting_affine)
-            transformed = transform_image(static, static_grid2world, moving,
-                              moving_grid2world, sol)
+            affine_map = affreg.optimize(static, moving, transform, x0,
+                                         static_grid2world, moving_grid2world,
+                                         starting_affine)
+            transformed = affine_map.transform(moving)
             # Sum of absolute differences
             end_sad = np.abs(static - transformed).sum()
             reduction = 1 - end_sad / start_sad

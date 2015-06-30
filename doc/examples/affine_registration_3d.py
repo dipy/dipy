@@ -12,7 +12,7 @@ from dipy.viz import regtools
 from dipy.data import fetch_stanford_hardi, read_stanford_hardi
 from dipy.data.fetcher import fetch_syn_data, read_syn_data
 from dipy.align.imaffine import (align_centers_of_mass,
-                                 transform_image,
+                                 AffineMap,
                                  MattesMIMetric,
                                  AffineRegistration)
 from dipy.align.transforms import (TranslationTransform3D,
@@ -45,10 +45,11 @@ to draw one on top of the other we need to resample the moving image on a grid
 of the same dimensions as the static image, we can do this by "transforming"
 the moving image using an identity transform
 """
-
 identity = np.eye(4)
-resampled = transform_image(static, static_grid2world,
-                            moving, moving_grid2world, identity)
+affine_map = AffineMap(None,
+                       static.shape, static_grid2world,
+                       moving.shape, moving_grid2world)
+resampled = affine_map.transform(moving)
 regtools.overlay_slices(static, resampled, None, 0,
                         "Static", "Moving", "resampled_0.png")
 regtools.overlay_slices(static, resampled, None, 1,
@@ -80,9 +81,7 @@ We can now transform the moving image and draw it on top of the static image,
 registration is not likely to be good, but at least they will occupy roughly
 the same space
 """
-
-transformed = transform_image(static, static_grid2world,
-                              moving, moving_grid2world, c_of_mass)
+transformed = c_of_mass.transform(moving)
 regtools.overlay_slices(static, transformed, None, 0,
                         "Static", "Transformed", "transformed_com_0.png")
 regtools.overlay_slices(static, transformed, None, 1,
@@ -176,18 +175,17 @@ aligning volumes, the dimension is 3)
 
 transform = TranslationTransform3D()
 params0 = None
-starting_affine = c_of_mass
-trans = affreg.optimize(static, moving, transform, params0,
-                        static_grid2world, moving_grid2world,
-                        starting_affine=starting_affine)
+starting_affine = c_of_mass.affine
+translation = affreg.optimize(static, moving, transform, params0,
+                              static_grid2world, moving_grid2world,
+                              starting_affine=starting_affine)
 
 """
 If we look at the result, we can see that this translation is much better than
 simply aligning the centers of mass
 """
 
-transformed = transform_image(static, static_grid2world,
-                              moving, moving_grid2world, trans)
+transformed = translation.transform(moving)
 regtools.overlay_slices(static, transformed, None, 0,
                         "Static", "Transformed", "transformed_trans_0.png")
 regtools.overlay_slices(static, transformed, None, 1,
@@ -213,7 +211,7 @@ found optimal translation)
 
 transform = RigidTransform3D()
 params0 = None
-starting_affine = trans
+starting_affine = translation.affine
 rigid = affreg.optimize(static, moving, transform, params0,
                         static_grid2world, moving_grid2world,
                         starting_affine=starting_affine)
@@ -222,8 +220,7 @@ rigid = affreg.optimize(static, moving, transform, params0,
 This produces a slight rotation, and the images are now better aligned
 """
 
-transformed = transform_image(static, static_grid2world,
-                              moving, moving_grid2world, rigid)
+transformed = rigid.transform(moving)
 regtools.overlay_slices(static, transformed, None, 0,
                         "Static", "Transformed", "transformed_rigid_0.png")
 regtools.overlay_slices(static, transformed, None, 1,
@@ -250,7 +247,7 @@ very close to the optimal transform
 
 transform = AffineTransform3D()
 params0 = None
-starting_affine = rigid
+starting_affine = rigid.affine
 affine = affreg.optimize(static, moving, transform, params0,
                          static_grid2world, moving_grid2world,
                          starting_affine=starting_affine)
@@ -259,8 +256,7 @@ affine = affreg.optimize(static, moving, transform, params0,
 This results in a slight shear and scale
 """
 
-transformed = transform_image(static, static_grid2world,
-                              moving, moving_grid2world, affine)
+transformed = affine.transform(moving)
 regtools.overlay_slices(static, transformed, None, 0,
                         "Static", "Transformed", "transformed_affine_0.png")
 regtools.overlay_slices(static, transformed, None, 1,
