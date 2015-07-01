@@ -59,11 +59,8 @@ def gibbs_energy(seg, index, label, beta):
 
 def Ising(l, voxel, beta):
 
-    Beta = 0
-
     if l == voxel:
-        Beta = beta - beta
+        return - beta
     else:
-        Beta = beta + beta
-        
-    return Beta
+        return beta
+

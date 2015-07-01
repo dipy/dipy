@@ -29,5 +29,5 @@ def icm(mu, var, masked_img, seg_img, classes, beta):
                                      mu, var, idx, l, beta)
 
         segmented[idx] = L[np.argmin(totalE)]
-            
+
     return segmented

@@ -73,14 +73,13 @@ niter = 3
 
 for i in range(0, niter):
 
-    segmented = icm(mu_upd, var_upd, masked_img, seg_init_masked_pad, nclass, beta)
+    segmented = icm(mu_upd, var_upd, masked_img, seg_init_masked, nclass, beta)
     segmented = segmented.copy(order='C')
     segmented_pad = add_padding_reflection(segmented, 1)
 
     # This loop is for equation 2.18 of the Stan Z. Li book.
     for l in range(0, nclass):
         for idx in ndindex(shape):
-
 
             P_L_N[idx[0], idx[1], idx[2], l] += Ising(l, segmented_pad[idx[0] + 1 - 1, idx[1] + 1, idx[2] + 1], beta)
             P_L_N[idx[0], idx[1], idx[2], l] += Ising(l, segmented_pad[idx[0] + 1 + 1, idx[1] + 1, idx[2] + 1], beta)
@@ -89,10 +88,9 @@ for i in range(0, niter):
             P_L_N[idx[0], idx[1], idx[2], l] += Ising(l, segmented_pad[idx[0] + 1, idx[1] + 1, idx[2] + 1 - 1], beta)
             P_L_N[idx[0], idx[1], idx[2], l] += Ising(l, segmented_pad[idx[0] + 1, idx[1] + 1, idx[2] + 1 + 1], beta)
 
-
         # Eq 2.18
         P_L_N[:, :, :, l] = np.exp(- P_L_N[:, :, :, l])
-        P_L_N_norm[:,:,:,l] += P_L_N[:,:,:,l]
+        P_L_N_norm[:,:,:,l] = np.sum(P_L_N[:,:,:,l])
 
     P_L_N = P_L_N/P_L_N_norm
     P_L_N[np.isnan(P_L_N)] = 0
