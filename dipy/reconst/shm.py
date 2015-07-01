@@ -969,6 +969,12 @@ def sh_to_sf_matrix(sphere, sh_order, basis_type=None, return_inv=True, smooth=0
 def sh_to_ap(coeffs_mtx, normal_factor=0.00001):
     """ Calculates anisotropic power map with a given SH coeffecient matrix
 
+    References
+    __________
+    .. [1]  Dell’Acqua, F., Lacerda, L., Catani, M., Simmons, A., 2014. 
+            Anisotropic Power Maps: A diffusion contrast to reveal low anisotropy tissues from HARDI data, 
+            in: Proceedings of International Society for Magnetic Resonance in Medicine. Milan, Italy.
+
     Parameters
     ----------
     coeffs_mtx : ndarray
