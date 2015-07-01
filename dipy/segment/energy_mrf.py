@@ -5,13 +5,13 @@ import numpy as np
 def total_energy(masked_image, masked_segmentation,
                  mu, var, index, label, beta):
 
-    energytotal = log_likelihood(masked_image, mu, var, index, label)
+    energytotal = neg_log_likelihood(masked_image, mu, var, index, label)
     energytotal += gibbs_energy(masked_segmentation, index, label, beta)
 
     return energytotal
 
 
-def log_likelihood(img, mu, var, index, label):
+def neg_log_likelihood(img, mu, var, index, label):
 
     loglike = ((img[index] - mu[label]) ** 2) / (2 * var[label])
 
@@ -55,3 +55,15 @@ def gibbs_energy(seg, index, label, beta):
         energy = energy + beta
 
     return energy
+
+
+def Ising(l, voxel, beta):
+
+    Beta = 0
+
+    if l == voxel:
+        Beta = beta - beta
+    else:
+        Beta = beta + beta
+        
+return Beta

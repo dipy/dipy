@@ -23,8 +23,9 @@ def seg_stats(input_image, seg_image, nclass):
 
 
     """
-    mu = np.zeros(3)
-    std = np.zeros(3)
+    mu = np.zeros(nclass)
+    std = np.zeros(nclass)
+    var = np.zeros(nclass)
 
     for i in range(1, nclass + 1):
 
@@ -32,6 +33,7 @@ def seg_stats(input_image, seg_image, nclass):
 
         mu[i - 1] = np.mean(H, -1)
         std[i - 1] = np.std(H, -1)
+        var[i - 1] = np.var(H, -1)
 
 
-    return mu, std
+    return mu, std, var
