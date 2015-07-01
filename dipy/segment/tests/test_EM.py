@@ -55,7 +55,7 @@ g = np.zeros_like(masked_img)
 
 
 # weight of the neighborhood in ICM
-beta = 100
+beta = 10
 # update variables of mu and variance
 mu_upd = mu
 var_upd = var
@@ -78,7 +78,7 @@ for i in range(0, niter):
     segmented_pad = add_padding_reflection(segmented, 1)
 
     # This loop is for equation 2.18 of the Stan Z. Li book.
-    for l in range(0, nclass):
+    for l in range(1, nclass + 1):
         for idx in ndindex(shape):
 
             P_L_N[idx[0], idx[1], idx[2], l] += Ising(l, segmented_pad[idx[0] + 1 - 1, idx[1] + 1, idx[2] + 1], beta)
@@ -90,19 +90,21 @@ for i in range(0, niter):
 
         # Eq 2.18
         P_L_N[:, :, :, l] = np.exp(- P_L_N[:, :, :, l])
-        P_L_N_norm[:,:,:,l] = np.sum(P_L_N[:,:,:,l])
+        P_L_N_norm[:,:,:,l] += P_L_N[:,:,:,l]
 
     P_L_N = P_L_N/P_L_N_norm
     P_L_N[np.isnan(P_L_N)] = 0
+    # P_L_N[datamask > 0] = 0
 
     # This is for equation 27 of the Zhang paper
-    for l in range(0, nclass):
+    for l in range(1, nclass + 1):
         for idx in ndindex(shape):
             g[idx] = np.exp(-((masked_img[idx] - mu[l])**2/2*var[l]))/np.sqrt(2*np.pi*var[l])
             P_L_Y[idx[0], idx[1], idx[2], l] = g[idx] * P_L_Y[idx[0], idx[1], idx[2], l]
         P_L_Y_norm[:,:,:,l] += P_L_Y[:,:,:,l]
     P_L_Y = P_L_Y/P_L_Y_norm
     P_L_Y[np.isnan(P_L_Y)] = 0
+    # P_L_Y[datamask > 0] = 0
 
     # This is for equations 25 and 26 of the Zhang paper
     for l in range(0, nclass):
