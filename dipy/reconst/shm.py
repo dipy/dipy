@@ -965,3 +965,59 @@ def sh_to_sf_matrix(sphere, sh_order, basis_type=None, return_inv=True, smooth=0
         return B.T, invB.T
 
     return B.T
+
+def sh_to_ap(coeffs_mtx, normal_factor=0.00001):
+    """ Calculates anisotropic power map with a given SH coeffecient matrix
+
+    Parameters
+    ----------
+    coeffs_mtx : ndarray
+        A ndarray where the last dimension is the
+        SH coeff estimates for that voxel.
+    normal_factor: float
+        The value to normalize the ap values. Default is 10^-5.
+
+    Returns
+    -------
+    AP : ndarray
+        The resulting power image.
+    """
+
+    dim = coeffs_mtx.shape[:-1]
+    n_coeffs = coeffs_mtx.shape[-1]
+
+    L = 2    # start at L=2
+    sum_n = 1
+
+    def single_L_ap(coeffs_mtx, L=2, power=2):
+        n_start = 1
+        n_L = 2*L+1
+        for l in xrange(2,L,2):
+            n_l = 2*l+1
+            #sum_n start at index 1
+            n_start += n_l
+        n_stop = n_start + n_L
+        #print 'func:',L, n_L, n_start, n_stop
+        c = np.power(coeffs_mtx[...,n_start:n_stop], power)
+        ap_i = np.mean(c, axis=-1)
+        ap_i = np.multiply(ap_i, 1.0/n_L)
+        return ap_i
+
+    ap = np.zeros(dim)
+    #print 'AP shape:',ap.shape
+
+    while sum_n < n_coeffs:
+        n_L = 2*L+1
+        #print L, n_L, sum_n, sum_n+n_L
+        ap_i = single_L_ap(coeffs_mtx, L)
+        ap = np.add(ap_i, ap)
+        sum_n += n_L
+        L+=2
+
+    # normalize with 10^-5
+    log_ap = np.ma.log(ap/normal_factor)
+
+    # zero all values < 0
+    log_ap[log_ap<0] = 0
+
+    return log_ap
