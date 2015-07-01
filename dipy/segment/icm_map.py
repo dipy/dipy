@@ -1,59 +1,33 @@
+from __future__ import division, print_function, absolute_import
 
-
-# Use ICM to segment T1 image with HMRF
-
+# Use ICM to segment T1 image with MRF
 import numpy as np
-import nibabel as nib
-
-img = nib.load('/Users/jvillalo/Documents/GSoC_2015/Code/Data/3587_BL_T1_to_MNI_Linear_6p.nii.gz')
-dataimg = img.get_data()
-
-mask_image = nib.load('/Users/jvillalo/Documents/GSoC_2015/Code/Data/3587_mask.nii.gz')
-datamask = mask_image.get_data()
-
-from dipy.segment.mask import applymask
-masked_img = applymask(dataimg,datamask)
-print('masked_img.shape (%d, %d, %d)' % masked_img.shape)
-shape=masked_img.shape[:3]
-
-# Still must do Otsu for 3 classes. 
-#from init_param import otsu_param
-#mu_tissue1, sig_tissue1, mu_tissue2, sig_tissue2 = otsu_param(masked_img, 4, 4)
-
-seg = nib.load('/Users/jvillalo/Documents/GSoC_2015/Code/Data/FAST/3587_BL_T1_to_MNI_Linear_6p_seg.nii.gz')
-seg_initial = seg.get_data()
-
-nclass = 3
-nh = 6   #neighborhood
-niter = 1
-totalE = np.zeros((shape[0],shape[1],shape[2],nclass))
-
-from dipy.segment.rois_stats import seg_stats
-seg_stats(masked_img, seg_initial, 3)
-
 from dipy.core.ndindex import ndindex
-
-for idx in np.ndindex(shape):
-    if not masked_img[idx]:
-        continue
-    
-    while True:
-        
-        mu, std = seg_stats(masked_img, seg_initial, 3)
-    
-        for l in range(0,nclass-3):
-            totalE = 1/(2*vars[l])*(masked_img-mus[l])^2 + np.log(sigs[l]) - beta*Himg[:,:,:,l]
-        np.amin(totalE[-1])
-        
-    N = niter+1        
-    if N == 1:
-        break
+from dipy.segment.energy_mrf import total_energy
+from dipy.denoise.denspeed import add_padding_reflection
 
 
+def icm(mu, var, masked_img, seg_img, classes, beta):
 
-    
-    
-    
-    
-    
-    
+    totalE = np.zeros(classes)
+    L = range(1, classes + 1)
+#    niter = 2
+#    N = 0
+    segmented = np.zeros(masked_img.shape)
+    shape = masked_img.shape[:3]
+    masked_img = masked_img.copy(order='C')
+    masked_img_pad = add_padding_reflection(masked_img, 1)
+    seg_img = masked_img.copy(order='C')
+    seg_img_pad = add_padding_reflection(seg_img, 1)
+
+    for idx in ndindex(shape):
+        if not masked_img[idx]:
+            continue
+        for l in range(0, classes):
+
+            totalE[l] = total_energy(masked_img_pad, seg_img_pad,
+                                     mu, var, idx, l, beta)
+
+        segmented[idx] = L[np.argmin(totalE)]
+            
+    return segmented

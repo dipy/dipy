@@ -7,7 +7,7 @@ from dipy.segment.rois_stats import seg_stats
 from dipy.segment.energy_mrf import Ising
 from dipy.denoise.denspeed import add_padding_reflection
 from dipy.denoise.denspeed import remove_padding
-from dipy.segment.tests.test_icm_map import icm
+from dipy.segment.icm_map import icm
 import matplotlib.pyplot as plt
 
 dname = '/Users/jvillalo/Documents/GSoC_2015/Code/Data/T1_coronal/'
@@ -41,7 +41,7 @@ print(std)
 
 nclass = 3
 P_L_N = np.zeros((256, 256, 3, nclass))
-P_L_N_norm = np.zeros((256, 256, 3, nclass))
+P_L_N_norm = np.zeros((256, 256, 3, 1))
 P_L_Y = np.zeros((256, 256, 3, nclass))
 P_L_Y_norm = np.zeros((256, 256, 3, nclass))
 g = np.zeros((256, 256, 3))
@@ -67,8 +67,8 @@ for i in range(0, 3):
             P_L_N[idx[0], idx[1], idx[2], l] += Ising(l, segmented_pad[idx[0] + 1, idx[1] + 1, idx[2] + 1 - 1], beta)
             P_L_N[idx[0], idx[1], idx[2], l] += Ising(l, segmented_pad[idx[0] + 1, idx[1] + 1, idx[2] + 1 + 1], beta)
         
-        P_L_N[:,:,:,l] = np.exp(P_L_N[:,:,:,l])
-        P_L_N_norm[:,:,:,l] += P_L_N[:,:,:,l]
+        P_L_N[:,:,:,l] = np.exp(-(P_L_N[:,:,:,l]))
+        P_L_N_norm[:, :, :, 0] += P_L_N[:,:,:,l]
     P_L_N = P_L_N/P_L_N_norm
 
     # This is for equation 27 of the Zhang paper
