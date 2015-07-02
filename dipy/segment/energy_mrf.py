@@ -22,6 +22,7 @@ def neg_log_likelihood(img, mu, var, index, label):
 
 def gibbs_energy(seg, index, label, beta):
 
+    label = label + 1
     energy = 0
 
     if label == seg[index[0] + 1 - 1, index[1] + 1, index[2] + 1]:
@@ -57,7 +58,7 @@ def gibbs_energy(seg, index, label, beta):
     return energy
 
 
-def Ising(l, voxel, beta):
+def ising(l, voxel, beta):
 
     if l == voxel:
         return - beta

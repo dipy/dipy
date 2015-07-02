@@ -11,8 +11,7 @@ def icm(mu, var, masked_img, seg_img, classes, beta):
 
     totalE = np.zeros(classes)
     L = range(1, classes + 1)
-#    niter = 2
-#    N = 0
+
     segmented = np.zeros(masked_img.shape)
     shape = masked_img.shape[:3]
     masked_img = masked_img.copy(order='C')
