@@ -11,7 +11,7 @@ import dipy.align.vector_fields as vfu
 from dipy.data import get_data
 from dipy.align import floating
 import nibabel.eulerangles as eulerangles
-from dipy.align.imwarp import DiffeomorphicMap
+from dipy.align.imwarp import DiffeomorphicMap, get_synthetic_warped_circle
 from dipy.align import VerbosityLevels
 from dipy.__config__ import USING_VC_SSE2, USING_GCC_SSE2
 
@@ -528,39 +528,6 @@ def test_ssd_2d_gauss_newton():
     assert_equal(optimizer.SCALE_END_CALLED, 0)
     assert_equal(optimizer.ITER_START_CALLED, 0)
     assert_equal(optimizer.ITER_END_CALLED, 0)
-
-
-def get_synthetic_warped_circle(nslices):
-    #get a subsampled circle
-    fname_cicle = get_data('reg_o')
-    circle = np.load(fname_cicle)[::4,::4].astype(floating)
-
-    #create a synthetic invertible map and warp the circle
-    d, dinv = vfu.create_harmonic_fields_2d(64, 64, 0.1, 4)
-    d = np.asarray(d, dtype=floating)
-    dinv = np.asarray(dinv, dtype=floating)
-    mapping = DiffeomorphicMap(2, (64, 64))
-    mapping.forward, mapping.backward = d, dinv
-    wcircle = mapping.transform(circle)
-
-    if(nslices == 1):
-        return circle, wcircle
-
-    #normalize and form the 3d by piling slices
-    circle = (circle-circle.min())/(circle.max() - circle.min())
-    circle_3d = np.ndarray(circle.shape + (nslices,), dtype=floating)
-    circle_3d[...] = circle[...,None]
-    circle_3d[...,0] = 0
-    circle_3d[...,-1] = 0
-
-    #do the same with the warped circle
-    wcircle = (wcircle-wcircle.min())/(wcircle.max() - wcircle.min())
-    wcircle_3d = np.ndarray(wcircle.shape + (nslices,), dtype=floating)
-    wcircle_3d[...] = wcircle[...,None]
-    wcircle_3d[...,0] = 0
-    wcircle_3d[...,-1] = 0
-
-    return circle_3d, wcircle_3d
 
 
 @npt.dec.skipif(NO_SSE2)
