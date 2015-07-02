@@ -10,9 +10,11 @@ def test_renderer():
 
     ren = window.Renderer()
 
+    # background color for renderer
     bg_float = (1, 0.5, 0)
 
-    bg_color = tuple((np.round(255 * np.array(bg_float))).astype('uint8'))
+    # that will come in the image in the 0-255 uint scale
+    bg_color = tuple((np.floor(255 * np.array(bg_float))).astype('uint8'))
 
     ren.background(bg_float)
 
@@ -93,6 +95,7 @@ def test_parallel_projection():
     # pixels rather than in perspective projection were
     # the axes being further will be smaller.
     npt.assert_equal(np.sum(arr2 > 0) > np.sum(arr > 0), True)
+
 
 if __name__ == '__main__':
 
