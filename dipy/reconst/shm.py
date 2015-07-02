@@ -24,24 +24,24 @@ keep the data as is and implement the relevant equations rewritten in the
 following form: Y.T = x.T B.T, or in python syntax data = np.dot(sh_coef, B.T)
 where data is Y.T and sh_coef is x.T.
 """
+
 import numpy as np
 from numpy import concatenate, diag, diff, empty, eye, sqrt, unique, dot
 from numpy.linalg import pinv, svd
 from numpy.random import randint
+
 from dipy.reconst.odf import OdfModel, OdfFit
-from scipy.special import sph_harm, lpn, lpmv, gammaln
-from dipy.core.sphere import Sphere
-import dipy.core.gradients as grad
-from dipy.sims.voxel import single_tensor, all_tensor_evecs
 from dipy.core.geometry import cart2sphere
 from dipy.core.onetime import auto_attr
 from dipy.reconst.cache import Cache
 
 from distutils.version import LooseVersion
 import scipy
+from scipy.special import lpn, lpmv, gammaln
 
 if LooseVersion(scipy.version.short_version) >= LooseVersion('0.15.0'):
     SCIPY_15_PLUS = True
+    import scipy.special as sps
 else:
     SCIPY_15_PLUS = False
 
@@ -158,7 +158,18 @@ def gen_dirac(m, n, theta, phi):
 
 
 def spherical_harmonics(m, n, theta, phi):
-    r""" Compute spherical harmonics
+    x = np.cos(phi)
+    val = lpmv(m, n, x).astype(complex)
+    val *= np.sqrt((2 * n + 1) / 4.0 / np.pi)
+    val *= np.exp(0.5 * (gammaln(n - m + 1) - gammaln(n + m + 1)))
+    val = val * np.exp(1j * m * theta)
+    return val
+
+if SCIPY_15_PLUS:
+    def spherical_harmonics(m, n, theta, phi):
+        return sps.sph_harm(m, n, theta, phi, dtype=complex)
+
+spherical_harmonics.__doc__ = r""" Compute spherical harmonics
 
     This may take scalar or array arguments. The inputs will be broadcasted
     against each other.
@@ -182,17 +193,9 @@ def spherical_harmonics(m, n, theta, phi):
     Notes
     -----
     This is a faster implementation of scipy.special.sph_harm for
-    scipy version < 0.15.0.
-
+    scipy version < 0.15.0. For scipy 0.15 and onwards, we use the scipy
+    implementation of the function
     """
-    if SCIPY_15_PLUS:
-        return sph_harm(m, n, theta, phi)
-    x = np.cos(phi)
-    val = lpmv(m, n, x).astype(complex)
-    val *= np.sqrt((2 * n + 1) / 4.0 / np.pi)
-    val *= np.exp(0.5 * (gammaln(n - m + 1) - gammaln(n + m + 1)))
-    val = val * np.exp(1j * m * theta)
-    return val
 
 
 def real_sph_harm(m, n, theta, phi):

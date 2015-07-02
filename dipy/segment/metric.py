@@ -1,14 +1,22 @@
 from dipy.segment.featurespeed import (Feature,
                                        IdentityFeature,
-                                       CenterOfMassFeature)
+                                       ResampleFeature,
+                                       CenterOfMassFeature,
+                                       MidpointFeature,
+                                       ArcLengthFeature,
+                                       VectorBetweenEndpointsFeature)
 
 from dipy.segment.metricspeed import (Metric,
                                       SumPointwiseEuclideanMetric,
                                       AveragePointwiseEuclideanMetric,
-                                      MinimumAverageDirectFlipMetric)
+                                      MinimumAverageDirectFlipMetric,
+                                      CosineMetric)
 
 from dipy.segment.metricspeed import (dist,
                                       distance_matrix)
+
+# Creates aliases
+EuclideanMetric = SumPointwiseEuclideanMetric
 
 
 def mdf(s1, s2):

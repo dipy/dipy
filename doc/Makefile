@@ -58,7 +58,7 @@ examples-tgz: rstexamples
 gitwash-update:
 	python ../tools/gitwash_dumper.py devel dipy --repo-name=dipy --github-user=nipy \
             --project-url=http://nipy.org/dipy \
-            --project-ml-url=http://mail.scipy.org/mailman/listinfo/nipy-devel
+            --project-ml-url=https://mail.python.org/mailman/listinfo/neuroimaging
 
 html: api rstexamples html-after-examples
 	# build full docs including examples

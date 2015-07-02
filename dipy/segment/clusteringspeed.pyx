@@ -2,10 +2,10 @@
 # cython: wraparound=False, cdivision=True, boundscheck=False
 
 import numpy as np
-cimport numpy as np
+cimport numpy as cnp
 
 from libc.math cimport fabs
-from cythonutils cimport Data2D, Shape, shape2tuple, tuple2shape
+from cythonutils cimport Data2D, Shape, shape2tuple, tuple2shape, same_shape
 
 
 cdef extern from "stdlib.h" nogil:
@@ -58,7 +58,7 @@ cdef class Clusters:
         element : 2d array (float)
             Data of the element to assign.
         """
-        cdef np.npy_intp C = self.clusters_size[id_cluster]
+        cdef cnp.npy_intp C = self.clusters_size[id_cluster]
         self.clusters_indices[id_cluster] = <int*> realloc(self.clusters_indices[id_cluster], (C+1)*sizeof(int))
         self.clusters_indices[id_cluster][C] = id_element
         self.clusters_size[id_cluster] += 1
@@ -117,7 +117,7 @@ cdef class ClustersCentroid(Clusters):
         The `__dealloc__` method of the superclass is automatically called:
         http://docs.cython.org/src/userguide/special_methods.html#finalization-method-dealloc
         """
-        cdef np.npy_intp i
+        cdef cnp.npy_intp i
         for i in range(self._nb_clusters):
             free(&(self.centroids[i].features[0, 0]))
 
@@ -143,17 +143,17 @@ cdef class ClustersCentroid(Clusters):
             Data of the element to assign.
         """
         cdef Data2D updated_centroid = self._updated_centroids[id_cluster].features
-        cdef np.npy_intp C = self.clusters_size[id_cluster]
-        cdef np.npy_intp n, d
+        cdef cnp.npy_intp C = self.clusters_size[id_cluster]
+        cdef cnp.npy_intp n, d
 
-        cdef np.npy_intp N = updated_centroid.shape[0], D = updated_centroid.shape[1]
+        cdef cnp.npy_intp N = updated_centroid.shape[0], D = updated_centroid.shape[1]
         for n in range(N):
             for d in range(D):
                 updated_centroid[n, d] = ((updated_centroid[n, d] * C) + element[n, d]) / (C+1)
 
         Clusters.c_assign(self, id_cluster, id_element, element)
 
-    cdef int c_update(ClustersCentroid self, np.npy_intp id_cluster) nogil except -1:
+    cdef int c_update(ClustersCentroid self, cnp.npy_intp id_cluster) nogil except -1:
         """ Update the centroid of a cluster.
 
         Parameters
@@ -168,8 +168,8 @@ cdef class ClustersCentroid(Clusters):
         """
         cdef Data2D centroid = self.centroids[id_cluster].features
         cdef Data2D updated_centroid = self._updated_centroids[id_cluster].features
-        cdef np.npy_intp N = updated_centroid.shape[0], D = centroid.shape[1]
-        cdef np.npy_intp n, d
+        cdef cnp.npy_intp N = updated_centroid.shape[0], D = centroid.shape[1]
+        cdef cnp.npy_intp n, d
         cdef int converged = 1
 
         for n in range(N):
@@ -226,7 +226,7 @@ cdef class QuickBundles(object):
             Nearest cluster to `features` according to the given metric.
         """
         cdef:
-            np.npy_intp k
+            cnp.npy_intp k
             double dist
             NearestCluster nearest_cluster
 
@@ -266,9 +266,15 @@ cdef class QuickBundles(object):
         cdef:
             Data2D features_to_add = self.features
             NearestCluster nearest_cluster, nearest_cluster_flip
+            Shape features_shape = self.metric.feature.c_infer_shape(datum)
 
         # Check if datum is compatible with the metric
-        if not self.metric.c_are_compatible(self.metric.feature.c_infer_shape(datum), self.features_shape):
+        if not same_shape(features_shape, self.features_shape):
+            with gil:
+                raise ValueError("All features do not have the same shape! QuickBundles requires this to compute centroids!")
+
+        # Check if datum is compatible with the metric
+        if not self.metric.c_are_compatible(features_shape, self.features_shape):
             with gil:
                 raise ValueError("Data features' shapes must be compatible according to the metric used!")
 

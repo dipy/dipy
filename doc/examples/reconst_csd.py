@@ -172,6 +172,7 @@ csd_model = ConstrainedSphericalDeconvModel(gtab, response)
 """
 For illustration purposes we will fit only a small portion of the data.
 """
+
 data_small = data[20:50, 55:85, 38:39]
 csd_fit = csd_model.fit(data_small)
 

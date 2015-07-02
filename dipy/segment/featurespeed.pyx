@@ -2,9 +2,10 @@
 # cython: wraparound=False, cdivision=True, boundscheck=False
 
 import numpy as np
-cimport numpy as np
+cimport numpy as cnp
 
 from cythonutils cimport tuple2shape, shape2tuple, shape_from_memview
+from dipy.tracking.streamlinespeed cimport c_set_number_of_points, c_length
 
 
 cdef class Feature(object):
@@ -36,7 +37,7 @@ cdef class Feature(object):
         def __set__(self, int value):
             self.is_order_invariant = bool(value)
 
-    cdef Shape c_infer_shape(Feature self, Data2D datum) nogil  except *:
+    cdef Shape c_infer_shape(Feature self, Data2D datum) nogil except *:
         """ Cython version of `Feature.infer_shape`. """
         with gil:
             shape = self.infer_shape(np.asarray(datum))
@@ -49,7 +50,7 @@ cdef class Feature(object):
             else:
                 raise TypeError("Only scalar, 1D or 2D array features are supported!")
 
-    cdef void c_extract(Feature self, Data2D datum, Data2D out) nogil  except *:
+    cdef void c_extract(Feature self, Data2D datum, Data2D out) nogil except *:
         """ Cython version of `Feature.extract`. """
         cdef Data2D c_features
         with gil:
@@ -77,7 +78,7 @@ cdef class Feature(object):
 
         Returns
         -------
-        tuple
+        int, 1-tuple or 2-tuple
             Shape of the features.
         """
         raise NotImplementedError("Feature's subclasses must implement method `infer_shape(self, datum)`!")
@@ -187,13 +188,39 @@ cdef class IdentityFeature(CythonFeature):
                 out[n, d] = datum[n, d]
 
 
+cdef class ResampleFeature(CythonFeature):
+    """ Extracts features from a sequential datum.
+
+    A sequence of N-dimensional points is represented as a 2D array with
+    shape (nb_points, nb_dimensions).
+
+    The features being extracted are the points of the sequence once resampled.
+    This is useful for metrics requiring a constant number of points for all
+     streamlines.
+    """
+    def __init__(ResampleFeature self, cnp.npy_intp nb_points):
+        super(ResampleFeature, self).__init__(is_order_invariant=False)
+        self.nb_points = nb_points
+
+        if nb_points <= 0:
+            raise ValueError("ResampleFeature: `nb_points` must be strictly positive: {0}".format(nb_points))
+
+    cdef Shape c_infer_shape(ResampleFeature self, Data2D datum) nogil except *:
+        cdef Shape shape = shape_from_memview(datum)
+        shape.dims[0] = self.nb_points
+        return shape
+
+    cdef void c_extract(ResampleFeature self, Data2D datum, Data2D out) nogil except *:
+        c_set_number_of_points(datum, out)
+
+
 cdef class CenterOfMassFeature(CythonFeature):
     """ Extracts features from a sequential datum.
 
     A sequence of N-dimensional points is represented as a 2D array with
     shape (nb_points, nb_dimensions).
 
-    The feature being extracted consists in one N-dimensional point representing
+    The feature being extracted consists of one N-dimensional point representing
     the mean of the points, i.e. the center of mass.
     """
     def __init__(CenterOfMassFeature self):
@@ -222,6 +249,90 @@ cdef class CenterOfMassFeature(CythonFeature):
             out[0, d] /= N
 
 
+cdef class MidpointFeature(CythonFeature):
+    """ Extracts features from a sequential datum.
+
+    A sequence of N-dimensional points is represented as a 2D array with
+    shape (nb_points, nb_dimensions).
+
+    The feature being extracted consists of one N-dimensional point representing
+    the middle point of the sequence (i.e. `nb_points//2`th point).
+    """
+    def __init__(MidpointFeature self):
+        super(MidpointFeature, self).__init__(is_order_invariant=False)
+
+    cdef Shape c_infer_shape(MidpointFeature self, Data2D datum) nogil except *:
+        cdef Shape shape
+        shape.ndim = 2
+        shape.dims[0] = 1
+        shape.dims[1] = datum.shape[1]
+        shape.size = datum.shape[1]
+        return shape
+
+    cdef void c_extract(MidpointFeature self, Data2D datum, Data2D out) nogil except *:
+        cdef:
+            int N = datum.shape[0], D = datum.shape[1]
+            int mid = N/2
+            int d
+
+        for d in range(D):
+            out[0, d] = datum[mid, d]
+
+
+cdef class ArcLengthFeature(CythonFeature):
+    """ Extracts features from a sequential datum.
+
+    A sequence of N-dimensional points is represented as a 2D array with
+    shape (nb_points, nb_dimensions).
+
+    The feature being extracted consists of one scalar representing
+    the arc length of the sequence (i.e. the sum of the length of all segments).
+    """
+    def __init__(ArcLengthFeature self):
+        super(ArcLengthFeature, self).__init__(is_order_invariant=True)
+
+    cdef Shape c_infer_shape(ArcLengthFeature self, Data2D datum) nogil except *:
+        cdef Shape shape
+        shape.ndim = 2
+        shape.dims[0] = 1
+        shape.dims[1] = 1
+        shape.size = 1
+        return shape
+
+    cdef void c_extract(ArcLengthFeature self, Data2D datum, Data2D out) nogil except *:
+        out[0, 0] = c_length(datum)
+
+
+cdef class VectorBetweenEndpointsFeature(CythonFeature):
+    """ Extracts features from a sequential datum.
+
+    A sequence of N-dimensional points is represented as a 2D array with
+    shape (nb_points, nb_dimensions).
+
+    The feature being extracted consists of one vector in the N-dimensional
+    space pointing from one end-point of the sequence to the other
+    (i.e. `S[-1]-S[0]`).
+    """
+    def __init__(VectorBetweenEndpointsFeature self):
+        super(VectorBetweenEndpointsFeature, self).__init__(is_order_invariant=False)
+
+    cdef Shape c_infer_shape(VectorBetweenEndpointsFeature self, Data2D datum) nogil except *:
+        cdef Shape shape
+        shape.ndim = 2
+        shape.dims[0] = 1
+        shape.dims[1] = datum.shape[1]
+        shape.size = datum.shape[1]
+        return shape
+
+    cdef void c_extract(VectorBetweenEndpointsFeature self, Data2D datum, Data2D out) nogil except *:
+        cdef:
+            int N = datum.shape[0], D = datum.shape[1]
+            int d
+
+        for d in range(D):
+            out[0, d] = datum[N-1, d] - datum[0, d]
+
+
 cpdef infer_shape(Feature feature, data):
     """ Infers shape of the features extracted from data.
 
@@ -245,27 +356,16 @@ cpdef infer_shape(Feature feature, data):
     if len(data) == 0:
         return []
 
+    shapes = []
     cdef int i
-    all_same_shapes = True
-    shapes = [shape2tuple(feature.c_infer_shape(data[0]))]
-    for i in range(1, len(data)):
-        shapes.append(shape2tuple(feature.c_infer_shape(data[i])))
-        if shapes[0] != shapes[i]:
-            all_same_shapes = False
-
-    if all_same_shapes:
-        features = np.empty((len(shapes),) + shapes[0], dtype=np.float32)
-    else:
-        features = [np.empty(shape, dtype=np.float32) for shape in shapes]
-
-    for i in range(len(data)):
+    for i in range(0, len(data)):
         datum = data[i] if data[i].flags.writeable else data[i].astype(np.float32)
-        feature.c_extract(datum, features[i])
+        shapes.append(shape2tuple(feature.c_infer_shape(datum)))
 
     if single_datum:
-        return features[0]
+        return shapes[0]
     else:
-        return features
+        return shapes
 
 
 cpdef extract(Feature feature, data):
@@ -295,19 +395,10 @@ cpdef extract(Feature feature, data):
     if len(data) == 0:
         return []
 
+    shapes = infer_shape(feature, data)
+    features = [np.empty(shape, dtype=np.float32) for shape in shapes]
+
     cdef int i
-    all_same_shapes = True
-    shapes = [shape2tuple(feature.c_infer_shape(data[0]))]
-    for i in range(1, len(data)):
-        shapes.append(shape2tuple(feature.c_infer_shape(data[i])))
-        if shapes[0] != shapes[i]:
-            all_same_shapes = False
-
-    if all_same_shapes:
-        features = np.empty((len(shapes),) + shapes[0], dtype=np.float32)
-    else:
-        features = [np.empty(shape, dtype=np.float32) for shape in shapes]
-
     for i in range(len(data)):
         datum = data[i] if data[i].flags.writeable else data[i].astype(np.float32)
         feature.c_extract(datum, features[i])

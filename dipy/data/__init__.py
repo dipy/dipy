@@ -271,6 +271,8 @@ def get_data(name='small_64D'):
         return pjoin(THIS_DIR, 'circle.npy')
     if name == 'cb_2':
         return pjoin(THIS_DIR, 'cb_2.npz')
+    if name == "t1_coronal_slice":
+        return pjoin(THIS_DIR, 't1_coronal_slice.npy')
 
 
 def _gradient_from_file(filename):

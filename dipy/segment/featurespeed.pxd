@@ -1,5 +1,5 @@
 from cythonutils cimport Data2D, Shape
-
+cimport numpy as cnp
 
 cdef class Feature(object):
     cdef int is_order_invariant
@@ -15,6 +15,12 @@ cdef class CythonFeature(Feature):
     pass
 
 # The IdentityFeature class returns the datum as-is. This is useful for metric
-# like SumPointwiseEuclideanMetric that does not require any pre-processing.
+# that does not require any pre-processing.
 cdef class IdentityFeature(CythonFeature):
     pass
+
+# The ResampleFeature class returns the datum resampled. This is useful for
+# metric like SumPointwiseEuclideanMetric that does require a consistent
+# number of points between datum.
+cdef class ResampleFeature(CythonFeature):
+    cdef cnp.npy_intp nb_points

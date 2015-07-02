@@ -364,6 +364,15 @@ def seeds_from_mask(mask, density=[1, 1, 1], voxel_size=None, affine=None):
         seed point at the center the voxel ``[i, j, k]`` will be represented as
         ``[x, y, z]`` where ``[x, y, z, 1] == np.dot(affine, [i, j, k , 1])``.
 
+    See Also
+    --------
+    random_seeds_from_mask
+
+    Raises
+    ------
+    ValueError
+        When ``mask`` is not a three-dimensional array
+
     Examples
     --------
     >>> mask = np.zeros((3,3,3), 'bool')
@@ -389,6 +398,7 @@ def seeds_from_mask(mask, density=[1, 1, 1], voxel_size=None, affine=None):
     mask = np.array(mask, dtype=bool, copy=False, ndmin=3)
     if mask.ndim != 3:
         raise ValueError('mask cannot be more than 3d')
+
     density = asarray(density, int)
     if density.size == 1:
         d = density
@@ -403,14 +413,15 @@ def seeds_from_mask(mask, density=[1, 1, 1], voxel_size=None, affine=None):
     grid = grid / density
     grid += (.5 / density - .5)
 
-    # Add the grid of points to each voxel in mask
     where = np.argwhere(mask)
+
+    # Add the grid of points to each voxel in mask
     seeds = where[:, np.newaxis, :] + grid[np.newaxis, :, :]
     seeds = seeds.reshape((-1, 3))
 
-    # Apply the spacial transform
+    # Apply the spatial transform
     if affine is not None:
-        # Use affine to move seeds int real world coordinates
+        # Use affine to move seeds into real world coordinates
         seeds = np.dot(seeds, affine[:3, :3].T)
         seeds += affine[:3, 3]
     elif voxel_size is not None:
@@ -420,6 +431,79 @@ def seeds_from_mask(mask, density=[1, 1, 1], voxel_size=None, affine=None):
 
     return seeds
 
+def random_seeds_from_mask(mask, seeds_per_voxel=1, affine=None):
+    """Creates randomly placed seeds for fiber tracking from a binary mask.
+
+    Seeds points are placed randomly distributed in all voxels of ``mask`` which
+    are ``True``. This function is essentially similar to ``seeds_from_mask()``,
+    with the difference that instead of evenly distributing the seeds, it randomly
+    places the seeds within the voxels specified by the ``mask``
+
+    Parameters
+    ----------
+    mask : binary 3d array_like
+        A binary array specifying where to place the seeds for fiber tracking.
+    seeds_per_voxel : int
+        Specifies the number of seeds to place in each voxel.
+    affine : array, (4, 4)
+        The mapping between voxel indices and the point space for seeds. A
+        seed point at the center the voxel ``[i, j, k]`` will be represented as
+        ``[x, y, z]`` where ``[x, y, z, 1] == np.dot(affine, [i, j, k , 1])``.
+
+    See Also
+    --------
+    seeds_from_mask
+
+    Raises
+    ------
+    ValueError
+        When ``mask`` is not a three-dimensional array
+
+    Examples
+    --------
+    >>> mask = np.zeros((3,3,3), 'bool')
+    >>> mask[0,0,0] = 1
+
+    >>> np.random.seed(1)
+    >>> random_seeds_from_mask(mask, seeds_per_voxel=1)
+    array([[-0.082978  ,  0.22032449, -0.49988563]])
+
+    >>> random_seeds_from_mask(mask, seeds_per_voxel=6)
+    array([[-0.19766743, -0.35324411, -0.40766141],
+           [-0.31373979, -0.15443927, -0.10323253],
+           [ 0.03881673, -0.08080549,  0.1852195 ],
+           [-0.29554775,  0.37811744, -0.47261241],
+           [ 0.17046751, -0.0826952 ,  0.05868983],
+           [-0.35961306, -0.30189851,  0.30074457]])
+    >>> mask[0,1,2] = 1
+    >>> random_seeds_from_mask(mask, seeds_per_voxel=2)
+    array([[ 0.46826158, -0.18657582,  0.19232262],
+           [ 0.37638915,  0.39460666, -0.41495579],
+           [-0.46094522,  0.66983042,  2.3781425 ],
+           [-0.40165317,  0.92110763,  2.45788953]])
+
+    """
+    mask = np.array(mask, dtype=bool, copy=False, ndmin=3)
+    if mask.ndim != 3:
+        raise ValueError('mask cannot be more than 3d')
+
+    where = np.argwhere(mask)
+    num_voxels = len(where)
+
+    # Generate as many random triplets as the number of seeds needed
+    grid = np.random.random([seeds_per_voxel * num_voxels, 3])
+    # Repeat elements of 'where' so that it can be added to grid
+    where = np.repeat(where, seeds_per_voxel, axis=0)
+    seeds = where + grid - .5
+    seeds = asarray(seeds)
+
+    # Apply the spatial transform
+    if affine is not None:
+        # Use affine to move seeds into real world coordinates
+        seeds = np.dot(seeds, affine[:3, :3].T)
+        seeds += affine[:3, 3]
+
+    return seeds
 
 def _with_initialize(generator):
     """Allows one to write a generator with initialization code.

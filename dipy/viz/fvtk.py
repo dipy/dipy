@@ -1023,7 +1023,7 @@ def tensor(evals, evecs, scalar_colors=None, sphere=None, scale=2.2, norm=True):
         from dipy.reconst.dti import color_fa, fractional_anisotropy
         cfa = color_fa(fractional_anisotropy(evals), evecs)
     else:
-        cfa = scalar_colors
+        cfa = _makeNd(scalar_colors, 4)
 
     list_sq = []
     list_cols = []
@@ -1045,7 +1045,6 @@ def tensor(evals, evecs, scalar_colors=None, sphere=None, scale=2.2, norm=True):
 
         acolor = np.zeros(xyz.shape)
         acolor[:, :] = np.interp(cfa[ijk], [0, 1], [0, 255])
-
         list_cols.append(acolor.astype('ubyte'))
 
     points = vtk.vtkPoints()

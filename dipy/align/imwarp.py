@@ -99,7 +99,7 @@ def get_direction_and_spacings(affine, dim):
 
 class ScaleSpace(object):
     def __init__(self, image, num_levels,
-                 codomain_affine=None,
+                 image_grid2world=None,
                  input_spacing=None,
                  sigma_factor=0.2,
                  mask0=False):
@@ -120,9 +120,8 @@ class ScaleSpace(object):
             image.
         num_levels : int
             the desired number of levels (resolutions) of the scale space
-        codomain_affine : array, shape (k, k), k=3,4 (for either 2D or 3D images)
-            the matrix transforming voxel coordinates to space coordinates in
-            the input image discretization
+        image_grid2world : array, shape (k, k), k=3,4 (for either 2D or 3D images)
+            the grid-to-space transform of the image grid
         input_spacing : array, shape (k-1,)
             the spacing (voxel size) between voxels in physical space
         sigma_factor : float
@@ -152,11 +151,11 @@ class ScaleSpace(object):
             input_spacing = np.ones((self.dim,), dtype = np.int32)
         self.spacings = [input_spacing]
         self.scalings = [np.ones(self.dim)]
-        self.affines = [codomain_affine]
+        self.affines = [image_grid2world]
         self.sigmas = [np.zeros(self.dim)]
 
-        if codomain_affine is not None:
-            self.affine_invs = [npl.inv(codomain_affine)]
+        if image_grid2world is not None:
+            self.affine_invs = [npl.inv(image_grid2world)]
         else:
             self.affine_invs = [None]
 
@@ -177,8 +176,8 @@ class ScaleSpace(object):
             scaling = scaling_factor * min_spacing / input_spacing
             output_spacing = input_spacing * scaling
             extended = np.append(scaling, [1])
-            if not codomain_affine is None:
-                affine = codomain_affine.dot(np.diag(extended))
+            if not image_grid2world is None:
+                affine = image_grid2world.dot(np.diag(extended))
             else:
                 affine = np.diag(extended)
             output_size = input_size * (input_spacing / output_spacing) + 0.5
@@ -405,11 +404,11 @@ class DiffeomorphicMap(object):
     def __init__(self,
                  dim,
                  disp_shape,
-                 disp_affine=None,
+                 disp_grid2world=None,
                  domain_shape=None,
-                 domain_affine=None,
+                 domain_grid2world=None,
                  codomain_shape=None,
-                 codomain_affine=None,
+                 codomain_grid2world=None,
                  prealign=None):
         r""" DiffeomorphicMap
 
@@ -427,12 +426,12 @@ class DiffeomorphicMap(object):
         disp_shape : array, shape (dim,)
             the number of slices (if 3D), rows and columns of the deformation
             field's discretization
-        disp_affine : the voxel-to-space transformation between the deformation field's
+        disp_grid2world : the voxel-to-space transformation between the deformation field's
             grid and space
         domain_shape : array, shape (dim,)
             the number of slices (if 3D), rows and columns of the default
             discretizatio of this map's domain
-        domain_affine : array, shape (dim+1, dim+1)
+        domain_grid2world : array, shape (dim+1, dim+1)
             the default voxel-to-space transformation between this map's
             discretization and physical space
         codomain_shape : array, shape (dim,)
@@ -443,7 +442,7 @@ class DiffeomorphicMap(object):
             the inverse transformation is 'normally' used to warp images with
             the same discretization and voxel-to-space transformation as the
             deformation field grid.
-        codomain_affine : array, shape (dim+1, dim+1)
+        codomain_grid2world : array, shape (dim+1, dim+1)
             the voxel-to-space transformation of images that are 'normally'
             warped using this transformation (in the forward direction).
         prealign : array, shape (dim+1, dim+1)
@@ -460,34 +459,34 @@ class DiffeomorphicMap(object):
         self.disp_shape = np.asarray(disp_shape, dtype = np.int32)
 
         # If the discretization affine is None, we assume it's the identity
-        self.disp_affine = disp_affine
-        if(self.disp_affine is None):
-            self.disp_affine_inv = None
+        self.disp_grid2world = disp_grid2world
+        if(self.disp_grid2world is None):
+            self.disp_world2grid = None
         else:
-            self.disp_affine_inv = npl.inv(self.disp_affine)
+            self.disp_world2grid = npl.inv(self.disp_grid2world)
 
         # If domain_shape is not provided, we use the map's discretization shape
         if(domain_shape is None):
             self.domain_shape = self.disp_shape
         else:
             self.domain_shape = np.asarray(domain_shape, dtype = np.int32)
-        self.domain_affine = domain_affine
-        if(domain_affine is None):
-            self.domain_affine_inv = None
+        self.domain_grid2world = domain_grid2world
+        if(domain_grid2world is None):
+            self.domain_world2grid = None
         else:
-            self.domain_affine_inv = npl.inv(domain_affine)
+            self.domain_world2grid = npl.inv(domain_grid2world)
 
         # If codomain shape was not provided, we assume it is an endomorphism:
-        # use the same domain_shape and codomain_affine as the field domain
+        # use the same domain_shape and codomain_grid2world as the field domain
         if codomain_shape is None:
             self.codomain_shape = self.domain_shape
         else:
             self.codomain_shape = np.asarray(codomain_shape, dtype = np.int32)
-        self.codomain_affine = codomain_affine
-        if codomain_affine is None:
-            self.codomain_affine_inv = None
+        self.codomain_grid2world = codomain_grid2world
+        if codomain_grid2world is None:
+            self.codomain_world2grid = None
         else:
-            self.codomain_affine_inv = npl.inv(codomain_affine)
+            self.codomain_world2grid = npl.inv(codomain_grid2world)
 
         self.prealign = prealign
         if prealign is None:
@@ -550,8 +549,8 @@ class DiffeomorphicMap(object):
             else:
                 return vfu.warp_3d_nn
 
-    def _warp_forward(self, image, interpolation='linear', world_to_image=None,
-                      sampling_shape=None, sampling_affine=None):
+    def _warp_forward(self, image, interpolation='linear', image_world2grid=None,
+                      out_shape=None, out_grid2world=None):
         r"""Warps an image in the forward direction
 
         Deforms the input image under this diffeomorphic map in the forward
@@ -568,17 +567,17 @@ class DiffeomorphicMap(object):
         interpolation : string, either 'linear' or 'nearest'
             the type of interpolation to be used for warping, either 'linear'
             (for k-linear interpolation) or 'nearest' for nearest neighbor
-        world_to_image : array, shape (dim+1, dim+1)
+        image_world2grid : array, shape (dim+1, dim+1)
             the transformation bringing world (space) coordinates to voxel
             coordinates of the image given as input
-        sampling_shape : array, shape (dim,)
+        out_shape : array, shape (dim,)
             the number of slices, rows and columns of the desired warped image
-        sampling_affine : the transformation bringing voxel coordinates of the
+        out_grid2world : the transformation bringing voxel coordinates of the
             warped image to physical space
 
         Returns
         -------
-        warped : array, shape = sampling_shape or self.codomain_shape if None
+        warped : array, shape = out_shape or self.codomain_shape if None
             the warped image under this transformation in the forward direction
 
         Notes
@@ -610,26 +609,26 @@ class DiffeomorphicMap(object):
         grid-to-space transform telling us for each grid voxel what point in
         space we need to bring via interpolation). So, S is the matrix that
         converts the sampling grid (whose shape is given as parameter
-        'sampling_shape' ) to space coordinates.
+        'out_shape' ) to space coordinates.
         """
         #if no world-to-image transform is provided, we use the codomain info
-        if world_to_image is None:
-            world_to_image = self.codomain_affine_inv
+        if image_world2grid is None:
+            image_world2grid = self.codomain_world2grid
         #if no sampling info is provided, we use the domain info
-        if sampling_shape is None:
+        if out_shape is None:
             if self.domain_shape is None:
                 raise ValueError('Unable to infer sampling info. '
-                                 'Provide a valid sampling_shape.')
-            sampling_shape = self.domain_shape
+                                 'Provide a valid out_shape.')
+            out_shape = self.domain_shape
         else:
-            sampling_shape = np.asarray(sampling_shape, dtype=np.int32)
-        if sampling_affine is None:
-            sampling_affine = self.domain_affine
+            out_shape = np.asarray(out_shape, dtype=np.int32)
+        if out_grid2world is None:
+            out_grid2world = self.domain_grid2world
 
-        W = None if world_to_image == 'identity' else world_to_image
-        Dinv = self.disp_affine_inv
+        W = None if image_world2grid == 'identity' else image_world2grid
+        Dinv = self.disp_world2grid
         P = self.prealign
-        S = None if sampling_affine == 'identity' else sampling_affine
+        S = None if out_grid2world == 'identity' else out_grid2world
 
         #this is the matrix which we need to multiply the voxel coordinates
         #to interpolate on the forward displacement field ("in"side the
@@ -657,11 +656,11 @@ class DiffeomorphicMap(object):
         warp_f = self._get_warping_function(interpolation)
 
         warped = warp_f(image, self.forward, affine_idx_in, affine_idx_out,
-                        affine_disp, sampling_shape)
+                        affine_disp, out_shape)
         return warped
 
-    def _warp_backward(self, image, interpolation='linear', world_to_image=None,
-                       sampling_shape=None, sampling_affine=None):
+    def _warp_backward(self, image, interpolation='linear', image_world2grid=None,
+                       out_shape=None, out_grid2world=None):
         r"""Warps an image in the backward direction
 
         Deforms the input image under this diffeomorphic map in the backward
@@ -678,17 +677,17 @@ class DiffeomorphicMap(object):
         interpolation : string, either 'linear' or 'nearest'
             the type of interpolation to be used for warping, either 'linear'
             (for k-linear interpolation) or 'nearest' for nearest neighbor
-        world_to_image : array, shape (dim+1, dim+1)
+        image_world2grid : array, shape (dim+1, dim+1)
             the transformation bringing world (space) coordinates to voxel
             coordinates of the image given as input
-        sampling_shape : array, shape (dim,)
+        out_shape : array, shape (dim,)
             the number of slices, rows and columns of the desired warped image
-        sampling_affine : the transformation bringing voxel coordinates of the
+        out_grid2world : the transformation bringing voxel coordinates of the
             warped image to physical space
 
         Returns
         -------
-        warped : array, shape = sampling_shape or self.domain_shape if None
+        warped : array, shape = out_shape or self.domain_shape if None
             the warped image under this transformation in the backward direction
 
         Notes
@@ -719,25 +718,25 @@ class DiffeomorphicMap(object):
         grid-to-space transform telling us for each grid voxel what point in
         space we need to bring via interpolation). So, S is the matrix that
         converts the sampling grid (whose shape is given as parameter
-        'sampling_shape' ) to space coordinates.
+        'out_shape' ) to space coordinates.
 
         """
         #if no world-to-image transform is provided, we use the domain info
-        if world_to_image is None:
-            world_to_image = self.domain_affine_inv
+        if image_world2grid is None:
+            image_world2grid = self.domain_world2grid
 
         #if no sampling info is provided, we use the codomain info
-        if sampling_shape is None:
+        if out_shape is None:
             if self.codomain_shape is None:
-                raise ValueError('Unable to infer sampling info. Provide a valid sampling_shape.')
-            sampling_shape = self.codomain_shape
-        if sampling_affine is None:
-            sampling_affine = self.codomain_affine
+                raise ValueError('Unable to infer sampling info. Provide a valid out_shape.')
+            out_shape = self.codomain_shape
+        if out_grid2world is None:
+            out_grid2world = self.codomain_grid2world
 
-        W = None if world_to_image == 'identity' else world_to_image
-        Dinv = self.disp_affine_inv
+        W = None if image_world2grid == 'identity' else image_world2grid
+        Dinv = self.disp_world2grid
         Pinv = self.prealign_inv
-        S = None if sampling_affine == 'identity' else sampling_affine
+        S = None if out_grid2world == 'identity' else out_grid2world
 
         #this is the matrix which we need to multiply the voxel coordinates
         #to interpolate on the backward displacement field ("in"side the
@@ -764,12 +763,12 @@ class DiffeomorphicMap(object):
         warp_f = self._get_warping_function(interpolation)
 
         warped = warp_f(image, self.backward, affine_idx_in, affine_idx_out,
-                        affine_disp, sampling_shape)
+                        affine_disp, out_shape)
 
         return warped
 
-    def transform(self, image, interpolation='linear', world_to_image=None,
-                  sampling_shape=None, sampling_affine=None):
+    def transform(self, image, interpolation='linear', image_world2grid=None,
+                  out_shape=None, out_grid2world=None):
         r"""Warps an image in the forward direction
 
         Transforms the input image under this transformation in the forward
@@ -785,17 +784,17 @@ class DiffeomorphicMap(object):
         interpolation : string, either 'linear' or 'nearest'
             the type of interpolation to be used for warping, either 'linear'
             (for k-linear interpolation) or 'nearest' for nearest neighbor
-        world_to_image : array, shape (dim+1, dim+1)
+        image_world2grid : array, shape (dim+1, dim+1)
             the transformation bringing world (space) coordinates to voxel
             coordinates of the image given as input
-        sampling_shape : array, shape (dim,)
+        out_shape : array, shape (dim,)
             the number of slices, rows and columns of the desired warped image
-        sampling_affine : the transformation bringing voxel coordinates of the
+        out_grid2world : the transformation bringing voxel coordinates of the
             warped image to physical space
 
         Returns
         -------
-        warped : array, shape = sampling_shape or self.codomain_shape if None
+        warped : array, shape = out_shape or self.codomain_shape if None
             the warped image under this transformation in the forward direction
 
         Notes
@@ -803,18 +802,18 @@ class DiffeomorphicMap(object):
         See _warp_forward and _warp_backward documentation for further
         information.
         """
-        if sampling_shape is not None:
-            sampling_shape = np.asarray(sampling_shape, dtype=np.int32)
+        if out_shape is not None:
+            out_shape = np.asarray(out_shape, dtype=np.int32)
         if self.is_inverse:
-            warped = self._warp_backward(image, interpolation, world_to_image,
-                                         sampling_shape, sampling_affine)
+            warped = self._warp_backward(image, interpolation, image_world2grid,
+                                         out_shape, out_grid2world)
         else:
-            warped = self._warp_forward(image, interpolation, world_to_image,
-                                        sampling_shape, sampling_affine)
+            warped = self._warp_forward(image, interpolation, image_world2grid,
+                                        out_shape, out_grid2world)
         return np.asarray(warped)
 
-    def transform_inverse(self, image, interpolation='linear', world_to_image=None,
-                          sampling_shape=None, sampling_affine=None):
+    def transform_inverse(self, image, interpolation='linear', image_world2grid=None,
+                          out_shape=None, out_grid2world=None):
         r"""Warps an image in the backward direction
 
         Transforms the input image under this transformation in the backward
@@ -830,17 +829,17 @@ class DiffeomorphicMap(object):
         interpolation : string, either 'linear' or 'nearest'
             the type of interpolation to be used for warping, either 'linear'
             (for k-linear interpolation) or 'nearest' for nearest neighbor
-        world_to_image : array, shape (dim+1, dim+1)
+        image_world2grid : array, shape (dim+1, dim+1)
             the transformation bringing world (space) coordinates to voxel
             coordinates of the image given as input
-        sampling_shape : array, shape (dim,)
+        out_shape : array, shape (dim,)
             the number of slices, rows and columns of the desired warped image
-        sampling_affine : the transformation bringing voxel coordinates of the
+        out_grid2world : the transformation bringing voxel coordinates of the
             warped image to physical space
 
         Returns
         -------
-        warped : array, shape = sampling_shape or self.codomain_shape if None
+        warped : array, shape = out_shape or self.codomain_shape if None
             the warped image under this transformation in the backward direction
 
         Notes
@@ -849,11 +848,11 @@ class DiffeomorphicMap(object):
         information.
         """
         if self.is_inverse:
-            warped = self._warp_forward(image, interpolation, world_to_image,
-                                        sampling_shape, sampling_affine)
+            warped = self._warp_forward(image, interpolation, image_world2grid,
+                                        out_shape, out_grid2world)
         else:
-            warped = self._warp_backward(image, interpolation, world_to_image,
-                                       sampling_shape, sampling_affine)
+            warped = self._warp_backward(image, interpolation, image_world2grid,
+                                         out_shape, out_grid2world)
         return np.asarray(warped)
 
     def inverse(self):
@@ -870,11 +869,11 @@ class DiffeomorphicMap(object):
         """
         inv = DiffeomorphicMap(self.dim,
                                self.disp_shape,
-                               self.disp_affine,
+                               self.disp_grid2world,
                                self.domain_shape,
-                               self.domain_affine,
+                               self.domain_grid2world,
                                self.codomain_shape,
-                               self.codomain_affine,
+                               self.codomain_grid2world,
                                self.prealign)
         inv.forward = self.forward
         inv.backward = self.backward
@@ -905,13 +904,14 @@ class DiffeomorphicMap(object):
         expanded_backward = expand_f(self.backward, expand_factors, new_shape)
 
         expand_factors = np.append(expand_factors, [1])
-        expanded_affine = mult_aff(self.disp_affine, np.diag(expand_factors))
-        expanded_affine_inv = npl.inv(expanded_affine)
+        expanded_grid2world = mult_aff(self.disp_grid2world, 
+                                       np.diag(expand_factors))
+        expanded_world2grid = npl.inv(expanded_grid2world)
         self.forward = expanded_forward
         self.backward = expanded_backward
         self.disp_shape = new_shape
-        self.disp_affine = expanded_affine
-        self.disp_affine_inv = expanded_affine_inv
+        self.disp_grid2world = expanded_grid2world
+        self.disp_world2grid = expanded_world2grid
 
     def compute_inversion_error(self):
         r"""Inversion error of the displacement fields
@@ -941,7 +941,7 @@ class DiffeomorphicMap(object):
         fields
 
         """
-        Dinv = self.disp_affine_inv
+        Dinv = self.disp_world2grid
         if self.dim == 2:
             compose_f = vfu.compose_vector_fields_2d
         else:
@@ -966,11 +966,11 @@ class DiffeomorphicMap(object):
         """
         new_map = DiffeomorphicMap(self.dim,
                                    self.disp_shape,
-                                   self.disp_affine,
+                                   self.disp_grid2world,
                                    self.domain_shape,
-                                   self.domain_affine,
+                                   self.domain_grid2world,
                                    self.codomain_shape,
-                                   self.codomain_affine,
+                                   self.codomain_grid2world,
                                    self.prealign)
         new_map.forward = self.forward
         new_map.backward = self.backward
@@ -1016,7 +1016,7 @@ class DiffeomorphicMap(object):
         d1_inv = self.get_backward_field()
         d2_inv = phi.get_backward_field()
 
-        premult_disp = self.disp_affine_inv
+        premult_disp = self.disp_world2grid
 
         if self.dim == 2:
             compose_f = vfu.compose_vector_fields_2d
@@ -1038,7 +1038,7 @@ class DiffeomorphicMap(object):
         the domain and codomain affine transforms into the displacement field.
         The resulting transformation may be regarded as operating on the
         image spaces given by the domain and codomain discretization. As a
-        result, self.prealign, self.disp_affine, self.domain_affine and
+        result, self.prealign, self.disp_grid2world, self.domain_grid2world and
         self.codomain affine will be None (denoting Identity) in the resulting
         diffeomorphic map.
         """
@@ -1047,10 +1047,10 @@ class DiffeomorphicMap(object):
         else:
             simplify_f = vfu.simplify_warp_function_3d
         # Simplify the forward transform
-        D = self.domain_affine
+        D = self.domain_grid2world
         P = self.prealign
-        Rinv = self.disp_affine_inv
-        Cinv = self.codomain_affine_inv
+        Rinv = self.disp_world2grid
+        Cinv = self.codomain_world2grid
 
         #this is the matrix which we need to multiply the voxel coordinates
         #to interpolate on the forward displacement field ("in"side the
@@ -1071,9 +1071,9 @@ class DiffeomorphicMap(object):
                                  self.domain_shape)
 
         # Simplify the backward transform
-        C = self.codomain_affine_inv
+        C = self.codomain_world2grid
         Pinv = self.prealign_inv
-        Dinv = self.domain_affine_inv
+        Dinv = self.domain_world2grid
 
         affine_idx_in = mult_aff(Rinv, C)
         affine_idx_out = mult_aff(Dinv, mult_aff(Pinv, C))
@@ -1214,23 +1214,30 @@ class SymmetricDiffeomorphicRegistration(DiffeomorphicRegistration):
         self.mask0 = metric.mask0
 
     def update(self, current_displacement, new_displacement,
-               affine_inv, time_scaling):
+               disp_world2grid, time_scaling):
         r"""Composition of the current displacement field with the given field
 
         Interpolates new displacement at the locations defined by
-        current_displacement. Equivalently, computes the composition C of the given
-        displacement fields as C(x) = B(A(x)), where A is current_displacement and B
-        is new_displacement. This function is intended to be used with
-        deformation fields of the same sampling (e.g. to be called by a
-        registration algorithm).
+        current_displacement. Equivalently, computes the composition C of the
+        given displacement fields as C(x) = B(A(x)), where A is 
+        current_displacement and B is new_displacement. This function is
+        intended to be used with deformation fields of the same sampling
+        (e.g. to be called by a registration algorithm).
 
         Parameters
         ----------
-        new_displacement : array, shape (R, C, 2) or (S, R, C, 3)
-            the displacement field to be warped by current_displacement
         current_displacement : array, shape (R', C', 2) or (S', R', C', 3)
             the displacement field defining where to interpolate
             new_displacement
+        new_displacement : array, shape (R, C, 2) or (S, R, C, 3)
+            the displacement field to be warped by current_displacement
+        disp_world2grid : array, shape (dim+1, dim+1)
+            the space-to-grid transform associated with the displacements'
+            grid (we assume that both displacements are discretized over the
+            same grid)
+        time_scaling : float
+            scaling factor applied to d2. The effect may be interpreted as
+            moving d1 displacements along a factor (`time_scaling`) of d2.
 
         Returns
         -------
@@ -1240,8 +1247,12 @@ class SymmetricDiffeomorphicRegistration(DiffeomorphicRegistration):
         """
 
         mean_norm = np.sqrt(np.sum((np.array(current_displacement) ** 2), -1)).mean()
+        # We assume that both displacement fields have the same
+        # grid2world transform, which implies premult_index=Identity
+        # and premult_disp is the world2grid transform associated with
+        # the displacements' grid
         self.compose(current_displacement, new_displacement, None,
-                     affine_inv, time_scaling, current_displacement)
+                     disp_world2grid, time_scaling, current_displacement)
 
         return np.array(current_displacement), np.array(mean_norm)
 
@@ -1267,7 +1278,7 @@ class SymmetricDiffeomorphicRegistration(DiffeomorphicRegistration):
             self.compose = vfu.compose_vector_fields_3d
 
     def _init_optimizer(self, static, moving,
-                        static_affine, moving_affine, prealign):
+                        static_grid2world, moving_grid2world, prealign):
         r"""Initializes the registration optimizer
 
         Initializes the optimizer by computing the scale space of the input
@@ -1287,9 +1298,9 @@ class SymmetricDiffeomorphicRegistration(DiffeomorphicRegistration):
             lies inside the domain of the deformation fields. This is assumed to
             be accomplished by "pre-aligning" the moving image towards the
             static using an affine transformation given by the 'prealign' matrix
-        static_affine: array, shape (dim+1, dim+1)
+        static_grid2world: array, shape (dim+1, dim+1)
             the voxel-to-space transformation associated to the static image
-        moving_affine: array, shape (dim+1, dim+1)
+        moving_grid2world: array, shape (dim+1, dim+1)
             the voxel-to-space transformation associated to the moving image
         prealign: array, shape (dim+1, dim+1)
             the affine transformation (operating on the physical space)
@@ -1299,9 +1310,9 @@ class SymmetricDiffeomorphicRegistration(DiffeomorphicRegistration):
         self._connect_functions()
         #Extract information from the affine matrices to create the scale space
         static_direction, static_spacing = \
-            get_direction_and_spacings(static_affine, self.dim)
+            get_direction_and_spacings(static_grid2world, self.dim)
         moving_direction, moving_spacing = \
-            get_direction_and_spacings(moving_affine, self.dim)
+            get_direction_and_spacings(moving_grid2world, self.dim)
 
         #the images' directions don't change with scale
         self.static_direction = np.eye(self.dim + 1)
@@ -1317,7 +1328,7 @@ class SymmetricDiffeomorphicRegistration(DiffeomorphicRegistration):
             print('Creating scale space from the moving image. Levels: %d. '
                   'Sigma factor: %f.' % (self.levels, self.ss_sigma_factor))
 
-        self.moving_ss = ScaleSpace(moving, self.levels, moving_affine,
+        self.moving_ss = ScaleSpace(moving, self.levels, moving_grid2world,
                                     moving_spacing, self.ss_sigma_factor,
                                     self.mask0)
 
@@ -1325,7 +1336,7 @@ class SymmetricDiffeomorphicRegistration(DiffeomorphicRegistration):
             print('Creating scale space from the static image. Levels: %d. '
                   'Sigma factor: %f.' % (self.levels, self.ss_sigma_factor))
 
-        self.static_ss = ScaleSpace(static, self.levels, static_affine,
+        self.static_ss = ScaleSpace(static, self.levels, static_grid2world,
                                     static_spacing, self.ss_sigma_factor,
                                     self.mask0)
 
@@ -1341,26 +1352,26 @@ class SymmetricDiffeomorphicRegistration(DiffeomorphicRegistration):
         #Get the properties of the coarsest level from the static image. These
         #properties will be taken as the reference discretization.
         disp_shape = self.static_ss.get_domain_shape(self.levels-1)
-        disp_affine = self.static_ss.get_affine(self.levels-1)
+        disp_grid2world = self.static_ss.get_affine(self.levels-1)
 
         # The codomain discretization of both diffeomorphic maps is
         # precisely the discretization of the static image
         codomain_shape = static.shape
-        codomain_affine = static_affine
+        codomain_grid2world = static_grid2world
 
         #The forward model transforms points from the static image
         #to points on the reference (which is the static as well). So the domain
         #properties are taken from the static image. Since its the same as the
         #reference, we don't need to pre-align.
         domain_shape = static.shape
-        domain_affine = static_affine
+        domain_grid2world = static_grid2world
         self.static_to_ref = DiffeomorphicMap(self.dim,
                                               disp_shape,
-                                              disp_affine,
+                                              disp_grid2world,
                                               domain_shape,
-                                              domain_affine,
+                                              domain_grid2world,
                                               codomain_shape,
-                                              codomain_affine,
+                                              codomain_grid2world,
                                               None)
         self.static_to_ref.allocate()
 
@@ -1375,14 +1386,14 @@ class SymmetricDiffeomorphicRegistration(DiffeomorphicRegistration):
         #points in the moving physical space
         prealign_inv = None if prealign is None else npl.inv(prealign)
         domain_shape = moving.shape
-        domain_affine = moving_affine
+        domain_grid2world = moving_grid2world
         self.moving_to_ref = DiffeomorphicMap(self.dim,
                                                disp_shape,
-                                               disp_affine,
+                                               disp_grid2world,
                                                domain_shape,
-                                               domain_affine,
+                                               domain_grid2world,
                                                codomain_shape,
-                                               codomain_affine,
+                                               codomain_grid2world,
                                                prealign_inv)
         self.moving_to_ref.allocate()
 
@@ -1417,9 +1428,9 @@ class SymmetricDiffeomorphicRegistration(DiffeomorphicRegistration):
 
         current_disp_shape = \
             self.static_ss.get_domain_shape(self.current_level)
-        current_disp_affine = \
+        current_disp_grid2world = \
             self.static_ss.get_affine(self.current_level)
-        current_disp_affine_inv = \
+        current_disp_world2grid = \
             self.static_ss.get_affine_inv(self.current_level)
         current_disp_spacing = \
             self.static_ss.get_spacing(self.current_level)
@@ -1429,20 +1440,20 @@ class SymmetricDiffeomorphicRegistration(DiffeomorphicRegistration):
         wstatic = self.static_to_ref.transform_inverse(current_static, 'linear',
                                                        None,
                                                        current_disp_shape,
-                                                       current_disp_affine)
+                                                       current_disp_grid2world)
         wmoving = self.moving_to_ref.transform_inverse(current_moving, 'linear',
                                                         None,
                                                         current_disp_shape,
-                                                        current_disp_affine)
+                                                        current_disp_grid2world)
         #Pass both images to the metric. Now both images are sampled on the
         #reference grid (equal to the static image's grid) and the direction
         #doesn't change across scales
-        self.metric.set_moving_image(wmoving, current_disp_affine,
+        self.metric.set_moving_image(wmoving, current_disp_grid2world,
             current_disp_spacing, self.static_direction)
         self.metric.use_moving_image_dynamics(
             current_moving, self.moving_to_ref.inverse())
 
-        self.metric.set_static_image(wstatic, current_disp_affine,
+        self.metric.set_static_image(wstatic, current_disp_grid2world,
             current_disp_spacing, self.static_direction)
         self.metric.use_static_image_dynamics(
             current_static, self.static_to_ref.inverse())
@@ -1472,7 +1483,7 @@ class SymmetricDiffeomorphicRegistration(DiffeomorphicRegistration):
         #Add to current total field
         self.static_to_ref.forward, md_forward = self.update(
             self.static_to_ref.forward, fw_step,
-            current_disp_affine_inv, self.step_length)
+            current_disp_world2grid, self.step_length)
         del fw_step
 
         #Keep track of the forward energy
@@ -1495,7 +1506,7 @@ class SymmetricDiffeomorphicRegistration(DiffeomorphicRegistration):
         #Add to current total field
         self.moving_to_ref.forward, md_backward = self.update(
             self.moving_to_ref.forward, bw_step,
-            current_disp_affine_inv, self.step_length)
+            current_disp_world2grid, self.step_length)
         del bw_step
 
         #Keep track of the energy
@@ -1516,7 +1527,7 @@ class SymmetricDiffeomorphicRegistration(DiffeomorphicRegistration):
         self.static_to_ref.backward = np.array(
             self.invert_vector_field(
                 self.static_to_ref.forward,
-                current_disp_affine_inv,
+                current_disp_world2grid,
                 current_disp_spacing,
                 self.inv_iter, self.inv_tol, self.static_to_ref.backward))
 
@@ -1524,7 +1535,7 @@ class SymmetricDiffeomorphicRegistration(DiffeomorphicRegistration):
         self.moving_to_ref.backward = np.array(
             self.invert_vector_field(
                 self.moving_to_ref.forward,
-                current_disp_affine_inv,
+                current_disp_world2grid,
                 current_disp_spacing,
                 self.inv_iter, self.inv_tol, self.moving_to_ref.backward))
 
@@ -1532,7 +1543,7 @@ class SymmetricDiffeomorphicRegistration(DiffeomorphicRegistration):
         self.static_to_ref.forward = np.array(
             self.invert_vector_field(
                 self.static_to_ref.backward,
-                current_disp_affine_inv,
+                current_disp_world2grid,
                 current_disp_spacing,
                 self.inv_iter, self.inv_tol, self.static_to_ref.forward))
 
@@ -1540,7 +1551,7 @@ class SymmetricDiffeomorphicRegistration(DiffeomorphicRegistration):
         self.moving_to_ref.forward = np.array(
             self.invert_vector_field(
                 self.moving_to_ref.backward,
-                current_disp_affine_inv,
+                current_disp_world2grid,
                 current_disp_spacing,
                 self.inv_iter, self.inv_tol, self.moving_to_ref.forward))
 
@@ -1664,7 +1675,7 @@ class SymmetricDiffeomorphicRegistration(DiffeomorphicRegistration):
         if self.callback is not None:
             self.callback(self, RegistrationStages.OPT_END)
 
-    def optimize(self, static, moving, static_affine=None, moving_affine=None,
+    def optimize(self, static, moving, static_grid2world=None, moving_grid2world=None,
                  prealign=None):
         r"""
         Starts the optimization
@@ -1682,9 +1693,9 @@ class SymmetricDiffeomorphicRegistration(DiffeomorphicRegistration):
             lies inside the domain of the deformation fields. This is assumed to
             be accomplished by "pre-aligning" the moving image towards the
             static using an affine transformation given by the 'prealign' matrix
-        static_affine: array, shape (dim+1, dim+1)
+        static_grid2world: array, shape (dim+1, dim+1)
             the voxel-to-space transformation associated to the static image
-        moving_affine: array, shape (dim+1, dim+1)
+        moving_grid2world: array, shape (dim+1, dim+1)
             the voxel-to-space transformation associated to the moving image
         prealign: array, shape (dim+1, dim+1)
             the affine transformation (operating on the physical space)
@@ -1704,7 +1715,7 @@ class SymmetricDiffeomorphicRegistration(DiffeomorphicRegistration):
             print("Pre-align:", prealign)
 
         self._init_optimizer(static.astype(floating), moving.astype(floating),
-                             static_affine, moving_affine, prealign)
+                             static_grid2world, moving_grid2world, prealign)
         self._optimize()
         self._end_optimizer()
         return self.static_to_ref

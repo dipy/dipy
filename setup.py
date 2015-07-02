@@ -88,11 +88,6 @@ for modulename, other_sources, language in (
     ('dipy.reconst.recspeed', [], 'c'),
     ('dipy.reconst.vec_val_sum', [], 'c'),
     ('dipy.reconst.quick_squash', [], 'c'),
-    ('dipy.segment.cythonutils', [], 'c'),
-    ('dipy.segment.featurespeed', [], 'c'),
-    ('dipy.segment.metricspeed', [], 'c'),
-    ('dipy.segment.clusteringspeed', [], 'c'),
-    ('dipy.segment.clustering_algorithms', [], 'c'),
     ('dipy.tracking.distances', [], 'c'),
     ('dipy.tracking.streamlinespeed', [], 'c'),
     ('dipy.tracking.local.localtrack', [], 'c'),
@@ -101,13 +96,19 @@ for modulename, other_sources, language in (
     ('dipy.tracking.local.interpolation', [], 'c'),
     ('dipy.tracking.vox2track', [], 'c'),
     ('dipy.tracking.propspeed', [], 'c'),
+    ('dipy.segment.cythonutils', [], 'c'),
+    ('dipy.segment.featurespeed', [], 'c'),
+    ('dipy.segment.metricspeed', [], 'c'),
+    ('dipy.segment.clusteringspeed', [], 'c'),
+    ('dipy.segment.clustering_algorithms', [], 'c'),
     ('dipy.denoise.denspeed', [], 'c'),
     ('dipy.align.vector_fields', [], 'c'),
     ('dipy.align.sumsqdiff', [], 'c'),
     ('dipy.align.expectmax', [], 'c'),
     ('dipy.align.crosscorr', [], 'c'),
     ('dipy.align.bundlemin', [], 'c'),
-    ('dipy.align.transforms', [], 'c')):
+    ('dipy.align.transforms', [], 'c'),
+    ('dipy.align.mattes', [], 'c')):
 
     pyx_src = pjoin(*modulename.split('.')) + '.pyx'
     EXTS.append(Extension(modulename, [pyx_src] + other_sources,

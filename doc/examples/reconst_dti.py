@@ -137,7 +137,7 @@ the tensor:
                     \lambda_3)^2+(\lambda_2-\lambda_3)^2}{\lambda_1^2+
                     \lambda_2^2+\lambda_3^2}}
 
-Note that FA should be interperted carefully. It may be an indication of the
+Note that FA should be interpreted carefully. It may be an indication of the
 density of packing of fibers in a voxel, and the amount of myelin wrapping these
 axons, but it is not always a measure of "tissue integrity". For example, FA
 may decrease in locations in which there is fanning of white matter fibers, or
