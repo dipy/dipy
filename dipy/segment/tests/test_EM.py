@@ -6,12 +6,12 @@ from dipy.core.ndindex import ndindex
 from dipy.segment.rois_stats import seg_stats
 from dipy.segment.energy_mrf import ising
 from dipy.denoise.denspeed import add_padding_reflection
-from dipy.denoise.denspeed import remove_padding
+# from dipy.denoise.denspeed import remove_padding
 from dipy.segment.icm_map import icm
 import matplotlib.pyplot as plt
 
 dname = '/Users/jvillalo/Documents/GSoC_2015/Code/Data/T1_coronal/'
-#dname = '/home/eleftherios/Dropbox/DIPY_GSoC_2015/T1_coronal/'
+# dname = '/home/eleftherios/Dropbox/DIPY_GSoC_2015/T1_coronal/'
 
 img = nib.load(dname + 't1_coronal_stack.nii.gz')
 dataimg = img.get_data()
@@ -35,9 +35,9 @@ seg_init_masked_pad = add_padding_reflection(seg_init_masked, 1)
 
 print("computing the statistics of the ROIs (CSF, GM, WM)")
 mu, std, var = seg_stats(masked_img, seg_init_masked, 3)
-print("Intitial estimates of mu and std")
+print("Intitial estimates of mu and var")
 print(mu)
-print(std)
+print(var)
 
 nclass = 3
 
@@ -63,7 +63,8 @@ beta = 1.5
 mu_upd = mu
 var_upd = var
 # number of iterations of the mu/var updates
-niter = 1
+niter = 5
+# update segmented image after each ICM
 seg_upd = seg_init_masked
 
 # Notes clear implementation of P_L_N addition
@@ -71,7 +72,6 @@ seg_upd = seg_init_masked
 # a = np.array([[0, 0, 0], [0, 1, 0], [0, 0, 0]])
 # ising_kernel = np.array([a, ising, a])
 # P_L_N[i-1:i+2, j-1:j+2, k-1:k+2] += isign_kernel
-
 
 for i in range(0, niter):
 
@@ -124,23 +124,30 @@ for i in range(0, niter):
             if not masked_img[idx]:
                 continue
 
-            mu_num[:, :, :, l] = (P_L_Y[idx[0], idx[1], idx[2], l] * masked_img[idx])
-            var_num[:, :, :, l] = (P_L_Y[idx[0], idx[1], idx[2], l] * (masked_img[idx] - mu_upd[l]))
-            denm[:, :, :, l] = P_L_Y[idx[0], idx[1], idx[2], l]
-            
+            mu_num[idx[0], idx[1], idx[2], l] = (P_L_Y[idx[0], idx[1], idx[2], l] * masked_img[idx])
+            var_num[idx[0], idx[1], idx[2], l] = (P_L_Y[idx[0], idx[1], idx[2], l] * (masked_img[idx] - mu_upd[l])**2)
+            denm[idx[0], idx[1], idx[2], l] = P_L_Y[idx[0], idx[1], idx[2], l]
+                        
         mu_upd[l] = np.sum(applymask(mu_num[:, :, :, l], datamask)) / np.sum(applymask(denm[:, :, :, l], datamask))
-        var_upd[l] = np.sum(applymask(var_num[:, :, :, l], datamask)) / np.sum(applymask(denm[:, :, :, l], datamask))           
+        var_upd[l] = np.sum(applymask(var_num[:, :, :, l], datamask)) / np.sum(applymask(denm[:, :, :, l], datamask))
+        
+        print('class ', l)
+        print(np.sum(applymask(mu_num[:, :, :, l], datamask)))
+        print(np.sum(applymask(var_num[:, :, :, l], datamask)))
+        print(np.sum(applymask(denm[:, :, :, l], datamask)))
+        print(mu_upd[l], mu[l])
+        print(var_upd[l], var[l])          
             
 
 print('Show results')
 plt.figure()
 plt.imshow(seg_init_masked[:, :, 1])
 plt.figure()
-plt.imshow(P_L_Y[:, :, :, 0])
+plt.imshow(P_L_Y[:, :, 1, 0])
 plt.figure()
-plt.imshow(P_L_Y[:, :, :, 1])
+plt.imshow(P_L_Y[:, :, 1, 1])
 plt.figure()
-plt.imshow(P_L_Y[:, :, :, 2])
+plt.imshow(P_L_Y[:, :, 1, 2])
 plt.figure()
 plt.imshow(segmented[:, :, 1])
 
