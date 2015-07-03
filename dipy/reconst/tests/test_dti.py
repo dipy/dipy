@@ -112,8 +112,8 @@ def test_tensor_model():
     # Check that eigenvalues and eigenvectors are properly sorted through
     # that previous operation:
     for i in range(3):
-        assert_array_equal(np.dot(tensor, evecs[:, i]),
-                           evals[i] * evecs[:, i])
+        assert_array_almost_equal(np.dot(tensor, evecs[:, i]),
+                                  evals[i] * evecs[:, i])
     # Design Matrix
     X = dti.design_matrix(gtab)
     # Signals
