@@ -1,3 +1,9 @@
+"""
+============================
+Tissue Classification for T1
+============================
+"""
+
 import numpy as np
 import nibabel as nib
 
@@ -127,17 +133,17 @@ for i in range(0, niter):
             mu_num[idx[0], idx[1], idx[2], l] = (P_L_Y[idx[0], idx[1], idx[2], l] * masked_img[idx])
             var_num[idx[0], idx[1], idx[2], l] = (P_L_Y[idx[0], idx[1], idx[2], l] * (masked_img[idx] - mu_upd[l])**2)
             denm[idx[0], idx[1], idx[2], l] = P_L_Y[idx[0], idx[1], idx[2], l]
-                        
+
         mu_upd[l] = np.sum(applymask(mu_num[:, :, :, l], datamask)) / np.sum(applymask(denm[:, :, :, l], datamask))
         var_upd[l] = np.sum(applymask(var_num[:, :, :, l], datamask)) / np.sum(applymask(denm[:, :, :, l], datamask))
-        
+
         print('class ', l)
         print(np.sum(applymask(mu_num[:, :, :, l], datamask)))
         print(np.sum(applymask(var_num[:, :, :, l], datamask)))
         print(np.sum(applymask(denm[:, :, :, l], datamask)))
         print(mu_upd[l], mu[l])
-        print(var_upd[l], var[l])          
-            
+        print(var_upd[l], var[l])
+
 
 print('Show results')
 plt.figure()
