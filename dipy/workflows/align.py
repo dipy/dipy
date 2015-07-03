@@ -47,4 +47,5 @@ def syn_registration(moving, static, metric=CCMetric(3),
     warped_moving = mapping.transform(moving_data)
     new_image = nib.Nifti1Image(warped_moving, static_affine)
 
-    return new_image, np.array(mapping.forward)
+    return (new_image, nib.Nifti1Image(np.array(mapping.forward), moving_affine), 
+            nib.Nifti1Image(np.array(mapping.backward), static_affine))
