@@ -1,10 +1,10 @@
 import numpy as np
 import nibabel as nib
 
-from dipy.align.imwarp import SymmetricDiffeomorphicRegistration
-from dipy.align.imwarp import DiffeomorphicMap
-from dipy.align.metrics import CCMetric
-import dipy.align.vector_fields as vfu
+from imwarp import SymmetricDiffeomorphicRegistration
+from imwarp import DiffeomorphicMap
+from metrics import CCMetric
+import vector_fields as vfu
 
 
 def syn_registration(moving, static, metric=CCMetric(3), 
