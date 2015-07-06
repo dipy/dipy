@@ -1,5 +1,5 @@
 #!/usr/bin/python
-""" Classes and functions for fitting tensors """
+""" Classes and functions for fitting the diffusion kurtosis model """
 from __future__ import division, print_function, absolute_import
 
 import warnings
@@ -39,23 +39,25 @@ def apparent_kurtosis_coef(dki_params, sphere, min_diffusivity=0,
         Parameters are ordered as follow:
             1) Three diffusion tensor's eingenvalues
             2) Three lines of the eigenvector matrix each containing the first,
-               second and third coordinates of the eigenvector
+               second and third coordinates of the eigenvectors respectively
             3) Fifteen elements of the kurtosis tensor
-
     sphere : a Sphere class instance
         The AKC will be calculated for each of the vertices in the sphere
-
     min_diffusivity : float (optional)
         Because negative eigenvalues are not physical and small eigenvalues
         cause quite a lot of noise in diffusion based metrics, diffusivity
         values smaller than `min_diffusivity` are replaced with
         `min_diffusivity`. defaut = 0
-
     min_kurtosis : float (optional)
         Because high amplitude negative values of kurtosis are not physicaly
         and biologicaly pluasible, and these causes huge artefacts in kurtosis
         based measures, directional kurtosis values than `min_kurtosis` are
         replaced with `min_kurtosis`. defaut = -1
+
+    Returns
+    --------
+    AKC : ndarray (x, y, z, g) or (n, g)
+        Apparent kurtosis coefficient (AKC) for all g directions of a sphere.
 
     Notes
     -----
@@ -115,8 +117,8 @@ def _directional_kurtosis(dt, MD, kt, V, min_diffusivity=0, min_kurtosis=-1):
         mean diffusivity of the voxel
     kt : array (15,)
         elements of the kurtosis tensor of the voxel.
-    V : array (N, 3)
-        N of directions of a Sphere in Cartesian coordinates
+    V : array (g, 3)
+        g directions of a Sphere in Cartesian coordinates
     min_diffusivity : float (optional)
         Because negative eigenvalues are not physical and small eigenvalues
         cause quite a lot of noise in diffusion based metrics, diffusivity
@@ -127,6 +129,12 @@ def _directional_kurtosis(dt, MD, kt, V, min_diffusivity=0, min_kurtosis=-1):
         and biologicaly pluasible, and these causes huge artefacts in kurtosis
         based measures, directional kurtosis values than `min_kurtosis` are
         replaced with `min_kurtosis`. defaut = -1
+
+    Returns
+    --------
+    AKC : ndarray (g,)
+        Apparent kurtosis coefficient (AKC) in all g directions of a sphere for
+        a single voxel.
 
     See Also
     --------
@@ -178,14 +186,11 @@ def dki_prediction(dki_params, gtab, S0=150, snr=None):
             2) Three lines of the eigenvector matrix each containing the first,
                second and third coordinates of the eigenvector
             3) Fifteen elements of the kurtosis tensor
-
     gtab : a GradientTable class instance
         The gradient table for this prediction
-
     S0 : float or ndarray (optional)
         The non diffusion-weighted signal in every voxel, or across all
         voxels. Default: 150
-
     snr : float (optional)
         Signal to noise ratio, assuming Rician noise.  If set to None, no
         noise is added.
@@ -219,9 +224,9 @@ def dki_prediction(dki_params, gtab, S0=150, snr=None):
 
 
 class DiffusionKurtosisModel(ReconstModel):
-    """ Diffusion Kurtosis Tensor
+    """ Class for the Diffusion Kurtosis Model
     """
-    def __init__(self, gtab, fit_method="OLS_DKI", *args, **kwargs):
+    def __init__(self, gtab, fit_method="OLS", *args, **kwargs):
         """ Diffusion Kurtosis Tensor Model [1]
 
         Parameters
@@ -230,9 +235,9 @@ class DiffusionKurtosisModel(ReconstModel):
 
         fit_method : str or callable
             str can be one of the following:
-            'OLS_DKI' or 'ULLS_DKI' for ordinary least squares
+            'OLS' or 'ULLS' for ordinary least squares
                 dki.ols_fit_dki
-            'WLS_DKI' or 'UWLLS_DKI' for weighted ordinary least squares
+            'WLS' or 'UWLLS' for weighted ordinary least squares
                 dki.wls_fit_dki
 
             callable has to have the signature:
@@ -306,10 +311,6 @@ class DiffusionKurtosisModel(ReconstModel):
                 2) Three lines of the eigenvector matrix each containing the
                    first, second and third coordinates of the eigenvector
                 3) Fifteen elements of the kurtosis tensor
-
-        gtab : a GradientTable class instance
-            The gradient table for this prediction
-
         S0 : float or ndarray (optional)
             The non diffusion-weighted signal in every voxel, or across all
             voxels. Default: 1
@@ -318,12 +319,24 @@ class DiffusionKurtosisModel(ReconstModel):
 
 
 class DiffusionKurtosisFit(TensorFit):
-
+    """ Class for fitting the Diffusion Kurtosis Model"""
     def __init__(self, model, model_params):
         """ Initialize a DiffusionKurtosisFit class instance.
 
-        Since DKI is an extension of DTI, class instance is defined as a
-        subclass of the TensorFit from dti.py
+        Since DKI is an extension of DTI, class instance is defined as subclass
+        of the TensorFit from dti.py
+
+        Parameters
+        ----------
+        model : DiffusionKurtosisModel Class instance
+            Class instance containing the Diffusion Kurtosis Model for the fit
+        model_params : ndarray (x, y, z, 27) or (n, 27)
+            All parameters estimated from the diffusion kurtosis model.
+            Parameters are ordered as follow:
+                1) Three diffusion tensor's eingenvalues
+                2) Three lines of the eigenvector matrix each containing the
+                   first, second and third coordinates of the eigenvector
+                3) Fifteen elements of the kurtosis tensor
         """
         TensorFit.__init__(self, model, model_params)
 
@@ -350,19 +363,26 @@ class DiffusionKurtosisFit(TensorFit):
 
         Notes
         -----
-        The calculation of ADC, relies on the following relationship:
+        For each sphere direction with coordinates $(n_{1}, n_{2}, n_{3})$, the
+        calculation of AKC is done using formula:
 
         .. math ::
+            AKC(n)=\frac{MD^{2}}{ADC(n)^{2}}\sum_{i=1}^{3}\sum_{j=1}^{3}
+            \sum_{k=1}^{3}\sum_{l=1}^{3}n_{i}n_{j}n_{k}n_{l}W_{ijkl}
 
-            ADC = \vec{b} Q \vec{b}^T
+        where $W_{ijkl}$ are the elements of the kurtosis tensor, MD the mean
+        diffusivity and ADC the apparent diffusion coefficent computed as:
 
-        Where Q is the quadratic form of the tensor.
+        .. math ::
+            ADC(n)=\sum_{i=1}^{3}\sum_{j=1}^{3}n_{i}n_{j}D_{ij}
+
+        where $D_{ij}$ are the elements of the diffusion tensor.
         """
         return apparent_kurtosis_coef(self.model_params, sphere)
 
-    def dki_predict(self, gtab, S0=1):
+    def predict(self, gtab, S0=1):
         r""" Given a DKI model fit, predict the signal on the vertices of a
-        sphere
+        gradient table
 
         Parameters
         ----------
@@ -736,8 +756,4 @@ common_fit_methods = {'WLS': wls_fit_dki,
                       'OLS': ols_fit_dki,
                       'UWLLS': wls_fit_dki,
                       'ULLS': ols_fit_dki,
-                      'WLS_DKI': wls_fit_dki,
-                      'OLS_DKI': ols_fit_dki,
-                      'UWLLS_DKI': wls_fit_dki,
-                      'ULLS_DKI': ols_fit_dki
                       }
