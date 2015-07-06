@@ -632,6 +632,7 @@ def _wls_iter(design_matrix, inv_design, sig, min_diffusivity):
                second and third coordinates of the eigenvector
             3) Fifteen elements of the kurtosis tensor
     """
+    # Rename design_matrix only to make code easier to read below
     A = design_matrix
 
     # DKI ordinary linear least square solution
