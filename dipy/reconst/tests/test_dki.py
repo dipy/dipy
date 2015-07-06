@@ -88,13 +88,13 @@ def test_dki_fits():
     """ DKI fits are tested on noise free crossing fiber simulates """
 
     # OLS fitting
-    dkiM = dki.DiffusionKurtosisModel(gtab_2s, fit_method="OLS_DKI")
+    dkiM = dki.DiffusionKurtosisModel(gtab_2s, fit_method="OLS")
     dkiF = dkiM.fit(signal_cross)
 
     assert_array_almost_equal(dkiF.model_params, crossing_ref)
 
     # WLS fitting
-    dki_wlsM = dki.DiffusionKurtosisModel(gtab_2s, fit_method="WLS_DKI")
+    dki_wlsM = dki.DiffusionKurtosisModel(gtab_2s, fit_method="WLS")
     dki_wlsF = dki_wlsM.fit(signal_cross)
 
     assert_array_almost_equal(dki_wlsF.model_params, crossing_ref)

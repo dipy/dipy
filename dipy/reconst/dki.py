@@ -265,6 +265,18 @@ class DiffusionKurtosisModel(ReconstModel):
         self.design_matrix = design_matrix(self.gtab)
         self.args = args
         self.kwargs = kwargs
+        self.min_signal = self.kwargs.pop('min_signal', None)
+        if self.min_signal is not None and self.min_signal <= 0:
+            e_s = "The `min_signal` key-word argument needs to be strictly"
+            e_s += " positive."
+            raise ValueError(e_s)
+
+    def _min_positive_signal(self, data):
+        data = data.ravel()
+        if np.all(data == 0):
+            return 0.0001
+        else:
+            return data[data > 0].min()
 
     def fit(self, data, mask=None):
         """ Fit method of the DKI model class
@@ -430,7 +442,7 @@ class DiffusionKurtosisFit(TensorFit):
         return dki_prediction(self.model_params, self.gtab, S0)
 
 
-def ols_fit_dki(design_matrix, data, min_signal=1):
+def ols_fit_dki(design_matrix, data):
     r""" Computes ordinary least squares (OLS) fit to calculate the diffusion
     tensor and kurtosis tensor using a linear regression diffusion kurtosis
     model [1]_.
@@ -443,9 +455,6 @@ def ols_fit_dki(design_matrix, data, min_signal=1):
     data : array (N, g)
         Data or response variables holding the data. Note that the last
         dimension should contain the data. It makes no copies of data.
-    min_signal : default = 1
-        All values below min_signal are repalced with min_signal. This is done
-        in order to avoid taking log(0) durring the tensor fitting.
 
     Returns
     -------
@@ -467,10 +476,7 @@ def ols_fit_dki(design_matrix, data, min_signal=1):
            Estimation of tensors and tensor-derived measures in diffusional
            kurtosis imaging. Magn Reson Med. 65(3), 823-836
     """
-
     tol = 1e-6
-    if min_signal <= 0:
-        raise ValueError('min_signal must be > 0')
 
     # preparing data and initializing parameters
     data = np.asarray(data)
@@ -483,7 +489,7 @@ def ols_fit_dki(design_matrix, data, min_signal=1):
 
     # lopping OLS solution on all data voxels
     for vox in range(len(data_flat)):
-        dki_params[vox] = _ols_iter(inv_design, data_flat[vox], min_signal,
+        dki_params[vox] = _ols_iter(inv_design, data_flat[vox],
                                     min_diffusivity)
 
     # Reshape data according to the input data shape
@@ -492,7 +498,7 @@ def ols_fit_dki(design_matrix, data, min_signal=1):
     return dki_params
 
 
-def _ols_iter(inv_design, sig, min_signal, min_diffusivity):
+def _ols_iter(inv_design, sig, min_diffusivity):
     """ Helper function used by ols_fit_dki - Applies OLS fit of the diffusion
     kurtosis model to single voxel signals.
 
@@ -503,9 +509,6 @@ def _ols_iter(inv_design, sig, min_signal, min_diffusivity):
         the regression coefficients.
     sig : array (g,)
         Diffusion-weighted signal for a single voxel data.
-    min_signal : float
-        All values below min_signal are repalced with min_signal. This is done
-        in order to avoid taking log(0) durring the tensor fitting.
     min_diffusivity : float
         Because negative eigenvalues are not physical and small eigenvalues,
         much smaller than the diffusion weighting, cause quite a lot of noise
@@ -522,10 +525,6 @@ def _ols_iter(inv_design, sig, min_signal, min_diffusivity):
                second and third coordinates of the eigenvector
             3) Fifteen elements of the kurtosis tensor
     """
-
-    # removing small signals
-    sig = np.maximum(sig, min_signal)
-
     # DKI ordinary linear least square solution
     log_s = np.log(sig)
     result = np.dot(inv_design, log_s)
@@ -546,7 +545,7 @@ def _ols_iter(inv_design, sig, min_signal, min_diffusivity):
     return dki_params
 
 
-def wls_fit_dki(design_matrix, data, min_signal=1):
+def wls_fit_dki(design_matrix, data):
     r""" Computes weighted linear least squares (WLS) fit to calculate
     the diffusion tensor and kurtosis tensor using a weighted linear
     regression diffusion kurtosis model [1]_.
@@ -583,8 +582,6 @@ def wls_fit_dki(design_matrix, data, min_signal=1):
     """
 
     tol = 1e-6
-    if min_signal <= 0:
-        raise ValueError('min_signal must be > 0')
 
     # preparing data and initializing parametres
     data = np.asarray(data)
@@ -598,7 +595,7 @@ def wls_fit_dki(design_matrix, data, min_signal=1):
     # lopping WLS solution on all data voxels
     for vox in range(len(data_flat)):
         dki_params[vox] = _wls_iter(design_matrix, inv_design, data_flat[vox],
-                                    min_signal, min_diffusivity)
+                                    min_diffusivity)
 
     # Reshape data according to the input data shape
     dki_params = dki_params.reshape((data.shape[:-1]) + (27,))
@@ -606,7 +603,7 @@ def wls_fit_dki(design_matrix, data, min_signal=1):
     return dki_params
 
 
-def _wls_iter(design_matrix, inv_design, sig, min_signal, min_diffusivity):
+def _wls_iter(design_matrix, inv_design, sig, min_diffusivity):
     """ Helper function used by wls_fit_dki - Applies WLS fit of the diffusion
     kurtosis model to single voxel signals.
 
@@ -619,9 +616,6 @@ def _wls_iter(design_matrix, inv_design, sig, min_signal, min_diffusivity):
         Inverse of the design matrix.
     sig : array (g, )
         Diffusion-weighted signal for a single voxel data.
-    min_signal : float
-        All values below min_signal are repalced with min_signal. This is done
-        in order to avoid taking log(0) durring the tensor fitting.
     min_diffusivity : float
         Because negative eigenvalues are not physical and small eigenvalues,
         much smaller than the diffusion weighting, cause quite a lot of noise
@@ -639,9 +633,6 @@ def _wls_iter(design_matrix, inv_design, sig, min_signal, min_diffusivity):
             3) Fifteen elements of the kurtosis tensor
     """
     A = design_matrix
-
-    # removing small signals
-    sig = np.maximum(sig, min_signal)
 
     # DKI ordinary linear least square solution
     log_s = np.log(sig)
