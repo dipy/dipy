@@ -142,7 +142,20 @@ def streamtube(lines, colors=None, opacity=1, linewidth=0.01, tube_sides=9,
     ----------
     lines : list
         list of N curves represented as 2D ndarrays
-    colors : array (N, 3), tuple (3,), array (K,), array (X, Y, Z)
+
+    colors : array (N, 3), list of arrays, tuple (3,), array (K,), None
+        If None then a standard orientation colormap is used for every line.
+        If one tuple of color is used. Then all streamlines will have the same
+        colour.
+        If an array (N, 3) is given, where N is equal to the number of lines.
+        Then every line is coloured with a different RGB color.
+        If a list of RGB arrays is given then every point of every line takes
+        a different color.
+        If an array (K, ) is given, where K is the number of points of all
+        lines then these are considered as the values to be used by the
+        colormap.
+        If an array (X, Y, Z) or (X, Y, Z, 3) is given then the values for the
+        colormap are interpolated automatically using trilinear interpolation.
 
     opacity : float
     linewidth : float
@@ -264,8 +277,19 @@ def line(lines, colors=None, opacity=1, linewidth=1,
     ------------
     lines :  list of arrays
 
-    colors : array, shape (N,3)
-            Colormap where every triplet is encoding red, green and blue e.g.
+    colors : array (N, 3), list of arrays, tuple (3,), array (K,), None
+        If None then a standard orientation colormap is used for every line.
+        If one tuple of color is used. Then all streamlines will have the same
+        colour.
+        If an array (N, 3) is given, where N is equal to the number of lines.
+        Then every line is coloured with a different RGB color.
+        If a list of RGB arrays is given then every point of every line takes
+        a different color.
+        If an array (K, ) is given, where K is the number of points of all
+        lines then these are considered as the values to be used by the
+        colormap.
+        If an array (X, Y, Z) or (X, Y, Z, 3) is given then the values for the
+        colormap are interpolated automatically using trilinear interpolation.
 
     opacity : float, optional
 
