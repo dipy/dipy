@@ -142,7 +142,8 @@ def streamtube(lines, colors=None, opacity=1, linewidth=0.01, tube_sides=9,
     ----------
     lines : list
         list of N curves represented as 2D ndarrays
-    colors : array (N, 3), tuple (3,) or colormap
+    colors : array (N, 3), tuple (3,), array (K,), array (X, Y, Z)
+
     opacity : float
     linewidth : float
     tube_sides : int
@@ -261,28 +262,13 @@ def line(lines, colors=None, opacity=1, linewidth=1,
 
     Parameters
     ------------
-    lines :  list of arrays representing lines as 3d points  for example
-            lines = [np.random.rand(10,3),np.random.rand(20,3)]
-            represents 2 lines the first with 10 points and the second with
-            20 points in x,y,z coordinates.
+    lines :  list of arrays
+
     colors : array, shape (N,3)
             Colormap where every triplet is encoding red, green and blue e.g.
 
-            ::
-              r1,g1,b1
-              r2,g2,b2
-              ...
-              rN,gN,bN
-
-            where
-
-            ::
-              0=<r<=1,
-              0=<g<=1,
-              0=<b<=1
-
     opacity : float, optional
-        ``0 <= transparency <= 1``
+
     linewidth : float, optional
         Line thickness.
     spline_subdiv : int, optional
@@ -357,7 +343,19 @@ def lines_to_vtk_polydata(lines, colors=None):
     ----------
     lines : list
         list of N curves represented as 2D ndarrays
-    colors : array (N, 3), tuple (3,) or colormap
+    colors : array (N, 3), list of arrays, tuple (3,), array (K,), None
+        If None then a standard orientation colormap is used for every line.
+        If one tuple of color is used. Then all streamlines will have the same
+        colour.
+        If an array (N, 3) is given, where N is equal to the number of lines.
+        Then every line is coloured with a different RGB color.
+        If a list of RGB arrays is given then every point of every line takes
+        a different color.
+        If an array (K, ) is given, where K is the number of points of all
+        lines then these are considered as the values to be used by the
+        colormap.
+        If an array (X, Y, Z) or (X, Y, Z, 3) is given then the values for the
+        colormap are interpolated automatically using trilinear interpolation.
 
     Returns
     -------
