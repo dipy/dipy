@@ -570,12 +570,6 @@ def analyze_snapshot(im, bg_color=(0, 0, 0), colors=None,
         bg_color = im[0, 0]
         background = np.dot(bg_color, weights)
 
-        print('-----------')
-        print(im[0, 0])
-        print(im.dtype)
-        print(gray[0, 0])
-        print(background)
-
         if strel is None:
             strel = np.array([[0, 1, 0],
                               [1, 1, 1],

@@ -9,7 +9,9 @@ def test_renderer():
 
     ren = window.Renderer()
 
-    # background color for renderer
+    # background color for renderer (1, 0.5, 0)
+    # 0.01 added here to remove numerical errors across change from float
+    # to int
     bg_float = (1, 0.501, 0)
 
     # that will come in the image in the 0-255 uint scale
@@ -18,7 +20,7 @@ def test_renderer():
     ren.background(bg_float)
     # window.show(ren)
     arr = window.snapshot(ren)
-    print(bg_color)
+
     report = window.analyze_snapshot(arr,
                                      bg_color=bg_color,
                                      colors=[bg_color, (0, 127, 0)])
@@ -98,5 +100,4 @@ def test_parallel_projection():
 
 if __name__ == '__main__':
 
-    test_renderer()
-    #npt.run_module_suite()
+    npt.run_module_suite()
