@@ -1,6 +1,5 @@
 import numpy as np
 from dipy.viz import actor, window, fvtk
-from dipy.data import fetch_viz_icons, read_viz_icons
 import numpy.testing as npt
 
 

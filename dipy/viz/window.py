@@ -2,7 +2,12 @@ from __future__ import division, print_function, absolute_import
 
 import numpy as np
 from scipy import ndimage
-import Tkinter
+
+try:
+    import Tkinter as tkinter
+except ImportError:
+    import tkinter
+
 import tkFileDialog
 
 # Conditional import machinery for vtk
@@ -160,7 +165,7 @@ def open_file_dialog(file_types=[("All files", "*")]):
         Returns the full paths of all selected files
     """
 
-    root = Tkinter.Tk()
+    root = tkinter.Tk()
     root.withdraw()
     file_paths = tkFileDialog.askopenfilenames(filetypes=file_types)
     return file_paths
@@ -185,7 +190,7 @@ def save_file_dialog(initial_file='dipy.png', default_ext='.png',
         Complete filename of saved file
     """
 
-    root = Tkinter.Tk()
+    root = tkinter.Tk()
     root.withdraw()
     file_path = tkFileDialog.asksaveasfilename(initialfile=initial_file,
                                                defaultextension=default_ext,
