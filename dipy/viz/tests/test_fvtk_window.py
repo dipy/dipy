@@ -10,8 +10,8 @@ def test_renderer():
     ren = window.Renderer()
 
     # background color for renderer (1, 0.5, 0)
-    # 0.01 added here to remove numerical errors across change from float
-    # to int
+    # 0.01 added here to remove numerical errors when moving from float
+    # to int values
     bg_float = (1, 0.501, 0)
 
     # that will come in the image in the 0-255 uint scale
