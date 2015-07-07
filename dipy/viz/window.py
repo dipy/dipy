@@ -23,12 +23,15 @@ if have_vtk:
     version = vtk.vtkVersion.GetVTKSourceVersion().split(' ')[-1]
     major_version = vtk.vtkVersion.GetVTKMajorVersion()
     from vtk.util.numpy_support import vtk_to_numpy
+    vtkRenderer = vtk.vtkRenderer
+else:
+    vtkRenderer = object
 
 if have_imread:
     from scipy.misc import imread
 
 
-class Renderer(vtk.vtkRenderer):
+class Renderer(vtkRenderer):
     """ The key rendering preparation object
 
     This is an important object that is responsible for preparing objects
@@ -556,7 +559,14 @@ def analyze_snapshot(im, bg_color=(0, 0, 0), colors=None,
     if find_objects is True:
         weights = [0.299, 0.587, 0.144]
         gray = np.dot(im[..., :3], weights)
+        bg_color = im[0, 0]
         background = np.dot(bg_color, weights)
+
+        print('-----------')
+        print(im[0, 0])
+        print(im.dtype)
+        print(gray[0, 0])
+        print(background)
 
         if strel is None:
             strel = np.array([[0, 1, 0],

@@ -20,6 +20,7 @@ def test_renderer():
 
     # window.show(ren)
     arr = window.snapshot(ren)
+    print(bg_color)
     report = window.analyze_snapshot(arr,
                                      bg_color=bg_color,
                                      colors=[bg_color, (0, 127, 0)])
@@ -99,4 +100,5 @@ def test_parallel_projection():
 
 if __name__ == '__main__':
 
-    npt.run_module_suite()
+    test_renderer()
+    #npt.run_module_suite()
