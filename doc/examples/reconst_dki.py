@@ -10,7 +10,7 @@ the kurtosis tensor [Jensen2005]_. Measurements of non-Gaussian diffusion are
 of interest because they can be used to charaterize tissue microstructural
 heterogeneity [Jensen2010]_ and to derive concrete biophysical parameters as
 the density of axonal fibres and diffusion tortuosity [Fierem2011]_. Moreover,
-DKI can be used to resolve crossing fibers on tractography and to obtain
+DKI can be used to resolve crossing fibers in tractography and to obtain
 invariant rotational measures not limited to well aligned fiber populations
 [NetoHe2015]_.
 
@@ -48,7 +48,7 @@ needed to fully characterize the KT:
                     & W_{xxzz} & W_{yyzz} & W_{xxyz} & W_{xyyz} & W_{xyzz}
                     & & )\end{matrix}
 
-In the following example we show how to reconstruct your diffusion multi-shell
+In the following example we show how to reconstruct your diffusion multi shell
 datasets using the kurtosis tensor model.
 
 First import Dipy's DKI module:
@@ -81,7 +81,7 @@ data = img.get_data()
 """
 img contains a nibabel Nifti1Image object (with the data) and gtab contains a
 GradientTable object with information about the b-values and b-vectors. The
-b-values used on the loaded dataset are visualized above
+b-values used on the loaded dataset are visualized below
 """
 
 import matplotlib.pyplot as plt
@@ -99,11 +99,11 @@ fig1.savefig('HARDI193_bvalues.png')
 
 From the figure above, we can check that the loaded dataset contains three
 non-zero b-values as required for DKI. However the highest b-value of 3500
-$s.mm^{-2}$ is higher than normally used on DKI. Since DKI negletes diffusion
+$s.mm^{-2}$ is higher than normally used on DKI. Since DKI neglets diffusion
 signal components higher than the 4th order KT, a upper bound of b-value < 3000
-$s.mm^{-2}$ is normally implied to insure the fitting viability[Jensen2010]_.
-Following this, we discard the b-value shell of 3500 $s.mm^{-2}$ before DKI
-fitting
+$s.mm^{-2}$ is normally implied to decrease the influence of higher order terms
+[Jensen2010]_. Following this, we discard the b-value shell of 3500 $s.mm^{-2}$
+before DKI fitting.
 """
 
 select_ind = gtab.bvals < 3000
@@ -148,7 +148,7 @@ dkifit = dkimodel.fit(maskdata)
 """
 The fit method creates a DiffusionKurtosisFit object which contains all the
 diffusion and kurtosis fitting parameters and other DKI attributes. For
-instance, all DTI's standard tensor statistics can be computed from the
+instance, all diffusion standard tensor statistics can be computed from the
 DiffusionKurtosisFit instance as the fractional anisotropy (FA), the mean
 diffusivity (MD), the axial diffusivity (AD) and the radial diffusivity (RD).
 """
@@ -159,12 +159,11 @@ AD = dkifit.ad
 RD = dkifit.rd
 
 """
-Note that these DTI standard measures could also be computed from Dipy's DTI
-module. However, DTI models is only viable for b-values < 1500 $s.mm^{-2}$. For
-comparison purposes, we calculate above FA, MD, AD, and RD from Dipy's DTI
-modules.
-
-We first extract the data for the viable b-value for DTI.
+Note that these four standard measures could also be computed from Dipy's DTI
+module. For comparison purposes, we calculate below the FA, MD, AD, and RD
+using Dipy's DTI module. For this, we first extract the data of the lower
+b-value to decrease the effects of the signal components lager than the 2nd
+order which are not taken into account by DTI.
 """
 
 select_dti_ind = gtab.bvals < 1500
@@ -176,7 +175,7 @@ maskdata_for_dti, mask = median_otsu(selected_dti_data, 3, 1, True,
                                      vol_idx=range(10, 50), dilate=2)
 
 """ Then, we carry on with the DTI fitting and standard tensor statistics
-using DTI's module """
+by instantiate Dipy's TensorModel """
 
 import dipy.reconst.dti as dti
 
@@ -190,7 +189,7 @@ dti_RD = tenfit.rd
 
 """
 The DT based measured obtain from DKI and DTI can be easly visualized using
-matplotlib. For example, we show above the middle axial slices of FA, MD, AD,
+matplotlib. For example, we show below the middle axial slices of FA, MD, AD,
 and RD obtain from the DKI model (upper panels) and the DTI model (lower
 panels).
 """
