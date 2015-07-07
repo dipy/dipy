@@ -11,7 +11,7 @@ except ImportError:
 try:
     import tkFileDialog as filedialog
 except ImportError:
-    filedialog = tkinter.filedialog
+    from tkinter import filedialog
 
 # Conditional import machinery for vtk
 from dipy.utils.optpkg import optional_package
