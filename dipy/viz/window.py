@@ -8,7 +8,10 @@ try:
 except ImportError:
     import tkinter
 
-import tkFileDialog
+try:
+    import tkFileDialog as filedialog
+except ImportError:
+    filedialog = tkinter.filedialog
 
 # Conditional import machinery for vtk
 from dipy.utils.optpkg import optional_package
@@ -167,7 +170,7 @@ def open_file_dialog(file_types=[("All files", "*")]):
 
     root = tkinter.Tk()
     root.withdraw()
-    file_paths = tkFileDialog.askopenfilenames(filetypes=file_types)
+    file_paths = filedialog.askopenfilenames(filetypes=file_types)
     return file_paths
 
 
@@ -192,9 +195,9 @@ def save_file_dialog(initial_file='dipy.png', default_ext='.png',
 
     root = tkinter.Tk()
     root.withdraw()
-    file_path = tkFileDialog.asksaveasfilename(initialfile=initial_file,
-                                               defaultextension=default_ext,
-                                               filetypes=file_types)
+    file_path = filedialog.asksaveasfilename(initialfile=initial_file,
+                                             defaultextension=default_ext,
+                                             filetypes=file_types)
     return file_path
 
 
