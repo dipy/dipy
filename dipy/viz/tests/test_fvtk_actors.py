@@ -110,8 +110,37 @@ def test_bundle_maps():
     npt.assert_almost_equal(report.actors, 1)
     # window.show(renderer)
 
+    renderer.clear()
+
+    nb_points = np.sum([len(b) for b in bundle])
+    values = 100 * np.random.rand(nb_points)
+    # values[:nb_points/2] = 0
+
+    line = actor.streamtube(bundle, values, linewidth=0.1, lookup_colormap=lut)
+    renderer.add(line)
+    # window.show(renderer)
+
+    report = window.analyze_renderer(renderer)
+    npt.assert_equal(report.actors_classnames[0], 'vtkLODActor')
+
+    renderer.clear()
+
+    colors = np.random.rand(nb_points, 3)
+    # values[:nb_points/2] = 0
+
+    line = actor.line(bundle, colors, linewidth=2)
+    renderer.add(line)
+    # window.show(renderer)
+
+    report = window.analyze_renderer(renderer)
+    npt.assert_equal(report.actors_classnames[0], 'vtkLODActor')
+    # window.show(renderer)
+
+    arr = window.snapshot(renderer)
+    report2 = window.analyze_snapshot(arr)
+    npt.assert_equal(report2.objects, 1)
+
+
 if __name__ == "__main__":
 
     npt.run_module_suite()
-    # test_bundle_maps()
-    # test_streamtube_and_line_actors()

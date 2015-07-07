@@ -186,7 +186,7 @@ def streamtube(lines, colors=None, opacity=1, linewidth=0.01, tube_sides=9,
 
     See Also
     --------
-    dipy.viz.fvtk.line
+    dipy.viz.actor.line
     """
     # Poly data with lines and colors
     poly_data, is_colormap = lines_to_vtk_polydata(lines, colors)
@@ -340,7 +340,7 @@ def line(lines, colors=None, opacity=1, linewidth=1,
     else:
         actor = vtk.vtkActor()
 
-    actor = vtk.vtkActor()
+    # actor = vtk.vtkActor()
     actor.SetMapper(poly_mapper)
     actor.GetProperty().SetLineWidth(linewidth)
     actor.GetProperty().SetOpacity(opacity)
