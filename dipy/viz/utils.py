@@ -131,7 +131,7 @@ def trilinear_interp(input_array, indices):
     """ Evaluate the input_array data at the given indices
     """
 
-    if input_array.ndim <= 2  or input_array.ndim >= 5:
+    if input_array.ndim <= 2 or input_array.ndim >= 5:
         raise ValueError("Input array can only be 3d or 4d")
 
     x_indices = indices[:, 0]
