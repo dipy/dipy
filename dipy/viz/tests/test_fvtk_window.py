@@ -11,10 +11,10 @@ def test_renderer():
     ren = window.Renderer()
 
     # background color for renderer
-    bg_float = (1, 0.4, 0)
+    bg_float = (1, 0.501, 0)
 
     # that will come in the image in the 0-255 uint scale
-    bg_color = tuple((np.floor(255 * np.array(bg_float))).astype('uint8'))
+    bg_color = tuple((np.round(255 * np.array(bg_float))).astype('uint8'))
 
     ren.background(bg_float)
     # window.show(ren)
