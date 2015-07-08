@@ -35,21 +35,23 @@ def test_icm():
 
     mu = np.array([0.44230444, 0.64952929, 0.78890026])
     var = np.array([0.01061197, 0.00227377, 0.00127969])
-    img = masked_img
+    #img = masked_img
     seg_img = seg_init_masked
     classes = 3
     beta = 1.5
-
-    npt.assert_equal(icm(mu, var, img, seg_img, classes, beta), beta)
-
+    
+    seg1 = icm(mu, var, masked_img, seg_img, classes, beta)    
+    
     mu = np.array([0.44230444, 0.64952929, 0.78890026])
     var = np.array([0.01061197, 0.00227377, 0.00127969])
-    img = masked_ones
+    #img = masked_ones
     seg_img = seg_init_masked
     classes = 3
     beta = 1.5
-
-    npt.assert_equal(icm(mu, var, img, seg_img, classes, beta), beta)
+    
+    seg2 = icm(mu, var, masked_ones, seg_img, classes, beta)
+    
+    npt.assert_array_almost_equal(seg1, seg2)
 
 
 def test_total_energy():
