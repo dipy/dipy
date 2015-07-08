@@ -214,7 +214,7 @@ def dki_prediction(dki_params, gtab, S0=150):
     # lopping for all voxels
     for v in range(len(pred_sig)):
         DT = np.dot(np.dot(fevecs[v], np.diag(fevals[v])), fevecs[v].T)
-        dt = lower_triangular(DT)        
+        dt = lower_triangular(DT)
         MD = (dt[0] + dt[2] + dt[5]) / 3
         X = np.concatenate((dt, fkt[v]*MD*MD, np.array([np.log(S0)])), axis=0)
         pred_sig[v] = np.exp(np.dot(A, X))

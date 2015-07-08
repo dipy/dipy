@@ -119,6 +119,7 @@ def test_apparent_kurtosis_coef():
     for d in range(len(gtab.bvecs[gtab.bvals > 0])):
         assert_array_almost_equal(AKC[d], Kref_sphere)
 
+
 def test_dki_predict():
     dkiM = dki.DiffusionKurtosisModel(gtab_2s)
     pred = dkiM.predict(crossing_ref, S0=100)
@@ -128,5 +129,3 @@ def test_dki_predict():
     # just to check that it works with more than one voxel:
     pred_multi = dkiM.predict(multi_params, S0=100)
     assert_array_almost_equal(pred_multi, DWI)
-
-
