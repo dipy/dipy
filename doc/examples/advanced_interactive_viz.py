@@ -119,7 +119,7 @@ callback which will be given to the ``slider`` function.
 """
 
 def change_slice(obj, event):
-    z = int(np.round(obj.GetSliderRepresentation().GetValue()))
+    z = int(np.round(obj.get_value()))
     image_actor.display_extent(0, shape[0] - 1,
                                0, shape[1] - 1, z, z)
 

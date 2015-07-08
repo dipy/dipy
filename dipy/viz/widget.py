@@ -23,8 +23,8 @@ def slider(iren, ren, callback, min_value=0, max_value=255, value=125,
         Used to process events and handle them to the slider. Can also be given
         by the attribute ``ShowManager.iren``.
     ren :  vtkRenderer or Renderer
-        Used to update the slider's position when the window changes. Can also be given
-        by the ``ShowManager.ren`` attribute.
+        Used to update the slider's position when the window changes. Can also
+        be given by the ``ShowManager.ren`` attribute.
     callback : function
         Function that has at least ``obj`` and ``event`` as parameters. It will
         be called when the slider's bar has changed.
@@ -92,6 +92,12 @@ def slider(iren, ren, callback, min_value=0, max_value=255, value=125,
             slider_rep.GetPoint1Coordinate().SetCoordinateSystemToDisplay()
             slider_rep.GetPoint1Coordinate().SetValue(coord2[0] - size[0],
                                                       coord2[1] - size[1])
+
+        def set_value(self, value):
+            return self.GetSliderRepresentation().SetValue(value)
+
+        def get_value(self):
+            return self.GetSliderRepresentation().GetValue()
 
     slider = SliderWidget()
     slider.SetInteractor(iren)
