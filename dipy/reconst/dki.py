@@ -16,7 +16,6 @@ from dipy.reconst.dti import (TensorFit, fractional_anisotropy,
                               apparent_diffusion_coef, from_lower_triangular,
                               lower_triangular, decompose_tensor)
 
-from dipy.sims.voxel import DKI_signal
 from dipy.utils.six.moves import range
 from dipy.data import get_sphere
 from ..core.gradients import gradient_table
@@ -174,7 +173,7 @@ def _directional_kurtosis(dt, MD, kt, V, min_diffusivity=0, min_kurtosis=-1):
     return (MD/ADC) ** 2 * AKC
 
 
-def dki_prediction(dki_params, gtab, S0=150, snr=None):
+def dki_prediction(dki_params, gtab, S0=150):
     """ Predict a signal given diffusion kurtosis imaging parameters.
 
     Parameters
@@ -191,9 +190,6 @@ def dki_prediction(dki_params, gtab, S0=150, snr=None):
     S0 : float or ndarray (optional)
         The non diffusion-weighted signal in every voxel, or across all
         voxels. Default: 150
-    snr : float (optional)
-        Signal to noise ratio, assuming Rician noise.  If set to None, no
-        noise is added.
 
     Returns
     --------
@@ -206,6 +202,9 @@ def dki_prediction(dki_params, gtab, S0=150, snr=None):
     """
     evals, evecs, kt = split_dki_param(dki_params)
 
+    # Define DKI design matrix according to given gtab
+    A = design_matrix(gtab)
+
     # Flat parameters and initialize pred_sig
     fevals = evals.reshape((-1, evals.shape[-1]))
     fevecs = evals.reshape((-1, evecs.shape[-2]))
@@ -214,8 +213,10 @@ def dki_prediction(dki_params, gtab, S0=150, snr=None):
 
     # lopping for all voxels
     for v in range(len(pred_sig)):
-        DT = np.dot(np.dot(fevecs[v], np.diag(fevals[v])), fevecs[v].T)
-        pred_sig[v] = DKI_signal(gtab, lower_triangular(DT), fkt[v], S0, snr)
+        dt = np.dot(np.dot(fevecs[v], np.diag(fevals[v])), fevecs[v].T)
+        MD = (dt[0] + dt[2] + dt[5]) / 3
+        X = np.concatenate((dt, fkt[v]*MD*MD, np.array([np.log(S0)])), axis=0)
+        pred_sig[v] = np.exp(np.dot(A, X))
 
     # Reshape data according to the shape of dki_params
     pred_sig = pred_sig.reshape(dki_params.shape + len(pred_sig))
@@ -632,7 +633,6 @@ def _wls_iter(design_matrix, inv_design, sig, min_diffusivity):
                second and third coordinates of the eigenvector
             3) Fifteen elements of the kurtosis tensor
     """
-    # Rename design_matrix only to make code easier to read below
     A = design_matrix
 
     # DKI ordinary linear least square solution
