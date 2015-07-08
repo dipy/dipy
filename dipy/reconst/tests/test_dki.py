@@ -39,6 +39,7 @@ frac_cross = [fie*50, (1-fie) * 50, fie*50, (1-fie) * 50]
 
 # Noise free simulates
 signal_cross, dt_cross, kt_cross = multi_tensor_dki(gtab_2s, mevals_cross,
+                                                    S0=100,
                                                     angles=angles_cross,
                                                     fractions=frac_cross,
                                                     snr=None)
@@ -58,7 +59,7 @@ Di = 0.00099
 De = 0.00226
 mevals_sph = np.array([[Di, Di, Di], [De, De, De]])
 frac_sph = [50, 50]
-signal_sph, dt_sph, kt_sph = multi_tensor_dki(gtab_2s, mevals_sph,
+signal_sph, dt_sph, kt_sph = multi_tensor_dki(gtab_2s, mevals_sph, S0=100,
                                               fractions=frac_sph,
                                               snr=None)
 evals_sph, evecs = decompose_tensor(from_lower_triangular(dt_sph))
@@ -117,3 +118,15 @@ def test_apparent_kurtosis_coef():
     # check all direction
     for d in range(len(gtab.bvecs[gtab.bvals > 0])):
         assert_array_almost_equal(AKC[d], Kref_sphere)
+
+def test_dki_predict():
+    dkiM = dki.DiffusionKurtosisModel(gtab_2s)
+    pred = dkiM.predict(crossing_ref, S0=100)
+
+    assert_array_almost_equal(pred, signal_cross)
+
+    # just to check that it works with more than one voxel:
+    pred_multi = dkiM.predict(multi_params, S0=100)
+    assert_array_almost_equal(pred_multi, DWI)
+
+
