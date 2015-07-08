@@ -2,7 +2,6 @@
 from __future__ import division, print_function, absolute_import
 
 import numpy as np
-from dipy.core.ndindex import ndindex
 from scipy.ndimage import map_coordinates
 
 # Conditional import machinery for vtk
