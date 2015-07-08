@@ -99,7 +99,7 @@ fig1.savefig('HARDI193_bvalues.png')
 
 From the figure above, we can check that the loaded dataset contains three
 non-zero b-values as required for DKI. However the highest b-value of 3500
-$s.mm^{-2}$ is higher than normally used on DKI. Since DKI neglets diffusion
+$s.mm^{-2}$ is higher than normally used on DKI. Since DKI neglects diffusion
 signal components higher than the 4th order KT, a upper bound of b-value < 3000
 $s.mm^{-2}$ is normally implied to decrease the influence of higher order terms
 [Jensen2010]_. Following this, we discard the b-value shell of 3500 $s.mm^{-2}$
@@ -175,7 +175,7 @@ maskdata_for_dti, mask = median_otsu(selected_dti_data, 3, 1, True,
                                      vol_idx=range(10, 50), dilate=2)
 
 """ Then, we carry on with the DTI fitting and standard tensor statistics
-by instantiate Dipy's TensorModel """
+by instantiating Dipy's TensorModel """
 
 import dipy.reconst.dti as dti
 
