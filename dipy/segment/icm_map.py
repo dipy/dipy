@@ -1,6 +1,5 @@
 from __future__ import division, print_function, absolute_import
 
-# Use ICM to segment T1 image with MRF
 import numpy as np
 from dipy.core.ndindex import ndindex
 from dipy.segment.energy_mrf import total_energy
@@ -8,6 +7,24 @@ from dipy.denoise.denspeed import add_padding_reflection
 
 
 def icm(mu, var, masked_img, seg_img, classes, beta):
+    r"""Use ICM to segment T1 image with MRF
+    Parameters
+    -----------
+    
+    mu : 1x3 ndarray - mean of each tissue
+    var : 1x3 ndarray - variance of each tissue
+    masked_img : 3D ndarray - masked T1 structural image
+    seg_img : 3D ndarray - initial segmatation provided as an input
+    classes : integer - number of tissue classes
+    beta : float - the weight of the neighborhood
+    
+    
+    Returns
+    --------
+    
+    segmented : 3D ndarray - segmentation of the input T1 structural image
+    
+    """
 
     totalE = np.zeros(classes)
     L = range(1, classes + 1)

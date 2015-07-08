@@ -6,21 +6,19 @@ def seg_stats(input_image, seg_image, nclass):
     r""" Mean and standard variation for 3 tissue classes
 
     1 is CSF
-    2 is gray matter
+    2 is grey matter
     3 is white matter
 
     Parameters
     ----------
-    input_image : ndarray
-        blah blah
-
-
+    input_image : ndarray of grey level T1 image
+    seg_image : ndarray of initital segmentation, also an image
+    nclass : float numeber of classes (three in most cases)
 
     Returns
     -------
-    mu, std : float
-        Mean and standard deviation for every class
-
+    mu, std, var : ndarray of dimensions 1x3
+        Mean, standard deviation and variance for every class
 
     """
     mu = np.zeros(nclass)
