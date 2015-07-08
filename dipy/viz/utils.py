@@ -128,13 +128,15 @@ def rotation_from_lines(lines, use_line_dir=True, use_full_eig=False):
     return transform
 
 
-def trilinear_interp(input_array, indices):
+def map_coordinates_3d_4d(input_array, indices):
     """ Evaluate the input_array data at the given indices
+    using trilinear interpolation
 
     Parameters
     ----------
     input_array : ndarray,
         3D or 4D array
+    indices : ndarray
 
     Returns
     -------

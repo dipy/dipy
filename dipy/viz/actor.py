@@ -4,7 +4,7 @@ import numpy as np
 
 from dipy.viz.colormap import line_colors
 from dipy.viz.utils import numpy_to_vtk_points, numpy_to_vtk_colors
-from dipy.viz.utils import set_input, trilinear_interp
+from dipy.viz.utils import set_input, map_coordinates_3d_4d
 from dipy.core.ndindex import ndindex
 
 # Conditional import machinery for vtk
@@ -431,7 +431,7 @@ def lines_to_vtk_polydata(lines, colors=None):
                 vtk_colors = numpy_to_vtk_colors(255 * cols_arr[colors_mapper])
             else:  # colormap
                 #  get colors for each vertex
-                cols_arr = trilinear_interp(cols_arr, points_array)
+                cols_arr = map_coordinates_3d_4d(cols_arr, points_array)
                 vtk_colors = numpy_support.numpy_to_vtk(cols_arr, deep=True)
                 is_colormap = True
 

@@ -1,8 +1,9 @@
 import numpy as np
 import numpy.testing as npt
+from dipy.viz.utils import map_coordinates_3d_4d
 
 
-def trilinear_interp(input_array, indices):
+def trilinear_interp_numpy(input_array, indices):
     """ Evaluate the input_array data at the given indices
     """
 
@@ -54,30 +55,18 @@ def test_trilinear_interp():
 
     indices = np.array([[0, 0, 0], [1, 1, 1], [2, 2, 2], [1.5, 1.5, 1.5]])
 
-    values = trilinear_interp(A, indices)
-    print(values)
-
-    values2 = map_coordinates(A, indices.T, order=1)
-    print(values2)
-
+    values = trilinear_interp_numpy(A, indices)
+    values2 = map_coordinates_3d_4d(A, indices)
     npt.assert_almost_equal(values, values2)
 
     B = np.zeros((5, 5, 5, 3))
     B[2, 2, 2] = np.array([1, 1, 1])
 
-    values = trilinear_interp(B, indices)
-    print(values)
-
-    values_4d = []
-    for i in range(B.shape[-1]):
-        values_tmp = map_coordinates(B[..., i], indices.T, order=1)
-        values_4d.append(values_tmp)
-    values_4d = np.ascontiguousarray(np.array(values_4d).T)
-
-    print(values_4d)
+    values = trilinear_interp_numpy(B, indices)
+    values_4d = map_coordinates_3d_4d(B, indices)
     npt.assert_almost_equal(values, values_4d)
 
 
 if __name__ == '__main__':
 
-    test_trilinear_interp()
+    npt.run_module_suite()
