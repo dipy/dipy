@@ -906,3 +906,54 @@ def compose_transformations(*mats):
 
     return prev
 
+
+def perpendicular_directions(v, num=30, half=False):
+    r""" Computes n equaly spaced perpendicular directions relative to a given
+    vector v
+
+    Parameters
+    -----------
+    v : array (3,)
+        Array containing the three cartesian coordinates of vector v
+    num : int, optional
+        Number of perpendicular directions to generate
+    half : bool, optional
+        If haph is True, perpendicular directions are sampled on halp of the
+        unit circunference perpendicular to v, otherwive perpendicular
+        directions are sampled on the full circunference. Defaut of half is
+        False
+    
+    Returns
+    -------
+    psamples : array (n, 3)
+        array of vectors perpendicular to v
+    
+    Notes
+    --------
+    Function is implemented according to:
+
+    
+    """
+    # Float error used for floats comparison 
+    er = np.finfo(v[0]).eps * 1e3  
+    
+    # Define circunference or semi-circunference
+    if half == True:
+        a = np.linspace(0., np.pi, num=num, endpoint=False)
+    else:
+        a = np.linspace(0., 2 * np.pi, num=num, endpoint=False)
+
+    cosa = np.cos(a)
+    sina = np.sin(a)
+
+    # Check if vector is not aligned to the x axis. 
+    if v[0] > er:
+        sq = np.sqrt(v[1]**2 + v[2]**2)
+        psamples = np.array([- sq*sina, (v[0]*v[1]*sina - v[2]*cosa) / sq,
+                             (v[0]*v[2]*sina + v[1]*cosa) / sq])
+    else:
+        sq = np.sqrt(v[0]**2+v[2]**2);
+        psamples = np.array([- (v[2]*cosa + v[0]*v[1]*sina) / sq, sina*sq,
+                             (v[0]*cosa - v[2]*v[1]*sina) / sq])
+
+    return psamples.T
