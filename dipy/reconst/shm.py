@@ -969,8 +969,23 @@ def sh_to_sf_matrix(sphere, sh_order, basis_type=None, return_inv=True, smooth=0
 def sh_to_ap(coeffs_mtx, normal_factor=0.00001):
     """ Calculates anisotropic power map with a given SH coeffecient matrix
 
+    Notes
+    ----------
+    Calculate AP image based on a IxJxKxC SH coeffecient matrix based on the equation:
+    $$ AP = \sum_{l=2,4,6,...}{\frac{1}{2l+1} \sum_{m=-l}{|a_{l,m}|^2}} $$
+
+    Where dim C is made of a flattened lxm coeffecient, where l are the SH levels.
+    and m = 2l+1.
+    So l=1 has 1 coeffecient, l=2 has 5, ... l=8 has 17 and so on.
+    A l=2 SH coeffecient matrix will then be composed of a IxJxKx6 volume. 
+
+    The final AP image is then normalized by log(AP/normal_factor). 
+    All values < 0 are discarded. 
+
+
+
     References
-    __________
+    ----------
     .. [1]  Dell’Acqua, F., Lacerda, L., Catani, M., Simmons, A., 2014. 
             Anisotropic Power Maps: A diffusion contrast to reveal low anisotropy tissues from HARDI data, 
             in: Proceedings of International Society for Magnetic Resonance in Medicine. Milan, Italy.
@@ -988,6 +1003,8 @@ def sh_to_ap(coeffs_mtx, normal_factor=0.00001):
     AP : ndarray
         The resulting power image.
     """
+
+    from dipy.utils.six.moves import xrange
 
     dim = coeffs_mtx.shape[:-1]
     n_coeffs = coeffs_mtx.shape[-1]
