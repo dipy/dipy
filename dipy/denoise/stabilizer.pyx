@@ -9,6 +9,9 @@ from scipy.special import erfinv
 from dipy.denoise.hyp1f1 import hyp1f1 as cython_mpmath1f1
 
 from dipy.utils.optpkg import optional_package
+
+cdef bint have_cython_gsl, have_mpmath
+
 cython_gsl, have_cython_gsl, _ = optional_package("cython_gsl")
 mpmath, have_mpmath, _ = optional_package("mpmath")
 
@@ -237,12 +240,11 @@ def fixed_point_finder(m_hat, sigma, N, max_iter=100, eps=1e-4):
     and its applications in MRI.
     Journal of Magnetic Resonance 2009; 197: 108-119.
     """
-    with nogil:
-        return _fixed_point_finder(m_hat, sigma, N, max_iter, eps)
+    return _fixed_point_finder(m_hat, sigma, N, max_iter, eps)
 
 
 cdef double _fixed_point_finder(double m_hat, double sigma, int N,
-                                int max_iter=100, double eps=1e-4) nogil:
+                                int max_iter=100, double eps=1e-4):
     """Fixed point formula for finding eta. Table 1 p. 11 of [1].
 
     m_hat : float
@@ -273,30 +275,31 @@ cdef double _fixed_point_finder(double m_hat, double sigma, int N,
         int cond = True
         int n_iter = 0
 
-    # Initial estimated value is below the noise floor, so just return 0
-    if m_hat < sqrt(0.5 * M_PI) * sigma:
-        return 0
+    with nogil:
+        # Initial estimated value is below the noise floor, so just return 0
+        if m_hat < sqrt(0.5 * M_PI) * sigma:
+            return 0
 
-    delta = _beta(N) * sigma - m_hat
+        delta = _beta(N) * sigma - m_hat
 
-    if fabs(delta) < 1e-15:
-        return 0
+        if fabs(delta) < 1e-15:
+            return 0
 
-    m = m_hat
-    t0 = m
-    t1 = _fixed_point_k(t0, m, sigma, N)
-
-    while cond:
-
-        t0 = t1
+        m = m_hat
+        t0 = m
         t1 = _fixed_point_k(t0, m, sigma, N)
-        n_iter += 1
-        cond = fabs(t1 - t0) > eps
 
-        if n_iter > max_iter:
-            break
+        while cond:
 
-    return t1
+            t0 = t1
+            t1 = _fixed_point_k(t0, m, sigma, N)
+            n_iter += 1
+            cond = fabs(t1 - t0) > eps
+
+            if n_iter > max_iter:
+                break
+
+        return t1
 
 
 cdef double _beta(int N) nogil:

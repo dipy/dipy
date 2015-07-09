@@ -8,6 +8,10 @@ from copy import deepcopy
 from os.path import join as pjoin, dirname, exists
 from glob import glob
 
+from dipy.utils.optpkg import optional_package
+cython_gsl, have_cython_gsl, _ = optional_package("cython_gsl")
+
+
 # BEFORE importing distutils, remove MANIFEST. distutils doesn't properly
 # update it when the contents of directories change.
 if exists('MANIFEST'): os.remove('MANIFEST')
@@ -97,6 +101,8 @@ for modulename, other_sources, language in (
     ('dipy.denoise.denspeed', [], 'c'),
     ('dipy.denoise.enhancement_kernel', [], 'c'),
     ('dipy.denoise.shift_twist_convolution', [], 'c'),
+    ('dipy.denoise.hyp1f1', [], 'c'),
+    ('dipy.denoise.stabilizer', [], 'c'),
     ('dipy.align.vector_fields', [], 'c'),
     ('dipy.align.sumsqdiff', [], 'c'),
     ('dipy.align.expectmax', [], 'c'),
@@ -110,6 +116,19 @@ for modulename, other_sources, language in (
                           language=language,
                           **deepcopy(ext_kwargs)))  # deepcopy lists
 
+# Build gsl cython extension if present
+if have_cython_gsl:
+    pyxfile = 'dipy/denoise/stabilizer.pyx'
+    ext_name = "dipy.denoise.stabilizer"
+
+    cython_gsl_ext = Extension(ext_name,
+                               [pyxfile],
+                               libraries=cython_gsl.get_libraries(),
+                               library_dirs=[cython_gsl.get_library_dir()],
+                               cython_include_dirs=[cython_gsl.get_cython_include_dir()],
+                               include_dirs=[np.get_include()])
+
+    EXTS.append(cython_gsl_ext)
 
 # Do our own build and install time dependency checking. setup.py gets called in
 # many different ways, and may be called just to collect information (egg_info).

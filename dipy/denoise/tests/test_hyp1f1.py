@@ -1,0 +1,48 @@
+import numpy as np
+from dipy.denoise.hyp1f1 import hyp1f1
+
+
+def test_hyp1f1():
+
+    # Some values from the gnu gsl tests
+
+    np.testing.assert_allclose(hyp1f1(1, 1, 0.5), 1.6487212707001281468)
+    np.testing.assert_allclose(hyp1f1(1, 2, 500.0), 2.8071844357056748215e+214)
+    np.testing.assert_allclose(hyp1f1(1, 2, -500.0), 0.002)
+    np.testing.assert_allclose(hyp1f1(8, 1, 0.5), 13.108875178030540372)
+    np.testing.assert_allclose(hyp1f1(10, 1, 1.0),  131.63017574352619931)
+    np.testing.assert_allclose(hyp1f1(10, 1, 10.0), 8.514625476546280796e+09)
+    np.testing.assert_allclose(hyp1f1(10, 1, 100.0),  1.5671363646800353320e+56)
+    np.testing.assert_allclose(hyp1f1(10, 20, 1.0),  1.6585618002669675465)
+    np.testing.assert_allclose(hyp1f1(10, 20, 10.0),  265.26686430340188871)
+    np.testing.assert_allclose(hyp1f1(10, 20, 100.0), 3.640477355063227129e+34)
+    np.testing.assert_allclose(hyp1f1(10, 100, 1.0),  1.1056660194025527099)
+    np.testing.assert_allclose(hyp1f1(10, 100, 10.0),  2.8491063634727594206)
+    np.testing.assert_allclose(hyp1f1(10, 100, 40.0),  133.85880835831230986)
+    np.testing.assert_allclose(hyp1f1(10, 100, 100.0),  8.032171336754168282e+07)
+    np.testing.assert_allclose(hyp1f1(100, 1, 1.0),  6.892842729046469965e+07)
+    np.testing.assert_allclose(hyp1f1(100, 1, 10.0),  2.4175917112200409098e+28)
+    np.testing.assert_allclose(hyp1f1(100, 1, 100.0),  1.9303216896309102993e+110)
+    np.testing.assert_allclose(hyp1f1(100, 200, 1.0),  1.6497469106162459226)
+    np.testing.assert_allclose(hyp1f1(100, 200, 10.0),  157.93286197349321981)
+    np.testing.assert_allclose(hyp1f1(100, 400, 10.0),  12.473087623658878813)
+    np.testing.assert_allclose(hyp1f1(10, 1, -1.0),      0.11394854824644542810)
+    np.testing.assert_allclose(hyp1f1(10, 1, -100.0),   -4.208138537480269868e-32)
+    np.testing.assert_allclose(hyp1f1(10, 50, -1.0),     0.820006196079380)
+    np.testing.assert_allclose(hyp1f1(10, 100, -10.0),   0.38378859043466243)
+    np.testing.assert_allclose(hyp1f1(10, 100, -500.0),  1.1090822141973655929e-08)
+    np.testing.assert_allclose(hyp1f1(10, 100, -10000.0), 5.173783508088272292e-21)
+    np.testing.assert_allclose(hyp1f1(-1, 1, 2.0),  -1.0)
+    np.testing.assert_allclose(hyp1f1(-1, -2, 2.0),  2.0)
+    np.testing.assert_allclose(hyp1f1(-2, -3, 2.0),  3.0)
+    np.testing.assert_allclose(hyp1f1(-10, 1, 1.0),  0.4189459325396825397)
+    np.testing.assert_allclose(hyp1f1(-10, 1, 10.0),  27.984126984126984127)
+    np.testing.assert_allclose(hyp1f1(-10, 1, 100.0),  9.051283795429571429e+12)
+    np.testing.assert_allclose(hyp1f1(-100, 20, 1.0),  0.0020203016320697069566)
+    np.testing.assert_allclose(hyp1f1(-10, -20, 1.0),  1.6379141878548080173)
+    np.testing.assert_allclose(hyp1f1(-10, -20, 10.0),  78.65202404521289970)
+    np.testing.assert_allclose(hyp1f1(-10, -100, 1.0),  1.1046713999681950919)
+    np.testing.assert_allclose(hyp1f1(-10, -100, 10.0),  2.6035952191039006838)
+    np.testing.assert_allclose(hyp1f1(-100, -200, 1.0),  1.6476859702535324743)
+    np.testing.assert_allclose(hyp1f1(-100, -200, 10.0),  139.38026829540687270)
+    np.testing.assert_allclose(hyp1f1(-10, -20, -1.0),  0.6025549561148035735)
