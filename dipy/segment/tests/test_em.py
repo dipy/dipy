@@ -16,8 +16,8 @@ from dipy.segment.energy_mrf import (total_energy, neg_log_likelihood,
 from dipy.segment.rois_stats import seg_stats
 from dipy.segment.mrf_em import prob_neigh, prob_image, update_param
 
-dname = '/Users/jvillalo/Documents/GSoC_2015/Code/Data/T1_coronal/'
-# dname = '/home/eleftherios/Dropbox/DIPY_GSoC_2015/T1_coronal/'
+# dname = '/Users/jvillalo/Documents/GSoC_2015/Code/Data/T1_coronal/'
+dname = '/home/eleftherios/Dropbox/DIPY_GSoC_2015/T1_coronal/'
 
 img = nib.load(dname + 't1_coronal_stack.nii.gz')
 dataimg = img.get_data()
@@ -43,6 +43,10 @@ def test_icm():
     beta = 1.5
 
     seg1, totale1 = icm(mu, var, masked_img, seg_init_masked, classes, beta)
+
+    mu = np.array([1., 1., 1.])
+    var = np.array([0.0, 0.0, 0.0])
+
     seg2, totale2 = icm(mu, var, masked_ones, seg_init_masked, classes, beta)
 
     plt.figure()
@@ -59,6 +63,19 @@ def test_icm():
     npt.assert_equal(np.sum(np.abs(seg1 - seg2)) > 0, True)
     npt.assert_equal(np.sum(np.abs(seg1 - seg_init_masked)) > 0, True)
     npt.assert_equal(np.sum(np.abs(totale1 - totale2)) > 0, True)
+    # npt.assert_equal(np.sum(totale2), 0)
+
+    mu = np.array([1, 2, 3])
+    var = np.array([0, 0, 0.])
+    seg3, totale3 = icm(mu, var, seg_init_masked, seg_init_masked, classes, beta)
+
+    plt.figure()
+    plt.imshow(seg3[:, :, 1])
+    plt.figure()
+    plt.imshow(np.abs(seg1[:, :, 1] - seg3[:, :, 1]))
+
+    npt.assert_array_almost_equal(seg3, seg_init_masked)
+
 
 
 def test_total_energy():
@@ -126,6 +143,8 @@ def test_neg_log_likelihood():
     npt.assert_equal((loglike1 != loglike2), True)
 
 
+
+
 def test_gibbs_energy():
 
     seg_img = seg_init_masked.copy(order='C')
@@ -167,46 +186,50 @@ def test_ising():
 
 def test_prob_neigh():
 
-    seg_img = seg_init_masked.copy(order='C')
-    seg_img_pad = add_padding_reflection(seg_img, 1)
-    nclass = 3
-    beta = 1.5
+    # test with big beta
+    # npt.assert_raises
+    # np.assert_equal(value, np.inf)
+#
+#    seg_img = seg_init_masked.copy(order='C')
+#    seg_img_pad = add_padding_reflection(seg_img, 1)
+#    nclass = 3
+#    beta = 1.5
+#
+#    PLN1 = prob_neigh(nclass, masked_img, seg_img_pad, beta)
+#
+#    beta = 1.5
+#
+#    PLN2 = prob_neigh(nclass, masked_img, seg_img_pad, beta)
+#
+#    npt.assert_array_almost_equal(PLN1, PLN2)
+#
+#def test_prob_image():
+#
+#    nclass
+#    masked_img
+#    mu_upd
+#    var_upd
+#    P_L_N
+#
+#
+#
+#def test_update_param():
+#
+#    nclass
+#    masked_img
+#    datamask
+#    mu_upd
+#    P_L_Y
+#
 
-    PLN1 = prob_neigh(nclass, masked_img, seg_img_pad, beta)
-    
-    beta = 1.5
 
-    PLN2 = prob_neigh(nclass, masked_img, seg_img_pad, beta)
-    
-    npt.assert_array_almost_equal(PLN1, PLN2)
-    
-def test_prob_image():
-    
-    nclass
-    masked_img
-    mu_upd
-    var_upd
-    P_L_N
-    
-    
-    
-def test_update_param():
-    
-    nclass
-    masked_img
-    datamask
-    mu_upd
-    P_L_Y
-    
-    
-    
 
 if __name__ == '__main__':
 
     test_icm()
-    test_total_energy()
-    test_neg_log_likelihood()
-    test_gibbs_energy()
-    test_ising()
+#    test_total_energy()
+#    test_neg_log_likelihood()
+#    test_gibbs_energy()
+#    test_ising()
 
-    npt.run_module_suite()
+    # npt.run_module_suite()

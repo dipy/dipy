@@ -8,9 +8,9 @@ def total_energy(masked_image, masked_segmentation,
 
     Parameters
     -----------
-    masked_image : 3D ndarray - T1 structural image. Must be masked and 
+    masked_image : 3D ndarray - T1 structural image. Must be masked and
                    zero padded
-    masked_segmentation : 3D ndarray - initial segmentation. Must be masked 
+    masked_segmentation : 3D ndarray - initial segmentation. Must be masked
                           and zero padded
     mu : This is a 1X3 ndarray with mean of each each tissue type
          [CSF, Grey Matter, White Matter]
@@ -38,7 +38,7 @@ def neg_log_likelihood(img, mu, var, index, label):
     Parameters
     -----------
 
-    img : 3D ndarray. The grey scale T1 image. Must be masked. 
+    img : 3D ndarray. The grey scale T1 image. Must be masked.
     mu : This is a 1X3 ndarray with mean of each each tissue type
         [CSF, Grey Matter, White Matter]
     var : Also a 1x3 ndarray with the variance of each tissue type
@@ -51,10 +51,11 @@ def neg_log_likelihood(img, mu, var, index, label):
     loglike : float - the negative log-likelihood
 
     """
-
-    loglike = ((img[index] - mu[label]) ** 2) / (2 * var[label])
-
-    loglike += np.log(np.sqrt(var[label]))
+    if var[label] == 0:
+        loglike = 0
+    else:
+        loglike = ((img[index] - mu[label]) ** 2) / (2 * var[label])
+        loglike += np.log(np.sqrt(var[label]))
 
     return loglike
 
