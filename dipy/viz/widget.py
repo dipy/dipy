@@ -93,6 +93,21 @@ def slider(iren, ren, callback, min_value=0, max_value=255, value=125,
             slider_rep.GetPoint1Coordinate().SetValue(coord2[0] - size[0],
                                                       coord2[1] - size[1])
 
+            old_coord2 * 0.04/new_coord2
+
+            length = 0.04
+            width = 0.04
+            cap_length = 0.01
+            cap_width = 0.01
+            tube_width = 0.005
+
+            slider_rep.SetSliderLength(length)
+            slider_rep.SetSliderWidth(width)
+            slider_rep.SetEndCapLength(cap_length)
+            slider_rep.SetEndCapWidth(cap_width)
+            slider_rep.SetTubeWidth(tube_width)
+            slider_rep.SetLabelFormat(label_format)
+
         def set_value(self, value):
             return self.GetSliderRepresentation().SetValue(value)
 
