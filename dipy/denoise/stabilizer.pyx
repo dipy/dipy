@@ -1,34 +1,23 @@
 # cython: wraparound=False, cdivision=True, boundscheck=False
 
 cimport cython
-
-from itertools import repeat
-from libc.math cimport sqrt, exp, fabs, M_PI
-from multiprocessing import Pool, cpu_count
-
-import numpy as np
 cimport numpy as np
-import mpmath
+import numpy as np
 
-from dipy.core.ndindex import ndindex
+from libc.math cimport sqrt, exp, fabs, M_PI
 from scipy.special import erfinv
-import scipy
+from dipy.denoise.hyp1f1 import hyp1f1 as cython_mpmath1f1
+
 from dipy.utils.optpkg import optional_package
 cython_gsl, have_cython_gsl, _ = optional_package("cython_gsl")
 mpmath, have_mpmath, _ = optional_package("mpmath")
 
-from dipy.denoise.hyp1f1 import hyp1f1 as mpmath1f1
-
-if not have_cython_gsl:
-    raise ValueError('cannot find gsl package (required for hyp1f1), \
-        try pip install cythongsl and sudo apt-get install libgsl0-dev libgsl0ldbl')
-
 
 if not have_cython_gsl and not have_mpmath:
-    raise ValueError('Cannot find cython_gsl or mpmath package (required for hyp1f1). \
+    raise ValueError('Cannot find cython_gsl nor mpmath package (required for hyp1f1). \
         Try pip install cythongsl (recommended : faster than mpmath, but you need to \
         install the GSL library also (sudo apt-get install libgsl0-dev libgsl0ldbl)) \
-        or pip install mpmath (also pip install gmpy2 for faster performance.)')
+        or pip install mpmath (also pip install gmpy2 for faster performances.)')
 
 if have_cython_gsl:
     from cython_gsl cimport gsl_sf_hyperg_1F1 as gsl1f1
@@ -38,7 +27,8 @@ if have_cython_gsl:
 if have_mpmath:
     import mpmath
 
-cdef double hyp1f1(double a, int b, double x):
+
+cdef double hyp1f1(double a, int b, double x) nogil:
     """Wrapper for 1F1 hypergeometric series function
     http://en.wikipedia.org/wiki/Confluent_hypergeometric_function"""
     cdef double out
@@ -48,26 +38,13 @@ cdef double hyp1f1(double a, int b, double x):
         return gsl1f1(a, b, x)
 
     # Use mpmath cython version, and mpmath symbolic if no convergence
-    out = mpmath1f1(a, b, x)
-    if np.isinf(out) or np.isnan(out):
-        out = float(mpmath.hyp1f1(a, b, x))
+    with gil:
+        out = cython_mpmath1f1(a, b, x)
+        if np.isinf(out) or np.isnan(out):
+            out = float(mpmath.hyp1f1(a, b, x))
 
-    return out
+        return out
 
-    # cdef double out
-    # try:
-    #     mpmath.fp.hyp1f1(a, b, x)
-    # except mpmath.libmp.libhyper.NoConvergence:
-    #     out = float(mpmath.hyp1f1(a, b, x))
-    # return out
-        # return mpmath.fp.hyp1f1(a, b, x)
-    # except (mpmath.fp.NoConvergence, ValueError):
-    #     return gsl_sf_hyperg_1F1(a, b, x)
-        # print("no conv!")
-        # return float(mpmath.hyp1f1(a, b, x))
-    # return scipy.special.hyp1f1(a, b, x)
-    # print(a,b,x)
-    # return sam1f1(a,b,x)
 
 cdef double _inv_cdf_gauss(double y, double eta, double sigma):
     """Helper function for _chi_to_gauss. Returns the gaussian distributed value
@@ -117,7 +94,7 @@ def chi_to_gauss(m, eta, sigma, N, alpha=0.0001):
 
 
 cdef double _chi_to_gauss(double m, double eta, double sigma, int N,
-                          double alpha=0.0001):
+                          double alpha=0.0001) nogil:
     """Maps the noisy signal intensity from a Rician/Non central chi distribution
     to its gaussian counterpart. See p. 4 of [1] eq. 12.
 
@@ -145,8 +122,8 @@ cdef double _chi_to_gauss(double m, double eta, double sigma, int N,
 
     cdef double cdf
 
-# with nogil:
-    cdf = 1. - _marcumq_cython(eta/sigma, m/sigma, N)
+    with nogil:
+        cdf = 1. - _marcumq_cython(eta/sigma, m/sigma, N)
 
     # clip cdf between alpha/2 and 1-alpha/2
     if cdf < alpha/2:
@@ -154,11 +131,11 @@ cdef double _chi_to_gauss(double m, double eta, double sigma, int N,
     elif cdf > 1 - alpha/2:
         cdf = 1 - alpha/2
 
-# with gil:
-    return _inv_cdf_gauss(cdf, eta, sigma)
+    with gil:
+        return _inv_cdf_gauss(cdf, eta, sigma)
 
 
-cdef double multifactorial(int N, int k=1):
+cdef double multifactorial(int N, int k=1) nogil:
     """Returns the multifactorial of order k of N.
     https://en.wikipedia.org/wiki/Factorial#Multifactorials
 
@@ -182,7 +159,7 @@ cdef double multifactorial(int N, int k=1):
 
 
 cdef double _marcumq_cython(double a, double b, int M, double eps=1e-8,
-                            int max_iter=10000):
+                            int max_iter=10000) nogil:
     """Computes the generalized Marcum Q function of order M.
     http://en.wikipedia.org/wiki/Marcum_Q-function
 
@@ -260,12 +237,12 @@ def fixed_point_finder(m_hat, sigma, N, max_iter=100, eps=1e-4):
     and its applications in MRI.
     Journal of Magnetic Resonance 2009; 197: 108-119.
     """
-    # with nogil:
-    return _fixed_point_finder(m_hat, sigma, N, max_iter, eps)
+    with nogil:
+        return _fixed_point_finder(m_hat, sigma, N, max_iter, eps)
 
 
 cdef double _fixed_point_finder(double m_hat, double sigma, int N,
-                                int max_iter=100, double eps=1e-4):
+                                int max_iter=100, double eps=1e-4) nogil:
     """Fixed point formula for finding eta. Table 1 p. 11 of [1].
 
     m_hat : float
@@ -282,6 +259,13 @@ cdef double _fixed_point_finder(double m_hat, double sigma, int N,
     return
     t1 : float
         Estimation of the underlying signal value
+
+    Notes
+    --------
+    This has the fix to return eta = 0 when below the noise floor instead of -eta.
+    See Bai & al. 2014 A framework for accurate determination of the T2 distribution from
+    multiple echo magnitude MRI images, Journal of Magnetic Resonance, Volume 244,
+    July 2014, Pages 53-63, ISSN 1090-7807
     """
 
     cdef:
@@ -297,11 +281,8 @@ cdef double _fixed_point_finder(double m_hat, double sigma, int N,
 
     if fabs(delta) < 1e-15:
         return 0
-    # elif delta > 0:
-    #     m = _beta(N) * sigma + delta
-    # else:
-    m = m_hat
 
+    m = m_hat
     t0 = m
     t1 = _fixed_point_k(t0, m, sigma, N)
 
@@ -315,13 +296,10 @@ cdef double _fixed_point_finder(double m_hat, double sigma, int N,
         if n_iter > max_iter:
             break
 
-    # if delta > 0:
-    #     return -t1
-
     return t1
 
 
-cdef double _beta(int N):
+cdef double _beta(int N) nogil:
     """Helper function for _xi, see p. 3 [1] just after eq. 8."""
 
     cdef:
@@ -331,12 +309,12 @@ cdef double _beta(int N):
     return sqrt(0.5 * M_PI) * (factorial2N_1 / (2**(N-1) * factorialN_1))
 
 
-cdef double _fixed_point_g(double eta, double m, double sigma, int N):
+cdef double _fixed_point_g(double eta, double m, double sigma, int N) nogil:
     """Helper function for _fixed_point_k, see p. 3 [1] eq. 11."""
     return sqrt(m**2 + (_xi(eta, sigma, N) - 2*N) * sigma**2)
 
 
-cdef double _fixed_point_k(double eta, double m, double sigma, int N):
+cdef double _fixed_point_k(double eta, double m, double sigma, int N) nogil:
     """Helper function for _fixed_point_finder, see p. 11 [1] eq. D2."""
 
     cdef:
@@ -353,69 +331,7 @@ cdef double _fixed_point_k(double eta, double m, double sigma, int N):
     return eta - num / denom
 
 
-def corrected_sigma(eta, sigma, mask, N, n_cores=None):
-    """Compute the local corrected standard deviation for the adaptive nonlocal
-    means according to the correction factor xi.
-
-    eta : float
-        Signal intensity
-    sigma : float
-        Noise magnitude standard deviation
-    mask : ndarray
-        Compute only the corrected sigma value inside the mask.
-    N : int
-        Number of coils of the acquisition (N=1 for Rician noise)
-    n_cores : int
-        Number of cpu cores to use for parallel computations, default : all of them
-
-    return :
-        Corrected sigma value, where sigma_gaussian = sigma / sqrt(xi)
-    """
-    pool = Pool(processes=n_cores)
-    arglist = [(eta_vox, sigma_vox, mask_vox, N_vox)
-               for eta_vox, sigma_vox, mask_vox, N_vox
-               in zip(eta, sigma, mask, repeat(N))]
-    sigma = pool.map(_corrected_sigma_parallel, arglist)
-    pool.close()
-    pool.join()
-
-    return np.asarray(sigma).reshape(eta.shape).astype(np.float32)
-
-
-def _corrected_sigma_parallel(arglist):
-    """Helper function for corrected_sigma to multiprocess the correction
-    factor xi."""
-
-    eta, sigma, mask, N = arglist
-    out = np.zeros(eta.shape, dtype=np.float32)
-
-    for idx in ndindex(out.shape):
-        if sigma[idx] > 0 and mask[idx]:
-            out[idx] = _corrected_sigma(eta[idx], sigma[idx], N)
-
-    return out
-
-
-cdef double _corrected_sigma(double eta, double sigma, int N):
-    """Compute the local corrected standard deviation for the adaptive nonlocal
-    means according to the correction factor xi.
-
-    eta : float
-        Signal intensity
-    sigma : float
-        Noise magnitude standard deviation
-    N : int
-        Number of coils of the acquisition (N=1 for Rician noise)
-    mask : ndarray
-        Compute only the corrected sigma value inside the mask.
-
-    return :
-        Corrected sigma value, where sigma_gaussian = sigma / sqrt(xi)
-    """
-    return sigma / sqrt(_xi(eta, sigma, N))
-
-
-cdef double _xi(double eta, double sigma, int N):
+cdef double _xi(double eta, double sigma, int N) nogil:
     """Standard deviation scaling factor formula, see p. 3 of [1], eq. 10.
 
     eta : float
