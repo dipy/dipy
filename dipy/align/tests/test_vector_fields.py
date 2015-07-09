@@ -1554,7 +1554,7 @@ def test_reorient_random_vector_fields():
                          (3, vfu.reorient_vector_field_3d)):
         size = [20, 30, 40][:n_dims] + [n_dims]
         arr = np.random.normal(size=size)
-        arr_32 = arr.astype(np.float32)
+        arr_32 = arr.astype(floating)
         affine = from_matvec(np.random.normal(size=(n_dims, n_dims)),
                              np.zeros(n_dims))
         func(arr_32, affine)
@@ -1562,7 +1562,7 @@ def test_reorient_random_vector_fields():
         # Reorient reorients without translation
         trans = np.arange(n_dims) + 2
         affine[:-1, -1] = trans
-        arr_32 = arr.astype(np.float32)
+        arr_32 = arr.astype(floating)
         func(arr_32, affine)
         assert_almost_equal(arr_32, apply_affine(affine, arr) - trans, 6)
 
@@ -1597,14 +1597,14 @@ def test_gradient_2d():
     img = a * TX[..., 0] ** 2 +\
         b * TX[..., 0] * TX[..., 1] +\
         c * TX[..., 1] ** 2
-    img = img.astype(np.float32)
+    img = img.astype(floating)
     # img is an image sampled at X with grid-to-space transform T
 
     # Test sparse gradient: choose some sample points (in space)
     sample = mattes.sample_domain_regular(20, np.array(sh, dtype=np.int32), T)
     sample = np.array(sample)
     # Compute the analytical gradient at all points
-    expected = np.empty((sample.shape[0], 2), dtype=np.float32)
+    expected = np.empty((sample.shape[0], 2), dtype=floating)
     expected[..., 0] = 2 * a * sample[:, 0] + b * sample[:, 1]
     expected[..., 1] = 2 * c * sample[:, 1] + b * sample[:, 0]
     # Get the numerical gradient with the implementation under test
@@ -1624,7 +1624,7 @@ def test_gradient_2d():
 
     # Test dense gradient
     # Compute the analytical gradient at all points
-    expected = np.empty(sh + (2,), dtype=np.float32)
+    expected = np.empty(sh + (2,), dtype=floating)
     expected[..., 0] = 2 * a * TX[..., 0] + b * TX[..., 1]
     expected[..., 1] = 2 * c * TX[..., 1] + b * TX[..., 0]
     # Get the numerical gradient with the implementation under test
@@ -1674,13 +1674,13 @@ def test_gradient_3d():
         c * TX[..., 2] ** 2 + d * TX[..., 0] * TX[..., 1] +\
         e * TX[..., 0] * TX[..., 2] + f * TX[..., 1] * TX[..., 2]
 
-    img = img.astype(np.float32)
+    img = img.astype(floating)
     # Test sparse gradient: choose some sample points (in space)
     sample =\
         mattes.sample_domain_regular(100, np.array(shape, dtype=np.int32), T)
     sample = np.array(sample)
     # Compute the analytical gradient at all points
-    expected = np.empty((sample.shape[0], 3), dtype=np.float32)
+    expected = np.empty((sample.shape[0], 3), dtype=floating)
     expected[..., 0] =\
         2 * a * sample[:, 0] + d * sample[:, 1] + e * sample[:, 2]
     expected[..., 1] =\
@@ -1705,7 +1705,7 @@ def test_gradient_3d():
 
     # Test dense gradient
     # Compute the analytical gradient at all points
-    expected = np.empty(shape + (3,), dtype=np.float32)
+    expected = np.empty(shape + (3,), dtype=floating)
     expected[..., 0] = 2 * a * TX[..., 0] + d * TX[..., 1] + e * TX[..., 2]
     expected[..., 1] = 2 * b * TX[..., 1] + d * TX[..., 0] + f * TX[..., 2]
     expected[..., 2] = 2 * c * TX[..., 2] + e * TX[..., 0] + f * TX[..., 1]

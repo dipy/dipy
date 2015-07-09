@@ -276,17 +276,33 @@ class MattesBase(object):
         if (self.joint_grad is None) or (self.joint_grad.shape[2] != n):
             self.joint_grad = np.zeros((nbins, nbins, n))
         if dim == 2:
-            _joint_pdf_gradient_dense_2d(theta, transform, static, moving,
-                                         grid2world, mgradient, smask,
-                                         mmask, self.smin, self.sdelta,
-                                         self.mmin, self.mdelta, self.nbins,
-                                         self.padding, self.joint_grad)
+            if mgradient.dtype == np.float64:
+                _joint_pdf_gradient_dense_2d[cython.double](theta, transform,
+                    static, moving, grid2world, mgradient, smask, mmask,
+                    self.smin, self.sdelta, self.mmin, self.mdelta,
+                    self.nbins, self.padding, self.joint_grad)
+            elif mgradient.dtype == np.float32:
+                _joint_pdf_gradient_dense_2d[cython.float](theta, transform,
+                    static, moving, grid2world, mgradient, smask, mmask,
+                    self.smin, self.sdelta, self.mmin, self.mdelta,
+                    self.nbins, self.padding, self.joint_grad)
+            else:
+                raise ValueError('Grad. field dtype must be floating point')
+
         elif dim == 3:
-            _joint_pdf_gradient_dense_3d(theta, transform, static, moving,
-                                         grid2world, mgradient, smask,
-                                         mmask, self.smin, self.sdelta,
-                                         self.mmin, self.mdelta, self.nbins,
-                                         self.padding, self.joint_grad)
+            if mgradient.dtype == np.float64:
+                _joint_pdf_gradient_dense_3d[cython.double](theta, transform,
+                    static, moving, grid2world, mgradient, smask, mmask,
+                    self.smin, self.sdelta, self.mmin, self.mdelta,
+                    self.nbins, self.padding, self.joint_grad)
+            elif mgradient.dtype == np.float32:
+                _joint_pdf_gradient_dense_3d[cython.float](theta, transform,
+                    static, moving, grid2world, mgradient, smask, mmask,
+                    self.smin, self.sdelta, self.mmin, self.mdelta,
+                    self.nbins, self.padding, self.joint_grad)
+            else:
+                raise ValueError('Grad. field dtype must be floating point')
+
         else:
             msg = 'Only dimensions 2 and 3 are supported. ' +\
                 str(dim) + ' received'
@@ -333,19 +349,32 @@ class MattesBase(object):
             self.joint_grad = np.zeros(shape=(nbins, nbins, n))
 
         if dim == 2:
-            _joint_pdf_gradient_sparse_2d(theta, transform, sval, mval,
-                                          sample_points, mgradient,
-                                          self.smin, self.sdelta,
-                                          self.mmin, self.mdelta,
-                                          self.nbins, self.padding,
-                                          self.joint_grad)
+            if mgradient.dtype == np.float64:
+                _joint_pdf_gradient_sparse_2d[cython.double](theta, transform,
+                    sval, mval, sample_points, mgradient, self.smin,
+                    self.sdelta, self.mmin, self.mdelta, self.nbins,
+                    self.padding, self.joint_grad)
+            elif mgradient.dtype == np.float32:
+                _joint_pdf_gradient_sparse_2d[cython.float](theta, transform,
+                    sval, mval, sample_points, mgradient, self.smin,
+                    self.sdelta, self.mmin, self.mdelta, self.nbins,
+                    self.padding, self.joint_grad)
+            else:
+                raise ValueError('Grad. field dtype must be floating point')
+
         elif dim == 3:
-            _joint_pdf_gradient_sparse_3d(theta, transform, sval, mval,
-                                          sample_points, mgradient,
-                                          self.smin, self.sdelta,
-                                          self.mmin, self.mdelta,
-                                          self.nbins, self.padding,
-                                          self.joint_grad)
+            if mgradient.dtype == np.float64:
+                _joint_pdf_gradient_sparse_3d[cython.double](theta, transform,
+                    sval, mval, sample_points, mgradient, self.smin,
+                    self.sdelta, self.mmin, self.mdelta, self.nbins,
+                    self.padding, self.joint_grad)
+            elif mgradient.dtype == np.float32:
+                _joint_pdf_gradient_sparse_3d[cython.float](theta, transform,
+                    sval, mval, sample_points, mgradient, self.smin,
+                    self.sdelta, self.mmin, self.mdelta, self.nbins,
+                    self.padding, self.joint_grad)
+            else:
+                raise ValueError('Grad. field dtype must be floating point')
         else:
             msg = 'Only dimensions 2 and 3 are supported. ' + str(dim) +\
                 ' received'

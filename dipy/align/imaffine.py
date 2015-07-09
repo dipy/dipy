@@ -3,7 +3,6 @@ import numpy.linalg as npl
 import scipy.ndimage as ndimage
 from ..core.optimize import Optimizer
 from ..core.optimize import SCIPY_LESS_0_12
-from . import floating
 from . import vector_fields as vf
 from . import VerbosityLevels
 from .mattes import MattesBase, sample_domain_regular
@@ -163,21 +162,12 @@ class AffineMap(object):
 
         # Obtain the appropriate transform method
         if interp == 'nearest':
-            # Convert input image dtype to an appropriate supported type
-            # Integral supported types are int16 and int32
-            if image.dtype in [np.dtype('float64'), np.dtype('float32')]:
-                image = image.astype(floating)
-            elif image.dtype is np.dtype('int64'):
-                image = image.astype(np.int32)
-            elif image.dtype is np.dtype('int8'):
-                image = image.astype(np.int16)
             if dim == 2:
                 transform_method = vf.warp_2d_affine_nn
             elif dim == 3:
                 transform_method = vf.warp_3d_affine_nn
         elif interp == 'linear':
-            # for trilinear interpolation, the only supported type is floating
-            image = image.astype(floating)
+            image = image.astype(np.float64)
             if dim == 2:
                 transform_method = vf.warp_2d_affine
             elif dim == 3:
@@ -403,8 +393,6 @@ class MattesMIMetric(MattesBase):
         else:
             self.update_pdfs = self.update_pdfs_sparse
             self.update_gradient = self.update_gradient_sparse
-            static_32 = np.array(static).astype(np.float32)
-            moving_32 = np.array(moving).astype(np.float32)
             self.transformed = None
             k = int(np.ceil(1.0 / self.sampling_proportion))
             shape = np.array(static.shape, dtype=np.int32)
@@ -416,14 +404,13 @@ class MattesMIMetric(MattesBase):
             # Sample the static image
             static_p = self.static_world2grid.dot(self.samples.T).T
             static_p = static_p[..., :self.dim]
-            self.static_vals, inside = self.interp_method(static_32, static_p)
+            self.static_vals, inside = self.interp_method(static, static_p)
             self.static_vals = np.array(self.static_vals, dtype=np.float64)
             # Sample the moving image
             sp_to_moving = self.moving_world2grid.dot(P)
             moving_p = sp_to_moving.dot(self.samples.T).T
             moving_p = moving_p[..., :self.dim]
-            self.moving_vals, inside = self.interp_method(moving_32,
-                                                          moving_p)
+            self.moving_vals, inside = self.interp_method(moving, moving_p)
 
         MattesBase.setup(self, self.static, self.moving)
 
@@ -476,10 +463,9 @@ class MattesMIMetric(MattesBase):
             sp_to_moving = self.moving_world2grid.dot(M)
             points_on_moving = sp_to_moving.dot(self.samples.T).T
             points_on_moving = points_on_moving[..., :self.dim]
-            moving_32 = self.moving.astype(np.float32)
-            self.moving_vals, inside = self.interp_method(moving_32,
+            self.moving_vals, inside = self.interp_method(self.moving,
                                                           points_on_moving)
-            self.moving_vals = np.array(self.moving_vals, dtype=np.float64)
+            self.moving_vals = np.array(self.moving_vals)
             static_values = self.static_vals
             moving_values = self.moving_vals
         self.update_pdfs(static_values, moving_values)
@@ -490,7 +476,7 @@ class MattesMIMetric(MattesBase):
                 # Compute the gradient of moving img. at physical points
                 # associated with the >>static image's grid<< cells
                 grid_to_world = M.dot(self.static_grid2world)
-                mgrad, inside = vf.gradient(self.moving.astype(np.float32),
+                mgrad, inside = vf.gradient(self.moving,
                                             self.moving_world2grid,
                                             self.moving_spacing,
                                             self.static.shape,
@@ -502,8 +488,7 @@ class MattesMIMetric(MattesBase):
             else:
                 # Compute the gradient of moving at the sampling points
                 # which are already given in physical space coordinates
-                moving32 = self.moving.astype(np.float32)
-                mgrad, inside = vf.sparse_gradient(moving32,
+                mgrad, inside = vf.sparse_gradient(self.moving,
                                                    sp_to_moving,
                                                    self.moving_spacing,
                                                    self.samples)
