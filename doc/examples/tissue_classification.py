@@ -56,11 +56,11 @@ var_upd = var
 seg_upd = seg_init_masked
 
 for i in range(0, niter):
-    
+
     print('Iteration', i)
 
     # Calls the ICM function
-    segmented = icm(mu_upd, var_upd, masked_img, seg_upd, nclass, beta)
+    segmented, totalenergy = icm(mu_upd, var_upd, masked_img, seg_upd, nclass, beta)
     seg_upd = segmented
     segmented = segmented.copy(order='C')
     segmented_pad = add_padding_reflection(segmented, 1)

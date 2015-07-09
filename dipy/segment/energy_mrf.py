@@ -8,19 +8,21 @@ def total_energy(masked_image, masked_segmentation,
 
     Parameters
     -----------
-    masked_image :
-    masked_segmentation :
-    mu : 
-    var : 
-    index : 
-    label : 
-    beta : 
+    masked_image : 3D ndarray - T1 structural image. Must be masked and 
+                   zero padded
+    masked_segmentation : 3D ndarray - initial segmentation. Must be masked 
+                          and zero padded
+    mu : This is a 1X3 ndarray with mean of each each tissue type
+         [CSF, Grey Matter, White Matter]
+    var : Also a 1x3 ndarray with the variance of each tissue type
+    index : The voxel index
+    label : The index of the label that is looping through (0, 1 or 2)
+    beta : float - scalar value of the weight given to the neighborhood
 
     Returns
     --------
 
-    energytotal : float number corresponding to the total energy
-
+    energytotal : float scalar corresponding to the total energy in that voxel
 
     """
 
@@ -36,17 +38,17 @@ def neg_log_likelihood(img, mu, var, index, label):
     Parameters
     -----------
 
-    img : The grey scale T1 image. It should be masked already
+    img : 3D ndarray. The grey scale T1 image. Must be masked. 
     mu : This is a 1X3 ndarray with mean of each each tissue type
         [CSF, Grey Matter, White Matter]
     var : Also a 1x3 ndarray with the variance of each tissue type
-    index : The voxel index
-    label : The index of the label that is looping through, 0, 1 or 2
+    index : tuple - The voxel index
+    label : The index of the label that is looping through (0, 1 or 2)
 
     Returns
     --------
 
-    loglike : the negative log-likelihood
+    loglike : float - the negative log-likelihood
 
     """
 
@@ -58,6 +60,21 @@ def neg_log_likelihood(img, mu, var, index, label):
 
 
 def gibbs_energy(seg, index, label, beta):
+    r""" Computes the Gibbs energy
+
+    Parameters
+    -----------
+    seg : 3D ndarray - initial segmentation. Must be masked and zero padded
+    index : tuple - The voxel index
+    label : The index of the label that is looping through (0, 1 or 2)
+    beta : float - scalar value of the weight given to the neighborhood
+
+    Returns
+    --------
+
+    energy : float - Gibbs energy
+
+    """
 
     label = label + 1
     energy = 0
