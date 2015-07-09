@@ -48,7 +48,7 @@ needed to fully characterize the KT:
                     & W_{xxzz} & W_{yyzz} & W_{xxyz} & W_{xyyz} & W_{xyzz}
                     & & )\end{matrix}
 
-In the following example we show how to reconstruct your diffusion multi shell
+In the following example we show how to reconstruct your diffusion multi-shell
 datasets using the kurtosis tensor model.
 
 First import Dipy's DKI module:
@@ -58,7 +58,7 @@ First import Dipy's DKI module:
 import dipy.reconst.dki as dki
 
 """
-DKI requires multi shell data, i.e. data acquired from more than one non-zero
+DKI requires multi-shell data, i.e. data acquired from more than one non-zero
 b-value. Here, we use fetch to download the raw HARDI of a dMRI dataset
 cotaining three non-zero b-values. The size of the dataset is 188 MBytes,
 however you only need to fetch it once.
