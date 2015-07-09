@@ -66,6 +66,7 @@ def slider(iren, ren, callback, min_value=0, max_value=255, value=125,
     slider_rep.GetPoint1Coordinate().SetValue(coord2[0] - size[0],
                                               coord2[1] - size[1])
 
+    initial_window_size = ren.GetSize()
     length = 0.04
     width = 0.04
     cap_length = 0.01
@@ -81,32 +82,24 @@ def slider(iren, ren, callback, min_value=0, max_value=255, value=125,
 
     class SliderWidget(vtk.vtkSliderWidget):
 
-        def place(self, renderer):
+        def place(self, ren):
 
             slider_rep = self.GetRepresentation()
             coord2_norm = slider_rep.GetPoint2Coordinate()
             coord2_norm.SetCoordinateSystemToNormalizedDisplay()
             coord2_norm.SetValue(*right_normalized_pos)
 
-            coord2 = coord2_norm.GetComputedDisplayValue(renderer)
+            coord2 = coord2_norm.GetComputedDisplayValue(ren)
             slider_rep.GetPoint1Coordinate().SetCoordinateSystemToDisplay()
             slider_rep.GetPoint1Coordinate().SetValue(coord2[0] - size[0],
                                                       coord2[1] - size[1])
 
-            old_coord2 * 0.04/new_coord2
-
-            length = 0.04
-            width = 0.04
-            cap_length = 0.01
-            cap_width = 0.01
-            tube_width = 0.005
+            window_size = ren.GetSize()
+            length = initial_window_size[0] * 0.04 / window_size[0]
+            width = initial_window_size[1] * 0.04 / window_size[1]
 
             slider_rep.SetSliderLength(length)
             slider_rep.SetSliderWidth(width)
-            slider_rep.SetEndCapLength(cap_length)
-            slider_rep.SetEndCapWidth(cap_width)
-            slider_rep.SetTubeWidth(tube_width)
-            slider_rep.SetLabelFormat(label_format)
 
         def set_value(self, value):
             return self.GetSliderRepresentation().SetValue(value)
