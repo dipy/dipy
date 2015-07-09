@@ -241,8 +241,8 @@ class ShowManager(object):
 
                 file_types = (("PNG file", "*.png"), ("All Files", "*.*"))
                 filepath = save_file_dialog(initial_file='dipy.png',
-                                            default_extension='.png',
-                                            filetypes=file_types)
+                                            default_ext='.png',
+                                            file_types=file_types)
                 if filepath == '':
                     print('No file was provided in the dialog')
                 else:
