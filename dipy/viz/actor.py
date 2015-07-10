@@ -21,7 +21,7 @@ if have_vtk:
     major_version = vtk.vtkVersion.GetVTKMajorVersion()
 
 
-def slice(data, affine=None, opacity=1., lookup_colormap=None):
+def slice(data, affine=None, value_range=None, opacity=1., lookup_colormap=None):
     """ Cuts 3D volumes into images
 
     Parameters
@@ -45,7 +45,10 @@ def slice(data, affine=None, opacity=1., lookup_colormap=None):
 
     """
 
-    vol = np.interp(data, xp=[data.min(), data.max()], fp=[0, 255])
+    if value_range is None:
+        vol = np.interp(data, xp=[data.min(), data.max()], fp=[0, 255])
+    else:
+        vol = np.interp(data, xp=[value_range[0], value_range[1]], fp=[0, 255])
     vol = vol.astype('uint8')
 
     im = vtk.vtkImageData()
@@ -105,13 +108,29 @@ def slice(data, affine=None, opacity=1., lookup_colormap=None):
 
         def input_connection(self, output_port):
             self.GetMapper().SetInputConnection(output_port)
+            self.output_port = output_port
 
         def display_extent(self, x1, x2, y1, y2, z1, z2):
             self.SetDisplayExtent(x1, x2, y1, y2, z1, z2)
             self.Update()
+            self.x1 = x1
+            self.x2 = x2
+            self.y1 = y1
+            self.y2 = y2
+            self.z1 = z1
+            self.z2 = z2
 
         def opacity(self, value):
             self.GetProperty().SetOpacity(value)
+
+        def copy(self):
+            im_actor = ImageActor()
+            im_actor.input_connection(self.output_port)
+            im_actor.SetDisplayExtent(self.x1, self.x2,
+                                      self.y1, self.y2,
+                                      self.z1, self.z2)
+            im_actor.opacity(opacity)
+            return im_actor
 
     image_actor = ImageActor()
     image_actor.input_connection(plane_colors.GetOutputPort())
