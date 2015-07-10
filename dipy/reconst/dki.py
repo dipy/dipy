@@ -14,7 +14,8 @@ from dipy.reconst.dti import (TensorFit, fractional_anisotropy,
                               color_fa, determinant, isotropic, deviatoric,
                               norm, mode, linearity, planarity, sphericity,
                               apparent_diffusion_coef, from_lower_triangular,
-                              lower_triangular, decompose_tensor)
+                              lower_triangular, decompose_tensor,
+                              _min_positive_signal)
 
 from dipy.reconst.utils import dki_design_matrix as design_matrix
 from dipy.utils.six.moves import range
@@ -274,13 +275,6 @@ class DiffusionKurtosisModel(ReconstModel):
             e_s += " positive."
             raise ValueError(e_s)
 
-    def _min_positive_signal(self, data):
-        data = data.ravel()
-        if np.all(data == 0):
-            return 0.0001
-        else:
-            return data[data > 0].min()
-
     def fit(self, data, mask=None):
         """ Fit method of the DKI model class
 
@@ -293,14 +287,23 @@ class DiffusionKurtosisModel(ReconstModel):
             A boolean array used to mark the coordinates in the data that
             should be analyzed that has the shape data.shape[-1]
         """
-        # If a mask is provided, we will use it to access the data
-        if mask is not None:
-            # Make sure it's boolean, so that it can be used to mask
-            mask = np.array(mask, dtype=bool, copy=False)
-            data_in_mask = data[mask]
+        if mask is None:
+            # Flatten it to 2D either way:
+            data_in_mask = np.reshape(data, (-1, data.shape[-1]))
         else:
-            data_in_mask = data
+            # Check for valid shape of the mask
+            if mask.shape != data.shape[:-1]:
+                raise ValueError("Mask is not the same shape as data.")
+            mask = np.array(mask, dtype=bool, copy=False)
+            data_in_mask = np.reshape(data[mask], (-1, data.shape[-1]))
 
+
+        if self.min_signal is None:
+            min_signal = _min_positive_signal(data)
+        else:
+            min_signal = self.min_signal
+
+        data_in_mask = np.maximum(data_in_mask, min_signal)        
         params_in_mask = self.fit_method(self.design_matrix, data_in_mask,
                                          *self.args, **self.kwargs)
 
