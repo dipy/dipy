@@ -1,3 +1,51 @@
+""" Affine image registration module consisting of the following classes:
+
+    AffineMap: encapsulates the necessary information to perform affine
+        transforms between two domains, defined by a `static` and a `moving`
+        image. The `domain` of the transform is the set of points in the
+        `static` image's grid, and the `codomain` is the set of points in
+        the `moving` image. When we call the `transform` method, `AffineMap`
+        maps each point `x` of the domain (`static` grid) to the codomain
+        (`moving` grid) and interpolates the `moving` image at that point
+        to obtain the intensity value to be placed at `x` in the resulting
+        grid. The `transform_inverse` method performs the opposite operation
+        mapping points in the codomain to points in the domain.
+
+    ParzenJointHistogram: computes the marginal and joint distributions of
+        intensities of a pair of images, using Parzen windows [Parzen62]
+        with a cubic spline kernel, as proposed by Mattes et al. [Mattes03].
+        It also computes the gradient of the joint histogram w.r.t. the
+        parameters of a given transform.
+
+    ParzenMutualInformation: inherits from `ParzenJointHistogram` and
+        computes the Mutual Information similarity measure and its gradient
+        from the joint and marginal distributions of paired intensities,
+        which are computed by the super class.
+
+    MIMetric: it is a Python interface to the ParzenMutualInformation cython
+        class, which is used to compute the value and gradient the way
+        `Optimizer` needs them. That is, given a set of transform parameters,
+        it will use `ParzenMutualInformation` methods to compute the value and
+        gradient evaluated at the given parameters.
+
+    AffineRegistration: it runs the multi-resolution registration, putting
+        all the pieces together. It needs to create the scale space of the
+        images and run the multi-resolution registration by using the Metric
+        and the Optimizer at each level of the Gaussian pyramid. At each
+        level, it will setup the metric to compute value and gradient of the
+        metric with the input images with different levels of smoothing.
+
+    References
+    ----------
+    [Parzen62] E. Parzen. On the estimation of a probability density
+               function and the mode. Annals of Mathematical Statistics,
+               33(3), 1065-1076, 1962.
+    [Mattes03] Mattes, D., Haynor, D. R., Vesselle, H., Lewellen, T. K.,
+               & Eubank, W. PET-CT image registration in the chest using
+               free-form deformations. IEEE Transactions on Medical
+               Imaging, 22(1), 120-8, 2003.
+"""
+
 import numpy as np
 import numpy.linalg as npl
 import scipy.ndimage as ndimage
@@ -5,7 +53,7 @@ from ..core.optimize import Optimizer
 from ..core.optimize import SCIPY_LESS_0_12
 from . import vector_fields as vf
 from . import VerbosityLevels
-from .mattes import MattesBase, sample_domain_regular
+from .parzenhist import ParzenMutualInformation, sample_domain_regular
 from .imwarp import (get_direction_and_spacings, ScaleSpace)
 from .scalespace import IsotropicScaleSpace
 
@@ -62,6 +110,7 @@ class AffineMap(object):
 
     def set_affine(self, affine):
         """ Sets the affine transform (operating in physical space)
+
         Parameters
         ----------
         affine : array, shape (dim + 1, dim + 1)
@@ -285,27 +334,28 @@ class AffineMap(object):
         return np.array(transformed)
 
 
-class MattesMIMetric(MattesBase):
+class MIMetric(ParzenMutualInformation):
     def __init__(self, nbins=32, sampling_proportion=None):
-        r""" Initializes an instance of the Mattes MI metric
+        r""" Initializes an instance of the Mutual Information metric
 
         This class implements the methods required by Optimizer to drive the
         registration process by making calls to the low level methods defined
-        in MattesBase.
+        in ParzenMutualInformation.
 
         Parameters
         ----------
         nbins : int, optional
             the number of bins to be used for computing the intensity
             histograms. The default is 32.
-        sampling_proportion : float in (0,1], optional
+        sampling_proportion : None or float in interval (0, 1], optional
             There are two types of sampling: dense and sparse. Dense sampling
             uses all voxels for estimating the (joint and marginal) intensity
             histograms, while sparse sampling uses a subset of them. If
-            sampling_proportion is None, then dense sampling is
-            used. If sampling_proportion is a floating point value in (0,1]
-            then sparse sampling is used, where sampling_proportion specifies
-            the proportion of voxels to be used. The default is None.
+            `sampling_proportion` is None, then dense sampling is
+            used. If `sampling_proportion` is a floating point value in (0,1]
+            then sparse sampling is used, where `sampling_proportion`
+            specifies the proportion of voxels to be used. The default is
+            None.
 
         Notes
         -----
@@ -313,11 +363,11 @@ class MattesMIMetric(MattesBase):
         differentiable at exact voxel coordinates, but they are differentiable
         between voxel coordinates. When using sparse sampling, selected voxels
         are slightly moved by adding a small random displacement within one
-        voxel to prevent sampling points to be located exactly at voxel
+        voxel to prevent sampling points from being located exactly at voxel
         coordinates. When using dense sampling, this random displacement is
         not applied.
         """
-        super(MattesMIMetric, self).__init__(nbins)
+        super(MIMetric, self).__init__(nbins)
         self.sampling_proportion = sampling_proportion
 
     def setup(self, transform, static, moving, static_grid2world=None,
@@ -411,8 +461,7 @@ class MattesMIMetric(MattesBase):
             moving_p = sp_to_moving.dot(self.samples.T).T
             moving_p = moving_p[..., :self.dim]
             self.moving_vals, inside = self.interp_method(moving, moving_p)
-
-        MattesBase.setup(self, self.static, self.moving)
+        super(MIMetric, self).setup(self.static, self.moving)
 
     def _update(self, params, update_gradient=True):
         r""" Updates marginal and joint distributions and the joint gradient
@@ -625,7 +674,7 @@ class AffineRegistration(object):
         self.metric = metric
 
         if self.metric is None:
-            self.metric = MattesMIMetric()
+            self.metric = MIMetric()
 
         if level_iters is None:
             level_iters = [10000, 1000, 100]

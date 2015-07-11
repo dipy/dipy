@@ -182,7 +182,7 @@ def test_affreg_all_transforms():
                         setup_random_transform(transform, factor, nslices, 1.0)
         # Sum of absolute differences
         start_sad = np.abs(static - moving).sum()
-        metric = imaffine.MattesMIMetric(32, sampling_pc)
+        metric = imaffine.MIMetric(32, sampling_pc)
         affreg = imaffine.AffineRegistration(metric,
                                              [10000, 1000, 100],
                                              [3, 1, 0],

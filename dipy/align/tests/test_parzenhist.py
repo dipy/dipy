@@ -7,10 +7,11 @@ from ...core.ndindex import ndindex
 from ...data import get_data
 from .. import vector_fields as vf
 from ..transforms import regtransforms
-from ..mattes import (MattesBase,
-                      cubic_spline,
-                      cubic_spline_derivative,
-                      sample_domain_regular)
+from ..parzenhist import (ParzenJointHistogram,
+                          ParzenMutualInformation,
+                          cubic_spline,
+                          cubic_spline_derivative,
+                          sample_domain_regular)
 from numpy.testing import (assert_array_equal,
                            assert_array_almost_equal,
                            assert_almost_equal,
@@ -113,8 +114,8 @@ def test_cubic_spline_derivative():
     assert_array_almost_equal(actual, expected)
 
 
-def test_mattes_base():
-    # Test the simple functionality of MattesBase,
+def test_parzen_joint_histogram():
+    # Test the simple functionality of ParzenJointHistogram,
     # the gradients and computation of the joint intensity distribution
     # will be tested independently
     for nbins in [15, 30, 50]:
@@ -122,7 +123,7 @@ def test_mattes_base():
             for intensity_range in [0.1, 1.0, 10.0]:
                 fact = 1
                 max_int = min_int + intensity_range
-                M = MattesBase(nbins)
+                P = ParzenJointHistogram(nbins)
                 # Make a pair of 4-pixel images, introduce +/- 1 values
                 # that will be excluded using a mask
                 static = np.array([min_int - 1.0, min_int,
@@ -135,44 +136,44 @@ def test_mattes_base():
                 static_mask = np.array([0, 1, 1, 0])
                 moving_mask = np.array([1, 0, 0, 1])
 
-                M.setup(static, moving, static_mask, moving_mask)
+                P.setup(static, moving, static_mask, moving_mask)
 
                 # Test bin_normalize_static at the boundary
-                normalized = M.bin_normalize_static(min_int)
-                assert_almost_equal(normalized, M.padding)
-                index = M.bin_index(normalized)
-                assert_equal(index, M.padding)
-                normalized = M.bin_normalize_static(max_int)
-                assert_almost_equal(normalized, nbins - M.padding)
-                index = M.bin_index(normalized)
-                assert_equal(index, nbins - 1 - M.padding)
+                normalized = P.bin_normalize_static(min_int)
+                assert_almost_equal(normalized, P.padding)
+                index = P.bin_index(normalized)
+                assert_equal(index, P.padding)
+                normalized = P.bin_normalize_static(max_int)
+                assert_almost_equal(normalized, nbins - P.padding)
+                index = P.bin_index(normalized)
+                assert_equal(index, nbins - 1 - P.padding)
 
                 # Test bin_normalize_moving at the boundary
-                normalized = M.bin_normalize_moving(fact * min_int)
-                assert_almost_equal(normalized, M.padding)
-                index = M.bin_index(normalized)
-                assert_equal(index, M.padding)
-                normalized = M.bin_normalize_moving(fact * max_int)
-                assert_almost_equal(normalized, nbins - M.padding)
-                index = M.bin_index(normalized)
-                assert_equal(index, nbins - 1 - M.padding)
+                normalized = P.bin_normalize_moving(fact * min_int)
+                assert_almost_equal(normalized, P.padding)
+                index = P.bin_index(normalized)
+                assert_equal(index, P.padding)
+                normalized = P.bin_normalize_moving(fact * max_int)
+                assert_almost_equal(normalized, nbins - P.padding)
+                index = P.bin_index(normalized)
+                assert_equal(index, nbins - 1 - P.padding)
 
                 # Test bin_index not at the boundary
-                delta_s = (max_int - min_int) / (nbins - 2 * M.padding)
-                delta_m = fact * (max_int - min_int) / (nbins - 2 * M.padding)
-                for i in range(nbins - 2 * M.padding):
-                    normalized = M.bin_normalize_static(min_int +
+                delta_s = (max_int - min_int) / (nbins - 2 * P.padding)
+                delta_m = fact * (max_int - min_int) / (nbins - 2 * P.padding)
+                for i in range(nbins - 2 * P.padding):
+                    normalized = P.bin_normalize_static(min_int +
                                                         (i + 0.5) * delta_s)
-                    index = M.bin_index(normalized)
-                    assert_equal(index, M.padding + i)
+                    index = P.bin_index(normalized)
+                    assert_equal(index, P.padding + i)
 
-                    normalized = M.bin_normalize_moving(fact * min_int +
+                    normalized = P.bin_normalize_moving(fact * min_int +
                                                         (i + 0.5) * delta_m)
-                    index = M.bin_index(normalized)
-                    assert_equal(index, M.padding + i)
+                    index = P.bin_index(normalized)
+                    assert_equal(index, P.padding + i)
 
 
-def test_mattes_densities():
+def test_parzen_densities():
     # Test the computation of the joint intensity distribution
     # using a dense and a sparse set of values
     seed = 1246592
@@ -191,28 +192,28 @@ def test_mattes_densities():
             static, moving = create_random_image_pair(shape, nvals, seed)
 
         # Initialize
-        mbase = MattesBase(nbins)
-        mbase.setup(static, moving)
+        parzen_hist = ParzenJointHistogram(nbins)
+        parzen_hist.setup(static, moving)
         # Get distributions computed by dense sampling
-        mbase.update_pdfs_dense(static, moving)
-        actual_joint_dense = mbase.joint
-        actual_mmarginal_dense = mbase.mmarginal
-        actual_smarginal_dense = mbase.smarginal
+        parzen_hist.update_pdfs_dense(static, moving)
+        actual_joint_dense = parzen_hist.joint
+        actual_mmarginal_dense = parzen_hist.mmarginal
+        actual_smarginal_dense = parzen_hist.smarginal
 
         # Get distributions computed by sparse sampling
         sval = static.reshape(-1)
         mval = moving.reshape(-1)
-        mbase.update_pdfs_sparse(sval, mval)
-        actual_joint_sparse = mbase.joint
-        actual_mmarginal_sparse = mbase.mmarginal
-        actual_smarginal_sparse = mbase.smarginal
+        parzen_hist.update_pdfs_sparse(sval, mval)
+        actual_joint_sparse = parzen_hist.joint
+        actual_mmarginal_sparse = parzen_hist.mmarginal
+        actual_smarginal_sparse = parzen_hist.smarginal
 
         # Compute the expected joint distribution with dense sampling
         expected_joint_dense = np.zeros(shape=(nbins, nbins))
         for index in ndindex(shape):
-            sv = mbase.bin_normalize_static(static[index])
-            mv = mbase.bin_normalize_moving(moving[index])
-            sbin = mbase.bin_index(sv)
+            sv = parzen_hist.bin_normalize_static(static[index])
+            mv = parzen_hist.bin_normalize_moving(moving[index])
+            sbin = parzen_hist.bin_index(sv)
             # The spline is centered at mv, will evaluate for all row
             spline_arg = np.array([i - mv for i in range(nbins)])
             contribution = cubic_spline(spline_arg)
@@ -221,9 +222,9 @@ def test_mattes_densities():
         # Compute the expected joint distribution with sparse sampling
         expected_joint_sparse = np.zeros(shape=(nbins, nbins))
         for index in range(sval.shape[0]):
-            sv = mbase.bin_normalize_static(sval[index])
-            mv = mbase.bin_normalize_moving(mval[index])
-            sbin = mbase.bin_index(sv)
+            sv = parzen_hist.bin_normalize_static(sval[index])
+            mv = parzen_hist.bin_normalize_moving(mval[index])
+            sbin = parzen_hist.bin_index(sv)
             # The spline is centered at mv, will evaluate for all row
             spline_arg = np.array([i - mv for i in range(nbins)])
             contribution = cubic_spline(spline_arg)
@@ -345,8 +346,8 @@ def test_joint_pdf_gradients_dense():
 
         static, moving, static_g2w, moving_g2w, smask, mmask, M = \
             setup_random_transform(transform, factor, nslices, 5.0)
-        metric = MattesBase(32)
-        metric.setup(static, moving, smask, mmask)
+        parzen_hist = ParzenJointHistogram(32)
+        parzen_hist.setup(static, moving, smask, mmask)
 
         # Compute the gradient at theta with the implementation under test
         M = transform.param_to_matrix(theta)
@@ -354,19 +355,19 @@ def test_joint_pdf_gradients_dense():
 
         warped = warp_method(moving.astype(np.float32), shape, M)
         warped = np.array(warped)
-        metric.update_pdfs_dense(static.astype(np.float64),
+        parzen_hist.update_pdfs_dense(static.astype(np.float64),
                                  warped.astype(np.float64))
         # Get the joint distribution evaluated at theta
-        J0 = np.copy(metric.joint)
+        J0 = np.copy(parzen_hist.joint)
         grid_to_space = np.eye(dim + 1)
         spacing = np.ones(dim, dtype=np.float64)
         mgrad, inside = vf.gradient(moving.astype(np.float32), moving_g2w,
                                     spacing, shape, grid_to_space)
         id = transform.get_identity_parameters()
-        metric.update_gradient_dense(id, transform, static.astype(np.float64),
+        parzen_hist.update_gradient_dense(id, transform, static.astype(np.float64),
                                      warped.astype(np.float64), grid_to_space,
                                      mgrad, smask, mmask)
-        actual = np.copy(metric.joint_grad)
+        actual = np.copy(parzen_hist.joint_grad)
         # Now we have the gradient of the joint distribution w.r.t. the
         # transform parameters
 
@@ -381,9 +382,9 @@ def test_joint_pdf_gradients_dense():
             shape = np.array(static.shape, dtype=np.int32)
             warped = warp_method(moving.astype(np.float32), shape, M)
             warped = np.array(warped)
-            metric.update_pdfs_dense(static.astype(np.float64),
+            parzen_hist.update_pdfs_dense(static.astype(np.float64),
                                      warped.astype(np.float64))
-            J1 = np.copy(metric.joint)
+            J1 = np.copy(parzen_hist.joint)
             expected[..., i] = (J1 - J0) / h
 
         # Dot product and norms of gradients of each joint histogram cell
@@ -421,8 +422,8 @@ def test_joint_pdf_gradients_sparse():
 
         static, moving, static_g2w, moving_g2w, smask, mmask, M = \
             setup_random_transform(transform, factor, nslices, 5.0)
-        metric = MattesBase(32)
-        metric.setup(static, moving, smask, mmask)
+        parzen_hist = ParzenJointHistogram(32)
+        parzen_hist.setup(static, moving, smask, mmask)
 
         # Sample the fixed-image domain
         k = 3
@@ -449,19 +450,19 @@ def test_joint_pdf_gradients_sparse():
         intensities_moving, inside = interp_method(moving.astype(np.float32),
                                                    samples_moving_grid)
         intensities_moving = np.array(intensities_moving, dtype=np.float64)
-        metric.update_pdfs_sparse(intensities_static, intensities_moving)
+        parzen_hist.update_pdfs_sparse(intensities_static, intensities_moving)
         # Get the joint distribution evaluated at theta
-        J0 = np.copy(metric.joint)
+        J0 = np.copy(parzen_hist.joint)
 
         spacing = np.ones(dim + 1, dtype=np.float64)
         mgrad, inside = vf.sparse_gradient(moving.astype(np.float32),
                                            sp_to_moving, spacing, samples)
-        metric.update_gradient_sparse(theta, transform, intensities_static,
+        parzen_hist.update_gradient_sparse(theta, transform, intensities_static,
                                       intensities_moving, samples[..., :dim],
                                       mgrad)
         # Get the gradient of the joint distribution w.r.t. the transform
         # parameters
-        actual = np.copy(metric.joint_grad)
+        actual = np.copy(parzen_hist.joint_grad)
 
         # Compute the gradient using finite-diferences
         n = transform.get_number_of_parameters()
@@ -476,8 +477,8 @@ def test_joint_pdf_gradients_sparse():
             intensities_moving, inside = \
                 interp_method(moving.astype(np.float32), samples_moving_grid)
             intensities_moving = np.array(intensities_moving, dtype=np.float64)
-            metric.update_pdfs_sparse(intensities_static, intensities_moving)
-            J1 = np.copy(metric.joint)
+            parzen_hist.update_pdfs_sparse(intensities_static, intensities_moving)
+            J1 = np.copy(parzen_hist.joint)
             expected[..., i] = (J1 - J0) / h
 
         # Dot product and norms of gradients of each joint histogram cell
@@ -517,16 +518,16 @@ def test_mi_gradient_dense():
         smask = None
         mmask = None
 
-        # Prepare a MattesBase instance
+        # Prepare a ParzenMutualInformation instance
         # The computation of the metric is done in 3 steps:
         # 1.Compute the joint distribution
         # 2.Compute the gradient of the joint distribution
         # 3.Compute the metric's value and gradient using results from 1 and 2
-        metric = MattesBase(32)
-        metric.setup(static, moving, smask, mmask)
+        parzen_mi = ParzenMutualInformation(32)
+        parzen_mi.setup(static, moving, smask, mmask)
 
         # 1. Update the joint distribution
-        metric.update_pdfs_dense(static.astype(np.float64),
+        parzen_mi.update_pdfs_dense(static.astype(np.float64),
                                  moving.astype(np.float64))
 
         # 2. Update the joint distribution gradient (the derivative of each
@@ -538,19 +539,19 @@ def test_mi_gradient_dense():
         shape = np.array(static.shape, dtype=np.int32)
         mgrad, inside = vf.gradient(moving.astype(np.float32), moving_g2w,
                                     spacing, shape, grid_to_space)
-        metric.update_gradient_dense(theta, transform,
+        parzen_mi.update_gradient_dense(theta, transform,
                                      static.astype(np.float64),
                                      moving.astype(np.float64),
                                      grid_to_space, mgrad, smask, mmask)
 
         # 3. Update the metric (in this case, the Mutual Information) and its
         # gradient, which is computed from the joint density and its gradient
-        metric.update_mi_metric(update_gradient=True)
+        parzen_mi.update_mi_metric(update_gradient=True)
 
         # Now we can extract the value and gradient of the metric
         # This is the gradient according to the implementation under test
-        val0 = metric.metric_val
-        actual = np.copy(metric.metric_grad)
+        val0 = parzen_mi.metric_val
+        actual = np.copy(parzen_mi.metric_grad)
 
         # Compute the gradient using finite-diferences
         n = transform.get_number_of_parameters()
@@ -562,10 +563,10 @@ def test_mi_gradient_dense():
             M = transform.param_to_matrix(dtheta)
             shape = np.array(static.shape, dtype=np.int32)
             warped = np.array(warp_method(moving.astype(np.float32), shape, M))
-            metric.update_pdfs_dense(static.astype(np.float64),
+            parzen_mi.update_pdfs_dense(static.astype(np.float64),
                                      warped.astype(np.float64))
-            metric.update_mi_metric(update_gradient=False)
-            val1 = metric.metric_val
+            parzen_mi.update_mi_metric(update_gradient=False)
+            val1 = parzen_mi.metric_val
             expected[i] = (val1 - val0) / h
 
         dp = expected.dot(actual)
@@ -608,13 +609,13 @@ def test_mi_gradient_sparse():
                                                    samples_static_grid)
         intensities_static = np.array(intensities_static, dtype=np.float64)
 
-        # Prepare a MattesBase instance
+        # Prepare a ParzenMutualInformation instance
         # The computation of the metric is done in 3 steps:
         # 1.Compute the joint distribution
         # 2.Compute the gradient of the joint distribution
         # 3.Compute the metric's value and gradient using results from 1 and 2
-        metric = MattesBase(32)
-        metric.setup(static, moving, smask, mmask)
+        parzen_mi = ParzenMutualInformation(32)
+        parzen_mi.setup(static, moving, smask, mmask)
 
         # 1. Update the joint distribution
         sp_to_moving = np.linalg.inv(moving_g2w)
@@ -622,7 +623,7 @@ def test_mi_gradient_sparse():
         intensities_moving, inside = interp_method(moving.astype(np.float32),
                                                    samples_moving_grid)
         intensities_moving = np.array(intensities_moving, dtype=np.float64)
-        metric.update_pdfs_sparse(intensities_static, intensities_moving)
+        parzen_mi.update_pdfs_sparse(intensities_static, intensities_moving)
 
         # 2. Update the joint distribution gradient (the derivative of each
         # histogram cell w.r.t. the transform parameters). This requires
@@ -634,19 +635,19 @@ def test_mi_gradient_sparse():
                                            sp_to_moving,
                                            spacing,
                                            samples[..., :dim])
-        metric.update_gradient_sparse(theta, transform, intensities_static,
+        parzen_mi.update_gradient_sparse(theta, transform, intensities_static,
                                       intensities_moving,
                                       samples[..., :dim],
                                       mgrad)
 
         # 3. Update the metric (in this case, the Mutual Information) and its
         # gradient, which is computed from the joint density and its gradient
-        metric.update_mi_metric(update_gradient=True)
+        parzen_mi.update_mi_metric(update_gradient=True)
 
         # Now we can extract the value and gradient of the metric
         # This is the gradient according to the implementation under test
-        val0 = metric.metric_val
-        actual = np.copy(metric.metric_grad)
+        val0 = parzen_mi.metric_val
+        actual = np.copy(parzen_mi.metric_grad)
 
         # Compute the gradient using finite-diferences
         n = transform.get_number_of_parameters()
@@ -662,9 +663,9 @@ def test_mi_gradient_sparse():
             intensities_moving, inside =\
                 interp_method(moving.astype(np.float32), samples_moving_grid)
             intensities_moving = np.array(intensities_moving, dtype=np.float64)
-            metric.update_pdfs_sparse(intensities_static, intensities_moving)
-            metric.update_mi_metric(update_gradient=False)
-            val1 = metric.metric_val
+            parzen_mi.update_pdfs_sparse(intensities_static, intensities_moving)
+            parzen_mi.update_mi_metric(update_gradient=False)
+            val1 = parzen_mi.metric_val
             expected[i] = (val1 - val0) / h
 
         dp = expected.dot(actual)

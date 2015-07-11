@@ -23,15 +23,20 @@ cdef extern from "dpy_math.h" nogil:
     double sin(double)
     double log(double)
 
-class MattesBase(object):
+class ParzenJointHistogram(object):
     def __init__(self, nbins):
-        r""" Base class for the Mattes Mutual Information metric [Mattes03].
-        This implementation is not tied to any optimization (registration)
-        method, the idea is that a registration metric based on MI should
-        inherit from this class to perform the low-level computations of
-        the joint intensity distributions and its gradient w.r.t. the
-        transform parameters, and then communicate the results to the
-        appropriate optimizer.
+        r""" Base class to compute joint and marginal probability density
+        functions and their derivatives with respect to a transform's
+        parameters. The smooth histograms are computed by using Parzen
+        windows [Parzen62] with a cubic spline kernel, as proposed by
+        Mattes et al. [Mattes03]. This implementation is not tied to any
+        optimization (registration) method, the idea is that
+        information-theoretic matching functionals (such as Mutual
+        Information) can inherit from this class to perform the low-level
+        computations of the joint intensity distributions and its gradient
+        w.r.t. the transform parameters. The derived class can then compute
+        the similarity/dissimilarity measure and gradient, and finally
+        communicate the results to the appropriate optimizer.
 
         Parameters
         ----------
@@ -41,6 +46,9 @@ class MattesBase(object):
 
         References
         ----------
+        [Parzen62] E. Parzen. On the estimation of a probability density
+                   function and the mode. Annals of Mathematical Statistics,
+                   33(3), 1065-1076, 1962.
         [Mattes03] Mattes, D., Haynor, D. R., Vesselle, H., Lewellen, T. K.,
                    & Eubank, W. PET-CT image registration in the chest using
                    free-form deformations. IEEE Transactions on Medical
@@ -380,6 +388,33 @@ class MattesBase(object):
                 ' received'
             raise ValueError(msg)
 
+
+class ParzenMutualInformation(ParzenJointHistogram):
+    def __init__(self, nbins):
+        r""" Mutual Information similarity metric
+
+        Implementation of the Mutual Information metric using
+        Parzen windows [Parzen62] with a cubic spline kernel,
+        as proposed by Mattes et al. [Mattes03].
+
+        Parameters
+        ----------
+        nbins : int
+            the number of bins of the joint and marginal probability density
+            functions (the actual number of bins of the joint PDF is nbins**2)
+
+        References
+        ----------
+        [Parzen62] E. Parzen. On the estimation of a probability density
+                   function and the mode. Annals of Mathematical Statistics,
+                   33(3), 1065-1076, 1962.
+        [Mattes03] Mattes, D., Haynor, D. R., Vesselle, H., Lewellen, T. K.,
+                   & Eubank, W. PET-CT image registration in the chest using
+                   free-form deformations. IEEE Transactions on Medical
+                   Imaging, 22(1), 120-8, 2003.
+        """
+        super(ParzenMutualInformation, self).__init__(nbins)
+
     def update_mi_metric(self, update_gradient=True):
         r""" Computes current value and gradient of the MI metric
 
@@ -398,7 +433,7 @@ class MattesBase(object):
             if (self.metric_grad is None) or (self.metric_grad.shape[0] != sh):
                 self.metric_grad = np.empty(sh)
             grad = self.metric_grad
-        self.metric_val = _compute_mattes_mi(self.joint, self.joint_grad,
+        self.metric_val = _compute_parzen_mi(self.joint, self.joint_grad,
                                              self.smarginal, self.mmarginal,
                                              grad)
 
@@ -1210,7 +1245,7 @@ cdef _joint_pdf_gradient_sparse_3d(double[:] theta, Transform transform,
                         grad_pdf[i, j, k] /= norm_factor
 
 
-cdef double _compute_mattes_mi(double[:, :] joint,
+cdef double _compute_parzen_mi(double[:, :] joint,
                                double[:, :, :] joint_gradient,
                                double[:] smarginal, double[:] mmarginal,
                                double[:] mi_gradient) nogil:
@@ -1284,7 +1319,7 @@ def sample_domain_2d(int[:] shape, int n, double[:, :] samples,
 
     Example
     -------
-    >>> from dipy.align.mattes import sample_domain_2d
+    >>> from dipy.align.parzenhist import sample_domain_2d
     >>> import dipy.align.vector_fields as vf
     >>> mask = np.array(vf.create_circle(10, 10, 3), dtype=np.int32)
     >>> n = 5
@@ -1350,7 +1385,7 @@ def sample_domain_regular(int k, int[:] shape, double[:, :] grid2world,
 
     Example
     -------
-    >>> from dipy.align.mattes import sample_domain_regular
+    >>> from dipy.align.parzenhist import sample_domain_regular
     >>> import dipy.align.vector_fields as vf
     >>> shape = np.array((10, 10), dtype=np.int32)
     >>> sigma = 0
@@ -1430,7 +1465,7 @@ def sample_domain_3d(int[:] shape, int n, double[:, :] samples,
 
     Example
     -------
-    >>> from dipy.align.mattes import sample_domain_3d
+    >>> from dipy.align.parzenhist import sample_domain_3d
     >>> import dipy.align.vector_fields as vf
     >>> mask = np.array(vf.create_sphere(10, 10, 10, 3), dtype=np.int32)
     >>> n = 10
