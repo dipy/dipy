@@ -98,6 +98,9 @@ def slice(data, affine=None, value_range=None, opacity=1., lookup_colormap=None)
         lut = lookup_colormap
 
     x1, x2, y1, y2, z1, z2 = im.GetExtent()
+    print(im.GetExtent())
+    print(image_resliced.GetOutput().GetExtent())
+    ex1, ex2, ey1, ey2, ez1, ez2 = image_resliced.GetOutput().GetExtent()
 
     plane_colors = vtk.vtkImageMapToColors()
     plane_colors.SetLookupTable(lut)
@@ -109,16 +112,22 @@ def slice(data, affine=None, value_range=None, opacity=1., lookup_colormap=None)
         def input_connection(self, output_port):
             self.GetMapper().SetInputConnection(output_port)
             self.output_port = output_port
+            self.shape = (ex2 + 1, ey2 + 1, ez2 + 1)
 
         def display_extent(self, x1, x2, y1, y2, z1, z2):
             self.SetDisplayExtent(x1, x2, y1, y2, z1, z2)
             self.Update()
-            self.x1 = x1
-            self.x2 = x2
-            self.y1 = y1
-            self.y2 = y2
-            self.z1 = z1
-            self.z2 = z2
+
+        def display(self, x=None, y=None, z=None):
+            if x is None and y is None and z is None:
+                self.display_extent(ex1, ex2, ey1, ey2, ez2/2, ez2/2)
+            if x is not None:
+                self.display_extent(x, x, ey1, ey2, ez1, ez2)
+            if y is not None:
+                self.display_extent(ex1, ex2, y, y, ez1, ez2)
+            if z is not None:
+                self.display_extent(ex1, ex2, ey1, ey2, z, z)
+
 
         def opacity(self, value):
             self.GetProperty().SetOpacity(value)
@@ -126,15 +135,13 @@ def slice(data, affine=None, value_range=None, opacity=1., lookup_colormap=None)
         def copy(self):
             im_actor = ImageActor()
             im_actor.input_connection(self.output_port)
-            im_actor.SetDisplayExtent(self.x1, self.x2,
-                                      self.y1, self.y2,
-                                      self.z1, self.z2)
+            im_actor.SetDisplayExtent(*self.GetDisplayExtent())
             im_actor.opacity(opacity)
             return im_actor
 
     image_actor = ImageActor()
     image_actor.input_connection(plane_colors.GetOutputPort())
-    image_actor.display_extent(x1, x2, y1, y2, z2/2, z2/2)
+    image_actor.display()
     image_actor.opacity(opacity)
 
     return image_actor
