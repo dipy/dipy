@@ -483,22 +483,17 @@ class MIMetric(ParzenMutualInformation):
             if True, the gradient of the joint PDF will also be computed,
             otherwise, only the marginal and joint PDFs will be computed.
             The default is True.
-
-        Returns
-        -------
-        is_invertible : Boolean
-            whether the transform defined by `params` is invertible or not
         """
         # Get the matrix associated with the params parameter vector
         M = self.transform.param_to_matrix(params)
         if self.starting_affine is not None:
             M = M.dot(self.starting_affine)
         try:
-            i = npl.inv(M)
+            self.affine_map.set_affine(M)
         except:
-            return False
+            raise ValueError('The transformation is not invertible')
 
-        self.affine_map.set_affine(M)
+
 
         # Update the joint and marginal intensity distributions
         if self.samples is None:
@@ -551,7 +546,6 @@ class MIMetric(ParzenMutualInformation):
         # The results are in self.metric_val and self.metric_grad
         # ready to be returned from 'distance' and 'gradient'
         self.update_mi_metric(update_gradient)
-        return True
 
     def distance(self, params):
         r""" Numeric value of the negative Mutual Information
@@ -573,7 +567,9 @@ class MIMetric(ParzenMutualInformation):
             transforming the moving image by the currently set transform
             with `params` parameters
         """
-        if not self._update(params, False):
+        try:
+            self._update(params, False)
+        except:
             return np.inf
         return -1 * self.metric_val
 
@@ -592,8 +588,10 @@ class MIMetric(ParzenMutualInformation):
         grad : array, shape (n,)
             the gradient of the negative Mutual Information
         """
-        if not self._update(params, True):
-            return self.metric_grad
+        try:
+            self._update(params, True)
+        except:
+            return 0 * self.metric_grad
         return -1 * self.metric_grad
 
     def distance_and_gradient(self, params):
@@ -615,8 +613,10 @@ class MIMetric(ParzenMutualInformation):
         neg_mi_grad : array, shape (n,)
             the gradient of the negative Mutual Information
         """
-        if not self._update(params, True):
-            return np.inf, self.metric_grad
+        try:
+            self._update(params, True)
+        except:
+            return np.inf, 0 * self.metric_grad
         return -1 * self.metric_val, -1 * self.metric_grad
 
 

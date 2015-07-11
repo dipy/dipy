@@ -8,10 +8,10 @@ from scipy.ndimage.interpolation import map_coordinates
 from nibabel.affines import apply_affine, from_matvec
 from ...core import geometry
 from .. import floating
-from .. import mattes
 from .. import imwarp
 from .. import vector_fields as vfu
 from ..transforms import regtransforms
+from ..parzenhist import sample_domain_regular
 
 
 def test_random_displacement_field_2d():
@@ -1601,7 +1601,7 @@ def test_gradient_2d():
     # img is an image sampled at X with grid-to-space transform T
 
     # Test sparse gradient: choose some sample points (in space)
-    sample = mattes.sample_domain_regular(20, np.array(sh, dtype=np.int32), T)
+    sample = sample_domain_regular(20, np.array(sh, dtype=np.int32), T)
     sample = np.array(sample)
     # Compute the analytical gradient at all points
     expected = np.empty((sample.shape[0], 2), dtype=floating)
@@ -1677,7 +1677,7 @@ def test_gradient_3d():
     img = img.astype(floating)
     # Test sparse gradient: choose some sample points (in space)
     sample =\
-        mattes.sample_domain_regular(100, np.array(shape, dtype=np.int32), T)
+        sample_domain_regular(100, np.array(shape, dtype=np.int32), T)
     sample = np.array(sample)
     # Compute the analytical gradient at all points
     expected = np.empty((sample.shape[0], 3), dtype=floating)
