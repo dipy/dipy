@@ -3031,9 +3031,9 @@ def create_sphere(cnp.npy_intp nslices, cnp.npy_intp nrows,
     return s
 
 
-cdef void _gradient_3d(floating[:, :, :] img, double[:, :] img_world2grid,
-                       double[:] img_spacing, double[:, :] out_grid2world,
-                       floating[:, :, :, :] out, int[:, :, :] inside):
+def _gradient_3d(floating[:, :, :] img, double[:, :] img_world2grid,
+                 double[:] img_spacing, double[:, :] out_grid2world,
+                 floating[:, :, :, :] out, int[:, :, :] inside):
     r""" Gradient of a 3D image in physical space coordinates
 
     Each grid cell (i, j, k) in the sampling grid (determined by
@@ -3127,11 +3127,11 @@ cdef void _gradient_3d(floating[:, :, :] img, double[:, :] img_world2grid,
                         dx[p] = x[p]
 
 
-cdef void _sparse_gradient_3d(floating[:, :, :] img,
-                              double[:, :] img_world2grid,
-                              double[:] img_spacing,
-                              double[:, :] sample_points,
-                              floating[:, :] out, int[:] inside):
+def _sparse_gradient_3d(floating[:, :, :] img,
+                        double[:, :] img_world2grid,
+                        double[:] img_spacing,
+                        double[:, :] sample_points,
+                        floating[:, :] out, int[:] inside):
     r""" Gradient of a 3D image evaluated at a set of points in physical space
 
     For each row (x_i, y_i, z_i) in sample_points, the image is interpolated at
@@ -3210,9 +3210,9 @@ cdef void _sparse_gradient_3d(floating[:, :, :] img,
                 dx[p] = sample_points[i, p]
 
 
-cdef void _gradient_2d(floating[:, :] img, double[:, :] img_world2grid,
-                       double[:] img_spacing, double[:, :] out_grid2world,
-                       floating[:, :, :] out, int[:, :] inside):
+def _gradient_2d(floating[:, :] img, double[:, :] img_world2grid,
+                 double[:] img_spacing, double[:, :] out_grid2world,
+                 floating[:, :, :] out, int[:, :] inside):
     r""" Gradient of a 2D image in physical space coordinates
 
     Each grid cell (i, j) in the sampling grid (determined by
@@ -3293,10 +3293,10 @@ cdef void _gradient_2d(floating[:, :] img, double[:, :] img_world2grid,
                     dx[p] = x[p]
 
 
-cdef void _sparse_gradient_2d(floating[:, :] img, double[:, :] img_world2grid,
-                              double[:] img_spacing,
-                              double[:, :] sample_points,
-                              floating[:, :] out, int[:] inside):
+def _sparse_gradient_2d(floating[:, :] img, double[:, :] img_world2grid,
+                        double[:] img_spacing,
+                        double[:, :] sample_points,
+                        floating[:, :] out, int[:] inside):
     r""" Gradient of a 2D image evaluated at a set of points in physical space
 
     For each row (x_i, y_i) in sample_points, the image is interpolated at
@@ -3402,30 +3402,16 @@ def gradient(img, img_world2grid, img_spacing, out_shape,
     ftype = img.dtype.type
     out = np.empty(tuple(out_shape)+(dim,), dtype=ftype)
     inside = np.empty(tuple(out_shape), dtype=np.int32)
+    # Select joint density gradient 2D or 3D
     if dim == 2:
-        if ftype == np.float64:
-            _gradient_2d[cython.double](img, img_world2grid.astype(np.float64),
-                         img_spacing.astype(np.float64),
-                         out_grid2world.astype(np.float64), out, inside)
-        elif ftype == np.float32:
-            _gradient_2d[cython.float](img, img_world2grid.astype(np.float64),
-                         img_spacing.astype(np.float64),
-                         out_grid2world.astype(np.float64), out, inside)
-        else:
-            raise ValueError('Please cast image to a floating point type')
+        jd_grad = _gradient_2d
     elif dim == 3:
-        if ftype == np.float64:
-            _gradient_3d[cython.double](img, img_world2grid.astype(np.float64),
-                         img_spacing.astype(np.float64),
-                         out_grid2world.astype(np.float64), out, inside)
-        elif ftype == np.float32:
-            _gradient_3d[cython.float](img, img_world2grid.astype(np.float64),
-                         img_spacing.astype(np.float64),
-                         out_grid2world.astype(np.float64), out, inside)
-        else:
-            raise ValueError('Please cast image to a floating point type')
+        jd_grad = _gradient_3d
     else:
         raise ValueError('Undefined gradient for image dimension %d' % (dim,))
+    jd_grad(img, img_world2grid.astype(np.float64),
+            img_spacing.astype(np.float64),
+            out_grid2world.astype(np.float64), out, inside)
     return out, inside
 
 
@@ -3460,26 +3446,11 @@ def sparse_gradient(img, img_world2grid, img_spacing, sample_points):
     n = sample_points.shape[0]
     out = np.empty(shape=(n, dim), dtype=ftype)
     inside = np.empty(shape=(n,), dtype=np.int32)
+    # Select joint density gradient 2D or 3D
     if dim == 2:
-        if ftype == np.float64:
-            _sparse_gradient_2d[cython.double](img, img_world2grid.astype(np.float64),
-                                img_spacing.astype(np.float64), sample_points,
-                                out, inside)
-        elif ftype == np.float32:
-            _sparse_gradient_2d[cython.float](img, img_world2grid.astype(np.float64),
-                                img_spacing.astype(np.float64), sample_points,
-                                out, inside)
-        else:
-            raise ValueError('Please cast image to a floating point type')
+        jd_grad = _sparse_gradient_2d
     else:
-        if ftype == np.float64:
-            _sparse_gradient_3d[cython.double](img, img_world2grid.astype(np.float64),
-                                img_spacing.astype(np.float64), sample_points,
-                                out, inside)
-        elif ftype == np.float32:
-            _sparse_gradient_3d[cython.float](img, img_world2grid.astype(np.float64),
-                                img_spacing.astype(np.float64), sample_points,
-                                out, inside)
-        else:
-            raise ValueError('Please cast image to a floating point type')
+        jd_grad = _sparse_gradient_3d
+    jd_grad(img, img_world2grid.astype(np.float64),
+            img_spacing.astype(np.float64), sample_points, out, inside)
     return out, inside
