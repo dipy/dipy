@@ -11,10 +11,9 @@ from dipy.viz import regtools as rt
 from dipy.align import floating
 from dipy.align import vector_fields as vf
 from dipy.align import imaffine
-from dipy.align import mattes
 from dipy.align.transforms import (Transform,
                                    regtransforms)
-from dipy.align.tests.test_mattes import setup_random_transform
+from dipy.align.tests.test_parzenhist import setup_random_transform
 
 # For each transform type, select a transform factor (indicating how large the
 # true transform between static and moving images will be) and a sampling
