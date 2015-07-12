@@ -599,16 +599,25 @@ def _near_roi(sl, x_roi_coords, tol, mode='any'):
 	-------
 	out : boolean
     """
+    if len(x_roi_coords)==0:
+        return False
     if mode=="any" or mode=="all":
-        dist = cdist(sl, x_roi_coords, 'euclidean')
-    else:
-        sub_sl = np.vstack([sl[0], sl[-1]])
+        s = sl
+    elif mode=="either_end" or mode=="both_end":
         # 'end' modes, use a streamline with 2 nodes:
-        dist = cdist(sub_sl, x_roi_coords, 'euclidean')
-    if mode=="any" or mode=="either_end":
-        return np.min(dist)<tol
+        s = np.vstack([sl[0], sl[-1]])
     else:
-        return np.all(np.min(dist, -1)<tol)
+        e_s = "For determining relationship to an array, you can use "
+        e_s += "one of the following modes: 'any', 'all', 'both_end',"
+        e_s += "'either_end', but you entered: %s."%mode
+        raise ValueError(e_s)
+
+    dist = cdist(s, x_roi_coords, 'euclidean')
+
+    if mode=="any" or mode=="either_end":
+        return np.min(dist)<=tol
+    else:
+        return np.all(np.min(dist, -1)<=tol)
 
 
 def near_roi(streamlines, target_mask, affine=None, tol=None,
@@ -666,11 +675,10 @@ def near_roi(streamlines, target_mask, affine=None, tol=None,
     if isinstance(streamlines, list):
         out = np.zeros(len(streamlines), dtype=bool)
         for ii, sl in enumerate(streamlines):
-
             out[ii] = _near_roi(sl, x_roi_coords, tol=tol,
                                 mode=mode)
         return out
-    # If it's a generators, we'll need to generate the output into a list
+    # If it's a generator, we'll need to generate the output into a list
     else:
         out = []
         for sl in streamlines:

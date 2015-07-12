@@ -1,7 +1,12 @@
+"""
+Select streamlines
+"""
+
+
 from warnings import warn
 import numpy as np
 from nibabel.affines import apply_affine
-from dipy.tracking.vox2track import _near_roi
+from dipy.tracking.utils import _near_roi
 
 
 def reduce_rois(rois, include):
