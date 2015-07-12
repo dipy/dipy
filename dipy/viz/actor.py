@@ -21,7 +21,8 @@ if have_vtk:
     major_version = vtk.vtkVersion.GetVTKMajorVersion()
 
 
-def slice(data, affine=None, value_range=None, opacity=1., lookup_colormap=None):
+def slice(data, affine=None, value_range=None, opacity=1.,
+          lookup_colormap=None):
     """ Cuts 3D volumes into images
 
     Parameters
@@ -30,6 +31,9 @@ def slice(data, affine=None, value_range=None, opacity=1., lookup_colormap=None)
         A 3D volume as a numpy array.
     affine : array, shape (3, 3)
         Grid to space (usually RAS 1mm) transformation matrix
+    value_range : None or tuple (2,)
+        If None then the values will be interpolated to (0, 255) from
+        (min, max). Otherwise from (value_range[0], value_range[1]).
     opacity : float
         Opacity of 0 means completely transparent and 1 completely visible.
     lookup_colormap : vtkLookupTable
@@ -44,6 +48,8 @@ def slice(data, affine=None, value_range=None, opacity=1., lookup_colormap=None)
         coordinates as calculated by the affine parameter.
 
     """
+    if data.ndim < 3 or data.ndim > 4:
+        raise ValueError('Only 3D or 4D data are supported')
 
     if value_range is None:
         vol = np.interp(data, xp=[data.min(), data.max()], fp=[0, 255])
@@ -127,7 +133,6 @@ def slice(data, affine=None, value_range=None, opacity=1., lookup_colormap=None)
                 self.display_extent(ex1, ex2, y, y, ez1, ez2)
             if z is not None:
                 self.display_extent(ex1, ex2, ey1, ey2, z, z)
-
 
         def opacity(self, value):
             self.GetProperty().SetOpacity(value)
