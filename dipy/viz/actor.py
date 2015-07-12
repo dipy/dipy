@@ -48,8 +48,8 @@ def slice(data, affine=None, value_range=None, opacity=1.,
         coordinates as calculated by the affine parameter.
 
     """
-    if data.ndim < 3 or data.ndim > 4:
-        raise ValueError('Only 3D or 4D data are supported')
+    if data.ndim != 3:
+        raise ValueError('Only 3D arrays are currently supported.')
 
     if value_range is None:
         vol = np.interp(data, xp=[data.min(), data.max()], fp=[0, 255])
