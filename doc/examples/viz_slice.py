@@ -4,45 +4,91 @@
 Simple volume visualization
 ============================
 
-Here we present an example
+Here we present an example for visualizing slices from 3D images.
 
 """
+
 import os
 import nibabel as nib
 from dipy.data import fetch_bundles_2_subjects
 from dipy.viz import window, actor
 
 
+"""
+Let's download and load a T1.
+"""
+
 fetch_bundles_2_subjects()
 
 fname = os.path.join(os.path.expanduser('~'), '.dipy', 'exp_bundles_and_maps',
                      'bundles_2_subjects', 'subj_1', 't1_warped.nii.gz')
 
+
 img = nib.load(fname)
 data = img.get_data()
 affine = img.get_affine()
 
+"""
+Create a Renderer object which holds all the actors which we want to visualize.
+"""
+
 renderer = window.Renderer()
+renderer.background((1, 1, 1))
+
+"""
+The T1 has usually a higher range of values than what can be visualized in an
+image. We can set the range that we would like to see.
+"""
 
 mean, std = data[data > 0].mean(), data[data > 0].std()
-
 value_range = (mean - 0.5 * std, mean + 1.5 * std)
 
-world_coord = True
+"""
+The ``slice`` function will read data and resample the data using an affine
+transformation matrix. The default behavior of this function is to show the
+the middle slice of the last dimension of the resampled data.
+"""
 
-if world_coord:
-    slice_actor = actor.slice(data, affine, value_range)
-else:
-    slice_actor = actor.slice(data, value_range=value_range)
+slice_actor = actor.slice(data, affine, value_range)
+
+"""
+The ``slice_actor`` contains an axial slice.
+"""
 
 renderer.add(slice_actor)
 
+"""
+The same actor can show any different slice from the given data using its
+``display`` function. However, if we want to show multiple slices we need to
+copy the actor first.
+"""
+
 slice_actor2 = slice_actor.copy()
+
+"""
+Now we have a new ``slice_actor`` which displays the middle slice of saggital
+plane.
+"""
 
 slice_actor2.display(slice_actor2.shape[0]/2, None, None)
 
-renderer.background((1, 1, 1))
-
 renderer.add(slice_actor2)
 
-window.show(renderer, size=(600, 600))
+"""
+In order to interact with the data you will need to uncomment the line below.
+"""
+
+# window.show(renderer, size=(600, 600))
+
+"""
+Otherwise, you can save a screenshot using the following command.
+"""
+
+window.snapshot(renderer, 'slices.png', size=(600, 600))
+
+"""
+.. figure:: slices.png
+   :align: center
+
+   **Simple slice viewer**.
+"""
