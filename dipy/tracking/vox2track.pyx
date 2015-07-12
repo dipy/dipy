@@ -2,8 +2,6 @@
 """This module contains the parts of dipy.tracking.utils that need to be
 implemented in cython.
 """
-import math
-
 import cython
 
 import numpy as np
