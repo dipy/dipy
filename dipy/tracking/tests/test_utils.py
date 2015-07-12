@@ -280,16 +280,14 @@ def test_near_roi():
 
     # Test for use of the 'all' mode:
     assert_array_equal(near_roi(x_streamlines, mask, affine=affine, tol=None,
-                                mode='all'),
-                 np.array([False, False, False]))
+                                mode='all'), np.array([False, False, False]))
 
     mask[0, 1, 1] = True
     mask[0, 2, 2] = True
     # Test for use of the 'all' mode, also testing that setting the tolerance
     # to a very small number gets overridden:
     assert_array_equal(near_roi(x_streamlines, mask, affine=affine, tol=0.1,
-                                mode='all'),
-                 np.array([False, True, False]))
+                                mode='all'), np.array([False, True, False]))
 
     mask[2, 2, 2] = True
     mask[3, 3, 3] = True
@@ -538,4 +536,3 @@ def test_unique_rows():
                              [6,7,8],[0,1,0],[1,0,1]])
 
     assert_array_equal(unique_rows(arr), arr_w_unique)
-

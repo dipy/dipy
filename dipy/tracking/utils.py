@@ -52,9 +52,7 @@ from functools import wraps
 from warnings import warn
 
 from nibabel.affines import apply_affine
-
-# Import tools writen in cython
-from dipy.tracking.vox2track import _near_roi
+from scipy.spatial.distance import cdist
 
 from dipy.tracking.streamline import transform_streamlines
 
@@ -575,6 +573,44 @@ def target(streamlines, target_mask, affine, include=True):
             yield sl
 
 
+def _near_roi(sl, x_roi_coords, tol, mode='any'):
+    """
+    Helper function implementing the inner loops of the :func:`near_roi`
+    function.
+
+    Parameters
+    ----------
+    sl : array, shape (N, 3)
+	    A single streamline
+    x_roi_coords : array
+        ROI coordinates transformed to the streamline coordinate frame.
+    tol : float
+        Distance (in the units of the streamlines, usually mm). If any
+        coordinate in the streamline is within this distance from the center
+        of any voxel in the ROI, this function returns True.
+	mode : string
+		One of {"any", "all", "either_end", "both_end"}, where return True if:
+		"any" : any point is within tol from ROI.
+		"all" : all points are within tol from ROI.
+		"either_end" : either of the end-points is within tol from ROI
+		"both_end" : both end points are within tol from ROI.
+
+	Returns
+	-------
+	out : boolean
+    """
+    if mode=="any" or mode=="all":
+        dist = cdist(sl, x_roi_coords, 'euclidean')
+    else:
+        sub_sl = np.vstack([sl[0], sl[-1]])
+        # 'end' modes, use a streamline with 2 nodes:
+        dist = cdist(sub_sl, x_roi_coords, 'euclidean')
+    if mode=="any" or mode=="either_end":
+        return np.min(dist)<tol
+    else:
+        return np.all(np.min(dist, -1)<tol)
+
+
 def near_roi(streamlines, target_mask, affine=None, tol=None,
              mode="any"):
     """
@@ -630,6 +666,7 @@ def near_roi(streamlines, target_mask, affine=None, tol=None,
     if isinstance(streamlines, list):
         out = np.zeros(len(streamlines), dtype=bool)
         for ii, sl in enumerate(streamlines):
+
             out[ii] = _near_roi(sl, x_roi_coords, tol=tol,
                                 mode=mode)
         return out
@@ -638,7 +675,7 @@ def near_roi(streamlines, target_mask, affine=None, tol=None,
         out = []
         for sl in streamlines:
             out.append(_near_roi(sl, x_roi_coords, tol=tol,
-                                 mode=mode))
+                                mode=mode))
 
         return(np.array(out, dtype=bool))
 
