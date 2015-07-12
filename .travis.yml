@@ -4,6 +4,7 @@
 # It's okay for it to be on multiple physical lines, so long as you remember:
 # - There can't be any leading "-"s - All newlines will be removed, so use
 # ";"s
+sudo: false  # To use travis container infrastructure
 language: python
 env:
     global:
@@ -32,7 +33,7 @@ before_install:
     - source venv/bin/activate
     - python --version # just to check
     - retry pip install nose # always
-    - sudo apt-get install libblas-dev liblapack-dev libatlas3gf-base
+    - apt-get install libblas-dev liblapack-dev libatlas3gf-base
     - wheelhouse_pip_install $DEPENDS
     - if [ "${COVERAGE}" == "1" ]; then
       pip install coverage;
