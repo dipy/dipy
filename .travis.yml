@@ -18,6 +18,9 @@ addons:
       - libatlas3gf-base
       - libgsl0-dev
       - libgsl0ldbl
+
+sudo: false
+
 env:
     global:
         - DEPENDS="cython numpy scipy matplotlib h5py nibabel cvxopt"
@@ -72,6 +75,14 @@ matrix:
     - python: 2.7
       env:
         - DEPENDS="cython numpy scipy matplotlib h5py nibabel cvxopt scikit_learn mpmath"
+addons:
+  apt:
+    packages:
+    - libblas-dev
+    - liblapack-dev
+    - libatlas3gf-base
+    - libgsl0-dev
+    - libgsl0ldbl
 
 before_install:
     - source tools/travis_tools.sh
@@ -83,6 +94,10 @@ before_install:
     - pip install -U pip
     - retry pip install nose;
     - wheelhouse_pip_install $DEPENDS;
+
+
+    - retry pip install nose # always
+    - wheelhouse_pip_install $DEPENDS
 
     - if [ "${COVERAGE}" == "1" ]; then
       pip install coverage;
