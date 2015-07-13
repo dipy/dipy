@@ -4,6 +4,8 @@
 
 import numpy as np
 
+import random
+
 from dipy.core.geometry import (sphere2cart, cart2sphere,
                                 nearest_pos_semi_def,
                                 sphere_distance,
@@ -256,38 +258,34 @@ def test_compose_decompose_matrix():
 
 def test_perpendicular_directions():
     num = 35
-    vector_v = sphere2cart(1, np.pi/4, np.pi/4)
-    pd = perpendicular_directions(vector_v, num=num, half=False)
 
-    # see if length of pd is equal to the number of intendend samples
-    assert_equal(num, len(pd))
+    vectors_v = np.zeros((4, 3))
 
-    # check if all directions are perpendicular to vector v
-    for d in pd:
-        cos_angle = np.dot(d, vector_v)
-        assert_almost_equal(cos_angle, 0)
+    for v in range(3):
+        theta = random.uniform(0, np.pi)
+        phi = random.uniform(0, 2*np.pi)
+        vectors_v[v] = sphere2cart(1, theta, phi)
+    vectors_v[3] = [1, 0, 0]
 
-    # check if directions are sampled by multiples of 2*pi / num
-    delta_a = 2 * np.pi / num
-    for d in pd:
-        angle = np.arccos(np.dot(pd[0], d))
-        rest = angle % delta_a
-        if rest > delta_a * 0.99:  # To correct cases of negative error
-            rest = rest - delta_a
-        assert_almost_equal(rest, 0)
+    for vector_v in vectors_v:
+        pd = perpendicular_directions(vector_v, num=num, half=False)
 
-    # check case of vector_v is aligned to x_axis
-    vector_v = [1., 0., 0.]
-    pd = perpendicular_directions(vector_v, num=num, half=False)
-    for d in pd:
-        cos_angle = np.dot(d, vector_v)
-        assert_almost_equal(cos_angle, 0)
-    for d in pd:
-        angle = np.arccos(np.dot(pd[0], d))
-        rest = angle % delta_a
-        if rest > delta_a * 0.99:  # To correct cases of negative error
-            rest = rest - delta_a
-        assert_almost_equal(rest, 0)
+        # see if length of pd is equal to the number of intendend samples
+        assert_equal(num, len(pd))
+
+        # check if all directions are perpendicular to vector v
+        for d in pd:
+            cos_angle = np.dot(d, vector_v)
+            assert_almost_equal(cos_angle, 0)
+
+        # check if directions are sampled by multiples of 2*pi / num
+        delta_a = 2 * np.pi / num
+        for d in pd:
+            angle = np.arccos(np.dot(pd[0], d))
+            rest = angle % delta_a
+            if rest > delta_a * 0.99:  # To correct cases of negative error
+                rest = rest - delta_a
+            assert_almost_equal(rest, 0)
 
 
 if __name__ == '__main__':

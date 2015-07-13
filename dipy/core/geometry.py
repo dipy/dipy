@@ -912,7 +912,7 @@ def compose_transformations(*mats):
 
 
 def perpendicular_directions(v, num=30, half=False):
-    r""" Computes n equaly spaced perpendicular directions relative to a given
+    r""" Computes n evenly spaced perpendicular directions relative to a given
     vector v
 
     Parameters
@@ -922,9 +922,9 @@ def perpendicular_directions(v, num=30, half=False):
     num : int, optional
         Number of perpendicular directions to generate
     half : bool, optional
-        If haph is True, perpendicular directions are sampled on halp of the
-        unit circunference perpendicular to v, otherwive perpendicular
-        directions are sampled on the full circunference. Defaut of half is
+        If half is True, perpendicular directions are sampled on halp of the
+        unit circumference perpendicular to v, otherwive perpendicular
+        directions are sampled on the full circumference. Default of half is
         False
 
     Returns
@@ -934,7 +934,52 @@ def perpendicular_directions(v, num=30, half=False):
 
     Notes
     --------
-    Function is implemented according to:
+    Perpendicular directions are estimated using the following two step
+    procedure:
+    
+        1) the perpendicular directions are first sampled in a unit
+        circumference parallel to the plane normal to the x-axis.
+
+        2) Samples are then rotated and aligned to the plane normal to vector
+        v. The rotational matrix for this rotation is constructed as reference
+        frame basis which axis are the following:
+            - The first axis is vector v
+            - The second axis is defined as the normalized vector given by the
+            cross product between vector v and the unit vector aligned to the
+            x-axis
+            - The third axis is defined as the cross product between the
+            previous computed vector and vector v.
+
+    Following this two steps, coordinates of the final perpendicular directions
+    are given as:
+
+    .. math::
+
+        \left [ -\sin(a_{i}) \sqrt{{v_{y}}^{2}+{v_{z}}^{2}}
+        \; , \;
+        \frac{v_{x}v_{y}\sin(a_{i})-v_{z}\cos(a_{i})}
+        {\sqrt{{v_{y}}^{2}+{v_{z}}^{2}}}
+        \; , \;
+        \frac{v_{x}v_{z}\sin(a_{i})-v_{y}\cos(a_{i})}
+        {\sqrt{{v_{y}}^{2}+{v_{z}}^{2}}} \right  ]
+
+    This procedure has a singularity when vector v is aligned to the x-axis. To
+    solve this singularity, perpendicular directions in procedure's step 1 are
+    defined in the plane normal to y-axis and the second axis of the rotated
+    frame of reference is computed as the normalized vector given by the cross
+    product between vector v and the unit vector aligned to the y-axis. 
+    Following this, the coordinates of the perpendicular directions are given
+    as:
+
+        \left [ -\frac{\left (v_{x}v_{y}\sin(a_{i})+v_{z}\cos(a_{i}) \right )}
+        {\sqrt{{v_{x}}^{2}+{v_{z}}^{2}}}
+        \; , \;
+        \sin(a_{i}) \sqrt{{v_{x}}^{2}+{v_{z}}^{2}}
+        \; , \;
+        \frac{v_{y}v_{z}\sin(a_{i})+v_{x}\cos(a_{i})}
+        {\sqrt{{v_{x}}^{2}+{v_{z}}^{2}}} \right  ]
+
+    For more details see:
 
     http://gsoc2015dipydki.blogspot.it/2015/07/rnh-post-8-computing-perpendicul
     ar.html
@@ -944,11 +989,11 @@ def perpendicular_directions(v, num=30, half=False):
     # Float error used for floats comparison
     er = np.finfo(v[0]).eps * 1e3
 
-    # Define circunference or semi-circunference
+    # Define circumference or semi-circumference
     if half is True:
-        a = np.linspace(0., np.pi, num=num, endpoint=False)
+        a = np.linspace(0., math.pi, num=num, endpoint=False)
     else:
-        a = np.linspace(0., 2 * np.pi, num=num, endpoint=False)
+        a = np.linspace(0., 2 * math.pi, num=num, endpoint=False)
 
     cosa = np.cos(a)
     sina = np.sin(a)
