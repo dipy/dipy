@@ -1,7 +1,7 @@
 
 """
 ============================
-Simple volume visualization
+Simple volume slicing
 ============================
 
 Here we present an example for visualizing slices from 3D images.
@@ -20,11 +20,12 @@ Let's download and load a T1.
 
 fetch_bundles_2_subjects()
 
-fname = os.path.join(os.path.expanduser('~'), '.dipy', 'exp_bundles_and_maps',
-                     'bundles_2_subjects', 'subj_1', 't1_warped.nii.gz')
+fname_t1 = os.path.join(os.path.expanduser('~'), '.dipy',
+                        'exp_bundles_and_maps', 'bundles_2_subjects',
+                        'subj_1', 't1_warped.nii.gz')
 
 
-img = nib.load(fname)
+img = nib.load(fname_t1)
 data = img.get_data()
 affine = img.get_affine()
 
@@ -91,4 +92,45 @@ window.snapshot(renderer, 'slices.png', size=(600, 600))
    :align: center
 
    **Simple slice viewer**.
+
+It is also possible to set the colormap of your preference. Here we are loading
+an FA image and showing it in a non-standard way using an HSV colormap.
+"""
+
+fname_fa = os.path.join(os.path.expanduser('~'), '.dipy',
+                        'exp_bundles_and_maps', 'bundles_2_subjects',
+                        'subj_1', 'fa_1x1x1.nii.gz')
+
+img = nib.load(fname_fa)
+fa = img.get_data()
+
+"""
+Notice here how the scale range is (0, 255) and not (0, 1) which is the usual
+range of FA values.
+"""
+
+lut = actor.colormap_lookup_table(scale_range=(0, 255),
+                                  hue_range=(0.4, 1.),
+                                  saturation_range=(1, 1.),
+                                  value_range=(0., 1.))
+
+"""
+This is because the lookup table is applied in the slice after interpolating
+to (0, 255).
+"""
+
+fa_actor = actor.slice(fa, affine, lookup_colormap=lut)
+
+renderer.clear()
+renderer.add(fa_actor)
+
+# window.show(renderer, size=(600, 600))
+
+window.snapshot(renderer, 'slices_lut.png', size=(600, 600))
+
+"""
+.. figure:: slices_lut.png
+   :align: center
+
+   **Simple slice viewer with an HSV colormap**.
 """

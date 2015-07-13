@@ -104,8 +104,6 @@ def slice(data, affine=None, value_range=None, opacity=1.,
         lut = lookup_colormap
 
     x1, x2, y1, y2, z1, z2 = im.GetExtent()
-    print(im.GetExtent())
-    print(image_resliced.GetOutput().GetExtent())
     ex1, ex2, ey1, ey2, ez1, ez2 = image_resliced.GetOutput().GetExtent()
 
     plane_colors = vtk.vtkImageMapToColors()
