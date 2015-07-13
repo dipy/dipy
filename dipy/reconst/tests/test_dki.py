@@ -196,3 +196,148 @@ def test_carlson_rd():
 
     # Compare
     assert_array_almost_equal(RD, RD_ref)
+
+
+def test_Wrotate_single_fiber():
+
+    # Rotate the kurtosis tensor of single fiber simulate to the diffusion
+    # tensor diagonal and check that is equal to the kurtosis tensor of the
+    # same single fiber simulated directly to the x-axis
+
+    # Define single fiber simulate 
+    mevals = np.array([[0.00099, 0, 0], [0.00226, 0.00087, 0.00087]])
+    fie = 0.49
+    frac = [fie*100, (1 - fie)*100]
+
+    # simulate single fiber not aligned to the x-axis
+    angles = [(45, 0), (45, 0)]
+    signal, dt, kt = multi_tensor_dki(gtab_2s, mevals, angles=angles,
+                                      fractions=frac, snr=None)
+
+    evals, evecs = decompose_tensor(from_lower_triangular(dt))
+
+    kt_rotated = dki.Wrotate(kt, evecs)  # Now coordinate system has diffusion
+                                         # tensor diagonal aligned with the
+                                         # x-axis
+
+    # Reference simulation which is simulated directly aligned to the x-axis
+    angles = (90, 0), (90, 0)
+    signal, dt_ref, kt_ref = multi_tensor_dki(gtab_2s, mevals, angles=angles,
+                                              fractions=frac, snr=None)
+
+    assert_array_almost_equal(kt_rotated, kt_ref)
+
+
+def test_Wrotate_crossing_fibers():
+    
+    # Test 2 - simulate crossing fibers intersecting at 70 degrees.
+    # In this case, diffusion tensor principal eigenvector will be aligned in 
+    # the middle of the crossing fibers. Thus, after rotating the kurtosis 
+    # tensor, this will be equal to a kurtosis tensor simulate of crossing
+    # fibers both deviating 35 degrees from the x-axis. Moreover, we know that
+    # crossing fibers will be aligned to the x-y plane, because the smaller
+    # diffusion eigenvalue, perpendicular to both crossings fibers, will be
+    # aligned to the z-axis.
+    
+    # Simulate the crossing fiber
+    angles = [(90, 30), (90, 30), (20, 30), (20, 30)]
+    fie = 0.49
+    frac = [fie*50, (1-fie) * 50, fie*50, (1-fie) * 50]
+    mevals = np.array([[0.00099, 0, 0], [0.00226, 0.00087, 0.00087],
+                       [0.00099, 0, 0], [0.00226, 0.00087, 0.00087]])
+
+    signal, dt, kt = multi_tensor_dki(gtab_2s, mevals, angles=angles,
+                                      fractions=frac, snr=None)
+
+    evals, evecs = decompose_tensor(from_lower_triangular(dt))
+
+    kt_rotated = dki.Wrotate(kt, evecs)  # Now coordinate system has diffusion
+                                         # tensor diagonal aligned with the
+                                         # x-axis
+
+    # Simulate the reference kurtosis tensor
+    angles = [(90, 35), (90, 35), (90, -35), (90, -35)]
+
+    signal, dt, kt_ref = multi_tensor_dki(gtab_2s, mevals, angles=angles,
+                                          fractions=frac, snr=None)
+
+    # Compare rotated with the reference
+    assert_array_almost_equal(kt_rotated, kt_ref)
+
+def test_Wcons():
+
+    # Construct the 4D kurtosis tensor manualy from the crossing fiber kt
+    # simulate
+    Wfit = np.zeros([3, 3, 3, 3])
+
+    # Wxxxx
+    Wfit[0, 0, 0, 0] = kt_cross[0]
+
+    # Wyyyy
+    Wfit[1, 1, 1, 1] = kt_cross[1]
+
+    # Wzzzz
+    Wfit[2, 2, 2, 2] = kt_cross[2]
+
+    # Wxxxy
+    Wfit[0, 0, 0, 1] = Wfit[0, 0, 1, 0] = Wfit[0, 1, 0, 0] = kt_cross[3]
+    Wfit[1, 0, 0, 0] = kt_cross[3]
+
+    # Wxxxz
+    Wfit[0, 0, 0, 2] = Wfit[0, 0, 2, 0] = Wfit[0, 2, 0, 0] = kt_cross[4]
+    Wfit[2, 0, 0, 0] = kt_cross[4]
+
+    # Wxyyy
+    Wfit[0, 1, 1, 1] = Wfit[1, 0, 1, 1] = Wfit[1, 1, 1, 0] = kt_cross[5]
+    Wfit[1, 1, 0, 1] = kt_cross[5]
+
+    # Wxxxz
+    Wfit[1, 1, 1, 2] = Wfit[1, 2, 1, 1] = Wfit[2, 1, 1, 1] = kt_cross[6]
+    Wfit[1, 1, 2, 1] = kt_cross[6]    
+
+    # Wxzzz
+    Wfit[0, 2, 2, 2] = Wfit[2, 2, 2, 0] = Wfit[2, 0, 2, 2] = kt_cross[7]
+    Wfit[2, 2, 0, 2] = kt_cross[7]
+
+    # Wyzzz
+    Wfit[1, 2, 2, 2] = Wfit[2, 2, 2, 1] = Wfit[2, 1, 2, 2] = kt_cross[8]
+    Wfit[2, 2, 1, 2] = kt_cross[8]
+
+    # Wxxyy
+    Wfit[0, 0, 1, 1] = Wfit[0, 1, 0, 1] = Wfit[0, 1, 1, 0] = kt_cross[9]
+    Wfit[1, 0, 0, 1] = Wfit[1, 0, 1, 0] = Wfit[1, 1, 0, 0] = kt_cross[9]
+
+    # Wxxzz
+    Wfit[0, 0, 2, 2] = Wfit[0, 2, 0, 2] = Wfit[0, 2, 2, 0] = kt_cross[10]
+    Wfit[2, 0, 0, 2] = Wfit[2, 0, 2, 0] = Wfit[2, 2, 0, 0] = kt_cross[10]
+
+    # Wyyzz
+    Wfit[1, 1, 2, 2] = Wfit[1, 2, 1, 2] = Wfit[1, 2, 2, 1] = kt_cross[11]
+    Wfit[2, 1, 1, 2] = Wfit[2, 2, 1, 1] = Wfit[2, 1, 2, 1] = kt_cross[11]
+
+    # Wxxyz
+    Wfit[0, 0, 1, 2] = Wfit[0, 0, 2, 1] = Wfit[0, 1, 0, 2] = kt_cross[12]
+    Wfit[0, 1, 2, 0] = Wfit[0, 2, 0, 1] = Wfit[0, 2, 1, 0] = kt_cross[12]
+    Wfit[1, 0, 0, 2] = Wfit[1, 0, 2, 0] = Wfit[1, 2, 0, 0] = kt_cross[12]
+    Wfit[2, 0, 0, 1] = Wfit[2, 0, 1, 0] = Wfit[2, 1, 0, 0] = kt_cross[12]
+
+    # Wxyyz
+    Wfit[0, 1, 1, 2] = Wfit[0, 1, 2, 1] = Wfit[0, 2, 1, 1] = kt_cross[13]
+    Wfit[1, 0, 1, 2] = Wfit[1, 1, 0, 2] = Wfit[1, 1, 2, 0] = kt_cross[13]
+    Wfit[1, 2, 0, 1] = Wfit[1, 2, 1, 0] = Wfit[2, 0, 1, 1] = kt_cross[13]
+    Wfit[2, 1, 0, 1] = Wfit[2, 1, 1, 0] = Wfit[1, 0, 2, 1] = kt_cross[13]
+
+    # Wxyzz
+    Wfit[0, 1, 2, 2] = Wfit[0, 2, 1, 2] = Wfit[0, 2, 2, 1] = kt_cross[14]
+    Wfit[1, 0, 2, 2] = Wfit[1, 2, 0, 2] = Wfit[1, 2, 2, 0] = kt_cross[14]
+    Wfit[2, 0, 1, 2] = Wfit[2, 0, 2, 1] = Wfit[2, 1, 0, 2] = kt_cross[14]
+    Wfit[2, 1, 2, 0] = Wfit[2, 2, 0, 1] = Wfit[2, 2, 1, 0] = kt_cross[14]
+
+    # Function to be tested
+    Wcons = dki.Wcons(kt_cross)
+
+    Wfit = Wfit.reshape(-1)
+    Wcons = Wcons.reshape(-1)
+
+    assert_array_almost_equal(Wcons, Wfit)
+

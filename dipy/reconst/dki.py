@@ -800,6 +800,170 @@ def _wls_iter(design_matrix, inv_design, sig, min_diffusivity):
     return dki_params
 
 
+def Wrotate(kt, Basis, inds = None):
+    r""" Rotate a kurtosis tensor from the standard Cartesian coordinate system
+    to another coordinate system basis
+    
+    Parameters
+    ----------
+    kt : (15,)
+        Vector with the 15 independent elements of the kurtosis tensor
+    Basis : array (3, 3)
+        Vectors of the basis column-wise oriented
+    inds : array(m, 4) (optional)
+        Array of vectors containing the four indexes of m specific elements of
+        the rotated kurtosis tensor. If not specified all 15 elements of the
+        rotated kurtosis tensor are computed.
+    
+    Returns
+    --------
+    Wrot : array (m,) or (15,)
+        Vector with the m independent elements of the rotated kurtosis tensor.
+        If 'indices' is not specified all 15 elements of the rotated kurtosis
+        tensor are computed.
+    Note
+    ------
+    KT elements are assumed to be ordered as follows:
+        
+    .. math::
+            
+    \begin{matrix} ( & W_{xxxx} & W_{yyyy} & W_{zzzz} & W_{xxxy} & W_{xxxz}
+                     & ... \\
+                     & W_{xyyy} & W_{yyyz} & W_{xzzz} & W_{yzzz} & W_{xxyy}
+                     & ... \\
+                     & W_{xxzz} & W_{yyzz} & W_{xxyz} & W_{xyyz} & W_{xyzz}
+                     & & )\end{matrix}
+    References
+    ----------
+    [1] Hui ES, Cheung MM, Qi L, Wu EX, 2008. Towards better MR
+    characterization of neural tissues using directional diffusion kurtosis
+    analysis. Neuroimage 42(1): 122-34
+    """
+    if inds is None:
+        inds = np.array([[0, 0, 0, 0], [1, 1, 1, 1], [2, 2, 2, 2],
+                         [0, 0, 0, 1], [0, 0, 0, 2], [0, 1, 1, 1],
+                         [1, 1, 1, 2], [0, 2, 2, 2], [1, 2, 2, 2],
+                         [0, 0, 1, 1], [0, 0, 2, 2], [1, 1, 2, 2],
+                         [0, 0, 1, 2], [0, 1, 1, 2], [0, 1, 2, 2]])
+    else:
+        inds = np.array(inds)
+        inds = inds.reshape((-1, inds.shape[-1]))
+
+    Wrot = np.zeros(len(inds))
+
+    # Construct full 4D tensor
+    W4D = Wcons(kt)
+
+    for e in range(len(inds)):
+        Wrot[e] = _Wrotate_element(W4D, inds[e][0], inds[e][1], inds[e][2],
+                                   inds[e][3], Basis)
+
+    return Wrot
+
+
+def _Wrotate_element(W4D, indi, indj, indk, indl, B):
+    r""" Helper function that returns the element with specified index of a
+    rotated kurtosis tensor from the Cartesian coordinate system to another
+    coordinate system basis
+    Parameters
+    ----------
+    W4D : array(4,4,4,4)
+        Full 4D kutosis tensor in the Cartesian coordinate system
+    indi : int
+        Rotated kurtosis tensor element index i (0 for x, 1 for y, 2 for z)
+    indj : int
+        Rotated kurtosis tensor element index j (0 for x, 1 for y, 2 for z)
+    indk : int
+        Rotated kurtosis tensor element index k (0 for x, 1 for y, 2 for z)
+    indl: int
+        Rotated kurtosis tensor element index l (0 for x, 1 for y, 2 for z)
+    B: array (3, 3)
+        Vectors of the basis column-wise oriented
+    
+    Returns
+    -------
+    Wre : float
+          rotated kurtosis tensor element of index ind_i, ind_j, ind_k, ind_l
+    
+    References
+    ----------
+    [1] Hui ES, Cheung MM, Qi L, Wu EX, 2008. Towards better MR
+    characterization of neural tissues using directional diffusion kurtosis
+    analysis. Neuroimage 42(1): 122-34
+    """
+
+    Wre = 0
+
+    # These for loops can be avoid using kt symmetry properties. If this
+    # simplification is done we don't need also to reconstruct the full kt
+    # tensor
+    for il in range(3):
+        for jl in range(3):
+            for kl in range(3):
+                for ll in range(3):
+                    multiplyB = B[il, indi]*B[jl, indj]*B[kl, indk]*B[ll, indl]
+                    Wre = Wre + multiplyB * W4D[il, jl, kl, ll]
+
+    return Wre
+
+
+def Wcons(k_elements):
+    r""" Construct the full 4D kurtosis tensors from its 15 independent
+    elements
+    
+    Parameters
+    ----------
+    k_elements : (15,)
+        elements of the kurtosis tensor in the following order:
+        
+            .. math::
+            
+    \begin{matrix} ( & W_{xxxx} & W_{yyyy} & W_{zzzz} & W_{xxxy} & W_{xxxz}
+                     & ... \\
+                     & W_{xyyy} & W_{yyyz} & W_{xzzz} & W_{yzzz} & W_{xxyy}
+                     & ... \\
+                     & W_{xxzz} & W_{yyzz} & W_{xxyz} & W_{xyyz} & W_{xyzz}
+                     & & )\end{matrix}
+    Returns
+    -------
+    W : array(4,4,4,4)
+        Full 4D kutosis tensor
+    """
+
+    # Note: The multiplication of the indexes (i+1) * (j+1) * (k+1) * (l+1)
+    # for of an elements is only equal to this multiplication for another
+    # element if an only if the element corresponds to an symmetry element.
+    # This multiplication is therefore used to fill the other elements of the
+    # full kurtosis elements
+    indep_ele = {1: k_elements[0],
+                 16: k_elements[1],
+                 81: k_elements[2],
+                 2: k_elements[3],
+                 3: k_elements[4],
+                 8: k_elements[5],
+                 24: k_elements[6],
+                 27: k_elements[7],
+                 54: k_elements[8],
+                 4: k_elements[9],
+                 9: k_elements[10],
+                 36: k_elements[11],
+                 6: k_elements[12],
+                 12: k_elements[13],
+                 18: k_elements[14]}
+
+    W = np.zeros((3, 3, 3, 3))
+
+    xyz = [0, 1, 2]
+    for ind_i in xyz:
+        for ind_j in xyz:
+            for ind_k in xyz:
+                for ind_l in xyz:
+                    key = (ind_i+1) * (ind_j+1) * (ind_k+1) * (ind_l+1)
+                    W[ind_i][ind_j][ind_k][ind_l] = indep_ele[key]
+
+    return W
+
+
 def split_dki_param(dki_params):
     r""" Extract the diffusion tensor eigenvalues, the diffusion tensor
     eigenvector matrix, and the 15 independent elements of the kurtosis tensor
