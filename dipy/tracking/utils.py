@@ -583,7 +583,7 @@ def sl_near_roi(sl, x_roi_coords, tol, mode='any'):
     ----------
     sl : array, shape (N, 3)
 	    A single streamline
-    x_roi_coords : array
+    x_roi_coords : array, shape (M, 3)
         ROI coordinates transformed to the streamline coordinate frame.
     tol : float
         Distance (in the units of the streamlines, usually mm). If any
