@@ -1,21 +1,21 @@
 """
-=======================================
-Visualize bundle and metrics on bundles
-=======================================
-
+========================================
+Visualize bundles and metrics on bundles
+========================================
 """
 
 import numpy as np
-import nibabel as nib
 from dipy.viz import window, actor
 from dipy.data import fetch_bundles_2_subjects, read_bundles_2_subjects
+from dipy.tracking.streamline import transform_streamlines
 
 fetch_bundles_2_subjects()
-dix = read_bundles_2_subjects()
+dix = read_bundles_2_subjects(subj_id='subj_1', metrics=['fa'],
+                              bundles=['cg.left', 'cst.right'])
 
 fa = dix['fa']
 affine = dix['affine']
-bundle = dix['cst.right']
+bundle = dix['cg.left']
 
 renderer = window.Renderer()
 
@@ -27,56 +27,36 @@ window.show(renderer)
 
 renderer.clear()
 
-stream_actor2 = actor.line(bundle, fa)
+bundle_img = transform_streamlines(bundle, np.linalg.inv(affine))
+
+stream_actor2 = actor.line(bundle_img, fa)
 
 renderer.add(stream_actor2)
 
 window.show(renderer)
+renderer.clear()
 
-1/0
+stream_actor3 = actor.streamtube(bundle_img, fa, linewidth=0.1)
+bar = actor.scalar_bar()
 
-"""
-Load colormap (FA map for this example)
-"""
-fa_file = nib.load(dname + "../fa_1x1x1.nii.gz")
-fa_colormap = fa_file.get_data()
-colormap_affine = fa_file.get_affine()
+renderer.add(stream_actor3)
+renderer.add(bar)
 
-"""
-4. Transform lines in the same coordinates
-"""
-transfo = np.linalg.inv(colormap_affine)
-lines = [nib.affines.apply_affine(transfo, s) for s in lines]
+window.show(renderer)
 
-"""
-5. Generate and render fvtk streamline with scalar_bar
-"""
-width = 0.1
-fvtk_tubes = vtk_a.streamtube(lines, fa_colormap, linewidth=width)
-scalar_bar = vtk_a.scalar_bar(fvtk_tubes.GetMapper().GetLookupTable())
+renderer.clear()
 
-renderer = fvtk.ren()
-fvtk.add(renderer, fvtk_tubes)
-fvtk.add(renderer, scalar_bar)
-fvtk.show(renderer)
+hue = [0.0, 0.0]  # red only
+saturation = [0.0, 1.0]  # white to red
 
-"""
-6. Generate and render fvtk streamline with scalar_bar
-"""
+lut_cmap = actor.colormap_lookup_table(hue_range=hue,
+                                       saturation_range=saturation)
 
-saturation = [0.0, 1.0] # white to red
-hue = [0.0, 0.0] # Red only
+stream_actor4 = actor.streamtube(bundle_img, fa, linewidth=0.1,
+                                 lookup_colormap=lut_cmap)
+bar2 = actor.scalar_bar(lut_cmap)
 
-lut_cmap = vtk_a.colormap_lookup_table(hue_range=hue, saturation_range=saturation)
+renderer.add(stream_actor4)
+renderer.add(bar2)
 
-fvtk_tubes = vtk_a.streamtube(lines, fa_colormap, linewidth=width,
-                              lookup_colormap=lut_cmap)
-
-scalar_bar = vtk_a.scalar_bar(fvtk_tubes.GetMapper().GetLookupTable())
-
-renderer = fvtk.ren()
-fvtk.add(renderer, fvtk_tubes)
-fvtk.add(renderer, scalar_bar)
-fvtk.show(renderer)
-
-
+window.show(renderer)
