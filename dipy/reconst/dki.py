@@ -28,6 +28,138 @@ from ..core.onetime import auto_attr
 from .base import ReconstModel
 
 
+def carlson_rf(x, y, z, errtol=3e-4):
+    r""" Computes the Carlson's incomplete elliptic integral of the first kind
+    defined as:
+    .. math::
+        R_F = \frac{1}{2} \int_{0}^{\infty} \left [(t+x)(t+y)(t+z)  \right ]
+        ^{-\frac{1}{2}}dt
+    Parameters
+    ----------
+    x : ndarray (n,)
+        First independent variable of the integral.
+    y : ndarray (n,)
+        Second independent variable of the integral.
+    z : ndarray (n,)
+        Third independent variable of the integral.
+    errtol : float
+        Error tolerance. Integral is computed with relative error less in
+        magnitude than the defined value
+    Returns
+    -------
+    RF : ndarray (n,)
+        Value of the incomplete first order elliptic integral
+    Note
+    -----
+    x, y, and z have to be nonnegative and at most one of them is zero.
+    References
+    ----------
+    .. [1] Carlson, B.C., 1994. Numerical computation of real or complex
+           elliptic integrals. arXiv:math/9409227 [math.CA]
+    """
+    # Initialize RF
+    RF = np.zeros(len(x), dtype=x.dtype)
+
+    # Convergence has to be done voxel by voxel
+    for v in range(len(x)):
+        n = 0
+        xn = x[v]
+        yn = y[v]
+        zn = z[v]
+        An = (xn + yn + zn) / 3.0
+        Q = (3.*errtol) ** (-1/6.) * np.max([np.abs(An - xn), np.abs(An - yn),
+                                            np.abs(An - zn)])
+        # Convergence condition
+        while 4.**(-n) * Q > abs(An):          
+            xnroot = np.sqrt(xn)
+            ynroot = np.sqrt(yn)
+            znroot = np.sqrt(zn)
+            lamda = xnroot*(ynroot + znroot) + ynroot*znroot
+            xn = (xn + lamda)*0.250
+            yn = (yn + lamda)*0.250
+            zn = (zn + lamda)*0.250
+            An = (An + lamda)*0.250
+            n = n + 1
+
+        # post convergence calculation
+        X = 1 - xn/An
+        Y = 1 - yn/An
+        Z = - X - Y
+        E2 = X*Y - Z*Z
+        E3 = X * Y * Z
+        RF[v] = An**(-1/2.) * (1 - E2/10. + E3/14. + (E2**2)/24. - 3/44.*E2*E3)
+
+    return RF
+
+
+def carlson_rd(x, y, z, errtol=1e-4):
+    r""" Computes the Carlson's incomplete elliptic integral of the second kind
+    defined as:
+    .. math::
+        R_D = \frac{3}{2} \int_{0}^{\infty} (t+x)^{-\frac{1}{2}}
+        (t+y)^{-\frac{1}{2}}(t+z)  ^{-\frac{3}{2}}
+    Parameters
+    ----------
+    x : ndarray (n,)
+        First independent variable of the integral.
+    y : ndarray (n,)
+        Second independent variable of the integral.
+    z : ndarray (n,)
+        Third independent variable of the integral.
+    errtol : float
+        Error tolerance. Integral is computed with relative error less in
+        magnitude than the defined value
+    Returns
+    -------
+    RD : ndarray (n,)
+        Value of the incomplete second order elliptic integral
+    
+    Note
+    -----
+    x, y, and z have to be nonnegative and at most x or y is zero.
+    """
+    # Initialize RD
+    RD = np.zeros(len(x), dtype=x.dtype)
+
+    # Convergence has to be done voxel by voxel
+    for v in range(len(x)):
+        n = 0
+        xn = x[v]
+        yn = y[v]
+        zn = z[v]
+        A0 = (xn + yn + 3.*zn) / 5.0
+        An = A0.copy()
+        Q = (errtol/4.) ** (-1/6.) * np.max([np.abs(An - xn), np.abs(An - yn),
+                                             np.abs(An - zn)])
+        sum_term = 0
+        # Convergence condition
+        while 4.**(-n) * Q > abs(An):          
+            xnroot = np.sqrt(xn)
+            ynroot = np.sqrt(yn)
+            znroot = np.sqrt(zn)
+            lamda = xnroot*(ynroot + znroot) + ynroot*znroot
+            sum_term = sum_term + 4.**(-n) / (znroot * (zn + lamda))
+            n = n + 1
+            xn = (xn + lamda)*0.250
+            yn = (yn + lamda)*0.250
+            zn = (zn + lamda)*0.250
+            An = (An + lamda)*0.250
+
+        # post convergence calculation
+        X = (A0 - x[v]) / (4.**(n) * An)
+        Y = (A0 - y[v]) / (4.**(n) * An)
+        Z = - (X+Y) / 3.
+        E2 = X*Y - 6.*Z*Z
+        E3 = (3.*X*Y - 8.*Z*Z) * Z
+        E4 = 3.* (X*Y - Z*Z) * Z**2.
+        E5 = X * Y * Z**3.
+        RD[v] = \
+            4**(-n) * An**(-3/2.) * (1 - 3/14.*E2 + 1/6.*E3 + 9/88.*(E2**2) - \
+            3/22.*E4 - 9/52.*E2*E3 + 3/26.*E5) + 3*sum_term
+
+    return RD
+
+
 def apparent_kurtosis_coef(dki_params, sphere, min_diffusivity=0,
                            min_kurtosis=-1):
     r""" Calculate the apparent kurtosis coefficient (AKC) in each direction
