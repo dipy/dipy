@@ -507,11 +507,24 @@ def colormap_lookup_table(scale_range=(0, 1), hue_range=(0.8, 0),
     return lookup_table
 
 
-def scalar_bar(lookup_table, title=" "):
-    """ Default Scalar bar actor for the colormap
+def scalar_bar(lookup_table=None, title=" "):
+    """ Default scalar bar actor for a given colormap
+
+    Parameters
+    ----------
+    lookup_table : vtkLookupTable or None
+        If None then ``colormap_lookup_table`` is called with default options.
+    title : str
+
+    Returns
+    -------
+    scalar_bar : vtkScalarBarActor
+
     """
     lookup_table_copy = vtk.vtkLookupTable()
     # Deepcopy the lookup_table because sometimes vtkPolyDataMapper deletes it
+    if lookup_table is None:
+        lookup_table = colormap_lookup_table()
     lookup_table_copy.DeepCopy(lookup_table)
     scalar_bar = vtk.vtkScalarBarActor()
     scalar_bar.SetTitle(title)
