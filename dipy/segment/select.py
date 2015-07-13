@@ -6,7 +6,7 @@ Select streamlines
 from warnings import warn
 import numpy as np
 from nibabel.affines import apply_affine
-from dipy.tracking.utils import _near_roi
+from dipy.tracking.utils import sl_near_roi
 
 
 def reduce_rois(rois, include):
@@ -165,9 +165,9 @@ def select_by_roi(streamlines, rois, include, mode=None, affine=None,
     if mode is None:
         mode = "any"
     for sl in streamlines:
-        include = _near_roi(sl, x_include_roi_coords, tol=tol,
+        include = sl_near_roi(sl, x_include_roi_coords, tol=tol,
                                 mode=mode)
-        exclude = _near_roi(sl, x_exclude_roi_coords, tol=tol,
+        exclude = sl_near_roi(sl, x_exclude_roi_coords, tol=tol,
                                 mode=mode)
         if include & ~exclude:
             yield sl
