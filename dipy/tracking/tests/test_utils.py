@@ -10,7 +10,7 @@ from dipy.tracking.utils import (affine_for_trackvis, connectivity_matrix,
                                  ndbincount, reduce_labels,
                                  reorder_voxels_affine, seeds_from_mask,
                                  random_seeds_from_mask, target,
-                                 _rmi, unique_rows, near_roi)
+                                 _rmi, unique_rows, near_roi, filter_by_bb)
 
 import dipy.tracking.metrics as metrix
 
@@ -246,6 +246,20 @@ def test_target():
     assert_true(include[0] is streamlines[0])
     assert_equal(len(exclude), 1)
     assert_true(exclude[0] is streamlines[1])
+
+
+def test_filter_by_bb():
+    mask = np.zeros((4, 4, 4))
+    mask[1:2,1:2,1:2] = 1
+    sl = [np.array([[0, 0, 0],
+                    [0, 0, 1],
+                    [0, 0, 2]]),
+         np.array([[0, 0, 0],
+                    [1, 1, 1]])]
+
+    roi_coords = np.array(np.where(mask)).T
+    new_sl = list(filter_by_bb(sl, roi_coords, tol=0.86))
+    assert_equal(new_sl, [sl[1]])
 
 
 def test_near_roi():

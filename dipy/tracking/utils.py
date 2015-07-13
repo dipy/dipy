@@ -622,6 +622,33 @@ def sl_near_roi(sl, x_roi_coords, tol, mode='any'):
         return np.all(np.min(dist, -1)<=tol)
 
 
+def filter_by_bb(streamlines, x_roi_coords, tol):
+    """
+    Filter streamlines using a bounding box extracted from the coordinates of
+    an ROI.
+
+    Parameters
+    ----------
+    streamlines : list or generator
+        A sequence of streamlines. Each streamline should be a (N, 3) array,
+        where N is the length of the streamline.
+    x_roi_coords :
+    tol : float
+        Distance (in the units of the streamlines, usually mm). If any
+        coordinate in the streamline is within this distance from the center
+        of any voxel in the ROI, this function returns True.
+
+
+    """
+    bb = np.array((np.min(x_roi_coords, 0) - tol,
+                   np.max(x_roi_coords, 0) + tol))
+    for sl in streamlines:
+        cond = np.array([np.any(sl[:, i] >= bb[0, i]) &
+                         np.any(sl[:, i] <= bb[1, i]) for i in [0, 1]])
+        if np.any(cond):
+            yield sl
+
+
 def near_roi(streamlines, target_mask, affine=None, tol=None,
              mode="any"):
     """
@@ -666,12 +693,13 @@ def near_roi(streamlines, target_mask, affine=None, tol=None,
         tol = dtc
     elif tol < dtc:
         w_s = "Tolerance input provided would create gaps in your"
-        w_s += " inclusion ROI. Setting to: %s"%dist_to_corner
+        w_s += " inclusion ROI. Setting to: %s"%dtc
         warn(w_s)
         tol = dtc
 
     roi_coords = np.array(np.where(target_mask)).T
     x_roi_coords = apply_affine(affine, roi_coords)
+
     # If it's already a list, we can save time by preallocating the output
     if isinstance(streamlines, list):
         out = np.zeros(len(streamlines), dtype=bool)
