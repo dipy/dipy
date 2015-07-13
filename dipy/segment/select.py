@@ -7,6 +7,7 @@ from warnings import warn
 import numpy as np
 from nibabel.affines import apply_affine
 from dipy.tracking.utils import sl_near_roi
+from dipy.core.geometry import dist_to_corner
 
 
 def reduce_rois(rois, include):
@@ -148,14 +149,14 @@ def select_by_roi(streamlines, rois, include, mode=None, affine=None,
     if affine is None:
         affine = np.eye(4)
     # This calculates the maximal distance to a corner of the voxel:
-    dist_to_corner = np.sqrt(np.sum((np.diag(affine)[:-1] / 2) ** 2))
+    dtc = dist_to_corner(affine)
     if tol is None:
-        tol = dist_to_corner
-    elif tol < dist_to_corner:
+        tol = dtc
+    elif tol < dtc:
         w_s = "Tolerance input provided would create gaps in your"
         w_s += " inclusion ROI. Setting to: %s"%dist_to_corner
         warn(w_s)
-        tol = dist_to_corner
+        tol = dtc
     include_roi, exclude_roi = reduce_rois(rois, include)
     include_roi_coords = np.array(np.where(include_roi)).T
     x_include_roi_coords = apply_affine(affine, include_roi_coords)

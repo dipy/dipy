@@ -55,6 +55,7 @@ from nibabel.affines import apply_affine
 from scipy.spatial.distance import cdist
 
 from dipy.tracking.streamline import transform_streamlines
+from dipy.core.geometry import dist_to_corner
 
 from collections import defaultdict
 from ..utils.six.moves import xrange, map
@@ -660,15 +661,14 @@ def near_roi(streamlines, target_mask, affine=None, tol=None,
     """
     if affine is None:
         affine = np.eye(4)
-    # This calculates the maximal distance to a corner of the voxel:
-    dist_to_corner = np.sqrt(np.sum((np.diag(affine)[:-1] / 2) ** 2))
+    dtc = dist_to_corner(affine)
     if tol is None:
-        tol = dist_to_corner
-    elif tol < dist_to_corner:
+        tol = dtc
+    elif tol < dtc:
         w_s = "Tolerance input provided would create gaps in your"
         w_s += " inclusion ROI. Setting to: %s"%dist_to_corner
         warn(w_s)
-        tol = dist_to_corner
+        tol = dtc
 
     roi_coords = np.array(np.where(target_mask)).T
     x_roi_coords = apply_affine(affine, roi_coords)
