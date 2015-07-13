@@ -46,6 +46,28 @@ def _roll_evals(evals, axis=-1):
     return evals
 
 
+def _min_positive_signal(data):
+    """ Helper function to establish the minimun positive signal of a given
+    data
+
+    Parameters
+    ----------
+    data: array ([X, Y, Z, ...], g)
+        Data or response variables holding the data. Note that the last
+        dimension should contain the data.
+    
+    Returns
+    -------
+    min_signal : float
+        Minimun positive signal of the given data
+    """
+    data = data.ravel()
+    if np.all(data == 0):
+        return 0.0001
+    else:
+        return data[data > 0].min()
+
+
 def fractional_anisotropy(evals, axis=-1):
     r"""
     Fractional anisotropy (FA) of a diffusion tensor.
@@ -81,6 +103,7 @@ def fractional_anisotropy(evals, axis=-1):
                   / ((evals * evals).sum(0) + all_zero))
 
     return fa
+
 
 def geodesic_anisotropy(evals, axis=-1):
     r"""
@@ -156,6 +179,7 @@ def geodesic_anisotropy(evals, axis=-1):
     ga = np.sqrt(log1 ** 2 + log2 ** 2 + log3 ** 2)
 
     return ga
+
 
 def mean_diffusivity(evals, axis=-1):
     r"""
@@ -731,13 +755,6 @@ class TensorModel(ReconstModel):
             e_s += " positive."
             raise ValueError(e_s)
 
-    def _min_positive_signal(self, data):
-        data = data.ravel()
-        if np.all(data == 0):
-            return 0.0001
-        else:
-            return data[data > 0].min()
-
     def fit(self, data, mask=None):
         """ Fit method of the DTI model class
 
@@ -763,7 +780,7 @@ class TensorModel(ReconstModel):
 
 
         if self.min_signal is None:
-            min_signal = self._min_positive_signal(data)
+            min_signal = _min_positive_signal(data)
         else:
             min_signal = self.min_signal
 
@@ -838,7 +855,7 @@ class TensorFit(object):
         """
         Returns the eigenvectors of the tensor as an array
         """
-        evecs = self.model_params[..., 3:]
+        evecs = self.model_params[..., 3:12]
         return evecs.reshape(self.shape + (3, 3))
 
     @property
@@ -1131,7 +1148,7 @@ class TensorFit(object):
         which a signal is to be predicted and $b$ is the b value provided in
         the GradientTable input for that direction
         """
-        return tensor_prediction(self.model_params, gtab, S0=S0)
+        return tensor_prediction(self.model_params[0:12], gtab, S0=S0)
 
 
 def wls_fit_tensor(design_matrix, data):

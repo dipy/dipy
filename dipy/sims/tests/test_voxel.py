@@ -8,8 +8,7 @@ from numpy.testing import (assert_array_equal, assert_array_almost_equal,
 from dipy.sims.voxel import (_check_directions, SingleTensor, MultiTensor,
                              multi_tensor_odf, all_tensor_evecs, add_noise,
                              single_tensor, sticks_and_ball, multi_tensor_dki,
-                             dki_design_matrix, kurtosis_element,
-                             DKI_signal)
+                             kurtosis_element, DKI_signal)
 from dipy.core.geometry import (vec2vec_rotmat, sphere2cart)
 from dipy.data import get_data, get_sphere
 from dipy.core.gradients import gradient_table
