@@ -283,7 +283,7 @@ def test_perpendicular_directions():
         # check if directions are sampled by multiples of 2*pi / num
         delta_a = 2 * np.pi / num
         for d in pd:
-            angle = math.arccos(np.dot(pd[0], d))
+            angle = math.acos(np.dot(pd[0], d))
             rest = angle % delta_a
             if rest > delta_a * 0.99:  # To correct cases of negative error
                 rest = rest - delta_a
