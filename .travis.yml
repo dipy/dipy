@@ -40,6 +40,7 @@ matrix:
     - python: 2.7
       env:
         - COVERAGE=1
+<<<<<<< 514a21eaad5909dde9884cc42203e9ba85ddd0ed
         # Check these values against requirements.txt and dipy/info.py
         - DEPENDS="cython==0.18 numpy==1.7.1 scipy==0.9.0 nibabel==1.2.0"
     - python: 2.7
@@ -54,9 +55,15 @@ matrix:
         - LIBGL_ALWAYS_INDIRECT=y
         - VENV_ARGS="--system-site-packages --python=/usr/bin/python2.7"
         - TEST_WITH_XVFB=true
+=======
+        - DEPENDS="cython==0.18 numpy==1.6.0 scipy==0.9.0 nibabel==1.2.0"
+        
+    # Test cythongsl and mpmath codepath separately, since only one is needed
+>>>>>>> Update .travis.yml
     - python: 2.7
       sudo: true   # This is set to true for apt-get
       env:
+<<<<<<< 514a21eaad5909dde9884cc42203e9ba85ddd0ed
         - VTK=1
         - VTK_VER="python-vtk6"
         - LIBGL_ALWAYS_INDIRECT=y
@@ -75,6 +82,15 @@ matrix:
     - python: 2.7
       env:
         - DEPENDS="cython numpy scipy matplotlib h5py nibabel cvxopt scikit_learn mpmath"
+=======
+        - DEPENDS="cython numpy scipy matplotlib h5py nibabel cvxopt scikit_learn"
+        - pip install cythongsl 
+    - python: 2.7
+      env:
+        - DEPENDS="cython numpy scipy matplotlib h5py nibabel cvxopt scikit_learn"
+        - pip install mpmath
+        
+>>>>>>> Update .travis.yml
 addons:
   apt:
     packages:
