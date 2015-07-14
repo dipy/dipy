@@ -9,7 +9,7 @@ import numpy as np
 from dipy.viz import window, actor, widget
 from dipy.data import fetch_viz_icons, read_viz_icons
 
-interactive = True
+
 renderer = window.Renderer()
 
 lines = [np.array([[-1, 0, 0.], [1, 0, 0.]]),
@@ -23,9 +23,8 @@ renderer.add(stream_actor)
 # in steps so that the widgets can be added properly
 show_manager = window.ShowManager(renderer, size=(800, 800))
 
-if interactive:
-    show_manager.initialize()
-    show_manager.render()
+show_manager.initialize()
+show_manager.render()
 
 
 global opacity
@@ -86,7 +85,7 @@ slider = widget.slider(show_manager.iren, show_manager.ren,
                        right_normalized_pos=(.98, 0.7),
                        size=(120, 0), label_format="%0.2lf",
                        color=(0.4, 0.4, 0.4),
-                       selected_color=(0.9, 0.5, 0.5))
+                       selected_color=(0.2, 0.2, 0.2))
 
 # This callback is used to update the buttons/sliders' position
 # so they can stay on the right side of the window when the window
@@ -107,11 +106,11 @@ def win_callback(obj, event):
         size = obj.GetSize()
         show_manager.render()
 
-if interactive:
-    show_manager.add_window_callback(win_callback)
-    # you can also register any callback in a vtk way like this
-    # show_manager.window.AddObserver(vtk.vtkCommand.ModifiedEvent,
-    #                                 win_callback)
 
-    show_manager.render()
-    show_manager.start()
+show_manager.add_window_callback(win_callback)
+# you can also register any callback in a vtk way like this
+# show_manager.window.AddObserver(vtk.vtkCommand.ModifiedEvent,
+#                                 win_callback)
+
+show_manager.render()
+show_manager.start()
