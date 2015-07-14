@@ -39,4 +39,5 @@
  piesno.py
  viz_advanced.py
  viz_slice.py
- viz_bundle_maps.py
+ viz_bundles.py
+ viz_hud.py
