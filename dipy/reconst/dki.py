@@ -612,20 +612,18 @@ def mean_kurtosis(dki_params, sphere=None):
     --------
     The MK analytical solution is calculated using the following equation [2]_:
     .. math::
-    \begin{multline}
+
     MK=F_1(\lambda_1,\lambda_2,\lambda_3)\hat{W}_{1111}+
        F_1(\lambda_2,\lambda_1,\lambda_3)\hat{W}_{2222}+
        F_1(\lambda_3,\lambda_2,\lambda_1)\hat{W}_{3333}+ \\
        F_2(\lambda_1,\lambda_2,\lambda_3)\hat{W}_{2233}+
        F_2(\lambda_2,\lambda_1,\lambda_3)\hat{W}_{1133}+
        F_2(\lambda_3,\lambda_2,\lambda_1)\hat{W}_{1122}
-    \end{multline}
         
     where $\hat{W}_{ijkl}$ are the components of the $W$ tensor in the
     coordinates system defined by the eigenvectors of the diffusion tensor
     $\mathbf{D}$ and 
  
-    \begin{multline}
     F_1(\lambda_1,\lambda_2,\lambda_3)=
     \frac{(\lambda_1+\lambda_2+\lambda_3)^2}
     {18(\lambda_1-\lambda_2)(\lambda_1-\lambda_3)}
@@ -635,8 +633,7 @@ def mean_kurtosis(dki_params, sphere=None):
     \lambda_1\lambda_3}
     {3\lambda_1 \sqrt{\lambda_2 \lambda_3}}
     R_D(\frac{\lambda_1}{\lambda_2},\frac{\lambda_1}{\lambda_3},1)-1 ]
-    \end{multline}
-    \begin{multline}
+
     F_2(\lambda_1,\lambda_2,\lambda_3)=
     \frac{(\lambda_1+\lambda_2+\lambda_3)^2}
     {3(\lambda_2-\lambda_3)^2}
@@ -644,7 +641,6 @@ def mean_kurtosis(dki_params, sphere=None):
     R_F(\frac{\lambda_1}{\lambda_2},\frac{\lambda_1}{\lambda_3},1)+\\
     \frac{2\lambda_1-\lambda_2-\lambda_3}{3\sqrt{\lambda_2 \lambda_3}}
     R_D(\frac{\lambda_1}{\lambda_2},\frac{\lambda_1}{\lambda_3},1)-2]
-    \end{multline}
     
     where $R_f$ and $R_d$ are the Carlson's elliptic integrals.
       
@@ -663,6 +659,252 @@ def mean_kurtosis(dki_params, sphere=None):
         MK = np.mean(apparent_kurtosis_coef(dki_params, sphere), axis=-1)
 
     return MK
+
+
+def _G1m(a, b, c):
+    """ Helper function that computes function $G_1$ which is required to
+    compute the analytical solution of the Axial kurtosis.
+    
+    Parameters
+    ----------
+    a : ndarray (n,)
+        Array containing the values of parameter $\lambda_1$ of function $G_1$ 
+    b : ndarray (n,)
+        Array containing the values of parameter $\lambda_2$ of function $G_1$
+    c : ndarray (n,)
+        Array containing the values of parameter $\lambda_3$ of function $G_1$
+        
+    Returns
+    -------
+    G1 : ndarray (n,)
+       Value of the function $G_1$ for all elements of the arrays a, b, and c
+
+    Notes
+    --------
+    Function $G_1$ is defined as [1]_:
+    .. math::
+
+        G_1(\lambda_1,\lambda_2,\lambda_3)=
+        \frac{(\lambda_1+\lambda_2+\lambda_3)^2}{18\lambda_2(\lambda_2-
+        \lambda_3)} \left (2\lambda_2 +
+        \frac{\lambda_3^2-3\lambda_2\lambda_3}{\sqrt{\lambda_2\lambda_3}}
+        \right)
+
+    References
+    ----------
+    .. [1] Tabesh, A., Jensen, J.H., Ardekani, B.A., Helpern, J.A., 2011.
+           Estimation of tensors and tensor-derived measures in diffusional
+           kurtosis imaging. Magn Reson Med. 65(3), 823-836
+    """
+    # Float error used to compare two floats, abs(l1 - l2) < er for l1 = l2 
+    er = np.finfo(a[0]).eps * 1e3  # Error defined three order of magnitude of 
+                                   # system's epslon
+    # Initialize G1
+    G1 = np.empty(a.shape)
+
+    # NaN for non plausible diffusion values, i.e. a <= 0 or b <= 0 or c <= 0
+    abc = np.array((a, b, c))    
+    cond0 = np.logical_and.reduce(abc<=0)
+    if np.sum(cond0)!=0:
+        G1[cond0] = float('nan')
+
+    # Apply formula for non problematic plaussible cases, i.e. b!=c
+    cond1=np.logical_and(~cond0, (abs(b - c) > er))
+    if np.sum(cond1)!=0:
+        L1 = a[cond1]
+        L2 = b[cond1]
+        L3 = c[cond1]
+        G1[cond1] = \
+            (L1+L2+L3)**2 / (18 * L2 * (L2-L3)**2) * \
+            (2.*L2 + (L3**2 - 3*L2*L3) / np.sqrt(L2*L3))
+
+    # Resolve possible sigularity b==c
+    cond2=np.logical_and(~cond0, abs(b - c) < er)
+    if np.sum(cond2)!=0:
+        L1 = a[cond2]
+        L2 = b[cond2]
+        G1[cond2] = (L1 + 2.*L2)**2 / (24.*L2**2)
+
+    return G1
+
+
+def _G2m(a,b,c):
+    """ Helper function that computes function $G_2$ which is required to
+    compute the analytical solution of the Axial kurtosis.
+    
+    Parameters
+    ----------
+    a : ndarray (n,)
+        Array containing the values of parameter $\lambda_1$ of function $G_2$ 
+    b : ndarray (n,)
+        Array containing the values of parameter $\lambda_2$ of function $G_2$
+    c : ndarray (n,)
+        Array containing the values of parameter $\lambda_3$ of function $G_2$
+        
+    Returns
+    -------
+    G2 : ndarray (n,)
+       Value of the function $G_2$ for all elements of the arrays a, b, and c
+
+    Notes
+    --------
+    Function $G_2$ is defined as [1]_:
+    .. math::
+        G_2(\lambda_1,\lambda_2,\lambda_3)=
+        \frac{(\lambda_1+\lambda_2+\lambda_3)^2}{(\lambda_2-\lambda_3)^2}
+        \left ( \frac{\lambda_2+\lambda_3}{\sqrt{\lambda_2\lambda_3}}-2\right )
+
+    References
+    ----------
+    .. [1] Tabesh, A., Jensen, J.H., Ardekani, B.A., Helpern, J.A., 2011.
+           Estimation of tensors and tensor-derived measures in diffusional
+           kurtosis imaging. Magn Reson Med. 65(3), 823-836
+    """
+    # Float error used to compare two floats, abs(l1 - l2) < er for l1 = l2 
+    er = np.finfo(a[0]).eps * 1e3  # Error defined three order of magnitude of 
+                                   # system's epslon
+    # Initialize G1
+    G2 = np.zeros(a.shape)
+
+    # NaN for non plausible diffusion values, i.e. a <= 0 or b <= 0 or c <= 0
+    abc = np.array((a, b, c))    
+    cond0 = np.logical_and.reduce(abc<=0)
+    if np.sum(cond0)!=0:
+        G2[cond0] = float('nan')
+
+    # Apply formula for non problematic plaussible cases, i.e. b!=c
+    cond1=np.logical_and(~cond0, (abs(b - c) > er))
+    if np.sum(cond1)!=0:
+        L1 = a[cond1]
+        L2 = b[cond1]
+        L3 = c[cond1]
+        G2[cond1] = \
+            (L1+L2+L3)**2 / (3 * (L2-L3)**2) * ((L2+L3) / np.sqrt(L2*L3) - 2)
+
+    # Resolve possible sigularity b==c
+    cond2=np.logical_and(~cond0, abs(b - c) < er)
+    if np.sum(cond2)!=0:
+        L1 = a[cond2]
+        L2 = b[cond2]
+        G2[cond2] = (L1 + 2.*L2)**2 / (12.*L2**2)
+
+    return G2
+
+
+def radial_kurtosis(dki_params):
+    r""" Radial Kurtosis (RK) of a diffusion kurtosis tensor. 
+
+    Parameters
+    ----------
+    dki_params : ndarray (x, y, z, 27) or (n, 27)
+        All parameters estimated from the diffusion kurtosis model.
+        Parameters are ordered as follow:
+            1) Three diffusion tensor's eingenvalues
+            2) Three lines of the eigenvector matrix each containing the first,
+               second and third coordinates of the eigenvector
+            3) Fifteen elements of the kurtosis tensor
+
+    Returns
+    -------
+    rk : array
+        Calculated RK.
+
+    Notes
+    --------
+    RK is calculated with the following equation:
+    .. math::
+        K_{\bot} = G_1(\lambda_1,\lambda_2,\lambda_3)\hat{W}_{2222} +
+                   G_1(\lambda_1,\lambda_3,\lambda_2)\hat{W}_{3333} +
+                   G_2(\lambda_1,\lambda_2,\lambda_3)\hat{W}_{2233}
+
+    where:
+    .. math::
+        G_1(\lambda_1,\lambda_2,\lambda_3)=
+        \frac{(\lambda_1+\lambda_2+\lambda_3)^2}{18\lambda_2(\lambda_2-
+        \lambda_3)} \left (2\lambda_2 +
+        \frac{\lambda_3^2-3\lambda_2\lambda_3}{\sqrt{\lambda_2\lambda_3}}
+        \right)
+  
+    and
+
+    .. math::
+        G_2(\lambda_1,\lambda_2,\lambda_3)=
+        \frac{(\lambda_1+\lambda_2+\lambda_3)^2}{(\lambda_2-\lambda_3)^2}
+        \left ( \frac{\lambda_2+\lambda_3}{\sqrt{\lambda_2\lambda_3}}-2\right )
+    """
+    # Flat parameters
+    outshape = dki_params.shape[:-1]
+    dki_params = dki_params.reshape((-1, dki_params.shape[-1]))
+
+    # Split the model parameters to three variable containing the evals, evecs,
+    # and kurtosis elements
+
+    evals, evecs, kt = split_dki_param(dki_params)
+
+    # Rotate the kurtosis tensor from the standard Cartesian coordinate system
+    # to another coordinate system in which the 3 orthonormal eigenvectors of
+    # DT are the base coordinate
+    Wyyyy = np.zeros((len(kt)))
+    Wzzzz = np.zeros((len(kt)))
+    Wyyzz = np.zeros((len(kt)))
+
+    for vox in range(len(kt)): 
+        Wyyyy[vox] = Wrotate(kt[vox], evecs[vox], [1, 1, 1, 1])
+        Wzzzz[vox] = Wrotate(kt[vox], evecs[vox], [2, 2, 2, 2])
+        Wyyzz[vox] = Wrotate(kt[vox], evecs[vox], [1, 1, 2, 2])
+
+    # Compute MK
+    RK = \
+        _G1m(evals[...,0], evals[...,1], evals[...,2]) * Wyyyy + \
+        _G1m(evals[...,0], evals[...,2], evals[...,1]) * Wzzzz + \
+        _G2m(evals[...,0], evals[...,1], evals[...,2]) * Wyyzz     
+
+    RK = RK.reshape(outshape)
+
+    return RK
+
+
+def axial_kurtosis(dki_params):
+    r"""  Computes axial Kurtosis (AK) from the kurtosis tensor.
+
+    Parameters
+    ----------
+    dki_params : ndarray (x, y, z, 27) or (n, 27)
+        All parameters estimated from the diffusion kurtosis model.
+        Parameters are ordered as follow:
+            1) Three diffusion tensor's eingenvalues
+            2) Three lines of the eigenvector matrix each containing the first,
+               second and third coordinates of the eigenvector
+            3) Fifteen elements of the kurtosis tensor
+
+    Returns
+    -------
+    ak : array
+        Calculated AK.
+    """
+    # Flat parameters
+    outshape = dki_params.shape[:-1]
+    dki_params = dki_params.reshape((-1, dki_params.shape[-1]))
+
+    # Split data
+    evals, evecs, kt = split_dki_param(dki_params)
+
+    # Compute MD
+    MD = mean_diffusivity(evals)
+
+    # Initialize AK
+    AK = np.zeros(kt.shape[:-1])
+
+    # loop over all voxels
+    for vox in range(len(kt)):
+        R = evecs[vox]
+        dt = lower_triangular(np.dot(np.dot(R, np.diag(evals[vox])), R.T))
+        AK[vox] = _directional_kurtosis(dt, MD[vox], kt[vox],
+                                        np.array([R[:, 1]]))
+
+    AK = AK.reshape(outshape)
+
+    return AK
 
 
 def dki_prediction(dki_params, gtab, S0=150):
@@ -899,49 +1141,45 @@ class DiffusionKurtosisFit(TensorFit):
             of the directional kurtosis of the vertices in the sphere [1]_.
             Otherwise MK is computed from its analytical solution [2]_.
 
-    Returns
-    -------
-    mk : array
-        Calculated MK.
+        Returns
+        -------
+        mk : array
+            Calculated MK.
 
-    Notes
-    --------
-    The MK analytical solution is calculated using the following equation [2]_:
-    .. math::
-    \begin{multline}
-    MK=F_1(\lambda_1,\lambda_2,\lambda_3)\hat{W}_{1111}+
-       F_1(\lambda_2,\lambda_1,\lambda_3)\hat{W}_{2222}+
-       F_1(\lambda_3,\lambda_2,\lambda_1)\hat{W}_{3333}+ \\
-       F_2(\lambda_1,\lambda_2,\lambda_3)\hat{W}_{2233}+
-       F_2(\lambda_2,\lambda_1,\lambda_3)\hat{W}_{1133}+
-       F_2(\lambda_3,\lambda_2,\lambda_1)\hat{W}_{1122}
-    \end{multline}
-        
-    where $\hat{W}_{ijkl}$ are the components of the $W$ tensor in the
-    coordinates system defined by the eigenvectors of the diffusion tensor
-    $\mathbf{D}$ and 
- 
-    \begin{multline}
-    F_1(\lambda_1,\lambda_2,\lambda_3)=
-    \frac{(\lambda_1+\lambda_2+\lambda_3)^2}
-    {18(\lambda_1-\lambda_2)(\lambda_1-\lambda_3)}
-    [\frac{\sqrt{\lambda_2\lambda_3}}{\lambda_1}
-    R_F(\frac{\lambda_1}{\lambda_2},\frac{\lambda_1}{\lambda_3},1)+\\
-    \frac{3\lambda_1^2-\lambda_1\lambda_2-\lambda_2\lambda_3-
-    \lambda_1\lambda_3}
-    {3\lambda_1 \sqrt{\lambda_2 \lambda_3}}
-    R_D(\frac{\lambda_1}{\lambda_2},\frac{\lambda_1}{\lambda_3},1)-1 ]
-    \end{multline}
-    \begin{multline}
-    F_2(\lambda_1,\lambda_2,\lambda_3)=
-    \frac{(\lambda_1+\lambda_2+\lambda_3)^2}
-    {3(\lambda_2-\lambda_3)^2}
-    [\frac{\lambda_2+\lambda_3}{\sqrt{\lambda_2\lambda_3}}
-    R_F(\frac{\lambda_1}{\lambda_2},\frac{\lambda_1}{\lambda_3},1)+\\
-    \frac{2\lambda_1-\lambda_2-\lambda_3}{3\sqrt{\lambda_2 \lambda_3}}
-    R_D(\frac{\lambda_1}{\lambda_2},\frac{\lambda_1}{\lambda_3},1)-2]
-    \end{multline}
-    
+        Notes
+        --------
+        The MK analytical solution is calculated using the following equation [2]_:
+        .. math::
+
+        MK=F_1(\lambda_1,\lambda_2,\lambda_3)\hat{W}_{1111}+
+           F_1(\lambda_2,\lambda_1,\lambda_3)\hat{W}_{2222}+
+           F_1(\lambda_3,\lambda_2,\lambda_1)\hat{W}_{3333}+ \\
+           F_2(\lambda_1,\lambda_2,\lambda_3)\hat{W}_{2233}+
+           F_2(\lambda_2,\lambda_1,\lambda_3)\hat{W}_{1133}+
+           F_2(\lambda_3,\lambda_2,\lambda_1)\hat{W}_{1122}
+
+        where $\hat{W}_{ijkl}$ are the components of the $W$ tensor in the
+        coordinates system defined by the eigenvectors of the diffusion tensor
+        $\mathbf{D}$ and 
+
+        F_1(\lambda_1,\lambda_2,\lambda_3)=
+        \frac{(\lambda_1+\lambda_2+\lambda_3)^2}
+        {18(\lambda_1-\lambda_2)(\lambda_1-\lambda_3)}
+        [\frac{\sqrt{\lambda_2\lambda_3}}{\lambda_1}
+        R_F(\frac{\lambda_1}{\lambda_2},\frac{\lambda_1}{\lambda_3},1)+\\
+        \frac{3\lambda_1^2-\lambda_1\lambda_2-\lambda_2\lambda_3-
+        \lambda_1\lambda_3}
+        {3\lambda_1 \sqrt{\lambda_2 \lambda_3}}
+        R_D(\frac{\lambda_1}{\lambda_2},\frac{\lambda_1}{\lambda_3},1)-1 ]
+
+        F_2(\lambda_1,\lambda_2,\lambda_3)=
+        \frac{(\lambda_1+\lambda_2+\lambda_3)^2}
+        {3(\lambda_2-\lambda_3)^2}
+        [\frac{\lambda_2+\lambda_3}{\sqrt{\lambda_2\lambda_3}}
+        R_F(\frac{\lambda_1}{\lambda_2},\frac{\lambda_1}{\lambda_3},1)+\\
+        \frac{2\lambda_1-\lambda_2-\lambda_3}{3\sqrt{\lambda_2 \lambda_3}}
+        R_D(\frac{\lambda_1}{\lambda_2},\frac{\lambda_1}{\lambda_3},1)-2]
+
     where $R_f$ and $R_d$ are the Carlson's elliptic integrals.
       
     References
@@ -954,6 +1192,48 @@ class DiffusionKurtosisFit(TensorFit):
            kurtosis imaging. Magn Reson Med. 65(3), 823-836
     """
         return mean_kurtosis(self.model_params, sphere)
+
+    @auto_attr
+    def ak(self):
+        r"""
+        Axial Kurtosis (AK) of a diffusion kurtosis tensor. 
+        Returns
+        -------
+        ak : array
+            Calculated AK.
+        """
+        return axial_kurtosis(self.model_params)
+
+    @auto_attr
+    def rk(self):
+        r""" Radial Kurtosis (RK) of a diffusion kurtosis tensor. 
+        Returns
+        -------
+        rk : array
+            Calculated RK.
+        Notes
+        --------
+        RK is calculated with the following equation:
+        .. math::
+            K_{\bot} = G_1(\lambda_1,\lambda_2,\lambda_3)\hat{W}_{2222} +
+                       G_1(\lambda_1,\lambda_3,\lambda_2)\hat{W}_{3333} +
+                       G_2(\lambda_1,\lambda_2,\lambda_3)\hat{W}_{2233}
+        where:
+        .. math::
+            G_1(\lambda_1,\lambda_2,\lambda_3)=
+            \frac{(\lambda_1+\lambda_2+\lambda_3)^2}{18\lambda_2(\lambda_2-
+            \lambda_3)} \left (2\lambda_2 +
+            \frac{\lambda_3^2-3\lambda_2\lambda_3}{\sqrt{\lambda_2\lambda_3}}
+            \right)
+  
+        and
+        .. math::
+            G_2(\lambda_1,\lambda_2,\lambda_3)=
+            \frac{(\lambda_1+\lambda_2+\lambda_3)^2}{(\lambda_2-\lambda_3)^2}
+            \left ( \frac{\lambda_2+\lambda_3}{\sqrt{\lambda_2\lambda_3}}-2
+            \right )
+        """
+        return radial_kurtosis(self.model_params)
 
     def predict(self, gtab, S0=1):
         r""" Given a DKI model fit, predict the signal on the vertices of a

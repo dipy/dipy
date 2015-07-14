@@ -20,7 +20,8 @@ from dipy.data import get_data
 
 from dipy.reconst.dti import (from_lower_triangular, decompose_tensor)
 
-from dipy.reconst.dki import (mean_kurtosis, carlson_rf,  carlson_rd)
+from dipy.reconst.dki import (mean_kurtosis, carlson_rf,  carlson_rd,
+                              axial_kurtosis, radial_kurtosis)
 
 from dipy.core.sphere import Sphere
 
@@ -344,40 +345,37 @@ def test_Wcons():
     assert_array_almost_equal(Wcons, Wfit)
 
 
-def test_MK():
-    """ tests MK solutions are equal to an expected values for a spherical
-    kurtosis tensor"""
+def test_spherical_dki_statistics():
+    # tests MK solutions are equal to an expected values for a spherical
+    # kurtosis tensor
 
-    # OLS fitting
-    dkiM = dki.DiffusionKurtosisModel(gtab_2s)
-    dkiF = dkiM.fit(signal_sph)
-
-    # MK numerical method
-    sph = Sphere(xyz=gtab.bvecs[gtab.bvals > 0])
-    MK_nm = mean_kurtosis(dkiF.model_params, sph)
-
-    assert_almost_equal(Kref_sphere, MK_nm)
-    
-    # MK analytical solution
-    MK_as = mean_kurtosis(dkiF.model_params)
-
-    assert_almost_equal(Kref_sphere, MK_as)
-    
-    # multi spherical simulations
+    # Define multi voxel spherical kurtosis simulations
     MParam = np.zeros((2, 2, 2, 27))
     MParam[0, 0, 0] = MParam[0, 0, 1] = MParam[0, 1, 0] = params_sph
     MParam[0, 1, 1] = MParam[1, 1, 0] = params_sph
     # MParam[1, 1, 1], MParam[1, 0, 0], and MParam[1, 0, 1] remains zero
+
     MRef = np.zeros((2, 2, 2))
     MRef[0, 0, 0] = MRef[0, 0, 1] = MRef[0, 1, 0] = Kref_sphere
     MRef[0, 1, 1] = MRef[1, 1, 0] = Kref_sphere
     MRef[1, 1, 1] = MRef[1, 0, 0] = MRef[1, 0, 1] = float('nan')
 
+    # Mean kurtosis analytical solution
     MK_multi = mean_kurtosis(MParam)
     assert_array_almost_equal(MK_multi, MRef)
 
+    # Mean kurtosis numerical method
+    sph = Sphere(xyz=gtab.bvecs[gtab.bvals > 0])
     MK_multi = mean_kurtosis(MParam, sph)
     assert_array_almost_equal(MK_multi, MRef)
+
+    # axial kurtosis analytical solution
+    AK_multi = axial_kurtosis(MParam)
+    assert_array_almost_equal(AK_multi, MRef)
+
+    # radial kurtosis analytical solution
+    RK_multi = radial_kurtosis(MParam)
+    assert_array_almost_equal(RK_multi, MRef)
 
 
 def test_compare_MK_method():
