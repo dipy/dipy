@@ -5,12 +5,12 @@ Create a minimalistic user interface
 
 """
 
+import numpy as np
 from dipy.viz import window, actor, widget
 from dipy.data import fetch_viz_icons, read_viz_icons
 
 interactive = True
 renderer = window.Renderer()
-
 
 lines = [np.array([[-1, 0, 0.], [1, 0, 0.]]),
          np.array([[-1, 1, 0.], [1, 1, 0.]])]
@@ -31,15 +31,16 @@ if interactive:
 global opacity
 opacity = 1.
 
+
 def button_callback(obj, event):
-    print('Camera pressed')
-    window.save_file_dialog(file_types=[("PNG files", "*.png")])
+    print('Infinity button pressed')
+
 
 def button_plus_callback(obj, event):
     print('+ pressed')
     global opacity
     if opacity < 1:
-        opacity += 0.2
+        opacity += 0.1
     stream_actor.GetProperty().SetOpacity(opacity)
 
 
@@ -47,12 +48,12 @@ def button_minus_callback(obj, event):
     print('- pressed')
     global opacity
     if opacity > 0:
-        opacity -= 0.2
-
+        opacity -= 0.1
     stream_actor.GetProperty().SetOpacity(opacity)
 
+
 fetch_viz_icons()
-button_png = read_viz_icons(fname='camera.png')
+button_png = read_viz_icons(fname='infinite.png')
 
 button = widget.button(show_manager.iren,
                        show_manager.ren,
@@ -71,18 +72,21 @@ button_minus = widget.button(show_manager.iren,
                              button_minus_callback,
                              button_png_minus, (.98, .9), (50, 50))
 
-def print_status(obj, event):
+
+def move_lines(obj, event):
     rep = obj.GetRepresentation()
     stream_actor.SetPosition((rep.GetValue(), 0, 0))
 
 slider = widget.slider(show_manager.iren, show_manager.ren,
-                       callback=print_status,
+                       callback=move_lines,
                        min_value=-1,
                        max_value=1,
                        value=0.,
                        label="X",
                        right_normalized_pos=(.98, 0.7),
-                       size=(120, 0), label_format="%0.2lf")
+                       size=(120, 0), label_format="%0.2lf",
+                       color=(0.4, 0.4, 0.4),
+                       selected_color=(0.9, 0.5, 0.5))
 
 # This callback is used to update the buttons/sliders' position
 # so they can stay on the right side of the window when the window
@@ -90,6 +94,7 @@ slider = widget.slider(show_manager.iren, show_manager.ren,
 
 global size
 size = renderer.GetSize()
+
 
 def win_callback(obj, event):
     global size
@@ -110,12 +115,3 @@ if interactive:
 
     show_manager.render()
     show_manager.start()
-
-if not interactive:
-    button.Off()
-    slider.Off()
-
-    arr = window.snapshot(renderer, size=(800, 800))
-    # imshow(report.labels, origin='lower')
-
-report = window.analyze_renderer(renderer)

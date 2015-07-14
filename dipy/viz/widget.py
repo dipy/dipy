@@ -127,7 +127,6 @@ def slider(iren, ren, callback, min_value=0, max_value=255, value=125,
     slider.AddObserver("InteractionEvent", callback)
     slider.SetEnabled(True)
 
-
     return slider
 
 
@@ -155,8 +154,8 @@ def button(iren, ren, callback, fname, right_normalized_pos=(.98, .9),
         Used to process events and handle them to the button. Can also be given
         by the attribute ``ShowManager.iren``.
     ren :  vtkRenderer or Renderer
-        Used to update the slider's position when the window changes. Can also be given
-        by the ``ShowManager.ren`` attribute.
+        Used to update the slider's position when the window changes. Can also
+        be given by the ``ShowManager.ren`` attribute.
     callback : function
         Function that has at least ``obj`` and ``event`` as parameters. It will
         be called when the button is pressed.
