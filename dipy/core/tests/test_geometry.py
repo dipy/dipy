@@ -6,8 +6,6 @@ import numpy as np
 
 import random
 
-import math
-
 from dipy.core.geometry import (sphere2cart, cart2sphere,
                                 nearest_pos_semi_def,
                                 sphere_distance,
@@ -283,7 +281,7 @@ def test_perpendicular_directions():
         # check if directions are sampled by multiples of 2*pi / num
         delta_a = 2 * np.pi / num
         for d in pd:
-            angle = math.arccos(np.dot(pd[0], d))
+            angle = np.arccos(np.dot(pd[0], d))
             rest = angle % delta_a
             if rest > delta_a * 0.99:  # To correct cases of negative error
                 rest = rest - delta_a
