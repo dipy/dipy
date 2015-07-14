@@ -264,8 +264,8 @@ def test_perpendicular_directions():
     for v in range(3):
         theta = random.uniform(0, np.pi)
         phi = random.uniform(0, 2*np.pi)
-        vectors_v[v] = sphere2cart(1, theta, phi)
-    vectors_v[3] = [1, 0, 0]
+        vectors_v[v] = sphere2cart(1., theta, phi)
+    vectors_v[3] = [1., 0., 0.]
 
     for vector_v in vectors_v:
         pd = perpendicular_directions(vector_v, num=num, half=False)

@@ -1004,7 +1004,7 @@ def perpendicular_directions(v, num=30, half=False):
         psamples = np.array([- sq*sina, (v[0]*v[1]*sina - v[2]*cosa) / sq,
                              (v[0]*v[2]*sina + v[1]*cosa) / sq])
     else:
-        sq = np.sqrt(v[0]**2+v[2]**2)
+        sq = np.sqrt(v[0]**2 + v[2]**2)
         psamples = np.array([- (v[2]*cosa + v[0]*v[1]*sina) / sq, sina*sq,
                              (v[0]*cosa - v[2]*v[1]*sina) / sq])
 
