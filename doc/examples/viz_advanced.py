@@ -131,7 +131,9 @@ slider = widget.slider(show_m.iren, show_m.ren,
                        value=shape[2] / 2,
                        label="Move slice",
                        right_normalized_pos=(.98, 0.6),
-                       size=(120, 0), label_format="%0.lf")
+                       size=(120, 0), label_format="%0.lf",
+                       color=(1., 1., 1.),
+                       selected_color=(0.86, 0.33, 1.))
 
 """
 Then, we can render all the widget and everything else in the screen and
@@ -149,6 +151,7 @@ using its ``place`` method everytime the window size changes.
 
 global size
 size = ren.GetSize()
+
 
 def win_callback(obj, event):
     global size
