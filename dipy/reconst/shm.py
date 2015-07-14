@@ -967,12 +967,13 @@ def sh_to_sf_matrix(sphere, sh_order, basis_type=None, return_inv=True, smooth=0
     return B.T
 
 def sh_to_ap(coeffs_mtx, normal_factor=0.00001):
-    """ Calculates anisotropic power map with a given SH coeffecient matrix
+    """ Calculates anisotropic power map with a given SH coefficient matrix
 
     Notes
     ----------
     Calculate AP image based on a IxJxKxC SH coeffecient matrix based on the equation:
-    $$ AP = \sum_{l=2,4,6,...}{\frac{1}{2l+1} \sum_{m=-l}{|a_{l,m}|^2}} $$
+    .. math::
+        AP = \sum_{l=2,4,6,...}{\frac{1}{2l+1} \sum_{m=-l}{|a_{l,m}|^2}}
 
     Where dim C is made of a flattened lxm coeffecient, where l are the SH levels.
     and m = 2l+1.
@@ -1020,18 +1021,15 @@ def sh_to_ap(coeffs_mtx, normal_factor=0.00001):
             #sum_n start at index 1
             n_start += n_l
         n_stop = n_start + n_L
-        #print 'func:',L, n_L, n_start, n_stop
         c = np.power(coeffs_mtx[...,n_start:n_stop], power)
         ap_i = np.mean(c, axis=-1)
         ap_i = np.multiply(ap_i, 1.0/n_L)
         return ap_i
 
     ap = np.zeros(dim)
-    #print 'AP shape:',ap.shape
 
     while sum_n < n_coeffs:
         n_L = 2*L+1
-        #print L, n_L, sum_n, sum_n+n_L
         ap_i = single_L_ap(coeffs_mtx, L)
         ap = np.add(ap_i, ap)
         sum_n += n_L
