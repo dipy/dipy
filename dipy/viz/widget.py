@@ -14,7 +14,9 @@ def slider(iren, ren, callback, min_value=0, max_value=255, value=125,
            label="Slider",
            right_normalized_pos=(0.9, 0.5),
            size=(50, 0),
-           label_format="%0.0lf"):
+           label_format="%0.0lf",
+           color=(0.5, 0.5, 0.5),
+           selected_color = (0.9, 0.2, 0.1)):
     """ A 2D slider widget
 
     Parameters
@@ -80,6 +82,16 @@ def slider(iren, ren, callback, min_value=0, max_value=255, value=125,
     slider_rep.SetTubeWidth(tube_width)
     slider_rep.SetLabelFormat(label_format)
 
+    slider_rep.GetLabelProperty().SetColor(*color)
+    slider_rep.GetTubeProperty().SetColor(*color)
+    slider_rep.GetCapProperty().SetColor(*color)
+    slider_rep.GetTitleProperty().SetColor(*color)
+    slider_rep.GetSelectedProperty().SetColor(*selected_color)
+    slider_rep.GetSliderProperty().SetColor(*color)
+
+    slider_rep.GetLabelProperty().SetShadow(0)
+    slider_rep.GetTitleProperty().SetShadow(0)
+
     class SliderWidget(vtk.vtkSliderWidget):
 
         def place(self, ren):
@@ -114,6 +126,7 @@ def slider(iren, ren, callback, min_value=0, max_value=255, value=125,
     slider.KeyPressActivationOff()
     slider.AddObserver("InteractionEvent", callback)
     slider.SetEnabled(True)
+
 
     return slider
 
