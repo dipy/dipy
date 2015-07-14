@@ -238,7 +238,28 @@ bias) [Veraa2011]_.
 The standard kurtosis statistics can be computed from the DiffusinKurtosisFit
 instance as the mean kurtosis (MK), the axial kurtosis (AD) and the radial
 kurtosis (RK).
+"""
 
+MK = dkifit.mk
+RK = dkifit.rk
+AK = dkifit.ak
+
+fig3, ax = plt.subplots(1, 3, figsize=(12, 6),
+                        subplot_kw={'xticks': [], 'yticks': []})
+
+fig3.subplots_adjust(hspace=0.3, wspace=0.05)
+
+ax.flat[0].imshow(MK[:, :, axial_middle], cmap='gray')
+ax.flat[0].set_title('MK')
+ax.flat[1].imshow(RK[:, :, axial_middle], cmap='gray')
+ax.flat[1].set_title('RK')
+ax.flat[2].imshow(AK[:, :, axial_middle], cmap='gray')
+ax.flat[2].set_title('AK')
+
+plt.show()
+fig3.savefig('Kurtosis_tensor_standard_measures.png')
+
+""" 
 References:
 
 .. [Jensen2005] Jensen JH, Helpern JA, Ramani A, Lu H, Kaczynski K (2005).
@@ -265,5 +286,4 @@ References:
                 Magnetic Resonance in Medicine 65(1): 138-145
 
 .. include:: ../links_names.inc
-
 """
