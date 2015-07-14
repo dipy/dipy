@@ -984,7 +984,7 @@ def perpendicular_directions(v, num=30, half=False):
     http://gsoc2015dipydki.blogspot.it/2015/07/rnh-post-8-computing-perpendicul
     ar.html
     """
-    v = np.array(v)
+    v = np.array(v, dtype=float)
 
     # Float error used for floats comparison
     er = np.finfo(v[0]).eps * 1e3
@@ -999,7 +999,7 @@ def perpendicular_directions(v, num=30, half=False):
     sina = np.sin(a)
 
     # Check if vector is not aligned to the x axis
-    if abs(v[0] - 1) > er:
+    if abs(v[0] - 1.) > er:
         sq = np.sqrt(v[1]**2 + v[2]**2)
         psamples = np.array([- sq*sina, (v[0]*v[1]*sina - v[2]*cosa) / sq,
                              (v[0]*v[2]*sina + v[1]*cosa) / sq])
