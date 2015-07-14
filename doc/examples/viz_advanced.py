@@ -10,6 +10,7 @@ module was named ``fvtk``, meaning functions using vtk. This is still available
 for backwards compatibility but now there is a more comprehensive way to access
 the main functions using the following modules.
 """
+
 import numpy as np
 from dipy.viz import actor, window, widget
 
@@ -167,5 +168,12 @@ the available 3D and 2D objects.
 # show_m.render()
 # show_m.start()
 
+window.snapshot(ren, 'bundles_and_a_slice.png', size=(1200, 900))
 
+"""
+.. figure:: bundles_and_a_slice.png
+   :align: center
+
+   **A few bundles with interactive slicing**.
+"""
 
