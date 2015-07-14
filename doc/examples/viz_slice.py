@@ -13,7 +13,6 @@ import nibabel as nib
 from dipy.data import fetch_bundles_2_subjects
 from dipy.viz import window, actor
 
-
 """
 Let's download and load a T1.
 """
