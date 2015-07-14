@@ -21,9 +21,16 @@ renderer = window.Renderer()
 
 stream_actor = actor.line(bundle)
 
+
 renderer.add(stream_actor)
 
-window.show(renderer)
+renderer.set_camera(position=(-302.62,7.14,33.44),
+                    focal_point=(-4.72, 24.53, 54.96),
+                    view_up=(-0.08,0.17,0.98))
+
+window.show(renderer, reset_camera=False)
+
+renderer.camera_info()
 
 renderer.clear()
 
@@ -33,7 +40,7 @@ stream_actor2 = actor.line(bundle_img, fa)
 
 renderer.add(stream_actor2)
 
-window.show(renderer)
+window.show(renderer, reset_camera=False)
 renderer.clear()
 
 stream_actor3 = actor.streamtube(bundle_img, fa, linewidth=0.1)
@@ -42,7 +49,7 @@ bar = actor.scalar_bar()
 renderer.add(stream_actor3)
 renderer.add(bar)
 
-window.show(renderer)
+window.show(renderer, reset_camera=False)
 
 renderer.clear()
 
@@ -59,4 +66,4 @@ bar2 = actor.scalar_bar(lut_cmap)
 renderer.add(stream_actor4)
 renderer.add(bar2)
 
-window.show(renderer)
+window.show(renderer, reset_camera=False)
