@@ -261,11 +261,11 @@ def test_perpendicular_directions():
 
     vectors_v = np.zeros((4, 3))
 
-    for v in range(3):
+    for v in range(4):
         theta = random.uniform(0, np.pi)
         phi = random.uniform(0, 2*np.pi)
         vectors_v[v] = sphere2cart(1., theta, phi)
-    vectors_v[3] = [1., 0., 0.]
+    vectors_v[3] = [1, 0, 0]
 
     for vector_v in vectors_v:
         pd = perpendicular_directions(vector_v, num=num, half=False)
@@ -279,8 +279,8 @@ def test_perpendicular_directions():
             assert_almost_equal(cos_angle, 0)
 
         # check if directions are sampled by multiples of 2*pi / num
-        delta_a = 2 * np.pi / num
-        for d in pd:
+        delta_a = 2. * np.pi / num
+        for d in pd[1:]:
             angle = np.arccos(np.dot(pd[0], d))
             rest = angle % delta_a
             if rest > delta_a * 0.99:  # To correct cases of negative error
