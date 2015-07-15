@@ -260,7 +260,7 @@ def test_parzen_densities():
 def setup_random_transform(transform, rfactor, nslices=45, sigma=1):
     r""" Creates a pair of images related to each other by an affine transform
 
-    We warp the static image with a random transform so that the
+    We transform the static image with a random transform so that the
     returned ground-truth transform will produce the static image
     when applied to the moving image. This will simply stack some copies of
     a T1 coronal slice image and add some zero slices up and down to
@@ -289,10 +289,10 @@ def setup_random_transform(transform, rfactor, nslices=45, sigma=1):
     if nslices == 1:
         dim = 2
         moving = moving_slice
-        warp_method = vf.warp_2d_affine
+        transform_method = vf.transform_2d_affine
     else:
         dim = 3
-        warp_method = vf.warp_3d_affine
+        transform_method = vf.transform_3d_affine
         moving = np.zeros(shape=moving_slice.shape + (nslices,))
         moving[..., zero_slices:(2 * zero_slices)] = moving_slice[..., None]
 
@@ -308,7 +308,7 @@ def setup_random_transform(transform, rfactor, nslices=45, sigma=1):
 
     M = transform.param_to_matrix(theta)
     shape = np.array(moving.shape, dtype=np.int32)
-    static = np.array(warp_method(moving.astype(np.float32), shape, M))
+    static = np.array(transform_method(moving.astype(np.float32), shape, M))
     static = static.astype(np.float64)
     static_g2w = np.eye(dim + 1)
     smask = np.ones_like(static, dtype=np.int32)
@@ -322,7 +322,7 @@ def test_joint_pdf_gradients_dense():
     # transform parameters. Since the histograms are discrete partitions of the
     # image intensities, the finite difference approximation is normally not
     # very close to the analytical derivatives. Other sources of error are the
-    # interpolation used when warping the images and the boundary intensities
+    # interpolation used when transforming the images and the boundary intensities
     # introduced when interpolating outside of the image (i.e. some "zeros" are
     # introduced at the boundary which affect the numerical derivatives but is
     # not taken into account by the analytical derivatives). Thus, we need to
@@ -335,10 +335,10 @@ def test_joint_pdf_gradients_dense():
         dim = ttype[1]
         if dim == 2:
             nslices = 1
-            warp_method = vf.warp_2d_affine
+            transform_method = vf.transform_2d_affine
         else:
             nslices = 45
-            warp_method = vf.warp_3d_affine
+            transform_method = vf.transform_3d_affine
 
         transform = regtransforms[ttype]
         factor = factors[ttype]
@@ -353,10 +353,10 @@ def test_joint_pdf_gradients_dense():
         M = transform.param_to_matrix(theta)
         shape = np.array(static.shape, dtype=np.int32)
 
-        warped = warp_method(moving.astype(np.float32), shape, M)
-        warped = np.array(warped)
+        moved = transform_method(moving.astype(np.float32), shape, M)
+        moved = np.array(moved)
         parzen_hist.update_pdfs_dense(static.astype(np.float64),
-                                 warped.astype(np.float64))
+                                 moved.astype(np.float64))
         # Get the joint distribution evaluated at theta
         J0 = np.copy(parzen_hist.joint)
         grid_to_space = np.eye(dim + 1)
@@ -365,7 +365,7 @@ def test_joint_pdf_gradients_dense():
                                     spacing, shape, grid_to_space)
         id = transform.get_identity_parameters()
         parzen_hist.update_gradient_dense(id, transform, static.astype(np.float64),
-                                     warped.astype(np.float64), grid_to_space,
+                                     moved.astype(np.float64), grid_to_space,
                                      mgrad, smask, mmask)
         actual = np.copy(parzen_hist.joint_grad)
         # Now we have the gradient of the joint distribution w.r.t. the
@@ -377,13 +377,13 @@ def test_joint_pdf_gradients_dense():
         for i in range(n):
             dtheta = theta.copy()
             dtheta[i] += h
-            # Update the joint distribution with the warped moving image
+            # Update the joint distribution with the transformed moving image
             M = transform.param_to_matrix(dtheta)
             shape = np.array(static.shape, dtype=np.int32)
-            warped = warp_method(moving.astype(np.float32), shape, M)
-            warped = np.array(warped)
+            moved = transform_method(moving.astype(np.float32), shape, M)
+            moved = np.array(moved)
             parzen_hist.update_pdfs_dense(static.astype(np.float64),
-                                     warped.astype(np.float64))
+                                          moved.astype(np.float64))
             J1 = np.copy(parzen_hist.joint)
             expected[..., i] = (J1 - J0) / h
 
@@ -470,7 +470,7 @@ def test_joint_pdf_gradients_sparse():
         for i in range(n):
             dtheta = theta.copy()
             dtheta[i] += h
-            # Update the joint distribution with the warped moving image
+            # Update the joint distribution with the transformed moving image
             M = transform.param_to_matrix(dtheta)
             sp_to_moving = np.linalg.inv(moving_g2w).dot(M)
             samples_moving_grid = sp_to_moving.dot(samples.T).T
@@ -507,10 +507,10 @@ def test_mi_gradient_dense():
         dim = ttype[1]
         if dim == 2:
             nslices = 1
-            warp_method = vf.warp_2d_affine
+            transform_method = vf.transform_2d_affine
         else:
             nslices = 45
-            warp_method = vf.warp_3d_affine
+            transform_method = vf.transform_3d_affine
         # Get data (pair of images related to each other by an known transform)
         factor = factors[ttype]
         static, moving, static_g2w, moving_g2w, smask, mmask, M = \
@@ -562,9 +562,9 @@ def test_mi_gradient_dense():
 
             M = transform.param_to_matrix(dtheta)
             shape = np.array(static.shape, dtype=np.int32)
-            warped = np.array(warp_method(moving.astype(np.float32), shape, M))
+            moved = np.array(transform_method(moving.astype(np.float32), shape, M))
             parzen_mi.update_pdfs_dense(static.astype(np.float64),
-                                     warped.astype(np.float64))
+                                        moved.astype(np.float64))
             parzen_mi.update_mi_metric(update_gradient=False)
             val1 = parzen_mi.metric_val
             expected[i] = (val1 - val0) / h

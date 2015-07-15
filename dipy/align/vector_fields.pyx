@@ -1977,9 +1977,9 @@ def warp_3d(floating[:, :, :] volume, floating[:, :, :, :] d1,
     return warped
 
 
-def warp_3d_affine(floating[:, :, :] volume, int[:] ref_shape,
-                   double[:, :] affine):
-    r"""Warps a 3D volume by an affine transform using trilinear interpolation
+def transform_3d_affine(floating[:, :, :] volume, int[:] ref_shape,
+                        double[:, :] affine):
+    r"""Transforms a 3D volume by an affine transform with trilinear interp.
 
     Deforms the input volume under the given affine transformation using
     tri-linear interpolation. The shape of the resulting transformation
@@ -1991,19 +1991,19 @@ def warp_3d_affine(floating[:, :, :] volume, int[:] ref_shape,
     volume : array, shape (S, R, C)
         the input volume to be transformed
     ref_shape : array, shape (3,)
-        the shape of the resulting warped volume
+        the shape of the resulting volume
     affine : array, shape (4, 4)
         the affine transform to be applied
 
     Returns
     -------
-    warped : array, shape (S', R', C')
+    out : array, shape (S', R', C')
         the transformed volume
 
     Notes
     -----
     The reason it is necessary to provide the intended shape of the resulting
-    warped volume is because the affine transformation is defined on all R^{3}
+    volume is because the affine transformation is defined on all R^{3}
     but we must sample a finite lattice. Also the resulting shape may not be
     necessarily equal to the input shape, unless we are interested on
     endomorphisms only and not general diffeomorphisms.
@@ -2019,8 +2019,8 @@ def warp_3d_affine(floating[:, :, :] volume, int[:] ref_shape,
         int inside
         double dkk, dii, djj, tmp0, tmp1
         double alpha, beta, gamma, calpha, cbeta, cgamma
-        floating[:, :, :] warped = np.zeros(shape=(nslices, nrows, ncols),
-                                            dtype=np.asarray(volume).dtype)
+        floating[:, :, :] out = np.zeros(shape=(nslices, nrows, ncols),
+                                         dtype=np.asarray(volume).dtype)
 
     if not is_valid_affine(affine, 3):
         raise ValueError("Invalid affine transform matrix")
@@ -2039,8 +2039,8 @@ def warp_3d_affine(floating[:, :, :] volume, int[:] ref_shape,
                         dii = i
                         djj = j
                     inside = _interpolate_scalar_3d[floating](volume, dkk,
-                        dii, djj, &warped[k,i,j])
-    return warped
+                        dii, djj, &out[k,i,j])
+    return out
 
 
 def warp_3d_nn(number[:, :, :] volume, floating[:, :, :, :] d1,
@@ -2173,12 +2173,12 @@ def warp_3d_nn(number[:, :, :] volume, floating[:, :, :, :] d1,
     return warped
 
 
-def warp_3d_affine_nn(number[:, :, :] volume, int[:] ref_shape,
-                      double[:, :] affine=None):
-    r"""Warps a 3D volume by an affine transform using NN interpolation
+def transform_3d_affine_nn(number[:, :, :] volume, int[:] ref_shape,
+                           double[:, :] affine=None):
+    r"""Transforms a 3D volume by an affine transform with NN interpolation
 
     Deforms the input volume under the given affine transformation using
-    nearest neighbor interpolation. The shape of the resulting transformation
+    nearest neighbor interpolation. The shape of the resulting volume
     is given by ref_shape. If the affine matrix is None, it is taken as the
     identity.
 
@@ -2187,19 +2187,19 @@ def warp_3d_affine_nn(number[:, :, :] volume, int[:] ref_shape,
     volume : array, shape (S, R, C)
         the input volume to be transformed
     ref_shape : array, shape (3,)
-        the shape of the resulting warped volume
+        the shape of the resulting volume
     affine : array, shape (4, 4)
         the affine transform to be applied
 
     Returns
     -------
-    warped : array, shape (S', R', C')
+    out : array, shape (S', R', C')
         the transformed volume
 
     Notes
     -----
     The reason it is necessary to provide the intended shape of the resulting
-    warped volume is because the affine transformation is defined on all R^{3}
+    volume is because the affine transformation is defined on all R^{3}
     but we must sample a finite lattice. Also the resulting shape may not be
     necessarily equal to the input shape, unless we are interested on
     endomorphisms only and not general diffeomorphisms.
@@ -2214,8 +2214,8 @@ def warp_3d_affine_nn(number[:, :, :] volume, int[:] ref_shape,
         double dkk, dii, djj, tmp0, tmp1
         double alpha, beta, gamma, calpha, cbeta, cgamma
         cnp.npy_intp k, i, j, kk, ii, jj
-        number[:, :, :] warped = np.zeros((nslices, nrows, ncols),
-                                          dtype=np.asarray(volume).dtype)
+        number[:, :, :] out = np.zeros((nslices, nrows, ncols),
+                                        dtype=np.asarray(volume).dtype)
 
     if not is_valid_affine(affine, 3):
         raise ValueError("Invalid affine transform matrix")
@@ -2234,8 +2234,8 @@ def warp_3d_affine_nn(number[:, :, :] volume, int[:] ref_shape,
                         dii = i
                         djj = j
                     _interpolate_scalar_nn_3d[number](volume, dkk, dii, djj,
-                                                      &warped[k,i,j])
-    return warped
+                                                      &out[k,i,j])
+    return out
 
 
 def warp_2d(floating[:, :] image, floating[:, :, :] d1,
@@ -2352,12 +2352,12 @@ def warp_2d(floating[:, :] image, floating[:, :, :] d1,
     return warped
 
 
-def warp_2d_affine(floating[:, :] image, int[:] ref_shape,
-                   double[:, :] affine=None):
-    r"""Warps a 2D image by an affine transform using bilinear interpolation
+def transform_2d_affine(floating[:, :] image, int[:] ref_shape,
+                        double[:, :] affine=None):
+    r"""Transforms a 2D image by an affine transform with bilinear interp.
 
     Deforms the input image under the given affine transformation using
-    tri-linear interpolation. The shape of the resulting transformation
+    tri-linear interpolation. The shape of the resulting image
     is given by ref_shape. If the affine matrix is None, it is taken as the
     identity.
 
@@ -2366,19 +2366,19 @@ def warp_2d_affine(floating[:, :] image, int[:] ref_shape,
     image : array, shape (R, C)
         the input image to be transformed
     ref_shape : array, shape (2,)
-        the shape of the resulting warped image
+        the shape of the resulting image
     affine : array, shape (3, 3)
         the affine transform to be applied
 
     Returns
     -------
-    warped : array, shape (R', C')
+    out : array, shape (R', C')
         the transformed image
 
     Notes
     -----
     The reason it is necessary to provide the intended shape of the resulting
-    warped image is because the affine transformation is defined on all R^{2}
+    image is because the affine transformation is defined on all R^{2}
     but we must sample a finite lattice. Also the resulting shape may not be
     necessarily equal to the input shape, unless we are interested on
     endomorphisms only and not general diffeomorphisms.
@@ -2391,8 +2391,8 @@ def warp_2d_affine(floating[:, :] image, int[:] ref_shape,
         cnp.npy_intp i, j, ii, jj
         double dii, djj, tmp0
         double alpha, beta, calpha, cbeta
-        floating[:, :] warped = np.zeros(shape=(nrows, ncols),
-                                         dtype=np.asarray(image).dtype)
+        floating[:, :] out = np.zeros(shape=(nrows, ncols),
+                                      dtype=np.asarray(image).dtype)
 
     if not is_valid_affine(affine, 2):
         raise ValueError("Invalid affine transform matrix")
@@ -2408,8 +2408,8 @@ def warp_2d_affine(floating[:, :] image, int[:] ref_shape,
                     dii = i
                     djj = j
                 _interpolate_scalar_2d[floating](image, dii, djj,
-                                                 &warped[i, j])
-    return warped
+                                                 &out[i, j])
+    return out
 
 
 def warp_2d_nn(number[:, :] image, floating[:, :, :] d1,
@@ -2526,12 +2526,12 @@ def warp_2d_nn(number[:, :] image, floating[:, :, :] d1,
     return warped
 
 
-def warp_2d_affine_nn(number[:, :] image, int[:] ref_shape,
-                      double[:, :] affine=None):
-    r"""Warps a 2D image by an affine transform using NN interpolation
+def transform_2d_affine_nn(number[:, :] image, int[:] ref_shape,
+                           double[:, :] affine=None):
+    r"""Transforms a 2D image by an affine transform with NN interpolation
 
     Deforms the input image under the given affine transformation using
-    nearest neighbor interpolation. The shape of the resulting transformation
+    nearest neighbor interpolation. The shape of the resulting image
     is given by ref_shape. If the affine matrix is None, it is taken as the
     identity.
 
@@ -2540,19 +2540,19 @@ def warp_2d_affine_nn(number[:, :] image, int[:] ref_shape,
     image : array, shape (R, C)
         the input image to be transformed
     ref_shape : array, shape (2,)
-        the shape of the resulting warped image
+        the shape of the resulting image
     affine : array, shape (3, 3)
         the affine transform to be applied
 
     Returns
     -------
-    warped : array, shape (R', C')
+    out : array, shape (R', C')
         the transformed image
 
     Notes
     -----
     The reason it is necessary to provide the intended shape of the resulting
-    warped image is because the affine transformation is defined on all R^{2}
+    image is because the affine transformation is defined on all R^{2}
     but we must sample a finite lattice. Also the resulting shape may not be
     necessarily equal to the input shape, unless we are interested on
     endomorphisms only and not general diffeomorphisms.
@@ -2565,8 +2565,8 @@ def warp_2d_affine_nn(number[:, :] image, int[:] ref_shape,
         double dii, djj, tmp0
         double alpha, beta, calpha, cbeta
         cnp.npy_intp i, j, ii, jj
-        number[:, :] warped = np.zeros((nrows, ncols),
-                                       dtype=np.asarray(image).dtype)
+        number[:, :] out = np.zeros((nrows, ncols),
+                                    dtype=np.asarray(image).dtype)
 
     if not is_valid_affine(affine, 2):
         raise ValueError("Invalid affine transform matrix")
@@ -2582,8 +2582,8 @@ def warp_2d_affine_nn(number[:, :] image, int[:] ref_shape,
                     dii = i
                     djj = j
                 _interpolate_scalar_nn_2d[number](image, dii, djj,
-                                                  &warped[i, j])
-    return warped
+                                                  &out[i, j])
+    return out
 
 
 def resample_displacement_field_3d(floating[:, :, :, :] field,

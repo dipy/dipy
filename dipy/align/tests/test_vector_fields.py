@@ -723,9 +723,9 @@ def test_warping_3d():
     assert_raises(ValueError, vfu.warp_3d_nn, sphere, d, val, val, inval, sh)
 
 
-def test_affine_warping_2d():
+def test_affine_transforms_2d():
     r"""
-    Tests 2D affine warping functions against scipy implementation
+    Tests 2D affine transform functions against scipy implementation
     """
     # Create a simple invertible affine transform
     d_shape = (64, 64)
@@ -772,44 +772,41 @@ def test_affine_warping_2d():
             Y = np.apply_along_axis(gt_affine.dot, 0, X)[0:2, ...]
 
             expected = map_coordinates(circle, Y, order=1)
-            warped = vfu.warp_2d_affine(circle,
-                                        np.array(d_shape, dtype=np.int32),
-                                        gt_affine)
+            warped = vfu.transform_2d_affine(circle,
+                np.array(d_shape, dtype=np.int32), gt_affine)
             assert_array_almost_equal(warped, expected)
 
             # Test affine warping with nearest-neighbor interpolation
             expected = map_coordinates(circle, Y, order=0)
-            warped = vfu.warp_2d_affine_nn(circle,
-                                           np.array(d_shape, dtype=np.int32),
-                                           gt_affine)
+            warped = vfu.transform_2d_affine_nn(circle,
+                np.array(d_shape, dtype=np.int32), gt_affine)
             assert_array_almost_equal(warped, expected)
 
     # Test the affine = None case
-    warped = vfu.warp_2d_affine(circle,
-                                np.array(codomain_shape, dtype=np.int32), None)
+    warped = vfu.transform_2d_affine(circle,
+        np.array(codomain_shape, dtype=np.int32), None)
     assert_array_equal(warped, circle)
 
-    warped = vfu.warp_2d_affine_nn(circle,
-                                   np.array(codomain_shape, dtype=np.int32),
-                                   None)
+    warped = vfu.transform_2d_affine_nn(circle,
+        np.array(codomain_shape, dtype=np.int32), None)
     assert_array_equal(warped, circle)
 
     # Test exception is raised when the affine transform matrix is not valid
     invalid = np.zeros((2, 2), dtype=np.float64)
     shape = np.array(codomain_shape, dtype=np.int32)
     # Exceptions from warp_2d
-    assert_raises(ValueError, vfu.warp_2d_affine, circle, shape, invalid)
-    assert_raises(ValueError, vfu.warp_2d_affine, circle, shape, invalid)
-    assert_raises(ValueError, vfu.warp_2d_affine, circle, shape, invalid)
+    assert_raises(ValueError, vfu.transform_2d_affine, circle, shape, invalid)
+    assert_raises(ValueError, vfu.transform_2d_affine, circle, shape, invalid)
+    assert_raises(ValueError, vfu.transform_2d_affine, circle, shape, invalid)
     # Exceptions from warp_2d_nn
-    assert_raises(ValueError, vfu.warp_2d_affine_nn, circle, shape, invalid)
-    assert_raises(ValueError, vfu.warp_2d_affine_nn, circle, shape, invalid)
-    assert_raises(ValueError, vfu.warp_2d_affine_nn, circle, shape, invalid)
+    assert_raises(ValueError, vfu.transform_2d_affine_nn, circle, shape, invalid)
+    assert_raises(ValueError, vfu.transform_2d_affine_nn, circle, shape, invalid)
+    assert_raises(ValueError, vfu.transform_2d_affine_nn, circle, shape, invalid)
 
 
-def test_affine_warping_3d():
+def test_affine_transforms_3d():
     r"""
-    Tests 3D affine warping functions against scipy implementation
+    Tests 3D affine transform functions against scipy implementation
     """
     # Create a simple invertible affine transform
     d_shape = (64, 64, 64)
@@ -861,39 +858,37 @@ def test_affine_warping_3d():
             Y = np.apply_along_axis(gt_affine.dot, 0, X)[0:3, ...]
 
             expected = map_coordinates(sphere, Y, order=1)
-            warped = vfu.warp_3d_affine(sphere,
-                                        np.array(d_shape, dtype=np.int32),
-                                        gt_affine)
-            assert_array_almost_equal(warped, expected)
+            transformed = vfu.transform_3d_affine(sphere,
+                np.array(d_shape, dtype=np.int32), gt_affine)
+            assert_array_almost_equal(transformed, expected)
 
-            # Test affine warping with nearest-neighbor interpolation
+            # Test affine transform with nearest-neighbor interpolation
             expected = map_coordinates(sphere, Y, order=0)
-            warped = vfu.warp_3d_affine_nn(sphere,
-                                           np.array(d_shape, dtype=np.int32),
-                                           gt_affine)
-            assert_array_almost_equal(warped, expected)
+            transformed = vfu.transform_3d_affine_nn(sphere,
+                np.array(d_shape, dtype=np.int32), gt_affine)
+            assert_array_almost_equal(transformed, expected)
 
     # Test the affine = None case
-    warped = vfu.warp_3d_affine(sphere,
-                                np.array(codomain_shape, dtype=np.int32), None)
-    assert_array_equal(warped, sphere)
+    transformed = vfu.transform_3d_affine(sphere,
+        np.array(codomain_shape, dtype=np.int32), None)
+    assert_array_equal(transformed, sphere)
 
-    warped = vfu.warp_3d_affine_nn(sphere,
+    transformed = vfu.transform_3d_affine_nn(sphere,
                                    np.array(codomain_shape, dtype=np.int32),
                                    None)
-    assert_array_equal(warped, sphere)
+    assert_array_equal(transformed, sphere)
 
     # Test exception is raised when the affine transform matrix is not valid
     invalid = np.zeros((3, 3), dtype=np.float64)
     shape = np.array(codomain_shape, dtype=np.int32)
-    # Exceptions from warp_2d
-    assert_raises(ValueError, vfu.warp_3d_affine, sphere, shape, invalid)
-    assert_raises(ValueError, vfu.warp_3d_affine, sphere, shape, invalid)
-    assert_raises(ValueError, vfu.warp_3d_affine, sphere, shape, invalid)
-    # Exceptions from warp_2d_nn
-    assert_raises(ValueError, vfu.warp_3d_affine_nn, sphere, shape, invalid)
-    assert_raises(ValueError, vfu.warp_3d_affine_nn, sphere, shape, invalid)
-    assert_raises(ValueError, vfu.warp_3d_affine_nn, sphere, shape, invalid)
+    # Exceptions from transform_2d
+    assert_raises(ValueError, vfu.transform_3d_affine, sphere, shape, invalid)
+    assert_raises(ValueError, vfu.transform_3d_affine, sphere, shape, invalid)
+    assert_raises(ValueError, vfu.transform_3d_affine, sphere, shape, invalid)
+    # Exceptions from transform_2d_nn
+    assert_raises(ValueError, vfu.transform_3d_affine_nn, sphere, shape, invalid)
+    assert_raises(ValueError, vfu.transform_3d_affine_nn, sphere, shape, invalid)
+    assert_raises(ValueError, vfu.transform_3d_affine_nn, sphere, shape, invalid)
 
 
 def test_compose_vector_fields_2d():

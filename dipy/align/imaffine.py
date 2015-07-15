@@ -59,10 +59,10 @@ from .scalespace import IsotropicScaleSpace
 
 _interp_options = ['nearest', 'linear']
 _transform_method = {}
-_transform_method[(2, 'nearest')] = vf.warp_2d_affine_nn
-_transform_method[(3, 'nearest')] = vf.warp_3d_affine_nn
-_transform_method[(2, 'linear')] = vf.warp_2d_affine
-_transform_method[(3, 'linear')] = vf.warp_3d_affine
+_transform_method[(2, 'nearest')] = vf.transform_2d_affine_nn
+_transform_method[(3, 'nearest')] = vf.transform_3d_affine_nn
+_transform_method[(2, 'linear')] = vf.transform_2d_affine
+_transform_method[(3, 'linear')] = vf.transform_3d_affine
 
 
 class AffineInversionError(Exception):
