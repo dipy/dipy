@@ -3,37 +3,45 @@
 Create a minimalistic user interface
 =====================================
 
+DIPY allows to create a minimalistic interface using widgets.
+
+In this example we will create: a) two parallel steamtubes, b) add some buttons
+which will change the opacity of these tubes and c) move the streamtubes using
+a slider.
 """
 
 import numpy as np
 from dipy.viz import window, actor, widget
 from dipy.data import fetch_viz_icons, read_viz_icons
 
+"""
+First, we add the streamtubes to the
+"""
 
 renderer = window.Renderer()
 
 lines = [np.array([[-1, 0, 0.], [1, 0, 0.]]),
          np.array([[-1, 1, 0.], [1, 1, 0.]])]
-colors = np.array([[1., 0., 0.], [0.3, 0.7, 0.]])
-stream_actor = actor.streamtube(lines, colors)
+colors = np.array([[1., 0., 0.], [1., 0.5, 0.]])
+stream_actor = actor.streamtube(lines, colors, linewidth=0.3)
 
 renderer.add(stream_actor)
 
-# the show manager allows to break the rendering process
-# in steps so that the widgets can be added properly
+"""
+The ``ShowManager`` allows to break the visualization process in steps so that
+the widgets can be added and updated properly.
+"""
+
 show_manager = window.ShowManager(renderer, size=(800, 800))
 
 show_manager.initialize()
-show_manager.render()
 
+"""
+Next we add the widgets and their callbacks.
+"""
 
 global opacity
 opacity = 1.
-
-
-def button_callback(obj, event):
-    print('Infinity button pressed')
-
 
 def button_plus_callback(obj, event):
     print('+ pressed')
@@ -51,15 +59,13 @@ def button_minus_callback(obj, event):
     stream_actor.GetProperty().SetOpacity(opacity)
 
 
+"""
+We need to download some icons to create a face for our buttons ...
+"""
+
 fetch_viz_icons()
-button_png = read_viz_icons(fname='infinite.png')
-
-button = widget.button(show_manager.iren,
-                       show_manager.ren,
-                       button_callback,
-                       button_png, (.98, 1.), (80, 50))
-
 button_png_plus = read_viz_icons(fname='plus.png')
+
 button_plus = widget.button(show_manager.iren,
                             show_manager.ren,
                             button_plus_callback,
@@ -71,10 +77,13 @@ button_minus = widget.button(show_manager.iren,
                              button_minus_callback,
                              button_png_minus, (.98, .9), (50, 50))
 
-
 def move_lines(obj, event):
-    rep = obj.GetRepresentation()
-    stream_actor.SetPosition((rep.GetValue(), 0, 0))
+
+    stream_actor.SetPosition((obj.get_value(), 0, 0))
+
+"""
+And then we create the slider.
+"""
 
 slider = widget.slider(show_manager.iren, show_manager.ren,
                        callback=move_lines,
@@ -87,24 +96,22 @@ slider = widget.slider(show_manager.iren, show_manager.ren,
                        color=(0.4, 0.4, 0.4),
                        selected_color=(0.2, 0.2, 0.2))
 
-# This callback is used to update the buttons/sliders' position
-# so they can stay on the right side of the window when the window
-# is being resized.
-
 global size
 size = renderer.GetSize()
 
+"""
+This callback is used to update the buttons/sliders' position so they can stay
+on the correct side of the window when the window is being resized.
+"""
 
 def win_callback(obj, event):
     global size
     if size != obj.GetSize():
 
-        button.place(renderer)
         button_plus.place(renderer)
         button_minus.place(renderer)
         slider.place(renderer)
         size = obj.GetSize()
-        show_manager.render()
 
 
 show_manager.add_window_callback(win_callback)
@@ -112,5 +119,25 @@ show_manager.add_window_callback(win_callback)
 # show_manager.window.AddObserver(vtk.vtkCommand.ModifiedEvent,
 #                                 win_callback)
 
+renderer.zoom(0.7)
+renderer.roll(10.)
+
 show_manager.render()
-show_manager.start()
+
+"""
+Uncomment the following line to start the interaction.
+"""
+
+# show_manager.start()
+
+window.snapshot(renderer, 'mini_ui.png', size=(800, 800))
+
+del show_manager
+
+"""
+.. figure:: mini_ui.png
+   :align: center
+
+   **A minimalistic user interface**.
+"""
+
