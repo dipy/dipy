@@ -102,9 +102,9 @@ class Renderer(vtkRenderer):
 
     def camera_info(self):
         cam = self.get_camera()
-        print('Camera Position (%.2f,%.2f,%.2f)' % cam.GetPosition())
-        print('Camera Focal Point (%.2f,%.2f,%.2f)' % cam.GetFocalPoint())
-        print('Camera View Up (%.2f,%.2f,%.2f)' % cam.GetViewUp())
+        print('Camera Position (%.2f, %.2f, %.2f)' % cam.GetPosition())
+        print('Camera Focal Point (%.2f, %.2f, %.2f)' % cam.GetFocalPoint())
+        print('Camera View Up (%.2f, %.2f, %.2f)' % cam.GetViewUp())
 
     def set_camera(self, position=None, focal_point=None, view_up=None):
         if position is not None:
@@ -113,6 +113,19 @@ class Renderer(vtkRenderer):
             self.GetActiveCamera().SetFocalPoint(*focal_point)
         if view_up is not None:
             self.GetActiveCamera().SetViewUp(*view_up)
+
+    @property
+    def size(self):
+        return self.GetSize()
+
+    def zoom(self, value):
+        self.GetActiveCamera().Zoom(value)
+
+    def azimuth(self, angle):
+        self.GetActiveCamera().Azimuth(angle)
+
+    def roll(self, angle):
+        self.GetActiveCamera().Roll(angle)
 
 
 def renderer(background=None):
