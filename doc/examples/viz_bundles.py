@@ -190,8 +190,8 @@ window.snapshot(renderer, 'bundle5.png', size=(600, 600))
 """
 .. figure:: bundle5.png
    :align: center
+   **Color every streamline by the length of the streamline **
 
-   **Color by length of streamline **.
 
 Show every point of every streamline with a different color
 ============================================================
@@ -205,7 +205,7 @@ renderer.clear()
 
 colors = [np.random.rand(*streamline.shape) for streamline in bundle_native]
 
-stream_actor6 = actor.line(bundle_native, colors, linewidth=0.2, opacity=1)
+stream_actor6 = actor.line(bundle_native, colors, linewidth=0.2)
 
 renderer.add(stream_actor6)
 
