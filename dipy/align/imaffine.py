@@ -57,6 +57,13 @@ from .parzenhist import ParzenMutualInformation, sample_domain_regular
 from .imwarp import (get_direction_and_spacings, ScaleSpace)
 from .scalespace import IsotropicScaleSpace
 
+_interp_options = ['nearest', 'linear']
+_transform_method = {}
+_transform_method[(2, 'nearest')] = vf.warp_2d_affine_nn
+_transform_method[(3, 'nearest')] = vf.warp_3d_affine_nn
+_transform_method[(2, 'linear')] = vf.warp_2d_affine
+_transform_method[(3, 'linear')] = vf.warp_3d_affine
+
 
 class AffineInversionError(Exception):
     pass
@@ -197,6 +204,10 @@ class AffineMap(object):
         transformed : array, shape `sampling_grid_shape` or `self.domain_shape`
             the transformed image, sampled at the requested grid
         """
+        # Verify valid interpolation requested
+        if interp not in _interp_options:
+            raise ValueError('Unknown interpolation method: %s' % (interp,))
+
         # Obtain sampling grid
         if sampling_grid_shape is None:
             if apply_inverse:
@@ -209,6 +220,10 @@ class AffineMap(object):
 
         dim = len(sampling_grid_shape)
         shape = np.array(sampling_grid_shape, dtype=np.int32)
+
+        # Verify valid image dimension
+        if dim < 2 or dim > 3:
+            raise ValueError('Undefined transform for dimension: %d' % (dim,))
 
         # Obtain grid-to-world transform for sampling grid
         if sampling_grid2world is None:
@@ -229,21 +244,6 @@ class AffineMap(object):
                 image_grid2world = np.eye(dim + 1)
         image_world2grid = npl.inv(image_grid2world)
 
-        # Obtain the appropriate transform method
-        if interp == 'nearest':
-            if dim == 2:
-                transform_method = vf.warp_2d_affine_nn
-            elif dim == 3:
-                transform_method = vf.warp_3d_affine_nn
-        elif interp == 'linear':
-            image = image.astype(np.float64)
-            if dim == 2:
-                transform_method = vf.warp_2d_affine
-            elif dim == 3:
-                transform_method = vf.warp_3d_affine
-        else:
-            raise ValueError('Unknown interpolation method: '+str(interp))
-
         # Compute the transform from sampling grid to input image grid
         if apply_inverse:
             aff = self.affine_inverse
@@ -256,7 +256,7 @@ class AffineMap(object):
             comp = image_world2grid.dot(self.affine.dot(sampling_grid2world))
 
         # Transform the input image
-        transformed = transform_method(image, shape, comp)
+        transformed = _transform_method[(dim, interp)](image, shape, comp)
         return transformed
 
     def transform(self, image, interp='linear', image_grid2world=None,

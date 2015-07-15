@@ -25,7 +25,9 @@ cdef extern from "dpy_math.h" nogil:
 
 class ParzenJointHistogram(object):
     def __init__(self, nbins):
-        r""" Base class to compute joint and marginal probability density
+        r""" Computes joint histogram and derivatives with Parzen windows
+
+        Base class to compute joint and marginal probability density
         functions and their derivatives with respect to a transform's
         parameters. The smooth histograms are computed by using Parzen
         windows [Parzen62] with a cubic spline kernel, as proposed by
