@@ -58,6 +58,10 @@ from .imwarp import (get_direction_and_spacings, ScaleSpace)
 from .scalespace import IsotropicScaleSpace
 
 
+class AffineInversionError(Exception):
+    pass
+
+
 class AffineMap(object):
     def __init__(self, affine, domain_grid_shape=None, domain_grid2world=None,
                  codomain_grid_shape=None, codomain_grid2world=None):
@@ -65,21 +69,32 @@ class AffineMap(object):
 
         Implements an affine transformation whose domain is given by
         `domain_grid` and `domain_grid2world`, and whose co-domain is
-        given by `codomain_grid` and `codomain_grid2world`. This domain
-        and co-domain information is used as default sampling information
-        to transform images. If such domain/co-domain information is not
-        provided (None) then the sampling information needs to be specified
-        each time the `transform` or `transform_inverse` is called to
-        transform images. Note that such sampling information is not
-        necessary to transform points defined in physical space, such as
-        stream lines.
+        given by `codomain_grid` and `codomain_grid2world`.
+
+        The actual transform is represented by the `affine` matrix, which
+        operate in world coordinates. Therefore, to transform a moving image
+        towards a static image, we first map each voxel (i,j,k) of the static
+        image to world coordinates (x,y,z) by applying `domain_grid2world`.
+        Then we apply the `affine` transform to (x,y,z) obtaining (x', y', z')
+        in moving image's world coordinates. Finally, (x', y', z') is mapped
+        to voxel coordinates (i', j', k') in the moving image by multiplying
+        (x', y', z') by the inverse of `codomain_grid2world`. The
+        `codomain_grid_shape` is used analogously to transform the static
+        image towards the moving image when calling `transform_inverse`.
+
+        If the domain/co-domain information is not provided (None) then the
+        sampling information needs to be specified each time the `transform`
+        or `transform_inverse` is called to transform images. Note that such
+        sampling information is not necessary to transform points defined in
+        physical space, such as stream lines.
 
         Parameters
         ----------
         affine : array, shape (dim + 1, dim + 1)
             the matrix defining the affine transform, where `dim` is the
             dimension of the space this map operates in (2 for 2D images,
-            3 for 3D images)
+            3 for 3D images). If None, then `self` represents the identity
+            transformation.
         domain_grid_shape : sequence, shape (dim,), optional
             the shape of the default domain sampling grid. When `transform`
             is called to transform an image, the resulting image will have
@@ -116,12 +131,17 @@ class AffineMap(object):
         affine : array, shape (dim + 1, dim + 1)
             the matrix representing the affine transform operating in
             physical space. The domain and co-domain information
-            remains unchanged
+            remains unchanged. If None, then `self` represents the identity
+            transformation.
         """
         self.affine = affine
-        self.affine_inv = None
-        if affine is not None:
+        if self.affine is None:
+            self.affine_inv = None
+            return
+        try:
             self.affine_inv = npl.inv(affine)
+        except npl.LinAlgError:
+            raise AffineInversionError('Affine cannot be inverted')
 
     def _apply_transform(self, image, interp='linear', image_grid2world=None,
                          sampling_grid_shape=None, sampling_grid2world=None,
@@ -488,12 +508,7 @@ class MIMetric(ParzenMutualInformation):
         M = self.transform.param_to_matrix(params)
         if self.starting_affine is not None:
             M = M.dot(self.starting_affine)
-        try:
             self.affine_map.set_affine(M)
-        except:
-            raise ValueError('The transformation is not invertible')
-
-
 
         # Update the joint and marginal intensity distributions
         if self.samples is None:
@@ -569,7 +584,7 @@ class MIMetric(ParzenMutualInformation):
         """
         try:
             self._update(params, False)
-        except:
+        except AffineInversionError:
             return np.inf
         return -1 * self.metric_val
 
@@ -590,7 +605,7 @@ class MIMetric(ParzenMutualInformation):
         """
         try:
             self._update(params, True)
-        except:
+        except AffineInversionError:
             return 0 * self.metric_grad
         return -1 * self.metric_grad
 
@@ -615,7 +630,7 @@ class MIMetric(ParzenMutualInformation):
         """
         try:
             self._update(params, True)
-        except:
+        except AffineInversionError:
             return np.inf, 0 * self.metric_grad
         return -1 * self.metric_val, -1 * self.metric_grad
 
