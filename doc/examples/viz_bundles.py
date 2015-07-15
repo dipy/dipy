@@ -40,7 +40,7 @@ transform in native image coordinates so that it is in the same coordinate
 space as the ``fa``.
 """
 
-bundle_img = transform_streamlines(bundle, np.linalg.inv(affine))
+bundle_native = transform_streamlines(bundle, np.linalg.inv(affine))
 
 """
 Show every streamline with an orientation color
@@ -51,7 +51,7 @@ This is the default option when you are using ``line`` or ``streamtube``.
 
 renderer = window.Renderer()
 
-stream_actor = actor.line(bundle_img)
+stream_actor = actor.line(bundle_native)
 
 renderer.set_camera(position=(-176.42, 118.52, 128.20),
                     focal_point=(113.30, 128.31, 76.56),
@@ -77,14 +77,14 @@ focal point and view up vectors of the camera.
 renderer.camera_info()
 
 """
-Show every point with a value from a metric with default colormap
+Show every point with a value from a volume with default colormap
 =================================================================
 
 Here we will need to input the ``fa`` map in ``streamtube`` or ``line``.
 """
 
 renderer.clear()
-stream_actor2 = actor.line(bundle_img, fa, linewidth=0.1)
+stream_actor2 = actor.line(bundle_native, fa, linewidth=0.1)
 
 """
 We can also show the scalar bar.
@@ -104,7 +104,7 @@ window.snapshot(renderer, 'bundle2.png', size=(600, 600))
 
    **Every point with a color from FA**.
 
-Show every point with a value from a metric with your colormap
+Show every point with a value from a volume with your colormap
 ==============================================================
 
 Here we will need to input the ``fa`` map in ``streamtube`` or ``
@@ -118,7 +118,7 @@ saturation = [0.0, 1.0]  # white to red
 lut_cmap = actor.colormap_lookup_table(hue_range=hue,
                                        saturation_range=saturation)
 
-stream_actor3 = actor.line(bundle_img, fa, linewidth=0.1,
+stream_actor3 = actor.line(bundle_native, fa, linewidth=0.1,
                            lookup_colormap=lut_cmap)
 bar2 = actor.scalar_bar(lut_cmap)
 
@@ -133,6 +133,92 @@ window.snapshot(renderer, 'bundle3.png', size=(600, 600))
    :align: center
 
    **Every point with a color from FA using a non default colomap**.
+
+
+Show every bundle with a specific color
+========================================
+
+You can have a bundle with a specific color. Here orange.
 """
 
+renderer.clear()
+stream_actor4 = actor.line(bundle_native, (1., 0.5, 0), linewidth=0.1)
 
+renderer.add(stream_actor4)
+
+# window.show(renderer, size=(600, 600), reset_camera=False)
+window.snapshot(renderer, 'bundle4.png', size=(600, 600))
+
+"""
+.. figure:: bundle4.png
+   :align: center
+
+   **Entire bundle with a specific color**.
+
+Show every streamline of a bundle with a different color
+========================================================
+
+Let's make a colormap where every streamline of the bundle is colored by its
+length.
+"""
+
+renderer.clear()
+
+from dipy.tracking.streamline import length
+
+lengths = length(bundle_native)
+
+hue = [0.5, 0.5]  # red only
+saturation = [0.0, 1.0]  # black to white
+
+lut_cmap = actor.colormap_lookup_table(
+    scale_range=(lengths.min(), lengths.max()),
+    hue_range=hue,
+    saturation_range=saturation)
+
+stream_actor5 = actor.line(bundle_native, lengths, linewidth=0.1,
+                           lookup_colormap=lut_cmap)
+
+renderer.add(stream_actor5)
+bar3 = actor.scalar_bar(lut_cmap)
+
+renderer.add(bar3)
+
+# window.show(renderer, size=(600, 600), reset_camera=False)
+window.snapshot(renderer, 'bundle5.png', size=(600, 600))
+
+"""
+.. figure:: bundle5.png
+   :align: center
+
+   **Color by length of streamline **.
+
+Show every point of every streamline with a different color
+============================================================
+
+In this case in which we want to have a color per point and per streamline,
+we can create a list of the colors to correspond to the list of streamlines
+(bundles). Here in ``colors`` we will insert some random RGB colors.
+"""
+
+renderer.clear()
+
+colors = [np.random.rand(*streamline.shape) for streamline in bundle_native]
+
+stream_actor6 = actor.line(bundle_native, colors, linewidth=0.2, opacity=1)
+
+renderer.add(stream_actor6)
+
+# window.show(renderer, size=(600, 600), reset_camera=False)
+window.snapshot(renderer, 'bundle6.png', size=(600, 600))
+
+"""
+.. figure:: bundle6.png
+   :align: center
+
+   **Random colors per points per streamline**.
+
+In summary, we showed that there are many useful ways for visualizing maps
+on bundles.
+
+"""
