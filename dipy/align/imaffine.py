@@ -256,6 +256,8 @@ class AffineMap(object):
             comp = image_world2grid.dot(self.affine.dot(sampling_grid2world))
 
         # Transform the input image
+        if interp == 'linear':
+            image = image.astype(np.float64)
         transformed = _transform_method[(dim, interp)](image, shape, comp)
         return transformed
 
