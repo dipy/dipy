@@ -763,7 +763,7 @@ def diffusion_kurtosis_odf(dki_params, sphere, alfa=4):
 
     Returns
     -------
-    dki_odf : ndarray
+    kODF : ndarray
         The DKI-ODF sampled in every direction of the sphere in every voxel of
         the input data.
 
@@ -782,8 +782,28 @@ def diffusion_kurtosis_odf(dki_params, sphere, alfa=4):
         and novel biomarkers. NeuroImage 111: 85-99.
         doi:10.1016/j.neuroimage.2015.02.004
     """
-    dki_odf = 'in progress'
-    return dki_odf
+    # flat data
+    outshape = dki_params.shape[:-1]
+    dki_params = dki_params.reshape((-1, dki_params.shape[-1]))
+
+    # Split data
+    evals, evecs, kt = split_dki_param(dki_params)
+
+    # Initialize AKC matrix
+    V = sphere.vertices
+    kODF = np.zeros((len(kt), len(V)))
+
+    # select non-zero voxels
+
+    # loop over all voxels
+    for vox in range(len(kt)):
+        R = evecs[vox]
+        dt = lower_triangular(np.dot(np.dot(R, np.diag(evals[vox])), R.T))
+        kODF[vox] = kodf(dt, kt[vox], V, alfa)
+
+    # reshape data according to input data
+    kODF = kODF.reshape((outshape + (len(V),)))
+    return kODF
 
 
 def kodf(pa, dt, kt, alfa=4, U=None, neg=False):
