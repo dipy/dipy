@@ -81,34 +81,52 @@ def gibbs_energy(seg, index, label, beta):
     energy = 0
 
     if label == seg[index[0] + 1 - 1, index[1] + 1, index[2] + 1]:
-        energy = energy - beta
+        # energy = energy - beta
+        energy = energy
     else:
         energy = energy + beta
+        # energy = energy - beta*(label - seg[index[0] + 1 - 1, index[1] + 1, index[2] + 1])
+        # energy = energy - beta
 
     if label == seg[index[0] + 1 + 1, index[1] + 1, index[2] + 1]:
-        energy = energy - beta
+        # energy = energy - beta
+        energy = energy
     else:
         energy = energy + beta
+        # energy = energy - beta*(label - seg[index[0] + 1 + 1, index[1] + 1, index[2] + 1])
+        # energy = energy - beta
 
     if label == seg[index[0] + 1, index[1] + 1 - 1, index[2] + 1]:
-        energy = energy - beta
+        # energy = energy - beta
+        energy = energy
     else:
         energy = energy + beta
+        # energy = energy - beta*(label - seg[index[0] + 1, index[1] + 1 - 1, index[2] + 1])
+        # energy = energy - beta
 
     if label == seg[index[0] + 1, index[1] + 1 + 1, index[2] + 1]:
-        energy = energy - beta
+        # energy = energy - beta
+        energy = energy
     else:
         energy = energy + beta
+        # energy = energy - beta*(label - seg[index[0] + 1, index[1] + 1 + 1, index[2] + 1])
+        # energy = energy - beta
 
     if label == seg[index[0] + 1, index[1] + 1, index[2] + 1 - 1]:
-        energy = energy - beta
+        # energy = energy - beta
+        energy = energy
     else:
         energy = energy + beta
+        # energy = energy - beta*(label - seg[index[0] + 1, index[1] + 1, index[2] + 1 - 1])
+        # energy = energy - beta
 
     if label == seg[index[0] + 1, index[1] + 1, index[2] + 1 + 1]:
-        energy = energy - beta
+        # energy = energy - beta
+        energy = energy
     else:
         energy = energy + beta
+        # energy = energy - beta*(label - seg[index[0] + 1, index[1] + 1, index[2] + 1 + 1])
+        # energy = energy - beta
 
     return energy
 

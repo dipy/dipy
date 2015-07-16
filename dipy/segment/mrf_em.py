@@ -109,7 +109,7 @@ def prob_image(nclass, masked_img, mu_upd, var_upd, P_L_N):
 
 
 def update_param(nclass, masked_img, datamask, mu_upd, P_L_Y):
-    r""" Udates the mean and the variance in each iteration
+    r""" Updates the mean and the variance in each iteration
     This is for equations 25 and 26 of the Zhang paper
 
     Parameters
