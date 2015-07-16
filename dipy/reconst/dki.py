@@ -802,7 +802,10 @@ def kodf(pa, dt, kt, alfa=4, U=None, neg=False):
         Radial weighting power. Default is 4 according to [Jen2014]_ and
         [Raf2015]_.
     U : array (3, 3), optional
-    neg :
+    neg : bool, optional
+        If neg is True, ODF estimate is negate. This optional paramater is
+        useful for the procedures to extract fiber direction estimates from the
+        DKI-ODF
     """
     kurt_odf = 'in progress'
     return kurt_odf
