@@ -14,6 +14,7 @@
  reslice_datasets.py
  segment_quickbundles.py
  segment_extending_clustering_framework.py
+ segment_quickbundles_advanced.py
  snr_in_cc.py
  streamline_formats.py
  tracking_eudx_odf.py

@@ -1,7 +1,7 @@
 """
-=========================================
-Tractography Clustering with QuickBundles
-=========================================
+=================================================
+Tractography Clustering with QuickBundles (basic)
+=================================================
 
 This example explains how we can use QuickBundles [Garyfallidis12]_ to
 simplify/cluster streamlines.
@@ -36,7 +36,8 @@ Perform QuickBundles clustering using the MDF metric and a 10mm distance
 threshold. Keep in mind that since the MDF metric requires streamlines to have
 the same number of points, the clustering algorithm will internally use a
 representation of streamlines that have been automatically downsampled/upsampled
-so they have only 18 points (See tutorial### to manually set that number of points).
+so they have only 12 points (To set manually the number of points,
+see :ref:`example_segment_quickbundles_advanced`).
 """
 
 qb = QuickBundles(threshold=10.)

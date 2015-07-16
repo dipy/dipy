@@ -10,6 +10,7 @@ that could be uses to cluster streamlines.
 The purpose of this tutorial is to show how to easily create new `Feature` and
 new `Metric` classes that can be used by QuickBundles.
 
+.. _clustering-framework:
 
 Clustering framework
 ====================
