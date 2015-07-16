@@ -557,6 +557,24 @@ def read_syn_data():
     b0 = nib.load(b0_name)
     return t1, b0
 
+mni_notes = \
+"""
+    Notes
+    -----
+    The following publications should be referenced when using these templates:
+
+    .. [1] VS Fonov, AC Evans, K Botteron, CR Almli, RC McKinstry, DL Collins
+           and BDCG, Unbiased average age-appropriate atlases for pediatric
+           studies, NeuroImage, 54:1053-8119, DOI: 10.1016/j.neuroimage.2010.07.033
+
+    .. [2] VS Fonov, AC Evans, RC McKinstry, CR Almli and DL Collins,
+            Unbiased nonlinear average age-appropriate brain templates from
+            birth to adulthood, NeuroImage, 47:S102
+            Organization for Human Brain Mapping 2009 Annual Meeting,
+            DOI: http://dx.doi.org/10.1016/S1053-8119(09)70884-5
+"""
+
+
 
 def fetch_mni_template():
     """
@@ -611,7 +629,6 @@ def read_mni_template(contrast="T2"):
     >>> T2_nifti = read_mni_template("T2") # doctest: +SKIP
     Get both files in this order:
     >>> T1_nifti, T2_nifti = read_mni_template(["T1", "T2"]) # doctest: +SKIP
-
     """
     folder = pjoin(dipy_home, 'mni_template')
     file_dict = {"T1":pjoin(folder, 'mni_icbm152_t1_tal_nlin_asym_09a.nii'),
@@ -638,6 +655,11 @@ def read_mni_template(contrast="T2"):
         msg = "Could not find the MNI template files, "
         msg += "please run `fetch_mni_template` first"
         print(msg)
+
+
+# Add the references to both MNI-related functions:
+read_mni_template.__doc__ += mni_notes
+fetch_mni_template.__doc__ += mni_notes
 
 
 def fetch_cenir_multib(with_raw=False):
