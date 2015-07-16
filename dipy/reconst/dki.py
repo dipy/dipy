@@ -398,6 +398,44 @@ class DiffusionKurtosisFit(TensorFit):
         """
         return apparent_kurtosis_coef(self.model_params, sphere)
 
+    def dki_odf(self, sphere, alfa=4):
+        """
+        The diffusion kurtosis estimate of the orientation distribution
+        function (DKI-ODF). This estimates the DKI-ODF in every direction of
+        the given sphere in every voxel of the input data.
+
+        Parameters
+        ----------
+        sphere : Sphere class instance.
+            The DKI-ODF is calculated in the vertices of this input.
+        alfa : float, optional
+            radial weighting power. Default is 4 according to [Jen2014]_ and
+            [Raf2015]
+
+        Returns
+        -------
+        dki_odf : ndarray
+            The DKI-ODF sampled in every direction of the sphere in every
+            voxel of the input data.
+
+        Notes
+        -----
+        This is based on the DKI-ODF estimate proposed by [Jen2014]_. 
+        More information about this method can be found in [Raf2015]_.
+
+        .. [Jen2014] Jensen, J.H., Helpern, J.A., Tabesh, A., (2014). Leading
+            non-Gaussian corrections for diffusion orientation distribution
+            function. NMR Biomed. 27, 202–211.
+            http://dx.doi.org/10.1002/nbm.3053.
+
+        .. [Raf2015] Neto Henriques, R., Correia, M.M., Nunes, R.G., Ferreira,
+            H.A. (2015). Exploring the 3D geometry of the diffusion kurtosis
+            tensor—Impact on the development of robust tractography procedures
+            and novel biomarkers. NeuroImage 111: 85-99.
+            doi:10.1016/j.neuroimage.2015.02.004
+        """
+        return diffusion_kurtosis_odf(self.model_params, sphere, alfa)
+
     def predict(self, gtab, S0=1):
         r""" Given a DKI model fit, predict the signal on the vertices of a
         gradient table
@@ -699,6 +737,76 @@ def split_dki_param(dki_params):
     kt = dki_params[..., 12:]
 
     return evals, evecs, kt
+
+
+def diffusion_kurtosis_odf(dki_params, sphere, alfa=4):
+    """
+    The diffusion kurtosis estimate of the orientation distribution function
+    (DKI-ODF). This estimates the DKI-ODF in every direction of the given
+    sphere in every voxel of the input data.
+
+    Parameters
+    ----------
+    dki_params : ndarray (x, y, z, 27) or (n, 27)
+        All parameters estimated from the diffusion kurtosis model.
+        Parameters are ordered as follow:
+            1) Three diffusion tensor's eingenvalues
+            2) Three lines of the eigenvector matrix each containing the first,
+               second and third coordinates of the eigenvector
+            3) Fifteen elements of the kurtosis tensor
+
+    sphere : Sphere class instance.
+        The DKI-ODF is calculated in the vertices of this input.
+    alfa : float, optional
+        Radial weighting power. Default is 4 according to [Jen2014]_ and
+        [Raf2015]_.
+
+    Returns
+    -------
+    dki_odf : ndarray
+        The DKI-ODF sampled in every direction of the sphere in every voxel of
+        the input data.
+
+    Notes
+    -----
+    This is based on the DKI-ODF estimate proposed by [Jen2014]_. More
+    information about this method can be found in [Raf2015]_.
+
+    .. [Jen2014] Jensen, J.H., Helpern, J.A., Tabesh, A., (2014). Leading
+        non-Gaussian corrections for diffusion orientation distribution
+        function. NMR Biomed. 27, 202–211. http://dx.doi.org/10.1002/nbm.3053.
+
+    .. [Raf2015] Neto Henriques, R., Correia, M.M., Nunes, R.G., Ferreira,
+        H.A. (2015). Exploring the 3D geometry of the diffusion kurtosis
+        tensor—Impact on the development of robust tractography procedures
+        and novel biomarkers. NeuroImage 111: 85-99.
+        doi:10.1016/j.neuroimage.2015.02.004
+    """
+    dki_odf = 'in progress'
+    return dki_odf
+
+
+def kodf(pa, dt, kt, alfa=4, U=None, neg=False):
+    """ Compute the DKI based ODF estimation along a direction x difened by
+    polar angular coordinates
+    
+    Parameters
+    ----------
+    x : array (2,)
+        arrays containing the two polar angles of direction x
+    dt : array (6,)
+        elements of the diffusion tensor of the voxel.
+    kt : array (15,)
+        elements of the kurtosis tensor of the voxel.
+    alfa : float, optional
+        Radial weighting power. Default is 4 according to [Jen2014]_ and
+        [Raf2015]_.
+    U : array (3, 3), optional
+    neg :
+    """
+    kurt_odf = 'in progress'
+    return kurt_odf
+
 
 common_fit_methods = {'WLS': wls_fit_dki,
                       'OLS': ols_fit_dki,
