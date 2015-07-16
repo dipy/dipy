@@ -922,7 +922,7 @@ def perpendicular_directions(v, num=30, half=False):
     num : int, optional
         Number of perpendicular directions to generate
     half : bool, optional
-        If half is True, perpendicular directions are sampled on halp of the
+        If half is True, perpendicular directions are sampled on half of the
         unit circumference perpendicular to v, otherwive perpendicular
         directions are sampled on the full circumference. Default of half is
         False
