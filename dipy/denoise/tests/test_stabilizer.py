@@ -8,7 +8,7 @@ from numpy.testing import assert_almost_equal, assert_equal
 from scipy.special import factorialk
 from scipy.stats import norm
 
-from scilpy.denoising.stabilizer import (_test_marcumq_cython, _test_beta,
+from dipy.denoise.stabilizer import (_test_marcumq_cython, _test_beta,
     _test_fixed_point_k, _test_xi, fixed_point_finder, chi_to_gauss,
     _test_inv_cdf_gauss, _test_multifactorial)
 
