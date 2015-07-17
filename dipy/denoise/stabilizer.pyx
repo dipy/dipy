@@ -11,13 +11,6 @@ from dipy.denoise.hyp1f1 import hyp1f1 as cython_mpmath1f1
 from dipy.utils.optpkg import optional_package
 mpmath, have_mpmath, _ = optional_package("mpmath")
 
-try: 
-    import cython_gsl
-except ImportError:
-    have_cython_gsl = False
-else:
-    have_cython_gsl = True
-    
 if not have_cython_gsl and not have_mpmath:
     raise ValueError('Cannot find cython_gsl nor mpmath package (required for hyp1f1). \
         Try pip install cythongsl (recommended : faster than mpmath, but you need to \
