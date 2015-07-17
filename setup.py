@@ -11,10 +11,10 @@ from glob import glob
 try:
     import cython_gsl
 except ImportError:
-    DEF have_cython_gsl = False
+    have_cython_gsl = False
     print("Could not find cython_gsl, the gsl support is disabled in dipy.denoise.stabilizer.pyx!")
 else:
-    DEF have_cython_gsl = True
+    have_cython_gsl = True
     print("Compiling with cython_gsl support.")
 
 # BEFORE importing distutils, remove MANIFEST. distutils doesn't properly
