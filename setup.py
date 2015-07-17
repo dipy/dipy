@@ -131,6 +131,7 @@ if have_cython_gsl:
                                [pyxfile],
                                libraries=cython_gsl.get_libraries(),
                                library_dirs=[cython_gsl.get_library_dir()],
+                               cython_compile_time_env={'have_cython_gsl': have_cython_gsl},
                                cython_include_dirs=[cython_gsl.get_cython_include_dir()],
                                include_dirs=[np.get_include()])
 
