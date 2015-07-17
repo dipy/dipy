@@ -22,7 +22,7 @@ if not have_cython_gsl and not have_mpmath:
         install the GSL library also (sudo apt-get install libgsl0-dev libgsl0ldbl)) \
         or pip install mpmath (also pip install gmpy2 for faster performances.)')
 
-if have_cython_gsl:
+IF have_cython_gsl:
     from cython_gsl cimport gsl_sf_hyperg_1F1 as gsl1f1
     print("The GNU GSL is subject to the GSL license, see \n\
         http://www.gnu.org/copyleft/gpl.html for more information")
