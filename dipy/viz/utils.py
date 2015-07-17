@@ -36,21 +36,30 @@ def numpy_to_vtk_colors(colors):
     return vtk_colors
 
 
-def set_input(vtk_object, input):
-    """ Generic input for vtk data,
-        depending of the type of input and vtk version
+def set_input(vtk_object, inp):
+    """ Generic input function which takes into account VTK 5 or 6
+
+    Parameters
+    ----------
+    vtk_object: vtk object
+    inp: vtkPolyData or vtkImageData or vtkAlgorithmOutput
+
+    Returns
+    -------
+    vtk_object
 
     Example
     ----------
     >>> poly_mapper = set_input(vtk.vtkPolyDataMapper(), poly_data)
     """
-    if isinstance(input, vtk.vtkPolyData):
+    if isinstance(inp, vtk.vtkPolyData) \
+       or isinstance(inp, vtk.vtkImageData):
         if vtk.VTK_MAJOR_VERSION <= 5:
-            vtk_object.SetInput(input)
+            vtk_object.SetInput(inp)
         else:
-            vtk_object.SetInputData(input)
-    elif isinstance(input, vtk.vtkAlgorithmOutput):
-        vtk_object.SetInputConnection(input)
+            vtk_object.SetInputData(inp)
+    elif isinstance(inp, vtk.vtkAlgorithmOutput):
+        vtk_object.SetInputConnection(inp)
 
     vtk_object.Update()
     return vtk_object

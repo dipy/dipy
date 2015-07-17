@@ -91,7 +91,7 @@ def slice(data, affine=None, value_range=None, opacity=1.,
 
     # Set the reslicing
     image_resliced = vtk.vtkImageReslice()
-    image_resliced.SetInputData(im)
+    set_input(image_resliced, im)
     image_resliced.SetResliceTransform(transform)
     image_resliced.AutoCropOutputOn()
     image_resliced.SetInterpolationModeToLinear()
