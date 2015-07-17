@@ -10,9 +10,10 @@ cdef extern from "dpy_math.h" nogil:
     double sqrt(double)
     double log(double)
 
+
 class FASTImageSegmenter(object):
     """ Image segmentation with constant models
-    
+
     Image segmentation by maximum a-posteriori estimation of HMRF model
     with the Potts/Ising potential
     """
@@ -32,7 +33,7 @@ class FASTImageSegmenter(object):
             number of classes of the expected segmentation
         beta : float (positive)
             parameter of the Potts/Ising model
-        max_iter : int (positive) 
+        max_iter : int (positive)
             maximum number of iterations
         """
         cdef:
@@ -47,15 +48,15 @@ class FASTImageSegmenter(object):
         # Initialize the means and variances (TO-DO: initialize with median otsu)
         print("Initializing parameters")
         _initialize_constant_models_uniform(image, mu, sigmasq)
-        
+
         # Compute the negative log-likelihood for all classes at all voxels
         print("Computing neg-log-likelihood")
         _compute_neg_log_likelihood_gaussian(image, mu, sigmasq, neglogl)
-        
+
         # Initialize segmentation with the maximum likelihood class at each voxel
         print("Initializing segmentation")
         _initialize_maximum_likelihood(neglogl, out)
-        
+
         # Iterate ICM
         for iter in range(max_iter):
             print("ICM. Iter: %d"%(iter,))
@@ -63,12 +64,20 @@ class FASTImageSegmenter(object):
         return out
 
 
+def neg_log_likelihood_gaussian(image, mu, sigmasq):
+
+    out = np.empty(image.shape, dtype=np.int32)
+    _compute_neg_log_likelihood_gaussian(image, mu, sigmasq, out)
+
+    return out
+
+
 cdef void _compute_neg_log_likelihood_gaussian(double[:,:,:] image,
                                                double[:] mu,
                                                double[:] sigmasq,
                                                double[:,:,:,:] out)nogil:
     """ Computes the Gaussian negative log-likelihood of each class
-    
+
     Computes the Gaussian negative log-likelihood of each class for each
     voxel of `image` assuming a Gaussian distribution with means and
     variances given by `mu` and `sigmasq`, respectively (constant models
@@ -99,12 +108,12 @@ cdef void _compute_neg_log_likelihood_gaussian(double[:,:,:] image,
 
 cdef void _iterate_icm_issing(double[:,:,:,:] neglogl, double beta, int[:,:,:] out) nogil:
     """ Executes one iteration of the ICM algorithm for MRF MAP estimation
-    
+
     The prior distribution of the MRF is a Gibbs distribution with the
     Potts/Ising model with parameter `beta`:
-    
+
     https://en.wikipedia.org/wiki/Potts_model
-    
+
     Parameters
     ----------
     neglogl : array, shape(X, Y, Z, K)
@@ -128,7 +137,7 @@ cdef void _iterate_icm_issing(double[:,:,:,:] neglogl, double beta, int[:,:,:] o
         cnp.npy_intp x, y, z, xx, yy, zz, i, j, k
         double min_energy, this_energy
         int best_class
-        
+
     for x in range(nx):
         for y in range(ny):
             for z in range(nz):
@@ -147,7 +156,7 @@ cdef void _iterate_icm_issing(double[:,:,:,:] neglogl, double beta, int[:,:,:] o
                         zz = z + dZ[i]
                         if((zz < 0) or (zz >= nz)):
                             continue
-                            
+
                         if out[xx,yy,zz] == k:
                             this_energy -= beta
                         else:
@@ -158,10 +167,10 @@ cdef void _iterate_icm_issing(double[:,:,:,:] neglogl, double beta, int[:,:,:] o
                 out[x,y,z] = best_class
 
 
-                
+
 cdef void _initialize_constant_models_uniform(double[:,:,:] image, double[:] mu, double[:] sigma)nogil:
     """ Initializes the means and variances uniformly
-    
+
     The means are initialized uniformly along the dynamic range of `image`.
     The variances are set to 1 for all classes
 
@@ -191,11 +200,11 @@ cdef void _initialize_constant_models_uniform(double[:,:,:] image, double[:] mu,
     for i in range(nclasses):
         sigma[i] = 1.0
         mu[i] = min_val + i * (max_val - min_val)/nclasses
-    
+
 
 cdef void _initialize_maximum_likelihood(double[:,:,:,:] neglogl, int[:,:,:] out)nogil:
     """ Initializes the segmentation of an image with given neg-log-likelihood
-    
+
     Initializes the segmentation of an image with neg-log-likelihood field
     given by `neglogl`. The class of each voxel is selected as the one with
     the minimum neg-log-likelihood (i.e. the maximum-likelihood segmentation).
