@@ -115,7 +115,7 @@ def slice(data, affine=None, value_range=None, opacity=1.,
 
         def input_connection(self, output):
             if vtk.VTK_MAJOR_VERSION <= 5:
-                self.GetMapper().SetInput(output.GetOutput())
+                self.SetInput(output.GetOutput())
             else:
                 self.GetMapper().SetInputConnection(output.GetOutputPort())
             self.output = output
@@ -123,7 +123,8 @@ def slice(data, affine=None, value_range=None, opacity=1.,
 
         def display_extent(self, x1, x2, y1, y2, z1, z2):
             self.SetDisplayExtent(x1, x2, y1, y2, z1, z2)
-            self.Update()
+            if vtk.VTK_MAJOR_VERSION > 5:
+                self.Update()
 
         def display(self, x=None, y=None, z=None):
             if x is None and y is None and z is None:
@@ -136,7 +137,10 @@ def slice(data, affine=None, value_range=None, opacity=1.,
                 self.display_extent(ex1, ex2, ey1, ey2, z, z)
 
         def opacity(self, value):
-            self.GetProperty().SetOpacity(value)
+            if vtk.VTK_MAJOR_VERSION <= 5:
+                self.SetOpacity(value)
+            else:
+                self.GetProperty().SetOpacity(value)
 
         def copy(self):
             im_actor = ImageActor()

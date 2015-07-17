@@ -78,7 +78,7 @@ renderer.add(slice_actor2)
 In order to interact with the data you will need to uncomment the line below.
 """
 
-# window.show(renderer, size=(600, 600))
+window.show(renderer, size=(600, 600))
 
 """
 Otherwise, you can save a screenshot using the following command.
@@ -123,7 +123,7 @@ fa_actor = actor.slice(fa, affine, lookup_colormap=lut)
 renderer.clear()
 renderer.add(fa_actor)
 
-# window.show(renderer, size=(600, 600))
+window.show(renderer, size=(600, 600))
 
 window.snapshot(renderer, 'slices_lut.png', size=(600, 600))
 
