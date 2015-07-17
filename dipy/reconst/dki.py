@@ -28,12 +28,44 @@ from ..core.onetime import auto_attr
 from .base import ReconstModel
 
 
+def _positive_evals(L1, L2, L3, er=None):
+    """ Helper function that indentifies which voxels in a array have all
+    eigenvalues larger than zero
+
+    Parameters
+    ----------
+    L1 : ndarray (n,)
+        First independent variable of the integral.
+    L2 : ndarray (n,)
+        Second independent variable of the integral.
+    L3 : ndarray (n,)
+        Third independent variable of the integral.
+    er : float, optional
+        A eigenvalues is classified as larger than zero if it is larger than er
+
+    Returns
+    -------
+    ind : boolean (n,)
+        Array that marks the voxels that have all eigenvalues are larger than
+        zero.
+    """
+    if er is None:
+        er = np.finfo(L1[0]).eps * 1e3
+
+    ind = np.logical_and(L1 > er, np.logical_and(L2 > er, L3 > er))
+  
+    return ind
+
+
 def carlson_rf(x, y, z, errtol=3e-4):
     r""" Computes the Carlson's incomplete elliptic integral of the first kind
     defined as:
+    
     .. math::
+    
         R_F = \frac{1}{2} \int_{0}^{\infty} \left [(t+x)(t+y)(t+z)  \right ]
         ^{-\frac{1}{2}}dt
+
     Parameters
     ----------
     x : ndarray (n,)
@@ -45,13 +77,16 @@ def carlson_rf(x, y, z, errtol=3e-4):
     errtol : float
         Error tolerance. Integral is computed with relative error less in
         magnitude than the defined value
+
     Returns
     -------
     RF : ndarray (n,)
         Value of the incomplete first order elliptic integral
+
     Note
     -----
     x, y, and z have to be nonnegative and at most one of them is zero.
+
     References
     ----------
     .. [1] Carlson, B.C., 1994. Numerical computation of real or complex
@@ -95,9 +130,11 @@ def carlson_rf(x, y, z, errtol=3e-4):
 def carlson_rd(x, y, z, errtol=1e-4):
     r""" Computes the Carlson's incomplete elliptic integral of the second kind
     defined as:
+
     .. math::
         R_D = \frac{3}{2} \int_{0}^{\infty} (t+x)^{-\frac{1}{2}}
         (t+y)^{-\frac{1}{2}}(t+z)  ^{-\frac{3}{2}}
+
     Parameters
     ----------
     x : ndarray (n,)
@@ -109,6 +146,7 @@ def carlson_rd(x, y, z, errtol=1e-4):
     errtol : float
         Error tolerance. Integral is computed with relative error less in
         magnitude than the defined value
+
     Returns
     -------
     RD : ndarray (n,)
@@ -177,10 +215,13 @@ def _F1m(a, b, c):
     -------
     F1 : ndarray (n,)
        Value of the function $F_1$ for all elements of the arrays a, b, and c
+
     Notes
     --------
     Function $F_1$ is defined as [1]_:
+
     .. math::
+
         F_1(\lambda_1,\lambda_2,\lambda_3)=
         \frac{(\lambda_1+\lambda_2+\lambda_3)^2}
         {18(\lambda_1-\lambda_2)(\lambda_1-\lambda_3)}
@@ -190,6 +231,7 @@ def _F1m(a, b, c):
         \lambda_1\lambda_3}
         {3\lambda_1 \sqrt{\lambda_2 \lambda_3}}
         R_D(\frac{\lambda_1}{\lambda_2},\frac{\lambda_1}{\lambda_3},1)-1 ]
+
     References
     ----------
     .. [1] Tabesh, A., Jensen, J.H., Ardekani, B.A., Helpern, J.A., 2011.
@@ -197,21 +239,18 @@ def _F1m(a, b, c):
            kurtosis imaging. Magn Reson Med. 65(3), 823-836
     """
     # Float error used to compare two floats, abs(l1 - l2) < er for l1 = l2 
-    er = np.finfo(a[0]).eps * 1e3  # Error defined three order of magnitude of 
-                                   # system's epslon
+    er = np.finfo(a[0]).eps * 1e3  # Error defined as three order of magnitude
+                                   # larger than system's epslon
 
     # Initialize F1
-    F1 = np.empty(a.shape)
+    F1 = np.zeros(a.shape)
 
-    # NaN for non plausible diffusion values, i.e. a <= 0 or b <= 0 or c <= 0
-    abc = np.array((a, b, c))
-    cond0 = np.logical_and.reduce(abc<=0)
-    if np.sum(cond0)!=0:
-        F1[cond0] = float('nan')
+    # Only computes F1 in voxels that have all eigenvalues larger than zero
+    cond0 = _positive_evals(a, b, c, er=er)
 
     # Apply formula for non problematic plaussible cases, i.e. a!=b and b!=c
-    cond1 = np.logical_and(~cond0, np.logical_and(abs(a - b) > er,
-                                                  abs(b - c) > er))
+    cond1 = np.logical_and(cond0, np.logical_and(abs(a - b) > er,
+                                                 abs(b - c) > er))
     if np.sum(cond1)!=0:
         L1 = a[cond1]
         L2 = b[cond1]
@@ -224,7 +263,7 @@ def _F1m(a, b, c):
                      (3 * L1 * np.sqrt(L2*L3))) * RDm - 1)
 
     # Resolve possible sigularity a==b
-    cond2 = np.logical_and(~cond0, np.logical_and(abs(a - b) < er,
+    cond2 = np.logical_and(cond0, np.logical_and(abs(a - b) < er,
                                                   abs(b - c) > er))
     if np.sum(cond2)!=0:
         L1 = a[cond2]
@@ -232,7 +271,7 @@ def _F1m(a, b, c):
         F1[cond2] = _F2m(L3, L1, L1) / 2
 
     # Resolve possible sigularity a==c 
-    cond3 = np.logical_and(~cond0, np.logical_and(abs(a - c) < er,
+    cond3 = np.logical_and(cond0, np.logical_and(abs(a - c) < er,
                                                   abs(a - b) > er))
     if np.sum(cond3)!=0:
         L1 = a[cond3]
@@ -240,7 +279,7 @@ def _F1m(a, b, c):
         F1[cond3] = _F2m(L2, L1, L1) / 2
 
     # Resolve possible sigularity a==b and a==c
-    cond4 = np.logical_and(~cond0, np.logical_and(abs(a - c) < er,
+    cond4 = np.logical_and(cond0, np.logical_and(abs(a - c) < er,
                                                   abs(a - b) < er))
     if np.sum(cond4)!=0:
         F1[cond4] = 1/5.
@@ -265,9 +304,11 @@ def _F2m(a, b, c):
     -------
     F2 : ndarray (n,)
        Value of the function $F_2$ for all elements of the arrays a, b, and c
+
     Notes
     --------
     Function $F_2$ is defined as [1]_:
+
     .. math::
         F_2(\lambda_1,\lambda_2,\lambda_3)=
         \frac{(\lambda_1+\lambda_2+\lambda_3)^2}
@@ -276,6 +317,7 @@ def _F2m(a, b, c):
         R_F(\frac{\lambda_1}{\lambda_2},\frac{\lambda_1}{\lambda_3},1)+\\
         \frac{2\lambda_1-\lambda_2-\lambda_3}{3\sqrt{\lambda_2 \lambda_3}}
         R_D(\frac{\lambda_1}{\lambda_2},\frac{\lambda_1}{\lambda_3},1)-2]
+
     References
     ----------
     .. [1] Tabesh, A., Jensen, J.H., Ardekani, B.A., Helpern, J.A., 2011.
@@ -283,20 +325,17 @@ def _F2m(a, b, c):
            kurtosis imaging. Magn Reson Med. 65(3), 823-836
     """
     # Float error used to compare two floats, abs(l1 - l2) < er for l1 = l2 
-    er = np.finfo(a[0]).eps * 1e3  # Error defined three order of magnitude of 
-                                   # system's epslon
+    er = np.finfo(a[0]).eps * 1e3  # Error defined as three order of magnitude
+                                   # larger than system's epslon
 
     # Initialize F2
-    F2 = np.empty(a.shape)
+    F2 = np.zeros(a.shape)
 
-    # NaN for non plausible diffusion values, i.e. a <= 0 or b <= 0 or c <= 0
-    abc = np.array((a, b, c))    
-    cond0 = np.logical_and.reduce(abc<=0)
-    if np.sum(cond0)!=0:
-        F2[cond0] = float('nan')
+    # Only computes F2 in voxels that have all eigenvalues larger than zero
+    cond0 = _positive_evals(a, b, c, er=er)
 
     # Apply formula for non problematic plaussible cases, i.e. b!=c
-    cond1=np.logical_and(~cond0, (abs(b - c) > er))
+    cond1=np.logical_and(cond0, (abs(b - c) > er))
     if np.sum(cond1)!=0:
         L1 = a[cond1]
         L2 = b[cond1]
@@ -308,7 +347,7 @@ def _F2m(a, b, c):
                      ((2.*L1-L2-L3) / (3.*np.sqrt(L2*L3))) * RD - 2.)
 
     # Resolve possible sigularity b==c
-    cond2=np.logical_and(~cond0, np.logical_and(abs(b - c) < er,
+    cond2=np.logical_and(cond0, np.logical_and(abs(b - c) < er,
                                                 abs(a - b) > er))
     if np.sum(cond2)!=0:
         L1 = a[cond2]
@@ -328,7 +367,7 @@ def _F2m(a, b, c):
                     (L3 * (L1 + 2.*L3) + L1 * (L1 - 4.*L3) * alpha)
 
     # Resolve possible sigularity a==b and a==c
-    cond3 = np.logical_and(~cond0, np.logical_and(abs(a - c) < er,
+    cond3 = np.logical_and(cond0, np.logical_and(abs(a - c) < er,
                                                   abs(a - b) < er))
     if np.sum(cond3)!=0:
         F2[cond3] = 6/15.
@@ -353,44 +392,46 @@ def _mk_analytical_solution(dki_params):
     -------
     mk : array
         Calculated MK.
+
     Notes
     --------
     MK is calculated with the following equation [1]_:
+
     .. math::
-    \begin{multline}
-    MK=F_1(\lambda_1,\lambda_2,\lambda_3)\hat{W}_{1111}+
-       F_1(\lambda_2,\lambda_1,\lambda_3)\hat{W}_{2222}+
-       F_1(\lambda_3,\lambda_2,\lambda_1)\hat{W}_{3333}+ \\
-       F_2(\lambda_1,\lambda_2,\lambda_3)\hat{W}_{2233}+
-       F_2(\lambda_2,\lambda_1,\lambda_3)\hat{W}_{1133}+
-       F_2(\lambda_3,\lambda_2,\lambda_1)\hat{W}_{1122}
-    \end{multline}
+
+        MK =F_1(\lambda_1,\lambda_2,\lambda_3)\hat{W}_{1111}+
+        F_1(\lambda_2,\lambda_1,\lambda_3)\hat{W}_{2222}+
+        F_1(\lambda_3,\lambda_2,\lambda_1)\hat{W}_{3333}+ \\
+        F_2(\lambda_1,\lambda_2,\lambda_3)\hat{W}_{2233}+
+        F_2(\lambda_2,\lambda_1,\lambda_3)\hat{W}_{1133}+
+        F_2(\lambda_3,\lambda_2,\lambda_1)\hat{W}_{1122}
         
     where $\hat{W}_{ijkl}$ are the components of the $W$ tensor in the
     coordinates system defined by the eigenvectors of the diffusion tensor
     $\mathbf{D}$ and 
  
-    \begin{multline}
-    F_1(\lambda_1,\lambda_2,\lambda_3)=
-    \frac{(\lambda_1+\lambda_2+\lambda_3)^2}
-    {18(\lambda_1-\lambda_2)(\lambda_1-\lambda_3)}
-    [\frac{\sqrt{\lambda_2\lambda_3}}{\lambda_1}
-    R_F(\frac{\lambda_1}{\lambda_2},\frac{\lambda_1}{\lambda_3},1)+\\
-    \frac{3\lambda_1^2-\lambda_1\lambda_2-\lambda_2\lambda_3-
-    \lambda_1\lambda_3}
-    {3\lambda_1 \sqrt{\lambda_2 \lambda_3}}
-    R_D(\frac{\lambda_1}{\lambda_2},\frac{\lambda_1}{\lambda_3},1)-1 ]
-    \end{multline}
-    \begin{multline}
-    F_2(\lambda_1,\lambda_2,\lambda_3)=
-    \frac{(\lambda_1+\lambda_2+\lambda_3)^2}
-    {3(\lambda_2-\lambda_3)^2}
-    [\frac{\lambda_2+\lambda_3}{\sqrt{\lambda_2\lambda_3}}
-    R_F(\frac{\lambda_1}{\lambda_2},\frac{\lambda_1}{\lambda_3},1)+\\
-    \frac{2\lambda_1-\lambda_2-\lambda_3}{3\sqrt{\lambda_2 \lambda_3}}
-    R_D(\frac{\lambda_1}{\lambda_2},\frac{\lambda_1}{\lambda_3},1)-2]
-    \end{multline}
-    
+     .. math::
+
+        F_1(\lambda_1,\lambda_2,\lambda_3)=
+        \frac{(\lambda_1+\lambda_2+\lambda_3)^2}
+        {18(\lambda_1-\lambda_2)(\lambda_1-\lambda_3)}
+        [\frac{\sqrt{\lambda_2\lambda_3}}{\lambda_1}
+        R_F(\frac{\lambda_1}{\lambda_2},\frac{\lambda_1}{\lambda_3},1)+\\
+        \frac{3\lambda_1^2-\lambda_1\lambda_2-\lambda_2\lambda_3-
+        \lambda_1\lambda_3}
+        {3\lambda_1 \sqrt{\lambda_2 \lambda_3}}
+        R_D(\frac{\lambda_1}{\lambda_2},\frac{\lambda_1}{\lambda_3},1)-1 ]
+ 
+     .. math::
+
+        F_2(\lambda_1,\lambda_2,\lambda_3)=
+        \frac{(\lambda_1+\lambda_2+\lambda_3)^2}
+        {3(\lambda_2-\lambda_3)^2}
+        [\frac{\lambda_2+\lambda_3}{\sqrt{\lambda_2\lambda_3}}
+        R_F(\frac{\lambda_1}{\lambda_2},\frac{\lambda_1}{\lambda_3},1)+\\
+        \frac{2\lambda_1-\lambda_2-\lambda_3}{3\sqrt{\lambda_2 \lambda_3}}
+        R_D(\frac{\lambda_1}{\lambda_2},\frac{\lambda_1}{\lambda_3},1)-2]
+
     where $R_f$ and $R_d$ are the Carlson's elliptic integrals.
       
     References
@@ -485,6 +526,7 @@ def apparent_kurtosis_coef(dki_params, sphere, min_diffusivity=0,
     diffusivity and ADC the apparent diffusion coefficent computed as:
 
     .. math ::
+
         ADC(n)=\sum_{i=1}^{3}\sum_{j=1}^{3}n_{i}n_{j}D_{ij}
 
     where $D_{ij}$ are the elements of the diffusion tensor.
@@ -497,22 +539,30 @@ def apparent_kurtosis_coef(dki_params, sphere, min_diffusivity=0,
     # Split data
     evals, evecs, kt = split_dki_param(dki_params)
 
-    # Compute MD
-    MD = mean_diffusivity(evals)
-
     # Initialize AKC matrix
     V = sphere.vertices
     AKC = np.zeros((len(kt), len(V)))
 
-    # loop over all voxels
+    # select relevant voxels to process
+    rel_i = _positive_evals(evals[..., 0], evals[..., 1], evals[..., 2])
+    kt = kt[rel_i]
+    evecs = evecs[rel_i]
+    evals = evals[rel_i]
+    AKCi = AKC[rel_i]
+    
+    # Compute MD
+    MD = mean_diffusivity(evals)
+
+    # loop over all relevant voxels
     for vox in range(len(kt)):
         R = evecs[vox]
         dt = lower_triangular(np.dot(np.dot(R, np.diag(evals[vox])), R.T))
-        AKC[vox] = _directional_kurtosis(dt, MD[vox], kt[vox], V,
-                                         min_diffusivity=min_diffusivity,
-                                         min_kurtosis=min_kurtosis)
+        AKCi[vox] = _directional_kurtosis(dt, MD[vox], kt[vox], V,
+                                          min_diffusivity=min_diffusivity,
+                                          min_kurtosis=min_kurtosis)
 
     # reshape data according to input data
+    AKC[rel_i] = AKCi
     AKC = AKC.reshape((outshape + (len(V),)))
 
     return AKC
@@ -697,19 +747,17 @@ def _G1m(a, b, c):
            kurtosis imaging. Magn Reson Med. 65(3), 823-836
     """
     # Float error used to compare two floats, abs(l1 - l2) < er for l1 = l2 
-    er = np.finfo(a[0]).eps * 1e3  # Error defined three order of magnitude of 
-                                   # system's epslon
-    # Initialize G1
-    G1 = np.empty(a.shape)
+    er = np.finfo(a[0]).eps * 1e3  # Error defined as three order of magnitude
+                                   # larger than system's epslon
 
-    # NaN for non plausible diffusion values, i.e. a <= 0 or b <= 0 or c <= 0
-    abc = np.array((a, b, c))    
-    cond0 = np.logical_and.reduce(abc<=0)
-    if np.sum(cond0)!=0:
-        G1[cond0] = float('nan')
+    # Initialize G1
+    G1 = np.zeros(a.shape)
+
+    # Only computes G1 in voxels that have all eigenvalues larger than zero
+    cond0 = _positive_evals(a, b, c, er=er)
 
     # Apply formula for non problematic plaussible cases, i.e. b!=c
-    cond1=np.logical_and(~cond0, (abs(b - c) > er))
+    cond1=np.logical_and(cond0, (abs(b - c) > er))
     if np.sum(cond1)!=0:
         L1 = a[cond1]
         L2 = b[cond1]
@@ -719,7 +767,7 @@ def _G1m(a, b, c):
             (2.*L2 + (L3**2 - 3*L2*L3) / np.sqrt(L2*L3))
 
     # Resolve possible sigularity b==c
-    cond2=np.logical_and(~cond0, abs(b - c) < er)
+    cond2=np.logical_and(cond0, abs(b - c) < er)
     if np.sum(cond2)!=0:
         L1 = a[cond2]
         L2 = b[cond2]
@@ -761,19 +809,17 @@ def _G2m(a,b,c):
            kurtosis imaging. Magn Reson Med. 65(3), 823-836
     """
     # Float error used to compare two floats, abs(l1 - l2) < er for l1 = l2 
-    er = np.finfo(a[0]).eps * 1e3  # Error defined three order of magnitude of 
-                                   # system's epslon
-    # Initialize G1
+    er = np.finfo(a[0]).eps * 1e3  # Error defined as three order of magnitude
+                                   # larger than system's epslon
+
+    # Initialize G2
     G2 = np.zeros(a.shape)
 
-    # NaN for non plausible diffusion values, i.e. a <= 0 or b <= 0 or c <= 0
-    abc = np.array((a, b, c))    
-    cond0 = np.logical_and.reduce(abc<=0)
-    if np.sum(cond0)!=0:
-        G2[cond0] = float('nan')
+    # Only computes G2 in voxels that have all eigenvalues larger than zero
+    cond0 = _positive_evals(a, b, c, er=er)
 
     # Apply formula for non problematic plaussible cases, i.e. b!=c
-    cond1=np.logical_and(~cond0, (abs(b - c) > er))
+    cond1=np.logical_and(cond0, (abs(b - c) > er))
     if np.sum(cond1)!=0:
         L1 = a[cond1]
         L2 = b[cond1]
@@ -782,7 +828,7 @@ def _G2m(a,b,c):
             (L1+L2+L3)**2 / (3 * (L2-L3)**2) * ((L2+L3) / np.sqrt(L2*L3) - 2)
 
     # Resolve possible sigularity b==c
-    cond2=np.logical_and(~cond0, abs(b - c) < er)
+    cond2=np.logical_and(cond0, abs(b - c) < er)
     if np.sum(cond2)!=0:
         L1 = a[cond2]
         L2 = b[cond2]
@@ -889,19 +935,28 @@ def axial_kurtosis(dki_params):
     # Split data
     evals, evecs, kt = split_dki_param(dki_params)
 
-    # Compute MD
-    MD = mean_diffusivity(evals)
-
     # Initialize AK
     AK = np.zeros(kt.shape[:-1])
+
+    # select relevant voxels to process
+    rel_i = _positive_evals(evals[..., 0], evals[..., 1], evals[..., 2])
+    kt = kt[rel_i]
+    evecs = evecs[rel_i]
+    evals = evals[rel_i]
+    AKi = AK[rel_i]
+    
+    # Compute MD
+    MD = mean_diffusivity(evals)
 
     # loop over all voxels
     for vox in range(len(kt)):
         R = evecs[vox]
         dt = lower_triangular(np.dot(np.dot(R, np.diag(evals[vox])), R.T))
-        AK[vox] = _directional_kurtosis(dt, MD[vox], kt[vox],
+        AKi[vox] = _directional_kurtosis(dt, MD[vox], kt[vox],
                                         np.array([R[:, 1]]))
 
+    # reshape data according to input data
+    AK[rel_i] = AKi
     AK = AK.reshape(outshape)
 
     return AK
@@ -1148,37 +1203,45 @@ class DiffusionKurtosisFit(TensorFit):
 
         Notes
         --------
-        The MK analytical solution is calculated using the following equation [2]_:
+        The MK analytical solution is calculated using the following equation
+        [2]_:
+
         .. math::
 
-        MK=F_1(\lambda_1,\lambda_2,\lambda_3)\hat{W}_{1111}+
-           F_1(\lambda_2,\lambda_1,\lambda_3)\hat{W}_{2222}+
-           F_1(\lambda_3,\lambda_2,\lambda_1)\hat{W}_{3333}+ \\
-           F_2(\lambda_1,\lambda_2,\lambda_3)\hat{W}_{2233}+
-           F_2(\lambda_2,\lambda_1,\lambda_3)\hat{W}_{1133}+
-           F_2(\lambda_3,\lambda_2,\lambda_1)\hat{W}_{1122}
+            MK=F_1(\lambda_1,\lambda_2,\lambda_3)\hat{W}_{1111}+
+            F_1(\lambda_2,\lambda_1,\lambda_3)\hat{W}_{2222}+
+            F_1(\lambda_3,\lambda_2,\lambda_1)\hat{W}_{3333}+ \\
+            F_2(\lambda_1,\lambda_2,\lambda_3)\hat{W}_{2233}+
+            F_2(\lambda_2,\lambda_1,\lambda_3)\hat{W}_{1133}+
+            F_2(\lambda_3,\lambda_2,\lambda_1)\hat{W}_{1122}
 
         where $\hat{W}_{ijkl}$ are the components of the $W$ tensor in the
         coordinates system defined by the eigenvectors of the diffusion tensor
         $\mathbf{D}$ and 
 
-        F_1(\lambda_1,\lambda_2,\lambda_3)=
-        \frac{(\lambda_1+\lambda_2+\lambda_3)^2}
-        {18(\lambda_1-\lambda_2)(\lambda_1-\lambda_3)}
-        [\frac{\sqrt{\lambda_2\lambda_3}}{\lambda_1}
-        R_F(\frac{\lambda_1}{\lambda_2},\frac{\lambda_1}{\lambda_3},1)+\\
-        \frac{3\lambda_1^2-\lambda_1\lambda_2-\lambda_2\lambda_3-
-        \lambda_1\lambda_3}
-        {3\lambda_1 \sqrt{\lambda_2 \lambda_3}}
-        R_D(\frac{\lambda_1}{\lambda_2},\frac{\lambda_1}{\lambda_3},1)-1 ]
+        .. math::
 
-        F_2(\lambda_1,\lambda_2,\lambda_3)=
-        \frac{(\lambda_1+\lambda_2+\lambda_3)^2}
-        {3(\lambda_2-\lambda_3)^2}
-        [\frac{\lambda_2+\lambda_3}{\sqrt{\lambda_2\lambda_3}}
-        R_F(\frac{\lambda_1}{\lambda_2},\frac{\lambda_1}{\lambda_3},1)+\\
-        \frac{2\lambda_1-\lambda_2-\lambda_3}{3\sqrt{\lambda_2 \lambda_3}}
-        R_D(\frac{\lambda_1}{\lambda_2},\frac{\lambda_1}{\lambda_3},1)-2]
+            F_1(\lambda_1,\lambda_2,\lambda_3)=
+            \frac{(\lambda_1+\lambda_2+\lambda_3)^2}
+            {18(\lambda_1-\lambda_2)(\lambda_1-\lambda_3)}
+            [\frac{\sqrt{\lambda_2\lambda_3}}{\lambda_1}
+            R_F(\frac{\lambda_1}{\lambda_2},\frac{\lambda_1}{\lambda_3},1)+\\
+            \frac{3\lambda_1^2-\lambda_1\lambda_2-\lambda_2\lambda_3-
+            \lambda_1\lambda_3}
+            {3\lambda_1 \sqrt{\lambda_2 \lambda_3}}
+            R_D(\frac{\lambda_1}{\lambda_2},\frac{\lambda_1}{\lambda_3},1)-1 ]
+ 
+        and
+
+        .. math::
+
+            F_2(\lambda_1,\lambda_2,\lambda_3)=
+            \frac{(\lambda_1+\lambda_2+\lambda_3)^2}
+            {3(\lambda_2-\lambda_3)^2}
+            [\frac{\lambda_2+\lambda_3}{\sqrt{\lambda_2\lambda_3}}
+            R_F(\frac{\lambda_1}{\lambda_2},\frac{\lambda_1}{\lambda_3},1)+\\
+            \frac{2\lambda_1-\lambda_2-\lambda_3}{3\sqrt{\lambda_2 \lambda_3}}
+            R_D(\frac{\lambda_1}{\lambda_2},\frac{\lambda_1}{\lambda_3},1)-2]
 
     where $R_f$ and $R_d$ are the Carlson's elliptic integrals.
       
@@ -1196,7 +1259,8 @@ class DiffusionKurtosisFit(TensorFit):
     @auto_attr
     def ak(self):
         r"""
-        Axial Kurtosis (AK) of a diffusion kurtosis tensor. 
+        Axial Kurtosis (AK) of a diffusion kurtosis tensor.
+
         Returns
         -------
         ak : array
@@ -1206,20 +1270,27 @@ class DiffusionKurtosisFit(TensorFit):
 
     @auto_attr
     def rk(self):
-        r""" Radial Kurtosis (RK) of a diffusion kurtosis tensor. 
+        r""" Radial Kurtosis (RK) of a diffusion kurtosis tensor.
+
         Returns
         -------
         rk : array
             Calculated RK.
+
         Notes
         --------
         RK is calculated with the following equation:
+
         .. math::
+
             K_{\bot} = G_1(\lambda_1,\lambda_2,\lambda_3)\hat{W}_{2222} +
                        G_1(\lambda_1,\lambda_3,\lambda_2)\hat{W}_{3333} +
                        G_2(\lambda_1,\lambda_2,\lambda_3)\hat{W}_{2233}
+
         where:
+
         .. math::
+
             G_1(\lambda_1,\lambda_2,\lambda_3)=
             \frac{(\lambda_1+\lambda_2+\lambda_3)^2}{18\lambda_2(\lambda_2-
             \lambda_3)} \left (2\lambda_2 +
@@ -1227,7 +1298,9 @@ class DiffusionKurtosisFit(TensorFit):
             \right)
   
         and
+
         .. math::
+
             G_2(\lambda_1,\lambda_2,\lambda_3)=
             \frac{(\lambda_1+\lambda_2+\lambda_3)^2}{(\lambda_2-\lambda_3)^2}
             \left ( \frac{\lambda_2+\lambda_3}{\sqrt{\lambda_2\lambda_3}}-2
@@ -1538,6 +1611,7 @@ def Wrotate(kt, Basis, inds = None):
                      & ... \\
                      & W_{xxzz} & W_{yyzz} & W_{xxyz} & W_{xyyz} & W_{xyzz}
                      & & )\end{matrix}
+
     References
     ----------
     [1] Hui ES, Cheung MM, Qi L, Wu EX, 2008. Towards better MR
@@ -1570,6 +1644,7 @@ def _Wrotate_element(W4D, indi, indj, indk, indl, B):
     r""" Helper function that returns the element with specified index of a
     rotated kurtosis tensor from the Cartesian coordinate system to another
     coordinate system basis
+
     Parameters
     ----------
     W4D : array(4,4,4,4)
@@ -1621,7 +1696,7 @@ def Wcons(k_elements):
     k_elements : (15,)
         elements of the kurtosis tensor in the following order:
         
-            .. math::
+        .. math::
             
     \begin{matrix} ( & W_{xxxx} & W_{yyyy} & W_{zzzz} & W_{xxxy} & W_{xxxz}
                      & ... \\

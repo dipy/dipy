@@ -6,7 +6,7 @@ import numpy as np
 
 from nose.tools import assert_almost_equal
 
-from numpy.testing import assert_array_almost_equal
+from numpy.testing import (assert_array_almost_equal, assert_array_equal)
 
 from dipy.sims.voxel import multi_tensor_dki
 
@@ -21,7 +21,7 @@ from dipy.data import get_data
 from dipy.reconst.dti import (from_lower_triangular, decompose_tensor)
 
 from dipy.reconst.dki import (mean_kurtosis, carlson_rf,  carlson_rd,
-                              axial_kurtosis, radial_kurtosis)
+                              axial_kurtosis, radial_kurtosis, _positive_evals)
 
 from dipy.core.sphere import Sphere
 
@@ -83,6 +83,18 @@ multi_params = np.zeros((2, 2, 1, 27))
 multi_params[0, 0, 0] = multi_params[0, 1, 0] = crossing_ref
 multi_params[1, 0, 0] = multi_params[1, 1, 0] = crossing_ref
 
+
+def test_positive_evals():
+    # Tested evals
+    L1 = np.array([1e-3, 1e-3, 2e-3, 0, 0])
+    L2 = np.array([3e-3, 0, 2e-3, 1e-3, 0])
+    L3 = np.array([4e-3, 1e-4, 0, 0, 0])
+    # only the first voxels have all eigenvalues larger than zero, thus:
+    expected_ind = np.array([True, False, False, False, False], dtype=bool)
+    # test function _positive_evals
+    ind = _positive_evals(L1, L2, L3)
+    assert_array_equal(ind, expected_ind)
+    
 
 def test_dki_fits():
     """ DKI fits are tested on noise free crossing fiber simulates """
@@ -358,7 +370,7 @@ def test_spherical_dki_statistics():
     MRef = np.zeros((2, 2, 2))
     MRef[0, 0, 0] = MRef[0, 0, 1] = MRef[0, 1, 0] = Kref_sphere
     MRef[0, 1, 1] = MRef[1, 1, 0] = Kref_sphere
-    MRef[1, 1, 1] = MRef[1, 0, 0] = MRef[1, 0, 1] = float('nan')
+    MRef[1, 1, 1] = MRef[1, 0, 0] = MRef[1, 0, 1] = 0
 
     # Mean kurtosis analytical solution
     MK_multi = mean_kurtosis(MParam)
@@ -369,13 +381,13 @@ def test_spherical_dki_statistics():
     MK_multi = mean_kurtosis(MParam, sph)
     assert_array_almost_equal(MK_multi, MRef)
 
-    # axial kurtosis analytical solution
-    AK_multi = axial_kurtosis(MParam)
-    assert_array_almost_equal(AK_multi, MRef)
-
     # radial kurtosis analytical solution
     RK_multi = radial_kurtosis(MParam)
     assert_array_almost_equal(RK_multi, MRef)
+    
+    # axial kurtosis analytical solution
+    AK_multi = axial_kurtosis(MParam)
+    assert_array_almost_equal(AK_multi, MRef)
 
 
 def test_compare_MK_method():
