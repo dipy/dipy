@@ -11,10 +11,12 @@ from dipy.denoise.hyp1f1 import hyp1f1 as cython_mpmath1f1
 from dipy.utils.optpkg import optional_package
 mpmath, have_mpmath, _ = optional_package("mpmath")
 
+import warnings
+
 if not have_cython_gsl and not have_mpmath:
-    raise Warning('Cannot find cython_gsl nor mpmath package (required for hyp1f1). \
-        Try pip install cythongsl (recommended : faster than mpmath, but you need to \
-        install the GSL library also (sudo apt-get install libgsl0-dev libgsl0ldbl)) \
+    warnings.warn('Cannot find cython_gsl nor mpmath package (required for hyp1f1).\n \
+        Try pip install cythongsl (recommended : faster than mpmath, but you need to\n \
+        install the GSL library also (sudo apt-get install libgsl0-dev libgsl0ldbl))\n \
         or pip install mpmath (also pip install gmpy2 for faster performances.)')
 
 IF have_cython_gsl:
