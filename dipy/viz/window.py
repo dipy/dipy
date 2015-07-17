@@ -484,8 +484,8 @@ def snapshot(ren, fname=None, size=(300, 300)):
     -----------
     ren : vtkRenderer
         as returned from function renderer()
-    fname : str
-        Save PNG file.
+    fname : str or None
+        Save PNG file. If None return only an array without saving PNG.
     size : (int, int)
         ``(width, height)`` of the window
 
@@ -495,6 +495,9 @@ def snapshot(ren, fname=None, size=(300, 300)):
         Color array of size (width, height, 3) where the last dimension
         holds the RGB values.
     """
+
+    if vtk.VTK_MAJOR_VERSION <= 5:
+        raise ImportError('Snapshot is available only for VTK 6+')
 
     width, height = size
 
