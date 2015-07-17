@@ -754,7 +754,6 @@ def diffusion_kurtosis_odf(dki_params, sphere, alfa=4):
             2) Three lines of the eigenvector matrix each containing the first,
                second and third coordinates of the eigenvector
             3) Fifteen elements of the kurtosis tensor
-
     sphere : Sphere class instance.
         The DKI-ODF is calculated in the vertices of this input.
     alfa : float, optional
@@ -763,9 +762,9 @@ def diffusion_kurtosis_odf(dki_params, sphere, alfa=4):
 
     Returns
     -------
-    kODF : ndarray
-        The DKI-ODF sampled in every direction of the sphere in every voxel of
-        the input data.
+    kODF : ndarray (x, y, z, g) or (n, g)
+        The DKI-ODF sampled for every voxel of the input data and every g
+        directions of the sphere.
 
     Notes
     -----
@@ -794,41 +793,141 @@ def diffusion_kurtosis_odf(dki_params, sphere, alfa=4):
     kODF = np.zeros((len(kt), len(V)))
 
     # select non-zero voxels
+    # (when #677 is merged replace this code lines by function _positive_evals)
+    # rel_i = _positive_evals(evals[..., 0], evals[..., 1], evals[..., 2])    
+    er = np.finfo(evals[0, 0]).eps * 1e3
+    rel_i = np.logical_and(evals[..., 0] > er,
+                           np.logical_and(evals[..., 1] > er,
+                                          evals[..., 2] > er))
+    kt = kt[rel_i]
+    evecs = evecs[rel_i]
+    evals = evals[rel_i]
+    kODFi = kODF[rel_i]
 
-    # loop over all voxels
+    # loop over all relevant voxels
     for vox in range(len(kt)):
         R = evecs[vox]
         dt = lower_triangular(np.dot(np.dot(R, np.diag(evals[vox])), R.T))
-        kODF[vox] = kodf(dt, kt[vox], V, alfa)
+        kODFi[vox] = _directional_kurtosis_odf(dt, kt[vox], V, alfa)
 
     # reshape data according to input data
     kODF = kODF.reshape((outshape + (len(V),)))
     return kODF
 
 
-def kodf(pa, dt, kt, alfa=4, U=None, neg=False):
-    """ Compute the DKI based ODF estimation along a direction x difened by
-    polar angular coordinates
-    
+def _directional_kurtosis_odf(dt, kt, V, alfa=4):
+    """ Helper function that samples the diffusion kurtosis based orientation
+    distribution function in each direction of a sphere for a single voxel.
+
     Parameters
     ----------
-    x : array (2,)
-        arrays containing the two polar angles of direction x
     dt : array (6,)
         elements of the diffusion tensor of the voxel.
     kt : array (15,)
         elements of the kurtosis tensor of the voxel.
+    V : array (g, 3)
+        g directions of a Sphere in Cartesian coordinates
     alfa : float, optional
-        Radial weighting power. Default is 4 according to [Jen2014]_ and
-        [Raf2015]_.
-    U : array (3, 3), optional
-    neg : bool, optional
-        If neg is True, ODF estimate is negate. This optional paramater is
-        useful for the procedures to extract fiber direction estimates from the
-        DKI-ODF
+        Radial weighting power. Default is 4.
+
+    Returns
+    -------
+    kODF : array (g,)
+        The DKI-ODF sampled in every g directions for a single voxel.
     """
-    kurt_odf = 'in progress'
-    return kurt_odf
+    MD = (dt[0] + dt[2] + dt[5]) / 3
+
+    # Compute dimensionless tensor U
+    U = np.linalg.pinv(from_lower_triangular(dt)) * MD
+
+    # loop over all directions
+    kODF = np.zeros(len(V))
+    for i in range(len(V)):
+        kODF[i] = _dki_odf_core(V[i], dt, kt, U, alfa)
+
+    return kODF
+
+
+def _dki_odf_core(n, dt, kt, U, alfa=4):
+    """ Compute the DKI based ODF estimation of a voxel along the given
+    directions n
+    
+    Parameters
+    ----------
+    n : array (3,)
+        arrays containing the three cartesian coordinates of direction n
+    dt : array (6,)
+        elements of the diffusion tensor of the voxel.
+    kt : array (15,)
+        elements of the kurtosis tensor of the voxel.
+    U : array (3, 3)
+        dimensionless tensor defined by $U = \overline{D} \times DT^{-1}$,
+        where \overline{D} is the mean diffusivity and DT the diffusion tensor
+    alfa : float, optional
+        Radial weighting power. Default is 4.
+    """
+    # Compute elements of matrix V
+    Un = np.dot(U, n)
+    nUn = np.dot(n, Un)
+    V00 = Un[0]**2 / nUn
+    V11 = Un[1]**2 / nUn
+    V22 = Un[2]**2 / nUn
+    V01 = Un[0]*Un[1] / nUn
+    V02 = Un[0]*Un[2] / nUn
+    V12 = Un[1]*Un[2] / nUn
+
+    # diffusion ODF
+    ODFg = (1./nUn) ** ((alfa+1.)/2.)
+
+    # Estimate ODF
+    ODF = \
+        ODFg * (1. + 1/24. * \
+        (kt[0] * (3*U[0, 0]*U[0, 0] - 6*(alfa+1)*U[0, 0]*V00 + \
+                  (alfa+1)*(alfa+3)*V00*V00) + \
+         kt[1] * (3*U[1, 1]*U[1, 1] - 6*(alfa+1)*U[1, 1]*V11 + \
+                  (alfa+1) * (alfa + 3)*V11*V11) + \
+         kt[2] * (3*U[2, 2]*U[2, 2] - 6*(alfa+1)*U[2, 2]*V22 + \
+                  (alfa+1)*(alfa+3)*V22*V22) + \
+         kt[3] * (12*U[0, 0]*U[0, 1] - 12*(alfa+1)*U[0, 0]*V01 - \
+                  12*(alfa+1)*U[0, 1]*V00 + 4*(alfa+1)*(alfa+3)*V00*V01) + \
+         kt[4] * (12*U[0, 0]*U[0, 2] - 12*(alfa+1)*U[0, 0]*V02 - \
+                  12*(alfa+1)*U[0, 2]*V00 + 4*(alfa+1)*(alfa+3)*V00*V02) + \
+         kt[5] * (12*U[0, 1]*U[1, 1] - 12*(alfa+1)*U[0, 1]*V11 - \
+                  12*(alfa+1)*U[1, 1]*V01 + 4*(alfa+1)*(alfa+3)*V01*V11) + \
+         kt[6] * (12*U[1, 1]*U[1, 2] - 12*(alfa+1)*U[1, 1]*V12 - \
+                  12*(alfa+1)*U[1, 2]*V11 + 4*(alfa+1)*(alfa+3)*V11*V12) + \
+         kt[7] * (12*U[0, 2]*U[2, 2] - 12*(alfa+1)*U[0, 2]*V22 - \
+                  12*(alfa+1)*U[2, 2]*V02 + 4*(alfa+1)*(alfa+3)*V02*V22) + \
+         kt[8] * (12*U[1, 2]*U[2, 2] - 12*(alfa+1)*U[1,2]*V22 - \
+                  12*(alfa+1)*U[2, 2]*V12 + 4*(alfa+1)*(alfa+3)*V12*V22) + \
+         kt[9] * (6*U[0, 0]*U[1, 1] + 12*U[0, 1]*U[0, 1] - \
+                  6*(alfa+1)*U[0, 0]*V11 - 6*(alfa+1)*U[1, 1]*V00 - \
+                  24*(alfa+1)*U[0, 1]*V01 + 2*(alfa+1)*(alfa+3)*V00*V11 + \
+                  4*(alfa+1)*(alfa+3)*V01*V01) + \
+         kt[10] * (6*U[0, 0]*U[2, 2] + 12*U[0, 2]*U[0, 2] - \
+                   6*(alfa+1)*U[0, 0]*V22 - 6*(alfa+1)*U[2, 2]*V00 - \
+                   24*(alfa+1)*U[0,2]*V02 + 2*(alfa+1)*(alfa+3)*V00*V22 + \
+                   4*(alfa+1)*(alfa+3)*V02*V02) + \
+         kt[11] * (6*U[1, 1]*U[2, 2] + 12*U[1, 2]*U[1, 2] - \
+                   6*(alfa+1)*U[1,1]*V22 - 6*(alfa+1)*U[2, 2]*V11 - \
+                   24*(alfa+1)*U[1,2]*V12 + 2*(alfa+1)*(alfa+3)*V11*V22 + \
+                   4*(alfa+1)*(alfa+3)*V12*V12) + \
+         kt[12] * (12*U[0, 0]*U[1, 2] + 24*U[0, 1]*U[0, 2] - \
+                   12*(alfa+1)*U[0, 0]*V12 - 12*(alfa+1)*U[1, 2]*V00 - \
+                   24*(alfa+1)*U[0, 1]*V02 - 24*(alfa+1)*U[0, 2]*V01 + \
+                   4*(alfa+1)*(alfa+3)*V00*V12 + \
+                   8*(alfa+1)*(alfa+3)*V01*V02) + \
+         kt[13] * (12*U[1, 1]*U[0, 2] + 24*U[1, 0]*U[1, 2] - \
+                   12*(alfa+1)*U[1, 1]*V02 - 12*(alfa+1)*U[0, 2]*V11 - \
+                   24*(alfa+1)*U[0, 1]*V12 - 24*(alfa+1)*U[1, 2]*V01 + \
+                   4*(alfa+1)*(alfa+3)*V11*V02 + \
+                   8*(alfa+1)*(alfa+3)*V01*V12) + \
+         kt[14] * (12*U[2, 2]*U[0, 1] + 24*U[2, 0]*U[2, 1] - \
+                   12*(alfa+1)*U[2, 2]*V01 - 12*(alfa+1)*U[0, 1]*V22 - \
+                   24*(alfa+1)*U[0, 2]*V12 - 24*(alfa+1)*U[1, 2]*V02 + \
+                   4*(alfa+1)*(alfa+3)*V22*V01 + 8*(alfa+1)*(alfa+3)*V02*V12)))
+
+    return ODF
 
 
 common_fit_methods = {'WLS': wls_fit_dki,
