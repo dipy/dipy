@@ -168,8 +168,8 @@ Finally, please uncomment the following lines so that you can interact with
 the available 3D and 2D objects.
 """
 
-show_m.render()
-show_m.start()
+# show_m.render()
+# show_m.start()
 
 window.snapshot(ren, 'bundles_and_a_slice.png', size=(1200, 900))
 
