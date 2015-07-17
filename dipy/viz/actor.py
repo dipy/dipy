@@ -113,9 +113,12 @@ def slice(data, affine=None, value_range=None, opacity=1.,
 
     class ImageActor(vtk.vtkImageActor):
 
-        def input_connection(self, output_port):
-            self.GetMapper().SetInputConnection(output_port)
-            self.output_port = output_port
+        def input_connection(self, output):
+            if vtk.VTK_MAJOR_VERSION <= 5:
+                self.GetMapper().SetInput(output.GetOutput())
+            else:
+                self.GetMapper().SetInputConnection(output.GetOutputPort())
+            self.output = output
             self.shape = (ex2 + 1, ey2 + 1, ez2 + 1)
 
         def display_extent(self, x1, x2, y1, y2, z1, z2):
@@ -137,13 +140,13 @@ def slice(data, affine=None, value_range=None, opacity=1.,
 
         def copy(self):
             im_actor = ImageActor()
-            im_actor.input_connection(self.output_port)
+            im_actor.input_connection(self.output)
             im_actor.SetDisplayExtent(*self.GetDisplayExtent())
             im_actor.opacity(opacity)
             return im_actor
 
     image_actor = ImageActor()
-    image_actor.input_connection(plane_colors.GetOutputPort())
+    image_actor.input_connection(plane_colors)
     image_actor.display()
     image_actor.opacity(opacity)
 
