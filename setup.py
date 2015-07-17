@@ -8,9 +8,12 @@ from copy import deepcopy
 from os.path import join as pjoin, dirname, exists
 from glob import glob
 
-from dipy.utils.optpkg import optional_package
-cython_gsl, have_cython_gsl, _ = optional_package("cython_gsl")
-
+try:
+    import cython_gsl
+except ImportError:
+    have_cython_gsl = False
+else:
+    have_cython_gsl = True
 
 # BEFORE importing distutils, remove MANIFEST. distutils doesn't properly
 # update it when the contents of directories change.
