@@ -12,7 +12,7 @@ from dipy.utils.optpkg import optional_package
 mpmath, have_mpmath, _ = optional_package("mpmath")
 
 if not have_cython_gsl and not have_mpmath:
-    raise ValueError('Cannot find cython_gsl nor mpmath package (required for hyp1f1). \
+    raise Warning('Cannot find cython_gsl nor mpmath package (required for hyp1f1). \
         Try pip install cythongsl (recommended : faster than mpmath, but you need to \
         install the GSL library also (sudo apt-get install libgsl0-dev libgsl0ldbl)) \
         or pip install mpmath (also pip install gmpy2 for faster performances.)')
