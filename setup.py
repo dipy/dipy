@@ -12,8 +12,10 @@ try:
     import cython_gsl
 except ImportError:
     have_cython_gsl = False
+    print("Could not find cython_gsl, the gsl support is disabled in dipy.denoise.stabilizer.pyx!")
 else:
     have_cython_gsl = True
+    print("Compiling with cython_gsl support.")
 
 # BEFORE importing distutils, remove MANIFEST. distutils doesn't properly
 # update it when the contents of directories change.
@@ -117,6 +119,7 @@ for modulename, other_sources, language in (
     pyx_src = pjoin(*modulename.split('.')) + '.pyx'
     EXTS.append(Extension(modulename, [pyx_src] + other_sources,
                           language=language,
+                          cython_compile_time_env={'have_cython_gsl': have_cython_gsl},
                           **deepcopy(ext_kwargs)))  # deepcopy lists
 
 # Build gsl cython extension if present
