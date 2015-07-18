@@ -1,6 +1,8 @@
 import numpy as np
 from dipy.data import get_data
-from dipy.segment.mrf_map import FASTImageSegmenter
+from dipy.segment.mrf_map import (FASTImageSegmenter,
+                                  initialize_constant_models_uniform,
+                                  neg_log_likelihood_gaussian)
 
 
 def test_segmentation():
@@ -27,4 +29,23 @@ def test_segmentation():
     # the segmentation gets smoother as we increase beta
 
 
-test_segmentation()
+def test_initialization():
+
+    fname = get_data('t1_coronal_slice')
+    single_slice = np.load(fname)
+    nslices = 5
+    image = np.zeros(shape=single_slice.shape + (nslices,))
+    image[..., :nslices] = single_slice[..., None]
+
+    num_classes = 3
+
+    mu, sigma = initialize_constant_models_uniform(image, num_classes)
+
+    print(mu)
+    print(sigma)
+
+
+if __name__ == '__main__':
+
+    test_initialization()
+    #test_segmentation()

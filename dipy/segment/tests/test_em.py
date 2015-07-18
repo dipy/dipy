@@ -17,8 +17,8 @@ from dipy.segment.energy_mrf import (total_energy, neg_log_likelihood,
 # from dipy.segment.rois_stats import seg_stats
 # from dipy.segment.mrf_em import prob_neigh, prob_image, update_param
 
-dname = '/Users/jvillalo/Documents/GSoC_2015/Code/Data/T1_coronal/'
-# dname = '/home/eleftherios/Dropbox/DIPY_GSoC_2015/T1_coronal/'
+#dname = '/Users/jvillalo/Documents/GSoC_2015/Code/Data/T1_coronal/'
+dname = '/home/eleftherios/Dropbox/DIPY_GSoC_2015/T1_coronal/'
 
 img = nib.load(dname + 't1_coronal_stack.nii.gz')
 dataimg = img.get_data()
@@ -337,7 +337,7 @@ def test_gibbs_energy():
     print('nei6: ', seg_init_masked[index[0], index[1], index[2] + 1])
 
     label = 0  # if the label matches the voxel value it does not add
-                # label needs to be 0,1,2. The function adds +1 to the given 
+                # label needs to be 0,1,2. The function adds +1 to the given
                 # number
 
     gibbs1 = gibbs_energy(seg_init_masked, index, label, beta=1)
@@ -347,8 +347,8 @@ def test_gibbs_energy():
     print('gibb2s: ', gibbs2)
 
 #    npt.assert_equal(np.abs(gibbs2) > np.abs(gibbs1), True)
-    
-    
+
+
 
 #    sqimg = square_masked.copy(order='C')
 #    sqimg_pad = add_padding_reflection(sqimg, 1)
@@ -429,7 +429,7 @@ def test_gibbs_energy():
 ##    np.assert_equal(value, np.inf)
 
 if __name__ == '__main__':
-    
+
 #    test_icm()
 #    test_total_energy()
 #    test_neg_log_likelihood()

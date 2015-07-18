@@ -25,6 +25,7 @@ class FASTImageSegmenter(object):
     def segment(self, double[:,:,:] image, int num_classes, double beta,
                 int max_iter):
         """ Segments `image` into `num_class` classes
+
         Parameters
         ----------
         image : array, shape(X, Y, Z)
@@ -64,7 +65,84 @@ class FASTImageSegmenter(object):
         return out
 
 
+def initialize_constant_models_uniform(image, num_classes=3):
+    """ Initializes the means and variances uniformly
+
+    The means are initialized uniformly along the dynamic range of `image`.
+    The variances are set to 1 for all classes
+
+    Parameters
+    ----------
+    image : array, shape(X, Y, Z)
+    num_classes : int
+
+    Returns
+    -------
+    mu : array, shape(K,)
+    sigmasq : array, shape(K,)
+    """
+
+    cdef:
+        double[:] mu = np.empty((num_classes,), dtype=np.float64)
+        double[:] sigmasq = np.empty((num_classes,), dtype=np.float64)
+
+    _initialize_constant_models_uniform(image, mu, sigmasq)
+    return np.array(mu), np.array(sigmasq)
+
+
+cdef void _initialize_constant_models_uniform(double[:,:,:] image, double[:] mu, double[:] sigma) nogil:
+    """ Initializes the means and variances uniformly
+
+    The means are initialized uniformly along the dynamic range of `image`.
+    The variances are set to 1 for all classes
+
+    Parameters
+    ----------
+    image : array, shape(X, Y, Z)
+    mu : array, shape(K,)
+    sigmasq : array, shape(K,)
+    """
+    cdef:
+        cnp.npy_intp nx = image.shape[0]
+        cnp.npy_intp ny = image.shape[1]
+        cnp.npy_intp nz = image.shape[2]
+        int nclasses = mu.shape[0]
+        int i
+        double min_val
+        double max_val
+    min_val = image[0,0,0]
+    max_val = image[0,0,0]
+    for x in range(nx):
+        for y in range(ny):
+            for z in range(nz):
+                if image[x,y,z] < min_val:
+                    min_val = image[x,y,z]
+                if image[x,y,z] > max_val:
+                    max_val = image[x,y,z]
+    for i in range(nclasses):
+        sigma[i] = 1.0
+        mu[i] = min_val + i * (max_val - min_val)/nclasses
+
+
 def neg_log_likelihood_gaussian(image, mu, sigmasq):
+    """ Computes the Gaussian negative log-likelihood of each class
+
+    Computes the Gaussian negative log-likelihood of each class for each
+    voxel of `image` assuming a Gaussian distribution with means and
+    variances given by `mu` and `sigmasq`, respectively (constant models
+    along the full volume). The negative log-likelihood will be written
+    in `out`.
+
+    Parameters
+    ----------
+    image : array, shape(X, Y, Z)
+    mu : array, shape (K,)
+    sigmasq : array, shape (K,)
+
+    Returns
+    -------
+    out : array, shape (X, Y, Z, K)
+    """
 
     out = np.empty(image.shape, dtype=np.int32)
     _compute_neg_log_likelihood_gaussian(image, mu, sigmasq, out)
@@ -75,7 +153,7 @@ def neg_log_likelihood_gaussian(image, mu, sigmasq):
 cdef void _compute_neg_log_likelihood_gaussian(double[:,:,:] image,
                                                double[:] mu,
                                                double[:] sigmasq,
-                                               double[:,:,:,:] out)nogil:
+                                               double[:,:,:,:] out) nogil:
     """ Computes the Gaussian negative log-likelihood of each class
 
     Computes the Gaussian negative log-likelihood of each class for each
@@ -83,6 +161,7 @@ cdef void _compute_neg_log_likelihood_gaussian(double[:,:,:] image,
     variances given by `mu` and `sigmasq`, respectively (constant models
     along the full volume). The negative log-likelihood will be written
     in `out`.
+
     Parameters
     ----------
     image : array, shape(X, Y, Z)
@@ -168,41 +247,9 @@ cdef void _iterate_icm_issing(double[:,:,:,:] neglogl, double beta, int[:,:,:] o
 
 
 
-cdef void _initialize_constant_models_uniform(double[:,:,:] image, double[:] mu, double[:] sigma)nogil:
-    """ Initializes the means and variances uniformly
-
-    The means are initialized uniformly along the dynamic range of `image`.
-    The variances are set to 1 for all classes
-
-    Parameters
-    ----------
-    image : array, shape(X, Y, Z)
-    mu : array, shape(K,)
-    sigmasq : array, shape(K,)
-    """
-    cdef:
-        cnp.npy_intp nx = image.shape[0]
-        cnp.npy_intp ny = image.shape[1]
-        cnp.npy_intp nz = image.shape[2]
-        int nclasses = mu.shape[0]
-        int i
-        double min_val
-        double max_val
-    min_val = image[0,0,0]
-    max_val = image[0,0,0]
-    for x in range(nx):
-        for y in range(ny):
-            for z in range(nz):
-                if image[x,y,z] < min_val:
-                    min_val = image[x,y,z]
-                if image[x,y,z] > max_val:
-                    max_val = image[x,y,z]
-    for i in range(nclasses):
-        sigma[i] = 1.0
-        mu[i] = min_val + i * (max_val - min_val)/nclasses
 
 
-cdef void _initialize_maximum_likelihood(double[:,:,:,:] neglogl, int[:,:,:] out)nogil:
+cdef void _initialize_maximum_likelihood(double[:,:,:,:] neglogl, int[:,:,:] out) nogil:
     """ Initializes the segmentation of an image with given neg-log-likelihood
 
     Initializes the segmentation of an image with neg-log-likelihood field
