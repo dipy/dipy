@@ -561,6 +561,9 @@ mni_notes = \
 """
     Notes
     -----
+    The templates were downloaded from the MNI (McGill University) `website <http://www.bic.mni.mcgill.ca/ServicesAtlases/ICBM152NLin2009>`_
+    in July 2015.
+
     The following publications should be referenced when using these templates:
 
     .. [1] VS Fonov, AC Evans, K Botteron, CR Almli, RC McKinstry, DL Collins
@@ -572,6 +575,19 @@ mni_notes = \
             birth to adulthood, NeuroImage, 47:S102
             Organization for Human Brain Mapping 2009 Annual Meeting,
             DOI: http://dx.doi.org/10.1016/S1053-8119(09)70884-5
+
+    License for the MNI templates:
+    -----------------------------
+    Copyright (C) 1993–2004 Louis Collins, McConnell Brain Imaging Centre,
+    Montreal Neurological Institute, McGill University. Permission to use,
+    copy, modify, and distribute this software and its documentation for any
+    purpose and without fee is hereby granted, provided that the above
+    copyright notice appear in all copies. The authors and McGill University
+    make no representations about the suitability of this software for any
+    purpose. It is provided “as is” without express or implied warranty. The
+    authors are not responsible for any data loss, equipment damage, property
+    loss, or injury to subjects or patients resulting from the use or misuse
+    of this software package.
 """
 
 
