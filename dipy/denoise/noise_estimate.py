@@ -1,6 +1,5 @@
 from __future__ import division, print_function
 
-import warnings
 import numpy as np
 
 from scipy.special import gammainccinv
@@ -11,6 +10,18 @@ def _inv_nchi_cdf(N, K, alpha):
     """Inverse CDF for the noncentral chi distribution
     See [1]_ p.3 section 2.3"""
     return gammainccinv(N * K, 1 - alpha) / K
+
+
+# List of optimal quantil for PIESNO.
+# Get optimal quantile for N if available, else use the median.
+opt_quantile = {1: 0.79681213002002,
+                2: 0.7306303027491917,
+                4: 0.6721952960782169,
+                8: 0.6254030432343569,
+               16: 0.5900487123737876,
+               32: 0.5641772300866416,
+               64: 0.5455611840489607,
+              128: 0.5322811923303339}
 
 
 def piesno(data, N, alpha=0.01, l=100, itermax=100, eps=1e-5, return_mask=False):
@@ -86,16 +97,27 @@ def piesno(data, N, alpha=0.01, l=100, itermax=100, eps=1e-5, return_mask=False)
         e_s = "This function only works on datasets of at least 3 dimensions."
         raise ValueError(e_s)
 
+    if N in opt_quantile:
+        q = opt_quantile[N]
+    else:
+        q = 0.5
+
+    # Initial estimation of sigma
+    m = np.percentile(data, q * 100) / np.sqrt(2 * _inv_nchi_cdf(N, 1, q))
+
     if data.ndim == 4:
 
         sigma = np.zeros(data.shape[-2], dtype=np.float32)
         mask_noise = np.zeros(data.shape[:-1], dtype=np.bool)
 
         for idx in range(data.shape[-2]):
-            sigma[idx], mask_noise[..., idx] = _piesno_3D(data[..., idx, :],
-                                                          N, alpha=alpha,
-                                                          l=l, itermax=itermax,
-                                                          eps=eps, return_mask=True)
+            sigma[idx], mask_noise[..., idx] = _piesno_3D(data[..., idx, :], N,
+                                                          alpha=alpha,
+                                                          l=l,
+                                                          itermax=itermax,
+                                                          eps=eps,
+                                                          return_mask=True,
+                                                          m=m)
 
     else:
         sigma, mask_noise = _piesno_3D(data, N,
@@ -103,7 +125,8 @@ def piesno(data, N, alpha=0.01, l=100, itermax=100, eps=1e-5, return_mask=False)
                                        l=l,
                                        itermax=itermax,
                                        eps=eps,
-                                       return_mask=True)
+                                       return_mask=True,
+                                       m=m)
 
     if return_mask:
         return sigma, mask_noise
@@ -112,7 +135,7 @@ def piesno(data, N, alpha=0.01, l=100, itermax=100, eps=1e-5, return_mask=False)
 
 
 def _piesno_3D(data, N, alpha=0.01, l=100, itermax=100, eps=1e-5,
-               return_mask=False):
+               return_mask=False, m=None):
     """
     Probabilistic Identification and Estimation of Noise (PIESNO).
     This is the slice by slice version for working on a 4D array.
@@ -146,6 +169,10 @@ def _piesno_3D(data, N, alpha=0.01, l=100, itermax=100, eps=1e-5,
         If True, return a mask identyfing all the pure noise voxel
         that were found. Default: False.
 
+    m : float (optional)
+        Upper bound for the initial estimation of sigma. default : None,
+        which computes the optimal quantile for N.
+
     Returns
     --------
     sigma : float
@@ -173,15 +200,6 @@ def _piesno_3D(data, N, alpha=0.01, l=100, itermax=100, eps=1e-5,
     and its applications in MRI."
     Journal of Magnetic Resonance 2009; 197: 108-119.
     """
-    # Get optimal quantile for N if available, else use the median.
-    opt_quantile = {1: 0.79681213002002,
-                    2: 0.7306303027491917,
-                    4: 0.6721952960782169,
-                    8: 0.6254030432343569,
-                   16: 0.5900487123737876,
-                   32: 0.5641772300866416,
-                   64: 0.5455611840489607,
-                  128: 0.5322811923303339}
 
     if N in opt_quantile:
         q = opt_quantile[N]
@@ -189,9 +207,10 @@ def _piesno_3D(data, N, alpha=0.01, l=100, itermax=100, eps=1e-5,
     else:
         q = 0.5
 
-    # Initial estimation of sigma
     denom = np.sqrt(2 * _inv_nchi_cdf(N, 1, q))
-    m = np.percentile(data, q * 100) / denom
+
+    if m is None:
+        m = np.percentile(data, q * 100) / denom
 
     phi = np.arange(1, l + 1) * m / l
     K = data.shape[-1]
