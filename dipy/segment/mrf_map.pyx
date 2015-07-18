@@ -138,16 +138,20 @@ def neg_log_likelihood_gaussian(image, mu, sigmasq):
     image : array, shape(X, Y, Z)
     mu : array, shape (K,)
     sigmasq : array, shape (K,)
+    num_classes : int
 
     Returns
     -------
     out : array, shape (X, Y, Z, K)
     """
 
-    out = np.empty(image.shape, dtype=np.int32)
-    _compute_neg_log_likelihood_gaussian(image, mu, sigmasq, out)
+    nx, ny, nz = image.shape[:3]
+    num_classes = len(mu)
+    neglogl = np.empty((nx, ny, nz, num_classes), dtype=np.float64)
 
-    return out
+    _compute_neg_log_likelihood_gaussian(image, mu, sigmasq, neglogl)
+
+    return neglogl
 
 
 cdef void _compute_neg_log_likelihood_gaussian(double[:,:,:] image,
