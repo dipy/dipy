@@ -34,11 +34,11 @@ def _positive_evals(L1, L2, L3, er=None):
 
     Parameters
     ----------
-    L1 : ndarray (n,)
+    L1 : ndarray
         First independent variable of the integral.
-    L2 : ndarray (n,)
+    L2 : ndarray
         Second independent variable of the integral.
-    L3 : ndarray (n,)
+    L3 : ndarray
         Third independent variable of the integral.
     er : float, optional
         A eigenvalues is classified as larger than zero if it is larger than er
@@ -50,7 +50,7 @@ def _positive_evals(L1, L2, L3, er=None):
         zero.
     """
     if er is None:
-        er = np.finfo(L1[0]).eps * 1e3
+        er = np.finfo(L1.ravel()[0]).eps * 1e3
 
     ind = np.logical_and(L1 > er, np.logical_and(L2 > er, L3 > er))
   

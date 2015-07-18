@@ -86,11 +86,12 @@ multi_params[1, 0, 0] = multi_params[1, 1, 0] = crossing_ref
 
 def test_positive_evals():
     # Tested evals
-    L1 = np.array([1e-3, 1e-3, 2e-3, 0, 0])
-    L2 = np.array([3e-3, 0, 2e-3, 1e-3, 0])
-    L3 = np.array([4e-3, 1e-4, 0, 0, 0])
+    L1 = np.array([[1e-3, 1e-3, 2e-3], [0, 1e-3, 0]])
+    L2 = np.array([[3e-3, 0, 2e-3], [1e-3, 1e-3, 0]])
+    L3 = np.array([[4e-3, 1e-4, 0], [0, 1e-3, 0]])
     # only the first voxels have all eigenvalues larger than zero, thus:
-    expected_ind = np.array([True, False, False, False, False], dtype=bool)
+    expected_ind = np.array([[True, False, False], [False, True, False]],
+                            dtype=bool)
     # test function _positive_evals
     ind = _positive_evals(L1, L2, L3)
     assert_array_equal(ind, expected_ind)
