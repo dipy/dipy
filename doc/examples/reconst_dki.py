@@ -231,12 +231,12 @@ fig2.savefig('Diffusion_tensor_measures_from_DTI_and_DKI.png')
 From the figure, we can see that the DT standard diffusion measures from DKI
 are noisier than the DTI measurements. This is a well known pitfall of DKI
 [NetoHe2014]_. Since it involves the estimation of a larger number of
-parameters, DKI is more sensitive to noise than DTI. Nevertheless, DT diffusion
-based measures were shown to have better precision (i.e. less sensitive to
-bias) [Veraa2011]_.
+parameters, DKI is more sensitive to noise than DTI. Nevertheless, DKI
+diffusion based measures were shown to have better precision (i.e. less
+sensitive to bias) [Veraa2011]_.
 
 The standard kurtosis statistics can be computed from the DiffusinKurtosisFit
-instance as the mean kurtosis (MK), the axial kurtosis (AD) and the radial
+instance as the mean kurtosis (MK), the axial kurtosis (AK) and the radial
 kurtosis (RK).
 """
 
@@ -257,9 +257,13 @@ ax.flat[2].imshow(AK[:, :, axial_middle], cmap='gray')
 ax.flat[2].set_title('AK')
 
 plt.show()
-fig3.savefig('Kurtosis_tensor_standard_measures.png')
+fig3.savefig('Kurtosis_standard_measures.png')
 
-""" 
+"""
+.. figure:: Kurtosis_standard_measures.png
+   :align: center
+   **Kurtosis tensor standard measures obtain from the kurtosis tensor.**.
+
 References:
 
 .. [Jensen2005] Jensen JH, Helpern JA, Ramani A, Lu H, Kaczynski K (2005).
