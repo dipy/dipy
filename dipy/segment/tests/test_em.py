@@ -11,7 +11,7 @@ from dipy.sims.voxel import add_noise
 # from dipy.data import get_data
 import matplotlib.pyplot as plt
 
-from dipy.segment.icm_map import icm
+from dipy.segment.icm_segmenter import icm
 from dipy.segment.energy_mrf import (total_energy, neg_log_likelihood,
                                      gibbs_energy)
 # from dipy.segment.rois_stats import seg_stats
