@@ -13,9 +13,9 @@ import matplotlib.pyplot as plt
 
 from dipy.segment.icm_map import icm
 from dipy.segment.energy_mrf import (total_energy, neg_log_likelihood,
-                                     gibbs_energy, ising)
-from dipy.segment.rois_stats import seg_stats
-from dipy.segment.mrf_em import prob_neigh, prob_image, update_param
+                                     gibbs_energy)
+# from dipy.segment.rois_stats import seg_stats
+# from dipy.segment.mrf_em import prob_neigh, prob_image, update_param
 
 dname = '/Users/jvillalo/Documents/GSoC_2015/Code/Data/T1_coronal/'
 # dname = '/home/eleftherios/Dropbox/DIPY_GSoC_2015/T1_coronal/'
@@ -326,108 +326,114 @@ def test_neg_log_likelihood():
 
 def test_gibbs_energy():
 
-    seg_img = seg_init_masked.copy(order='C')
-    seg_img_pad = add_padding_reflection(seg_img, 1)
-    index = (150, 125, 1)
-    print(seg_img_pad[150, 125, 1])
+    index = (160, 105, 2)
+    print('index1: ', seg_init_masked[160, 105, 2])  # This is 1
+    index = (160, 105, 2)
+    print('nei1: ', seg_init_masked[index[0] - 1, index[1], index[2]])
+    print('nei2: ', seg_init_masked[index[0] + 1, index[1], index[2]])
+    print('nei3: ', seg_init_masked[index[0], index[1] - 1, index[2]])
+    print('nei4: ', seg_init_masked[index[0], index[1] + 1, index[2]])
+    print('nei5: ', seg_init_masked[index[0], index[1], index[2] - 1])
+    print('nei6: ', seg_init_masked[index[0], index[1], index[2] + 1])
+
+    label = 0  # if the label matches the voxel value it does not add
+                # label needs to be 0,1,2. The function adds +1 to the given 
+                # number
+
+    gibbs1 = gibbs_energy(seg_init_masked, index, label, beta=1)
+    print('gibbs1: ', gibbs1)
+
+    gibbs2 = gibbs_energy(seg_init_masked, index, label, beta=0)
+    print('gibb2s: ', gibbs2)
+
+#    npt.assert_equal(np.abs(gibbs2) > np.abs(gibbs1), True)
     
-    label = 1  # if the label matches the voxel value it does not add
-    beta = 1.5
-
-    gibbs1 = gibbs_energy(seg_img_pad, index, label, beta)
-
-    beta = 2
-
-    gibbs2 = gibbs_energy(seg_img_pad, index, label, beta)
-
-    npt.assert_equal(np.abs(gibbs2) > np.abs(gibbs1), True)
-    
     
 
-    sqimg = square_masked.copy(order='C')
-    sqimg_pad = add_padding_reflection(sqimg, 1)
-    index = (150, 125, 1)
-    print(sqimg_pad[150, 125, 1])
+#    sqimg = square_masked.copy(order='C')
+#    sqimg_pad = add_padding_reflection(sqimg, 1)
+#    index = (150, 125, 1)
+#    print(sqimg_pad[150, 125, 1])
+#
+#    label = 1
+#
+#    beta = 1.5
+#
+#    gibbs1 = gibbs_energy(sqimg_pad, index, label, beta)
+#
+#    beta = 2
+#
+#    gibbs2 = gibbs_energy(sqimg_pad, index, label, beta)
+#
+#    npt.assert_equal(np.abs(gibbs2) > np.abs(gibbs1), True)
 
-    label = 1
-
-    beta = 1.5
-
-    gibbs1 = gibbs_energy(sqimg_pad, index, label, beta)
-
-    beta = 2
-
-    gibbs2 = gibbs_energy(sqimg_pad, index, label, beta)
-
-    npt.assert_equal(np.abs(gibbs2) > np.abs(gibbs1), True)
-
-def test_ising():
-
-    l = 1
-    vox = 2
-    beta = 20
-
-    npt.assert_equal(ising(l, vox, beta), beta)
-
-    l = 1
-    vox = 1
-    beta = 20
-
-    npt.assert_equal(ising(l, vox, beta), - beta)
-
-
-def test_seg_stats():
-
-    nclass = 3
-
-    Mu, Std, Var = seg_stats(masked_img, seg_init_masked, nclass)
-    print(Mu)
-    print(Std)
-    print(Var)
-
-    Mu, Std, Var = seg_stats(seg_init_masked, seg_init_masked, nclass)
-    print(Mu)
-    print(Std)
-    print(Var)
+#def test_ising():
+#
+#    l = 1
+#    vox = 2
+#    beta = 20
+#
+#    npt.assert_equal(ising(l, vox, beta), beta)
+#
+#    l = 1
+#    vox = 1
+#    beta = 20
+#
+#    npt.assert_equal(ising(l, vox, beta), - beta)
+#
+#
+#def test_seg_stats():
+#
+#    nclass = 3
+#
+#    Mu, Std, Var = seg_stats(masked_img, seg_init_masked, nclass)
+#    print(Mu)
+#    print(Std)
+#    print(Var)
+#
+#    Mu, Std, Var = seg_stats(seg_init_masked, seg_init_masked, nclass)
+#    print(Mu)
+#    print(Std)
+#    print(Var)
 
 
-def test_emfuncs():
-
-    seg_img = seg_init_masked.copy(order='C')
-    seg_img_pad = add_padding_reflection(seg_img, 1)
-    nclass = 3
-    beta = 1.5
-
-    # Testing prob_neigh
-    PLN1 = prob_neigh(nclass, masked_img, seg_img_pad, beta)
-
-    beta = 1.5
-
-    PLN2 = prob_neigh(nclass, masked_img, seg_img_pad, beta)
-
-    npt.assert_array_equal(np.sum(np.abs(PLN1 - PLN2)) > 0, True)
-
-    # Testing prob_image with current estimates of mu and var
-    mu = np.array([0.44230444, 0.64952929, 0.78890026])
-    var = np.array([0.01061197, 0.00227377, 0.00127969])
-
-    PLY1 = prob_image(nclass, masked_img, mu, var, PLN1)
-
-    mu_update, var_update = update_param(nclass, masked_img, datamask, mu,
-                                         PLY1)
-
-    npt.assert_array_equal(np.sum(np.abs(mu - mu_update)) > 0, True)
-    npt.assert_array_equal(np.sum(np.abs(var - var_update)) > 0, True)
-
-#    npt.assert_raises
-#    np.assert_equal(value, np.inf)
+#def test_emfuncs():
+#
+#    seg_img = seg_init_masked.copy(order='C')
+#    seg_img_pad = add_padding_reflection(seg_img, 1)
+#    nclass = 3
+#    beta = 1.5
+#
+#    # Testing prob_neigh
+#    PLN1 = prob_neigh(nclass, masked_img, seg_img_pad, beta)
+#
+#    beta = 1.5
+#
+#    PLN2 = prob_neigh(nclass, masked_img, seg_img_pad, beta)
+#
+#    npt.assert_array_equal(np.sum(np.abs(PLN1 - PLN2)) > 0, True)
+#
+#    # Testing prob_image with current estimates of mu and var
+#    mu = np.array([0.44230444, 0.64952929, 0.78890026])
+#    var = np.array([0.01061197, 0.00227377, 0.00127969])
+#
+#    PLY1 = prob_image(nclass, masked_img, mu, var, PLN1)
+#
+#    mu_update, var_update = update_param(nclass, masked_img, datamask, mu,
+#                                         PLY1)
+#
+#    npt.assert_array_equal(np.sum(np.abs(mu - mu_update)) > 0, True)
+#    npt.assert_array_equal(np.sum(np.abs(var - var_update)) > 0, True)
+#
+##    npt.assert_raises
+##    np.assert_equal(value, np.inf)
 
 if __name__ == '__main__':
     
-    test_icm()
-    test_total_energy()
-    test_neg_log_likelihood()
+#    test_icm()
+#    test_total_energy()
+#    test_neg_log_likelihood()
     test_gibbs_energy()
-    test_ising()
+#    test_ising()
 
     npt.run_module_suite()
