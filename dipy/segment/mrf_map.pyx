@@ -61,7 +61,7 @@ class FASTImageSegmenter(object):
         # Iterate ICM
         for iter in range(max_iter):
             print("ICM. Iter: %d"%(iter,))
-            _iterate_icm_issing(neglogl, beta, out)
+            _iterate_icm_ising(neglogl, beta, out)
         return out
 
 
@@ -189,7 +189,88 @@ cdef void _compute_neg_log_likelihood_gaussian(double[:,:,:] image,
                     out[x,y,z,k] = (diff * diff) / (2.0 * sigmasq[k]) + norm_constant
 
 
-cdef void _iterate_icm_issing(double[:,:,:,:] neglogl, double beta, int[:,:,:] out) nogil:
+def initialize_maximum_likelihood(neglogl):
+    """ Initializes the segmentation of an image with given neg-log-likelihood
+
+    Initializes the segmentation of an image with neg-log-likelihood field
+    given by `neglogl`. The class of each voxel is selected as the one with
+    the minimum neg-log-likelihood (i.e. the maximum-likelihood segmentation).
+
+    Parameters
+    ----------
+    neglogl : array, shape(X, Y, Z, K)
+        neglogl[x,y,z,k] is the likelihhood of class k for voxel (x,y,z)
+
+    Returns
+    --------
+    out : array, shape(X, Y, Z)
+        the buffer in which to write the initial segmentation
+    """
+
+    out = np.zeros(neglogl.shape[:3]).astype(np.int32)
+
+    _initialize_maximum_likelihood(neglogl, out)
+
+    return out
+
+
+cdef void _initialize_maximum_likelihood(double[:,:,:,:] neglogl, int[:,:,:] out) nogil:
+    """ Initializes the segmentation of an image with given neg-log-likelihood
+
+    Initializes the segmentation of an image with neg-log-likelihood field
+    given by `neglogl`. The class of each voxel is selected as the one with
+    the minimum neg-log-likelihood (i.e. the maximum-likelihood segmentation).
+
+    Parameters
+    ----------
+    neglogl : array, shape(X, Y, Z, K)
+        neglogl[x,y,z,k] is the likelihhood of class k for voxel (x,y,z)
+    out : array, shape(X, Y, Z)
+        the buffer in which to write the initial segmentation
+    """
+    cdef:
+        cnp.npy_intp nx = neglogl.shape[0]
+        cnp.npy_intp ny = neglogl.shape[1]
+        cnp.npy_intp nz = neglogl.shape[2]
+        cnp.npy_intp nclasses = neglogl.shape[3]
+        double min_energy
+        int best_class
+    for x in range(nx):
+        for y in range(ny):
+            for z in range(nz):
+                # Select the best label for this voxel (x, y, z)
+                best_class = -1
+                for k in range(nclasses):
+                    if (best_class == -1) or (neglogl[x,y,z,k] < min_energy):
+                        best_class = k
+                        min_energy = neglogl[x,y,z,k]
+                out[x,y,z] = best_class
+
+
+def iterate_icm_ising(neglogl, beta, out):
+    """ Executes one iteration of the ICM algorithm for MRF MAP estimation
+
+    The prior distribution of the MRF is a Gibbs distribution with the
+    Potts/Ising model with parameter `beta`:
+
+    https://en.wikipedia.org/wiki/Potts_model
+
+    Parameters
+    ----------
+    neglogl : array, shape(X, Y, Z, K)
+        neglogl[x,y,z,k] is the negative log likelihood of class k at voxel
+        (x,y,z)
+    beta : float (positive)
+        the parameter of the Potts/Ising model
+    out : array, shape (X, Y, Z)
+        initial segmentation. On output this segmentation will change by one
+        iteration of the ICM algorithm
+    """
+
+    _iterate_icm_ising(neglogl, beta, out)
+
+
+cdef void _iterate_icm_ising(double[:,:,:,:] neglogl, double beta, int[:,:,:] out) nogil:
     """ Executes one iteration of the ICM algorithm for MRF MAP estimation
 
     The prior distribution of the MRF is a Gibbs distribution with the
@@ -250,36 +331,3 @@ cdef void _iterate_icm_issing(double[:,:,:,:] neglogl, double beta, int[:,:,:] o
                 out[x,y,z] = best_class
 
 
-
-
-
-cdef void _initialize_maximum_likelihood(double[:,:,:,:] neglogl, int[:,:,:] out) nogil:
-    """ Initializes the segmentation of an image with given neg-log-likelihood
-
-    Initializes the segmentation of an image with neg-log-likelihood field
-    given by `neglogl`. The class of each voxel is selected as the one with
-    the minimum neg-log-likelihood (i.e. the maximum-likelihood segmentation).
-    Parameters
-    ----------
-    neglogl : array, shape(X, Y, Z, K)
-        neglogl[x,y,z,k] is the likelihhood of class k for voxel (x,y,z)
-    out : array, shape(X, Y, Z)
-        the buffer in which to write the initial segmentation
-    """
-    cdef:
-        cnp.npy_intp nx = neglogl.shape[0]
-        cnp.npy_intp ny = neglogl.shape[1]
-        cnp.npy_intp nz = neglogl.shape[2]
-        cnp.npy_intp nclasses = neglogl.shape[3]
-        double min_energy
-        int best_class
-    for x in range(nx):
-        for y in range(ny):
-            for z in range(nz):
-                # Select the best label for this voxel (x, y, z)
-                best_class = -1
-                for k in range(nclasses):
-                    if (best_class == -1) or (neglogl[x,y,z,k] < min_energy):
-                        best_class = k
-                        min_energy = neglogl[x,y,z,k]
-                out[x,y,z] = best_class
