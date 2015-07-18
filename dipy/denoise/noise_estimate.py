@@ -103,7 +103,7 @@ def piesno(data, N, alpha=0.01, l=100, itermax=100, eps=1e-5, return_mask=False)
         q = 0.5
 
     # Initial estimation of sigma
-    m = np.percentile(data, q * 100) / np.sqrt(2 * _inv_nchi_cdf(N, 1, q))
+    initial_estimation = np.percentile(data, q * 100) / np.sqrt(2 * _inv_nchi_cdf(N, 1, q))
 
     if data.ndim == 4:
 
@@ -117,7 +117,7 @@ def piesno(data, N, alpha=0.01, l=100, itermax=100, eps=1e-5, return_mask=False)
                                                           itermax=itermax,
                                                           eps=eps,
                                                           return_mask=True,
-                                                          m=m)
+                                                          initial_estimation=initial_estimation)
 
     else:
         sigma, mask_noise = _piesno_3D(data, N,
@@ -126,7 +126,7 @@ def piesno(data, N, alpha=0.01, l=100, itermax=100, eps=1e-5, return_mask=False)
                                        itermax=itermax,
                                        eps=eps,
                                        return_mask=True,
-                                       m=m)
+                                       initial_estimation=initial_estimation)
 
     if return_mask:
         return sigma, mask_noise
@@ -135,7 +135,7 @@ def piesno(data, N, alpha=0.01, l=100, itermax=100, eps=1e-5, return_mask=False)
 
 
 def _piesno_3D(data, N, alpha=0.01, l=100, itermax=100, eps=1e-5,
-               return_mask=False, m=None):
+               return_mask=False, initial_estimation=None):
     """
     Probabilistic Identification and Estimation of Noise (PIESNO).
     This is the slice by slice version for working on a 4D array.
@@ -169,7 +169,7 @@ def _piesno_3D(data, N, alpha=0.01, l=100, itermax=100, eps=1e-5,
         If True, return a mask identyfing all the pure noise voxel
         that were found. Default: False.
 
-    m : float (optional)
+    initial_estimation : float (optional)
         Upper bound for the initial estimation of sigma. default : None,
         which computes the optimal quantile for N.
 
@@ -203,14 +203,15 @@ def _piesno_3D(data, N, alpha=0.01, l=100, itermax=100, eps=1e-5,
 
     if N in opt_quantile:
         q = opt_quantile[N]
-
     else:
         q = 0.5
 
     denom = np.sqrt(2 * _inv_nchi_cdf(N, 1, q))
 
-    if m is None:
+    if initial_estimation is None:
         m = np.percentile(data, q * 100) / denom
+    else:
+        m = initial_estimation
 
     phi = np.arange(1, l + 1) * m / l
     K = data.shape[-1]
