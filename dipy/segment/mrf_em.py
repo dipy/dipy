@@ -3,7 +3,6 @@ from __future__ import division, print_function, absolute_import
 import numpy as np
 from dipy.segment.mask import applymask
 from dipy.core.ndindex import ndindex
-from dipy.segment.energy_mrf import ising
 
 
 def prob_neigh(nclass, masked_img, segmented_pad, beta):
@@ -36,7 +35,7 @@ def prob_neigh(nclass, masked_img, segmented_pad, beta):
     # ising = np.array([[0, 1, 0], [1, -1, 1], [0, 1, 0]])
     # a = np.array([[0, 0, 0], [0, 1, 0], [0, 0, 0]])
     # ising_kernel = np.array([a, ising, a])
-    # P_L_N[i-1:i+2, j-1:j+2, k-1:k+2] += isign_kernel
+    # P_L_N[i-1:i+2, j-1:j+2, k-1:k+2] += ising_kernel
 
     for l in range(0, nclass):
         for idx in ndindex(shape):
@@ -153,3 +152,24 @@ def update_param(nclass, masked_img, datamask, mu_upd, P_L_Y):
         print('updated_var:', var_upd[l])
 
     return mu_upd, var_upd
+
+
+def ising(l, voxel, beta):
+    r""" Ising model
+
+    Parameters
+    -----------
+    l : The value of the label that is being tested in each voxel (1, 2 or 3)
+    voxel : The value of the voxel
+    beta : the value of the weight given to the neighborhood
+
+    Returns
+    --------
+    beta : Negative or positive float number
+
+    """
+
+    if l == voxel:
+        return - beta
+    else:
+        return beta
