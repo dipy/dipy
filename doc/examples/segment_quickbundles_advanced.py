@@ -21,8 +21,8 @@ streams, hdr = tv.read(fname)
 streamlines = [i[0] for i in streams]
 
 """
-QuickBundles using `ResampleFeature`
-====================================
+QuickBundles using the `ResampleFeature`
+========================================
 By default, QuickBundles algorithm internally uses a representation of
 streamlines that are either downsampled or upsampled so they have 12 points.
 To tell QuickBundles to use a different number of points when resampling, one
