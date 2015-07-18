@@ -95,34 +95,34 @@ def carlson_rf(x, y, z, errtol=3e-4):
     # Initialize RF
     RF = np.zeros(len(x), dtype=x.dtype)
 
+    xn = x.copy()
+    yn = y.copy()
+    zn = z.copy()
+    An = (xn + yn + zn) / 3.0
+    Q = (3.*errtol) ** (-1/6.) * np.max([np.abs(An - xn), np.abs(An - yn),
+                                         np.abs(An - zn)], axis=0)
     # Convergence has to be done voxel by voxel
     for v in range(len(x)):
         n = 0
-        xn = x[v]
-        yn = y[v]
-        zn = z[v]
-        An = (xn + yn + zn) / 3.0
-        Q = (3.*errtol) ** (-1/6.) * np.max([np.abs(An - xn), np.abs(An - yn),
-                                            np.abs(An - zn)])
         # Convergence condition
-        while 4.**(-n) * Q > abs(An):          
-            xnroot = np.sqrt(xn)
-            ynroot = np.sqrt(yn)
-            znroot = np.sqrt(zn)
+        while 4.**(-n) * Q[v] > abs(An[v]):          
+            xnroot = np.sqrt(xn[v])
+            ynroot = np.sqrt(yn[v])
+            znroot = np.sqrt(zn[v])
             lamda = xnroot*(ynroot + znroot) + ynroot*znroot
-            xn = (xn + lamda)*0.250
-            yn = (yn + lamda)*0.250
-            zn = (zn + lamda)*0.250
-            An = (An + lamda)*0.250
             n = n + 1
+            xn[v] = (xn[v]+lamda) * 0.250
+            yn[v] = (yn[v]+lamda) * 0.250
+            zn[v] = (zn[v]+lamda) * 0.250
+            An[v] = (An[v]+lamda) * 0.250
 
-        # post convergence calculation
-        X = 1 - xn/An
-        Y = 1 - yn/An
-        Z = - X - Y
-        E2 = X*Y - Z*Z
-        E3 = X * Y * Z
-        RF[v] = An**(-1/2.) * (1 - E2/10. + E3/14. + (E2**2)/24. - 3/44.*E2*E3)
+    # post convergence calculation
+    X = 1. - xn/An
+    Y = 1. - yn/An
+    Z = - X - Y
+    E2 = X*Y - Z*Z
+    E3 = X * Y * Z
+    RF = An**(-1/2.) * (1 - E2/10. + E3/14. + (E2**2)/24. - 3/44.*E2*E3)
 
     return RF
 
@@ -159,41 +159,42 @@ def carlson_rd(x, y, z, errtol=1e-4):
     # Initialize RD
     RD = np.zeros(len(x), dtype=x.dtype)
 
+    xn = x.copy()
+    yn = y.copy()
+    zn = z.copy()
+    A0 = (xn + yn + 3.*zn) / 5.0
+    An = A0.copy()
+    Q = (errtol/4.) ** (-1/6.) * np.max([np.abs(An - xn), np.abs(An - yn),
+                                         np.abs(An - zn)], axis=0)
+    sum_term = np.zeros(len(x), dtype=x.dtype)
+    n = np.zeros(len(x))
+
     # Convergence has to be done voxel by voxel
     for v in range(len(x)):
-        n = 0
-        xn = x[v]
-        yn = y[v]
-        zn = z[v]
-        A0 = (xn + yn + 3.*zn) / 5.0
-        An = A0.copy()
-        Q = (errtol/4.) ** (-1/6.) * np.max([np.abs(An - xn), np.abs(An - yn),
-                                             np.abs(An - zn)])
-        sum_term = 0
         # Convergence condition
-        while 4.**(-n) * Q > abs(An):          
-            xnroot = np.sqrt(xn)
-            ynroot = np.sqrt(yn)
-            znroot = np.sqrt(zn)
+        while 4.**(-n[v]) * Q[v] > abs(An[v]):          
+            xnroot = np.sqrt(xn[v])
+            ynroot = np.sqrt(yn[v])
+            znroot = np.sqrt(zn[v])
             lamda = xnroot*(ynroot + znroot) + ynroot*znroot
-            sum_term = sum_term + 4.**(-n) / (znroot * (zn + lamda))
-            n = n + 1
-            xn = (xn + lamda)*0.250
-            yn = (yn + lamda)*0.250
-            zn = (zn + lamda)*0.250
-            An = (An + lamda)*0.250
+            sum_term[v] = sum_term[v] + 4.**(-n[v]) / (znroot * (zn[v]+lamda))
+            n[v] = n[v] + 1
+            xn[v] = (xn[v]+lamda) * 0.250
+            yn[v] = (yn[v]+lamda) * 0.250
+            zn[v] = (zn[v]+lamda) * 0.250
+            An[v] = (An[v]+lamda) * 0.250
 
-        # post convergence calculation
-        X = (A0 - x[v]) / (4.**(n) * An)
-        Y = (A0 - y[v]) / (4.**(n) * An)
-        Z = - (X+Y) / 3.
-        E2 = X*Y - 6.*Z*Z
-        E3 = (3.*X*Y - 8.*Z*Z) * Z
-        E4 = 3.* (X*Y - Z*Z) * Z**2.
-        E5 = X * Y * Z**3.
-        RD[v] = \
-            4**(-n) * An**(-3/2.) * (1 - 3/14.*E2 + 1/6.*E3 + 9/88.*(E2**2) - \
-            3/22.*E4 - 9/52.*E2*E3 + 3/26.*E5) + 3*sum_term
+    # post convergence calculation
+    X = (A0 - x) / (4.**(n) * An)
+    Y = (A0 - y) / (4.**(n) * An)
+    Z = - (X+Y) / 3.
+    E2 = X*Y - 6.*Z*Z
+    E3 = (3.*X*Y - 8.*Z*Z) * Z
+    E4 = 3.* (X*Y - Z*Z) * Z**2.
+    E5 = X * Y * Z**3.
+    RD = \
+        4**(-n) * An**(-3/2.) * (1 - 3/14.*E2 + 1/6.*E3 + 9/88.*(E2**2) - \
+        3/22.*E4 - 9/52.*E2*E3 + 3/26.*E5) + 3*sum_term
 
     return RD
 
@@ -1243,17 +1244,17 @@ class DiffusionKurtosisFit(TensorFit):
             \frac{2\lambda_1-\lambda_2-\lambda_3}{3\sqrt{\lambda_2 \lambda_3}}
             R_D(\frac{\lambda_1}{\lambda_2},\frac{\lambda_1}{\lambda_3},1)-2]
 
-    where $R_f$ and $R_d$ are the Carlson's elliptic integrals.
+        where $R_f$ and $R_d$ are the Carlson's elliptic integrals.
       
-    References
-    ----------
-    .. [1] Hui ES, Cheung MM, Qi L, Wu EX, 2008. Towards better MR
-           characterization of neural tissues using directional diffusion
-           kurtosis analysis. Neuroimage 42(1): 122-34
-       [2] Tabesh, A., Jensen, J.H., Ardekani, B.A., Helpern, J.A., 2011.
-           Estimation of tensors and tensor-derived measures in diffusional
-           kurtosis imaging. Magn Reson Med. 65(3), 823-836
-    """
+        References
+        ----------
+        .. [1] Hui ES, Cheung MM, Qi L, Wu EX, 2008. Towards better MR
+               characterization of neural tissues using directional diffusion
+               kurtosis analysis. Neuroimage 42(1): 122-34
+           [2] Tabesh, A., Jensen, J.H., Ardekani, B.A., Helpern, J.A., 2011.
+               Estimation of tensors and tensor-derived measures in diffusional
+               kurtosis imaging. Magn Reson Med. 65(3), 823-836
+        """
         return mean_kurtosis(self.model_params, sphere)
 
     @auto_attr
