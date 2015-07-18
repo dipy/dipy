@@ -1,14 +1,17 @@
 import numpy as np
 import itertools
 
+
+from nose.tools import assert_equal, assert_raises
+from numpy.testing import assert_array_equal, run_module_suite
+from dipy.testing.memory import get_type_refcount
+
 from dipy.segment.clustering import QuickBundles
 
 import dipy.segment.metric as dipymetric
 from dipy.segment.clustering_algorithms import quickbundles
 import dipy.tracking.streamline as streamline_utils
 
-from nose.tools import assert_equal, assert_raises
-from numpy.testing import assert_array_equal, run_module_suite
 
 dtype = "float32"
 threshold = 7
@@ -149,6 +152,17 @@ def test_quickbundles_with_not_order_invariant_metric():
     clusters = qb.cluster(streamlines)
     assert_equal(len(clusters), 1)
     assert_array_equal(clusters[0].centroid, streamline)
+
+
+def test_quickbundles_memory_leaks():
+    qb = QuickBundles(threshold=2*threshold)
+
+    type_name_pattern = "memoryview"
+    initial_types_refcount = get_type_refcount(type_name_pattern)
+
+    qb.cluster(data)
+    # At this point, all memoryviews created during clustering should be freed.
+    assert_equal(get_type_refcount(type_name_pattern), initial_types_refcount)
 
 
 if __name__ == '__main__':
