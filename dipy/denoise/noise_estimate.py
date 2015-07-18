@@ -12,7 +12,7 @@ def _inv_nchi_cdf(N, K, alpha):
     return gammainccinv(N * K, 1 - alpha) / K
 
 
-# List of optimal quantil for PIESNO.
+# List of optimal quantile for PIESNO.
 # Get optimal quantile for N if available, else use the median.
 opt_quantile = {1: 0.79681213002002,
                 2: 0.7306303027491917,
