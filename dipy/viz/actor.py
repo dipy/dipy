@@ -60,6 +60,7 @@ def slice(data, affine):
     #     i, j, k = index
     #     im.SetScalarComponentFromFloat(i, j, k, 0, vol[i, j, k])
     vol = np.swapaxes(vol, 0, 2)
+    vol = np.ascontiguousarray(vol)
     uchar_array = numpy_support.numpy_to_vtk(vol.ravel(), deep=0)
     im.GetPointData().SetScalars(uchar_array)
 
