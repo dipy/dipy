@@ -36,6 +36,9 @@ renderer = window.Renderer()
 renderer.background((1, 1, 1))
 
 """
+Render slices from T1 with a specific value range
+=================================================
+
 The T1 has usually a higher range of values than what can be visualized in an
 image. We can set the range that we would like to see.
 """
@@ -74,11 +77,14 @@ slice_actor2.display(slice_actor2.shape[0]/2, None, None)
 
 renderer.add(slice_actor2)
 
+renderer.reset_camera()
+renderer.zoom(1.4)
+
 """
 In order to interact with the data you will need to uncomment the line below.
 """
 
-# window.show(renderer, size=(600, 600))
+# window.show(renderer, size=(600, 600), reset_camera=False)
 
 """
 Otherwise, you can save a screenshot using the following command.
@@ -91,6 +97,9 @@ window.snapshot(renderer, 'slices.png', size=(600, 600))
    :align: center
 
    **Simple slice viewer**.
+
+Render slices from FA with your colormap
+========================================
 
 It is also possible to set the colormap of your preference. Here we are loading
 an FA image and showing it in a non-standard way using an HSV colormap.
@@ -123,7 +132,10 @@ fa_actor = actor.slice(fa, affine, lookup_colormap=lut)
 renderer.clear()
 renderer.add(fa_actor)
 
-# window.show(renderer, size=(600, 600))
+renderer.reset_camera()
+renderer.zoom(1.4)
+
+# window.show(renderer, size=(600, 600), reset_camera=False)
 
 window.snapshot(renderer, 'slices_lut.png', size=(600, 600))
 
@@ -132,26 +144,62 @@ window.snapshot(renderer, 'slices_lut.png', size=(600, 600))
    :align: center
 
    **Simple slice viewer with an HSV colormap**.
+
+
+Create a mosaic
+================
+
+By using the ``copy`` and ``display`` method of the ``slice_actor`` becomes
+easy and efficient to create a mosaic of all the slices.
+
+So, let's clear the renderer and change the projection from perspective to
+parallel.
 """
 
 renderer.clear()
-
-X, Y, Z = slice_actor.shape
-
 renderer.projection('parallel')
+
+"""
+Now we need to create two nested for loops which will set the positions of
+the grid of the mosaic and add the new actors to the renderer.
+"""
 
 cnt = 0
 
-z = slice_actor.shape[-1]
+X, Y, Z = slice_actor.shape[:3]
 
-for j in range(9):
-    for i in range(20):
+rows = 10
+cols = 15
+border = 10
+
+for j in range(rows):
+    for i in range(cols):
         slice_mosaic = slice_actor.copy()
         slice_mosaic.display(None, None, cnt)
-        slice_mosaic.SetPosition(256 * i, 9 * 256 - 256 * j, 0)
+        slice_mosaic.set_position((X + border) * i,
+                                  0.5 * cols * (Y + border) - (Y + border) * j,
+                                  0)
         renderer.add(slice_mosaic)
         cnt += 1
-    if cnt>z: break
+        if cnt > Z:
+            break
+    if cnt > Z:
+        break
 
+renderer.reset_camera()
+renderer.zoom(1.6)
 
-window.show(renderer, reset_camera=True)
+window.show(renderer, size=(900, 600), reset_camera=False)
+
+window.snapshot(renderer, 'mosaic.png', size=(900, 600))
+
+"""
+You can now move the mosaic up/down and left/right using the middle mouse
+button pressed. And zoom in/out using the scroll wheel.
+
+.. figure:: mosaic.png
+   :align: center
+
+   **Create your own mosaic**.
+"""
+

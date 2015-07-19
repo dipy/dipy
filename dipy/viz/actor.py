@@ -153,6 +153,12 @@ def slice(data, affine=None, value_range=None, opacity=1.,
             im_actor.opacity(opacity)
             return im_actor
 
+        def set_position(self, wx, wy, wz):
+            self.SetPosition(wx, wy, wz)
+
+        def get_position(self):
+            return self.GetPosition()
+
     image_actor = ImageActor()
     image_actor.input_connection(plane_colors)
     image_actor.display()
