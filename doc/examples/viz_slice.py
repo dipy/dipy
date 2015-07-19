@@ -78,7 +78,7 @@ renderer.add(slice_actor2)
 In order to interact with the data you will need to uncomment the line below.
 """
 
-window.show(renderer, size=(600, 600))
+# window.show(renderer, size=(600, 600))
 
 """
 Otherwise, you can save a screenshot using the following command.
@@ -123,7 +123,7 @@ fa_actor = actor.slice(fa, affine, lookup_colormap=lut)
 renderer.clear()
 renderer.add(fa_actor)
 
-window.show(renderer, size=(600, 600))
+# window.show(renderer, size=(600, 600))
 
 window.snapshot(renderer, 'slices_lut.png', size=(600, 600))
 
@@ -133,3 +133,28 @@ window.snapshot(renderer, 'slices_lut.png', size=(600, 600))
 
    **Simple slice viewer with an HSV colormap**.
 """
+
+renderer.clear()
+
+X, Y, Z = slice_actor.shape
+
+renderer.projection('parallel')
+
+cnt = 0
+
+z = slice_mosaic.shape[-1]
+
+for i in range(20):
+    for j in range(9):
+        slice_mosaic = slice_actor.copy()
+        slice_mosaic.display(None, None, cnt)
+        slice_mosaic.SetPosition(256 * i - 256 * 10 + 2 , 256 * j - 256 * 4.5 + 2, 0)
+        renderer.add(slice_mosaic)
+        cnt += 1
+    if cnt>z: break
+
+from dipy.viz import fvtk
+renderer.add(fvtk.axes((100, 100, 100)))
+renderer.zoom(2.)
+
+window.show(renderer)
