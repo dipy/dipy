@@ -161,7 +161,8 @@ renderer.projection('parallel')
 
 """
 Now we need to create two nested for loops which will set the positions of
-the grid of the mosaic and add the new actors to the renderer.
+the grid of the mosaic and add the new actors to the renderer. We are going
+to use 15 columns and 10 rows but you can adjust those with your datasets.
 """
 
 cnt = 0
@@ -192,7 +193,7 @@ renderer.zoom(1.6)
 # window.show(renderer, size=(900, 600), reset_camera=False)
 
 """
-If you uncomment the ``window.show`` line above. You will be able to move the
+If you uncomment the ``window.show`` line above, you will be able to move the
 mosaic up/down and left/right using the middle mouse button pressed. And zoom
 in/out using the scroll wheel.
 """
@@ -203,6 +204,5 @@ window.snapshot(renderer, 'mosaic.png', size=(900, 600))
 .. figure:: mosaic.png
    :align: center
 
-   **A mosaic**.
+   **A mosaic of all the slices in the T1 volume**.
 """
-
