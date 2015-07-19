@@ -1,8 +1,8 @@
 
 """
-============================
+=====================
 Simple volume slicing
-============================
+=====================
 
 Here we present an example for visualizing slices from 3D images.
 
@@ -189,17 +189,20 @@ for j in range(rows):
 renderer.reset_camera()
 renderer.zoom(1.6)
 
-window.show(renderer, size=(900, 600), reset_camera=False)
+# window.show(renderer, size=(900, 600), reset_camera=False)
+
+"""
+If you uncomment the ``window.show`` line above. You will be able to move the
+mosaic up/down and left/right using the middle mouse button pressed. And zoom
+in/out using the scroll wheel.
+"""
 
 window.snapshot(renderer, 'mosaic.png', size=(900, 600))
 
 """
-You can now move the mosaic up/down and left/right using the middle mouse
-button pressed. And zoom in/out using the scroll wheel.
-
 .. figure:: mosaic.png
    :align: center
 
-   **Create your own mosaic**.
+   **A mosaic**.
 """
 
