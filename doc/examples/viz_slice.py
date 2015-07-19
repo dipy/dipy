@@ -142,19 +142,16 @@ renderer.projection('parallel')
 
 cnt = 0
 
-z = slice_mosaic.shape[-1]
+z = slice_actor.shape[-1]
 
-for i in range(20):
-    for j in range(9):
+for j in range(9):
+    for i in range(20):
         slice_mosaic = slice_actor.copy()
         slice_mosaic.display(None, None, cnt)
-        slice_mosaic.SetPosition(256 * i - 256 * 10 + 2 , 256 * j - 256 * 4.5 + 2, 0)
+        slice_mosaic.SetPosition(256 * i, 9 * 256 - 256 * j, 0)
         renderer.add(slice_mosaic)
         cnt += 1
     if cnt>z: break
 
-from dipy.viz import fvtk
-renderer.add(fvtk.axes((100, 100, 100)))
-renderer.zoom(2.)
 
-window.show(renderer)
+window.show(renderer, reset_camera=True)
