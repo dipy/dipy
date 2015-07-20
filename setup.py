@@ -122,7 +122,6 @@ for modulename, other_sources, language in (
     ('dipy.denoise.enhancement_kernel', [], 'c'),
     ('dipy.denoise.shift_twist_convolution', [], 'c'),
     ('dipy.denoise.hyp1f1', [], 'c'),
-    ('dipy.denoise.stabilizer', [], 'c'),
     ('dipy.align.vector_fields', [], 'c'),
     ('dipy.align.sumsqdiff', [], 'c'),
     ('dipy.align.expectmax', [], 'c'),
@@ -137,11 +136,10 @@ for modulename, other_sources, language in (
                           cython_compile_time_env={'have_cython_gsl': have_cython_gsl},
                           **deepcopy(ext_kwargs)))  # deepcopy lists
 
-# Build gsl cython extension if present
+# Build gsl cython extension if present, if not it will use mpmath.
+pyxfile = 'dipy/denoise/stabilizer.pyx'
+ext_name = "dipy.denoise.stabilizer"
 if have_cython_gsl:
-    pyxfile = 'dipy/denoise/stabilizer.pyx'
-    ext_name = "dipy.denoise.stabilizer"
-
     cython_gsl_ext = Extension(ext_name,
                                [pyxfile],
                                libraries=cython_gsl.get_libraries(),
@@ -149,9 +147,14 @@ if have_cython_gsl:
                                cython_compile_time_env={'have_cython_gsl': have_cython_gsl},
                                cython_include_dirs=[cython_gsl.get_cython_include_dir()],
                                include_dirs=[np.get_include()])
+else:
+    cython_gsl_ext = Extension(ext_name,
+                               [pyxfile],
+                               language=language,
+                               cython_compile_time_env={'have_cython_gsl': have_cython_gsl},
+                               **deepcopy(ext_kwargs))
 
-    EXTS.append(cython_gsl_ext)
-
+EXTS.append(cython_gsl_ext)
 # Do our own build and install time dependency checking. setup.py gets called in
 # many different ways, and may be called just to collect information (egg_info).
 # We need to set up tripwires to raise errors when actually doing things, like
