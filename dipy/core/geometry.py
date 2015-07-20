@@ -501,7 +501,8 @@ def lambert_equal_area_projection_polar(theta, phi):
        planar coordinates of points following mapping by Lambert's EAP.
     """
 
-    return 2 * np.repeat(np.sin(theta / 2), 2).reshape((theta.shape[0], 2)) * np.column_stack((np.cos(phi), np.sin(phi)))
+    return 2 * np.repeat(np.sin(theta / 2), 2).reshape((theta.shape[0], 2)) * \
+        np.column_stack((np.cos(phi), np.sin(phi)))
 
 
 def lambert_equal_area_projection_cart(x, y, z):
@@ -617,7 +618,8 @@ def euler_matrix(ai, aj, ak, axes='sxyz'):
     return M
 
 
-def compose_matrix(scale=None, shear=None, angles=None, translate=None, perspective=None):
+def compose_matrix(scale=None, shear=None, angles=None, translate=None,
+                   perspective=None):
     """Return 4x4 transformation matrix from sequence of
     transformations.
 
@@ -687,8 +689,8 @@ def compose_matrix(scale=None, shear=None, angles=None, translate=None, perspect
 def decompose_matrix(matrix):
     """Return sequence of transformations from transformation matrix.
 
-    Code modified from the excellent work of Christoph Gohlke link provided here
-    http://www.lfd.uci.edu/~gohlke/code/transformations.py.html
+    Code modified from the excellent work of Christoph Gohlke link provided
+    here: http://www.lfd.uci.edu/~gohlke/code/transformations.py.html
 
     Parameters
     ------------
@@ -768,7 +770,7 @@ def decompose_matrix(matrix):
         angles[0] = math.atan2(row[1, 2], row[2, 2])
         angles[2] = math.atan2(row[0, 1], row[0, 0])
     else:
-        #angles[0] = math.atan2(row[1, 0], row[1, 1])
+        # angles[0] = math.atan2(row[1, 0], row[1, 1])
         angles[0] = math.atan2(-row[2, 1], row[1, 1])
         angles[2] = 0.0
 
@@ -799,7 +801,8 @@ def circumradius(a, b, c):
     z = np.cross(x, y)
     # test for collinearity
     if np.linalg.norm(z) == 0:
-        return np.sqrt(np.max(np.dot(x, x), np.dot(y, y), np.dot(a - b, a - b))) / 2.
+        return np.sqrt(np.max(np.dot(x, x), np.dot(y, y),
+                              np.dot(a - b, a - b))) / 2.
     else:
         m = np.vstack((x, y, z))
         w = np.dot(np.linalg.inv(m.T), np.array([xx / 2., yy / 2., 0]))
@@ -809,7 +812,8 @@ def circumradius(a, b, c):
 def vec2vec_rotmat(u, v):
     r""" rotation matrix from 2 unit vectors
 
-    u,v being unit 3d vectors return a 3x3 rotation matrix R than aligns u to v.
+    u, v being unit 3d vectors return a 3x3 rotation matrix R than aligns u to
+    v.
 
     In general there are many rotations that will map u to v. If S is any
     rotation using v as an axis then R.S will also map u to v since (S.R)u =
@@ -847,7 +851,7 @@ def vec2vec_rotmat(u, v):
     w = np.cross(u, v)
     wn = np.linalg.norm(w)
 
-    # Check that cross product is OK and vectors 
+    # Check that cross product is OK and vectors
     # u, v are not collinear (norm(w)>0.0)
     if np.isnan(wn) or wn < np.finfo(float).eps:
         norm_u_v = np.linalg.norm(u - v)
@@ -906,3 +910,99 @@ def compose_transformations(*mats):
 
     return prev
 
+
+def perpendicular_directions(v, num=30, half=False):
+    r""" Computes n evenly spaced perpendicular directions relative to a given
+    vector v
+
+    Parameters
+    -----------
+    v : array (3,)
+        Array containing the three cartesian coordinates of vector v
+    num : int, optional
+        Number of perpendicular directions to generate
+    half : bool, optional
+        If half is True, perpendicular directions are sampled on half of the
+        unit circumference perpendicular to v, otherwive perpendicular
+        directions are sampled on the full circumference. Default of half is
+        False
+
+    Returns
+    -------
+    psamples : array (n, 3)
+        array of vectors perpendicular to v
+
+    Notes
+    --------
+    Perpendicular directions are estimated using the following two step
+    procedure:
+    
+        1) the perpendicular directions are first sampled in a unit
+        circumference parallel to the plane normal to the x-axis.
+
+        2) Samples are then rotated and aligned to the plane normal to vector
+        v. The rotational matrix for this rotation is constructed as reference
+        frame basis which axis are the following:
+            - The first axis is vector v
+            - The second axis is defined as the normalized vector given by the
+            cross product between vector v and the unit vector aligned to the
+            x-axis
+            - The third axis is defined as the cross product between the
+            previous computed vector and vector v.
+
+    Following this two steps, coordinates of the final perpendicular directions
+    are given as:
+
+    .. math::
+
+        \left [ -\sin(a_{i}) \sqrt{{v_{y}}^{2}+{v_{z}}^{2}}
+        \; , \;
+        \frac{v_{x}v_{y}\sin(a_{i})-v_{z}\cos(a_{i})}
+        {\sqrt{{v_{y}}^{2}+{v_{z}}^{2}}}
+        \; , \;
+        \frac{v_{x}v_{z}\sin(a_{i})-v_{y}\cos(a_{i})}
+        {\sqrt{{v_{y}}^{2}+{v_{z}}^{2}}} \right  ]
+
+    This procedure has a singularity when vector v is aligned to the x-axis. To
+    solve this singularity, perpendicular directions in procedure's step 1 are
+    defined in the plane normal to y-axis and the second axis of the rotated
+    frame of reference is computed as the normalized vector given by the cross
+    product between vector v and the unit vector aligned to the y-axis. 
+    Following this, the coordinates of the perpendicular directions are given
+    as:
+
+        \left [ -\frac{\left (v_{x}v_{y}\sin(a_{i})+v_{z}\cos(a_{i}) \right )}
+        {\sqrt{{v_{x}}^{2}+{v_{z}}^{2}}}
+        \; , \;
+        \sin(a_{i}) \sqrt{{v_{x}}^{2}+{v_{z}}^{2}}
+        \; , \;
+        \frac{v_{y}v_{z}\sin(a_{i})+v_{x}\cos(a_{i})}
+        {\sqrt{{v_{x}}^{2}+{v_{z}}^{2}}} \right  ]
+
+    For more details on this calculation, see ` here <http://gsoc2015dipydki.blogspot.it/2015/07/rnh-post-8-computing-perpendicular.html>`_.
+    """
+    v = np.array(v, dtype=float)
+
+    # Float error used for floats comparison
+    er = np.finfo(v[0]).eps * 1e3
+
+    # Define circumference or semi-circumference
+    if half is True:
+        a = np.linspace(0., math.pi, num=num, endpoint=False)
+    else:
+        a = np.linspace(0., 2 * math.pi, num=num, endpoint=False)
+
+    cosa = np.cos(a)
+    sina = np.sin(a)
+
+    # Check if vector is not aligned to the x axis
+    if abs(v[0] - 1.) > er:
+        sq = np.sqrt(v[1]**2 + v[2]**2)
+        psamples = np.array([- sq*sina, (v[0]*v[1]*sina - v[2]*cosa) / sq,
+                             (v[0]*v[2]*sina + v[1]*cosa) / sq])
+    else:
+        sq = np.sqrt(v[0]**2 + v[2]**2)
+        psamples = np.array([- (v[2]*cosa + v[0]*v[1]*sina) / sq, sina*sq,
+                             (v[0]*cosa - v[2]*v[1]*sina) / sq])
+
+    return psamples.T
