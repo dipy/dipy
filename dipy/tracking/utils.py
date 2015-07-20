@@ -632,7 +632,8 @@ def filter_bounding_box(streamlines, x_roi_coords, tol):
     streamlines : list or generator
         A sequence of streamlines. Each streamline should be a (N, 3) array,
         where N is the length of the streamline.
-    x_roi_coords :
+    x_roi_coords : array, shape (M, 3)
+        ROI coordinates transformed to the streamline coordinate frame.
     tol : float
         Distance (in the units of the streamlines, usually mm). If any
         coordinate in the streamline is within this distance from the center
