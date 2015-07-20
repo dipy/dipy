@@ -900,7 +900,7 @@ def radial_kurtosis(dki_params):
         Wzzzz[vox] = Wrotate(kt[vox], evecs[vox], [2, 2, 2, 2])
         Wyyzz[vox] = Wrotate(kt[vox], evecs[vox], [1, 1, 2, 2])
 
-    # Compute MK
+    # Compute RK
     RK = \
         _G1m(evals[...,0], evals[...,1], evals[...,2]) * Wyyyy + \
         _G1m(evals[...,0], evals[...,2], evals[...,1]) * Wzzzz + \
@@ -1649,7 +1649,7 @@ def _Wrotate_element(W4D, indi, indj, indk, indl, B):
     Parameters
     ----------
     W4D : array(4,4,4,4)
-        Full 4D kutosis tensor in the Cartesian coordinate system
+        Full 4D kurtosis tensor in the Cartesian coordinate system
     indi : int
         Rotated kurtosis tensor element index i (0 for x, 1 for y, 2 for z)
     indj : int
@@ -1708,7 +1708,7 @@ def Wcons(k_elements):
     Returns
     -------
     W : array(4,4,4,4)
-        Full 4D kutosis tensor
+        Full 4D kurtosis tensor
     """
 
     # Note: The multiplication of the indexes (i+1) * (j+1) * (k+1) * (l+1)
