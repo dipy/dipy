@@ -425,12 +425,12 @@ class DiffusionKurtosisFit(TensorFit):
 
         .. [Jen2014] Jensen, J.H., Helpern, J.A., Tabesh, A., (2014). Leading
             non-Gaussian corrections for diffusion orientation distribution
-            function. NMR Biomed. 27, 202–211.
+            function. NMR Biomed. 27, 202-211.
             http://dx.doi.org/10.1002/nbm.3053.
 
         .. [Raf2015] Neto Henriques, R., Correia, M.M., Nunes, R.G., Ferreira,
             H.A. (2015). Exploring the 3D geometry of the diffusion kurtosis
-            tensor—Impact on the development of robust tractography procedures
+            tensor - Impact on the development of robust tractography procedures
             and novel biomarkers. NeuroImage 111: 85-99.
             doi:10.1016/j.neuroimage.2015.02.004
         """
@@ -773,11 +773,11 @@ def diffusion_kurtosis_odf(dki_params, sphere, alfa=4):
 
     .. [Jen2014] Jensen, J.H., Helpern, J.A., Tabesh, A., (2014). Leading
         non-Gaussian corrections for diffusion orientation distribution
-        function. NMR Biomed. 27, 202–211. http://dx.doi.org/10.1002/nbm.3053.
+        function. NMR Biomed. 27, 202-211. http://dx.doi.org/10.1002/nbm.3053.
 
     .. [Raf2015] Neto Henriques, R., Correia, M.M., Nunes, R.G., Ferreira,
         H.A. (2015). Exploring the 3D geometry of the diffusion kurtosis
-        tensor—Impact on the development of robust tractography procedures
+        tensor - Impact on the development of robust tractography procedures
         and novel biomarkers. NeuroImage 111: 85-99.
         doi:10.1016/j.neuroimage.2015.02.004
     """
@@ -811,6 +811,7 @@ def diffusion_kurtosis_odf(dki_params, sphere, alfa=4):
         kODFi[vox] = _directional_kurtosis_odf(dt, kt[vox], V, alfa)
 
     # reshape data according to input data
+    kODF[rel_i] = kODFi
     kODF = kODF.reshape((outshape + (len(V),)))
     return kODF
 
