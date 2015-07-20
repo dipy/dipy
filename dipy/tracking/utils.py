@@ -574,7 +574,7 @@ def target(streamlines, target_mask, affine, include=True):
             yield sl
 
 
-def sl_near_roi(sl, x_roi_coords, tol, mode='any'):
+def streamline_near_roi(sl, x_roi_coords, tol, mode='any'):
     """
     Is a streamline near an ROI.
 
@@ -704,14 +704,14 @@ def near_roi(streamlines, target_mask, affine=None, tol=None,
     if isinstance(streamlines, list):
         out = np.zeros(len(streamlines), dtype=bool)
         for ii, sl in enumerate(streamlines):
-            out[ii] = sl_near_roi(sl, x_roi_coords, tol=tol,
+            out[ii] = streamline_near_roi(sl, x_roi_coords, tol=tol,
                                 mode=mode)
         return out
     # If it's a generator, we'll need to generate the output into a list
     else:
         out = []
         for sl in streamlines:
-            out.append(sl_near_roi(sl, x_roi_coords, tol=tol,
+            out.append(streamline_near_roi(sl, x_roi_coords, tol=tol,
                                 mode=mode))
 
         return(np.array(out, dtype=bool))
