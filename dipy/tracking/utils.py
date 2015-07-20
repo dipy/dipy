@@ -622,7 +622,7 @@ def streamline_near_roi(sl, x_roi_coords, tol, mode='any'):
         return np.all(np.min(dist, -1)<=tol)
 
 
-def filter_by_bb(streamlines, x_roi_coords, tol):
+def filter_bounding_box(streamlines, x_roi_coords, tol):
     """
     Filter streamlines using a bounding box extracted from the coordinates of
     an ROI.
