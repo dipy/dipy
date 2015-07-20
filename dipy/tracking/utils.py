@@ -54,7 +54,6 @@ from warnings import warn
 from nibabel.affines import apply_affine
 from scipy.spatial.distance import cdist
 
-from dipy.tracking.streamline import transform_streamlines
 from dipy.core.geometry import dist_to_corner
 
 from collections import defaultdict

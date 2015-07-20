@@ -95,7 +95,6 @@ def transform_streamlines(streamlines, mat):
     new_streamlines : list
         List of the transformed 2D ndarrays of shape[-1]==3
     """
-
     return [apply_affine(mat, s) for s in streamlines]
 
 
