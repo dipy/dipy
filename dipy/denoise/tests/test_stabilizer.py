@@ -41,7 +41,12 @@ def test_fixed_point_finder():
     # Values taken from hispeed.SignalFixedPointFinder.fixedPointFinder
     assert_almost_equal(fixed_point_finder(50, 30, 12), -192.78288201533618)
     assert_almost_equal(fixed_point_finder(650, 45, 1), 648.4366584016703)
-
+    assert_almost_equal(hispeed.SignalFixedPointFinder.fixedPointFinder(100.,45.,1), 87.3107934130575)
+    assert_almost_equal(hispeed.SignalFixedPointFinder.fixedPointFinder(300.,45.,4), 275.0610394688794)
+    
+    # Return 0 instead of negatives
+    assert_almost_equal(fixed_point_finder(0, 30, 12), 0)
+    assert_almost_equal(fixed_point_finder(-10, 30, 1), 0)
 
 def test_chi_to_gauss():
     # Values taken from hispeed.DistributionalMapping.nonCentralChiToGaussian
