@@ -1623,25 +1623,32 @@ def Wrotate(kt, Basis, inds = None):
 
     Wrot = np.zeros(len(inds))
 
-    # Construct full 4D tensor
-    W4D = Wcons(kt)
-
     for e in range(len(inds)):
-        Wrot[e] = _Wrotate_element(W4D, inds[e][0], inds[e][1], inds[e][2],
+        Wrot[e] = _Wrotate_element(kt, inds[e][0], inds[e][1], inds[e][2],
                                    inds[e][3], Basis)
 
     return Wrot
 
+# Defining keys to select a kurtosis tensor element with indexes (i, j, k, l)
+# on a kt vector that contains only the 15 independent elements of the kurtosis
+# tensor: Considering y defined by (i+1) * (j+1) * (k+1) * (l+1). Two elements
+# of the full 4D kurtosis tensor are equal if y obtain from the indexes of
+# these two element are equal. Therefore, the possible values of y (1, 16, 81,
+# 2, 3, 8, 24 27, 54, 4, 9, 36, 6, 12, 18) are used to point each element of
+# the kurtosis tensor on the format of a vector containing the 15 independent
+# elements.
+ind_ele = {1: 0, 16: 1, 81: 2, 2: 3, 3: 4, 8: 5, 24: 6, 27: 7, 54: 8, 4: 9,
+           9: 10, 36: 11, 6: 12, 12: 13, 18: 14}
 
-def _Wrotate_element(W4D, indi, indj, indk, indl, B):
-    r""" Helper function that returns the element with specified index of a
+def _Wrotate_element(kt, indi, indj, indk, indl, B):
+    r""" Helper function that returns the element with specified indexes of a
     rotated kurtosis tensor from the Cartesian coordinate system to another
     coordinate system basis
 
     Parameters
     ----------
-    W4D : array(4,4,4,4)
-        Full 4D kurtosis tensor in the Cartesian coordinate system
+    kt : (15,)
+        Vector with the 15 independent elements of the kurtosis tensor
     indi : int
         Rotated kurtosis tensor element index i (0 for x, 1 for y, 2 for z)
     indj : int
@@ -1670,13 +1677,14 @@ def _Wrotate_element(W4D, indi, indj, indk, indl, B):
     # These for loops can be avoid using kt symmetry properties. If this
     # simplification is done we don't need also to reconstruct the full kt
     # tensor
-    for il in range(3):
-        for jl in range(3):
-            for kl in range(3):
-                for ll in range(3):
+    xyz = [0, 1, 2]
+    for il in xyz:
+        for jl in xyz:
+            for kl in xyz:
+                for ll in xyz:
+                    key = (il+1) * (jl+1) * (kl+1) * (ll+1)
                     multiplyB = B[il, indi]*B[jl, indj]*B[kl, indk]*B[ll, indl]
-                    Wre = Wre + multiplyB * W4D[il, jl, kl, ll]
-
+                    Wre = Wre + multiplyB * kt[ind_ele[key]]
     return Wre
 
 
@@ -1699,7 +1707,7 @@ def Wcons(k_elements):
                      & & )\end{matrix}
     Returns
     -------
-    W : array(4,4,4,4)
+    W : array(3, 3, 3, 3)
         Full 4D kurtosis tensor
     """
 
@@ -1708,21 +1716,6 @@ def Wcons(k_elements):
     # element if an only if the element corresponds to an symmetry element.
     # This multiplication is therefore used to fill the other elements of the
     # full kurtosis elements
-    indep_ele = {1: k_elements[0],
-                 16: k_elements[1],
-                 81: k_elements[2],
-                 2: k_elements[3],
-                 3: k_elements[4],
-                 8: k_elements[5],
-                 24: k_elements[6],
-                 27: k_elements[7],
-                 54: k_elements[8],
-                 4: k_elements[9],
-                 9: k_elements[10],
-                 36: k_elements[11],
-                 6: k_elements[12],
-                 12: k_elements[13],
-                 18: k_elements[14]}
 
     W = np.zeros((3, 3, 3, 3))
 
@@ -1732,7 +1725,7 @@ def Wcons(k_elements):
             for ind_k in xyz:
                 for ind_l in xyz:
                     key = (ind_i+1) * (ind_j+1) * (ind_k+1) * (ind_l+1)
-                    W[ind_i][ind_j][ind_k][ind_l] = indep_ele[key]
+                    W[ind_i][ind_j][ind_k][ind_l] = k_elements[ind_ele[key]]
 
     return W
 

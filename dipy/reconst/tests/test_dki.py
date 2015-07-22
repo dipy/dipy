@@ -21,7 +21,8 @@ from dipy.data import get_data
 from dipy.reconst.dti import (from_lower_triangular, decompose_tensor)
 
 from dipy.reconst.dki import (mean_kurtosis, carlson_rf,  carlson_rd,
-                              axial_kurtosis, radial_kurtosis, _positive_evals)
+                              axial_kurtosis, radial_kurtosis, _positive_evals,
+                              Wcons)
 
 from dipy.core.sphere import Sphere
 
@@ -280,6 +281,7 @@ def test_Wrotate_crossing_fibers():
 
     # Compare rotated with the reference
     assert_array_almost_equal(kt_rotated, kt_ref)
+
 
 def test_Wcons():
 
