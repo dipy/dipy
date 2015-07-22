@@ -11,6 +11,7 @@ cdef extern from "dpy_math.h" nogil:
     cdef double NPY_PI
     double sqrt(double)
     double log(double)
+    double exp(double)
 
 
 class ConstantObservationModel(object):
@@ -22,16 +23,16 @@ class ConstantObservationModel(object):
     # To-do: create abstract class "ObservationModel" and derive
     # Constant... and Splines... from it
 
-    def __init__(self, nclasses):
+    def __init__(self):
         r""" Initializes an instance of the ConstantObservationModel class
         """
         pass
 
-        self.nclasses
-        self.mu = np.zeros(nclasses)
-        self.sigmasq = np.zeros(nclasses)
+        # self.nclasses
+        # self.mu = np.zeros(nclasses)
+        # self.sigmasq = np.zeros(nclasses)
 
-    def initialize_param_uniform(self, image, num_classes):
+    def initialize_param_uniform(self, image, nclasses):
         """ Initializes the means and variances uniformly
 
         The means are initialized uniformly along the dynamic range of `image`.
@@ -49,13 +50,13 @@ class ConstantObservationModel(object):
         """
 
         cdef:
-            double[:] mu = np.empty((num_classes,), dtype=np.float64)
-            double[:] sigmasq = np.empty((num_classes,), dtype=np.float64)
+            double[:] mu = np.empty((nclasses,), dtype=np.float64)
+            double[:] sigmasq = np.empty((nclasses,), dtype=np.float64)
 
         _initialize_param_uniform(image, mu, sigmasq)
         return np.array(mu), np.array(sigmasq)
 
-    def negloglikelihood(self, image):
+    def negloglikelihood(self, image, mu, sigmasq, nclasses):
         r""" Computes the Gaussian negative log-likelihood of each class
 
         Computes the Gaussian negative log-likelihood of each class for each
@@ -66,7 +67,7 @@ class ConstantObservationModel(object):
 
         """
 
-        nloglike = np.zeros(image.shape + (self.nclass,))
+        nloglike = np.zeros(image.shape + (nclasses,))
         mask = np.where(image > 0, 1, 0)
 
         for idx in ndindex(image.shape[:3]):
@@ -76,11 +77,11 @@ class ConstantObservationModel(object):
                 if sigmasq[l] == 0:
                     nloglike[idx, l] = 0
                 else:
-                    nloglike[idx, l] = ((image[idx] - self.mu[l]) ** 2.0) / (2.0 * self.sigmasq[l])
+                    nloglike[idx, l] = ((image[idx] - mu[l]) ** 2.0) / (2.0 * sigmasq[l])
                     nloglike[idx, l] += np.log(2.0 * np.pi * np.sqrt(sigmasq[l]))
         return nloglike
 
-    def prob_neighborhood(self, image, seg, beta, self.nclasses):
+    def prob_neighborhood(self, image, seg, beta, nclasses):
         r""" Conditional probability of the label given the neighborhood
         Equation 2.18 of the Stan Z. Li book.
 
@@ -99,9 +100,25 @@ class ConstantObservationModel(object):
                              the voxel
         """
 
-        _prob_neighborhood(image, seg, beta, self.nclasses)
+        cdef:
+            double[:,:,:,:] P_L_N = np.zeros(image.shape + (nclasses,), dtype=np.float64)
+            # double[:,:,:,:]
+            cnp.npy_intp classid = 0
 
-        return P_L_N
+        PLN_norm = np.zeros(image.shape, dtype=np.float64)
+
+        for classid in range(nclasses):
+            _prob_neighb_perclass(image, seg, beta, classid, P_L_N)
+
+            # Eq 2.18 of Stan Z. Li book
+
+            PLN = np.array(P_L_N)
+
+            PLN[:, :, :, classid] = np.exp(- PLN[:, :, :, classid])
+            PLN_norm += PLN[:, :, :, classid]
+            PLN[:, :, :, classid] = PLN[:, :, :, classid] / PLN_norm
+
+        return PLN
 
 
     def prob_image(self, img, nclasses, mu, sigmasq, P_L_N):
@@ -147,7 +164,7 @@ class ConstantObservationModel(object):
 
         return P_L_Y
 
-    def update_param(self, image, P_L_Y):
+    def update_param(self, image, P_L_Y, mu, nclasses):
         r""" Updates the means and the variances in each iteration for all the
         labels. This is for equations 25 and 26 of the Zhang paper
 
@@ -165,14 +182,14 @@ class ConstantObservationModel(object):
 
         """
         # temporary mu and var files to compute the update
-        mu_upd = self.mu
-        var_upd = np.zeros(self.nclasses)
-        mu_num = np.zeros(image.shape + (self.nclasses,))
-        var_num = np.zeros(image.shape + (self.nclasses,))
-        denm = np.zeros(image.shape + (self.nclasses,))
+        mu_upd = mu
+        var_upd = np.zeros(nclasses)
+        mu_num = np.zeros(image.shape + (nclasses,))
+        var_num = np.zeros(image.shape + (nclasses,))
+        denm = np.zeros(image.shape + (nclasses,))
         mask = np.where(image > 0, 1, 0)
 
-        for l in range(self.nclasses):
+        for l in range(nclasses):
             for idx in ndindex(image.shape[:3]):
                 if not mask[idx]:
                     continue
@@ -227,48 +244,45 @@ cdef void _initialize_param_uniform(double[:,:,:] image, double[:] mu, double[:]
             mu[i] = min_val + i * (max_val - min_val)/nclasses
 
 
-cdef void _prob_neighborhood(double[:,:,:] image, double[:,:,:] seg, double beta, self.nclasses) nogil:
+cdef void _prob_neighb_perclass(double[:, :, :] image, double[:, :, :] seg,
+                                double beta, int classid,
+                                double[:, :, :, :] P_L_N) nogil:
 
     cdef:
         cnp.npy_intp nx = image.shape[0]
         cnp.npy_intp ny = image.shape[1]
         cnp.npy_intp nz = image.shape[2]
         cnp.npy_intp nneigh = 6
+        cnp.npy_intp l = classid
+        cnp.npy_intp x, y, z, xx, yy, zz
+        double vox_prob
         cnp.npy_intp* dX = [-1, 0, 0, 0,  0, 1]
         cnp.npy_intp* dY = [0, -1, 0, 1,  0, 0]
         cnp.npy_intp* dZ = [0,  0, 1, 0, -1, 0]
-        double[:,:,:,:] P_L_N = np.zeros((nx, ny, nz, self.nclasses), dtype=np.float64)
-        double[:,:,:,:] P_L_N_norm = np.zeros((nx, ny, nz), dtype=np.float64)
 
-        for l in range(self.nclasses):
-            for x in range(nx):
-                for y in range(ny):
-                    for z in range(nz):
+    for x in range(nx):
+        for y in range(ny):
+            for z in range(nz):
 
-                            vox_prob = P_L_N[x, y, z, l]
+                vox_prob = P_L_N[x, y, z, l]
 
-                            for i in range(nneigh):
-                                xx = x + dX[i]
-                                if((xx < 0) or (xx >= nx)):
-                                    continue
-                                yy = y + dY[i]
-                                if((yy < 0) or (yy >= ny)):
-                                    continue
-                                zz = z + dZ[i]
-                                if((zz < 0) or (zz >= nz)):
-                                    continue
+                for i in range(nneigh):
+                    xx = x + dX[i]
+                    if((xx < 0) or (xx >= nx)):
+                        continue
+                    yy = y + dY[i]
+                    if((yy < 0) or (yy >= ny)):
+                        continue
+                    zz = z + dZ[i]
+                    if((zz < 0) or (zz >= nz)):
+                        continue
 
-                                if seg[xx,yy,zz] == l:
-                                    vox_prob -= beta
-                                else:
-                                    vox_prob += beta
+                    if seg[xx,yy,zz] == l:
+                        vox_prob -= beta
+                    else:
+                        vox_prob += beta
 
-                            P_L_N[x, y, z, l] = vox_prob
-
-            # Eq 2.18 of Stan Z. Li book
-            P_L_N[:, :, :, l] = np.exp(- P_L_N[:, :, :, l])
-            P_L_N_norm[:, :, :] += P_L_N[:, :, :, l]
-            P_L_N[:, :, :, l] = P_L_N[:, :, :, l]/P_L_N_norm
+                P_L_N[x, y, z, l] = vox_prob
 
 
 class IteratedConditionalModes(object):
@@ -432,41 +446,41 @@ cdef void _icm_ising(double[:,:,:,:] nloglike, double beta, int[:,:,:] seg) nogi
                 seg[x,y,z] = best_class
 
 
-class ImageSegmenter(object):
-    # To-do: generalize to quadratic measure fields measure fields
-    def __init__(self):
-        self.observation_model = ObservationModel()
-        pass
+#class ImageSegmenter(object):
+#    # To-do: generalize to quadratic measure fields measure fields
+#    def __init__(self):
+#        self.observation_model = ConstantObservationModel()
+#        pass
+#
+#    def segment_HMRF(self, image, nclasses, max_iter):
+#
+#        print("Computing neg-log-likelihood")
+#        self.observation_model.negloglikelihood()
+#        negll = self.observation_model.negloglikelihood(image)
+#
+#        print("Initializing parameters")
+#        mu, sigmasq = self.observation_model.initialize_param_uniform(image, nclasses)
+#
+#        print("Initializing segmentation")
+#        posteriorMaximizer = IteratedConditionalModes()
+#        seg_init = posteriorMaximizer.initialize_maximum_likelihood(negll)
+#
+#        for iter in range(max_iter): # Here is where the EM parts come in
+#            print("Iter: %d"%(iter,))
+#
+#            PLN = self.observation_model._prob_neighborhood(image, seg_init, beta, nclasses)
+#            PLY = self.observation_model.prob_image(img, nclasses, mu, sigmasq, PLN)
+#            self.observationmodel.update_param(image, PLY)
+#            negll = self.observation_model.negloglikelihood(image)
+#            seg = posteriorMaximizer.icm_ising(negll, beta, segm)
+#
+#        return seg
 
-    def segment_HMRF(self, image, nclasses, max_iter):
 
-        print("Computing neg-log-likelihood")
-        self.observation_model.negloglikelihood()
-        negll = self.observation_model.negloglikelihood(image)
-
-        print("Initializing parameters")
-        mu, sigmasq = self.observation_model.initialize_param_uniform(image, nclasses)
-
-        print("Initializing segmentation")
-        posteriorMaximizer = IteratedConditionalModes()
-        seg_init = posteriorMaximizer.initialize_maximum_likelihood(negll)
-
-        for iter in range(max_iter): # Here is where the EM parts come in
-            print("Iter: %d"%(iter,))
-
-            PLN = self.observation_model._prob_neighborhood(image, seg_init, beta, nclasses)
-            PLY = self.observation_model.prob_image(img, nclasses, mu, sigmasq, PLN)
-            self.observationmodel.update_param(image, PLY)
-            negll = self.observation_model.negloglikelihood(image)
-            seg = posteriorMaximizer.icm_ising(negll, beta, segm)
-
-        return seg
-
-
-if __name__ == "__main__":
-
-    image = nib.load('my_image.nii.gz')
-    nclasses = 3
-
-    segmenter = ImageSegmenter(model)
-    segmented = segmenter.segment_HMRF(image, nclasses)
+#if __name__ == "__main__":
+#
+#    image = nib.load('my_image.nii.gz')
+#    nclasses = 3
+#
+#    segmenter = ImageSegmenter(model)
+#    segmented = segmenter.segment_HMRF(image, nclasses)
