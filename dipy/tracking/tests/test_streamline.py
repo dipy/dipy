@@ -562,6 +562,12 @@ def test_select_by_roi():
     mask1[0, 0, 0] = True
     mask2[1, 0, 0] = True
 
+    selection = select_by_roi(streamlines, [mask1], [True],
+    tol=1)
+
+    npt.assert_array_equal(list(selection), [streamlines[0],
+                                            streamlines[1]])
+
     selection = select_by_roi(streamlines, [mask1, mask2], [True, True],
     tol=1)
 
