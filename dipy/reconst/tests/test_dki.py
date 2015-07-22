@@ -6,13 +6,13 @@ import numpy as np
 
 import random
 
+import dipy.reconst.dki as dki
+
 from nose.tools import assert_almost_equal
 
 from numpy.testing import (assert_array_almost_equal, assert_array_equal)
 
 from dipy.sims.voxel import multi_tensor_dki
-
-import dipy.reconst.dki as dki
 
 from dipy.io.gradients import read_bvals_bvecs
 
@@ -23,7 +23,8 @@ from dipy.data import get_data
 from dipy.reconst.dti import (from_lower_triangular, decompose_tensor)
 
 from dipy.reconst.dki import (mean_kurtosis, carlson_rf,  carlson_rd,
-                              axial_kurtosis, radial_kurtosis, _positive_evals)
+                              axial_kurtosis, radial_kurtosis, _positive_evals,
+                              _F1m, _F2m)
 
 from dipy.core.sphere import Sphere
 
@@ -408,3 +409,43 @@ def test_compare_MK_method():
                     axis=-1)
 
     assert_array_almost_equal(MK_as, MK_nm, decimal=1)
+
+
+def test_single_voxel_DKI_stats():
+    # tests if AK and RK are equal to expected values for a single fiber
+    # simulate randomly oriented
+    ADi = 0.00099
+    ADe = 0.00226
+    RDi = 0
+    RDe = 0.00087
+    # Reference values
+    AD = fie*ADi + (1-fie)*ADe
+    AK = 3 * fie * (1-fie) * ((ADi-ADe) / AD) ** 2
+    RD = fie*RDi + (1-fie)*RDe
+    RK = 3 * fie * (1-fie) * ((RDi-RDe) / RD) ** 2
+    ref_vals = np.array([AD, AK, RD, RK])
+    
+    # simulate fiber randomly oriented
+    theta = random.uniform(0, 180)
+    phi = random.uniform(0, 320)
+    angles = [(theta, phi), (theta, phi)]
+    mevals = np.array([[ADi, RDi, RDi], [ADe, RDe, RDe]])
+    frac = [fie*100, (1-fie)*100]
+    signal, dt, kt = multi_tensor_dki(gtab_2s, mevals, S0=100, angles=angles,
+                                      fractions=frac, snr=None)
+    evals, evecs = decompose_tensor(from_lower_triangular(dt))
+    dki_par = np.concatenate((evals, evecs[0], evecs[1], evecs[2], kt), axis=0)
+
+    # Estimates using dki functions
+    ADe1 = dki.axial_diffusivity(evals)
+    RDe1 = dki.radial_diffusivity(evals)
+    AKe1 = axial_kurtosis(dki_par)
+    RKe1 = radial_kurtosis(dki_par)
+    e1_vals = np.array([ADe1, AKe1, RDe1, RKe1])
+    assert_array_almost_equal(e1_vals, ref_vals)
+
+    # Estimates using the kurtosis class object
+    dkiM = dki.DiffusionKurtosisModel(gtab_2s)
+    dkiF = dkiM.fit(signal)
+    e2_vals = np.array([dkiF.ad, dkiF.ak, dkiF.rd, dkiF.rk])
+    assert_array_almost_equal(e2_vals, ref_vals)

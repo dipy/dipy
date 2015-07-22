@@ -241,9 +241,9 @@ def _F1m(a, b, c):
     # Only computes F1 in voxels that have all eigenvalues larger than zero
     cond0 = _positive_evals(a, b, c, er=er)
 
-    # Apply formula for non problematic plaussible cases, i.e. a!=b and b!=c
+    # Apply formula for non problematic plaussible cases, i.e. a!=b and a!=c
     cond1 = np.logical_and(cond0, np.logical_and(abs(a - b) > er,
-                                                 abs(b - c) > er))
+                                                 abs(a - c) > er))
     if np.sum(cond1)!=0:
         L1 = a[cond1]
         L2 = b[cond1]
@@ -251,13 +251,13 @@ def _F1m(a, b, c):
         RFm = carlson_rf(L1/L2, L1/L3, np.ones(len(L1)))
         RDm = carlson_rd(L1/L2, L1/L3, np.ones(len(L1)))
         F1[cond1] = ((L1+L2+L3) ** 2) / (18 * (L1-L2) * (L1-L3)) * \
-                    (((np.sqrt(L2*L3)) / L1) * RFm + \
-                     ((3 * L1**2 - L1*L2 - L1*L3 - L2*L3) / \
-                     (3 * L1 * np.sqrt(L2*L3))) * RDm - 1)
+                    (np.sqrt(L2*L3) / L1 * RFm + \
+                     (3 * L1**2 - L1*L2 - L1*L3 - L2*L3) / \
+                     (3 * L1 * np.sqrt(L2*L3)) * RDm - 1)
 
     # Resolve possible sigularity a==b
     cond2 = np.logical_and(cond0, np.logical_and(abs(a - b) < er,
-                                                  abs(b - c) > er))
+                                                 abs(b - c) > er))
     if np.sum(cond2)!=0:
         L1 = a[cond2]
         L3 = c[cond2]
@@ -694,7 +694,7 @@ def _G1m(a, b, c):
 
 def _G2m(a,b,c):
     """ Helper function that computes function $G_2$ which is required to
-    compute the analytical solution of the Axial kurtosis.
+    compute the analytical solution of the radial kurtosis.
     
     Parameters
     ----------
@@ -869,7 +869,7 @@ def axial_kurtosis(dki_params):
         R = evecs[vox]
         dt = lower_triangular(np.dot(np.dot(R, np.diag(evals[vox])), R.T))
         AKi[vox] = _directional_kurtosis(dt, MD[vox], kt[vox],
-                                        np.array([R[:, 1]]))
+                                        np.array([R[:, 0]]))
 
     # reshape data according to input data
     AK[rel_i] = AKi
