@@ -605,13 +605,13 @@ def mean_kurtosis(dki_params, sphere=None):
     Wxxzz = np.zeros((len(kt)))
     Wyyzz = np.zeros((len(kt)))
 
-    for vox in range(len(kt)): 
-        Wxxxx[vox] = Wrotate(kt[vox], evecs[vox], [0, 0, 0, 0])
-        Wyyyy[vox] = Wrotate(kt[vox], evecs[vox], [1, 1, 1, 1])
-        Wzzzz[vox] = Wrotate(kt[vox], evecs[vox], [2, 2, 2, 2])
-        Wxxyy[vox] = Wrotate(kt[vox], evecs[vox], [0, 0, 1, 1])
-        Wxxzz[vox] = Wrotate(kt[vox], evecs[vox], [0, 0, 2, 2])
-        Wyyzz[vox] = Wrotate(kt[vox], evecs[vox], [1, 1, 2, 2])
+    for vox in range(len(kt)):
+        Wxxxx[vox] = _Wrotate_element(kt[vox], 0, 0, 0, 0, evecs[vox])
+        Wyyyy[vox] = _Wrotate_element(kt[vox], 1, 1, 1, 1, evecs[vox])
+        Wzzzz[vox] = _Wrotate_element(kt[vox], 2, 2, 2, 2, evecs[vox])
+        Wxxyy[vox] = _Wrotate_element(kt[vox], 0, 0, 1, 1, evecs[vox])
+        Wxxzz[vox] = _Wrotate_element(kt[vox], 0, 0, 2, 2, evecs[vox])
+        Wyyzz[vox] = _Wrotate_element(kt[vox], 1, 1, 2, 2, evecs[vox])
 
     # Compute MK
     MK = _F1m(evals[..., 0], evals[..., 1], evals[..., 2])*Wxxxx + \
@@ -811,9 +811,9 @@ def radial_kurtosis(dki_params):
     Wyyzz = np.zeros((len(kt)))
 
     for vox in range(len(kt)): 
-        Wyyyy[vox] = Wrotate(kt[vox], evecs[vox], [1, 1, 1, 1])
-        Wzzzz[vox] = Wrotate(kt[vox], evecs[vox], [2, 2, 2, 2])
-        Wyyzz[vox] = Wrotate(kt[vox], evecs[vox], [1, 1, 2, 2])
+        Wyyyy[vox] = _Wrotate_element(kt[vox], 1, 1, 1, 1, evecs[vox])
+        Wzzzz[vox] = _Wrotate_element(kt[vox], 2, 2, 2, 2, evecs[vox])
+        Wyyzz[vox] = _Wrotate_element(kt[vox], 1, 1, 2, 2, evecs[vox])
 
     # Compute RK
     RK = \
