@@ -434,43 +434,7 @@ def _mk_analytical_solution(dki_params):
            kurtosis imaging. Magn Reson Med. 65(3), 823-836
     """
 
-    # Flat parameters
-    outshape = dki_params.shape[:-1]
-    dki_params = dki_params.reshape((-1, dki_params.shape[-1]))
-
-    # Split the model parameters to three variable containing the evals, evecs,
-    # and kurtosis elements
-
-    evals, evecs, kt = split_dki_param(dki_params)
-
-    # Rotate the kurtosis tensor from the standard Cartesian coordinate system
-    # to another coordinate system in which the 3 orthonormal eigenvectors of
-    # DT are the base coordinate
-    Wxxxx = np.zeros((len(kt)))
-    Wyyyy = np.zeros((len(kt)))
-    Wzzzz = np.zeros((len(kt)))
-    Wxxyy = np.zeros((len(kt)))
-    Wxxzz = np.zeros((len(kt)))
-    Wyyzz = np.zeros((len(kt)))
-
-    for vox in range(len(kt)): 
-        Wxxxx[vox] = Wrotate(kt[vox], evecs[vox], [0, 0, 0, 0])
-        Wyyyy[vox] = Wrotate(kt[vox], evecs[vox], [1, 1, 1, 1])
-        Wzzzz[vox] = Wrotate(kt[vox], evecs[vox], [2, 2, 2, 2])
-        Wxxyy[vox] = Wrotate(kt[vox], evecs[vox], [0, 0, 1, 1])
-        Wxxzz[vox] = Wrotate(kt[vox], evecs[vox], [0, 0, 2, 2])
-        Wyyzz[vox] = Wrotate(kt[vox], evecs[vox], [1, 1, 2, 2])
-
-    # Compute MK
-    MeanKurt = _F1m(evals[..., 0], evals[..., 1], evals[..., 2])*Wxxxx + \
-               _F1m(evals[..., 1], evals[..., 0], evals[..., 2])*Wyyyy + \
-               _F1m(evals[..., 2], evals[..., 1], evals[..., 0])*Wzzzz + \
-               _F2m(evals[..., 0], evals[..., 1], evals[..., 2])*Wyyzz + \
-               _F2m(evals[..., 1], evals[..., 0], evals[..., 2])*Wxxzz + \
-               _F2m(evals[..., 2], evals[..., 1], evals[..., 0])*Wxxyy
-
-    MeanKurt = MeanKurt.reshape(outshape)
-
+    
     return MeanKurt
 
 
@@ -641,10 +605,6 @@ def mean_kurtosis(dki_params, sphere=None):
             2) Three lines of the eigenvector matrix each containing the first,
                second and third coordinates of the eigenvector
             3) Fifteen elements of the kurtosis tensor
-    sphere : a Sphere class instance (optional)
-        If a sphere class instance is given, MK is estimated as the average of
-        the directional kurtosis of the vertices in the sphere [1]_. Otherwise
-        MK is computed from its analytical solution [2]_.
         
     Returns
     -------
@@ -653,7 +613,7 @@ def mean_kurtosis(dki_params, sphere=None):
 
     Notes
     --------
-    The MK analytical solution is calculated using the following equation [2]_:
+    The MK analytical solution is calculated using the following equation [1]_:
     .. math::
 
     MK=F_1(\lambda_1,\lambda_2,\lambda_3)\hat{W}_{1111}+
@@ -696,10 +656,43 @@ def mean_kurtosis(dki_params, sphere=None):
            Estimation of tensors and tensor-derived measures in diffusional
            kurtosis imaging. Magn Reson Med. 65(3), 823-836
     """
-    if sphere == None:
-        MK = _mk_analytical_solution(dki_params)
-    else:
-        MK = np.mean(apparent_kurtosis_coef(dki_params, sphere), axis=-1)
+    # Flat parameters
+    outshape = dki_params.shape[:-1]
+    dki_params = dki_params.reshape((-1, dki_params.shape[-1]))
+
+    # Split the model parameters to three variable containing the evals, evecs,
+    # and kurtosis elements
+
+    evals, evecs, kt = split_dki_param(dki_params)
+
+    # Rotate the kurtosis tensor from the standard Cartesian coordinate system
+    # to another coordinate system in which the 3 orthonormal eigenvectors of
+    # DT are the base coordinate
+    Wxxxx = np.zeros((len(kt)))
+    Wyyyy = np.zeros((len(kt)))
+    Wzzzz = np.zeros((len(kt)))
+    Wxxyy = np.zeros((len(kt)))
+    Wxxzz = np.zeros((len(kt)))
+    Wyyzz = np.zeros((len(kt)))
+
+    for vox in range(len(kt)): 
+        Wxxxx[vox] = Wrotate(kt[vox], evecs[vox], [0, 0, 0, 0])
+        Wyyyy[vox] = Wrotate(kt[vox], evecs[vox], [1, 1, 1, 1])
+        Wzzzz[vox] = Wrotate(kt[vox], evecs[vox], [2, 2, 2, 2])
+        Wxxyy[vox] = Wrotate(kt[vox], evecs[vox], [0, 0, 1, 1])
+        Wxxzz[vox] = Wrotate(kt[vox], evecs[vox], [0, 0, 2, 2])
+        Wyyzz[vox] = Wrotate(kt[vox], evecs[vox], [1, 1, 2, 2])
+
+    # Compute MK
+    MK = _F1m(evals[..., 0], evals[..., 1], evals[..., 2])*Wxxxx + \
+         _F1m(evals[..., 1], evals[..., 0], evals[..., 2])*Wyyyy + \
+         _F1m(evals[..., 2], evals[..., 1], evals[..., 0])*Wzzzz + \
+         _F2m(evals[..., 0], evals[..., 1], evals[..., 2])*Wyyzz + \
+         _F2m(evals[..., 1], evals[..., 0], evals[..., 2])*Wxxzz + \
+         _F2m(evals[..., 2], evals[..., 1], evals[..., 0])*Wxxyy
+
+    MK = MK.reshape(outshape)
+
 
     return MK
 

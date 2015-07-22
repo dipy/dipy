@@ -353,12 +353,12 @@ def test_Wcons():
     Wfit[2, 1, 2, 0] = Wfit[2, 2, 0, 1] = Wfit[2, 2, 1, 0] = kt_cross[14]
 
     # Function to be tested
-    Wcons = dki.Wcons(kt_cross)
+    W4D = dki.Wcons(kt_cross)
 
     Wfit = Wfit.reshape(-1)
-    Wcons = Wcons.reshape(-1)
+    W4D = W4D.reshape(-1)
 
-    assert_array_almost_equal(Wcons, Wfit)
+    assert_array_almost_equal(W4D, Wfit)
 
 
 def test_spherical_dki_statistics():
@@ -406,6 +406,7 @@ def test_compare_MK_method():
 
     # MK numerical method
     sph = Sphere(xyz=gtab.bvecs[gtab.bvals > 0])
-    MK_nm = mean_kurtosis(dkiF.model_params, sph)
+    MK_nm = np.mean(dki.apparent_kurtosis_coef(dkiF.model_params, sph),
+                    axis=-1)
 
     assert_array_almost_equal(MK_as, MK_nm, decimal=1)
