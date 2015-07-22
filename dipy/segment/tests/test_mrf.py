@@ -4,16 +4,7 @@ import matplotlib.pyplot as plt
 from dipy.data import get_data
 from dipy.sims.voxel import add_noise
 from dipy.segment.mrf import (ConstantObservationModel,
-                              initialize_param_uniform,
-                              negloglikelihood,
-                              prob_neighborhood,
-                              prob_image,
-                              update_param,
-                              IteratedConditionalModes,
-                              initialize_maximum_likelihood,
-                              icm_ising,
-                              ImageSegmenter,
-                              segment_HMRF)
+                              IteratedConditionalModes)
 
 
 # Load a coronal slice from a T1-weighted MRI
@@ -26,7 +17,7 @@ image = np.zeros(shape=single_slice.shape + (nslices,))
 image[..., :nslices] = single_slice[..., None]
 
 # Execute the segmentation
-nclasses = 3
+nclasses = 4
 beta = 0.1
 max_iter = 2
 
@@ -59,15 +50,19 @@ B[99:157, 99:157, :] = temp_3
 
 square_gauss = add_noise(square, 4, 1, noise_type='gaussian')
 
+
 def test_greyscale_image():
 
-    mu, sigma = initialize_param_uniform(image, nclasses)
+    com = ConstantObservationModel()
+    mu, sigma = com.initialize_param_uniform(image, nclasses)
 
     print(mu)
     print(sigma)
 
     npt.assert_almost_equal(mu, np.array([0., 0.25, 0.5, 0.75]))
     npt.assert_equal(sigma, np.array([1.0, 1.0, 1.0, 1.0]))
+
+    1/0
 
     sigmasq = sigma ** 2
 
@@ -115,5 +110,6 @@ def test_greyscale_image():
 
 if __name__ == '__main__':
 
-    initial_segmentation, final_segmentation = test_in_parts()
+    test_greyscale_image()
+    #initial_segmentation, final_segmentation = test_in_parts()
     #test_segmentation()
