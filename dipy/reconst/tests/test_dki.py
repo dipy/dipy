@@ -4,6 +4,8 @@ from __future__ import division, print_function, absolute_import
 
 import numpy as np
 
+import random
+
 from nose.tools import assert_almost_equal
 
 from numpy.testing import (assert_array_almost_equal, assert_array_equal)
@@ -21,8 +23,7 @@ from dipy.data import get_data
 from dipy.reconst.dti import (from_lower_triangular, decompose_tensor)
 
 from dipy.reconst.dki import (mean_kurtosis, carlson_rf,  carlson_rd,
-                              axial_kurtosis, radial_kurtosis, _positive_evals,
-                              Wcons)
+                              axial_kurtosis, radial_kurtosis, _positive_evals)
 
 from dipy.core.sphere import Sphere
 
@@ -228,7 +229,9 @@ def test_Wrotate_single_fiber():
     frac = [fie*100, (1 - fie)*100]
 
     # simulate single fiber not aligned to the x-axis
-    angles = [(45, 0), (45, 0)]
+    theta = random.uniform(0, 180)
+    phi = random.uniform(0, 320)
+    angles = [(theta, phi), (theta, phi)]
     signal, dt, kt = multi_tensor_dki(gtab_2s, mevals, angles=angles,
                                       fractions=frac, snr=None)
 
@@ -362,7 +365,7 @@ def test_Wcons():
 
 
 def test_spherical_dki_statistics():
-    # tests MK solutions are equal to an expected values for a spherical
+    # tests if MK, AK and RK are equal to expected values of a spherical
     # kurtosis tensor
 
     # Define multi voxel spherical kurtosis simulations
@@ -380,15 +383,10 @@ def test_spherical_dki_statistics():
     MK_multi = mean_kurtosis(MParam)
     assert_array_almost_equal(MK_multi, MRef)
 
-    # Mean kurtosis numerical method
-    sph = Sphere(xyz=gtab.bvecs[gtab.bvals > 0])
-    MK_multi = mean_kurtosis(MParam, sph)
-    assert_array_almost_equal(MK_multi, MRef)
-
     # radial kurtosis analytical solution
     RK_multi = radial_kurtosis(MParam)
     assert_array_almost_equal(RK_multi, MRef)
-    
+
     # axial kurtosis analytical solution
     AK_multi = axial_kurtosis(MParam)
     assert_array_almost_equal(AK_multi, MRef)
