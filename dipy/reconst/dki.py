@@ -629,7 +629,7 @@ def mean_kurtosis(dki_params, sphere=None):
 
 def _G1m(a, b, c):
     """ Helper function that computes function $G_1$ which is required to
-    compute the analytical solution of the Axial kurtosis.
+    compute the analytical solution of the Radial kurtosis.
     
     Parameters
     ----------
@@ -694,7 +694,7 @@ def _G1m(a, b, c):
 
 def _G2m(a,b,c):
     """ Helper function that computes function $G_2$ which is required to
-    compute the analytical solution of the radial kurtosis.
+    compute the analytical solution of the Radial kurtosis.
     
     Parameters
     ----------
@@ -1597,9 +1597,6 @@ def _Wrotate_element(kt, indi, indj, indk, indl, B):
 
     Wre = 0
 
-    # These for loops can be avoid using kt symmetry properties. If this
-    # simplification is done we don't need also to reconstruct the full kt
-    # tensor
     xyz = [0, 1, 2]
     for il in xyz:
         for jl in xyz:
@@ -1633,12 +1630,6 @@ def Wcons(k_elements):
     W : array(3, 3, 3, 3)
         Full 4D kurtosis tensor
     """
-
-    # Note: The multiplication of the indexes (i+1) * (j+1) * (k+1) * (l+1)
-    # for of an elements is only equal to this multiplication for another
-    # element if an only if the element corresponds to an symmetry element.
-    # This multiplication is therefore used to fill the other elements of the
-    # full kurtosis elements
 
     W = np.zeros((3, 3, 3, 3))
 
