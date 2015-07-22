@@ -28,6 +28,8 @@ from dipy.reconst.dki import (mean_kurtosis, carlson_rf,  carlson_rd,
 
 from dipy.core.sphere import Sphere
 
+from dipy.core.geometry import perpendicular_directions
+
 
 fimg, fbvals, fbvecs = get_data('small_64D')
 bvals, bvecs = read_bvals_bvecs(fbvals, fbvecs)
@@ -394,9 +396,10 @@ def test_spherical_dki_statistics():
 
 
 def test_compare_MK_method():
-    """ tests if analytical solution of MK is equal to the exact solution"""
+    # tests if analytical solution of MK is equal to the average of directional
+    # kurtosis sampled from a sphere
 
-    # OLS fitting
+    # DKI Model fitting
     dkiM = dki.DiffusionKurtosisModel(gtab_2s)
     dkiF = dkiM.fit(signal_cross)
 
@@ -449,3 +452,24 @@ def test_single_voxel_DKI_stats():
     dkiF = dkiM.fit(signal)
     e2_vals = np.array([dkiF.ad, dkiF.ak, dkiF.rd, dkiF.rk])
     assert_array_almost_equal(e2_vals, ref_vals)
+
+
+def test_compare_RK_methods():
+    # tests if analytical solution of RK is equal to the perpendicular kurtosis
+    # relative to the first diffusion axis
+
+    # DKI Model fitting
+    dkiM = dki.DiffusionKurtosisModel(gtab_2s)
+    dkiF = dkiM.fit(signal_cross)
+
+    # MK analytical solution
+    RK_as = dkiF.rk
+
+    # MK numerical method
+    evecs = dkiF.evecs
+    p_dir = perpendicular_directions(evecs[:, 0], num=30, half=True)
+    ver = Sphere(xyz=p_dir)
+    RK_nm = np.mean(dki.apparent_kurtosis_coef(dkiF.model_params, ver),
+                    axis=-1)
+
+    assert_array_almost_equal(RK_as, RK_nm)
