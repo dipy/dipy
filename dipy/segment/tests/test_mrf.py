@@ -3,17 +3,17 @@ import numpy.testing as npt
 import matplotlib.pyplot as plt
 from dipy.data import get_data
 from dipy.sims.voxel import add_noise
-from dipy.segment.segmentation import (ConstantObservationModel, 
-                                       initialize_param_uniform, 
-                                       negloglikelihood,
-                                       prob_neighborhood,
-                                       prob_image,
-                                       update_param,
-                                       IteratedConditionalModes,
-                                       initialize_maximum_likelihood,
-                                       icm_ising,
-                                       ImageSegmenter,
-                                       segment_HMRF)
+from dipy.segment.mrf import (ConstantObservationModel,
+                              initialize_param_uniform,
+                              negloglikelihood,
+                              prob_neighborhood,
+                              prob_image,
+                              update_param,
+                              IteratedConditionalModes,
+                              initialize_maximum_likelihood,
+                              icm_ising,
+                              ImageSegmenter,
+                              segment_HMRF)
 
 
 # Load a coronal slice from a T1-weighted MRI
@@ -65,7 +65,7 @@ def test_greyscale_image():
 
     print(mu)
     print(sigma)
-    
+
     npt.assert_almost_equal(mu, np.array([0., 0.25, 0.5, 0.75]))
     npt.assert_equal(sigma, np.array([1.0, 1.0, 1.0, 1.0]))
 
@@ -96,13 +96,13 @@ def test_greyscale_image():
     for i in range(max_iter):
 
         print(i)
-        
+
         PLN = prob_neighborhood(image, initial_segmentation, beta, nclasses)
-        PLY = prob_image(image, nclasses, mu, sigmasq, PLN)          
+        PLY = prob_image(image, nclasses, mu, sigmasq, PLN)
         mu, sigmasq = update_param(image, PLY)
         negll = negloglikelihood(image, mu, sigmasq, nclasses)
         final_segmentation = icm_ising(negll, beta, segm)
-            
+
         figure()
         imshow(final_segmentation[..., 1])
 
