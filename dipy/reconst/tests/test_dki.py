@@ -149,13 +149,14 @@ def test_carlson_rf():
     # Carlson, B.C., 1994. Numerical computation of real or complex
     # elliptic integrals. arXiv:math/9409227 [math.CA]
     
-    # Real values
-    x = np.array([1.0, 0.5, 2.0])
-    y = np.array([2.0, 1.0, 3.0])
-    z = np.array([0.0, 0.0, 4.0])
+    # Real values (test in 2D format)
+    x = np.array([[1.0, 0.5], [2.0, 2.0]])
+    y = np.array([[2.0, 1.0], [3.0, 3.0]])
+    z = np.array([[0.0, 0.0], [4.0, 4.0]])
     
     # Defene reference outputs
-    RF_ref = np.array([1.3110287771461, 1.8540746773014, 0.58408284167715])
+    RF_ref = np.array([[1.3110287771461, 1.8540746773014],
+                       [0.58408284167715, 0.58408284167715]])
     
     # Compute integrals
     RF =  carlson_rf(x, y, z)
@@ -198,15 +199,15 @@ def test_carlson_rd():
     # Compare
     assert_array_almost_equal(RD, RD_ref)
     
-    # Complex values
-    x = np.array([1j, 0.0, 0.0, -2 - 1j])
-    y = np.array([-1j, 1j, 1j-1, -1j])
-    z = np.array([2.0, -1j, 1j, -1 + 1j])
+    # Complex values (testing in 2D format)
+    x = np.array([[1j, 0.0], [0.0, -2 - 1j]])
+    y = np.array([[-1j, 1j], [1j-1, -1j]])
+    z = np.array([[2.0, -1j], [1j, -1 + 1j]])
     
     # Defene reference outputs
-    RD_ref = np.array([0.65933854154220, 1.2708196271910 + 2.7811120159521j,
-                       -1.8577235439239 - 0.96193450888839j, 
-                       1.8249027393704 - 1.2218475784827j])
+    RD_ref = np.array([[0.65933854154220, 1.2708196271910 + 2.7811120159521j],
+                        [-1.8577235439239 - 0.96193450888839j, 
+                         1.8249027393704 - 1.2218475784827j]])
     # Compute integrals
     RD =  carlson_rd(x, y, z, errtol=1e-5)
 

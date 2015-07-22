@@ -19,13 +19,9 @@ from dipy.reconst.dti import (TensorFit, fractional_anisotropy,
 
 from dipy.reconst.utils import dki_design_matrix as design_matrix
 from dipy.utils.six.moves import range
-from dipy.data import get_sphere
-from ..core.gradients import gradient_table
-from ..core.geometry import vector_norm
-from ..core.sphere import Sphere
-from .vec_val_sum import vec_val_vect
 from ..core.onetime import auto_attr
 from .base import ReconstModel
+from dipy.core.ndindex import ndindex
 
 
 def _positive_evals(L1, L2, L3, er=None):
@@ -68,11 +64,11 @@ def carlson_rf(x, y, z, errtol=3e-4):
 
     Parameters
     ----------
-    x : ndarray (n,)
+    x : ndarray
         First independent variable of the integral.
-    y : ndarray (n,)
+    y : ndarray
         Second independent variable of the integral.
-    z : ndarray (n,)
+    z : ndarray
         Third independent variable of the integral.
     errtol : float
         Error tolerance. Integral is computed with relative error less in
@@ -80,7 +76,7 @@ def carlson_rf(x, y, z, errtol=3e-4):
 
     Returns
     -------
-    RF : ndarray (n,)
+    RF : ndarray
         Value of the incomplete first order elliptic integral
 
     Note
@@ -92,17 +88,15 @@ def carlson_rf(x, y, z, errtol=3e-4):
     .. [1] Carlson, B.C., 1994. Numerical computation of real or complex
            elliptic integrals. arXiv:math/9409227 [math.CA]
     """
-    # Initialize RF
-    RF = np.zeros(len(x), dtype=x.dtype)
-
     xn = x.copy()
     yn = y.copy()
     zn = z.copy()
     An = (xn + yn + zn) / 3.0
-    Q = (3.*errtol) ** (-1/6.) * np.max([np.abs(An - xn), np.abs(An - yn),
-                                         np.abs(An - zn)], axis=0)
+    Q = (3.*errtol) ** (-1/6.) * np.max(np.abs([An - xn, An - yn, An - zn]),
+                                        axis=0)
     # Convergence has to be done voxel by voxel
-    for v in range(len(x)):
+    index = ndindex(x.shape)
+    for v in index:
         n = 0
         # Convergence condition
         while 4.**(-n) * Q[v] > abs(An[v]):          
@@ -137,11 +131,11 @@ def carlson_rd(x, y, z, errtol=1e-4):
 
     Parameters
     ----------
-    x : ndarray (n,)
+    x : ndarray
         First independent variable of the integral.
-    y : ndarray (n,)
+    y : ndarray
         Second independent variable of the integral.
-    z : ndarray (n,)
+    z : ndarray
         Third independent variable of the integral.
     errtol : float
         Error tolerance. Integral is computed with relative error less in
@@ -149,28 +143,26 @@ def carlson_rd(x, y, z, errtol=1e-4):
 
     Returns
     -------
-    RD : ndarray (n,)
+    RD : ndarray
         Value of the incomplete second order elliptic integral
     
     Note
     -----
     x, y, and z have to be nonnegative and at most x or y is zero.
     """
-    # Initialize RD
-    RD = np.zeros(len(x), dtype=x.dtype)
-
     xn = x.copy()
     yn = y.copy()
     zn = z.copy()
     A0 = (xn + yn + 3.*zn) / 5.0
     An = A0.copy()
-    Q = (errtol/4.) ** (-1/6.) * np.max([np.abs(An - xn), np.abs(An - yn),
-                                         np.abs(An - zn)], axis=0)
-    sum_term = np.zeros(len(x), dtype=x.dtype)
-    n = np.zeros(len(x))
+    Q = (errtol/4.) ** (-1/6.) * np.max(np.abs([An - xn, An - yn, An - zn]),
+                                        axis=0)
+    sum_term = np.zeros(x.shape, dtype=x.dtype)
+    n = np.zeros(x.shape)
 
     # Convergence has to be done voxel by voxel
-    for v in range(len(x)):
+    index = ndindex(x.shape)
+    for v in index:
         # Convergence condition
         while 4.**(-n[v]) * Q[v] > abs(An[v]):          
             xnroot = np.sqrt(xn[v])
