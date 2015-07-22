@@ -1,8 +1,18 @@
-from __future__ import division, print_function, absolute_import
+#!python
+#cython: boundscheck=False
+#cython: wraparound=False
+#cython: cdivision=True
+import numpy as np
+cimport cython
+cimport numpy as cnp
+cdef extern from "dpy_math.h" nogil:
+    cdef double NPY_PI
+    double sqrt(double)
+    double log(double)
+
+#from __future__ import division, print_function, absolute_import
 import numpy as np
 from dipy.core.ndindex import ndindex
-
-
 
 
 def icm(mu, var, masked_img, seg_img, classes, beta):

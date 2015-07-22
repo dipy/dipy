@@ -1,39 +1,45 @@
-# import warnings
-
 import numpy as np
-import nibabel as nib
 import numpy.testing as npt
-
-from dipy.segment.mask import applymask
-from dipy.denoise.denspeed import add_padding_reflection
+from dipy.data import get_data
 from dipy.sims.voxel import add_noise
-# from dipy.core.ndindex import ndindex
-# from dipy.data import get_data
+from dipy.segment.mrf_map import (FASTImageSegmenter,
+                                  initialize_constant_models_uniform,
+                                  neg_log_likelihood_gaussian,
+                                  initialize_maximum_likelihood,
+                                  iterate_icm_ising)
 import matplotlib.pyplot as plt
-
 from dipy.segment.icm_segmenter import icm
 from dipy.segment.energy_mrf import (total_energy, neg_log_likelihood,
                                      gibbs_energy)
 # from dipy.segment.rois_stats import seg_stats
 # from dipy.segment.mrf_em import prob_neigh, prob_image, update_param
 
-#dname = '/Users/jvillalo/Documents/GSoC_2015/Code/Data/T1_coronal/'
-dname = '/home/eleftherios/Dropbox/DIPY_GSoC_2015/T1_coronal/'
+# Load a coronal slice from a T1-weighted MRI
+fname = get_data('t1_coronal_slice')
+single_slice = np.load(fname)
 
-img = nib.load(dname + 't1_coronal_stack.nii.gz')
-dataimg = img.get_data()
+# Stack a few copies to form a 3D volume
+nslices = 5
+image = np.zeros(shape=single_slice.shape + (nslices,))
+image[..., :nslices] = single_slice[..., None]
 
-mask = nib.load(dname + 't1mask_coronal_stack.nii.gz')
-datamask = mask.get_data()
+# Execute the segmentation
+num_classes = 6
+beta = 0.1
+max_iter = 2
 
-seg = nib.load(dname + 't1seg_coronal_stack.nii.gz')
-seg_init = seg.get_data()
-
-ones = np.ones_like(dataimg)
-
-masked_ones = applymask(ones, datamask)
-masked_img = applymask(dataimg, datamask)
-seg_init_masked = applymask(seg_init, datamask)
+# dname = '/Users/jvillalo/Documents/GSoC_2015/Code/Data/T1_coronal/'
+# dname = '/home/eleftherios/Dropbox/DIPY_GSoC_2015/T1_coronal/'
+# img = nib.load(dname + 't1_coronal_stack.nii.gz')
+# dataimg = img.get_data()
+# mask = nib.load(dname + 't1mask_coronal_stack.nii.gz')
+# datamask = mask.get_data()
+# seg = nib.load(dname + 't1seg_coronal_stack.nii.gz')
+# seg_init = seg.get_data()
+# ones = np.ones_like(dataimg)
+# masked_ones = applymask(ones, datamask)
+# masked_img = applymask(dataimg, datamask)
+# seg_init_masked = applymask(seg_init, datamask)
 
 square = np.zeros((256, 256, 3))
 square[42:213, 42:213, :] = 3

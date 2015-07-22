@@ -1,5 +1,6 @@
 import numpy as np
 import numpy.testing as npt
+import matplotlib.pyplot as plt
 from dipy.data import get_data
 from dipy.segment.mrf_map import (FASTImageSegmenter,
                                   initialize_constant_models_uniform,
@@ -25,13 +26,12 @@ max_iter = 2
 
 def test_segmentation():
 
-
     segmenter = FASTImageSegmenter()
     segmented = segmenter.segment(image, num_classes, beta, max_iter)
 
-    imshow(image[..., 0])
-    figure()
-    imshow(segmented[..., 0])
+    plt.imshow(image[..., 0])
+    plt.figure()
+    plt.imshow(segmented[..., 0])
 
     # TO-DO: assert against a good segmentation
     # For now we can simply visualize the result and verify that
