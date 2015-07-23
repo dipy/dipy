@@ -880,7 +880,7 @@ if __name__ == '__main__':
                                      clean_thr=5.,
                                      local_slr=True,
                                      verbose=True,
-                                     disp=False,
+                                     disp=True,
                                      expand_thr=2.,
                                      f_extracted='extracted.pkl',
                                      f_manual='manual.pkl',
