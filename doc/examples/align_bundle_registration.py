@@ -1,6 +1,4 @@
-# TODO: the camera is not being updated properly maybe the error is
-# related to the view_up. But also when reset_camera is not called for
-# some reason things do not render immediately.
+# TODO: calculate also the view_up
 
 from dipy.align.streamlinear import StreamlineLinearRegistration
 from dipy.tracking.streamline import set_number_of_points, select_random_set_of_streamlines
@@ -145,7 +143,7 @@ import numpy as np
 
 renderer = window.renderer()
 
-stream_actor = actor.line(sbundle1 + sbundle2, linewidth=1.5) #streamtube(bundle1, linewidth=0.1)
+stream_actor = actor.line(sbundle1, linewidth=1.5) #streamtube(bundle1, linewidth=0.1)
 renderer.add(stream_actor)
 
 position, focal_point, corners, plane = position_camera(stream_actor,
@@ -170,7 +168,7 @@ renderer.add(fvtk.dots(corners, fvtk.colors.green))
 
 renderer.reset_camera()
 
-renderer.set_camera(position=position, focal_point=focal_point, view_up=(0, 0, 1.))
+renderer.set_camera(position=position, focal_point=focal_point, view_up=(0, 0, 1))
 #renderer.ResetCameraClippingRange()
 #renderer.reset_camera()
 #renderer.set_camera(position=position, focal_point=focal_point)
