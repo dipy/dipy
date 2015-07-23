@@ -465,16 +465,16 @@ class MutualInformationMetric(object):
             self.ns = self.samples.shape[0]
             # Add a column of ones (homogeneous coordinates)
             self.samples = np.hstack((self.samples, np.ones(self.ns)[:, None]))
+            if self.starting_affine is None:
+                self.samples_prealigned = self.samples
+            else:
+                self.samples_prealigned =\
+                    self.starting_affine.dot(self.samples.T).T
             # Sample the static image
             static_p = self.static_world2grid.dot(self.samples.T).T
             static_p = static_p[..., :self.dim]
             self.static_vals, inside = self.interp_method(static, static_p)
             self.static_vals = np.array(self.static_vals, dtype=np.float64)
-            # Sample the moving image
-            #sp_to_moving = self.moving_world2grid.dot(P)
-            #moving_p = sp_to_moving.dot(self.samples.T).T
-            #moving_p = moving_p[..., :self.dim]
-            #self.moving_vals, inside = self.interp_method(moving, moving_p)
         self.histogram.setup(self.static, self.moving)
 
     def _update_histogram(self):
@@ -543,10 +543,13 @@ class MutualInformationMetric(object):
             The default is True.
         """
         # Get the matrix associated with the `params` parameter vector
-        M = self.transform.param_to_matrix(params)
+        current_affine = self.transform.param_to_matrix(params)
+        # Get the static-to-prealigned matrix (only needed for the MI gradient)
+        static2prealigned = self.static_grid2world
         if self.starting_affine is not None:
-            M = M.dot(self.starting_affine)
-        self.affine_map.set_affine(M)
+            current_affine = current_affine.dot(self.starting_affine)
+            static2prealigned = self.starting_affine.dot(static2prealigned)
+        self.affine_map.set_affine(current_affine)
 
         # Update the histogram with the current joint intensities
         static_values, moving_values = self._update_histogram()
@@ -563,25 +566,28 @@ class MutualInformationMetric(object):
             if self.sampling_proportion is None:  # Dense case
                 # Compute the gradient of moving img. at physical points
                 # associated with the >>static image's grid<< cells
-                grid_to_world = M.dot(self.static_grid2world)
+                # The image gradient must be eval. at current moved points
+                grid_to_world = current_affine.dot(self.static_grid2world)
                 mgrad, inside = vf.gradient(self.moving,
                                             self.moving_world2grid,
                                             self.moving_spacing,
                                             self.static.shape,
                                             grid_to_world)
+                # The Jacobian must be evaluated at the pre-aligned points
                 H.update_gradient_dense(params, self.transform, static_values,
-                                        moving_values, grid_to_world, mgrad)
+                                        moving_values, static2prealigned, mgrad)
             else:  # Sparse case
                 # Compute the gradient of moving at the sampling points
                 # which are already given in physical space coordinates
-                sp_to_moving = self.moving_world2grid.dot(M)
+                pts = current_affine.dot(self.samples.T).T  # Moved points
                 mgrad, inside = vf.sparse_gradient(self.moving,
-                                                   sp_to_moving,
+                                                   self.moving_world2grid,
                                                    self.moving_spacing,
-                                                   self.samples)
-                points = self.samples[..., :self.dim]
+                                                   pts)
+                # The Jacobian must be evaluated at the pre-aligned points
+                pts = self.samples_prealigned[..., :self.dim]
                 H.update_gradient_sparse(params, self.transform, static_values,
-                                         moving_values, points, mgrad)
+                                         moving_values, pts, mgrad)
 
         # Call the cythonized MI computation with self.histogram fields
         self.metric_val = compute_parzen_mi(H.joint, H.joint_grad,

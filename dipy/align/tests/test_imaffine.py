@@ -17,20 +17,24 @@ from dipy.align.tests.test_parzenhist import (setup_random_transform,
                                               sample_domain_regular)
 
 # For each transform type, select a transform factor (indicating how large the
-# true transform between static and moving images will be) and a sampling
+# true transform between static and moving images will be), a sampling scheme
 # (either a positive integer less than or equal to 100, or None) indicating
 # the percentage (if int) of voxels to be used for estimating the joint PDFs,
-# or dense sampling (if None)
-factors = {('TRANSLATION', 2): (2.0, 0.35),
-           ('ROTATION', 2): (0.1, None),
-           ('RIGID', 2): (0.1, .50),
-           ('SCALING', 2): (0.01, None),
-           ('AFFINE', 2): (0.1, .50),
-           ('TRANSLATION', 3): (2.0, None),
-           ('ROTATION', 3): (0.1, 1.0),
-           ('RIGID', 3): (0.1, None),
-           ('SCALING', 3): (0.1, .35),
-           ('AFFINE', 3): (0.1, None)}
+# or dense sampling (if None), and also specify a starting point (to avoid
+# starting from the identity)
+factors = {('TRANSLATION', 2): (2.0, 0.35, np.array([2.3, 4.5])),
+           ('ROTATION', 2): (0.1, None, np.array([0.1])),
+           ('RIGID', 2): (0.1, .50, np.array([0.12, 1.8, 2.7])),
+           ('SCALING', 2): (0.01, None, np.array([1.05])),
+           ('AFFINE', 2): (0.1, .50, np.array([0.99, -0.05, 1.3, 0.05, 0.99, 2.5])),
+           ('TRANSLATION', 3): (2.0, None, np.array([2.3, 4.5, 1.7])),
+           ('ROTATION', 3): (0.1, 1.0, np.array([0.1, 0.15, -0.11])),
+           ('RIGID', 3): (0.1, None, np.array([0.1, 0.15, -0.11, 2.3, 4.5, 1.7])),
+           ('SCALING', 3): (0.1, .35, np.array([0.95])),
+           ('AFFINE', 3): (0.1, None, np.array([0.99, -0.05,  0.03, 1.3,
+                                                0.05,  0.99, -0.10, 2.5,
+                                                -0.07, 0.10,  0.99, -1.4]))}
+
 
 def test_align_centers_of_mass_3d():
     np.random.seed(1246592)
@@ -250,6 +254,7 @@ def test_affreg_defaults():
 
 
 def test_mi_gradient():
+    np.random.seed(2022966)
     # Test the gradient of mutual information
     h = 1e-5
     for ttype in factors:
@@ -259,18 +264,20 @@ def test_mi_gradient():
             nslices = 1
         else:
             nslices = 45
-        # Get data (pair of images related to each other by an known transform)
         factor = factors[ttype][0]
         sampling_proportion = factors[ttype][1]
+        theta = factors[ttype][2]
+        # Start from a small rotation
+        start = regtransforms[('ROTATION', dim)]
+        nrot = start.get_number_of_parameters()
+        starting_affine = start.param_to_matrix(0.25 * np.random.randn(nrot))
+        # Get data (pair of images related to each other by an known transform)
         static, moving, static_g2w, moving_g2w, smask, mmask, M = \
-            setup_random_transform(transform, factor, nslices, 5.0)
-        smask = None
-        mmask = None
+            setup_random_transform(transform, factor, nslices, 2.0)
 
-        theta = transform.get_identity_parameters().copy()
         # Prepare a MutualInformationMetric instance
         mi_metric = imaffine.MutualInformationMetric(32, sampling_proportion)
-        mi_metric.setup(transform, static, moving, smask, mmask)
+        mi_metric.setup(transform, static, moving, starting_affine=starting_affine)
         # Compute the gradient with the implementation under test
         actual = mi_metric.gradient(theta)
 
