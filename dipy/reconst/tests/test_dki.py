@@ -16,6 +16,8 @@ from dipy.core.gradients import gradient_table
 
 from dipy.data import get_data
 
+from dipy.data import get_sphere
+
 from dipy.reconst.dti import (from_lower_triangular, decompose_tensor)
 
 from dipy.core.sphere import Sphere
@@ -129,4 +131,69 @@ def test_dki_predict():
     # just to check that it works with more than one voxel:
     pred_multi = dkiM.predict(multi_params, S0=100)
     assert_array_almost_equal(pred_multi, DWI)
+
+
+def test_diffusion_kurtosis_odf():
+    #
+
+    # define parameters
+    alpha = 4
+    sphere = get_sphere('symmetric724').subdivide(1)
+    V = sphere.vertices
     
+    dipy_odf = dki._directional_kurtosis_odf(dt_cross, kt_cross, V,
+                                             alpha=alpha)
+    # reference ODF
+    MD = (dt_cross[0] + dt_cross[2] + dt_cross[5]) / 3
+    U = np.linalg.pinv(from_lower_triangular(dt_cross)) * MD
+    refODF = np.zeros(len(V))
+    for i in range(len(V)):
+        refODF[i] = _dki_odf_for_loops(V[i], dt_cross, kt_cross, U, alpha)
+
+    assert_array_almost_equal(dipy_odf, refODF)
+
+
+def _dki_odf_for_loops(n, dt, kt, U, a):
+    """ Helper function to test Dipy implementation of diffusion_kurtosis_odf.
+
+    This function is analogous than dipy's helper function _dki_odf_core from
+    module dipy.reconst.dki, however here function is implemented in the format
+    presented in as Eq.5 of the article:
+
+        Neto Henriques R, Correia MM, Nunes RG, Ferreira HA (2015). Exploring
+        the 3D geometry of the diffusion kurtosis tensor - Impact on the
+        development of robust tractography procedures and novel biomarkers,
+        NeuroImage 111: 85-99
+
+    To a detailed information of inputs see the helper function_dki_odf_core
+    """
+    # Compute full 4D kurtosis tensor
+    W = dki.Wcons(kt)
+
+    # Compute elements of matrix V
+    Un = np.dot(U, n)
+    nUn = np.dot(n, Un)
+    V00 = Un[0]**2 / nUn
+    V11 = Un[1]**2 / nUn
+    V22 = Un[2]**2 / nUn
+    V01 = Un[0]*Un[1] / nUn
+    V02 = Un[0]*Un[2] / nUn
+    V12 = Un[1]*Un[2] / nUn
+    V = from_lower_triangular(np.array([V00, V01, V11, V02, V12, V22]))
+
+    # diffusion ODF
+    ODFg = (1./nUn) ** ((a + 1.)/2.)
+
+    # Compute the summatory term of reference Eq.5
+    SW = 0
+    xyz = [0, 1, 2]
+    for i in xyz:
+        for j in xyz:
+           for k in xyz:
+               for l in xyz:
+                   SW = SW + W[i, j, k, l] * (3*U[i, j]*U[k, l] - \
+                                              6*(a + 1)*U[i, j]*V[k, l] + \
+                                              (a + 1)*(a + 3)*V[i, j]*V[k, l])
+
+    # return the total ODF
+    return ODFg * (1. + 1/24.*SW)

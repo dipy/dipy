@@ -398,7 +398,7 @@ class DiffusionKurtosisFit(TensorFit):
         """
         return apparent_kurtosis_coef(self.model_params, sphere)
 
-    def dki_odf(self, sphere, alfa=4):
+    def dki_odf(self, sphere, alpha=4):
         """
         The diffusion kurtosis estimate of the orientation distribution
         function (DKI-ODF). This estimates the DKI-ODF in every direction of
@@ -408,7 +408,7 @@ class DiffusionKurtosisFit(TensorFit):
         ----------
         sphere : Sphere class instance.
             The DKI-ODF is calculated in the vertices of this input.
-        alfa : float, optional
+        alpha : float, optional
             radial weighting power. Default is 4 according to [Jen2014]_ and
             [Raf2015]
 
@@ -434,7 +434,7 @@ class DiffusionKurtosisFit(TensorFit):
             and novel biomarkers. NeuroImage 111: 85-99.
             doi:10.1016/j.neuroimage.2015.02.004
         """
-        return diffusion_kurtosis_odf(self.model_params, sphere, alfa)
+        return diffusion_kurtosis_odf(self.model_params, sphere, alpha)
 
     def predict(self, gtab, S0=1):
         r""" Given a DKI model fit, predict the signal on the vertices of a
@@ -739,7 +739,7 @@ def split_dki_param(dki_params):
     return evals, evecs, kt
 
 
-def diffusion_kurtosis_odf(dki_params, sphere, alfa=4):
+def diffusion_kurtosis_odf(dki_params, sphere, alpha=4):
     """
     The diffusion kurtosis estimate of the orientation distribution function
     (DKI-ODF). This estimates the DKI-ODF in every direction of the given
@@ -756,7 +756,7 @@ def diffusion_kurtosis_odf(dki_params, sphere, alfa=4):
             3) Fifteen elements of the kurtosis tensor
     sphere : Sphere class instance.
         The DKI-ODF is calculated in the vertices of this input.
-    alfa : float, optional
+    alpha : float, optional
         Radial weighting power. Default is 4 according to [Jen2014]_ and
         [Raf2015]_.
 
@@ -808,7 +808,7 @@ def diffusion_kurtosis_odf(dki_params, sphere, alfa=4):
     for vox in range(len(kt)):
         R = evecs[vox]
         dt = lower_triangular(np.dot(np.dot(R, np.diag(evals[vox])), R.T))
-        kODFi[vox] = _directional_kurtosis_odf(dt, kt[vox], V, alfa)
+        kODFi[vox] = _directional_kurtosis_odf(dt, kt[vox], V, alpha)
 
     # reshape data according to input data
     kODF[rel_i] = kODFi
@@ -816,7 +816,7 @@ def diffusion_kurtosis_odf(dki_params, sphere, alfa=4):
     return kODF
 
 
-def _directional_kurtosis_odf(dt, kt, V, alfa=4):
+def _directional_kurtosis_odf(dt, kt, V, alpha=4):
     """ Helper function that samples the diffusion kurtosis based orientation
     distribution function in each direction of a sphere for a single voxel.
 
@@ -828,7 +828,7 @@ def _directional_kurtosis_odf(dt, kt, V, alfa=4):
         elements of the kurtosis tensor of the voxel.
     V : array (g, 3)
         g directions of a Sphere in Cartesian coordinates
-    alfa : float, optional
+    alpha : float, optional
         Radial weighting power. Default is 4.
 
     Returns
@@ -844,12 +844,12 @@ def _directional_kurtosis_odf(dt, kt, V, alfa=4):
     # loop over all directions
     kODF = np.zeros(len(V))
     for i in range(len(V)):
-        kODF[i] = _dki_odf_core(V[i], dt, kt, U, alfa)
+        kODF[i] = _dki_odf_core(V[i], dt, kt, U, alpha)
 
     return kODF
 
 
-def _dki_odf_core(n, dt, kt, U, alfa=4):
+def _dki_odf_core(n, dt, kt, U, alpha=4):
     """ Compute the DKI based ODF estimation of a voxel along the given
     directions n
     
@@ -864,7 +864,7 @@ def _dki_odf_core(n, dt, kt, U, alfa=4):
     U : array (3, 3)
         dimensionless tensor defined by $U = \overline{D} \times DT^{-1}$,
         where \overline{D} is the mean diffusivity and DT the diffusion tensor
-    alfa : float, optional
+    alpha : float, optional
         Radial weighting power. Default is 4.
     """
     # Compute elements of matrix V
@@ -878,55 +878,55 @@ def _dki_odf_core(n, dt, kt, U, alfa=4):
     V12 = Un[1]*Un[2] / nUn
 
     # diffusion ODF
-    ODFg = (1./nUn) ** ((alfa+1.)/2.)
+    ODFg = (1./nUn) ** ((alpha+1.)/2.)
 
     # Estimate ODF
     ODF = \
         ODFg * (1. + 1/24. * \
-        (kt[0] * (3*U[0, 0]*U[0, 0] - 6*(alfa+1)*U[0, 0]*V00 + \
-                  (alfa+1)*(alfa+3)*V00*V00) + \
-         kt[1] * (3*U[1, 1]*U[1, 1] - 6*(alfa+1)*U[1, 1]*V11 + \
-                  (alfa+1) * (alfa + 3)*V11*V11) + \
-         kt[2] * (3*U[2, 2]*U[2, 2] - 6*(alfa+1)*U[2, 2]*V22 + \
-                  (alfa+1)*(alfa+3)*V22*V22) + \
-         kt[3] * (12*U[0, 0]*U[0, 1] - 12*(alfa+1)*U[0, 0]*V01 - \
-                  12*(alfa+1)*U[0, 1]*V00 + 4*(alfa+1)*(alfa+3)*V00*V01) + \
-         kt[4] * (12*U[0, 0]*U[0, 2] - 12*(alfa+1)*U[0, 0]*V02 - \
-                  12*(alfa+1)*U[0, 2]*V00 + 4*(alfa+1)*(alfa+3)*V00*V02) + \
-         kt[5] * (12*U[0, 1]*U[1, 1] - 12*(alfa+1)*U[0, 1]*V11 - \
-                  12*(alfa+1)*U[1, 1]*V01 + 4*(alfa+1)*(alfa+3)*V01*V11) + \
-         kt[6] * (12*U[1, 1]*U[1, 2] - 12*(alfa+1)*U[1, 1]*V12 - \
-                  12*(alfa+1)*U[1, 2]*V11 + 4*(alfa+1)*(alfa+3)*V11*V12) + \
-         kt[7] * (12*U[0, 2]*U[2, 2] - 12*(alfa+1)*U[0, 2]*V22 - \
-                  12*(alfa+1)*U[2, 2]*V02 + 4*(alfa+1)*(alfa+3)*V02*V22) + \
-         kt[8] * (12*U[1, 2]*U[2, 2] - 12*(alfa+1)*U[1,2]*V22 - \
-                  12*(alfa+1)*U[2, 2]*V12 + 4*(alfa+1)*(alfa+3)*V12*V22) + \
+        (kt[0] * (3*U[0, 0]*U[0, 0] - 6*(alpha+1)*U[0, 0]*V00 + \
+                  (alpha+1)*(alpha+3)*V00*V00) + \
+         kt[1] * (3*U[1, 1]*U[1, 1] - 6*(alpha+1)*U[1, 1]*V11 + \
+                  (alpha+1) * (alpha + 3)*V11*V11) + \
+         kt[2] * (3*U[2, 2]*U[2, 2] - 6*(alpha+1)*U[2, 2]*V22 + \
+                  (alpha+1)*(alpha+3)*V22*V22) + \
+         kt[3] * (12*U[0, 0]*U[0, 1] - 12*(alpha+1)*U[0, 0]*V01 - \
+                  12*(alpha+1)*U[0, 1]*V00 + 4*(alpha+1)*(alpha+3)*V00*V01) + \
+         kt[4] * (12*U[0, 0]*U[0, 2] - 12*(alpha+1)*U[0, 0]*V02 - \
+                  12*(alpha+1)*U[0, 2]*V00 + 4*(alpha+1)*(alpha+3)*V00*V02) + \
+         kt[5] * (12*U[0, 1]*U[1, 1] - 12*(alpha+1)*U[0, 1]*V11 - \
+                  12*(alpha+1)*U[1, 1]*V01 + 4*(alpha+1)*(alpha+3)*V01*V11) + \
+         kt[6] * (12*U[1, 1]*U[1, 2] - 12*(alpha+1)*U[1, 1]*V12 - \
+                  12*(alpha+1)*U[1, 2]*V11 + 4*(alpha+1)*(alpha+3)*V11*V12) + \
+         kt[7] * (12*U[0, 2]*U[2, 2] - 12*(alpha+1)*U[0, 2]*V22 - \
+                  12*(alpha+1)*U[2, 2]*V02 + 4*(alpha+1)*(alpha+3)*V02*V22) + \
+         kt[8] * (12*U[1, 2]*U[2, 2] - 12*(alpha+1)*U[1,2]*V22 - \
+                  12*(alpha+1)*U[2, 2]*V12 + 4*(alpha+1)*(alpha+3)*V12*V22) + \
          kt[9] * (6*U[0, 0]*U[1, 1] + 12*U[0, 1]*U[0, 1] - \
-                  6*(alfa+1)*U[0, 0]*V11 - 6*(alfa+1)*U[1, 1]*V00 - \
-                  24*(alfa+1)*U[0, 1]*V01 + 2*(alfa+1)*(alfa+3)*V00*V11 + \
-                  4*(alfa+1)*(alfa+3)*V01*V01) + \
+                  6*(alpha+1)*U[0, 0]*V11 - 6*(alpha+1)*U[1, 1]*V00 - \
+                  24*(alpha+1)*U[0, 1]*V01 + 2*(alpha+1)*(alpha+3)*V00*V11 + \
+                  4*(alpha+1)*(alpha+3)*V01*V01) + \
          kt[10] * (6*U[0, 0]*U[2, 2] + 12*U[0, 2]*U[0, 2] - \
-                   6*(alfa+1)*U[0, 0]*V22 - 6*(alfa+1)*U[2, 2]*V00 - \
-                   24*(alfa+1)*U[0,2]*V02 + 2*(alfa+1)*(alfa+3)*V00*V22 + \
-                   4*(alfa+1)*(alfa+3)*V02*V02) + \
+                   6*(alpha+1)*U[0, 0]*V22 - 6*(alpha+1)*U[2, 2]*V00 - \
+                   24*(alpha+1)*U[0,2]*V02 + 2*(alpha+1)*(alpha+3)*V00*V22 + \
+                   4*(alpha+1)*(alpha+3)*V02*V02) + \
          kt[11] * (6*U[1, 1]*U[2, 2] + 12*U[1, 2]*U[1, 2] - \
-                   6*(alfa+1)*U[1,1]*V22 - 6*(alfa+1)*U[2, 2]*V11 - \
-                   24*(alfa+1)*U[1,2]*V12 + 2*(alfa+1)*(alfa+3)*V11*V22 + \
-                   4*(alfa+1)*(alfa+3)*V12*V12) + \
+                   6*(alpha+1)*U[1,1]*V22 - 6*(alpha+1)*U[2, 2]*V11 - \
+                   24*(alpha+1)*U[1,2]*V12 + 2*(alpha+1)*(alpha+3)*V11*V22 + \
+                   4*(alpha+1)*(alpha+3)*V12*V12) + \
          kt[12] * (12*U[0, 0]*U[1, 2] + 24*U[0, 1]*U[0, 2] - \
-                   12*(alfa+1)*U[0, 0]*V12 - 12*(alfa+1)*U[1, 2]*V00 - \
-                   24*(alfa+1)*U[0, 1]*V02 - 24*(alfa+1)*U[0, 2]*V01 + \
-                   4*(alfa+1)*(alfa+3)*V00*V12 + \
-                   8*(alfa+1)*(alfa+3)*V01*V02) + \
+                   12*(alpha+1)*U[0, 0]*V12 - 12*(alpha+1)*U[1, 2]*V00 - \
+                   24*(alpha+1)*U[0, 1]*V02 - 24*(alpha+1)*U[0, 2]*V01 + \
+                   4*(alpha+1)*(alpha+3)*V00*V12 + \
+                   8*(alpha+1)*(alpha+3)*V01*V02) + \
          kt[13] * (12*U[1, 1]*U[0, 2] + 24*U[1, 0]*U[1, 2] - \
-                   12*(alfa+1)*U[1, 1]*V02 - 12*(alfa+1)*U[0, 2]*V11 - \
-                   24*(alfa+1)*U[0, 1]*V12 - 24*(alfa+1)*U[1, 2]*V01 + \
-                   4*(alfa+1)*(alfa+3)*V11*V02 + \
-                   8*(alfa+1)*(alfa+3)*V01*V12) + \
+                   12*(alpha+1)*U[1, 1]*V02 - 12*(alpha+1)*U[0, 2]*V11 - \
+                   24*(alpha+1)*U[0, 1]*V12 - 24*(alpha+1)*U[1, 2]*V01 + \
+                   4*(alpha+1)*(alpha+3)*V11*V02 + \
+                   8*(alpha+1)*(alpha+3)*V01*V12) + \
          kt[14] * (12*U[2, 2]*U[0, 1] + 24*U[2, 0]*U[2, 1] - \
-                   12*(alfa+1)*U[2, 2]*V01 - 12*(alfa+1)*U[0, 1]*V22 - \
-                   24*(alfa+1)*U[0, 2]*V12 - 24*(alfa+1)*U[1, 2]*V02 + \
-                   4*(alfa+1)*(alfa+3)*V22*V01 + 8*(alfa+1)*(alfa+3)*V02*V12)))
+                   12*(alpha+1)*U[2, 2]*V01 - 12*(alpha+1)*U[0, 1]*V22 - \
+                   24*(alpha+1)*U[0, 2]*V12 - 24*(alpha+1)*U[1, 2]*V02 + \
+                   4*(alpha+1)*(alpha+3)*V22*V01 + 8*(alpha+1)*(alpha+3)*V02*V12)))
 
     return ODF
 
