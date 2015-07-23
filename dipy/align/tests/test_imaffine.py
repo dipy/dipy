@@ -166,7 +166,7 @@ def test_align_origins_3d():
                     assert_array_almost_equal(actual.affine, expected)
 
 
-def __test_affreg_all_transforms():
+def test_affreg_all_transforms():
     # Test affine registration using all transforms with typical settings
     for ttype in factors.keys():
         dim = ttype[1]
