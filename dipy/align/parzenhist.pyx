@@ -391,55 +391,6 @@ class ParzenJointHistogram(object):
             raise ValueError(msg)
 
 
-class ParzenMutualInformation(ParzenJointHistogram):
-    def __init__(self, nbins):
-        r""" Mutual Information similarity metric
-
-        Implementation of the Mutual Information metric using
-        Parzen windows [Parzen62] with a cubic spline kernel,
-        as proposed by Mattes et al. [Mattes03].
-
-        Parameters
-        ----------
-        nbins : int
-            the number of bins of the joint and marginal probability density
-            functions (the actual number of bins of the joint PDF is nbins**2)
-
-        References
-        ----------
-        [Parzen62] E. Parzen. On the estimation of a probability density
-                   function and the mode. Annals of Mathematical Statistics,
-                   33(3), 1065-1076, 1962.
-        [Mattes03] Mattes, D., Haynor, D. R., Vesselle, H., Lewellen, T. K.,
-                   & Eubank, W. PET-CT image registration in the chest using
-                   free-form deformations. IEEE Transactions on Medical
-                   Imaging, 22(1), 120-8, 2003.
-        """
-        super(ParzenMutualInformation, self).__init__(nbins)
-
-    def update_mi_metric(self, update_gradient=True):
-        r""" Computes current value and gradient of the MI metric
-
-        The value of the metric will be computed, but the gradient will
-        only be computed if `update_gradient` is True.
-
-        Parameters
-        ----------
-        update_gradient : Boolean
-            boolean indicating if the gradient must be computed (if False,
-            only the value is computed). Default is True.
-        """
-        grad = None
-        if update_gradient:
-            sh = self.joint_grad.shape[2]
-            if (self.metric_grad is None) or (self.metric_grad.shape[0] != sh):
-                self.metric_grad = np.empty(sh)
-            grad = self.metric_grad
-        self.metric_val = _compute_parzen_mi(self.joint, self.joint_grad,
-                                             self.smarginal, self.mmarginal,
-                                             grad)
-
-
 cdef inline double _bin_normalize(double x, double mval, double delta) nogil:
     r''' Normalizes intensity x to the range covered by the Parzen histogram
     We assume that mval was computed as:
@@ -1247,10 +1198,10 @@ cdef _joint_pdf_gradient_sparse_3d(double[:] theta, Transform transform,
                         grad_pdf[i, j, k] /= norm_factor
 
 
-cdef double _compute_parzen_mi(double[:, :] joint,
-                               double[:, :, :] joint_gradient,
-                               double[:] smarginal, double[:] mmarginal,
-                               double[:] mi_gradient) nogil:
+def compute_parzen_mi(double[:, :] joint,
+                      double[:, :, :] joint_gradient,
+                      double[:] smarginal, double[:] mmarginal,
+                      double[:] mi_gradient):
     r""" Computes the mutual information and its gradient (if requested)
 
     Parameters
@@ -1274,22 +1225,22 @@ cdef double _compute_parzen_mi(double[:, :] joint,
         cnp.npy_intp nrows = joint.shape[0]
         cnp.npy_intp ncols = joint.shape[1]
         cnp.npy_intp n = joint_gradient.shape[2]
+    with nogil:
+        mi_gradient[:] = 0
+        metric_value = 0
+        for i in range(nrows):
+            for j in range(ncols):
+                if joint[i, j] < epsilon or mmarginal[j] < epsilon:
+                    continue
 
-    mi_gradient[:] = 0
-    metric_value = 0
-    for i in range(nrows):
-        for j in range(ncols):
-            if joint[i, j] < epsilon or mmarginal[j] < epsilon:
-                continue
+                factor = log(joint[i, j] / mmarginal[j])
 
-            factor = log(joint[i, j] / mmarginal[j])
+                if mi_gradient is not None:
+                    for k in range(n):
+                        mi_gradient[k] += joint_gradient[i, j, k] * factor
 
-            if mi_gradient is not None:
-                for k in range(n):
-                    mi_gradient[k] += joint_gradient[i, j, k] * factor
-
-            if smarginal[i] > epsilon:
-                metric_value += joint[i, j] * (factor - log(smarginal[i]))
+                if smarginal[i] > epsilon:
+                    metric_value += joint[i, j] * (factor - log(smarginal[i]))
 
     return metric_value
 

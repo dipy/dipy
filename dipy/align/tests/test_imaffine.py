@@ -13,7 +13,8 @@ from dipy.align import vector_fields as vf
 from dipy.align import imaffine
 from dipy.align.transforms import (Transform,
                                    regtransforms)
-from dipy.align.tests.test_parzenhist import setup_random_transform
+from dipy.align.tests.test_parzenhist import (setup_random_transform,
+                                              sample_domain_regular)
 
 # For each transform type, select a transform factor (indicating how large the
 # true transform between static and moving images will be) and a sampling
@@ -26,7 +27,7 @@ factors = {('TRANSLATION', 2): (2.0, 0.35),
            ('SCALING', 2): (0.01, None),
            ('AFFINE', 2): (0.1, .50),
            ('TRANSLATION', 3): (2.0, None),
-           ('ROTATION', 3): (0.1, 35, 1.0),
+           ('ROTATION', 3): (0.1, 1.0),
            ('RIGID', 3): (0.1, None),
            ('SCALING', 3): (0.1, .35),
            ('AFFINE', 3): (0.1, None)}
@@ -165,7 +166,7 @@ def test_align_origins_3d():
                     assert_array_almost_equal(actual.affine, expected)
 
 
-def test_affreg_all_transforms():
+def __test_affreg_all_transforms():
     # Test affine registration using all transforms with typical settings
     for ttype in factors.keys():
         dim = ttype[1]
@@ -181,7 +182,7 @@ def test_affreg_all_transforms():
                         setup_random_transform(transform, factor, nslices, 1.0)
         # Sum of absolute differences
         start_sad = np.abs(static - moving).sum()
-        metric = imaffine.MIMetric(32, sampling_pc)
+        metric = imaffine.MutualInformationMetric(32, sampling_pc)
         affreg = imaffine.AffineRegistration(metric,
                                              [10000, 1000, 100],
                                              [3, 1, 0],
@@ -246,3 +247,46 @@ def test_affreg_defaults():
             reduction = 1 - end_sad / start_sad
             print("%s>>%f"%(ttype, reduction))
             assert(reduction > 0.9)
+
+
+def test_mi_gradient():
+    # Test the gradient of mutual information
+    h = 1e-5
+    for ttype in factors:
+        transform = regtransforms[ttype]
+        dim = ttype[1]
+        if dim == 2:
+            nslices = 1
+        else:
+            nslices = 45
+        # Get data (pair of images related to each other by an known transform)
+        factor = factors[ttype][0]
+        sampling_proportion = factors[ttype][1]
+        static, moving, static_g2w, moving_g2w, smask, mmask, M = \
+            setup_random_transform(transform, factor, nslices, 5.0)
+        smask = None
+        mmask = None
+
+        theta = transform.get_identity_parameters().copy()
+        # Prepare a MutualInformationMetric instance
+        mi_metric = imaffine.MutualInformationMetric(32, sampling_proportion)
+        mi_metric.setup(transform, static, moving, smask, mmask)
+        # Compute the gradient with the implementation under test
+        actual = mi_metric.gradient(theta)
+
+        # Compute the gradient using finite-diferences
+        n = transform.get_number_of_parameters()
+        expected = np.empty(n, dtype=np.float64)
+
+        val0 = mi_metric.distance(theta)
+        for i in range(n):
+            dtheta = theta.copy()
+            dtheta[i] += h
+            val1 = mi_metric.distance(dtheta)
+            expected[i] = (val1 - val0) / h
+
+        dp = expected.dot(actual)
+        enorm = np.linalg.norm(expected)
+        anorm = np.linalg.norm(actual)
+        nprod = dp / (enorm * anorm)
+        assert(nprod >= 0.999)

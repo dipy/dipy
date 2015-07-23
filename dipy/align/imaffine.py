@@ -17,16 +17,12 @@
         It also computes the gradient of the joint histogram w.r.t. the
         parameters of a given transform.
 
-    ParzenMutualInformation: inherits from `ParzenJointHistogram` and
-        computes the Mutual Information similarity measure and its gradient
-        from the joint and marginal distributions of paired intensities,
-        which are computed by the super class.
-
-    MIMetric: it is a Python interface to the ParzenMutualInformation cython
-        class, which is used to compute the value and gradient the way
-        `Optimizer` needs them. That is, given a set of transform parameters,
-        it will use `ParzenMutualInformation` methods to compute the value and
-        gradient evaluated at the given parameters.
+    MutualInformationMetric: computes the value and gradient of the mutual
+        information metric the way `Optimizer` needs them. That is, given
+        a set of transform parameters, it will use `ParzenJointHistogram`
+        to compute the value and gradient of the joint intensity histogram
+        evaluated at the given parameters, and evaluate the the value and
+        gradient of the histogram's mutual information.
 
     AffineRegistration: it runs the multi-resolution registration, putting
         all the pieces together. It needs to create the scale space of the
@@ -53,7 +49,9 @@ from ..core.optimize import Optimizer
 from ..core.optimize import SCIPY_LESS_0_12
 from . import vector_fields as vf
 from . import VerbosityLevels
-from .parzenhist import ParzenMutualInformation, sample_domain_regular
+from .parzenhist import (ParzenJointHistogram,
+                         sample_domain_regular,
+                         compute_parzen_mi)
 from .imwarp import (get_direction_and_spacings, ScaleSpace)
 from .scalespace import IsotropicScaleSpace
 
@@ -356,13 +354,12 @@ class AffineMap(object):
         return np.array(transformed)
 
 
-class MIMetric(ParzenMutualInformation):
+class MutualInformationMetric(object):
     def __init__(self, nbins=32, sampling_proportion=None):
         r""" Initializes an instance of the Mutual Information metric
 
         This class implements the methods required by Optimizer to drive the
-        registration process by making calls to the low level methods defined
-        in ParzenMutualInformation.
+        registration process.
 
         Parameters
         ----------
@@ -389,8 +386,10 @@ class MIMetric(ParzenMutualInformation):
         coordinates. When using dense sampling, this random displacement is
         not applied.
         """
-        super(MIMetric, self).__init__(nbins)
+        self.histogram = ParzenJointHistogram(nbins)
         self.sampling_proportion = sampling_proportion
+        self.metric_val = None
+        self.metric_grad = None
 
     def setup(self, transform, static, moving, static_grid2world=None,
               moving_grid2world=None, starting_affine=None):
@@ -456,16 +455,9 @@ class MIMetric(ParzenMutualInformation):
             self.interp_method = vf.interpolate_scalar_3d
 
         if self.sampling_proportion is None:
-            self.update_pdfs = self.update_pdfs_dense
-            self.update_gradient = self.update_gradient_dense
             self.samples = None
             self.ns = 0
-            self.transformed = self.affine_map.transform(self.moving)
-            self.transformed = self.transformed.astype(np.float64)
         else:
-            self.update_pdfs = self.update_pdfs_sparse
-            self.update_gradient = self.update_gradient_sparse
-            self.transformed = None
             k = int(np.ceil(1.0 / self.sampling_proportion))
             shape = np.array(static.shape, dtype=np.int32)
             self.samples = sample_domain_regular(k, shape, static_grid2world)
@@ -479,13 +471,57 @@ class MIMetric(ParzenMutualInformation):
             self.static_vals, inside = self.interp_method(static, static_p)
             self.static_vals = np.array(self.static_vals, dtype=np.float64)
             # Sample the moving image
-            sp_to_moving = self.moving_world2grid.dot(P)
-            moving_p = sp_to_moving.dot(self.samples.T).T
-            moving_p = moving_p[..., :self.dim]
-            self.moving_vals, inside = self.interp_method(moving, moving_p)
-        super(MIMetric, self).setup(self.static, self.moving)
+            #sp_to_moving = self.moving_world2grid.dot(P)
+            #moving_p = sp_to_moving.dot(self.samples.T).T
+            #moving_p = moving_p[..., :self.dim]
+            #self.moving_vals, inside = self.interp_method(moving, moving_p)
+        self.histogram.setup(self.static, self.moving)
 
-    def _update(self, params, update_gradient=True):
+    def _update_histogram(self):
+        r""" Updates the histogram according to the current affine transform
+
+        The current affine transform is given by `self.affine_map`, which
+        must be set before calling this method.
+
+        Returns
+        -------
+        static_values: array, shape(n,) if sparse sampling is being used,
+                       array, shape(S, R, C) or (R, C) if dense sampling
+            the intensity values corresponding to the static image used to
+            update the histogram. If sparse sampling is being used, then
+            it is simply a sequence of scalars, obtained by sampling the static
+            image at the `n` sampling points. If dense sampling is being used,
+            then the intensities are given directly by the static image,
+            whose shape is (S, R, C) in the 3D case or (R, C) in the 2D case.
+        moving_values: array, shape(n,) if sparse sampling is being used,
+                       array, shape(S, R, C) or (R, C) if dense sampling
+            the intensity values corresponding to the moving image used to
+            update the histogram. If sparse sampling is being used, then
+            it is simply a sequence of scalars, obtained by sampling the moving
+            image at the `n` sampling points (mapped to the moving space by the
+            current affine transform). If dense sampling is being used,
+            then the intensities are given by the moving imaged linearly
+            transformed towards the static image by the current affine, which
+            results in an image of the same shape as the static image.
+        """
+        static_values = None
+        moving_values = None
+        if self.sampling_proportion is None:  # Dense case
+            static_values = self.static
+            moving_values = self.affine_map.transform(self.moving)
+            self.histogram.update_pdfs_dense(static_values, moving_values)
+        else:  # Sparse case
+            sp_to_moving = self.moving_world2grid.dot(self.affine_map.affine)
+            pts = sp_to_moving.dot(self.samples.T).T  # Points on moving grid
+            pts = pts[..., :self.dim]
+            self.moving_vals, inside = self.interp_method(self.moving, pts)
+            self.moving_vals = np.array(self.moving_vals)
+            static_values = self.static_vals
+            moving_values = self.moving_vals
+            self.histogram.update_pdfs_sparse(static_values, moving_values)
+        return static_values, moving_values
+
+    def _update_mutual_information(self, params, update_gradient=True):
         r""" Updates marginal and joint distributions and the joint gradient
 
         The distributions are updated according to the static and transformed
@@ -506,34 +542,25 @@ class MIMetric(ParzenMutualInformation):
             otherwise, only the marginal and joint PDFs will be computed.
             The default is True.
         """
-        # Get the matrix associated with the params parameter vector
+        # Get the matrix associated with the `params` parameter vector
         M = self.transform.param_to_matrix(params)
         if self.starting_affine is not None:
             M = M.dot(self.starting_affine)
-            self.affine_map.set_affine(M)
+        self.affine_map.set_affine(M)
 
-        # Update the joint and marginal intensity distributions
-        if self.samples is None:
-            # Warp the moving image (dense case)
-            self.transformed = self.affine_map.transform(self.moving)
-            self.transformed = self.transformed.astype(np.float64)
-            static_values = self.static
-            moving_values = self.transformed
-        else:
-            # Sample the moving image (sparse case)
-            sp_to_moving = self.moving_world2grid.dot(M)
-            points_on_moving = sp_to_moving.dot(self.samples.T).T
-            points_on_moving = points_on_moving[..., :self.dim]
-            self.moving_vals, inside = self.interp_method(self.moving,
-                                                          points_on_moving)
-            self.moving_vals = np.array(self.moving_vals)
-            static_values = self.static_vals
-            moving_values = self.moving_vals
-        self.update_pdfs(static_values, moving_values)
+        # Update the histogram with the current joint intensities
+        static_values, moving_values = self._update_histogram()
 
-        # Compute the gradient of the joint PDF w.r.t. parameters
+        H = self.histogram  # Shortcut to `self.histogram`
+        grad = None  # Buffer to write the MI gradient into (if needed)
         if update_gradient:
-            if self.samples is None:
+            # Re-allocate buffer for the gradient, if needed
+            n = params.shape[0]  # Number of parameters
+            if (self.metric_grad is None) or (self.metric_grad.shape[0] != n):
+                self.metric_grad = np.empty(n)
+            grad = self.metric_grad
+            # Compute the gradient of the joint PDF w.r.t. parameters
+            if self.sampling_proportion is None:  # Dense case
                 # Compute the gradient of moving img. at physical points
                 # associated with the >>static image's grid<< cells
                 grid_to_world = M.dot(self.static_grid2world)
@@ -542,27 +569,24 @@ class MIMetric(ParzenMutualInformation):
                                             self.moving_spacing,
                                             self.static.shape,
                                             grid_to_world)
-                # Dense case: we just need to provide the grid-to-world
-                # transform to obtain the sampling points' world coordinates
-                # because we know that all grid cells must be processed
-                sampling_info = grid_to_world
-            else:
+                H.update_gradient_dense(params, self.transform, static_values,
+                                        moving_values, grid_to_world, mgrad)
+            else:  # Sparse case
                 # Compute the gradient of moving at the sampling points
                 # which are already given in physical space coordinates
+                sp_to_moving = self.moving_world2grid.dot(M)
                 mgrad, inside = vf.sparse_gradient(self.moving,
                                                    sp_to_moving,
                                                    self.moving_spacing,
                                                    self.samples)
-                # Sparse case: we need to provide the actual coordinates of
-                # all sampling points
-                sampling_info = self.samples[..., :self.dim]
-            self.update_gradient(params, self.transform, static_values,
-                                 moving_values, sampling_info, mgrad)
+                points = self.samples[..., :self.dim]
+                H.update_gradient_sparse(params, self.transform, static_values,
+                                         moving_values, points, mgrad)
 
-        # Evaluate the mutual information and its gradient
-        # The results are in self.metric_val and self.metric_grad
-        # ready to be returned from 'distance' and 'gradient'
-        self.update_mi_metric(update_gradient)
+        # Call the cythonized MI computation with self.histogram fields
+        self.metric_val = compute_parzen_mi(H.joint, H.joint_grad,
+                                            H.smarginal, H.mmarginal,
+                                            grad)
 
     def distance(self, params):
         r""" Numeric value of the negative Mutual Information
@@ -585,7 +609,7 @@ class MIMetric(ParzenMutualInformation):
             with `params` parameters
         """
         try:
-            self._update(params, False)
+            self._update_mutual_information(params, False)
         except AffineInversionError:
             return np.inf
         return -1 * self.metric_val
@@ -606,7 +630,7 @@ class MIMetric(ParzenMutualInformation):
             the gradient of the negative Mutual Information
         """
         try:
-            self._update(params, True)
+            self._update_mutual_information(params, True)
         except AffineInversionError:
             return 0 * self.metric_grad
         return -1 * self.metric_grad
@@ -631,7 +655,7 @@ class MIMetric(ParzenMutualInformation):
             the gradient of the negative Mutual Information
         """
         try:
-            self._update(params, True)
+            self._update_mutual_information(params, True)
         except AffineInversionError:
             return np.inf, 0 * self.metric_grad
         return -1 * self.metric_val, -1 * self.metric_grad
@@ -691,7 +715,7 @@ class AffineRegistration(object):
         self.metric = metric
 
         if self.metric is None:
-            self.metric = MIMetric()
+            self.metric = MutualInformationMetric()
 
         if level_iters is None:
             level_iters = [10000, 1000, 100]
@@ -934,8 +958,6 @@ class AffineRegistration(object):
             # Start next iteration at identity
             self.params0 = self.transform.get_identity_parameters()
 
-            # Update the metric to the current solution
-            self.metric._update(params, False)
         affine_map.set_affine(self.starting_affine)
         return affine_map
 
