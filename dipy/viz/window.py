@@ -113,6 +113,7 @@ class Renderer(vtkRenderer):
             self.GetActiveCamera().SetFocalPoint(*focal_point)
         if view_up is not None:
             self.GetActiveCamera().SetViewUp(*view_up)
+        self.ResetCameraClippingRange()
 
     @property
     def size(self):
