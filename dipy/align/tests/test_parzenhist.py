@@ -3,11 +3,11 @@ import scipy as sp
 import scipy.ndimage as ndimage
 from functools import reduce
 from operator import mul
-from ...core.ndindex import ndindex
-from ...data import get_data
-from .. import vector_fields as vf
-from ..transforms import regtransforms
-from ..parzenhist import (ParzenJointHistogram,
+from dipy.core.ndindex import ndindex
+from dipy.data import get_data
+from dipy.align import vector_fields as vf
+from dipy.align.transforms import regtransforms
+from dipy.align.parzenhist import (ParzenJointHistogram,
                           cubic_spline,
                           cubic_spline_derivative,
                           sample_domain_regular)
@@ -498,9 +498,6 @@ def test_joint_pdf_gradients_sparse():
         assert(std_cosine < 0.15)
 
 
-
-
-
 def test_sample_domain_regular():
     # Test 2D sampling
     shape = np.array((10, 10), dtype=np.int32)
@@ -545,3 +542,62 @@ def test_sample_domain_regular():
     assert_equal(len(set(indices)), len(indices))
     # Verify the sampling was regular at rate k
     assert_equal((indices % k).sum(), 0)
+
+
+def test_exceptions():
+    H = ParzenJointHistogram(32)
+    valid = np.empty((2,2,2), dtype=np.float64)
+    invalid = np.empty((2,2,2,2), dtype=np.float64)
+
+    # Test exception from `ParzenJointHistogram.update_pdfs_dense`
+    assert_raises(ValueError, H.update_pdfs_dense, valid, invalid)
+    assert_raises(ValueError, H.update_pdfs_dense, invalid, valid)
+    assert_raises(ValueError, H.update_pdfs_dense, invalid, invalid)
+
+    # Test exception from `ParzenJointHistogram.update_gradient_dense`
+    for shape in [(5,5), (5,5,5)]:
+        dim = len(shape)
+        grid2world=np.eye(dim + 1)
+        transform = regtransforms[('ROTATION', dim)]
+        theta = transform.get_identity_parameters()
+        valid_img = np.empty(shape, dtype=np.float64)
+        valid_grad = np.empty(shape + (dim,), dtype=np.float64)
+
+        invalid_img = np.empty((2,2,2,2), dtype=np.float64)
+        invalid_grad_type = valid_grad.astype(np.int32)
+        invalid_grad_dim = np.empty(shape + (dim+1,), dtype=np.float64)
+
+        for s, m, g in [(valid_img, valid_img, invalid_grad_type),
+                        (valid_img, valid_img, invalid_grad_dim),
+                        (invalid_img, valid_img, valid_grad),
+                        (invalid_img, invalid_img, invalid_grad_type),
+                        (invalid_img, invalid_img, invalid_grad_dim)]:
+            assert_raises(ValueError, H.update_gradient_dense,
+                          theta, transform, s, m, grid2world, g)
+
+    # Test exception from `ParzenJointHistogram.update_gradient_dense`
+    nsamples = 2
+    for dim in [2, 3]:
+        transform = regtransforms[('ROTATION', dim)]
+        theta = transform.get_identity_parameters()
+        valid_vals = np.empty((nsamples,), dtype=np.float64)
+        valid_grad = np.empty((nsamples,dim), dtype=np.float64)
+        valid_points = np.empty((nsamples,dim), dtype=np.float64)
+
+        invalid_grad_type = np.empty((nsamples,dim), dtype=np.int32)
+        invalid_grad_dim = np.empty((nsamples,dim + 2), dtype=np.float64)
+        invalid_grad_len = np.empty((nsamples + 1,dim), dtype=np.float64)
+        invalid_vals = np.empty((nsamples + 1), dtype=np.float64)
+        invalid_points_dim = np.empty((nsamples,dim + 2), dtype=np.float64)
+        invalid_points_len = np.empty((nsamples+1,dim), dtype=np.float64)
+
+        for s, m, p, g in [(invalid_vals, valid_vals, valid_points, valid_grad),
+                           (valid_vals, invalid_vals, valid_points, valid_grad),
+                           (valid_vals, valid_vals, invalid_points_dim, valid_grad),
+                           (valid_vals, valid_vals, invalid_points_dim, invalid_grad_dim),
+                           (valid_vals, valid_vals, invalid_points_len, valid_grad),
+                           (valid_vals, valid_vals, valid_points, invalid_grad_type),
+                           (valid_vals, valid_vals, valid_points, invalid_grad_dim),
+                           (valid_vals, valid_vals, valid_points, invalid_grad_len)]:
+            assert_raises(ValueError, H.update_gradient_sparse,
+                          theta, transform, s, m, p, g)

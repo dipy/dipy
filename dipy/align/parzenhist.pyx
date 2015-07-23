@@ -76,6 +76,7 @@ class ParzenJointHistogram(object):
         # support of the cubic spline is 5 bins (the center plus 2 bins at each
         # side) we need a padding of 2, in the case of cubic splines.
         self.padding = 2
+        self.setup_called = False
 
     def setup(self, static, moving, smask=None, mmask=None):
         r""" Compute histogram settings to store the PDF of input images
@@ -117,6 +118,8 @@ class ParzenJointHistogram(object):
         self.joint = np.zeros(shape=(self.nbins, self.nbins))
         self.smarginal = np.zeros(shape=(self.nbins,), dtype=np.float64)
         self.mmarginal = np.zeros(shape=(self.nbins,), dtype=np.float64)
+
+        self.setup_called = True
 
     def bin_normalize_static(self, x):
         r""" Maps intensity x to the range covered by the static histogram
@@ -193,7 +196,16 @@ class ParzenJointHistogram(object):
             inside the object of interest and 0's along the background).
             If None, ones_like(moving) is used as mask.
         '''
+        if static.shape != moving.shape:
+            raise ValueError("Images must have the same shape")
         dim = len(static.shape)
+        if not dim in [2, 3]:
+            msg = 'Only dimensions 2 and 3 are supported. ' +\
+                    str(dim) + ' received'
+            raise ValueError(msg)
+        if not self.setup_called:
+            self.setup(static, moving, smask=None, mmask=None)
+
         if dim == 2:
             _compute_pdfs_dense_2d(static, moving, smask, mmask, self.smin,
                                    self.sdelta, self.mmin, self.mdelta,
@@ -204,10 +216,6 @@ class ParzenJointHistogram(object):
                                    self.sdelta, self.mmin, self.mdelta,
                                    self.nbins, self.padding, self.joint,
                                    self.smarginal, self.mmarginal)
-        else:
-            msg = 'Only dimensions 2 and 3 are supported. ' +\
-                str(dim) + ' received'
-            raise ValueError(msg)
 
     def update_pdfs_sparse(self, sval, mval):
         r''' Computes the Probability Density Functions from a set of samples
@@ -230,6 +238,9 @@ class ParzenJointHistogram(object):
         mval : array, shape (n,)
             sampled intensities from the moving image at sampled_points
         '''
+        if not self.setup_called:
+            self.setup(sval, mval)
+
         energy = _compute_pdfs_sparse(sval, mval, self.smin, self.sdelta,
                                       self.mmin, self.mdelta, self.nbins,
                                       self.padding, self.joint,
@@ -279,7 +290,20 @@ class ParzenJointHistogram(object):
             inside the object of interest and 0's along the background).
             The default is None, indicating all voxels are considered.
         '''
+        if static.shape != moving.shape:
+            raise ValueError("Images must have the same shape")
         dim = len(static.shape)
+        if not dim in [2, 3]:
+            msg = 'Only dimensions 2 and 3 are supported. ' +\
+                str(dim) + ' received'
+            raise ValueError(msg)
+
+        if mgradient.shape != moving.shape + (dim,):
+            raise ValueError('Invalid gradient field dimensions.')
+
+        if not self.setup_called:
+            self.setup(static, moving, smask, mmask)
+
         n = theta.shape[0]
         nbins = self.nbins
 
@@ -312,11 +336,6 @@ class ParzenJointHistogram(object):
                     self.nbins, self.padding, self.joint_grad)
             else:
                 raise ValueError('Grad. field dtype must be floating point')
-
-        else:
-            msg = 'Only dimensions 2 and 3 are supported. ' +\
-                str(dim) + ' received'
-            raise ValueError(msg)
 
     def update_gradient_sparse(self, theta, transform, sval, mval,
                                sample_points, mgradient):
@@ -352,6 +371,17 @@ class ParzenJointHistogram(object):
             the gradient of the moving image at the sample points
         '''
         dim = sample_points.shape[1]
+        if mgradient.shape[1] != dim:
+            raise ValueError('Dimensions of gradients and points are different')
+
+        nsamples = sval.shape[0]
+        if ((mgradient.shape[0] != nsamples) or (mval.shape[0] != nsamples)
+            or sample_points.shape[0] != nsamples):
+            raise ValueError('Number of points and gradients are different.')
+
+        if not mgradient.dtype in [np.float32, np.float64]:
+            raise ValueError('Gradients dtype must be floating point')
+
         n = theta.shape[0]
         nbins = self.nbins
 
@@ -370,7 +400,7 @@ class ParzenJointHistogram(object):
                     self.sdelta, self.mmin, self.mdelta, self.nbins,
                     self.padding, self.joint_grad)
             else:
-                raise ValueError('Grad. field dtype must be floating point')
+                raise ValueError('Gradients dtype must be floating point')
 
         elif dim == 3:
             if mgradient.dtype == np.float64:
@@ -384,7 +414,7 @@ class ParzenJointHistogram(object):
                     self.sdelta, self.mmin, self.mdelta, self.nbins,
                     self.padding, self.joint_grad)
             else:
-                raise ValueError('Grad. field dtype must be floating point')
+                raise ValueError('Gradients dtype must be floating point')
         else:
             msg = 'Only dimensions 2 and 3 are supported. ' + str(dim) +\
                 ' received'
