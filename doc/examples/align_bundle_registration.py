@@ -141,7 +141,7 @@ from dipy.viz import window, actor
 import numpy as np
 
 
-renderer = window.renderer()
+renderer = window.Renderer()
 
 stream_actor = actor.line(sbundle1, linewidth=1.5) #streamtube(bundle1, linewidth=0.1)
 renderer.add(stream_actor)
