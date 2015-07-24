@@ -120,6 +120,9 @@ cdef class ClustersCentroid(Clusters):
         cdef cnp.npy_intp i
         for i in range(self._nb_clusters):
             free(&(self.centroids[i].features[0, 0]))
+            free(&(self._updated_centroids[i].features[0, 0]))
+            self.centroids[i].features = None  # Necessary to decrease refcount
+            self._updated_centroids[i].features = None  # Necessary to decrease refcount
 
         free(self.centroids)
         self.centroids = NULL
