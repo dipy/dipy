@@ -1,7 +1,7 @@
 """
-===========================
-Automatic bundle extraction
-===========================
+============================
+Automatic bundle recognition
+============================
 """
 import numpy as np
 from os.path import basename
@@ -410,7 +410,7 @@ def auto_extract(model_bundle, moved_streamlines,
 
         x0 = np.array([0, 0, 0, 0, 0, 0, 1.])
         bounds = [(-30, 30), (-30, 30), (-30, 30),
-                  (-45, 45), (-45, 45), (-45, 45), (0.5, 1.5)]
+                  (-45, 45), (-45, 45), (-45, 45), (0.8, 1.2)]
 
         slr = StreamlineLinearRegistration(x0=x0, bounds=bounds)
 
