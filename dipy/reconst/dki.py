@@ -844,12 +844,12 @@ def _directional_kurtosis_odf(dt, kt, V, alpha=4):
     # loop over all directions
     kODF = np.zeros(len(V))
     for i in range(len(V)):
-        kODF[i] = _dki_odf_core(V[i], dt, kt, U, alpha)
+        kODF[i] = _dki_odf_core(V[i], kt, U, alpha)
 
     return kODF
 
 
-def _dki_odf_core(n, dt, kt, U, alpha=4):
+def _dki_odf_core(n, kt, U, alpha=4):
     """ Compute the DKI based ODF estimation of a voxel along the given
     directions n
     

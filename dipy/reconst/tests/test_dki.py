@@ -153,9 +153,10 @@ def test_diffusion_kurtosis_odf():
     # reference ODF for a single voxel simulate
     MD = (dt_cross[0] + dt_cross[2] + dt_cross[5]) / 3
     U = np.linalg.pinv(from_lower_triangular(dt_cross)) * MD
+    W = dki.Wcons(kt_cross)
     ODFref = np.zeros(len(V))
     for i in range(len(V)):
-        ODFref[i] = _dki_odf_non_vectorized(V[i], dt_cross, kt_cross, U, alpha)
+        ODFref[i] = _dki_odf_non_vectorized(V[i], W, U, alpha)
 
     assert_array_almost_equal(dipy_odf, ODFref)
 
@@ -173,7 +174,7 @@ def test_diffusion_kurtosis_odf():
     assert_array_almost_equal(dipy_odf, multi_ODFref)
 
 
-def _dki_odf_non_vectorized(n, dt, kt, U, a):
+def _dki_odf_non_vectorized(n, W, U, a):
     """ Helper function to test Dipy implementation of diffusion_kurtosis_odf.
 
     This function is analogous to dipy's helper function _dki_odf_core from
@@ -187,9 +188,6 @@ def _dki_odf_non_vectorized(n, dt, kt, U, a):
 
     To a detailed information of inputs see the helper function_dki_odf_core
     """
-    # Compute full 4D kurtosis tensor
-    W = dki.Wcons(kt)
-
     # Compute elements of matrix V
     Un = np.dot(U, n)
     nUn = np.dot(n, Un)
