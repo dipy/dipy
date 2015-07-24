@@ -926,7 +926,8 @@ def _dki_odf_core(n, dt, kt, U, alpha=4):
          kt[14] * (12*U[2, 2]*U[0, 1] + 24*U[2, 0]*U[2, 1] - \
                    12*(alpha+1)*U[2, 2]*V01 - 12*(alpha+1)*U[0, 1]*V22 - \
                    24*(alpha+1)*U[0, 2]*V12 - 24*(alpha+1)*U[1, 2]*V02 + \
-                   4*(alpha+1)*(alpha+3)*V22*V01 + 8*(alpha+1)*(alpha+3)*V02*V12)))
+                   4*(alpha+1)*(alpha+3)*V22*V01 + \
+                   8*(alpha+1)*(alpha+3)*V02*V12)))
 
     return ODF
 

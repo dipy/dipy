@@ -134,31 +134,51 @@ def test_dki_predict():
 
 
 def test_diffusion_kurtosis_odf():
-    #
+    # Comparison of our vectorized implementation of the DKI-ODF using the
+    # symmetry of the diffusion kurtosis tensor with the implementation on the
+    # non-vectorized format directly presented in Eq. 5 of the article:
+    #     Neto Henriques R, Correia MM, Nunes RG, Ferreira HA (2015). Exploring
+    #     the 3D geometry of the diffusion kurtosis tensor - Impact on the
+    #     development of robust tractography procedures and novel biomarkers,
+    #     NeuroImage 111: 85-99
 
     # define parameters
     alpha = 4
-    sphere = get_sphere('symmetric724').subdivide(1)
+    sphere = get_sphere('symmetric362').subdivide(1)
     V = sphere.vertices
-    
+
+    # Compute the dki-odf using the helper function to process single voxel
     dipy_odf = dki._directional_kurtosis_odf(dt_cross, kt_cross, V,
                                              alpha=alpha)
-    # reference ODF
+    # reference ODF for a single voxel simulate
     MD = (dt_cross[0] + dt_cross[2] + dt_cross[5]) / 3
     U = np.linalg.pinv(from_lower_triangular(dt_cross)) * MD
-    refODF = np.zeros(len(V))
+    ODFref = np.zeros(len(V))
     for i in range(len(V)):
-        refODF[i] = _dki_odf_for_loops(V[i], dt_cross, kt_cross, U, alpha)
+        ODFref[i] = _dki_odf_non_vectorized(V[i], dt_cross, kt_cross, U, alpha)
 
-    assert_array_almost_equal(dipy_odf, refODF)
+    assert_array_almost_equal(dipy_odf, ODFref)
+
+    # test function for multi-voxel data
+    dipy_odf = dki.diffusion_kurtosis_odf(multi_params, sphere, alpha=alpha)
+    multi_ODFref = np.zeros((2, 2, 1, len(V)))
+    multi_ODFref[0, 0, 0] = multi_ODFref[0, 1, 0] = ODFref
+    multi_ODFref[1, 0, 0] = multi_ODFref[1, 1, 0] = ODFref
+    assert_array_almost_equal(dipy_odf, multi_ODFref)
+
+    # test dki class
+    dkimodel = dki.DiffusionKurtosisModel(gtab_2s)
+    dkifit = dkimodel.fit(DWI)
+    dipy_odf = dkifit.dki_odf(sphere, alpha=alpha)
+    assert_array_almost_equal(dipy_odf, multi_ODFref)
 
 
-def _dki_odf_for_loops(n, dt, kt, U, a):
+def _dki_odf_non_vectorized(n, dt, kt, U, a):
     """ Helper function to test Dipy implementation of diffusion_kurtosis_odf.
 
-    This function is analogous than dipy's helper function _dki_odf_core from
+    This function is analogous to dipy's helper function _dki_odf_core from
     module dipy.reconst.dki, however here function is implemented in the format
-    presented in as Eq.5 of the article:
+    presented in Eq.5 of the article:
 
         Neto Henriques R, Correia MM, Nunes RG, Ferreira HA (2015). Exploring
         the 3D geometry of the diffusion kurtosis tensor - Impact on the
