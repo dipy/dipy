@@ -51,9 +51,10 @@ B[99:157, 99:157, :] = temp_3
 square_gauss = add_noise(square, 4, 1, noise_type='gaussian')
 
 
-def test_greyscale_image():
+def test_initialize_param_uniform():
 
     com = ConstantObservationModel()
+
     mu, sigma = com.initialize_param_uniform(image, nclasses)
 
     print(mu)
@@ -62,54 +63,141 @@ def test_greyscale_image():
     npt.assert_almost_equal(mu, np.array([0., 0.25, 0.5, 0.75]))
     npt.assert_equal(sigma, np.array([1.0, 1.0, 1.0, 1.0]))
 
-    1/0
+
+def test_negloglikelihood():
+
+    com = ConstantObservationModel()
+
+    mu, sigma = com.initialize_param_uniform(image, nclasses)
+
+    print(mu)
+    print(sigma)
+
+    npt.assert_almost_equal(mu, np.array([0., 0.25, 0.5, 0.75]))
+    npt.assert_equal(sigma, np.array([1.0, 1.0, 1.0, 1.0]))
 
     sigmasq = sigma ** 2
 
-    neglogl = negloglikelihood(image, nclasses, mu, sigmasq)
+    neglogl = com.negloglikelihood(image, mu, sigmasq, nclasses)
 
-    print(neg_logl.shape)
-    print(neg_logl.min())
-    print(neg_logl.max())
+    print(neglogl.shape)
+    print(neglogl.min())
+    print(neglogl.max())
 
     # Testing the likelihood of the same voxel for two different labels
-    npt.assert_equal((neglogl[150, 125, 1] != neglogl[150, 125, 2]), True)
-    npt.assert_equal((neglogl[150, 125, 2] != neglogl[150, 125, 3]), True)
-    npt.assert_equal((neglogl[150, 125, 1] != neglogl[150, 125, 3]), True)
+    print(neglogl[150, 125, 2, 1])
+    print(neglogl[150, 125, 2, 2])
+    print(neglogl[150, 125, 2, 3])
+    plt.figure()
+    plt.imshow(neglogl[:, :, 2, 0])
+    plt.figure()
+    plt.imshow(neglogl[:, :, 2, 1])
+    plt.figure()
+    plt.imshow(neglogl[:, :, 2, 2])
+    plt.figure()
+    plt.imshow(neglogl[:, :, 2, 3])
+    npt.assert_equal((neglogl[150, 125, 2, 1] != neglogl[150, 125, 2, 2]),
+                     True)
+    npt.assert_equal((neglogl[150, 125, 2, 2] != neglogl[150, 125, 2, 3]),
+                     True)
+    npt.assert_equal((neglogl[150, 125, 2, 1] != neglogl[150, 125, 2, 3]),
+                     True)
 
-    initial_segmentation = initialize_maximum_likelihood(neglogl)
 
-    imshow(image[..., 1])
-    figure()
-    imshow(initial_segmentation[..., 1])
+def test_greyscale_image():
+
+    com = ConstantObservationModel()
+    icm = IteratedConditionalModes()
+
+    mu, sigma = com.initialize_param_uniform(image, nclasses)
+
+    print(mu)
+    print(sigma)
+
+    npt.assert_almost_equal(mu, np.array([0., 0.25, 0.5, 0.75]))
+    npt.assert_equal(sigma, np.array([1.0, 1.0, 1.0, 1.0]))
+
+    sigmasq = sigma ** 2
+
+    neglogl = com.negloglikelihood(image, mu, sigmasq, nclasses)
+
+    print(neglogl.shape)
+    print(neglogl.min())
+    print(neglogl[100, 100, 2, 0].max())
+    print(neglogl[100, 100, 2, 1].max())
+    print(neglogl[100, 100, 2, 2].max())
+    print(neglogl[100, 100, 2, 3].max())
+
+    # Testing the likelihood of the same voxel for two different labels
+    print(neglogl[100, 100, 2, 0])
+    print(neglogl[100, 100, 2, 1])
+    print(neglogl[100, 100, 2, 2])
+    print(neglogl[100, 100, 2, 3])
+    npt.assert_equal((neglogl[100, 100, 2, 1] != neglogl[100, 100, 2, 2]),
+                     True)
+    npt.assert_equal((neglogl[100, 100, 2, 2] != neglogl[100, 100, 2, 3]),
+                     True)
+    npt.assert_equal((neglogl[100, 100, 2, 1] != neglogl[100, 100, 2, 3]),
+                     True)
+
+    initial_segmentation = icm.initialize_maximum_likelihood(neglogl)
+
+    plt.imshow(image[..., 1])
+    plt.figure()
+    plt.imshow(initial_segmentation[..., 1])
 
     npt.assert_equal(initial_segmentation.max(), 3)
     npt.assert_equal(initial_segmentation.min(), 0)
 
-    final_segmentation = initial_segmentation.copy()
+    PLN = com.prob_neighborhood(image, initial_segmentation, beta, nclasses)
 
-    for i in range(max_iter):
+    plt.figure()
+    plt.imshow(PLN[..., 0])
+    plt.figure()
+    plt.imshow(PLN[..., 1])
+    plt.figure()
+    plt.imshow(PLN[..., 2])
+    plt.figure()
+    plt.imshow(PLN[..., 3])
+    
+    PLY = com.prob_image(image, nclasses, mu, sigmasq, PLN)
 
-        print(i)
+    plt.figure()
+    plt.imshow(PLY[..., 0])
+    plt.imshow(PLY[..., 1])
+    plt.imshow(PLY[..., 2])
+    plt.imshow(PLY[..., 3])
 
-        PLN = prob_neighborhood(image, initial_segmentation, beta, nclasses)
-        PLY = prob_image(image, nclasses, mu, sigmasq, PLN)
-        mu, sigmasq = update_param(image, PLY)
-        negll = negloglikelihood(image, mu, sigmasq, nclasses)
-        final_segmentation = icm_ising(negll, beta, segm)
+    mu_upd, sigmasq_upd = com.update_param(image, PLY, mu, nclasses)
 
-        figure()
-        imshow(final_segmentation[..., 1])
+    npt.assert_equal(mu_upd != mu, True)
+    npt.assert_equal(sigmasq_upd != sigma, True)
 
-    figure()
-    D = np.abs(initial_segmentation - final_segmentation)
-    imshow(D[..., 1])
+#    final_segmentation = initial_segmentation.copy()
+#
+#    for i in range(max_iter):
+#
+#        print(i)
+#
+#        PLN = com.prob_neighborhood(image, initial_segmentation, beta, nclasses)
+#        PLY = com.prob_image(image, nclasses, mu, sigmasq, PLN)
+#        mu_upd, sigmasq_upd = com.update_param(image, PLY)
+#        negll = com.negloglikelihood(image, mu_upd, sigmasq_upd, nclasses)
+#        final_segmentation = icm.icm_ising(negll, beta, segm)
+#
+#        figure()
+#        plt.imshow(final_segmentation[..., 1])
+#
+#    plt.figure()
+#    D = np.abs(initial_segmentation - final_segmentation)
+#    plt.imshow(D[..., 1])
 
-    return initial_segmentation, final_segmentation
+    return initial_segmentation #, final_segmentation
 
 
 if __name__ == '__main__':
-
-    test_greyscale_image()
+    
+    test_negloglikelihood()
+    #test_greyscale_image()
     #initial_segmentation, final_segmentation = test_in_parts()
     #test_segmentation()

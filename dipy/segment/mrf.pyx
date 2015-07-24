@@ -67,19 +67,25 @@ class ConstantObservationModel(object):
 
         """
 
-        nloglike = np.zeros(image.shape + (nclasses,))
+        nloglike = np.zeros(image.shape + (nclasses,), dtype=np.float64)
         mask = np.where(image > 0, 1, 0)
-
-        for idx in ndindex(image.shape[:3]):
-            if not mask[idx]:
-                continue
-            for l in range(self.nclasses):
-                if sigmasq[l] == 0:
-                    nloglike[idx, l] = 0
-                else:
-                    nloglike[idx, l] = ((image[idx] - mu[l]) ** 2.0) / (2.0 * sigmasq[l])
-                    nloglike[idx, l] += np.log(2.0 * np.pi * np.sqrt(sigmasq[l]))
-        return nloglike
+        
+        if not image is None:       
+        
+            print(image.shape)
+            for idx in ndindex(image.shape):
+                if not mask[idx]:
+                    continue
+                for l in range(nclasses):
+                    if sigmasq[l] == 0:
+                        nloglike[idx, l] = 0
+                    else:
+                        nloglike[idx, l] = ((image[idx] - mu[l]) ** 2.0) / (2.0 * sigmasq[l])
+                        nloglike[idx, l] += np.log(2.0 * np.pi * np.sqrt(sigmasq[l]))
+            return nloglike
+            
+        else: '
+            print('not read!!')
 
     def prob_neighborhood(self, image, seg, beta, nclasses):
         r""" Conditional probability of the label given the neighborhood
@@ -111,9 +117,7 @@ class ConstantObservationModel(object):
             _prob_neighb_perclass(image, seg, beta, classid, P_L_N)
 
             # Eq 2.18 of Stan Z. Li book
-
             PLN = np.array(P_L_N)
-
             PLN[:, :, :, classid] = np.exp(- PLN[:, :, :, classid])
             PLN_norm += PLN[:, :, :, classid]
             PLN[:, :, :, classid] = PLN[:, :, :, classid] / PLN_norm
