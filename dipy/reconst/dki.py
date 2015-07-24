@@ -2502,6 +2502,7 @@ common_fit_methods = {'WLS': wls_fit_dki,
 ind_ele = {1: 0, 16: 1, 81: 2, 2: 3, 3: 4, 8: 5, 24: 6, 27: 7, 54: 8, 4: 9,
            9: 10, 36: 11, 6: 12, 12: 13, 18: 14}
 
+
 def Wcons(k_elements):
     r""" Construct the full 4D kurtosis tensors from its 15 independent
     elements
