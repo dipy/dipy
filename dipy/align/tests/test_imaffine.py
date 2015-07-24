@@ -204,6 +204,7 @@ def test_affreg_all_transforms():
         print("%s>>%f"%(ttype, reduction))
         assert(reduction > 0.9)
 
+
 def test_affreg_defaults():
     # Test all default arguments with an arbitrary transform
     # Select an arbitrary transform (all of them are already tested
@@ -248,6 +249,13 @@ def test_affreg_defaults():
             transformed = affine_map.transform(moving)
             # Sum of absolute differences
             end_sad = np.abs(static - transformed).sum()
+            reduction = 1 - end_sad / start_sad
+            print("%s>>%f"%(ttype, reduction))
+            assert(reduction > 0.9)
+
+            transformed_inv = affine_map.transform_inverse(static)
+            # Sum of absolute differences
+            end_sad = np.abs(moving - transformed_inv).sum()
             reduction = 1 - end_sad / start_sad
             print("%s>>%f"%(ttype, reduction))
             assert(reduction > 0.9)

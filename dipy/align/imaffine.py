@@ -244,14 +244,14 @@ class AffineMap(object):
 
         # Compute the transform from sampling grid to input image grid
         if apply_inverse:
-            aff = self.affine_inverse
+            aff = self.affine_inv
         else:
             aff = self.affine
 
         if (aff is None) or resample_only:
             comp = image_world2grid.dot(sampling_grid2world)
         else:
-            comp = image_world2grid.dot(self.affine.dot(sampling_grid2world))
+            comp = image_world2grid.dot(aff.dot(sampling_grid2world))
 
         # Transform the input image
         if interp == 'linear':
