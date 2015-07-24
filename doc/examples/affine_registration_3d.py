@@ -45,6 +45,7 @@ to draw one on top of the other we need to resample the moving image on a grid
 of the same dimensions as the static image, we can do this by "transforming"
 the moving image using an identity transform
 """
+
 identity = np.eye(4)
 affine_map = AffineMap(None,
                        static.shape, static_grid2world,
@@ -81,6 +82,7 @@ We can now transform the moving image and draw it on top of the static image,
 registration is not likely to be good, but at least they will occupy roughly
 the same space
 """
+
 transformed = c_of_mass.transform(moving)
 regtools.overlay_slices(static, transformed, None, 0,
                         "Static", "Transformed", "transformed_com_0.png")
