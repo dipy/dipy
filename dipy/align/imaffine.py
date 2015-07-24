@@ -909,7 +909,7 @@ class AffineRegistration(object):
 
         for level in range(self.levels - 1, -1, -1):
             self.current_level = level
-            max_iter = self.level_iters[level]
+            max_iter = self.level_iters[-1 - level]
             if self.verbosity >= VerbosityLevels.STATUS:
                 print('Optimizing level %d [max iter: %d]' % (level, max_iter))
 
