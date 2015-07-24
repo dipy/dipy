@@ -2498,3 +2498,41 @@ common_fit_methods = {'WLS': wls_fit_dki,
                       'restore': restore_fit_tensor,
                       'RESTORE': restore_fit_tensor
                       }
+
+ind_ele = {1: 0, 16: 1, 81: 2, 2: 3, 3: 4, 8: 5, 24: 6, 27: 7, 54: 8, 4: 9,
+           9: 10, 36: 11, 6: 12, 12: 13, 18: 14}
+
+def Wcons(k_elements):
+    r""" Construct the full 4D kurtosis tensors from its 15 independent
+    elements
+    
+    Parameters
+    ----------
+    k_elements : (15,)
+        elements of the kurtosis tensor in the following order:
+        
+        .. math::
+            
+    \begin{matrix} ( & W_{xxxx} & W_{yyyy} & W_{zzzz} & W_{xxxy} & W_{xxxz}
+                     & ... \\
+                     & W_{xyyy} & W_{yyyz} & W_{xzzz} & W_{yzzz} & W_{xxyy}
+                     & ... \\
+                     & W_{xxzz} & W_{yyzz} & W_{xxyz} & W_{xyyz} & W_{xyzz}
+                     & & )\end{matrix}
+    Returns
+    -------
+    W : array(3, 3, 3, 3)
+        Full 4D kurtosis tensor
+    """
+
+    W = np.zeros((3, 3, 3, 3))
+
+    xyz = [0, 1, 2]
+    for ind_i in xyz:
+        for ind_j in xyz:
+            for ind_k in xyz:
+                for ind_l in xyz:
+                    key = (ind_i+1) * (ind_j+1) * (ind_k+1) * (ind_l+1)
+                    W[ind_i][ind_j][ind_k][ind_l] = k_elements[ind_ele[key]]
+
+    return W
