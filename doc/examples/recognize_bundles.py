@@ -26,6 +26,7 @@ from os.path import isdir
 import os
 from dipy.io.pickles import load_pickle, save_pickle
 
+
 def read_trk(fname):
     streams, hdr = tv.read(fname, points_space='rasmm')
     return [i[0] for i in streams], hdr
@@ -868,7 +869,6 @@ def load_janice_results(f_extracted, f_manual, f_model):
         fvtk.record(ren, size=(1200, 1200), magnification=1,
                     out_path=str(i) + '_manual.png')
         fvtk.rm(ren, manual_actor)
-
 
 
 
