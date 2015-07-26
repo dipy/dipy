@@ -69,8 +69,8 @@ class ConstantObservationModel(object):
 
         nloglike = np.zeros(image.shape + (nclasses,), dtype=np.float64)
         mask = np.where(image > 0, 1, 0)
-        
-        #if not image is None:       
+
+        #if not image is None:
 
         for idx in ndindex(image.shape):
 #            if not mask[idx]:
@@ -159,12 +159,12 @@ class ConstantObservationModel(object):
                 P_L_Y[idx[0], idx[1], idx[2], l] = g[idx] * P_L_N[idx[0], idx[1], idx[2], l]
 
             P_L_Y_norm[:, :, :] += P_L_Y[:, :, :, l]
-            
+
         for l in range(nclasses):
             P_L_Y[:, :, :, l] = P_L_Y[:, :, :, l]/P_L_Y_norm
-            
+
         P_L_Y[np.isnan(P_L_Y)] = 0
-        
+
         return P_L_Y
 
     def update_param(self, image, P_L_Y, mu, nclasses):
@@ -173,10 +173,12 @@ class ConstantObservationModel(object):
 
         Parameters
         -----------
-        image : Input T1 grey scale image
+        image : ndarray
+            Input T1 grey scale image
 
-        P_L_Y : Probability of the label given the input image
-                Computed by the Expectation Maximization algorithm
+        P_L_Y : ndarray
+            Probability of the label given the input image computed by the
+            Expectation Maximization algorithm.
 
         Returns
         --------
@@ -190,24 +192,19 @@ class ConstantObservationModel(object):
         mu_num = np.zeros(image.shape + (nclasses,))
         var_num = np.zeros(image.shape + (nclasses,))
         denm = np.zeros(image.shape + (nclasses,))
-        mask = np.where(image > 0, 1, 0)
 
         for l in range(nclasses):
             for idx in ndindex(image.shape[:3]):
-#                if not mask[idx]:
-#                    continue
-                mu_num[idx[0], idx[1], idx[2], l] = (P_L_Y[idx[0], idx[1], idx[2], l] * image[idx])
-                var_num[idx[0], idx[1], idx[2], l] = (P_L_Y[idx[0], idx[1], idx[2], l] * (image[idx] - mu[l])**2)
-                denm[idx[0], idx[1], idx[2], l] = P_L_Y[idx[0], idx[1], idx[2], l]
+                idxl = idx + (l,)
+                mu_num[idxl] = (P_L_Y[idxl] * image[idx])
+                var_num[idxl] = (P_L_Y[idxl] * (image[idx] - mu[l]) ** 2)
+                denm[idxl] = P_L_Y[idxl]
 
-            mu_upd[l] = np.sum(applymask(mu_num[:, :, :, l], mask)) / np.sum(applymask(denm[:, :, :, l], mask))
-            var_upd[l] = np.sum(applymask(var_num[:, :, :, l], mask)) / np.sum(applymask(denm[:, :, :, l], mask))
-            
+            mu_upd[l] = np.sum(mu_num[:, :, :, l]) / np.sum(denm[:, :, :, l])
+            var_upd[l] = np.sum(var_num[:, :, :, l]) / np.sum(denm[:, :, :, l])
+
             print('updated means and variances per class')
             print('class: ', l)
-#            print('mu_num_sum:', np.sum(applymask(mu_num[:, :, :, l], mask)))
-#            print('var_num_sum:', np.sum(applymask(var_num[:, :, :, l], mask)))
-#            print('denominator_sum:', np.sum(applymask(denm[:, :, :, l], mask)))
             print('updated_mu:', mu_upd[l])
             print('updated_var:', var_upd[l])
 
@@ -345,7 +342,7 @@ class IteratedConditionalModes(object):
             initial segmentation. On segput this segmentation will change by one
             iteration of the ICM algorithm
         """
-        
+
         _icm_ising(nloglike, beta, seg)
 
         return seg
@@ -457,10 +454,10 @@ class ImageSegmenter(object):
         pass
 
     def segment_HMRF(self, image, nclasses, beta, max_iter):
-        
+
         observation_model = ConstantObservationModel()
         posteriorMaximizer = IteratedConditionalModes()
-        
+
         print("Initializing parameters")
         mu, sigmasq = observation_model.initialize_param_uniform(image, nclasses)
 
@@ -469,7 +466,7 @@ class ImageSegmenter(object):
 
         print("Initializing segmentation")
         seg_init = posteriorMaximizer.initialize_maximum_likelihood(negll)
-        
+
         seg = np.empty_like(image)
 
         for iter in range(max_iter): # Here is where the EM parts come in
