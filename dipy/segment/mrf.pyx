@@ -104,8 +104,8 @@ class ConstantObservationModel(object):
         """
 
         cdef:
-            double[:,:,:,:] P_L_N = np.zeros(image.shape + (nclasses,), dtype=np.float64)
-            # double[:,:,:,:]
+            double[:, :, :, :] P_L_N = np.zeros(image.shape + (nclasses,),
+                                                dtype=np.float64)
             cnp.npy_intp classid = 0
 
         PLN_norm = np.zeros(image.shape, dtype=np.float64)
@@ -128,18 +128,22 @@ class ConstantObservationModel(object):
 
         Parameters
         -----------
-        img : 3D ndarray - masked T1 structural image
-        nclasses : int - number of tissue classes
-        mu : 1x3 ndarray - current estimate of mean of each tissue type
-        sigmasq : 1x3 ndarray - current estimate of the variance of each tissue
-                                type
-        P_L_N : 4D ndarray - probability of the label given the neighborhood.
-                             Previously computed by function prob_neigh
+        img : ndarray 3D
+            masked T1 structural image
+        nclasses : int
+            number of tissue classes
+        mu : ndarray (1, 3)
+            current estimate of mean of each tissue type
+        sigmasq : ndarray (1, 3)
+            current estimate of the variance of each tissue type
+        P_L_N : ndarray 4D
+            probability of the label given the neighborhood. Previously
+            computed by function prob_neigh
 
         Returns
         --------
-
-        P_L_Y : 4D ndarray - Probability of the label given the input image
+        P_L_Y : ndarray 4D
+            Probability of the label given the input image
 
         """
         # probability of the tissue label (from the 3 classes) given the
@@ -148,14 +152,12 @@ class ConstantObservationModel(object):
         P_L_Y_norm = np.zeros_like(img)
         # normal density equation 11 of the Zhang paper
         g = np.zeros_like(img)
-        mask = np.where(img > 0, 1, 0)
+        # mask = np.where(img > 0, 1, 0)
 
         for l in range(nclasses):
             for idx in ndindex(img.shape[:3]):
-#                if not mask[idx]:
-#                    continue
 
-                g[idx] = np.exp(-((img[idx] - mu[l]) ** 2 / 2 * sigmasq[l])) / np.sqrt(2*np.pi*sigmasq[l])
+                g[idx] = np.exp(-((img[idx] - mu[l]) ** 2 / 2 * sigmasq[l])) / np.sqrt(2 * np.pi * sigmasq[l])
                 P_L_Y[idx[0], idx[1], idx[2], l] = g[idx] * P_L_N[idx[0], idx[1], idx[2], l]
 
             P_L_Y_norm[:, :, :] += P_L_Y[:, :, :, l]
@@ -164,6 +166,7 @@ class ConstantObservationModel(object):
             P_L_Y[:, :, :, l] = P_L_Y[:, :, :, l]/P_L_Y_norm
 
         P_L_Y[np.isnan(P_L_Y)] = 0
+        # P_L_Y[P_L_Y < 0] = 0
 
         return P_L_Y
 

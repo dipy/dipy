@@ -115,7 +115,7 @@ def test_greyscale_image():
     icm = IteratedConditionalModes()
 
     mu, sigma = com.initialize_param_uniform(image, nclasses)
-    
+
 
     print(mu)
     print(sigma)
@@ -233,6 +233,9 @@ def test_greyscale_iter():
 
         PLN = com.prob_neighborhood(image, initial_segmentation, beta, nclasses)
         PLY = com.prob_image(image, nclasses, mu, sigmasq, PLN)
+
+        npt.assert_equal(PLY.all() >= 0, True)
+
         mu_upd, sigmasq_upd = com.update_param(image, PLY, mu, nclasses)
         negll = com.negloglikelihood(image, mu_upd, sigmasq_upd, nclasses)
 #        plt.figure()
@@ -272,8 +275,8 @@ def test_ImageSegmenter():
 
 if __name__ == '__main__':
 
-    #test_initialize_param_uniform()
-    #test_negloglikelihood()
-    initial_segmentation, final_segmentation = test_greyscale_image()
-    #seg_init, final_segmentation = test_greyscale_iter()
-    #segmented = test_ImageSegmenter()
+    # test_initialize_param_uniform()
+    # test_negloglikelihood()
+    # initial_segmentation, final_segmentation = test_greyscale_image()
+    seg_init, final_segmentation = test_greyscale_iter()
+    # segmented = test_ImageSegmenter()
