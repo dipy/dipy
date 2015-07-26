@@ -19,8 +19,8 @@ image[..., :nslices] = single_slice[..., None]
 
 # Execute the segmentation
 nclasses = 4
-beta = np.float64(0.0001)
-max_iter = 2
+beta = np.float64(0.01)
+max_iter = 3
 
 square = np.zeros((256, 256, 3))
 square[42:213, 42:213, :] = 3
@@ -220,8 +220,8 @@ def test_greyscale_iter():
 
     plt.figure()
     plt.imshow(initial_segmentation[..., 1])
-    npt.assert_equal(initial_segmentation.max(), 3)
-    npt.assert_equal(initial_segmentation.min(), 0)
+#    npt.assert_equal(initial_segmentation.max(), 3)
+#    npt.assert_equal(initial_segmentation.min(), 0)
 
     # final_segmentation = initial_segmentation.copy()
     final_segmentation = np.empty_like(image)
@@ -242,9 +242,9 @@ def test_greyscale_iter():
         plt.figure()
         plt.imshow(final_segmentation[..., 1])
 
-#        initial_segmentation = final_segmentation
-#        mu = mu_upd
-#        sigmasq = sigmasq_upd
+        initial_segmentation = final_segmentation.copy()
+        mu = mu_upd.copy()
+        sigmasq = sigmasq_upd.copy()
 
 #    Difference_map = np.abs(initial_segmentation - final_segmentation)
 #    plt.figure()
@@ -252,12 +252,13 @@ def test_greyscale_iter():
 
     return seg_init, final_segmentation
 
+
 def test_ImageSegmenter():
 
     imgseg = ImageSegmenter()
 
     T1_seg = imgseg.segment_HMRF(image, nclasses, beta, max_iter)
-    
+
     plt.figure()
     plt.imshow(T1_seg[..., 1])
 
@@ -265,14 +266,14 @@ def test_ImageSegmenter():
 #
 #    plt.figure()
 #    plt.imshow(Square1_seg[..., 1])
-    
+
     return T1_seg
-    
+
 
 if __name__ == '__main__':
 
     #test_initialize_param_uniform()
     #test_negloglikelihood()
-    #initial_segmentation, final_segmentation = test_greyscale_image()
+    initial_segmentation, final_segmentation = test_greyscale_image()
     #seg_init, final_segmentation = test_greyscale_iter()
-    segmented = test_ImageSegmenter()
+    #segmented = test_ImageSegmenter()
