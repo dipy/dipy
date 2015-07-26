@@ -1,16 +1,16 @@
 import numpy as np
 import scipy as sp
 import scipy.ndimage as ndimage
-from dipy.core.ndindex import ndindex
-from dipy.data import get_data
-import dipy.align.vector_fields as vf
-from dipy.align.transforms import regtransforms
 from functools import reduce
 from operator import mul
-from dipy.align.mattes import (MattesBase,
-                               cubic_spline,
-                               cubic_spline_derivative,
-                               sample_domain_regular)
+from dipy.core.ndindex import ndindex
+from dipy.data import get_data
+from dipy.align import vector_fields as vf
+from dipy.align.transforms import regtransforms
+from dipy.align.parzenhist import (ParzenJointHistogram,
+                          cubic_spline,
+                          cubic_spline_derivative,
+                          sample_domain_regular)
 from numpy.testing import (assert_array_equal,
                            assert_array_almost_equal,
                            assert_almost_equal,
@@ -113,8 +113,8 @@ def test_cubic_spline_derivative():
     assert_array_almost_equal(actual, expected)
 
 
-def test_mattes_base():
-    # Test the simple functionality of MattesBase,
+def test_parzen_joint_histogram():
+    # Test the simple functionality of ParzenJointHistogram,
     # the gradients and computation of the joint intensity distribution
     # will be tested independently
     for nbins in [15, 30, 50]:
@@ -122,7 +122,7 @@ def test_mattes_base():
             for intensity_range in [0.1, 1.0, 10.0]:
                 fact = 1
                 max_int = min_int + intensity_range
-                M = MattesBase(nbins)
+                P = ParzenJointHistogram(nbins)
                 # Make a pair of 4-pixel images, introduce +/- 1 values
                 # that will be excluded using a mask
                 static = np.array([min_int - 1.0, min_int,
@@ -135,44 +135,44 @@ def test_mattes_base():
                 static_mask = np.array([0, 1, 1, 0])
                 moving_mask = np.array([1, 0, 0, 1])
 
-                M.setup(static, moving, static_mask, moving_mask)
+                P.setup(static, moving, static_mask, moving_mask)
 
                 # Test bin_normalize_static at the boundary
-                normalized = M.bin_normalize_static(min_int)
-                assert_almost_equal(normalized, M.padding)
-                index = M.bin_index(normalized)
-                assert_equal(index, M.padding)
-                normalized = M.bin_normalize_static(max_int)
-                assert_almost_equal(normalized, nbins - M.padding)
-                index = M.bin_index(normalized)
-                assert_equal(index, nbins - 1 - M.padding)
+                normalized = P.bin_normalize_static(min_int)
+                assert_almost_equal(normalized, P.padding)
+                index = P.bin_index(normalized)
+                assert_equal(index, P.padding)
+                normalized = P.bin_normalize_static(max_int)
+                assert_almost_equal(normalized, nbins - P.padding)
+                index = P.bin_index(normalized)
+                assert_equal(index, nbins - 1 - P.padding)
 
                 # Test bin_normalize_moving at the boundary
-                normalized = M.bin_normalize_moving(fact * min_int)
-                assert_almost_equal(normalized, M.padding)
-                index = M.bin_index(normalized)
-                assert_equal(index, M.padding)
-                normalized = M.bin_normalize_moving(fact * max_int)
-                assert_almost_equal(normalized, nbins - M.padding)
-                index = M.bin_index(normalized)
-                assert_equal(index, nbins - 1 - M.padding)
+                normalized = P.bin_normalize_moving(fact * min_int)
+                assert_almost_equal(normalized, P.padding)
+                index = P.bin_index(normalized)
+                assert_equal(index, P.padding)
+                normalized = P.bin_normalize_moving(fact * max_int)
+                assert_almost_equal(normalized, nbins - P.padding)
+                index = P.bin_index(normalized)
+                assert_equal(index, nbins - 1 - P.padding)
 
                 # Test bin_index not at the boundary
-                delta_s = (max_int - min_int) / (nbins - 2 * M.padding)
-                delta_m = fact * (max_int - min_int) / (nbins - 2 * M.padding)
-                for i in range(nbins - 2 * M.padding):
-                    normalized = M.bin_normalize_static(min_int +
+                delta_s = (max_int - min_int) / (nbins - 2 * P.padding)
+                delta_m = fact * (max_int - min_int) / (nbins - 2 * P.padding)
+                for i in range(nbins - 2 * P.padding):
+                    normalized = P.bin_normalize_static(min_int +
                                                         (i + 0.5) * delta_s)
-                    index = M.bin_index(normalized)
-                    assert_equal(index, M.padding + i)
+                    index = P.bin_index(normalized)
+                    assert_equal(index, P.padding + i)
 
-                    normalized = M.bin_normalize_moving(fact * min_int +
+                    normalized = P.bin_normalize_moving(fact * min_int +
                                                         (i + 0.5) * delta_m)
-                    index = M.bin_index(normalized)
-                    assert_equal(index, M.padding + i)
+                    index = P.bin_index(normalized)
+                    assert_equal(index, P.padding + i)
 
 
-def test_mattes_densities():
+def test_parzen_densities():
     # Test the computation of the joint intensity distribution
     # using a dense and a sparse set of values
     seed = 1246592
@@ -191,28 +191,28 @@ def test_mattes_densities():
             static, moving = create_random_image_pair(shape, nvals, seed)
 
         # Initialize
-        mbase = MattesBase(nbins)
-        mbase.setup(static, moving)
+        parzen_hist = ParzenJointHistogram(nbins)
+        parzen_hist.setup(static, moving)
         # Get distributions computed by dense sampling
-        mbase.update_pdfs_dense(static, moving)
-        actual_joint_dense = mbase.joint
-        actual_mmarginal_dense = mbase.mmarginal
-        actual_smarginal_dense = mbase.smarginal
+        parzen_hist.update_pdfs_dense(static, moving)
+        actual_joint_dense = parzen_hist.joint
+        actual_mmarginal_dense = parzen_hist.mmarginal
+        actual_smarginal_dense = parzen_hist.smarginal
 
         # Get distributions computed by sparse sampling
         sval = static.reshape(-1)
         mval = moving.reshape(-1)
-        mbase.update_pdfs_sparse(sval, mval)
-        actual_joint_sparse = mbase.joint
-        actual_mmarginal_sparse = mbase.mmarginal
-        actual_smarginal_sparse = mbase.smarginal
+        parzen_hist.update_pdfs_sparse(sval, mval)
+        actual_joint_sparse = parzen_hist.joint
+        actual_mmarginal_sparse = parzen_hist.mmarginal
+        actual_smarginal_sparse = parzen_hist.smarginal
 
         # Compute the expected joint distribution with dense sampling
         expected_joint_dense = np.zeros(shape=(nbins, nbins))
         for index in ndindex(shape):
-            sv = mbase.bin_normalize_static(static[index])
-            mv = mbase.bin_normalize_moving(moving[index])
-            sbin = mbase.bin_index(sv)
+            sv = parzen_hist.bin_normalize_static(static[index])
+            mv = parzen_hist.bin_normalize_moving(moving[index])
+            sbin = parzen_hist.bin_index(sv)
             # The spline is centered at mv, will evaluate for all row
             spline_arg = np.array([i - mv for i in range(nbins)])
             contribution = cubic_spline(spline_arg)
@@ -221,9 +221,9 @@ def test_mattes_densities():
         # Compute the expected joint distribution with sparse sampling
         expected_joint_sparse = np.zeros(shape=(nbins, nbins))
         for index in range(sval.shape[0]):
-            sv = mbase.bin_normalize_static(sval[index])
-            mv = mbase.bin_normalize_moving(mval[index])
-            sbin = mbase.bin_index(sv)
+            sv = parzen_hist.bin_normalize_static(sval[index])
+            mv = parzen_hist.bin_normalize_moving(mval[index])
+            sbin = parzen_hist.bin_index(sv)
             # The spline is centered at mv, will evaluate for all row
             spline_arg = np.array([i - mv for i in range(nbins)])
             contribution = cubic_spline(spline_arg)
@@ -259,7 +259,7 @@ def test_mattes_densities():
 def setup_random_transform(transform, rfactor, nslices=45, sigma=1):
     r""" Creates a pair of images related to each other by an affine transform
 
-    We warp the static image with a random transform so that the
+    We transform the static image with a random transform so that the
     returned ground-truth transform will produce the static image
     when applied to the moving image. This will simply stack some copies of
     a T1 coronal slice image and add some zero slices up and down to
@@ -288,10 +288,10 @@ def setup_random_transform(transform, rfactor, nslices=45, sigma=1):
     if nslices == 1:
         dim = 2
         moving = moving_slice
-        warp_method = vf.warp_2d_affine
+        transform_method = vf.transform_2d_affine
     else:
         dim = 3
-        warp_method = vf.warp_3d_affine
+        transform_method = vf.transform_3d_affine
         moving = np.zeros(shape=moving_slice.shape + (nslices,))
         moving[..., zero_slices:(2 * zero_slices)] = moving_slice[..., None]
 
@@ -307,7 +307,7 @@ def setup_random_transform(transform, rfactor, nslices=45, sigma=1):
 
     M = transform.param_to_matrix(theta)
     shape = np.array(moving.shape, dtype=np.int32)
-    static = np.array(warp_method(moving.astype(np.float32), shape, M))
+    static = np.array(transform_method(moving.astype(np.float32), shape, M))
     static = static.astype(np.float64)
     static_g2w = np.eye(dim + 1)
     smask = np.ones_like(static, dtype=np.int32)
@@ -321,7 +321,7 @@ def test_joint_pdf_gradients_dense():
     # transform parameters. Since the histograms are discrete partitions of the
     # image intensities, the finite difference approximation is normally not
     # very close to the analytical derivatives. Other sources of error are the
-    # interpolation used when warping the images and the boundary intensities
+    # interpolation used when transforming the images and the boundary intensities
     # introduced when interpolating outside of the image (i.e. some "zeros" are
     # introduced at the boundary which affect the numerical derivatives but is
     # not taken into account by the analytical derivatives). Thus, we need to
@@ -334,10 +334,10 @@ def test_joint_pdf_gradients_dense():
         dim = ttype[1]
         if dim == 2:
             nslices = 1
-            warp_method = vf.warp_2d_affine
+            transform_method = vf.transform_2d_affine
         else:
             nslices = 45
-            warp_method = vf.warp_3d_affine
+            transform_method = vf.transform_3d_affine
 
         transform = regtransforms[ttype]
         factor = factors[ttype]
@@ -345,28 +345,28 @@ def test_joint_pdf_gradients_dense():
 
         static, moving, static_g2w, moving_g2w, smask, mmask, M = \
             setup_random_transform(transform, factor, nslices, 5.0)
-        metric = MattesBase(32)
-        metric.setup(static, moving, smask, mmask)
+        parzen_hist = ParzenJointHistogram(32)
+        parzen_hist.setup(static, moving, smask, mmask)
 
         # Compute the gradient at theta with the implementation under test
         M = transform.param_to_matrix(theta)
         shape = np.array(static.shape, dtype=np.int32)
 
-        warped = warp_method(moving.astype(np.float32), shape, M)
-        warped = np.array(warped)
-        metric.update_pdfs_dense(static.astype(np.float64),
-                                 warped.astype(np.float64))
+        moved = transform_method(moving.astype(np.float32), shape, M)
+        moved = np.array(moved)
+        parzen_hist.update_pdfs_dense(static.astype(np.float64),
+                                 moved.astype(np.float64))
         # Get the joint distribution evaluated at theta
-        J0 = np.copy(metric.joint)
+        J0 = np.copy(parzen_hist.joint)
         grid_to_space = np.eye(dim + 1)
         spacing = np.ones(dim, dtype=np.float64)
         mgrad, inside = vf.gradient(moving.astype(np.float32), moving_g2w,
                                     spacing, shape, grid_to_space)
         id = transform.get_identity_parameters()
-        metric.update_gradient_dense(id, transform, static.astype(np.float64),
-                                     warped.astype(np.float64), grid_to_space,
+        parzen_hist.update_gradient_dense(id, transform, static.astype(np.float64),
+                                     moved.astype(np.float64), grid_to_space,
                                      mgrad, smask, mmask)
-        actual = np.copy(metric.joint_grad)
+        actual = np.copy(parzen_hist.joint_grad)
         # Now we have the gradient of the joint distribution w.r.t. the
         # transform parameters
 
@@ -376,14 +376,14 @@ def test_joint_pdf_gradients_dense():
         for i in range(n):
             dtheta = theta.copy()
             dtheta[i] += h
-            # Update the joint distribution with the warped moving image
+            # Update the joint distribution with the transformed moving image
             M = transform.param_to_matrix(dtheta)
             shape = np.array(static.shape, dtype=np.int32)
-            warped = warp_method(moving.astype(np.float32), shape, M)
-            warped = np.array(warped)
-            metric.update_pdfs_dense(static.astype(np.float64),
-                                     warped.astype(np.float64))
-            J1 = np.copy(metric.joint)
+            moved = transform_method(moving.astype(np.float32), shape, M)
+            moved = np.array(moved)
+            parzen_hist.update_pdfs_dense(static.astype(np.float64),
+                                          moved.astype(np.float64))
+            J1 = np.copy(parzen_hist.joint)
             expected[..., i] = (J1 - J0) / h
 
         # Dot product and norms of gradients of each joint histogram cell
@@ -421,8 +421,8 @@ def test_joint_pdf_gradients_sparse():
 
         static, moving, static_g2w, moving_g2w, smask, mmask, M = \
             setup_random_transform(transform, factor, nslices, 5.0)
-        metric = MattesBase(32)
-        metric.setup(static, moving, smask, mmask)
+        parzen_hist = ParzenJointHistogram(32)
+        parzen_hist.setup(static, moving, smask, mmask)
 
         # Sample the fixed-image domain
         k = 3
@@ -449,19 +449,19 @@ def test_joint_pdf_gradients_sparse():
         intensities_moving, inside = interp_method(moving.astype(np.float32),
                                                    samples_moving_grid)
         intensities_moving = np.array(intensities_moving, dtype=np.float64)
-        metric.update_pdfs_sparse(intensities_static, intensities_moving)
+        parzen_hist.update_pdfs_sparse(intensities_static, intensities_moving)
         # Get the joint distribution evaluated at theta
-        J0 = np.copy(metric.joint)
+        J0 = np.copy(parzen_hist.joint)
 
         spacing = np.ones(dim + 1, dtype=np.float64)
         mgrad, inside = vf.sparse_gradient(moving.astype(np.float32),
                                            sp_to_moving, spacing, samples)
-        metric.update_gradient_sparse(theta, transform, intensities_static,
+        parzen_hist.update_gradient_sparse(theta, transform, intensities_static,
                                       intensities_moving, samples[..., :dim],
                                       mgrad)
         # Get the gradient of the joint distribution w.r.t. the transform
         # parameters
-        actual = np.copy(metric.joint_grad)
+        actual = np.copy(parzen_hist.joint_grad)
 
         # Compute the gradient using finite-diferences
         n = transform.get_number_of_parameters()
@@ -469,15 +469,15 @@ def test_joint_pdf_gradients_sparse():
         for i in range(n):
             dtheta = theta.copy()
             dtheta[i] += h
-            # Update the joint distribution with the warped moving image
+            # Update the joint distribution with the transformed moving image
             M = transform.param_to_matrix(dtheta)
             sp_to_moving = np.linalg.inv(moving_g2w).dot(M)
             samples_moving_grid = sp_to_moving.dot(samples.T).T
             intensities_moving, inside = \
                 interp_method(moving.astype(np.float32), samples_moving_grid)
             intensities_moving = np.array(intensities_moving, dtype=np.float64)
-            metric.update_pdfs_sparse(intensities_static, intensities_moving)
-            J1 = np.copy(metric.joint)
+            parzen_hist.update_pdfs_sparse(intensities_static, intensities_moving)
+            J1 = np.copy(parzen_hist.joint)
             expected[..., i] = (J1 - J0) / h
 
         # Dot product and norms of gradients of each joint histogram cell
@@ -496,182 +496,6 @@ def test_joint_pdf_gradients_sparse():
         std_cosine = P[P != 0].std()
         assert(mean_cosine > 0.99)
         assert(std_cosine < 0.15)
-
-
-def test_mi_gradient_dense():
-    # Test the gradient of mutual information
-    h = 1e-5
-    for ttype in factors:
-        transform = regtransforms[ttype]
-        dim = ttype[1]
-        if dim == 2:
-            nslices = 1
-            warp_method = vf.warp_2d_affine
-        else:
-            nslices = 45
-            warp_method = vf.warp_3d_affine
-        # Get data (pair of images related to each other by an known transform)
-        factor = factors[ttype]
-        static, moving, static_g2w, moving_g2w, smask, mmask, M = \
-            setup_random_transform(transform, factor, nslices, 5.0)
-        smask = None
-        mmask = None
-
-        # Prepare a MattesBase instance
-        # The computation of the metric is done in 3 steps:
-        # 1.Compute the joint distribution
-        # 2.Compute the gradient of the joint distribution
-        # 3.Compute the metric's value and gradient using results from 1 and 2
-        metric = MattesBase(32)
-        metric.setup(static, moving, smask, mmask)
-
-        # 1. Update the joint distribution
-        metric.update_pdfs_dense(static.astype(np.float64),
-                                 moving.astype(np.float64))
-
-        # 2. Update the joint distribution gradient (the derivative of each
-        # histogram cell w.r.t. the transform parameters). This requires
-        # among other things, the spatial gradient of the moving image.
-        theta = transform.get_identity_parameters().copy()
-        grid_to_space = np.eye(dim + 1)
-        spacing = np.ones(dim, dtype=np.float64)
-        shape = np.array(static.shape, dtype=np.int32)
-        mgrad, inside = vf.gradient(moving.astype(np.float32), moving_g2w,
-                                    spacing, shape, grid_to_space)
-        metric.update_gradient_dense(theta, transform,
-                                     static.astype(np.float64),
-                                     moving.astype(np.float64),
-                                     grid_to_space, mgrad, smask, mmask)
-
-        # 3. Update the metric (in this case, the Mutual Information) and its
-        # gradient, which is computed from the joint density and its gradient
-        metric.update_mi_metric(update_gradient=True)
-
-        # Now we can extract the value and gradient of the metric
-        # This is the gradient according to the implementation under test
-        val0 = metric.metric_val
-        actual = np.copy(metric.metric_grad)
-
-        # Compute the gradient using finite-diferences
-        n = transform.get_number_of_parameters()
-        expected = np.empty_like(actual)
-        for i in range(n):
-            dtheta = theta.copy()
-            dtheta[i] += h
-
-            M = transform.param_to_matrix(dtheta)
-            shape = np.array(static.shape, dtype=np.int32)
-            warped = np.array(warp_method(moving.astype(np.float32), shape, M))
-            metric.update_pdfs_dense(static.astype(np.float64),
-                                     warped.astype(np.float64))
-            metric.update_mi_metric(update_gradient=False)
-            val1 = metric.metric_val
-            expected[i] = (val1 - val0) / h
-
-        dp = expected.dot(actual)
-        enorm = np.linalg.norm(expected)
-        anorm = np.linalg.norm(actual)
-        nprod = dp / (enorm * anorm)
-        assert(nprod >= 0.999)
-
-
-def test_mi_gradient_sparse():
-    # Test the gradient of mutual information
-    h = 1e-5
-    for ttype in factors:
-        transform = regtransforms[ttype]
-        dim = ttype[1]
-        if dim == 2:
-            nslices = 1
-            interp_method = vf.interpolate_scalar_2d
-        else:
-            nslices = 45
-            interp_method = vf.interpolate_scalar_3d
-        # Get data (pair of images related to each other by an known transform)
-        factor = factors[ttype]
-        static, moving, static_g2w, moving_g2w, smask, mmask, M = \
-            setup_random_transform(transform, factor, nslices, 5.0)
-        smask = None
-        mmask = None
-
-        # Sample static domain
-        k = 3
-        sigma = 0.25
-        seed = 1234
-        shape = np.array(static.shape, dtype=np.int32)
-        samples = sample_domain_regular(k, shape, static_g2w, sigma, seed)
-        samples = np.array(samples)
-        samples = np.hstack((samples, np.ones(samples.shape[0])[:, None]))
-        sp_to_static = np.linalg.inv(static_g2w)
-        samples_static_grid = (sp_to_static.dot(samples.T).T)[..., :dim]
-        intensities_static, inside = interp_method(static.astype(np.float32),
-                                                   samples_static_grid)
-        intensities_static = np.array(intensities_static, dtype=np.float64)
-
-        # Prepare a MattesBase instance
-        # The computation of the metric is done in 3 steps:
-        # 1.Compute the joint distribution
-        # 2.Compute the gradient of the joint distribution
-        # 3.Compute the metric's value and gradient using results from 1 and 2
-        metric = MattesBase(32)
-        metric.setup(static, moving, smask, mmask)
-
-        # 1. Update the joint distribution
-        sp_to_moving = np.linalg.inv(moving_g2w)
-        samples_moving_grid = (sp_to_moving.dot(samples.T).T)[..., :dim]
-        intensities_moving, inside = interp_method(moving.astype(np.float32),
-                                                   samples_moving_grid)
-        intensities_moving = np.array(intensities_moving, dtype=np.float64)
-        metric.update_pdfs_sparse(intensities_static, intensities_moving)
-
-        # 2. Update the joint distribution gradient (the derivative of each
-        # histogram cell w.r.t. the transform parameters). This requires
-        # to evaluate the gradient of the moving image at the sampling points
-        theta = transform.get_identity_parameters().copy()
-        spacing = np.ones(dim, dtype=np.float64)
-        shape = np.array(static.shape, dtype=np.int32)
-        mgrad, inside = vf.sparse_gradient(moving.astype(np.float32),
-                                           sp_to_moving,
-                                           spacing,
-                                           samples[..., :dim])
-        metric.update_gradient_sparse(theta, transform, intensities_static,
-                                      intensities_moving,
-                                      samples[..., :dim],
-                                      mgrad)
-
-        # 3. Update the metric (in this case, the Mutual Information) and its
-        # gradient, which is computed from the joint density and its gradient
-        metric.update_mi_metric(update_gradient=True)
-
-        # Now we can extract the value and gradient of the metric
-        # This is the gradient according to the implementation under test
-        val0 = metric.metric_val
-        actual = np.copy(metric.metric_grad)
-
-        # Compute the gradient using finite-diferences
-        n = transform.get_number_of_parameters()
-        expected = np.empty_like(actual)
-        for i in range(n):
-            dtheta = theta.copy()
-            dtheta[i] += h
-
-            M = transform.param_to_matrix(dtheta)
-            shape = np.array(static.shape, dtype=np.int32)
-            sp_to_moving = np.linalg.inv(moving_g2w).dot(M)
-            samples_moving_grid = (sp_to_moving.dot(samples.T).T)[..., :dim]
-            intensities_moving, inside =\
-                interp_method(moving.astype(np.float32), samples_moving_grid)
-            intensities_moving = np.array(intensities_moving, dtype=np.float64)
-            metric.update_pdfs_sparse(intensities_static, intensities_moving)
-            metric.update_mi_metric(update_gradient=False)
-            val1 = metric.metric_val
-            expected[i] = (val1 - val0) / h
-
-        dp = expected.dot(actual)
-        enorm = np.linalg.norm(expected)
-        anorm = np.linalg.norm(actual)
-        nprod = dp / (enorm * anorm)
-        assert(nprod > 0.9999)
 
 
 def test_sample_domain_regular():
@@ -718,3 +542,62 @@ def test_sample_domain_regular():
     assert_equal(len(set(indices)), len(indices))
     # Verify the sampling was regular at rate k
     assert_equal((indices % k).sum(), 0)
+
+
+def test_exceptions():
+    H = ParzenJointHistogram(32)
+    valid = np.empty((2,2,2), dtype=np.float64)
+    invalid = np.empty((2,2,2,2), dtype=np.float64)
+
+    # Test exception from `ParzenJointHistogram.update_pdfs_dense`
+    assert_raises(ValueError, H.update_pdfs_dense, valid, invalid)
+    assert_raises(ValueError, H.update_pdfs_dense, invalid, valid)
+    assert_raises(ValueError, H.update_pdfs_dense, invalid, invalid)
+
+    # Test exception from `ParzenJointHistogram.update_gradient_dense`
+    for shape in [(5,5), (5,5,5)]:
+        dim = len(shape)
+        grid2world=np.eye(dim + 1)
+        transform = regtransforms[('ROTATION', dim)]
+        theta = transform.get_identity_parameters()
+        valid_img = np.empty(shape, dtype=np.float64)
+        valid_grad = np.empty(shape + (dim,), dtype=np.float64)
+
+        invalid_img = np.empty((2,2,2,2), dtype=np.float64)
+        invalid_grad_type = valid_grad.astype(np.int32)
+        invalid_grad_dim = np.empty(shape + (dim+1,), dtype=np.float64)
+
+        for s, m, g in [(valid_img, valid_img, invalid_grad_type),
+                        (valid_img, valid_img, invalid_grad_dim),
+                        (invalid_img, valid_img, valid_grad),
+                        (invalid_img, invalid_img, invalid_grad_type),
+                        (invalid_img, invalid_img, invalid_grad_dim)]:
+            assert_raises(ValueError, H.update_gradient_dense,
+                          theta, transform, s, m, grid2world, g)
+
+    # Test exception from `ParzenJointHistogram.update_gradient_dense`
+    nsamples = 2
+    for dim in [2, 3]:
+        transform = regtransforms[('ROTATION', dim)]
+        theta = transform.get_identity_parameters()
+        valid_vals = np.empty((nsamples,), dtype=np.float64)
+        valid_grad = np.empty((nsamples,dim), dtype=np.float64)
+        valid_points = np.empty((nsamples,dim), dtype=np.float64)
+
+        invalid_grad_type = np.empty((nsamples,dim), dtype=np.int32)
+        invalid_grad_dim = np.empty((nsamples,dim + 2), dtype=np.float64)
+        invalid_grad_len = np.empty((nsamples + 1,dim), dtype=np.float64)
+        invalid_vals = np.empty((nsamples + 1), dtype=np.float64)
+        invalid_points_dim = np.empty((nsamples,dim + 2), dtype=np.float64)
+        invalid_points_len = np.empty((nsamples+1,dim), dtype=np.float64)
+
+        for s, m, p, g in [(invalid_vals, valid_vals, valid_points, valid_grad),
+                           (valid_vals, invalid_vals, valid_points, valid_grad),
+                           (valid_vals, valid_vals, invalid_points_dim, valid_grad),
+                           (valid_vals, valid_vals, invalid_points_dim, invalid_grad_dim),
+                           (valid_vals, valid_vals, invalid_points_len, valid_grad),
+                           (valid_vals, valid_vals, valid_points, invalid_grad_type),
+                           (valid_vals, valid_vals, valid_points, invalid_grad_dim),
+                           (valid_vals, valid_vals, valid_points, invalid_grad_len)]:
+            assert_raises(ValueError, H.update_gradient_sparse,
+                          theta, transform, s, m, p, g)

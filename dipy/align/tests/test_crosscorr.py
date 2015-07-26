@@ -1,7 +1,7 @@
 import numpy as np
-from dipy.align import floating
-from numpy.testing import (assert_array_almost_equal)
-import dipy.align.crosscorr as cc
+from numpy.testing import assert_array_almost_equal
+from .. import floating
+from .. import crosscorr as cc
 
 def test_cc_factors_2d():
     r"""
