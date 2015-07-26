@@ -70,22 +70,19 @@ class ConstantObservationModel(object):
         nloglike = np.zeros(image.shape + (nclasses,), dtype=np.float64)
         mask = np.where(image > 0, 1, 0)
         
-        if not image is None:       
-        
-            print(image.shape)
-            for idx in ndindex(image.shape):
-                if not mask[idx]:
-                    continue
-                for l in range(nclasses):
-                    if sigmasq[l] == 0:
-                        nloglike[idx, l] = 0
-                    else:
-                        nloglike[idx, l] = ((image[idx] - mu[l]) ** 2.0) / (2.0 * sigmasq[l])
-                        nloglike[idx, l] += np.log(2.0 * np.pi * np.sqrt(sigmasq[l]))
-            return nloglike
-            
-        else: '
-            print('not read!!')
+        #if not image is None:       
+
+        for idx in ndindex(image.shape):
+#            if not mask[idx]:
+#                continue
+            for l in range(nclasses):
+                if sigmasq[l] == 0:
+                    nloglike[idx + (l,)] = 0
+                else:
+                    nloglike[idx + (l,)] = ((image[idx] - mu[l]) ** 2.0) / (2.0 * sigmasq[l])
+                    nloglike[idx + (l,)] += np.log(2.0 * np.pi * np.sqrt(sigmasq[l]))
+        return nloglike
+
 
     def prob_neighborhood(self, image, seg, beta, nclasses):
         r""" Conditional probability of the label given the neighborhood
@@ -153,19 +150,21 @@ class ConstantObservationModel(object):
         g = np.zeros_like(img)
         mask = np.where(img > 0, 1, 0)
 
-        for l in range(self.nclasses):
+        for l in range(nclasses):
             for idx in ndindex(img.shape[:3]):
-                if not mask[idx]:
-                    continue
+#                if not mask[idx]:
+#                    continue
 
                 g[idx] = np.exp(-((img[idx] - mu[l]) ** 2 / 2 * sigmasq[l])) / np.sqrt(2*np.pi*sigmasq[l])
                 P_L_Y[idx[0], idx[1], idx[2], l] = g[idx] * P_L_N[idx[0], idx[1], idx[2], l]
 
             P_L_Y_norm[:, :, :] += P_L_Y[:, :, :, l]
+            
+        for l in range(nclasses):
             P_L_Y[:, :, :, l] = P_L_Y[:, :, :, l]/P_L_Y_norm
-
+            
         P_L_Y[np.isnan(P_L_Y)] = 0
-
+        
         return P_L_Y
 
     def update_param(self, image, P_L_Y, mu, nclasses):
@@ -186,7 +185,7 @@ class ConstantObservationModel(object):
 
         """
         # temporary mu and var files to compute the update
-        mu_upd = mu
+        mu_upd = np.zeros(nclasses)
         var_upd = np.zeros(nclasses)
         mu_num = np.zeros(image.shape + (nclasses,))
         var_num = np.zeros(image.shape + (nclasses,))
@@ -195,19 +194,20 @@ class ConstantObservationModel(object):
 
         for l in range(nclasses):
             for idx in ndindex(image.shape[:3]):
-                if not mask[idx]:
-                    continue
+#                if not mask[idx]:
+#                    continue
                 mu_num[idx[0], idx[1], idx[2], l] = (P_L_Y[idx[0], idx[1], idx[2], l] * image[idx])
-                var_num[idx[0], idx[1], idx[2], l] = (P_L_Y[idx[0], idx[1], idx[2], l] * (image[idx] - mu_upd[l])**2)
+                var_num[idx[0], idx[1], idx[2], l] = (P_L_Y[idx[0], idx[1], idx[2], l] * (image[idx] - mu[l])**2)
                 denm[idx[0], idx[1], idx[2], l] = P_L_Y[idx[0], idx[1], idx[2], l]
 
             mu_upd[l] = np.sum(applymask(mu_num[:, :, :, l], mask)) / np.sum(applymask(denm[:, :, :, l], mask))
             var_upd[l] = np.sum(applymask(var_num[:, :, :, l], mask)) / np.sum(applymask(denm[:, :, :, l], mask))
-
+            
+            print('updated means and variances per class')
             print('class: ', l)
-            print('mu_num_sum:', np.sum(applymask(mu_num[:, :, :, l], mask)))
-            print('var_num_sum:', np.sum(applymask(var_num[:, :, :, l], mask)))
-            print('denominator_sum:', np.sum(applymask(denm[:, :, :, l], mask)))
+#            print('mu_num_sum:', np.sum(applymask(mu_num[:, :, :, l], mask)))
+#            print('var_num_sum:', np.sum(applymask(var_num[:, :, :, l], mask)))
+#            print('denominator_sum:', np.sum(applymask(denm[:, :, :, l], mask)))
             print('updated_mu:', mu_upd[l])
             print('updated_var:', var_upd[l])
 
@@ -321,7 +321,7 @@ class IteratedConditionalModes(object):
             the buffer in which to write the initial segmentation
         """
 
-        seg = np.zeros(nloglike.shape[:3]).astype(np.int32)
+        seg = np.zeros(nloglike.shape[:3]).astype(np.float64)
 
         _initialize_maximum_likelihood(nloglike, seg)
 
@@ -345,13 +345,13 @@ class IteratedConditionalModes(object):
             initial segmentation. On segput this segmentation will change by one
             iteration of the ICM algorithm
         """
-
+        
         _icm_ising(nloglike, beta, seg)
 
+        return seg
 
 
-
-cdef void _initialize_maximum_likelihood(double[:,:,:,:] nloglike, int[:,:,:] seg) nogil:
+cdef void _initialize_maximum_likelihood(double[:,:,:,:] nloglike, double[:,:,:] seg) nogil:
     r""" Initializes the segmentation of an image with given neg-log-likelihood
 
     Initializes the segmentation of an image with neg-log-likelihood field
@@ -385,7 +385,7 @@ cdef void _initialize_maximum_likelihood(double[:,:,:,:] nloglike, int[:,:,:] se
                 seg[x,y,z] = best_class
 
 
-cdef void _icm_ising(double[:,:,:,:] nloglike, double beta, int[:,:,:] seg) nogil:
+cdef void _icm_ising(double[:,:,:,:] nloglike, double beta, double[:,:,:] seg) nogil:
     """ Executes one iteration of the ICM algorithm for MRF MAP estimation
     The prior distribution of the MRF is a Gibbs distribution with the
     Potts/Ising model with parameter `beta`:
@@ -450,35 +450,38 @@ cdef void _icm_ising(double[:,:,:,:] nloglike, double beta, int[:,:,:] seg) nogi
                 seg[x,y,z] = best_class
 
 
-#class ImageSegmenter(object):
-#    # To-do: generalize to quadratic measure fields measure fields
-#    def __init__(self):
-#        self.observation_model = ConstantObservationModel()
-#        pass
-#
-#    def segment_HMRF(self, image, nclasses, max_iter):
-#
-#        print("Computing neg-log-likelihood")
-#        self.observation_model.negloglikelihood()
-#        negll = self.observation_model.negloglikelihood(image)
-#
-#        print("Initializing parameters")
-#        mu, sigmasq = self.observation_model.initialize_param_uniform(image, nclasses)
-#
-#        print("Initializing segmentation")
-#        posteriorMaximizer = IteratedConditionalModes()
-#        seg_init = posteriorMaximizer.initialize_maximum_likelihood(negll)
-#
-#        for iter in range(max_iter): # Here is where the EM parts come in
-#            print("Iter: %d"%(iter,))
-#
-#            PLN = self.observation_model._prob_neighborhood(image, seg_init, beta, nclasses)
-#            PLY = self.observation_model.prob_image(img, nclasses, mu, sigmasq, PLN)
-#            self.observationmodel.update_param(image, PLY)
-#            negll = self.observation_model.negloglikelihood(image)
-#            seg = posteriorMaximizer.icm_ising(negll, beta, segm)
-#
-#        return seg
+class ImageSegmenter(object):
+    # To-do: generalize to quadratic measure fields measure fields
+    def __init__(self):
+
+        pass
+
+    def segment_HMRF(self, image, nclasses, beta, max_iter):
+        
+        observation_model = ConstantObservationModel()
+        posteriorMaximizer = IteratedConditionalModes()
+        
+        print("Initializing parameters")
+        mu, sigmasq = observation_model.initialize_param_uniform(image, nclasses)
+
+        print("Computing neg-log-likelihood")
+        negll = observation_model.negloglikelihood(image, mu, sigmasq, nclasses)
+
+        print("Initializing segmentation")
+        seg_init = posteriorMaximizer.initialize_maximum_likelihood(negll)
+        
+        seg = np.empty_like(image)
+
+        for iter in range(max_iter): # Here is where the EM parts come in
+            print("Iter: %d"%(iter,))
+
+            PLN = observation_model.prob_neighborhood(image, seg_init, beta, nclasses)
+            PLY = observation_model.prob_image(image, nclasses, mu, sigmasq, PLN)
+            mu_upd, sigmasq_upd = observation_model.update_param(image, PLY, mu, nclasses)
+            negll = observation_model.negloglikelihood(image, mu_upd, sigmasq_upd, nclasses)
+            seg = posteriorMaximizer.icm_ising(negll, beta, seg_init)
+
+        return seg
 
 
 #if __name__ == "__main__":

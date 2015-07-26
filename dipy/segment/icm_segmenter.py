@@ -3,8 +3,6 @@ import numpy as np
 from dipy.core.ndindex import ndindex
 
 
-
-
 def icm(mu, var, masked_img, seg_img, classes, beta):
     r"""Use ICM to segment T1 image with MRF
     Parameters
@@ -104,6 +102,36 @@ def neg_log_likelihood(img, mu, var, index, label):
         loglike += np.log(np.sqrt(var[label]))
 
     return loglike
+
+    
+def negloglikelihood(image, mu, sigmasq, nclasses):
+    r""" Computes the Gaussian negative log-likelihood of each class
+
+    Computes the Gaussian negative log-likelihood of each class for each
+    voxel of `image` assuming a Gaussian distribution with means and
+    variances given by `mu` and `sigmasq`, respectively (constant models
+    along the full volume). The negative log-likelihood will be written
+    in `nloglike`.
+
+    """
+
+    nloglike = np.zeros(image.shape + (nclasses,), dtype=np.float64)
+    mask = np.where(image > 0, 1, 0)
+
+    # if not image is None:       
+
+    for idx in ndindex(image.shape):
+        if not mask[idx]:
+            continue
+        for l in range(nclasses):
+            if sigmasq[l] == 0:
+                nloglike[idx + (l,)] = 0
+                print(nloglike[idx + (l,)])
+            else:
+                nloglike[idx + (l,)] = ((image[idx] - mu[l]) ** 2.0) / (2.0 * sigmasq[l])
+                nloglike[idx + (l,)] += np.log(2.0 * np.pi * np.sqrt(sigmasq[l]))
+                print(nloglike[idx + (l,)])
+    return nloglike
 
 
 def gibbs_energy(seg, index, label, beta):
