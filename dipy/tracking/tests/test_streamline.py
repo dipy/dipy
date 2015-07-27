@@ -1,6 +1,7 @@
 from __future__ import print_function
 
 import numpy as np
+from numpy.linalg import norm
 
 from nose.tools import assert_true, assert_equal, assert_almost_equal
 from numpy.testing import (assert_array_equal, assert_array_almost_equal,
@@ -416,7 +417,9 @@ def compress_streamlines_python(streamlines, error_rate=0.5):
     dist_between_points = lambda prev, next: np.sqrt(((prev-next)**2).sum())
 
     # Projection of a 3D point on a 3D line, minimal distance
-    dist_to_line = lambda prev, next, curr: np.linalg.norm(np.cross(next-prev, curr-next)) / np.linalg.norm(next-prev)
+    dist_to_line = lambda prev, next, curr: norm(np.cross(next-prev,
+                                                          curr-next)
+                                                 ) / norm(next-prev)
 
     compressed_tracks = []
     for i in range(len(streamlines)):
@@ -427,7 +430,8 @@ def compress_streamlines_python(streamlines, error_rate=0.5):
         # For all points on one streamline
         for j in range(len(streamlines[i])):
             # Distance between last point added and current point
-            in_between = dist_between_points(streamlines[i][last_added_point], streamlines[i][j])
+            in_between = dist_between_points(streamlines[i][last_added_point],
+                                             streamlines[i][j])
             # Always add the first points
             if j == 0:
                 current_tract[nb_points] = streamlines[i][j]
@@ -449,7 +453,6 @@ def compress_streamlines_python(streamlines, error_rate=0.5):
                         nb_points += 1
                         last_added_point = j-1
                         last_success = j-1
-                        j -= 1
                         break
                     # The current point is successful
                     else:
@@ -467,13 +470,28 @@ def compress_streamlines_python(streamlines, error_rate=0.5):
 
 
 def test_compress_streamlines():
-    #(errorRate < 0.001 or errorRate > 1
+    # Compressing a straight streamline that is less than 10mm long
+    # should output a two points streamline.
+    linear_streamline = np.linspace(0, 5, 100*3).reshape((100, 3))
+    c_streamline = compress_streamlines(linear_streamline)
+    assert_equal(len(c_streamline), 2)
+    assert_array_equal(c_streamline, [linear_streamline[0],
+                                      linear_streamline[-1]])
+
+    # The distance of consecutive points must be less or equal than 10mm.
+    linear_streamline = np.linspace(0, 100, 100*3).reshape((100, 3))
+    linear_streamline[:, 1:] = 0.
+    c_streamline = compress_streamlines(linear_streamline)
+    segments_length = np.linalg.norm(c_streamline[1:]-c_streamline[:-1], axis=1)
+    assert_true(np.all(segments_length <= 10))
+    assert_equal(len(c_streamline), 12)
+    assert_array_equal(c_streamline, linear_streamline[::9])
+
+    # Make sure Cython and Python versions are the same.
     for error_rate in np.linspace(0.001, 1, 100):
         cstreamline_python = compress_streamlines_python([streamline],
                                                          error_rate)[0]
-        print("Nb. streamlines {0} -> {1} with an error rate of {2}".format(len(streamline), len(cstreamline_python), error_rate))
         cstreamline_cython = compress_streamlines(streamline, error_rate)
-        #print("Nb. streamlines {0} -> {1} with an error rate of {2}".format(len(streamline), len(cstreamline_python), error_rate))
         assert_equal(len(cstreamline_python), len(cstreamline_cython))
         assert_array_almost_equal(cstreamline_python, cstreamline_cython)
 

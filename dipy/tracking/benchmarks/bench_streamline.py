@@ -67,6 +67,7 @@ def bench_compress_streamlines():
     repeat = 10
     fname = get_data('fornix')
     streams, hdr = tv.read(fname)
+    streams, hdr = tv.read("/home/cotm2719/research/dat/neuroimaging/fiber_compression/interface_npv010.trk")
     streamlines = [i[0] for i in streams]
     error_rate = 0.1
 

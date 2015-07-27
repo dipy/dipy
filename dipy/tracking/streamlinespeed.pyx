@@ -400,41 +400,42 @@ cdef np.npy_intp c_compress_streamline(Streamline streamline, double error_rate,
 def compress_streamlines(streamlines, error_rate=0.5):
     """ Compress streamlines by linearizing some part of them.
 
-    The linearization process [Presseau15]_. will not change a given
-    streamline by more than `error_rate` mm.
+    The linearization process [Presseau15]_. will not remove a point if it
+    causes either an offset of more than `error_rate`mm or a distance
+    between two consecutive points to be more than 10mm.
 
     Parameters
     ----------
-    streamlines : one or a list of array-like shape (N,3)
+    streamlines : one or a list of array-like of shape (N,3)
         Array representing x,y,z of N points in a streamline
     error_rate : float (optional)
         Maximum error in mm.
 
     Returns
     -------
-    compressed_streamlines : one or a list of array-like shape (M, 3)
-        Results of the linearization process removing
+    compressed_streamlines : one or a list of array-like
+        Results of the linearization process.
 
-    Examples (TODO)
+    Examples
     --------
-    >>> from dipy.tracking.streamline import set_number_of_points
+    >>> from dipy.tracking.streamline import compress_streamlines
     >>> import numpy as np
-    >>> # One streamline: a semi-circle
-    >>> theta = np.pi*np.linspace(0, 1, 100)
-    >>> x = np.cos(theta)
-    >>> y = np.sin(theta)
-    >>> z = 0 * x
-    >>> streamline = np.vstack((x, y, z)).T
-    >>> modified_streamline = set_number_of_points(streamline, 3)
-    >>> len(modified_streamline)
-    3
+    >>> # One streamline: a wiggling line
+    >>> rng = np.random.RandomState(42)
+    >>> streamline = np.linspace(0, 10, 100*3).reshape((100, 3))
+    >>> streamline += 0.2 * rng.rand(100, 3)
+    >>> c_streamline = compress_streamlines(streamline, error_rate=0.2)
+    >>> len(streamline)
+    100
+    >>> len(c_streamline)
+    12
     >>> # Multiple streamlines
     >>> streamlines = [streamline, streamline[::2]]
-    >>> modified_streamlines = set_number_of_points(streamlines, 10)
+    >>> c_streamlines = compress_streamlines(streamlines, error_rate=0.2)
     >>> [len(s) for s in streamlines]
     [100, 50]
-    >>> [len(s) for s in modified_streamlines]
-    [10, 10]
+    >>> [len(s) for s in c_streamlines]
+    [12, 5]
 
 
     References
