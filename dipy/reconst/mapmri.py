@@ -1,5 +1,6 @@
 import numpy as np
 from dipy.reconst.multi_voxel import multi_voxel_fit
+from dipy.reconst.base import ReconstModel, ReconstFit
 from scipy.special import hermite, gamma
 from scipy.misc import factorial, factorial2
 import dipy.reconst.dti as dti
@@ -10,7 +11,7 @@ from ..utils.optpkg import optional_package
 cvxopt, have_cvxopt, _ = optional_package("cvxopt")
 
 
-class MapmriModel():
+class MapmriModel(ReconstModel):
 
     r"""Mean Apparent Propagator MRI (MAPMRI) [1]_ of the diffusion signal.
 
@@ -145,16 +146,12 @@ class MapmriModel():
     def fit(self, data):
 
         tenfit = self.tenmodel.fit(data[..., self.ind])
-
         evals = tenfit.evals
         R = tenfit.evecs
-
         ind_evals = np.argsort(evals)[::-1]
         evals = evals[ind_evals]
         R = R[ind_evals, :]
-
         evals = np.clip(evals, self.eigenvalue_threshold, evals.max())
-
         if self.anisotropic_scaling:
             mu = np.sqrt(evals * 2 * self.tau)
 
@@ -166,10 +163,8 @@ class MapmriModel():
         qvecs = np.dot(self.gtab.bvecs, R)
         q = qvecs * qvals[:, None]
         M = mapmri_phi_matrix(self.radial_order, mu, q.T)
-
         # This is a simple empirical regularization, to be replaced
         I = np.diag(self.ind_mat.sum(1) ** 2)
-
         if self.eap_cons:
             rmax = 2 * np.sqrt(10 * evals.max() * self.tau)
             r_index, r_grad = create_rspace(11, rmax)
@@ -199,7 +194,7 @@ class MapmriModel():
         return MapmriFit(self, coef, mu, R, self.ind_mat)
 
 
-class MapmriFit():
+class MapmriFit(ReconstFit):
 
     def __init__(self, model, mapmri_coef, mu, R, ind_mat):
         """ Calculates diffusion properties for a single voxel
