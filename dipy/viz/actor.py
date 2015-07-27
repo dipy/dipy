@@ -48,8 +48,8 @@ def slice(data, affine=None, value_range=None, opacity=1.,
         coordinates as calculated by the affine parameter.
 
     """
-    if data.ndim != 3:
-        raise ValueError('Only 3D arrays are currently supported.')
+#     if data.ndim != 3:
+#         raise ValueError('Only 3D arrays are currently supported.')
 
     if value_range is None:
         vol = np.interp(data, xp=[data.min(), data.max()], fp=[0, 255])
@@ -67,6 +67,7 @@ def slice(data, affine=None, value_range=None, opacity=1.,
     im.SetSpacing(voxsz[2], voxsz[0], voxsz[1])
     if major_version <= 5:
         im.AllocateScalars()
+        im.SetNumberOfScalarComponents(3)
     else:
         im.AllocateScalars(vtk.VTK_UNSIGNED_CHAR, 3)
 
@@ -77,7 +78,13 @@ def slice(data, affine=None, value_range=None, opacity=1.,
     #     im.SetScalarComponentFromFloat(i, j, k, 0, vol[i, j, k])
     vol = np.swapaxes(vol, 0, 2)
     vol = np.ascontiguousarray(vol)
-    uchar_array = numpy_support.numpy_to_vtk(vol.ravel(), deep=0)
+    
+    print(vol.shape)
+    vol = np.reshape(vol, [vol.shape[0]*vol.shape[1]*vol.shape[2], vol.shape[3]])
+    print(vol.shape)
+    uchar_array = numpy_support.numpy_to_vtk(vol, deep=0)
+    
+#     uchar_array = numpy_support.numpy_to_vtk(vol.ravel(), deep=0)
     im.GetPointData().SetScalars(uchar_array)
 
     if affine is None:
@@ -112,7 +119,7 @@ def slice(data, affine=None, value_range=None, opacity=1.,
     ex1, ex2, ey1, ey2, ez1, ez2 = image_resliced.GetOutput().GetExtent()
 
     plane_colors = vtk.vtkImageMapToColors()
-    plane_colors.SetLookupTable(lut)
+#     plane_colors.SetLookupTable(lut)
     plane_colors.SetInputConnection(image_resliced.GetOutputPort())
     plane_colors.Update()
 
