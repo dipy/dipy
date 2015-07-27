@@ -188,7 +188,7 @@ cdef void c_set_number_of_points(Streamline streamline, Streamline out) nogil:
 
 
 def set_number_of_points(streamlines, nb_points=3):
-    ''' change the number of points of streamlines
+    ''' Change the number of points of streamlines
         (either by downsampling or upsampling)
 
     Change the number of points of streamlines in order to obtain
@@ -301,3 +301,171 @@ def set_number_of_points(streamlines, nb_points=3):
         return modified_streamlines[0]
     else:
         return modified_streamlines
+
+
+cdef double c_cross_product_normed(double bx, double by, double bz,
+                                   double cx, double cy, double cz) nogil:
+    cdef double ax, ay, az
+    ax = by*cz - bz*cy
+    ay = bz*cx - bx*cz
+    az = bx*cy - by*cx
+    return sqrt(ax*ax + ay*ay + az*az)
+
+
+
+cdef double c_dist_to_line(Streamline streamline, np.npy_intp prev,
+                           np.npy_intp next, np.npy_intp curr) nogil:
+
+    cdef:
+        double norm1, norm2
+        double dn
+        np.npy_intp D = streamline.shape[1]
+
+    # Compute cross product of next-prev and curr-next
+    norm1 = c_cross_product_normed(streamline[next, 0]-streamline[prev, 0],
+                                   streamline[next, 1]-streamline[prev, 1],
+                                   streamline[next, 2]-streamline[prev, 2],
+                                   streamline[curr, 0]-streamline[next, 0],
+                                   streamline[curr, 1]-streamline[next, 1],
+                                   streamline[curr, 2]-streamline[next, 2])
+
+    # Norm of next-prev
+    norm2 = 0.0
+    for d in range(D):
+        dn = streamline[next, d]-streamline[prev, d]
+        norm2 += dn*dn
+    norm2 = sqrt(norm2)
+
+    return norm1 / norm2
+
+
+
+cdef np.npy_intp c_compress_streamline(Streamline streamline, double error_rate, Streamline out) nogil:
+    cdef:
+        np.npy_intp N = streamline.shape[0]
+        np.npy_intp D = streamline.shape[1]
+        np.npy_intp nb_points = 0
+        np.npy_intp last_added_point_idx = 0
+        np.npy_intp last_success = 0
+        np.npy_intp last_added_point = 0
+        np.npy_intp i, k, prev, next, curr
+        double dn, in_between_dist
+
+    for i in range(N):
+        # Euclidean distance between last added point and current point.
+        in_between_dist = 0.0
+        for d in range(D):
+            dn = streamline[i, d] - streamline[last_added_point, d]
+            in_between_dist += dn*dn
+
+        in_between_dist = sqrt(in_between_dist)
+
+        if i == 0:  # First point is always added.
+            for d in range(D):
+                out[nb_points, d] = streamline[i, d]
+
+            last_success = i
+            nb_points += 1
+        elif i < N-1:  # Perform linearization if needed.
+            prev = last_added_point
+            next = i+1
+
+            # Check that each point is not offset by more than `error_rate` mm.
+            for k in range(last_added_point, i):
+                curr = k
+                dist = c_dist_to_line(streamline, prev, next, curr)
+
+                # If the current point's offset is greater than `error_rate`, use the latest success.
+                if dist > error_rate or in_between_dist > 10:
+                    for d in range(D):
+                        out[nb_points, d] = streamline[last_success, d]
+
+                    nb_points += 1
+                    last_added_point = i-1
+                    last_success = i-1
+                    break
+                # The current point's offset is ok, check the next point.
+                else:
+                    last_success = i
+
+        else:  # Last point is always added.
+            for d in range(D):
+                out[nb_points, d] = streamline[i, d]
+
+            nb_points += 1
+
+    return nb_points
+
+
+def compress_streamlines(streamlines, error_rate=0.5):
+    """ Compress streamlines by linearizing some part of them.
+
+    The linearization process [Presseau15]_. will not change a given
+    streamline by more than `error_rate` mm.
+
+    Parameters
+    ----------
+    streamlines : one or a list of array-like shape (N,3)
+        Array representing x,y,z of N points in a streamline
+    error_rate : float (optional)
+        Maximum error in mm.
+
+    Returns
+    -------
+    compressed_streamlines : one or a list of array-like shape (M, 3)
+        Results of the linearization process removing
+
+    Examples (TODO)
+    --------
+    >>> from dipy.tracking.streamline import set_number_of_points
+    >>> import numpy as np
+    >>> # One streamline: a semi-circle
+    >>> theta = np.pi*np.linspace(0, 1, 100)
+    >>> x = np.cos(theta)
+    >>> y = np.sin(theta)
+    >>> z = 0 * x
+    >>> streamline = np.vstack((x, y, z)).T
+    >>> modified_streamline = set_number_of_points(streamline, 3)
+    >>> len(modified_streamline)
+    3
+    >>> # Multiple streamlines
+    >>> streamlines = [streamline, streamline[::2]]
+    >>> modified_streamlines = set_number_of_points(streamlines, 10)
+    >>> [len(s) for s in streamlines]
+    [100, 50]
+    >>> [len(s) for s in modified_streamlines]
+    [10, 10]
+
+
+    References
+    ----------
+    .. [Presseau15] Presseau C. et al., A new compression format for fiber
+                    tracking datasets, NeuroImage, no 109, 73-83, 2015.
+    """
+    only_one_streamlines = False
+    if type(streamlines) is np.ndarray:
+        only_one_streamlines = True
+        streamlines = [streamlines]
+
+    if len(streamlines) == 0:
+        return []
+
+
+    compressed_streamlines = []
+    cdef np.npy_intp i
+    for i in range(len(streamlines)):
+        dtype = streamlines[i].dtype
+        streamline = streamlines[i] if streamlines[i].flags.writeable else streamlines[i].astype(dtype)
+        compressed_streamline = np.empty(streamline.shape, dtype)
+
+        if dtype == np.float32:
+            nb_points = c_compress_streamline[float2d](streamline, error_rate, compressed_streamline)
+        else:
+            nb_points = c_compress_streamline[double2d](streamline, error_rate, compressed_streamline)
+
+        compressed_streamlines.append(compressed_streamline[:nb_points])
+
+    if only_one_streamlines:
+        return compressed_streamlines[0]
+    else:
+        return compressed_streamlines

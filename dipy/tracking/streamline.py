@@ -2,6 +2,7 @@ import numpy as np
 from nibabel.affines import apply_affine
 from dipy.tracking.streamlinespeed import set_number_of_points
 from dipy.tracking.streamlinespeed import length
+from dipy.tracking.streamlinespeed import compress_streamlines
 
 
 def unlist_streamlines(streamlines):
