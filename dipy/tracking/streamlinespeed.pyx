@@ -403,14 +403,14 @@ def compress_streamlines(streamlines, tol_error=0.5):
     segments have in common. The linearization process [Presseau15]_. will
     not remove a point if it causes either an offset of more than
     `tol_error`mm or a distance between two consecutive points to be more
-    than 10mm.
+    than 10mm [Rheault15]_.
 
     Parameters
     ----------
     streamlines : one or a list of array-like of shape (N,3)
         Array representing x,y,z of N points in a streamline
     tol_error : float (optional)
-        Tolerance error in mm.
+        Tolerance error in mm. Default is 0.5mm.
 
     Returns
     -------
@@ -443,6 +443,7 @@ def compress_streamlines(streamlines, tol_error=0.5):
     ----------
     .. [Presseau15] Presseau C. et al., A new compression format for fiber
                     tracking datasets, NeuroImage, no 109, 73-83, 2015.
+    .. [Rheault15] Rheault F. et al., In writing, 2015.
     """
     only_one_streamlines = False
     if type(streamlines) is np.ndarray:
