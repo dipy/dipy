@@ -67,19 +67,18 @@ def bench_compress_streamlines():
     repeat = 10
     fname = get_data('fornix')
     streams, hdr = tv.read(fname)
-    streams, hdr = tv.read("/home/cotm2719/research/dat/neuroimaging/fiber_compression/interface_npv010.trk")
     streamlines = [i[0] for i in streams]
-    error_rate = 0.1
+    tol_error = 0.1
 
     print("Timing compress_streamlines() in Cython ({0} streamlines)".format(len(streamlines)))
-    cython_time = measure("compress_streamlines(streamlines, error_rate)", repeat)
+    cython_time = measure("compress_streamlines(streamlines, tol_error)", repeat)
     print("Cython time: {0:.3}sec".format(cython_time))
     del streamlines
 
     fname = get_data('fornix')
     streams, hdr = tv.read(fname)
     streamlines = [i[0] for i in streams]
-    python_time = measure("compress_streamlines_python(streamlines, error_rate)", repeat)
+    python_time = measure("compress_streamlines_python(streamlines, tol_error)", repeat)
     print("Python time: {0:.2}sec".format(python_time))
     print("Speed up of {0}x".format(python_time/cython_time))
     del streamlines

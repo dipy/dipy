@@ -408,7 +408,7 @@ def test_select_streamlines():
     assert_equal(len(new_streamlines), 3)
 
 
-def compress_streamlines_python(streamlines, error_rate=0.5):
+def compress_streamlines_python(streamlines, tol_error=0.5):
     """
     Initial Python version of the FiberCompression found on
     https://github.com/scilus/FiberCompression.
@@ -448,7 +448,7 @@ def compress_streamlines_python(streamlines, error_rate=0.5):
                     dist = dist_to_line(prev, next, curr)
 
                     #Add the last success if the current point fail
-                    if dist > error_rate or in_between > 10:
+                    if dist > tol_error or in_between > 10:
                         current_tract[nb_points] = streamlines[i][last_success]
                         nb_points += 1
                         last_added_point = j-1
@@ -488,10 +488,10 @@ def test_compress_streamlines():
     assert_array_equal(c_streamline, linear_streamline[::9])
 
     # Make sure Cython and Python versions are the same.
-    for error_rate in np.linspace(0.001, 1, 100):
+    for tol_error in np.linspace(0.001, 1, 100):
         cstreamline_python = compress_streamlines_python([streamline],
-                                                         error_rate)[0]
-        cstreamline_cython = compress_streamlines(streamline, error_rate)
+                                                         tol_error)[0]
+        cstreamline_cython = compress_streamlines(streamline, tol_error)
         assert_equal(len(cstreamline_python), len(cstreamline_cython))
         assert_array_almost_equal(cstreamline_python, cstreamline_cython)
 

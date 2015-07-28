@@ -312,7 +312,6 @@ cdef double c_cross_product_normed(double bx, double by, double bz,
     return sqrt(ax*ax + ay*ay + az*az)
 
 
-
 cdef double c_dist_to_line(Streamline streamline, np.npy_intp prev,
                            np.npy_intp next, np.npy_intp curr) nogil:
 
@@ -339,8 +338,7 @@ cdef double c_dist_to_line(Streamline streamline, np.npy_intp prev,
     return norm1 / norm2
 
 
-
-cdef np.npy_intp c_compress_streamline(Streamline streamline, double error_rate, Streamline out) nogil:
+cdef np.npy_intp c_compress_streamline(Streamline streamline, double tol_error, Streamline out) nogil:
     cdef:
         np.npy_intp N = streamline.shape[0]
         np.npy_intp D = streamline.shape[1]
@@ -370,13 +368,13 @@ cdef np.npy_intp c_compress_streamline(Streamline streamline, double error_rate,
             prev = last_added_point
             next = i+1
 
-            # Check that each point is not offset by more than `error_rate` mm.
+            # Check that each point is not offset by more than `tol_error` mm.
             for k in range(last_added_point, i):
                 curr = k
                 dist = c_dist_to_line(streamline, prev, next, curr)
 
-                # If the current point's offset is greater than `error_rate`, use the latest success.
-                if dist > error_rate or in_between_dist > 10:
+                # If the current point's offset is greater than `tol_error`, use the latest success.
+                if dist > tol_error or in_between_dist > 10:
                     for d in range(D):
                         out[nb_points, d] = streamline[last_success, d]
 
@@ -397,19 +395,22 @@ cdef np.npy_intp c_compress_streamline(Streamline streamline, double error_rate,
     return nb_points
 
 
-def compress_streamlines(streamlines, error_rate=0.5):
+def compress_streamlines(streamlines, tol_error=0.5):
     """ Compress streamlines by linearizing some part of them.
 
-    The linearization process [Presseau15]_. will not remove a point if it
-    causes either an offset of more than `error_rate`mm or a distance
-    between two consecutive points to be more than 10mm.
+    Basically, it consists in merging consecutive segments that are
+    near collinear. The merging is achieved by removing the point the two
+    segments have in common. The linearization process [Presseau15]_. will
+    not remove a point if it causes either an offset of more than
+    `tol_error`mm or a distance between two consecutive points to be more
+    than 10mm.
 
     Parameters
     ----------
     streamlines : one or a list of array-like of shape (N,3)
         Array representing x,y,z of N points in a streamline
-    error_rate : float (optional)
-        Maximum error in mm.
+    tol_error : float (optional)
+        Tolerance error in mm.
 
     Returns
     -------
@@ -424,14 +425,14 @@ def compress_streamlines(streamlines, error_rate=0.5):
     >>> rng = np.random.RandomState(42)
     >>> streamline = np.linspace(0, 10, 100*3).reshape((100, 3))
     >>> streamline += 0.2 * rng.rand(100, 3)
-    >>> c_streamline = compress_streamlines(streamline, error_rate=0.2)
+    >>> c_streamline = compress_streamlines(streamline, tol_error=0.2)
     >>> len(streamline)
     100
     >>> len(c_streamline)
     12
     >>> # Multiple streamlines
     >>> streamlines = [streamline, streamline[::2]]
-    >>> c_streamlines = compress_streamlines(streamlines, error_rate=0.2)
+    >>> c_streamlines = compress_streamlines(streamlines, tol_error=0.2)
     >>> [len(s) for s in streamlines]
     [100, 50]
     >>> [len(s) for s in c_streamlines]
@@ -460,9 +461,9 @@ def compress_streamlines(streamlines, error_rate=0.5):
         compressed_streamline = np.empty(streamline.shape, dtype)
 
         if dtype == np.float32:
-            nb_points = c_compress_streamline[float2d](streamline, error_rate, compressed_streamline)
+            nb_points = c_compress_streamline[float2d](streamline, tol_error, compressed_streamline)
         else:
-            nb_points = c_compress_streamline[double2d](streamline, error_rate, compressed_streamline)
+            nb_points = c_compress_streamline[double2d](streamline, tol_error, compressed_streamline)
 
         compressed_streamlines.append(compressed_streamline[:nb_points])
 
