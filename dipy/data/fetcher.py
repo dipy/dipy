@@ -638,3 +638,47 @@ def read_mni_template(contrast="T2"):
         msg = "Could not find the MNI template files, "
         msg += "please run `fetch_mni_template` first"
         print(msg)
+
+
+def fetch_cenir_multib():
+    """
+    Fetch 'HCP-like' data, collected at multiple b-values
+
+
+    """
+
+def read_cenir_multib():
+    url = \
+
+    'https://digital.lib.washington.edu/researchworks/bitstream/handle/1773/33311/'
+    fname_list = ['4D_dwi_B200.nii.gz','4D_dwi_eddycor_B200.nii.gz',
+                  'dwi_bvals_B200', 'dwi_bvecs_B200',
+                  '4D_dwi_B400.nii.gz','4D_dwi_eddycor_B400.nii.gz',
+                  'dwi_bvals_B400', 'dwi_bvecs_B400',
+                  '4D_dwi_B1000.nii.gz','4D_dwi_eddycor_B1000.nii.gz',
+                  'dwi_bvals_B1000', 'dwi_bvecs_B1000',
+                  '4D_dwi_B2000.nii.gz','4D_dwi_eddycor_B2000.nii.gz',
+                  'dwi_bvals_B2000', 'dwi_bvecs_B2000',
+                  '4D_dwi_B3000.nii.gz','4D_dwi_eddycor_B3000.nii.gz',
+                  'dwi_bvals_B3000', 'dwi_bvecs_B3000']
+
+    url_list = [url + ff for ff in fname_list]
+    md5_list = ['6e2168072e80aa4c0c20f1e6e52ec0c8',
+                'f41f2e1516d880547fbf7d6a83884f0d',
+                '1ea8f4f1e41bc17a94602e48141fdbc8']
+    folder = pjoin(dipy_home, 'mni_template')
+    if not os.path.exists(folder):
+        print('Creating new directory %s' % folder)
+        os.makedirs(folder)
+        print('Downloading T2 and T1 MNI templates (~35 MB)...')
+
+        for i in range(len(md5_list)):
+            _get_file_data(pjoin(folder, fname_list[i]), url_list[i])
+            check_md5(pjoin(folder, fname_list[i]), md5_list[i])
+
+        print('Done.')
+        print('Files copied in folder %s' % folder)
+        print("The copyright notice is provided in the file: %s" %
+              pjoin(folder, fname_list[0]))
+    else:
+        _already_there_msg(folder)
