@@ -303,8 +303,9 @@ def set_number_of_points(streamlines, nb_points=3):
         return modified_streamlines
 
 
-cdef double c_cross_product_normed(double bx, double by, double bz,
-                                   double cx, double cy, double cz) nogil:
+cdef double c_norm_of_cross_product(double bx, double by, double bz,
+                                    double cx, double cy, double cz) nogil:
+    """ Computes the norm of the cross-product in 3D. """
     cdef double ax, ay, az
     ax = by*cz - bz*cy
     ay = bz*cx - bx*cz
@@ -314,19 +315,20 @@ cdef double c_cross_product_normed(double bx, double by, double bz,
 
 cdef double c_dist_to_line(Streamline streamline, np.npy_intp prev,
                            np.npy_intp next, np.npy_intp curr) nogil:
+    """ Computes the shortest Euclidean distance between a point `curr` and
+        the line passing through `prev` and `next`. """
 
     cdef:
-        double norm1, norm2
-        double dn
+        double dn, norm1, norm2
         np.npy_intp D = streamline.shape[1]
 
     # Compute cross product of next-prev and curr-next
-    norm1 = c_cross_product_normed(streamline[next, 0]-streamline[prev, 0],
-                                   streamline[next, 1]-streamline[prev, 1],
-                                   streamline[next, 2]-streamline[prev, 2],
-                                   streamline[curr, 0]-streamline[next, 0],
-                                   streamline[curr, 1]-streamline[next, 1],
-                                   streamline[curr, 2]-streamline[next, 2])
+    norm1 = c_norm_of_cross_product(streamline[next, 0]-streamline[prev, 0],
+                                    streamline[next, 1]-streamline[prev, 1],
+                                    streamline[next, 2]-streamline[prev, 2],
+                                    streamline[curr, 0]-streamline[next, 0],
+                                    streamline[curr, 1]-streamline[next, 1],
+                                    streamline[curr, 2]-streamline[next, 2])
 
     # Norm of next-prev
     norm2 = 0.0
@@ -340,63 +342,61 @@ cdef double c_dist_to_line(Streamline streamline, np.npy_intp prev,
 
 cdef np.npy_intp c_compress_streamline(Streamline streamline, Streamline out,
                                        double tol_error, double max_segment_length) nogil:
+    """ Compresses a streamline (see function `compress_streamlines`)."""
     cdef:
         np.npy_intp N = streamline.shape[0]
         np.npy_intp D = streamline.shape[1]
         np.npy_intp nb_points = 0
         np.npy_intp last_added_point_idx = 0
         np.npy_intp last_success = 0
-        np.npy_intp last_added_point = 0
-        np.npy_intp i, k, prev, next, curr
-        double dn, in_between_dist
+        np.npy_intp prev = 0
+        np.npy_intp i, k, next, curr
+        double dn, segment_length
 
-    for i in range(N):
+    # Copy first point since it is always kept.
+    for d in range(D):
+        out[0, d] = streamline[0, d]
+
+    last_success = 0
+    nb_points = 1
+
+    for i in range(1, N-1):
         # Euclidean distance between last added point and current point.
-        in_between_dist = 0.0
+        segment_length = 0.0
         for d in range(D):
-            dn = streamline[i, d] - streamline[last_added_point, d]
-            in_between_dist += dn*dn
+            dn = streamline[i, d] - streamline[prev, d]
+            segment_length += dn*dn
 
-        in_between_dist = sqrt(in_between_dist)
+        segment_length = sqrt(segment_length)
+        next = i+1
 
-        if i == 0:  # First point is always added.
-            for d in range(D):
-                out[nb_points, d] = streamline[i, d]
+        # Check that each point is not offset by more than `tol_error` mm.
+        for curr in range(prev, i):
+            dist = c_dist_to_line(streamline, prev, next, curr)
 
-            last_success = i
-            nb_points += 1
-        elif i < N-1:  # Perform linearization if needed.
-            prev = last_added_point
-            next = i+1
+            # If the current point's offset is greater than `tol_error`, use the latest success.
+            if dist > tol_error or segment_length > max_segment_length:
+                for d in range(D):
+                    out[nb_points, d] = streamline[last_success, d]
 
-            # Check that each point is not offset by more than `tol_error` mm.
-            for k in range(last_added_point, i):
-                curr = k
-                dist = c_dist_to_line(streamline, prev, next, curr)
+                nb_points += 1
+                prev = i-1
+                last_success = i-1
+                break
+            # The current point's offset is ok, check the next point.
+            else:
+                last_success = i
 
-                # If the current point's offset is greater than `tol_error`, use the latest success.
-                if dist > tol_error or in_between_dist > max_segment_length:
-                    for d in range(D):
-                        out[nb_points, d] = streamline[last_success, d]
+    # Copy last point since it is always kept.
+    for d in range(D):
+        out[nb_points, d] = streamline[N-1, d]
 
-                    nb_points += 1
-                    last_added_point = i-1
-                    last_success = i-1
-                    break
-                # The current point's offset is ok, check the next point.
-                else:
-                    last_success = i
-
-        else:  # Last point is always added.
-            for d in range(D):
-                out[nb_points, d] = streamline[i, d]
-
-            nb_points += 1
+    nb_points += 1
 
     return nb_points
 
 
-def compress_streamlines(streamlines, tol_error=0.1, max_segment_length=10):
+def compress_streamlines(streamlines, tol_error=0.01, max_segment_length=10):
     """ Compress streamlines by linearization as in [Presseau15]_.
 
     The compression consists in merging consecutive segments that are
@@ -408,7 +408,7 @@ def compress_streamlines(streamlines, tol_error=0.1, max_segment_length=10):
     Recommendations for setting this margin can be found in [Presseau15]_
     (in which they called it tolerance error).
 
-    The compression also ensures that two consecutive points won't be to far
+    The compression also ensures that two consecutive points won't be too far
     from each other (precisely less or equal than `max_segment_length`mm).
     This is purely to speed up the linearization process [Rheault15]_. A low
     value will result in a faster linearization but low compression, whereas
@@ -417,9 +417,9 @@ def compress_streamlines(streamlines, tol_error=0.1, max_segment_length=10):
     Parameters
     ----------
     streamlines : one or a list of array-like of shape (N,3)
-        Array representing x,y,z of N points in a streamline
+        Array representing x,y,z of N points in a streamline.
     tol_error : float (optional)
-        Tolerance error in mm (default: 0.1). A rule of thumb is to set it
+        Tolerance error in mm (default: 0.01). A rule of thumb is to set it
         to 0.01mm for deterministic streamlines and 0.1mm for probabilitic
         streamlines.
     max_segment_length : float (optional)
@@ -452,11 +452,19 @@ def compress_streamlines(streamlines, tol_error=0.1, max_segment_length=10):
     [12, 5]
 
 
+    Notes
+    -----
+    Be aware that compressed streamlines have variable step sizes. One needs to
+    be careful when computing streamlines-based metrics [Houde15]_.
+
     References
     ----------
     .. [Presseau15] Presseau C. et al., A new compression format for fiber
                     tracking datasets, NeuroImage, no 109, 73-83, 2015.
-    .. [Rheault15] Rheault F. et al., In writing, 2015.
+    .. [Rheault15] Rheault F. et al., Real Time Interaction with Millions of
+                   Streamlines, ISMRM, 2015.
+    .. [Houde15] Houde J.-C. et al. How to Avoid Biased Streamlines-Based
+                 Metrics for Streamlines with Variable Step Sizes, ISMRM, 2015.
     """
     only_one_streamlines = False
     if type(streamlines) is np.ndarray:

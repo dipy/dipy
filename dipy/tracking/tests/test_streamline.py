@@ -408,7 +408,8 @@ def test_select_streamlines():
     assert_equal(len(new_streamlines), 3)
 
 
-def compress_streamlines_python(streamlines, tol_error=0.5):
+def compress_streamlines_python(streamlines, tol_error=0.01,
+                                max_segment_length=10):
     """
     Initial Python version of the FiberCompression found on
     https://github.com/scilus/FiberCompression.
@@ -448,7 +449,7 @@ def compress_streamlines_python(streamlines, tol_error=0.5):
                     dist = dist_to_line(prev, next, curr)
 
                     #Add the last success if the current point fail
-                    if dist > tol_error or in_between > 10:
+                    if dist > tol_error or in_between > max_segment_length:
                         current_tract[nb_points] = streamlines[i][last_success]
                         nb_points += 1
                         last_added_point = j-1
