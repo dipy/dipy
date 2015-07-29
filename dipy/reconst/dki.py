@@ -2540,3 +2540,57 @@ def Wcons(k_elements):
                     W[ind_i][ind_j][ind_k][ind_l] = k_elements[ind_ele[key]]
 
     return W
+
+
+def dki_directions(dki_params, sphere, alpha=4, relative_peak_threshold=0.1,
+                     min_separation_angle=20, mask=None, return_odf=False,
+                     normalize_peaks=False, npeaks=3):
+    """ Estimation of fiber direction based on diffusion kurtosis imaging
+    (DKI). Fiber directions are estimated as the maxima of the orientation
+    distribution function [Jen2014]. This function is based on the work done by
+    [Raf2015]_.
+
+    Parameters
+    ----------
+    dki_params : ndarray (x, y, z, 27) or (n, 27)
+        All parameters estimated from the diffusion kurtosis model.
+        Parameters are ordered as follow:
+            1) Three diffusion tensor's eingenvalues
+            2) Three lines of the eigenvector matrix each containing the first,
+               second and third coordinates of the eigenvector
+            3) Fifteen elements of the kurtosis tensor
+    sphere : Sphere class instance, optional
+        The sphere providing direction of samples for initial evaluation of the
+        DKI-ODF.
+    alpha : float, optional
+        Radial weighting power of the orientation distribution function.
+        Default is 4 according to [Jen2014]_ and [Raf2015]_.
+    relative_peak_threshold : float, optional
+        Only return peaks greater than ``relative_peak_threshold * m`` where m
+        is the largest peak.
+    min_separation_angle : float in [0, 90], optinal
+        The minimum distance between directions. If two peaks are too close
+        only the larger of the two is returned.
+    mask : array, optional
+        If `mask` is provided, voxels that are False in `mask` are skipped and
+        no peaks are returned.
+    return_odf : bool, optional
+        If True, the odfs sampled on sphere directions are returned.
+    normalize_peaks : bool, optional
+        If true, all peak values are calculated relative to `max(odf)`.
+    npeaks : int, optional
+        Maximum number of peaks found (default 3 peaks).
+
+    .. [Jen2014] Jensen, J.H., Helpern, J.A., Tabesh, A., (2014). Leading
+        non-Gaussian corrections for diffusion orientation distribution
+        function. NMR Biomed. 27, 202-211. http://dx.doi.org/10.1002/nbm.3053.
+
+    .. [Raf2015] Neto Henriques, R., Correia, M.M., Nunes, R.G., Ferreira,
+        H.A. (2015). Exploring the 3D geometry of the diffusion kurtosis
+        tensor - Impact on the development of robust tractography procedures
+        and novel biomarkers. NeuroImage 111: 85-99.
+        doi:10.1016/j.neuroimage.2015.02.004
+    """
+    a = 'WIP'
+    return a
+    
