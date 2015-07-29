@@ -17,6 +17,8 @@ def is_valid_affine(double[:, :] M, int dim):
         return True
     if M.shape[0] < dim or M.shape[1] < dim + 1:
         return False
+    if np.isnan(np.sum(M)):
+        return False
     return True
 
 
