@@ -109,17 +109,21 @@ class ConstantObservationModel(object):
             cnp.npy_intp classid = 0
 
         PLN_norm = np.zeros(image.shape, dtype=np.float64)
+        PLN = np.zeros(image.shape + (nclasses,), dtype=np.float64)
 
         for classid in range(nclasses):
             _prob_neighb_perclass(image, seg, beta, classid, P_L_N)
 
             # Eq 2.18 of Stan Z. Li book
-            PLN = np.array(P_L_N)
+            PLN[:, :, :, classid] = np.array(P_L_N[:, :, :, classid])
             PLN[:, :, :, classid] = np.exp(- PLN[:, :, :, classid])
             PLN_norm += PLN[:, :, :, classid]
-            PLN[:, :, :, classid] = PLN[:, :, :, classid] / PLN_norm
 
-        return PLN
+        for l in range(nclasses):
+            PLN[:, :, :, l] = PLN[:, :, :, l] / PLN_norm
+            #P_L_N[np.isnan(P_L_N)] = 0
+
+        return PLN #,PLN_norm
 
 
     def prob_image(self, img, nclasses, mu, sigmasq, P_L_N):
@@ -156,9 +160,10 @@ class ConstantObservationModel(object):
 
         for l in range(nclasses):
             for idx in ndindex(img.shape[:3]):
-
+                idxl = idx + (l,)
                 g[idx] = np.exp(-((img[idx] - mu[l]) ** 2 / 2 * sigmasq[l])) / np.sqrt(2 * np.pi * sigmasq[l])
-                P_L_Y[idx[0], idx[1], idx[2], l] = g[idx] * P_L_N[idx[0], idx[1], idx[2], l]
+                # P_L_Y[idx[0], idx[1], idx[2], l] = g[idx] * P_L_N[idx[0], idx[1], idx[2], l]
+                P_L_Y[idxl] = g[idx] * P_L_N[idxl]
 
             P_L_Y_norm[:, :, :] += P_L_Y[:, :, :, l]
 
@@ -269,6 +274,7 @@ cdef void _prob_neighb_perclass(double[:, :, :] image, double[:, :, :] seg,
             for z in range(nz):
 
                 vox_prob = P_L_N[x, y, z, l]
+                #vox_prob = 0
 
                 for i in range(nneigh):
                     xx = x + dX[i]
