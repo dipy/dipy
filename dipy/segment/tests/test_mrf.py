@@ -216,6 +216,8 @@ def test_greyscale_iter():
 #    plt.figure()
 #    plt.imshow(neglogl[:, :, 1, 1])
     initial_segmentation = icm.initialize_maximum_likelihood(neglogl)
+    
+    
 
     plt.figure()
     plt.imshow(initial_segmentation[..., 1])

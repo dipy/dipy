@@ -56,6 +56,41 @@ class ConstantObservationModel(object):
         _initialize_param_uniform(image, mu, sigmasq)
         return np.array(mu), np.array(sigmasq)
 
+    def seg_stats(input_image, seg_image, nclass):
+        r""" Mean and standard variation for 3 tissue classes
+    
+        1 is CSF
+        2 is grey matter
+        3 is white matter
+    
+        Parameters
+        ----------
+        input_image : ndarray of grey level T1 image
+        seg_image : ndarray of initital segmentation, also an image
+        nclass : float numeber of classes (three in most cases)
+    
+        Returns
+        -------
+        mu, std, var : ndarray of dimensions 1x3
+            Mean, standard deviation and variance for every class
+    
+        """
+        mu = np.zeros(nclass)
+        std = np.zeros(nclass)
+        var = np.zeros(nclass)
+    
+        for i in range(1, nclass + 1):
+    
+            H = input_image[seg_image == i]
+    
+            mu[i - 1] = np.mean(H, -1)
+            std[i - 1] = np.std(H, -1)
+            var[i - 1] = np.var(H, -1)
+
+
+        return mu, std, var
+
+
     def negloglikelihood(self, image, mu, sigmasq, nclasses):
         r""" Computes the Gaussian negative log-likelihood of each class
 
@@ -80,7 +115,8 @@ class ConstantObservationModel(object):
                     nloglike[idx + (l,)] = 0
                 else:
                     nloglike[idx + (l,)] = ((image[idx] - mu[l]) ** 2.0) / (2.0 * sigmasq[l])
-                    nloglike[idx + (l,)] += np.log(2.0 * np.pi * np.sqrt(sigmasq[l]))
+#                    nloglike[idx + (l,)] += np.log(2.0 * np.pi * np.sqrt(sigmasq[l]))
+                    nloglike[idx + (l,)] += np.log(np.sqrt(2.0 * np.pi * sigmasq[l]))
         return nloglike
 
 
@@ -161,7 +197,7 @@ class ConstantObservationModel(object):
         for l in range(nclasses):
             for idx in ndindex(img.shape[:3]):
                 idxl = idx + (l,)
-                g[idx] = np.exp(-((img[idx] - mu[l]) ** 2 / 2 * sigmasq[l])) / np.sqrt(2 * np.pi * sigmasq[l])
+                g[idx] = (np.exp(-((img[idx] - mu[l]) ** 2)) / (2 * sigmasq[l])) / (np.sqrt(2 * np.pi * sigmasq[l]))
                 # P_L_Y[idx[0], idx[1], idx[2], l] = g[idx] * P_L_N[idx[0], idx[1], idx[2], l]
                 P_L_Y[idxl] = g[idx] * P_L_N[idxl]
 
@@ -273,8 +309,8 @@ cdef void _prob_neighb_perclass(double[:, :, :] image, double[:, :, :] seg,
         for y in range(ny):
             for z in range(nz):
 
-                vox_prob = P_L_N[x, y, z, l]
-                #vox_prob = 0
+                #vox_prob = P_L_N[x, y, z, l]
+                vox_prob = 0
 
                 for i in range(nneigh):
                     xx = x + dX[i]
