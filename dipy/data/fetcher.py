@@ -650,8 +650,8 @@ def fetch_cenir_multib(with_raw=False):
         Whether to fetch the raw data. Per default, this is False, which means
         that only eddy-current/motion corrected data is fetched
     """
-    url = \
-    'https://digital.lib.washington.edu/researchworks/bitstream/handle/1773/33311/'
+    folder = pjoin(dipy_home, 'cenir_multib')
+
     fname_list = ['4D_dwi_eddycor_B200.nii.gz',
                   'dwi_bvals_B200', 'dwi_bvecs_B200',
                   '4D_dwieddycor_B400.nii.gz',
@@ -688,23 +688,15 @@ def fetch_cenir_multib(with_raw=False):
                         '7c23e8a5198624aa29455f0578025d4f',
                         '4e4324c676f5a97b3ded8bbb100bf6e5'])
 
-    url_list = [url + ff for ff in fname_list]
+    files = {}
+    baseurl = \
+    'https://digital.lib.washington.edu/researchworks/bitstream/handle/1773/33311/'
 
-    folder = pjoin(dipy_home, 'cenir_multib')
-    if not os.path.exists(folder):
-        print('Creating new directory %s' % folder)
-        os.makedirs(folder)
-        msg = 'Downloading CENIR multi b-value data: ~1.8 GB '
-        msg += '(~2.6 GB with raw data)...'
-        print(msg)
+    for f, m in zip(fname_list, md5_list):
+        files[f] = (baseurl + f, m)
 
-        for i in range(len(md5_list)):
-            _get_file_data(pjoin(folder, fname_list[i]), url_list[i])
-            check_md5(pjoin(folder, fname_list[i]), md5_list[i])
-
-        print('Files copied in folder %s' % folder)
-    else:
-        _already_there_msg(folder)
+    fetch_data(files, folder)
+    return files, folder
 
 
 def read_cenir_multib(bvals=None):
@@ -725,11 +717,9 @@ def read_cenir_multib(bvals=None):
     -----
     Details of acquisition and processing are availble
     """
+    files, folder = fetch_cenir_multib(with_raw=False)
     if bvals is None:
         bvals = [200, 400, 1000, 2000, 3000]
-
-    folder = pjoin(dipy_home, 'cenir_multib')
-
     file_dict = {
     200:{'DWI': pjoin(folder, '4D_dwi_eddycor_B200.nii.gz'),
            'bvals': pjoin(folder, 'dwi_bvals_B200'),
@@ -745,44 +735,17 @@ def read_cenir_multib(bvals=None):
            'bvecs': pjoin(folder, 'bvecs_B2000')},
     3000:{'DWI': pjoin(folder, '4D_dwieddycor_B3000.nii.gz'),
            'bvals': pjoin(folder, 'bvals_B3000'),
-           'bvecs': pjoin(folder, 'bvecs_B3000')}
-           }
-
-    md5_dict = {
-    200:{'DWI': 'fd704aa3deb83c1c7229202cb3db8c48',
-           'bvals': '80ae5df76a575fe5bf9f1164bb0d4cfb',
-           'bvecs': '18e90f8a3e6a4db2457e5b1ba1cc98a9'},
-    400:{'DWI': '3d0f2b8ef7b6a4a3aa5c4f7a90c9cfec',
-           'bvals': 'c38056c40c9cc42372232d6e75c47f54',
-           'bvecs': '810d79b4c30cb7dff3b2000017d5f72a'},
-    1000:{'DWI': 'dde8037601a14436b2173f4345b5fd17',
-           'bvals': '97de6a492ae304f39e0b418b6ebac64c',
-           'bvecs': 'f28a0faa701bdfc66e31bde471a5b992'},
-    2000:{'DWI': 'c5e4b96e3afdee99c0e994eff3b2331a',
-           'bvals': '9c83b8d5caf9c3def240f320f2d2f56c',
-           'bvecs': '05446bd261d57193d8dbc097e06db5ff'},
-    3000:{'DWI': 'f0d70456ce424fda2cecd48e64f3a151',
-           'bvals': '336accdb56acbbeff8dac1748d15ceb8',
-           'bvecs': '27089f3baaf881d96f6a9da202e3d69b'}
-           }
-
-    #try:
+           'bvecs': pjoin(folder, 'bvecs_B3000')}}
     data = []
     bval_list = []
     bvec_list = []
     for bval in bvals:
-        for filetype in ['DWI', 'bvals', 'bvecs']:
-            check_md5(file_dict[bval][filetype], md5_dict[bval][filetype])
         data.append(nib.load(file_dict[bval]['DWI']).get_data())
         bval_list.extend(np.loadtxt(file_dict[bval]['bvals']))
         bvec_list.append(np.loadtxt(file_dict[bval]['bvecs']))
 
     return (gradient_table(bval_list, np.concatenate(bvec_list, -1)),
             np.concatenate(data, -1))
-    # except IOError:
-    #     msg = "Could not find the CENIR multi b-value files, "
-    #     msg += "please run `fetch_cenir_multib` first"
-    #     print(msg)
 
 
 CENIR_notes = \
