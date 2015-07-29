@@ -338,7 +338,8 @@ cdef double c_dist_to_line(Streamline streamline, np.npy_intp prev,
     return norm1 / norm2
 
 
-cdef np.npy_intp c_compress_streamline(Streamline streamline, double tol_error, Streamline out) nogil:
+cdef np.npy_intp c_compress_streamline(Streamline streamline, Streamline out,
+                                       double tol_error, double max_segment_length) nogil:
     cdef:
         np.npy_intp N = streamline.shape[0]
         np.npy_intp D = streamline.shape[1]
@@ -374,7 +375,7 @@ cdef np.npy_intp c_compress_streamline(Streamline streamline, double tol_error, 
                 dist = c_dist_to_line(streamline, prev, next, curr)
 
                 # If the current point's offset is greater than `tol_error`, use the latest success.
-                if dist > tol_error or in_between_dist > 10:
+                if dist > tol_error or in_between_dist > max_segment_length:
                     for d in range(D):
                         out[nb_points, d] = streamline[last_success, d]
 
@@ -395,22 +396,34 @@ cdef np.npy_intp c_compress_streamline(Streamline streamline, double tol_error, 
     return nb_points
 
 
-def compress_streamlines(streamlines, tol_error=0.5):
-    """ Compress streamlines by linearizing some part of them.
+def compress_streamlines(streamlines, tol_error=0.1, max_segment_length=10):
+    """ Compress streamlines by linearization as in [Presseau15]_.
 
-    Basically, it consists in merging consecutive segments that are
+    The compression consists in merging consecutive segments that are
     near collinear. The merging is achieved by removing the point the two
-    segments have in common. The linearization process [Presseau15]_. will
-    not remove a point if it causes either an offset of more than
-    `tol_error`mm or a distance between two consecutive points to be more
-    than 10mm [Rheault15]_.
+    segments have in common.
+
+    The linearization process [Presseau15]_ ensures that every points being
+    removed are within a certain margin (in mm) of the resulting streamline.
+    Recommendations for setting this margin can be found in [Presseau15]_
+    (in which they called it tolerance error).
+
+    The compression also ensures that two consecutive points won't be to far
+    from each other (precisely less or equal than `max_segment_length`mm).
+    This is purely to speed up the linearization process [Rheault15]_. A low
+    value will result in a faster linearization but low compression, whereas
+    a high value will result in a slower linearization but high compression.
 
     Parameters
     ----------
     streamlines : one or a list of array-like of shape (N,3)
         Array representing x,y,z of N points in a streamline
     tol_error : float (optional)
-        Tolerance error in mm. Default is 0.5mm.
+        Tolerance error in mm (default: 0.1). A rule of thumb is to set it
+        to 0.01mm for deterministic streamlines and 0.1mm for probabilitic
+        streamlines.
+    max_segment_length : float (optional)
+        Maximum length of any given segment produced by the compression.
 
     Returns
     -------
@@ -453,7 +466,6 @@ def compress_streamlines(streamlines, tol_error=0.5):
     if len(streamlines) == 0:
         return []
 
-
     compressed_streamlines = []
     cdef np.npy_intp i
     for i in range(len(streamlines)):
@@ -462,9 +474,11 @@ def compress_streamlines(streamlines, tol_error=0.5):
         compressed_streamline = np.empty(streamline.shape, dtype)
 
         if dtype == np.float32:
-            nb_points = c_compress_streamline[float2d](streamline, tol_error, compressed_streamline)
+            nb_points = c_compress_streamline[float2d](streamline, compressed_streamline,
+                                                       tol_error, max_segment_length)
         else:
-            nb_points = c_compress_streamline[double2d](streamline, tol_error, compressed_streamline)
+            nb_points = c_compress_streamline[double2d](streamline, compressed_streamline,
+                                                        tol_error, max_segment_length)
 
         compressed_streamlines.append(compressed_streamline[:nb_points])
 

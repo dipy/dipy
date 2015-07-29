@@ -478,12 +478,13 @@ def test_compress_streamlines():
     assert_array_equal(c_streamline, [linear_streamline[0],
                                       linear_streamline[-1]])
 
-    # The distance of consecutive points must be less or equal than 10mm.
+    # The distance of consecutive points must be less or equal than some value.
+    max_segment_length = 10
     linear_streamline = np.linspace(0, 100, 100*3).reshape((100, 3))
     linear_streamline[:, 1:] = 0.
     c_streamline = compress_streamlines(linear_streamline)
-    segments_length = np.linalg.norm(c_streamline[1:]-c_streamline[:-1], axis=1)
-    assert_true(np.all(segments_length <= 10))
+    segments_length = np.sqrt((np.diff(c_streamline, axis=0)**2).sum(axis=1))
+    assert_true(np.all(segments_length <= max_segment_length))
     assert_equal(len(c_streamline), 12)
     assert_array_equal(c_streamline, linear_streamline[::9])
 

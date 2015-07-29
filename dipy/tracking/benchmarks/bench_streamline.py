@@ -68,17 +68,16 @@ def bench_compress_streamlines():
     fname = get_data('fornix')
     streams, hdr = tv.read(fname)
     streamlines = [i[0] for i in streams]
-    tol_error = 0.1
 
     print("Timing compress_streamlines() in Cython ({0} streamlines)".format(len(streamlines)))
-    cython_time = measure("compress_streamlines(streamlines, tol_error)", repeat)
+    cython_time = measure("compress_streamlines(streamlines)", repeat)
     print("Cython time: {0:.3}sec".format(cython_time))
     del streamlines
 
     fname = get_data('fornix')
     streams, hdr = tv.read(fname)
     streamlines = [i[0] for i in streams]
-    python_time = measure("compress_streamlines_python(streamlines, tol_error)", repeat)
+    python_time = measure("compress_streamlines_python(streamlines)", repeat)
     print("Python time: {0:.2}sec".format(python_time))
     print("Speed up of {0}x".format(python_time/cython_time))
     del streamlines
