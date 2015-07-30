@@ -1,6 +1,5 @@
  # A type of -*- python -*- file
-""" Optimized track distances, similarities and clustering algorithms using
-track distances
+""" Optimized track distances, similarities and distanch clustering algorithms
 """
 
 # cython: profile=True
@@ -188,7 +187,7 @@ cdef inline void cmul_3vec(float a, float *vec, float *vec_out) nogil:
 cdef cnp.dtype f32_dt = np.dtype(np.float32)
 
 
-def cut_plane(tracks,ref):
+def cut_plane(tracks, ref):
     ''' Extract divergence vectors and points of intersection
     between planes normal to the reference fiber and other tracks
 
@@ -202,13 +201,14 @@ def cut_plane(tracks,ref):
     Returns
     -------
     hits : sequence
-       list of points and rcds (radial coefficient of divergence)``
+       list of points and rcds (radial coefficient of divergence)
 
     Notes
     -----
     The orthogonality relationship
-    np.inner(hits[p][q][0:3]-ref[p+1],ref[p+2]-ref[r][p+1]) will hold throughout
-    for every point q in the hits plane at point (p+1) on the reference track.
+    ``np.inner(hits[p][q][0:3]-ref[p+1],ref[p+2]-ref[r][p+1])`` will hold
+    throughout for every point q in the hits plane at point (p+1) on the
+    reference track.
 
     Examples
     --------
