@@ -165,12 +165,12 @@ def show_clusters_grid_view(clusters, colormap=None, makelabel=None,
 
 
 def remove_clusters_by_size(clusters, min_size=0):
-    #sizes = np.array(map(len, clusters))
-    #mean_size = sizes.mean()
-    #std_size = sizes.std()
+    # sizes = np.array(map(len, clusters))
+    # mean_size = sizes.mean()
+    # std_size = sizes.std()
 
     by_size = lambda c: len(c) >= min_size
-    #and len(c) >= mean_size - alpha * std_size
+    # and len(c) >= mean_size - alpha * std_size
 
     # filter returns a list of clusters
     return filter(by_size, clusters)
