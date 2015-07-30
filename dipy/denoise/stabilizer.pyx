@@ -21,7 +21,7 @@ if not have_cython_gsl and not have_mpmath:
 
 IF have_cython_gsl:
     from cython_gsl cimport gsl_sf_hyperg_1F1 as gsl1f1
-    print("The GNU GSL is subject to the GSL license, see \n\
+    print("The GNU GSL is subject to the GPL license, see \n\
         http://www.gnu.org/copyleft/gpl.html for more information")
 
 if have_mpmath:
