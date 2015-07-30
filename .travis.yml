@@ -6,6 +6,9 @@
 # ";"s
 sudo: false  # To use travis container infrastructure
 language: python
+cache:
+  directories:
+    - $HOME/.cache/pip
 env:
     global:
         - DEPENDS="cython numpy scipy matplotlib h5py nibabel cvxopt"
