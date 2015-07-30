@@ -17,9 +17,13 @@ cdef void _solve_2d_symmetric_positive_definite(double* A, double* y,
                                                 double* out) nogil:
     r"""Solves a 2-variable symmetric positive-definite linear system
 
-    Solves the symmetric positive-definite linear system Mx = y given by
-    M=[[A[0], A[1]],
-       [A[1], A[2]]].
+    The C implementation of the public-facing Python function
+    ``solve_2d_symmetric_positive_definite``.
+
+    Solves the symmetric positive-definite linear system $Mx = y$ given by::
+
+        M = [[A[0], A[1]],
+             [A[1], A[2]]]
 
     Parameters
     ----------
@@ -35,8 +39,12 @@ cdef void _solve_2d_symmetric_positive_definite(double* A, double* y,
 
 
 def solve_2d_symmetric_positive_definite(A, y, double det):
-    r"""
-    Wrapper for _solve_2d_symmetric_positive_definite
+    r"""Solves a 2-variable symmetric positive-definite linear system
+
+    Solves the symmetric positive-definite linear system $Mx = y$ given by::
+
+        M = [[A[0], A[1]],
+             [A[1], A[2]]]
 
     Parameters
     ----------
@@ -72,6 +80,9 @@ cdef int _solve_3d_symmetric_positive_definite(double* g,
 
     Solves the symmetric semi-positive-definite linear system $Mx = y$ given by
     $M = (g g^{T} + \tau I)$
+
+    The C implementation of the public-facing Python function
+    ``solve_3d_symmetric_positive_definite``.
 
     Parameters
     ----------
@@ -114,8 +125,10 @@ cdef int _solve_3d_symmetric_positive_definite(double* g,
 
 
 def solve_3d_symmetric_positive_definite(g, y, double tau):
-    r"""
-    Wrapper for _solve_3d_symmetric_positive_definite (see documentation above)
+    r"""Solves a 3-variable symmetric positive-definite linear system
+
+    Solves the symmetric semi-positive-definite linear system $Mx = y$ given by
+    $M = (g g^{T} + \tau I)$.
 
     Parameters
     ----------

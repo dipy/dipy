@@ -54,7 +54,7 @@ cdef void splitoffset(float *offset, size_t *index, size_t shape) nogil:
 def trilinear_interp(cnp.ndarray[cnp.float32_t, ndim=4, mode='strided'] data,
                      cnp.ndarray[cnp.float_t, ndim=1, mode='strided'] index,
                      cnp.ndarray[cnp.float_t, ndim=1, mode='c'] voxel_size):
-    """ Interpolates vector from 4D `data` at 3D point given by `index`
+    """Interpolates vector from 4D `data` at 3D point given by `index`
 
     Interpolates a vector of length T from a 4D volume of shape (I, J, K, T),
     given point (x, y, z) where (x, y, z) are the coordinates of the point in
@@ -105,7 +105,7 @@ def remove_similar_vertices(
     double theta,
     bint return_mapping=False,
     bint return_index=False):
-    """ Remove vertices that are less than `theta` degrees from any other
+    """Remove vertices that are less than `theta` degrees from any other
 
     Returns vertices that are at least theta degrees from any other vertex.
     Vertex v and -v are considered the same so if v and -v are both in
@@ -206,7 +206,7 @@ def remove_similar_vertices(
 @cython.wraparound(False)
 def search_descending(cnp.ndarray[cnp.float_t, ndim=1, mode='c'] a,
                       double relative_threshold):
-    """ `i` in descending array `a` so `a[i] < a[0] * relative_threshold`
+    """`i` in descending array `a` so `a[i] < a[0] * relative_threshold`
 
     Call ``T = a[0] * relative_threshold``. Return value `i` will be the
     smallest index in the descending array `a` such that ``a[i] < T``.
@@ -265,7 +265,7 @@ def search_descending(cnp.ndarray[cnp.float_t, ndim=1, mode='c'] a,
 @cython.boundscheck(False)
 @cython.profile(True)
 def local_maxima(cnp.ndarray odf, cnp.ndarray edges):
-    """ Local maxima of a function evaluated on a discrete set of points.
+    """Local maxima of a function evaluated on a discrete set of points.
 
     If a function is evaluated on some set of points where each pair of
     neighboring points is an edge in edges, find the local maxima.
@@ -316,7 +316,7 @@ def local_maxima(cnp.ndarray odf, cnp.ndarray edges):
 @cython.wraparound(False)
 @cython.boundscheck(False)
 cdef void _cosort(double[::1] A, cnp.npy_intp[::1] B) nogil:
-    """ Sorts `A` in-place and applies the same reordering to `B`"""
+    """Sorts `A` in-place and applies the same reordering to `B`"""
     cdef:
         size_t n = A.shape[0]
         size_t hole
@@ -427,7 +427,7 @@ def le_to_odf(cnp.ndarray[double, ndim=1] odf, \
                  int odfn,\
                  int radiusn,\
                  int anglesn):
-    """ odf for interpolated laplacian normalized signal
+    """odf for interpolated Laplacian normalized signal
     """
     cdef int m, i, j
 
@@ -445,7 +445,7 @@ def le_to_odf(cnp.ndarray[double, ndim=1] odf, \
 def sum_on_blocks_1d(cnp.ndarray[double, ndim=1] arr,\
     cnp.ndarray[long, ndim=1] blocks,\
     cnp.ndarray[double, ndim=1] out,int outn):
-    """ Summations on blocks of 1d array
+    """Summations on blocks of 1d array
     """
     cdef:
         int m,i,j
@@ -463,7 +463,7 @@ def sum_on_blocks_1d(cnp.ndarray[double, ndim=1] arr,\
 
 
 def argmax_from_adj(vals, vertex_inds, adj_inds):
-    """ Indices of local maxima from `vals` given adjacent points
+    """Indices of local maxima from `vals` given adjacent points
 
     Parameters
     ----------
@@ -496,7 +496,7 @@ def proc_reco_args(vals, vertinds):
 
 
 def adj_to_countarrs(adj_inds):
-    """ Convert adjacency sequence to counts and flattened indices
+    """Convert adjacency sequence to counts and flattened indices
 
     We use this to provide expected input to ``argmax_from_countarrs``
 
@@ -532,7 +532,7 @@ def argmax_from_countarrs(cnp.ndarray vals,
                           cnp.ndarray vertinds,
                           cnp.ndarray adj_counts,
                           cnp.ndarray adj_inds):
-    """ Indices of local maxima from `vals` from count, array neighbors
+    """Indices of local maxima from `vals` from count, array neighbors
 
     Parameters
     ----------
