@@ -10,12 +10,12 @@ from time import time
 from itertools import chain
 
 
-def auto_extract(model_bundle, moved_streamlines,
-                 close_centroids_thr=20,
-                 clean_thr=7.,
-                 local_slr=True,
-                 verbose=True, expand_thr=None,
-                 return_full=False):
+def recognize_bundles(model_bundle, moved_streamlines,
+                      close_centroids_thr=20,
+                      clean_thr=7.,
+                      local_slr=True,
+                      verbose=True, expand_thr=None,
+                      return_full=False):
 
     if verbose:
         print('# Centroids of model bundle')
