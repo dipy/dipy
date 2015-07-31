@@ -32,6 +32,8 @@ def median_otsu_bet(input_file, out_dir, save_masked=False, median_radius=4,
             out_dir_path = join(dirname(fpath), out_dir)
             if not exists(out_dir_path):
                 makedirs(out_dir_path)
+        else:
+            out_dir_path = out_dir
 
         mask_img = nib.Nifti1Image(mask.astype(np.float32), img.get_affine())
         mask_img.to_filename(join(out_dir_path, mask_fname))
