@@ -400,10 +400,10 @@ def compress_streamlines(streamlines, tol_error=0.01, max_segment_length=10):
     """ Compress streamlines by linearization as in [Presseau15]_.
 
     The compression consists in merging consecutive segments that are
-    near collinear. The merging is achieved by removing the point the two
+    nearly collinear. The merging is achieved by removing the point the two
     segments have in common.
 
-    The linearization process [Presseau15]_ ensures that every points being
+    The linearization process [Presseau15]_ ensures that every point being
     removed are within a certain margin (in mm) of the resulting streamline.
     Recommendations for setting this margin can be found in [Presseau15]_
     (in which they called it tolerance error).

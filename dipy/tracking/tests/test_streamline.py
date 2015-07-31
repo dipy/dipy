@@ -433,7 +433,7 @@ def compress_streamlines_python(streamlines, tol_error=0.01,
             # Distance between last point added and current point
             in_between = dist_between_points(streamlines[i][last_added_point],
                                              streamlines[i][j])
-            # Always add the first points
+            # Always add the first point
             if j == 0:
                 current_tract[nb_points] = streamlines[i][j]
                 last_success = j
@@ -496,6 +496,9 @@ def test_compress_streamlines():
         cstreamline_cython = compress_streamlines(streamline, tol_error)
         assert_equal(len(cstreamline_python), len(cstreamline_cython))
         assert_array_almost_equal(cstreamline_python, cstreamline_cython)
+
+    # Test we can set `max_segment_length` to infinity (like the C++ version)
+    cstreamline_cython = compress_streamlines(streamline, max_segment_length=np.inf)
 
 
 if __name__ == '__main__':
