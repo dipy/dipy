@@ -330,7 +330,7 @@ def test_joint_pdf_gradients_dense():
     # they approximately point in the same direction by testing if the angle
     # they form is close to zero.
     h = 1e-4
-    for ttype in factors:
+    for ttype in sorted(factors):
         dim = ttype[1]
         if dim == 2:
             nslices = 1
@@ -406,7 +406,7 @@ def test_joint_pdf_gradients_dense():
 
 def test_joint_pdf_gradients_sparse():
     h = 1e-4
-    for ttype in factors:
+    for ttype in sorted(factors):
         dim = ttype[1]
         if dim == 2:
             nslices = 1
