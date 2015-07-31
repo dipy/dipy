@@ -4,6 +4,8 @@ from __future__ import division, print_function, absolute_import
 
 import numpy as np
 
+from nose.tools import assert_almost_equal
+
 from numpy.testing import assert_array_almost_equal
 
 from dipy.sims.voxel import multi_tensor_dki
@@ -144,7 +146,7 @@ def test_diffusion_kurtosis_odf():
 
     # define parameters
     alpha = 4
-    sphere = get_sphere('symmetric362').subdivide(1)
+    sphere = get_sphere('symmetric362')
     V = sphere.vertices
 
     # Compute the dki-odf using the helper function to process single voxel
@@ -215,3 +217,20 @@ def _dki_odf_non_vectorized(n, W, U, a):
 
     # return the total ODF
     return ODFg * (1. + 1/24.*SW)
+
+
+def test_dki_directions():
+    # define parameters
+    alpha = 4
+    sphere = get_sphere('symmetric362').subdivide(1)
+
+    pam = dki.dki_directions(crossing_ref, sphere, alpha=alpha,
+                             relative_peak_threshold=0.1,
+                             min_separation_angle=20, mask=None,
+                             return_odf=True, normalize_peaks=False, npeaks=3)
+
+    # Check if detected two fiber directions
+    v_norm = np.linalg.norm(pam.peak_dirs, axis=-1)
+    Ndetect_peaks = sum(v_norm)
+
+    assert_almost_equal(Ndetect_peaks, 2.)
