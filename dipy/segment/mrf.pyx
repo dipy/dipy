@@ -56,7 +56,7 @@ class ConstantObservationModel(object):
         _initialize_param_uniform(image, mu, sigmasq)
         return np.array(mu), np.array(sigmasq)
 
-    def seg_stats(input_image, seg_image, nclass):
+    def seg_stats(self, input_image, seg_image, nclass):
         r""" Mean and standard variation for 3 tissue classes
     
         1 is CSF
@@ -79,13 +79,13 @@ class ConstantObservationModel(object):
         std = np.zeros(nclass)
         var = np.zeros(nclass)
     
-        for i in range(1, nclass + 1):
+        for i in range(0, nclass):
     
             H = input_image[seg_image == i]
     
-            mu[i - 1] = np.mean(H, -1)
-            std[i - 1] = np.std(H, -1)
-            var[i - 1] = np.var(H, -1)
+            mu[i] = np.mean(H, -1)
+            std[i] = np.std(H, -1)
+            var[i] = np.var(H, -1)
 
 
         return mu, std, var
@@ -140,7 +140,9 @@ class ConstantObservationModel(object):
         """
 
         cdef:
-            double[:, :, :, :] P_L_N = np.zeros(image.shape + (nclasses,),
+            #double[:, :, :, :] P_L_N = np.zeros(image.shape + (nclasses,),
+            #                                    dtype=np.float64)
+            double[:, :, :] P_L_N = np.zeros(image.shape,
                                                 dtype=np.float64)
             cnp.npy_intp classid = 0
 
@@ -151,7 +153,8 @@ class ConstantObservationModel(object):
             _prob_neighb_perclass(image, seg, beta, classid, P_L_N)
 
             # Eq 2.18 of Stan Z. Li book
-            PLN[:, :, :, classid] = np.array(P_L_N[:, :, :, classid])
+            #PLN[:, :, :, classid] = np.array(P_L_N[:, :, :, classid])
+            PLN[:, :, :, classid] = np.array(P_L_N)
             PLN[:, :, :, classid] = np.exp(- PLN[:, :, :, classid])
             PLN_norm += PLN[:, :, :, classid]
 
@@ -159,100 +162,100 @@ class ConstantObservationModel(object):
             PLN[:, :, :, l] = PLN[:, :, :, l] / PLN_norm
             #P_L_N[np.isnan(P_L_N)] = 0
 
-        return PLN #,PLN_norm
+        return PLN, PLN_norm
 
 
-    def prob_image(self, img, nclasses, mu, sigmasq, P_L_N):
-        r""" Conditional probability of the label given the image
-        This is for equation 27 of the Zhang paper
-
-        Parameters
-        -----------
-        img : ndarray 3D
-            masked T1 structural image
-        nclasses : int
-            number of tissue classes
-        mu : ndarray (1, 3)
-            current estimate of mean of each tissue type
-        sigmasq : ndarray (1, 3)
-            current estimate of the variance of each tissue type
-        P_L_N : ndarray 4D
-            probability of the label given the neighborhood. Previously
-            computed by function prob_neigh
-
-        Returns
-        --------
-        P_L_Y : ndarray 4D
-            Probability of the label given the input image
-
-        """
-        # probability of the tissue label (from the 3 classes) given the
-        # voxel
-        P_L_Y = np.zeros_like(P_L_N)
-        P_L_Y_norm = np.zeros_like(img)
-        # normal density equation 11 of the Zhang paper
-        g = np.zeros_like(img)
-        # mask = np.where(img > 0, 1, 0)
-
-        for l in range(nclasses):
-            for idx in ndindex(img.shape[:3]):
-                idxl = idx + (l,)
-                g[idx] = (np.exp(-((img[idx] - mu[l]) ** 2)) / (2 * sigmasq[l])) / (np.sqrt(2 * np.pi * sigmasq[l]))
-                # P_L_Y[idx[0], idx[1], idx[2], l] = g[idx] * P_L_N[idx[0], idx[1], idx[2], l]
-                P_L_Y[idxl] = g[idx] * P_L_N[idxl]
-
-            P_L_Y_norm[:, :, :] += P_L_Y[:, :, :, l]
-
-        for l in range(nclasses):
-            P_L_Y[:, :, :, l] = P_L_Y[:, :, :, l]/P_L_Y_norm
-
-        P_L_Y[np.isnan(P_L_Y)] = 0
-        # P_L_Y[P_L_Y < 0] = 0
-
-        return P_L_Y
-
-    def update_param(self, image, P_L_Y, mu, nclasses):
-        r""" Updates the means and the variances in each iteration for all the
-        labels. This is for equations 25 and 26 of the Zhang paper
-
-        Parameters
-        -----------
-        image : ndarray
-            Input T1 grey scale image
-
-        P_L_Y : ndarray
-            Probability of the label given the input image computed by the
-            Expectation Maximization algorithm.
-
-        Returns
-        --------
-        mu_upd : 1x3 ndarray - mean of each tissue class
-        var_upd : 1x3 ndarray - variance of each tissue class
-
-        """
-        # temporary mu and var files to compute the update
-        mu_upd = np.zeros(nclasses)
-        var_upd = np.zeros(nclasses)
-        mu_num = np.zeros(image.shape + (nclasses,))
-        var_num = np.zeros(image.shape + (nclasses,))
-        denm = np.zeros(image.shape + (nclasses,))
-
-        for l in range(nclasses):
-            for idx in ndindex(image.shape[:3]):
-                idxl = idx + (l,)
-                mu_num[idxl] = (P_L_Y[idxl] * image[idx])
-                var_num[idxl] = (P_L_Y[idxl] * (image[idx] - mu[l]) ** 2)
-                denm[idxl] = P_L_Y[idxl]
-
-            mu_upd[l] = np.sum(mu_num[:, :, :, l]) / np.sum(denm[:, :, :, l])
-            var_upd[l] = np.sum(var_num[:, :, :, l]) / np.sum(denm[:, :, :, l])
-
-            print('updated means and variances per class')
-            print('class: ', l)
-            print('updated_mu:', mu_upd[l])
-            print('updated_var:', var_upd[l])
-
-        return mu_upd, var_upd
+#    def prob_image(self, img, nclasses, mu, sigmasq, P_L_N):
+#        r""" Conditional probability of the label given the image
+#        This is for equation 27 of the Zhang paper
+#
+#        Parameters
+#        -----------
+#        img : ndarray 3D
+#            masked T1 structural image
+#        nclasses : int
+#            number of tissue classes
+#        mu : ndarray (1, 3)
+#            current estimate of mean of each tissue type
+#        sigmasq : ndarray (1, 3)
+#            current estimate of the variance of each tissue type
+#        P_L_N : ndarray 4D
+#            probability of the label given the neighborhood. Previously
+#            computed by function prob_neigh
+#
+#        Returns
+#        --------
+#        P_L_Y : ndarray 4D
+#            Probability of the label given the input image
+#
+#        """
+#        # probability of the tissue label (from the 3 classes) given the
+#        # voxel
+#        P_L_Y = np.zeros_like(P_L_N)
+#        P_L_Y_norm = np.zeros_like(img)
+#        # normal density equation 11 of the Zhang paper
+#        g = np.zeros_like(img)
+#        # mask = np.where(img > 0, 1, 0)
+#
+#        for l in range(nclasses):
+#            for idx in ndindex(img.shape[:3]):
+#                idxl = idx + (l,)
+#                g[idx] = (np.exp(-((img[idx] - mu[l]) ** 2)) / (2 * sigmasq[l])) / (np.sqrt(2 * np.pi * sigmasq[l]))
+#                # P_L_Y[idx[0], idx[1], idx[2], l] = g[idx] * P_L_N[idx[0], idx[1], idx[2], l]
+#                P_L_Y[idxl] = g[idx] * P_L_N[idxl]
+#
+#            P_L_Y_norm[:, :, :] += P_L_Y[:, :, :, l]
+#
+#        for l in range(nclasses):
+#            P_L_Y[:, :, :, l] = P_L_Y[:, :, :, l]/P_L_Y_norm
+#
+#        P_L_Y[np.isnan(P_L_Y)] = 0
+#        # P_L_Y[P_L_Y < 0] = 0
+#
+#        return P_L_Y
+#
+#    def update_param(self, image, P_L_Y, mu, nclasses):
+#        r""" Updates the means and the variances in each iteration for all the
+#        labels. This is for equations 25 and 26 of the Zhang paper
+#
+#        Parameters
+#        -----------
+#        image : ndarray
+#            Input T1 grey scale image
+#
+#        P_L_Y : ndarray
+#            Probability of the label given the input image computed by the
+#            Expectation Maximization algorithm.
+#
+#        Returns
+#        --------
+#        mu_upd : 1x3 ndarray - mean of each tissue class
+#        var_upd : 1x3 ndarray - variance of each tissue class
+#
+#        """
+#        # temporary mu and var files to compute the update
+#        mu_upd = np.zeros(nclasses)
+#        var_upd = np.zeros(nclasses)
+#        mu_num = np.zeros(image.shape + (nclasses,))
+#        var_num = np.zeros(image.shape + (nclasses,))
+#        denm = np.zeros(image.shape + (nclasses,))
+#
+#        for l in range(nclasses):
+#            for idx in ndindex(image.shape[:3]):
+#                idxl = idx + (l,)
+#                mu_num[idxl] = (P_L_Y[idxl] * image[idx])
+#                var_num[idxl] = (P_L_Y[idxl] * (image[idx] - mu[l]) ** 2)
+#                denm[idxl] = P_L_Y[idxl]
+#
+#            mu_upd[l] = np.sum(mu_num[:, :, :, l]) / np.sum(denm[:, :, :, l])
+#            var_upd[l] = np.sum(var_num[:, :, :, l]) / np.sum(denm[:, :, :, l])
+#
+#            print('updated means and variances per class')
+#            print('class: ', l)
+#            print('updated_mu:', mu_upd[l])
+#            print('updated_var:', var_upd[l])
+#
+#        return mu_upd, var_upd
 
 
 cdef void _initialize_param_uniform(double[:,:,:] image, double[:] mu, double[:] sigma) nogil:
@@ -291,7 +294,7 @@ cdef void _initialize_param_uniform(double[:,:,:] image, double[:] mu, double[:]
 
 cdef void _prob_neighb_perclass(double[:, :, :] image, double[:, :, :] seg,
                                 double beta, int classid,
-                                double[:, :, :, :] P_L_N) nogil:
+                                double[:, :, :] P_L_N) nogil:
 
     cdef:
         cnp.npy_intp nx = image.shape[0]
@@ -305,6 +308,7 @@ cdef void _prob_neighb_perclass(double[:, :, :] image, double[:, :, :] seg,
         cnp.npy_intp* dY = [0, -1, 0, 1,  0, 0]
         cnp.npy_intp* dZ = [0,  0, 1, 0, -1, 0]
 
+    #with gil: print('Hey, this is the label :', l)
     for x in range(nx):
         for y in range(ny):
             for z in range(nz):
@@ -328,7 +332,8 @@ cdef void _prob_neighb_perclass(double[:, :, :] image, double[:, :, :] seg,
                     else:
                         vox_prob += beta
 
-                P_L_N[x, y, z, l] = vox_prob
+                #P_L_N[x, y, z, l] = vox_prob
+                P_L_N[x, y, z] = vox_prob
 
 
 class IteratedConditionalModes(object):
