@@ -50,11 +50,11 @@ def show_bundles(static, moving, linewidth=1., tubes=False,
         fvtk.record(ren, size=(900, 900), out_path=fname)
 
 
-def recognize_bundles_proxy(streamline_files, model_bundle_files,
-                            model_streamlines_file, out_dir='same',
-                            close_centroids_thr=str(20),
-                            clean_thr=str(5.),
-                            local_slr=True):
+def recognize_bundles_flow(streamline_files, model_bundle_files,
+                           model_streamlines_file, out_dir='same',
+                           close_centroids_thr=str(20),
+                           clean_thr=str(5.),
+                           local_slr=str(True)):
 
     verbose = True
     disp = True
@@ -83,8 +83,9 @@ def recognize_bundles_proxy(streamline_files, model_bundle_files,
         moved_streamlines, mat, centroids1, centroids2 = ret
         print(mat)
         if disp:
-            show_bundles(model_streamlines, streamlines)
-            show_bundles(model_streamlines, moved_streamlines)
+            # show_bundles(model_streamlines, streamlines)
+            # show_bundles(model_streamlines, moved_streamlines)
+            pass
 
         print('# Model_bundle files')
         for mb in mbfiles:
@@ -97,11 +98,11 @@ def recognize_bundles_proxy(streamline_files, model_bundle_files,
                 local_slr=bool(local_slr),
                 verbose=verbose)
 
-            #bundle_in_model = transform_streamlines(extracted, np.dot(mat2, mat))
+            # bundle_in_model = transform_streamlines(extracted, np.dot(mat2, mat))
             if disp:
                 show_bundles(model_bundle, extracted_bundle)
 
-                #show_bundles(model_streamlines, moved_streamlines)
+                # show_bundles(model_streamlines, moved_streamlines)
 
     print('# Model whole brain streamlines file')
     print(model_streamlines_file)
