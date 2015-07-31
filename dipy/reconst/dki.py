@@ -2578,6 +2578,12 @@ def dki_directions(dki_params, sphere, alpha=4, relative_peak_threshold=0.1,
     npeaks : int, optional
         Maximum number of peaks found (default 3 peaks).
 
+    Returns
+    -------
+    pam : PeaksAndMetrics
+        An object with ``peak_directions``, ``peak_values``, ``peak_indices``,
+        ``odf`` as attributes
+
     .. [Jen2014] Jensen, J.H., Helpern, J.A., Tabesh, A., (2014). Leading
         non-Gaussian corrections for diffusion orientation distribution
         function. NMR Biomed. 27, 202-211. http://dx.doi.org/10.1002/nbm.3053.
@@ -2588,6 +2594,74 @@ def dki_directions(dki_params, sphere, alpha=4, relative_peak_threshold=0.1,
         and novel biomarkers. NeuroImage 111: 85-99.
         doi:10.1016/j.neuroimage.2015.02.004
     """
-    a = 'WIP'
-    return a
-    
+    shape = dki_params.shape[:-1]
+
+    # select voxels where to find fiber directions
+    if mask is None:
+        mask = np.ones(shape, dtype='bool')
+    else:
+        if mask.shape != shape:
+            raise ValueError("Mask is not the same shape as data.")
+    evals, evecs, kt = split_dki_param(dki_params)
+    # select non-zero voxels
+    # (when #677 is merged replace this code lines by function _positive_evals)
+    # pos_evals = _positive_evals(evals[..., 0], evals[..., 1], evals[..., 2])
+    er = np.finfo(evals.ravel()[0]).eps * 1e3
+    pos_evals = np.logical_and(evals[..., 0] > er,
+                               np.logical_and(evals[..., 1] > er,
+                                              evals[..., 2] > er))
+    mask = np.logical_and(mask, pos_evals)
+
+    # initialize parameters for pam
+    qa_array = np.zeros((shape + (npeaks,)))
+    peak_dirs = np.zeros((shape + (npeaks, 3)))
+    peak_values = np.zeros((shape + (npeaks,)))
+    peak_indices = np.zeros((shape + (npeaks,)), dtype='int')
+    if return_odf:
+        odf_array = np.zeros((shape + (len(sphere.vertices),)))
+
+    # for all voxels:
+    global_max = -np.inf
+    for idx in ndindex(shape):
+        if not mask[idx]:
+            continue
+
+        dt = lower_triangular(np.dot(np.dot(evecs[idx], np.diag(evals[idx])),
+                                     evecs[idx].T))
+
+        # First sample of the DKI-ODF
+        odf = _directional_kurtosis_odf(dt, kt, sphere.vertices, alpha=alpha)
+        if return_odf:
+            odf_array[idx] = odf
+
+        # First estimate of the fiber direction
+        direction, pk, ind = peak_directions(odf, sphere,
+                                             relative_peak_threshold,
+                                             min_separation_angle)
+
+        if pk.shape[0] != 0:
+            global_max = max(global_max, pk[0])
+            n = min(npeaks, pk.shape[0])
+
+            qa_array[idx][:n] = pk[:n] - odf.min()
+            peak_dirs[idx][:n] = direction[:n]
+            peak_indices[idx][:n] = ind[:n]
+            peak_values[idx][:n] = pk[:n]
+
+            if normalize_peaks:
+                peak_values[idx][:n] /= pk[0]
+                peak_dirs[idx] *= peak_values[idx][:, None]
+        else:
+            global_max = max(global_max, odf.max())
+
+    qa_array /= global_max
+    pam = PeaksAndMetrics()
+    pam.sphere = sphere
+    pam.peak_dirs = peak_dirs
+    pam.peak_values = peak_values
+    pam.peak_indices = peak_indices
+    pam.qa = qa_array
+    if return_odf:
+        pam.odf = odf_array
+
+    return pam
