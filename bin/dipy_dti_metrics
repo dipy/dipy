@@ -1,0 +1,131 @@
+#! /usr/bin/env python
+from __future__ import division, print_function
+import os
+import logging
+
+from dipy.workflow.reconst import compute_dti_metrics
+from dipy.fixes import argparse as arg
+
+DESCRIPTION = """
+    Script to compute all of the Diffusion Tensor Imaging (DTI) metrics.\n\n
+    By default, will output all available metrics, using default names.
+    Specific names can be specified using the metrics flags that are listed in
+    the "Metrics files flags" section.\n\n
+    If --not_all is set, only the metrics specified explicitly by the flags
+    will be output.\n\n
+    The available metrics are: fractional anisotropy (FA), axial diffusivisty
+    (AD), radial diffusivity (RD), mean diffusivity (MD), mode,
+    red-green-blue colored FA (rgb), principal tensor e-vector and tensor
+    coefficients (dxx, dxy, dxz, dyy, dyz, dzz).
+    """
+
+p = arg.ArgumentParser(description=DESCRIPTION,
+                       formatter_class=arg.RawTextHelpFormatter)
+
+p.add_argument('input', action='store', metavar='input', type=str,
+               help='Path of the input diffusion volume.')
+
+p.add_argument('bvals', action='store', metavar='bvals',
+               help='Path of the bvals file, in FSL format.')
+
+p.add_argument('bvecs', action='store', metavar='bvecs',
+               help='Path of the bvecs file, in FSL format.')
+
+p.add_argument('-f', action='store_true', dest='overwrite',
+               help='If set, the saved files volume will be overwritten ' +
+                    'if they already exist. (Default: False)')
+
+p.add_argument('--out_dir', action='store', dest='out_dir', type=str,
+                   default='', help='Path to output metrics.')
+
+p.add_argument('--mask', action='store', dest='mask',
+               metavar='mask', default=None, type=str,
+               help='Path to a binary mask. Only data inside the mask ' +
+                    'will be used for computations and reconstruction. ' +
+                    '(Default: None)')
+
+p.add_argument('--not_all', action='store_true', dest='not_all',
+               help='If set, will only save the metrics explicitely ' +
+                    'specified using the other metrics flags. ' +
+                    '(Default: not set).')
+
+g = p.add_argument_group(title='Metrics files flags')
+g.add_argument('--ad', action='store', dest='ad',
+               metavar='file', required=False, default='', type=str,
+               help='Output filename for the axial diffusivity.')
+
+g.add_argument('--evec', action='store', dest='evec',
+               metavar='file', default='', type=str,
+               help='Output filename for the principal eigenvector ' +
+                    'of the tensor.')
+
+g.add_argument('--eval', action='store', dest='eval',
+               metavar='file', default='', type=str,
+               help='Output filename for the eigenvalues ' +
+                    'of the tensor.')
+
+g.add_argument('--fa', action='store', dest='fa',
+               metavar='file', default='', type=str,
+               help='Output filename for the fractional anisotropy.')
+
+g.add_argument('--ga', action='store', dest='ga',
+               metavar='file', default='', type=str,
+               help='Output filename for the geodesic anisotropy.')
+
+g.add_argument('--md', action='store', dest='md',
+               metavar='file', default='', type=str,
+               help='Output filename for the mean diffusivity.')
+
+g.add_argument('--mode', action='store', dest='mode',
+               metavar='file', default='', type=str,
+               help='Output filename for the mode.')
+
+g.add_argument('--rgb', action='store', dest='rgb',
+               metavar='file', default='', type=str,
+               help='Output filename for the colored fractional ' +
+                    'anisotropy.')
+
+g.add_argument('--rd', action='store', dest='rd',
+               metavar='file', default='', type=str,
+               help='Output filename for the radial diffusivity.')
+
+g.add_argument('--tensor', action='store', dest='tensor',
+               metavar='file', default='', type=str,
+               help='Output filename for the tensor coefficients.')
+
+if __name__ == "__main__":
+    args = p.parse_args()
+
+    if not args.not_all:
+        if args.fa == '':
+            args.fa = 'fa.nii.gz'
+        if args.ga == '':
+            args.ga = 'ga.nii.gz'
+        if args.rgb == '':
+            args.rgb = 'rgb.nii.gz'
+        if args.md == '':
+            args.md = 'md.nii.gz'
+        if args.ad == '':
+            args.ad = 'ad.nii.gz'
+        if args.rd == '':
+            args.rd = 'rd.nii.gz'
+        if args.mode == '':
+            args.mode = 'mode.nii.gz'
+        if args.tensor == '':
+            args.tensor = 'tensor.nii.gz'
+        if args.evec == '':
+            args.evec = 'tensor_evecs.nii.gz'
+        if args.eval == '':
+            args.eval = 'tensor_evals.nii.gz'
+
+    arglist = [args.fa, args.rgb, args.md, args.ad, args.rd, args.mode,
+               args.tensor, args.evec, args.ga]
+
+    if args.not_all and not any(arglist):
+        p.error('When using --not_all, you need to specify at least ' +
+                     'one metric to output.')
+
+    compute_dti_metrics(args.input, args.mask, args.bvals, args.bvecs,
+                        args.out_dir, args.tensor, args.fa, args.ga, args.rgb,
+                        args.md, args.ad, args.rd, args.mode, args.evec,
+                        args.eval)
