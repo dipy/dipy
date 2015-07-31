@@ -2625,24 +2625,31 @@ def dki_directions(dki_params, sphere, alpha=4, relative_peak_threshold=0.1,
     for idx in ndindex(shape):
         if not mask[idx]:
             continue
-
-        dt = lower_triangular(np.dot(np.dot(evecs[idx], np.diag(evals[idx])),
-                                     evecs[idx].T))
-
+        
+        # Compute dimensionless tensor U
+        dt = np.dot(np.dot(evecs[idx], np.diag(evals[idx])), evecs[idx].T)
+        MD = (dt[0, 0] + dt[1, 1] + dt[2, 2]) / 3
+        U = np.linalg.pinv(dt) * MD
+        
         # First sample of the DKI-ODF
-        odf = _directional_kurtosis_odf(dt, kt, sphere.vertices, alpha=alpha)
+        odf = np.zeros(len(sphere.vertices))
+        for i in range(len(sphere.vertices)):
+             odf[i] = _dki_odf_core(sphere.vertices[i], kt[idx], U, alpha)
         if return_odf:
             odf_array[idx] = odf
 
-        # First estimate of the fiber direction
+        # First estimate of the fiber direction from sphere vertices
         direction, pk, ind = peak_directions(odf, sphere,
                                              relative_peak_threshold,
                                              min_separation_angle)
 
         if pk.shape[0] != 0:
+            # Direction convergence
+            
+
+            # Saving directions
             global_max = max(global_max, pk[0])
             n = min(npeaks, pk.shape[0])
-
             qa_array[idx][:n] = pk[:n] - odf.min()
             peak_dirs[idx][:n] = direction[:n]
             peak_indices[idx][:n] = ind[:n]
