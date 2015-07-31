@@ -807,46 +807,22 @@ def diffusion_kurtosis_odf(dki_params, sphere, alpha=4):
 
     # loop over all relevant voxels
     for vox in range(len(kt)):
+        # Compute dimensionless tensor U
         R = evecs[vox]
-        dt = lower_triangular(np.dot(np.dot(R, np.diag(evals[vox])), R.T))
-        kODFi[vox] = _directional_kurtosis_odf(dt, kt[vox], V, alpha)
+        dt = np.dot(np.dot(R, np.diag(evals[vox])), R.T)
+        MD = (dt[0, 0] + dt[1, 1] + dt[2, 2]) / 3
+        U = np.linalg.pinv(dt) * MD
+
+        # loop over all directions
+        sampledODF = np.zeros(len(V))
+        for i in range(len(V)):
+             sampledODF[i] = _dki_odf_core(V[i], kt[vox], U, alpha)
+
+        kODFi[vox] = sampledODF
 
     # reshape data according to input data
     kODF[rel_i] = kODFi
     kODF = kODF.reshape((outshape + (len(V),)))
-    return kODF
-
-
-def _directional_kurtosis_odf(dt, kt, V, alpha=4):
-    """ Helper function that samples the diffusion kurtosis based orientation
-    distribution function in each direction of a sphere for a single voxel.
-
-    Parameters
-    ----------
-    dt : array (6,)
-        elements of the diffusion tensor of the voxel.
-    kt : array (15,)
-        elements of the kurtosis tensor of the voxel.
-    V : array (g, 3)
-        g directions of a Sphere in Cartesian coordinates
-    alpha : float, optional
-        Radial weighting power. Default is 4.
-
-    Returns
-    -------
-    kODF : array (g,)
-        The DKI-ODF sampled in every g directions for a single voxel.
-    """
-    MD = (dt[0] + dt[2] + dt[5]) / 3
-
-    # Compute dimensionless tensor U
-    U = np.linalg.pinv(from_lower_triangular(dt)) * MD
-
-    # loop over all directions
-    kODF = np.zeros(len(V))
-    for i in range(len(V)):
-        kODF[i] = _dki_odf_core(V[i], kt, U, alpha)
-
     return kODF
 
 
@@ -1063,24 +1039,31 @@ def dki_directions(dki_params, sphere, alpha=4, relative_peak_threshold=0.1,
     for idx in ndindex(shape):
         if not mask[idx]:
             continue
-
-        dt = lower_triangular(np.dot(np.dot(evecs[idx], np.diag(evals[idx])),
-                                     evecs[idx].T))
-
+        
+        # Compute dimensionless tensor U
+        dt = np.dot(np.dot(evecs[idx], np.diag(evals[idx])), evecs[idx].T)
+        MD = (dt[0, 0] + dt[1, 1] + dt[2, 2]) / 3
+        U = np.linalg.pinv(dt) * MD
+        
         # First sample of the DKI-ODF
-        odf = _directional_kurtosis_odf(dt, kt, sphere.vertices, alpha=alpha)
+        odf = np.zeros(len(sphere.vertices))
+        for i in range(len(sphere.vertices)):
+             odf[i] = _dki_odf_core(sphere.vertices[i], kt[idx], U, alpha)
         if return_odf:
             odf_array[idx] = odf
 
-        # First estimate of the fiber direction
+        # First estimate of the fiber direction from sphere vertices
         direction, pk, ind = peak_directions(odf, sphere,
                                              relative_peak_threshold,
                                              min_separation_angle)
 
         if pk.shape[0] != 0:
+            # Direction convergence
+            
+
+            # Saving directions
             global_max = max(global_max, pk[0])
             n = min(npeaks, pk.shape[0])
-
             qa_array[idx][:n] = pk[:n] - odf.min()
             peak_dirs[idx][:n] = direction[:n]
             peak_indices[idx][:n] = ind[:n]

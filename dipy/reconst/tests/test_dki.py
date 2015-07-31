@@ -150,8 +150,8 @@ def test_diffusion_kurtosis_odf():
     V = sphere.vertices
 
     # Compute the dki-odf using the helper function to process single voxel
-    dipy_odf = dki._directional_kurtosis_odf(dt_cross, kt_cross, V,
-                                             alpha=alpha)
+    dipy_odf = dki.diffusion_kurtosis_odf(crossing_ref, sphere, alpha=alpha)
+
     # reference ODF for a single voxel simulate
     MD = (dt_cross[0] + dt_cross[2] + dt_cross[5]) / 3
     U = np.linalg.pinv(from_lower_triangular(dt_cross)) * MD
