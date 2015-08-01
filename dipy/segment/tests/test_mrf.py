@@ -2,7 +2,6 @@ import numpy as np
 import numpy.testing as npt
 import matplotlib.pyplot as plt
 from dipy.data import get_data
-from dipy.core.ndindex import ndindex
 from dipy.sims.voxel import add_noise
 from dipy.segment.mrf import (ConstantObservationModel,
                               IteratedConditionalModes,
@@ -17,7 +16,6 @@ single_slice = np.load(fname)
 nslices = 5
 image = np.zeros(shape=single_slice.shape + (nslices,))
 image[..., :nslices] = single_slice[..., None]
-#image = image * 200
 
 # Execute the segmentation
 nclasses = 4
@@ -54,95 +52,21 @@ square_2[99:157, 99:157, :] = temp_3
 square_gauss = add_noise(square, 4, 1, noise_type='gaussian')
 
 
-def test_initialize_param_uniform():
-
-    com = ConstantObservationModel()
-
-    mu, sigma = com.initialize_param_uniform(image, nclasses)
-
-    print(mu)
-    print(sigma)
-
-    npt.assert_almost_equal(mu, np.array([0., 0.25, 0.5, 0.75]))
-    npt.assert_equal(sigma, np.array([1.0, 1.0, 1.0, 1.0]))
-
-
-def test_negloglikelihood():
-
-    com = ConstantObservationModel()
-
-    mu, sigma = com.initialize_param_uniform(image, nclasses)
-
-    print(mu)
-    print(sigma)
-
-    npt.assert_almost_equal(mu, np.array([0., 0.25, 0.5, 0.75]))
-    npt.assert_equal(sigma, np.array([1.0, 1.0, 1.0, 1.0]))
-
-    sigmasq = sigma ** 2
-
-    neglogl = com.negloglikelihood(image, mu, sigmasq, nclasses)
-
-    print(neglogl.shape)
-    print(neglogl.min())
-    print(neglogl.max())
-
-    # Testing the likelihood of the same voxel for two different labels
-    print('negloglikelihood for one voxel in brain tissue')
-    print(neglogl[150, 125, 2, 0])
-    print(neglogl[150, 125, 2, 1])
-    print(neglogl[150, 125, 2, 2])
-    print(neglogl[150, 125, 2, 3])
-    plt.figure()
-    plt.imshow(neglogl[:, :, 2, 0])
-    plt.figure()
-    plt.imshow(neglogl[:, :, 2, 1])
-    plt.figure()
-    plt.imshow(neglogl[:, :, 2, 2])
-    plt.figure()
-    plt.imshow(neglogl[:, :, 2, 3])
-    npt.assert_equal((neglogl[150, 125, 2, 0] != neglogl[150, 125, 2, 1]),
-                     True)
-    npt.assert_equal((neglogl[150, 125, 2, 1] != neglogl[150, 125, 2, 2]),
-                     True)
-    npt.assert_equal((neglogl[150, 125, 2, 2] != neglogl[150, 125, 2, 3]),
-                     True)
-    npt.assert_equal((neglogl[150, 125, 2, 1] != neglogl[150, 125, 2, 3]),
-                     True)
-
-
 def test_greyscale_image():
 
     com = ConstantObservationModel()
     icm = IteratedConditionalModes()
 
     mu, sigma = com.initialize_param_uniform(image, nclasses)
-
-    print(mu)
-    print(sigma)
-
-    npt.assert_almost_equal(mu, np.array([0., 0.25, 0.5, 0.75]))
-    npt.assert_equal(sigma, np.array([1.0, 1.0, 1.0, 1.0]))
-
     sigmasq = sigma ** 2
+    npt.assert_equal(mu, np.array([0., 0.25, 0.5, 0.75]))
+    npt.assert_equal(sigma, np.array([1.0, 1.0, 1.0, 1.0]))
+    npt.assert_equal(sigmasq, np.array([1.0, 1.0, 1.0, 1.0]))
 
     neglogl = com.negloglikelihood(image, mu, sigmasq, nclasses)
-
-    print(neglogl.shape)
-    print(neglogl.min())
-    print(neglogl.max())
-    print('maximum negloglikelihood per label')
-    print(neglogl[100, 100, 2, 0].max())
-    print(neglogl[100, 100, 2, 1].max())
-    print(neglogl[100, 100, 2, 2].max())
-    print(neglogl[100, 100, 2, 3].max())
-
-    # Testing the likelihood of the same voxel for two different labels
-    print('negloglikelihood for one voxel in brain tissue')
-    print(neglogl[100, 100, 2, 0])
-    print(neglogl[100, 100, 2, 1])
-    print(neglogl[100, 100, 2, 2])
-    print(neglogl[100, 100, 2, 3])
+    npt.assert_equal(neglogl.all() <= 1, True)
+    npt.assert_equal(neglogl.all() > 0, True)
+    print('negloglikelihood for one voxel in white matter')
     npt.assert_equal((neglogl[100, 100, 2, 0] != neglogl[100, 100, 2, 1]),
                      True)
     npt.assert_equal((neglogl[100, 100, 2, 1] != neglogl[100, 100, 2, 2]),
@@ -153,51 +77,25 @@ def test_greyscale_image():
                      True)
 
     initial_segmentation = icm.initialize_maximum_likelihood(neglogl)
-
-    plt.imshow(image[..., 1])
-    plt.figure()
-    plt.imshow(initial_segmentation[..., 1])
-
     npt.assert_equal(initial_segmentation.max(), 3)
     npt.assert_equal(initial_segmentation.min(), 0)
 
-    # seg = np.float64(initial_segmentation)
-
     PLN = com.prob_neighborhood(image, initial_segmentation, beta, nclasses)
-
-    plt.figure()
-    plt.imshow(PLN[:, :, 2, 0])
-    plt.figure()
-    plt.imshow(PLN[:, :, 2, 1])
-    plt.figure()
-    plt.imshow(PLN[:, :, 2, 2])
-    plt.figure()
-    plt.imshow(PLN[:, :, 2, 3])
-
+    npt.assert_equal(PLN.all() >= 0.0, True)
+    npt.assert_equal(PLN.all() <= 1.0, True)
     PLY = com.prob_image(image, nclasses, mu, sigmasq, PLN)
-
-    plt.figure()
-    plt.imshow(PLY[:, :, 2, 0])
-    plt.figure()
-    plt.imshow(PLY[:, :, 2, 1])
-    plt.figure()
-    plt.imshow(PLY[:, :, 2, 2])
-    plt.figure()
-    plt.imshow(PLY[:, :, 2, 3])
+    npt.assert_equal(PLY.all() >= 0.0, True)
+    npt.assert_equal(PLY.all() <= 1.0, True)
 
     mu_upd, sigmasq_upd = com.update_param(image, PLY, mu, nclasses)
-    print('updated vs old means and variances')
-    print(mu)
-    print(mu_upd)
-    print(sigmasq)
-    print(sigmasq_upd)
+    print('updated means and variances vs original ones')
     npt.assert_equal(mu_upd != mu, True)
     npt.assert_equal(sigmasq_upd != sigmasq, True)
 
     icm_segmentation = icm.icm_ising(neglogl, beta, initial_segmentation)
-    plt.figure()
-    plt.imshow(icm_segmentation[..., 1])
     npt.assert_equal(np.abs(np.sum(icm_segmentation)) != 0, True)
+    npt.assert_equal(icm_segmentation.max(), 3)
+    npt.assert_equal(icm_segmentation.min(), 0)
 
     return initial_segmentation, icm_segmentation
 
@@ -207,25 +105,17 @@ def test_greyscale_iter():
     com = ConstantObservationModel()
     icm = IteratedConditionalModes()
 
-    plt.figure()
-    plt.imshow(image[..., 1])
-
     mu, sigma = com.initialize_param_uniform(image, nclasses)
     sigmasq = sigma ** 2
     neglogl = com.negloglikelihood(image, mu, sigmasq, nclasses)
-#    plt.figure()
-#    plt.imshow(neglogl[:, :, 1, 1])
     initial_segmentation = icm.initialize_maximum_likelihood(neglogl)
+    npt.assert_equal(initial_segmentation.max(), 3)
+    npt.assert_equal(initial_segmentation.min(), 0)
 
     mu, sigma, sigmasq = com.seg_stats(image, initial_segmentation, nclasses)
-    print(mu)
-    print(sigmasq)
-    plt.figure()
-    plt.imshow(initial_segmentation[..., 1])
-#    npt.assert_equal(initial_segmentation.max(), 3)
-#    npt.assert_equal(initial_segmentation.min(), 0)
+    npt.assert_equal(mu.all() >= 0, True)
+    npt.assert_equal(sigmasq.all() >= 0, True)
 
-    # final_segmentation = initial_segmentation.copy()
     final_segmentation = np.empty_like(image)
     seg_init = initial_segmentation.copy()
 
@@ -233,31 +123,29 @@ def test_greyscale_iter():
 
         print('iteration: ', i)
 
-        PLN, PLN_norm = com.prob_neighborhood(image, initial_segmentation, beta, nclasses)
-        # PLY = com.prob_image(image, nclasses, mu, sigmasq, PLN)
-        PLY = prob_image(image, nclasses, mu, sigmasq, PLN)
+        PLN = com.prob_neighborhood(image, initial_segmentation, beta, nclasses)
+        npt.assert_equal(PLN.all() >= 0.0, True)
+        PLY = com.prob_image(image, nclasses, mu, sigmasq, PLN)
+        npt.assert_equal(PLY.all() >= 0.0, True)
 
-#        npt.assert_equal(PLY.all() >= 0, True)
-
-        # mu_upd, sigmasq_upd = com.update_param(image, PLY, mu, nclasses)
-        mu_upd, sigmasq_upd = update_param(image, PLY, mu, nclasses)
+        mu_upd, sigmasq_upd = com.update_param(image, PLY, mu, nclasses)
+        npt.assert_equal(mu_upd.all() >= 0.0, True)
+        npt.assert_equal(sigmasq_upd.all() >= 0.0, True)
         negll = com.negloglikelihood(image, mu_upd, sigmasq_upd, nclasses)
-#        plt.figure()
-#        plt.imshow(negll[:, :, 1, 1])
+        npt.assert_equal(negll.all() >= 0.0, True)
         final_segmentation = icm.icm_ising(negll, beta, initial_segmentation)
 
-        plt.figure()
-        plt.imshow(final_segmentation[..., 1])
+#        plt.figure()
+#        plt.imshow(final_segmentation[..., 1])
 
         initial_segmentation = final_segmentation.copy()
         mu = mu_upd.copy()
         sigmasq = sigmasq_upd.copy()
 
-#    Difference_map = np.abs(initial_segmentation - final_segmentation)
-#    plt.figure()
-#    plt.imshow(Difference_map[..., 1])
+    Difference_map = np.abs(seg_init - final_segmentation)
+    npt.assert_equal(np.abs(np.sum(Difference_map)) != 0, True)
 
-    return seg_init, final_segmentation, mu, sigmasq
+    return seg_init, final_segmentation, PLY
 
 
 def test_ImageSegmenter():
@@ -279,8 +167,6 @@ def test_ImageSegmenter():
 
 if __name__ == '__main__':
 
-    # test_initialize_param_uniform()
-    # test_negloglikelihood()
-    # initial_segmentation, final_segmentation = test_greyscale_image()
-    seg_init, final_segmentation, mu, sigmasq = test_greyscale_iter()
+    initial_segmentation, final_segmentation = test_greyscale_image()
+    seg_init, final_segmentation, PLY = test_greyscale_iter()
     # segmented = test_ImageSegmenter()
