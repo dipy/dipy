@@ -101,7 +101,6 @@ for modulename, other_sources, language in (
     ('dipy.segment.metricspeed', [], 'c'),
     ('dipy.segment.clusteringspeed', [], 'c'),
     ('dipy.segment.clustering_algorithms', [], 'c'),
-    ('dipy.segment.mrf_map', [], 'c'),
     ('dipy.segment.mrf', [], 'c'),
     ('dipy.denoise.denspeed', [], 'c'),
     ('dipy.align.vector_fields', [], 'c'),

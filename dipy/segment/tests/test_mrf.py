@@ -147,26 +147,27 @@ def test_greyscale_iter():
 
     return seg_init, final_segmentation, PLY
 
-
-def test_ImageSegmenter():
-
-    imgseg = ImageSegmenter()
-
-    T1_seg = imgseg.segment_HMRF(image, nclasses, beta, max_iter)
-
-    plt.figure()
-    plt.imshow(T1_seg[..., 1])
-
+#
+#def test_ImageSegmenter():
+#
+#    imgseg = ImageSegmenter()
+#
+#    T1_seg = imgseg.segment_HMRF(image, nclasses, beta, max_iter)
+#
+#    plt.figure()
+#    plt.imshow(T1_seg[..., 1])
 #    Square1_seg = imgseg.segment_HMRF(image, nclasses, beta, max_iter)
 #
 #    plt.figure()
 #    plt.imshow(Square1_seg[..., 1])
-
-    return T1_seg
+#
+#    return T1_seg
 
 
 if __name__ == '__main__':
 
-    initial_segmentation, final_segmentation = test_greyscale_image()
-    seg_init, final_segmentation, PLY = test_greyscale_iter()
+    #pass
+    npt.run_module_suite()
+    #initial_segmentation, final_segmentation = test_greyscale_image()
+    #seg_init, final_segmentation, PLY = test_greyscale_iter()
     # segmented = test_ImageSegmenter()
