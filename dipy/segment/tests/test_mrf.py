@@ -17,7 +17,7 @@ single_slice = np.load(fname)
 nslices = 5
 image = np.zeros(shape=single_slice.shape + (nslices,))
 image[..., :nslices] = single_slice[..., None]
-image = image * 200
+#image = image * 200
 
 # Execute the segmentation
 nclasses = 4
@@ -219,7 +219,7 @@ def test_greyscale_iter():
 
     mu, sigma, sigmasq = com.seg_stats(image, initial_segmentation, nclasses)
     print(mu)
-    print(sigma)
+    print(sigmasq)
     plt.figure()
     plt.imshow(initial_segmentation[..., 1])
 #    npt.assert_equal(initial_segmentation.max(), 3)
@@ -257,7 +257,7 @@ def test_greyscale_iter():
 #    plt.figure()
 #    plt.imshow(Difference_map[..., 1])
 
-    return seg_init, final_segmentation
+    return seg_init, final_segmentation, mu, sigmasq
 
 
 def test_ImageSegmenter():
@@ -307,20 +307,36 @@ def prob_image(img, nclasses, mu, sigmasq, P_L_N):
     # normal density equation 11 of the Zhang paper
     g = np.zeros_like(img)
     # mask = np.where(img > 0, 1, 0)
-
+    Epsilon = 1e-6
+    Epsilonsq = Epsilon*Epsilon
+    
+    
     for l in range(nclasses):
+        
+        print('This is the max PLN', P_L_N.max())
+        print('This is the min PLN', P_L_N.min())
         for idx in ndindex(img.shape[:3]):
             idxl = idx + (l,)
-            g[idx] = (np.exp(-((img[idx] - mu[l]) ** 2)) / (2 * sigmasq[l])) / (np.sqrt(2 * np.pi * sigmasq[l]))
-            # P_L_Y[idx[0], idx[1], idx[2], l] = g[idx] * P_L_N[idx[0], idx[1], idx[2], l]
+            if sigmasq[l] < Epsilonsq:
+                if np.abs(img[idx] - mu[l]) <= Epsilon:
+                    g[idx] = 1
+                else:
+                    g[idx] = 0
+            else:
+                g[idx] = (np.exp(-((img[idx] - mu[l]) ** 2) / (2 * sigmasq[l]))) / (np.sqrt(2 * np.pi * sigmasq[l]))
+            
             P_L_Y[idxl] = g[idx] * P_L_N[idxl]
 
         P_L_Y_norm[:, :, :] += P_L_Y[:, :, :, l]
+        
+    if np.max(P_L_Y[...,0]) < Epsilon:
+        print('Esta es mi mu:', mu)
+        print('Esta es mi varianza:', sigmasq)
 
     for l in range(nclasses):
         P_L_Y[:, :, :, l] = P_L_Y[:, :, :, l]/P_L_Y_norm
 
-    P_L_Y[np.isnan(P_L_Y)] = 0
+    #P_L_Y[np.isnan(P_L_Y)] = 0
     # P_L_Y[P_L_Y < 0] = 0
 
     return P_L_Y
@@ -353,6 +369,8 @@ def update_param(image, P_L_Y, mu, nclasses):
     denm = np.zeros(image.shape + (nclasses,))
 
     for l in range(nclasses):
+        print('This is the max PLY', P_L_Y[...,l].max(), 'label', l)
+        print('This is the min PLY', P_L_Y[...,l].min(), 'label', l)
         for idx in ndindex(image.shape[:3]):
             idxl = idx + (l,)
             mu_num[idxl] = (P_L_Y[idxl] * image[idx])
@@ -361,7 +379,9 @@ def update_param(image, P_L_Y, mu, nclasses):
 
         mu_upd[l] = np.sum(mu_num[:, :, :, l]) / np.sum(denm[:, :, :, l])
         var_upd[l] = np.sum(var_num[:, :, :, l]) / np.sum(denm[:, :, :, l])
-
+#        if var_upd[l] < 1e-6:
+#            var_upd[l] = 1e-6
+            
         print('updated means and variances per class')
         print('class: ', l)
         print('updated_mu:', mu_upd[l])
@@ -375,5 +395,5 @@ if __name__ == '__main__':
     # test_initialize_param_uniform()
     # test_negloglikelihood()
     # initial_segmentation, final_segmentation = test_greyscale_image()
-    seg_init, final_segmentation = test_greyscale_iter()
+    seg_init, final_segmentation, mu, sigmasq = test_greyscale_iter()
     # segmented = test_ImageSegmenter()
