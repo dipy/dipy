@@ -143,6 +143,8 @@ class AffineMap(object):
         if self.affine is None:
             self.affine_inv = None
             return
+        if np.any(np.isnan(affine)):
+            raise AffineInversionError('Affine contains invalid elements')
         try:
             self.affine_inv = npl.inv(affine)
         except npl.LinAlgError:

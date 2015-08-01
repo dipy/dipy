@@ -793,15 +793,19 @@ def test_affine_transforms_2d():
 
     # Test exception is raised when the affine transform matrix is not valid
     invalid = np.zeros((2, 2), dtype=np.float64)
+    invalid_nan = np.zeros((3, 3), dtype=np.float64)
+    invalid_nan[1, 1] = np.nan
     shape = np.array(codomain_shape, dtype=np.int32)
-    # Exceptions from warp_2d
+    # Exceptions from transform_2d
     assert_raises(ValueError, vfu.transform_2d_affine, circle, shape, invalid)
     assert_raises(ValueError, vfu.transform_2d_affine, circle, shape, invalid)
     assert_raises(ValueError, vfu.transform_2d_affine, circle, shape, invalid)
-    # Exceptions from warp_2d_nn
+    assert_raises(ValueError, vfu.transform_2d_affine, circle, shape, invalid_nan)
+    # Exceptions from transform_2d_nn
     assert_raises(ValueError, vfu.transform_2d_affine_nn, circle, shape, invalid)
     assert_raises(ValueError, vfu.transform_2d_affine_nn, circle, shape, invalid)
     assert_raises(ValueError, vfu.transform_2d_affine_nn, circle, shape, invalid)
+    assert_raises(ValueError, vfu.transform_2d_affine_nn, circle, shape, invalid_nan)
 
 
 def test_affine_transforms_3d():
@@ -880,15 +884,19 @@ def test_affine_transforms_3d():
 
     # Test exception is raised when the affine transform matrix is not valid
     invalid = np.zeros((3, 3), dtype=np.float64)
+    invalid_nan = np.zeros((4, 4), dtype=np.float64)
+    invalid_nan[1, 1] = np.nan
     shape = np.array(codomain_shape, dtype=np.int32)
-    # Exceptions from transform_2d
+    # Exceptions from transform_3d_affine
     assert_raises(ValueError, vfu.transform_3d_affine, sphere, shape, invalid)
     assert_raises(ValueError, vfu.transform_3d_affine, sphere, shape, invalid)
     assert_raises(ValueError, vfu.transform_3d_affine, sphere, shape, invalid)
-    # Exceptions from transform_2d_nn
+    assert_raises(ValueError, vfu.transform_3d_affine, sphere, shape, invalid_nan)
+    # Exceptions from transform_3d_affine_nn
     assert_raises(ValueError, vfu.transform_3d_affine_nn, sphere, shape, invalid)
     assert_raises(ValueError, vfu.transform_3d_affine_nn, sphere, shape, invalid)
     assert_raises(ValueError, vfu.transform_3d_affine_nn, sphere, shape, invalid)
+    assert_raises(ValueError, vfu.transform_3d_affine_nn, sphere, shape, invalid_nan)
 
 
 def test_compose_vector_fields_2d():

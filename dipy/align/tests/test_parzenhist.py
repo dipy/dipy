@@ -330,7 +330,13 @@ def test_joint_pdf_gradients_dense():
     # they approximately point in the same direction by testing if the angle
     # they form is close to zero.
     h = 1e-4
-    for ttype in factors:
+
+    # Make sure dictionary entries are processed in the same order regardless of
+    # the platform. Otherwise any random numbers drawn within the loop would make
+    # the test non-deterministic even if we fix the seed before the loop.
+    # Right now, this test does not draw any samples, but we still sort the entries
+    # to prevent future related failures.
+    for ttype in sorted(factors):
         dim = ttype[1]
         if dim == 2:
             nslices = 1
@@ -406,7 +412,14 @@ def test_joint_pdf_gradients_dense():
 
 def test_joint_pdf_gradients_sparse():
     h = 1e-4
-    for ttype in factors:
+
+    # Make sure dictionary entries are processed in the same order regardless of
+    # the platform. Otherwise any random numbers drawn within the loop would make
+    # the test non-deterministic even if we fix the seed before the loop.
+    # Right now, this test does not draw any samples, but we still sort the entries
+    # to prevent future related failures.
+
+    for ttype in sorted(factors):
         dim = ttype[1]
         if dim == 2:
             nslices = 1
