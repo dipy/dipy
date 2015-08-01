@@ -4,6 +4,40 @@ from dipy.tracking.streamlinespeed import set_number_of_points
 from dipy.tracking.streamlinespeed import length
 
 
+def count(streamlines):
+    """ Return the total number of streamlines
+
+    Parameters
+    ----------
+    streamlines: sequence
+        Sequence (list) of numpy arrays
+
+    Returns
+    -------
+    no_streamlines: int
+    """
+    if streamlines == []:
+        return 0
+    return len(streamlines)
+
+
+def nbytes(streamlines):
+    """ Return the total size of streamlines in MBs
+
+    Parameters
+    ----------
+    streamlines: sequence
+        Sequence (list) of numpy arrays
+
+    Returns
+    -------
+    mbytes: int
+    """
+    if streamlines == []:
+        return 0
+    return np.sum([s.nbytes for s in streamlines]) / 1024. ** 2
+
+
 def unlist_streamlines(streamlines):
     """ Return the streamlines not as a list but as an array and an offset
 
