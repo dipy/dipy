@@ -227,7 +227,8 @@ def test_dki_directions():
     pam = dki.dki_directions(crossing_ref, sphere, alpha=alpha,
                              relative_peak_threshold=0.1,
                              min_separation_angle=20, mask=None,
-                             return_odf=True, normalize_peaks=False, npeaks=3)
+                             return_odf=True, normalize_peaks=False, npeaks=3,
+                             gtol=None)
 
     # Check if detected two fiber directions
     Ndetect_peaks = 0.0
@@ -236,3 +237,12 @@ def test_dki_directions():
         Ndetect_peaks = Ndetect_peaks + v_norm
 
     assert_almost_equal(Ndetect_peaks, 2.)
+    
+    # Check if convergence is working propertly
+    pam = dki.dki_directions(crossing_ref, sphere, alpha=alpha,
+                             relative_peak_threshold=0.1,
+                             min_separation_angle=20, mask=None,
+                             return_odf=True, normalize_peaks=False, npeaks=3)
+
+    # Since two fiber have the same weight their values have to be equal.
+    assert_almost_equal(pam.peak_values[0], pam.peak_values[0])

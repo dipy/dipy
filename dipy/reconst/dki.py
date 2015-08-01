@@ -19,9 +19,9 @@ from dipy.reconst.dti import (TensorFit, fractional_anisotropy,
 
 from dipy.reconst.utils import dki_design_matrix as design_matrix
 from dipy.utils.six.moves import range
+from dipy.core.geometry import (sphere2cart, cart2sphere)
 from dipy.data import get_sphere
 from ..core.gradients import gradient_table
-from ..core.geometry import vector_norm
 from ..core.sphere import Sphere
 from .vec_val_sum import vec_val_vect
 from ..core.onetime import auto_attr
@@ -827,8 +827,8 @@ def diffusion_kurtosis_odf(dki_params, sphere, alpha=4):
 
 
 def _dki_odf_core(n, kt, U, alpha=4):
-    """ Compute the DKI based ODF estimation of a voxel along the given
-    directions n
+    """ Helper function thar compute the DKI based ODF estimation of a voxel
+    along the given directions n
     
     Parameters
     ----------
@@ -841,6 +841,11 @@ def _dki_odf_core(n, kt, U, alpha=4):
         where \overline{D} is the mean diffusivity and DT the diffusion tensor
     alpha : float, optional
         Radial weighting power. Default is 4.
+    
+    Returns
+    -------
+    dki_odf : float
+        The DKI-ODF value for direction n.
     """
     # Compute elements of matrix V
     Un = np.dot(U, n)
@@ -955,7 +960,7 @@ def Wcons(k_elements):
 
 def dki_directions(dki_params, sphere, alpha=4, relative_peak_threshold=0.1,
                      min_separation_angle=20, mask=None, return_odf=False,
-                     normalize_peaks=False, npeaks=3):
+                     normalize_peaks=False, npeaks=3, gtol=1e-5):
     """ Estimation of fiber direction based on diffusion kurtosis imaging
     (DKI). Fiber directions are estimated as the maxima of the orientation
     distribution function [Jen2014]. This function is based on the work done by
@@ -991,6 +996,10 @@ def dki_directions(dki_params, sphere, alpha=4, relative_peak_threshold=0.1,
         If true, all peak values are calculated relative to `max(odf)`.
     npeaks : int, optional
         Maximum number of peaks found (default 3 peaks).
+    gtol : float, optional
+        Degree gradient must be less than gtol before succesful termination.
+        If gtol is None, fiber direction has the precision of the given sphere
+        class instance
 
     Returns
     -------
@@ -1053,19 +1062,27 @@ def dki_directions(dki_params, sphere, alpha=4, relative_peak_threshold=0.1,
             odf_array[idx] = odf
 
         # First estimate of the fiber direction from sphere vertices
-        direction, pk, ind = peak_directions(odf, sphere,
-                                             relative_peak_threshold,
-                                             min_separation_angle)
+        di, pk, ind = peak_directions(odf, sphere, relative_peak_threshold,
+                                      min_separation_angle)
 
         if pk.shape[0] != 0:
+            n = min(npeaks, pk.shape[0])
             # Direction convergence
-            
+            if gtol is not None:
+                for p in range(n):
+                    r, theta, phi = cart2sphere(di[p, 0], di[p, 1], di[p, 2])
+                    ang = np.array([theta, phi])
+                    ang[:] = opt.fmin_bfgs(_dki_odf_converge, ang,
+                                           args=(kt[idx], U, alpha),
+                                           gtol=gtol, disp=False,
+                                           retall=False)
+                    di[p] = np.array(sphere2cart(1., ang[0], ang[1]))
+                    pk[p] = _dki_odf_core(di[p], kt[idx], U, alpha) 
 
             # Saving directions
             global_max = max(global_max, pk[0])
-            n = min(npeaks, pk.shape[0])
             qa_array[idx][:n] = pk[:n] - odf.min()
-            peak_dirs[idx][:n] = direction[:n]
+            peak_dirs[idx][:n] = di[:n]
             peak_indices[idx][:n] = ind[:n]
             peak_values[idx][:n] = pk[:n]
 
@@ -1086,3 +1103,37 @@ def dki_directions(dki_params, sphere, alpha=4, relative_peak_threshold=0.1,
         pam.odf = odf_array
 
     return pam
+
+
+def _dki_odf_converge(ang, kt, U, alpha=4):
+    """ Helper function that computes the DKI based ODF estimation of a voxel
+    along a given directions in polar coordinates.
+
+    Parameters
+    ----------
+    ang : array (2,)
+        arrays containing the two polar angles
+    kt : array (15,)
+        elements of the kurtosis tensor of the voxel.
+    U : array (3, 3)
+        dimensionless tensor defined by $U = \overline{D} \times DT^{-1}$,
+        where \overline{D} is the mean diffusivity and DT the diffusion tensor
+    alpha : float, optional
+        Radial weighting power. Default is 4.
+
+    Returns
+    -------
+    dki_odf : float
+        The negated DKI-ODF value for the given direction.
+    
+    Notes
+    -----
+    This function is useful to refine the ODF maxima directions beyond the
+    precision of directions samples in the given sphere object
+    
+    See also
+    --------
+    dipy.reconst.dki.dki_directions
+    """
+    n = np.array(sphere2cart(1, ang[0], ang[1]))
+    return - _dki_odf_core(n, kt, U, alpha=alpha)
