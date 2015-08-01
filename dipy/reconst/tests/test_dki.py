@@ -222,7 +222,7 @@ def _dki_odf_non_vectorized(n, W, U, a):
 def test_dki_directions():
     # define parameters
     alpha = 4
-    sphere = get_sphere('symmetric362').subdivide(1)
+    sphere = get_sphere('symmetric362')
 
     pam = dki.dki_directions(crossing_ref, sphere, alpha=alpha,
                              relative_peak_threshold=0.1,
