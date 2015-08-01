@@ -12,7 +12,9 @@ from dipy.tracking.streamline import (set_number_of_points,
                                       unlist_streamlines,
                                       center_streamlines,
                                       transform_streamlines,
-                                      select_random_set_of_streamlines)
+                                      select_random_set_of_streamlines,
+                                      count,
+                                      nbytes)
 
 
 streamline = np.array([[82.20181274,  91.3650589 ,  43.15737152],
@@ -405,6 +407,17 @@ def test_select_streamlines():
     new_streamlines = select_random_set_of_streamlines(streamlines, 4)
     assert_equal(len(new_streamlines), 3)
 
+
+def test_size_and_nbytes():
+
+    streamlines = []
+    assert_equal(count(streamlines), 0)
+    assert_equal(nbytes(streamlines), 0)
+
+    A = np.array([[1, 2, 3], [1, 2, 3]], dtype=np.float64)
+    streamlines = [A for i in range(10)]
+    assert_equal(count(streamlines), 10)
+    assert_equal(nbytes(streamlines), (10 * 6 * 8) / 1024. ** 2)
 
 if __name__ == '__main__':
     run_module_suite()
