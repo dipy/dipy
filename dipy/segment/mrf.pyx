@@ -12,6 +12,7 @@ cdef extern from "dpy_math.h" nogil:
     double sqrt(double)
     double log(double)
     double exp(double)
+    double abs(double)
 
 
 class ConstantObservationModel(object):
@@ -58,35 +59,34 @@ class ConstantObservationModel(object):
 
     def seg_stats(self, input_image, seg_image, nclass):
         r""" Mean and standard variation for 3 tissue classes
-    
+
         1 is CSF
         2 is grey matter
         3 is white matter
-    
+
         Parameters
         ----------
         input_image : ndarray of grey level T1 image
         seg_image : ndarray of initital segmentation, also an image
         nclass : float numeber of classes (three in most cases)
-    
+
         Returns
         -------
         mu, std, var : ndarray of dimensions 1x3
             Mean, standard deviation and variance for every class
-    
+
         """
         mu = np.zeros(nclass)
         std = np.zeros(nclass)
         var = np.zeros(nclass)
-    
+
         for i in range(0, nclass):
-    
+
             H = input_image[seg_image == i]
-    
+
             mu[i] = np.mean(H, -1)
             std[i] = np.std(H, -1)
             var[i] = np.var(H, -1)
-
 
         return mu, std, var
 
@@ -104,9 +104,9 @@ class ConstantObservationModel(object):
 
         nloglike = np.zeros(image.shape + (nclasses,), dtype=np.float64)
         mask = np.where(image > 0, 1, 0)
-        Epsilon = 1e-8      # Maximum precision for double.    
+        Epsilon = 1e-8      # Maximum precision for double.
         Epsilon_sq = 1e-16  # We assume images normalized to 0-1
-        
+
         for idx in ndindex(image.shape):
 
             for l in range(nclasses):
@@ -169,7 +169,7 @@ class ConstantObservationModel(object):
     def prob_image(self, img, nclasses, mu, sigmasq, P_L_N):
         r""" Conditional probability of the label given the image
         This is for equation 27 of the Zhang paper
-    
+
         Parameters
         -----------
         img : ndarray 3D
@@ -183,12 +183,12 @@ class ConstantObservationModel(object):
         P_L_N : ndarray 4D
             probability of the label given the neighborhood. Previously
             computed by function prob_neigh
-    
+
         Returns
         --------
         P_L_Y : ndarray 4D
             Probability of the label given the input image
-    
+
         """
         # probability of the tissue label (from the 3 classes) given the
         # voxel
@@ -196,51 +196,35 @@ class ConstantObservationModel(object):
         P_L_Y_norm = np.zeros_like(img)
         # normal density equation 11 of the Zhang paper
         g = np.zeros_like(img)
-        # mask = np.where(img > 0, 1, 0)
-        Epsilon = 1e-8
-        Epsilon_sq = 1e-16
-    
-    
+
         for l in range(nclasses):
-            for idx in ndindex(img.shape[:3]):
-                idxl = idx + (l,)
-    
-                if sigmasq[l] < Epsilon_sq:
-                    if np.abs(img[idx] - mu[l]) < Epsilon:
-                        g[idx] = 1
-                    else:
-                        g[idx] = 0
-                else:
-                    g[idx] = (np.exp(-((img[idx] - mu[l]) ** 2) / (2 * sigmasq[l]))) / (np.sqrt(2 * np.pi * sigmasq[l]))
-                
-                P_L_Y[idxl] = g[idx] * P_L_N[idxl]
-    
+            _prob_image(img, g, mu, sigmasq, l, P_L_N, P_L_Y)
             P_L_Y_norm[:, :, :] += P_L_Y[:, :, :, l]
-    
+
         for l in range(nclasses):
             P_L_Y[:, :, :, l] = P_L_Y[:, :, :, l]/P_L_Y_norm
-    
+
         return P_L_Y
-    
-    
+
+
     def update_param(self, image, P_L_Y, mu, nclasses):
         r""" Updates the means and the variances in each iteration for all the
         labels. This is for equations 25 and 26 of the Zhang paper
-    
+
         Parameters
         -----------
         image : ndarray
             Input T1 grey scale image
-    
+
         P_L_Y : ndarray
             Probability of the label given the input image computed by the
             Expectation Maximization algorithm.
-    
+
         Returns
         --------
         mu_upd : 1x3 ndarray - mean of each tissue class
         var_upd : 1x3 ndarray - variance of each tissue class
-    
+
         """
         # temporary mu and var files to compute the update
         mu_upd = np.zeros(nclasses)
@@ -248,23 +232,23 @@ class ConstantObservationModel(object):
         mu_num = np.zeros(image.shape + (nclasses,))
         var_num = np.zeros(image.shape + (nclasses,))
         denm = np.zeros(image.shape + (nclasses,))
-    
+
         for l in range(nclasses):
-            
+
             for idx in ndindex(image.shape[:3]):
                 idxl = idx + (l,)
                 mu_num[idxl] = (P_L_Y[idxl] * image[idx])
                 var_num[idxl] = (P_L_Y[idxl] * (image[idx] - mu[l]) ** 2)
                 denm[idxl] = P_L_Y[idxl]
-    
+
             mu_upd[l] = np.sum(mu_num[:, :, :, l]) / np.sum(denm[:, :, :, l])
             var_upd[l] = np.sum(var_num[:, :, :, l]) / np.sum(denm[:, :, :, l])
-                
+
             print('updated means and variances per class')
             print('class: ', l)
             print('updated_mu:', mu_upd[l])
             print('updated_var:', var_upd[l])
-    
+
         return mu_upd, var_upd
 
 
@@ -344,6 +328,37 @@ cdef void _prob_neighb_perclass(double[:, :, :] image, double[:, :, :] seg,
 
                 #P_L_N[x, y, z, l] = vox_prob
                 P_L_N[x, y, z] = vox_prob
+
+
+cdef void _prob_image(double[:, :, :] image, double[:, :, :] gaussian,
+                      double[:] mu, double[:] sigmasq, int classid,
+                      double[:, :, :, :] P_L_N,
+                      double[:, :, :, :] P_L_Y) nogil:
+
+    cdef:
+        cnp.npy_intp nx = image.shape[0]
+        cnp.npy_intp ny = image.shape[1]
+        cnp.npy_intp nz = image.shape[2]
+        cnp.npy_intp nneigh = 6
+        cnp.npy_intp l = classid
+        cnp.npy_intp x, y, z, xx, yy, zz
+
+        double eps = 1e-8
+        double eps_sq = 1e-16
+
+    for x in range(nx):
+        for y in range(ny):
+            for z in range(nz):
+
+                if sigmasq[l] < eps_sq:
+                    if abs(image[x, y, z] - mu[l]) < eps:
+                        gaussian[x, y, z] = 1
+                    else:
+                        gaussian[x, y, z] = 0
+                else:
+                    gaussian[x, y, z] = (exp(-((image[x, y, z] - mu[l]) ** 2) / (2 * sigmasq[l]))) / (sqrt(2 * NPY_PI * sigmasq[l]))
+
+                P_L_Y[x, y, z, l] = gaussian[x, y, z] * P_L_N[x, y, z, l]
 
 
 class IteratedConditionalModes(object):
@@ -482,7 +497,7 @@ cdef void _icm_ising(double[:,:,:,:] nloglike, double beta, double[:,:,:] seg) n
         for y in range(ny):
             for z in range(nz):
                 # Select the best label for this voxel (x, y, z)
-                
+
                 best_class = -1
                 for k in range(nclasses):
                     this_energy = nloglike[x, y, z, k]
@@ -502,7 +517,7 @@ cdef void _icm_ising(double[:,:,:,:] nloglike, double beta, double[:,:,:] seg) n
                             this_energy -= beta
                         else:
                             this_energy += beta
-                    
+
                     if (best_class == -1) or (this_energy < min_energy):
                         min_energy = this_energy
                         best_class = k
