@@ -5,6 +5,7 @@ from dipy.align.streamlinear import whole_brain_slr
 from dipy.segment.bundles import recognize_bundles
 from dipy.tracking.streamline import transform_streamlines
 from nibabel import trackvis as tv
+from psutil import phymem_usage
 
 
 def load_trk(fname):
@@ -70,8 +71,14 @@ def recognize_bundles_flow(streamline_files, model_bundle_files,
     if out_dir == 'same':
         pass
 
+    pmu = phymem_usage()
+    print('Memory usage', pmu.free / 1024 ** 2)
+
     print('### Recognition of bundles ###')
     model_streamlines, hrd_model = load_trk(model_streamlines_file)
+
+    pmu = phymem_usage()
+    print('Memory usage', pmu.free / 1024 ** 2)
 
     print('# Streamline files')
     for sf in sfiles:
@@ -81,6 +88,10 @@ def recognize_bundles_flow(streamline_files, model_bundle_files,
                               maxiter=150, select_random=50000,
                               verbose=verbose)
         moved_streamlines, mat, centroids1, centroids2 = ret
+
+        pmu = phymem_usage()
+        print('Memory usage', pmu.free / 1024 ** 2)
+
         print(mat)
         if disp:
             # show_bundles(model_streamlines, streamlines)
@@ -98,10 +109,13 @@ def recognize_bundles_flow(streamline_files, model_bundle_files,
                 local_slr=bool(local_slr),
                 verbose=verbose)
 
-            # bundle_in_model = transform_streamlines(extracted, np.dot(mat2, mat))
+            pmu = phymem_usage()
+            print('Memory usage', pmu.free / 1024 ** 2)
+
+            # bundle_in_model = transform_streamlines(extracted,
+            #                                         np.dot(mat2, mat))
             if disp:
                 show_bundles(model_bundle, extracted_bundle)
-
                 # show_bundles(model_streamlines, moved_streamlines)
 
     print('# Model whole brain streamlines file')
