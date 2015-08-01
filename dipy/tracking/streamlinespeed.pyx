@@ -410,7 +410,7 @@ def compress_streamlines(streamlines, tol_error=0.01, max_segment_length=10):
 
     The compression also ensures that two consecutive points won't be too far
     from each other (precisely less or equal than `max_segment_length`mm).
-    This is purely to speed up the linearization process [Rheault15]_. A low
+    This is a tradeoff to speed up the linearization process [Rheault15]_. A low
     value will result in a faster linearization but low compression, whereas
     a high value will result in a slower linearization but high compression.
 
@@ -423,7 +423,8 @@ def compress_streamlines(streamlines, tol_error=0.01, max_segment_length=10):
         to 0.01mm for deterministic streamlines and 0.1mm for probabilitic
         streamlines.
     max_segment_length : float (optional)
-        Maximum length of any given segment produced by the compression.
+        Maximum length in mm of any given segment produced by the compression.
+        The default is 10mm. (In [Presseau15]_, they used a value of `np.inf`).
 
     Returns
     -------
