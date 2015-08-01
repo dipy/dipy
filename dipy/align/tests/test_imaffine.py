@@ -172,6 +172,12 @@ def test_align_origins_3d():
 
 def test_affreg_all_transforms():
     # Test affine registration using all transforms with typical settings
+
+    # Make sure dictionary entries are processed in the same order regardless of
+    # the platform. Otherwise any random numbers drawn within the loop would make
+    # the test non-deterministic even if we fix the seed before the loop.
+    # Right now, this test does not draw any samples, but we still sort the entries
+    # to prevent future related failures.
     for ttype in sorted(factors):
         dim = ttype[1]
         if dim == 2:
@@ -265,6 +271,11 @@ def test_mi_gradient():
     np.random.seed(2022966)
     # Test the gradient of mutual information
     h = 1e-5
+    # Make sure dictionary entries are processed in the same order regardless of
+    # the platform. Otherwise any random numbers drawn within the loop would make
+    # the test non-deterministic even if we fix the seed before the loop:
+    # in this case the samples are drawn with `np.random.randn` below
+
     for ttype in sorted(factors):
         transform = regtransforms[ttype]
         dim = ttype[1]
