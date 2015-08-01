@@ -230,7 +230,9 @@ def test_dki_directions():
                              return_odf=True, normalize_peaks=False, npeaks=3)
 
     # Check if detected two fiber directions
-    v_norm = np.linalg.norm(pam.peak_dirs, axis=-1)
-    Ndetect_peaks = sum(v_norm)
+    Ndetect_peaks = 0.0
+    for ps in pam.peak_dirs: 
+        v_norm = np.linalg.norm(ps)
+        Ndetect_peaks = Ndetect_peaks + v_norm
 
     assert_almost_equal(Ndetect_peaks, 2.)
