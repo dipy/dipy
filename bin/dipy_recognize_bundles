@@ -5,11 +5,10 @@ from dipy.workflows.segment import recognize_bundles_flow
 parser = arg.ArgumentParser()
 
 parser.add_argument('streamlines', action='store')
-parser.add_argument('--out_dir', action='store', dest='out_dir')
 parser.add_argument('--model_bundles', action='store', dest='model_bundles')
 parser.add_argument('--model_streamlines', action='store',
                     dest='model_streamlines')
-parser.add_argument('--mat', action='store', dest='mat')
+parser.add_argument('--out_dir', action='store', dest='out_dir')
 
 
 if __name__ == '__main__':

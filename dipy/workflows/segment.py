@@ -1,11 +1,11 @@
 import os
+import numpy as np
 from dipy.utils.six import string_types
 from glob import glob
 from dipy.align.streamlinear import whole_brain_slr
 from dipy.segment.bundles import recognize_bundles
 from dipy.tracking.streamline import transform_streamlines
 from nibabel import trackvis as tv
-from psutil import phymem_usage
 
 
 def load_trk(fname):
@@ -58,7 +58,7 @@ def recognize_bundles_flow(streamline_files, model_bundle_files,
                            local_slr=str(True)):
 
     verbose = True
-    disp = True
+    disp = False
 
     if isinstance(streamline_files, string_types):
         sfiles = glob(streamline_files)
@@ -71,14 +71,8 @@ def recognize_bundles_flow(streamline_files, model_bundle_files,
     if out_dir == 'same':
         pass
 
-    pmu = phymem_usage()
-    print('Memory usage', pmu.free / 1024 ** 2)
-
     print('### Recognition of bundles ###')
     model_streamlines, hrd_model = load_trk(model_streamlines_file)
-
-    pmu = phymem_usage()
-    print('Memory usage', pmu.free / 1024 ** 2)
 
     print('# Streamline files')
     for sf in sfiles:
@@ -88,9 +82,6 @@ def recognize_bundles_flow(streamline_files, model_bundle_files,
                               maxiter=150, select_random=50000,
                               verbose=verbose)
         moved_streamlines, mat, centroids1, centroids2 = ret
-
-        pmu = phymem_usage()
-        print('Memory usage', pmu.free / 1024 ** 2)
 
         print(mat)
         if disp:
@@ -109,14 +100,29 @@ def recognize_bundles_flow(streamline_files, model_bundle_files,
                 local_slr=bool(local_slr),
                 verbose=verbose)
 
-            pmu = phymem_usage()
-            print('Memory usage', pmu.free / 1024 ** 2)
+            extracted_bundle_initial = transform_streamlines(
+                                            extracted_bundle,
+                                            np.linalg.inv(np.dot(mat2, mat))
+                                                            )
 
-            # bundle_in_model = transform_streamlines(extracted,
-            #                                         np.dot(mat2, mat))
             if disp:
                 show_bundles(model_bundle, extracted_bundle)
                 # show_bundles(model_streamlines, moved_streamlines)
+
+            if out_dir == 'same':
+                sf_bundle_file = os.path.join(os.path.dirname(sf),
+                                              os.path.basename(mb))
+            else:
+                sf_bundle_file = os.path.join(
+                                        out_dir,
+                                        os.path.basename(os.path.dirname(sf)),
+                                        os.path.basename(mb)
+                                             )
+            if not os.path.exists(os.path.dirname(sf_bundle_file)):
+                os.makedirs(os.path.dirname(sf_bundle_file))
+            save_trk(sf_bundle_file, extracted_bundle_initial, hdr=hdr)
+            print('Bundle saved in %s ' % (sf_bundle_file,))
+
 
     print('# Model whole brain streamlines file')
     print(model_streamlines_file)
