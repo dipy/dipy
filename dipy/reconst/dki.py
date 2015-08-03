@@ -2560,7 +2560,7 @@ def dki_directions(dki_params, sphere, alpha=4, relative_peak_threshold=0.1,
                second and third coordinates of the eigenvector
             3) Fifteen elements of the kurtosis tensor
     sphere : Sphere class instance, optional
-        The sphere providing direction of samples for initial evaluation of the
+        The sphere providing sample directions for initial evaluation of the
         DKI-ODF.
     alpha : float, optional
         Radial weighting power of the orientation distribution function.
@@ -2581,9 +2581,9 @@ def dki_directions(dki_params, sphere, alpha=4, relative_peak_threshold=0.1,
     npeaks : int, optional
         Maximum number of peaks found (default 3 peaks).
     gtol : float, optional
-        Degree gradient must be less than gtol before succesful termination.
-        If gtol is None, fiber direction has the precision of the given sphere
-        class instance
+        Degree gradient must be less than gtol before succesful termination. If
+        gtol is None, fiber direction is directly taken from the initial
+        sampled directions of the given sphere object
 
     Returns
     -------
@@ -2690,8 +2690,8 @@ def dki_directions(dki_params, sphere, alpha=4, relative_peak_threshold=0.1,
 
 
 def _dki_odf_converge(ang, kt, U, alpha=4):
-    """ Helper function that computes the DKI based ODF estimation of a voxel
-    along a given directions in polar coordinates.
+    """ Helper function that computes the negate of the DKI based ODF
+    estimation of a voxel along a given directions in polar coordinates.
 
     Parameters
     ----------
@@ -2712,8 +2712,8 @@ def _dki_odf_converge(ang, kt, U, alpha=4):
     
     Notes
     -----
-    This function is useful to refine the ODF maxima directions beyond the
-    precision of directions samples in the given sphere object
+    This function is used to refine the ODF maxima directions beyond the
+    precision of the directions samples in a given sphere object
     
     See also
     --------
