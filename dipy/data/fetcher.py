@@ -638,3 +638,125 @@ def read_mni_template(contrast="T2"):
         msg = "Could not find the MNI template files, "
         msg += "please run `fetch_mni_template` first"
         print(msg)
+
+
+def fetch_cenir_multib(with_raw=False):
+    """
+    Fetch 'HCP-like' data, collected at multiple b-values
+
+    Parameters
+    ----------
+    with_raw : bool
+        Whether to fetch the raw data. Per default, this is False, which means
+        that only eddy-current/motion corrected data is fetched
+    """
+    folder = pjoin(dipy_home, 'cenir_multib')
+
+    fname_list = ['4D_dwi_eddycor_B200.nii.gz',
+                  'dwi_bvals_B200', 'dwi_bvecs_B200',
+                  '4D_dwieddycor_B400.nii.gz',
+                  'bvals_B400', 'bvecs_B400',
+                  '4D_dwieddycor_B1000.nii.gz',
+                  'bvals_B1000', 'bvecs_B1000',
+                   '4D_dwieddycor_B2000.nii.gz',
+                  'bvals_B2000', 'bvecs_B2000',
+                  '4D_dwieddycor_B3000.nii.gz',
+                  'bvals_B3000', 'bvecs_B3000']
+
+    md5_list = ['fd704aa3deb83c1c7229202cb3db8c48',
+                '80ae5df76a575fe5bf9f1164bb0d4cfb',
+                '18e90f8a3e6a4db2457e5b1ba1cc98a9',
+                '3d0f2b8ef7b6a4a3aa5c4f7a90c9cfec',
+                'c38056c40c9cc42372232d6e75c47f54',
+                '810d79b4c30cb7dff3b2000017d5f72a',
+                'dde8037601a14436b2173f4345b5fd17',
+                '97de6a492ae304f39e0b418b6ebac64c',
+                'f28a0faa701bdfc66e31bde471a5b992',
+                'c5e4b96e3afdee99c0e994eff3b2331a',
+                '9c83b8d5caf9c3def240f320f2d2f56c',
+                '05446bd261d57193d8dbc097e06db5ff',
+                'f0d70456ce424fda2cecd48e64f3a151',
+                '336accdb56acbbeff8dac1748d15ceb8',
+                '27089f3baaf881d96f6a9da202e3d69b']
+    if with_raw:
+        fname_list.extend(['4D_dwi_B200.nii.gz', '4D_dwi_B400.nii.gz',
+                            '4D_dwi_B1000.nii.gz', '4D_dwi_B2000.nii.gz',
+                            '4D_dwi_B3000.nii.gz'])
+        md5_list.extend(['a8c36e76101f2da2ca8119474ded21d5',
+                        'a0e7939f6d977458afbb2f4659062a79',
+                        '87fc307bdc2e56e105dffc81b711a808',
+                        '7c23e8a5198624aa29455f0578025d4f',
+                        '4e4324c676f5a97b3ded8bbb100bf6e5'])
+
+    files = {}
+    baseurl = \
+    'https://digital.lib.washington.edu/researchworks/bitstream/handle/1773/33311/'
+
+    for f, m in zip(fname_list, md5_list):
+        files[f] = (baseurl + f, m)
+
+    fetch_data(files, folder)
+    return files, folder
+
+
+def read_cenir_multib(bvals=None):
+    """
+    Read CENIR multi b-value data
+
+    Parameters
+    ----------
+    bvals : list
+        The b-values to read from file (200, 400, 1000, 2000, 3000).
+
+    Returns
+    -------
+    gtab : a GradientTable class instance
+    img : nibabel.Nifti1Image
+
+    Notes
+    -----
+    Details of acquisition and processing are availble
+    """
+    files, folder = fetch_cenir_multib(with_raw=False)
+    if bvals is None:
+        bvals = [200, 400, 1000, 2000, 3000]
+    file_dict = {
+    200:{'DWI': pjoin(folder, '4D_dwi_eddycor_B200.nii.gz'),
+           'bvals': pjoin(folder, 'dwi_bvals_B200'),
+           'bvecs': pjoin(folder, 'dwi_bvecs_B200')},
+    400:{'DWI': pjoin(folder, '4D_dwieddycor_B400.nii.gz'),
+           'bvals': pjoin(folder, 'bvals_B400'),
+           'bvecs': pjoin(folder, 'bvecs_B400')},
+    1000:{'DWI': pjoin(folder, '4D_dwieddycor_B1000.nii.gz'),
+           'bvals': pjoin(folder, 'bvals_B1000'),
+           'bvecs': pjoin(folder, 'bvecs_B1000')},
+    2000:{'DWI': pjoin(folder, '4D_dwieddycor_B2000.nii.gz'),
+           'bvals': pjoin(folder, 'bvals_B2000'),
+           'bvecs': pjoin(folder, 'bvecs_B2000')},
+    3000:{'DWI': pjoin(folder, '4D_dwieddycor_B3000.nii.gz'),
+           'bvals': pjoin(folder, 'bvals_B3000'),
+           'bvecs': pjoin(folder, 'bvecs_B3000')}}
+    data = []
+    bval_list = []
+    bvec_list = []
+    for bval in bvals:
+        data.append(nib.load(file_dict[bval]['DWI']).get_data())
+        bval_list.extend(np.loadtxt(file_dict[bval]['bvals']))
+        bvec_list.append(np.loadtxt(file_dict[bval]['bvecs']))
+
+    # All affines are the same, so grab the last one:
+    aff = nib.load(file_dict[bval]['DWI']).get_affine()
+    return (gradient_table(bval_list, np.concatenate(bvec_list, -1)),
+            nib.Nifti1Image(np.concatenate(data, -1), aff))
+
+
+CENIR_notes = \
+"""
+Notes
+-----
+Details of the acquisition and processing, and additional meta-data are avalible
+through `UW researchworks <https://digital.lib.washington.edu/researchworks/handle/1773/33311>`_
+"""
+
+fetch_cenir_multib.__doc__ += CENIR_notes
+read_cenir_multib.__doc__ += CENIR_notes
