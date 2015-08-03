@@ -5,7 +5,7 @@ from dipy.fixes import argparse as arg
 
 parser = arg.ArgumentParser()
 parser.add_argument('input', action='store')
-parser.add_argument('output_directory', action='store')
+parser.add_argument('--out_dir', type=str, default='')
 parser.add_argument('--save_masked', action='store_true')
 parser.set_defaults(save_masked=False)
 parser.add_argument('--radius', type=int, default=4)
@@ -14,5 +14,5 @@ parser.add_argument('--numpass', type=int, default=4)
 
 if __name__ == "__main__":
     params = parser.parse_args()
-    median_otsu_bet(params.input, params.output_directory, params.save_masked,
+    median_otsu_bet(params.input, params.out_dir, params.save_masked,
                     params.radius, params.numpass)
