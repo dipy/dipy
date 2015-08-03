@@ -2641,16 +2641,17 @@ def dki_directions(dki_params, sphere, alpha=4, relative_peak_threshold=0.1,
         # First sample of the DKI-ODF
         odf = np.zeros(len(sphere.vertices))
         for i in range(len(sphere.vertices)):
-             odf[i] = _dki_odf_core(sphere.vertices[i], kt[idx], U, alpha)
+            odf[i] = _dki_odf_core(sphere.vertices[i], kt[idx], U, alpha)
         if return_odf:
             odf_array[idx] = odf
 
         # First estimate of the fiber direction from sphere vertices
-        di, pk, ind = peak_directions(odf, sphere, relative_peak_threshold,
-                                      min_separation_angle)
+        pk, ind = local_maxima(odf, sphere.edges)
+        n = len(pk)
 
-        if pk.shape[0] != 0:
-            n = min(npeaks, pk.shape[0])
+        if n != 0:
+            di = sphere.vertices[ind]
+
             # Direction convergence
             if gtol is not None:
                 for p in range(n):
@@ -2661,7 +2662,24 @@ def dki_directions(dki_params, sphere, alpha=4, relative_peak_threshold=0.1,
                                            gtol=gtol, disp=False,
                                            retall=False)
                     di[p] = np.array(sphere2cart(1., ang[0], ang[1]))
-                    pk[p] = _dki_odf_core(di[p], kt[idx], U, alpha) 
+                    pk[p] = _dki_odf_core(di[p], kt[idx], U, alpha)
+
+            # remove small peaks
+            odf_min = odf.min()
+            odf_min = odf_min if (odf_min >= 0.) else 0.
+            values_norm = (pk - odf_min)
+            n = search_descending(values_norm, relative_peak_threshold)
+            ind = ind[:n]
+            di = di[:n]
+            pk = pk[:n]
+            
+            # Remove peaks too close together
+            di, uniq = remove_similar_vertices(di, min_separation_angle,
+                                               return_index=True)
+            pk = pk[uniq]
+            ind = ind[uniq]
+
+            n = min(npeaks, len(pk))
 
             # Saving directions
             global_max = max(global_max, pk[0])
