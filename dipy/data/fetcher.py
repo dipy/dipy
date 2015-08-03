@@ -711,7 +711,7 @@ def read_cenir_multib(bvals=None):
     Returns
     -------
     gtab : a GradientTable class instance
-    data : 4D array of the data correpsonding to `gtab`.
+    img : nibabel.Nifti1Image
 
     Notes
     -----
@@ -744,8 +744,10 @@ def read_cenir_multib(bvals=None):
         bval_list.extend(np.loadtxt(file_dict[bval]['bvals']))
         bvec_list.append(np.loadtxt(file_dict[bval]['bvecs']))
 
+    # All affines are the same, so grab the last one:
+    aff = nib.load(file_dict[bval]['DWI']).get_affine()
     return (gradient_table(bval_list, np.concatenate(bvec_list, -1)),
-            np.concatenate(data, -1))
+            nib.Nifti1Image(np.concatenate(data, -1), aff))
 
 
 CENIR_notes = \
