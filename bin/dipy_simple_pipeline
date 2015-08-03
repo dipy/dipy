@@ -1,0 +1,42 @@
+#! /usr/bin/env python
+import os
+
+from dipy.workflow.segment import median_otsu_bet
+from dipy.workflow.reconst import compute_dti_metrics
+from dipy.fixes import argparse as arg
+
+parser = arg.ArgumentParser()
+parser.add_argument('input', action='store')
+
+parser.add_argument('bvals', action='store', metavar='bvals',
+                    help='Path of the bvals file, in FSL format.')
+
+parser.add_argument('bvecs', action='store', metavar='bvecs',
+                    help='Path of the bvecs file, in FSL format.')
+
+if __name__ == "__main__":
+    params = parser.parse_args()
+    input_dir = os.path.dirname(params.input)
+    fname, ext = os.path.splitext(os.path.basename(params.input))
+
+    if fname.endswith('.nii'):
+        fname, _ = os.path.splitext(fname)
+        ext = '.nii.gz'
+
+    work_dir = os.path.join(input_dir, 'work')
+    median_otsu_bet(params.input, 'work', True, 4, 4)
+
+    # Fix this?
+    mask_fname = fname + '_mask' + ext
+    mask_path = os.path.join(work_dir, mask_fname)
+
+    metrics_dir = os.path.join(work_dir, 'metrics')
+    compute_dti_metrics(params.input, mask_path, params.bvals, params.bvecs,
+                        'work/metrics/', 'tensor.nii.gz', 'fa.nii.gz', 'ga.nii.gz',
+                        'rgb.nii.gz', 'md.nii.gz', 'ad.nii.gz', 'rd.nii.gz',
+                        'mode.nii.gz', 'tensor_evecs.nii.gz',
+                        'tensor_evals.nii.gz')
+
+
+
+
