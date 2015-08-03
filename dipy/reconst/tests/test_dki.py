@@ -246,3 +246,11 @@ def test_dki_directions():
 
     # Since two fiber have the same weight their values have to be equal.
     assert_almost_equal(pam.peak_values[0], pam.peak_values[0])
+    
+    # Check if dki fiber direction estimate is working on dki class instance
+    dkimodel = dki.DiffusionKurtosisModel(gtab_2s)
+    dkifit = dkimodel.fit(DWI)
+    dirs = dkifit.dki_directions(sphere, alpha=alpha,
+                                 relative_peak_threshold=0.1,
+                                 min_separation_angle=20, mask=None)
+    assert_almost_equal(dirs.peak_values[0, 0, 0, 0], pam.peak_values[0])

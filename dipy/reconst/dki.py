@@ -438,6 +438,65 @@ class DiffusionKurtosisFit(TensorFit):
         """
         return diffusion_kurtosis_odf(self.model_params, sphere, alpha)
 
+    def dki_directions(self, sphere, alpha=4, relative_peak_threshold=0.1,
+                       min_separation_angle=20, mask=None, return_odf=False,
+                       normalize_peaks=False, npeaks=3, gtol=1e-5):
+        """ Estimation of fiber directions based on diffusion kurtosis imaging
+        (DKI). Fiber directions are estimated as the maxima of the DKI
+        orientation distribution function [Jen2014]. This function is based on 
+        the work done by [Raf2015]_.
+
+        Parameters
+        ----------
+        sphere : Sphere class instance, optional
+            The sphere providing sample directions for initial evaluation of
+            the DKI-ODF.
+        alpha : float, optional
+            Radial weighting power of the orientation distribution function.
+            Default is 4 according to [Jen2014]_ and [Raf2015]_.
+        relative_peak_threshold : float, optional
+            Only return peaks greater than ``relative_peak_threshold * m``
+            where m is the largest peak.
+        min_separation_angle : float in [0, 90], optinal
+            The minimum distance between directions. If two peaks are too close
+            only the larger of the two is returned.
+        mask : array, optional
+            If `mask` is provided, voxels that are False in `mask` are skipped
+            and no peaks are returned.
+        return_odf : bool, optional
+            If True, the odfs sampled on sphere directions are returned.
+        normalize_peaks : bool, optional
+            If true, all peak values are calculated relative to `max(odf)`.
+        npeaks : int, optional
+            Maximum number of peaks found (default 3 peaks).
+        gtol : float, optional
+            Degree gradient must be less than gtol before succesful
+            termination. If gtol is None, fiber direction is directly taken
+            from the initial sampled directions of the given sphere object.
+
+        Returns
+        -------
+        pam : PeaksAndMetrics
+            An object with ``peak_directions``, ``peak_values``,
+            ``peak_indices``, ``odf`` as attributes
+
+        .. [Jen2014] Jensen, J.H., Helpern, J.A., Tabesh, A., (2014). Leading
+            non-Gaussian corrections for diffusion orientation distribution
+            function. NMR Biomed. 27, 202-211.
+            http://dx.doi.org/10.1002/nbm.3053.
+
+        .. [Raf2015] Neto Henriques, R., Correia, M.M., Nunes, R.G., Ferreira,
+            H.A. (2015). Exploring the 3D geometry of the diffusion kurtosis
+            tensor - Impact on the development of robust tractography
+            procedures and novel biomarkers. NeuroImage 111: 85-99.
+            doi:10.1016/j.neuroimage.2015.02.004
+        """
+        return dki_directions(self.model_params, sphere, alpha=4,
+                              relative_peak_threshold=0.1,
+                              min_separation_angle=20, mask=None,
+                              return_odf=False, normalize_peaks=False,
+                              npeaks=3, gtol=1e-5)
+
     def predict(self, gtab, S0=1):
         r""" Given a DKI model fit, predict the signal on the vertices of a
         gradient table
@@ -976,7 +1035,7 @@ def dki_directions(dki_params, sphere, alpha=4, relative_peak_threshold=0.1,
                second and third coordinates of the eigenvector
             3) Fifteen elements of the kurtosis tensor
     sphere : Sphere class instance, optional
-        The sphere providing direction of samples for initial evaluation of the
+        The sphere providing sample directions for initial evaluation of the
         DKI-ODF.
     alpha : float, optional
         Radial weighting power of the orientation distribution function.
@@ -997,9 +1056,9 @@ def dki_directions(dki_params, sphere, alpha=4, relative_peak_threshold=0.1,
     npeaks : int, optional
         Maximum number of peaks found (default 3 peaks).
     gtol : float, optional
-        Degree gradient must be less than gtol before succesful termination.
-        If gtol is None, fiber direction has the precision of the given sphere
-        class instance
+        Degree gradient must be less than gtol before succesful termination. If
+        gtol is None, fiber direction is directly taken from the initial
+        sampled directions of the given sphere object
 
     Returns
     -------
@@ -1106,8 +1165,8 @@ def dki_directions(dki_params, sphere, alpha=4, relative_peak_threshold=0.1,
 
 
 def _dki_odf_converge(ang, kt, U, alpha=4):
-    """ Helper function that computes the DKI based ODF estimation of a voxel
-    along a given directions in polar coordinates.
+    """ Helper function that computes the negate of the DKI based ODF
+    estimation of a voxel along a given directions in polar coordinates.
 
     Parameters
     ----------
@@ -1128,8 +1187,8 @@ def _dki_odf_converge(ang, kt, U, alpha=4):
     
     Notes
     -----
-    This function is useful to refine the ODF maxima directions beyond the
-    precision of directions samples in the given sphere object
+    This function is used to refine the ODF maxima directions beyond the
+    precision of the directions samples in a given sphere object
     
     See also
     --------
