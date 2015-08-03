@@ -55,8 +55,10 @@ def compute_dti_metrics(dwis, masks, bvalues, bvectors, out_dir, tensor,
             out_dir_path = os.path.dirname(dwi)
         elif not os.path.isabs(out_dir):
             out_dir_path = os.path.join(os.path.dirname(dwi), out_dir)
-        if not os.path.exists(out_dir_path):
-            os.makedirs(out_dir_path)
+            if not os.path.exists(out_dir_path):
+                os.makedirs(out_dir_path)
+        else:
+            out_dir_path = out_dir
 
         FA = fractional_anisotropy(tenfit.evals)
         FA[np.isnan(FA)] = 0
