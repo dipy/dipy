@@ -2652,6 +2652,17 @@ def dki_directions(dki_params, sphere, alpha=4, relative_peak_threshold=0.1,
         if n != 0:
             di = sphere.vertices[ind]
 
+            # To remove possible peak duplicates in opposite directions, we 
+            # first remove all peaks closer than 10% of the selected
+            # relative_peak_threshold
+            odf_min = odf.min()
+            odf_min = odf_min if (odf_min >= 0.) else 0.
+            values_norm = (pk - odf_min)
+            n = search_descending(values_norm, relative_peak_threshold * 0.1)
+            ind = ind[:n]
+            di = di[:n]
+            pk = pk[:n]
+
             # Direction convergence
             if gtol is not None:
                 for p in range(n):
@@ -2665,8 +2676,6 @@ def dki_directions(dki_params, sphere, alpha=4, relative_peak_threshold=0.1,
                     pk[p] = _dki_odf_core(di[p], kt[idx], U, alpha)
 
             # remove small peaks
-            odf_min = odf.min()
-            odf_min = odf_min if (odf_min >= 0.) else 0.
             values_norm = (pk - odf_min)
             n = search_descending(values_norm, relative_peak_threshold)
             ind = ind[:n]
