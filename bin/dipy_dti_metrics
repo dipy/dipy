@@ -3,7 +3,7 @@ from __future__ import division, print_function
 import os
 import logging
 
-from dipy.workflow.reconst import compute_dti_metrics
+from dipy.workflows.reconst import compute_dti_metrics
 from dipy.fixes import argparse as arg
 
 DESCRIPTION = """
