@@ -1,7 +1,8 @@
 from __future__ import division, print_function, absolute_import
 
 from glob import glob
-from os.path import join, basename, splitext
+from os.path import join, basename, splitext, dirname, isabs, exists
+from os import makedirs
 
 import nibabel as nib
 import numpy as np
@@ -10,14 +11,9 @@ from dipy.segment.mask import median_otsu
 
 
 def median_otsu_bet(input_file, out_dir, save_masked=False, median_radius=4,
-                numpass=4, autocrop=False, vol_idx=None, dilate=None):
+                    numpass=4, autocrop=False, vol_idx=None, dilate=None):
 
-    inputs = glob(input_file)
-    out_dirs = glob(out_dir)
-    if len(out_dirs) == 1:
-        out_dirs = list(out_dirs) * len(inputs)
-
-    for (fpath, out_dir_path) in zip(inputs, out_dirs):
+    for fpath in glob(input_file):
         img = nib.load(fpath)
         volume = img.get_data()
         masked, mask = median_otsu(volume, median_radius, numpass, autocrop,
@@ -29,6 +25,15 @@ def median_otsu_bet(input_file, out_dir, save_masked=False, median_radius=4,
             ext = '.nii.gz'
 
         mask_fname = fname + '_mask' + ext
+
+        if out_dir == '':
+            out_dir_path = dirname(fpath)
+        elif not isabs(out_dir):
+            out_dir_path = join(dirname(fpath), out_dir)
+            if not exists(out_dir_path):
+                makedirs(out_dir_path)
+        else:
+            out_dir_path = out_dir
 
         mask_img = nib.Nifti1Image(mask.astype(np.float32), img.get_affine())
         mask_img.to_filename(join(out_dir_path, mask_fname))
