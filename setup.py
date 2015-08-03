@@ -213,7 +213,7 @@ def main(**extra_args):
                           'dipy.sims.tests',
                           'dipy.denoise',
                           'dipy.denoise.tests',
-                          'dipy.workflow'],
+                          'dipy.workflows'],
 
           ext_modules = EXTS,
           # The package_data spec has no effect for me (on python 2.6) -- even
