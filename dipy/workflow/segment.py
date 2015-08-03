@@ -39,6 +39,6 @@ def median_otsu_bet(input_file, out_dir, save_masked=False, median_radius=4,
         mask_img.to_filename(join(out_dir_path, mask_fname))
 
         if save_masked:
-            masked_fname = fname + '_masked' + ext
+            masked_fname = fname + '_bet' + ext
             masked_img = nib.Nifti1Image(masked, img.get_affine(), img.get_header())
             masked_img.to_filename(join(out_dir_path, masked_fname))
