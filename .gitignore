@@ -25,3 +25,4 @@ dipy.egg-info/
 nibabel*egg/
 pyx-stamps
 __config__.py
+.DS_Store

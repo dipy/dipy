@@ -1,19 +1,19 @@
 from __future__ import print_function
 import numpy as np
 import numpy.testing as npt
+import nibabel.eulerangles as eulerangles
 from numpy.testing import (assert_equal,
                            assert_array_equal,
                            assert_array_almost_equal,
                            assert_raises)
-import dipy.align.imwarp as imwarp
-import dipy.align.metrics as metrics
-import dipy.align.vector_fields as vfu
-from dipy.data import get_data
-from dipy.align import floating
-import nibabel.eulerangles as eulerangles
-from dipy.align.imwarp import DiffeomorphicMap
-from dipy.align import VerbosityLevels
-from dipy.__config__ import USING_VC_SSE2, USING_GCC_SSE2
+from ...__config__ import USING_VC_SSE2, USING_GCC_SSE2
+from ...data import get_data
+from .. import floating
+from .. import imwarp as imwarp
+from .. import metrics as metrics
+from .. import vector_fields as vfu
+from .. import VerbosityLevels
+from ..imwarp import DiffeomorphicMap
 
 NO_SSE2 = not (USING_VC_SSE2 or USING_GCC_SSE2)
 
@@ -313,29 +313,6 @@ def test_optimizer_exceptions():
     #Verify exception thrown when attepting to fit the energy profile without
     #enough data
     assert_raises(ValueError, optimizer._get_energy_derivative)
-
-
-def test_scale_space_exceptions():
-    np.random.seed(2022966)
-
-    target_shape = (32, 32)
-    #create a random image
-    image = np.ndarray(target_shape, dtype=floating)
-    ns = np.size(image)
-    image[...] = np.random.randint(0, 10, ns).reshape(tuple(target_shape))
-    zeros = (image == 0).astype(np.int32)
-
-    ss = imwarp.ScaleSpace(image,3)
-
-    for invalid_level in [-1, 3, 4]:
-        assert_raises(ValueError, ss.get_image, invalid_level)
-
-    # Verify that the mask is correctly applied, when requested
-    ss = imwarp.ScaleSpace(image,3, mask0=True)
-    for level in range(3):
-        img = ss.get_image(level)
-        z = (img == 0).astype(np.int32)
-        assert_array_equal(zeros, z)
 
 
 def test_get_direction_and_spacings():

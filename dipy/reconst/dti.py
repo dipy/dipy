@@ -853,7 +853,7 @@ class TensorFit(object):
     @property
     def evecs(self):
         """
-        Returns the eigenvectors of the tensor as an array
+        Returns the eigenvectors of the tensor as an array, columnwise
         """
         evecs = self.model_params[..., 3:12]
         return evecs.reshape(self.shape + (3, 3))

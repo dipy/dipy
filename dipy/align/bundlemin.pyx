@@ -83,19 +83,14 @@ def _bundle_minimum_distance_matrix(double [:, ::1] static,
     -----------
     static: array
         Static streamlines
-
     moving: array
         Moving streamlines
-
     static_size : int
         Number of static streamlines
-
     moving_size : int
         Number of moving streamlines
-
     rows : int
         Number of points per streamline
-
     D : 2D array
         Distance matrix
 
@@ -134,16 +129,12 @@ def _bundle_minimum_distance(double [:, ::1] stat,
     -----------
     static : array
         Static streamlines
-
     moving : array
         Moving streamlines
-
     static_size : int
         Number of static streamlines
-
     moving_size : int
         Number of moving streamlines
-
     rows : int
         Number of points per streamline
 
@@ -217,8 +208,7 @@ def _bundle_minimum_distance(double [:, ::1] stat,
 
 
 def distance_matrix_mdf(streamlines_a, streamlines_b):
-    r''' Calculate distance matrix between two sets of streamlines using the
-    minimum direct flipped distance.
+    r''' Minimum direct flipped distance matrix between two streamline sets
 
     All streamlines need to have the same number of points
 
