@@ -497,6 +497,10 @@ def test_compress_streamlines():
         assert_equal(len(cstreamline_python), len(cstreamline_cython))
         assert_array_almost_equal(cstreamline_python, cstreamline_cython)
 
+        # First and last points should always be the same as the original ones.
+        assert_array_equal(cstreamline_cython[0], streamline[0])
+        assert_array_equal(cstreamline_cython[-1], streamline[-1])
+
     # Test we can set `max_segment_length` to infinity (like the C++ version)
     cstreamline_cython = compress_streamlines(streamline, max_segment_length=np.inf)
 
