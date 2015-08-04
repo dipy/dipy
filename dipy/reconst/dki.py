@@ -621,10 +621,7 @@ def mean_kurtosis(dki_params, sphere=None):
          _F2m(evals[..., 1], evals[..., 0], evals[..., 2])*Wxxzz + \
          _F2m(evals[..., 2], evals[..., 1], evals[..., 0])*Wxxyy
 
-    MK = MK.reshape(outshape)
-
-
-    return MK
+    return MK.reshape(outshape)
 
 
 def _G1m(a, b, c):
@@ -821,9 +818,7 @@ def radial_kurtosis(dki_params):
         _G1m(evals[...,0], evals[...,2], evals[...,1]) * Wzzzz + \
         _G2m(evals[...,0], evals[...,1], evals[...,2]) * Wyyzz     
 
-    RK = RK.reshape(outshape)
-
-    return RK
+    return RK.reshape(outshape)
 
 
 def axial_kurtosis(dki_params):
@@ -873,9 +868,8 @@ def axial_kurtosis(dki_params):
 
     # reshape data according to input data
     AK[rel_i] = AKi
-    AK = AK.reshape(outshape)
 
-    return AK
+    return AK.reshape(outshape)
 
 
 def dki_prediction(dki_params, gtab, S0=150):
