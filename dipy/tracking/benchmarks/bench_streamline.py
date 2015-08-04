@@ -77,7 +77,7 @@ def bench_compress_streamlines():
     fname = get_data('fornix')
     streams, hdr = tv.read(fname)
     streamlines = [i[0] for i in streams]
-    python_time = measure("compress_streamlines_python(streamlines)", repeat)
+    python_time = measure("map(compress_streamlines_python, streamlines)", repeat)
     print("Python time: {0:.2}sec".format(python_time))
     print("Speed up of {0}x".format(python_time/cython_time))
     del streamlines

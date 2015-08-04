@@ -5,7 +5,7 @@ import numpy as np
 cimport numpy as np
 import cython
 
-from libc.math cimport sqrt
+from libc.math cimport sqrt, isnan
 
 cdef extern from "stdlib.h" nogil:
     ctypedef unsigned long size_t
@@ -340,6 +340,22 @@ cdef double c_dist_to_line(Streamline streamline, np.npy_intp prev,
     return norm1 / norm2
 
 
+cdef double c_segment_length(Streamline streamline,
+                             np.npy_intp start, np.npy_intp end) nogil:
+    """ Computes the length of the segment going from `start` to `end`. """
+    cdef:
+        np.npy_intp D = streamline.shape[1]
+        np.npy_intp d
+        double segment_length = 0.0
+        double dn
+
+    for d in range(D):
+        dn = streamline[end, d] - streamline[start, d]
+        segment_length += dn*dn
+
+    return sqrt(segment_length)
+
+
 cdef np.npy_intp c_compress_streamline(Streamline streamline, Streamline out,
                                        double tol_error, double max_segment_length) nogil:
     """ Compresses a streamline (see function `compress_streamlines`)."""
@@ -347,52 +363,43 @@ cdef np.npy_intp c_compress_streamline(Streamline streamline, Streamline out,
         np.npy_intp N = streamline.shape[0]
         np.npy_intp D = streamline.shape[1]
         np.npy_intp nb_points = 0
-        np.npy_intp last_added_point_idx = 0
-        np.npy_intp last_success = 0
-        np.npy_intp prev = 0
-        np.npy_intp i, k, next, curr
-        double dn, segment_length
+        np.npy_intp d, prev, next, curr
+        double segment_length
 
     # Copy first point since it is always kept.
     for d in range(D):
         out[0, d] = streamline[0, d]
 
-    last_success = 0
     nb_points = 1
+    prev = 0
 
-    for i in range(1, N-1):
+    for next in range(1, N):
         # Euclidean distance between last added point and current point.
-        segment_length = 0.0
-        for d in range(D):
-            dn = streamline[i, d] - streamline[prev, d]
-            segment_length += dn*dn
+        if c_segment_length(streamline, prev, next) > max_segment_length:
+            for d in range(D):
+                out[nb_points, d] = streamline[next-1, d]
 
-        segment_length = sqrt(segment_length)
-        next = i+1
+            nb_points += 1
+            prev = next-1
+            continue
 
         # Check that each point is not offset by more than `tol_error` mm.
-        for curr in range(prev, i):
+        for curr in range(prev+1, next):
             dist = c_dist_to_line(streamline, prev, next, curr)
 
-            # If the current point's offset is greater than `tol_error`, use the latest success.
-            if dist > tol_error or segment_length > max_segment_length:
+            if isnan(dist) or dist > tol_error:
                 for d in range(D):
-                    out[nb_points, d] = streamline[last_success, d]
+                    out[nb_points, d] = streamline[next-1, d]
 
                 nb_points += 1
-                prev = i-1
-                last_success = i-1
+                prev = next-1
                 break
-            # The current point's offset is ok, check the next point.
-            else:
-                last_success = i
 
     # Copy last point since it is always kept.
     for d in range(D):
         out[nb_points, d] = streamline[N-1, d]
 
     nb_points += 1
-
     return nb_points
 
 

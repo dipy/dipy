@@ -408,66 +408,55 @@ def test_select_streamlines():
     assert_equal(len(new_streamlines), 3)
 
 
-def compress_streamlines_python(streamlines, tol_error=0.01,
+def compress_streamlines_python(streamline, tol_error=0.01,
                                 max_segment_length=10):
     """
-    Initial Python version of the FiberCompression found on
+    Python version of the FiberCompression found on
     https://github.com/scilus/FiberCompression.
     """
     # Euclidean distance
-    dist_between_points = lambda prev, next: np.sqrt(((prev-next)**2).sum())
+    segment_length = lambda prev, next: np.sqrt(((prev-next)**2).sum())
 
     # Projection of a 3D point on a 3D line, minimal distance
     dist_to_line = lambda prev, next, curr: norm(np.cross(next-prev,
                                                           curr-next)
                                                  ) / norm(next-prev)
 
-    compressed_tracks = []
-    for i in range(len(streamlines)):
-        # Pre-allocation
-        current_tract = np.zeros((len(streamlines[i]), 3))
-        nb_points = 0
-        last_added_point = 0
-        # For all points on one streamline
-        for j in range(len(streamlines[i])):
-            # Distance between last point added and current point
-            in_between = dist_between_points(streamlines[i][last_added_point],
-                                             streamlines[i][j])
-            # Always add the first point
-            if j == 0:
-                current_tract[nb_points] = streamlines[i][j]
-                last_success = j
+    nb_points = 0
+    compressed_streamline = np.zeros_like(streamline)
+
+    # Copy first point since it is always kept.
+    compressed_streamline[0, :] = streamline[0, :]
+    nb_points += 1
+    prev = streamline[0]
+    prev_id = 0
+
+    for next_id, next in enumerate(streamline[1:], start=1):
+        # Euclidean distance between last added point and current point.
+        if segment_length(prev, next) > max_segment_length:
+            compressed_streamline[nb_points, :] = streamline[next_id-1, :]
+            nb_points += 1
+            prev = streamline[next_id-1]
+            prev_id = next_id-1
+            continue
+
+        # Check that each point is not offset by more than `tol_error` mm.
+        for curr in streamline[prev_id+1:next_id]:
+            dist = dist_to_line(prev, next, curr)
+
+            if np.isnan(dist) or dist > tol_error:
+                compressed_streamline[nb_points, :] = streamline[next_id-1, :]
                 nb_points += 1
-            # Compression
-            elif j < len(streamlines[i])-1:
-                prev = streamlines[i][last_added_point]
-                next = streamlines[i][j+1]
+                prev = streamline[next_id-1]
+                prev_id = next_id-1
+                break
 
-                # Checkback
-                for k in range(last_added_point, j):
-                    curr = streamlines[i][k]
-                    dist = dist_to_line(prev, next, curr)
+    # Copy last point since it is always kept.
+    compressed_streamline[nb_points, :] = streamline[-1, :]
+    nb_points += 1
 
-                    #Add the last success if the current point fail
-                    if dist > tol_error or in_between > max_segment_length:
-                        current_tract[nb_points] = streamlines[i][last_success]
-                        nb_points += 1
-                        last_added_point = j-1
-                        last_success = j-1
-                        break
-                    # The current point is successful
-                    else:
-                        last_success = j
-            # Always add the last point
-            else:
-                current_tract[nb_points] = streamlines[i][j]
-                nb_points += 1
-
-        # Make sure the array have the correct size
-        current_tract.resize((nb_points, 3))
-        compressed_tracks.append(current_tract)
-
-    return compressed_tracks
+    # Make sure the array have the correct size
+    return compressed_streamline[:nb_points]
 
 
 def test_compress_streamlines():
@@ -489,20 +478,50 @@ def test_compress_streamlines():
     assert_equal(len(c_streamline), 12)
     assert_array_equal(c_streamline, linear_streamline[::9])
 
-    # Make sure Cython and Python versions are the same.
-    for tol_error in np.linspace(0.001, 1, 100):
-        cstreamline_python = compress_streamlines_python([streamline],
-                                                         tol_error)[0]
-        cstreamline_cython = compress_streamlines(streamline, tol_error)
-        assert_equal(len(cstreamline_python), len(cstreamline_cython))
-        assert_array_almost_equal(cstreamline_python, cstreamline_cython)
+    # Test we can set `max_segment_length` to infinity (like the C++ version)
+    compress_streamlines(streamline, max_segment_length=np.inf)
+
+    # Uncompressable streamline when `tol_error` == 1.
+    simple_streamline = np.array([[0, 0, 0],
+                                  [1, 1, 0],
+                                  [1.5, np.inf, 0],
+                                  [2, 2, 0],
+                                  [2.5, 20, 0],
+                                  [3, 3, 0]])
+    csimple_streamline_cython = compress_streamlines(simple_streamline,
+                                                     tol_error=1)
+    assert_array_equal(csimple_streamline_cython, simple_streamline)
+
+    # Create a special streamline where every other point is increasingly
+    # farther from a straigth line formed by the streamline endpoints.
+    tol_errors = np.linspace(0, 10, 21)
+    orthogonal_line = np.array([[-np.sqrt(2)/2, np.sqrt(2)/2, 0]], dtype=np.float32)
+    special_streamline = np.array([range(len(tol_errors)*2+1)] * 3, dtype=np.float32).T
+    special_streamline[1::2] += orthogonal_line * tol_errors[:, None]
+
+    # # Uncomment to see the streamline.
+    # import pylab as plt
+    # plt.plot(special_streamline[:, 0], special_streamline[:, 1], '.-')
+    # plt.axis('equal'); plt.show()
+
+    # Test different values for `tol_error`.
+    for i, tol_error in enumerate(tol_errors):
+        cspecial_streamline = compress_streamlines(special_streamline,
+                                                   tol_error=tol_error+1e-4,
+                                                   max_segment_length=np.inf)
 
         # First and last points should always be the same as the original ones.
-        assert_array_equal(cstreamline_cython[0], streamline[0])
-        assert_array_equal(cstreamline_cython[-1], streamline[-1])
+        assert_array_equal(cspecial_streamline[0], special_streamline[0])
+        assert_array_equal(cspecial_streamline[-1], special_streamline[-1])
 
-    # Test we can set `max_segment_length` to infinity (like the C++ version)
-    cstreamline_cython = compress_streamlines(streamline, max_segment_length=np.inf)
+        assert_equal(len(cspecial_streamline), len(special_streamline)-((i*2)+1))
+
+        # Make sure Cython and Python versions are the same.
+        cstreamline_python = compress_streamlines_python(special_streamline,
+                                                         tol_error=tol_error+1e-4,
+                                                         max_segment_length=np.inf)
+        assert_equal(len(cspecial_streamline), len(cstreamline_python))
+        assert_array_almost_equal(cspecial_streamline, cstreamline_python)
 
 
 if __name__ == '__main__':
