@@ -27,7 +27,7 @@ cdef class Feature(object):
     `infer_shape` methods.
     """
     def __init__(Feature self, is_order_invariant=True):
-        # By default every features are order invariant.
+        # By default every feature is order invariant.
         self.is_order_invariant = is_order_invariant
 
     property is_order_invariant:
@@ -382,10 +382,6 @@ cpdef extract(Feature feature, data):
     -------
     list of 2D arrays
         List of features extracted from `data`.
-
-    Notes
-    -----
-    This method calls its Cython version `self.c_extract` accordingly.
     """
     single_datum = False
     if type(data) is np.ndarray:
