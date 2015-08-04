@@ -14,14 +14,9 @@ from dipy.reconst.dti import (TensorModel, color_fa, fractional_anisotropy,
 
 def compute_dti_metrics(dwis, masks, bvalues, bvectors, out_dir, tensor,
                         fa, ga, rgb, md, ad, rd, mode, evec, eval):
-    dwi_paths = glob(dwis)
-    if masks is None:
-        masks = [masks] * len(dwi_paths)
-    else:
-        masks = glob(masks)
 
-    for dwi, mask, bval, bvec in zip(dwi_paths,
-                                     masks,
+    for dwi, mask, bval, bvec in zip(glob(dwis),
+                                     glob(masks),
                                      glob(bvalues),
                                      glob(bvectors)):
 
