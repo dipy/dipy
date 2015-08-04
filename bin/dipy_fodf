@@ -1,0 +1,23 @@
+#! /usr/bin/env python
+from __future__ import division, print_function
+from dipy.fixes import argparse as arg
+
+from dipy.workflows.fodf import compute_fodf
+
+parser = arg.ArgumentParser()
+parser.add_argument('input', action='store')
+parser.add_argument('bvals', action='store', metavar='bvals',
+                    help='Path of the bvals file, in FSL format.')
+parser.add_argument('bvecs', action='store', metavar='bvecs',
+                    help='Path of the bvecs file, in FSL format.')
+parser.add_argument('--mask', action='store', dest='mask',
+                    metavar='', default=None, type=str,
+                    help='Path to a binary mask. Only the data inside the ' +
+                         'mask will be used for computations and reconstruction.')
+
+parser.add_argument('--out_dir', type=str, default='')
+params = parser.parse_args()
+compute_fodf(params.input, params.mask, params.bvals, params.bvecs, params.out_dir)
+
+
+
