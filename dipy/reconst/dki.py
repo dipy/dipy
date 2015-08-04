@@ -197,16 +197,16 @@ def _F1m(a, b, c):
     
     Parameters
     ----------
-    a : ndarray (n,)
+    a : ndarray
         Array containing the values of parameter $\lambda_1$ of function $F_1$ 
-    b : ndarray (n,)
+    b : ndarray
         Array containing the values of parameter $\lambda_2$ of function $F_1$
-    c : ndarray (n,)
+    c : ndarray
         Array containing the values of parameter $\lambda_3$ of function $F_1$
         
     Returns
     -------
-    F1 : ndarray (n,)
+    F1 : ndarray
        Value of the function $F_1$ for all elements of the arrays a, b, and c
 
     Notes
@@ -232,7 +232,7 @@ def _F1m(a, b, c):
            kurtosis imaging. Magn Reson Med. 65(3), 823-836
     """
     # Float error used to compare two floats, abs(l1 - l2) < er for l1 = l2 
-    er = np.finfo(a[0]).eps * 1e3  # Error defined as three order of magnitude
+    er = np.finfo(a.ravel()[0]).eps * 1e3  # Error defined as three order of magnitude
                                    # larger than system's epslon
 
     # Initialize F1
@@ -286,16 +286,16 @@ def _F2m(a, b, c):
     
     Parameters
     ----------
-    a : ndarray (n,)
+    a : ndarray
         Array containing the values of parameter $\lambda_1$ of function $F_2$ 
-    b : ndarray (n,)
+    b : ndarray
         Array containing the values of parameter $\lambda_2$ of function $F_2$
-    c : ndarray (n,)
+    c : ndarray
         Array containing the values of parameter $\lambda_3$ of function $F_2$
         
     Returns
     -------
-    F2 : ndarray (n,)
+    F2 : ndarray
        Value of the function $F_2$ for all elements of the arrays a, b, and c
 
     Notes
@@ -318,7 +318,7 @@ def _F2m(a, b, c):
            kurtosis imaging. Magn Reson Med. 65(3), 823-836
     """
     # Float error used to compare two floats, abs(l1 - l2) < er for l1 = l2 
-    er = np.finfo(a[0]).eps * 1e3  # Error defined as three order of magnitude
+    er = np.finfo(a.ravel()[0]).eps * 1e3  # Error defined as three order of magnitude
                                    # larger than system's epslon
 
     # Initialize F2
@@ -418,7 +418,6 @@ def apparent_kurtosis_coef(dki_params, sphere, min_diffusivity=0,
 
     where $D_{ij}$ are the elements of the diffusion tensor.
     """
-
     # Flat parameters
     outshape = dki_params.shape[:-1]
     dki_params = dki_params.reshape((-1, dki_params.shape[-1]))
@@ -450,9 +449,8 @@ def apparent_kurtosis_coef(dki_params, sphere, min_diffusivity=0,
 
     # reshape data according to input data
     AKC[rel_i] = AKCi
-    AKC = AKC.reshape((outshape + (len(V),)))
 
-    return AKC
+    return AKC.reshape((outshape + (len(V),)))
 
 
 def _directional_kurtosis(dt, MD, kt, V, min_diffusivity=0, min_kurtosis=-1):
@@ -525,7 +523,8 @@ def _directional_kurtosis(dt, MD, kt, V, min_diffusivity=0, min_kurtosis=-1):
 
 
 def mean_kurtosis(dki_params, sphere=None):
-    r""" Computes mean Kurtosis (MK) from the kurtosis tensor. 
+    r""" Computes mean Kurtosis (MK) from the kurtosis tensor.
+
     Parameters
     ----------
     dki_params : ndarray (x, y, z, 27) or (n, 27)
@@ -535,7 +534,7 @@ def mean_kurtosis(dki_params, sphere=None):
             2) Three lines of the eigenvector matrix each containing the first,
                second and third coordinates of the eigenvector
             3) Fifteen elements of the kurtosis tensor
-        
+
     Returns
     -------
     mk : array
@@ -552,11 +551,11 @@ def mean_kurtosis(dki_params, sphere=None):
        F_2(\lambda_1,\lambda_2,\lambda_3)\hat{W}_{2233}+
        F_2(\lambda_2,\lambda_1,\lambda_3)\hat{W}_{1133}+
        F_2(\lambda_3,\lambda_2,\lambda_1)\hat{W}_{1122}
-        
+
     where $\hat{W}_{ijkl}$ are the components of the $W$ tensor in the
     coordinates system defined by the eigenvectors of the diffusion tensor
     $\mathbf{D}$ and 
- 
+
     F_1(\lambda_1,\lambda_2,\lambda_3)=
     \frac{(\lambda_1+\lambda_2+\lambda_3)^2}
     {18(\lambda_1-\lambda_2)(\lambda_1-\lambda_3)}
@@ -574,9 +573,9 @@ def mean_kurtosis(dki_params, sphere=None):
     R_F(\frac{\lambda_1}{\lambda_2},\frac{\lambda_1}{\lambda_3},1)+\\
     \frac{2\lambda_1-\lambda_2-\lambda_3}{3\sqrt{\lambda_2 \lambda_3}}
     R_D(\frac{\lambda_1}{\lambda_2},\frac{\lambda_1}{\lambda_3},1)-2]
-    
+
     where $R_f$ and $R_d$ are the Carlson's elliptic integrals.
-      
+
     References
     ----------
     .. [1] Hui ES, Cheung MM, Qi L, Wu EX, 2008. Towards better MR
@@ -586,32 +585,19 @@ def mean_kurtosis(dki_params, sphere=None):
            Estimation of tensors and tensor-derived measures in diffusional
            kurtosis imaging. Magn Reson Med. 65(3), 823-836
     """
-    # Flat parameters
-    outshape = dki_params.shape[:-1]
-    dki_params = dki_params.reshape((-1, dki_params.shape[-1]))
-
     # Split the model parameters to three variable containing the evals, evecs,
     # and kurtosis elements
-
     evals, evecs, kt = split_dki_param(dki_params)
 
     # Rotate the kurtosis tensor from the standard Cartesian coordinate system
     # to another coordinate system in which the 3 orthonormal eigenvectors of
     # DT are the base coordinate
-    Wxxxx = np.zeros((len(kt)))
-    Wyyyy = np.zeros((len(kt)))
-    Wzzzz = np.zeros((len(kt)))
-    Wxxyy = np.zeros((len(kt)))
-    Wxxzz = np.zeros((len(kt)))
-    Wyyzz = np.zeros((len(kt)))
-
-    for vox in range(len(kt)):
-        Wxxxx[vox] = _Wrotate_element(kt[vox], 0, 0, 0, 0, evecs[vox])
-        Wyyyy[vox] = _Wrotate_element(kt[vox], 1, 1, 1, 1, evecs[vox])
-        Wzzzz[vox] = _Wrotate_element(kt[vox], 2, 2, 2, 2, evecs[vox])
-        Wxxyy[vox] = _Wrotate_element(kt[vox], 0, 0, 1, 1, evecs[vox])
-        Wxxzz[vox] = _Wrotate_element(kt[vox], 0, 0, 2, 2, evecs[vox])
-        Wyyzz[vox] = _Wrotate_element(kt[vox], 1, 1, 2, 2, evecs[vox])
+    Wxxxx = Wrotate_element(kt, 0, 0, 0, 0, evecs)
+    Wyyyy = Wrotate_element(kt, 1, 1, 1, 1, evecs)
+    Wzzzz = Wrotate_element(kt, 2, 2, 2, 2, evecs)
+    Wxxyy = Wrotate_element(kt, 0, 0, 1, 1, evecs)
+    Wxxzz = Wrotate_element(kt, 0, 0, 2, 2, evecs)
+    Wyyzz = Wrotate_element(kt, 1, 1, 2, 2, evecs)
 
     # Compute MK
     MK = _F1m(evals[..., 0], evals[..., 1], evals[..., 2])*Wxxxx + \
@@ -621,7 +607,7 @@ def mean_kurtosis(dki_params, sphere=None):
          _F2m(evals[..., 1], evals[..., 0], evals[..., 2])*Wxxzz + \
          _F2m(evals[..., 2], evals[..., 1], evals[..., 0])*Wxxyy
 
-    return MK.reshape(outshape)
+    return MK
 
 
 def _G1m(a, b, c):
@@ -630,16 +616,16 @@ def _G1m(a, b, c):
     
     Parameters
     ----------
-    a : ndarray (n,)
+    a : ndarray
         Array containing the values of parameter $\lambda_1$ of function $G_1$ 
-    b : ndarray (n,)
+    b : ndarray
         Array containing the values of parameter $\lambda_2$ of function $G_1$
-    c : ndarray (n,)
+    c : ndarray
         Array containing the values of parameter $\lambda_3$ of function $G_1$
         
     Returns
     -------
-    G1 : ndarray (n,)
+    G1 : ndarray
        Value of the function $G_1$ for all elements of the arrays a, b, and c
 
     Notes
@@ -660,7 +646,7 @@ def _G1m(a, b, c):
            kurtosis imaging. Magn Reson Med. 65(3), 823-836
     """
     # Float error used to compare two floats, abs(l1 - l2) < er for l1 = l2 
-    er = np.finfo(a[0]).eps * 1e3  # Error defined as three order of magnitude
+    er = np.finfo(a.ravel()[0]).eps * 1e3  # Error defined as three order of magnitude
                                    # larger than system's epslon
 
     # Initialize G1
@@ -689,22 +675,22 @@ def _G1m(a, b, c):
     return G1
 
 
-def _G2m(a,b,c):
+def _G2m(a, b, c):
     """ Helper function that computes function $G_2$ which is required to
     compute the analytical solution of the Radial kurtosis.
-    
+
     Parameters
     ----------
-    a : ndarray (n,)
+    a : ndarray
         Array containing the values of parameter $\lambda_1$ of function $G_2$ 
-    b : ndarray (n,)
+    b : ndarray
         Array containing the values of parameter $\lambda_2$ of function $G_2$
     c : ndarray (n,)
         Array containing the values of parameter $\lambda_3$ of function $G_2$
-        
+
     Returns
     -------
-    G2 : ndarray (n,)
+    G2 : ndarray
        Value of the function $G_2$ for all elements of the arrays a, b, and c
 
     Notes
@@ -722,7 +708,7 @@ def _G2m(a,b,c):
            kurtosis imaging. Magn Reson Med. 65(3), 823-836
     """
     # Float error used to compare two floats, abs(l1 - l2) < er for l1 = l2 
-    er = np.finfo(a[0]).eps * 1e3  # Error defined as three order of magnitude
+    er = np.finfo(a.ravel()[0]).eps * 1e3  # Error defined as three order of magnitude
                                    # larger than system's epslon
 
     # Initialize G2
@@ -791,26 +777,16 @@ def radial_kurtosis(dki_params):
         \frac{(\lambda_1+\lambda_2+\lambda_3)^2}{(\lambda_2-\lambda_3)^2}
         \left ( \frac{\lambda_2+\lambda_3}{\sqrt{\lambda_2\lambda_3}}-2\right )
     """
-    # Flat parameters
-    outshape = dki_params.shape[:-1]
-    dki_params = dki_params.reshape((-1, dki_params.shape[-1]))
-
     # Split the model parameters to three variable containing the evals, evecs,
     # and kurtosis elements
-
     evals, evecs, kt = split_dki_param(dki_params)
 
     # Rotate the kurtosis tensor from the standard Cartesian coordinate system
     # to another coordinate system in which the 3 orthonormal eigenvectors of
     # DT are the base coordinate
-    Wyyyy = np.zeros((len(kt)))
-    Wzzzz = np.zeros((len(kt)))
-    Wyyzz = np.zeros((len(kt)))
-
-    for vox in range(len(kt)): 
-        Wyyyy[vox] = _Wrotate_element(kt[vox], 1, 1, 1, 1, evecs[vox])
-        Wzzzz[vox] = _Wrotate_element(kt[vox], 2, 2, 2, 2, evecs[vox])
-        Wyyzz[vox] = _Wrotate_element(kt[vox], 1, 1, 2, 2, evecs[vox])
+    Wyyyy = Wrotate_element(kt, 1, 1, 1, 1, evecs)
+    Wzzzz = Wrotate_element(kt, 2, 2, 2, 2, evecs)
+    Wyyzz = Wrotate_element(kt, 1, 1, 2, 2, evecs)
 
     # Compute RK
     RK = \
@@ -818,7 +794,7 @@ def radial_kurtosis(dki_params):
         _G1m(evals[...,0], evals[...,2], evals[...,1]) * Wzzzz + \
         _G2m(evals[...,0], evals[...,1], evals[...,2]) * Wyyzz     
 
-    return RK.reshape(outshape)
+    return RK
 
 
 def axial_kurtosis(dki_params):
@@ -1488,7 +1464,7 @@ def _wls_iter(design_matrix, inv_design, sig, min_diffusivity):
     return dki_params
 
 
-def Wrotate(kt, Basis, inds = None):
+def Wrotate(kt, Basis):
     r""" Rotate a kurtosis tensor from the standard Cartesian coordinate system
     to another coordinate system basis
     
@@ -1528,21 +1504,18 @@ def Wrotate(kt, Basis, inds = None):
     characterization of neural tissues using directional diffusion kurtosis
     analysis. Neuroimage 42(1): 122-34
     """
-    if inds is None:
-        inds = np.array([[0, 0, 0, 0], [1, 1, 1, 1], [2, 2, 2, 2],
-                         [0, 0, 0, 1], [0, 0, 0, 2], [0, 1, 1, 1],
-                         [1, 1, 1, 2], [0, 2, 2, 2], [1, 2, 2, 2],
-                         [0, 0, 1, 1], [0, 0, 2, 2], [1, 1, 2, 2],
-                         [0, 0, 1, 2], [0, 1, 1, 2], [0, 1, 2, 2]])
-    else:
-        inds = np.array(inds)
-        inds = inds.reshape((-1, inds.shape[-1]))
+    inds = np.array([[0, 0, 0, 0], [1, 1, 1, 1], [2, 2, 2, 2],
+                     [0, 0, 0, 1], [0, 0, 0, 2], [0, 1, 1, 1],
+                     [1, 1, 1, 2], [0, 2, 2, 2], [1, 2, 2, 2],
+                     [0, 0, 1, 1], [0, 0, 2, 2], [1, 1, 2, 2],
+                     [0, 0, 1, 2], [0, 1, 1, 2], [0, 1, 2, 2]])
 
-    Wrot = np.zeros(len(inds))
+
+    Wrot = np.zeros(kt.shape)
 
     for e in range(len(inds)):
-        Wrot[e] = _Wrotate_element(kt, inds[e][0], inds[e][1], inds[e][2],
-                                   inds[e][3], Basis)
+        Wrot[..., e] = Wrotate_element(kt, inds[e][0], inds[e][1], inds[e][2],
+                                       inds[e][3], Basis)
 
     return Wrot
 
@@ -1557,15 +1530,14 @@ def Wrotate(kt, Basis, inds = None):
 ind_ele = {1: 0, 16: 1, 81: 2, 2: 3, 3: 4, 8: 5, 24: 6, 27: 7, 54: 8, 4: 9,
            9: 10, 36: 11, 6: 12, 12: 13, 18: 14}
 
-def _Wrotate_element(kt, indi, indj, indk, indl, B):
-    r""" Helper function that returns the element with specified indexes of a
-    rotated kurtosis tensor from the Cartesian coordinate system to another
-    coordinate system basis
+def Wrotate_element(kt, indi, indj, indk, indl, B):
+    r""" Computes the the specified index element of a kurtosis tensor rotated
+    to the coordinate system basis B.
 
     Parameters
     ----------
-    kt : (15,)
-        Vector with the 15 independent elements of the kurtosis tensor
+    kt : ndarray (x, y, z, 15) or (n, 15)
+        Array containing the 15 independent elements of the kurtosis tensor
     indi : int
         Rotated kurtosis tensor element index i (0 for x, 1 for y, 2 for z)
     indj : int
@@ -1574,14 +1546,19 @@ def _Wrotate_element(kt, indi, indj, indk, indl, B):
         Rotated kurtosis tensor element index k (0 for x, 1 for y, 2 for z)
     indl: int
         Rotated kurtosis tensor element index l (0 for x, 1 for y, 2 for z)
-    B: array (3, 3)
+    B: array (x, y, z, 3, 3) or (n, 15)
         Vectors of the basis column-wise oriented
     
     Returns
     -------
     Wre : float
           rotated kurtosis tensor element of index ind_i, ind_j, ind_k, ind_l
-    
+
+    Note
+    -----
+    It is assumed that initial kurtosis tensor elementes are defined on the
+    Cartesian coordinate system.
+
     References
     ----------
     [1] Hui ES, Cheung MM, Qi L, Wu EX, 2008. Towards better MR
@@ -1597,8 +1574,10 @@ def _Wrotate_element(kt, indi, indj, indk, indl, B):
             for kl in xyz:
                 for ll in xyz:
                     key = (il+1) * (jl+1) * (kl+1) * (ll+1)
-                    multiplyB = B[il, indi]*B[jl, indj]*B[kl, indk]*B[ll, indl]
-                    Wre = Wre + multiplyB * kt[ind_ele[key]]
+                    multiplyB = \
+                        B[..., il, indi] * B[..., jl, indj] * \
+                        B[..., kl, indk] * B[..., ll, indl]
+                    Wre = Wre + multiplyB * kt[..., ind_ele[key]]
     return Wre
 
 
