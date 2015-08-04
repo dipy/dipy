@@ -6,8 +6,8 @@ Tractography Clustering - Available Features
 This page lists available features that can be used by the tractography
 clustering framework. For every feature a brief description is provided
 explaining: what it does, when it's useful and how to use it. If you are not
-familiar with the tractography clustering framework, check this tutorial
-:ref:`clustering-framework`.
+familiar with the tractography clustering framework, read the
+:ref:`clustering-framework` first.
 
 .. contents:: Available Features
     :local:
