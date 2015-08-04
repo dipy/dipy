@@ -3,28 +3,30 @@
 Reconstruction of the diffusion signal with the kurtosis tensor model
 =====================================================================
 
-The diffusion kurtois model is an expansion of the diffusion tensor model. In
-addition to the diffusion tensor (DT), the diffusion kurtosis model quantifies
-the degree to which water diffusion in biologic tissues is non-Gaussian using
-the kurtosis tensor [Jensen2005]_. Measurements of non-Gaussian diffusion are
-of interest because they can be used to charaterize tissue microstructural
-heterogeneity [Jensen2010]_ and to derive concrete biophysical parameters as
-the density of axonal fibres and diffusion tortuosity [Fierem2011]_. Moreover,
-DKI can be used to resolve crossing fibers in tractography and to obtain
-invariant rotational measures not limited to well aligned fiber populations
-[NetoHe2015]_.
+The diffusion kurtois model is an expansion of the diffusion tensor model
+(see :ref:`example_reconst_dti`). In addition to the diffusion tensor (DT), the
+diffusion kurtosis model quantifies the degree to which water diffusion in 
+biologic tissues is non-Gaussian using the kurtosis tensor (KT) [Jensen2005]_.
+Measurements of non-Gaussian diffusion are of interest because they can be used
+to charaterize tissue microstructural heterogeneity [Jensen2010]_ and to derive
+concrete biophysical parameters as the density of axonal fibres and diffusion
+tortuosity [Fierem2011]_. Moreover, DKI can be used to resolve crossing fibers
+in tractography and to obtain invariant rotational measures not limited to well
+aligned fiber populations [NetoHe2015]_.
 
-The diffusion kurtosis model relates the diffusion-weighted signal,
-$S(\mathbf{n}, b)$, to the applied diffusion weighting, $\mathbf{b}$, the
-signal in the absence of diffusion gradient sensitisation, $S_0$, and the
-values of diffusion, $\mathbf{D(n)}$, and diffusion kurtosis, $\mathbf{K(n)}$,
-along the spatial direction $\mathbf{n}$ [NetoHe2015]_:
+The diffusion kurtosis model express the diffusion-weighted signal as:
 
 .. math::
+
     S(n,b)=S_{0}e^{-bD(n)+\frac{1}{6}b^{2}D(n)^{2}K(n)}
 
-$\mathbf{D(n)}$ and $\mathbf{K(n)}$ can be computed from the DT and KT using
-the following equations:
+where $\mathbf{b}$ is the applied diffusion weighting (which is dependent on
+the measuremenent parameters measurement), $S_0$ the signal in the absence of
+diffusion gradient sensitisation, $\mathbf{D(n)}$ the value of diffusion along
+direction  $\mathbf{n}$, and $\mathbf{K(n)}$ the value of kurtosis along
+direction $\mathbf{n}$. The directional diffusion $\mathbf{D(n)}$ and kurtosis
+$\mathbf{K(n)}$ can be related to the diffusion tensor (DT) and kurtosis tensor
+(KT) using the following equations:
 
 .. math::
      D(n)=\sum_{i=1}^{3}\sum_{j=1}^{3}n_{i}n_{j}D_{ij}
@@ -48,11 +50,11 @@ needed to fully characterize the KT:
                     & W_{xxzz} & W_{yyzz} & W_{xxyz} & W_{xyyz} & W_{xyzz}
                     & & )\end{matrix}
 
-In the following example we show how to reconstruct your diffusion multi-shell
-datasets using the kurtosis tensor model.
+In the following example we show how to fit diffusion kurtosis model to the
+diffusion multi-shell datasets and how to estimate diffusion kurtosis based
+statistics.
 
-First import Dipy's DKI module:
-
+First, we import all relevant modules:
 """
 
 import dipy.reconst.dki as dki
