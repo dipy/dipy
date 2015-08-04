@@ -5,7 +5,10 @@ import numpy as np
 cimport numpy as np
 import cython
 
-from libc.math cimport sqrt, isnan
+from libc.math cimport sqrt
+
+cdef extern from "dpy_math.h" nogil:
+    bint dpy_isnan(double x)
 
 cdef extern from "stdlib.h" nogil:
     ctypedef unsigned long size_t
@@ -387,7 +390,7 @@ cdef np.npy_intp c_compress_streamline(Streamline streamline, Streamline out,
         for curr in range(prev+1, next):
             dist = c_dist_to_line(streamline, prev, next, curr)
 
-            if isnan(dist) or dist > tol_error:
+            if dpy_isnan(dist) or dist > tol_error:
                 for d in range(D):
                     out[nb_points, d] = streamline[next-1, d]
 
