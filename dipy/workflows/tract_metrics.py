@@ -8,7 +8,7 @@ import tractconverter
 
 from dipy.tracking.utils import density_map
 
-def tract_density(tract_files, ref_files, up_factor, out_dir):
+def tract_density(tract_files, ref_files, up_factor=1.0, out_dir=''):
     for tract_file, ref_file in zip(glob(tract_files), glob(ref_files)):
         ref = nib.load(ref_file)
         ref_head = ref.get_header()
@@ -19,11 +19,9 @@ def tract_density(tract_files, ref_files, up_factor, out_dir):
         tract_format = tractconverter.detect_format(tract_file)
         tract = tract_format(tract_file, anatFile=ref_file)
 
-        voxel_dim = ref_head['pixdim'][1:4]
         streamlines = [i for i in tract]
 
         affine = np.eye(4)
-        #affine[:3, :3] *= np.asarray(voxel_dim)
 
         # Need to adjust the affine to take upsampling into account
         affine[0, 0] /= up_factor
