@@ -232,8 +232,9 @@ def _F1m(a, b, c):
            kurtosis imaging. Magn Reson Med. 65(3), 823-836
     """
     # Float error used to compare two floats, abs(l1 - l2) < er for l1 = l2 
-    er = np.finfo(a.ravel()[0]).eps * 1e3  # Error defined as three order of magnitude
-                                   # larger than system's epslon
+    er = np.finfo(a.ravel()[0]).eps * 1e3  # Error defined as three order of 
+                                           # magnitude larger than system's
+                                           # epslon
 
     # Initialize F1
     F1 = np.zeros(a.shape)
@@ -286,7 +287,7 @@ def _F2m(a, b, c):
     
     Parameters
     ----------
-    a : ndarray
+    a : ndarray 
         Array containing the values of parameter $\lambda_1$ of function $F_2$ 
     b : ndarray
         Array containing the values of parameter $\lambda_2$ of function $F_2$
@@ -585,6 +586,11 @@ def mean_kurtosis(dki_params, sphere=None):
            Estimation of tensors and tensor-derived measures in diffusional
            kurtosis imaging. Magn Reson Med. 65(3), 823-836
     """
+    # Flat parameters. For numpy versions more recent than 1.6.0, this step
+    # isn't required
+    outshape = dki_params.shape[:-1]
+    dki_params = dki_params.reshape((-1, dki_params.shape[-1]))
+    
     # Split the model parameters to three variable containing the evals, evecs,
     # and kurtosis elements
     evals, evecs, kt = split_dki_param(dki_params)
@@ -607,7 +613,7 @@ def mean_kurtosis(dki_params, sphere=None):
          _F2m(evals[..., 1], evals[..., 0], evals[..., 2])*Wxxzz + \
          _F2m(evals[..., 2], evals[..., 1], evals[..., 0])*Wxxyy
 
-    return MK
+    return MK.reshape(outshape)
 
 
 def _G1m(a, b, c):
@@ -646,8 +652,9 @@ def _G1m(a, b, c):
            kurtosis imaging. Magn Reson Med. 65(3), 823-836
     """
     # Float error used to compare two floats, abs(l1 - l2) < er for l1 = l2 
-    er = np.finfo(a.ravel()[0]).eps * 1e3  # Error defined as three order of magnitude
-                                   # larger than system's epslon
+    er = np.finfo(a.ravel()[0]).eps * 1e3  # Error defined as three order of
+                                           # magnitude larger than system's
+                                           # epslon
 
     # Initialize G1
     G1 = np.zeros(a.shape)
@@ -708,8 +715,9 @@ def _G2m(a, b, c):
            kurtosis imaging. Magn Reson Med. 65(3), 823-836
     """
     # Float error used to compare two floats, abs(l1 - l2) < er for l1 = l2 
-    er = np.finfo(a.ravel()[0]).eps * 1e3  # Error defined as three order of magnitude
-                                   # larger than system's epslon
+    er = np.finfo(a.ravel()[0]).eps * 1e3  # Error defined as three order of
+                                           # magnitude larger than system's
+                                           # epslon
 
     # Initialize G2
     G2 = np.zeros(a.shape)
@@ -777,6 +785,11 @@ def radial_kurtosis(dki_params):
         \frac{(\lambda_1+\lambda_2+\lambda_3)^2}{(\lambda_2-\lambda_3)^2}
         \left ( \frac{\lambda_2+\lambda_3}{\sqrt{\lambda_2\lambda_3}}-2\right )
     """
+    # Flat parameters. For numpy versions more recent than 1.6.0, this step
+    # isn't required
+    outshape = dki_params.shape[:-1]
+    dki_params = dki_params.reshape((-1, dki_params.shape[-1]))
+
     # Split the model parameters to three variable containing the evals, evecs,
     # and kurtosis elements
     evals, evecs, kt = split_dki_param(dki_params)
@@ -790,11 +803,11 @@ def radial_kurtosis(dki_params):
 
     # Compute RK
     RK = \
-        _G1m(evals[...,0], evals[...,1], evals[...,2]) * Wyyyy + \
-        _G1m(evals[...,0], evals[...,2], evals[...,1]) * Wzzzz + \
-        _G2m(evals[...,0], evals[...,1], evals[...,2]) * Wyyzz     
+        _G1m(evals[..., 0], evals[..., 1], evals[..., 2]) * Wyyyy + \
+        _G1m(evals[..., 0], evals[..., 2], evals[..., 1]) * Wzzzz + \
+        _G2m(evals[..., 0], evals[..., 1], evals[..., 2]) * Wyyzz     
 
-    return RK
+    return RK.reshape(outshape)
 
 
 def axial_kurtosis(dki_params):
