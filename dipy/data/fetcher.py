@@ -759,8 +759,8 @@ def read_cenir_multib(bvals=None):
 
     # All affines are the same, so grab the last one:
     aff = nib.load(file_dict[bval]['DWI']).get_affine()
-    return (gradient_table(bval_list, np.concatenate(bvec_list, -1)),
-            nib.Nifti1Image(np.concatenate(data, -1), aff))
+    return (nib.Nifti1Image(np.concatenate(data, -1), aff),
+            gradient_table(bval_list, np.concatenate(bvec_list, -1)))
 
 
 CENIR_notes = \
