@@ -634,17 +634,16 @@ def filter_bounding_box(streamlines, x_roi_coords, tol):
     x_roi_coords : array, shape (M, 3)
         ROI coordinates transformed to the streamline coordinate frame.
     tol : float
-        Distance (in the units of the streamlines, usually mm). If any
-        coordinate in the streamline is within this distance from the center
-        of any voxel in the ROI, this function returns True.
-
+        Distance (in the units of the streamlines, usually mm). If a streamline
+        is within this distance from the center of the voxels defining the
+        bounding box, this streamline is considered in the bounding box
 
     """
     bb = np.array((np.min(x_roi_coords, 0) - tol,
                    np.max(x_roi_coords, 0) + tol))
     for sl in streamlines:
         cond = np.array([np.any(sl[:, i] >= bb[0, i]) &
-                         np.any(sl[:, i] <= bb[1, i]) for i in [0, 1]])
+                         np.any(sl[:, i] <= bb[1, i]) for i in range(2)])
         if np.any(cond):
             yield sl
 
