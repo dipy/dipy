@@ -1,0 +1,40 @@
+#! /usr/bin/env python
+
+from dipy.workflows.segment import median_otsu_flow
+from dipy.fixes import argparse as arg
+
+parser = arg.ArgumentParser()
+parser.add_argument('input', action='store',
+                    help='Path to the volume on which to apply brain '
+                         'segmentation. You can use wildcards on the path'
+                         'to process multiple volumes at once.')
+
+parser.add_argument('--out_dir', type=str, default='',
+                    help='The output direcotry where results are saved.')
+
+parser.add_argument('--save_masked', dest='save_masked', action='store_const',
+                    const='True', default='False',
+                    help='Save the masked volume.')
+
+parser.add_argument('--radius', type=str, default='4',
+                    help='Radius (in voxels) of the applied median filter.')
+
+parser.add_argument('--numpass', type=str, default='4',
+                    help='Number of pass of the median filter.')
+
+parser.add_argument('--auto_crop', dest='auto_crop', action='store_const',
+                    const='True', default='False',
+                    help='Automatically crop the mask.')
+
+parser.add_argument('--dilate', type=str, default='None',
+                    help='Dilatation to apply to the mask.')
+
+parser.add_argument('--vol_indices', type=str, default='None',
+                    help='Index of the slices to use if the input is in 4D.')
+
+
+if __name__ == "__main__":
+    params = parser.parse_args()
+    median_otsu_flow(params.input, params.out_dir, params.save_masked,
+                     params.radius, params.numpass, params.auto_crop,
+                     params.vol_indices, params.dilate)
