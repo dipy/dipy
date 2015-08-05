@@ -643,7 +643,7 @@ def filter_bounding_box(streamlines, x_roi_coords, tol):
                    np.max(x_roi_coords, 0) + tol))
     for sl in streamlines:
         cond = np.array([np.any(sl[:, i] >= bb[0, i]) &
-                         np.any(sl[:, i] <= bb[1, i]) for i in range(2)])
+                         np.any(sl[:, i] <= bb[1, i]) for i in range(3)])
         if np.any(cond):
             yield sl
 
