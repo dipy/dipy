@@ -3,6 +3,9 @@ import os
 
 from dipy.workflows.segment import median_otsu_bet
 from dipy.workflows.reconst import compute_dti_metrics
+from dipy.workflows.fodf import compute_fodf
+from dipy.workflows.tracking import track_peaks_deterministic
+from dipy.workflows.tract_metrics import tract_density
 from dipy.fixes import argparse as arg
 
 parser = arg.ArgumentParser()
@@ -37,4 +40,12 @@ if __name__ == "__main__":
                         'mode.nii.gz', 'tensor_evecs.nii.gz',
                         'tensor_evals.nii.gz')
 
+    compute_fodf(params.input, mask_path, params.bvals, params.bvecs,
+                 'work/metrics/')
 
+    track_peaks_deterministic(os.path.join(metrics_dir, 'fa.nii.gz'),
+                              os.path.join(metrics_dir, 'peaks_values.nii.gz'),
+                              os.path.join(metrics_dir, 'peaks_indices.nii.gz'))
+
+    tract_density(os.path.join(metrics_dir, 'tractogram.trk'),
+                  os.path.join(metrics_dir, 'fa.nii.gz'))

@@ -10,20 +10,18 @@ from dipy.data import get_sphere
 
 
 
-def track_peaks_deterministic(ref, peaks, peaks_idx, out_dir):
+def track_peaks_deterministic(ref, peaks_values, peaks_idx, out_dir=''):
     # Load Data volumes
-    for ref_path, peaks_path, peaks_idx_path in zip(glob(ref),
-                                                   glob(peaks),
-                                                   glob(peaks_idx)):
+    for ref_path, peaks_values_path, peaks_idx_path in zip(glob(ref),
+                                                           glob(peaks_values),
+                                                           glob(peaks_idx)):
         ref_img = nib.load(ref_path)
         ref_vol = ref_img.get_data()
         voxel_size = ref_img.get_header().get_zooms()[:3]
 
         peaks_idx = nib.load(peaks_idx_path).get_data()
-        peaks_value = nib.load(peaks_path).get_data()
+        peaks_value = nib.load(peaks_values_path).get_data()
 
-        print 'peaks: ', peaks_path
-        print 'peaks idx: ', peaks_idx_path
         # Run Dipy EuDX Tracking
         tracks_iter = EuDX(peaks_value,
                            peaks_idx,
