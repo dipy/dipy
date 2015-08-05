@@ -23,3 +23,15 @@ def choose_create_out_dir(out_dir, root_path):
         result_path = out_dir
 
     return result_path
+
+def int_param(val):
+    return int(val) if val != 'None' else None
+
+def bool_param(val):
+    return (val == 'True') if val != 'None' else None
+
+def int_list_param(val, sep=' '):
+    if val == 'None':
+        return None
+
+    return val.split(sep)
