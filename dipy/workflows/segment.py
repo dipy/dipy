@@ -61,8 +61,8 @@ def recognize_bundles_flow(streamline_files, model_bundle_files,
                            verbose=str(1),
                            disp=str(0)):
 
-    verbose = bool(verbose)
-    disp = bool(disp)
+    verbose = bool(int(verbose))
+    disp = bool(int(disp))
     scale_range = tuple([float(i) for i in scale_range.split(':')])
 
     if isinstance(streamline_files, string_types):
@@ -101,7 +101,7 @@ def recognize_bundles_flow(streamline_files, model_bundle_files,
                 model_bundle, moved_streamlines,
                 close_centroids_thr=float(close_centroids_thr),
                 clean_thr=float(clean_thr),
-                local_slr=bool(local_slr),
+                local_slr=bool(int(local_slr)),
                 expand_thr=None,
                 scale_range=scale_range,
                 verbose=verbose,

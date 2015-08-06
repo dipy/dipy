@@ -19,14 +19,17 @@ parser.add_argument('--expand_thr', action='store',
                     dest='expand_thr')
 parser.add_argument('--scale_range', action='store',
                     dest='scale_range', default='0.8:1.2')
-
+parser.add_argument('--disp', action='store',
+                    dest='disp')
 
 if __name__ == '__main__':
 
     args = parser.parse_args()
 
+    print(args)
+
     recognize_bundles_flow(args.streamlines, args.model_bundles,
                            args.model_streamlines, args.out_dir,
                            args.close_centroids_thr, args.clean_thr,
                            args.local_slr, args.expand_thr,
-                           args.scale_range)
+                           args.scale_range, disp=args.disp)
