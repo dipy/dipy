@@ -8,7 +8,7 @@ The diffusion kurtois model is an expansion of the diffusion tensor model
 diffusion kurtosis model quantifies the degree to which water diffusion in 
 biologic tissues is non-Gaussian using the kurtosis tensor (KT) [Jensen2005]_.
 
-Measurements of non-Gaussian diffusion by the diffusion kurtosis model are of
+Measurements of non-Gaussian diffusion from the diffusion kurtosis model are of
 interest because they can be used to charaterize tissue microstructural
 heterogeneity [Jensen2010]_ and to derive concrete biophysical parameters as
 the density of axonal fibres and diffusion tortuosity [Fierem2011]_.
@@ -52,9 +52,9 @@ characterize the KT:
                     & W_{xxzz} & W_{yyzz} & W_{xxyz} & W_{xyyz} & W_{xyzz}
                     & & )\end{matrix}
 
-In the following example we show how to fit diffusion kurtosis model to the
-diffusion multi-shell datasets and how to estimate diffusion kurtosis based
-statistics.
+In the following example we show how to fit the diffusion kurtosis model on
+diffusion-weighted multi-shell datasets and how to estimate diffusion kurtosis
+based statistics.
 
 First, we import all relevant modules:
 """
@@ -70,7 +70,7 @@ from dipy.segment.mask import median_otsu
 DKI requires multi-shell data, i.e. data acquired from more than one non-zero
 b-value. Here, we use fetch to download a multi-shell dataset which parameters
 are similar to the used on the Human Connectome Project (HCP). The total size
-of the dowloaded data is 188 MBytes, however you only need to fetch it once.
+of the dowloaded data is 1760 MBytes, however you only need to fetch it once.
 Parameter ``with_raw`` of function ``fetch_cenir_multib`` is set to ``False``
 to only download eddy-current/motion corrected data:
 """
@@ -92,11 +92,11 @@ data = img.get_data()
 
 """
 Function ``read_cenir_multib`` return img and gtab which contains respectively
-a nibabel Nifti1Image object (where the data is extracted) and a GradientTable
+a nibabel Nifti1Image object (where the data can extracted) and a GradientTable
 object with information about the b-values and b-vectors.
 
-Before fitting the data some data pre-processing is done. First, we mask and
-crop the data to avoid calculating Tensors on the background of the image.
+Before fitting the data, we first mask and crop the data to avoid calculating
+Tensors on the background of the image.
 """
 
 maskdata, mask = median_otsu(data, 3, 1, True, vol_idx=range(10, 50), dilate=2)
@@ -119,8 +119,8 @@ dkifit = dkimodel.fit(maskdata)
 """
 The fit method creates a DiffusionKurtosisFit object which contains all the
 diffusion and kurtosis fitting parameters and other DKI attributes. For
-instance, since the diffusion kurtosis model also estimates the diffusion
-tensor, all diffusion standard tensor statistics can be computed from the
+instance, since the diffusion kurtosis model estimates the diffusion tensor,
+all diffusion standard tensor statistics can be computed from the
 DiffusionKurtosisFit instance. As example, we show below how to extract the
 fractional anisotropy (FA), the mean diffusivity (MD), the axial diffusivity
 (AD) and the radial diffusivity (RD) from the DiffusionKurtosisiFit instance.
@@ -148,8 +148,8 @@ dti_RD = tenfit.rd
 """
 The DT based measured obtain from DKI and DTI can be easly visualized using
 matplotlib. For example, the FA, MD, AD, and RD obtain from the DKI model
-(upper panels) and the DTI model (lower panels). Images are ploted for an
-arbitary selected axial slices.
+(upper panels) and the DTI model (lower panels) are ploted for an arbitary
+selected axial slice.
 """
 
 axial_slice = 40
@@ -186,28 +186,23 @@ fig1.savefig('Diffusion_tensor_measures_from_DTI_and_DKI.png')
    **Diffusion tensor measures obtain from the diffusion tensor estimated from
    DKI (upper panels) and DTI (lower panels).**.
 
-This paragraph have to be updated -----------------------------------------
-From the figure, we can see that the DT standard diffusion measures from DKI
-are noisier than the DTI measurements. This is a well known pitfall of DKI
-[NetoHe2014]_. Since it involves the estimation of a larger number of
-parameters, DKI is more sensitive to noise than DTI. Nevertheless, DKI
-diffusion based measures were shown to have better precision (i.e. less
-sensitive to bias) [Veraa2011]_.
+From the figure, we can see that the standard diffusion measures from DKI has
+similar constrasts than the standard diffusion measures from DTI.
 
-The standard kurtosis statistics can be computed from the DiffusinKurtosisFit
-instance as the mean kurtosis (MK), the axial kurtosis (AK) and the radial
-kurtosis (RK).
+In addition to the standard diffusion statistics, the DiffusinKurtosisFit
+instance can be used to estimate standard non-Gaussian measures as the mean
+kurtosis (MK), the axial kurtosis (AK) and the radial kurtosis (RK).
 """
 
 MK = dkifit.mk
-RK = dkifit.rk
 AK = dkifit.ak
+RK = dkifit.rk
 
 """
-Kurtosis measures are very susceptible to outliers which corrupts the automatic
-visualization scale of the figure above. By setting a typical kurtosis value
-range of 0 and 2, we remove kurtosis measures outliers and reproduce the
-figures.
+Kurtosis measures are susceptible to high amplitude outliers which can corrupt
+the automatic ajusted scale of the matplotlib functions. By assuming that
+typical values of kurtosis lie on a range between 0 and 2, the impact of high
+amplitude kurtosis outliers are removed in the following:
 """
 
 MK[MK > 2] = 2
@@ -218,7 +213,7 @@ RK[RK > 2] = 2
 RK[RK < 0] = 0
 
 """
-We plot
+Now we are ready to plot the kurtosis standard measures using matplotlib:
 """
 
 fig2, ax = plt.subplots(1, 3, figsize=(12, 6),
@@ -228,10 +223,10 @@ fig2.subplots_adjust(hspace=0.3, wspace=0.05)
 
 ax.flat[0].imshow(MK[:, :, axial_slice], cmap='gray')
 ax.flat[0].set_title('MK')
-ax.flat[2].imshow(RK[:, :, axial_slice], cmap='gray')
-ax.flat[2].set_title('RK')
 ax.flat[1].imshow(AK[:, :, axial_slice], cmap='gray')
 ax.flat[1].set_title('AK')
+ax.flat[2].imshow(RK[:, :, axial_slice], cmap='gray')
+ax.flat[2].set_title('RK')
 
 plt.show()
 fig2.savefig('Kurtosis_tensor_standard_measures.png')
@@ -240,6 +235,12 @@ fig2.savefig('Kurtosis_tensor_standard_measures.png')
 .. figure:: Kurtosis_standard_measures.png
    :align: center
    **Kurtosis tensor standard measures obtain from the kurtosis tensor.**.
+
+The non-Gaussian behaviour of the diffusion signal is larger when water
+diffusion is restrited by compartments and barriers (e.g., myelin sheath).
+Therefore, as the figure above shows, white matter kurtosis values are smaller
+along the axial direction of fibers (smaller amplitudes shown in the AK map)
+than for the radial directions (larger amplitudes shown in the RK map).
 
 References:
 
@@ -253,18 +254,10 @@ References:
 .. [Fierem2011] Fieremans E, Jensen JH, Helpern JA (2011). White matter
                 characterization with diffusion kurtosis imaging. NeuroImage
                 58: 177-188
-.. [NetoHe2014] Neto Henriques R, Ferreira HA, Correia MM (2012). Diffusion
-                kurtosis imaging of the healthy human brain. Master
-                Dissertation Bachelor and Master Program in Biomedical
-                Engineering and Biophysics, Faculty of Sciences.
 .. [NetoHe2015] Neto Henriques R, Correia MM, Nunes RG, Ferreira HA (2015).
                 Exploring the 3D geometry of the diffusion kurtosis tensor -
                 Impact on the development of robust tractography procedures and
                 novel biomarkers, NeuroImage 111: 85-99
-.. [Veraar2011] Veraart J, Poot DH, Van Hecke W, Blockx I, Van der Linden A,
-                Verhoye M, Sijbers J (2011). More Accurate Estimation of
-                Diffusion Tensor Parameters Using Diffusion Kurtosis Imaging.
-                Magnetic Resonance in Medicine 65(1): 138-145
 
 .. include:: ../links_names.inc
 """
