@@ -55,15 +55,15 @@ def recognize_bundles_flow(streamline_files, model_bundle_files,
                            model_streamlines_file, out_dir=None,
                            close_centroids_thr=str(20),
                            clean_thr=str(5.),
-                           local_slr=str(True),
+                           local_slr=str(1),
                            expand_thr=None,
                            scale_range="0.8:1.2",
-                           verbose=str(True),
-                           disp=str(False)):
+                           verbose=str(1),
+                           disp=str(0)):
 
     verbose = bool(verbose)
     disp = bool(disp)
-    scale_range = (float(i) for i in "0.8:1.2".split(':'))
+    scale_range = tuple([float(i) for i in scale_range.split(':')])
 
     if isinstance(streamline_files, string_types):
         sfiles = glob(streamline_files)
@@ -127,4 +127,5 @@ def recognize_bundles_flow(streamline_files, model_bundle_files,
             if not os.path.exists(os.path.dirname(sf_bundle_file)):
                 os.makedirs(os.path.dirname(sf_bundle_file))
             save_trk(sf_bundle_file, extracted_bundle_initial, hdr=hdr)
-            print('Bundle saved in %s ' % (sf_bundle_file,))
+
+            print('Recognized bundle saved in %s ' % (sf_bundle_file,))
