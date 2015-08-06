@@ -24,7 +24,7 @@ from .base import ReconstModel
 from dipy.core.ndindex import ndindex
 
 
-def _positive_evals(L1, L2, L3, er=None):
+def _positive_evals(L1, L2, L3, er=2e-7):
     """ Helper function that indentifies which voxels in a array have all
     eigenvalues significantly larger than zero
 
@@ -44,15 +44,7 @@ def _positive_evals(L1, L2, L3, er=None):
     ind : boolean (n,)
         Array that marks the voxels that have all eigenvalues are larger than
         zero.
-
-    Note
-    -----
-    If er is not given, it is assumed to be the smallest non-zero diffusion of
-    the smallest eignevalue L3.
     """
-    if er is None:
-        er = L3[L3 > 0].min()
-
     ind = np.logical_and(L1 > er, np.logical_and(L2 > er, L3 > er))
 
     return ind
