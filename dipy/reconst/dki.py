@@ -44,7 +44,7 @@ def _positive_evals(L1, L2, L3, er=None):
     ind : boolean (n,)
         Array that marks the voxels that have all eigenvalues are larger than
         zero.
-        
+
     Note
     -----
     If er is not given, it is assumed to be the smallest non-zero diffusion of
@@ -54,16 +54,16 @@ def _positive_evals(L1, L2, L3, er=None):
         er = L3[L3 > 0].min()
 
     ind = np.logical_and(L1 > er, np.logical_and(L2 > er, L3 > er))
-  
+
     return ind
 
 
 def carlson_rf(x, y, z, errtol=3e-4):
     r""" Computes the Carlson's incomplete elliptic integral of the first kind
     defined as:
-    
+
     .. math::
-    
+
         R_F = \frac{1}{2} \int_{0}^{\infty} \left [(t+x)(t+y)(t+z)  \right ]
         ^{-\frac{1}{2}}dt
 
@@ -104,7 +104,7 @@ def carlson_rf(x, y, z, errtol=3e-4):
     for v in index:
         n = 0
         # Convergence condition
-        while 4.**(-n) * Q[v] > abs(An[v]):          
+        while 4.**(-n) * Q[v] > abs(An[v]):
             xnroot = np.sqrt(xn[v])
             ynroot = np.sqrt(yn[v])
             znroot = np.sqrt(zn[v])
@@ -150,7 +150,7 @@ def carlson_rd(x, y, z, errtol=1e-4):
     -------
     RD : ndarray
         Value of the incomplete second order elliptic integral
-    
+
     Note
     -----
     x, y, and z have to be nonnegative and at most x or y is zero.
@@ -169,7 +169,7 @@ def carlson_rd(x, y, z, errtol=1e-4):
     index = ndindex(x.shape)
     for v in index:
         # Convergence condition
-        while 4.**(-n[v]) * Q[v] > abs(An[v]):          
+        while 4.**(-n[v]) * Q[v] > abs(An[v]):
             xnroot = np.sqrt(xn[v])
             ynroot = np.sqrt(yn[v])
             znroot = np.sqrt(zn[v])
@@ -187,11 +187,12 @@ def carlson_rd(x, y, z, errtol=1e-4):
     Z = - (X+Y) / 3.
     E2 = X*Y - 6.*Z*Z
     E3 = (3.*X*Y - 8.*Z*Z) * Z
-    E4 = 3.* (X*Y - Z*Z) * Z**2.
+    E4 = 3. * (X*Y - Z*Z) * Z**2.
     E5 = X * Y * Z**3.
     RD = \
-        4**(-n) * An**(-3/2.) * (1 - 3/14.*E2 + 1/6.*E3 + 9/88.*(E2**2) - \
-        3/22.*E4 - 9/52.*E2*E3 + 3/26.*E5) + 3*sum_term
+        4**(-n) * An**(-3/2.) * \
+        (1 - 3/14.*E2 + 1/6.*E3 + 9/88.*(E2**2) - 3/22.*E4 - 9/52.*E2*E3 +
+         3/26.*E5) + 3*sum_term
 
     return RD
 
@@ -199,16 +200,16 @@ def carlson_rd(x, y, z, errtol=1e-4):
 def _F1m(a, b, c):
     """ Helper function that computes function $F_1$ which is required to
     compute the analytical solution of the Mean kurtosis.
-    
+
     Parameters
     ----------
     a : ndarray
-        Array containing the values of parameter $\lambda_1$ of function $F_1$ 
+        Array containing the values of parameter $\lambda_1$ of function $F_1$
     b : ndarray
         Array containing the values of parameter $\lambda_2$ of function $F_1$
     c : ndarray
         Array containing the values of parameter $\lambda_3$ of function $F_1$
-        
+
     Returns
     -------
     F1 : ndarray
@@ -236,10 +237,9 @@ def _F1m(a, b, c):
            Estimation of tensors and tensor-derived measures in diffusional
            kurtosis imaging. Magn Reson Med. 65(3), 823-836
     """
-    # Float error used to compare two floats, abs(l1 - l2) < er for l1 = l2 
-    er = np.finfo(a.ravel()[0]).eps * 1e3  # Error defined as three order of 
-                                           # magnitude larger than system's
-                                           # epslon
+    # Float error used to compare two floats, abs(l1 - l2) < er for l1 = l2
+    # Error is defined as three order of magnitude larger than system's epslon
+    er = np.finfo(a.ravel()[0]).eps * 1e3
 
     # Initialize F1
     F1 = np.zeros(a.shape)
@@ -250,37 +250,37 @@ def _F1m(a, b, c):
     # Apply formula for non problematic plaussible cases, i.e. a!=b and a!=c
     cond1 = np.logical_and(cond0, np.logical_and(abs(a - b) > er,
                                                  abs(a - c) > er))
-    if np.sum(cond1)!=0:
+    if np.sum(cond1) != 0:
         L1 = a[cond1]
         L2 = b[cond1]
         L3 = c[cond1]
         RFm = carlson_rf(L1/L2, L1/L3, np.ones(len(L1)))
         RDm = carlson_rd(L1/L2, L1/L3, np.ones(len(L1)))
         F1[cond1] = ((L1+L2+L3) ** 2) / (18 * (L1-L2) * (L1-L3)) * \
-                    (np.sqrt(L2*L3) / L1 * RFm + \
-                     (3 * L1**2 - L1*L2 - L1*L3 - L2*L3) / \
+                    (np.sqrt(L2*L3) / L1 * RFm +
+                     (3 * L1**2 - L1*L2 - L1*L3 - L2*L3) /
                      (3 * L1 * np.sqrt(L2*L3)) * RDm - 1)
 
     # Resolve possible sigularity a==b
     cond2 = np.logical_and(cond0, np.logical_and(abs(a - b) < er,
                                                  abs(b - c) > er))
-    if np.sum(cond2)!=0:
+    if np.sum(cond2) != 0:
         L1 = a[cond2]
         L3 = c[cond2]
         F1[cond2] = _F2m(L3, L1, L1) / 2
 
-    # Resolve possible sigularity a==c 
+    # Resolve possible sigularity a==c
     cond3 = np.logical_and(cond0, np.logical_and(abs(a - c) < er,
-                                                  abs(a - b) > er))
-    if np.sum(cond3)!=0:
+                                                 abs(a - b) > er))
+    if np.sum(cond3) != 0:
         L1 = a[cond3]
         L2 = b[cond3]
         F1[cond3] = _F2m(L2, L1, L1) / 2
 
     # Resolve possible sigularity a==b and a==c
     cond4 = np.logical_and(cond0, np.logical_and(abs(a - c) < er,
-                                                  abs(a - b) < er))
-    if np.sum(cond4)!=0:
+                                                 abs(a - b) < er))
+    if np.sum(cond4) != 0:
         F1[cond4] = 1/5.
 
     return F1
@@ -289,16 +289,16 @@ def _F1m(a, b, c):
 def _F2m(a, b, c):
     """ Helper function that computes function $F_2$ which is required to
     compute the analytical solution of the Mean kurtosis.
-    
+
     Parameters
     ----------
-    a : ndarray 
-        Array containing the values of parameter $\lambda_1$ of function $F_2$ 
+    a : ndarray
+        Array containing the values of parameter $\lambda_1$ of function $F_2$
     b : ndarray
         Array containing the values of parameter $\lambda_2$ of function $F_2$
     c : ndarray
         Array containing the values of parameter $\lambda_3$ of function $F_2$
-        
+
     Returns
     -------
     F2 : ndarray
@@ -323,9 +323,9 @@ def _F2m(a, b, c):
            Estimation of tensors and tensor-derived measures in diffusional
            kurtosis imaging. Magn Reson Med. 65(3), 823-836
     """
-    # Float error used to compare two floats, abs(l1 - l2) < er for l1 = l2 
-    er = np.finfo(a.ravel()[0]).eps * 1e3  # Error defined as three order of magnitude
-                                   # larger than system's epslon
+    # Float error used to compare two floats, abs(l1 - l2) < er for l1 = l2
+    # Error is defined as three order of magnitude larger than system's epslon
+    er = np.finfo(a.ravel()[0]).eps * 1e3
 
     # Initialize F2
     F2 = np.zeros(a.shape)
@@ -334,21 +334,21 @@ def _F2m(a, b, c):
     cond0 = _positive_evals(a, b, c)
 
     # Apply formula for non problematic plaussible cases, i.e. b!=c
-    cond1=np.logical_and(cond0, (abs(b - c) > er))
-    if np.sum(cond1)!=0:
+    cond1 = np.logical_and(cond0, (abs(b - c) > er))
+    if np.sum(cond1) != 0:
         L1 = a[cond1]
         L2 = b[cond1]
         L3 = c[cond1]
         RF = carlson_rf(L1/L2, L1/L3, np.ones(len(L1)))
         RD = carlson_rd(L1/L2, L1/L3, np.ones(len(L1)))
         F2[cond1] = (((L1+L2+L3) ** 2) / (3. * (L2-L3) ** 2)) * \
-                    (((L2+L3) / (np.sqrt(L2*L3))) * RF + \
+                    (((L2+L3) / (np.sqrt(L2*L3))) * RF +
                      ((2.*L1-L2-L3) / (3.*np.sqrt(L2*L3))) * RD - 2.)
 
     # Resolve possible sigularity b==c
-    cond2=np.logical_and(cond0, np.logical_and(abs(b - c) < er,
-                                                abs(a - b) > er))
-    if np.sum(cond2)!=0:
+    cond2 = np.logical_and(cond0, np.logical_and(abs(b - c) < er,
+                                                 abs(a - b) > er))
+    if np.sum(cond2) != 0:
         L1 = a[cond2]
         L2 = b[cond2]
         L3 = c[cond2]
@@ -357,18 +357,19 @@ def _F2m(a, b, c):
         x = 1. - (L1/L3)
         alpha = np.zeros(len(L1))
         for i in range(len(x)):
-            if x[i]>0:
+            if x[i] > 0:
                 alpha[i] = 1./np.sqrt(x[i]) * np.arctanh(np.sqrt(x[i]))
             else:
                 alpha[i] = 1./np.sqrt(-x[i]) * np.arctan(np.sqrt(-x[i]))
 
-        F2[cond2] = 6. * ((L1 + 2.*L3)**2) / (144. * L3**2 * (L1-L3)**2) * \
-                    (L3 * (L1 + 2.*L3) + L1 * (L1 - 4.*L3) * alpha)
+        F2[cond2] = \
+            6. * ((L1 + 2.*L3)**2) / (144. * L3**2 * (L1-L3)**2) * \
+            (L3 * (L1 + 2.*L3) + L1 * (L1 - 4.*L3) * alpha)
 
     # Resolve possible sigularity a==b and a==c
     cond3 = np.logical_and(cond0, np.logical_and(abs(a - c) < er,
-                                                  abs(a - b) < er))
-    if np.sum(cond3)!=0:
+                                                 abs(a - b) < er))
+    if np.sum(cond3) != 0:
         F2[cond3] = 6/15.
 
     return F2
@@ -441,7 +442,7 @@ def apparent_kurtosis_coef(dki_params, sphere, min_diffusivity=0,
     evecs = evecs[rel_i]
     evals = evals[rel_i]
     AKCi = AKC[rel_i]
-    
+
     # Compute MD
     MD = mean_diffusivity(evals)
 
@@ -560,7 +561,7 @@ def mean_kurtosis(dki_params, sphere=None):
 
     where $\hat{W}_{ijkl}$ are the components of the $W$ tensor in the
     coordinates system defined by the eigenvectors of the diffusion tensor
-    $\mathbf{D}$ and 
+    $\mathbf{D}$ and
 
     F_1(\lambda_1,\lambda_2,\lambda_3)=
     \frac{(\lambda_1+\lambda_2+\lambda_3)^2}
@@ -595,7 +596,7 @@ def mean_kurtosis(dki_params, sphere=None):
     # isn't required
     outshape = dki_params.shape[:-1]
     dki_params = dki_params.reshape((-1, dki_params.shape[-1]))
-    
+
     # Split the model parameters to three variable containing the evals, evecs,
     # and kurtosis elements
     evals, evecs, kt = split_dki_param(dki_params)
@@ -611,12 +612,13 @@ def mean_kurtosis(dki_params, sphere=None):
     Wyyzz = Wrotate_element(kt, 1, 1, 2, 2, evecs)
 
     # Compute MK
-    MK = _F1m(evals[..., 0], evals[..., 1], evals[..., 2])*Wxxxx + \
-         _F1m(evals[..., 1], evals[..., 0], evals[..., 2])*Wyyyy + \
-         _F1m(evals[..., 2], evals[..., 1], evals[..., 0])*Wzzzz + \
-         _F2m(evals[..., 0], evals[..., 1], evals[..., 2])*Wyyzz + \
-         _F2m(evals[..., 1], evals[..., 0], evals[..., 2])*Wxxzz + \
-         _F2m(evals[..., 2], evals[..., 1], evals[..., 0])*Wxxyy
+    MK = \
+        _F1m(evals[..., 0], evals[..., 1], evals[..., 2])*Wxxxx + \
+        _F1m(evals[..., 1], evals[..., 0], evals[..., 2])*Wyyyy + \
+        _F1m(evals[..., 2], evals[..., 1], evals[..., 0])*Wzzzz + \
+        _F2m(evals[..., 0], evals[..., 1], evals[..., 2])*Wyyzz + \
+        _F2m(evals[..., 1], evals[..., 0], evals[..., 2])*Wxxzz + \
+        _F2m(evals[..., 2], evals[..., 1], evals[..., 0])*Wxxyy
 
     return MK.reshape(outshape)
 
@@ -624,16 +626,16 @@ def mean_kurtosis(dki_params, sphere=None):
 def _G1m(a, b, c):
     """ Helper function that computes function $G_1$ which is required to
     compute the analytical solution of the Radial kurtosis.
-    
+
     Parameters
     ----------
     a : ndarray
-        Array containing the values of parameter $\lambda_1$ of function $G_1$ 
+        Array containing the values of parameter $\lambda_1$ of function $G_1$
     b : ndarray
         Array containing the values of parameter $\lambda_2$ of function $G_1$
     c : ndarray
         Array containing the values of parameter $\lambda_3$ of function $G_1$
-        
+
     Returns
     -------
     G1 : ndarray
@@ -656,10 +658,9 @@ def _G1m(a, b, c):
            Estimation of tensors and tensor-derived measures in diffusional
            kurtosis imaging. Magn Reson Med. 65(3), 823-836
     """
-    # Float error used to compare two floats, abs(l1 - l2) < er for l1 = l2 
-    er = np.finfo(a.ravel()[0]).eps * 1e3  # Error defined as three order of
-                                           # magnitude larger than system's
-                                           # epslon
+    # Float error used to compare two floats, abs(l1 - l2) < er for l1 = l2
+    # Error is defined as three order of magnitude larger than system's epslon
+    er = np.finfo(a.ravel()[0]).eps * 1e3
 
     # Initialize G1
     G1 = np.zeros(a.shape)
@@ -668,8 +669,8 @@ def _G1m(a, b, c):
     cond0 = _positive_evals(a, b, c)
 
     # Apply formula for non problematic plaussible cases, i.e. b!=c
-    cond1=np.logical_and(cond0, (abs(b - c) > er))
-    if np.sum(cond1)!=0:
+    cond1 = np.logical_and(cond0, (abs(b - c) > er))
+    if np.sum(cond1) != 0:
         L1 = a[cond1]
         L2 = b[cond1]
         L3 = c[cond1]
@@ -678,8 +679,8 @@ def _G1m(a, b, c):
             (2.*L2 + (L3**2 - 3*L2*L3) / np.sqrt(L2*L3))
 
     # Resolve possible sigularity b==c
-    cond2=np.logical_and(cond0, abs(b - c) < er)
-    if np.sum(cond2)!=0:
+    cond2 = np.logical_and(cond0, abs(b - c) < er)
+    if np.sum(cond2) != 0:
         L1 = a[cond2]
         L2 = b[cond2]
         G1[cond2] = (L1 + 2.*L2)**2 / (24.*L2**2)
@@ -694,7 +695,7 @@ def _G2m(a, b, c):
     Parameters
     ----------
     a : ndarray
-        Array containing the values of parameter $\lambda_1$ of function $G_2$ 
+        Array containing the values of parameter $\lambda_1$ of function $G_2$
     b : ndarray
         Array containing the values of parameter $\lambda_2$ of function $G_2$
     c : ndarray (n,)
@@ -719,10 +720,9 @@ def _G2m(a, b, c):
            Estimation of tensors and tensor-derived measures in diffusional
            kurtosis imaging. Magn Reson Med. 65(3), 823-836
     """
-    # Float error used to compare two floats, abs(l1 - l2) < er for l1 = l2 
-    er = np.finfo(a.ravel()[0]).eps * 1e3  # Error defined as three order of
-                                           # magnitude larger than system's
-                                           # epslon
+    # Float error used to compare two floats, abs(l1 - l2) < er for l1 = l2
+    # Error is defined as three order of magnitude larger than system's epslon
+    er = np.finfo(a.ravel()[0]).eps * 1e3
 
     # Initialize G2
     G2 = np.zeros(a.shape)
@@ -731,8 +731,8 @@ def _G2m(a, b, c):
     cond0 = _positive_evals(a, b, c)
 
     # Apply formula for non problematic plaussible cases, i.e. b!=c
-    cond1=np.logical_and(cond0, (abs(b - c) > er))
-    if np.sum(cond1)!=0:
+    cond1 = np.logical_and(cond0, (abs(b - c) > er))
+    if np.sum(cond1) != 0:
         L1 = a[cond1]
         L2 = b[cond1]
         L3 = c[cond1]
@@ -740,8 +740,8 @@ def _G2m(a, b, c):
             (L1+L2+L3)**2 / (3 * (L2-L3)**2) * ((L2+L3) / np.sqrt(L2*L3) - 2)
 
     # Resolve possible sigularity b==c
-    cond2=np.logical_and(cond0, abs(b - c) < er)
-    if np.sum(cond2)!=0:
+    cond2 = np.logical_and(cond0, abs(b - c) < er)
+    if np.sum(cond2) != 0:
         L1 = a[cond2]
         L2 = b[cond2]
         G2[cond2] = (L1 + 2.*L2)**2 / (12.*L2**2)
@@ -750,7 +750,7 @@ def _G2m(a, b, c):
 
 
 def radial_kurtosis(dki_params):
-    r""" Radial Kurtosis (RK) of a diffusion kurtosis tensor. 
+    r""" Radial Kurtosis (RK) of a diffusion kurtosis tensor.
 
     Parameters
     ----------
@@ -782,7 +782,7 @@ def radial_kurtosis(dki_params):
         \lambda_3)} \left (2\lambda_2 +
         \frac{\lambda_3^2-3\lambda_2\lambda_3}{\sqrt{\lambda_2\lambda_3}}
         \right)
-  
+
     and
 
     .. math::
@@ -810,7 +810,7 @@ def radial_kurtosis(dki_params):
     RK = \
         _G1m(evals[..., 0], evals[..., 1], evals[..., 2]) * Wyyyy + \
         _G1m(evals[..., 0], evals[..., 2], evals[..., 1]) * Wzzzz + \
-        _G2m(evals[..., 0], evals[..., 1], evals[..., 2]) * Wyyzz     
+        _G2m(evals[..., 0], evals[..., 1], evals[..., 2]) * Wyyzz
 
     return RK.reshape(outshape)
 
@@ -849,7 +849,7 @@ def axial_kurtosis(dki_params):
     evecs = evecs[rel_i]
     evals = evals[rel_i]
     AKi = AK[rel_i]
-    
+
     # Compute MD
     MD = mean_diffusivity(evals)
 
@@ -858,7 +858,7 @@ def axial_kurtosis(dki_params):
         R = evecs[vox]
         dt = lower_triangular(np.dot(np.dot(R, np.diag(evals[vox])), R.T))
         AKi[vox] = _directional_kurtosis(dt, MD[vox], kt[vox],
-                                        np.array([R[:, 0]]))
+                                         np.array([R[:, 0]]))
 
     # reshape data according to input data
     AK[rel_i] = AKi
@@ -988,13 +988,12 @@ class DiffusionKurtosisModel(ReconstModel):
             mask = np.array(mask, dtype=bool, copy=False)
             data_in_mask = np.reshape(data[mask], (-1, data.shape[-1]))
 
-
         if self.min_signal is None:
             min_signal = _min_positive_signal(data)
         else:
             min_signal = self.min_signal
 
-        data_in_mask = np.maximum(data_in_mask, min_signal)        
+        data_in_mask = np.maximum(data_in_mask, min_signal)
         params_in_mask = self.fit_method(self.design_matrix, data_in_mask,
                                          *self.args, **self.kwargs)
 
@@ -1091,7 +1090,7 @@ class DiffusionKurtosisFit(TensorFit):
 
     @auto_attr
     def mk(self, sphere=None):
-        r""" Computes mean Kurtosis (MK) from the kurtosis tensor. 
+        r""" Computes mean Kurtosis (MK) from the kurtosis tensor.
 
         Parameters
         ----------
@@ -1121,7 +1120,7 @@ class DiffusionKurtosisFit(TensorFit):
 
         where $\hat{W}_{ijkl}$ are the components of the $W$ tensor in the
         coordinates system defined by the eigenvectors of the diffusion tensor
-        $\mathbf{D}$ and 
+        $\mathbf{D}$ and
 
         .. math::
 
@@ -1134,7 +1133,7 @@ class DiffusionKurtosisFit(TensorFit):
             \lambda_1\lambda_3}
             {3\lambda_1 \sqrt{\lambda_2 \lambda_3}}
             R_D(\frac{\lambda_1}{\lambda_2},\frac{\lambda_1}{\lambda_3},1)-1 ]
- 
+
         and
 
         .. math::
@@ -1148,7 +1147,7 @@ class DiffusionKurtosisFit(TensorFit):
             R_D(\frac{\lambda_1}{\lambda_2},\frac{\lambda_1}{\lambda_3},1)-2]
 
         where $R_f$ and $R_d$ are the Carlson's elliptic integrals.
-      
+
         References
         ----------
         .. [1] Hui ES, Cheung MM, Qi L, Wu EX, 2008. Towards better MR
@@ -1200,7 +1199,7 @@ class DiffusionKurtosisFit(TensorFit):
             \lambda_3)} \left (2\lambda_2 +
             \frac{\lambda_3^2-3\lambda_2\lambda_3}{\sqrt{\lambda_2\lambda_3}}
             \right)
-  
+
         and
 
         .. math::
@@ -1485,7 +1484,7 @@ def _wls_iter(design_matrix, inv_design, sig, min_diffusivity):
 def Wrotate(kt, Basis):
     r""" Rotate a kurtosis tensor from the standard Cartesian coordinate system
     to another coordinate system basis
-    
+
     Parameters
     ----------
     kt : (15,)
@@ -1496,7 +1495,7 @@ def Wrotate(kt, Basis):
         Array of vectors containing the four indexes of m specific elements of
         the rotated kurtosis tensor. If not specified all 15 elements of the
         rotated kurtosis tensor are computed.
-    
+
     Returns
     --------
     Wrot : array (m,) or (15,)
@@ -1506,9 +1505,9 @@ def Wrotate(kt, Basis):
     Note
     ------
     KT elements are assumed to be ordered as follows:
-        
+
     .. math::
-            
+
     \begin{matrix} ( & W_{xxxx} & W_{yyyy} & W_{zzzz} & W_{xxxy} & W_{xxxz}
                      & ... \\
                      & W_{xyyy} & W_{yyyz} & W_{xzzz} & W_{yzzz} & W_{xxyy}
@@ -1527,7 +1526,6 @@ def Wrotate(kt, Basis):
                      [1, 1, 1, 2], [0, 2, 2, 2], [1, 2, 2, 2],
                      [0, 0, 1, 1], [0, 0, 2, 2], [1, 1, 2, 2],
                      [0, 0, 1, 2], [0, 1, 1, 2], [0, 1, 2, 2]])
-
 
     Wrot = np.zeros(kt.shape)
 
@@ -1548,6 +1546,7 @@ def Wrotate(kt, Basis):
 ind_ele = {1: 0, 16: 1, 81: 2, 2: 3, 3: 4, 8: 5, 24: 6, 27: 7, 54: 8, 4: 9,
            9: 10, 36: 11, 6: 12, 12: 13, 18: 14}
 
+
 def Wrotate_element(kt, indi, indj, indk, indl, B):
     r""" Computes the the specified index element of a kurtosis tensor rotated
     to the coordinate system basis B.
@@ -1566,7 +1565,7 @@ def Wrotate_element(kt, indi, indj, indk, indl, B):
         Rotated kurtosis tensor element index l (0 for x, 1 for y, 2 for z)
     B: array (x, y, z, 3, 3) or (n, 15)
         Vectors of the basis column-wise oriented
-    
+
     Returns
     -------
     Wre : float
@@ -1602,26 +1601,26 @@ def Wrotate_element(kt, indi, indj, indk, indl, B):
 def Wcons(k_elements):
     r""" Construct the full 4D kurtosis tensors from its 15 independent
     elements
-    
+
     Parameters
     ----------
     k_elements : (15,)
         elements of the kurtosis tensor in the following order:
-        
+
         .. math::
-            
+
     \begin{matrix} ( & W_{xxxx} & W_{yyyy} & W_{zzzz} & W_{xxxy} & W_{xxxz}
                      & ... \\
                      & W_{xyyy} & W_{yyyz} & W_{xzzz} & W_{yzzz} & W_{xxyy}
                      & ... \\
                      & W_{xxzz} & W_{yyzz} & W_{xxyz} & W_{xyyz} & W_{xyzz}
                      & & )\end{matrix}
+
     Returns
     -------
     W : array(3, 3, 3, 3)
         Full 4D kurtosis tensor
     """
-
     W = np.zeros((3, 3, 3, 3))
 
     xyz = [0, 1, 2]

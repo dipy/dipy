@@ -5,7 +5,7 @@ Reconstruction of the diffusion signal with the kurtosis tensor model
 
 The diffusion kurtois model is an expansion of the diffusion tensor model
 (see :ref:`example_reconst_dti`). In addition to the diffusion tensor (DT), the
-diffusion kurtosis model quantifies the degree to which water diffusion in 
+diffusion kurtosis model quantifies the degree to which water diffusion in
 biologic tissues is non-Gaussian using the kurtosis tensor (KT) [Jensen2005]_.
 
 Measurements of non-Gaussian diffusion from the diffusion kurtosis model are of
@@ -78,13 +78,13 @@ to only download eddy-current/motion corrected data:
 fetch_cenir_multib(with_raw=False)
 
 """
-Next, we read the saved dataset. To decrease the influence of diffusion signal 
+Next, we read the saved dataset. To decrease the influence of diffusion signal
 taylor approximation componets larger than the fourth order (componets not
 taken into account by the diffusion kurtosis tensor), we only select the
 b-values up to 2000 $s.mm^{-2}$:
 """
 
-bvals=[200, 400, 1000, 2000]
+bvals = [200, 400, 1000, 2000]
 
 img, gtab = read_cenir_multib(bvals)
 
@@ -110,7 +110,7 @@ DiffusinKurtosisModel in the following way:
 dkimodel = dki.DiffusionKurtosisModel(gtab)
 
 """
-To fitting the data using the defined ``dkimodel``, we just need to call the 
+To fitting the data using the defined ``dkimodel``, we just need to call the
 fit function of the DiffusinKurtosisModel:
 """
 
