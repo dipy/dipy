@@ -557,36 +557,60 @@ def read_syn_data():
     b0 = nib.load(b0_name)
     return t1, b0
 
+mni_notes = \
+"""
+    Notes
+    -----
+    The templates were downloaded from the MNI (McGill University) `website <http://www.bic.mni.mcgill.ca/ServicesAtlases/ICBM152NLin2009>`_
+    in July 2015.
+
+    The following publications should be referenced when using these templates:
+
+    .. [1] VS Fonov, AC Evans, K Botteron, CR Almli, RC McKinstry, DL Collins
+           and BDCG, Unbiased average age-appropriate atlases for pediatric
+           studies, NeuroImage, 54:1053-8119, DOI: 10.1016/j.neuroimage.2010.07.033
+
+    .. [2] VS Fonov, AC Evans, RC McKinstry, CR Almli and DL Collins,
+            Unbiased nonlinear average age-appropriate brain templates from
+            birth to adulthood, NeuroImage, 47:S102
+            Organization for Human Brain Mapping 2009 Annual Meeting,
+            DOI: http://dx.doi.org/10.1016/S1053-8119(09)70884-5
+
+    License for the MNI templates:
+    -----------------------------
+    Copyright (C) 1993-2004, Louis Collins McConnell Brain Imaging Centre,
+    Montreal Neurological Institute, McGill University. Permission to use,
+    copy, modify, and distribute this software and its documentation for any
+    purpose and without fee is hereby granted, provided that the above
+    copyright notice appear in all copies. The authors and McGill University
+    make no representations about the suitability of this software for any
+    purpose. It is provided "as is" without express or implied warranty. The
+    authors are not responsible for any data loss, equipment damage, property
+    loss, or injury to subjects or patients resulting from the use or misuse
+    of this software package.
+"""
+
+
 
 def fetch_mni_template():
     """
     Fetch the MNI T2 and T1 template files (~35 MB)
     """
-    url = \
+    folder = pjoin(dipy_home, 'mni_template')
+    baseurl = \
     'https://digital.lib.washington.edu/researchworks/bitstream/handle/1773/33312/'
+
     fname_list = ['COPYING',
                   'mni_icbm152_t2_tal_nlin_asym_09a.nii',
                   'mni_icbm152_t1_tal_nlin_asym_09a.nii']
-    url_list = [url + ff for ff in fname_list]
     md5_list = ['6e2168072e80aa4c0c20f1e6e52ec0c8',
                 'f41f2e1516d880547fbf7d6a83884f0d',
                 '1ea8f4f1e41bc17a94602e48141fdbc8']
-    folder = pjoin(dipy_home, 'mni_template')
-    if not os.path.exists(folder):
-        print('Creating new directory %s' % folder)
-        os.makedirs(folder)
-        print('Downloading T2 and T1 MNI templates (~35 MB)...')
-
-        for i in range(len(md5_list)):
-            _get_file_data(pjoin(folder, fname_list[i]), url_list[i])
-            check_md5(pjoin(folder, fname_list[i]), md5_list[i])
-
-        print('Done.')
-        print('Files copied in folder %s' % folder)
-        print("The copyright notice is provided in the file: %s" %
-              pjoin(folder, fname_list[0]))
-    else:
-        _already_there_msg(folder)
+    files = {}
+    for f, m in zip(fname_list, md5_list):
+        files[f] = (baseurl + f, m)
+    fetch_data(files, folder)
+    return files, folder
 
 
 def read_mni_template(contrast="T2"):
@@ -611,33 +635,22 @@ def read_mni_template(contrast="T2"):
     >>> T2_nifti = read_mni_template("T2") # doctest: +SKIP
     Get both files in this order:
     >>> T1_nifti, T2_nifti = read_mni_template(["T1", "T2"]) # doctest: +SKIP
-
     """
-    folder = pjoin(dipy_home, 'mni_template')
+    files, folder = fetch_mni_template()
     file_dict = {"T1":pjoin(folder, 'mni_icbm152_t1_tal_nlin_asym_09a.nii'),
                  "T2":pjoin(folder, 'mni_icbm152_t2_tal_nlin_asym_09a.nii')}
-
-    md5_dict = {'T1': '1ea8f4f1e41bc17a94602e48141fdbc8',
-                'T2': 'f41f2e1516d880547fbf7d6a83884f0d'}
-
-    try:
-        # If a string was provided, you only wanted one of them:
-        if isinstance(contrast, str):
-            check_md5(file_dict[contrast], md5_dict[contrast])
-            return nib.load(file_dict[contrast])
-
-        # Otherwise, we construct a list of outputs
+    if isinstance(contrast, str):
+        return nib.load(file_dict[contrast])
+    else:
         out_list = []
         for k in contrast:
-            check_md5(file_dict[k], md5_dict[k])
             out_list.append(nib.load(file_dict[k]))
+    return out_list
 
-        return out_list
 
-    except IOError:
-        msg = "Could not find the MNI template files, "
-        msg += "please run `fetch_mni_template` first"
-        print(msg)
+# Add the references to both MNI-related functions:
+read_mni_template.__doc__ += mni_notes
+fetch_mni_template.__doc__ += mni_notes
 
 
 def fetch_cenir_multib(with_raw=False):
