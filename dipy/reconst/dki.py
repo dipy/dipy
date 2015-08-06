@@ -26,7 +26,7 @@ from dipy.core.ndindex import ndindex
 
 def _positive_evals(L1, L2, L3, er=None):
     """ Helper function that indentifies which voxels in a array have all
-    eigenvalues larger than zero
+    eigenvalues significantly larger than zero
 
     Parameters
     ----------
@@ -44,9 +44,14 @@ def _positive_evals(L1, L2, L3, er=None):
     ind : boolean (n,)
         Array that marks the voxels that have all eigenvalues are larger than
         zero.
+        
+    Note
+    -----
+    If er is not given, it is assumed to be the smallest non-zero diffusion of
+    the smallest eignevalue L3.
     """
     if er is None:
-        er = np.finfo(L1.ravel()[0]).eps * 1e3
+        er = L3[L3 > 0].min()
 
     ind = np.logical_and(L1 > er, np.logical_and(L2 > er, L3 > er))
   
@@ -240,7 +245,7 @@ def _F1m(a, b, c):
     F1 = np.zeros(a.shape)
 
     # Only computes F1 in voxels that have all eigenvalues larger than zero
-    cond0 = _positive_evals(a, b, c, er=er)
+    cond0 = _positive_evals(a, b, c)
 
     # Apply formula for non problematic plaussible cases, i.e. a!=b and a!=c
     cond1 = np.logical_and(cond0, np.logical_and(abs(a - b) > er,
@@ -326,7 +331,7 @@ def _F2m(a, b, c):
     F2 = np.zeros(a.shape)
 
     # Only computes F2 in voxels that have all eigenvalues larger than zero
-    cond0 = _positive_evals(a, b, c, er=er)
+    cond0 = _positive_evals(a, b, c)
 
     # Apply formula for non problematic plaussible cases, i.e. b!=c
     cond1=np.logical_and(cond0, (abs(b - c) > er))
@@ -660,7 +665,7 @@ def _G1m(a, b, c):
     G1 = np.zeros(a.shape)
 
     # Only computes G1 in voxels that have all eigenvalues larger than zero
-    cond0 = _positive_evals(a, b, c, er=er)
+    cond0 = _positive_evals(a, b, c)
 
     # Apply formula for non problematic plaussible cases, i.e. b!=c
     cond1=np.logical_and(cond0, (abs(b - c) > er))
@@ -723,7 +728,7 @@ def _G2m(a, b, c):
     G2 = np.zeros(a.shape)
 
     # Only computes G2 in voxels that have all eigenvalues larger than zero
-    cond0 = _positive_evals(a, b, c, er=er)
+    cond0 = _positive_evals(a, b, c)
 
     # Apply formula for non problematic plaussible cases, i.e. b!=c
     cond1=np.logical_and(cond0, (abs(b - c) > er))
