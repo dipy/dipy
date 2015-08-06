@@ -229,7 +229,8 @@ def main(**extra_args):
           scripts      = [pjoin('bin', 'dipy_peak_extraction'),
                           pjoin('bin', 'dipy_fit_tensor'),
                           pjoin('bin', 'dipy_sh_estimate'),
-                          pjoin('bin', 'dipy_quickbundles')],
+                          pjoin('bin', 'dipy_quickbundles'),
+                          pjoin('bin', 'dipy_recognize_bundles')],
           cmdclass = cmdclass,
           **extra_args
         )
