@@ -519,10 +519,9 @@ def exp_validation_with_janice(model_tag='t0337',
 
         print('Duration %f ' % (time() - t, ))
 
-        #write_trk(tag + '_moved_streamlines.trk', moved_streamlines, hdr=hdr)
-
-        #show_bundles(centroids1, centroids2)
-        #show_bundles(centroids1, transform_streamlines(centroids2, mat))
+        # write_trk(tag + '_moved_streamlines.trk', moved_streamlines, hdr=hdr)
+        # show_bundles(centroids1, centroids2)
+        # show_bundles(centroids1, transform_streamlines(centroids2, mat))
 
         extracted, mat2 = auto_extract(model_bundle, moved_streamlines,
                                        close_centroids_thr=close_centroids_thr,

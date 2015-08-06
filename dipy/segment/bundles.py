@@ -14,7 +14,9 @@ def recognize_bundles(model_bundle, moved_streamlines,
                       close_centroids_thr=20,
                       clean_thr=7.,
                       local_slr=True,
-                      verbose=True, expand_thr=None,
+                      expand_thr=None,
+                      scale_range=(0.8, 1.2),
+                      verbose=True,
                       return_full=False):
 
     if verbose:
@@ -81,7 +83,7 @@ def recognize_bundles(model_bundle, moved_streamlines,
 
         x0 = np.array([0, 0, 0, 0, 0, 0, 1.])
         bounds = [(-30, 30), (-30, 30), (-30, 30),
-                  (-45, 45), (-45, 45), (-45, 45), (0.8, 1.2)]
+                  (-45, 45), (-45, 45), (-45, 45), scale_range]
 
         slr = StreamlineLinearRegistration(x0=x0, bounds=bounds)
 
@@ -128,14 +130,17 @@ def recognize_bundles(model_bundle, moved_streamlines,
     if verbose:
         print('Duration %f ' % (time() - t, ))
 
-    msg = 'Total duration of automatic extraction %0.4f seconds.'
-    print(msg % (time() - t0, ))
-
     if return_full:
         out.append(close_clusters_clean)
         # show_bundles(model_bundle, close_clusters_clean)
 
     if expand_thr is not None:
+
+        if verbose:
+            print('# Start expansion strategy')
+
+        t = time()
+
         rclose_clusters_clean = set_number_of_points(close_clusters_clean, 20)
         expand_matrix = bundles_distances_mam(rclose_clusters_clean,
                                               rcloser_streamlines)
@@ -145,9 +150,14 @@ def recognize_bundles(model_bundle, moved_streamlines,
         expanded = [closer_streamlines[i]
                     for i in np.where(mins != np.inf)[0]]
 
+        print('Duration %f ' % (time() - t, ))
+
         if return_full:
             return expanded, matrix, out
         return expanded, matrix
+
+    msg = 'Total duration of bundle recognition is %0.4f seconds.'
+    print(msg % (time() - t0, ))
 
     if return_full:
         return close_clusters_clean, matrix, out

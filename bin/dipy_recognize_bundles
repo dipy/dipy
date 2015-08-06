@@ -9,6 +9,16 @@ parser.add_argument('--model_bundles', action='store', dest='model_bundles')
 parser.add_argument('--model_streamlines', action='store',
                     dest='model_streamlines')
 parser.add_argument('--out_dir', action='store', dest='out_dir')
+parser.add_argument('--close_centroids_thr', action='store',
+                    dest='close_centroids_thr', default=str(20))
+parser.add_argument('--clean_thr', action='store',
+                    dest='clean_thr', default=str(5))
+parser.add_argument('--local_slr', action='store',
+                    dest='local_slr', default=str(True))
+parser.add_argument('--expand_thr', action='store',
+                    dest='expand_thr')
+parser.add_argument('--scale_range', action='store',
+                    dest='scale_range', default='0.8:1.2')
 
 
 if __name__ == '__main__':

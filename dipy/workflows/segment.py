@@ -52,13 +52,18 @@ def show_bundles(static, moving, linewidth=1., tubes=False,
 
 
 def recognize_bundles_flow(streamline_files, model_bundle_files,
-                           model_streamlines_file, out_dir='same',
+                           model_streamlines_file, out_dir=None,
                            close_centroids_thr=str(20),
                            clean_thr=str(5.),
-                           local_slr=str(True)):
+                           local_slr=str(True),
+                           expand_thr=None,
+                           scale_range="0.8:1.2",
+                           verbose=str(True),
+                           disp=str(False)):
 
-    verbose = True
-    disp = False
+    verbose = bool(verbose)
+    disp = bool(disp)
+    scale_range = (float(i) for i in "0.8:1.2".split(':'))
 
     if isinstance(streamline_files, string_types):
         sfiles = glob(streamline_files)
@@ -68,11 +73,14 @@ def recognize_bundles_flow(streamline_files, model_bundle_files,
     if isinstance(model_bundle_files, string_types):
         mbfiles = glob(model_bundle_files)
 
-    if out_dir == 'same':
+    if out_dir is None:
         pass
 
     print('### Recognition of bundles ###')
     model_streamlines, hrd_model = load_trk(model_streamlines_file)
+
+    print('# Model\'s whole brain streamlines file')
+    print(model_streamlines_file)
 
     print('# Streamline files')
     for sf in sfiles:
@@ -84,10 +92,6 @@ def recognize_bundles_flow(streamline_files, model_bundle_files,
         moved_streamlines, mat, centroids1, centroids2 = ret
 
         print(mat)
-        if disp:
-            # show_bundles(model_streamlines, streamlines)
-            # show_bundles(model_streamlines, moved_streamlines)
-            pass
 
         print('# Model_bundle files')
         for mb in mbfiles:
@@ -98,31 +102,29 @@ def recognize_bundles_flow(streamline_files, model_bundle_files,
                 close_centroids_thr=float(close_centroids_thr),
                 clean_thr=float(clean_thr),
                 local_slr=bool(local_slr),
-                verbose=verbose)
+                expand_thr=None,
+                scale_range=scale_range,
+                verbose=verbose,
+                return_full=False)
 
             extracted_bundle_initial = transform_streamlines(
-                                            extracted_bundle,
-                                            np.linalg.inv(np.dot(mat2, mat))
-                                                            )
+                extracted_bundle,
+                np.linalg.inv(np.dot(mat2, mat)))
 
             if disp:
                 show_bundles(model_bundle, extracted_bundle)
                 # show_bundles(model_streamlines, moved_streamlines)
 
-            if out_dir == 'same':
+            if out_dir is None:
                 sf_bundle_file = os.path.join(os.path.dirname(sf),
                                               os.path.basename(mb))
             else:
                 sf_bundle_file = os.path.join(
-                                        out_dir,
-                                        os.path.basename(os.path.dirname(sf)),
-                                        os.path.basename(mb)
-                                             )
+                    out_dir,
+                    os.path.basename(os.path.dirname(sf)),
+                    os.path.basename(mb))
+
             if not os.path.exists(os.path.dirname(sf_bundle_file)):
                 os.makedirs(os.path.dirname(sf_bundle_file))
             save_trk(sf_bundle_file, extracted_bundle_initial, hdr=hdr)
             print('Bundle saved in %s ' % (sf_bundle_file,))
-
-
-    print('# Model whole brain streamlines file')
-    print(model_streamlines_file)
