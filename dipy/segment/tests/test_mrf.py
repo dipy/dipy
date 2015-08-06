@@ -19,8 +19,8 @@ image[..., :nslices] = single_slice[..., None]
 
 # Execute the segmentation
 nclasses = 4
-beta = np.float64(0.0)
-max_iter = 3
+beta = np.float64(0.01)
+max_iter = 10
 
 square = np.zeros((256, 256, 3))
 square[42:213, 42:213, :] = 3
@@ -77,7 +77,7 @@ def test_greyscale_image():
                      True)
 
     initial_segmentation = icm.initialize_maximum_likelihood(neglogl)
-    npt.assert_equal(initial_segmentation.max(), 3)
+    npt.assert_equal(initial_segmentation.max(), nclasses - 1)
     npt.assert_equal(initial_segmentation.min(), 0)
 
     PLN = com.prob_neighborhood(image, initial_segmentation, beta, nclasses)
@@ -94,7 +94,7 @@ def test_greyscale_image():
 
     icm_segmentation = icm.icm_ising(neglogl, beta, initial_segmentation)
     npt.assert_equal(np.abs(np.sum(icm_segmentation)) != 0, True)
-    npt.assert_equal(icm_segmentation.max(), 3)
+    npt.assert_equal(icm_segmentation.max(), nclasses - 1)
     npt.assert_equal(icm_segmentation.min(), 0)
 
     return initial_segmentation, icm_segmentation
@@ -109,7 +109,7 @@ def test_greyscale_iter():
     sigmasq = sigma ** 2
     neglogl = com.negloglikelihood(image, mu, sigmasq, nclasses)
     initial_segmentation = icm.initialize_maximum_likelihood(neglogl)
-    npt.assert_equal(initial_segmentation.max(), 3)
+    npt.assert_equal(initial_segmentation.max(), nclasses - 1)
     npt.assert_equal(initial_segmentation.min(), 0)
 
     mu, sigma, sigmasq = com.seg_stats(image, initial_segmentation, nclasses)
@@ -119,11 +119,14 @@ def test_greyscale_iter():
     final_segmentation = np.empty_like(image)
     seg_init = initial_segmentation.copy()
 
+#    energy_pre = np.zeros_like(image)
+
     for i in range(max_iter):
 
         print('iteration: ', i)
 
-        PLN = com.prob_neighborhood(image, initial_segmentation, beta, nclasses)
+        PLN = com.prob_neighborhood(image, initial_segmentation, beta,
+                                    nclasses)
         npt.assert_equal(PLN.all() >= 0.0, True)
         PLY = com.prob_image(image, nclasses, mu, sigmasq, PLN)
         npt.assert_equal(PLY.all() >= 0.0, True)
@@ -133,7 +136,17 @@ def test_greyscale_iter():
         npt.assert_equal(sigmasq_upd.all() >= 0.0, True)
         negll = com.negloglikelihood(image, mu_upd, sigmasq_upd, nclasses)
         npt.assert_equal(negll.all() >= 0.0, True)
-        final_segmentation = icm.icm_ising(negll, beta, initial_segmentation)
+        
+        plt.figure()
+        plt.imshow(negll[..., 1, 0]) 
+        plt.colorbar()
+        
+        final_segmentation, energy = icm.icm_ising(negll, beta,
+                                                   initial_segmentation)
+
+#        if i > 0:
+#            npt.assert_equal(energy[100, 100, 2] <= energy_pre[100, 100, 2], True)
+#        energy_pre = energy.copy()
 
 #        plt.figure()
 #        plt.imshow(final_segmentation[..., 1])
@@ -142,32 +155,83 @@ def test_greyscale_iter():
         mu = mu_upd.copy()
         sigmasq = sigmasq_upd.copy()
 
-    Difference_map = np.abs(seg_init - final_segmentation)
-    npt.assert_equal(np.abs(np.sum(Difference_map)) != 0, True)
+    difference_map = np.abs(seg_init - final_segmentation)
+    npt.assert_equal(np.abs(np.sum(difference_map)) != 0, True)
 
     return seg_init, final_segmentation, PLY
 
-#
-#def test_ImageSegmenter():
-#
-#    imgseg = ImageSegmenter()
-#
-#    T1_seg = imgseg.segment_HMRF(image, nclasses, beta, max_iter)
-#
-#    plt.figure()
-#    plt.imshow(T1_seg[..., 1])
-#    Square1_seg = imgseg.segment_HMRF(image, nclasses, beta, max_iter)
-#
-#    plt.figure()
-#    plt.imshow(Square1_seg[..., 1])
-#
-#    return T1_seg
+
+def test_square_iter():
+
+    com = ConstantObservationModel()
+    icm = IteratedConditionalModes()
+
+    initial_segmentation = square.copy()
+    npt.assert_equal(initial_segmentation.max(), nclasses - 1)
+    npt.assert_equal(initial_segmentation.min(), 0)
+
+    mu, sigma, sigmasq = com.seg_stats(square_1, initial_segmentation,
+                                       nclasses)
+    npt.assert_equal(mu.all() >= 0, True)
+    npt.assert_equal(sigmasq.all() >= 0, True)
+
+    final_segmentation = np.empty_like(square_1)
+    seg_init = initial_segmentation.copy()
+
+#    energy_pre = np.zeros_like(image)
+
+    for i in range(max_iter):
+
+        print("Iteration: %d"%(max_iter,))
+
+        PLN = com.prob_neighborhood(square_1, initial_segmentation, beta,
+                                    nclasses)
+        npt.assert_equal(PLN.all() >= 0.0, True)
+        PLY = com.prob_image(square_1, nclasses, mu, sigmasq, PLN)
+        npt.assert_equal(PLY.all() >= 0.0, True)
+
+        mu_upd, sigmasq_upd = com.update_param(square_1, PLY, mu, nclasses)
+        npt.assert_equal(mu_upd.all() >= 0.0, True)
+        npt.assert_equal(sigmasq_upd.all() >= 0.0, True)
+        negll = com.negloglikelihood(square_1, mu_upd, sigmasq_upd, nclasses)
+        npt.assert_equal(negll.all() >= 0.0, True)
+        final_segmentation, energy = icm.icm_ising(negll, beta,
+                                                   initial_segmentation)
+
+#        if i > 0:
+#            npt.assert_equal(energy[100, 100, 2] <= energy_pre[100, 100, 2], True)
+#        energy_pre = energy.copy()
+
+#        plt.figure()
+#        plt.imshow(final_segmentation[..., 1])
+
+        initial_segmentation = final_segmentation.copy()
+        mu = mu_upd.copy()
+        sigmasq = sigmasq_upd.copy()
+
+    difference_map = np.abs(seg_init - final_segmentation)
+    npt.assert_equal(np.abs(np.sum(difference_map)) != 0, True)
+
+    return seg_init, final_segmentation, PLY
+
+
+def test_segment_hmrf():
+
+    imgseg = ImageSegmenter()
+
+    T1coronal_init, T1coronal_final, PLY = imgseg.segment_hmrf(image, nclasses,
+                                                          beta, max_iter)
+    
+    npt.assert_equal(T1coronal_final.max(), nclasses - 1)
+    npt.assert_equal(T1coronal_final.min(), 0)
+
+    return T1coronal_init, T1coronal_final, PLY 
 
 
 if __name__ == '__main__':
-
-    #pass
-    npt.run_module_suite()
-    #initial_segmentation, final_segmentation = test_greyscale_image()
-    #seg_init, final_segmentation, PLY = test_greyscale_iter()
-    # segmented = test_ImageSegmenter()
+    pass
+    # npt.run_module_suite()
+    # initial_segmentation, final_segmentation = test_greyscale_image()
+    seg_init, final_segmentation, PLY = test_greyscale_iter()
+    # seg_init, final_segmentation, PLY = test_square_iter()
+    # T1init, T1final, PLY = test_segment_hmrf()
