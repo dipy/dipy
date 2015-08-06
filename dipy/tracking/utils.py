@@ -621,33 +621,6 @@ def streamline_near_roi(sl, x_roi_coords, tol, mode='any'):
         return np.all(np.min(dist, -1)<=tol)
 
 
-def filter_bounding_box(streamlines, x_roi_coords, tol):
-    """
-    Filter streamlines using a bounding box extracted from the coordinates of
-    an ROI.
-
-    Parameters
-    ----------
-    streamlines : list or generator
-        A sequence of streamlines. Each streamline should be a (N, 3) array,
-        where N is the length of the streamline.
-    x_roi_coords : array, shape (M, 3)
-        ROI coordinates transformed to the streamline coordinate frame.
-    tol : float
-        Distance (in the units of the streamlines, usually mm). If a streamline
-        is within this distance from the center of the voxels defining the
-        bounding box, this streamline is considered in the bounding box
-
-    """
-    bb = np.array((np.min(x_roi_coords, 0) - tol,
-                   np.max(x_roi_coords, 0) + tol))
-    for sl in streamlines:
-        cond = np.array([np.any(sl[:, i] >= bb[0, i]) &
-                         np.any(sl[:, i] <= bb[1, i]) for i in range(3)])
-        if np.any(cond):
-            yield sl
-
-
 def near_roi(streamlines, target_mask, affine=None, tol=None,
              mode="any"):
     """
