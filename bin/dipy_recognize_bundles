@@ -26,4 +26,7 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     recognize_bundles_flow(args.streamlines, args.model_bundles,
-                           args.model_streamlines, args.out_dir)
+                           args.model_streamlines, args.out_dir,
+                           args.close_centroids_thr, args.clean_thr,
+                           args.local_slr, args.expand_thr,
+                           args.scale_range)
