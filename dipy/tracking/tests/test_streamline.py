@@ -414,6 +414,9 @@ def compress_streamlines_python(streamline, tol_error=0.01,
     Python version of the FiberCompression found on
     https://github.com/scilus/FiberCompression.
     """
+    if streamline.shape[0] <= 2:
+        return streamline.copy()
+
     # Euclidean distance
     segment_length = lambda prev, next: np.sqrt(((prev-next)**2).sum())
 
@@ -460,6 +463,14 @@ def compress_streamlines_python(streamline, tol_error=0.01,
 
 
 def test_compress_streamlines():
+    # Small streamlines (less than two points) are uncompressable.
+    for small_streamline in [np.array([[]]),
+                             np.array([[1, 1, 1]]),
+                             np.array([[1, 1, 1], [2, 2, 2]])]:
+        c_streamline = compress_streamlines(small_streamline)
+        assert_equal(len(c_streamline), len(small_streamline))
+        assert_array_equal(c_streamline, small_streamline)
+
     # Compressing a straight streamline that is less than 10mm long
     # should output a two points streamline.
     linear_streamline = np.linspace(0, 5, 100*3).reshape((100, 3))
