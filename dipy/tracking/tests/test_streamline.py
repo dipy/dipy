@@ -434,7 +434,7 @@ def compress_streamlines_python(streamline, tol_error=0.01,
     prev = streamline[0]
     prev_id = 0
 
-    for next_id, next in enumerate(streamline[1:], start=1):
+    for next_id, next in enumerate(streamline[2:], start=2):
         # Euclidean distance between last added point and current point.
         if segment_length(prev, next) > max_segment_length:
             compressed_streamline[nb_points, :] = streamline[next_id-1, :]
@@ -444,7 +444,7 @@ def compress_streamlines_python(streamline, tol_error=0.01,
             continue
 
         # Check that each point is not offset by more than `tol_error` mm.
-        for curr in streamline[prev_id+1:next_id]:
+        for o, curr in enumerate(streamline[prev_id+1:next_id], start=prev_id+1):
             dist = dist_to_line(prev, next, curr)
 
             if np.isnan(dist) or dist > tol_error:
@@ -463,45 +463,54 @@ def compress_streamlines_python(streamline, tol_error=0.01,
 
 
 def test_compress_streamlines():
-    # Small streamlines (less than two points) are uncompressable.
-    for small_streamline in [np.array([[]]),
-                             np.array([[1, 1, 1]]),
-                             np.array([[1, 1, 1], [2, 2, 2]])]:
-        c_streamline = compress_streamlines(small_streamline)
-        assert_equal(len(c_streamline), len(small_streamline))
-        assert_array_equal(c_streamline, small_streamline)
+    for compress_func in [compress_streamlines_python, compress_streamlines]:
+        # Small streamlines (less than two points) are uncompressable.
+        for small_streamline in [np.array([[]]),
+                                 np.array([[1, 1, 1]]),
+                                 np.array([[1, 1, 1], [2, 2, 2]])]:
+            c_streamline = compress_func(small_streamline)
+            assert_equal(len(c_streamline), len(small_streamline))
+            assert_array_equal(c_streamline, small_streamline)
 
-    # Compressing a straight streamline that is less than 10mm long
-    # should output a two points streamline.
-    linear_streamline = np.linspace(0, 5, 100*3).reshape((100, 3))
-    c_streamline = compress_streamlines(linear_streamline)
-    assert_equal(len(c_streamline), 2)
-    assert_array_equal(c_streamline, [linear_streamline[0],
-                                      linear_streamline[-1]])
+        # Compressing a straight streamline that is less than 10mm long
+        # should output a two points streamline.
+        linear_streamline = np.linspace(0, 5, 100*3).reshape((100, 3))
+        c_streamline = compress_func(linear_streamline)
+        assert_equal(len(c_streamline), 2)
+        assert_array_equal(c_streamline, [linear_streamline[0],
+                                          linear_streamline[-1]])
 
-    # The distance of consecutive points must be less or equal than some value.
-    max_segment_length = 10
-    linear_streamline = np.linspace(0, 100, 100*3).reshape((100, 3))
-    linear_streamline[:, 1:] = 0.
-    c_streamline = compress_streamlines(linear_streamline)
-    segments_length = np.sqrt((np.diff(c_streamline, axis=0)**2).sum(axis=1))
-    assert_true(np.all(segments_length <= max_segment_length))
-    assert_equal(len(c_streamline), 12)
-    assert_array_equal(c_streamline, linear_streamline[::9])
+        # The distance of consecutive points must be less or equal than some value.
+        max_segment_length = 10
+        linear_streamline = np.linspace(0, 100, 100*3).reshape((100, 3))
+        linear_streamline[:, 1:] = 0.
+        c_streamline = compress_func(linear_streamline,
+                                     max_segment_length=max_segment_length)
+        segments_length = np.sqrt((np.diff(c_streamline, axis=0)**2).sum(axis=1))
+        assert_true(np.all(segments_length <= max_segment_length))
+        assert_equal(len(c_streamline), 12)
+        assert_array_equal(c_streamline, linear_streamline[::9])
 
-    # Test we can set `max_segment_length` to infinity (like the C++ version)
-    compress_streamlines(streamline, max_segment_length=np.inf)
+        # A small `max_segment_length` should keep all points.
+        c_streamline = compress_func(linear_streamline,
+                                     max_segment_length=0.01)
+        assert_array_equal(c_streamline, linear_streamline)
 
-    # Uncompressable streamline when `tol_error` == 1.
-    simple_streamline = np.array([[0, 0, 0],
-                                  [1, 1, 0],
-                                  [1.5, np.inf, 0],
-                                  [2, 2, 0],
-                                  [2.5, 20, 0],
-                                  [3, 3, 0]])
-    csimple_streamline_cython = compress_streamlines(simple_streamline,
-                                                     tol_error=1)
-    assert_array_equal(csimple_streamline_cython, simple_streamline)
+        # Test we can set `max_segment_length` to infinity (like the C++ version)
+        compress_func(streamline, max_segment_length=np.inf)
+
+        # Uncompressable streamline when `tol_error` == 1.
+        simple_streamline = np.array([[0, 0, 0],
+                                      [1, 1, 0],
+                                      [1.5, np.inf, 0],
+                                      [2, 2, 0],
+                                      [2.5, 20, 0],
+                                      [3, 3, 0]])
+
+        # Because of np.inf, compressing that streamline causes a warning.
+        with np.errstate(invalid='ignore'):
+            c_streamline = compress_func(simple_streamline, tol_error=1)
+            assert_array_equal(c_streamline, simple_streamline)
 
     # Create a special streamline where every other point is increasingly
     # farther from a straigth line formed by the streamline endpoints.

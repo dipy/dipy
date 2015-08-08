@@ -376,7 +376,10 @@ cdef np.npy_intp c_compress_streamline(Streamline streamline, Streamline out,
     nb_points = 1
     prev = 0
 
-    for next in range(1, N):
+    # Loop through the points of the streamline checking if we can use the
+    # linearized segment: next-prev. We start with next=2 (third points) since
+    # we already added point 0 and segment between the two firsts is linear.
+    for next in range(2, N):
         # Euclidean distance between last added point and current point.
         if c_segment_length(streamline, prev, next) > max_segment_length:
             for d in range(D):
@@ -512,7 +515,12 @@ def compress_streamlines(streamlines, tol_error=0.01, max_segment_length=10):
             nb_points = c_compress_streamline[double2d](streamline, compressed_streamline,
                                                         tol_error, max_segment_length)
 
-        compressed_streamlines.append(compressed_streamline[:nb_points])
+        if nb_points > streamline.shape[0]:
+            print streamline
+            print i, nb_points, shape[0]
+
+        compressed_streamline.resize((nb_points, streamline.shape[1]))
+        compressed_streamlines.append(compressed_streamline)
 
     if only_one_streamlines:
         return compressed_streamlines[0]
