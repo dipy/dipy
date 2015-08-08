@@ -515,10 +515,6 @@ def compress_streamlines(streamlines, tol_error=0.01, max_segment_length=10):
             nb_points = c_compress_streamline[double2d](streamline, compressed_streamline,
                                                         tol_error, max_segment_length)
 
-        if nb_points > streamline.shape[0]:
-            print streamline
-            print i, nb_points, shape[0]
-
         compressed_streamline.resize((nb_points, streamline.shape[1]))
         compressed_streamlines.append(compressed_streamline)
 
