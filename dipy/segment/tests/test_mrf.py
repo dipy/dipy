@@ -19,7 +19,7 @@ image[..., :nslices] = single_slice[..., None]
 
 # Execute the segmentation
 nclasses = 4
-beta = np.float64(0.01)
+beta = np.float64(0.0)
 max_iter = 10
 
 square = np.zeros((256, 256, 3))
@@ -112,7 +112,10 @@ def test_greyscale_iter():
     npt.assert_equal(initial_segmentation.max(), nclasses - 1)
     npt.assert_equal(initial_segmentation.min(), 0)
 
-    mu, sigma, sigmasq = com.seg_stats(image, initial_segmentation, nclasses)
+#    mu, sigma, sigmasq = com.seg_stats(image, initial_segmentation, nclasses)
+#    print('initial mu:', mu)
+#    print('initial var:', sigmasq)    
+    
     npt.assert_equal(mu.all() >= 0, True)
     npt.assert_equal(sigmasq.all() >= 0, True)
 
@@ -137,9 +140,9 @@ def test_greyscale_iter():
         negll = com.negloglikelihood(image, mu_upd, sigmasq_upd, nclasses)
         npt.assert_equal(negll.all() >= 0.0, True)
         
-        plt.figure()
-        plt.imshow(negll[..., 1, 0]) 
-        plt.colorbar()
+#        plt.figure()
+#        plt.imshow(negll[..., 1, 0]) 
+#        plt.colorbar()
         
         final_segmentation, energy = icm.icm_ising(negll, beta,
                                                    initial_segmentation)
