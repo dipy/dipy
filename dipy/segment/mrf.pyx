@@ -123,16 +123,24 @@ class ConstantObservationModel(object):
         
         for idx in ndindex(image.shape):
 
-            for l in range(nclasses):
-                if sigmasq[l] < epsilon_sq:
-
-                    if np.abs(mu[l] - image[idx]) < epsilon:
-                        nloglike[idx + (l,)] = 1
+                for l in range(nclasses):
+                    
+#                    if np.sqrt(2.0 * np.pi * sigmasq[l]) < 1e-320:
+#                        
+#                        nloglike[idx + (l,)] =
+                    
+                    if sigmasq[l] < epsilon_sq:
+    
+                        if np.abs(mu[l] - image[idx]) < epsilon:
+                            nloglike[idx + (l,)] = 0
+                        else:
+                            nloglike[idx + (l,)] = np.inf
                     else:
-                        nloglike[idx + (l,)] = np.inf
-                else:
-                    nloglike[idx + (l,)] = ((image[idx] - mu[l]) ** 2.0) / (2.0 * sigmasq[l])
-                    nloglike[idx + (l,)] += np.log(np.sqrt(2.0 * np.pi * sigmasq[l]))
+                        nloglike[idx + (l,)] = ((image[idx] - mu[l]) ** 2.0) / (2.0 * sigmasq[l])
+                        nloglike[idx + (l,)] += np.log(np.sqrt(2.0 * np.pi * sigmasq[l]))
+#                        if nloglike[idx + (l,)] < 0:
+#                            nloglike[idx + (l,)] = 0
+                        
 
 #        if nloglike[50, 50, 1, 0] == 1: # background voxel
 #            print(">>>!!", image[50, 50, 1])
@@ -575,10 +583,7 @@ cdef void _icm_ising(double[:,:,:,:] nloglike, double beta, double[:,:,:] seg, d
                 best_class = -1
                 for k in range(nclasses):
                     this_energy = nloglike[x, y, z, k]
-
-#                    if this_energy == NPY_INFINITY:
-#                        continue
-                                    
+                    
                     # Accumulate Gibbs energy for label k
                     for i in range(nneigh):
                         xx = x + dX[i]
