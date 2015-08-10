@@ -1,37 +1,39 @@
 """
-===============================================================
-Exploring the 3D information of DKI and use it for Tractography
-===============================================================
+==============================================================
+Exploring the 3D information of DKI for DKI based Tractography
+==============================================================
 
 In this example we show how to analyze the 3D information of the tensors
 estimated from diffusion kurtosis imaging (DKI) and how DKI can be used for
 tractography. This example is based on the work done by [Raf2015]_.
 
-All relevant modules for this example are imported below:
+First we import all relevant modules for this example:
 """
 import numpy as np
 import dipy.reconst.dki as dki
+from dipy.data import read_cenir_multib
 from dipy.sims.voxel import multi_tensor_dki
 from dipy.data import get_sphere
 from dipy.viz import fvtk
-# in future we have to import the right data
-from dipy.data import fetch_sherbrooke_3shell
-from dipy.data import read_sherbrooke_3shell
 
 """
-For this example we use data ... :
+This example will be based on the same multi-shell data used in the previous
+DKI usage example :ref:`example_reconst_dki`. This data was recorder with
+similar acquisition parameters used on the Human Connectome Project (HCP),
+however we only use the data's b-values up to 2000 $s.mm^{-2}$ to decrease the
+influence of the diffusion signal taylor approximation componets not taken into
+account by the diffusion kurtosis model:
 """
 
-# in future we have to import the right data
-fetch_sherbrooke_3shell()
-img, gtab = read_sherbrooke_3shell()
+bvals = [200, 400, 1000, 2000]
+img, gtab = read_cenir_multib(bvals)
 data = img.get_data()
 
 """
 We first illustrate the 3D information provided by DKI on simulates. For this,
 we use the GradientTable of the loaded real data sample and simulate the signal
-of five voxels of two fibers with increasing crossing angle. (Add reference to
-the DKI simulation example for more details)
+of five voxels of two fibers with increasing crossing angle (for more details
+of the DKI simulations see :ref:`example_simulate_dki`)
 """
 
 mevals = np.array([[0.00099, 0, 0],
