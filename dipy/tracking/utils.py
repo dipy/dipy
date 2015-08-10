@@ -573,15 +573,14 @@ def target(streamlines, target_mask, affine, include=True):
             yield sl
 
 
-def streamline_near_roi(sl, x_roi_coords, tol, mode='any'):
-    """
-    Is a streamline near an ROI.
+def streamline_near_roi(streamline, x_roi_coords, tol, mode='any'):
+    """Is a streamline near an ROI.
 
     Implements the inner loops of the :func:`near_roi` function.
 
     Parameters
     ----------
-    sl : array, shape (N, 3)
+    streamline : array, shape (N, 3)
 	    A single streamline
     x_roi_coords : array, shape (M, 3)
         ROI coordinates transformed to the streamline coordinate frame.
@@ -589,12 +588,12 @@ def streamline_near_roi(sl, x_roi_coords, tol, mode='any'):
         Distance (in the units of the streamlines, usually mm). If any
         coordinate in the streamline is within this distance from the center
         of any voxel in the ROI, this function returns True.
-	mode : string
-		One of {"any", "all", "either_end", "both_end"}, where return True if:
-		"any" : any point is within tol from ROI.
-		"all" : all points are within tol from ROI.
-		"either_end" : either of the end-points is within tol from ROI
-		"both_end" : both end points are within tol from ROI.
+    mode : string
+		One of {"any", "all", "either_end", "both_end"}, where return True if
+		"any" - any point is within tol from ROI.
+		"all" - all points are within tol from ROI.
+		"either_end" - either of the end-points is within tol from ROI
+		"both_end" - both end points are within tol from ROI.
 
 	Returns
 	-------
@@ -603,10 +602,10 @@ def streamline_near_roi(sl, x_roi_coords, tol, mode='any'):
     if len(x_roi_coords)==0:
         return False
     if mode=="any" or mode=="all":
-        s = sl
+        s = streamline
     elif mode=="either_end" or mode=="both_end":
         # 'end' modes, use a streamline with 2 nodes:
-        s = np.vstack([sl[0], sl[-1]])
+        s = np.vstack([streamline[0], streamline[-1]])
     else:
         e_s = "For determining relationship to an array, you can use "
         e_s += "one of the following modes: 'any', 'all', 'both_end',"
@@ -621,10 +620,9 @@ def streamline_near_roi(sl, x_roi_coords, tol, mode='any'):
         return np.all(np.min(dist, -1)<=tol)
 
 
-def near_roi(streamlines, target_mask, affine=None, tol=None,
+def near_roi(streamlines, region_of_interest, affine=None, tol=None,
              mode="any"):
-    """
-    Provide filtering criteria for a set of streamlines based on whether they
+    """Provide filtering criteria for a set of streamlines based on whether they
     fall within a tolerance distance from an ROI
 
     Parameters
@@ -632,7 +630,7 @@ def near_roi(streamlines, target_mask, affine=None, tol=None,
     streamlines : list or generator
         A sequence of streamlines. Each streamline should be a (N, 3) array,
         where N is the length of the streamline.
-    target_mask : ndarray
+    region_of_interest : ndarray
         A mask used as a target. Non-zero values are considered to be within
         the target region.
     affine : ndarray
@@ -643,12 +641,12 @@ def near_roi(streamlines, target_mask, affine=None, tol=None,
         of any voxel in the ROI, the filtering criterion is set to True for
         this streamline, otherwise False. Defaults to the distance between
         the center of each voxel and the corner of the voxel.
-	mode : string, optional
-		One of {"any", "all", "either_end", "both_end"}, where return True if:
-		"any" : any point is within tol from ROI. Default.
-		"all" : all points are within tol from ROI.
-		"either_end" : either of the end-points is within tol from ROI
-		"both_end" : both end points are within tol from ROI.
+    mode : string, optional
+		One of {"any", "all", "either_end", "both_end"}, where return True if
+		"any" - any point is within tol from ROI. Default.
+		"all" - all points are within tol from ROI.
+		"either_end" - either of the end-points is within tol from ROI
+		"both_end" - both end points are within tol from ROI.
 
     Returns
     -------
@@ -669,7 +667,7 @@ def near_roi(streamlines, target_mask, affine=None, tol=None,
         warn(w_s)
         tol = dtc
 
-    roi_coords = np.array(np.where(target_mask)).T
+    roi_coords = np.array(np.where(region_of_interest)).T
     x_roi_coords = apply_affine(affine, roi_coords)
 
     # If it's already a list, we can save time by preallocating the output

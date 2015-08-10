@@ -1009,8 +1009,7 @@ def perpendicular_directions(v, num=30, half=False):
 
 
 def dist_to_corner(affine):
-    """
-    Calculate the maximal distance from the center to a corner of a voxel,
+    """Calculate the maximal distance from the center to a corner of a voxel,
     given an affine
 
     Parameters
@@ -1020,7 +1019,9 @@ def dist_to_corner(affine):
 
     Returns
     -------
-    float, the maximal distance to the
+    dist: float
+        The maximal distance to the corner of a voxel, given voxel size encoded
+        in the affine.
     """
     R = affine[0:3,0:3]
     vox_dim = np.diag(np.linalg.cholesky(R.T.dot(R)))

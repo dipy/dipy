@@ -212,12 +212,12 @@ def select_by_roi(streamlines, rois, include, mode=None, affine=None,
     Examples
     --------
     >>> streamlines = [np.array([[0, 0., 0.9],
-    ...                                  [1.9, 0., 0.]]),
-    ...                        np.array([[0., 0., 0],
-    ...                                  [0, 1., 1.],
-    ...                                  [0, 2., 2.]]),
-    ...                        np.array([[2, 2, 2],
-    ...                                  [3, 3, 3]])]
+    ...                          [1.9, 0., 0.]]),
+    ...                np.array([[0., 0., 0],
+    ...                          [0, 1., 1.],
+    ...                          [0, 2., 2.]]),
+    ...                np.array([[2, 2, 2],
+    ...                          [3, 3, 3]])]
     >>> mask1 = np.zeros((4, 4, 4), dtype=bool)
     >>> mask2 = np.zeros_like(mask1)
     >>> mask1[0, 0, 0] = True
@@ -236,9 +236,9 @@ def select_by_roi(streamlines, rois, include, mode=None, affine=None,
            [ 0.,  1.,  1.],
            [ 0.,  2.,  2.]])]
     >>> selection = select_by_roi(streamlines, [mask1, mask2],
-    ...                      [True, True],
-    ...                      mode="both_end",
-    ...                      tol=1.0)
+    ...                           [True, True],
+    ...                           mode="both_end",
+    ...                           tol=1.0)
     >>> list(selection)
     [array([[ 0. ,  0. ,  0.9],
            [ 1.9,  0. ,  0. ]])]
@@ -261,7 +261,7 @@ def select_by_roi(streamlines, rois, include, mode=None, affine=None,
         tol = dtc
     elif tol < dtc:
         w_s = "Tolerance input provided would create gaps in your"
-        w_s += " inclusion ROI. Setting to: %s"%dist_to_corner
+        w_s += " inclusion ROI. Setting to: %s" % dist_to_corner
         warn(w_s)
         tol = dtc
     include_roi, exclude_roi = reduce_rois(rois, include)
@@ -274,8 +274,8 @@ def select_by_roi(streamlines, rois, include, mode=None, affine=None,
         mode = "any"
     for sl in streamlines:
         include = streamline_near_roi(sl, x_include_roi_coords, tol=tol,
-                                mode=mode)
+                                      mode=mode)
         exclude = streamline_near_roi(sl, x_exclude_roi_coords, tol=tol,
-                                mode=mode)
+                                      mode=mode)
         if include & ~exclude:
             yield sl

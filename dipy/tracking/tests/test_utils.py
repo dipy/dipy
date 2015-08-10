@@ -265,9 +265,9 @@ def test_near_roi():
     mask[1, 0, 0] = True
 
     assert_array_equal(near_roi(streamlines, mask, tol=1),
-                 np.array([True, True, False]))
+                       np.array([True, True, False]))
     assert_array_equal(near_roi(streamlines, mask),
-                 np.array([False, True, False]))
+                       np.array([False, True, False]))
 
     # If there is an affine, we need to use it:
     affine[:, 3] = [-1, 100, -20, 1]
@@ -292,8 +292,7 @@ def test_near_roi():
     mask[2, 2, 2] = True
     mask[3, 3, 3] = True
     assert_array_equal(near_roi(x_streamlines, mask, affine=affine, tol=None,
-                                mode='all'),
-                 np.array([False, True, True]))
+                                mode='all'), np.array([False, True, True]))
 
     # Test for use of endpoints as selection criteria:
     mask = np.zeros((4, 4, 4), dtype=bool)
