@@ -16,6 +16,7 @@ single_slice = np.load(fname)
 nslices = 5
 image = np.zeros(shape=single_slice.shape + (nslices,))
 image[..., :nslices] = single_slice[..., None]
+image += np.random.normal(0.01, 0.001, image.shape)
 
 # Execute the segmentation
 nclasses = 4
@@ -146,7 +147,11 @@ def test_greyscale_iter():
         npt.assert_equal(sigmasq_upd.all() >= 0.0, True)
         negll = com.negloglikelihood(image_gauss, mu_upd, sigmasq_upd, nclasses)
         npt.assert_equal(negll.all() >= 0.0, True)
-        
+
+#        plt.figure()
+#        plt.imshow(negll[..., 1, 0])
+#        plt.colorbar()
+
         final_segmentation, energy = icm.icm_ising(negll, beta,
                                                    initial_segmentation)
 
@@ -154,8 +159,9 @@ def test_greyscale_iter():
 #            npt.assert_equal(energy[100, 100, 2] <= energy_pre[100, 100, 2], True)
 #        energy_pre = energy.copy()
 
-#        plt.figure()
-#        plt.imshow(final_segmentation[..., 1])
+        plt.figure()
+        plt.imshow(final_segmentation[..., 1])
+
 
         initial_segmentation = final_segmentation.copy()
         mu = mu_upd.copy()
@@ -227,11 +233,11 @@ def test_segment_hmrf():
 
     T1coronal_init, T1coronal_final, PLY = imgseg.segment_hmrf(image, nclasses,
                                                           beta, max_iter)
-    
+
     npt.assert_equal(T1coronal_final.max(), nclasses - 1)
     npt.assert_equal(T1coronal_final.min(), 0)
 
-    return T1coronal_init, T1coronal_final, PLY 
+    return T1coronal_init, T1coronal_final, PLY
 
 
 if __name__ == '__main__':

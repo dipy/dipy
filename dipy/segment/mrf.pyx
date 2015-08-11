@@ -10,10 +10,10 @@ cimport numpy as cnp
 cdef extern from "dpy_math.h" nogil:
     cdef double NPY_PI
     cdef double NPY_INFINITY
-    double npy_sqrt(double)
-    double npy_log(double)
-    double npy_exp(double)
-    double npy_fabs(double)
+    double sqrt(double)
+    double log(double)
+    double exp(double)
+    double fabs(double)
 
 
 class ConstantObservationModel(object):
@@ -107,6 +107,9 @@ class ConstantObservationModel(object):
 
         for l in range(nclasses):
             _negloglikelihood(image, mu, sigmasq, l, nloglike)
+
+        for l in range(nclasses):
+            _negloglikelihood(image, mu, sigmasq, l, nloglike)
             
         print('negloglike:', nloglike[50,50,1,0])
         print('negloglike:', nloglike[50,50,1,1])
@@ -116,38 +119,37 @@ class ConstantObservationModel(object):
         return nloglike
 
 #    def negloglikelihood(self, image, mu, sigmasq, nclasses):
-#        
 #        nloglike = np.zeros(image.shape + (nclasses,), dtype=np.float64)
-#        epsilon = 1e-8      # Maximum precision for double.    
+#        epsilon = 1e-8      # Maximum precision for double.
 #        epsilon_sq = 1e-16  # We assume images normalized to 0-1
-#        
+#
 #        for idx in ndindex(image.shape):
 #
 #                for l in range(nclasses):
-#                    
-##                    if np.sqrt(2.0 * np.pi * sigmasq[l]) < 1e-320:                        
+#
+##                    if np.sqrt(2.0 * np.pi * sigmasq[l]) < 1e-320:
+##
 ##                        nloglike[idx + (l,)] =
-#                    
+#
 #                    if sigmasq[l] < epsilon_sq:
-#    
+#
 #                        if np.abs(mu[l] - image[idx]) < epsilon:
-#                            nloglike[idx + (l,)] = 1
+#                            nloglike[idx + (l,)] = 0
 #                        else:
 #                            nloglike[idx + (l,)] = np.inf
 #                    else:
 #                        nloglike[idx + (l,)] = ((image[idx] - mu[l]) ** 2.0) / (2.0 * sigmasq[l])
 #                        nloglike[idx + (l,)] += np.log(np.sqrt(2.0 * np.pi * sigmasq[l]))
-#                        
 ##                        if nloglike[idx + (l,)] < 0:
 ##                            nloglike[idx + (l,)] = 0
-#                        
+#
 #
 ##        if nloglike[50, 50, 1, 0] == 1: # background voxel
 ##            print(">>>!!", image[50, 50, 1])
 ##            print(">>>!!", mu[0], mu[1], mu[2], mu[3])
-##            print(">>>!!", sigmasq[0], sigmasq[1], sigmasq[2], sigmasq[3])      
-##
-##
+##            print(">>>!!", sigmasq[0], sigmasq[1], sigmasq[2], sigmasq[3])
+#
+#
 ##        if nloglike[143, 83, 1, 0] < epsilon: # grey-matter voxel
 ##            print(">>>!!", image[143, 83, 1])
 ##            print(">>>!!", mu[0], mu[1], mu[2], mu[3])
@@ -272,7 +274,7 @@ class ConstantObservationModel(object):
         var_num = np.zeros(image.shape + (nclasses,), dtype=np.float64)
 
         for l in range(nclasses):
-            
+
             _update_param(image, mu, l, P_L_Y, mu_num, var_num)
 
             mu_upd[l] = np.sum(mu_num[:, :, :, l]) / np.sum(P_L_Y[:, :, :, l])
@@ -318,19 +320,19 @@ cdef void _initialize_param_uniform(double[:,:,:] image, double[:] mu, double[:]
         for i in range(nclasses):
             sigma[i] = 1.0
             mu[i] = min_val + i * (max_val - min_val)/nclasses
-            
 
-cdef void _negloglikelihood(double[:, :, :] image, double[:] mu, 
-                            double[:] sigmasq, int classid, 
+
+cdef void _negloglikelihood(double[:, :, :] image, double[:] mu,
+                            double[:] sigmasq, int classid,
                             double[:, :, :, :] neglogl) nogil:
-                            
+
     cdef:
         cnp.npy_intp nx = image.shape[0]
         cnp.npy_intp ny = image.shape[1]
         cnp.npy_intp nz = image.shape[2]
         cnp.npy_intp l = classid
         cnp.npy_intp x, y, z
-        
+
         double eps = 1e-8   # We assume images normalized to 0-1
         double eps_sq = 1e-16 # Maximum precision for double.
 
@@ -338,14 +340,14 @@ cdef void _negloglikelihood(double[:, :, :] image, double[:] mu,
         for y in range(ny):
             for z in range(nz):
                 if sigmasq[l] < eps_sq:
-                    if npy_fabs(image[x, y, z] - mu[l]) < eps:
+                    if fabs(image[x, y, z] - mu[l]) < eps:
                         neglogl[x, y, z, l] = 1
                     else:
                         neglogl[x, y, z, l] = NPY_INFINITY
                 else:
                     neglogl[x, y, z, l] = ((image[x, y, z] - mu[l]) ** 2.0) / (2.0 * sigmasq[l])
-                    neglogl[x, y, z, l] += npy_log(npy_sqrt(2.0 * NPY_PI * sigmasq[l]))
-                    
+                    neglogl[x, y, z, l] += log(sqrt(2.0 * NPY_PI * sigmasq[l]))
+
 
 cdef void _prob_neighb_perclass(double[:, :, :] image, double[:, :, :] seg,
                                 double beta, int classid,
@@ -410,18 +412,18 @@ cdef void _prob_image(double[:, :, :] image, double[:, :, :] gaussian,
             for z in range(nz):
 
                 if sigmasq[l] < eps_sq:
-                    if npy_fabs(image[x, y, z] - mu[l]) < eps:
+                    if fabs(image[x, y, z] - mu[l]) < eps:
                         gaussian[x, y, z] = 1
                     else:
                         gaussian[x, y, z] = 0
                 else:
-                    gaussian[x, y, z] = (npy_exp(-((image[x, y, z] - mu[l]) ** 2) / (2 * sigmasq[l]))) / (npy_sqrt(2 * NPY_PI * sigmasq[l]))
+                    gaussian[x, y, z] = (exp(-((image[x, y, z] - mu[l]) ** 2) / (2 * sigmasq[l]))) / (sqrt(2 * NPY_PI * sigmasq[l]))
 
                 P_L_Y[x, y, z, l] = gaussian[x, y, z] * P_L_N[x, y, z, l]
-                
+
 
 cdef void _update_param(double[:, :, :] image, double[:] mu, int classid,
-                        double[:, :, :, :] P_L_Y, 
+                        double[:, :, :, :] P_L_Y,
                         double[:, :, :, :] mu_num,
                         double[:, :, :, :] var_num) nogil:
 
@@ -447,7 +449,7 @@ class IteratedConditionalModes(object):
     # To-do: generalize to different potentials
     # To-do: generalize to different neighborhoods
 
-    def __init__(self):
+    def __init__(self)
         pass
 
 #    def initialize_otsu(image):
@@ -497,7 +499,7 @@ class IteratedConditionalModes(object):
             initial segmentation. On segput this segmentation will change by one
             iteration of the ICM algorithm
         """
-        
+
         energy = np.zeros(nloglike.shape[:3]).astype(np.float64)
 
         _icm_ising(nloglike, beta, seg, energy)
@@ -583,7 +585,7 @@ cdef void _icm_ising(double[:,:,:,:] nloglike, double beta, double[:,:,:] seg, d
                 best_class = -1
                 for k in range(nclasses):
                     this_energy = nloglike[x, y, z, k]
-                    
+
                     # Accumulate Gibbs energy for label k
                     for i in range(nneigh):
                         xx = x + dX[i]
@@ -602,10 +604,10 @@ cdef void _icm_ising(double[:,:,:,:] nloglike, double beta, double[:,:,:] seg, d
                             this_energy += beta
 
                     if (best_class == -1) or (this_energy < min_energy):
-                        
+
                         min_energy = this_energy
                         best_class = k
-                
+
                 seg[x, y, z] = best_class
                 energy[x, y, z] = min_energy
 
@@ -620,7 +622,7 @@ class ImageSegmenter(object):
 
         observationModel = ConstantObservationModel()
         posteriorMaximizer = IteratedConditionalModes()
-        
+
         if image.max() > 1:
             image = np.interp(image, [0, image.max()], [0.0, 1.0])
 
@@ -633,7 +635,7 @@ class ImageSegmenter(object):
         initial_segmentation = posteriorMaximizer.initialize_maximum_likelihood(neglogl)
         print("Calculating parameters for initital segmentation")
         mu, sigma, sigmasq = observationModel.seg_stats(image, initial_segmentation, nclasses)
-        
+
         final_seg = np.empty_like(image)
         seg_init = initial_segmentation.copy()
 
@@ -645,7 +647,7 @@ class ImageSegmenter(object):
             mu_upd, sigmasq_upd = observationModel.update_param(image, PLY, mu, nclasses)
             negll = observationModel.negloglikelihood(image, mu_upd, sigmasq_upd, nclasses)
             final_seg, energy = posteriorMaximizer.icm_ising(negll, beta, initial_segmentation)
-            
+
             initial_segmentation = final_seg.copy()
             mu = mu_upd.copy()
             sigmasq = sigmasq_upd.copy()
