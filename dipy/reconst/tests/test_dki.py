@@ -404,7 +404,7 @@ def test_compare_MK_method():
     dkiF = dkiM.fit(signal_cross)
 
     # MK analytical solution
-    MK_as = dkiF.mk
+    MK_as = dkiF.mk()
 
     # MK numerical method
     sph = Sphere(xyz=gtab.bvecs[gtab.bvals > 0])
@@ -450,7 +450,7 @@ def test_single_voxel_DKI_stats():
     # Estimates using the kurtosis class object
     dkiM = dki.DiffusionKurtosisModel(gtab_2s)
     dkiF = dkiM.fit(signal)
-    e2_vals = np.array([dkiF.ad, dkiF.ak, dkiF.rd, dkiF.rk])
+    e2_vals = np.array([dkiF.ad, dkiF.ak(), dkiF.rd, dkiF.rk()])
     assert_array_almost_equal(e2_vals, ref_vals)
 
 
@@ -463,7 +463,7 @@ def test_compare_RK_methods():
     dkiF = dkiM.fit(signal_cross)
 
     # MK analytical solution
-    RK_as = dkiF.rk
+    RK_as = dkiF.rk()
 
     # MK numerical method
     evecs = dkiF.evecs

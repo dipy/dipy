@@ -194,25 +194,16 @@ instance can be used to estimate standard non-Gaussian measures as the mean
 kurtosis (MK), the axial kurtosis (AK) and the radial kurtosis (RK).
 """
 
-MK = dkifit.mk
-AK = dkifit.ak
-RK = dkifit.rk
+MK = dkifit.mk(0, 2)
+AK = dkifit.ak(0, 2)
+RK = dkifit.rk(0, 2)
 
 """
-Kurtosis measures are susceptible to high amplitude outliers which can corrupt
-the automatic ajusted scale of the matplotlib functions. By assuming that
-typical values of kurtosis lie in the range between 0 and 2, the impact of high
-amplitude kurtosis outliers are removed in the following:
-"""
+Kurtosis measures are susceptible to high amplitude outliers. The impact of
+high amplitude kurtosis outliers were removed on the above lines of codes by
+introducing as an optional input the extremes of the typical values of kurtosis
+(assumed here as the values on the range between 0 and 2)
 
-MK[MK > 2] = 2
-MK[MK < 0] = 0
-AK[AK > 2] = 2
-AK[AK < 0] = 0
-RK[RK > 2] = 2
-RK[RK < 0] = 0
-
-"""
 Now we are ready to plot the kurtosis standard measures using matplotlib:
 """
 

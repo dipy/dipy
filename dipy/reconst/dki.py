@@ -1119,7 +1119,6 @@ class DiffusionKurtosisFit(TensorFit):
         """
         return apparent_kurtosis_coef(self.model_params, sphere)
 
-    @auto_attr
     def mk(self, min_kurtosis=0, max_kurtosis=3):
         r""" Computes mean Kurtosis (MK) from the kurtosis tensor.
 
@@ -1191,7 +1190,6 @@ class DiffusionKurtosisFit(TensorFit):
         """
         return mean_kurtosis(self.model_params, min_kurtosis, max_kurtosis)
 
-    @auto_attr
     def ak(self, min_kurtosis=0, max_kurtosis=3):
         r"""
         Axial Kurtosis (AK) of a diffusion kurtosis tensor.
@@ -1214,7 +1212,6 @@ class DiffusionKurtosisFit(TensorFit):
         """
         return axial_kurtosis(self.model_params, min_kurtosis, max_kurtosis)
 
-    @auto_attr
     def rk(self, min_kurtosis=0, max_kurtosis=3):
         r""" Radial Kurtosis (RK) of a diffusion kurtosis tensor.
 
