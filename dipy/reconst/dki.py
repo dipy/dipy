@@ -521,7 +521,7 @@ def _directional_kurtosis(dt, MD, kt, V, min_diffusivity=0, min_kurtosis=-1):
     return (MD/ADC) ** 2 * AKC
 
 
-def mean_kurtosis(dki_params, sphere=None):
+def mean_kurtosis(dki_params, min_kurtosis=0, max_kurtosis=3):
     r""" Computes mean Kurtosis (MK) from the kurtosis tensor.
 
     Parameters
@@ -533,6 +533,14 @@ def mean_kurtosis(dki_params, sphere=None):
             2) Three lines of the eigenvector matrix each containing the first,
                second and third coordinates of the eigenvector
             3) Fifteen elements of the kurtosis tensor
+    min_kurtosis : float (optional)
+        To keep kurtosis values within a plausible biophysical range, mean 
+        kurtosis values that are smaller than `min_kurtosis` are replaced with
+        `min_kurtosis`. defaut = 0
+    max_kurtosis : float (optional)
+        To keep kurtosis values within a plausible biophysical range, mean 
+        kurtosis values that are larger than `max_kurtosis` are replaced with
+        `max_kurtosis`. defaut = 3
 
     Returns
     -------
@@ -577,10 +585,7 @@ def mean_kurtosis(dki_params, sphere=None):
 
     References
     ----------
-    .. [1] Hui ES, Cheung MM, Qi L, Wu EX, 2008. Towards better MR
-           characterization of neural tissues using directional diffusion
-           kurtosis analysis. Neuroimage 42(1): 122-34
-       [2] Tabesh, A., Jensen, J.H., Ardekani, B.A., Helpern, J.A., 2011.
+    .. [1] Tabesh, A., Jensen, J.H., Ardekani, B.A., Helpern, J.A., 2011.
            Estimation of tensors and tensor-derived measures in diffusional
            kurtosis imaging. Magn Reson Med. 65(3), 823-836
     """
@@ -611,6 +616,12 @@ def mean_kurtosis(dki_params, sphere=None):
         _F2m(evals[..., 0], evals[..., 1], evals[..., 2])*Wyyzz + \
         _F2m(evals[..., 1], evals[..., 0], evals[..., 2])*Wxxzz + \
         _F2m(evals[..., 2], evals[..., 1], evals[..., 0])*Wxxyy
+    
+    if min_kurtosis is not None:
+        MK = MK.clip(min=min_kurtosis)
+
+    if max_kurtosis is not None:
+        MK = MK.clip(max=max_kurtosis)
 
     return MK.reshape(outshape)
 
@@ -741,7 +752,7 @@ def _G2m(a, b, c):
     return G2
 
 
-def radial_kurtosis(dki_params):
+def radial_kurtosis(dki_params, min_kurtosis=0, max_kurtosis=3):
     r""" Radial Kurtosis (RK) of a diffusion kurtosis tensor.
 
     Parameters
@@ -753,6 +764,14 @@ def radial_kurtosis(dki_params):
             2) Three lines of the eigenvector matrix each containing the first,
                second and third coordinates of the eigenvector
             3) Fifteen elements of the kurtosis tensor
+    min_kurtosis : float (optional)
+        To keep kurtosis values within a plausible biophysical range, radial 
+        kurtosis values that are smaller than `min_kurtosis` are replaced with
+        `min_kurtosis`. defaut = 0
+    max_kurtosis : float (optional)
+        To keep kurtosis values within a plausible biophysical range, radial 
+        kurtosis values that are larger than `max_kurtosis` are replaced with
+        `max_kurtosis`. defaut = 3
 
     Returns
     -------
@@ -804,10 +823,16 @@ def radial_kurtosis(dki_params):
         _G1m(evals[..., 0], evals[..., 2], evals[..., 1]) * Wzzzz + \
         _G2m(evals[..., 0], evals[..., 1], evals[..., 2]) * Wyyzz
 
+    if min_kurtosis is not None:
+        RK = RK.clip(min=min_kurtosis)
+
+    if max_kurtosis is not None:
+        RK = RK.clip(max=max_kurtosis)
+
     return RK.reshape(outshape)
 
 
-def axial_kurtosis(dki_params):
+def axial_kurtosis(dki_params, min_kurtosis=0, max_kurtosis=3):
     r"""  Computes axial Kurtosis (AK) from the kurtosis tensor.
 
     Parameters
@@ -819,6 +844,14 @@ def axial_kurtosis(dki_params):
             2) Three lines of the eigenvector matrix each containing the first,
                second and third coordinates of the eigenvector
             3) Fifteen elements of the kurtosis tensor
+    min_kurtosis : float (optional)
+        To keep kurtosis values within a plausible biophysical range, axial
+        kurtosis values that are smaller than `min_kurtosis` are replaced with
+        `min_kurtosis`. defaut = 0
+    max_kurtosis : float (optional)
+        To keep kurtosis values within a plausible biophysical range, axial
+        kurtosis values that are larger than `max_kurtosis` are replaced with
+        `max_kurtosis`. defaut = 3
 
     Returns
     -------
@@ -854,6 +887,12 @@ def axial_kurtosis(dki_params):
 
     # reshape data according to input data
     AK[rel_i] = AKi
+    
+    if min_kurtosis is not None:
+        AK = AK.clip(min=min_kurtosis)
+
+    if max_kurtosis is not None:
+        AK = AK.clip(max=max_kurtosis)
 
     return AK.reshape(outshape)
 
@@ -1081,15 +1120,19 @@ class DiffusionKurtosisFit(TensorFit):
         return apparent_kurtosis_coef(self.model_params, sphere)
 
     @auto_attr
-    def mk(self, sphere=None):
+    def mk(self, min_kurtosis=0, max_kurtosis=3):
         r""" Computes mean Kurtosis (MK) from the kurtosis tensor.
 
         Parameters
         ----------
-        sphere : a Sphere class instance (optional)
-            If a sphere class instance is given, MK is estimated as the average
-            of the directional kurtosis of the vertices in the sphere [1]_.
-            Otherwise MK is computed from its analytical solution [2]_.
+        min_kurtosis : float (optional)
+            To keep kurtosis values within a plausible biophysical range, mean 
+            kurtosis values that are smaller than `min_kurtosis` are replaced
+            with `min_kurtosis`. defaut = 0
+        max_kurtosis : float (optional)
+            To keep kurtosis values within a plausible biophysical range, mean 
+            kurtosis values that are larger than `max_kurtosis` are replaced
+            with `max_kurtosis`. defaut = 3
 
         Returns
         -------
@@ -1099,7 +1142,7 @@ class DiffusionKurtosisFit(TensorFit):
         Notes
         --------
         The MK analytical solution is calculated using the following equation
-        [2]_:
+        [1]_:
 
         .. math::
 
@@ -1142,30 +1185,49 @@ class DiffusionKurtosisFit(TensorFit):
 
         References
         ----------
-        .. [1] Hui ES, Cheung MM, Qi L, Wu EX, 2008. Towards better MR
-               characterization of neural tissues using directional diffusion
-               kurtosis analysis. Neuroimage 42(1): 122-34
-           [2] Tabesh, A., Jensen, J.H., Ardekani, B.A., Helpern, J.A., 2011.
+        .. [1] Tabesh, A., Jensen, J.H., Ardekani, B.A., Helpern, J.A., 2011.
                Estimation of tensors and tensor-derived measures in diffusional
                kurtosis imaging. Magn Reson Med. 65(3), 823-836
         """
-        return mean_kurtosis(self.model_params, sphere)
+        return mean_kurtosis(self.model_params, min_kurtosis, max_kurtosis)
 
     @auto_attr
-    def ak(self):
+    def ak(self, min_kurtosis=0, max_kurtosis=3):
         r"""
         Axial Kurtosis (AK) of a diffusion kurtosis tensor.
+
+        Parameters
+        ----------
+        min_kurtosis : float (optional)
+            To keep kurtosis values within a plausible biophysical range, axial
+            kurtosis values that are smaller than `min_kurtosis` are replaced
+            with `min_kurtosis`. defaut = 0
+        max_kurtosis : float (optional)
+            To keep kurtosis values within a plausible biophysical range, axial
+            kurtosis values that are larger than `max_kurtosis` are replaced
+            with `max_kurtosis`. defaut = 3
 
         Returns
         -------
         ak : array
             Calculated AK.
         """
-        return axial_kurtosis(self.model_params)
+        return axial_kurtosis(self.model_params, min_kurtosis, max_kurtosis)
 
     @auto_attr
-    def rk(self):
+    def rk(self, min_kurtosis=0, max_kurtosis=3):
         r""" Radial Kurtosis (RK) of a diffusion kurtosis tensor.
+
+        Parameters
+        ----------
+        min_kurtosis : float (optional)
+            To keep kurtosis values within a plausible biophysical range, axial
+            kurtosis values that are smaller than `min_kurtosis` are replaced
+            with `min_kurtosis`. defaut = 0
+        max_kurtosis : float (optional)
+            To keep kurtosis values within a plausible biophysical range, axial
+            kurtosis values that are larger than `max_kurtosis` are replaced
+            with `max_kurtosis`. defaut = 3
 
         Returns
         -------
@@ -1173,7 +1235,7 @@ class DiffusionKurtosisFit(TensorFit):
             Calculated RK.
 
         Notes
-        --------
+        ------
         RK is calculated with the following equation:
 
         .. math::
@@ -1201,7 +1263,7 @@ class DiffusionKurtosisFit(TensorFit):
             \left ( \frac{\lambda_2+\lambda_3}{\sqrt{\lambda_2\lambda_3}}-2
             \right )
         """
-        return radial_kurtosis(self.model_params)
+        return radial_kurtosis(self.model_params, min_kurtosis, max_kurtosis)
 
     def predict(self, gtab, S0=1):
         r""" Given a DKI model fit, predict the signal on the vertices of a

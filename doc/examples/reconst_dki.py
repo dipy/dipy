@@ -189,7 +189,7 @@ fig1.savefig('Diffusion_tensor_measures_from_DTI_and_DKI.png')
 From the figure, we can see that the standard diffusion measures from DKI has
 similar constrasts than the standard diffusion measures from DTI.
 
-In addition to the standard diffusion statistics, the DiffusinKurtosisFit
+In addition to the standard diffusion statistics, the DiffusionKurtosisFit
 instance can be used to estimate standard non-Gaussian measures as the mean
 kurtosis (MK), the axial kurtosis (AK) and the radial kurtosis (RK).
 """
