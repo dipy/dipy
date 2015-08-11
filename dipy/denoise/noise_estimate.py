@@ -321,7 +321,7 @@ def estimate_sigma(arr, disable_background_masking=False, N=0):
     k[1, 1, 2] = 1
 
     # Precomputed factor from Koay 2006, this corrects the bias of magnitude image
-    correction_factor = {0: 1 # No correction
+    correction_factor = {0: 1, # No correction
                          1: 0.42920367320510366,
                          4: 0.4834941393603609,
                          6: 0.4891759468548269,
