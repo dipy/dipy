@@ -3,6 +3,7 @@ import os
 
 import numpy as np
 import nibabel as nib
+import pickle
 
 from dipy.reconst.peaks import peaks_from_model, reshape_peaks_for_visualization
 from dipy.data import get_sphere
@@ -18,9 +19,9 @@ def compute_fodf(input, mask, bvalues, bvectors, out_dir):
     print glob(bvectors)
 
     for dwi, maskfile, bval, bvec in zip(glob(input),
-                                     glob(mask),
-                                     glob(bvalues),
-                                     glob(bvectors)):
+                                         glob(mask),
+                                         glob(bvalues),
+                                         glob(bvectors)):
         vol = nib.load(dwi)
         data = vol.get_data()
         affine = vol.get_affine()

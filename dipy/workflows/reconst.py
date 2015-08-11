@@ -29,22 +29,7 @@ def compute_dti_metrics(dwis, masks, bvalues, bvectors, out_dir, tensor,
         else:
             mask = nib.load(mask).get_data().astype(np.bool)
 
-        # Get tensors
-        print('Tensor estimation...')
-        bvals, bvecs = read_bvals_bvecs(bval, bvec)
-        if bvals.min() != 0:
-            if bvals.min() > 20:
-                raise ValueError('The minimal bvalue is greater than 20. ' +
-                                 'This is highly suspicious. Please check ' +
-                                 'your data to ensure everything is correct.\n' +
-                                 'Value found: {0}'.format(bvals.min()))
-            else:
-                gtab = gradient_table(bvals, bvecs, b0_threshold=bvals.min())
-        else:
-            gtab = gradient_table(bvals, bvecs)
-
-        tenmodel = TensorModel(gtab)
-        tenfit = tenmodel.fit(data, mask)
+        tenfit, _ = get_fitted_tensor(data, mask, bval, bvec)
 
         if out_dir == '':
             out_dir_path = os.path.dirname(dwi)
@@ -110,3 +95,23 @@ def compute_dti_metrics(dwis, masks, bvalues, bvectors, out_dir, tensor,
         if eval:
             evals_img = nib.Nifti1Image(tenfit.evals.astype(np.float32), affine)
             nib.save(evals_img, os.path.join(out_dir_path, evec))
+
+def get_fitted_tensor(data, mask, bval, bvec):
+    # Get tensors
+    print('Tensor estimation...')
+    bvals, bvecs = read_bvals_bvecs(bval, bvec)
+    if bvals.min() != 0:
+        if bvals.min() > 20:
+            raise ValueError('The minimal bvalue is greater than 20. ' +
+                             'This is highly suspicious. Please check ' +
+                             'your data to ensure everything is correct.\n' +
+                             'Value found: {0}'.format(bvals.min()))
+        else:
+            gtab = gradient_table(bvals, bvecs, b0_threshold=bvals.min())
+    else:
+        gtab = gradient_table(bvals, bvecs)
+
+    tenmodel = TensorModel(gtab)
+    tenfit = tenmodel.fit(data, mask)
+
+    return tenfit, gtab
