@@ -2,23 +2,31 @@
 
 from __future__ import division, print_function
 from dipy.fixes import argparse as arg
-from dipy.workflows.tracking import track_peaks_deterministic
+from dipy.workflows.tracking import deterministic_tracking
 
 
 parser = arg.ArgumentParser()
-parser.add_argument('ref', action='store',
-                    help='Path of the reference file.')
-parser.add_argument('peaks', action='store', metavar='peaks',
-                    help='Path of the peaks file')
-parser.add_argument('peaks_index', action='store', metavar='bvecs',
-                    help='Path of the peaks index file.')
-parser.add_argument('--out_dir', type=str, default='',
-                    help='Path to output the resulting tractogram')
+parser.add_argument('input', action='store', metavar='input', type=str,
+                    help='Path of the input diffusion volume.')
+
+parser.add_argument('bvals', action='store', metavar='bvals',
+                    help='Path of the bvals file, in FSL format.')
+
+parser.add_argument('bvecs', action='store', metavar='bvals',
+                    help='Path of the bvecs file, in FSL format.')
+
+parser.add_argument('--mask', action='store', dest='mask',
+                    metavar='mask', default=None, type=str,
+                    help='Path to a binary mask. Only data inside the mask ' +
+                         'will be used for computations.')
+
+parser.add_argument('--out_dir', action='store', dest='out_dir', type=str,
+                    default='', help='Path to output tracts.')
 
 if __name__ == "__main__":
     params = parser.parse_args()
-    track_peaks_deterministic(params.ref, params.peaks, params.peaks_index,
-                              params.out_dir)
+    deterministic_tracking(params.input, params.mask, params.bvals, params.bvecs,
+                           params.out_dir)
 
 
 

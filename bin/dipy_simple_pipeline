@@ -1,10 +1,10 @@
 #! /usr/bin/env python
 import os
 
-from dipy.workflows.segment import median_otsu_bet
+from dipy.workflows.segment import median_otsu_flow
 from dipy.workflows.reconst import compute_dti_metrics
 from dipy.workflows.fodf import compute_fodf
-from dipy.workflows.tracking import track_peaks_deterministic
+from dipy.workflows.tracking import deterministic_tracking
 from dipy.workflows.tract_metrics import tract_density
 from dipy.fixes import argparse as arg
 
@@ -27,9 +27,8 @@ if __name__ == "__main__":
         ext = '.nii.gz'
 
     work_dir = os.path.join(input_dir, 'work')
-    median_otsu_bet(params.input, 'work', True, 4, 4)
+    median_otsu_flow(params.input, 'work', 'True', '4', '4')
 
-    # Fix this?
     mask_fname = fname + '_mask' + ext
     mask_path = os.path.join(work_dir, mask_fname)
 
@@ -43,9 +42,9 @@ if __name__ == "__main__":
     compute_fodf(params.input, mask_path, params.bvals, params.bvecs,
                  'work/metrics/')
 
-    track_peaks_deterministic(os.path.join(metrics_dir, 'fa.nii.gz'),
-                              os.path.join(metrics_dir, 'peaks_values.nii.gz'),
-                              os.path.join(metrics_dir, 'peaks_indices.nii.gz'))
+    deterministic_tracking(os.path.join(metrics_dir, 'fa.nii.gz'),
+                           os.path.join(metrics_dir, 'peaks_values.nii.gz'),
+                           os.path.join(metrics_dir, 'peaks_indices.nii.gz'))
 
     tract_density(os.path.join(metrics_dir, 'tractogram.trk'),
                   os.path.join(metrics_dir, 'fa.nii.gz'))
