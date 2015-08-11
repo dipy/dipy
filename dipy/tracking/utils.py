@@ -573,7 +573,7 @@ def target(streamlines, target_mask, affine, include=True):
             yield sl
 
 
-def streamline_near_roi(streamline, x_roi_coords, tol, mode='any'):
+def streamline_near_roi(streamline, roi_coords, tol, mode='any'):
     """Is a streamline near an ROI.
 
     Implements the inner loops of the :func:`near_roi` function.
@@ -582,7 +582,7 @@ def streamline_near_roi(streamline, x_roi_coords, tol, mode='any'):
     ----------
     streamline : array, shape (N, 3)
 	    A single streamline
-    x_roi_coords : array, shape (M, 3)
+    roi_coords : array, shape (M, 3)
         ROI coordinates transformed to the streamline coordinate frame.
     tol : float
         Distance (in the units of the streamlines, usually mm). If any
@@ -599,7 +599,7 @@ def streamline_near_roi(streamline, x_roi_coords, tol, mode='any'):
 	-------
 	out : boolean
     """
-    if len(x_roi_coords)==0:
+    if len(roi_coords)==0:
         return False
     if mode=="any" or mode=="all":
         s = streamline
@@ -612,7 +612,7 @@ def streamline_near_roi(streamline, x_roi_coords, tol, mode='any'):
         e_s += "'either_end', but you entered: %s."%mode
         raise ValueError(e_s)
 
-    dist = cdist(s, x_roi_coords, 'euclidean')
+    dist = cdist(s, roi_coords, 'euclidean')
 
     if mode=="any" or mode=="either_end":
         return np.min(dist)<=tol
