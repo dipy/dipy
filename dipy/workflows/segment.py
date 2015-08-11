@@ -51,7 +51,7 @@ def median_otsu_flow(input_files, out_dir, save_masked=str(False),
                                    int_list_param(vol_idx), int_param(dilate))
 
         fname, ext = splitext(basename(fpath))
-        if(fname.endswith('.nii')):
+        if fname.endswith('.nii'):
             fname, _ = splitext(fname)
             ext = '.nii.gz'
 
