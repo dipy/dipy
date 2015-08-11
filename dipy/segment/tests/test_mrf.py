@@ -19,8 +19,8 @@ image[..., :nslices] = single_slice[..., None]
 
 # Execute the segmentation
 nclasses = 4
-beta = np.float64(0.0)
-max_iter = 10
+beta = np.float64(0.1)
+max_iter = 12
 
 square = np.zeros((256, 256, 3))
 square[42:213, 42:213, :] = 3
@@ -112,37 +112,40 @@ def test_greyscale_iter():
     npt.assert_equal(initial_segmentation.max(), nclasses - 1)
     npt.assert_equal(initial_segmentation.min(), 0)
 
-#    mu, sigma, sigmasq = com.seg_stats(image, initial_segmentation, nclasses)
-#    print('initial mu:', mu)
-#    print('initial var:', sigmasq)    
-    
+    mu, sigma, sigmasq = com.seg_stats(image, initial_segmentation, nclasses)
+    print('initial mu:', mu)
+    print('initial var:', sigmasq)
     npt.assert_equal(mu.all() >= 0, True)
     npt.assert_equal(sigmasq.all() >= 0, True)
 
+    zero = np.zeros_like(image)+0.01
+    zero_noise = add_noise(zero, 1000, 1, noise_type='gaussian')
+    image_gauss = np.where(image == 0, zero_noise, image)
+
+#    image_gauss = add_noise(image, 1000, 1, noise_type='gaussian')
+
+    plt.figure()
+    plt.imshow(image_gauss[..., 1]) 
+    plt.colorbar()
+
     final_segmentation = np.empty_like(image)
     seg_init = initial_segmentation.copy()
-
-#    energy_pre = np.zeros_like(image)
 
     for i in range(max_iter):
 
         print('iteration: ', i)
 
-        PLN = com.prob_neighborhood(image, initial_segmentation, beta,
+        PLN = com.prob_neighborhood(image_gauss, initial_segmentation, beta,
                                     nclasses)
         npt.assert_equal(PLN.all() >= 0.0, True)
-        PLY = com.prob_image(image, nclasses, mu, sigmasq, PLN)
+        PLY = com.prob_image(image_gauss, nclasses, mu, sigmasq, PLN)
         npt.assert_equal(PLY.all() >= 0.0, True)
 
-        mu_upd, sigmasq_upd = com.update_param(image, PLY, mu, nclasses)
+        mu_upd, sigmasq_upd = com.update_param(image_gauss, PLY, mu, nclasses)
         npt.assert_equal(mu_upd.all() >= 0.0, True)
         npt.assert_equal(sigmasq_upd.all() >= 0.0, True)
-        negll = com.negloglikelihood(image, mu_upd, sigmasq_upd, nclasses)
+        negll = com.negloglikelihood(image_gauss, mu_upd, sigmasq_upd, nclasses)
         npt.assert_equal(negll.all() >= 0.0, True)
-        
-#        plt.figure()
-#        plt.imshow(negll[..., 1, 0]) 
-#        plt.colorbar()
         
         final_segmentation, energy = icm.icm_ising(negll, beta,
                                                    initial_segmentation)
