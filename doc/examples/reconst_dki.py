@@ -10,23 +10,23 @@ biologic tissues is non-Gaussian using the kurtosis tensor (KT) [Jensen2005]_.
 
 Measurements of non-Gaussian diffusion from the diffusion kurtosis model are of
 interest because they can be used to charaterize tissue microstructural
-heterogeneity [Jensen2010]_ and to derive concrete biophysical parameters as
-the density of axonal fibres and diffusion tortuosity [Fierem2011]_.
+heterogeneity [Jensen2010]_ and to derive concrete biophysical parameters, such
+as the density of axonal fibres and diffusion tortuosity [Fierem2011]_.
 Moreover, DKI can be used to resolve crossing fibers in tractography and to
 obtain invariant rotational measures not limited to well aligned fiber
 populations [NetoHe2015]_.
 
-The diffusion kurtosis model express the diffusion-weighted signal as:
+The diffusion kurtosis model expresses the diffusion-weighted signal as:
 
 .. math::
 
     S(n,b)=S_{0}e^{-bD(n)+\frac{1}{6}b^{2}D(n)^{2}K(n)}
 
 where $\mathbf{b}$ is the applied diffusion weighting (which is dependent on
-the measuremenent parameters measurement), $S_0$ the signal in the absence of
-diffusion gradient sensitisation, $\mathbf{D(n)}$ the value of diffusion along
-direction  $\mathbf{n}$, and $\mathbf{K(n)}$ the value of kurtosis along
-direction $\mathbf{n}$. The directional diffusion $\mathbf{D(n)}$ and kurtosis
+the measuremenent parameters), $S_0$ the signal in the absence of diffusion
+gradient sensitization, $\mathbf{D(n)}$ the value of diffusion along direction
+$\mathbf{n}$, and $\mathbf{K(n)}$ the value of kurtosis along direction
+$\mathbf{n}$. The directional diffusion $\mathbf{D(n)}$ and kurtosis
 $\mathbf{K(n)}$ can be related to the diffusion tensor (DT) and kurtosis tensor
 (KT) using the following equations:
 
@@ -103,15 +103,15 @@ maskdata, mask = median_otsu(data, 3, 1, True, vol_idx=range(10, 50), dilate=2)
 
 """
 Now that we have loaded and prepared the datasets we can go forward with the
-voxel reconstruction. This can be done by first instantiate the
-DiffusinKurtosisModel in the following way:
+voxel reconstruction. This can be done by first instantiating the
+DiffusionKurtosisModel in the following way:
 """
 
 dkimodel = dki.DiffusionKurtosisModel(gtab)
 
 """
 To fitting the data using the defined ``dkimodel``, we just need to call the
-fit function of the DiffusinKurtosisModel:
+fit function of the DiffusionKurtosisModel:
 """
 
 dkifit = dkimodel.fit(maskdata)
@@ -201,7 +201,7 @@ RK = dkifit.rk
 """
 Kurtosis measures are susceptible to high amplitude outliers which can corrupt
 the automatic ajusted scale of the matplotlib functions. By assuming that
-typical values of kurtosis lie on a range between 0 and 2, the impact of high
+typical values of kurtosis lie in the range between 0 and 2, the impact of high
 amplitude kurtosis outliers are removed in the following:
 """
 
@@ -232,7 +232,7 @@ plt.show()
 fig2.savefig('Kurtosis_tensor_standard_measures.png')
 
 """
-.. figure:: Kurtosis_standard_measures.png
+.. figure:: Kurtosis_tensor_standard_measures.png
    :align: center
    **Kurtosis tensor standard measures obtain from the kurtosis tensor.**.
 
