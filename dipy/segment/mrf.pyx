@@ -107,7 +107,7 @@ class ConstantObservationModel(object):
 
         for l in range(nclasses):
             _negloglikelihood(image, mu, sigmasq, l, nloglike)
-            
+
         print('negloglike:', nloglike[50,50,1,0])
         print('negloglike:', nloglike[50,50,1,1])
         print('negloglike:', nloglike[50,50,1,2])
@@ -294,9 +294,13 @@ cdef void _negloglikelihood(double[:, :, :] image, double[:] mu,
             for z in range(nz):
                 if sigmasq[l] < eps_sq:
                     if fabs(image[x, y, z] - mu[l]) < eps:
-                        neglogl[x, y, z, l] = 1
+                        neglogl[x, y, z, l] = 1 + log(sqrt(2.0 * NPY_PI * sigmasq[l]))
+                        if neglogl[x, y, z, l] == - NPY_INFINITY:
+                            neglogl[x, y, z, l] = -1.7976931348623157e+100 #308
+
                     else:
-                        neglogl[x, y, z, l] = NPY_INFINITY
+                        neglogl[x, y, z, l] = 1.7976931348623157e+100 #308
+
                 else:
                     neglogl[x, y, z, l] = ((image[x, y, z] - mu[l]) ** 2.0) / (2.0 * sigmasq[l])
                     neglogl[x, y, z, l] += log(sqrt(2.0 * NPY_PI * sigmasq[l]))

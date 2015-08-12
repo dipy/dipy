@@ -20,7 +20,7 @@ image[..., :nslices] = single_slice[..., None]
 
 # Execute the segmentation
 nclasses = 4
-beta = np.float64(0.1)
+beta = np.float64(0.)
 max_iter = 12
 
 square = np.zeros((256, 256, 3))
@@ -124,10 +124,11 @@ def test_greyscale_iter():
     zero_noise = add_noise(zero, 1000, 1, noise_type='gaussian')
     image_gauss = np.where(image == 0, zero_noise, image)
 
+    image_gauss = image
 #    image_gauss = add_noise(image, 1000, 1, noise_type='gaussian')
 
     plt.figure()
-    plt.imshow(image_gauss[..., 1]) 
+    plt.imshow(image_gauss[..., 1])
     plt.colorbar()
 
     final_segmentation = np.empty_like(image)
@@ -135,7 +136,8 @@ def test_greyscale_iter():
 
     for i in range(max_iter):
 
-        print('iteration: ', i)
+        print('>> Iteration: ' +  str(i))
+        print('\n')
 
         PLN = com.prob_neighborhood(image_gauss, initial_segmentation, beta,
                                     nclasses)
