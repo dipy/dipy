@@ -108,59 +108,12 @@ class ConstantObservationModel(object):
         for l in range(nclasses):
             _negloglikelihood(image, mu, sigmasq, l, nloglike)
 
-        for l in range(nclasses):
-            _negloglikelihood(image, mu, sigmasq, l, nloglike)
-            
         print('negloglike:', nloglike[50,50,1,0])
         print('negloglike:', nloglike[50,50,1,1])
         print('negloglike:', nloglike[50,50,1,2])
         print('negloglike:', nloglike[50,50,1,3])
 
         return nloglike
-
-#    def negloglikelihood(self, image, mu, sigmasq, nclasses):
-#        nloglike = np.zeros(image.shape + (nclasses,), dtype=np.float64)
-#        epsilon = 1e-8      # Maximum precision for double.
-#        epsilon_sq = 1e-16  # We assume images normalized to 0-1
-#
-#        for idx in ndindex(image.shape):
-#
-#                for l in range(nclasses):
-#
-##                    if np.sqrt(2.0 * np.pi * sigmasq[l]) < 1e-320:
-##
-##                        nloglike[idx + (l,)] =
-#
-#                    if sigmasq[l] < epsilon_sq:
-#
-#                        if np.abs(mu[l] - image[idx]) < epsilon:
-#                            nloglike[idx + (l,)] = 0
-#                        else:
-#                            nloglike[idx + (l,)] = np.inf
-#                    else:
-#                        nloglike[idx + (l,)] = ((image[idx] - mu[l]) ** 2.0) / (2.0 * sigmasq[l])
-#                        nloglike[idx + (l,)] += np.log(np.sqrt(2.0 * np.pi * sigmasq[l]))
-##                        if nloglike[idx + (l,)] < 0:
-##                            nloglike[idx + (l,)] = 0
-#
-#
-##        if nloglike[50, 50, 1, 0] == 1: # background voxel
-##            print(">>>!!", image[50, 50, 1])
-##            print(">>>!!", mu[0], mu[1], mu[2], mu[3])
-##            print(">>>!!", sigmasq[0], sigmasq[1], sigmasq[2], sigmasq[3])
-#
-#
-##        if nloglike[143, 83, 1, 0] < epsilon: # grey-matter voxel
-##            print(">>>!!", image[143, 83, 1])
-##            print(">>>!!", mu[0], mu[1], mu[2], mu[3])
-##            print(">>>!!", sigmasq[0], sigmasq[1], sigmasq[2], sigmasq[3])
-#
-#        print('negloglike:', nloglike[50,50,1,0])
-#        print('negloglike:', nloglike[50,50,1,1])
-#        print('negloglike:', nloglike[50,50,1,2])
-#        print('negloglike:', nloglike[50,50,1,3])
-#
-#        return nloglike
 
 
     def prob_neighborhood(self, image, seg, beta, nclasses):
@@ -341,9 +294,13 @@ cdef void _negloglikelihood(double[:, :, :] image, double[:] mu,
             for z in range(nz):
                 if sigmasq[l] < eps_sq:
                     if fabs(image[x, y, z] - mu[l]) < eps:
-                        neglogl[x, y, z, l] = 1
+                        neglogl[x, y, z, l] = 1 + log(sqrt(2.0 * NPY_PI * sigmasq[l]))
+                        if neglogl[x, y, z, l] == - NPY_INFINITY:
+                            neglogl[x, y, z, l] = -1.7976931348623157e+100 #308
+
                     else:
-                        neglogl[x, y, z, l] = NPY_INFINITY
+                        neglogl[x, y, z, l] = 1.7976931348623157e+100 #308
+
                 else:
                     neglogl[x, y, z, l] = ((image[x, y, z] - mu[l]) ** 2.0) / (2.0 * sigmasq[l])
                     neglogl[x, y, z, l] += log(sqrt(2.0 * NPY_PI * sigmasq[l]))
@@ -449,7 +406,7 @@ class IteratedConditionalModes(object):
     # To-do: generalize to different potentials
     # To-do: generalize to different neighborhoods
 
-    def __init__(self)
+    def __init__(self):
         pass
 
 #    def initialize_otsu(image):
