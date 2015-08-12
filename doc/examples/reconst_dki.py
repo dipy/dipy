@@ -99,7 +99,7 @@ Before fitting the data, we first mask and crop the data to avoid calculating
 Tensors on the background of the image.
 """
 
-maskdata, mask = median_otsu(data, 4, 2, False, vol_idx=[0, 1], dilate=1)
+maskdata, mask = median_otsu(data, 4, 2, True, vol_idx=[0, 1], dilate=1)
 
 """
 Now that we have loaded and prepared the datasets we can go forward with the
@@ -194,15 +194,15 @@ instance can be used to estimate standard non-Gaussian measures as the mean
 kurtosis (MK), the axial kurtosis (AK) and the radial kurtosis (RK).
 """
 
-MK = dkifit.mk(0, 2)
-AK = dkifit.ak(0, 2)
-RK = dkifit.rk(0, 2)
+MK = dkifit.mk(0, 3)
+AK = dkifit.ak(0, 3)
+RK = dkifit.rk(0, 3)
 
 """
 Kurtosis measures are susceptible to high amplitude outliers. The impact of
 high amplitude kurtosis outliers were removed on the above lines of codes by
 introducing as an optional input the extremes of the typical values of kurtosis
-(assumed here as the values on the range between 0 and 2)
+(assumed here as the values on the range between 0 and 3)
 
 Now we are ready to plot the kurtosis standard measures using matplotlib:
 """
