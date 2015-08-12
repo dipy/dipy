@@ -99,7 +99,7 @@ Before fitting the data, we first mask and crop the data to avoid calculating
 Tensors on the background of the image.
 """
 
-maskdata, mask = median_otsu(data, 3, 1, True, vol_idx=range(10, 50), dilate=2)
+maskdata, mask = median_otsu(data, 4, 2, False, vol_idx=[0, 1], dilate=1)
 
 """
 Now that we have loaded and prepared the datasets we can go forward with the
