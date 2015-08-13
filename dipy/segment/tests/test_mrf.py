@@ -21,7 +21,7 @@ image[..., :nslices] = single_slice[..., None]
 # Execute the segmentation
 nclasses = 4
 beta = np.float64(0.)
-max_iter = 6
+max_iter = 12
 
 square = np.zeros((256, 256, 3))
 square[42:213, 42:213, :] = 3
@@ -131,16 +131,15 @@ def test_greyscale_iter():
     npt.assert_equal(mu.all() >= 0, True)
     npt.assert_equal(sigmasq.all() >= 0, True)
 
-    zero = np.zeros_like(image) + 0.01
-    zero_noise = add_noise(zero, 1000, 1, noise_type='gaussian')
+    zero = np.zeros_like(image) + 0.001
+    zero_noise = add_noise(zero, 10000, 1, noise_type='gaussian')
     image_gauss = np.where(image == 0, zero_noise, image)
 
-    #image_gauss = image
-#    image_gauss = add_noise(image, 1000, 1, noise_type='gaussian')
+    image_gauss = image
 
-    plt.figure()
-    plt.imshow(image_gauss[..., 1])
-    plt.colorbar()
+    #plt.figure()
+    #plt.imshow(image_gauss[..., 1])
+    #plt.colorbar()
 
     final_segmentation = np.empty_like(image)
     seg_init = initial_segmentation.copy()
@@ -151,10 +150,9 @@ def test_greyscale_iter():
         print('>> Iteration: ' +  str(i))
         print('\n')
 
-        plt.figure()
-
-        plt.imshow(initial_segmentation[..., 1])
-        plt.title('initial ' + str(i) )
+#        plt.figure()
+#        plt.imshow(initial_segmentation[..., 1])
+#        plt.title('initial ' + str(i) )
 
         PLN = com.prob_neighborhood(image_gauss, initial_segmentation, beta,
                                     nclasses)
@@ -177,9 +175,16 @@ def test_greyscale_iter():
 
         plt.figure()
         plt.imshow(final_segmentation[..., 1])
+        plt.colorbar()
         plt.title('final ' + str(i) )
-        #plt.figure()
-        #plt.imshow(np.abs(final_segmentation[..., 1] - initial_segmentation[..., 1]))
+
+        plt.figure()
+        plt.imshow(np.abs(final_segmentation[..., 1] - initial_segmentation[..., 1]))
+
+        diff = np.abs(final_segmentation[..., 1] - initial_segmentation[..., 1])
+
+        print('Difference points')
+        print(np.sum(diff > 0))
 
         initial_segmentation = final_segmentation.copy()
         mu = mu_upd.copy()
