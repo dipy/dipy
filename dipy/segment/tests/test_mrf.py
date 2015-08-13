@@ -16,12 +16,12 @@ single_slice = np.load(fname)
 nslices = 5
 image = np.zeros(shape=single_slice.shape + (nslices,))
 image[..., :nslices] = single_slice[..., None]
-image += np.random.normal(0.01, 0.001, image.shape)
+# image += np.random.normal(0.01, 0.001, image.shape)
 
 # Execute the segmentation
 nclasses = 4
 beta = np.float64(0.)
-max_iter = 12
+max_iter = 6
 
 square = np.zeros((256, 256, 3))
 square[42:213, 42:213, :] = 3
@@ -108,22 +108,34 @@ def test_greyscale_iter():
 
     mu, sigma = com.initialize_param_uniform(image, nclasses)
     sigmasq = sigma ** 2
+
+    print('>>> Initialize means and variances per class')
+    for l in range(nclasses):
+        print('class: ', l)
+        print('updated_mu:', mu[l])
+        print('updated_var:', sigmasq[l])
+
     neglogl = com.negloglikelihood(image, mu, sigmasq, nclasses)
     initial_segmentation = icm.initialize_maximum_likelihood(neglogl)
     npt.assert_equal(initial_segmentation.max(), nclasses - 1)
     npt.assert_equal(initial_segmentation.min(), 0)
 
     mu, sigma, sigmasq = com.seg_stats(image, initial_segmentation, nclasses)
-    print('initial mu:', mu)
-    print('initial var:', sigmasq)
+
+    print('>>> Seg stats means and variances per class')
+    for l in range(nclasses):
+        print('class: ', l)
+        print('updated_mu:', mu[l])
+        print('updated_var:', sigmasq[l])
+
     npt.assert_equal(mu.all() >= 0, True)
     npt.assert_equal(sigmasq.all() >= 0, True)
 
-    zero = np.zeros_like(image)+0.01
+    zero = np.zeros_like(image) + 0.01
     zero_noise = add_noise(zero, 1000, 1, noise_type='gaussian')
     image_gauss = np.where(image == 0, zero_noise, image)
 
-    image_gauss = image
+    #image_gauss = image
 #    image_gauss = add_noise(image, 1000, 1, noise_type='gaussian')
 
     plt.figure()
@@ -135,8 +147,14 @@ def test_greyscale_iter():
 
     for i in range(max_iter):
 
+        print('\n')
         print('>> Iteration: ' +  str(i))
         print('\n')
+
+        plt.figure()
+
+        plt.imshow(initial_segmentation[..., 1])
+        plt.title('initial ' + str(i) )
 
         PLN = com.prob_neighborhood(image_gauss, initial_segmentation, beta,
                                     nclasses)
@@ -163,7 +181,9 @@ def test_greyscale_iter():
 
         plt.figure()
         plt.imshow(final_segmentation[..., 1])
-
+        plt.title('final ' + str(i) )
+        #plt.figure()
+        #plt.imshow(np.abs(final_segmentation[..., 1] - initial_segmentation[..., 1]))
 
         initial_segmentation = final_segmentation.copy()
         mu = mu_upd.copy()
