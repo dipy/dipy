@@ -21,7 +21,7 @@ image[..., :nslices] = single_slice[..., None]
 # Execute the segmentation
 nclasses = 4
 beta = np.float64(0.)
-max_iter = 12
+max_iter = 6
 
 square = np.zeros((256, 256, 3))
 square[42:213, 42:213, :] = 3
@@ -51,6 +51,17 @@ temp_3 = np.where(temp_3 < 20, 1, 2)
 square_2[99:157, 99:157, :] = temp_3
 
 square_gauss = add_noise(square, 4, 1, noise_type='gaussian')
+
+
+class Formatter(object):
+
+    def __init__(self, im):
+        self.im = im
+
+    def __call__(self, x, y):
+        shape = self.im.get_array().shape
+        z = self.im.get_array()[int(y), int(x)]
+        return 'x={:.01f}, y={:.01f}, value={:.01f}'.format(x, shape[0] - y, z)
 
 
 def test_greyscale_image():
@@ -158,19 +169,100 @@ def test_greyscale_iter():
                                     nclasses)
         npt.assert_equal(PLN.all() >= 0.0, True)
 
+        print('\n')
+        print('### PLN vox(50, 50, 1) BK')
+        print('BK         ' + str(PLN[50,50,1,0]))
+        print('CSF        ' + str(PLN[50,50,1,1]))
+        print('GM         ' + str(PLN[50,50,1,2]))
+        print('WM         ' + str(PLN[50,50,1,3]))
+
+        print('### PLN vox(147, 129, 1) CSF')
+        print('BK         ' + str(PLN[147,129,1,0]))
+        print('CSF        ' + str(PLN[147,129,1,1]))
+        print('GM         ' + str(PLN[147,129,1,2]))
+        print('WM         ' + str(PLN[147,129,1,3]))
+
+        print('### PLN vox(61, 152, 1) GM')
+        print('BK         ' + str(PLN[61,152,1,0]))
+        print('CSF        ' + str(PLN[61,152,1,1]))
+        print('GM         ' + str(PLN[61,152,1,2]))
+        print('WM         ' + str(PLN[61,152,1,3]))
+
+        print('### PLN vox(100, 100, 1) WM')
+        print('BK         ' + str(PLN[100,100,1,0]))
+        print('CSF        ' + str(PLN[100,100,1,1]))
+        print('GM         ' + str(PLN[100,100,1,2]))
+        print('WM         ' + str(PLN[100,100,1,3]))
+        print('\n')
+
         PLY = com.prob_image(image_gauss, nclasses, mu, sigmasq, PLN)
         npt.assert_equal(PLY.all() >= 0.0, True)
+
+        print('\n')
+        print('### PLY vox(50, 50, 1) BK')
+        print('BK         ' + str(PLY[50,50,1,0]))
+        print('CSF        ' + str(PLY[50,50,1,1]))
+        print('GM         ' + str(PLY[50,50,1,2]))
+        print('WM         ' + str(PLY[50,50,1,3]))
+
+        print('### PLY vox(147, 129, 1) CSF')
+        print('BK         ' + str(PLY[147,129,1,0]))
+        print('CSF        ' + str(PLY[147,129,1,1]))
+        print('GM         ' + str(PLY[147,129,1,2]))
+        print('WM         ' + str(PLY[147,129,1,3]))
+
+        print('### PLY vox(61, 152, 1) GM')
+        print('BK         ' + str(PLY[61,152,1,0]))
+        print('CSF        ' + str(PLY[61,152,1,1]))
+        print('GM         ' + str(PLY[61,152,1,2]))
+        print('WM         ' + str(PLY[61,152,1,3]))
+
+        print('### PLY vox(100, 100, 1) WM')
+        print('BK         ' + str(PLY[100,100,1,0]))
+        print('CSF        ' + str(PLY[100,100,1,1]))
+        print('GM         ' + str(PLY[100,100,1,2]))
+        print('WM         ' + str(PLY[100,100,1,3]))
+        print('\n')
+
 
         mu_upd, sigmasq_upd = com.update_param(image_gauss, PLY, mu, nclasses)
         npt.assert_equal(mu_upd.all() >= 0.0, True)
         npt.assert_equal(sigmasq_upd.all() >= 0.0, True)
 
-        negll = com.negloglikelihood(image_gauss, mu_upd, sigmasq_upd, nclasses)
-        npt.assert_equal(negll.all() >= 0.0, True)
+        print('>>> Updated means and variances per class (update_param)')
+        for l in range(nclasses):
+            print('class: ', l)
+            print('updated_mu:', mu_upd[l])
+            print('updated_var:', sigmasq_upd[l])
 
-#        plt.figure()
-#        plt.imshow(negll[..., 1, 0])
-#        plt.colorbar()
+        negll = com.negloglikelihood(image_gauss, mu_upd, sigmasq_upd, nclasses)
+
+        print('\n')
+        print('### Negloglikelihood vox(50, 50, 1) BK')
+        print('BK         ' + str(negll[50,50,1,0]))
+        print('CSF        ' + str(negll[50,50,1,1]))
+        print('GM         ' + str(negll[50,50,1,2]))
+        print('WM         ' + str(negll[50,50,1,3]))
+
+        print('### Negloglikelihood vox(147, 129, 1) CSF')
+        print('BK         ' + str(negll[147,129,1,0]))
+        print('CSF        ' + str(negll[147,129,1,1]))
+        print('GM         ' + str(negll[147,129,1,2]))
+        print('WM         ' + str(negll[147,129,1,3]))
+
+        print('### Negloglikelihood vox(61, 152, 1) GM')
+        print('BK         ' + str(negll[61,152,1,0]))
+        print('CSF        ' + str(negll[61,152,1,1]))
+        print('GM         ' + str(negll[61,152,1,2]))
+        print('WM         ' + str(negll[61,152,1,3]))
+
+        print('### Negloglikelihood vox(100, 100, 1) WM')
+        print('BK         ' + str(negll[100,100,1,0]))
+        print('CSF        ' + str(negll[100,100,1,1]))
+        print('GM         ' + str(negll[100,100,1,2]))
+        print('WM         ' + str(negll[100,100,1,3]))
+        print('\n')
+
 
         final_segmentation, energy = icm.icm_ising(negll, beta,
                                                    initial_segmentation)
@@ -179,13 +271,14 @@ def test_greyscale_iter():
 #            npt.assert_equal(energy[100, 100, 2] <= energy_pre[100, 100, 2], True)
 #        energy_pre = energy.copy()
 
-        plt.figure()
-        plt.imshow(final_segmentation[..., 1])
-        plt.colorbar()
-        plt.title('final ' + str(i) )
+        fig, ax = plt.subplots()
+        ims = ax.imshow(final_segmentation[..., 1], interpolation='nearest')
+        fig.colorbar(ims)
+        ax.format_coord = Formatter(ims)
+        ax.set_title('final ' + str(i))
 
-        plt.figure()
-        plt.imshow(np.abs(final_segmentation[..., 1] - initial_segmentation[..., 1]))
+#        plt.figure()
+#        plt.imshow(np.abs(final_segmentation[..., 1] - initial_segmentation[..., 1]))
 
         diff = np.abs(final_segmentation[..., 1] - initial_segmentation[..., 1])
 

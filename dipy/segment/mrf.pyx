@@ -108,32 +108,6 @@ class ConstantObservationModel(object):
         for l in range(nclasses):
             _negloglikelihood(image, mu, sigmasq, l, nloglike)
 
-        print('\n')
-        print('### Negloglikelihood vox(50, 50, 1) BK')
-        print('BK         ' + str(nloglike[50,50,1,0]))
-        print('CSF        ' + str(nloglike[50,50,1,1]))
-        print('GM         ' + str(nloglike[50,50,1,2]))
-        print('WM         ' + str(nloglike[50,50,1,3]))
-
-        print('### Negloglikelihood vox(147, 129, 1) CSF')
-        print('BK         ' + str(nloglike[147,129,1,0]))
-        print('CSF        ' + str(nloglike[147,129,1,1]))
-        print('GM         ' + str(nloglike[147,129,1,2]))
-        print('WM         ' + str(nloglike[147,129,1,3]))
-
-        print('### Negloglikelihood vox(61, 152, 1) GM')
-        print('BK         ' + str(nloglike[61,152,1,0]))
-        print('CSF        ' + str(nloglike[61,152,1,1]))
-        print('GM         ' + str(nloglike[61,152,1,2]))
-        print('WM         ' + str(nloglike[61,152,1,3]))
-
-        print('### Negloglikelihood vox(100, 100, 1) WM')
-        print('BK         ' + str(nloglike[100,100,1,0]))
-        print('CSF        ' + str(nloglike[100,100,1,1]))
-        print('GM         ' + str(nloglike[100,100,1,2]))
-        print('WM         ' + str(nloglike[100,100,1,3]))
-        print('\n')
-
         return nloglike
 
 
@@ -207,15 +181,17 @@ class ConstantObservationModel(object):
         # voxel
         P_L_Y = np.zeros_like(P_L_N)
         P_L_Y_norm = np.zeros_like(img)
-        # normal density equation 11 of the Zhang paper
-        g = np.zeros_like(img)
 
         for l in range(nclasses):
+
+            # normal density equation 11 of the Zhang paper
+            g = np.zeros_like(img)
+
             _prob_image(img, g, mu, sigmasq, l, P_L_N, P_L_Y)
             P_L_Y_norm[:, :, :] += P_L_Y[:, :, :, l]
 
         for l in range(nclasses):
-            P_L_Y[:, :, :, l] = P_L_Y[:, :, :, l]/P_L_Y_norm
+            P_L_Y[:, :, :, l] = P_L_Y[:, :, :, l] / P_L_Y_norm
 
         return P_L_Y
 
@@ -245,18 +221,16 @@ class ConstantObservationModel(object):
         mu_num = np.zeros(image.shape + (nclasses,), dtype=np.float64)
         var_num = np.zeros(image.shape + (nclasses,), dtype=np.float64)
 
-        print('>>> Updated means and variances per class (update_param)')
+
         for l in range(nclasses):
 
-            _update_param(image, mu, l, P_L_Y, mu_num, var_num)
+            #_update_param(image, mu, l, P_L_Y, mu_num, var_num)
+            mu_num[..., l] = P_L_Y[..., l] * image
+            var_num[..., l] = P_L_Y[..., l] * ((image - mu[l]) ** 2)
 
-            mu_upd[l] = np.sum(mu_num[:, :, :, l]) / np.sum(P_L_Y[:, :, :, l])
-            var_upd[l] = np.sum(var_num[:, :, :, l]) / np.sum(P_L_Y[:, :, :, l])
+            mu_upd[l] = np.sum(mu_num[..., l]) / np.sum(P_L_Y[..., l])
+            var_upd[l] = np.sum(var_num[..., l]) / np.sum(P_L_Y[..., l])
 
-
-            print('class: ', l)
-            print('updated_mu:', mu_upd[l])
-            print('updated_var:', var_upd[l])
 
         return mu_upd, var_upd
 
@@ -315,11 +289,9 @@ cdef void _negloglikelihood(double[:, :, :] image, double[:] mu,
                 if sigmasq[l] < eps_sq:
                     if fabs(image[x, y, z] - mu[l]) < eps:
                         neglogl[x, y, z, l] = 1 + log(sqrt(2.0 * NPY_PI * sigmasq[l]))
-                        #if neglogl[x, y, z, l] == - NPY_INFINITY:
-                        #    neglogl[x, y, z, l] = -1.7976931348623157e+100 #308
 
                     else:
-                        neglogl[x, y, z, l] = NPY_INFINITY #1.7976931348623157e+100 #308
+                        neglogl[x, y, z, l] = NPY_INFINITY
 
                 else:
                     neglogl[x, y, z, l] = ((image[x, y, z] - mu[l]) ** 2.0) / (2.0 * sigmasq[l])
