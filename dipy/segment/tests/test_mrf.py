@@ -157,12 +157,14 @@ def test_greyscale_iter():
         PLN = com.prob_neighborhood(image_gauss, initial_segmentation, beta,
                                     nclasses)
         npt.assert_equal(PLN.all() >= 0.0, True)
+
         PLY = com.prob_image(image_gauss, nclasses, mu, sigmasq, PLN)
         npt.assert_equal(PLY.all() >= 0.0, True)
 
         mu_upd, sigmasq_upd = com.update_param(image_gauss, PLY, mu, nclasses)
         npt.assert_equal(mu_upd.all() >= 0.0, True)
         npt.assert_equal(sigmasq_upd.all() >= 0.0, True)
+
         negll = com.negloglikelihood(image_gauss, mu_upd, sigmasq_upd, nclasses)
         npt.assert_equal(negll.all() >= 0.0, True)
 
