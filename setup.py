@@ -217,7 +217,14 @@ def main(**extra_args):
           scripts      = [pjoin('bin', 'dipy_peak_extraction'),
                           pjoin('bin', 'dipy_fit_tensor'),
                           pjoin('bin', 'dipy_sh_estimate'),
-                          pjoin('bin', 'dipy_quickbundles')],
+                          pjoin('bin', 'dipy_quickbundles'),
+                          pjoin('bin', 'dipy_dti_metrics'),
+                          pjoin('bin', 'dipy_fodf'),
+                          pjoin('bin', 'dipy_median_otsu'),
+                          pjoin('bin', 'dipy_simple_pipeline'),
+                          pjoin('bin', 'dipy_track_deterministic'),
+                          pjoin('bin', 'dipy_track_EuDX'),
+                          pjoin('bin', 'dipy_tract_density')],
           cmdclass = cmdclass,
           **extra_args
         )
