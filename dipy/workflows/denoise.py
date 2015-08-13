@@ -10,17 +10,19 @@ from dipy.workflows.utils import choose_create_out_dir
 def nlmeans_flow(dwis, sigma=0, out_dir=''):
 
     for dwi_path in glob(dwis):
+        print('Denoising {0}'.format(dwi_path))
         image = nib.load(dwi_path)
 
         data = image.get_data()
 
-        if sigma == 0:
-            sigma = estimate_sigma(data)
-            print 'Found sigma {0}'.format(sigma)
+        real_sig = sigma
+        if real_sig == 0:
+            real_sig = estimate_sigma(data)
+            print 'Found sigma {0}'.format(real_sig)
 
         out_dir_path = choose_create_out_dir(out_dir, dwi_path)
 
-        denoised_data = nlmeans(data, sigma)
+        denoised_data = nlmeans(data, real_sig)
         denoised_image = nib.Nifti1Image(
             denoised_data, image.get_affine(), image.get_header())
 

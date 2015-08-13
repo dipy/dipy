@@ -20,6 +20,7 @@ def compute_dti_metrics(dwis, masks, bvalues, bvectors, out_dir, tensor,
                                      glob(bvalues),
                                      glob(bvectors)):
 
+        print('Computing dti metrics for {0}'.format(dwi))
         img = nib.load(dwi)
         data = img.get_data()
         affine = img.get_affine()

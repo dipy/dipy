@@ -22,6 +22,8 @@ def compute_fodf(input, mask, bvalues, bvectors, out_dir):
                                          glob(mask),
                                          glob(bvalues),
                                          glob(bvectors)):
+
+        print('Computing fiber odfs for {0}'.format(dwi))
         vol = nib.load(dwi)
         data = vol.get_data()
         affine = vol.get_affine()
