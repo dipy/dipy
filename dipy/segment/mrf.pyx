@@ -164,6 +164,8 @@ class ConstantObservationModel(object):
         PLN = np.zeros(image.shape + (nclasses,), dtype=np.float64)
 
         for classid in range(nclasses):
+
+            P_L_N = np.zeros(image.shape, dtype=np.float64)
             _prob_neighb_perclass(image, seg, beta, classid, P_L_N)
 
             # Eq 2.18 of Stan Z. Li book
@@ -344,7 +346,6 @@ cdef void _prob_neighb_perclass(double[:, :, :] image, double[:, :, :] seg,
         for y in range(ny):
             for z in range(nz):
 
-                #vox_prob = P_L_N[x, y, z, l]
                 vox_prob = 0
 
                 for i in range(nneigh):
@@ -358,12 +359,11 @@ cdef void _prob_neighb_perclass(double[:, :, :] image, double[:, :, :] seg,
                     if((zz < 0) or (zz >= nz)):
                         continue
 
-                    if seg[xx,yy,zz] == l:
+                    if seg[xx, yy, zz] == l:
                         vox_prob -= beta
                     else:
                         vox_prob += beta
 
-                #P_L_N[x, y, z, l] = vox_prob
                 P_L_N[x, y, z] = vox_prob
 
 
