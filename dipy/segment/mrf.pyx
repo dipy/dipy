@@ -570,6 +570,8 @@ cdef void _icm_ising(double[:,:,:,:] nloglike, double beta, double[:,:,:] seg,
                 # Select the best label for this voxel (x, y, z)
 
                 best_class = -1
+                min_energy = NPY_INFINITY
+
                 for k in range(nclasses):
                     this_energy = nloglike[x, y, z, k]
 
@@ -590,7 +592,7 @@ cdef void _icm_ising(double[:,:,:,:] nloglike, double beta, double[:,:,:] seg,
                         else:
                             this_energy += beta
 
-                    if (best_class == -1) or (this_energy < min_energy):
+                    if this_energy < min_energy:
 
                         min_energy = this_energy
                         best_class = k
