@@ -218,8 +218,13 @@ def test_greyscale_iter():
         npt.assert_equal(mu_upd.all() >= 0.0, True)
         npt.assert_equal(sigmasq_upd.all() >= 0.0, True)
 
+        print('>>> Updated means and variances per class (update_param)')
+        for l in range(nclasses):
+            print('class: ', l)
+            print('updated_mu:', mu_upd[l])
+            print('updated_var:', sigmasq_upd[l])
+
         negll = com.negloglikelihood(image_gauss, mu_upd, sigmasq_upd, nclasses)
-        npt.assert_equal(negll.all() >= 0.0, True)
 
         print('\n')
         print('### Negloglikelihood vox(50, 50, 1) BK')

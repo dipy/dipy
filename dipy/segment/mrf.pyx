@@ -221,18 +221,16 @@ class ConstantObservationModel(object):
         mu_num = np.zeros(image.shape + (nclasses,), dtype=np.float64)
         var_num = np.zeros(image.shape + (nclasses,), dtype=np.float64)
 
-        print('>>> Updated means and variances per class (update_param)')
+
         for l in range(nclasses):
 
-            _update_param(image, mu, l, P_L_Y, mu_num, var_num)
+            #_update_param(image, mu, l, P_L_Y, mu_num, var_num)
+            mu_num[..., l] = P_L_Y[..., l] * image
+            var_num[..., l] = P_L_Y[..., l] * ((image - mu[l]) ** 2)
 
-            mu_upd[l] = np.sum(mu_num[:, :, :, l]) / np.sum(P_L_Y[:, :, :, l])
-            var_upd[l] = np.sum(var_num[:, :, :, l]) / np.sum(P_L_Y[:, :, :, l])
+            mu_upd[l] = np.sum(mu_num[..., l]) / np.sum(P_L_Y[..., l])
+            var_upd[l] = np.sum(var_num[..., l]) / np.sum(P_L_Y[..., l])
 
-
-            print('class: ', l)
-            print('updated_mu:', mu_upd[l])
-            print('updated_var:', var_upd[l])
 
         return mu_upd, var_upd
 
@@ -291,11 +289,9 @@ cdef void _negloglikelihood(double[:, :, :] image, double[:] mu,
                 if sigmasq[l] < eps_sq:
                     if fabs(image[x, y, z] - mu[l]) < eps:
                         neglogl[x, y, z, l] = 1 + log(sqrt(2.0 * NPY_PI * sigmasq[l]))
-                        #if neglogl[x, y, z, l] == - NPY_INFINITY:
-                        #    neglogl[x, y, z, l] = -1.7976931348623157e+100 #308
 
                     else:
-                        neglogl[x, y, z, l] = NPY_INFINITY #1.7976931348623157e+100 #308
+                        neglogl[x, y, z, l] = NPY_INFINITY
 
                 else:
                     neglogl[x, y, z, l] = ((image[x, y, z] - mu[l]) ** 2.0) / (2.0 * sigmasq[l])
