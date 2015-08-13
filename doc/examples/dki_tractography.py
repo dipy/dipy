@@ -7,24 +7,26 @@ In this example we show how to analyze the 3D information of the tensors
 estimated from diffusion kurtosis imaging (DKI) and how DKI can be used for
 tractography. This example is based on the work done by [Raf2015]_.
 
-First we import all relevant modules for this example:
+First we import all relevant modules:
 """
 
 import numpy as np
+import nibabel as nib
 import dipy.reconst.dki as dki
 from dipy.data import read_cenir_multib
 from dipy.sims.voxel import multi_tensor_dki
+from dipy.segment.mask import median_otsu
 from dipy.data import get_sphere
 from dipy.core.geometry import sphere2cart
 from dipy.viz import fvtk
 
 """
 This example will be based on the same multi-shell data used in the previous
-DKI usage example :ref:`example_reconst_dki`. This data was recorder with
+DKI usage example :ref:`example_reconst_dki`. This data was collected with
 similar acquisition parameters used on the Human Connectome Project (HCP),
 however we only use the data's b-values up to 2000 $s.mm^{-2}$ to decrease the
 influence of the diffusion signal taylor approximation componets not taken into
-account by the diffusion kurtosis model.
+account by the diffusion kurtosis model. 
 """
 
 bvals = [200, 400, 1000, 2000]
@@ -39,20 +41,21 @@ diffusion kurtosis model as:
 dkimodel = dki.DiffusionKurtosisModel(gtab)
 
 """
-Assuming the same GradientTable of the loaded data, we first illustrate the 3D
-information provided by DKI on simulates. For this, we simulate the signal of
-five voxels of two fibers with increasing crossing angle as follow (for more
+We first illustrate the 3D information provided by DKI from simulations. For
+this, based on the same GradientTable of the loaded data, we generate the
+signal of five voxels containing two fibers populations with increasing
+intersection angle and the same GradientTable of the loaded data (for more
 details on DKI simulates see :ref:`example_simulate_dki`):
 """
 
-# Parameters that we mantain constant across the five voxels simulates
+# Defining the parameters that we mantain constant across the five voxels
 mevals = np.array([[0.00099, 0, 0], [0.00226, 0.00087, 0.00087],
                    [0.00099, 0, 0], [0.00226, 0.00087, 0.00087]])
 fie = 0.49
 fractions = [fie*50, (1 - fie)*50, fie*50, (1 - fie)*50]
 
-# five_voxel_angles is a 5x4 matrix corresponding to the number of voxels
-# simulated and the 4 compartments used on each simulate
+# `five_voxel_angles` is a 5x4 matrix that contains the information of the
+# fiber directions for the 5 simulated voxels each formed by 4 compartments
 five_voxel_angles = np.array([[(90, 0), (90, 0), (90, 0), (90, 0)],
                               [(90, 0), (90, 0), (90, 30), (90, 30)],
                               [(90, 0), (90, 0), (90, 45), (90, 45)],
@@ -67,13 +70,13 @@ for v in range(len(five_voxel_angles)):
                                              angles=angles,
                                              fractions=fractions, snr=None)
 
-""" Now we fit the signal of the simulated voxels by calling the fit method of
-the DiffusinKurtosisModel: """
+""" Now we fit the signal of the simulated voxels using the fit method of the
+DiffusinKurtosisModel: """
 
 dkifit = dkimodel.fit(signal_dki)
 
 """ To visualize the 3D information provide by the diffusion and kurtosis
-tensor, we compute and plot the apparent directional diffusivity and kurtosis
+tensors, we compute and plot the apparent directional diffusivity and kurtosis
 values on 724 directions evenly sampled on a sphere. """
 
 sphere = get_sphere('symmetric724')
@@ -90,20 +93,20 @@ tensors_actor = fvtk.sphere_funcs(tensors, sphere)
 fvtk.add(ren, tensors_actor)
 
 """
-In the graphical presentation of the tensors estimated from DKI, we add the
+For the graphical presentation of the tensors estimated from DKI, we add the
 ground truth direction of fibers from the simulation paremeters. This is done
 using the following lines of code:
 """
 
-# convert fiber directions ground truth angles to cartesian coordinates
+# convert fiber directions ground truth angles to Cartesian coordinates
 gt_dir = np.zeros((5, 1, 2, 3))
 for d in range(5):
     a = five_voxel_angles[d]
     gt_dir[d, 0, 0] = sphere2cart(1, np.deg2rad(a[0, 0]), np.deg2rad(a[0, 1]))
     gt_dir[d, 0, 1] = sphere2cart(1, np.deg2rad(a[2, 0]), np.deg2rad(a[2, 1]))
 
-# Duplicate directions ground truth to plot direction reference in both
-# diffusion and kurtosis tensors
+# Duplicate directions ground truth to plot the direction reference in both
+# directional diffusivity and kurtosis values
 gt_dir_2copies = np.vstack([gt_dir, gt_dir])
 gt_dir_2copies = gt_dir_2copies.reshape((5, 2, 1, 2, 3), order='F')
 
@@ -158,10 +161,31 @@ fvtk.record(ren, out_path='DKI_ODF_geometry.png', size=(1200, 1200))
    between two simulated white matter fibers. Fiber ground truth are plotted in
    red **.
 
-For the figure above, we can see that DKI-ODF peaks are related to the ground
-truth directions, and thus DKI based tractography can be performed by finding
-the maxima of the DKI-ODF. Below we illustrate how this is done in real data. 
+We can see from figure that DKI-ODF peaks can be directly related to the ground
+truth directions. Following this, fiber direction can be estimated by finding
+the maxima of the DKI-ODF. Below we illustrate how this is done in real data
+and how this fiber estimates can be used on tractography.
+
+As mention in :ref:`example_reconst_dki`, diffusion kurtosis imaging requires
+some pre-processing to reduce the impact of signal artefacts. Robust procedures
+for this can be computationally expensive. To avoid reprocessing data, here we
+load the data previously denoised in :ref:`example_reconst_dki`
 """
+
+img = nib.load('denoised_cenir_multib.nii.gz') 
+den = img.get_data()
+affine = img.get_affine()
+
+""" Now, we mask and crop the data to remove some of unnecessary background
+voxels:  
+"""
+
+maskdata, mask = median_otsu(den, 4, 2, True, vol_idx=[0, 1], dilate=1)
+
+""" To fit the diffusion kurtosis model, we just need to call again the fit
+funtion the of DiffusinKurtosisModel: """
+
+dkifit = dkimodel.fit(maskdata)
 
 """
 References:
