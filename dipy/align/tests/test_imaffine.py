@@ -213,6 +213,10 @@ def test_affreg_all_transforms():
         print("%s>>%f"%(ttype, reduction))
         assert(reduction > 0.9)
 
+    # Verify that exception is raised if level_iters is empty
+    metric = imaffine.MutualInformationMetric(32)
+    assert_raises(ValueError, imaffine.AffineRegistration, metric, [])
+
 
 def test_affreg_defaults():
     # Test all default arguments with an arbitrary transform
@@ -221,8 +225,9 @@ def test_affreg_defaults():
     transform_name = 'TRANSLATION'
     dim = 2
     ttype = (transform_name, dim)
+    aff_options = ['mass', 'voxel-origin', 'centers', None, np.eye(dim+1)]
 
-    for starting_affine in ['mass', 'voxel-origin', 'centers', None]:
+    for starting_affine in aff_options:
         if dim == 2:
             nslices = 1
         else:
@@ -521,13 +526,14 @@ def test_MIMetric_invalid_params():
     static = np.random.rand(20,20,20)
     moving = np.random.rand(20,20,20)
     n = transform.get_number_of_parameters()
+    sampling_proportion = 0.3
     theta_sing = np.zeros(n)
     theta_nan = np.zeros(n)
     theta_nan[...] = np.nan
     theta_inf = np.zeros(n)
     theta_nan[...] = np.inf
 
-    mi_metric = imaffine.MutualInformationMetric(32)
+    mi_metric = imaffine.MutualInformationMetric(32, sampling_proportion)
     mi_metric.setup(transform, static, moving)
     for theta in [theta_sing, theta_nan, theta_inf]:
         # Test metric value at invalid params

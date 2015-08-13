@@ -563,10 +563,6 @@ class MutualInformationMetric(object):
         H = self.histogram  # Shortcut to `self.histogram`
         grad = None  # Buffer to write the MI gradient into (if needed)
         if update_gradient:
-            # Re-allocate buffer for the gradient, if needed
-            n = params.shape[0]  # Number of parameters
-            if (self.metric_grad is None) or (self.metric_grad.shape[0] != n):
-                self.metric_grad = np.empty(n)
             grad = self.metric_grad
             # Compute the gradient of the joint PDF w.r.t. parameters
             if self.sampling_proportion is None:  # Dense case
