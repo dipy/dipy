@@ -197,7 +197,7 @@ def test_affreg_all_transforms():
         start_sad = np.abs(static - moving).sum()
         metric = imaffine.MutualInformationMetric(32, sampling_pc)
         affreg = imaffine.AffineRegistration(metric,
-                                             [10000, 1000, 100],
+                                             [1000, 100, 50],
                                              [3, 1, 0],
                                              [4, 2, 1],
                                              'L-BFGS-B',
