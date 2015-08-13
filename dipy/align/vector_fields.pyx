@@ -19,6 +19,8 @@ def is_valid_affine(double[:, :] M, int dim):
         return False
     if np.any(np.isnan(M)):
         return False
+    if np.any(np.isinf(M)):
+        return False
     return True
 
 

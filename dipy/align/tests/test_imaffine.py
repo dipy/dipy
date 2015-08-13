@@ -13,6 +13,7 @@ from dipy.viz import regtools as rt
 from dipy.align import floating
 from dipy.align import vector_fields as vf
 from dipy.align import imaffine
+from dipy.align.imaffine import AffineInversionError
 from dipy.align.transforms import (Transform,
                                    regtransforms)
 from dipy.align.tests.test_parzenhist import (setup_random_transform,
@@ -437,6 +438,16 @@ def test_affine_map():
             assert_array_almost_equal(actual_linear, expected_linear)
             assert_array_almost_equal(actual_nn, expected_nn)
 
+            # Test set_affine with valid matrix
+            affine_map.set_affine(affine)
+            if affine is None:
+                assert(affine_map.affine is None)
+                assert(affine_map.affine_inv is None)
+            else:
+                assert_array_equal(affine, affine_map.affine)
+                actual = affine_map.affine.dot(affine_map.affine_inv)
+                assert_array_almost_equal(actual, np.eye(dim+1))
+
             # Evaluate via the inverse transform
 
             # AffineMap will use the inverse of the input matrix when we call
@@ -478,3 +489,57 @@ def test_affine_map():
         affmap_invalid_shape = imaffine.AffineMap(valid)
         assert_raises(ValueError, affmap_invalid_shape.transform, img)
         assert_raises(ValueError, affmap_invalid_shape.transform_inverse, img)
+
+        # Verify exception is raised when requesting an invalid interpolation
+        assert_raises(ValueError, affine_map.transform, img, 'invalid')
+        assert_raises(ValueError, affine_map.transform_inverse, img, 'invalid')
+
+        # Verify exception is raised when attempting to warp an image of
+        # invalid dimension
+        for dim in [2, 3]:
+            affine_map = imaffine.AffineMap(np.eye(dim),
+                                            cod_shape[:dim], None,
+                                            dom_shape[:dim], None)
+            for sh in [(2,), (2,2,2,2)]:
+                img = np.zeros(sh)
+                assert_raises(ValueError, affine_map.transform, img)
+                assert_raises(ValueError, affine_map.transform_inverse, img)
+            aff_sing = np.zeros((dim + 1, dim + 1))
+            aff_nan = np.zeros((dim + 1, dim + 1))
+            aff_nan[...] = np.nan
+            aff_inf = np.zeros((dim + 1, dim + 1))
+            aff_inf[...] = np.inf
+
+            assert_raises(AffineInversionError, affine_map.set_affine, aff_sing)
+            assert_raises(AffineInversionError, affine_map.set_affine, aff_nan)
+            assert_raises(AffineInversionError, affine_map.set_affine, aff_inf)
+
+
+
+def test_MIMetric_invalid_params():
+    transform = regtransforms[('AFFINE', 3)]
+    static = np.random.rand(20,20,20)
+    moving = np.random.rand(20,20,20)
+    n = transform.get_number_of_parameters()
+    theta_sing = np.zeros(n)
+    theta_nan = np.zeros(n)
+    theta_nan[...] = np.nan
+    theta_inf = np.zeros(n)
+    theta_nan[...] = np.inf
+
+    mi_metric = imaffine.MutualInformationMetric(32)
+    mi_metric.setup(transform, static, moving)
+    for theta in [theta_sing, theta_nan, theta_inf]:
+        # Test metric value at invalid params
+        actual_val = mi_metric.distance(theta)
+        assert(np.isinf(actual_val))
+
+        # Test gradient at invalid params
+        expected_grad = np.zeros(n)
+        actual_grad = mi_metric.gradient(theta)
+        assert_equal(actual_grad, expected_grad)
+
+        # Test both
+        actual_val, actual_grad = mi_metric.distance_and_gradient(theta)
+        assert(np.isinf(actual_val))
+        assert_equal(actual_grad, expected_grad)

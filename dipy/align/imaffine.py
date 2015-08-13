@@ -144,7 +144,7 @@ class AffineMap(object):
         if self.affine is None:
             self.affine_inv = None
             return
-        if np.any(np.isnan(affine)):
+        if np.any(np.isnan(affine)) or np.any(np.isinf(affine)):
             raise AffineInversionError('Affine contains invalid elements')
         try:
             self.affine_inv = npl.inv(affine)
@@ -223,8 +223,9 @@ class AffineMap(object):
         shape = np.array(sampling_grid_shape, dtype=np.int32)
 
         # Verify valid image dimension
-        if dim < 2 or dim > 3:
-            raise ValueError('Undefined transform for dimension: %d' % (dim,))
+        img_dim = len(image.shape)
+        if img_dim < 2 or img_dim > 3:
+            raise ValueError('Undefined transform for dim: %d' % (img_dim,))
 
         # Obtain grid-to-world transform for sampling grid
         if sampling_grid2world is None:
@@ -427,6 +428,8 @@ class MutualInformationMetric(object):
             interpolation artifacts. The default is None, implying no
             pre-alignment is performed.
         """
+        n = transform.get_number_of_parameters()
+        self.metric_grad = np.zeros(n, dtype=np.float64)
         self.dim = len(static.shape)
         if moving_grid2world is None:
             moving_grid2world = np.eye(self.dim + 1)
