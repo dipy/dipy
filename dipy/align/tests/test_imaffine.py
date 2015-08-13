@@ -4,7 +4,8 @@ import nibabel as nib
 from numpy.testing import (assert_array_equal,
                            assert_array_almost_equal,
                            assert_almost_equal,
-                           assert_equal)
+                           assert_equal,
+                           assert_raises)
 from dipy.core import geometry as geometry
 from dipy.data import get_data
 from dipy.viz import regtools as rt
@@ -316,3 +317,140 @@ def test_mi_gradient():
         anorm = np.linalg.norm(actual)
         nprod = dp / (enorm * anorm)
         assert(nprod >= 0.99)
+
+
+def create_affine_transforms(dim, translations, rotations, scales, rot_axis=None):
+    r""" Creates a list of affine transforms with all combinations of params
+
+    This function is intended to be used for testing only. It generates
+    affine transforms for all combinations of the input parameters in the
+    following order: let T be a translation, R a rotation and S a scale. The
+    generated affine will be:
+
+    A = T.dot(S).dot(R).dot(T^{-1})
+
+    Translation is handled this way because it is convenient to provide
+    the translation parameters in terms of the center of rotation we wish
+    to generate.
+
+    Parameters
+    ----------
+    dim: int (either dim=2 or dim=3)
+        dimension of the affine transforms
+    translations: sequence of dim-tuples
+        each dim-tuple represents a translation parameter
+    rotations: sequence of floats
+        each number represents a rotation angle in radians
+    scales: sequence of floats
+        each number represents a scale
+    rot_axis: rotation axis (used for dim=3 only)
+
+    Returns
+    -------
+    transforms: sequence of (dim + 1)x(dim + 1) matrices
+        each matrix correspond to an affine transform with a combination
+        of the input parameters
+    """
+    transforms = []
+    for t in translations:
+        trans_inv = np.eye(dim + 1)
+        trans_inv[:dim, dim] = -t[:dim]
+        trans = np.linalg.inv(trans_inv)
+        for theta in rotations:  # rotation angle
+            if dim == 2:
+                ct = np.cos(theta)
+                st = np.sin(theta)
+                rot = np.array([[ct, -st, 0],
+                                [st, ct, 0],
+                                [0, 0, 1]])
+            else:
+                rot = np.eye(dim + 1)
+                rot[:3, :3] = geometry.rodrigues_axis_rotation(rot_axis, theta)
+
+            for s in scales:  # scale
+                scale = np.eye(dim + 1) * s
+                scale[dim,dim] = 1
+
+            affine = trans.dot(scale.dot(rot.dot(trans_inv)))
+            transforms.append(affine)
+    return transforms
+
+
+def test_affine_map():
+    np.random.seed(2112927)
+    dom_shape = np.array([64, 64, 64], dtype=np.int32)
+    cod_shape = np.array([80, 80, 80], dtype=np.int32)
+    nx = dom_shape[0]
+    ny = dom_shape[1]
+    nz = dom_shape[2]
+    # Radius of the circle/sphere (testing image)
+    radius = 16
+    # Rotation axis (used for 3D transforms only)
+    rot_axis = np.array([.5, 2.0, 1.5])
+    # Arbitrary transform parameters
+    t = 0.3
+    rotations = [-1 * np.pi / 5.0, 0.0, np.pi / 5.0]
+    scales = [0.5,  1.0, 2.0]
+    for dim in [2, 3]:
+        # Setup current dimension
+        if dim == 2:
+            # Create image of a circle
+            img = vf.create_circle(cod_shape[0], cod_shape[1], radius)
+            oracle_linear = vf.transform_2d_affine
+            oracle_nn = vf.transform_2d_affine_nn
+        else:
+            # Create image of a sphere
+            img = vf.create_sphere(cod_shape[0], cod_shape[1], cod_shape[2],
+                                   radius)
+            oracle_linear = vf.transform_3d_affine
+            oracle_nn = vf.transform_3d_affine_nn
+        img = np.array(img)
+        # Translation is the only parameter differing for 2D and 3D
+        translations = [t * dom_shape[:dim]]
+        # Generate affine transforms
+        gt_affines = create_affine_transforms(dim, translations, rotations,
+                                              scales, rot_axis)
+        # Include the None case
+        gt_affines.append(None)
+
+        for affine in gt_affines:
+            # make both domain point to the same physical region
+            # It's ok to use the same transform, we just want to test
+            # that this information is actually being considered
+            domain_grid2world = affine
+            codomain_grid2world = affine
+            grid2grid_transform = affine
+
+            # Evaluate the transform with vector_fields module (already tested)
+            expected = oracle_linear(img, dom_shape[:dim], grid2grid_transform)
+
+            # Evaluate the transform with the implementation under test
+            affine_map = imaffine.AffineMap(affine,
+                                            dom_shape[:dim], domain_grid2world,
+                                            cod_shape[:dim], codomain_grid2world)
+            actual = affine_map.transform(img, interp='linear')
+            assert_array_almost_equal(actual, expected)
+
+            # Test affine warping with nearest-neighbor interpolation
+            expected = oracle_nn(img, dom_shape[:dim], grid2grid_transform)
+            actual = affine_map.transform(img, interp='nearest')
+            assert_array_almost_equal(actual, expected)
+
+        # Verify AffineMap cannot be created with a non-invertible matrix
+        invalid_nan = np.zeros((dim + 1, dim + 1), dtype=np.float64)
+        invalid_nan[1, 1] = np.nan
+        invalid_zeros = np.zeros((dim + 1, dim + 1), dtype=np.float64)
+        assert_raises(imaffine.AffineInversionError, imaffine.AffineMap, invalid_nan)
+        assert_raises(imaffine.AffineInversionError, imaffine.AffineMap, invalid_zeros)
+
+        # Test exception is raised when the affine transform matrix is not valid
+        invalid_shape = np.eye(dim)
+        affmap_invalid_shape = imaffine.AffineMap(invalid_shape,
+                                                  dom_shape[:dim], None,
+                                                  cod_shape[:dim], None)
+        assert_raises(ValueError, affmap_invalid_shape.transform, img)
+
+        # Verify exception is raised when sampling info is not provided
+        valid = np.eye(3)
+        affmap_invalid_shape = imaffine.AffineMap(valid)
+        assert_raises(ValueError, affmap_invalid_shape.transform, img)

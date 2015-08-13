@@ -798,12 +798,8 @@ def test_affine_transforms_2d():
     shape = np.array(codomain_shape, dtype=np.int32)
     # Exceptions from transform_2d
     assert_raises(ValueError, vfu.transform_2d_affine, circle, shape, invalid)
-    assert_raises(ValueError, vfu.transform_2d_affine, circle, shape, invalid)
-    assert_raises(ValueError, vfu.transform_2d_affine, circle, shape, invalid)
     assert_raises(ValueError, vfu.transform_2d_affine, circle, shape, invalid_nan)
     # Exceptions from transform_2d_nn
-    assert_raises(ValueError, vfu.transform_2d_affine_nn, circle, shape, invalid)
-    assert_raises(ValueError, vfu.transform_2d_affine_nn, circle, shape, invalid)
     assert_raises(ValueError, vfu.transform_2d_affine_nn, circle, shape, invalid)
     assert_raises(ValueError, vfu.transform_2d_affine_nn, circle, shape, invalid_nan)
 
@@ -889,12 +885,8 @@ def test_affine_transforms_3d():
     shape = np.array(codomain_shape, dtype=np.int32)
     # Exceptions from transform_3d_affine
     assert_raises(ValueError, vfu.transform_3d_affine, sphere, shape, invalid)
-    assert_raises(ValueError, vfu.transform_3d_affine, sphere, shape, invalid)
-    assert_raises(ValueError, vfu.transform_3d_affine, sphere, shape, invalid)
     assert_raises(ValueError, vfu.transform_3d_affine, sphere, shape, invalid_nan)
     # Exceptions from transform_3d_affine_nn
-    assert_raises(ValueError, vfu.transform_3d_affine_nn, sphere, shape, invalid)
-    assert_raises(ValueError, vfu.transform_3d_affine_nn, sphere, shape, invalid)
     assert_raises(ValueError, vfu.transform_3d_affine_nn, sphere, shape, invalid)
     assert_raises(ValueError, vfu.transform_3d_affine_nn, sphere, shape, invalid_nan)
 
