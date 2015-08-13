@@ -92,11 +92,11 @@ data = img.get_data()
 
 """
 Function ``read_cenir_multib`` return img and gtab which contains respectively
-a nibabel Nifti1Image object (where the data can extracted) and a GradientTable
-object with information about the b-values and b-vectors.
+a nibabel Nifti1Image object (where the data can be extracted) and a
+GradientTable object with information about the b-values and b-vectors.
 
-Before fitting the data, we first mask and crop the data to avoid calculating
-Tensors on the background of the image.
+Before fitting the data, we preform some data pre-processing. First we mask and
+crop the data to avoid unnecessary calculations on the image background.
 """
 
 maskdata, mask = median_otsu(data, 4, 2, True, vol_idx=[0, 1], dilate=1)
