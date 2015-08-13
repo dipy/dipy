@@ -62,6 +62,7 @@ First, we import all relevant modules:
 import dipy.reconst.dki as dki
 import dipy.reconst.dti as dti
 import matplotlib.pyplot as plt
+import nibabel as nib
 from dipy.data import fetch_cenir_multib
 from dipy.data import read_cenir_multib
 from dipy.segment.mask import median_otsu
@@ -92,14 +93,15 @@ img, gtab = read_cenir_multib(bvals)
 
 data = img.get_data()
 
+affine = img.get_affine()
+
 """
 Function ``read_cenir_multib`` return img and gtab which contains respectively
 a nibabel Nifti1Image object (where the data can be extracted) and a
 GradientTable object with information about the b-values and b-vectors.
 
 Before fitting the data, we preform some data pre-processing. We first create a
-preliminary mask and avoid unnecessary calculations on the pre-processing
-steps:
+preliminary mask and avoid pre-processing unnecessary voxels:
 """
 
 maskdata, mask = median_otsu(data, 4, 2, False, vol_idx=[0, 1], dilate=1)
@@ -108,9 +110,9 @@ maskdata, mask = median_otsu(data, 4, 2, False, vol_idx=[0, 1], dilate=1)
 Since the diffusion kurtosis models involves the estimation of a large number
 of parameters [TaxCMW2015]_ and since the non-Gaussian components of the
 diffusion signal are more sensitivity to artefacts [NetoHe2012]_, a fundamental
-data pre-processing step for diffusion kurtosis fitting is to denoise
-diffusion-weighted volumes. For this, we use Dipy's non-local mean filter
-(see :ref:`example-denoise-nlmeans`). Note that, since the HCP-like has a large
+data pre-processing step for diffusion kurtosis fitting is to denoise our data.
+For this, we use Dipy's non-local mean filter (see
+:ref:`example-denoise-nlmeans`). Note that, since the HCP-like has a large
 number of diffusion-weigthed volume, this procedure can take some minutes to
 compute.
 """
@@ -119,9 +121,15 @@ sigma = estimate_sigma(data, N=4)
 den = nlmeans(data, sigma=sigma, mask=mask)
 
 """
-Finally, we re-generate a final version of the brain mask for the denoised data
-and crop the data to avoid unnecessary calculations on the background of the
-image.
+To avoid future reprocessing of the non-local mean field, below we save the
+denoised version of the HCP-like data.
+"""
+
+nib.save(nib.Nifti1Image(den, affine), 'denoised_cenir_multib.nii.gz')
+
+""" 
+Finally, we compute a final version of the brain mask and crop the denoised
+data to avoid unnecessary calculations on the background of the image.
 """
 
 maskdata, mask = median_otsu(den, 4, 2, True, vol_idx=[0, 1], dilate=1)
@@ -259,9 +267,11 @@ along the axial direction of fibers (smaller amplitudes shown in the AK map)
 than for the radial directions (larger amplitudes shown in the RK map).
 
 References:
-.. [TaxCMW2015] Tax CMW, Otte WM, Viergever MA, Dijkhuizen RM, Leemans A (2014)
-                REKINDLE: Robust extraction of kurtosis INDices with linear
-                estimation. Magnetic Resonance in Medicine 73(2): 794–808.
+
+.. [TaxCMW2015] Tax CMW, Otte WM, Viergever MA, Dijkhuizen RM, Leemans A 
+                (2014). REKINDLE: Robust extraction of kurtosis INDices with
+                linear estimation. Magnetic Resonance in Medicine 73(2):
+                794–808.
 .. [Jensen2005] Jensen JH, Helpern JA, Ramani A, Lu H, Kaczynski K (2005).
                 Diffusional Kurtosis Imaging: The Quantification of
                 Non_Gaussian Water Diffusion by Means of Magnetic Resonance
