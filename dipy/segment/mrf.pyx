@@ -108,10 +108,31 @@ class ConstantObservationModel(object):
         for l in range(nclasses):
             _negloglikelihood(image, mu, sigmasq, l, nloglike)
 
-        print('negloglike:', nloglike[50,50,1,0])
-        print('negloglike:', nloglike[50,50,1,1])
-        print('negloglike:', nloglike[50,50,1,2])
-        print('negloglike:', nloglike[50,50,1,3])
+        print('\n')
+        print('### Negloglikelihood vox(50, 50, 1) BK')
+        print('BK         ' + str(nloglike[50,50,1,0]))
+        print('CSF        ' + str(nloglike[50,50,1,1]))
+        print('GM         ' + str(nloglike[50,50,1,2]))
+        print('WM         ' + str(nloglike[50,50,1,3]))
+
+        print('### Negloglikelihood vox(147, 129, 1) CSF')
+        print('BK         ' + str(nloglike[147,129,1,0]))
+        print('CSF        ' + str(nloglike[147,129,1,1]))
+        print('GM         ' + str(nloglike[147,129,1,2]))
+        print('WM         ' + str(nloglike[147,129,1,3]))
+
+        print('### Negloglikelihood vox(147, 129, 1) GM')
+        print('BK         ' + str(nloglike[61,152,1,0]))
+        print('CSF        ' + str(nloglike[61,152,1,1]))
+        print('GM         ' + str(nloglike[61,152,1,2]))
+        print('WM         ' + str(nloglike[61,152,1,3]))
+
+        print('### Negloglikelihood vox(100, 100, 1) WM')
+        print('BK         ' + str(nloglike[100,100,1,0]))
+        print('CSF        ' + str(nloglike[100,100,1,1]))
+        print('GM         ' + str(nloglike[100,100,1,2]))
+        print('WM         ' + str(nloglike[100,100,1,3]))
+        print('\n')
 
         return nloglike
 
@@ -226,6 +247,7 @@ class ConstantObservationModel(object):
         mu_num = np.zeros(image.shape + (nclasses,), dtype=np.float64)
         var_num = np.zeros(image.shape + (nclasses,), dtype=np.float64)
 
+        print('>>> Updated means and variances per class (update_param)')
         for l in range(nclasses):
 
             _update_param(image, mu, l, P_L_Y, mu_num, var_num)
@@ -233,7 +255,7 @@ class ConstantObservationModel(object):
             mu_upd[l] = np.sum(mu_num[:, :, :, l]) / np.sum(P_L_Y[:, :, :, l])
             var_upd[l] = np.sum(var_num[:, :, :, l]) / np.sum(P_L_Y[:, :, :, l])
 
-            print('updated means and variances per class')
+
             print('class: ', l)
             print('updated_mu:', mu_upd[l])
             print('updated_var:', var_upd[l])
@@ -295,11 +317,11 @@ cdef void _negloglikelihood(double[:, :, :] image, double[:] mu,
                 if sigmasq[l] < eps_sq:
                     if fabs(image[x, y, z] - mu[l]) < eps:
                         neglogl[x, y, z, l] = 1 + log(sqrt(2.0 * NPY_PI * sigmasq[l]))
-                        if neglogl[x, y, z, l] == - NPY_INFINITY:
-                            neglogl[x, y, z, l] = -1.7976931348623157e+100 #308
+                        #if neglogl[x, y, z, l] == - NPY_INFINITY:
+                        #    neglogl[x, y, z, l] = -1.7976931348623157e+100 #308
 
                     else:
-                        neglogl[x, y, z, l] = 1.7976931348623157e+100 #308
+                        neglogl[x, y, z, l] = NPY_INFINITY #1.7976931348623157e+100 #308
 
                 else:
                     neglogl[x, y, z, l] = ((image[x, y, z] - mu[l]) ** 2.0) / (2.0 * sigmasq[l])
@@ -531,7 +553,8 @@ cdef void _icm_ising(double[:,:,:,:] nloglike, double beta, double[:,:,:] seg, d
         cnp.npy_intp nz = nloglike.shape[2]
         cnp.npy_intp nclasses = nloglike.shape[3]
         cnp.npy_intp x, y, z, xx, yy, zz, i, j, k
-        double min_energy, this_energy
+        double min_energy = NPY_INFINITY
+        double this_energy = NPY_INFINITY
         int best_class
 
     for x in range(nx):
@@ -542,6 +565,11 @@ cdef void _icm_ising(double[:,:,:,:] nloglike, double beta, double[:,:,:] seg, d
                 best_class = -1
                 for k in range(nclasses):
                     this_energy = nloglike[x, y, z, k]
+
+#                    if this_energy == -1.7976931348623157e+100:
+#                        min_energy = this_energy
+#                        best_class = k
+#                        break
 
                     # Accumulate Gibbs energy for label k
                     for i in range(nneigh):
@@ -555,7 +583,8 @@ cdef void _icm_ising(double[:,:,:,:] nloglike, double beta, double[:,:,:] seg, d
                         if((zz < 0) or (zz >= nz)):
                             continue
 
-                        if seg[xx,yy,zz] == k:
+                        #if nloglike[xx, yy, zz, k] > -1.7976931348623157e+100:
+                        if seg[xx, yy, zz] == k:
                             this_energy -= beta
                         else:
                             this_energy += beta
