@@ -108,32 +108,6 @@ class ConstantObservationModel(object):
         for l in range(nclasses):
             _negloglikelihood(image, mu, sigmasq, l, nloglike)
 
-        print('\n')
-        print('### Negloglikelihood vox(50, 50, 1) BK')
-        print('BK         ' + str(nloglike[50,50,1,0]))
-        print('CSF        ' + str(nloglike[50,50,1,1]))
-        print('GM         ' + str(nloglike[50,50,1,2]))
-        print('WM         ' + str(nloglike[50,50,1,3]))
-
-        print('### Negloglikelihood vox(147, 129, 1) CSF')
-        print('BK         ' + str(nloglike[147,129,1,0]))
-        print('CSF        ' + str(nloglike[147,129,1,1]))
-        print('GM         ' + str(nloglike[147,129,1,2]))
-        print('WM         ' + str(nloglike[147,129,1,3]))
-
-        print('### Negloglikelihood vox(61, 152, 1) GM')
-        print('BK         ' + str(nloglike[61,152,1,0]))
-        print('CSF        ' + str(nloglike[61,152,1,1]))
-        print('GM         ' + str(nloglike[61,152,1,2]))
-        print('WM         ' + str(nloglike[61,152,1,3]))
-
-        print('### Negloglikelihood vox(100, 100, 1) WM')
-        print('BK         ' + str(nloglike[100,100,1,0]))
-        print('CSF        ' + str(nloglike[100,100,1,1]))
-        print('GM         ' + str(nloglike[100,100,1,2]))
-        print('WM         ' + str(nloglike[100,100,1,3]))
-        print('\n')
-
         return nloglike
 
 
@@ -207,15 +181,17 @@ class ConstantObservationModel(object):
         # voxel
         P_L_Y = np.zeros_like(P_L_N)
         P_L_Y_norm = np.zeros_like(img)
-        # normal density equation 11 of the Zhang paper
-        g = np.zeros_like(img)
 
         for l in range(nclasses):
+
+            # normal density equation 11 of the Zhang paper
+            g = np.zeros_like(img)
+
             _prob_image(img, g, mu, sigmasq, l, P_L_N, P_L_Y)
             P_L_Y_norm[:, :, :] += P_L_Y[:, :, :, l]
 
         for l in range(nclasses):
-            P_L_Y[:, :, :, l] = P_L_Y[:, :, :, l]/P_L_Y_norm
+            P_L_Y[:, :, :, l] = P_L_Y[:, :, :, l] / P_L_Y_norm
 
         return P_L_Y
 

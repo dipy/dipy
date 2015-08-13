@@ -158,8 +158,61 @@ def test_greyscale_iter():
                                     nclasses)
         npt.assert_equal(PLN.all() >= 0.0, True)
 
+        print('\n')
+        print('### PLN vox(50, 50, 1) BK')
+        print('BK         ' + str(PLN[50,50,1,0]))
+        print('CSF        ' + str(PLN[50,50,1,1]))
+        print('GM         ' + str(PLN[50,50,1,2]))
+        print('WM         ' + str(PLN[50,50,1,3]))
+
+        print('### PLN vox(147, 129, 1) CSF')
+        print('BK         ' + str(PLN[147,129,1,0]))
+        print('CSF        ' + str(PLN[147,129,1,1]))
+        print('GM         ' + str(PLN[147,129,1,2]))
+        print('WM         ' + str(PLN[147,129,1,3]))
+
+        print('### PLN vox(61, 152, 1) GM')
+        print('BK         ' + str(PLN[61,152,1,0]))
+        print('CSF        ' + str(PLN[61,152,1,1]))
+        print('GM         ' + str(PLN[61,152,1,2]))
+        print('WM         ' + str(PLN[61,152,1,3]))
+
+        print('### PLN vox(100, 100, 1) WM')
+        print('BK         ' + str(PLN[100,100,1,0]))
+        print('CSF        ' + str(PLN[100,100,1,1]))
+        print('GM         ' + str(PLN[100,100,1,2]))
+        print('WM         ' + str(PLN[100,100,1,3]))
+        print('\n')
+
         PLY = com.prob_image(image_gauss, nclasses, mu, sigmasq, PLN)
         npt.assert_equal(PLY.all() >= 0.0, True)
+
+        print('\n')
+        print('### PLY vox(50, 50, 1) BK')
+        print('BK         ' + str(PLY[50,50,1,0]))
+        print('CSF        ' + str(PLY[50,50,1,1]))
+        print('GM         ' + str(PLY[50,50,1,2]))
+        print('WM         ' + str(PLY[50,50,1,3]))
+
+        print('### PLY vox(147, 129, 1) CSF')
+        print('BK         ' + str(PLY[147,129,1,0]))
+        print('CSF        ' + str(PLY[147,129,1,1]))
+        print('GM         ' + str(PLY[147,129,1,2]))
+        print('WM         ' + str(PLY[147,129,1,3]))
+
+        print('### PLY vox(61, 152, 1) GM')
+        print('BK         ' + str(PLY[61,152,1,0]))
+        print('CSF        ' + str(PLY[61,152,1,1]))
+        print('GM         ' + str(PLY[61,152,1,2]))
+        print('WM         ' + str(PLY[61,152,1,3]))
+
+        print('### PLY vox(100, 100, 1) WM')
+        print('BK         ' + str(PLY[100,100,1,0]))
+        print('CSF        ' + str(PLY[100,100,1,1]))
+        print('GM         ' + str(PLY[100,100,1,2]))
+        print('WM         ' + str(PLY[100,100,1,3]))
+        print('\n')
+
 
         mu_upd, sigmasq_upd = com.update_param(image_gauss, PLY, mu, nclasses)
         npt.assert_equal(mu_upd.all() >= 0.0, True)
@@ -167,6 +220,33 @@ def test_greyscale_iter():
 
         negll = com.negloglikelihood(image_gauss, mu_upd, sigmasq_upd, nclasses)
         npt.assert_equal(negll.all() >= 0.0, True)
+
+        print('\n')
+        print('### Negloglikelihood vox(50, 50, 1) BK')
+        print('BK         ' + str(negll[50,50,1,0]))
+        print('CSF        ' + str(negll[50,50,1,1]))
+        print('GM         ' + str(negll[50,50,1,2]))
+        print('WM         ' + str(negll[50,50,1,3]))
+
+        print('### Negloglikelihood vox(147, 129, 1) CSF')
+        print('BK         ' + str(negll[147,129,1,0]))
+        print('CSF        ' + str(negll[147,129,1,1]))
+        print('GM         ' + str(negll[147,129,1,2]))
+        print('WM         ' + str(negll[147,129,1,3]))
+
+        print('### Negloglikelihood vox(61, 152, 1) GM')
+        print('BK         ' + str(negll[61,152,1,0]))
+        print('CSF        ' + str(negll[61,152,1,1]))
+        print('GM         ' + str(negll[61,152,1,2]))
+        print('WM         ' + str(negll[61,152,1,3]))
+
+        print('### Negloglikelihood vox(100, 100, 1) WM')
+        print('BK         ' + str(negll[100,100,1,0]))
+        print('CSF        ' + str(negll[100,100,1,1]))
+        print('GM         ' + str(negll[100,100,1,2]))
+        print('WM         ' + str(negll[100,100,1,3]))
+        print('\n')
+
 
         final_segmentation, energy = icm.icm_ising(negll, beta,
                                                    initial_segmentation)
