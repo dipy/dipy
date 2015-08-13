@@ -23,10 +23,10 @@ The diffusion kurtosis model expresses the diffusion-weighted signal as:
     S(n,b)=S_{0}e^{-bD(n)+\frac{1}{6}b^{2}D(n)^{2}K(n)}
 
 where $\mathbf{b}$ is the applied diffusion weighting (which is dependent on
-the measuremenent parameters), $S_0$ the signal in the absence of diffusion
-gradient sensitization, $\mathbf{D(n)}$ the value of diffusion along direction
-$\mathbf{n}$, and $\mathbf{K(n)}$ the value of kurtosis along direction
-$\mathbf{n}$. The directional diffusion $\mathbf{D(n)}$ and kurtosis
+the measuremenent parameters), $S_0$ is the signal in the absence of diffusion
+gradient sensitization, $\mathbf{D(n)}$ is the value of diffusion along
+direction $\mathbf{n}$, and $\mathbf{K(n)}$ is the value of kurtosis along
+direction $\mathbf{n}$. The directional diffusion $\mathbf{D(n)}$ and kurtosis
 $\mathbf{K(n)}$ can be related to the diffusion tensor (DT) and kurtosis tensor
 (KT) using the following equations:
 
@@ -65,6 +65,8 @@ import matplotlib.pyplot as plt
 from dipy.data import fetch_cenir_multib
 from dipy.data import read_cenir_multib
 from dipy.segment.mask import median_otsu
+from dipy.denoise.noise_estimate import estimate_sigma
+from dipy.denoise.nlmeans import nlmeans
 
 """
 DKI requires multi-shell data, i.e. data acquired from more than one non-zero
@@ -95,11 +97,34 @@ Function ``read_cenir_multib`` return img and gtab which contains respectively
 a nibabel Nifti1Image object (where the data can be extracted) and a
 GradientTable object with information about the b-values and b-vectors.
 
-Before fitting the data, we preform some data pre-processing. First we mask and
-crop the data to avoid unnecessary calculations on the image background.
+Before fitting the data, we preform some data pre-processing. We first create a
+preliminary mask and avoid unnecessary calculations on the pre-processing
+steps:
 """
 
-maskdata, mask = median_otsu(data, 4, 2, True, vol_idx=[0, 1], dilate=1)
+maskdata, mask = median_otsu(data, 4, 2, False, vol_idx=[0, 1], dilate=1)
+
+"""
+Since the diffusion kurtosis models involves the estimation of a large number
+of parameters [TaxCMW2015]_ and since the non-Gaussian components of the
+diffusion signal are more sensitivity to artefacts [NetoHe2012]_, a fundamental
+data pre-processing step for diffusion kurtosis fitting is to denoise
+diffusion-weighted volumes. For this, we use Dipy's non-local mean filter
+(see :ref:`example-denoise-nlmeans`). Note that, since the HCP-like has a large
+number of diffusion-weigthed volume, this procedure can take some minutes to
+compute.
+"""
+
+sigma = estimate_sigma(data, N=4)
+den = nlmeans(data, sigma=sigma, mask=mask)
+
+"""
+Finally, we re-generate a final version of the brain mask for the denoised data
+and crop the data to avoid unnecessary calculations on the background of the
+image.
+"""
+
+maskdata, mask = median_otsu(den, 4, 2, True, vol_idx=[0, 1], dilate=1)
 
 """
 Now that we have loaded and prepared the datasets we can go forward with the
@@ -234,7 +259,9 @@ along the axial direction of fibers (smaller amplitudes shown in the AK map)
 than for the radial directions (larger amplitudes shown in the RK map).
 
 References:
-
+.. [TaxCMW2015] Tax CMW, Otte WM, Viergever MA, Dijkhuizen RM, Leemans A (2014)
+                REKINDLE: Robust extraction of kurtosis INDices with linear
+                estimation. Magnetic Resonance in Medicine 73(2): 794–808.
 .. [Jensen2005] Jensen JH, Helpern JA, Ramani A, Lu H, Kaczynski K (2005).
                 Diffusional Kurtosis Imaging: The Quantification of
                 Non_Gaussian Water Diffusion by Means of Magnetic Resonance
@@ -245,6 +272,11 @@ References:
 .. [Fierem2011] Fieremans E, Jensen JH, Helpern JA (2011). White matter
                 characterization with diffusion kurtosis imaging. NeuroImage
                 58: 177-188
+.. [NetoHe2012] Neto Henriques R, Ferreira H, Correia M, (2012). Diffusion
+                kurtosis imaging of the healthy human brain.Master Dissertation
+                Bachelor andMaster Programin Biomedical Engineering and
+                Biophysics, Faculty of Sciences.
+                http://repositorio.ul.pt/bitstream/10451/8511/1/ulfc104137_tm_Rafael_Henriques.pdf
 .. [NetoHe2015] Neto Henriques R, Correia MM, Nunes RG, Ferreira HA (2015).
                 Exploring the 3D geometry of the diffusion kurtosis tensor -
                 Impact on the development of robust tractography procedures and
