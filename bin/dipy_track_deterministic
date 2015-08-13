@@ -2,7 +2,7 @@
 
 from __future__ import division, print_function
 from dipy.fixes import argparse as arg
-from dipy.workflows.tracking import deterministic_tracking
+from dipy.workflows.tracking import deterministic_tracking_flow
 
 
 parser = arg.ArgumentParser()
@@ -25,8 +25,8 @@ parser.add_argument('--out_dir', action='store', dest='out_dir', type=str,
 
 if __name__ == "__main__":
     params = parser.parse_args()
-    deterministic_tracking(params.input, params.mask, params.bvals, params.bvecs,
-                           params.out_dir)
+    deterministic_tracking_flow(params.input, params.mask, params.bvals,
+                                params.bvecs, params.out_dir)
 
 
 

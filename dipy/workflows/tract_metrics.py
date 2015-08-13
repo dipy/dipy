@@ -10,6 +10,7 @@ from dipy.tracking.utils import density_map
 
 def tract_density(tract_files, ref_files, up_factor=1.0, out_dir=''):
     for tract_file, ref_file in zip(glob(tract_files), glob(ref_files)):
+        print('Computing tract density for {0}'.format(tract_file))
         ref = nib.load(ref_file)
         ref_head = ref.get_header()
         pos_factor = ref_head['pixdim'][1:4] / up_factor
@@ -27,8 +28,8 @@ def tract_density(tract_files, ref_files, up_factor=1.0, out_dir=''):
         affine[0, 0] /= up_factor
         affine[1, 1] /= up_factor
         affine[2, 2] /= up_factor
-        tdi_map = density_map(streamlines, data_shape, affine=affine)
         affine[:3, :] = ref.get_affine()[:3, :]
+        tdi_map = density_map(streamlines, data_shape, affine=affine)
 
         map_img = nib.Nifti1Image(tdi_map.astype(np.float32), affine)
 

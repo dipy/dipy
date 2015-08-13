@@ -17,10 +17,6 @@ from dipy.workflows.utils import choose_create_out_dir
 from dipy.reconst.dti import fractional_anisotropy
 from dipy.data import default_sphere
 from dipy.direction import DeterministicMaximumDirectionGetter
-from dipy.io.trackvis import save_trk
-
-
-
 
 
 def track_EuDX(ref, peaks_values, peaks_idx, out_dir=''):
@@ -64,28 +60,25 @@ def track_EuDX(ref, peaks_values, peaks_idx, out_dir=''):
                            streamlines_trk,
                            hdr)
 
-def deterministic_tracking(dwi_paths, mask_paths, bvalues, bvectors, out_dir=''):
+def deterministic_tracking_flow(dwi_paths, mask_paths, bvalues, bvectors, out_dir=''):
 
     for dwi, mask, bval, bvec in zip(glob(dwi_paths),
                                      glob(mask_paths),
                                      glob(bvalues),
                                      glob(bvectors)):
+        print('Deterministic tracking on {0}'.format(dwi))
         dwi_img = nib.load(dwi)
         affine = dwi_img.get_affine()
-        print affine
         dwi_data = dwi_img.get_data()
         voxel_size = dwi_img.get_header().get_zooms()[:3]
-        print 'voxelsize', voxel_size
         mask_img = nib.load(mask)
         mask_data = mask_img.get_data()
 
         tenfit, gtab = get_fitted_tensor(dwi_data, mask_data, bval, bvec)
         FA = fractional_anisotropy(tenfit.evals)
 
-        seed_mask = FA > 0.4
+        seed_mask = FA > 0.2
         seeds = utils.seeds_from_mask(seed_mask, density=1, affine=affine)
-
-        print seeds.shape
         csd_model = ConstrainedSphericalDeconvModel(gtab, None, sh_order=6)
         csd_fit = csd_model.fit(dwi_data, mask=mask_data)
 
