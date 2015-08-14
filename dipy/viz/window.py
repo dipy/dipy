@@ -97,6 +97,9 @@ class Renderer(vtkRenderer):
         """
         self.ResetCamera()
 
+    def reset_clipping_range(self):
+        self.ResetCameraClippingRange()
+
     def get_camera(self):
         return self.GetActiveCamera()
 
@@ -117,16 +120,70 @@ class Renderer(vtkRenderer):
 
     @property
     def size(self):
+        """ Renderer size"""
         return self.GetSize()
 
     def zoom(self, value):
+        """ In perspective mode, decrease the view angle by the specified
+        factor. In parallel mode, decrease the parallel scale by the specified
+        factor. A value greater than 1 is a zoom-in, a value less than 1 is a
+        zoom-out.
+        """
         self.GetActiveCamera().Zoom(value)
 
     def azimuth(self, angle):
+        """ Rotate the camera about the view up vector centered at the focal
+        point. Note that the view up vector is whatever was set via SetViewUp,
+        and is not necessarily perpendicular to the direction of projection.
+        The result is a horizontal rotation of the camera.
+        """
         self.GetActiveCamera().Azimuth(angle)
 
+    def yaw(self, angle):
+        """ Rotate the focal point about the view up vector, using the camera's
+        position as the center of rotation. Note that the view up vector is
+        whatever was set via SetViewUp, and is not necessarily perpendicular
+        to the direction of projection. The result is a horizontal rotation of
+        the scene.
+        """
+        self.GetActiveCamera().Yaw(angle)
+
+    def elevation(self, angle):
+        """ Rotate the camera about the cross product of the negative of the
+        direction of projection and the view up vector, using the focal point
+        as the center of rotation. The result is a vertical rotation of the
+        scene.
+        """
+        self.GetActiveCamera().Elevation(angle)
+
+    def pitch(self, angle):
+        """ Rotate the focal point about the cross product of the view up
+        vector and the direction of projection, using the camera's position as
+        the center of rotation. The result is a vertical rotation of the
+        camera.
+        """
+        self.GetActiveCamera().Pitch(angle)
+
     def roll(self, angle):
+        """ Rotate the camera about the direction of projection. This will
+        spin the camera about its axis.
+        """
         self.GetActiveCamera().Roll(angle)
+
+    def dolly(self, value):
+        """ Divide the camera's distance from the focal point by the given
+        dolly value. Use a value greater than one to dolly-in toward the focal
+        point, and use a value less than one to dolly-out away from the focal
+        point.
+        """
+        self.GetActiveCamera().Dolly(value)
+
+    def camera_direction(self):
+        """ Get the vector in the direction from the camera position to the
+        focal point. This is usually the opposite of the ViewPlaneNormal, the
+        vector perpendicular to the screen, unless the view is oblique.
+        """
+        return self.GetActiveCamera().GetDirectionOfProjection()
 
 
 def renderer(background=None):
