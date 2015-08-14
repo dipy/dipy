@@ -99,7 +99,6 @@ class Renderer(vtkRenderer):
     def reset_clipping_range(self):
         self.ResetCameraClippingRange()
 
-    @property
     def camera(self):
         return self.GetActiveCamera()
 
@@ -109,9 +108,10 @@ class Renderer(vtkRenderer):
 
     def camera_info(self):
         cam = self.get_camera()
-        print('Camera Position (%.2f, %.2f, %.2f)' % cam.GetPosition())
-        print('Camera Focal Point (%.2f, %.2f, %.2f)' % cam.GetFocalPoint())
-        print('Camera View Up (%.2f, %.2f, %.2f)' % cam.GetViewUp())
+        print('# Camera info')
+        print('\tPosition (%.2f, %.2f, %.2f)' % cam.GetPosition())
+        print('\tFocal Point (%.2f, %.2f, %.2f)' % cam.GetFocalPoint())
+        print('\tView Up (%.2f, %.2f, %.2f)' % cam.GetViewUp())
 
     def set_camera(self, position=None, focal_point=None, view_up=None):
         if position is not None:
@@ -122,7 +122,6 @@ class Renderer(vtkRenderer):
             self.GetActiveCamera().SetViewUp(*view_up)
         self.ResetCameraClippingRange()
 
-    @property
     def size(self):
         """ Renderer size"""
         return self.GetSize()
