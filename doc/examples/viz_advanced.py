@@ -171,7 +171,7 @@ the available 3D and 2D objects.
 # show_m.render()
 # show_m.start()
 
-window.snapshot(ren, 'bundles_and_a_slice.png', size=(1200, 900))
+window.record(ren, out_path='bundles_and_a_slice.png', size=(1200, 900))
 
 """
 .. figure:: bundles_and_a_slice.png

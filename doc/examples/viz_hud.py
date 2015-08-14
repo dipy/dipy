@@ -130,7 +130,7 @@ Uncomment the following line to start the interaction.
 
 # show_manager.start()
 
-window.snapshot(renderer, 'mini_ui.png', size=(800, 800))
+window.record(renderer, out_path='mini_ui.png', size=(800, 800))
 
 del show_manager
 
