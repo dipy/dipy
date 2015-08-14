@@ -3,7 +3,7 @@
 Visualize bundles and metrics on bundles
 ========================================
 
-Frist, let's download some available datasets. Here we are using a dataset
+First, let's download some available datasets. Here we are using a dataset
 which provides metrics and bundles.
 """
 
@@ -17,7 +17,7 @@ dix = read_bundles_2_subjects(subj_id='subj_1', metrics=['fa'],
                               bundles=['cg.left', 'cst.right'])
 
 """
-Store franctional anisotropy.
+Store fractional anisotropy.
 """
 
 fa = dix['fa']

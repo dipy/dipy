@@ -50,7 +50,7 @@ res = read_bundles_2_subjects('subj_1', ['t1', 'fa'],
 
 """
 We will use 3 bundles, FA and the affine transformation that brings the voxel
-cordinates to world coordinates (RAS 1mm).
+coordinates to world coordinates (RAS 1mm).
 """
 
 streamlines = res['af.left'] + res['cst.right'] + res['cc_1']
@@ -146,7 +146,7 @@ start the interaction using ``show_m.start()``.
 """
 However, if you change the window size, the slider will not update its position
 properly. The solution to this issue is to update the position of the slider
-using its ``place`` method everytime the window size changes.
+using its ``place`` method every time the window size changes.
 """
 
 global size

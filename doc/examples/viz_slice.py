@@ -49,7 +49,7 @@ value_range = (mean - 0.5 * std, mean + 1.5 * std)
 """
 The ``slice`` function will read data and resample the data using an affine
 transformation matrix. The default behavior of this function is to show the
-the middle slice of the last dimension of the resampled data.
+middle slice of the last dimension of the resampled data.
 """
 
 slice_actor = actor.slice(data, affine, value_range)
