@@ -589,11 +589,15 @@ def streamline_near_roi(streamline, roi_coords, tol, mode='any'):
         coordinate in the streamline is within this distance from the center
         of any voxel in the ROI, this function returns True.
     mode : string
-		One of {"any", "all", "either_end", "both_end"}, where return True if
-		"any" - any point is within tol from ROI.
-		"all" - all points are within tol from ROI.
-		"either_end" - either of the end-points is within tol from ROI
-		"both_end" - both end points are within tol from ROI.
+		One of {"any", "all", "either_end", "both_end"}, where return True if:
+
+		"any" : any point is within tol from ROI.
+
+        "all" : all points are within tol from ROI.
+
+        "either_end" : either of the end-points is within tol from ROI
+
+        "both_end" : both end points are within tol from ROI.
 
 	Returns
 	-------
@@ -642,11 +646,15 @@ def near_roi(streamlines, region_of_interest, affine=None, tol=None,
         this streamline, otherwise False. Defaults to the distance between
         the center of each voxel and the corner of the voxel.
     mode : string, optional
-		One of {"any", "all", "either_end", "both_end"}, where return True if
-		"any" - any point is within tol from ROI. Default.
-		"all" - all points are within tol from ROI.
-		"either_end" - either of the end-points is within tol from ROI
-		"both_end" - both end points are within tol from ROI.
+		One of {"any", "all", "either_end", "both_end"}, where return True if:
+
+		"any" : any point is within tol from ROI. Default.
+
+		"all" : all points are within tol from ROI.
+
+		"either_end" : either of the end-points is within tol from ROI
+
+		"both_end" : both end points are within tol from ROI.
 
     Returns
     -------
