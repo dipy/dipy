@@ -244,9 +244,9 @@ def select_by_roi(streamlines, rois, include, mode=None, affine=None,
            [ 1.9,  0. ,  0. ]])]
     >>> mask2[0, 2, 2] = True
     >>> selection = select_by_roi(streamlines, [mask1, mask2],
-    ...                      [True, True],
-    ...                      mode="both_end",
-    ...                      tol=1.0)
+    ...                           [True, True],
+    ...                           mode="both_end",
+    ...                           tol=1.0)
     >>> list(selection)
     [array([[ 0. ,  0. ,  0.9],
            [ 1.9,  0. ,  0. ]]), array([[ 0.,  0.,  0.],
