@@ -19,8 +19,6 @@ from __future__ import division, print_function, absolute_import
 
 from dipy.utils.six.moves import xrange
 
-import types
-
 import numpy as np
 
 from dipy.core.ndindex import ndindex
