@@ -181,10 +181,10 @@ def select_by_roi(streamlines, rois, include, mode=None, affine=None,
     mode : string, optional
 		One of {"any", "all", "either_end", "both_end"}, where a
             streamline is associated with an ROI if:
-		"any" : any point is within tol from ROI. Default.
-		"all" : all points are within tol from ROI.
-		"either_end" : either of the end-points is within tol from ROI
-		"both_end" : both end points are within tol from ROI.
+		"any" - any point is within tol from ROI. Default.
+		"all" - all points are within tol from ROI.
+		"either_end" - either of the end-points is within tol from ROI
+		"both_end" - both end points are within tol from ROI.
     affine : ndarray
         Affine transformation from voxels to streamlines. Default: identity.
     tol : float
