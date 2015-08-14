@@ -119,6 +119,7 @@ After we have initialized the ``ShowManager`` we can go ahead and create a
 callback which will be given to the ``slider`` function.
 """
 
+
 def change_slice(obj, event):
     z = int(np.round(obj.get_value()))
     image_actor.display_extent(0, shape[0] - 1,
@@ -161,15 +162,18 @@ def win_callback(obj, event):
         size = obj.GetSize()
 
 show_m.initialize()
-show_m.add_window_callback(win_callback)
 
 """
 Finally, please uncomment the following lines so that you can interact with
 the available 3D and 2D objects.
 """
 
+# show_m.add_window_callback(win_callback)
 # show_m.render()
 # show_m.start()
+
+ren.zoom(1.5)
+ren.reset_clipping_range()
 
 window.record(ren, out_path='bundles_and_a_slice.png', size=(1200, 900))
 
@@ -180,3 +184,4 @@ window.record(ren, out_path='bundles_and_a_slice.png', size=(1200, 900))
    **A few bundles with interactive slicing**.
 """
 
+del show_m
