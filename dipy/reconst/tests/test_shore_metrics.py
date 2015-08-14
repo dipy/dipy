@@ -74,6 +74,7 @@ def test_shore_metrics():
     pdf_shore = asmfit.pdf(v * radius)
     pdf_mt = multi_tensor_pdf(v * radius, mevals=mevals,
                               angles=angl, fractions= [50, 50])
+
     nmse_pdf = np.sqrt(np.sum((pdf_mt - pdf_shore) ** 2)) / (pdf_mt.sum())
     assert_almost_equal(nmse_pdf, 0.0, 2)
 

@@ -174,7 +174,7 @@ def test_metric_cosine():
             if metric.are_compatible(f1.shape, f2.shape):
                 distance = metric.dist(f1, f2)
                 if np.all(f1 == f2):
-                    assert_equal(distance, 0.)
+                    assert_almost_equal(distance, 0.)
 
                 assert_almost_equal(distance, dipymetric.dist(metric, s1, s2))
                 assert_true(distance >= 0.)

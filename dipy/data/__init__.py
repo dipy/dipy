@@ -8,7 +8,6 @@ import sys
 import json
 
 from nibabel import load
-from dipy.io.bvectxt import read_bvec_file
 from os.path import join as pjoin, dirname
 
 if sys.version_info[0] < 3:
@@ -48,8 +47,11 @@ from dipy.data.fetcher import (fetch_scil_b0,
                                fetch_viz_icons,
                                read_viz_icons,
                                fetch_bundles_2_subjects,
-                               read_bundles_2_subjects)
-
+                               read_bundles_2_subjects,
+                               fetch_cenir_multib,
+                               read_cenir_multib,
+                               fetch_mni_template,
+                               read_mni_template)
 
 from ..utils.arrfuncs import as_native_array
 from dipy.tracking.streamline import relist_streamlines

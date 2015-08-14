@@ -563,6 +563,39 @@ def read_syn_data():
     b0 = nib.load(b0_name)
     return t1, b0
 
+mni_notes = \
+"""
+    Notes
+    -----
+    The templates were downloaded from the MNI (McGill University) `website <http://www.bic.mni.mcgill.ca/ServicesAtlases/ICBM152NLin2009>`_
+    in July 2015.
+
+    The following publications should be referenced when using these templates:
+
+    .. [1] VS Fonov, AC Evans, K Botteron, CR Almli, RC McKinstry, DL Collins
+           and BDCG, Unbiased average age-appropriate atlases for pediatric
+           studies, NeuroImage, 54:1053-8119, DOI: 10.1016/j.neuroimage.2010.07.033
+
+    .. [2] VS Fonov, AC Evans, RC McKinstry, CR Almli and DL Collins,
+            Unbiased nonlinear average age-appropriate brain templates from
+            birth to adulthood, NeuroImage, 47:S102
+            Organization for Human Brain Mapping 2009 Annual Meeting,
+            DOI: http://dx.doi.org/10.1016/S1053-8119(09)70884-5
+
+    License for the MNI templates:
+    -----------------------------
+    Copyright (C) 1993-2004, Louis Collins McConnell Brain Imaging Centre,
+    Montreal Neurological Institute, McGill University. Permission to use,
+    copy, modify, and distribute this software and its documentation for any
+    purpose and without fee is hereby granted, provided that the above
+    copyright notice appear in all copies. The authors and McGill University
+    make no representations about the suitability of this software for any
+    purpose. It is provided "as is" without express or implied warranty. The
+    authors are not responsible for any data loss, equipment damage, property
+    loss, or injury to subjects or patients resulting from the use or misuse
+    of this software package.
+"""
+
 
 def fetch_viz_icons():
     """ Download icons for visualization
@@ -688,31 +721,21 @@ def fetch_mni_template():
     """
     Fetch the MNI T2 and T1 template files (~35 MB)
     """
-    url = \
+    folder = pjoin(dipy_home, 'mni_template')
+    baseurl = \
     'https://digital.lib.washington.edu/researchworks/bitstream/handle/1773/33312/'
+
     fname_list = ['COPYING',
                   'mni_icbm152_t2_tal_nlin_asym_09a.nii',
                   'mni_icbm152_t1_tal_nlin_asym_09a.nii']
-    url_list = [url + ff for ff in fname_list]
     md5_list = ['6e2168072e80aa4c0c20f1e6e52ec0c8',
                 'f41f2e1516d880547fbf7d6a83884f0d',
                 '1ea8f4f1e41bc17a94602e48141fdbc8']
-    folder = pjoin(dipy_home, 'mni_template')
-    if not os.path.exists(folder):
-        print('Creating new directory %s' % folder)
-        os.makedirs(folder)
-        print('Downloading T2 and T1 MNI templates (~35 MB)...')
-
-        for i in range(len(md5_list)):
-            _get_file_data(pjoin(folder, fname_list[i]), url_list[i])
-            check_md5(pjoin(folder, fname_list[i]), md5_list[i])
-
-        print('Done.')
-        print('Files copied in folder %s' % folder)
-        print("The copyright notice is provided in the file: %s" %
-              pjoin(folder, fname_list[0]))
-    else:
-        _already_there_msg(folder)
+    files = {}
+    for f, m in zip(fname_list, md5_list):
+        files[f] = (baseurl + f, m)
+    fetch_data(files, folder)
+    return files, folder
 
 
 def read_mni_template(contrast="T2"):
@@ -737,30 +760,142 @@ def read_mni_template(contrast="T2"):
     >>> T2_nifti = read_mni_template("T2") # doctest: +SKIP
     Get both files in this order:
     >>> T1_nifti, T2_nifti = read_mni_template(["T1", "T2"]) # doctest: +SKIP
-
     """
-    folder = pjoin(dipy_home, 'mni_template')
+
+    files, folder = fetch_mni_template()
     file_dict = {"T1": pjoin(folder, 'mni_icbm152_t1_tal_nlin_asym_09a.nii'),
                  "T2": pjoin(folder, 'mni_icbm152_t2_tal_nlin_asym_09a.nii')}
-
-    md5_dict = {'T1': '1ea8f4f1e41bc17a94602e48141fdbc8',
-                'T2': 'f41f2e1516d880547fbf7d6a83884f0d'}
-
-    try:
-        # If a string was provided, you only wanted one of them:
-        if isinstance(contrast, str):
-            check_md5(file_dict[contrast], md5_dict[contrast])
-            return nib.load(file_dict[contrast])
-
-        # Otherwise, we construct a list of outputs
+    if isinstance(contrast, str):
+        return nib.load(file_dict[contrast])
+    else:
         out_list = []
         for k in contrast:
-            check_md5(file_dict[k], md5_dict[k])
             out_list.append(nib.load(file_dict[k]))
+    return out_list
 
-        return out_list
 
-    except IOError:
-        msg = "Could not find the MNI template files, "
-        msg += "please run `fetch_mni_template` first"
-        print(msg)
+# Add the references to both MNI-related functions:
+read_mni_template.__doc__ += mni_notes
+fetch_mni_template.__doc__ += mni_notes
+
+
+def fetch_cenir_multib(with_raw=False):
+    """
+    Fetch 'HCP-like' data, collected at multiple b-values
+
+    Parameters
+    ----------
+    with_raw : bool
+        Whether to fetch the raw data. Per default, this is False, which means
+        that only eddy-current/motion corrected data is fetched
+    """
+    folder = pjoin(dipy_home, 'cenir_multib')
+
+    fname_list = ['4D_dwi_eddycor_B200.nii.gz',
+                  'dwi_bvals_B200', 'dwi_bvecs_B200',
+                  '4D_dwieddycor_B400.nii.gz',
+                  'bvals_B400', 'bvecs_B400',
+                  '4D_dwieddycor_B1000.nii.gz',
+                  'bvals_B1000', 'bvecs_B1000',
+                   '4D_dwieddycor_B2000.nii.gz',
+                  'bvals_B2000', 'bvecs_B2000',
+                  '4D_dwieddycor_B3000.nii.gz',
+                  'bvals_B3000', 'bvecs_B3000']
+
+    md5_list = ['fd704aa3deb83c1c7229202cb3db8c48',
+                '80ae5df76a575fe5bf9f1164bb0d4cfb',
+                '18e90f8a3e6a4db2457e5b1ba1cc98a9',
+                '3d0f2b8ef7b6a4a3aa5c4f7a90c9cfec',
+                'c38056c40c9cc42372232d6e75c47f54',
+                '810d79b4c30cb7dff3b2000017d5f72a',
+                'dde8037601a14436b2173f4345b5fd17',
+                '97de6a492ae304f39e0b418b6ebac64c',
+                'f28a0faa701bdfc66e31bde471a5b992',
+                'c5e4b96e3afdee99c0e994eff3b2331a',
+                '9c83b8d5caf9c3def240f320f2d2f56c',
+                '05446bd261d57193d8dbc097e06db5ff',
+                'f0d70456ce424fda2cecd48e64f3a151',
+                '336accdb56acbbeff8dac1748d15ceb8',
+                '27089f3baaf881d96f6a9da202e3d69b']
+    if with_raw:
+        fname_list.extend(['4D_dwi_B200.nii.gz', '4D_dwi_B400.nii.gz',
+                            '4D_dwi_B1000.nii.gz', '4D_dwi_B2000.nii.gz',
+                            '4D_dwi_B3000.nii.gz'])
+        md5_list.extend(['a8c36e76101f2da2ca8119474ded21d5',
+                        'a0e7939f6d977458afbb2f4659062a79',
+                        '87fc307bdc2e56e105dffc81b711a808',
+                        '7c23e8a5198624aa29455f0578025d4f',
+                        '4e4324c676f5a97b3ded8bbb100bf6e5'])
+
+    files = {}
+    baseurl = \
+    'https://digital.lib.washington.edu/researchworks/bitstream/handle/1773/33311/'
+
+    for f, m in zip(fname_list, md5_list):
+        files[f] = (baseurl + f, m)
+
+    fetch_data(files, folder)
+    return files, folder
+
+
+def read_cenir_multib(bvals=None):
+    """
+    Read CENIR multi b-value data
+
+    Parameters
+    ----------
+    bvals : list
+        The b-values to read from file (200, 400, 1000, 2000, 3000).
+
+    Returns
+    -------
+    gtab : a GradientTable class instance
+    img : nibabel.Nifti1Image
+
+    Notes
+    -----
+    Details of acquisition and processing are availble
+    """
+    files, folder = fetch_cenir_multib(with_raw=False)
+    if bvals is None:
+        bvals = [200, 400, 1000, 2000, 3000]
+    file_dict = {
+    200:{'DWI': pjoin(folder, '4D_dwi_eddycor_B200.nii.gz'),
+           'bvals': pjoin(folder, 'dwi_bvals_B200'),
+           'bvecs': pjoin(folder, 'dwi_bvecs_B200')},
+    400:{'DWI': pjoin(folder, '4D_dwieddycor_B400.nii.gz'),
+           'bvals': pjoin(folder, 'bvals_B400'),
+           'bvecs': pjoin(folder, 'bvecs_B400')},
+    1000:{'DWI': pjoin(folder, '4D_dwieddycor_B1000.nii.gz'),
+           'bvals': pjoin(folder, 'bvals_B1000'),
+           'bvecs': pjoin(folder, 'bvecs_B1000')},
+    2000:{'DWI': pjoin(folder, '4D_dwieddycor_B2000.nii.gz'),
+           'bvals': pjoin(folder, 'bvals_B2000'),
+           'bvecs': pjoin(folder, 'bvecs_B2000')},
+    3000:{'DWI': pjoin(folder, '4D_dwieddycor_B3000.nii.gz'),
+           'bvals': pjoin(folder, 'bvals_B3000'),
+           'bvecs': pjoin(folder, 'bvecs_B3000')}}
+    data = []
+    bval_list = []
+    bvec_list = []
+    for bval in bvals:
+        data.append(nib.load(file_dict[bval]['DWI']).get_data())
+        bval_list.extend(np.loadtxt(file_dict[bval]['bvals']))
+        bvec_list.append(np.loadtxt(file_dict[bval]['bvecs']))
+
+    # All affines are the same, so grab the last one:
+    aff = nib.load(file_dict[bval]['DWI']).get_affine()
+    return (gradient_table(bval_list, np.concatenate(bvec_list, -1)),
+            nib.Nifti1Image(np.concatenate(data, -1), aff))
+
+
+CENIR_notes = \
+"""
+Notes
+-----
+Details of the acquisition and processing, and additional meta-data are avalible
+through `UW researchworks <https://digital.lib.washington.edu/researchworks/handle/1773/33311>`_
+"""
+
+fetch_cenir_multib.__doc__ += CENIR_notes
+read_cenir_multib.__doc__ += CENIR_notes

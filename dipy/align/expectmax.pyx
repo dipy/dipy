@@ -7,7 +7,7 @@
 import numpy as np
 cimport cython
 cimport numpy as cnp
-from fused_types cimport floating, number
+from .fused_types cimport floating, number
 cdef extern from "dpy_math.h" nogil:
     int dpy_isinf(double)
     double floor(double)
@@ -367,7 +367,7 @@ def compute_em_demons_step_2d(floating[:,:] delta_field,
 
     Parameters
     ----------
-    delta_field : array, shape(R, C)
+    delta_field : array, shape (R, C)
         contains, at each pixel, the difference between the moving image (warped
         under the current deformation s(. , .) ) J and the static image I:
         delta_field[i,j] = J(s(i,j)) - I(i,j). The order is important, changing
@@ -375,16 +375,16 @@ def compute_em_demons_step_2d(floating[:,:] delta_field,
         warping the static image towards the moving, which may not be the
         intended behavior unless the 'gradient_moving' passed corresponds to
         the gradient of the static image
-    sigma_sq_field : array, shape(R, C)
+    sigma_sq_field : array, shape (R, C)
         contains, at each pixel (i, j), the estimated variance (not std) of the
         hidden variable associated to the intensity at static[i,j] (which must
         have been previously quantized)
-    gradient_moving : array, shape(R, C, 2)
+    gradient_moving : array, shape (R, C, 2)
         the gradient of the moving image
     sigma_sq_x : float
         parameter controlling the amount of regularization. It corresponds to
         $\sigma_x^2$ in algorithm 1 of Vercauteren et al.[2]
-    out : array, shape(R, C, 2)
+    out : array, shape (R, C, 2)
         the resulting demons step will be written to this array
 
     Returns
@@ -463,7 +463,7 @@ def compute_em_demons_step_3d(floating[:,:,:] delta_field,
 
     Parameters
     ----------
-    delta_field : array, shape(S, R, C)
+    delta_field : array, shape (S, R, C)
         contains, at each pixel, the difference between the moving image (warped
         under the current deformation s ) J and the static image I:
         delta_field[k,i,j] = J(s(k,i,j)) - I(k,i,j). The order is important,
@@ -471,16 +471,16 @@ def compute_em_demons_step_3d(floating[:,:,:] delta_field,
         backward demons step warping the static image towards the moving, which
         may not be the intended behavior unless the 'gradient_moving' passed
         corresponds to the gradient of the static image
-    sigma_sq_field : array, shape(S, R, C)
+    sigma_sq_field : array, shape (S, R, C)
         contains, at each pixel (k, i, j), the estimated variance (not std) of
         the hidden variable associated to the intensity at static[k,i,j] (which
         must have been previously quantized)
-    gradient_moving : array, shape(S, R, C, 2)
+    gradient_moving : array, shape (S, R, C, 2)
         the gradient of the moving image
     sigma_sq_x : float
         parameter controlling the amount of regularization. It corresponds to
         $\sigma_x^2$ in algorithm 1 of Vercauteren et al.[2].
-    out : array, shape(S, R, C, 2)
+    out : array, shape (S, R, C, 2)
         the resulting demons step will be written to this array
 
     Returns

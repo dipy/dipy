@@ -1,17 +1,17 @@
 import numpy as np
-from dipy.align import floating
-import dipy.align.vector_fields as vfu
-import dipy.align.mattes as mattes
-from dipy.align.transforms import regtransforms
 from numpy.testing import (assert_array_equal,
                            assert_array_almost_equal,
                            assert_almost_equal,
                            assert_equal,
                            assert_raises)
-import dipy.align.imwarp as imwarp
-from nibabel.affines import apply_affine, from_matvec
 from scipy.ndimage.interpolation import map_coordinates
-import dipy.core.geometry as geometry
+from nibabel.affines import apply_affine, from_matvec
+from ...core import geometry
+from .. import floating
+from .. import imwarp
+from .. import vector_fields as vfu
+from ..transforms import regtransforms
+from ..parzenhist import sample_domain_regular
 
 
 def test_random_displacement_field_2d():
@@ -723,9 +723,9 @@ def test_warping_3d():
     assert_raises(ValueError, vfu.warp_3d_nn, sphere, d, val, val, inval, sh)
 
 
-def test_affine_warping_2d():
+def test_affine_transforms_2d():
     r"""
-    Tests 2D affine warping functions against scipy implementation
+    Tests 2D affine transform functions against scipy implementation
     """
     # Create a simple invertible affine transform
     d_shape = (64, 64)
@@ -772,44 +772,45 @@ def test_affine_warping_2d():
             Y = np.apply_along_axis(gt_affine.dot, 0, X)[0:2, ...]
 
             expected = map_coordinates(circle, Y, order=1)
-            warped = vfu.warp_2d_affine(circle,
-                                        np.array(d_shape, dtype=np.int32),
-                                        gt_affine)
+            warped = vfu.transform_2d_affine(circle,
+                np.array(d_shape, dtype=np.int32), gt_affine)
             assert_array_almost_equal(warped, expected)
 
             # Test affine warping with nearest-neighbor interpolation
             expected = map_coordinates(circle, Y, order=0)
-            warped = vfu.warp_2d_affine_nn(circle,
-                                           np.array(d_shape, dtype=np.int32),
-                                           gt_affine)
+            warped = vfu.transform_2d_affine_nn(circle,
+                np.array(d_shape, dtype=np.int32), gt_affine)
             assert_array_almost_equal(warped, expected)
 
     # Test the affine = None case
-    warped = vfu.warp_2d_affine(circle,
-                                np.array(codomain_shape, dtype=np.int32), None)
+    warped = vfu.transform_2d_affine(circle,
+        np.array(codomain_shape, dtype=np.int32), None)
     assert_array_equal(warped, circle)
 
-    warped = vfu.warp_2d_affine_nn(circle,
-                                   np.array(codomain_shape, dtype=np.int32),
-                                   None)
+    warped = vfu.transform_2d_affine_nn(circle,
+        np.array(codomain_shape, dtype=np.int32), None)
     assert_array_equal(warped, circle)
 
     # Test exception is raised when the affine transform matrix is not valid
     invalid = np.zeros((2, 2), dtype=np.float64)
+    invalid_nan = np.zeros((3, 3), dtype=np.float64)
+    invalid_nan[1, 1] = np.nan
     shape = np.array(codomain_shape, dtype=np.int32)
-    # Exceptions from warp_2d
-    assert_raises(ValueError, vfu.warp_2d_affine, circle, shape, invalid)
-    assert_raises(ValueError, vfu.warp_2d_affine, circle, shape, invalid)
-    assert_raises(ValueError, vfu.warp_2d_affine, circle, shape, invalid)
-    # Exceptions from warp_2d_nn
-    assert_raises(ValueError, vfu.warp_2d_affine_nn, circle, shape, invalid)
-    assert_raises(ValueError, vfu.warp_2d_affine_nn, circle, shape, invalid)
-    assert_raises(ValueError, vfu.warp_2d_affine_nn, circle, shape, invalid)
+    # Exceptions from transform_2d
+    assert_raises(ValueError, vfu.transform_2d_affine, circle, shape, invalid)
+    assert_raises(ValueError, vfu.transform_2d_affine, circle, shape, invalid)
+    assert_raises(ValueError, vfu.transform_2d_affine, circle, shape, invalid)
+    assert_raises(ValueError, vfu.transform_2d_affine, circle, shape, invalid_nan)
+    # Exceptions from transform_2d_nn
+    assert_raises(ValueError, vfu.transform_2d_affine_nn, circle, shape, invalid)
+    assert_raises(ValueError, vfu.transform_2d_affine_nn, circle, shape, invalid)
+    assert_raises(ValueError, vfu.transform_2d_affine_nn, circle, shape, invalid)
+    assert_raises(ValueError, vfu.transform_2d_affine_nn, circle, shape, invalid_nan)
 
 
-def test_affine_warping_3d():
+def test_affine_transforms_3d():
     r"""
-    Tests 3D affine warping functions against scipy implementation
+    Tests 3D affine transform functions against scipy implementation
     """
     # Create a simple invertible affine transform
     d_shape = (64, 64, 64)
@@ -861,39 +862,41 @@ def test_affine_warping_3d():
             Y = np.apply_along_axis(gt_affine.dot, 0, X)[0:3, ...]
 
             expected = map_coordinates(sphere, Y, order=1)
-            warped = vfu.warp_3d_affine(sphere,
-                                        np.array(d_shape, dtype=np.int32),
-                                        gt_affine)
-            assert_array_almost_equal(warped, expected)
+            transformed = vfu.transform_3d_affine(sphere,
+                np.array(d_shape, dtype=np.int32), gt_affine)
+            assert_array_almost_equal(transformed, expected)
 
-            # Test affine warping with nearest-neighbor interpolation
+            # Test affine transform with nearest-neighbor interpolation
             expected = map_coordinates(sphere, Y, order=0)
-            warped = vfu.warp_3d_affine_nn(sphere,
-                                           np.array(d_shape, dtype=np.int32),
-                                           gt_affine)
-            assert_array_almost_equal(warped, expected)
+            transformed = vfu.transform_3d_affine_nn(sphere,
+                np.array(d_shape, dtype=np.int32), gt_affine)
+            assert_array_almost_equal(transformed, expected)
 
     # Test the affine = None case
-    warped = vfu.warp_3d_affine(sphere,
-                                np.array(codomain_shape, dtype=np.int32), None)
-    assert_array_equal(warped, sphere)
+    transformed = vfu.transform_3d_affine(sphere,
+        np.array(codomain_shape, dtype=np.int32), None)
+    assert_array_equal(transformed, sphere)
 
-    warped = vfu.warp_3d_affine_nn(sphere,
+    transformed = vfu.transform_3d_affine_nn(sphere,
                                    np.array(codomain_shape, dtype=np.int32),
                                    None)
-    assert_array_equal(warped, sphere)
+    assert_array_equal(transformed, sphere)
 
     # Test exception is raised when the affine transform matrix is not valid
     invalid = np.zeros((3, 3), dtype=np.float64)
+    invalid_nan = np.zeros((4, 4), dtype=np.float64)
+    invalid_nan[1, 1] = np.nan
     shape = np.array(codomain_shape, dtype=np.int32)
-    # Exceptions from warp_2d
-    assert_raises(ValueError, vfu.warp_3d_affine, sphere, shape, invalid)
-    assert_raises(ValueError, vfu.warp_3d_affine, sphere, shape, invalid)
-    assert_raises(ValueError, vfu.warp_3d_affine, sphere, shape, invalid)
-    # Exceptions from warp_2d_nn
-    assert_raises(ValueError, vfu.warp_3d_affine_nn, sphere, shape, invalid)
-    assert_raises(ValueError, vfu.warp_3d_affine_nn, sphere, shape, invalid)
-    assert_raises(ValueError, vfu.warp_3d_affine_nn, sphere, shape, invalid)
+    # Exceptions from transform_3d_affine
+    assert_raises(ValueError, vfu.transform_3d_affine, sphere, shape, invalid)
+    assert_raises(ValueError, vfu.transform_3d_affine, sphere, shape, invalid)
+    assert_raises(ValueError, vfu.transform_3d_affine, sphere, shape, invalid)
+    assert_raises(ValueError, vfu.transform_3d_affine, sphere, shape, invalid_nan)
+    # Exceptions from transform_3d_affine_nn
+    assert_raises(ValueError, vfu.transform_3d_affine_nn, sphere, shape, invalid)
+    assert_raises(ValueError, vfu.transform_3d_affine_nn, sphere, shape, invalid)
+    assert_raises(ValueError, vfu.transform_3d_affine_nn, sphere, shape, invalid)
+    assert_raises(ValueError, vfu.transform_3d_affine_nn, sphere, shape, invalid_nan)
 
 
 def test_compose_vector_fields_2d():
@@ -1554,7 +1557,7 @@ def test_reorient_random_vector_fields():
                          (3, vfu.reorient_vector_field_3d)):
         size = [20, 30, 40][:n_dims] + [n_dims]
         arr = np.random.normal(size=size)
-        arr_32 = arr.astype(np.float32)
+        arr_32 = arr.astype(floating)
         affine = from_matvec(np.random.normal(size=(n_dims, n_dims)),
                              np.zeros(n_dims))
         func(arr_32, affine)
@@ -1562,7 +1565,7 @@ def test_reorient_random_vector_fields():
         # Reorient reorients without translation
         trans = np.arange(n_dims) + 2
         affine[:-1, -1] = trans
-        arr_32 = arr.astype(np.float32)
+        arr_32 = arr.astype(floating)
         func(arr_32, affine)
         assert_almost_equal(arr_32, apply_affine(affine, arr) - trans, 6)
 
@@ -1597,14 +1600,14 @@ def test_gradient_2d():
     img = a * TX[..., 0] ** 2 +\
         b * TX[..., 0] * TX[..., 1] +\
         c * TX[..., 1] ** 2
-    img = img.astype(np.float32)
+    img = img.astype(floating)
     # img is an image sampled at X with grid-to-space transform T
 
     # Test sparse gradient: choose some sample points (in space)
-    sample = mattes.sample_domain_regular(20, np.array(sh, dtype=np.int32), T)
+    sample = sample_domain_regular(20, np.array(sh, dtype=np.int32), T)
     sample = np.array(sample)
     # Compute the analytical gradient at all points
-    expected = np.empty((sample.shape[0], 2), dtype=np.float32)
+    expected = np.empty((sample.shape[0], 2), dtype=floating)
     expected[..., 0] = 2 * a * sample[:, 0] + b * sample[:, 1]
     expected[..., 1] = 2 * c * sample[:, 1] + b * sample[:, 0]
     # Get the numerical gradient with the implementation under test
@@ -1624,7 +1627,7 @@ def test_gradient_2d():
 
     # Test dense gradient
     # Compute the analytical gradient at all points
-    expected = np.empty(sh + (2,), dtype=np.float32)
+    expected = np.empty(sh + (2,), dtype=floating)
     expected[..., 0] = 2 * a * TX[..., 0] + b * TX[..., 1]
     expected[..., 1] = 2 * c * TX[..., 1] + b * TX[..., 0]
     # Get the numerical gradient with the implementation under test
@@ -1674,13 +1677,13 @@ def test_gradient_3d():
         c * TX[..., 2] ** 2 + d * TX[..., 0] * TX[..., 1] +\
         e * TX[..., 0] * TX[..., 2] + f * TX[..., 1] * TX[..., 2]
 
-    img = img.astype(np.float32)
+    img = img.astype(floating)
     # Test sparse gradient: choose some sample points (in space)
     sample =\
-        mattes.sample_domain_regular(100, np.array(shape, dtype=np.int32), T)
+        sample_domain_regular(100, np.array(shape, dtype=np.int32), T)
     sample = np.array(sample)
     # Compute the analytical gradient at all points
-    expected = np.empty((sample.shape[0], 3), dtype=np.float32)
+    expected = np.empty((sample.shape[0], 3), dtype=floating)
     expected[..., 0] =\
         2 * a * sample[:, 0] + d * sample[:, 1] + e * sample[:, 2]
     expected[..., 1] =\
@@ -1705,7 +1708,7 @@ def test_gradient_3d():
 
     # Test dense gradient
     # Compute the analytical gradient at all points
-    expected = np.empty(shape + (3,), dtype=np.float32)
+    expected = np.empty(shape + (3,), dtype=floating)
     expected[..., 0] = 2 * a * TX[..., 0] + d * TX[..., 1] + e * TX[..., 2]
     expected[..., 1] = 2 * b * TX[..., 1] + d * TX[..., 0] + f * TX[..., 2]
     expected[..., 2] = 2 * c * TX[..., 2] + e * TX[..., 0] + f * TX[..., 1]

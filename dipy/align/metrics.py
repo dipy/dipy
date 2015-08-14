@@ -2,27 +2,28 @@
 
 from __future__ import print_function
 import abc
-from dipy.utils.six import with_metaclass
 import numpy as np
 import scipy as sp
 from scipy import gradient, ndimage
-import dipy.align.vector_fields as vfu
-from dipy.align import sumsqdiff as ssd
-from dipy.align import crosscorr as cc
-from dipy.align import expectmax as em
-from dipy.align import floating
+from ..utils.six import with_metaclass
+from . import vector_fields as vfu
+from . import sumsqdiff as ssd
+from . import crosscorr as cc
+from . import expectmax as em
+from . import floating
 
 
 class SimilarityMetric(with_metaclass(abc.ABCMeta, object)):
     def __init__(self, dim):
         r""" Similarity Metric abstract class
 
-        A similarity metric is in charge of keeping track of the numerical value
-        of the similarity (or distance) between the two given images. It also
-        computes the update field for the forward and inverse displacement
+        A similarity metric is in charge of keeping track of the numerical
+        value of the similarity (or distance) between the two given images. It
+        also computes the update field for the forward and inverse displacement
         fields to be used in a gradient-based optimization algorithm. Note that
-        this metric does not depend on any transformation (affine or non-linear)
-        so it assumes the static and moving images are already warped
+        this metric does not depend on any transformation (affine or
+        non-linear) so it assumes the static and moving images are already
+        warped
 
         Parameters
         ----------
@@ -103,7 +104,7 @@ class SimilarityMetric(with_metaclass(abc.ABCMeta, object)):
         Parameters
         ----------
         original_static_image : array, shape (R, C) or (S, R, C)
-            the original image from which the current static image was generated
+            original image from which the current static image was generated
         transformation : DiffeomorphicMap object
             the transformation that was applied to original image to generate
             the current static image
@@ -129,7 +130,7 @@ class SimilarityMetric(with_metaclass(abc.ABCMeta, object)):
         self.moving_direction = moving_direction
 
     def use_moving_image_dynamics(self, original_moving_image, transformation):
-        r"""This is called by the optimizer just after setting the moving image.
+        r"""This is called by the optimizer just after setting the moving image
 
         This method allows the metric to compute any useful
         information from knowing how the current static image was generated
@@ -141,7 +142,7 @@ class SimilarityMetric(with_metaclass(abc.ABCMeta, object)):
         Parameters
         ----------
         original_moving_image : array, shape (R, C) or (S, R, C)
-            the original image from which the current moving image was generated
+            original image from which the current moving image was generated
         transformation : DiffeomorphicMap object
             the transformation that was applied to original image to generate
             the current moving image
@@ -154,9 +155,9 @@ class SimilarityMetric(with_metaclass(abc.ABCMeta, object)):
 
         This method will be called before any compute_forward or
         compute_backward call, this allows the Metric to pre-compute any useful
-        information for speeding up the update computations. This initialization
-        was needed in ANTS because the updates are called once per voxel. In
-        Python this is unpractical, though.
+        information for speeding up the update computations. This
+        initialization was needed in ANTS because the updates are called once
+        per voxel. In Python this is unpractical, though.
         """
 
     @abc.abstractmethod
@@ -187,11 +188,12 @@ class SimilarityMetric(with_metaclass(abc.ABCMeta, object)):
 
     @abc.abstractmethod
     def get_energy(self):
-        r"""The numerical value assigned by this metric to the current image pair
+        r"""Numerical value assigned by this metric to the current image pair
 
-        Must return the numeric value of the similarity between the given static
-        and moving images
+        Must return the numeric value of the similarity between the given
+        static and moving images
         """
+
 
 class CCMetric(SimilarityMetric):
 
@@ -231,8 +233,7 @@ class CCMetric(SimilarityMetric):
             self.compute_backward_step = cc.compute_cc_backward_step_3d
             self.reorient_vector_field = vfu.reorient_vector_field_3d
         else:
-            raise ValueError('CC Metric not defined for dimension %d'%(self.dim));
-
+            raise ValueError('CC Metric not defined for dim. %d' % (self.dim))
 
     def initialize_iteration(self):
         r"""Prepares the metric to compute one displacement field iteration.
@@ -244,8 +245,8 @@ class CCMetric(SimilarityMetric):
         affine transformations.
         """
         self.factors = self.precompute_factors(self.static_image,
-                                             self.moving_image,
-                                             self.radius)
+                                               self.moving_image,
+                                               self.radius)
         self.factors = np.array(self.factors)
 
         self.gradient_moving = np.empty(
@@ -253,7 +254,7 @@ class CCMetric(SimilarityMetric):
         for i, grad in enumerate(sp.gradient(self.moving_image)):
             self.gradient_moving[..., i] = grad
 
-        #Convert the moving image's gradient field from voxel to physical space
+        # Convert moving image's gradient field from voxel to physical space
         if self.moving_spacing is not None:
             self.gradient_moving /= self.moving_spacing
         if self.moving_direction is not None:
@@ -265,7 +266,7 @@ class CCMetric(SimilarityMetric):
         for i, grad in enumerate(sp.gradient(self.static_image)):
             self.gradient_static[..., i] = grad
 
-        #Convert the moving image's gradient field from voxel to physical space
+        # Convert moving image's gradient field from voxel to physical space
         if self.static_spacing is not None:
             self.gradient_static /= self.static_spacing
         if self.static_direction is not None:
@@ -287,10 +288,10 @@ class CCMetric(SimilarityMetric):
         """
         displacement, self.energy = self.compute_forward_step(
             self.gradient_static, self.factors, self.radius)
-        displacement=np.array(displacement)
+        displacement = np.array(displacement)
         for i in range(self.dim):
             displacement[..., i] = ndimage.filters.gaussian_filter(
-                                        displacement[..., i], self.sigma_diff)
+                displacement[..., i], self.sigma_diff)
         return displacement
 
     def compute_backward(self):
@@ -299,20 +300,20 @@ class CCMetric(SimilarityMetric):
         Computes the update displacement field to be used for registration of
         the static image towards the moving image
         """
-        displacement, energy=self.compute_backward_step(
-            self.gradient_moving, self.factors, self.radius)
-        displacement=np.array(displacement)
+        displacement, energy = self.compute_backward_step(self.gradient_moving,
+                                                          self.factors,
+                                                          self.radius)
+        displacement = np.array(displacement)
         for i in range(self.dim):
             displacement[..., i] = ndimage.filters.gaussian_filter(
-                                        displacement[..., i], self.sigma_diff)
+                displacement[..., i], self.sigma_diff)
         return displacement
 
-
     def get_energy(self):
-        r"""The numerical value assigned by this metric to the current image pair
+        r"""Numerical value assigned by this metric to the current image pair
 
-        Returns the Cross Correlation (data term) energy computed at the largest
-        iteration
+        Returns the Cross Correlation (data term) energy computed at the
+        largest iteration
         """
         return self.energy
 
@@ -386,14 +387,14 @@ class EMMetric(SimilarityMetric):
             self.compute_stats = em.compute_masked_class_stats_3d
             self.reorient_vector_field = vfu.reorient_vector_field_3d
         else:
-            raise ValueError('EM Metric not defined for dimension %d'%(self.dim));
+            raise ValueError('EM Metric not defined for dim. %d' % (self.dim))
 
         if self.step_type == 'demons':
             self.compute_step = self.compute_demons_step
         elif self.step_type == 'gauss_newton':
             self.compute_step = self.compute_gauss_newton_step
         else:
-            raise ValueError('Optimization step %s not defined'%(self.step_type))
+            raise ValueError('Opt. step %s not defined' % (self.step_type))
 
     def initialize_iteration(self):
         r"""Prepares the metric to compute one displacement field iteration.
@@ -409,16 +410,16 @@ class EMMetric(SimilarityMetric):
         sampling_mask = self.static_image_mask*self.moving_image_mask
         self.sampling_mask = sampling_mask
         staticq, self.staticq_levels, hist = self.quantize(self.static_image,
-                                                      self.q_levels)
+                                                           self.q_levels)
         staticq = np.array(staticq, dtype=np.int32)
         self.staticq_levels = np.array(self.staticq_levels)
-        staticq_means, staticq_variances = self.compute_stats(sampling_mask,
-                                                       self.moving_image,
-                                                       self.q_levels,
-                                                       staticq)
+        staticq_means, staticq_vars = self.compute_stats(sampling_mask,
+                                                         self.moving_image,
+                                                         self.q_levels,
+                                                         staticq)
         staticq_means[0] = 0
         self.staticq_means = np.array(staticq_means)
-        self.staticq_variances = np.array(staticq_variances)
+        self.staticq_variances = np.array(staticq_vars)
         self.staticq_sigma_sq_field = self.staticq_variances[staticq]
         self.staticq_means_field = self.staticq_means[staticq]
 
@@ -428,7 +429,7 @@ class EMMetric(SimilarityMetric):
         for i, grad in enumerate(sp.gradient(self.moving_image)):
             self.gradient_moving[..., i] = grad
 
-        #Convert the moving image's gradient field from voxel to physical space
+        # Convert moving image's gradient field from voxel to physical space
         if self.moving_spacing is not None:
             self.gradient_moving /= self.moving_spacing
         if self.moving_direction is not None:
@@ -441,7 +442,7 @@ class EMMetric(SimilarityMetric):
         for i, grad in enumerate(sp.gradient(self.static_image)):
             self.gradient_static[..., i] = grad
 
-        #Convert the moving image's gradient field from voxel to physical space
+        # Convert moving image's gradient field from voxel to physical space
         if self.static_spacing is not None:
             self.gradient_static /= self.static_spacing
         if self.static_direction is not None:
@@ -542,20 +543,20 @@ class EMMetric(SimilarityMetric):
 
         if self.dim == 2:
             self.energy = v_cycle_2d(self.levels_below,
-                                          self.inner_iter, delta,
-                                          sigma_sq_field,
-                                          gradient,
-                                          None,
-                                          self.smooth,
-                                          displacement)
+                                     self.inner_iter, delta,
+                                     sigma_sq_field,
+                                     gradient,
+                                     None,
+                                     self.smooth,
+                                     displacement)
         else:
             self.energy = v_cycle_3d(self.levels_below,
-                                          self.inner_iter, delta,
-                                          sigma_sq_field,
-                                          gradient,
-                                          None,
-                                          self.smooth,
-                                          displacement)
+                                     self.inner_iter, delta,
+                                     sigma_sq_field,
+                                     gradient,
+                                     None,
+                                     self.smooth,
+                                     displacement)
         return displacement
 
     def compute_demons_step(self, forward_step=True):
@@ -630,13 +631,13 @@ class EMMetric(SimilarityMetric):
             the transformation that was applied to the original_static_image
             to generate the current static image
         """
-        self.static_image_mask = (original_static_image>0).astype(np.int32)
+        self.static_image_mask = (original_static_image > 0).astype(np.int32)
         if transformation is None:
             return
-        shape = np.array(self.static_image.shape, dtype = np.int32)
+        shape = np.array(self.static_image.shape, dtype=np.int32)
         affine = self.static_affine
-        self.static_image_mask = \
-            transformation.transform(self.static_image_mask,'nearest', None, shape, affine)
+        self.static_image_mask = transformation.transform(
+            self.static_image_mask, 'nearest', None, shape, affine)
 
     def use_moving_image_dynamics(self, original_moving_image, transformation):
         r"""This is called by the optimizer just after setting the moving image.
@@ -656,13 +657,13 @@ class EMMetric(SimilarityMetric):
             the transformation that was applied to the original_moving_image
             to generate the current moving image
         """
-        self.moving_image_mask = (original_moving_image>0).astype(np.int32)
+        self.moving_image_mask = (original_moving_image > 0).astype(np.int32)
         if transformation is None:
             return
-        shape = np.array(self.moving_image.shape, dtype = np.int32)
+        shape = np.array(self.moving_image.shape, dtype=np.int32)
         affine = self.moving_affine
-        self.moving_image_mask = \
-            transformation.transform(self.moving_image_mask,'nearest', None, shape, affine)
+        self.moving_image_mask = transformation.transform(
+            self.moving_image_mask, 'nearest', None, shape, affine)
 
 
 class SSDMetric(SimilarityMetric):
@@ -687,8 +688,8 @@ class SSDMetric(SimilarityMetric):
             be set for the optimizer, not the metric)
         step_type : string
             the displacement field step to be computed when 'compute_forward'
-            and 'compute_backward' are called. Either 'demons' or 'gauss_newton'
-
+            and 'compute_backward' are called. Either 'demons' or
+            'gauss_newton'
         """
         super(SSDMetric, self).__init__(dim)
         self.smooth = smooth
@@ -710,14 +711,14 @@ class SSDMetric(SimilarityMetric):
         elif self.dim == 3:
             self.reorient_vector_field = vfu.reorient_vector_field_3d
         else:
-            raise ValueError('SSD Metric not defined for dimension %d'%(self.dim))
+            raise ValueError('SSD Metric not defined for dim. %d' % (self.dim))
 
         if self.step_type == 'gauss_newton':
             self.compute_step = self.compute_gauss_newton_step
         elif self.step_type == 'demons':
             self.compute_step = self.compute_demons_step
         else:
-            raise ValueError('Optimization step %s not defined'%(self.step_type))
+            raise ValueError('Opt. step %s not defined' % (self.step_type))
 
     def initialize_iteration(self):
         r"""Prepares the metric to compute one displacement field iteration.
@@ -730,7 +731,7 @@ class SSDMetric(SimilarityMetric):
         for i, grad in enumerate(gradient(self.moving_image)):
             self.gradient_moving[..., i] = grad
 
-        #Convert the static image's gradient field from voxel to physical space
+        # Convert static image's gradient field from voxel to physical space
         if self.moving_spacing is not None:
             self.gradient_moving /= self.moving_spacing
         if self.moving_direction is not None:
@@ -742,7 +743,7 @@ class SSDMetric(SimilarityMetric):
         for i, grad in enumerate(gradient(self.static_image)):
             self.gradient_static[..., i] = grad
 
-        #Convert the moving image's gradient field from voxel to physical space
+        # Convert static image's gradient field from voxel to physical space
         if self.static_spacing is not None:
             self.gradient_static /= self.static_spacing
         if self.static_direction is not None:
@@ -800,12 +801,12 @@ class SSDMetric(SimilarityMetric):
 
         if self.dim == 2:
             self.energy = v_cycle_2d(self.levels_below, self.inner_iter,
-                                    delta_field, None, gradient, None,
-                                    self.smooth, displacement)
+                                     delta_field, None, gradient, None,
+                                     self.smooth, displacement)
         else:
             self.energy = v_cycle_3d(self.levels_below, self.inner_iter,
-                                    delta_field, None, gradient, None,
-                                    self.smooth, displacement)
+                                     delta_field, None, gradient, None,
+                                     self.smooth, displacement)
         return displacement
 
     def compute_demons_step(self, forward_step=True):
@@ -844,14 +845,14 @@ class SSDMetric(SimilarityMetric):
 
         if self.dim == 2:
             step, self.energy = ssd.compute_ssd_demons_step_2d(delta_field,
-                                                             gradient,
-                                                             sigma_reg_2,
-                                                             None)
+                                                               gradient,
+                                                               sigma_reg_2,
+                                                               None)
         else:
             step, self.energy = ssd.compute_ssd_demons_step_3d(delta_field,
-                                                             gradient,
-                                                             sigma_reg_2,
-                                                             None)
+                                                               gradient,
+                                                               sigma_reg_2,
+                                                               None)
         for i in range(self.dim):
             step[..., i] = ndimage.filters.gaussian_filter(step[..., i],
                                                            self.smooth)
@@ -873,14 +874,14 @@ class SSDMetric(SimilarityMetric):
 
 
 def v_cycle_2d(n, k, delta_field, sigma_sq_field, gradient_field, target,
-             lambda_param, displacement, depth=0):
+               lambda_param, displacement, depth=0):
     r"""Multi-resolution Gauss-Seidel solver using V-type cycles
 
     Multi-resolution Gauss-Seidel solver: solves the Gauss-Newton linear system
     by first filtering (GS-iterate) the current level, then solves for the
     residual at a coarser resolution and finally refines the solution at the
-    current resolution. This scheme corresponds to the V-cycle proposed by Bruhn
-    and Weickert[Bruhn05].
+    current resolution. This scheme corresponds to the V-cycle proposed by
+    Bruhn and Weickert[Bruhn05].
 
     Parameters
     ----------
@@ -902,8 +903,8 @@ def v_cycle_2d(n, k, delta_field, sigma_sq_field, gradient_field, target,
         right-hand side of the linear system to be solved in the Weickert's
         multi-resolution algorithm
     lambda_param : float
-        smoothness parameter, the larger its value the smoother the displacement
-        field
+        smoothness parameter, the larger its value the smoother the
+        displacement field
     displacement : array, shape (R, C, 2)
         the displacement field to start the optimization from
 
@@ -919,27 +920,27 @@ def v_cycle_2d(n, k, delta_field, sigma_sq_field, gradient_field, target,
               performance", 10th IEEE International Conference on Computer
               Vision, 2005. ICCV 2005.
     """
-    #pre-smoothing
+    # pre-smoothing
     for i in range(k):
         ssd.iterate_residual_displacement_field_ssd_2d(delta_field,
-                                                      sigma_sq_field,
-                                                      gradient_field,
-                                                      target,
-                                                      lambda_param,
-                                                      displacement)
+                                                       sigma_sq_field,
+                                                       gradient_field,
+                                                       target,
+                                                       lambda_param,
+                                                       displacement)
     if n == 0:
         energy = ssd.compute_energy_ssd_2d(delta_field)
         return energy
 
-    #solve at coarser grid
+    # solve at coarser grid
     residual = None
     residual = ssd.compute_residual_displacement_field_ssd_2d(delta_field,
-                                                             sigma_sq_field,
-                                                             gradient_field,
-                                                             target,
-                                                             lambda_param,
-                                                             displacement,
-                                                             residual)
+                                                              sigma_sq_field,
+                                                              gradient_field,
+                                                              target,
+                                                              lambda_param,
+                                                              displacement,
+                                                              residual)
     sub_residual = np.array(vfu.downsample_displacement_field_2d(residual))
     del residual
     subsigma_sq_field = None
@@ -951,30 +952,32 @@ def v_cycle_2d(n, k, delta_field, sigma_sq_field, gradient_field, target,
         vfu.downsample_displacement_field_2d(gradient_field))
 
     shape = np.array(displacement.shape).astype(np.int32)
-    sub_displacement = np.zeros(shape=((shape[0]+1)//2, (shape[1]+1)//2, 2 ),
-                               dtype=floating)
+    half_shape = ((shape[0] + 1) // 2, (shape[1] + 1) // 2, 2)
+    sub_displacement = np.zeros(shape=half_shape,
+                                dtype=floating)
     sublambda_param = lambda_param*0.25
     v_cycle_2d(n-1, k, subdelta_field, subsigma_sq_field, subgradient_field,
-             sub_residual, sublambda_param, sub_displacement, depth+1)
-    #displacement += np.array(
+               sub_residual, sublambda_param, sub_displacement, depth+1)
+    # displacement += np.array(
     #    vfu.upsample_displacement_field(sub_displacement, shape))
     displacement += vfu.resample_displacement_field_2d(sub_displacement,
                                                        np.array([0.5, 0.5]),
                                                        shape)
 
-    #post-smoothing
+    # post-smoothing
     for i in range(k):
         ssd.iterate_residual_displacement_field_ssd_2d(delta_field,
-                                                             sigma_sq_field,
-                                                             gradient_field,
-                                                             target,
-                                                             lambda_param,
-                                                             displacement)
+                                                       sigma_sq_field,
+                                                       gradient_field,
+                                                       target,
+                                                       lambda_param,
+                                                       displacement)
     energy = ssd.compute_energy_ssd_2d(delta_field)
     return energy
 
+
 def v_cycle_3d(n, k, delta_field, sigma_sq_field, gradient_field, target,
-             lambda_param, displacement, depth=0):
+               lambda_param, displacement, depth=0):
     r"""Multi-resolution Gauss-Seidel solver using V-type cycles
 
     Multi-resolution Gauss-Seidel solver: solves the linear system by first
@@ -1007,8 +1010,8 @@ def v_cycle_3d(n, k, delta_field, sigma_sq_field, gradient_field, target,
         right-hand side of the linear system to be solved in the Weickert's
         multi-resolution algorithm
     lambda_param : float
-        smoothness parameter, the larger its value the smoother the displacement
-        field
+        smoothness parameter, the larger its value the smoother the
+        displacement field
     displacement : array, shape (S, R, C, 3)
         the displacement field to start the optimization from
 
@@ -1017,25 +1020,25 @@ def v_cycle_3d(n, k, delta_field, sigma_sq_field, gradient_field, target,
     energy : the energy of the EM (or SSD if sigmafield[...]==1) metric at this
         iteration
     """
-    #pre-smoothing
+    # pre-smoothing
     for i in range(k):
         ssd.iterate_residual_displacement_field_ssd_3d(delta_field,
-                                                             sigma_sq_field,
-                                                             gradient_field,
-                                                             target,
-                                                             lambda_param,
-                                                             displacement)
+                                                       sigma_sq_field,
+                                                       gradient_field,
+                                                       target,
+                                                       lambda_param,
+                                                       displacement)
     if n == 0:
         energy = ssd.compute_energy_ssd_3d(delta_field)
         return energy
-    #solve at coarser grid
+    # solve at coarser grid
     residual = ssd.compute_residual_displacement_field_ssd_3d(delta_field,
-                                                            sigma_sq_field,
-                                                            gradient_field,
-                                                            target,
-                                                            lambda_param,
-                                                            displacement,
-                                                            None)
+                                                              sigma_sq_field,
+                                                              gradient_field,
+                                                              target,
+                                                              lambda_param,
+                                                              displacement,
+                                                              None)
     sub_residual = np.array(vfu.downsample_displacement_field_3d(residual))
     del residual
     subsigma_sq_field = None
@@ -1046,27 +1049,26 @@ def v_cycle_3d(n, k, delta_field, sigma_sq_field, gradient_field, target,
         vfu.downsample_displacement_field_3d(gradient_field))
     shape = np.array(displacement.shape).astype(np.int32)
     sub_displacement = np.zeros(
-        shape=((shape[0]+1)//2, (shape[1]+1)//2, (shape[2]+1)//2, 3 ),
+        shape=((shape[0]+1)//2, (shape[1]+1)//2, (shape[2]+1)//2, 3),
         dtype=floating)
     sublambda_param = lambda_param*0.25
     v_cycle_3d(n-1, k, subdelta_field, subsigma_sq_field, subgradient_field,
-             sub_residual, sublambda_param, sub_displacement, depth+1)
+               sub_residual, sublambda_param, sub_displacement, depth+1)
     del subdelta_field
     del subsigma_sq_field
     del subgradient_field
     del sub_residual
-    #vfu.accumulate_upsample_displacement_field3D(sub_displacement, displacement)
     displacement += vfu.resample_displacement_field_3d(sub_displacement,
-                                                       np.array([0.5, 0.5, 0.5]),
+                                                       0.5 * np.ones(3),
                                                        shape)
     del sub_displacement
-    #post-smoothing
+    # post-smoothing
     for i in range(k):
         ssd.iterate_residual_displacement_field_ssd_3d(delta_field,
-                                                      sigma_sq_field,
-                                                      gradient_field,
-                                                      target,
-                                                      lambda_param,
-                                                      displacement)
+                                                       sigma_sq_field,
+                                                       gradient_field,
+                                                       target,
+                                                       lambda_param,
+                                                       displacement)
     energy = ssd.compute_energy_ssd_3d(delta_field)
     return energy

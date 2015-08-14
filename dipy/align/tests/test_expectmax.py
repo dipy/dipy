@@ -1,12 +1,10 @@
 import numpy as np
-from dipy.align import floating
-import dipy.align.expectmax as em
 from numpy.testing import (assert_equal,
                            assert_array_equal,
                            assert_array_almost_equal,
                            assert_raises)
-
-
+from .. import floating
+from .. import expectmax as em
 
 
 def test_compute_em_demons_step_2d():

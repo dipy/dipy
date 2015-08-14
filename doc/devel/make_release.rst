@@ -308,28 +308,14 @@ tag to github, so the buildbots can find the released code and build it.
 Other stuff that needs doing for the release
 ============================================
 
-* Checkout the tagged release, and upload the docs::
+* Checkout the tagged release, build the html docs and upload them to
+  the github pages website::
 
-    make upload-website-mysfusername
-
-  where ``mysfusername`` is obviously your own sourceforge username.
+    make upload
 
   You need to checkout the tagged version in order to get the version number
   correct for the doc build.  The version number gets picked up from the
   ``info.py`` version.
-
-* Make a tarball for the examples, to allow packagers to bypass the need for
-  having vtk or pytables or a display on the build machines::
-
-        cd doc
-        make upload-examples-mysfusername
-
-  The command requires pytables_ and python vtk on your machine. It writes an
-  archive named for the dipy version and the docs, e.g::
-
-    <dipy root>/dist/dipy-0.6.0.dev-doc-examples.tar.gz
-
-  and thence writes the archive to the dipy doc directory on sourceforge.
 
 * Announce to the mailing lists.  With fear and trembling.
 

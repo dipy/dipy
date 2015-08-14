@@ -4,7 +4,7 @@ import numpy as np
 import nibabel as nib
 
 from numpy.testing import assert_almost_equal, assert_equal, assert_array_almost_equal
-from dipy.denoise.noise_estimate import _inv_nchi_cdf, piesno, estimate_sigma
+from dipy.denoise.noise_estimate import _inv_nchi_cdf, piesno, estimate_sigma, _piesno_3D
 import dipy.data
 
 # See page 5 of the reference paper for tested values
@@ -28,6 +28,20 @@ def test_piesno():
     test_piesno_data = nib.load(dipy.data.get_data("test_piesno")).get_data()
     sigma = piesno(test_piesno_data, N=8, alpha=0.01, l=1, eps=1e-10, return_mask=False)
     assert_almost_equal(sigma, 0.010749458025559)
+
+    noise1 = (np.random.randn(100, 100, 100) * 50) + 10
+    noise2 = (np.random.randn(100, 100, 100) * 50) + 10
+    rician_noise = np.sqrt(noise1**2 + noise2**2)
+    sigma, mask = piesno(rician_noise, N=1, alpha=0.01, l=1, eps=1e-10, return_mask=True)
+
+    # less than 3% of error?
+    assert_almost_equal(np.abs(sigma - 50) / sigma < 0.03, True)
+
+    # Test using the median as the initial estimation
+    initial_estimation = np.median(sigma) / np.sqrt(2 * _inv_nchi_cdf(1, 1, 0.5))
+    sigma, mask = _piesno_3D(rician_noise, N=1, alpha=0.01, l=1, eps=1e-10, return_mask=True,
+                             initial_estimation=initial_estimation)
+    assert_almost_equal(np.abs(sigma - 50) / sigma < 0.03, True)
 
 
 def test_estimate_sigma():

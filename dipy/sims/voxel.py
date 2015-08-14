@@ -204,7 +204,7 @@ def single_tensor(gtab, S0=1, evals=None, evecs=None, snr=None):
     evecs : (3, 3) ndarray
         Eigenvectors of the tensor.  You can also think of this as a rotation
         matrix that transforms the direction of the tensor. The eigenvectors
-        needs to be column wise.
+        need to be column wise.
     snr : float
         Signal to noise ratio, assuming Rician noise.  None implies no noise.
 
@@ -545,9 +545,9 @@ def single_tensor_odf(r, evals=None, evecs=None):
         Eigenvalues of diffusion tensor.  By default, use values typical for
         prolate white matter.
     evecs : (3, 3) ndarray
-        Eigenvectors of the tensor.  You can also think of these as the
-        rotation matrix that determines the orientation of the diffusion
-        tensor.
+        Eigenvectors of the tensor, written column-wise.  You can also think
+        of these as the rotation matrix that determines the orientation of
+        the diffusion tensor.
 
     Returns
     -------
@@ -594,13 +594,14 @@ def all_tensor_evecs(e0):
     Returns
     -------
     evecs : (3,3) ndarray
-        Tensor eigenvectors.
+        Tensor eigenvectors, arranged column-wise.
 
     """
     axes = np.eye(3)
     mat = vec2vec_rotmat(axes[0], e0)
     e1 = np.dot(mat, axes[1])
     e2 = np.dot(mat, axes[2])
+    # Return the eigenvectors column-wise:
     return np.array([e0, e1, e2]).T
 
 

@@ -83,6 +83,9 @@ show_both_bundles([cb_subj1, cb_subj2_aligned],
 
    **After bundle registration**.
 
+.. [Garyfallidis15] Garyfallidis et. al, "Robust and efficient linear
+                    registration of white-matter fascicles in the space
+                    of streamlines", Neuroimage, 117:124-140, 2015.
 .. [Garyfallidis14] Garyfallidis et. al, "Direct native-space fiber bundle
                     alignment for group comparisons", ISMRM, 2014.
 
