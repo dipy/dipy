@@ -497,9 +497,6 @@ def snapshot(ren, fname=None, size=(300, 300)):
         holds the RGB values.
     """
 
-    if vtk.VTK_MAJOR_VERSION <= 5:
-        raise ImportError('Snapshot is available only for VTK 6+')
-
     width, height = size
 
     graphics_factory = vtk.vtkGraphicsFactory()
