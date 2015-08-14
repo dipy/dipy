@@ -107,7 +107,7 @@ class Renderer(vtkRenderer):
         return cam.GetPosition(), cam.GetFocalPoint(), cam.GetViewUp()
 
     def camera_info(self):
-        cam = self.get_camera()
+        cam = self.camera()
         print('# Camera info')
         print('\tPosition (%.2f, %.2f, %.2f)' % cam.GetPosition())
         print('\tFocal Point (%.2f, %.2f, %.2f)' % cam.GetFocalPoint())

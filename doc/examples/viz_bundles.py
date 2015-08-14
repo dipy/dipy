@@ -74,7 +74,7 @@ close the window and call the ``camera_info`` method which prints the position,
 focal point and view up vectors of the camera.
 """
 
-renderer.camera_info
+renderer.camera_info()
 
 """
 Show every point with a value from a volume with default colormap

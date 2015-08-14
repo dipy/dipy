@@ -98,7 +98,7 @@ slider = widget.slider(show_manager.iren, show_manager.ren,
                        selected_color=(0.2, 0.2, 0.2))
 
 global size
-size = renderer.GetSize()
+size = renderer.size()
 
 """
 This callback is used to update the buttons/sliders' position so they can stay
