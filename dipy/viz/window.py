@@ -40,14 +40,13 @@ if have_imread:
 
 
 class Renderer(vtkRenderer):
-    """ The key rendering preparation object
+    """ Your scene class
 
     This is an important object that is responsible for preparing objects
     e.g. actors and volumes for rendering. This is a more pythonic version
     of ``vtkRenderer`` proving simple methods for adding and removing actors
     but also it provides access to all the functionality
-    available in ``vtkRenderer``.
-
+    available in ``vtkRenderer`` if necessary.
     """
 
     def background(self, color):
@@ -93,15 +92,20 @@ class Renderer(vtkRenderer):
             self.GetActiveCamera().ParallelProjectionOff()
 
     def reset_camera(self):
-        """ Allow the renderer to reset the camera
+        """ Reset the camera to an automatic position given by the engine.
         """
         self.ResetCamera()
 
     def reset_clipping_range(self):
         self.ResetCameraClippingRange()
 
-    def get_camera(self):
+    @property
+    def camera(self):
         return self.GetActiveCamera()
+
+    def get_camera(self):
+        cam = self.GetActiveCamera()
+        return cam.GetPosition(), cam.GetFocalPoint(), cam.GetViewUp()
 
     def camera_info(self):
         cam = self.get_camera()
