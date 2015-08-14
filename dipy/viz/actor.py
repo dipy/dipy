@@ -27,8 +27,8 @@ def slice(data, affine=None, value_range=None, opacity=1.,
 
     Parameters
     ----------
-    data : array, shape (X, Y, Z)
-        A 3D volume as a numpy array.
+    data : array, shape (X, Y, Z) or (X, Y, Z, 3)
+        A grayscale or rgb 3D volume as a numpy array.
     affine : array, shape (3, 3)
         Grid to space (usually RAS 1mm) transformation matrix
     value_range : None or tuple (2,)
@@ -49,7 +49,15 @@ def slice(data, affine=None, value_range=None, opacity=1.,
 
     """
     if data.ndim != 3:
-        raise ValueError('Only 3D arrays are currently supported.')
+        if data.ndim == 4:
+            if data.shape[3] != 3:
+                raise ValueError('Only RGB 3D arrays are currently supported.')
+            else:
+                nb_components = 3
+        else:
+            raise ValueError('Only 3D arrays are currently supported.')
+    else:
+        nb_components = 1
 
     if value_range is None:
         vol = np.interp(data, xp=[data.min(), data.max()], fp=[0, 255])
@@ -62,13 +70,14 @@ def slice(data, affine=None, value_range=None, opacity=1.,
         im.SetScalarTypeToUnsignedChar()
     I, J, K = vol.shape[:3]
     im.SetDimensions(I, J, K)
-    voxsz = (1., 1., 1)
+    voxsz = (1., 1., 1.)
     # im.SetOrigin(0,0,0)
     im.SetSpacing(voxsz[2], voxsz[0], voxsz[1])
     if major_version <= 5:
         im.AllocateScalars()
+        im.SetNumberOfScalarComponents(nb_components)
     else:
-        im.AllocateScalars(vtk.VTK_UNSIGNED_CHAR, 3)
+        im.AllocateScalars(vtk.VTK_UNSIGNED_CHAR, nb_components)
 
     # copy data
     # what I do below is the same as what is commented here but much faster
@@ -77,7 +86,13 @@ def slice(data, affine=None, value_range=None, opacity=1.,
     #     im.SetScalarComponentFromFloat(i, j, k, 0, vol[i, j, k])
     vol = np.swapaxes(vol, 0, 2)
     vol = np.ascontiguousarray(vol)
-    uchar_array = numpy_support.numpy_to_vtk(vol.ravel(), deep=0)
+    
+    if nb_components == 1:
+        vol = vol.ravel()
+    else:
+        vol = np.reshape(vol, [vol.shape[0]*vol.shape[1]*vol.shape[2], vol.shape[3]])
+
+    uchar_array = numpy_support.numpy_to_vtk(vol, deep=0)
     im.GetPointData().SetScalars(uchar_array)
 
     if affine is None:
@@ -102,19 +117,15 @@ def slice(data, affine=None, value_range=None, opacity=1.,
     image_resliced.SetInterpolationModeToLinear()
     image_resliced.Update()
 
-    if lookup_colormap is None:
-        # Create a black/white lookup table.
-        lut = colormap_lookup_table((0, 255), (0, 0), (0, 0), (0, 1))
-    else:
-        lut = lookup_colormap
+    if nb_components == 1:
+        if lookup_colormap is None:
+            # Create a black/white lookup table.
+            lut = colormap_lookup_table((0, 255), (0, 0), (0, 0), (0, 1))
+        else:
+            lut = lookup_colormap
 
     x1, x2, y1, y2, z1, z2 = im.GetExtent()
     ex1, ex2, ey1, ey2, ez1, ez2 = image_resliced.GetOutput().GetExtent()
-
-    plane_colors = vtk.vtkImageMapToColors()
-    plane_colors.SetLookupTable(lut)
-    plane_colors.SetInputConnection(image_resliced.GetOutputPort())
-    plane_colors.Update()
 
     class ImageActor(vtk.vtkImageActor):
 
@@ -161,7 +172,14 @@ def slice(data, affine=None, value_range=None, opacity=1.,
             return self.GetPosition()
 
     image_actor = ImageActor()
-    image_actor.input_connection(plane_colors)
+    if nb_components == 1:
+        plane_colors = vtk.vtkImageMapToColors()
+        plane_colors.SetLookupTable(lut)
+        plane_colors.SetInputConnection(image_resliced.GetOutputPort())
+        plane_colors.Update()
+        image_actor.input_connection(plane_colors)
+    else:
+        image_actor.input_connection(image_resliced)
     image_actor.display()
     image_actor.opacity(opacity)
 
