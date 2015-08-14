@@ -12,13 +12,13 @@ from dipy.align.tests.test_streamlinear import fornix_streamlines
 @npt.dec.skipif(not actor.have_vtk)
 @npt.dec.skipif(not actor.have_vtk_colors)
 @npt.dec.skipif(not window.have_imread)
-def test_slice():
+def test_slicer():
 
     renderer = window.renderer()
 
     data = (255 * np.random.rand(50, 50, 50))
     affine = np.eye(4)
-    slicer = actor.slice(data, affine)
+    slicer = actor.slicer(data, affine)
     window.add(renderer, slicer)
     # window.show(renderer)
 

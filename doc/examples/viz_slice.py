@@ -52,7 +52,7 @@ transformation matrix. The default behavior of this function is to show the
 middle slice of the last dimension of the resampled data.
 """
 
-slice_actor = actor.slice(data, affine, value_range)
+slice_actor = actor.slicer(data, affine, value_range)
 
 """
 The ``slice_actor`` contains an axial slice.
@@ -127,7 +127,7 @@ This is because the lookup table is applied in the slice after interpolating
 to (0, 255).
 """
 
-fa_actor = actor.slice(fa, affine, lookup_colormap=lut)
+fa_actor = actor.slicer(fa, affine, lookup_colormap=lut)
 
 renderer.clear()
 renderer.add(fa_actor)

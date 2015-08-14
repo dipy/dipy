@@ -21,14 +21,14 @@ if have_vtk:
     major_version = vtk.vtkVersion.GetVTKMajorVersion()
 
 
-def slice(data, affine=None, value_range=None, opacity=1.,
+def slicer(data, affine=None, value_range=None, opacity=1.,
           lookup_colormap=None):
-    """ Cuts 3D volumes into images
+    """ Cuts 3D scalar or rgb volumes into images
 
     Parameters
     ----------
     data : array, shape (X, Y, Z) or (X, Y, Z, 3)
-        A grayscale or rgb 3D volume as a numpy array.
+        A grayscale or rgb 4D volume as a numpy array.
     affine : array, shape (3, 3)
         Grid to space (usually RAS 1mm) transformation matrix
     value_range : None or tuple (2,)
@@ -86,7 +86,7 @@ def slice(data, affine=None, value_range=None, opacity=1.,
     #     im.SetScalarComponentFromFloat(i, j, k, 0, vol[i, j, k])
     vol = np.swapaxes(vol, 0, 2)
     vol = np.ascontiguousarray(vol)
-    
+
     if nb_components == 1:
         vol = vol.ravel()
     else:

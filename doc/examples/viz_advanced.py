@@ -85,9 +85,9 @@ ren = window.Renderer()
 stream_actor = actor.line(streamlines)
 
 if not world_coords:
-    image_actor = actor.slice(data, affine=np.eye(4))
+    image_actor = actor.slicer(data, affine=np.eye(4))
 else:
-    image_actor = actor.slice(data, affine)
+    image_actor = actor.slicer(data, affine)
 
 """
 For fun let's change also the opacity of the slicer
