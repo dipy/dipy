@@ -281,6 +281,7 @@ cdef void _negloglikelihood(double[:, :, :] image, double[:] mu,
         cnp.npy_intp x, y, z
 
         double eps = 1e-8   # We assume images normalized to 0-1
+#        double eps = 1e-16
         double eps_sq = 1e-16 # Maximum precision for double.
 
     for x in range(nx):
@@ -289,13 +290,45 @@ cdef void _negloglikelihood(double[:, :, :] image, double[:] mu,
                 if sigmasq[l] < eps_sq:
                     if fabs(image[x, y, z] - mu[l]) < eps:
                         neglogl[x, y, z, l] = 1 + log(sqrt(2.0 * NPY_PI * sigmasq[l]))
+#                        neglogl[x, y, z, l] = 1 + log(sigmasq[l])
+                        if x==50 and y==50 and z==1:
+                            with gil: print('This is BK voxel!! 1+log')
+                        if x==147 and y==129 and z==1:
+                            with gil: print('This is CSF voxel!! 1+log')
+                        if x==61 and y==152 and z==1:
+                            with gil: print('This is GM voxel!! 1+log')
+                        if x==100 and y==100 and z==1:
+                            with gil: print('This is WM voxel!! 1+log')
+                        
 
                     else:
                         neglogl[x, y, z, l] = NPY_INFINITY
+                        if x==50 and y==50 and z==1:
+                            with gil: print('This is BK voxel!! INFINITY')
+                        if x==147 and y==129 and z==1:
+                            with gil: print('This is CSF voxel!! INFINITY')
+                        if x==61 and y==152 and z==1:
+                            with gil: print('This is GM voxel!! INFINITY')
+                        if x==100 and y==100 and z==1:
+                            with gil: print('This is WM voxel!! INFINITY')
 
                 else:
-                    neglogl[x, y, z, l] = ((image[x, y, z] - mu[l]) ** 2.0) / (2.0 * sigmasq[l])
-                    neglogl[x, y, z, l] += log(sqrt(2.0 * NPY_PI * sigmasq[l]))
+                    neglogl[x, y, z, l] = ((image[x, y, z] - mu[l]) ** 2.0) / (2.0 * sigmasq[l]) #original
+#                    neglogl[x, y, z, l] = (image[x, y, z] - mu[l]) / sqrt(sigmasq[l]) # Demirkaya
+#                    neglogl[x, y, z, l] = (((image[x, y, z] - mu[l]) ** 2.0) / sigmasq[l] + log(sigmasq[l])) / 2.0
+                
+                    neglogl[x, y, z, l] += log(sqrt(2.0 * NPY_PI * sigmasq[l])) #original
+#                    neglogl[x, y, z, l] += log(sqrt(sigmasq[l])) # Demirkaya
+#                    neglogl[x, y, z, l] += log(2.0 * NPY_PI * sqrt(sigmasq[l])) # Demirkaya matlab
+                    if x==50 and y==50 and z==1:
+                        with gil: print('This is BK voxel!! FULL version')
+                    if x==147 and y==129 and z==1:
+                            with gil: print('This is CSF voxel!! FULL version')
+                    if x==61 and y==152 and z==1:
+                            with gil: print('This is GM voxel!! FULL version')
+                    if x==100 and y==100 and z==1:
+                            with gil: print('This is WM voxel!! FULL version')
+                    
 
 
 cdef void _prob_neighb_perclass(double[:, :, :] image, double[:, :, :] seg,
