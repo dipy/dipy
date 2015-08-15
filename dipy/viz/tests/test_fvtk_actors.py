@@ -197,6 +197,14 @@ def test_bundle_maps():
     report2 = window.analyze_snapshot(arr)
     npt.assert_equal(report2.objects, 1)
 
+    #try other input options for colors
+    renderer.clear()
+    actor.line(bundle, (1., 0.5, 0))
+    actor.line(bundle, np.arange(len(bundle)))
+    actor.line(bundle)
+    colors=[np.random.rand(*b.shape) for b in bundle]
+    actor.line(bundle, colors=colors)
+
 
 if __name__ == "__main__":
 
