@@ -90,7 +90,7 @@ def slicer(data, affine=None, value_range=None, opacity=1.,
     if nb_components == 1:
         vol = vol.ravel()
     else:
-        vol = np.reshape(vol, [vol.shape[0]*vol.shape[1]*vol.shape[2], vol.shape[3]])
+        vol = np.reshape(vol, [np.prod(vol.shape[:3]), vol.shape[3]])
 
     uchar_array = numpy_support.numpy_to_vtk(vol, deep=0)
     im.GetPointData().SetScalars(uchar_array)

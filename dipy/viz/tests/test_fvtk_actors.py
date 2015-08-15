@@ -42,6 +42,24 @@ def test_slicer():
         report = window.analyze_snapshot(fname, find_objects=True)
         npt.assert_equal(report.objects, 1)
 
+    npt.assert_raises(ValueError, actor.slicer, np.ones(10))
+
+    renderer.clear()
+
+    rgb = np.zeros((30, 30, 30, 3))
+    rgb[..., 0] = 1.
+    rgb_actor = actor.slicer(rgb)
+
+    renderer.add(rgb_actor)
+
+    renderer.reset_camera()
+    renderer.reset_clipping_range()
+
+    arr = window.snapshot(renderer)
+    report = window.analyze_snapshot(arr, colors=[(255, 0, 0)])
+    npt.assert_equal(report.objects, 1)
+    npt.assert_equal(report.colors_found, [True])
+
 
 @npt.dec.skipif(not actor.have_vtk)
 @npt.dec.skipif(not actor.have_vtk_colors)
