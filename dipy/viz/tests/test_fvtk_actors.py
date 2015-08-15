@@ -60,6 +60,27 @@ def test_slicer():
     npt.assert_equal(report.objects, 1)
     npt.assert_equal(report.colors_found, [True])
 
+    lut = actor.colormap_lookup_table(scale_range=(0, 255),
+                                      hue_range=(0.4, 1.),
+                                      saturation_range=(1, 1.),
+                                      value_range=(0., 1.))
+    renderer.clear()
+    slicer_lut = actor.slicer(data, lookup_colormap=lut)
+
+    slicer_lut.display(10, None, None)
+    slicer_lut.display(None, 10, None)
+    slicer_lut.display(None, None, 10)
+
+    slicer_lut2 = slicer_lut.copy()
+    slicer_lut2.display(None, None, 10)
+    renderer.add(slicer_lut2)
+
+    renderer.reset_clipping_range()
+
+    arr = window.snapshot(renderer)
+    report = window.analyze_snapshot(arr, find_objects=True)
+    npt.assert_equal(report.objects, 1)
+
 
 @npt.dec.skipif(not actor.have_vtk)
 @npt.dec.skipif(not actor.have_vtk_colors)
@@ -78,6 +99,20 @@ def test_streamtube_and_line_actors():
 
     # create streamtubes of the same lines and shift them a bit
     c2 = actor.streamtube(lines, colors, linewidth=.1)
+    c2.SetPosition(2, 0, 0)
+    window.add(renderer, c2)
+
+    arr = window.snapshot(renderer)
+
+    report = window.analyze_snapshot(arr,
+                                     colors=[(255, 0, 0), (0, 0, 255)],
+                                     find_objects=True)
+
+    npt.assert_equal(report.objects, 4)
+    npt.assert_equal(report.colors_found, [True, True])
+
+    # as before with splines
+    c2 = actor.streamtube(lines, colors, spline_subdiv=5, linewidth=.1)
     c2.SetPosition(2, 0, 0)
     window.add(renderer, c2)
 
