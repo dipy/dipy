@@ -57,6 +57,10 @@ def test_streamtube_and_line_actors():
     c = actor.line(lines, colors, linewidth=3)
     window.add(renderer, c)
 
+    c = actor.line(lines, colors, spline_subdiv=5, linewidth=3)
+    window.add(renderer, c)
+
+
     # create streamtubes of the same lines and shift them a bit
     c2 = actor.streamtube(lines, colors, linewidth=.1)
     c2.SetPosition(2, 0, 0)
