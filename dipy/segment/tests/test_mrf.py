@@ -155,6 +155,8 @@ def test_greyscale_iter():
     final_segmentation = np.empty_like(image)
     seg_init = initial_segmentation.copy()
 
+    energies = []
+
     for i in range(max_iter):
 
         print('\n')
@@ -271,14 +273,27 @@ def test_greyscale_iter():
 #            npt.assert_equal(energy[100, 100, 2] <= energy_pre[100, 100, 2], True)
 #        energy_pre = energy.copy()
 
-        fig, ax = plt.subplots()
-        ims = ax.imshow(final_segmentation[..., 1], interpolation='nearest')
-        fig.colorbar(ims)
-        ax.format_coord = Formatter(ims)
-        ax.set_title('final ' + str(i))
+        plt.ion()
+        plt.figure()
+        plt.imshow(final_segmentation[..., 1])
+        plt.colorbar()
+        plt.title('final ' + str(i) )
 
-#        plt.figure()
-#        plt.imshow(np.abs(final_segmentation[..., 1] - initial_segmentation[..., 1]))
+        print("Energy sum " + str(energy[energy > -np.inf].sum()))
+        print("Energy min " + str(energy[energy > -np.inf].min()))
+        print("Energy max " + str(energy[energy > -np.inf].max()))
+
+        energies.append(energy[energy > -np.inf].sum())
+
+        plt.figure()
+        plt.imshow(energy[..., 1])
+        plt.colorbar()
+        plt.title('energy ' + str(i) )
+
+        plt.figure()
+        plt.imshow(np.abs(final_segmentation[..., 1] - initial_segmentation[..., 1]))
+        plt.colorbar()
+        plt.title('diff ' + str(i) )
 
         diff = np.abs(final_segmentation[..., 1] - initial_segmentation[..., 1])
 
@@ -288,6 +303,11 @@ def test_greyscale_iter():
         initial_segmentation = final_segmentation.copy()
         mu = mu_upd.copy()
         sigmasq = sigmasq_upd.copy()
+
+
+    plt.figure()
+    plt.plot(energies)
+    plt.title('Energies')
 
     difference_map = np.abs(seg_init - final_segmentation)
     npt.assert_equal(np.abs(np.sum(difference_map)) != 0, True)
