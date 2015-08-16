@@ -100,7 +100,17 @@ def test_positive_evals():
     # test function _positive_evals
     ind = _positive_evals(L1, L2, L3)
     assert_array_equal(ind, expected_ind)
-    
+
+
+def test_split_dki_param():
+    dkiM = dki.DiffusionKurtosisModel(gtab_2s, fit_method="OLS")
+    dkiF = dkiM.fit(DWI)
+    evals, evecs, kt = dki.split_dki_param(dkiF.model_params)
+
+    assert_array_almost_equal(evals, dkiF.evals)
+    assert_array_almost_equal(evecs, dkiF.evecs)
+    assert_array_almost_equal(kt, dkiF.kt)
+
 
 def test_dki_fits():
     """ DKI fits are tested on noise free crossing fiber simulates """
@@ -482,9 +492,9 @@ def test_compare_RK_methods():
     assert_array_almost_equal(RK_as, RK_nm)
 
 
-def test_MK_singularities():
-    # To test conditions of F1, F2, G1, and G2 not covered on previous MK and
-    # RK tests
+def test_MK_for_prolate_DT():
+    # To test MK in case that analytical solution was a singularity not covered
+    # by other tests
 
     dkiM = dki.DiffusionKurtosisModel(gtab_2s)
     
