@@ -142,9 +142,9 @@ def test_greyscale_iter():
     npt.assert_equal(mu.all() >= 0, True)
     npt.assert_equal(sigmasq.all() >= 0, True)
 
-    zero = np.zeros_like(image) + 0.001
-    zero_noise = add_noise(zero, 10000, 1, noise_type='gaussian')
-    image_gauss = np.where(image == 0, zero_noise, image)
+#    zero = np.zeros_like(image) + 0.001
+#    zero_noise = add_noise(zero, 10000, 1, noise_type='gaussian')
+#    image_gauss = np.where(image == 0, zero_noise, image)
 
     image_gauss = image
 
@@ -154,6 +154,8 @@ def test_greyscale_iter():
 
     final_segmentation = np.empty_like(image)
     seg_init = initial_segmentation.copy()
+
+    energies = []
 
     for i in range(max_iter):
 
@@ -169,31 +171,31 @@ def test_greyscale_iter():
                                     nclasses)
         npt.assert_equal(PLN.all() >= 0.0, True)
 
-        print('\n')
-        print('### PLN vox(50, 50, 1) BK')
-        print('BK         ' + str(PLN[50,50,1,0]))
-        print('CSF        ' + str(PLN[50,50,1,1]))
-        print('GM         ' + str(PLN[50,50,1,2]))
-        print('WM         ' + str(PLN[50,50,1,3]))
-
-        print('### PLN vox(147, 129, 1) CSF')
-        print('BK         ' + str(PLN[147,129,1,0]))
-        print('CSF        ' + str(PLN[147,129,1,1]))
-        print('GM         ' + str(PLN[147,129,1,2]))
-        print('WM         ' + str(PLN[147,129,1,3]))
-
-        print('### PLN vox(61, 152, 1) GM')
-        print('BK         ' + str(PLN[61,152,1,0]))
-        print('CSF        ' + str(PLN[61,152,1,1]))
-        print('GM         ' + str(PLN[61,152,1,2]))
-        print('WM         ' + str(PLN[61,152,1,3]))
-
-        print('### PLN vox(100, 100, 1) WM')
-        print('BK         ' + str(PLN[100,100,1,0]))
-        print('CSF        ' + str(PLN[100,100,1,1]))
-        print('GM         ' + str(PLN[100,100,1,2]))
-        print('WM         ' + str(PLN[100,100,1,3]))
-        print('\n')
+#        print('\n')
+#        print('### PLN vox(50, 50, 1) BK')
+#        print('BK         ' + str(PLN[50,50,1,0]))
+#        print('CSF        ' + str(PLN[50,50,1,1]))
+#        print('GM         ' + str(PLN[50,50,1,2]))
+#        print('WM         ' + str(PLN[50,50,1,3]))
+#
+#        print('### PLN vox(147, 129, 1) CSF')
+#        print('BK         ' + str(PLN[147,129,1,0]))
+#        print('CSF        ' + str(PLN[147,129,1,1]))
+#        print('GM         ' + str(PLN[147,129,1,2]))
+#        print('WM         ' + str(PLN[147,129,1,3]))
+#
+#        print('### PLN vox(61, 152, 1) GM')
+#        print('BK         ' + str(PLN[61,152,1,0]))
+#        print('CSF        ' + str(PLN[61,152,1,1]))
+#        print('GM         ' + str(PLN[61,152,1,2]))
+#        print('WM         ' + str(PLN[61,152,1,3]))
+#
+#        print('### PLN vox(100, 100, 1) WM')
+#        print('BK         ' + str(PLN[100,100,1,0]))
+#        print('CSF        ' + str(PLN[100,100,1,1]))
+#        print('GM         ' + str(PLN[100,100,1,2]))
+#        print('WM         ' + str(PLN[100,100,1,3]))
+#        print('\n')
 
         PLY = com.prob_image(image_gauss, nclasses, mu, sigmasq, PLN)
         npt.assert_equal(PLY.all() >= 0.0, True)
@@ -267,18 +269,27 @@ def test_greyscale_iter():
         final_segmentation, energy = icm.icm_ising(negll, beta,
                                                    initial_segmentation)
 
-#        if i > 0:
-#            npt.assert_equal(energy[100, 100, 2] <= energy_pre[100, 100, 2], True)
-#        energy_pre = energy.copy()
-
         fig, ax = plt.subplots()
         ims = ax.imshow(final_segmentation[..., 1], interpolation='nearest')
         fig.colorbar(ims)
         ax.format_coord = Formatter(ims)
         ax.set_title('final ' + str(i))
 
-#        plt.figure()
-#        plt.imshow(np.abs(final_segmentation[..., 1] - initial_segmentation[..., 1]))
+        print("Energy sum " + str(energy[energy > -np.inf].sum()))
+        print("Energy min " + str(energy[energy > -np.inf].min()))
+        print("Energy max " + str(energy[energy > -np.inf].max()))
+
+        energies.append(energy[energy > -np.inf].sum())
+
+        plt.figure()
+        plt.imshow(energy[..., 1])
+        plt.colorbar()
+        plt.title('energy ' + str(i) )
+
+        plt.figure()
+        plt.imshow(np.abs(final_segmentation[..., 1] - initial_segmentation[..., 1]))
+        plt.colorbar()
+        plt.title('diff ' + str(i) )
 
         diff = np.abs(final_segmentation[..., 1] - initial_segmentation[..., 1])
 
@@ -288,6 +299,10 @@ def test_greyscale_iter():
         initial_segmentation = final_segmentation.copy()
         mu = mu_upd.copy()
         sigmasq = sigmasq_upd.copy()
+
+    plt.figure()
+    plt.plot(energies)
+    plt.title('Energies')
 
     difference_map = np.abs(seg_init - final_segmentation)
     npt.assert_equal(np.abs(np.sum(difference_map)) != 0, True)
