@@ -497,7 +497,7 @@ def test_compare_RK_methods():
     assert_array_almost_equal(RK_as, RK_nm)
 
 
-def test_MK_for_prolate_DT():
+def test_MK_singularities():
     # To test MK in case that analytical solution was a singularity not covered
     # by other tests
 
@@ -505,41 +505,44 @@ def test_MK_for_prolate_DT():
     
     # test singularity L1 == L2 - this is the case of a prolate diffusion
     # tensor for crossing fibers at 90 degrees
-    angles_90 = [(90, 0), (90, 0), (0, 0), (0, 0)]
-    s_90, dt_90, kt_90 = multi_tensor_dki(gtab_2s, mevals_cross, S0=100,
-                                          angles=angles_90,
-                                          fractions=frac_cross, snr=None)
-    dkiF = dkiM.fit(s_90)
-    MK = dkiF.mk()
-    
-    sph = Sphere(xyz=gtab.bvecs[gtab.bvals > 0])
+    angles_all = np.array([[(90, 0), (90, 0), (0, 0), (0, 0)],
+                           [(89.9, 0), (89.9, 0), (0, 0), (0, 0)]])
+    for angles_90 in angles_all:
+        s_90, dt_90, kt_90 = multi_tensor_dki(gtab_2s, mevals_cross, S0=100,
+                                              angles=angles_90,
+                                              fractions=frac_cross, snr=None)
+        dkiF = dkiM.fit(s_90)
+        MK = dkiF.mk()
 
-    MK_nm = np.mean(dkiF.akc(sph))
-    
-    assert_almost_equal(MK, MK_nm, decimal=2)
-    
-    # test singularity L1 == L3 and L1 != L2
-    # since L1 is defined as the larger eigenvalue and L3 the smallest
-    # eigenvalue, this singularity teoretically will never be called, because
-    # for L1 == L3, L2 have also to be  = L1 and L2. 
-    # Nevertheless, I decided to include this test since this singularity is
-    # revelant for cases that eigenvalues are not ordered
+        sph = Sphere(xyz=gtab.bvecs[gtab.bvals > 0])
 
-    # artificially revert the eigenvalue and eigenvector order
-    dki_params = dkiF.model_params.copy()
-    dki_params[1] = dkiF.model_params[2]
-    dki_params[2] = dkiF.model_params[1]
-    dki_params[4] = dkiF.model_params[5]
-    dki_params[5] = dkiF.model_params[4]
-    dki_params[7] = dkiF.model_params[8]
-    dki_params[8] = dkiF.model_params[7]
-    dki_params[10] = dkiF.model_params[11]
-    dki_params[11] = dkiF.model_params[10]
+        MK_nm = np.mean(dkiF.akc(sph))
 
-    MK = dki.mean_kurtosis(dki_params)
-    MK_nm = np.mean(dki.apparent_kurtosis_coef(dki_params, sph))
+        assert_almost_equal(MK, MK_nm, decimal=2)
     
-    assert_almost_equal(MK, MK_nm, decimal=2)
+        # test singularity L1 == L3 and L1 != L2
+        # since L1 is defined as the larger eigenvalue and L3 the smallest
+        # eigenvalue, this singularity teoretically will never be called,
+        # because for L1 == L3, L2 have also to be  = L1 and L2. 
+        # Nevertheless, I decided to include this test since this singularity is
+        # revelant for cases that eigenvalues are not ordered
+
+        # artificially revert the eigenvalue and eigenvector order
+        dki_params = dkiF.model_params.copy()
+        dki_params[1] = dkiF.model_params[2]
+        dki_params[2] = dkiF.model_params[1]
+        dki_params[4] = dkiF.model_params[5]
+        dki_params[5] = dkiF.model_params[4]
+        dki_params[7] = dkiF.model_params[8]
+        dki_params[8] = dkiF.model_params[7]
+        dki_params[10] = dkiF.model_params[11]
+        dki_params[11] = dkiF.model_params[10]
+
+        MK = dki.mean_kurtosis(dki_params)
+        MK_nm = np.mean(dki.apparent_kurtosis_coef(dki_params, sph))
+    
+        assert_almost_equal(MK, MK_nm, decimal=2)
+
 
 def test_dki_errors():
 
