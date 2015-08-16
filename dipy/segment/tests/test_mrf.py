@@ -21,7 +21,7 @@ image[..., :nslices] = single_slice[..., None]
 # Execute the segmentation
 nclasses = 4
 beta = np.float64(0.)
-max_iter = 12
+max_iter = 6
 
 square = np.zeros((256, 256, 3))
 square[42:213, 42:213, :] = 3
@@ -51,6 +51,17 @@ temp_3 = np.where(temp_3 < 20, 1, 2)
 square_2[99:157, 99:157, :] = temp_3
 
 square_gauss = add_noise(square, 4, 1, noise_type='gaussian')
+
+
+class Formatter(object):
+
+    def __init__(self, im):
+        self.im = im
+
+    def __call__(self, x, y):
+        shape = self.im.get_array().shape
+        z = self.im.get_array()[int(y), int(x)]
+        return 'x={:.01f}, y={:.01f}, value={:.01f}'.format(x, shape[0] - y, z)
 
 
 def test_greyscale_image():
@@ -260,13 +271,14 @@ def test_greyscale_iter():
 #            npt.assert_equal(energy[100, 100, 2] <= energy_pre[100, 100, 2], True)
 #        energy_pre = energy.copy()
 
-        plt.figure()
-        plt.imshow(final_segmentation[..., 1])
-        plt.colorbar()
-        plt.title('final ' + str(i) )
+        fig, ax = plt.subplots()
+        ims = ax.imshow(final_segmentation[..., 1], interpolation='nearest')
+        fig.colorbar(ims)
+        ax.format_coord = Formatter(ims)
+        ax.set_title('final ' + str(i))
 
-        plt.figure()
-        plt.imshow(np.abs(final_segmentation[..., 1] - initial_segmentation[..., 1]))
+#        plt.figure()
+#        plt.imshow(np.abs(final_segmentation[..., 1] - initial_segmentation[..., 1]))
 
         diff = np.abs(final_segmentation[..., 1] - initial_segmentation[..., 1])
 
