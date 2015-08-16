@@ -535,11 +535,11 @@ def mean_kurtosis(dki_params, min_kurtosis=0, max_kurtosis=3):
                second and third coordinates of the eigenvector
             3) Fifteen elements of the kurtosis tensor
     min_kurtosis : float (optional)
-        To keep kurtosis values within a plausible biophysical range, mean 
+        To keep kurtosis values within a plausible biophysical range, mean
         kurtosis values that are smaller than `min_kurtosis` are replaced with
         `min_kurtosis`. defaut = 0
     max_kurtosis : float (optional)
-        To keep kurtosis values within a plausible biophysical range, mean 
+        To keep kurtosis values within a plausible biophysical range, mean
         kurtosis values that are larger than `max_kurtosis` are replaced with
         `max_kurtosis`. defaut = 3
 
@@ -617,7 +617,7 @@ def mean_kurtosis(dki_params, min_kurtosis=0, max_kurtosis=3):
         _F2m(evals[..., 0], evals[..., 1], evals[..., 2])*Wyyzz + \
         _F2m(evals[..., 1], evals[..., 0], evals[..., 2])*Wxxzz + \
         _F2m(evals[..., 2], evals[..., 1], evals[..., 0])*Wxxyy
-    
+
     if min_kurtosis is not None:
         MK = MK.clip(min=min_kurtosis)
 
@@ -766,11 +766,11 @@ def radial_kurtosis(dki_params, min_kurtosis=0, max_kurtosis=3):
                second and third coordinates of the eigenvector
             3) Fifteen elements of the kurtosis tensor
     min_kurtosis : float (optional)
-        To keep kurtosis values within a plausible biophysical range, radial 
+        To keep kurtosis values within a plausible biophysical range, radial
         kurtosis values that are smaller than `min_kurtosis` are replaced with
         `min_kurtosis`. defaut = 0
     max_kurtosis : float (optional)
-        To keep kurtosis values within a plausible biophysical range, radial 
+        To keep kurtosis values within a plausible biophysical range, radial
         kurtosis values that are larger than `max_kurtosis` are replaced with
         `max_kurtosis`. defaut = 3
 
@@ -888,7 +888,7 @@ def axial_kurtosis(dki_params, min_kurtosis=0, max_kurtosis=3):
 
     # reshape data according to input data
     AK[rel_i] = AKi
-    
+
     if min_kurtosis is not None:
         AK = AK.clip(min=min_kurtosis)
 
@@ -1126,11 +1126,11 @@ class DiffusionKurtosisFit(TensorFit):
         Parameters
         ----------
         min_kurtosis : float (optional)
-            To keep kurtosis values within a plausible biophysical range, mean 
+            To keep kurtosis values within a plausible biophysical range, mean
             kurtosis values that are smaller than `min_kurtosis` are replaced
             with `min_kurtosis`. defaut = 0
         max_kurtosis : float (optional)
-            To keep kurtosis values within a plausible biophysical range, mean 
+            To keep kurtosis values within a plausible biophysical range, mean
             kurtosis values that are larger than `max_kurtosis` are replaced
             with `max_kurtosis`. defaut = 3
 

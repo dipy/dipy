@@ -156,7 +156,7 @@ def test_dki_predict():
     # just to check that it works with more than one voxel:
     pred_multi = dkiM.predict(multi_params, S0=100)
     assert_array_almost_equal(pred_multi, DWI)
-    
+
     # check the function predict of the DiffusionKurtosisFit object
     dkiF = dkiM.fit(DWI)
     pred_multi = dkiF.predict(gtab, S0=100)
@@ -164,72 +164,71 @@ def test_dki_predict():
 
 
 def test_carlson_rf():
-    
     # Define inputs that we know the outputs from:
     # Carlson, B.C., 1994. Numerical computation of real or complex
     # elliptic integrals. arXiv:math/9409227 [math.CA]
-    
+
     # Real values (test in 2D format)
     x = np.array([[1.0, 0.5], [2.0, 2.0]])
     y = np.array([[2.0, 1.0], [3.0, 3.0]])
     z = np.array([[0.0, 0.0], [4.0, 4.0]])
-    
+
     # Defene reference outputs
     RF_ref = np.array([[1.3110287771461, 1.8540746773014],
                        [0.58408284167715, 0.58408284167715]])
-    
+
     # Compute integrals
-    RF =  carlson_rf(x, y, z)
+    RF = carlson_rf(x, y, z)
 
     # Compare
     assert_array_almost_equal(RF, RF_ref)
-    
+
     # Complex values
     x = np.array([1j, 1j - 1, 1j, 1j - 1])
     y = np.array([-1j, 1j, -1j, 1j])
     z = np.array([0.0, 0.0, 2, 1 - 1j])
-    
+
     # Defene reference outputs
     RF_ref = np.array([1.8540746773014, 0.79612586584234 - 1.2138566698365j,
                        1.0441445654064, 0.93912050218619 - 0.53296252018635j])
     # Compute integrals
-    RF =  carlson_rf(x, y, z, errtol=3e-5)
+    RF = carlson_rf(x, y, z, errtol=3e-5)
 
     # Compare
     assert_array_almost_equal(RF, RF_ref)
 
 
 def test_carlson_rd():
-    
+
     # Define inputs that we know the outputs from:
     # Carlson, B.C., 1994. Numerical computation of real or complex
     # elliptic integrals. arXiv:math/9409227 [math.CA]
-    
+
     # Real values
     x = np.array([0.0, 2.0])
     y = np.array([2.0, 3.0])
     z = np.array([1.0, 4.0])
-    
+
     # Defene reference outputs
     RD_ref = np.array([1.7972103521034, 0.16510527294261])
-    
+
     # Compute integrals
-    RD =  carlson_rd(x, y, z, errtol=1e-5)
+    RD = carlson_rd(x, y, z, errtol=1e-5)
 
     # Compare
     assert_array_almost_equal(RD, RD_ref)
-    
+
     # Complex values (testing in 2D format)
     x = np.array([[1j, 0.0], [0.0, -2 - 1j]])
     y = np.array([[-1j, 1j], [1j-1, -1j]])
     z = np.array([[2.0, -1j], [1j, -1 + 1j]])
-    
+
     # Defene reference outputs
     RD_ref = np.array([[0.65933854154220, 1.2708196271910 + 2.7811120159521j],
-                        [-1.8577235439239 - 0.96193450888839j, 
-                         1.8249027393704 - 1.2218475784827j]])
+                       [-1.8577235439239 - 0.96193450888839j,
+                        1.8249027393704 - 1.2218475784827j]])
     # Compute integrals
-    RD =  carlson_rd(x, y, z, errtol=1e-5)
+    RD = carlson_rd(x, y, z, errtol=1e-5)
 
     # Compare
     assert_array_almost_equal(RD, RD_ref)
@@ -241,7 +240,7 @@ def test_Wrotate_single_fiber():
     # tensor diagonal and check that is equal to the kurtosis tensor of the
     # same single fiber simulated directly to the x-axis
 
-    # Define single fiber simulate 
+    # Define single fiber simulate
     mevals = np.array([[0.00099, 0, 0], [0.00226, 0.00087, 0.00087]])
     fie = 0.49
     frac = [fie*100, (1 - fie)*100]
@@ -255,11 +254,11 @@ def test_Wrotate_single_fiber():
 
     evals, evecs = decompose_tensor(from_lower_triangular(dt))
 
-    kt_rotated = dki.Wrotate(kt, evecs)  # Now coordinate system has diffusion
-                                         # tensor diagonal aligned with the
-                                         # x-axis
+    kt_rotated = dki.Wrotate(kt, evecs)
+    # Now coordinate system has the DT diagonal aligned to the x-axis
 
-    # Reference simulation which is simulated directly aligned to the x-axis
+    # Reference simulation in which DT diagonal is directly aligned to the
+    # x-axis
     angles = (90, 0), (90, 0)
     signal, dt_ref, kt_ref = multi_tensor_dki(gtab_2s, mevals, angles=angles,
                                               fractions=frac, snr=None)
@@ -268,16 +267,15 @@ def test_Wrotate_single_fiber():
 
 
 def test_Wrotate_crossing_fibers():
-    
     # Test 2 - simulate crossing fibers intersecting at 70 degrees.
-    # In this case, diffusion tensor principal eigenvector will be aligned in 
-    # the middle of the crossing fibers. Thus, after rotating the kurtosis 
+    # In this case, diffusion tensor principal eigenvector will be aligned in
+    # the middle of the crossing fibers. Thus, after rotating the kurtosis
     # tensor, this will be equal to a kurtosis tensor simulate of crossing
     # fibers both deviating 35 degrees from the x-axis. Moreover, we know that
     # crossing fibers will be aligned to the x-y plane, because the smaller
     # diffusion eigenvalue, perpendicular to both crossings fibers, will be
     # aligned to the z-axis.
-    
+
     # Simulate the crossing fiber
     angles = [(90, 30), (90, 30), (20, 30), (20, 30)]
     fie = 0.49
@@ -290,9 +288,8 @@ def test_Wrotate_crossing_fibers():
 
     evals, evecs = decompose_tensor(from_lower_triangular(dt))
 
-    kt_rotated = dki.Wrotate(kt, evecs)  # Now coordinate system has diffusion
-                                         # tensor diagonal aligned with the
-                                         # x-axis
+    kt_rotated = dki.Wrotate(kt, evecs)
+    # Now coordinate system has diffusion tensor diagonal aligned to the x-axis
 
     # Simulate the reference kurtosis tensor
     angles = [(90, 35), (90, 35), (90, -35), (90, -35)]
@@ -333,7 +330,7 @@ def test_Wcons():
 
     # Wxxxz
     Wfit[1, 1, 1, 2] = Wfit[1, 2, 1, 1] = Wfit[2, 1, 1, 1] = kt_cross[6]
-    Wfit[1, 1, 2, 1] = kt_cross[6]    
+    Wfit[1, 1, 2, 1] = kt_cross[6]
 
     # Wxzzz
     Wfit[0, 2, 2, 2] = Wfit[2, 2, 2, 0] = Wfit[2, 0, 2, 2] = kt_cross[7]
@@ -442,7 +439,7 @@ def test_single_voxel_DKI_stats():
     RD = fie*RDi + (1-fie)*RDe
     RK = 3 * fie * (1-fie) * ((RDi-RDe) / RD) ** 2
     ref_vals = np.array([AD, AK, RD, RK])
-    
+
     # simulate fiber randomly oriented
     theta = random.uniform(0, 180)
     phi = random.uniform(0, 320)
@@ -502,7 +499,7 @@ def test_MK_singularities():
     # by other tests
 
     dkiM = dki.DiffusionKurtosisModel(gtab_2s)
-    
+
     # test singularity L1 == L2 - this is the case of a prolate diffusion
     # tensor for crossing fibers at 90 degrees
     angles_all = np.array([[(90, 0), (90, 0), (0, 0), (0, 0)],
@@ -519,13 +516,13 @@ def test_MK_singularities():
         MK_nm = np.mean(dkiF.akc(sph))
 
         assert_almost_equal(MK, MK_nm, decimal=2)
-    
+
         # test singularity L1 == L3 and L1 != L2
         # since L1 is defined as the larger eigenvalue and L3 the smallest
         # eigenvalue, this singularity teoretically will never be called,
-        # because for L1 == L3, L2 have also to be  = L1 and L2. 
-        # Nevertheless, I decided to include this test since this singularity is
-        # revelant for cases that eigenvalues are not ordered
+        # because for L1 == L3, L2 have also to be  = L1 and L2.
+        # Nevertheless, I decided to include this test since this singularity
+        # is revelant for cases that eigenvalues are not ordered
 
         # artificially revert the eigenvalue and eigenvector order
         dki_params = dkiF.model_params.copy()
@@ -540,7 +537,7 @@ def test_MK_singularities():
 
         MK = dki.mean_kurtosis(dki_params)
         MK_nm = np.mean(dki.apparent_kurtosis_coef(dki_params, sph))
-    
+
         assert_almost_equal(MK, MK_nm, decimal=2)
 
 
@@ -564,7 +561,7 @@ def test_dki_errors():
     # test a correct mask
     dkiF = dkiM.fit(DWI)
     mask_correct = dkiF.fa > 0
-    mask_correct[1, 1] = False 
+    mask_correct[1, 1] = False
     multi_params[1, 1] = np.zeros(27)
     mask_not_correct = np.array([[True, True, False], [True, False, False]])
     dkiF = dkiM.fit(DWI, mask=mask_correct)

@@ -128,7 +128,7 @@ denoised version of the HCP-like data.
 
 nib.save(nib.Nifti1Image(den, affine), 'denoised_cenir_multib.nii.gz')
 
-""" 
+"""
 Finally, we compute a final version of the brain mask and crop the denoised
 data to avoid unnecessary calculations on the background of the image.
 """
@@ -278,7 +278,7 @@ than for the radial directions (larger amplitudes shown in the RK map).
 
 References:
 
-.. [TaxCMW2015] Tax CMW, Otte WM, Viergever MA, Dijkhuizen RM, Leemans A 
+.. [TaxCMW2015] Tax CMW, Otte WM, Viergever MA, Dijkhuizen RM, Leemans A
                 (2014). REKINDLE: Robust extraction of kurtosis INDices with
                 linear estimation. Magnetic Resonance in Medicine 73(2):
                 794–808.
