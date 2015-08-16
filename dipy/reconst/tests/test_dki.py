@@ -8,9 +8,8 @@ import random
 
 import dipy.reconst.dki as dki
 
-from nose.tools import assert_almost_equal
-
-from numpy.testing import (assert_array_almost_equal, assert_array_equal)
+from numpy.testing import (assert_array_almost_equal, assert_array_equal,
+                           assert_almost_equal)
 
 from dipy.sims.voxel import multi_tensor_dki
 
@@ -501,7 +500,7 @@ def test_MK_singularities():
 
     MK_nm = np.mean(dkiF.akc(sph))
     
-    assert_almost_equal(MK, MK_nm, delta=1e-2)
+    assert_almost_equal(MK, MK_nm, decimal=2)
     
     """ (previous lines of code already cover this lines of codes)
     # test singularity L1 == L3 and L1 != L2 - since L1 is defined as the
