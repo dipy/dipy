@@ -453,6 +453,13 @@ def test_single_voxel_DKI_stats():
     e2_vals = np.array([dkiF.ad, dkiF.ak(), dkiF.rd, dkiF.rk()])
     assert_array_almost_equal(e2_vals, ref_vals)
 
+    # test MK (note this test correspond to the MK singularity L2==L3)
+    MK_as = dkiF.mk()
+    sph = Sphere(xyz=gtab.bvecs[gtab.bvals > 0])
+    MK_nm = np.mean(dkiF.akc(sph))
+
+    assert_array_almost_equal(MK_as, MK_nm, decimal=1)
+
 
 def test_compare_RK_methods():
     # tests if analytical solution of RK is equal to the perpendicular kurtosis
@@ -475,7 +482,7 @@ def test_compare_RK_methods():
     assert_array_almost_equal(RK_as, RK_nm)
 
 
-def test_F1_F2_G1_G2_conditions():
+def test_MK_singularities():
     # To test conditions of F1, F2, G1, and G2 not covered on previous MK and
     # RK tests
 
@@ -491,6 +498,7 @@ def test_F1_F2_G1_G2_conditions():
     MK = dkiF.mk()
     
     sph = Sphere(xyz=gtab.bvecs[gtab.bvals > 0])
+
     MK_nm = np.mean(dkiF.akc(sph))
     
     assert_almost_equal(MK, MK_nm, delta=1e-2)
