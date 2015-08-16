@@ -1308,7 +1308,7 @@ class DiffusionKurtosisFit(TensorFit):
         and the fourth-order KT tensors, respectively, and $MD$ is the mean
         diffusivity.
         """
-        return dki_prediction(self.model_params, self.gtab, S0)
+        return dki_prediction(self.model_params, gtab, S0)
 
 
 def ols_fit_dki(design_matrix, data):
