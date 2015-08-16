@@ -473,3 +473,46 @@ def test_compare_RK_methods():
                     axis=-1)
 
     assert_array_almost_equal(RK_as, RK_nm)
+
+
+def test_F1_F2_G1_G2_conditions():
+    # To test conditions of F1, F2, G1, and G2 not covered on previous MK and
+    # RK tests
+
+    dkiM = dki.DiffusionKurtosisModel(gtab_2s)
+    
+    # test singularity L1 == L2 - this is the case of a prolate diffusion
+    # tensor for crossing fibers at 90 degrees
+    angles_90 = [(90, 0), (90, 0), (0, 0), (0, 0)]
+    s_90, dt_90, kt_90 = multi_tensor_dki(gtab_2s, mevals_cross, S0=100,
+                                          angles=angles_90,
+                                          fractions=frac_cross, snr=None)
+    dkiF = dkiM.fit(s_90)
+    MK = dkiF.mk()
+    
+    sph = Sphere(xyz=gtab.bvecs[gtab.bvals > 0])
+    MK_nm = np.mean(dkiF.akc(sph))
+    
+    assert_almost_equal(MK, MK_nm, delta=1e-2)
+    
+    """ (previous lines of code already cover this lines of codes)
+    # test singularity L1 == L3 and L1 != L2 - since L1 is defined as the
+    # larger eigenvalue and L3 the smallest eigenvalue, this condition
+    # teoretically will never happen, since for L1 == L3, L2 have also to be
+    # = L1 and L2. Nevertheless, this case could happen if eigenvalues are not
+    # ordered
+    dki_params = dkiF.model_params.copy()
+    dki_params[1] = dkiF.model_params[2]
+    dki_params[2] = dkiF.model_params[1]
+    dki_params[4] = dkiF.model_params[5]
+    dki_params[5] = dkiF.model_params[4]
+    dki_params[7] = dkiF.model_params[8]
+    dki_params[8] = dkiF.model_params[7]
+    dki_params[10] = dkiF.model_params[11]
+    dki_params[11] = dkiF.model_params[10]
+
+    MK = dki.mean_kurtosis(dki_params)
+    MK_nm = np.mean(dki.apparent_kurtosis_coef(dki_params, sph))
+    
+    assert_almost_equal(MK, MK_nm, delta=1e-2)
+    """

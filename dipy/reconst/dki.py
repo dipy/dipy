@@ -259,7 +259,7 @@ def _F1m(a, b, c):
     if np.sum(cond2) != 0:
         L1 = a[cond2]
         L3 = c[cond2]
-        F1[cond2] = _F2m(L3, L1, L1) / 2
+        F1[cond2] = _F2m(L3, L1, L1) / 2.
 
     # Resolve possible sigularity a==c
     cond3 = np.logical_and(cond0, np.logical_and(abs(a - c) < er,
@@ -342,7 +342,6 @@ def _F2m(a, b, c):
                                                  abs(a - b) > er))
     if np.sum(cond2) != 0:
         L1 = a[cond2]
-        L2 = b[cond2]
         L3 = c[cond2]
 
         # Cumpute alfa [1]_
