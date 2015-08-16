@@ -3,17 +3,18 @@
 Reconstruction of the diffusion signal with the kurtosis tensor model
 =====================================================================
 
-The diffusion kurtois model is an expansion of the diffusion tensor model
+The diffusion kurtosis model is an expansion of the diffusion tensor model
 (see :ref:`example_reconst_dti`). In addition to the diffusion tensor (DT), the
 diffusion kurtosis model quantifies the degree to which water diffusion in
-biologic tissues is non-Gaussian using the kurtosis tensor (KT) [Jensen2005]_.
+biological tissues is non-Gaussian using the kurtosis tensor (KT)
+[Jensen2005]_.
 
 Measurements of non-Gaussian diffusion from the diffusion kurtosis model are of
 interest because they can be used to charaterize tissue microstructural
 heterogeneity [Jensen2010]_ and to derive concrete biophysical parameters, such
 as the density of axonal fibres and diffusion tortuosity [Fierem2011]_.
 Moreover, DKI can be used to resolve crossing fibers in tractography and to
-obtain invariant rotational measures not limited to well aligned fiber
+obtain invariant rotational measures not limited to well-aligned fiber
 populations [NetoHe2015]_.
 
 The diffusion kurtosis model expresses the diffusion-weighted signal as:
@@ -71,18 +72,18 @@ from dipy.denoise.nlmeans import nlmeans
 
 """
 DKI requires multi-shell data, i.e. data acquired from more than one non-zero
-b-value. Here, we use fetch to download a multi-shell dataset which parameters
-are similar to the used on the Human Connectome Project (HCP). The total size
-of the dowloaded data is 1760 MBytes, however you only need to fetch it once.
-Parameter ``with_raw`` of function ``fetch_cenir_multib`` is set to ``False``
-to only download eddy-current/motion corrected data:
+b-value. Here, we use fetch to download a multi-shell dataset with parameters
+that are similar to the data collected in the Human Connectome Project (HCP).
+The total size of the downloaded data is 1760 MBytes, however you only need to
+fetch it once. Parameter ``with_raw`` of function ``fetch_cenir_multib`` is set
+to ``False`` to only download eddy-current/motion corrected data:
 """
 
 fetch_cenir_multib(with_raw=False)
 
 """
 Next, we read the saved dataset. To decrease the influence of diffusion signal
-taylor approximation componets larger than the fourth order (componets not
+taylor approximation components larger than the fourth order (componets not
 taken into account by the diffusion kurtosis tensor), we only select the
 b-values up to 2000 $s.mm^{-2}$:
 """
@@ -101,7 +102,7 @@ a nibabel Nifti1Image object (where the data can be extracted) and a
 GradientTable object with information about the b-values and b-vectors.
 
 Before fitting the data, we preform some data pre-processing. We first create a
-preliminary mask and avoid pre-processing unnecessary voxels:
+preliminary mask to avoid preprocessing unnecessary voxels:
 """
 
 maskdata, mask = median_otsu(data, 4, 2, False, vol_idx=[0, 1], dilate=1)
@@ -109,12 +110,12 @@ maskdata, mask = median_otsu(data, 4, 2, False, vol_idx=[0, 1], dilate=1)
 """
 Since the diffusion kurtosis models involves the estimation of a large number
 of parameters [TaxCMW2015]_ and since the non-Gaussian components of the
-diffusion signal are more sensitivity to artefacts [NetoHe2012]_, a fundamental
+diffusion signal are more sensitive to artefacts [NetoHe2012]_, a fundamental
 data pre-processing step for diffusion kurtosis fitting is to denoise our data.
 For this, we use Dipy's non-local mean filter (see
-:ref:`example-denoise-nlmeans`). Note that, since the HCP-like has a large
-number of diffusion-weigthed volume, this procedure can take some minutes to
-compute.
+:ref:`example-denoise-nlmeans`). Note that, since the HCP-like data has a large
+number of diffusion-weigthed volume, this procedure can take a couple of hours
+to compute.
 """
 
 sigma = estimate_sigma(data, N=4)
@@ -143,8 +144,8 @@ DiffusionKurtosisModel in the following way:
 dkimodel = dki.DiffusionKurtosisModel(gtab)
 
 """
-To fitting the data using the defined ``dkimodel``, we just need to call the
-fit function of the DiffusionKurtosisModel:
+To fit the data using the defined model object, we call the ``fit`` function of
+this object:
 """
 
 dkifit = dkimodel.fit(maskdata)
@@ -154,7 +155,7 @@ The fit method creates a DiffusionKurtosisFit object which contains all the
 diffusion and kurtosis fitting parameters and other DKI attributes. For
 instance, since the diffusion kurtosis model estimates the diffusion tensor,
 all diffusion standard tensor statistics can be computed from the
-DiffusionKurtosisFit instance. As example, we show below how to extract the
+DiffusionKurtosisFit instance. For example, we show below how to extract the
 fractional anisotropy (FA), the mean diffusivity (MD), the axial diffusivity
 (AD) and the radial diffusivity (RD) from the DiffusionKurtosisiFit instance.
 """
@@ -166,7 +167,14 @@ RD = dkifit.rd
 
 """
 Note that these four standard measures could also be computed from Dipy's DTI
-module. For comparison purposes, we calculate below the FA, MD, AD, and RD
+module. Theoretically, computing these measures from both models should be
+analogous. However, since the diffusion kurtosis model involves a larger number
+of parameters, diffusion statistics maps can look more noisy. On the other
+hand, the diffusion statistics from the kurtosis model are expected to have
+better precision and smaller dependency to different acquisition protocols
+because the influences of the higher signal taylor expansion components not
+assumed by the diffusion tensor are moduled out by the diffusion kurtosis
+tensor. For comparison purposes, we calculate below the FA, MD, AD, and RD
 using Dipy's TensorModel.
 """
 
@@ -179,10 +187,9 @@ dti_AD = tenfit.ad
 dti_RD = tenfit.rd
 
 """
-The DT based measured obtain from DKI and DTI can be easly visualized using
-matplotlib. For example, the FA, MD, AD, and RD obtain from the DKI model
-(upper panels) and the DTI model (lower panels) are ploted for an arbitary
-selected axial slice.
+The DT based measures can be easly visualized using matplotlib. For example,
+the FA, MD, AD, and RD obtain from the diffusion kurtosis model (upper panels)
+and the tensor model (lower panels) are plotted for an axial slice.
 """
 
 axial_slice = 40
@@ -219,12 +226,15 @@ fig1.savefig('Diffusion_tensor_measures_from_DTI_and_DKI.png')
    **Diffusion tensor measures obtain from the diffusion tensor estimated from
    DKI (upper panels) and DTI (lower panels).**.
 
-From the figure, we can see that the standard diffusion measures from DKI has
-similar constrasts than the standard diffusion measures from DTI.
+From the figure, we can see that the standard diffusion measures of the
+HCP-like data obtain from the diffusion kurtosis model have similar contracts
+to the standard diffusion measures obtain from the tensor model. This can be
+explained by the high quality of the dataset and the high preformance of the
+diffusion kurtosis fit procedure.
 
 In addition to the standard diffusion statistics, the DiffusionKurtosisFit
-instance can be used to estimate standard non-Gaussian measures as the mean
-kurtosis (MK), the axial kurtosis (AK) and the radial kurtosis (RK).
+instance can be used to estimate the non-Gaussian measures of mean kurtosis
+(MK), the axial kurtosis (AK) and the radial kurtosis (RK).
 """
 
 MK = dkifit.mk(0, 3)
