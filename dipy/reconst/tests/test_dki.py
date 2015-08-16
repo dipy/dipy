@@ -11,6 +11,8 @@ import dipy.reconst.dki as dki
 from numpy.testing import (assert_array_almost_equal, assert_array_equal,
                            assert_almost_equal)
 
+from nose.tools import assert_raises
+
 from dipy.sims.voxel import multi_tensor_dki
 
 from dipy.io.gradients import read_bvals_bvecs
@@ -22,8 +24,7 @@ from dipy.data import get_data
 from dipy.reconst.dti import (from_lower_triangular, decompose_tensor)
 
 from dipy.reconst.dki import (mean_kurtosis, carlson_rf,  carlson_rd,
-                              axial_kurtosis, radial_kurtosis, _positive_evals,
-                              _F1m, _F2m)
+                              axial_kurtosis, radial_kurtosis, _positive_evals)
 
 from dipy.core.sphere import Sphere
 
@@ -524,3 +525,31 @@ def test_MK_singularities():
     MK_nm = np.mean(dki.apparent_kurtosis_coef(dki_params, sph))
     
     assert_almost_equal(MK, MK_nm, decimal=2)
+
+def test_dki_errors():
+
+    # first error of DKI module is if a unknown fit method is given
+    assert_raises(ValueError, dki.DiffusionKurtosisModel, gtab_2s,
+                  fit_method="JOANA")
+
+    # second error of DKI module is if a min_signal is defined as negative
+    assert_raises(ValueError, dki.DiffusionKurtosisModel, gtab_2s,
+                  min_signal=-1)
+    # try case with correct min_signal
+    dkiM = dki.DiffusionKurtosisModel(gtab_2s, min_signal=1)
+    dkiF = dkiM.fit(DWI)
+    assert_array_almost_equal(dkiF.model_params, multi_params)
+
+    # third error is if a given mask do not have same shape as data
+    dkiM = dki.DiffusionKurtosisModel(gtab_2s)
+
+    # test a correct mask
+    dkiF = dkiM.fit(DWI)
+    mask_correct = dkiF.fa > 0
+    mask_correct[1, 1] = False 
+    multi_params[1, 1] = np.zeros(27)
+    mask_not_correct = np.array([[True, True, False], [True, False, False]])
+    dkiF = dkiM.fit(DWI, mask=mask_correct)
+    assert_array_almost_equal(dkiF.model_params, multi_params)
+    # test a incorrect mask
+    assert_raises(ValueError, dkiM.fit, DWI, mask=mask_not_correct)
