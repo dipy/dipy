@@ -502,12 +502,14 @@ def test_MK_singularities():
     
     assert_almost_equal(MK, MK_nm, decimal=2)
     
-    """ (previous lines of code already cover this lines of codes)
-    # test singularity L1 == L3 and L1 != L2 - since L1 is defined as the
-    # larger eigenvalue and L3 the smallest eigenvalue, this condition
-    # teoretically will never happen, since for L1 == L3, L2 have also to be
-    # = L1 and L2. Nevertheless, this case could happen if eigenvalues are not
-    # ordered
+    # test singularity L1 == L3 and L1 != L2
+    # since L1 is defined as the larger eigenvalue and L3 the smallest
+    # eigenvalue, this singularity teoretically will never be called, because
+    # for L1 == L3, L2 have also to be  = L1 and L2. 
+    # Nevertheless, I decided to include this test since this singularity is
+    # revelant for cases that eigenvalues are not ordered
+
+    # artificially revert the eigenvalue and eigenvector order
     dki_params = dkiF.model_params.copy()
     dki_params[1] = dkiF.model_params[2]
     dki_params[2] = dkiF.model_params[1]
@@ -521,5 +523,4 @@ def test_MK_singularities():
     MK = dki.mean_kurtosis(dki_params)
     MK_nm = np.mean(dki.apparent_kurtosis_coef(dki_params, sph))
     
-    assert_almost_equal(MK, MK_nm, delta=1e-2)
-    """
+    assert_almost_equal(MK, MK_nm, decimal=2)
