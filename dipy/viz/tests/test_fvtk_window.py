@@ -113,7 +113,7 @@ def test_active_camera():
     renderer.elevation(90)
 
     arr = window.snapshot(renderer)
-    report = window.analyze_snapshot(arr, colors=[(0, 255, 0)])
+    report = window.analyze_snapshot(arr, colors=(0, 255, 0))
     npt.assert_equal(report.colors_found, [True])
 
     renderer.set_camera((0., 0., 1.), (0., 0., 0), view_up)
