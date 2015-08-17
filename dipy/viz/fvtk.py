@@ -16,6 +16,7 @@ For more information on VTK there many neat examples in
 http://www.vtk.org/Wiki/VTK/Tutorials/External_Tutorials
 '''
 from __future__ import division, print_function, absolute_import
+from warnings import warn
 
 from dipy.utils.six.moves import xrange
 
@@ -64,67 +65,7 @@ if have_vtk:
 
     from dipy.viz.window import (ren, renderer, add, clear, rm, rm_all,
                                  show, record, snapshot)
-    from dipy.viz.actor import line, streamtube, slicer
-
-
-def _arrow(pos=(0, 0, 0), color=(1, 0, 0), scale=(1, 1, 1), opacity=1):
-    ''' Internal function for generating arrow actors.
-    '''
-    arrow = vtk.vtkArrowSource()
-    # arrow.SetTipLength(length)
-
-    arrowm = vtk.vtkPolyDataMapper()
-
-    if major_version <= 5:
-        arrowm.SetInput(arrow.GetOutput())
-    else:
-        arrowm.SetInputConnection(arrow.GetOutputPort())
-
-    arrowa = vtk.vtkActor()
-    arrowa.SetMapper(arrowm)
-
-    arrowa.GetProperty().SetColor(color)
-    arrowa.GetProperty().SetOpacity(opacity)
-    arrowa.SetScale(scale)
-
-    return arrowa
-
-
-def axes(scale=(1, 1, 1), colorx=(1, 0, 0), colory=(0, 1, 0), colorz=(0, 0, 1),
-         opacity=1):
-    """ Create an actor with the coordinate's system axes where
-    red = x, green = y, blue = z.
-
-    Parameters
-    ----------
-    scale : tuple (3,)
-        axes size e.g. (100, 100, 100)
-    colorx : tuple (3,)
-        x-axis color. Default red.
-    colory : tuple (3,)
-        y-axis color. Default blue.
-    colorz : tuple (3,)
-        z-axis color. Default green.
-
-    Returns
-    -------
-    vtkAssembly
-
-    """
-
-    arrowx = _arrow(color=colorx, scale=scale, opacity=opacity)
-    arrowy = _arrow(color=colory, scale=scale, opacity=opacity)
-    arrowz = _arrow(color=colorz, scale=scale, opacity=opacity)
-
-    arrowy.RotateZ(90)
-    arrowz.RotateY(-90)
-
-    ass = vtk.vtkAssembly()
-    ass.AddPart(arrowx)
-    ass.AddPart(arrowy)
-    ass.AddPart(arrowz)
-
-    return ass
+    from dipy.viz.actor import line, streamtube, slicer, axes
 
 
 def dots(points, color=(1, 0, 0), opacity=1, dot_size=5):
@@ -1106,6 +1047,10 @@ def camera(ren, pos=None, focal=None, viewup=None, verbose=True):
     -------
     vtkCamera
     """
+
+    msg = "This function is deprecated."
+    msg += "Please use the window.Renderer class to get/set the active camera."
+    warn(DeprecationWarning(msg))
 
     cam = ren.GetActiveCamera()
     if verbose:
