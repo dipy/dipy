@@ -16,12 +16,14 @@ single_slice = np.load(fname)
 nslices = 5
 image = np.zeros(shape=single_slice.shape + (nslices,))
 image[..., :nslices] = single_slice[..., None]
-# image += np.random.normal(0.01, 0.001, image.shape)
+
 
 # Execute the segmentation
 nclasses = 4
-beta = np.float64(0.)
-max_iter = 6
+beta = np.float64(0.1)
+max_iter = 30
+background_noise = True
+press_key = False
 
 square = np.zeros((256, 256, 3))
 square[42:213, 42:213, :] = 3
@@ -142,15 +144,16 @@ def test_greyscale_iter():
     npt.assert_equal(mu.all() >= 0, True)
     npt.assert_equal(sigmasq.all() >= 0, True)
 
-#    zero = np.zeros_like(image) + 0.001
-#    zero_noise = add_noise(zero, 10000, 1, noise_type='gaussian')
-#    image_gauss = np.where(image == 0, zero_noise, image)
+    if background_noise:
+        zero = np.zeros_like(image) + 0.001
+        zero_noise = add_noise(zero, 10000, 1, noise_type='gaussian')
+        image_gauss = np.where(image == 0, zero_noise, image)
+    else:
+        image_gauss = image
 
-    image_gauss = image
-
-    #plt.figure()
-    #plt.imshow(image_gauss[..., 1])
-    #plt.colorbar()
+    # plt.figure()
+    # plt.imshow(image_gauss[..., 1])
+    # plt.colorbar()
 
     final_segmentation = np.empty_like(image)
     seg_init = initial_segmentation.copy()
@@ -226,7 +229,6 @@ def test_greyscale_iter():
         print('WM         ' + str(PLY[100,100,1,3]))
         print('\n')
 
-
         mu_upd, sigmasq_upd = com.update_param(image_gauss, PLY, mu, nclasses)
         npt.assert_equal(mu_upd.all() >= 0.0, True)
         npt.assert_equal(sigmasq_upd.all() >= 0.0, True)
@@ -237,7 +239,8 @@ def test_greyscale_iter():
             print('updated_mu:', mu_upd[l])
             print('updated_var:', sigmasq_upd[l])
 
-        negll = com.negloglikelihood(image_gauss, mu_upd, sigmasq_upd, nclasses)
+        negll = com.negloglikelihood(image_gauss,
+                                     mu_upd, sigmasq_upd, nclasses)
 
         print('\n')
         print('### Negloglikelihood vox(50, 50, 1) BK')
@@ -275,6 +278,17 @@ def test_greyscale_iter():
         ax.format_coord = Formatter(ims)
         ax.set_title('final ' + str(i))
 
+        diff = np.abs(final_segmentation[..., 1] - initial_segmentation[..., 1])
+
+        fig, ax = plt.subplots()
+        ims = ax.imshow(diff, interpolation='nearest')
+        fig.colorbar(ims)
+        ax.format_coord = Formatter(ims)
+        ax.set_title('diff ' + str(i))
+
+        print('Difference points')
+        print(np.sum(diff > 0))
+
         print("Energy sum " + str(energy[energy > -np.inf].sum()))
         print("Energy min " + str(energy[energy > -np.inf].min()))
         print("Energy max " + str(energy[energy > -np.inf].max()))
@@ -286,26 +300,37 @@ def test_greyscale_iter():
         plt.colorbar()
         plt.title('energy ' + str(i) )
 
-        plt.figure()
-        plt.imshow(np.abs(final_segmentation[..., 1] - initial_segmentation[..., 1]))
-        plt.colorbar()
-        plt.title('diff ' + str(i) )
-
-        diff = np.abs(final_segmentation[..., 1] - initial_segmentation[..., 1])
-
-        print('Difference points')
-        print(np.sum(diff > 0))
-
         initial_segmentation = final_segmentation.copy()
         mu = mu_upd.copy()
         sigmasq = sigmasq_upd.copy()
+
+        if press_key:
+            raw_input('Next ...')
+        plt.close('all')
+        #else:
 
     plt.figure()
     plt.plot(energies)
     plt.title('Energies')
 
+    print('Argmax Energies', np.array(energies).argmax())
+    print('Max Energy', np.array(energies).max())
+
+    print('Argmin Energies', np.array(energies).argmin())
+    print('Min Energy', np.array(energies).min())
+
+    np.set_printoptions(3, suppress=True)
+    print(np.diff(energies) * 0.0001)
+
+    1/0
     difference_map = np.abs(seg_init - final_segmentation)
     npt.assert_equal(np.abs(np.sum(difference_map)) != 0, True)
+
+    fig, ax = plt.subplots()
+    ims = ax.imshow(image_gauss[..., 1], interpolation='nearest')
+    fig.colorbar(ims)
+    ax.format_coord = Formatter(ims)
+    ax.set_title('image ' + str(i))
 
     return seg_init, final_segmentation, PLY
 
@@ -331,7 +356,7 @@ def test_square_iter():
 
     for i in range(max_iter):
 
-        print("Iteration: %d"%(max_iter,))
+        print("Iteration: %d" % (max_iter,))
 
         PLN = com.prob_neighborhood(square_1, initial_segmentation, beta,
                                     nclasses)
