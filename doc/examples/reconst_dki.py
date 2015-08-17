@@ -171,11 +171,8 @@ module. Theoretically, computing these measures from both models should be
 analogous. However, since the diffusion kurtosis model involves a larger number
 of parameters, diffusion statistics maps can look more noisy. On the other
 hand, the diffusion statistics from the kurtosis model are expected to have
-better precision and smaller dependency to different acquisition protocols
-because the influences of the higher signal taylor expansion components not
-assumed by the diffusion tensor are moduled out by the diffusion kurtosis
-tensor. For comparison purposes, we calculate below the FA, MD, AD, and RD
-using Dipy's TensorModel.
+better precision [[Veraar2011]]_. For comparison purposes, we calculate below
+the FA, MD, AD, and RD using Dipy's TensorModel.
 """
 
 tenmodel = dti.TensorModel(gtab)
@@ -301,6 +298,10 @@ References:
                 Exploring the 3D geometry of the diffusion kurtosis tensor -
                 Impact on the development of robust tractography procedures and
                 novel biomarkers, NeuroImage 111: 85-99
+.. [Veraar2011] Veraart J, Poot DH, Van Hecke W, Blockx I, Van der Linden A,
+                Verhoye M, Sijbers J (2011). More Accurate Estimation of
+                Diffusion Tensor Parameters Using Diffusion Kurtosis Imaging.
+                Magnetic Resonance in Medicine 65(1): 138-145
 
 .. include:: ../links_names.inc
 """
