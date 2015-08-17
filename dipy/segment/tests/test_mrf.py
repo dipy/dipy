@@ -21,9 +21,9 @@ image[..., :nslices] = single_slice[..., None]
 # Execute the segmentation
 nclasses = 4
 beta = np.float64(0.1)
-max_iter = 30
+max_iter = 12
 background_noise = True
-press_key = False
+press_key = True
 
 square = np.zeros((256, 256, 3))
 square[42:213, 42:213, :] = 3
@@ -151,9 +151,9 @@ def test_greyscale_iter():
     else:
         image_gauss = image
 
-    # plt.figure()
-    # plt.imshow(image_gauss[..., 1])
-    # plt.colorbar()
+    plt.figure()
+    plt.imshow(image_gauss[..., 1])
+    plt.colorbar()
 
     final_segmentation = np.empty_like(image)
     seg_init = initial_segmentation.copy()
@@ -322,7 +322,7 @@ def test_greyscale_iter():
     np.set_printoptions(3, suppress=True)
     print(np.diff(energies) * 0.0001)
 
-    1/0
+
     difference_map = np.abs(seg_init - final_segmentation)
     npt.assert_equal(np.abs(np.sum(difference_map)) != 0, True)
 
@@ -331,6 +331,14 @@ def test_greyscale_iter():
     fig.colorbar(ims)
     ax.format_coord = Formatter(ims)
     ax.set_title('image ' + str(i))
+
+    fig, ax = plt.subplots()
+    ims = ax.imshow(final_segmentation[..., 1], interpolation='nearest')
+    fig.colorbar(ims)
+    ax.format_coord = Formatter(ims)
+    ax.set_title('image ' + str(i))
+
+
 
     return seg_init, final_segmentation, PLY
 
