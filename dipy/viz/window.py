@@ -2,6 +2,7 @@ from __future__ import division, print_function, absolute_import
 
 import numpy as np
 from scipy import ndimage
+from copy import copy
 
 try:
     import Tkinter as tkinter
@@ -322,6 +323,13 @@ class ShowManager(object):
             default option which is False will order the actors according to
             the order of their addition to the Renderer().
 
+        Attributes
+        ----------
+        ren : vtkRenderer()
+        iren : vtkRenderWindowInteractor()
+        style : vtkInteractorStyle()
+        window : vtkRenderWindow()
+
         Methods
         -------
         initialize()
@@ -349,35 +357,38 @@ class ShowManager(object):
         >>> # start()
         """
 
+        self.ren = ren
         self.title = title
         self.size = size
         self.png_magnify = png_magnify
+        self.reset_camera = reset_camera
+        self.order_transparent = order_transparent
 
-        if reset_camera:
-            ren.ResetCamera()
+        if self.reset_camera:
+            self.ren.ResetCamera()
 
-        window = vtk.vtkRenderWindow()
-        window.AddRenderer(ren)
-        # window.SetAAFrames(6)
-        if title == 'DIPY':
-            window.SetWindowName(title + ' ' + dipy_version)
+        self.window = vtk.vtkRenderWindow()
+        self.window.AddRenderer(ren)
+
+        if self.title == 'DIPY':
+            self.window.SetWindowName(title + ' ' + dipy_version)
         else:
-            window.SetWindowName(title)
-        window.SetSize(size[0], size[1])
+            self.window.SetWindowName(title)
+        self.window.SetSize(size[0], size[1])
 
-        if order_transparent:
+        if self.order_transparent:
 
             # Use a render window with alpha bits
             # as default is 0 (false))
-            window.SetAlphaBitPlanes(True)
+            self.window.SetAlphaBitPlanes(True)
 
             # Force to not pick a framebuffer with a multisample buffer
             # (default is 8)
-            window.SetMultiSamples(0)
+            self.window.SetMultiSamples(0)
 
             # Choose to use depth peeling (if supported)
             # (default is 0 (false)):
-            ren.UseDepthPeelingOn()
+            self.ren.UseDepthPeelingOn()
 
             # Set depth peeling parameters
             # Set the maximum number of rendering passes (default is 4)
@@ -386,9 +397,9 @@ class ShowManager(object):
             # Set the occlusion ratio (initial value is 0.0, exact image):
             ren.SetOcclusionRatio(0.0)
 
-        style = vtk.vtkInteractorStyleTrackballCamera()
-        iren = vtk.vtkRenderWindowInteractor()
-        iren.SetRenderWindow(window)
+        self.style = vtk.vtkInteractorStyleTrackballCamera()
+        self.iren = vtk.vtkRenderWindowInteractor()
+        self.iren.SetRenderWindow(self.window)
 
         def key_press_standard(obj, event):
 
@@ -416,11 +427,6 @@ class ShowManager(object):
                     writer.Write()
                     print('File ' + filepath + ' is saved.')
 
-        self.window = window
-        self.ren = ren
-        self.iren = iren
-        self.style = style
-
         self.iren.AddObserver('KeyPressEvent', key_press_standard)
         self.iren.SetInteractorStyle(self.style)
 
@@ -438,9 +444,20 @@ class ShowManager(object):
     def start(self):
         """ Starts interaction
         """
-        self.iren.Start()
+        try:
+            self.iren.Start()
+        except AttributeError:
+            self.__init__(self.ren, self.title, size=self.size,
+                          png_magnify=self.png_magnify,
+                          reset_camera=self.reset_camera,
+                          order_transparent=self.order_transparent)
+            self.initialize()
+            self.render()
+            self.iren.Start()
+
         # window.RemoveAllObservers()
         # ren.SetRenderWindow(None)
+
         self.window.RemoveRenderer(self.ren)
         self.ren.SetRenderWindow(None)
         del self.iren
