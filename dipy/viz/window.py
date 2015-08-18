@@ -299,7 +299,8 @@ class ShowManager(object):
     """
 
     def __init__(self, ren, title='DIPY', size=(300, 300),
-                 png_magnify=1, reset_camera=True, order_transparent=False):
+                 png_magnify=1, reset_camera=True, order_transparent=False,
+                 interactor_style='trackball'):
 
         """ Manages the visualization pipeline
 
@@ -322,6 +323,10 @@ class ShowManager(object):
             actors according to their relative position to the camera. The
             default option which is False will order the actors according to
             the order of their addition to the Renderer().
+        interactor_style : str or vtkInteractorStyle
+            If str then if 'trackball' then vtkInteractorStyleTrackballCamera()
+            is used or if 'image' then vtkInteractorStyleImage() is used (no
+            rotation). Otherwise you can input your own interactor style.
 
         Attributes
         ----------
@@ -363,6 +368,7 @@ class ShowManager(object):
         self.png_magnify = png_magnify
         self.reset_camera = reset_camera
         self.order_transparent = order_transparent
+        self.interactor_style = interactor_style
 
         if self.reset_camera:
             self.ren.ResetCamera()
@@ -397,7 +403,13 @@ class ShowManager(object):
             # Set the occlusion ratio (initial value is 0.0, exact image):
             ren.SetOcclusionRatio(0.0)
 
-        self.style = vtk.vtkInteractorStyleTrackballCamera()
+        if self.interactor_style == 'image':
+            self.style = vtk.vtkInteractorStyleImage()
+        elif self.interactor_style == 'trackball':
+            self.style = vtk.vtkInteractorStyleTrackballCamera()
+        else:
+            self.style = interactor_style
+
         self.iren = vtk.vtkRenderWindowInteractor()
         self.iren.SetRenderWindow(self.window)
 
@@ -450,7 +462,8 @@ class ShowManager(object):
             self.__init__(self.ren, self.title, size=self.size,
                           png_magnify=self.png_magnify,
                           reset_camera=self.reset_camera,
-                          order_transparent=self.order_transparent)
+                          order_transparent=self.order_transparent,
+                          interactor_style=self.interactor_style)
             self.initialize()
             self.render()
             self.iren.Start()
