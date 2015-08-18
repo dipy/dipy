@@ -19,7 +19,7 @@ else:
     SCIPY_16_PLUS = False
 
 if not have_cython_gsl and not SCIPY_16_PLUS:
-    warnings.warn('Cannot find cython_gsl nor scipy >= 0.16 package (required for hyp1f1).\n \
+    warnings.warn('Cannot find cython_gsl nor scipy >= 0.16.1 package (required for hyp1f1).\n \
         Try pip install cythongsl (recommended : faster than scipy, but you need to\n \
         install the GSL library also (sudo apt-get install libgsl0-dev libgsl0ldbl))')
 
