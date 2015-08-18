@@ -6,44 +6,41 @@ import numpy as np
 
 from libc.math cimport sqrt, exp, fabs, M_PI
 from scipy.special import erfinv
-from dipy.denoise.hyp1f1 import hyp1f1 as cython_mpmath1f1
 
-from dipy.utils.optpkg import optional_package
-mpmath, have_mpmath, _ = optional_package("mpmath")
-
+from distutils.version import LooseVersion
 import warnings
+import scipy
 
-if not have_cython_gsl and not have_mpmath:
-    warnings.warn('Cannot find cython_gsl nor mpmath package (required for hyp1f1).\n \
-        Try pip install cythongsl (recommended : faster than mpmath, but you need to\n \
-        install the GSL library also (sudo apt-get install libgsl0-dev libgsl0ldbl))\n \
-        or pip install mpmath (also pip install gmpy2 for faster performances.)')
+
+if LooseVersion(scipy.version.short_version) >= LooseVersion('0.16.1'):
+    SCIPY_16_PLUS = True
+    from scipy.special import hyp1f1 as scipy1f1
+else:
+    SCIPY_16_PLUS = False
+
+if not have_cython_gsl and not SCIPY_16_PLUS:
+    warnings.warn('Cannot find cython_gsl nor scipy >= 0.16 package (required for hyp1f1).\n \
+        Try pip install cythongsl (recommended : faster than scipy, but you need to\n \
+        install the GSL library also (sudo apt-get install libgsl0-dev libgsl0ldbl))')
 
 IF have_cython_gsl:
     from cython_gsl cimport gsl_sf_hyperg_1F1 as gsl1f1
     print("The GNU GSL is subject to the GPL license, see \n\
         http://www.gnu.org/copyleft/gpl.html for more information")
 
-if have_mpmath:
-    import mpmath
-
 
 cdef double hyp1f1(double a, int b, double x) nogil:
     """Wrapper for 1F1 hypergeometric series function
     http://en.wikipedia.org/wiki/Confluent_hypergeometric_function"""
-    cdef double out
 
-    # Has cython gsl version, use it since it's faster
+    # Has cython gsl version, use it since it's faster.
     if have_cython_gsl:
         return gsl1f1(a, b, x)
 
-    # Use mpmath cython version, and mpmath symbolic if no convergence
+    # scipy version is fixed in 0.17dev~0.16.1dev, but unstable before that
+    # and will give tons of errors.
     with gil:
-        out = cython_mpmath1f1(a, b, x)
-        if np.isinf(out) or np.isnan(out):
-            out = float(mpmath.hyp1f1(a, b, x))
-
-        return out
+        return scipy1f1(a, b, x)
 
 
 cdef double _inv_cdf_gauss(double y, double eta, double sigma):
