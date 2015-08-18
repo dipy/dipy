@@ -166,7 +166,42 @@ def test_parallel_projection():
     npt.assert_equal(np.sum(arr2 > 0) > np.sum(arr > 0), True)
 
 
+@npt.dec.skipif(not actor.have_vtk)
+@npt.dec.skipif(not actor.have_vtk_colors)
+def test_order_transparent():
+
+    renderer = window.Renderer()
+
+    lines = [np.array([[-1, 0, 0.], [1, 0, 0.]]),
+             np.array([[-1, 1, 0.], [1, 1, 0.]])]
+    colors = np.array([[1., 0., 0.], [0., .5, 0.]])
+    stream_actor = actor.streamtube(lines, colors, linewidth=0.3, opacity=0.5)
+
+    renderer.add(stream_actor)
+
+    renderer.UseDepthPeelingOn()
+    renderer.SetMaximumNumberOfPeels(4)
+    renderer.SetOcclusionRatio(0.0)
+
+    renderer.reset_camera()
+
+    # green in front
+    renderer.elevation(90)
+    renderer.reset_clipping_range()
+    arr = window.snapshot(renderer)
+
+    # therefore the green component must have a higher value (in RGB terms)
+    npt.assert_equal(arr[150, 150][1] > arr[150, 150][0], True)
+
+    # red in front
+    renderer.elevation(-180)
+    renderer.reset_clipping_range()
+    arr = window.snapshot(renderer)
+
+    # therefore the red component must have a higher value (in RGB terms)
+    npt.assert_equal(arr[150, 150][0] > arr[150, 150][1], True)
+
+
 if __name__ == '__main__':
 
-    # npt.run_module_suite()
-    test_active_camera()
+    npt.run_module_suite()
