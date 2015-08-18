@@ -293,9 +293,61 @@ def save_file_dialog(initial_file='dipy.png', default_ext='.png',
 
 
 class ShowManager(object):
+    """ This class is the interface between the renderer, the window and the
+    interactor.
+    """
 
-    def __init__(self, ren, title='Dipy', size=(300, 300),
-                 png_magnify=1, reset_camera=True):
+    def __init__(self, ren, title='DIPY', size=(300, 300),
+                 png_magnify=1, reset_camera=True, order_transparent=False):
+
+        """ Manages the visualization pipeline
+
+        Parameters
+        ----------
+        ren : Renderer() or vtkRenderer()
+            The scene that holds all the actors.
+        title : string
+            A string for the window title bar.
+        size : (int, int)
+            ``(width, height)`` of the window
+        png_magnify : int
+            Number of times to magnify the screenshot. This can be used to save
+            high resolution screenshots when pressing 's' inside the window.
+        reset_camera : bool
+            Default is True. You can change this option to False if you want to
+            keep the camera as set before calling this function.
+        order_transparent : bool
+            True is useful when you want to order transparent
+            actors according to their relative position to the camera. The
+            default option which is False will order the actors according to
+            the order of their addition to the Renderer().
+
+        Methods
+        -------
+        initialize()
+        render()
+        start()
+        add_window_callback()
+
+        Notes
+        -----
+        Default interaction keys for
+
+        * 3d navigation are with left, middle and right mouse dragging
+        * resetting the camera press 'r'
+        * saving a screenshot press 's'
+        * for quiting press 'q'
+
+        Examples
+        --------
+        >>> from dipy.viz import actor, window
+        >>> renderer = window.Renderer()
+        >>> renderer.add(actor.axes())
+        >>> showm = window.ShowManager(renderer)
+        >>> # showm.initialize()
+        >>> # showm.render()
+        >>> # start()
+        """
 
         self.title = title
         self.size = size
@@ -307,11 +359,32 @@ class ShowManager(object):
         window = vtk.vtkRenderWindow()
         window.AddRenderer(ren)
         # window.SetAAFrames(6)
-        if title == 'Dipy':
+        if title == 'DIPY':
             window.SetWindowName(title + ' ' + dipy_version)
         else:
             window.SetWindowName(title)
         window.SetSize(size[0], size[1])
+
+        if order_transparent:
+
+            # Use a render window with alpha bits
+            # as default is 0 (false))
+            window.SetAlphaBitPlanes(True)
+
+            # Force to not pick a framebuffer with a multisample buffer
+            # (default is 8)
+            window.SetMultiSamples(0)
+
+            # Choose to use depth peeling (if supported)
+            # (default is 0 (false)):
+            ren.UseDepthPeelingOn()
+
+            # Set depth peeling parameters
+            # Set the maximum number of rendering passes (default is 4)
+            ren.SetMaximumNumberOfPeels(4)
+
+            # Set the occlusion ratio (initial value is 0.0, exact image):
+            ren.SetOcclusionRatio(0.0)
 
         style = vtk.vtkInteractorStyleTrackballCamera()
         iren = vtk.vtkRenderWindowInteractor()
@@ -349,17 +422,22 @@ class ShowManager(object):
         self.style = style
 
         self.iren.AddObserver('KeyPressEvent', key_press_standard)
-
         self.iren.SetInteractorStyle(self.style)
 
     def initialize(self):
+        """ Initialize interaction
+        """
         self.iren.Initialize()
         # picker.Pick(85, 126, 0, ren)
 
     def render(self):
+        """ Renders only once
+        """
         self.window.Render()
 
     def start(self):
+        """ Starts interaction
+        """
         self.iren.Start()
         # window.RemoveAllObservers()
         # ren.SetRenderWindow(None)
@@ -369,39 +447,44 @@ class ShowManager(object):
         del self.window
 
     def add_window_callback(self, win_callback):
+        """ Add window callbacks
+        """
         self.window.AddObserver(vtk.vtkCommand.ModifiedEvent, win_callback)
         self.window.Render()
 
 
-def show(ren, title='Dipy', size=(300, 300),
-         png_magnify=1, reset_camera=True):
+def show(ren, title='DIPY', size=(300, 300),
+         png_magnify=1, reset_camera=True, order_transparent=False):
     """ Show window with current renderer
-
 
     Parameters
     ------------
-    ren : vtkRenderer() object
-        As returned from function ``ren()``.
+    ren : Renderer() or vtkRenderer()
+        The scene that holds all the actors.
     title : string
         A string for the window title bar.
     size : (int, int)
         ``(width, height)`` of the window
     png_magnify : int
-        Number of times to magnify the screenshot.
+        Number of times to magnify the screenshot. This can be used to save
+        high resolution screenshots when pressing 's' inside the window.
+    reset_camera : bool
+        Default is True. You can change this option to False if you want to
+        keep the camera as set before calling this function.
+    order_transparent : bool
+        True is useful when you want to order transparent
+        actors according to their relative position to the camera. The default
+        option which is False will order the actors according to the order of
+        their addition to the Renderer().
 
     Notes
     -----
-    If you want to:
+    Default interaction keys for
 
-    * navigate in the the 3d world use the left - middle - right mouse buttons
-    * reset the screen press 'r'
-    * save a screenshot press 's'
-    * quit press 'q'
-
-    See also
-    ---------
-    dipy.viz.window.record
-    dipy.viz.window.snapshot
+    * 3d navigation are with left, middle and right mouse dragging
+    * resetting the camera press 'r'
+    * saving a screenshot press 's'
+    * for quiting press 'q'
 
     Examples
     ----------
@@ -417,13 +500,13 @@ def show(ren, title='Dipy', size=(300, 300),
     >>> #fvtk.show(r)
 
     See also
-    ----------
-    dipy.viz.fvtk.record
-
+    ---------
+    dipy.viz.window.record
+    dipy.viz.window.snapshot
     """
 
     show_manager = ShowManager(ren, title, size,
-                               png_magnify, reset_camera)
+                               png_magnify, reset_camera, order_transparent)
     show_manager.initialize()
     show_manager.render()
     show_manager.start()
