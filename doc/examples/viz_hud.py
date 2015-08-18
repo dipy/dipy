@@ -22,7 +22,7 @@ renderer = window.Renderer()
 
 lines = [np.array([[-1, 0, 0.], [1, 0, 0.]]),
          np.array([[-1, 1, 0.], [1, 1, 0.]])]
-colors = np.array([[1., 0., 0.], [1., 0.5, 0.]])
+colors = np.array([[1., 0., 0.], [0., .5, 0.]])
 stream_actor = actor.streamtube(lines, colors, linewidth=0.3)
 
 renderer.add(stream_actor)
@@ -32,7 +32,8 @@ The ``ShowManager`` allows to break the visualization process in steps so that
 the widgets can be added and updated properly.
 """
 
-show_manager = window.ShowManager(renderer, size=(800, 800))
+show_manager = window.ShowManager(renderer, size=(800, 800),
+                                  order_transparent=True)
 
 show_manager.initialize()
 
@@ -42,6 +43,7 @@ Next we add the widgets and their callbacks.
 
 global opacity
 opacity = 1.
+
 
 def button_plus_callback(obj, event):
     print('+ pressed')
@@ -142,4 +144,3 @@ del show_manager
 
    **A minimalistic user interface**.
 """
-
