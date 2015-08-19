@@ -4,7 +4,7 @@ import numpy as np
 from numpy import dot
 from dipy.core.geometry import sphere2cart
 from dipy.core.geometry import vec2vec_rotmat
-
+from dipy.reconst.utils import dki_design_matrix
 
 # Diffusion coefficients for white matter tracts, in mm^2/s
 #
@@ -204,7 +204,7 @@ def single_tensor(gtab, S0=1, evals=None, evecs=None, snr=None):
     evecs : (3, 3) ndarray
         Eigenvectors of the tensor.  You can also think of this as a rotation
         matrix that transforms the direction of the tensor. The eigenvectors
-        needs to be column wise.
+        need to be column wise.
     snr : float
         Signal to noise ratio, assuming Rician noise.  None implies no noise.
 
@@ -459,7 +459,6 @@ def kurtosis_element(D_comps, frac, ind_i, ind_j, ind_k, ind_l, DT=None,
            tractography procedures and novel biomarkers", NeuroImage (2015)
            111, 85-99.
     """
-
     if DT is None:
         DT = np.zeros((3, 3))
         for i in range(len(frac)):
@@ -485,7 +484,8 @@ def kurtosis_element(D_comps, frac, ind_i, ind_j, ind_k, ind_l, DT=None,
 
 def DKI_signal(gtab, dt, kt, S0=150, snr=None):
     r""" Simulated signal based on the diffusion and diffusion kurtosis
-    tensors. Simulations are preformed assuming the DKI model.
+    tensors of a single voxel. Simulations are preformed assuming the DKI
+    model.
 
     Parameters
     -----------
@@ -533,53 +533,6 @@ def DKI_signal(gtab, dt, kt, S0=150, snr=None):
     return S
 
 
-def dki_design_matrix(gtab):
-    r""" Constructs B design matrix for DKI
-
-    Parameters
-    ---------
-    gtab : GradientTable
-        Measurement directions.
-
-    Returns
-    -------
-    design_matrix : array (N,22)
-          Design matrix or B matrix for the DKI model
-            design_matrix[j, :] = (Bxx, Bxy, Bzz, Bxz, Byz, Bzz,
-                                   Bxxxx, Byyyy, Bzzzz, Bxxxy, Bxxxz,
-                                   Bxyyy, Byyyz, Bxzzz, Byzzz, Bxxyy,
-                                   Bxxzz, Byyzz, Bxxyz, Bxyyz, Bxyzz,
-                                   BlogS0)
-    """
-    b = gtab.bvals
-    bvec = gtab.bvecs
-
-    B = np.zeros((len(b), 22))
-    B[:, 0] = -b * bvec[:, 0] * bvec[:, 0]
-    B[:, 1] = -2 * b * bvec[:, 0] * bvec[:, 1]
-    B[:, 2] = -b * bvec[:, 1] * bvec[:, 1]
-    B[:, 3] = -2 * b * bvec[:, 0] * bvec[:, 2]
-    B[:, 4] = -2 * b * bvec[:, 1] * bvec[:, 2]
-    B[:, 5] = -b * bvec[:, 2] * bvec[:, 2]
-    B[:, 6] = b * b * bvec[:, 0]**4 / 6
-    B[:, 7] = b * b * bvec[:, 1]**4 / 6
-    B[:, 8] = b * b * bvec[:, 2]**4 / 6
-    B[:, 9] = 4 * b * b * bvec[:, 0]**3 * bvec[:, 1] / 6
-    B[:, 10] = 4 * b * b * bvec[:, 0]**3 * bvec[:, 2] / 6
-    B[:, 11] = 4 * b * b * bvec[:, 1]**3 * bvec[:, 0] / 6
-    B[:, 12] = 4 * b * b * bvec[:, 1]**3 * bvec[:, 2] / 6
-    B[:, 13] = 4 * b * b * bvec[:, 2]**3 * bvec[:, 0] / 6
-    B[:, 14] = 4 * b * b * bvec[:, 2]**3 * bvec[:, 1] / 6
-    B[:, 15] = b * b * bvec[:, 0]**2 * bvec[:, 1]**2
-    B[:, 16] = b * b * bvec[:, 0]**2 * bvec[:, 2]**2
-    B[:, 17] = b * b * bvec[:, 1]**2 * bvec[:, 2]**2
-    B[:, 18] = 2 * b * b * bvec[:, 0]**2 * bvec[:, 1] * bvec[:, 2]
-    B[:, 19] = 2 * b * b * bvec[:, 1]**2 * bvec[:, 0] * bvec[:, 2]
-    B[:, 20] = 2 * b * b * bvec[:, 2]**2 * bvec[:, 0] * bvec[:, 1]
-    B[:, 21] = np.ones(len(b))
-
-    return B
-
 
 def single_tensor_odf(r, evals=None, evecs=None):
     """ Simulated ODF with a single tensor.
@@ -592,9 +545,9 @@ def single_tensor_odf(r, evals=None, evecs=None):
         Eigenvalues of diffusion tensor.  By default, use values typical for
         prolate white matter.
     evecs : (3, 3) ndarray
-        Eigenvectors of the tensor.  You can also think of these as the
-        rotation matrix that determines the orientation of the diffusion
-        tensor.
+        Eigenvectors of the tensor, written column-wise.  You can also think
+        of these as the rotation matrix that determines the orientation of
+        the diffusion tensor.
 
     Returns
     -------
@@ -641,13 +594,14 @@ def all_tensor_evecs(e0):
     Returns
     -------
     evecs : (3,3) ndarray
-        Tensor eigenvectors.
+        Tensor eigenvectors, arranged column-wise.
 
     """
     axes = np.eye(3)
     mat = vec2vec_rotmat(axes[0], e0)
     e1 = np.dot(mat, axes[1])
     e2 = np.dot(mat, axes[2])
+    # Return the eigenvectors column-wise:
     return np.array([e0, e1, e2]).T
 
 
@@ -685,7 +639,6 @@ def multi_tensor_odf(odf_verts, mevals, angles, fractions):
     >>> odf = multi_tensor_odf(vertices, mevals, angles, [50, 50])
 
     '''
-
     mf = [f / 100. for f in fractions]
 
     sticks = _check_directions(angles)

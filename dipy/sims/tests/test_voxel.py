@@ -8,8 +8,7 @@ from numpy.testing import (assert_array_equal, assert_array_almost_equal,
 from dipy.sims.voxel import (_check_directions, SingleTensor, MultiTensor,
                              multi_tensor_odf, all_tensor_evecs, add_noise,
                              single_tensor, sticks_and_ball, multi_tensor_dki,
-                             dki_design_matrix, kurtosis_element,
-                             DKI_signal)
+                             kurtosis_element, DKI_signal)
 from dipy.core.geometry import (vec2vec_rotmat, sphere2cart)
 from dipy.data import get_data, get_sphere
 from dipy.core.gradients import gradient_table
@@ -147,6 +146,7 @@ def test_snr():
 def test_all_tensor_evecs():
     e0 = np.array([1/np.sqrt(2), 1/np.sqrt(2), 0])
 
+    # Vectors are returned column-wise!
     desired = np.array([[1/np.sqrt(2), 1/np.sqrt(2), 0],
                         [-1/np.sqrt(2), 1/np.sqrt(2), 0],
                         [0, 0, 1]]).T

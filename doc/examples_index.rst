@@ -39,7 +39,7 @@ Basic SNR estimation
 
 - :ref:`example_snr_in_cc`
 
-PIESNO
+Robust noise estimation with PIESNO
 ~~~~~~
 - :ref:`example_piesno`
 
@@ -148,6 +148,7 @@ Registration
 
 Image-based Registration
 ~~~~~~~~~~~~~~~~~~~~~~~~~
+- :ref:`example_affine_registration_3d`
 - :ref:`example_syn_registration_2d`
 - :ref:`example_syn_registration_3d`
 

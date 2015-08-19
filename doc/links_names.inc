@@ -48,7 +48,7 @@
 .. _`nipy launchpad`: https://launchpad.net/nipy
 .. _launchpad: https://launchpad.net/
 .. _`nipy trunk`: https://code.launchpad.net/~nipy-developers/nipy/trunk
-.. _`nipy mailing list`: http://projects.scipy.org/mailman/listinfo/nipy-devel
+.. _`nipy mailing list`: https://mail.python.org/mailman/listinfo/neuroimaging
 .. _`nipy bugs`: https://bugs.launchpad.net/nipy
 .. _pep8: http://www.python.org/dev/peps/pep-0008/
 .. _`numpy coding style`: http://scipy.org/scipy/numpy/wiki/CodingStyleGuidelines

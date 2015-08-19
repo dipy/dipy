@@ -1,10 +1,11 @@
 import numpy as np
-from dipy.align import floating
+from .. import floating
+from .. import sumsqdiff as ssd
 from numpy.testing import (assert_equal,
                            assert_almost_equal,
                            assert_array_almost_equal,
                            assert_allclose)
-import dipy.align.sumsqdiff as ssd
+
 
 def iterate_residual_field_ssd_2d(delta_field, sigmasq_field, grad, target,
                                   lambda_param, dfield):
@@ -397,14 +398,12 @@ def test_solve_2d_symmetric_positive_definite():
     # Large determinant
     As.append(np.array([1e6, 1e4, 1e6]))
 
-    actual = np.zeros(2, dtype=np.float64)
-
     for A in As:
-        AA = np.array([[A[0], A[1]],[A[1], A[2]]])
+        AA = np.array([[A[0], A[1]], [A[1], A[2]]])
         det = np.linalg.det(AA)
         for b in bs:
             expected = np.linalg.solve(AA, b)
-            ssd.solve_2d_symmetric_positive_definite(A, b, det, actual)
+            actual = ssd.solve_2d_symmetric_positive_definite(A, b, det)
             assert_allclose(expected, actual, rtol = 1e-9, atol = 1e-9)
 
 
@@ -434,14 +433,13 @@ def test_solve_3d_symmetric_positive_definite():
     gs.append(np.array([0.0, 0.2, 0.1]))
     gs.append(np.array([0.3, 0.0, 0.9]))
 
-    actual = np.zeros(3)
     for g in gs:
         A = g[:,None]*g[None,:]
         for tau in taus:
             AA = A + tau * np.eye(3)
             for b in bs:
-                is_singular = ssd.solve_3d_symmetric_positive_definite(g, b, tau, actual)
-
+                actual, is_singular = ssd.solve_3d_symmetric_positive_definite(
+                    g, b, tau)
                 if tau == 0.0:
                     assert_equal(is_singular, 1)
                 else:
