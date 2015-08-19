@@ -5,6 +5,7 @@
 import numpy as np
 from dipy.segment.mask import applymask
 from dipy.core.ndindex import ndindex
+from dipy.sims.voxel import add_noise
 cimport cython
 cimport numpy as cnp
 cdef extern from "dpy_math.h" nogil:
@@ -17,25 +18,22 @@ cdef extern from "dpy_math.h" nogil:
 
 
 class ConstantObservationModel(object):
-    r""" Image segmentation with constant models
+    
+    r""" Image segmentation with constant models.
     Image segmentation by maximum a-posteriori estimation of HMRF model
     with the Potts/Ising potential
     """
-    # To-do: generalize to measure fields
-    # To-do: create abstract class "ObservationModel" and derive
-    # Constant... and Splines... from it
 
     def __init__(self):
+        
         r""" Initializes an instance of the ConstantObservationModel class
         """
         pass
 
-        # self.nclasses
-        # self.mu = np.zeros(nclasses)
-        # self.sigmasq = np.zeros(nclasses)
 
     def initialize_param_uniform(self, image, nclasses):
-        """ Initializes the means and variances uniformly
+        
+        r""" Initializes the means and variances uniformly
 
         The means are initialized uniformly along the dynamic range of `image`.
         The variances are set to 1 for all classes
@@ -43,12 +41,12 @@ class ConstantObservationModel(object):
         Parameters
         ----------
         image : array, shape(X, Y, Z)
-        num_classes : int
+        nclasses : int, number of desired classes
 
         Returns
         -------
-        mu : array, shape(K,)
-        sigmasq : array, shape(K,)
+        mu : array, shape(nclasses,)
+        sigmasq : array, shape(nlasses,)
         """
 
         cdef:
@@ -58,23 +56,21 @@ class ConstantObservationModel(object):
         _initialize_param_uniform(image, mu, sigmasq)
         return np.array(mu), np.array(sigmasq)
 
-    def seg_stats(self, input_image, seg_image, nclass):
-        r""" Mean and standard variation for 3 tissue classes
 
-        1 is CSF
-        2 is grey matter
-        3 is white matter
+    def seg_stats(self, input_image, seg_image, nclass):
+        
+        r""" Mean and standard variation for N desired  tissue classes
 
         Parameters
         ----------
-        input_image : ndarray of grey level T1 image
-        seg_image : ndarray of initital segmentation, also an image
-        nclass : float numeber of classes (three in most cases)
+        input_image : ndarray, gray level T1 image
+        seg_image : ndarray, initital segmentation image
+        nclass : int, number of classes (3 in most cases)
 
         Returns
         -------
-        mu, std, var : ndarray of dimensions 1x3
-            Mean, standard deviation and variance for every class
+        mu, std, var : ndarrays of dimensions 1x3
+                        Mean, standard deviation and variance for every class
 
         """
         mu = np.zeros(nclass)
@@ -93,13 +89,23 @@ class ConstantObservationModel(object):
 
 
     def negloglikelihood(self, image, mu, sigmasq, nclasses):
-        r""" Computes the Gaussian negative log-likelihood of each class
-
-        Computes the Gaussian negative log-likelihood of each class for each
-        voxel of `image` assuming a Gaussian distribution with means and
+        
+        r""" Computes the gaussian negative log-likelihood of each class at 
+        each voxel of `image` assuming a gaussian distribution with means and
         variances given by `mu` and `sigmasq`, respectively (constant models
         along the full volume). The negative log-likelihood will be written
         in `nloglike`.
+        
+        Parameters
+        ----------
+        image : ndarray, gray scale T1 image
+        mu : ndarray, mean of each class
+        sigmasq : ndarray, variance of each class
+        nclasses : int, number of classes
+        
+        Returns
+        -------
+        nloglike : 4D ndarray, negloglikelihood for each class in each volume  
 
         """
 
@@ -112,22 +118,22 @@ class ConstantObservationModel(object):
 
 
     def prob_neighborhood(self, image, seg, beta, nclasses):
+        
         r""" Conditional probability of the label given the neighborhood
         Equation 2.18 of the Stan Z. Li book.
 
         Parameters
         -----------
-        img : 3D ndarray - masked T1 structural image
-        nclasses : int - number of tissue classes
-        seg : 3D ndarray - tissue segmentation derived from the ICM
-                                     model. Must be padded with zeros
-        beta : float - value of th importance of the neighborhood
+        image : 3D ndarray, gray-scale T1 image
+        seg : 3D ndarray, tissue segmentation derived from the ICM model
+        beta : float, importance of the neighborhood. Determines spatial
+                smoothness of the segmentation. Usually between 0 to 0.5
+        nclasses : int, number of tissue classes
 
         Returns
         --------
-
-        P_L_N : 4D ndarray - Probability of the label given the neighborhood of
-                             the voxel
+        PLN : 4D ndarray, Probability of the label given the neighborhood of
+                the voxel
         """
 
         cdef:
@@ -142,7 +148,6 @@ class ConstantObservationModel(object):
             P_L_N = np.zeros(image.shape, dtype=np.float64)
             _prob_neighb_perclass(image, seg, beta, classid, P_L_N)
 
-            # Eq 2.18 of Stan Z. Li book
             PLN[:, :, :, classid] = np.array(P_L_N)
             PLN[:, :, :, classid] = np.exp(- PLN[:, :, :, classid])
             PLN_norm += PLN[:, :, :, classid]
@@ -154,37 +159,30 @@ class ConstantObservationModel(object):
 
 
     def prob_image(self, img, nclasses, mu, sigmasq, P_L_N):
+        
         r""" Conditional probability of the label given the image
-        This is for equation 27 of the Zhang paper
 
         Parameters
         -----------
-        img : ndarray 3D
-            masked T1 structural image
-        nclasses : int
-            number of tissue classes
-        mu : ndarray (1, 3)
-            current estimate of mean of each tissue type
-        sigmasq : ndarray (1, 3)
-            current estimate of the variance of each tissue type
-        P_L_N : ndarray 4D
-            probability of the label given the neighborhood. Previously
-            computed by function prob_neigh
+        img : 3D ndarray, gray-scale T1 image
+        nclasses : int, number of tissue classes
+        mu : ndarray, current estimate of the mean of each tissue class
+        sigmasq : ndarray, current estimate of the variance of each tissue 
+                    class
+        P_L_N : 4D ndarray, probability of the label given the neighborhood. 
+                Previously computed by function prob_neighborhood
 
         Returns
         --------
-        P_L_Y : ndarray 4D
-            Probability of the label given the input image
+        P_L_Y : 4D ndarray, probability of the label given the input image
 
         """
-        # probability of the tissue label (from the 3 classes) given the
-        # voxel
+
         P_L_Y = np.zeros_like(P_L_N)
         P_L_Y_norm = np.zeros_like(img)
 
         for l in range(nclasses):
 
-            # normal density equation 11 of the Zhang paper
             g = np.zeros_like(img)
 
             _prob_image(img, g, mu, sigmasq, l, P_L_N, P_L_Y)
@@ -197,81 +195,138 @@ class ConstantObservationModel(object):
 
 
     def update_param(self, image, P_L_Y, mu, nclasses):
+        
         r""" Updates the means and the variances in each iteration for all the
         labels. This is for equations 25 and 26 of the Zhang paper
 
         Parameters
         -----------
-        image : ndarray
-            Input T1 grey scale image
-
-        P_L_Y : ndarray
-            Probability of the label given the input image computed by the
-            Expectation Maximization algorithm.
+        image : ndarray, input T1 gray-scale image
+        P_L_Y : 4D ndarray, probability of the label given the input image
+                computed by the expectation maximization (EM) algorithm
+        mu : ndarray, mean of each tissue class
+        nclasses : int, number of tissue classes
 
         Returns
         --------
-        mu_upd : 1x3 ndarray - mean of each tissue class
-        var_upd : 1x3 ndarray - variance of each tissue class
+        mu_upd : ndarray, updated mean of each tissue class
+        var_upd : ndarray, updated variance of each tissue class
 
         """
-        # temporary mu and var files to compute the update
+
         mu_upd = np.zeros(nclasses, dtype=np.float64)
         var_upd = np.zeros(nclasses, dtype=np.float64)
         mu_num = np.zeros(image.shape + (nclasses,), dtype=np.float64)
         var_num = np.zeros(image.shape + (nclasses,), dtype=np.float64)
 
-
         for l in range(nclasses):
-
-            #_update_param(image, mu, l, P_L_Y, mu_num, var_num)
             mu_num[..., l] = P_L_Y[..., l] * image
             var_num[..., l] = P_L_Y[..., l] * ((image - mu[l]) ** 2)
 
             mu_upd[l] = np.sum(mu_num[..., l]) / np.sum(P_L_Y[..., l])
             var_upd[l] = np.sum(var_num[..., l]) / np.sum(P_L_Y[..., l])
 
+        return mu_upd, var_upd
+
+
+    def update_param_new(self, image, P_L_Y, mu, nclasses):
+            
+        r""" Updates the means and the variances in each iteration for all the
+        labels. This is for equations 25 and 26 of the Zhang paper
+
+        Parameters
+        -----------
+        image : ndarray, input T1 gray-scale image
+        P_L_Y : 4D ndarray, probability of the label given the input image
+                computed by the expectation maximization (EM) algorithm
+        mu : ndarray, mean of each tissue class
+        nclasses : int, number of tissue classes
+
+        Returns
+        --------
+        mu_upd : ndarray, updated mean of each tissue class
+        var_upd : ndarray, updated variance of each tissue class
+
+        """
+
+        mu_upd = np.zeros(nclasses, dtype=np.float64)
+        var_upd = np.zeros(nclasses, dtype=np.float64)
+        mu_num = np.zeros(image.shape + (nclasses,), dtype=np.float64)
+        var_num = np.zeros(image.shape + (nclasses,), dtype=np.float64)
+
+        for l in range(nclasses):
+            mu_num[..., l] = P_L_Y[..., l] * image
+            var_num[..., l] = mu_num[..., l] * image
+
+            mu_upd[l] = np.sum(mu_num[..., l]) / np.sum(P_L_Y[..., l])
+            var_upd[l] = np.sum(var_num[..., l]) / np.sum(P_L_Y[..., l]) - mu_upd[l] ** 2
 
         return mu_upd, var_upd
 
 
 cdef void _initialize_param_uniform(double[:,:,:] image, double[:] mu, double[:] sigma) nogil:
-        """ Initializes the mu and sigmasqiances uniformly
+    
+    r""" Initializes the means and standard deviations uniformly
 
-        The mu are initialized uniformly along the dynamic range of `image`.
-        The sigmasqiances are set to 1 for all classes
+    The means are initialized uniformly along the dynamic range of `image`.
+    The standard deviations are set to 1 for all classes.
 
-        Parameters
-        ----------
-        image : array, shape(X, Y, Z)
-        mu : array, shape(K,)
-        sigmasq : array, shape(K,)
-        """
-        cdef:
-            cnp.npy_intp nx = image.shape[0]
-            cnp.npy_intp ny = image.shape[1]
-            cnp.npy_intp nz = image.shape[2]
-            int nclasses = mu.shape[0]
-            int i
-            double min_val
-            double max_val
-        min_val = image[0,0,0]
-        max_val = image[0,0,0]
-        for x in range(nx):
-            for y in range(ny):
-                for z in range(nz):
-                    if image[x,y,z] < min_val:
-                        min_val = image[x,y,z]
-                    if image[x,y,z] > max_val:
-                        max_val = image[x,y,z]
-        for i in range(nclasses):
-            sigma[i] = 1.0
-            mu[i] = min_val + i * (max_val - min_val)/nclasses
+    Parameters
+    ----------
+    image : array, shape(X, Y, Z), input gray-scale T1 image
+    mu : array, shape(K,)
+    sigma : array, shape(K,)
+    
+    Returns
+    -------
+    mu : array, mean of each class
+    sigma : standard deviation of each class
+    
+    """
+    cdef:
+        cnp.npy_intp nx = image.shape[0]
+        cnp.npy_intp ny = image.shape[1]
+        cnp.npy_intp nz = image.shape[2]
+        int nclasses = mu.shape[0]
+        int i
+        double min_val
+        double max_val
+    min_val = image[0,0,0]
+    max_val = image[0,0,0]
+    for x in range(nx):
+        for y in range(ny):
+            for z in range(nz):
+                if image[x,y,z] < min_val:
+                    min_val = image[x,y,z]
+                if image[x,y,z] > max_val:
+                    max_val = image[x,y,z]
+    for i in range(nclasses):
+        sigma[i] = 1.0
+        mu[i] = min_val + i * (max_val - min_val)/nclasses
 
 
 cdef void _negloglikelihood(double[:, :, :] image, double[:] mu,
                             double[:] sigmasq, int classid,
                             double[:, :, :, :] neglogl) nogil:
+
+    r""" Computes the gaussian negative log-likelihood of each class at 
+    each voxel of `image` assuming a gaussian distribution with means and
+    variances given by `mu` and `sigmasq`, respectively (constant models
+    along the full volume). The negative log-likelihood will be written
+    in `neglogl`.
+    
+    Parameters
+    ----------
+    image : ndarray, gray-scale T1 image
+    mu : ndarray, mean of each class
+    sigmasq : ndarray, variance of each class
+    classid : int, class identifier
+    neglogl : buffer for the neg-loglikelihood
+    
+    Returns
+    -------
+    neglogl : 4D ndarray, neg-loglikelihood for the class (l)  
+    """
 
     cdef:
         cnp.npy_intp nx = image.shape[0]
@@ -279,61 +334,46 @@ cdef void _negloglikelihood(double[:, :, :] image, double[:] mu,
         cnp.npy_intp nz = image.shape[2]
         cnp.npy_intp l = classid
         cnp.npy_intp x, y, z
-
-        double eps = 1e-8   # We assume images normalized to 0-1
-#        double eps = 1e-16
+        double eps = 1e-8     # We assume images normalized to 0-1
         double eps_sq = 1e-16 # Maximum precision for double.
 
     for x in range(nx):
         for y in range(ny):
             for z in range(nz):
+                
                 if sigmasq[l] < eps_sq:
+                    
                     if fabs(image[x, y, z] - mu[l]) < eps:
                         neglogl[x, y, z, l] = 1 + log(sqrt(2.0 * NPY_PI * sigmasq[l]))
-#                        neglogl[x, y, z, l] = 1 + log(sigmasq[l])
-                        if x==50 and y==50 and z==1:
-                            with gil: print('This is BK voxel!! 1+log')
-                        if x==147 and y==129 and z==1:
-                            with gil: print('This is CSF voxel!! 1+log')
-                        if x==61 and y==152 and z==1:
-                            with gil: print('This is GM voxel!! 1+log')
-                        if x==100 and y==100 and z==1:
-                            with gil: print('This is WM voxel!! 1+log')
-                        
-
                     else:
                         neglogl[x, y, z, l] = NPY_INFINITY
-                        if x==50 and y==50 and z==1:
-                            with gil: print('This is BK voxel!! INFINITY')
-                        if x==147 and y==129 and z==1:
-                            with gil: print('This is CSF voxel!! INFINITY')
-                        if x==61 and y==152 and z==1:
-                            with gil: print('This is GM voxel!! INFINITY')
-                        if x==100 and y==100 and z==1:
-                            with gil: print('This is WM voxel!! INFINITY')
 
                 else:
-                    neglogl[x, y, z, l] = ((image[x, y, z] - mu[l]) ** 2.0) / (2.0 * sigmasq[l]) #original
-#                    neglogl[x, y, z, l] = (image[x, y, z] - mu[l]) / sqrt(sigmasq[l]) # Demirkaya
-#                    neglogl[x, y, z, l] = (((image[x, y, z] - mu[l]) ** 2.0) / sigmasq[l] + log(sigmasq[l])) / 2.0
-                
-                    neglogl[x, y, z, l] += log(sqrt(2.0 * NPY_PI * sigmasq[l])) #original
-#                    neglogl[x, y, z, l] += log(sqrt(sigmasq[l])) # Demirkaya
-#                    neglogl[x, y, z, l] += log(2.0 * NPY_PI * sqrt(sigmasq[l])) # Demirkaya matlab
-                    if x==50 and y==50 and z==1:
-                        with gil: print('This is BK voxel!! FULL version')
-                    if x==147 and y==129 and z==1:
-                            with gil: print('This is CSF voxel!! FULL version')
-                    if x==61 and y==152 and z==1:
-                            with gil: print('This is GM voxel!! FULL version')
-                    if x==100 and y==100 and z==1:
-                            with gil: print('This is WM voxel!! FULL version')
-                    
+                    neglogl[x, y, z, l] = ((image[x, y, z] - mu[l]) ** 2.0) / (2.0 * sigmasq[l])
+                    neglogl[x, y, z, l] += log(sqrt(2.0 * NPY_PI * sigmasq[l]))
 
 
 cdef void _prob_neighb_perclass(double[:, :, :] image, double[:, :, :] seg,
                                 double beta, int classid,
                                 double[:, :, :] P_L_N) nogil:
+    
+    r""" Conditional probability of the label given the neighborhood
+    Equation 2.18 of the Stan Z. Li book.
+
+    Parameters
+    -----------
+    image : 3D array, gray-scale T1 image
+    seg : 3D array, tissue segmentation derived from the ICM model
+    beta : float, importance of the neighborhood. Determines spatial
+            smoothness of the segmentation. Usually between 0 to 0.5
+    classid : int, tissue class identifier
+    P_L_N : 3D array to store P(L|N)
+
+    Returns
+    --------
+    P_L_N : 3D ndarray, probability of the label (l) given the 
+            neighborhood of the voxel P(L|N)
+    """
 
     cdef:
         cnp.npy_intp nx = image.shape[0]
@@ -376,6 +416,27 @@ cdef void _prob_image(double[:, :, :] image, double[:, :, :] gaussian,
                       double[:] mu, double[:] sigmasq, int classid,
                       double[:, :, :, :] P_L_N,
                       double[:, :, :, :] P_L_Y) nogil:
+                          
+    r""" Conditional probability of the label given the image
+
+    Parameters
+    -----------
+    image : 3D array, gray-scale T1 image
+    nclasses : int, number of tissue classes
+    mu : array, current estimate of the mean of each tissue class
+    sigmasq : array, current estimate of the variance of each tissue 
+                class
+    classid : int, tissue class identifier
+    P_L_N : 4D array, probability of the label given the neighborhood. 
+            Previously computed by function prob_neighborhood
+    P_L_Y : 4D array to hold P(L|Y)
+
+    Returns
+    --------
+    P_L_Y : 4D array, probability of the label given the input image
+            P(L|Y)
+
+    """
 
     cdef:
         cnp.npy_intp nx = image.shape[0]
@@ -402,47 +463,21 @@ cdef void _prob_image(double[:, :, :] image, double[:, :, :] gaussian,
                 P_L_Y[x, y, z, l] = gaussian[x, y, z] * P_L_N[x, y, z, l]
 
 
-cdef void _update_param(double[:, :, :] image, double[:] mu, int classid,
-                        double[:, :, :, :] P_L_Y,
-                        double[:, :, :, :] mu_num,
-                        double[:, :, :, :] var_num) nogil:
-
-    cdef:
-        cnp.npy_intp nx = image.shape[0]
-        cnp.npy_intp ny = image.shape[1]
-        cnp.npy_intp nz = image.shape[2]
-        cnp.npy_intp l = classid
-        cnp.npy_intp x, y, z
-
-
-    for x in range(nx):
-        for y in range(ny):
-            for z in range(nz):
-
-                mu_num[x, y, z, l] = (P_L_Y[x, y, z, l] * image[x, y, z])
-                var_num[x, y , z, l] = (P_L_Y[x, y, z, l] * (image[x, y, z] - mu[l]) ** 2)
-
-
 class IteratedConditionalModes(object):
-    # To-do: generalize to measure fields
-    # To-do: create abstract class "PosteriorOptimizer" and derive ICM from it
-    # To-do: generalize to different potentials
-    # To-do: generalize to different neighborhoods
 
     def __init__(self):
         pass
 
-#    def initialize_otsu(image):
-#        seg = np.zeros(...)
-#        ...
-#        return seg
 
     def initialize_maximum_likelihood(self, nloglike):
-        r""" Initializes the segmentation of an image with given neg-log-likelihood
+        
+        r""" Initializes the segmentation of an image with given
+            neg-loglikelihood
 
         Initializes the segmentation of an image with neglog-likelihood field
-        given by `nloglike`. The class of each voxel is selected as the one with
-        the minimum neglog-likelihood (i.e. the maximum-likelihood segmentation).
+        given by `nloglike`. The class of each voxel is selected as the one 
+        with the minimum neglog-likelihood (i.e. maximum-likelihood 
+        segmentation).
 
         Parameters
         ----------
@@ -451,7 +486,7 @@ class IteratedConditionalModes(object):
 
         Returns
         --------
-        seg : array, shape(X, Y, Z)
+        seg : ndarray, shape(X, Y, Z)
             the buffer in which to write the initial segmentation
         """
 
@@ -461,28 +496,31 @@ class IteratedConditionalModes(object):
 
         return seg
 
+
     def icm_ising(self, nloglike, beta, seg):
-        """ Executes one iteration of the ICM algorithm for MRF MAP estimation
+        
+        r""" Executes one iteration of the ICM algorithm for MRF MAP estimation
         The prior distribution of the MRF is a Gibbs distribution with the
         Potts/Ising model with parameter `beta`:
-
+        
         https://en.wikipedia.org/wiki/Potts_model
 
         Parameters
         ----------
         nloglike : array, shape(X, Y, Z, K)
-            nloglike[x,y,z,k] is the negative log likelihood of class k at voxel
-            (x,y,z)
-        beta : float (positive)
-            the parameter of the Potts/Ising model
-        seg : array, shape (X, Y, Z)
-            initial segmentation. On segput this segmentation will change by one
+            nloglike[x,y,z,k] is the negative log likelihood of class k at 
+            voxel (x,y,z)
+        beta : float (positive),
+            the parameter of the Potts/Ising model. Determines the smoothness 
+            of the output segmentation 
+        seg : ndarray, shape (X, Y, Z)
+            initial segmentation. This segmentation will change by one
             iteration of the ICM algorithm
 
         Returns
         -------
-        new_seg : array, shape (X, Y, Z)
-            final segmentation
+        new_seg : 3D ndarray, final segmentation
+        energy : 3D ndarray, final energy
         """
 
         energy = np.zeros(nloglike.shape[:3]).astype(np.float64)
@@ -495,6 +533,7 @@ class IteratedConditionalModes(object):
 
 
 cdef void _initialize_maximum_likelihood(double[:,:,:,:] nloglike, double[:,:,:] seg) nogil:
+    
     r""" Initializes the segmentation of an image with given neg-log-likelihood
 
     Initializes the segmentation of an image with neg-log-likelihood field
@@ -503,12 +542,16 @@ cdef void _initialize_maximum_likelihood(double[:,:,:,:] nloglike, double[:,:,:]
 
     Parameters
     ----------
-    nloglike : array, shape(X, Y, Z, K)
+    nloglike : 3D array
         nloglike[x,y,z,k] is the likelihhood of class k for voxel (x,y,z)
-    seg : array, shape(X, Y, Z)
+    seg : 3D array
         the buffer in which to write the initial segmentation. This is the
         inital segmentation
+        
+    Returns : 
+    seg : 3D array, initial segmentation
     """
+    
     cdef:
         cnp.npy_intp nx = nloglike.shape[0]
         cnp.npy_intp ny = nloglike.shape[1]
@@ -519,7 +562,7 @@ cdef void _initialize_maximum_likelihood(double[:,:,:,:] nloglike, double[:,:,:]
     for x in range(nx):
         for y in range(ny):
             for z in range(nz):
-                # Select the best label for this voxel (x, y, z)
+
                 best_class = -1
                 for k in range(nclasses):
                     if (best_class == -1) or (nloglike[x,y,z,k] < min_energy):
@@ -530,7 +573,8 @@ cdef void _initialize_maximum_likelihood(double[:,:,:,:] nloglike, double[:,:,:]
 
 cdef void _icm_ising(double[:,:,:,:] nloglike, double beta, double[:,:,:] seg,
                      double[:,:,:] energy, double[:,:,:] new_seg) nogil:
-    """ Executes one iteration of the ICM algorithm for MRF MAP estimation
+    
+    r""" Executes one iteration of the ICM algorithm for MRF MAP estimation
     The prior distribution of the MRF is a Gibbs distribution with the
     Potts/Ising model with parameter `beta`:
 
@@ -541,18 +585,18 @@ cdef void _icm_ising(double[:,:,:,:] nloglike, double beta, double[:,:,:] seg,
     nloglike : array, shape(X, Y, Z, K)
         nloglike[x,y,z,k] is the negative log likelihood of class k at voxel
         (x,y,z)
-    beta : float (positive)
-        the parameter of the Potts/Ising model
-    seg : array
-        initial segmentation. This segmentation will change by one
-        iteration of the ICM algorithm
+    beta : float (positive), the parameter of the Potts/Ising model.
+        Determines the smoothness of the output segmentation 
+    seg : 3D array, initial segmentation. 
+        This segmentation will change by one iteration of the ICM algorithm
+    energy : 3D array, buffer for the energy
+    new_seg : 3D array, buffer for the final segmentation
 
     Returns
     -------
-    energy : array
-        energy for every voxel
-    new_seg :  3D array
-        new segmentation
+    energy : 3D array, energy for every voxel
+    new_seg : 3D array, new final segmentation (there is a new one in each 
+        iteration)
     """
 
     cdef:
@@ -572,7 +616,6 @@ cdef void _icm_ising(double[:,:,:,:] nloglike, double beta, double[:,:,:] seg,
     for x in range(nx):
         for y in range(ny):
             for z in range(nz):
-                # Select the best label for this voxel (x, y, z)
 
                 best_class = -1
                 min_energy = NPY_INFINITY
@@ -580,7 +623,6 @@ cdef void _icm_ising(double[:,:,:,:] nloglike, double beta, double[:,:,:] seg,
                 for k in range(nclasses):
                     this_energy = nloglike[x, y, z, k]
 
-                    # Accumulate Gibbs energy for label k
                     for i in range(nneigh):
                         xx = x + dX[i]
                         if((xx < 0) or (xx >= nx)):
@@ -607,46 +649,89 @@ cdef void _icm_ising(double[:,:,:,:] nloglike, double beta, double[:,:,:] seg,
 
 
 class ImageSegmenter(object):
-    # To-do: generalize to quadratic measure fields measure fields
-    def __init__(self):
+
+    def __init__(self, save_history=False, verbose=False):
+        
+        self.save_history = save_history
+        self.segmentations = []
+        self.pves = []
+        self.energies = []
+        self.energies_sum = []
 
         pass
 
     def segment_hmrf(self, image, nclasses, beta, max_iter):
-
-        observationModel = ConstantObservationModel()
-        posteriorMaximizer = IteratedConditionalModes()
+        
+        com = ConstantObservationModel()
+        icm = IteratedConditionalModes()
 
         if image.max() > 1:
             image = np.interp(image, [0, image.max()], [0.0, 1.0])
-
-        print("Initializing parameters")
-        mu, sigma = observationModel.initialize_param_uniform(image, nclasses)
+        
+        if self.verbose:
+            print('\n')
+            print(">> Initializing parameters")
+            print('\n')
+        mu, sigma = com.initialize_param_uniform(image, nclasses)
         sigmasq = sigma ** 2
-        print("Computing first negative log-likelihood")
-        neglogl = observationModel.negloglikelihood(image, mu, sigmasq, nclasses)
-        print("Initializing segmentation")
-        initial_segmentation = posteriorMaximizer.initialize_maximum_likelihood(neglogl)
-        print("Calculating parameters for initial segmentation")
-        mu, sigma, sigmasq = observationModel.seg_stats(image, initial_segmentation, nclasses)
+        
+        if self.verbose:
+            print('\n')
+            print(">> Initializing segmentation")
+            print('\n')
+        neglogl = com.negloglikelihood(image, mu, sigmasq, nclasses)
+        seg_init = icm.initialize_maximum_likelihood(neglogl)
+        
+        if self.verbose:
+            print('\n')
+            print(">> Calculating parameters for initial segmentation")
+            print('\n')
+        mu, sigma, sigmasq = com.seg_stats(image, seg_init, nclasses)
+    
+        if self.verbose:
+            print('\n')
+            print(">> Adding gaussian noise to the background")
+            print('\n')
+        zero = np.zeros_like(image) + 0.001
+        zero_noise = add_noise(zero, 10000, 1, noise_type='gaussian')
+        image_gauss = np.where(image == 0, zero_noise, image)
+    
+        final_segmentation = np.empty_like(image)
+        initial_segmentation = seg_init.copy()
+        energies = []
+        
+        if self.verbose:
+            print('\n')
+            print('>> Expectation Maximization')
+            print('\n')
+    
+        for i in range(max_iter):
+            
+            if self.verbose:
+                print('>> Iteration: ' + str(i))
 
-        final_seg = np.empty_like(image)
-        seg_init = initial_segmentation.copy()
+            PLN = com.prob_neighborhood(image_gauss, seg_init, 
+                                        beta, nclasses)
+            PVE = com.prob_image(image_gauss, nclasses, mu, sigmasq, PLN)    
+            mu_upd, sigmasq_upd = com.update_param(image_gauss, PVE, mu, 
+                                                   nclasses)
+            
+            negll = com.negloglikelihood(image_gauss,
+                                         mu_upd, sigmasq_upd, nclasses)
 
-        for iter in range(max_iter):
-            print("Iteration: %d"%(iter,))
+            final_segmentation, energy = icm.icm_ising(negll, beta, seg_init)
 
-            PLN = observationModel.prob_neighborhood(image, initial_segmentation, beta, nclasses)
-            PLY = observationModel.prob_image(image, nclasses, mu, sigmasq, PLN)
-            mu_upd, sigmasq_upd = observationModel.update_param(image, PLY, mu, nclasses)
-            negll = observationModel.negloglikelihood(image, mu_upd, sigmasq_upd, nclasses)
-            final_seg, energy = posteriorMaximizer.icm_ising(negll, beta, initial_segmentation)
-
-            initial_segmentation = final_seg.copy()
+            if self.save_history:
+                self.segmentations.append(final_segmentation)
+                self.pves.append(PVE)
+                self.energies.append(energy)
+                self.energies_sum.append(energy[energy > -np.inf].sum())
+            
+            seg_init = final_segmentation.copy()
             mu = mu_upd.copy()
             sigmasq = sigmasq_upd.copy()
-
-        return seg_init, final_seg, PLY
+        
+        return initial_segmentation, final_segmentation, PVE
 
 
 #if __name__ == "__main__":
