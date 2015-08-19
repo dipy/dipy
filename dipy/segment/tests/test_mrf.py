@@ -4,8 +4,8 @@ import matplotlib.pyplot as plt
 from dipy.data import get_data
 from dipy.sims.voxel import add_noise
 from dipy.segment.mrf import (ConstantObservationModel,
-                              IteratedConditionalModes,
-                              ImageSegmenter)
+                              IteratedConditionalModes)
+from dipy.segment.tissue import (TissueClassifierHMRF)
 
 
 # Load a coronal slice from a T1-weighted MRI
@@ -361,7 +361,8 @@ def test_icm_square():
         print('>> Iteration: ' + str(j))
         print('\n')
 
-        final_segmentation_2, energy_2 = icm.icm_ising(negll, beta, initial_segmentation)
+        final_segmentation_2, energy_2 = icm.icm_ising(negll, beta, 
+                                                       initial_segmentation)
         initial_segmentation = final_segmentation_2.copy()
 
     difference_map = np.abs(final_segmentation_1 - final_segmentation_2)
@@ -372,13 +373,13 @@ def test_icm_square():
 
 def test_segment_hmrf():
 
-    imgseg = ImageSegmenter()
-    
+    imgseg = TissueClassifierHMRF()
+
     beta = 0.1
     max_iter = 10
 
-    seg_init, seg_final, PVE = imgseg.segment_hmrf(image, nclasses,
-                                                          beta, max_iter)
+    seg_init, seg_final, PVE = imgseg.classify(image, nclasses,
+                                               beta, max_iter)
 
     npt.assert_equal(seg_final.max(), nclasses - 1)
     npt.assert_equal(seg_final.min(), 0)
