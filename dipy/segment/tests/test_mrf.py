@@ -29,7 +29,18 @@ square = np.zeros((256, 256, 3))
 square[42:213, 42:213, :] = 1
 square[71:185, 71:185, :] = 2
 square[99:157, 99:157, :] = 3
-square_gauss = add_noise(square, 1000, 1, noise_type='gaussian')
+
+square_gauss = np.zeros((256, 256, 3)) + 0.001
+square_gauss = add_noise(square_gauss, 10000, 1, noise_type='gaussian')
+square_gauss[42:213, 42:213, :] = 1
+noise_1 = np.random.normal(1.001, 0.0001, size=square_gauss[42:213, 42:213, :].shape)
+square_gauss[42:213, 42:213, :] = square_gauss[42:213, 42:213, :] + noise_1
+square_gauss[71:185, 71:185, :] = 2
+noise_2 = np.random.normal(2.001, 0.0001, size=square_gauss[71:185, 71:185, :].shape)
+square_gauss[71:185, 71:185, :] = square_gauss[71:185, 71:185, :] + noise_2
+square_gauss[99:157, 99:157, :] = 3
+noise_3 = np.random.normal(3.001, 0.0001, size=square_gauss[99:157, 99:157, :].shape)
+square_gauss[99:157, 99:157, :] = square_gauss[99:157, 99:157, :] + noise_3
 
 square_1 = np.zeros((256, 256, 3)) + 0.001
 square_1 = add_noise(square_1, 10000, 1, noise_type='gaussian')
@@ -42,6 +53,7 @@ square_1[71:185, 71:185, :] = temp_2
 temp_3 = np.random.random_integers(20, size=(58, 58, 3))
 temp_3 = np.where(temp_3 < 20, 3, 1)
 square_1[99:157, 99:157, :] = temp_3
+
 
 
 class Formatter(object):
