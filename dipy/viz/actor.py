@@ -1,6 +1,7 @@
 # from __future__ import division, print_function, absolute_import
 
 import numpy as np
+from nibabel.affines import apply_affine
 
 from dipy.viz.colormap import line_colors
 from dipy.viz.utils import numpy_to_vtk_points, numpy_to_vtk_colors
@@ -184,6 +185,67 @@ def slicer(data, affine=None, value_range=None, opacity=1.,
     image_actor.opacity(opacity)
 
     return image_actor
+
+
+def odf_slicer(odfs, affine=None, mask=None, sphere=None, scale=2.2,
+               norm=True, radial_scale=True, opacity=1.,
+               lookup_colormap=None):
+    """ Slice spherical fields
+
+    """
+
+    if mask is None:
+        mask = np.ones(odfs.shape[:3])
+        ijk = np.ascontiguousarray(np.array(np.nonzero(mask)).T)
+
+    if affine is not None:
+        ijk = np.ascontiguousarray(apply_affine(affine, ijk))
+
+    faces = np.asarray(sphere.faces, dtype=int)
+    vertices = sphere.vertices
+
+    all_xyz = []
+    all_faces = []
+    for center in ijk:
+        m = odfs[tuple(center)].copy()
+
+        if norm:
+            m /= abs(m).max()
+
+        if radial_scale:
+            xyz = vertices * m[:, None]
+        else:
+            xyz = vertices.copy()
+
+        all_xyz.append(xyz)
+        all_faces.append(faces)
+
+    all_xyz = np.concatenate(all_xyz)
+    all_xyz_vtk = numpy_support.numpy_to_vtk(all_xyz)
+
+    all_faces = np.concatenate(all_faces)
+    all_faces_vtk = numpy_support.numpy_to_vtkIdTypeArray(all_faces)
+
+    points = vtk.vtkPoints()
+    points.SetData(all_xyz_vtk)
+
+    cells = vtk.vtkCellArray()
+    cells.SetCells(len(vertices), all_faces_vtk)
+
+    polydata = vtk.vtkPolyData()
+    polydata.SetPoints(points)
+    polydata.SetPolys(cells)
+
+    mapper = vtk.vtkPolyDataMapper()
+    if major_version <= 5:
+        mapper.SetInput(polydata)
+    else:
+        mapper.SetInputData(polydata)
+
+    actor = vtk.vtkActor()
+    actor.SetMapper(mapper)
+
+    return actor
 
 
 def streamtube(lines, colors=None, opacity=1, linewidth=0.01, tube_sides=9,

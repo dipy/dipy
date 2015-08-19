@@ -7,6 +7,7 @@ import numpy.testing as npt
 from nibabel.tmpdirs import TemporaryDirectory
 from dipy.tracking.streamline import center_streamlines, transform_streamlines
 from dipy.align.tests.test_streamlinear import fornix_streamlines
+from dipy.data import get_sphere
 
 
 @npt.dec.skipif(not actor.have_vtk)
@@ -197,15 +198,33 @@ def test_bundle_maps():
     report2 = window.analyze_snapshot(arr)
     npt.assert_equal(report2.objects, 1)
 
-    #try other input options for colors
+    # try other input options for colors
     renderer.clear()
     actor.line(bundle, (1., 0.5, 0))
     actor.line(bundle, np.arange(len(bundle)))
     actor.line(bundle)
-    colors=[np.random.rand(*b.shape) for b in bundle]
+    colors = [np.random.rand(*b.shape) for b in bundle]
     actor.line(bundle, colors=colors)
 
 
+@npt.dec.skipif(not actor.have_vtk)
+@npt.dec.skipif(not actor.have_vtk_colors)
+@npt.dec.skipif(not window.have_imread)
+def test_odf_slicer():
+
+    sphere = get_sphere('repulsion724')
+    odfs = np.ones((4, 4, 4, sphere.vertices.shape[0]))
+
+    affine = np.eye(4)
+
+    odf_actor = actor.odf_slicer(odfs, affine, sphere=sphere)
+
+    renderer = window.renderer()
+    renderer.add(odf_actor)
+
+    window.show(renderer)
+
 if __name__ == "__main__":
 
-    npt.run_module_suite()
+    # npt.run_module_suite()
+    ijk = test_odf_slicer()
