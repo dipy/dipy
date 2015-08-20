@@ -12,10 +12,13 @@ First we import all relevant modules:
 
 import numpy as np
 import nibabel as nib
+import os.path as op
 import dipy.reconst.dki as dki
 from dipy.data import read_cenir_multib
 from dipy.sims.voxel import multi_tensor_dki
 from dipy.segment.mask import median_otsu
+from dipy.denoise.noise_estimate import estimate_sigma
+from dipy.denoise.nlmeans import nlmeans
 from dipy.data import get_sphere
 from dipy.core.geometry import sphere2cart
 from dipy.viz import fvtk
@@ -74,14 +77,18 @@ for v in range(len(five_voxel_angles)):
                                              angles=angles,
                                              fractions=fractions, snr=None)
 
-""" Now we fit the signal of the simulated voxels using the fit method of the
-DiffusinKurtosisModel: """
+"""
+Now we fit the signal of the simulated voxels using the fit method of the
+DiffusinKurtosisModel:
+"""
 
 dkifit = dkimodel.fit(signal_dki)
 
-""" To visualize the 3D information provide by the diffusion and kurtosis
+"""
+To visualize the 3D information provide by the diffusion and kurtosis
 tensors, we compute and plot the directional diffusivity and kurtosis values
-on 724 directions evenly sampled on a sphere. """
+on 724 directions evenly sampled on a sphere.
+"""
 
 sphere = get_sphere('symmetric724')
 
@@ -117,8 +124,9 @@ gt_dir_2copies = gt_dir_2copies.reshape((5, 2, 1, 2, 3), order='F')
 gt_peaks = fvtk.peaks(gt_dir_2copies, 1.05 * np.ones(gt_dir_2copies.shape))
 fvtk.add(ren, gt_peaks)
 
-""" Now we are ready to save and show the figure containing the tensor
-geometries """
+"""
+Now we are ready to save and show the figure containing the tensor geometries:
+"""
 
 fvtk.record(ren, out_path='geometry_of_dki_tensors.png', size=(1200, 1200))
 
@@ -146,7 +154,8 @@ from the DiffusionKurtosisFit object:
 
 ODF = dkifit.dki_odf(sphere)
 
-""" We plot below the DKI-ODF in the analogous way done for the directional
+"""
+We plot below the DKI-ODF in the analogous way done for the directional
 diffusivity and kurtosis values:
 """
 
@@ -172,28 +181,39 @@ fvtk.show(ren, title='DKI-ODF geometry', size=(500, 500))
 
 We can see from figure that DKI-ODF peaks are near to the fiber directions
 ground truth. In this way, we show that when the ground truth fibers directions
-are not known (the case of real brain data), these can estimated by finding
+are not known (the case of real brain data), these can be estimated by finding
 the DKI-ODF maxima. Below we illustrate how this is done the HCP-like brain
 dataset.
 
-As mention in :ref:`example_reconst_dki`, diffusion kurtosis imaging requires
-that some pre-processing is done on real brain datasets to reduce the impact of
-signal artefacts. To avoid reprocessing data, here we load the data previously
-denoised in :ref:`example_reconst_dki`
+As mention in :ref:`example_reconst_dki`, for real brain datasets, diffusion
+kurtosis imaging requires that some pre-processing is done to reduce the impact
+of signal artefacts. Above we denoise our data using Dipy's non-local mean
+filter (see :ref:`example-denoise-nlmeans`). Since this procedure can take a
+couple of hours to run, if you already had performed this step in the previous
+DKI example :ref:`example_reconst_dki` or if you are running this example for
+the second time, the denoised version of the data is loaded instead.
 """
 
-img = nib.load('denoised_cenir_multib.nii.gz') 
+if not op.exists('denoised_cenir_multib.nii.gz'):
+    maskdata, mask = median_otsu(data, 4, 2, False, vol_idx=[0, 1], dilate=1)
+    sigma = estimate_sigma(data, N=4)
+    den = nlmeans(data, sigma=sigma, mask=mask)
+    nib.save(nib.Nifti1Image(den, affine), 'denoised_cenir_multib.nii.gz')
+else:
+    img = nib.load('denoised_cenir_multib.nii.gz') 
+    den = img.get_data()
 
-den = img.get_data()
-
-""" Now, we mask the data to avoid processing unnecessary background voxels:  
+"""
+Now, we mask the data to avoid processing unnecessary background voxels:
 """
 
 maskdata, mask = median_otsu(den, 4, 2, False, vol_idx=[0, 1], dilate=1)
 
-""" To fit the diffusion kurtosis model, we just need to call again the
-function fit of the DiffusinKurtosisModel. For illustration, we first show the
-DKI based ODF reconstructions in a small portion of the data. """
+"""
+To fit the diffusion kurtosis model, we call the ``fit`` function of the DKI
+model object defined on the beginning of this example. For illustration, we
+first show the DKI based ODF reconstructions in a small portion of the data.
+"""
 
 data_portion = maskdata[30:70, 50:51, 35:65]
 
@@ -201,7 +221,7 @@ dkifit = dkimodel.fit(data_portion)
 
 """
 Having fitted the diffusion kurtosis model, we are ready to compute and plot
-the DKI based ODFs
+the DKI based ODFs using the following:
 """
 
 dkiodf = dkifit.dki_odf(sphere)
@@ -212,6 +232,12 @@ odf_spheres.RotateX(-90)
 fvtk.add(ren, odf_spheres)
 fvtk.record(ren, out_path='dki_odfs.png')
 fvtk.show(ren)
+
+"""
+Alteratively the above this plot, fiber direction estimates from the DKI based
+ODF can be computed and ploted in the following way:
+"""
+
 
 """
 References:
