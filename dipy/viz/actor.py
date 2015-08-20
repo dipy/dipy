@@ -23,7 +23,7 @@ if have_vtk:
 
 
 def slicer(data, affine=None, value_range=None, opacity=1.,
-          lookup_colormap=None):
+           lookup_colormap=None):
     """ Cuts 3D scalar or rgb volumes into images
 
     Parameters
@@ -189,7 +189,7 @@ def slicer(data, affine=None, value_range=None, opacity=1.,
 
 def odf_slicer(odfs, affine=None, mask=None, sphere=None, scale=2.2,
                norm=True, radial_scale=True, opacity=1.,
-               lookup_colormap=None):
+               colormap=None):
     """ Slice spherical fields
 
     """
@@ -206,7 +206,7 @@ def odf_slicer(odfs, affine=None, mask=None, sphere=None, scale=2.2,
 
     all_xyz = []
     all_faces = []
-    for center in ijk:
+    for (k, center) in enumerate(ijk):
         m = odfs[tuple(center)].copy()
 
         if norm:
@@ -217,24 +217,42 @@ def odf_slicer(odfs, affine=None, mask=None, sphere=None, scale=2.2,
         else:
             xyz = vertices.copy()
 
-        all_xyz.append(xyz)
-        all_faces.append(faces)
+        all_xyz.append(xyz + center)
+        all_faces.append(faces + k * xyz.shape[0])
 
     all_xyz = np.ascontiguousarray(np.concatenate(all_xyz))
-    all_xyz_vtk = numpy_support.numpy_to_vtk(all_xyz)
+    all_xyz_vtk = numpy_support.numpy_to_vtk(all_xyz, deep=True)
 
-    all_faces = np.ascontiguousarray(np.concatenate(all_faces))
-    all_faces_vtk = numpy_support.numpy_to_vtkIdTypeArray(all_faces)
+    all_faces = np.concatenate(all_faces)
+    all_faces = np.hstack((3 * np.ones((len(all_faces), 1)),
+                           all_faces))
+    ncells = len(all_faces)
+
+    all_faces = np.ascontiguousarray(all_faces.ravel(), dtype='i8')
+    all_faces_vtk = numpy_support.numpy_to_vtkIdTypeArray(all_faces,
+                                                          deep=True)
 
     points = vtk.vtkPoints()
     points.SetData(all_xyz_vtk)
 
     cells = vtk.vtkCellArray()
-    cells.SetCells(3, all_faces_vtk)
+    cells.SetCells(ncells, all_faces_vtk)
+
+    if colormap is not None:
+        from dipy.viz.fvtk import create_colormap
+        cols = create_colormap(odfs.ravel(), colormap)
+        # cols = np.interp(cols, [0, 1], [0, 255]).astype('ubyte')
+
+        vtk_colors = numpy_to_vtk_colors(255 * cols)
+        vtk_colors.SetName("Colors")
+
 
     polydata = vtk.vtkPolyData()
     polydata.SetPoints(points)
     polydata.SetPolys(cells)
+
+    if colormap is not None:
+        polydata.GetPointData().SetScalars(vtk_colors)
 
     mapper = vtk.vtkPolyDataMapper()
     if major_version <= 5:

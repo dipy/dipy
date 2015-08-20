@@ -217,7 +217,8 @@ def test_odf_slicer():
 
     affine = np.eye(4)
 
-    odf_actor = actor.odf_slicer(odfs, affine, sphere=sphere)
+    odf_actor = actor.odf_slicer(odfs, affine, sphere=sphere,
+                                 colormap='jet')
 
     renderer = window.renderer()
     renderer.add(odf_actor)
