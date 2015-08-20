@@ -220,17 +220,17 @@ def odf_slicer(odfs, affine=None, mask=None, sphere=None, scale=2.2,
         all_xyz.append(xyz)
         all_faces.append(faces)
 
-    all_xyz = np.concatenate(all_xyz)
+    all_xyz = np.ascontiguousarray(np.concatenate(all_xyz))
     all_xyz_vtk = numpy_support.numpy_to_vtk(all_xyz)
 
-    all_faces = np.concatenate(all_faces)
+    all_faces = np.ascontiguousarray(np.concatenate(all_faces))
     all_faces_vtk = numpy_support.numpy_to_vtkIdTypeArray(all_faces)
 
     points = vtk.vtkPoints()
     points.SetData(all_xyz_vtk)
 
     cells = vtk.vtkCellArray()
-    cells.SetCells(len(vertices), all_faces_vtk)
+    cells.SetCells(3, all_faces_vtk)
 
     polydata = vtk.vtkPolyData()
     polydata.SetPoints(points)
