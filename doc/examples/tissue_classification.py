@@ -1,87 +1,77 @@
 """
-============================
-Tissue Classification for T1
-============================
+=======================================================
+Tissue Classification for a T1-weighted Strutural Image
+=======================================================
+This example explains how to segment a T1-weighted structural image using a MRF
+approach. Similar algorithms have been proposed by Zhang et al. [Zhang2001]_,
+and Avants et al. [Avants2011]_ available in FAST-FSL and ANTS-Artropos,
+respectively.
+
+Here we will use a T1-weighted image, that has been previously skull-stripped
+and bias field corrected.
 """
 
-# import numpy as np
+import numpy as np
 import nibabel as nib
-
-from dipy.segment.mask import applymask
-from dipy.segment.rois_stats import seg_stats
-from dipy.denoise.denspeed import add_padding_reflection
-from dipy.segment.icm_map import icm
-from dipy.segment.mrf_em import prob_neigh, prob_image, update_param
 import matplotlib.pyplot as plt
+from dipy.data import get_data
+from dipy.segment.tissue import TissueClassifierHMRF
 
-dname = '/Users/jvillalo/Documents/GSoC_2015/Code/Data/T1_coronal/'
-# dname = '/home/eleftherios/Dropbox/DIPY_GSoC_2015/T1_coronal/'
+"""
+First we fetch the T1 volume from the Syn dataset
+"""
 
-img = nib.load(dname + 't1_coronal_stack.nii.gz')
-dataimg = img.get_data()
+img = nib.load('/Users/jvillalo/.dipy/syn_test/t1_brain.nii.gz')
+t1_img = img.get_data()
+print('t1_img.shape (%d, %d, %d)' % t1_img.shape)
 
-mask_image = nib.load(dname + 't1mask_coronal_stack.nii.gz')
-datamask = mask_image.get_data()
+#from dipy.data.fetcher import fetch_syn_data, read_syn_data
+#fetch_syn_data()
+#nib_syn_t1, nib_syn_b0 = read_syn_data()
+#syn_b0 = np.array(nib_syn_b0.get_data())
 
-seg = nib.load(dname + 't1seg_coronal_stack.nii.gz')
-seg_init = seg.get_data()
+"""
+Now we will define the other three parameters for the segmentation algorith
 
-masked_img = applymask(dataimg, datamask)
-seg_init_masked = applymask(seg_init, datamask)
+First, the number of tissue classes
+"""
 
-print('masked_img.shape (%d, %d, %d)' % masked_img.shape)
-shape = masked_img.shape[:3]
+nclass = 4
 
-masked_img = masked_img.copy(order='C')
-seg_init_masked = seg_init_masked.copy(order='c')
-masked_img_pad = add_padding_reflection(masked_img, 1)
-seg_init_masked_pad = add_padding_reflection(seg_init_masked, 1)
+"""
+Then, the smoothnes factor of the segmentation. Good performance is achieved
+with values between [0 - 0,5]
+"""
 
-print("computing the statistics of the ROIs [CSF, GM, WM]")
-mu, std, var = seg_stats(masked_img, seg_init_masked, 3)
-print("Intitial estimates of mu and var")
-print('mean', mu)
-print('variance', var)
+beta = 0.1
 
-# number of tissue classes
-nclass = 3
-# weight of the neighborhood in ICM
-beta = 1.5
-# number of iterations of the mu/var updates
-niter = 5
-# update variables of mean and variance
-mu_upd = mu
-var_upd = var
-# update segmented image after each ICM
-seg_upd = seg_init_masked
+"""
+Then the number of iterations. Most of the time 10-15 iterations are optimal
+"""
 
-for i in range(0, niter):
+niter = 20
 
-    print('Iteration', i)
+"""
+Now we call an instace of the class TissueClassifierHMRF and its method
+called classify with the correspondings inputs.
+"""
 
-    # Calls the ICM function
-    segmented, totalenergy = icm(mu_upd, var_upd, masked_img, seg_upd, nclass, beta)
-    seg_upd = segmented
-    segmented = segmented.copy(order='C')
-    segmented_pad = add_padding_reflection(segmented, 1)
+hmrf = TissueClassifierHMRF()
+initial_segmentation, final_segmentation, PVE = hmrf.classify(t1_img, 
+                                                              nclass, beta, 
+                                                              niter)
+                                                              
+"""
+Now we plot the resulting segmentation and the partial volume 
+"""
 
-    # This is for equation 2.18 of the Stan Z. Li book.
-    P_L_N = prob_neigh(nclass, masked_img, segmented_pad, beta)
-
-    # This is for equation 27 of the Zhang paper
-    P_L_Y = prob_image(nclass, masked_img, mu_upd, var_upd, P_L_N)
-
-    # This is for equations 25 and 26 of the Zhang paper
-    mu_upd, var_upd = update_param(nclass, masked_img, datamask, mu_upd, P_L_Y)
-
-print('Show results')
 plt.figure()
-plt.imshow(seg_init_masked[:, :, 1])
+plt.imshow(final_segmentation[:, :, 89])
 plt.figure()
-plt.imshow(P_L_Y[:, :, 1, 0])
+
+"""
+
+"""
+
 plt.figure()
-plt.imshow(P_L_Y[:, :, 1, 1])
-plt.figure()
-plt.imshow(P_L_Y[:, :, 1, 2])
-plt.figure()
-plt.imshow(seg_upd[:, :, 1])
+plt.imshow(PVE[:, :, 89, 1])
