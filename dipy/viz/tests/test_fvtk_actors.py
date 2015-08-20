@@ -213,7 +213,7 @@ def test_bundle_maps():
 def test_odf_slicer():
 
     sphere = get_sphere('repulsion724')
-    odfs = np.ones((4, 4, 4, sphere.vertices.shape[0]))
+    odfs = np.ones((10, 10, 10, sphere.vertices.shape[0]))
 
     affine = np.eye(4)
 
@@ -221,9 +221,26 @@ def test_odf_slicer():
                                  colormap='jet')
 
     renderer = window.renderer()
+    # renderer.add(odf_actor)
+    # window.show(renderer)
+
+    mask = np.zeros(odfs.shape[:3])
+    mask[:, :, 5] = 1
+
+    odf_actor = actor.odf_slicer(odfs, affine,
+                                 mask=mask, sphere=sphere, scale=.2,
+                                 colormap='jet')
+    renderer.clear()
+
+    fa = np.random.rand(*odfs.shape[:3])
+    fa_actor = actor.slicer(fa, affine)
+    fa_actor.display(None, None, 5)
+
+    renderer.add(fa_actor)
     renderer.add(odf_actor)
 
     window.show(renderer)
+
 
 if __name__ == "__main__":
 

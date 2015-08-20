@@ -196,7 +196,8 @@ def odf_slicer(odfs, affine=None, mask=None, sphere=None, scale=2.2,
 
     if mask is None:
         mask = np.ones(odfs.shape[:3])
-        ijk = np.ascontiguousarray(np.array(np.nonzero(mask)).T)
+
+    ijk = np.ascontiguousarray(np.array(np.nonzero(mask)).T)
 
     if affine is not None:
         ijk = np.ascontiguousarray(apply_affine(affine, ijk))
@@ -217,7 +218,7 @@ def odf_slicer(odfs, affine=None, mask=None, sphere=None, scale=2.2,
         else:
             xyz = vertices.copy()
 
-        all_xyz.append(xyz + center)
+        all_xyz.append(scale * xyz + center)
         all_faces.append(faces + k * xyz.shape[0])
 
     all_xyz = np.ascontiguousarray(np.concatenate(all_xyz))
@@ -245,7 +246,6 @@ def odf_slicer(odfs, affine=None, mask=None, sphere=None, scale=2.2,
 
         vtk_colors = numpy_to_vtk_colors(255 * cols)
         vtk_colors.SetName("Colors")
-
 
     polydata = vtk.vtkPolyData()
     polydata.SetPoints(points)
