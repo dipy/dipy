@@ -13,7 +13,7 @@ fname = get_data('t1_coronal_slice')
 single_slice = np.load(fname)
 
 # Stack a few copies to form a 3D volume
-nslices = 5
+nslices = 256
 image = np.zeros(shape=single_slice.shape + (nslices,))
 image[..., :nslices] = single_slice[..., None]
 
@@ -361,21 +361,42 @@ def test_icm_square():
     npt.assert_equal(np.abs(np.sum(difference_map)) != 0, True)
 
 
-def test_segment_hmrf():
+def test_classify():
 
     imgseg = TissueClassifierHMRF()
 
     beta = 0.1
     max_iter = 10
+    
+    npt.assert_equal(image.max(), 1)
+    npt.assert_equal(image.min(), 0)
 
     seg_init, seg_final, PVE = imgseg.classify(image, nclasses,
                                                beta, max_iter)
-
+    
     npt.assert_equal(seg_final.max(), nclasses - 1)
     npt.assert_equal(seg_final.min(), 0)
+    
+    
+    imgseg = TissueClassifierHMRF(save_history=True)
+    
+    seg_init, seg_final, PVE = imgseg.classify(200 * image, nclasses,
+                                               beta, max_iter)
+    
+    npt.assert_equal(seg_final.max(), nclasses - 1)
+    npt.assert_equal(seg_final.min(), 0)
+   
+    npt.assert_equal(len(imgseg.segmentations), max_iter)  
 
 
 if __name__ == '__main__':
     pass
     npt.run_module_suite()
+    
+    
+    
+    
+    
+    
+    
 
