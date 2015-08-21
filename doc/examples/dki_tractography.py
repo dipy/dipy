@@ -171,7 +171,7 @@ fvtk.record(ren, out_path='DKI_ODF_geometry.png', size=(1200, 1200))
 
 fvtk.show(ren, title='DKI-ODF geometry', size=(500, 500))
 
-""" 
+"""
 .. figure:: DKI_ODF_geometry.png
    :align: center
    ** Geometrical representation of the DKI based orientation distribution
@@ -234,12 +234,36 @@ fvtk.record(ren, out_path='dki_odfs.png')
 fvtk.show(ren)
 
 """
-Alteratively the above this plot, fiber direction estimates from the DKI based
-ODF can be computed and ploted in the following way:
+.. figure:: dki_odfs.png
+   :align: center
+   ** DKI based orientation distribution function (ODF) estimate computed from
+   a portion of real brain data**.
+
+Alteratively to the above plot, fiber direction estimates from the DKI based
+ODF can be computed from the diffusion kurtosis fitted model object, by calling
+the function ``dki_directions`` of this object. This function is able to refine
+direction estimates under the percision of the initially sampled sphere object
+directions. Therefore, to reduce computational time, we load a sphere object
+with a smaller number of directions. DKI based ODF fiber directions are
+computed and ploted below:
 """
 
+sphere = get_sphere('repulsion100')
+
+dkidir = dkifit.dki_directions(sphere)
+
+ren = fvtk.ren()
+dki_peaks = fvtk.peaks(dkidir.peak_dirs)
+fvtk.add(ren, dki_peaks)
+fvtk.record(ren, out_path='dki_dirs.png')
+fvtk.show(ren)
 
 """
+.. figure:: dki_dirs.png
+   :align: center
+   ** Fiber directions computed from real brain DKI based orientation
+   distribution function (ODF) **.
+
 References:
 
 .. [Jen2014] Jensen, J.H., Helpern, J.A., Tabesh, A., (2014). Leading
