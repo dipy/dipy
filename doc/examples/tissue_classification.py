@@ -98,7 +98,7 @@ Now we plot the resulting segmentation.
 .. figure:: final_seg.png
    :align: center
 
-   **This is the resulting segmentation. Each tissue class is color coded separately, red for the WM, yellow for the GM and light blue for the CSF**.
+   **Each tissue class is color coded separately, red for the WM, yellow for the GM and light blue for the CSF**.
 
 """
 
