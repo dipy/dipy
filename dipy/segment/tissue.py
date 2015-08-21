@@ -5,6 +5,10 @@ from dipy.segment.mrf import (ConstantObservationModel,
 
 
 class TissueClassifierHMRF(object):
+    """"
+    This class contains the methods for tissue classification using the Markov
+    Random Fields modeling approach
+    """
 
     def __init__(self, save_history=False, verbose=True):
         
@@ -18,6 +22,26 @@ class TissueClassifierHMRF(object):
         pass
 
     def classify(self, image, nclasses, beta, max_iter):
+        """
+        This method uses the Maximum a posteriori - Markov Random Field
+        approach for segmentation by using the Iterative Conditional Modes and
+        Expectation Maximization to estimate the parameters.
+        
+        Parameters
+        ----------
+        image : 3D ndarray, T1 structural image.
+        nclasses : int, number of desired classes.
+        beta : float, smoothing parameter, the higher this number the 
+                smoother the output will be.
+        max_iter : number of desired iterations. Ususally between 0 and 0.5
+        
+        Returns
+        -------
+        final_segmentation : 3D ndarray, contains all tissue types. 
+        PVE : ndarray, probability map of each tissue type.
+        """        
+        
+        nclasses = nclasses + 1 # One extra class for the background
         
         com = ConstantObservationModel()
         icm = IteratedConditionalModes()
@@ -62,10 +86,12 @@ class TissueClassifierHMRF(object):
                 self.pves.append(PVE)
                 self.energies.append(energy)
                 self.energies_sum.append(energy[energy > -np.inf].sum())
-            
+             
             seg_init = final_segmentation.copy()
             mu = mu_upd.copy()
             sigmasq = sigmasq_upd.copy()
+            
+        PVE = PVE[..., 1:]
         
         return initial_segmentation, final_segmentation, PVE
 
