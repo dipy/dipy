@@ -556,6 +556,70 @@ def read_syn_data():
     b0 = nib.load(b0_name)
     return t1, b0
 
+
+def fetch_tissue_data():
+    """ Download images to be used for tissue classification
+    """
+    url = 'https://dl.dropboxusercontent.com/u/2481924/tissue_data/'
+    t1 = url + 't1_brain.nii.gz'
+    t1d = url + 't1_brain_denoised.nii.gz'
+
+    folder = pjoin(dipy_home, 'tissue_data')
+
+    md5_list = ['99c4b77267a6855cbfd96716d5d65b70',  # t1
+                '4b87e1b02b19994fbd462490cc784fa3']  # t1d
+
+    url_list = [t1, t1d]
+    fname_list = ['t1_brain.nii.gz', 't1_brain_denoised.nii.gz']
+
+    if not os.path.exists(folder):
+        print('Creating new directory %s' % folder)
+        os.makedirs(folder)
+        msg = 'Downloading 2 t1 volumes from the same session (7.8MB)...'
+        print(msg)
+
+        for i in range(len(md5_list)):
+            _get_file_data(pjoin(folder, fname_list[i]), url_list[i])
+            check_md5(pjoin(folder, fname_list[i]), md5_list[i])
+
+        print('Done.')
+        print('Files copied in folder %s' % folder)
+    else:
+        _already_there_msg(folder)
+
+
+def read_tissue_data(contrast='T1'):
+    """ Load images to be used for tissue classification
+
+    Parameters
+    ----------
+    constrast : str
+        'T1', 'T1 denoised' or 'Anisotropic Map'
+
+    Returns
+    -------
+    image : obj,
+        Nifti1Image
+
+    """
+    folder = pjoin(dipy_home, 'tissue_data')
+    t1_name = pjoin(folder, 't1_brain.nii.gz')
+    t1d_name = pjoin(folder, 't1_brain_denoised.nii.gz')
+
+    md5_dict = {'t1': '99c4b77267a6855cbfd96716d5d65b70',
+                't1d': '4b87e1b02b19994fbd462490cc784fa3'}
+
+    check_md5(t1_name, md5_dict['t1'])
+    check_md5(t1d_name, md5_dict['t1d'])
+
+    if contrast == 'T1 denoised':
+        return nib.load(t1d_name)
+    elif contrast == 'Anisotropic Map':
+        raise ValueError('Not avail')
+    else:
+        return nib.load(t1_name)
+
+
 mni_notes = \
     """
     Notes
