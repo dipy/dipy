@@ -1,6 +1,5 @@
 import numpy as np
 import numpy.testing as npt
-import matplotlib.pyplot as plt
 from dipy.data import get_data
 from dipy.sims.voxel import add_noise
 from dipy.segment.mrf import (ConstantObservationModel,
@@ -13,7 +12,7 @@ fname = get_data('t1_coronal_slice')
 single_slice = np.load(fname)
 
 # Stack a few copies to form a 3D volume
-nslices = 256
+nslices = 5
 image = np.zeros(shape=single_slice.shape + (nslices,))
 image[..., :nslices] = single_slice[..., None]
 
@@ -22,7 +21,6 @@ nclasses = 4
 beta = np.float64(0.0)
 max_iter = 10
 background_noise = True
-press_key = False
 
 # Making squares
 square = np.zeros((256, 256, 3))
@@ -56,17 +54,6 @@ square_1[71:185, 71:185, :] = temp_2
 temp_3 = np.random.random_integers(20, size=(58, 58, 3))
 temp_3 = np.where(temp_3 < 20, 3, 1)
 square_1[99:157, 99:157, :] = temp_3
-
-
-class Formatter(object):
-
-    def __init__(self, im):
-        self.im = im
-
-    def __call__(self, x, y):
-        shape = self.im.get_array().shape
-        z = self.im.get_array()[int(y), int(x)]
-        return 'x={:.01f}, y={:.01f}, value={:.01f}'.format(x, shape[0] - y, z)
 
 
 def test_greyscale_image():
@@ -133,7 +120,7 @@ def test_greyscale_image():
 
 def test_greyscale_iter():
 
-    max_iter = 100
+    max_iter = 15
     beta = np.float64(0.1)
 
     com = ConstantObservationModel()
@@ -217,10 +204,6 @@ def test_greyscale_iter():
         mu = mu_upd.copy()
         sigmasq = sigmasq_upd.copy()
 
-        if press_key:
-            raw_input('Next ...')
-        plt.close('all')
-
     npt.assert_equal(energies[-1] < energies[0], True)
 #    npt.assert_equal(energies[-1] < energies[-50], True)
 
@@ -234,8 +217,6 @@ def test_square_iter():
     icm = IteratedConditionalModes()
 
     initial_segmentation = square
-    plt.figure()
-    plt.imshow(initial_segmentation[..., 1])
 
     mu, sigma, sigmasq = com.seg_stats(square_gauss, initial_segmentation,
                                        nclasses)
@@ -306,10 +287,6 @@ def test_square_iter():
         mu = mu_upd.copy()
         sigmasq = sigmasq_upd.copy()
 
-        if press_key:
-            raw_input('Next ...')
-        plt.close('all')
-
     np.set_printoptions(3, suppress=True)
     print(np.diff(energies) * 0.0001)
 
@@ -374,16 +351,15 @@ def test_classify():
     seg_init, seg_final, PVE = imgseg.classify(image, nclasses,
                                                beta, max_iter)
     
-    npt.assert_equal(seg_final.max(), nclasses - 1)
+    npt.assert_equal(seg_final.max(), nclasses)
     npt.assert_equal(seg_final.min(), 0)
-    
-    
+        
     imgseg = TissueClassifierHMRF(save_history=True)
     
     seg_init, seg_final, PVE = imgseg.classify(200 * image, nclasses,
                                                beta, max_iter)
     
-    npt.assert_equal(seg_final.max(), nclasses - 1)
+    npt.assert_equal(seg_final.max(), nclasses)
     npt.assert_equal(seg_final.min(), 0)
    
     npt.assert_equal(len(imgseg.segmentations), max_iter)  
