@@ -578,7 +578,7 @@ def fetch_tissue_data():
     if not os.path.exists(folder):
         print('Creating new directory %s' % folder)
         os.makedirs(folder)
-        msg = 'Downloading 2 t1 volumes from the same session (7.8MB)...'
+        msg = 'Downloading 3 Nifti1 images (9.3MB)...'
         print(msg)
 
         for i in range(len(md5_list)):
