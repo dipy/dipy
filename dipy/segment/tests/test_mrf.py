@@ -280,15 +280,12 @@ def test_square_iter():
 
         final_segmentation, energy = icm.icm_ising(negll, beta,
                                                    initial_segmentation)
-                
+
         energies.append(energy[energy > -np.inf].sum())
 
         initial_segmentation = final_segmentation.copy()
         mu = mu_upd.copy()
         sigmasq = sigmasq_upd.copy()
-
-    np.set_printoptions(3, suppress=True)
-    print(np.diff(energies) * 0.0001)
 
     difference_map = np.abs(seg_init - final_segmentation)
     npt.assert_equal(np.abs(np.sum(difference_map)) == 0, True)
@@ -318,7 +315,8 @@ def test_icm_square():
         print('>> Iteration: ' + str(i))
         print('\n')
 
-        final_segmentation_1, energy_1 = icm.icm_ising(negll, beta, initial_segmentation)
+        final_segmentation_1, energy_1 = icm.icm_ising(negll, beta,
+                                                       initial_segmentation)
         initial_segmentation = final_segmentation_1.copy()
 
     beta = 2
@@ -330,7 +328,7 @@ def test_icm_square():
         print('>> Iteration: ' + str(j))
         print('\n')
 
-        final_segmentation_2, energy_2 = icm.icm_ising(negll, beta, 
+        final_segmentation_2, energy_2 = icm.icm_ising(negll, beta,
                                                        initial_segmentation)
         initial_segmentation = final_segmentation_2.copy()
 
@@ -344,35 +342,27 @@ def test_classify():
 
     beta = 0.1
     max_iter = 10
-    
+
     npt.assert_equal(image.max(), 1)
     npt.assert_equal(image.min(), 0)
 
     seg_init, seg_final, PVE = imgseg.classify(image, nclasses,
                                                beta, max_iter)
-    
+
     npt.assert_equal(seg_final.max(), nclasses)
     npt.assert_equal(seg_final.min(), 0)
-        
+
     imgseg = TissueClassifierHMRF(save_history=True)
-    
+
     seg_init, seg_final, PVE = imgseg.classify(200 * image, nclasses,
                                                beta, max_iter)
-    
+
     npt.assert_equal(seg_final.max(), nclasses)
     npt.assert_equal(seg_final.min(), 0)
-   
-    npt.assert_equal(len(imgseg.segmentations), max_iter)  
+
+    npt.assert_equal(len(imgseg.segmentations), max_iter)
 
 
 if __name__ == '__main__':
-    pass
-    npt.run_module_suite()
-    
-    
-    
-    
-    
-    
-    
 
+    npt.run_module_suite()
