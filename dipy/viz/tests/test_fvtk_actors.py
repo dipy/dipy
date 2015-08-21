@@ -212,6 +212,8 @@ def test_bundle_maps():
 def test_odf_slicer():
 
     sphere = get_sphere('repulsion724')
+
+    # use memory maps
     odfs = np.ones((10, 10, 10, sphere.vertices.shape[0]))
     # odfs = np.random.rand(10, 10, 10, sphere.vertices.shape[0])
 
@@ -231,11 +233,13 @@ def test_odf_slicer():
 
     for k in range(10):
         I, J, K = odfs.shape[:3]
+
         odf_actor.display_extent(0, I, 0, J, k, k + 1)
-        window.show(renderer)
+        odf_actor.GetProperty().SetOpacity(0.2)
+        # window.show(renderer, reset_camera=False)
 
 
 if __name__ == "__main__":
 
-    # npt.run_module_suite()
-    ijk = test_odf_slicer()
+    npt.run_module_suite()
+
