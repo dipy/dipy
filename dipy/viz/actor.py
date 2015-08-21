@@ -191,8 +191,36 @@ def odf_slicer(odfs, affine=None, mask=None, sphere=None, scale=2.2,
                norm=True, radial_scale=True, opacity=1.,
                colormap=None):
     """ Slice spherical fields
-
     """
+
+    class OdfSlicerActor(vtk.vtkActor):
+
+        def display_extent(self, x1, x2, y1, y2, z1, z2):
+
+            mask = np.zeros(odfs.shape[:3])
+            mask[x1:x2, y1:y2, z1:z2] = 1
+
+            self.mapper = _odf_slicer_mapper(odfs=odfs,
+                                             affine=affine,
+                                             mask=mask,
+                                             sphere=sphere,
+                                             scale=scale,
+                                             norm=norm,
+                                             radial_scale=radial_scale,
+                                             opacity=opacity,
+                                             colormap=colormap)
+            self.SetMapper(self.mapper)
+
+    odf_actor = OdfSlicerActor()
+    I, J, K = odfs.shape[:3]
+    odf_actor.display_extent(0, I, 0, J, K/2, K/2 + 1)
+
+    return odf_actor
+
+
+def _odf_slicer_mapper(odfs, affine=None, mask=None, sphere=None, scale=2.2,
+                       norm=True, radial_scale=True, opacity=1.,
+                       colormap=None):
 
     if mask is None:
         mask = np.ones(odfs.shape[:3])
@@ -260,10 +288,10 @@ def odf_slicer(odfs, affine=None, mask=None, sphere=None, scale=2.2,
     else:
         mapper.SetInputData(polydata)
 
-    actor = vtk.vtkActor()
-    actor.SetMapper(mapper)
+    # actor = vtk.vtkActor()
+    # actor.SetMapper(mapper)
 
-    return actor
+    return mapper
 
 
 def streamtube(lines, colors=None, opacity=1, linewidth=0.01, tube_sides=9,
