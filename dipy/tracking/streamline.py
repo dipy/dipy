@@ -188,7 +188,7 @@ def select_by_rois(streamlines, rois, include, mode=None, affine=None,
     >>> mask1[0, 0, 0] = True
     >>> mask2[1, 0, 0] = True
     >>> selection = select_by_rois(streamlines, [mask1, mask2],
-                                   [True, True],
+    ...                            [True, True],
     ...                            tol=1)
     >>> list(selection) # The result is a generator
     [array([[ 0. ,  0. ,  0.9],
@@ -196,7 +196,7 @@ def select_by_rois(streamlines, rois, include, mode=None, affine=None,
            [ 0.,  1.,  1.],
            [ 0.,  2.,  2.]])]
     >>> selection = select_by_rois(streamlines, [mask1, mask2],
-                                   [True, False],
+    ...                            [True, False],
     ...                            tol=0.87)
     >>> list(selection)
     [array([[ 0.,  0.,  0.],
