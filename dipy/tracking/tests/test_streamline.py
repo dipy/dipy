@@ -420,12 +420,12 @@ def compress_streamlines_python(streamline, tol_error=0.01,
         return streamline.copy()
 
     # Euclidean distance
-    segment_length = lambda prev, next: np.sqrt(((prev-next)**2).sum())
+    def segment_length(prev, next):
+        return np.sqrt(((prev-next)**2).sum())
 
     # Projection of a 3D point on a 3D line, minimal distance
-    dist_to_line = lambda prev, next, curr: norm(np.cross(next-prev,
-                                                          curr-next)
-                                                 ) / norm(next-prev)
+    def dist_to_line(prev, next):
+        return norm(np.cross(next-prev, curr-next)) / norm(next-prev)
 
     nb_points = 0
     compressed_streamline = np.zeros_like(streamline)
@@ -446,7 +446,8 @@ def compress_streamlines_python(streamline, tol_error=0.01,
             continue
 
         # Check that each point is not offset by more than `tol_error` mm.
-        for o, curr in enumerate(streamline[prev_id+1:next_id], start=prev_id+1):
+        for o, curr in enumerate(streamline[prev_id+1:next_id],
+                                 start=prev_id+1):
             dist = dist_to_line(prev, next, curr)
 
             if np.isnan(dist) or dist > tol_error:
@@ -482,13 +483,15 @@ def test_compress_streamlines():
         assert_array_equal(c_streamline, [linear_streamline[0],
                                           linear_streamline[-1]])
 
-        # The distance of consecutive points must be less or equal than some value.
+        # The distance of consecutive points must be less or equal than some
+        # value.
         max_segment_length = 10
         linear_streamline = np.linspace(0, 100, 100*3).reshape((100, 3))
         linear_streamline[:, 1:] = 0.
         c_streamline = compress_func(linear_streamline,
                                      max_segment_length=max_segment_length)
-        segments_length = np.sqrt((np.diff(c_streamline, axis=0)**2).sum(axis=1))
+        segments_length = np.sqrt((np.diff(c_streamline,
+                                           axis=0)**2).sum(axis=1))
         assert_true(np.all(segments_length <= max_segment_length))
         assert_equal(len(c_streamline), 12)
         assert_array_equal(c_streamline, linear_streamline[::9])
@@ -498,7 +501,8 @@ def test_compress_streamlines():
                                      max_segment_length=0.01)
         assert_array_equal(c_streamline, linear_streamline)
 
-        # Test we can set `max_segment_length` to infinity (like the C++ version)
+        # Test we can set `max_segment_length` to infinity
+        # (like the C++ version)
         compress_func(streamline, max_segment_length=np.inf)
 
         # Uncompressable streamline when `tol_error` == 1.
@@ -517,8 +521,10 @@ def test_compress_streamlines():
     # Create a special streamline where every other point is increasingly
     # farther from a straigth line formed by the streamline endpoints.
     tol_errors = np.linspace(0, 10, 21)
-    orthogonal_line = np.array([[-np.sqrt(2)/2, np.sqrt(2)/2, 0]], dtype=np.float32)
-    special_streamline = np.array([range(len(tol_errors)*2+1)] * 3, dtype=np.float32).T
+    orthogonal_line = np.array([[-np.sqrt(2)/2, np.sqrt(2)/2, 0]],
+                               dtype=np.float32)
+    special_streamline = np.array([range(len(tol_errors)*2+1)] * 3,
+                                  dtype=np.float32).T
     special_streamline[1::2] += orthogonal_line * tol_errors[:, None]
 
     # # Uncomment to see the streamline.
@@ -536,12 +542,14 @@ def test_compress_streamlines():
         assert_array_equal(cspecial_streamline[0], special_streamline[0])
         assert_array_equal(cspecial_streamline[-1], special_streamline[-1])
 
-        assert_equal(len(cspecial_streamline), len(special_streamline)-((i*2)+1))
+        assert_equal(len(cspecial_streamline),
+                     len(special_streamline)-((i*2)+1))
 
         # Make sure Cython and Python versions are the same.
-        cstreamline_python = compress_streamlines_python(special_streamline,
-                                                         tol_error=tol_error+1e-4,
-                                                         max_segment_length=np.inf)
+        cstreamline_python = compress_streamlines_python(
+                                            special_streamline,
+                                            tol_error=tol_error+1e-4,
+                                            max_segment_length=np.inf)
         assert_equal(len(cspecial_streamline), len(cstreamline_python))
         assert_array_almost_equal(cspecial_streamline, cstreamline_python)
 
@@ -555,7 +563,6 @@ def test_select_by_rois():
                    np.array([[2, 2, 2],
                              [3, 3, 3]])]
 
-    affine = np.eye(4)
     # Make two ROIs:
     mask1 = np.zeros((4, 4, 4), dtype=bool)
     mask2 = np.zeros_like(mask1)
@@ -563,16 +570,16 @@ def test_select_by_rois():
     mask2[1, 0, 0] = True
 
     selection = select_by_rois(streamlines, [mask1], [True],
-    tol=1)
+                               tol=1)
 
     npt.assert_array_equal(list(selection), [streamlines[0],
-                                            streamlines[1]])
+                           streamlines[1]])
 
     selection = select_by_rois(streamlines, [mask1, mask2], [True, True],
-    tol=1)
+                               tol=1)
 
     npt.assert_array_equal(list(selection), [streamlines[0],
-                                            streamlines[1]])
+                           streamlines[1]])
 
     selection = select_by_rois(streamlines, [mask1, mask2], [True, False])
 
@@ -580,19 +587,18 @@ def test_select_by_rois():
 
     # Setting tolerance too low gets overridden:
     selection = select_by_rois(streamlines, [mask1, mask2], [True, False],
-                              tol=0.1)
+                               tol=0.1)
     npt.assert_array_equal(list(selection), [streamlines[1]])
 
-
     selection = select_by_rois(streamlines, [mask1, mask2], [True, True],
-                                            tol=0.87)
+                               tol=0.87)
 
     npt.assert_array_equal(list(selection), [streamlines[1]])
 
     mask3 = np.zeros_like(mask1)
     mask3[0, 2, 2] = 1
     selection = select_by_rois(streamlines, [mask1, mask2, mask3],
-                              [True, True, False], tol=1.0)
+                               [True, True, False], tol=1.0)
 
     npt.assert_array_equal(list(selection), [streamlines[0]])
 
@@ -602,37 +608,35 @@ def test_select_by_rois():
 
     selection = select_by_rois(streamlines, [mask1], [True], tol=1.0)
     npt.assert_array_equal(list(selection), [streamlines[0],
-                                            streamlines[1]])
+                           streamlines[1]])
 
     # Use different modes:
     selection = select_by_rois(streamlines, [mask1, mask2, mask3],
-                              [True, True, False],
-                              mode="all",
-                              tol=1.0)
-    npt.assert_array_equal(list(selection), [streamlines[0]])
-
-
-    selection = select_by_rois(streamlines, [mask1, mask2, mask3],
-                              [True, True, False],
-                              mode="either_end",
-                              tol=1.0)
+                               [True, True, False],
+                               mode="all",
+                               tol=1.0)
     npt.assert_array_equal(list(selection), [streamlines[0]])
 
     selection = select_by_rois(streamlines, [mask1, mask2, mask3],
-                              [True, True, False],
-                              mode="both_end",
-                              tol=1.0)
+                               [True, True, False],
+                               mode="either_end",
+                               tol=1.0)
+    npt.assert_array_equal(list(selection), [streamlines[0]])
+
+    selection = select_by_rois(streamlines, [mask1, mask2, mask3],
+                               [True, True, False],
+                               mode="both_end",
+                               tol=1.0)
     npt.assert_array_equal(list(selection), [streamlines[0]])
 
     mask2[0, 2, 2] = True
     selection = select_by_rois(streamlines, [mask1, mask2, mask3],
-                              [True, True, False],
-                              mode="both_end",
-                              tol=1.0)
+                               [True, True, False],
+                               mode="both_end",
+                               tol=1.0)
 
     npt.assert_array_equal(list(selection), [streamlines[0],
                                              streamlines[1]])
-
 
     # Test with generator input:
     def generate_sl(streamlines):
@@ -640,10 +644,9 @@ def test_select_by_rois():
             yield sl
 
     selection = select_by_rois(generate_sl(streamlines), [mask1], [True],
-                              tol=1.0)
+                               tol=1.0)
     npt.assert_array_equal(list(selection), [streamlines[0],
-                                            streamlines[1]])
-
+                           streamlines[1]])
 
 
 if __name__ == '__main__':

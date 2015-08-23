@@ -20,19 +20,21 @@ import numpy.testing as npt
 from numpy.testing import assert_array_almost_equal, assert_array_equal
 from nose.tools import assert_equal, assert_raises, assert_true
 
+
 def make_streamlines():
-    streamlines = [ np.array([[0, 0, 0],
-                              [1, 1, 1],
-                              [2, 2, 2],
-                              [5, 10, 12]], 'float'),
-                    np.array([[1, 2, 3],
-                              [3, 2, 0],
-                              [5, 20, 33],
-                              [40, 80, 120]], 'float') ]
+    streamlines = [np.array([[0, 0, 0],
+                             [1, 1, 1],
+                             [2, 2, 2],
+                             [5, 10, 12]], 'float'),
+                   np.array([[1, 2, 3],
+                             [3, 2, 0],
+                             [5, 20, 33],
+                             [40, 80, 120]], 'float')]
     return streamlines
 
+
 def test_density_map():
-    #One streamline diagonal in volume
+    # One streamline diagonal in volume
     streamlines = [np.array([np.arange(10)]*3).T]
     shape = (10, 10, 10)
     x = np.arange(10)
@@ -41,8 +43,8 @@ def test_density_map():
     dm = density_map(streamlines, vol_dims=shape, voxel_size=(1, 1, 1))
     assert_array_equal(dm, expected)
 
-    #add streamline, make voxel_size smaller. Each streamline should only be
-    #counted once, even if multiple points lie in a voxel
+    # add streamline, make voxel_size smaller. Each streamline should only be
+    # counted once, even if multiple points lie in a voxel
     streamlines.append(np.ones((5, 3)))
     shape = (5, 5, 5)
     x = np.arange(5)
@@ -51,7 +53,7 @@ def test_density_map():
     expected[0, 0, 0] += 1
     dm = density_map(streamlines, vol_dims=shape, voxel_size=(2, 2, 2))
     assert_array_equal(dm, expected)
-    #should work with a generator
+    # should work with a generator
     dm = density_map(iter(streamlines), vol_dims=shape, voxel_size=(2, 2, 2))
     assert_array_equal(dm, expected)
 
@@ -75,9 +77,9 @@ def test_connectivity_matrix():
     label_volume = np.array([[[3, 0, 0],
                               [0, 0, 0],
                               [0, 0, 4]]])
-    streamlines = [np.array([[0,0,0],[0,0,0],[0,2,2]], 'float'),
-                   np.array([[0,0,0],[0,1,1],[0,2,2]], 'float'),
-                   np.array([[0,2,2],[0,1,1],[0,0,0]], 'float')]
+    streamlines = [np.array([[0, 0, 0], [0, 0, 0], [0, 2, 2]], 'float'),
+                   np.array([[0, 0, 0], [0, 1, 1], [0, 2, 2]], 'float'),
+                   np.array([[0, 2, 2], [0, 1, 1], [0, 0, 0]], 'float')]
     expected = np.zeros((5, 5), 'int')
     expected[3, 4] = 2
     expected[4, 3] = 1
@@ -116,7 +118,7 @@ def test_connectivity_matrix():
     streamlines = [-i for i in streamlines]
     matrix = connectivity_matrix(streamlines, label_volume, affine=affine)
     # In the symmetrical case, the matrix should be, well, symmetric:
-    assert_equal(matrix[4,3], matrix[4,3])
+    assert_equal(matrix[4, 3], matrix[4, 3])
 
 
 def test_ndbincount():
@@ -127,29 +129,29 @@ def test_ndbincount():
         assert_equal(bc[2, 2], expected[3])
     x = np.array([[0, 0], [0, 0], [0, 1], [0, 1], [1, 0], [2, 2]]).T
     expected = [2, 2, 1, 1]
-    #count occurrences in x
+    # count occurrences in x
     bc = ndbincount(x)
     assert_equal(bc.shape, (3, 3))
     check(expected)
-    #pass in shape
+    # pass in shape
     bc = ndbincount(x, shape=(4, 5))
     assert_equal(bc.shape, (4, 5))
     check(expected)
-    #pass in weights
+    # pass in weights
     weights = np.arange(6.)
     weights[-1] = 1.23
     expeceted = [1., 5., 4., 1.23]
     bc = ndbincount(x, weights=weights)
     check(expeceted)
-    #raises an error if shape is too small
+    # raises an error if shape is too small
     assert_raises(ValueError, ndbincount, x, None, (2, 2))
 
 
 def test_reduce_labels():
     shape = (4, 5, 6)
-    #labels from 100 to 220
+    # labels from 100 to 220
     labels = np.arange(100, np.prod(shape)+100).reshape(shape)
-    #new labels form 0 to 120, and lookup maps range(0,120) to range(100, 220)
+    # new labels form 0 to 120, and lookup maps range(0,120) to range(100, 220)
     new_labels, lookup = reduce_labels(labels)
     assert_array_equal(new_labels, labels-100)
     assert_array_equal(lookup, labels.ravel())
@@ -162,18 +164,18 @@ def test_move_streamlines():
     for i, test_sl in enumerate(new_streamlines):
         assert_array_equal(test_sl, streamlines[i])
 
-    affine[:3,3] += (4,5,6)
+    affine[:3, 3] += (4, 5, 6)
     new_streamlines = move_streamlines(streamlines, affine)
     for i, test_sl in enumerate(new_streamlines):
         assert_array_equal(test_sl, streamlines[i]+(4, 5, 6))
 
     affine = np.eye(4)
-    affine = affine[[2,1,0,3]]
+    affine = affine[[2, 1, 0, 3]]
     new_streamlines = move_streamlines(streamlines, affine)
     for i, test_sl in enumerate(new_streamlines):
         assert_array_equal(test_sl, streamlines[i][:, [2, 1, 0]])
 
-    affine[:3,3] += (4,5,6)
+    affine[:3, 3] += (4, 5, 6)
     new_streamlines = move_streamlines(streamlines, affine)
     undo_affine = move_streamlines(new_streamlines, np.eye(4),
                                    input_space=affine)
@@ -196,8 +198,7 @@ def test_target():
                              [2., 0., 0.]]),
                    np.array([[0., 0., 0],
                              [0, 1., 1.],
-                             [0, 2., 2.]])
-                  ]
+                             [0, 2., 2.]])]
     affine = np.eye(4)
     mask = np.zeros((4, 4, 4), dtype=bool)
     mask[0, 0, 0] = True
@@ -219,7 +220,7 @@ def test_target():
     assert_true(new[0] is streamlines[1])
 
     # Test that bad points raise a value error
-    bad_sl = [ np.array([[10., 10., 10.]])]
+    bad_sl = [np.array([[10., 10., 10.]])]
     new = target(bad_sl, mask, affine=affine)
     assert_raises(ValueError, list, new)
     bad_sl = [-np.array([[10., 10., 10.]])]
@@ -258,8 +259,7 @@ def test_near_roi():
                              [0, 1., 1.],
                              [0, 2., 2.]]),
                    np.array([[2, 2, 2],
-                             [3, 3, 3]])
-                  ]
+                             [3, 3, 3]])]
 
     affine = np.eye(4)
     mask = np.zeros((4, 4, 4), dtype=bool)
@@ -276,9 +276,10 @@ def test_near_roi():
     # Transform the streamlines:
     x_streamlines = [sl + affine[:3, 3] for sl in streamlines]
     assert_array_equal(near_roi(x_streamlines, mask, affine=affine, tol=1),
-                 np.array([True, True, False]))
-    assert_array_equal(near_roi(x_streamlines, mask, affine=affine, tol=None),
-                 np.array([False, True, False]))
+                       np.array([True, True, False]))
+    assert_array_equal(near_roi(x_streamlines, mask, affine=affine,
+                                tol=None),
+                       np.array([False, True, False]))
 
     # Test for use of the 'all' mode:
     assert_array_equal(near_roi(x_streamlines, mask, affine=affine, tol=None,
@@ -293,8 +294,10 @@ def test_near_roi():
 
     mask[2, 2, 2] = True
     mask[3, 3, 3] = True
-    assert_array_equal(near_roi(x_streamlines, mask, affine=affine, tol=None,
-                                mode='all'), np.array([False, True, True]))
+    assert_array_equal(near_roi(x_streamlines, mask, affine=affine,
+                                tol=None,
+                                mode='all'),
+                       np.array([False, True, True]))
 
     # Test for use of endpoints as selection criteria:
     mask = np.zeros((4, 4, 4), dtype=bool)
@@ -303,15 +306,16 @@ def test_near_roi():
 
     assert_array_equal(near_roi(streamlines, mask, tol=0.87,
                                 mode="either_end"),
-                        np.array([True, False, False]))
+                       np.array([True, False, False]))
 
-    assert_array_equal(near_roi(streamlines, mask, tol=0.87, mode="both_end"),
-                        np.array([False, False, False]))
+    assert_array_equal(near_roi(streamlines, mask, tol=0.87,
+                                mode="both_end"),
+                       np.array([False, False, False]))
 
     mask[0, 0, 0] = True
     mask[0, 2, 2] = True
     assert_array_equal(near_roi(streamlines, mask, mode="both_end"),
-                        np.array([False, True, False]))
+                       np.array([False, True, False]))
 
     # Test with a generator input:
     def generate_sl(streamlines):
@@ -320,7 +324,7 @@ def test_near_roi():
 
     assert_array_equal(near_roi(generate_sl(streamlines),
                                 mask, mode="both_end"),
-                        np.array([False, True, False]))
+                       np.array([False, True, False]))
 
 
 def test_voxel_ornt():
@@ -362,7 +366,7 @@ def test_voxel_ornt():
         assert_array_equal(next(test_sl), next(expected_sl))
 
     srp_affine = reorder_voxels_affine(ras, srp, sh, sz)
-    toras_affine = reorder_voxels_affine(srp, ras, (40 ,40, 40), (3, 1, 2))
+    toras_affine = reorder_voxels_affine(srp, ras, (40, 40, 40), (3, 1, 2))
     assert_array_equal(np.dot(toras_affine, srp_affine), I4)
     expected_sl = [sl.copy() for sl in streamlines]
     for sl in expected_sl:
@@ -378,7 +382,8 @@ def test_streamline_mapping():
                    np.array([[0, 0, 0], [0, 1, 1], [0, 2, 2]], 'float'),
                    np.array([[0, 2, 2], [0, 1, 1], [0, 0, 0]], 'float')]
     mapping = streamline_mapping(streamlines, (1, 1, 1))
-    expected = {(0, 0, 0):[0, 1, 2], (0, 2, 2):[0, 1, 2], (0, 1, 1):[1, 2]}
+    expected = {(0, 0, 0): [0, 1, 2], (0, 2, 2): [0, 1, 2],
+                (0, 1, 1): [1, 2]}
     assert_equal(mapping, expected)
 
     mapping = streamline_mapping(streamlines, (1, 1, 1),
@@ -441,15 +446,14 @@ def test_affine_for_trackvis():
 
 
 def test_length():
-
     # Generate a simulated bundle of fibers:
-    n_streamlines=50
-    n_pts=100
+    n_streamlines = 50
+    n_pts = 100
     t = np.linspace(-10, 10, n_pts)
 
     bundle = []
     for i in np.linspace(3, 5, n_streamlines):
-        pts = np.vstack((np.cos(2 * t/np.pi), np.zeros(t.shape) + i, t )).T
+        pts = np.vstack((np.cos(2 * t/np.pi), np.zeros(t.shape) + i, t)).T
         bundle.append(pts)
 
     start = np.random.randint(10, 30, n_streamlines)
@@ -493,7 +497,7 @@ def test_random_seeds_from_mask():
     assert_equal(mask.sum() * 24, len(seeds))
 
     mask[:] = False
-    mask[2,2,2] = True
+    mask[2, 2, 2] = True
     seeds = random_seeds_from_mask(mask, seeds_per_voxel=8)
     assert_equal(mask.sum() * 8, len(seeds))
     assert_true(np.all((seeds > 1.5) & (seeds < 2.5)))
@@ -520,21 +524,20 @@ def test_unique_rows():
     """
     Testing the function unique_coords
     """
-    arr = np.array([[1,2,3],[1,2,3],[2,3,4],[3,4,5]])
-    arr_w_unique = np.array([[1,2,3],[2,3,4],[3,4,5]])
+    arr = np.array([[1, 2, 3], [1, 2, 3], [2, 3, 4], [3, 4, 5]])
+    arr_w_unique = np.array([[1, 2, 3], [2, 3, 4], [3, 4, 5]])
     assert_array_equal(unique_rows(arr), arr_w_unique)
 
     # Should preserve order:
-    arr = np.array([[2,3,4],[1,2,3],[1,2,3],[3,4,5]])
-    arr_w_unique = np.array([[2,3,4],[1,2,3],[3,4,5]])
+    arr = np.array([[2, 3, 4], [1, 2, 3], [1, 2, 3], [3, 4, 5]])
+    arr_w_unique = np.array([[2, 3, 4], [1, 2, 3], [3, 4, 5]])
     assert_array_equal(unique_rows(arr), arr_w_unique)
 
-
     # Should work even with longer arrays:
-    arr = np.array([[2,3,4],[1,2,3],[1,2,3],[3,4,5],
-                    [6,7,8],[0,1,0],[1,0,1]])
-    arr_w_unique = np.array([[2,3,4],[1,2,3],[3,4,5],
-                             [6,7,8],[0,1,0],[1,0,1]])
+    arr = np.array([[2, 3, 4], [1, 2, 3], [1, 2, 3], [3, 4, 5],
+                    [6, 7, 8], [0, 1, 0], [1, 0, 1]])
+    arr_w_unique = np.array([[2, 3, 4], [1, 2, 3], [3, 4, 5],
+                             [6, 7, 8], [0, 1, 0], [1, 0, 1]])
 
     assert_array_equal(unique_rows(arr), arr_w_unique)
 

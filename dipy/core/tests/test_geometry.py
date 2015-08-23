@@ -290,13 +290,13 @@ def test_perpendicular_directions():
 
 
 def _rotation_from_angles(r):
-    R =   np.array([[1, 0, 0],
-                   [0, np.cos(r[0]), np.sin(r[0])],
-                   [0, -np.sin(r[0]), np.cos(r[0])]])
+    R = np.array([[1, 0, 0],
+                  [0, np.cos(r[0]), np.sin(r[0])],
+                  [0, -np.sin(r[0]), np.cos(r[0])]])
 
-    R = np.dot(R, np.array([[np.cos(r[1]), 0,np.sin(r[1])],
+    R = np.dot(R, np.array([[np.cos(r[1]), 0, np.sin(r[1])],
                             [0, 1, 0],
-                            [-np.sin(r[1]),0,np.cos(r[1])]]))
+                            [-np.sin(r[1]), 0, np.cos(r[1])]]))
 
     R = np.dot(R, np.array([[np.cos(r[2]), np.sin(r[2]), 0],
                             [-np.sin(r[2]), np.cos(r[2]), 0],

@@ -577,7 +577,6 @@ def euler_matrix(ai, aj, ak, axes='sxyz'):
     try:
         firstaxis, parity, repetition, frame = _AXES2TUPLE[axes]
     except (AttributeError, KeyError):
-        _ = _TUPLE2AXES[axes]
         firstaxis, parity, repetition, frame = axes
 
     i = firstaxis
@@ -1023,6 +1022,6 @@ def dist_to_corner(affine):
         The maximal distance to the corner of a voxel, given voxel size encoded
         in the affine.
     """
-    R = affine[0:3,0:3]
+    R = affine[0:3, 0:3]
     vox_dim = np.diag(np.linalg.cholesky(R.T.dot(R)))
     return np.sqrt(np.sum((vox_dim / 2) ** 2))
