@@ -10,11 +10,13 @@ from dipy.tracking.utils import (affine_for_trackvis, connectivity_matrix,
                                  ndbincount, reduce_labels,
                                  reorder_voxels_affine, seeds_from_mask,
                                  random_seeds_from_mask, target,
-                                 _rmi, unique_rows, near_roi)
+                                 _rmi, unique_rows, near_roi,
+                                 reduce_rois)
 
 import dipy.tracking.metrics as metrix
 
 from dipy.tracking.vox2track import streamline_mapping
+import numpy.testing as npt
 from numpy.testing import assert_array_almost_equal, assert_array_equal
 from nose.tools import assert_equal, assert_raises, assert_true
 
@@ -535,3 +537,21 @@ def test_unique_rows():
                              [6,7,8],[0,1,0],[1,0,1]])
 
     assert_array_equal(unique_rows(arr), arr_w_unique)
+
+
+def test_reduce_rois():
+    roi1 = np.zeros((4, 4, 4), dtype=np.bool)
+    roi2 = np.zeros((4, 4, 4), dtype=np.bool)
+    roi1[1, 1, 1] = 1
+    roi2[2, 2, 2] = 1
+    include_roi, exclude_roi = reduce_rois([roi1, roi2], [True, True])
+    npt.assert_equal(include_roi, roi1 + roi2)
+    npt.assert_equal(exclude_roi, np.zeros((4, 4, 4)))
+    include_roi, exclude_roi = reduce_rois([roi1, roi2], [True, False])
+    npt.assert_equal(include_roi, roi1)
+    npt.assert_equal(exclude_roi, roi2)
+    # Array input:
+    include_roi, exclude_roi = reduce_rois(np.array([roi1, roi2]),
+                                           [True, True])
+    npt.assert_equal(include_roi, roi1 + roi2)
+    npt.assert_equal(exclude_roi, np.zeros((4, 4, 4)))
