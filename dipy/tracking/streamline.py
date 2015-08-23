@@ -121,7 +121,7 @@ def select_random_set_of_streamlines(streamlines, select):
 
 
 def select_by_rois(streamlines, rois, include, mode=None, affine=None,
-                  tol=None):
+                   tol=None):
     """Select streamlines based on logical relations with several regions of
     interest (ROIs). For example, select streamlines that pass near ROI1,
     but only if they do not pass near ROI2.
@@ -187,31 +187,33 @@ def select_by_rois(streamlines, rois, include, mode=None, affine=None,
     >>> mask2 = np.zeros_like(mask1)
     >>> mask1[0, 0, 0] = True
     >>> mask2[1, 0, 0] = True
-    >>> selection = select_by_rois(streamlines, [mask1, mask2], [True, True],
-    ...                           tol=1)
+    >>> selection = select_by_rois(streamlines, [mask1, mask2],
+                                   [True, True],
+    ...                            tol=1)
     >>> list(selection) # The result is a generator
     [array([[ 0. ,  0. ,  0.9],
            [ 1.9,  0. ,  0. ]]), array([[ 0.,  0.,  0.],
            [ 0.,  1.,  1.],
            [ 0.,  2.,  2.]])]
-    >>> selection = select_by_rois(streamlines, [mask1, mask2], [True, False],
-    ...                           tol=0.87)
+    >>> selection = select_by_rois(streamlines, [mask1, mask2],
+                                   [True, False],
+    ...                            tol=0.87)
     >>> list(selection)
     [array([[ 0.,  0.,  0.],
            [ 0.,  1.,  1.],
            [ 0.,  2.,  2.]])]
     >>> selection = select_by_rois(streamlines, [mask1, mask2],
-    ...                           [True, True],
-    ...                           mode="both_end",
-    ...                           tol=1.0)
+    ...                            [True, True],
+    ...                            mode="both_end",
+    ...                            tol=1.0)
     >>> list(selection)
     [array([[ 0. ,  0. ,  0.9],
            [ 1.9,  0. ,  0. ]])]
     >>> mask2[0, 2, 2] = True
     >>> selection = select_by_rois(streamlines, [mask1, mask2],
-    ...                           [True, True],
-    ...                           mode="both_end",
-    ...                           tol=1.0)
+    ...                            [True, True],
+    ...                            mode="both_end",
+    ...                            tol=1.0)
     >>> list(selection)
     [array([[ 0. ,  0. ,  0.9],
            [ 1.9,  0. ,  0. ]]), array([[ 0.,  0.,  0.],
