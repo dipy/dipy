@@ -599,7 +599,7 @@ def streamline_near_roi(streamline, roi_coords, tol, mode='any'):
 
         "both_end" : both end points are within tol from ROI.
 
-	Returns
+    Returns
 	-------
 	out : boolean
     """
@@ -892,3 +892,43 @@ def move_streamlines(streamlines, output_space, input_space=None):
 
     for sl in streamlines:
         yield np.dot(sl, lin_T) + offset
+
+
+def reduce_rois(rois, include):
+    """Reduce multiple ROIs to one inclusion and one exclusion ROI
+
+    Parameters
+    ----------
+    rois : list or ndarray
+        A list of 3D arrays, each with shape (x, y, z) corresponding to the
+        shape of the brain volume, or a 4D array with shape (n_rois, x, y,
+        z). Non-zeros in each volume are considered to be within the region.
+
+    include : array or list
+        A list or 1D array of boolean marking inclusion or exclusion
+        criteria.
+
+    Returns
+    -------
+    include_roi : boolean 3D array
+        An array marking the inclusion mask.
+
+    exclude_roi : boolean 3D array
+        An array marking the exclusion mask
+
+    Note
+    ----
+    The include_roi and exclude_roi can be used to perfom the operation: "(A
+    or B or ...) and not (X or Y or ...)", where A, B are inclusion regions
+    and X, Y are exclusion regions.
+    """
+    include_roi = np.zeros(rois[0].shape, dtype=bool)
+    exclude_roi = np.zeros(rois[0].shape, dtype=bool)
+
+    for i in range(len(rois)):
+        if include[i]:
+            include_roi |= rois[i]
+        else:
+            exclude_roi |= rois[i]
+
+    return include_roi, exclude_roi

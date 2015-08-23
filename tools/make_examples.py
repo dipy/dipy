@@ -109,7 +109,7 @@ sys.path.insert(0, os.getcwd())
 if not os.path.isdir('fig'):
     os.mkdir('fig')
 
-for script in glob('*.py'):
+for script in validated_examples:
     figure_basename = os.path.join('fig', os.path.splitext(script)[0])
     print script
 
