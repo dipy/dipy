@@ -22,6 +22,10 @@ from dipy.denoise.nlmeans import nlmeans
 from dipy.data import get_sphere
 from dipy.core.geometry import sphere2cart
 from dipy.viz import fvtk
+from dipy.tracking.local import ThresholdTissueClassifier
+from dipy.tracking import utils
+from dipy.tracking.local import LocalTracking
+from dipy.io.trackvis import save_trk
 
 """
 This example will be based on the same multi-shell data used in the previous
@@ -49,7 +53,7 @@ dkimodel = dki.DiffusionKurtosisModel(gtab)
 
 """
 We first illustrate the 3D information provided by DKI from simulations. For
-this, based on the same GradientTable of the loaded data, we generate the
+this, and based on the same GradientTable of the loaded data, we generate the
 signal of five voxels containing two fibers populations with increasing
 intersection angle (for more details on DKI simulates see
 :ref:`example_simulate_dki`):
@@ -104,8 +108,8 @@ tensors_actor = fvtk.sphere_funcs(tensors, sphere)
 fvtk.add(ren, tensors_actor)
 
 """
-For the graphical presentation of the tensors estimated from DKI, we add the
-ground truth direction of the fibers. This is done using the following lines of
+Ground truth direction of fibers are added to the graphical presentation of the
+tensors estimated from DKI, using the following lines of
 code:
 """
 
@@ -180,28 +184,27 @@ fvtk.show(ren, title='DKI-ODF geometry', size=(500, 500))
    red **.
 
 We can see from figure that DKI-ODF peaks are near to the fiber directions
-ground truth. In this way, we show that when the ground truth fibers directions
-are not known (the case of real brain data), these can be estimated by finding
-the DKI-ODF maxima. Below we illustrate how this is done the HCP-like brain
-dataset.
+ground truth. In this way, if the ground truth fibers directions are not known
+(case of real brain data), these can be estimated by finding the DKI-ODF
+maxima. Below we illustrate how this is done the HCP-like brain data.
 
 As mention in :ref:`example_reconst_dki`, for real brain datasets, diffusion
-kurtosis imaging requires that some pre-processing is done to reduce the impact
-of signal artefacts. Above we denoise our data using Dipy's non-local mean
-filter (see :ref:`example-denoise-nlmeans`). Since this procedure can take a
-couple of hours to run, if you already had performed this step in the previous
-DKI example :ref:`example_reconst_dki` or if you are running this example for
-the second time, the denoised version of the data is loaded instead.
+kurtosis imaging requires some pre-processing to reduce the impact of signal
+artefacts. Above we denoise our data using Dipy's non-local mean filter (see
+:ref:`example-denoise-nlmeans`). Since this procedure can take a couple of
+hours to run, we first check if this data was previously denoised and saved
+from previous examples. If this is te case the load the previous processed
+data.
 """
 
-if not op.exists('denoised_cenir_multib.nii.gz'):
+if op.exists('denoised_cenir_multib.nii.gz'):
+    img = nib.load('denoised_cenir_multib.nii.gz') 
+    den = img.get_data()
+else:
     maskdata, mask = median_otsu(data, 4, 2, False, vol_idx=[0, 1], dilate=1)
     sigma = estimate_sigma(data, N=4)
     den = nlmeans(data, sigma=sigma, mask=mask)
     nib.save(nib.Nifti1Image(den, affine), 'denoised_cenir_multib.nii.gz')
-else:
-    img = nib.load('denoised_cenir_multib.nii.gz') 
-    den = img.get_data()
 
 """
 Now, we mask the data to avoid processing unnecessary background voxels:
@@ -239,13 +242,13 @@ fvtk.show(ren)
    ** DKI based orientation distribution function (ODF) estimate computed from
    a portion of real brain data**.
 
-Alteratively to the above plot, fiber direction estimates from the DKI based
+Alternatively to the above plot, fiber direction estimates from the DKI based
 ODF can be computed from the diffusion kurtosis fitted model object, by calling
 the function ``dki_directions`` of this object. This function is able to refine
 direction estimates under the percision of the initially sampled sphere object
 directions. Therefore, to reduce computational time, we load a sphere object
 with a smaller number of directions. DKI based ODF fiber directions are
-computed and ploted below:
+computed and plotted below:
 """
 
 sphere = get_sphere('repulsion100')
@@ -264,6 +267,38 @@ fvtk.show(ren)
    ** Fiber directions computed from real brain DKI based orientation
    distribution function (ODF) **.
 
+These fiber direction estimates combined with Dipy's fiber tract procedures can
+be used to reconstruct all brain tractography. Above, we summarize the steps
+required to obtain a full brain DKI based tractography reconstruction from the
+HCP-like data. For illustration proposes we define the region to tract and the
+regions to seed as all brain voxels with FA larger than 0.1 (for optimization
+of this parameters please see :ref: `example-introduction-to-basic-tracking`).
+"""
+
+# Fit all brain dataset
+dkifit = dkimodel.fit(maskdata)
+
+# Estimate fiber directions on all brain voxels
+dkidir = dkifit.dki_directions(sphere)
+
+# Select region to tract
+classifier = ThresholdTissueClassifier(dkifit.fa, .1)
+
+# Select regions to seed
+seed_mask = dkifit.fa > 0.1
+seeds = utils.seeds_from_mask(seed_mask, density=[2, 2, 2], affine=affine)
+
+# Initialize LocalTracking
+streamlines = LocalTracking(dki_peaks, classifier, seeds, affine, step_size=.5)
+
+# Compute streamlines and store as a list.
+streamlines = list(streamlines)
+
+# Save tracts in trk format
+save_trk("DKI_tractography_cenir_multib.trk", streamlines, affine,
+         den.shape[:-1])
+
+"""
 References:
 
 .. [Jen2014] Jensen, J.H., Helpern, J.A., Tabesh, A., (2014). Leading
