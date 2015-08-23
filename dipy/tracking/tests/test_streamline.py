@@ -424,7 +424,7 @@ def compress_streamlines_python(streamline, tol_error=0.01,
         return np.sqrt(((prev-next)**2).sum())
 
     # Projection of a 3D point on a 3D line, minimal distance
-    def dist_to_line(prev, next):
+    def dist_to_line(prev, next, curr):
         return norm(np.cross(next-prev, curr-next)) / norm(next-prev)
 
     nb_points = 0
