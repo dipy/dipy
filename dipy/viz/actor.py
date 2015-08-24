@@ -193,7 +193,7 @@ def odf_slicer(odfs, affine=None, mask=None, sphere=None, scale=2.2,
     """ Slice spherical fields
     """
 
-    class OdfSlicerActor(vtk.vtkActor):
+    class OdfSlicerActor(vtk.vtkLODActor):
 
         def display_extent(self, x1, x2, y1, y2, z1, z2):
 
@@ -235,6 +235,7 @@ def _odf_slicer_mapper(odfs, affine=None, mask=None, sphere=None, scale=2.2,
 
     all_xyz = []
     all_faces = []
+    all_ms = []
     for (k, center) in enumerate(ijk):
         m = odfs[tuple(center)].copy()
 
@@ -248,6 +249,7 @@ def _odf_slicer_mapper(odfs, affine=None, mask=None, sphere=None, scale=2.2,
 
         all_xyz.append(scale * xyz + center)
         all_faces.append(faces + k * xyz.shape[0])
+        all_ms.append(m)
 
     all_xyz = np.ascontiguousarray(np.concatenate(all_xyz))
     all_xyz_vtk = numpy_support.numpy_to_vtk(all_xyz, deep=True)
@@ -261,6 +263,8 @@ def _odf_slicer_mapper(odfs, affine=None, mask=None, sphere=None, scale=2.2,
     all_faces_vtk = numpy_support.numpy_to_vtkIdTypeArray(all_faces,
                                                           deep=True)
 
+    all_ms = np.ascontiguousarray(np.concatenate(all_ms), dtype='f4')
+
     points = vtk.vtkPoints()
     points.SetData(all_xyz_vtk)
 
@@ -269,10 +273,16 @@ def _odf_slicer_mapper(odfs, affine=None, mask=None, sphere=None, scale=2.2,
 
     if colormap is not None:
         from dipy.viz.fvtk import create_colormap
-        cols = create_colormap(odfs.ravel(), colormap)
+        cols = create_colormap(all_ms.ravel(), colormap)
         # cols = np.interp(cols, [0, 1], [0, 255]).astype('ubyte')
 
-        vtk_colors = numpy_to_vtk_colors(255 * cols)
+        # vtk_colors = numpy_to_vtk_colors(255 * cols)
+
+        vtk_colors = numpy_support.numpy_to_vtk(
+            np.asarray(255 * cols),
+            deep=True,
+            array_type=vtk.VTK_UNSIGNED_CHAR)
+
         vtk_colors.SetName("Colors")
 
     polydata = vtk.vtkPolyData()

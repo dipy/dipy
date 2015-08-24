@@ -211,10 +211,17 @@ def test_bundle_maps():
 @npt.dec.skipif(not window.have_imread)
 def test_odf_slicer():
 
-    sphere = get_sphere('repulsion724')
+    sphere = get_sphere('repulsion100')
 
     # use memory maps
-    odfs = np.ones((10, 10, 10, sphere.vertices.shape[0]))
+    # odfs = np.ones((10, 10, 10, sphere.vertices.shape[0]))
+
+    shape = (100, 100, 100, sphere.vertices.shape[0])
+
+    odfs = np.memmap('test.mmap', dtype='float64', mode='w+',
+                     shape=shape)
+
+    odfs[:] = 1
     # odfs = np.random.rand(10, 10, 10, sphere.vertices.shape[0])
 
     affine = np.eye(4)
@@ -236,10 +243,11 @@ def test_odf_slicer():
 
         odf_actor.display_extent(0, I, 0, J, k, k + 1)
         odf_actor.GetProperty().SetOpacity(0.2)
-        # window.show(renderer, reset_camera=False)
+        window.show(renderer, reset_camera=False)
 
 
 if __name__ == "__main__":
 
-    npt.run_module_suite()
+    # npt.run_module_suite()
+    test_odf_slicer()
 
