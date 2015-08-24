@@ -243,7 +243,7 @@ def test_odf_slicer():
 
         odf_actor.display_extent(0, I, 0, J, k, k + 1)
         odf_actor.GetProperty().SetOpacity(0.2)
-        window.show(renderer, reset_camera=False)
+        # window.show(renderer, reset_camera=False)
 
 
 if __name__ == "__main__":

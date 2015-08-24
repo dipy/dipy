@@ -784,3 +784,16 @@ def analyze_snapshot(im, bg_color=(0, 0, 0), colors=None,
         report.objects = objects
 
     return report
+
+
+def picker(ren, picker_type='cell', initial_pos=(50, 50, 0), callback=None):
+
+    if picker_type == 'cell':
+        pick = vtk.vtkCellPicker()
+    if callback is not None:
+        pick.AddObserver("EndPickEvent", callback)
+
+    x, y, z = initial_pos
+    pick.Pick(x, y, z, ren)
+
+    return pick

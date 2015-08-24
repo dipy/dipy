@@ -163,19 +163,40 @@ def win_callback(obj, event):
 
 show_m.initialize()
 
+ren.zoom(1.5)
+ren.reset_clipping_range()
+
 """
 Finally, please uncomment the following lines so that you can interact with
 the available 3D and 2D objects.
 """
 
-# show_m.add_window_callback(win_callback)
-# show_m.render()
-# show_m.start()
+show_m.add_window_callback(win_callback)
 
-ren.zoom(1.5)
-ren.reset_clipping_range()
+import vtk
 
-window.record(ren, out_path='bundles_and_a_slice.png', size=(1200, 900))
+picker = vtk.vtkCellPicker()
+
+
+def pick_callback(obj, event):
+    #global picker
+
+    print('Hey')
+
+    sel_pos = obj.GetSelectionPoint()
+    pick_pos = obj.GetPickPosition()
+    print(sel_pos)
+    print(pick_pos)
+
+picker.AddObserver("EndPickEvent", pick_callback)
+#pick = window.picker(ren, callback=pick_callback)
+show_m.iren.SetPicker(picker)
+picker.Pick(85, 126, 0, ren)
+show_m.render()
+show_m.start()
+
+
+# window.record(ren, out_path='bundles_and_a_slice.png', size=(1200, 900))
 
 """
 .. figure:: bundles_and_a_slice.png
