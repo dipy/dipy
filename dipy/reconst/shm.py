@@ -966,8 +966,21 @@ def sh_to_sf_matrix(sphere, sh_order, basis_type=None, return_inv=True, smooth=0
 
     return B.T
 
-def sh_to_ap(coeffs_mtx, normal_factor=0.00001):
+def anisotropic_power(sh_coeffs, normal_factor=0.00001):
     """ Calculates anisotropic power map with a given SH coefficient matrix
+
+    Parameters
+    ----------
+    sh_coeffs : ndarray
+        A ndarray where the last dimension is the
+        SH coeff estimates for that voxel.
+    normal_factor: float
+        The value to normalize the ap values. Default is 10^-5.
+
+    Returns
+    -------
+    AP : ndarray
+        The resulting power image.
 
     Notes
     ----------
@@ -983,37 +996,22 @@ def sh_to_ap(coeffs_mtx, normal_factor=0.00001):
     The final AP image is then normalized by log(AP/normal_factor).
     All values < 0 are discarded.
 
-
-
     References
     ----------
-    .. [1]  Dell’Acqua, F., Lacerda, L., Catani, M., Simmons, A., 2014.
+    .. [1]  Dell'Acqua, F., Lacerda, L., Catani, M., Simmons, A., 2014.
             Anisotropic Power Maps: A diffusion contrast to reveal low anisotropy tissues from HARDI data,
             in: Proceedings of International Society for Magnetic Resonance in Medicine. Milan, Italy.
-
-    Parameters
-    ----------
-    coeffs_mtx : ndarray
-        A ndarray where the last dimension is the
-        SH coeff estimates for that voxel.
-    normal_factor: float
-        The value to normalize the ap values. Default is 10^-5.
-
-    Returns
-    -------
-    AP : ndarray
-        The resulting power image.
     """
 
     from dipy.utils.six.moves import xrange
 
-    dim = coeffs_mtx.shape[:-1]
-    n_coeffs = coeffs_mtx.shape[-1]
+    dim = sh_coeffs.shape[:-1]
+    n_coeffs = sh_coeffs.shape[-1]
 
     L = 2    # start at L=2
     sum_n = 1
 
-    def single_L_ap(coeffs_mtx, L=2, power=2):
+    def single_L_ap(sh_coeffs, L=2, power=2):
         n_start = 1
         n_L = 2*L+1
         for l in xrange(2,L,2):
@@ -1021,7 +1019,7 @@ def sh_to_ap(coeffs_mtx, normal_factor=0.00001):
             #sum_n start at index 1
             n_start += n_l
         n_stop = n_start + n_L
-        c = np.power(coeffs_mtx[...,n_start:n_stop], power)
+        c = np.power(sh_coeffs[...,n_start:n_stop], power)
         ap_i = np.mean(c, axis=-1)
         ap_i = np.multiply(ap_i, 1.0/n_L)
         return ap_i
@@ -1030,7 +1028,7 @@ def sh_to_ap(coeffs_mtx, normal_factor=0.00001):
 
     while sum_n < n_coeffs:
         n_L = 2*L+1
-        ap_i = single_L_ap(coeffs_mtx, L)
+        ap_i = single_L_ap(sh_coeffs, L)
         ap = np.add(ap_i, ap)
         sum_n += n_L
         L+=2

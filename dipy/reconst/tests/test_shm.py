@@ -25,7 +25,7 @@ from dipy.reconst.shm import (real_sph_harm, real_sym_sh_basis,
                               smooth_pinv, bootstrap_data_array,
                               bootstrap_data_voxel, ResidualBootstrapWrapper,
                               CsaOdfModel, QballModel, SphHarmFit,
-                              spherical_harmonics, sh_to_ap)
+                              spherical_harmonics, anisotropic_power)
 
 def test_order_from_ncoeff():
     """
@@ -419,7 +419,7 @@ def test_faster_sph_harm():
 
     assert_array_almost_equal(sh, sh2, 8)
 
-def test_sh_to_ap():
+def test_anisotropic_power():
     testset = np.array([[  2.52783730e-01,  -8.63827673e-03,  -1.76620393e-03,
          -4.34251390e-03,  -5.06066428e-03,   3.81412854e-03,
           5.47631094e-03,   1.39282880e-03,  -1.97130701e-03,
@@ -468,7 +468,7 @@ def test_sh_to_ap():
 
     answers = [0.0, 3.4198238120739317, 5.2417375088492255]
 
-    apvals = sh_to_ap(testset)
+    apvals = anisotropic_power(testset)
     assert_array_almost_equal(apvals, answers)
 
 if __name__ == "__main__":
