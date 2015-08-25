@@ -300,7 +300,8 @@ class ShowManager(object):
 
     def __init__(self, ren, title='DIPY', size=(300, 300),
                  png_magnify=1, reset_camera=True, order_transparent=False,
-                 interactor_style='trackball'):
+                 interactor_style='trackball', picker_pos=(10, 10, 0),
+                 picker_tol=0.002):
 
         """ Manages the visualization pipeline
 
@@ -327,6 +328,8 @@ class ShowManager(object):
             If str then if 'trackball' then vtkInteractorStyleTrackballCamera()
             is used or if 'image' then vtkInteractorStyleImage() is used (no
             rotation). Otherwise you can input your own interactor style.
+        picker_pos : tuple
+        picker_tol : float
 
         Attributes
         ----------
@@ -369,6 +372,8 @@ class ShowManager(object):
         self.reset_camera = reset_camera
         self.order_transparent = order_transparent
         self.interactor_style = interactor_style
+        self.picker_pos = picker_pos
+        self.picker_tol = picker_tol
 
         if self.reset_camera:
             self.ren.ResetCamera()
@@ -442,11 +447,17 @@ class ShowManager(object):
         self.iren.AddObserver('KeyPressEvent', key_press_standard)
         self.iren.SetInteractorStyle(self.style)
 
+        self.picker = vtk.vtkCellPicker()
+        self.picker.SetTolerance(self.picker_tol)
+        self.iren.SetPicker(self.picker)
+
     def initialize(self):
         """ Initialize interaction
         """
         self.iren.Initialize()
-        # picker.Pick(85, 126, 0, ren)
+
+        i, j, k = self.picker_pos
+        self.picker.Pick(i, j, k, self.ren)
 
     def render(self):
         """ Renders only once
@@ -481,6 +492,9 @@ class ShowManager(object):
         """
         self.window.AddObserver(vtk.vtkCommand.ModifiedEvent, win_callback)
         self.window.Render()
+
+    def add_picker_callback(self, picker_callback):
+        self.picker.AddObserver("EndPickEvent", picker_callback)
 
 
 def show(ren, title='DIPY', size=(300, 300),
@@ -784,16 +798,3 @@ def analyze_snapshot(im, bg_color=(0, 0, 0), colors=None,
         report.objects = objects
 
     return report
-
-
-def picker(ren, picker_type='cell', initial_pos=(50, 50, 0), callback=None):
-
-    if picker_type == 'cell':
-        pick = vtk.vtkCellPicker()
-    if callback is not None:
-        pick.AddObserver("EndPickEvent", callback)
-
-    x, y, z = initial_pos
-    pick.Pick(x, y, z, ren)
-
-    return pick
