@@ -456,14 +456,14 @@ def compress_streamlines(streamlines, tol_error=0.01, max_segment_length=10):
     >>> len(streamline)
     100
     >>> len(c_streamline)
-    12
+    10
     >>> # Multiple streamlines
     >>> streamlines = [streamline, streamline[::2]]
     >>> c_streamlines = compress_streamlines(streamlines, tol_error=0.2)
     >>> [len(s) for s in streamlines]
     [100, 50]
     >>> [len(s) for s in c_streamlines]
-    [12, 5]
+    [10, 7]
 
 
     Notes
