@@ -93,7 +93,7 @@ else:
 For fun let's change also the opacity of the slicer
 """
 
-slicer_opacity = 1
+slicer_opacity = 1.
 image_actor.opacity(slicer_opacity)
 
 """
