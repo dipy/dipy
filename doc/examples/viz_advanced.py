@@ -93,7 +93,7 @@ else:
 For fun let's change also the opacity of the slicer
 """
 
-slicer_opacity = .6
+slicer_opacity = 1
 image_actor.opacity(slicer_opacity)
 
 """
@@ -161,6 +161,21 @@ def win_callback(obj, event):
         slider.place(ren)
         size = obj.GetSize()
 
+"""
+Here, we can add a callback that is triggered everytime we press 'p' on a
+slicer and gives us the position and actual value.
+"""
+
+resampled = image_actor.get_data()
+
+
+def pick_callback(obj, event):
+
+    ijk = obj.GetPointIJK()
+    i, j, k = ijk
+    print("Position (%d, %d, %d) value %d" % (i, j, k, resampled[i, j, k]))
+
+
 show_m.initialize()
 
 ren.zoom(1.5)
@@ -172,29 +187,10 @@ the available 3D and 2D objects.
 """
 
 show_m.add_window_callback(win_callback)
+show_m.add_picker_callback(pick_callback)
 
-import vtk
-
-picker = vtk.vtkCellPicker()
-
-
-def pick_callback(obj, event):
-    #global picker
-
-    print('Hey')
-
-    sel_pos = obj.GetSelectionPoint()
-    pick_pos = obj.GetPickPosition()
-    print(sel_pos)
-    print(pick_pos)
-
-picker.AddObserver("EndPickEvent", pick_callback)
-#pick = window.picker(ren, callback=pick_callback)
-show_m.iren.SetPicker(picker)
-picker.Pick(85, 126, 0, ren)
 show_m.render()
 show_m.start()
-
 
 # window.record(ren, out_path='bundles_and_a_slice.png', size=(1200, 900))
 

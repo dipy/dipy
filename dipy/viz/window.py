@@ -491,7 +491,6 @@ class ShowManager(object):
         """ Add window callbacks
         """
         self.window.AddObserver(vtk.vtkCommand.ModifiedEvent, win_callback)
-        self.window.Render()
 
     def add_picker_callback(self, picker_callback):
         self.picker.AddObserver("EndPickEvent", picker_callback)
