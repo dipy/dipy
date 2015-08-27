@@ -176,13 +176,13 @@ def slicer(data, affine=None, value_range=None, opacity=1.,
             data = self.output.GetOutput()
             scalars = data.GetPointData().GetScalars()
             data = numpy_support.vtk_to_numpy(scalars)
-            A = data
-            A = A[:, 0]
             shape = self.shape
-            A2 = A.reshape(shape[2], shape[1], shape[0])
-            A3 = A2.swapaxes(0, 2)
-            data = A3
-            return data
+            if data.ndim == 2:
+                data = data.reshape(shape[2], shape[1], shape[0],
+                                    data.shape[-1])
+            else:
+                data = data.reshape(shape[2], shape[1], shape[0])
+            return data.swapaxes(0, 2)
 
     image_actor = ImageActor()
     if nb_components == 1:

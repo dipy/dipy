@@ -53,7 +53,7 @@ We will use 3 bundles, FA and the affine transformation that brings the voxel
 coordinates to world coordinates (RAS 1mm).
 """
 
-streamlines = res['af.left'] + res['cst.right'] + res['cc_1']
+streamlines = res['af.left'] #+ res['cst.right'] + res['cc_1']
 data = res['fa']
 shape = data.shape
 affine = res['affine']
@@ -93,7 +93,7 @@ else:
 For fun let's change also the opacity of the slicer
 """
 
-slicer_opacity = 1.
+slicer_opacity = .6
 image_actor.opacity(slicer_opacity)
 
 """
@@ -173,7 +173,8 @@ def pick_callback(obj, event):
 
     ijk = obj.GetPointIJK()
     i, j, k = ijk
-    print("Position (%d, %d, %d) value %d" % (i, j, k, resampled[i, j, k]))
+    # print("Position (%d, %d, %d) value %d" % (i, j, k, resampled[i, j, k]))
+    print(resampled[i, j, k])
 
 
 show_m.initialize()
