@@ -5,6 +5,19 @@ API changes
 Here we provide information about functions or classes that have been removed,
 renamed or are deprecated (not recommended) during different release circles.
 
+Dipy 0.10 Changes
+----------------
+
+**Registration**
+
+The following utilty functions from ``vector_fields`` module were renamed:
+
+``warp_2d_affine`` is now ``transform_2d_affine``
+``warp_2d_affine_nn`` is now ``transform_2d_affine_nn``
+``warp_3d_affine`` is now ``transform_3d_affine``
+``warp_3d_affine_nn`` is now ``transform_3d_affine_nn``
+
+
 Dipy 0.9 Changes
 ----------------
 
