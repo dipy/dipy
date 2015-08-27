@@ -60,6 +60,8 @@ class Renderer(vtkRenderer):
         """
         if isinstance(actor, vtk.vtkVolume):
             self.AddVolume(actor)
+        if isinstance(actor, vtk.vtkActor2D):
+            self.AddActor2D(actor)
         else:
             self.AddActor(actor)
 
@@ -494,6 +496,10 @@ class ShowManager(object):
 
     def add_picker_callback(self, picker_callback):
         self.picker.AddObserver("EndPickEvent", picker_callback)
+
+    def add_timer_callback(self, duration, timer_callback):
+        self.iren.AddObserver("TimerEvent", timer_callback)
+        timerId = self.iren.CreateRepeatingTimer(duration);
 
 
 def show(ren, title='DIPY', size=(300, 300),

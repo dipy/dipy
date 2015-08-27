@@ -168,13 +168,17 @@ slicer and gives us the position and actual value.
 
 resampled = image_actor.get_data()
 
+sb = actor.status_bar('')
+ren.add(sb)
+
 
 def pick_callback(obj, event):
 
     ijk = obj.GetPointIJK()
     i, j, k = ijk
-    # print("Position (%d, %d, %d) value %d" % (i, j, k, resampled[i, j, k]))
-    print(resampled[i, j, k])
+    v1, v2, v3, v4 = resampled[i, j, k]
+    msg = "Position (%d, %d, %d) value %d" % (i, j, k, v1)
+    sb.set_text(msg)
 
 
 show_m.initialize()
@@ -183,12 +187,22 @@ ren.zoom(1.5)
 ren.reset_clipping_range()
 
 """
-Finally, please uncomment the following lines so that you can interact with
+Please uncomment the following lines so that you can interact with
 the available 3D and 2D objects.
 """
 
+cnt = 0
+
+
+def timer_callback(obj, event):
+    global cnt
+    print(cnt)
+    cnt += 1
+
+
 show_m.add_window_callback(win_callback)
 show_m.add_picker_callback(pick_callback)
+show_m.add_timer_callback(1000, timer_callback)
 
 show_m.render()
 show_m.start()
