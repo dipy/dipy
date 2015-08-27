@@ -376,6 +376,7 @@ class ShowManager(object):
         self.interactor_style = interactor_style
         self.picker_pos = picker_pos
         self.picker_tol = picker_tol
+        self.timers = []
 
         if self.reset_camera:
             self.ren.ResetCamera()
@@ -497,9 +498,15 @@ class ShowManager(object):
     def add_picker_callback(self, picker_callback):
         self.picker.AddObserver("EndPickEvent", picker_callback)
 
-    def add_timer_callback(self, duration, timer_callback):
+    def add_timer_callback(self, repeat, duration, timer_callback):
         self.iren.AddObserver("TimerEvent", timer_callback)
-        timerId = self.iren.CreateRepeatingTimer(duration);
+
+        if repeat:
+            timer_id = self.iren.CreateRepeatingTimer(duration)
+        else:
+            timer_id = self.iren.CreateOneShotTimer(duration)
+        self.timers.append(timer_id)
+
 
 
 def show(ren, title='DIPY', size=(300, 300),
