@@ -202,17 +202,34 @@ Please uncomment the following lines so that you can interact with
 the available 3D and 2D objects.
 """
 
+show_m.render()
+
+bit_rate = 10 * np.prod(show_m.window.GetSize())
+print(bit_rate)
+bit_rate_tol = 10 * np.prod(show_m.window.GetSize()) * 3
+print(bit_rate_tol)
+mw = window.MovieWriter('new.avi', show_m.window,
+                        bit_rate=bit_rate, bit_rate_tol=bit_rate_tol,
+                        frame_rate=None,
+                        compression=True, compression_quality=None)
+mw.start()
 
 def timer_callback(obj, event):
+
     ren.azimuth(.1)
     show_m.render()
+    mw.write()
+
 
 show_m.add_window_callback(win_callback)
 show_m.add_picker_callback(pick_callback)
-show_m.add_timer_callback(20, timer_callback)
+show_m.add_timer_callback(True, 20, timer_callback)
 
 show_m.render()
 show_m.start()
+
+
+del mw
 
 # window.record(ren, out_path='bundles_and_a_slice.png', size=(1200, 900))
 

@@ -810,3 +810,57 @@ def analyze_snapshot(im, bg_color=(0, 0, 0), colors=None,
         report.objects = objects
 
     return report
+
+
+class MovieWriter():
+
+    def __init__(self, fname, window, encoder='ffmpeg',
+                 bit_rate=None, bit_rate_tol=None, frame_rate=None,
+                 compression=False, compression_quality=None):
+
+        self.wif = vtk.vtkWindowToImageFilter()
+        self.wif.SetInput(window)
+        self.wif.ReadFrontBufferOff()
+        self.wif.Update()
+
+        self.writer_alive = True
+        self.bit_rate = bit_rate
+        self.bit_rate_tol = bit_rate_tol
+        self.frame_rate = frame_rate
+        self.compression = compression
+        self.compression_quality = compression_quality
+
+        if encoder == 'ffmpeg':
+            self.writer = vtk.vtkFFMPEGWriter()
+            self.writer.SetInputConnection(self.wif.GetOutputPort())
+            self.writer.SetFileName(fname)
+            if bit_rate is not None:
+                self.writer.SetBitRate(bit_rate)
+                self.writer.SetBitRateTolerance(bit_rate_tol)
+            if frame_rate is not None:
+                self.writer.SetRate(frame_rate)
+            self.writer.SetCompression(compression)
+            if compression_quality is not None:
+                self.writer.SetQuality(compression_quality)
+
+        if encoder == 'png':
+            raise ValueError('PNG writing not currently supported')
+
+        if encoder == 'gif':
+            raise ValueError('GIF writing not currently supported')
+
+    def start(self):
+        if self.writer_alive:
+            self.writer.Start()
+
+    def write(self):
+        self.wif.Modified()
+        self.writer.Write()
+
+    def end(self):
+        self.writer.End()
+        self.write_alive = False
+
+    def __del__(self):
+        if self.writer_alive:
+            self.writer.End()
