@@ -115,3 +115,28 @@ def select_random_set_of_streamlines(streamlines, select):
     len_s = len(streamlines)
     index = np.random.randint(0, len_s, min(select, len_s))
     return [streamlines[i] for i in index]
+
+
+def get_bounding_box_streamlines(streamlines):
+    """ Returns the axis aligned bounding box (AABB) envlopping `streamlines`.
+
+    Parameters
+    ----------
+    streamlines : list of 2D arrays
+        Each 2D array represents a sequence of 3D points (nb_points, 3).
+
+    Returns
+    -------
+    box_min : ndarray
+        Coordinate of the bounding box corner having the minimum (X, Y, Z).
+    box_max : ndarray
+        Coordinate of the bounding box corner having the maximum (X, Y, Z).
+    """
+    box_min = np.array([np.inf, np.inf, np.inf])
+    box_max = -np.array([np.inf, np.inf, np.inf])
+
+    for s in streamlines:
+        box_min = np.minimum(box_min, np.min(s, axis=0))
+        box_max = np.maximum(box_max, np.max(s, axis=0))
+
+    return box_min, box_max
