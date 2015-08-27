@@ -776,3 +776,19 @@ def axes(scale=(1, 1, 1), colorx=(1, 0, 0), colory=(0, 1, 0), colorz=(0, 0, 1),
     ass.AddPart(arrowz)
 
     return ass
+
+
+def status_bar(text, position = (0, 0)):
+
+
+    class TextActor(vtk.vtkTextActor):
+
+        def set_text(self, text):
+            self.SetInput(text)
+
+    text_actor = TextActor()
+    text_actor.SetTextScaleModeToProp()
+    text_actor.SetDisplayPosition(*position)
+    text_actor.set_text(text)
+
+    return text_actor
