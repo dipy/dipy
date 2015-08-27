@@ -211,12 +211,12 @@ def test_bundle_maps():
 @npt.dec.skipif(not window.have_imread)
 def test_odf_slicer():
 
-    sphere = get_sphere('repulsion100')
+    sphere = get_sphere('symmetric362')
 
     # use memory maps
     # odfs = np.ones((10, 10, 10, sphere.vertices.shape[0]))
 
-    shape = (100, 100, 100, sphere.vertices.shape[0])
+    shape = (11, 11, 11, sphere.vertices.shape[0])
 
     odfs = np.memmap('test.mmap', dtype='float64', mode='w+',
                      shape=shape)
@@ -228,22 +228,30 @@ def test_odf_slicer():
     renderer = window.renderer()
 
     odf_actor = actor.odf_slicer(odfs, affine,
-                                 mask=None, sphere=sphere, scale=.2,
+                                 mask=None, sphere=sphere, scale=.25,
                                  colormap='jet')
 
-    fa = np.random.rand(*odfs.shape[:3])
+    fa = 0. * np.random.rand(*odfs.shape[:3])
+    fa[:, 0, :] = 1.
+    fa[:, -1, :] = 1.
+    fa[0, :, :] = 1.
+    fa[-1, :, :] = 1.
+    fa[5, 5, 5] = 1
+
     fa_actor = actor.slicer(fa, affine)
     fa_actor.display(None, None, 5)
 
     renderer.add(fa_actor)
     renderer.add(odf_actor)
+    renderer.reset_camera()
+    renderer.reset_clipping_range()
 
-    for k in range(10):
+    for k in range(5, 6):
         I, J, K = odfs.shape[:3]
 
         odf_actor.display_extent(0, I, 0, J, k, k + 1)
         odf_actor.GetProperty().SetOpacity(0.2)
-        # window.show(renderer, reset_camera=False)
+        window.show(renderer, reset_camera=False)
 
 
 if __name__ == "__main__":
