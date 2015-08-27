@@ -778,17 +778,67 @@ def axes(scale=(1, 1, 1), colorx=(1, 0, 0), colory=(0, 1, 0), colorz=(0, 0, 1),
     return ass
 
 
-def status_bar(text, position = (0, 0)):
-
+def text(text, position=(0, 0), color=(1, 1, 1),
+         font_size=12, font_family='Arial', justification='left',
+         bold=False, italic=False, shadow=False):
 
     class TextActor(vtk.vtkTextActor):
 
-        def set_text(self, text):
+        def message(self, text):
             self.SetInput(text)
 
+        def set_message(self, text):
+            self.SetInput(text)
+
+        def get_message(self):
+            return self.GetInput()
+
+        def font_size(self, size):
+            self.GetTextProperty().SetFontSize(size)
+
+        def font_family(self, family='Arial'):
+            self.GetTextProperty().SetFontFamilyToArial()
+
+        def justification(self, justification):
+            tprop = self.GetTextProperty()
+            if justification == 'left':
+                tprop.SetJustificationToLeft()
+            if justification == 'center':
+                tprop.SetJustificationToCentered()
+            if justification == 'right':
+                tprop.SetJustificationToRight()
+
+        def font_style(self, bold=False, italic=False, shadow=False):
+            tprop = self.GetTextProperty()
+            if bold:
+                tprop.BoldOn()
+            else:
+                tprop.BoldOff()
+            if italic:
+                tprop.ItalicOn()
+            else:
+                tprop.ItalicOff()
+            if shadow:
+                tprop.ShadowOn()
+            else:
+                tprop.ShadowOff()
+
+        def color(self, color):
+            self.GetTextProperty().SetColor(*color)
+
+        def set_position(self, position):
+            self.SetDisplayPosition(*position)
+
+        def get_position(self, position):
+            return self.GetDisplayPosition()
+
     text_actor = TextActor()
-    text_actor.SetTextScaleModeToProp()
-    text_actor.SetDisplayPosition(*position)
-    text_actor.set_text(text)
+    text_actor.set_position(position)
+    text_actor.message(text)
+    text_actor.font_size(font_size)
+    text_actor.font_family(font_family)
+    text_actor.justification(justification)
+    text_actor.font_style(bold, italic, shadow)
+    text_actor.color(color)
 
     return text_actor
