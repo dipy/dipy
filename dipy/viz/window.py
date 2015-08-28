@@ -449,6 +449,7 @@ class ShowManager(object):
 
         self.iren.AddObserver('KeyPressEvent', key_press_standard)
         self.iren.SetInteractorStyle(self.style)
+        self.style.SetCurrentRenderer(self.ren)
 
         self.picker = vtk.vtkCellPicker()
         self.picker.SetTolerance(self.picker_tol)
