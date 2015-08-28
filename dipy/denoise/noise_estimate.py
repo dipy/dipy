@@ -282,7 +282,7 @@ def estimate_sigma(arr, disable_background_masking=False, N=0):
         Number of coils of the receiver array. Use N = 1 in case of a SENSE
         reconstruction (Philips scanners) or the number of coils for a GRAPPA
         reconstruction (Siemens and GE). Use 0 to disable the correction factor,
-        as for example is the noise is Gaussian distributed. See [1] for more information.
+        as for example if the noise is Gaussian distributed. See [1] for more information.
 
     Returns
     -------
