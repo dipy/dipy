@@ -1,7 +1,15 @@
 import numpy as np
 
 from .localtrack import local_tracker
+from dipy.align import Bunch
 from dipy.tracking import utils
+
+# enum TissueClass (tissue_classifier.pxd) is not accessible
+# from here. To be changed when minimal cython version > 0.21.
+# cython 0.21 - cpdef enum to export values into Python-level namespace
+# https://github.com/cython/cython/commit/50133b5a91eea348eddaaad22a606a7fa1c7c457
+TissueTypes = Bunch(OUTSIDEIMAGE=-1, INVALIDPOINT=0, TRACKPOINT=1, ENDPOINT=2)
+
 
 class LocalTracking(object):
     """A streamline generator for local tracking methods"""
@@ -25,7 +33,8 @@ class LocalTracking(object):
         return np.sqrt(dotlin.diagonal())
 
     def __init__(self, direction_getter, tissue_classifier, seeds, affine,
-                 step_size, max_cross=None, maxlen=500, fixedstep=True):
+                 step_size, max_cross=None, maxlen=500, fixedstep=True,
+                 return_all=True):
         """Creates streamlines by using local fiber-tracking.
 
         Parameters
@@ -52,7 +61,12 @@ class LocalTracking(object):
         maxlen : int
             Maximum number of steps to track from seed. Used to prevent
             infinite loops.
-
+        fixedstep : bool
+            If true, a fixed stepsize is used, otherwise a variable step size
+            is used.
+        return_all : bool
+            If true, return all generated streamlines, otherwise only
+            streamlines reaching end points or exiting the image.
         """
         self.direction_getter = direction_getter
         self.tissue_classifier = tissue_classifier
@@ -65,6 +79,7 @@ class LocalTracking(object):
         self.fixed = fixedstep
         self.max_cross = max_cross
         self.maxlen = maxlen
+        self.return_all = return_all
 
     def __iter__(self):
         # Make tracks, move them to point space and return
@@ -93,12 +108,18 @@ class LocalTracking(object):
             directions = dg.initial_direction(s)
             directions = directions[:max_cross]
             for first_step in directions:
-                stepsF = local_tracker(dg, tc, s, first_step, vs, F, ss, fixed)
-                if stepsF < 0:
+                stepsF, tissue_class = local_tracker(dg, tc, s, first_step,
+                                                     vs, F, ss, fixed)
+                if not (self.return_all or
+                        tissue_class == TissueTypes.ENDPOINT or
+                        tissue_class == TissueTypes.OUTSIDEIMAGE):
                     continue
                 first_step = -first_step
-                stepsB = local_tracker(dg, tc, s, first_step, vs, B, ss, fixed)
-                if stepsB < 0:
+                stepsB, tissue_class = local_tracker(dg, tc, s, first_step,
+                                                     vs, B, ss, fixed)
+                if not (self.return_all or
+                        tissue_class == TissueTypes.ENDPOINT or
+                        tissue_class == TissueTypes.OUTSIDEIMAGE):
                     continue
 
                 if stepsB == 1:

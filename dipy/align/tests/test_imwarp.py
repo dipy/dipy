@@ -1,19 +1,19 @@
 from __future__ import print_function
 import numpy as np
 import numpy.testing as npt
+import nibabel.eulerangles as eulerangles
 from numpy.testing import (assert_equal,
                            assert_array_equal,
                            assert_array_almost_equal,
                            assert_raises)
-import dipy.align.imwarp as imwarp
-import dipy.align.metrics as metrics
-import dipy.align.vector_fields as vfu
-from dipy.data import get_data
-from dipy.align import floating
-import nibabel.eulerangles as eulerangles
-from dipy.align.imwarp import DiffeomorphicMap
-from dipy.align import VerbosityLevels
-from dipy.__config__ import USING_VC_SSE2, USING_GCC_SSE2
+from ...__config__ import USING_VC_SSE2, USING_GCC_SSE2
+from ...data import get_data
+from .. import floating
+from .. import imwarp as imwarp
+from .. import metrics as metrics
+from .. import vector_fields as vfu
+from .. import VerbosityLevels
+from ..imwarp import DiffeomorphicMap
 
 NO_SSE2 = not (USING_VC_SSE2 or USING_GCC_SSE2)
 
@@ -67,12 +67,12 @@ def test_diffeomorphic_map_2d():
     gt_affine = trans_inv.dot(scale.dot(trans))
 
     #create the random displacement field
-    domain_affine = gt_affine
-    codomain_affine = gt_affine
+    domain_grid2world = gt_affine
+    codomain_grid2world = gt_affine
     disp, assign = vfu.create_random_displacement_2d(
                         np.array(domain_shape, dtype=np.int32),
-                        domain_affine,np.array(codomain_shape, dtype=np.int32),
-                        codomain_affine)
+                        domain_grid2world,np.array(codomain_shape, dtype=np.int32),
+                        codomain_grid2world)
     disp = np.array(disp, dtype=floating)
     assign = np.array(assign)
     #create a random image (with decimal digits) to warp
@@ -90,9 +90,9 @@ def test_diffeomorphic_map_2d():
     expected = moving_image[(assign[...,0], assign[...,1])]
 
     #warp using a DiffeomorphicMap instance
-    diff_map = imwarp.DiffeomorphicMap(2, domain_shape, domain_affine,
-                                          domain_shape, domain_affine,
-                                          codomain_shape, codomain_affine,
+    diff_map = imwarp.DiffeomorphicMap(2, domain_shape, domain_grid2world,
+                                          domain_shape, domain_grid2world,
+                                          codomain_shape, codomain_grid2world,
                                           None)
     diff_map.forward = disp
 
@@ -122,9 +122,9 @@ def test_diffeomorphic_map_2d():
         assert_array_almost_equal(warped, expected)
 
     #Now test the inverse functionality
-    diff_map = imwarp.DiffeomorphicMap(2, codomain_shape, codomain_affine,
-                                          codomain_shape, codomain_affine,
-                                          domain_shape, domain_affine, None)
+    diff_map = imwarp.DiffeomorphicMap(2, codomain_shape, codomain_grid2world,
+                                          codomain_shape, codomain_grid2world,
+                                          domain_shape, domain_grid2world, None)
     diff_map.backward = disp
     for type in [floating, np.float64, np.int64, np.int32]:
         moving_image = moving_image.astype(type)
@@ -143,9 +143,9 @@ def test_diffeomorphic_map_2d():
 
     #Verify that DiffeomorphicMap raises the appropriate exceptions when
     #the sampling information is undefined
-    diff_map = imwarp.DiffeomorphicMap(2, domain_shape, domain_affine,
-                                          domain_shape, domain_affine,
-                                          codomain_shape, codomain_affine,
+    diff_map = imwarp.DiffeomorphicMap(2, domain_shape, domain_grid2world,
+                                          domain_shape, domain_grid2world,
+                                          codomain_shape, codomain_grid2world,
                                           None)
     diff_map.forward = disp
     diff_map.domain_shape = None
@@ -154,9 +154,9 @@ def test_diffeomorphic_map_2d():
     assert_raises(ValueError, diff_map.transform, moving_image, 'linear')
 
     #Same test for diff_map.transform_inverse
-    diff_map = imwarp.DiffeomorphicMap(2, domain_shape, domain_affine,
-                                          domain_shape, domain_affine,
-                                          codomain_shape, codomain_affine,
+    diff_map = imwarp.DiffeomorphicMap(2, domain_shape, domain_grid2world,
+                                          domain_shape, domain_grid2world,
+                                          codomain_shape, codomain_grid2world,
                                           None)
     diff_map.forward = disp
     diff_map.codomain_shape = None
@@ -223,12 +223,12 @@ def test_diffeomorphic_map_simplification_2d():
     #original one
     assert_array_almost_equal(warped, expected)
     #And of course, it must be simpler...
-    assert_equal(simplified.domain_affine, None)
-    assert_equal(simplified.codomain_affine, None)
-    assert_equal(simplified.disp_affine, None)
-    assert_equal(simplified.domain_affine_inv, None)
-    assert_equal(simplified.codomain_affine_inv, None)
-    assert_equal(simplified.disp_affine_inv, None)
+    assert_equal(simplified.domain_grid2world, None)
+    assert_equal(simplified.codomain_grid2world, None)
+    assert_equal(simplified.disp_grid2world, None)
+    assert_equal(simplified.domain_world2grid, None)
+    assert_equal(simplified.codomain_world2grid, None)
+    assert_equal(simplified.disp_world2grid, None)
 
 
 def test_diffeomorphic_map_simplification_3d():
@@ -290,12 +290,12 @@ def test_diffeomorphic_map_simplification_3d():
     #original one
     assert_array_almost_equal(warped, expected)
     #And of course, it must be simpler...
-    assert_equal(simplified.domain_affine, None)
-    assert_equal(simplified.codomain_affine, None)
-    assert_equal(simplified.disp_affine, None)
-    assert_equal(simplified.domain_affine_inv, None)
-    assert_equal(simplified.codomain_affine_inv, None)
-    assert_equal(simplified.disp_affine_inv, None)
+    assert_equal(simplified.domain_grid2world, None)
+    assert_equal(simplified.codomain_grid2world, None)
+    assert_equal(simplified.disp_grid2world, None)
+    assert_equal(simplified.domain_world2grid, None)
+    assert_equal(simplified.codomain_world2grid, None)
+    assert_equal(simplified.disp_world2grid, None)
 
 def test_optimizer_exceptions():
     #An arbitrary valid metric
@@ -313,29 +313,6 @@ def test_optimizer_exceptions():
     #Verify exception thrown when attepting to fit the energy profile without
     #enough data
     assert_raises(ValueError, optimizer._get_energy_derivative)
-
-
-def test_scale_space_exceptions():
-    np.random.seed(2022966)
-
-    target_shape = (32, 32)
-    #create a random image
-    image = np.ndarray(target_shape, dtype=floating)
-    ns = np.size(image)
-    image[...] = np.random.randint(0, 10, ns).reshape(tuple(target_shape))
-    zeros = (image == 0).astype(np.int32)
-
-    ss = imwarp.ScaleSpace(image,3)
-
-    for invalid_level in [-1, 3, 4]:
-        assert_raises(ValueError, ss.get_image, invalid_level)
-
-    # Verify that the mask is correctly applied, when requested
-    ss = imwarp.ScaleSpace(image,3, mask0=True)
-    for level in range(3):
-        img = ss.get_image(level)
-        z = (img == 0).astype(np.int32)
-        assert_array_equal(zeros, z)
 
 
 def test_get_direction_and_spacings():

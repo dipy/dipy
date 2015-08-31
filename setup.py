@@ -96,12 +96,19 @@ for modulename, other_sources, language in (
     ('dipy.tracking.local.interpolation', [], 'c'),
     ('dipy.tracking.vox2track', [], 'c'),
     ('dipy.tracking.propspeed', [], 'c'),
+    ('dipy.segment.cythonutils', [], 'c'),
+    ('dipy.segment.featurespeed', [], 'c'),
+    ('dipy.segment.metricspeed', [], 'c'),
+    ('dipy.segment.clusteringspeed', [], 'c'),
+    ('dipy.segment.clustering_algorithms', [], 'c'),
     ('dipy.denoise.denspeed', [], 'c'),
     ('dipy.align.vector_fields', [], 'c'),
     ('dipy.align.sumsqdiff', [], 'c'),
     ('dipy.align.expectmax', [], 'c'),
     ('dipy.align.crosscorr', [], 'c'),
-    ('dipy.align.bundlemin', [], 'c')):
+    ('dipy.align.bundlemin', [], 'c'),
+    ('dipy.align.transforms', [], 'c'),
+    ('dipy.align.parzenhist', [], 'c')):
 
     pyx_src = pjoin(*modulename.split('.')) + '.pyx'
     EXTS.append(Extension(modulename, [pyx_src] + other_sources,
@@ -200,6 +207,7 @@ def main(**extra_args):
                           'dipy.external',
                           'dipy.external.tests',
                           'dipy.segment',
+                          'dipy.segment.benchmarks',
                           'dipy.segment.tests',
                           'dipy.sims',
                           'dipy.sims.tests',

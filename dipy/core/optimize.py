@@ -11,7 +11,7 @@ import scipy.sparse as sps
 import scipy.optimize as opt
 from dipy.utils.six import with_metaclass
 
-SCIPY_LESS_0_12 = LooseVersion(scipy.__version__) < '0.12'
+SCIPY_LESS_0_12 = LooseVersion(scipy.version.short_version) < '0.12'
 
 if not SCIPY_LESS_0_12:
     from scipy.optimize import minimize
@@ -151,7 +151,7 @@ class Optimizer(object):
                     options = default_options
 
                 try:
-                    out = fmin_l_bfgs_b(fun, x0, args,
+                    out = fmin_l_bfgs_b(fun, x0, fprime=jac, args=args,
                                         approx_grad=approx_grad,
                                         bounds=bounds,
                                         m=options['maxcor'],
@@ -166,7 +166,7 @@ class Optimizer(object):
                     msg += '`maxfun` instead with value twice of maxiter.'
 
                     print(msg)
-                    out = fmin_l_bfgs_b(fun, x0, args,
+                    out = fmin_l_bfgs_b(fun, x0, fprime=jac, args=args,
                                         approx_grad=approx_grad,
                                         bounds=bounds,
                                         m=options['maxcor'],

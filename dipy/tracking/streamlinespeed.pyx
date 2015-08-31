@@ -12,15 +12,8 @@ cdef extern from "stdlib.h" nogil:
     void free(void *ptr)
     void *malloc(size_t size)
 
-ctypedef float[:,:] float2d
-ctypedef double[:,:] double2d
 
-ctypedef fused Streamline:
-    float2d
-    double2d
-
-
-cdef double _length(Streamline streamline) nogil:
+cdef double c_length(Streamline streamline) nogil:
     cdef:
         np.npy_intp i
         double out = 0.0
@@ -102,30 +95,30 @@ def length(streamlines):
                 streamline = streamline.astype(dtype)
 
             if dtype == np.float32:
-                streamlines_length[i] = _length[float2d](streamline)
+                streamlines_length[i] = c_length[float2d](streamline)
             else:
-                streamlines_length[i] = _length[double2d](streamline)
+                streamlines_length[i] = c_length[double2d](streamline)
 
     elif dtype == np.float32:
         # All streamlines have composed of float32 points
         for i in range(len(streamlines)):
             streamline = streamlines[i] if streamlines[i].flags.writeable else streamlines[i].astype(dtype)
-            streamlines_length[i] = _length[float2d](streamline)
+            streamlines_length[i] = c_length[float2d](streamline)
     elif dtype == np.float64:
         # All streamlines are composed of float64 points
         for i in range(len(streamlines)):
             streamline = streamlines[i] if streamlines[i].flags.writeable else streamlines[i].astype(dtype)
-            streamlines_length[i] = _length[double2d](streamline)
+            streamlines_length[i] = c_length[double2d](streamline)
     elif dtype == np.int64 or dtype == np.uint64:
         # All streamlines are composed of int64 or uint64 points so convert them in float64 one at the time
         for i in range(len(streamlines)):
             streamline = streamlines[i].astype(np.float64)
-            streamlines_length[i] = _length[double2d](streamline)
+            streamlines_length[i] = c_length[double2d](streamline)
     else:
         # All streamlines are composed of points with a dtype fitting in 32bits so convert them in float32 one at the time
         for i in range(len(streamlines)):
             streamline = streamlines[i].astype(np.float32)
-            streamlines_length[i] = _length[float2d](streamline)
+            streamlines_length[i] = c_length[float2d](streamline)
 
     if only_one_streamlines:
         return streamlines_length[0]
@@ -133,7 +126,7 @@ def length(streamlines):
         return streamlines_length
 
 
-cdef void _arclengths(Streamline streamline, double* out) nogil:
+cdef void c_arclengths(Streamline streamline, double* out) nogil:
     cdef np.npy_intp i = 0
     cdef double dn
 
@@ -147,7 +140,7 @@ cdef void _arclengths(Streamline streamline, double* out) nogil:
         out[i] = out[i-1] + sqrt(out[i])
 
 
-cdef void _set_number_of_points(Streamline streamline, Streamline out) nogil:
+cdef void c_set_number_of_points(Streamline streamline, Streamline out) nogil:
     cdef:
         np.npy_intp N = streamline.shape[0]
         np.npy_intp D = streamline.shape[1]
@@ -157,7 +150,7 @@ cdef void _set_number_of_points(Streamline streamline, Streamline out) nogil:
 
     # Get arclength at each point.
     arclengths = <double*> malloc(streamline.shape[0] * sizeof(double))
-    _arclengths(streamline, arclengths)
+    c_arclengths(streamline, arclengths)
 
     step = arclengths[N-1] / (new_N-1)
 
@@ -270,9 +263,9 @@ def set_number_of_points(streamlines, nb_points=3):
 
             modified_streamline = np.empty((nb_points, streamline.shape[1]), dtype=streamline.dtype)
             if dtype == np.float32:
-                _set_number_of_points[float2d](streamline, modified_streamline)
+                c_set_number_of_points[float2d](streamline, modified_streamline)
             else:
-                _set_number_of_points[double2d](streamline, modified_streamline)
+                c_set_number_of_points[double2d](streamline, modified_streamline)
             modified_streamlines.append(modified_streamline)
 
     elif dtype == np.float32:
@@ -280,28 +273,28 @@ def set_number_of_points(streamlines, nb_points=3):
         for i in range(len(streamlines)):
             streamline = streamlines[i] if streamlines[i].flags.writeable else streamlines[i].astype(dtype)
             modified_streamline = np.empty((nb_points, streamline.shape[1]), dtype=streamline.dtype)
-            _set_number_of_points[float2d](streamline, modified_streamline)
+            c_set_number_of_points[float2d](streamline, modified_streamline)
             modified_streamlines.append(modified_streamline)
     elif dtype == np.float64:
         # All streamlines are composed of float64 points
         for i in range(len(streamlines)):
             streamline = streamlines[i] if streamlines[i].flags.writeable else streamlines[i].astype(dtype)
             modified_streamline = np.empty((nb_points, streamline.shape[1]), dtype=streamline.dtype)
-            _set_number_of_points[double2d](streamline, modified_streamline)
+            c_set_number_of_points[double2d](streamline, modified_streamline)
             modified_streamlines.append(modified_streamline)
     elif dtype == np.int64 or dtype == np.uint64:
         # All streamlines are composed of int64 or uint64 points so convert them in float64 one at the time
         for i in range(len(streamlines)):
             streamline = streamlines[i].astype(np.float64)
             modified_streamline = np.empty((nb_points, streamline.shape[1]), dtype=streamline.dtype)
-            _set_number_of_points[double2d](streamline, modified_streamline)
+            c_set_number_of_points[double2d](streamline, modified_streamline)
             modified_streamlines.append(modified_streamline)
     else:
         # All streamlines are composed of points with a dtype fitting in 32bits so convert them in float32 one at the time
         for i in range(len(streamlines)):
             streamline = streamlines[i].astype(np.float32)
             modified_streamline = np.empty((nb_points, streamline.shape[1]), dtype=streamline.dtype)
-            _set_number_of_points[float2d](streamline, modified_streamline)
+            c_set_number_of_points[float2d](streamline, modified_streamline)
             modified_streamlines.append(modified_streamline)
 
     if only_one_streamlines:

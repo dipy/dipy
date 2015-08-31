@@ -623,6 +623,7 @@ def point(points, colors, opacity=1, point_radius=0.1, theta=8, phi=8):
         mapper.SetInputData(glyph.GetOutput())
     actor = vtk.vtkActor()
     actor.SetMapper(mapper)
+    actor.GetProperty().SetOpacity(opacity)
 
     return actor
 
@@ -1388,7 +1389,7 @@ def tensor(evals, evecs, scalar_colors=None, sphere=None, scale=2.2, norm=True):
         from dipy.reconst.dti import color_fa, fractional_anisotropy
         cfa = color_fa(fractional_anisotropy(evals), evecs)
     else:
-        cfa = scalar_colors
+        cfa = _makeNd(scalar_colors, 4)
 
     list_sq = []
     list_cols = []
@@ -1410,7 +1411,6 @@ def tensor(evals, evecs, scalar_colors=None, sphere=None, scale=2.2, norm=True):
 
         acolor = np.zeros(xyz.shape)
         acolor[:, :] = np.interp(cfa[ijk], [0, 1], [0, 255])
-
         list_cols.append(acolor.astype('ubyte'))
 
     points = vtk.vtkPoints()
@@ -1752,29 +1752,30 @@ def record(ren=None, cam_pos=None, cam_focal=None, cam_view=None,
            magnification=1, size=(300, 300), verbose=False):
     ''' This will record a video of your scene
 
-    Records a video as a series of ``.png`` files of your scene by rotating the
-    azimuth angle az_angle in every frame.
+    Records a video as a series of ``.png`` files of your scene by rotating 
+    the azimuth angle az_angle in every frame.
 
     Parameters
     -----------
     ren : vtkRenderer() object
-        as returned from function ren()
+        As returned from :func:`ren`.
     cam_pos : None or sequence (3,), optional
-        camera position
+        Camera position.
     cam_focal : None or sequence (3,), optional
-        camera focal point
+        Camera focal point.
     cam_view : None or sequence (3,), optional
-        camera view up
+        Camera view up. 
     out_path : str, optional
-        output directory for the frames
-    path_numbering : bool
-        when recording it changes out_path ot out_path + str(frame number)
+        Output directory for the frames
+    path_numbering : bool, optional
+        when recording it changes out_path to out_path + str(frame number). 
+        If n_frames is larger than 1, this will default to True  
     n_frames : int, optional
-        number of frames to save, default 1
+        number of frames to save. Default: 1
     az_ang : float, optional
-        azimuthal angle of camera rotation.
+        Azimuthal angle of camera rotation (degrees). Default: 10.
     magnification : int, optional
-        how much to magnify the saved frame
+        How much to magnify the saved frame. Default: 1 (no magnification).
 
     Examples
     ---------
@@ -1831,7 +1832,7 @@ def record(ren=None, cam_pos=None, cam_focal=None, cam_view=None,
         renderLarge.Update()
         writer.SetInputConnection(renderLarge.GetOutputPort())
         # filename='/tmp/'+str(3000000+i)+'.png'
-        if path_numbering:
+        if n_frames > 1 or path_numbering:
             if out_path is None:
                 filename = str(1000000 + i) + '.png'
             else:

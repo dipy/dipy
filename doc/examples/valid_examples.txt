@@ -13,6 +13,7 @@
  kfold_xval.py
  reslice_datasets.py
  segment_quickbundles.py
+ segment_extending_clustering_framework.py
  snr_in_cc.py
  streamline_formats.py
  tracking_eudx_odf.py
@@ -31,7 +32,9 @@
  introduction_to_basic_tracking.py
  probabilistic_fiber_tracking.py
  deterministic_fiber_tracking.py
+ affine_registration_3d.py
  syn_registration_2d.py
  syn_registration_3d.py
  bundle_registration.py
-
+ tracking_tissue_classifier.py
+ piesno.py

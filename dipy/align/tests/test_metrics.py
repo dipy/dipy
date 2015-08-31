@@ -1,10 +1,11 @@
 import numpy as np
-from dipy.align import floating
+from scipy import ndimage
+from .. import floating
+from ..metrics import SSDMetric, CCMetric, EMMetric
 from numpy.testing import (assert_array_equal,
                            assert_array_almost_equal,
                            assert_raises)
-from scipy import ndimage
-from dipy.align.metrics import SSDMetric, CCMetric, EMMetric
+
 
 def test_exceptions():
     for invalid_dim in [-1,0,1,4,5]:

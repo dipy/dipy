@@ -34,10 +34,14 @@ Brain Extraction
 
 - :ref:`example_brain_extraction_dwi`
 
-SNR estimation
-~~~~~~~~~~~~~~
+Basic SNR estimation
+~~~~~~~~~~~~~~~~~~~~
 
 - :ref:`example_snr_in_cc`
+
+PIESNO
+~~~~~~
+- :ref:`example_piesno`
 
 Denoising
 ~~~~~~~~~
@@ -113,6 +117,7 @@ Fiber tracking (NEW - Experimental)
 - :ref:`example_introduction_to_basic_tracking`
 - :ref:`example_probabilistic_fiber_tracking`
 - :ref:`example_deterministic_fiber_tracking`
+- :ref:`example_tracking_tissue_classifier`
 - :ref:`example_sfm_tracking`
 
 ---------------
@@ -123,7 +128,7 @@ Fiber tracking
 - :ref:`example_tracking_eudx_odf`
 
 -------------------------------------
-Fiber tracking validation (NEW)
+Fiber tracking validation
 -------------------------------------
 
 - :ref:`example_linear_fascicle_evaluation`
@@ -138,11 +143,12 @@ Streamline analysis and connectivity
 
 
 ------------------
-Registration (NEW)
+Registration
 ------------------
 
 Image-based Registration
 ~~~~~~~~~~~~~~~~~~~~~~~~~
+- :ref:`example_affine_registration_3d`
 - :ref:`example_syn_registration_2d`
 - :ref:`example_syn_registration_3d`
 
@@ -158,6 +164,7 @@ Streamline Clustering
 ~~~~~~~~~~~~~~~~~~~~~
 
 - :ref:`example_segment_quickbundles`
+- :ref:`example_segment_extending_clustering_framework`
 
 Brain Segmentation
 ~~~~~~~~~~~~~~~~~~

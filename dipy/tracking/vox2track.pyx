@@ -9,6 +9,8 @@ import numpy as np
 cimport numpy as cnp
 from ._utils import _mapping_to_voxel, _to_voxel_coordinates
 
+from ..utils.six.moves import xrange
+
 cdef extern from "dpy_math.h":
     double floor(double x)
 
@@ -16,7 +18,8 @@ cdef extern from "dpy_math.h":
 @cython.boundscheck(False)
 @cython.wraparound(False)
 @cython.profile(False)
-def _voxel2streamline(sl, unique_idx):
+def _voxel2streamline(sl,
+                      cnp.ndarray[cnp.npy_intp, ndim=2] unique_idx):
     """
     Maps voxels to streamlines and streamlines to voxels, for setting up
     the LiFE equations matrix
@@ -32,52 +35,45 @@ def _voxel2streamline(sl, unique_idx):
 
     Returns
     -------
-    v2f, v2fn : tuple of arrays
+    v2f, v2fn : tuple of dicts
 
-    The first array in the tuple answers the question: Given a voxel (from
-    the unique indices in this model), which fibers pass through it? Shape:
-    (n_voxels, n_fibers).
+    The first dict in the tuple answers the question: Given a voxel (from
+    the unique indices in this model), which fibers pass through it?
 
-    The second answers the question: Given a voxel, for each fiber, which
-    nodes are in that voxel? Shape: (n_voxels, max(n_nodes per fiber)).
-
+    The second answers the question: Given a streamline, for each voxel that
+    this streamline passes through, which nodes of that streamline are in that
+    voxel?
     """
-    cdef:
-        cnp.ndarray[cnp.int_t, ndim=2, mode='strided'] v2f
-        cnp.ndarray[cnp.double_t, ndim=2, mode='strided'] v2fn
-
-    # Given a voxel (from the unique coords, is the fiber in here?)
-    v2f = np.zeros((len(unique_idx), len(sl)), dtype=np.int)
-
-    # This is a grid of size (fibers, maximal length of a fiber), so that
-    # we can capture the voxel number in each fiber/node combination:
-    v2fn = np.ones((len(sl), np.max([len(s) for s in sl])),
-                   dtype=np.double) * np.nan
-
     # Define local counters:
-    cdef int s_idx, vv_idx, voxel_id
+    cdef int s_idx, node_idx, voxel_id, ii
+    cdef dict vox_dict = {}
+    for ii in range(len(unique_idx)):
+        vox = unique_idx[ii]
+        vox_dict[vox[0], vox[1], vox[2]] = ii
+    # Outputs are these dicts:
+    cdef dict v2f = {}
+    cdef dict v2fn = {}
     # In each fiber:
     for s_idx in range(len(sl)):
-        s = sl[s_idx]
-        sl_as_idx = np.array(s).astype(int)
+        sl_as_idx = np.array(sl[s_idx]).astype(int)
+        v2fn[s_idx] = {}
         # In each voxel present in there:
-        for vv_idx in range(len(sl_as_idx)):
-            vv = sl_as_idx[vv_idx]
-            # What serial number is this voxel in the unique streamline indices:
-            voxel_id = int(np.where((vv[0] == unique_idx[:, 0]) *
-                                    (vv[1] == unique_idx[:, 1]) *
-                                    (vv[2] == unique_idx[:, 2]))[0])
-
-            # Add that combination to the grid:
-            v2f[voxel_id, s_idx] = v2f[voxel_id, s_idx] + 1
-
+        for node_idx in range(len(sl_as_idx)):
+            node = sl_as_idx[node_idx]
+            # What serial number is this voxel in the unique voxel indices:
+            voxel_id = vox_dict[node[0], node[1], node[2]]
+            # Add that combination to the dict:
+            if voxel_id in v2f:
+                if s_idx not in v2f[voxel_id]:
+                    v2f[voxel_id].append(s_idx)
+            else:
+                v2f[voxel_id] = [s_idx]
             # All the nodes going through this voxel get its number:
-            v2fn[s_idx][np.where((sl_as_idx[:, 0] == vv[0]) *
-                                 (sl_as_idx[:, 1] == vv[1]) *
-                                 (sl_as_idx[:, 2] == vv[2]))] = voxel_id
-
+            if voxel_id in v2fn[s_idx]:
+                v2fn[s_idx][voxel_id].append(node_idx)
+            else:
+                v2fn[s_idx][voxel_id] = [node_idx]
     return v2f ,v2fn
-
 
 
 def streamline_mapping(streamlines, voxel_size=None, affine=None,

@@ -42,7 +42,7 @@ def pkg_commit_hash(pkg_path):
     pth = os.path.join(pkg_path, COMMIT_INFO_FNAME)
     if not os.path.isfile(pth):
         raise IOError('Missing commit info file %s' % pth)
-    cfg_parser = configparser.ConfigParser()
+    cfg_parser = configparser.RawConfigParser()
     cfg_parser.read(pth)
     archive_subst = cfg_parser.get('commit hash', 'archive_subst_hash')
     if not archive_subst.startswith('$Format'): # it has been substituted
@@ -76,6 +76,7 @@ def get_pkg_info(pkg_path):
     '''
     src, hsh = pkg_commit_hash(pkg_path)
     import numpy
+    import dipy
     return dict(
         pkg_path=pkg_path,
         commit_source=src,
@@ -83,4 +84,5 @@ def get_pkg_info(pkg_path):
         sys_version=sys.version,
         sys_executable=sys.executable,
         sys_platform=sys.platform,
-        np_version=numpy.__version__)
+        np_version=numpy.__version__,
+        dipy_version=dipy.__version__)

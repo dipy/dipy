@@ -31,6 +31,7 @@ Windows
 
 #. You will still need to install the nibabel_ library, which supports reading and writing of neuroimaging data formats. You can install it from a binary installer on the `nibabel pypi`_ web page. Download the `.exe` installer in the table at the bottom and double-click it to launch the installation process.
 
+
 #. Similarly, you can install dipy_ itself from the `dipy pypi`_ web-page. Download the `.exe` installer in the table at the bottom of the page and double-click it to launch the installation.
 
 #. Now, you should be able to start using dipy_. From a python console or script try ::
@@ -48,6 +49,11 @@ or ::
     easy_install nibabel
     easy_install dipy
 
+#. Some of the visualization methods require the VTK_ library and this can be installed using Anaconda ::
+
+     conda install vtk
+
+    
 OSX
 ---
 
@@ -68,6 +74,10 @@ When the installation has finished we can check if it is successful in the follo
     >>> import dipy
 
 This should work with no error.
+
+#. Some of the visualization methods require the VTK_ library and this can be installed using Anaconda ::
+
+     conda install vtk
 
 Linux
 -----

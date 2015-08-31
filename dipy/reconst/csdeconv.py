@@ -1,21 +1,61 @@
 from __future__ import division, print_function, absolute_import
 import warnings
+
 import numpy as np
 from scipy.integrate import quad
 from scipy.special import lpn, gamma
+import scipy.linalg as la
+import scipy.linalg.lapack as ll
 
-from dipy.reconst.multi_voxel import multi_voxel_fit
-from dipy.data import small_sphere, get_sphere
+from dipy.data import small_sphere, get_sphere, default_sphere
+
 from dipy.core.geometry import cart2sphere
 from dipy.core.ndindex import ndindex
 from dipy.sims.voxel import single_tensor
 from dipy.utils.six.moves import range
 
+from dipy.reconst.multi_voxel import multi_voxel_fit
 from dipy.reconst.dti import TensorModel, fractional_anisotropy
 from dipy.reconst.shm import (sph_harm_ind_list, real_sph_harm,
                               sph_harm_lookup, lazy_index, SphHarmFit,
                               real_sym_sh_basis, sh_to_rh, forward_sdeconv_mat,
                               SphHarmModel)
+
+from dipy.reconst.peaks import peaks_from_model
+from dipy.core.geometry import vec2vec_rotmat
+
+
+class AxSymShResponse(object):
+    """A simple wrapper for response functions represented using only axially
+    symmetric, even spherical harmonic functions (ie, m == 0 and n even).
+
+    Parameters:
+    -----------
+    S0 : float
+        Signal with no diffusion weighting.
+    dwi_response : array
+        Response function signal as coefficients to axially symmetric, even
+        spherical harmonic.
+
+    """
+    def __init__(self, S0, dwi_response, bvalue=None):
+        self.S0 = S0
+        self.dwi_response = dwi_response
+        self.bvalue = bvalue
+        self.m = np.zeros(len(dwi_response))
+        self.sh_order = 2 * (len(dwi_response) - 1)
+        self.n = np.arange(0, self.sh_order + 1, 2)
+
+    def basis(self, sphere):
+        """A basis that maps the response coefficients onto a sphere."""
+        theta = sphere.theta[:, None]
+        phi = sphere.phi[:, None]
+        return real_sph_harm(self.m, self.n, theta, phi)
+
+    def on_sphere(self, sphere):
+        """Evaluates the response function on sphere."""
+        B = self.basis(sphere)
+        return np.dot(self.dwi_response, B.T)
 
 
 class ConstrainedSphericalDeconvModel(SphHarmModel):
@@ -39,7 +79,7 @@ class ConstrainedSphericalDeconvModel(SphHarmModel):
         Parameters
         ----------
         gtab : GradientTable
-        response : tuple
+        response : tuple or AxSymShResponse object
             A tuple with two elements. The first is the eigen-values as an (3,)
             ndarray and the second is the signal value for the response
             function without diffusion weighting.  This is to be able to
@@ -103,40 +143,46 @@ class ConstrainedSphericalDeconvModel(SphHarmModel):
         self.B_reg = real_sph_harm(m, n, theta[:, None], phi[:, None])
 
         if response is None:
-            self.response = (np.array([0.0015, 0.0003, 0.0003]), 1)
+            response = (np.array([0.0015, 0.0003, 0.0003]), 1)
+
+        self.response = response
+        if isinstance(response, AxSymShResponse):
+            r_sh = response.dwi_response
+            self.response_scaling = response.S0
+            n_response = response.n
+            m_response = response.m
         else:
-            self.response = response
-
-        self.S_r = estimate_response(gtab, self.response[0], self.response[1])
-        self.response_scaling = self.response[1]
-
-        r_sh = np.linalg.lstsq(self.B_dwi, self.S_r[self._where_dwi])[0]
-        r_rh = sh_to_rh(r_sh, m, n)
-
+            self.S_r = estimate_response(gtab, self.response[0],
+                                         self.response[1])
+            r_sh = np.linalg.lstsq(self.B_dwi, self.S_r[self._where_dwi])[0]
+            n_response = n
+            m_response = m
+            self.response_scaling = response[1]
+        r_rh = sh_to_rh(r_sh, m_response, n_response)
         self.R = forward_sdeconv_mat(r_rh, n)
 
         # scale lambda_ to account for differences in the number of
         # SH coefficients and number of mapped directions
         # This is exactly what is done in [4]_
-        self.lambda_ = (lambda_  * self.R.shape[0] * r_rh[0] /
-                        (np.sqrt(self.B_reg.shape[0]) * np.sqrt(362.))
-                       )
+        lambda_ = (lambda_  * self.R.shape[0] * r_rh[0] /
+                   (np.sqrt(self.B_reg.shape[0]) * np.sqrt(362.)))
+        self.B_reg *= lambda_
         self.sh_order = sh_order
         self.tau = tau
+        self._X = X = self.R.diagonal() * self.B_dwi
+        self._P = np.dot(X.T, X)
 
     @multi_voxel_fit
     def fit(self, data):
         dwi_data = data[self._where_dwi]
-        X = self.R.diagonal() * self.B_dwi
-        shm_coeff, num_it = csdeconv(dwi_data, self.sh_order, X, self.B_reg,
-                                     self.lambda_, self.tau)
+        shm_coeff, _ = csdeconv(dwi_data, self._X, self.B_reg, self.tau,
+                                P=self._P)
         return SphHarmFit(self, shm_coeff, None)
 
 
     def predict(self, sh_coeff, gtab=None, S0=1):
         """Compute a signal prediction given spherical harmonic coefficients
-        and (optionally) a response function for the provided GradientTable
-        class instance.
+        for the provided GradientTable class instance.
 
         Parameters
         ----------
@@ -167,7 +213,6 @@ class ConstrainedSphericalDeconvModel(SphHarmModel):
         predict_matrix = SH_basis * self.R.diagonal()
         S0 = np.asarray(S0)[..., None]
         scaling = S0 / self.response_scaling
-
         # This is the key operation: convolve and multiply by S0:
         pre_pred_sig = scaling * np.dot(predict_matrix, sh_coeff)
 
@@ -187,7 +232,7 @@ class ConstrainedSDTModel(SphHarmModel):
 
         The SDT computes a fiber orientation distribution (FOD) as opposed to a
         diffusion ODF as the QballModel or the CsaOdfModel. This results in a
-        sharper angular profile with better angular resolution. The Contrained
+        sharper angular profile with better angular resolution. The Constrained
         SDTModel is similar to the Constrained CSDModel but mathematically it
         deconvolves the q-ball ODF as oppposed to the HARDI signal (see [1]_
         for a comparison and a through discussion).
@@ -349,7 +394,24 @@ def forward_sdt_deconv_mat(ratio, n, r2_term=False):
     return np.diag(b), np.diag(bb)
 
 
-def csdeconv(dwsignal, sh_order, X, B_reg, lambda_=1., tau=0.1):
+potrf, potrs = ll.get_lapack_funcs(('potrf', 'potrs'))
+
+def _solve_cholesky(Q, z):
+    L, info = potrf(Q, lower=False, overwrite_a=False, clean=False)
+    if info > 0:
+        msg = "%d-th leading minor not positive definite" % info
+        raise la.LinAlgError(msg)
+    if info < 0:
+        msg = 'illegal value in %d-th argument of internal potrf' % -info
+        raise ValueError(msg)
+    f, info = potrs(L, z, lower=False, overwrite_b=False)
+    if info != 0:
+        msg = 'illegal value in %d-th argument of internal potrs' % -info
+        raise ValueError(msg)
+    return f
+
+
+def csdeconv(dwsignal, X, B_reg, tau=0.1, convergence=50, P=None):
     r""" Constrained-regularized spherical deconvolution (CSD) [1]_
 
     Deconvolves the axially symmetric single fiber response function `r_rh` in
@@ -358,18 +420,14 @@ def csdeconv(dwsignal, sh_order, X, B_reg, lambda_=1., tau=0.1):
 
     Parameters
     ----------
-    dwsignal, : array
+    dwsignal : array
         Diffusion weighted signals to be deconvolved.
-    sh_order : int
-         maximal SH order of the SH representation
     X : array
         Prediction matrix which estimates diffusion weighted signals from FOD
         coefficients.
     B_reg : array (N, B)
         SH basis matrix which maps FOD coefficients to FOD values on the
-        surface of the sphere.
-    lambda_ : float
-        lambda parameter in minimization equation (default 1.0)
+        surface of the sphere. B_reg should be scaled to account for lambda.
     tau : float
         Threshold controlling the amplitude below which the corresponding fODF
         is assumed to be zero.  Ideally, tau should be set to zero. However, to
@@ -379,15 +437,85 @@ def csdeconv(dwsignal, sh_order, X, B_reg, lambda_=1., tau=0.1):
         peaks. Because SDT is based on a q-ball ODF deconvolution, and not
         signal deconvolution, using the max instead of mean (as in CSD), is
         more stable.
+    convergence : int
+        Maximum number of iterations to allow the deconvolution to converge.
+    P : ndarray
+        This is an optimization to avoid computing ``dot(X.T, X)`` many times.
+        If the same ``X`` is used many times, ``P`` can be precomputed and
+        passed to this function.
 
     Returns
     -------
     fodf_sh : ndarray (``(sh_order + 1)*(sh_order + 2)/2``,)
          Spherical harmonics coefficients of the constrained-regularized fiber
-         ODF
+         ODF.
     num_it : int
          Number of iterations in the constrained-regularization used for
-         convergence
+         convergence.
+
+    Notes
+    -----
+    This section describes how the fitting of the SH coefficients is done.
+    Problem is to minimise per iteration:
+
+    $F(f_n) = ||Xf_n - S||^2 + \lambda^2 ||H_{n-1} f_n||^2$
+
+    Where $X$ maps current FOD SH coefficients $f_n$ to DW signals $s$ and
+    $H_{n-1}$ maps FOD SH coefficients $f_n$ to amplitudes along set of negative
+    directions identified in previous iteration, i.e. the matrix formed by the
+    rows of $B_{reg}$ for which $Hf_{n-1}<0$ where $B_{reg}$ maps $f_n$ to FOD
+    amplitude on a sphere.
+
+    Solve by differentiating and setting to zero:
+
+    $\Rightarrow \frac{\delta F}{\delta f_n} = 2X^T(Xf_n - S) + 2 \lambda^2
+    H_{n-1}^TH_{n-1}f_n=0$
+
+    Or:
+
+    $(X^TX + \lambda^2 H_{n-1}^TH_{n-1})f_n = X^Ts$
+
+    Define $Q = X^TX + \lambda^2 H_{n-1}^TH_{n-1}$ , which by construction is a
+    square positive definite symmetric matrix of size $n_{SH} by n_{SH}$. If
+    needed, positive definiteness can be enforced with a small minimum norm
+    regulariser (helps a lot with poorly conditioned direction sets and/or
+    superresolution):
+
+    $Q = X^TX + (\lambda H_{n-1}^T) (\lambda H_{n-1}) + \mu I$
+
+    Solve $Qf_n = X^Ts$ using Cholesky decomposition:
+
+    $Q = LL^T$
+
+    where $L$ is lower triangular. Then problem can be solved by
+    back-substitution:
+
+    $L_y = X^Ts$
+
+    $L^Tf_n = y$
+
+    To speeds things up further, form $P = X^TX + \mu I$, and update to form
+    $Q$ by rankn update with $H_{n-1}$. The dipy implementation looks like:
+
+        form initially $P = X^T X + \mu I$ and $\lambda B_{reg}$
+
+        for each voxel: form $z = X^Ts$
+
+            estimate $f_0$ by solving $Pf_0=z$. We use a simplified $l_{max}=4$
+            solution here, but it might not make a big difference.
+
+            Then iterate until no change in rows of $H$ used in $H_n$
+
+                form $H_{n}$ given $f_{n-1}$
+
+                form $Q = P + (\lambda H_{n-1}^T) (\lambda H_{n-1}$) (this can
+                be done by rankn update, but we currently do not use rankn
+                update).
+
+                solve $Qf_n = z$ using Cholesky decomposition
+
+    We'd like to thanks Donald Tournier for his help with describing and
+    implementing this algorithm.
 
     References
     ----------
@@ -396,48 +524,57 @@ def csdeconv(dwsignal, sh_order, X, B_reg, lambda_=1., tau=0.1):
            constrained super-resolved spherical deconvolution.
 
     """
-    # generate initial fODF estimate, truncated at SH order 4
-    fodf_sh = np.linalg.lstsq(X, dwsignal)[0]
-    fodf_sh[15:] = 0
+    mu = 1e-5
+    if P is None:
+        P = np.dot(X.T, X)
+    z = np.dot(X.T, dwsignal)
 
-    fodf = np.dot(B_reg, fodf_sh)
-    # set threshold on FOD amplitude used to identify 'negative' values
-    threshold = tau * np.mean(np.dot(B_reg, fodf_sh))
+    try:
+        fodf_sh = _solve_cholesky(P, z)
+    except la.LinAlgError:
+        P = P + mu * np.eye(P.shape[0])
+        fodf_sh = _solve_cholesky(P, z)
+    # For the first iteration we use a smooth FOD that only uses SH orders up
+    # to 4 (the first 15 coefficients).
+    fodf = np.dot(B_reg[:, :15], fodf_sh[:15])
+    # The mean of an fodf can be computed by taking $Y_{0,0} * coeff_{0,0}$
+    threshold = B_reg[0, 0] * fodf_sh[0] * tau
+    where_fodf_small = (fodf < threshold).nonzero()[0]
 
-    k = []
-    convergence = 50
-    for num_it in range(1, convergence + 1):
+    # If the low-order fodf does not have any values less than threshold, the
+    # full-order fodf is used.
+    if len(where_fodf_small) == 0:
         fodf = np.dot(B_reg, fodf_sh)
+        where_fodf_small = (fodf < threshold).nonzero()[0]
+        # If the fodf still has no values less than threshold, return the fodf.
+        if len(where_fodf_small) == 0:
+            return fodf_sh, 0
 
-        k2 = np.nonzero(fodf < threshold)[0]
+    for num_it in range(1, convergence + 1):
+        # This is the super-resolved trick.  Wherever there is a negative
+        # amplitude value on the fODF, it concatenates a value to the S vector
+        # so that the estimation can focus on trying to eliminate it. In a
+        # sense, this "adds" a measurement, which can help to better estimate
+        # the fodf_sh, even if you have more SH coefficients to estimate than
+        # actual S measurements.
+        H = B_reg.take(where_fodf_small, axis=0)
 
-        if (k2.shape[0] + X.shape[0]) < B_reg.shape[1]:
-            warnings.warn(
-            'too few negative directions identified - failed to converge')
-            return fodf_sh, num_it
+        # We use the Cholesky decomposition to solve for the SH coefficients.
+        Q = P + np.dot(H.T, H)
+        fodf_sh = _solve_cholesky(Q, z)
 
-        if num_it > 1 and k.shape[0] == k2.shape[0]:
-            if (k == k2).all():
-                return fodf_sh, num_it
+        # Sample the FOD using the regularization sphere and compute k.
+        fodf = np.dot(B_reg, fodf_sh)
+        where_fodf_small_last = where_fodf_small
+        where_fodf_small = (fodf < threshold).nonzero()[0]
 
-        k = k2
+        if (len(where_fodf_small) == len(where_fodf_small_last) and
+            (where_fodf_small == where_fodf_small_last).all()):
+            break
+    else:
+        msg = 'maximum number of iterations exceeded - failed to converge'
+        warnings.warn(msg)
 
-        # This is the super-resolved trick.
-        # Wherever there is a negative amplitude value on the fODF, it
-        # concatenates a value to the S vector so that the estimation can
-        # focus on trying to eliminate it. In a sense, this "adds" a
-        # measurement, which can help to better estimate the fodf_sh, even if
-        # you have more SH coeffcients to estimate than actual S measurements.
-        M = np.concatenate((X, lambda_ * B_reg[k, :]))
-        S = np.concatenate((dwsignal, np.zeros(k.shape)))
-        try:
-            fodf_sh = np.linalg.lstsq(M, S)[0]
-        except np.linalg.LinAlgError as lae:
-            # SVD did not converge in Linear Least Squares in current
-            # voxel. Proceeding with initial SH estimate for this voxel.
-            pass
-
-    warnings.warn('maximum number of iterations exceeded - failed to converge')
     return fodf_sh, num_it
 
 
@@ -664,7 +801,7 @@ def auto_response(gtab, data, roi_center=None, roi_radius=10, fa_thr=0.7,
     returned, which can be used to judge the fidelity of the response function.
     As a rule of thumb, at least 300 voxels should be used to estimate a good
     response function (see [1]_).
-    
+
     References
     ----------
     .. [1] Tournier, J.D., et al. NeuroImage 2004. Direct estimation of the
@@ -701,3 +838,123 @@ def auto_response(gtab, data, roi_center=None, roi_radius=10, fa_thr=0.7,
         return response, ratio, indices[0].size
 
     return response, ratio
+
+
+def recursive_response(gtab, data, mask=None, sh_order=8, peak_thr=0.01,
+                       init_fa=0.08, init_trace=0.0021, iter=8,
+                       convergence=0.001, parallel=True, nbr_processes=None,
+                       sphere=default_sphere):
+    """ Recursive calibration of response function using peak threshold
+
+    Parameters
+    ----------
+    gtab : GradientTable
+    data : ndarray
+        diffusion data
+    mask : ndarray, optional
+        mask for recursive calibration, for example a white matter mask. It has
+        shape `data.shape[0:3]` and dtype=bool. Default: use the entire data
+        array. 
+    sh_order : int, optional
+        maximal spherical harmonics order. Default: 8
+    peak_thr : float, optional
+        peak threshold, how large the second peak can be relative to the first
+        peak in order to call it a single fiber population [1]. Default: 0.01
+    init_fa : float, optional
+        FA of the initial 'fat' response function (tensor). Default: 0.08
+    init_trace : float, optional
+        trace of the initial 'fat' response function (tensor). Default: 0.0021
+    iter : int, optional
+        maximum number of iterations for calibration. Default: 8.
+    convergence : float, optional
+        convergence criterion, maximum relative change of SH
+        coefficients. Default: 0.001.
+    parallel : bool, optional
+        Whether to use parallelization in peak-finding during the calibration
+        procedure. Default: True
+    nbr_processes: int
+        If `parallel` is True, the number of subprocesses to use
+        (default multiprocessing.cpu_count()).
+    sphere : Sphere, optional.
+        The sphere used for peak finding. Default: default_sphere.
+    
+    Returns
+    -------
+    response : ndarray
+        response function in SH coefficients
+
+    Notes
+    -----
+    In CSD there is an important pre-processing step: the estimation of the
+    fiber response function. Using an FA threshold is not a very robust method.
+    It is dependent on the dataset (non-informed used subjectivity), and still
+    depends on the diffusion tensor (FA and first eigenvector),
+    which has low accuracy at high b-value. This function recursively
+    calibrates the response function, for more information see [1].
+
+    References
+    ----------
+    .. [1] Tax, C.M.W., et al. NeuroImage 2014. Recursive calibration of
+           the fiber response function for spherical deconvolution of
+           diffusion MRI data.
+    """
+    S0 = 1
+    evals = fa_trace_to_lambdas(init_fa, init_trace)
+    res_obj = (evals, S0)
+
+    if mask is None:
+        data = data.reshape(-1, data.shape[-1])
+    else:
+        data = data[mask]
+
+    n = np.arange(0, sh_order + 1, 2)
+    where_dwi = lazy_index(~gtab.b0s_mask)
+    response_p = np.ones(len(n))
+
+    for num_it in range(1, iter):
+        r_sh_all = np.zeros(len(n))
+        csd_model = ConstrainedSphericalDeconvModel(gtab, res_obj,
+                                                    sh_order=sh_order)
+
+        csd_peaks = peaks_from_model(model=csd_model,
+                                     data=data,
+                                     sphere=sphere,
+                                     relative_peak_threshold=peak_thr,
+                                     min_separation_angle=25,
+                                     parallel=parallel,
+                                     nbr_processes=nbr_processes)
+
+        dirs = csd_peaks.peak_dirs
+        vals = csd_peaks.peak_values
+        single_peak_mask = (vals[:, 1] / vals[:, 0]) < peak_thr
+        data = data[single_peak_mask]
+        dirs = dirs[single_peak_mask]
+
+        for num_vox in range(0, data.shape[0]):
+            rotmat = vec2vec_rotmat(dirs[num_vox, 0], np.array([0, 0, 1]))
+
+            rot_gradients = np.dot(rotmat, gtab.gradients.T).T
+
+            x, y, z = rot_gradients[where_dwi].T
+            r, theta, phi = cart2sphere(x, y, z)
+            # for the gradient sphere
+            B_dwi = real_sph_harm(0, n, theta[:, None], phi[:, None])
+            r_sh_all += np.linalg.lstsq(B_dwi, data[num_vox, where_dwi])[0]
+
+        response = r_sh_all / data.shape[0]
+        res_obj = AxSymShResponse(data[:, gtab.b0s_mask].mean(), response)
+
+        change = abs((response_p - response) / response_p)
+        if all(change < convergence):
+            break
+
+        response_p = response
+
+    return res_obj
+
+
+def fa_trace_to_lambdas(fa=0.08, trace=0.0021):
+    lambda1 = (trace / 3.) * (1 + 2 * fa / (3 - 2 * fa ** 2) ** (1 / 2.))
+    lambda2 = (trace / 3.) * (1 - fa / (3 - 2 * fa ** 2) ** (1 / 2.))
+    evals = np.array([lambda1, lambda2, lambda2])
+    return evals

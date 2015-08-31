@@ -77,6 +77,16 @@ or updating to the newest version of dipy.""" % (fullpath, md5)
         _log("Files successfully downloaded to %s" % (folder))
 
 
+def _already_there_msg(folder):
+    """
+    Prints a message indicating that a certain data-set is already in place
+    """
+    msg = 'Dataset is already in place. If you want to fetch it again '
+    msg += 'please first remove the folder %s ' % folder
+    print(msg)
+
+
+
 def fetch_scil_b0():
     """ Download b=0 datasets from multiple MR systems (GE, Philips, Siemens) and
         different magnetic fields (1.5T and 3T)
@@ -89,7 +99,9 @@ def fetch_scil_b0():
     if not os.path.exists(folder):
         print('Creating new directory %s' % folder)
         os.makedirs(folder)
-        print('Downloading SCIL b=0 datasets from multiple sites and multiple companies (9.2MB)...')
+        msg = 'Downloading SCIL b=0 datasets from multiple sites and'
+        msg += 'multiple companies (9.2MB)...'
+        print()
         opener = urlopen(uraw)
         open(folder+'.zip', 'wb').write(opener.read())
 
@@ -100,7 +112,7 @@ def fetch_scil_b0():
         print('Done.')
         print('Files copied in folder %s' % dipy_home)
     else:
-        print('Dataset already in place. If you want to fetch again please first remove folder %s ' % dipy_home)
+        _already_there_msg(folder)
 
 
 def read_scil_b0():
@@ -199,7 +211,7 @@ def fetch_isbi2013_2shell():
         print('Done.')
         print('Files copied in folder %s' % folder)
     else:
-        print('Dataset is already in place. If you want to fetch it again, please first remove the folder %s ' % folder)
+        _already_there_msg(folder)
 
 
 def read_isbi2013_2shell():
@@ -260,7 +272,7 @@ def fetch_sherbrooke_3shell():
         print('Done.')
         print('Files copied in folder %s' % folder)
     else:
-        print('Dataset is already in place. If you want to fetch it again, please first remove the folder %s ' % folder)
+        _already_there_msg(folder)
 
 
 def read_sherbrooke_3shell():
@@ -347,7 +359,7 @@ def fetch_stanford_hardi():
         print('Done.')
         print('Files copied in folder %s' % folder)
     else:
-        print('Dataset is already in place. If you want to fetch it again, please first remove the folder %s ' % folder)
+        _already_there_msg(folder)
 
 
 def read_stanford_hardi():
@@ -384,7 +396,7 @@ def fetch_stanford_t1():
     url_t1 = url + 't1.nii.gz'
     folder = pjoin(dipy_home, 'stanford_hardi')
     file_md5 = 'a6a140da6a947d4131b2368752951b0a'
-    files = {"t1.nii.gz" : (url_t1, file_md5)}
+    files = {"t1.nii.gz": (url_t1, file_md5)}
     fetch_data(files, folder)
     return files, folder
 
@@ -394,6 +406,33 @@ def read_stanford_t1():
     f_t1 = pjoin(folder, 't1.nii.gz')
     img = nib.load(f_t1)
     return img
+
+
+def fetch_stanford_pve_maps():
+    url = 'https://stacks.stanford.edu/file/druid:yx282xq2090/'
+    url_pve_csf = url + 'pve_csf.nii.gz'
+    url_pve_gm = url + 'pve_gm.nii.gz'
+    url_pve_wm = url + 'pve_wm.nii.gz'
+    folder = pjoin(dipy_home, 'stanford_hardi')
+    file_csf_md5 = '2c498e4fed32bca7f726e28aa86e9c18'
+    file_gm_md5 = '1654b20aeb35fc2734a0d7928b713874'
+    file_wm_md5 = '2e244983cf92aaf9f9d37bc7716b37d5'
+    files = {"pve_csf.nii.gz": (url_pve_csf, file_csf_md5),
+             "pve_gm.nii.gz": (url_pve_gm, file_gm_md5),
+             "pve_wm.nii.gz": (url_pve_wm, file_wm_md5)}
+    fetch_data(files, folder)
+    return files, folder
+
+
+def read_stanford_pve_maps():
+    files, folder = fetch_stanford_pve_maps()
+    f_pve_csf = pjoin(folder, 'pve_csf.nii.gz')
+    f_pve_gm = pjoin(folder, 'pve_gm.nii.gz')
+    f_pve_wm = pjoin(folder, 'pve_wm.nii.gz')
+    img_pve_csf = nib.load(f_pve_csf)
+    img_pve_gm = nib.load(f_pve_gm)
+    img_pve_wm = nib.load(f_pve_wm)
+    return (img_pve_csf, img_pve_gm, img_pve_wm)
 
 
 def fetch_taiwan_ntu_dsi():
@@ -429,7 +468,7 @@ def fetch_taiwan_ntu_dsi():
         print('http://dsi-studio.labsolver.org')
 
     else:
-        print('Dataset is already in place. If you want to fetch it again, please first remove the folder %s ' % folder)
+        _already_there_msg(folder)
 
 
 def read_taiwan_ntu_dsi():
@@ -463,13 +502,14 @@ def read_taiwan_ntu_dsi():
     img = nib.load(fraw)
     return img, gtab
 
+
 def fetch_syn_data():
     """ Download t1 and b0 volumes from the same session
     """
     url = 'https://dl.dropboxusercontent.com/u/5918983/'
     t1 = url + 't1.nii.gz'
     b0 = url + 'b0.nii.gz'
-    
+
     folder = pjoin(dipy_home, 'syn_test')
 
     md5_list = ['701bda02bb769655c7d4a9b1df2b73a6', # t1
@@ -490,7 +530,7 @@ def fetch_syn_data():
         print('Done.')
         print('Files copied in folder %s' % folder)
     else:
-        print('Dataset is already in place. If you want to fetch it again, please first remove the folder %s ' % folder)
+        _already_there_msg(folder)
 
 
 def read_syn_data():
@@ -516,3 +556,85 @@ def read_syn_data():
     t1 = nib.load(t1_name)
     b0 = nib.load(b0_name)
     return t1, b0
+
+
+def fetch_mni_template():
+    """
+    Fetch the MNI T2 and T1 template files (~35 MB)
+    """
+    url = \
+    'https://digital.lib.washington.edu/researchworks/bitstream/handle/1773/33312/'
+    fname_list = ['COPYING',
+                  'mni_icbm152_t2_tal_nlin_asym_09a.nii',
+                  'mni_icbm152_t1_tal_nlin_asym_09a.nii']
+    url_list = [url + ff for ff in fname_list]
+    md5_list = ['6e2168072e80aa4c0c20f1e6e52ec0c8',
+                'f41f2e1516d880547fbf7d6a83884f0d',
+                '1ea8f4f1e41bc17a94602e48141fdbc8']
+    folder = pjoin(dipy_home, 'mni_template')
+    if not os.path.exists(folder):
+        print('Creating new directory %s' % folder)
+        os.makedirs(folder)
+        print('Downloading T2 and T1 MNI templates (~35 MB)...')
+
+        for i in range(len(md5_list)):
+            _get_file_data(pjoin(folder, fname_list[i]), url_list[i])
+            check_md5(pjoin(folder, fname_list[i]), md5_list[i])
+
+        print('Done.')
+        print('Files copied in folder %s' % folder)
+        print("The copyright notice is provided in the file: %s" %
+              pjoin(folder, fname_list[0]))
+    else:
+        _already_there_msg(folder)
+
+
+def read_mni_template(contrast="T2"):
+    """
+    Read the MNI template from disk
+
+    Parameters
+    ----------
+    contrast : list or string, optional
+        Which of the contrast templates to read. Two contrasts are available:
+        "T1" and "T2", so you can either enter one of these strings as input,
+        or a list containing both of them.
+
+    Returns
+    -------
+    list : contains the nibabel.Nifti1Image objects requested, according to the
+        order they were requested in the input.
+
+    Examples
+    --------
+    Get only the T2 file:
+    >>> T2_nifti = read_mni_template("T2") # doctest: +SKIP
+    Get both files in this order:
+    >>> T1_nifti, T2_nifti = read_mni_template(["T1", "T2"]) # doctest: +SKIP
+
+    """
+    folder = pjoin(dipy_home, 'mni_template')
+    file_dict = {"T1":pjoin(folder, 'mni_icbm152_t1_tal_nlin_asym_09a.nii'),
+                 "T2":pjoin(folder, 'mni_icbm152_t2_tal_nlin_asym_09a.nii')}
+
+    md5_dict = {'T1': '1ea8f4f1e41bc17a94602e48141fdbc8',
+                'T2': 'f41f2e1516d880547fbf7d6a83884f0d'}
+
+    try:
+        # If a string was provided, you only wanted one of them:
+        if isinstance(contrast, str):
+            check_md5(file_dict[contrast], md5_dict[contrast])
+            return nib.load(file_dict[contrast])
+
+        # Otherwise, we construct a list of outputs
+        out_list = []
+        for k in contrast:
+            check_md5(file_dict[k], md5_dict[k])
+            out_list.append(nib.load(file_dict[k]))
+
+        return out_list
+
+    except IOError:
+        msg = "Could not find the MNI template files, "
+        msg += "please run `fetch_mni_template` first"
+        print(msg)

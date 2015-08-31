@@ -43,7 +43,9 @@ from dipy.data.fetcher import (fetch_scil_b0,
                                fetch_syn_data,
                                read_syn_data,
                                fetch_stanford_t1,
-	                       read_stanford_t1)
+                               read_stanford_t1,
+                               fetch_stanford_pve_maps,
+                               read_stanford_pve_maps)
 
 from ..utils.arrfuncs import as_native_array
 from dipy.tracking.streamline import relist_streamlines
@@ -265,6 +267,8 @@ def get_data(name='small_64D'):
         return pjoin(THIS_DIR, 'circle.npy')
     if name == 'cb_2':
         return pjoin(THIS_DIR, 'cb_2.npz')
+    if name == "t1_coronal_slice":
+        return pjoin(THIS_DIR, 't1_coronal_slice.npy')
 
 
 def _gradient_from_file(filename):
