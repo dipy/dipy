@@ -68,6 +68,9 @@ def read_bvals_bvecs(fbvals, fbvecs):
     if bvals is None:
         return bvals, bvecs
 
+    if len(bvals.shape) > 1:
+        raise IOError('bval file should have one row')
+
     if max(bvals.shape) != max(bvecs.shape):
             raise IOError('b-values and b-vectors shapes do not correspond')
 
