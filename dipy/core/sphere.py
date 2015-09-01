@@ -1,7 +1,5 @@
 from __future__ import division, print_function, absolute_import
 
-__all__ = ['Sphere', 'HemiSphere', 'faces_from_sphere_vertices', 'unique_edges']
-
 import numpy as np
 import warnings
 
@@ -10,6 +8,9 @@ from ..utils.six.moves import xrange
 from dipy.core.geometry import cart2sphere, sphere2cart, vector_norm
 from dipy.core.onetime import auto_attr
 from dipy.reconst.recspeed import remove_similar_vertices
+
+__all__ = ['Sphere', 'HemiSphere', 'faces_from_sphere_vertices',
+           'unique_edges']
 
 
 def _all_specified(*args):
@@ -47,6 +48,7 @@ def faces_from_sphere_vertices(vertices):
         return np.asarray(faces, np.uint16)
     else:
         return faces
+
 
 def unique_edges(faces, return_mapping=False):
     """Extract all unique edges from given triangular faces.
@@ -154,8 +156,8 @@ class Sphere(object):
 
         all_specified = _all_specified(x, y, z) + _all_specified(xyz) + \
                         _all_specified(theta, phi)
-        one_complete = _some_specified(x, y, z) + _some_specified(xyz) + \
-                       _some_specified(theta, phi)
+        one_complete = (_some_specified(x, y, z) + _some_specified(xyz) +
+                        _some_specified(theta, phi))
 
         if not (all_specified == 1 and one_complete == 1):
             raise ValueError("Sphere must be constructed using either "
@@ -347,11 +349,11 @@ class HemiSphere(Sphere):
         vertices = np.vstack([self.vertices, -self.vertices])
 
         edges = np.vstack([self.edges, n + self.edges])
-        _switch_vertex(edges[:,0], edges[:,1], vertices)
+        _switch_vertex(edges[:, 0], edges[:, 1], vertices)
 
         faces = np.vstack([self.faces, n + self.faces])
-        _switch_vertex(faces[:,0], faces[:,1], vertices)
-        _switch_vertex(faces[:,0], faces[:,2], vertices)
+        _switch_vertex(faces[:, 0], faces[:, 1], vertices)
+        _switch_vertex(faces[:, 0], faces[:, 2], vertices)
         return Sphere(xyz=vertices, edges=edges, faces=faces)
 
     @auto_attr
@@ -369,7 +371,6 @@ class HemiSphere(Sphere):
         sphere = self.mirror()
         sphere = sphere.subdivide(n)
         return HemiSphere.from_sphere(sphere)
-
 
     def find_closest(self, xyz):
         """
@@ -429,11 +430,11 @@ def _get_forces(charges):
         potential = 1. / r_mag
 
     d = np.arange(len(charges))
-    force[d,d] = 0
+    force[d, d] = 0
     force = force.sum(0)
     force_r_comp = (charges*force).sum(-1)[:, None]
     f_theta = force - force_r_comp*charges
-    potential[d,d] = 0
+    potential[d, d] = 0
     potential = 2*potential.sum()
     return f_theta, potential
 
@@ -499,7 +500,7 @@ def disperse_charges(hemi, iters, const=.2):
 
 def interp_rbf(data, sphere_origin, sphere_target,
                function='multiquadric', epsilon=None, smooth=0,
-               norm = "euclidean_norm"):
+               norm="euclidean_norm"):
     """Interpolate data on the sphere, using radial basis functions.
 
     Parameters
@@ -557,8 +558,8 @@ def interp_rbf(data, sphere_origin, sphere_target,
 
     kwargs = {'function': function,
               'epsilon': epsilon,
-              'smooth' : smooth,
-              'norm' : norm}
+              'smooth': smooth,
+              'norm': norm}
 
     rbfi = Rbf(sphere_origin.x, sphere_origin.y, sphere_origin.z, data,
                **kwargs)
@@ -607,13 +608,12 @@ def euler_characteristic_check(sphere, chi=2):
 
 
 octahedron_vertices = np.array(
-    [[ 1.0 , 0.0,  0.0],
-     [-1.0,  0.0,  0.0],
-     [ 0.0,  1.0,  0.0],
-     [ 0.0, -1.0,  0.0],
-     [ 0.0,  0.0,  1.0],
-     [ 0.0,  0.0, -1.0],
-    ])
+    [[1.0, 0.0, 0.0],
+     [-1.0, 0.0, 0.0],
+     [0.0, 1.0, 0.0],
+     [0.0, -1.0, 0.0],
+     [0.0,  0.0, 1.0],
+     [0.0,  0.0, -1.0], ])
 octahedron_faces = np.array(
     [[0, 4, 2],
      [1, 5, 3],
@@ -622,47 +622,45 @@ octahedron_faces = np.array(
      [1, 4, 3],
      [0, 5, 2],
      [0, 4, 3],
-     [1, 5, 2],
-    ], dtype='uint16')
+     [1, 5, 2], ], dtype='uint16')
 
 t = (1 + np.sqrt(5)) / 2
 icosahedron_vertices = np.array(
-    [[  t,  1,  0], #  0
-     [ -t,  1,  0], #  1
-     [  t, -1,  0], #  2
-     [ -t, -1,  0], #  3
-     [  1,  0,  t], #  4
-     [  1,  0, -t], #  5
-     [ -1,  0,  t], #  6
-     [ -1,  0, -t], #  7
-     [  0,  t,  1], #  8
-     [  0, -t,  1], #  9
-     [  0,  t, -1], # 10
-     [  0, -t, -1], # 11
-    ])
+    [[t,  1,  0],     # 0
+     [-t,  1,  0],    # 1
+     [t, -1,  0],     # 2
+     [-t, -1,  0],    # 3
+     [1,  0,  t],     # 4
+     [1,  0, -t],     # 5
+     [-1,  0,  t],    # 6
+     [-1,  0, -t],    # 7
+     [0,  t,  1],     # 8
+     [0, -t,  1],     # 9
+     [0,  t, -1],     # 10
+     [0, -t, -1], ])   # 11
+
 icosahedron_vertices /= vector_norm(icosahedron_vertices, keepdims=True)
 icosahedron_faces = np.array(
-    [[ 8,  4,  0],
-     [ 2,  5,  0],
-     [ 2,  5, 11],
-     [ 9,  2, 11],
-     [ 2,  4,  0],
-     [ 9,  2,  4],
+    [[8,  4,  0],
+     [2,  5,  0],
+     [2,  5, 11],
+     [9,  2, 11],
+     [2,  4,  0],
+     [9,  2,  4],
      [10,  8,  1],
      [10,  8,  0],
      [10,  5,  0],
-     [ 6,  3,  1],
-     [ 9,  6,  3],
-     [ 6,  8,  1],
-     [ 6,  8,  4],
-     [ 9,  6,  4],
-     [ 7, 10,  1],
-     [ 7, 10,  5],
-     [ 7,  3,  1],
-     [ 7,  3, 11],
-     [ 9,  3, 11],
-     [ 7,  5, 11],
-    ], dtype='uint16')
+     [6,  3,  1],
+     [9,  6,  3],
+     [6,  8,  1],
+     [6,  8,  4],
+     [9,  6,  4],
+     [7, 10,  1],
+     [7, 10,  5],
+     [7,  3,  1],
+     [7,  3, 11],
+     [9,  3, 11],
+     [7,  5, 11], ], dtype='uint16')
 
 unit_octahedron = Sphere(xyz=octahedron_vertices, faces=octahedron_faces)
 unit_icosahedron = Sphere(xyz=icosahedron_vertices, faces=icosahedron_faces)
