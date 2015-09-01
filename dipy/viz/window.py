@@ -419,6 +419,9 @@ class ShowManager(object):
             self.style = interactor_style
 
         self.iren = vtk.vtkRenderWindowInteractor()
+        self.style.SetCurrentRenderer(self.ren)
+        self.style.SetInteractor(self.iren)  # Hack: this allows the Python version of this method to be called.
+        self.iren.SetInteractorStyle(self.style)
         self.iren.SetRenderWindow(self.window)
 
         def key_press_standard(obj, event):
@@ -448,8 +451,6 @@ class ShowManager(object):
                     print('File ' + filepath + ' is saved.')
 
         self.iren.AddObserver('KeyPressEvent', key_press_standard)
-        self.iren.SetInteractorStyle(self.style)
-        self.style.SetCurrentRenderer(self.ren)
 
         self.picker = vtk.vtkCellPicker()
         self.picker.SetTolerance(self.picker_tol)
