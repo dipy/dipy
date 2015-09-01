@@ -48,12 +48,15 @@ def test_read_bvals_bvecs():
     bv_file2.close()
     npt.assert_raises(IOError,read_bvals_bvecs, fbvals, bv_file2.name)
 
-    # Theres less bvecs than bvals:
+    # There are less bvecs than bvals:
     new_bvecs3 = bvecs[:-1, :]
     bv_file3 = tempfile.NamedTemporaryFile()
     np.save(bv_file3, new_bvecs3)
     bv_file3.close()
     npt.assert_raises(IOError,read_bvals_bvecs, fbvals, bv_file3.name)
+
+    # You entered the bvecs on both sides:
+    npt.assert_raises(IOError, read_bvals_bvecs, fbvecs, fbvecs)
 
 
 if __name__ == '__main__':

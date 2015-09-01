@@ -16,7 +16,7 @@ def read_bvals_bvecs(fbvals, fbvecs):
     fbvals : str
              path of file with b-values, or None if you don't want to read bvals
     fbvecs : str
-             path of file with b-vectorsl, or None if you don't want to read bvecs
+             path of file with b-vectors, or None if you don't want to read bvecs
 
     Returns
     -------
