@@ -523,7 +523,7 @@ def interp_rbf(data, sphere_origin, sphere_target,
         "distance" between two points.
         'angle' - The angle between two vectors
         'euclidean_norm' - The Euclidean distance
-        
+
     Returns
     -------
     v : (M,) ndarray
@@ -535,31 +535,30 @@ def interp_rbf(data, sphere_origin, sphere_target,
 
     """
     from scipy.interpolate import Rbf
-    
+
     def angle(x1, x2):
         xx = np.arccos((x1 * x2).sum(axis=0))
         xx[np.isnan(xx)] = 0
         return xx
-        
+
     def euclidean_norm(x1, x2):
         return np.sqrt(((x1 - x2)**2).sum(axis=0))
-    
+
     if norm is "angle":
         norm = angle
     elif norm is "euclidean_norm":
         norm = euclidean_norm
-        
-    # Workaround for bug in SciPy that doesn't allow
-    # specification of epsilon None
-    if epsilon is not None:
-        kwargs = {'function': function,
-                  'epsilon': epsilon,
-                  'smooth' : smooth,
-                  'norm' : norm}
-    else:
-        kwargs = {'function': function,
-                  'smooth': smooth,
-                  'norm' : norm}
+
+    if epsilon is None:
+        # Use a heuristic that seems to work here: take epsilon to be the
+        # average distance between the origin points in this norm:
+        epsilon = np.mean(norm(sphere_origin.vertices.T[..., :, np.newaxis],
+                          sphere_origin.vertices.T[..., np.newaxis, :]))
+
+    kwargs = {'function': function,
+              'epsilon': epsilon,
+              'smooth' : smooth,
+              'norm' : norm}
 
     rbfi = Rbf(sphere_origin.x, sphere_origin.y, sphere_origin.z, data,
                **kwargs)
