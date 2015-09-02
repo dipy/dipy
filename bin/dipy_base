@@ -8,13 +8,8 @@ from dipy.workflows.segment import median_otsu_flow
 iap = IntrospectiveArgumentParser()
 iap.add_workflow(median_otsu_flow)
 
-iap.update_argument('--dilate', dest='dilate', choices=[0, 1, 2], type=int, help="Yeah")
+iap.update_argument('--dilate', dest='dilate', choices=[0, 1, 2], type=int, help="Yeah Overwritten")
 #iap.update_argument('--numpass', dest='numpass', action='store_true', type=int, help="Yeah OK")
-
-params = iap.doc['Parameters']
-
-for p in params:
-    print(p[0], p[1])
 
 #for act in bap._actions[1:]:
 #    if act.dest == 'dilate':
@@ -28,9 +23,9 @@ for p in params:
 
 if __name__ == '__main__':
 
-    #args = iap.parse_args()
+    args = iap.parse_args()
 
-    #print(args)
+    print(args)
 
     #median_otsu_flow(**args)
     pass
