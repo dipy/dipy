@@ -30,9 +30,9 @@ def median_otsu_flow(input_files, out_dir, save_masked=False,
         Output directory
     median_radius : int, optional
         Radius (in voxels) of the applied median filter(default 4)
-    numpass: int, optional
+    numpass : int, optional
         Number of pass of the median filter (default 4)
-    autocrop: bool, optional
+    autocrop : bool, optional
         if True, the masked input_volumes will also be cropped using the
         bounding box defined by the masked data. Should be on if DWI is
         upsampled to 1x1x1 resolution. (default False)
