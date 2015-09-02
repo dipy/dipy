@@ -62,7 +62,7 @@ class IntrospectiveArgumentParser(arg.ArgumentParser):
 
         if has_ndoc:
 
-            self.doc = ndoc.docscrape.NumpyDocString(doc)
+            self.doc = ndoc.docscrape.NumpyDocString(doc)['Parameters']
 
         args = specs.args
         defaults = specs.defaults
@@ -74,12 +74,42 @@ class IntrospectiveArgumentParser(arg.ArgumentParser):
         cnt = 0
         for i in range(len_args - len_defaults):
 
-            self.add_argument(args[i])
+            print(i)
+            if has_ndoc:
+                print(args[i])
+                help_msg = ''.join(self.doc[i][2])
+                print(help_msg)
+                self.add_argument(args[i], help=help_msg)
+            else:
+                self.add_argument(args[i])
             cnt += 1
 
-        # Arguments with defaults
+        # Arguments with defaults (Optional)
         for i in range(cnt, len_args):
-            self.add_argument('--' + args[i], help="ok")
+            print(i)
+
+            if has_ndoc:
+                print(args[i])
+                dtype = self._select_dtype(self.doc[i][1])
+                print(dtype)
+                help_msg = ''.join(self.doc[i][2])
+                print(help_msg)
+                self.add_argument('--' + args[i], type=dtype, help=help_msg)
+            else:
+                self.add_argument('--' + args[i])
+
+    def _select_dtype(self, text):
+
+        text = text.lower()
+
+        if text.find('str'):
+            return str
+        if text.find('int'):
+            return int
+        if text.find('float'):
+            return float
+        if text.find('bool'):
+            return bool
 
     def update_argument(self, *args, **kargs):
 
@@ -90,3 +120,12 @@ class IntrospectiveArgumentParser(arg.ArgumentParser):
         for act in self._actions[1:]:
             if act.dest == dest:
                 print(act)
+
+    def add_epilogue(self):
+        # with citations
+        pass
+
+    def add_description(self):
+        pass
+
+
