@@ -10,8 +10,6 @@ from dipy.workflows.utils import choose_create_out_dir, int_param, bool_param, \
     int_list_param
 from dipy.segment.mask import median_otsu
 
-def median_otsu_args():
-    pass
 
 def median_otsu_flow(input_files, out_dir, save_masked=False,
                      median_radius=4, numpass=4, autocrop=False,
@@ -19,7 +17,8 @@ def median_otsu_flow(input_files, out_dir, save_masked=False,
     """ Workflow wrapping the median_otsu segmentation method.
 
     It applies median_otsu segmentation on each file found by 'globing'
-    ``input_files`` and saves the results in a directory specified by ``out_dir``
+    ``input_files`` and saves the results in a directory specified by
+    ``out_dir``.
 
     Parameters
     ----------
@@ -28,12 +27,14 @@ def median_otsu_flow(input_files, out_dir, save_masked=False,
         multiple inputs at once.
     out_dir : string
         Output directory
+    save_masked : bool
+        Save mask
     median_radius : int, optional
         Radius (in voxels) of the applied median filter(default 4)
     numpass : int, optional
         Number of pass of the median filter (default 4)
     autocrop : bool, optional
-        if True, the masked input_volumes will also be cropped using the
+        If True, the masked input_volumes will also be cropped using the
         bounding box defined by the masked data. Should be on if DWI is
         upsampled to 1x1x1 resolution. (default False)
     vol_idx : string, optional
