@@ -1,12 +1,11 @@
 #! /usr/bin/env python
 
-from dipy.workflows.base import AugmentedArgumentParser
+from dipy.workflows.base import IntrospectiveArgumentParser
 
 from dipy.workflows.segment import median_otsu_flow
 
 
-
-bap = AugmentedArgumentParser(conflict_handler='resolve')
+bap = IntrospectiveArgumentParser()
 bap.add_workflow(median_otsu_flow)
 
 for act in bap._actions[1:]:
@@ -14,15 +13,17 @@ for act in bap._actions[1:]:
         print(act)
 
 bap.update_argument('--dilate', dest='dilate', choices=[0, 1, 2], type=int, help="Yeah")
-bap.update_argument('--numpass', dest='numpass', action='store_true', type=int, help="Yeah")
+#bap.update_argument('--numpass', dest='numpass', action='store_true', type=int, help="Yeah OK")
 
-for act in bap._actions[1:]:
-    if act.dest == 'dilate':
-        print(act)
+#for act in bap._actions[1:]:
+#    if act.dest == 'dilate':
+#        print(act)
 
 #bap.add_argument('--dilate', dest='dilate', help='choices 0 1 2')
 
 #bap.add_argument("-q", "--quiet", action="store_true")
+
+
 
 if __name__ == '__main__':
 
