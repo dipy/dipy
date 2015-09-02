@@ -84,3 +84,9 @@ class IntrospectiveArgumentParser(arg.ArgumentParser):
     def update_argument(self, *args, **kargs):
 
         self.add_argument(*args, **kargs)
+
+    def show_argument(self, dest):
+
+        for act in self._actions[1:]:
+            if act.dest == dest:
+                print(act)
