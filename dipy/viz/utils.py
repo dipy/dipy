@@ -94,3 +94,84 @@ def map_coordinates_3d_4d(input_array, indices):
                                          indices.T, order=1)
             values_4d.append(values_tmp)
         return np.ascontiguousarray(np.array(values_4d).T)
+
+
+def auto_camera(actor, zoom=10, relative='max'):
+    """ Automatically calculate the position of the camera given an actor
+
+    """
+
+    bounds = actor.GetBounds()
+
+    x_min, x_max, y_min, y_max, z_min, z_max = bounds
+
+    bounds = np.array(bounds).reshape(3, 2)
+    center_bb = bounds.mean(axis=1)
+    widths_bb = np.abs(bounds[:, 0] - bounds[:, 1])
+
+    corners = np.array([[x_min, y_min, z_min],
+                        [x_min, y_min, z_max],
+                        [x_min, y_max, z_min],
+                        [x_min, y_max, z_max],
+                        [x_max, y_min, z_min],
+                        [x_max, y_min, z_max],
+                        [x_max, y_max, z_min],
+                        [x_max, y_max, z_max]])
+
+    x_plane_min = np.array([[x_min, y_min, z_min],
+                            [x_min, y_min, z_max],
+                            [x_min, y_max, z_min],
+                            [x_min, y_max, z_max]])
+
+    x_plane_max = np.array([[x_max, y_min, z_min],
+                            [x_max, y_min, z_max],
+                            [x_max, y_max, z_min],
+                            [x_max, y_max, z_max]])
+
+    y_plane_min = np.array([[x_min, y_min, z_min],
+                            [x_min, y_min, z_max],
+                            [x_max, y_min, z_min],
+                            [x_max, y_min, z_max]])
+
+    y_plane_max = np.array([[x_min, y_max, z_min],
+                            [x_min, y_max, z_max],
+                            [x_max, y_max, z_min],
+                            [x_max, y_max, z_max]])
+
+    z_plane_min = np.array([[x_min, y_min, z_min],
+                            [x_min, y_max, z_min],
+                            [x_max, y_min, z_min],
+                            [x_max, y_max, z_min]])
+
+    z_plane_max = np.array([[x_min, y_min, z_max],
+                            [x_min, y_max, z_max],
+                            [x_max, y_min, z_max],
+                            [x_max, y_max, z_max]])
+
+    which_plane = np.argmin(widths_bb)
+
+    if which_plane == 0:
+        if relative == 'max':
+            plane = x_plane_max
+        else:
+            plane = x_plane_min
+
+    if which_plane == 1:
+        if relative == 'max':
+            plane = y_plane_max
+        else:
+            plane = y_plane_min
+
+    if which_plane == 2:
+        if relative == 'max':
+            plane = z_plane_max
+        else:
+            plane = z_plane_min
+
+    initial_position = np.mean(plane, axis=0)
+
+    position = center_bb + zoom * (initial_position - center_bb)
+
+    viewup = None
+
+    return position, center_bb, corners, plane, viewup
