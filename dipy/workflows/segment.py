@@ -10,10 +10,12 @@ from dipy.workflows.utils import choose_create_out_dir, int_param, bool_param, \
     int_list_param
 from dipy.segment.mask import median_otsu
 
+def median_otsu_args():
+    pass
 
-def median_otsu_flow(input_files, out_dir, save_masked=str(False),
-                     median_radius=str(4), numpass=str(4), autocrop=str(False),
-                     vol_idx=str(None), dilate=str(None)):
+def median_otsu_flow(input_files, out_dir, save_masked=False,
+                     median_radius=4, numpass=4, autocrop=False,
+                     vol_idx=None, dilate=None):
     """ Workflow wrapping the median_otsu segmentation method.
 
     It applies median_otsu segmentation on each file found by 'globing'
@@ -24,11 +26,13 @@ def median_otsu_flow(input_files, out_dir, save_masked=str(False),
     input_files : string
         Path to the input volumes. This path may contain wildcards to process
         multiple inputs at once.
-    median_radius : string, optional
+    out_dir : string
+        Output directory
+    median_radius : int, optional
         Radius (in voxels) of the applied median filter(default 4)
-    numpass: string, optional
+    numpass: int, optional
         Number of pass of the median filter (default 4)
-    autocrop: string, optional
+    autocrop: bool, optional
         if True, the masked input_volumes will also be cropped using the
         bounding box defined by the masked data. Should be on if DWI is
         upsampled to 1x1x1 resolution. (default False)
@@ -38,6 +42,7 @@ def median_otsu_flow(input_files, out_dir, save_masked=str(False),
         4D array)
     dilate : string, optional
         number of iterations for binary dilation (default 'None')
+
     """
 
     for fpath in glob(input_files):
@@ -46,9 +51,9 @@ def median_otsu_flow(input_files, out_dir, save_masked=str(False),
         img = nib.load(fpath)
         volume = img.get_data()
 
-        masked, mask = median_otsu(volume, int_param(median_radius),
-                                   int_param(numpass), bool_param(autocrop),
-                                   int_list_param(vol_idx), int_param(dilate))
+        masked, mask = median_otsu(volume, median_radius,
+                                   numpass, autocrop,
+                                   vol_idx, dilate)
 
         fname, ext = splitext(basename(fpath))
         if(fname.endswith('.nii')):
