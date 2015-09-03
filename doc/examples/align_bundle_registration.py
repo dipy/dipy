@@ -137,7 +137,7 @@ for bundle_type in ['cst.right']:#, 'cst.right', 'cc_1']:
 #                      show=True)
 
 
-from dipy.viz import window, actor
+from dipy.viz import window, actor, utils
 import numpy as np
 
 
@@ -146,8 +146,8 @@ renderer = window.Renderer()
 stream_actor = actor.line(sbundle1, linewidth=1.5) #streamtube(bundle1, linewidth=0.1)
 renderer.add(stream_actor)
 
-position, focal_point, corners, plane = position_camera(stream_actor,
-                                                        15, 'max')
+position, focal_point, corners, plane, _ = utils.auto_camera(stream_actor,
+                                                             15, 'max')
 
 #position = np.zeros(3)
 #focal_point = np.ones(3)
