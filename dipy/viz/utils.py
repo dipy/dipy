@@ -153,25 +153,29 @@ def auto_camera(actor, zoom=10, relative='max'):
     if which_plane == 0:
         if relative == 'max':
             plane = x_plane_max
+            view_up = np.array([0, 1, 0])
         else:
             plane = x_plane_min
+            view_up = np.array([0, -1, 0])
 
     if which_plane == 1:
         if relative == 'max':
             plane = y_plane_max
+            view_up = np.array([0, 0, 1])
         else:
             plane = y_plane_min
+            view_up = np.array([0, 0, -1])
 
     if which_plane == 2:
         if relative == 'max':
             plane = z_plane_max
+            view_up = np.array([0, 1, 0])
         else:
             plane = z_plane_min
+            view_up = np.array([0, 1, 0])
 
     initial_position = np.mean(plane, axis=0)
 
     position = center_bb + zoom * (initial_position - center_bb)
 
-    viewup = None
-
-    return position, center_bb, corners, plane, viewup
+    return position, center_bb, view_up, corners, plane
