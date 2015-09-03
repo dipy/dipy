@@ -108,7 +108,7 @@ subj2 = read_bundles_2_subjects('subj_2', ['fa', 't1'],
                                 ['af.left', 'cst.left', 'cst.right', 'cc_1', 'cc_2'])
 
 
-for bundle_type in ['cst.right']:#, 'cst.right', 'cc_1']:
+for bundle_type in ['cc_1']:#, 'cst.right', 'cc_1']:
 
 
     bundle1 = subj1[bundle_type]
@@ -143,11 +143,13 @@ import numpy as np
 
 renderer = window.Renderer()
 
-stream_actor = actor.line(sbundle1, linewidth=1.5) #streamtube(bundle1, linewidth=0.1)
+stream_actor = actor.line(sbundle1 , linewidth=1.5) #streamtube(bundle1, linewidth=0.1)
 renderer.add(stream_actor)
 
-position, focal_point, corners, plane, _ = utils.auto_camera(stream_actor,
-                                                             15, 'max')
+position, focal_point, view_up, corners, plane = utils.auto_camera(stream_actor,
+                                                                   15, 'max')
+
+print(position, focal_point, view_up)
 
 #position = np.zeros(3)
 #focal_point = np.ones(3)
@@ -168,7 +170,7 @@ renderer.add(fvtk.dots(corners, fvtk.colors.green))
 
 renderer.reset_camera()
 
-renderer.set_camera(position=position, focal_point=focal_point, view_up=(0, 0, 1))
+renderer.set_camera(position=position, focal_point=focal_point, view_up=view_up)
 #renderer.ResetCameraClippingRange()
 #renderer.reset_camera()
 #renderer.set_camera(position=position, focal_point=focal_point)
