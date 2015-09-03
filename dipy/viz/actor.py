@@ -1,6 +1,7 @@
 # from __future__ import division, print_function, absolute_import
 
 import numpy as np
+from nibabel.affines import apply_affine
 
 from dipy.viz.colormap import line_colors
 from dipy.viz.utils import numpy_to_vtk_points, numpy_to_vtk_colors
@@ -21,14 +22,14 @@ if have_vtk:
     major_version = vtk.vtkVersion.GetVTKMajorVersion()
 
 
-def slice(data, affine=None, value_range=None, opacity=1.,
-          lookup_colormap=None):
-    """ Cuts 3D volumes into images
+def slicer(data, affine=None, value_range=None, opacity=1.,
+           lookup_colormap=None):
+    """ Cuts 3D scalar or rgb volumes into images
 
     Parameters
     ----------
-    data : array, shape (X, Y, Z)
-        A 3D volume as a numpy array.
+    data : array, shape (X, Y, Z) or (X, Y, Z, 3)
+        A grayscale or rgb 4D volume as a numpy array.
     affine : array, shape (3, 3)
         Grid to space (usually RAS 1mm) transformation matrix
     value_range : None or tuple (2,)
@@ -49,7 +50,15 @@ def slice(data, affine=None, value_range=None, opacity=1.,
 
     """
     if data.ndim != 3:
-        raise ValueError('Only 3D arrays are currently supported.')
+        if data.ndim == 4:
+            if data.shape[3] != 3:
+                raise ValueError('Only RGB 3D arrays are currently supported.')
+            else:
+                nb_components = 3
+        else:
+            raise ValueError('Only 3D arrays are currently supported.')
+    else:
+        nb_components = 1
 
     if value_range is None:
         vol = np.interp(data, xp=[data.min(), data.max()], fp=[0, 255])
@@ -62,13 +71,14 @@ def slice(data, affine=None, value_range=None, opacity=1.,
         im.SetScalarTypeToUnsignedChar()
     I, J, K = vol.shape[:3]
     im.SetDimensions(I, J, K)
-    voxsz = (1., 1., 1)
+    voxsz = (1., 1., 1.)
     # im.SetOrigin(0,0,0)
     im.SetSpacing(voxsz[2], voxsz[0], voxsz[1])
     if major_version <= 5:
         im.AllocateScalars()
+        im.SetNumberOfScalarComponents(nb_components)
     else:
-        im.AllocateScalars(vtk.VTK_UNSIGNED_CHAR, 3)
+        im.AllocateScalars(vtk.VTK_UNSIGNED_CHAR, nb_components)
 
     # copy data
     # what I do below is the same as what is commented here but much faster
@@ -77,7 +87,13 @@ def slice(data, affine=None, value_range=None, opacity=1.,
     #     im.SetScalarComponentFromFloat(i, j, k, 0, vol[i, j, k])
     vol = np.swapaxes(vol, 0, 2)
     vol = np.ascontiguousarray(vol)
-    uchar_array = numpy_support.numpy_to_vtk(vol.ravel(), deep=0)
+
+    if nb_components == 1:
+        vol = vol.ravel()
+    else:
+        vol = np.reshape(vol, [np.prod(vol.shape[:3]), vol.shape[3]])
+
+    uchar_array = numpy_support.numpy_to_vtk(vol, deep=0)
     im.GetPointData().SetScalars(uchar_array)
 
     if affine is None:
@@ -102,19 +118,15 @@ def slice(data, affine=None, value_range=None, opacity=1.,
     image_resliced.SetInterpolationModeToLinear()
     image_resliced.Update()
 
-    if lookup_colormap is None:
-        # Create a black/white lookup table.
-        lut = colormap_lookup_table((0, 255), (0, 0), (0, 0), (0, 1))
-    else:
-        lut = lookup_colormap
+    if nb_components == 1:
+        if lookup_colormap is None:
+            # Create a black/white lookup table.
+            lut = colormap_lookup_table((0, 255), (0, 0), (0, 0), (0, 1))
+        else:
+            lut = lookup_colormap
 
     x1, x2, y1, y2, z1, z2 = im.GetExtent()
     ex1, ex2, ey1, ey2, ez1, ez2 = image_resliced.GetOutput().GetExtent()
-
-    plane_colors = vtk.vtkImageMapToColors()
-    plane_colors.SetLookupTable(lut)
-    plane_colors.SetInputConnection(image_resliced.GetOutputPort())
-    plane_colors.Update()
 
     class ImageActor(vtk.vtkImageActor):
 
@@ -160,12 +172,149 @@ def slice(data, affine=None, value_range=None, opacity=1.,
         def get_position(self):
             return self.GetPosition()
 
+        def get_data(self):
+            data = self.output.GetOutput()
+            scalars = data.GetPointData().GetScalars()
+            data = numpy_support.vtk_to_numpy(scalars)
+            shape = self.shape
+            if data.ndim == 2:
+                data = data.reshape(shape[2], shape[1], shape[0],
+                                    data.shape[-1])
+            else:
+                data = data.reshape(shape[2], shape[1], shape[0])
+            return data.swapaxes(0, 2)
+
     image_actor = ImageActor()
-    image_actor.input_connection(plane_colors)
+    if nb_components == 1:
+        plane_colors = vtk.vtkImageMapToColors()
+        plane_colors.SetLookupTable(lut)
+        plane_colors.SetInputConnection(image_resliced.GetOutputPort())
+        plane_colors.Update()
+        image_actor.input_connection(plane_colors)
+    else:
+        image_actor.input_connection(image_resliced)
     image_actor.display()
     image_actor.opacity(opacity)
+    image_actor.GetMapper().BorderOn()
 
     return image_actor
+
+
+def odf_slicer(odfs, affine=None, mask=None, sphere=None, scale=2.2,
+               norm=True, radial_scale=True, opacity=1.,
+               colormap=None):
+    """ Slice spherical fields
+    """
+
+    class OdfSlicerActor(vtk.vtkLODActor):
+
+        def display_extent(self, x1, x2, y1, y2, z1, z2):
+
+            mask = np.zeros(odfs.shape[:3])
+            mask[x1:x2, y1:y2, z1:z2] = 1
+
+            self.mapper = _odf_slicer_mapper(odfs=odfs,
+                                             affine=affine,
+                                             mask=mask,
+                                             sphere=sphere,
+                                             scale=scale,
+                                             norm=norm,
+                                             radial_scale=radial_scale,
+                                             opacity=opacity,
+                                             colormap=colormap)
+            self.SetMapper(self.mapper)
+
+    odf_actor = OdfSlicerActor()
+    I, J, K = odfs.shape[:3]
+    odf_actor.display_extent(0, I, 0, J, K/2, K/2 + 1)
+
+    return odf_actor
+
+
+def _odf_slicer_mapper(odfs, affine=None, mask=None, sphere=None, scale=2.2,
+                       norm=True, radial_scale=True, opacity=1.,
+                       colormap=None):
+
+    if mask is None:
+        mask = np.ones(odfs.shape[:3])
+
+    ijk = np.ascontiguousarray(np.array(np.nonzero(mask)).T)
+
+    if affine is not None:
+        ijk = np.ascontiguousarray(apply_affine(affine, ijk))
+
+    faces = np.asarray(sphere.faces, dtype=int)
+    vertices = sphere.vertices
+
+    all_xyz = []
+    all_faces = []
+    all_ms = []
+    for (k, center) in enumerate(ijk):
+        m = odfs[tuple(center)].copy()
+
+        if norm:
+            m /= abs(m).max()
+
+        if radial_scale:
+            xyz = vertices * m[:, None]
+        else:
+            xyz = vertices.copy()
+
+        all_xyz.append(scale * xyz + center)
+        all_faces.append(faces + k * xyz.shape[0])
+        all_ms.append(m)
+
+    all_xyz = np.ascontiguousarray(np.concatenate(all_xyz))
+    all_xyz_vtk = numpy_support.numpy_to_vtk(all_xyz, deep=True)
+
+    all_faces = np.concatenate(all_faces)
+    all_faces = np.hstack((3 * np.ones((len(all_faces), 1)),
+                           all_faces))
+    ncells = len(all_faces)
+
+    all_faces = np.ascontiguousarray(all_faces.ravel(), dtype='i8')
+    all_faces_vtk = numpy_support.numpy_to_vtkIdTypeArray(all_faces,
+                                                          deep=True)
+
+    all_ms = np.ascontiguousarray(np.concatenate(all_ms), dtype='f4')
+
+    points = vtk.vtkPoints()
+    points.SetData(all_xyz_vtk)
+
+    cells = vtk.vtkCellArray()
+    cells.SetCells(ncells, all_faces_vtk)
+
+    if colormap is not None:
+        from dipy.viz.fvtk import create_colormap
+        cols = create_colormap(all_ms.ravel(), colormap)
+        # cols = np.interp(cols, [0, 1], [0, 255]).astype('ubyte')
+
+        # vtk_colors = numpy_to_vtk_colors(255 * cols)
+
+        vtk_colors = numpy_support.numpy_to_vtk(
+            np.asarray(255 * cols),
+            deep=True,
+            array_type=vtk.VTK_UNSIGNED_CHAR)
+
+        vtk_colors.SetName("Colors")
+
+    polydata = vtk.vtkPolyData()
+    polydata.SetPoints(points)
+    polydata.SetPolys(cells)
+
+    if colormap is not None:
+        polydata.GetPointData().SetScalars(vtk_colors)
+
+    mapper = vtk.vtkPolyDataMapper()
+    if major_version <= 5:
+        mapper.SetInput(polydata)
+    else:
+        mapper.SetInputData(polydata)
+
+    # actor = vtk.vtkActor()
+    # actor.SetMapper(mapper)
+
+    return mapper
 
 
 def streamtube(lines, colors=None, opacity=1, linewidth=0.01, tube_sides=9,
@@ -568,3 +717,129 @@ def scalar_bar(lookup_table=None, title=" "):
     scalar_bar.SetNumberOfLabels(6)
 
     return scalar_bar
+
+
+def _arrow(pos=(0, 0, 0), color=(1, 0, 0), scale=(1, 1, 1), opacity=1):
+    ''' Internal function for generating arrow actors.
+    '''
+    arrow = vtk.vtkArrowSource()
+    # arrow.SetTipLength(length)
+
+    arrowm = vtk.vtkPolyDataMapper()
+
+    if major_version <= 5:
+        arrowm.SetInput(arrow.GetOutput())
+    else:
+        arrowm.SetInputConnection(arrow.GetOutputPort())
+
+    arrowa = vtk.vtkActor()
+    arrowa.SetMapper(arrowm)
+
+    arrowa.GetProperty().SetColor(color)
+    arrowa.GetProperty().SetOpacity(opacity)
+    arrowa.SetScale(scale)
+
+    return arrowa
+
+
+def axes(scale=(1, 1, 1), colorx=(1, 0, 0), colory=(0, 1, 0), colorz=(0, 0, 1),
+         opacity=1):
+    """ Create an actor with the coordinate's system axes where
+    red = x, green = y, blue = z.
+
+    Parameters
+    ----------
+    scale : tuple (3,)
+        axes size e.g. (100, 100, 100)
+    colorx : tuple (3,)
+        x-axis color. Default red.
+    colory : tuple (3,)
+        y-axis color. Default blue.
+    colorz : tuple (3,)
+        z-axis color. Default green.
+
+    Returns
+    -------
+    vtkAssembly
+
+    """
+
+    arrowx = _arrow(color=colorx, scale=scale, opacity=opacity)
+    arrowy = _arrow(color=colory, scale=scale, opacity=opacity)
+    arrowz = _arrow(color=colorz, scale=scale, opacity=opacity)
+
+    arrowy.RotateZ(90)
+    arrowz.RotateY(-90)
+
+    ass = vtk.vtkAssembly()
+    ass.AddPart(arrowx)
+    ass.AddPart(arrowy)
+    ass.AddPart(arrowz)
+
+    return ass
+
+
+def text(text, position=(0, 0), color=(1, 1, 1),
+         font_size=12, font_family='Arial', justification='left',
+         bold=False, italic=False, shadow=False):
+
+    class TextActor(vtk.vtkTextActor):
+
+        def message(self, text):
+            self.SetInput(text)
+
+        def set_message(self, text):
+            self.SetInput(text)
+
+        def get_message(self):
+            return self.GetInput()
+
+        def font_size(self, size):
+            self.GetTextProperty().SetFontSize(size)
+
+        def font_family(self, family='Arial'):
+            self.GetTextProperty().SetFontFamilyToArial()
+
+        def justification(self, justification):
+            tprop = self.GetTextProperty()
+            if justification == 'left':
+                tprop.SetJustificationToLeft()
+            if justification == 'center':
+                tprop.SetJustificationToCentered()
+            if justification == 'right':
+                tprop.SetJustificationToRight()
+
+        def font_style(self, bold=False, italic=False, shadow=False):
+            tprop = self.GetTextProperty()
+            if bold:
+                tprop.BoldOn()
+            else:
+                tprop.BoldOff()
+            if italic:
+                tprop.ItalicOn()
+            else:
+                tprop.ItalicOff()
+            if shadow:
+                tprop.ShadowOn()
+            else:
+                tprop.ShadowOff()
+
+        def color(self, color):
+            self.GetTextProperty().SetColor(*color)
+
+        def set_position(self, position):
+            self.SetDisplayPosition(*position)
+
+        def get_position(self, position):
+            return self.GetDisplayPosition()
+
+    text_actor = TextActor()
+    text_actor.set_position(position)
+    text_actor.message(text)
+    text_actor.font_size(font_size)
+    text_actor.font_family(font_family)
+    text_actor.justification(justification)
+    text_actor.font_style(bold, italic, shadow)
+    text_actor.color(color)
+
+    return text_actor

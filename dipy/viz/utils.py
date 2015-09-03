@@ -65,29 +65,6 @@ def set_input(vtk_object, inp):
     return vtk_object
 
 
-def evec_from_lines(lines, use_line_dir=True):
-    """ Get eigen vectors from lines directions in a 3x3 array
-
-    if use_line_dir is set to False
-        only use the points position information
-
-    """
-
-    if use_line_dir:
-        lines_dir = []
-        for line in lines:
-            lines_dir += [line[1:] - line[0:-1]]
-        directions = np.vstack(lines_dir)
-    else:
-        points = np.vstack(lines)
-        centered_points = points - np.mean(points, axis=0)
-        norm = np.sqrt(np.sum(centered_points**2, axis=1, keepdims=True))
-        directions = centered_points/norm
-
-    U, e_val, e_vec = np.linalg.svd(directions, full_matrices=False)
-    return e_vec
-
-
 def map_coordinates_3d_4d(input_array, indices):
     """ Evaluate the input_array data at the given indices
     using trilinear interpolation
@@ -119,32 +96,82 @@ def map_coordinates_3d_4d(input_array, indices):
         return np.ascontiguousarray(np.array(values_4d).T)
 
 
-def rescale_to_uint8(data):
-    """ Rescales value of a ndarray to 8 bits unsigned integer
-
-    This function rescales the values of the input between 0 and 255,
-    then copies it to a new 8 bits unsigned integer array.
-
-    Parameters
-    ----------
-    data : ndarray
-
-    Return
-    ------
-    uint8 : ndarray
-
-    Note
-    ----
-    NANs are clipped to 0. If min equals max, result will be all 0.
+def auto_camera(actor, zoom=10, relative='max'):
+    """ Automatically calculate the position of the camera given an actor
 
     """
 
-    temp = np.array(data, dtype=np.float64)
-    temp[np.isnan(temp)] = 0
-    temp -= np.min(temp)
-    if np.max(temp) != 0.0:
-        temp /= np.max(temp)
-        temp *= 255.0
-    temp = np.array(np.round(temp), dtype=np.uint8)
+    bounds = actor.GetBounds()
 
-    return temp
+    x_min, x_max, y_min, y_max, z_min, z_max = bounds
+
+    bounds = np.array(bounds).reshape(3, 2)
+    center_bb = bounds.mean(axis=1)
+    widths_bb = np.abs(bounds[:, 0] - bounds[:, 1])
+
+    corners = np.array([[x_min, y_min, z_min],
+                        [x_min, y_min, z_max],
+                        [x_min, y_max, z_min],
+                        [x_min, y_max, z_max],
+                        [x_max, y_min, z_min],
+                        [x_max, y_min, z_max],
+                        [x_max, y_max, z_min],
+                        [x_max, y_max, z_max]])
+
+    x_plane_min = np.array([[x_min, y_min, z_min],
+                            [x_min, y_min, z_max],
+                            [x_min, y_max, z_min],
+                            [x_min, y_max, z_max]])
+
+    x_plane_max = np.array([[x_max, y_min, z_min],
+                            [x_max, y_min, z_max],
+                            [x_max, y_max, z_min],
+                            [x_max, y_max, z_max]])
+
+    y_plane_min = np.array([[x_min, y_min, z_min],
+                            [x_min, y_min, z_max],
+                            [x_max, y_min, z_min],
+                            [x_max, y_min, z_max]])
+
+    y_plane_max = np.array([[x_min, y_max, z_min],
+                            [x_min, y_max, z_max],
+                            [x_max, y_max, z_min],
+                            [x_max, y_max, z_max]])
+
+    z_plane_min = np.array([[x_min, y_min, z_min],
+                            [x_min, y_max, z_min],
+                            [x_max, y_min, z_min],
+                            [x_max, y_max, z_min]])
+
+    z_plane_max = np.array([[x_min, y_min, z_max],
+                            [x_min, y_max, z_max],
+                            [x_max, y_min, z_max],
+                            [x_max, y_max, z_max]])
+
+    which_plane = np.argmin(widths_bb)
+
+    if which_plane == 0:
+        if relative == 'max':
+            plane = x_plane_max
+        else:
+            plane = x_plane_min
+
+    if which_plane == 1:
+        if relative == 'max':
+            plane = y_plane_max
+        else:
+            plane = y_plane_min
+
+    if which_plane == 2:
+        if relative == 'max':
+            plane = z_plane_max
+        else:
+            plane = z_plane_min
+
+    initial_position = np.mean(plane, axis=0)
+
+    position = center_bb + zoom * (initial_position - center_bb)
+
+    viewup = None
+
+    return position, center_bb, corners, plane, viewup

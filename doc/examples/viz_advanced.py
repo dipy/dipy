@@ -50,10 +50,12 @@ res = read_bundles_2_subjects('subj_1', ['t1', 'fa'],
 
 """
 We will use 3 bundles, FA and the affine transformation that brings the voxel
-cordinates to world coordinates (RAS 1mm).
+coordinates to world coordinates (RAS 1mm).
 """
 
-streamlines = res['af.left'] + res['cst.right'] + res['cc_1']
+af_streamlines = res['af.left']
+cst_streamlines = res['cst.right']
+cc_streamlines = res['cc_1']
 data = res['fa']
 shape = data.shape
 affine = res['affine']
@@ -74,7 +76,12 @@ native space using the inverse of the affine.
 
 if not world_coords:
     from dipy.tracking.streamline import transform_streamlines
-    streamlines = transform_streamlines(streamlines, np.linalg.inv(affine))
+    af_streamlines = transform_streamlines(af_streamlines,
+                                           np.linalg.inv(affine))
+    cst_streamlines = transform_streamlines(cst_streamlines,
+                                            np.linalg.inv(affine))
+    cc_streamlines = transform_streamlines(cc_streamlines,
+                                           np.linalg.inv(affine))
 
 """
 Now we create, a ``Renderer`` object and add the streamlines using the ``line``
@@ -82,12 +89,14 @@ function and an image plane using the ``slice`` function.
 """
 
 ren = window.Renderer()
-stream_actor = actor.line(streamlines)
+af_actor = actor.line(af_streamlines)
+cst_actor = actor.line(cst_streamlines)
+cc_actor = actor.line(cc_streamlines)
 
 if not world_coords:
-    image_actor = actor.slice(data, affine=np.eye(4))
+    image_actor = actor.slicer(data, affine=np.eye(4))
 else:
-    image_actor = actor.slice(data, affine)
+    image_actor = actor.slicer(data, affine)
 
 """
 For fun let's change also the opacity of the slicer
@@ -100,7 +109,9 @@ image_actor.opacity(slicer_opacity)
 Connect the actors with the Renderer.
 """
 
-ren.add(stream_actor)
+ren.add(af_actor)
+ren.add(cst_actor)
+ren.add(cc_actor)
 ren.add(image_actor)
 
 """
@@ -118,6 +129,7 @@ show_m.initialize()
 After we have initialized the ``ShowManager`` we can go ahead and create a
 callback which will be given to the ``slider`` function.
 """
+
 
 def change_slice(obj, event):
     z = int(np.round(obj.get_value()))
@@ -146,7 +158,7 @@ start the interaction using ``show_m.start()``.
 """
 However, if you change the window size, the slider will not update its position
 properly. The solution to this issue is to update the position of the slider
-using its ``place`` method everytime the window size changes.
+using its ``place`` method every time the window size changes.
 """
 
 global size
@@ -160,18 +172,66 @@ def win_callback(obj, event):
         slider.place(ren)
         size = obj.GetSize()
 
+"""
+Here, we can add a callback that is triggered everytime we press 'p' on a
+slicer and gives us the position and actual value.
+"""
+
+resampled = image_actor.get_data()
+
+status = actor.text('', font_size=14, bold=True)
+ren.add(status)
+
+
+def pick_callback(obj, event):
+
+    ijk = obj.GetPointIJK()
+    i, j, k = ijk
+    v1, v2, v3, v4 = resampled[i, j, k]
+    msg = ">>> Position (%d, %d, %d) value %d" % (i, j, k, v1)
+    status.message(msg)
+
+
 show_m.initialize()
-show_m.add_window_callback(win_callback)
+
+ren.zoom(1.5)
+ren.reset_clipping_range()
 
 """
-Finally, please uncomment the following lines so that you can interact with
+Please uncomment the following lines so that you can interact with
 the available 3D and 2D objects.
 """
 
-# show_m.render()
-# show_m.start()
+show_m.render()
 
-window.snapshot(ren, 'bundles_and_a_slice.png', size=(1200, 900))
+bit_rate = 10 * np.prod(show_m.window.GetSize())
+print(bit_rate)
+bit_rate_tol = 10 * np.prod(show_m.window.GetSize()) * 3
+print(bit_rate_tol)
+mw = window.MovieWriter('new.avi', show_m.window,
+                        bit_rate=bit_rate, bit_rate_tol=bit_rate_tol,
+                        frame_rate=None,
+                        compression=True, compression_quality=None)
+mw.start()
+
+def timer_callback(obj, event):
+
+    ren.azimuth(.1)
+    show_m.render()
+    mw.write()
+
+
+show_m.add_window_callback(win_callback)
+show_m.add_picker_callback(pick_callback)
+show_m.add_timer_callback(True, 20, timer_callback)
+
+show_m.render()
+show_m.start()
+
+
+del mw
+
+# window.record(ren, out_path='bundles_and_a_slice.png', size=(1200, 900))
 
 """
 .. figure:: bundles_and_a_slice.png
@@ -180,3 +240,4 @@ window.snapshot(ren, 'bundles_and_a_slice.png', size=(1200, 900))
    **A few bundles with interactive slicing**.
 """
 
+del show_m

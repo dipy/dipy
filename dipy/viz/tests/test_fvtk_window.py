@@ -1,5 +1,5 @@
 import numpy as np
-from dipy.viz import actor, window, fvtk
+from dipy.viz import actor, window
 import numpy.testing as npt
 
 
@@ -27,7 +27,7 @@ def test_renderer():
     npt.assert_equal(report.objects, 0)
     npt.assert_equal(report.colors_found, [True, False])
 
-    axes = fvtk.axes()
+    axes = actor.axes()
     ren.add(axes)
     # window.show(ren)
 
@@ -68,20 +68,88 @@ def test_renderer():
 
 @npt.dec.skipif(not actor.have_vtk)
 @npt.dec.skipif(not actor.have_vtk_colors)
+def test_active_camera():
+    renderer = window.Renderer()
+    renderer.add(actor.axes(scale=(1, 1, 1)))
+
+    renderer.reset_camera()
+    renderer.reset_clipping_range()
+
+    direction = renderer.camera_direction()
+    position, focal_point, view_up = renderer.get_camera()
+
+    renderer.set_camera((0., 0., 1.), (0., 0., 0), view_up)
+
+    position, focal_point, view_up = renderer.get_camera()
+    npt.assert_almost_equal(np.dot(direction, position), -1)
+
+    renderer.zoom(1.5)
+
+    new_position, _, _ = renderer.get_camera()
+
+    npt.assert_array_almost_equal(position, new_position)
+
+    renderer.zoom(1)
+
+    # rotate around focal point
+    renderer.azimuth(90)
+
+    position, _, _ = renderer.get_camera()
+
+    npt.assert_almost_equal(position, (1.0, 0.0, 0))
+
+    arr = window.snapshot(renderer)
+    report = window.analyze_snapshot(arr, colors=[(255, 0, 0)])
+    npt.assert_equal(report.colors_found, [True])
+
+    # rotate around camera's center
+    renderer.yaw(90)
+
+    arr = window.snapshot(renderer)
+    report = window.analyze_snapshot(arr, colors=[(0, 0, 0)])
+    npt.assert_equal(report.colors_found, [True])
+
+    renderer.yaw(-90)
+    renderer.elevation(90)
+
+    arr = window.snapshot(renderer)
+    report = window.analyze_snapshot(arr, colors=(0, 255, 0))
+    npt.assert_equal(report.colors_found, [True])
+
+    renderer.set_camera((0., 0., 1.), (0., 0., 0), view_up)
+
+    # vertical rotation of the camera around the focal point
+    renderer.pitch(10)
+    renderer.pitch(-10)
+
+    # rotate around the direction of projection
+    renderer.roll(90)
+
+    # inverted normalized distance from focal point along the direction
+    # of the camera
+
+    position, _, _ = renderer.get_camera()
+    renderer.dolly(0.5)
+    new_position, _, _ = renderer.get_camera()
+    npt.assert_almost_equal(position[2], 0.5 * new_position[2])
+
+
+@npt.dec.skipif(not actor.have_vtk)
+@npt.dec.skipif(not actor.have_vtk_colors)
 def test_parallel_projection():
 
     ren = window.Renderer()
-    axes = fvtk.axes()
+    axes = actor.axes()
     ren.add(axes)
 
-    axes2 = fvtk.axes()
+    axes2 = actor.axes()
     axes2.SetPosition((2, 0, 0))
     ren.add(axes2)
 
     # Put the camera on a angle so that the
     # camera can show the difference between perspective
     # and parallel projection
-    fvtk.camera(ren, pos=(1.5, 1.5, 1.5))
+    ren.set_camera((1.5, 1.5, 1.5))
     ren.GetActiveCamera().Zoom(2)
 
     # window.show(ren, reset_camera=True)
@@ -96,6 +164,42 @@ def test_parallel_projection():
     # pixels rather than in perspective projection were
     # the axes being further will be smaller.
     npt.assert_equal(np.sum(arr2 > 0) > np.sum(arr > 0), True)
+
+
+@npt.dec.skipif(not actor.have_vtk)
+@npt.dec.skipif(not actor.have_vtk_colors)
+def test_order_transparent():
+
+    renderer = window.Renderer()
+
+    lines = [np.array([[-1, 0, 0.], [1, 0, 0.]]),
+             np.array([[-1, 1, 0.], [1, 1, 0.]])]
+    colors = np.array([[1., 0., 0.], [0., .5, 0.]])
+    stream_actor = actor.streamtube(lines, colors, linewidth=0.3, opacity=0.5)
+
+    renderer.add(stream_actor)
+
+    renderer.UseDepthPeelingOn()
+    renderer.SetMaximumNumberOfPeels(4)
+    renderer.SetOcclusionRatio(0.0)
+
+    renderer.reset_camera()
+
+    # green in front
+    renderer.elevation(90)
+    renderer.reset_clipping_range()
+    arr = window.snapshot(renderer)
+
+    # therefore the green component must have a higher value (in RGB terms)
+    npt.assert_equal(arr[150, 150][1] > arr[150, 150][0], True)
+
+    # red in front
+    renderer.elevation(-180)
+    renderer.reset_clipping_range()
+    arr = window.snapshot(renderer)
+
+    # therefore the red component must have a higher value (in RGB terms)
+    npt.assert_equal(arr[150, 150][0] > arr[150, 150][1], True)
 
 
 if __name__ == '__main__':

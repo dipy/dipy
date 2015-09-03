@@ -39,7 +39,7 @@ Basic SNR estimation
 
 - :ref:`example_snr_in_cc`
 
-PIESNO
+Robust noise estimation with PIESNO
 ~~~~~~
 - :ref:`example_piesno`
 

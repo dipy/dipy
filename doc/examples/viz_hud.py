@@ -22,7 +22,7 @@ renderer = window.Renderer()
 
 lines = [np.array([[-1, 0, 0.], [1, 0, 0.]]),
          np.array([[-1, 1, 0.], [1, 1, 0.]])]
-colors = np.array([[1., 0., 0.], [1., 0.5, 0.]])
+colors = np.array([[1., 0., 0.], [0., .5, 0.]])
 stream_actor = actor.streamtube(lines, colors, linewidth=0.3)
 
 renderer.add(stream_actor)
@@ -32,7 +32,8 @@ The ``ShowManager`` allows to break the visualization process in steps so that
 the widgets can be added and updated properly.
 """
 
-show_manager = window.ShowManager(renderer, size=(800, 800))
+show_manager = window.ShowManager(renderer, size=(800, 800),
+                                  order_transparent=True)
 
 show_manager.initialize()
 
@@ -42,6 +43,7 @@ Next we add the widgets and their callbacks.
 
 global opacity
 opacity = 1.
+
 
 def button_plus_callback(obj, event):
     print('+ pressed')
@@ -77,6 +79,7 @@ button_minus = widget.button(show_manager.iren,
                              button_minus_callback,
                              button_png_minus, (.98, .9), (50, 50))
 
+
 def move_lines(obj, event):
 
     stream_actor.SetPosition((obj.get_value(), 0, 0))
@@ -97,12 +100,13 @@ slider = widget.slider(show_manager.iren, show_manager.ren,
                        selected_color=(0.2, 0.2, 0.2))
 
 global size
-size = renderer.GetSize()
+size = renderer.size()
 
 """
 This callback is used to update the buttons/sliders' position so they can stay
 on the correct side of the window when the window is being resized.
 """
+
 
 def win_callback(obj, event):
     global size
@@ -113,8 +117,6 @@ def win_callback(obj, event):
         slider.place(renderer)
         size = obj.GetSize()
 
-
-show_manager.add_window_callback(win_callback)
 # you can also register any callback in a vtk way like this
 # show_manager.window.AddObserver(vtk.vtkCommand.ModifiedEvent,
 #                                 win_callback)
@@ -122,15 +124,17 @@ show_manager.add_window_callback(win_callback)
 renderer.zoom(0.7)
 renderer.roll(10.)
 
-show_manager.render()
-
 """
 Uncomment the following line to start the interaction.
 """
 
+# show_manager.add_window_callback(win_callback)
+# show_manager.render()
 # show_manager.start()
 
-window.snapshot(renderer, 'mini_ui.png', size=(800, 800))
+renderer.reset_clipping_range()
+
+window.record(renderer, out_path='mini_ui.png', size=(800, 800))
 
 del show_manager
 
@@ -140,4 +144,3 @@ del show_manager
 
    **A minimalistic user interface**.
 """
-

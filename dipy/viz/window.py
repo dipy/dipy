@@ -2,6 +2,7 @@ from __future__ import division, print_function, absolute_import
 
 import numpy as np
 from scipy import ndimage
+from copy import copy
 
 try:
     import Tkinter as tkinter
@@ -40,14 +41,13 @@ if have_imread:
 
 
 class Renderer(vtkRenderer):
-    """ The key rendering preparation object
+    """ Your scene class
 
     This is an important object that is responsible for preparing objects
     e.g. actors and volumes for rendering. This is a more pythonic version
     of ``vtkRenderer`` proving simple methods for adding and removing actors
     but also it provides access to all the functionality
-    available in ``vtkRenderer``.
-
+    available in ``vtkRenderer`` if necessary.
     """
 
     def background(self, color):
@@ -60,6 +60,8 @@ class Renderer(vtkRenderer):
         """
         if isinstance(actor, vtk.vtkVolume):
             self.AddVolume(actor)
+        if isinstance(actor, vtk.vtkActor2D):
+            self.AddActor2D(actor)
         else:
             self.AddActor(actor)
 
@@ -93,18 +95,26 @@ class Renderer(vtkRenderer):
             self.GetActiveCamera().ParallelProjectionOff()
 
     def reset_camera(self):
-        """ Allow the renderer to reset the camera
+        """ Reset the camera to an automatic position given by the engine.
         """
         self.ResetCamera()
 
-    def get_camera(self):
+    def reset_clipping_range(self):
+        self.ResetCameraClippingRange()
+
+    def camera(self):
         return self.GetActiveCamera()
 
+    def get_camera(self):
+        cam = self.GetActiveCamera()
+        return cam.GetPosition(), cam.GetFocalPoint(), cam.GetViewUp()
+
     def camera_info(self):
-        cam = self.get_camera()
-        print('Camera Position (%.2f, %.2f, %.2f)' % cam.GetPosition())
-        print('Camera Focal Point (%.2f, %.2f, %.2f)' % cam.GetFocalPoint())
-        print('Camera View Up (%.2f, %.2f, %.2f)' % cam.GetViewUp())
+        cam = self.camera()
+        print('# Active Camera')
+        print('   Position (%.2f, %.2f, %.2f)' % cam.GetPosition())
+        print('   Focal Point (%.2f, %.2f, %.2f)' % cam.GetFocalPoint())
+        print('   View Up (%.2f, %.2f, %.2f)' % cam.GetViewUp())
 
     def set_camera(self, position=None, focal_point=None, view_up=None):
         if position is not None:
@@ -115,18 +125,71 @@ class Renderer(vtkRenderer):
             self.GetActiveCamera().SetViewUp(*view_up)
         self.ResetCameraClippingRange()
 
-    @property
     def size(self):
+        """ Renderer size"""
         return self.GetSize()
 
     def zoom(self, value):
+        """ In perspective mode, decrease the view angle by the specified
+        factor. In parallel mode, decrease the parallel scale by the specified
+        factor. A value greater than 1 is a zoom-in, a value less than 1 is a
+        zoom-out.
+        """
         self.GetActiveCamera().Zoom(value)
 
     def azimuth(self, angle):
+        """ Rotate the camera about the view up vector centered at the focal
+        point. Note that the view up vector is whatever was set via SetViewUp,
+        and is not necessarily perpendicular to the direction of projection.
+        The result is a horizontal rotation of the camera.
+        """
         self.GetActiveCamera().Azimuth(angle)
 
+    def yaw(self, angle):
+        """ Rotate the focal point about the view up vector, using the camera's
+        position as the center of rotation. Note that the view up vector is
+        whatever was set via SetViewUp, and is not necessarily perpendicular
+        to the direction of projection. The result is a horizontal rotation of
+        the scene.
+        """
+        self.GetActiveCamera().Yaw(angle)
+
+    def elevation(self, angle):
+        """ Rotate the camera about the cross product of the negative of the
+        direction of projection and the view up vector, using the focal point
+        as the center of rotation. The result is a vertical rotation of the
+        scene.
+        """
+        self.GetActiveCamera().Elevation(angle)
+
+    def pitch(self, angle):
+        """ Rotate the focal point about the cross product of the view up
+        vector and the direction of projection, using the camera's position as
+        the center of rotation. The result is a vertical rotation of the
+        camera.
+        """
+        self.GetActiveCamera().Pitch(angle)
+
     def roll(self, angle):
+        """ Rotate the camera about the direction of projection. This will
+        spin the camera about its axis.
+        """
         self.GetActiveCamera().Roll(angle)
+
+    def dolly(self, value):
+        """ Divide the camera's distance from the focal point by the given
+        dolly value. Use a value greater than one to dolly-in toward the focal
+        point, and use a value less than one to dolly-out away from the focal
+        point.
+        """
+        self.GetActiveCamera().Dolly(value)
+
+    def camera_direction(self):
+        """ Get the vector in the direction from the camera position to the
+        focal point. This is usually the opposite of the ViewPlaneNormal, the
+        vector perpendicular to the screen, unless the view is oblique.
+        """
+        return self.GetActiveCamera().GetDirectionOfProjection()
 
 
 def renderer(background=None):
@@ -233,29 +296,130 @@ def save_file_dialog(initial_file='dipy.png', default_ext='.png',
 
 
 class ShowManager(object):
+    """ This class is the interface between the renderer, the window and the
+    interactor.
+    """
 
-    def __init__(self, ren, title='Dipy', size=(300, 300),
-                 png_magnify=1, reset_camera=True):
+    def __init__(self, ren, title='DIPY', size=(300, 300),
+                 png_magnify=1, reset_camera=True, order_transparent=False,
+                 interactor_style='trackball', picker_pos=(10, 10, 0),
+                 picker_tol=0.002):
 
+        """ Manages the visualization pipeline
+
+        Parameters
+        ----------
+        ren : Renderer() or vtkRenderer()
+            The scene that holds all the actors.
+        title : string
+            A string for the window title bar.
+        size : (int, int)
+            ``(width, height)`` of the window
+        png_magnify : int
+            Number of times to magnify the screenshot. This can be used to save
+            high resolution screenshots when pressing 's' inside the window.
+        reset_camera : bool
+            Default is True. You can change this option to False if you want to
+            keep the camera as set before calling this function.
+        order_transparent : bool
+            True is useful when you want to order transparent
+            actors according to their relative position to the camera. The
+            default option which is False will order the actors according to
+            the order of their addition to the Renderer().
+        interactor_style : str or vtkInteractorStyle
+            If str then if 'trackball' then vtkInteractorStyleTrackballCamera()
+            is used or if 'image' then vtkInteractorStyleImage() is used (no
+            rotation). Otherwise you can input your own interactor style.
+        picker_pos : tuple
+        picker_tol : float
+
+        Attributes
+        ----------
+        ren : vtkRenderer()
+        iren : vtkRenderWindowInteractor()
+        style : vtkInteractorStyle()
+        window : vtkRenderWindow()
+
+        Methods
+        -------
+        initialize()
+        render()
+        start()
+        add_window_callback()
+
+        Notes
+        -----
+        Default interaction keys for
+
+        * 3d navigation are with left, middle and right mouse dragging
+        * resetting the camera press 'r'
+        * saving a screenshot press 's'
+        * for quiting press 'q'
+
+        Examples
+        --------
+        >>> from dipy.viz import actor, window
+        >>> renderer = window.Renderer()
+        >>> renderer.add(actor.axes())
+        >>> showm = window.ShowManager(renderer)
+        >>> # showm.initialize()
+        >>> # showm.render()
+        >>> # start()
+        """
+
+        self.ren = ren
         self.title = title
         self.size = size
         self.png_magnify = png_magnify
+        self.reset_camera = reset_camera
+        self.order_transparent = order_transparent
+        self.interactor_style = interactor_style
+        self.picker_pos = picker_pos
+        self.picker_tol = picker_tol
+        self.timers = []
 
-        if reset_camera:
-            ren.ResetCamera()
+        if self.reset_camera:
+            self.ren.ResetCamera()
 
-        window = vtk.vtkRenderWindow()
-        window.AddRenderer(ren)
-        # window.SetAAFrames(6)
-        if title == 'Dipy':
-            window.SetWindowName(title + ' ' + dipy_version)
+        self.window = vtk.vtkRenderWindow()
+        self.window.AddRenderer(ren)
+
+        if self.title == 'DIPY':
+            self.window.SetWindowName(title + ' ' + dipy_version)
         else:
-            window.SetWindowName(title)
-        window.SetSize(size[0], size[1])
+            self.window.SetWindowName(title)
+        self.window.SetSize(size[0], size[1])
 
-        style = vtk.vtkInteractorStyleTrackballCamera()
-        iren = vtk.vtkRenderWindowInteractor()
-        iren.SetRenderWindow(window)
+        if self.order_transparent:
+
+            # Use a render window with alpha bits
+            # as default is 0 (false))
+            self.window.SetAlphaBitPlanes(True)
+
+            # Force to not pick a framebuffer with a multisample buffer
+            # (default is 8)
+            self.window.SetMultiSamples(0)
+
+            # Choose to use depth peeling (if supported)
+            # (default is 0 (false)):
+            self.ren.UseDepthPeelingOn()
+
+            # Set depth peeling parameters
+            # Set the maximum number of rendering passes (default is 4)
+            ren.SetMaximumNumberOfPeels(4)
+
+            # Set the occlusion ratio (initial value is 0.0, exact image):
+            ren.SetOcclusionRatio(0.0)
+
+        if self.interactor_style == 'image':
+            self.style = vtk.vtkInteractorStyleImage()
+        elif self.interactor_style == 'trackball':
+            self.style = vtk.vtkInteractorStyleTrackballCamera()
+        else:
+            self.style = interactor_style
+
+        self.iren = vtk.vtkRenderWindowInteractor()
+        self.iren.SetRenderWindow(self.window)
 
         def key_press_standard(obj, event):
 
@@ -283,65 +447,101 @@ class ShowManager(object):
                     writer.Write()
                     print('File ' + filepath + ' is saved.')
 
-        self.window = window
-        self.ren = ren
-        self.iren = iren
-        self.style = style
-
         self.iren.AddObserver('KeyPressEvent', key_press_standard)
-
         self.iren.SetInteractorStyle(self.style)
+        self.style.SetCurrentRenderer(self.ren)
+
+        self.picker = vtk.vtkCellPicker()
+        self.picker.SetTolerance(self.picker_tol)
+        self.iren.SetPicker(self.picker)
 
     def initialize(self):
+        """ Initialize interaction
+        """
         self.iren.Initialize()
-        # picker.Pick(85, 126, 0, ren)
+
+        i, j, k = self.picker_pos
+        self.picker.Pick(i, j, k, self.ren)
 
     def render(self):
+        """ Renders only once
+        """
         self.window.Render()
 
     def start(self):
-        self.iren.Start()
+        """ Starts interaction
+        """
+        try:
+            self.iren.Start()
+        except AttributeError:
+            self.__init__(self.ren, self.title, size=self.size,
+                          png_magnify=self.png_magnify,
+                          reset_camera=self.reset_camera,
+                          order_transparent=self.order_transparent,
+                          interactor_style=self.interactor_style)
+            self.initialize()
+            self.render()
+            self.iren.Start()
+
         # window.RemoveAllObservers()
         # ren.SetRenderWindow(None)
+
         self.window.RemoveRenderer(self.ren)
         self.ren.SetRenderWindow(None)
         del self.iren
         del self.window
 
     def add_window_callback(self, win_callback):
+        """ Add window callbacks
+        """
         self.window.AddObserver(vtk.vtkCommand.ModifiedEvent, win_callback)
-        self.window.Render()
+
+    def add_picker_callback(self, picker_callback):
+        self.picker.AddObserver("EndPickEvent", picker_callback)
+
+    def add_timer_callback(self, repeat, duration, timer_callback):
+        self.iren.AddObserver("TimerEvent", timer_callback)
+
+        if repeat:
+            timer_id = self.iren.CreateRepeatingTimer(duration)
+        else:
+            timer_id = self.iren.CreateOneShotTimer(duration)
+        self.timers.append(timer_id)
 
 
-def show(ren, title='Dipy', size=(300, 300),
-         png_magnify=1, reset_camera=True):
+
+def show(ren, title='DIPY', size=(300, 300),
+         png_magnify=1, reset_camera=True, order_transparent=False):
     """ Show window with current renderer
-
 
     Parameters
     ------------
-    ren : vtkRenderer() object
-        As returned from function ``ren()``.
+    ren : Renderer() or vtkRenderer()
+        The scene that holds all the actors.
     title : string
         A string for the window title bar.
     size : (int, int)
         ``(width, height)`` of the window
     png_magnify : int
-        Number of times to magnify the screenshot.
+        Number of times to magnify the screenshot. This can be used to save
+        high resolution screenshots when pressing 's' inside the window.
+    reset_camera : bool
+        Default is True. You can change this option to False if you want to
+        keep the camera as set before calling this function.
+    order_transparent : bool
+        True is useful when you want to order transparent
+        actors according to their relative position to the camera. The default
+        option which is False will order the actors according to the order of
+        their addition to the Renderer().
 
     Notes
     -----
-    If you want to:
+    Default interaction keys for
 
-    * navigate in the the 3d world use the left - middle - right mouse buttons
-    * reset the screen press 'r'
-    * save a screenshot press 's'
-    * quit press 'q'
-
-    See also
-    ---------
-    dipy.viz.window.record
-    dipy.viz.window.snapshot
+    * 3d navigation are with left, middle and right mouse dragging
+    * resetting the camera press 'r'
+    * saving a screenshot press 's'
+    * for quiting press 'q'
 
     Examples
     ----------
@@ -357,13 +557,13 @@ def show(ren, title='Dipy', size=(300, 300),
     >>> #fvtk.show(r)
 
     See also
-    ----------
-    dipy.viz.fvtk.record
-
+    ---------
+    dipy.viz.window.record
+    dipy.viz.window.snapshot
     """
 
     show_manager = ShowManager(ren, title, size,
-                               png_magnify, reset_camera)
+                               png_magnify, reset_camera, order_transparent)
     show_manager.initialize()
     show_manager.render()
     show_manager.start()
@@ -497,9 +697,6 @@ def snapshot(ren, fname=None, size=(300, 300)):
         holds the RGB values.
     """
 
-    if vtk.VTK_MAJOR_VERSION <= 5:
-        raise ImportError('Snapshot is available only for VTK 6+')
-
     width, height = size
 
     graphics_factory = vtk.vtkGraphicsFactory()
@@ -614,3 +811,57 @@ def analyze_snapshot(im, bg_color=(0, 0, 0), colors=None,
         report.objects = objects
 
     return report
+
+
+class MovieWriter():
+
+    def __init__(self, fname, window, encoder='ffmpeg',
+                 bit_rate=None, bit_rate_tol=None, frame_rate=None,
+                 compression=False, compression_quality=None):
+
+        self.wif = vtk.vtkWindowToImageFilter()
+        self.wif.SetInput(window)
+        self.wif.ReadFrontBufferOff()
+        self.wif.Update()
+
+        self.writer_alive = True
+        self.bit_rate = bit_rate
+        self.bit_rate_tol = bit_rate_tol
+        self.frame_rate = frame_rate
+        self.compression = compression
+        self.compression_quality = compression_quality
+
+        if encoder == 'ffmpeg':
+            self.writer = vtk.vtkFFMPEGWriter()
+            self.writer.SetInputConnection(self.wif.GetOutputPort())
+            self.writer.SetFileName(fname)
+            if bit_rate is not None:
+                self.writer.SetBitRate(bit_rate)
+                self.writer.SetBitRateTolerance(bit_rate_tol)
+            if frame_rate is not None:
+                self.writer.SetRate(frame_rate)
+            self.writer.SetCompression(compression)
+            if compression_quality is not None:
+                self.writer.SetQuality(compression_quality)
+
+        if encoder == 'png':
+            raise ValueError('PNG writing not currently supported')
+
+        if encoder == 'gif':
+            raise ValueError('GIF writing not currently supported')
+
+    def start(self):
+        if self.writer_alive:
+            self.writer.Start()
+
+    def write(self):
+        self.wif.Modified()
+        self.writer.Write()
+
+    def end(self):
+        self.writer.End()
+        self.write_alive = False
+
+    def __del__(self):
+        if self.writer_alive:
+            self.writer.End()

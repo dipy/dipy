@@ -49,10 +49,10 @@ value_range = (mean - 0.5 * std, mean + 1.5 * std)
 """
 The ``slice`` function will read data and resample the data using an affine
 transformation matrix. The default behavior of this function is to show the
-the middle slice of the last dimension of the resampled data.
+middle slice of the last dimension of the resampled data.
 """
 
-slice_actor = actor.slice(data, affine, value_range)
+slice_actor = actor.slicer(data, affine, value_range)
 
 """
 The ``slice_actor`` contains an axial slice.
@@ -90,7 +90,7 @@ In order to interact with the data you will need to uncomment the line below.
 Otherwise, you can save a screenshot using the following command.
 """
 
-window.snapshot(renderer, 'slices.png', size=(600, 600))
+window.record(renderer, out_path='slices.png', size=(600, 600))
 
 """
 .. figure:: slices.png
@@ -127,7 +127,7 @@ This is because the lookup table is applied in the slice after interpolating
 to (0, 255).
 """
 
-fa_actor = actor.slice(fa, affine, lookup_colormap=lut)
+fa_actor = actor.slicer(fa, affine, lookup_colormap=lut)
 
 renderer.clear()
 renderer.add(fa_actor)
@@ -137,7 +137,7 @@ renderer.zoom(1.4)
 
 # window.show(renderer, size=(600, 600), reset_camera=False)
 
-window.snapshot(renderer, 'slices_lut.png', size=(600, 600))
+window.record(renderer, out_path='slices_lut.png', size=(600, 600))
 
 """
 .. figure:: slices_lut.png
@@ -198,7 +198,7 @@ mosaic up/down and left/right using the middle mouse button pressed. And zoom
 in/out using the scroll wheel.
 """
 
-window.snapshot(renderer, 'mosaic.png', size=(900, 600))
+window.record(renderer, out_path='mosaic.png', size=(900, 600))
 
 """
 .. figure:: mosaic.png

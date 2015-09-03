@@ -16,10 +16,9 @@ For more information on VTK there many neat examples in
 http://www.vtk.org/Wiki/VTK/Tutorials/External_Tutorials
 '''
 from __future__ import division, print_function, absolute_import
+from warnings import warn
 
 from dipy.utils.six.moves import xrange
-
-import types
 
 import numpy as np
 
@@ -66,67 +65,7 @@ if have_vtk:
 
     from dipy.viz.window import (ren, renderer, add, clear, rm, rm_all,
                                  show, record, snapshot)
-    from dipy.viz.actor import line, streamtube
-
-
-def _arrow(pos=(0, 0, 0), color=(1, 0, 0), scale=(1, 1, 1), opacity=1):
-    ''' Internal function for generating arrow actors.
-    '''
-    arrow = vtk.vtkArrowSource()
-    # arrow.SetTipLength(length)
-
-    arrowm = vtk.vtkPolyDataMapper()
-
-    if major_version <= 5:
-        arrowm.SetInput(arrow.GetOutput())
-    else:
-        arrowm.SetInputConnection(arrow.GetOutputPort())
-
-    arrowa = vtk.vtkActor()
-    arrowa.SetMapper(arrowm)
-
-    arrowa.GetProperty().SetColor(color)
-    arrowa.GetProperty().SetOpacity(opacity)
-    arrowa.SetScale(scale)
-
-    return arrowa
-
-
-def axes(scale=(1, 1, 1), colorx=(1, 0, 0), colory=(0, 1, 0), colorz=(0, 0, 1),
-         opacity=1):
-    """ Create an actor with the coordinate's system axes where
-    red = x, green = y, blue = z.
-
-    Parameters
-    ----------
-    scale : tuple (3,)
-        axes size e.g. (100, 100, 100)
-    colorx : tuple (3,)
-        x-axis color. Default red.
-    colory : tuple (3,)
-        y-axis color. Default blue.
-    colorz : tuple (3,)
-        z-axis color. Default green.
-
-    Returns
-    -------
-    vtkAssembly
-
-    """
-
-    arrowx = _arrow(color=colorx, scale=scale, opacity=opacity)
-    arrowy = _arrow(color=colory, scale=scale, opacity=opacity)
-    arrowz = _arrow(color=colorz, scale=scale, opacity=opacity)
-
-    arrowy.RotateZ(90)
-    arrowz.RotateY(-90)
-
-    ass = vtk.vtkAssembly()
-    ass.AddPart(arrowx)
-    ass.AddPart(arrowy)
-    ass.AddPart(arrowz)
-
-    return ass
+    from dipy.viz.actor import line, streamtube, slicer, axes
 
 
 def dots(points, color=(1, 0, 0), opacity=1, dot_size=5):
@@ -1089,164 +1028,6 @@ def tensor(evals, evecs, scalar_colors=None, sphere=None, scale=2.2, norm=True):
     return actor
 
 
-def slicer(vol, voxsz=(1.0, 1.0, 1.0), plane_i=[0], plane_j=None,
-           plane_k=None, outline=True):
-    """ Slice a 3D volume
-
-    Parameters
-    ----------
-    vol : array, shape (N, M, K)
-        An array representing the volumetric dataset that we want to slice
-    voxsz : sequence of 3 floats
-        Voxel size.
-    plane_i : sequence of ints
-        show plane or planes along the first dimension
-    plane_j : sequence of ints
-        show plane or planes along the second dimension
-    plane_k : sequence of ints
-        show plane or planes along the third(last) dimension
-    outline : bool
-        if True (default) a small outline is drawn around the slices
-
-    Examples
-    --------
-    >>> import numpy as np
-    >>> from dipy.viz import fvtk
-    >>> x, y, z = np.ogrid[-10:10:80j, -10:10:80j, -10:10:80j]
-    >>> s = np.sin(x * y * z) / (x * y * z)
-    >>> r = fvtk.ren()
-    >>> fvtk.add(r, fvtk.slicer(s, plane_i=[0, 5]))
-    >>> #fvtk.show(r)
-    """
-
-    if plane_i is None:
-        plane_i = []
-    if plane_j is None:
-        plane_j = []
-    if plane_k is None:
-        plane_k = []
-
-    if vol.ndim != 3:
-        raise ValueError("vol has to be a 3d array")
-
-    vol = np.interp(vol, xp=[vol.min(), vol.max()], fp=[0, 255])
-    vol = vol.astype('uint8')
-
-    im = vtk.vtkImageData()
-    if major_version <= 5:
-        im.SetScalarTypeToUnsignedChar()
-    I, J, K = vol.shape[:3]
-    im.SetDimensions(I, J, K)
-    # im.SetOrigin(0,0,0)
-    im.SetSpacing(voxsz[2], voxsz[0], voxsz[1])
-    if major_version <= 5:
-        im.AllocateScalars()
-    else:
-        im.AllocateScalars(vtk.VTK_UNSIGNED_CHAR, 3)
-
-    # copy data
-    for i in range(vol.shape[0]):
-        for j in range(vol.shape[1]):
-            for k in range(vol.shape[2]):
-                im.SetScalarComponentFromFloat(i, j, k, 0, vol[i, j, k])
-
-    #from dipy.viz.utils import ndarray_to_vtkimagedata
-    #im = ndarray_to_vtkimagedata(vol)
-
-    # An outline provides context around the data.
-    outlineData = vtk.vtkOutlineFilter()
-    if major_version <= 5:
-        outlineData.SetInput(im)
-    else:
-        outlineData.SetInputData(im)
-
-    mapOutline = vtk.vtkPolyDataMapper()
-    mapOutline.SetInputConnection(outlineData.GetOutputPort())
-    outline_ = vtk.vtkActor()
-    outline_.SetMapper(mapOutline)
-    outline_.GetProperty().SetColor(1, 0, 0)
-
-    # Now we are creating three orthogonal planes passing through the
-    # volume. Each plane uses a different texture map and therefore has
-    # diferent coloration.
-
-    # Start by creatin a black/white lookup table.
-    lut = vtk.vtkLookupTable()
-    lut.SetTableRange(vol.min(), vol.max())
-    lut.SetSaturationRange(0, 0)
-    lut.SetHueRange(0, 0)
-    lut.SetValueRange(0, 1)
-    lut.SetRampToLinear()
-    lut.Build()
-
-    x1, x2, y1, y2, z1, z2 = im.GetExtent()
-
-    # print x1,x2,y1,y2,z1,z2
-
-    # Create the first of the three planes. The filter vtkImageMapToColors
-    # maps the data through the corresponding lookup table created above.
-    # The vtkImageActor is a type of vtkProp and conveniently displays an
-    # image on a single quadrilateral plane. It does this using texture
-    # mapping and as a result is quite fast. (Note: the input image has to
-    # be unsigned char values, which the vtkImageMapToColors produces.)
-    # Note also that by specifying the DisplayExtent, the pipeline
-    # requests data of this extent and the vtkImageMapToColors only
-    # processes a slice of data.
-    planeColors = vtk.vtkImageMapToColors()
-    # saggitalColors.SetInputConnection(im.GetOutputPort())
-    if major_version <= 5:
-        planeColors.SetInput(im)
-    else:
-        planeColors.SetInputData(im)
-    planeColors.SetLookupTable(lut)
-    planeColors.Update()
-
-    saggitals = []
-    for x in plane_i:
-
-        saggital = vtk.vtkImageActor()
-        if major_version <= 5:
-            saggital.SetInput(planeColors.GetOutput())
-        else:
-            saggital.SetInputData(planeColors.GetOutput())
-        saggital.SetDisplayExtent(x, x, y1, y2, z1, z2)
-        saggitals.append(saggital)
-
-    axials = []
-    for z in plane_k:
-        axial = vtk.vtkImageActor()
-        if major_version <= 5:
-            axial.SetInput(planeColors.GetOutput())
-        else:
-            axial.SetInputData(planeColors.GetOutput())
-        axial.SetDisplayExtent(x1, x2, y1, y2, z, z)
-        axials.append(axial)
-
-    coronals = []
-    for y in plane_j:
-        coronal = vtk.vtkImageActor()
-        if major_version <= 5:
-            coronal.SetInput(planeColors.GetOutput())
-        else:
-            coronal.SetInputData(planeColors.GetOutput())
-        coronal.SetDisplayExtent(x1, x2, y, y, z1, z2)
-        coronals.append(coronal)
-
-    assem = vtk.vtkAssembly()
-
-    for sag in saggitals:
-        assem.AddPart(sag)
-    for ax in axials:
-        assem.AddPart(ax)
-    for cor in coronals:
-        assem.AddPart(cor)
-
-    if outline:
-        assem.AddPart(outline_)
-
-    return assem
-
-
 def camera(ren, pos=None, focal=None, viewup=None, verbose=True):
     """ Change the active camera
 
@@ -1266,6 +1047,10 @@ def camera(ren, pos=None, focal=None, viewup=None, verbose=True):
     -------
     vtkCamera
     """
+
+    msg = "This function is deprecated."
+    msg += "Please use the window.Renderer class to get/set the active camera."
+    warn(DeprecationWarning(msg))
 
     cam = ren.GetActiveCamera()
     if verbose:
