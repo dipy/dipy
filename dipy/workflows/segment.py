@@ -53,17 +53,17 @@ def show_bundles(static, moving, linewidth=1., tubes=False,
 
 def recognize_bundles_flow(streamline_files, model_bundle_files,
                            model_streamlines_file, out_dir=None,
-                           close_centroids_thr=str(20),
-                           clean_thr=str(5.),
-                           local_slr=str(1),
+                           close_centroids_thr=20,
+                           clean_thr=5.,
+                           local_slr=True,
                            expand_thr=None,
-                           scale_range="0.8:1.2",
-                           verbose=str(1),
-                           disp=str(0)):
+                           scale_range=(0.8, 1.2),
+                           verbose=True,
+                           disp=False):
 
     verbose = bool(int(verbose))
     disp = bool(int(disp))
-    scale_range = tuple([float(i) for i in scale_range.split(':')])
+    # scale_range = tuple([float(i) for i in scale_range.split(':')])
 
     if isinstance(streamline_files, string_types):
         sfiles = glob(streamline_files)
@@ -99,10 +99,10 @@ def recognize_bundles_flow(streamline_files, model_bundle_files,
             model_bundle, hdr_model_bundle = load_trk(mb)
             extracted_bundle, mat2 = recognize_bundles(
                 model_bundle, moved_streamlines,
-                close_centroids_thr=float(close_centroids_thr),
-                clean_thr=float(clean_thr),
-                local_slr=bool(int(local_slr)),
-                expand_thr=None,
+                close_centroids_thr=close_centroids_thr,
+                clean_thr=clean_thr,
+                local_slr=local_slr,
+                expand_thr=expand_thr,
                 scale_range=scale_range,
                 verbose=verbose,
                 return_full=False)
