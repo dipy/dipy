@@ -61,8 +61,6 @@ def recognize_bundles_flow(streamline_files, model_bundle_files,
                            verbose=True,
                            disp=False):
 
-    verbose = bool(int(verbose))
-    disp = bool(int(disp))
     # scale_range = tuple([float(i) for i in scale_range.split(':')])
 
     if isinstance(streamline_files, string_types):
