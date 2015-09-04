@@ -10,6 +10,7 @@ from dipy.core.ndindex import ndindex
 
 # Conditional import machinery for vtk
 from dipy.utils.optpkg import optional_package
+from dipy.utils.six import string_types
 
 # Allow import, but disable doctests if we don't have vtk
 vtk, have_vtk, setup_module = optional_package('vtk')
@@ -779,9 +780,9 @@ def axes(scale=(1, 1, 1), colorx=(1, 0, 0), colory=(0, 1, 0), colorz=(0, 0, 1),
     return ass
 
 
-def text(text, position=(0, 0), color=(1, 1, 1),
-         font_size=12, font_family='Arial', justification='left',
-         bold=False, italic=False, shadow=False):
+def text_overlay(text, position=(0, 0), color=(1, 1, 1),
+                 font_size=12, font_family='Arial', justification='left',
+                 bold=False, italic=False, shadow=False):
 
     class TextActor(vtk.vtkTextActor):
 
@@ -843,3 +844,35 @@ def text(text, position=(0, 0), color=(1, 1, 1),
     text_actor.color(color)
 
     return text_actor
+
+
+def figure(pic, interpolation='nearest'):
+    """ Return a figure as an image actor
+    """
+
+    if isinstance(pic, string_types):
+        png = vtk.vtkPNGReader()
+        png.SetFileName(pic)
+        png.Update()
+        vtk_image_data = png.GetOutput()
+    else:
+
+        image_imp = vtk.util.vtkImageImportFromArray.vtkImageImportFromArray()
+        image_imp.SetArray(pic)
+        image_imp.Update()
+        vtk_image_data = image_imp.GetOutput()
+
+    image_actor = vtk.vtkImageActor()
+    image_actor.SetInputData(vtk_image_data)
+
+    if interpolation == 'nearest':
+        image_actor.GetProperty().SetInterpolationTypeToNearest()
+
+    if interpolation == 'linear':
+        image_actor.GetProperty().SetInterpolationTypeToLinear()
+
+    if interpolation == 'cubic':
+        image_actor.GetProperty().SetInterpolationTypeToCubic()
+
+    image_actor.Update()
+    return image_actor

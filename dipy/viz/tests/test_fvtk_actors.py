@@ -253,9 +253,72 @@ def test_odf_slicer():
         odf_actor.GetProperty().SetOpacity(0.2)
         window.show(renderer, reset_camera=False)
 
+def fig2data (fig):
+    """
+    Convert a Matplotlib figure to a 4D numpy array with RGBA channels
+    and return it.
+
+    Look also here
+    http://wiki.scipy.org/Cookbook/Matplotlib/VTK_Integration
+
+    """
+    # draw the renderer
+    fig.canvas.draw()
+
+    # Get the RGBA buffer from the figure
+    w,h = fig.canvas.get_width_height()
+    buf = np.fromstring(fig.canvas.tostring_argb(), dtype=np.uint8)
+    buf.shape = (w, h, 4)
+
+    # canvas.tostring_argb give pixmap in ARGB mode. Roll the ALPHA channel to have it in RGBA mode
+    buf = np.roll(buf, 3, axis = 2)
+    return buf
+
+
+@npt.dec.skipif(not actor.have_vtk)
+@npt.dec.skipif(not actor.have_vtk_colors)
+@npt.dec.skipif(not window.have_imread)
+def test_figure():
+
+    #A = np.zeros((200, 100), dtype=np.uchar)
+    #A[100, 50] = 255
+
+    fname = '/home/eleftherios/.dipy/icons/icomoon/camera.png'
+    from dipy.viz import actor, window
+
+    figure_actor = actor.figure(fname)
+
+    renderer = window.renderer()
+#    figure_actor.SetPosition(50, 50, 0)
+#
+#    renderer.add(figure_actor)
+#
+#    window.show(renderer)
+#
+#    renderer.clear()
+#
+#    A = 255 * np.ones((200, 100), dtype=np.ubyte)
+#    A[90:110, 50] = 0
+#    figure_actor = actor.figure(A, interpolation='cubic')
+#
+#    renderer.add(figure_actor)
+#    window.show(renderer)
+#
+#    renderer.clear()
+
+    A = 255 * np.ones((200, 100, 1, 3), dtype=np.ubyte)
+    A[100:, 50, 0] = np.array([255, 0, 0])
+    #A = np.swapaxes(A, 0, 2)
+    #figure_actor = actor.figure(A, interpolation='nearest')
+    figure_actor = actor.slicer(A)
+
+    renderer.add(figure_actor)
+    window.show(renderer)
+
+
 
 if __name__ == "__main__":
 
     # npt.run_module_suite()
-    test_odf_slicer()
-
+    # test_odf_slicer()
+    test_figure()
