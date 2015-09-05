@@ -286,8 +286,8 @@ def test_figure():
     fname = '/home/eleftherios/.dipy/icons/icomoon/camera.png'
     from dipy.viz import actor, window
 
-    figure_actor = actor.figure(fname)
-
+    #figure_actor = actor.figure(fname)
+    #1/0
     renderer = window.renderer()
 #    figure_actor.SetPosition(50, 50, 0)
 #
@@ -297,23 +297,36 @@ def test_figure():
 #
 #    renderer.clear()
 #
-#    A = 255 * np.ones((200, 100), dtype=np.ubyte)
-#    A[90:110, 50] = 0
-#    figure_actor = actor.figure(A, interpolation='cubic')
-#
-#    renderer.add(figure_actor)
-#    window.show(renderer)
-#
-#    renderer.clear()
 
-    A = 255 * np.ones((200, 100, 1, 3), dtype=np.ubyte)
-    A[100:, 50, 0] = np.array([255, 0, 0])
+    # create RGBA array
+    A = 255 * np.ones((100, 200, 4), dtype=np.ubyte)
+    A[:, 100] = np.array([255, 0, 0, 255])
+    print(A.dtype)
     #A = np.swapaxes(A, 0, 2)
-    #figure_actor = actor.figure(A, interpolation='nearest')
-    figure_actor = actor.slicer(A)
+    figure_actor = actor.figure(A, interpolation='nearest')
+    #figure_actor = actor.slicer(A)
 
     renderer.add(figure_actor)
     window.show(renderer)
+
+    def fig2data(fig):
+        """
+        @brief Convert a Matplotlib figure to a 4D numpy array with RGBA channels and return it
+        @param fig a matplotlib figure
+        @return a numpy 3D array of RGBA values
+        """
+        # draw the renderer
+        fig.canvas.draw ( )
+
+        # Get the RGBA buffer from the figure
+        w,h = fig.canvas.get_width_height()
+        buf = numpy.fromstring ( fig.canvas.tostring_argb(), dtype=numpy.uint8 )
+        buf.shape = ( w, h,4 )
+
+        # canvas.tostring_argb give pixmap in ARGB mode. Roll the ALPHA channel to have it in RGBA mode
+        buf = numpy.roll ( buf, 3, axis = 2 )
+        return buf
+
 
 
 
