@@ -190,6 +190,9 @@ def matplotlib_figure_to_numpy(fig, flip_up_down=True):
     -------
     arr : ndarray
         a numpy 3D array of RGBA values
+
+    TODO
+    http://stackoverflow.com/questions/5391026/matplotlib-alternatives-to-savefig-to-improve-performance-when-saving-into-a
     """
     # draw the renderer
     fig.canvas.draw()

@@ -309,23 +309,22 @@ def test_figure():
     renderer.add(figure_actor)
     window.show(renderer)
 
-    def fig2data(fig):
-        """
-        @brief Convert a Matplotlib figure to a 4D numpy array with RGBA channels and return it
-        @param fig a matplotlib figure
-        @return a numpy 3D array of RGBA values
-        """
-        # draw the renderer
-        fig.canvas.draw ( )
+    from dipy.viz.utils import matplotlib_figure_to_numpy
 
-        # Get the RGBA buffer from the figure
-        w,h = fig.canvas.get_width_height()
-        buf = numpy.fromstring ( fig.canvas.tostring_argb(), dtype=numpy.uint8 )
-        buf.shape = ( w, h,4 )
+    fig = figure()
+    print(fig)
+    plot(np.arange(12))
 
-        # canvas.tostring_argb give pixmap in ARGB mode. Roll the ALPHA channel to have it in RGBA mode
-        buf = numpy.roll ( buf, 3, axis = 2 )
-        return buf
+    arr = fig2data(fig)
+
+    renderer.clear()
+
+    arr = np.flipud(arr)
+
+    figure_actor = actor.figure(arr, interpolation='cubic')
+
+    renderer.add(figure_actor)
+    window.show(renderer)
 
 
 

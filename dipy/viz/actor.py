@@ -869,6 +869,7 @@ def figure(pic, interpolation='nearest'):
             else:
                 vtk_image_data.AllocateScalars(vtk.VTK_UNSIGNED_CHAR, 4)
 
+            # width, height
             vtk_image_data.SetDimensions(pic.shape[1], pic.shape[0], 1)
             vtk_image_data.SetExtent(0, pic.shape[1] - 1,
                                      0, pic.shape[0] - 1,
@@ -879,45 +880,8 @@ def figure(pic, interpolation='nearest'):
             uchar_array = numpy_support.numpy_to_vtk(pic_tmp, deep=True)
             vtk_image_data.GetPointData().SetScalars(uchar_array)
 
-
-    """
-    im = vtk.vtkImageData()
-    if major_version <= 5:
-        im.SetScalarTypeToUnsignedChar()
-    I, J, K = vol.shape[:3]
-    im.SetDimensions(I, J, K)
-    voxsz = (1., 1., 1.)
-    # im.SetOrigin(0,0,0)
-    im.SetSpacing(voxsz[2], voxsz[0], voxsz[1])
-    if major_version <= 5:
-        im.AllocateScalars()
-        im.SetNumberOfScalarComponents(nb_components)
-    else:
-        im.AllocateScalars(vtk.VTK_UNSIGNED_CHAR, nb_components)
-
-    # copy data
-    # what I do below is the same as what is commented here but much faster
-    # for index in ndindex(vol.shape):
-    #     i, j, k = index
-    #     im.SetScalarComponentFromFloat(i, j, k, 0, vol[i, j, k])
-    vol = np.swapaxes(vol, 0, 2)
-    vol = np.ascontiguousarray(vol)
-
-    if nb_components == 1:
-        vol = vol.ravel()
-    else:
-        vol = np.reshape(vol, [np.prod(vol.shape[:3]), vol.shape[3]])
-
-    uchar_array = numpy_support.numpy_to_vtk(vol, deep=0)
-    im.GetPointData().SetScalars(uchar_array)
-    """
-
-
-
-
     image_actor = vtk.vtkImageActor()
     image_actor.SetInputData(vtk_image_data)
-    print(vtk_image_data)
 
     if interpolation == 'nearest':
         image_actor.GetProperty().SetInterpolationTypeToNearest()
