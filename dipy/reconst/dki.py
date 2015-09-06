@@ -241,8 +241,8 @@ def _F1m(a, b, c):
     cond0 = _positive_evals(a, b, c)
 
     # Apply formula for non problematic plaussible cases, i.e. a!=b and a!=c
-    cond1 = np.logical_and(cond0, np.logical_and(abs((a - b)/a) >= er,
-                                                 abs((a - c)/a) >= er))
+    cond1 = np.logical_and(cond0, np.logical_and(abs(a - b) >= a * er,
+                                                 abs(a - c) >= a * er))
     if np.sum(cond1) != 0:
         L1 = a[cond1]
         L2 = b[cond1]
@@ -255,24 +255,24 @@ def _F1m(a, b, c):
                      (3 * L1 * np.sqrt(L2*L3)) * RDm - 1)
 
     # Resolve possible sigularity a==b
-    cond2 = np.logical_and(cond0, np.logical_and(abs((a - b)/a) < er,
-                                                 abs((a - c)/a) > er))
+    cond2 = np.logical_and(cond0, np.logical_and(abs(a - b) < a * er,
+                                                 abs(a - c) > a * er))
     if np.sum(cond2) != 0:
         L1 = (a[cond2]+b[cond2]) / 2.
         L3 = c[cond2]
         F1[cond2] = _F2m(L3, L1, L1) / 2.
 
     # Resolve possible sigularity a==c
-    cond3 = np.logical_and(cond0, np.logical_and(abs((a - c)/a) < er,
-                                                 abs((a - b)/a) > er))
+    cond3 = np.logical_and(cond0, np.logical_and(abs(a - c) < a * er,
+                                                 abs(a - b) > a * er))
     if np.sum(cond3) != 0:
         L1 = (a[cond3]+c[cond3]) / 2.
         L2 = b[cond3]
         F1[cond3] = _F2m(L2, L1, L1) / 2
 
     # Resolve possible sigularity a==b and a==c
-    cond4 = np.logical_and(cond0, np.logical_and(abs((a - c)/a) < er,
-                                                 abs((a - b)/a) < er))
+    cond4 = np.logical_and(cond0, np.logical_and(abs(a - c) < a * er,
+                                                 abs(a - b) < a * er))
     if np.sum(cond4) != 0:
         F1[cond4] = 1/5.
 
@@ -328,7 +328,7 @@ def _F2m(a, b, c):
     cond0 = _positive_evals(a, b, c)
 
     # Apply formula for non problematic plaussible cases, i.e. b!=c
-    cond1 = np.logical_and(cond0, (abs((b - c)/b) > er))
+    cond1 = np.logical_and(cond0, (abs(b - c) > b * er))
     if np.sum(cond1) != 0:
         L1 = a[cond1]
         L2 = b[cond1]
@@ -340,8 +340,8 @@ def _F2m(a, b, c):
                      ((2.*L1-L2-L3) / (3.*np.sqrt(L2*L3))) * RD - 2.)
 
     # Resolve possible sigularity b==c
-    cond2 = np.logical_and(cond0, np.logical_and(abs((b - c)/b) < er,
-                                                 abs((a - b)/b) > er))
+    cond2 = np.logical_and(cond0, np.logical_and(abs(b - c) < b * er,
+                                                 abs(a - b) > b * er))
     if np.sum(cond2) != 0:
         L1 = a[cond2]
         L3 = (c[cond2]+b[cond2]) / 2.
@@ -360,8 +360,8 @@ def _F2m(a, b, c):
             (L3 * (L1 + 2.*L3) + L1 * (L1 - 4.*L3) * alpha)
 
     # Resolve possible sigularity a==b and a==c
-    cond3 = np.logical_and(cond0, np.logical_and(abs((b - c)/b) < er,
-                                                 abs((a - b)/b) < er))
+    cond3 = np.logical_and(cond0, np.logical_and(abs(b - c) < b * er,
+                                                 abs(a - b) < b * er))
     if np.sum(cond3) != 0:
         F2[cond3] = 6/15.
 
