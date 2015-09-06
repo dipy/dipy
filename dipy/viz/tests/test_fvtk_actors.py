@@ -253,27 +253,6 @@ def test_odf_slicer():
         odf_actor.GetProperty().SetOpacity(0.2)
         window.show(renderer, reset_camera=False)
 
-def fig2data (fig):
-    """
-    Convert a Matplotlib figure to a 4D numpy array with RGBA channels
-    and return it.
-
-    Look also here
-    http://wiki.scipy.org/Cookbook/Matplotlib/VTK_Integration
-
-    """
-    # draw the renderer
-    fig.canvas.draw()
-
-    # Get the RGBA buffer from the figure
-    w,h = fig.canvas.get_width_height()
-    buf = np.fromstring(fig.canvas.tostring_argb(), dtype=np.uint8)
-    buf.shape = (w, h, 4)
-
-    # canvas.tostring_argb give pixmap in ARGB mode. Roll the ALPHA channel to have it in RGBA mode
-    buf = np.roll(buf, 3, axis = 2)
-    return buf
-
 
 @npt.dec.skipif(not actor.have_vtk)
 @npt.dec.skipif(not actor.have_vtk_colors)
@@ -315,18 +294,18 @@ def test_figure():
     print(fig)
     plot(np.arange(12))
 
-    arr = fig2data(fig)
+    arr = matplotlib_figure_to_numpy(fig)
 
     renderer.clear()
 
-    arr = np.flipud(arr)
+    #arr = np.flipud(arr)
 
-    figure_actor = actor.figure(arr, interpolation='cubic')
+    figure_actor = actor.figure(arr, interpolation='nearest')
 
     renderer.add(figure_actor)
     window.show(renderer)
 
-
+    1/0
 
 
 if __name__ == "__main__":
