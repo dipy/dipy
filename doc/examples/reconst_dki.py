@@ -83,7 +83,7 @@ fetch_cenir_multib(with_raw=False)
 
 """
 Next, we read the saved dataset. To decrease the influence of diffusion signal
-taylor approximation components larger than the fourth order (componets not
+Taylor approximation components larger than the fourth order (componets not
 taken into account by the diffusion kurtosis tensor), we only select the
 b-values up to 2000 $s.mm^{-2}$:
 """
@@ -114,7 +114,7 @@ diffusion signal are more sensitive to artefacts [NetoHe2012]_, a fundamental
 data pre-processing step for diffusion kurtosis fitting is to denoise our data.
 For this, we use Dipy's non-local mean filter (see
 :ref:`example-denoise-nlmeans`). Note that, since the HCP-like data has a large
-number of diffusion-weigthed volume, this procedure can take a couple of hours
+number of diffusion-weigthed volumes, this procedure can take a couple of hours
 to compute.
 """
 
@@ -171,8 +171,8 @@ module. Theoretically, computing these measures from both models should be
 analogous. However, since the diffusion kurtosis model involves a larger number
 of parameters, diffusion statistics maps can look more noisy. On the other
 hand, the diffusion statistics from the kurtosis model are expected to have
-better precision [[Veraar2011]]_. For comparison purposes, we calculate below
-the FA, MD, AD, and RD using Dipy's TensorModel.
+better accuracy [Veraar2011]_. For comparison purposes, we calculate below the
+FA, MD, AD, and RD using Dipy's TensorModel.
 """
 
 tenmodel = dti.TensorModel(gtab)
@@ -224,9 +224,9 @@ fig1.savefig('Diffusion_tensor_measures_from_DTI_and_DKI.png')
    DKI (upper panels) and DTI (lower panels).**.
 
 From the figure, we can see that the standard diffusion measures of the
-HCP-like data obtain from the diffusion kurtosis model have similar contracts
+HCP-like data obtained from the diffusion kurtosis model have similar contrasts
 to the standard diffusion measures obtain from the tensor model. This can be
-explained by the high quality of the dataset and the high preformance of the
+explained by the high quality of the dataset and the high performance of the
 diffusion kurtosis fit procedure.
 
 In addition to the standard diffusion statistics, the DiffusionKurtosisFit
@@ -278,7 +278,7 @@ References:
 .. [TaxCMW2015] Tax CMW, Otte WM, Viergever MA, Dijkhuizen RM, Leemans A
                 (2014). REKINDLE: Robust extraction of kurtosis INDices with
                 linear estimation. Magnetic Resonance in Medicine 73(2):
-                794–808.
+                794-808.
 .. [Jensen2005] Jensen JH, Helpern JA, Ramani A, Lu H, Kaczynski K (2005).
                 Diffusional Kurtosis Imaging: The Quantification of
                 Non_Gaussian Water Diffusion by Means of Magnetic Resonance
@@ -290,9 +290,9 @@ References:
                 characterization with diffusion kurtosis imaging. NeuroImage
                 58: 177-188
 .. [NetoHe2012] Neto Henriques R, Ferreira H, Correia M, (2012). Diffusion
-                kurtosis imaging of the healthy human brain.Master Dissertation
-                Bachelor andMaster Programin Biomedical Engineering and
-                Biophysics, Faculty of Sciences.
+                kurtosis imaging of the healthy human brain. Master
+                Dissertation Bachelor and Master Programin Biomedical
+                Engineering and Biophysics, Faculty of Sciences.
                 http://repositorio.ul.pt/bitstream/10451/8511/1/ulfc104137_tm_Rafael_Henriques.pdf
 .. [NetoHe2015] Neto Henriques R, Correia MM, Nunes RG, Ferreira HA (2015).
                 Exploring the 3D geometry of the diffusion kurtosis tensor -
