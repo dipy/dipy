@@ -1,7 +1,7 @@
 import os
 import numpy as np
 
-from dipy.viz import actor, window
+from dipy.viz import actor, window, utils
 
 import numpy.testing as npt
 from nibabel.tmpdirs import TemporaryDirectory
@@ -257,58 +257,66 @@ def test_odf_slicer():
 @npt.dec.skipif(not actor.have_vtk)
 @npt.dec.skipif(not actor.have_vtk_colors)
 @npt.dec.skipif(not window.have_imread)
+@npt.dec.skipif(not utils.have_mpl)
 def test_figure():
 
-    #A = np.zeros((200, 100), dtype=np.uchar)
-    #A[100, 50] = 255
-
-    fname = '/home/eleftherios/.dipy/icons/icomoon/camera.png'
-    from dipy.viz import actor, window
-
-    #figure_actor = actor.figure(fname)
-    #1/0
     renderer = window.renderer()
-#    figure_actor.SetPosition(50, 50, 0)
-#
-#    renderer.add(figure_actor)
-#
-#    window.show(renderer)
-#
-#    renderer.clear()
-#
 
-    # create RGBA array
+    # create RGBA rectangle of width height 100 and width  200
+    # with one red line in the middle
     A = 255 * np.ones((100, 200, 4), dtype=np.ubyte)
     A[:, 100] = np.array([255, 0, 0, 255])
-    print(A.dtype)
-    #A = np.swapaxes(A, 0, 2)
     figure_actor = actor.figure(A, interpolation='nearest')
-    #figure_actor = actor.slicer(A)
-
     renderer.add(figure_actor)
-    window.show(renderer)
 
-    from dipy.viz.utils import matplotlib_figure_to_numpy
+    renderer.reset_camera()
+    renderer.zoom(3.5)
 
+    # window.show(renderer, reset_camera=False)
+    snap_arr = window.snapshot(renderer)
+
+    npt.assert_array_equal(snap_arr[150, 150], [255, 0, 0])
+    npt.assert_array_equal(snap_arr[160, 150], [255, 0, 0])
+    npt.assert_array_equal(snap_arr[150, 160], [255, 255, 255])
+
+    renderer.clear()
+
+    # create a nice fill plot with matplotlib and show it in the VTK scene
     import matplotlib.pyplot as plt
-
 
     x = np.linspace(0, 1)
     y = np.sin(4 * np.pi * x) * np.exp(-5 * x)
 
+    fig = plt.figure(figsize=(1000/300, 800/300), dpi=300)
+    ax = fig.add_subplot(111)
+    ax.set_title('Fill plot')
+    ax.fill(x, y, 'r')
+    ax.grid(True)
 
-    fig = plt.figure(figsize=(1000/100, 800/100), dpi=100)
-    plt.fill(x, y, 'r')
-    plt.grid(True)
+    arr = utils.matplotlib_figure_to_numpy(fig, dpi=300, transparent=True)
+    plt.close(fig)
 
     renderer.clear()
+    renderer.background((0.7, 0.7, 0.7))
 
-    arr = matplotlib_figure_to_numpy(fig)
-
-    figure_actor = actor.figure(arr, interpolation='nearest')
+    figure_actor = actor.figure(arr, interpolation='cubic')
 
     renderer.add(figure_actor)
-    window.show(renderer)
+
+    axes_actor = actor.axes((50, 50, 50))
+    axes_actor.SetPosition(500, 400, -50)
+
+    # renderer.add(axes_actor)
+    # window.show(renderer)
+    renderer.reset_camera()
+
+    props = renderer.GetViewProps()
+    print(props.GetNumberOfItems())
+    props.InitTraversal()
+    npt.assert_equal(props.GetNextProp().GetClassName(), 'vtkImageActor')
+
+    report = window.analyze_renderer(renderer)
+    npt.assert_equal(report.bg_color, (0.7, 0.7, 0.7))
 
 
 if __name__ == "__main__":

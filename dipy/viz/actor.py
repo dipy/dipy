@@ -848,6 +848,17 @@ def text_overlay(text, position=(0, 0), color=(1, 1, 1),
 
 def figure(pic, interpolation='nearest'):
     """ Return a figure as an image actor
+
+    Parameters
+    ----------
+    pic : filename or numpy RGBA array
+
+    interpolation : str
+        Options are nearest, linear or cubic. Default is nearest.
+
+    Returns
+    -------
+    image_actor : vtkImageActor
     """
 
     if isinstance(pic, string_types):
@@ -879,8 +890,6 @@ def figure(pic, interpolation='nearest'):
             pic_tmp = np.ascontiguousarray(pic_tmp)
             uchar_array = numpy_support.numpy_to_vtk(pic_tmp, deep=True)
             vtk_image_data.GetPointData().SetScalars(uchar_array)
-
-    print(vtk_image_data)
 
     image_actor = vtk.vtkImageActor()
     image_actor.SetInputData(vtk_image_data)
