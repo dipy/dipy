@@ -290,9 +290,16 @@ def test_figure():
 
     from dipy.viz.utils import matplotlib_figure_to_numpy
 
-    fig = figure()
-    print(fig)
-    plot(np.arange(12))
+    import matplotlib.pyplot as plt
+
+
+    x = np.linspace(0, 1)
+    y = np.sin(4 * np.pi * x) * np.exp(-5 * x)
+
+
+    fig = plt.figure()
+    plt.fill(x, y, 'r')
+    plt.grid(True)
 
     arr = matplotlib_figure_to_numpy(fig)
 
@@ -304,8 +311,6 @@ def test_figure():
 
     renderer.add(figure_actor)
     window.show(renderer)
-
-    1/0
 
 
 if __name__ == "__main__":
