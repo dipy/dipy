@@ -880,6 +880,8 @@ def figure(pic, interpolation='nearest'):
             uchar_array = numpy_support.numpy_to_vtk(pic_tmp, deep=True)
             vtk_image_data.GetPointData().SetScalars(uchar_array)
 
+    print(vtk_image_data)
+
     image_actor = vtk.vtkImageActor()
     image_actor.SetInputData(vtk_image_data)
 

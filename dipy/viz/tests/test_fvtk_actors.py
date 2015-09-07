@@ -297,15 +297,13 @@ def test_figure():
     y = np.sin(4 * np.pi * x) * np.exp(-5 * x)
 
 
-    fig = plt.figure()
+    fig = plt.figure(figsize=(1000/100, 800/100), dpi=100)
     plt.fill(x, y, 'r')
     plt.grid(True)
 
-    arr = matplotlib_figure_to_numpy(fig)
-
     renderer.clear()
 
-    #arr = np.flipud(arr)
+    arr = matplotlib_figure_to_numpy(fig)
 
     figure_actor = actor.figure(arr, interpolation='nearest')
 
