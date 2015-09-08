@@ -254,7 +254,7 @@ def test_odf_slicer():
 
         odf_actor.display_extent(0, I, 0, J, k, k + 1)
         odf_actor.GetProperty().SetOpacity(0.6)
-        window.show(renderer, reset_camera=False)
+        # window.show(renderer, reset_camera=False)
 
 
 @npt.dec.skipif(not actor.have_vtk)
@@ -324,5 +324,4 @@ def test_figure():
 
 if __name__ == "__main__":
 
-    #npt.run_module_suite()
-    test_odf_slicer()
+    npt.run_module_suite()
