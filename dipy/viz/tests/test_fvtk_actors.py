@@ -1,7 +1,7 @@
 import os
 import numpy as np
 
-from dipy.viz import actor, window
+from dipy.viz import actor, window, utils
 
 import numpy.testing as npt
 from nibabel.tmpdirs import TemporaryDirectory
@@ -227,8 +227,11 @@ def test_odf_slicer():
     affine = np.eye(4)
     renderer = window.renderer()
 
+    mask = np.ones(odfs.shape[:3])
+    mask[:4, :4, :4] = 0
+
     odf_actor = actor.odf_slicer(odfs, affine,
-                                 mask=None, sphere=sphere, scale=.25,
+                                 mask=mask, sphere=sphere, scale=.25,
                                  colormap='jet')
 
     fa = 0. * np.random.rand(*odfs.shape[:3])
@@ -246,16 +249,79 @@ def test_odf_slicer():
     renderer.reset_camera()
     renderer.reset_clipping_range()
 
-    for k in range(5, 6):
+    for k in range(0, 5):
         I, J, K = odfs.shape[:3]
 
         odf_actor.display_extent(0, I, 0, J, k, k + 1)
-        odf_actor.GetProperty().SetOpacity(0.2)
-        window.show(renderer, reset_camera=False)
+        odf_actor.GetProperty().SetOpacity(0.6)
+        # window.show(renderer, reset_camera=False)
+
+
+@npt.dec.skipif(not actor.have_vtk)
+@npt.dec.skipif(not actor.have_vtk_colors)
+@npt.dec.skipif(not window.have_imread)
+@npt.dec.skipif(not utils.have_mpl)
+def test_figure():
+
+    renderer = window.renderer()
+
+    # create RGBA rectangle of width height 100 and width  200
+    # with one red line in the middle
+    A = 255 * np.ones((100, 200, 4), dtype=np.ubyte)
+    A[:, 100] = np.array([255, 0, 0, 255])
+    figure_actor = actor.figure(A, interpolation='nearest')
+    renderer.add(figure_actor)
+
+    renderer.reset_camera()
+    renderer.zoom(3.5)
+
+    # window.show(renderer, reset_camera=False)
+    snap_arr = window.snapshot(renderer)
+
+    npt.assert_array_equal(snap_arr[150, 150], [255, 0, 0])
+    npt.assert_array_equal(snap_arr[160, 150], [255, 0, 0])
+    npt.assert_array_equal(snap_arr[150, 160], [255, 255, 255])
+
+    renderer.clear()
+
+    # create a nice fill plot with matplotlib and show it in the VTK scene
+    import matplotlib.pyplot as plt
+
+    x = np.linspace(0, 1)
+    y = np.sin(4 * np.pi * x) * np.exp(-5 * x)
+
+    fig = plt.figure(figsize=(1000/300, 800/300), dpi=300)
+    ax = fig.add_subplot(111)
+    ax.set_title('Fill plot')
+    ax.fill(x, y, 'r')
+    ax.grid(True)
+
+    arr = utils.matplotlib_figure_to_numpy(fig, dpi=300, transparent=True)
+    plt.close(fig)
+
+    renderer.clear()
+    renderer.background((0.7, 0.7, 0.7))
+
+    figure_actor = actor.figure(arr, interpolation='cubic')
+
+    renderer.add(figure_actor)
+
+    axes_actor = actor.axes((50, 50, 50))
+    axes_actor.SetPosition(500, 400, -50)
+
+    # renderer.add(axes_actor)
+    # window.show(renderer)
+    renderer.reset_camera()
+
+    props = renderer.GetViewProps()
+    print(props.GetNumberOfItems())
+    props.InitTraversal()
+    npt.assert_equal(props.GetNextProp().GetClassName(), 'vtkImageActor')
+
+    report = window.analyze_renderer(renderer)
+    npt.assert_equal(report.bg_color, (0.7, 0.7, 0.7))
 
 
 if __name__ == "__main__":
 
-    # npt.run_module_suite()
-    test_odf_slicer()
-
+    npt.run_module_suite()

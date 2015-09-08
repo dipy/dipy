@@ -10,6 +10,7 @@ from dipy.core.ndindex import ndindex
 
 # Conditional import machinery for vtk
 from dipy.utils.optpkg import optional_package
+from dipy.utils.six import string_types
 
 # Allow import, but disable doctests if we don't have vtk
 vtk, have_vtk, setup_module = optional_package('vtk')
@@ -206,16 +207,23 @@ def odf_slicer(odfs, affine=None, mask=None, sphere=None, scale=2.2,
     """ Slice spherical fields
     """
 
+    if mask is None:
+        mask = np.ones(odfs.shape[:3], dtype=np.bool)
+    else:
+        mask = mask.astype(np.bool)
+
     class OdfSlicerActor(vtk.vtkLODActor):
 
         def display_extent(self, x1, x2, y1, y2, z1, z2):
 
-            mask = np.zeros(odfs.shape[:3])
-            mask[x1:x2, y1:y2, z1:z2] = 1
+            tmp_mask = np.zeros(odfs.shape[:3], dtype=np.bool)
+            tmp_mask[x1:x2, y1:y2, z1:z2] = True
+
+            tmp_mask = np.bitwise_and(tmp_mask, mask)
 
             self.mapper = _odf_slicer_mapper(odfs=odfs,
                                              affine=affine,
-                                             mask=mask,
+                                             mask=tmp_mask,
                                              sphere=sphere,
                                              scale=scale,
                                              norm=norm,
@@ -779,9 +787,9 @@ def axes(scale=(1, 1, 1), colorx=(1, 0, 0), colory=(0, 1, 0), colorz=(0, 0, 1),
     return ass
 
 
-def text(text, position=(0, 0), color=(1, 1, 1),
-         font_size=12, font_family='Arial', justification='left',
-         bold=False, italic=False, shadow=False):
+def text_overlay(text, position=(0, 0), color=(1, 1, 1),
+                 font_size=12, font_family='Arial', justification='left',
+                 bold=False, italic=False, shadow=False):
 
     class TextActor(vtk.vtkTextActor):
 
@@ -843,3 +851,64 @@ def text(text, position=(0, 0), color=(1, 1, 1),
     text_actor.color(color)
 
     return text_actor
+
+
+def figure(pic, interpolation='nearest'):
+    """ Return a figure as an image actor
+
+    Parameters
+    ----------
+    pic : filename or numpy RGBA array
+
+    interpolation : str
+        Options are nearest, linear or cubic. Default is nearest.
+
+    Returns
+    -------
+    image_actor : vtkImageActor
+    """
+
+    if isinstance(pic, string_types):
+        png = vtk.vtkPNGReader()
+        png.SetFileName(pic)
+        png.Update()
+        vtk_image_data = png.GetOutput()
+    else:
+
+        if pic.ndim == 3 and pic.shape[2] == 4:
+
+            vtk_image_data = vtk.vtkImageData()
+            if major_version <= 5:
+                vtk_image_data.SetScalarTypeToUnsignedChar()
+
+            if major_version <= 5:
+                vtk_image_data.AllocateScalars()
+                vtk_image_data.SetNumberOfScalarComponents(4)
+            else:
+                vtk_image_data.AllocateScalars(vtk.VTK_UNSIGNED_CHAR, 4)
+
+            # width, height
+            vtk_image_data.SetDimensions(pic.shape[1], pic.shape[0], 1)
+            vtk_image_data.SetExtent(0, pic.shape[1] - 1,
+                                     0, pic.shape[0] - 1,
+                                     0, 0)
+            pic_tmp = np.swapaxes(pic, 0, 1)
+            pic_tmp = pic.reshape(pic.shape[1] * pic.shape[0], 4)
+            pic_tmp = np.ascontiguousarray(pic_tmp)
+            uchar_array = numpy_support.numpy_to_vtk(pic_tmp, deep=True)
+            vtk_image_data.GetPointData().SetScalars(uchar_array)
+
+    image_actor = vtk.vtkImageActor()
+    image_actor.SetInputData(vtk_image_data)
+
+    if interpolation == 'nearest':
+        image_actor.GetProperty().SetInterpolationTypeToNearest()
+
+    if interpolation == 'linear':
+        image_actor.GetProperty().SetInterpolationTypeToLinear()
+
+    if interpolation == 'cubic':
+        image_actor.GetProperty().SetInterpolationTypeToCubic()
+
+    image_actor.Update()
+    return image_actor
