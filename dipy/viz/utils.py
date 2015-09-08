@@ -103,7 +103,7 @@ def map_coordinates_3d_4d(input_array, indices):
         return np.ascontiguousarray(np.array(values_4d).T)
 
 
-def auto_camera(actor, zoom=10, relative='max'):
+def auto_camera(actor, zoom=10, relative='max', select_plane=None):
     """ Automatically calculate the position of the camera given an actor
 
     """
@@ -155,7 +155,10 @@ def auto_camera(actor, zoom=10, relative='max'):
                             [x_max, y_min, z_max],
                             [x_max, y_max, z_max]])
 
-    which_plane = np.argmin(widths_bb)
+    if select_plane is None:
+        which_plane = np.argmin(widths_bb)
+    else:
+        which_plane = select_plane
 
     if which_plane == 0:
         if relative == 'max':
