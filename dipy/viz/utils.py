@@ -141,61 +141,6 @@ def map_coordinates_3d_4d(input_array, indices):
         return np.ascontiguousarray(np.array(values_4d).T)
 
 
-def get_bounding_box_sizes(actor):
-    """ Gets the bounding box sizes of an actor. """
-    X1, X2, Y1, Y2, Z1, Z2 = actor.GetBounds()
-    return (X2-X1, Y2-Y1, Z2-Z1)
-
-
-def get_grid_cells_position(shapes, aspect_ratio=16/9., dim=None):
-    """ Constructs a XY-grid based on the cells content shape.
-
-    This function generates the coordinates of every grid cell. The width and
-    height of every cell correspond to the largest width and the largest height
-    respectively. The grid dimensions will automatically be adjusted to respect
-    the given aspect ratio unless they are explicitly specified.
-
-    The grid follows a row-major order with the top left corner being at
-    coordinates (0,0,0) and the bottom right corner being at coordinates
-    (nb_cols*cell_width, -nb_rows*cell_height, 0). Note that the X increases
-    while the Y decreases.
-
-    Parameters
-    ----------
-    shapes : list of tuple of int
-        The shape (width, height) of every cell content.
-    aspect_ratio : float (optional)
-        Aspect ratio of the grid (width/height). Default: 16:9.
-    dim : tuple of int (optional)
-        Dimension (nb_rows, nb_cols) of the grid, if provided.
-
-    Returns
-    -------
-    ndarray
-        3D coordinates of every grid cell.
-
-    """
-    cell_shape = np.r_[np.max(shapes, axis=0), 0]
-    cell_aspect_ratio = cell_shape[0]/cell_shape[1]
-
-    count = len(shapes)
-    if dim is None:
-        # Compute the number of rows and columns.
-        n_cols = np.ceil(np.sqrt(count*aspect_ratio / cell_aspect_ratio))
-        n_rows = np.ceil(count / n_cols)
-        assert n_cols * n_rows >= count
-    else:
-        n_rows, n_cols = dim
-
-        if n_cols * n_rows < count:
-            raise ValueError("Size is too small, it cannot contain at least {} elements.".format(count))
-
-    # Use indexing="xy" so the cells are in row-major (C-order). Also,
-    # the Y coordinates are negative so the cells are order from top to bottom.
-    X, Y, Z = np.meshgrid(np.arange(n_cols), -np.arange(n_rows), [0], indexing="xy")
-    return cell_shape * np.array([X.flatten(), Y.flatten(), Z.flatten()]).T
-
-
 def auto_camera(actor, zoom=10, relative='max'):
     """ Automatically calculate the position of the camera given an actor
 
