@@ -349,6 +349,7 @@ class StreamlineLinearRegistration(object):
 
         mat_history = []
 
+        self.history = opt.evolution
         if opt.evolution is not None:
             for vecs in opt.evolution:
                 mat_history.append(compose_transformations(moving_mat,

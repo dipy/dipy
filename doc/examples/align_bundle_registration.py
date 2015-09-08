@@ -1,26 +1,148 @@
 # TODO: calculate also the view_up
 
 from dipy.align.streamlinear import StreamlineLinearRegistration
-from dipy.tracking.streamline import set_number_of_points, select_random_set_of_streamlines
-from dipy.viz import fvtk
+from dipy.tracking.streamline import (set_number_of_points,
+                                      select_random_set_of_streamlines,
+                                      transform_streamlines)
+from dipy.viz import actor, window, utils, fvtk
 from dipy.data.fetcher import fetch_bundles_2_subjects, read_bundles_2_subjects
+import numpy as np
 
 
-def show_both_bundles(bundles, colors=None, show=False, fname=None):
+def vtk_matrix_to_numpy(matrix):
+    import vtk
+    """ Converts VTK matrix to numpy array.
+    """
+    if matrix is None:
+        return None
 
-    ren = fvtk.ren()
-    ren.SetBackground(1., 1, 1)
+    size = (4, 4)
+    if isinstance(matrix, vtk.vtkMatrix3x3):
+        size = (3, 3)
+
+    mat = np.zeros(size)
+    for i in range(mat.shape[0]):
+        for j in range(mat.shape[1]):
+            mat[i, j] = matrix.GetElement(i, j)
+
+    return mat
+
+
+def numpy_to_vtk_matrix(array):
+    """ Converts a numpy array to a VTK matrix.
+    """
+    import vtk
+    if array is None:
+        return None
+
+    if array.shape == (4, 4):
+        matrix = vtk.vtkMatrix4x4()
+    elif array.shape == (3, 3):
+        matrix = vtk.vtkMatrix3x3()
+    else:
+        raise ValueError("Invalid matrix shape: {0}".format(array.shape))
+
+    for i in range(array.shape[0]):
+        for j in range(array.shape[1]):
+            matrix.SetElement(i, j, array[i, j])
+
+    return matrix
+
+
+def show_both_bundles(bundles, colors=None, size=(1080, 600),
+                      show=False, fname=None):
+
+    ren = window.Renderer()
+    ren.background((1., 1, 1))
+
+    positions = np.zeros(3)
+    focal_points = np.zeros(3)
     for (i, bundle) in enumerate(bundles):
         color = colors[i]
-        lines = fvtk.streamtube(bundle, color, linewidth=0.3)
-        #lines.RotateX(-90)
-        #lines.RotateZ(90)
-        fvtk.add(ren, lines)
+        lines = actor.line(bundle, color, linewidth=1.5)
+        ren.add(lines)
+        position, focal_point, view_up, _, _ = utils.auto_camera(lines,
+                                                                 15, 'max')
+        positions += position
+        focal_points += focal_point
+
+    positions = positions/float(len(bundles))
+    focal_points = focal_points/float(len(bundles))
+
+    ren.set_camera(positions, focal_points, view_up)
+    # ren.reset_clipping_range()
+    # ren.reset_camera()
+
     if show:
-        fvtk.show(ren)
+        window.show(ren, size=size, reset_camera=False)
+
     if fname is not None:
-        sleep(1)
-        fvtk.record(ren, n_frames=1, out_path=fname, size=(900, 900))
+        window.record(ren, n_frames=1, out_path=fname, size=size)
+
+
+def write_movie(bundles, transforms, size=(1080, 600), video_fname='test.avi'):
+
+    global show_m
+    global mw
+    global moving_actor
+    global cnt
+
+    first_message = actor.text_overlay('Streamline-based Linear Registration (SLR)',
+                                       position=(size[0]/2 - 300, size[1]/2),
+                                       color=(0, 0, 0),
+                                       font_size=32)
+
+    static_bundle = bundles[0]
+    moving_bundle = bundles[1]
+
+    ren = window.Renderer()
+    ren.background((1., 1., 1))
+
+    ren.add(first_message)
+
+    static_actor = actor.line(static_bundle, fvtk.colors.red, linewidth=1.5)
+    moving_actor = actor.line(static_bundle, fvtk.colors.orange, linewidth=1.5)
+
+    ren.add(static_actor)
+    ren.add(moving_actor)
+
+    show_m = window.ShowManager(ren, size=size)
+    show_m.initialize()
+
+    position, focal_point, view_up, _, _ = utils.auto_camera(static_actor,
+                                                             15, 'max')
+    ren.reset_camera()
+    ren.set_camera(position, focal_point, view_up)
+    ren.reset_clipping_range()
+
+    repeat_time = 20
+
+    cnt = 0
+
+    def timer_callback(obj, event):
+        global cnt
+        print('Recording ...')
+        show_m.ren.azimuth(.4)
+
+        if cnt < len(transforms):
+            mat = transforms[cnt]
+            print(mat)
+            cnt += 1
+            moving_actor.SetUserMatrix(numpy_to_vtk_matrix(mat))
+        show_m.render()
+        mw.write()
+
+    mw = window.MovieWriter(video_fname, show_m.window)
+
+    mw.start()
+
+    show_m.add_timer_callback(True, repeat_time, timer_callback)
+
+    show_m.render()
+    show_m.start()
+
+    del mw
+    del show_m
 
 
 fetch_bundles_2_subjects()
@@ -32,8 +154,7 @@ subj2 = read_bundles_2_subjects('subj_2', ['fa', 't1'],
                                 ['af.left', 'cst.left', 'cst.right', 'cc_1', 'cc_2'])
 
 
-for bundle_type in ['cc_1']:#, 'cst.right', 'cc_1']:
-
+for bundle_type in ['cst.left']:  # 'cst.right', 'cc_1']:
 
     bundle1 = subj1[bundle_type]
     bundle2 = subj2[bundle_type]
@@ -44,68 +165,33 @@ for bundle_type in ['cc_1']:#, 'cst.right', 'cc_1']:
     sbundle1 = select_random_set_of_streamlines(sbundle1, 400)
     sbundle2 = select_random_set_of_streamlines(sbundle2, 400)
 
+    show_both_bundles([bundle1, bundle2],
+                      colors=[fvtk.colors.orange, fvtk.colors.red],
+                      show=True)
 
-#    slr = StreamlineLinearRegistration(x0='affine')
-#    slm = slr.optimize(static=sbundle1, moving=sbundle2)
-#
-#    sbundle2_moved = slm.transform(sbundle2)
-#
-#
-#    show_both_bundles([sbundle1, sbundle2],
-#                      colors=[fvtk.colors.orange, fvtk.colors.red],
-#                      show=True)
-#
-#
-#    show_both_bundles([sbundle1, sbundle2_moved],
-#                      colors=[fvtk.colors.orange, fvtk.colors.red],
-#                      show=True)
+    slr = StreamlineLinearRegistration(x0='affine', evolution=True)
+    slm = slr.optimize(static=sbundle1, moving=sbundle2)
+
+    bundle2_moved = slm.transform(bundle2)
+
+    show_both_bundles([bundle1, bundle2_moved],
+                      colors=[fvtk.colors.orange, fvtk.colors.red],
+                      show=True)
 
 
-from dipy.viz import window, actor, utils
-import numpy as np
+
+bundles = []
+bundles.append(bundle1)
+bundles.append(bundle2)
+
+transforms = []
+
+for mat in slm.matrix_history:
+    transforms.append(mat)
+    bundles.append(transform_streamlines(bundle2, mat))
+transforms.append(slm.matrix)
 
 
-renderer = window.Renderer()
+bundles.append(bundle2_moved)
 
-stream_actor = actor.line(sbundle1 , linewidth=1.5) #streamtube(bundle1, linewidth=0.1)
-renderer.add(stream_actor)
-
-position, focal_point, view_up, corners, plane = utils.auto_camera(stream_actor,
-                                                                   15, 'max')
-
-print(position, focal_point, view_up)
-
-#position = np.zeros(3)
-#focal_point = np.ones(3)
-
-# window.show(renderer)
-
-renderer.add(fvtk.axes((10, 10, 10)))
-
-renderer.add(fvtk.dots(focal_point[None, :], fvtk.colors.red))
-renderer.add(fvtk.dots(position[None, :], fvtk.colors.yellow))
-# renderer.add(fvtk.dots(bounds[:, 0], fvtk.colors.red))
-# renderer.add(fvtk.dots(bounds[:, 1], fvtk.colors.red))# renderer.add(fvtk.dots(corners, fvtk.colors.green))
-#renderer.add(fvtk.dots(z_plane_min, fvtk.colors.blue))
-#renderer.add(fvtk.dots(z_plane_max, fvtk.colors.yellow))
-renderer.add(fvtk.dots(corners, fvtk.colors.green))
-
-#window.show(renderer)
-
-renderer.reset_camera()
-
-renderer.set_camera(position=position, focal_point=focal_point, view_up=view_up)
-#renderer.ResetCameraClippingRange()
-#renderer.reset_camera()
-#renderer.set_camera(position=position, focal_point=focal_point)
-#renderer.roll(-90)
-renderer.camera_info()
-
-window.show(renderer, size=(900, 900), reset_camera=False)
-#window.show(renderer)
-renderer.camera_info()
-
-#window.snapshot(renderer, 'test.png')
-#renderer.reset_camera()
-#window.show(renderer)
-#renderer.camera_info()
+write_movie(bundles, transforms, video_fname='test.avi')

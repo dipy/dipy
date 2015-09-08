@@ -309,7 +309,7 @@ def test_figure():
     axes_actor = actor.axes((50, 50, 50))
     axes_actor.SetPosition(500, 400, -50)
 
-    # renderer.add(axes_actor)
+    renderer.add(axes_actor)
     # window.show(renderer)
     renderer.reset_camera()
 

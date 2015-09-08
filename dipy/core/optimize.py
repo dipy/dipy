@@ -219,7 +219,8 @@ class Optimizer(object):
                 self._evol_kx = []
 
                 def history_of_x(kx):
-                    self._evol_kx.append(kx)
+                    self._evol_kx.append(kx.copy())
+
                 res = minimize(fun, x0, args, method, jac, hess, hessp, bounds,
                                constraints, tol, callback=history_of_x,
                                options=options)
