@@ -207,16 +207,23 @@ def odf_slicer(odfs, affine=None, mask=None, sphere=None, scale=2.2,
     """ Slice spherical fields
     """
 
+    if mask is None:
+        mask = np.ones(odfs.shape[:3], dtype=np.bool)
+    else:
+        mask = mask.astype(np.bool)
+
     class OdfSlicerActor(vtk.vtkLODActor):
 
         def display_extent(self, x1, x2, y1, y2, z1, z2):
 
-            mask = np.zeros(odfs.shape[:3])
-            mask[x1:x2, y1:y2, z1:z2] = 1
+            tmp_mask = np.zeros(odfs.shape[:3], dtype=np.bool)
+            tmp_mask[x1:x2, y1:y2, z1:z2] = True
+
+            tmp_mask = np.bitwise_and(tmp_mask, mask)
 
             self.mapper = _odf_slicer_mapper(odfs=odfs,
                                              affine=affine,
-                                             mask=mask,
+                                             mask=tmp_mask,
                                              sphere=sphere,
                                              scale=scale,
                                              norm=norm,
