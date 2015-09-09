@@ -488,6 +488,7 @@ class ShowManager(object):
 
         self.window.RemoveRenderer(self.ren)
         self.ren.SetRenderWindow(None)
+        self.destroy_timers()
         del self.iren
         del self.window
 
@@ -508,6 +509,9 @@ class ShowManager(object):
             timer_id = self.iren.CreateOneShotTimer(duration)
         self.timers.append(timer_id)
 
+    def destroy_timers(self):
+        for timer_id in self.timers:
+            self.iren.DestroyTimer(timer_id)
 
 
 def show(ren, title='DIPY', size=(300, 300),

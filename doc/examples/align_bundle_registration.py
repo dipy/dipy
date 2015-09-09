@@ -82,73 +82,92 @@ def show_both_bundles(bundles, colors=None, size=(1080, 600),
 
 def write_movie(bundles, transforms, size=(1080, 600), video_fname='test.avi'):
 
-    global show_m
-    global mw
-    global moving_actor
-    global cnt
-    global first_message
+    global show_m, mw, moving_actor, cnt, first_message, time, moved_actor, cnt_trans
 
     first_message = actor.text_overlay('Streamline-based Linear Registration (SLR)',
                                        position=(size[0]/2 - 300, size[1]/2),
                                        color=(0, 0, 0),
                                        font_size=32)
 
+    ref_message = actor.text_overlay('Garyfallidis et al., Neuroimage 2015',
+                                     position=(10, 10),
+                                     color=(0, 0, 0),
+                                     font_size=14,
+                                     font_family='Times', bold=True)
+
     static_bundle = bundles[0]
     moving_bundle = bundles[1]
+    moved_bundle = bundles[2]
 
     ren = window.Renderer()
     ren.background((1., 1., 1))
 
     ren.add(first_message)
+    ren.add(ref_message)
 
     static_actor = actor.line(static_bundle, fvtk.colors.red, linewidth=1.5)
     moving_actor = actor.line(moving_bundle, fvtk.colors.orange, linewidth=1.5)
+    moved_actor = actor.line(moved_bundle, fvtk.colors.orange, linewidth=1.5)
 
     ren.add(static_actor)
     ren.add(moving_actor)
 
-    show_m = window.ShowManager(ren, size=size)
+    show_m = window.ShowManager(ren, size=size, order_transparent=True)
     show_m.initialize()
 
     position, focal_point, view_up, _, _ = utils.auto_camera(static_actor,
                                                              15, 'max')
     ren.reset_camera()
+    view_up = (0, 1., 0)
     ren.set_camera(position, focal_point, view_up)
     ren.reset_clipping_range()
 
     repeat_time = 20
-
     cnt = 0
+    time = 0
 
-    def transformation_callback(obj, event):
-        global cnt
+    np.set_printoptions(3, suppress=True)
 
-        if cnt < len(transforms):
-            mat = transforms[cnt]
-            print(cnt)
-            cnt += 1
+    cnt_trans = 0
+
+    def apply_transformation():
+        global cnt_trans
+        print('inside')
+        if cnt_trans < len(transforms):
+            mat = transforms[cnt_trans]
+            print(mat)
             moving_actor.SetUserMatrix(numpy_to_vtk_matrix(mat))
-        show_m.render()
-        mw.write()
+            cnt_trans += 1
 
     def timer_callback(obj, event):
-        print('Recording ...')
-        show_m.ren.azimuth(.4 * 4)
+        global cnt, time
+
+        if time == 5000:
+            first_message.VisibilityOff()
+
+        if time > 1000 and cnt % 10 == 0:
+            apply_transformation()
+
+        if time == 2000:
+            static_actor.GetProperty().SetOpacity(0.5)
+            moving_actor.GetProperty().SetOpacity(0.5)
+
+        if time == 12000:
+            first_message.VisibilityOn()
+
+        show_m.ren.azimuth(.4)
         show_m.render()
         mw.write()
 
-    def stop_initial(obj, event):
-        global first_message
-        first_message.VisibilityOff()
+        print('Time %d' % (time,))
+        print('Cnt %d' % (cnt,))
+        time = repeat_time * cnt
+        cnt += 1
 
-
-    mw = window.MovieWriter(video_fname, show_m.window)
-
+    mw = window.MovieWriter(video_fname, show_m.window, frame_rate=30)
     mw.start()
 
     show_m.add_timer_callback(True, repeat_time, timer_callback)
-    show_m.add_timer_callback(True, repeat_time * 30, transformation_callback)
-    show_m.add_timer_callback(False, 2000, stop_initial)
 
     show_m.render()
     show_m.start()
@@ -166,7 +185,7 @@ subj2 = read_bundles_2_subjects('subj_2', ['fa', 't1'],
                                 ['af.left', 'cst.left', 'cst.right', 'cc_1', 'cc_2'])
 
 
-for bundle_type in ['cst.left']:  # 'cst.right', 'cc_1']:
+for bundle_type in ['af.left']:  # 'cst.right', 'cc_1']:
 
     bundle1 = subj1[bundle_type]
     bundle2 = subj2[bundle_type]
@@ -191,7 +210,6 @@ for bundle_type in ['cst.left']:  # 'cst.right', 'cc_1']:
                       show=True)
 
 
-
 bundles = []
 bundles.append(bundle1)
 bundles.append(bundle2)
@@ -201,7 +219,6 @@ transforms = []
 for mat in slm.matrix_history:
     transforms.append(mat)
 transforms.append(slm.matrix)
-
 
 bundles.append(bundle2_moved)
 
