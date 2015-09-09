@@ -1,5 +1,5 @@
 
-from __future__ import division, print_function, absolute_import
+from __future__ import division, absolute_import
 
 import os
 import numpy as np
@@ -18,6 +18,44 @@ matplotlib, have_mpl, _ = optional_package("matplotlib")
 
 if have_imread:
     from scipy.misc import imread
+
+
+def vtk_matrix_to_numpy(matrix):
+    """ Converts VTK matrix to numpy array.
+    """
+    if matrix is None:
+        return None
+
+    size = (4, 4)
+    if isinstance(matrix, vtk.vtkMatrix3x3):
+        size = (3, 3)
+
+    mat = np.zeros(size)
+    for i in range(mat.shape[0]):
+        for j in range(mat.shape[1]):
+            mat[i, j] = matrix.GetElement(i, j)
+
+    return mat
+
+
+def numpy_to_vtk_matrix(array):
+    """ Converts a numpy array to a VTK matrix.
+    """
+    if array is None:
+        return None
+
+    if array.shape == (4, 4):
+        matrix = vtk.vtkMatrix4x4()
+    elif array.shape == (3, 3):
+        matrix = vtk.vtkMatrix3x3()
+    else:
+        raise ValueError("Invalid matrix shape: {0}".format(array.shape))
+
+    for i in range(array.shape[0]):
+        for j in range(array.shape[1]):
+            matrix.SetElement(i, j, array[i, j])
+
+    return matrix
 
 
 def numpy_to_vtk_points(points):
