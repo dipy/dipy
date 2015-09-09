@@ -86,6 +86,7 @@ def write_movie(bundles, transforms, size=(1080, 600), video_fname='test.avi'):
     global mw
     global moving_actor
     global cnt
+    global first_message
 
     first_message = actor.text_overlay('Streamline-based Linear Registration (SLR)',
                                        position=(size[0]/2 - 300, size[1]/2),
@@ -101,7 +102,7 @@ def write_movie(bundles, transforms, size=(1080, 600), video_fname='test.avi'):
     ren.add(first_message)
 
     static_actor = actor.line(static_bundle, fvtk.colors.red, linewidth=1.5)
-    moving_actor = actor.line(static_bundle, fvtk.colors.orange, linewidth=1.5)
+    moving_actor = actor.line(moving_bundle, fvtk.colors.orange, linewidth=1.5)
 
     ren.add(static_actor)
     ren.add(moving_actor)
@@ -119,24 +120,35 @@ def write_movie(bundles, transforms, size=(1080, 600), video_fname='test.avi'):
 
     cnt = 0
 
-    def timer_callback(obj, event):
+    def transformation_callback(obj, event):
         global cnt
-        print('Recording ...')
-        show_m.ren.azimuth(.4)
 
         if cnt < len(transforms):
             mat = transforms[cnt]
-            print(mat)
+            print(cnt)
             cnt += 1
             moving_actor.SetUserMatrix(numpy_to_vtk_matrix(mat))
         show_m.render()
         mw.write()
+
+    def timer_callback(obj, event):
+        print('Recording ...')
+        show_m.ren.azimuth(.4 * 4)
+        show_m.render()
+        mw.write()
+
+    def stop_initial(obj, event):
+        global first_message
+        first_message.VisibilityOff()
+
 
     mw = window.MovieWriter(video_fname, show_m.window)
 
     mw.start()
 
     show_m.add_timer_callback(True, repeat_time, timer_callback)
+    show_m.add_timer_callback(True, repeat_time * 30, transformation_callback)
+    show_m.add_timer_callback(False, 2000, stop_initial)
 
     show_m.render()
     show_m.start()
@@ -188,7 +200,6 @@ transforms = []
 
 for mat in slm.matrix_history:
     transforms.append(mat)
-    bundles.append(transform_streamlines(bundle2, mat))
 transforms.append(slm.matrix)
 
 
