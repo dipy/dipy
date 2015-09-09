@@ -19,6 +19,7 @@ from dipy.utils.optpkg import optional_package
 
 from dipy import __version__ as dipy_version
 from dipy.utils.six import string_types
+from dipy.viz.actor import Container
 
 
 # import vtk
@@ -55,15 +56,19 @@ class Renderer(vtkRenderer):
         """
         self.SetBackground(color)
 
-    def add(self, actor):
+    def add(self, *actors):
         """ Add an actor to the renderer
         """
-        if isinstance(actor, vtk.vtkVolume):
-            self.AddVolume(actor)
-        if isinstance(actor, vtk.vtkActor2D):
-            self.AddActor2D(actor)
-        else:
-            self.AddActor(actor)
+        for actor in actors:
+            if isinstance(actor, Container):
+                for a in actor.get_actors():
+                    self.add(a)
+            elif isinstance(actor, vtk.vtkVolume):
+                self.AddVolume(actor)
+            elif isinstance(actor, vtk.vtkActor2D):
+                self.AddActor2D(actor)
+            else:
+                self.AddActor(actor)
 
     def rm(self, actor):
         """ Remove a specific actor
@@ -98,6 +103,38 @@ class Renderer(vtkRenderer):
         """ Reset the camera to an automatic position given by the engine.
         """
         self.ResetCamera()
+
+    def reset_camera_tight(self, margin_factor=1.02):
+        """ Resets camera so the content fit tightly within the window.
+
+        Parameters
+        ----------
+        margin_factor : float (optional)
+            Margin added around the content. Default: 1.02.
+
+        Notes
+        -----
+        This reset function works best with
+        ``:func:dipy.interactor.InteractorStyleImageAndTrackballActor``.
+        """
+        self.ComputeAspect()
+        cam = self.GetActiveCamera()
+        aspect = self.GetAspect()
+
+        X1, X2, Y1, Y2, Z1, Z2 = self.ComputeVisiblePropBounds()
+        width, height = X2-X1, Y2-Y1
+        center = np.array((X1 + width/2., Y1 + height/2., 0))
+
+        angle = np.pi*cam.GetViewAngle()/180.
+        dist = max(width/aspect[0], height) / np.sin(angle/2.) / 2.
+        position = center + np.array((0, 0, dist*margin_factor))
+
+        cam.SetPosition(*position)
+        cam.SetFocalPoint(*center)
+        self.ResetCameraClippingRange(X1, X2, Y1, Y2, Z1, Z2)
+
+        parallelScale = max(width/aspect[0], height) / 2.
+        cam.SetParallelScale(parallelScale*margin_factor)
 
     def reset_clipping_range(self):
         self.ResetCameraClippingRange()
@@ -508,7 +545,6 @@ class ShowManager(object):
         else:
             timer_id = self.iren.CreateOneShotTimer(duration)
         self.timers.append(timer_id)
-
 
 
 def show(ren, title='DIPY', size=(300, 300),

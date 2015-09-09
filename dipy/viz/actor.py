@@ -932,6 +932,35 @@ def text_3d(text, position=(0, 0, 0), color=(1, 1, 1),
         def get_position(self, position):
             return self.GetPosition()
 
+        # def GetCenter(self):
+        #     """ Replace parent function as it always returns (0,0,0). """
+        #     return self.GetOrigin()
+
+        # def GetOrigin(self):
+        #     bounds = self.GetBounds()
+        #     #center = self.GetCenter()
+        #     X1, X2, Y1, Y2, Z1, Z2 = self.GetBounds()
+        #     width, height, depth = X2-X1, Y2-Y1, Z2-Z1
+        #     center = X1+width/2., Y1+height/2., Z1+depth/2.
+
+        #     origin = np.zeros(3)
+        #     tprop = self.GetTextProperty()
+        #     if tprop.GetJustification() == vtk.VTK_TEXT_LEFT:
+        #         origin[0] = bounds[0]
+        #     elif tprop.GetJustification() == vtk.VTK_TEXT_CENTERED:
+        #         origin[0] = center[0]
+        #     elif tprop.GetJustification() == vtk.VTK_TEXT_RIGHT:
+        #         origin[0] = bounds[1]
+
+        #     if tprop.GetVerticalJustification() == vtk.VTK_TEXT_BOTTOM:
+        #         origin[1] = bounds[2]
+        #     elif tprop.GetVerticalJustification() == vtk.VTK_TEXT_CENTERED:
+        #         origin[1] = center[1]
+        #     elif tprop.GetVerticalJustification() == vtk.VTK_TEXT_TOP:
+        #         origin[1] = bounds[3]
+
+        #     return origin
+
         def _update_user_matrix(self):
             """
             Text justification of vtkTextActor3D doesn't seem to be working, so we do it manually.
@@ -1032,3 +1061,45 @@ def figure(pic, interpolation='nearest'):
     image_actor.Update()
     return image_actor
 
+
+class Container(vtk.vtkAssembly):
+    def __init__(self, layout=layout.Layout(), name=""):
+        self.actors = []
+        self.user_matrices = {}  # Backup
+        self.layout = layout
+        self.name = name
+        self.anchor = np.zeros(3)
+
+    def add(self, *actors):
+        self.actors.extend(actors)
+
+        for a in actors:
+            self.AddPart(a)
+
+            self.user_matrices[a] = vtk_matrix_to_numpy(a.GetUserMatrix())
+            if isinstance(a, Container):
+                self.user_matrices.update(a.user_matrices)
+
+        self.layout.apply(actors)
+
+    def get_actors(self):
+        actors = []
+        nb_paths = self.GetNumberOfPaths()
+        self.InitPathTraversal()
+
+        for i in range(nb_paths):
+            path = self.GetNextPath()
+            parent_container = path.GetItemAsObject(path.GetNumberOfItems()-2)
+            obj = path.GetLastNode().GetViewProp()
+
+            new_user_matrix = vtk_matrix_to_numpy(parent_container.GetMatrix())
+            if self.user_matrices[obj] is not None:
+                new_user_matrix = np.dot(new_user_matrix, self.user_matrices[obj])
+
+            obj.SetUserMatrix(numpy_to_vtk_matrix(new_user_matrix))
+            actors.append(obj)
+
+        return actors
+
+    def __len__(self):
+        return len(self.actors)
