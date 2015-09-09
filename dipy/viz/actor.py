@@ -932,35 +932,6 @@ def text_3d(text, position=(0, 0, 0), color=(1, 1, 1),
         def get_position(self, position):
             return self.GetPosition()
 
-        # def GetCenter(self):
-        #     """ Replace parent function as it always returns (0,0,0). """
-        #     return self.GetOrigin()
-
-        # def GetOrigin(self):
-        #     bounds = self.GetBounds()
-        #     #center = self.GetCenter()
-        #     X1, X2, Y1, Y2, Z1, Z2 = self.GetBounds()
-        #     width, height, depth = X2-X1, Y2-Y1, Z2-Z1
-        #     center = X1+width/2., Y1+height/2., Z1+depth/2.
-
-        #     origin = np.zeros(3)
-        #     tprop = self.GetTextProperty()
-        #     if tprop.GetJustification() == vtk.VTK_TEXT_LEFT:
-        #         origin[0] = bounds[0]
-        #     elif tprop.GetJustification() == vtk.VTK_TEXT_CENTERED:
-        #         origin[0] = center[0]
-        #     elif tprop.GetJustification() == vtk.VTK_TEXT_RIGHT:
-        #         origin[0] = bounds[1]
-
-        #     if tprop.GetVerticalJustification() == vtk.VTK_TEXT_BOTTOM:
-        #         origin[1] = bounds[2]
-        #     elif tprop.GetVerticalJustification() == vtk.VTK_TEXT_CENTERED:
-        #         origin[1] = center[1]
-        #     elif tprop.GetVerticalJustification() == vtk.VTK_TEXT_TOP:
-        #         origin[1] = bounds[3]
-
-        #     return origin
-
         def _update_user_matrix(self):
             """
             Text justification of vtkTextActor3D doesn't seem to be working, so we do it manually.
@@ -1103,3 +1074,24 @@ class Container(vtk.vtkAssembly):
 
     def __len__(self):
         return len(self.actors)
+
+
+def grid(actors, captions=None, padding=0, aspect_ratio=16/9., dim=None):
+    grid_layout = layout.GridLayout(padding=padding, aspect_ratio=aspect_ratio, dim=dim)
+    grid = Container(layout=grid_layout)
+
+    if captions is not None:
+        actors_with_caption = []
+        for a, text in zip(actors, captions):
+            captioned_layout = layout.RelativeLayout()
+            captioned_layout.add_constraint(text, np.zeros(3), a, np.zeros(3), (0, -100, 0))
+            actor_with_caption = Container(layout=captioned_layout)
+            actor_with_caption.add(a, text)
+
+            actor_with_caption.anchor = a.GetCenter()  # The anchor will be a the center of the grid cell in the GridLayout.
+            actors_with_caption.append(actor_with_caption)
+
+        actors = actors_with_caption
+
+    grid.add(*actors)
+    return grid
