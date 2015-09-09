@@ -24,7 +24,7 @@ The diffusion kurtosis model expresses the diffusion-weighted signal as:
     S(n,b)=S_{0}e^{-bD(n)+\frac{1}{6}b^{2}D(n)^{2}K(n)}
 
 where $\mathbf{b}$ is the applied diffusion weighting (which is dependent on
-the measuremenent parameters), $S_0$ is the signal in the absence of diffusion
+the measurement parameters), $S_0$ is the signal in the absence of diffusion
 gradient sensitization, $\mathbf{D(n)}$ is the value of diffusion along
 direction $\mathbf{n}$, and $\mathbf{K(n)}$ is the value of kurtosis along
 direction $\mathbf{n}$. The directional diffusion $\mathbf{D(n)}$ and kurtosis
