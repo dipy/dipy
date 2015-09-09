@@ -1,9 +1,20 @@
 # -*- coding:utf-8 -*-
 
-import vtk
+import numpy as np
+
+# Conditional import machinery for vtk.
+from dipy.utils.optpkg import optional_package
+
+# Allow import, but disable doctests if we don't have vtk.
+vtk, have_vtk, setup_module = optional_package('vtk')
+
+if have_vtk:
+    vtkInteractorStyleUser = vtk.vtkInteractorStyleUser
+else:
+    vtkInteractorStyleUser = object
 
 
-class InteractorStyleImageAndTrackballActor(vtk.vtkInteractorStyleUser):
+class InteractorStyleImageAndTrackballActor(vtkInteractorStyleUser):
     """ Interactive manipulation of the camera specialized for images that can
     also manipulates objects in the scene independent of each other.
 
@@ -91,3 +102,64 @@ class InteractorStyleImageAndTrackballActor(vtk.vtkInteractorStyleUser):
         # `vtkInteractorStyleUser` does not forward these events.
         interactor.AddObserver("MouseWheelForwardEvent", self.on_mouse_wheel_forward)
         interactor.AddObserver("MouseWheelBackwardEvent", self.on_mouse_wheel_backward)
+
+
+class InteractorStyleBundlesGrid(InteractorStyleImageAndTrackballActor):
+
+    ANTICLOCKWISE_ROTATION_Y = np.array([-10, 0, 1, 0])
+    CLOCKWISE_ROTATION_Y = np.array([10, 0, 1, 0])
+    ANTICLOCKWISE_ROTATION_X = np.array([-10, 1, 0, 0])
+    CLOCKWISE_ROTATION_X = np.array([10, 1, 0, 0])
+
+    def __init__(self, bundles_actors):
+        InteractorStyleImageAndTrackballActor.__init__(self)
+        self.bundles_actors = bundles_actors
+
+    def on_key_pressed(self, obj, evt):
+        if obj.GetKeySym() == "Left":
+            for a in self.bundles_actors:
+                self.rotate(a, self.ANTICLOCKWISE_ROTATION_Y)
+        elif obj.GetKeySym() == "Right":
+            for a in self.bundles_actors:
+                self.rotate(a, self.CLOCKWISE_ROTATION_Y)
+        elif obj.GetKeySym() == "Up":
+            for a in self.bundles_actors:
+                self.rotate(a, self.ANTICLOCKWISE_ROTATION_X)
+        elif obj.GetKeySym() == "Down":
+            for a in self.bundles_actors:
+                self.rotate(a, self.CLOCKWISE_ROTATION_X)
+
+        obj.GetInteractor().Render()
+
+    def SetInteractor(self, interactor):
+        InteractorStyleImageAndTrackballActor.SetInteractor(self, interactor)
+        self.AddObserver("KeyPressEvent", self.on_key_pressed)
+
+    def rotate(self, prop3D, rotation):
+        center = np.array(prop3D.GetCenter())
+
+        oldMatrix = prop3D.GetMatrix()
+        orig = np.array(prop3D.GetOrigin())
+
+        newTransform = vtk.vtkTransform()
+        newTransform.PostMultiply()
+        if prop3D.GetUserMatrix() is not None:
+            newTransform.SetMatrix(prop3D.GetUserMatrix())
+        else:
+            newTransform.SetMatrix(oldMatrix)
+
+        newTransform.Translate(*(-center))
+        newTransform.RotateWXYZ(*rotation)
+        newTransform.Translate(*center)
+
+        # now try to get the composit of translate, rotate, and scale
+        newTransform.Translate(*(-orig))
+        newTransform.PreMultiply()
+        newTransform.Translate(*orig)
+
+        if prop3D.GetUserMatrix() is not None:
+            newTransform.GetMatrix(prop3D.GetUserMatrix())
+        else:
+            prop3D.SetPosition(newTransform.GetPosition())
+            prop3D.SetScale(newTransform.GetScale())
+            prop3D.SetOrientation(newTransform.GetOrientation())
