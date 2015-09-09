@@ -205,4 +205,28 @@ window.record(renderer, out_path='mosaic.png', size=(900, 600))
    :align: center
 
    **A mosaic of all the slices in the T1 volume**.
+
+
+Create a mosaic - the easy way
+==============================
 """
+renderer.clear()
+renderer.projection('parallel')
+
+X, Y, Z = slice_actor.shape[:3]
+
+rows = 10
+cols = 15
+border = 10
+
+slices = []
+for z in range(Z):
+    slice_mosaic = slice_actor.copy()
+    slice_mosaic.display(None, None, z)
+    slices.append(slice_mosaic)
+
+grid = actor.grid(slices, padding=border)
+renderer.add(grid)
+
+renderer.reset_camera_tight()
+window.show(renderer, size=(900, 600), reset_camera=False)
