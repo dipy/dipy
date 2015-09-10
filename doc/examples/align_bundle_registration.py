@@ -80,7 +80,7 @@ def show_both_bundles(bundles, colors=None, size=(1080, 600),
         window.record(ren, n_frames=1, out_path=fname, size=size)
 
 
-def write_movie(bundles, transforms, size=(1080, 600), video_fname='test.avi'):
+def write_movie(bundles, transforms, size=(1920, 1080), video_fname='test.avi'):
 
     global show_m, mw, moving_actor, cnt, first_message, time, moved_actor, cnt_trans
 
@@ -109,6 +109,8 @@ def write_movie(bundles, transforms, size=(1080, 600), video_fname='test.avi'):
     moving_actor = actor.line(moving_bundle, fvtk.colors.orange, linewidth=1.5)
     moved_actor = actor.line(moved_bundle, fvtk.colors.orange, linewidth=1.5)
 
+
+
     ren.add(static_actor)
     ren.add(moving_actor)
 
@@ -118,7 +120,7 @@ def write_movie(bundles, transforms, size=(1080, 600), video_fname='test.avi'):
     position, focal_point, view_up, _, _ = utils.auto_camera(static_actor,
                                                              15, 'max')
     ren.reset_camera()
-    view_up = (0, 1., 0)
+    view_up = (0, 0., 1)
     ren.set_camera(position, focal_point, view_up)
     ren.reset_clipping_range()
 
@@ -148,9 +150,17 @@ def write_movie(bundles, transforms, size=(1080, 600), video_fname='test.avi'):
         if time > 1000 and cnt % 10 == 0:
             apply_transformation()
 
-        if time == 2000:
-            static_actor.GetProperty().SetOpacity(0.5)
-            moving_actor.GetProperty().SetOpacity(0.5)
+        if time == 3000:
+            static_actor.GetProperty().SetOpacity(0.2)
+            moving_actor.GetProperty().SetOpacity(1.)
+
+        if time == 6000:
+            static_actor.GetProperty().SetOpacity(1.)
+            moving_actor.GetProperty().SetOpacity(0.2)
+
+        if time == 9000:
+            static_actor.GetProperty().SetOpacity(1.)
+            moving_actor.GetProperty().SetOpacity(1.)
 
         if time == 12000:
             first_message.VisibilityOn()
