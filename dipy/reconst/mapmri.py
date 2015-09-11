@@ -10,7 +10,6 @@ from ..utils.optpkg import optional_package
 
 cvxopt, have_cvxopt, _ = optional_package("cvxopt")
 
-
 class MapmriModel(ReconstModel):
 
     r"""Mean Apparent Propagator MRI (MAPMRI) [1]_ of the diffusion signal.
