@@ -116,20 +116,26 @@ class InteractorStyleBundlesGrid(InteractorStyleImageAndTrackballActor):
         self.bundles_actors = bundles_actors
 
     def on_key_pressed(self, obj, evt):
+        has_changed = False
         if obj.GetKeySym() == "Left":
+            has_changed = True
             for a in self.bundles_actors:
                 self.rotate(a, self.ANTICLOCKWISE_ROTATION_Y)
         elif obj.GetKeySym() == "Right":
+            has_changed = True
             for a in self.bundles_actors:
                 self.rotate(a, self.CLOCKWISE_ROTATION_Y)
         elif obj.GetKeySym() == "Up":
+            has_changed = True
             for a in self.bundles_actors:
                 self.rotate(a, self.ANTICLOCKWISE_ROTATION_X)
         elif obj.GetKeySym() == "Down":
+            has_changed = True
             for a in self.bundles_actors:
                 self.rotate(a, self.CLOCKWISE_ROTATION_X)
 
-        obj.GetInteractor().Render()
+        if has_changed:
+            obj.GetInteractor().Render()
 
     def SetInteractor(self, interactor):
         InteractorStyleImageAndTrackballActor.SetInteractor(self, interactor)

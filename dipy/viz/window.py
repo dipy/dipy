@@ -129,6 +129,7 @@ class Renderer(vtkRenderer):
         dist = max(width/aspect[0], height) / np.sin(angle/2.) / 2.
         position = center + np.array((0, 0, dist*margin_factor))
 
+        cam.SetViewUp(0, 1, 0)
         cam.SetPosition(*position)
         cam.SetFocalPoint(*center)
         self.ResetCameraClippingRange(X1, X2, Y1, Y2, Z1, Z2)
@@ -226,7 +227,7 @@ class Renderer(vtkRenderer):
         focal point. This is usually the opposite of the ViewPlaneNormal, the
         vector perpendicular to the screen, unless the view is oblique.
         """
-        return self.GetActiveCamera().GetDirectionOfProjection()
+        return np.array(self.GetActiveCamera().GetDirectionOfProjection())
 
 
 def renderer(background=None):

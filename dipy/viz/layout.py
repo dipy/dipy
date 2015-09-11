@@ -76,10 +76,10 @@ class GridLayout(Layout):
             cell_shape = np.max(bounding_box_sizes, axis=0)[:2]
             shapes = [cell_shape] * len(actors)
         elif self.cell_shape == "square":
-        #     bounding_box_sizes = np.asarray(list(map(get_bounding_box_sizes, actors)))
-        #     cell_shape = np.max(bounding_box_sizes, axis=0)[:2]
-        #     shapes = [(max(cell_shape),)*2] * len(actors)
-        # elif self.cell_shape == "diagonal":
+            bounding_box_sizes = np.asarray(list(map(get_bounding_box_sizes, actors)))
+            cell_shape = np.max(bounding_box_sizes, axis=0)[:2]
+            shapes = [(max(cell_shape),)*2] * len(actors)
+        elif self.cell_shape == "diagonal":
             # Size of every cell corresponds to the diagonal of the largest bounding box.
             longest_diagonal = np.max([a.GetLength() for a in actors])
             shapes = [(longest_diagonal, longest_diagonal)] * len(actors)
