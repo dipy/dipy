@@ -150,10 +150,13 @@ def slicer(data, affine=None, value_range=None, opacity=1.,
             if x is None and y is None and z is None:
                 self.display_extent(ex1, ex2, ey1, ey2, ez2/2, ez2/2)
             if x is not None:
+                x = min(max(0, x), self.shape[0])
                 self.display_extent(x, x, ey1, ey2, ez1, ez2)
             if y is not None:
+                y = min(max(0, y), self.shape[1])
                 self.display_extent(ex1, ex2, y, y, ez1, ez2)
             if z is not None:
+                z = min(max(0, z), self.shape[2])
                 self.display_extent(ex1, ex2, ey1, ey2, z, z)
 
         def opacity(self, value):
@@ -1063,28 +1066,36 @@ class Container(vtk.vtkAssembly):
             parent_container = path.GetItemAsObject(path.GetNumberOfItems()-2)
             obj = path.GetLastNode().GetViewProp()
 
+            if obj not in self.user_matrices:
+                self.user_matrices[obj] = obj.GetUserMatrix()
+
             new_user_matrix = vtk_matrix_to_numpy(parent_container.GetMatrix())
-            if self.user_matrices[obj] is not None:
-                new_user_matrix = np.dot(new_user_matrix, self.user_matrices[obj])
+            #if self.user_matrices[obj] is not None:
+            #    new_user_matrix = np.dot(new_user_matrix, self.user_matrices[obj])
 
             obj.SetUserMatrix(numpy_to_vtk_matrix(new_user_matrix))
             actors.append(obj)
 
         return actors
 
+    def SetVisibility(self, visibility):
+        vtk.vtkAssembly.SetVisibility(self, visibility)
+        for a in self.actors:
+            a.SetVisibility(visibility)
+
     def __len__(self):
         return len(self.actors)
 
 
-def grid(actors, captions=None, padding=0, aspect_ratio=16/9., dim=None):
-    grid_layout = layout.GridLayout(padding=padding, aspect_ratio=aspect_ratio, dim=dim)
+def grid(actors, captions=None, padding=0, offset_caption=-100, cell_shape="rect", aspect_ratio=16/9., dim=None):
+    grid_layout = layout.GridLayout(padding=padding, cell_shape=cell_shape, aspect_ratio=aspect_ratio, dim=dim)
     grid = Container(layout=grid_layout)
 
     if captions is not None:
         actors_with_caption = []
         for a, text in zip(actors, captions):
             captioned_layout = layout.RelativeLayout()
-            captioned_layout.add_constraint(text, np.zeros(3), a, np.zeros(3), (0, -100, 0))
+            captioned_layout.add_constraint(text, np.zeros(3), a, np.zeros(3), (0, offset_caption, 0))
             actor_with_caption = Container(layout=captioned_layout)
             actor_with_caption.add(a, text)
 
