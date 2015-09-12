@@ -554,7 +554,7 @@ def interp_rbf(data, sphere_origin, sphere_target,
         # Use a heuristic that seems to work here: take epsilon to be the
         # average distance between the origin points in this norm:
         epsilon = np.mean(norm(sphere_origin.vertices.T[..., :, np.newaxis],
-                          sphere_origin.vertices.T[..., np.newaxis, :]))
+                               sphere_origin.vertices.T[..., np.newaxis, :]))
 
     kwargs = {'function': function,
               'epsilon': epsilon,
