@@ -12,7 +12,9 @@ from itertools import chain
 
 class RecoBundles(object):
 
-    def __init__(self, moved_streamlines):
+    def __init__(self, streamlines):
+
+        self.streamlines = streamlines
         pass
 
     def reduce_search_space(self):
@@ -31,7 +33,11 @@ class RecoBundles(object):
         pass
 
     def recognize(self, model_bundle):
-        pass
+
+        self.model_bundle = model_bundle
+
+        self.reduce_search_space()
+
 
 
 def recognize_bundles(model_bundle, moved_streamlines,

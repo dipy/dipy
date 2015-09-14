@@ -14,7 +14,7 @@ parser.add_argument('--clean_thr', dest='clean_thr', default=5)
 parser.add_argument('--local_slr', dest='local_slr', default=True)
 parser.add_argument('--expand_thr', dest='expand_thr')
 parser.add_argument('--scale_range', dest='scale_range', default=(0.8, 1.2))
-parser.add_argument('--disp', dest='disp', default=True)
+parser.add_argument('--disp', dest='disp', action='store_true', default=False)
 
 
 if __name__ == '__main__':
@@ -22,8 +22,6 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     print(args)
-
-    1/0
 
     recognize_bundles_flow(args.streamlines, args.model_bundles,
                            args.model_streamlines, args.out_dir,
