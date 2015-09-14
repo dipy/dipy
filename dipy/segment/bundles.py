@@ -10,6 +10,30 @@ from time import time
 from itertools import chain
 
 
+class RecoBundles(object):
+
+    def __init__(self, moved_streamlines):
+        pass
+
+    def reduce_search_space(self):
+        pass
+
+    def prune_distant_clusters(self):
+        pass
+
+    def apply_slr_locally(self):
+        pass
+
+    def reduce_with_shape_prior(self):
+        pass
+
+    def expand_with_shape_prior(self):
+        pass
+
+    def recognize(self, model_bundle):
+        pass
+
+
 def recognize_bundles(model_bundle, moved_streamlines,
                       close_centroids_thr=20,
                       clean_thr=7.,
@@ -66,6 +90,11 @@ def recognize_bundles(model_bundle, moved_streamlines,
 
     close_streamlines = list(chain(*close_clusters))
 
+    if len(close_streamlines) > 20000:
+        print('Too many of close streamlines to process... subsampling to 20K')
+        close_streamlines = select_random_set_of_streamlines(close_streamlines,
+                                                             20000)
+
     if verbose:
         print('Duration %f secs.' % (time() - t, ))
 
@@ -88,6 +117,17 @@ def recognize_bundles(model_bundle, moved_streamlines,
         slr = StreamlineLinearRegistration(x0=x0, bounds=bounds)
 
         static = select_random_set_of_streamlines(model_bundle, 400)
+
+        if verbose:
+            msg = 'Number of close streamlines: %d'
+            print(msg % (len(close_streamlines),))
+
+        if len(close_streamlines) == 0:
+            print('   You have no close streamlines... No bundle recognition')
+            if return_full:
+                return close_streamlines, None, None
+            return close_streamlines, None
+
         moving = select_random_set_of_streamlines(close_streamlines, 600)
 
         static = set_number_of_points(static, 20)
@@ -113,19 +153,38 @@ def recognize_bundles(model_bundle, moved_streamlines,
         matrix = np.eye(4)
 
     if verbose:
-        print('# Remove streamlines which are a bit far')
+        print('Number of closer streamlines: %d' % (len(closer_streamlines),))
 
-    t = time()
+    if clean_thr > 0:
+        if verbose:
+            print('# Remove streamlines which are a bit far')
 
-    rcloser_streamlines = set_number_of_points(closer_streamlines, 20)
+        t = time()
 
-    clean_matrix = bundles_distances_mdf(rmodel_bundle, rcloser_streamlines)
+        rcloser_streamlines = set_number_of_points(closer_streamlines, 20)
 
-    clean_matrix[clean_matrix > clean_thr] = np.inf
+        # find the closer_streamlines that are closer than clean_thr
+        clean_matrix = bundles_distances_mdf(rmodel_bundle,
+                                             rcloser_streamlines)
+        clean_matrix[clean_matrix > clean_thr] = np.inf
+        mins = np.min(clean_matrix, axis=0)
+        close_clusters_clean = [closer_streamlines[i]
+                                for i in np.where(mins != np.inf)[0]]
 
-    mins = np.min(clean_matrix, axis=0)
-    close_clusters_clean = [closer_streamlines[i]
-                            for i in np.where(mins != np.inf)[0]]
+        if verbose:
+            msg = 'Number of streamlines after cleanup: %d'
+            print(msg % (len(close_clusters_clean),))
+
+        if len(close_clusters_clean) == 0:
+            print('   You have cleaned all your streamlines!')
+            if return_full:
+                return close_clusters_clean, None, None
+            return close_clusters_clean, None
+    else:
+        if verbose:
+            print('No cleaning up...')
+
+        close_clusters_clean = closer_streamlines
 
     if verbose:
         print('Duration %f ' % (time() - t, ))
@@ -150,9 +209,14 @@ def recognize_bundles(model_bundle, moved_streamlines,
         expanded = [closer_streamlines[i]
                     for i in np.where(mins != np.inf)[0]]
 
+        if verbose:
+            msg = 'Number of streamlines after expansion: %d'
+            print(msg % (len(expanded),))
+
         print('Duration %f ' % (time() - t, ))
 
         if return_full:
+            out.append(expanded)
             return expanded, matrix, out
         return expanded, matrix
 
