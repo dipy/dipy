@@ -499,8 +499,8 @@ def disperse_charges(hemi, iters, const=.2):
 
 
 def interp_rbf(data, sphere_origin, sphere_target,
-               function='multiquadric', epsilon=None, smooth=0,
-               norm="euclidean_norm"):
+               function='multiquadric', epsilon=None, smooth=0.1,
+               norm="angle"):
     """Interpolate data on the sphere, using radial basis functions.
 
     Parameters
@@ -515,10 +515,11 @@ def interp_rbf(data, sphere_origin, sphere_target,
     function : {'multiquadric', 'inverse', 'gaussian'}
         Radial basis function.
     epsilon : float
-        Radial basis function spread parameter.
+        Radial basis function spread parameter. Defaults to approximate average distance between nodes.
+    a good start
     smooth : float
         values greater than zero increase the smoothness of the
-        approximation with 0 (the default) as pure interpolation.
+        approximation with 0 as pure interpolation. Default: 0.1
     norm : str
         A string indicating the function that returns the
         "distance" between two points.
@@ -545,21 +546,26 @@ def interp_rbf(data, sphere_origin, sphere_target,
     def euclidean_norm(x1, x2):
         return np.sqrt(((x1 - x2)**2).sum(axis=0))
 
-    if norm is "angle":
+    if norm == "angle":
         norm = angle
-    elif norm is "euclidean_norm":
+    elif norm == "euclidean_norm":
+        w_s = "The Eucldian norm used for interpolation is inaccurate "
+        w_s += "and will be deprecated in future versions. Please consider "
+        w_s += "using the 'angle' norm instead"
+        warnings.warning(w_s)
         norm = euclidean_norm
 
-    if epsilon is None:
-        # Use a heuristic that seems to work here: take epsilon to be the
-        # average distance between the origin points in this norm:
-        epsilon = np.mean(norm(sphere_origin.vertices.T[..., :, np.newaxis],
-                               sphere_origin.vertices.T[..., np.newaxis, :]))
-
-    kwargs = {'function': function,
-              'epsilon': epsilon,
-              'smooth': smooth,
-              'norm': norm}
+    # Workaround for bug in older versions of SciPy that don't allow
+    # specification of epsilon None:
+    if epsilon is not None:
+        kwargs = {'function': function,
+                 'epsilon': epsilon,
+                 'smooth' : smooth,
+                 'norm' : norm}
+    else:
+        kwargs = {'function': function,
+                  'smooth': smooth,
+                  'norm' : norm}
 
     rbfi = Rbf(sphere_origin.x, sphere_origin.y, sphere_origin.z, data,
                **kwargs)

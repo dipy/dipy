@@ -365,17 +365,14 @@ def test_interp_rbf():
     from dipy.core.subdivide_octahedron import create_unit_hemisphere
     import numpy as np
 
-    s0 = create_unit_hemisphere(2)
-    s1 = create_unit_hemisphere(3)
+    s0 = create_unit_sphere(3)
+    s1 = create_unit_sphere(4)
 
     for a, b in zip([1, 2, 0.5], [1, 0.5, 2]):
         data = data_func(s0, a, b)
         expected = data_func(s1, a, b)
-        interp_data_en = interp_rbf(data, s0, s1, norm = "euclidean_norm")
         interp_data_a = interp_rbf(data, s0, s1, norm = "angle")
-        nt.assert_(np.mean(np.abs(interp_data_en - expected)) < 0.1)
         nt.assert_(np.mean(np.abs(interp_data_a - expected)) < 0.1)
-
 
 if __name__ == "__main__":
     nt.run_module_suite()
