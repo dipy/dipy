@@ -147,7 +147,7 @@ class AffineMap(object):
         self.affine_inv = None
         if self.affine is None:
             return
-        if not np.all(np.isfinite(affine))
+        if not np.all(np.isfinite(affine)):
             raise AffineInversionError('Affine contains invalid elements')
         try:
             self.affine_inv = npl.inv(affine)
