@@ -282,7 +282,6 @@ class MapmriFit(ReconstFit):
         qvals = np.sqrt(gtab.bvals / tau) / (2 * np.pi)
         qvecs = np.dot(gtab.bvecs, self.R)
         q = qvecs * qvals[:, None]
-
         s_mat = mapmri_phi_matrix(self.radial_order, self.mu, q.T)
         S_reconst = S0 * np.dot(s_mat, self._mapmri_coef)
 
