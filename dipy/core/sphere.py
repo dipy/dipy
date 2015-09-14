@@ -552,16 +552,16 @@ def interp_rbf(data, sphere_origin, sphere_target,
         w_s = "The Eucldian norm used for interpolation is inaccurate "
         w_s += "and will be deprecated in future versions. Please consider "
         w_s += "using the 'angle' norm instead"
-        warnings.warning(w_s)
+        warnings.warn(w_s)
         norm = euclidean_norm
 
     # Workaround for bug in older versions of SciPy that don't allow
     # specification of epsilon None:
     if epsilon is not None:
         kwargs = {'function': function,
-                 'epsilon': epsilon,
-                 'smooth' : smooth,
-                 'norm' : norm}
+                  'epsilon': epsilon,
+                  'smooth' : smooth,
+                  'norm' : norm}
     else:
         kwargs = {'function': function,
                   'smooth': smooth,
