@@ -984,12 +984,13 @@ def anisotropic_power(sh_coeffs, normal_factor=0.00001):
 
     Notes
     ----------
-    Calculate AP image based on a IxJxKxC SH coeffecient matrix based on the equation:
+    Calculate AP image based on a IxJxKxC SH coeffecient matrix based on the
+    equation:
     .. math::
         AP = \sum_{l=2,4,6,...}{\frac{1}{2l+1} \sum_{m=-l}{|a_{l,m}|^2}}
 
-    Where dim C is made of a flattened lxm coeffecient, where l are the SH levels.
-    and m = 2l+1.
+    Where dim C is made of a flattened lxm coeffecient, where l are the SH
+    levels, and m = 2l+1.
     So l=1 has 1 coeffecient, l=2 has 5, ... l=8 has 17 and so on.
     A l=2 SH coeffecient matrix will then be composed of a IxJxKx6 volume.
 
@@ -999,11 +1000,11 @@ def anisotropic_power(sh_coeffs, normal_factor=0.00001):
     References
     ----------
     .. [1]  Dell'Acqua, F., Lacerda, L., Catani, M., Simmons, A., 2014.
-            Anisotropic Power Maps: A diffusion contrast to reveal low anisotropy tissues from HARDI data,
-            in: Proceedings of International Society for Magnetic Resonance in Medicine. Milan, Italy.
+            Anisotropic Power Maps: A diffusion contrast to reveal low
+            anisotropy tissues from HARDI data,
+            in: Proceedings of International Society for Magnetic Resonance in
+            Medicine. Milan, Italy.
     """
-
-    from dipy.utils.six.moves import xrange
 
     dim = sh_coeffs.shape[:-1]
     n_coeffs = sh_coeffs.shape[-1]
@@ -1014,12 +1015,12 @@ def anisotropic_power(sh_coeffs, normal_factor=0.00001):
     def single_L_ap(sh_coeffs, L=2, power=2):
         n_start = 1
         n_L = 2*L+1
-        for l in xrange(2,L,2):
-            n_l = 2*l+1
-            #sum_n start at index 1
+        for l in range(2, L, 2):
+            n_l = 2 * l + 1
+            # sum_n start at index 1
             n_start += n_l
         n_stop = n_start + n_L
-        c = np.power(sh_coeffs[...,n_start:n_stop], power)
+        c = np.power(sh_coeffs[..., n_start:n_stop], power)
         ap_i = np.mean(c, axis=-1)
         ap_i = np.multiply(ap_i, 1.0/n_L)
         return ap_i
@@ -1031,12 +1032,12 @@ def anisotropic_power(sh_coeffs, normal_factor=0.00001):
         ap_i = single_L_ap(sh_coeffs, L)
         ap = np.add(ap_i, ap)
         sum_n += n_L
-        L+=2
+        L += 2
 
     # normalize with 10^-5
     log_ap = np.ma.log(ap/normal_factor)
 
     # zero all values < 0
-    log_ap[log_ap<0] = 0
+    log_ap[log_ap < 0] = 0
 
     return log_ap
