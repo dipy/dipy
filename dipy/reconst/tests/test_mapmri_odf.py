@@ -11,24 +11,25 @@ from dipy.sims.voxel import SticksAndBall
 from dipy.core.subdivide_octahedron import create_unit_sphere
 from dipy.core.sphere_stats import angular_similarity
 from dipy.reconst.tests.test_dsi import sticks_and_ball_dummies
-
+from dipy.sims.voxel import MultiTensor
 
 def test_mapmri_odf():
-    gtab = get_isbi2013_2shell_gtab()
 
+    gtab = get_3shell_gtab()
     # load symmetric 724 sphere
     sphere = get_sphere('symmetric724')
 
     # load icosahedron sphere
     sphere2 = create_unit_sphere(5)
-    data, golden_directions = SticksAndBall(gtab, d=0.0015,
-                                            S0=100, angles=[(0, 0), (90, 0)],
-                                            fractions=[50, 50], snr=None)
+    evals = np.array(([0.0017, 0.0003, 0.0003],
+                      [0.0017, 0.0003, 0.0003]))
+    data, golden_directions = MultiTensor(
+        gtab, evals, S0=1.0, angles=[(0, 0), (90, 0)], fractions=[50, 50], snr=None)
     map_model = MapmriModel(gtab, radial_order=4)
     # symmetric724
     mapfit = map_model.fit(data)
     odf = mapfit.odf(sphere)
-
+    print(odf.shape)
     directions, _ , _ = peak_directions(odf, sphere, .35, 25)
     assert_equal(len(directions), 2)
     assert_almost_equal(

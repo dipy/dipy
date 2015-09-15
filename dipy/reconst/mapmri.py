@@ -144,7 +144,7 @@ class MapmriModel(ReconstModel):
     @multi_voxel_fit
     def fit(self, data):
 
-        tenfit = self.tenmodel.fit(data[..., self.ind])
+        tenfit = self.tenmodel.fit(data[self.ind])
         evals = tenfit.evals
         R = tenfit.evecs
         ind_evals = np.argsort(evals)[::-1]
