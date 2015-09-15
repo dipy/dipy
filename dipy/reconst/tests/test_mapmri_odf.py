@@ -29,7 +29,10 @@ def test_mapmri_odf():
     # symmetric724
     mapfit = map_model.fit(data)
     odf = mapfit.odf(sphere)
-    print(odf.shape)
+    print('odf')
+    print(odf.dtype)
+    print('sphere')
+    print(sphere.edges.dtype)
     directions, _ , _ = peak_directions(odf, sphere, .35, 25)
     assert_equal(len(directions), 2)
     assert_almost_equal(
