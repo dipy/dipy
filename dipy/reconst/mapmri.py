@@ -258,7 +258,7 @@ class MapmriFit(ReconstFit):
         v = np.dot(v_, self.R)
         I_s = mapmri_odf_matrix(self.radial_order, self.mu, s, v)
         odf = np.dot(I_s, self._mapmri_coef)
-        return np.clip(odf, 0, None)
+        return odf
 
     def predict(self, gtab, S0=1.0):
         """
