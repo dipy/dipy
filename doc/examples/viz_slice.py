@@ -215,18 +215,24 @@ renderer.projection('parallel')
 
 X, Y, Z = slice_actor.shape[:3]
 
-rows = 10
-cols = 15
-border = 10
-
 slices = []
 for z in range(Z):
     slice_mosaic = slice_actor.copy()
     slice_mosaic.display(None, None, z)
     slices.append(slice_mosaic)
 
-grid = actor.grid(slices, padding=border)
+grid = actor.grid(slices, cell_padding=10)
 renderer.add(grid)
 
 renderer.reset_camera_tight()
 window.show(renderer, size=(900, 600), reset_camera=False)
+
+window.record(renderer, out_path='mosaic_with_grid.png', size=(900, 600))
+
+"""
+.. figure:: mosaic_with_grid.png
+   :align: center
+
+   **A mosaic of all the slices in the T1 volume**.
+
+"""
