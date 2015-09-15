@@ -61,8 +61,7 @@ class Renderer(vtkRenderer):
         """
         for actor in actors:
             if isinstance(actor, Container):
-                for a in actor.get_actors():
-                    self.add(a)
+                actor.add_to_renderer(self)
             elif isinstance(actor, vtk.vtkVolume):
                 self.AddVolume(actor)
             elif isinstance(actor, vtk.vtkActor2D):

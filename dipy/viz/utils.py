@@ -314,7 +314,6 @@ def auto_orient(actor, direction, bbox_type="OBB", data_up=None, ref_up=(0, 1, 0
     return new_actor
 
 
-
 def auto_camera(actor, zoom=10, relative='max'):
     """ Automatically calculate the position of the camera given an actor
 
