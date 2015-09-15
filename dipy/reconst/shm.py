@@ -1014,7 +1014,7 @@ def anisotropic_power(sh_coeffs, normal_factor=0.00001):
 
     def single_L_ap(sh_coeffs, L=2, power=2):
         n_start = 1
-        n_L = 2*L+1
+        n_L = 2 * L + 1
         for l in range(2, L, 2):
             n_l = 2 * l + 1
             # sum_n start at index 1
@@ -1035,7 +1035,7 @@ def anisotropic_power(sh_coeffs, normal_factor=0.00001):
         L += 2
 
     # normalize with 10^-5
-    log_ap = np.ma.log(ap/normal_factor)
+    log_ap = np.log(ap/normal_factor)
 
     # zero all values < 0
     log_ap[log_ap < 0] = 0
