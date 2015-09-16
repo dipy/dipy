@@ -983,7 +983,8 @@ def calculate_max_order(n_coeffs):
 
         Notes
         -----
-        The calculation in this function proceeds according to the following logic:
+        The calculation in this function proceeds according to the following
+        logic:
         .. math::
            n = \frac{1}{2} (L+1) (L+2)
            \rarrow 2n = L^2 + 3L + 2
@@ -998,31 +999,6 @@ def calculate_max_order(n_coeffs):
         L1 = (-3 + np.sqrt(1 + 8 * n_coeffs)) / 2
         L2 = (-3 - np.sqrt(1 + 8 * n_coeffs)) / 2
         return np.int(max([L1,L2]))
-
-def _single_L_ap(sh_coeffs, L=2, power=2):
-    """
-    Anisotropic power calculated for a single value of L
-
-    Parameters
-    ----------
-    sh_coeffs : ndarray.
-        Spherical harmonic coefficients.
-    L : int, optional.
-        The order up which the powers are calculated.
-    power : int
-        The degree to which power maps are calculated. Default: 2.
-    """
-    n_start = 1
-    # Accumulate over all even SH orders smaller than L:
-    for l in range(2, L, 2):
-        n_l = 2 * l + 1
-        n_start += n_l
-    n_L = 2 * L + 1
-    n_stop = n_start + n_L
-    c = np.power(np.abs(sh_coeffs[..., n_start:n_stop]), power)
-    ap_i = np.mean(c, axis=-1)
-    ap_i = ap_i / (n_L)
-    return ap_i
 
 
 def anisotropic_power(sh_coeffs, normal_factor=0.00001, power=2):
@@ -1071,9 +1047,14 @@ def anisotropic_power(sh_coeffs, normal_factor=0.00001, power=2):
     n_coeffs = sh_coeffs.shape[-1]
     max_order = calculate_max_order(n_coeffs)
     ap = np.zeros(dim)
+    n_start = 1
     for L in range(2, max_order+2, 2):
-        ap_i = _single_L_ap(sh_coeffs, L, power=power)
+        n_L = 2 * L + 1
+        n_stop = n_start + n_L
+        ap_i = (np.mean(np.abs(sh_coeffs[..., n_start:n_stop]) ** power, -1)
+                / n_L)
         ap += ap_i
+        n_start = n_stop
 
     # normalize with the a small normalization factor:
     log_ap = np.log(ap / normal_factor)
