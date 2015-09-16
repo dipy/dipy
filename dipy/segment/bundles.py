@@ -51,6 +51,8 @@ class RecoBundles(object):
         rmodel_bundle = set_number_of_points(self.model_bundle, nb_pts)
         rmodel_bundle = [s.astype('f4') for s in rmodel_bundle]
 
+        self.resampled_model_bundle = rmodel_bundle
+
         qb = QuickBundles(threshold=mdf_thr)
         self.model_cluster_map = qb.cluster(rmodel_bundle)
         self.model_centroids = self.model_cluster_map.centroids
@@ -133,12 +135,38 @@ class RecoBundles(object):
         if self.verbose:
             print('Duration %f ' % (time() - t, ))
 
+    def reduce_with_shape_prior(self, prior_distance='mdf', dist_thr=20):
 
-    def prune_distant_clusters(self):
-        pass
+        if dist_thr <= 0:
+            print('Has to be greater or equal to 0')
 
-    def reduce_with_shape_prior(self):
-        pass
+        if self.verbose:
+            print('# Remove streamlines which are a bit far')
+
+        t = time()
+
+        rcloser_streamlines = set_number_of_points(self.transf_streamlines, 20)
+        # Reduce with RECLUSTERING IF closer streamlines is larger than
+
+        # find the closer_streamlines that are closer than clean_thr
+        clean_matrix = bundles_distances_mdf(self.resampled_model_bundle,
+                                             rcloser_streamlines)
+        clean_matrix[clean_matrix > dist_thr] = np.inf
+        mins = np.min(clean_matrix, axis=0)
+        close_clusters_clean = [self.transf_streamlines[i]
+                                for i in np.where(mins != np.inf)[0]]
+
+        if self.verbose:
+            msg = 'Number of streamlines after cleanup: %d'
+            print(msg % (len(close_clusters_clean),))
+
+        if len(close_clusters_clean) == 0:
+            print('   You have cleaned all your streamlines!')
+
+        if self.verbose:
+            print('Duration %f ' % (time() - t, ))
+
+
 
     def expand_with_shape_prior(self):
         pass
