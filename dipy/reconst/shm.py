@@ -966,7 +966,66 @@ def sh_to_sf_matrix(sphere, sh_order, basis_type=None, return_inv=True, smooth=0
 
     return B.T
 
-def anisotropic_power(sh_coeffs, normal_factor=0.00001):
+def calculate_max_order(n_coeffs):
+        """
+        Calculate the maximal harmonic order, given that you know the
+        number of parameters that were estimated.
+
+        Parameters
+        ----------
+        n_coeffs : int
+            The number of SH coefficients
+
+        Returns
+        -------
+        L : int
+            The maximal SH order, given the number of coefficients
+
+        Notes
+        -----
+        The calculation in this function proceeds according to the following logic:
+        .. math::
+           n = \frac{1}{2} (L+1) (L+2)
+           \rarrow 2n = L^2 + 3L + 2
+           \rarrow L^2 + 3L + 2 - 2n = 0
+           \rarrow L^2 + 3L + 2(1-n) = 0
+           \rarrow L_{1,2} = \frac{-3 \pm \sqrt{9 - 8 (1-n)}}{2}
+           \rarrow L{1,2} = \frac{-3 \pm \sqrt{1 + 8n}}{2}
+
+        Finally, the positive value is chosen between the two options.
+        """
+
+        L1 = (-3 + np.sqrt(1 + 8 * n_coeffs)) / 2
+        L2 = (-3 - np.sqrt(1 + 8 * n_coeffs)) / 2
+        return np.int(max([L1,L2]))
+
+def _single_L_ap(sh_coeffs, L=2, power=2):
+    """
+    Anisotropic power calculated for a single value of L
+
+    Parameters
+    ----------
+    sh_coeffs : ndarray.
+        Spherical harmonic coefficients.
+    L : int, optional.
+        The order up which the powers are calculated.
+    power : int
+        The degree to which power maps are calculated. Default: 2.
+    """
+    n_start = 1
+    # Accumulate over all even SH orders smaller than L:
+    for l in range(2, L, 2):
+        n_l = 2 * l + 1
+        n_start += n_l
+    n_L = 2 * L + 1
+    n_stop = n_start + n_L
+    c = np.power(np.abs(sh_coeffs[..., n_start:n_stop]), power)
+    ap_i = np.mean(c, axis=-1)
+    ap_i = ap_i / (n_L)
+    return ap_i
+
+
+def anisotropic_power(sh_coeffs, normal_factor=0.00001, power=2):
     """ Calculates anisotropic power map with a given SH coefficient matrix
 
     Parameters
@@ -974,28 +1033,30 @@ def anisotropic_power(sh_coeffs, normal_factor=0.00001):
     sh_coeffs : ndarray
         A ndarray where the last dimension is the
         SH coeff estimates for that voxel.
-    normal_factor: float
+    normal_factor: float, optional
         The value to normalize the ap values. Default is 10^-5.
+    power : int, optional
+        The degree to which power maps are calculated. Default: 2.
 
     Returns
     -------
-    AP : ndarray
-        The resulting power image.
+    log_ap : ndarray
+        The log of the resulting power image.
 
     Notes
     ----------
     Calculate AP image based on a IxJxKxC SH coeffecient matrix based on the
     equation:
     .. math::
-        AP = \sum_{l=2,4,6,...}{\frac{1}{2l+1} \sum_{m=-l}{|a_{l,m}|^2}}
+        AP = \sum_{l=2,4,6,...}{\frac{1}{2l+1} \sum_{m=-l}^l{|a_{l,m}|^n}}
 
-    Where dim C is made of a flattened lxm coeffecient, where l are the SH
-    levels, and m = 2l+1.
+    Where the last dimension, C, is made of a flattened array of $l$x$m$ coeffecients, where $l$ are the SH orders, and $m = 2l+1$,
     So l=1 has 1 coeffecient, l=2 has 5, ... l=8 has 17 and so on.
     A l=2 SH coeffecient matrix will then be composed of a IxJxKx6 volume.
+    The power, $n$ is usually set to $n=2$.
 
-    The final AP image is then normalized by log(AP/normal_factor).
-    All values < 0 are discarded.
+    The final AP image is then normalized to log(AP/normal_factor), and
+    all values < 0 are discarded (set to 0).
 
     References
     ----------
@@ -1008,36 +1069,21 @@ def anisotropic_power(sh_coeffs, normal_factor=0.00001):
 
     dim = sh_coeffs.shape[:-1]
     n_coeffs = sh_coeffs.shape[-1]
-
-    L = 2    # start at L=2
+    max_order = calculate_max_order(n_coeffs)
     sum_n = 1
-
-    def single_L_ap(sh_coeffs, L=2, power=2):
-        n_start = 1
-        n_L = 2 * L + 1
-        for l in range(2, L, 2):
-            n_l = 2 * l + 1
-            # sum_n start at index 1
-            n_start += n_l
-        n_stop = n_start + n_L
-        c = np.power(sh_coeffs[..., n_start:n_stop], power)
-        ap_i = np.mean(c, axis=-1)
-        ap_i = np.multiply(ap_i, 1.0/n_L)
-        return ap_i
-
     ap = np.zeros(dim)
+    for L in range(2, max_order, 2):
+        ap_i = _single_L_ap(sh_coeffs, L)
+        ap += ap_i
 
-    while sum_n < n_coeffs:
-        n_L = 2*L+1
-        ap_i = single_L_ap(sh_coeffs, L)
-        ap = np.add(ap_i, ap)
-        sum_n += n_L
-        L += 2
-
-    # normalize with 10^-5
+    # normalize with the a small normalization factor:
     log_ap = np.log(ap/normal_factor)
 
-    # zero all values < 0
-    log_ap[log_ap < 0] = 0
-
+    if isinstance(log_ap, np.ndarray):
+        # zero all values < 0
+        log_ap[log_ap < 0] = 0
+    else:
+        # assume this is a singleton float (input was 1D):
+        if log_ap < 0:
+            return 0
     return log_ap

@@ -470,6 +470,8 @@ def test_anisotropic_power():
 
     apvals = anisotropic_power(testset)
     assert_array_almost_equal(apvals, answers)
+    # Test that this works for single voxel arrays as well:
+    assert_array_almost_equal(anisotropic_power(testset[1]), answers[1])
 
 if __name__ == "__main__":
     import nose
