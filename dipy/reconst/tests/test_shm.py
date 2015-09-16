@@ -25,7 +25,8 @@ from dipy.reconst.shm import (real_sph_harm, real_sym_sh_basis,
                               smooth_pinv, bootstrap_data_array,
                               bootstrap_data_voxel, ResidualBootstrapWrapper,
                               CsaOdfModel, QballModel, SphHarmFit,
-                              spherical_harmonics, anisotropic_power)
+                              spherical_harmonics, anisotropic_power,
+                              calculate_max_order)
 
 def test_order_from_ncoeff():
     """
@@ -472,6 +473,18 @@ def test_anisotropic_power():
     assert_array_almost_equal(apvals, answers)
     # Test that this works for single voxel arrays as well:
     assert_array_almost_equal(anisotropic_power(testset[1]), answers[1])
+
+
+def test_calculate_max_order():
+    """
+    Based on the table in:
+    http://jdtournier.github.io/mrtrix-0.2/tractography/preprocess.html
+    """
+    orders = [2, 4, 6, 8, 10, 12]
+    n_coeffs = [6, 15, 28, 45, 66, 91]
+    for o, n in zip(orders, n_coeffs):
+        assert_equal(calculate_max_order(n), o)
+
 
 if __name__ == "__main__":
     import nose
