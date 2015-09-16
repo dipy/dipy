@@ -1070,14 +1070,13 @@ def anisotropic_power(sh_coeffs, normal_factor=0.00001, power=2):
     dim = sh_coeffs.shape[:-1]
     n_coeffs = sh_coeffs.shape[-1]
     max_order = calculate_max_order(n_coeffs)
-    sum_n = 1
     ap = np.zeros(dim)
-    for L in range(2, max_order, 2):
-        ap_i = _single_L_ap(sh_coeffs, L)
+    for L in range(2, max_order+2, 2):
+        ap_i = _single_L_ap(sh_coeffs, L, power=power)
         ap += ap_i
 
     # normalize with the a small normalization factor:
-    log_ap = np.log(ap/normal_factor)
+    log_ap = np.log(ap / normal_factor)
 
     if isinstance(log_ap, np.ndarray):
         # zero all values < 0
