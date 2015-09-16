@@ -72,7 +72,7 @@ def recognize_bundles_flow(streamline_files, model_bundle_files,
         mbfiles = glob(model_bundle_files)
 
     if out_dir is None:
-        pass
+        print('No out_dir was provided results will be given in the same folder as input streamlines')
 
     print('### Recognition of bundles ###')
     model_streamlines, hrd_model = load_trk(model_streamlines_file)

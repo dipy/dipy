@@ -12,18 +12,129 @@ from itertools import chain
 
 class RecoBundles(object):
 
-    def __init__(self, streamlines):
+    def __init__(self, streamlines, verbose=True):
 
         self.streamlines = streamlines
-        pass
+        self.verbose = verbose
 
-    def reduce_search_space(self):
-        pass
+    def recognize(self, model_bundle):
+
+        self.model_bundle = model_bundle
+
+    def cluster_streamlines(self, mdf_thr=20, nb_pts=20):
+
+        t = time()
+        if self.verbose:
+            print('# Calculate centroids of moved_streamlines')
+
+        rstreamlines = set_number_of_points(self.streamlines, 20)
+        # qb.cluster had problem with f8
+        rstreamlines = [s.astype('f4') for s in rstreamlines]
+
+        qb = QuickBundles(threshold=mdf_thr)
+        cluster_map = qb.cluster(rstreamlines)
+        cluster_map.refdata = self.streamlines
+        self.cluster_map = cluster_map
+        self.centroids = self.cluster_map.centroids
+        self.nb_centroids = len(self.centroids)
+
+        if self.verbose:
+            print('Duration %f ' % (time() - t, ))
+
+    def cluster_model_bundle(self, mdf_thr=20, nb_pts=20):
+        t = time()
+        if self.verbose:
+            print('# Starting clustering model bundle ...')
+            print(' Model bundle has %d' % (len(self.model_bundle), ))
+            print(' Algorithm used is QuickBundles')
+
+        rmodel_bundle = set_number_of_points(self.model_bundle, nb_pts)
+        rmodel_bundle = [s.astype('f4') for s in rmodel_bundle]
+
+        qb = QuickBundles(threshold=mdf_thr)
+        self.model_cluster_map = qb.cluster(rmodel_bundle)
+        self.model_centroids = self.model_cluster_map.centroids
+        self.nb_model_centroids = len(self.model_centroids)
+
+        if self.verbose:
+            print('Centroids of model bundle are created')
+            print('Duration %0.3f sec.' % (time() - t, ))
+
+    def reduce_search_space(self, close_centroids_thr=20):
+        t = time()
+        if self.verbose:
+            print('# Find centroids which are close to the model_centroids')
+
+        centroid_matrix = bundles_distances_mdf(self.model_centroids,
+                                                self.centroids)
+
+        centroid_matrix[centroid_matrix > close_centroids_thr] = np.inf
+
+        mins = np.min(centroid_matrix, axis=0)
+        close_clusters = [self.cluster_map[i] for i
+                          in np.where(mins != np.inf)[0]]
+        close_centroids = [cluster.centroid for cluster in close_clusters]
+
+        close_streamlines = list(chain(*close_clusters))
+
+        # Some times close streamlines are too many. I need to think of a
+        # solution for this. Otherwise the next distance matrix becomes too
+        # big.
+
+        self.neighb_streamlines = close_streamlines
+        self.neighb_clusters = close_clusters
+        self.neighb_centroids = close_centroids
+
+        self.nb_neighb_streamlines = len(self.neighb_streamlines)
+
+        if self.nb_neighb_streamlines == 0:
+            print('   You have no close streamlines... No bundle recognition')
+
+        if self.verbose:
+            print('Number of neighbor streamlines %d' %
+                  (self.nb_neighb_streamlines,))
+            print('Duration %f secs.' % (time() - t, ))
+
+    def apply_slr_locally(self, x0=None,
+                          scale_range=None,
+                          select_model=400,
+                          select_target=600, nb_pts=20):
+
+        if self.verbose:
+            print('# Local SLR of neighb_streamlines to model')
+
+        t = time()
+
+        if x0 is None:
+            x0 = np.array([0, 0, 0, 0, 0, 0, 1.])
+
+        if scale_range is None:
+            bounds = [(-30, 30), (-30, 30), (-30, 30),
+                      (-45, 45), (-45, 45), (-45, 45), scale_range]
+
+        slr = StreamlineLinearRegistration(x0=x0, bounds=bounds)
+        static = select_random_set_of_streamlines(self.model_bundle,
+                                                  select_model)
+
+        moving = select_random_set_of_streamlines(self.neighb_streamlines,
+                                                  select_target)
+
+        static = set_number_of_points(static, nb_pts)
+        moving = set_number_of_points(moving, nb_pts)
+
+        slm = slr.optimize(static, moving)
+
+        self.transf_streamlines = transform_streamlines(
+            self.neighb_streamlines, slm.matrix)
+
+        self.transf_matrix = slm.matrix
+        self.bmd = slm.fopt ** 2
+
+        if self.verbose:
+            print('Duration %f ' % (time() - t, ))
+
 
     def prune_distant_clusters(self):
-        pass
-
-    def apply_slr_locally(self):
         pass
 
     def reduce_with_shape_prior(self):
@@ -31,13 +142,6 @@ class RecoBundles(object):
 
     def expand_with_shape_prior(self):
         pass
-
-    def recognize(self, model_bundle):
-
-        self.model_bundle = model_bundle
-
-        self.reduce_search_space()
-
 
 
 def recognize_bundles(model_bundle, moved_streamlines,
@@ -227,7 +331,7 @@ def recognize_bundles(model_bundle, moved_streamlines,
         return expanded, matrix
 
     msg = 'Total duration of bundle recognition is %0.4f seconds.'
-    print(msg % (time() - t0, ))
+    print(msg % (time() - t0,))
 
     if return_full:
         return close_clusters_clean, matrix, out

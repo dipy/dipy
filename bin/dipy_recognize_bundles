@@ -4,27 +4,89 @@ from dipy.workflows.segment import recognize_bundles_flow
 
 parser = arg.ArgumentParser()
 
-parser.add_argument('streamlines')
-parser.add_argument('--model_bundles', dest='model_bundles')
-parser.add_argument('--model_streamlines', dest='model_streamlines')
-parser.add_argument('--out_dir', dest='out_dir')
-parser.add_argument('--close_centroids_thr', dest='close_centroids_thr',
-                    default=20)
+parser.add_argument(
+    'streamlines',
+    help=('Full brain streamlines in which you want to recognize bundles.'))
+
+parser.add_argument(
+    '--model_bundles', dest='model_bundles',
+    help='List of model bundles that will be used for recognition.')
+
+parser.add_argument(
+    '--model_streamlines', dest='model_streamlines',
+    help='Full brain streamlines that correspond to the model bundles.')
+
+parser.add_argument(
+    '--out_dir', dest='out_dir',
+    help='Output directory to save recognized bundles.')
+
+parser.add_argument(
+    '--close_centroids_thr', dest='close_centroids_thr', default=20)
+
 parser.add_argument('--clean_thr', dest='clean_thr', default=5)
 parser.add_argument('--local_slr', dest='local_slr', default=True)
 parser.add_argument('--expand_thr', dest='expand_thr')
-parser.add_argument('--scale_range', dest='scale_range', default=(0.8, 1.2))
+parser.add_argument('--scale_range', dest='scale_range', default='0.8:1.2')
 parser.add_argument('--disp', dest='disp', action='store_true', default=False)
+
+#parser.add_argument('streamlines', action='store',
+#                    help='Full brain streamlines in which you want to recognize bundles.')
+#
+#parser.add_argument('--model_bundles', action='store', dest='model_bundles',
+#                    help='List of model bundles that will be used for recognition.')
+#
+#parser.add_argument('--model_streamlines', action='store',
+#                    dest='model_streamlines',
+#                    help='Full brain streamlines that correspond to the model bundles.')
+#
+#parser.add_argument('--out_dir', action='store', dest='out_dir', default='',
+#                    help='Output directory to save recognized bundles.')
+#
+#parser.add_argument('--close_centroids_thr', action='store',
+#                    dest='close_centroids_thr', default=str(20),
+#                    help='Closeness threshold for centroids of clusters near the model bundle. (Default: 20mm)')
+#
+#parser.add_argument('--clean_thr', action='store',
+#                    dest='clean_thr', default=str(5),
+#                    help='Remove streamlines in the recognize streamlines that are more than clean_thr away.'+\
+#                        ' 0 if you do not want cleaning up. (Default: 5mm)')
+#
+#parser.add_argument('--local_slr', action='store',
+#                    dest='local_slr', default=str(1),
+#                    help='Use local Streamline Linear Registration (slr) to find close streamlines. (Default: 1)')
+#
+#parser.add_argument('--expand_thr', action='store',
+#                    dest='expand_thr',
+#                    help='Expand threshold in mm for the recognize bundle to ' + \
+#                        'have more fanning and more streamlines. (Default: None)')
+#
+#parser.add_argument('--scale_range', action='store',
+#                    dest='scale_range', default='0.8:1.2',
+#                    help='I do not know what this does... (Default: 0.8:1.2)')
+#
+#parser.add_argument('--space', action='store',
+#                    dest='space', default='rasmm',
+#                    help='Space in which to load and save streamlines, rasmm or voxmm. (Default: rasmm).')
+#
+#parser.add_argument('--disp', action='store', default=0,
+#                    dest='disp',
+#                    help='Display options. 0 is verbose mode. 1 will also display some bundles with fvtk.'+\
+#                        ' (Default: 0)')
 
 
 if __name__ == '__main__':
 
     args = parser.parse_args()
 
-    print(args)
+    # print(args)
+
+    # if not os.path.isdir(out_dir) or args.out_dir is None :
+    #     parser.error('"{0}" must be a valid directory.'.format(args.out_dir))
+
+    scale_range = tuple([float(f) for f in args.scale_range.split(':')])
 
     recognize_bundles_flow(args.streamlines, args.model_bundles,
                            args.model_streamlines, args.out_dir,
                            args.close_centroids_thr, args.clean_thr,
                            args.local_slr, args.expand_thr,
-                           args.scale_range, disp=args.disp)
+                           scale_range, disp=args.disp)
