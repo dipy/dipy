@@ -16,10 +16,15 @@ class RecoBundles(object):
 
         self.streamlines = streamlines
         self.verbose = verbose
+        self.cluster_streamlines()
 
     def recognize(self, model_bundle):
 
         self.model_bundle = model_bundle
+        self.cluster_model_bundle()
+        self.reduce_search_space(reduction_thr=20)
+        self.register_neighb_to_model()
+        self.reduce_with_shape_prior()
 
     def cluster_streamlines(self, mdf_thr=20, nb_pts=20):
 
@@ -62,7 +67,7 @@ class RecoBundles(object):
             print('Centroids of model bundle are created')
             print('Duration %0.3f sec.' % (time() - t, ))
 
-    def reduce_search_space(self, close_centroids_thr=20):
+    def reduce_search_space(self, reduction_thr=20):
         t = time()
         if self.verbose:
             print('# Find centroids which are close to the model_centroids')
@@ -70,7 +75,7 @@ class RecoBundles(object):
         centroid_matrix = bundles_distances_mdf(self.model_centroids,
                                                 self.centroids)
 
-        centroid_matrix[centroid_matrix > close_centroids_thr] = np.inf
+        centroid_matrix[centroid_matrix > reduction_thr] = np.inf
 
         mins = np.min(centroid_matrix, axis=0)
         close_clusters = [self.cluster_map[i] for i
@@ -97,10 +102,9 @@ class RecoBundles(object):
                   (self.nb_neighb_streamlines,))
             print('Duration %f secs.' % (time() - t, ))
 
-    def apply_slr_locally(self, x0=None,
-                          scale_range=None,
-                          select_model=400,
-                          select_target=600, nb_pts=20):
+    def register_neighb_to_model(self, x0=None, scale_range=None,
+                                 select_model=400, select_target=600,
+                                 nb_pts=20):
 
         if self.verbose:
             print('# Local SLR of neighb_streamlines to model')
@@ -165,7 +169,6 @@ class RecoBundles(object):
 
         if self.verbose:
             print('Duration %f ' % (time() - t, ))
-
 
 
     def expand_with_shape_prior(self):
