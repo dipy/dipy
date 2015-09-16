@@ -11,8 +11,7 @@ Tristan-Vega, A., et. al. 2010. A new methodology for estimation of fiber
 Tristan-Vega, A., et. al. 2009. Estimation of fiber orientation probability
     density functions in high angular resolution diffusion imaging.
 
-"""
-"""
+
 Note about the Transpose:
 In the literature the matrix representation of these methods is often written
 as Y = Bx where B is some design matrix and Y and x are column vectors. In our
@@ -76,6 +75,7 @@ def forward_sdeconv_mat(r_rh, n):
     if np.any(n % 2):
         raise ValueError("n has odd degrees, expecting only even degrees")
     return np.diag(r_rh[n // 2])
+
 
 def sh_to_rh(r_sh, m, n):
     """ Spherical harmonics (SH) to rotational harmonics (RH)
@@ -923,7 +923,8 @@ def sh_to_sf(sh, sphere, sh_order, basis_type=None):
     return sf
 
 
-def sh_to_sf_matrix(sphere, sh_order, basis_type=None, return_inv=True, smooth=0):
+def sh_to_sf_matrix(sphere, sh_order, basis_type=None, return_inv=True,
+                    smooth=0):
     """ Matrix that transforms Spherical harmonics (SH) to spherical
     function (SF).
 
@@ -966,6 +967,7 @@ def sh_to_sf_matrix(sphere, sh_order, basis_type=None, return_inv=True, smooth=0
 
     return B.T
 
+
 def calculate_max_order(n_coeffs):
         """
         Calculate the maximal harmonic order, given that you know the
@@ -998,7 +1000,7 @@ def calculate_max_order(n_coeffs):
 
         L1 = (-3 + np.sqrt(1 + 8 * n_coeffs)) / 2
         L2 = (-3 - np.sqrt(1 + 8 * n_coeffs)) / 2
-        return np.int(max([L1,L2]))
+        return np.int(max([L1, L2]))
 
 
 def anisotropic_power(sh_coeffs, normal_factor=0.00001, power=2):
@@ -1026,7 +1028,8 @@ def anisotropic_power(sh_coeffs, normal_factor=0.00001, power=2):
     .. math::
         AP = \sum_{l=2,4,6,...}{\frac{1}{2l+1} \sum_{m=-l}^l{|a_{l,m}|^n}}
 
-    Where the last dimension, C, is made of a flattened array of $l$x$m$ coeffecients, where $l$ are the SH orders, and $m = 2l+1$,
+    Where the last dimension, C, is made of a flattened array of $l$x$m$
+    coefficients, where $l$ are the SH orders, and $m = 2l+1$,
     So l=1 has 1 coeffecient, l=2 has 5, ... l=8 has 17 and so on.
     A l=2 SH coeffecient matrix will then be composed of a IxJxKx6 volume.
     The power, $n$ is usually set to $n=2$.
@@ -1048,11 +1051,11 @@ def anisotropic_power(sh_coeffs, normal_factor=0.00001, power=2):
     max_order = calculate_max_order(n_coeffs)
     ap = np.zeros(dim)
     n_start = 1
-    for L in range(2, max_order+2, 2):
+    for L in range(2, max_order + 2, 2):
         n_L = 2 * L + 1
         n_stop = n_start + n_L
-        ap_i = (np.mean(np.abs(sh_coeffs[..., n_start:n_stop]) ** power, -1)
-                / n_L)
+        ap_i = (np.mean(np.abs(sh_coeffs[..., n_start:n_stop]) ** power, -1) /
+                n_L)
         ap += ap_i
         n_start = n_stop
 
