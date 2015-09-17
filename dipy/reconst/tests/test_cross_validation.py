@@ -63,6 +63,14 @@ def test_dti_xval():
     cod = xval.coeff_of_determination(S, kf_xval)
     npt.assert_array_almost_equal(cod, np.ones(kf_xval.shape[:-1])*100)
 
+    # Test with 2D data for use of a mask
+    S = np.array([[S, S], [S, S]])
+    mask = np.ones(S.shape[:-1], dtype=bool)
+    mask[1, 1] = 0
+    kf_xval = xval.kfold_xval(dm, S, 2, mask=mask)
+    cod2d = xval.coeff_of_determination(S, kf_xval)
+    npt.assert_array_almost_equal(np.round(cod2d[0, 0]), cod)
+
 
 def test_csd_xval():
     # First, let's see that it works with some data:
@@ -96,6 +104,16 @@ def test_csd_xval():
 
     # We're going to be really lenient here:
     npt.assert_array_almost_equal(np.round(cod), csd_cod)
+    # Test for sD data with more than one voxel for use of a mask:
+    S = np.array([[S, S], [S, S]])
+    mask = np.ones(S.shape[:-1], dtype=bool)
+    mask[1, 1] = 0
+    kf_xval = xval.kfold_xval(sm, S, 2, response, sh_order=2,
+                              mask=mask)
+
+    cod = xval.coeff_of_determination(S, kf_xval)
+    npt.assert_array_almost_equal(np.round(cod[0]), csd_cod)
+
 
 
 def test_no_predict():
@@ -107,11 +125,11 @@ def test_no_predict():
         def __init__(self, gtab):
             base.ReconstModel.__init__(self, gtab)
 
-        def fit(self, data):
-            return NoPredictFit(self, data)
+        def fit(self, data, mask=None):
+            return NoPredictFit(self, data, mask=mask)
 
     class NoPredictFit(base.ReconstFit):
-        def __init__(self, model, data):
+        def __init__(self, model, data, mask=None):
             base.ReconstFit.__init__(self, model, data)
 
     gtab = gt.gradient_table(fbval, fbvec)

@@ -80,12 +80,20 @@ class MultiVoxelFit(ReconstFit):
                 return S0
 
         kwargs['S0'] = gimme_S0(S0, ijk)
+        # If we have a mask, we might have some Nones up front, skip those:
+        while self.fit_array[ijk] is None:
+            ijk = next(idx)
+
         first_pred = self.fit_array[ijk].predict(*args, **kwargs)
         result = np.empty(self.fit_array.shape + (first_pred.shape[-1],))
         result[ijk] = first_pred
         for ijk in idx:
             kwargs['S0'] = gimme_S0(S0, ijk)
-            result[ijk] = self.fit_array[ijk].predict(*args, **kwargs)
+            # If it's masked, we predict a 0:
+            if self.fit_array[ijk] is None:
+                result[ijk] *= 0
+            else:
+                result[ijk] = self.fit_array[ijk].predict(*args, **kwargs)
 
         return result
 

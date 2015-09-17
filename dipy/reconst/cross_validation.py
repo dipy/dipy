@@ -68,17 +68,20 @@ def kfold_xval(model, data, folds, *model_args, **model_kwargs):
         The type of the model to use for prediction. The corresponding Fit
         object must have a `predict` function implementd One of the following:
         `reconst.dti.TensorModel` or
-        `reconst.csdeconv.ConstrainedSphericalDeconvModel`. 
+        `reconst.csdeconv.ConstrainedSphericalDeconvModel`.
     data : ndarray
         Diffusion MRI data acquired with the GradientTable of the model. Shape
         will typically be `(x, y, z, b)` where `xyz` are spatial dimensions and
-        b is the number of bvals/bvecs in the GradientTable. 
+        b is the number of bvals/bvecs in the GradientTable.
     folds : int
         The number of divisions to apply to the data
     model_args : list
         Additional arguments to the model initialization
     model_kwargs : dict
-        Additional key-word arguments to the model initialization
+        Additional key-word arguments to the model initialization. If contains
+        the kwarg `mask`, this will be used as a key-word argument to the `fit`
+        method of the model object, rather than being used in the initialization
+        of the model object
 
     Notes
     -----
@@ -133,9 +136,9 @@ def kfold_xval(model, data, folds, *model_args, **model_kwargs):
                                                  nz_bval[~fold_mask]]),
                                       np.concatenate([gtab.bvecs[gtab.b0s_mask],
                                                  nz_bvec[~fold_mask]]))
-
+        mask = model_kwargs.pop('mask', None)
         this_model = model.__class__(this_gtab, *model_args, **model_kwargs)
-        this_fit = this_model.fit(this_data)
+        this_fit = this_model.fit(this_data, mask=mask)
         if not hasattr(this_fit, 'predict'):
             err_str = "Models of type: %s "%this_model.__class__
             err_str += "do not have an implementation of model prediction"
