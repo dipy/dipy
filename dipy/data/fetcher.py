@@ -718,7 +718,7 @@ def read_cenir_multib(bvals=None):
 
     Parameters
     ----------
-    bvals : list
+    bvals : list or int
         The b-values to read from file (200, 400, 1000, 2000, 3000).
 
     Returns
@@ -733,6 +733,8 @@ def read_cenir_multib(bvals=None):
     files, folder = fetch_cenir_multib(with_raw=False)
     if bvals is None:
         bvals = [200, 400, 1000, 2000, 3000]
+    if isinstance(bvals, int):
+        bvals = [bvals]
     file_dict = {
     200:{'DWI': pjoin(folder, '4D_dwi_eddycor_B200.nii.gz'),
            'bvals': pjoin(folder, 'dwi_bvals_B200'),
