@@ -201,7 +201,8 @@ def slicer(data, affine=None, value_range=None, opacity=1.,
         image_actor.input_connection(image_resliced)
     image_actor.display()
     image_actor.opacity(opacity)
-    image_actor.GetMapper().BorderOn()
+    if major_version >= 6:
+        image_actor.GetMapper().BorderOn()
 
     return image_actor
 
