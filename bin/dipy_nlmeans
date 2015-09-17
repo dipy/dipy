@@ -10,7 +10,7 @@ parser.add_argument('input', action='store',
                          'segmentation. You can use wildcards on the path'
                          'to process multiple volumes at once.')
 
-parser.add_argument('--sigma', type=int, default=0,
+parser.add_argument('--sigma', type=float, default=0,
                     help='The sigma used for NLMEANS.')
 
 parser.add_argument('--out_dir', type=str, default='',
