@@ -122,6 +122,8 @@ def kfold_xval(model, data, folds, *model_args, **model_kwargs):
     nz_bval = gtab.bvals[~gtab.b0s_mask]
     nz_bvec = gtab.bvecs[~gtab.b0s_mask]
 
+    # Pop the mask, if there is one, out here for use in every fold:
+    mask = model_kwargs.pop('mask', None)
     for k in range(folds):
         fold_mask = np.ones(data_b.shape[-1], dtype=bool)
         fold_idx = order[k*n_in_fold:(k+1)*n_in_fold]
@@ -136,7 +138,6 @@ def kfold_xval(model, data, folds, *model_args, **model_kwargs):
                                                  nz_bval[~fold_mask]]),
                                       np.concatenate([gtab.bvecs[gtab.b0s_mask],
                                                  nz_bvec[~fold_mask]]))
-        mask = model_kwargs.pop('mask', None)
         this_model = model.__class__(this_gtab, *model_args, **model_kwargs)
         this_fit = this_model.fit(this_data, mask=mask)
         if not hasattr(this_fit, 'predict'):
