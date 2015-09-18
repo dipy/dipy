@@ -26,6 +26,8 @@ class RecoBundles(object):
         self.register_neighb_to_model()
         self.reduce_with_shape_prior()
 
+        return self.close_clusters_clean
+
     def cluster_streamlines(self, mdf_thr=20, nb_pts=20):
 
         t = time()
@@ -42,6 +44,7 @@ class RecoBundles(object):
         self.cluster_map = cluster_map
         self.centroids = self.cluster_map.centroids
         self.nb_centroids = len(self.centroids)
+        self.indices = [cluster.indices for cluster in self.cluster_map]
 
         if self.verbose:
             print('Duration %f ' % (time() - t, ))
@@ -81,6 +84,7 @@ class RecoBundles(object):
         close_clusters = [self.cluster_map[i] for i
                           in np.where(mins != np.inf)[0]]
         close_centroids = [cluster.centroid for cluster in close_clusters]
+        close_indices = [cluster.indices for cluster in close_clusters]
 
         close_streamlines = list(chain(*close_clusters))
 
@@ -91,6 +95,7 @@ class RecoBundles(object):
         self.neighb_streamlines = close_streamlines
         self.neighb_clusters = close_clusters
         self.neighb_centroids = close_centroids
+        self.neighb_indices = close_indices
 
         self.nb_neighb_streamlines = len(self.neighb_streamlines)
 
@@ -111,12 +116,12 @@ class RecoBundles(object):
 
         t = time()
 
-        if x0 is None:
-            x0 = np.array([0, 0, 0, 0, 0, 0, 1.])
+        # if x0 is None:
+        x0 = np.array([0, 0, 0, 0, 0, 0, 1.])
 
-        if scale_range is None:
-            bounds = [(-30, 30), (-30, 30), (-30, 30),
-                      (-45, 45), (-45, 45), (-45, 45), scale_range]
+        # if scale_range is None:
+        bounds = [(-30, 30), (-30, 30), (-30, 30),
+                  (-45, 45), (-45, 45), (-45, 45), scale_range]
 
         slr = StreamlineLinearRegistration(x0=x0, bounds=bounds)
         static = select_random_set_of_streamlines(self.model_bundle,
@@ -170,6 +175,7 @@ class RecoBundles(object):
         if self.verbose:
             print('Duration %f ' % (time() - t, ))
 
+        self.close_clusters_clean = close_clusters_clean
 
     def expand_with_shape_prior(self):
         pass
