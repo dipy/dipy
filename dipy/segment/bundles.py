@@ -18,17 +18,6 @@ class RecoBundles(object):
         self.verbose = verbose
         self.cluster_streamlines()
 
-    def recognize(self, model_bundle):
-
-        # TODO: add input to the different methods
-        self.model_bundle = model_bundle
-        self.cluster_model_bundle()
-        self.reduce_search_space(reduction_thr=20)
-        self.register_neighb_to_model()
-        self.reduce_with_shape_prior()
-
-        return self.transf_streamlines#close_clusters_clean
-
     def cluster_streamlines(self, mdf_thr=20, nb_pts=20):
 
         t = time()
@@ -50,12 +39,25 @@ class RecoBundles(object):
         if self.verbose:
             print('Duration %f ' % (time() - t, ))
 
+    def recognize(self, model_bundle):
+
+        # TODO: add input to the different methods
+        self.model_bundle = model_bundle
+        self.cluster_model_bundle()
+        self.reduce_search_space(reduction_thr=20)
+        self.register_neighb_to_model()
+        self.reduce_with_shape_prior()
+
+        return self.close_clusters_streamlines
+
     def cluster_model_bundle(self, mdf_thr=20, nb_pts=20):
         t = time()
         if self.verbose:
             print('# Starting clustering model bundle ...')
-            print(' Model bundle has %d' % (len(self.model_bundle), ))
+            print(' Model bundle has %d streamlines'
+                  % (len(self.model_bundle), ))
             print(' Algorithm used is QuickBundles')
+            print(' Distance threshold %0.3f' % (mdf_thr,))
 
         rmodel_bundle = set_number_of_points(self.model_bundle, nb_pts)
         rmodel_bundle = [s.astype('f4') for s in rmodel_bundle]
@@ -68,7 +70,8 @@ class RecoBundles(object):
         self.nb_model_centroids = len(self.model_centroids)
 
         if self.verbose:
-            print('Centroids of model bundle are created')
+            print(' Model bundle has %d centroids'
+                  % (self.nb_model_centroids,))
             print('Duration %0.3f sec.' % (time() - t, ))
 
     def reduce_search_space(self, reduction_thr=20):
@@ -101,12 +104,12 @@ class RecoBundles(object):
         self.nb_neighb_streamlines = len(self.neighb_streamlines)
 
         if self.nb_neighb_streamlines == 0:
-            print('   You have no close streamlines... No bundle recognition')
+            print(' You have no close streamlines... No bundle recognition')
 
         if self.verbose:
-            print('Number of neighbor streamlines %d' %
+            print(' Number of neighbor streamlines %d' %
                   (self.nb_neighb_streamlines,))
-            print('Duration %f secs.' % (time() - t, ))
+            print('Duration %f sec.' % (time() - t, ))
 
     def register_neighb_to_model(self, x0=None, scale_range=(0.8, 1.2),
                                  select_model=400, select_target=600,
@@ -143,40 +146,62 @@ class RecoBundles(object):
         self.bmd = slm.fopt ** 2
 
         if self.verbose:
-            print('Duration %f ' % (time() - t, ))
+            print('Duration %0.3f sec' % (time() - t, ))
 
-    def reduce_with_shape_prior(self, prior_distance='mdf', dist_thr=20):
+    def reduce_with_shape_prior(self, prior_distance='mdf', mdf_thr=5,
+                                reduction_thr=40):
 
-        if dist_thr <= 0:
-            print('Has to be greater or equal to 0')
+        if reduction_thr < 0:
+            print('Reduction_thr has to be greater or equal to 0')
 
         if self.verbose:
-            print('# Remove streamlines which are a bit far')
+            print('# Reduce streamlines which have '
+                  'different shapes in MDF terms')
 
         t = time()
 
         rcloser_streamlines = set_number_of_points(self.transf_streamlines, 20)
-        # Reduce with RECLUSTERING IF closer streamlines is larger than
+
+        qb = QuickBundles(threshold=mdf_thr)
+        rcloser_cluster_map = qb.cluster(rcloser_streamlines)
+
+        self.rcloser_cluster_map = rcloser_cluster_map
+        self.rcloser_centroids = rcloser_cluster_map.centroids
+        self.nb_rcloser_centroids = len(rcloser_cluster_map.centroids)
 
         # find the closer_streamlines that are closer than clean_thr
         clean_matrix = bundles_distances_mdf(self.resampled_model_bundle,
-                                             rcloser_streamlines)
-        clean_matrix[clean_matrix > dist_thr] = np.inf
+                                             self.rcloser_centroids)
+        clean_matrix[clean_matrix > reduction_thr] = np.inf
+
+        if self.verbose:
+            print(' Matrix size is (%d, %d)' % clean_matrix.shape)
         mins = np.min(clean_matrix, axis=0)
-        close_clusters_clean = [self.transf_streamlines[i]
-                                for i in np.where(mins != np.inf)[0]]
+        # close_clusters_clean = [self.transf_streamlines[i]
+        #                        for i in np.where(mins != np.inf)[0]]
+
+        rcloser_clusters_indices = [self.rcloser_cluster_map[i].indices
+                                    for i in np.where(mins != np.inf)[0]]
+
+        rcloser_clusters_indices = list(chain(*rcloser_clusters_indices))
+
+        close_clusters_streamlines = [self.transf_streamlines[i]
+                                      for i in rcloser_clusters_indices]
+
+        self.close_clusters_streamlines = close_clusters_streamlines
+        self.nb_close_clusters_streamlines = len(close_clusters_streamlines)
 
         if self.verbose:
-            msg = 'Number of streamlines after cleanup: %d'
-            print(msg % (len(close_clusters_clean),))
+            msg = ' Number of centroids: %d'
+            print(msg % (self.nb_rcloser_centroids,))
+            msg = ' Number of streamlines after cleanup: %d'
+            print(msg % (self.nb_close_clusters_streamlines,))
 
-        if len(close_clusters_clean) == 0:
-            print('   You have cleaned all your streamlines!')
+        if len(close_clusters_streamlines) == 0:
+            print(' You have cleaned all your streamlines')
 
         if self.verbose:
-            print('Duration %f ' % (time() - t, ))
-
-        self.close_clusters_clean = close_clusters_clean
+            print('Duration %0.3f sec' % (time() - t, ))
 
     def expand_with_shape_prior(self):
         pass

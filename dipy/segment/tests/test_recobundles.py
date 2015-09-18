@@ -82,7 +82,6 @@ def test_recognition():
     np.set_printoptions(3, suppress=True)
     print(rb.transf_matrix)
 
-
     show_bundles(model_bundle, recognized_bundle)
     mat2 = np.eye(4)
     mat2[:3, 3] = np.array([60, 0, 0])
@@ -92,6 +91,8 @@ def test_recognition():
 
     print('Recognized bundle %d' % (len(recognized_bundle),))
     print('Model bundle %d' % (len(model_bundle),))
+
+    1/0
 
 if __name__ == '__main__':
 
