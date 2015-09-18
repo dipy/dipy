@@ -4,7 +4,7 @@ from numpy.lib.stride_tricks import as_strided
 
 from ..core.ndindex import ndindex
 from .quick_squash import quick_squash as _squash
-from .base import ReconstModel, ReconstFit
+from .base import ReconstFit
 
 
 def multi_voxel_fit(single_voxel_fit):
@@ -73,6 +73,7 @@ class MultiVoxelFit(ReconstFit):
         S0 = kwargs.get('S0', np.ones(self.fit_array.shape))
         idx = ndindex(self.fit_array.shape)
         ijk = next(idx)
+
         def gimme_S0(S0, ijk):
             if isinstance(S0, np.ndarray):
                 return S0[ijk]
@@ -96,6 +97,7 @@ class MultiVoxelFit(ReconstFit):
                 result[ijk] = self.fit_array[ijk].predict(*args, **kwargs)
 
         return result
+
 
 class CallableArray(np.ndarray):
     """An array which can be called like a function"""
