@@ -1739,7 +1739,6 @@ def decompose_tensor(tensor, min_diffusivity=0):
         eigenvals = eigenvals[xi, order]
         eigenvecs = eigenvecs.reshape(shape + (3, 3))
         eigenvals = eigenvals.reshape(shape + (3, ))
-
     eigenvals = eigenvals.clip(min=min_diffusivity)
     # eigenvecs: each vector is columnar
 
@@ -1790,7 +1789,7 @@ def quantize_evecs(evecs, odf_vertices=None):
     IN : ndarray
     """
     max_evecs = evecs[..., :, 0]
-    if odf_vertices == None:
+    if odf_vertices is None:
         odf_vertices = get_sphere('symmetric362').vertices
     tup = max_evecs.shape[:-1]
     mec = max_evecs.reshape(np.prod(np.array(tup)), 3)
@@ -1828,6 +1827,6 @@ common_fit_methods = {'WLS': wls_fit_tensor,
                       'OLS': ols_fit_tensor,
                       'NLLS': nlls_fit_tensor,
                       'RT': restore_fit_tensor,
-                      'restore':restore_fit_tensor,
-                      'RESTORE':restore_fit_tensor
-                     }
+                      'restore': restore_fit_tensor,
+                      'RESTORE': restore_fit_tensor
+                      }
