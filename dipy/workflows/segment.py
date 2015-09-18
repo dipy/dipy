@@ -11,7 +11,7 @@ from dipy.workflows.utils import choose_create_out_dir, int_param, bool_param, \
 from dipy.segment.mask import median_otsu
 
 
-def median_otsu_flow(input_files, out_dir, save_masked=False,
+def median_otsu_flow(input_files, out_dir='', save_masked=False,
                      median_radius=4, numpass=4, autocrop=False,
                      vol_idx=None, dilate=None):
     """ Workflow wrapping the median_otsu segmentation method.
@@ -25,8 +25,8 @@ def median_otsu_flow(input_files, out_dir, save_masked=False,
     input_files : string
         Path to the input volumes. This path may contain wildcards to process
         multiple inputs at once.
-    out_dir : string
-        Output directory
+    out_dir : string, optional
+        Output directory (default input file directory)
     save_masked : bool
         Save mask
     median_radius : int, optional
@@ -43,9 +43,7 @@ def median_otsu_flow(input_files, out_dir, save_masked=False,
         4D array)
     dilate : string, optional
         number of iterations for binary dilation (default 'None')
-
     """
-
     for fpath in glob(input_files):
         print('')
         print('Applying median_otsu segmentation on {0}'.format(fpath))
