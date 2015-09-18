@@ -64,13 +64,14 @@ def test_recognition():
     play_bundles_dix = deepcopy(model_bundles_dix)
 
     mat = np.eye(4)
-    mat[:3, 3] = np.array([20, 0, 0])
+    mat[:3, 3] = np.array([10, 0, 0])
 
     tag = 'MCP'
     play_bundles_dix[tag] = transform_streamlines(play_bundles_dix[tag], mat)
 
     model_bundle = model_bundles_dix[tag]
 
+    # make sure that you put the bundles back in the correct order
     streamlines = list(chain(*play_bundles_dix.values()))
 
     # show_bundles(model_bundle, streamlines)
@@ -78,8 +79,19 @@ def test_recognition():
     rb = RecoBundles(streamlines)
     recognized_bundle = rb.recognize(model_bundle)
 
-    show_bundles(model_bundle, recognized_bundle)
+    np.set_printoptions(3, suppress=True)
+    print(rb.transf_matrix)
 
+
+    show_bundles(model_bundle, recognized_bundle)
+    mat2 = np.eye(4)
+    mat2[:3, 3] = np.array([60, 0, 0])
+
+    show_bundles(transform_streamlines(model_bundle, mat2),
+                 recognized_bundle)
+
+    print('Recognized bundle %d' % (len(recognized_bundle),))
+    print('Model bundle %d' % (len(model_bundle),))
 
 if __name__ == '__main__':
 

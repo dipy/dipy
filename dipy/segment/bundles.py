@@ -26,7 +26,7 @@ class RecoBundles(object):
         self.register_neighb_to_model()
         self.reduce_with_shape_prior()
 
-        return self.close_clusters_clean
+        return self.transf_streamlines#close_clusters_clean
 
     def cluster_streamlines(self, mdf_thr=20, nb_pts=20):
 
@@ -107,7 +107,7 @@ class RecoBundles(object):
                   (self.nb_neighb_streamlines,))
             print('Duration %f secs.' % (time() - t, ))
 
-    def register_neighb_to_model(self, x0=None, scale_range=None,
+    def register_neighb_to_model(self, x0=None, scale_range=(0.8, 1.2),
                                  select_model=400, select_target=600,
                                  nb_pts=20):
 
@@ -116,8 +116,8 @@ class RecoBundles(object):
 
         t = time()
 
-        # if x0 is None:
-        x0 = np.array([0, 0, 0, 0, 0, 0, 1.])
+        if x0 is None:
+            x0 = np.array([0, 0, 0, 0, 0, 0, 1.])
 
         # if scale_range is None:
         bounds = [(-30, 30), (-30, 30), (-30, 30),
