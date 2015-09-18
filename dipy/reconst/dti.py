@@ -1601,13 +1601,17 @@ def restore_fit_tensor(design_matrix, data, sigma=None, jac=True):
                     this_tensor, status = opt.leastsq(_nlls_err_func,
                                                       start_params,
                                                       args=(clean_design,
-                                                            clean_sig),
+                                                            clean_sig,
+                                                            'sigma',
+                                                            this_sigma),
                                                       Dfun=_nlls_jacobian_func)
                 else:
                     this_tensor, status = opt.leastsq(_nlls_err_func,
                                                       start_params,
                                                       args=(clean_design,
-                                                            clean_sig))
+                                                            clean_sig,
+                                                            'sigma',
+                                                            this_sigma))
 
         # The parameters are the evals and the evecs:
         try:
