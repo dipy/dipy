@@ -1,6 +1,7 @@
 from dipy.fixes import argparse as arg
 import inspect
 
+
 try:
     import numpydoc as ndoc
     has_ndoc = True
@@ -55,13 +56,13 @@ class IntrospectiveArgumentParser(arg.ArgumentParser):
                                   fromfile_prefix_chars, argument_default,
                                   conflict_handler, add_help)
 
-    def add_workflow(self, workflow):
+        self.doc = None
 
+    def add_workflow(self, workflow):
         specs = inspect.getargspec(workflow)
         doc = inspect.getdoc(workflow)
 
         if has_ndoc:
-
             self.doc = ndoc.docscrape.NumpyDocString(doc)['Parameters']
 
         args = specs.args
@@ -73,12 +74,8 @@ class IntrospectiveArgumentParser(arg.ArgumentParser):
         # Arguments with no defaults (Positional)
         cnt = 0
         for i in range(len_args - len_defaults):
-
-            print(i)
             if has_ndoc:
-                print(args[i])
                 help_msg = ''.join(self.doc[i][2])
-                print(help_msg)
                 self.add_argument(args[i], help=help_msg)
             else:
                 self.add_argument(args[i])
@@ -86,30 +83,31 @@ class IntrospectiveArgumentParser(arg.ArgumentParser):
 
         # Arguments with defaults (Optional)
         for i in range(cnt, len_args):
-            print(i)
-
             if has_ndoc:
-                print(args[i])
-                dtype = self._select_dtype(self.doc[i][1])
-                print(dtype)
-                help_msg = ''.join(self.doc[i][2])
-                print(help_msg)
-                self.add_argument('--' + args[i], type=dtype, help=help_msg)
+                typestr = self.doc[i][1]
+                dtype = self._select_dtype(typestr)
+                help_msg = ' '.join(self.doc[i][2])
+                self.add_argument('--' + args[i], action='store', type=dtype,
+                                  metavar=dtype.__name__, help=help_msg)
             else:
                 self.add_argument('--' + args[i])
 
     def _select_dtype(self, text):
-
         text = text.lower()
-
-        if text.find('str'):
+        if text.find('str') != -1:
             return str
-        if text.find('int'):
+        if text.find('int') != -1:
             return int
-        if text.find('float'):
+        if text.find('float') != -1:
             return float
-        if text.find('bool'):
+        if text.find('bool') != -1:
             return bool
+
+    def get_flow_args(self, args=None, namespace=None):
+        ns_args = self.parse_args(args, namespace)
+        dct = vars(ns_args)
+
+        return dict((k, v) for k, v in dct.items() if v is not None)
 
     def update_argument(self, *args, **kargs):
 
