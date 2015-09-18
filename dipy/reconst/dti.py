@@ -16,7 +16,7 @@ from ..core.geometry import vector_norm
 from ..core.sphere import Sphere
 from .vec_val_sum import vec_val_vect
 from ..core.onetime import auto_attr
-from .base import ReconstModel, ReconstFit
+from .base import ReconstModel
 
 
 def _roll_evals(evals, axis=-1):
@@ -100,8 +100,10 @@ def fractional_anisotropy(evals, axis=-1):
     # Make sure not to get nans
     all_zero = (evals == 0).all(axis=0)
     ev1, ev2, ev3 = evals
-    fa = np.sqrt(0.5 * ((ev1 - ev2) ** 2 + (ev2 - ev3) ** 2 + (ev3 - ev1) ** 2)
-                  / ((evals * evals).sum(0) + all_zero))
+    fa = np.sqrt(0.5 * ((ev1 - ev2) ** 2 +
+                 (ev2 - ev3) ** 2 +
+                 (ev3 - ev1) ** 2) /
+                 ((evals * evals).sum(0) + all_zero))
 
     return fa
 
@@ -798,7 +800,6 @@ class TensorModel(ReconstModel):
             dti_params[mask, :] = params_in_mask
 
         return TensorFit(self, dti_params)
-
 
     def predict(self, dti_params, S0=1):
         """
