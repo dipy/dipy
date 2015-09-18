@@ -20,6 +20,7 @@ class RecoBundles(object):
 
     def recognize(self, model_bundle):
 
+        # TODO: add input to the different methods
         self.model_bundle = model_bundle
         self.cluster_model_bundle()
         self.reduce_search_space(reduction_thr=20)
