@@ -2,7 +2,9 @@ import numpy as np
 from dipy.tracking.streamline import (transform_streamlines,
                                       set_number_of_points,
                                       select_random_set_of_streamlines)
-from dipy.segment.clustering import QuickBundles
+from dipy.segment.clustering import (QuickBundles,
+                                     AveragePointwiseEuclideanMetric)
+from dipy.segment.metric import IdentityFeature
 from dipy.tracking.distances import (bundles_distances_mdf,
                                      bundles_distances_mam)
 from dipy.align.streamlinear import StreamlineLinearRegistration
@@ -24,11 +26,13 @@ class RecoBundles(object):
         if self.verbose:
             print('# Calculate centroids of moved_streamlines')
 
-        rstreamlines = set_number_of_points(self.streamlines, 20)
-        # qb.cluster had problem with f8
+        rstreamlines = set_number_of_points(self.streamlines, nb_pts)
         rstreamlines = [s.astype('f4') for s in rstreamlines]
 
-        qb = QuickBundles(threshold=mdf_thr)
+        feature = IdentityFeature()
+        metric = AveragePointwiseEuclideanMetric(feature)
+        qb = QuickBundles(threshold=mdf_thr, metric=metric)
+
         cluster_map = qb.cluster(rstreamlines)
         cluster_map.refdata = self.streamlines
         self.cluster_map = cluster_map
@@ -41,7 +45,6 @@ class RecoBundles(object):
 
     def recognize(self, model_bundle):
 
-        # TODO: add input to the different methods
         self.model_bundle = model_bundle
         self.cluster_model_bundle()
         self.reduce_search_space(reduction_thr=20)
@@ -64,7 +67,10 @@ class RecoBundles(object):
 
         self.resampled_model_bundle = rmodel_bundle
 
-        qb = QuickBundles(threshold=mdf_thr)
+        feature = IdentityFeature()
+        metric = AveragePointwiseEuclideanMetric(feature)
+        qb = QuickBundles(threshold=mdf_thr, metric=metric)
+
         self.model_cluster_map = qb.cluster(rmodel_bundle)
         self.model_centroids = self.model_cluster_map.centroids
         self.nb_model_centroids = len(self.model_centroids)
@@ -85,8 +91,8 @@ class RecoBundles(object):
         centroid_matrix[centroid_matrix > reduction_thr] = np.inf
 
         mins = np.min(centroid_matrix, axis=0)
-        close_clusters = [self.cluster_map[i] for i
-                          in np.where(mins != np.inf)[0]]
+        close_clusters = [self.cluster_map[i]
+                          for i in np.where(mins != np.inf)[0]]
         close_centroids = [cluster.centroid for cluster in close_clusters]
         close_indices = [cluster.indices for cluster in close_clusters]
 
@@ -162,30 +168,34 @@ class RecoBundles(object):
 
         rcloser_streamlines = set_number_of_points(self.transf_streamlines, 20)
 
-        qb = QuickBundles(threshold=mdf_thr)
+        feature = IdentityFeature()
+        metric = AveragePointwiseEuclideanMetric(feature)
+        qb = QuickBundles(threshold=mdf_thr, metric=metric)
         rcloser_cluster_map = qb.cluster(rcloser_streamlines)
 
+        self.rcloser_streamlines = rcloser_streamlines
         self.rcloser_cluster_map = rcloser_cluster_map
         self.rcloser_centroids = rcloser_cluster_map.centroids
         self.nb_rcloser_centroids = len(rcloser_cluster_map.centroids)
 
         # find the closer_streamlines that are closer than clean_thr
 
-        #UNDERSTAND WHY NANS
+        # UNDERSTAND WHY NANS
         clean_matrix = bundles_distances_mdf(self.resampled_model_bundle,
                                              self.rcloser_centroids)
 
         self.clean_matrix_tmp = clean_matrix.copy()
+        clean_matrix[np.isnan(clean_matrix)] = np.inf
         clean_matrix[clean_matrix > reduction_thr] = np.inf
 
         self.clean_matrix = clean_matrix
 
         if self.verbose:
             print(' Matrix size is (%d, %d)' % clean_matrix.shape)
-        #mins = np.min(clean_matrix, axis=0)
-        # close_clusters_clean = [self.transf_streamlines[i]
-        #                        for i in np.where(mins != np.inf)[0]]
 
+        # mins = np.min(clean_matrix, axis=0)
+        # close_clusters_clean = [self.transf_streamlines[i]
+        #                         for i in np.where(mins != np.inf)[0]]
 
         rcloser_clusters_indices = [self.rcloser_cluster_map[i].indices
                                     for i in np.where(clean_matrix != np.inf)[1]]

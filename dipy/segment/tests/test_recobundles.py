@@ -79,6 +79,8 @@ def test_recognition():
     rb = RecoBundles(streamlines)
     recognized_bundle = rb.recognize(model_bundle)
 
+    print(len(recognized_bundle))
+
     np.set_printoptions(3, suppress=True)
     print(rb.transf_matrix)
 
@@ -92,7 +94,6 @@ def test_recognition():
     print('Recognized bundle %d' % (len(recognized_bundle),))
     print('Model bundle %d' % (len(model_bundle),))
 
-    1/0
 
 if __name__ == '__main__':
 
