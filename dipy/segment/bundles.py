@@ -149,7 +149,7 @@ class RecoBundles(object):
             print('Duration %0.3f sec' % (time() - t, ))
 
     def reduce_with_shape_prior(self, prior_distance='mdf', mdf_thr=5,
-                                reduction_thr=40):
+                                reduction_thr=10):
 
         if reduction_thr < 0:
             print('Reduction_thr has to be greater or equal to 0')
@@ -176,25 +176,28 @@ class RecoBundles(object):
 
         if self.verbose:
             print(' Matrix size is (%d, %d)' % clean_matrix.shape)
-        mins = np.min(clean_matrix, axis=0)
+        #mins = np.min(clean_matrix, axis=0)
         # close_clusters_clean = [self.transf_streamlines[i]
         #                        for i in np.where(mins != np.inf)[0]]
 
+
         rcloser_clusters_indices = [self.rcloser_cluster_map[i].indices
-                                    for i in np.where(mins != np.inf)[0]]
+                                    for i in np.where(clean_matrix != np.inf)[1]]
 
         rcloser_clusters_indices = list(chain(*rcloser_clusters_indices))
+        rcloser_clusters_indices = list(np.unique(rcloser_clusters_indices))
 
         close_clusters_streamlines = [self.transf_streamlines[i]
                                       for i in rcloser_clusters_indices]
 
+        self.close_clusters_indices = rcloser_clusters_indices
         self.close_clusters_streamlines = close_clusters_streamlines
         self.nb_close_clusters_streamlines = len(close_clusters_streamlines)
 
         if self.verbose:
             msg = ' Number of centroids: %d'
             print(msg % (self.nb_rcloser_centroids,))
-            msg = ' Number of streamlines after cleanup: %d'
+            msg = ' Number of streamlines after shape reduction: %d'
             print(msg % (self.nb_close_clusters_streamlines,))
 
         if len(close_clusters_streamlines) == 0:
