@@ -170,9 +170,15 @@ class RecoBundles(object):
         self.nb_rcloser_centroids = len(rcloser_cluster_map.centroids)
 
         # find the closer_streamlines that are closer than clean_thr
+
+        #UNDERSTAND WHY NANS
         clean_matrix = bundles_distances_mdf(self.resampled_model_bundle,
                                              self.rcloser_centroids)
+
+        self.clean_matrix_tmp = clean_matrix.copy()
         clean_matrix[clean_matrix > reduction_thr] = np.inf
+
+        self.clean_matrix = clean_matrix
 
         if self.verbose:
             print(' Matrix size is (%d, %d)' % clean_matrix.shape)
