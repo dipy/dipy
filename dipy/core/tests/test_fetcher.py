@@ -38,4 +38,3 @@ def test_fetch_data():
         files = {"testfile.txt" : (testfile_url, bad_md5)}
         npt.assert_raises(fetcher.FetcherError,
                           fetcher.fetch_data, files, tmpdir)
-

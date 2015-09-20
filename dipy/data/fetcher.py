@@ -4,7 +4,6 @@ import os
 import sys
 import textwrap
 import contextlib
-import types
 
 if sys.version_info[0] < 3:
     from urllib2 import urlopen
@@ -27,10 +26,6 @@ dipy_home = pjoin(os.path.expanduser('~'), '.dipy')
 
 
 class FetcherError(Exception):
-    pass
-
-
-class MD5Error(Exception):
     pass
 
 
@@ -80,7 +75,7 @@ def check_md5(filename, stored_md5=None):
     You can try downloading the file again or updating to the newest version of
     dipy.""" % (filename, stored_md5,
                 computed_md5)
-            raise MD5Error(textwrap.fill(msg))
+            raise FetcherError(msg)
 
 
 def _get_file_data(fname, url):
