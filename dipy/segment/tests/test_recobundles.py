@@ -65,11 +65,12 @@ def test_recognition():
     play_bundles_dix = deepcopy(model_bundles_dix)
 
     mat = np.eye(4)
-    mat[:3, 3] = np.array([0, 0, 0])
+    mat[:3, 3] = np.array([0.1, 0, 0])
 
     tag = 'MCP'
-
-    tag = 'CST_right'
+    tag = 'Fornix'
+    tag = 'Cingulum_right'
+    # tag = 'CST_right'
 
     play_bundles_dix[tag] = transform_streamlines(play_bundles_dix[tag], mat)
 
@@ -81,9 +82,9 @@ def test_recognition():
     # show_bundles(model_bundle, streamlines)
 
     rb = RecoBundles(streamlines, mdf_thr=15)
-    recognized_bundle = rb.recognize(model_bundle, mdf_thr=10,
+    recognized_bundle = rb.recognize(model_bundle, mdf_thr=5,
                                      reduction_thr=20,
-                                     slr=False,
+                                     slr=True,
                                      pruning_thr=5)
 
     show_bundles(rb.model_centroids, rb.centroids)
@@ -104,7 +105,7 @@ def test_recognition():
     print('Recognized bundle %d' % (len(recognized_bundle),))
     print('Model bundle %d' % (len(model_bundle),))
 
-    1/0
+    # 1/0
 
 if __name__ == '__main__':
 

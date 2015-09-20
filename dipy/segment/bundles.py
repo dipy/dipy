@@ -57,6 +57,8 @@ class RecoBundles(object):
                   slr=True,
                   pruning_thr=10):
 
+        t = time()
+
         self.model_bundle = model_bundle
         self.cluster_model_bundle(mdf_thr=mdf_thr)
         self.reduce_search_space(reduction_thr=reduction_thr)
@@ -67,6 +69,9 @@ class RecoBundles(object):
             self.transf_matrix = np.eye(4)
         self.prune_what_not_in_model(pruning_thr=pruning_thr)
 
+        if self.verbose:
+            print('Total duration of recognition time is %0.3f sec.'
+                  % (time()-t,))
         return self.pruned_streamlines
 
     def cluster_model_bundle(self, mdf_thr=20, nb_pts=20):
@@ -177,6 +182,7 @@ class RecoBundles(object):
         if self.verbose:
             print('# Prune streamlines which have '
                   'different shapes in MDF terms')
+            print(' Pruning threshold %0.3f' % (pruning_thr,))
 
         t = time()
 
@@ -192,8 +198,9 @@ class RecoBundles(object):
         self.rtransf_centroids = rtransf_cluster_map.centroids
         self.nb_rtransf_centroids = len(self.rtransf_centroids)
 
-        dist_matrix = bundles_distances_mdf(self.resampled_model_bundle,
-                                            self.rtransf_streamlines)  # self.rtransf_centroids)
+
+        dist_matrix = bundles_distances_mdf(self.model_centroids,
+                                            self.rtransf_centroids)
 
         dist_matrix[np.isnan(dist_matrix)] = np.inf
         dist_matrix[dist_matrix > pruning_thr] = np.inf
@@ -201,11 +208,17 @@ class RecoBundles(object):
         self.pruning_matrix = dist_matrix.copy()
 
         if self.verbose:
-            print(' Matrix size is (%d, %d)' % dist_matrix.shape)
+            print(' Pruning matrix size is (%d, %d)'
+                  % self.pruning_matrix.shape)
 
         mins = np.min(self.pruning_matrix, axis=0)
+        pruned_indices = [self.rtransf_cluster_map[i].indices
+                          for i in np.where(mins != np.inf)[0]]
+        pruned_indices = list(chain(*pruned_indices))
         pruned_streamlines = [self.transf_streamlines[i]
-                              for i in np.where(mins != np.inf)[0]]
+                              for i in pruned_indices]
+
+
 
 # Think about this more carefuly
 #        pruned_indices = [self.rtransf_cluster_map[i].indices
