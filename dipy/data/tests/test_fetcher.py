@@ -16,29 +16,31 @@ from dipy.data import SPHERE_FILES
 
 def test_check_md5():
     fd, fname = tempfile.mkstemp()
-    stored_md5 = fetch._get_file_md5(fname)
+    stored_md5 = fetcher._get_file_md5(fname)
     # If all is well, this shouldn't return anything:
     npt.assert_equal(fetcher.check_md5(fname, stored_md5), None)
     # If None is provided as input, it should silently not check either:
     npt.assert_equal(fetcher.check_md5(fname, None), None)
     # Otherwise, it will raise its exception class:
-    npt.assert_raises(fetcher.MD5Error, fetch.check_md5, fname, 'foo')
+    npt.assert_raises(fetcher.FetcherError, fetcher.check_md5, fname, 'foo')
 
 
 def test_make_fetcher():
-    fd, fname = tempfile.mkstemp()
-    tempdir =  tempfile.gettempdir()
-    stored_md5 = fetcher._get_file_md5(fname)
-    testfile_url = pathname2url(fname)
-    testfile_url = urljoin("file:", testfile_url)
+    symmetric362 = SPHERE_FILES['symmetric362']
+    with TemporaryDirectory() as tmpdir:
+        stored_md5 = fetcher._get_file_md5(symmetric362)
+        testfile_url = pathname2url(op.split(symmetric362)[0] + op.sep)
+        testfile_url = urljoin("file:", testfile_url)
+        print(testfile_url)
+        print(symmetric362)
+        sphere_fetcher = fetcher._make_fetcher("sphere_fetcher",
+                                               tmpdir, testfile_url,
+                                               [op.split(symmetric362)[-1]],
+                                               ["sphere_name"],
+                                               md5_list=[stored_md5])
 
-    silly_fetcher = fetcher._make_fetcher("silly_fetcher",
-                                          tempdir, testfile_url, [fname],
-                                          ["silly_name"],
-                                          md5_list=[stored_md5])
-
-    silly_fetcher()
-    assert op.isfile(op.join(tempdir, "silly_name"))
+        sphere_fetcher()
+        assert op.isfile(op.join(tmpdir, "sphere_name"))
 
 
 def test_fetch_data():
