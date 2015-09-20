@@ -352,21 +352,11 @@ def read_isbi2013_2shell():
     gtab : obj,
         GradientTable
     """
-    folder = pjoin(dipy_home, 'isbi2013')
+    files, folder = fetch_isbi2013_2shell()
     fraw = pjoin(folder, 'phantom64.nii.gz')
     fbval = pjoin(folder, 'phantom64.bval')
     fbvec = pjoin(folder, 'phantom64.bvec')
-
-    md5_dict = {'data': '42911a70f232321cf246315192d69c42',
-                'bval': '90e8cf66e0f4d9737a3b3c0da24df5ea',
-                'bvec': '4b7aa2757a1ccab140667b76e8075cb1'}
-
-    check_md5(fraw, md5_dict['data'])
-    check_md5(fbval, md5_dict['bval'])
-    check_md5(fbvec, md5_dict['bvec'])
-
     bvals, bvecs = read_bvals_bvecs(fbval, fbvec)
-
     gtab = gradient_table(bvals, bvecs)
     img = nib.load(fraw)
     return img, gtab
@@ -382,20 +372,11 @@ def read_sherbrooke_3shell():
     gtab : obj,
         GradientTable
     """
-    folder = pjoin(dipy_home, 'sherbrooke_3shell')
+    files, folder = fetch_sherbrooke_3shell()
     fraw = pjoin(folder, 'HARDI193.nii.gz')
     fbval = pjoin(folder, 'HARDI193.bval')
     fbvec = pjoin(folder, 'HARDI193.bvec')
-    md5_dict = {'data': '0b735e8f16695a37bfbd66aab136eb66',
-                'bval': 'e9b9bb56252503ea49d31fb30a0ac637',
-                'bvec': '0c83f7e8b917cd677ad58a078658ebb7'}
-
-    check_md5(fraw, md5_dict['data'])
-    check_md5(fbval, md5_dict['bval'])
-    check_md5(fbvec, md5_dict['bvec'])
-
     bvals, bvecs = read_bvals_bvecs(fbval, fbvec)
-
     gtab = gradient_table(bvals, bvecs)
     img = nib.load(fraw)
     return img, gtab
@@ -406,7 +387,6 @@ def read_stanford_labels():
     # First get the hardi data
     fetch_stanford_hardi()
     hard_img, gtab = read_stanford_hardi()
-
     # Fetch and load
     files, folder = fetch_stanford_labels()
     labels_file = pjoin(folder, "aparc-reduced.nii.gz")
@@ -424,20 +404,11 @@ def read_stanford_hardi():
     gtab : obj,
         GradientTable
     """
-    folder = pjoin(dipy_home, 'stanford_hardi')
+    files, folder = fetch_stanford_hardi()
     fraw = pjoin(folder, 'HARDI150.nii.gz')
     fbval = pjoin(folder, 'HARDI150.bval')
     fbvec = pjoin(folder, 'HARDI150.bvec')
-    md5_dict = {'data': '0b18513b46132b4d1051ed3364f2acbc',
-                'bval': '4e08ee9e2b1d2ec3fddb68c70ae23c36',
-                'bvec': '4c63a586f29afc6a48a5809524a76cb4'}
-
-    check_md5(fraw, md5_dict['data'])
-    check_md5(fbval, md5_dict['bval'])
-    check_md5(fbvec, md5_dict['bvec'])
-
     bvals, bvecs = read_bvals_bvecs(fbval, fbvec)
-
     gtab = gradient_table(bvals, bvecs)
     img = nib.load(fraw)
     return img, gtab
@@ -471,23 +442,13 @@ def read_taiwan_ntu_dsi():
     gtab : obj,
         GradientTable
     """
-    folder = pjoin(dipy_home, 'taiwan_ntu_dsi')
+    files, folder = fetch_taiwan_ntu_dsi()
     fraw = pjoin(folder, 'DSI203.nii.gz')
     fbval = pjoin(folder, 'DSI203.bval')
     fbvec = pjoin(folder, 'DSI203.bvec')
-    md5_dict = {'data': '950408c0980a7154cb188666a885a91f',
-                'bval': '602e5cb5fad2e7163e8025011d8a6755',
-                'bvec': 'a95eb1be44748c20214dc7aa654f9e6b',
-                'license': '7fa1d5e272533e832cc7453eeba23f44'}
-
-    check_md5(fraw, md5_dict['data'])
-    check_md5(fbval, md5_dict['bval'])
-    check_md5(fbvec, md5_dict['bvec'])
-    check_md5(pjoin(folder, 'DSI203_license.txt'), md5_dict['license'])
-
     bvals, bvecs = read_bvals_bvecs(fbval, fbvec)
-    bvecs[1:] = bvecs[1:] / np.sqrt(np.sum(bvecs[1:] * bvecs[1:], axis=1))[:, None]
-
+    bvecs[1:] = (bvecs[1:] /
+                 np.sqrt(np.sum(bvecs[1:] * bvecs[1:], axis=1))[:, None])
     gtab = gradient_table(bvals, bvecs)
     img = nib.load(fraw)
     return img, gtab
@@ -503,16 +464,9 @@ def read_syn_data():
     b0 : obj,
         Nifti1Image
     """
-    folder = pjoin(dipy_home, 'syn_test')
+    files, folder = fetch_syn_data()
     t1_name = pjoin(folder, 't1.nii.gz')
     b0_name = pjoin(folder, 'b0.nii.gz')
-
-    md5_dict = {'t1': '701bda02bb769655c7d4a9b1df2b73a6',
-                'b0': 'e4b741f0c77b6039e67abb2885c97a78'}
-
-    check_md5(t1_name, md5_dict['t1'])
-    check_md5(b0_name, md5_dict['b0'])
-
     t1 = nib.load(t1_name)
     b0 = nib.load(b0_name)
     return t1, b0
