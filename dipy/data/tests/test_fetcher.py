@@ -41,7 +41,8 @@ def test_make_fetcher():
 
         sphere_fetcher()
         assert op.isfile(op.join(tmpdir, "sphere_name"))
-
+        npt.assert_equal(fetcher._get_file_md5(op.join(tmpdir, "sphere_name")),
+                         stored_md5)
 
 def test_fetch_data():
     symmetric362 = SPHERE_FILES['symmetric362']
