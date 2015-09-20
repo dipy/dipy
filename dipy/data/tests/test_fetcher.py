@@ -53,7 +53,7 @@ def test_fetch_data():
         # Test that the fetcher can get a file
         testfile_url = pathname2url(symmetric362)
         testfile_url = urljoin("file:", testfile_url)
-        files = {"testfile.txt" : (testfile_url, md5)}
+        files = {"testfile.txt": (testfile_url, md5)}
         fetcher.fetch_data(files, tmpdir)
         npt.assert_(op.exists(newfile))
 
@@ -66,6 +66,6 @@ def test_fetch_data():
 
         # Test that an error is raised when the md5 checksum of the download
         # file does not match the expected value
-        files = {"testfile.txt" : (testfile_url, bad_md5)}
+        files = {"testfile.txt": (testfile_url, bad_md5)}
         npt.assert_raises(fetcher.FetcherError,
                           fetcher.fetch_data, files, tmpdir)
