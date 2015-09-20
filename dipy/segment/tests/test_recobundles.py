@@ -12,6 +12,7 @@ def show_bundles(static, moving, linewidth=1., tubes=False,
 
     from dipy.viz import fvtk
     ren = fvtk.ren()
+    ren.clear()
     ren.SetBackground(1, 1, 1.)
 
     if tubes:
@@ -64,9 +65,12 @@ def test_recognition():
     play_bundles_dix = deepcopy(model_bundles_dix)
 
     mat = np.eye(4)
-    mat[:3, 3] = np.array([10, 0, 0])
+    mat[:3, 3] = np.array([0, 0, 0])
 
     tag = 'MCP'
+
+    tag = 'CST_right'
+
     play_bundles_dix[tag] = transform_streamlines(play_bundles_dix[tag], mat)
 
     model_bundle = model_bundles_dix[tag]
@@ -76,15 +80,21 @@ def test_recognition():
 
     # show_bundles(model_bundle, streamlines)
 
-    rb = RecoBundles(streamlines)
-    recognized_bundle = rb.recognize(model_bundle)
+    rb = RecoBundles(streamlines, mdf_thr=15)
+    recognized_bundle = rb.recognize(model_bundle, mdf_thr=10,
+                                     reduction_thr=20,
+                                     slr=False,
+                                     pruning_thr=5)
 
-    print(len(recognized_bundle))
+    show_bundles(rb.model_centroids, rb.centroids)
+
+    show_bundles(model_bundle, rb.neighb_streamlines)
 
     np.set_printoptions(3, suppress=True)
     print(rb.transf_matrix)
 
     show_bundles(model_bundle, recognized_bundle)
+
     mat2 = np.eye(4)
     mat2[:3, 3] = np.array([60, 0, 0])
 
@@ -94,6 +104,7 @@ def test_recognition():
     print('Recognized bundle %d' % (len(recognized_bundle),))
     print('Model bundle %d' % (len(model_bundle),))
 
+    1/0
 
 if __name__ == '__main__':
 
