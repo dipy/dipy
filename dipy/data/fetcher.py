@@ -135,7 +135,7 @@ def fetch_data(files, folder, data_size=None):
 
 
 def _make_fetcher(name, folder, baseurl, remote_fnames, local_fnames,
-                  md5_list=None, doc="", data_size=None, msg=None):
+                  md5_list=None, doc="", data_size=None, msg=None, unzip=False):
     """
     Create a new fetcher
 
@@ -162,6 +162,8 @@ def _make_fetcher(name, folder, baseurl, remote_fnames, local_fnames,
     msg : str, optional.
         A message to print to screen when fetching takes place. Default (None)
         is not to print anything
+    unzip : bool, optional
+        Whether to unzip the file(s) after downloading them
     returns
     -------
     fetcher : function
@@ -173,8 +175,13 @@ def _make_fetcher(name, folder, baseurl, remote_fnames, local_fnames,
         for i, (f, n), in enumerate(zip(remote_fnames, local_fnames)):
             files[n] = (baseurl + f, md5_list[i] if md5_list is not None else None)
         fetch_data(files, folder, data_size)
+
         if msg is not None:
             print(msg)
+        if unzip:
+            for f in local_fnames:
+                z = zipfile.ZipFile(pjoin(folder, f), 'r')
+                z.extractall(dipy_home)
         return files, folder
 
     fetcher.__name__ = name
@@ -289,33 +296,16 @@ fetch_mni_template = _make_fetcher("fetch_mni_template",
                         "Fetch the MNI T2 and T1 template files (~35 MB)",
                         data_size="35MB")
 
-
-def fetch_scil_b0():
-    """ Download b=0 datasets from multiple MR systems (GE, Philips, Siemens) and
-        different magnetic fields (1.5T and 3T)
-    """
-    zipname = 'datasets_multi-site_all_companies'
-    url = 'http://scil.dinf.usherbrooke.ca/wp-content/data/'
-    uraw = url + zipname + '.zip'
-    folder = pjoin(dipy_home, zipname)
-
-    if not os.path.exists(folder):
-        _log('Creating new directory %s' % folder)
-        os.makedirs(folder)
-        msg = 'Downloading SCIL b=0 datasets from multiple sites and'
-        msg += 'multiple companies (9.2MB)...'
-        _log(msg)
-        opener = urlopen(uraw)
-        open(folder+'.zip', 'wb').write(opener.read())
-
-        print('Unziping '+folder+'.zip ...')
-        zip = zipfile.ZipFile(folder+'.zip', 'r')
-        zip.extractall(dipy_home)
-
-        print('Done.')
-        print('Files copied in folder %s' % dipy_home)
-    else:
-        _already_there_msg(folder)
+fetch_scil_b0 = _make_fetcher("fetch_scil_b0",
+                             dipy_home,
+                            'http://scil.dinf.usherbrooke.ca/wp-content/data/',
+                            ['datasets_multi-site_all_companies.zip'],
+                            ['datasets_multi-site_all_companies.zip'],
+                            None,
+                            data_size="9.2MB",
+                            doc=\
+            "Download b=0 datasets from multiple MR systems (GE, Philips, Siemens) and different magnetic fields (1.5T and 3T)",
+                            unzip=True)
 
 
 def read_scil_b0():
