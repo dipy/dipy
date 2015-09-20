@@ -2,7 +2,6 @@ from __future__ import division, print_function, absolute_import
 
 import os
 import sys
-import textwrap
 import contextlib
 
 if sys.version_info[0] < 3:
@@ -56,7 +55,8 @@ def _get_file_md5(filename):
 
 def check_md5(filename, stored_md5=None):
     """
-    Computes the md5 of filename and check if it matches with the supplied string md5
+    Computes the md5 of filename and check if it matches with the supplied
+    string md5
 
     Input
     -----
@@ -70,10 +70,10 @@ def check_md5(filename, stored_md5=None):
         computed_md5 = _get_file_md5(filename)
         if stored_md5 != computed_md5:
             msg = """The downloaded file, %s, does not have the expected md5
-    checksum of "%s". Instead, the md5 checksum was: "%s". This could mean that
-    something is wrong with the file or that the upstream file has been updated.
-    You can try downloading the file again or updating to the newest version of
-    dipy.""" % (filename, stored_md5,
+   checksum of "%s". Instead, the md5 checksum was: "%s". This could mean that
+   something is wrong with the file or that the upstream file has been updated.
+   You can try downloading the file again or updating to the newest version of
+   dipy.""" % (filename, stored_md5,
                 computed_md5)
             raise FetcherError(msg)
 
@@ -111,7 +111,7 @@ def fetch_data(files, folder, data_size=None):
         os.makedirs(folder)
 
     if data_size is not None:
-        _log('Data size is approximately %s'%data_size)
+        _log('Data size is approximately %s' % data_size)
 
     all_skip = True
     for f in files:
@@ -130,7 +130,8 @@ def fetch_data(files, folder, data_size=None):
 
 
 def _make_fetcher(name, folder, baseurl, remote_fnames, local_fnames,
-                  md5_list=None, doc="", data_size=None, msg=None, unzip=False):
+                  md5_list=None, doc="", data_size=None, msg=None,
+                  unzip=False):
     """
     Create a new fetcher
 
@@ -148,12 +149,13 @@ def _make_fetcher(name, folder, baseurl, remote_fnames, local_fnames,
     local_fnames : list of strings
         The names of the files to be saved on the local filesystem
     md5_list : list of strings, optional
-        The md5 checksums of the files. Used to verify the content of the files.
-        Default: None, skipping checking md5.
+        The md5 checksums of the files. Used to verify the content of the
+        files. Default: None, skipping checking md5.
     doc : str, optional.
         Documentation of the fetcher.
     data_size : str, optional.
-        If provided, is sent as a message to the user before downloading starts.
+        If provided, is sent as a message to the user before downloading
+        starts.
     msg : str, optional.
         A message to print to screen when fetching takes place. Default (None)
         is not to print anything
@@ -168,7 +170,8 @@ def _make_fetcher(name, folder, baseurl, remote_fnames, local_fnames,
     def fetcher():
         files = {}
         for i, (f, n), in enumerate(zip(remote_fnames, local_fnames)):
-            files[n] = (baseurl + f, md5_list[i] if md5_list is not None else None)
+            files[n] = (baseurl + f, md5_list[i] if
+                        md5_list is not None else None)
         fetch_data(files, folder, data_size)
 
         if msg is not None:
@@ -194,8 +197,8 @@ fetch_isbi2013_2shell = _make_fetcher("fetch_isbi2013_2shell",
                 ['42911a70f232321cf246315192d69c42',
                  '90e8cf66e0f4d9737a3b3c0da24df5ea',
                  '4b7aa2757a1ccab140667b76e8075cb1'],
-                 doc="Download a 2-shell software phantom dataset",
-                 data_size="")
+                doc="Download a 2-shell software phantom dataset",
+                data_size="")
 
 fetch_stanford_labels = _make_fetcher("fetch_stanford_labels",
                 pjoin(dipy_home, 'stanford_hardi'),
@@ -203,7 +206,7 @@ fetch_stanford_labels = _make_fetcher("fetch_stanford_labels",
                 ["aparc-reduced.nii.gz", "label-info.txt"],
                 ["aparc-reduced.nii.gz", "label-info.txt"],
                 ['742de90090d06e687ce486f680f6d71a',
-                '39db9f0f5e173d7a2c2e51b07d5d711b'],
+                 '39db9f0f5e173d7a2c2e51b07d5d711b'],
                 doc=\
             "Download reduced freesurfer aparc image from stanford web site")
 
@@ -218,7 +221,7 @@ fetch_sherbrooke_3shell = _make_fetcher("fetch_sherbrooke_3shell",
                 ['0b735e8f16695a37bfbd66aab136eb66',
                  'e9b9bb56252503ea49d31fb30a0ac637',
                  '0c83f7e8b917cd677ad58a078658ebb7'],
-                 doc=\
+                doc=\
                  "Download a 3shell HARDI dataset with 192 gradient direction")
 
 fetch_stanford_hardi = _make_fetcher("fetch_stanford_hardi",
@@ -229,7 +232,7 @@ fetch_stanford_hardi = _make_fetcher("fetch_stanford_hardi",
                     ['0b18513b46132b4d1051ed3364f2acbc',
                      '4e08ee9e2b1d2ec3fddb68c70ae23c36',
                      '4c63a586f29afc6a48a5809524a76cb4'],
-                     doc=\
+                    doc=\
                      "Download a HARDI dataset with 160 gradient directions")
 
 fetch_stanford_t1 = _make_fetcher("fetch_stanford_t1",
@@ -259,10 +262,10 @@ fetch_taiwan_ntu_dsi = _make_fetcher("fetch_taiwan_ntu_dsi",
                          '602e5cb5fad2e7163e8025011d8a6755',
                          'a95eb1be44748c20214dc7aa654f9e6b',
                          '7fa1d5e272533e832cc7453eeba23f44'],
-                         doc=\
+                        doc=\
                          "Download a DSI dataset with 203 gradient directions",
-                         msg= "See DSI203_license.txt for LICENSE. For the complete datasets please visit : http://dsi-studio.labsolver.org",
-                         data_size="91MB")
+                        msg= "See DSI203_license.txt for LICENSE. For the complete datasets please visit : http://dsi-studio.labsolver.org",
+                        data_size="91MB")
 
 fetch_syn_data = _make_fetcher("fetch_syn_data",
                                pjoin(dipy_home, 'syn_test'),
@@ -287,12 +290,12 @@ fetch_mni_template = _make_fetcher("fetch_mni_template",
                                    ['6e2168072e80aa4c0c20f1e6e52ec0c8',
                                     'f41f2e1516d880547fbf7d6a83884f0d',
                                     '1ea8f4f1e41bc17a94602e48141fdbc8'],
-                                    doc = \
+                                   doc = \
                         "Fetch the MNI T2 and T1 template files (~35 MB)",
-                        data_size="35MB")
+                                   data_size="35MB")
 
 fetch_scil_b0 = _make_fetcher("fetch_scil_b0",
-                             dipy_home,
+                            dipy_home,
                             'http://scil.dinf.usherbrooke.ca/wp-content/data/',
                             ['datasets_multi-site_all_companies.zip'],
                             ['datasets_multi-site_all_companies.zip'],
@@ -467,17 +470,19 @@ def read_syn_data():
     return t1, b0
 
 mni_notes = \
-"""
+    """
     Notes
     -----
-    The templates were downloaded from the MNI (McGill University) `website <http://www.bic.mni.mcgill.ca/ServicesAtlases/ICBM152NLin2009>`_
+    The templates were downloaded from the MNI (McGill University)
+    `website <http://www.bic.mni.mcgill.ca/ServicesAtlases/ICBM152NLin2009>`_
     in July 2015.
 
     The following publications should be referenced when using these templates:
 
     .. [1] VS Fonov, AC Evans, K Botteron, CR Almli, RC McKinstry, DL Collins
            and BDCG, Unbiased average age-appropriate atlases for pediatric
-           studies, NeuroImage, 54:1053-8119, DOI: 10.1016/j.neuroimage.2010.07.033
+           studies, NeuroImage, 54:1053-8119,
+           DOI: 10.1016/j.neuroimage.2010.07.033
 
     .. [2] VS Fonov, AC Evans, RC McKinstry, CR Almli and DL Collins,
             Unbiased nonlinear average age-appropriate brain templates from
@@ -498,6 +503,7 @@ mni_notes = \
     loss, or injury to subjects or patients resulting from the use or misuse
     of this software package.
 """
+
 
 def read_mni_template(contrast="T2"):
     """
@@ -523,8 +529,8 @@ def read_mni_template(contrast="T2"):
     >>> T1_nifti, T2_nifti = read_mni_template(["T1", "T2"]) # doctest: +SKIP
     """
     files, folder = fetch_mni_template()
-    file_dict = {"T1":pjoin(folder, 'mni_icbm152_t1_tal_nlin_asym_09a.nii'),
-                 "T2":pjoin(folder, 'mni_icbm152_t2_tal_nlin_asym_09a.nii')}
+    file_dict = {"T1": pjoin(folder, 'mni_icbm152_t1_tal_nlin_asym_09a.nii'),
+                 "T2": pjoin(folder, 'mni_icbm152_t2_tal_nlin_asym_09a.nii')}
     if isinstance(contrast, str):
         return nib.load(file_dict[contrast])
     else:
@@ -557,7 +563,7 @@ def fetch_cenir_multib(with_raw=False):
                   'bvals_B400', 'bvecs_B400',
                   '4D_dwieddycor_B1000.nii.gz',
                   'bvals_B1000', 'bvecs_B1000',
-                   '4D_dwieddycor_B2000.nii.gz',
+                  '4D_dwieddycor_B2000.nii.gz',
                   'bvals_B2000', 'bvecs_B2000',
                   '4D_dwieddycor_B3000.nii.gz',
                   'bvals_B3000', 'bvecs_B3000']
@@ -579,17 +585,17 @@ def fetch_cenir_multib(with_raw=False):
                 '27089f3baaf881d96f6a9da202e3d69b']
     if with_raw:
         fname_list.extend(['4D_dwi_B200.nii.gz', '4D_dwi_B400.nii.gz',
-                            '4D_dwi_B1000.nii.gz', '4D_dwi_B2000.nii.gz',
-                            '4D_dwi_B3000.nii.gz'])
+                           '4D_dwi_B1000.nii.gz', '4D_dwi_B2000.nii.gz',
+                           '4D_dwi_B3000.nii.gz'])
         md5_list.extend(['a8c36e76101f2da2ca8119474ded21d5',
-                        'a0e7939f6d977458afbb2f4659062a79',
-                        '87fc307bdc2e56e105dffc81b711a808',
-                        '7c23e8a5198624aa29455f0578025d4f',
-                        '4e4324c676f5a97b3ded8bbb100bf6e5'])
+                         'a0e7939f6d977458afbb2f4659062a79',
+                         '87fc307bdc2e56e105dffc81b711a808',
+                         '7c23e8a5198624aa29455f0578025d4f',
+                         '4e4324c676f5a97b3ded8bbb100bf6e5'])
 
     files = {}
     baseurl = \
-    'https://digital.lib.washington.edu/researchworks/bitstream/handle/1773/33311/'
+'https://digital.lib.washington.edu/researchworks/bitstream/handle/1773/33311/'
 
     for f, m in zip(fname_list, md5_list):
         files[f] = (baseurl + f, m)
@@ -621,22 +627,21 @@ def read_cenir_multib(bvals=None):
         bvals = [200, 400, 1000, 2000, 3000]
     if isinstance(bvals, int):
         bvals = [bvals]
-    file_dict = {
-    200:{'DWI': pjoin(folder, '4D_dwi_eddycor_B200.nii.gz'),
-           'bvals': pjoin(folder, 'dwi_bvals_B200'),
-           'bvecs': pjoin(folder, 'dwi_bvecs_B200')},
-    400:{'DWI': pjoin(folder, '4D_dwieddycor_B400.nii.gz'),
-           'bvals': pjoin(folder, 'bvals_B400'),
-           'bvecs': pjoin(folder, 'bvecs_B400')},
-    1000:{'DWI': pjoin(folder, '4D_dwieddycor_B1000.nii.gz'),
-           'bvals': pjoin(folder, 'bvals_B1000'),
-           'bvecs': pjoin(folder, 'bvecs_B1000')},
-    2000:{'DWI': pjoin(folder, '4D_dwieddycor_B2000.nii.gz'),
-           'bvals': pjoin(folder, 'bvals_B2000'),
-           'bvecs': pjoin(folder, 'bvecs_B2000')},
-    3000:{'DWI': pjoin(folder, '4D_dwieddycor_B3000.nii.gz'),
-           'bvals': pjoin(folder, 'bvals_B3000'),
-           'bvecs': pjoin(folder, 'bvecs_B3000')}}
+    file_dict = {200: {'DWI': pjoin(folder, '4D_dwi_eddycor_B200.nii.gz'),
+                       'bvals': pjoin(folder, 'dwi_bvals_B200'),
+                       'bvecs': pjoin(folder, 'dwi_bvecs_B200')},
+                 400: {'DWI': pjoin(folder, '4D_dwieddycor_B400.nii.gz'),
+                       'bvals': pjoin(folder, 'bvals_B400'),
+                       'bvecs': pjoin(folder, 'bvecs_B400')},
+                 1000: {'DWI': pjoin(folder, '4D_dwieddycor_B1000.nii.gz'),
+                        'bvals': pjoin(folder, 'bvals_B1000'),
+                        'bvecs': pjoin(folder, 'bvecs_B1000')},
+                 2000: {'DWI': pjoin(folder, '4D_dwieddycor_B2000.nii.gz'),
+                        'bvals': pjoin(folder, 'bvals_B2000'),
+                        'bvecs': pjoin(folder, 'bvecs_B2000')},
+                 3000: {'DWI': pjoin(folder, '4D_dwieddycor_B3000.nii.gz'),
+                        'bvals': pjoin(folder, 'bvals_B3000'),
+                        'bvecs': pjoin(folder, 'bvecs_B3000')}}
     data = []
     bval_list = []
     bvec_list = []
@@ -652,12 +657,12 @@ def read_cenir_multib(bvals=None):
 
 
 CENIR_notes = \
-"""
-Notes
------
-Details of the acquisition and processing, and additional meta-data are avalible
-through `UW researchworks <https://digital.lib.washington.edu/researchworks/handle/1773/33311>`_
-"""
+    """
+    Notes
+    -----
+    Details of the acquisition and processing, and additional meta-data are
+    avalible through `UW researchworks <https://digital.lib.washington.edu/researchworks/handle/1773/33311>`_
+    """
 
 fetch_cenir_multib.__doc__ += CENIR_notes
 read_cenir_multib.__doc__ += CENIR_notes
