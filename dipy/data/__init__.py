@@ -8,7 +8,6 @@ import sys
 import json
 
 from nibabel import load
-from dipy.io.bvectxt import read_bvec_file
 from os.path import join as pjoin, dirname
 
 if sys.version_info[0] < 3:
@@ -310,7 +309,8 @@ def dsi_deconv_voxels():
                 data[ix, iy, iz], dirs = SticksAndBall(gtab,
                                                        d=0.0015,
                                                        S0=100,
-                                                       angles=[(0, 0), (90, 0)],
+                                                       angles=[(0, 0),
+                                                               (90, 0)],
                                                        fractions=[50, 50],
                                                        snr=None)
     return data, gtab
@@ -347,6 +347,8 @@ def mrtrix_spherical_functions():
 
 
 dipy_cmaps = None
+
+
 def get_cmap(name):
     """Makes a callable, similar to maptlotlib.pyplot.get_cmap"""
     global dipy_cmaps
@@ -380,6 +382,7 @@ def two_cingulum_bundles():
     cb1 = relist_streamlines(res['points'], res['offsets'])
     cb2 = relist_streamlines(res['points2'], res['offsets2'])
     return cb1, cb2
+
 
 def matlab_life_results():
     matlab_rmse = np.load(pjoin(DATA_DIR, 'life_matlab_rmse.npy'))
