@@ -115,6 +115,9 @@ def fetch_data(files, folder, data_size=None):
         _log("Creating new folder %s" % (folder))
         os.makedirs(folder)
 
+    if data_size is not None:
+        _log('Data size is approximately %s'%data_size)
+
     all_skip = True
     for f in files:
         url, md5 = files[f]
@@ -123,8 +126,6 @@ def fetch_data(files, folder, data_size=None):
             continue
         all_skip = False
         _log('Downloading "%s" to %s' % (f, folder))
-        if data_size is not None:
-            _log('Data size is approximately %s'%data_size)
         _get_file_data(fullpath, url)
         check_md5(fullpath, md5)
     if all_skip:
