@@ -4,6 +4,7 @@ import os
 import sys
 import textwrap
 import contextlib
+import types
 
 if sys.version_info[0] < 3:
     from urllib2 import urlopen
@@ -21,16 +22,74 @@ import zipfile
 from dipy.core.gradients import gradient_table
 from dipy.io.gradients import read_bvals_bvecs
 
+# Set a user-writeable file-system location to put files:
+dipy_home = pjoin(os.path.expanduser('~'), '.dipy')
+
+
 class FetcherError(Exception):
     pass
 
 
+class MD5Error(Exception):
+    pass
+
+
 def _log(msg):
+    """Helper function to keep track of things.
+    For now, just prints the message
+    """
     print(msg)
 
-dipy_home = pjoin(os.path.expanduser('~'), '.dipy')
 
-def fetch_data(files, folder):
+def _already_there_msg(folder):
+    """
+    Prints a message indicating that a certain data-set is already in place
+    """
+    msg = 'Dataset is already in place. If you want to fetch it again '
+    msg += 'please first remove the folder %s ' % folder
+    _log(msg)
+
+
+def _get_file_md5(filename):
+    """Compute the md5 checksum of a file"""
+    md5_data = md5()
+    with open(filename, 'rb') as f:
+        for chunk in iter(lambda: f.read(128*md5_data.block_size), b''):
+            md5_data.update(chunk)
+    return md5_data.hexdigest()
+
+
+def check_md5(filename, stored_md5=None):
+    """
+    Computes the md5 of filename and check if it matches with the supplied string md5
+
+    Input
+    -----
+    filename : string
+        Path to a file.
+    md5 : string
+        Known md5 of filename to check against. If None (default), checking is
+        skipped
+    """
+    if stored_md5 is not None:
+        computed_md5 = _get_file_md5(filename)
+        if stored_md5 != computed_md5:
+            msg = """The downloaded file, %s, does not have the expected md5
+    checksum of "%s". Instead, the md5 checksum was: "%s". This could mean that
+    something is wrong with the file or that the upstream file has been updated.
+    You can try downloading the file again or updating to the newest version of
+    dipy.""" % (filename, stored_md5,
+                computed_md5)
+            raise MD5Error(textwrap.fill(msg))
+
+
+def _get_file_data(fname, url):
+    with contextlib.closing(urlopen(url)) as opener:
+        with open(fname, 'wb') as data:
+            copyfileobj(opener, data)
+
+
+def fetch_data(files, folder, data_size=None):
     """Downloads files to folder and checks their md5 checksums
 
     Parameters
@@ -42,7 +101,9 @@ def fetch_data(files, folder):
     folder : str
         The directory where to save the file, the directory will be created if
         it does not already exist.
-
+    data_size : str, optional
+        A string describing the size of the data (e.g. "91 MB") to be logged to
+        the screen. Default does not produce any information about data size.
     Raises
     ------
     FetcherError
@@ -62,29 +123,170 @@ def fetch_data(files, folder):
             continue
         all_skip = False
         _log('Downloading "%s" to %s' % (f, folder))
+        if data_size is not None:
+            _log('Data size is approximately %s'%data_size)
         _get_file_data(fullpath, url)
-        if _get_file_md5(fullpath) != md5:
-            msg = """The downloaded file, %s, does not have the expected md5
-checksum of "%s". This could mean that that something is wrong with the file or
-that the upstream file has been updated. You can try downloading the file again
-or updating to the newest version of dipy.""" % (fullpath, md5)
-            msg = textwrap.fill(msg)
-            raise FetcherError(msg)
-
+        check_md5(fullpath, md5)
     if all_skip:
-        _log("All files already in %s." % (folder))
+        _already_there_msg(folder)
     else:
         _log("Files successfully downloaded to %s" % (folder))
 
 
-def _already_there_msg(folder):
+def _make_fetcher(name, folder, baseurl, remote_fnames, local_fnames,
+                  md5_list=None, doc="", data_size=None, msg=None):
     """
-    Prints a message indicating that a certain data-set is already in place
-    """
-    msg = 'Dataset is already in place. If you want to fetch it again '
-    msg += 'please first remove the folder %s ' % folder
-    print(msg)
+    Create a new fetcher
 
+    Parameters
+    ----------
+    name : str
+        The name of the fetcher function.
+    folder : str
+        The full path to the folder in which the files would be placed locally.
+        Typically, this is something like 'pjoin(dipy_home, 'foo')'
+    baseurl : str
+        The URL from which this fetcher reads files
+    remote_fnames : list of strings
+        The names of the files in the baseurl location
+    local_fnames : list of strings
+        The names of the files to be saved on the local filesystem
+    md5_list : list of strings, optional
+        The md5 checksums of the files. Used to verify the content of the files.
+        Default: None, skipping checking md5.
+    doc : str, optional.
+        Documentation of the fetcher.
+    data_size : str, optional.
+        If provided, is sent as a message to the user before downloading starts.
+    msg : str, optional.
+        A message to print to screen when fetching takes place. Default (None)
+        is not to print anything
+    returns
+    -------
+    fetcher : function
+        A function that, when called, fetches data according to the designated
+        inputs
+    """
+    def fetcher():
+        files = {}
+        for i, (f, n), in enumerate(zip(remote_fnames, local_fnames)):
+            files[n] = (baseurl + f, md5_list[i] if md5_list is not None else None)
+        fetch_data(files, folder, data_size)
+        if msg is not None:
+            print(msg)
+        return files, folder
+
+    fetcher.__name__ = name
+    fetcher.__doc__ = doc
+    return fetcher
+
+
+fetch_isbi2013_2shell = _make_fetcher("fetch_isbi2013_2shell",
+                pjoin(dipy_home, 'isbi2013'),
+                'https://dl.dropboxusercontent.com/u/2481924/isbi2013_merlet/',
+                ['2shells-1500-2500-N64-SNR-30.nii.gz',
+                 '2shells-1500-2500-N64.bval',
+                 '2shells-1500-2500-N64.bvec'],
+                ['phantom64.nii.gz', 'phantom64.bval', 'phantom64.bvec'],
+                ['42911a70f232321cf246315192d69c42',
+                 '90e8cf66e0f4d9737a3b3c0da24df5ea',
+                 '4b7aa2757a1ccab140667b76e8075cb1'],
+                 doc="Download a 2-shell software phantom dataset",
+                 data_size="")
+
+fetch_stanford_labels = _make_fetcher("fetch_stanford_labels",
+                pjoin(dipy_home, 'stanford_hardi'),
+                'https://stacks.stanford.edu/file/druid:yx282xq2090/',
+                ["aparc-reduced.nii.gz", "label-info.txt"],
+                ["aparc-reduced.nii.gz", "label-info.txt"],
+                ['742de90090d06e687ce486f680f6d71a',
+                '39db9f0f5e173d7a2c2e51b07d5d711b'],
+                doc=\
+            "Download reduced freesurfer aparc image from stanford web site")
+
+
+fetch_sherbrooke_3shell = _make_fetcher("fetch_sherbrooke_3shell",
+                                        pjoin(dipy_home, 'sherbrooke_3shell'),
+                'https://dl.dropboxusercontent.com/u/2481924/sherbrooke_data/',
+                ['3shells-1000-2000-3500-N193.nii.gz',
+                 '3shells-1000-2000-3500-N193.bval',
+                 '3shells-1000-2000-3500-N193.bvec'],
+                ['HARDI193.nii.gz', 'HARDI193.bval', 'HARDI193.bvec'],
+                ['0b735e8f16695a37bfbd66aab136eb66',
+                 'e9b9bb56252503ea49d31fb30a0ac637',
+                 '0c83f7e8b917cd677ad58a078658ebb7'],
+                 doc=\
+                 "Download a 3shell HARDI dataset with 192 gradient direction")
+
+fetch_stanford_hardi = _make_fetcher("fetch_stanford_hardi",
+                                     pjoin(dipy_home, 'stanford_hardi'),
+                    'https://stacks.stanford.edu/file/druid:yx282xq2090/',
+                    ['dwi.nii.gz', 'dwi.bvals', 'dwi.bvecs'],
+                    ['HARDI150.nii.gz', 'HARDI150.bval', 'HARDI150.bvec'],
+                    ['0b18513b46132b4d1051ed3364f2acbc',
+                     '4e08ee9e2b1d2ec3fddb68c70ae23c36',
+                     '4c63a586f29afc6a48a5809524a76cb4'],
+                     doc=\
+                     "Download a HARDI dataset with 160 gradient directions")
+
+fetch_stanford_t1 = _make_fetcher("fetch_stanford_t1",
+                                  pjoin(dipy_home, 'stanford_hardi'),
+                        'https://stacks.stanford.edu/file/druid:yx282xq2090/',
+                        ['t1.nii.gz'],
+                        ['t1.nii.gz'],
+                        ['a6a140da6a947d4131b2368752951b0a'])
+
+fetch_stanford_pve_maps = _make_fetcher("fetch_stanford_pve_maps",
+                        pjoin(dipy_home, 'stanford_hardi'),
+                        'https://stacks.stanford.edu/file/druid:yx282xq2090/',
+                        ['pve_csf.nii.gz', 'pve_gm.nii.gz','pve_wm.nii.gz'],
+                        ['pve_csf.nii.gz', 'pve_gm.nii.gz','pve_wm.nii.gz'],
+                        ['2c498e4fed32bca7f726e28aa86e9c18',
+                         '1654b20aeb35fc2734a0d7928b713874',
+                         '2e244983cf92aaf9f9d37bc7716b37d5'])
+
+fetch_taiwan_ntu_dsi = _make_fetcher("fetch_taiwan_ntu_dsi",
+                         pjoin(dipy_home, 'taiwan_ntu_dsi'),
+                        "http://dl.dropbox.com/u/2481924/",
+                        ['taiwan_ntu_dsi.nii.gz','tawian_ntu_dsi.bval',
+                         'taiwan_ntu_dsi.bvec', 'license_taiwan_ntu_dsi.txt'],
+                        ['DSI203.nii.gz', 'DSI203.bval', 'DSI203.bvec',
+                         'DSI203_license.txt'],
+                        ['950408c0980a7154cb188666a885a91f',
+                         '602e5cb5fad2e7163e8025011d8a6755',
+                         'a95eb1be44748c20214dc7aa654f9e6b',
+                         '7fa1d5e272533e832cc7453eeba23f44'],
+                         doc=\
+                         "Download a DSI dataset with 203 gradient directions",
+                         msg= "See DSI203_license.txt for LICENSE. For the complete datasets please visit : http://dsi-studio.labsolver.org",
+                         data_size="91MB")
+
+fetch_syn_data = _make_fetcher("fetch_syn_data",
+                               pjoin(dipy_home, 'syn_test'),
+                               'https://dl.dropboxusercontent.com/u/5918983/',
+                               ['t1.nii.gz', 'b0.nii.gz'],
+                               ['t1.nii.gz', 'b0.nii.gz'],
+                               ['701bda02bb769655c7d4a9b1df2b73a6',
+                                'e4b741f0c77b6039e67abb2885c97a78'],
+                               data_size = "12MB",
+                               doc=\
+                             "Download t1 and b0 volumes from the same session")
+
+fetch_mni_template = _make_fetcher("fetch_mni_template",
+                                   pjoin(dipy_home, 'mni_template'),
+'https://digital.lib.washington.edu/researchworks/bitstream/handle/1773/33312/',
+                                   ['COPYING',
+                                    'mni_icbm152_t2_tal_nlin_asym_09a.nii',
+                                    'mni_icbm152_t1_tal_nlin_asym_09a.nii'],
+                                   ['COPYING',
+                                    'mni_icbm152_t2_tal_nlin_asym_09a.nii',
+                                    'mni_icbm152_t1_tal_nlin_asym_09a.nii'],
+                                   ['6e2168072e80aa4c0c20f1e6e52ec0c8',
+                                    'f41f2e1516d880547fbf7d6a83884f0d',
+                                    '1ea8f4f1e41bc17a94602e48141fdbc8'],
+                                    doc = \
+                        "Fetch the MNI T2 and T1 template files (~35 MB)",
+                        data_size="35MB")
 
 
 def fetch_scil_b0():
@@ -97,11 +299,11 @@ def fetch_scil_b0():
     folder = pjoin(dipy_home, zipname)
 
     if not os.path.exists(folder):
-        print('Creating new directory %s' % folder)
+        _log('Creating new directory %s' % folder)
         os.makedirs(folder)
         msg = 'Downloading SCIL b=0 datasets from multiple sites and'
         msg += 'multiple companies (9.2MB)...'
-        print()
+        _log(msg)
         opener = urlopen(uraw)
         open(folder+'.zip', 'wb').write(opener.read())
 
@@ -149,71 +351,6 @@ def read_siemens_scil_b0():
     return nib.load(file)
 
 
-def _get_file_md5(filename):
-    """Compute the md5 checksum of a file"""
-    md5_data = md5()
-    with open(filename, 'rb') as f:
-        for chunk in iter(lambda: f.read(128*md5_data.block_size), b''):
-            md5_data.update(chunk)
-    return md5_data.hexdigest()
-
-
-def check_md5(filename, stored_md5):
-    """
-    Computes the md5 of filename and check if it matches with the supplied string md5
-
-    Input
-    -----
-    filename : string
-        Path to a file.
-    md5 : string
-        Known md5 of filename to check against.
-
-    """
-    computed_md5 = _get_file_md5(filename)
-    if stored_md5 != computed_md5:
-        print ("MD5 checksum of filename", filename, "failed. Expected MD5 was", stored_md5,
-               "but computed MD5 was", computed_md5, '\n',
-               "Please check if the data has been downloaded correctly or if the upstream data has changed.")
-
-
-def _get_file_data(fname, url):
-    with contextlib.closing(urlopen(url)) as opener:
-        with open(fname, 'wb') as data:
-            copyfileobj(opener, data)
-
-
-def fetch_isbi2013_2shell():
-    """ Download a 2-shell software phantom dataset
-    """
-    url = 'https://dl.dropboxusercontent.com/u/2481924/isbi2013_merlet/'
-    uraw = url + '2shells-1500-2500-N64-SNR-30.nii.gz'
-    ubval = url + '2shells-1500-2500-N64.bval'
-    ubvec = url + '2shells-1500-2500-N64.bvec'
-    folder = pjoin(dipy_home, 'isbi2013')
-
-    md5_list = ['42911a70f232321cf246315192d69c42', # data
-                '90e8cf66e0f4d9737a3b3c0da24df5ea', # bval
-                '4b7aa2757a1ccab140667b76e8075cb1'] # bvec
-
-    url_list = [uraw, ubval, ubvec]
-    fname_list = ['phantom64.nii.gz', 'phantom64.bval', 'phantom64.bvec']
-
-    if not os.path.exists(folder):
-        print('Creating new directory %s' % folder)
-        os.makedirs(folder)
-        print('Downloading raw 2-shell synthetic data (20MB)...')
-
-        for i in range(len(md5_list)):
-            _get_file_data(pjoin(folder, fname_list[i]), url_list[i])
-            check_md5(pjoin(folder, fname_list[i]), md5_list[i])
-
-        print('Done.')
-        print('Files copied in folder %s' % folder)
-    else:
-        _already_there_msg(folder)
-
-
 def read_isbi2013_2shell():
     """ Load ISBI 2013 2-shell synthetic dataset
 
@@ -242,37 +379,6 @@ def read_isbi2013_2shell():
     gtab = gradient_table(bvals, bvecs)
     img = nib.load(fraw)
     return img, gtab
-
-
-def fetch_sherbrooke_3shell():
-    """ Download a 3shell HARDI dataset with 192 gradient directions
-    """
-    url = 'https://dl.dropboxusercontent.com/u/2481924/sherbrooke_data/'
-    uraw = url + '3shells-1000-2000-3500-N193.nii.gz'
-    ubval = url + '3shells-1000-2000-3500-N193.bval'
-    ubvec = url + '3shells-1000-2000-3500-N193.bvec'
-    folder = pjoin(dipy_home, 'sherbrooke_3shell')
-
-    md5_list = ['0b735e8f16695a37bfbd66aab136eb66', # data
-                'e9b9bb56252503ea49d31fb30a0ac637', # bval
-                '0c83f7e8b917cd677ad58a078658ebb7'] # bvec
-
-    url_list = [uraw, ubval, ubvec]
-    fname_list = ['HARDI193.nii.gz', 'HARDI193.bval', 'HARDI193.bvec']
-
-    if not os.path.exists(folder):
-        print('Creating new directory %s' % folder)
-        os.makedirs(folder)
-        print('Downloading raw 3-shell data (184MB)...')
-
-        for i in range(len(md5_list)):
-            _get_file_data(pjoin(folder, fname_list[i]), url_list[i])
-            check_md5(pjoin(folder, fname_list[i]), md5_list[i])
-
-        print('Done.')
-        print('Files copied in folder %s' % folder)
-    else:
-        _already_there_msg(folder)
 
 
 def read_sherbrooke_3shell():
@@ -304,20 +410,6 @@ def read_sherbrooke_3shell():
     return img, gtab
 
 
-def fetch_stanford_labels():
-    """Download reduced freesurfer aparc image from stanford web site."""
-    folder = pjoin(dipy_home, 'stanford_hardi')
-    baseurl = 'https://stacks.stanford.edu/file/druid:yx282xq2090/'
-
-    files = {}
-    files["aparc-reduced.nii.gz"] = (baseurl + "aparc-reduced.nii.gz",
-                                     '742de90090d06e687ce486f680f6d71a')
-    files["label-info.txt"] = (baseurl + "label_info.txt",
-                               '39db9f0f5e173d7a2c2e51b07d5d711b')
-    fetch_data(files, folder)
-    return files, folder
-
-
 def read_stanford_labels():
     """Read stanford hardi data and label map"""
     # First get the hardi data
@@ -329,37 +421,6 @@ def read_stanford_labels():
     labels_file = pjoin(folder, "aparc-reduced.nii.gz")
     labels_img = nib.load(labels_file)
     return hard_img, gtab, labels_img
-
-
-def fetch_stanford_hardi():
-    """ Download a HARDI dataset with 160 gradient directions
-    """
-    url = 'https://stacks.stanford.edu/file/druid:yx282xq2090/'
-    uraw = url + 'dwi.nii.gz'
-    ubval = url + 'dwi.bvals'
-    ubvec = url + 'dwi.bvecs'
-    folder = pjoin(dipy_home, 'stanford_hardi')
-
-    md5_list = ['0b18513b46132b4d1051ed3364f2acbc', # data
-                '4e08ee9e2b1d2ec3fddb68c70ae23c36', # bval
-                '4c63a586f29afc6a48a5809524a76cb4'] # bvec
-
-    url_list = [uraw, ubval, ubvec]
-    fname_list = ['HARDI150.nii.gz', 'HARDI150.bval', 'HARDI150.bvec']
-
-    if not os.path.exists(folder):
-        print('Creating new directory %s' % folder)
-        os.makedirs(folder)
-        print('Downloading raw HARDI data (87MB)...')
-
-        for i in range(len(md5_list)):
-            _get_file_data(pjoin(folder, fname_list[i]), url_list[i])
-            check_md5(pjoin(folder, fname_list[i]), md5_list[i])
-
-        print('Done.')
-        print('Files copied in folder %s' % folder)
-    else:
-        _already_there_msg(folder)
 
 
 def read_stanford_hardi():
@@ -391,37 +452,11 @@ def read_stanford_hardi():
     return img, gtab
 
 
-def fetch_stanford_t1():
-    url = 'https://stacks.stanford.edu/file/druid:yx282xq2090/'
-    url_t1 = url + 't1.nii.gz'
-    folder = pjoin(dipy_home, 'stanford_hardi')
-    file_md5 = 'a6a140da6a947d4131b2368752951b0a'
-    files = {"t1.nii.gz": (url_t1, file_md5)}
-    fetch_data(files, folder)
-    return files, folder
-
-
 def read_stanford_t1():
     files, folder = fetch_stanford_t1()
     f_t1 = pjoin(folder, 't1.nii.gz')
     img = nib.load(f_t1)
     return img
-
-
-def fetch_stanford_pve_maps():
-    url = 'https://stacks.stanford.edu/file/druid:yx282xq2090/'
-    url_pve_csf = url + 'pve_csf.nii.gz'
-    url_pve_gm = url + 'pve_gm.nii.gz'
-    url_pve_wm = url + 'pve_wm.nii.gz'
-    folder = pjoin(dipy_home, 'stanford_hardi')
-    file_csf_md5 = '2c498e4fed32bca7f726e28aa86e9c18'
-    file_gm_md5 = '1654b20aeb35fc2734a0d7928b713874'
-    file_wm_md5 = '2e244983cf92aaf9f9d37bc7716b37d5'
-    files = {"pve_csf.nii.gz": (url_pve_csf, file_csf_md5),
-             "pve_gm.nii.gz": (url_pve_gm, file_gm_md5),
-             "pve_wm.nii.gz": (url_pve_wm, file_wm_md5)}
-    fetch_data(files, folder)
-    return files, folder
 
 
 def read_stanford_pve_maps():
@@ -433,42 +468,6 @@ def read_stanford_pve_maps():
     img_pve_gm = nib.load(f_pve_gm)
     img_pve_wm = nib.load(f_pve_wm)
     return (img_pve_csf, img_pve_gm, img_pve_wm)
-
-
-def fetch_taiwan_ntu_dsi():
-    """ Download a DSI dataset with 203 gradient directions
-    """
-    uraw = 'http://dl.dropbox.com/u/2481924/taiwan_ntu_dsi.nii.gz'
-    ubval = 'http://dl.dropbox.com/u/2481924/tawian_ntu_dsi.bval'
-    ubvec = 'http://dl.dropbox.com/u/2481924/taiwan_ntu_dsi.bvec'
-    ureadme = 'http://dl.dropbox.com/u/2481924/license_taiwan_ntu_dsi.txt'
-    folder = pjoin(dipy_home, 'taiwan_ntu_dsi')
-
-    md5_list = ['950408c0980a7154cb188666a885a91f', # data
-                '602e5cb5fad2e7163e8025011d8a6755', # bval
-                'a95eb1be44748c20214dc7aa654f9e6b', # bvec
-                '7fa1d5e272533e832cc7453eeba23f44'] # license
-
-    url_list = [uraw, ubval, ubvec, ureadme]
-    fname_list = ['DSI203.nii.gz', 'DSI203.bval', 'DSI203.bvec', 'DSI203_license.txt']
-
-    if not os.path.exists(folder):
-        print('Creating new directory %s' % folder)
-        os.makedirs(folder)
-        print('Downloading raw DSI data (91MB)...')
-
-        for i in range(len(md5_list)):
-            _get_file_data(pjoin(folder, fname_list[i]), url_list[i])
-            check_md5(pjoin(folder, fname_list[i]), md5_list[i])
-
-        print('Done.')
-        print('Files copied in folder %s' % folder)
-        print('See DSI203_license.txt for LICENSE.')
-        print('For the complete datasets please visit :')
-        print('http://dsi-studio.labsolver.org')
-
-    else:
-        _already_there_msg(folder)
 
 
 def read_taiwan_ntu_dsi():
@@ -501,36 +500,6 @@ def read_taiwan_ntu_dsi():
     gtab = gradient_table(bvals, bvecs)
     img = nib.load(fraw)
     return img, gtab
-
-
-def fetch_syn_data():
-    """ Download t1 and b0 volumes from the same session
-    """
-    url = 'https://dl.dropboxusercontent.com/u/5918983/'
-    t1 = url + 't1.nii.gz'
-    b0 = url + 'b0.nii.gz'
-
-    folder = pjoin(dipy_home, 'syn_test')
-
-    md5_list = ['701bda02bb769655c7d4a9b1df2b73a6', # t1
-                'e4b741f0c77b6039e67abb2885c97a78'] # b0
-
-    url_list = [t1, b0]
-    fname_list = ['t1.nii.gz', 'b0.nii.gz']
-
-    if not os.path.exists(folder):
-        print('Creating new directory %s' % folder)
-        os.makedirs(folder)
-        print('Downloading t1 and b0 volumes from the same session (12MB)...')
-
-        for i in range(len(md5_list)):
-            _get_file_data(pjoin(folder, fname_list[i]), url_list[i])
-            check_md5(pjoin(folder, fname_list[i]), md5_list[i])
-
-        print('Done.')
-        print('Files copied in folder %s' % folder)
-    else:
-        _already_there_msg(folder)
 
 
 def read_syn_data():
@@ -589,29 +558,6 @@ mni_notes = \
     loss, or injury to subjects or patients resulting from the use or misuse
     of this software package.
 """
-
-
-
-def fetch_mni_template():
-    """
-    Fetch the MNI T2 and T1 template files (~35 MB)
-    """
-    folder = pjoin(dipy_home, 'mni_template')
-    baseurl = \
-    'https://digital.lib.washington.edu/researchworks/bitstream/handle/1773/33312/'
-
-    fname_list = ['COPYING',
-                  'mni_icbm152_t2_tal_nlin_asym_09a.nii',
-                  'mni_icbm152_t1_tal_nlin_asym_09a.nii']
-    md5_list = ['6e2168072e80aa4c0c20f1e6e52ec0c8',
-                'f41f2e1516d880547fbf7d6a83884f0d',
-                '1ea8f4f1e41bc17a94602e48141fdbc8']
-    files = {}
-    for f, m in zip(fname_list, md5_list):
-        files[f] = (baseurl + f, m)
-    fetch_data(files, folder)
-    return files, folder
-
 
 def read_mni_template(contrast="T2"):
     """
