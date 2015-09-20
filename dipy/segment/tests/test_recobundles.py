@@ -30,7 +30,7 @@ def show_bundles(static, moving, linewidth=1., tubes=False,
     fvtk.add(ren, static_actor)
     fvtk.add(ren, moving_actor)
 
-    fvtk.add(ren, fvtk.axes(scale=(2, 2, 2)))
+    fvtk.add(ren, fvtk.axes(scale=(20, 20, 20)))
 
     fvtk.show(ren, size=(900, 900))
     if fname is not None:
@@ -70,7 +70,8 @@ def test_recognition():
     tag = 'MCP'
     tag = 'Fornix'
     tag = 'Cingulum_right'
-    # tag = 'CST_right'
+    tag = 'CST_right'
+    tag = 'CST_left'
 
     play_bundles_dix[tag] = transform_streamlines(play_bundles_dix[tag], mat)
 
@@ -85,25 +86,35 @@ def test_recognition():
     recognized_bundle = rb.recognize(model_bundle, mdf_thr=5,
                                      reduction_thr=20,
                                      slr=True,
+                                     slr_select=(200, 200),
                                      pruning_thr=5)
 
+    print('Show model centroids and all centroids of new space')
     show_bundles(rb.model_centroids, rb.centroids)
 
+    print('Show model bundle and neighborhood')
     show_bundles(model_bundle, rb.neighb_streamlines)
 
     np.set_printoptions(3, suppress=True)
+    print
     print(rb.transf_matrix)
 
+    print('Show model bundle and transformed neighborhood')
+    show_bundles(model_bundle, rb.transf_streamlines)
+
+    print('Show model bundles and pruned streamlines')
     show_bundles(model_bundle, recognized_bundle)
 
     mat2 = np.eye(4)
     mat2[:3, 3] = np.array([60, 0, 0])
 
+    print('Same with a shift')
     show_bundles(transform_streamlines(model_bundle, mat2),
                  recognized_bundle)
 
-    print('Recognized bundle %d' % (len(recognized_bundle),))
-    print('Model bundle %d' % (len(model_bundle),))
+    print
+    print('Recognized bundle has %d streamlines' % (len(recognized_bundle),))
+    print('Model bundle has %d streamlines' % (len(model_bundle),))
 
     # 1/0
 

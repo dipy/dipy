@@ -18,19 +18,15 @@ class RecoBundles(object):
 
         self.streamlines = streamlines
         self.verbose = verbose
-        if self.verbose:
-            print('## Recognition of Bundles ## \n')
-
         self.cluster_streamlines(mdf_thr=mdf_thr)
 
     def cluster_streamlines(self, mdf_thr=20, nb_pts=20):
 
         t = time()
         if self.verbose:
-            print('# Starting clustering streamlines ...')
+            print('# Cluster streamlines using QuickBundles')
             print(' Streamlines has %d streamlines'
                   % (len(self.streamlines), ))
-            print(' Algorithm used is QuickBundles')
             print(' Distance threshold %0.3f' % (mdf_thr,))
 
         rstreamlines = set_number_of_points(self.streamlines, nb_pts)
@@ -55,15 +51,19 @@ class RecoBundles(object):
     def recognize(self, model_bundle, mdf_thr=10,
                   reduction_thr=20,
                   slr=True,
+                  slr_select=(400, 600),
                   pruning_thr=10):
 
         t = time()
+        if self.verbose:
+            print('## Recognize given bundle ## \n')
 
         self.model_bundle = model_bundle
         self.cluster_model_bundle(mdf_thr=mdf_thr)
         self.reduce_search_space(reduction_thr=reduction_thr)
         if slr:
-            self.register_neighb_to_model()
+            self.register_neighb_to_model(select_model=slr_select[0],
+                                          select_target=slr_select[1])
         else:
             self.transf_streamlines = self.neighb_streamlines
             self.transf_matrix = np.eye(4)
@@ -77,10 +77,9 @@ class RecoBundles(object):
     def cluster_model_bundle(self, mdf_thr=20, nb_pts=20):
         t = time()
         if self.verbose:
-            print('# Starting clustering model bundle ...')
+            print('# Cluster model bundle using QuickBundles')
             print(' Model bundle has %d streamlines'
                   % (len(self.model_bundle), ))
-            print(' Algorithm used is QuickBundles')
             print(' Distance threshold %0.3f' % (mdf_thr,))
 
         rmodel_bundle = set_number_of_points(self.model_bundle, nb_pts)
@@ -104,7 +103,8 @@ class RecoBundles(object):
     def reduce_search_space(self, reduction_thr=20):
         t = time()
         if self.verbose:
-            print('# Find centroids which are close to the model_centroids')
+            print('# Reduce search space')
+            print(' Reduction threshold %0.3f' % (reduction_thr,))
 
         centroid_matrix = bundles_distances_mdf(self.model_centroids,
                                                 self.centroids)
@@ -148,7 +148,6 @@ class RecoBundles(object):
         if x0 is None:
             x0 = np.array([0, 0, 0, 0, 0, 0, 1.])
 
-        # if scale_range is None:
         bounds = [(-30, 30), (-30, 30), (-30, 30),
                   (-45, 45), (-45, 45), (-45, 45), scale_range]
 
@@ -168,11 +167,13 @@ class RecoBundles(object):
             self.neighb_streamlines, slm.matrix)
 
         self.transf_matrix = slm.matrix
-        self.bmd = slm.fopt ** 2
+        self.slr_bmd = slm.fopt
+        self.slr_iterations = slm.iterations
 
         if self.verbose:
-            print(' Squared BMD is %.3f' % (self.bmd,))
-            print(' Duration %0.3f sec. \n' % (time() - t, ))
+            print(' Square-root of BMD is %.3f' % (np.sqrt(self.slr_bmd),))
+            print(' Number of iterations %d' % (self.slr_iterations,))
+            print(' Duration %0.3f sec. \n' % (time() - t,))
 
     def prune_what_not_in_model(self, mdf_thr=5, pruning_thr=10):
 
@@ -218,19 +219,7 @@ class RecoBundles(object):
         pruned_streamlines = [self.transf_streamlines[i]
                               for i in pruned_indices]
 
-
-
-# Think about this more carefuly
-#        pruned_indices = [self.rtransf_cluster_map[i].indices
-#                          for i in np.where(dist_matrix != np.inf)[1]]
-#
-#        pruned_indices = list(chain(*pruned_indices))
-#        pruned_indices = list(np.unique(pruned_indices))
-#
-#        pruned_streamlines = [self.transf_streamlines[i]
-#                              for i in pruned_indices]
-#
-#        self.pruned_indices = pruned_indices
+        self.pruned_indices = pruned_indices
         self.pruned_streamlines = pruned_streamlines
         self.nb_pruned_streamlines = len(pruned_streamlines)
 
