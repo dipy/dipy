@@ -4,12 +4,13 @@ from dipy.tracking.streamline import (transform_streamlines,
                                       select_random_set_of_streamlines)
 from dipy.segment.clustering import (QuickBundles,
                                      AveragePointwiseEuclideanMetric)
-from dipy.segment.metric import IdentityFeature
+from dipy.segment.metric import IdentityFeature, ResampleFeature
 from dipy.tracking.distances import (bundles_distances_mdf,
                                      bundles_distances_mam)
 from dipy.align.streamlinear import StreamlineLinearRegistration
 from time import time
 from itertools import chain
+from scipy.spatial import cKDTree
 
 
 class RecoBundles(object):
@@ -17,6 +18,7 @@ class RecoBundles(object):
     def __init__(self, streamlines, mdf_thr=20, verbose=True):
 
         self.streamlines = streamlines
+        self.nb_streamlines = len(streamlines)
         self.verbose = verbose
         self.cluster_streamlines(mdf_thr=mdf_thr)
 
@@ -40,9 +42,9 @@ class RecoBundles(object):
         cluster_map.refdata = self.streamlines
         self.cluster_map = cluster_map
         self.centroids = self.cluster_map.centroids
+        self.rstreamlines = rstreamlines
         self.nb_centroids = len(self.centroids)
         self.indices = [cluster.indices for cluster in self.cluster_map]
-        #self.indices = list(chain(*self.indices))
 
         if self.verbose:
             print(' Streamlines have %d centroids'
@@ -249,9 +251,27 @@ class RecoBundles(object):
     def expand_with_shape_prior(self):
         pass
 
+    def search_with_quickbundles():
+        pass
 
-def search_with_quickbundles():
-    pass
+    def build_kdtree(self, nb_pts=20, mdf_thr=10, mam_metric='min',
+                     leaf_size=10):
+
+        feature = ResampleFeature(nb_points=nb_pts)
+        metric = AveragePointwiseEuclideanMetric(feature)
+        qb = QuickBundles(threshold=mdf_thr, metric=metric)
+        cluster_map = qb.cluster(self.pruned_streamlines)
+
+        search_labels = np.setdiff1d(np.array(self.labels),
+                                     np.arange(self.nb_streamlines))
+
+        search_rstreamlines = [self.rstreamlines[i] for i in search_labels]
+
+        vectors = bundles_distances_mam(search_rstreamlines,
+                                        cluster_map.centroids, mam_metric)
+
+        self.kd_vectors = vectors
+        self.kdtree = cKDTree(vectors, leafsize=leaf_size)
 
 
 def recognize_bundles(model_bundle, moved_streamlines,

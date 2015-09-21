@@ -39,6 +39,7 @@ def show_bundles(static, moving, linewidth=1., tubes=False,
 
 def test_recognition():
 
+    disp = False
     dname = '/home/eleftherios/Data/ISMRM_2015_challenge_bundles_RAS/'
 
     bundle_trk = ['CA', 'CC', 'Cingulum_left',
@@ -73,10 +74,10 @@ def test_recognition():
     mat = np.eye(4)
     mat[:3, 3] = np.array([0.1, 0, 0])
 
-    tag = 'MCP'
+    # tag = 'MCP'
     # tag = 'Fornix'
     # tag = 'Cingulum_right'
-    # tag = 'CST_right'
+    tag = 'CST_right'
     # tag = 'CST_left'
 
     play_bundles_dix[tag] = transform_streamlines(play_bundles_dix[tag], mat)
@@ -99,42 +100,54 @@ def test_recognition():
                                      slr_select=(200, 200),
                                      pruning_thr=5)
 
-    print('Show model centroids and all centroids of new space')
-    show_bundles(rb.model_centroids, rb.centroids)
+    if disp:
 
-    print('Show model bundle and neighborhood')
-    show_bundles(model_bundle, rb.neighb_streamlines)
+        print('Show model centroids and all centroids of new space')
+        show_bundles(rb.model_centroids, rb.centroids)
 
+        print('Show model bundle and neighborhood')
+        show_bundles(model_bundle, rb.neighb_streamlines)
 
-    print('Show model bundle and transformed neighborhood')
-    show_bundles(model_bundle, rb.transf_streamlines)
+        print('Show model bundle and transformed neighborhood')
+        show_bundles(model_bundle, rb.transf_streamlines)
 
-    print('Show model bundles and pruned streamlines')
-    show_bundles(model_bundle, recognized_bundle)
+        print('Show model bundles and pruned streamlines')
+        show_bundles(model_bundle, recognized_bundle)
 
-    mat2 = np.eye(4)
-    mat2[:3, 3] = np.array([60, 0, 0])
+        mat2 = np.eye(4)
+        mat2[:3, 3] = np.array([60, 0, 0])
 
-    print('Same with a shift')
-    show_bundles(transform_streamlines(model_bundle, mat2),
-                 recognized_bundle)
+        print('Same with a shift')
+        show_bundles(transform_streamlines(model_bundle, mat2),
+                     recognized_bundle)
 
-    print('Show initial labels vs model bundle')
-    show_bundles(transform_streamlines(rb.labeled_streamlines, mat2),
-                 model_bundle)
+        print('Show initial labels vs model bundle')
+        show_bundles(transform_streamlines(rb.labeled_streamlines, mat2),
+                     model_bundle)
 
-    print
+    print('\a')
     print('Recognized bundle has %d streamlines' % (len(recognized_bundle),))
     print('Model bundle has %d streamlines' % (len(model_bundle),))
+    print('\a')
 
     # intersection = np.intersect1d(model_indices_dix['MCP'], rb.labels)
-    difference = np.setdiff1d(rb.labels, model_indices_dix['MCP'])
+    difference = np.setdiff1d(rb.labels, model_indices_dix[tag])
 
     print('Difference %d' % (len(difference),))
+
+    rb.build_kdtree()
+
+    dists, indices = rb.kdtree.query(np.zeros(rb.kd_vectors.shape[1]),
+                                     300, p=2)
+
+    extra_streamlines = [rb.streamlines[i] for i in indices]
+    show_bundles(recognized_bundle, extra_streamlines)
+
+    return rb
 
     1/0
 
 
 if __name__ == '__main__':
 
-    test_recognition()
+    rb = test_recognition()
