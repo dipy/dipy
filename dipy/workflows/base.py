@@ -89,13 +89,13 @@ class IntrospectiveArgumentParser(arg.ArgumentParser):
 
     def _select_dtype(self, text):
         text = text.lower()
-        if text.find('str') != -1:
+        if 'str' in text:
             return str
-        if text.find('int') != -1:
+        if 'int' in text:
             return int
-        if text.find('float') != -1:
+        if 'float' in text:
             return float
-        if text.find('bool') != -1:
+        if 'bool' in text:
             return bool
 
     def get_flow_args(self, args=None, namespace=None):
