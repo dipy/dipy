@@ -1,14 +1,9 @@
 from dipy.fixes import argparse as arg
+from dipy.utils.optpkg import optional_package
+
 import inspect
 
-
-try:
-    import numpydoc as ndoc
-    has_ndoc = True
-except ImportError:
-    print('Numpydoc is not installed. \n pip install numpydoc')
-    has_ndoc = False
-
+ndoc, has_ndoc, _ = optional_package('numpydoc')
 
 class IntrospectiveArgumentParser(arg.ArgumentParser):
 
