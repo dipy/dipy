@@ -19,7 +19,7 @@ def nlmeans_3d(arr, mask=None, sigma=None, patch_radius=1,
     arr : 3D ndarray
         The array to be denoised
     mask : 3D ndarray
-    sigma : float
+    sigma : float or 3D array
         standard deviation of the noise estimated from the data
     patch_radius : int
         patch size is ``2 x patch_radius + 1``. Default is 1.
