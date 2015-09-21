@@ -83,12 +83,12 @@ def test_recognition():
 
     model_bundle = model_bundles_dix[tag]
 
-    # make sure that you put the bundles back in the correct order
-    streamlines = []#list(chain(*play_bundles_dix.values()))
+    # make sure that you put the bundles the correct order for the classification
+    # tests
+    streamlines = []
 
     for (i, f) in enumerate(fnames):
         streamlines += play_bundles_dix[bundle_trk[i]]
-
 
     # show_bundles(model_bundle, streamlines)
 
@@ -127,8 +127,13 @@ def test_recognition():
     print('Recognized bundle has %d streamlines' % (len(recognized_bundle),))
     print('Model bundle has %d streamlines' % (len(model_bundle),))
 
-    res = np.intersect1d(model_indices_dix['MCP'], rb.labels)
+    #intersection = np.intersect1d(model_indices_dix['MCP'], rb.labels)
+    difference = np.setdiff1d(rb.labels, model_indices_dix['MCP'])
+
+    print('Difference %d' % (len(difference),))
+
     1/0
+
 
 if __name__ == '__main__':
 

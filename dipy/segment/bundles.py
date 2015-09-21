@@ -185,8 +185,7 @@ class RecoBundles(object):
             print('Pruning_thr has to be greater or equal to 0')
 
         if self.verbose:
-            print('# Prune streamlines which have '
-                  'different shapes by comparing the MDF distance')
+            print('# Prune streamlines using the MDF distance')
             print(' Pruning threshold %0.3f' % (pruning_thr,))
 
         t = time()
