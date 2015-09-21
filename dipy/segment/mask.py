@@ -8,7 +8,7 @@ from dipy.reconst.dti import fractional_anisotropy, color_fa
 
 from scipy.ndimage.filters import median_filter
 try:
-    from skimage.filters import threshold_otsu as otsu
+    from skimage.filter import threshold_otsu as otsu
 except:
     from .threshold import otsu
 
