@@ -74,17 +74,17 @@ def test_recognition():
     mat[:3, 3] = np.array([0.1, 0, 0])
 
     tag = 'MCP'
-    #tag = 'Fornix'
-    #tag = 'Cingulum_right'
-    #tag = 'CST_right'
-    #tag = 'CST_left'
+    # tag = 'Fornix'
+    # tag = 'Cingulum_right'
+    # tag = 'CST_right'
+    # tag = 'CST_left'
 
     play_bundles_dix[tag] = transform_streamlines(play_bundles_dix[tag], mat)
 
     model_bundle = model_bundles_dix[tag]
 
-    # make sure that you put the bundles the correct order for the classification
-    # tests
+    # make sure that you put the bundles the correct order for the
+    # classification tests
     streamlines = []
 
     for (i, f) in enumerate(fnames):
@@ -127,7 +127,7 @@ def test_recognition():
     print('Recognized bundle has %d streamlines' % (len(recognized_bundle),))
     print('Model bundle has %d streamlines' % (len(model_bundle),))
 
-    #intersection = np.intersect1d(model_indices_dix['MCP'], rb.labels)
+    # intersection = np.intersect1d(model_indices_dix['MCP'], rb.labels)
     difference = np.setdiff1d(rb.labels, model_indices_dix['MCP'])
 
     print('Difference %d' % (len(difference),))

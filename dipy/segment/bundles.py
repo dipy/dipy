@@ -202,7 +202,6 @@ class RecoBundles(object):
         self.rtransf_centroids = rtransf_cluster_map.centroids
         self.nb_rtransf_centroids = len(self.rtransf_centroids)
 
-
         dist_matrix = bundles_distances_mdf(self.model_centroids,
                                             self.rtransf_centroids)
 
@@ -249,6 +248,10 @@ class RecoBundles(object):
 
     def expand_with_shape_prior(self):
         pass
+
+
+def search_with_quickbundles():
+    pass
 
 
 def recognize_bundles(model_bundle, moved_streamlines,
