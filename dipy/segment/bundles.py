@@ -42,6 +42,7 @@ class RecoBundles(object):
         self.centroids = self.cluster_map.centroids
         self.nb_centroids = len(self.centroids)
         self.indices = [cluster.indices for cluster in self.cluster_map]
+        #self.indices = list(chain(*self.indices))
 
         if self.verbose:
             print(' Streamlines have %d centroids'
@@ -70,7 +71,7 @@ class RecoBundles(object):
         self.prune_what_not_in_model(pruning_thr=pruning_thr)
 
         if self.verbose:
-            print('Total duration of recognition time is %0.3f sec.'
+            print('Total duration of recognition time is %0.3f sec.\n'
                   % (time()-t,))
         return self.pruned_streamlines
 
@@ -134,7 +135,7 @@ class RecoBundles(object):
         if self.verbose:
             print(' Number of neighbor streamlines %d' %
                   (self.nb_neighb_streamlines,))
-            print(' Duration %f sec. \n' % (time() - t, ))
+            print(' Duration %0.3f sec. \n' % (time() - t, ))
 
     def register_neighb_to_model(self, x0=None, scale_range=(0.8, 1.2),
                                  select_model=400, select_target=600,
@@ -173,6 +174,9 @@ class RecoBundles(object):
         if self.verbose:
             print(' Square-root of BMD is %.3f' % (np.sqrt(self.slr_bmd),))
             print(' Number of iterations %d' % (self.slr_iterations,))
+            np.set_printoptions(3, suppress=True)
+            print(self.transf_matrix)
+            np.set_printoptions()
             print(' Duration %0.3f sec. \n' % (time() - t,))
 
     def prune_what_not_in_model(self, mdf_thr=5, pruning_thr=10):
@@ -182,7 +186,7 @@ class RecoBundles(object):
 
         if self.verbose:
             print('# Prune streamlines which have '
-                  'different shapes in MDF terms')
+                  'different shapes by comparing the MDF distance')
             print(' Pruning threshold %0.3f' % (pruning_thr,))
 
         t = time()
@@ -222,6 +226,12 @@ class RecoBundles(object):
         self.pruned_indices = pruned_indices
         self.pruned_streamlines = pruned_streamlines
         self.nb_pruned_streamlines = len(pruned_streamlines)
+
+        initial_indices = list(chain(*self.neighb_indices))
+        final_indices = [initial_indices[i] for i in pruned_indices]
+        self.labels = final_indices
+        self.labeled_streamlines = [self.streamlines[i]
+                                    for i in final_indices]
 
         if self.verbose:
             msg = ' Number of centroids: %d'

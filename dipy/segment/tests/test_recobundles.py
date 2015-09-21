@@ -56,11 +56,17 @@ def test_recognition():
     fnames = [dname + bundle_name + '.trk' for bundle_name in bundle_trk]
 
     model_bundles_dix = {}
+    model_indices_dix = {}
+
+    cnt = 0
 
     for (i, fname) in enumerate(fnames):
         streams, hdr = tv.read(fname, points_space='rasmm')
         bundle = [s[0] for s in streams]
-        model_bundles_dix[bundle_trk[i].split('.trk')[0]] = bundle
+        key = bundle_trk[i].split('.trk')[0]
+        model_bundles_dix[key] = bundle
+        model_indices_dix[key] = cnt + np.arange(len(bundle))
+        cnt = cnt + len(bundle)
 
     play_bundles_dix = deepcopy(model_bundles_dix)
 
@@ -68,17 +74,21 @@ def test_recognition():
     mat[:3, 3] = np.array([0.1, 0, 0])
 
     tag = 'MCP'
-    tag = 'Fornix'
-    tag = 'Cingulum_right'
-    tag = 'CST_right'
-    tag = 'CST_left'
+    #tag = 'Fornix'
+    #tag = 'Cingulum_right'
+    #tag = 'CST_right'
+    #tag = 'CST_left'
 
     play_bundles_dix[tag] = transform_streamlines(play_bundles_dix[tag], mat)
 
     model_bundle = model_bundles_dix[tag]
 
     # make sure that you put the bundles back in the correct order
-    streamlines = list(chain(*play_bundles_dix.values()))
+    streamlines = []#list(chain(*play_bundles_dix.values()))
+
+    for (i, f) in enumerate(fnames):
+        streamlines += play_bundles_dix[bundle_trk[i]]
+
 
     # show_bundles(model_bundle, streamlines)
 
@@ -95,9 +105,6 @@ def test_recognition():
     print('Show model bundle and neighborhood')
     show_bundles(model_bundle, rb.neighb_streamlines)
 
-    np.set_printoptions(3, suppress=True)
-    print
-    print(rb.transf_matrix)
 
     print('Show model bundle and transformed neighborhood')
     show_bundles(model_bundle, rb.transf_streamlines)
@@ -112,11 +119,16 @@ def test_recognition():
     show_bundles(transform_streamlines(model_bundle, mat2),
                  recognized_bundle)
 
+    print('Show initial labels vs model bundle')
+    show_bundles(transform_streamlines(rb.labeled_streamlines, mat2),
+                 model_bundle)
+
     print
     print('Recognized bundle has %d streamlines' % (len(recognized_bundle),))
     print('Model bundle has %d streamlines' % (len(model_bundle),))
 
-    # 1/0
+    res = np.intersect1d(model_indices_dix['MCP'], rb.labels)
+    1/0
 
 if __name__ == '__main__':
 
