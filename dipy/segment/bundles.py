@@ -262,14 +262,20 @@ class RecoBundles(object):
         qb = QuickBundles(threshold=mdf_thr, metric=metric)
         cluster_map = qb.cluster(self.pruned_streamlines)
 
-        search_labels = np.setdiff1d(np.array(self.labels),
-                                     np.arange(self.nb_streamlines))
+        search_labels = np.setdiff1d(np.arange(self.nb_streamlines),
+                                     np.array(self.labels))
 
         search_rstreamlines = [self.rstreamlines[i] for i in search_labels]
 
-        vectors = bundles_distances_mam(search_rstreamlines,
-                                        cluster_map.centroids, mam_metric)
+        if mam_metric is not None:
+            vectors = bundles_distances_mam(search_rstreamlines,
+                                            cluster_map.centroids,
+                                            metric=mam_metric)
+        else:
+            vectors = bundles_distances_mdf(search_rstreamlines,
+                                            cluster_map.centroids)
 
+        self.search_rstreamlines = search_rstreamlines
         self.kd_vectors = vectors
         self.kdtree = cKDTree(vectors, leafsize=leaf_size)
 

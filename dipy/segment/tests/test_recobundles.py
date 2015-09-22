@@ -99,6 +99,7 @@ def test_recognition():
                                      slr=True,
                                      slr_select=(200, 200),
                                      pruning_thr=5)
+    #TODO check why pruning threshold segfaults when very low
 
     if disp:
 
@@ -135,15 +136,37 @@ def test_recognition():
 
     print('Difference %d' % (len(difference),))
 
-    rb.build_kdtree()
+    rb.build_kdtree(mam_metric=None)
+
+    dists, indices = rb.kdtree.query(np.zeros(rb.kd_vectors.shape[1]),
+                                     10, p=2)
+
+    extra_streamlines = [rb.search_rstreamlines[i] for i in indices]
+    show_bundles(recognized_bundle, extra_streamlines, tubes=True)
+
+    print('New streamlines')
+    print(len(extra_streamlines))
+
+    dists, indices = rb.kdtree.query(np.zeros(rb.kd_vectors.shape[1]),
+                                     20, p=2)
+
+    extra_streamlines = [rb.search_rstreamlines[i] for i in indices]
+    show_bundles(recognized_bundle, extra_streamlines, tubes=True)
+
+    print('New streamlines')
+    print(len(extra_streamlines))
+
 
     dists, indices = rb.kdtree.query(np.zeros(rb.kd_vectors.shape[1]),
                                      300, p=2)
 
-    extra_streamlines = [rb.streamlines[i] for i in indices]
-    show_bundles(recognized_bundle, extra_streamlines)
+    extra_streamlines = [rb.search_rstreamlines[i] for i in indices]
+    show_bundles(recognized_bundle, extra_streamlines, tubes=True)
 
-    return rb
+    print('New streamlines')
+    print(len(extra_streamlines))
+
+    #return rb
 
     1/0
 
