@@ -246,14 +246,6 @@ class RecoBundles(object):
         if self.verbose:
             print(' Duration %0.3f sec. \n' % (time() - t, ))
 
-    def shrink_with_shape_prior(self):
-        pass
-
-    def expand_with_shape_prior(self):
-        pass
-
-    def search_with_quickbundles():
-        pass
 
     def build_kdtree(self, nb_pts=20, mdf_thr=10, mam_metric='min',
                      leaf_size=10):
@@ -268,17 +260,30 @@ class RecoBundles(object):
 
         search_rstreamlines = [self.rstreamlines[i] for i in search_labels]
 
+        rlabeled_streamlines = set_number_of_points(self.labeled_streamlines,
+                                                    nb_pts)
+
         if mam_metric is not None:
             vectors = bundles_distances_mam(search_rstreamlines,
                                             cluster_map.centroids,
                                             metric=mam_metric)
+
+            internal_vectors = bundles_distances_mam(rlabeled_streamlines,
+                                                     cluster_map.centroids,
+                                                     metric=mam_metric)
         else:
             vectors = bundles_distances_mdf(search_rstreamlines,
                                             cluster_map.centroids)
 
+            internal_vectors = bundles_distances_mdf(rlabeled_streamlines,
+                                                     cluster_map.centroids)
+
         self.search_labels = search_labels
         self.kd_vectors = vectors
+        self.kd_internal_vectors = internal_vectors
         self.kdtree = cKDTree(vectors, leafsize=leaf_size)
+
+        self.kdtree_internal = cKDTree(internal_vectors, leafsize=leaf_size)
 
     def expand(self, nb_nn, return_streamlines=False):
         """ Expand
@@ -306,6 +311,25 @@ class RecoBundles(object):
         if return_streamlines:
             new_streamlines = [self.streamlines[self.search_labels[i]]
                                for i in indices]
+            return dists, actual_indices, new_streamlines
+        return dists, actual_indices
+
+    def reduce(self, nb_nn_reduced=1, return_streamlines=False):
+
+        cnt_max = self.kd_internal_vectors.shape[0]
+
+        if nb_nn_reduced < cnt_max:
+            cnt = cnt_max - nb_nn_reduced
+        else:
+            cnt = 1
+
+        dists, indices = self.kdtree_internal.query(
+            np.zeros(self.kd_internal_vectors.shape[1]), cnt, p=2)
+
+        actual_indices = [self.labels[i] for i in indices]
+        if return_streamlines:
+            new_streamlines = [self.streamlines[i]
+                               for i in actual_indices]
             return dists, actual_indices, new_streamlines
         return dists, actual_indices
 

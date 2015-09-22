@@ -78,8 +78,8 @@ def test_recognition():
     # tag = 'Fornix'
     # tag = 'Cingulum_right'
     # tag = 'CST_right'
-    # tag = 'CST_left'
-    tag = 'POPT_left'
+    tag = 'CST_left'
+    # tag = 'POPT_left'
 
     play_bundles_dix[tag] = transform_streamlines(play_bundles_dix[tag], mat)
 
@@ -98,7 +98,7 @@ def test_recognition():
     recognized_bundle = rb.recognize(model_bundle, mdf_thr=5,
                                      reduction_thr=20,
                                      slr=True,
-                                     slr_select=(400, 400),
+                                     slr_select=(256, 256),
                                      pruning_thr=5)
     # TODO check why pruning threshold segfaults when very low
 
@@ -138,7 +138,7 @@ def test_recognition():
 
     print('\a')
     print('Build the KDTree for this bundle')
-
+    print('Start expansion')
     print('\a')
 
     rb.build_kdtree(mam_metric=None)
@@ -149,9 +149,20 @@ def test_recognition():
     print(len(expansion_intersection))
     npt.assert_equal(len(expansion_intersection), 0)
 
+
     show_bundles(recognized_bundle, expansion_streamlines, tubes=False)
 
-    1/0
+    print('Start reduction')
+
+    nb_reduced = 100
+
+    dists, actual_indices, reduced_streamlines = rb.reduce(nb_reduced, True)
+
+    show_bundles(recognized_bundle, reduced_streamlines, tubes=True)
+
+    npt.assert_equal(len(np.intersect1d(actual_indices, rb.labels)),
+                     len(rb.labels) - nb_reduced)
+
 
 #    dists, indices = rb.kdtree.query(np.zeros(rb.kd_vectors.shape[1]),
 #                                     20, p=2)
