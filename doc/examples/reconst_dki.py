@@ -60,10 +60,10 @@ based statistics.
 First, we import all relevant modules:
 """
 
+import numpy as np
 import dipy.reconst.dki as dki
 import dipy.reconst.dti as dti
 import matplotlib.pyplot as plt
-import nibabel as nib
 from dipy.data import fetch_cenir_multib
 from dipy.data import read_cenir_multib
 from dipy.segment.mask import median_otsu
@@ -101,8 +101,8 @@ Function ``read_cenir_multib`` return img and gtab which contains respectively
 a nibabel Nifti1Image object (where the data can be extracted) and a
 GradientTable object with information about the b-values and b-vectors.
 
-Before fitting the data, we preform some data pre-processing. We first create a
-preliminary mask to avoid preprocessing unnecessary voxels:
+Before fitting the data, we preform some data pre-processing. We first compute
+a brain mask to avoid unnecessary calculations on the background of the image.
 """
 
 maskdata, mask = median_otsu(data, 4, 2, False, vol_idx=[0, 1], dilate=1)
@@ -115,29 +115,23 @@ data pre-processing step for diffusion kurtosis fitting is to denoise our data.
 For this, we use Dipy's non-local mean filter (see
 :ref:`example-denoise-nlmeans`). Note that, since the HCP-like data has a large
 number of diffusion-weigthed volumes, this procedure can take a couple of hours
-to compute.
+to compute the entire dataset. Therefore, to speed the run time in this example
+we only denoise an axial slice of the data.
 """
+
+axial_slice = 40
 
 sigma = estimate_sigma(data, N=4)
-den = nlmeans(data, sigma=sigma, mask=mask)
+
+mask_roi = np.zeros(data.shape[:-1], dtype=bool)
+mask_roi[:, :, axial_slice] = mask[:, :, axial_slice]
+
+den = nlmeans(data, sigma=sigma, mask=mask_roi)
+den = den[:, :, axial_slice, :]
 
 """
-To avoid future reprocessing of the non-local mean field, below we save the
-denoised version of the HCP-like data.
-"""
-
-nib.save(nib.Nifti1Image(den, affine), 'denoised_cenir_multib.nii.gz')
-
-"""
-Finally, we compute a final version of the brain mask and crop the denoised
-data to avoid unnecessary calculations on the background of the image.
-"""
-
-maskdata, mask = median_otsu(den, 4, 2, True, vol_idx=[0, 1], dilate=1)
-
-"""
-Now that we have loaded and prepared the datasets we can go forward with the
-voxel reconstruction. This can be done by first instantiating the
+Now that we have loaded and prepared the voxels to process we can go forward
+with the voxel reconstruction. This can be done by first instantiating the
 DiffusionKurtosisModel in the following way:
 """
 
@@ -148,7 +142,7 @@ To fit the data using the defined model object, we call the ``fit`` function of
 this object:
 """
 
-dkifit = dkimodel.fit(maskdata)
+dkifit = dkimodel.fit(den)
 
 """
 The fit method creates a DiffusionKurtosisFit object which contains all the
@@ -176,7 +170,7 @@ FA, MD, AD, and RD using Dipy's TensorModel.
 """
 
 tenmodel = dti.TensorModel(gtab)
-tenfit = tenmodel.fit(maskdata)
+tenfit = tenmodel.fit(den)
 
 dti_FA = tenfit.fa
 dti_MD = tenfit.md
@@ -186,32 +180,30 @@ dti_RD = tenfit.rd
 """
 The DT based measures can be easly visualized using matplotlib. For example,
 the FA, MD, AD, and RD obtain from the diffusion kurtosis model (upper panels)
-and the tensor model (lower panels) are plotted for an axial slice.
+and the tensor model (lower panels) are plotted for the selected axial slice.
 """
-
-axial_slice = 40
 
 fig1, ax = plt.subplots(2, 4, figsize=(12, 6),
                         subplot_kw={'xticks': [], 'yticks': []})
 
 fig1.subplots_adjust(hspace=0.3, wspace=0.05)
 
-ax.flat[0].imshow(FA[:, :, axial_slice], cmap='gray')
+ax.flat[0].imshow(FA, cmap='gray')
 ax.flat[0].set_title('FA (DKI)')
-ax.flat[1].imshow(MD[:, :, axial_slice], cmap='gray')
+ax.flat[1].imshow(MD, cmap='gray')
 ax.flat[1].set_title('MD (DKI)')
-ax.flat[2].imshow(AD[:, :, axial_slice], cmap='gray')
+ax.flat[2].imshow(AD, cmap='gray')
 ax.flat[2].set_title('AD (DKI)')
-ax.flat[3].imshow(RD[:, :, axial_slice], cmap='gray')
+ax.flat[3].imshow(RD, cmap='gray')
 ax.flat[3].set_title('RD (DKI)')
 
-ax.flat[4].imshow(dti_FA[:, :, axial_slice], cmap='gray')
+ax.flat[4].imshow(dti_FA, cmap='gray')
 ax.flat[4].set_title('FA (DTI)')
-ax.flat[5].imshow(dti_MD[:, :, axial_slice], cmap='gray')
+ax.flat[5].imshow(dti_MD, cmap='gray')
 ax.flat[5].set_title('MD (DTI)')
-ax.flat[6].imshow(dti_AD[:, :, axial_slice], cmap='gray')
+ax.flat[6].imshow(dti_AD, cmap='gray')
 ax.flat[6].set_title('AD (DTI)')
-ax.flat[7].imshow(dti_RD[:, :, axial_slice], cmap='gray')
+ax.flat[7].imshow(dti_RD, cmap='gray')
 ax.flat[7].set_title('RD (DTI)')
 
 plt.show()
@@ -252,11 +244,11 @@ fig2, ax = plt.subplots(1, 3, figsize=(12, 6),
 
 fig2.subplots_adjust(hspace=0.3, wspace=0.05)
 
-ax.flat[0].imshow(MK[:, :, axial_slice], cmap='gray')
+ax.flat[0].imshow(MK, cmap='gray')
 ax.flat[0].set_title('MK')
-ax.flat[1].imshow(AK[:, :, axial_slice], cmap='gray')
+ax.flat[1].imshow(AK, cmap='gray')
 ax.flat[1].set_title('AK')
-ax.flat[2].imshow(RK[:, :, axial_slice], cmap='gray')
+ax.flat[2].imshow(RK, cmap='gray')
 ax.flat[2].set_title('RK')
 
 plt.show()
