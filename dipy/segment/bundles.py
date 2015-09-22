@@ -179,6 +179,7 @@ class RecoBundles(object):
             np.set_printoptions(3, suppress=True)
             print(self.transf_matrix)
             np.set_printoptions()
+
             print(' Duration %0.3f sec. \n' % (time() - t,))
 
     def prune_what_not_in_model(self, mdf_thr=5, pruning_thr=10):
@@ -275,9 +276,38 @@ class RecoBundles(object):
             vectors = bundles_distances_mdf(search_rstreamlines,
                                             cluster_map.centroids)
 
-        self.search_rstreamlines = search_rstreamlines
+        self.search_labels = search_labels
         self.kd_vectors = vectors
         self.kdtree = cKDTree(vectors, leafsize=leaf_size)
+
+    def expand(self, nb_nn, return_streamlines=False):
+        """ Expand
+
+        Parameters
+        ----------
+        nb_nn : int
+            Number of nearest neighbors
+        return_streamlines : bool
+            Default is False.
+
+        Returns
+        -------
+        dists : float
+            Norm 2 distance from KDtree zero vector
+        actual_indices : list
+            Indices of new streamlines in the initial dataset
+        new_streamlines : list of ndarrays (optional)
+            Returned only if ``return_streamlines`` is True.
+        """
+
+        dists, indices = self.kdtree.query(np.zeros(self.kd_vectors.shape[1]),
+                                           nb_nn, p=2)
+        actual_indices = [self.search_labels[i] for i in indices]
+        if return_streamlines:
+            new_streamlines = [self.streamlines[self.search_labels[i]]
+                               for i in indices]
+            return dists, actual_indices, new_streamlines
+        return dists, actual_indices
 
 
 def recognize_bundles(model_bundle, moved_streamlines,

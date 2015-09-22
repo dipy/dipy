@@ -39,7 +39,7 @@ def show_bundles(static, moving, linewidth=1., tubes=False,
 
 def test_recognition():
 
-    disp = False
+    disp = True
     dname = '/home/eleftherios/Data/ISMRM_2015_challenge_bundles_RAS/'
 
     bundle_trk = ['CA', 'CC', 'Cingulum_left',
@@ -72,13 +72,14 @@ def test_recognition():
     play_bundles_dix = deepcopy(model_bundles_dix)
 
     mat = np.eye(4)
-    mat[:3, 3] = np.array([0.1, 0, 0])
+    mat[:3, 3] = np.array([-5., 5, 0])
 
     # tag = 'MCP'
     # tag = 'Fornix'
     # tag = 'Cingulum_right'
-    tag = 'CST_right'
+    # tag = 'CST_right'
     # tag = 'CST_left'
+    tag = 'POPT_left'
 
     play_bundles_dix[tag] = transform_streamlines(play_bundles_dix[tag], mat)
 
@@ -97,9 +98,9 @@ def test_recognition():
     recognized_bundle = rb.recognize(model_bundle, mdf_thr=5,
                                      reduction_thr=20,
                                      slr=True,
-                                     slr_select=(200, 200),
+                                     slr_select=(400, 400),
                                      pruning_thr=5)
-    #TODO check why pruning threshold segfaults when very low
+    # TODO check why pruning threshold segfaults when very low
 
     if disp:
 
@@ -133,42 +134,47 @@ def test_recognition():
 
     # intersection = np.intersect1d(model_indices_dix['MCP'], rb.labels)
     difference = np.setdiff1d(rb.labels, model_indices_dix[tag])
-
     print('Difference %d' % (len(difference),))
+
+    print('\a')
+    print('Build the KDTree for this bundle')
+
+    print('\a')
 
     rb.build_kdtree(mam_metric=None)
 
-    dists, indices = rb.kdtree.query(np.zeros(rb.kd_vectors.shape[1]),
-                                     10, p=2)
+    dists, actual_indices, expansion_streamlines = rb.expand(300, True)
 
-    extra_streamlines = [rb.search_rstreamlines[i] for i in indices]
-    show_bundles(recognized_bundle, extra_streamlines, tubes=True)
+    expansion_intersection = np.intersect1d(actual_indices, rb.labels)
+    print(len(expansion_intersection))
+    npt.assert_equal(len(expansion_intersection), 0)
 
-    print('New streamlines')
-    print(len(extra_streamlines))
-
-    dists, indices = rb.kdtree.query(np.zeros(rb.kd_vectors.shape[1]),
-                                     20, p=2)
-
-    extra_streamlines = [rb.search_rstreamlines[i] for i in indices]
-    show_bundles(recognized_bundle, extra_streamlines, tubes=True)
-
-    print('New streamlines')
-    print(len(extra_streamlines))
-
-
-    dists, indices = rb.kdtree.query(np.zeros(rb.kd_vectors.shape[1]),
-                                     300, p=2)
-
-    extra_streamlines = [rb.search_rstreamlines[i] for i in indices]
-    show_bundles(recognized_bundle, extra_streamlines, tubes=True)
-
-    print('New streamlines')
-    print(len(extra_streamlines))
-
-    #return rb
+    show_bundles(recognized_bundle, expansion_streamlines, tubes=False)
 
     1/0
+
+#    dists, indices = rb.kdtree.query(np.zeros(rb.kd_vectors.shape[1]),
+#                                     20, p=2)
+#
+#    extra_streamlines = [rb.search_rstreamlines[i] for i in indices]
+#    show_bundles(recognized_bundle, extra_streamlines, tubes=True)
+#
+#    print('New streamlines')
+#    print(len(extra_streamlines))
+#
+#
+#    dists, indices = rb.kdtree.query(np.zeros(rb.kd_vectors.shape[1]),
+#                                     300, p=2)
+#
+#    extra_streamlines = [rb.search_rstreamlines[i] for i in indices]
+#    show_bundles(recognized_bundle, extra_streamlines, tubes=True)
+#
+#    print('New streamlines')
+#    print(len(extra_streamlines))
+
+    # return rb
+
+    # 1/0
 
 
 if __name__ == '__main__':
