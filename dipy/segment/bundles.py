@@ -412,8 +412,8 @@ def recognize_bundles(model_bundle, moved_streamlines,
         t = time()
 
         x0 = np.array([0, 0, 0, 0, 0, 0, 1.])
-        bounds = [(-30, 30), (-30, 30), (-30, 30),
-                  (-45, 45), (-45, 45), (-45, 45), scale_range]
+        bounds = [(-6, 6), (-6, 6), (-6, 6),
+                  (-5, 5), (-5, 5), (-5, 5), scale_range]
 
         slr = StreamlineLinearRegistration(x0=x0, bounds=bounds)
 

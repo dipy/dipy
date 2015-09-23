@@ -345,18 +345,23 @@ class StreamlineLinearRegistration(object):
             from dipy.core.pso import pso
             lower_bounds = [b[0] for b in self.bounds]
             upper_bounds = [b[1] for b in self.bounds]
-            xopt, fopt = pso(distance, lower_bounds, upper_bounds)
+            xopt, fopt, all_xopt, all_fopt = pso(distance, lower_bounds, upper_bounds)
+            print(lower_bounds)
+            print(upper_bounds)
+            print(xopt)
+            print(fopt)
             class Opt(object):
-                xopt=None
-                fopt=None
-                nfev=None
-                nit=None
+                xopt = None
+                fopt = None
+                nfev = None
+                nit = None
 
             opt = Opt()
             opt.xopt = xopt
             opt.fopt = fopt
             opt.nfev = 100
             opt.nit = 100
+            opt.evolution = None
 
         if self.verbose:
             opt.print_summary()
