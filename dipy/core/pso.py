@@ -145,7 +145,7 @@ def particle_swarm_optimizer(func, lb, ub,
     fg = np.inf  # best swarm position starting value
 
     # Initialize the particle's position
-    x = lb + x*(ub - lb)
+    x = lb + x * (ub - lb)
 
     # Calculate objective and constraints for each particle
     if processes > 1:

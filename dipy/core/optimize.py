@@ -136,12 +136,12 @@ class Optimizer(object):
             lower_bounds = [b[0] for b in bounds]
             upper_bounds = [b[1] for b in bounds]
 
-            opt_pso = {'ieqcons':[], 'f_ieqcons':None,
-                       'args':(), 'kwargs':{},
-                       'swarmsize':100, 'omega':0.5,
-                       'phip':0.5, 'phig':0.5, 'maxiter':100,
-                       'minstep':1e-8, 'minfunc':1e-8, 'debug':False,
-                       'processes':1, 'particle_output':False}
+            opt_pso = {'ieqcons': [], 'f_ieqcons': None,
+                       'args': args, 'kwargs': {},
+                       'swarmsize': 100, 'omega': 0.5,
+                       'phip': 0.5, 'phig': 0.5, 'maxiter': 100,
+                       'minstep': 1e-8, 'minfunc': 1e-8, 'debug': False,
+                       'processes': 1, 'particle_output': False}
 
             if options is None:
                 options = opt_pso
@@ -173,8 +173,10 @@ class Optimizer(object):
             else:
                 xopt, fopt = out
 
-            res = {'x': xopt, 'fun': fopt,
-                   'nfev': opt_pso['maxiter'], 'nit': opt_pso['swarmsize']}
+            self.res = {'x': xopt, 'fun': fopt,
+                        'nfev': opt_pso['maxiter'],
+                        'nit': opt_pso['swarmsize']}
+            return
 
         if SCIPY_LESS_0_12:
 
