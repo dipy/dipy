@@ -79,8 +79,8 @@ def test_recognition():
     # tag = 'Fornix'
     # tag = 'Cingulum_right'
     # tag = 'CST_right'
-    # tag = 'CST_left'
-    tag = 'POPT_left'
+    tag = 'CST_left'
+    # tag = 'POPT_left'
 
     play_bundles_dix[tag] = transform_streamlines(play_bundles_dix[tag], mat)
 
@@ -145,7 +145,7 @@ def test_recognition():
 
     rb.build_kdtree(mam_metric=None)
 
-    dists, actual_indices, expansion_streamlines = rb.expand(300, True)
+    dists, actual_indices, expansion_streamlines = rb.expand(10000, True)
 
     expansion_intersection = np.intersect1d(actual_indices, rb.labels)
     print(len(expansion_intersection))
@@ -156,16 +156,17 @@ def test_recognition():
 
     print('Start reduction')
 
-    nb_reduced = 100
+    nb_reduced = 7000
 
     dists, actual_indices, reduced_streamlines = rb.reduce(nb_reduced, True)
 
-    show_bundles(recognized_bundle, reduced_streamlines, tubes=True)
+    show_bundles(recognized_bundle, reduced_streamlines, tubes=False)
 
     npt.assert_equal(len(np.intersect1d(actual_indices, rb.labels)),
                      len(rb.labels) - nb_reduced)
 
 
+    1/0
 #    dists, indices = rb.kdtree.query(np.zeros(rb.kd_vectors.shape[1]),
 #                                     20, p=2)
 #

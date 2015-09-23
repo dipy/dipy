@@ -155,7 +155,7 @@ class RecoBundles(object):
         bounds = [(-30, 30), (-30, 30), (-30, 30),
                   (-45, 45), (-45, 45), (-45, 45), scale_range]
 
-        slr = StreamlineLinearRegistration(x0=x0, bounds=bounds, method='PSO')
+        slr = StreamlineLinearRegistration(x0=x0, bounds=bounds)
         static = select_random_set_of_streamlines(self.model_bundle,
                                                   select_model)
 
