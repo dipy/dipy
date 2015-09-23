@@ -150,6 +150,7 @@ class RecoBundles(object):
 
         if x0 is None:
             x0 = np.array([0, 0, 0, 0, 0, 0, 1.])
+            # x0 = np.array([0, 0, 0, 0, 0, 0])
 
         bounds = [(-30, 30), (-30, 30), (-30, 30),
                   (-45, 45), (-45, 45), (-45, 45), scale_range]

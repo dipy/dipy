@@ -73,13 +73,14 @@ def test_recognition():
 
     mat = np.eye(4)
     mat[:3, 3] = np.array([-5., 5, 0])
+    #mat[:3, 3] = np.array([5, 0, 0])
 
     # tag = 'MCP'
     # tag = 'Fornix'
     # tag = 'Cingulum_right'
     # tag = 'CST_right'
-    tag = 'CST_left'
-    # tag = 'POPT_left'
+    # tag = 'CST_left'
+    tag = 'POPT_left'
 
     play_bundles_dix[tag] = transform_streamlines(play_bundles_dix[tag], mat)
 
@@ -98,8 +99,9 @@ def test_recognition():
     recognized_bundle = rb.recognize(model_bundle, mdf_thr=5,
                                      reduction_thr=20,
                                      slr=True,
-                                     slr_select=(256, 256),
+                                     slr_select=(400, 400),
                                      pruning_thr=5)
+
     # TODO check why pruning threshold segfaults when very low
 
     if disp:
