@@ -261,8 +261,8 @@ class StreamlineLinearRegistration(object):
 
         self.verbose = verbose
         self.method = method
-        if self.method not in ['Powell', 'L-BFGS-B']:
-            raise ValueError('Only Powell and L-BFGS-B can be used')
+        if self.method not in ['Powell', 'L-BFGS-B', 'PSO']:
+            raise ValueError('Only Powell, L-BFGS-B and PSO can be used')
         self.bounds = bounds
         self.options = options
         self.evolution = evolution
@@ -339,6 +339,24 @@ class StreamlineLinearRegistration(object):
                             method=self.method,
                             bounds=self.bounds, options=self.options,
                             evolution=self.evolution)
+
+        if self.method == 'PSO':
+
+            from dipy.core.pso import pso
+            lower_bounds = [b[0] for b in self.bounds]
+            upper_bounds = [b[1] for b in self.bounds]
+            xopt, fopt, best_pos, best_f = pso(distance,
+                                               lower_bounds,
+                                               upper_bounds)
+            class Opt(object):
+                xopt=None
+                fopt=None
+                nfev=None
+                nit=None
+
+            opt = Opt()
+            opt.xopt = xopt
+            opt.fopt = fopt
 
         if self.verbose:
             opt.print_summary()
