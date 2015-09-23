@@ -1,5 +1,3 @@
-from warnings import warn
-
 import numpy as np
 from nibabel.affines import apply_affine
 from dipy.tracking.streamlinespeed import set_number_of_points
@@ -98,6 +96,7 @@ def transform_streamlines(streamlines, mat):
     new_streamlines : list
         List of the transformed 2D ndarrays of shape[-1]==3
     """
+
     return [apply_affine(mat, s) for s in streamlines]
 
 
@@ -249,3 +248,27 @@ def select_by_rois(streamlines, rois, include, mode=None, affine=None,
                                       mode=mode)
         if include & ~exclude:
             yield sl
+
+def get_bounding_box_streamlines(streamlines):
+    """ Returns the axis aligned bounding box (AABB) envlopping `streamlines`.
+
+    Parameters
+    ----------
+    streamlines : list of 2D arrays
+        Each 2D array represents a sequence of 3D points (nb_points, 3).
+
+    Returns
+    -------
+    box_min : ndarray
+        Coordinate of the bounding box corner having the minimum (X, Y, Z).
+    box_max : ndarray
+        Coordinate of the bounding box corner having the maximum (X, Y, Z).
+    """
+    box_min = np.array([np.inf, np.inf, np.inf])
+    box_max = -np.array([np.inf, np.inf, np.inf])
+
+    for s in streamlines:
+        box_min = np.minimum(box_min, np.min(s, axis=0))
+        box_max = np.maximum(box_max, np.max(s, axis=0))
+
+    return box_min, box_max

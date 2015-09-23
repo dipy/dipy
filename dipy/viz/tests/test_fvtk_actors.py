@@ -322,6 +322,90 @@ def test_figure():
     npt.assert_equal(report.bg_color, (0.7, 0.7, 0.7))
 
 
-if __name__ == "__main__":
+@npt.dec.skipif(not actor.have_vtk)
+@npt.dec.skipif(not actor.have_vtk_colors)
+def test_text_3d():
+    ren = window.Renderer()
 
-    npt.run_module_suite()
+    grid_line = actor.line([np.array([[-1, -1, 0],
+                                      [1, -1, 0],
+                                      [1, 1, 0],
+                                      [-1, 1, 0],
+                                      [-1, -1, 0]], dtype=float),
+                            np.array([[0, -1, 0.],
+                                      [0, 1, 0]], dtype=float),
+                            np.array([[-1, 0, 0.],
+                                      [1, 0, 0]], dtype=float)], colors=(1., 1., 1.))
+    ren.add(grid_line)
+
+    ren.add(actor.text_3d("TestA", position=(-1, 1, 0), color=(1, 0, 0), font_size=0.2,
+                          justification="left", vertical_justification="top"))
+    ren.add(actor.text_3d("TestB", position=(0, 1, 0), color=(0, 1, 0), font_size=0.2,
+                          justification="center", vertical_justification="top"))
+    ren.add(actor.text_3d("TestC", position=(1, 1, 0), color=(0, 0, 1), font_size=0.2,
+                          justification="right", vertical_justification="top"))
+
+    ren.add(actor.text_3d("TestA", position=(-1, 0, 0), color=(1, 1, 0), font_size=0.2,
+                          justification="left", vertical_justification="middle"))
+    ren.add(actor.text_3d("TestB", position=(0, 0, 0), color=(0, 1, 1), font_size=0.2,
+                          justification="center", vertical_justification="middle"))
+    ren.add(actor.text_3d("TestC", position=(1, 0, 0), color=(1, 0, 1), font_size=0.2,
+                          justification="right", vertical_justification="middle"))
+
+    ren.add(actor.text_3d("TestA", position=(-1, -1, 0), color=(1, 0, 1), font_size=0.2,
+                          justification="left", vertical_justification="bottom"))
+    ren.add(actor.text_3d("TestB", position=(0, -1, 0), color=(1, 1, 0), font_size=0.2,
+                          justification="center", vertical_justification="bottom"))
+    ren.add(actor.text_3d("TestC", position=(1, -1, 0), color=(0, 1, 1), font_size=0.2,
+                          justification="right", vertical_justification="bottom"))
+
+    ren.add(actor.axes())
+    ren.reset_camera()
+
+    show_m = window.ShowManager(ren)
+    show_m.start()
+
+    # Multi-lines
+    ren = window.Renderer()
+
+    grid_line = actor.line([np.array([[-1, -1, 0],
+                                      [1, -1, 0],
+                                      [1, 1, 0],
+                                      [-1, 1, 0],
+                                      [-1, -1, 0]], dtype=float),
+                            np.array([[0, -1, 0.],
+                                      [0, 1, 0]], dtype=float),
+                            np.array([[-1, 0, 0.],
+                                      [1, 0, 0]], dtype=float)], colors=(1., 1., 1.))
+    ren.add(grid_line)
+
+    ren.add(actor.text_3d("TestA\nlines\nvery long long!", position=(-1, 1, 0), color=(1, 0, 0), font_size=0.2,
+                          justification="left", vertical_justification="top"))
+    ren.add(actor.text_3d("TestB", position=(0, 1, 0), color=(0, 1, 0), font_size=0.2,
+                          justification="center", vertical_justification="top"))
+    ren.add(actor.text_3d("TestC", position=(1, 1, 0), color=(0, 0, 1), font_size=0.2,
+                          justification="right", vertical_justification="top"))
+
+    ren.add(actor.text_3d("TestA", position=(-1, 0, 0), color=(1, 1, 0), font_size=0.2,
+                          justification="left", vertical_justification="middle"))
+    ren.add(actor.text_3d("TestB\nlines\nvery long long!", position=(0, 0, 0), color=(0, 1, 1), font_size=0.2,
+                          justification="center", vertical_justification="middle"))
+    ren.add(actor.text_3d("TestC", position=(1, 0, 0), color=(1, 0, 1), font_size=0.2,
+                          justification="right", vertical_justification="middle"))
+
+    ren.add(actor.text_3d("TestA", position=(-1, -1, 0), color=(1, 0, 1), font_size=0.2,
+                          justification="left", vertical_justification="bottom"))
+    ren.add(actor.text_3d("TestB", position=(0, -1, 0), color=(1, 1, 0), font_size=0.2,
+                          justification="center", vertical_justification="bottom"))
+    ren.add(actor.text_3d("TestC\nlines\nvery long long!", position=(1, -1, 0), color=(0, 1, 1), font_size=0.2,
+                          justification="right", vertical_justification="bottom"))
+
+    ren.add(actor.axes())
+    ren.reset_camera()
+
+    show_m = window.ShowManager(ren)
+    show_m.start()
+
+if __name__ == "__main__":
+    test_text_3d()
+    #npt.run_module_suite()
