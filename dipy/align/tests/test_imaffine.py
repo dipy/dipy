@@ -36,7 +36,7 @@ factors = {('TRANSLATION', 2): (2.0, 0.35, np.array([2.3, 4.5])),
                                                 -0.07, 0.10,  0.99, -1.4]))}
 
 
-def test_align_centers_of_mass_3d():
+def test_transform_centers_of_mass_3d():
     np.random.seed(1246592)
     shape = (64, 64, 64)
     rm = 8
@@ -79,12 +79,12 @@ def test_align_centers_of_mass_3d():
             expected[:3, 3] = c_moving - c_static
 
             # Implementation under test
-            actual = imaffine.align_centers_of_mass(static, static_grid2world,
-                                                    moving, moving_grid2world)
+            actual = imaffine.transform_centers_of_mass(static, static_grid2world,
+                                                        moving, moving_grid2world)
             assert_array_almost_equal(actual.affine, expected)
 
 
-def test_align_geometric_centers_3d():
+def test_transform_geometric_centers_3d():
     # Create arbitrary image-to-space transforms
     axis = np.array([.5, 2.0, 1.5])
     t = 0.15 #translation factor
@@ -124,12 +124,12 @@ def test_align_geometric_centers_3d():
                     expected[:3, 3] = c_moving - c_static
 
                     # Implementation under test
-                    actual = imaffine.align_geometric_centers(static,
+                    actual = imaffine.transform_geometric_centers(static,
                         static_grid2world, moving, moving_grid2world)
                     assert_array_almost_equal(actual.affine, expected)
 
 
-def test_align_origins_3d():
+def test_transform_origins_3d():
     # Create arbitrary image-to-space transforms
     axis = np.array([.5, 2.0, 1.5])
     t = 0.15 #translation factor
@@ -165,7 +165,7 @@ def test_align_origins_3d():
                     expected[:3, 3] = c_moving - c_static
 
                     # Implementation under test
-                    actual = imaffine.align_origins(static, static_grid2world,
+                    actual = imaffine.transform_origins(static, static_grid2world,
                                                     moving, moving_grid2world)
                     assert_array_almost_equal(actual.affine, expected)
 

@@ -2,7 +2,6 @@
 """This module contains the parts of dipy.tracking.utils that need to be
 implemented in cython.
 """
-
 import cython
 
 import numpy as np
@@ -211,16 +210,16 @@ def track_counts(tracks, vol_dims, vox_sizes=(1,1,1), return_elements=True):
     Imagine you had voxel coordinate tracks in ``vs``.  To just fill an array
     with the counts of how many tracks pass through each voxel:
 
-    >>> vox_track0 = np.array([[0,0,0],[1.1,2.2,3.3],[2.2,4.4,6.6]])
-    >>> vox_track1 = np.array([[0,0,0],[0,0,1],[0,0,2]])
+    >>> vox_track0 = np.array([[0, 0, 0], [1.1, 2.2, 3.3], [2.2, 4.4, 6.6]])
+    >>> vox_track1 = np.array([[0, 0, 0], [0, 0, 1], [0, 0, 2]])
     >>> vs = (vox_track0, vox_track1)
     >>> vox_dim = (10, 20, 30) # original voxel array size
-    >>> tcs=track_counts(vs, vox_dim, (1,1,1), False)
+    >>> tcs = track_counts(vs, vox_dim, (1, 1, 1), False)
     >>> tcs.shape
     (10, 20, 30)
-    >>> tcs[0,0,0:4]
+    >>> tcs[0, 0, 0:4]
     array([2, 1, 1, 0])
-    >>> tcs[1,2,3], tcs[2,4,7]
+    >>> tcs[1, 2, 3], tcs[2, 4, 7]
     (1, 1)
 
     You can also use the routine to count into larger-than-voxel boxes.  To do

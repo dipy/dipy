@@ -64,16 +64,16 @@ pre_align = np.array([[1.02783543e+00, -4.83019053e-02, -6.07735639e-02, -2.5765
 As we did in the 2D example, we would like to visualize (some slices of) the two
 volumes by overlapping them over two channels of a color image. To do that we
 need them to be sampled on the same grid, so let's first re-sample the moving
-image on the static grid
+image on the static grid. We create an AffineMap to transform the moving image
+towards the static image
 """
 
-import dipy.align.vector_fields as vfu
+from dipy.align.imaffine import AffineMap
+affine_map = AffineMap(pre_align,
+                       static.shape, static_affine,
+                       moving.shape, moving_affine)
 
-transform = np.linalg.inv(moving_affine).dot(pre_align.dot(static_affine))
-resampled = vfu.warp_3d_affine(moving.astype(np.float32), 
-                                   np.asarray(static.shape, dtype=np.int32), 
-                                   transform)
-resampled = np.asarray(resampled)
+resampled = affine_map.transform(moving)
 
 """
 plot the overlapped middle slices of the volumes

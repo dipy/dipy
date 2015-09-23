@@ -49,9 +49,12 @@ And the letters A-D represent the following points in
 from __future__ import division, print_function, absolute_import
 
 from functools import wraps
+from warnings import warn
 
-# Import tools writen in cython
-from .vox2track import *
+from nibabel.affines import apply_affine
+from scipy.spatial.distance import cdist
+
+from dipy.core.geometry import dist_to_corner
 
 from collections import defaultdict
 from ..utils.six.moves import xrange, map
@@ -63,6 +66,7 @@ from . import metrics
 
 # Import helper functions shared with vox2track
 from ._utils import (_mapping_to_voxel, _to_voxel_coordinates)
+
 
 def _rmi(index, dims):
     """An alternate implementation of numpy.ravel_multi_index for older
@@ -127,8 +131,8 @@ def density_map(streamlines, vol_dims, voxel_size=None, affine=None):
     for sl in streamlines:
         inds = _to_voxel_coordinates(sl, lin_T, offset)
         i, j, k = inds.T
-        #this takes advantage of the fact that numpy's += operator only acts
-        #once even if there are repeats in inds
+        # this takes advantage of the fact that numpy's += operator only
+        # acts once even if there are repeats in inds
         counts[i, j, k] += 1
     return counts
 
@@ -174,8 +178,7 @@ def connectivity_matrix(streamlines, label_volume, voxel_size=None,
     # Error checking on label_volume
     kind = label_volume.dtype.kind
     labels_positive = ((kind == 'u') or
-                       ((kind == 'i') and (label_volume.min() >= 0))
-                      )
+                       ((kind == 'i') and (label_volume.min() >= 0)))
     valid_label_volume = (labels_positive and label_volume.ndim == 3)
     if not valid_label_volume:
         raise ValueError("label_volume must be a 3d integer array with"
@@ -184,14 +187,14 @@ def connectivity_matrix(streamlines, label_volume, voxel_size=None,
     # If streamlines is an iterators
     if return_mapping and mapping_as_streamlines:
         streamlines = list(streamlines)
-    #take the first and last point of each streamline
+    # take the first and last point of each streamline
     endpoints = [sl[0::len(sl)-1] for sl in streamlines]
 
     # Map the streamlines coordinates to voxel coordinates
     lin_T, offset = _mapping_to_voxel(affine, voxel_size)
     endpoints = _to_voxel_coordinates(endpoints, lin_T, offset)
 
-    #get labels for label_volume
+    # get labels for label_volume
     i, j, k = endpoints.T
     endlabels = label_volume[i, j, k]
     if symmetric:
@@ -336,9 +339,10 @@ def subsegment(streamlines, max_segment_length):
                     count += 1
             elif ns == 0:
                 pass
-                #repeated point
+                # repeated point
             else:
-                #this should never happen because ns should be a positive int
+                # this should never happen because ns should be a positive
+                # int
                 assert(ns >= 0)
         yield output_sl
 
@@ -431,13 +435,15 @@ def seeds_from_mask(mask, density=[1, 1, 1], voxel_size=None, affine=None):
 
     return seeds
 
+
 def random_seeds_from_mask(mask, seeds_per_voxel=1, affine=None):
     """Creates randomly placed seeds for fiber tracking from a binary mask.
 
-    Seeds points are placed randomly distributed in all voxels of ``mask`` which
-    are ``True``. This function is essentially similar to ``seeds_from_mask()``,
-    with the difference that instead of evenly distributing the seeds, it randomly
-    places the seeds within the voxels specified by the ``mask``
+    Seeds points are placed randomly distributed in all voxels of ``mask``
+    which are ``True``. This function is essentially similar to
+    ``seeds_from_mask()``, with the difference that instead of evenly
+    distributing the seeds, it randomly places the seeds within the voxels
+    specified by the ``mask``
 
     Parameters
     ----------
@@ -505,6 +511,7 @@ def random_seeds_from_mask(mask, seeds_per_voxel=1, affine=None):
 
     return seeds
 
+
 def _with_initialize(generator):
     """Allows one to write a generator with initialization code.
 
@@ -530,7 +537,8 @@ def target(streamlines, target_mask, affine, include=True):
         A sequence of streamlines. Each streamline should be a (N, 3) array,
         where N is the length of the streamline.
     target_mask : array-like
-        A mask used as a target.
+        A mask used as a target. Non-zero values are considered to be within
+        the target region.
     affine : array (4, 4)
         The affine transform from voxel indices to streamline points.
     include : bool, default True
@@ -566,6 +574,130 @@ def target(streamlines, target_mask, affine, include=True):
             raise ValueError("streamlines points are outside of target_mask")
         if state.any() == include:
             yield sl
+
+
+def streamline_near_roi(streamline, roi_coords, tol, mode='any'):
+    """Is a streamline near an ROI.
+
+    Implements the inner loops of the :func:`near_roi` function.
+
+    Parameters
+    ----------
+    streamline : array, shape (N, 3)
+        A single streamline
+    roi_coords : array, shape (M, 3)
+        ROI coordinates transformed to the streamline coordinate frame.
+    tol : float
+        Distance (in the units of the streamlines, usually mm). If any
+        coordinate in the streamline is within this distance from the center
+        of any voxel in the ROI, this function returns True.
+    mode : string
+        One of {"any", "all", "either_end", "both_end"}, where return True
+        if:
+
+        "any" : any point is within tol from ROI.
+
+        "all" : all points are within tol from ROI.
+
+        "either_end" : either of the end-points is within tol from ROI
+
+        "both_end" : both end points are within tol from ROI.
+
+    Returns
+    -------
+    out : boolean
+    """
+    if len(roi_coords) == 0:
+        return False
+    if mode == "any" or mode == "all":
+        s = streamline
+    elif mode == "either_end" or mode == "both_end":
+        # 'end' modes, use a streamline with 2 nodes:
+        s = np.vstack([streamline[0], streamline[-1]])
+    else:
+        e_s = "For determining relationship to an array, you can use "
+        e_s += "one of the following modes: 'any', 'all', 'both_end',"
+        e_s += "'either_end', but you entered: %s." % mode
+        raise ValueError(e_s)
+
+    dist = cdist(s, roi_coords, 'euclidean')
+
+    if mode == "any" or mode == "either_end":
+        return np.min(dist) <= tol
+    else:
+        return np.all(np.min(dist, -1) <= tol)
+
+
+def near_roi(streamlines, region_of_interest, affine=None, tol=None,
+             mode="any"):
+    """Provide filtering criteria for a set of streamlines based on whether
+    they fall within a tolerance distance from an ROI
+
+    Parameters
+    ----------
+    streamlines : list or generator
+        A sequence of streamlines. Each streamline should be a (N, 3) array,
+        where N is the length of the streamline.
+    region_of_interest : ndarray
+        A mask used as a target. Non-zero values are considered to be within
+        the target region.
+    affine : ndarray
+        Affine transformation from voxels to streamlines. Default: identity.
+    tol : float
+        Distance (in the units of the streamlines, usually mm). If any
+        coordinate in the streamline is within this distance from the center
+        of any voxel in the ROI, the filtering criterion is set to True for
+        this streamline, otherwise False. Defaults to the distance between
+        the center of each voxel and the corner of the voxel.
+    mode : string, optional
+        One of {"any", "all", "either_end", "both_end"}, where return True
+        if:
+
+        "any" : any point is within tol from ROI. Default.
+
+        "all" : all points are within tol from ROI.
+
+        "either_end" : either of the end-points is within tol from ROI
+
+        "both_end" : both end points are within tol from ROI.
+
+    Returns
+    -------
+    1D array of boolean dtype, shape (len(streamlines), )
+
+    This contains `True` for indices corresponding to each streamline
+    that passes within a tolerance distance from the target ROI, `False`
+    otherwise.
+    """
+    if affine is None:
+        affine = np.eye(4)
+    dtc = dist_to_corner(affine)
+    if tol is None:
+        tol = dtc
+    elif tol < dtc:
+        w_s = "Tolerance input provided would create gaps in your"
+        w_s += " inclusion ROI. Setting to: %s" % dtc
+        warn(w_s)
+        tol = dtc
+
+    roi_coords = np.array(np.where(region_of_interest)).T
+    x_roi_coords = apply_affine(affine, roi_coords)
+
+    # If it's already a list, we can save time by preallocating the output
+    if isinstance(streamlines, list):
+        out = np.zeros(len(streamlines), dtype=bool)
+        for ii, sl in enumerate(streamlines):
+            out[ii] = streamline_near_roi(sl, x_roi_coords, tol=tol,
+                                          mode=mode)
+        return out
+    # If it's a generator, we'll need to generate the output into a list
+    else:
+        out = []
+        for sl in streamlines:
+            out.append(streamline_near_roi(sl, x_roi_coords, tol=tol,
+                                           mode=mode))
+
+        return(np.array(out, dtype=bool))
 
 
 def reorder_voxels_affine(input_ornt, output_ornt, shape, voxel_size):
@@ -607,7 +739,7 @@ def reorder_voxels_affine(input_ornt, output_ornt, shape, voxel_size):
     affine[:3] = affine[map[:, 0]]
     corner = asarray(voxel_size) * shape
     affine[:3, 3] = (map[:, 1] < 0) * corner[map[:, 0]]
-    #multiply the rows of affine to get right sign
+    # multiply the rows of affine to get right sign
     affine[:3, :3] *= map[:, 1:]
     return affine
 
@@ -638,17 +770,18 @@ def affine_from_fsl_mat_file(mat_affine, input_voxsz, output_voxsz):
     input_voxsz = asarray(input_voxsz)
     output_voxsz = asarray(output_voxsz)
     shift = eye(4)
-    shift[:3,3] = -input_voxsz/2
+    shift[:3, 3] = -input_voxsz / 2
 
     affine = dot(mat_affine, shift)
-    affine[:3,3] += output_voxsz/2
+    affine[:3, 3] += output_voxsz / 2
 
     return affine
 
 
 def affine_for_trackvis(voxel_size, voxel_order=None, dim=None,
                         ref_img_voxel_order=None):
-    """Returns an affine which maps points for voxel indices to trackvis space.
+    """Returns an affine which maps points for voxel indices to trackvis
+    space.
 
     Parameters
     ----------
@@ -660,7 +793,6 @@ def affine_for_trackvis(voxel_size, voxel_order=None, dim=None,
     affine : array (4, 4)
         Mapping from the voxel indices of the reference image to trackvis
         space.
-
     """
     if (voxel_order is not None or dim is not None or
         ref_img_voxel_order is not None):
@@ -765,3 +897,43 @@ def move_streamlines(streamlines, output_space, input_space=None):
 
     for sl in streamlines:
         yield np.dot(sl, lin_T) + offset
+
+
+def reduce_rois(rois, include):
+    """Reduce multiple ROIs to one inclusion and one exclusion ROI
+
+    Parameters
+    ----------
+    rois : list or ndarray
+        A list of 3D arrays, each with shape (x, y, z) corresponding to the
+        shape of the brain volume, or a 4D array with shape (n_rois, x, y,
+        z). Non-zeros in each volume are considered to be within the region.
+
+    include : array or list
+        A list or 1D array of boolean marking inclusion or exclusion
+        criteria.
+
+    Returns
+    -------
+    include_roi : boolean 3D array
+        An array marking the inclusion mask.
+
+    exclude_roi : boolean 3D array
+        An array marking the exclusion mask
+
+    Note
+    ----
+    The include_roi and exclude_roi can be used to perfom the operation: "(A
+    or B or ...) and not (X or Y or ...)", where A, B are inclusion regions
+    and X, Y are exclusion regions.
+    """
+    include_roi = np.zeros(rois[0].shape, dtype=bool)
+    exclude_roi = np.zeros(rois[0].shape, dtype=bool)
+
+    for i in range(len(rois)):
+        if include[i]:
+            include_roi |= rois[i]
+        else:
+            exclude_roi |= rois[i]
+
+    return include_roi, exclude_roi
