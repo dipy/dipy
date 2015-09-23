@@ -18,7 +18,8 @@ from dipy.core.geometry import (sphere2cart, cart2sphere,
                                 compose_transformations,
                                 compose_matrix,
                                 decompose_matrix,
-                                perpendicular_directions)
+                                perpendicular_directions,
+                                dist_to_corner)
 
 from nose.tools import (assert_false, assert_equal, assert_raises,
                         assert_almost_equal)
@@ -288,6 +289,34 @@ def test_perpendicular_directions():
             assert_almost_equal(rest, 0)
 
 
-if __name__ == '__main__':
+def _rotation_from_angles(r):
+    R = np.array([[1, 0, 0],
+                  [0, np.cos(r[0]), np.sin(r[0])],
+                  [0, -np.sin(r[0]), np.cos(r[0])]])
 
+    R = np.dot(R, np.array([[np.cos(r[1]), 0, np.sin(r[1])],
+                            [0, 1, 0],
+                            [-np.sin(r[1]), 0, np.cos(r[1])]]))
+
+    R = np.dot(R, np.array([[np.cos(r[2]), np.sin(r[2]), 0],
+                            [-np.sin(r[2]), np.cos(r[2]), 0],
+                            [0, 0, 1]]))
+    R = np.linalg.inv(R)
+    return R
+
+
+def test_dist_to_corner():
+    affine = np.eye(4)
+    # Calculate the distance with the pythagorean theorem:
+    pythagoras = np.sqrt(np.sum((np.diag(affine)[:-1] / 2) ** 2))
+    # Compare to calculation with this function:
+    assert_array_almost_equal(dist_to_corner(affine), pythagoras)
+    # Apply a rotation to the matrix, just to demonstrate the calculation is
+    # robust to that:
+    R = _rotation_from_angles(np.random.randn(3) * np.pi)
+    new_aff = np.vstack([np.dot(R, affine[:3, :]), [0, 0, 0, 1]])
+    assert_array_almost_equal(dist_to_corner(new_aff), pythagoras)
+
+
+if __name__ == '__main__':
     run_module_suite()
