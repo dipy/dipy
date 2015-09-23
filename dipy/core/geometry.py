@@ -577,7 +577,6 @@ def euler_matrix(ai, aj, ak, axes='sxyz'):
     try:
         firstaxis, parity, repetition, frame = _AXES2TUPLE[axes]
     except (AttributeError, KeyError):
-        _ = _TUPLE2AXES[axes]
         firstaxis, parity, repetition, frame = axes
 
     i = firstaxis
@@ -936,7 +935,7 @@ def perpendicular_directions(v, num=30, half=False):
     --------
     Perpendicular directions are estimated using the following two step
     procedure:
-    
+
         1) the perpendicular directions are first sampled in a unit
         circumference parallel to the plane normal to the x-axis.
 
@@ -967,7 +966,7 @@ def perpendicular_directions(v, num=30, half=False):
     solve this singularity, perpendicular directions in procedure's step 1 are
     defined in the plane normal to y-axis and the second axis of the rotated
     frame of reference is computed as the normalized vector given by the cross
-    product between vector v and the unit vector aligned to the y-axis. 
+    product between vector v and the unit vector aligned to the y-axis.
     Following this, the coordinates of the perpendicular directions are given
     as:
 
@@ -1006,3 +1005,23 @@ def perpendicular_directions(v, num=30, half=False):
                              (v[0]*cosa - v[2]*v[1]*sina) / sq])
 
     return psamples.T
+
+
+def dist_to_corner(affine):
+    """Calculate the maximal distance from the center to a corner of a voxel,
+    given an affine
+
+    Parameters
+    ----------
+    affine : 4 by 4 array.
+        The spatial transformation from the measurement to the scanner space.
+
+    Returns
+    -------
+    dist: float
+        The maximal distance to the corner of a voxel, given voxel size encoded
+        in the affine.
+    """
+    R = affine[0:3, 0:3]
+    vox_dim = np.diag(np.linalg.cholesky(R.T.dot(R)))
+    return np.sqrt(np.sum((vox_dim / 2) ** 2))

@@ -5,7 +5,9 @@ from nibabel.affines import apply_affine
 
 from dipy.viz.colormap import line_colors
 from dipy.viz.utils import numpy_to_vtk_points, numpy_to_vtk_colors
-from dipy.viz.utils import set_input, map_coordinates_3d_4d
+from dipy.viz.utils import vtk_matrix_to_numpy, numpy_to_vtk_matrix
+from dipy.viz.utils import set_input, map_coordinates_3d_4d, get_bounding_box_sizes, shallow_copy
+from dipy.viz import layout
 from dipy.core.ndindex import ndindex
 
 # Conditional import machinery for vtk
@@ -148,10 +150,13 @@ def slicer(data, affine=None, value_range=None, opacity=1.,
             if x is None and y is None and z is None:
                 self.display_extent(ex1, ex2, ey1, ey2, ez2/2, ez2/2)
             if x is not None:
+                x = min(max(0, x), self.shape[0])
                 self.display_extent(x, x, ey1, ey2, ez1, ez2)
             if y is not None:
+                y = min(max(0, y), self.shape[1])
                 self.display_extent(ex1, ex2, y, y, ez1, ez2)
             if z is not None:
+                z = min(max(0, z), self.shape[2])
                 self.display_extent(ex1, ex2, ey1, ey2, z, z)
 
         def opacity(self, value):
@@ -196,7 +201,8 @@ def slicer(data, affine=None, value_range=None, opacity=1.,
         image_actor.input_connection(image_resliced)
     image_actor.display()
     image_actor.opacity(opacity)
-    image_actor.GetMapper().BorderOn()
+    if major_version >= 6:
+        image_actor.GetMapper().BorderOn()
 
     return image_actor
 
@@ -853,6 +859,123 @@ def text_overlay(text, position=(0, 0), color=(1, 1, 1),
     return text_actor
 
 
+def text_3d(text, position=(0, 0, 0), color=(1, 1, 1),
+            font_size=12, font_family='Arial', justification='left',
+            vertical_justification="bottom",
+            bold=False, italic=False, shadow=False):
+
+    class TextActor3D(vtk.vtkTextActor3D):
+        def message(self, text):
+            self.set_message(text)
+
+        def set_message(self, text):
+            self.SetInput(text)
+            self._update_user_matrix()
+
+        def get_message(self):
+            return self.GetInput()
+
+        def font_size(self, size):
+            self.GetTextProperty().SetFontSize(24)
+            text_actor.SetScale((1./24.*size,)*3)
+            self._update_user_matrix()
+
+        def font_family(self, family='Arial'):
+            self.GetTextProperty().SetFontFamilyToArial()
+            #self._update_user_matrix()
+
+        def justification(self, justification):
+            tprop = self.GetTextProperty()
+            if justification == 'left':
+                tprop.SetJustificationToLeft()
+            elif justification == 'center':
+                tprop.SetJustificationToCentered()
+            elif justification == 'right':
+                tprop.SetJustificationToRight()
+            else:
+                raise ValueError("Unknown justification: '{}'".format(justification))
+
+            self._update_user_matrix()
+
+        def vertical_justification(self, justification):
+            tprop = self.GetTextProperty()
+            if justification == 'top':
+                tprop.SetVerticalJustificationToTop()
+            elif justification == 'middle':
+                tprop.SetVerticalJustificationToCentered()
+            elif justification == 'bottom':
+                tprop.SetVerticalJustificationToBottom()
+            else:
+                raise ValueError("Unknown vertical justification: '{}'".format(justification))
+
+            self._update_user_matrix()
+
+        def font_style(self, bold=False, italic=False, shadow=False):
+            tprop = self.GetTextProperty()
+            if bold:
+                tprop.BoldOn()
+            else:
+                tprop.BoldOff()
+            if italic:
+                tprop.ItalicOn()
+            else:
+                tprop.ItalicOff()
+            if shadow:
+                tprop.ShadowOn()
+            else:
+                tprop.ShadowOff()
+
+            self._update_user_matrix()
+
+        def color(self, color):
+            self.GetTextProperty().SetColor(*color)
+
+        def set_position(self, position):
+            self.SetPosition(position)
+
+        def get_position(self, position):
+            return self.GetPosition()
+
+        def _update_user_matrix(self):
+            """
+            Text justification of vtkTextActor3D doesn't seem to be working, so we do it manually.
+            """
+            user_matrix = np.eye(4)
+
+            text_bounds = [0, 0, 0, 0]
+            self.GetBoundingBox(text_bounds)
+
+            tprop = self.GetTextProperty()
+            if tprop.GetJustification() == vtk.VTK_TEXT_LEFT:
+                user_matrix[:3, -1] += (-text_bounds[0], 0, 0)
+            elif tprop.GetJustification() == vtk.VTK_TEXT_CENTERED:
+                user_matrix[:3, -1] += (-(text_bounds[0]+(text_bounds[1]-text_bounds[0])/2.), 0, 0)
+            elif tprop.GetJustification() == vtk.VTK_TEXT_RIGHT:
+                user_matrix[:3, -1] += (-text_bounds[1], 0, 0)
+
+            if tprop.GetVerticalJustification() == vtk.VTK_TEXT_BOTTOM:
+                user_matrix[:3, -1] += (0, -text_bounds[2], 0)
+            elif tprop.GetVerticalJustification() == vtk.VTK_TEXT_CENTERED:
+                user_matrix[:3, -1] += (0, -(text_bounds[2]+(text_bounds[3]-text_bounds[2])/2), 0)
+            elif tprop.GetVerticalJustification() == vtk.VTK_TEXT_TOP:
+                user_matrix[:3, -1] += (0, -text_bounds[3], 0)
+
+            user_matrix[:3, -1] *= self.GetScale()
+            self.SetUserMatrix(numpy_to_vtk_matrix(user_matrix))
+
+    text_actor = TextActor3D()
+    text_actor.message(text)
+    text_actor.font_size(font_size)
+    text_actor.set_position(position)
+    text_actor.font_family(font_family)
+    text_actor.font_style(bold, italic, shadow)
+    text_actor.color(color)
+    text_actor.justification(justification)
+    text_actor.vertical_justification(vertical_justification)
+
+    return text_actor
+
+
 def figure(pic, interpolation='nearest'):
     """ Return a figure as an image actor
 
@@ -912,3 +1035,203 @@ def figure(pic, interpolation='nearest'):
 
     image_actor.Update()
     return image_actor
+
+
+class Container(object):
+    """ Provides functionalities for grouping multiple actors using a given
+    layout.
+
+    Attributes
+    ----------
+    anchor : 3-tuple of float
+        Anchor of this container used when laying out items in a container.
+        The anchor point is relative to the center of the container.
+        Default: (0, 0, 0).
+
+    padding : 6-tuple of float
+        Padding around this container bounding box. The 6-tuple represents
+        (pad_x_neg, pad_x_pos, pad_y_neg, pad_y_pos, pad_z_neg, pad_z_pos).
+        Default: (0, 0, 0, 0, 0, 0)
+
+    """
+    def __init__(self, layout=layout.Layout()):
+        """
+        Parameters
+        ----------
+        layout : ``dipy.viz.layout.Layout`` object
+            Items of this container will be arranged according to `layout`.
+        """
+        self.layout = layout
+        self._items = []
+        self._need_update = True
+        self._position = np.zeros(3)
+        self._visibility = True
+        self.anchor = np.zeros(3)
+        self.padding = np.zeros(6)
+
+    @property
+    def items(self):
+        if self._need_update:
+            self.update()
+
+        return self._items
+
+    def add(self, *items, **kwargs):
+        """ Adds some items to this container.
+
+        Parameters
+        ----------
+        items : `vtkProp3D` objects
+            Items to add to this container.
+        borrow : bool
+            If True the items are added as-is, otherwise a shallow copy is
+            made first. If you intend to reuse the items elsewhere you
+            should set `borrow=False`. Default: True.
+        """
+        self._need_update = True
+
+        for item in items:
+            if not kwargs.get('borrow', True):
+                item = shallow_copy(item)
+
+            self._items.append(item)
+
+    def clear(self):
+        """ Clears all items of this container. """
+        self._need_update = True
+        del self._items[:]
+
+    def update(self):
+        """ Updates the position of the items of this container. """
+        self.layout.apply(self._items)
+        self._need_update = False
+
+    def add_to_renderer(self, ren):
+        """ Adds the items of this container to a given renderer. """
+        for item in self.items:
+            if isinstance(item, Container):
+                item.add_to_renderer(ren)
+            else:
+                ren.add(item)
+
+    def GetBounds(self):
+        """ Get the bounds of the container. """
+        bounds = np.zeros(6)    # x1, x2, y1, y2, z1, z2
+        bounds[::2] = np.inf    # x1, y1, z1
+        bounds[1::2] = -np.inf  # x2, y2, z2
+
+        for item in self.items:
+            item_bounds = item.GetBounds()
+            bounds[::2] = np.minimum(bounds[::2], item_bounds[::2])
+            bounds[1::2] = np.maximum(bounds[1::2], item_bounds[1::2])
+
+        # Add padding, if any.
+        bounds[::2] -= self.padding[::2]
+        bounds[1::2] += self.padding[1::2]
+
+        return tuple(bounds)
+
+    def GetVisibility(self):
+        return self._visibility
+
+    def SetVisibility(self, visibility):
+        self._visibility = visibility
+        for item in self.items:
+            item.SetVisibility(visibility)
+
+    def GetPosition(self):
+        return self._position
+
+    def AddPosition(self, position):
+        self._position += position
+        for item in self.items:
+            item.AddPosition(position)
+
+    def SetPosition(self, position):
+        self.AddPosition(np.array(position) - self._position)
+
+    def GetCenter(self):
+        """ Get the center of the bounding box. """
+        x1, x2, y1, y2, z1, z2 = self.GetBounds()
+        return ((x1+x2)/2., (y1+y2)/2., (z1+z2)/2.)
+
+    def GetLength(self):
+        """ Get the length of bounding box diagonal. """
+        x1, x2, y1, y2, z1, z2 = self.GetBounds()
+        width, height, depth = x2-x1, y2-y1, z2-z1
+        return np.sqrt(np.sum([width**2, height**2, depth**2]))
+
+    def NewInstance(self):
+        return Container(layout=self.layout)
+
+    def ShallowCopy(self, other):
+        self._position = other._position.copy()
+        self._anchor = other._anchor
+        self.clear()
+        self.add(*other._items, borrow=False)
+        self.update()
+
+    def __len__(self):
+        return len(self._items)
+
+
+def grid(actors, captions=None, caption_offset=(0, -100, 0), cell_padding=0, cell_shape="rect", aspect_ratio=16/9., dim=None):
+    """ Creates a grid of actors that lies in the xy-plane.
+
+        Parameters
+        ----------
+        actors : list of `vtkProp3D` objects
+            Actors to be layout in a grid manner.
+        captions : list of `vtkProp3D` objects (optional)
+            Objects serving as captions (can be any `vtkProp3D` object, not
+            necessarily text). There should be one caption per actor. By
+            default, there are no captions.
+        caption_offset : 3-tuple of float (optional)
+            Tells where to position the caption w.r.t. the center of its
+            associated actor. Default: (0, -100, 0).
+        cell_padding : 2-tuple of float or float (optional)
+            Each grid cell will be padded according to (pad_x, pad_y) i.e.
+            horizontally and vertically. Padding is evenly distributed on each
+            side of the cell. If a single float is provided then both pad_x and
+            pad_y will have the same value.
+        cell_shape : {'rect', 'square', 'diagonal'} (optional)
+            Specifies the desired shape of every grid cell.
+            'rect' ensures the cells are the tightest.
+            'square' ensures the cells are as wide as high.
+            'diagonal' ensures the content of the cells can be rotated without
+                       colliding with content of the neighboring cells.
+        aspect_ratio : float (optional)
+            Aspect ratio of the grid (width/height). Default: 16:9.
+        dim : tuple of int (optional)
+            Dimension (nb_rows, nb_cols) of the grid. If provided,
+            `aspect_ratio` will be ignored.
+
+        Returns
+        -------
+        ``dipy.viz.actor.Container`` object
+            Object that represents the grid containing all the actors and
+            captions, if any.
+    """
+    grid_layout = layout.GridLayout(cell_padding=cell_padding, cell_shape=cell_shape, aspect_ratio=aspect_ratio, dim=dim)
+    grid = Container(layout=grid_layout)
+
+    if captions is not None:
+        actors_with_caption = []
+        for actor, caption in zip(actors, captions):
+            actor_center = np.array(actor.GetCenter())
+
+            # Offset accordingly the caption w.r.t. the center of the associated actor.
+            caption = shallow_copy(caption)
+            caption.SetPosition(actor_center + caption_offset)
+
+            actor_with_caption = Container()
+            actor_with_caption.add(actor, caption)
+
+            # We change the anchor of the container so the actor will be centered in the grid cell.
+            actor_with_caption.anchor = actor_center - actor_with_caption.GetCenter()
+            actors_with_caption.append(actor_with_caption)
+
+        actors = actors_with_caption
+
+    grid.add(*actors)
+    return grid
