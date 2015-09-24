@@ -37,9 +37,32 @@ def show_bundles(static, moving, linewidth=1., tubes=False,
         fvtk.record(ren, size=(900, 900), out_path=fname)
 
 
+def show_grid(list_of_streamlines, linewidth=1., opacity=1., dim=None):
+
+    from dipy.viz import fvtk
+
+    actors = []
+    for streamlines in list_of_streamlines:
+        actors.append(fvtk.line(streamlines, fvtk.colors.red, linewidth=linewidth, opacity=opacity))
+
+    from dipy.viz import actor, window
+    from dipy.viz.interactor import InteractorStyleBundlesGrid
+
+    ren = window.Renderer()
+    ren.projection('parallel')
+
+    ren.add(actor.grid(actors, dim=dim))
+    show_m = window.ShowManager(ren, size=(900, 900),
+                                #interactor_style=InteractorStyleImageAndTrackballActor())
+                                interactor_style=InteractorStyleBundlesGrid(actors))
+    show_m.initialize()
+    show_m.render()
+    show_m.start()
+
+
 def test_recognition():
 
-    disp = True
+    disp = False
     dname = '/home/eleftherios/Data/ISMRM_2015_challenge_bundles_RAS/'
 
     bundle_trk = ['CA', 'CC', 'Cingulum_left',
@@ -100,9 +123,13 @@ def test_recognition():
                                      reduction_thr=20,
                                      slr=True,
                                      slr_select=(400, 400),
+                                     slr_method='L-BFGS-B',
                                      pruning_thr=5)
 
     # TODO check why pruning threshold segfaults when very low
+
+
+
 
     if disp:
 
@@ -151,8 +178,8 @@ def test_recognition():
     print(len(expansion_intersection))
     npt.assert_equal(len(expansion_intersection), 0)
 
-
-    show_bundles(recognized_bundle, expansion_streamlines, tubes=False)
+    if disp:
+        show_bundles(recognized_bundle, expansion_streamlines, tubes=False)
 
     print('Start reduction')
 
@@ -160,11 +187,14 @@ def test_recognition():
 
     dists, actual_indices, reduced_streamlines = rb.reduce(nb_reduced, True)
 
-    show_bundles(recognized_bundle, reduced_streamlines, tubes=False)
+    if disp:
+        show_bundles(recognized_bundle, reduced_streamlines, tubes=False)
 
     npt.assert_equal(len(np.intersect1d(actual_indices, rb.labels)),
                      len(rb.labels) - nb_reduced)
 
+    show_grid([model_bundle, recognized_bundle,
+               expansion_streamlines, reduced_streamlines], dim=(2, 2))
 
     1/0
 #    dists, indices = rb.kdtree.query(np.zeros(rb.kd_vectors.shape[1]),

@@ -343,7 +343,7 @@ class StreamlineLinearRegistration(object):
         if self.method == 'PSO':
 
             opt = Optimizer(distance, self.x0.tolist(),
-                            methods=self.method,
+                            method=self.method,
                             bounds=self.bounds, options=self.options,
                             evolution=self.evolution)
 
