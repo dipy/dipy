@@ -55,6 +55,7 @@ class RecoBundles(object):
                   reduction_thr=20,
                   slr=True,
                   slr_select=(400, 600),
+                  slr_method='L-BFGS-B',
                   pruning_thr=10):
 
         t = time()
@@ -66,7 +67,8 @@ class RecoBundles(object):
         self.reduce_search_space(reduction_thr=reduction_thr)
         if slr:
             self.register_neighb_to_model(select_model=slr_select[0],
-                                          select_target=slr_select[1])
+                                          select_target=slr_select[1],
+                                          method=slr_method)
         else:
             self.transf_streamlines = self.neighb_streamlines
             self.transf_matrix = np.eye(4)
@@ -141,6 +143,7 @@ class RecoBundles(object):
 
     def register_neighb_to_model(self, x0=None, scale_range=(0.8, 1.2),
                                  select_model=400, select_target=600,
+                                 method='L-BFGS-B',
                                  nb_pts=20):
 
         if self.verbose:
@@ -155,7 +158,8 @@ class RecoBundles(object):
         bounds = [(-30, 30), (-30, 30), (-30, 30),
                   (-45, 45), (-45, 45), (-45, 45), scale_range]
 
-        slr = StreamlineLinearRegistration(x0=x0, bounds=bounds)
+        slr = StreamlineLinearRegistration(x0=x0, bounds=bounds,
+                                           method=method)
         static = select_random_set_of_streamlines(self.model_bundle,
                                                   select_model)
 
@@ -412,8 +416,8 @@ def recognize_bundles(model_bundle, moved_streamlines,
         t = time()
 
         x0 = np.array([0, 0, 0, 0, 0, 0, 1.])
-        bounds = [(-30, 30), (-30, 30), (-30, 30),
-                  (-45, 45), (-45, 45), (-45, 45), scale_range]
+        bounds = [(-6, 6), (-6, 6), (-6, 6),
+                  (-5, 5), (-5, 5), (-5, 5), scale_range]
 
         slr = StreamlineLinearRegistration(x0=x0, bounds=bounds)
 

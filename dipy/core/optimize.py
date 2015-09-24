@@ -10,6 +10,7 @@ import scipy
 import scipy.sparse as sps
 import scipy.optimize as opt
 from dipy.utils.six import with_metaclass
+from dipy.core.pso import particle_swarm_optimizer
 
 SCIPY_LESS_0_12 = LooseVersion(scipy.version.short_version) < '0.12'
 
@@ -24,8 +25,8 @@ class Optimizer(object):
     def __init__(self, fun,  x0, args=(), method='L-BFGS-B', jac=None,
                  hess=None, hessp=None, bounds=None, constraints=(),
                  tol=None, callback=None, options=None, evolution=False):
-        """ A class for handling minimization of scalar function of one or more
-        variables.
+        """ A class for handling minimization of scalar functions of one or
+        more variables.
 
         Parameters
         ----------
@@ -54,6 +55,7 @@ class Optimizer(object):
                 - 'SLSQP'
                 - 'dogleg'
                 - 'trust-ncg'
+                - 'PSO'
 
         jac : bool or callable, optional
             Jacobian of objective function. Only for CG, BFGS, Newton-CG,
@@ -120,13 +122,61 @@ class Optimizer(object):
 
         See also
         ---------
-        scipy.optimize.minimize
+        :func:`scipy.optimize.minimize`
+        :func:`dipy.core.pso`
         """
 
         self.size_of_x = len(x0)
         self._evol_kx = None
 
         _eps = np.finfo(float).eps
+
+        if method == 'PSO':
+
+            lower_bounds = [b[0] for b in bounds]
+            upper_bounds = [b[1] for b in bounds]
+
+            opt_pso = {'ieqcons': [], 'f_ieqcons': None,
+                       'args': args, 'kwargs': {},
+                       'swarmsize': 100, 'omega': 0.5,
+                       'phip': 0.5, 'phig': 0.5, 'maxiter': 100,
+                       'minstep': 1e-8, 'minfunc': 1e-8, 'debug': False,
+                       'processes': 1, 'particle_output': False}
+
+            if options is None:
+                options = opt_pso
+            else:
+                for k in options.keys():
+                    opt_pso[k] = options[k]
+
+            out = particle_swarm_optimizer(
+                func=fun,
+                lb=lower_bounds,
+                ub=upper_bounds,
+                ieqcons=opt_pso['ieqcons'],
+                f_ieqcons=opt_pso['f_ieqcons'],
+                args=opt_pso['args'],
+                kwargs=opt_pso['kwargs'],
+                swarmsize=opt_pso['swarmsize'],
+                omega=opt_pso['omega'],
+                phip=opt_pso['phip'],
+                phig=opt_pso['phig'],
+                maxiter=opt_pso['maxiter'],
+                minstep=opt_pso['minstep'],
+                minfunc=opt_pso['minfunc'],
+                debug=opt_pso['debug'],
+                processes=opt_pso['processes'],
+                particle_output=opt_pso['particle_output'])
+
+            if opt_pso['particle_output'] is True:
+                xopt, fopt, p_xopt, p_fopt = out
+            else:
+                xopt, fopt = out
+
+            self.res = {'x': xopt, 'fun': fopt,
+                        'nfev': opt_pso['maxiter'],
+                        'nit': opt_pso['swarmsize']}
+            return
 
         if SCIPY_LESS_0_12:
 

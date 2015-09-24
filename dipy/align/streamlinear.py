@@ -261,8 +261,8 @@ class StreamlineLinearRegistration(object):
 
         self.verbose = verbose
         self.method = method
-        if self.method not in ['Powell', 'L-BFGS-B']:
-            raise ValueError('Only Powell and L-BFGS-B can be used')
+        if self.method not in ['Powell', 'L-BFGS-B', 'PSO']:
+            raise ValueError('Only Powell, L-BFGS-B and PSO can be used')
         self.bounds = bounds
         self.options = options
         self.evolution = evolution
@@ -334,6 +334,13 @@ class StreamlineLinearRegistration(object):
                 self.options = {'maxcor': 10, 'ftol': 1e-7,
                                 'gtol': 1e-5, 'eps': 1e-8,
                                 'maxiter': 100}
+
+            opt = Optimizer(distance, self.x0.tolist(),
+                            method=self.method,
+                            bounds=self.bounds, options=self.options,
+                            evolution=self.evolution)
+
+        if self.method == 'PSO':
 
             opt = Optimizer(distance, self.x0.tolist(),
                             method=self.method,
