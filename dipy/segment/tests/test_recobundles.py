@@ -51,7 +51,7 @@ def show_grid(list_of_streamlines, linewidth=1., opacity=1., dim=None):
     ren = window.Renderer()
     ren.projection('parallel')
 
-    ren.add(actor.grid(actors, dim=dim))
+    ren.add(actor.grid(actors, dim=dim, cell_padding=25))
     show_m = window.ShowManager(ren, size=(900, 900),
                                 #interactor_style=InteractorStyleImageAndTrackballActor())
                                 interactor_style=InteractorStyleBundlesGrid(actors))
@@ -172,7 +172,7 @@ def test_recognition():
 
     rb.build_kdtree(mam_metric=None)
 
-    dists, actual_indices, expansion_streamlines = rb.expand(10000, True)
+    dists, actual_indices, expansion_streamlines = rb.expand(300, True)
 
     expansion_intersection = np.intersect1d(actual_indices, rb.labels)
     print(len(expansion_intersection))
