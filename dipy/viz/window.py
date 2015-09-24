@@ -19,6 +19,7 @@ from dipy.utils.optpkg import optional_package
 
 from dipy import __version__ as dipy_version
 from dipy.utils.six import string_types
+from dipy.viz.actor import Container
 
 
 # import vtk
@@ -55,15 +56,18 @@ class Renderer(vtkRenderer):
         """
         self.SetBackground(color)
 
-    def add(self, actor):
+    def add(self, *actors):
         """ Add an actor to the renderer
         """
-        if isinstance(actor, vtk.vtkVolume):
-            self.AddVolume(actor)
-        if isinstance(actor, vtk.vtkActor2D):
-            self.AddActor2D(actor)
-        else:
-            self.AddActor(actor)
+        for actor in actors:
+            if isinstance(actor, Container):
+                actor.add_to_renderer(self)
+            elif isinstance(actor, vtk.vtkVolume):
+                self.AddVolume(actor)
+            elif isinstance(actor, vtk.vtkActor2D):
+                self.AddActor2D(actor)
+            else:
+                self.AddActor(actor)
 
     def rm(self, actor):
         """ Remove a specific actor
@@ -98,6 +102,39 @@ class Renderer(vtkRenderer):
         """ Reset the camera to an automatic position given by the engine.
         """
         self.ResetCamera()
+
+    def reset_camera_tight(self, margin_factor=1.02):
+        """ Resets camera so the content fit tightly within the window.
+
+        Parameters
+        ----------
+        margin_factor : float (optional)
+            Margin added around the content. Default: 1.02.
+
+        Notes
+        -----
+        This reset function works best with
+        ``:func:dipy.interactor.InteractorStyleImageAndTrackballActor``.
+        """
+        self.ComputeAspect()
+        cam = self.GetActiveCamera()
+        aspect = self.GetAspect()
+
+        X1, X2, Y1, Y2, Z1, Z2 = self.ComputeVisiblePropBounds()
+        width, height = X2-X1, Y2-Y1
+        center = np.array((X1 + width/2., Y1 + height/2., 0))
+
+        angle = np.pi*cam.GetViewAngle()/180.
+        dist = max(width/aspect[0], height) / np.sin(angle/2.) / 2.
+        position = center + np.array((0, 0, dist*margin_factor))
+
+        cam.SetViewUp(0, 1, 0)
+        cam.SetPosition(*position)
+        cam.SetFocalPoint(*center)
+        self.ResetCameraClippingRange(X1, X2, Y1, Y2, Z1, Z2)
+
+        parallelScale = max(width/aspect[0], height) / 2.
+        cam.SetParallelScale(parallelScale*margin_factor)
 
     def reset_clipping_range(self):
         self.ResetCameraClippingRange()
@@ -189,7 +226,7 @@ class Renderer(vtkRenderer):
         focal point. This is usually the opposite of the ViewPlaneNormal, the
         vector perpendicular to the screen, unless the view is oblique.
         """
-        return self.GetActiveCamera().GetDirectionOfProjection()
+        return np.array(self.GetActiveCamera().GetDirectionOfProjection())
 
 
 def renderer(background=None):
@@ -419,6 +456,9 @@ class ShowManager(object):
             self.style = interactor_style
 
         self.iren = vtk.vtkRenderWindowInteractor()
+        self.style.SetCurrentRenderer(self.ren)
+        self.style.SetInteractor(self.iren)  # Hack: this allows the Python version of this method to be called.
+        self.iren.SetInteractorStyle(self.style)
         self.iren.SetRenderWindow(self.window)
 
         def key_press_standard(obj, event):
@@ -448,8 +488,6 @@ class ShowManager(object):
                     print('File ' + filepath + ' is saved.')
 
         self.iren.AddObserver('KeyPressEvent', key_press_standard)
-        self.iren.SetInteractorStyle(self.style)
-        self.style.SetCurrentRenderer(self.ren)
 
         self.picker = vtk.vtkCellPicker()
         self.picker.SetTolerance(self.picker_tol)
@@ -512,7 +550,6 @@ class ShowManager(object):
     def destroy_timers(self):
         for timer_id in self.timers:
             self.iren.DestroyTimer(timer_id)
-
 
 def show(ren, title='DIPY', size=(300, 300),
          png_magnify=1, reset_camera=True, order_transparent=False):
