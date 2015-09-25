@@ -8,6 +8,7 @@ from dipy.segment.metric import IdentityFeature, ResampleFeature
 from dipy.tracking.distances import (bundles_distances_mdf,
                                      bundles_distances_mam)
 from dipy.align.streamlinear import StreamlineLinearRegistration
+from dipy.align.bundlemin import distance_matrix_mdf
 from time import time
 from itertools import chain
 from scipy.spatial import cKDTree
@@ -56,6 +57,7 @@ class RecoBundles(object):
                   slr=True,
                   slr_select=(400, 600),
                   slr_method='L-BFGS-B',
+                  slr_use_centroids=False,
                   pruning_thr=10):
 
         t = time()
@@ -68,11 +70,22 @@ class RecoBundles(object):
         if slr:
             self.register_neighb_to_model(select_model=slr_select[0],
                                           select_target=slr_select[1],
-                                          method=slr_method)
+                                          method=slr_method,
+                                          use_centroids=slr_use_centroids
+                                          )
         else:
             self.transf_streamlines = self.neighb_streamlines
             self.transf_matrix = np.eye(4)
         self.prune_what_not_in_model(pruning_thr=pruning_thr)
+
+        """
+        if slr and repeat_slr:
+            self.neighb_streamlines = self.pruned_streamlines
+            self.register_neighb_to_model(select_model=slr_select[0],
+                                          select_target=slr_select[1],
+                                          method=slr_method)
+            self.prune_what_not_in_model(pruning_thr=pruning_thr)
+        """
 
         if self.verbose:
             print('Total duration of recognition time is %0.3f sec.\n'
@@ -144,6 +157,7 @@ class RecoBundles(object):
     def register_neighb_to_model(self, x0=None, scale_range=(0.8, 1.2),
                                  select_model=400, select_target=600,
                                  method='L-BFGS-B',
+                                 use_centroids=False,
                                  nb_pts=20):
 
         if self.verbose:
@@ -160,14 +174,25 @@ class RecoBundles(object):
 
         slr = StreamlineLinearRegistration(x0=x0, bounds=bounds,
                                            method=method)
-        static = select_random_set_of_streamlines(self.model_bundle,
-                                                  select_model)
 
-        moving = select_random_set_of_streamlines(self.neighb_streamlines,
-                                                  select_target)
+        if not use_centroids:
+            static = select_random_set_of_streamlines(self.model_bundle,
+                                                      select_model)
+            moving = select_random_set_of_streamlines(self.neighb_streamlines,
+                                                      select_target)
 
-        static = set_number_of_points(static, nb_pts)
-        moving = set_number_of_points(moving, nb_pts)
+            static = set_number_of_points(static, nb_pts)
+            moving = set_number_of_points(moving, nb_pts)
+
+        else:
+            static = self.model_centroids
+
+            moving_all = set_number_of_points(self.neighb_streamlines, nb_pts)
+            feature = IdentityFeature()
+            metric = AveragePointwiseEuclideanMetric(feature)
+            qb = QuickBundles(threshold=5, metric=metric)
+            cluster_map = qb.cluster(moving_all)
+            moving = cluster_map.centroids
 
         slm = slr.optimize(static, moving)
 
@@ -178,9 +203,16 @@ class RecoBundles(object):
         self.slr_bmd = slm.fopt
         self.slr_iterations = slm.iterations
 
+        self.slr_initial_matrix = distance_matrix_mdf(
+            static, moving)
+
+        self.slr_final_matrix = distance_matrix_mdf(
+            static, transform_streamlines(moving, slm.matrix))
+
         if self.verbose:
             print(' Square-root of BMD is %.3f' % (np.sqrt(self.slr_bmd),))
             print(' Number of iterations %d' % (self.slr_iterations,))
+            print(' Matrix size {}'.format(self.slr_final_matrix.shape))
             np.set_printoptions(3, suppress=True)
             print(self.transf_matrix)
             np.set_printoptions()
@@ -251,14 +283,20 @@ class RecoBundles(object):
         if self.verbose:
             print(' Duration %0.3f sec. \n' % (time() - t, ))
 
-
     def build_kdtree(self, nb_pts=20, mdf_thr=10, mam_metric='min',
                      leaf_size=10):
 
         feature = ResampleFeature(nb_points=nb_pts)
         metric = AveragePointwiseEuclideanMetric(feature)
         qb = QuickBundles(threshold=mdf_thr, metric=metric)
-        cluster_map = qb.cluster(self.pruned_streamlines)
+
+        if self.nb_pruned_streamlines > 0 :
+            cluster_map = qb.cluster(self.pruned_streamlines)
+        else:
+            print('Pruned streamlines are empty')
+            self.kdtree_is_built = False
+
+            return
 
         search_labels = np.setdiff1d(np.arange(self.nb_streamlines),
                                      np.array(self.labels))
@@ -287,8 +325,8 @@ class RecoBundles(object):
         self.kd_vectors = vectors
         self.kd_internal_vectors = internal_vectors
         self.kdtree = cKDTree(vectors, leafsize=leaf_size)
-
         self.kdtree_internal = cKDTree(internal_vectors, leafsize=leaf_size)
+        self.kdtree_is_built = True
 
     def expand(self, nb_nn, return_streamlines=False):
         """ Expand
@@ -309,6 +347,11 @@ class RecoBundles(object):
         new_streamlines : list of ndarrays (optional)
             Returned only if ``return_streamlines`` is True.
         """
+        if not self.kdtree_is_built:
+            if return_streamlines:
+                return None, None, None
+            else:
+                return None, None
 
         dists, indices = self.kdtree.query(np.zeros(self.kd_vectors.shape[1]),
                                            nb_nn, p=2)
@@ -321,12 +364,21 @@ class RecoBundles(object):
 
     def reduce(self, nb_nn_reduced=1, return_streamlines=False):
 
+        if not self.kdtree_is_built:
+            if return_streamlines:
+                return None, None, None
+            else:
+                return None, None
+
         cnt_max = self.kd_internal_vectors.shape[0]
 
         if nb_nn_reduced < cnt_max:
             cnt = cnt_max - nb_nn_reduced
         else:
-            cnt = 1
+            if return_streamlines:
+                return None, None, None
+            else:
+                return None, None
 
         dists, indices = self.kdtree_internal.query(
             np.zeros(self.kd_internal_vectors.shape[1]), cnt, p=2)

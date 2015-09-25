@@ -238,8 +238,7 @@ def auto_orient(actor, direction, bbox_type="OBB", data_up=None, ref_up=(0, 1, 0
         Shallow copy of `actor` that have been oriented accordingly to the
         given options.
     """
-    new_actor = vtk.vtkActor()
-    new_actor.ShallowCopy(actor)
+    new_actor = shallow_copy(actor)
 
     if bbox_type == "AABB":
         x1, x2, y1, y2, z1, z2 = new_actor.GetBounds()

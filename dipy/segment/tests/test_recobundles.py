@@ -5,12 +5,12 @@ from dipy.tracking.streamline import transform_streamlines
 from copy import deepcopy
 from itertools import chain
 from dipy.segment.bundles import RecoBundles
+from dipy.viz import fvtk
 
 
 def show_bundles(static, moving, linewidth=1., tubes=False,
                  opacity=1., fname=None):
 
-    from dipy.viz import fvtk
     ren = fvtk.ren()
     ren.clear()
     ren.SetBackground(1, 1, 1.)
@@ -37,24 +37,32 @@ def show_bundles(static, moving, linewidth=1., tubes=False,
         fvtk.record(ren, size=(900, 900), out_path=fname)
 
 
-def show_grid(list_of_streamlines, linewidth=1., opacity=1., dim=None):
-
-    from dipy.viz import fvtk
+def show_grid(list_of_streamlines, list_of_captions, linewidth=1., opacity=1., dim=None):
 
     actors = []
     for streamlines in list_of_streamlines:
         actors.append(fvtk.line(streamlines, fvtk.colors.red, linewidth=linewidth, opacity=opacity))
 
-    from dipy.viz import actor, window
+    from dipy.viz import actor, window, utils
     from dipy.viz.interactor import InteractorStyleBundlesGrid
+
+    new_actors = []
+    for act in actors:
+        new_actors.append(utils.auto_orient(act, (0, 0, -1),
+                                            data_up=(0, 0, 1)))
+
+    caption_actors = []
+    for caption in list_of_captions:
+        caption_actors.append(actor.text_3d(caption, justification='center'))
 
     ren = window.Renderer()
     ren.projection('parallel')
 
-    ren.add(actor.grid(actors, dim=dim, cell_padding=25))
+    ren.add(actor.grid(new_actors, caption_actors,
+                       dim=dim, cell_padding=0, cell_shape='diagonal'))
     show_m = window.ShowManager(ren, size=(900, 900),
                                 #interactor_style=InteractorStyleImageAndTrackballActor())
-                                interactor_style=InteractorStyleBundlesGrid(actors))
+                                interactor_style=InteractorStyleBundlesGrid(new_actors))
     show_m.initialize()
     show_m.render()
     show_m.start()
@@ -62,7 +70,7 @@ def show_grid(list_of_streamlines, linewidth=1., opacity=1., dim=None):
 
 def test_recognition():
 
-    disp = False
+    disp = True
     dname = '/home/eleftherios/Data/ISMRM_2015_challenge_bundles_RAS/'
 
     bundle_trk = ['CA', 'CC', 'Cingulum_left',
@@ -96,13 +104,13 @@ def test_recognition():
 
     mat = np.eye(4)
     mat[:3, 3] = np.array([-5., 5, 0])
-    #mat[:3, 3] = np.array([5, 0, 0])
+    # mat[:3, 3] = np.array([5, 0, 0])
 
     # tag = 'MCP'
-    # tag = 'Fornix'
+    tag = 'Fornix'
     # tag = 'Cingulum_right'
     # tag = 'CST_right'
-    tag = 'CST_left'
+    # tag = 'CST_left'
     # tag = 'POPT_left'
 
     play_bundles_dix[tag] = transform_streamlines(play_bundles_dix[tag], mat)
@@ -124,12 +132,8 @@ def test_recognition():
                                      slr=True,
                                      slr_select=(400, 400),
                                      slr_method='L-BFGS-B',
-                                     pruning_thr=5)
-
-    # TODO check why pruning threshold segfaults when very low
-
-
-
+                                     slr_use_centroids=True,
+                                     pruning_thr=10)
 
     if disp:
 
@@ -148,13 +152,13 @@ def test_recognition():
         mat2 = np.eye(4)
         mat2[:3, 3] = np.array([60, 0, 0])
 
-        print('Same with a shift')
-        show_bundles(transform_streamlines(model_bundle, mat2),
-                     recognized_bundle)
+        # print('Same with a shift')
+        # show_bundles(transform_streamlines(model_bundle, mat2),
+        #              recognized_bundle)
 
-        print('Show initial labels vs model bundle')
-        show_bundles(transform_streamlines(rb.labeled_streamlines, mat2),
-                     model_bundle)
+        # print('Show initial labels vs model bundle')
+        # show_bundles(transform_streamlines(rb.labeled_streamlines, mat2),
+        #             model_bundle)
 
     print('\a')
     print('Recognized bundle has %d streamlines' % (len(recognized_bundle),))
@@ -164,6 +168,8 @@ def test_recognition():
     # intersection = np.intersect1d(model_indices_dix['MCP'], rb.labels)
     difference = np.setdiff1d(rb.labels, model_indices_dix[tag])
     print('Difference %d' % (len(difference),))
+
+    1/0
 
     print('\a')
     print('Build the KDTree for this bundle')
@@ -183,7 +189,7 @@ def test_recognition():
 
     print('Start reduction')
 
-    nb_reduced = 7000
+    nb_reduced = 100
 
     dists, actual_indices, reduced_streamlines = rb.reduce(nb_reduced, True)
 
@@ -194,31 +200,11 @@ def test_recognition():
                      len(rb.labels) - nb_reduced)
 
     show_grid([model_bundle, recognized_bundle,
-               expansion_streamlines, reduced_streamlines], dim=(2, 2))
-
-    1/0
-#    dists, indices = rb.kdtree.query(np.zeros(rb.kd_vectors.shape[1]),
-#                                     20, p=2)
-#
-#    extra_streamlines = [rb.search_rstreamlines[i] for i in indices]
-#    show_bundles(recognized_bundle, extra_streamlines, tubes=True)
-#
-#    print('New streamlines')
-#    print(len(extra_streamlines))
-#
-#
-#    dists, indices = rb.kdtree.query(np.zeros(rb.kd_vectors.shape[1]),
-#                                     300, p=2)
-#
-#    extra_streamlines = [rb.search_rstreamlines[i] for i in indices]
-#    show_bundles(recognized_bundle, extra_streamlines, tubes=True)
-#
-#    print('New streamlines')
-#    print(len(extra_streamlines))
+              expansion_streamlines, reduced_streamlines],
+              ['model', 'recognized', 'expanded', 'reduced'], dim=(2, 2))
 
     # return rb
 
-    # 1/0
 
 
 if __name__ == '__main__':
