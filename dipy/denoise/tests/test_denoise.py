@@ -11,5 +11,5 @@ def test_denoise():
     """
     fdata, fbval, fbvec = dpd.get_data()
     data = nib.load(fdata).get_data()
-    sigma = estimate_sigma(data, N=4)
+    sigma = estimate_sigma(data)
     denoised = nlmeans(data, sigma=sigma)
