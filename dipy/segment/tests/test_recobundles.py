@@ -70,7 +70,7 @@ def show_grid(list_of_streamlines, list_of_captions, linewidth=1., opacity=1., d
 
 def test_recognition():
 
-    disp = True
+    disp = False
     dname = '/home/eleftherios/Data/ISMRM_2015_challenge_bundles_RAS/'
 
     bundle_trk = ['CA', 'CC', 'Cingulum_left',
@@ -107,11 +107,11 @@ def test_recognition():
     # mat[:3, 3] = np.array([5, 0, 0])
 
     # tag = 'MCP'
-    tag = 'Fornix'
+    # tag = 'Fornix'
     # tag = 'Cingulum_right'
     # tag = 'CST_right'
     # tag = 'CST_left'
-    # tag = 'POPT_left'
+    tag = 'POPT_left'
 
     play_bundles_dix[tag] = transform_streamlines(play_bundles_dix[tag], mat)
 
@@ -132,7 +132,7 @@ def test_recognition():
                                      slr=True,
                                      slr_select=(400, 400),
                                      slr_method='L-BFGS-B',
-                                     slr_use_centroids=True,
+                                     slr_use_centroids=False,
                                      pruning_thr=10)
 
     if disp:
@@ -169,8 +169,18 @@ def test_recognition():
     difference = np.setdiff1d(rb.labels, model_indices_dix[tag])
     print('Difference %d' % (len(difference),))
 
-    1/0
+    figure()
+    A = np.sqrt(rb.slr_initial_matrix)
+    A = np.sort(np.sort(A, axis=0), axis=1)
+    imshow(A, vmin=0, vmax=6.5)
+    colorbar()
+    B = np.sqrt(rb.slr_final_matrix)
+    B = np.sort(np.sort(B, axis=0), axis=1)
+    figure()
+    imshow(B, vmin=0, vmax=6.5)
+    colorbar()
 
+    1/0
     print('\a')
     print('Build the KDTree for this bundle')
     print('Start expansion')
@@ -205,7 +215,7 @@ def test_recognition():
 
     # return rb
 
-
+    1/0
 
 if __name__ == '__main__':
 
