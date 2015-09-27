@@ -3,6 +3,7 @@ import numpy as np
 from dipy.utils.six import with_metaclass
 from dipy.core.optimize import Optimizer
 from dipy.align.bundlemin import (_bundle_minimum_distance,
+                                  _bundle_minimum_distance_static,
                                   distance_matrix_mdf)
 from dipy.tracking.streamline import (transform_streamlines,
                                       unlist_streamlines,
@@ -100,6 +101,16 @@ class BundleMinDistanceMetric(StreamlineDistanceMetric):
                                         self.static_centered_pts,
                                         self.moving_centered_pts,
                                         self.block_size)
+
+class BundleMinDistanceStaticMetric(BundleMinDistanceMetric):
+
+    def distance(self, xopt):
+
+        return bundle_min_distance_static_fast(xopt,
+                                               self.static_centered_pts,
+                                               self.moving_centered_pts,
+                                               self.block_size)
+
 
 
 class BundleMinDistanceMatrixMetric(StreamlineDistanceMetric):
@@ -373,14 +384,18 @@ class StreamlineLinearRegistration(object):
 
         if hasattr(x0, 'ndim'):
 
-            if len(x0) not in [6, 7, 12]:
-                msg = 'Only 1D arrays of 6, 7 and 12 elements are allowed'
+            if len(x0) not in [3, 6, 7, 12]:
+                msg = 'Only 1D arrays of 3, 6, 7 and 12 elements are allowed'
                 raise ValueError(msg)
             if x0.ndim != 1:
                 raise ValueError("Array should have only one dimension")
             return x0
 
         if isinstance(x0, string_types):
+
+            if x0.lower() == 'translation':
+                return np.zeros(3)
+
             if x0.lower() == 'rigid':
                 return np.zeros(6)
 
@@ -391,10 +406,12 @@ class StreamlineLinearRegistration(object):
                 return np.array([0, 0, 0, 0, 0, 0, 1., 1., 1., 0, 0, 0])
 
         if isinstance(x0, int):
-            if x0 not in [6, 7, 12]:
-                msg = 'Only 6, 7 and 12 are accepted as integers'
+            if x0 not in [3, 6, 7, 12]:
+                msg = 'Only 3, 6, 7 and 12 are accepted as integers'
                 raise ValueError(msg)
             else:
+                if x0 == 3:
+                    return np.zeros(3)
                 if x0 == 6:
                     return np.zeros(6)
                 if x0 == 7:
@@ -592,6 +609,56 @@ def bundle_min_distance_fast(t, static, moving, block_size):
                                     block_size)
 
 
+def bundle_min_distance_static_fast(t, static, moving, block_size):
+    """ MDF-based pairwise distance optimization function (MIN)
+
+    We minimize the distance between moving streamlines as they align
+    with the static streamlines.
+
+    Parameters
+    -----------
+    t : array
+        1D array. t is a vector of of affine transformation parameters with
+        size at least 6.
+        If size is 6, t is interpreted as translation + rotation.
+        If size is 7, t is interpreted as translation + rotation +
+        isotropic scaling.
+        If size is 12, t is interpreted as translation + rotation +
+        scaling + shearing.
+
+    static : array
+        N*M x 3 array. All the points of the static streamlines. With order of
+        streamlines intact. Where N is the number of streamlines and M
+        is the number of points per streamline.
+
+    moving : array
+        K*M x 3 array. All the points of the moving streamlines. With order of
+        streamlines intact. Where K is the number of streamlines and M
+        is the number of points per streamline.
+
+    block_size : int
+        Number of points per streamline. All streamlines in static and moving
+        should have the same number of points M.
+
+    Returns
+    -------
+    cost: float
+
+    """
+
+    aff = compose_matrix44(t)
+    moving = np.dot(aff[:3, :3], moving.T).T + aff[:3, 3]
+    moving = np.ascontiguousarray(moving, dtype=np.float64)
+
+    rows = static.shape[0] / block_size
+    cols = moving.shape[0] / block_size
+
+    return _bundle_minimum_distance_static(static, moving,
+                                           rows,
+                                           cols,
+                                           block_size)
+
+
 def remove_clusters_by_size(clusters, min_size=0):
     by_size = lambda c: len(c) >= min_size
     return filter(by_size, clusters)
@@ -680,7 +747,8 @@ def compose_matrix44(t, dtype=np.double):
     -----------
     t : ndarray
         This is a 1D vector of of affine transformation parameters with
-        size at least 6.
+        size at least 3.
+        If size is 3, t is interpreted as translation.
         If size is 6, t is interpreted as translation + rotation.
         If size is 7, t is interpreted as translation + rotation +
         isotropic scaling.
@@ -697,12 +765,12 @@ def compose_matrix44(t, dtype=np.double):
         t = np.array(t)
     size = t.size
 
-    if size not in [6, 7, 12]:
-        raise ValueError('Accepted number of parameters is 6, 7 and 12')
+    if size not in [3, 6, 7, 12]:
+        raise ValueError('Accepted number of parameters is 3, 6, 7 and 12')
 
     scale, shear, angles, translate = (None, ) * 4
+    translate = _threshold(t[0:3], MAX_DIST)
     if size in [6, 7, 12]:
-        translate = _threshold(t[0:3], MAX_DIST)
         angles = np.deg2rad(t[3:6])
     if size == 7:
         scale = np.array((t[6],) * 3)
@@ -722,8 +790,8 @@ def decompose_matrix44(mat, size=12):
     mat : array
         Homogeneous 4x4 transformation matrix
     size : int
-        Size of output vector. 6 for rigid, 7 for similarity and 12
-        for affine. Default is 12.
+        Size of output vector. 3 for translation, 6 for rigid, 7 for similarity
+        and 12 for affine. Default is 12.
 
     Returns
     -------
@@ -735,6 +803,8 @@ def decompose_matrix44(mat, size=12):
 
     t = np.zeros(12.)
     t[:3] = translate
+    if size == 3:
+        return t[:3]
     t[3: 6] = np.rad2deg(angles)
     if size == 6:
         return t[:6]
@@ -746,4 +816,4 @@ def decompose_matrix44(mat, size=12):
         t[9: 12] = shear
         return t
 
-    raise ValueError('Size can be 6, 7 or 12')
+    raise ValueError('Size can be 3, 6, 7 or 12')

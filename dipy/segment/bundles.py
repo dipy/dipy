@@ -7,7 +7,8 @@ from dipy.segment.clustering import (QuickBundles,
 from dipy.segment.metric import IdentityFeature, ResampleFeature
 from dipy.tracking.distances import (bundles_distances_mdf,
                                      bundles_distances_mam)
-from dipy.align.streamlinear import StreamlineLinearRegistration
+from dipy.align.streamlinear import (StreamlineLinearRegistration,
+                                     BundleMinDistanceStaticMetric)
 from dipy.align.bundlemin import distance_matrix_mdf
 from time import time
 from itertools import chain
@@ -55,6 +56,8 @@ class RecoBundles(object):
     def recognize(self, model_bundle, mdf_thr=10,
                   reduction_thr=20,
                   slr=True,
+                  slr_x0=None,
+                  slr_bounds=None,
                   slr_select=(400, 600),
                   slr_method='L-BFGS-B',
                   slr_use_centroids=False,
@@ -68,7 +71,9 @@ class RecoBundles(object):
         self.cluster_model_bundle(mdf_thr=mdf_thr)
         self.reduce_search_space(reduction_thr=reduction_thr)
         if slr:
-            self.register_neighb_to_model(select_model=slr_select[0],
+            self.register_neighb_to_model(x0=slr_x0,
+                                          bounds=slr_bounds,
+                                          select_model=slr_select[0],
                                           select_target=slr_select[1],
                                           method=slr_method,
                                           use_centroids=slr_use_centroids
@@ -154,7 +159,7 @@ class RecoBundles(object):
                   (self.nb_neighb_streamlines,))
             print(' Duration %0.3f sec. \n' % (time() - t, ))
 
-    def register_neighb_to_model(self, x0=None, scale_range=(0.8, 1.2),
+    def register_neighb_to_model(self, x0=None, bounds=None,
                                  select_model=400, select_target=600,
                                  method='L-BFGS-B',
                                  use_centroids=False,
@@ -167,12 +172,16 @@ class RecoBundles(object):
 
         if x0 is None:
             x0 = np.array([0, 0, 0, 0, 0, 0, 1.])
-            # x0 = np.array([0, 0, 0, 0, 0, 0])
 
-        bounds = [(-30, 30), (-30, 30), (-30, 30),
-                  (-45, 45), (-45, 45), (-45, 45), scale_range]
+        if bounds is None:
+            bounds = [(-30, 30), (-30, 30), (-30, 30),
+                      (-45, 45), (-45, 45), (-45, 45), (0.8, 1.0)]
+        #bounds = [(-30, 30), (-30, 30), (-30, 30)]
+        #bounds = None
 
-        slr = StreamlineLinearRegistration(x0=x0, bounds=bounds,
+        metric = BundleMinDistanceStaticMetric()
+
+        slr = StreamlineLinearRegistration(metric=metric, x0=x0, bounds=bounds,
                                            method=method)
 
         if not use_centroids:
@@ -215,6 +224,7 @@ class RecoBundles(object):
             print(' Matrix size {}'.format(self.slr_final_matrix.shape))
             np.set_printoptions(3, suppress=True)
             print(self.transf_matrix)
+            print(slm.xopt)
             np.set_printoptions()
 
             print(' Duration %0.3f sec. \n' % (time() - t,))

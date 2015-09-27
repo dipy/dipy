@@ -1,11 +1,14 @@
 import numpy as np
 import numpy.testing as npt
 import nibabel.trackvis as tv
-from dipy.tracking.streamline import transform_streamlines
+from dipy.tracking.streamline import (transform_streamlines,
+                                      select_random_set_of_streamlines,
+                                      set_number_of_points)
 from copy import deepcopy
 from itertools import chain
 from dipy.segment.bundles import RecoBundles
 from dipy.viz import fvtk
+from dipy.align.bundlemin import distance_matrix_mdf
 
 
 def show_bundles(static, moving, linewidth=1., tubes=False,
@@ -70,7 +73,7 @@ def show_grid(list_of_streamlines, list_of_captions, linewidth=1., opacity=1., d
 
 def test_recognition():
 
-    disp = False
+    disp = True
     dname = '/home/eleftherios/Data/ISMRM_2015_challenge_bundles_RAS/'
 
     bundle_trk = ['CA', 'CC', 'Cingulum_left',
@@ -103,8 +106,8 @@ def test_recognition():
     play_bundles_dix = deepcopy(model_bundles_dix)
 
     mat = np.eye(4)
-    mat[:3, 3] = np.array([-5., 5, 0])
-    # mat[:3, 3] = np.array([5, 0, 0])
+    # mat[:3, 3] = np.array([0., 0, 0])
+    mat[:3, 3] = np.array([-5, 5, 0])
 
     # tag = 'MCP'
     # tag = 'Fornix'
@@ -130,10 +133,12 @@ def test_recognition():
     recognized_bundle = rb.recognize(model_bundle, mdf_thr=5,
                                      reduction_thr=20,
                                      slr=True,
+                                     slr_x0='translation',
+                                     slr_bounds=[(-20, 20), (-20, 20), (-20, 20)], # (-45, 45), (-45, 45), (-45, 45)
                                      slr_select=(400, 400),
                                      slr_method='L-BFGS-B',
                                      slr_use_centroids=False,
-                                     pruning_thr=10)
+                                     pruning_thr=5)
 
     if disp:
 
@@ -152,35 +157,67 @@ def test_recognition():
         mat2 = np.eye(4)
         mat2[:3, 3] = np.array([60, 0, 0])
 
-        # print('Same with a shift')
-        # show_bundles(transform_streamlines(model_bundle, mat2),
-        #              recognized_bundle)
+        print('Same with a shift')
+        show_bundles(transform_streamlines(model_bundle, mat2),
+                     recognized_bundle)
 
-        # print('Show initial labels vs model bundle')
-        # show_bundles(transform_streamlines(rb.labeled_streamlines, mat2),
-        #             model_bundle)
+        print('Show initial labels vs model bundle')
+        show_bundles(transform_streamlines(rb.labeled_streamlines, mat2),
+                     model_bundle)
 
     print('\a')
     print('Recognized bundle has %d streamlines' % (len(recognized_bundle),))
     print('Model bundle has %d streamlines' % (len(model_bundle),))
     print('\a')
 
+    def investigate_space():
+
+        moving = set_number_of_points(rb.transf_streamlines, 20)
+        static = set_number_of_points(rb.model_bundle, 20)
+        moving = select_random_set_of_streamlines(moving, 400)
+        static = select_random_set_of_streamlines(static, 400)
+
+        A = []
+
+        for x in np.arange(-40, 40, 2):
+            for y in np.arange(-40, 40, 2):
+                print(x, y)
+                tmat = np.eye(4)
+                tmat[:3, 3] = np.array([x, y, 0])
+                moved = transform_streamlines(moving, tmat)
+                d01 = distance_matrix_mdf(static, moved)
+
+                rows, cols = d01.shape
+                bmd = 0.25 * (np.sum(np.min(d01, axis=0)) / float(cols) +
+                    np.sum(np.min(d01, axis=1)) / float(rows)) ** 2
+
+                A.append(bmd)
+        A = np.array(A)
+        A = A.reshape(40, 40)
+
+        return A
+
+    # A = investigate_space()
+
     # intersection = np.intersect1d(model_indices_dix['MCP'], rb.labels)
     difference = np.setdiff1d(rb.labels, model_indices_dix[tag])
     print('Difference %d' % (len(difference),))
 
-    figure()
-    A = np.sqrt(rb.slr_initial_matrix)
-    A = np.sort(np.sort(A, axis=0), axis=1)
-    imshow(A, vmin=0, vmax=6.5)
-    colorbar()
-    B = np.sqrt(rb.slr_final_matrix)
-    B = np.sort(np.sort(B, axis=0), axis=1)
-    figure()
-    imshow(B, vmin=0, vmax=6.5)
-    colorbar()
+#    figure()
+#    A = np.sqrt(rb.slr_initial_matrix)
+#    A = np.sort(np.sort(A, axis=0), axis=1)
+#    imshow(A, vmin=0, vmax=6.5)
+#    colorbar()
+#    B = np.sqrt(rb.slr_final_matrix)
+#    B = np.sort(np.sort(B, axis=0), axis=1)
+#    figure()
+#    imshow(B, vmin=0, vmax=6.5)
+#    colorbar()
 
-    1/0
+    from ipdb import set_trace
+
+    set_trace()
+
     print('\a')
     print('Build the KDTree for this bundle')
     print('Start expansion')
