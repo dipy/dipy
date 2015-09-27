@@ -133,8 +133,9 @@ def test_recognition():
     recognized_bundle = rb.recognize(model_bundle, mdf_thr=5,
                                      reduction_thr=20,
                                      slr=True,
+                                     slr_metric='static',
                                      slr_x0='translation',
-                                     slr_bounds=[(-20, 20), (-20, 20), (-20, 20)], # (-45, 45), (-45, 45), (-45, 45)
+                                     slr_bounds=[(-20, 20), (-20, 20), (-20, 20)], #, (-45, 45), (-45, 45), (-45, 45)],
                                      slr_select=(400, 400),
                                      slr_method='L-BFGS-B',
                                      slr_use_centroids=False,

@@ -8,6 +8,8 @@ from dipy.segment.metric import IdentityFeature, ResampleFeature
 from dipy.tracking.distances import (bundles_distances_mdf,
                                      bundles_distances_mam)
 from dipy.align.streamlinear import (StreamlineLinearRegistration,
+                                     BundleMinDistanceMetric,
+                                     BundleSumDistanceMatrixMetric,
                                      BundleMinDistanceStaticMetric)
 from dipy.align.bundlemin import distance_matrix_mdf
 from time import time
@@ -56,6 +58,7 @@ class RecoBundles(object):
     def recognize(self, model_bundle, mdf_thr=10,
                   reduction_thr=20,
                   slr=True,
+                  slr_metric=None,
                   slr_x0=None,
                   slr_bounds=None,
                   slr_select=(400, 600),
@@ -71,7 +74,8 @@ class RecoBundles(object):
         self.cluster_model_bundle(mdf_thr=mdf_thr)
         self.reduce_search_space(reduction_thr=reduction_thr)
         if slr:
-            self.register_neighb_to_model(x0=slr_x0,
+            self.register_neighb_to_model(metric=slr_metric,
+                                          x0=slr_x0,
                                           bounds=slr_bounds,
                                           select_model=slr_select[0],
                                           select_target=slr_select[1],
@@ -159,7 +163,7 @@ class RecoBundles(object):
                   (self.nb_neighb_streamlines,))
             print(' Duration %0.3f sec. \n' % (time() - t, ))
 
-    def register_neighb_to_model(self, x0=None, bounds=None,
+    def register_neighb_to_model(self, metric=None, x0=None, bounds=None,
                                  select_model=400, select_target=600,
                                  method='L-BFGS-B',
                                  use_centroids=False,
@@ -170,6 +174,13 @@ class RecoBundles(object):
 
         t = time()
 
+        if metric is None:
+            metric = BundleMinDistanceMetric()
+        if metric == 'static':
+            metric = BundleMinDistanceStaticMetric()
+        if metric == 'sum':
+            metric = BundleSumDistanceMatrixMetric()
+
         if x0 is None:
             x0 = np.array([0, 0, 0, 0, 0, 0, 1.])
 
@@ -179,10 +190,6 @@ class RecoBundles(object):
         #bounds = [(-30, 30), (-30, 30), (-30, 30)]
         #bounds = None
 
-        metric = BundleMinDistanceStaticMetric()
-
-        slr = StreamlineLinearRegistration(metric=metric, x0=x0, bounds=bounds,
-                                           method=method)
 
         if not use_centroids:
             static = select_random_set_of_streamlines(self.model_bundle,
@@ -202,6 +209,12 @@ class RecoBundles(object):
             qb = QuickBundles(threshold=5, metric=metric)
             cluster_map = qb.cluster(moving_all)
             moving = cluster_map.centroids
+
+        # TODO add option for doing first translation, then rigid, then similarity
+
+
+        slr = StreamlineLinearRegistration(metric=metric, x0=x0, bounds=bounds,
+                                           method=method)
 
         slm = slr.optimize(static, moving)
 

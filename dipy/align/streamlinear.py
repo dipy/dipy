@@ -112,7 +112,6 @@ class BundleMinDistanceStaticMetric(BundleMinDistanceMetric):
                                                self.block_size)
 
 
-
 class BundleMinDistanceMatrixMetric(StreamlineDistanceMetric):
     """ Bundle-based Minimum Distance aka BMD
 
