@@ -155,7 +155,7 @@ def _bundle_minimum_distance(double [:, ::1] stat,
         double dist=0
         double * min_j
         double * min_i
-        cdef openmp.omp_lock_t lock
+        openmp.omp_lock_t lock
 
     with nogil:
 
@@ -246,8 +246,8 @@ def _bundle_minimum_distance_static(double [:, ::1] stat,
         double inf = np.finfo('f8').max
         double dist=0
         double * min_j
-        double * min_i
-        cdef openmp.omp_lock_t lock
+        # double * min_i
+        openmp.omp_lock_t lock
 
     with nogil:
 
@@ -290,7 +290,7 @@ def _bundle_minimum_distance_static(double [:, ::1] stat,
         #    sum_j += min_i[j]
 
         free(min_j)
-        free(min_i)
+        # free(min_i)
 
         dist = sum_i / <double>static_size
 
