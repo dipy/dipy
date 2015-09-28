@@ -189,10 +189,9 @@ class RecoBundles(object):
 
         if bounds is None:
             bounds = [(-30, 30), (-30, 30), (-30, 30),
-                      (-45, 45), (-45, 45), (-45, 45), (0.8, 1.0)]
+                      (-45, 45), (-45, 45), (-45, 45), (0.8, 1.2)]
         #bounds = [(-30, 30), (-30, 30), (-30, 30)]
         #bounds = None
-
 
         if not use_centroids:
             static = select_random_set_of_streamlines(self.model_bundle,
@@ -213,9 +212,6 @@ class RecoBundles(object):
             cluster_map = qb.cluster(moving_all)
             moving = cluster_map.centroids
 
-        # TODO add option for doing first translation,
-        # then rigid, then similarity
-
         if progressive is False:
 
             slr = StreamlineLinearRegistration(metric=metric, x0=x0,
@@ -225,23 +221,58 @@ class RecoBundles(object):
 
         if progressive is True:
 
-            if x0 == 'rigid':
+            if x0 == 'rigid' or x0 == 'similarity' or x0 == 'scaling':
 
-                slr = StreamlineLinearRegistration(metric=metric,
-                                                   x0='translation',
-                                                   bounds=bounds[:3],
-                                                   method=method)
+                slr_t = StreamlineLinearRegistration(metric=metric,
+                                                     x0='translation',
+                                                     bounds=bounds[:3],
+                                                     method=method)
 
-                slm_tmp = slr.optimize(static, moving)
-                x_translation = slm_tmp.xopt
+                slm_t = slr_t.optimize(static, moving)
+                x_translation = slm_t.xopt
                 x = np.zeros(6)
                 x[:3] = x_translation
 
-                slr2 = StreamlineLinearRegistration(metric=metric,
-                                                    x0=x,
-                                                    bounds=bounds,
-                                                    method=method)
-                slm = slr2.optimize(static, moving)
+                slr_r = StreamlineLinearRegistration(metric=metric,
+                                                     x0=x,
+                                                     bounds=bounds[:6],
+                                                     method=method)
+                slm_r = slr_r.optimize(static, moving)
+
+            if x0 == 'similarity' or x0 == 'scaling':
+
+                x_rigid = slm_r.xopt
+                x = np.zeros(7)
+                x[:6] = x_rigid
+                x[6] = 1.
+
+                slr_s = StreamlineLinearRegistration(metric=metric,
+                                                     x0=x,
+                                                     bounds=bounds[:7],
+                                                     method=method)
+                slm_s = slr_s.optimize(static, moving)
+
+            if x0 == 'scaling':
+
+                x_similarity = slm_s.xopt
+                x = np.zeros(9)
+                x[:6] = x_similarity[:6]
+                # from ipdb import set_trace
+                # set_trace()
+                x[6:] = np.array((x_similarity[6],) * 3)
+
+                slr_c = StreamlineLinearRegistration(metric=metric,
+                                                     x0=x,
+                                                     bounds=bounds[:9],
+                                                     method=method)
+                slm_c = slr_c.optimize(static, moving)
+
+            if x0 == 'rigid':
+                slm = slm_r
+            if x0 == 'similarity':
+                slm = slm_s
+            if x0 == 'scaling':
+                slm = slm_c
 
         self.transf_streamlines = transform_streamlines(
             self.neighb_streamlines, slm.matrix)
@@ -255,6 +286,7 @@ class RecoBundles(object):
 
         self.slr_final_matrix = distance_matrix_mdf(
             static, transform_streamlines(moving, slm.matrix))
+        self.slr_xopt = slm.xopt
 
         if self.verbose:
             print(' Square-root of BMD is %.3f' % (np.sqrt(self.slr_bmd),))
