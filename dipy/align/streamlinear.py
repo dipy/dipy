@@ -383,8 +383,8 @@ class StreamlineLinearRegistration(object):
 
         if hasattr(x0, 'ndim'):
 
-            if len(x0) not in [3, 6, 7, 12]:
-                msg = 'Only 1D arrays of 3, 6, 7 and 12 elements are allowed'
+            if len(x0) not in [3, 6, 7, 9, 12]:
+                msg = 'Only 1D arrays of 3, 6, 7, 9 and 12 elements are allowed'
                 raise ValueError(msg)
             if x0.ndim != 1:
                 raise ValueError("Array should have only one dimension")
@@ -401,12 +401,15 @@ class StreamlineLinearRegistration(object):
             if x0.lower() == 'similarity':
                 return np.array([0, 0, 0, 0, 0, 0, 1.])
 
+            if x0.lower() == 'scaling':
+                return np.array([0, 0, 0, 0, 0, 0, 1, 1, 1.])
+
             if x0.lower() == 'affine':
                 return np.array([0, 0, 0, 0, 0, 0, 1., 1., 1., 0, 0, 0])
 
         if isinstance(x0, int):
-            if x0 not in [3, 6, 7, 12]:
-                msg = 'Only 3, 6, 7 and 12 are accepted as integers'
+            if x0 not in [3, 6, 7, 9, 12]:
+                msg = 'Only 3, 6, 7, 9 and 12 are accepted as integers'
                 raise ValueError(msg)
             else:
                 if x0 == 3:
@@ -415,6 +418,8 @@ class StreamlineLinearRegistration(object):
                     return np.zeros(6)
                 if x0 == 7:
                     return np.array([0, 0, 0, 0, 0, 0, 1.])
+                if x0 == 9:
+                    return np.array([0, 0, 0, 0, 0, 0, 1, 1, 1.])
                 if x0 == 12:
                     return np.array([0, 0, 0, 0, 0, 0, 1., 1., 1., 0, 0, 0])
 
@@ -751,6 +756,8 @@ def compose_matrix44(t, dtype=np.double):
         If size is 6, t is interpreted as translation + rotation.
         If size is 7, t is interpreted as translation + rotation +
         isotropic scaling.
+        If size is 9, t is interpreted as translation + rotation + anisotropic
+        scaling.
         If size is 12, t is interpreted as translation + rotation +
         scaling + shearing.
 
@@ -764,18 +771,19 @@ def compose_matrix44(t, dtype=np.double):
         t = np.array(t)
     size = t.size
 
-    if size not in [3, 6, 7, 12]:
+    if size not in [3, 6, 7, 9, 12]:
         raise ValueError('Accepted number of parameters is 3, 6, 7 and 12')
 
     scale, shear, angles, translate = (None, ) * 4
     translate = _threshold(t[0:3], MAX_DIST)
-    if size in [6, 7, 12]:
+    if size in [6, 7, 9, 12]:
         angles = np.deg2rad(t[3:6])
     if size == 7:
         scale = np.array((t[6],) * 3)
+    if size in [9, 12]:
+        scale = t[6:9]
     if size == 12:
-        scale = t[6: 9]
-        shear = t[9: 12]
+        shear = t[9:12]
     return compose_matrix(scale=scale, shear=shear,
                           angles=angles,
                           translate=translate)
@@ -790,12 +798,12 @@ def decompose_matrix44(mat, size=12):
         Homogeneous 4x4 transformation matrix
     size : int
         Size of output vector. 3 for translation, 6 for rigid, 7 for similarity
-        and 12 for affine. Default is 12.
+        9 for scaling and 12 for affine. Default is 12.
 
     Returns
     -------
     t : ndarray
-        One dimensional ndarray of 6, 7 or 12 affine parameters.
+        One dimensional ndarray of 6, 7, 9 or 12 affine parameters.
 
     """
     scale, shear, angles, translate, _ = decompose_matrix(mat)
@@ -810,9 +818,12 @@ def decompose_matrix44(mat, size=12):
     if size == 7:
         t[6] = np.mean(scale)
         return t[:7]
+    if size == 9:
+        t[6:9] = scale
+        return t[:9]
     if size == 12:
         t[6: 9] = scale
         t[9: 12] = shear
         return t
 
-    raise ValueError('Size can be 3, 6, 7 or 12')
+    raise ValueError('Size can be 3, 6, 7, 9 or 12')
