@@ -64,6 +64,7 @@ class RecoBundles(object):
                   slr_select=(400, 600),
                   slr_method='L-BFGS-B',
                   slr_use_centroids=False,
+                  slr_progressive=False,
                   pruning_thr=10):
 
         t = time()
@@ -80,7 +81,8 @@ class RecoBundles(object):
                                           select_model=slr_select[0],
                                           select_target=slr_select[1],
                                           method=slr_method,
-                                          use_centroids=slr_use_centroids
+                                          use_centroids=slr_use_centroids,
+                                          progressive=slr_progressive
                                           )
         else:
             self.transf_streamlines = self.neighb_streamlines
@@ -167,6 +169,7 @@ class RecoBundles(object):
                                  select_model=400, select_target=600,
                                  method='L-BFGS-B',
                                  use_centroids=False,
+                                 progressive=False,
                                  nb_pts=20):
 
         if self.verbose:
@@ -210,13 +213,35 @@ class RecoBundles(object):
             cluster_map = qb.cluster(moving_all)
             moving = cluster_map.centroids
 
-        # TODO add option for doing first translation, then rigid, then similarity
+        # TODO add option for doing first translation,
+        # then rigid, then similarity
 
+        if progressive is False:
 
-        slr = StreamlineLinearRegistration(metric=metric, x0=x0, bounds=bounds,
-                                           method=method)
+            slr = StreamlineLinearRegistration(metric=metric, x0=x0,
+                                               bounds=bounds,
+                                               method=method)
+            slm = slr.optimize(static, moving)
 
-        slm = slr.optimize(static, moving)
+        if progressive is True:
+
+            if x0 == 'rigid':
+
+                slr = StreamlineLinearRegistration(metric=metric,
+                                                   x0='translation',
+                                                   bounds=bounds[:3],
+                                                   method=method)
+
+                slm_tmp = slr.optimize(static, moving)
+                x_translation = slm_tmp.xopt
+                x = np.zeros(6)
+                x[:3] = x_translation
+
+                slr2 = StreamlineLinearRegistration(metric=metric,
+                                                    x0=x,
+                                                    bounds=bounds,
+                                                    method=method)
+                slm = slr2.optimize(static, moving)
 
         self.transf_streamlines = transform_streamlines(
             self.neighb_streamlines, slm.matrix)
