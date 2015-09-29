@@ -18,5 +18,4 @@ def test_denoise():
     # Test on 3D image:
     data = data[..., 0]
     sigma2 = estimate_sigma(data)
-    denoised = nlmeans(data, sigma=sigma1)
     denoised = nlmeans(data, sigma=sigma2)
