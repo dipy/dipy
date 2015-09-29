@@ -7,15 +7,14 @@ import nibabel as nib
 import numpy as np
 
 from dipy.workflows.utils import (choose_create_out_dir,
-                                  int_param,
-                                  bool_param,
-                                  int_list_param)
+                                  bool_param)
 from dipy.segment.mask import median_otsu
+from dipy.workflows.align import load_trk, save_trk
 import os
 import numpy as np
 from dipy.utils.six import string_types
 from glob import glob
-from dipy.segment.bundles import recognize_bundles
+from dipy.segment.bundles import recognize_bundles, RecoBundles
 from dipy.tracking.streamline import transform_streamlines
 from nibabel import trackvis as tv
 
@@ -115,12 +114,44 @@ def show_bundles(static, moving, linewidth=1., tubes=False,
 
 
 def recognize_bundles_flow(streamline_files, model_bundle_files,
-                           model_streamlines_file, out_dir=None,
-                           close_centroids_thr=20,
-                           clean_thr=5.,
-                           local_slr=True,
-                           verbose=True,
+                           out_dir=None, reduction_thr=20, pruning_thr=5.,
+                           slr=True, slr_metric=None,
+                           slr_transform='similarity', slr_progressive=True,
+                           slr_matrix='small', verbose=True,
                            disp=False):
+    """ Recognize bundles
+
+    Parameters
+    ----------
+    streamline_files : string
+        The path of streamline files where you want to recognize bundles
+    model_bundle_files : string
+        The path of model bundle files
+    out_dir : string, optional
+        Directory to output the different files
+    reduction_thr : float, optional
+        Reduce search space by (mm). (default 20)
+    pruning_thr : float, optional
+        Pruning after matching (default 5).
+    slr : bool, optional
+        Enable local Streamline-based Linear Registration (default True).
+    slr_metric : string, optional
+        Options are None, static or sum (default None).
+    slr_transform : string, optional
+        Transformation allowed. translation, rigid, similarity or scaling
+        (Default 'similarity').
+    slr_progressive : bool, optional
+        If for example you selected `rigid` in slr_transform then you will
+        do first translation and then rigid (default True).
+    slr_matrix : string, optional
+        Options are 'nano', 'tiny', 'small', 'medium', 'large', 'huge' (default
+        'small')
+    verbose : bool, optional
+        Enable standard output (defaut True).
+    disp : bool, optional
+        Show 3D results (default False).
+
+    """
 
     if isinstance(streamline_files, string_types):
         sfiles = glob(streamline_files)
@@ -131,45 +162,76 @@ def recognize_bundles_flow(streamline_files, model_bundle_files,
         mbfiles = glob(model_bundle_files)
 
     if out_dir is None:
-        print('No out_dir was provided results will be given in the same folder as input streamlines')
+        print('Results will be given in the same folder as input streamlines')
+
+    bounds = [(-30, 30), (-30, 30), (-30, 30),
+              (-45, 45), (-45, 45), (-45, 45),
+              (0.8, 1.2), (0.8, 1.2), (0.8, 1.2)]
+
+    slr_matrix = slr_matrix.lower()
+    if slr_matrix == 'nano':
+        slr_select = (100, 100)
+    if slr_matrix == 'tiny':
+        slr_select = (250, 250)
+    if slr_matrix == 'small':
+        slr_select = (400, 400)
+    if slr_matrix == 'medium':
+        slr_select = (600, 600)
+    if slr_matrix == 'large':
+        slr_select = (800, 800)
+    if slr_matrix == 'huge':
+        slr_select = (1200, 1200)
+
+    slr_transform = slr_transform.lower()
+    if slr_transform == 'translation':
+        bounds = bounds[:3]
+    if slr_transform == 'rigid':
+        bounds = bounds[:6]
+    if slr_transform == 'similarity':
+        bounds = bounds[:7]
+    if slr_transform == 'scaling':
+        bounds = bounds[:9]
 
     print('### Recognition of bundles ###')
-    model_streamlines, hrd_model = load_trk(model_streamlines_file)
-
-    print('# Model\'s whole brain streamlines file')
-    print(model_streamlines_file)
 
     print('# Streamline files')
     for sf in sfiles:
         print(sf)
         streamlines, hdr = load_trk(sf)
-        ret = whole_brain_slr(model_streamlines, streamlines,
-                              maxiter=150, select_random=50000,
-                              verbose=verbose)
-        moved_streamlines, mat, centroids1, centroids2 = ret
-
-        print(mat)
-
         print('# Model_bundle files')
         for mb in mbfiles:
             print(mb)
             model_bundle, hdr_model_bundle = load_trk(mb)
-            extracted_bundle, mat2 = recognize_bundles(
-                model_bundle, moved_streamlines,
-                close_centroids_thr=close_centroids_thr,
-                clean_thr=clean_thr,
-                local_slr=local_slr,
-                expand_thr=expand_thr,
-                scale_range=scale_range,
-                verbose=verbose,
-                return_full=False)
 
-            extracted_bundle_initial = transform_streamlines(
-                extracted_bundle,
-                np.linalg.inv(np.dot(mat2, mat)))
+            rb = RecoBundles(streamlines, mdf_thr=15)
+            recognized_bundle = rb.recognize(model_bundle, mdf_thr=5,
+                                             reduction_thr=reduction_thr,
+                                             slr=slr,
+                                             slr_metric=slr_metric,
+                                             slr_x0=slr_transform,
+                                             slr_bounds=bounds,
+                                             slr_select=slr_select,
+                                             slr_method='L-BFGS-B',
+                                             slr_use_centroids=False,
+                                             slr_progressive=slr_progressive,
+                                             pruning_thr=5)
+
+#            extracted_bundle, mat2 = recognize_bundles(
+#                model_bundle, moved_streamlines,
+#                close_centroids_thr=close_centroids_thr,
+#                clean_thr=clean_thr,
+#                local_slr=local_slr,
+#                expand_thr=expand_thr,
+#                scale_range=scale_range,
+#                verbose=verbose,
+#                return_full=False)
+#
+#            extracted_bundle_initial = transform_streamlines(
+#                extracted_bundle,
+#                np.linalg.inv(np.dot(mat2, mat)))
 
             if disp:
-                show_bundles(model_bundle, extracted_bundle)
+                show_bundles(model_bundle, recognized_bundle)
                 # show_bundles(model_streamlines, moved_streamlines)
 
             if out_dir is None:
@@ -181,8 +243,8 @@ def recognize_bundles_flow(streamline_files, model_bundle_files,
                     os.path.basename(os.path.dirname(sf)),
                     os.path.basename(mb))
 
-            if not os.path.exists(os.path.dirname(sf_bundle_file)):
-                os.makedirs(os.path.dirname(sf_bundle_file))
-            save_trk(sf_bundle_file, extracted_bundle_initial, hdr=hdr)
+            # if not os.path.exists(os.path.dirname(sf_bundle_file)):
+            #     os.makedirs(os.path.dirname(sf_bundle_file))
+            save_trk(sf_bundle_file, recognized_bundle, hdr=hdr)
 
-            print('Recognized bundle saved in %s ' % (sf_bundle_file,))
+            print('Recognized bundle saved in \n %s ' % (sf_bundle_file,))
