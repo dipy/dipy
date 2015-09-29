@@ -15,7 +15,6 @@ import os
 import numpy as np
 from dipy.utils.six import string_types
 from glob import glob
-from dipy.align.streamlinear import whole_brain_slr
 from dipy.segment.bundles import recognize_bundles
 from dipy.tracking.streamline import transform_streamlines
 from nibabel import trackvis as tv
@@ -86,20 +85,6 @@ def median_otsu_flow(input_files, out_dir='', save_masked=False,
             print('Masked volume saved as {0}'.format(masked_out_path))
 
 
-def load_trk(fname):
-    streams, hdr = tv.read(fname, points_space='rasmm')
-    return [i[0] for i in streams], hdr
-
-
-def save_trk(fname, streamlines, hdr=None):
-    streams = ((s, None, None) for s in streamlines)
-    if hdr is not None:
-        hdr_dict = {key: hdr[key] for key in hdr.dtype.names}
-        tv.write(fname, streams, hdr_mapping=hdr_dict, points_space='rasmm')
-    else:
-        tv.write(fname, streams, points_space='rasmm')
-
-
 def show_bundles(static, moving, linewidth=1., tubes=False,
                  opacity=1., fname=None):
 
@@ -134,12 +119,8 @@ def recognize_bundles_flow(streamline_files, model_bundle_files,
                            close_centroids_thr=20,
                            clean_thr=5.,
                            local_slr=True,
-                           expand_thr=None,
-                           scale_range=(0.8, 1.2),
                            verbose=True,
                            disp=False):
-
-    # scale_range = tuple([float(i) for i in scale_range.split(':')])
 
     if isinstance(streamline_files, string_types):
         sfiles = glob(streamline_files)

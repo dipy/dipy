@@ -672,13 +672,17 @@ def whole_brain_slr(streamlines1, streamlines2,
                     rm_small_clusters=50,
                     maxiter=100,
                     select_random=None,
-                    verbose=False):
+                    verbose=False,
+                    greater_than=50,
+                    less_than=250,
+                    qb_thr=15,
+                    nb_pts=20):
 
     if verbose:
-        print(len(streamlines1))
-        print(len(streamlines2))
+        print('Static streamlines size {}'.format(len(streamlines1)))
+        print('Moving streamlines size {}'.format(len(streamlines2)))
 
-    def check_range(streamline, gt=50, lt=250):
+    def check_range(streamline, gt=greater_than, lt=less_than):
 
         if (length(streamline) > gt) & (length(streamline) < lt):
             return True
@@ -689,8 +693,9 @@ def whole_brain_slr(streamlines1, streamlines2,
     streamlines2 = [s for s in streamlines2 if check_range(s)]
 
     if verbose:
-        print(len(streamlines1))
-        print(len(streamlines2))
+
+        print('Static streamlines after length {}'.format(len(streamlines1)))
+        print('Moving streamlines after length {}'.format(len(streamlines2)))
 
     if select_random is not None:
         rstreamlines1 = select_random_set_of_streamlines(streamlines1,
@@ -698,8 +703,8 @@ def whole_brain_slr(streamlines1, streamlines2,
     else:
         rstreamlines1 = streamlines1
 
-    rstreamlines1 = set_number_of_points(rstreamlines1, 20)
-    qb1 = QuickBundles(threshold=15)
+    rstreamlines1 = set_number_of_points(rstreamlines1, nb_pts)
+    qb1 = QuickBundles(threshold=qb_thr)
     rstreamlines1 = [s.astype('f4') for s in rstreamlines1]
     cluster_map1 = qb1.cluster(rstreamlines1)
     clusters1 = remove_clusters_by_size(cluster_map1, rm_small_clusters)
@@ -711,8 +716,8 @@ def whole_brain_slr(streamlines1, streamlines2,
     else:
         rstreamlines2 = streamlines2
 
-    rstreamlines2 = set_number_of_points(rstreamlines2, 20)
-    qb2 = QuickBundles(threshold=15)
+    rstreamlines2 = set_number_of_points(rstreamlines2, nb_pts)
+    qb2 = QuickBundles(threshold=qb_thr)
     rstreamlines2 = [s.astype('f4') for s in rstreamlines2]
     cluster_map2 = qb2.cluster(rstreamlines2)
     clusters2 = remove_clusters_by_size(cluster_map2, rm_small_clusters)
@@ -726,14 +731,13 @@ def whole_brain_slr(streamlines1, streamlines2,
     slm = slr.optimize(qb_centroids1, qb_centroids2)
 
     if verbose:
-        print('QB1 %d' % len(qb_centroids1,))
-        print('QB2 %d' % len(qb_centroids2,))
+        print('QB static centroids size %d' % len(qb_centroids1,))
+        print('QB moving centroids size %d' % len(qb_centroids2,))
 
     duration = time() - t
     if verbose:
-        print('SAR done in  %f seconds.' % (duration, ))
-
-    print('SAR iterations: %d ' % (slm.iterations, ))
+        print('SLR finished in  %0.3f seconds.' % (duration,))
+        print('SLR iterations: %d ' % (slm.iterations,))
 
     moved_streamlines2 = slm.transform(streamlines2)
 

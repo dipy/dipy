@@ -190,8 +190,9 @@ class RecoBundles(object):
         if bounds is None:
             bounds = [(-30, 30), (-30, 30), (-30, 30),
                       (-45, 45), (-45, 45), (-45, 45), (0.8, 1.2)]
-        #bounds = [(-30, 30), (-30, 30), (-30, 30)]
-        #bounds = None
+
+        # bounds = [(-30, 30), (-30, 30), (-30, 30)]
+        # bounds = None
 
         if not use_centroids:
             static = select_random_set_of_streamlines(self.model_bundle,
@@ -370,7 +371,7 @@ class RecoBundles(object):
         metric = AveragePointwiseEuclideanMetric(feature)
         qb = QuickBundles(threshold=mdf_thr, metric=metric)
 
-        if self.nb_pruned_streamlines > 0 :
+        if self.nb_pruned_streamlines > 0:
             cluster_map = qb.cluster(self.pruned_streamlines)
         else:
             print('Pruned streamlines are empty')

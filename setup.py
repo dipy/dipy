@@ -231,7 +231,8 @@ def main(**extra_args):
                           pjoin('bin', 'dipy_fit_tensor'),
                           pjoin('bin', 'dipy_sh_estimate'),
                           pjoin('bin', 'dipy_quickbundles'),
-                          pjoin('bin', 'dipy_recognize_bundles')],
+                          pjoin('bin', 'dipy_recognize_bundles'),
+                          pjoin('bin', 'dipy_whole_brain_slr')],
           cmdclass = cmdclass,
           **extra_args
         )
