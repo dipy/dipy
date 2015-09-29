@@ -12,10 +12,11 @@ def test_denoise():
     fdata, fbval, fbvec = dpd.get_data()
     # Test on 4D image:
     data = nib.load(fdata).get_data()
-    sigma = estimate_sigma(data)
-    denoised = nlmeans(data, sigma=sigma)
+    sigma1 = estimate_sigma(data)
+    denoised = nlmeans(data, sigma=sigma1)
 
     # Test on 3D image:
     data = data[..., 0]
-    sigma = estimate_sigma(data)
-    denoised = nlmeans(data, sigma=sigma)
+    sigma2 = estimate_sigma(data)
+    denoised = nlmeans(data, sigma=sigma1)
+    denoised = nlmeans(data, sigma=sigma2)
