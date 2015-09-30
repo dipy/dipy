@@ -197,6 +197,11 @@ def recognize_bundles_flow(streamline_files, model_bundle_files,
     print('# Streamline files')
     for sf in sfiles:
         print(sf)
+
+        if not os.path.exists(sf):
+            print('File {} does not exist'.format(sf))
+            return
+
         streamlines, hdr = load_trk(sf)
 
         rb = RecoBundles(streamlines, mdf_thr=15)
@@ -204,6 +209,11 @@ def recognize_bundles_flow(streamline_files, model_bundle_files,
         print('# Model_bundle files')
         for mb in mbfiles:
             print(mb)
+
+            if not os.path.exists(mb):
+                print('File {} does not exist'.format(mb))
+                return
+
             model_bundle, hdr_model_bundle = load_trk(mb)
 
             recognized_bundle = rb.recognize(model_bundle, mdf_thr=5,
@@ -218,6 +228,8 @@ def recognize_bundles_flow(streamline_files, model_bundle_files,
                                              slr_progressive=slr_progressive,
                                              pruning_thr=pruning_thr)
 
+# TODO add option to return recognized bundle in the space that you want
+# Or better return the labels of the bundle which I currently do.
 #            extracted_bundle, mat2 = recognize_bundles(
 #                model_bundle, moved_streamlines,
 #                close_centroids_thr=close_centroids_thr,
@@ -252,8 +264,10 @@ def recognize_bundles_flow(streamline_files, model_bundle_files,
             save_trk(sf_bundle_file, recognized_bundle, hdr=hdr)
             np.save(sf_bundle_labels, np.array(rb.labels))
 
-            print('Recognized bundle saved in \n %s ' % (sf_bundle_file,))
-            print('Recognized bundle labels saved in \n %s ' % (sf_bundle_labels,))
+            print('Recognized bundle saved in \n {} '
+                  .format(sf_bundle_file))
+            print('Recognized bundle labels saved in \n {} '
+                  .format(sf_bundle_labels))
 
 
 def kdtrees_bundles_flow(streamline_file, labels_file, verbose=True):

@@ -26,7 +26,8 @@ class RecoBundles(object):
         self.verbose = verbose
         self.cluster_streamlines(mdf_thr=mdf_thr)
 
-    def cluster_streamlines(self, mdf_thr=20, nb_pts=20):
+    def cluster_streamlines(self, mdf_thr=20, nb_pts=20,
+                            select_randomly=50000):
 
         t = time()
         if self.verbose:
@@ -37,6 +38,13 @@ class RecoBundles(object):
 
         rstreamlines = set_number_of_points(self.streamlines, nb_pts)
         rstreamlines = [s.astype('f4') for s in rstreamlines]
+
+        if self.verbose:
+            print(' Resampling to {} points'.format(nb_pts))
+            print(' Duration %0.3f sec. \n' % (time() - t, ))
+
+        len_s = len(self.streamlines)
+        indices = np.random.randint(0, len_s, min(select_randomly, len_s))
 
         feature = IdentityFeature()
         metric = AveragePointwiseEuclideanMetric(feature)
