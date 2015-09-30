@@ -470,6 +470,11 @@ class KDTreeBundles(object):
         dists, indices = self.kdtree_internal.query(
             np.zeros(self.kd_internal_vectors.shape[1]), cnt, p=2)
 
+        # from ipdb import set_trace
+        # set_trace()
+        if isinstance(indices, int):
+            indices = [indices]
+
         actual_indices = [self.labels[i] for i in indices]
         if return_streamlines:
             new_streamlines = [self.streamlines[i]

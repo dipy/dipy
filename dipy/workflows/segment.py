@@ -257,7 +257,7 @@ def recognize_bundles_flow(streamline_files, model_bundle_files,
 
 
 def kdtrees_bundles_flow(streamline_file, labels_file, verbose=True):
-    """ Explore kdtrees
+    """ Expand reduce bundles using kdtrees
 
     Parameters
     ----------
@@ -267,38 +267,90 @@ def kdtrees_bundles_flow(streamline_file, labels_file, verbose=True):
         Print standard output (default True)
     """
 
+    global bundle_actor
+    global bundle
+    global final_streamlines
+
     streamlines, hdr = load_trk(streamline_file)
     labels = np.load(labels_file)
+
+    bundle = [streamlines[i] for i in labels]
+    final_streamlines = bundle
 
     kdb = KDTreeBundles(streamlines, labels)
     kdb.build_kdtree()
 
     from dipy.viz import window, actor, widget
+    from dipy.data import fetch_viz_icons, read_viz_icons
+    fetch_viz_icons()
 
     ren = window.Renderer()
-    bundle = actor.line(kdb.model_bundle)
-    ren.add(bundle)
+    bundle_actor = actor.line(kdb.model_bundle)
+    ren.add(bundle_actor)
 
     show_m = window.ShowManager(ren, size=(1200, 900))
     show_m.initialize()
 
     def expand_callback(obj, event):
+        global bundle_actor
+        global bundle
+        global final_streamlines
+
         z = int(np.round(obj.get_value()))
-        dists, actual_indices, new_streamlines = kdb.expand(z, True)
-        ren.rm(bundle)
-        bundle = actor.line(new_streamlines)
-        ren.add(bundle)
+        if z > len(bundle):
+            dists, actual_indices, extra_streamlines = kdb.expand(z, True)
+            final_streamlines = bundle + extra_streamlines
+        if z < len(bundle):
+            reduction = len(bundle) - z
+            # print(reduction)
+            dists, actual_indices, final_streamlines = kdb.reduce(reduction,
+                                                                  True)
+        if z == len(bundle):
+            final_streamlines = bundle
+        ren.rm(bundle_actor)
+        bundle_actor = actor.line(final_streamlines)
+        ren.add(bundle_actor)
+        show_m.render()
 
     slider = widget.slider(show_m.iren, show_m.ren,
                            callback=expand_callback,
-                           min_value=0,
-                           max_value=20,
-                           value=1,
-                           label="Expand",
+                           min_value=1,
+                           max_value=len(bundle) + 3 * len(bundle),
+                           value=len(bundle),
+                           label="Expand/Reduce",
                            right_normalized_pos=(.98, 0.6),
                            size=(120, 0), label_format="%0.lf",
                            color=(1., 1., 1.),
                            selected_color=(0.86, 0.33, 1.))
 
+    def button_save_callback(obj, event):
+        global final_streamlines
+        ftypes = (("Trackvis file", "*.trk"), ("All Files", "*.*"))
+        fname = window.save_file_dialog(initial_file='dipy.trk',
+                                        default_ext='.trk',
+                                        file_types=ftypes)
+        if fname != '':
+            print('Saving new trk file ...')
+            save_trk(fname, final_streamlines, hdr=hdr)
+            print('File saved at ' + fname)
+
+    button_png = read_viz_icons(fname='drive.png')
+    button = widget.button(show_m.iren,
+                           show_m.ren,
+                           button_save_callback,
+                           button_png, (.94, .9), (50, 50))
+
+    global size
+    size = ren.GetSize()
+
+    def win_callback(obj, event):
+        global size
+        if size != obj.GetSize():
+
+            slider.place(ren)
+            button.place(ren)
+            size = obj.GetSize()
+
+    show_m.add_window_callback(win_callback)
     show_m.render()
     show_m.start()
