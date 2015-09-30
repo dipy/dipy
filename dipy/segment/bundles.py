@@ -387,7 +387,7 @@ class KDTreeBundles(object):
 
         search_rstreamlines = [self.rstreamlines[i] for i in search_labels]
 
-        rlabeled_streamlines = set_number_of_points(self.labeled_streamlines,
+        rlabeled_streamlines = set_number_of_points(self.model_bundle,
                                                     nb_pts)
 
         if mam_metric is not None:
