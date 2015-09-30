@@ -156,10 +156,12 @@ def recognize_bundles_flow(streamline_files, model_bundle_files,
     if isinstance(streamline_files, string_types):
         sfiles = glob(streamline_files)
     else:
-        raise ValueError('# Streamline_files not a string')
+        raise ValueError('Streamline_files not a string')
 
     if isinstance(model_bundle_files, string_types):
         mbfiles = glob(model_bundle_files)
+        if mbfiles == []:
+            raise ValueError('Model_bundle_files is not correct')
 
     if out_dir is None:
         print('Results will be given in the same folder as input streamlines')
