@@ -50,12 +50,16 @@ def whole_brain_slr_flow(moving_streamlines_files,
 
     static_streamlines, hdr_static = load_trk(static_streamlines_file)
 
-    print('# Static streamlines file')
-    print(static_streamlines_file)
+    if verbose:
+        print('# Static streamlines file')
+        print(static_streamlines_file)
+        print('# Moving streamlines files')
 
-    print('# Moving streamlines files')
     for sf in sfiles:
-        print(sf)
+
+        if verbose:
+            print(sf)
+
         moving_streamlines, hdr = load_trk(sf)
         ret = whole_brain_slr(static_streamlines, moving_streamlines,
                               maxiter=maxiter, select_random=select_random,
@@ -78,15 +82,17 @@ def whole_brain_slr_flow(moving_streamlines_files,
         static_centroids_file = path.join(out_dir,
                                           'static_centroids' + ext)
         moved_centroids_file = path.join(
-            out_dir,  'moved_centroids' + ext)
+            out_dir, 'moved_centroids' + ext)
         mat_file = path.join(out_dir, 'affine.txt')
 
-        print('Saving results at :')
-        print(moved_bundle_file)
-        print(static_centroids_file)
-        print(moving_centroids_file)
-        print(moved_centroids_file)
-        print(mat_file)
+        if verbose:
+            print('Saving results at :')
+            print(moved_bundle_file)
+            print(static_centroids_file)
+            print(moving_centroids_file)
+            print(moved_centroids_file)
+            print(mat_file)
+
         save_trk(moved_bundle_file, moved_streamlines, hdr=hdr_static)
         save_trk(static_centroids_file, static_centroids, hdr=hdr_static)
         save_trk(moving_centroids_file, moving_centroids, hdr=hdr)

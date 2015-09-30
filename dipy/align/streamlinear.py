@@ -668,7 +668,7 @@ def remove_clusters_by_size(clusters, min_size=0):
     return filter(by_size, clusters)
 
 
-def whole_brain_slr(streamlines1, streamlines2,
+def whole_brain_slr(static, moving,
                     rm_small_clusters=50,
                     maxiter=100,
                     select_random=None,
@@ -679,8 +679,8 @@ def whole_brain_slr(streamlines1, streamlines2,
                     nb_pts=20):
 
     if verbose:
-        print('Static streamlines size {}'.format(len(streamlines1)))
-        print('Moving streamlines size {}'.format(len(streamlines2)))
+        print('Static streamlines size {}'.format(len(static)))
+        print('Moving streamlines size {}'.format(len(moving)))
 
     def check_range(streamline, gt=greater_than, lt=less_than):
 
@@ -689,8 +689,8 @@ def whole_brain_slr(streamlines1, streamlines2,
         else:
             return False
 
-    streamlines1 = [s for s in streamlines1 if check_range(s)]
-    streamlines2 = [s for s in streamlines2 if check_range(s)]
+    streamlines1 = [s for s in static if check_range(s)]
+    streamlines2 = [s for s in moving if check_range(s)]
 
     if verbose:
 
@@ -739,9 +739,9 @@ def whole_brain_slr(streamlines1, streamlines2,
         print('SLR finished in  %0.3f seconds.' % (duration,))
         print('SLR iterations: %d ' % (slm.iterations,))
 
-    moved_streamlines2 = slm.transform(streamlines2)
+    moved = slm.transform(moving)
 
-    return moved_streamlines2, slm.matrix, qb_centroids1, qb_centroids2
+    return moved, slm.matrix, qb_centroids1, qb_centroids2
 
 
 def _threshold(x, th):

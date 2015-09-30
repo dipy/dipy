@@ -14,7 +14,7 @@ import os
 import numpy as np
 from dipy.utils.six import string_types
 from glob import glob
-from dipy.segment.bundles import recognize_bundles, RecoBundles
+from dipy.segment.bundles import RecoBundles, KDTreeBundles
 from dipy.tracking.streamline import transform_streamlines
 from nibabel import trackvis as tv
 
@@ -198,12 +198,14 @@ def recognize_bundles_flow(streamline_files, model_bundle_files,
     for sf in sfiles:
         print(sf)
         streamlines, hdr = load_trk(sf)
+
+        rb = RecoBundles(streamlines, mdf_thr=15)
+
         print('# Model_bundle files')
         for mb in mbfiles:
             print(mb)
             model_bundle, hdr_model_bundle = load_trk(mb)
 
-            rb = RecoBundles(streamlines, mdf_thr=15)
             recognized_bundle = rb.recognize(model_bundle, mdf_thr=5,
                                              reduction_thr=reduction_thr,
                                              slr=slr,
@@ -214,7 +216,7 @@ def recognize_bundles_flow(streamline_files, model_bundle_files,
                                              slr_method='L-BFGS-B',
                                              slr_use_centroids=False,
                                              slr_progressive=slr_progressive,
-                                             pruning_thr=5)
+                                             pruning_thr=pruning_thr)
 
 #            extracted_bundle, mat2 = recognize_bundles(
 #                model_bundle, moved_streamlines,
@@ -232,19 +234,73 @@ def recognize_bundles_flow(streamline_files, model_bundle_files,
 
             if disp:
                 show_bundles(model_bundle, recognized_bundle)
-                # show_bundles(model_streamlines, moved_streamlines)
 
             if out_dir is None:
-                sf_bundle_file = os.path.join(os.path.dirname(sf),
-                                              os.path.basename(mb))
-            else:
-                sf_bundle_file = os.path.join(
-                    out_dir,
-                    os.path.basename(os.path.dirname(sf)),
-                    os.path.basename(mb))
+                out_dir = ''
+
+            sf_bundle_file = os.path.join(
+                out_dir,
+                os.path.basename(os.path.dirname(sf)),
+                os.path.basename(mb))
+
+            sf_bundle_labels = os.path.join(
+                out_dir,
+                os.path.basename(os.path.dirname(sf)),
+                os.path.splitext(os.path.basename(mb))[0] + '_labels.npy')
 
             # if not os.path.exists(os.path.dirname(sf_bundle_file)):
             #     os.makedirs(os.path.dirname(sf_bundle_file))
+
             save_trk(sf_bundle_file, recognized_bundle, hdr=hdr)
+            np.save(sf_bundle_labels, np.array(rb.labels))
 
             print('Recognized bundle saved in \n %s ' % (sf_bundle_file,))
+            print('Recognized bundle labels saved in \n %s ' % (sf_bundle_labels,))
+
+
+def kdtrees_bundles_flow(streamline_file, labels_file, verbose=True):
+    """ Explore kdtrees
+
+    Parameters
+    ----------
+    streamline_file : string
+    labels_file : string
+    verbose : bool, optional
+        Print standard output (default True)
+    """
+
+    streamlines, hdr = load_trk(streamline_file)
+    labels = np.load(labels_file)
+
+    kdb = KDTreeBundles(streamlines, labels)
+    kdb.build_kdtree()
+
+    from dipy.viz import window, actor, widget
+
+    ren = window.Renderer()
+    bundle = actor.line(kdb.model_bundle)
+    ren.add(bundle)
+
+    show_m = window.ShowManager(ren, size=(1200, 900))
+    show_m.initialize()
+
+    def expand_callback(obj, event):
+        z = int(np.round(obj.get_value()))
+        dists, actual_indices, new_streamlines = kdb.expand(z, True)
+        ren.rm(bundle)
+        bundle = actor.line(new_streamlines)
+        ren.add(bundle)
+
+    slider = widget.slider(show_m.iren, show_m.ren,
+                           callback=expand_callback,
+                           min_value=0,
+                           max_value=20,
+                           value=1,
+                           label="Expand",
+                           right_normalized_pos=(.98, 0.6),
+                           size=(120, 0), label_format="%0.lf",
+                           color=(1., 1., 1.),
+                           selected_color=(0.86, 0.33, 1.))
+
+    show_m.render()
+    show_m.start()
