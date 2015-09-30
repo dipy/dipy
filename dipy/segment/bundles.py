@@ -219,6 +219,9 @@ class RecoBundles(object):
 
         if progressive is True:
 
+            if self.verbose:
+                print('Progressive Registration is Enabled')
+
             if x0 == 'rigid' or x0 == 'similarity' or x0 == 'scaling':
 
                 slr_t = StreamlineLinearRegistration(metric=metric,

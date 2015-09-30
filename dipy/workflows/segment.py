@@ -240,12 +240,10 @@ def recognize_bundles_flow(streamline_files, model_bundle_files,
 
             sf_bundle_file = os.path.join(
                 out_dir,
-                os.path.basename(os.path.dirname(sf)),
                 os.path.basename(mb))
 
             sf_bundle_labels = os.path.join(
                 out_dir,
-                os.path.basename(os.path.dirname(sf)),
                 os.path.splitext(os.path.basename(mb))[0] + '_labels.npy')
 
             # if not os.path.exists(os.path.dirname(sf_bundle_file)):
