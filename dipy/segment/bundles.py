@@ -44,13 +44,28 @@ class RecoBundles(object):
             print(' Duration %0.3f sec. \n' % (time() - t, ))
 
         len_s = len(self.streamlines)
-        indices = np.random.randint(0, len_s, min(select_randomly, len_s))
+        indices = np.random.choice(len_s, min(select_randomly, len_s),
+                                   replace=False)
 
         feature = IdentityFeature()
         metric = AveragePointwiseEuclideanMetric(feature)
         qb = QuickBundles(threshold=mdf_thr, metric=metric)
 
-        cluster_map = qb.cluster(rstreamlines)
+        t1 = time()
+        initial_clusters = qb.cluster(rstreamlines, ordering=indices)
+
+        if self.verbose:
+            print(' QuickBundles time for %d' % (select_randomly,))
+            print(' Duration %0.3f sec. \n' % (time() - t1, ))
+
+        t2 = time()
+
+        cluster_map = qb.assign(initial_clusters, rstreamlines)
+
+        if self.verbose:
+            print(' QuickBundles time for %d' % (select_randomly,))
+            print(' Duration %0.3f sec. \n' % (time() - t2, ))
+
         cluster_map.refdata = self.streamlines
         self.cluster_map = cluster_map
         self.centroids = self.cluster_map.centroids

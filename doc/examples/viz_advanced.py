@@ -179,7 +179,7 @@ slicer and gives us the position and actual value.
 
 resampled = image_actor.get_data()
 
-status = actor.text('', font_size=14, bold=True)
+status = actor.text_overlay('', font_size=14, bold=True)
 ren.add(status)
 
 
