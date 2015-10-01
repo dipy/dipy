@@ -499,7 +499,7 @@ class QuickBundles(Clustering):
 
     def assign(self, clusters, streamlines, ordering=None):
         from dipy.segment.clustering_algorithms import quickbundles_assignment
-        new_clusters = quickbundles_assignment(streamlines, self.metric,
+        new_clusters = quickbundles_assignment(clusters, streamlines, self.metric,
                                                threshold=self.threshold,
                                                ordering=ordering)
         return new_clusters

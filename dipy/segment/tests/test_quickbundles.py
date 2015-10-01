@@ -213,6 +213,21 @@ def test_quickbundles_streamlines():
         assert_equal(clusters.centroids[0].dtype, np.float32)
 
 
+def test_quickbundles_assignment_streamlines():
+    rdata = streamline_utils.set_number_of_points(data, 10)
+    qb = QuickBundles(threshold=2*threshold)
+
+    clusters = qb.cluster(rdata)
+    # By default `refdata` refers to data being clustered.
+    assert_equal(clusters.refdata, rdata)
+    # Set `refdata` to return indices instead of actual data points.
+    clusters.refdata = None
+    assert_array_equal(list(itertools.chain(*clusters)), list(itertools.chain(*clusters_truth)))
+
+    clusters = qb.cluster(rdata)
+    new_clusters = qb.assign(clusters, rdata)
+
+
 def test_quickbundles_with_not_order_invariant_metric():
     metric = dipymetric.AveragePointwiseEuclideanMetric()
     qb = QuickBundles(threshold=np.inf, metric=metric)
