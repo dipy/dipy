@@ -495,5 +495,11 @@ class QuickBundles(Clustering):
                                    max_nb_clusters=self.max_nb_clusters,
                                    ordering=ordering)
 
-        cluster_map.refdata = streamlines
         return cluster_map
+
+    def assign(self, clusters, streamlines, ordering=None):
+        from dipy.segment.clustering_algorithms import quickbundles_assignment
+        new_clusters = quickbundles_assignment(streamlines, self.metric,
+                                               threshold=self.threshold,
+                                               ordering=ordering)
+        return new_clusters

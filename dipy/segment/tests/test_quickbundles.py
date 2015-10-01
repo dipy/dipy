@@ -9,7 +9,7 @@ from dipy.testing.memory import get_type_refcount
 from dipy.segment.clustering import QuickBundles
 
 import dipy.segment.metric as dipymetric
-from dipy.segment.clustering_algorithms import quickbundles
+from dipy.segment.clustering_algorithms import quickbundles, quickbundles_assignment
 import dipy.tracking.streamline as streamline_utils
 
 
@@ -116,6 +116,77 @@ def test_quickbundles_2D():
     assert_equal(len(clusters), len(data))
     assert_array_equal(list(map(len, clusters)), np.ones(len(data)))
     assert_array_equal([idx for cluster in clusters for idx in cluster.indices], range(len(data)))
+
+
+def test_quickbundles_assignment_2D():
+    # Test quickbundles clustering using 2D points and the Eulidean metric.
+    rng = np.random.RandomState(42)
+    data = []
+    data += [rng.randn(1, 2) + np.array([0, 0]) for i in range(1)]
+    data += [rng.randn(1, 2) + np.array([10, 10]) for i in range(2)]
+    data += [rng.randn(1, 2) + np.array([-10, 10]) for i in range(3)]
+    data += [rng.randn(1, 2) + np.array([10, -10]) for i in range(4)]
+    data += [rng.randn(1, 2) + np.array([-10, -10]) for i in range(5)]
+    data = np.array(data, dtype=dtype)
+
+    far_away_data = data * 10
+
+    clusters_truth = [[0, 15], [1, 2, 16, 17], [3, 4, 5, 18, 19, 20],
+                      [6, 7, 8, 9, 21, 22, 23, 24],
+                      [10, 11, 12, 13, 14, 25, 26, 27, 28, 29]]
+
+    # # Uncomment the following to visualize this test
+    # import pylab as plt
+    # plt.plot(*zip(*data[0:1, 0]), linestyle='None', marker='s')
+    # plt.plot(*zip(*data[1:3, 0]), linestyle='None', marker='o')
+    # plt.plot(*zip(*data[3:6, 0]), linestyle='None', marker='+')
+    # plt.plot(*zip(*data[6:10, 0]), linestyle='None', marker='.')
+    # plt.plot(*zip(*data[10:, 0]), linestyle='None', marker='*')
+
+    # plt.plot(*zip(*far_away_data[0:1, 0]), linestyle='None', marker='s')
+    # plt.plot(*zip(*far_away_data[1:3, 0]), linestyle='None', marker='o')
+    # plt.plot(*zip(*far_away_data[3:6, 0]), linestyle='None', marker='+')
+    # plt.plot(*zip(*far_away_data[6:10, 0]), linestyle='None', marker='.')
+    # plt.plot(*zip(*far_away_data[10:, 0]), linestyle='None', marker='*')
+    # plt.show()
+
+    # Theorically using a threshold above the following value will not
+    # produce expected results.
+    threshold = np.sqrt(2*(10**2))-np.sqrt(2)
+    metric = dipymetric.SumPointwiseEuclideanMetric()
+    clusters = quickbundles(data, metric, threshold)
+    assert_equal(len(clusters), len(clusters_truth))
+
+    # Test that adding data, even if really far away, won't create new clusters but
+    # rather assign the data to their closest cluster.
+    new_clusters = quickbundles_assignment(clusters, far_away_data, metric, threshold)
+
+    # No cluster should have been created (assignments only).
+    assert_equal(len(new_clusters), len(clusters))
+
+    # Check if new clusters are the same as 'clusters_truth'
+    for cluster in new_clusters:
+        # Find the corresponding cluster in 'clusters_truth'
+        for cluster_truth in clusters_truth:
+            if cluster_truth[0] in cluster.indices:
+                assert_equal(sorted(cluster.indices), sorted(cluster_truth))
+
+    # Test assigning the data used for the initial clustering but with a different ordering.
+    ordering = np.arange(len(data))
+    rng.shuffle(ordering)
+    clusters_truth = [[0, 0], [1, 2, 1, 2], [3, 4, 5, 3, 4, 5], [6, 7, 8, 9, 6, 7, 8, 9],
+                      [10, 11, 12, 13, 14, 10, 11, 12, 13, 14]]
+    new_clusters = quickbundles_assignment(clusters, data, metric, threshold, ordering)
+
+    # No cluster should have been created (assignments only).
+    assert_equal(len(new_clusters), len(clusters))
+
+    # Check if new clusters are the same as 'clusters_truth'
+    for cluster in new_clusters:
+        # Find the corresponding cluster in 'clusters_truth'
+        for cluster_truth in clusters_truth:
+            if cluster_truth[0] in cluster.indices:
+                assert_equal(sorted(cluster.indices), sorted(cluster_truth))
 
 
 def test_quickbundles_streamlines():
