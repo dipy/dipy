@@ -218,14 +218,18 @@ def test_quickbundles_assignment_streamlines():
     qb = QuickBundles(threshold=2*threshold)
 
     clusters = qb.cluster(rdata)
-    # By default `refdata` refers to data being clustered.
-    assert_equal(clusters.refdata, rdata)
-    # Set `refdata` to return indices instead of actual data points.
-    clusters.refdata = None
-    assert_array_equal(list(itertools.chain(*clusters)), list(itertools.chain(*clusters_truth)))
-
-    clusters = qb.cluster(rdata)
     new_clusters = qb.assign(clusters, rdata)
+
+    # `refdata` should be the same as the `clusters` one.
+    assert_equal(new_clusters.refdata, clusters.refdata)
+    assert_equal(new_clusters.refdata, rdata)
+
+    # Because we assign the same streamlines that the one used for the initial clusters.
+    clusters_truth = [[0, 1, 0, 1], [2, 4, 2, 4], [3, 3]]
+
+    # Set `refdata` to return indices instead of actual data points.
+    new_clusters.refdata = None
+    assert_array_equal(list(itertools.chain(*new_clusters)), list(itertools.chain(*clusters_truth)))
 
 
 def test_quickbundles_with_not_order_invariant_metric():
