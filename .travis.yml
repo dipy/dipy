@@ -53,7 +53,7 @@ before_install:
     - conda config --set always_yes yes
     - conda update conda
     - conda info -a
-    - travis_retry conda create -n test $CONDA
+    - travis_retry conda create -n test $CONDA $DEPENDS
     - source activate test
     - source tools/travis_tools.sh
     - virtualenv --python=python venv
