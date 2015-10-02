@@ -3,10 +3,12 @@ from dipy.fixes import argparse as arg
 from dipy.workflows.viz import horizon_flow
 from dipy.workflows.base import IntrospectiveArgumentParser
 
+# parser = arg.ArgumentParser()
+
 parser = IntrospectiveArgumentParser()
 
-parser.add_workflow(horizon_flow)
-parser.update_argument('files', nargs='*')
+# parser.add_workflow(horizon_flow)
+parser.add_argument('input_files', nargs='*')
 
 if __name__ == '__main__':
 

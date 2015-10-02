@@ -1,7 +1,7 @@
 import numpy as np
 import nibabel as nib
 from nibabel import trackvis as tv
-from dipy.core.histeq import histeq
+from dipy.segment.clustering import QuickBundles
 from dipy.tracking.streamline import transform_streamlines
 from dipy.viz import actor, window, widget
 from dipy.viz import fvtk
@@ -31,6 +31,12 @@ def viz(tractograms, data, affine):
     ren = window.Renderer()
 
     for streamlines in tractograms:
+
+        if len(streamlines) > 50000:
+            qb = QuickBundles(30)
+            clusters = qb.cluster(streamlines)
+            streamlines = clusters.centroids
+
         ren.add(actor.line(streamlines, lod_points=10 ** 5))
 
     image_actor = actor.slicer(data, affine)
@@ -75,17 +81,16 @@ def viz(tractograms, data, affine):
     show_m.start()
 
 
-def horizon_flow(input_file, other_files, verbose=True):
+def horizon_flow(input_files, verbose=True):
     """ Horizon
 
     Parameters
     ----------
-    input_file : string
-    files : string
+    input_files : string
     verbose : bool, optional
     """
 
-    input_files = [input_file] + other_files
+    #input_files = [input_file] + files
     print(input_files)
 
     filenames = input_files
