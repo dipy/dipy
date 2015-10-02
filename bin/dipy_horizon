@@ -3,8 +3,6 @@ from dipy.fixes import argparse as arg
 from dipy.workflows.viz import horizon_flow
 from dipy.workflows.base import IntrospectiveArgumentParser
 
-# parser = arg.ArgumentParser()
-
 parser = IntrospectiveArgumentParser()
 
 # parser.add_workflow(horizon_flow)
