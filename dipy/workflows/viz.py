@@ -29,7 +29,8 @@ def viz(tractograms, data, affine):
     slicer_opacity = .8
 
     ren = window.Renderer()
-
+    global actors
+    actors = []
     for streamlines in tractograms:
 
         if len(streamlines) > 50000:
@@ -37,46 +38,72 @@ def viz(tractograms, data, affine):
             clusters = qb.cluster(streamlines)
             streamlines = clusters.centroids
 
-        ren.add(actor.line(streamlines, lod_points=10 ** 5))
-
-    image_actor = actor.slicer(data, affine)
-
-    image_actor.opacity(slicer_opacity)
-
-    ren.add(image_actor)
-
-    ren.add(fvtk.axes((10, 10, 10)))
+            for s in streamlines:
+                act = actor.line([s], linewidth=3, lod=False)
+                actors.append(act)
+                ren.add(act)
+            # ren.add(actor.line(clusters[10], linewidth=2, lod=True))
+        else:
+            ren.add(actor.line(streamlines, opacity=0.5, lod_points=10 ** 5))
 
     show_m = window.ShowManager(ren, size=(1200, 900))
     show_m.initialize()
 
-    def change_slice(obj, event):
-        z = int(np.round(obj.get_value()))
-        image_actor.display(None, None, z)
+    if data is not None:
+        image_actor = actor.slicer(data, affine)
+        image_actor.opacity(slicer_opacity)
+        ren.add(image_actor)
 
-    slider = widget.slider(show_m.iren, show_m.ren,
-                           callback=change_slice,
-                           min_value=0,
-                           max_value=image_actor.shape[1] - 1,
-                           value=image_actor.shape[1] / 2,
-                           label="Move slice",
-                           right_normalized_pos=(.98, 0.6),
-                           size=(120, 0), label_format="%0.lf",
-                           color=(1., 1., 1.),
-                           selected_color=(0.86, 0.33, 1.))
+        ren.add(fvtk.axes((10, 10, 10)))
+
+        def change_slice(obj, event):
+            z = int(np.round(obj.get_value()))
+            image_actor.display(None, None, z)
+
+        slider = widget.slider(show_m.iren, show_m.ren,
+                               callback=change_slice,
+                               min_value=0,
+                               max_value=image_actor.shape[1] - 1,
+                               value=image_actor.shape[1] / 2,
+                               label="Move slice",
+                               right_normalized_pos=(.98, 0.6),
+                               size=(120, 0), label_format="%0.lf",
+                               color=(1., 1., 1.),
+                               selected_color=(0.86, 0.33, 1.))
 
     global size
     size = ren.GetSize()
+    global picked_actors
+    picked_actors = []
+
+    def pick_callback(obj, event):
+        global actors
+        # from ipdb import set_trace
+        # set_trace()
+        prop = obj.GetProp3D()
+
+        ac = np.array(actors)
+        index = np.where(ac == prop)[0]
+        if index in picked_actors:
+
+
+        else:
+            bundle = actor.line(clusters[index], opacity=0.5)
+            picked_actors.append(bundle)
+            ren.add(bundle)
+
 
     def win_callback(obj, event):
         global size
         if size != obj.GetSize():
 
-            slider.place(ren)
+            if data is not None:
+                slider.place(ren)
             size = obj.GetSize()
 
     show_m.initialize()
     show_m.add_window_callback(win_callback)
+    show_m.add_picker_callback(pick_callback)
     show_m.render()
     show_m.start()
 
@@ -90,7 +117,7 @@ def horizon_flow(input_files, verbose=True):
     verbose : bool, optional
     """
 
-    #input_files = [input_file] + files
+    # input_files = [input_file] + files
     print(input_files)
 
     filenames = input_files
@@ -98,6 +125,8 @@ def horizon_flow(input_files, verbose=True):
     tractograms = []
     print(filenames)
 
+    data = None
+    affine = None
     for f in filenames:
 
         sp = path.splitext(f)[1]
