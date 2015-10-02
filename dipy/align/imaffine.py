@@ -132,6 +132,9 @@ class AffineMap(object):
     def set_affine(self, affine):
         """ Sets the affine transform (operating in physical space)
 
+        Also sets `self.affine_inv` - the inverse of `affine`, or None if there
+        is no inverse.
+
         Parameters
         ----------
         affine : array, shape (dim + 1, dim + 1)
@@ -141,8 +144,8 @@ class AffineMap(object):
             transformation.
         """
         self.affine = affine
+        self.affine_inv = None
         if self.affine is None:
-            self.affine_inv = None
             return
         if np.any(np.isnan(affine)):
             raise AffineInversionError('Affine contains invalid elements')
