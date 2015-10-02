@@ -58,8 +58,6 @@ before_install:
     - travis_retry conda create -n test $CONDA $DEPENDS
     - source activate test
     - source tools/travis_tools.sh
-    - virtualenv --python=python venv
-    - source venv/bin/activate
     - python --version # just to check
     - retry pip install nose # always
     - wheelhouse_pip_install $DEPENDS
