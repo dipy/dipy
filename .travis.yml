@@ -60,13 +60,13 @@ before_install:
     - source tools/travis_tools.sh
     - python --version # just to check
     - retry pip install nose # always
-    - pip install $NIB
+    - retry pip install $NIB
     - if [ "${COVERAGE}" == "1" ]; then
       pip install coverage;
       pip install coveralls;
       fi
-    - if [[ $CONDA == python=2* ]]; then
-      conda install vtk;
+    - if [[ $CONDA == python=2.7 ]]; then
+         conda install vtk;
       fi
 install:
     - python setup.py install
