@@ -26,18 +26,19 @@ matrix:
     - python: 2.7
       env:
         - CONDA="python=2.7"
-    - python: 2.7
-      env:
         - COVERAGE=1
     # To test minimum dependencies
     - python: 2.7
       env:
+        - CONDA="python=2.7"
         - COVERAGE=1
         - DEPENDS="cython=0.18"
         - NIB="nibabel==1.2.0 numpy==1.6.0 scipy==0.9.0"
+    # To test with scikit-learn:
     - python: 2.7
       env:
-        - DEPENDS="cython numpy scipy matplotlib h5py cvxopt scikit_learn"
+        - CONDA="python=2.7"
+        - DEPENDS="cython numpy scipy matplotlib h5py cvxopt scikit-learn"
         - NIB="nibabel"
     - python: 3.2
       env:
