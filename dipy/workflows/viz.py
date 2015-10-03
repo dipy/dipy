@@ -24,27 +24,31 @@ def save_trk(fname, streamlines, hdr=None):
         tv.write(fname, streams, points_space='rasmm')
 
 
-def viz(tractograms, data, affine):
+def viz(tractograms, data, affine, qb_thr=30):
 
     slicer_opacity = .8
 
     ren = window.Renderer()
-    global actors
-    actors = []
+    global centroid_actors
+    centroid_actors = []
     for streamlines in tractograms:
 
         if len(streamlines) > 50000:
-            qb = QuickBundles(30)
+            qb = QuickBundles(qb_thr)
             clusters = qb.cluster(streamlines)
             streamlines = clusters.centroids
 
-            for s in streamlines:
-                act = actor.line([s], linewidth=3, lod=False)
-                actors.append(act)
+            for (i, s) in enumerate(streamlines):
+                if len(clusters[i]) > 1000:
+                    act = actor.line([s], linewidth=3, lod=False)
+                else:
+                    act = actor.line([s], linewidth=1, lod=False)
+
+                centroid_actors.append(act)
                 ren.add(act)
             # ren.add(actor.line(clusters[10], linewidth=2, lod=True))
         else:
-            ren.add(actor.line(streamlines, opacity=0.5, lod_points=10 ** 5))
+            ren.add(actor.line(streamlines, fvtk.colors.white, opacity=0.5, lod_points=10 ** 5))
 
     show_m = window.ShowManager(ren, size=(1200, 900))
     show_m.initialize()
@@ -74,24 +78,34 @@ def viz(tractograms, data, affine):
     global size
     size = ren.GetSize()
     global picked_actors
-    picked_actors = []
+    picked_actors = {}
 
     def pick_callback(obj, event):
-        global actors
+        global centroid_actors
+        global picked_actors
         # from ipdb import set_trace
         # set_trace()
         prop = obj.GetProp3D()
+        # print('prop')
+        # print(prop)
 
-        ac = np.array(actors)
+        ac = np.array(centroid_actors)
         index = np.where(ac == prop)[0]
-        if index in picked_actors:
 
+        if len(index) > 0:
+            try:
+                bundle = picked_actors[prop]
+                ren.rm(bundle)
+                del picked_actors[prop]
+            except:
+                bundle = actor.line(clusters[index], opacity=0.5)
+                # print('bundle')
+                # print(bundle)
+                picked_actors[prop] = bundle
+                ren.add(bundle)
 
-        else:
-            bundle = actor.line(clusters[index], opacity=0.5)
-            picked_actors.append(bundle)
-            ren.add(bundle)
-
+        if prop in picked_actors.values():
+            ren.rm(prop)
 
     def win_callback(obj, event):
         global size
@@ -108,12 +122,13 @@ def viz(tractograms, data, affine):
     show_m.start()
 
 
-def horizon_flow(input_files, verbose=True):
+def horizon_flow(input_files, qb_thr=30, verbose=True):
     """ Horizon
 
     Parameters
     ----------
     input_files : string
+    qb_thr : float, optional
     verbose : bool, optional
     """
 
@@ -143,4 +158,4 @@ def horizon_flow(input_files, verbose=True):
             affine = img.get_affine()
             print(affine)
 
-    viz(tractograms, data, affine)
+    viz(tractograms, data, affine, qb_thr)
