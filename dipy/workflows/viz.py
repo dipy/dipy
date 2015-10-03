@@ -40,17 +40,26 @@ def viz(tractograms, data, affine, qb_thr=30):
 
             for (i, s) in enumerate(streamlines):
                 if len(clusters[i]) > 1000:
-                    act = actor.line([s], linewidth=3, lod=False)
-                else:
+                    act = actor.line([s], linewidth=10, lod=False)
+                elif len(clusters[i]) <= 1000 and len(clusters[i]) > 50:
                     act = actor.line([s], linewidth=1, lod=False)
 
                 centroid_actors.append(act)
                 ren.add(act)
             # ren.add(actor.line(clusters[10], linewidth=2, lod=True))
         else:
-            ren.add(actor.line(streamlines, fvtk.colors.white, opacity=0.5, lod_points=10 ** 5))
+            ren.add(actor.line(streamlines, fvtk.colors.white,
+                               opacity=1., lod_points=10 ** 5))
 
-    show_m = window.ShowManager(ren, size=(1200, 900))
+    class SimpleTrackBallNoBB(window.vtk.vtkInteractorStyleTrackballCamera):
+        def HighlightProp(self, p):
+            pass
+
+    style = SimpleTrackBallNoBB()
+    # very hackish way
+    style.SetPickColor(0, 0, 0)
+    # style.HighlightProp(None)
+    show_m = window.ShowManager(ren, size=(1200, 900), interactor_style=style)
     show_m.initialize()
 
     if data is not None:
@@ -98,7 +107,7 @@ def viz(tractograms, data, affine, qb_thr=30):
                 ren.rm(bundle)
                 del picked_actors[prop]
             except:
-                bundle = actor.line(clusters[index], opacity=0.5)
+                bundle = actor.line(clusters[index])
                 # print('bundle')
                 # print(bundle)
                 picked_actors[prop] = bundle
