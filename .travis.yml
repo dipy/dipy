@@ -60,8 +60,7 @@ before_install:
     - source tools/travis_tools.sh
     - python --version # just to check
     - retry pip install nose # always
-    - wheelhouse_pip_install $DEPENDS
-    - wheelhouse_pip_install $NIB
+    - pip install $NIB
     - if [ "${COVERAGE}" == "1" ]; then
       pip install coverage;
       pip install coveralls;
