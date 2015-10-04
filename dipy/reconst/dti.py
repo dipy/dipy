@@ -877,6 +877,11 @@ class TensorFit(object):
         return fractional_anisotropy(self.evals)
 
     @auto_attr
+    def color_fa(self):
+        """Color fractional anisotropy of diffusion tensor"""
+        return color_fa(self.fa, self.evecs)
+
+    @auto_attr
     def ga(self):
         """Geodesic anisotropy (GA) calculated from cached eigenvalues."""
         return geodesic_anisotropy(self.evals)
