@@ -741,11 +741,12 @@ class TensorModel(ReconstModel):
 
         if not callable(fit_method):
             try:
-                self.fit_method = common_fit_methods[fit_method]
+                fit_method = common_fit_methods[fit_method]
             except KeyError:
                 raise ValueError('"' + str(fit_method) + '" is not a known fit '
                                  'method, the fit method should either be a '
                                  'function or one of the common fit methods')
+        self.fit_method = fit_method
 
         self.design_matrix = design_matrix(self.gtab)
         self.args = args
