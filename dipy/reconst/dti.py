@@ -9,6 +9,7 @@ import numpy as np
 import scipy.optimize as opt
 
 from dipy.utils.six.moves import range
+from dipy.utils.arrfuncs import pinv_vec
 from dipy.data import get_sphere
 from ..core.gradients import gradient_table
 from ..core.geometry import vector_norm
@@ -1210,8 +1211,6 @@ def wls_fit_tensor(design_matrix, data):
     """
     tol = 1e-6
     data = np.asarray(data)
-    data_flat = data.reshape((-1, data.shape[-1]))
-    dti_params = np.empty((len(data_flat), 4, 3))
 
     #obtain OLS fitting matrix
     #U,S,V = np.linalg.svd(design_matrix, False)
@@ -1219,24 +1218,20 @@ def wls_fit_tensor(design_matrix, data):
     #math: ols_fit = X*beta_ols*inv(y)
     #ols_fit = np.dot(U, U.T)
     ols_fit = _ols_fit_matrix(design_matrix)
-    min_diffusivity = tol / -design_matrix.min()
 
-    for param, sig in zip(dti_params, data_flat):
-        param[0], param[1:] = _wls_iter(ols_fit, design_matrix, sig,
-                                        min_diffusivity)
+    log_s = np.log(data)
+    w = np.exp(np.einsum('...ij,...j', ols_fit, log_s))
+    evals, evecs = decompose_tensor(
+        from_lower_triangular(
+            np.einsum('...ij,...j',
+                      pinv_vec(design_matrix * w[..., None]),
+                      w * log_s)
+        ),
+        min_diffusivity=tol / -design_matrix.min()
+    )
 
-    dti_params.shape = data.shape[:-1] + (12,)
-    return dti_params
-
-
-def _wls_iter(ols_fit, design_matrix, sig, min_diffusivity):
-    ''' Helper function used by wls_fit_tensor.
-    '''
-    log_s = np.log(sig)
-    w = np.exp(np.dot(ols_fit, log_s))
-    D = np.dot(np.linalg.pinv(design_matrix * w[:, None]), w * log_s)
-    tensor = from_lower_triangular(D)
-    return decompose_tensor(tensor, min_diffusivity=min_diffusivity)
+    dti_params = np.concatenate((evals[..., None, :], evecs), axis=-2)
+    return dti_params.reshape(data.shape[:-1] + (12,))
 
 
 def ols_fit_tensor(design_matrix, data):
