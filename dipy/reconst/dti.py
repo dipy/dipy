@@ -1722,7 +1722,7 @@ def decompose_tensor(tensor, min_diffusivity=0):
 
     Parameters
     ----------
-    tensor : array (3, 3)
+    tensor : array (..., 3, 3)
         Hermitian matrix representing a diffusion tensor.
     min_diffusivity : float
         Because negative eigenvalues are not physical and small eigenvalues,
@@ -1732,22 +1732,37 @@ def decompose_tensor(tensor, min_diffusivity=0):
 
     Returns
     -------
-    eigvals : array (3,)
+    eigvals : array (..., 3)
         Eigenvalues from eigen decomposition of the tensor. Negative
         eigenvalues are replaced by zero. Sorted from largest to smallest.
-    eigvecs : array (3, 3)
+    eigvecs : array (..., 3, 3)
         Associated eigenvectors from eigen decomposition of the tensor.
-        Eigenvectors are columnar (e.g. eigvecs[:,j] is associated with
-        eigvals[j])
+        Eigenvectors are columnar (e.g. eigvecs[..., :, j] is associated with
+        eigvals[..., j])
 
     """
     #outputs multiplicity as well so need to unique
     eigenvals, eigenvecs = np.linalg.eigh(tensor)
 
     #need to sort the eigenvalues and associated eigenvectors
-    order = eigenvals.argsort()[::-1]
-    eigenvecs = eigenvecs[:, order]
-    eigenvals = eigenvals[order]
+    if eigenvals.ndim == 1:
+        # this is a lot faster when dealing with a single voxel
+        order = eigenvals.argsort()[::-1]
+        eigenvecs = eigenvecs[:, order]
+        eigenvals = eigenvals[order]
+    else:
+        # temporarily flatten eigenvals and eigenvecs to make sorting easier
+        shape = eigenvals.shape[:-1]
+        eigenvals = eigenvals.reshape(-1, 3)
+        eigenvecs = eigenvecs.reshape(-1, 3, 3)
+        size = eigenvals.shape[0]
+        order = eigenvals.argsort()[:, ::-1]
+        xi, yi = np.ogrid[:size, :3, :3][:2]
+        eigenvecs = eigenvecs[xi, yi, order[:, None, :]]
+        xi = np.ogrid[:size, :3][0]
+        eigenvals = eigenvals[xi, order]
+        eigenvecs = eigenvecs.reshape(shape + (3, 3))
+        eigenvals = eigenvals.reshape(shape + (3, ))
 
     eigenvals = eigenvals.clip(min=min_diffusivity)
     # eigenvecs: each vector is columnar
