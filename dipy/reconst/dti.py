@@ -55,7 +55,7 @@ def _min_positive_signal(data):
     data: array ([X, Y, Z, ...], g)
         Data or response variables holding the data. Note that the last
         dimension should contain the data.
-    
+
     Returns
     -------
     min_signal : float
@@ -1239,15 +1239,6 @@ def _wls_iter(ols_fit, design_matrix, sig, min_diffusivity):
     return decompose_tensor(tensor, min_diffusivity=min_diffusivity)
 
 
-def _ols_iter(inv_design, sig, min_diffusivity):
-    ''' Helper function used by ols_fit_tensor.
-    '''
-    log_s = np.log(sig)
-    D = np.dot(inv_design, log_s)
-    tensor = from_lower_triangular(D)
-    return decompose_tensor(tensor, min_diffusivity=min_diffusivity)
-
-
 def ols_fit_tensor(design_matrix, data):
     r"""
     Computes ordinary least squares (OLS) fit to calculate self-diffusion
@@ -1293,27 +1284,23 @@ def ols_fit_tensor(design_matrix, data):
     """
     tol = 1e-6
 
-    data = np.asarray(data)
-    data_flat = data.reshape((-1, data.shape[-1]))
-    evals = np.empty((len(data_flat), 3))
-    evecs = np.empty((len(data_flat), 3, 3))
-    dti_params = np.empty((len(data_flat), 4, 3))
-
     #obtain OLS fitting matrix
     #U,S,V = np.linalg.svd(design_matrix, False)
     #math: beta_ols = inv(X.T*X)*X.T*y
     #math: ols_fit = X*beta_ols*inv(y)
     #ols_fit =  np.dot(U, U.T)
 
-    min_diffusivity = tol / -design_matrix.min()
-    inv_design = np.linalg.pinv(design_matrix)
+    evals, evecs = decompose_tensor(
+        from_lower_triangular(
+            np.einsum('...ij,...j',
+                      np.linalg.pinv(design_matrix),
+                      np.log(np.asarray(data)))
+        ),
+        min_diffusivity=tol / -design_matrix.min()
+    )
 
-    for param, sig in zip(dti_params, data_flat):
-        param[0], param[1:] = _ols_iter(inv_design, sig, min_diffusivity)
-
-    dti_params.shape = data.shape[:-1] + (12,)
-    dti_params = dti_params
-    return dti_params
+    dti_params = np.concatenate((evals[..., None, :], evecs), axis=-2)
+    return dti_params.reshape(data.shape[:-1] + (12,))
 
 
 def _ols_fit_matrix(design_matrix):
