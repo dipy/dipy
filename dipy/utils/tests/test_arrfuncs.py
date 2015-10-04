@@ -5,7 +5,7 @@ import sys
 
 import numpy as np
 
-from ..arrfuncs import as_native_array
+from ..arrfuncs import as_native_array, pinv_vec
 
 from numpy.testing import (assert_array_almost_equal,
                            assert_array_equal)
@@ -28,3 +28,12 @@ def test_as_native():
     assert_array_equal(barr, narr)
     assert_equal(narr.dtype.byteorder, NATIVE_ORDER)
 
+
+def test_pinv_vec():
+    arr = np.random.randn(4, 4, 4, 3, 7)
+    pinv = pinv_vec(arr)
+    for i in range(4):
+        for j in range(4):
+            for k in range(4):
+                assert_array_almost_equal(pinv[i, j, k],
+                                          np.linalg.pinv(arr[i, j, k]))
