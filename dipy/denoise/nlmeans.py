@@ -35,14 +35,18 @@ def nlmeans(arr, sigma, mask=None, patch_radius=1, block_radius=5, rician=True):
                           rician).astype(arr.dtype)
 
     elif arr.ndim == 4:
-
         denoised_arr = np.zeros_like(arr)
-        sigma = np.ones(arr.shape[:-1], dtype=np.float64) * sigma
+
+        if isinstance(sigma, np.ndarray) and sigma.ndim == 3:
+            sigma = (np.ones(arr.shape, dtype=np.float64) *
+                     sigma[..., np.newaxis])
+        else:
+            sigma = np.ones(arr.shape, dtype=np.float64) * sigma
 
         for i in range(arr.shape[-1]):
             denoised_arr[..., i] = nlmeans_3d(arr[..., i],
                                               mask,
-                                              sigma,
+                                              sigma[..., i],
                                               patch_radius,
                                               block_radius,
                                               rician).astype(arr.dtype)

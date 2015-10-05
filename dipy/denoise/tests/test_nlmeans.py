@@ -82,5 +82,12 @@ def test_nlmeans_dtype():
     assert_equal(S0.dtype, S0n.dtype)
 
 
+def test_nlmeans_4d_3dsigma():
+    # Input is 4D data and 3D sigma
+    data = np.ones((10,10,10,5))
+    sigma = np.ones((10,10,10))
+    nlmeans(data, sigma)
+
+
 if __name__ == '__main__':
     run_module_suite()
