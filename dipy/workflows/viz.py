@@ -37,12 +37,16 @@ def viz(tractograms, data, affine, qb_thr=30):
             qb = QuickBundles(qb_thr)
             clusters = qb.cluster(streamlines)
             streamlines = clusters.centroids
+            sizes = np.array([len(c) for c in clusters])
+            sizes = np.interp(sizes, [sizes.min(), sizes.max()], [0.1, 2.5])
+
 
             for (i, s) in enumerate(streamlines):
-                if len(clusters[i]) > 1000:
-                    act = actor.line([s], linewidth=10, lod=False)
-                elif len(clusters[i]) <= 1000 and len(clusters[i]) > 50:
-                    act = actor.line([s], linewidth=1, lod=False)
+                act = actor.streamtube([s], linewidth=sizes[i], lod=False)
+                #if len(clusters[i]) > 1000:
+                #   act = actor.line([s], linewidth=10, lod=False)
+                #elif len(clusters[i]) <= 1000 and len(clusters[i]) > 50:
+                #   act = actor.line([s], linewidth=1, lod=False)
 
                 centroid_actors.append(act)
                 ren.add(act)
