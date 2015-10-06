@@ -846,8 +846,9 @@ def response_from_mask(gtab, data, mask):
     data : ndarray
         Diffusion data
     mask : ndarray
-        Mask the estimation of the response function. For example a mask of
-        the white matter voxels with FA values higher than 0.7 (see [1]_).
+        Mask to use for the estimation of the response function. For example a
+        mask of the white matter voxels with FA values higher than 0.7
+        (see [1]_).
 
     Returns
     -------
@@ -859,7 +860,7 @@ def response_from_mask(gtab, data, mask):
     Notes
     -----
     See csdeconv.auto_response() or csdeconv.recursive_response() if you don't
-    have a mask for the response function estimation.
+    have a computed mask for the response function estimation.
 
     References
     ----------
@@ -867,12 +868,14 @@ def response_from_mask(gtab, data, mask):
     fiber orientation density function from diffusion-weighted MRI
     data using spherical deconvolution
     """
+
     ten = TensorModel(gtab)
-    indices = mask > 0
+    indices = np.where(mask > 0)
 
     if indices[0].size == 0:
         msg = "No voxel in mask with value > 0 were found."
         warnings.warn(msg, UserWarning)
+        return (np.nan, np.nan), np.nan
 
     tenfit = ten.fit(data[indices])
     lambdas = tenfit.evals[:, :2]

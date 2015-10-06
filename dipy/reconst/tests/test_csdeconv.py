@@ -114,9 +114,12 @@ def test_response_from_mask():
 
     gtab = gradient_table(bvals, bvecs)
     ten = TensorModel(gtab)
+    tenfit = ten.fit(data)
+    FA = fractional_anisotropy(tenfit.evals)
+    FA[np.isnan(FA)] = 0
     radius = 3
 
-    for fa_thr in np.arange(0, 0.9, 0.1):
+    for fa_thr in np.arange(0, 1, 0.1):
         response_auto, ratio_auto, nvoxels = auto_response(gtab,
                                                            data,
                                                            roi_center=None,
@@ -130,11 +133,7 @@ def test_response_from_mask():
              cj - radius: cj + radius,
              ck - radius: ck + radius] = 1
 
-        tenfit = ten.fit(data)
-        FA = fractional_anisotropy(tenfit.evals)
-        FA[np.isnan(FA)] = 0
-        mask[np.where(FA <= fa_thr)] = 0
-
+        mask[FA <= fa_thr] = 0
         response_mask, ratio_mask = response_from_mask(gtab, data, mask)
 
         assert_equal(int(np.sum(mask)), nvoxels)
