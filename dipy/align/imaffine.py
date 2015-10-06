@@ -132,6 +132,9 @@ class AffineMap(object):
     def set_affine(self, affine):
         """ Sets the affine transform (operating in physical space)
 
+        Also sets `self.affine_inv` - the inverse of `affine`, or None if
+        there is no inverse.
+
         Parameters
         ----------
         affine : array, shape (dim + 1, dim + 1)
@@ -141,10 +144,10 @@ class AffineMap(object):
             transformation.
         """
         self.affine = affine
+        self.affine_inv = None
         if self.affine is None:
-            self.affine_inv = None
             return
-        if np.any(np.isnan(affine)):
+        if not np.all(np.isfinite(affine)):
             raise AffineInversionError('Affine contains invalid elements')
         try:
             self.affine_inv = npl.inv(affine)
@@ -223,8 +226,9 @@ class AffineMap(object):
         shape = np.array(sampling_grid_shape, dtype=np.int32)
 
         # Verify valid image dimension
-        if dim < 2 or dim > 3:
-            raise ValueError('Undefined transform for dimension: %d' % (dim,))
+        img_dim = len(image.shape)
+        if img_dim < 2 or img_dim > 3:
+            raise ValueError('Undefined transform for dim: %d' % (img_dim,))
 
         # Obtain grid-to-world transform for sampling grid
         if sampling_grid2world is None:
@@ -427,6 +431,8 @@ class MutualInformationMetric(object):
             interpolation artifacts. The default is None, implying no
             pre-alignment is performed.
         """
+        n = transform.get_number_of_parameters()
+        self.metric_grad = np.zeros(n, dtype=np.float64)
         self.dim = len(static.shape)
         if moving_grid2world is None:
             moving_grid2world = np.eye(self.dim + 1)
@@ -560,10 +566,6 @@ class MutualInformationMetric(object):
         H = self.histogram  # Shortcut to `self.histogram`
         grad = None  # Buffer to write the MI gradient into (if needed)
         if update_gradient:
-            # Re-allocate buffer for the gradient, if needed
-            n = params.shape[0]  # Number of parameters
-            if (self.metric_grad is None) or (self.metric_grad.shape[0] != n):
-                self.metric_grad = np.empty(n)
             grad = self.metric_grad
             # Compute the gradient of the joint PDF w.r.t. parameters
             if self.sampling_proportion is None:  # Dense case
