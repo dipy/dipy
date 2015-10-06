@@ -245,7 +245,8 @@ class RecoBundles(object):
             if self.verbose:
                 print('Progressive Registration is Enabled')
 
-            if x0 == 'rigid' or x0 == 'similarity' or x0 == 'scaling':
+            if x0 == 'translation' or x0 == 'rigid' or \
+               x0 == 'similarity' or x0 == 'scaling':
 
                 slr_t = StreamlineLinearRegistration(metric=metric,
                                                      x0='translation',
@@ -253,6 +254,9 @@ class RecoBundles(object):
                                                      method=method)
 
                 slm_t = slr_t.optimize(static, moving)
+
+            if x0 == 'rigid' or x0 == 'similarity' or x0 == 'scaling':
+
                 x_translation = slm_t.xopt
                 x = np.zeros(6)
                 x[:3] = x_translation
@@ -291,6 +295,8 @@ class RecoBundles(object):
                                                      method=method)
                 slm_c = slr_c.optimize(static, moving)
 
+            if x0 == 'translation':
+                slm = slm_t
             if x0 == 'rigid':
                 slm = slm_r
             if x0 == 'similarity':
