@@ -82,8 +82,14 @@ class IntrospectiveArgumentParser(arg.ArgumentParser):
                 typestr = self.doc[i][1]
                 dtype = self._select_dtype(typestr)
                 help_msg = ' '.join(self.doc[i][2])
-                self.add_argument('--' + args[i], action='store', type=dtype,
-                                  metavar=dtype.__name__, help=help_msg)
+                if 'bool' in typestr:
+                    self.add_argument('--' + args[i], choices=[0, 1], type=int,
+                                      metavar=dtype.__name__, help=help_msg)
+                else:
+                    self.add_argument('--' + args[i], action='store',
+                                      type=dtype,
+                                      metavar=dtype.__name__, help=help_msg)
+
             else:
                 self.add_argument('--' + args[i])
 

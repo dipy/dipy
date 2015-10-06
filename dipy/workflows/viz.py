@@ -38,8 +38,7 @@ def viz(tractograms, data, affine, qb_thr=30):
             clusters = qb.cluster(streamlines)
             streamlines = clusters.centroids
             sizes = np.array([len(c) for c in clusters])
-            sizes = np.interp(sizes, [sizes.min(), sizes.max()], [0.1, 2.5])
-
+            sizes = np.interp(sizes, [sizes.min(), sizes.max()], [0.1, 2.])
 
             for (i, s) in enumerate(streamlines):
                 act = actor.streamtube([s], linewidth=sizes[i], lod=False)
