@@ -838,15 +838,44 @@ def auto_response(gtab, data, roi_center=None, roi_radius=10, fa_thr=0.7,
 
 
 def response_from_mask(gtab, data, mask):
+    """ Estimate the response function from a given mask.
+
+    Parameters
+    ----------
+    gtab : GradientTable
+    data : ndarray
+        Diffusion data
+    mask : ndarray
+        Mask the estimation of the response function. For example a mask of
+        the white matter voxels with FA values higher than 0.7 (see [1]_).
+
+    Returns
+    -------
+    response : tuple, (2,)
+        (`evals`, `S0`)
+    ratio : float
+        The ratio between smallest versus largest eigenvalue of the response.
+
+    Notes
+    -----
+    See csdeconv.auto_response() or csdeconv.recursive_response() if you don't
+    have a mask for the response function estimation.
+
+    References
+    ----------
+    .. [1] Tournier, J.D., et al. NeuroImage 2004. Direct estimation of the
+    fiber orientation density function from diffusion-weighted MRI
+    data using spherical deconvolution
+    """
     ten = TensorModel(gtab)
     indices = mask > 0
-    tenfit = ten.fit(data[indices])
 
     if indices[0].size == 0:
         msg = "No voxel in mask with value > 0 were found."
         warnings.warn(msg, UserWarning)
 
-    lambdas = tenfit.evals[indices][:, :2]
+    tenfit = ten.fit(data[indices])
+    lambdas = tenfit.evals[:, :2]
     S0s = data[indices][:, np.nonzero(gtab.b0s_mask)[0]]
 
     return _get_response(S0s, lambdas)
