@@ -102,7 +102,7 @@ def test_quickbundles_2D():
     # Cluster each cluster again using a small threshold
     for cluster in clusters:
         subclusters = quickbundles(data, metric, threshold=0, ordering=cluster.indices)
-        assert_equal(len(subclusters), len(cluster))
+        subclusters.refdata = None  # Use indices instead
         assert_equal(sorted(itertools.chain(*subclusters)), sorted(cluster.indices))
 
     # A very large threshold should produce only 1 cluster
