@@ -212,7 +212,6 @@ midpoints = np.asarray(map(feature.extract, streamlines))
 
 # Color each midpoint according to the cluster they belong to.
 rng = np.random.RandomState(42)
-#colormap = rng.rand(len(clusters), 3)
 colormap = fvtk.create_colormap(np.arange(len(clusters)))
 colormap_full = np.ones((len(streamlines), 3))
 for cluster, color in zip(clusters, colormap):
