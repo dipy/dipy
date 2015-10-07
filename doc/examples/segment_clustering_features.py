@@ -14,9 +14,9 @@ familiar with the tractography clustering framework, read the
     :depth: 1
 
 **Note**:
-All examples assume a variable `streamlines` has already been loaded. We
-defined a simple function to do so. It imports the necessary modules and
-load a small streamline bundle.
+All examples assume a function `get_streamlines` exists. We defined here a
+simple function to do so. It imports the necessary modules and load a small
+streamline bundle.
 """
 
 
@@ -62,7 +62,7 @@ streamlines = set_number_of_points(streamlines, nb_points=12)
 
 # Create an instance of `IdentityFeature` and tell metric to use it.
 feature = IdentityFeature()
-metric = AveragePointwiseEuclideanMetric(feature=feature)  # a.k.a. MDF
+metric = AveragePointwiseEuclideanMetric(feature=feature)
 qb = QuickBundles(threshold=10., metric=metric)
 clusters = qb.cluster(streamlines)
 
@@ -95,7 +95,7 @@ own instance of `ResampleFeature` (see following example).
 **Note:** Resampling streamlines has an impact on clustering results both in
 term of speed and quality. Setting the number of points too low will result in
 a loss of information about the shape of the streamlines. On the contrary,
-setting the number of points to high will slow down the clustering process.
+setting the number of points too high will slow down the clustering process.
 """
 
 from dipy.segment.clustering import QuickBundles
@@ -128,8 +128,8 @@ Center of Mass Feature
 ======================
 **What:** Instances of `CenterOfMassFeature` compute the center of mass (also
 known as center of gravity) of a set of points. This is achieved by taking the
-mean of every coordinate independently (for more information see the [wiki
-page](https://en.wikipedia.org/wiki/Center_of_mass)).
+mean of every coordinate independently (for more information see the
+`wiki page <https://en.wikipedia.org/wiki/Center_of_mass>`_).
 
 **When:** This feature can be useful when you *only* need information about the
 spatial position of a streamline.
@@ -159,7 +159,6 @@ centers = np.asarray(map(feature.extract, streamlines))
 
 # Color each center of mass according to the cluster they belong to.
 rng = np.random.RandomState(42)
-#colormap = rng.rand(len(clusters), 3)
 colormap = fvtk.create_colormap(np.arange(len(clusters)))
 colormap_full = np.ones((len(streamlines), 3))
 for cluster, color in zip(clusters, colormap):
@@ -239,8 +238,8 @@ fvtk.record(ren, n_frames=1, out_path='midpoint_feature.png', size=(600, 600))
 ArcLength Feature
 =================
 **What:** Instances of `ArcLengthFeature` compute the length of a streamline.
-More specifically, this feature corresponds to the sum of every streamline
-segments length.
+More specifically, this feature corresponds to the sum of the lengths of every
+streamline segments.
 
 **When:** This feature can be useful when you *only* need information about the
 length of a streamline.
@@ -259,8 +258,6 @@ feature = ArcLengthFeature()
 metric = EuclideanMetric(feature)
 qb = QuickBundles(threshold=2., metric=metric)
 clusters = qb.cluster(streamlines)
-
-#lengths = map(feature.extract, streamlines)
 
 # Color each streamline according to the cluster they belong to.
 colormap = fvtk.create_colormap(np.ravel(clusters.centroids))

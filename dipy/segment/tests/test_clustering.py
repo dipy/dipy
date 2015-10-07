@@ -416,17 +416,17 @@ def test_cluster_map_str_and_repr():
     assert_equal(repr(cluster_map), "ClusterMap(" + expected_str + ")")
 
 
-def test_cluster_map_get_size():
+def test_cluster_map_size():
     nb_clusters = 11
     cluster_map = ClusterMap()
     clusters = [Cluster() for i in range(nb_clusters)]
     cluster_map.add_cluster(*clusters)
 
     assert_equal(len(cluster_map), nb_clusters)
-    assert_equal(cluster_map.get_size(), nb_clusters)
+    assert_equal(cluster_map.size(), nb_clusters)
 
 
-def test_cluster_map_get_clusters_sizes():
+def test_cluster_map_clusters_sizes():
     rng = np.random.RandomState(42)
     nb_clusters = 11
     # Generate random indices
@@ -436,7 +436,7 @@ def test_cluster_map_get_clusters_sizes():
     clusters = [Cluster(indices=indices[i]) for i in range(nb_clusters)]
     cluster_map.add_cluster(*clusters)
 
-    assert_equal(cluster_map.get_clusters_sizes(), list(map(len, indices)))
+    assert_equal(cluster_map.clusters_sizes(), list(map(len, indices)))
 
 
 def test_cluster_map_get_small_and_large_clusters():

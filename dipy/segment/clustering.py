@@ -316,11 +316,11 @@ class ClusterMap(object):
         """ Remove all clusters from this cluster map. """
         del self.clusters[:]
 
-    def get_size(self):
+    def size(self):
         """ Gets number of clusters contained in this cluster map. """
         return len(self)
 
-    def get_clusters_sizes(self):
+    def clusters_sizes(self):
         """ Gets the size of every cluster contained in this cluster map.
 
         Returns
