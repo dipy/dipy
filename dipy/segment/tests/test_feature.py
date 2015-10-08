@@ -181,11 +181,11 @@ def test_feature_arclength():
             assert_array_almost_equal(features, features_flip)
 
 
-def test_feature_vector_between_endpoints():
+def test_feature_vector_of_endpoints():
     # Test subclassing Feature
-    class VectorBetweenEndpointsFeature(dipymetric.Feature):
+    class VectorOfEndpointsFeature(dipymetric.Feature):
         def __init__(self):
-            super(VectorBetweenEndpointsFeature, self).__init__(False)
+            super(VectorOfEndpointsFeature, self).__init__(False)
 
         def infer_shape(self, streamline):
             return (1, streamline.shape[1])
@@ -193,8 +193,8 @@ def test_feature_vector_between_endpoints():
         def extract(self, streamline):
             return streamline[[-1]] - streamline[[0]]
 
-    feature_types = [dipymetric.VectorBetweenEndpointsFeature(),
-                     VectorBetweenEndpointsFeature()]
+    feature_types = [dipymetric.VectorOfEndpointsFeature(),
+                     VectorOfEndpointsFeature()]
     for feature in feature_types:
         for s in [s1, s2, s3, s4]:
             # Test method infer_shape

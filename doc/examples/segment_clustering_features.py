@@ -277,11 +277,11 @@ fvtk.record(ren, n_frames=1, out_path='arclength_feature.png', size=(600, 600))
 
    **Showing the streamlines colored according to their length**.
 
-.. _clustering-examples-VectorBetweenEndpointsFeature:
+.. _clustering-examples-VectorOfEndpointsFeature:
 
 Vector Between Endpoints Feature
 ================================
-**What:** Instances of `VectorBetweenEndpointsFeature` extract the vector going
+**What:** Instances of `VectorOfEndpointsFeature` extract the vector going
 from one extremity of the streamline to the other. In other words, this feature
 represents the vector beginning at the first point and ending at the last point
 of the streamlines.
@@ -297,13 +297,13 @@ using this feature.
 import numpy as np
 from dipy.viz import fvtk
 from dipy.segment.clustering import QuickBundles
-from dipy.segment.metric import VectorBetweenEndpointsFeature
+from dipy.segment.metric import VectorOfEndpointsFeature
 from dipy.segment.metric import CosineMetric
 
 # Get some streamlines.
 streamlines = get_streamlines()  # Previously defined.
 
-feature = VectorBetweenEndpointsFeature()
+feature = VectorOfEndpointsFeature()
 metric = CosineMetric(feature)
 qb = QuickBundles(threshold=0.1, metric=metric)
 clusters = qb.cluster(streamlines)
@@ -319,10 +319,10 @@ ren = fvtk.ren()
 fvtk.clear(ren)
 ren.SetBackground(0, 0, 0)
 fvtk.add(ren, fvtk.streamtube(streamlines, colormap_full))
-fvtk.record(ren, n_frames=1, out_path='vector_between_endpoints_feature.png', size=(600, 600))
+fvtk.record(ren, n_frames=1, out_path='vector_of_endpoints_feature.png', size=(600, 600))
 
 """
-.. figure:: vector_between_endpoints_feature.png
+.. figure:: vector_of_endpoints_feature.png
    :align: center
 
    **Showing the streamlines colored according to their orientation**.

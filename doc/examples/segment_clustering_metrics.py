@@ -45,7 +45,7 @@ to avoid this and you made sure all your streamlines have already the same
 number of points, you can manually provide an instance of
 `AveragePointwiseEuclideanMetric` to `QuickBundles`. Since the default
 `Feature` is the `IdentityFeature` the streamlines won't be resampled thus
-saving some computional time.
+saving some computational time.
 
 **Note:** Inputs must be sequences of same length.
 """
@@ -173,13 +173,13 @@ orientation of a streamline.
 import numpy as np
 from dipy.viz import fvtk
 from dipy.segment.clustering import QuickBundles
-from dipy.segment.metric import VectorBetweenEndpointsFeature
+from dipy.segment.metric import VectorOfEndpointsFeature
 from dipy.segment.metric import CosineMetric
 
 # Get some streamlines.
 streamlines = get_streamlines()  # Previously defined.
 
-feature = VectorBetweenEndpointsFeature()
+feature = VectorOfEndpointsFeature()
 metric = CosineMetric(feature)
 qb = QuickBundles(threshold=0.1, metric=metric)
 clusters = qb.cluster(streamlines)
