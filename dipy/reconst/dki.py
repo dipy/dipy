@@ -3,9 +3,10 @@
 from __future__ import division, print_function, absolute_import
 
 import numpy as np
-from dipy.reconst.dti import (TensorFit, mean_diffusivity,
-                              from_lower_triangular, lower_triangular,
-                              decompose_tensor, _min_positive_signal)
+from dipy.reconst.dti import (TensorFit, mean_diffusivity, axial_diffusivity,
+                              radial_diffusivity, from_lower_triangular,
+                              lower_triangular, decompose_tensor,
+                              _min_positive_signal)
 
 from dipy.reconst.utils import dki_design_matrix as design_matrix
 from dipy.utils.six.moves import range
