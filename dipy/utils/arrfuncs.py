@@ -33,6 +33,16 @@ def pinv_vec(a, rcond=1e-15):
     """Vectorized version of numpy.linalg.pinv"""
 
     a = np.asarray(a)
+    if np.version.version.split('.') < ['1', '8']:
+        # numpy 1.8.0 introduced a vectorized version of np.linalg.svd,
+        # if using older numpy fall back to using non vectorized np.linalg.pinv
+        shape = a.shape[:-2]
+        a = a.reshape(-1, a.shape[-2], a.shape[-1])
+        result = np.empty((a.shape[0], a.shape[2], a.shape[1]))
+        for i, item in enumerate(a):
+            result[i] = np.linalg.pinv(item, rcond)
+        return result.reshape(shape + (a.shape[2], a.shape[1]))
+
     swap = np.arange(a.ndim)
     swap[[-2, -1]] = swap[[-1, -2]]
     u, s, v = np.linalg.svd(a, full_matrices=False)
