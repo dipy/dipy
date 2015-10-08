@@ -358,21 +358,27 @@ def test_disperse_charges():
     nt.assert_array_almost_equal(norms, 1)
 
 def test_interp_rbf():
+    def data_func(s, a, b):
+        return a * np.cos(s.theta) + b * np.sin(s.phi)
+
     from dipy.core.sphere import Sphere, interp_rbf
-    from dipy.core.subdivide_octahedron import create_unit_hemisphere
     import numpy as np
+    s0 = create_unit_sphere(3)
+    s1 = create_unit_sphere(4)
+    for a, b in zip([1, 2, 0.5], [1, 0.5, 2]):
+        data = data_func(s0, a, b)
+        expected = data_func(s1, a, b)
+        interp_data_a = interp_rbf(data, s0, s1, norm="angle")
+        nt.assert_(np.mean(np.abs(interp_data_a - expected)) < 0.1)
 
-    s0 = create_unit_hemisphere(2)
-    s1 = create_unit_hemisphere(3)
-
-    data = np.cos(s0.theta) + np.sin(s0.phi)
-    expected = np.cos(s1.theta) + np.sin(s1.phi)
-    interp_data_en = interp_rbf(data, s0, s1, norm = "euclidean_norm")
-    interp_data_a = interp_rbf(data, s0, s1, norm = "angle")
-
-    nt.assert_(np.mean(np.abs(interp_data_en - expected)) < 0.1)
-    nt.assert_(np.mean(np.abs(interp_data_a - expected)) < 0.1)
-
+    # Test that using the euclidean norm raises a warning
+    # (following https://docs.python.org/2/library/warnings.html#testing-warnings)
+    with warnings.catch_warnings(record=True) as w:
+        warnings.simplefilter("always")
+        interp_data_en = interp_rbf(data, s0, s1, norm ="euclidean_norm")
+        nt.assert_(len(w) == 1)
+        nt.assert_(issubclass(w[-1].category, DeprecationWarning))
+        nt.assert_("deprecated" in str(w[-1].message))
 
 if __name__ == "__main__":
     nt.run_module_suite()

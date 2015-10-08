@@ -57,13 +57,13 @@ from ..utils.arrfuncs import as_native_array
 from dipy.tracking.streamline import relist_streamlines
 
 
-THIS_DIR = dirname(__file__)
+DATA_DIR = pjoin(dirname(__file__), 'files')
 SPHERE_FILES = {
-    'symmetric362': pjoin(THIS_DIR, 'evenly_distributed_sphere_362.npz'),
-    'symmetric642': pjoin(THIS_DIR, 'evenly_distributed_sphere_642.npz'),
-    'symmetric724': pjoin(THIS_DIR, 'evenly_distributed_sphere_724.npz'),
-    'repulsion724': pjoin(THIS_DIR, 'repulsion724.npz'),
-    'repulsion100': pjoin(THIS_DIR, 'repulsion100.npz')
+    'symmetric362': pjoin(DATA_DIR, 'evenly_distributed_sphere_362.npz'),
+    'symmetric642': pjoin(DATA_DIR, 'evenly_distributed_sphere_642.npz'),
+    'symmetric724': pjoin(DATA_DIR, 'evenly_distributed_sphere_724.npz'),
+    'repulsion724': pjoin(DATA_DIR, 'repulsion724.npz'),
+    'repulsion100': pjoin(DATA_DIR, 'repulsion100.npz')
 }
 
 
@@ -109,11 +109,11 @@ def get_sim_voxels(name='fib1'):
     These sim voxels were provided by M.M. Correia using Rician noise.
     """
     if name == 'fib0':
-        fname = pjoin(THIS_DIR, 'fib0.pkl.gz')
+        fname = pjoin(DATA_DIR, 'fib0.pkl.gz')
     if name == 'fib1':
-        fname = pjoin(THIS_DIR, 'fib1.pkl.gz')
+        fname = pjoin(DATA_DIR, 'fib1.pkl.gz')
     if name == 'fib2':
-        fname = pjoin(THIS_DIR, 'fib2.pkl.gz')
+        fname = pjoin(DATA_DIR, 'fib2.pkl.gz')
     return loads_compat(gzip.open(fname, 'rb').read())
 
 
@@ -139,9 +139,9 @@ def get_skeleton(name='C1'):
     ['N', 'hidden', 'indices', 'most']
     """
     if name == 'C1':
-        fname = pjoin(THIS_DIR, 'C1.pkl.gz')
+        fname = pjoin(DATA_DIR, 'C1.pkl.gz')
     if name == 'C3':
-        fname = pjoin(THIS_DIR, 'C3.pkl.gz')
+        fname = pjoin(DATA_DIR, 'C3.pkl.gz')
     return loads_compat(gzip.open(fname, 'rb').read())
 
 
@@ -233,55 +233,55 @@ def get_data(name='small_64D'):
     """
 
     if name == 'small_64D':
-        fbvals = pjoin(THIS_DIR, 'small_64D.bvals.npy')
-        fbvecs = pjoin(THIS_DIR, 'small_64D.gradients.npy')
-        fimg = pjoin(THIS_DIR, 'small_64D.nii')
+        fbvals = pjoin(DATA_DIR, 'small_64D.bvals.npy')
+        fbvecs = pjoin(DATA_DIR, 'small_64D.gradients.npy')
+        fimg = pjoin(DATA_DIR, 'small_64D.nii')
         return fimg, fbvals, fbvecs
     if name == '55dir_grad.bvec':
-        return pjoin(THIS_DIR, '55dir_grad.bvec')
+        return pjoin(DATA_DIR, '55dir_grad.bvec')
     if name == 'small_101D':
-        fbvals = pjoin(THIS_DIR, 'small_101D.bval')
-        fbvecs = pjoin(THIS_DIR, 'small_101D.bvec')
-        fimg = pjoin(THIS_DIR, 'small_101D.nii.gz')
+        fbvals = pjoin(DATA_DIR, 'small_101D.bval')
+        fbvecs = pjoin(DATA_DIR, 'small_101D.bvec')
+        fimg = pjoin(DATA_DIR, 'small_101D.nii.gz')
         return fimg, fbvals, fbvecs
     if name == 'aniso_vox':
-        return pjoin(THIS_DIR, 'aniso_vox.nii.gz')
+        return pjoin(DATA_DIR, 'aniso_vox.nii.gz')
     if name == 'fornix':
-        return pjoin(THIS_DIR, 'tracks300.trk')
+        return pjoin(DATA_DIR, 'tracks300.trk')
     if name == 'gqi_vectors':
-        return pjoin(THIS_DIR, 'ScannerVectors_GQI101.txt')
+        return pjoin(DATA_DIR, 'ScannerVectors_GQI101.txt')
     if name == 'dsi515btable':
-        return pjoin(THIS_DIR, 'dsi515_b_table.txt')
+        return pjoin(DATA_DIR, 'dsi515_b_table.txt')
     if name == 'dsi4169btable':
-        return pjoin(THIS_DIR, 'dsi4169_b_table.txt')
+        return pjoin(DATA_DIR, 'dsi4169_b_table.txt')
     if name == 'grad514':
-        return pjoin(THIS_DIR, 'grad_514.txt')
+        return pjoin(DATA_DIR, 'grad_514.txt')
     if name == "small_25":
-        fbvals = pjoin(THIS_DIR, 'small_25.bval')
-        fbvecs = pjoin(THIS_DIR, 'small_25.bvec')
-        fimg = pjoin(THIS_DIR, 'small_25.nii.gz')
+        fbvals = pjoin(DATA_DIR, 'small_25.bval')
+        fbvecs = pjoin(DATA_DIR, 'small_25.bvec')
+        fimg = pjoin(DATA_DIR, 'small_25.nii.gz')
         return fimg, fbvals, fbvecs
     if name == "S0_10":
-        fimg = pjoin(THIS_DIR, 'S0_10slices.nii.gz')
+        fimg = pjoin(DATA_DIR, 'S0_10slices.nii.gz')
         return fimg
     if name == "test_piesno":
-        fimg = pjoin(THIS_DIR, 'test_piesno.nii.gz')
+        fimg = pjoin(DATA_DIR, 'test_piesno.nii.gz')
         return fimg
     if name == "reg_c":
-        return pjoin(THIS_DIR, 'C.npy')
+        return pjoin(DATA_DIR, 'C.npy')
     if name == "reg_o":
-        return pjoin(THIS_DIR, 'circle.npy')
+        return pjoin(DATA_DIR, 'circle.npy')
     if name == 'cb_2':
-        return pjoin(THIS_DIR, 'cb_2.npz')
+        return pjoin(DATA_DIR, 'cb_2.npz')
     if name == "t1_coronal_slice":
-        return pjoin(THIS_DIR, 't1_coronal_slice.npy')
+        return pjoin(DATA_DIR, 't1_coronal_slice.npy')
 
 
 def _gradient_from_file(filename):
     """Reads a gradient file saved as a text file compatible with np.loadtxt
     and saved in the dipy data directory"""
     def gtab_getter():
-        gradfile = pjoin(THIS_DIR, filename)
+        gradfile = pjoin(DATA_DIR, filename)
         grad = np.loadtxt(gradfile, delimiter=',')
         gtab = GradientTable(grad)
         return gtab
@@ -312,7 +312,8 @@ def dsi_deconv_voxels():
                 data[ix, iy, iz], dirs = SticksAndBall(gtab,
                                                        d=0.0015,
                                                        S0=100,
-                                                       angles=[(0, 0), (90, 0)],
+                                                       angles=[(0, 0),
+                                                               (90, 0)],
                                                        fractions=[50, 50],
                                                        snr=None)
     return data, gtab
@@ -338,9 +339,9 @@ def mrtrix_spherical_functions():
     These coefficients were obtained by using the dwi2SH command of mrtrix.
 
     """
-    func_discrete = load(pjoin(THIS_DIR, "func_discrete.nii.gz")).get_data()
-    func_coef = load(pjoin(THIS_DIR, "func_coef.nii.gz")).get_data()
-    gradients = np.loadtxt(pjoin(THIS_DIR, "sphere_grad.txt"))
+    func_discrete = load(pjoin(DATA_DIR, "func_discrete.nii.gz")).get_data()
+    func_coef = load(pjoin(DATA_DIR, "func_coef.nii.gz")).get_data()
+    gradients = np.loadtxt(pjoin(DATA_DIR, "sphere_grad.txt"))
     # gradients[0] and the first volume of func_discrete,
     # func_discrete[..., 0], are associated with the b=0 signal.
     # gradients[:, 3] are the b-values for each gradient/volume.
@@ -349,11 +350,13 @@ def mrtrix_spherical_functions():
 
 
 dipy_cmaps = None
+
+
 def get_cmap(name):
     """Makes a callable, similar to maptlotlib.pyplot.get_cmap"""
     global dipy_cmaps
     if dipy_cmaps is None:
-        filename = pjoin(THIS_DIR, "dipy_colormaps.json")
+        filename = pjoin(DATA_DIR, "dipy_colormaps.json")
         with open(filename) as f:
             dipy_cmaps = json.load(f)
 
@@ -383,7 +386,8 @@ def two_cingulum_bundles():
     cb2 = relist_streamlines(res['points2'], res['offsets2'])
     return cb1, cb2
 
+
 def matlab_life_results():
-    matlab_rmse = np.load(pjoin(THIS_DIR, 'life_matlab_rmse.npy'))
-    matlab_weights = np.load(pjoin(THIS_DIR, 'life_matlab_weights.npy'))
+    matlab_rmse = np.load(pjoin(DATA_DIR, 'life_matlab_rmse.npy'))
+    matlab_weights = np.load(pjoin(DATA_DIR, 'life_matlab_weights.npy'))
     return matlab_rmse, matlab_weights

@@ -54,6 +54,7 @@ from .parzenhist import (ParzenJointHistogram,
                          compute_parzen_mi)
 from .imwarp import (get_direction_and_spacings, ScaleSpace)
 from .scalespace import IsotropicScaleSpace
+from warnings import warn
 
 _interp_options = ['nearest', 'linear']
 _transform_method = {}
@@ -131,6 +132,9 @@ class AffineMap(object):
     def set_affine(self, affine):
         """ Sets the affine transform (operating in physical space)
 
+        Also sets `self.affine_inv` - the inverse of `affine`, or None if
+        there is no inverse.
+
         Parameters
         ----------
         affine : array, shape (dim + 1, dim + 1)
@@ -140,10 +144,10 @@ class AffineMap(object):
             transformation.
         """
         self.affine = affine
+        self.affine_inv = None
         if self.affine is None:
-            self.affine_inv = None
             return
-        if np.any(np.isnan(affine)):
+        if not np.all(np.isfinite(affine)):
             raise AffineInversionError('Affine contains invalid elements')
         try:
             self.affine_inv = npl.inv(affine)
@@ -222,8 +226,9 @@ class AffineMap(object):
         shape = np.array(sampling_grid_shape, dtype=np.int32)
 
         # Verify valid image dimension
-        if dim < 2 or dim > 3:
-            raise ValueError('Undefined transform for dimension: %d' % (dim,))
+        img_dim = len(image.shape)
+        if img_dim < 2 or img_dim > 3:
+            raise ValueError('Undefined transform for dim: %d' % (img_dim,))
 
         # Obtain grid-to-world transform for sampling grid
         if sampling_grid2world is None:
@@ -426,6 +431,8 @@ class MutualInformationMetric(object):
             interpolation artifacts. The default is None, implying no
             pre-alignment is performed.
         """
+        n = transform.get_number_of_parameters()
+        self.metric_grad = np.zeros(n, dtype=np.float64)
         self.dim = len(static.shape)
         if moving_grid2world is None:
             moving_grid2world = np.eye(self.dim + 1)
@@ -559,10 +566,6 @@ class MutualInformationMetric(object):
         H = self.histogram  # Shortcut to `self.histogram`
         grad = None  # Buffer to write the MI gradient into (if needed)
         if update_gradient:
-            # Re-allocate buffer for the gradient, if needed
-            n = params.shape[0]  # Number of parameters
-            if (self.metric_grad is None) or (self.metric_grad.shape[0] != n):
-                self.metric_grad = np.empty(n)
             grad = self.metric_grad
             # Compute the gradient of the joint PDF w.r.t. parameters
             if self.sampling_proportion is None:  # Dense case
@@ -795,20 +798,20 @@ class AffineRegistration(object):
         if starting_affine is None:
             self.starting_affine = np.eye(self.dim + 1)
         elif starting_affine == 'mass':
-            affine_map = align_centers_of_mass(static,
-                                               static_grid2world,
-                                               moving,
-                                               moving_grid2world)
+            affine_map = transform_centers_of_mass(static,
+                                                   static_grid2world,
+                                                   moving,
+                                                   moving_grid2world)
             self.starting_affine = affine_map.affine
         elif starting_affine == 'voxel-origin':
-            affine_map = align_origins(static, static_grid2world,
-                                       moving, moving_grid2world)
+            affine_map = transform_origins(static, static_grid2world,
+                                           moving, moving_grid2world)
             self.starting_affine = affine_map.affine
         elif starting_affine == 'centers':
-            affine_map = align_geometric_centers(static,
-                                                 static_grid2world,
-                                                 moving,
-                                                 moving_grid2world)
+            affine_map = transform_geometric_centers(static,
+                                                     static_grid2world,
+                                                     moving,
+                                                     moving_grid2world)
             self.starting_affine = affine_map.affine
         elif (isinstance(starting_affine, np.ndarray) and
               starting_affine.shape >= (self.dim, self.dim + 1)):
@@ -972,6 +975,33 @@ class AffineRegistration(object):
 
 def align_centers_of_mass(static, static_grid2world,
                           moving, moving_grid2world):
+    msg = "This function is deprecated please use"
+    msg += " dipy.align.imaffine.transform_centers_of_mass instead."
+    warn(msg)
+    return transform_centers_of_mass(static, static_grid2world,
+                                       moving, moving_grid2world)
+
+
+def align_geometric_centers(static, static_grid2world,
+                            moving, moving_grid2world):
+    msg = "This function is deprecated please use"
+    msg += " dipy.align.imaffine.transform_geometric_centers instead."
+    warn(msg)
+    return transform_geometric_centers(static, static_grid2world,
+                                       moving, moving_grid2world)
+
+
+def align_origins(static, static_grid2world,
+                  moving, moving_grid2world):
+    msg = "This function is deprecated please use"
+    msg += " dipy.align.imaffine.transform_origins instead."
+    warn(msg)
+    return transform_origins(static, static_grid2world,
+                                       moving, moving_grid2world)
+
+
+def transform_centers_of_mass(static, static_grid2world,
+                              moving, moving_grid2world):
     r""" Transformation to align the center of mass of the input images
 
     Parameters
@@ -1009,8 +1039,8 @@ def align_centers_of_mass(static, static_grid2world,
     return affine_map
 
 
-def align_geometric_centers(static, static_grid2world,
-                            moving, moving_grid2world):
+def transform_geometric_centers(static, static_grid2world,
+                                moving, moving_grid2world):
     r""" Transformation to align the geometric center of the input images
 
     With "geometric center" of a volume we mean the physical coordinates of
@@ -1051,8 +1081,8 @@ def align_geometric_centers(static, static_grid2world,
     return affine_map
 
 
-def align_origins(static, static_grid2world,
-                  moving, moving_grid2world):
+def transform_origins(static, static_grid2world,
+                      moving, moving_grid2world):
     r""" Transformation to align the origins of the input images
 
     With "origin" of a volume we mean the physical coordinates of

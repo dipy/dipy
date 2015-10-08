@@ -6,6 +6,7 @@ Here we provide information about functions or classes that have been removed,
 renamed or are deprecated (not recommended) during different release circles.
 
 Dipy 0.10 Changes
+<<<<<<< HEAD
 -----------------
 
 ** New visualization module**
@@ -13,6 +14,25 @@ Dipy 0.10 Changes
 ``fvtk.slicer`` input parameters have changed. Now the slicer function is
 more powerfull and supports RGB images too. See tutorial ``viz_slice.py`` for
 more information.
+=======
+----------------
+
+**Interpolation**
+The default behavior of the function `core.sphere.interp_rbf` has changed.
+The default smoothing parameter is now set to 0.1 (previously 0). In addition,
+the default norm is now `angle` (was previously `euclidean_norm`). Note that
+the use of `euclidean_norm` is discouraged, and this norm will be deprecated
+in the 0.11 release cycle.
+
+**Registration**
+
+The following utilty functions from ``vector_fields`` module were renamed:
+
+``warp_2d_affine`` is now ``transform_2d_affine``
+``warp_2d_affine_nn`` is now ``transform_2d_affine_nn``
+``warp_3d_affine`` is now ``transform_3d_affine``
+``warp_3d_affine_nn`` is now ``transform_3d_affine_nn``
+>>>>>>> nipy-dipy-master
 
 
 Dipy 0.9 Changes

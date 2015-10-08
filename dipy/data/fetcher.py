@@ -2,7 +2,6 @@ from __future__ import division, print_function, absolute_import
 
 import os
 import sys
-import textwrap
 import contextlib
 
 if sys.version_info[0] < 3:
@@ -13,7 +12,6 @@ else:
 from os.path import join as pjoin
 from hashlib import md5
 from shutil import copyfileobj
-import tarfile
 
 import numpy as np
 import nibabel as nib
@@ -22,18 +20,71 @@ import zipfile
 from dipy.core.gradients import gradient_table
 from dipy.io.gradients import read_bvals_bvecs
 
+# Set a user-writeable file-system location to put files:
+dipy_home = pjoin(os.path.expanduser('~'), '.dipy')
+
 
 class FetcherError(Exception):
     pass
 
 
 def _log(msg):
+    """Helper function to keep track of things.
+    For now, just prints the message
+    """
     print(msg)
 
-dipy_home = pjoin(os.path.expanduser('~'), '.dipy')
+
+def _already_there_msg(folder):
+    """
+    Prints a message indicating that a certain data-set is already in place
+    """
+    msg = 'Dataset is already in place. If you want to fetch it again '
+    msg += 'please first remove the folder %s ' % folder
+    _log(msg)
 
 
-def fetch_data(files, folder):
+def _get_file_md5(filename):
+    """Compute the md5 checksum of a file"""
+    md5_data = md5()
+    with open(filename, 'rb') as f:
+        for chunk in iter(lambda: f.read(128*md5_data.block_size), b''):
+            md5_data.update(chunk)
+    return md5_data.hexdigest()
+
+
+def check_md5(filename, stored_md5=None):
+    """
+    Computes the md5 of filename and check if it matches with the supplied
+    string md5
+
+    Input
+    -----
+    filename : string
+        Path to a file.
+    md5 : string
+        Known md5 of filename to check against. If None (default), checking is
+        skipped
+    """
+    if stored_md5 is not None:
+        computed_md5 = _get_file_md5(filename)
+        if stored_md5 != computed_md5:
+            msg = """The downloaded file, %s, does not have the expected md5
+   checksum of "%s". Instead, the md5 checksum was: "%s". This could mean that
+   something is wrong with the file or that the upstream file has been updated.
+   You can try downloading the file again or updating to the newest version of
+   dipy.""" % (filename, stored_md5,
+                computed_md5)
+            raise FetcherError(msg)
+
+
+def _get_file_data(fname, url):
+    with contextlib.closing(urlopen(url)) as opener:
+        with open(fname, 'wb') as data:
+            copyfileobj(opener, data)
+
+
+def fetch_data(files, folder, data_size=None):
     """Downloads files to folder and checks their md5 checksums
 
     Parameters
@@ -45,7 +96,9 @@ def fetch_data(files, folder):
     folder : str
         The directory where to save the file, the directory will be created if
         it does not already exist.
-
+    data_size : str, optional
+        A string describing the size of the data (e.g. "91 MB") to be logged to
+        the screen. Default does not produce any information about data size.
     Raises
     ------
     FetcherError
@@ -57,6 +110,9 @@ def fetch_data(files, folder):
         _log("Creating new folder %s" % (folder))
         os.makedirs(folder)
 
+    if data_size is not None:
+        _log('Data size is approximately %s' % data_size)
+
     all_skip = True
     for f in files:
         url, md5 = files[f]
@@ -66,56 +122,188 @@ def fetch_data(files, folder):
         all_skip = False
         _log('Downloading "%s" to %s' % (f, folder))
         _get_file_data(fullpath, url)
-        if _get_file_md5(fullpath) != md5:
-            msg = """The downloaded file, %s, does not have the expected md5
-checksum of "%s". This could mean that that something is wrong with the file or
-that the upstream file has been updated. You can try downloading the file again
-or updating to the newest version of dipy.""" % (fullpath, md5)
-            msg = textwrap.fill(msg)
-            raise FetcherError(msg)
-
+        check_md5(fullpath, md5)
     if all_skip:
-        _log("All files already in %s." % (folder))
+        _already_there_msg(folder)
     else:
         _log("Files successfully downloaded to %s" % (folder))
 
 
-def _already_there_msg(folder):
+def _make_fetcher(name, folder, baseurl, remote_fnames, local_fnames,
+                  md5_list=None, doc="", data_size=None, msg=None,
+                  unzip=False):
     """
-    Prints a message indicating that a certain data-set is already in place
+    Create a new fetcher
+
+    Parameters
+    ----------
+    name : str
+        The name of the fetcher function.
+    folder : str
+        The full path to the folder in which the files would be placed locally.
+        Typically, this is something like 'pjoin(dipy_home, 'foo')'
+    baseurl : str
+        The URL from which this fetcher reads files
+    remote_fnames : list of strings
+        The names of the files in the baseurl location
+    local_fnames : list of strings
+        The names of the files to be saved on the local filesystem
+    md5_list : list of strings, optional
+        The md5 checksums of the files. Used to verify the content of the
+        files. Default: None, skipping checking md5.
+    doc : str, optional.
+        Documentation of the fetcher.
+    data_size : str, optional.
+        If provided, is sent as a message to the user before downloading
+        starts.
+    msg : str, optional.
+        A message to print to screen when fetching takes place. Default (None)
+        is not to print anything
+    unzip : bool, optional
+        Whether to unzip the file(s) after downloading them
+    returns
+    -------
+    fetcher : function
+        A function that, when called, fetches data according to the designated
+        inputs
     """
-    msg = 'Dataset is already in place. If you want to fetch it again '
-    msg += 'please first remove the folder %s ' % folder
-    print(msg)
+    def fetcher():
+        files = {}
+        for i, (f, n), in enumerate(zip(remote_fnames, local_fnames)):
+            files[n] = (baseurl + f, md5_list[i] if
+                        md5_list is not None else None)
+        fetch_data(files, folder, data_size)
+
+        if msg is not None:
+            print(msg)
+        if unzip:
+            for f in local_fnames:
+                z = zipfile.ZipFile(pjoin(folder, f), 'r')
+                z.extractall(dipy_home)
+        return files, folder
+
+    fetcher.__name__ = name
+    fetcher.__doc__ = doc
+    return fetcher
 
 
+fetch_isbi2013_2shell = _make_fetcher("fetch_isbi2013_2shell",
+                pjoin(dipy_home, 'isbi2013'),
+                'https://dl.dropboxusercontent.com/u/2481924/isbi2013_merlet/',
+                ['2shells-1500-2500-N64-SNR-30.nii.gz',
+                 '2shells-1500-2500-N64.bval',
+                 '2shells-1500-2500-N64.bvec'],
+                ['phantom64.nii.gz', 'phantom64.bval', 'phantom64.bvec'],
+                ['42911a70f232321cf246315192d69c42',
+                 '90e8cf66e0f4d9737a3b3c0da24df5ea',
+                 '4b7aa2757a1ccab140667b76e8075cb1'],
+                doc="Download a 2-shell software phantom dataset",
+                data_size="")
 
-def fetch_scil_b0():
-    """ Download b=0 datasets from multiple MR systems (GE, Philips, Siemens) and
-        different magnetic fields (1.5T and 3T)
-    """
-    zipname = 'datasets_multi-site_all_companies'
-    url = 'http://scil.dinf.usherbrooke.ca/wp-content/data/'
-    uraw = url + zipname + '.zip'
-    folder = pjoin(dipy_home, zipname)
+fetch_stanford_labels = _make_fetcher("fetch_stanford_labels",
+                pjoin(dipy_home, 'stanford_hardi'),
+                'https://stacks.stanford.edu/file/druid:yx282xq2090/',
+                ["aparc-reduced.nii.gz", "label-info.txt"],
+                ["aparc-reduced.nii.gz", "label-info.txt"],
+                ['742de90090d06e687ce486f680f6d71a',
+                 '39db9f0f5e173d7a2c2e51b07d5d711b'],
+                doc=\
+            "Download reduced freesurfer aparc image from stanford web site")
 
-    if not os.path.exists(folder):
-        print('Creating new directory %s' % folder)
-        os.makedirs(folder)
-        msg = 'Downloading SCIL b=0 datasets from multiple sites and'
-        msg += 'multiple companies (9.2MB)...'
-        print()
-        opener = urlopen(uraw)
-        open(folder+'.zip', 'wb').write(opener.read())
 
-        print('Unziping '+folder+'.zip ...')
-        zip = zipfile.ZipFile(folder+'.zip', 'r')
-        zip.extractall(dipy_home)
+fetch_sherbrooke_3shell = _make_fetcher("fetch_sherbrooke_3shell",
+                                        pjoin(dipy_home, 'sherbrooke_3shell'),
+                'https://dl.dropboxusercontent.com/u/2481924/sherbrooke_data/',
+                ['3shells-1000-2000-3500-N193.nii.gz',
+                 '3shells-1000-2000-3500-N193.bval',
+                 '3shells-1000-2000-3500-N193.bvec'],
+                ['HARDI193.nii.gz', 'HARDI193.bval', 'HARDI193.bvec'],
+                ['0b735e8f16695a37bfbd66aab136eb66',
+                 'e9b9bb56252503ea49d31fb30a0ac637',
+                 '0c83f7e8b917cd677ad58a078658ebb7'],
+                doc=\
+                 "Download a 3shell HARDI dataset with 192 gradient direction")
 
-        print('Done.')
-        print('Files copied in folder %s' % dipy_home)
-    else:
-        _already_there_msg(folder)
+fetch_stanford_hardi = _make_fetcher("fetch_stanford_hardi",
+                                     pjoin(dipy_home, 'stanford_hardi'),
+                    'https://stacks.stanford.edu/file/druid:yx282xq2090/',
+                    ['dwi.nii.gz', 'dwi.bvals', 'dwi.bvecs'],
+                    ['HARDI150.nii.gz', 'HARDI150.bval', 'HARDI150.bvec'],
+                    ['0b18513b46132b4d1051ed3364f2acbc',
+                     '4e08ee9e2b1d2ec3fddb68c70ae23c36',
+                     '4c63a586f29afc6a48a5809524a76cb4'],
+                    doc=\
+                     "Download a HARDI dataset with 160 gradient directions")
+
+fetch_stanford_t1 = _make_fetcher("fetch_stanford_t1",
+                                  pjoin(dipy_home, 'stanford_hardi'),
+                        'https://stacks.stanford.edu/file/druid:yx282xq2090/',
+                        ['t1.nii.gz'],
+                        ['t1.nii.gz'],
+                        ['a6a140da6a947d4131b2368752951b0a'])
+
+fetch_stanford_pve_maps = _make_fetcher("fetch_stanford_pve_maps",
+                        pjoin(dipy_home, 'stanford_hardi'),
+                        'https://stacks.stanford.edu/file/druid:yx282xq2090/',
+                        ['pve_csf.nii.gz', 'pve_gm.nii.gz','pve_wm.nii.gz'],
+                        ['pve_csf.nii.gz', 'pve_gm.nii.gz','pve_wm.nii.gz'],
+                        ['2c498e4fed32bca7f726e28aa86e9c18',
+                         '1654b20aeb35fc2734a0d7928b713874',
+                         '2e244983cf92aaf9f9d37bc7716b37d5'])
+
+fetch_taiwan_ntu_dsi = _make_fetcher("fetch_taiwan_ntu_dsi",
+                         pjoin(dipy_home, 'taiwan_ntu_dsi'),
+                        "http://dl.dropbox.com/u/2481924/",
+                        ['taiwan_ntu_dsi.nii.gz','tawian_ntu_dsi.bval',
+                         'taiwan_ntu_dsi.bvec', 'license_taiwan_ntu_dsi.txt'],
+                        ['DSI203.nii.gz', 'DSI203.bval', 'DSI203.bvec',
+                         'DSI203_license.txt'],
+                        ['950408c0980a7154cb188666a885a91f',
+                         '602e5cb5fad2e7163e8025011d8a6755',
+                         'a95eb1be44748c20214dc7aa654f9e6b',
+                         '7fa1d5e272533e832cc7453eeba23f44'],
+                        doc=\
+                         "Download a DSI dataset with 203 gradient directions",
+                        msg= "See DSI203_license.txt for LICENSE. For the complete datasets please visit : http://dsi-studio.labsolver.org",
+                        data_size="91MB")
+
+fetch_syn_data = _make_fetcher("fetch_syn_data",
+                               pjoin(dipy_home, 'syn_test'),
+                               'https://dl.dropboxusercontent.com/u/5918983/',
+                               ['t1.nii.gz', 'b0.nii.gz'],
+                               ['t1.nii.gz', 'b0.nii.gz'],
+                               ['701bda02bb769655c7d4a9b1df2b73a6',
+                                'e4b741f0c77b6039e67abb2885c97a78'],
+                               data_size = "12MB",
+                               doc=\
+                             "Download t1 and b0 volumes from the same session")
+
+fetch_mni_template = _make_fetcher("fetch_mni_template",
+                                   pjoin(dipy_home, 'mni_template'),
+'https://digital.lib.washington.edu/researchworks/bitstream/handle/1773/33312/',
+                                   ['COPYING',
+                                    'mni_icbm152_t2_tal_nlin_asym_09a.nii',
+                                    'mni_icbm152_t1_tal_nlin_asym_09a.nii'],
+                                   ['COPYING',
+                                    'mni_icbm152_t2_tal_nlin_asym_09a.nii',
+                                    'mni_icbm152_t1_tal_nlin_asym_09a.nii'],
+                                   ['6e2168072e80aa4c0c20f1e6e52ec0c8',
+                                    'f41f2e1516d880547fbf7d6a83884f0d',
+                                    '1ea8f4f1e41bc17a94602e48141fdbc8'],
+                                   doc = \
+                        "Fetch the MNI T2 and T1 template files (~35 MB)",
+                                   data_size="35MB")
+
+fetch_scil_b0 = _make_fetcher("fetch_scil_b0",
+                            dipy_home,
+                            'http://scil.dinf.usherbrooke.ca/wp-content/data/',
+                            ['datasets_multi-site_all_companies.zip'],
+                            ['datasets_multi-site_all_companies.zip'],
+                            None,
+                            data_size="9.2MB",
+                            doc=\
+            "Download b=0 datasets from multiple MR systems (GE, Philips, Siemens) and different magnetic fields (1.5T and 3T)",
+                            unzip=True)
 
 
 def read_scil_b0():
@@ -152,74 +340,6 @@ def read_siemens_scil_b0():
     return nib.load(file)
 
 
-def _get_file_md5(filename):
-    """Compute the md5 checksum of a file"""
-    md5_data = md5()
-    with open(filename, 'rb') as f:
-        for chunk in iter(lambda: f.read(128*md5_data.block_size), b''):
-            md5_data.update(chunk)
-    return md5_data.hexdigest()
-
-
-def check_md5(filename, stored_md5):
-    """
-    Computes the md5 of filename and check if it matches with the supplied string md5
-
-    Input
-    -----
-    filename : string
-        Path to a file.
-    md5 : string
-        Known md5 of filename to check against.
-
-    """
-    computed_md5 = _get_file_md5(filename)
-    if stored_md5 != computed_md5:
-        msg = "MD5 checksum of filename " + filename + " failed.\n"
-        msg += "Expected MD5 was " + stored_md5 + "\n"
-        msg += "Current MD5 is " + computed_md5 + "\n"
-        msg += "Please check if the data has been downloaded "
-        msg += "correctly or if the upstream data has changed."
-        print (msg)
-
-
-def _get_file_data(fname, url):
-    with contextlib.closing(urlopen(url)) as opener:
-        with open(fname, 'wb') as data:
-            copyfileobj(opener, data)
-
-
-def fetch_isbi2013_2shell():
-    """ Download a 2-shell software phantom dataset
-    """
-    url = 'https://dl.dropboxusercontent.com/u/2481924/isbi2013_merlet/'
-    uraw = url + '2shells-1500-2500-N64-SNR-30.nii.gz'
-    ubval = url + '2shells-1500-2500-N64.bval'
-    ubvec = url + '2shells-1500-2500-N64.bvec'
-    folder = pjoin(dipy_home, 'isbi2013')
-
-    md5_list = ['42911a70f232321cf246315192d69c42',  # data
-                '90e8cf66e0f4d9737a3b3c0da24df5ea',  # bval
-                '4b7aa2757a1ccab140667b76e8075cb1']  # bvec
-
-    url_list = [uraw, ubval, ubvec]
-    fname_list = ['phantom64.nii.gz', 'phantom64.bval', 'phantom64.bvec']
-
-    if not os.path.exists(folder):
-        print('Creating new directory %s' % folder)
-        os.makedirs(folder)
-        print('Downloading raw 2-shell synthetic data (20MB)...')
-
-        for i in range(len(md5_list)):
-            _get_file_data(pjoin(folder, fname_list[i]), url_list[i])
-            check_md5(pjoin(folder, fname_list[i]), md5_list[i])
-
-        print('Done.')
-        print('Files copied in folder %s' % folder)
-    else:
-        _already_there_msg(folder)
-
-
 def read_isbi2013_2shell():
     """ Load ISBI 2013 2-shell synthetic dataset
 
@@ -230,55 +350,14 @@ def read_isbi2013_2shell():
     gtab : obj,
         GradientTable
     """
-    folder = pjoin(dipy_home, 'isbi2013')
+    files, folder = fetch_isbi2013_2shell()
     fraw = pjoin(folder, 'phantom64.nii.gz')
     fbval = pjoin(folder, 'phantom64.bval')
     fbvec = pjoin(folder, 'phantom64.bvec')
-
-    md5_dict = {'data': '42911a70f232321cf246315192d69c42',
-                'bval': '90e8cf66e0f4d9737a3b3c0da24df5ea',
-                'bvec': '4b7aa2757a1ccab140667b76e8075cb1'}
-
-    check_md5(fraw, md5_dict['data'])
-    check_md5(fbval, md5_dict['bval'])
-    check_md5(fbvec, md5_dict['bvec'])
-
     bvals, bvecs = read_bvals_bvecs(fbval, fbvec)
-
     gtab = gradient_table(bvals, bvecs)
     img = nib.load(fraw)
     return img, gtab
-
-
-def fetch_sherbrooke_3shell():
-    """ Download a 3shell HARDI dataset with 192 gradient directions
-    """
-    url = 'https://dl.dropboxusercontent.com/u/2481924/sherbrooke_data/'
-    uraw = url + '3shells-1000-2000-3500-N193.nii.gz'
-    ubval = url + '3shells-1000-2000-3500-N193.bval'
-    ubvec = url + '3shells-1000-2000-3500-N193.bvec'
-    folder = pjoin(dipy_home, 'sherbrooke_3shell')
-
-    md5_list = ['0b735e8f16695a37bfbd66aab136eb66',  # data
-                'e9b9bb56252503ea49d31fb30a0ac637',  # bval
-                '0c83f7e8b917cd677ad58a078658ebb7']  # bvec
-
-    url_list = [uraw, ubval, ubvec]
-    fname_list = ['HARDI193.nii.gz', 'HARDI193.bval', 'HARDI193.bvec']
-
-    if not os.path.exists(folder):
-        print('Creating new directory %s' % folder)
-        os.makedirs(folder)
-        print('Downloading raw 3-shell data (184MB)...')
-
-        for i in range(len(md5_list)):
-            _get_file_data(pjoin(folder, fname_list[i]), url_list[i])
-            check_md5(pjoin(folder, fname_list[i]), md5_list[i])
-
-        print('Done.')
-        print('Files copied in folder %s' % folder)
-    else:
-        _already_there_msg(folder)
 
 
 def read_sherbrooke_3shell():
@@ -291,37 +370,14 @@ def read_sherbrooke_3shell():
     gtab : obj,
         GradientTable
     """
-    folder = pjoin(dipy_home, 'sherbrooke_3shell')
+    files, folder = fetch_sherbrooke_3shell()
     fraw = pjoin(folder, 'HARDI193.nii.gz')
     fbval = pjoin(folder, 'HARDI193.bval')
     fbvec = pjoin(folder, 'HARDI193.bvec')
-    md5_dict = {'data': '0b735e8f16695a37bfbd66aab136eb66',
-                'bval': 'e9b9bb56252503ea49d31fb30a0ac637',
-                'bvec': '0c83f7e8b917cd677ad58a078658ebb7'}
-
-    check_md5(fraw, md5_dict['data'])
-    check_md5(fbval, md5_dict['bval'])
-    check_md5(fbvec, md5_dict['bvec'])
-
     bvals, bvecs = read_bvals_bvecs(fbval, fbvec)
-
     gtab = gradient_table(bvals, bvecs)
     img = nib.load(fraw)
     return img, gtab
-
-
-def fetch_stanford_labels():
-    """Download reduced freesurfer aparc image from stanford web site."""
-    folder = pjoin(dipy_home, 'stanford_hardi')
-    baseurl = 'https://stacks.stanford.edu/file/druid:yx282xq2090/'
-
-    files = {}
-    files["aparc-reduced.nii.gz"] = (baseurl + "aparc-reduced.nii.gz",
-                                     '742de90090d06e687ce486f680f6d71a')
-    files["label-info.txt"] = (baseurl + "label_info.txt",
-                               '39db9f0f5e173d7a2c2e51b07d5d711b')
-    fetch_data(files, folder)
-    return files, folder
 
 
 def read_stanford_labels():
@@ -329,43 +385,11 @@ def read_stanford_labels():
     # First get the hardi data
     fetch_stanford_hardi()
     hard_img, gtab = read_stanford_hardi()
-
     # Fetch and load
     files, folder = fetch_stanford_labels()
     labels_file = pjoin(folder, "aparc-reduced.nii.gz")
     labels_img = nib.load(labels_file)
     return hard_img, gtab, labels_img
-
-
-def fetch_stanford_hardi():
-    """ Download a HARDI dataset with 160 gradient directions
-    """
-    url = 'https://stacks.stanford.edu/file/druid:yx282xq2090/'
-    uraw = url + 'dwi.nii.gz'
-    ubval = url + 'dwi.bvals'
-    ubvec = url + 'dwi.bvecs'
-    folder = pjoin(dipy_home, 'stanford_hardi')
-
-    md5_list = ['0b18513b46132b4d1051ed3364f2acbc',  # data
-                '4e08ee9e2b1d2ec3fddb68c70ae23c36',  # bval
-                '4c63a586f29afc6a48a5809524a76cb4']  # bvec
-
-    url_list = [uraw, ubval, ubvec]
-    fname_list = ['HARDI150.nii.gz', 'HARDI150.bval', 'HARDI150.bvec']
-
-    if not os.path.exists(folder):
-        print('Creating new directory %s' % folder)
-        os.makedirs(folder)
-        print('Downloading raw HARDI data (87MB)...')
-
-        for i in range(len(md5_list)):
-            _get_file_data(pjoin(folder, fname_list[i]), url_list[i])
-            check_md5(pjoin(folder, fname_list[i]), md5_list[i])
-
-        print('Done.')
-        print('Files copied in folder %s' % folder)
-    else:
-        _already_there_msg(folder)
 
 
 def read_stanford_hardi():
@@ -378,33 +402,14 @@ def read_stanford_hardi():
     gtab : obj,
         GradientTable
     """
-    folder = pjoin(dipy_home, 'stanford_hardi')
+    files, folder = fetch_stanford_hardi()
     fraw = pjoin(folder, 'HARDI150.nii.gz')
     fbval = pjoin(folder, 'HARDI150.bval')
     fbvec = pjoin(folder, 'HARDI150.bvec')
-    md5_dict = {'data': '0b18513b46132b4d1051ed3364f2acbc',
-                'bval': '4e08ee9e2b1d2ec3fddb68c70ae23c36',
-                'bvec': '4c63a586f29afc6a48a5809524a76cb4'}
-
-    check_md5(fraw, md5_dict['data'])
-    check_md5(fbval, md5_dict['bval'])
-    check_md5(fbvec, md5_dict['bvec'])
-
     bvals, bvecs = read_bvals_bvecs(fbval, fbvec)
-
     gtab = gradient_table(bvals, bvecs)
     img = nib.load(fraw)
     return img, gtab
-
-
-def fetch_stanford_t1():
-    url = 'https://stacks.stanford.edu/file/druid:yx282xq2090/'
-    url_t1 = url + 't1.nii.gz'
-    folder = pjoin(dipy_home, 'stanford_hardi')
-    file_md5 = 'a6a140da6a947d4131b2368752951b0a'
-    files = {"t1.nii.gz": (url_t1, file_md5)}
-    fetch_data(files, folder)
-    return files, folder
 
 
 def read_stanford_t1():
@@ -412,22 +417,6 @@ def read_stanford_t1():
     f_t1 = pjoin(folder, 't1.nii.gz')
     img = nib.load(f_t1)
     return img
-
-
-def fetch_stanford_pve_maps():
-    url = 'https://stacks.stanford.edu/file/druid:yx282xq2090/'
-    url_pve_csf = url + 'pve_csf.nii.gz'
-    url_pve_gm = url + 'pve_gm.nii.gz'
-    url_pve_wm = url + 'pve_wm.nii.gz'
-    folder = pjoin(dipy_home, 'stanford_hardi')
-    file_csf_md5 = '2c498e4fed32bca7f726e28aa86e9c18'
-    file_gm_md5 = '1654b20aeb35fc2734a0d7928b713874'
-    file_wm_md5 = '2e244983cf92aaf9f9d37bc7716b37d5'
-    files = {"pve_csf.nii.gz": (url_pve_csf, file_csf_md5),
-             "pve_gm.nii.gz": (url_pve_gm, file_gm_md5),
-             "pve_wm.nii.gz": (url_pve_wm, file_wm_md5)}
-    fetch_data(files, folder)
-    return files, folder
 
 
 def read_stanford_pve_maps():
@@ -441,42 +430,6 @@ def read_stanford_pve_maps():
     return (img_pve_csf, img_pve_gm, img_pve_wm)
 
 
-def fetch_taiwan_ntu_dsi():
-    """ Download a DSI dataset with 203 gradient directions
-    """
-    uraw = 'http://dl.dropbox.com/u/2481924/taiwan_ntu_dsi.nii.gz'
-    ubval = 'http://dl.dropbox.com/u/2481924/tawian_ntu_dsi.bval'
-    ubvec = 'http://dl.dropbox.com/u/2481924/taiwan_ntu_dsi.bvec'
-    ureadme = 'http://dl.dropbox.com/u/2481924/license_taiwan_ntu_dsi.txt'
-    folder = pjoin(dipy_home, 'taiwan_ntu_dsi')
-
-    md5_list = ['950408c0980a7154cb188666a885a91f',  # data
-                '602e5cb5fad2e7163e8025011d8a6755',  # bval
-                'a95eb1be44748c20214dc7aa654f9e6b',  # bvec
-                '7fa1d5e272533e832cc7453eeba23f44']  # license
-
-    url_list = [uraw, ubval, ubvec, ureadme]
-    fname_list = ['DSI203.nii.gz', 'DSI203.bval', 'DSI203.bvec', 'DSI203_license.txt']
-
-    if not os.path.exists(folder):
-        print('Creating new directory %s' % folder)
-        os.makedirs(folder)
-        print('Downloading raw DSI data (91MB)...')
-
-        for i in range(len(md5_list)):
-            _get_file_data(pjoin(folder, fname_list[i]), url_list[i])
-            check_md5(pjoin(folder, fname_list[i]), md5_list[i])
-
-        print('Done.')
-        print('Files copied in folder %s' % folder)
-        print('See DSI203_license.txt for LICENSE.')
-        print('For the complete datasets please visit :')
-        print('http://dsi-studio.labsolver.org')
-
-    else:
-        _already_there_msg(folder)
-
-
 def read_taiwan_ntu_dsi():
     """ Load Taiwan NTU dataset
 
@@ -487,56 +440,16 @@ def read_taiwan_ntu_dsi():
     gtab : obj,
         GradientTable
     """
-    folder = pjoin(dipy_home, 'taiwan_ntu_dsi')
+    files, folder = fetch_taiwan_ntu_dsi()
     fraw = pjoin(folder, 'DSI203.nii.gz')
     fbval = pjoin(folder, 'DSI203.bval')
     fbvec = pjoin(folder, 'DSI203.bvec')
-    md5_dict = {'data': '950408c0980a7154cb188666a885a91f',
-                'bval': '602e5cb5fad2e7163e8025011d8a6755',
-                'bvec': 'a95eb1be44748c20214dc7aa654f9e6b',
-                'license': '7fa1d5e272533e832cc7453eeba23f44'}
-
-    check_md5(fraw, md5_dict['data'])
-    check_md5(fbval, md5_dict['bval'])
-    check_md5(fbvec, md5_dict['bvec'])
-    check_md5(pjoin(folder, 'DSI203_license.txt'), md5_dict['license'])
-
     bvals, bvecs = read_bvals_bvecs(fbval, fbvec)
-    bvecs[1:] = bvecs[1:] / np.sqrt(np.sum(bvecs[1:] * bvecs[1:], axis=1))[:, None]
-
+    bvecs[1:] = (bvecs[1:] /
+                 np.sqrt(np.sum(bvecs[1:] * bvecs[1:], axis=1))[:, None])
     gtab = gradient_table(bvals, bvecs)
     img = nib.load(fraw)
     return img, gtab
-
-
-def fetch_syn_data():
-    """ Download t1 and b0 volumes from the same session
-    """
-    url = 'https://dl.dropboxusercontent.com/u/5918983/'
-    t1 = url + 't1.nii.gz'
-    b0 = url + 'b0.nii.gz'
-
-    folder = pjoin(dipy_home, 'syn_test')
-
-    md5_list = ['701bda02bb769655c7d4a9b1df2b73a6',  # t1
-                'e4b741f0c77b6039e67abb2885c97a78']  # b0
-
-    url_list = [t1, b0]
-    fname_list = ['t1.nii.gz', 'b0.nii.gz']
-
-    if not os.path.exists(folder):
-        print('Creating new directory %s' % folder)
-        os.makedirs(folder)
-        print('Downloading t1 and b0 volumes from the same session (12MB)...')
-
-        for i in range(len(md5_list)):
-            _get_file_data(pjoin(folder, fname_list[i]), url_list[i])
-            check_md5(pjoin(folder, fname_list[i]), md5_list[i])
-
-        print('Done.')
-        print('Files copied in folder %s' % folder)
-    else:
-        _already_there_msg(folder)
 
 
 def read_syn_data():
@@ -549,32 +462,27 @@ def read_syn_data():
     b0 : obj,
         Nifti1Image
     """
-    folder = pjoin(dipy_home, 'syn_test')
+    files, folder = fetch_syn_data()
     t1_name = pjoin(folder, 't1.nii.gz')
     b0_name = pjoin(folder, 'b0.nii.gz')
-
-    md5_dict = {'t1': '701bda02bb769655c7d4a9b1df2b73a6',
-                'b0': 'e4b741f0c77b6039e67abb2885c97a78'}
-
-    check_md5(t1_name, md5_dict['t1'])
-    check_md5(b0_name, md5_dict['b0'])
-
     t1 = nib.load(t1_name)
     b0 = nib.load(b0_name)
     return t1, b0
 
 mni_notes = \
-"""
+    """
     Notes
     -----
-    The templates were downloaded from the MNI (McGill University) `website <http://www.bic.mni.mcgill.ca/ServicesAtlases/ICBM152NLin2009>`_
+    The templates were downloaded from the MNI (McGill University)
+    `website <http://www.bic.mni.mcgill.ca/ServicesAtlases/ICBM152NLin2009>`_
     in July 2015.
 
     The following publications should be referenced when using these templates:
 
     .. [1] VS Fonov, AC Evans, K Botteron, CR Almli, RC McKinstry, DL Collins
            and BDCG, Unbiased average age-appropriate atlases for pediatric
-           studies, NeuroImage, 54:1053-8119, DOI: 10.1016/j.neuroimage.2010.07.033
+           studies, NeuroImage, 54:1053-8119,
+           DOI: 10.1016/j.neuroimage.2010.07.033
 
     .. [2] VS Fonov, AC Evans, RC McKinstry, CR Almli and DL Collins,
             Unbiased nonlinear average age-appropriate brain templates from
@@ -596,6 +504,168 @@ mni_notes = \
     of this software package.
 """
 
+
+def read_mni_template(contrast="T2"):
+    """
+    Read the MNI template from disk
+
+    Parameters
+    ----------
+    contrast : list or string, optional
+        Which of the contrast templates to read. Two contrasts are available:
+        "T1" and "T2", so you can either enter one of these strings as input,
+        or a list containing both of them.
+
+    Returns
+    -------
+    list : contains the nibabel.Nifti1Image objects requested, according to the
+        order they were requested in the input.
+
+    Examples
+    --------
+    Get only the T2 file:
+    >>> T2_nifti = read_mni_template("T2") # doctest: +SKIP
+    Get both files in this order:
+    >>> T1_nifti, T2_nifti = read_mni_template(["T1", "T2"]) # doctest: +SKIP
+    """
+    files, folder = fetch_mni_template()
+    file_dict = {"T1": pjoin(folder, 'mni_icbm152_t1_tal_nlin_asym_09a.nii'),
+                 "T2": pjoin(folder, 'mni_icbm152_t2_tal_nlin_asym_09a.nii')}
+    if isinstance(contrast, str):
+        return nib.load(file_dict[contrast])
+    else:
+        out_list = []
+        for k in contrast:
+            out_list.append(nib.load(file_dict[k]))
+    return out_list
+
+
+# Add the references to both MNI-related functions:
+read_mni_template.__doc__ += mni_notes
+fetch_mni_template.__doc__ += mni_notes
+
+
+def fetch_cenir_multib(with_raw=False):
+    """
+    Fetch 'HCP-like' data, collected at multiple b-values
+
+    Parameters
+    ----------
+    with_raw : bool
+        Whether to fetch the raw data. Per default, this is False, which means
+        that only eddy-current/motion corrected data is fetched
+    """
+    folder = pjoin(dipy_home, 'cenir_multib')
+
+    fname_list = ['4D_dwi_eddycor_B200.nii.gz',
+                  'dwi_bvals_B200', 'dwi_bvecs_B200',
+                  '4D_dwieddycor_B400.nii.gz',
+                  'bvals_B400', 'bvecs_B400',
+                  '4D_dwieddycor_B1000.nii.gz',
+                  'bvals_B1000', 'bvecs_B1000',
+                  '4D_dwieddycor_B2000.nii.gz',
+                  'bvals_B2000', 'bvecs_B2000',
+                  '4D_dwieddycor_B3000.nii.gz',
+                  'bvals_B3000', 'bvecs_B3000']
+
+    md5_list = ['fd704aa3deb83c1c7229202cb3db8c48',
+                '80ae5df76a575fe5bf9f1164bb0d4cfb',
+                '18e90f8a3e6a4db2457e5b1ba1cc98a9',
+                '3d0f2b8ef7b6a4a3aa5c4f7a90c9cfec',
+                'c38056c40c9cc42372232d6e75c47f54',
+                '810d79b4c30cb7dff3b2000017d5f72a',
+                'dde8037601a14436b2173f4345b5fd17',
+                '97de6a492ae304f39e0b418b6ebac64c',
+                'f28a0faa701bdfc66e31bde471a5b992',
+                'c5e4b96e3afdee99c0e994eff3b2331a',
+                '9c83b8d5caf9c3def240f320f2d2f56c',
+                '05446bd261d57193d8dbc097e06db5ff',
+                'f0d70456ce424fda2cecd48e64f3a151',
+                '336accdb56acbbeff8dac1748d15ceb8',
+                '27089f3baaf881d96f6a9da202e3d69b']
+    if with_raw:
+        fname_list.extend(['4D_dwi_B200.nii.gz', '4D_dwi_B400.nii.gz',
+                           '4D_dwi_B1000.nii.gz', '4D_dwi_B2000.nii.gz',
+                           '4D_dwi_B3000.nii.gz'])
+        md5_list.extend(['a8c36e76101f2da2ca8119474ded21d5',
+                         'a0e7939f6d977458afbb2f4659062a79',
+                         '87fc307bdc2e56e105dffc81b711a808',
+                         '7c23e8a5198624aa29455f0578025d4f',
+                         '4e4324c676f5a97b3ded8bbb100bf6e5'])
+
+    files = {}
+    baseurl = \
+'https://digital.lib.washington.edu/researchworks/bitstream/handle/1773/33311/'
+
+    for f, m in zip(fname_list, md5_list):
+        files[f] = (baseurl + f, m)
+
+    fetch_data(files, folder)
+    return files, folder
+
+
+def read_cenir_multib(bvals=None):
+    """
+    Read CENIR multi b-value data
+
+    Parameters
+    ----------
+    bvals : list or int
+        The b-values to read from file (200, 400, 1000, 2000, 3000).
+
+    Returns
+    -------
+    gtab : a GradientTable class instance
+    img : nibabel.Nifti1Image
+
+    Notes
+    -----
+    Details of acquisition and processing are availble
+    """
+    files, folder = fetch_cenir_multib(with_raw=False)
+    if bvals is None:
+        bvals = [200, 400, 1000, 2000, 3000]
+    if isinstance(bvals, int):
+        bvals = [bvals]
+    file_dict = {200: {'DWI': pjoin(folder, '4D_dwi_eddycor_B200.nii.gz'),
+                       'bvals': pjoin(folder, 'dwi_bvals_B200'),
+                       'bvecs': pjoin(folder, 'dwi_bvecs_B200')},
+                 400: {'DWI': pjoin(folder, '4D_dwieddycor_B400.nii.gz'),
+                       'bvals': pjoin(folder, 'bvals_B400'),
+                       'bvecs': pjoin(folder, 'bvecs_B400')},
+                 1000: {'DWI': pjoin(folder, '4D_dwieddycor_B1000.nii.gz'),
+                        'bvals': pjoin(folder, 'bvals_B1000'),
+                        'bvecs': pjoin(folder, 'bvecs_B1000')},
+                 2000: {'DWI': pjoin(folder, '4D_dwieddycor_B2000.nii.gz'),
+                        'bvals': pjoin(folder, 'bvals_B2000'),
+                        'bvecs': pjoin(folder, 'bvecs_B2000')},
+                 3000: {'DWI': pjoin(folder, '4D_dwieddycor_B3000.nii.gz'),
+                        'bvals': pjoin(folder, 'bvals_B3000'),
+                        'bvecs': pjoin(folder, 'bvecs_B3000')}}
+    data = []
+    bval_list = []
+    bvec_list = []
+    for bval in bvals:
+        data.append(nib.load(file_dict[bval]['DWI']).get_data())
+        bval_list.extend(np.loadtxt(file_dict[bval]['bvals']))
+        bvec_list.append(np.loadtxt(file_dict[bval]['bvecs']))
+
+    # All affines are the same, so grab the last one:
+    aff = nib.load(file_dict[bval]['DWI']).get_affine()
+    return (nib.Nifti1Image(np.concatenate(data, -1), aff),
+            gradient_table(bval_list, np.concatenate(bvec_list, -1)))
+
+
+CENIR_notes = \
+    """
+    Notes
+    -----
+    Details of the acquisition and processing, and additional meta-data are
+    avalible through `UW researchworks <https://digital.lib.washington.edu/researchworks/handle/1773/33311>`_
+    """
+
+fetch_cenir_multib.__doc__ += CENIR_notes
+read_cenir_multib.__doc__ += CENIR_notes
 
 def fetch_viz_icons():
     """ Download icons for visualization
@@ -715,187 +785,3 @@ def read_bundles_2_subjects(subj_id='subj_1', metrics=['fa'],
         res[bun] = streamlines
 
     return res
-
-
-def fetch_mni_template():
-    """
-    Fetch the MNI T2 and T1 template files (~35 MB)
-    """
-    folder = pjoin(dipy_home, 'mni_template')
-    baseurl = \
-    'https://digital.lib.washington.edu/researchworks/bitstream/handle/1773/33312/'
-
-    fname_list = ['COPYING',
-                  'mni_icbm152_t2_tal_nlin_asym_09a.nii',
-                  'mni_icbm152_t1_tal_nlin_asym_09a.nii']
-    md5_list = ['6e2168072e80aa4c0c20f1e6e52ec0c8',
-                'f41f2e1516d880547fbf7d6a83884f0d',
-                '1ea8f4f1e41bc17a94602e48141fdbc8']
-    files = {}
-    for f, m in zip(fname_list, md5_list):
-        files[f] = (baseurl + f, m)
-    fetch_data(files, folder)
-    return files, folder
-
-
-def read_mni_template(contrast="T2"):
-    """
-    Read the MNI template from disk
-
-    Parameters
-    ----------
-    contrast : list or string, optional
-        Which of the contrast templates to read. Two contrasts are available:
-        "T1" and "T2", so you can either enter one of these strings as input,
-        or a list containing both of them.
-
-    Returns
-    -------
-    list : contains the nibabel.Nifti1Image objects requested, according to the
-        order they were requested in the input.
-
-    Examples
-    --------
-    Get only the T2 file:
-    >>> T2_nifti = read_mni_template("T2") # doctest: +SKIP
-    Get both files in this order:
-    >>> T1_nifti, T2_nifti = read_mni_template(["T1", "T2"]) # doctest: +SKIP
-    """
-
-    files, folder = fetch_mni_template()
-    file_dict = {"T1": pjoin(folder, 'mni_icbm152_t1_tal_nlin_asym_09a.nii'),
-                 "T2": pjoin(folder, 'mni_icbm152_t2_tal_nlin_asym_09a.nii')}
-    if isinstance(contrast, str):
-        return nib.load(file_dict[contrast])
-    else:
-        out_list = []
-        for k in contrast:
-            out_list.append(nib.load(file_dict[k]))
-    return out_list
-
-
-# Add the references to both MNI-related functions:
-read_mni_template.__doc__ += mni_notes
-fetch_mni_template.__doc__ += mni_notes
-
-
-def fetch_cenir_multib(with_raw=False):
-    """
-    Fetch 'HCP-like' data, collected at multiple b-values
-
-    Parameters
-    ----------
-    with_raw : bool
-        Whether to fetch the raw data. Per default, this is False, which means
-        that only eddy-current/motion corrected data is fetched
-    """
-    folder = pjoin(dipy_home, 'cenir_multib')
-
-    fname_list = ['4D_dwi_eddycor_B200.nii.gz',
-                  'dwi_bvals_B200', 'dwi_bvecs_B200',
-                  '4D_dwieddycor_B400.nii.gz',
-                  'bvals_B400', 'bvecs_B400',
-                  '4D_dwieddycor_B1000.nii.gz',
-                  'bvals_B1000', 'bvecs_B1000',
-                   '4D_dwieddycor_B2000.nii.gz',
-                  'bvals_B2000', 'bvecs_B2000',
-                  '4D_dwieddycor_B3000.nii.gz',
-                  'bvals_B3000', 'bvecs_B3000']
-
-    md5_list = ['fd704aa3deb83c1c7229202cb3db8c48',
-                '80ae5df76a575fe5bf9f1164bb0d4cfb',
-                '18e90f8a3e6a4db2457e5b1ba1cc98a9',
-                '3d0f2b8ef7b6a4a3aa5c4f7a90c9cfec',
-                'c38056c40c9cc42372232d6e75c47f54',
-                '810d79b4c30cb7dff3b2000017d5f72a',
-                'dde8037601a14436b2173f4345b5fd17',
-                '97de6a492ae304f39e0b418b6ebac64c',
-                'f28a0faa701bdfc66e31bde471a5b992',
-                'c5e4b96e3afdee99c0e994eff3b2331a',
-                '9c83b8d5caf9c3def240f320f2d2f56c',
-                '05446bd261d57193d8dbc097e06db5ff',
-                'f0d70456ce424fda2cecd48e64f3a151',
-                '336accdb56acbbeff8dac1748d15ceb8',
-                '27089f3baaf881d96f6a9da202e3d69b']
-    if with_raw:
-        fname_list.extend(['4D_dwi_B200.nii.gz', '4D_dwi_B400.nii.gz',
-                            '4D_dwi_B1000.nii.gz', '4D_dwi_B2000.nii.gz',
-                            '4D_dwi_B3000.nii.gz'])
-        md5_list.extend(['a8c36e76101f2da2ca8119474ded21d5',
-                        'a0e7939f6d977458afbb2f4659062a79',
-                        '87fc307bdc2e56e105dffc81b711a808',
-                        '7c23e8a5198624aa29455f0578025d4f',
-                        '4e4324c676f5a97b3ded8bbb100bf6e5'])
-
-    files = {}
-    baseurl = \
-    'https://digital.lib.washington.edu/researchworks/bitstream/handle/1773/33311/'
-
-    for f, m in zip(fname_list, md5_list):
-        files[f] = (baseurl + f, m)
-
-    fetch_data(files, folder)
-    return files, folder
-
-
-def read_cenir_multib(bvals=None):
-    """
-    Read CENIR multi b-value data
-
-    Parameters
-    ----------
-    bvals : list
-        The b-values to read from file (200, 400, 1000, 2000, 3000).
-
-    Returns
-    -------
-    gtab : a GradientTable class instance
-    img : nibabel.Nifti1Image
-
-    Notes
-    -----
-    Details of acquisition and processing are availble
-    """
-    files, folder = fetch_cenir_multib(with_raw=False)
-    if bvals is None:
-        bvals = [200, 400, 1000, 2000, 3000]
-    file_dict = {
-    200:{'DWI': pjoin(folder, '4D_dwi_eddycor_B200.nii.gz'),
-           'bvals': pjoin(folder, 'dwi_bvals_B200'),
-           'bvecs': pjoin(folder, 'dwi_bvecs_B200')},
-    400:{'DWI': pjoin(folder, '4D_dwieddycor_B400.nii.gz'),
-           'bvals': pjoin(folder, 'bvals_B400'),
-           'bvecs': pjoin(folder, 'bvecs_B400')},
-    1000:{'DWI': pjoin(folder, '4D_dwieddycor_B1000.nii.gz'),
-           'bvals': pjoin(folder, 'bvals_B1000'),
-           'bvecs': pjoin(folder, 'bvecs_B1000')},
-    2000:{'DWI': pjoin(folder, '4D_dwieddycor_B2000.nii.gz'),
-           'bvals': pjoin(folder, 'bvals_B2000'),
-           'bvecs': pjoin(folder, 'bvecs_B2000')},
-    3000:{'DWI': pjoin(folder, '4D_dwieddycor_B3000.nii.gz'),
-           'bvals': pjoin(folder, 'bvals_B3000'),
-           'bvecs': pjoin(folder, 'bvecs_B3000')}}
-    data = []
-    bval_list = []
-    bvec_list = []
-    for bval in bvals:
-        data.append(nib.load(file_dict[bval]['DWI']).get_data())
-        bval_list.extend(np.loadtxt(file_dict[bval]['bvals']))
-        bvec_list.append(np.loadtxt(file_dict[bval]['bvecs']))
-
-    # All affines are the same, so grab the last one:
-    aff = nib.load(file_dict[bval]['DWI']).get_affine()
-    return (gradient_table(bval_list, np.concatenate(bvec_list, -1)),
-            nib.Nifti1Image(np.concatenate(data, -1), aff))
-
-
-CENIR_notes = \
-"""
-Notes
------
-Details of the acquisition and processing, and additional meta-data are avalible
-through `UW researchworks <https://digital.lib.washington.edu/researchworks/handle/1773/33311>`_
-"""
-
-fetch_cenir_multib.__doc__ += CENIR_notes
-read_cenir_multib.__doc__ += CENIR_notes

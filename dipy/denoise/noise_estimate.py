@@ -266,7 +266,7 @@ def _piesno_3D(data, N, alpha=0.01, l=100, itermax=100, eps=1e-5,
     return sigma[pos]
 
 
-def estimate_sigma(arr, disable_background_masking=False, N=1):
+def estimate_sigma(arr, disable_background_masking=False, N=0):
     """Standard deviation estimation from local patches
 
     Parameters
@@ -278,10 +278,11 @@ def estimate_sigma(arr, disable_background_masking=False, N=1):
         If True, uses all voxels for the estimation, otherwise, only non-zeros
         voxels are used. Useful if the background is masked by the scanner.
 
-    N : int, default 1
+    N : int, default 0
         Number of coils of the receiver array. Use N = 1 in case of a SENSE
         reconstruction (Philips scanners) or the number of coils for a GRAPPA
-        reconstruction (Siemens and GE). See [1] for more information.
+        reconstruction (Siemens and GE). Use 0 to disable the correction factor,
+        as for example if the noise is Gaussian distributed. See [1] for more information.
 
     Returns
     -------
@@ -320,7 +321,8 @@ def estimate_sigma(arr, disable_background_masking=False, N=1):
     k[1, 1, 2] = 1
 
     # Precomputed factor from Koay 2006, this corrects the bias of magnitude image
-    correction_factor = {1: 0.42920367320510366,
+    correction_factor = {0: 1, # No correction
+                         1: 0.42920367320510366,
                          4: 0.4834941393603609,
                          6: 0.4891759468548269,
                          8: 0.49195420135894175,
