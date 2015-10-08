@@ -53,3 +53,20 @@ def pinv_vec(a, rcond=1e-15):
     return np.einsum('...ij,...jk',
                      np.transpose(v, swap) * s[..., None, :],
                      np.transpose(u, swap))
+
+
+def eigh(a, UPLO='L'):
+    """Iterate over eigh if it doesn't support vectorized operation"""
+    a = np.asarray(a)
+    if a.ndim > 2 and np.version.version.split('.') < ['1', '8']:
+        # numpy 1.8.0 introduced a vectorized version of np.linalg.eigh,
+        # if using older numpy fall back to iterating over np.linalg.eigh
+        shape = a.shape[:-2]
+        a = a.reshape(-1, a.shape[-2], a.shape[-1])
+        evals = np.empty((a.shape[0], a.shape[1]))
+        evecs = np.empty((a.shape[0], a.shape[1], a.shape[1]))
+        for i, item in enumerate(a):
+            evals[i], evecs[i] = np.linalg.eigh(item, UPLO)
+        return (evals.reshape(shape + (a.shape[1], )),
+                evecs.reshape(shape + (a.shape[1], a.shape[1])))
+    return np.linalg.eigh(a, UPLO)
