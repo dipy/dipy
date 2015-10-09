@@ -210,28 +210,33 @@ def streamtube(lines, colors=None, opacity=1, linewidth=0.01, tube_sides=9,
         colormap are interpolated automatically using trilinear interpolation.
 
     opacity : float
+        Default is 1.
     linewidth : float
+        Default is 0.01.
     tube_sides : int
+        Default is 9.
     lod : bool
-        use vtkLODActor rather than vtkActor
+        Use vtkLODActor(level of detail) rather than vtkActor. Default is True.
     lod_points : int
-        number of points to be used when LOD is in effect
+        Number of points to be used when LOD is in effect. Default is 10000.
     lod_points_size : int
-        size of points when lod is in effect
+        Size of points when lod is in effect. Default is 3.
     spline_subdiv : int
-        number of splines subdivision to smooth streamtubes
-    lookup_colormap : bool
-        add a default lookup table to the colormap
+        Number of splines subdivision to smooth streamtubes. Default is None.
+    lookup_colormap : vtkLookupTable
+        Add a default lookup table to the colormap. Default is None which calls
+        :func:`dipy.viz.actor.colormap_lookup_table`.
 
     Examples
     --------
-    >>> from dipy.viz import fvtk
-    >>> r=fvtk.ren()
-    >>> lines=[np.random.rand(10, 3), np.random.rand(20, 3)]
-    >>> colors=np.random.rand(2, 3)
-    >>> c=fvtk.streamtube(lines, colors)
-    >>> fvtk.add(r,c)
-    >>> #fvtk.show(r)
+    >>> import numpy as np
+    >>> from dipy.viz import actor, window
+    >>> ren = window.Renderer()
+    >>> lines = [np.random.rand(10, 3), np.random.rand(20, 3)]
+    >>> colors = np.random.rand(2, 3)
+    >>> c = actor.streamtube(lines, colors)
+    >>> ren.add(c)
+    >>> #window.show(ren)
 
     Notes
     -----
@@ -250,7 +255,7 @@ def streamtube(lines, colors=None, opacity=1, linewidth=0.01, tube_sides=9,
 
     See Also
     --------
-    dipy.viz.actor.line
+    :func:`dipy.viz.actor.line`
     """
     # Poly data with lines and colors
     poly_data, is_colormap = lines_to_vtk_polydata(lines, colors)
@@ -347,13 +352,16 @@ def line(lines, colors=None, opacity=1, linewidth=1,
         colormap are interpolated automatically using trilinear interpolation.
 
     opacity : float, optional
+        Default is 1.
 
     linewidth : float, optional
-        Line thickness.
+        Line thickness. Default is 1.
     spline_subdiv : int, optional
-        number of splines subdivision to smooth streamtubes
+        Number of splines subdivision to smooth streamtubes. Default is None
+        which means no subdivision.
     lookup_colormap : bool, optional
-        add a default lookup table to the colormap
+        Add a default lookup table to the colormap. Default is None which calls
+        :func:`dipy.viz.actor.colormap_lookup_table`.
 
     Returns
     ----------
@@ -362,13 +370,13 @@ def line(lines, colors=None, opacity=1, linewidth=1,
 
     Examples
     ----------
-    >>> from dipy.viz import fvtk
-    >>> r=fvtk.ren()
-    >>> lines=[np.random.rand(10,3), np.random.rand(20,3)]
-    >>> colors=np.random.rand(2,3)
-    >>> c=fvtk.line(lines, colors)
-    >>> fvtk.add(r,c)
-    >>> #fvtk.show(r)
+    >>> from dipy.viz import actor, window
+    >>> ren = window.Renderer()
+    >>> lines = [np.random.rand(10,3), np.random.rand(20,3)]
+    >>> colors = np.random.rand(2,3)
+    >>> c = actor.line(lines, colors)
+    >>> actor.add(ren, c)
+    >>> #window.show(ren)
     """
     # Poly data with lines and colors
     poly_data, is_colormap = lines_to_vtk_polydata(lines, colors)
