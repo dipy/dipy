@@ -1158,6 +1158,28 @@ class TensorFit(object):
         return tensor_prediction(self.model_params[0:12], gtab, S0=S0)
 
 
+def tensor6_to_dtiparams(tensor, min_diffusivity=0):
+    """Return dti_params as expected by TensorFit given the 6 tensor values
+
+    Parameters
+    ----------
+    tensor : array (..., 6)
+        The 6 elements of the diffusion tensor. Only the first 6 elements are
+        used, if the last dimension contains more, the rest are ignored.
+    min_diffusivity : float
+        See decompose_tensor()
+
+    Returns
+    -------
+    dti_params : array (..., 12)
+        Eigenvalues and eigenvectors as expected by TensorFit
+    """
+    evals, evecs = decompose_tensor(from_lower_triangular(tensor),
+                                    min_diffusivity=min_diffusivity)
+    dti_params = np.concatenate((evals[..., None, :], evecs), axis=-2)
+    return dti_params.reshape(tensor.shape[:-1] + (12, ))
+
+
 def wls_fit_tensor(design_matrix, data):
     r"""
     Computes weighted least squares (WLS) fit to calculate self-diffusion
@@ -1217,27 +1239,15 @@ def wls_fit_tensor(design_matrix, data):
     """
     tol = 1e-6
     data = np.asarray(data)
-
-    #obtain OLS fitting matrix
-    #U,S,V = np.linalg.svd(design_matrix, False)
-    #math: beta_ols = inv(X.T*X)*X.T*y
-    #math: ols_fit = X*beta_ols*inv(y)
-    #ols_fit = np.dot(U, U.T)
     ols_fit = _ols_fit_matrix(design_matrix)
-
     log_s = np.log(data)
     w = np.exp(np.einsum('...ij,...j', ols_fit, log_s))
-    evals, evecs = decompose_tensor(
-        from_lower_triangular(
-            np.einsum('...ij,...j',
-                      pinv_vec(design_matrix * w[..., None]),
-                      w * log_s)
-        ),
-        min_diffusivity=tol / -design_matrix.min()
+    return tensor6_to_dtiparams(
+        np.einsum('...ij,...j',
+                  pinv_vec(design_matrix * w[..., None]),
+                  w * log_s),
+        min_diffusivity=tol / -design_matrix.min(),
     )
-
-    dti_params = np.concatenate((evals[..., None, :], evecs), axis=-2)
-    return dti_params.reshape(data.shape[:-1] + (12,))
 
 
 def ols_fit_tensor(design_matrix, data):
@@ -1284,24 +1294,11 @@ def ols_fit_tensor(design_matrix, data):
         NeuroImage 33, 531-541.
     """
     tol = 1e-6
-
-    #obtain OLS fitting matrix
-    #U,S,V = np.linalg.svd(design_matrix, False)
-    #math: beta_ols = inv(X.T*X)*X.T*y
-    #math: ols_fit = X*beta_ols*inv(y)
-    #ols_fit =  np.dot(U, U.T)
-
-    evals, evecs = decompose_tensor(
-        from_lower_triangular(
-            np.einsum('...ij,...j',
-                      np.linalg.pinv(design_matrix),
-                      np.log(np.asarray(data)))
-        ),
-        min_diffusivity=tol / -design_matrix.min()
+    data = np.asarray(data)
+    return tensor6_to_dtiparams(
+        np.einsum('...ij,...j', np.linalg.pinv(design_matrix), np.log(data)),
+        min_diffusivity=tol / -design_matrix.min(),
     )
-
-    dti_params = np.concatenate((evals[..., None, :], evecs), axis=-2)
-    return dti_params.reshape(data.shape[:-1] + (12,))
 
 
 def _ols_fit_matrix(design_matrix):
