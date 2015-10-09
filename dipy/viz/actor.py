@@ -21,6 +21,39 @@ if have_vtk:
     major_version = vtk.vtkVersion.GetVTKMajorVersion()
 
 
+def colormap_lookup_table(scale_range=(0, 1), hue_range=(0.8, 0),
+                          saturation_range=(1, 1), value_range=(0.8, 0.8)):
+    """ Lookup table for the colormap
+
+    Parameters
+    ----------
+    scale_range : tuple
+        It can be anything e.g. (0, 1) or (0, 255). Usually it is the mininum
+        and maximum value of your data. Default is (0, 1).
+    hue_range : tuple of floats
+        HSV values (min 0 and max 1). Default is (0.8, 0).
+    saturation_range : tuple of floats
+        HSV values (min 0 and max 1). Default is (1, 1).
+    value_range : tuple of floats
+        HSV value (min 0 and max 1). Default is (0.8, 0.8).
+
+    Returns
+    -------
+    lookup_table : vtkLookupTable
+
+    """
+    lookup_table = vtk.vtkLookupTable()
+    lookup_table.SetRange(scale_range)
+    lookup_table.SetTableRange(scale_range)
+
+    lookup_table.SetHueRange(hue_range)
+    lookup_table.SetSaturationRange(saturation_range)
+    lookup_table.SetValueRange(value_range)
+
+    lookup_table.Build()
+    return lookup_table
+
+
 def slicer(data, affine=None, value_range=None, opacity=1.,
            lookup_colormap=None):
     """ Cuts 3D scalar or rgb volumes into 2D images
@@ -217,6 +250,8 @@ def streamtube(lines, colors=None, opacity=1, linewidth=0.01, tube_sides=9,
         Default is 9.
     lod : bool
         Use vtkLODActor(level of detail) rather than vtkActor. Default is True.
+        Level of detail actors do not render the full geometry when the
+        frame rate is low.
     lod_points : int
         Number of points to be used when LOD is in effect. Default is 10000.
     lod_points_size : int
@@ -245,17 +280,17 @@ def streamtube(lines, colors=None, opacity=1, linewidth=0.01, tube_sides=9,
     A solution to this problem is to reduce the number of points in each
     streamline. In Dipy we provide an algorithm that will reduce the number of
     points on the straighter parts of the streamline but keep more points on
-    the curvier parts. This can be used in the following way
+    the curvier parts. This can be used in the following way::
 
-    from dipy.tracking.distances import approx_polygon_track
-    lines = [approx_polygon_track(line, 0.2) for line in lines]
+        from dipy.tracking.distances import approx_polygon_track
+        lines = [approx_polygon_track(line, 0.2) for line in lines]
 
     Alternatively we suggest using the ``line`` actor which is much more
     efficient.
 
     See Also
     --------
-    :func:`dipy.viz.actor.line`
+    :func:``dipy.viz.actor.line``
     """
     # Poly data with lines and colors
     poly_data, is_colormap = lines_to_vtk_polydata(lines, colors)
@@ -282,6 +317,8 @@ def streamtube(lines, colors=None, opacity=1, linewidth=0.01, tube_sides=9,
     tube_filter = set_input(vtk.vtkTubeFilter(), next_input)
     tube_filter.SetNumberOfSides(tube_sides)
     tube_filter.SetRadius(linewidth)
+    # TODO using the line above we will be able to visualize
+    # streamtubes of varying radius
     # tube_filter.SetVaryRadiusToVaryRadiusByScalar()
     tube_filter.CappingOn()
     tube_filter.Update()
@@ -293,7 +330,6 @@ def streamtube(lines, colors=None, opacity=1, linewidth=0.01, tube_sides=9,
     poly_mapper.SetScalarModeToUsePointFieldData()
     poly_mapper.SelectColorArray("Colors")
     poly_mapper.GlobalImmediateModeRenderingOn()
-    # poly_mapper.SetColorModeToMapScalars()
     poly_mapper.Update()
 
     # Color Scale with a lookup table
@@ -313,11 +349,10 @@ def streamtube(lines, colors=None, opacity=1, linewidth=0.01, tube_sides=9,
         actor = vtk.vtkActor()
 
     actor.SetMapper(poly_mapper)
-    actor.GetProperty().SetAmbient(0.1)  # .3
-    actor.GetProperty().SetDiffuse(0.15)  # .3
-    actor.GetProperty().SetSpecular(0.05)  # .3
+    actor.GetProperty().SetAmbient(0.1)
+    actor.GetProperty().SetDiffuse(0.15)
+    actor.GetProperty().SetSpecular(0.05)
     actor.GetProperty().SetSpecularPower(6)
-    # actor.GetProperty().SetInterpolationToGouraud()
     actor.GetProperty().SetInterpolationToPhong()
     actor.GetProperty().BackfaceCullingOn()
     actor.GetProperty().SetOpacity(opacity)
@@ -359,21 +394,29 @@ def line(lines, colors=None, opacity=1, linewidth=1,
     spline_subdiv : int, optional
         Number of splines subdivision to smooth streamtubes. Default is None
         which means no subdivision.
+    lod : bool
+        Use vtkLODActor(level of detail) rather than vtkActor. Default is True.
+        Level of detail actors do not render the full geometry when the
+        frame rate is low.
+    lod_points : int
+        Number of points to be used when LOD is in effect. Default is 10000.
+    lod_points_size : int
+        Size of points when lod is in effect. Default is 3.
     lookup_colormap : bool, optional
         Add a default lookup table to the colormap. Default is None which calls
         :func:`dipy.viz.actor.colormap_lookup_table`.
 
     Returns
     ----------
-    v : vtkActor object
+    v : vtkActor or vtkLODActor object
         Line.
 
     Examples
     ----------
     >>> from dipy.viz import actor, window
     >>> ren = window.Renderer()
-    >>> lines = [np.random.rand(10,3), np.random.rand(20,3)]
-    >>> colors = np.random.rand(2,3)
+    >>> lines = [np.random.rand(10, 3), np.random.rand(20, 3)]
+    >>> colors = np.random.rand(2, 3)
     >>> c = actor.line(lines, colors)
     >>> actor.add(ren, c)
     >>> #window.show(ren)
@@ -394,7 +437,6 @@ def line(lines, colors=None, opacity=1, linewidth=1,
     poly_mapper.ScalarVisibilityOn()
     poly_mapper.SetScalarModeToUsePointFieldData()
     poly_mapper.SelectColorArray("Colors")
-    # poly_mapper.SetColorModeToMapScalars()
     poly_mapper.Update()
 
     # Color Scale with a lookup table
@@ -438,10 +480,10 @@ def lines_to_vtk_polydata(lines, colors=None):
         Then every line is coloured with a different RGB color.
         If a list of RGB arrays is given then every point of every line takes
         a different color.
-        If an array (K, ) is given, where K is the number of points of all
+        If an array (K,) is given, where K is the number of points of all
         lines then these are considered as the values to be used by the
         colormap.
-        If an array (L, ) is given, where L is the number of streamlines then
+        If an array (L,) is given, where L is the number of streamlines then
         these are considered as the values to be used by the colormap per
         streamline.
         If an array (X, Y, Z) or (X, Y, Z, 3) is given then the values for the
@@ -449,7 +491,7 @@ def lines_to_vtk_polydata(lines, colors=None):
 
     Returns
     -------
-    poly_data :  vtkPolyData
+    poly_data : vtkPolyData
     is_colormap : bool, true if the input color array was a colormap
     """
 
@@ -482,7 +524,7 @@ def lines_to_vtk_polydata(lines, colors=None):
     # Set Lines to vtk array format
     vtk_lines = vtk.vtkCellArray()
     vtk_lines.GetData().DeepCopy(numpy_support.numpy_to_vtk(lines_array))
-    vtk_lines.SetNumberOfCells(len(lines))
+    vtk_lines.SetNumberOfCells(nb_lines)
 
     is_colormap = False
     # Get colors_array (reformat to have colors for each points)
@@ -530,39 +572,6 @@ def lines_to_vtk_polydata(lines, colors=None):
     poly_data.SetLines(vtk_lines)
     poly_data.GetPointData().SetScalars(vtk_colors)
     return poly_data, is_colormap
-
-
-def colormap_lookup_table(scale_range=(0, 1), hue_range=(0.8, 0),
-                          saturation_range=(1, 1), value_range=(0.8, 0.8)):
-    """ Lookup table for the colormap
-
-    Parameters
-    ----------
-    scale_range : tuple
-        It can be anything e.g. (0, 1) or (0, 255). Usually it is the mininum
-        and maximum value of your data.
-    hue_range : tuple of floats
-        HSV values (min 0 and max 1)
-    saturation_range : tuple of floats
-        HSV values (min 0 and max 1)
-    value_range : tuple of floats
-        HSV value (min 0 and max 1)
-
-    Returns
-    -------
-    lookup_table : vtkLookupTable
-
-    """
-    lookup_table = vtk.vtkLookupTable()
-    lookup_table.SetRange(scale_range)
-    lookup_table.SetTableRange(scale_range)
-
-    lookup_table.SetHueRange(hue_range)
-    lookup_table.SetSaturationRange(saturation_range)
-    lookup_table.SetValueRange(value_range)
-
-    lookup_table.Build()
-    return lookup_table
 
 
 def scalar_bar(lookup_table=None, title=" "):
