@@ -167,12 +167,6 @@ def slicer(data, affine=None, value_range=None, opacity=1.,
             im_actor.opacity(opacity)
             return im_actor
 
-        def set_position(self, wx, wy, wz):
-            self.SetPosition(wx, wy, wz)
-
-        def get_position(self):
-            return self.GetPosition()
-
     image_actor = ImageActor()
     if nb_components == 1:
         plane_colors = vtk.vtkImageMapToColors()

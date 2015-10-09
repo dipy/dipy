@@ -177,9 +177,9 @@ for j in range(rows):
     for i in range(cols):
         slice_mosaic = slice_actor.copy()
         slice_mosaic.display(None, None, cnt)
-        slice_mosaic.set_position((X + border) * i,
-                                  0.5 * cols * (Y + border) - (Y + border) * j,
-                                  0)
+        slice_mosaic.SetPosition((X + border) * i,
+                                 0.5 * cols * (Y + border) - (Y + border) * j,
+                                 0)
         renderer.add(slice_mosaic)
         cnt += 1
         if cnt > Z:
