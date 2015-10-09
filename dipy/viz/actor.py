@@ -22,18 +22,20 @@ if have_vtk:
 
 
 def slicer(data, affine=None, value_range=None, opacity=1.,
-          lookup_colormap=None):
-    """ Cuts 3D scalar or rgb volumes into images
+           lookup_colormap=None):
+    """ Cuts 3D scalar or rgb volumes into 2D images
 
     Parameters
     ----------
     data : array, shape (X, Y, Z) or (X, Y, Z, 3)
         A grayscale or rgb 4D volume as a numpy array.
-    affine : array, shape (3, 3)
-        Grid to space (usually RAS 1mm) transformation matrix
+    affine : array, shape (4, 4)
+        Grid to space (usually RAS 1mm) transformation matrix. Default is None.
+        If None then the identity matrix is used.
     value_range : None or tuple (2,)
-        If None then the values will be interpolated to (0, 255) from
-        (min, max). Otherwise from (value_range[0], value_range[1]).
+        If None then the values will be interpolated from (data.min(),
+        data.max()) to (0, 255). Otherwise from (value_range[0],
+        value_range[1]) to (0, 255).
     opacity : float
         Opacity of 0 means completely transparent and 1 completely visible.
     lookup_colormap : vtkLookupTable

@@ -755,7 +755,7 @@ def read_bundles_2_subjects(subj_id='subj_1', metrics=['fa'],
     ----------
     .. [1] Renaud, E. M. Descoteaux, M. Bernier, E. Garyfallidis,
     K. Whittingstall, “Morphology of thalamus, LGN and optic radiation do not
-    influence EEG alpha waves”, Brain function and structure (submitted), 2015.
+    influence EEG alpha waves”, Under Submission, 2015.
 
     .. [2] Garyfallidis, E., O. Ocegueda, D. Wassermann,
     M. Descoteaux. Robust and efficient linear registration of fascicles in the
