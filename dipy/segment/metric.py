@@ -4,7 +4,7 @@ from dipy.segment.featurespeed import (Feature,
                                        CenterOfMassFeature,
                                        MidpointFeature,
                                        ArcLengthFeature,
-                                       VectorBetweenEndpointsFeature)
+                                       VectorOfEndpointsFeature)
 
 from dipy.segment.metricspeed import (Metric,
                                       SumPointwiseEuclideanMetric,

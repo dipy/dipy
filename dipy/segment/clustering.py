@@ -316,17 +316,17 @@ class ClusterMap(object):
         """ Remove all clusters from this cluster map. """
         del self.clusters[:]
 
-    def get_size(self):
+    def size(self):
         """ Gets number of clusters contained in this cluster map. """
         return len(self)
 
-    def get_clusters_sizes(self):
-        """ Gets the size of every clusters contained in this cluster map.
+    def clusters_sizes(self):
+        """ Gets the size of every cluster contained in this cluster map.
 
         Returns
         -------
         list of int
-            Sizes of every clusters in this cluster map.
+            Sizes of every cluster in this cluster map.
         """
         return list(map(len, self))
 
@@ -365,7 +365,7 @@ class ClusterMapCentroid(ClusterMap):
     """ Provides functionalities for interacting with clustering outputs
     that have centroids.
 
-    Allows to retrieve easely the centroid of every clusters. Also, it is
+    Allows to retrieve easely the centroid of every cluster. Also, it is
     a useful container to create, remove, retrieve and filter clusters.
     If `refdata` is given, elements will be returned instead of their
     index when using `ClusterCentroid` objects.

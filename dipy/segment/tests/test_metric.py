@@ -123,7 +123,7 @@ def test_metric_minimum_average_direct_flip():
 
 
 def test_metric_cosine():
-    feature = dipymetric.VectorBetweenEndpointsFeature()
+    feature = dipymetric.VectorOfEndpointsFeature()
 
     class CosineMetric(dipymetric.Metric):
         def __init__(self, feature):
