@@ -710,15 +710,15 @@ def read_viz_icons(style='icomoon', fname='infinity.png'):
 
     Parameters
     ----------
-    style: str
+    style : str
         Current icon style. Default is icomoon.
-    fname: str
+    fname : str
         Filename of icon. This should be found in folder HOME/.dipy/style/.
         Default is infinity.png.
 
     Returns
     --------
-    path: str
+    path : str
         Complete path of icon.
 
     """
@@ -729,6 +729,39 @@ def read_viz_icons(style='icomoon', fname='infinity.png'):
 
 def read_bundles_2_subjects(subj_id='subj_1', metrics=['fa'],
                             bundles=['af.left', 'cst.right', 'cc_1']):
+    r""" Read images and streamlines from 2 subjects of the SNAIL dataset
+
+    Parameters
+    ----------
+    subj_id : string
+        Either ``subj_1`` or ``subj_2``.
+    metrics : list
+        Either ['fa'] or ['t1'] or ['fa', 't1']
+    bundles : list
+        Example ['af.left', 'cst.right', 'cc_1']. See all the available bundles
+        in the ``exp_bundles_maps/bundles_2_subjects`` directory of your
+        ``$HOME/.dipy`` folder.
+
+    Returns
+    -------
+    dix : dict
+        Dictionary with data of the metrics and the bundles as keys.
+
+    Notes
+    -----
+    If you are using these datasets please cite the following publications.
+
+    References
+    ----------
+    .. [1] Renaud, E. M. Descoteaux, M. Bernier, E. Garyfallidis,
+    K. Whittingstall, “Morphology of thalamus, LGN and optic radiation do not
+    influence EEG alpha waves”, Brain function and structure (submitted), 2015.
+
+    .. [2] Garyfallidis, E., O. Ocegueda, D. Wassermann,
+    M. Descoteaux. Robust and efficient linear registration of fascicles in the
+    space of streamlines , Neuroimage, 117:124-140, 2015.
+
+    """
 
     dname = pjoin(dipy_home, 'exp_bundles_and_maps', 'bundles_2_subjects')
 
