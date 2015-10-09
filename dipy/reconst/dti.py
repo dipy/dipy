@@ -4,6 +4,8 @@ from __future__ import division, print_function, absolute_import
 
 import warnings
 
+import functools
+
 import numpy as np
 
 import scipy.optimize as opt
@@ -1163,6 +1165,42 @@ class TensorFit(object):
         return tensor_prediction(self.model_params[..., 0:12], gtab, S0=S0)
 
 
+def iter_fit_tensor(step=1e4):
+    """Wrap a fit_tensor func and iterate over chunks of data with given length
+
+    Splits data into a number of chunks of specified size and iterates the
+    decorated fit_tensor function over them. This is useful to counteract the
+    temporary but significant memory usage increase in fit_tensor functions
+    that use vectorized operations and need to store large temporary arrays for
+    their vectorized operations.
+
+    """
+
+    def iter_decorator(fit_tensor):
+        """Actual iter decorator returned by iter_fit_tensor dec factory"""
+
+        @functools.wraps(fit_tensor)
+        def wrapped_fit_tensor(design_matrix, data, step=step,
+                               *args, **kwargs):
+            """Iterate fit_tensor function over the data chunks"""
+            shape = data.shape[:-1]
+            size = np.prod(shape)
+            step = int(step) or size
+            if step >= size:
+                return fit_tensor(design_matrix, data, *args, **kwargs)
+            data = data.reshape(-1, data.shape[-1])
+            dtiparams = np.empty((size, 12), dtype=np.float64)
+            for i in range(0, size, step):
+                dtiparams[i:i+step] = fit_tensor(design_matrix, data[i:i+step],
+                                                 *args, **kwargs)
+            return dtiparams.reshape(shape + (12, ))
+
+        return wrapped_fit_tensor
+
+    return iter_decorator
+
+
+@iter_fit_tensor()
 def wls_fit_tensor(design_matrix, data):
     r"""
     Computes weighted least squares (WLS) fit to calculate self-diffusion
@@ -1234,6 +1272,7 @@ def wls_fit_tensor(design_matrix, data):
     )
 
 
+@iter_fit_tensor()
 def ols_fit_tensor(design_matrix, data):
     r"""
     Computes ordinary least squares (OLS) fit to calculate self-diffusion
