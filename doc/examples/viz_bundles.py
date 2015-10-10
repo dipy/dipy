@@ -36,8 +36,8 @@ bundle = dix['cg.left']
 
 """
 It happened that this bundle is in world coordinates and therefore we need to
-transform in native image coordinates so that it is in the same coordinate
-space as the ``fa``.
+transform it into native image coordinates so that it is in the same coordinate
+space as the ``fa`` image.
 """
 
 bundle_native = transform_streamlines(bundle, np.linalg.inv(affine))
