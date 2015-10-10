@@ -15,7 +15,7 @@ from dipy.viz import window, actor, widget
 from dipy.data import fetch_viz_icons, read_viz_icons
 
 """
-First, we add the streamtubes to the
+First, we add a couple of streamtubes to the Renderer
 """
 
 renderer = window.Renderer()
@@ -62,7 +62,9 @@ def button_minus_callback(obj, event):
 
 
 """
-We need to download some icons to create a face for our buttons ...
+We need to download some icons to create a face for our buttons. We provide
+some simple icons in this tutorial. But you of course you can use any PNG icon
+you may want.
 """
 
 fetch_viz_icons()
@@ -81,7 +83,6 @@ button_minus = widget.button(show_manager.iren,
 
 
 def move_lines(obj, event):
-
     stream_actor.SetPosition((obj.get_value(), 0, 0))
 
 """
@@ -125,7 +126,7 @@ renderer.zoom(0.7)
 renderer.roll(10.)
 
 """
-Uncomment the following line to start the interaction.
+Uncomment the following lines to start the interaction.
 """
 
 # show_manager.add_window_callback(win_callback)
