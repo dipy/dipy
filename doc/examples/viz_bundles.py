@@ -59,6 +59,7 @@ renderer.set_camera(position=(-176.42, 118.52, 128.20),
 
 renderer.add(stream_actor)
 
+# Uncomment the line below to show to display the window
 # window.show(renderer, size=(600, 600), reset_camera=False)
 window.record(renderer, out_path='bundle1.png', size=(600, 600))
 
