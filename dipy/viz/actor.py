@@ -587,11 +587,15 @@ def scalar_bar(lookup_table=None, title=" "):
     -------
     scalar_bar : vtkScalarBarActor
 
+    See Also
+    --------
+    :func:`dipy.viz.actor.colormap_lookup_table`
+
     """
     lookup_table_copy = vtk.vtkLookupTable()
-    # Deepcopy the lookup_table because sometimes vtkPolyDataMapper deletes it
     if lookup_table is None:
         lookup_table = colormap_lookup_table()
+    # Deepcopy the lookup_table because sometimes vtkPolyDataMapper deletes it
     lookup_table_copy.DeepCopy(lookup_table)
     scalar_bar = vtk.vtkScalarBarActor()
     scalar_bar.SetTitle(title)
@@ -632,18 +636,17 @@ def axes(scale=(1, 1, 1), colorx=(1, 0, 0), colory=(0, 1, 0), colorz=(0, 0, 1),
     Parameters
     ----------
     scale : tuple (3,)
-        axes size e.g. (100, 100, 100)
+        Axes size e.g. (100, 100, 100). Default is (1, 1, 1).
     colorx : tuple (3,)
-        x-axis color. Default red.
+        x-axis color. Default red (1, 0, 0).
     colory : tuple (3,)
-        y-axis color. Default blue.
+        y-axis color. Default green (0, 1, 0).
     colorz : tuple (3,)
-        z-axis color. Default green.
+        z-axis color. Default blue (0, 0, 1).
 
     Returns
     -------
     vtkAssembly
-
     """
 
     arrowx = _arrow(color=colorx, scale=scale, opacity=opacity)
