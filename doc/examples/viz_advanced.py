@@ -42,7 +42,7 @@ fetch_bundles_2_subjects()
 
 """
 The following function outputs a dictionary with the required bundles e.g., af
-left and maps, e.g., FA for a specific subject.
+left (left arcuate fasciculus) and maps, e.g., FA for a specific subject.
 """
 
 res = read_bundles_2_subjects('subj_1', ['t1', 'fa'],
@@ -90,7 +90,7 @@ else:
     image_actor = actor.slicer(data, affine)
 
 """
-For fun let's change also the opacity of the slicer
+We can also change also the opacity of the slicer
 """
 
 slicer_opacity = .6
@@ -137,14 +137,10 @@ slider = widget.slider(show_m.iren, show_m.ren,
                        selected_color=(0.86, 0.33, 1.))
 
 """
-Then, we can render all the widget and everything else in the screen and
+Then, we can render all the widgets and everything else in the screen and
 start the interaction using ``show_m.start()``.
-"""
 
-# show_m.render()
-# show_m.start()
 
-"""
 However, if you change the window size, the slider will not update its position
 properly. The solution to this issue is to update the position of the slider
 using its ``place`` method every time the window size changes.
@@ -164,7 +160,7 @@ def win_callback(obj, event):
 show_m.initialize()
 
 """
-Finally, please uncomment the following lines so that you can interact with
+Finally, please uncomment the following 3 lines so that you can interact with
 the available 3D and 2D objects.
 """
 
