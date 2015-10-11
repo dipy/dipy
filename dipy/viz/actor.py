@@ -384,7 +384,7 @@ def line(lines, colors=None, opacity=1, linewidth=1,
     >>> lines = [np.random.rand(10, 3), np.random.rand(20, 3)]
     >>> colors = np.random.rand(2, 3)
     >>> c = actor.line(lines, colors)
-    >>> actor.add(ren, c)
+    >>> ren.add(c)
     >>> #window.show(ren)
     """
     # Poly data with lines and colors
