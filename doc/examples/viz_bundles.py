@@ -29,7 +29,7 @@ Store grid to world transformation matrix.
 affine = dix['affine']
 
 """
-Store the cingulum bundle. A bundle is a set of streamlines.
+Store the cingulum bundle. A bundle is a list of streamlines.
 """
 
 bundle = dix['cg.left']
