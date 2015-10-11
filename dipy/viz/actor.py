@@ -2,10 +2,9 @@
 
 import numpy as np
 
-from dipy.viz.colormap import line_colors
+from dipy.viz.colormap import line_colors, colormap_lookup_table
 from dipy.viz.utils import numpy_to_vtk_points, numpy_to_vtk_colors
 from dipy.viz.utils import set_input, map_coordinates_3d_4d
-from dipy.core.ndindex import ndindex
 
 # Conditional import machinery for vtk
 from dipy.utils.optpkg import optional_package
@@ -19,39 +18,6 @@ if have_vtk:
 
     version = vtk.vtkVersion.GetVTKSourceVersion().split(' ')[-1]
     major_version = vtk.vtkVersion.GetVTKMajorVersion()
-
-
-def colormap_lookup_table(scale_range=(0, 1), hue_range=(0.8, 0),
-                          saturation_range=(1, 1), value_range=(0.8, 0.8)):
-    """ Lookup table for the colormap
-
-    Parameters
-    ----------
-    scale_range : tuple
-        It can be anything e.g. (0, 1) or (0, 255). Usually it is the mininum
-        and maximum value of your data. Default is (0, 1).
-    hue_range : tuple of floats
-        HSV values (min 0 and max 1). Default is (0.8, 0).
-    saturation_range : tuple of floats
-        HSV values (min 0 and max 1). Default is (1, 1).
-    value_range : tuple of floats
-        HSV value (min 0 and max 1). Default is (0.8, 0.8).
-
-    Returns
-    -------
-    lookup_table : vtkLookupTable
-
-    """
-    lookup_table = vtk.vtkLookupTable()
-    lookup_table.SetRange(scale_range)
-    lookup_table.SetTableRange(scale_range)
-
-    lookup_table.SetHueRange(hue_range)
-    lookup_table.SetSaturationRange(saturation_range)
-    lookup_table.SetValueRange(value_range)
-
-    lookup_table.Build()
-    return lookup_table
 
 
 def slicer(data, affine=None, value_range=None, opacity=1.,
