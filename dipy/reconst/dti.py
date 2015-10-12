@@ -9,7 +9,7 @@ import numpy as np
 import scipy.optimize as opt
 
 from dipy.utils.six.moves import range
-from dipy.utils.arrfuncs import pinv_vec, eigh
+from dipy.utils.arrfuncs import pinv, eigh
 from dipy.data import get_sphere
 from ..core.gradients import gradient_table
 from ..core.geometry import vector_norm
@@ -1244,7 +1244,7 @@ def wls_fit_tensor(design_matrix, data):
     w = np.exp(np.einsum('...ij,...j', ols_fit, log_s))
     return tensor6_to_dtiparams(
         np.einsum('...ij,...j',
-                  pinv_vec(design_matrix * w[..., None]),
+                  pinv(design_matrix * w[..., None]),
                   w * log_s),
         min_diffusivity=tol / -design_matrix.min(),
     )

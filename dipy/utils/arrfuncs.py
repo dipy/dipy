@@ -33,7 +33,7 @@ def as_native_array(arr):
     return arr.byteswap().newbyteorder()
 
 
-def pinv_vec(a, rcond=1e-15):
+def pinv(a, rcond=1e-15):
     """Vectorized version of numpy.linalg.pinv"""
 
     a = np.asarray(a)
@@ -46,17 +46,17 @@ def pinv_vec(a, rcond=1e-15):
         for i, item in enumerate(a):
             result[i] = np.linalg.pinv(item, rcond)
         return result.reshape(shape + (a.shape[2], a.shape[1]))
-
-    swap = np.arange(a.ndim)
-    swap[[-2, -1]] = swap[[-1, -2]]
-    u, s, v = np.linalg.svd(a, full_matrices=False)
-    cutoff = np.maximum.reduce(s, axis=-1, keepdims=True) * rcond
-    mask = s > cutoff
-    s[mask] = 1. / s[mask]
-    s[~mask] = 0
-    return np.einsum('...ij,...jk',
-                     np.transpose(v, swap) * s[..., None, :],
-                     np.transpose(u, swap))
+    else:
+        swap = np.arange(a.ndim)
+        swap[[-2, -1]] = swap[[-1, -2]]
+        u, s, v = np.linalg.svd(a, full_matrices=False)
+        cutoff = np.maximum.reduce(s, axis=-1, keepdims=True) * rcond
+        mask = s > cutoff
+        s[mask] = 1. / s[mask]
+        s[~mask] = 0
+        return np.einsum('...ij,...jk',
+                         np.transpose(v, swap) * s[..., None, :],
+                         np.transpose(u, swap))
 
 
 def eigh(a, UPLO='L'):
