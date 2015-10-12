@@ -168,7 +168,9 @@ def point(points, colors, opacity=1, point_radius=0.1, theta=8, phi=8):
 
         pts.InsertNextPoint(p[0], p[1], p[2])
         scalars.InsertNextTuple3(
-            round(255 * colors[cnt_colors][0]), round(255 * colors[cnt_colors][1]), round(255 * colors[cnt_colors][2]))
+            round(255 * colors[cnt_colors][0]),
+            round(255 * colors[cnt_colors][1]),
+            round(255 * colors[cnt_colors][2]))
         cnt_colors += 1
 
     src = vtk.vtkSphereSource()
@@ -188,6 +190,7 @@ def point(points, colors, opacity=1, point_radius=0.1, theta=8, phi=8):
         glyph.SetInputData(polyData)
     glyph.SetColorModeToColorByScalar()
     glyph.SetScaleModeToDataScalingOff()
+    glyph.Update()
 
     mapper = vtk.vtkPolyDataMapper()
     if major_version <= 5:
