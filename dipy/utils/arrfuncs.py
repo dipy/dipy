@@ -34,12 +34,38 @@ def as_native_array(arr):
 
 
 def pinv(a, rcond=1e-15):
-    """Vectorized version of numpy.linalg.pinv"""
+    """Vectorized version of `numpy.linalg.pinv`
 
+    If numpy version is less than 1.8, it falls back to iterating over
+    `np.linalg.pinv` since there isn't a vectorized version of `np.linalg.svd`
+    available.
+
+    Parameters
+    ----------
+    a : (..., M, N) array_like
+        Matrix to be pseudo-inverted.
+    rcond : float
+        Cutoff for small singular values.
+
+    Returns
+    -------
+    B : (..., N, M) ndarray
+        The pseudo-inverse of `a`.
+
+    Raises
+    ------
+    LinAlgError
+        If the SVD computation does not converge.
+
+    See Also
+    --------
+    np.linalg.pinv
+    """
     a = np.asarray(a)
     if NUMPY_LESS_1_8:
-        # numpy 1.8.0 introduced a vectorized version of np.linalg.svd,
-        # if using older numpy fall back to using non vectorized np.linalg.pinv
+        if a.ndim <= 2:
+            # properly handle the case of a single 2D array
+            return np.linalg.pinv(a, rcond)
         shape = a.shape[:-2]
         a = a.reshape(-1, a.shape[-2], a.shape[-1])
         result = np.empty((a.shape[0], a.shape[2], a.shape[1]))
@@ -60,11 +86,37 @@ def pinv(a, rcond=1e-15):
 
 
 def eigh(a, UPLO='L'):
-    """Iterate over eigh if it doesn't support vectorized operation"""
+    """Iterate over `np.linalg.eigh` if it doesn't support vectorized operation
+
+    Parameters
+    ----------
+    a : (..., M, M) array_like
+        Hermitian/Symmetric matrices whose eigenvalues and
+        eigenvectors are to be computed.
+    UPLO : {'L', 'U'}, optional
+        Specifies whether the calculation is done with the lower triangular
+        part of `a` ('L', default) or the upper triangular part ('U').
+
+    Returns
+    -------
+    w : (..., M) ndarray
+        The eigenvalues in ascending order, each repeated according to
+        its multiplicity.
+    v : (..., M, M) ndarray
+        The column ``v[..., :, i]`` is the normalized eigenvector corresponding
+        to the eigenvalue ``w[..., i]``.
+
+    Raises
+    ------
+    LinAlgError
+        If the eigenvalue computation does not converge.
+
+    See Also
+    --------
+    np.linalg.eigh
+    """
     a = np.asarray(a)
     if a.ndim > 2 and NUMPY_LESS_1_8:
-        # numpy 1.8.0 introduced a vectorized version of np.linalg.eigh,
-        # if using older numpy fall back to iterating over np.linalg.eigh
         shape = a.shape[:-2]
         a = a.reshape(-1, a.shape[-2], a.shape[-1])
         evals = np.empty((a.shape[0], a.shape[1]))
