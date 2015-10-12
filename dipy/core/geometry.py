@@ -861,7 +861,7 @@ def vec2vec_rotmat(u, v):
         return np.eye(3)
 
     # if everything ok, normalize w
-    w /= wn
+    w = w / wn
 
     # vp is in plane of u,v,  perpendicular to u
     vp = (v - (np.dot(u, v) * u))
