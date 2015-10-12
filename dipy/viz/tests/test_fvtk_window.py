@@ -183,12 +183,25 @@ def test_order_transparent():
     renderer.SetMaximumNumberOfPeels(4)
     renderer.SetOcclusionRatio(0.0)
 
+
+
     renderer.reset_camera()
 
     # green in front
     renderer.elevation(90)
     renderer.reset_clipping_range()
-    arr = window.snapshot(renderer)
+    renderer.reset_camera()
+
+    #showm = window.ShowManager(renderer, order_transparent=True)
+    #showm.initialize()
+    #showm.render()
+    #showm.iren.Start()
+
+    #show.initialize()
+    window.show(renderer, reset_camera=False, order_transparent=True)
+    #from ipdb import set_trace
+    #set_trace()
+    arr = window.snapshot(renderer, 'test.png')
 
     # therefore the green component must have a higher value (in RGB terms)
     npt.assert_equal(arr[150, 150][1] > arr[150, 150][0], True)
@@ -196,6 +209,7 @@ def test_order_transparent():
     # red in front
     renderer.elevation(-180)
     renderer.reset_clipping_range()
+    #window.show(renderer, reset_camera=False, order_transparent=True)
     arr = window.snapshot(renderer)
 
     # therefore the red component must have a higher value (in RGB terms)
@@ -204,4 +218,5 @@ def test_order_transparent():
 
 if __name__ == '__main__':
 
-    npt.run_module_suite()
+    # npt.run_module_suite()
+    test_order_transparent()
