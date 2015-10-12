@@ -1,10 +1,14 @@
 """ Utilities to manipulate numpy arrays """
 
 import sys
+from distutils.version import LooseVersion
 
 import numpy as np
 
 from nibabel.volumeutils import endian_codes, native_code, swapped_code
+
+
+NUMPY_LESS_1_8 = LooseVersion(np.version.short_version) < '1.8'
 
 
 def as_native_array(arr):
@@ -33,7 +37,7 @@ def pinv_vec(a, rcond=1e-15):
     """Vectorized version of numpy.linalg.pinv"""
 
     a = np.asarray(a)
-    if np.version.version.split('.') < ['1', '8']:
+    if NUMPY_LESS_1_8:
         # numpy 1.8.0 introduced a vectorized version of np.linalg.svd,
         # if using older numpy fall back to using non vectorized np.linalg.pinv
         shape = a.shape[:-2]
@@ -58,7 +62,7 @@ def pinv_vec(a, rcond=1e-15):
 def eigh(a, UPLO='L'):
     """Iterate over eigh if it doesn't support vectorized operation"""
     a = np.asarray(a)
-    if a.ndim > 2 and np.version.version.split('.') < ['1', '8']:
+    if a.ndim > 2 and NUMPY_LESS_1_8:
         # numpy 1.8.0 introduced a vectorized version of np.linalg.eigh,
         # if using older numpy fall back to iterating over np.linalg.eigh
         shape = a.shape[:-2]
