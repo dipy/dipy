@@ -544,7 +544,7 @@ def show(ren, title='DIPY', size=(300, 300),
 
 def record(ren=None, cam_pos=None, cam_focal=None, cam_view=None,
            out_path=None, path_numbering=False, n_frames=1, az_ang=10,
-           magnification=1, size=(300, 300), verbose=False):
+           magnification=1, size=(300, 300), reset_camera=True, verbose=False):
     """ This will record a video of your scene
 
     Records a video as a series of ``.png`` files of your scene by rotating the
@@ -600,7 +600,7 @@ def record(ren=None, cam_pos=None, cam_focal=None, cam_view=None,
 
     # ren.GetActiveCamera().Azimuth(180)
 
-    if ren is None:
+    if reset_camera:
         ren.ResetCamera()
 
     renderLarge = vtk.vtkRenderLargeImage()
