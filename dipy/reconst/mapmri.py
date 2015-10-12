@@ -165,6 +165,15 @@ class MapmriModel(ReconstModel):
         # This is a simple empirical regularization, to be replaced
         I = np.diag(self.ind_mat.sum(1) ** 2)
         if self.eap_cons:
+            if not have_cvxopt:
+                raise ValueError(
+                'CVXOPT package needed to enforce constraints')
+            w_s = "The implementation of MAPMRI depends on CVXOPT "
+            w_s += " (http://cvxopt.org/). This software is licensed "
+            w_s += "under the GPL (see: http://cvxopt.org/copyright.html) "
+            w_s += " and you may be subject to this license when using MAPMRI."
+            warn(w_s)
+            import cvxopt.solvers
             rmax = 2 * np.sqrt(10 * evals.max() * self.tau)
             r_index, r_grad = create_rspace(11, rmax)
             K = mapmri_psi_matrix(
