@@ -55,7 +55,7 @@ def _min_positive_signal(data):
     data: array ([X, Y, Z, ...], g)
         Data or response variables holding the data. Note that the last
         dimension should contain the data.
-    
+
     Returns
     -------
     min_signal : float
