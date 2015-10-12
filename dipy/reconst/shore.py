@@ -15,7 +15,8 @@ from ..core.geometry import cart2sphere
 from ..utils.optpkg import optional_package
 
 cvxopt, have_cvxopt, _ = optional_package("cvxopt")
-
+if have_cvxopt:
+    import cvxopt.solvers
 
 class ShoreModel(Cache):
 
@@ -236,7 +237,6 @@ class ShoreModel(Cache):
             w_s += "under the GPL (see: http://cvxopt.org/copyright.html) "
             w_s += " and you may be subject to this license when using SHORE."
             warn(w_s)
-            import cvxopt.solvers
             M0 = M[self.gtab.b0s_mask, :]
             M0_mean = M0.mean(0)[None, :]
             Mprime = np.r_[M0_mean, M[~self.gtab.b0s_mask, :]]
