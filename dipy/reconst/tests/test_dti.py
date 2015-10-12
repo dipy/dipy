@@ -14,7 +14,7 @@ import scipy.optimize as opt
 
 import dipy.reconst.dti as dti
 from dipy.reconst.dti import (axial_diffusivity, color_fa,
-                              fractional_anisotropy, from_lower_triangular, geodesic_anisotropy, 
+                              fractional_anisotropy, from_lower_triangular, geodesic_anisotropy,
                               lower_triangular, mean_diffusivity,
                               radial_diffusivity, TensorModel, trace,
                               linearity, planarity, sphericity)
@@ -73,7 +73,7 @@ def test_tensor_model():
         if np.any(gtab.b0s_mask):
             relative_data = (data[0, 0, 0]/np.mean(data[0, 0, 0,
                                                         gtab.b0s_mask]))
-        
+
 
             dtifit_to_relative = dm_to_relative.fit(relative_data)
             npt.assert_almost_equal(dtifit.fa[0,0,0], dtifit_to_relative.fa,
@@ -154,6 +154,14 @@ def test_tensor_model():
                   dti.TensorModel,
                   gtab,
                   fit_method='crazy_method')
+
+    # Test custom fit tensor method
+    try:
+        model = dti.TensorModel(gtab, fit_method=lambda *args, **kwargs: 42)
+        fit = model.fit_method()
+    except Exception as exc:
+        assert False, "TensorModel should accept custom fit methods: %s" % exc
+    assert fit == 42, "Custom fit method for TensorModel returned %s." % fit
 
     # Test multi-voxel data
     data = np.zeros((3, Y.shape[1]))
@@ -673,6 +681,6 @@ def test_eig_from_lo_tri():
 
     dm = dti.TensorModel(gtab, 'LS')
     dmfit = dm.fit(S)
-    
+
     lo_tri = lower_triangular(dmfit.quadratic_form)
     assert_array_almost_equal(dti.eig_from_lo_tri(lo_tri), dmfit.model_params)
