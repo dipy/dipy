@@ -15,7 +15,15 @@ ns, have_numpy_support, _ = optional_package('vtk.util.numpy_support')
 
 
 def numpy_to_vtk_points(points):
-    """ numpy points array to a vtk points array
+    """ Numpy points array to a vtk points array
+
+    Parameters
+    ----------
+    points : ndarray
+
+    Returns
+    -------
+    vtk_points : vtkPoints()
     """
     vtk_points = vtk.vtkPoints()
     vtk_points.SetData(ns.numpy_to_vtk(np.asarray(points), deep=True))
@@ -23,14 +31,26 @@ def numpy_to_vtk_points(points):
 
 
 def numpy_to_vtk_colors(colors):
-    """ numpy color array to a vtk color array
+    """ Numpy color array to a vtk color array
 
-    if colors are not already in UNSIGNED_CHAR
-        you may need to multiply by 255.
-
-    Example
+    Parameters
     ----------
-    >>>  vtk_colors = numpy_to_vtk_colors(255 * float_array)
+    colors: ndarray
+
+    Returns
+    -------
+    vtk_colors : vtkDataArray
+
+    Notes
+    -----
+    If colors are not already in UNSIGNED_CHAR you may need to multiply by 255.
+
+    Examples
+    --------
+    >>> import numpy as np
+    >>> from dipy.viz.utils import numpy_to_vtk_colors
+    >>> rgb_array = np.random.rand(100, 3)
+    >>> vtk_colors = numpy_to_vtk_colors(255 * rgb_array)
     """
     vtk_colors = ns.numpy_to_vtk(np.asarray(colors), deep=True,
                                  array_type=vtk.VTK_UNSIGNED_CHAR)
@@ -41,9 +61,11 @@ def set_input(vtk_object, input):
     """ Generic input for vtk data,
         depending of the type of input and vtk version
 
-    Example
-    ----------
-    >>> poly_mapper = set_input(vtk.vtkPolyDataMapper(), poly_data)
+    Notes
+    -------
+    This can be used in the following way::
+        from dipy.viz.utils import set_input
+        poly_mapper = set_input(vtk.vtkPolyDataMapper(), poly_data)
     """
     if isinstance(input, vtk.vtkPolyData):
         if vtk.VTK_MAJOR_VERSION <= 5:
