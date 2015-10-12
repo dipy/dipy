@@ -11,7 +11,8 @@ cache:
     - $HOME/.cache/pip
 env:
     global:
-        - DEPENDS="cython numpy scipy matplotlib h5py nibabel cvxopt"
+        - DEPENDS="cython numpy scipy matplotlib h5py cvxopt"
+        - NIB="nibabel"
 python:
     - 2.6
     - 3.2
@@ -19,27 +20,55 @@ python:
     - 3.4
 matrix:
   include:
+    - python: 2.6
+      env:
+        - CONDA="python=2.6"
     - python: 2.7
       env:
+        - CONDA="python=2.7"
         - COVERAGE=1
     # To test minimum dependencies
     - python: 2.7
       env:
+        - CONDA="python=2.7"
         - COVERAGE=1
-        - DEPENDS="cython==0.18 numpy==1.6.0 scipy==0.9.0 nibabel==1.2.0"
+        - DEPENDS="cython=0.18"
+        - NIB="nibabel==1.2.0 numpy==1.6.0 scipy==0.9.0"
+    # To test with scikit-learn:
     - python: 2.7
       env:
-        - DEPENDS="cython numpy scipy matplotlib h5py nibabel cvxopt scikit_learn"
+        - CONDA="python=2.7"
+        - DEPENDS="cython numpy scipy matplotlib h5py cvxopt scikit-learn"
+        - NIB="nibabel"
+    - python: 3.2
+      env:
+        - CONDA="python=3.2"
+    - python: 3.3
+      env:
+        - CONDA="python=3.3"
+    - python: 3.4
+      env:
+        - CONDA="python=3.4"
 before_install:
+    - wget http://repo.continuum.io/miniconda/Miniconda-latest-Linux-x86_64.sh -O miniconda.sh;
+    - bash miniconda.sh -b -p $HOME/miniconda
+    - export PATH="$HOME/miniconda/bin:$PATH"
+    - hash -r
+    - conda config --set always_yes yes
+    - conda update conda
+    - conda info -a
+    - travis_retry conda create -n test $CONDA $DEPENDS
+    - source activate test
     - source tools/travis_tools.sh
-    - virtualenv --python=python venv
-    - source venv/bin/activate
     - python --version # just to check
     - retry pip install nose # always
-    - wheelhouse_pip_install $DEPENDS
+    - retry pip install $NIB
     - if [ "${COVERAGE}" == "1" ]; then
       pip install coverage;
       pip install coveralls;
+      fi
+    - if [[ $CONDA == python=2.7 ]]; then
+         conda install vtk;
       fi
 install:
     - python setup.py install
