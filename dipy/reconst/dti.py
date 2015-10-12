@@ -1148,7 +1148,7 @@ class TensorFit(object):
         which a signal is to be predicted and $b$ is the b value provided in
         the GradientTable input for that direction
         """
-        return tensor_prediction(self.model_params[0:12], gtab, S0=S0)
+        return tensor_prediction(self.model_params[..., 0:12], gtab, S0=S0)
 
 
 def wls_fit_tensor(design_matrix, data):
