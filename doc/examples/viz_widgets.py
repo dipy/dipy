@@ -23,8 +23,7 @@ renderer = window.Renderer()
 lines = [np.array([[-1, 0, 0.], [1, 0, 0.]]),
          np.array([[-1, 1, 0.], [1, 1, 0.]])]
 colors = np.array([[1., 0., 0.], [0., .5, 0.]])
-stream_actor = actor.streamtube(lines, colors, linewidth=0.3)
-
+stream_actor = actor.streamtube(lines, colors, linewidth=0.3, lod=False)
 renderer.add(stream_actor)
 
 """
@@ -35,30 +34,24 @@ the widgets can be added and updated properly.
 show_manager = window.ShowManager(renderer, size=(800, 800),
                                   order_transparent=True)
 
-show_manager.initialize()
-
 """
 Next we add the widgets and their callbacks.
 """
 
-global opacity
-opacity = 1.
-
 
 def button_plus_callback(obj, event):
     print('+ pressed')
-    global opacity
+    opacity = stream_actor.GetProperty().GetOpacity()
     if opacity < 1:
-        opacity += 0.1
-    stream_actor.GetProperty().SetOpacity(opacity)
+        stream_actor.GetProperty().SetOpacity(opacity + 0.1)
 
 
 def button_minus_callback(obj, event):
     print('- pressed')
-    global opacity
+
+    opacity = stream_actor.GetProperty().GetOpacity()
     if opacity > 0:
-        opacity -= 0.1
-    stream_actor.GetProperty().SetOpacity(opacity)
+        stream_actor.GetProperty().SetOpacity(opacity - 0.1)
 
 
 """
@@ -86,7 +79,7 @@ def move_lines(obj, event):
     stream_actor.SetPosition((obj.get_value(), 0, 0))
 
 """
-And then we create the slider.
+Then we create the slider.
 """
 
 slider = widget.slider(show_manager.iren, show_manager.ren,
@@ -100,27 +93,24 @@ slider = widget.slider(show_manager.iren, show_manager.ren,
                        color=(0.4, 0.4, 0.4),
                        selected_color=(0.2, 0.2, 0.2))
 
-global size
-size = renderer.size()
-
 """
-This callback is used to update the buttons/sliders' position so they can stay
-on the correct side of the window when the window is being resized.
+And a simple overlay text.
 """
 
 
-def win_callback(obj, event):
-    global size
-    if size != obj.GetSize():
+def text_clicked(obj, event):
+    print "Awesome!"
 
-        button_plus.place(renderer)
-        button_minus.place(renderer)
-        slider.place(renderer)
-        size = obj.GetSize()
+text = widget.text(show_manager.iren, show_manager.ren,
+                   message="Powered by DIPY",
+                   callback=text_clicked,
+                   color=(1., .5, .0),
+                   left_down_pos=(10, 5),
+                   right_top_pos=(200, 35))
 
-# you can also register any callback in a vtk way like this
-# show_manager.window.AddObserver(vtk.vtkCommand.ModifiedEvent,
-#                                 win_callback)
+"""
+Position the camera.
+"""
 
 renderer.zoom(0.7)
 renderer.roll(10.)
@@ -129,9 +119,9 @@ renderer.roll(10.)
 Uncomment the following lines to start the interaction.
 """
 
-# show_manager.add_window_callback(win_callback)
-# show_manager.render()
-# show_manager.start()
+show_manager.initialize()
+show_manager.render()
+show_manager.start()
 
 renderer.reset_clipping_range()
 
