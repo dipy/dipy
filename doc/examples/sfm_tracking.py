@@ -139,7 +139,7 @@ ren = fvtk.ren()
 fvtk.add(ren, streamlines_actor)
 fvtk.add(ren, vol_actor)
 fvtk.add(ren, vol_actor2)
-fvtk.show(ren)
+
 fvtk.record(ren, n_frames=1, out_path='sfm_streamlines.png',
             size=(800, 800))
 
