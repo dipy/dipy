@@ -36,47 +36,62 @@ class RecoBundles(object):
                   % (len(self.streamlines), ))
             print(' Distance threshold %0.3f' % (mdf_thr,))
 
-        rstreamlines = set_number_of_points(self.streamlines, nb_pts)
-        rstreamlines = [s.astype('f4') for s in rstreamlines]
+        len_s = len(self.streamlines)
+        indices = np.random.choice(len_s, min(select_randomly, len_s),
+                                   replace=False)
+        sample_streamlines = [self.streamlines[i]
+                              for i in indices]
+        sample_streamlines = set_number_of_points(sample_streamlines, 2)
+        sample_streamlines = [s.astype('f4') for s in sample_streamlines]
 
         if self.verbose:
             print(' Resampling to {} points'.format(nb_pts))
             print(' Duration %0.3f sec. \n' % (time() - t, ))
-
-        len_s = len(self.streamlines)
-        indices = np.random.choice(len_s, min(select_randomly, len_s),
-                                   replace=False)
 
         feature = IdentityFeature()
         metric = AveragePointwiseEuclideanMetric(feature)
         qb = QuickBundles(threshold=mdf_thr, metric=metric)
 
         t1 = time()
-        initial_clusters = qb.cluster(rstreamlines, ordering=indices)
+        initial_clusters = qb.cluster(sample_streamlines)
 
         if self.verbose:
-            print(' QuickBundles time for %d' % (select_randomly,))
+            print(' QuickBundles time for %d random streamlines'
+                  % (select_randomly,))
             print(' Duration %0.3f sec. \n' % (time() - t1, ))
 
         t2 = time()
 
-        cluster_map = qb.assign(initial_clusters, rstreamlines)
+        rstreamlines_2pt = set_number_of_points(self.streamlines, 2)
+        rstreamlines_2pt = [s.astype('f4') for s in rstreamlines_2pt]
 
         if self.verbose:
-            print(' QuickBundles time for %d' % (select_randomly,))
+            print(' Resampling to 2 points %d' % (self.nb_streamlines,))
             print(' Duration %0.3f sec. \n' % (time() - t2, ))
+
+        t3 = time()
+
+        initial_centroids = initial_clusters.centroids
+
+        for cluster in initial_clusters:
+            cluster.centroid = set_number_of_points(cluster.centroid, 2)
+
+        cluster_map = qb.assign(initial_clusters, rstreamlines_2pt)
+
+        if self.verbose:
+            print(' Assignment time for %d streamlines' % (len_s,))
+            print(' Duration %0.3f sec. \n' % (time() - t3, ))
 
         cluster_map.refdata = self.streamlines
         self.cluster_map = cluster_map
-        self.centroids = self.cluster_map.centroids
-        self.rstreamlines = rstreamlines
+        self.centroids = initial_centroids
         self.nb_centroids = len(self.centroids)
         self.indices = [cluster.indices for cluster in self.cluster_map]
 
         if self.verbose:
             print(' Streamlines have %d centroids'
                   % (self.nb_centroids,))
-            print(' Duration %0.3f sec. \n' % (time() - t, ))
+            print(' Total duration %0.3f sec. \n' % (time() - t, ))
 
     def recognize(self, model_bundle, mdf_thr=10,
                   reduction_thr=20,
