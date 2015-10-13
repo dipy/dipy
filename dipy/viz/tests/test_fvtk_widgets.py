@@ -87,7 +87,7 @@ def test_button_and_slider_widgets():
             size = obj.GetSize()
 
     if interactive:
-        show_manager.add_window_callback(win_callback)
+        # show_manager.add_window_callback(win_callback)
         # you can also register any callback in a vtk way like this
         # show_manager.window.AddObserver(vtk.vtkCommand.ModifiedEvent,
         #                                 win_callback)
@@ -98,10 +98,13 @@ def test_button_and_slider_widgets():
     if not interactive:
         button.Off()
         slider.Off()
+        # Uncomment below to test the slider and button with analyze
+        # button.place(renderer)
+        # slider.place(renderer)
 
         arr = window.snapshot(renderer, size=(800, 800))
         report = window.analyze_snapshot(arr)
-        npt.assert_equal(report.objects, 4)
+        npt.assert_equal(report.objects, 2)
         # imshow(report.labels, origin='lower')
 
     report = window.analyze_renderer(renderer)
@@ -166,13 +169,7 @@ def test_text_widget():
     if interactive:
         show_manager.render()
 
-    def win_callback(obj, event):
-        print('Window modified')
-        button.place(renderer)
-        text.place(renderer)
-
     if interactive:
-        show_manager.add_window_callback(win_callback)
         show_manager.render()
         show_manager.start()
 
