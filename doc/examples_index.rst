@@ -165,6 +165,8 @@ Streamline Clustering
 
 - :ref:`example_segment_quickbundles`
 - :ref:`example_segment_extending_clustering_framework`
+- :ref:`example_segment_clustering_features`
+- :ref:`example_segment_clustering_metrics`
 
 Brain Segmentation
 ~~~~~~~~~~~~~~~~~~
