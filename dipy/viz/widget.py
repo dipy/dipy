@@ -1,6 +1,8 @@
 # Widgets are different than actors in that they can interact with events
 # To do so they need as input a vtkRenderWindowInteractor also known as iren.
 
+import numpy as np
+
 # Conditional import machinery for vtk
 from dipy.utils.optpkg import optional_package
 
@@ -127,6 +129,13 @@ def slider(iren, ren, callback, min_value=0, max_value=255, value=125,
     slider.AddObserver("InteractionEvent", callback)
     slider.SetEnabled(True)
 
+    # Place widget after window resizing.
+    def _place_widget(obj, event):
+        slider.place(ren)
+
+    iren.GetRenderWindow().AddObserver(vtk.vtkCommand.StartEvent, _place_widget)
+    iren.GetRenderWindow().AddObserver(vtk.vtkCommand.ModifiedEvent, _place_widget)
+
     return slider
 
 
@@ -204,7 +213,13 @@ def button(iren, ren, callback, fname, right_normalized_pos=(.98, .9),
     button.SetInteractor(iren)
     button.SetRepresentation(button_rep)
     button.AddObserver(vtk.vtkCommand.StateChangedEvent, callback)
-    button.place(ren)
+
+    # Place widget after window resizing.
+    def _place_widget(obj, event):
+        button.place(ren)
+
+    iren.GetRenderWindow().AddObserver(vtk.vtkCommand.StartEvent, _place_widget)
+    iren.GetRenderWindow().AddObserver(vtk.vtkCommand.ModifiedEvent, _place_widget)
 
     return button
 
@@ -228,11 +243,13 @@ def text(iren, ren, callback, message="DIPY",
     message : str
         Message to be shown in the text widget
     left_down_pos : tuple
-        Normalized coordinates for left down corner of text. Default is
-        (0.8, 0.5).
+        Coordinates for left down corner of text. If float are provided,
+        the normalized coordinate system is used, otherwise the coordinates
+        represent pixel positions. Default is (0.8, 0.5).
     right_top_pos : tuple
-        Normalized coordinates for left down corner of text. Default is
-        (0.9, 0.5).
+        Coordinates for right top corner of text. If float are provided,
+        the normalized coordinate system is used, otherwise the coordinates
+        represent pixel positions. Default is (0.9, 0.5).
     color : tuple
         Foreground RGB color of text. Default is (1., .5, .0).
     opacity : float
@@ -256,13 +273,7 @@ def text(iren, ren, callback, message="DIPY",
 
     # Create the text representation. Used for positioning the text_actor
     text_rep = vtk.vtkTextRepresentation()
-    text_rep.SetPlaceFactor(1)
-
-    text_rep.GetPositionCoordinate().SetCoordinateSystemToNormalizedDisplay()
-    text_rep.GetPositionCoordinate().SetValue(*left_down_pos)
-
-    text_rep.GetPosition2Coordinate().SetCoordinateSystemToNormalizedDisplay()
-    text_rep.GetPosition2Coordinate().SetValue(*right_top_pos)
+    text_rep.SetTextActor(text_actor)
 
     if border:
         text_rep.SetShowBorderToOn()
@@ -272,40 +283,41 @@ def text(iren, ren, callback, message="DIPY",
     class TextWidget(vtk.vtkTextWidget):
 
         def place(self, renderer):
-
             text_rep = self.GetRepresentation()
 
             position = text_rep.GetPositionCoordinate()
-            position.SetCoordinateSystemToNormalizedDisplay()
-            position.SetValue(*left_down_pos)
-
             position2 = text_rep.GetPosition2Coordinate()
-            position2.SetCoordinateSystemToNormalizedDisplay()
+
+            # The dtype of `left_down_pos` determines coordinate system type.
+            if np.issubdtype(np.asarray(left_down_pos).dtype, np.integer):
+                position.SetCoordinateSystemToDisplay()
+            else:
+                position.SetCoordinateSystemToNormalizedDisplay()
+
+            # The dtype of `right_top_pos` determines coordinate system type.
+            if np.issubdtype(np.asarray(right_top_pos).dtype, np.integer):
+                position2.SetCoordinateSystemToDisplay()
+            else:
+                position2.SetCoordinateSystemToNormalizedDisplay()
+
+            position.SetValue(*left_down_pos)
             position2.SetValue(*right_top_pos)
-
-            self.SelectableOn()
-            self.ResizableOff()
-            text_rep.ProportionalResizeOn()
-
-            self.On()
 
     text_widget = TextWidget()
     text_widget.SetRepresentation(text_rep)
     text_widget.SetInteractor(iren)
-    text_widget.SetTextActor(text_actor)
     text_widget.SelectableOn()
     text_widget.ResizableOff()
-    text_widget.GetRepresentation().ProportionalResizeOn()
 
     text_widget.AddObserver(vtk.vtkCommand.WidgetActivateEvent, callback)
-    text_widget.On()
 
-    # This is a hack for avoiding not plotting the text widget when
-    # backface culling in On on a different actor
-    ss = vtk.vtkSphereSource()
-    mapper = vtk.vtkPolyDataMapper()
-    mapper.SetInputConnection(ss.GetOutputPort())
-    actor = vtk.vtkActor()
-    actor.GetProperty().BackfaceCullingOff()
+    # Place widget after window resizing.
+    def _place_widget(obj, event):
+        text_widget.place(ren)
+
+    iren.GetRenderWindow().AddObserver(vtk.vtkCommand.StartEvent, _place_widget)
+    iren.GetRenderWindow().AddObserver(vtk.vtkCommand.ModifiedEvent, _place_widget)
+
+    text_widget.On()
 
     return text_widget
