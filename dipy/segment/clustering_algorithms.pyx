@@ -120,6 +120,8 @@ def quickbundles(streamlines, Metric metric, double threshold, long max_nb_clust
 def quickbundles_assignment(clusters, streamlines, Metric metric, double threshold, ordering=None):
     """ Assigns streamlines to nearest clusters.
 
+    Note that the clusters won't be updated.
+
     Parameters
     ----------
     clusters : `ClusterMapCentroid` object
@@ -157,36 +159,21 @@ def quickbundles_assignment(clusters, streamlines, Metric metric, double thresho
     cdef QuickBundles qb = QuickBundles(features_shape, metric, threshold, max_nb_clusters)
     cdef int idx, i, n, d
 
-    # Add already existing clusters from `clusters`.
+    # Initialize centroids using the ones from `clusters`.
     for i, cluster in enumerate(clusters):
         qb.clusters.c_create_cluster()
         for n in range(features_shape[0]):
             for d in range(features_shape[1]):
                 qb.clusters.centroids[i].features[n][d] = cluster.centroid[n, d]
 
-        # Add previous indices
-        for idx in cluster.indices:
-            Clusters.c_assign(qb.clusters, i, idx, None)
-
     for idx in ordering:
         streamline = streamlines[idx]
         if not streamline.flags.writeable or streamline.dtype != DTYPE:
             streamline = streamline.astype(DTYPE)
 
+        # We do assignation only, no centroid will be updated.
         cluster_id = qb.assignment_step(streamline, idx)
-        # The update step is performed right after the assignement step instead
-        # of after all streamlines have been assigned like k-means algorithm.
-        qb.update_step(cluster_id)
 
     new_clusters = clusters_centroid2clustermap_centroid(qb.clusters)
     new_clusters.refdata = streamlines
-
-    # If not the same refdata, append the new one to the old one.
-    if clusters.refdata is not new_clusters.refdata:
-        offset = len(clusters.refdata)
-        new_clusters.refdata += clusters.refdata
-        for new_cluster, old_cluster in zip(new_clusters, clusters):
-            for i in range(len(old_cluster), len(new_cluster)):
-                new_cluster.indices[i] += offset
-
     return new_clusters
