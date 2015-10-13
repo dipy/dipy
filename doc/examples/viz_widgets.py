@@ -94,7 +94,7 @@ slider = widget.slider(show_manager.iren, show_manager.ren,
                        selected_color=(0.2, 0.2, 0.2))
 
 """
-And a simple overlay text.
+And we add a simple clickable text overlay at the bottom left corner.
 """
 
 
