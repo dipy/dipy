@@ -135,7 +135,8 @@ Uncomment the following lines to start the interaction.
 
 renderer.reset_clipping_range()
 
-window.record(renderer, out_path='mini_ui.png', size=(800, 800))
+window.record(renderer, out_path='mini_ui.png', size=(800, 800),
+              reset_camera=False)
 
 del show_manager
 

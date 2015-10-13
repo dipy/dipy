@@ -171,7 +171,8 @@ the available 3D and 2D objects.
 ren.zoom(1.5)
 ren.reset_clipping_range()
 
-window.record(ren, out_path='bundles_and_a_slice.png', size=(1200, 900))
+window.record(ren, out_path='bundles_and_a_slice.png', size=(1200, 900),
+              reset_camera=False)
 
 """
 .. figure:: bundles_and_a_slice.png

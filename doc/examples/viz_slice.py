@@ -90,7 +90,8 @@ In order to interact with the data you will need to uncomment the line below.
 Otherwise, you can save a screenshot using the following command.
 """
 
-window.record(renderer, out_path='slices.png', size=(600, 600))
+window.record(renderer, out_path='slices.png', size=(600, 600),
+              reset_camera=False)
 
 """
 .. figure:: slices.png
@@ -137,7 +138,8 @@ renderer.zoom(1.4)
 
 # window.show(renderer, size=(600, 600), reset_camera=False)
 
-window.record(renderer, out_path='slices_lut.png', size=(600, 600))
+window.record(renderer, out_path='slices_lut.png', size=(600, 600),
+              reset_camera=False)
 
 """
 .. figure:: slices_lut.png
@@ -198,7 +200,8 @@ mosaic up/down and left/right using the middle mouse button pressed. And zoom
 in/out using the scroll wheel.
 """
 
-window.record(renderer, out_path='mosaic.png', size=(900, 600))
+window.record(renderer, out_path='mosaic.png', size=(900, 600),
+              reset_camera=False)
 
 """
 .. figure:: mosaic.png
