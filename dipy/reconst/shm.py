@@ -1052,7 +1052,7 @@ def anisotropic_power(sh_coeffs, normal_factor=0.00001, power=2):
     ap = np.zeros(dim)
     n_start = 1
     for L in range(2, max_order + 2, 2):
-        n_stop = n_start + n_L
+        n_stop = n_start + (2 * L + 1)
         ap_i = np.mean(np.abs(sh_coeffs[..., n_start:n_stop]) ** power, -1)
         ap += ap_i
         n_start = n_stop
