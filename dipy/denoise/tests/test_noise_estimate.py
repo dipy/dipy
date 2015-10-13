@@ -39,10 +39,13 @@ def test_piesno():
     assert_(np.abs(sigma - 50) / sigma < 0.03)
 
     # Test using the median as the initial estimation
-    initial_estimation = np.median(sigma) / np.sqrt(2 * _inv_nchi_cdf(1, 1, 0.5))
-    sigma, mask = _piesno_3D(rician_noise, N=1, alpha=0.01, l=1, eps=1e-10, return_mask=True,
+    initial_estimation = (np.median(sigma) /
+                          np.sqrt(2 * _inv_nchi_cdf(1, 1, 0.5)))
+    sigma, mask = _piesno_3D(rician_noise, N=1, alpha=0.01, l=1, eps=1e-10,
+                             return_mask=True,
                              initial_estimation=initial_estimation)
-    assert_almost_equal(np.abs(sigma - 50) / sigma < 0.03, True)
+
+    assert_(np.abs(sigma - 50) / sigma < 0.03)
 
 
 def test_estimate_sigma():
