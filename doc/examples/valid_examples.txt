@@ -41,4 +41,4 @@
  viz_advanced.py
  viz_slice.py
  viz_bundles.py
- viz_hud.py
+ viz_widgets.py
