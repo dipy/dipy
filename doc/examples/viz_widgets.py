@@ -114,16 +114,16 @@ Position the camera.
 
 renderer.zoom(0.7)
 renderer.roll(10.)
+renderer.reset_clipping_range()
 
 """
 Uncomment the following lines to start the interaction.
 """
 
-show_manager.initialize()
-show_manager.render()
-show_manager.start()
+# show_manager.initialize()
+# show_manager.render()
+# show_manager.start()
 
-renderer.reset_clipping_range()
 
 window.record(renderer, out_path='mini_ui.png', size=(800, 800),
               reset_camera=False)
