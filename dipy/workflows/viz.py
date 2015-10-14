@@ -24,7 +24,7 @@ def save_trk(fname, streamlines, hdr=None):
         tv.write(fname, streams, points_space='rasmm')
 
 
-def viz(tractograms, data, affine, qb_thr=30):
+def horizon(tractograms, data, affine, qb_thr=30, random_colors=True):
 
     slicer_opacity = .8
 
@@ -51,7 +51,11 @@ def viz(tractograms, data, affine, qb_thr=30):
                 ren.add(act)
             # ren.add(actor.line(clusters[10], linewidth=2, lod=True))
         else:
-            ren.add(actor.line(streamlines, fvtk.colors.white,
+            if not random_colors:
+                colors = fvtk.colors.white
+            else:
+                colors = np.random.rand(3)
+            ren.add(actor.line(streamlines, colors,
                                opacity=1., lod_points=10 ** 5))
 
     class SimpleTrackBallNoBB(window.vtk.vtkInteractorStyleTrackballCamera):
@@ -134,28 +138,25 @@ def viz(tractograms, data, affine, qb_thr=30):
     show_m.start()
 
 
-def horizon_flow(input_files, qb_thr=30, verbose=True):
+def horizon_flow(input_files, qb_thr=30, random_colors=True, verbose=True):
     """ Horizon
 
     Parameters
     ----------
     input_files : string
     qb_thr : float, optional
+    random_colors : bool, optional
     verbose : bool, optional
     """
-
-    # input_files = [input_file] + files
-    print(input_files)
 
     filenames = input_files
     # glob(input_files)
     tractograms = []
-    print(filenames)
 
     data = None
     affine = None
     for f in filenames:
-
+        print(f)
         sp = path.splitext(f)[1]
 
         if sp == '.trk':
@@ -170,4 +171,4 @@ def horizon_flow(input_files, qb_thr=30, verbose=True):
             affine = img.get_affine()
             print(affine)
 
-    viz(tractograms, data, affine, qb_thr)
+    horizon(tractograms, data, affine, qb_thr, random_colors)
