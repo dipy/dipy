@@ -41,7 +41,7 @@ class RecoBundles(object):
                                    replace=False)
         sample_streamlines = [self.streamlines[i]
                               for i in indices]
-        sample_streamlines = set_number_of_points(sample_streamlines, 2)
+        sample_streamlines = set_number_of_points(sample_streamlines, nb_pts)
         sample_streamlines = [s.astype('f4') for s in sample_streamlines]
 
         if self.verbose:
