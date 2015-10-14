@@ -311,7 +311,7 @@ class ShowManager(object):
         title : string
             A string for the window title bar.
         size : (int, int)
-            ``(width, height)`` of the window
+            ``(width, height)`` of the window. Default is (300, 300).
         png_magnify : int
             Number of times to magnify the screenshot. This can be used to save
             high resolution screenshots when pressing 's' inside the window.
@@ -492,12 +492,13 @@ def show(ren, title='DIPY', size=(300, 300),
     ren : Renderer() or vtkRenderer()
         The scene that holds all the actors.
     title : string
-        A string for the window title bar.
+        A string for the window title bar. Default is DIPY and current version.
     size : (int, int)
-        ``(width, height)`` of the window
+        ``(width, height)`` of the window. Default is (300, 300).
     png_magnify : int
-        Number of times to magnify the screenshot. This can be used to save
-        high resolution screenshots when pressing 's' inside the window.
+        Number of times to magnify the screenshot. Default is 1. This can be
+        used to save high resolution screenshots when pressing 's' inside the
+        window.
     reset_camera : bool
         Default is True. You can change this option to False if you want to
         keep the camera as set before calling this function.
@@ -555,28 +556,31 @@ def record(ren=None, cam_pos=None, cam_focal=None, cam_view=None,
     ren : vtkRenderer() object
         as returned from function ren()
     cam_pos : None or sequence (3,), optional
-        camera position
+        Camera's position. If None then default camera's position is used.
     cam_focal : None or sequence (3,), optional
-        camera focal point
+        Camera's focal point. If None then default camera's focal point is
+        used.
     cam_view : None or sequence (3,), optional
-        camera view up
+        Camera's view up direction. If None then default camera's view up
+        vector is used.
     out_path : str, optional
-        output directory for the frames
+        Output path for the frames. If None a default dipy.png is created.
     path_numbering : bool
-        when recording it changes out_path ot out_path + str(frame number)
+        When recording it changes out_path to out_path + str(frame number)
     n_frames : int, optional
-        number of frames to save, default 1
+        Number of frames to save, default 1
     az_ang : float, optional
-        azimuthal angle of camera rotation.
+        Azimuthal angle of camera rotation.
     magnification : int, optional
-        how much to magnify the saved frame
+        How much to magnify the saved frame. Default is 1.
     size : (int, int)
-        ``(width, height)`` of the window
+        ``(width, height)`` of the window. Default is (300, 300).
+    reset_camera : bool
+        If True Call ``ren.reset_camera()``. Otherwise you need to set the
+         camera before calling this function.
     verbose : bool
-        print information about the camera
-    sleep_time : float
-        Creates a small delay in seconds so that the renderer has enough
-        time to save the figure correctly.
+        print information about the camera. Default is False.
+
 
     Examples
     ---------
@@ -644,7 +648,10 @@ def record(ren=None, cam_pos=None, cam_focal=None, cam_view=None,
             else:
                 filename = out_path + str(i).zfill(6) + '.png'
         else:
-            filename = out_path
+            if out_path is None:
+                filename = 'dipy.png'
+            else:
+                filename = out_path
         writer.SetFileName(filename)
         writer.Write()
 
@@ -661,11 +668,11 @@ def snapshot(ren, fname=None, size=(300, 300)):
     fname : str or None
         Save PNG file. If None return only an array without saving PNG.
     size : (int, int)
-        ``(width, height)`` of the window
+        ``(width, height)`` of the window. Default is (300, 300).
 
     Returns
     -------
-    arr : array
+    arr : ndarray
         Color array of size (width, height, 3) where the last dimension
         holds the RGB values.
     """
