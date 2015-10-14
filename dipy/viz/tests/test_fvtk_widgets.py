@@ -163,11 +163,10 @@ def test_text_widget():
                        opacity=1.,
                        border=False)
 
-    button.place(renderer)
-    text.place(renderer)
-
-    if interactive:
-        show_manager.render()
+    if not interactive:
+        button.Off()
+        text.Off()
+        pass
 
     if interactive:
         show_manager.render()
@@ -175,7 +174,7 @@ def test_text_widget():
 
     arr = window.snapshot(renderer, size=(1200, 1200))
     report = window.analyze_snapshot(arr)
-    npt.assert_equal(report.objects, 30)
+    npt.assert_equal(report.objects, 3)
 
     # If you want to see the segmented objects after the analysis is finished
     # you can use imshow(report.labels, origin='lower')
