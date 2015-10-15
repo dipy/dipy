@@ -40,3 +40,7 @@
  bundle_registration.py
  tracking_tissue_classifier.py
  piesno.py
+ viz_advanced.py
+ viz_slice.py
+ viz_bundles.py
+ viz_widgets.py

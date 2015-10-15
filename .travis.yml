@@ -12,6 +12,7 @@ cache:
 env:
     global:
         - DEPENDS="cython numpy scipy matplotlib h5py nibabel cvxopt"
+        - VENV_ARGS="--python=python"
 python:
     - 2.6
     - 3.2
@@ -30,9 +31,14 @@ matrix:
     - python: 2.7
       env:
         - DEPENDS="cython numpy scipy matplotlib h5py nibabel cvxopt scikit_learn"
+    - python: 2.7
+      sudo: true
+      env:
+        - VTK=1
+        - VENV_ARGS="--system-site-packages --python=/usr/bin/python2.7"
 before_install:
     - source tools/travis_tools.sh
-    - virtualenv --python=python venv
+    - virtualenv $VENV_ARGS venv
     - source venv/bin/activate
     - python --version # just to check
     - retry pip install nose # always
@@ -40,6 +46,12 @@ before_install:
     - if [ "${COVERAGE}" == "1" ]; then
       pip install coverage;
       pip install coveralls;
+      fi
+    - if [ "${VTK}" == "1" ]; then
+      sudo apt-get update;
+      sudo apt-get install -y python-vtk;
+      sudo apt-get install -y xvfb;
+      python -c "import vtk";
       fi
 install:
     - python setup.py install
@@ -54,6 +66,9 @@ script:
       cp ../.coveragerc .;
       COVER_ARGS="--with-coverage --cover-package dipy";
       fi
-    - nosetests --with-doctest --verbose $COVER_ARGS dipy
+    - if [ "${VTK}" == "1" ]; then
+      VIRT_BUFF="xvfb-run";
+      fi
+    - $VIRT_BUFF nosetests --with-doctest --verbose $COVER_ARGS dipy
 after_success:
     - if [ "${COVERAGE}" == "1" ]; then coveralls; fi

@@ -19,8 +19,6 @@ from __future__ import division, print_function, absolute_import
 
 from dipy.utils.six.moves import xrange
 
-import types
-
 import numpy as np
 
 from dipy.core.ndindex import ndindex
@@ -33,6 +31,7 @@ vtk, have_vtk, setup_module = optional_package('vtk')
 colors, have_vtk_colors, _ = optional_package('vtk.util.colors')
 
 cm, have_matplotlib, _ = optional_package('matplotlib.cm')
+
 if have_matplotlib:
     get_cmap = cm.get_cmap
 else:
@@ -63,53 +62,7 @@ if have_vtk:
     # Create a cell picker.
     picker = vtk.vtkCellPicker()
 
-
-def ren():
-    '''Create a renderer.
-
-    Returns
-    -------
-    v : vtkRenderer() object
-        Renderer.
-
-    Examples
-    --------
-    >>> from dipy.viz import fvtk
-    >>> import numpy as np
-    >>> r=fvtk.ren()
-    >>> lines=[np.random.rand(10,3)]
-    >>> c=fvtk.line(lines, fvtk.colors.red)
-    >>> fvtk.add(r,c)
-    >>> #fvtk.show(r)
-    '''
-    return vtk.vtkRenderer()
-
-
-def add(ren, a):
-    ''' Add a specific actor
-    '''
-    if isinstance(a, vtk.vtkVolume):
-        ren.AddVolume(a)
-    else:
-        ren.AddActor(a)
-
-
-def rm(ren, a):
-    ''' Remove a specific actor
-    '''
-    ren.RemoveActor(a)
-
-
-def clear(ren):
-    ''' Remove all actors from the renderer
-    '''
-    ren.RemoveAllViewProps()
-
-
-def rm_all(ren):
-    ''' Remove all actors from the renderer
-    '''
-    clear(ren)
+    from dipy.viz.window import ren, renderer, add, clear, rm, rm_all
 
 
 def _arrow(pos=(0, 0, 0), color=(1, 0, 0), scale=(1, 1, 1), opacity=1):
@@ -123,7 +76,7 @@ def _arrow(pos=(0, 0, 0), color=(1, 0, 0), scale=(1, 1, 1), opacity=1):
     if major_version <= 5:
         arrowm.SetInput(arrow.GetOutput())
     else:
-        arrowm.SetInputData(arrow.GetOutput())
+        arrowm.SetInputConnection(arrow.GetOutputPort())
 
     arrowa = vtk.vtkActor()
     arrowa.SetMapper(arrowm)
@@ -138,7 +91,7 @@ def _arrow(pos=(0, 0, 0), color=(1, 0, 0), scale=(1, 1, 1), opacity=1):
 def axes(scale=(1, 1, 1), colorx=(1, 0, 0), colory=(0, 1, 0), colorz=(0, 0, 1),
          opacity=1):
     """ Create an actor with the coordinate's system axes where
-    red = x, green = y, blue =z.
+    red = x, green = y, blue = z.
 
     Parameters
     ----------
@@ -595,7 +548,9 @@ def point(points, colors, opacity=1, point_radius=0.1, theta=8, phi=8):
 
         pts.InsertNextPoint(p[0], p[1], p[2])
         scalars.InsertNextTuple3(
-            round(255 * colors[cnt_colors][0]), round(255 * colors[cnt_colors][1]), round(255 * colors[cnt_colors][2]))
+            round(255 * colors[cnt_colors][0]),
+            round(255 * colors[cnt_colors][1]),
+            round(255 * colors[cnt_colors][2]))
         cnt_colors += 1
 
     src = vtk.vtkSphereSource()
@@ -615,6 +570,7 @@ def point(points, colors, opacity=1, point_radius=0.1, theta=8, phi=8):
         glyph.SetInputData(polyData)
     glyph.SetColorModeToColorByScalar()
     glyph.SetScaleModeToDataScalingOff()
+    glyph.Update()
 
     mapper = vtk.vtkPolyDataMapper()
     if major_version <= 5:
@@ -1515,6 +1471,9 @@ def slicer(vol, voxsz=(1.0, 1.0, 1.0), plane_i=[0], plane_j=None,
         for j in range(vol.shape[1]):
             for k in range(vol.shape[2]):
                 im.SetScalarComponentFromFloat(i, j, k, 0, vol[i, j, k])
+
+    #from dipy.viz.utils import ndarray_to_vtkimagedata
+    #im = ndarray_to_vtkimagedata(vol)
 
     # An outline provides context around the data.
     outlineData = vtk.vtkOutlineFilter()
