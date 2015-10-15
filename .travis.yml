@@ -35,7 +35,6 @@ matrix:
       env:
         - VTK=1
 before_install:
-    - apt-get update && apt-get install -y python-vtk
     - source tools/travis_tools.sh
     - virtualenv --system-site-packages --python=python venv
     - source venv/bin/activate
