@@ -49,9 +49,7 @@ before_install:
       sudo apt-get update;
       sudo apt-get install -y python-vtk;
       sudo apt-get install -y xvfb;
-      pip install virtualenvwrapper;
-      source /etc/bash_completion.d/virtualenvwrapper;
-      toggleglobalsitepackages;
+      python -c "import vtk";
       fi
 install:
     - python setup.py install
