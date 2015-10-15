@@ -12,6 +12,7 @@ cache:
 env:
     global:
         - DEPENDS="cython numpy scipy matplotlib h5py nibabel cvxopt"
+        - VENV_ARGS="--python=python"
 python:
     - 2.6
     - 3.2
@@ -34,15 +35,10 @@ matrix:
       sudo: true
       env:
         - VTK=1
+        - VENV_ARGS="--system-site-packages --python=/usr/bin/python2.7"
 before_install:
-    - if [ "${VTK}" == "1" ]; then
-      sudo apt-get update;
-      sudo apt-get install -y libvtk5-dev python-vtk;
-      sudo apt-get install -y xvfb;
-      python -c "import vtk";
-      fi
     - source tools/travis_tools.sh
-    - virtualenv --system-site-packages --python=python venv
+    - virtualenv -$VENV_ARGS --python=python venv
     - source venv/bin/activate
     - python --version # just to check
     - retry pip install nose # always
@@ -52,6 +48,9 @@ before_install:
       pip install coveralls;
       fi
     - if [ "${VTK}" == "1" ]; then
+      sudo apt-get update;
+      sudo apt-get install -y python-vtk;
+      sudo apt-get install -y xvfb;
       python -c "import vtk";
       fi
 install:
