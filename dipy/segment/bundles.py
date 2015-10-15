@@ -362,6 +362,9 @@ class RecoBundles(object):
         qb = QuickBundles(threshold=mdf_thr, metric=metric)
         rtransf_cluster_map = qb.cluster(rtransf_streamlines)
 
+        if self.verbose:
+            print(' QB Duration %0.3f sec. \n' % (time() - t, ))
+
         self.rtransf_streamlines = rtransf_streamlines
         self.rtransf_cluster_map = rtransf_cluster_map
         self.rtransf_centroids = rtransf_cluster_map.centroids
