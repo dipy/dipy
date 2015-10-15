@@ -371,7 +371,7 @@ def snapshot(ren, fname=None, size=(300, 300)):
 
     graphics_factory = vtk.vtkGraphicsFactory()
     graphics_factory.SetOffScreenOnlyMode(1)
-    graphics_factory.SetUseMesaClasses(1)
+    # graphics_factory.SetUseMesaClasses(1)
 
     render_window = vtk.vtkRenderWindow()
     render_window.SetOffScreenRendering(1)
