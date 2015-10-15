@@ -38,7 +38,7 @@ matrix:
         - VENV_ARGS="--system-site-packages --python=/usr/bin/python2.7"
 before_install:
     - source tools/travis_tools.sh
-    - virtualenv -$VENV_ARGS --python=python venv
+    - virtualenv $VENV_ARGS --python=python venv
     - source venv/bin/activate
     - python --version # just to check
     - retry pip install nose # always
