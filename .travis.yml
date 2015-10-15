@@ -47,7 +47,7 @@ before_install:
       fi
     - if [ "${VTK}" == "1" ]; then
       sudo apt-get update;
-      sudo apt-get install -y python-vtk;
+      sudo apt-get install -y libvtk5-dev python-vtk;
       sudo apt-get install -y xvfb;
       python -c "import vtk";
       fi
