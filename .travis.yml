@@ -35,6 +35,12 @@ matrix:
       env:
         - VTK=1
 before_install:
+    - if [ "${VTK}" == "1" ]; then
+      sudo apt-get update;
+      sudo apt-get install -y libvtk5-dev python-vtk;
+      sudo apt-get install -y xvfb;
+      python -c "import vtk";
+      fi
     - source tools/travis_tools.sh
     - virtualenv --system-site-packages --python=python venv
     - source venv/bin/activate
@@ -46,9 +52,6 @@ before_install:
       pip install coveralls;
       fi
     - if [ "${VTK}" == "1" ]; then
-      sudo apt-get update;
-      sudo apt-get install -y libvtk5-dev python-vtk;
-      sudo apt-get install -y xvfb;
       python -c "import vtk";
       fi
 install:
