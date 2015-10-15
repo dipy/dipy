@@ -30,6 +30,10 @@ matrix:
     - python: 2.7
       env:
         - DEPENDS="cython numpy scipy matplotlib h5py nibabel cvxopt scikit_learn"
+    - python: 2.7
+      sudo: true
+      env:
+        - VTK=1
 before_install:
     - apt-get update && apt-get install -y python-vtk
     - source tools/travis_tools.sh
@@ -41,6 +45,10 @@ before_install:
     - if [ "${COVERAGE}" == "1" ]; then
       pip install coverage;
       pip install coveralls;
+      fi
+    - if [ "${VTK}" == "1" ]; then
+      sudo apt-get update && apt-get install -y python-vtk;
+      toggleglobalsitepackages;
       fi
 install:
     - python setup.py install
