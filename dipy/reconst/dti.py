@@ -1158,28 +1158,6 @@ class TensorFit(object):
         return tensor_prediction(self.model_params[0:12], gtab, S0=S0)
 
 
-def tensor6_to_dtiparams(tensor, min_diffusivity=0):
-    """Return dti_params as expected by TensorFit given the 6 tensor values
-
-    Parameters
-    ----------
-    tensor : array (..., 6)
-        The 6 elements of the diffusion tensor. Only the first 6 elements are
-        used, if the last dimension contains more, the rest are ignored.
-    min_diffusivity : float
-        See decompose_tensor()
-
-    Returns
-    -------
-    dti_params : array (..., 12)
-        Eigenvalues and eigenvectors as expected by TensorFit
-    """
-    evals, evecs = decompose_tensor(from_lower_triangular(tensor),
-                                    min_diffusivity=min_diffusivity)
-    dti_params = np.concatenate((evals[..., None, :], evecs), axis=-2)
-    return dti_params.reshape(tensor.shape[:-1] + (12, ))
-
-
 def wls_fit_tensor(design_matrix, data):
     r"""
     Computes weighted least squares (WLS) fit to calculate self-diffusion
@@ -1242,7 +1220,7 @@ def wls_fit_tensor(design_matrix, data):
     ols_fit = _ols_fit_matrix(design_matrix)
     log_s = np.log(data)
     w = np.exp(np.einsum('...ij,...j', ols_fit, log_s))
-    return tensor6_to_dtiparams(
+    return eig_from_lo_tri(
         np.einsum('...ij,...j',
                   pinv(design_matrix * w[..., None]),
                   w * log_s),
@@ -1295,7 +1273,7 @@ def ols_fit_tensor(design_matrix, data):
     """
     tol = 1e-6
     data = np.asarray(data)
-    return tensor6_to_dtiparams(
+    return eig_from_lo_tri(
         np.einsum('...ij,...j', np.linalg.pinv(design_matrix), np.log(data)),
         min_diffusivity=tol / -design_matrix.min(),
     )
@@ -1808,7 +1786,7 @@ def quantize_evecs(evecs, odf_vertices=None):
     return IN
 
 
-def eig_from_lo_tri(data):
+def eig_from_lo_tri(data, min_diffusivity=0):
     """
     Calculates tensor eigenvalues/eigenvectors from an array containing the
     lower diagonal form of the six unique tensor elements.
@@ -1817,24 +1795,19 @@ def eig_from_lo_tri(data):
     ----------
     data : array_like (..., 6)
         diffusion tensors elements stored in lower triangular order
+    min_diffusivity : float
+        See decompose_tensor()
 
     Returns
     -------
-    dti_params (..., 12)
+    dti_params : array (..., 12)
         Eigen-values and eigen-vectors of the same array.
     """
     data = np.asarray(data)
-    data_flat = data.reshape((-1, data.shape[-1]))
-    dti_params = np.empty((len(data_flat), 4, 3))
-
-    for ii in range(len(data_flat)):
-        tensor = from_lower_triangular(data_flat[ii])
-        eigvals, eigvecs = decompose_tensor(tensor)
-        dti_params[ii, 0] = eigvals
-        dti_params[ii, 1:] = eigvecs
-
-    dti_params.shape = data.shape[:-1] + (12,)
-    return dti_params
+    evals, evecs = decompose_tensor(from_lower_triangular(data),
+                                    min_diffusivity=min_diffusivity)
+    dti_params = np.concatenate((evals[..., None, :], evecs), axis=-2)
+    return dti_params.reshape(data.shape[:-1] + (12, ))
 
 
 common_fit_methods = {'WLS': wls_fit_tensor,
