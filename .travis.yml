@@ -50,7 +50,7 @@ before_install:
       sudo apt-get install -y python-vtk;
       sudo apt-get install -y xvfb;
       pip install virtualenvwrapper;
-      toggleglobalsitepackages;
+      virtualenvwrapper.sh toggleglobalsitepackages;
       fi
 install:
     - python setup.py install
