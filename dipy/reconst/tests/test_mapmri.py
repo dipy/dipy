@@ -87,17 +87,17 @@ def test_mapmri_metrics():
     gt_rtop = 1.0 / np.sqrt((4 * np.pi * tau)**3 *
                             mevals[0, 0] * mevals[0, 1] * mevals[0, 2])
     rtop = mapfit.rtop()
-    assert_almost_equal(rtop, gt_rtop, 6)
+    assert_almost_equal(rtop, gt_rtop, 4)
 
     # RTAP
     gt_rtap = 1.0 / np.sqrt((4 * np.pi * tau)**2 * mevals[0, 1] * mevals[0, 2])
     rtap = mapfit.rtap()
-    assert_almost_equal(rtap, gt_rtap, 6)
+    assert_almost_equal(rtap, gt_rtap, 4)
 
     # RTPP
     gt_rtpp = 1.0 / np.sqrt((4 * np.pi * tau) * mevals[0, 0])
     rtpp = mapfit.rtpp()
-    assert_almost_equal(rtpp, gt_rtpp, 6)
+    assert_almost_equal(rtpp, gt_rtpp, 4)
 
 
 if __name__ == '__main__':
