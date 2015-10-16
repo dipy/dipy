@@ -1034,8 +1034,7 @@ def anisotropic_power(sh_coeffs, normal_factor=0.00001, power=2):
     A l=2 SH coeffecient matrix will then be composed of a IxJxKx6 volume.
     The power, $n$ is usually set to $n=2$.
 
-    The final AP image is then normalized to log(AP/normal_factor), and
-    all values < 0 are discarded (set to 0).
+    The final AP image is then shifted by -log(normal_factor), to be strictly non-negative. Any remaining values < 0 are discarded (set to 0).
 
     References
     ----------
@@ -1057,8 +1056,8 @@ def anisotropic_power(sh_coeffs, normal_factor=0.00001, power=2):
         ap += ap_i
         n_start = n_stop
 
-    # normalize with the a small normalization factor:
-    log_ap = np.log(ap / normal_factor)
+    # Shift the map to be non-negative:
+    log_ap = np.log(ap) - np.log(normal_factor)
 
     if isinstance(log_ap, np.ndarray):
         # zero all values < 0
