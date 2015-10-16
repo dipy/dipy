@@ -675,7 +675,6 @@ def test_predict():
     assert_equal(p.shape, data.shape)
 
 
-
 def test_eig_from_lo_tri():
     psphere = get_sphere('symmetric362')
     bvecs = np.concatenate(([[0, 0, 0]], psphere.vertices))
