@@ -25,6 +25,8 @@ data = img.get_data()
 affine = img.get_affine()
 
 mask = data[..., 0] > 80
+
+# We select only one volume for the example to run quickly.
 data = data[..., 1]
 
 print("vol size", data.shape)
