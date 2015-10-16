@@ -1003,7 +1003,8 @@ def calculate_max_order(n_coeffs):
         return np.int(max([L1, L2]))
 
 
-def anisotropic_power(sh_coeffs, normal_factor=0.00001, power=2):
+def anisotropic_power(sh_coeffs, normal_factor=0.00001, power=2,
+                      non_negative=True):
     """ Calculates anisotropic power map with a given SH coefficient matrix
 
     Parameters
@@ -1015,6 +1016,9 @@ def anisotropic_power(sh_coeffs, normal_factor=0.00001, power=2):
         The value to normalize the ap values. Default is 10^-5.
     power : int, optional
         The degree to which power maps are calculated. Default: 2.
+    non_negative: bool, optional
+        Whether to rectify the resulting map to be non-negative.
+        Default: True.
 
     Returns
     -------
@@ -1034,7 +1038,8 @@ def anisotropic_power(sh_coeffs, normal_factor=0.00001, power=2):
     A l=2 SH coeffecient matrix will then be composed of a IxJxKx6 volume.
     The power, $n$ is usually set to $n=2$.
 
-    The final AP image is then shifted by -log(normal_factor), to be strictly non-negative. Any remaining values < 0 are discarded (set to 0).
+    The final AP image is then shifted by -log(normal_factor), to be strictly non-negative. Remaining values < 0 are discarded (set to 0), per default,
+    and this option is controlled throug the `non_negative` key word argument.
 
     References
     ----------
@@ -1058,12 +1063,13 @@ def anisotropic_power(sh_coeffs, normal_factor=0.00001, power=2):
 
     # Shift the map to be non-negative:
     log_ap = np.log(ap) - np.log(normal_factor)
-
-    if isinstance(log_ap, np.ndarray):
-        # zero all values < 0
-        log_ap[log_ap < 0] = 0
-    else:
-        # assume this is a singleton float (input was 1D):
-        if log_ap < 0:
-            return 0
+    if non_negative:
+        if isinstance(log_ap, np.ndarray):
+            if non_negative:
+            # zero all values < 0
+            log_ap[log_ap < 0] = 0
+        else:
+            # assume this is a singleton float (input was 1D):
+            if log_ap < 0:
+                return 0
     return log_ap
