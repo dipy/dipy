@@ -52,7 +52,7 @@ before_install:
       sudo apt-get install -y python-vtk;
       sudo apt-get install -y xvfb;
       sudo apt-get install -y python-tk;
-      python -c "import vtk";
+      python -c "import vtk; import Tkinter";
       fi
 install:
     #- python setup.py install
