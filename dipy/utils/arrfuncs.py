@@ -42,14 +42,14 @@ def pinv(a, rcond=1e-15):
 
     Parameters
     ----------
-    a : (..., M, N) array_like
+    a : array_like (..., M, N)
         Matrix to be pseudo-inverted.
     rcond : float
         Cutoff for small singular values.
 
     Returns
     -------
-    B : (..., N, M) ndarray
+    B : ndarray (..., N, M)
         The pseudo-inverse of `a`.
 
     Raises
@@ -90,7 +90,7 @@ def eigh(a, UPLO='L'):
 
     Parameters
     ----------
-    a : (..., M, M) array_like
+    a : array_like (..., M, M)
         Hermitian/Symmetric matrices whose eigenvalues and
         eigenvectors are to be computed.
     UPLO : {'L', 'U'}, optional
@@ -99,10 +99,10 @@ def eigh(a, UPLO='L'):
 
     Returns
     -------
-    w : (..., M) ndarray
+    w : ndarray (..., M)
         The eigenvalues in ascending order, each repeated according to
         its multiplicity.
-    v : (..., M, M) ndarray
+    v : ndarray (..., M, M)
         The column ``v[..., :, i]`` is the normalized eigenvector corresponding
         to the eigenvalue ``w[..., i]``.
 
