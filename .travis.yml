@@ -51,6 +51,7 @@ before_install:
       sudo apt-get update;
       sudo apt-get install -y python-vtk;
       sudo apt-get install -y xvfb;
+      sudo apt-get install -y python-tk;
       python -c "import vtk";
       fi
 install:
