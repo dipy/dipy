@@ -9,6 +9,7 @@ import numpy as np
 import scipy.optimize as opt
 
 from dipy.utils.six.moves import range
+from dipy.utils.arrfuncs import pinv, eigh
 from dipy.data import get_sphere
 from ..core.gradients import gradient_table
 from ..core.geometry import vector_norm
@@ -740,11 +741,12 @@ class TensorModel(ReconstModel):
 
         if not callable(fit_method):
             try:
-                self.fit_method = common_fit_methods[fit_method]
+                fit_method = common_fit_methods[fit_method]
             except KeyError:
                 raise ValueError('"' + str(fit_method) + '" is not a known fit '
                                  'method, the fit method should either be a '
                                  'function or one of the common fit methods')
+        self.fit_method = fit_method
 
         self.design_matrix = design_matrix(self.gtab)
         self.args = args
@@ -873,6 +875,11 @@ class TensorFit(object):
     def fa(self):
         """Fractional anisotropy (FA) calculated from cached eigenvalues."""
         return fractional_anisotropy(self.evals)
+
+    @auto_attr
+    def color_fa(self):
+        """Color fractional anisotropy of diffusion tensor"""
+        return color_fa(self.fa, self.evecs)
 
     @auto_attr
     def ga(self):
@@ -1210,42 +1217,15 @@ def wls_fit_tensor(design_matrix, data):
     """
     tol = 1e-6
     data = np.asarray(data)
-    data_flat = data.reshape((-1, data.shape[-1]))
-    dti_params = np.empty((len(data_flat), 4, 3))
-
-    #obtain OLS fitting matrix
-    #U,S,V = np.linalg.svd(design_matrix, False)
-    #math: beta_ols = inv(X.T*X)*X.T*y
-    #math: ols_fit = X*beta_ols*inv(y)
-    #ols_fit = np.dot(U, U.T)
     ols_fit = _ols_fit_matrix(design_matrix)
-    min_diffusivity = tol / -design_matrix.min()
-
-    for param, sig in zip(dti_params, data_flat):
-        param[0], param[1:] = _wls_iter(ols_fit, design_matrix, sig,
-                                        min_diffusivity)
-
-    dti_params.shape = data.shape[:-1] + (12,)
-    return dti_params
-
-
-def _wls_iter(ols_fit, design_matrix, sig, min_diffusivity):
-    ''' Helper function used by wls_fit_tensor.
-    '''
-    log_s = np.log(sig)
-    w = np.exp(np.dot(ols_fit, log_s))
-    D = np.dot(np.linalg.pinv(design_matrix * w[:, None]), w * log_s)
-    tensor = from_lower_triangular(D)
-    return decompose_tensor(tensor, min_diffusivity=min_diffusivity)
-
-
-def _ols_iter(inv_design, sig, min_diffusivity):
-    ''' Helper function used by ols_fit_tensor.
-    '''
-    log_s = np.log(sig)
-    D = np.dot(inv_design, log_s)
-    tensor = from_lower_triangular(D)
-    return decompose_tensor(tensor, min_diffusivity=min_diffusivity)
+    log_s = np.log(data)
+    w = np.exp(np.einsum('...ij,...j', ols_fit, log_s))
+    return eig_from_lo_tri(
+        np.einsum('...ij,...j',
+                  pinv(design_matrix * w[..., None]),
+                  w * log_s),
+        min_diffusivity=tol / -design_matrix.min(),
+    )
 
 
 def ols_fit_tensor(design_matrix, data):
@@ -1292,28 +1272,11 @@ def ols_fit_tensor(design_matrix, data):
         NeuroImage 33, 531-541.
     """
     tol = 1e-6
-
     data = np.asarray(data)
-    data_flat = data.reshape((-1, data.shape[-1]))
-    evals = np.empty((len(data_flat), 3))
-    evecs = np.empty((len(data_flat), 3, 3))
-    dti_params = np.empty((len(data_flat), 4, 3))
-
-    #obtain OLS fitting matrix
-    #U,S,V = np.linalg.svd(design_matrix, False)
-    #math: beta_ols = inv(X.T*X)*X.T*y
-    #math: ols_fit = X*beta_ols*inv(y)
-    #ols_fit =  np.dot(U, U.T)
-
-    min_diffusivity = tol / -design_matrix.min()
-    inv_design = np.linalg.pinv(design_matrix)
-
-    for param, sig in zip(dti_params, data_flat):
-        param[0], param[1:] = _ols_iter(inv_design, sig, min_diffusivity)
-
-    dti_params.shape = data.shape[:-1] + (12,)
-    dti_params = dti_params
-    return dti_params
+    return eig_from_lo_tri(
+        np.einsum('...ij,...j', np.linalg.pinv(design_matrix), np.log(data)),
+        min_diffusivity=tol / -design_matrix.min(),
+    )
 
 
 def _ols_fit_matrix(design_matrix):
@@ -1722,7 +1685,7 @@ def decompose_tensor(tensor, min_diffusivity=0):
 
     Parameters
     ----------
-    tensor : array (3, 3)
+    tensor : array (..., 3, 3)
         Hermitian matrix representing a diffusion tensor.
     min_diffusivity : float
         Because negative eigenvalues are not physical and small eigenvalues,
@@ -1732,22 +1695,37 @@ def decompose_tensor(tensor, min_diffusivity=0):
 
     Returns
     -------
-    eigvals : array (3,)
+    eigvals : array (..., 3)
         Eigenvalues from eigen decomposition of the tensor. Negative
         eigenvalues are replaced by zero. Sorted from largest to smallest.
-    eigvecs : array (3, 3)
+    eigvecs : array (..., 3, 3)
         Associated eigenvectors from eigen decomposition of the tensor.
-        Eigenvectors are columnar (e.g. eigvecs[:,j] is associated with
-        eigvals[j])
+        Eigenvectors are columnar (e.g. eigvecs[..., :, j] is associated with
+        eigvals[..., j])
 
     """
     #outputs multiplicity as well so need to unique
-    eigenvals, eigenvecs = np.linalg.eigh(tensor)
+    eigenvals, eigenvecs = eigh(tensor)
 
     #need to sort the eigenvalues and associated eigenvectors
-    order = eigenvals.argsort()[::-1]
-    eigenvecs = eigenvecs[:, order]
-    eigenvals = eigenvals[order]
+    if eigenvals.ndim == 1:
+        # this is a lot faster when dealing with a single voxel
+        order = eigenvals.argsort()[::-1]
+        eigenvecs = eigenvecs[:, order]
+        eigenvals = eigenvals[order]
+    else:
+        # temporarily flatten eigenvals and eigenvecs to make sorting easier
+        shape = eigenvals.shape[:-1]
+        eigenvals = eigenvals.reshape(-1, 3)
+        eigenvecs = eigenvecs.reshape(-1, 3, 3)
+        size = eigenvals.shape[0]
+        order = eigenvals.argsort()[:, ::-1]
+        xi, yi = np.ogrid[:size, :3, :3][:2]
+        eigenvecs = eigenvecs[xi, yi, order[:, None, :]]
+        xi = np.ogrid[:size, :3][0]
+        eigenvals = eigenvals[xi, order]
+        eigenvecs = eigenvecs.reshape(shape + (3, 3))
+        eigenvals = eigenvals.reshape(shape + (3, ))
 
     eigenvals = eigenvals.clip(min=min_diffusivity)
     # eigenvecs: each vector is columnar
@@ -1808,7 +1786,7 @@ def quantize_evecs(evecs, odf_vertices=None):
     return IN
 
 
-def eig_from_lo_tri(data):
+def eig_from_lo_tri(data, min_diffusivity=0):
     """
     Calculates tensor eigenvalues/eigenvectors from an array containing the
     lower diagonal form of the six unique tensor elements.
@@ -1817,24 +1795,19 @@ def eig_from_lo_tri(data):
     ----------
     data : array_like (..., 6)
         diffusion tensors elements stored in lower triangular order
+    min_diffusivity : float
+        See decompose_tensor()
 
     Returns
     -------
-    dti_params (..., 12)
+    dti_params : array (..., 12)
         Eigen-values and eigen-vectors of the same array.
     """
     data = np.asarray(data)
-    data_flat = data.reshape((-1, data.shape[-1]))
-    dti_params = np.empty((len(data_flat), 4, 3))
-
-    for ii in range(len(data_flat)):
-        tensor = from_lower_triangular(data_flat[ii])
-        eigvals, eigvecs = decompose_tensor(tensor)
-        dti_params[ii, 0] = eigvals
-        dti_params[ii, 1:] = eigvecs
-
-    dti_params.shape = data.shape[:-1] + (12,)
-    return dti_params
+    evals, evecs = decompose_tensor(from_lower_triangular(data),
+                                    min_diffusivity=min_diffusivity)
+    dti_params = np.concatenate((evals[..., None, :], evecs), axis=-2)
+    return dti_params.reshape(data.shape[:-1] + (12, ))
 
 
 common_fit_methods = {'WLS': wls_fit_tensor,
