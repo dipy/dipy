@@ -73,7 +73,8 @@ def _bundle_minimum_distance_matrix(double [:, ::1] static,
                                     cnp.npy_intp static_size,
                                     cnp.npy_intp moving_size,
                                     cnp.npy_intp rows,
-                                    double [:, ::1] D):
+                                    double [:, ::1] D,
+                                    num_threads=None):
     """ MDF-based pairwise distance optimization function
 
     We minimize the distance between moving streamlines of the same number of
@@ -93,6 +94,9 @@ def _bundle_minimum_distance_matrix(double [:, ::1] static,
         Number of points per streamline
     D : 2D array
         Distance matrix
+    num_threads : int
+        Number of threads. If None (default) then all available threads
+        will be used.
 
     Returns
     -------
@@ -103,6 +107,10 @@ def _bundle_minimum_distance_matrix(double [:, ::1] static,
         cnp.npy_intp i=0, j=0, mov_i=0, mov_j=0
 
     with nogil:
+
+        if have_openmp and num_threads is not None:
+            openmp.omp_set_dynamic(0)
+            openmp.omp_set_num_threads(num_threads)
 
         for i in prange(static_size):
 
@@ -119,7 +127,8 @@ def _bundle_minimum_distance(double [:, ::1] stat,
                              double [:, ::1] mov,
                              cnp.npy_intp static_size,
                              cnp.npy_intp moving_size,
-                             cnp.npy_intp rows):
+                             cnp.npy_intp rows,
+                             num_threads=None)
     """ MDF-based pairwise distance optimization function
 
     We minimize the distance between moving streamlines of the same number of
@@ -137,6 +146,9 @@ def _bundle_minimum_distance(double [:, ::1] stat,
         Number of moving streamlines
     rows : int
         Number of points per streamline
+    num_threads : int
+        Number of threads. If None (default) then all available threads
+        will be used.
 
     Returns
     -------
@@ -158,6 +170,10 @@ def _bundle_minimum_distance(double [:, ::1] stat,
         cdef openmp.omp_lock_t lock
 
     with nogil:
+
+        if have_openmp and num_threads is not None:
+            openmp.omp_set_dynamic(0)
+            openmp.omp_set_num_threads(num_threads)
 
         if have_openmp:
             openmp.omp_init_lock(&lock)
@@ -208,7 +224,7 @@ def _bundle_minimum_distance(double [:, ::1] stat,
 
 
 def distance_matrix_mdf(streamlines_a, streamlines_b):
-    r''' Minimum direct flipped distance matrix between two streamline sets
+    r""" Minimum direct flipped distance matrix between two streamline sets
 
     All streamlines need to have the same number of points
 
@@ -223,8 +239,7 @@ def distance_matrix_mdf(streamlines_a, streamlines_b):
     -------
     DM : array, shape (len(streamlines_a), len(streamlines_b))
         distance matrix
-
-    '''
+    """
     cdef:
         size_t i, j, lentA, lentB
     # preprocess tracks

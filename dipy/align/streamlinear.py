@@ -55,7 +55,7 @@ class BundleMinDistanceMetric(StreamlineDistanceMetric):
                         2014.
     """
 
-    def setup(self, static, moving):
+    def setup(self, static, moving, num_threads=None):
         """ Setup static and moving sets of streamlines
 
         Parameters
@@ -64,6 +64,9 @@ class BundleMinDistanceMetric(StreamlineDistanceMetric):
             Fixed or reference set of streamlines.
         moving : streamlines
             Moving streamlines.
+        num_threads : int
+            Number of threads. If None (default) then all available threads
+            will be used.
 
         Notes
         -----
@@ -72,6 +75,7 @@ class BundleMinDistanceMetric(StreamlineDistanceMetric):
 
         self._set_static(static)
         self._set_moving(moving)
+        self.num_threads = num_threads
 
     def _set_static(self, static):
         static_centered_pts, st_idx = unlist_streamlines(static)
@@ -94,7 +98,8 @@ class BundleMinDistanceMetric(StreamlineDistanceMetric):
         return bundle_min_distance_fast(xopt,
                                         self.static_centered_pts,
                                         self.moving_centered_pts,
-                                        self.block_size)
+                                        self.block_size,
+                                        self.num_threads)
 
 
 class BundleMinDistanceMatrixMetric(StreamlineDistanceMetric):
@@ -114,7 +119,7 @@ class BundleMinDistanceMatrixMetric(StreamlineDistanceMetric):
 
     """
 
-    def setup(self, static, moving):
+    def setup(self, static, moving, num_threads=None):
         """ Setup static and moving sets of streamlines
 
         Parameters
@@ -123,15 +128,20 @@ class BundleMinDistanceMatrixMetric(StreamlineDistanceMetric):
             Fixed or reference set of streamlines.
         moving : streamlines
             Moving streamlines.
+        num_threads : int
+            Number of threads. If None (default) then all available threads
+            will be used.
 
         Notes
         -----
         Call this after the object is initiated and before distance.
 
-        The difference between this class and
+        Num_threads is not used in this class. Use ``BundleMinDistanceMetric``
+        for a faster, threaded and less memory hungry metric
         """
         self.static = static
         self.moving = moving
+        self.num_threads = num_threads
 
     def distance(self, xopt):
         """ Distance calculated from this Metric
@@ -448,7 +458,7 @@ class StreamlineRegistrationMap(object):
         return transform_streamlines(moving, self.matrix)
 
 
-def bundle_sum_distance(t, static, moving):
+def bundle_sum_distance(t, static, moving, num_threads=None):
     """ MDF distance optimization function (SUM)
 
     We minimize the distance between moving streamlines as they align
@@ -480,7 +490,7 @@ def bundle_sum_distance(t, static, moving):
 
     aff = compose_matrix44(t)
     moving = transform_streamlines(moving, aff)
-    d01 = distance_matrix_mdf(static, moving)
+    d01 = distance_matrix_mdf(static, moving, num_threads)
     return np.sum(d01)
 
 
@@ -507,6 +517,10 @@ def bundle_min_distance(t, static, moving):
     moving : list
         Moving streamlines.
 
+    num_threads : int
+        Number of threads. If None (default) then all available threads
+        will be used.
+
     Returns
     -------
     cost: float
@@ -521,7 +535,7 @@ def bundle_min_distance(t, static, moving):
                    np.sum(np.min(d01, axis=1)) / float(rows)) ** 2
 
 
-def bundle_min_distance_fast(t, static, moving, block_size):
+def bundle_min_distance_fast(t, static, moving, block_size, num_threads):
     """ MDF-based pairwise distance optimization function (MIN)
 
     We minimize the distance between moving streamlines as they align
@@ -552,6 +566,10 @@ def bundle_min_distance_fast(t, static, moving, block_size):
         Number of points per streamline. All streamlines in static and moving
         should have the same number of points M.
 
+    num_threads : int
+        Number of threads. If None (default) then all available threads
+        will be used.
+
     Returns
     -------
     cost: float
@@ -576,7 +594,8 @@ def bundle_min_distance_fast(t, static, moving, block_size):
     return _bundle_minimum_distance(static, moving,
                                     rows,
                                     cols,
-                                    block_size)
+                                    block_size,
+                                    num_threads)
 
 
 def _threshold(x, th):

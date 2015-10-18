@@ -2,7 +2,11 @@ from __future__ import division
 
 import numpy as np
 cimport numpy as cnp
+
 cimport cython
+cimport safe_openmp as openmp
+from safe_openmp cimport have_openmp
+
 from cython.parallel import parallel, prange
 
 from libc.math cimport sqrt, exp
@@ -11,7 +15,7 @@ from libc.string cimport memcpy
 
 
 def nlmeans_3d(arr, mask=None, sigma=None, patch_radius=1,
-               block_radius=5, rician=True):
+               block_radius=5, rician=True, num_threads=None):
     """ Non-local means for denoising 3D images
 
     Parameters
@@ -28,6 +32,9 @@ def nlmeans_3d(arr, mask=None, sigma=None, patch_radius=1,
     rician : boolean
         If True the noise is estimated as Rician, otherwise Gaussian noise
         is assumed.
+    num_threads : int
+        Number of threads. If None (default) then all available threads
+        will be used.
 
     Returns
     -------
@@ -54,7 +61,8 @@ def nlmeans_3d(arr, mask=None, sigma=None, patch_radius=1,
     mask = add_padding_reflection(mask.astype('f8'), block_radius)
     sigma = np.ascontiguousarray(sigma, dtype='f8')
     sigma = add_padding_reflection(sigma.astype('f8'), block_radius)
-    arrnlm = _nlmeans_3d(arr, mask, sigma, patch_radius, block_radius, rician)
+    arrnlm = _nlmeans_3d(arr, mask, sigma, patch_radius, block_radius,
+                         rician, num_threads)
 
     return remove_padding(arrnlm, block_radius)
 
@@ -63,7 +71,7 @@ def nlmeans_3d(arr, mask=None, sigma=None, patch_radius=1,
 @cython.boundscheck(False)
 def _nlmeans_3d(double [:, :, ::1] arr, double [:, :, ::1] mask,
                 double [:, :, ::1] sigma, patch_radius=1, block_radius=5,
-                rician=True):
+                rician=True, num_threads=None):
     """ This algorithm denoises the value of every voxel (i, j, k) by
     calculating a weight between a moving 3D patch and a static 3D patch
     centered at (i, j, k). The moving patch can only move inside a
@@ -80,6 +88,10 @@ def _nlmeans_3d(double [:, :, ::1] arr, double [:, :, ::1] mask,
     I = arr.shape[0]
     J = arr.shape[1]
     K = arr.shape[2]
+
+    if have_openmp and num_threads is not None:
+        openmp.omp_set_dynamic(0)
+        openmp.omp_set_num_threads(num_threads)
 
     # move the block
     with nogil, parallel():
