@@ -160,9 +160,13 @@ def test_multi_voxel_fit():
     mask[2, 2] = 1
     data = np.zeros((3, 3, 3, 64))
     fit = model.fit(data, mask)
-    npt.assert_array_equal(fit.model_attr, np.eye(3) * 2)
+    expected = np.zeros((3,3,3))
+    expected[0, 0] = 2
+    expected[1, 1] = 2
+    expected[2, 2] = 2
+    npt.assert_array_equal(fit.model_attr, expected)
     odf = fit.odf(unit_icosahedron)
-    npt.assert_equal(odf.shape, (3, 3, 12))
+    npt.assert_equal(odf.shape, (3, 3, 3, 12))
     npt.assert_array_equal(odf[~mask], 0)
     npt.assert_array_equal(odf[mask], 1)
     predicted = np.zeros(data.shape)
@@ -170,8 +174,8 @@ def test_multi_voxel_fit():
     npt.assert_equal(fit.predict(S0=S0), predicted)
 
     # Test fit.shape
-    npt.assert_equal(fit.shape, (3, 3))
+    npt.assert_equal(fit.shape, (3, 3, 3))
 
     # Test indexing into a fit
-    npt.assert_equal(type(fit[0, 0]), SillyFit)
-    npt.assert_equal(fit[:2, :2].shape, (2, 2))
+    npt.assert_equal(type(fit[0, 0, 0]), SillyFit)
+    npt.assert_equal(fit[:2, :2, :2].shape, (2, 2, 2))
