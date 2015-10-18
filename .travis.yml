@@ -58,4 +58,4 @@ install:
     #- python setup.py install
 # command to run tests, e.g. python setup.py test
 script:
-    - python -c "import Tkinter; print(Tkinter.__file__); import nose; prin(nose.__file__)"
+    - python -c "import Tkinter; print(Tkinter.__file__); import nose; print(nose.__file__)"
