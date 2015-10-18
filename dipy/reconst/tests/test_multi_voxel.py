@@ -153,10 +153,12 @@ def test_multi_voxel_fit():
     S0 = np.random.randn()
     npt.assert_equal(fit.predict(S0=S0), np.ones(many_voxels.shape) * S0)
 
-
     # Test with a mask
-    mask = np.eye(3).astype('bool')
-    data = np.zeros((3, 3, 64))
+    mask = np.zeros((3, 3, 3)).astype('bool')
+    mask[0, 0] = 1
+    mask[1, 1] = 1
+    mask[2, 2] = 1
+    data = np.zeros((3, 3, 3, 64))
     fit = model.fit(data, mask)
     npt.assert_array_equal(fit.model_attr, np.eye(3) * 2)
     odf = fit.odf(unit_icosahedron)
