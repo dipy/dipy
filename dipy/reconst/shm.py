@@ -1065,7 +1065,6 @@ def anisotropic_power(sh_coeffs, normal_factor=0.00001, power=2,
     log_ap = np.log(ap) - np.log(normal_factor)
     if non_negative:
         if isinstance(log_ap, np.ndarray):
-            if non_negative:
             # zero all values < 0
             log_ap[log_ap < 0] = 0
         else:
