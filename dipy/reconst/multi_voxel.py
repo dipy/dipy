@@ -86,7 +86,7 @@ class MultiVoxelFit(ReconstFit):
             ijk = next(idx)
 
         first_pred = self.fit_array[ijk].predict(*args, **kwargs)
-        result = np.empty(self.fit_array.shape + (first_pred.shape[-1],))
+        result = np.zeros(self.fit_array.shape + (first_pred.shape[-1],))
         result[ijk] = first_pred
         for ijk in idx:
             kwargs['S0'] = gimme_S0(S0, ijk)
