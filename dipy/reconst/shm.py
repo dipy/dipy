@@ -1061,8 +1061,10 @@ def anisotropic_power(sh_coeffs, normal_factor=0.00001, power=2,
         ap += ap_i
         n_start = n_stop
 
-    # Shift the map to be non-negative:
+    # Shift the map to be mostly non-negative:
     log_ap = np.log(ap) - np.log(normal_factor)
+
+    # Deal with residual negative values:
     if non_negative:
         if isinstance(log_ap, np.ndarray):
             # zero all values < 0
