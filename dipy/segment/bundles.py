@@ -1,6 +1,6 @@
 import numpy as np
 from dipy.tracking.streamline import (transform_streamlines,
-                                      set_number_of_points,
+                                      set_number_of_points, nbytes,
                                       select_random_set_of_streamlines)
 from dipy.segment.clustering import (QuickBundles,
                                      AveragePointwiseEuclideanMetric)
@@ -34,6 +34,7 @@ class RecoBundles(object):
             print('# Cluster streamlines using QuickBundles')
             print(' Streamlines has %d streamlines'
                   % (len(self.streamlines), ))
+            print(' Size is %0.3f MB' % (nbytes(self.streamlines),))
             print(' Distance threshold %0.3f' % (mdf_thr,))
 
         len_s = len(self.streamlines)
@@ -45,7 +46,8 @@ class RecoBundles(object):
         sample_streamlines = [s.astype('f4') for s in sample_streamlines]
 
         if self.verbose:
-            print(' Resampling to {} points'.format(nb_pts))
+            print(' Resampled to {} points'.format(nb_pts))
+            print(' Size is %0.3f MB' % (nbytes(sample_streamlines),))
             print(' Duration %0.3f sec. \n' % (time() - t, ))
 
         feature = IdentityFeature()
@@ -58,23 +60,30 @@ class RecoBundles(object):
         if self.verbose:
             print(' QuickBundles time for %d random streamlines'
                   % (select_randomly,))
+
             print(' Duration %0.3f sec. \n' % (time() - t1, ))
 
         t2 = time()
 
-        rstreamlines_2pt = set_number_of_points(self.streamlines, 2)
+        # change back to 2
+        # but don't use set_number do it directly
+        rstreamlines_2pt = set_number_of_points(self.streamlines, 3)
         rstreamlines_2pt = [s.astype('f4') for s in rstreamlines_2pt]
 
         if self.verbose:
             print(' Resampling to 2 points %d' % (self.nb_streamlines,))
+            print(' Size is %0.3f MB' % (nbytes(rstreamlines_2pt),))
             print(' Duration %0.3f sec. \n' % (time() - t2, ))
+
+        from ipdb import set_trace
+        set_trace()
 
         t3 = time()
 
         initial_centroids = initial_clusters.centroids
 
         for cluster in initial_clusters:
-            cluster.centroid = set_number_of_points(cluster.centroid, 2)
+            cluster.centroid = set_number_of_points(cluster.centroid, 3)
 
         cluster_map = qb.assign(initial_clusters, rstreamlines_2pt)
 

@@ -5,7 +5,7 @@ from os.path import join, basename, splitext
 
 import nibabel as nib
 import numpy as np
-
+from time import time
 from dipy.workflows.utils import (choose_create_out_dir,
                                   bool_param)
 from dipy.segment.mask import median_otsu
@@ -205,7 +205,9 @@ def recognize_bundles_flow(streamline_files, model_bundle_files,
             print('File {} does not exist'.format(sf))
             return
 
+        t = time()
         streamlines, hdr = load_trk(sf)
+        print('Loading time %0.3f sec' % (time() - t,))
 
         rb = RecoBundles(streamlines, mdf_thr=15)
 
