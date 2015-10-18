@@ -46,12 +46,13 @@ before_install:
       pip install coveralls;
       fi
     - if [ "${VTK}" == "1" ]; then
-      sudo apt-get update;
-      sudo apt-get install -y python-vtk;
-      sudo apt-get install -y xvfb;
-      sudo apt-get install -y python-tk;
-      sudo apt-get install python-nose;
-      python -c "import vtk; import Tkinter";
+          sudo apt-get update;
+          sudo apt-get install -y python-vtk;
+          sudo apt-get install -y xvfb;
+          sudo apt-get install -y python-tk;
+          sudo apt-get install python-nose;
+          python -c "import vtk; import Tkinter";
+          wheelhouse_pip_install $DEPENDS;
       else
          retry pip install nose;
          wheelhouse_pip_install $DEPENDS;
