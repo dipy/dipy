@@ -75,6 +75,6 @@ script:
     - if [ "${VTK}" == "1" ]; then
       VIRT_BUFF="xvfb-run";
       fi
-    - $VIRT_BUFF nosetests --with-doctest --verbose $COVER_ARGS dipy
+    - $VIRT_BUFF /home/travis/build/nipy/dipy/venv/bin/nosetests --with-doctest --verbose $COVER_ARGS dipy
 after_success:
     - if [ "${COVERAGE}" == "1" ]; then coveralls; fi
