@@ -566,7 +566,7 @@ def planarity(evals, axis=-1):
 
     Notes
     --------
-    Linearity is calculated with the following equation:
+    Planarity is calculated with the following equation:
 
     .. math::
 
@@ -602,7 +602,7 @@ def sphericity(evals, axis=-1):
 
     Notes
     --------
-    Linearity is calculated with the following equation:
+    Sphericity is calculated with the following equation:
 
     .. math::
 
