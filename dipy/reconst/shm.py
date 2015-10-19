@@ -11,8 +11,7 @@ Tristan-Vega, A., et. al. 2010. A new methodology for estimation of fiber
 Tristan-Vega, A., et. al. 2009. Estimation of fiber orientation probability
     density functions in high angular resolution diffusion imaging.
 
-"""
-"""
+
 Note about the Transpose:
 In the literature the matrix representation of these methods is often written
 as Y = Bx where B is some design matrix and Y and x are column vectors. In our
@@ -76,6 +75,7 @@ def forward_sdeconv_mat(r_rh, n):
     if np.any(n % 2):
         raise ValueError("n has odd degrees, expecting only even degrees")
     return np.diag(r_rh[n // 2])
+
 
 def sh_to_rh(r_sh, m, n):
     """ Spherical harmonics (SH) to rotational harmonics (RH)
@@ -923,7 +923,8 @@ def sh_to_sf(sh, sphere, sh_order, basis_type=None):
     return sf
 
 
-def sh_to_sf_matrix(sphere, sh_order, basis_type=None, return_inv=True, smooth=0):
+def sh_to_sf_matrix(sphere, sh_order, basis_type=None, return_inv=True,
+                    smooth=0):
     """ Matrix that transforms Spherical harmonics (SH) to spherical
     function (SF).
 
@@ -965,3 +966,110 @@ def sh_to_sf_matrix(sphere, sh_order, basis_type=None, return_inv=True, smooth=0
         return B.T, invB.T
 
     return B.T
+
+
+def calculate_max_order(n_coeffs):
+        """Calculate the maximal harmonic order, given that you know the
+        number of parameters that were estimated.
+
+        Parameters
+        ----------
+        n_coeffs : int
+            The number of SH coefficients
+
+        Returns
+        -------
+        L : int
+            The maximal SH order, given the number of coefficients
+
+        Notes
+        -----
+        The calculation in this function proceeds according to the following
+        logic:
+        .. math::
+           n = \frac{1}{2} (L+1) (L+2)
+           \rarrow 2n = L^2 + 3L + 2
+           \rarrow L^2 + 3L + 2 - 2n = 0
+           \rarrow L^2 + 3L + 2(1-n) = 0
+           \rarrow L_{1,2} = \frac{-3 \pm \sqrt{9 - 8 (1-n)}}{2}
+           \rarrow L{1,2} = \frac{-3 \pm \sqrt{1 + 8n}}{2}
+
+        Finally, the positive value is chosen between the two options.
+        """
+
+        L1 = (-3 + np.sqrt(1 + 8 * n_coeffs)) / 2
+        L2 = (-3 - np.sqrt(1 + 8 * n_coeffs)) / 2
+        return np.int(max([L1, L2]))
+
+
+def anisotropic_power(sh_coeffs, norm_factor=0.00001, power=2,
+                      non_negative=True):
+    """Calculates anisotropic power map with a given SH coefficient matrix
+
+    Parameters
+    ----------
+    sh_coeffs : ndarray
+        A ndarray where the last dimension is the
+        SH coeff estimates for that voxel.
+    norm_factor: float, optional
+        The value to normalize the ap values. Default is 10^-5.
+    power : int, optional
+        The degree to which power maps are calculated. Default: 2.
+    non_negative: bool, optional
+        Whether to rectify the resulting map to be non-negative.
+        Default: True.
+
+    Returns
+    -------
+    log_ap : ndarray
+        The log of the resulting power image.
+
+    Notes
+    ----------
+    Calculate AP image based on a IxJxKxC SH coeffecient matrix based on the
+    equation:
+    .. math::
+        AP = \sum_{l=2,4,6,...}{\frac{1}{2l+1} \sum_{m=-l}^l{|a_{l,m}|^n}}
+
+    Where the last dimension, C, is made of a flattened array of $l$x$m$
+    coefficients, where $l$ are the SH orders, and $m = 2l+1$,
+    So l=1 has 1 coeffecient, l=2 has 5, ... l=8 has 17 and so on.
+    A l=2 SH coeffecient matrix will then be composed of a IxJxKx6 volume.
+    The power, $n$ is usually set to $n=2$.
+
+    The final AP image is then shifted by -log(normal_factor), to be strictly non-negative. Remaining values < 0 are discarded (set to 0), per default,
+    and this option is controlled throug the `non_negative` key word argument.
+
+    References
+    ----------
+    .. [1]  Dell'Acqua, F., Lacerda, L., Catani, M., Simmons, A., 2014.
+            Anisotropic Power Maps: A diffusion contrast to reveal low
+            anisotropy tissues from HARDI data,
+            in: Proceedings of International Society for Magnetic Resonance in
+            Medicine. Milan, Italy.
+    """
+
+    dim = sh_coeffs.shape[:-1]
+    n_coeffs = sh_coeffs.shape[-1]
+    max_order = calculate_max_order(n_coeffs)
+    ap = np.zeros(dim)
+    n_start = 1
+    for L in range(2, max_order + 2, 2):
+        n_stop = n_start + (2 * L + 1)
+        ap_i = np.mean(np.abs(sh_coeffs[..., n_start:n_stop]) ** power, -1)
+        ap += ap_i
+        n_start = n_stop
+
+    # Shift the map to be mostly non-negative:
+    log_ap = np.log(ap) - np.log(norm_factor)
+
+    # Deal with residual negative values:
+    if non_negative:
+        if isinstance(log_ap, np.ndarray):
+            # zero all values < 0
+            log_ap[log_ap < 0] = 0
+        else:
+            # assume this is a singleton float (input was 1D):
+            if log_ap < 0:
+                return 0
+    return log_ap
