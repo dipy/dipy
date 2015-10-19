@@ -88,7 +88,9 @@ def test_nlmeans_4d_3dsigma_and_threads():
     sigma = np.ones((10, 10, 10))
     new_data = nlmeans(data, sigma, num_threads=1)
     new_data2 = nlmeans(data, sigma, num_threads=2)
+    new_data3 = nlmeans(data, sigma, num_threads=None)
     assert_array_almost_equal(new_data, new_data2)
+    assert_array_almost_equal(new_data2, new_data3)
 
 if __name__ == '__main__':
     run_module_suite()
