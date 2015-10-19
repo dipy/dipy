@@ -1003,7 +1003,7 @@ def calculate_max_order(n_coeffs):
         return np.int(max([L1, L2]))
 
 
-def anisotropic_power(sh_coeffs, normal_factor=0.00001, power=2,
+def anisotropic_power(sh_coeffs, norm_factor=0.00001, power=2,
                       non_negative=True):
     """ Calculates anisotropic power map with a given SH coefficient matrix
 
@@ -1012,7 +1012,7 @@ def anisotropic_power(sh_coeffs, normal_factor=0.00001, power=2,
     sh_coeffs : ndarray
         A ndarray where the last dimension is the
         SH coeff estimates for that voxel.
-    normal_factor: float, optional
+    norm_factor: float, optional
         The value to normalize the ap values. Default is 10^-5.
     power : int, optional
         The degree to which power maps are calculated. Default: 2.
@@ -1062,7 +1062,7 @@ def anisotropic_power(sh_coeffs, normal_factor=0.00001, power=2,
         n_start = n_stop
 
     # Shift the map to be mostly non-negative:
-    log_ap = np.log(ap) - np.log(normal_factor)
+    log_ap = np.log(ap) - np.log(norm_factor)
 
     # Deal with residual negative values:
     if non_negative:
