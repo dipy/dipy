@@ -60,11 +60,7 @@ before_install:
       fi
     - which nosetests
 install:
-    - if [ "${VTK}" == "1" ]; then
-        /home/travis/build/nipy/dipy/venv/bin/python setup.py install;
-      else
-         python setup.py install;
-      fi
+    - python setup.py install;
 # command to run tests, e.g. python setup.py test
 script:
     # Change into an innocuous directory and find tests from installation
@@ -79,6 +75,6 @@ script:
     - if [ "${VTK}" == "1" ]; then
       VIRT_BUFF="xvfb-run";
       fi
-    - $VIRT_BUFF /home/travis/build/nipy/dipy/venv/bin/nosetests --with-doctest --verbose $COVER_ARGS dipy
+    - $VIRT_BUFF nosetests --with-doctest --verbose $COVER_ARGS dipy
 after_success:
     - if [ "${COVERAGE}" == "1" ]; then coveralls; fi
