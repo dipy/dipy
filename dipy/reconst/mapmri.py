@@ -182,6 +182,9 @@ class MapmriModel(ReconstModel):
         tenfit = self.tenmodel.fit(data)
         evals = tenfit.evals
         R = tenfit.evecs
+        ind_evals = np.argsort(evals)[::-1]
+        evals = evals[ind_evals]
+        R = R[:, ind_evals]
         evals = np.clip(evals, self.eigenvalue_threshold, evals.max())
         if self.anisotropic_scaling:
             mu = np.sqrt(evals * 2 * self.tau)
@@ -194,7 +197,7 @@ class MapmriModel(ReconstModel):
         qvecs = np.dot(self.gtab.bvecs, R)
         q = qvecs * qvals[:, None]
         M = mapmri_phi_matrix(self.radial_order, mu, q.T)
-
+        
         if self.laplacian_regularization:
             laplacian_matrix = mapmri_laplacian_reg_matrix(
                 self.ind_mat, mu, self.R_mat, self.L_mat, self.S_mat)
