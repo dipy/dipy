@@ -58,6 +58,7 @@ before_install:
          retry pip install nose;
          wheelhouse_pip_install $DEPENDS;
       fi
+    - which nosetests
 install:
     #- if [ "${VTK}" == "1" ]; then
     #    /usr/bin/python2.7 setup.py install;
