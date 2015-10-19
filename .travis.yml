@@ -61,7 +61,7 @@ before_install:
     - which nosetests
 install:
     - if [ "${VTK}" == "1" ]; then
-        /usr/bin/python2.7 setup.py install;
+        /home/travis/build/nipy/dipy/venv/bin/python setup.py install;
       else
          python setup.py install;
       fi
