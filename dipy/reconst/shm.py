@@ -969,8 +969,7 @@ def sh_to_sf_matrix(sphere, sh_order, basis_type=None, return_inv=True,
 
 
 def calculate_max_order(n_coeffs):
-        """
-        Calculate the maximal harmonic order, given that you know the
+        """Calculate the maximal harmonic order, given that you know the
         number of parameters that were estimated.
 
         Parameters
@@ -1005,7 +1004,7 @@ def calculate_max_order(n_coeffs):
 
 def anisotropic_power(sh_coeffs, norm_factor=0.00001, power=2,
                       non_negative=True):
-    """ Calculates anisotropic power map with a given SH coefficient matrix
+    """Calculates anisotropic power map with a given SH coefficient matrix
 
     Parameters
     ----------

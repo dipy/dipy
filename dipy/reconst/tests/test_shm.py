@@ -422,7 +422,7 @@ def test_anisotropic_power():
     for n_coeffs in [6, 15, 28, 45, 66, 91]:
         for norm_factor in [0.0005, 0.00001]:
 
-            # Create some really simple case:
+            # Create some really simple cases:
             coeffs = np.ones((3, n_coeffs))
             max_order = calculate_max_order(coeffs.shape[-1])
             # For the case where all coeffs == 1, the ap is simply log of the
@@ -440,8 +440,7 @@ def test_anisotropic_power():
 
 
 def test_calculate_max_order():
-    """
-    Based on the table in:
+    """Based on the table in:
     http://jdtournier.github.io/mrtrix-0.2/tractography/preprocess.html
     """
     orders = [2, 4, 6, 8, 10, 12]
