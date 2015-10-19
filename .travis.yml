@@ -42,6 +42,7 @@ before_install:
     - virtualenv $VENV_ARGS venv
     - source venv/bin/activate
     - python --version # just to check
+    - which python
     - if [ "${COVERAGE}" == "1" ]; then
       pip install coverage;
       pip install coveralls;
@@ -58,25 +59,26 @@ before_install:
          wheelhouse_pip_install $DEPENDS;
       fi
 install:
-    - if [ "${VTK}" == "1" ]; then
-        /usr/bin/python2.7 setup.py install;
-      else
-         python setup.py install;
-      fi
+    #- if [ "${VTK}" == "1" ]; then
+    #    /usr/bin/python2.7 setup.py install;
+    #  else
+    #     python setup.py install;
+    #  fi
 # command to run tests, e.g. python setup.py test
 script:
+    - python -c"import dipy; print(dipy.__file__)"
     # Change into an innocuous directory and find tests from installation
-    - mkdir for_testing
-    - cd for_testing
+    #- mkdir for_testing
+    #- cd for_testing
     # No figure windows for mpl; quote to hide : from travis-ci yaml parsing
-    - 'echo "backend : agg" > matplotlibrc'
-    - if [ "${COVERAGE}" == "1" ]; then
-      cp ../.coveragerc .;
-      COVER_ARGS="--with-coverage --cover-package dipy";
-      fi
-    - if [ "${VTK}" == "1" ]; then
-      VIRT_BUFF="xvfb-run";
-      fi
-    - $VIRT_BUFF nosetests --with-doctest --verbose $COVER_ARGS dipy
-after_success:
-    - if [ "${COVERAGE}" == "1" ]; then coveralls; fi
+    #- 'echo "backend : agg" > matplotlibrc'
+    #- if [ "${COVERAGE}" == "1" ]; then
+    #  cp ../.coveragerc .;
+    #  COVER_ARGS="--with-coverage --cover-package dipy";
+    #  fi
+    #- if [ "${VTK}" == "1" ]; then
+    #  VIRT_BUFF="xvfb-run";
+    #  fi
+    #- $VIRT_BUFF nosetests --with-doctest --verbose $COVER_ARGS dipy
+#after_success:
+#    - if [ "${COVERAGE}" == "1" ]; then coveralls; fi
