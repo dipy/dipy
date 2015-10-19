@@ -188,6 +188,9 @@ class MapmriModel(ReconstModel):
         tenfit = self.tenmodel.fit(data[self.ind])
         evals = tenfit.evals
         R = tenfit.evecs
+        ind_evals = np.argsort(evals)[::-1]
+        evals = evals[ind_evals]
+        R = R[:, ind_evals]
         evals = np.clip(evals, self.eigenvalue_threshold, evals.max())
         if self.anisotropic_scaling:
             mu = np.sqrt(evals * 2 * self.tau)
