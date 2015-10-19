@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 import numpy as np
 from dipy.reconst.multi_voxel import multi_voxel_fit
 from dipy.reconst.base import ReconstModel, ReconstFit
@@ -20,10 +21,10 @@ class MapmriModel(ReconstModel):
     dimensions.
     The main difference with the SHORE proposed in [3]_ is that MAPMRI 3D
     extension is provided using a set of three basis functions for the radial
-    part, one for the signal along x, one for y and one for z, while [3]_ 
+    part, one for the signal along x, one for y and one for z, while [3]_
     uses one basis function to model the radial part and real Spherical
     Harmonics to model the angular part.
-    From the MAPMRI coefficients is possible to use the analytical formulae 
+    From the MAPMRI coefficients is possible to use the analytical formulae
     to estimate the ODF.
 
     References
@@ -39,13 +40,28 @@ class MapmriModel(ReconstModel):
     .. [3] Merlet S. et. al, "Continuous diffusion signal, EAP and ODF
            estimation via Compressive Sensing in diffusion MRI", Medical
            Image Analysis, 2013.
+
+    .. [4] Fick et al. "Laplacian-Regularized MAP-MRI: Improving Axonal
+           Caliber", ISBI, 2015.
+
+    .. [5] Cheng, J., 2014. Estimation and Processing of Ensemble Average
+           Propagator and Its Features in Diffusion MRI. Ph.D. Thesis.
+
+    .. [6] Hosseinbor et al. "Bessel fourier orientation reconstruction
+           (bfor): An analytical diffusion propagator reconstruction for hybrid
+           diffusion imaging and computation of q-space indices. NeuroImage 64,
+           2013, 650–670.
+
+    .. [7] Craven et al. "Smoothing Noisy Data with Spline Functions."
+           NUMER MATH 31.4 (1978): 377-403.
     """
 
     def __init__(self,
                  gtab,
                  radial_order=4,
-                 lambd=1e-16,
-                 eap_cons=False,
+                 laplacian_regularization=True,
+                 laplacian_weighting='GCV',
+                 positivity_constraint=False,
                  anisotropic_scaling=True,
                  eigenvalue_threshold=1e-04,
                  bmax_threshold=2000):
@@ -58,10 +74,10 @@ class MapmriModel(ReconstModel):
 
         The main difference with the SHORE proposed in [3]_ is that MAPMRI 3D
         extension is provided using a set of three basis functions for the radial
-        part, one for the signal along x, one for y and one for z, while [3]_ 
+        part, one for the signal along x, one for y and one for z, while [3]_
         uses one basis function to model the radial part and real Spherical
         Harmonics to model the angular part.
-        From the MAPMRI coefficients is possible to use the analytical formulae 
+        From the MAPMRI coefficients is possible to use the analytical formulae
         to estimate the ODF.
 
 
@@ -71,15 +87,20 @@ class MapmriModel(ReconstModel):
             gradient directions and bvalues container class
         radial_order : unsigned int,
             an even integer that represent the order of the basis
-        lambd : float,
-            radial regularisation constant
-        eap_cons : bool,
+        laplacian_regularization: bool,
+            Regularize using the Laplacian of the MAP-MRI basis.
+        laplacian_weighting: string or scalar or ndarray,
+            The string 'GCV' makes it use generalized cross-validation to find
+            the regularization weight [3]. A scalar sets the regularization
+            weight to that value. A numpy array of values will make the GCV
+            function find the optimal value among those values.
+        positivity_constraint : bool,
             Constrain the propagator to be positive.
         anisotropic_scaling : bool,
             If false, force the basis function to be identical in the three
             dimensions (SHORE like).
         eigenvalue_threshold : float,
-            set the minimum of the tensor eigenvalues in order to avoid 
+            set the minimum of the tensor eigenvalues in order to avoid
             stability problem
         bmax_threshold : float,
             set the maximum b-value for the tensor estimation
@@ -121,9 +142,27 @@ class MapmriModel(ReconstModel):
         self.bvecs = gtab.bvecs
         self.gtab = gtab
         self.radial_order = radial_order
-        self.lambd = lambd
-        self.eap_cons = eap_cons
-        if self.eap_cons:
+
+        self.laplacian_regularization = laplacian_regularization
+        if laplacian_weighting == 'GCV' or \
+                np.isscalar(laplacian_weighting) or \
+                type(laplacian_weighting) == np.ndarray:
+            if np.isscalar(laplacian_weighting) and \
+                    laplacian_weighting < 0.:
+                msg = "Laplacian Regularization weighting must be positive."
+                raise ValueError(msg)
+            if type(laplacian_weighting) == np.ndarray and \
+                    laplacian_weighting.min() < 0.:
+                msg = "Laplacian Regularization weighting must be positive."
+                raise ValueError(msg)
+            else:
+                self.laplacian_weighting = laplacian_weighting
+
+        self.R_mat, self.L_mat, self.S_mat = mapmri_RLS_regularization_matrices(
+            radial_order)
+
+        self.positivity_constraint = positivity_constraint
+        if self.positivity_constraint:
             if not have_cvxopt:
                 raise ValueError(
                     'CVXOPT package needed to enforce constraints')
@@ -161,24 +200,39 @@ class MapmriModel(ReconstModel):
         qvecs = np.dot(self.gtab.bvecs, R)
         q = qvecs * qvals[:, None]
         M = mapmri_phi_matrix(self.radial_order, mu, q.T)
-        # This is a simple empirical regularization, to be replaced
-        I = np.diag(self.ind_mat.sum(1) ** 2)
-        if self.eap_cons:
+
+        if self.laplacian_regularization:
+            laplacian_matrix = mapmri_laplacian_reg_matrix(
+                self.ind_mat, mu, self.R_mat, self.L_mat, self.S_mat)
+            if self.laplacian_weighting == 'GCV':
+                lopt = generalized_crossvalidation(data, M, laplacian_matrix)
+            elif np.isscalar(self.laplacian_weighting):
+                lopt = self.laplacian_weighting
+            elif type(self.laplacian_weighting) == np.ndarray:
+                lopt = generalized_crossvalidation(data, M, laplacian_matrix,
+                                                   self.laplacian_weighting)
+        else:
+            lopt = 0.
+            laplacian_matrix = np.ones((self.ind_mat.shape[0],
+                                        self.ind_mat.shape[0]))
+
+        if self.positivity_constraint:
             if not have_cvxopt:
                 raise ValueError(
-                    'CVXOPT package needed to enforce constraints')
-            w_s = "The implementation of MAPMRI depends on CVXOPT "
-            w_s += " (http://cvxopt.org/). This software is licensed "
+                'CVXOPT package needed to enforce constraints')
+            w_s = "The implementation of MAPMRI does not depend on CVXOPT "
+            w_s += "(http://cvxopt.org/). It can be used with only the "
+            w_s += "laplacian regularization. CVXOPT is licensed "
             w_s += "under the GPL (see: http://cvxopt.org/copyright.html) "
-            w_s += " and you may be subject to this license when using MAPMRI."
+            w_s += "and you may be subject to this license when using the "
+            w_s += "positivity constraint. "
             warn(w_s)
-            import cvxopt.solvers
             rmax = 2 * np.sqrt(10 * evals.max() * self.tau)
             r_index, r_grad = create_rspace(11, rmax)
             K = mapmri_psi_matrix(
                 self.radial_order,  mu, r_grad[0:len(r_grad) / 2, :])
 
-            Q = cvxopt.matrix(np.dot(M.T, M) + self.lambd * I)
+            Q = cvxopt.matrix(np.dot(M.T, M) + lopt * laplacian_matrix)
             p = cvxopt.matrix(-1 * np.dot(M.T, data))
             G = cvxopt.matrix(-1 * K)
             h = cvxopt.matrix(np.zeros((K.shape[0])), (K.shape[0], 1))
@@ -190,7 +244,7 @@ class MapmriModel(ReconstModel):
             coef = np.array(sol['x'])[:, 0]
         else:
             pseudoInv = np.dot(
-                np.linalg.inv(np.dot(M.T, M) + self.lambd * I), M.T)
+                np.linalg.inv(np.dot(M.T, M) + lopt * laplacian_matrix), M.T)
             coef = np.dot(pseudoInv, data)
 
         E0 = 0
@@ -198,12 +252,12 @@ class MapmriModel(ReconstModel):
             E0 = E0 + coef[i] * self.Bm[i]
         coef = coef / E0
 
-        return MapmriFit(self, coef, mu, R, self.ind_mat)
+        return MapmriFit(self, coef, mu, R, self.ind_mat, lopt)
 
 
 class MapmriFit(ReconstFit):
 
-    def __init__(self, model, mapmri_coef, mu, R, ind_mat):
+    def __init__(self, model, mapmri_coef, mu, R, ind_mat, lopt):
         """ Calculates diffusion properties for a single voxel
 
         Parameters
@@ -227,6 +281,7 @@ class MapmriFit(ReconstFit):
         self.mu = mu
         self.R = R
         self.ind_mat = ind_mat
+        self.lopt = lopt
 
     @property
     def mapmri_mu(self):
@@ -284,7 +339,7 @@ class MapmriFit(ReconstFit):
         for i in range(self.ind_mat.shape[0]):
             if Bm[i] > 0.0:
                 rtpp += (-1.0) ** (self.ind_mat[i, 0] /
-                                   2.0) * self._mapmri_coef[i] * Bm[i]
+                                2.0) * self._mapmri_coef[i] * Bm[i]
         return const * rtpp
 
     def rtap(self):
@@ -303,7 +358,8 @@ class MapmriFit(ReconstFit):
         for i in range(self.ind_mat.shape[0]):
             if Bm[i] > 0.0:
                 rtap += (-1.0) ** (
-                    (self.ind_mat[i, 1] + self.ind_mat[i, 2]) / 2.0) * self._mapmri_coef[i] * Bm[i]
+                (self.ind_mat[i, 1] + self.ind_mat[i, 2])
+                / 2.0) * self._mapmri_coef[i] * Bm[i]
         return const * rtap
 
     def rtop(self):
@@ -608,7 +664,8 @@ def mapmri_odf_matrix(radial_order, mu, s, vertices):
     mux, muy, muz = mu
     # Eq, 35a
     rho = 1.0 / np.sqrt((vertices[:, 0] / mux) ** 2 +
-                        (vertices[:, 1] / muy) ** 2 + (vertices[:, 2] / muz) ** 2)
+                        (vertices[:, 1] / muy) ** 2 +
+                        (vertices[:, 2] / muz) ** 2)
     # Eq, 35b
     alpha = 2 * rho * (vertices[:, 0] / mux)
     # Eq, 35c
@@ -718,3 +775,199 @@ def create_rspace(gridsize, radius_max):
     vecs = vecs + radius
 
     return vecs, tab
+
+
+def delta(n, m):
+    if n == m:
+        return 1
+    return 0
+
+
+def map_laplace_s(n, m):
+    """ S(n, m) static matrix for Laplacian regularization [4].
+    Parameters
+    ----------
+    n, m : unsigned int
+        basis order of the MAP-MRI basis in different directions
+
+    Returns
+    -------
+    R, L, S : Matrices, shape (N_coef,N_coef)
+        Regularization submatrices
+    """
+    return (-1) ** n * delta(n, m) / (2 * np.sqrt(np.pi))
+
+
+def map_laplace_l(n, m):
+    """ L(m, n) static matrix for Laplacian regularization [4].
+    Parameters
+    ----------
+    n, m : unsigned int
+        basis order of the MAP-MRI basis in different directions
+
+    Returns
+    -------
+    R, L, S : Matrices, shape (N_coef,N_coef)
+        Regularization submatrices
+    """
+    a = np.sqrt((m - 1) * m) * delta(m - 2, n)
+    b = np.sqrt((n - 1) * n) * delta(n - 2, m)
+    c = (2 * n + 1) * delta(m, n)
+    return np.pi ** (3 / 2.) * (-1) ** (n + 1) * (a + b + c)
+
+
+def map_laplace_r(n, m):
+    """ R(m,n) static matrix for Laplacian regularization [4].
+    Parameters
+    ----------
+    n, m : unsigned int
+        basis order of the MAP-MRI basis in different directions
+
+    Returns
+    -------
+    R, L, S : Matrices, shape (N_coef,N_coef)
+        Regularization submatrices
+    """
+
+    k = 2 * np.pi ** (7 / 2.) * (-1) ** (n)
+
+    a0 = 3 * (2 * n ** 2 + 2 * n + 1) * delta(n, m)
+
+    sqmn = np.sqrt(gamma(m + 1) / gamma(n + 1))
+
+    sqnm = 1 / sqmn
+
+    an2 = 2 * (2 * n + 3) * sqmn * delta(m, n + 2)
+
+    an4 = sqmn * delta(m, n + 4)
+
+    am2 = 2 * (2 * m + 3) * sqnm * delta(m + 2, n)
+
+    am4 = sqnm * delta(m + 4, n)
+
+    return k * (a0 + an2 + an4 + am2 + am4)
+
+
+def mapmri_RLS_regularization_matrices(radial_order):
+    """ Generates the static portions of the Laplacian regularization matrix
+    according to [4].
+
+    Parameters
+    ----------
+    radial_order : unsigned int,
+        an even integer that represent the order of the basis
+
+    Returns
+    -------
+    R, L, S : Matrices, shape (N_coef,N_coef)
+        Regularization submatrices
+    """
+    R = np.zeros((radial_order + 1, radial_order + 1))
+    for i in xrange(radial_order + 1):
+        for j in xrange(radial_order + 1):
+            R[i, j] = map_laplace_r(i, j)
+
+    L = np.zeros((radial_order + 1, radial_order + 1))
+    for i in xrange(radial_order + 1):
+        for j in xrange(radial_order + 1):
+            L[i, j] = map_laplace_l(i, j)
+
+    S = np.zeros((radial_order + 1, radial_order + 1))
+    for i in xrange(radial_order + 1):
+        for j in xrange(radial_order + 1):
+            S[i, j] = map_laplace_s(i, j)
+    return R, L, S
+
+
+def mapmri_laplacian_reg_matrix(ind_mat, mu, R_mat, L_mat, S_mat):
+    """ Puts the Laplacian regularization matrix together [4].
+    The static parts in R, L and S are multiplied and divided by the
+    voxel-specific scale factors.
+
+    Parameters
+    ----------
+    ind_mat : matrix (N_coef, 3),
+        Basis order matrix
+    mu : array, shape (3,)
+        scale factors of the basis for x, y, z
+    R, L, S : matrices, shape (N_coef,N_coef)
+        Regularization submatrices
+
+    Returns
+    -------
+    LR : matrix (N_coef, N_coef),
+        Voxel-specific Laplacian regularization matrix
+    """
+    ux, uy, uz = mu
+
+    x, y, z = ind_mat.T
+
+    n_elem = ind_mat.shape[0]
+
+    LR = np.zeros((n_elem, n_elem))
+
+    for i in range(n_elem):
+        for j in range(i, n_elem):
+            if (x[i] - x[j]) % 2 == 0 and (y[i] - y[j]) % 2 == 0 and (z[i] - z[j]) % 2 == 0:
+                LR[i, j] = LR[j, i] = \
+                    (ux ** 3 / (uy * uz)) *\
+                    R_mat[x[i], x[j]] * S_mat[y[i], y[j]] * S_mat[z[i], z[j]] +\
+                    (uy ** 3 / (ux * uz)) *\
+                    R_mat[y[i], y[j]] * S_mat[z[i], z[j]] * S_mat[x[i], x[j]] +\
+                    (uz ** 3 / (ux * uy)) *\
+                    R_mat[z[i], z[j]] * S_mat[x[i], x[j]] * S_mat[y[i], y[j]] +\
+                    2 * ((ux * uy) / uz) *\
+                    L_mat[x[i], x[j]] * L_mat[y[i], y[j]] * S_mat[z[i], z[j]] +\
+                    2 * ((ux * uz) / uy) *\
+                    L_mat[x[i], x[j]] * L_mat[z[i], z[j]] * S_mat[y[i], y[j]] +\
+                    2 * ((uz * uy) / ux) *\
+                    L_mat[z[i], z[j]] * L_mat[y[i], y[j]] * S_mat[x[i], x[j]]
+
+    return LR
+
+
+def generalized_crossvalidation(data, M, LR, weights_array=None):
+    """Generalized Cross Validation Function [7].
+
+
+    Here weights_array
+    is a numpy array with all values that should be considered in the GCV.
+    It will run through the weights until the cost function starts to
+    increase, then stop and take the last value as the optimum weight.
+    Parameters
+    ----------
+    data : array (N),
+        Basis order matrix
+    M : matrix, shape (N, Ncoef)
+        mapmri observation matrix
+    LR : matrix, shape (N_coef,N_coef)
+        regularization matrix
+    weights_array : array (N_of_weights)
+        array of optional regularization weights
+
+    Returns
+    -------
+    lopt : float,
+        optimal regularization weight
+    """
+
+    if weights_array is None:
+        lrange = np.linspace(0, 1, 21)[1:]  # reasonably fast standard range
+    else:
+        lrange = weights_array
+
+    samples = lrange.shape[0]
+    MMt = np.dot(M.T, M)
+    K = len(data)
+    gcvold = gcvnew = 10e10
+    i = -1
+    while gcvold >= gcvnew and i < samples - 2:
+        gcvold = gcvnew
+        i = i + 1
+        S = np.dot(np.dot(M, np.linalg.pinv(MMt + lrange[i] * LR)), M.T)
+        trS = np.matrix.trace(S)
+        normyytilde = np.linalg.norm(data - np.dot(S, data), 2)
+        gcvnew = normyytilde / (K - trS)
+
+    lopt = lrange[i - 1]
+    return lopt
