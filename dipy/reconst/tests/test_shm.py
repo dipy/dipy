@@ -436,7 +436,7 @@ def test_anisotropic_power():
             # Test that this works for single voxel arrays as well:
             assert_array_almost_equal(
                 anisotropic_power(coeffs[1], norm_factor=norm_factor),
-                                      answers[1])
+                answers[1])
 
 
 def test_calculate_max_order():
