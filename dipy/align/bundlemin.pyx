@@ -106,11 +106,11 @@ def _bundle_minimum_distance_matrix(double [:, ::1] static,
     cdef:
         cnp.npy_intp i=0, j=0, mov_i=0, mov_j=0
 
-    with nogil:
+    if have_openmp and num_threads is not None:
+        openmp.omp_set_dynamic(0)
+        openmp.omp_set_num_threads(num_threads)
 
-        if have_openmp and num_threads is not None:
-            openmp.omp_set_dynamic(0)
-            openmp.omp_set_num_threads(num_threads)
+    with nogil:
 
         for i in prange(static_size):
 
@@ -169,11 +169,11 @@ def _bundle_minimum_distance(double [:, ::1] stat,
         double * min_i
         cdef openmp.omp_lock_t lock
 
-    with nogil:
+    if have_openmp and num_threads is not None:
+        openmp.omp_set_dynamic(0)
+        openmp.omp_set_num_threads(num_threads)
 
-        if have_openmp and num_threads is not None:
-            openmp.omp_set_dynamic(0)
-            openmp.omp_set_num_threads(num_threads)
+    with nogil:
 
         if have_openmp:
             openmp.omp_init_lock(&lock)
