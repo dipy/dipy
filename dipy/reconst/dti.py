@@ -1027,8 +1027,6 @@ class TensorFit(object):
             Linearity =
             \frac{\lambda_1-\lambda_2}{\lambda_1+\lambda_2+\lambda_3}
 
-        Notes
-        -----
         [1] Westin C.-F., Peled S., Gubjartsson H., Kikinis R., Jolesz
             F., "Geometrical diffusion measures for MRI from tensor basis
             analysis" in Proc. 5th Annual ISMRM, 1997.
