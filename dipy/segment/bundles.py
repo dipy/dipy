@@ -65,9 +65,12 @@ class RecoBundles(object):
 
         t2 = time()
 
+        from ipdb import set_trace
+        set_trace()
+
         # change back to 2
         # but don't use set_number do it directly
-        rstreamlines_2pt = set_number_of_points(self.streamlines, 3)
+        rstreamlines_2pt = set_number_of_points(self.streamlines, 2)
         rstreamlines_2pt = [s.astype('f4') for s in rstreamlines_2pt]
 
         if self.verbose:
@@ -75,15 +78,12 @@ class RecoBundles(object):
             print(' Size is %0.3f MB' % (nbytes(rstreamlines_2pt),))
             print(' Duration %0.3f sec. \n' % (time() - t2, ))
 
-        from ipdb import set_trace
-        set_trace()
-
         t3 = time()
 
         initial_centroids = initial_clusters.centroids
 
         for cluster in initial_clusters:
-            cluster.centroid = set_number_of_points(cluster.centroid, 3)
+            cluster.centroid = set_number_of_points(cluster.centroid, 2)
 
         cluster_map = qb.assign(initial_clusters, rstreamlines_2pt)
 
