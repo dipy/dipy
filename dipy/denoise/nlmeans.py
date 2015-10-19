@@ -53,7 +53,8 @@ def nlmeans(arr, sigma, mask=None, patch_radius=1, block_radius=5,
                                               sigma[..., i],
                                               patch_radius,
                                               block_radius,
-                                              rician).astype(arr.dtype)
+                                              rician,
+                                              num_threads).astype(arr.dtype)
 
         return denoised_arr
 

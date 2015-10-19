@@ -6,6 +6,6 @@ cdef extern from "conditional_omp.h":
     extern void omp_set_lock(omp_lock_t *) nogil
     extern void omp_unset_lock(omp_lock_t *) nogil
     extern int omp_test_lock(omp_lock_t *) nogil
-    extern void omp_set_dynamic(int dynamic_threads);
-    extern void omp_set_num_threads(int num_threads);
+    extern void omp_set_dynamic(int dynamic_threads) nogil
+    extern void omp_set_num_threads(int num_threads) nogil
     cdef int have_openmp

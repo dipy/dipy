@@ -82,13 +82,13 @@ def test_nlmeans_dtype():
     assert_equal(S0.dtype, S0n.dtype)
 
 
-def test_nlmeans_4d_3dsigma():
+def test_nlmeans_4d_3dsigma_and_threads():
     # Input is 4D data and 3D sigma
-    data = np.ones((50, 50, 50, 5))
-    sigma = np.ones((50, 50, 50))
-    new_data = nlmeans(data, sigma)
-
+    data = np.ones((10, 10, 10, 5))
+    sigma = np.ones((10, 10, 10))
+    new_data = nlmeans(data, sigma, num_threads=1)
+    new_data2 = nlmeans(data, sigma, num_threads=2)
+    assert_array_almost_equal(new_data, new_data2)
 
 if __name__ == '__main__':
-    #run_module_suite()
-    test_nlmeans_4d_3dsigma()
+    run_module_suite()
