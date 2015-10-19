@@ -58,7 +58,11 @@ before_install:
          wheelhouse_pip_install $DEPENDS;
       fi
 install:
-    - python setup.py install
+    - if [ "${VTK}" == "1" ]; then
+        /usr/bin/python2.7 setup.py install;
+      else
+         python setup.py install;
+      fi
 # command to run tests, e.g. python setup.py test
 script:
     # Change into an innocuous directory and find tests from installation
