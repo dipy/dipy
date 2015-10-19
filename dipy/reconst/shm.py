@@ -965,3 +965,79 @@ def sh_to_sf_matrix(sphere, sh_order, basis_type=None, return_inv=True, smooth=0
         return B.T, invB.T
 
     return B.T
+
+def anisotropic_power(sh_coeffs, normal_factor=0.00001):
+    """ Calculates anisotropic power map with a given SH coefficient matrix
+
+    Parameters
+    ----------
+    sh_coeffs : ndarray
+        A ndarray where the last dimension is the
+        SH coeff estimates for that voxel.
+    normal_factor: float
+        The value to normalize the ap values. Default is 10^-5.
+
+    Returns
+    -------
+    AP : ndarray
+        The resulting power image.
+
+    Notes
+    ----------
+    Calculate AP image based on a IxJxKxC SH coeffecient matrix based on the 
+    equation:
+    .. math::
+        AP = \sum_{l=2,4,6,...}{\frac{1}{2l+1} \sum_{m=-l}{|a_{l,m}|^2}}
+
+    Where dim C is made of a flattened lxm coeffecient, where l are the SH 
+    levels, and m = 2l+1.
+    So l=1 has 1 coeffecient, l=2 has 5, ... l=8 has 17 and so on.
+    A l=2 SH coeffecient matrix will then be composed of a IxJxKx6 volume.
+
+    The final AP image is then normalized by log(AP/normal_factor).
+    All values < 0 are discarded.
+
+    References
+    ----------
+    .. [1]  Dell'Acqua, F., Lacerda, L., Catani, M., Simmons, A., 2014.
+            Anisotropic Power Maps: A diffusion contrast to reveal low 
+            anisotropy tissues from HARDI data, 
+            in: Proceedings of International Society for Magnetic Resonance in 
+            Medicine. Milan, Italy.        
+    """
+
+    dim = sh_coeffs.shape[:-1]
+    n_coeffs = sh_coeffs.shape[-1]
+
+    L = 2    # start at L=2
+    sum_n = 1
+
+    def single_L_ap(sh_coeffs, L=2, power=2):
+        n_start = 1
+        n_L = 2*L+1
+        for l in range(2, L, 2):
+            n_l = 2 * l + 1
+            # sum_n start at index 1
+            n_start += n_l
+        n_stop = n_start + n_L
+        c = np.power(sh_coeffs[..., n_start:n_stop], power)
+        ap_i = np.mean(c, axis=-1)
+        ap_i = np.multiply(ap_i, 1.0/n_L)
+        return ap_i
+
+    ap = np.zeros(dim)
+
+    while sum_n < n_coeffs:
+        n_L = 2*L+1
+        ap_i = single_L_ap(sh_coeffs, L)
+        ap = np.add(ap_i, ap)
+        sum_n += n_L
+        L += 2
+
+    # normalize with 10^-5
+    log_ap = np.ma.log(ap/normal_factor)
+
+    # zero all values < 0
+    log_ap[log_ap < 0] = 0
+
+    return log_ap
