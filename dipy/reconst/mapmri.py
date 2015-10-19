@@ -194,7 +194,7 @@ class MapmriModel(ReconstModel):
         qvecs = np.dot(self.gtab.bvecs, R)
         q = qvecs * qvals[:, None]
         M = mapmri_phi_matrix(self.radial_order, mu, q.T)
-        
+
         if self.laplacian_regularization:
             laplacian_matrix = mapmri_laplacian_reg_matrix(
                 self.ind_mat, mu, self.R_mat, self.L_mat, self.S_mat)
