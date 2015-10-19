@@ -18,14 +18,21 @@ LOG_MAX_DIST = np.log(MAX_DIST)
 
 class StreamlineDistanceMetric(with_metaclass(abc.ABCMeta, object)):
 
-    def __init__(self):
+    def __init__(self, num_threads=None):
         """ An abstract class for the metric used for streamline registration
 
         If the two sets of streamlines match exactly then method ``distance``
         of this object should be minimum.
+
+        Parameters
+        ----------
+        num_threads : int
+            Number of threads. If None (default) then all available threads
+            will be used. Only metrics using OpenMP will use this variable.
         """
         self.static = None
         self.moving = None
+        self.num_threads = num_threads
 
     @abc.abstractmethod
     def setup(self, static, moving):
@@ -55,7 +62,7 @@ class BundleMinDistanceMetric(StreamlineDistanceMetric):
                         2014.
     """
 
-    def setup(self, static, moving, num_threads=None):
+    def setup(self, static, moving):
         """ Setup static and moving sets of streamlines
 
         Parameters
@@ -75,7 +82,6 @@ class BundleMinDistanceMetric(StreamlineDistanceMetric):
 
         self._set_static(static)
         self._set_moving(moving)
-        self.num_threads = num_threads
 
     def _set_static(self, static):
         static_centered_pts, st_idx = unlist_streamlines(static)
@@ -119,7 +125,7 @@ class BundleMinDistanceMatrixMetric(StreamlineDistanceMetric):
 
     """
 
-    def setup(self, static, moving, num_threads=None):
+    def setup(self, static, moving):
         """ Setup static and moving sets of streamlines
 
         Parameters
@@ -128,9 +134,6 @@ class BundleMinDistanceMatrixMetric(StreamlineDistanceMetric):
             Fixed or reference set of streamlines.
         moving : streamlines
             Moving streamlines.
-        num_threads : int
-            Number of threads. If None (default) then all available threads
-            will be used.
 
         Notes
         -----
@@ -141,7 +144,6 @@ class BundleMinDistanceMatrixMetric(StreamlineDistanceMetric):
         """
         self.static = static
         self.moving = moving
-        self.num_threads = num_threads
 
     def distance(self, xopt):
         """ Distance calculated from this Metric
@@ -186,7 +188,7 @@ class StreamlineLinearRegistration(object):
 
     def __init__(self, metric=None, x0="rigid", method='L-BFGS-B',
                  bounds=None, verbose=False, options=None,
-                 evolution=False):
+                 evolution=False, num_threads=None):
         r""" Linear registration of 2 sets of streamlines [Garyfallidis14]_.
 
         Parameters
@@ -250,6 +252,10 @@ class StreamlineLinearRegistration(object):
             If True save the transformation for each iteration of the
             optimizer. Default is False. Supported only with Scipy >= 0.11.
 
+        num_threads : int
+            Number of threads. If None (default) then all available threads
+            will be used. Only metrics using OpenMP will use this variable.
+
         References
         ----------
         .. [Garyfallidis14] Garyfallidis et al., "Direct native-space fiber
@@ -262,7 +268,7 @@ class StreamlineLinearRegistration(object):
         self.metric = metric
 
         if self.metric is None:
-            self.metric = BundleMinDistanceMetric()
+            self.metric = BundleMinDistanceMetric(num_threads=num_threads)
 
         self.verbose = verbose
         self.method = method
@@ -277,7 +283,6 @@ class StreamlineLinearRegistration(object):
 
         Parameters
         ----------
-
         static : streamlines
             Reference or fixed set of streamlines.
         moving : streamlines
@@ -356,9 +361,10 @@ class StreamlineLinearRegistration(object):
 
         if opt.evolution is not None:
             for vecs in opt.evolution:
-                mat_history.append(compose_transformations(moving_mat,
-                                                           compose_matrix44(vecs),
-                                                           static_mat))
+                mat_history.append(
+                    compose_transformations(moving_mat,
+                                            compose_matrix44(vecs),
+                                            static_mat))
 
         srm = StreamlineRegistrationMap(mat, opt.xopt, opt.fopt,
                                         mat_history, opt.nfev, opt.nit)
@@ -490,7 +496,7 @@ def bundle_sum_distance(t, static, moving, num_threads=None):
 
     aff = compose_matrix44(t)
     moving = transform_streamlines(moving, aff)
-    d01 = distance_matrix_mdf(static, moving, num_threads)
+    d01 = distance_matrix_mdf(static, moving)
     return np.sum(d01)
 
 
