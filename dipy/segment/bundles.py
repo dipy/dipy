@@ -65,9 +65,6 @@ class RecoBundles(object):
 
         t2 = time()
 
-        from ipdb import set_trace
-        set_trace()
-
         # change back to 2
         # but don't use set_number do it directly
         rstreamlines_2pt = set_number_of_points(self.streamlines, 2)
