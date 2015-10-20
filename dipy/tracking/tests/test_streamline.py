@@ -3,6 +3,7 @@ from __future__ import print_function
 import numpy as np
 from numpy.linalg import norm
 import numpy.testing as npt
+from dipy.testing.memory import get_type_refcount
 
 from nose.tools import assert_true, assert_equal, assert_almost_equal
 from numpy.testing import (assert_array_equal, assert_array_almost_equal,
@@ -293,6 +294,42 @@ def test_set_number_of_points():
                  len(streamlines_readonly))
 
 
+def test_set_number_of_points_memory_leaks():
+    # Test some dtypes
+    dtypes = [np.float32, np.float64, np.int32, np.int64]
+    for dtype in dtypes:
+        rng = np.random.RandomState(1234)
+        NB_STREAMLINES = 10000
+        streamlines = [rng.randn(rng.randint(10, 100), 3).astype(dtype) for _ in range(NB_STREAMLINES)]
+
+        list_refcount_before = get_type_refcount()["list"]
+
+        rstreamlines = set_number_of_points(streamlines, nb_points=2)
+        list_refcount_after = get_type_refcount()["list"]
+        del rstreamlines  # Delete `rstreamlines` because it holds a reference to `list`.
+
+        # Calling `set_number_of_points` should increase the refcount of `list` by one
+        # since we kept the returned value.
+        assert_equal(list_refcount_after, list_refcount_before+1)
+
+    # Test mixed dtypes
+    rng = np.random.RandomState(1234)
+    NB_STREAMLINES = 10000
+    streamlines = []
+    for i in range(NB_STREAMLINES):
+        dtype = dtypes[i % len(dtypes)]
+        streamlines.append(rng.randn(rng.randint(10, 100), 3).astype(dtype))
+
+    list_refcount_before = get_type_refcount()["list"]
+
+    rstreamlines = set_number_of_points(streamlines, nb_points=2)
+    list_refcount_after = get_type_refcount()["list"]
+
+    # Calling `set_number_of_points` should increase the refcount of `list` by one
+    # since we kept the returned value.
+    assert_equal(list_refcount_after, list_refcount_before+1)
+
+
 def test_length():
     # Test length of only one streamline
     length_streamline_cython = ds_length(streamline)
@@ -367,6 +404,41 @@ def test_length():
 
     assert_array_almost_equal(ds_length(streamlines_readonly),
                               [length_python(s) for s in streamlines_readonly])
+
+
+def test_length_memory_leaks():
+    # Test some dtypes
+    dtypes = [np.float32, np.float64, np.int32, np.int64]
+    for dtype in dtypes:
+        rng = np.random.RandomState(1234)
+        NB_STREAMLINES = 10000
+        streamlines = [rng.randn(rng.randint(10, 100), 3).astype(dtype) for _ in range(NB_STREAMLINES)]
+
+        list_refcount_before = get_type_refcount()["list"]
+
+        lengths = ds_length(streamlines)
+        list_refcount_after = get_type_refcount()["list"]
+
+        # Calling `ds_length` shouldn't increase the refcount of `list`
+        # since the return value is a numpy array.
+        assert_equal(list_refcount_after, list_refcount_before)
+
+    # Test mixed dtypes
+    rng = np.random.RandomState(1234)
+    NB_STREAMLINES = 10000
+    streamlines = []
+    for i in range(NB_STREAMLINES):
+        dtype = dtypes[i % len(dtypes)]
+        streamlines.append(rng.randn(rng.randint(10, 100), 3).astype(dtype))
+
+    list_refcount_before = get_type_refcount()["list"]
+
+    lengths = ds_length(streamlines)
+    list_refcount_after = get_type_refcount()["list"]
+
+    # Calling `ds_length` shouldn't increase the refcount of `list`
+    # since the return value is a numpy array.
+    assert_equal(list_refcount_after, list_refcount_before)
 
 
 def test_unlist_relist_streamlines():
@@ -553,6 +625,41 @@ def test_compress_streamlines():
         assert_equal(len(cspecial_streamline), len(cstreamline_python))
         assert_array_almost_equal(cspecial_streamline, cstreamline_python)
 
+
+def test_compress_streamlines_memory_leaks():
+    # Test some dtypes
+    dtypes = [np.float32, np.float64, np.int32, np.int64]
+    for dtype in dtypes:
+        rng = np.random.RandomState(1234)
+        NB_STREAMLINES = 10000
+        streamlines = [rng.randn(rng.randint(10, 100), 3).astype(dtype) for _ in range(NB_STREAMLINES)]
+
+        list_refcount_before = get_type_refcount()["list"]
+
+        cstreamlines = compress_streamlines(streamlines)
+        list_refcount_after = get_type_refcount()["list"]
+        del cstreamlines  # Delete `cstreamlines` because it holds a reference to `list`.
+
+        # Calling `compress_streamlines` should increase the refcount of `list` by one
+        # since we kept the returned value.
+        assert_equal(list_refcount_after, list_refcount_before+1)
+
+    # Test mixed dtypes
+    rng = np.random.RandomState(1234)
+    NB_STREAMLINES = 10000
+    streamlines = []
+    for i in range(NB_STREAMLINES):
+        dtype = dtypes[i % len(dtypes)]
+        streamlines.append(rng.randn(rng.randint(10, 100), 3).astype(dtype))
+
+    list_refcount_before = get_type_refcount()["list"]
+
+    cstreamlines = compress_streamlines(streamlines)
+    list_refcount_after = get_type_refcount()["list"]
+
+    # Calling `compress_streamlines` should increase the refcount of `list` by one
+    # since we kept the returned value.
+    assert_equal(list_refcount_after, list_refcount_before+1)
 
 def test_select_by_rois():
     streamlines = [np.array([[0, 0., 0.9],
