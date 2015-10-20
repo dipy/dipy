@@ -8,6 +8,7 @@ cimport safe_openmp as openmp
 from safe_openmp cimport have_openmp
 
 from cython.parallel import parallel, prange
+from multiprocessing import cpu_count
 
 from libc.math cimport sqrt, exp
 from libc.stdlib cimport malloc, free
@@ -84,17 +85,25 @@ def _nlmeans_3d(double [:, :, ::1] arr, double [:, :, ::1] mask,
         double summ = 0
         cnp.npy_intp P = patch_radius
         cnp.npy_intp B = block_radius
+        int all_cores = cpu_count()
+        int threads_to_use = -1
 
     I = arr.shape[0]
     J = arr.shape[1]
     K = arr.shape[2]
 
-    if have_openmp and num_threads is not None:
+    if num_threads is not None:
+        threads_to_use = num_threads
+    else:
+        threads_to_use = all_cores
+
+    if have_openmp:
         openmp.omp_set_dynamic(0)
-        openmp.omp_set_num_threads(num_threads)
+        openmp.omp_set_num_threads(threads_to_use)
 
     # move the block
     with nogil, parallel():
+
         for i in prange(B, I - B):
             for j in range(B, J - B):
                 for k in range(B, K - B):
@@ -103,6 +112,9 @@ def _nlmeans_3d(double [:, :, ::1] arr, double [:, :, ::1] mask,
                         continue
 
                     out[i, j, k] = process_block(arr, i, j, k, B, P, sigma)
+
+    if have_openmp and num_threads is not None:
+        openmp.omp_set_num_threads(all_cores)
 
     new = np.asarray(out)
 

@@ -13,7 +13,7 @@ from safe_openmp cimport have_openmp
 from cython.parallel import prange
 from libc.stdlib cimport malloc, free
 from libc.math cimport sqrt, sin, cos
-
+from multiprocessing import cpu_count
 
 cdef cnp.dtype f64_dt = np.dtype(np.float64)
 
@@ -105,20 +105,29 @@ def _bundle_minimum_distance_matrix(double [:, ::1] static,
 
     cdef:
         cnp.npy_intp i=0, j=0, mov_i=0, mov_j=0
+        int all_cores = cpu_count()
+        int threads_to_use = -1
 
-    if have_openmp and num_threads is not None:
+    if num_threads is not None:
+        threads_to_use = num_threads
+    else:
+        threads_to_use = all_cores
+
+    if have_openmp:
         openmp.omp_set_dynamic(0)
-        openmp.omp_set_num_threads(num_threads)
+        openmp.omp_set_num_threads(threads_to_use)
 
     with nogil:
 
         for i in prange(static_size):
-
             for j in prange(moving_size):
 
                 D[i, j] = min_direct_flip_dist(&static[i * rows, 0],
                                                &moving[j * rows, 0],
                                                rows)
+
+    if have_openmp and num_threads is not None:
+        openmp.omp_set_num_threads(all_cores)
 
     return np.asarray(D)
 
@@ -167,11 +176,18 @@ def _bundle_minimum_distance(double [:, ::1] stat,
         double dist=0
         double * min_j
         double * min_i
-        cdef openmp.omp_lock_t lock
+        openmp.omp_lock_t lock
+        int all_cores = cpu_count()
+        int threads_to_use = -1
 
-    if have_openmp and num_threads is not None:
+    if num_threads is not None:
+        threads_to_use = num_threads
+    else:
+        threads_to_use = all_cores
+
+    if have_openmp:
         openmp.omp_set_dynamic(0)
-        openmp.omp_set_num_threads(num_threads)
+        openmp.omp_set_num_threads(threads_to_use)
 
     with nogil:
 
@@ -219,6 +235,9 @@ def _bundle_minimum_distance(double [:, ::1] stat,
         dist = (sum_i / <double>static_size + sum_j / <double>moving_size)
 
         dist = 0.25 * dist * dist
+
+    if have_openmp and num_threads is not None:
+        openmp.omp_set_num_threads(all_cores)
 
     return dist
 

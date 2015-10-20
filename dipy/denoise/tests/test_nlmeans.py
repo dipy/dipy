@@ -84,13 +84,20 @@ def test_nlmeans_dtype():
 
 def test_nlmeans_4d_3dsigma_and_threads():
     # Input is 4D data and 3D sigma
-    data = np.ones((10, 10, 10, 5))
-    sigma = np.ones((10, 10, 10))
-    new_data = nlmeans(data, sigma, num_threads=1)
-    new_data2 = nlmeans(data, sigma, num_threads=2)
-    new_data3 = nlmeans(data, sigma, num_threads=None)
+    data = np.ones((50, 10, 10, 5))
+    sigma = np.ones(data.shape[:3])
+    mask = np.zeros(data.shape[:3])
+
+    mask[25-10:25+10] = 1
+
+    new_data = nlmeans(data, sigma, mask, num_threads=1)
+    new_data2 = nlmeans(data, sigma, mask, num_threads=None)
+    new_data3 = nlmeans(data, sigma, mask, num_threads=2)
+
     assert_array_almost_equal(new_data, new_data2)
     assert_array_almost_equal(new_data2, new_data3)
 
+
 if __name__ == '__main__':
+
     run_module_suite()
