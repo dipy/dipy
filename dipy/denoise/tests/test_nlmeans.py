@@ -94,27 +94,32 @@ def test_nlmeans_4d_3dsigma_and_threads():
     # mask[25-10:25+10] = 1
     mask[:] = 1
 
+    print('cpu count %d' % (cpu_count(),))
+
     print('1')
     t = time()
     new_data = nlmeans(data, sigma, mask, num_threads=1)
     duration_1core = time() - t
+    print(duration_1core)
 
     print('All')
     t = time()
     new_data2 = nlmeans(data, sigma, mask, num_threads=None)
-    duration_all_cores = time() - t
+    duration_all_core = time() - t
+    print(duration_all_core)
 
     print('2')
     t = time()
     new_data3 = nlmeans(data, sigma, mask, num_threads=2)
     duration_2core = time() - t
+    print(duration_all_core)
 
     assert_array_almost_equal(new_data, new_data2)
     assert_array_almost_equal(new_data2, new_data3)
 
     if cpu_count() > 2:
 
-        assert_equal(duration_all_cores < duration_2core, True)
+        assert_equal(duration_all_core < duration_2core, True)
         assert_equal(duration_2core < duration_1core, True)
 
 
