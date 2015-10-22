@@ -5,7 +5,9 @@ Continuous and analytical diffusion signal modelling with MAPMRI
 
 We show how to model the diffusion signal as a linear combination
 of continuous functions from the MAPMRI basis [Ozarslan2013]_.
-We also compute the analytical Orientation Distribution Function (ODF).
+We also compute the analytical Orientation Distribution Function (ODF),
+the the Return To the Origin Probability (RTOP), the Return To the Axis
+Probability (RTAP), and the Return To the Plane Probability (RTPP).
 
 First import the necessary modules:
 """
