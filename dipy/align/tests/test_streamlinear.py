@@ -452,7 +452,7 @@ def test_compose_decompose_matrix44():
     assert_raises(ValueError, decompose_matrix44, mat, 20)
 
 
-def test_cascade_of_optimizations():
+def test_cascade_of_optimizations_and_threading():
 
     cingulum_bundles = two_cingulum_bundles()
 
@@ -466,15 +466,16 @@ def test_cascade_of_optimizations():
     cb2 = set_number_of_points(cb2, 20)
 
     print('first rigid')
-    slr = StreamlineLinearRegistration(x0=6)
+    slr = StreamlineLinearRegistration(x0=6, num_threads=1)
     slm = slr.optimize(cb1, cb2)
 
     print('then similarity')
-    slr2 = StreamlineLinearRegistration(x0=7)
+    slr2 = StreamlineLinearRegistration(x0=7, num_threads=2)
     slm2 = slr2.optimize(cb1, cb2, slm.matrix)
 
     print('then affine')
-    slr3 = StreamlineLinearRegistration(x0=12, options={'maxiter': 50})
+    slr3 = StreamlineLinearRegistration(x0=12, options={'maxiter': 50},
+                                        num_threads=None)
     slm3 = slr3.optimize(cb1, cb2, slm2.matrix)
 
     assert_(slm2.fopt < slm.fopt)
