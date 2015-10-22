@@ -32,8 +32,7 @@ For this example we select only the shell with b-values equal to the one of the
 Human Connectome Project (HCP).
 """
 bvals = [1000, 2000, 3000]
-
-gtab, img = read_cenir_multib(bvals)
+img, gtab = read_cenir_multib(bvals)
 data = img.get_data()
 data_small = data[40:65, 50:51, 35:60]
 
