@@ -2,12 +2,11 @@ import numpy as np
 from numpy.testing import (run_module_suite,
                            assert_,
                            assert_equal,
-                           assert_raises,
                            assert_array_almost_equal)
 from dipy.denoise.nlmeans import nlmeans
-from dipy.denoise.denspeed import add_padding_reflection, remove_padding
+from dipy.denoise.denspeed import (add_padding_reflection, remove_padding,
+                                   cpu_count)
 from time import time
-from multiprocessing import cpu_count
 
 
 def test_nlmeans_padding():
@@ -122,7 +121,12 @@ def test_nlmeans_4d_3dsigma_and_threads():
         assert_equal(duration_all_core < duration_2core, True)
         assert_equal(duration_2core < duration_1core, True)
 
+    if cpu_count() == 2:
+
+        assert_equal(duration_2core < duration_1core, True)
+
 
 if __name__ == '__main__':
 
+    # test_nlmeans_4d_3dsigma_and_threads()
     run_module_suite()

@@ -85,7 +85,7 @@ def _nlmeans_3d(double [:, :, ::1] arr, double [:, :, ::1] mask,
         double summ = 0
         cnp.npy_intp P = patch_radius
         cnp.npy_intp B = block_radius
-        int all_cores = cpu_count()
+        int all_cores = openmp.omp_get_num_procs()
         int threads_to_use = -1
 
     I = arr.shape[0]
@@ -276,3 +276,11 @@ cdef cnp.npy_intp copy_block_3d(double * dest,
             memcpy(&dest[i * J * K  + j * K], &source[i + min_i, j + min_j, min_k], K * sizeof(double))
 
     return 1
+
+
+def cpu_count():
+    if have_openmp:
+        return openmp.omp_get_num_procs()
+    else:
+        return 1
+

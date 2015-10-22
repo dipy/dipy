@@ -11,3 +11,4 @@ cdef extern from "conditional_omp.h":
     extern int omp_get_num_procs() nogil
     extern int omp_get_max_threads() nogil
     cdef int have_openmp
+

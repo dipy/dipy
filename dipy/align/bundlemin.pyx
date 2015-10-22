@@ -105,7 +105,7 @@ def _bundle_minimum_distance_matrix(double [:, ::1] static,
 
     cdef:
         cnp.npy_intp i=0, j=0, mov_i=0, mov_j=0
-        int all_cores = cpu_count()
+        int all_cores = openmp.omp_get_num_procs()
         int threads_to_use = -1
 
     if num_threads is not None:
@@ -177,7 +177,7 @@ def _bundle_minimum_distance(double [:, ::1] stat,
         double * min_j
         double * min_i
         openmp.omp_lock_t lock
-        int all_cores = cpu_count()
+        int all_cores = openmp.omp_get_num_procs()
         int threads_to_use = -1
 
     if num_threads is not None:
