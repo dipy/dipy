@@ -31,31 +31,32 @@ matrix:
     - python: 2.7
       env:
         - DEPENDS="cython numpy scipy matplotlib h5py nibabel cvxopt scikit_learn"
+    # To test vtk functionality
     - python: 2.7
-      sudo: true
+      sudo: true   # This is set to true for apt-get
       env:
         - VTK=1
-        - VENV_ARGS="--system-site-packages --python=/usr/bin/python2.7"
+        - VENV_ARGS="--system-site-packages"
 before_install:
     - source tools/travis_tools.sh
     - virtualenv $VENV_ARGS venv
     - source venv/bin/activate
     - python --version # just to check
-    - retry pip install nose # always
     - wheelhouse_pip_install $DEPENDS
+    - retry pip install nose
     - if [ "${COVERAGE}" == "1" ]; then
       pip install coverage;
       pip install coveralls;
       fi
     - if [ "${VTK}" == "1" ]; then
-      sudo apt-get update;
-      sudo apt-get install -y python-vtk;
-      sudo apt-get install -y xvfb;
-      sudo apt-get install -y python-tk;
-      python -c "import vtk";
+          sudo apt-get update;
+          sudo apt-get install -y python-vtk;
+          sudo apt-get install -y xvfb;
+          sudo apt-get install -y python-tk;
+          sudo apt-get install python-nose;
       fi
 install:
-    - python setup.py install
+    - python setup.py install;
 # command to run tests, e.g. python setup.py test
 script:
     # Change into an innocuous directory and find tests from installation
@@ -68,8 +69,8 @@ script:
       COVER_ARGS="--with-coverage --cover-package dipy";
       fi
     - if [ "${VTK}" == "1" ]; then
-      VIRT_BUFF="xvfb-run";
+      VIRT_BUFF="xvfb-run --server-args='-screen 0 1024x768x24'";
       fi
-    - $VIRT_BUFF nosetests --with-doctest --verbose $COVER_ARGS dipy
+    - $VIRT_BUFF /home/travis/build/nipy/dipy/venv/bin/nosetests --with-doctest --verbose $COVER_ARGS dipy
 after_success:
     - if [ "${COVERAGE}" == "1" ]; then coveralls; fi
