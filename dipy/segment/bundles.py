@@ -1,5 +1,5 @@
 import numpy as np
-from dipy.tracking.streamline import (transform_streamlines,
+from dipy.tracking.streamline import (transform_streamlines, Streamlines,
                                       set_number_of_points, nbytes,
                                       select_random_set_of_streamlines)
 from dipy.segment.clustering import (QuickBundles,
@@ -19,10 +19,31 @@ from scipy.spatial import cKDTree
 
 class RecoBundles(object):
 
-    def __init__(self, streamlines, mdf_thr=20, verbose=True):
+    def __init__(self, streamlines, mdf_thr=20, verbose=True,
+                 load_chunks=False):
 
-        self.streamlines = streamlines
-        self.nb_streamlines = len(streamlines)
+        if load_chunks:
+            stream_obj = Streamlines()
+            buffer_100k = []
+            t = time()
+            for stream in streamlines:
+                buffer_100k.append(stream[0])
+                if len(buffer_100k) == 100000:
+                    stream_obj.extend(buffer_100k)
+                    buffer_100k = []
+            if len(buffer_100k) != 0:
+                stream_obj.extend(buffer_100k)
+            print('Duration %0.3f sec. \n' % (time() - t,))
+
+            self.streamlines = stream_obj
+        else:
+            self.streamlines = streamlines
+
+        self.nb_streamlines = len(self.streamlines)
+
+        from ipdb import set_trace
+        set_trace()
+
         self.verbose = verbose
         self.cluster_streamlines(mdf_thr=mdf_thr)
 

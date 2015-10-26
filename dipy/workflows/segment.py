@@ -119,7 +119,7 @@ def recognize_bundles_flow(streamline_files, model_bundle_files,
                            slr=True, slr_metric=None,
                            slr_transform='similarity', slr_progressive=True,
                            slr_matrix='small', verbose=True,
-                           disp=False):
+                           disp=False, load_chunks=False):
     """ Recognize bundles
 
     Parameters
@@ -151,7 +151,8 @@ def recognize_bundles_flow(streamline_files, model_bundle_files,
         Enable standard output (defaut True).
     disp : bool, optional
         Show 3D results (default False).
-
+    load_chunks : bool, optional
+        Load streamlines in chunks (default False)
     """
 
     if isinstance(streamline_files, string_types):
@@ -206,10 +207,18 @@ def recognize_bundles_flow(streamline_files, model_bundle_files,
             return
 
         t = time()
-        streamlines, hdr = load_trk(sf)
+        if not load_chunks:
+            streams, hdr = load_trk(sf)
+            streams = [s[0] for s in streams]
+        else:
+            # HACK returning things as a generator
+            # this is processed in a different way now and in a specific bundle
+            streams, hdr = tv.read(sf, as_generator=True, points_space='rasmm')
+
         print('Loading time %0.3f sec' % (time() - t,))
 
-        rb = RecoBundles(streamlines, mdf_thr=15)
+        rb = RecoBundles(streams, mdf_thr=15, load_chunks=load_chunks,
+                         process_percent=process_percent)
 
         print('# Model_bundle files')
         for mb in mbfiles:
