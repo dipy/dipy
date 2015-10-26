@@ -16,7 +16,7 @@ from ..core.geometry import vector_norm
 from ..core.sphere import Sphere
 from .vec_val_sum import vec_val_vect
 from ..core.onetime import auto_attr
-from .base import ReconstModel, ReconstFit
+from .base import ReconstModel
 
 
 def _roll_evals(evals, axis=-1):
@@ -100,8 +100,10 @@ def fractional_anisotropy(evals, axis=-1):
     # Make sure not to get nans
     all_zero = (evals == 0).all(axis=0)
     ev1, ev2, ev3 = evals
-    fa = np.sqrt(0.5 * ((ev1 - ev2) ** 2 + (ev2 - ev3) ** 2 + (ev3 - ev1) ** 2)
-                  / ((evals * evals).sum(0) + all_zero))
+    fa = np.sqrt(0.5 * ((ev1 - ev2) ** 2 +
+                 (ev2 - ev3) ** 2 +
+                 (ev3 - ev1) ** 2) /
+                 ((evals * evals).sum(0) + all_zero))
 
     return fa
 
@@ -128,38 +130,43 @@ def geodesic_anisotropy(evals, axis=-1):
 
     .. math::
 
-        GA = \sqrt{\sum_{i=1}^3 \log^2{\left ( \lambda_i/<\mathbf{D}> \right )}},
-        \quad \textrm{where} \quad <\mathbf{D}> = (\lambda_1\lambda_2\lambda_3)^{1/3}
+        GA = \sqrt{\sum_{i=1}^3
+        \log^2{\left ( \lambda_i/<\mathbf{D}> \right )}},
+        \quad \textrm{where} \quad <\mathbf{D}> =
+        (\lambda_1\lambda_2\lambda_3)^{1/3}
 
-    Note that the notation, $<D>$, is often used as the mean diffusivity (MD) of the diffusion tensor
-    and can lead to confusions in the literature (see [1]_ versus [2]_ versus [3]_ for example).
-    Reference [2]_ defines geodesic anisotropy (GA) with $<D>$ as the MD in the denominator of the sum.
-    This is wrong. The original paper [1]_ defines GA with $<D> = det(D)^{1/3}$, as the
-    isotropic part of the distance. This might be an explanation for the confusion.
-    The isotropic part of the diffusion tensor in Euclidean space is
-    the MD whereas the isotropic part of the tensor in log-Euclidean space is $det(D)^{1/3}$.
-    The Appendix of [1]_ and log-Euclidean derivations from [3]_ are clear on this.
-    Hence, all that to say that $<D> = det(D)^{1/3}$ here for the GA definition and not MD.
+    Note that the notation, $<D>$, is often used as the mean diffusivity (MD)
+    of the diffusion tensor and can lead to confusions in the literature
+    (see [1]_ versus [2]_ versus [3]_ for example). Reference [2]_ defines
+    geodesic anisotropy (GA) with $<D>$ as the MD in the denominator of the
+    sum. This is wrong. The original paper [1]_ defines GA with
+    $<D> = det(D)^{1/3}$, as the isotropic part of the distance. This might be
+    an explanation for the confusion. The isotropic part of the diffusion
+    tensor in Euclidean space is the MD whereas the isotropic part of the
+    tensor in log-Euclidean space is $det(D)^{1/3}$. The Appendix of [1]_ and
+    log-Euclidean derivations from [3]_ are clear on this. Hence, all that to
+    say that $<D> = det(D)^{1/3}$ here for the GA definition and not MD.
 
     References
     ----------
 
-    .. [1] P. G. Batchelor, M. Moakher, D. Atkinson, F. Calamante, A. Connelly,
-        "A rigorous framework for diffusion tensor calculus", Magnetic Resonance
-        in Medicine, vol. 53, pp. 221-225, 2005.
+    .. [1] P. G. Batchelor, M. Moakher, D. Atkinson, F. Calamante,
+        A. Connelly, "A rigorous framework for diffusion tensor calculus",
+        Magnetic Resonance in Medicine, vol. 53, pp. 221-225, 2005.
 
     .. [2] M. M. Correia, V. F. Newcombe, G.B. Williams.
-        "Contrast-to-noise ratios for indices of anisotropy obtained from diffusion MRI:
-        a study with standard clinical b-values at 3T". NeuroImage, vol. 57, pp. 1103-1115, 2011.
+        "Contrast-to-noise ratios for indices of anisotropy obtained from
+        diffusion MRI: a study with standard clinical b-values at 3T".
+        NeuroImage, vol. 57, pp. 1103-1115, 2011.
 
     .. [3] A. D. Lee, etal, P. M. Thompson.
-        "Comparison of fractional and geodesic anisotropy in diffusion tensor images
-        of 90 monozygotic and dizygotic twins". 5th IEEE International Symposium on
-        Biomedical Imaging (ISBI), pp. 943-946, May 2008.
+        "Comparison of fractional and geodesic anisotropy in diffusion tensor
+        images of 90 monozygotic and dizygotic twins". 5th IEEE International
+        Symposium on Biomedical Imaging (ISBI), pp. 943-946, May 2008.
 
     .. [4] V. Arsigny, P. Fillard, X. Pennec, N. Ayache.
-        "Log-Euclidean metrics for fast and simple calculus on diffusion tensors."
-        Magnetic Resonance in Medecine, vol 56, pp. 411-421, 2006.
+        "Log-Euclidean metrics for fast and simple calculus on diffusion
+        tensors." Magnetic Resonance in Medecine, vol 56, pp. 411-421, 2006.
 
     """
 
@@ -393,8 +400,6 @@ def isotropic(q_form):
         2006.
     """
     tr_A = q_form[..., 0, 0] + q_form[..., 1, 1] + q_form[..., 2, 2]
-    n_dims = len(q_form.shape)
-    add_dims = n_dims - 2  # These are the last two (the 3,3):
     my_I = np.eye(3)
     tr_AI = (tr_A.reshape(tr_A.shape + (1, 1)) * my_I)
     return (1 / 3.0) * tr_AI
@@ -561,11 +566,12 @@ def planarity(evals, axis=-1):
 
     Notes
     --------
-    Linearity is calculated with the following equation:
+    Planarity is calculated with the following equation:
 
     .. math::
 
-        Planarity = \frac{2 (\lambda_2-\lambda_3)}{\lambda_1+\lambda_2+\lambda_3}
+        Planarity =
+        \frac{2 (\lambda_2-\lambda_3)}{\lambda_1+\lambda_2+\lambda_3}
 
     Notes
     -----
@@ -596,7 +602,7 @@ def sphericity(evals, axis=-1):
 
     Notes
     --------
-    Linearity is calculated with the following equation:
+    Sphericity is calculated with the following equation:
 
     .. math::
 
@@ -651,8 +657,9 @@ def tensor_prediction(dti_params, gtab, S0):
     Parameters
     ----------
     dti_params : ndarray
-        Tensor parameters. The last dimension should have 12 tensor parameters: 3
-        eigenvalues, followed by the 3 corresponding eigenvectors
+        Tensor parameters. The last dimension should have 12 tensor
+        parameters: 3 eigenvalues, followed by the 3 corresponding
+        eigenvectors.
 
     gtab : a GradientTable class instance
         The gradient table for this prediction
@@ -712,7 +719,8 @@ class TensorModel(ReconstModel):
                 dti.ols_fit_tensor
             'NLLS' for non-linear least-squares
                 dti.nlls_fit_tensor
-            'RT' or 'restore' or 'RESTORE' for RESTORE robust tensor fitting [3]_
+            'RT' or 'restore' or 'RESTORE' for RESTORE robust tensor
+                fitting [3]_
                 dti.restore_fit_tensor
 
             callable has to have the signature:
@@ -743,11 +751,11 @@ class TensorModel(ReconstModel):
             try:
                 fit_method = common_fit_methods[fit_method]
             except KeyError:
-                raise ValueError('"' + str(fit_method) + '" is not a known fit '
-                                 'method, the fit method should either be a '
-                                 'function or one of the common fit methods')
+                e_s = '"' + str(fit_method) + '" is not a known fit '
+                e_s += 'method, the fit method should either be a '
+                e_s += 'function or one of the common fit methods'
+                raise ValueError(e_s)
         self.fit_method = fit_method
-
         self.design_matrix = design_matrix(self.gtab)
         self.args = args
         self.kwargs = kwargs
@@ -780,7 +788,6 @@ class TensorModel(ReconstModel):
             mask = np.array(mask, dtype=bool, copy=False)
             data_in_mask = np.reshape(data[mask], (-1, data.shape[-1]))
 
-
         if self.min_signal is None:
             min_signal = _min_positive_signal(data)
         else:
@@ -798,7 +805,6 @@ class TensorModel(ReconstModel):
             dti_params[mask, :] = params_in_mask
 
         return TensorFit(self, dti_params)
-
 
     def predict(self, dti_params, S0=1):
         """
@@ -992,7 +998,8 @@ class TensorFit(object):
 
         .. math::
 
-            Sphericity = \frac{2 (\lambda2 - \lambda_3)}{\lambda_1+\lambda_2+\lambda_3}
+            Sphericity =
+            \frac{2 (\lambda2 - \lambda_3)}{\lambda_1+\lambda_2+\lambda_3}
 
         Notes
         -----
@@ -1017,10 +1024,9 @@ class TensorFit(object):
 
         .. math::
 
-            Linearity = \frac{\lambda_1-\lambda_2}{\lambda_1+\lambda_2+\lambda_3}
+            Linearity =
+            \frac{\lambda_1-\lambda_2}{\lambda_1+\lambda_2+\lambda_3}
 
-        Notes
-        -----
         [1] Westin C.-F., Peled S., Gubjartsson H., Kikinis R., Jolesz
             F., "Geometrical diffusion measures for MRI from tensor basis
             analysis" in Proc. 5th Annual ISMRM, 1997.
@@ -1125,7 +1131,6 @@ class TensorFit(object):
         """
         return apparent_diffusion_coef(self.quadratic_form, sphere)
 
-
     def predict(self, gtab, S0=1):
         r"""
         Given a model fit, predict the signal on the vertices of a sphere
@@ -1202,7 +1207,8 @@ def wls_fit_tensor(design_matrix, data):
 
         y = \mathrm{data} \\
         X = \mathrm{design matrix} \\
-        \hat{\beta}_\mathrm{WLS} = \mathrm{desired regression coefficients (e.g. tensor)}\\
+        \hat{\beta}_\mathrm{WLS} =
+        \mathrm{desired regression coefficients (e.g. tensor)}\\
         \\
         \hat{\beta}_\mathrm{WLS} = (X^T W X)^{-1} X^T W y \\
         \\
@@ -1349,8 +1355,8 @@ def _nlls_err_func(tensor, design_matrix, data, weighting=None,
 
     References
     ----------
-    [1] Chang, L-C, Jones, DK and Pierpaoli, C (2005). RESTORE: robust estimation
-    of tensors by outlier rejection. MRM, 53: 1088-95.
+    [1] Chang, L-C, Jones, DK and Pierpaoli, C (2005). RESTORE: robust
+    estimation of tensors by outlier rejection. MRM, 53: 1088-95.
     """
     # This is the predicted signal given the params:
     y = np.exp(np.dot(design_matrix, tensor))
@@ -1360,16 +1366,16 @@ def _nlls_err_func(tensor, design_matrix, data, weighting=None,
 
     # If we don't want to weight the residuals, we are basically done:
     if weighting is None:
-       # And we return the SSE:
-       return residuals
+        # And we return the SSE:
+        return residuals
     se = residuals ** 2
     # If the user provided a sigma (e.g 1.5267 * std(background_noise), as
     # suggested by Chang et al.) we will use it:
     if weighting == 'sigma':
         if sigma is None:
-             e_s = "Must provide sigma value as input to use this weighting"
-             e_s += " method"
-             raise ValueError(e_s)
+            e_s = "Must provide sigma value as input to use this weighting"
+            e_s += " method"
+            raise ValueError(e_s)
         w = 1/(sigma**2)
 
     elif weighting == 'gmm':
@@ -1437,7 +1443,8 @@ def nlls_fit_tensor(design_matrix, data, weighting=None,
 
     Returns
     -------
-    nlls_params: the eigen-values and eigen-vectors of the tensor in each voxel.
+    nlls_params: the eigen-values and eigen-vectors of the tensor in each
+        voxel.
 
     """
     # Flatten for the iteration over voxels:
@@ -1473,13 +1480,15 @@ def nlls_fit_tensor(design_matrix, data, weighting=None,
 
         # The parameters are the evals and the evecs:
         try:
-            evals, evecs = decompose_tensor(from_lower_triangular(this_tensor[:6]))
+            evals, evecs = decompose_tensor(
+                               from_lower_triangular(this_tensor[:6]))
             dti_params[vox, :3] = evals
             dti_params[vox, 3:] = evecs.ravel()
         # If leastsq failed to converge and produced nans, we'll resort to the
         # OLS solution in this voxel:
         except np.linalg.LinAlgError:
-            evals, evecs = decompose_tensor(from_lower_triangular(start_params[:6]))
+            evals, evecs = decompose_tensor(
+                              from_lower_triangular(start_params[:6]))
             dti_params[vox, :3] = evals
             dti_params[vox, 3:] = evecs.ravel()
 
@@ -1523,7 +1532,6 @@ def restore_fit_tensor(design_matrix, data, sigma=None, jac=True):
     of tensors by outlier rejection. MRM, 53: 1088-95.
 
     """
-
     # Flatten for the iteration over voxels:
     flat_data = data.reshape((-1, data.shape[-1]))
     # Use the OLS method parameters as the starting point for the optimization:
@@ -1548,10 +1556,10 @@ def restore_fit_tensor(design_matrix, data, sigma=None, jac=True):
                                               Dfun=_nlls_jacobian_func)
         else:
             this_tensor, status = opt.leastsq(_nlls_err_func, start_params,
-                                             args=(design_matrix,
-                                                   flat_data[vox],
-                                                   'sigma',
-                                                   sigma))
+                                              args=(design_matrix,
+                                                    flat_data[vox],
+                                                    'sigma',
+                                                    sigma))
 
         # Get the residuals:
         pred_sig = np.exp(np.dot(design_matrix, this_tensor))
@@ -1561,18 +1569,18 @@ def restore_fit_tensor(design_matrix, data, sigma=None, jac=True):
         if np.any(np.abs(residuals) > 3 * sigma):
             # Do nlls with GMM-weighting:
             if jac:
-                this_tensor, status= opt.leastsq(_nlls_err_func,
-                                                 start_params,
-                                                 args=(design_matrix,
-                                                       flat_data[vox],
-                                                       'gmm'),
-                                                 Dfun=_nlls_jacobian_func)
+                this_tensor, status = opt.leastsq(_nlls_err_func,
+                                                  start_params,
+                                                  args=(design_matrix,
+                                                        flat_data[vox],
+                                                        'gmm'),
+                                                  Dfun=_nlls_jacobian_func)
             else:
-                this_tensor, status= opt.leastsq(_nlls_err_func,
-                                                 start_params,
-                                                 args=(design_matrix,
-                                                       flat_data[vox],
-                                                       'gmm'))
+                this_tensor, status = opt.leastsq(_nlls_err_func,
+                                                  start_params,
+                                                  args=(design_matrix,
+                                                        flat_data[vox],
+                                                        'gmm'))
 
             # How are you doin' on those residuals?
             pred_sig = np.exp(np.dot(design_matrix, this_tensor))
@@ -1589,34 +1597,37 @@ def restore_fit_tensor(design_matrix, data, sigma=None, jac=True):
 
                 if jac:
                     this_tensor, status = opt.leastsq(_nlls_err_func,
-                                                     start_params,
-                                                     args=(clean_design,
-                                                           clean_sig),
-                                                     Dfun=_nlls_jacobian_func)
+                                                      start_params,
+                                                      args=(clean_design,
+                                                            clean_sig,
+                                                            'sigma',
+                                                            this_sigma),
+                                                      Dfun=_nlls_jacobian_func)
                 else:
                     this_tensor, status = opt.leastsq(_nlls_err_func,
-                                                     start_params,
-                                                     args=(clean_design,
-                                                           clean_sig))
+                                                      start_params,
+                                                      args=(clean_design,
+                                                            clean_sig,
+                                                            'sigma',
+                                                            this_sigma))
 
         # The parameters are the evals and the evecs:
         try:
-            evals, evecs = decompose_tensor(from_lower_triangular(this_tensor[:6]))
+            evals, evecs = decompose_tensor(
+                               from_lower_triangular(this_tensor[:6]))
             dti_params[vox, :3] = evals
             dti_params[vox, 3:] = evecs.ravel()
         # If leastsq failed to converge and produced nans, we'll resort to the
         # OLS solution in this voxel:
         except np.linalg.LinAlgError:
-            evals, evecs = decompose_tensor(from_lower_triangular(start_params[:6]))
+            evals, evecs = decompose_tensor(
+                               from_lower_triangular(start_params[:6]))
             dti_params[vox, :3] = evals
             dti_params[vox, 3:] = evecs.ravel()
 
     dti_params.shape = data.shape[:-1] + (12,)
     restore_params = dti_params
     return restore_params
-
-
-
 
 
 _lt_indices = np.array([[0, 1, 3],
@@ -1726,7 +1737,6 @@ def decompose_tensor(tensor, min_diffusivity=0):
         eigenvals = eigenvals[xi, order]
         eigenvecs = eigenvecs.reshape(shape + (3, 3))
         eigenvals = eigenvals.reshape(shape + (3, ))
-
     eigenvals = eigenvals.clip(min=min_diffusivity)
     # eigenvecs: each vector is columnar
 
@@ -1777,7 +1787,7 @@ def quantize_evecs(evecs, odf_vertices=None):
     IN : ndarray
     """
     max_evecs = evecs[..., :, 0]
-    if odf_vertices == None:
+    if odf_vertices is None:
         odf_vertices = get_sphere('symmetric362').vertices
     tup = max_evecs.shape[:-1]
     mec = max_evecs.reshape(np.prod(np.array(tup)), 3)
@@ -1815,6 +1825,6 @@ common_fit_methods = {'WLS': wls_fit_tensor,
                       'OLS': ols_fit_tensor,
                       'NLLS': nlls_fit_tensor,
                       'RT': restore_fit_tensor,
-                      'restore':restore_fit_tensor,
-                      'RESTORE':restore_fit_tensor
-                     }
+                      'restore': restore_fit_tensor,
+                      'RESTORE': restore_fit_tensor
+                      }

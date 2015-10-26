@@ -2,18 +2,9 @@
 """ Classes and functions for fitting the diffusion kurtosis model """
 from __future__ import division, print_function, absolute_import
 
-import warnings
-
 import numpy as np
-
-import scipy.optimize as opt
-
-from dipy.reconst.dti import (TensorFit, fractional_anisotropy,
-                              geodesic_anisotropy, mean_diffusivity,
-                              axial_diffusivity, radial_diffusivity, trace,
-                              color_fa, determinant, isotropic, deviatoric,
-                              norm, mode, linearity, planarity, sphericity,
-                              apparent_diffusion_coef, from_lower_triangular,
+from dipy.reconst.dti import (TensorFit, mean_diffusivity, axial_diffusivity,
+                              radial_diffusivity, from_lower_triangular,
                               lower_triangular, decompose_tensor,
                               _min_positive_signal)
 
