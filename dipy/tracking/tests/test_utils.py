@@ -12,6 +12,7 @@ from dipy.tracking.utils import (affine_for_trackvis, connectivity_matrix,
                                  random_seeds_from_mask, target,
                                  _rmi, unique_rows, near_roi,
                                  reduce_rois)
+from dipy.tracking._utils import _to_voxel_coordinates
 
 import dipy.tracking.metrics as metrix
 
@@ -71,6 +72,28 @@ def test_density_map():
     expected[2:, 2:, 2:] = expected_old
     dm = density_map(streamlines, new_shape, affine=affine)
     assert_array_equal(dm, expected)
+
+
+def test_to_voxel_coordinates_precision():
+    # To simplify tests, use an identity affine. This would be the result of
+    # a call to _mapping_to_voxel with another identity affine.
+    transfo = np.array([[1.0, 0.0, 0.0],
+                        [0.0, 1.0, 0.0],
+                        [0.0, 0.0, 1.0]])
+
+    # Offset is computed by _mapping_to_voxel. With a 1x1x1 dataset
+    # having no translation, the offset is half the voxel size, i.e. 0.5.
+    offset = np.array([0.5, 0.5, 0.5])
+
+    # Without the added tolerance in _to_voxel_coordinates, this streamline
+    # should raise an Error in the call to _to_voxel_coordinates.
+    failing_strl = [np.array([[-0.5000001, 0.0, 0.0], [0.0, 1.0, 0.0]],
+                             dtype=np.float32)]
+
+    indices = _to_voxel_coordinates(failing_strl, transfo, offset)
+
+    expected_indices = np.array([[[0, 0, 0], [0, 1, 0]]])
+    assert_array_equal(indices, expected_indices)
 
 
 def test_connectivity_matrix():
