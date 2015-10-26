@@ -8,6 +8,108 @@ from dipy.tracking.utils import streamline_near_roi
 from dipy.core.geometry import dist_to_corner
 
 
+class Streamlines(object):
+    def __init__(self):
+        self.points = np.empty((0, 3), dtype=np.float32)
+        self.offsets = []
+        self.nb_points = []
+
+    @classmethod
+    def from_list(cls, streamlines):
+        """ Fast way to create a `Streamlines` object from some streamlines.
+        Parameters
+        ----------
+        streamlines : list
+            List of 2D ndarrays of shape[-1]==3
+        """
+        s = cls()
+        s.extend(streamlines)
+        return s
+
+    def append(self, streamline):
+        """
+        Parameters
+        ----------
+        streamline : 2D ndarrays of shape[-1]==3
+            Streamline to add.
+        Note
+        ----
+        If you need to add multiple streamlines you should consider
+        `Streamlines.from_list` or `Streamlines.extend`.
+        """
+        self.offsets.append(len(self.points))
+        self.nb_points.append(len(streamline))
+        self.points = np.append(self.points, streamline, axis=0)
+
+    def extend(self, streamlines):
+        if isinstance(streamlines, Streamlines):
+            self.points = np.concatenate([self.points, streamlines.points], axis=0)
+            offset = self.offsets[-1] + self.nb_points[-1] if len(self) > 0 else 0
+            self.nb_points.extend(streamlines.nb_points)
+            self.offsets.extend(np.cumsum([offset] + streamlines.nb_points).tolist()[:-1])
+        else:
+            self.points = np.concatenate([self.points] + streamlines, axis=0)
+            offset = self.offsets[-1] + self.nb_points[-1] if len(self) > 0 else 0
+            nb_points = map(len, streamlines)
+            self.nb_points.extend(nb_points)
+            self.offsets.extend(np.cumsum([offset] + nb_points).tolist()[:-1])
+
+    def __getitem__(self, idx):
+        """ Gets element(s) through indexing.
+        Parameters
+        ----------
+        idx : int, slice or list
+            Index of the element(s) to get.
+        Returns
+        -------
+        `ndarray` object(s)
+            When `idx` is a int, returns a single 2D array.
+            When `idx` is either a slice or a list, returns a list of 2D arrays.
+        """
+        if isinstance(idx, int) or isinstance(idx, np.integer):
+            return self.points[self.offsets[idx]:self.offsets[idx]+self.nb_points[idx]]
+
+        elif type(idx) is slice:
+            streamlines = Streamlines()
+            streamlines.points = self.points
+            streamlines.offsets = self.offsets[idx]
+            streamlines.nb_points = self.nb_points[idx]
+            return streamlines
+
+        elif type(idx) is list:
+            streamlines = Streamlines()
+            streamlines.points = self.points
+            streamlines.offsets = [self.offsets[i] for i in idx]
+            streamlines.nb_points = [self.nb_points[i] for i in idx]
+            return streamlines
+
+        raise TypeError("Index must be a int or a slice! Not " + str(type(idx)))
+
+    def copy(self):
+        streamlines = Streamlines()
+        total_nb_points = np.sum(self.nb_points)
+        streamlines.points = np.empty((total_nb_points, 3), dtype=np.float32)
+
+        cur_offset = 0
+        for offset, nb_points in zip(self.offsets, self.nb_points):
+            streamlines.offsets.append(cur_offset)
+            streamlines.nb_points.append(nb_points)
+            streamlines.points[cur_offset:cur_offset+nb_points] = self.points[offset:offset+nb_points]
+            cur_offset += nb_points
+
+        return streamlines
+
+    def __iter__(self):
+        if len(self.nb_points) != len(self.offsets):
+            raise ValueError("Streamlines corrupted: len(self.nb_points) != len(self.offsets)")
+
+        for offset, nb_points in zip(self.offsets, self.nb_points):
+            yield self.points[offset: offset+nb_points]
+
+    def __len__(self):
+        return len(self.offsets)
+
+
 def count(streamlines):
     """ Return the total number of streamlines
 
