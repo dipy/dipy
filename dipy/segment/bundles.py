@@ -35,14 +35,11 @@ class RecoBundles(object):
                 stream_obj.extend(buffer_100k)
             print('Duration %0.3f sec. \n' % (time() - t,))
 
-            self.streamlines = stream_obj
+            self.streamlines = stream_obj[:1000000]
         else:
-            self.streamlines = streamlines
+            self.streamlines = streamlines[:1000000]
 
         self.nb_streamlines = len(self.streamlines)
-
-        from ipdb import set_trace
-        set_trace()
 
         self.verbose = verbose
         self.cluster_streamlines(mdf_thr=mdf_thr)
@@ -275,14 +272,16 @@ class RecoBundles(object):
             cluster_map = qb.cluster(moving_all)
             moving = cluster_map.centroids
 
-        if progressive is False:
+        from ipdb import set_trace
+        set_trace()
+        if progressive == False:
 
             slr = StreamlineLinearRegistration(metric=metric, x0=x0,
                                                bounds=bounds,
                                                method=method)
             slm = slr.optimize(static, moving)
 
-        if progressive is True:
+        if progressive == True:
 
             if self.verbose:
                 print('Progressive Registration is Enabled')
@@ -456,6 +455,8 @@ class KDTreeBundles(object):
         metric = AveragePointwiseEuclideanMetric(feature)
         qb = QuickBundles(threshold=mdf_thr, metric=metric)
         cluster_map = qb.cluster(self.model_bundle)
+
+        print('Number of centroids' % (cluster_map.centroids,))
 
         self.kdtree_is_built = False
 

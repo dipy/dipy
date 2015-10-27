@@ -209,7 +209,6 @@ def recognize_bundles_flow(streamline_files, model_bundle_files,
         t = time()
         if not load_chunks:
             streams, hdr = load_trk(sf)
-            streams = [s[0] for s in streams]
         else:
             # HACK returning things as a generator
             # this is processed in a different way now and in a specific bundle
@@ -217,8 +216,7 @@ def recognize_bundles_flow(streamline_files, model_bundle_files,
 
         print('Loading time %0.3f sec' % (time() - t,))
 
-        rb = RecoBundles(streams, mdf_thr=15, load_chunks=load_chunks,
-                         process_percent=process_percent)
+        rb = RecoBundles(streams, mdf_thr=15, load_chunks=load_chunks)
 
         print('# Model_bundle files')
         for mb in mbfiles:
