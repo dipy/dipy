@@ -1,9 +1,8 @@
 from dipy.fixes import argparse as arg
-from dipy.utils.optpkg import optional_package
 
 import inspect
 
-from documentation import NumpyDocString
+from dipy.workflows.documentation import NumpyDocString
 
 class IntrospectiveArgumentParser(arg.ArgumentParser):
 
