@@ -272,8 +272,8 @@ class RecoBundles(object):
             cluster_map = qb.cluster(moving_all)
             moving = cluster_map.centroids
 
-        from ipdb import set_trace
-        set_trace()
+        # from ipdb import set_trace
+        # set_trace()
         if progressive == False:
 
             slr = StreamlineLinearRegistration(metric=metric, x0=x0,
