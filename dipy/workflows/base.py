@@ -3,7 +3,7 @@ from dipy.utils.optpkg import optional_package
 
 import inspect
 
-ndoc, has_ndoc, _ = optional_package('numpydoc')
+from documentation import NumpyDocString
 
 class IntrospectiveArgumentParser(arg.ArgumentParser):
 
@@ -56,9 +56,7 @@ class IntrospectiveArgumentParser(arg.ArgumentParser):
     def add_workflow(self, workflow):
         specs = inspect.getargspec(workflow)
         doc = inspect.getdoc(workflow)
-
-        if has_ndoc:
-            self.doc = ndoc.docscrape.NumpyDocString(doc)['Parameters']
+        self.doc = NumpyDocString(doc)['Parameters']
 
         args = specs.args
         defaults = specs.defaults
@@ -69,31 +67,24 @@ class IntrospectiveArgumentParser(arg.ArgumentParser):
         # Arguments with no defaults (Positional)
         cnt = 0
         for i in range(len_args - len_defaults):
-            if has_ndoc:
-                help_msg = ''.join(self.doc[i][2])
-                self.add_argument(args[i], help=help_msg)
-            else:
-                self.add_argument(args[i])
+            help_msg = ''.join(self.doc[i][2])
+            self.add_argument(args[i], help=help_msg)
             cnt += 1
 
         # Arguments with defaults (Optional)
         for i in range(cnt, len_args):
-            if has_ndoc:
-                typestr = self.doc[i][1]
-                dtype = self._select_dtype(typestr)
-                help_msg = ' '.join(self.doc[i][2])
+            typestr = self.doc[i][1]
+            dtype = self._select_dtype(typestr)
+            help_msg = ' '.join(self.doc[i][2])
 
-                if dtype is bool:
-                    self.add_argument('--' + args[i], choices=[0, 1], type=int,
-                                      action='store', metavar=dtype.__name__,
-                                      help=help_msg)
-                else:
-                    self.add_argument('--' + args[i], action='store',
-                                      type=dtype, metavar=dtype.__name__,
-                                      help=help_msg)
-
+            if dtype is bool:
+                self.add_argument('--' + args[i], choices=[0, 1], type=int,
+                                  action='store', metavar=dtype.__name__,
+                                  help=help_msg)
             else:
-                self.add_argument('--' + args[i])
+                self.add_argument('--' + args[i], action='store',
+                                  type=dtype, metavar=dtype.__name__,
+                                  help=help_msg)
 
     def _select_dtype(self, text):
         text = text.lower()
