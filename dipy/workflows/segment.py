@@ -68,7 +68,7 @@ def median_otsu_flow(input_files, out_dir='', save_masked=False,
         mask_img.to_filename(mask_out_path)
         print('Mask saved as {0}'.format(mask_out_path))
 
-        if bool_param(save_masked):
+        if save_masked:
             masked_fname = fname + '_bet' + ext
             masked_img = nib.Nifti1Image(masked, img.get_affine(), img.get_header())
             masked_out_path = join(out_dir_path, masked_fname)
