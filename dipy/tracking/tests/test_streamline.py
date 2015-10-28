@@ -756,6 +756,7 @@ def test_select_by_rois():
     npt.assert_array_equal(list(selection), [streamlines[0],
                            streamlines[1]])
 
+
 def test_orient_by_rois():
     streamlines = [np.array([[0, 0., 0],
                              [1, 0., 0.],
@@ -779,7 +780,6 @@ def test_orient_by_rois():
                             [2., 0,  0.]])]
 
     npt.assert_equal(new_streamlines, flipped_sl)
-
 
 
 if __name__ == '__main__':
