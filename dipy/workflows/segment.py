@@ -229,7 +229,7 @@ def recognize_bundles_flow(streamline_files, model_bundle_files,
             model_bundle, hdr_model_bundle = load_trk(mb)
 
             recognized_bundle = rb.recognize(model_bundle, mdf_thr=5,
-                                             reduction_thr=reduction_thr,
+                                             reduction_thr=float(reduction_thr),
                                              slr=slr,
                                              slr_metric=slr_metric,
                                              slr_x0=slr_transform,

@@ -253,6 +253,10 @@ class RecoBundles(object):
             bounds = [(-30, 30), (-30, 30), (-30, 30),
                       (-45, 45), (-45, 45), (-45, 45), (0.8, 1.2)]
 
+        from dipy.workflows.segment import show_bundles
+
+        show_bundles(self.neighb_streamlines, self.model_bundle)
+
         if not use_centroids:
             static = select_random_set_of_streamlines(self.model_bundle,
                                                       select_model)
