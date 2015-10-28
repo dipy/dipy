@@ -1,6 +1,6 @@
 import numpy as np
 from dipy.tracking.streamline import (transform_streamlines, Streamlines,
-                                      set_number_of_points, nbytes,
+                                      set_number_of_points, nbytes, length,
                                       select_random_set_of_streamlines)
 from dipy.segment.clustering import (QuickBundles,
                                      AveragePointwiseEuclideanMetric)
@@ -20,7 +20,7 @@ from scipy.spatial import cKDTree
 class RecoBundles(object):
 
     def __init__(self, streamlines, mdf_thr=20, verbose=True,
-                 load_chunks=False):
+                 load_chunks=False, greater_that=0, less_than=300):
 
         if load_chunks:
             stream_obj = Streamlines()
@@ -35,9 +35,18 @@ class RecoBundles(object):
                 stream_obj.extend(buffer_100k)
             print('Duration %0.3f sec. \n' % (time() - t,))
 
-            self.streamlines = stream_obj[:1000000]
+            self.streamlines = stream_obj
         else:
-            self.streamlines = streamlines[:1000000]
+            self.streamlines = streamlines
+
+#        def check_range(streamline, gt=greater_than, lt=less_than):
+#
+#            if (length(streamline) > gt) & (length(streamline) < lt):
+#                return True
+#            else:
+#                return False
+#
+#        streamlines1 = [s for s in static if check_range(s)]
 
         self.nb_streamlines = len(self.streamlines)
 
@@ -45,7 +54,7 @@ class RecoBundles(object):
         self.cluster_streamlines(mdf_thr=mdf_thr)
 
     def cluster_streamlines(self, mdf_thr=20, nb_pts=20,
-                            select_randomly=50000):
+                            select_randomly=10**6):
 
         t = time()
         if self.verbose:
@@ -58,10 +67,11 @@ class RecoBundles(object):
         len_s = len(self.streamlines)
         indices = np.random.choice(len_s, min(select_randomly, len_s),
                                    replace=False)
-        sample_streamlines = [self.streamlines[i]
-                              for i in indices]
-        sample_streamlines = set_number_of_points(sample_streamlines, nb_pts)
-        sample_streamlines = [s.astype('f4') for s in sample_streamlines]
+        sample_streamlines = set_number_of_points(self.streamlines, nb_pts)
+#        sample_streamlines = [self.streamlines[i]
+#                              for i in indices]
+#        sample_streamlines = set_number_of_points(sample_streamlines, nb_pts)
+#        sample_streamlines = [s.astype('f4') for s in sample_streamlines]
 
         if self.verbose:
             print(' Resampled to {} points'.format(nb_pts))
@@ -70,10 +80,12 @@ class RecoBundles(object):
 
         feature = IdentityFeature()
         metric = AveragePointwiseEuclideanMetric(feature)
-        qb = QuickBundles(threshold=mdf_thr, metric=metric)
+        qb = QuickBundles(threshold=mdf_thr, metric=metric,
+                          max_nb_clusters=600)
 
         t1 = time()
-        initial_clusters = qb.cluster(sample_streamlines)
+        initial_clusters = qb.cluster(sample_streamlines, ordering=indices)
+        initial_centroids = initial_clusters.centroids
 
         if self.verbose:
             print(' QuickBundles time for %d random streamlines'
@@ -81,33 +93,31 @@ class RecoBundles(object):
 
             print(' Duration %0.3f sec. \n' % (time() - t1, ))
 
-        t2 = time()
+#        t2 = time()
+#
+#        # change back to 2
+#        # but don't use set_number do it directly
+#        rstreamlines_2pt = set_number_of_points(self.streamlines, 2)
+#        rstreamlines_2pt = [s.astype('f4') for s in rstreamlines_2pt]
+#
+#        if self.verbose:
+#            print(' Resampling to 2 points %d' % (self.nb_streamlines,))
+#            print(' Size is %0.3f MB' % (nbytes(rstreamlines_2pt),))
+#            print(' Duration %0.3f sec. \n' % (time() - t2, ))
+#
+#        t3 = time()
+#
+#        for cluster in initial_clusters:
+#            cluster.centroid = set_number_of_points(cluster.centroid, 2)
+#
+#        cluster_map = qb.assign(initial_clusters, rstreamlines_2pt)
+#
+#        if self.verbose:
+#            print(' Assignment time for %d streamlines' % (len_s,))
+#            print(' Duration %0.3f sec. \n' % (time() - t3, ))
 
-        # change back to 2
-        # but don't use set_number do it directly
-        rstreamlines_2pt = set_number_of_points(self.streamlines, 2)
-        rstreamlines_2pt = [s.astype('f4') for s in rstreamlines_2pt]
-
-        if self.verbose:
-            print(' Resampling to 2 points %d' % (self.nb_streamlines,))
-            print(' Size is %0.3f MB' % (nbytes(rstreamlines_2pt),))
-            print(' Duration %0.3f sec. \n' % (time() - t2, ))
-
-        t3 = time()
-
-        initial_centroids = initial_clusters.centroids
-
-        for cluster in initial_clusters:
-            cluster.centroid = set_number_of_points(cluster.centroid, 2)
-
-        cluster_map = qb.assign(initial_clusters, rstreamlines_2pt)
-
-        if self.verbose:
-            print(' Assignment time for %d streamlines' % (len_s,))
-            print(' Duration %0.3f sec. \n' % (time() - t3, ))
-
-        cluster_map.refdata = self.streamlines
-        self.cluster_map = cluster_map
+        initial_clusters.refdata = self.streamlines
+        self.cluster_map = initial_clusters
         self.centroids = initial_centroids
         self.nb_centroids = len(self.centroids)
         self.indices = [cluster.indices for cluster in self.cluster_map]
@@ -150,15 +160,6 @@ class RecoBundles(object):
             self.transf_streamlines = self.neighb_streamlines
             self.transf_matrix = np.eye(4)
         self.prune_what_not_in_model(pruning_thr=pruning_thr)
-
-        """
-        if slr and repeat_slr:
-            self.neighb_streamlines = self.pruned_streamlines
-            self.register_neighb_to_model(select_model=slr_select[0],
-                                          select_target=slr_select[1],
-                                          method=slr_method)
-            self.prune_what_not_in_model(pruning_thr=pruning_thr)
-        """
 
         if self.verbose:
             print('Total duration of recognition time is %0.3f sec.\n'
@@ -203,12 +204,25 @@ class RecoBundles(object):
         centroid_matrix[centroid_matrix > reduction_thr] = np.inf
 
         mins = np.min(centroid_matrix, axis=0)
-        close_clusters = [self.cluster_map[i]
-                          for i in np.where(mins != np.inf)[0]]
-        close_centroids = [cluster.centroid for cluster in close_clusters]
+        close_clusters_indices = list(np.where(mins != np.inf)[0])
+        close_clusters = self.cluster_map[close_clusters_indices]
+        # close_clusters = [self.cluster_map[i]
+        #                  for i in np.where(mins != np.inf)[0]]:
+        # close_centroids = [cluster.centroid for cluster in close_clusters]
+
+        # Important if reassignment has been used
+        # TODO maybe support both cases of having or not having assignment
+
+        close_centroids = [self.centroids[i]
+                           for i in close_clusters_indices]
         close_indices = [cluster.indices for cluster in close_clusters]
 
         close_streamlines = list(chain(*close_clusters))
+
+        from dipy.workflows.segment import show_bundles
+
+        show_bundles(self.model_bundle, close_centroids)
+        show_bundles(self.model_bundle, close_streamlines)
 
         self.centroid_matrix = centroid_matrix.copy()
 
@@ -247,7 +261,7 @@ class RecoBundles(object):
             metric = BundleSumDistanceMatrixMetric()
 
         if x0 is None:
-            x0 = np.array([0, 0, 0, 0, 0, 0, 1.])
+            x0 = 'similarity'
 
         if bounds is None:
             bounds = [(-30, 30), (-30, 30), (-30, 30),
@@ -342,12 +356,14 @@ class RecoBundles(object):
 
             if x0 == 'translation':
                 slm = slm_t
-            if x0 == 'rigid':
+            elif x0 == 'rigid':
                 slm = slm_r
-            if x0 == 'similarity':
+            elif x0 == 'similarity':
                 slm = slm_s
-            if x0 == 'scaling':
+            elif x0 == 'scaling':
                 slm = slm_c
+            else:
+                raise ValueError('Incorrect SLR transform')
 
         self.transf_streamlines = transform_streamlines(
             self.neighb_streamlines, slm.matrix)
