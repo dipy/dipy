@@ -265,6 +265,31 @@ def orient_by_rois(streamlines, roi1, roi2, affine=None):
         coordinate arrays (3d coordinates)
     affine : ndarray
         Affine transformation from voxels to streamlines. Default: identity.
+
+    Returns
+    -------
+    streamlines : list
+        The same 3D arrays, but reoriented with respect to the ROIs
+
+    Examples
+    --------
+    >>> streamlines = [np.array([[0, 0., 0],
+    ...                          [1, 0., 0.],
+    ...                          [2, 0., 0.]]),
+    ...                np.array([[2, 0., 0.],
+    ...                          [1, 0., 0],
+    ...                          [0, 0,  0.]])]
+    >>> roi1 = np.zeros((4, 4, 4), dtype=bool)
+    >>> roi2 = np.zeros_like(roi1)
+    >>> roi1[0, 0, 0] = True
+    >>> roi2[1, 0, 0] = True
+    >>> orient_by_rois(streamlines, roi1, roi2)
+    [array([[ 0.,  0.,  0.],
+           [ 1.,  0.,  0.],
+           [ 2.,  0.,  0.]]), array([[ 0.,  0.,  0.],
+           [ 1.,  0.,  0.],
+           [ 2.,  0.,  0.]])]
+
     """
 
     # If we don't already have coordinates on our hands:

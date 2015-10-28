@@ -768,9 +768,7 @@ def test_orient_by_rois():
     mask1 = np.zeros((4, 4, 4), dtype=bool)
     mask2 = np.zeros_like(mask1)
     mask1[0, 0, 0] = True
-    mask1[1, 1, 1] = True
     mask2[1, 0, 0] = True
-    mask2[2, 2, 2] = True
 
     new_streamlines = orient_by_rois(streamlines, mask1, mask2)
     flipped_sl = [np.array([[0, 0., 0],
