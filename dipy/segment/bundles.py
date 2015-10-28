@@ -17,18 +17,27 @@ from itertools import chain
 from scipy.spatial import cKDTree
 
 
+def check_range(streamline, gt, lt):
+    length_s = length(streamline)
+    if (length_s > gt) & (length_s < lt):
+        return True
+    else:
+        return False
+
+
 class RecoBundles(object):
 
     def __init__(self, streamlines, mdf_thr=20, verbose=True,
-                 load_chunks=False, greater_that=0, less_than=300):
+                 load_chunks=False, greater_than=30, less_than=300):
 
+        self.mdf_thr = mdf_thr
         if load_chunks:
             stream_obj = Streamlines()
             buffer_100k = []
             t = time()
             for stream in streamlines:
                 buffer_100k.append(stream[0])
-                if len(buffer_100k) == 100000:
+                if len(buffer_100k) == 10 ** 5:
                     stream_obj.extend(buffer_100k)
                     buffer_100k = []
             if len(buffer_100k) != 0:
@@ -39,16 +48,12 @@ class RecoBundles(object):
         else:
             self.streamlines = streamlines
 
-#        def check_range(streamline, gt=greater_than, lt=less_than):
-#
-#            if (length(streamline) > gt) & (length(streamline) < lt):
-#                return True
-#            else:
-#                return False
-#
-#        streamlines1 = [s for s in static if check_range(s)]
+        self.streamlines = [s for s in self.streamlines
+                            if check_range(s, greater_than, less_than)]
 
         self.nb_streamlines = len(self.streamlines)
+        print('Number of streamlines after length reduction {}'
+              .format(self.nb_streamlines))
 
         self.verbose = verbose
         self.cluster_streamlines(mdf_thr=mdf_thr)
@@ -68,20 +73,15 @@ class RecoBundles(object):
         indices = np.random.choice(len_s, min(select_randomly, len_s),
                                    replace=False)
         sample_streamlines = set_number_of_points(self.streamlines, nb_pts)
-#        sample_streamlines = [self.streamlines[i]
-#                              for i in indices]
-#        sample_streamlines = set_number_of_points(sample_streamlines, nb_pts)
-#        sample_streamlines = [s.astype('f4') for s in sample_streamlines]
 
         if self.verbose:
             print(' Resampled to {} points'.format(nb_pts))
             print(' Size is %0.3f MB' % (nbytes(sample_streamlines),))
-            print(' Duration %0.3f sec. \n' % (time() - t, ))
+            print(' Duration of resampling is %0.3f sec. \n' % (time() - t, ))
 
         feature = IdentityFeature()
         metric = AveragePointwiseEuclideanMetric(feature)
-        qb = QuickBundles(threshold=mdf_thr, metric=metric,
-                          max_nb_clusters=600)
+        qb = QuickBundles(threshold=mdf_thr, metric=metric)
 
         t1 = time()
         initial_clusters = qb.cluster(sample_streamlines, ordering=indices)
@@ -92,29 +92,6 @@ class RecoBundles(object):
                   % (select_randomly,))
 
             print(' Duration %0.3f sec. \n' % (time() - t1, ))
-
-#        t2 = time()
-#
-#        # change back to 2
-#        # but don't use set_number do it directly
-#        rstreamlines_2pt = set_number_of_points(self.streamlines, 2)
-#        rstreamlines_2pt = [s.astype('f4') for s in rstreamlines_2pt]
-#
-#        if self.verbose:
-#            print(' Resampling to 2 points %d' % (self.nb_streamlines,))
-#            print(' Size is %0.3f MB' % (nbytes(rstreamlines_2pt),))
-#            print(' Duration %0.3f sec. \n' % (time() - t2, ))
-#
-#        t3 = time()
-#
-#        for cluster in initial_clusters:
-#            cluster.centroid = set_number_of_points(cluster.centroid, 2)
-#
-#        cluster_map = qb.assign(initial_clusters, rstreamlines_2pt)
-#
-#        if self.verbose:
-#            print(' Assignment time for %d streamlines' % (len_s,))
-#            print(' Duration %0.3f sec. \n' % (time() - t3, ))
 
         initial_clusters.refdata = self.streamlines
         self.cluster_map = initial_clusters
@@ -139,6 +116,7 @@ class RecoBundles(object):
                   slr_progressive=False,
                   pruning_thr=10):
 
+        self.reduction_thr = reduction_thr
         t = time()
         if self.verbose:
             print('## Recognize given bundle ## \n')
@@ -154,8 +132,7 @@ class RecoBundles(object):
                                           select_target=slr_select[1],
                                           method=slr_method,
                                           use_centroids=slr_use_centroids,
-                                          progressive=slr_progressive
-                                          )
+                                          progressive=slr_progressive)
         else:
             self.transf_streamlines = self.neighb_streamlines
             self.transf_matrix = np.eye(4)
@@ -219,10 +196,13 @@ class RecoBundles(object):
 
         close_streamlines = list(chain(*close_clusters))
 
-        from dipy.workflows.segment import show_bundles
-
-        show_bundles(self.model_bundle, close_centroids)
-        show_bundles(self.model_bundle, close_streamlines)
+#        from dipy.workflows.segment import show_bundles
+#        show_bundles(self.model_centroids, close_centroids)
+#        show_bundles(self.model_bundle, close_centroids)
+#        show_bundles(self.model_bundle, close_streamlines)
+#
+#        from ipdb import set_trace
+#        set_trace()
 
         self.centroid_matrix = centroid_matrix.copy()
 
@@ -266,10 +246,6 @@ class RecoBundles(object):
         if bounds is None:
             bounds = [(-30, 30), (-30, 30), (-30, 30),
                       (-45, 45), (-45, 45), (-45, 45), (0.8, 1.2)]
-
-        from dipy.workflows.segment import show_bundles
-
-        show_bundles(self.neighb_streamlines, self.model_bundle)
 
         if not use_centroids:
             static = select_random_set_of_streamlines(self.model_bundle,
