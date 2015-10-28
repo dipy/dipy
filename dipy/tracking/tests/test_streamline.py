@@ -17,7 +17,8 @@ from dipy.tracking.streamline import (set_number_of_points,
                                       transform_streamlines,
                                       select_random_set_of_streamlines,
                                       compress_streamlines,
-                                      select_by_rois)
+                                      select_by_rois,
+                                      orient_by_rois)
 
 
 streamline = np.array([[82.20181274,  91.36505890,  43.15737152],
@@ -754,6 +755,33 @@ def test_select_by_rois():
                                tol=1.0)
     npt.assert_array_equal(list(selection), [streamlines[0],
                            streamlines[1]])
+
+def test_orient_by_rois():
+    streamlines = [np.array([[0, 0., 0],
+                             [1, 0., 0.],
+                             [2, 0., 0.]]),
+                   np.array([[2, 0., 0.],
+                             [1, 0., 0],
+                             [0, 0,  0.]])]
+
+    # Make two ROIs:
+    mask1 = np.zeros((4, 4, 4), dtype=bool)
+    mask2 = np.zeros_like(mask1)
+    mask1[0, 0, 0] = True
+    mask1[1, 1, 1] = True
+    mask2[1, 0, 0] = True
+    mask2[2, 2, 2] = True
+
+    new_streamlines = orient_by_rois(streamlines, mask1, mask2)
+    flipped_sl = [np.array([[0, 0., 0],
+                            [1, 0., 0.],
+                            [2, 0., 0.]]),
+                  np.array([[0., 0., 0.],
+                            [1., 0., 0],
+                            [2., 0,  0.]])]
+
+    npt.assert_equal(new_streamlines, flipped_sl)
+
 
 
 if __name__ == '__main__':
