@@ -449,7 +449,7 @@ class KDTreeBundles(object):
         qb = QuickBundles(threshold=mdf_thr, metric=metric)
         cluster_map = qb.cluster(self.model_bundle)
 
-        print('Number of centroids' % (cluster_map.centroids,))
+        print('Number of centroids %d' % (len(cluster_map.centroids),))
 
         self.kdtree_is_built = False
 
