@@ -766,20 +766,25 @@ def test_orient_by_rois():
                              [0, 0,  0.]])]
 
     # Make two ROIs:
-    mask1 = np.zeros((4, 4, 4), dtype=bool)
-    mask2 = np.zeros_like(mask1)
-    mask1[0, 0, 0] = True
-    mask2[1, 0, 0] = True
+    mask1_vol = np.zeros((4, 4, 4), dtype=bool)
+    mask2_vol = np.zeros_like(mask1_vol)
+    mask1_vol[0, 0, 0] = True
+    mask2_vol[1, 0, 0] = True
 
-    new_streamlines = orient_by_rois(streamlines, mask1, mask2)
-    flipped_sl = [np.array([[0, 0., 0],
-                            [1, 0., 0.],
-                            [2, 0., 0.]]),
-                  np.array([[0., 0., 0.],
-                            [1., 0., 0],
-                            [2., 0,  0.]])]
+    mask1_coords = np.array([[0, 0, 0]])
+    mask2_coords = np.array([[1, 0, 0]])
 
-    npt.assert_equal(new_streamlines, flipped_sl)
+    for mask1, mask2 in \
+      zip([mask1_vol, mask1_coords], [mask2_vol, mask2_coords]):
+        new_streamlines = orient_by_rois(streamlines, mask1, mask2)
+        flipped_sl = [np.array([[0, 0., 0],
+                                [1, 0., 0.],
+                                [2, 0., 0.]]),
+                      np.array([[0., 0., 0.],
+                                [1., 0., 0],
+                                [2., 0,  0.]])]
+
+        npt.assert_equal(new_streamlines, flipped_sl)
 
 
 if __name__ == '__main__':

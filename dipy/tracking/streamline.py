@@ -259,10 +259,11 @@ def orient_by_rois(streamlines, roi1, roi2, affine=None):
     Parameters
     ----------
     streamlines : list
-        List of 3d arrays. Coordinates of the
+        List of 3d arrays. Each array contains the xyz coordinates of a single
+        streamline.
     roi1, roi2 : ndarray
         Binary masks designating the location of the regions of interest, or
-        coordinate arrays (3d coordinates)
+        coordinate arrays (n-by-3 array with ROI coordinate in each row).
     affine : ndarray
         Affine transformation from voxels to streamlines. Default: identity.
 
