@@ -9,6 +9,7 @@ import dipy.tracking.utils as ut
 from dipy.tracking.utils import streamline_near_roi
 from dipy.core.geometry import dist_to_corner
 from scipy.spatial.distance import cdist
+from copy import deepcopy
 
 def unlist_streamlines(streamlines):
     """ Return the streamlines not as a list but as an array and an offset
@@ -253,7 +254,7 @@ def select_by_rois(streamlines, rois, include, mode=None, affine=None,
             yield sl
 
 
-def orient_by_rois(streamlines, roi1, roi2, affine=None):
+def orient_by_rois(streamlines, roi1, roi2, affine=None, copy=True):
     """Orient a set of streamlines according to a pair of ROIs
 
     Parameters
@@ -266,6 +267,8 @@ def orient_by_rois(streamlines, roi1, roi2, affine=None):
         coordinate arrays (n-by-3 array with ROI coordinate in each row).
     affine : ndarray
         Affine transformation from voxels to streamlines. Default: identity.
+    copy : bool
+        Whether to make a copy of the input, or mutate the input inplace.
 
     Returns
     -------
@@ -303,12 +306,18 @@ def orient_by_rois(streamlines, roi1, roi2, affine=None):
         roi1 = apply_affine(affine, roi1)
         roi2 = apply_affine(affine, roi2)
 
+    # Make a copy, so you don't change the output in place:
+    if copy:
+        new_sl = deepcopy(streamlines)
+    else:
+        new_sl = streamlines
+
     for idx, sl in enumerate(streamlines):
         dist1 = cdist(sl, roi1, 'euclidean')
         dist2 = cdist(sl, roi2, 'euclidean')
         min1 = np.argmin(dist1, 0)
         min2 = np.argmin(dist2, 0)
         if min1[0] > min2[0]:
-            streamlines[idx] = sl[::-1]
+            new_sl[idx] = sl[::-1]
 
-    return streamlines
+    return new_sl
