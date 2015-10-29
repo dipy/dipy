@@ -771,20 +771,26 @@ def test_orient_by_rois():
     mask1_vol[0, 0, 0] = True
     mask2_vol[1, 0, 0] = True
 
+    # If there is an affine, we'll use it:
+    affine = np.eye(4)
+    affine[:, 3] = [-1, 100, -20, 1]
+    # Transform the streamlines:
+    x_streamlines = [sl + affine[:3, 3] for sl in streamlines]
     mask1_coords = np.array([[0, 0, 0]])
     mask2_coords = np.array([[1, 0, 0]])
 
-    for mask1, mask2 in \
-      zip([mask1_vol, mask1_coords], [mask2_vol, mask2_coords]):
-        new_streamlines = orient_by_rois(streamlines, mask1, mask2)
-        flipped_sl = [np.array([[0, 0., 0],
-                                [1, 0., 0.],
-                                [2, 0., 0.]]),
-                      np.array([[0., 0., 0.],
-                                [1., 0., 0],
-                                [2., 0,  0.]])]
+    for sl, affine in zip([streamlines, x_streamlines], [None, affine]):
+        for mask1, mask2 in \
+          zip([mask1_vol, mask1_coords], [mask2_vol, mask2_coords]):
+            new_streamlines = orient_by_rois(sl, mask1, mask2, affine)
+            flipped_sl = [np.array([[0, 0., 0],
+                                    [1, 0., 0.],
+                                    [2, 0., 0.]]),
+                          np.array([[0., 0., 0.],
+                                    [1., 0., 0],
+                                    [2., 0,  0.]])]
 
-        npt.assert_equal(new_streamlines, flipped_sl)
+            npt.assert_equal(new_streamlines, flipped_sl)
 
 
 if __name__ == '__main__':
