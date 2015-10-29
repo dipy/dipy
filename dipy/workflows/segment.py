@@ -115,11 +115,12 @@ def show_bundles(static, moving, linewidth=1., tubes=False,
 
 
 def recognize_bundles_flow(streamline_files, model_bundle_files,
-                           out_dir=None, reduction_thr=20, pruning_thr=5.,
-                           slr=True, slr_metric=None,
+                           out_dir=None, clust_thr=15.,
+                           reduction_thr=20, model_clust_thr=5.,
+                           pruning_thr=5., slr=True, slr_metric=None,
                            slr_transform='similarity', slr_progressive=True,
                            slr_matrix='small', verbose=True,
-                           disp=False, load_chunks=False):
+                           disp=False, load_chunks=False, debug=False):
     """ Recognize bundles
 
     Parameters
@@ -130,8 +131,12 @@ def recognize_bundles_flow(streamline_files, model_bundle_files,
         The path of model bundle files
     out_dir : string, optional
         Directory to output the different files
+    clust_thr : float, optional
+        MDF distance threshold for all streamlines
     reduction_thr : float, optional
         Reduce search space by (mm). (default 20)
+    model_clust_thr : float, optional
+        MDF distance threshold for the model bundles (default 5)
     pruning_thr : float, optional
         Pruning after matching (default 5).
     slr : bool, optional
@@ -153,6 +158,8 @@ def recognize_bundles_flow(streamline_files, model_bundle_files,
         Show 3D results (default False).
     load_chunks : bool, optional
         Load streamlines in chunks (default False)
+    debug : bool, optional
+        Write out intremediate results (default False)
     """
 
     if isinstance(streamline_files, string_types):
@@ -216,7 +223,10 @@ def recognize_bundles_flow(streamline_files, model_bundle_files,
 
         print('Loading time %0.3f sec' % (time() - t,))
 
-        rb = RecoBundles(streams, mdf_thr=15, load_chunks=load_chunks)
+        rb = RecoBundles(streams, clust_thr=clust_thr, load_chunks=load_chunks)
+
+        from ipdb import set_trace
+        set_trace()
 
         print('# Model_bundle files')
         for mb in mbfiles:
@@ -228,17 +238,19 @@ def recognize_bundles_flow(streamline_files, model_bundle_files,
 
             model_bundle, hdr_model_bundle = load_trk(mb)
 
-            recognized_bundle = rb.recognize(model_bundle, mdf_thr=5,
-                                             reduction_thr=float(reduction_thr),
-                                             slr=slr,
-                                             slr_metric=slr_metric,
-                                             slr_x0=slr_transform,
-                                             slr_bounds=bounds,
-                                             slr_select=slr_select,
-                                             slr_method='L-BFGS-B',
-                                             slr_use_centroids=False,
-                                             slr_progressive=slr_progressive,
-                                             pruning_thr=pruning_thr)
+            recognized_bundle = rb.recognize(
+                model_bundle,
+                model_clust_thr=float(model_clust_thr),
+                reduction_thr=float(reduction_thr),
+                slr=slr,
+                slr_metric=slr_metric,
+                slr_x0=slr_transform,
+                slr_bounds=bounds,
+                slr_select=slr_select,
+                slr_method='L-BFGS-B',
+                slr_use_centroids=False,
+                slr_progressive=slr_progressive,
+                pruning_thr=pruning_thr)
 
 # TODO add option to return recognized bundle in the space that you want
 # Or better return the labels of the bundle which I currently do.
@@ -280,6 +292,23 @@ def recognize_bundles_flow(streamline_files, model_bundle_files,
                   .format(sf_bundle_file))
             print('Recognized bundle labels saved in \n {} '
                   .format(sf_bundle_labels))
+
+            if debug:
+                sf_bundle_neighb = os.path.join(
+                    out_dir,
+                    os.path.splitext(os.path.basename(mb))[0] + '_neighb.trk')
+                save_trk(sf_bundle_neighb, rb.neighb_streamlines,
+                         hdr=hdr)
+                print('Recognized bundle\'s neighbors saved in \n {} '
+                      .format(sf_bundle_neighb))
+
+        if debug:
+            sf_centroids = os.path.join(
+                os.path.dirname(sf),
+                os.path.splitext(os.path.basename(sf))[0] + '_centroids.trk')
+            save_trk(sf_centroids, rb.neighb_streamlines, hdr=hdr)
+            print('Centroids of streamlines saved in \n {} '
+                  .format(sf_centroids))
 
 
 def kdtrees_bundles_flow(streamline_file, labels_file, verbose=True):

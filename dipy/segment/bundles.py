@@ -27,10 +27,10 @@ def check_range(streamline, gt, lt):
 
 class RecoBundles(object):
 
-    def __init__(self, streamlines, mdf_thr=20, verbose=True,
-                 load_chunks=False, greater_than=30, less_than=300):
+    def __init__(self, streamlines, clust_thr=20, verbose=True,
+                 load_chunks=False):
 
-        self.mdf_thr = mdf_thr
+        self.clust_thr = clust_thr
         if load_chunks:
             stream_obj = Streamlines()
             buffer_100k = []
@@ -48,18 +48,14 @@ class RecoBundles(object):
         else:
             self.streamlines = streamlines
 
-        self.streamlines = [s for s in self.streamlines
-                            if check_range(s, greater_than, less_than)]
-
         self.nb_streamlines = len(self.streamlines)
-        print('Number of streamlines after length reduction {}'
-              .format(self.nb_streamlines))
-
         self.verbose = verbose
-        self.cluster_streamlines(mdf_thr=mdf_thr)
+        self.cluster_streamlines(clust_thr=clust_thr)
 
-    def cluster_streamlines(self, mdf_thr=20, nb_pts=20,
-                            select_randomly=10**6):
+    def cluster_streamlines(self, clust_thr=20, nb_pts=20,
+                            select_randomly=None):
+
+        select_randomly = 500000
 
         t = time()
         if self.verbose:
@@ -67,9 +63,11 @@ class RecoBundles(object):
             print(' Streamlines has %d streamlines'
                   % (len(self.streamlines), ))
             print(' Size is %0.3f MB' % (nbytes(self.streamlines),))
-            print(' Distance threshold %0.3f' % (mdf_thr,))
+            print(' Distance threshold %0.3f' % (clust_thr,))
 
-        len_s = len(self.streamlines)
+        len_s = self.nb_streamlines
+        if select_randomly is None:
+            select_randomly = len_s
         indices = np.random.choice(len_s, min(select_randomly, len_s),
                                    replace=False)
         sample_streamlines = set_number_of_points(self.streamlines, nb_pts)
@@ -81,7 +79,7 @@ class RecoBundles(object):
 
         feature = IdentityFeature()
         metric = AveragePointwiseEuclideanMetric(feature)
-        qb = QuickBundles(threshold=mdf_thr, metric=metric)
+        qb = QuickBundles(threshold=clust_thr, metric=metric)
 
         t1 = time()
         initial_clusters = qb.cluster(sample_streamlines, ordering=indices)
@@ -104,7 +102,7 @@ class RecoBundles(object):
                   % (self.nb_centroids,))
             print(' Total duration %0.3f sec. \n' % (time() - t, ))
 
-    def recognize(self, model_bundle, mdf_thr=10,
+    def recognize(self, model_bundle, model_clust_thr,
                   reduction_thr=20,
                   slr=True,
                   slr_metric=None,
@@ -122,7 +120,7 @@ class RecoBundles(object):
             print('## Recognize given bundle ## \n')
 
         self.model_bundle = model_bundle
-        self.cluster_model_bundle(mdf_thr=mdf_thr)
+        self.cluster_model_bundle(model_clust_thr=model_clust_thr)
         self.reduce_search_space(reduction_thr=reduction_thr)
         if slr:
             self.register_neighb_to_model(metric=slr_metric,
@@ -143,13 +141,14 @@ class RecoBundles(object):
                   % (time()-t,))
         return self.pruned_streamlines
 
-    def cluster_model_bundle(self, mdf_thr=20, nb_pts=20):
+    def cluster_model_bundle(self, model_clust_thr, nb_pts=20):
+        self.model_clust_thr = model_clust_thr
         t = time()
         if self.verbose:
             print('# Cluster model bundle using QuickBundles')
             print(' Model bundle has %d streamlines'
                   % (len(self.model_bundle), ))
-            print(' Distance threshold %0.3f' % (mdf_thr,))
+            print(' Distance threshold %0.3f' % (model_clust_thr,))
 
         rmodel_bundle = set_number_of_points(self.model_bundle, nb_pts)
         rmodel_bundle = [s.astype('f4') for s in rmodel_bundle]
@@ -158,7 +157,7 @@ class RecoBundles(object):
 
         feature = IdentityFeature()
         metric = AveragePointwiseEuclideanMetric(feature)
-        qb = QuickBundles(threshold=mdf_thr, metric=metric)
+        qb = QuickBundles(threshold=model_clust_thr, metric=metric)
 
         self.model_cluster_map = qb.cluster(rmodel_bundle)
         self.model_centroids = self.model_cluster_map.centroids
