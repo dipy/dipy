@@ -116,7 +116,7 @@ def show_bundles(static, moving, linewidth=1., tubes=False,
 
 def recognize_bundles_flow(streamline_files, model_bundle_files,
                            out_dir=None, clust_thr=15.,
-                           reduction_thr=20, model_clust_thr=5.,
+                           reduction_thr=10, model_clust_thr=5.,
                            pruning_thr=5., slr=True, slr_metric=None,
                            slr_transform='similarity', slr_progressive=True,
                            slr_matrix='small', verbose=True,
