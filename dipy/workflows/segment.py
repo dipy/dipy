@@ -120,7 +120,8 @@ def recognize_bundles_flow(streamline_files, model_bundle_files,
                            pruning_thr=5., slr=True, slr_metric=None,
                            slr_transform='similarity', slr_progressive=True,
                            slr_matrix='small', verbose=True,
-                           disp=False, load_chunks=False, debug=False):
+                           disp=False, load_chunks=False, debug=False,
+                           use_only=None):
     """ Recognize bundles
 
     Parameters
@@ -160,6 +161,10 @@ def recognize_bundles_flow(streamline_files, model_bundle_files,
         Load streamlines in chunks (default False)
     debug : bool, optional
         Write out intremediate results (default False)
+    use_only : int, optional
+        Use only a random sample of the steamlines of size ``use_only``.
+        Default is None which means that all the streamlines will be used.
+
     """
 
     if isinstance(streamline_files, string_types):
@@ -223,7 +228,8 @@ def recognize_bundles_flow(streamline_files, model_bundle_files,
 
         print('Loading time %0.3f sec' % (time() - t,))
 
-        rb = RecoBundles(streams, clust_thr=clust_thr, load_chunks=load_chunks)
+        rb = RecoBundles(streams, clust_thr=clust_thr, load_chunks=load_chunks,
+                         use_only=use_only)
 
         from ipdb import set_trace
         set_trace()
@@ -306,7 +312,7 @@ def recognize_bundles_flow(streamline_files, model_bundle_files,
             sf_centroids = os.path.join(
                 os.path.dirname(sf),
                 os.path.splitext(os.path.basename(sf))[0] + '_centroids.trk')
-            save_trk(sf_centroids, rb.neighb_streamlines, hdr=hdr)
+            save_trk(sf_centroids, rb.centroids, hdr=hdr)
             print('Centroids of streamlines saved in \n {} '
                   .format(sf_centroids))
 

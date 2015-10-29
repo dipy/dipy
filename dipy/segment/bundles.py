@@ -28,7 +28,7 @@ def check_range(streamline, gt, lt):
 class RecoBundles(object):
 
     def __init__(self, streamlines, clust_thr=20, verbose=True,
-                 load_chunks=False):
+                 load_chunks=False, use_only=None):
 
         self.clust_thr = clust_thr
         if load_chunks:
@@ -50,12 +50,10 @@ class RecoBundles(object):
 
         self.nb_streamlines = len(self.streamlines)
         self.verbose = verbose
-        self.cluster_streamlines(clust_thr=clust_thr)
+        self.cluster_streamlines(clust_thr=clust_thr, select_randomly=use_only)
 
     def cluster_streamlines(self, clust_thr=20, nb_pts=20,
                             select_randomly=None):
-
-        select_randomly = 500000
 
         t = time()
         if self.verbose:
