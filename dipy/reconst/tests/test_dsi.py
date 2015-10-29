@@ -24,7 +24,7 @@ def test_dsi():
     sphere2 = create_unit_sphere(5)
     btable = np.loadtxt(get_data('dsi515btable'))
     gtab = gradient_table(btable[:,0], btable[:,1:])
-    data, golden_directions = SticksAndBall(gtab, d=0.0015, 
+    data, golden_directions = SticksAndBall(gtab, d=0.0015,
                                             S0=100, angles=[(0, 0), (90, 0)],
                                             fractions=[50, 50], snr=None)
 
@@ -71,21 +71,36 @@ def test_multivox_dsi():
     assert_equal(np.alltrue(np.isreal(PDF)), True)
 
 
+def test_multib0_dsi():
+    data, gtab = dsi_voxels()
+    # Create a new data-set with a b0 measurement:
+    new_data = np.concatenate([data, data[..., 0, None]], -1)
+    new_bvecs = np.concatenate([gtab.bvecs, np.zeros((1, 3))])
+    new_bvals = np.concatenate([gtab.bvals, [0]])
+    new_gtab = gradient_table(new_bvals, new_bvecs)
+    DS = DiffusionSpectrumModel(new_gtab)
+    sphere = get_sphere('symmetric724')
+    DSfit = DS.fit(new_data)
+    PDF = DSfit.pdf()
+    assert_equal(new_data.shape[:-1] + (17, 17, 17), PDF.shape)
+    assert_equal(np.alltrue(np.isreal(PDF)), True)
+
+
 def sticks_and_ball_dummies(gtab):
     sb_dummies={}
-    S, sticks = SticksAndBall(gtab, d=0.0015, S0=100, 
-                              angles=[(0, 0)], 
-                              fractions=[100], snr=None)   
+    S, sticks = SticksAndBall(gtab, d=0.0015, S0=100,
+                              angles=[(0, 0)],
+                              fractions=[100], snr=None)
     sb_dummies['1fiber'] = (S, sticks)
-    S, sticks = SticksAndBall(gtab, d=0.0015, S0=100, 
+    S, sticks = SticksAndBall(gtab, d=0.0015, S0=100,
                               angles=[(0, 0), (90, 0)],
                               fractions=[50, 50], snr=None)
     sb_dummies['2fiber'] = (S, sticks)
-    S, sticks = SticksAndBall(gtab, d=0.0015, S0=100, 
+    S, sticks = SticksAndBall(gtab, d=0.0015, S0=100,
                               angles=[(0, 0), (90, 0), (90, 90)],
                               fractions=[33, 33, 33], snr=None)
     sb_dummies['3fiber'] = (S, sticks)
-    S, sticks = SticksAndBall(gtab, d=0.0015, S0=100, 
+    S, sticks = SticksAndBall(gtab, d=0.0015, S0=100,
                               angles=[(0, 0), (90, 0), (90, 90)],
                               fractions=[0, 0, 0], snr=None)
     sb_dummies['isotropic'] = (S, sticks)
