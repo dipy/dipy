@@ -216,7 +216,7 @@ class RecoBundles(object):
         if self.verbose:
             print(' Number of neighbor streamlines %d' %
                   (self.nb_neighb_streamlines,))
-            print(' Duration %0.3f sec. \n' % (time() - t, ))
+            print(' Duration %0.3f sec. \n' % (time() - t,))
 
     def register_neighb_to_model(self, metric=None, x0=None, bounds=None,
                                  select_model=400, select_target=600,
