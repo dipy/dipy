@@ -231,9 +231,6 @@ def recognize_bundles_flow(streamline_files, model_bundle_files,
         rb = RecoBundles(streams, clust_thr=clust_thr, load_chunks=load_chunks,
                          use_only=use_only)
 
-        from ipdb import set_trace
-        set_trace()
-
         print('# Model_bundle files')
         for mb in mbfiles:
             print(mb)
