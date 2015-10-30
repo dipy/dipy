@@ -111,12 +111,16 @@ def test_multi_voxel_fit():
 
         @multi_voxel_fit
         def fit(self, data, mask=None):
-            return SillyFit(model)
+            return SillyFit(model, data)
+
+        def predict(self, S0):
+            return np.ones(10) * S0
 
     class SillyFit(object):
 
-        def __init__(self, model):
+        def __init__(self, model, data):
             self.model = model
+            self.data = data
 
         model_attr = 2.
 
@@ -127,6 +131,9 @@ def test_multi_voxel_fit():
         def directions(self):
             n = np.random.randint(0, 10)
             return np.zeros((n, 3))
+
+        def predict(self, S0):
+            return np.ones(self.data.shape) * S0
 
     # Test the single voxel case
     model = SillyModel()
@@ -143,20 +150,32 @@ def test_multi_voxel_fit():
     expected = np.ones((2, 3, 4, 12))
     npt.assert_array_equal(fit.odf(unit_icosahedron), expected)
     npt.assert_equal(fit.directions.shape, (2, 3, 4))
+    S0 = 100.
+    npt.assert_equal(fit.predict(S0=S0), np.ones(many_voxels.shape) * S0)
 
     # Test with a mask
-    mask = np.eye(3).astype('bool')
-    data = np.zeros((3, 3, 64))
+    mask = np.zeros((3, 3, 3)).astype('bool')
+    mask[0, 0] = 1
+    mask[1, 1] = 1
+    mask[2, 2] = 1
+    data = np.zeros((3, 3, 3, 64))
     fit = model.fit(data, mask)
-    npt.assert_array_equal(fit.model_attr, np.eye(3) * 2)
+    expected = np.zeros((3,3,3))
+    expected[0, 0] = 2
+    expected[1, 1] = 2
+    expected[2, 2] = 2
+    npt.assert_array_equal(fit.model_attr, expected)
     odf = fit.odf(unit_icosahedron)
-    npt.assert_equal(odf.shape, (3, 3, 12))
+    npt.assert_equal(odf.shape, (3, 3, 3, 12))
     npt.assert_array_equal(odf[~mask], 0)
     npt.assert_array_equal(odf[mask], 1)
+    predicted = np.zeros(data.shape)
+    predicted[mask] = S0
+    npt.assert_equal(fit.predict(S0=S0), predicted)
 
     # Test fit.shape
-    npt.assert_equal(fit.shape, (3, 3))
+    npt.assert_equal(fit.shape, (3, 3, 3))
 
     # Test indexing into a fit
-    npt.assert_equal(type(fit[0, 0]), SillyFit)
-    npt.assert_equal(fit[:2, :2].shape, (2, 2))
+    npt.assert_equal(type(fit[0, 0, 0]), SillyFit)
+    npt.assert_equal(fit[:2, :2, :2].shape, (2, 2, 2))

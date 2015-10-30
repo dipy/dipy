@@ -116,9 +116,13 @@ def select_random_set_of_streamlines(streamlines, select):
     Returns
     -------
     selected_streamlines : list
+
+    Notes
+    -----
+    The same streamline will not be selected twice.
     """
     len_s = len(streamlines)
-    index = np.random.randint(0, len_s, min(select, len_s))
+    index = np.random.choice(len_s, min(select, len_s), replace=False)
     return [streamlines[i] for i in index]
 
 

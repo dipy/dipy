@@ -60,7 +60,7 @@ def _to_voxel_coordinates(streamline, lin_T, offset):
     raises an error for negative voxel values."""
     inds = np.dot(streamline, lin_T)
     inds += offset
-    if inds.min() < 0:
+    if inds.min().round(decimals=6) < 0:
         raise IndexError('streamline has points that map to negative voxel'
                          ' indices')
     return inds.astype(int)

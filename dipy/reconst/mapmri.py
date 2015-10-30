@@ -10,6 +10,7 @@ from ..utils.optpkg import optional_package
 
 cvxopt, have_cvxopt, _ = optional_package("cvxopt")
 
+
 class MapmriModel(ReconstModel):
 
     r"""Mean Apparent Propagator MRI (MAPMRI) [1]_ of the diffusion signal.
@@ -147,9 +148,6 @@ class MapmriModel(ReconstModel):
         tenfit = self.tenmodel.fit(data[self.ind])
         evals = tenfit.evals
         R = tenfit.evecs
-        ind_evals = np.argsort(evals)[::-1]
-        evals = evals[ind_evals]
-        R = R[ind_evals, :]
         evals = np.clip(evals, self.eigenvalue_threshold, evals.max())
         if self.anisotropic_scaling:
             mu = np.sqrt(evals * 2 * self.tau)
@@ -167,7 +165,7 @@ class MapmriModel(ReconstModel):
         if self.eap_cons:
             if not have_cvxopt:
                 raise ValueError(
-                'CVXOPT package needed to enforce constraints')
+                    'CVXOPT package needed to enforce constraints')
             w_s = "The implementation of MAPMRI depends on CVXOPT "
             w_s += " (http://cvxopt.org/). This software is licensed "
             w_s += "under the GPL (see: http://cvxopt.org/copyright.html) "
@@ -268,6 +266,65 @@ class MapmriFit(ReconstFit):
         I_s = mapmri_odf_matrix(self.radial_order, self.mu, s, v)
         odf = np.dot(I_s, self._mapmri_coef)
         return odf
+
+    def rtpp(self):
+        r""" Calculates the analytical return to the plane probability (RTPP)
+        [1]_.
+
+        References
+        ----------
+        .. [1] Ozarslan E. et. al, "Mean apparent propagator (MAP) MRI: A novel
+        diffusion imaging method for mapping tissue microstructure",
+        NeuroImage, 2013.
+        """
+        Bm = self.model.Bm
+        rtpp = 0
+        const = 1 / (np.sqrt(2 * np.pi) * self.mu[0])
+        for i in range(self.ind_mat.shape[0]):
+            if Bm[i] > 0.0:
+                rtpp += (-1.0) ** (self.ind_mat[i, 0] /
+                                   2.0) * self._mapmri_coef[i] * Bm[i]
+        return const * rtpp
+
+    def rtap(self):
+        r""" Calculates the analytical return to the axis probability (RTAP)
+        [1]_.
+
+        References
+        ----------
+        .. [1] Ozarslan E. et. al, "Mean apparent propagator (MAP) MRI: A novel
+        diffusion imaging method for mapping tissue microstructure",
+        NeuroImage, 2013.
+        """
+        Bm = self.model.Bm
+        rtap = 0
+        const = 1 / (2 * np.pi * self.mu[1] * self.mu[2])
+        for i in range(self.ind_mat.shape[0]):
+            if Bm[i] > 0.0:
+                rtap += (-1.0) ** (
+                    (self.ind_mat[i, 1] + self.ind_mat[i, 2]) / 2.0) * self._mapmri_coef[i] * Bm[i]
+        return const * rtap
+
+    def rtop(self):
+        r""" Calculates the analytical return to the origin probability (RTOP)
+        [1]_.
+
+        References
+        ----------
+        .. [1] Ozarslan E. et. al, "Mean apparent propagator (MAP) MRI: A novel
+        diffusion imaging method for mapping tissue microstructure",
+        NeuroImage, 2013.
+        """
+        Bm = self.model.Bm
+        rtop = 0
+        const = 1 / \
+            np.sqrt(
+                8 * np.pi ** 3 * (self.mu[0] ** 2 * self.mu[1] ** 2 * self.mu[2] ** 2))
+        for i in range(self.ind_mat.shape[0]):
+            if Bm[i] > 0.0:
+                rtop += (-1.0) ** ((self.ind_mat[i, 0] + self.ind_mat[i, 1] + self.ind_mat[
+                    i, 2]) / 2.0) * self._mapmri_coef[i] * Bm[i]
+        return const * rtop
 
     def predict(self, gtab, S0=1.0):
         """

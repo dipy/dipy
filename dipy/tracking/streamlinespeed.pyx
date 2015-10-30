@@ -88,14 +88,12 @@ def length(streamlines):
     if dtype is None:
         # List of streamlines having different dtypes
         for i in range(len(streamlines)):
-            streamline = streamlines[i]
-            dtype = streamline.dtype
+            dtype = streamlines[i].dtype
+            # HACK: To avoid memleaks we have to recast with astype(dtype).
+            streamline = streamlines[i].astype(dtype)
             if dtype != np.float32 and dtype != np.float64:
                 dtype = np.float64 if dtype == np.int64 or dtype == np.uint64 else np.float32
                 streamline = streamlines[i].astype(dtype)
-
-            if not streamline.flags.writeable:
-                streamline = streamline.astype(dtype)
 
             if dtype == np.float32:
                 streamlines_length[i] = c_length[float2d](streamline)
@@ -105,12 +103,14 @@ def length(streamlines):
     elif dtype == np.float32:
         # All streamlines have composed of float32 points
         for i in range(len(streamlines)):
-            streamline = streamlines[i] if streamlines[i].flags.writeable else streamlines[i].astype(dtype)
+            # HACK: To avoid memleaks we have to recast with astype(dtype).
+            streamline = streamlines[i].astype(dtype)
             streamlines_length[i] = c_length[float2d](streamline)
     elif dtype == np.float64:
         # All streamlines are composed of float64 points
         for i in range(len(streamlines)):
-            streamline = streamlines[i] if streamlines[i].flags.writeable else streamlines[i].astype(dtype)
+            # HACK: To avoid memleaks we have to recast with astype(dtype).
+            streamline = streamlines[i].astype(dtype)
             streamlines_length[i] = c_length[double2d](streamline)
     elif dtype == np.int64 or dtype == np.uint64:
         # All streamlines are composed of int64 or uint64 points so convert them in float64 one at the time
@@ -255,50 +255,54 @@ def set_number_of_points(streamlines, nb_points=3):
     if dtype is None:
         # List of streamlines having different dtypes
         for i in range(len(streamlines)):
-            streamline = streamlines[i]
-            dtype = streamline.dtype
+            dtype = streamlines[i].dtype
+            # HACK: To avoid memleaks we have to recast with astype(dtype).
+            streamline = streamlines[i].astype(dtype)
             if dtype != np.float32 and dtype != np.float64:
                 dtype = np.float64 if dtype == np.int64 or dtype == np.uint64 else np.float32
                 streamline = streamline.astype(dtype)
 
-            if not streamline.flags.writeable:
-                streamline = streamline.astype(dtype)
-
-            modified_streamline = np.empty((nb_points, streamline.shape[1]), dtype=streamline.dtype)
+            modified_streamline = np.empty((nb_points, streamline.shape[1]), dtype=dtype)
             if dtype == np.float32:
                 c_set_number_of_points[float2d](streamline, modified_streamline)
             else:
                 c_set_number_of_points[double2d](streamline, modified_streamline)
-            modified_streamlines.append(modified_streamline)
+
+            # HACK: To avoid memleaks we have to recast with astype(dtype).
+            modified_streamlines.append(modified_streamline.astype(dtype))
 
     elif dtype == np.float32:
         # All streamlines have composed of float32 points
         for i in range(len(streamlines)):
-            streamline = streamlines[i] if streamlines[i].flags.writeable else streamlines[i].astype(dtype)
+            streamline = streamlines[i].astype(dtype)
             modified_streamline = np.empty((nb_points, streamline.shape[1]), dtype=streamline.dtype)
             c_set_number_of_points[float2d](streamline, modified_streamline)
-            modified_streamlines.append(modified_streamline)
+            # HACK: To avoid memleaks we have to recast with astype(dtype).
+            modified_streamlines.append(modified_streamline.astype(dtype))
     elif dtype == np.float64:
         # All streamlines are composed of float64 points
         for i in range(len(streamlines)):
-            streamline = streamlines[i] if streamlines[i].flags.writeable else streamlines[i].astype(dtype)
+            streamline = streamlines[i].astype(dtype)
             modified_streamline = np.empty((nb_points, streamline.shape[1]), dtype=streamline.dtype)
             c_set_number_of_points[double2d](streamline, modified_streamline)
-            modified_streamlines.append(modified_streamline)
+            # HACK: To avoid memleaks we have to recast with astype(dtype).
+            modified_streamlines.append(modified_streamline.astype(dtype))
     elif dtype == np.int64 or dtype == np.uint64:
         # All streamlines are composed of int64 or uint64 points so convert them in float64 one at the time
         for i in range(len(streamlines)):
             streamline = streamlines[i].astype(np.float64)
             modified_streamline = np.empty((nb_points, streamline.shape[1]), dtype=streamline.dtype)
             c_set_number_of_points[double2d](streamline, modified_streamline)
-            modified_streamlines.append(modified_streamline)
+            # HACK: To avoid memleaks we have to recast with astype(np.float64).
+            modified_streamlines.append(modified_streamline.astype(np.float64))
     else:
         # All streamlines are composed of points with a dtype fitting in 32bits so convert them in float32 one at the time
         for i in range(len(streamlines)):
             streamline = streamlines[i].astype(np.float32)
             modified_streamline = np.empty((nb_points, streamline.shape[1]), dtype=streamline.dtype)
             c_set_number_of_points[float2d](streamline, modified_streamline)
-            modified_streamlines.append(modified_streamline)
+            # HACK: To avoid memleaks we have to recast with astype(np.float32).
+            modified_streamlines.append(modified_streamline.astype(np.float32))
 
     if only_one_streamlines:
         return modified_streamlines[0]
@@ -491,15 +495,13 @@ def compress_streamlines(streamlines, tol_error=0.01, max_segment_length=10):
     compressed_streamlines = []
     cdef np.npy_intp i
     for i in range(len(streamlines)):
-        streamline = streamlines[i]
-        dtype = streamline.dtype
+        dtype = streamlines[i].dtype
+        # HACK: To avoid memleaks we have to recast with astype(dtype).
+        streamline = streamlines[i].astype(dtype)
         shape = streamline.shape
 
         if dtype != np.float32 and dtype != np.float64:
             dtype = np.float64 if dtype == np.int64 or dtype == np.uint64 else np.float32
-            streamline = streamline.astype(dtype)
-
-        if not streamline.flags.writeable:
             streamline = streamline.astype(dtype)
 
         if shape[0] <= 2:
@@ -516,7 +518,8 @@ def compress_streamlines(streamlines, tol_error=0.01, max_segment_length=10):
                                                         tol_error, max_segment_length)
 
         compressed_streamline.resize((nb_points, streamline.shape[1]))
-        compressed_streamlines.append(compressed_streamline)
+        # HACK: To avoid memleaks we have to recast with astype(dtype).
+        compressed_streamlines.append(compressed_streamline.astype(dtype))
 
     if only_one_streamlines:
         return compressed_streamlines[0]
