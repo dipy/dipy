@@ -7,21 +7,9 @@ import numpy.testing as npt
 from nibabel.tmpdirs import TemporaryDirectory
 from dipy.tracking.streamline import center_streamlines, transform_streamlines
 from dipy.align.tests.test_streamlinear import fornix_streamlines
+from dipy.testing.decorators import xvfb_it
 
 run_test = actor.have_vtk and actor.have_vtk_colors and window.have_imread
-is_travis = os.environ.get('IS_TRAVIS', False)
-
-
-def xvfb_it(my_test):
-    def run_with_xvfb():
-        if is_travis:
-            from xvfbwrapper import Xvfb
-            display = Xvfb()
-            display.start()
-        my_test()
-        if is_travis:
-            display.stop()
-    return run_with_xvfb
 
 
 @npt.dec.skipif(not run_test)

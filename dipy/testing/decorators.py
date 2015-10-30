@@ -5,6 +5,7 @@ Decorators for dipy tests
 """
 
 import re
+import os
 
 
 SKIP_RE = re.compile("(\s*>>>.*?)(\s*)#\s*skip\s+if\s+(.*)$")
@@ -44,3 +45,16 @@ def doctest_skip_parser(func):
         new_lines.append(code)
     func.__doc__ = "\n".join(new_lines)
     return func
+
+# Travis testing with virtual frame-buffer
+is_travis = os.environ.get('IS_TRAVIS', False)
+def xvfb_it(my_test):
+    def test_with_xvfb():
+        if is_travis:
+            from xvfbwrapper import Xvfb
+            display = Xvfb()
+            display.start()
+        my_test()
+        if is_travis:
+            display.stop()
+    return test_with_xvfb

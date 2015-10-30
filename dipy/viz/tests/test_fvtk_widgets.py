@@ -2,18 +2,7 @@ import numpy as np
 from dipy.viz import actor, window, widget, fvtk
 from dipy.data import fetch_viz_icons, read_viz_icons
 import numpy.testing as npt
-
-def xvfb_it(my_test):
-    def run_with_xvfb():
-        if is_travis:
-            from xvfbwrapper import Xvfb
-            display = Xvfb()
-            display.start()
-        my_test()
-        if is_travis:
-            display.stop()
-    return run_with_xvfb
-
+from dipy.testing.decorators import xvfb_it
 
 @xvfb_it
 @npt.dec.skipif(not actor.have_vtk)
