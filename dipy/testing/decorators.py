@@ -49,6 +49,8 @@ def doctest_skip_parser(func):
 # Travis testing with virtual frame-buffer
 is_travis = os.environ.get('IS_TRAVIS', False)
 def xvfb_it(my_test):
+    # When we use verbose testing we want the name:
+    fname = my_test.__name__
     def test_with_xvfb():
         if is_travis:
             from xvfbwrapper import Xvfb
@@ -57,4 +59,6 @@ def xvfb_it(my_test):
         my_test()
         if is_travis:
             display.stop()
+    # Plant it back in and return the new function:
+    test_with_xvfb.__name__ = fname
     return test_with_xvfb
