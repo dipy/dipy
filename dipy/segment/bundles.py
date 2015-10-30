@@ -27,8 +27,8 @@ def check_range(streamline, gt, lt):
 
 class RecoBundles(object):
 
-    def __init__(self, streamlines, clust_thr=20, verbose=True,
-                 load_chunks=False, use_only=None):
+    def __init__(self, streamlines, cluster_map=None, clust_thr=20,
+                 verbose=True, load_chunks=False, use_only=None):
 
         self.clust_thr = clust_thr
         if load_chunks:
@@ -50,7 +50,23 @@ class RecoBundles(object):
 
         self.nb_streamlines = len(self.streamlines)
         self.verbose = verbose
-        self.cluster_streamlines(clust_thr=clust_thr, select_randomly=use_only)
+
+        if cluster_map is None:
+            self.cluster_streamlines(clust_thr=clust_thr,
+                                     select_randomly=use_only)
+        else:
+            t = time()
+            self.cluster_map = cluster_map
+            self.cluster_map.refdata = self.streamlines
+            self.centroids = self.cluster_map.centroids
+            self.nb_centroids = len(self.centroids)
+            self.indices = [cluster.indices for cluster in self.cluster_map]
+
+            if self.verbose:
+                print(' Streamlines have %d centroids'
+                      % (self.nb_centroids,))
+                print(' Total loading duration %0.3f sec. \n'
+                      % (time() - t, ))
 
     def cluster_streamlines(self, clust_thr=20, nb_pts=20,
                             select_randomly=None):
@@ -441,7 +457,7 @@ class KDTreeBundles(object):
         self.streamlines = streamlines
         self.rstreamlines = set_number_of_points(streamlines, 20)
 
-    def build_kdtree(self, nb_pts=20, mdf_thr=10, mam_metric='min',
+    def build_kdtree(self, nb_pts=20, mdf_thr=10, mam_metric='mdf',
                      leaf_size=10):
 
         feature = ResampleFeature(nb_points=nb_pts)
@@ -461,7 +477,7 @@ class KDTreeBundles(object):
         rlabeled_streamlines = set_number_of_points(self.model_bundle,
                                                     nb_pts)
 
-        if mam_metric is not None:
+        if mam_metric in ['min', 'max', 'avg']:
             vectors = bundles_distances_mam(search_rstreamlines,
                                             cluster_map.centroids,
                                             metric=mam_metric)
@@ -469,7 +485,7 @@ class KDTreeBundles(object):
             internal_vectors = bundles_distances_mam(rlabeled_streamlines,
                                                      cluster_map.centroids,
                                                      metric=mam_metric)
-        else:
+        elif mam_metric == 'mdf':
             vectors = bundles_distances_mdf(search_rstreamlines,
                                             cluster_map.centroids)
 

@@ -17,6 +17,7 @@ from glob import glob
 from dipy.segment.bundles import RecoBundles, KDTreeBundles
 from dipy.tracking.streamline import transform_streamlines
 from nibabel import trackvis as tv
+from dipy.io.pickles import save_pickle, load_pickle
 
 
 def median_otsu_flow(input_files, out_dir='', save_masked=False,
@@ -115,7 +116,7 @@ def show_bundles(static, moving, linewidth=1., tubes=False,
 
 
 def recognize_bundles_flow(streamline_files, model_bundle_files,
-                           out_dir=None, clust_thr=15.,
+                           out_dir=None, load_clusters=False, clust_thr=15.,
                            reduction_thr=10, model_clust_thr=5.,
                            pruning_thr=5., slr=True, slr_metric=None,
                            slr_transform='similarity', slr_progressive=True,
@@ -132,6 +133,8 @@ def recognize_bundles_flow(streamline_files, model_bundle_files,
         The path of model bundle files
     out_dir : string, optional
         Directory to output the different files
+    load_clusters : bool, optional
+        Default False.
     clust_thr : float, optional
         MDF distance threshold for all streamlines
     reduction_thr : float, optional
@@ -164,7 +167,6 @@ def recognize_bundles_flow(streamline_files, model_bundle_files,
     use_only : int, optional
         Use only a random sample of the steamlines of size ``use_only``.
         Default is None which means that all the streamlines will be used.
-
     """
 
     if isinstance(streamline_files, string_types):
@@ -226,10 +228,33 @@ def recognize_bundles_flow(streamline_files, model_bundle_files,
             # this is processed in a different way now and in a specific bundle
             streams, hdr = tv.read(sf, as_generator=True, points_space='rasmm')
 
-        print('Loading time %0.3f sec' % (time() - t,))
+        print(' Loading time %0.3f sec' % (time() - t,))
 
-        rb = RecoBundles(streams, clust_thr=clust_thr, load_chunks=load_chunks,
+        #from ipdb import set_trace
+        #set_trace()
+
+        sf_clusters = os.path.join(
+                os.path.dirname(sf),
+                os.path.splitext(os.path.basename(sf))[0] + '_clusters.pkl')
+
+        if bool(load_clusters) is True:
+            clusters = load_pickle(sf_clusters)
+        else:
+            clusters = None
+
+        rb = RecoBundles(streams, clusters,
+                         clust_thr=clust_thr,
+                         load_chunks=load_chunks,
                          use_only=use_only)
+
+        if clusters is None:
+
+            print('Clusters of streamlines saved in \n {} '
+                  .format(sf_clusters))
+
+            rb.cluster_map.refdata = None
+            save_pickle(sf_clusters, rb.cluster_map)
+            rb.cluster_map.refdata = rb.streamlines
 
         print('# Model_bundle files')
         for mb in mbfiles:
@@ -314,13 +339,16 @@ def recognize_bundles_flow(streamline_files, model_bundle_files,
                   .format(sf_centroids))
 
 
-def kdtrees_bundles_flow(streamline_file, labels_file, verbose=True):
+def kdtrees_bundles_flow(streamline_file, labels_file,
+                         metric='mdf',
+                         verbose=True):
     """ Expand reduce bundles using kdtrees
 
     Parameters
     ----------
     streamline_file : string
     labels_file : string
+    metric : string
     verbose : bool, optional
         Print standard output (default True)
     """
@@ -336,7 +364,7 @@ def kdtrees_bundles_flow(streamline_file, labels_file, verbose=True):
     final_streamlines = bundle
 
     kdb = KDTreeBundles(streamlines, labels)
-    kdb.build_kdtree()
+    kdb.build_kdtree(mam_metric=metric)
 
     from dipy.viz import window, actor, widget
     from dipy.data import fetch_viz_icons, read_viz_icons
@@ -373,7 +401,7 @@ def kdtrees_bundles_flow(streamline_file, labels_file, verbose=True):
     slider = widget.slider(show_m.iren, show_m.ren,
                            callback=expand_callback,
                            min_value=1,
-                           max_value=len(bundle) + 3 * len(bundle),
+                           max_value=len(bundle) + 10 * len(bundle),
                            value=len(bundle),
                            label="Expand/Reduce",
                            right_normalized_pos=(.98, 0.6),
