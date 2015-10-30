@@ -46,18 +46,22 @@ def doctest_skip_parser(func):
     func.__doc__ = "\n".join(new_lines)
     return func
 
-# Travis testing with virtual frame-buffer
-is_travis = os.environ.get('IS_TRAVIS', False)
+###
+# In some cases (e.g., on Travis), we want to use a virtual frame-buffer for
+# testing. The following decorator runs the tests under xvfb (mediated by
+# xvfbwrapper) conditioned on an environment variable (that we set in
+# .travis.yml for these cases):
+use_xvfb = os.environ.get('TEST_WITH_XVFB', False)
 def xvfb_it(my_test):
     # When we use verbose testing we want the name:
     fname = my_test.__name__
     def test_with_xvfb():
-        if is_travis:
+        if use_xvfb:
             from xvfbwrapper import Xvfb
             display = Xvfb()
             display.start()
         my_test()
-        if is_travis:
+        if use_xvfb:
             display.stop()
     # Plant it back in and return the new function:
     test_with_xvfb.__name__ = fname
