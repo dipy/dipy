@@ -54,7 +54,7 @@ def reslice(data, affine, zooms, new_zooms, order=1, mode='constant', cval=0):
     >>> data2.shape
     (77, 77, 40)
     """
-    R = np.diag(np.array(new_zooms)/np.array(zooms))
+    R = np.array(new_zooms) / np.array(zooms)
     new_shape = np.array(zooms)/np.array(new_zooms) * np.array(data.shape[:3])
     new_shape = np.round(new_shape).astype('i8')
     if data.ndim == 3:
@@ -74,6 +74,6 @@ def reslice(data, affine, zooms, new_zooms, order=1, mode='constant', cval=0):
             data2[..., i] = data2l[i]
 
     Rx = np.eye(4)
-    Rx[:3, :3] = R
+    Rx[:3, :3] = np.diag(R)
     affine2 = np.dot(affine, Rx)
     return data2, affine2
