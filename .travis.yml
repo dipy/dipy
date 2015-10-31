@@ -64,6 +64,7 @@ before_install:
           sudo apt-get install -y $VTK_VER;
           sudo apt-get install -y xvfb;
           sudo apt-get install -y python-tk;
+          sudo apt-get install -y python-imaging;
           retry pip install xvfbwrapper;
       fi
 install:
