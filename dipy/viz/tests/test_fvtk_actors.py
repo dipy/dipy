@@ -28,8 +28,7 @@ def test_slicer():
     npt.assert_equal(report.objects, 1)
 
     # The slicer can cut directly a smaller part of the image
-    slicer.SetDisplayExtent(10, 30, 10, 30, 35, 35)
-    slicer.Update()
+    slicer.display_extent(10, 30, 10, 30, 35, 35)
     renderer.ResetCamera()
 
     window.add(renderer, slicer)
