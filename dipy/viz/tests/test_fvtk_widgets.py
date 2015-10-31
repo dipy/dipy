@@ -2,8 +2,9 @@ import numpy as np
 from dipy.viz import actor, window, widget, fvtk
 from dipy.data import fetch_viz_icons, read_viz_icons
 import numpy.testing as npt
+from dipy.testing.decorators import xvfb_it
 
-
+@xvfb_it
 @npt.dec.skipif(not actor.have_vtk)
 @npt.dec.skipif(not actor.have_vtk_colors)
 def test_button_and_slider_widgets():
@@ -111,6 +112,7 @@ def test_button_and_slider_widgets():
     npt.assert_equal(report.actors, 1)
 
 
+@xvfb_it
 @npt.dec.skipif(not actor.have_vtk)
 @npt.dec.skipif(not actor.have_vtk_colors)
 def test_text_widget():

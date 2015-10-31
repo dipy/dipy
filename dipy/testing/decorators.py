@@ -5,6 +5,7 @@ Decorators for dipy tests
 """
 
 import re
+import os
 
 
 SKIP_RE = re.compile("(\s*>>>.*?)(\s*)#\s*skip\s+if\s+(.*)$")
@@ -44,3 +45,24 @@ def doctest_skip_parser(func):
         new_lines.append(code)
     func.__doc__ = "\n".join(new_lines)
     return func
+
+###
+# In some cases (e.g., on Travis), we want to use a virtual frame-buffer for
+# testing. The following decorator runs the tests under xvfb (mediated by
+# xvfbwrapper) conditioned on an environment variable (that we set in
+# .travis.yml for these cases):
+use_xvfb = os.environ.get('TEST_WITH_XVFB', False)
+def xvfb_it(my_test):
+    # When we use verbose testing we want the name:
+    fname = my_test.__name__
+    def test_with_xvfb():
+        if use_xvfb:
+            from xvfbwrapper import Xvfb
+            display = Xvfb()
+            display.start()
+        my_test()
+        if use_xvfb:
+            display.stop()
+    # Plant it back in and return the new function:
+    test_with_xvfb.__name__ = fname
+    return test_with_xvfb

@@ -7,15 +7,15 @@ import numpy.testing as npt
 from nibabel.tmpdirs import TemporaryDirectory
 from dipy.tracking.streamline import center_streamlines, transform_streamlines
 from dipy.align.tests.test_streamlinear import fornix_streamlines
+from dipy.testing.decorators import xvfb_it
 
 run_test = actor.have_vtk and actor.have_vtk_colors and window.have_imread
 
 
 @npt.dec.skipif(not run_test)
+@xvfb_it
 def test_slicer():
-
     renderer = window.renderer()
-
     data = (255 * np.random.rand(50, 50, 50))
     affine = np.eye(4)
     slicer = actor.slicer(data, affine)
@@ -82,9 +82,9 @@ def test_slicer():
     npt.assert_equal(report.objects, 1)
 
 
+@xvfb_it
 @npt.dec.skipif(not run_test)
 def test_streamtube_and_line_actors():
-
     renderer = window.renderer()
 
     line1 = np.array([[0, 0, 0], [1, 1, 1], [2, 2, 2.]])
@@ -128,8 +128,8 @@ def test_streamtube_and_line_actors():
 
 
 @npt.dec.skipif(not run_test)
+@xvfb_it
 def test_bundle_maps():
-
     renderer = window.renderer()
     bundle = fornix_streamlines()
     bundle, shift = center_streamlines(bundle)

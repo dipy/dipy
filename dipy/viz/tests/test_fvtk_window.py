@@ -1,8 +1,10 @@
 import numpy as np
 from dipy.viz import actor, window
 import numpy.testing as npt
+from dipy.testing.decorators import xvfb_it
 
 
+@xvfb_it
 @npt.dec.skipif(not actor.have_vtk)
 @npt.dec.skipif(not actor.have_vtk_colors)
 def test_renderer():
@@ -66,6 +68,7 @@ def test_renderer():
     npt.assert_equal(report.actors, 0)
 
 
+@xvfb_it
 @npt.dec.skipif(not actor.have_vtk)
 @npt.dec.skipif(not actor.have_vtk_colors)
 def test_active_camera():
@@ -134,6 +137,7 @@ def test_active_camera():
     npt.assert_almost_equal(position[2], 0.5 * new_position[2])
 
 
+@xvfb_it
 @npt.dec.skipif(not actor.have_vtk)
 @npt.dec.skipif(not actor.have_vtk_colors)
 def test_parallel_projection():
@@ -166,6 +170,7 @@ def test_parallel_projection():
     npt.assert_equal(np.sum(arr2 > 0) > np.sum(arr > 0), True)
 
 
+@xvfb_it
 @npt.dec.skipif(not actor.have_vtk)
 @npt.dec.skipif(not actor.have_vtk_colors)
 def test_order_transparent():
