@@ -1,3 +1,4 @@
+import os
 import numpy as np
 from dipy.viz import actor, window
 import numpy.testing as npt
@@ -191,7 +192,16 @@ def test_order_transparent():
     renderer.camera().OrthogonalizeViewUp()
     renderer.reset_clipping_range()
 
-    arr = window.snapshot(renderer, offscreen=False, order_transparent=True)
+    renderer.reset_camera()
+
+    not_xvfb = os.environ.get("TEST_WITH_XVFB", False)
+
+    if not_xvfb:
+        arr = window.snapshot(renderer, fname='green_front.png',
+                              offscreen=True, order_transparent=False)
+    else:
+        arr = window.snapshot(renderer, fname='green_front.png',
+                              offscreen=False, order_transparent=False)
 
     # therefore the green component must have a higher value (in RGB terms)
     npt.assert_equal(arr[150, 150][1] > arr[150, 150][0], True)
@@ -201,7 +211,12 @@ def test_order_transparent():
     renderer.camera().OrthogonalizeViewUp()
     renderer.reset_clipping_range()
 
-    arr = window.snapshot(renderer, offscreen=False, order_transparent=True)
+    if not_xvfb:
+        arr = window.snapshot(renderer, fname='red_front.png',
+                              offscreen=True, order_transparent=True)
+    else:
+        arr = window.snapshot(renderer, fname='red_front.png',
+                              offscreen=False, order_transparent=True)
 
     # therefore the red component must have a higher value (in RGB terms)
     npt.assert_equal(arr[150, 150][0] > arr[150, 150][1], True)
