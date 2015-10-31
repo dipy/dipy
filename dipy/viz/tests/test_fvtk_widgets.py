@@ -4,6 +4,7 @@ from dipy.data import fetch_viz_icons, read_viz_icons
 import numpy.testing as npt
 from dipy.testing.decorators import xvfb_it
 
+
 @xvfb_it
 @npt.dec.skipif(not actor.have_vtk)
 @npt.dec.skipif(not actor.have_vtk_colors)

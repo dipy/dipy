@@ -184,26 +184,24 @@ def test_order_transparent():
 
     renderer.add(stream_actor)
 
-    renderer.UseDepthPeelingOn()
-    renderer.SetMaximumNumberOfPeels(4)
-    renderer.SetOcclusionRatio(0.0)
-
     renderer.reset_camera()
 
     # green in front
     renderer.elevation(90)
+    renderer.camera().OrthogonalizeViewUp()
     renderer.reset_clipping_range()
 
-    arr = window.snapshot(renderer)
+    arr = window.snapshot(renderer, offscreen=False, order_transparent=True)
 
     # therefore the green component must have a higher value (in RGB terms)
     npt.assert_equal(arr[150, 150][1] > arr[150, 150][0], True)
 
     # red in front
     renderer.elevation(-180)
+    renderer.camera().OrthogonalizeViewUp()
     renderer.reset_clipping_range()
 
-    arr = window.snapshot(renderer)
+    arr = window.snapshot(renderer, offscreen=False, order_transparent=True)
 
     # therefore the red component must have a higher value (in RGB terms)
     npt.assert_equal(arr[150, 150][0] > arr[150, 150][1], True)

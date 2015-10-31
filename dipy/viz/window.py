@@ -658,7 +658,8 @@ def record(ren=None, cam_pos=None, cam_focal=None, cam_view=None,
         ang = +az_ang
 
 
-def snapshot(ren, fname=None, size=(300, 300)):
+def snapshot(ren, fname=None, size=(300, 300), offscreen=True,
+             order_transparent=False):
     """ Saves a snapshot of the renderer in a file or in memory
 
     Parameters
@@ -669,6 +670,10 @@ def snapshot(ren, fname=None, size=(300, 300)):
         Save PNG file. If None return only an array without saving PNG.
     size : (int, int)
         ``(width, height)`` of the window. Default is (300, 300).
+    offscreen : bool
+        Default True. Go stealthmode no window should appear.
+    order_transparent : bool
+        Default False. Use depth peeling to sort transparent objects.
 
     Returns
     -------
@@ -679,15 +684,38 @@ def snapshot(ren, fname=None, size=(300, 300)):
 
     width, height = size
 
-    graphics_factory = vtk.vtkGraphicsFactory()
-    graphics_factory.SetOffScreenOnlyMode(1)
-    # TODO check if the line below helps in something
-    # graphics_factory.SetUseMesaClasses(1)
+    if offscreen:
+        graphics_factory = vtk.vtkGraphicsFactory()
+        graphics_factory.SetOffScreenOnlyMode(1)
+        # TODO check if the line below helps in something
+        # graphics_factory.SetUseMesaClasses(1)
 
     render_window = vtk.vtkRenderWindow()
-    render_window.SetOffScreenRendering(1)
+    if offscreen:
+        render_window.SetOffScreenRendering(1)
     render_window.AddRenderer(ren)
     render_window.SetSize(width, height)
+
+    if order_transparent:
+
+        # Use a render window with alpha bits
+        # as default is 0 (false))
+        render_window.SetAlphaBitPlanes(True)
+
+        # Force to not pick a framebuffer with a multisample buffer
+        # (default is 8)
+        render_window.SetMultiSamples(0)
+
+        # Choose to use depth peeling (if supported)
+        # (default is 0 (false)):
+        ren.UseDepthPeelingOn()
+
+        # Set depth peeling parameters
+        # Set the maximum number of rendering passes (default is 4)
+        ren.SetMaximumNumberOfPeels(4)
+
+        # Set the occlusion ratio (initial value is 0.0, exact image):
+        ren.SetOcclusionRatio(0.0)
 
     render_window.Render()
 
