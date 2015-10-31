@@ -125,7 +125,7 @@ def test_text_widget():
     window.add(renderer, axes)
     renderer.ResetCamera()
 
-    show_manager = window.ShowManager(renderer, size=(1200, 1200))
+    show_manager = window.ShowManager(renderer, size=(900, 900))
 
     if interactive:
         show_manager.initialize()
@@ -175,7 +175,7 @@ def test_text_widget():
         show_manager.render()
         show_manager.start()
 
-    arr = window.snapshot(renderer, size=(1200, 1200))
+    arr = window.snapshot(renderer, size=(900, 900))
     report = window.analyze_snapshot(arr)
     npt.assert_equal(report.objects, 3)
 

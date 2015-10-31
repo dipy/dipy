@@ -58,7 +58,7 @@ def xvfb_it(my_test):
     def test_with_xvfb():
         if use_xvfb:
             from xvfbwrapper import Xvfb
-            display = Xvfb()
+            display = Xvfb(width=1920, height=1080)
             display.start()
         my_test()
         if use_xvfb:
