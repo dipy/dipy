@@ -9,7 +9,7 @@ def _affine_transform(kwargs):
 
 
 def reslice(data, affine, zooms, new_zooms, order=1, mode='constant', cval=0,
-            mp=False):
+            num_processes=1):
     """Reslice data with new voxel resolution defined by ``new_zooms``
 
     Parameters
@@ -32,11 +32,10 @@ def reslice(data, affine, zooms, new_zooms, order=1, mode='constant', cval=0,
     cval : float
         Value used for points outside the boundaries of the input if
         mode='constant'.
-    mp: {bool, int}
+    num_processes: int
         Split the calculation to a pool of children processes. This only
-        applies to 4D `data` arrays. If False (the default), the calculation is
-        performed in the current thread. If a positive integer then it defines
-        the size of the multiprocessing pool that will be used. If True, then
+        applies to 4D `data` arrays. If a positive integer then it defines
+        the size of the multiprocessing pool that will be used. If 0, then
         the size of the pool will equal the number of cores available.
 
     Returns
@@ -76,11 +75,9 @@ def reslice(data, affine, zooms, new_zooms, order=1, mode='constant', cval=0,
         data2 = affine_transform(input=data, **kwargs)
     if data.ndim == 4:
         data2 = np.zeros(new_shape+(data.shape[-1],), data.dtype)
-        if mp is True:
-            mp = cpu_count()
-        elif not (isinstance(mp, int) and mp > 1):
-            mp = False
-        if not mp:
+        if not num_processes:
+            num_processes = cpu_count()
+        if num_processes < 2:
             for i in range(data.shape[-1]):
                 affine_transform(input=data[..., i], output=data2[..., i],
                                  **kwargs)
@@ -90,7 +87,7 @@ def reslice(data, affine, zooms, new_zooms, order=1, mode='constant', cval=0,
                 _kwargs = {'input': data[..., i]}
                 _kwargs.update(kwargs)
                 params.append(_kwargs)
-            pool = Pool(mp)
+            pool = Pool(num_processes)
             for i, result in enumerate(pool.imap(_affine_transform, params)):
                 data2[..., i] = result
             pool.close()
