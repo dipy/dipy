@@ -20,6 +20,8 @@ def test_slicer():
     affine = np.eye(4)
     slicer = actor.slicer(data, affine)
     window.add(renderer, slicer)
+    renderer.reset_camera()
+    renderer.reset_clipping_range()
     # window.show(renderer)
 
     # copy pixels in numpy array directly
