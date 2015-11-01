@@ -19,15 +19,19 @@ def test_slicer():
     data = (255 * np.random.rand(50, 50, 50))
     affine = np.eye(4)
     slicer = actor.slicer(data, affine)
+    slicer.display(None, None, 25)
     window.add(renderer, slicer)
+
     renderer.reset_camera()
     renderer.reset_clipping_range()
     # window.show(renderer)
 
     # copy pixels in numpy array directly
-    arr = window.snapshot(renderer)
+    arr = window.snapshot(renderer, 'test_slicer.png')
+    print(arr.sum())
     report = window.analyze_snapshot(arr, find_objects=True)
     npt.assert_equal(report.objects, 1)
+    # print(arr[..., 0])
 
     # The slicer can cut directly a smaller part of the image
     slicer.display_extent(10, 30, 10, 30, 35, 35)
