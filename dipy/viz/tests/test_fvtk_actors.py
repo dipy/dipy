@@ -28,8 +28,20 @@ def test_slicer():
 
     # copy pixels in numpy array directly
     arr = window.snapshot(renderer, 'test_slicer.png')
+    import scipy
+    print(scipy.__version__)
+    print(scipy.__file__)
+
     print(arr.sum())
+    print(np.sum(arr == 0))
+    print(np.sum(arr > 0))
+    print(arr.shape)
+    print(arr.dtype)
+
     report = window.analyze_snapshot(arr, find_objects=True)
+
+    print(report)
+
     npt.assert_equal(report.objects, 1)
     # print(arr[..., 0])
 
