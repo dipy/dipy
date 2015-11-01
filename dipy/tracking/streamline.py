@@ -90,6 +90,8 @@ def transform_streamlines(streamlines, mat):
     ----------
     streamlines : list
         List of 2D ndarrays of shape[-1]==3
+    mat : array, (4, 4)
+        transformation matrix
 
     Returns
     -------

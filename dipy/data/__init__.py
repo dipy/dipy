@@ -27,7 +27,6 @@ import numpy as np
 from dipy.core.gradients import GradientTable, gradient_table
 from dipy.core.sphere import Sphere, HemiSphere
 from dipy.sims.voxel import SticksAndBall
-import numpy as np
 from dipy.data.fetcher import (fetch_scil_b0,
                                read_scil_b0,
                                fetch_stanford_hardi,
@@ -45,6 +44,10 @@ from dipy.data.fetcher import (fetch_scil_b0,
                                read_stanford_t1,
                                fetch_stanford_pve_maps,
                                read_stanford_pve_maps,
+                               fetch_viz_icons,
+                               read_viz_icons,
+                               fetch_bundles_2_subjects,
+                               read_bundles_2_subjects,
                                fetch_cenir_multib,
                                read_cenir_multib,
                                fetch_mni_template,

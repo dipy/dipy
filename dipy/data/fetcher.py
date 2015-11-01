@@ -16,6 +16,7 @@ from shutil import copyfileobj
 import numpy as np
 import nibabel as nib
 
+import tarfile
 import zipfile
 from dipy.core.gradients import gradient_table
 from dipy.io.gradients import read_bvals_bvecs
@@ -132,8 +133,7 @@ def fetch_data(files, folder, data_size=None):
 def _make_fetcher(name, folder, baseurl, remote_fnames, local_fnames,
                   md5_list=None, doc="", data_size=None, msg=None,
                   unzip=False):
-    """
-    Create a new fetcher
+    """ Create a new fetcher
 
     Parameters
     ----------
@@ -158,9 +158,10 @@ def _make_fetcher(name, folder, baseurl, remote_fnames, local_fnames,
         starts.
     msg : str, optional.
         A message to print to screen when fetching takes place. Default (None)
-        is not to print anything
+        is to print nothing
     unzip : bool, optional
-        Whether to unzip the file(s) after downloading them
+        Whether to unzip the file(s) after downloading them. Supports zip, gz,
+        and tar.gz files.
     returns
     -------
     fetcher : function
@@ -178,8 +179,21 @@ def _make_fetcher(name, folder, baseurl, remote_fnames, local_fnames,
             print(msg)
         if unzip:
             for f in local_fnames:
-                z = zipfile.ZipFile(pjoin(folder, f), 'r')
-                z.extractall(dipy_home)
+                split_ext = os.path.splitext(f)
+                if split_ext[-1] == '.gz' or split_ext[-1] == '.bz2':
+                    if os.path.splitext(split_ext[0])[-1] == '.tar':
+                        ar = tarfile.open(pjoin(folder, f))
+                        ar.extractall(path=folder)
+                        ar.close()
+                    else:
+                        raise ValueError('File extension is not recognized')
+                elif split_ext[-1] == '.zip':
+                    z = zipfile.ZipFile(pjoin(folder, f), 'r')
+                    z.extractall(folder)
+                    z.close()
+                else:
+                    raise ValueError('File extension is not recognized')
+
         return files, folder
 
     fetcher.__name__ = name
@@ -187,123 +201,146 @@ def _make_fetcher(name, folder, baseurl, remote_fnames, local_fnames,
     return fetcher
 
 
-fetch_isbi2013_2shell = _make_fetcher("fetch_isbi2013_2shell",
-                pjoin(dipy_home, 'isbi2013'),
-                'https://dl.dropboxusercontent.com/u/2481924/isbi2013_merlet/',
-                ['2shells-1500-2500-N64-SNR-30.nii.gz',
-                 '2shells-1500-2500-N64.bval',
-                 '2shells-1500-2500-N64.bvec'],
-                ['phantom64.nii.gz', 'phantom64.bval', 'phantom64.bvec'],
-                ['42911a70f232321cf246315192d69c42',
-                 '90e8cf66e0f4d9737a3b3c0da24df5ea',
-                 '4b7aa2757a1ccab140667b76e8075cb1'],
-                doc="Download a 2-shell software phantom dataset",
-                data_size="")
+fetch_isbi2013_2shell = _make_fetcher(
+    "fetch_isbi2013_2shell",
+    pjoin(dipy_home, 'isbi2013'),
+    'https://dl.dropboxusercontent.com/u/2481924/isbi2013_merlet/',
+    ['2shells-1500-2500-N64-SNR-30.nii.gz',
+     '2shells-1500-2500-N64.bval',
+     '2shells-1500-2500-N64.bvec'],
+    ['phantom64.nii.gz', 'phantom64.bval', 'phantom64.bvec'],
+    ['42911a70f232321cf246315192d69c42',
+     '90e8cf66e0f4d9737a3b3c0da24df5ea',
+     '4b7aa2757a1ccab140667b76e8075cb1'],
+    doc="Download a 2-shell software phantom dataset",
+    data_size="")
 
-fetch_stanford_labels = _make_fetcher("fetch_stanford_labels",
-                pjoin(dipy_home, 'stanford_hardi'),
-                'https://stacks.stanford.edu/file/druid:yx282xq2090/',
-                ["aparc-reduced.nii.gz", "label-info.txt"],
-                ["aparc-reduced.nii.gz", "label-info.txt"],
-                ['742de90090d06e687ce486f680f6d71a',
-                 '39db9f0f5e173d7a2c2e51b07d5d711b'],
-                doc=\
-            "Download reduced freesurfer aparc image from stanford web site")
+fetch_stanford_labels = _make_fetcher(
+    "fetch_stanford_labels",
+    pjoin(dipy_home, 'stanford_hardi'),
+    'https://stacks.stanford.edu/file/druid:yx282xq2090/',
+    ["aparc-reduced.nii.gz", "label-info.txt"],
+    ["aparc-reduced.nii.gz", "label-info.txt"],
+    ['742de90090d06e687ce486f680f6d71a',
+     '39db9f0f5e173d7a2c2e51b07d5d711b'],
+    doc="Download reduced freesurfer aparc image from stanford web site")
+
+fetch_sherbrooke_3shell = _make_fetcher(
+    "fetch_sherbrooke_3shell",
+    pjoin(dipy_home, 'sherbrooke_3shell'),
+    'https://dl.dropboxusercontent.com/u/2481924/sherbrooke_data/',
+    ['3shells-1000-2000-3500-N193.nii.gz',
+     '3shells-1000-2000-3500-N193.bval',
+     '3shells-1000-2000-3500-N193.bvec'],
+    ['HARDI193.nii.gz', 'HARDI193.bval', 'HARDI193.bvec'],
+    ['0b735e8f16695a37bfbd66aab136eb66',
+     'e9b9bb56252503ea49d31fb30a0ac637',
+     '0c83f7e8b917cd677ad58a078658ebb7'],
+    doc="Download a 3shell HARDI dataset with 192 gradient direction")
 
 
-fetch_sherbrooke_3shell = _make_fetcher("fetch_sherbrooke_3shell",
-                                        pjoin(dipy_home, 'sherbrooke_3shell'),
-                'https://dl.dropboxusercontent.com/u/2481924/sherbrooke_data/',
-                ['3shells-1000-2000-3500-N193.nii.gz',
-                 '3shells-1000-2000-3500-N193.bval',
-                 '3shells-1000-2000-3500-N193.bvec'],
-                ['HARDI193.nii.gz', 'HARDI193.bval', 'HARDI193.bvec'],
-                ['0b735e8f16695a37bfbd66aab136eb66',
-                 'e9b9bb56252503ea49d31fb30a0ac637',
-                 '0c83f7e8b917cd677ad58a078658ebb7'],
-                doc=\
-                 "Download a 3shell HARDI dataset with 192 gradient direction")
+fetch_stanford_hardi = _make_fetcher(
+    "fetch_stanford_hardi",
+    pjoin(dipy_home, 'stanford_hardi'),
+    'https://stacks.stanford.edu/file/druid:yx282xq2090/',
+    ['dwi.nii.gz', 'dwi.bvals', 'dwi.bvecs'],
+    ['HARDI150.nii.gz', 'HARDI150.bval', 'HARDI150.bvec'],
+    ['0b18513b46132b4d1051ed3364f2acbc',
+     '4e08ee9e2b1d2ec3fddb68c70ae23c36',
+     '4c63a586f29afc6a48a5809524a76cb4'],
+    doc="Download a HARDI dataset with 160 gradient directions")
 
-fetch_stanford_hardi = _make_fetcher("fetch_stanford_hardi",
-                                     pjoin(dipy_home, 'stanford_hardi'),
-                    'https://stacks.stanford.edu/file/druid:yx282xq2090/',
-                    ['dwi.nii.gz', 'dwi.bvals', 'dwi.bvecs'],
-                    ['HARDI150.nii.gz', 'HARDI150.bval', 'HARDI150.bvec'],
-                    ['0b18513b46132b4d1051ed3364f2acbc',
-                     '4e08ee9e2b1d2ec3fddb68c70ae23c36',
-                     '4c63a586f29afc6a48a5809524a76cb4'],
-                    doc=\
-                     "Download a HARDI dataset with 160 gradient directions")
+fetch_stanford_t1 = _make_fetcher(
+    "fetch_stanford_t1",
+    pjoin(dipy_home, 'stanford_hardi'),
+    'https://stacks.stanford.edu/file/druid:yx282xq2090/',
+    ['t1.nii.gz'],
+    ['t1.nii.gz'],
+    ['a6a140da6a947d4131b2368752951b0a'])
 
-fetch_stanford_t1 = _make_fetcher("fetch_stanford_t1",
-                                  pjoin(dipy_home, 'stanford_hardi'),
-                        'https://stacks.stanford.edu/file/druid:yx282xq2090/',
-                        ['t1.nii.gz'],
-                        ['t1.nii.gz'],
-                        ['a6a140da6a947d4131b2368752951b0a'])
+fetch_stanford_pve_maps = _make_fetcher(
+    "fetch_stanford_pve_maps",
+    pjoin(dipy_home, 'stanford_hardi'),
+    'https://stacks.stanford.edu/file/druid:yx282xq2090/',
+    ['pve_csf.nii.gz', 'pve_gm.nii.gz', 'pve_wm.nii.gz'],
+    ['pve_csf.nii.gz', 'pve_gm.nii.gz', 'pve_wm.nii.gz'],
+    ['2c498e4fed32bca7f726e28aa86e9c18',
+     '1654b20aeb35fc2734a0d7928b713874',
+     '2e244983cf92aaf9f9d37bc7716b37d5'])
 
-fetch_stanford_pve_maps = _make_fetcher("fetch_stanford_pve_maps",
-                        pjoin(dipy_home, 'stanford_hardi'),
-                        'https://stacks.stanford.edu/file/druid:yx282xq2090/',
-                        ['pve_csf.nii.gz', 'pve_gm.nii.gz','pve_wm.nii.gz'],
-                        ['pve_csf.nii.gz', 'pve_gm.nii.gz','pve_wm.nii.gz'],
-                        ['2c498e4fed32bca7f726e28aa86e9c18',
-                         '1654b20aeb35fc2734a0d7928b713874',
-                         '2e244983cf92aaf9f9d37bc7716b37d5'])
+fetch_taiwan_ntu_dsi = _make_fetcher(
+    "fetch_taiwan_ntu_dsi",
+    pjoin(dipy_home, 'taiwan_ntu_dsi'),
+    "http://dl.dropbox.com/u/2481924/",
+    ['taiwan_ntu_dsi.nii.gz', 'tawian_ntu_dsi.bval',
+     'taiwan_ntu_dsi.bvec', 'license_taiwan_ntu_dsi.txt'],
+    ['DSI203.nii.gz', 'DSI203.bval', 'DSI203.bvec', 'DSI203_license.txt'],
+    ['950408c0980a7154cb188666a885a91f',
+     '602e5cb5fad2e7163e8025011d8a6755',
+     'a95eb1be44748c20214dc7aa654f9e6b',
+     '7fa1d5e272533e832cc7453eeba23f44'],
+    doc="Download a DSI dataset with 203 gradient directions",
+    msg="See DSI203_license.txt for LICENSE. For the complete datasets please visit : http://dsi-studio.labsolver.org",
+    data_size="91MB")
 
-fetch_taiwan_ntu_dsi = _make_fetcher("fetch_taiwan_ntu_dsi",
-                         pjoin(dipy_home, 'taiwan_ntu_dsi'),
-                        "http://dl.dropbox.com/u/2481924/",
-                        ['taiwan_ntu_dsi.nii.gz','tawian_ntu_dsi.bval',
-                         'taiwan_ntu_dsi.bvec', 'license_taiwan_ntu_dsi.txt'],
-                        ['DSI203.nii.gz', 'DSI203.bval', 'DSI203.bvec',
-                         'DSI203_license.txt'],
-                        ['950408c0980a7154cb188666a885a91f',
-                         '602e5cb5fad2e7163e8025011d8a6755',
-                         'a95eb1be44748c20214dc7aa654f9e6b',
-                         '7fa1d5e272533e832cc7453eeba23f44'],
-                        doc=\
-                         "Download a DSI dataset with 203 gradient directions",
-                        msg= "See DSI203_license.txt for LICENSE. For the complete datasets please visit : http://dsi-studio.labsolver.org",
-                        data_size="91MB")
+fetch_syn_data = _make_fetcher(
+    "fetch_syn_data",
+    pjoin(dipy_home, 'syn_test'),
+    'https://dl.dropboxusercontent.com/u/5918983/',
+    ['t1.nii.gz', 'b0.nii.gz'],
+    ['t1.nii.gz', 'b0.nii.gz'],
+    ['701bda02bb769655c7d4a9b1df2b73a6',
+     'e4b741f0c77b6039e67abb2885c97a78'],
+    data_size="12MB",
+    doc="Download t1 and b0 volumes from the same session")
 
-fetch_syn_data = _make_fetcher("fetch_syn_data",
-                               pjoin(dipy_home, 'syn_test'),
-                               'https://dl.dropboxusercontent.com/u/5918983/',
-                               ['t1.nii.gz', 'b0.nii.gz'],
-                               ['t1.nii.gz', 'b0.nii.gz'],
-                               ['701bda02bb769655c7d4a9b1df2b73a6',
-                                'e4b741f0c77b6039e67abb2885c97a78'],
-                               data_size = "12MB",
-                               doc=\
-                             "Download t1 and b0 volumes from the same session")
+fetch_mni_template = _make_fetcher(
+    "fetch_mni_template",
+    pjoin(dipy_home, 'mni_template'),
+    'https://digital.lib.washington.edu/researchworks/bitstream/handle/1773/33312/',
+    ['COPYING',
+     'mni_icbm152_t2_tal_nlin_asym_09a.nii',
+     'mni_icbm152_t1_tal_nlin_asym_09a.nii'],
+    ['COPYING',
+     'mni_icbm152_t2_tal_nlin_asym_09a.nii',
+     'mni_icbm152_t1_tal_nlin_asym_09a.nii'],
+    ['6e2168072e80aa4c0c20f1e6e52ec0c8',
+     'f41f2e1516d880547fbf7d6a83884f0d',
+     '1ea8f4f1e41bc17a94602e48141fdbc8'],
+    doc = "Fetch the MNI T2 and T1 template files",
+    data_size="35MB")
 
-fetch_mni_template = _make_fetcher("fetch_mni_template",
-                                   pjoin(dipy_home, 'mni_template'),
-'https://digital.lib.washington.edu/researchworks/bitstream/handle/1773/33312/',
-                                   ['COPYING',
-                                    'mni_icbm152_t2_tal_nlin_asym_09a.nii',
-                                    'mni_icbm152_t1_tal_nlin_asym_09a.nii'],
-                                   ['COPYING',
-                                    'mni_icbm152_t2_tal_nlin_asym_09a.nii',
-                                    'mni_icbm152_t1_tal_nlin_asym_09a.nii'],
-                                   ['6e2168072e80aa4c0c20f1e6e52ec0c8',
-                                    'f41f2e1516d880547fbf7d6a83884f0d',
-                                    '1ea8f4f1e41bc17a94602e48141fdbc8'],
-                                   doc = \
-                        "Fetch the MNI T2 and T1 template files (~35 MB)",
-                                   data_size="35MB")
+fetch_scil_b0 = _make_fetcher(
+    "fetch_scil_b0",
+    dipy_home,
+    'http://scil.dinf.usherbrooke.ca/wp-content/data/',
+    ['datasets_multi-site_all_companies.zip'],
+    ['datasets_multi-site_all_companies.zip'],
+    None,
+    data_size="9.2MB",
+    doc="Download b=0 datasets from multiple MR systems (GE, Philips, Siemens) and different magnetic fields (1.5T and 3T)",
+    unzip=True)
 
-fetch_scil_b0 = _make_fetcher("fetch_scil_b0",
-                            dipy_home,
-                            'http://scil.dinf.usherbrooke.ca/wp-content/data/',
-                            ['datasets_multi-site_all_companies.zip'],
-                            ['datasets_multi-site_all_companies.zip'],
-                            None,
-                            data_size="9.2MB",
-                            doc=\
-            "Download b=0 datasets from multiple MR systems (GE, Philips, Siemens) and different magnetic fields (1.5T and 3T)",
-                            unzip=True)
+fetch_viz_icons = _make_fetcher("fetch_viz_icons",
+                                pjoin(dipy_home, "icons"),
+                                'https://dl.dropboxusercontent.com/u/2481924/',
+                                ['icomoon.tar.gz'],
+                                ['icomoon.tar.gz'],
+                                ['94a07cba06b4136b6687396426f1e380'],
+                                data_size="12KB",
+                                doc="Download icons for dipy.viz",
+                                unzip=True)
+
+fetch_bundles_2_subjects = _make_fetcher(
+    "fetch_bundles_2_subjects",
+    pjoin(dipy_home, 'exp_bundles_and_maps'),
+    'https://dl.dropboxusercontent.com/u/2481924/',
+    ['bundles_2_subjects.tar.gz'],
+    ['bundles_2_subjects.tar.gz'],
+    ['97756fbef11ce2df31f1bedf1fc7aac7'],
+    data_size="234MB",
+    doc="Download 2 subjects from the SNAIL dataset with their bundles",
+    unzip=True)
 
 
 def read_scil_b0():
@@ -666,3 +703,93 @@ CENIR_notes = \
 
 fetch_cenir_multib.__doc__ += CENIR_notes
 read_cenir_multib.__doc__ += CENIR_notes
+
+
+def read_viz_icons(style='icomoon', fname='infinity.png'):
+    """ Read specific icon from specific style
+
+    Parameters
+    ----------
+    style : str
+        Current icon style. Default is icomoon.
+    fname : str
+        Filename of icon. This should be found in folder HOME/.dipy/style/.
+        Default is infinity.png.
+
+    Returns
+    --------
+    path : str
+        Complete path of icon.
+
+    """
+
+    folder = pjoin(dipy_home, 'icons', style)
+    return pjoin(folder, fname)
+
+
+def read_bundles_2_subjects(subj_id='subj_1', metrics=['fa'],
+                            bundles=['af.left', 'cst.right', 'cc_1']):
+    r""" Read images and streamlines from 2 subjects of the SNAIL dataset
+
+    Parameters
+    ----------
+    subj_id : string
+        Either ``subj_1`` or ``subj_2``.
+    metrics : list
+        Either ['fa'] or ['t1'] or ['fa', 't1']
+    bundles : list
+        Example ['af.left', 'cst.right', 'cc_1']. See all the available bundles
+        in the ``exp_bundles_maps/bundles_2_subjects`` directory of your
+        ``$HOME/.dipy`` folder.
+
+    Returns
+    -------
+    dix : dict
+        Dictionary with data of the metrics and the bundles as keys.
+
+    Notes
+    -----
+    If you are using these datasets please cite the following publications.
+
+    References
+    ----------
+
+    .. [1] Renaud, E., M. Descoteaux, M. Bernier, E. Garyfallidis,
+    K. Whittingstall, "Morphology of thalamus, LGN and optic radiation do not
+    influence EEG alpha waves", Plos One (under submission), 2015.
+
+    .. [2] Garyfallidis, E., O. Ocegueda, D. Wassermann,
+    M. Descoteaux. Robust and efficient linear registration of fascicles in the
+    space of streamlines , Neuroimage, 117:124-140, 2015.
+
+    """
+
+    dname = pjoin(dipy_home, 'exp_bundles_and_maps', 'bundles_2_subjects')
+
+    from nibabel import trackvis as tv
+
+    res = {}
+
+    if 't1' in metrics:
+        img = nib.load(pjoin(dname, subj_id, 't1_warped.nii.gz'))
+        data = img.get_data()
+        affine = img.get_affine()
+        res['t1'] = data
+
+    if 'fa' in metrics:
+        img_fa = nib.load(pjoin(dname, subj_id, 'fa_1x1x1.nii.gz'))
+        fa = img_fa.get_data()
+        affine = img_fa.get_affine()
+        res['fa'] = fa
+
+    res['affine'] = affine
+
+    for bun in bundles:
+
+        streams, hdr = tv.read(pjoin(dname, subj_id,
+                                     'bundles', 'bundles_' + bun + '.trk'),
+                               points_space="rasmm")
+        streamlines = [s[0] for s in streams]
+        res[bun] = streamlines
+
+    return res

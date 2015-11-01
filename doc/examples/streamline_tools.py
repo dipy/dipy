@@ -102,12 +102,16 @@ cc_streamlines_actor = fvtk.line(cc_streamlines, line_colors(cc_streamlines))
 cc_ROI_actor = fvtk.contour(cc_slice, levels=[1], colors=[(1., 1., 0.)],
                             opacities=[1.])
 
-vol_actor = fvtk.slicer(t1_data, voxsz=(1.0, 1.0, 1.0), plane_i=[40],
-                        plane_j=None, plane_k=[35], outline=False)
+vol_actor = fvtk.slicer(t1_data)
+
+vol_actor.display(40, None, None)
+vol_actor2 = vol_actor.copy()
+vol_actor2.display(None, None, 35)
 
 # Add display objects to canvas
 r = fvtk.ren()
 fvtk.add(r, vol_actor)
+fvtk.add(r, vol_actor2)
 fvtk.add(r, cc_streamlines_actor)
 fvtk.add(r, cc_ROI_actor)
 
