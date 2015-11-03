@@ -450,7 +450,7 @@ def random_seeds_from_mask_total(mask, seeds_count, affine=None):
     Seeds points are placed randomly distributed in all voxels of ``mask``
     which are ``True``. This function is similar to
     ``random_seeds_from_mask_per_voxel()``, with the difference that
-    instead of returning a number of seeds per voxel, it returns total
+    instead of returning a number of seeds per voxel, it returns a total
     number of seeds placed in the ``mask``.
 
     Parameters
