@@ -81,7 +81,7 @@ def test_greyscale_image():
     npt.assert_equal(initial_segmentation.max(), nclasses - 1)
     npt.assert_equal(initial_segmentation.min(), 0)
 
-    PLN = com.prob_neighborhood(image, initial_segmentation, beta, nclasses)
+    PLN = icm.prob_neighborhood(initial_segmentation, beta, nclasses)
     npt.assert_equal(PLN.all() >= 0.0, True)
     npt.assert_equal(PLN.all() <= 1.0, True)
 
@@ -133,7 +133,8 @@ def test_greyscale_iter():
     npt.assert_equal(initial_segmentation.max(), nclasses - 1)
     npt.assert_equal(initial_segmentation.min(), 0)
 
-    mu, sigma, sigmasq = com.seg_stats(image, initial_segmentation, nclasses)
+    mu, sigma = com.seg_stats(image, initial_segmentation, nclasses)
+    sigmasq = sigma ** 2
     npt.assert_equal(mu.all() >= 0, True)
     npt.assert_equal(sigmasq.all() >= 0, True)
 
@@ -150,7 +151,7 @@ def test_greyscale_iter():
 
     for i in range(max_iter):
 
-        PLN = com.prob_neighborhood(image_gauss, initial_segmentation, beta,
+        PLN = icm.prob_neighborhood(initial_segmentation, beta,
                                     nclasses)
         npt.assert_equal(PLN.all() >= 0.0, True)
 
@@ -218,8 +219,9 @@ def test_square_iter():
 
     initial_segmentation = square
 
-    mu, sigma, sigmasq = com.seg_stats(square_gauss, initial_segmentation,
-                                       nclasses)
+    mu, sigma = com.seg_stats(square_gauss, initial_segmentation,
+                              nclasses)
+    sigmasq = sigma ** 2
     npt.assert_equal(mu.all() >= 0, True)
     npt.assert_equal(sigmasq.all() >= 0, True)
 
@@ -233,7 +235,7 @@ def test_square_iter():
         print('>> Iteration: ' + str(i))
         print('\n')
 
-        PLN = com.prob_neighborhood(square_gauss, initial_segmentation, beta,
+        PLN = icm.prob_neighborhood(initial_segmentation, beta,
                                     nclasses)
         npt.assert_equal(PLN.all() >= 0.0, True)
 
@@ -298,7 +300,9 @@ def test_icm_square():
 
     initial_segmentation = square.copy()
 
-    mu, sigma, sigmasq = com.seg_stats(square_1, initial_segmentation, nclasses)
+    mu, sigma = com.seg_stats(square_1, initial_segmentation,
+                              nclasses)
+    sigmasq = sigma ** 2
     npt.assert_equal(mu.all() >= 0, True)
     npt.assert_equal(sigmasq.all() >= 0, True)
 
