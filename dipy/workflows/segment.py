@@ -6,8 +6,7 @@ from os.path import join, basename, splitext
 import nibabel as nib
 import numpy as np
 
-from dipy.workflows.utils import choose_create_out_dir, int_param, bool_param, \
-    int_list_param
+from dipy.workflows.utils import choose_create_out_dir
 from dipy.segment.mask import median_otsu
 
 
@@ -55,7 +54,7 @@ def median_otsu_flow(input_files, out_dir='', save_masked=False,
                                    vol_idx, dilate)
 
         fname, ext = splitext(basename(fpath))
-        if(fname.endswith('.nii')):
+        if fname.endswith('.nii'):
             fname, _ = splitext(fname)
             ext = '.nii.gz'
 
