@@ -54,7 +54,6 @@ def test_iap():
 
     # Test if types and order are respected
     for k, v in zip(all_keys, all_results):
-        print k, v
         npt.assert_equal(args[k], v)
 
     # Test if **args really fits dummy_flow's arguments
@@ -71,8 +70,6 @@ def inputs_from_results(results, keys=None):
         inputs.append(str(result))
 
     return inputs
-
-test_iap()
 
 
 
