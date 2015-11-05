@@ -155,7 +155,7 @@ cdef class EnhancementKernel:
             double l1norm
             double kernelval  
 
-        # For testing, only compute one orientation of v
+        # For testing, only compute one orientation of r
         if test_mode:
             OR2 = 1
 
@@ -163,7 +163,6 @@ cdef class EnhancementKernel:
         x = np.zeros(3)
         y = np.zeros(3) # constant at (0,0,0)
 
-        # l1norm = 0.0
         with nogil:
             for angv in range(OR1):
                 for angr in range(OR2):
@@ -180,11 +179,6 @@ cdef class EnhancementKernel:
                                                  xp+hn,
                                                  yp+hn,
                                                  zp+hn] = self.k2(x, y, orientations[angr,:], orientations[angv,:])
-                                # if angv == 0:
-                                #     l1norm += kernelval
-
-        # l1 normalize the lookup table
-        #lookuptablelocal = np.divide(lookuptablelocal, l1norm)
 
         # save to class member
         self.lookuptable = lookuptablelocal

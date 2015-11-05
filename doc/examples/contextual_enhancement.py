@@ -1,11 +1,25 @@
+# -*- coding: utf-8 -*-
 """
 ==============================================
 Contextual enhancement
 ==============================================
 
-This demo presents an example of crossing-preserving contextual enhancement of FOD/ODF fields, implementing the contextual PDE framework of [Portegies2015_PLoSOne]_ for processing HARDI data. The aim is to enhance the alignment of elongated structures in the data such that crossing/junctions are maintained while reducing noise and small incoherent structures. This is achieved via a hypo-elliptic 2nd order PDE in the domain of coupled positions and orientations :math:`\mathbb{R}^3 \rtimes S^2`. This domain carries a non-flat geometrical differential structure that allows including a notion of alignment between neighboring points. 
+This demo presents an example of crossing-preserving contextual enhancement of 
+FOD/ODF fields, implementing the contextual PDE framework of 
+[Portegies2015_PLoSOne]_ for processing HARDI data. The aim is to enhance the 
+alignment of elongated structures in the data such that crossing/junctions are 
+maintained while reducing noise and small incoherent structures. This is achieved
+ via a hypo-elliptic 2nd order PDE in the domain of coupled positions and 
+ orientations :math:`\mathbb{R}^3 \rtimes S^2`. This domain carries a non-flat 
+ geometrical differential structure that allows including a notion of alignment 
+ between neighboring points. 
 
-Let :math:`({\bf y},{\bf n}) \in \mathbb{R}^3\rtimes S^2` where :math:`{\bf y} \in \mathbb{R}^{3}` denotes the spatial part, and :math:`{\bf n} \in S^2` the angular part. Let :math:`W:\mathbb{R}^3\rtimes S^2\times \mathbb{R}^{+} \to \mathbb{R}` be the function representing the evolution of FOD/ODF field. Then, the contextual PDE with evolution time :math:`t\geq 0` is given by:
+Let :math:`({\bf y},{\bf n}) \in \mathbb{R}^3\rtimes S^2` where 
+:math:`{\bf y} \in \mathbb{R}^{3}` denotes the spatial part, and 
+:math:`{\bf n} \in S^2` the angular part. 
+Let :math:`W:\mathbb{R}^3\rtimes S^2\times \mathbb{R}^{+} \to \mathbb{R}` be 
+the function representing the evolution of FOD/ODF field. Then, the contextual 
+PDE with evolution time :math:`t\geq 0` is given by:
 
 .. math::
 
@@ -17,33 +31,55 @@ Let :math:`({\bf y},{\bf n}) \in \mathbb{R}^3\rtimes S^2` where :math:`{\bf y} \
 
 where:
 
-* :math:`D^{33}>0` is  the coefficient for the spatial smoothing (which goes only in the direction of :math:`n`);
+* :math:`D^{33}>0` is  the coefficient for the spatial smoothing (which goes 
+	only in the direction of :math:`n`);
 
-* :math:`D^{44}>0` is the coefficient for the angular smoothing (here :math:`\Delta_{S^2}` denotes the Laplace-Beltrami operator on the sphere :math:`S^2`);
+* :math:`D^{44}>0` is the coefficient for the angular smoothing 
+(here :math:`\Delta_{S^2}` denotes the Laplace-Beltrami operator 
+	on the sphere :math:`S^2`);
 
-* :math:`U:\mathbb{R}^3\rtimes S^2 \to \mathbb{R}` is the initial condition given by the noisy FOD/ODF’s field.
+* :math:`U:\mathbb{R}^3\rtimes S^2 \to \mathbb{R}` is the initial condition 
+given by the noisy FOD/ODF’s field.
 
-This equation is solved via a shift-twist convolution (denoted by :math:`\ast_{\mathbb{R}^3\rtimes S^2}`) with its corresponding kernel :math:`P_t:\mathbb{R}^3\rtimes S^2 \to \mathbb{R}^+`:
+This equation is solved via a shift-twist convolution (denoted by 
+	:math:`\ast_{\mathbb{R}^3\rtimes S^2}`) with its corresponding kernel 
+:math:`P_t:\mathbb{R}^3\rtimes S^2 \to \mathbb{R}^+`:
 
 .. math::
 
-	W(\vec{y},\vec{n},t) = (P_t \ast_{\mathbb{R}^3 \rtimes S^2} U)(\vec{y},\vec{n}) = \int_{\mathbb{R}^3} \int_{S^2} P_t (R^T_{\vec{n}^\prime}(\vec{y}-\vec{y}^\prime), R^T_{\vec{n}^\prime} \vec{n} ) U(\vec{y}^\prime, \vec{n}^\prime) \hspace{0.2em} d\sigma (\vec{n}^\prime) d\vec{y}^\prime.
+	W(\vec{y},\vec{n},t) = (P_t \ast_{\mathbb{R}^3 \rtimes S^2} U)(\vec{y},\vec{n}) 
+	= \int_{\mathbb{R}^3} \int_{S^2} P_t (R^T_{\vec{n}^\prime}(\vec{y}-\vec{y}^\prime),
+	 R^T_{\vec{n}^\prime} \vec{n} ) U(\vec{y}^\prime, \vec{n}^\prime) 
+\hspace{0.2em} d\sigma (\vec{n}^\prime) d\vec{y}^\prime.
 
-Here, :math:`R_{\bf n}` is any 3D rotation that maps the vector :math:`(0,0,1)` onto :math:`{\bf n}`.
+Here, :math:`R_{\bf n}` is any 3D rotation that maps the vector :math:`(0,0,1)` 
+onto :math:`{\bf n}`.
 
-Note that the shift-twist convolution differs from a Euclidean convolution and takes into account the non-flat structure of the space  :math:`\mathbb{R}^3\rtimes S^2`. 
+Note that the shift-twist convolution differs from a Euclidean convolution and 
+takes into account the non-flat structure of the space  :math:`\mathbb{R}^3\rtimes S^2`. 
 
-The kernel :math:`P_t` has a stochastic interpretation. It can be seen as the limiting distribution obtained by accumulating random walks of particles in the position/orientation domain, where in each step the particles can (randomly) move forward/backward along their current orientation, and (randomly) change their orientation.  This is an extension to the 3D case of the process for contour enhancement of 2D images. 
+The kernel :math:`P_t` has a stochastic interpretation [DuitsAndFranken_JMIV]_. 
+It can be seen as the limiting distribution obtained by accumulating random walks
+ of particles in the position/orientation domain, where in each step the particles
+  can (randomly) move forward/backward along their current orientation, and (randomly)
+   change their orientation.  This is an extension to the 3D case of the process 
+   for contour enhancement of 2D images. 
 
-.. figure:: ../../../stochastic_process.png
+.. figure:: stochastic_process.png
    :align: center
 
-   The random motion of particles (a) and it's corresponding probability map (b) in 2D. The 3D kernel is shown on the right. Adapted from [Portegies2015b]_.
+   The random motion of particles (a) and it's corresponding probability map (b)
+    in 2D. The 3D kernel is shown on the right. Adapted from [Portegies2015_PLoSOne]_.
+
+In practice, as the exact analytical formulas for the kernel :math:`P_t` are unknown,
+ we use the approximation given in [Portegies2015_SSVM]_. 
 
 """
 
 """
-The enhancement is evaluated on the Stanford HARDI dataset (160 orientations, b=3000). Rician noise is added to degrade the image quality and mimick a lower quality dataset. Constrained spherical deconvolution is used to model the fiber orientations.
+The enhancement is evaluated on the Stanford HARDI dataset (160 orientations, b=3000s/mm^2)
+ where Rician noise is added. Constrained spherical deconvolution is used to 
+ model the fiber orientations.
 
 """
 
@@ -104,12 +140,18 @@ from dipy.viz import fvtk
 from dipy.data import get_sphere
 from dipy.reconst.shm import sf_to_sh, sh_to_sf
 ren = fvtk.ren()
+
+# convolve kernel with delta spike
+spike = np.zeros((7, 7, 7, k.get_orientations().shape[0]), dtype=np.float64)
+spike[3, 3, 3, 0] = 1
+spike_shm_conv = convolve(sf_to_sh(spike, k.get_sphere(), sh_order=8), k, sh_order=8, test_mode=True)
+
 sphere = get_sphere('symmetric724')
-lutkernel = sh_to_sf(sf_to_sh(np.swapaxes(k.get_lookup_table()[0],0,3)[3,:,:,:], k.get_sphere(), sh_order=8), sphere, sh_order=8)
-model_kernel = fvtk.sphere_funcs(lutkernel*10, sphere, norm=False, radial_scale=True)
+spike_sf_conv = sh_to_sf(spike_shm_conv, sphere, sh_order=8)
+model_kernel = fvtk.sphere_funcs((spike_sf_conv*6)[3,:,:,:], sphere, norm=False, radial_scale=True)
 fvtk.add(ren, model_kernel)
-fvtk.camera(ren, pos=(-25, 0, 0), focal=(-1, -1, -1), viewup=(0, 1, 0))
-fvtk.record(ren, out_path='kernel.png', size=(512,512), scale=2)
+fvtk.camera(ren, pos=(30, 0, 0), focal=(0, 0, 0), viewup=(0, 0, 1), verbose=False)
+fvtk.record(ren, out_path='kernel.png', size=(1024,1024))
 
 """
 .. figure:: kernel.png
@@ -147,6 +189,11 @@ csd_sf_enh_sharp = csd_sf_enh_sharp * np.amax(csd_sf_orig)/np.amax(csd_sf_enh_sh
 The end results are visualized. It can be observed that the end result after diffusion and sharpening is closer to the original noiseless dataset.
 """
 
+csd_sf_orig_slice = csd_sf_orig[:,:,[3],:]
+csd_sf_noisy_slice = csd_sf_noisy[:,:,[3],:]
+csd_sf_enh_slice = csd_sf_enh[:,:,[3],:]
+csd_sf_enh_sharp_slice = csd_sf_enh_sharp[:,:,[3],:]
+
 ren = fvtk.ren()
 
 # original ODF field
@@ -169,30 +216,29 @@ fodf_spheres_enh_sharp = fvtk.sphere_funcs(csd_sf_enh_sharp_slice*1.5, sphere, s
 fodf_spheres_enh_sharp.SetPosition(35, 35, 0)
 fvtk.add(ren, fodf_spheres_enh_sharp)
 
-#fvtk.show(ren, size=(600, 600))
-fvtk.record(ren, out_path='enhancements.png', scale=2, size=(512, 512))
+fvtk.record(ren, out_path='enhancements.png', size=(1024, 1024))
 
 """
 
 .. figure:: enhancements.png
    :align: center
 
-   The results after enhancements. Top-left: original noiseless data. Bottom-left: original data with added Rician noise (SNR=2). Bottom-left: After enhancement of noisy data. Top-right: After enhancement and sharpening of noisy data.
+   The results after enhancements. Top-left: original noiseless data. Bottom-left: original data with added Rician noise (SNR=2). Bottom-right: After enhancement of noisy data. Top-right: After enhancement and sharpening of noisy data.
 
 References
 ~~~~~~~~~~~~~~~~~~~~~~
 
-.. [DuitsAndFranken2011] Duits, R. and Franken, E. (2011) Morphological and
-                      Linear Scale Spaces for Fiber Enhancement in DWI-MRI.
-                      J Math Imaging Vis, 46(3):326-368.
-.. [Portegies2015] J. Portegies, G. Sanguinetti, S. Meesters, and R. Duits. (2015)
+.. [Portegies2015_PLoSOne] J. Portegies, R. Fick, G. Sanguinetti, S. Meesters, G.Girard,
+                 and R. Duits. (2015) Improving Fiber Alignment in HARDI by 
+                 Combining Contextual PDE flow with Constrained Spherical 
+                 Deconvolution. PLoS One.
+.. [Portegies2015_SSVM] J. Portegies, G. Sanguinetti, S. Meesters, and R. Duits. (2015)
                  New Approximation of a Scale Space Kernel on SE(3) and
                  Applications in Neuroimaging. Fifth International
                  Conference on Scale Space and Variational Methods in
                  Computer Vision
-.. [Portegies2015b] J. Portegies, R. Fick, G. Sanguinetti, S. Meesters, G.Girard,
-                 and R. Duits. (2015) Improving Fiber Alignment in HARDI by 
-                 Combining Contextual PDE flow with Constrained Spherical 
-                 Deconvolution. PLoS One.
+.. [DuitsAndFranken_JMIV] Duits, R. and Franken, E. (2011) Morphological and
+                      Linear Scale Spaces for Fiber Enhancement in DWI-MRI.
+                      J Math Imaging Vis, 46(3):326-368.
 
 """
