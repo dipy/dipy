@@ -128,9 +128,7 @@ cdef double [:, :, :, ::1] perform_convolution (double [:, :, :, ::1] odfs,
         int all_cores = openmp.omp_get_num_procs()
         cnp.npy_intp corient, orient, cx, cy, cz, x, y, z
         int expectedvox
-
-    totalval = np.zeros((OR1,ny,nz,nx))
-    voxcount = np.zeros((OR1,ny,nz,nx))
+        int edgeNormalization = True
 
     if num_threads is not None:
         threads_to_use = num_threads
@@ -142,9 +140,11 @@ cdef double [:, :, :, ::1] perform_convolution (double [:, :, :, ::1] odfs,
         openmp.omp_set_num_threads(threads_to_use)
     
     if test_mode:
-        OR2 = 1;
+        edgeNormalization = False
 
     # expected number of voxels in kernel
+    totalval = np.zeros((OR1,ny,nz,nx))
+    voxcount = np.zeros((OR1,ny,nz,nx))
     expectedvox = nx*ny*nz
 
     with nogil:
@@ -156,14 +156,17 @@ cdef double [:, :, :, ::1] perform_convolution (double [:, :, :, ::1] odfs,
                         totalval[corient, cy, cz, cx] = 0.0
                         voxcount[corient, cy, cz, cx] = 0.0
                         # loop over kernel x,y,z,orient
-                        for x in range(int_max(cx-hn,0), int_min(cx+hn+1,ny-1)):
-                             for y in range(int_max(cy-hn,0), int_min(cy+hn+1,ny-1)):
-                                 for z in range(int_max(cz-hn,0), int_min(cz+hn+1,nz-1)):
+                        for x in range(int_max(cx-hn, 0), int_min(cx+hn+1, ny-1)):
+                             for y in range(int_max(cy-hn, 0), int_min(cy+hn+1, ny-1)):
+                                 for z in range(int_max(cz-hn, 0), int_min(cz+hn+1, nz-1)):
                                     voxcount[corient, cy, cz, cx] += 1.0
                                     for orient in range(0, OR2):
                                         totalval[corient, cy, cz, cx] += odfs[x, y, z, orient] * \
                                         lut[corient, orient, x-(cx-hn), y-(cy-hn), z-(cz-hn)]
-                        output[cx, cy, cz, corient] = totalval[corient, cy, cz, cx] * expectedvox/voxcount[corient, cy, cz, cx]
+                        if edgeNormalization:
+                            output[cx, cy, cz, corient] = totalval[corient, cy, cz, cx] * expectedvox/voxcount[corient, cy, cz, cx]
+                        else:
+                            output[cx, cy, cz, corient] = totalval[corient, cy, cz, cx]
 
     if have_openmp and num_threads is not None:
         openmp.omp_set_num_threads(all_cores)

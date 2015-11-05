@@ -95,8 +95,6 @@ for modulename, other_sources, language in (
     ('dipy.segment.clusteringspeed', [], 'c'),
     ('dipy.segment.clustering_algorithms', [], 'c'),
     ('dipy.denoise.denspeed', [], 'c'),
-    ('dipy.denoise.enhancement_kernel', [], 'c'),
-    ('dipy.denoise.shift_twist_convolution', [], 'c'),
     ('dipy.align.vector_fields', [], 'c'),
     ('dipy.align.sumsqdiff', [], 'c'),
     ('dipy.align.expectmax', [], 'c'),

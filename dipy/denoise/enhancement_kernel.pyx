@@ -157,7 +157,7 @@ cdef class EnhancementKernel:
 
         # For testing, only compute one orientation of v
         if test_mode:
-            OR1 = 1
+            OR2 = 1
 
         lookuptablelocal = np.zeros((OR1, OR2, N, N, N))
         x = np.zeros(3)
