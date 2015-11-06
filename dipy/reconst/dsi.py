@@ -161,9 +161,6 @@ class DiffusionSpectrumFit(OdfFit):
         Sq = np.zeros((self.qgrid_sz, self.qgrid_sz, self.qgrid_sz))
         # fill q-space
 
-        # from ipdb import set_trace
-        # set_trace()
-
         for i in range(len(values)):
             qx, qy, qz = self.model.qgrid[i]
             Sq[qx, qy, qz] += values[i]
@@ -331,13 +328,19 @@ def create_qspace(gtab, origin):
 
 def create_qtable(gtab, origin):
     """ create a normalized version of gradients
+
+    Parameters
+    ----------
+    gtab : GradientTable
+    origin : (3,) ndarray
+        center of qspace
+
+    Returns
+    -------
+    qtable : ndarray
     """
 
-    # from ipdb import set_trace
-    # set_trace()
     bv = gtab.bvals
-    # bmin = np.sort(bv)[1]
-    # bv_sorted = np.sort(bv)
     bsorted = np.sort(bv[np.bitwise_not(gtab.b0s_mask)])
     for i in range(len(bsorted)):
         bmin = bsorted[i]
