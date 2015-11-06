@@ -20,6 +20,7 @@ from dipy.core.sphere_stats import angular_similarity
 def test_dsi():
     #load symmetric 724 sphere
     sphere = get_sphere('symmetric724')
+
     #load icosahedron sphere
     sphere2 = create_unit_sphere(5)
     btable = np.loadtxt(get_data('dsi515btable'))
@@ -30,18 +31,19 @@ def test_dsi():
 
     ds = DiffusionSpectrumModel(gtab)
 
-    #symmetric724
+    # symmetric724
     dsfit = ds.fit(data)
     odf = dsfit.odf(sphere)
-    directions, _, _ = peak_directions(odf, sphere, .35, 25)
+
+    directions, _, _ = peak_directions(odf, sphere)
     assert_equal(len(directions), 2)
     assert_almost_equal(angular_similarity(directions, golden_directions),
                         2, 1)
 
-    #5 subdivisions
+    # 5 subdivisions
     dsfit = ds.fit(data)
     odf2 = dsfit.odf(sphere2)
-    directions, _, _ = peak_directions(odf2, sphere2, .35, 25)
+    directions, _, _ = peak_directions(odf2, sphere2)
     assert_equal(len(directions), 2)
     assert_almost_equal(angular_similarity(directions, golden_directions),
                         2, 1)
@@ -51,7 +53,7 @@ def test_dsi():
     for sbd in sb_dummies:
         data, golden_directions = sb_dummies[sbd]
         odf = ds.fit(data).odf(sphere2)
-        directions, _, _ = peak_directions(odf, sphere2, .35, 25)
+        directions, _, _ = peak_directions(odf, sphere2)
         if len(directions) <= 3:
             assert_equal(len(directions), len(golden_directions))
         if len(directions) > 3:
@@ -78,13 +80,18 @@ def test_multib0_dsi():
     new_bvecs = np.concatenate([gtab.bvecs, np.zeros((1, 3))])
     new_bvals = np.concatenate([gtab.bvals, [0]])
     new_gtab = gradient_table(new_bvals, new_bvecs)
-    DS = DiffusionSpectrumModel(new_gtab)
-    sphere = get_sphere('symmetric724')
-    DSfit = DS.fit(new_data)
-    PDF = DSfit.pdf()
-    assert_equal(new_data.shape[:-1] + (17, 17, 17), PDF.shape)
-    assert_equal(np.alltrue(np.isreal(PDF)), True)
+    ds = DiffusionSpectrumModel(new_gtab)
+    sphere = get_sphere('repulsion724')
+    dsfit = ds.fit(new_data)
+    pdf = dsfit.pdf()
+    odf = dsfit.odf(sphere)
+    assert_equal(new_data.shape[:-1] + (17, 17, 17), pdf.shape)
+    assert_equal(np.alltrue(np.isreal(pdf)), True)
+    from dipy.viz import fvtk
 
+    ren = fvtk.ren()
+    fvtk.add(ren, fvtk.sphere_funcs(odf, sphere))
+    fvtk.show(ren)
 
 def sticks_and_ball_dummies(gtab):
     sb_dummies={}
