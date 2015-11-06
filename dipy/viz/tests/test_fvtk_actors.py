@@ -20,7 +20,7 @@ def test_slicer():
     affine = np.eye(4)
     slicer = actor.slicer(data, affine)
     slicer.display(None, None, 25)
-    window.add(renderer, slicer)
+    renderer.add(slicer)
 
     renderer.reset_camera()
     renderer.reset_clipping_range()
@@ -49,7 +49,7 @@ def test_slicer():
     slicer.display_extent(10, 30, 10, 30, 35, 35)
     renderer.ResetCamera()
 
-    window.add(renderer, slicer)
+    renderer.add(slicer)
 
     # save pixels in png file not a numpy array
     with TemporaryDirectory() as tmpdir:
