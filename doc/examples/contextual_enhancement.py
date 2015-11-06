@@ -56,7 +56,7 @@ Here, :math:`R_{\bf n}` is any 3D rotation that maps the vector :math:`(0,0,1)`
 onto :math:`{\bf n}`.
 
 Note that the shift-twist convolution differs from a Euclidean convolution and 
-takes into account the non-flat structure of the space  :math:`\mathbb{R}^3\rtimes S^2`. 
+takes into account the non-flat structure of the space :math:`\mathbb{R}^3\rtimes S^2`. 
 
 The kernel :math:`P_t` has a stochastic interpretation [DuitsAndFranken_JMIV]_. 
 It can be seen as the limiting distribution obtained by accumulating random walks
@@ -77,9 +77,9 @@ In practice, as the exact analytical formulas for the kernel :math:`P_t` are unk
 """
 
 """
-The enhancement is evaluated on the Stanford HARDI dataset (160 orientations, b=3000s/mm^2)
- where Rician noise is added. Constrained spherical deconvolution is used to 
- model the fiber orientations.
+The enhancement is evaluated on the Stanford HARDI dataset 
+(150 orientations, b=2000s/mm^2) where Rician noise is added. Constrained 
+spherical deconvolution is used to model the fiber orientations.
 
 """
 
@@ -120,7 +120,10 @@ csd_fit_noisy = csd_model_noisy.fit(data_noisy_small)
 csd_shm_noisy = csd_fit_noisy.shm_coeff
 
 """
-A lookup-table is created, containing rotated versions of the kernel :math:`P_t` sampled over a discrete set of orientations. In order to ensure rotationally invariant processing, the discrete orientations are required to be equally distributed over a sphere. By default, a sphere with 100 directions is used.
+A lookup-table is created, containing rotated versions of the kernel :math:`P_t` 
+sampled over a discrete set of orientations. In order to ensure rotationally 
+invariant processing, the discrete orientations are required to be equally 
+distributed over a sphere. By default, a sphere with 100 directions is used.
 """
 
 from dipy.denoise.enhancement_kernel import EnhancementKernel
@@ -144,11 +147,15 @@ ren = fvtk.ren()
 # convolve kernel with delta spike
 spike = np.zeros((7, 7, 7, k.get_orientations().shape[0]), dtype=np.float64)
 spike[3, 3, 3, 0] = 1
-spike_shm_conv = convolve(sf_to_sh(spike, k.get_sphere(), sh_order=8), k, sh_order=8, test_mode=True)
+spike_shm_conv = convolve(sf_to_sh(spike, k.get_sphere(), sh_order=8), k, 
+                          sh_order=8, test_mode=True)
 
 sphere = get_sphere('symmetric724')
 spike_sf_conv = sh_to_sf(spike_shm_conv, sphere, sh_order=8)
-model_kernel = fvtk.sphere_funcs((spike_sf_conv*6)[3,:,:,:], sphere, norm=False, radial_scale=True)
+model_kernel = fvtk.sphere_funcs((spike_sf_conv*6)[3,:,:,:],
+                                  sphere, 
+                                  norm=False, 
+                                  radial_scale=True)
 fvtk.add(ren, model_kernel)
 fvtk.camera(ren, pos=(30, 0, 0), focal=(0, 0, 0), viewup=(0, 0, 1), verbose=False)
 fvtk.record(ren, out_path='kernel.png', size=(1024,1024))
@@ -186,7 +193,8 @@ csd_sf_enh_sharp = sh_to_sf(csd_shm_enh_sharp, sphere, sh_order=8)
 csd_sf_enh_sharp = csd_sf_enh_sharp * np.amax(csd_sf_orig)/np.amax(csd_sf_enh_sharp)
 
 """ 
-The end results are visualized. It can be observed that the end result after diffusion and sharpening is closer to the original noiseless dataset.
+The end results are visualized. It can be observed that the end result after diffusion 
+and sharpening is closer to the original noiseless dataset.
 """
 
 csd_sf_orig_slice = csd_sf_orig[:,:,[3],:]
@@ -197,22 +205,38 @@ csd_sf_enh_sharp_slice = csd_sf_enh_sharp[:,:,[3],:]
 ren = fvtk.ren()
 
 # original ODF field
-fodf_spheres_org = fvtk.sphere_funcs(csd_sf_orig_slice, sphere, scale=2, norm=False, radial_scale=True)
+fodf_spheres_org = fvtk.sphere_funcs(csd_sf_orig_slice, 
+                                     sphere, 
+                                     scale=2, 
+                                     norm=False, 
+                                     radial_scale=True)
 fodf_spheres_org.SetPosition(0, 35, 0)
 fvtk.add(ren, fodf_spheres_org)
 
 # ODF field with added noise
-fodf_spheres = fvtk.sphere_funcs(csd_sf_noisy_slice, sphere, scale=2, norm=False, radial_scale=True)
+fodf_spheres = fvtk.sphere_funcs(csd_sf_noisy_slice, 
+                                 sphere, 
+                                 scale=2, 
+                                 norm=False, 
+                                 radial_scale=True)
 fodf_spheres.SetPosition(0, 0, 0)
 fvtk.add(ren, fodf_spheres)
 
 # Enhancement of noisy ODF field
-fodf_spheres_enh = fvtk.sphere_funcs(csd_sf_enh_slice, sphere, scale=2, norm=False, radial_scale=True)
+fodf_spheres_enh = fvtk.sphere_funcs(csd_sf_enh_slice, 
+                                     sphere, 
+                                     scale=2, 
+                                     norm=False, 
+                                     radial_scale=True)
 fodf_spheres_enh.SetPosition(35, 0, 0)
 fvtk.add(ren, fodf_spheres_enh)
 
 # Additional sharpening
-fodf_spheres_enh_sharp = fvtk.sphere_funcs(csd_sf_enh_sharp_slice*1.5, sphere, scale=2, norm=False, radial_scale=True)
+fodf_spheres_enh_sharp = fvtk.sphere_funcs(csd_sf_enh_sharp_slice*1.5, 
+                                           sphere, 
+                                           scale=2, 
+                                           norm=False, 
+                                           radial_scale=True)
 fodf_spheres_enh_sharp.SetPosition(35, 35, 0)
 fvtk.add(ren, fodf_spheres_enh_sharp)
 
@@ -223,17 +247,19 @@ fvtk.record(ren, out_path='enhancements.png', size=(1024, 1024))
 .. figure:: enhancements.png
    :align: center
 
-   The results after enhancements. Top-left: original noiseless data. Bottom-left: original data with added Rician noise (SNR=2). Bottom-right: After enhancement of noisy data. Top-right: After enhancement and sharpening of noisy data.
+   The results after enhancements. Top-left: original noiseless data. Bottom-left: 
+   original data with added Rician noise (SNR=2). Bottom-right: After enhancement 
+   of noisy data. Top-right: After enhancement and sharpening of noisy data.
 
 References
 ~~~~~~~~~~~~~~~~~~~~~~
 
-.. [Portegies2015_PLoSOne] J. Portegies, R. Fick, G. Sanguinetti, S. Meesters, G.Girard,
-                 and R. Duits. (2015) Improving Fiber Alignment in HARDI by 
-                 Combining Contextual PDE flow with Constrained Spherical 
+.. [Portegies2015_PLoSOne] J. Portegies, R. Fick, G. Sanguinetti, S. Meesters, 
+                 G.Girard, and R. Duits. (2015) Improving Fiber Alignment in HARDI 
+                 by Combining Contextual PDE flow with Constrained Spherical 
                  Deconvolution. PLoS One.
-.. [Portegies2015_SSVM] J. Portegies, G. Sanguinetti, S. Meesters, and R. Duits. (2015)
-                 New Approximation of a Scale Space Kernel on SE(3) and
+.. [Portegies2015_SSVM] J. Portegies, G. Sanguinetti, S. Meesters, and R. Duits. 
+                 (2015) New Approximation of a Scale Space Kernel on SE(3) and
                  Applications in Neuroimaging. Fifth International
                  Conference on Scale Space and Variational Methods in
                  Computer Vision
