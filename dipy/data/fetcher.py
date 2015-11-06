@@ -219,8 +219,8 @@ fetch_stanford_labels = _make_fetcher(
     "fetch_stanford_labels",
     pjoin(dipy_home, 'stanford_hardi'),
     'https://stacks.stanford.edu/file/druid:yx282xq2090/',
-    ["aparc-reduced.nii.gz", "label-info.txt"],
-    ["aparc-reduced.nii.gz", "label-info.txt"],
+    ["aparc-reduced.nii.gz", "label_info.txt"],
+    ["aparc-reduced.nii.gz", "label_info.txt"],
     ['742de90090d06e687ce486f680f6d71a',
      '39db9f0f5e173d7a2c2e51b07d5d711b'],
     doc="Download reduced freesurfer aparc image from stanford web site")
