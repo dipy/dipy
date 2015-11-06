@@ -27,7 +27,7 @@ def test_slicer():
     # window.show(renderer)
 
     # copy pixels in numpy array directly
-    arr = window.snapshot(renderer, 'test_slicer.png')
+    arr = window.snapshot(renderer, 'test_slicer.png', offscreen=False)
     import scipy
     print(scipy.__version__)
     print(scipy.__file__)
@@ -55,7 +55,7 @@ def test_slicer():
     with TemporaryDirectory() as tmpdir:
         fname = os.path.join(tmpdir, 'slice.png')
         # window.show(renderer)
-        arr = window.snapshot(renderer, fname)
+        arr = window.snapshot(renderer, fname, offscreen=False)
         report = window.analyze_snapshot(fname, find_objects=True)
         npt.assert_equal(report.objects, 1)
 
@@ -72,7 +72,7 @@ def test_slicer():
     renderer.reset_camera()
     renderer.reset_clipping_range()
 
-    arr = window.snapshot(renderer)
+    arr = window.snapshot(renderer, offscreen=False)
     report = window.analyze_snapshot(arr, colors=[(255, 0, 0)])
     npt.assert_equal(report.objects, 1)
     npt.assert_equal(report.colors_found, [True])
@@ -94,7 +94,7 @@ def test_slicer():
 
     renderer.reset_clipping_range()
 
-    arr = window.snapshot(renderer)
+    arr = window.snapshot(renderer, offscreen=False)
     report = window.analyze_snapshot(arr, find_objects=True)
     npt.assert_equal(report.objects, 1)
 
