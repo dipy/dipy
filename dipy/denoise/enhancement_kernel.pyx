@@ -97,7 +97,7 @@ cdef class EnhancementKernel:
 
         # create a lookup table in testing mode
         if test_mode:
-            self.create_lookup_table(test_mode = True)
+            self.create_lookup_table(True)
             return
 
         # if LUT exists, load
