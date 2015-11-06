@@ -91,6 +91,7 @@ def convolve_sf(odfs_sf, kernel, test_mode=False, num_threads=None):
 @cython.wraparound(False)
 @cython.boundscheck(False)
 @cython.nonecheck(False)
+@cython.cdivision(True)
 cdef double [:, :, :, ::1] perform_convolution (double [:, :, :, ::1] odfs, 
                                                 double [:, :, :, :, ::1] lut,
                                                 int test_mode,
