@@ -12,7 +12,7 @@ from dipy.testing.decorators import xvfb_it
 run_test = actor.have_vtk and actor.have_vtk_colors and window.have_imread
 
 if actor.have_vtk:
-    if actor.major_version == 5:
+    if actor.major_version == 5 and os.environ.get('TEST_WITH_XVFB', False):
         skip_slicer = True
     else:
         skip_slicer = False
