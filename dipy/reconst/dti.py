@@ -1174,15 +1174,44 @@ def iter_fit_tensor(step=1e4):
     that use vectorized operations and need to store large temporary arrays for
     their vectorized operations.
 
+    Parameters
+    ----------
+    step : int
+        The chunk size as a number of voxels.
     """
 
     def iter_decorator(fit_tensor):
-        """Actual iter decorator returned by iter_fit_tensor dec factory"""
+        """Actual iter decorator returned by iter_fit_tensor dec factory
+
+        Parameters
+        ----------
+        fit_tensor : callable
+            A tensor fitting callable (most likely a function). The callable
+            has to have the signature:
+              fit_method(design_matrix, data, *args, **kwargs)
+        """
 
         @functools.wraps(fit_tensor)
         def wrapped_fit_tensor(design_matrix, data, step=step,
                                *args, **kwargs):
-            """Iterate fit_tensor function over the data chunks"""
+            """Iterate fit_tensor function over the data chunks
+
+            Parameters
+            ----------
+            design_matrix : array (g, 7)
+                Design matrix holding the covariants used to solve for the
+                regression coefficients.
+            data : array ([X, Y, Z, ...], g)
+                Data or response variables holding the data. Note that the last
+                dimension should contain the data. It makes no copies of data.
+            step : int
+                The chunk size as a number of voxels. Overrides `step` value
+                of `iter_fit_tensor`.
+            args : {list,tuple}
+                Any extra optional positional arguments passed to `fit_tensor`.
+            kwargs : dict
+                Any extra optional keyword arguments passed to `fit_tensor`.
+            """
             shape = data.shape[:-1]
             size = np.prod(shape)
             step = int(step) or size
