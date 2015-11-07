@@ -87,11 +87,7 @@ def test_multib0_dsi():
     odf = dsfit.odf(sphere)
     assert_equal(new_data.shape[:-1] + (17, 17, 17), pdf.shape)
     assert_equal(np.alltrue(np.isreal(pdf)), True)
-    from dipy.viz import fvtk
 
-    ren = fvtk.ren()
-    fvtk.add(ren, fvtk.sphere_funcs(odf, sphere))
-    fvtk.show(ren)
 
 def sticks_and_ball_dummies(gtab):
     sb_dummies={}
