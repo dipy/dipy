@@ -12,10 +12,15 @@ from dipy.testing.decorators import xvfb_it
 run_test = actor.have_vtk and actor.have_vtk_colors and window.have_imread
 
 if actor.have_vtk:
-    major_version = actor.vtk.vtkVersion.GetVTKMajorVersion()
+    if actor.major_version == 5:
+        skip_slicer = True
+    else:
+        skip_slicer = False
+else:
+    skip_slicer = False
 
 
-@npt.dec.skipif(major_version == 5)
+@npt.dec.skipif(skip_slicer)
 @npt.dec.skipif(not run_test)
 @xvfb_it
 def test_slicer():
