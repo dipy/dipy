@@ -341,16 +341,18 @@ def create_qtable(gtab, origin):
     """
 
     bv = gtab.bvals
-    bsorted = np.sort(bv[np.bitwise_not(gtab.b0s_mask)])
-    for i in range(len(bsorted)):
-        bmin = bsorted[i]
-        try:
-            if bv.max() / bmin > origin * 2:
-                continue
-            else:
-                break
-        except ZeroDivisionError:
-            continue
+    bmin = np.sort(bv)[1]
+
+#    bsorted = np.sort(bv[np.bitwise_not(gtab.b0s_mask)])
+#    for i in range(len(bsorted)):
+#        bmin = bsorted[i]
+#        try:
+#            if bv.max() / bmin > origin * 2:
+#                continue
+#            else:
+#                break
+#        except ZeroDivisionError:
+#            continue
 
     bv = np.sqrt(bv / bmin)
     qtable = np.vstack((bv, bv, bv)).T * gtab.bvecs
