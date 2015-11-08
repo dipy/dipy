@@ -11,7 +11,16 @@ from dipy.testing.decorators import xvfb_it
 
 run_test = actor.have_vtk and actor.have_vtk_colors and window.have_imread
 
+if actor.have_vtk:
+    if actor.major_version == 5 and os.environ.get('TEST_WITH_XVFB', False):
+        skip_slicer = True
+    else:
+        skip_slicer = False
+else:
+    skip_slicer = False
 
+
+@npt.dec.skipif(skip_slicer)
 @npt.dec.skipif(not run_test)
 @xvfb_it
 def test_slicer():
@@ -20,14 +29,14 @@ def test_slicer():
     affine = np.eye(4)
     slicer = actor.slicer(data, affine)
     slicer.display(None, None, 25)
-    window.add(renderer, slicer)
+    renderer.add(slicer)
 
     renderer.reset_camera()
     renderer.reset_clipping_range()
     # window.show(renderer)
 
     # copy pixels in numpy array directly
-    arr = window.snapshot(renderer, 'test_slicer.png')
+    arr = window.snapshot(renderer, 'test_slicer.png', offscreen=False)
     import scipy
     print(scipy.__version__)
     print(scipy.__file__)
@@ -49,13 +58,13 @@ def test_slicer():
     slicer.display_extent(10, 30, 10, 30, 35, 35)
     renderer.ResetCamera()
 
-    window.add(renderer, slicer)
+    renderer.add(slicer)
 
     # save pixels in png file not a numpy array
     with TemporaryDirectory() as tmpdir:
         fname = os.path.join(tmpdir, 'slice.png')
         # window.show(renderer)
-        arr = window.snapshot(renderer, fname)
+        arr = window.snapshot(renderer, fname, offscreen=False)
         report = window.analyze_snapshot(fname, find_objects=True)
         npt.assert_equal(report.objects, 1)
 
@@ -72,7 +81,7 @@ def test_slicer():
     renderer.reset_camera()
     renderer.reset_clipping_range()
 
-    arr = window.snapshot(renderer)
+    arr = window.snapshot(renderer, offscreen=False)
     report = window.analyze_snapshot(arr, colors=[(255, 0, 0)])
     npt.assert_equal(report.objects, 1)
     npt.assert_equal(report.colors_found, [True])
@@ -94,7 +103,7 @@ def test_slicer():
 
     renderer.reset_clipping_range()
 
-    arr = window.snapshot(renderer)
+    arr = window.snapshot(renderer, offscreen=False)
     report = window.analyze_snapshot(arr, find_objects=True)
     npt.assert_equal(report.objects, 1)
 
