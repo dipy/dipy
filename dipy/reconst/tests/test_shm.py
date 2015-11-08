@@ -25,7 +25,8 @@ from dipy.reconst.shm import (real_sph_harm, real_sym_sh_basis,
                               smooth_pinv, bootstrap_data_array,
                               bootstrap_data_voxel, ResidualBootstrapWrapper,
                               CsaOdfModel, QballModel, SphHarmFit,
-                              spherical_harmonics)
+                              spherical_harmonics, anisotropic_power,
+                              calculate_max_order)
 
 def test_order_from_ncoeff():
     """
@@ -383,9 +384,7 @@ def test_sf_to_sh():
 def test_faster_sph_harm():
 
     sh_order = 8
-
     m, n = sph_harm_ind_list(sh_order)
-
     theta = np.array([1.61491146,  0.76661665,  0.11976141,  1.20198246,  1.74066314,
                       1.5925956 ,  2.13022055,  0.50332859,  1.19868988,  0.78440679,
                       0.50686938,  0.51739718,  1.80342999,  0.73778957,  2.28559395,
@@ -418,6 +417,36 @@ def test_faster_sph_harm():
     sh2 = sph_harm_sp(m, n, theta[:, None], phi[:, None])
 
     assert_array_almost_equal(sh, sh2, 8)
+
+def test_anisotropic_power():
+    for n_coeffs in [6, 15, 28, 45, 66, 91]:
+        for norm_factor in [0.0005, 0.00001]:
+
+            # Create some really simple cases:
+            coeffs = np.ones((3, n_coeffs))
+            max_order = calculate_max_order(coeffs.shape[-1])
+            # For the case where all coeffs == 1, the ap is simply log of the
+            # number of even orders up to the maximal order:
+            analytic = (np.log(len(range(2, max_order + 2, 2))) -
+                        np.log(norm_factor))
+
+            answers = [analytic] * 3
+            apvals = anisotropic_power(coeffs, norm_factor=norm_factor)
+            assert_array_almost_equal(apvals, answers)
+            # Test that this works for single voxel arrays as well:
+            assert_array_almost_equal(
+                anisotropic_power(coeffs[1], norm_factor=norm_factor),
+                answers[1])
+
+
+def test_calculate_max_order():
+    """Based on the table in:
+    http://jdtournier.github.io/mrtrix-0.2/tractography/preprocess.html
+    """
+    orders = [2, 4, 6, 8, 10, 12]
+    n_coeffs = [6, 15, 28, 45, 66, 91]
+    for o, n in zip(orders, n_coeffs):
+        assert_equal(calculate_max_order(n), o)
 
 
 if __name__ == "__main__":

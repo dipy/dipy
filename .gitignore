@@ -20,9 +20,10 @@ MANIFEST
 dist/
 .project
 .pydevproject
-*.swp
+*.sw[po]
 dipy.egg-info/
 nibabel*egg/
 pyx-stamps
 __config__.py
 .DS_Store
+.coverage

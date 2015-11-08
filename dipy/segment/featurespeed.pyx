@@ -27,7 +27,7 @@ cdef class Feature(object):
     `infer_shape` methods.
     """
     def __init__(Feature self, is_order_invariant=True):
-        # By default every features are order invariant.
+        # By default every feature is order invariant.
         self.is_order_invariant = is_order_invariant
 
     property is_order_invariant:
@@ -303,7 +303,7 @@ cdef class ArcLengthFeature(CythonFeature):
         out[0, 0] = c_length(datum)
 
 
-cdef class VectorBetweenEndpointsFeature(CythonFeature):
+cdef class VectorOfEndpointsFeature(CythonFeature):
     """ Extracts features from a sequential datum.
 
     A sequence of N-dimensional points is represented as a 2D array with
@@ -313,10 +313,10 @@ cdef class VectorBetweenEndpointsFeature(CythonFeature):
     space pointing from one end-point of the sequence to the other
     (i.e. `S[-1]-S[0]`).
     """
-    def __init__(VectorBetweenEndpointsFeature self):
-        super(VectorBetweenEndpointsFeature, self).__init__(is_order_invariant=False)
+    def __init__(VectorOfEndpointsFeature self):
+        super(VectorOfEndpointsFeature, self).__init__(is_order_invariant=False)
 
-    cdef Shape c_infer_shape(VectorBetweenEndpointsFeature self, Data2D datum) nogil except *:
+    cdef Shape c_infer_shape(VectorOfEndpointsFeature self, Data2D datum) nogil except *:
         cdef Shape shape
         shape.ndim = 2
         shape.dims[0] = 1
@@ -324,7 +324,7 @@ cdef class VectorBetweenEndpointsFeature(CythonFeature):
         shape.size = datum.shape[1]
         return shape
 
-    cdef void c_extract(VectorBetweenEndpointsFeature self, Data2D datum, Data2D out) nogil except *:
+    cdef void c_extract(VectorOfEndpointsFeature self, Data2D datum, Data2D out) nogil except *:
         cdef:
             int N = datum.shape[0], D = datum.shape[1]
             int d
@@ -382,10 +382,6 @@ cpdef extract(Feature feature, data):
     -------
     list of 2D arrays
         List of features extracted from `data`.
-
-    Notes
-    -----
-    This method calls its Cython version `self.c_extract` accordingly.
     """
     single_datum = False
     if type(data) is np.ndarray:

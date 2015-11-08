@@ -36,7 +36,8 @@ Perform QuickBundles clustering using the MDF metric and a 10mm distance
 threshold. Keep in mind that since the MDF metric requires streamlines to have
 the same number of points, the clustering algorithm will internally use a
 representation of streamlines that have been automatically downsampled/upsampled
-so they have only 18 points (See tutorial### to manually set that number of points).
+so they have only 12 points (To set manually the number of points,
+see :ref:`clustering-examples-ResampleFeature`).
 """
 
 qb = QuickBundles(threshold=10.)
@@ -59,39 +60,31 @@ print("Centroid of the last cluster:\n", clusters[-1].centroid)
 
     Nb. clusters: 4
 
-    Cluster sizes: [64, 191, 44, 1]
+    Cluster sizes: [64, 191, 47, 1]
 
     Small clusters: array([False, False, False, True], dtype=bool)
 
     Streamlines indices of the first cluster:
-    [0, 7, 8, 10, 11, 12, 13, 14, 15, 18, 26, 30, 33, 35, 41, 42, 45, 65, 66, 75,
-     85, 100, 101, 105, 115, 116, 119, 122, 123, 124, 125, 126, 128, 129, 135, 139,
-     142, 143, 144, 148, 151, 159, 167, 175, 180, 181, 185, 200, 208, 210, 224, 237,
+    [0, 7, 8, 10, 11, 12, 13, 14, 15, 18, 26, 30, 33, 35, 41, 65, 66, 85, 100,
+     101, 105, 115, 116, 119, 122, 123, 124, 125, 126, 128, 129, 135, 139, 142,
+     143, 144, 148, 151, 159, 167, 175, 180, 181, 185, 200, 208, 210, 224, 237,
      246, 249, 251, 256, 267, 270, 280, 284, 293, 296, 297, 299]
 
     Centroid of the last cluster:
     array([[  84.83773804,  117.92590332,   77.32278442],
-           [  85.89845276,  116.67261505,   80.27609253],
-           [  86.2130661 ,  114.88985443,   83.13295746],
-           [  86.40007019,  112.50982666,   85.55088043],
-           [  86.54071045,  109.60722351,   87.31826019],
-           [  86.39044189,  106.43745422,   88.54563904],
-           [  86.29808807,  103.12637329,   89.29672241],
-           [  85.72164154,   99.78807068,   89.04328918],
-           [  84.6943512 ,   96.6314621 ,   88.31369781],
-           [  83.09349823,   93.83686066,   87.22660065],
-           [  81.00836945,   91.42190552,   86.07907867],
-           [  78.49610138,   89.20231628,   85.63204193],
-           [  75.75254822,   87.23584747,   85.22332001],
-           [  72.96138   ,   85.69472504,   84.09647369],
-           [  70.16287231,   85.14102173,   82.26060486],
-           [  67.67449188,   85.57660675,   79.98880005],
-           [  65.69326782,   86.66771698,   77.44818115],
+           [  86.10850525,  115.84362793,   81.91885376],
+           [  86.40357208,  112.25676727,   85.72930145],
+           [  86.48336792,  107.60327911,   88.13782501],
+           [  86.23897552,  102.5100708 ,   89.29447174],
+           [  85.04563904,   97.46020508,   88.54240417],
+           [  82.60240173,   93.14851379,   86.84208679],
+           [  78.98937225,   89.57682037,   85.63652039],
+           [  74.72344208,   86.60827637,   84.9391861 ],
+           [  70.40846252,   85.15874481,   82.4484024 ],
+           [  66.74534607,   86.00262451,   78.82582092],
            [  64.02451324,   88.43942261,   75.0697403 ]], dtype=float32)
 
-"""
 
-"""
 `clusters` has also attributes like `centroids` (cluster representatives), and
 methods like `add`, `remove`, and `clear` to modify the clustering result.
 
@@ -112,7 +105,7 @@ fvtk.record(ren, n_frames=1, out_path='fornix_initial.png', size=(600, 600))
 Show the centroids of the fornix after clustering (with random colors):
 """
 
-colormap = np.random.rand(len(clusters), 3)
+colormap = fvtk.create_colormap(np.arange(len(clusters)))
 
 fvtk.clear(ren)
 ren.SetBackground(1, 1, 1)

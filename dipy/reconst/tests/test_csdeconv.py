@@ -1,4 +1,5 @@
 import warnings
+import nibabel as nib
 import numpy as np
 import numpy.testing as npt
 from numpy.testing import (assert_, assert_equal, assert_almost_equal,
@@ -15,9 +16,12 @@ from dipy.reconst.csdeconv import (ConstrainedSphericalDeconvModel,
                                    forward_sdeconv_mat,
                                    odf_deconv,
                                    odf_sh_to_sharp,
-                                   auto_response, recursive_response)
+                                   auto_response,
+                                   recursive_response,
+                                   response_from_mask)
 from dipy.reconst.peaks import peak_directions
 from dipy.core.sphere_stats import angular_similarity
+from dipy.reconst.dti import TensorModel, fractional_anisotropy
 from dipy.reconst.shm import (CsaOdfModel, QballModel, sf_to_sh, sh_to_sf,
                               real_sym_sh_basis, sph_harm_ind_list)
 from dipy.reconst.shm import lazy_index
@@ -102,6 +106,41 @@ def test_recursive_response_calibration():
     assert_almost_equal(FA, FA_gt, 1)
 
 
+def test_response_from_mask():
+    fdata, fbvals, fbvecs = get_data('small_64D')
+    bvals = np.load(fbvals)
+    bvecs = np.load(fbvecs)
+    data = nib.load(fdata).get_data()
+
+    gtab = gradient_table(bvals, bvecs)
+    ten = TensorModel(gtab)
+    tenfit = ten.fit(data)
+    FA = fractional_anisotropy(tenfit.evals)
+    FA[np.isnan(FA)] = 0
+    radius = 3
+
+    for fa_thr in np.arange(0, 1, 0.1):
+        response_auto, ratio_auto, nvoxels = auto_response(gtab,
+                                                           data,
+                                                           roi_center=None,
+                                                           roi_radius=radius,
+                                                           fa_thr=fa_thr,
+                                                           return_number_of_voxels=True)
+
+        ci, cj, ck = np.array(data.shape[:3]) / 2
+        mask = np.zeros(data.shape[:3])
+        mask[ci - radius: ci + radius,
+             cj - radius: cj + radius,
+             ck - radius: ck + radius] = 1
+
+        mask[FA <= fa_thr] = 0
+        response_mask, ratio_mask = response_from_mask(gtab, data, mask)
+
+        assert_equal(int(np.sum(mask)), nvoxels)
+        assert_array_almost_equal(response_mask[0], response_auto[0])
+        assert_almost_equal(response_mask[1], response_auto[1])
+        assert_almost_equal(ratio_mask, ratio_auto)
+
 def test_csdeconv():
     SNR = 100
     S0 = 1
@@ -156,7 +195,7 @@ def test_csdeconv():
                                       roi_radius=3, fa_thr=0.5)
     assert_array_almost_equal(aresponse[0], response[0])
     assert_almost_equal(aresponse[1], 100)
-    assert_almost_equal(aratio, response[0][1]/response[0][0])
+    assert_almost_equal(aratio, response[0][1] / response[0][0])
 
     aresponse2, aratio2 = auto_response(gtab, big_S, roi_radius=3, fa_thr=0.5)
     assert_array_almost_equal(aresponse[0], response[0])

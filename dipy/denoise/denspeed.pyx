@@ -2,8 +2,13 @@ from __future__ import division
 
 import numpy as np
 cimport numpy as cnp
+
 cimport cython
+cimport safe_openmp as openmp
+from safe_openmp cimport have_openmp
+
 from cython.parallel import parallel, prange
+from multiprocessing import cpu_count
 
 from libc.math cimport sqrt, exp
 from libc.stdlib cimport malloc, free
@@ -11,7 +16,7 @@ from libc.string cimport memcpy
 
 
 def nlmeans_3d(arr, mask=None, sigma=None, patch_radius=1,
-               block_radius=5, rician=True):
+               block_radius=5, rician=True, num_threads=None):
     """ Non-local means for denoising 3D images
 
     Parameters
@@ -19,7 +24,7 @@ def nlmeans_3d(arr, mask=None, sigma=None, patch_radius=1,
     arr : 3D ndarray
         The array to be denoised
     mask : 3D ndarray
-    sigma : float
+    sigma : float or 3D array
         standard deviation of the noise estimated from the data
     patch_radius : int
         patch size is ``2 x patch_radius + 1``. Default is 1.
@@ -28,6 +33,9 @@ def nlmeans_3d(arr, mask=None, sigma=None, patch_radius=1,
     rician : boolean
         If True the noise is estimated as Rician, otherwise Gaussian noise
         is assumed.
+    num_threads : int
+        Number of threads. If None (default) then all available threads
+        will be used.
 
     Returns
     -------
@@ -36,7 +44,7 @@ def nlmeans_3d(arr, mask=None, sigma=None, patch_radius=1,
     """
 
     if arr.ndim != 3:
-        raise ValueError('arr needs to be a 3D ndarray')
+        raise ValueError('data needs to be a 3D ndarray', arr.shape)
 
     if mask is None:
         mask = np.ones(arr.shape, dtype='f8')
@@ -44,12 +52,18 @@ def nlmeans_3d(arr, mask=None, sigma=None, patch_radius=1,
         mask = np.ascontiguousarray(mask, dtype='f8')
 
     if mask.ndim != 3:
-        raise ValueError('arr needs to be a 3D ndarray')
+        raise ValueError('mask needs to be a 3D ndarray', mask.shape)
+
+    if sigma.ndim != 3:
+        raise ValueError('sigma needs to be a 3D ndarray', sigma.shape)
 
     arr = np.ascontiguousarray(arr, dtype='f8')
     arr = add_padding_reflection(arr, block_radius)
     mask = add_padding_reflection(mask.astype('f8'), block_radius)
-    arrnlm = _nlmeans_3d(arr, mask, sigma, patch_radius, block_radius, rician)
+    sigma = np.ascontiguousarray(sigma, dtype='f8')
+    sigma = add_padding_reflection(sigma.astype('f8'), block_radius)
+    arrnlm = _nlmeans_3d(arr, mask, sigma, patch_radius, block_radius,
+                         rician, num_threads)
 
     return remove_padding(arrnlm, block_radius)
 
@@ -57,9 +71,9 @@ def nlmeans_3d(arr, mask=None, sigma=None, patch_radius=1,
 @cython.wraparound(False)
 @cython.boundscheck(False)
 def _nlmeans_3d(double [:, :, ::1] arr, double [:, :, ::1] mask,
-                sigma, patch_radius=1, block_radius=5,
-                rician=True):
-    """ This algorithm denoises the value of every voxel (i, j ,k) by
+                double [:, :, ::1] sigma, patch_radius=1, block_radius=5,
+                rician=True, num_threads=None):
+    """ This algorithm denoises the value of every voxel (i, j, k) by
     calculating a weight between a moving 3D patch and a static 3D patch
     centered at (i, j, k). The moving patch can only move inside a
     3D block.
@@ -69,18 +83,27 @@ def _nlmeans_3d(double [:, :, ::1] arr, double [:, :, ::1] mask,
         cnp.npy_intp i, j, k, I, J, K
         double [:, :, ::1] out = np.zeros_like(arr)
         double summ = 0
-        double sigm = 0
         cnp.npy_intp P = patch_radius
         cnp.npy_intp B = block_radius
-
-    sigm = sigma
+        int all_cores = openmp.omp_get_num_procs()
+        int threads_to_use = -1
 
     I = arr.shape[0]
     J = arr.shape[1]
     K = arr.shape[2]
 
-    #move the block
+    if num_threads is not None:
+        threads_to_use = num_threads
+    else:
+        threads_to_use = all_cores
+
+    if have_openmp:
+        openmp.omp_set_dynamic(0)
+        openmp.omp_set_num_threads(threads_to_use)
+
+    # move the block
     with nogil, parallel():
+
         for i in prange(B, I - B):
             for j in range(B, J - B):
                 for k in range(B, K - B):
@@ -88,12 +111,15 @@ def _nlmeans_3d(double [:, :, ::1] arr, double [:, :, ::1] mask,
                     if mask[i, j, k] == 0:
                         continue
 
-                    out[i, j, k] = process_block(arr, i, j, k, B, P, sigm)
+                    out[i, j, k] = process_block(arr, i, j, k, B, P, sigma)
+
+    if have_openmp and num_threads is not None:
+        openmp.omp_set_num_threads(all_cores)
 
     new = np.asarray(out)
 
     if rician:
-        new -= 2 * sigm ** 2
+        new -= 2 * np.asarray(sigma)**2
         new[new < 0] = 0
 
     return np.sqrt(new)
@@ -104,7 +130,7 @@ def _nlmeans_3d(double [:, :, ::1] arr, double [:, :, ::1] mask,
 @cython.cdivision(True)
 cdef double process_block(double [:, :, ::1] arr,
                           cnp.npy_intp i, cnp.npy_intp j, cnp.npy_intp k,
-                          cnp.npy_intp B, cnp.npy_intp P, double sigma) nogil:
+                          cnp.npy_intp B, cnp.npy_intp P, double [:, :, ::1] sigma) nogil:
     """ Process the block with center at (i, j, k)
 
     Parameters
@@ -117,7 +143,8 @@ cdef double process_block(double [:, :, ::1] arr,
         block radius
     P : int
         patch radius
-    sigma : double
+    sigma : 3D array
+        local noise standard deviation
 
     Returns
     -------
@@ -127,24 +154,25 @@ cdef double process_block(double [:, :, ::1] arr,
     cdef:
         cnp.npy_intp m, n, o, M, N, O, a, b, c, cnt, step
         double patch_vol_size
-        double summ, d, w, sumw, sum_out, x
+        double summ, d, w, sumw, sum_out, x, sigm
         double * W
         double * cache
+        double * sigma_block
         double denom
         cnp.npy_intp BS = B * 2 + 1
-        double sqrt2 = 1.4142135623730951
 
     cnt = 0
     sumw = 0
     patch_vol_size = (P + P + 1) * (P + P + 1) * (P + P + 1)
-    denom = sigma * sigma * sqrt2
 
     W = <double *> malloc(BS * BS * BS * sizeof(double))
     cache = <double *> malloc(BS * BS * BS * sizeof(double))
+    sigma_block = <double *> malloc(BS * BS * BS * sizeof(double))
 
     # (i, j, k) coordinates are the center of the static patch
     # copy block in cache
     copy_block_3d(cache, BS, BS, BS, arr, i - B, j - B, k - B)
+    copy_block_3d(sigma_block, BS, BS, BS, sigma, i - B, j - B, k - B)
 
     # calculate weights between the central patch and the moving patch in block
     # (m, n, o) coordinates are the center of the moving patch
@@ -154,16 +182,19 @@ cdef double process_block(double [:, :, ::1] arr,
             for o in range(P, BS - P):
 
                 summ = 0
+                sigm = 0
 
                 # calculate square distance
-                for a in range(- P, P + 1):
-                    for b in range(- P, P + 1):
-                        for c in range(- P, P + 1):
+                for a in range(-P, P + 1):
+                    for b in range(-P, P + 1):
+                        for c in range(-P, P + 1):
 
                             # this line takes most of the time! mem access
                             d = cache[(B + a) * BS * BS + (B + b) * BS + (B + c)] - cache[(m + a) * BS * BS + (n + b) * BS + (o + c)]
                             summ += d * d
+                            sigm += sigma_block[(m + a) * BS * BS + (n + b) * BS + (o + c)]
 
+                denom = sqrt(2) * (sigm / patch_vol_size)**2
                 w = exp(-(summ / patch_vol_size) / denom)
                 sumw += w
                 W[cnt] = w
@@ -189,6 +220,7 @@ cdef double process_block(double [:, :, ::1] arr,
 
     free(W)
     free(cache)
+    free(sigma_block)
 
     return sum_out
 
@@ -244,3 +276,11 @@ cdef cnp.npy_intp copy_block_3d(double * dest,
             memcpy(&dest[i * J * K  + j * K], &source[i + min_i, j + min_j, min_k], K * sizeof(double))
 
     return 1
+
+
+def cpu_count():
+    if have_openmp:
+        return openmp.omp_get_num_procs()
+    else:
+        return 1
+

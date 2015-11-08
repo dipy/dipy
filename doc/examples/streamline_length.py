@@ -14,6 +14,7 @@ numpy arrays of size :math:`(N_i \times 3)` for :math:`i=1:M` where $M$ is the
 number of streamlines in the set.
 """
 
+import numpy as np
 from dipy.tracking.utils import length
 from dipy.tracking.metrics import downsample
 from dipy.tracking.distances import approx_polygon_track
@@ -34,7 +35,9 @@ def simulated_bundles(no_streamlines=50, n_pts=100):
     start = np.random.randint(10, 30, no_streamlines)
     end = np.random.randint(60, 100, no_streamlines)
 
-    bundle = [10 * streamline[start[i]:end[i]] for (i, streamline) in enumerate(bundle)]
+    bundle = [10 * streamline[start[i]:end[i]]
+              for (i, streamline) in enumerate(bundle)]
+    bundle = [np.ascontiguousarray(streamline) for streamline in bundle]
 
     return bundle
 

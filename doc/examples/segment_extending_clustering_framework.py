@@ -10,6 +10,7 @@ that could be uses to cluster streamlines.
 The purpose of this tutorial is to show how to easily create new `Feature` and
 new `Metric` classes that can be used by QuickBundles.
 
+.. _clustering-framework:
 
 Clustering framework
 ====================
@@ -45,7 +46,8 @@ outputting a `ClusterMap` object.
 Extending `Feature`
 ===================
 This section will guide you through the creation of a new feature extraction
-method that can be used in the context of this clustering framework.
+method that can be used in the context of this clustering framework. For a
+list of available features in Dipy see :ref:`example_segment_clustering_features`.
 
 Assuming a set of streamlines, the type of features we want to extract is the
 arc length (i.e. the sum of the length of each segment for a given streamline).
@@ -141,7 +143,8 @@ fvtk.record(ren, n_frames=1, out_path='fornix_clusters_arclength.png', size=(600
 Extending `Metric`
 ==================
 This section will guide you through the creation of a new metric that can be
-used in the context of this clustering framework.
+used in the context of this clustering framework. For a list of available
+metrics in Dipy see :ref:`example_segment_clustering_metrics`.
 
 Assuming a set of streamlines, we want a metric that computes the cosine
 distance giving the vector between endpoints of each streamline (i.e. one
@@ -152,7 +155,7 @@ Let's start by importing the necessary modules.
 """
 
 from dipy.segment.metric import Metric
-from dipy.segment.metric import VectorBetweenEndpointsFeature
+from dipy.segment.metric import VectorOfEndpointsFeature
 
 """
 We now define the class `CosineMetric` that will perform the desired
@@ -167,7 +170,7 @@ class CosineMetric(Metric):
     """ Computes the cosine distance between two streamlines. """
     def __init__(self):
         # For simplicity, features will be the vector between endpoints of a streamline.
-        super(CosineMetric, self).__init__(feature=VectorBetweenEndpointsFeature())
+        super(CosineMetric, self).__init__(feature=VectorOfEndpointsFeature())
 
     def are_compatible(self, shape1, shape2):
         """ Checks if two features are vectors of same dimension.

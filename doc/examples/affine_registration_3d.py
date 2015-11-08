@@ -11,7 +11,7 @@ import numpy as np
 from dipy.viz import regtools
 from dipy.data import fetch_stanford_hardi, read_stanford_hardi
 from dipy.data.fetcher import fetch_syn_data, read_syn_data
-from dipy.align.imaffine import (align_centers_of_mass,
+from dipy.align.imaffine import (transform_centers_of_mass,
                                  AffineMap,
                                  MutualInformationMetric,
                                  AffineRegistration)
@@ -47,7 +47,7 @@ the moving image using an identity transform
 """
 
 identity = np.eye(4)
-affine_map = AffineMap(None,
+affine_map = AffineMap(identity,
                        static.shape, static_grid2world,
                        moving.shape, moving_grid2world)
 resampled = affine_map.transform(moving)
@@ -74,8 +74,8 @@ We can obtain a very rough (and fast) registration by just aligning the centers
 of mass of the two images
 """
 
-c_of_mass = align_centers_of_mass(static, static_grid2world,
-                                  moving, moving_grid2world)
+c_of_mass = transform_centers_of_mass(static, static_grid2world,
+                                      moving, moving_grid2world)
 
 """
 We can now transform the moving image and draw it on top of the static image,

@@ -1,4 +1,4 @@
-""" Testing vizualization with fvtk
+""" Testing visualization with fvtk
 """
 import numpy as np
 
@@ -6,11 +6,15 @@ from dipy.viz import fvtk
 from dipy import data
 
 import numpy.testing as npt
+from dipy.testing.decorators import xvfb_it
 
 
+@xvfb_it
 @npt.dec.skipif(not fvtk.have_vtk)
 @npt.dec.skipif(not fvtk.have_vtk_colors)
 def test_fvtk_functions():
+    # This tests will fail if any of the given actors changed inputs or do
+    # not exist
 
     # Create a renderer
     r = fvtk.ren()
@@ -41,7 +45,9 @@ def test_fvtk_functions():
     fvtk.add(r, l)
 
     # Slice the volume
-    fvtk.add(r, fvtk.slicer(vol, plane_i=[50]))
+    slicer = fvtk.slicer(vol)
+    slicer.display(50, None, None)
+    fvtk.add(r, slicer)
 
     # Change the position of the active camera
     fvtk.camera(r, pos=(0.6, 0, 0), verbose=False)
@@ -57,10 +63,8 @@ def test_fvtk_functions():
                     colors=(0, 1, 0))
     fvtk.add(r, p2)
 
-    # Show everything
-    # fvtk.show(r)
 
-
+@xvfb_it
 @npt.dec.skipif(not fvtk.have_vtk)
 @npt.dec.skipif(not fvtk.have_vtk_colors)
 def test_fvtk_ellipsoid():
@@ -82,7 +86,8 @@ def test_fvtk_ellipsoid():
 
     fvtk.add(ren, fvtk.tensor(mevals, mevecs, sphere=sphere))
 
-    fvtk.add(ren, fvtk.tensor(mevals, mevecs, np.ones(mevals.shape), sphere=sphere))
+    fvtk.add(ren, fvtk.tensor(mevals, mevecs, np.ones(mevals.shape),
+             sphere=sphere))
 
     npt.assert_equal(ren.GetActors().GetNumberOfItems(), 2)
 
@@ -107,3 +112,8 @@ def test_colormaps_matplotlib():
         rgba2 = data.get_cmap(name)(v)
         # dipy's colormaps are close to matplotlibs colormaps, but not perfect
         npt.assert_array_almost_equal(rgba1, rgba2, 1)
+
+
+if __name__ == "__main__":
+
+    npt.run_module_suite()

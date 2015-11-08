@@ -1,6 +1,9 @@
 from __future__ import print_function
 
 import numpy as np
+from numpy.linalg import norm
+import numpy.testing as npt
+from dipy.testing.memory import get_type_refcount
 
 from nose.tools import assert_true, assert_equal, assert_almost_equal
 from numpy.testing import (assert_array_equal, assert_array_almost_equal,
@@ -12,46 +15,49 @@ from dipy.tracking.streamline import (set_number_of_points,
                                       unlist_streamlines,
                                       center_streamlines,
                                       transform_streamlines,
-                                      select_random_set_of_streamlines)
+                                      select_random_set_of_streamlines,
+                                      compress_streamlines,
+                                      select_by_rois,
+                                      orient_by_rois)
 
 
-streamline = np.array([[82.20181274,  91.3650589 ,  43.15737152],
-                       [82.3844223 ,  91.79336548,  43.87036514],
+streamline = np.array([[82.20181274,  91.36505890,  43.15737152],
+                       [82.38442230,  91.79336548,  43.87036514],
                        [82.48710632,  92.27861023,  44.56298065],
-                       [82.53310394,  92.7854538 ,  45.24635315],
+                       [82.53310394,  92.78545380,  45.24635315],
                        [82.53793335,  93.26902008,  45.94785309],
-                       [82.48797607,  93.75003815,  46.6493988 ],
-                       [82.35533142,  94.2518158 ,  47.32533264],
+                       [82.48797607,  93.75003815,  46.64939880],
+                       [82.35533142,  94.25181580,  47.32533264],
                        [82.15484619,  94.76634216,  47.97451019],
-                       [81.90982819,  95.28792572,  48.6024437 ],
+                       [81.90982819,  95.28792572,  48.60244370],
                        [81.63336945,  95.78153229,  49.23971176],
                        [81.35479736,  96.24868011,  49.89558792],
                        [81.08713531,  96.69807434,  50.56812668],
                        [80.81504822,  97.14285278,  51.24193192],
                        [80.52591705,  97.56719971,  51.92168427],
                        [80.26599884,  97.98269653,  52.61848068],
-                       [80.0463562 ,  98.38131714,  53.3385582 ],
-                       [79.8469162 ,  98.77052307,  54.06955338],
+                       [80.04635620,  98.38131714,  53.33855820],
+                       [79.84691620,  98.77052307,  54.06955338],
                        [79.57667542,  99.13599396,  54.78985596],
-                       [79.23351288,  99.4320755 ,  55.51065063],
+                       [79.23351288,  99.43207550,  55.51065063],
                        [78.84815979,  99.64141846,  56.24016571],
-                       [78.47383881,  99.77347565,  56.9929924 ],
+                       [78.47383881,  99.77347565,  56.99299240],
                        [78.12837219,  99.81330872,  57.76969528],
                        [77.80438995,  99.85082245,  58.55574799],
-                       [77.4943924 ,  99.88065338,  59.34777069],
+                       [77.49439240,  99.88065338,  59.34777069],
                        [77.21414185,  99.85343933,  60.15090561],
                        [76.96416473,  99.82772827,  60.96406937],
                        [76.74712372,  99.80519104,  61.78676605],
                        [76.52263641,  99.79122162,  62.60765076],
                        [76.03757477, 100.08692169,  63.24152374],
-                       [75.44867706, 100.3526535 ,  63.79513168],
-                       [74.78033447, 100.57255554,  64.272789  ],
-                       [74.11605835, 100.7733078 ,  64.76428986],
+                       [75.44867706, 100.35265350,  63.79513168],
+                       [74.78033447, 100.57255554,  64.27278900],
+                       [74.11605835, 100.77330780,  64.76428986],
                        [73.51222992, 100.98779297,  65.32373047],
                        [72.97387695, 101.23387146,  65.93502045],
                        [72.47355652, 101.49151611,  66.57343292],
-                       [71.99834442, 101.72480774,  67.2397995 ],
-                       [71.5690918 , 101.98665619,  67.92664337],
+                       [71.99834442, 101.72480774,  67.23979950],
+                       [71.56909180, 101.98665619,  67.92664337],
                        [71.18083191, 102.29483795,  68.61888123],
                        [70.81879425, 102.63343048,  69.31127167],
                        [70.47422791, 102.98672485,  70.00532532],
@@ -60,15 +66,15 @@ streamline = np.array([[82.20181274,  91.3650589 ,  43.15737152],
                        [69.27423096, 103.71351624,  72.13452911],
                        [68.91260529, 103.81676483,  72.89796448],
                        [68.60788727, 103.81982422,  73.69258118],
-                       [68.34162903, 103.7661972 ,  74.49915314],
+                       [68.34162903, 103.76619720,  74.49915314],
                        [68.08542633, 103.70635223,  75.30856323],
                        [67.83590698, 103.60187531,  76.11553955],
-                       [67.56822968, 103.4482193 ,  76.90870667],
+                       [67.56822968, 103.44821930,  76.90870667],
                        [67.28399658, 103.25878906,  77.68825531],
                        [67.00117493, 103.03740692,  78.45989227],
                        [66.72718048, 102.80329895,  79.23099518],
-                       [66.4619751 , 102.54130554,  79.99622345],
-                       [66.20803833, 102.22305298,  80.7438736 ],
+                       [66.46197510, 102.54130554,  79.99622345],
+                       [66.20803833, 102.22305298,  80.74387360],
                        [65.96872711, 101.88980865,  81.48987579],
                        [65.72864532, 101.59316254,  82.25085449],
                        [65.47808075, 101.33383942,  83.02194214],
@@ -88,20 +94,20 @@ streamline = np.array([[82.20181274,  91.3650589 ,  43.15737152],
                        [62.57145309,  99.42708588,  94.38592529],
                        [62.32259369,  99.25592804,  95.18167114],
                        [62.07497787,  99.05770111,  95.97154236],
-                       [61.82253647,  98.83877563,  96.7543869 ],
-                       [61.59536743,  98.59293365,  97.5370636 ],
+                       [61.82253647,  98.83877563,  96.75438690],
+                       [61.59536743,  98.59293365,  97.53706360],
                        [61.46530151,  98.30503845,  98.32772827],
                        [61.39904785,  97.97928619,  99.11172485],
                        [61.33279419,  97.65353394,  99.89572906],
                        [61.26067352,  97.30914307, 100.67123413],
                        [61.19459534,  96.96743011, 101.44847107],
-                       [61.1958046 ,  96.63417053, 102.23215485],
-                       [61.26572037,  96.2988739 , 103.01185608],
+                       [61.19580460,  96.63417053, 102.23215485],
+                       [61.26572037,  96.29887390, 103.01185608],
                        [61.39840698,  95.96297455, 103.78307343],
-                       [61.5720787 ,  95.6426239 , 104.55268097],
+                       [61.57207870,  95.64262390, 104.55268097],
                        [61.78163528,  95.35540771, 105.32629395],
                        [62.06700134,  95.09746552, 106.08564758],
-                       [62.39427185,  94.8572464 , 106.83369446],
+                       [62.39427185,  94.85724640, 106.83369446],
                        [62.74076462,  94.62278748, 107.57482147],
                        [63.11461639,  94.40107727, 108.30641937],
                        [63.53397751,  94.20418549, 109.02002716],
@@ -109,11 +115,11 @@ streamline = np.array([[82.20181274,  91.3650589 ,  43.15737152],
                        [64.43580627,  93.87523651, 110.42416382],
                        [64.84857941,  93.69993591, 111.14715576],
                        [65.26740265,  93.51858521, 111.86515808],
-                       [65.69511414,  93.3671875 , 112.58474731],
+                       [65.69511414,  93.36718750, 112.58474731],
                        [66.10470581,  93.22719574, 113.31711578],
                        [66.45891571,  93.06028748, 114.07256317],
                        [66.78582001,  92.90560913, 114.84281921],
-                       [67.11138916,  92.79004669, 115.6204071 ],
+                       [67.11138916,  92.79004669, 115.62040710],
                        [67.44729614,  92.75711823, 116.40135193],
                        [67.75688171,  92.98265076, 117.16111755],
                        [68.02041626,  93.28012848, 117.91371155],
@@ -127,9 +133,9 @@ streamline = np.array([[82.20181274,  91.3650589 ,  43.15737152],
                        [69.05086517,  92.74394989, 124.45450592],
                        [69.02742004,  92.40427399, 125.23509979],
                        [68.95466614,  92.09059143, 126.02339935],
-                       [68.84975433,  91.7967453 , 126.81564331],
+                       [68.84975433,  91.79674530, 126.81564331],
                        [68.72673798,  91.53726196, 127.61715698],
-                       [68.6068573 ,  91.3030014 , 128.42681885],
+                       [68.60685730,  91.30300140, 128.42681885],
                        [68.50636292,  91.12481689, 129.25317383],
                        [68.39311218,  91.01572418, 130.08976746],
                        [68.25946808,  90.94654083, 130.92756653]],
@@ -289,6 +295,42 @@ def test_set_number_of_points():
                  len(streamlines_readonly))
 
 
+def test_set_number_of_points_memory_leaks():
+    # Test some dtypes
+    dtypes = [np.float32, np.float64, np.int32, np.int64]
+    for dtype in dtypes:
+        rng = np.random.RandomState(1234)
+        NB_STREAMLINES = 10000
+        streamlines = [rng.randn(rng.randint(10, 100), 3).astype(dtype) for _ in range(NB_STREAMLINES)]
+
+        list_refcount_before = get_type_refcount()["list"]
+
+        rstreamlines = set_number_of_points(streamlines, nb_points=2)
+        list_refcount_after = get_type_refcount()["list"]
+        del rstreamlines  # Delete `rstreamlines` because it holds a reference to `list`.
+
+        # Calling `set_number_of_points` should increase the refcount of `list` by one
+        # since we kept the returned value.
+        assert_equal(list_refcount_after, list_refcount_before+1)
+
+    # Test mixed dtypes
+    rng = np.random.RandomState(1234)
+    NB_STREAMLINES = 10000
+    streamlines = []
+    for i in range(NB_STREAMLINES):
+        dtype = dtypes[i % len(dtypes)]
+        streamlines.append(rng.randn(rng.randint(10, 100), 3).astype(dtype))
+
+    list_refcount_before = get_type_refcount()["list"]
+
+    rstreamlines = set_number_of_points(streamlines, nb_points=2)
+    list_refcount_after = get_type_refcount()["list"]
+
+    # Calling `set_number_of_points` should increase the refcount of `list` by one
+    # since we kept the returned value.
+    assert_equal(list_refcount_after, list_refcount_before+1)
+
+
 def test_length():
     # Test length of only one streamline
     length_streamline_cython = ds_length(streamline)
@@ -365,6 +407,41 @@ def test_length():
                               [length_python(s) for s in streamlines_readonly])
 
 
+def test_length_memory_leaks():
+    # Test some dtypes
+    dtypes = [np.float32, np.float64, np.int32, np.int64]
+    for dtype in dtypes:
+        rng = np.random.RandomState(1234)
+        NB_STREAMLINES = 10000
+        streamlines = [rng.randn(rng.randint(10, 100), 3).astype(dtype) for _ in range(NB_STREAMLINES)]
+
+        list_refcount_before = get_type_refcount()["list"]
+
+        lengths = ds_length(streamlines)
+        list_refcount_after = get_type_refcount()["list"]
+
+        # Calling `ds_length` shouldn't increase the refcount of `list`
+        # since the return value is a numpy array.
+        assert_equal(list_refcount_after, list_refcount_before)
+
+    # Test mixed dtypes
+    rng = np.random.RandomState(1234)
+    NB_STREAMLINES = 10000
+    streamlines = []
+    for i in range(NB_STREAMLINES):
+        dtype = dtypes[i % len(dtypes)]
+        streamlines.append(rng.randn(rng.randint(10, 100), 3).astype(dtype))
+
+    list_refcount_before = get_type_refcount()["list"]
+
+    lengths = ds_length(streamlines)
+    list_refcount_after = get_type_refcount()["list"]
+
+    # Calling `ds_length` shouldn't increase the refcount of `list`
+    # since the return value is a numpy array.
+    assert_equal(list_refcount_after, list_refcount_before)
+
+
 def test_unlist_relist_streamlines():
     streamlines = [np.random.rand(10, 3),
                    np.random.rand(20, 3),
@@ -395,7 +472,7 @@ def test_center_and_transform():
     assert_array_equal(streamlines3[0], B)
 
 
-def test_select_streamlines():
+def test_select_random_streamlines():
     streamlines = [np.random.rand(10, 3),
                    np.random.rand(20, 3),
                    np.random.rand(5, 3)]
@@ -404,6 +481,323 @@ def test_select_streamlines():
 
     new_streamlines = select_random_set_of_streamlines(streamlines, 4)
     assert_equal(len(new_streamlines), 3)
+
+
+def compress_streamlines_python(streamline, tol_error=0.01,
+                                max_segment_length=10):
+    """
+    Python version of the FiberCompression found on
+    https://github.com/scilus/FiberCompression.
+    """
+    if streamline.shape[0] <= 2:
+        return streamline.copy()
+
+    # Euclidean distance
+    def segment_length(prev, next):
+        return np.sqrt(((prev-next)**2).sum())
+
+    # Projection of a 3D point on a 3D line, minimal distance
+    def dist_to_line(prev, next, curr):
+        return norm(np.cross(next-prev, curr-next)) / norm(next-prev)
+
+    nb_points = 0
+    compressed_streamline = np.zeros_like(streamline)
+
+    # Copy first point since it is always kept.
+    compressed_streamline[0, :] = streamline[0, :]
+    nb_points += 1
+    prev = streamline[0]
+    prev_id = 0
+
+    for next_id, next in enumerate(streamline[2:], start=2):
+        # Euclidean distance between last added point and current point.
+        if segment_length(prev, next) > max_segment_length:
+            compressed_streamline[nb_points, :] = streamline[next_id-1, :]
+            nb_points += 1
+            prev = streamline[next_id-1]
+            prev_id = next_id-1
+            continue
+
+        # Check that each point is not offset by more than `tol_error` mm.
+        for o, curr in enumerate(streamline[prev_id+1:next_id],
+                                 start=prev_id+1):
+            dist = dist_to_line(prev, next, curr)
+
+            if np.isnan(dist) or dist > tol_error:
+                compressed_streamline[nb_points, :] = streamline[next_id-1, :]
+                nb_points += 1
+                prev = streamline[next_id-1]
+                prev_id = next_id-1
+                break
+
+    # Copy last point since it is always kept.
+    compressed_streamline[nb_points, :] = streamline[-1, :]
+    nb_points += 1
+
+    # Make sure the array have the correct size
+    return compressed_streamline[:nb_points]
+
+
+def test_compress_streamlines():
+    for compress_func in [compress_streamlines_python, compress_streamlines]:
+        # Small streamlines (less than two points) are uncompressable.
+        for small_streamline in [np.array([[]]),
+                                 np.array([[1, 1, 1]]),
+                                 np.array([[1, 1, 1], [2, 2, 2]])]:
+            c_streamline = compress_func(small_streamline)
+            assert_equal(len(c_streamline), len(small_streamline))
+            assert_array_equal(c_streamline, small_streamline)
+
+        # Compressing a straight streamline that is less than 10mm long
+        # should output a two points streamline.
+        linear_streamline = np.linspace(0, 5, 100*3).reshape((100, 3))
+        c_streamline = compress_func(linear_streamline)
+        assert_equal(len(c_streamline), 2)
+        assert_array_equal(c_streamline, [linear_streamline[0],
+                                          linear_streamline[-1]])
+
+        # The distance of consecutive points must be less or equal than some
+        # value.
+        max_segment_length = 10
+        linear_streamline = np.linspace(0, 100, 100*3).reshape((100, 3))
+        linear_streamline[:, 1:] = 0.
+        c_streamline = compress_func(linear_streamline,
+                                     max_segment_length=max_segment_length)
+        segments_length = np.sqrt((np.diff(c_streamline,
+                                           axis=0)**2).sum(axis=1))
+        assert_true(np.all(segments_length <= max_segment_length))
+        assert_equal(len(c_streamline), 12)
+        assert_array_equal(c_streamline, linear_streamline[::9])
+
+        # A small `max_segment_length` should keep all points.
+        c_streamline = compress_func(linear_streamline,
+                                     max_segment_length=0.01)
+        assert_array_equal(c_streamline, linear_streamline)
+
+        # Test we can set `max_segment_length` to infinity
+        # (like the C++ version)
+        compress_func(streamline, max_segment_length=np.inf)
+
+        # Uncompressable streamline when `tol_error` == 1.
+        simple_streamline = np.array([[0, 0, 0],
+                                      [1, 1, 0],
+                                      [1.5, np.inf, 0],
+                                      [2, 2, 0],
+                                      [2.5, 20, 0],
+                                      [3, 3, 0]])
+
+        # Because of np.inf, compressing that streamline causes a warning.
+        with np.errstate(invalid='ignore'):
+            c_streamline = compress_func(simple_streamline, tol_error=1)
+            assert_array_equal(c_streamline, simple_streamline)
+
+    # Create a special streamline where every other point is increasingly
+    # farther from a straigth line formed by the streamline endpoints.
+    tol_errors = np.linspace(0, 10, 21)
+    orthogonal_line = np.array([[-np.sqrt(2)/2, np.sqrt(2)/2, 0]],
+                               dtype=np.float32)
+    special_streamline = np.array([range(len(tol_errors)*2+1)] * 3,
+                                  dtype=np.float32).T
+    special_streamline[1::2] += orthogonal_line * tol_errors[:, None]
+
+    # # Uncomment to see the streamline.
+    # import pylab as plt
+    # plt.plot(special_streamline[:, 0], special_streamline[:, 1], '.-')
+    # plt.axis('equal'); plt.show()
+
+    # Test different values for `tol_error`.
+    for i, tol_error in enumerate(tol_errors):
+        cspecial_streamline = compress_streamlines(special_streamline,
+                                                   tol_error=tol_error+1e-4,
+                                                   max_segment_length=np.inf)
+
+        # First and last points should always be the same as the original ones.
+        assert_array_equal(cspecial_streamline[0], special_streamline[0])
+        assert_array_equal(cspecial_streamline[-1], special_streamline[-1])
+
+        assert_equal(len(cspecial_streamline),
+                     len(special_streamline)-((i*2)+1))
+
+        # Make sure Cython and Python versions are the same.
+        cstreamline_python = compress_streamlines_python(
+                                            special_streamline,
+                                            tol_error=tol_error+1e-4,
+                                            max_segment_length=np.inf)
+        assert_equal(len(cspecial_streamline), len(cstreamline_python))
+        assert_array_almost_equal(cspecial_streamline, cstreamline_python)
+
+
+def test_compress_streamlines_memory_leaks():
+    # Test some dtypes
+    dtypes = [np.float32, np.float64, np.int32, np.int64]
+    for dtype in dtypes:
+        rng = np.random.RandomState(1234)
+        NB_STREAMLINES = 10000
+        streamlines = [rng.randn(rng.randint(10, 100), 3).astype(dtype) for _ in range(NB_STREAMLINES)]
+
+        list_refcount_before = get_type_refcount()["list"]
+
+        cstreamlines = compress_streamlines(streamlines)
+        list_refcount_after = get_type_refcount()["list"]
+        del cstreamlines  # Delete `cstreamlines` because it holds a reference to `list`.
+
+        # Calling `compress_streamlines` should increase the refcount of `list` by one
+        # since we kept the returned value.
+        assert_equal(list_refcount_after, list_refcount_before+1)
+
+    # Test mixed dtypes
+    rng = np.random.RandomState(1234)
+    NB_STREAMLINES = 10000
+    streamlines = []
+    for i in range(NB_STREAMLINES):
+        dtype = dtypes[i % len(dtypes)]
+        streamlines.append(rng.randn(rng.randint(10, 100), 3).astype(dtype))
+
+    list_refcount_before = get_type_refcount()["list"]
+
+    cstreamlines = compress_streamlines(streamlines)
+    list_refcount_after = get_type_refcount()["list"]
+
+    # Calling `compress_streamlines` should increase the refcount of `list` by one
+    # since we kept the returned value.
+    assert_equal(list_refcount_after, list_refcount_before+1)
+
+def test_select_by_rois():
+    streamlines = [np.array([[0, 0., 0.9],
+                             [1.9, 0., 0.]]),
+                   np.array([[0.1, 0., 0],
+                             [0, 1., 1.],
+                             [0, 2., 2.]]),
+                   np.array([[2, 2, 2],
+                             [3, 3, 3]])]
+
+    # Make two ROIs:
+    mask1 = np.zeros((4, 4, 4), dtype=bool)
+    mask2 = np.zeros_like(mask1)
+    mask1[0, 0, 0] = True
+    mask2[1, 0, 0] = True
+
+    selection = select_by_rois(streamlines, [mask1], [True],
+                               tol=1)
+
+    npt.assert_array_equal(list(selection), [streamlines[0],
+                           streamlines[1]])
+
+    selection = select_by_rois(streamlines, [mask1, mask2], [True, True],
+                               tol=1)
+
+    npt.assert_array_equal(list(selection), [streamlines[0],
+                           streamlines[1]])
+
+    selection = select_by_rois(streamlines, [mask1, mask2], [True, False])
+
+    npt.assert_array_equal(list(selection), [streamlines[1]])
+
+    # Setting tolerance too low gets overridden:
+    selection = select_by_rois(streamlines, [mask1, mask2], [True, False],
+                               tol=0.1)
+    npt.assert_array_equal(list(selection), [streamlines[1]])
+
+    selection = select_by_rois(streamlines, [mask1, mask2], [True, True],
+                               tol=0.87)
+
+    npt.assert_array_equal(list(selection), [streamlines[1]])
+
+    mask3 = np.zeros_like(mask1)
+    mask3[0, 2, 2] = 1
+    selection = select_by_rois(streamlines, [mask1, mask2, mask3],
+                               [True, True, False], tol=1.0)
+
+    npt.assert_array_equal(list(selection), [streamlines[0]])
+
+    # Select using only one ROI
+    selection = select_by_rois(streamlines, [mask1], [True], tol=0.87)
+    npt.assert_array_equal(list(selection), [streamlines[1]])
+
+    selection = select_by_rois(streamlines, [mask1], [True], tol=1.0)
+    npt.assert_array_equal(list(selection), [streamlines[0],
+                           streamlines[1]])
+
+    # Use different modes:
+    selection = select_by_rois(streamlines, [mask1, mask2, mask3],
+                               [True, True, False],
+                               mode="all",
+                               tol=1.0)
+    npt.assert_array_equal(list(selection), [streamlines[0]])
+
+    selection = select_by_rois(streamlines, [mask1, mask2, mask3],
+                               [True, True, False],
+                               mode="either_end",
+                               tol=1.0)
+    npt.assert_array_equal(list(selection), [streamlines[0]])
+
+    selection = select_by_rois(streamlines, [mask1, mask2, mask3],
+                               [True, True, False],
+                               mode="both_end",
+                               tol=1.0)
+    npt.assert_array_equal(list(selection), [streamlines[0]])
+
+    mask2[0, 2, 2] = True
+    selection = select_by_rois(streamlines, [mask1, mask2, mask3],
+                               [True, True, False],
+                               mode="both_end",
+                               tol=1.0)
+
+    npt.assert_array_equal(list(selection), [streamlines[0],
+                                             streamlines[1]])
+
+    # Test with generator input:
+    def generate_sl(streamlines):
+        for sl in streamlines:
+            yield sl
+
+    selection = select_by_rois(generate_sl(streamlines), [mask1], [True],
+                               tol=1.0)
+    npt.assert_array_equal(list(selection), [streamlines[0],
+                           streamlines[1]])
+
+
+def test_orient_by_rois():
+    streamlines = [np.array([[0, 0., 0],
+                             [1, 0., 0.],
+                             [2, 0., 0.]]),
+                   np.array([[2, 0., 0.],
+                             [1, 0., 0],
+                             [0, 0,  0.]])]
+
+    # Make two ROIs:
+    mask1_vol = np.zeros((4, 4, 4), dtype=bool)
+    mask2_vol = np.zeros_like(mask1_vol)
+    mask1_vol[0, 0, 0] = True
+    mask2_vol[1, 0, 0] = True
+    mask1_coords = np.array(np.where(mask1_vol)).T
+    mask2_coords = np.array(np.where(mask2_vol)).T
+
+    # If there is an affine, we'll use it:
+    affine = np.eye(4)
+    affine[:, 3] = [-1, 100, -20, 1]
+    # Transform the streamlines:
+    x_streamlines = [sl + affine[:3, 3] for sl in streamlines]
+
+    for copy in [True, False]:
+        for sl, affine in zip([streamlines, x_streamlines], [None, affine]):
+            for mask1, mask2 in \
+              zip([mask1_vol, mask1_coords], [mask2_vol, mask2_coords]):
+                new_streamlines = orient_by_rois(sl, mask1, mask2,
+                                                 affine=affine, copy=copy)
+                if copy:
+                    flipped_sl = [sl[0], sl[1][::-1]]
+                else:
+                    flipped_sl = [np.array([[0, 0., 0],
+                                            [1, 0., 0.],
+                                            [2, 0., 0.]]),
+                                  np.array([[0, 0., 0.],
+                                            [1, 0., 0],
+                                            [2, 0,  0.]])]
+                    if affine is not None:
+                        flipped_sl = [s + affine[:3, 3] for s in flipped_sl]
+
+                npt.assert_equal(new_streamlines, flipped_sl)
 
 
 if __name__ == '__main__':

@@ -63,13 +63,19 @@ candidate_streamlines_actor = fvtk.streamtube(candidate_sl,
                                        line_colors(candidate_sl))
 cc_ROI_actor = fvtk.contour(cc_slice, levels=[1], colors=[(1., 1., 0.)],
                             opacities=[1.])
-vol_actor = fvtk.slicer(t1_data, voxsz=(1.0, 1.0, 1.0), plane_i=[40],
-                        plane_j=None, plane_k=[35], outline=False)
+
+vol_actor = fvtk.slicer(t1_data)
+
+vol_actor.display(40, None, None)
+vol_actor2 = vol_actor.copy()
+vol_actor2.display(None, None, 35)
+
 # Add display objects to canvas
 ren = fvtk.ren()
 fvtk.add(ren, candidate_streamlines_actor)
 fvtk.add(ren, cc_ROI_actor)
 fvtk.add(ren, vol_actor)
+fvtk.add(ren, vol_actor2)
 fvtk.record(ren, n_frames=1, out_path='life_candidates.png',
             size=(800, 800))
 

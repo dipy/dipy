@@ -45,7 +45,7 @@ To do that, you would replace the instructions above with typing the following a
     pip install dipy
 
 or ::
-    
+
     easy_install nibabel
     easy_install dipy
 
@@ -53,7 +53,7 @@ or ::
 
      conda install vtk
 
-    
+
 OSX
 ---
 
@@ -214,6 +214,17 @@ OSX
 Make sure you have Xcode_ and Anaconda_ installed.
 
 From here follow the :ref:`install-source-nix` instructions.
+
+OpenMP with OSX
+---------------
+OpenMP is a standard library used in Dipy for efficient multithreaded
+applications (e.g. denoising and bundle registration). OpenMP is again
+supported by default after OSX 10.11 (El Capitan). If you have a version that
+does not support OpenMP then you need first to compile the library following
+these instructions http://openmp.llvm.org and then build Dipy. If you don't do
+this then you will use only one core and some of the algorithms will not run
+in parallel.
+
 
 Ubuntu/Debian
 -------------

@@ -86,7 +86,7 @@ NIBABEL_MIN_VERSION='1.2.0'
 # Main setup parameters
 NAME                = 'dipy'
 MAINTAINER          = "Eleftherios Garyfallidis"
-MAINTAINER_EMAIL    = "nipy-devel@neuroimaging.scipy.org"
+MAINTAINER_EMAIL    = "neuroimaging@python.org"
 DESCRIPTION         = description
 LONG_DESCRIPTION    = long_description
 URL                 = "http://dipy.org"
@@ -94,7 +94,7 @@ DOWNLOAD_URL        = "http://github.com/nipy/dipy/archives/master"
 LICENSE             = "BSD license"
 CLASSIFIERS         = CLASSIFIERS
 AUTHOR              = "dipy developers"
-AUTHOR_EMAIL        = "nipy-devel@neuroimaging.scipy.org"
+AUTHOR_EMAIL        = "neuroimaging@python.org"
 PLATFORMS           = "OS Independent"
 MAJOR               = _version_major
 MINOR               = _version_minor
