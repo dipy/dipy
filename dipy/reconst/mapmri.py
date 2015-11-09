@@ -102,8 +102,6 @@ class MapmriModel(ReconstModel):
         eigenvalue_threshold : float,
             set the minimum of the tensor eigenvalues in order to avoid
             stability problem
-        bmax_threshold : float,
-            set the maximum b-value for the tensor estimation
 
         References
         ----------
@@ -175,22 +173,16 @@ class MapmriModel(ReconstModel):
             self.tau = gtab.big_delta - gtab.small_delta / 3.0
         self.eigenvalue_threshold = eigenvalue_threshold
 
-        self.ind = self.gtab.bvals <= bmax_threshold
-        gtab_dti = gradient_table(
-            self.gtab.bvals[self.ind], self.gtab.bvecs[self.ind, :])
-        self.tenmodel = dti.TensorModel(gtab_dti)
+        self.tenmodel = dti.TensorModel(gtab)
         self.ind_mat = mapmri_index_matrix(self.radial_order)
         self.Bm = b_mat(self.ind_mat)
 
     @multi_voxel_fit
     def fit(self, data):
 
-        tenfit = self.tenmodel.fit(data[self.ind])
+        tenfit = self.tenmodel.fit(data)
         evals = tenfit.evals
         R = tenfit.evecs
-        ind_evals = np.argsort(evals)[::-1]
-        evals = evals[ind_evals]
-        R = R[:, ind_evals]
         evals = np.clip(evals, self.eigenvalue_threshold, evals.max())
         if self.anisotropic_scaling:
             mu = np.sqrt(evals * 2 * self.tau)
