@@ -22,7 +22,7 @@ cdef class BinaryTissueClassifier(TissueClassifier):
 cdef class ThresholdTissueClassifier(TissueClassifier):
     cdef:
         double threshold        
-        double[:, :, :] metric_map
+        public double[:, :, :] metric_map
     pass
 
 cdef class ActTissueClassifier(TissueClassifier):

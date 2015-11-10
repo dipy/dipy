@@ -67,6 +67,13 @@ cdef class ThresholdTissueClassifier(TissueClassifier):
         self.metric_map = np.asarray(metric_map, 'float64')
         self.threshold = threshold
 
+
+    def __reduce__(self):
+        return (ThresholdTissueClassifier, (self.get_metric_map(), self.threshold))
+
+    def get_metric_map(self):
+        return np.asarray(self.metric_map)
+
     @cython.boundscheck(False)
     @cython.wraparound(False)
     @cython.initializedcheck(False)
