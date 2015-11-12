@@ -359,7 +359,7 @@ class ShowManager(object):
         >>> showm = window.ShowManager(renderer)
         >>> # showm.initialize()
         >>> # showm.render()
-        >>> # start()
+        >>> # showm.start()
         """
 
         self.ren = ren
