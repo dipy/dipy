@@ -1,3 +1,5 @@
+from warnings import warn
+
 import numpy as np
 from nibabel.affines import apply_affine
 from dipy.tracking.streamlinespeed import set_number_of_points
@@ -6,143 +8,8 @@ from dipy.tracking.streamlinespeed import compress_streamlines
 import dipy.tracking.utils as ut
 from dipy.tracking.utils import streamline_near_roi
 from dipy.core.geometry import dist_to_corner
-
-
-class Streamlines(object):
-    def __init__(self):
-        self.points = np.empty((0, 3), dtype=np.float32)
-        self.offsets = []
-        self.nb_points = []
-
-    @classmethod
-    def from_list(cls, streamlines):
-        """ Fast way to create a `Streamlines` object from some streamlines.
-        Parameters
-        ----------
-        streamlines : list
-            List of 2D ndarrays of shape[-1]==3
-        """
-        s = cls()
-        s.extend(streamlines)
-        return s
-
-    def append(self, streamline):
-        """
-        Parameters
-        ----------
-        streamline : 2D ndarrays of shape[-1]==3
-            Streamline to add.
-        Note
-        ----
-        If you need to add multiple streamlines you should consider
-        `Streamlines.from_list` or `Streamlines.extend`.
-        """
-        self.offsets.append(len(self.points))
-        self.nb_points.append(len(streamline))
-        self.points = np.append(self.points, streamline, axis=0)
-
-    def extend(self, streamlines):
-        if isinstance(streamlines, Streamlines):
-            self.points = np.concatenate([self.points, streamlines.points], axis=0)
-            offset = self.offsets[-1] + self.nb_points[-1] if len(self) > 0 else 0
-            self.nb_points.extend(streamlines.nb_points)
-            self.offsets.extend(np.cumsum([offset] + streamlines.nb_points).tolist()[:-1])
-        else:
-            self.points = np.concatenate([self.points] + streamlines, axis=0)
-            offset = self.offsets[-1] + self.nb_points[-1] if len(self) > 0 else 0
-            nb_points = map(len, streamlines)
-            self.nb_points.extend(nb_points)
-            self.offsets.extend(np.cumsum([offset] + nb_points).tolist()[:-1])
-
-    def __getitem__(self, idx):
-        """ Gets element(s) through indexing.
-        Parameters
-        ----------
-        idx : int, slice or list
-            Index of the element(s) to get.
-        Returns
-        -------
-        `ndarray` object(s)
-            When `idx` is a int, returns a single 2D array.
-            When `idx` is either a slice or a list, returns a list of 2D arrays.
-        """
-        if isinstance(idx, int) or isinstance(idx, np.integer):
-            return self.points[self.offsets[idx]:self.offsets[idx]+self.nb_points[idx]]
-
-        elif type(idx) is slice:
-            streamlines = Streamlines()
-            streamlines.points = self.points
-            streamlines.offsets = self.offsets[idx]
-            streamlines.nb_points = self.nb_points[idx]
-            return streamlines
-
-        elif type(idx) is list:
-            streamlines = Streamlines()
-            streamlines.points = self.points
-            streamlines.offsets = [self.offsets[i] for i in idx]
-            streamlines.nb_points = [self.nb_points[i] for i in idx]
-            return streamlines
-
-        raise TypeError("Index must be a int or a slice! Not " + str(type(idx)))
-
-    def copy(self):
-        streamlines = Streamlines()
-        total_nb_points = np.sum(self.nb_points)
-        streamlines.points = np.empty((total_nb_points, 3), dtype=np.float32)
-
-        cur_offset = 0
-        for offset, nb_points in zip(self.offsets, self.nb_points):
-            streamlines.offsets.append(cur_offset)
-            streamlines.nb_points.append(nb_points)
-            streamlines.points[cur_offset:cur_offset+nb_points] = self.points[offset:offset+nb_points]
-            cur_offset += nb_points
-
-        return streamlines
-
-    def __iter__(self):
-        if len(self.nb_points) != len(self.offsets):
-            raise ValueError("Streamlines corrupted: len(self.nb_points) != len(self.offsets)")
-
-        for offset, nb_points in zip(self.offsets, self.nb_points):
-            yield self.points[offset: offset+nb_points]
-
-    def __len__(self):
-        return len(self.offsets)
-
-
-def count(streamlines):
-    """ Return the total number of streamlines
-
-    Parameters
-    ----------
-    streamlines: sequence
-        Sequence (list) of numpy arrays
-
-    Returns
-    -------
-    no_streamlines: int
-    """
-    if streamlines == []:
-        return 0
-    return len(streamlines)
-
-
-def nbytes(streamlines):
-    """ Return the total size of streamlines in MBs
-
-    Parameters
-    ----------
-    streamlines: sequence
-        Sequence (list) of numpy arrays
-
-    Returns
-    -------
-    mbytes: int
-    """
-    if streamlines == []:
-        return 0
-    return np.sum([s.nbytes for s in streamlines]) / 1024. ** 2
-
+from scipy.spatial.distance import cdist
+from copy import deepcopy
 
 def unlist_streamlines(streamlines):
     """ Return the streamlines not as a list but as an array and an offset
@@ -232,7 +99,6 @@ def transform_streamlines(streamlines, mat):
     new_streamlines : list
         List of the transformed 2D ndarrays of shape[-1]==3
     """
-
     return [apply_affine(mat, s) for s in streamlines]
 
 
@@ -251,6 +117,10 @@ def select_random_set_of_streamlines(streamlines, select):
     Returns
     -------
     selected_streamlines : list
+
+    Notes
+    -----
+    The same streamline will not be selected twice.
     """
     len_s = len(streamlines)
     index = np.random.choice(len_s, min(select, len_s), replace=False)
@@ -384,6 +254,75 @@ def select_by_rois(streamlines, rois, include, mode=None, affine=None,
                                       mode=mode)
         if include & ~exclude:
             yield sl
+
+
+def orient_by_rois(streamlines, roi1, roi2, affine=None, copy=True):
+    """Orient a set of streamlines according to a pair of ROIs
+
+    Parameters
+    ----------
+    streamlines : list
+        List of 3d arrays. Each array contains the xyz coordinates of a single
+        streamline.
+    roi1, roi2 : ndarray
+        Binary masks designating the location of the regions of interest, or
+        coordinate arrays (n-by-3 array with ROI coordinate in each row).
+    affine : ndarray
+        Affine transformation from voxels to streamlines. Default: identity.
+    copy : bool
+        Whether to make a copy of the input, or mutate the input inplace.
+
+    Returns
+    -------
+    streamlines : list
+        The same 3D arrays, but reoriented with respect to the ROIs
+
+    Examples
+    --------
+    >>> streamlines = [np.array([[0, 0., 0],
+    ...                          [1, 0., 0.],
+    ...                          [2, 0., 0.]]),
+    ...                np.array([[2, 0., 0.],
+    ...                          [1, 0., 0],
+    ...                          [0, 0,  0.]])]
+    >>> roi1 = np.zeros((4, 4, 4), dtype=bool)
+    >>> roi2 = np.zeros_like(roi1)
+    >>> roi1[0, 0, 0] = True
+    >>> roi2[1, 0, 0] = True
+    >>> orient_by_rois(streamlines, roi1, roi2)
+    [array([[ 0.,  0.,  0.],
+           [ 1.,  0.,  0.],
+           [ 2.,  0.,  0.]]), array([[ 0.,  0.,  0.],
+           [ 1.,  0.,  0.],
+           [ 2.,  0.,  0.]])]
+
+    """
+
+    # If we don't already have coordinates on our hands:
+    if len(roi1.shape) == 3:
+        roi1 = np.asarray(np.where(roi1.astype(bool))).T
+    if len(roi2.shape) == 3:
+        roi2 = np.asarray(np.where(roi2.astype(bool))).T
+
+    if affine is not None:
+        roi1 = apply_affine(affine, roi1)
+        roi2 = apply_affine(affine, roi2)
+
+    # Make a copy, so you don't change the output in place:
+    if copy:
+        new_sl = deepcopy(streamlines)
+    else:
+        new_sl = streamlines
+
+    for idx, sl in enumerate(streamlines):
+        dist1 = cdist(sl, roi1, 'euclidean')
+        dist2 = cdist(sl, roi2, 'euclidean')
+        min1 = np.argmin(dist1, 0)
+        min2 = np.argmin(dist2, 0)
+        if min1[0] > min2[0]:
+            new_sl[idx] = sl[::-1]
+
+    return new_sl
 
 def get_bounding_box_streamlines(streamlines):
     """ Returns the axis aligned bounding box (AABB) envlopping `streamlines`.

@@ -4,6 +4,7 @@
 import numpy as np
 cimport numpy as np
 import cython
+from dipy.tracking import Streamlines
 
 from libc.math cimport sqrt
 
@@ -190,6 +191,47 @@ cdef void c_set_number_of_points(Streamline streamline, Streamline out) nogil:
     free(arclengths)
 
 
+def _set_number_of_points_compactlist(streamlines, nb_points=3):
+    ''' Change the number of points of streamlines
+        (either by downsampling or upsampling)
+
+    Change the number of points of streamlines in order to obtain
+    `nb_points`-1 segments of equal length. Points of streamlines will be
+    modified along the curve.
+
+    Parameters
+    ----------
+    streamlines : ``Streamlines`` object
+        Streamlines to resample.
+    nb_points : int
+        Number of points wanted along the curve.
+
+    Returns
+    -------
+    rstreamlines : ``Streamlines`` object
+        Streamlines resampled so they have all the same number of points.
+
+    '''
+    if not isinstance(streamlines, Streamlines):
+        raise ValueError("`streamlines` must be a ``Streamlines`` object")
+
+    dtype = streamlines._data.dtype
+    new_nb_points = len(streamlines) * nb_points
+
+    rstreamlines = Streamlines()
+    rstreamlines._data = np.empty((new_nb_points, 3), dtype=dtype)
+    rstreamlines._offsets = (np.arange(len(streamlines)) * nb_points).tolist()
+    rstreamlines._lengths = [nb_points] * len(streamlines)
+
+    for s, rs in zip(streamlines, rstreamlines):
+        if dtype == np.float32:
+            c_set_number_of_points[float2d](s, rs)
+        else:
+            c_set_number_of_points[double2d](s, rs)
+
+    return rstreamlines
+
+
 def set_number_of_points(streamlines, nb_points=3):
     ''' Change the number of points of streamlines
         (either by downsampling or upsampling)
@@ -208,7 +250,7 @@ def set_number_of_points(streamlines, nb_points=3):
     Returns
     -------
     modified_streamlines : one or a list of array-like shape (`nb_points`,3)
-       array representing x,y,z of `nb_points` points that where interpolated.
+       array representing x,y,z of `nb_points` points that were interpolated.
 
     Examples
     --------
@@ -232,6 +274,9 @@ def set_number_of_points(streamlines, nb_points=3):
     [10, 10]
 
     '''
+    if isinstance(streamlines, Streamlines):
+        return _set_number_of_points_compactlist(streamlines, nb_points)
+
     only_one_streamlines = False
     if type(streamlines) is np.ndarray:
         only_one_streamlines = True

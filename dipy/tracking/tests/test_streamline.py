@@ -9,6 +9,7 @@ from nose.tools import assert_true, assert_equal, assert_almost_equal
 from numpy.testing import (assert_array_equal, assert_array_almost_equal,
                            assert_raises, run_module_suite)
 
+from dipy.tracking import Streamlines
 from dipy.tracking.streamline import (set_number_of_points,
                                       length as ds_length,
                                       relist_streamlines,
@@ -16,10 +17,9 @@ from dipy.tracking.streamline import (set_number_of_points,
                                       center_streamlines,
                                       transform_streamlines,
                                       select_random_set_of_streamlines,
-                                      count,
-                                      nbytes,
                                       compress_streamlines,
-                                      select_by_rois)
+                                      select_by_rois,
+                                      orient_by_rois)
 
 
 streamline = np.array([[82.20181274,  91.36505890,  43.15737152],
@@ -295,6 +295,16 @@ def test_set_number_of_points():
     assert_equal(len(set_number_of_points(streamlines_readonly, nb_points=42)),
                  len(streamlines_readonly))
 
+    # Test resampling of Streamlines object
+    nb_points = 12
+    streamlines_obj = Streamlines(streamlines)
+    rstreamlines_cython = set_number_of_points(streamlines, nb_points)
+    rstreamlines_obj_cython = set_number_of_points(streamlines_obj, nb_points)
+    assert_true(isinstance(rstreamlines_obj_cython, Streamlines))
+
+    for s1, s2 in zip(rstreamlines_cython, rstreamlines_obj_cython):
+        assert_array_equal(s1, s2)
+
 
 def test_set_number_of_points_memory_leaks():
     # Test some dtypes
@@ -330,6 +340,18 @@ def test_set_number_of_points_memory_leaks():
     # Calling `set_number_of_points` should increase the refcount of `list` by one
     # since we kept the returned value.
     assert_equal(list_refcount_after, list_refcount_before+1)
+
+    # Test resampling of Streamlines object
+    nb_points = 12
+    streamlines_obj = Streamlines(streamlines)
+
+    list_refcount_before = get_type_refcount()["list"]
+    rstreamlines_obj_cython = set_number_of_points(streamlines_obj, nb_points)
+    list_refcount_after = get_type_refcount()["list"]
+
+    # Calling `set_number_of_points` should increase the refcount of `list` by two
+    # since a ``Streamlines`` object contains two lists.
+    assert_equal(list_refcount_after, list_refcount_before+2)
 
 
 def test_length():
@@ -482,18 +504,6 @@ def test_select_random_streamlines():
 
     new_streamlines = select_random_set_of_streamlines(streamlines, 4)
     assert_equal(len(new_streamlines), 3)
-
-
-def test_size_and_nbytes():
-
-    streamlines = []
-    assert_equal(count(streamlines), 0)
-    assert_equal(nbytes(streamlines), 0)
-
-    A = np.array([[1, 2, 3], [1, 2, 3]], dtype=np.float64)
-    streamlines = [A for i in range(10)]
-    assert_equal(count(streamlines), 10)
-    assert_equal(nbytes(streamlines), (10 * 6 * 8) / 1024. ** 2)
 
 
 def compress_streamlines_python(streamline, tol_error=0.01,
@@ -768,6 +778,49 @@ def test_select_by_rois():
                                tol=1.0)
     npt.assert_array_equal(list(selection), [streamlines[0],
                            streamlines[1]])
+
+
+def test_orient_by_rois():
+    streamlines = [np.array([[0, 0., 0],
+                             [1, 0., 0.],
+                             [2, 0., 0.]]),
+                   np.array([[2, 0., 0.],
+                             [1, 0., 0],
+                             [0, 0,  0.]])]
+
+    # Make two ROIs:
+    mask1_vol = np.zeros((4, 4, 4), dtype=bool)
+    mask2_vol = np.zeros_like(mask1_vol)
+    mask1_vol[0, 0, 0] = True
+    mask2_vol[1, 0, 0] = True
+    mask1_coords = np.array(np.where(mask1_vol)).T
+    mask2_coords = np.array(np.where(mask2_vol)).T
+
+    # If there is an affine, we'll use it:
+    affine = np.eye(4)
+    affine[:, 3] = [-1, 100, -20, 1]
+    # Transform the streamlines:
+    x_streamlines = [sl + affine[:3, 3] for sl in streamlines]
+
+    for copy in [True, False]:
+        for sl, affine in zip([streamlines, x_streamlines], [None, affine]):
+            for mask1, mask2 in \
+              zip([mask1_vol, mask1_coords], [mask2_vol, mask2_coords]):
+                new_streamlines = orient_by_rois(sl, mask1, mask2,
+                                                 affine=affine, copy=copy)
+                if copy:
+                    flipped_sl = [sl[0], sl[1][::-1]]
+                else:
+                    flipped_sl = [np.array([[0, 0., 0],
+                                            [1, 0., 0.],
+                                            [2, 0., 0.]]),
+                                  np.array([[0, 0., 0.],
+                                            [1, 0., 0],
+                                            [2, 0,  0.]])]
+                    if affine is not None:
+                        flipped_sl = [s + affine[:3, 3] for s in flipped_sl]
+
+                npt.assert_equal(new_streamlines, flipped_sl)
 
 
 if __name__ == '__main__':
