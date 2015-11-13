@@ -39,5 +39,4 @@ def test_dsi_metrics():
 
 
 if __name__ == '__main__':
-    # run_module_suite()
-    test_dsi_metrics()
+    run_module_suite()

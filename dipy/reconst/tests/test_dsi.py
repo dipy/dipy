@@ -111,5 +111,4 @@ def sticks_and_ball_dummies(gtab):
 
 
 if __name__ == '__main__':
-    #run_module_suite()
-    test_multib0_dsi()
+    run_module_suite()
