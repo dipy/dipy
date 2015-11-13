@@ -163,6 +163,22 @@ class ClusterCentroid(Cluster):
         return converged
 
 
+class TreeCluster(ClusterCentroid):
+    def __init__(self, threshold, centroid, indices=None):
+        super(TreeCluster, self).__init__(centroid=centroid, indices=indices)
+        self.threshold = threshold
+        self.parent = None
+        self.children = []
+
+    def add(self, child):
+        child.parent = self
+        self.children.append(child)
+
+    @property
+    def is_leaf(self):
+        return len(self.children) == 0
+
+
 class ClusterMap(object):
     """ Provides functionalities for interacting with clustering outputs.
 
@@ -316,17 +332,17 @@ class ClusterMap(object):
         """ Remove all clusters from this cluster map. """
         del self.clusters[:]
 
-    def get_size(self):
+    def size(self):
         """ Gets number of clusters contained in this cluster map. """
         return len(self)
 
-    def get_clusters_sizes(self):
-        """ Gets the size of every clusters contained in this cluster map.
+    def clusters_sizes(self):
+        """ Gets the size of every cluster contained in this cluster map.
 
         Returns
         -------
         list of int
-            Sizes of every clusters in this cluster map.
+            Sizes of every cluster in this cluster map.
         """
         return list(map(len, self))
 
@@ -365,7 +381,7 @@ class ClusterMapCentroid(ClusterMap):
     """ Provides functionalities for interacting with clustering outputs
     that have centroids.
 
-    Allows to retrieve easely the centroid of every clusters. Also, it is
+    Allows to retrieve easely the centroid of every cluster. Also, it is
     a useful container to create, remove, retrieve and filter clusters.
     If `refdata` is given, elements will be returned instead of their
     index when using `ClusterCentroid` objects.
@@ -378,6 +394,70 @@ class ClusterMapCentroid(ClusterMap):
     @property
     def centroids(self):
         return [cluster.centroid for cluster in self.clusters]
+
+
+class TreeClusterMap(ClusterMap):
+    def __init__(self, root):
+        self.root = root
+        self.leaves = []
+
+        def _retrieves_leaves(node):
+            if node.is_leaf:
+                self.leaves.append(node)
+
+        self.traverse_postorder(self.root, _retrieves_leaves)
+
+    @property
+    def refdata(self):
+        return self._refdata
+
+    @refdata.setter
+    def refdata(self, value):
+        if value is None:
+            value = Identity()
+
+        self._refdata = value
+
+        def _set_refdata(node):
+            node.refdata = self._refdata
+
+        self.traverse_postorder(self.root, _set_refdata)
+
+    def traverse_postorder(self, node, visit):
+        for child in node.children:
+            self.traverse_postorder(child, visit)
+
+        visit(node)
+
+    def iter_preorder(self, node):
+        parent_stack = []
+        while len(parent_stack) > 0 or node is not None:
+            if node is not None:
+                yield node
+                if len(node.children) > 0:
+                    parent_stack += node.children[1:]
+                    node = node.children[0]
+                else:
+                    node = None
+            else:
+                node = parent_stack.pop()
+
+    def __iter__(self):
+        return self.iter_preorder(self.root)
+
+    def get_clusters(self, wanted_level):
+        clusters = ClusterMapCentroid()
+
+        def _traverse(node, level=0):
+            if level == wanted_level:
+                clusters.add_cluster(node)
+                return
+
+            for child in node.children:
+                _traverse(child, level+1)
+
+        _traverse(self.root)
+        return clusters
 
 
 class Clustering(object):
@@ -460,9 +540,11 @@ class QuickBundles(Clustering):
                         tractography simplification, Frontiers in Neuroscience,
                         vol 6, no 175, 2012.
     """
-    def __init__(self, threshold, metric="MDF_12points", max_nb_clusters=np.iinfo('i4').max):
+    def __init__(self, threshold, metric="MDF_12points",
+                 max_nb_clusters=np.iinfo('i4').max, bvh=False):
         self.threshold = threshold
         self.max_nb_clusters = max_nb_clusters
+        self.bvh = bvh
 
         if isinstance(metric, Metric):
             self.metric = metric
@@ -493,13 +575,66 @@ class QuickBundles(Clustering):
         cluster_map = quickbundles(streamlines, self.metric,
                                    threshold=self.threshold,
                                    max_nb_clusters=self.max_nb_clusters,
-                                   ordering=ordering)
+                                   ordering=ordering, bvh=self.bvh)
 
+        cluster_map.refdata = streamlines
         return cluster_map
 
-    def assign(self, clusters, streamlines, ordering=None):
-        from dipy.segment.clustering_algorithms import quickbundles_assignment
-        new_clusters = quickbundles_assignment(clusters, streamlines, self.metric,
-                                               threshold=self.threshold,
-                                               ordering=ordering)
-        return new_clusters
+
+class QuickBundlesX(Clustering):
+    r""" Clusters streamlines using QuickBundlesX.
+
+    TODO
+
+    Parameters
+    ----------
+    thresholds : list of float
+        Thresholds to use for each clustering layer. A threshold represents the
+        maximum distance from a cluster for a streamline to be still considered
+        as part of it.
+    metric : str or `Metric` object (optional)
+        The distance metric to use when comparing two streamlines. By default,
+        the Minimum average Direct-Flip (MDF) distance [Garyfallidis12]_ is
+        used and streamlines are automatically resampled so they have 12 points.
+
+    References
+    ----------
+    .. [Garyfallidis12] Garyfallidis E. et al., QuickBundles a method for
+                        tractography simplification, Frontiers in Neuroscience,
+                        vol 6, no 175, 2012.
+    """
+    def __init__(self, thresholds, metric="MDF_12points"):
+        self.thresholds = thresholds
+
+        if isinstance(metric, Metric):
+            self.metric = metric
+        elif metric == "MDF_12points":
+            feature = ResampleFeature(nb_points=12)
+            self.metric = AveragePointwiseEuclideanMetric(feature)
+        else:
+            raise ValueError("Unknown metric: {0}".format(metric))
+
+    def cluster(self, streamlines, ordering=None):
+        """ Clusters `streamlines` into bundles.
+
+        Performs quickbundles algorithm using predefined metric and threshold.
+
+        Parameters
+        ----------
+        streamlines : list of 2D arrays
+            Each 2D array represents a sequence of 3D points (points, 3).
+        ordering : iterable of indices
+            Specifies the order in which data points will be clustered.
+
+        Returns
+        -------
+        `QuickBundlesX` object
+            Result of the clustering.
+        """
+        from dipy.segment.clustering_algorithms import quickbundlesX
+        qbx = quickbundlesX(streamlines, self.metric,
+                            thresholds=self.thresholds,
+                            ordering=ordering)
+
+        #cluster_map.refdata = streamlines
+        return qbx
