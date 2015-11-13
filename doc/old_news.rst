@@ -4,6 +4,8 @@
 **********************
 Past announcements
 **********************
+
+
 - **Dipy 0.7.1** is available for :ref:`download <installation>` with **3X**
     more tutorials than 0.6.0! In addition, a `journal paper`_ focusing on
     teaching the fundamentals of Dipy is available in Frontiers of Neuroinformatics.

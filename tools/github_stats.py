@@ -28,7 +28,7 @@ PER_PAGE = 100
 element_pat = re.compile(r'<(.+?)>')
 rel_pat = re.compile(r'rel=[\'"](\w+)[\'"]')
 
-LAST_RELEASE = datetime(2011, 12, 2)
+LAST_RELEASE = datetime(2015, 3, 18)
 
 #-----------------------------------------------------------------------------
 # Functions
@@ -95,11 +95,11 @@ latter case, it is used as a time before the present."""
     allclosed = get_paged_request(url)
     # allclosed = get_issues(project=project, state='closed', pulls=pulls, since=period)
     filtered = [i for i in allclosed if _parse_datetime(i['closed_at']) > period]
-    
+
     # exclude rejected PRs
     if pulls:
         filtered = [ pr for pr in filtered if pr['merged_at'] ]
-    
+
     return filtered
 
 
@@ -138,7 +138,7 @@ if __name__ == "__main__":
             tag = sys.argv[1]
     else:
         tag = check_output(['git', 'describe', '--abbrev=0']).strip()
-    
+
     if tag:
         cmd = ['git', 'log', '-1', '--format=%ai', tag]
         tagday, tz = check_output(cmd).strip().rsplit(' ', 1)
@@ -155,10 +155,10 @@ if __name__ == "__main__":
     # For regular reports, it's nice to show them in reverse chronological order
     issues = sorted_by_field(issues, reverse=True)
     pulls = sorted_by_field(pulls, reverse=True)
-    
+
     n_issues, n_pulls = map(len, (issues, pulls))
     n_total = n_issues + n_pulls
-    
+
     # Print summary report we can directly include into release notes.
     print()
     since_day = since.strftime("%Y/%m/%d")
@@ -172,16 +172,16 @@ if __name__ == "__main__":
         since_tag = tag+'..'
         cmd = ['git', 'log', '--oneline', since_tag]
         ncommits = len(check_output(cmd).splitlines())
-        
+
         author_cmd = ['git', 'log', '--format=* %aN', since_tag]
         all_authors = check_output(author_cmd).splitlines()
         unique_authors = sorted(set(all_authors))
-        
+
         print("The following %i authors contributed %i commits." % (len(unique_authors), ncommits))
         print()
         print('\n'.join(unique_authors))
         print()
-        
+
     print()
     print("We closed a total of %d issues, %d pull requests and %d regular issues;\n"
           "this is the full list (generated with the script \n"
