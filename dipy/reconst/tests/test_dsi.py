@@ -88,6 +88,18 @@ def test_multib0_dsi():
     assert_equal(new_data.shape[:-1] + (17, 17, 17), pdf.shape)
     assert_equal(np.alltrue(np.isreal(pdf)), True)
 
+    # And again, with one more b0 measurement (two in total):
+    new_data = np.concatenate([data, data[..., 0, None]], -1)
+    new_bvecs = np.concatenate([gtab.bvecs, np.zeros((1, 3))])
+    new_bvals = np.concatenate([gtab.bvals, [0]])
+    new_gtab = gradient_table(new_bvals, new_bvecs)
+    ds = DiffusionSpectrumModel(new_gtab)
+    dsfit = ds.fit(new_data)
+    pdf = dsfit.pdf()
+    odf = dsfit.odf(sphere)
+    assert_equal(new_data.shape[:-1] + (17, 17, 17), pdf.shape)
+    assert_equal(np.alltrue(np.isreal(pdf)), True)
+
 
 def sticks_and_ball_dummies(gtab):
     sb_dummies={}
