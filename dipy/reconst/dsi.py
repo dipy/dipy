@@ -1,10 +1,9 @@
 import numpy as np
 from scipy.ndimage import map_coordinates
 from scipy.fftpack import fftn, fftshift, ifftshift
-from dipy.reconst.odf import OdfModel, OdfFit, gfa
+from dipy.reconst.odf import OdfModel, OdfFit
 from dipy.reconst.cache import Cache
 from dipy.reconst.multi_voxel import multi_voxel_fit
-from dipy.reconst.recspeed import local_maxima, remove_similar_vertices
 
 
 class DiffusionSpectrumModel(OdfModel, Cache):
@@ -165,8 +164,7 @@ class DiffusionSpectrumFit(OdfFit):
             qx, qy, qz = self.model.qgrid[i]
             Sq[qx, qy, qz] += values[i]
         # apply fourier transform
-        Pr = fftshift(np.real(fftn(ifftshift(Sq),
-                                   3 * (self.qgrid_sz, ))))
+        Pr = fftshift(np.real(fftn(ifftshift(Sq), 3 * (self.qgrid_sz, ))))
         # clipping negative values to 0 (ringing artefact)
         Pr = np.clip(Pr, 0, Pr.max())
 
@@ -345,7 +343,7 @@ def create_qtable(gtab, origin):
     for i in range(len(bsorted)):
         bmin = bsorted[i]
         try:
-            if bv.max() / bmin > origin * 2:
+            if np.sqrt(bv.max() / bmin) > origin + 1:
                 continue
             else:
                 break
