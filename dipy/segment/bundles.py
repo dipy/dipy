@@ -15,6 +15,7 @@ from dipy.align.bundlemin import distance_matrix_mdf
 from time import time
 from itertools import chain
 from scipy.spatial import cKDTree
+from ipdb import set_trace
 
 
 def check_range(streamline, gt, lt):
@@ -26,8 +27,7 @@ def check_range(streamline, gt, lt):
 
 def nbytes(streamlines):
 
-    return streamlines._data.shape[0] / 1024. ** 2
-
+    return streamlines._data.nbytes / 1024. ** 2
 
 
 class RecoBundles(object):
@@ -97,6 +97,8 @@ class RecoBundles(object):
             print(' Duration of resampling is %0.3f sec. \n' % (time() - t, ))
 
         thresholds = [30, 25, 20, 15]
+
+        set_trace()
 
         qbx = QuickBundlesX(thresholds,
                             metric=AveragePointwiseEuclideanMetric())
@@ -220,10 +222,11 @@ class RecoBundles(object):
                            for i in close_clusters_indices]
         close_indices = [cluster.indices for cluster in close_clusters]
 
-        from ipdb import set_trace
         set_trace()
 
         close_streamlines = list(chain(*close_clusters))
+
+        set_trace()
 
 #        from dipy.workflows.segment import show_bundles
 #        show_bundles(self.model_centroids, close_centroids)
