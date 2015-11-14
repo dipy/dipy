@@ -221,12 +221,16 @@ def recognize_bundles_flow(streamline_files, model_bundle_files,
             return
 
         t = time()
-        if not load_chunks:
-            streams, hdr = load_trk(sf)
-        else:
-            # HACK returning things as a generator
-            # this is processed in a different way now and in a specific bundle
-            streams, hdr = tv.read(sf, as_generator=True, points_space='rasmm')
+#        if not load_chunks:
+#            streams, hdr = load_trk(sf)
+#        else:
+#            # HACK returning things as a generator
+#            # this is processed in a different way now and in a specific bundle
+#            streams, hdr = tv.read(sf, as_generator=True, points_space='rasmm')
+
+        trkfile = nib.streamlines.load(sf)
+        # print('Loading time {}'.format(time()-t))
+        streamlines = trkfile.streamlines
 
         print(' Loading time %0.3f sec' % (time() - t,))
 
@@ -242,7 +246,7 @@ def recognize_bundles_flow(streamline_files, model_bundle_files,
         else:
             clusters = None
 
-        rb = RecoBundles(streams, clusters,
+        rb = RecoBundles(streamlines, clusters,
                          clust_thr=clust_thr,
                          load_chunks=load_chunks,
                          use_only=use_only)
