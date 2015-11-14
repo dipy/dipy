@@ -237,9 +237,9 @@ def recognize_bundles_flow(streamline_files, model_bundle_files,
         #from ipdb import set_trace
         #set_trace()
 
-        sf_clusters = os.path.join(
-                os.path.dirname(sf),
-                os.path.splitext(os.path.basename(sf))[0] + '_clusters.pkl')
+#        sf_clusters = os.path.join(
+#                os.path.dirname(sf),
+#                os.path.splitext(os.path.basename(sf))[0] + '_clusters.pkl')
 
         if bool(load_clusters) is True:
             clusters = load_pickle(sf_clusters)
@@ -251,14 +251,14 @@ def recognize_bundles_flow(streamline_files, model_bundle_files,
                          load_chunks=load_chunks,
                          use_only=use_only)
 
-        if clusters is None:
-
-            print('Clusters of streamlines saved in \n {} '
-                  .format(sf_clusters))
-
-            rb.cluster_map.refdata = None
-            save_pickle(sf_clusters, rb.cluster_map)
-            rb.cluster_map.refdata = rb.streamlines
+#        if clusters is None:
+#
+#            print('Clusters of streamlines saved in \n {} '
+#                  .format(sf_clusters))
+#
+#            rb.cluster_map.refdata = None
+#            save_pickle(sf_clusters, rb.cluster_map)
+#            rb.cluster_map.refdata = rb.streamlines
 
         print('# Model_bundle files')
         for mb in mbfiles:
