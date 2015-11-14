@@ -3,6 +3,7 @@
 
 import numpy as np
 cimport numpy as np
+
 import cython
 from dipy.tracking import Streamlines
 
@@ -223,7 +224,12 @@ def _set_number_of_points_compactlist(streamlines, nb_points=3):
     rstreamlines._offsets = (np.arange(len(streamlines)) * nb_points).tolist()
     rstreamlines._lengths = [nb_points] * len(streamlines)
 
-    for s, rs in zip(streamlines, rstreamlines):
+    cdef int i
+    for i in range(len(streamlines)):
+        # HACK: To avoid memleaks we have to recast with astype(dtype).
+        s = streamlines[i].astype(dtype)
+        rs = rstreamlines[i].astype(dtype)
+
         if dtype == np.float32:
             c_set_number_of_points[float2d](s, rs)
         else:
