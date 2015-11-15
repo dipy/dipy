@@ -510,8 +510,8 @@ cdef class QuickBundlesX(object):
 
     cdef void _fetch_level(self, CentroidNode* node):
         if node.level == self.level:
-            cluster = ClusterCentroid(np.asarray(node.centroid))
-            cluster.indices = np.asarray(<int[:node.size]> node.indices)
+            cluster = ClusterCentroid(np.asarray(node.centroid).copy())
+            cluster.indices = np.asarray(<int[:node.size]> node.indices).copy()
             self.clusters.add_cluster(cluster)
 
     def get_clusters(self, int level):
