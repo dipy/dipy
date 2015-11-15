@@ -13,7 +13,7 @@ First, we import the modules we will use in this example:
 
 import dipy.reconst.sfm as sfm
 import dipy.data as dpd
-import dipy.reconst.peaks as dpp
+import dipy.direction.peaks as dpp
 from dipy.viz import fvtk
 
 """

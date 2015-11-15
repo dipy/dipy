@@ -6,7 +6,7 @@ import numpy as np
 from dipy.fixes import argparse
 
 from dipy.core.ndindex import ndindex
-from dipy.reconst.peaks import peak_directions
+from dipy.direction.peaks import peak_directions
 from dipy.core.sphere import Sphere
 
 

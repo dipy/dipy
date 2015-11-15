@@ -56,7 +56,7 @@ We fit this model to the data in each voxel in the white-matter mask, so that
 we can use these directions in tracking:
 """
 
-from dipy.reconst.peaks import peaks_from_model
+from dipy.direction.peaks import peaks_from_model
 
 pnm = peaks_from_model(sf_model, data, sphere,
                        relative_peak_threshold=.5,

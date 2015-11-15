@@ -12,7 +12,7 @@ from dipy.reconst.tests.test_dsi import sticks_and_ball_dummies
 from dipy.core.subdivide_octahedron import create_unit_sphere
 from dipy.core.sphere_stats import angular_similarity
 from dipy.reconst.odf import gfa
-from dipy.reconst.peaks import peak_directions
+from dipy.direction.peaks import peak_directions
 
 
 def test_gqi():
@@ -23,10 +23,10 @@ def test_gqi():
     btable = np.loadtxt(get_data('dsi515btable'))
     bvals = btable[:,0]
     bvecs = btable[:,1:]
-    gtab = gradient_table(bvals, bvecs) 
-    data, golden_directions = SticksAndBall(gtab, d=0.0015, 
-                               S0=100, angles=[(0, 0), (90, 0)], 
-                               fractions=[50, 50], snr=None) 
+    gtab = gradient_table(bvals, bvecs)
+    data, golden_directions = SticksAndBall(gtab, d=0.0015,
+                               S0=100, angles=[(0, 0), (90, 0)],
+                               fractions=[50, 50], snr=None)
     gq = GeneralizedQSamplingModel(gtab, method='gqi2', sampling_length=1.4)
 
     #symmetric724
@@ -73,12 +73,3 @@ def test_mvoxel_gqi():
 
 if __name__ == "__main__":
     run_module_suite()
-
-
-
-
-
-
-
-
-

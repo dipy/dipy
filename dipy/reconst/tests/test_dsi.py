@@ -7,7 +7,7 @@ from numpy.testing import (assert_equal,
 from dipy.data import get_data, dsi_voxels
 from dipy.reconst.dsi import DiffusionSpectrumModel
 from dipy.reconst.odf import gfa
-from dipy.reconst.peaks import peak_directions
+from dipy.direction.peaks import peak_directions
 from dipy.sims.voxel import SticksAndBall
 from dipy.core.sphere import Sphere
 from dipy.core.gradients import gradient_table
@@ -24,7 +24,7 @@ def test_dsi():
     sphere2 = create_unit_sphere(5)
     btable = np.loadtxt(get_data('dsi515btable'))
     gtab = gradient_table(btable[:,0], btable[:,1:])
-    data, golden_directions = SticksAndBall(gtab, d=0.0015, 
+    data, golden_directions = SticksAndBall(gtab, d=0.0015,
                                             S0=100, angles=[(0, 0), (90, 0)],
                                             fractions=[50, 50], snr=None)
 
@@ -73,19 +73,19 @@ def test_multivox_dsi():
 
 def sticks_and_ball_dummies(gtab):
     sb_dummies={}
-    S, sticks = SticksAndBall(gtab, d=0.0015, S0=100, 
-                              angles=[(0, 0)], 
-                              fractions=[100], snr=None)   
+    S, sticks = SticksAndBall(gtab, d=0.0015, S0=100,
+                              angles=[(0, 0)],
+                              fractions=[100], snr=None)
     sb_dummies['1fiber'] = (S, sticks)
-    S, sticks = SticksAndBall(gtab, d=0.0015, S0=100, 
+    S, sticks = SticksAndBall(gtab, d=0.0015, S0=100,
                               angles=[(0, 0), (90, 0)],
                               fractions=[50, 50], snr=None)
     sb_dummies['2fiber'] = (S, sticks)
-    S, sticks = SticksAndBall(gtab, d=0.0015, S0=100, 
+    S, sticks = SticksAndBall(gtab, d=0.0015, S0=100,
                               angles=[(0, 0), (90, 0), (90, 90)],
                               fractions=[33, 33, 33], snr=None)
     sb_dummies['3fiber'] = (S, sticks)
-    S, sticks = SticksAndBall(gtab, d=0.0015, S0=100, 
+    S, sticks = SticksAndBall(gtab, d=0.0015, S0=100,
                               angles=[(0, 0), (90, 0), (90, 90)],
                               fractions=[0, 0, 0], snr=None)
     sb_dummies['isotropic'] = (S, sticks)

@@ -4,7 +4,7 @@ from numpy.testing import (assert_array_equal, assert_array_almost_equal,
                            assert_equal, assert_)
 from dipy.reconst.odf import (OdfFit, OdfModel, gfa)
 
-from dipy.reconst.peaks import (peaks_from_model,
+from dipy.direction.peaks import (peaks_from_model,
                                 peak_directions,
                                 peak_directions_nl,
                                 reshape_peaks_for_visualization)
@@ -579,4 +579,3 @@ def test_reshape_peaks_for_visualization():
 if __name__ == '__main__':
 
     run_module_suite()
-

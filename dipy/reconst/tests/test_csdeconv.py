@@ -19,7 +19,7 @@ from dipy.reconst.csdeconv import (ConstrainedSphericalDeconvModel,
                                    auto_response,
                                    recursive_response,
                                    response_from_mask)
-from dipy.reconst.peaks import peak_directions
+from dipy.direction.peaks import peak_directions
 from dipy.core.sphere_stats import angular_similarity
 from dipy.reconst.dti import TensorModel, fractional_anisotropy
 from dipy.reconst.shm import (CsaOdfModel, QballModel, sf_to_sh, sh_to_sf,
