@@ -210,13 +210,16 @@ class RecoBundles(object):
 
         mins = np.min(centroid_matrix, axis=0)
         close_clusters_indices = list(np.where(mins != np.inf)[0])
+
+        set_trace()
+
+        # TODO overflow with the next line
         close_clusters = self.cluster_map[close_clusters_indices]
+
         # close_clusters = [self.cluster_map[i]
         #                  for i in np.where(mins != np.inf)[0]]:
         # close_centroids = [cluster.centroid for cluster in close_clusters]
 
-        # Important if reassignment has been used
-        # TODO maybe support both cases of having or not having assignment
 
         close_centroids = [self.centroids[i]
                            for i in close_clusters_indices]
