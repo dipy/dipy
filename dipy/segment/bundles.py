@@ -98,7 +98,7 @@ class RecoBundles(object):
 
         thresholds = [30, 25, 20, 15]
 
-        set_trace()
+        # set_trace()
 
         qbx = QuickBundlesX(thresholds,
                             metric=AveragePointwiseEuclideanMetric())
@@ -211,7 +211,7 @@ class RecoBundles(object):
         mins = np.min(centroid_matrix, axis=0)
         close_clusters_indices = list(np.where(mins != np.inf)[0])
 
-        set_trace()
+        # set_trace()
 
         # TODO overflow with the next line
         close_clusters = self.cluster_map[close_clusters_indices]
@@ -220,16 +220,15 @@ class RecoBundles(object):
         #                  for i in np.where(mins != np.inf)[0]]:
         # close_centroids = [cluster.centroid for cluster in close_clusters]
 
-
         close_centroids = [self.centroids[i]
                            for i in close_clusters_indices]
         close_indices = [cluster.indices for cluster in close_clusters]
 
-        set_trace()
+        # set_trace()
 
         close_streamlines = list(chain(*close_clusters))
 
-        set_trace()
+        # set_trace()
 
 #        from dipy.workflows.segment import show_bundles
 #        show_bundles(self.model_centroids, close_centroids)

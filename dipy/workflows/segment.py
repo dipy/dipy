@@ -268,7 +268,10 @@ def recognize_bundles_flow(streamline_files, model_bundle_files,
                 print('File {} does not exist'.format(mb))
                 return
 
-            model_bundle, hdr_model_bundle = load_trk(mb)
+            # model_bundle, hdr_model_bundle = load_trk(mb)
+            model_trkfile = nib.streamlines.load(mb)
+
+            model_bundle = model_trkfile.streamlines
 
             recognized_bundle = rb.recognize(
                 model_bundle,
@@ -317,7 +320,12 @@ def recognize_bundles_flow(streamline_files, model_bundle_files,
             # if not os.path.exists(os.path.dirname(sf_bundle_file)):
             #     os.makedirs(os.path.dirname(sf_bundle_file))
 
-            save_trk(sf_bundle_file, recognized_bundle, hdr=hdr)
+            #save_trk(sf_bundle_file, recognized_bundle, hdr=hdr)
+
+            recognized_tractogram = nib.streamlines.Tractogram(recognized_bundle)
+            recognized_trkfile = nib.streamlines.TrkFile(recognized_tractogram)
+            nib.streamlines.save(recognized_trkfile, sf_bundle_file)
+
             np.save(sf_bundle_labels, np.array(rb.labels))
 
             print('Recognized bundle saved in \n {} '
@@ -329,8 +337,14 @@ def recognize_bundles_flow(streamline_files, model_bundle_files,
                 sf_bundle_neighb = os.path.join(
                     out_dir,
                     os.path.splitext(os.path.basename(mb))[0] + '_neighb.trk')
-                save_trk(sf_bundle_neighb, rb.neighb_streamlines,
-                         hdr=hdr)
+
+                neighb_tractogram = nib.streamlines.Tractogram(
+                    rb.neighb_streamlines)
+                neighb_trkfile = nib.streamlines.TrkFile(neighb_tractogram)
+                nib.streamlines.save(neighb_trkfile, sf_bundle_neighb)
+
+                # save_trk(sf_bundle_neighb, rb.neighb_streamlines,
+                #          hdr=hdr)
                 print('Recognized bundle\'s neighbors saved in \n {} '
                       .format(sf_bundle_neighb))
 
@@ -338,7 +352,13 @@ def recognize_bundles_flow(streamline_files, model_bundle_files,
             sf_centroids = os.path.join(
                 os.path.dirname(sf),
                 os.path.splitext(os.path.basename(sf))[0] + '_centroids.trk')
-            save_trk(sf_centroids, rb.centroids, hdr=hdr)
+
+            centroid_tractogram = nib.streamlines.Tractogram(
+                rb.centroids)
+            centroid_trkfile = nib.streamlines.TrkFile(centroid_tractogram)
+            nib.streamlines.save(centroid_trkfile, sf_centroids)
+
+            # save_trk(sf_centroids, rb.centroids, hdr=hdr)
             print('Centroids of streamlines saved in \n {} '
                   .format(sf_centroids))
 
