@@ -97,7 +97,7 @@ class RecoBundles(object):
             print(' Size is %0.3f MB' % (nbytes(sample_streamlines),))
             print(' Duration of resampling is %0.3f sec. \n' % (time() - t, ))
 
-        thresholds = [30, 25, 20, clust_thr]
+        thresholds = [35, 30, 25, 20, clust_thr]
 
         qbx = QuickBundlesX(thresholds,
                             metric=AveragePointwiseEuclideanMetric())
