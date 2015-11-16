@@ -33,6 +33,8 @@ def horizon(tractograms, data, affine, qb_thr=30, random_colors=True):
     centroid_actors = []
     for streamlines in tractograms:
 
+        print(len(streamlines))
+
         if len(streamlines) > 50000:
             qb = QuickBundles(qb_thr)
             clusters = qb.cluster(streamlines)
@@ -52,11 +54,12 @@ def horizon(tractograms, data, affine, qb_thr=30, random_colors=True):
             # ren.add(actor.line(clusters[10], linewidth=2, lod=True))
         else:
             if not random_colors:
-                colors = fvtk.colors.white
+                ren.add(actor.line(streamlines,
+                                   opacity=1., lod_points=10 ** 5))
             else:
                 colors = np.random.rand(3)
-            ren.add(actor.line(streamlines, colors,
-                               opacity=1., lod_points=10 ** 5))
+                ren.add(actor.line(streamlines, colors,
+                                   opacity=1., lod_points=10 ** 5))
 
     class SimpleTrackBallNoBB(window.vtk.vtkInteractorStyleTrackballCamera):
         def HighlightProp(self, p):

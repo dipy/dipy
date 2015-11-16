@@ -241,12 +241,12 @@ def recognize_bundles_flow(streamline_files, model_bundle_files,
 #                os.path.dirname(sf),
 #                os.path.splitext(os.path.basename(sf))[0] + '_clusters.pkl')
 
-        if bool(load_clusters) is True:
-            clusters = load_pickle(sf_clusters)
-        else:
-            clusters = None
+#        if bool(load_clusters) is True:
+#            clusters = load_pickle(sf_clusters)
+#        else:
+#            clusters = None
 
-        rb = RecoBundles(streamlines, clusters,
+        rb = RecoBundles(streamlines, None,
                          clust_thr=clust_thr,
                          load_chunks=load_chunks,
                          use_only=use_only)
