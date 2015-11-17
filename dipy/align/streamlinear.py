@@ -675,7 +675,7 @@ def progressive_slr(static, moving, metric, x0, bounds,
         print('Progressive Registration is Enabled')
 
     if x0 == 'translation' or x0 == 'rigid' or \
-       x0 == 'similarity' or x0 == 'scaling':
+       x0 == 'similarity' or x0 == 'scaling' or x0 == 'affine':
 
         slr_t = StreamlineLinearRegistration(metric=metric,
                                              x0='translation',
@@ -684,7 +684,8 @@ def progressive_slr(static, moving, metric, x0, bounds,
 
         slm_t = slr_t.optimize(static, moving)
 
-    if x0 == 'rigid' or x0 == 'similarity' or x0 == 'scaling':
+    if x0 == 'rigid' or x0 == 'similarity' or \
+       x0 == 'scaling' or x0 == 'affine':
 
         x_translation = slm_t.xopt
         x = np.zeros(6)
@@ -696,7 +697,7 @@ def progressive_slr(static, moving, metric, x0, bounds,
                                              method=method)
         slm_r = slr_r.optimize(static, moving)
 
-    if x0 == 'similarity' or x0 == 'scaling':
+    if x0 == 'similarity' or x0 == 'scaling' or x0 == 'affine':
 
         x_rigid = slm_r.xopt
         x = np.zeros(7)
@@ -709,7 +710,7 @@ def progressive_slr(static, moving, metric, x0, bounds,
                                              method=method)
         slm_s = slr_s.optimize(static, moving)
 
-    if x0 == 'scaling':
+    if x0 == 'scaling' or x0 == 'affine':
 
         x_similarity = slm_s.xopt
         x = np.zeros(9)
@@ -722,6 +723,19 @@ def progressive_slr(static, moving, metric, x0, bounds,
                                              method=method)
         slm_c = slr_c.optimize(static, moving)
 
+    if x0 == 'affine':
+
+        x_scaling = slm_c.xopt
+        x = np.zeros(12)
+        x[:9] = x_scaling[:9]
+        x[9:] = np.zeros(3)
+
+        slr_a = StreamlineLinearRegistration(metric=metric,
+                                             x0=x,
+                                             bounds=bounds[:12],
+                                             method=method)
+        slm_a = slr_a.optimize(static, moving)
+
     if x0 == 'translation':
         slm = slm_t
     elif x0 == 'rigid':
@@ -730,6 +744,8 @@ def progressive_slr(static, moving, metric, x0, bounds,
         slm = slm_s
     elif x0 == 'scaling':
         slm = slm_c
+    elif x0 == 'affine':
+        slm = slm_a
     else:
         raise ValueError('Incorrect SLR transform')
 
