@@ -26,40 +26,85 @@ def check_range(streamline, gt, lt):
     else:
         return False
 
-def nbytes(streamlines):
 
+def nbytes(streamlines):
     return streamlines._data.nbytes / 1024. ** 2
+
+
+def qbx_with_merge(streamlines, thresholds,
+                   nb_pts=20, select_randomly=None, verbose=True):
+
+    t = time()
+    len_s = len(streamlines)
+    if select_randomly is None:
+            select_randomly = len_s
+    indices = np.random.choice(len_s, min(select_randomly, len_s),
+                               replace=False)
+    sample_streamlines = set_number_of_points(streamlines, nb_pts)
+
+    if verbose:
+        print(' Resampled to {} points'.format(nb_pts))
+        print(' Size is %0.3f MB' % (nbytes(sample_streamlines),))
+        print(' Duration of resampling is %0.3f sec. \n' % (time() - t,))
+
+    if verbose:
+        print('QBX phase')
+
+    qbx = QuickBundlesX(thresholds,
+                        metric=AveragePointwiseEuclideanMetric())
+
+    t1 = time()
+    qbx_clusters = qbx.cluster(sample_streamlines, ordering=indices)
+
+    if verbose:
+        print('Merging phase')
+
+    qbx_merge = QuickBundlesX([thresholds[-1]],
+                              metric=AveragePointwiseEuclideanMetric())
+
+    final_level = len(thresholds)
+
+    qbx_ordering_final = np.random.choice(
+        len(qbx_clusters.get_clusters(final_level)),
+        len(qbx_clusters.get_clusters(final_level)), replace=False)
+
+    qbx_merged_cluster_map = qbx_merge.cluster(
+        qbx_clusters.get_clusters(final_level).centroids,
+        ordering=qbx_ordering_final).get_clusters(1)
+
+    qbx_cluster_map = qbx_clusters.get_clusters(final_level)
+
+    merged_cluster_map = ClusterMapCentroid()
+    for cluster in qbx_merged_cluster_map:
+        merged_cluster = ClusterCentroid(centroid=cluster.centroid)
+        for i in cluster.indices:
+            merged_cluster.indices.extend(qbx_cluster_map[i].indices)
+        merged_cluster_map.add_cluster(merged_cluster)
+
+    merged_cluster_map.refdata = streamlines
+
+    if verbose:
+        print(' QuickBundlesX time for %d random streamlines'
+              % (select_randomly,))
+
+        print(' Duration %0.3f sec. \n' % (time() - t1, ))
+
+    return merged_cluster_map
 
 
 class RecoBundles(object):
 
-    def __init__(self, streamlines, cluster_map=None, clust_thr=20,
-                 verbose=True, load_chunks=False, use_only=None):
+    def __init__(self, streamlines, cluster_map=None, clust_thr=15,
+                 verbose=True):
 
         self.clust_thr = clust_thr
-#        if load_chunks:
-#            stream_obj = Streamlines()
-#            buffer_100k = []
-#            t = time()
-#            for stream in streamlines:
-#                buffer_100k.append(stream[0])
-#                if len(buffer_100k) == 10 ** 5:
-#                    stream_obj.extend(buffer_100k)
-#                    buffer_100k = []
-#            if len(buffer_100k) != 0:
-#                stream_obj.extend(buffer_100k)
-#            print('Duration %0.3f sec. \n' % (time() - t,))
-#
-#            self.streamlines = stream_obj
-#        else:
         self.streamlines = streamlines
 
         self.nb_streamlines = len(self.streamlines)
         self.verbose = verbose
 
         if cluster_map is None:
-            self.cluster_streamlines(clust_thr=clust_thr,
-                                     select_randomly=use_only)
+            self.cluster_streamlines(clust_thr=clust_thr)
         else:
             t = time()
             self.cluster_map = cluster_map
@@ -74,8 +119,7 @@ class RecoBundles(object):
                 print(' Total loading duration %0.3f sec. \n'
                       % (time() - t, ))
 
-    def cluster_streamlines(self, clust_thr=15, nb_pts=20,
-                            select_randomly=None):
+    def cluster_streamlines(self, clust_thr=15, nb_pts=20):
 
         t = time()
         if self.verbose:
@@ -85,62 +129,67 @@ class RecoBundles(object):
             print(' Size is %0.3f MB' % (nbytes(self.streamlines),))
             print(' Distance threshold %0.3f' % (clust_thr,))
 
-        len_s = self.nb_streamlines
-        if select_randomly is None:
-            select_randomly = len_s
-        indices = np.random.choice(len_s, min(select_randomly, len_s),
-                                   replace=False)
-        sample_streamlines = set_number_of_points(self.streamlines, nb_pts)
+        thresholds = [40, 25, 20, clust_thr]
 
-        if self.verbose:
-            print(' Resampled to {} points'.format(nb_pts))
-            print(' Size is %0.3f MB' % (nbytes(sample_streamlines),))
-            print(' Duration of resampling is %0.3f sec. \n' % (time() - t, ))
+        merged_cluster_map = qbx_with_merge(self.streamlines, thresholds,
+                                            nb_pts, None, self.verbose)
 
-        thresholds = [35, 30, 25, 20, clust_thr]
-
-        qbx = QuickBundlesX(thresholds,
-                            metric=AveragePointwiseEuclideanMetric())
-
-        t1 = time()
-        qbx_clusters = qbx.cluster(sample_streamlines, ordering=indices)
-
-        # qbx_clusters_1 = qbx_clusters.get_clusters(1)
-        # qbx_clusters_2 = qbx_clusters.get_clusters(2)
-        # qbx_clusters_3 = qbx_clusters.get_clusters(3)
-        # qbx_clusters_4 = qbx_clusters.get_clusters(4)
-
-        qbx_merge = QuickBundlesX([thresholds[-1]],
-                                  metric=AveragePointwiseEuclideanMetric())
-
-        final_level = len(thresholds)
-
-        qbx_ordering_final = np.random.choice(
-            len(qbx_clusters.get_clusters(final_level)),
-            len(qbx_clusters.get_clusters(final_level)), replace=False)
-
-        qbx_merged_cluster_map = qbx_merge.cluster(
-            qbx_clusters.get_clusters(final_level).centroids,
-            ordering=qbx_ordering_final).get_clusters(1)
-
-        qbx_cluster_map = qbx_clusters.get_clusters(final_level)
-
-        merged_cluster_map = ClusterMapCentroid()
-        for cluster in qbx_merged_cluster_map:
-            merged_cluster = ClusterCentroid(centroid=cluster.centroid)
-            for i in cluster.indices:
-                merged_cluster.indices.extend(qbx_cluster_map[i].indices)
-            merged_cluster_map.add_cluster(merged_cluster)
-        merged_cluster_map.refdata = self.streamlines
-
-        # initial_clusters = qbx_merged_clusters
-        # initial_centroids = qbx_merged_clusters.get_clusters(1).centroids
-
-        if self.verbose:
-            print(' QuickBundlesX time for %d random streamlines'
-                  % (select_randomly,))
-
-            print(' Duration %0.3f sec. \n' % (time() - t1, ))
+#        len_s = self.nb_streamlines
+#        if select_randomly is None:
+#            select_randomly = len_s
+#        indices = np.random.choice(len_s, min(select_randomly, len_s),
+#                                   replace=False)
+#        sample_streamlines = set_number_of_points(self.streamlines, nb_pts)
+#
+#        if self.verbose:
+#            print(' Resampled to {} points'.format(nb_pts))
+#            print(' Size is %0.3f MB' % (nbytes(sample_streamlines),))
+#            print(' Duration of resampling is %0.3f sec. \n' % (time() - t, ))
+#
+#        thresholds = [35, 30, 25, 20, clust_thr]
+#
+#        qbx = QuickBundlesX(thresholds,
+#                            metric=AveragePointwiseEuclideanMetric())
+#
+#        t1 = time()
+#        qbx_clusters = qbx.cluster(sample_streamlines, ordering=indices)
+#
+#        # qbx_clusters_1 = qbx_clusters.get_clusters(1)
+#        # qbx_clusters_2 = qbx_clusters.get_clusters(2)
+#        # qbx_clusters_3 = qbx_clusters.get_clusters(3)
+#        # qbx_clusters_4 = qbx_clusters.get_clusters(4)
+#
+#        qbx_merge = QuickBundlesX([thresholds[-1]],
+#                                  metric=AveragePointwiseEuclideanMetric())
+#
+#        final_level = len(thresholds)
+#
+#        qbx_ordering_final = np.random.choice(
+#            len(qbx_clusters.get_clusters(final_level)),
+#            len(qbx_clusters.get_clusters(final_level)), replace=False)
+#
+#        qbx_merged_cluster_map = qbx_merge.cluster(
+#            qbx_clusters.get_clusters(final_level).centroids,
+#            ordering=qbx_ordering_final).get_clusters(1)
+#
+#        qbx_cluster_map = qbx_clusters.get_clusters(final_level)
+#
+#        merged_cluster_map = ClusterMapCentroid()
+#        for cluster in qbx_merged_cluster_map:
+#            merged_cluster = ClusterCentroid(centroid=cluster.centroid)
+#            for i in cluster.indices:
+#                merged_cluster.indices.extend(qbx_cluster_map[i].indices)
+#            merged_cluster_map.add_cluster(merged_cluster)
+#        merged_cluster_map.refdata = self.streamlines
+#
+#        # initial_clusters = qbx_merged_clusters
+#        # initial_centroids = qbx_merged_clusters.get_clusters(1).centroids
+#
+#        if self.verbose:
+#            print(' QuickBundlesX time for %d random streamlines'
+#                  % (select_randomly,))
+#
+#            print(' Duration %0.3f sec. \n' % (time() - t1, ))
 
         # initial_clusters.refdata = self.streamlines
         self.cluster_map = merged_cluster_map
@@ -151,7 +200,7 @@ class RecoBundles(object):
         if self.verbose:
             print(' Streamlines have %d centroids'
                   % (self.nb_centroids,))
-            print(' Total duration %0.3f sec. \n' % (time() - t, ))
+            print(' Total duration %0.3f sec. \n' % (time() - t,))
 
     def recognize(self, model_bundle, model_clust_thr,
                   reduction_thr=20,

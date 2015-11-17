@@ -117,12 +117,11 @@ def show_bundles(static, moving, linewidth=1., tubes=False,
 
 def recognize_bundles_flow(streamline_files, model_bundle_files,
                            out_dir=None, load_clusters=False, clust_thr=15.,
-                           reduction_thr=10, model_clust_thr=5.,
+                           reduction_thr=10., model_clust_thr=5.,
                            pruning_thr=5., slr=True, slr_metric=None,
                            slr_transform='similarity', slr_progressive=True,
                            slr_matrix='small', verbose=True,
-                           disp=False, load_chunks=False, debug=False,
-                           use_only=None):
+                           disp=False, debug=False):
     """ Recognize bundles
 
     Parameters
@@ -160,13 +159,8 @@ def recognize_bundles_flow(streamline_files, model_bundle_files,
         Enable standard output (defaut True).
     disp : bool, optional
         Show 3D results (default False).
-    load_chunks : bool, optional
-        Load streamlines in chunks (default False)
     debug : bool, optional
         Write out intremediate results (default False)
-    use_only : int, optional
-        Use only a random sample of the steamlines of size ``use_only``.
-        Default is None which means that all the streamlines will be used.
     """
 
     if isinstance(streamline_files, string_types):
@@ -221,44 +215,29 @@ def recognize_bundles_flow(streamline_files, model_bundle_files,
             return
 
         t = time()
-#        if not load_chunks:
-#            streams, hdr = load_trk(sf)
-#        else:
-#            # HACK returning things as a generator
-#            # this is processed in a different way now and in a specific bundle
-#            streams, hdr = tv.read(sf, as_generator=True, points_space='rasmm')
-
         trkfile = nib.streamlines.load(sf)
-        # print('Loading time {}'.format(time()-t))
         streamlines = trkfile.streamlines
-
         print(' Loading time %0.3f sec' % (time() - t,))
 
-        #from ipdb import set_trace
-        #set_trace()
+        sf_clusters = os.path.join(
+            os.path.dirname(sf),
+            os.path.splitext(os.path.basename(sf))[0] + '_clusters.pkl')
 
-#        sf_clusters = os.path.join(
-#                os.path.dirname(sf),
-#                os.path.splitext(os.path.basename(sf))[0] + '_clusters.pkl')
+        if bool(load_clusters) is True:
+            clusters = load_pickle(sf_clusters)
+        else:
+            clusters = None
 
-#        if bool(load_clusters) is True:
-#            clusters = load_pickle(sf_clusters)
-#        else:
-#            clusters = None
+        rb = RecoBundles(streamlines, clusters,
+                         clust_thr=clust_thr)
 
-        rb = RecoBundles(streamlines, None,
-                         clust_thr=clust_thr,
-                         load_chunks=load_chunks,
-                         use_only=use_only)
+        if clusters is None:
+            print('Clusters of streamlines saved in \n {} '
+                  .format(sf_clusters))
 
-#        if clusters is None:
-#
-#            print('Clusters of streamlines saved in \n {} '
-#                  .format(sf_clusters))
-#
-#            rb.cluster_map.refdata = None
-#            save_pickle(sf_clusters, rb.cluster_map)
-#            rb.cluster_map.refdata = rb.streamlines
+            rb.cluster_map.refdata = None
+            save_pickle(sf_clusters, rb.cluster_map)
+            rb.cluster_map.refdata = rb.streamlines
 
         print('# Model_bundle files')
         for mb in mbfiles:
@@ -268,10 +247,10 @@ def recognize_bundles_flow(streamline_files, model_bundle_files,
                 print('File {} does not exist'.format(mb))
                 return
 
-            # model_bundle, hdr_model_bundle = load_trk(mb)
+            t = time()
             model_trkfile = nib.streamlines.load(mb)
-
             model_bundle = model_trkfile.streamlines
+            print(' Loading time %0.3f sec' % (time() - t,))
 
             recognized_bundle = rb.recognize(
                 model_bundle,
@@ -343,8 +322,6 @@ def recognize_bundles_flow(streamline_files, model_bundle_files,
                 neighb_trkfile = nib.streamlines.TrkFile(neighb_tractogram)
                 nib.streamlines.save(neighb_trkfile, sf_bundle_neighb)
 
-                # save_trk(sf_bundle_neighb, rb.neighb_streamlines,
-                #          hdr=hdr)
                 print('Recognized bundle\'s neighbors saved in \n {} '
                       .format(sf_bundle_neighb))
 
@@ -358,7 +335,6 @@ def recognize_bundles_flow(streamline_files, model_bundle_files,
             centroid_trkfile = nib.streamlines.TrkFile(centroid_tractogram)
             nib.streamlines.save(centroid_trkfile, sf_centroids)
 
-            # save_trk(sf_centroids, rb.centroids, hdr=hdr)
             print('Centroids of streamlines saved in \n {} '
                   .format(sf_centroids))
 
