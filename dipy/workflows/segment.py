@@ -116,7 +116,7 @@ def show_bundles(static, moving, linewidth=1., tubes=False,
 
 
 def recognize_bundles_flow(streamline_files, model_bundle_files,
-                           out_dir=None, load_clusters=False, clust_thr=15.,
+                           out_dir=None, clust_thr=15.,
                            reduction_thr=10., model_clust_thr=5.,
                            pruning_thr=5., slr=True, slr_metric=None,
                            slr_transform='similarity', slr_progressive=True,
@@ -132,8 +132,6 @@ def recognize_bundles_flow(streamline_files, model_bundle_files,
         The path of model bundle files
     out_dir : string, optional
         Directory to output the different files
-    load_clusters : bool, optional
-        Default False.
     clust_thr : float, optional
         MDF distance threshold for all streamlines
     reduction_thr : float, optional
@@ -145,7 +143,7 @@ def recognize_bundles_flow(streamline_files, model_bundle_files,
     slr : bool, optional
         Enable local Streamline-based Linear Registration (default True).
     slr_metric : string, optional
-        Options are None, static or sum (default None).
+        Options are None, symmetric, asymmetric or diagonal (default None).
     slr_transform : string, optional
         Transformation allowed. translation, rigid, similarity or scaling
         (Default 'similarity').
@@ -204,10 +202,11 @@ def recognize_bundles_flow(streamline_files, model_bundle_files,
     if slr_transform == 'scaling':
         bounds = bounds[:9]
 
-    print('### Recognition of bundles ###')
+    print('### RecoBundles ###')
 
-    print('# Streamline files')
+    # Streamline file
     for sf in sfiles:
+        print('# Streamline file')
         print(sf)
 
         if not os.path.exists(sf):
@@ -223,8 +222,11 @@ def recognize_bundles_flow(streamline_files, model_bundle_files,
             os.path.dirname(sf),
             os.path.splitext(os.path.basename(sf))[0] + '_clusters.pkl')
 
-        if bool(load_clusters) is True:
+        if os.path.exists(sf_clusters):
             clusters = load_pickle(sf_clusters)
+            print(' Using pre-existing clustering file.')
+            print(' To ignore file delete it at {} and rerun'
+                  .format(sf_clusters))
         else:
             clusters = None
 
@@ -239,8 +241,9 @@ def recognize_bundles_flow(streamline_files, model_bundle_files,
             save_pickle(sf_clusters, rb.cluster_map)
             rb.cluster_map.refdata = rb.streamlines
 
-        print('# Model_bundle files')
+        # Model bundle
         for mb in mbfiles:
+            print('# Model_bundle file')
             print(mb)
 
             if not os.path.exists(mb):
@@ -299,9 +302,8 @@ def recognize_bundles_flow(streamline_files, model_bundle_files,
             # if not os.path.exists(os.path.dirname(sf_bundle_file)):
             #     os.makedirs(os.path.dirname(sf_bundle_file))
 
-            #save_trk(sf_bundle_file, recognized_bundle, hdr=hdr)
-
-            recognized_tractogram = nib.streamlines.Tractogram(recognized_bundle)
+            recognized_tractogram = nib.streamlines.Tractogram(
+                recognized_bundle)
             recognized_trkfile = nib.streamlines.TrkFile(recognized_tractogram)
             nib.streamlines.save(recognized_trkfile, sf_bundle_file)
 

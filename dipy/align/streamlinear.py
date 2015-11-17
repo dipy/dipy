@@ -668,6 +668,74 @@ def remove_clusters_by_size(clusters, min_size=0):
     return filter(by_size, clusters)
 
 
+def progressive_slr(static, moving, metric, x0, bounds,
+                    method='L-BFGS-B', verbose=True):
+
+    if verbose:
+        print('Progressive Registration is Enabled')
+
+    if x0 == 'translation' or x0 == 'rigid' or \
+       x0 == 'similarity' or x0 == 'scaling':
+
+        slr_t = StreamlineLinearRegistration(metric=metric,
+                                             x0='translation',
+                                             bounds=bounds[:3],
+                                             method=method)
+
+        slm_t = slr_t.optimize(static, moving)
+
+    if x0 == 'rigid' or x0 == 'similarity' or x0 == 'scaling':
+
+        x_translation = slm_t.xopt
+        x = np.zeros(6)
+        x[:3] = x_translation
+
+        slr_r = StreamlineLinearRegistration(metric=metric,
+                                             x0=x,
+                                             bounds=bounds[:6],
+                                             method=method)
+        slm_r = slr_r.optimize(static, moving)
+
+    if x0 == 'similarity' or x0 == 'scaling':
+
+        x_rigid = slm_r.xopt
+        x = np.zeros(7)
+        x[:6] = x_rigid
+        x[6] = 1.
+
+        slr_s = StreamlineLinearRegistration(metric=metric,
+                                             x0=x,
+                                             bounds=bounds[:7],
+                                             method=method)
+        slm_s = slr_s.optimize(static, moving)
+
+    if x0 == 'scaling':
+
+        x_similarity = slm_s.xopt
+        x = np.zeros(9)
+        x[:6] = x_similarity[:6]
+        x[6:] = np.array((x_similarity[6],) * 3)
+
+        slr_c = StreamlineLinearRegistration(metric=metric,
+                                             x0=x,
+                                             bounds=bounds[:9],
+                                             method=method)
+        slm_c = slr_c.optimize(static, moving)
+
+    if x0 == 'translation':
+        slm = slm_t
+    elif x0 == 'rigid':
+        slm = slm_r
+    elif x0 == 'similarity':
+        slm = slm_s
+    elif x0 == 'scaling':
+        slm = slm_c
+    else:
+        raise ValueError('Incorrect SLR transform')
+
+    return slm
+
+
 def whole_brain_slr(static, moving,
                     rm_small_clusters=50,
                     maxiter=100,
@@ -676,7 +744,8 @@ def whole_brain_slr(static, moving,
                     greater_than=50,
                     less_than=250,
                     qb_thr=15,
-                    nb_pts=20):
+                    nb_pts=20,
+                    progressive=True):
 
     if verbose:
         print('Static streamlines size {}'.format(len(static)))
