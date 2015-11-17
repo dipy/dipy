@@ -13,10 +13,8 @@ from dipy.workflows.align import load_trk, save_trk
 import os
 import numpy as np
 from dipy.utils.six import string_types
-from glob import glob
 from dipy.segment.bundles import RecoBundles, KDTreeBundles
 from dipy.tracking.streamline import transform_streamlines
-from nibabel import trackvis as tv
 from dipy.io.pickles import save_pickle, load_pickle
 
 
@@ -86,42 +84,12 @@ def median_otsu_flow(input_files, out_dir='', save_masked=False,
             print('Masked volume saved as {0}'.format(masked_out_path))
 
 
-def show_bundles(static, moving, linewidth=1., tubes=False,
-                 opacity=1., fname=None):
-
-    from dipy.viz import fvtk
-    ren = fvtk.ren()
-    ren.SetBackground(1, 1, 1.)
-
-    if tubes:
-        static_actor = fvtk.streamtube(static, fvtk.colors.red,
-                                       linewidth=linewidth, opacity=opacity)
-        moving_actor = fvtk.streamtube(moving, fvtk.colors.green,
-                                       linewidth=linewidth, opacity=opacity)
-
-    else:
-        static_actor = fvtk.line(static, fvtk.colors.red,
-                                 linewidth=linewidth, opacity=opacity)
-        moving_actor = fvtk.line(moving, fvtk.colors.green,
-                                 linewidth=linewidth, opacity=opacity)
-
-    fvtk.add(ren, static_actor)
-    fvtk.add(ren, moving_actor)
-
-    fvtk.add(ren, fvtk.axes(scale=(2, 2, 2)))
-
-    fvtk.show(ren, size=(900, 900))
-    if fname is not None:
-        fvtk.record(ren, size=(900, 900), out_path=fname)
-
-
 def recognize_bundles_flow(streamline_files, model_bundle_files,
                            out_dir=None, clust_thr=15.,
                            reduction_thr=10., model_clust_thr=5.,
                            pruning_thr=5., slr=True, slr_metric=None,
                            slr_transform='similarity', slr_progressive=True,
-                           slr_matrix='small', verbose=True,
-                           disp=False, debug=False):
+                           slr_matrix='small', verbose=True, debug=False):
     """ Recognize bundles
 
     Parameters
@@ -155,8 +123,6 @@ def recognize_bundles_flow(streamline_files, model_bundle_files,
         'small')
     verbose : bool, optional
         Enable standard output (defaut True).
-    disp : bool, optional
-        Show 3D results (default False).
     debug : bool, optional
         Write out intremediate results (default False)
     """
@@ -284,9 +250,6 @@ def recognize_bundles_flow(streamline_files, model_bundle_files,
 #            extracted_bundle_initial = transform_streamlines(
 #                extracted_bundle,
 #                np.linalg.inv(np.dot(mat2, mat)))
-
-            if disp:
-                show_bundles(model_bundle, recognized_bundle)
 
             if out_dir is None:
                 out_dir = ''
