@@ -272,6 +272,7 @@ def recognize_bundles_flow(streamline_files, model_bundle_files,
 
             np.save(sf_bundle_labels, np.array(rb.labels))
 
+            print('# Output files')
             print('Recognized bundle saved in \n {} '
                   .format(sf_bundle_file))
             print('Recognized bundle labels saved in \n {} '
