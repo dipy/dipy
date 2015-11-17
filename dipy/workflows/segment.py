@@ -267,7 +267,7 @@ def recognize_bundles_flow(streamline_files, model_bundle_files,
                 slr_method='L-BFGS-B',
                 slr_use_centroids=False,
                 slr_progressive=slr_progressive,
-                pruning_thr=pruning_thr)
+                pruning_thr=float(pruning_thr))
 
 # TODO add option to return recognized bundle in the space that you want
 # Or better return the labels of the bundle which I currently do.
