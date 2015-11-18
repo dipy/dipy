@@ -3,7 +3,7 @@ import os.path as path
 from dipy.utils.six import string_types
 from nibabel import trackvis as tv
 import nibabel as nib
-from dipy.align.streamlinear import whole_brain_slr
+from dipy.align.streamlinear import whole_brain_slr, progressive_slr
 from dipy.tracking.streamline import transform_streamlines
 from glob import glob
 
@@ -12,10 +12,10 @@ def load_trk(fname):
     # streams, hdr = tv.read(fname, points_space='rasmm')
     # return [i[0] for i in streams], hdr
     trkfile = nib.streamlines.load(fname)
-    return trkfile.streamlines
+    return trkfile.streamlines, trkfile.header
 
 
-def save_trk(fname, streamlines):
+def save_trk(fname, streamlines, hdr=None):
     # streams = ((s, None, None) for s in streamlines)
     # if hdr is not None:
     #     hdr_dict = {key: hdr[key] for key in hdr.dtype.names}
@@ -23,12 +23,13 @@ def save_trk(fname, streamlines):
     # else:
     #     tv.write(fname, streams, points_space='rasmm')
     tractogram = nib.streamlines.Tractogram(streamlines)
-    trkfile = nib.streamlines.TrkFile(tractogram)
-    nib.streamlines.save(trkfile, trkfile)
+    trkfile = nib.streamlines.TrkFile(tractogram, header=hdr)
+    nib.streamlines.save(trkfile, fname)
 
 
 def whole_brain_slr_flow(moving_streamlines_files,
                          static_streamlines_file, out_dir=None,
+                         slr_transform='affine', slr_progressive=True,
                          maxiter=150, select_random=50000, verbose=True):
     """ Whole brain Streamline-based Registration
 
@@ -40,12 +41,20 @@ def whole_brain_slr_flow(moving_streamlines_files,
         Path of static (fixed) streamlines
     out_dir : string, optional
         Output directory (default input file directory)
+    slr_transform : string, optional
+        Can be 'translation', 'rigid', 'similarity', 'scaling' or 'affine'.
+        (Default 'affine').
+    slr_progressive : bool, optional
+        If for example you selected `rigid` in slr_transform then you will
+        do first translation and then rigid (default True). From the command
+        line call this using 0 (False) or 1 (True).
     maxiter : int, optional
         Maximum iterations for registation optimization
     select_random : int, optional
         Random streamlines for starting QuickBundles.
     verbose : bool, optional
-        Print results as they are being generated.
+        Print results as they are being generated. From the command
+        line call this using 0 (False) or 1 (True).
 
     """
 
@@ -67,9 +76,11 @@ def whole_brain_slr_flow(moving_streamlines_files,
             print(sf)
 
         moving_streamlines, hdr = load_trk(sf)
+
         ret = whole_brain_slr(static_streamlines, moving_streamlines,
+                              x0=slr_transform,
                               maxiter=maxiter, select_random=select_random,
-                              verbose=verbose)
+                              verbose=verbose, progressive=slr_progressive)
         moved_streamlines, mat, static_centroids, moving_centroids = ret
 
         moved_centroids = transform_streamlines(moving_centroids, mat)
@@ -99,6 +110,7 @@ def whole_brain_slr_flow(moving_streamlines_files,
             print(moved_centroids_file)
             print(mat_file)
 
+        # hdr_static = None
         save_trk(moved_bundle_file, moved_streamlines, hdr=hdr_static)
         save_trk(static_centroids_file, static_centroids, hdr=hdr_static)
         save_trk(moving_centroids_file, moving_centroids, hdr=hdr)

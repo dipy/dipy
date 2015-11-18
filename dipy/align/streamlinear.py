@@ -677,6 +677,8 @@ def progressive_slr(static, moving, metric, x0, bounds,
     if x0 == 'translation' or x0 == 'rigid' or \
        x0 == 'similarity' or x0 == 'scaling' or x0 == 'affine':
 
+        if verbose:
+            print(' Translation  (3 parameters)...')
         slr_t = StreamlineLinearRegistration(metric=metric,
                                              x0='translation',
                                              bounds=bounds[:3],
@@ -691,6 +693,8 @@ def progressive_slr(static, moving, metric, x0, bounds,
         x = np.zeros(6)
         x[:3] = x_translation
 
+        if verbose:
+            print(' Rigid  (6 parameters) ...')
         slr_r = StreamlineLinearRegistration(metric=metric,
                                              x0=x,
                                              bounds=bounds[:6],
@@ -704,6 +708,8 @@ def progressive_slr(static, moving, metric, x0, bounds,
         x[:6] = x_rigid
         x[6] = 1.
 
+        if verbose:
+            print(' Similarity (7 parameters) ...')
         slr_s = StreamlineLinearRegistration(metric=metric,
                                              x0=x,
                                              bounds=bounds[:7],
@@ -717,6 +723,9 @@ def progressive_slr(static, moving, metric, x0, bounds,
         x[:6] = x_similarity[:6]
         x[6:] = np.array((x_similarity[6],) * 3)
 
+        if verbose:
+            print(' Scaling (9 parameters) ...')
+
         slr_c = StreamlineLinearRegistration(metric=metric,
                                              x0=x,
                                              bounds=bounds[:9],
@@ -729,6 +738,9 @@ def progressive_slr(static, moving, metric, x0, bounds,
         x = np.zeros(12)
         x[:9] = x_scaling[:9]
         x[9:] = np.zeros(3)
+
+        if verbose:
+            print(' Affine (12 parameters) ...')
 
         slr_a = StreamlineLinearRegistration(metric=metric,
                                              x0=x,
@@ -753,6 +765,7 @@ def progressive_slr(static, moving, metric, x0, bounds,
 
 
 def whole_brain_slr(static, moving,
+                    x0='affine',
                     rm_small_clusters=50,
                     maxiter=100,
                     select_random=None,
@@ -779,8 +792,10 @@ def whole_brain_slr(static, moving,
 
     if verbose:
 
-        print('Static streamlines after length {}'.format(len(streamlines1)))
-        print('Moving streamlines after length {}'.format(len(streamlines2)))
+        print('Static streamlines after length reduction {}'
+              .format(len(streamlines1)))
+        print('Moving streamlines after length reduction {}'
+              .format(len(streamlines2)))
 
     if select_random is not None:
         rstreamlines1 = select_random_set_of_streamlines(streamlines1,
@@ -808,12 +823,20 @@ def whole_brain_slr(static, moving,
     clusters2 = remove_clusters_by_size(cluster_map2, rm_small_clusters)
     qb_centroids2 = [cluster.centroid for cluster in clusters2]
 
-    slr = StreamlineLinearRegistration(x0='affine',
-                                       options={'maxiter': maxiter})
-
     t = time()
 
-    slm = slr.optimize(qb_centroids1, qb_centroids2)
+    if not progressive:
+        slr = StreamlineLinearRegistration(x0=x0,
+                                           options={'maxiter': maxiter})
+        slm = slr.optimize(qb_centroids1, qb_centroids2)
+    else:
+        bounds = [(-45, 45), (-45, 45), (-45, 45),
+                  (-30, 30), (-30, 30), (-30, 30),
+                  (0.6, 1.4), (0.6, 1.4), (0.6, 1.4),
+                  (-10, 10), (-10, 10), (-10, 10)]
+        slm = progressive_slr(qb_centroids1, qb_centroids2,
+                              x0=x0, metric=None,
+                              bounds=bounds)
 
     if verbose:
         print('QB static centroids size %d' % len(qb_centroids1,))
