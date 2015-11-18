@@ -6,25 +6,7 @@ import nibabel as nib
 from dipy.align.streamlinear import whole_brain_slr, progressive_slr
 from dipy.tracking.streamline import transform_streamlines
 from glob import glob
-
-
-def load_trk(fname):
-    # streams, hdr = tv.read(fname, points_space='rasmm')
-    # return [i[0] for i in streams], hdr
-    trkfile = nib.streamlines.load(fname)
-    return trkfile.streamlines, trkfile.header
-
-
-def save_trk(fname, streamlines, hdr=None):
-    # streams = ((s, None, None) for s in streamlines)
-    # if hdr is not None:
-    #     hdr_dict = {key: hdr[key] for key in hdr.dtype.names}
-    #     tv.write(fname, streams, hdr_mapping=hdr_dict, points_space='rasmm')
-    # else:
-    #     tv.write(fname, streams, points_space='rasmm')
-    tractogram = nib.streamlines.Tractogram(streamlines)
-    trkfile = nib.streamlines.TrkFile(tractogram, header=hdr)
-    nib.streamlines.save(trkfile, fname)
+from dipy.io.trackvis import load_trk, save_trk
 
 
 def whole_brain_slr_flow(moving_streamlines_files,
@@ -103,7 +85,7 @@ def whole_brain_slr_flow(moving_streamlines_files,
         mat_file = path.join(out_dir, 'affine.txt')
 
         if verbose:
-            print('Saving results at :')
+            print('\nSaving results at :')
             print(moved_bundle_file)
             print(static_centroids_file)
             print(moving_centroids_file)
