@@ -370,8 +370,7 @@ def seeds_from_mask(mask, density=[1, 1, 1], voxel_size=None, affine=None):
 
     See Also
     --------
-    random_seeds_from_mask_per_voxel
-    random_seeds_from_mask_total
+    random_seeds_from_mask
 
     Raises
     ------
@@ -437,69 +436,25 @@ def seeds_from_mask(mask, density=[1, 1, 1], voxel_size=None, affine=None):
     return seeds
 
 
-def random_seeds_from_mask(mask, seeds_per_voxel=1, affine=None):
-    msg = "This function is deprecated please use"
-    msg += " dipy.tracking.utils.random_seeds_from_mask_per_voxel."
-    warn(msg)
-    return random_seeds_from_mask_per_voxel(mask, seeds_per_voxel, affine)
-
-
-def random_seeds_from_mask_total(mask, seeds_count, affine=None):
+def random_seeds_from_mask(mask, seeds_count=1, is_seed_per_voxel=True, affine=None):
     """Creates randomly placed seeds for fiber tracking from a binary mask.
 
-    Seeds points are placed randomly distributed in all voxels of ``mask``
-    which are ``True``. This function is similar to
-    ``random_seeds_from_mask_per_voxel()``, with the difference that
-    instead of returning a number of seeds per voxel, it returns a total
-    number of seeds placed in the ``mask``.
+    Seeds points are placed randomly distributed in voxels of ``mask``
+    which are ``True``.
+    If ``is_seed_per_voxel`` is ``True``, this function is
+    similar to ``seeds_from_mask()``, with the difference that instead of evenly
+    distributing the seeds, it randomly places the seeds within the voxels
+    specified by the ``mask``.
 
     Parameters
     ----------
     mask : binary 3d array_like
         A binary array specifying where to place the seeds for fiber tracking.
     seeds_count : int
-        Specifies the total number of seeds to place in the mask.
-    affine : array, (4, 4)
-        The mapping between voxel indices and the point space for seeds. A
-        seed point at the center the voxel ``[i, j, k]`` will be represented as
-        ``[x, y, z]`` where ``[x, y, z, 1] == np.dot(affine, [i, j, k , 1])``.
-
-    See Also
-    --------
-    seeds_from_mask
-    random_seeds_from_mask_per_voxel
-
-    Raises
-    ------
-    ValueError
-        When ``mask`` is not a three-dimensional array
-    """
-    mask = np.array(mask, dtype=bool, copy=False, ndmin=3)
-    if mask.ndim != 3:
-        raise ValueError('mask cannot be more than 3d')
-
-    num_voxels = np.count_nonzero(mask)
-    seeds_per_voxel = seeds_count // num_voxels + 1
-    seeds = random_seeds_from_mask_per_voxel(mask, seeds_per_voxel, affine)
-    np.random.shuffle(seeds)
-    return seeds[:seeds_count]
-
-
-def random_seeds_from_mask_per_voxel(mask, seeds_per_voxel=1, affine=None):
-    """Creates randomly placed seeds for fiber tracking from a binary mask.
-
-    Seeds points are placed randomly distributed in all voxels of ``mask``
-    which are ``True``. This function is essentially similar to
-    ``seeds_from_mask()``, with the difference that instead of evenly
-    distributing the seeds, it randomly places the seeds within the voxels
-    specified by the ``mask``
-
-    Parameters
-    ----------
-    mask : binary 3d array_like
-        A binary array specifying where to place the seeds for fiber tracking.
-    seeds_per_voxel : int
         Specifies the number of seeds to place in each voxel.
+    is_seed_per_voxel: bool
+        If True, seeds_count is per voxel, else seeds_count is the total number
+        of seeds.
     affine : array, (4, 4)
         The mapping between voxel indices and the point space for seeds. A
         seed point at the center the voxel ``[i, j, k]`` will be represented as
@@ -508,7 +463,6 @@ def random_seeds_from_mask_per_voxel(mask, seeds_per_voxel=1, affine=None):
     See Also
     --------
     seeds_from_mask
-    random_seeds_from_mask_total
 
     Raises
     ------
@@ -521,10 +475,10 @@ def random_seeds_from_mask_per_voxel(mask, seeds_per_voxel=1, affine=None):
     >>> mask[0,0,0] = 1
 
     >>> np.random.seed(1)
-    >>> random_seeds_from_mask_per_voxel(mask, seeds_per_voxel=1)
+    >>> random_seeds_from_mask(mask, seeds_count=1)
     array([[-0.082978  ,  0.22032449, -0.49988563]])
 
-    >>> random_seeds_from_mask_per_voxel(mask, seeds_per_voxel=6)
+    >>> random_seeds_from_mask(mask, seeds_count=6)
     array([[-0.19766743, -0.35324411, -0.40766141],
            [-0.31373979, -0.15443927, -0.10323253],
            [ 0.03881673, -0.08080549,  0.1852195 ],
@@ -532,7 +486,7 @@ def random_seeds_from_mask_per_voxel(mask, seeds_per_voxel=1, affine=None):
            [ 0.17046751, -0.0826952 ,  0.05868983],
            [-0.35961306, -0.30189851,  0.30074457]])
     >>> mask[0,1,2] = 1
-    >>> random_seeds_from_mask_per_voxel(mask, seeds_per_voxel=2)
+    >>> random_seeds_from_mask(mask, seeds_count=2)
     array([[ 0.46826158, -0.18657582,  0.19232262],
            [ 0.37638915,  0.39460666, -0.41495579],
            [-0.46094522,  0.66983042,  2.3781425 ],
@@ -546,12 +500,23 @@ def random_seeds_from_mask_per_voxel(mask, seeds_per_voxel=1, affine=None):
     where = np.argwhere(mask)
     num_voxels = len(where)
 
+    if not is_seed_per_voxel:
+        # Generate enough seeds per voxel
+        seeds_per_voxel = seeds_count // num_voxels + 1
+    else:
+        seeds_per_voxel = seeds_count
+
     # Generate as many random triplets as the number of seeds needed
     grid = np.random.random([seeds_per_voxel * num_voxels, 3])
     # Repeat elements of 'where' so that it can be added to grid
     where = np.repeat(where, seeds_per_voxel, axis=0)
     seeds = where + grid - .5
     seeds = asarray(seeds)
+
+    if not is_seed_per_voxel:
+        # Randomize the seeds and select the requested amount
+        np.random.shuffle(seeds)
+        seeds = seeds[:seeds_count]
 
     # Apply the spatial transform
     if affine is not None:
