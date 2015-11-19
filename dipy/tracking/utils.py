@@ -451,7 +451,9 @@ def random_seeds_from_mask(mask, seeds_count=1, is_seed_per_voxel=True, affine=N
     mask : binary 3d array_like
         A binary array specifying where to place the seeds for fiber tracking.
     seeds_count : int
-        Specifies the number of seeds to place in each voxel.
+        The number of seeds to generate. If ``is_seed_per_voxel`` is True,
+        specifies the number of seeds to place in each voxel. Otherwise,
+        specifies the total number of seeds to place in the mask.
     is_seed_per_voxel: bool
         If True, seeds_count is per voxel, else seeds_count is the total number
         of seeds.
@@ -475,10 +477,10 @@ def random_seeds_from_mask(mask, seeds_count=1, is_seed_per_voxel=True, affine=N
     >>> mask[0,0,0] = 1
 
     >>> np.random.seed(1)
-    >>> random_seeds_from_mask(mask, seeds_count=1)
+    >>> random_seeds_from_mask(mask, seeds_count=1, is_seed_per_voxel=True)
     array([[-0.082978  ,  0.22032449, -0.49988563]])
 
-    >>> random_seeds_from_mask(mask, seeds_count=6)
+    >>> random_seeds_from_mask(mask, seeds_count=6, is_seed_per_voxel=True)
     array([[-0.19766743, -0.35324411, -0.40766141],
            [-0.31373979, -0.15443927, -0.10323253],
            [ 0.03881673, -0.08080549,  0.1852195 ],
@@ -486,7 +488,7 @@ def random_seeds_from_mask(mask, seeds_count=1, is_seed_per_voxel=True, affine=N
            [ 0.17046751, -0.0826952 ,  0.05868983],
            [-0.35961306, -0.30189851,  0.30074457]])
     >>> mask[0,1,2] = 1
-    >>> random_seeds_from_mask(mask, seeds_count=2)
+    >>> random_seeds_from_mask(mask, seeds_count=2, is_seed_per_voxel=True)
     array([[ 0.46826158, -0.18657582,  0.19232262],
            [ 0.37638915,  0.39460666, -0.41495579],
            [-0.46094522,  0.66983042,  2.3781425 ],

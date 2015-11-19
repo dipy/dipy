@@ -9,7 +9,6 @@ from dipy.tracking.utils import (affine_for_trackvis, connectivity_matrix,
                                  density_map, length, move_streamlines,
                                  ndbincount, reduce_labels,
                                  reorder_voxels_affine, seeds_from_mask,
-                                 random_seeds_from_mask,
                                  random_seeds_from_mask, target,
                                  _rmi, unique_rows, near_roi,
                                  reduce_rois)
