@@ -63,47 +63,46 @@ class IntrospectiveArgumentParser(arg.ArgumentParser):
         len_args = len(args)
         len_defaults = len(defaults)
 
-        # Arguments with no defaults (Positional)
-        cnt = 0
-        for i in range(len_args - len_defaults):
+        for i, arg in enumerate(args):
+            prefix = ''
+            if i >= len_args - len_defaults:
+                prefix = '--'
+
             typestr = self.doc[i][1]
-            dtype = self._select_dtype(typestr)
+            dtype, isnarg = self._select_dtype(typestr)
             help_msg = ''.join(self.doc[i][2])
-            if dtype is bool:
-                self.add_argument(args[i], choices=[0, 1], type=int,
-                                  action='store', metavar=dtype.__name__,
-                                  help=help_msg)
-            else:
-                self.add_argument(args[i], action='store',
-                                  type=dtype, metavar=dtype.__name__,
-                                  help=help_msg)
-            cnt += 1
 
-        # Arguments with defaults (Optional)
-        for i in range(cnt, len_args):
-            typestr = self.doc[i][1]
-            dtype = self._select_dtype(typestr)
-            help_msg = ' '.join(self.doc[i][2])
+            _args = ['{0}{1}'.format(prefix, arg)]
+            _kwargs = {"action": 'store',
+                      "metavar": dtype.__name__,
+                      "help": help_msg,
+                      'type': dtype}
 
             if dtype is bool:
-                self.add_argument('--' + args[i], choices=[0, 1], type=int,
-                                  action='store', metavar=dtype.__name__,
-                                  help=help_msg)
-            else:
-                self.add_argument('--' + args[i], action='store',
-                                  type=dtype, metavar=dtype.__name__,
-                                  help=help_msg)
+                _kwargs['type'] = int
+                _kwargs['choices'] = [0, 1]
+
+            if isnarg:
+                 _kwargs['nargs'] = '*'
+
+            self.add_argument(*_args, **_kwargs)
 
     def _select_dtype(self, text):
         text = text.lower()
+        nargs_str = 'variable'
+        is_nargs = nargs_str in text
+        arg_type = None
+
         if 'str' in text:
-            return str
+            arg_type = str
         if 'int' in text:
-            return int
+            arg_type = int
         if 'float' in text:
-            return float
+            arg_type = float
         if 'bool' in text:
-            return bool
+            arg_type = bool
+
+        return arg_type, is_nargs
 
     def get_flow_args(self, args=None, namespace=None):
         ns_args = self.parse_args(args, namespace)

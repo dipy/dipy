@@ -4,7 +4,7 @@ from dipy.workflows.base import IntrospectiveArgumentParser
 
 def dummy_flow(positional_str, positional_bool, positional_int,
                positional_float, optional_str='default', optional_bool=False,
-               optional_int=0, optional_float=1.0):
+               optional_int=0, optional_float=1.0, optional_float_2=2.0):
     """ Workflow used to test the introspective argument parser.
 
     Parameters
@@ -25,10 +25,12 @@ def dummy_flow(positional_str, positional_bool, positional_int,
         optional int argument (default 0)
     optional_float : float, optional
         optional float argument (default 1.0)
+    optional_float_2 : float, optional
+        optional float argument #2 (default 2.0)
     """
     return positional_str, positional_bool, positional_int,\
            positional_float, optional_str, optional_bool,\
-           optional_int, optional_float
+           optional_int, optional_float, optional_float_2
 
 
 def test_iap():
@@ -50,7 +52,7 @@ def test_iap():
     parser.add_workflow(dummy_flow)
     args = parser.get_flow_args()
     all_keys = pos_keys + opt_keys
-    all_results = pos_results+opt_results
+    all_results = pos_results + opt_results
 
     # Test if types and order are respected
     for k, v in zip(all_keys, all_results):
@@ -58,8 +60,7 @@ def test_iap():
 
     # Test if **args really fits dummy_flow's arguments
     return_values = dummy_flow(**args)
-    npt.assert_array_equal(return_values, all_results)
-
+    npt.assert_array_equal(return_values, all_results + [2.0])
 
 def inputs_from_results(results, keys=None):
     prefix = '--'
@@ -72,8 +73,29 @@ def inputs_from_results(results, keys=None):
     return inputs
 
 
+def nargs_flow(variable_ints, optionnal_int=2):
+    """ Workflow used to test the nargs argument.
 
+    Parameters
+    ----------
+    variable_ints : variable int
+        variable number of strings
+    optionnal_int : int
+        optionnal int argument
+    """
+    return variable_ints, optionnal_int
 
+def test_nargs():
+    sys.argv = [sys.argv[0]]
+    var_args = ['1', '2', '3', '4', '5', '6', '7', '8']
+    optionnals = ['--optionnal_int', '2']
+    sys.argv.extend(var_args + optionnals)
+
+    parser = IntrospectiveArgumentParser()
+    parser.add_workflow(nargs_flow)
+    args = parser.get_flow_args()
+    var_ints, opt_int = nargs_flow(**args)
+    npt.assert_equal(len(var_ints), len(var_args))
 
 
 
