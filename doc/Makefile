@@ -128,4 +128,4 @@ pdf-stamp: latex
 	touch $@
 
 upload: html
-	sh upload-gh-pages _build/html/ dipy nipy
+	./upload-gh-pages.sh _build/html/ dipy arokem
