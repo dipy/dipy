@@ -1,9 +1,8 @@
 from dipy.fixes import argparse as arg
-from dipy.utils.optpkg import optional_package
 
 import inspect
 
-ndoc, has_ndoc, _ = optional_package('numpydoc')
+from dipy.workflows.documentation import NumpyDocString
 
 class IntrospectiveArgumentParser(arg.ArgumentParser):
 
@@ -56,9 +55,7 @@ class IntrospectiveArgumentParser(arg.ArgumentParser):
     def add_workflow(self, workflow):
         specs = inspect.getargspec(workflow)
         doc = inspect.getdoc(workflow)
-
-        if has_ndoc:
-            self.doc = ndoc.docscrape.NumpyDocString(doc)['Parameters']
+        self.doc = NumpyDocString(doc)['Parameters']
 
         args = specs.args
         defaults = specs.defaults
@@ -66,43 +63,46 @@ class IntrospectiveArgumentParser(arg.ArgumentParser):
         len_args = len(args)
         len_defaults = len(defaults)
 
-        # Arguments with no defaults (Positional)
-        cnt = 0
-        for i in range(len_args - len_defaults):
-            if has_ndoc:
-                help_msg = ''.join(self.doc[i][2])
-                self.add_argument(args[i], help=help_msg)
-            else:
-                self.add_argument(args[i])
-            cnt += 1
+        for i, arg in enumerate(args):
+            prefix = ''
+            if i >= len_args - len_defaults:
+                prefix = '--'
 
-        # Arguments with defaults (Optional)
-        for i in range(cnt, len_args):
-            if has_ndoc:
-                typestr = self.doc[i][1]
-                dtype = self._select_dtype(typestr)
-                help_msg = ' '.join(self.doc[i][2])
-                if 'bool' in typestr:
-                    self.add_argument('--' + args[i], choices=[0, 1], type=int,
-                                      metavar=dtype.__name__, help=help_msg)
-                else:
-                    self.add_argument('--' + args[i], action='store',
-                                      type=dtype,
-                                      metavar=dtype.__name__, help=help_msg)
+            typestr = self.doc[i][1]
+            dtype, isnarg = self._select_dtype(typestr)
+            help_msg = ''.join(self.doc[i][2])
 
-            else:
-                self.add_argument('--' + args[i])
+            _args = ['{0}{1}'.format(prefix, arg)]
+            _kwargs = {"action": 'store',
+                      "metavar": dtype.__name__,
+                      "help": help_msg,
+                      'type': dtype}
+
+            if dtype is bool:
+                _kwargs['type'] = int
+                _kwargs['choices'] = [0, 1]
+
+            if isnarg:
+                 _kwargs['nargs'] = '*'
+
+            self.add_argument(*_args, **_kwargs)
 
     def _select_dtype(self, text):
         text = text.lower()
+        nargs_str = 'variable'
+        is_nargs = nargs_str in text
+        arg_type = None
+
         if 'str' in text:
-            return str
+            arg_type = str
         if 'int' in text:
-            return int
+            arg_type = int
         if 'float' in text:
-            return float
+            arg_type = float
         if 'bool' in text:
-            return bool
+            arg_type = bool
+
+        return arg_type, is_nargs
 
     def get_flow_args(self, args=None, namespace=None):
         ns_args = self.parse_args(args, namespace)

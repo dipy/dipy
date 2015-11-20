@@ -9,23 +9,10 @@ from copy import copy, deepcopy
 import os.path as path
 from glob import glob
 from dipy.io.trackvis import load_trk
+from dipy.segment.bundles import qbx_with_merge
 
 
-#def load_trk(fname):
-#    streams, hdr = tv.read(fname, points_space='rasmm')
-#    return [i[0] for i in streams], hdr
-#
-#
-#def save_trk(fname, streamlines, hdr=None):
-#    streams = ((s, None, None) for s in streamlines)
-#    if hdr is not None:
-#        hdr_dict = {key: hdr[key] for key in hdr.dtype.names}
-#        tv.write(fname, streams, hdr_mapping=hdr_dict, points_space='rasmm')
-#    else:
-#        tv.write(fname, streams, points_space='rasmm')
-
-
-def horizon(tractograms, data, affine, qb_thr=30, random_colors=False):
+def horizon(tractograms, data, affine, cluster=False, random_colors=False):
 
     slicer_opacity = .8
 
@@ -36,9 +23,10 @@ def horizon(tractograms, data, affine, qb_thr=30, random_colors=False):
 
         print(len(streamlines))
 
-        if len(streamlines) > np.inf:
-            qb = QuickBundles(qb_thr)
-            clusters = qb.cluster(streamlines)
+        if cluster:
+            # qb = QuickBundles(qb_thr)
+            # clusters = qb.cluster(streamlines)
+            clusters = qbx_with_merge(streamlines, [40, 30, 20])
             streamlines = clusters.centroids
             sizes = np.array([len(c) for c in clusters])
             sizes = np.interp(sizes, [sizes.min(), sizes.max()], [0.1, 2.])
@@ -142,13 +130,14 @@ def horizon(tractograms, data, affine, qb_thr=30, random_colors=False):
     show_m.start()
 
 
-def horizon_flow(input_files, qb_thr=30, random_colors=True, verbose=True):
+def horizon_flow(input_files, cluster=False,
+                 random_colors=False, verbose=True):
     """ Horizon
 
     Parameters
     ----------
-    input_files : string
-    qb_thr : float, optional
+    input_files : variable string
+    cluster : bool, optional
     random_colors : bool, optional
     verbose : bool, optional
     """
@@ -160,7 +149,8 @@ def horizon_flow(input_files, qb_thr=30, random_colors=True, verbose=True):
     data = None
     affine = None
     for f in filenames:
-        print(f)
+        if verbose:
+            print(f)
         sp = path.splitext(f)[1]
 
         if sp == '.trk':
@@ -173,6 +163,7 @@ def horizon_flow(input_files, qb_thr=30, random_colors=True, verbose=True):
             img = nib.load(f)
             data = img.get_data()
             affine = img.get_affine()
-            print(affine)
+            if verbose:
+                print(affine)
 
-    horizon(tractograms, data, affine, qb_thr, random_colors)
+    horizon(tractograms, data, affine, cluster, random_colors)

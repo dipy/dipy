@@ -4,10 +4,10 @@ from dipy.workflows.base import IntrospectiveArgumentParser
 
 parser = IntrospectiveArgumentParser()
 
-# parser.add_workflow(horizon_flow)
-parser.add_argument('input_files', nargs='*')
-parser.add_argument('--random_colors', type=int, choices=[0, 1], default=1)
-parser.add_argument('--qb_thr', type=float, default=30)
+parser.add_workflow(horizon_flow)
+# parser.add_argument('input_files', nargs='*')
+# parser.add_argument('--random_colors', type=int, choices=[0, 1], default=1)
+# parser.add_argument('--qb_thr', type=float, default=30)
 
 if __name__ == '__main__':
 
