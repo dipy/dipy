@@ -8,23 +8,24 @@ from dipy.viz import fvtk
 from copy import copy, deepcopy
 import os.path as path
 from glob import glob
+from dipy.io.trackvis import load_trk
 
 
-def load_trk(fname):
-    streams, hdr = tv.read(fname, points_space='rasmm')
-    return [i[0] for i in streams], hdr
+#def load_trk(fname):
+#    streams, hdr = tv.read(fname, points_space='rasmm')
+#    return [i[0] for i in streams], hdr
+#
+#
+#def save_trk(fname, streamlines, hdr=None):
+#    streams = ((s, None, None) for s in streamlines)
+#    if hdr is not None:
+#        hdr_dict = {key: hdr[key] for key in hdr.dtype.names}
+#        tv.write(fname, streams, hdr_mapping=hdr_dict, points_space='rasmm')
+#    else:
+#        tv.write(fname, streams, points_space='rasmm')
 
 
-def save_trk(fname, streamlines, hdr=None):
-    streams = ((s, None, None) for s in streamlines)
-    if hdr is not None:
-        hdr_dict = {key: hdr[key] for key in hdr.dtype.names}
-        tv.write(fname, streams, hdr_mapping=hdr_dict, points_space='rasmm')
-    else:
-        tv.write(fname, streams, points_space='rasmm')
-
-
-def horizon(tractograms, data, affine, qb_thr=30, random_colors=True):
+def horizon(tractograms, data, affine, qb_thr=30, random_colors=False):
 
     slicer_opacity = .8
 
@@ -35,7 +36,7 @@ def horizon(tractograms, data, affine, qb_thr=30, random_colors=True):
 
         print(len(streamlines))
 
-        if len(streamlines) > 50000:
+        if len(streamlines) > np.inf:
             qb = QuickBundles(qb_thr)
             clusters = qb.cluster(streamlines)
             streamlines = clusters.centroids
