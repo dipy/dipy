@@ -1434,4 +1434,6 @@ class SymmetricDiffeomorphicRegistration(DiffeomorphicRegistration):
                              static_grid2world, moving_grid2world, prealign)
         self._optimize()
         self._end_optimizer()
+        self.static_to_ref.forward = np.array(self.static_to_ref.forward)
+        self.static_to_ref.backward = np.array(self.static_to_ref.backward)
         return self.static_to_ref
