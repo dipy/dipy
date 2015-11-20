@@ -21,7 +21,8 @@
 .. _nibabel pypi: http://pypi.python.org/pypi/nibabel
 .. _nipy development guidelines: http://nipy.org/devel
 .. _buildbots: http://nipy.bic.berkeley.edu/builders
-
+.. _`dipy gitter`: https://gitter.im/nipy/dipy
+.. _neurostars: https://neurostars.org/
 
 .. Packaging
 .. _neurodebian: http://neuro.debian.net
