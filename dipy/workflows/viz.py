@@ -2,7 +2,7 @@ import numpy as np
 import nibabel as nib
 from nibabel import trackvis as tv
 from dipy.segment.clustering import QuickBundles
-from dipy.tracking.streamline import transform_streamlines
+from dipy.tracking.streamline import transform_streamlines, length
 from dipy.viz import actor, window, widget
 from dipy.viz import fvtk
 from copy import copy, deepcopy
@@ -10,9 +10,19 @@ import os.path as path
 from glob import glob
 from dipy.io.trackvis import load_trk
 from dipy.segment.bundles import qbx_with_merge
+from ipdb import set_trace
 
 
-def horizon(tractograms, data, affine, cluster=False, random_colors=False):
+def check_range(streamline, lt, gt):
+    length_s = length(streamline)
+    if (length_s < gt) & (length_s > lt):
+        return True
+    else:
+        return False
+
+
+def horizon(tractograms, data, affine, cluster=False, random_colors=False,
+            length_lt=0, length_gt=np.inf, clusters_lt=0, clusters_gt=np.inf):
 
     slicer_opacity = .8
 
@@ -24,23 +34,22 @@ def horizon(tractograms, data, affine, cluster=False, random_colors=False):
         print(len(streamlines))
 
         if cluster:
-            # qb = QuickBundles(qb_thr)
-            # clusters = qb.cluster(streamlines)
-            clusters = qbx_with_merge(streamlines, [40, 30, 20])
-            streamlines = clusters.centroids
+            clusters = qbx_with_merge(streamlines, [60, 40, 30, 20, 15])
+            centroids = clusters.centroids
             sizes = np.array([len(c) for c in clusters])
-            sizes = np.interp(sizes, [sizes.min(), sizes.max()], [0.1, 2.])
+            linewidths = np.interp(sizes,
+                                   [sizes.min(), sizes.max()], [0.1, 2.])
+            visible_cluster_id = []
 
-            for (i, s) in enumerate(streamlines):
-                act = actor.streamtube([s], linewidth=sizes[i], lod=False)
-                #if len(clusters[i]) > 1000:
-                #   act = actor.line([s], linewidth=10, lod=False)
-                #elif len(clusters[i]) <= 1000 and len(clusters[i]) > 50:
-                #   act = actor.line([s], linewidth=1, lod=False)
-
-                centroid_actors.append(act)
-                ren.add(act)
-            # ren.add(actor.line(clusters[10], linewidth=2, lod=True))
+            for (i, c) in enumerate(centroids):
+                # set_trace()
+                if check_range(c, length_lt, length_gt):
+                    if sizes[i] > clusters_lt and sizes[i] < clusters_gt:
+                        act = actor.streamtube([c], linewidth=linewidths[i],
+                                               lod=False)
+                        centroid_actors.append(act)
+                        ren.add(act)
+                        visible_cluster_id.append(i)
         else:
             if not random_colors:
                 ren.add(actor.line(streamlines,
@@ -106,9 +115,8 @@ def horizon(tractograms, data, affine, cluster=False, random_colors=False):
                 ren.rm(bundle)
                 del picked_actors[prop]
             except:
-                bundle = actor.line(clusters[index])
-                # print('bundle')
-                # print(bundle)
+                bundle = actor.line(clusters[visible_cluster_id[index]],
+                                    lod=False)
                 picked_actors[prop] = bundle
                 ren.add(bundle)
 
@@ -123,7 +131,26 @@ def horizon(tractograms, data, affine, cluster=False, random_colors=False):
                 slider.place(ren)
             size = obj.GetSize()
 
+    global centroid_visibility
+    centroid_visibility = True
+
+    def key_press(obj, event):
+        global centroid_visibility
+        key = obj.GetKeySym()
+        if key == 'h' or key == 'H':
+            if cluster:
+                if centroid_visibility is True:
+                    for ca in centroid_actors:
+                        ca.VisibilityOff()
+                    centroid_visibility = False
+                else:
+                    for ca in centroid_actors:
+                        ca.VisibilityOn()
+                    centroid_visibility = True
+                show_m.render()
+
     show_m.initialize()
+    show_m.iren.AddObserver('KeyPressEvent', key_press)
     show_m.add_window_callback(win_callback)
     show_m.add_picker_callback(pick_callback)
     show_m.render()
@@ -131,7 +158,9 @@ def horizon(tractograms, data, affine, cluster=False, random_colors=False):
 
 
 def horizon_flow(input_files, cluster=False,
-                 random_colors=False, verbose=True):
+                 random_colors=False, verbose=True,
+                 length_lt=0, length_gt=1000,
+                 clusters_lt=0, clusters_gt=10**7):
     """ Horizon
 
     Parameters
@@ -140,6 +169,10 @@ def horizon_flow(input_files, cluster=False,
     cluster : bool, optional
     random_colors : bool, optional
     verbose : bool, optional
+    length_lt : float, optional
+    length_gt : float, optional
+    clusters_lt : int, optional
+    clusters_gt : int, optional
     """
 
     filenames = input_files
@@ -166,4 +199,5 @@ def horizon_flow(input_files, cluster=False,
             if verbose:
                 print(affine)
 
-    horizon(tractograms, data, affine, cluster, random_colors)
+    horizon(tractograms, data, affine, cluster, random_colors,
+            length_lt, length_gt, clusters_lt, clusters_gt)
