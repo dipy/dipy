@@ -19,8 +19,8 @@ Highlights
 - Compatibility with new versions of scipy (0.16) and numpy (1.10).
 - New cleaner visualization API, including compatibility with VTK 6, and functions to create your own interactive visualizations.
 - DKI: Google Summer of Code work by Rafael Henriques.
-- MAPMRI.
-- Anisotropic Power Maps.
+- Mean Apparent Propagator (MAP) MRI - tissue microstructure estimation.
+- Anisotropic Power Maps from spherical harmonic coefficients.
 - Affine registration.
 
 See :ref:`older highlights <old_highlights>`.
