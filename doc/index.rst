@@ -16,10 +16,12 @@ Highlights
 **Dipy 0.10** is now available. New features in this release include: 
 
 
-- DKI: Thanks to support through the Google Summer of Code, to fund work done by Rafael Henriques, we now have the only open-source implementation of DKI.
 - Compatibility with new versions of scipy (0.16) and numpy (1.10).
 - New cleaner visualization API, including compatibility with VTK 6, and functions to create your own interactive visualizations.
-
+- DKI: Google Summer of Code work by Rafael Henriques.
+- MAPMRI.
+- Anisotropic Power Maps.
+- Affine registration.
 
 See :ref:`older highlights <old_highlights>`.
 
