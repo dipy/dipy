@@ -7,7 +7,7 @@ from numpy.testing import (assert_equal,
 from dipy.data import get_data, dsi_deconv_voxels
 from dipy.reconst.dsi import DiffusionSpectrumDeconvModel
 from dipy.reconst.odf import gfa
-from dipy.reconst.peaks import peak_directions
+from dipy.direction.peaks import peak_directions
 from dipy.sims.voxel import SticksAndBall
 from dipy.core.sphere import Sphere
 from dipy.core.gradients import gradient_table
