@@ -21,7 +21,8 @@ def check_range(streamline, lt, gt):
         return False
 
 
-def horizon(tractograms, data, affine, cluster=False, random_colors=False,
+def horizon(tractograms, data, affine, cluster=False, cluster_thr=15.,
+            random_colors=False,
             length_lt=0, length_gt=np.inf, clusters_lt=0, clusters_gt=np.inf):
 
     slicer_opacity = .8
@@ -31,11 +32,13 @@ def horizon(tractograms, data, affine, cluster=False, random_colors=False,
     centroid_actors = []
     for streamlines in tractograms:
 
-        print(len(streamlines))
+        print('Number of streamlines loaded {}'.format(len(streamlines)))
 
         if cluster:
-            clusters = qbx_with_merge(streamlines, [60, 40, 30, 20, 15])
+            clusters = qbx_with_merge(streamlines,
+                                      [60, 40, 30, 20, cluster_thr])
             centroids = clusters.centroids
+            print('Number of centroids loaded {}'.format(len(centroids)))
             sizes = np.array([len(c) for c in clusters])
             linewidths = np.interp(sizes,
                                    [sizes.min(), sizes.max()], [0.1, 2.])
@@ -100,11 +103,8 @@ def horizon(tractograms, data, affine, cluster=False, random_colors=False,
     def pick_callback(obj, event):
         global centroid_actors
         global picked_actors
-        # from ipdb import set_trace
-        # set_trace()
+
         prop = obj.GetProp3D()
-        # print('prop')
-        # print(prop)
 
         ac = np.array(centroid_actors)
         index = np.where(ac == prop)[0]
@@ -157,7 +157,7 @@ def horizon(tractograms, data, affine, cluster=False, random_colors=False,
     show_m.start()
 
 
-def horizon_flow(input_files, cluster=False,
+def horizon_flow(input_files, cluster=False, cluster_thr=15.,
                  random_colors=False, verbose=True,
                  length_lt=0, length_gt=1000,
                  clusters_lt=0, clusters_gt=10**7):
@@ -167,6 +167,7 @@ def horizon_flow(input_files, cluster=False,
     ----------
     input_files : variable string
     cluster : bool, optional
+    cluster_thr : float, optional
     random_colors : bool, optional
     verbose : bool, optional
     length_lt : float, optional
@@ -199,5 +200,5 @@ def horizon_flow(input_files, cluster=False,
             if verbose:
                 print(affine)
 
-    horizon(tractograms, data, affine, cluster, random_colors,
+    horizon(tractograms, data, affine, cluster, cluster_thr, random_colors,
             length_lt, length_gt, clusters_lt, clusters_gt)
