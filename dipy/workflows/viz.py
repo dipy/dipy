@@ -32,13 +32,13 @@ def horizon(tractograms, data, affine, cluster=False, cluster_thr=15.,
     centroid_actors = []
     for streamlines in tractograms:
 
-        print('Number of streamlines loaded {}'.format(len(streamlines)))
+        print('Number of streamlines loaded {} \n'.format(len(streamlines)))
 
         if cluster:
             clusters = qbx_with_merge(streamlines,
                                       [60, 40, 30, 20, cluster_thr])
             centroids = clusters.centroids
-            print('Number of centroids loaded {}'.format(len(centroids)))
+            print('Number of centroids is {}'.format(len(centroids)))
             sizes = np.array([len(c) for c in clusters])
             linewidths = np.interp(sizes,
                                    [sizes.min(), sizes.max()], [0.1, 2.])
