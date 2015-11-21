@@ -16,10 +16,12 @@ Highlights
 **Dipy 0.10** is now available. New features in this release include: 
 
 
-- FVTK 2.0: a new visualization framework. For example, see: 
-- DKI: Thanks to support through the Google Summer of Code, to fund work done by Rafael Henriques, we now have the only open-source implementation of DKI.
-- Compatibility with new versions of scipy (0.16) and numpy (1.10)
-
+- Compatibility with new versions of scipy (0.16) and numpy (1.10).
+- New cleaner visualization API, including compatibility with VTK 6, and functions to create your own interactive visualizations.
+- Diffusion Kurtosis Imaging(DKI): Google Summer of Code work by Rafael Henriques.
+- Mean Apparent Propagator (MAP) MRI - tissue microstructure estimation.
+- Anisotropic Power Maps from spherical harmonic coefficients.
+- Affine registration.
 
 See :ref:`older highlights <old_highlights>`.
 
@@ -28,11 +30,10 @@ See :ref:`older highlights <old_highlights>`.
 Announcements
 *************
 
-- **Dipy 0.10** released November ??, 2015.
-- **Dipy 0.9.2** released, March 18th, 2015.
-- The creators of Dipy_ will attend both ISMRM and HBM 2015. Come and meet us!
-- **Dipy 0.8.0** released, 6 January, 2015.
-- Dipy_ will be an official exhibitor in `HBM 2015 <http://ohbm.loni.usc.edu>`_. Don't miss our booth!
+- :ref:`Dipy 0.10 <release0.10>` released November ??, 2015.
+- :ref:`Dipy 0.9.2 <release0.9>` released, March 18th, 2015.
+- :ref:`Dipy 0.8.0 <release0.8>` released, 6 January, 2015.
+- Dipy_ was an official exhibitor in `HBM 2015 <http://ohbm.loni.usc.edu>`_.
 - Dipy was featured in `The Scientist Magazine <http://www.the-scientist.com/?articles.view/articleNo/41266/title/White-s-the-Matter>`_, Nov, 2014.
 - `Dipy paper`_ accepted in Frontiers of Neuroinformatics, January 22nd, 2014.
 
