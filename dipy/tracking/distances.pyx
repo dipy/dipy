@@ -1741,7 +1741,7 @@ def local_skeleton_clustering_3pts(tracks, d_thr=10):
                 #print(track.shape)
                 #print(track.dtype)
                 C[i_k]['hidden']+=track
-            C[i_k]['N']+=1
+            C[i_k]['N'] = C[i_k]['N'] + 1
             C[i_k]['indices'].append(it)
         else:
             C[lenC]={}
