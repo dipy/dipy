@@ -18,7 +18,7 @@ Highlights
 
 - Compatibility with new versions of scipy (0.16) and numpy (1.10).
 - New cleaner visualization API, including compatibility with VTK 6, and functions to create your own interactive visualizations.
-- DKI: Google Summer of Code work by Rafael Henriques.
+- Diffusion Kurtosis Imaging(DKI): Google Summer of Code work by Rafael Henriques.
 - Mean Apparent Propagator (MAP) MRI - tissue microstructure estimation.
 - Anisotropic Power Maps from spherical harmonic coefficients.
 - Affine registration.
