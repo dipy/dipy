@@ -32,17 +32,23 @@ def horizon(tractograms, data, affine, cluster=False, cluster_thr=15.,
     centroid_actors = []
     for streamlines in tractograms:
 
-        print('Number of streamlines loaded {} \n'.format(len(streamlines)))
+        print(' Number of streamlines loaded {} \n'.format(len(streamlines)))
 
         if cluster:
+            print(' Clustering threshold {} \n'.format(cluster_thr))
             clusters = qbx_with_merge(streamlines,
-                                      [60, 40, 30, 20, cluster_thr])
+                                      [40, 30, 25, 20, cluster_thr])
             centroids = clusters.centroids
-            print('Number of centroids is {}'.format(len(centroids)))
+            print(' Number of centroids is {}'.format(len(centroids)))
             sizes = np.array([len(c) for c in clusters])
             linewidths = np.interp(sizes,
                                    [sizes.min(), sizes.max()], [0.1, 2.])
             visible_cluster_id = []
+            print(' Minimum number of streamlines in cluster {}'
+                  .format(sizes.min()))
+
+            print(' Maximum number of streamlines in cluster {}'
+                  .format(sizes.max()))
 
             for (i, c) in enumerate(centroids):
                 # set_trace()
@@ -160,7 +166,7 @@ def horizon(tractograms, data, affine, cluster=False, cluster_thr=15.,
 def horizon_flow(input_files, cluster=False, cluster_thr=15.,
                  random_colors=False, verbose=True,
                  length_lt=0, length_gt=1000,
-                 clusters_lt=0, clusters_gt=10**7):
+                 clusters_lt=0, clusters_gt=10**8):
     """ Horizon
 
     Parameters
@@ -184,7 +190,9 @@ def horizon_flow(input_files, cluster=False, cluster_thr=15.,
     affine = None
     for f in filenames:
         if verbose:
+            print('Loading file ...')
             print(f)
+            print('\n')
         sp = path.splitext(f)[1]
 
         if sp == '.trk':

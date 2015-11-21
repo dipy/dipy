@@ -1,9 +1,7 @@
 import numpy as np
 import os.path as path
 from dipy.utils.six import string_types
-from nibabel import trackvis as tv
-import nibabel as nib
-from dipy.align.streamlinear import whole_brain_slr, progressive_slr
+from dipy.align.streamlinear import whole_brain_slr
 from dipy.tracking.streamline import transform_streamlines
 from glob import glob
 from dipy.io.trackvis import load_trk, save_trk
@@ -19,7 +17,7 @@ def whole_brain_slr_flow(moving_streamlines_files,
     ----------
     moving_streamlines_files : string
         Paths of streamline files to be registered to the static streamlines.
-    stratic_streamlines_file : string
+    static_streamlines_file : string
         Path of static (fixed) streamlines
     out_dir : string, optional
         Output directory (default input file directory)
@@ -92,7 +90,6 @@ def whole_brain_slr_flow(moving_streamlines_files,
             print(moved_centroids_file)
             print(mat_file)
 
-        # hdr_static = None
         save_trk(moved_bundle_file, moved_streamlines, hdr=hdr_static)
         save_trk(static_centroids_file, static_centroids, hdr=hdr_static)
         save_trk(moving_centroids_file, moving_centroids, hdr=hdr)
