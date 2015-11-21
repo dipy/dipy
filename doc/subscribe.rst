@@ -11,8 +11,8 @@ want to post to the list you will need first to subscribe to the `nipy
 mailing list`_. We suggest to begin the subject of your e-mail with
 ``[Dipy]``. This will help us respond faster to your questions.
 
-Additional help can be found on the Neurostars_ website. You can 
-sometimes catch us on the `dipy gitter`_ channel.
+Additional help can be found on the Neurostars_ website, or
+on the `dipy gitter`_ channel.
 
 
 .. include:: links_names.inc
