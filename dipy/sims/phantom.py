@@ -183,7 +183,10 @@ def orbital_phantom(gtab=None,
 
                 vol[x[i] + r * rb[0],
                     y[i] + r * rb[1],
-                    z[i] + r * rb[2]] += S
+                    z[i] + r * rb[2]] =\
+                vol[x[i] + r * rb[0],
+                    y[i] + r * rb[1],
+                    z[i] + r * rb[2]] + S
 
     vol = vol / np.max(vol, axis=-1)[..., np.newaxis]
     vol *= S0
