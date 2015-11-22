@@ -8,17 +8,19 @@ try:
     import Tkinter as tkinter
     has_tkinter = True
 except ImportError:
-    import tkinter
-    has_tkinter = True
-except ImportError:
-    has_tkinter = False
+    try:
+        import tkinter
+        has_tkinter = True
+    except ImportError:
+        has_tkinter = False
 
 try:
     import tkFileDialog as filedialog
 except ImportError:
-    from tkinter import filedialog
-except ImportError:
-    has_tkinter = False
+    try:
+        from tkinter import filedialog
+    except ImportError:
+        has_tkinter = False
 
 # Conditional import machinery for vtk
 from dipy.utils.optpkg import optional_package
