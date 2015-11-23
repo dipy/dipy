@@ -65,33 +65,38 @@ def whole_brain_slr_flow(moving_streamlines_files,
 
         moved_centroids = transform_streamlines(moving_centroids, mat)
 
-        # first = path.splitext(path.basename(sf))[0]
-        # second = path.splitext(path.basename(static_streamlines_file))[0]
+        moving_basename = path.splitext(path.basename(sf))[0]
+        static_basename = path.splitext(
+            path.basename(static_streamlines_file))[0]
         ext = path.splitext(path.basename(static_streamlines_file))[1]
 
         if out_dir is None:
             out_dir = path.dirname(sf)
 
         moved_bundle_file = path.join(out_dir,
-                                      'moved' + ext)
-        moving_centroids_file = path.join(out_dir,
-                                          'moving_centroids' + ext)
-        static_centroids_file = path.join(out_dir,
-                                          'static_centroids' + ext)
+                                      moving_basename + '_moved' + ext)
+        moving_centroids_file = path.join(
+            out_dir,
+            moving_basename + '_moving_centroids' + ext)
+        static_centroids_file = path.join(
+            out_dir,
+            static_basename + '_' + moving_basename + '_static_centroids' + ext)
         moved_centroids_file = path.join(
-            out_dir, 'moved_centroids' + ext)
-        mat_file = path.join(out_dir, 'affine.txt')
-
-        if verbose:
-            print('\nSaving results at :')
-            print(moved_bundle_file)
-            print(static_centroids_file)
-            print(moving_centroids_file)
-            print(moved_centroids_file)
-            print(mat_file)
+            out_dir, moving_basename + '_moved_centroids' + ext)
+        mat_file = path.join(
+            out_dir,
+            moving_basename + '_to_' + static_basename + '_affine.txt')
 
         save_trk(moved_bundle_file, moved_streamlines, hdr=hdr_static)
         save_trk(static_centroids_file, static_centroids, hdr=hdr_static)
         save_trk(moving_centroids_file, moving_centroids, hdr=hdr)
         save_trk(moved_centroids_file, moved_centroids, hdr=hdr_static)
         np.savetxt(mat_file, mat)
+
+        if verbose:
+            print('\n Saved results at:')
+            print(moved_bundle_file)
+            print(static_centroids_file)
+            print(moving_centroids_file)
+            print(moved_centroids_file)
+            print(mat_file)
