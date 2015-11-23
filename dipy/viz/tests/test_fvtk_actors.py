@@ -107,6 +107,40 @@ def test_slicer():
     report = window.analyze_snapshot(arr, find_objects=True)
     npt.assert_equal(report.objects, 1)
 
+    renderer.clear()
+
+    data = (255 * np.random.rand(50, 50, 50))
+    affine = np.diag([1, 3, 2, 1])
+    slicer = actor.slicer(data, affine,
+                          force_voxel_size=True, interpolation=False)
+    slicer.display(None, None, 25)
+
+    renderer.add(slicer)
+    renderer.reset_camera()
+    renderer.reset_clipping_range()
+
+    arr = window.snapshot(renderer, offscreen=False)
+    report = window.analyze_snapshot(arr, find_objects=True)
+    npt.assert_equal(report.objects, 1)
+    npt.assert_equal(data.shape, slicer.shape)
+
+    renderer.clear()
+
+    data = (255 * np.random.rand(50, 50, 50))
+    affine = np.diag([1, 3, 2, 1])
+    slicer = actor.slicer(data, affine,
+                          force_voxel_size=False, interpolation=True)
+    slicer.display(None, None, 25)
+
+    renderer.add(slicer)
+    renderer.reset_camera()
+    renderer.reset_clipping_range()
+
+    arr = window.snapshot(renderer, offscreen=False)
+    report = window.analyze_snapshot(arr, find_objects=True)
+    npt.assert_equal(report.objects, 1)
+    npt.assert_equal(slicer.shape, (50, 148, 99))
+
 
 @xvfb_it
 @npt.dec.skipif(not run_test)
