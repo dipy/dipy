@@ -80,15 +80,20 @@ def horizon(tractograms, data, affine, cluster=False, cluster_thr=15.,
     show_m.initialize()
 
     if data is not None:
+        #from dipy.core.geometry import rodrigues_axis_rotation
+        #affine[:3, :3] = np.dot(affine[:3, :3], rodrigues_axis_rotation((0, 0, 1), 45))
+
         image_actor = actor.slicer(data, affine)
         image_actor.opacity(slicer_opacity)
+        image_actor.SetInterpolate(False)
         ren.add(image_actor)
 
         ren.add(fvtk.axes((10, 10, 10)))
 
         def change_slice(obj, event):
             z = int(np.round(obj.get_value()))
-            image_actor.display(None, None, z)
+            #image_actor.display(None, None, z)
+            image_actor.display(None, z, None)
 
         slider = widget.slider(show_m.iren, show_m.ren,
                                callback=change_slice,
@@ -103,6 +108,7 @@ def horizon(tractograms, data, affine, cluster=False, cluster_thr=15.,
 
     global size
     size = ren.GetSize()
+    ren.background((1, 0.5, 0))
     global picked_actors
     picked_actors = {}
 
@@ -193,14 +199,13 @@ def horizon_flow(input_files, cluster=False, cluster_thr=15.,
             print('Loading file ...')
             print(f)
             print('\n')
-        sp = path.splitext(f)[1]
 
-        if sp == '.trk':
+        if f.endswith('.trk'):
 
             streamlines, hdr = load_trk(f)
             tractograms.append(streamlines)
 
-        if sp == '.nii.gz' or sp == '.nii':
+        if f.endswith('.nii.gz') or f.endswith('.nii'):
 
             img = nib.load(f)
             data = img.get_data()

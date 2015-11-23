@@ -74,9 +74,10 @@ def slicer(data, affine=None, value_range=None, opacity=1.,
         im.SetScalarTypeToUnsignedChar()
     I, J, K = vol.shape[:3]
     im.SetDimensions(I, J, K)
-    voxsz = (1., 1., 1.)
+    voxsz = (1.0, 1.0, 1.0)
     # im.SetOrigin(0,0,0)
-    im.SetSpacing(voxsz[2], voxsz[0], voxsz[1])
+
+    im.SetSpacing(*voxsz)#voxsz[2], voxsz[0], voxsz[1])
     if major_version <= 5:
         im.AllocateScalars()
         im.SetNumberOfScalarComponents(nb_components)
@@ -116,9 +117,18 @@ def slicer(data, affine=None, value_range=None, opacity=1.,
     # Set the reslicing
     image_resliced = vtk.vtkImageReslice()
     set_input(image_resliced, im)
+    # image_resliced.SetInformationInput(im)
     image_resliced.SetResliceTransform(transform)
+
     image_resliced.AutoCropOutputOn()
-    image_resliced.SetInterpolationModeToLinear()
+
+    RZS = affine[:3, :3]
+    zooms = np.sqrt(np.sum(RZS * RZS, axis=0))
+    image_resliced.SetOutputSpacing(*zooms)
+    #image_resliced.SetOutputExtent(0, 6, 0, 12, 0, 3*7+1)
+
+    #image_resliced.SetInterpolationModeToCubic()
+    image_resliced.SetInterpolationModeToNearestNeighbor()
     image_resliced.Update()
 
     if nb_components == 1:
@@ -129,7 +139,12 @@ def slicer(data, affine=None, value_range=None, opacity=1.,
             lut = lookup_colormap
 
     x1, x2, y1, y2, z1, z2 = im.GetExtent()
+    print('Hey')
+    print(im.GetExtent())
+
     ex1, ex2, ey1, ey2, ez1, ez2 = image_resliced.GetOutput().GetExtent()
+    print('Yo')
+    print(image_resliced.GetOutput().GetExtent())
 
     class ImageActor(vtk.vtkImageActor):
 
