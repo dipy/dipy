@@ -195,6 +195,9 @@ def slicer(data, affine=None, value_range=None, opacity=1.,
     else:
         image_actor.SetInterpolate(True)
 
+    if major_version >= 6:
+        image_actor.GetMapper().BorderOn()
+
     return image_actor
 
 
