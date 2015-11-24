@@ -2,7 +2,7 @@ from dipy.fixes import argparse as arg
 
 import inspect
 
-from dipy.workflows.documentation import NumpyDocString
+from dipy.workflows.docstring_parser import NumpyDocString
 
 class IntrospectiveArgumentParser(arg.ArgumentParser):
 
@@ -130,5 +130,3 @@ class IntrospectiveArgumentParser(arg.ArgumentParser):
 
     def add_description(self):
         pass
-
-
