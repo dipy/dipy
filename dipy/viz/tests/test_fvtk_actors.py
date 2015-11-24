@@ -111,8 +111,7 @@ def test_slicer():
 
     data = (255 * np.random.rand(50, 50, 50))
     affine = np.diag([1, 3, 2, 1])
-    slicer = actor.slicer(data, affine,
-                          force_voxel_size=True, interpolation='nearest')
+    slicer = actor.slicer(data, affine, interpolation='nearest')
     slicer.display(None, None, 25)
 
     renderer.add(slicer)
@@ -128,8 +127,8 @@ def test_slicer():
 
     data = (255 * np.random.rand(50, 50, 50))
     affine = np.diag([1, 3, 2, 1])
-    slicer = actor.slicer(data, affine,
-                          force_voxel_size=False, interpolation='linear')
+
+    slicer = actor.slicer(data, affine, interpolation='linear')
     slicer.display(None, None, 25)
 
     renderer.add(slicer)
@@ -139,7 +138,7 @@ def test_slicer():
     arr = window.snapshot(renderer, offscreen=False)
     report = window.analyze_snapshot(arr, find_objects=True)
     npt.assert_equal(report.objects, 1)
-    npt.assert_equal(slicer.shape, (50, 148, 99))
+    npt.assert_equal(data.shape, slicer.shape)
 
 
 @xvfb_it

@@ -21,8 +21,7 @@ if have_vtk:
 
 
 def slicer(data, affine=None, value_range=None, opacity=1.,
-           lookup_colormap=None, force_voxel_size=True,
-           interpolation='linear'):
+           lookup_colormap=None, interpolation='linear'):
     """ Cuts 3D scalar or rgb volumes into 2D images
 
     Parameters
@@ -40,11 +39,6 @@ def slicer(data, affine=None, value_range=None, opacity=1.,
         Opacity of 0 means completely transparent and 1 completely visible.
     lookup_colormap : vtkLookupTable
         If None (default) then a grayscale map is created.
-    force_voxel_size : bool
-        If True (default) then initial voxel sizes of the image will be
-        recovered from the affine and used to show the slices correctly. If
-        False then the output spacing will be considered as (1., 1., 1.). The
-        latter may have problems with images with anisotropic voxel size.
     interpolation : string
         If 'linear' (default) then linear interpolation is used on the final
         texture mapping. If 'nearest' then nearest neighbor interpolation is
@@ -128,10 +122,10 @@ def slicer(data, affine=None, value_range=None, opacity=1.,
 
     # Adding this will allow to support anisotropic voxels
     # and also gives the opportunity to slice per voxel coordinates
-    if force_voxel_size:
-        RZS = affine[:3, :3]
-        zooms = np.sqrt(np.sum(RZS * RZS, axis=0))
-        image_resliced.SetOutputSpacing(*zooms)
+
+    RZS = affine[:3, :3]
+    zooms = np.sqrt(np.sum(RZS * RZS, axis=0))
+    image_resliced.SetOutputSpacing(*zooms)
 
     image_resliced.SetInterpolationModeToLinear()
     image_resliced.Update()
