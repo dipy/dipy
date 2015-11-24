@@ -45,6 +45,13 @@ class IntrospectiveArgumentParser(arg.ArgumentParser):
         """
 
         iap = IntrospectiveArgumentParser
+        if epilog is None:
+            epilog = \
+                "Garyfallidis, E., M. Brett, B. Amirbekian, A. Rokem, S. Van Der " \
+                "Walt, M. Descoteaux, and I. Nimmo-Smith. Dipy, a library for the " \
+                "analysis of diffusion MRI data. Frontiers in Neuroinformatics," \
+                " 1-18, 2014."
+
         super(iap, self).__init__(prog, usage, description, epilog, version,
                                   parents, formatter_class, prefix_chars,
                                   fromfile_prefix_chars, argument_default,
@@ -111,17 +118,14 @@ class IntrospectiveArgumentParser(arg.ArgumentParser):
         return dict((k, v) for k, v in dct.items() if v is not None)
 
     def update_argument(self, *args, **kargs):
-
         self.add_argument(*args, **kargs)
 
     def show_argument(self, dest):
-
         for act in self._actions[1:]:
             if act.dest == dest:
                 print(act)
 
     def add_epilogue(self):
-        # with citations
         pass
 
     def add_description(self):
