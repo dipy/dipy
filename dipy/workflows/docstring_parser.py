@@ -120,6 +120,7 @@ class NumpyDocString(object):
             'Summary': [''],
             'Extended Summary': [],
             'Parameters': [],
+            'Outputs': [],
             'Returns': [],
             'Raises': [],
             'Warns': [],

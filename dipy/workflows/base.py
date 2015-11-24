@@ -64,6 +64,8 @@ class IntrospectiveArgumentParser(arg.ArgumentParser):
         doc = inspect.getdoc(workflow)
         self.doc = NumpyDocString(doc)['Parameters']
 
+        self.outputs = NumpyDocString(doc)['Outputs']
+
         args = specs.args
         defaults = specs.defaults
 
@@ -133,3 +135,7 @@ class IntrospectiveArgumentParser(arg.ArgumentParser):
 
     def add_description(self):
         pass
+
+    def get_outputs(self):
+        return self.outputs
+

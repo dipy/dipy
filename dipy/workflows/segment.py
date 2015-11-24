@@ -42,6 +42,12 @@ def median_otsu_flow(input_files, out_dir='', save_masked=False,
         4D array)
     dilate : string, optional
         number of iterations for binary dilation (default 'None')
+
+    Outputs
+    -------
+    mask : Binary nifti file representing the computed mask.
+    masked : Nifti file representing the masked input. This file is saved
+            save_masked is True.
     """
     for fpath in glob(input_files):
         print('')
