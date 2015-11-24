@@ -112,7 +112,7 @@ def test_slicer():
     data = (255 * np.random.rand(50, 50, 50))
     affine = np.diag([1, 3, 2, 1])
     slicer = actor.slicer(data, affine,
-                          force_voxel_size=True, interpolation=False)
+                          force_voxel_size=True, interpolation='nearest')
     slicer.display(None, None, 25)
 
     renderer.add(slicer)
@@ -129,7 +129,7 @@ def test_slicer():
     data = (255 * np.random.rand(50, 50, 50))
     affine = np.diag([1, 3, 2, 1])
     slicer = actor.slicer(data, affine,
-                          force_voxel_size=False, interpolation=True)
+                          force_voxel_size=False, interpolation='linear')
     slicer.display(None, None, 25)
 
     renderer.add(slicer)

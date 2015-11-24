@@ -47,8 +47,8 @@ def slicer(data, affine=None, value_range=None, opacity=1.,
         latter may have problems with images with anisotropic voxel size.
     interpolation : string
         If 'linear' (default) then linear interpolation is used on the final
-        texture texture mapping. If 'nearest' then nearest neighbor
-        interpolation is used on the final texture mapping.
+        texture mapping. If 'nearest' then nearest neighbor interpolation is
+        used on the final texture mapping.
 
     Returns
     -------
