@@ -72,7 +72,8 @@ class IntrospectiveArgumentParser(arg.ArgumentParser):
 
         for i, arg in enumerate(args):
             prefix = ''
-            if i >= len_args - len_defaults:
+            is_optionnal = i >= len_args - len_defaults
+            if is_optionnal:
                 prefix = '--'
 
             typestr = self.doc[i][1]
@@ -80,10 +81,12 @@ class IntrospectiveArgumentParser(arg.ArgumentParser):
             help_msg = ''.join(self.doc[i][2])
 
             _args = ['{0}{1}'.format(prefix, arg)]
-            _kwargs = {"action": 'store',
-                      "metavar": dtype.__name__,
-                      "help": help_msg,
-                      'type': dtype}
+            _kwargs = {'help': help_msg,
+                       'type': dtype,
+                       'action': 'store'}
+
+            if is_optionnal:
+               _kwargs["metavar"] = dtype.__name__
 
             if dtype is bool:
                 _kwargs['type'] = int
