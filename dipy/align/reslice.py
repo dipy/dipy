@@ -66,8 +66,10 @@ def reslice(data, affine, zooms, new_zooms, order=1, mode='constant', cval=0,
     >>> data2.shape
     (77, 77, 40)
     """
-    R = np.array(new_zooms) / np.array(zooms)
-    new_shape = np.array(zooms)/np.array(new_zooms) * np.array(data.shape[:3])
+    new_zooms = np.array(new_zooms, dtype='f8')
+    zooms = np.array(zooms, dtype='f8')
+    R = new_zooms / zooms
+    new_shape = zooms / new_zooms * np.array(data.shape[:3])
     new_shape = tuple(np.round(new_shape).astype('i8'))
     kwargs = {'matrix': R, 'output_shape': new_shape, 'order': order,
               'mode': mode, 'cval': cval}

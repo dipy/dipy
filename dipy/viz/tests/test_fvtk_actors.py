@@ -128,17 +128,24 @@ def test_slicer():
     data = (255 * np.random.rand(50, 50, 50))
     affine = np.diag([1, 3, 2, 1])
 
-    slicer = actor.slicer(data, affine, interpolation='linear')
+    from dipy.align.reslice import reslice
+
+    data2, affine2 = reslice(data, affine, zooms=(1, 3, 2),
+                             new_zooms=(1, 1, 1))
+
+    slicer = actor.slicer(data2, affine2, interpolation='linear')
     slicer.display(None, None, 25)
 
     renderer.add(slicer)
     renderer.reset_camera()
     renderer.reset_clipping_range()
 
+    # window.show(renderer, reset_camera=False)
     arr = window.snapshot(renderer, offscreen=False)
     report = window.analyze_snapshot(arr, find_objects=True)
     npt.assert_equal(report.objects, 1)
-    npt.assert_equal(data.shape, slicer.shape)
+    npt.assert_array_equal([1, 3, 2] * np.array(data.shape),
+                           np.array(slicer.shape))
 
 
 @xvfb_it
