@@ -5,6 +5,9 @@
 # - There can't be any leading "-"s - All newlines will be removed, so use
 # ";"s
 sudo: false  # To use travis container infrastructure
+os:
+    - linux
+    - osx
 language: python
 cache:
   directories:
