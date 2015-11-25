@@ -65,17 +65,17 @@ def add_noise(vol, snr=1.0, S0=None, noise_type='rician'):
 def diff2eigenvectors(dx,dy,dz):
     """ numerical derivatives 2 eigenvectors
     """
-    basis=np.eye(3)
-    u=np.array([dx,dy,dz])
-    u=u/np.linalg.norm(u)
-    R=vec2vec_rotmat(basis[:,0],u)
-    eig0=u
-    eig1=np.dot(R,basis[:,1])
-    eig2=np.dot(R,basis[:,2])
-    eigs=np.zeros((3,3))
-    eigs[:,0]=eig0
-    eigs[:,1]=eig1
-    eigs[:,2]=eig2
+    basis = np.eye(3)
+    u = np.array([dx, dy, dz])
+    u = u/np.linalg.norm(u)
+    R = vec2vec_rotmat(basis[:, 0], u)
+    eig0 = u
+    eig1 = np.dot(R, basis[:, 1])
+    eig2 = np.dot(R, basis[:, 2])
+    eigs = np.zeros((3, 3))
+    eigs[:, 0] = eig0
+    eigs[:, 1] = eig1
+    eigs[:, 2] = eig2
     return eigs, R
 
 
@@ -179,14 +179,12 @@ def orbital_phantom(gtab=None,
 
         for r in radii:
             for j in range(len(angles)):
-                rb = np.dot(R,np.array([bx[j], by[j], bz[j]]))
+                rb = np.dot(R, np.array([bx[j], by[j], bz[j]]))
 
-                vol[x[i] + r * rb[0],
-                    y[i] + r * rb[1],
-                    z[i] + r * rb[2]] =\
-                vol[x[i] + r * rb[0],
-                    y[i] + r * rb[1],
-                    z[i] + r * rb[2]] + S
+                ix = int(x[i] + r * rb[0])
+                iy = int(y[i] + r * rb[1])
+                iz = int(z[i] + r * rb[2])
+                vol[ix, iy, iz] = vol[ix, iy, iz] + S
 
     vol = vol / np.max(vol, axis=-1)[..., np.newaxis]
     vol *= S0
