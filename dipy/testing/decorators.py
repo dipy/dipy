@@ -10,8 +10,9 @@ import os
 
 SKIP_RE = re.compile("(\s*>>>.*?)(\s*)#\s*skip\s+if\s+(.*)$")
 
+
 def doctest_skip_parser(func):
-    """ Decorator replaces custom skip test markup in doctests
+    """Decorator replaces custom skip test markup in doctests.
 
     Say a function has a docstring::
 
@@ -20,13 +21,13 @@ def doctest_skip_parser(func):
         >>> something # skip if HAVE_BMODULE
 
     This decorator will evaluate the expresssion after ``skip if``.  If this
-    evaluates to True, then the comment is replaced by ``# doctest: +SKIP``.  If
-    False, then the comment is just removed. The expression is evaluated in the
-    ``globals`` scope of `func`.
+    evaluates to True, then the comment is replaced by ``# doctest: +SKIP``.
+    If False, then the comment is just removed. The expression is evaluated in
+    the ``globals`` scope of `func`.
 
     For example, if the module global ``HAVE_AMODULE`` is False, and module
-    global ``HAVE_BMODULE`` is False, the returned function will have docstring::
-
+    global ``HAVE_BMODULE`` is False, the returned function will have
+    docstring::
         >>> something # doctest: +SKIP
         >>> something + else
         >>> something
@@ -52,9 +53,15 @@ def doctest_skip_parser(func):
 # xvfbwrapper) conditioned on an environment variable (that we set in
 # .travis.yml for these cases):
 use_xvfb = os.environ.get('TEST_WITH_XVFB', False)
+if use_xvfb == 'true':
+    use_xvfb = True
+
+
 def xvfb_it(my_test):
+    """Run a test with xvfbwrapper."""
     # When we use verbose testing we want the name:
     fname = my_test.__name__
+
     def test_with_xvfb():
         if use_xvfb:
             from xvfbwrapper import Xvfb
