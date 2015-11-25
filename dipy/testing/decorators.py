@@ -53,8 +53,6 @@ def doctest_skip_parser(func):
 # xvfbwrapper) conditioned on an environment variable (that we set in
 # .travis.yml for these cases):
 use_xvfb = os.environ.get('TEST_WITH_XVFB', False)
-if use_xvfb == 'true':
-    use_xvfb = True
 
 
 def xvfb_it(my_test):
@@ -63,6 +61,10 @@ def xvfb_it(my_test):
     fname = my_test.__name__
 
     def test_with_xvfb():
+        if use_xvfb == 'skip':
+            def skipper_func():
+                pass
+            return skipper_func
         if use_xvfb:
             from xvfbwrapper import Xvfb
             display = Xvfb(width=1920, height=1080)
