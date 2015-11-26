@@ -352,11 +352,11 @@ def forward_sdt_deconv_mat(ratio, n, r2_term=False):
         The degree of spherical harmonic function associated with each row of
         the deconvolution matrix. Only even degrees are allowed.
     r2_term : bool
-        True if ODF comes from an ODF computed from a model using the $r^2$ term
-        in the integral. For example, DSI, GQI, SHORE, CSA, Tensor, Multi-tensor
-        ODFs. This results in using the proper analytical response function
-        solution solving from the single-fiber ODF with the r^2 term. This
-        derivation is not published anywhere but is very similar to [1]_.
+        True if ODF comes from an ODF computed from a model using the $r^2$
+        term in the integral. For example, DSI, GQI, SHORE, CSA, Tensor,
+        Multi-tensor ODFs. This results in using the proper analytical response
+        function solution solving from the single-fiber ODF with the r^2 term.
+        This derivation is not published anywhere but is very similar to [1]_.
 
     Returns
     -------
@@ -373,20 +373,20 @@ def forward_sdt_deconv_mat(ratio, n, r2_term=False):
     if np.any(n % 2):
         raise ValueError("n has odd degrees, expecting only even degrees")
     n_degrees = n.max() // 2 + 1
-    sdt = np.zeros(n_degrees) # SDT matrix
-    frt = np.zeros(n_degrees) # FRT (Funk-Radon transform) q-ball matrix
+    sdt = np.zeros(n_degrees)  # SDT matrix
+    frt = np.zeros(n_degrees)  # FRT (Funk-Radon transform) q-ball matrix
 
     for l in np.arange(0, n_degrees*2, 2):
-        if r2_term :
+        if r2_term:
             sharp = quad(lambda z: lpn(l, z)[0][-1] * gamma(1.5) *
-                         np.sqrt( ratio / (4 * np.pi ** 3) ) /
+                         np.sqrt(ratio / (4 * np.pi ** 3)) /
                          np.power((1 - (1 - ratio) * z ** 2), 1.5), -1., 1.)
-        else :
+        else:
             sharp = quad(lambda z: lpn(l, z)[0][-1] *
                          np.sqrt(1 / (1 - (1 - ratio) * z * z)), -1., 1.)
 
-        sdt[l / 2] = sharp[0]
-        frt[l / 2] = 2 * np.pi * lpn(l, 0)[0][-1]
+        sdt[int(l / 2)] = sharp[0]
+        frt[int(l / 2)] = 2 * np.pi * lpn(l, 0)[0][-1]
 
     idx = n // 2
     b = sdt[idx]
