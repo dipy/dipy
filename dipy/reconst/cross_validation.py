@@ -114,7 +114,7 @@ def kfold_xval(model, data, folds, *model_args, **model_kwargs):
 
     data_0 = data[..., gtab.b0s_mask]
     S0 = np.mean(data_0, -1)
-    n_in_fold = data_b.shape[-1]/folds
+    n_in_fold = data_b.shape[-1] / folds
     prediction = np.zeros(data.shape)
     # We are going to leave out some randomly chosen samples in each iteration:
     order = np.random.permutation(data_b.shape[-1])
@@ -127,7 +127,7 @@ def kfold_xval(model, data, folds, *model_args, **model_kwargs):
     gtgt = gt.gradient_table  # Shorthand
     for k in range(folds):
         fold_mask = np.ones(data_b.shape[-1], dtype=bool)
-        fold_idx = order[k*n_in_fold:(k+1)*n_in_fold]
+        fold_idx = order[int(k * n_in_fold): int((k + 1) * n_in_fold)]
         fold_mask[fold_idx] = False
         this_data = np.concatenate([data_0, data_b[..., fold_mask]], -1)
 

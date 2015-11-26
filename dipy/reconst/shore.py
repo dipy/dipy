@@ -533,7 +533,7 @@ def shore_matrix(radial_order, zeta, gtab, tau=1 / (4 * np.pi ** 2)):
                                 qgradients[:, 2])
     theta[np.isnan(theta)] = 0
     F = radial_order / 2
-    n_c = np.round(1 / 6.0 * (F + 1) * (F + 2) * (4 * F + 3))
+    n_c = int(np.round(1 / 6.0 * (F + 1) * (F + 2) * (4 * F + 3)))
     M = np.zeros((r.shape[0], n_c))
 
     counter = 0
@@ -575,7 +575,7 @@ def shore_matrix_pdf(radial_order, zeta, rtab):
     r, theta, phi = cart2sphere(rtab[:, 0], rtab[:, 1], rtab[:, 2])
     theta[np.isnan(theta)] = 0
     F = radial_order / 2
-    n_c = np.round(1 / 6.0 * (F + 1) * (F + 2) * (4 * F + 3))
+    n_c = int(np.round(1 / 6.0 * (F + 1) * (F + 2) * (4 * F + 3)))
     psi = np.zeros((r.shape[0], n_c))
     counter = 0
     for l in range(0, radial_order + 1, 2):
@@ -640,7 +640,7 @@ def _kappa_odf(zeta, n, l):
 def l_shore(radial_order):
     "Returns the angular regularisation matrix for SHORE basis"
     F = radial_order / 2
-    n_c = np.round(1 / 6.0 * (F + 1) * (F + 2) * (4 * F + 3))
+    n_c = int(np.round(1 / 6.0 * (F + 1) * (F + 2) * (4 * F + 3)))
     diagL = np.zeros(n_c)
     counter = 0
     for l in range(0, radial_order + 1, 2):
@@ -655,7 +655,7 @@ def l_shore(radial_order):
 def n_shore(radial_order):
     "Returns the angular regularisation matrix for SHORE basis"
     F = radial_order / 2
-    n_c = np.round(1 / 6.0 * (F + 1) * (F + 2) * (4 * F + 3))
+    n_c = int(np.round(1 / 6.0 * (F + 1) * (F + 2) * (4 * F + 3)))
     diagN = np.zeros(n_c)
     counter = 0
     for l in range(0, radial_order + 1, 2):

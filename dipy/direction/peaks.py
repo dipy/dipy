@@ -425,7 +425,7 @@ def peaks_from_model(model, data, sphere, relative_peak_threshold,
     peak_indices.fill(-1)
 
     if return_sh:
-        n_shm_coeff = (sh_order + 2) * (sh_order + 1) / 2
+        n_shm_coeff = (sh_order + 2) * (sh_order + 1) // 2
         shm_coeff = np.zeros((shape + (n_shm_coeff,)))
 
     if return_odf:
