@@ -385,8 +385,8 @@ def forward_sdt_deconv_mat(ratio, n, r2_term=False):
             sharp = quad(lambda z: lpn(l, z)[0][-1] *
                          np.sqrt(1 / (1 - (1 - ratio) * z * z)), -1., 1.)
 
-        sdt[int(l / 2)] = sharp[0]
-        frt[int(l / 2)] = 2 * np.pi * lpn(l, 0)[0][-1]
+        sdt[l // 2] = sharp[0]
+        frt[l // 2] = 2 * np.pi * lpn(l, 0)[0][-1]
 
     idx = n // 2
     b = sdt[idx]
@@ -811,11 +811,11 @@ def auto_response(gtab, data, roi_center=None, roi_radius=10, fa_thr=0.7,
 
     ten = TensorModel(gtab)
     if roi_center is None:
-        ci, cj, ck = np.array(data.shape[:3]) / 2
+        ci, cj, ck = np.array(data.shape[:3]) // 2
     else:
         ci, cj, ck = roi_center
     w = roi_radius
-    roi = data[ci - w: ci + w, cj - w: cj + w, ck - w: ck + w]
+    roi = data[int(ci - w): int(ci + w), int(cj - w): int(cj + w), int(ck - w): int(ck + w)]
     tenfit = ten.fit(roi)
     FA = fractional_anisotropy(tenfit.evals)
     FA[np.isnan(FA)] = 0

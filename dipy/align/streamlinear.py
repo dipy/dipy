@@ -668,7 +668,7 @@ def decompose_matrix44(mat, size=12):
     """
     scale, shear, angles, translate, _ = decompose_matrix(mat)
 
-    t = np.zeros(12.)
+    t = np.zeros(12)
     t[:3] = translate
     t[3: 6] = np.rad2deg(angles)
     if size == 6:
