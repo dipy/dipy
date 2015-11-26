@@ -209,7 +209,7 @@ def lines_to_vtk_polydata(lines, colors=None):
                         np.tile(255 * cols_arr, (nb_points, 1)))
 
             elif cols_arr.ndim == 2:  # map color to each line
-                colors_mapper = np.repeat(lines_range, points_per_line, axis=0)
+                colors_mapper = np.repeat(lines_range, points_per_line.astype(np.int32), axis=0)
                 vtk_colors = numpy_to_vtk_colors(255 * cols_arr[colors_mapper])
             else:  # colormap
                 #  get colors for each vertex
