@@ -797,22 +797,25 @@ class AffineRegistration(object):
         self.params0 = params0
         if starting_affine is None:
             self.starting_affine = np.eye(self.dim + 1)
-        elif starting_affine == 'mass':
-            affine_map = transform_centers_of_mass(static,
-                                                   static_grid2world,
-                                                   moving,
-                                                   moving_grid2world)
-            self.starting_affine = affine_map.affine
-        elif starting_affine == 'voxel-origin':
-            affine_map = transform_origins(static, static_grid2world,
-                                           moving, moving_grid2world)
-            self.starting_affine = affine_map.affine
-        elif starting_affine == 'centers':
-            affine_map = transform_geometric_centers(static,
-                                                     static_grid2world,
-                                                     moving,
-                                                     moving_grid2world)
-            self.starting_affine = affine_map.affine
+        elif isinstance(starting_affine, basestring):
+            if starting_affine == 'mass':
+                affine_map = transform_centers_of_mass(static,
+                                                       static_grid2world,
+                                                       moving,
+                                                       moving_grid2world)
+                self.starting_affine = affine_map.affine
+            elif starting_affine == 'voxel-origin':
+                affine_map = transform_origins(static, static_grid2world,
+                                               moving, moving_grid2world)
+                self.starting_affine = affine_map.affine
+            elif starting_affine == 'centers':
+                affine_map = transform_geometric_centers(static,
+                                                         static_grid2world,
+                                                         moving,
+                                                         moving_grid2world)
+                self.starting_affine = affine_map.affine
+            else:
+                raise ValueError('Invalid starting_affine strategy')
         elif (isinstance(starting_affine, np.ndarray) and
               starting_affine.shape >= (self.dim, self.dim + 1)):
             self.starting_affine = starting_affine
