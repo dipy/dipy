@@ -367,7 +367,7 @@ class ShoreFit():
         r""" Calculates the real analytical ODF in terms of Spherical Harmonics.
         """
         # Number of Spherical Harmonics involved in the estimation
-        J = (self.radial_order + 1) * (self.radial_order + 2) / 2
+        J = (self.radial_order + 1) * (self.radial_order + 2) // 2
 
         # Compute the Spherical Harmonics Coefficients
         c_sh = np.zeros(J)
@@ -618,7 +618,7 @@ def shore_matrix_odf(radial_order, zeta, sphere_vertices):
                                 sphere_vertices[:, 2])
     theta[np.isnan(theta)] = 0
     F = radial_order / 2
-    n_c = np.round(1 / 6.0 * (F + 1) * (F + 2) * (4 * F + 3))
+    n_c = int(np.round(1 / 6.0 * (F + 1) * (F + 2) * (4 * F + 3)))
     upsilon = np.zeros((len(sphere_vertices), n_c))
     counter = 0
     for l in range(0, radial_order + 1, 2):
