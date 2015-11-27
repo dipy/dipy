@@ -23,11 +23,11 @@ class NearestNeighborInterpolator(Interpolator):
     """Interpolates data using nearest neighbor interpolation"""
 
     def __getitem__(self, index):
-        index = tuple(index // self.voxel_size)
+        index = tuple(index / self.voxel_size)
         if min(index) < 0:
             raise OutsideImage('Negative Index')
         try:
-            return self.data[index]
+            return self.data[tuple(array(index).astype(int))]
         except IndexError:
             raise OutsideImage
 
