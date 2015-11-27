@@ -797,7 +797,7 @@ class AffineRegistration(object):
         self.params0 = params0
         if starting_affine is None:
             self.starting_affine = np.eye(self.dim + 1)
-        elif isinstance(starting_affine, basestring):
+        elif isinstance(starting_affine, str):
             if starting_affine == 'mass':
                 affine_map = transform_centers_of_mass(static,
                                                        static_grid2world,

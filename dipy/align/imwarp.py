@@ -220,7 +220,7 @@ class DiffeomorphicMap(object):
         '''
         if (obj is None) or isinstance(obj, np.ndarray):
             return obj
-        if isinstance(obj, basestring) and (obj == 'identity'):
+        if isinstance(obj, str) and (obj == 'identity'):
             return None
         raise ValueError('Invalid matrix')
 
