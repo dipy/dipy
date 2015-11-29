@@ -159,7 +159,7 @@ def lines_to_vtk_polydata(lines, colors=None):
 
     # Get lines_array in vtk input format
     lines_array = []
-    points_per_line = np.zeros([nb_lines], np.int64)
+    points_per_line = np.zeros([nb_lines], np.intp)
     current_position = 0
     for i in lines_range:
         current_len = len(lines[i])
@@ -209,10 +209,7 @@ def lines_to_vtk_polydata(lines, colors=None):
                         np.tile(255 * cols_arr, (nb_points, 1)))
 
             elif cols_arr.ndim == 2:  # map color to each line
-                # Needs to be cast into int32 for compatibility with
-                # sparc numpy 1.10:
-                ppl = points_per_line.astype(np.int32)
-                colors_mapper = np.repeat(lines_range, ppl, axis=0)
+                colors_mapper = np.repeat(lines_range, points_per_line, axis=0)
                 vtk_colors = numpy_to_vtk_colors(255 * cols_arr[colors_mapper])
             else:  # colormap
                 #  get colors for each vertex
