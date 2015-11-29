@@ -159,6 +159,9 @@ def lines_to_vtk_polydata(lines, colors=None):
 
     # Get lines_array in vtk input format
     lines_array = []
+    # Using np.intp (instead of int64), because of a bug in numpy:
+    # https://github.com/nipy/dipy/pull/789
+    # https://github.com/numpy/numpy/issues/4384
     points_per_line = np.zeros([nb_lines], np.intp)
     current_position = 0
     for i in lines_range:
