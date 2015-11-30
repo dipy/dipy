@@ -165,7 +165,13 @@ class RecoBundles(object):
 
         self.model_bundle = model_bundle
         self.cluster_model_bundle(model_clust_thr=model_clust_thr)
-        self.reduce_search_space(reduction_thr=reduction_thr)
+        success = self.reduce_search_space(reduction_thr=reduction_thr)
+        if not success:
+            self.pruned_streamlines = None
+            self.transf_streamlines = None
+            self.transf_matrix = None
+            self.labels = []
+            return []
         if slr:
             self.register_neighb_to_model(metric=slr_metric,
                                           x0=slr_x0,
@@ -252,11 +258,14 @@ class RecoBundles(object):
 
         if self.nb_neighb_streamlines == 0:
             print(' You have no neighbor streamlines... No bundle recognition')
+            return False
 
         if self.verbose:
             print(' Number of neighbor streamlines %d' %
                   (self.nb_neighb_streamlines,))
             print(' Duration %0.3f sec. \n' % (time() - t,))
+
+        return True
 
     def register_neighb_to_model(self, metric=None, x0=None, bounds=None,
                                  select_model=400, select_target=600,
