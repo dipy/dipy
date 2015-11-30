@@ -9,10 +9,19 @@ from dipy.tracking.streamline import center_streamlines, transform_streamlines
 from dipy.align.tests.test_streamlinear import fornix_streamlines
 from dipy.testing.decorators import xvfb_it
 
-run_test = actor.have_vtk and actor.have_vtk_colors and window.have_imread
+use_xvfb = os.environ.get('TEST_WITH_XVFB', False)
+if use_xvfb == 'skip':
+    skip_it = True
+else:
+    skip_it = False
+
+run_test = (actor.have_vtk and
+            actor.have_vtk_colors and
+            window.have_imread and
+            not skip_it)
 
 if actor.have_vtk:
-    if actor.major_version == 5 and os.environ.get('TEST_WITH_XVFB', False):
+    if actor.major_version == 5 and use_xvfb:
         skip_slicer = True
     else:
         skip_slicer = False
@@ -148,8 +157,8 @@ def test_slicer():
                            np.array(slicer.shape))
 
 
-@xvfb_it
 @npt.dec.skipif(not run_test)
+@xvfb_it
 def test_streamtube_and_line_actors():
     renderer = window.renderer()
 

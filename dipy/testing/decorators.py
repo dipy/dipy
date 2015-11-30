@@ -61,10 +61,6 @@ def xvfb_it(my_test):
     fname = my_test.__name__
 
     def test_with_xvfb():
-        if use_xvfb == 'skip':
-            def skipper_func():
-                pass
-            return skipper_func
         if use_xvfb:
             from xvfbwrapper import Xvfb
             display = Xvfb(width=1920, height=1080)
