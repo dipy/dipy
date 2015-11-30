@@ -964,7 +964,7 @@ def recursive_response(gtab, data, mask=None, sh_order=8, peak_thr=0.01,
     where_dwi = lazy_index(~gtab.b0s_mask)
     response_p = np.ones(len(n))
 
-    for num_it in range(1, iter):
+    for num_it in range(iter):
         r_sh_all = np.zeros(len(n))
         csd_model = ConstrainedSphericalDeconvModel(gtab, res_obj,
                                                     sh_order=sh_order)
@@ -983,7 +983,7 @@ def recursive_response(gtab, data, mask=None, sh_order=8, peak_thr=0.01,
         data = data[single_peak_mask]
         dirs = dirs[single_peak_mask]
 
-        for num_vox in range(0, data.shape[0]):
+        for num_vox in range(data.shape[0]):
             rotmat = vec2vec_rotmat(dirs[num_vox, 0], np.array([0, 0, 1]))
 
             rot_gradients = np.dot(rotmat, gtab.gradients.T).T
