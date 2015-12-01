@@ -29,6 +29,7 @@
 .. _neurodebian how to: http://neuro.debian.net/#how-to-use-this-repository
 .. _pip: http://www.pip-installer.org/en/latest/
 .. _easy_install: https://pypi.python.org/pypi/setuptools
+.. _homebrew: http://brew.sh/
 
 .. Documentation tools
 .. _graphviz: http://www.graphviz.org/
@@ -135,6 +136,7 @@
 .. _VTK: http://www.vtk.org/
 .. _ITK: http://www.itk.org/
 .. _swig: http://www.swig.org
+.. _openmp: www.openmp.org/
 
 .. Windows development
 .. _mingw: http://www.mingw.org/wiki/Getting_Started
