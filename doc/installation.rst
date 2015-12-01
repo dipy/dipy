@@ -193,7 +193,7 @@ When adding dipy_ to the ``PYTHONPATH``, we usually add the ``PYTHONPATH`` at
 the end of ``~/.bashrc`` or (OSX) ``~/.bash_profile`` so we don't need to
 retype it every time. This should look something like::
 
-  export PYTHONPATH=/home/user_dir/Devel/dipy:/home/user_dir/Devel/nibabel
+  export PYTHONPATH=/home/user_dir/Devel/dipy:$PYTHONPATH
 
 After changing the ``~/.bashrc`` or (OSX) ``~/.bash_profile`` try::
 
