@@ -284,12 +284,13 @@ still compile Dipy from source using the above instructions, but it might not ta
 advantage of the multithreaded parts of the code. To be able to compile 
 Dipy from source with OpenMP on Mac OSX, you will have to do a few more things. First 
 of all, you will need to install the Homebrew_ package manager. Next you will need
-to install and configure the compiler. This depends on your python installation:
+to install and configure the compiler. You have two options: using the GCC compiler
+or the CLANG compiler. This depends on your python installation:
 
 Under Anaconda
 ~~~~~~~~~~~~~~~~
 
-If you are using Anaconda, you will need to run the following::
+If you are using Anaconda, you will need to use GCC. Run the following::
     
 	brew reinstall gcc --without-multilib
 	
@@ -303,7 +304,7 @@ Under Homebrew Python or python.org Python
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 If you are already using the Homebrew Python, or the standard python.org Python, 
-you will need to run::
+you will need to use the CLANG compiler with OMP. Run::
 	
 	brew install clang-omp
 
