@@ -1,13 +1,19 @@
+import os
 import numpy as np
 from dipy.viz import actor, window, widget, fvtk
 from dipy.data import fetch_viz_icons, read_viz_icons
 import numpy.testing as npt
 from dipy.testing.decorators import xvfb_it
 
+use_xvfb = os.environ.get('TEST_WITH_XVFB', False)
+if use_xvfb == 'skip':
+    skip_it = True
+else:
+    skip_it = False
 
+
+@npt.dec.skipif(not actor.have_vtk or not actor.have_vtk_colors or skip_it)
 @xvfb_it
-@npt.dec.skipif(not actor.have_vtk)
-@npt.dec.skipif(not actor.have_vtk_colors)
 def test_button_and_slider_widgets():
 
     interactive = False
@@ -113,9 +119,8 @@ def test_button_and_slider_widgets():
     npt.assert_equal(report.actors, 1)
 
 
+@npt.dec.skipif(not actor.have_vtk or not actor.have_vtk_colors or skip_it)
 @xvfb_it
-@npt.dec.skipif(not actor.have_vtk)
-@npt.dec.skipif(not actor.have_vtk_colors)
 def test_text_widget():
 
     interactive = False
@@ -184,5 +189,4 @@ def test_text_widget():
 
 
 if __name__ == '__main__':
-
     npt.run_module_suite()
