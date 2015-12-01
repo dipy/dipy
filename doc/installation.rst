@@ -27,31 +27,25 @@ Using packages:
 Windows
 -------
 
-#. To use dipy_, you will need to install a few :ref:`dependencies`. One     simple way to get the dependencies on your machine, is to install the Anaconda_ python distribution, following the instructions on their website. Note that there are alternatives to Anaconda_. See below for :ref:`alternatives`.
+#. First, install the python library dependencies. One easy way to do that is to use the Anaconda_ distribution (see below for :ref:`alternatives`).
 
-#. You will still need to install the nibabel_ library, which supports reading and writing of neuroimaging data formats. You can install it from a binary installer on the `nibabel pypi`_ web page. Download the `.exe` installer in the table at the bottom and double-click it to launch the installation process.
+#. Even with Anaconda installed, you will still need to install the nibabel_ library, which supports reading and writing of neuroimaging data formats. Open a terminal and type ::
 
+        pip install nibabel
 
-#. Similarly, you can install dipy_ itself from the `dipy pypi`_ web-page. Download the `.exe` installer in the table at the bottom of the page and double-click it to launch the installation.
+#. Finally, we are ready to install 'dipy` itself. Same as with `nibabel` above, we will type at the terminal shell command line ::
 
-#. Now, you should be able to start using dipy_. From a python console or script try ::
+		pip install dipy
 
-    >>> import dipy
+When the installation has finished we can check if it is successful in the following way. From a Python console script try ::
 
-There are other alternatives than the one we have outlined above to installing the dependencies and to install nibabel_ and dipy_. In particular, you can use pip_ or  easy_install_ from the Anaconda Command Prompt (which you can launch from the Start Menu),
-To do that, you would replace the instructions above with typing the following at the command prompt ::
+		>>> import dipy
 
-    pip install nibabel
-    pip install dipy
-
-or ::
-
-    easy_install nibabel
-    easy_install dipy
+This should work with no error.
 
 #. Some of the visualization methods require the VTK_ library and this can be installed using Anaconda ::
 
-     conda install vtk
+		conda install vtk
 
 
 OSX
@@ -71,13 +65,13 @@ OSX
 
 When the installation has finished we can check if it is successful in the following way. From a Python console script try ::
 
-    >>> import dipy
+		>>> import dipy
 
 This should work with no error.
 
 #. Some of the visualization methods require the VTK_ library and this can be installed using Anaconda ::
 
-     conda install vtk
+		conda install vtk
 
 Linux
 -----
@@ -178,6 +172,72 @@ we'll also call it the ``<dipy root>`` directory.
 Building and installing
 =======================
 
+.. _install-source-nix:
+
+Install from source for Unix (e.g Linux, OSX)
+---------------------------------------------
+
+Change directory into the *dipy source root directory* .
+
+To install for the system::
+
+    python setup.py install
+
+To build dipy in the source tree (locally) so you can run the code in the source tree (recommended for following the latest source) run::
+
+    python setup.py build_ext --inplace
+
+add the *dipy source root directory* into your ``PYTHONPATH`` environment variable. Search google for ``PYTHONPATH`` for details or see `python module path`_ for an introduction.
+
+When adding dipy_ to the ``PYTHONPATH``, we usually add the ``PYTHONPATH`` at
+the end of ``~/.bashrc`` or (OSX) ``~/.bash_profile`` so we don't need to
+retype it every time. This should look something like::
+
+  export PYTHONPATH=/home/user_dir/Devel/dipy:/home/user_dir/Devel/nibabel
+
+After changing the ``~/.bashrc`` or (OSX) ``~/.bash_profile`` try::
+
+  source ~/.bashrc
+
+or::
+
+  source ~/.bash_profile
+
+so that you can have immediate access to dipy_ without needing to
+restart your terminal.
+
+
+Ubuntu/Debian
+-------------
+
+::
+
+    sudo apt-get install python-dev python-setuptools
+    sudo apt-get install python-numpy python-scipy
+    sudo apt-get install cython
+
+then::
+
+    sudo pip install nibabel
+
+(we need the latest version of this one - hence ``pip`` rather than
+``apt-get``).
+
+You might want the optional packages too (highly recommended)::
+
+    sudo apt-get install ipython python-tables python-vtk python-matplotlib
+
+
+Now follow :ref:`install-source-nix`.
+
+Fedora / Mandriva maybe Redhat
+------------------------------
+
+Same as above but use yum rather than apt-get when necessary.
+
+Now follow :ref:`install-source-nix`.
+
+
 Windows
 -------
 
@@ -217,77 +277,36 @@ From here follow the :ref:`install-source-nix` instructions.
 
 OpenMP with OSX
 ---------------
-OpenMP is a standard library used in Dipy for efficient multithreaded
-applications (e.g. denoising and bundle registration). OpenMP is again
-supported by default after OSX 10.11 (El Capitan). If you have a version that
-does not support OpenMP then you need first to compile the library following
-these instructions http://openmp.llvm.org and then build Dipy. If you don't do
-this then you will use only one core and some of the algorithms will not run
-in parallel.
+OpenMP_ is a standard library for efficient multithreaded applications. This 
+is used in Dipy for speeding up many different parts of the library (e.g., denoising 
+and bundle registration). If you do not have an OpenMP-enabled compiler, you can 
+still compile Dipy from source using the above instructions, but it might not take 
+advantage of the multithreaded parts of the code. To be able to compile 
+Dipy from source with OpenMP on Mac OSX, you will have to do a few more things. First 
+of all, you will need to install the Homebrew_ package manager. 
 
+Next, if you are using Anaconda, you will need to run the following::
+    
+	brew reinstall gcc --without-multilib
+	
+This should take about 45 minutes to complete. Then add to your bash 
+configuration (usually in ``~/.bash_profile``), the following::
 
-Ubuntu/Debian
--------------
+	export PATH="/usr/local/Cellar/gcc/5.2.0/bin/gcc-5:$PATH
 
-::
+If you are already using the Homebrew Python, or the standard python.org Python, 
+you will need to run::
+	
+	brew install clang-omp
 
-    sudo apt-get install python-dev python-setuptools
-    sudo apt-get install python-numpy python-scipy
-    sudo apt-get install cython
+And then edit the ``setup.py`` file to include the following line::
 
-then::
+	os.environ['CC'] = '/usr/local/bin/clang-omp'
 
-    sudo pip install nibabel
+Either way, when you run ``python setup.py install`` it should now 
+compile the code with this OpenMP-enabled compiler, and things should 
+go faster!
 
-(we need the latest version of these two - hence ``easy_install`` rather than
-``apt-get``).
-
-You might want the optional packages too (highly recommended)::
-
-    sudo apt-get install ipython python-tables python-vtk python-matplotlib
-
-Now follow :ref:`install-source-nix`.
-
-Fedora / Mandriva maybe Redhat
-------------------------------
-
-Same as above but use yum rather than apt-get when necessary.
-
-Now follow :ref:`install-source-nix`.
-
-.. _install-source-nix:
-
-Install from source for Unix (e.g Linux, OSX)
----------------------------------------------
-
-Change directory into the *dipy source root directory* .
-
-To install for the system::
-
-    python setup.py install
-
-To build dipy in the source tree (locally) so you can run the code in the source tree (recommended for following the latest source) run::
-
-    python setup.py build_ext --inplace
-
-add the *dipy source root directory* into your ``PYTHONPATH`` environment variable. Search google for ``PYTHONPATH`` for details or see `python module path`_ for an introduction.
-
-When adding dipy_ to the ``PYTHONPATH``, we usually add the ``PYTHONPATH`` at
-the end of ``~/.bashrc`` or (OSX) ``~/.bash_profile`` so we don't need to
-retype it every time. This should look something like::
-
-  export PYTHONPATH=/home/user_dir/Devel/dipy:/home/user_dir/Devel/nibabel
-
-After changing the ``~/.bashrc`` or (OSX) ``~/.bash_profile`` try::
-
-  source ~/.bashrc
-
-or::
-
-  source ~/.bash_profile
-
-so that you can have immediate access to dipy_ without needing to
-restart your terminal.
 
 Testing
 ========
