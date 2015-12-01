@@ -299,7 +299,8 @@ you will need to run::
 	
 	brew install clang-omp
 
-And then edit the ``setup.py`` file to include the following line::
+And then edit the ``setup.py`` file to include the following line (e.g., on line 14,
+at the top of the file, but after the initial imports)::
 
 	os.environ['CC'] = '/usr/local/bin/clang-omp'
 
