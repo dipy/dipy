@@ -201,7 +201,7 @@ def slicer(data, affine=None, value_range=None, opacity=1.,
     return image_actor
 
 
-def streamtube(lines, colors=None, opacity=1, linewidth=0.01, tube_sides=9,
+def streamtube(lines, colors=None, opacity=1, linewidth=0.1, tube_sides=9,
                lod=True, lod_points=10 ** 4, lod_points_size=3,
                spline_subdiv=None, lookup_colormap=None):
     """ Uses streamtubes to visualize polylines
