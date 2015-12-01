@@ -1,3 +1,4 @@
+import os
 import numpy as np
 from dipy.viz import actor, window, widget, fvtk
 from dipy.data import fetch_viz_icons, read_viz_icons
