@@ -168,6 +168,15 @@ def test_diffeomorphic_map_2d():
     #We must provide, at least, the reference grid shape
     assert_raises(ValueError, imwarp.DiffeomorphicMap, 2, None)
 
+    # Verify that matrices are correctly interpreted from string
+    non_array_obj = diff_map
+    array_obj = np.ones((3,3))
+    assert_raises(ValueError, diff_map.interpret_matrix, 'a different string')
+    assert_raises(ValueError, diff_map.interpret_matrix, non_array_obj)
+    assert(diff_map.interpret_matrix('identity') is None)
+    assert(diff_map.interpret_matrix(None) is None)
+    assert_array_equal(diff_map.interpret_matrix(array_obj), array_obj)
+
 
 def test_diffeomorphic_map_simplification_2d():
     r"""

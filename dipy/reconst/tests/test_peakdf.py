@@ -1,7 +1,7 @@
 import numpy as np
 import numpy.testing as npt
 
-from dipy.reconst.peaks import default_sphere, peaks_from_model
+from dipy.direction.peaks import default_sphere, peaks_from_model
 
 
 def test_PeaksAndMetricsDirectionGetter():
@@ -70,4 +70,3 @@ def test_PeaksAndMetricsDirectionGetter():
 
 if __name__ == "__main__":
     npt.run_module_suite()
-

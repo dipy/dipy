@@ -4,36 +4,24 @@
 Diffusion Imaging In Python
 ###########################
 
-Dipy_ is a **free** and **open source** software project focusing mainly on **diffusion** *magnetic resonance imaging* (dMRI) analysis.
-Nonetheless, as we solve problems in dMRI some of the solutions are applicable to the greater medical imaging and image processing communities.
-See for example our registration and denoising tutorials.
-
+Dipy_ is a **free** and **open source** software project for computational neuroanatomy, 
+focusing mainly on **diffusion** *magnetic resonance imaging* (dMRI) analysis. It implements a 
+broad range of algorithms for denoising, registration, reconstruction, tracking, clustering, 
+visualization, and statistical analysis of MRI data.
 
 **********
 Highlights
 **********
 
-**Dipy** is an **official exhibitor** for OHBM 2015. Come and meet us!
-
-.. raw :: html
-
-	<div style="width: 80% max-width=800px">
-		<a href="http://www.frontiersin.org/Neuroinformatics/10.3389/fninf.2014.00008/abstract" target="_blank"><img alt=" " class="align-center" src="_static/hbm2015_exhibitors.jpg" style="width: 90%;max-height: 90%">
-        </a>
-	</div>
+**Dipy 0.10** is now available. New features in this release include: 
 
 
-**Dipy 0.9.2** is now available for :ref:`download <installation>`. Here is a summary of the new features.
-
-* Anatomically Constrained Tissue Classifiers for Tracking
-* Massive speedup of Constrained Spherical Deconvolution (CSD)
-* Recursive calibration of response function for CSD
-* New experimental framework for clustering
-* Improvements and 10X speedup for Quickbundles
-* Improvements in Linear Fascicle Evaluation (LiFE)
-* New implementation of Geodesic Anisotropy 
-* New efficient transformation functions for registration
-* Sparse Fascicle Model supports acquisitions with multiple b-values
+- Compatibility with new versions of scipy (0.16) and numpy (1.10).
+- New cleaner visualization API, including compatibility with VTK 6, and functions to create your own interactive visualizations.
+- Diffusion Kurtosis Imaging(DKI): Google Summer of Code work by Rafael Henriques.
+- Mean Apparent Propagator (MAP) MRI - tissue microstructure estimation.
+- Anisotropic Power Maps from spherical harmonic coefficients.
+- Affine registration.
 
 See :ref:`older highlights <old_highlights>`.
 
@@ -42,15 +30,12 @@ See :ref:`older highlights <old_highlights>`.
 Announcements
 *************
 
-- **Dipy 0.9.2** released, March 18th, 2015.
-- The creators of Dipy_ will attend both ISMRM and HBM 2015. Come and meet us!
-- **Dipy 0.8.0** released, 6 January, 2015.
-- Dipy_ will be an official exhibitor in `HBM 2015 <http://ohbm.loni.usc.edu>`_. Don't miss our booth!
+- :ref:`Dipy 0.10 <release0.10>` released November ??, 2015.
+- :ref:`Dipy 0.9.2 <release0.9>` released, March 18th, 2015.
+- :ref:`Dipy 0.8.0 <release0.8>` released, 6 January, 2015.
+- Dipy_ was an official exhibitor in `HBM 2015 <http://ohbm.loni.usc.edu>`_.
 - Dipy was featured in `The Scientist Magazine <http://www.the-scientist.com/?articles.view/articleNo/41266/title/White-s-the-Matter>`_, Nov, 2014.
 - `Dipy paper`_ accepted in Frontiers of Neuroinformatics, January 22nd, 2014.
-- **Dipy 0.7.1** Released!, January 16th, 2014.
-- **Dipy 0.7.0** Released!, December 23rd, 2013.
-- A team of Dipy developers **wins** the `IEEE ISBI HARDI challenge <http://hardi.epfl.ch/static/events/2013_ISBI/workshop.html#results>`_, 7 April, 2013.
 
 See some of our :ref:`past announcements <old_news>`
 
@@ -87,7 +72,7 @@ In this example we use only a few voxels with 101 gradient directions::
     from dipy.reconst.dti import color_fa
     cfa = color_fa(fa, tenfit.evecs)
 
-As an exercise try to calculate the `color FA` with your datasets. Here is how
+As an exercise try to calculate the `color FA` with your datasets. Here is what
 a slice should look like.
 
 .. image:: _static/colorfa.png
@@ -107,7 +92,16 @@ You can learn more about how you to use Dipy_ with  your datasets by reading the
    documentation
    stateoftheart
 
+*******
+Support
+*******
 
+We acknowledge support from the following organizations:
 
+- The Gordon and Betty Moore Foundation and the Alfred P. Sloan Foundation, through the 
+  University of Washington eScience Institute Data Science Environment.
+
+- Google supported the work of Rafael Neto Henriques and Julio Villalon through the Google
+  Summer of Code Program, Summer 2015.
 
 .. include:: links_names.inc

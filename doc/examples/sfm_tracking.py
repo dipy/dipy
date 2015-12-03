@@ -56,7 +56,7 @@ We fit this model to the data in each voxel in the white-matter mask, so that
 we can use these directions in tracking:
 """
 
-from dipy.reconst.peaks import peaks_from_model
+from dipy.direction.peaks import peaks_from_model
 
 pnm = peaks_from_model(sf_model, data, sphere,
                        relative_peak_threshold=.5,
@@ -126,15 +126,20 @@ from dipy.tracking.streamline import select_random_set_of_streamlines
 plot_streamlines = select_random_set_of_streamlines(streamlines, 900)
 
 streamlines_actor = fvtk.streamtube(
-                    list(move_streamlines(plot_streamlines, inv(t1_aff))),
-                                    line_colors(streamlines))
+    list(move_streamlines(plot_streamlines, inv(t1_aff))),
+    line_colors(streamlines), linewidth=0.1)
 
-vol_actor = fvtk.slicer(t1_data, voxsz=(1.0, 1.0, 1.0), plane_i=[40],
-                        plane_j=None, plane_k=[35], outline=False)
+vol_actor = fvtk.slicer(t1_data)
+
+vol_actor.display(40, None, None)
+vol_actor2 = vol_actor.copy()
+vol_actor2.display(None, None, 35)
 
 ren = fvtk.ren()
 fvtk.add(ren, streamlines_actor)
 fvtk.add(ren, vol_actor)
+fvtk.add(ren, vol_actor2)
+
 fvtk.record(ren, n_frames=1, out_path='sfm_streamlines.png',
             size=(800, 800))
 

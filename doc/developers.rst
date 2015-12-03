@@ -41,6 +41,7 @@ And here is the rest of the wonderful contributors:
 - **Maria Luisa Mandelli**, University of California, San Francisco, CA, USA
 - **Adam Rybinski**, Jagiellonian University, Krakow, PL
 - **Qiyuan Tian**, Stanford University, Stanford, CA, USA
+- **Rafael Neto Henriques**, Cambridge University, UK
 
 Boundless collaboration is in the heart of Dipy_. We encourage everyone from anywhere in the world to join the team. You can start sharing your code `here`__. If you want to contribute but you don't know in area to focus, please send us an e-mail. We will be more than happy to help.
 

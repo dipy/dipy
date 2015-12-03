@@ -8,7 +8,7 @@ from dipy.reconst.dti import fractional_anisotropy, color_fa
 
 from scipy.ndimage.filters import median_filter
 try:
-    from skimage.filter import threshold_otsu as otsu
+    from skimage.filters import threshold_otsu as otsu
 except:
     from .threshold import otsu
 
@@ -51,10 +51,10 @@ def applymask(vol, mask):
     vol : ndarray
         Array with $V$ dimensions
     mask : ndarray
-        Binary mask.  Has $M$ dimensions where $M <= V$. When $M < V$, we append
-        $V - M$ dimensions with axis length 1 to `mask` so that `mask` will
-        broadcast against `vol`.  In the typical case `vol` can be 4D, `mask`
-        can be 3D, and we append a 1 to the mask shape which (via numpy
+        Binary mask.  Has $M$ dimensions where $M <= V$. When $M < V$, we
+        append $V - M$ dimensions with axis length 1 to `mask` so that `mask`
+        will broadcast against `vol`.  In the typical case `vol` can be 4D,
+        `mask` can be 3D, and we append a 1 to the mask shape which (via numpy
         broadcasting) has the effect of appling the 3D mask to each 3D slice in
         `vol` (``vol[..., 0]`` to ``vol[..., -1``).
 
@@ -69,7 +69,7 @@ def applymask(vol, mask):
 
 
 def bounding_box(vol):
-    """ Compute the bounding box of nonzero intensity voxels in the volume.
+    """Compute the bounding box of nonzero intensity voxels in the volume.
 
     Parameters
     ----------
@@ -102,7 +102,7 @@ def bounding_box(vol):
 
 
 def crop(vol, mins, maxs):
-    """ Crops the input volume.
+    """Crops the input volume.
 
     Parameters
     ----------
@@ -123,7 +123,7 @@ def crop(vol, mins, maxs):
 
 def median_otsu(input_volume, median_radius=4, numpass=4,
                 autocrop=False, vol_idx=None, dilate=None):
-    """ Simple brain extraction tool method for images from DWI data
+    """Simple brain extraction tool method for images from DWI data.
 
     It uses a median filter smoothing of the input_volumes `vol_idx` and an
     automatic histogram Otsu thresholding technique, hence the name
@@ -139,16 +139,18 @@ def median_otsu(input_volume, median_radius=4, numpass=4,
     input_volume : ndarray
         ndarray of the brain volume
     median_radius : int
-        Radius (in voxels) of the applied median filter(default 4)
+        Radius (in voxels) of the applied median filter (default: 4).
     numpass: int
-        Number of pass of the median filter (default 4)
+        Number of pass of the median filter (default: 4).
     autocrop: bool, optional
-        if True, the masked input_volume will also be cropped using the bounding
-        box defined by the masked data. Should be on if DWI is upsampled to 1x1x1
-        resolution. (default False)
+        if True, the masked input_volume will also be cropped using the
+        bounding box defined by the masked data. Should be on if DWI is
+        upsampled to 1x1x1 resolution. (default: False).
     vol_idx : None or array, optional
-        1D array representing indices of ``axis=3`` of a 4D `input_volume`
-        None (the default) corresponds to ``(0,)`` (assumes first volume in 4D array)
+        1D array representing indices of ``axis=3`` of a 4D `input_volume` None
+        (the default) corresponds to ``(0,)`` (assumes first volume in
+        4D array).
+
     dilate : None or int, optional
         number of iterations for binary dilation
 
@@ -158,6 +160,37 @@ def median_otsu(input_volume, median_radius=4, numpass=4,
         Masked input_volume
     mask : 3D ndarray
         The binary brain mask
+
+    Notes
+    -----
+    Copyright (C) 2011, the scikit-image team
+    All rights reserved.
+
+    Redistribution and use in source and binary forms, with or without
+    modification, are permitted provided that the following conditions are
+    met:
+
+     1. Redistributions of source code must retain the above copyright
+        notice, this list of conditions and the following disclaimer.
+     2. Redistributions in binary form must reproduce the above copyright
+        notice, this list of conditions and the following disclaimer in
+        the documentation and/or other materials provided with the
+        distribution.
+     3. Neither the name of skimage nor the names of its contributors may be
+        used to endorse or promote products derived from this software without
+        specific prior written permission.
+
+    THIS SOFTWARE IS PROVIDED BY THE AUTHOR ``AS IS'' AND ANY EXPRESS OR
+    IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+    WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+    DISCLAIMED. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY DIRECT,
+    INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
+    (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+    SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+    HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT,
+    STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING
+    IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+    POSSIBILITY OF SUCH DAMAGE.
     """
     if len(input_volume.shape) == 4:
         if vol_idx is not None:
@@ -166,7 +199,8 @@ def median_otsu(input_volume, median_radius=4, numpass=4,
             b0vol = input_volume[..., 0].copy()
     else:
         b0vol = input_volume.copy()
-    # Make a mask using a multiple pass median filter and histogram thresholding.
+    # Make a mask using a multiple pass median filter and histogram
+    # thresholding.
     mask = multi_median(b0vol, median_radius, numpass)
     thresh = otsu(mask)
     mask = mask > thresh
@@ -175,7 +209,8 @@ def median_otsu(input_volume, median_radius=4, numpass=4,
         cross = generate_binary_structure(3, 1)
         mask = binary_dilation(mask, cross, iterations=dilate)
 
-    # Auto crop the volumes using the mask as input_volume for bounding box computing.
+    # Auto crop the volumes using the mask as input_volume for bounding box
+    # computing.
     if autocrop:
         mins, maxs = bounding_box(mask)
         mask = crop(mask, mins, maxs)
@@ -258,4 +293,3 @@ def clean_cc_mask(mask):
     new_cc_mask[np.where(labels == biggest_vol)] = 1
 
     return new_cc_mask
-

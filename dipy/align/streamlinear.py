@@ -18,14 +18,21 @@ LOG_MAX_DIST = np.log(MAX_DIST)
 
 class StreamlineDistanceMetric(with_metaclass(abc.ABCMeta, object)):
 
-    def __init__(self):
+    def __init__(self, num_threads=None):
         """ An abstract class for the metric used for streamline registration
 
         If the two sets of streamlines match exactly then method ``distance``
         of this object should be minimum.
+
+        Parameters
+        ----------
+        num_threads : int
+            Number of threads. If None (default) then all available threads
+            will be used. Only metrics using OpenMP will use this variable.
         """
         self.static = None
         self.moving = None
+        self.num_threads = num_threads
 
     @abc.abstractmethod
     def setup(self, static, moving):
@@ -64,6 +71,9 @@ class BundleMinDistanceMetric(StreamlineDistanceMetric):
             Fixed or reference set of streamlines.
         moving : streamlines
             Moving streamlines.
+        num_threads : int
+            Number of threads. If None (default) then all available threads
+            will be used.
 
         Notes
         -----
@@ -94,7 +104,8 @@ class BundleMinDistanceMetric(StreamlineDistanceMetric):
         return bundle_min_distance_fast(xopt,
                                         self.static_centered_pts,
                                         self.moving_centered_pts,
-                                        self.block_size)
+                                        self.block_size,
+                                        self.num_threads)
 
 
 class BundleMinDistanceMatrixMetric(StreamlineDistanceMetric):
@@ -128,7 +139,8 @@ class BundleMinDistanceMatrixMetric(StreamlineDistanceMetric):
         -----
         Call this after the object is initiated and before distance.
 
-        The difference between this class and
+        Num_threads is not used in this class. Use ``BundleMinDistanceMetric``
+        for a faster, threaded and less memory hungry metric
         """
         self.static = static
         self.moving = moving
@@ -176,7 +188,7 @@ class StreamlineLinearRegistration(object):
 
     def __init__(self, metric=None, x0="rigid", method='L-BFGS-B',
                  bounds=None, verbose=False, options=None,
-                 evolution=False):
+                 evolution=False, num_threads=None):
         r""" Linear registration of 2 sets of streamlines [Garyfallidis14]_.
 
         Parameters
@@ -240,6 +252,10 @@ class StreamlineLinearRegistration(object):
             If True save the transformation for each iteration of the
             optimizer. Default is False. Supported only with Scipy >= 0.11.
 
+        num_threads : int
+            Number of threads. If None (default) then all available threads
+            will be used. Only metrics using OpenMP will use this variable.
+
         References
         ----------
         .. [Garyfallidis14] Garyfallidis et al., "Direct native-space fiber
@@ -252,7 +268,7 @@ class StreamlineLinearRegistration(object):
         self.metric = metric
 
         if self.metric is None:
-            self.metric = BundleMinDistanceMetric()
+            self.metric = BundleMinDistanceMetric(num_threads=num_threads)
 
         self.verbose = verbose
         self.method = method
@@ -267,7 +283,6 @@ class StreamlineLinearRegistration(object):
 
         Parameters
         ----------
-
         static : streamlines
             Reference or fixed set of streamlines.
         moving : streamlines
@@ -346,9 +361,10 @@ class StreamlineLinearRegistration(object):
 
         if opt.evolution is not None:
             for vecs in opt.evolution:
-                mat_history.append(compose_transformations(moving_mat,
-                                                           compose_matrix44(vecs),
-                                                           static_mat))
+                mat_history.append(
+                    compose_transformations(moving_mat,
+                                            compose_matrix44(vecs),
+                                            static_mat))
 
         srm = StreamlineRegistrationMap(mat, opt.xopt, opt.fopt,
                                         mat_history, opt.nfev, opt.nit)
@@ -448,7 +464,7 @@ class StreamlineRegistrationMap(object):
         return transform_streamlines(moving, self.matrix)
 
 
-def bundle_sum_distance(t, static, moving):
+def bundle_sum_distance(t, static, moving, num_threads=None):
     """ MDF distance optimization function (SUM)
 
     We minimize the distance between moving streamlines as they align
@@ -507,6 +523,10 @@ def bundle_min_distance(t, static, moving):
     moving : list
         Moving streamlines.
 
+    num_threads : int
+        Number of threads. If None (default) then all available threads
+        will be used.
+
     Returns
     -------
     cost: float
@@ -521,7 +541,7 @@ def bundle_min_distance(t, static, moving):
                    np.sum(np.min(d01, axis=1)) / float(rows)) ** 2
 
 
-def bundle_min_distance_fast(t, static, moving, block_size):
+def bundle_min_distance_fast(t, static, moving, block_size, num_threads):
     """ MDF-based pairwise distance optimization function (MIN)
 
     We minimize the distance between moving streamlines as they align
@@ -552,6 +572,10 @@ def bundle_min_distance_fast(t, static, moving, block_size):
         Number of points per streamline. All streamlines in static and moving
         should have the same number of points M.
 
+    num_threads : int
+        Number of threads. If None (default) then all available threads
+        will be used.
+
     Returns
     -------
     cost: float
@@ -576,7 +600,8 @@ def bundle_min_distance_fast(t, static, moving, block_size):
     return _bundle_minimum_distance(static, moving,
                                     rows,
                                     cols,
-                                    block_size)
+                                    block_size,
+                                    num_threads)
 
 
 def _threshold(x, th):
@@ -643,7 +668,7 @@ def decompose_matrix44(mat, size=12):
     """
     scale, shear, angles, translate, _ = decompose_matrix(mat)
 
-    t = np.zeros(12.)
+    t = np.zeros(12)
     t[:3] = translate
     t[3: 6] = np.rad2deg(angles)
     if size == 6:

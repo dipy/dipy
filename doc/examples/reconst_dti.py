@@ -223,7 +223,8 @@ evecs = tenfit.evecs[13:43, 44:74, 28:29]
 
 """
 We can color the ellipsoids using the ``color_fa`` values that we calculated
-above. In this example we additionally normalize the values to increase the contrast.
+above. In this example we additionally normalize the values to increase the
+contrast.
 """
 
 cfa = RGB[13:43, 44:74, 28:29]

@@ -4,6 +4,29 @@
 Older Highlights
 ****************
 
+**Dipy** was an **official exhibitor** for OHBM 2015.
+
+.. raw :: html
+
+	<div style="width: 80% max-width=800px">
+		<a href="http://www.humanbrainmapping.org/i4a/pages/index.cfm?pageID=3625" target="_blank"><img alt=" " class="align-center" src="_static/hbm2015_exhibitors.jpg" style="width: 90%;max-height: 90%">
+        </a>
+	</div>
+
+
+**Dipy 0.9.2** is now available for :ref:`download <installation>`. Here is a summary of the new features.
+
+* Anatomically Constrained Tissue Classifiers for Tracking
+* Massive speedup of Constrained Spherical Deconvolution (CSD)
+* Recursive calibration of response function for CSD
+* New experimental framework for clustering
+* Improvements and 10X speedup for Quickbundles
+* Improvements in Linear Fascicle Evaluation (LiFE)
+* New implementation of Geodesic Anisotropy 
+* New efficient transformation functions for registration
+* Sparse Fascicle Model supports acquisitions with multiple b-values
+
+
 **Dipy 0.8.0** is now available for :ref:`download <installation>`. The new
 release contains state-of-the-art algorithms for diffusion MRI registration, reconstruction, denoising, statistical evaluation, fiber tracking and validation of tracking.
 

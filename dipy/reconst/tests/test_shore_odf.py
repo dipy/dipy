@@ -2,7 +2,7 @@ import numpy as np
 from dipy.data import get_sphere, get_3shell_gtab, get_isbi2013_2shell_gtab
 from dipy.reconst.shore import ShoreModel
 from dipy.reconst.shm import QballModel, sh_to_sf
-from dipy.reconst.peaks import gfa, peak_directions
+from dipy.direction.peaks import gfa, peak_directions
 from numpy.testing import (assert_equal,
                            assert_almost_equal,
                            run_module_suite,
@@ -59,7 +59,7 @@ def test_shore_odf():
             assert_equal(gfa(odf) < 0.1, True)
 
 
-def test_multivox_shore():    
+def test_multivox_shore():
     gtab = get_3shell_gtab()
 
     data = np.random.random([20, 30, 1, gtab.gradients.shape[0]])

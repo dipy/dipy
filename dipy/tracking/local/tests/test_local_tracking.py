@@ -29,7 +29,7 @@ def test_stop_conditions():
 
     class SimpleTissueClassifier(TissueClassifier):
         def check_point(self, point):
-            p = np.round(point)
+            p = np.round(point).astype(int)
             if any(p < 0) or any(p >= tissue.shape):
                 return TissueTypes.OUTSIDEIMAGE
             return tissue[p[0], p[1], p[2]]

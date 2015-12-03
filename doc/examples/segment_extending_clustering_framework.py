@@ -155,7 +155,7 @@ Let's start by importing the necessary modules.
 """
 
 from dipy.segment.metric import Metric
-from dipy.segment.metric import VectorBetweenEndpointsFeature
+from dipy.segment.metric import VectorOfEndpointsFeature
 
 """
 We now define the class `CosineMetric` that will perform the desired
@@ -170,7 +170,7 @@ class CosineMetric(Metric):
     """ Computes the cosine distance between two streamlines. """
     def __init__(self):
         # For simplicity, features will be the vector between endpoints of a streamline.
-        super(CosineMetric, self).__init__(feature=VectorBetweenEndpointsFeature())
+        super(CosineMetric, self).__init__(feature=VectorOfEndpointsFeature())
 
     def are_compatible(self, shape1, shape2):
         """ Checks if two features are vectors of same dimension.

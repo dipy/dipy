@@ -6,7 +6,13 @@ Here we provide information about functions or classes that have been removed,
 renamed or are deprecated (not recommended) during different release circles.
 
 Dipy 0.10 Changes
-----------------
+-----------------
+
+** New visualization module**
+
+``fvtk.slicer`` input parameters have changed. Now the slicer function is
+more powerfull and supports RGB images too. See tutorial ``viz_slice.py`` for
+more information.
 
 **Interpolation**
 The default behavior of the function `core.sphere.interp_rbf` has changed.

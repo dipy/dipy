@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""Implemention of various Tractography methods
+"""Implemention of various Tractography methods.
 
 these tools are meant to be paired with diffusion reconstruction methods from
 dipy.reconst
@@ -17,7 +17,7 @@ from ..utils.six.moves import xrange
 
 import numpy as np
 from ..reconst.interpolate import OutsideImage, NearestNeighborInterpolator
-from ..reconst.peaks import default_sphere, peak_directions
+from dipy.direction.peaks import default_sphere, peak_directions
 from . import utils
 
 

@@ -1736,12 +1736,12 @@ def local_skeleton_clustering_3pts(tracks, d_thr=10):
         if m_k<d_thr:
             if flip[i_k]==1:
                 ts[0]=track[-1];ts[1]=track[1];ts[-1]=track[0]
-                C[i_k]['hidden']+=ts
+                C[i_k]['hidden'] = C[i_k]['hidden'] + ts
             else:
                 #print(track.shape)
                 #print(track.dtype)
-                C[i_k]['hidden']+=track
-            C[i_k]['N']+=1
+                C[i_k]['hidden'] = C[i_k]['hidden'] + track
+            C[i_k]['N'] = C[i_k]['N'] + 1
             C[i_k]['indices'].append(it)
         else:
             C[lenC]={}
