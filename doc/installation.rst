@@ -146,7 +146,9 @@ Dipy can process large diffusion datasets. For this reason we recommend using a 
 Note on python versions
 -----------------------
 
-Dipy supports python 2.6+ and python 3+. We started supporting Python 3 from version dipy.0.7.0.
+Most of the functionality in Dipy supports versions of Python from 2.6 to 3.5.
+However, some visualization functionality depends on VTK_, which currently does not work with Python 3 versions.
+Therefore, if you want to use the visualization functions in Dipy, please use it with Python 2.
 
 .. _from-source:
 
