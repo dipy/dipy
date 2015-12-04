@@ -49,8 +49,7 @@ Current information can always be found from the dipy website - http://dipy.org
 Mailing Lists
 =============
 
-Please see the developer's list at
-http://mail.scipy.org/mailman/listinfo/nipy-devel
+Please see the developer's list at https://mail.python.org/mailman/listinfo/neuroimaging
 
 Code
 ====
@@ -78,7 +77,7 @@ under the GPL license.
 """
 
 # versions for dependencies
-NUMPY_MIN_VERSION='1.6'
+NUMPY_MIN_VERSION='1.7.1'
 SCIPY_MIN_VERSION='0.9'
 CYTHON_MIN_VERSION='0.18'
 NIBABEL_MIN_VERSION='1.2.0'
