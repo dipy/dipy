@@ -13,7 +13,7 @@ visualization, and statistical analysis of MRI data.
 Highlights
 **********
 
-**Dipy 0.10** is now available. New features in this release include: 
+**Dipy 0.10.1** is now available. New features in this release include:
 
 
 - Compatibility with new versions of scipy (0.16) and numpy (1.10).
@@ -30,7 +30,7 @@ See :ref:`older highlights <old_highlights>`.
 Announcements
 *************
 
-- :ref:`Dipy 0.10 <release0.10>` released November ??, 2015.
+- :ref:`Dipy 0.10.1 <release0.10>` released December 4th, 2015.
 - :ref:`Dipy 0.9.2 <release0.9>` released, March 18th, 2015.
 - :ref:`Dipy 0.8.0 <release0.8>` released, 6 January, 2015.
 - Dipy_ was an official exhibitor in `HBM 2015 <http://ohbm.loni.usc.edu>`_.
