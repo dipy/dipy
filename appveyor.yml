@@ -28,6 +28,7 @@ install:
   - "conda create -q -n test-environment python=%PYTHON_VERSION% cython numpy scipy matplotlib h5py scikit-learn nose"
   - activate test-environment
   - pip install coverage nibabel
+  - python setup.py build_ext --inplace
 
 test_script:
   - nosetests
