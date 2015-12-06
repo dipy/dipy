@@ -30,4 +30,4 @@ install:
   - pip install coverage nibabel
 
 test_script:
-  - "%PYTHON%/Scripts/nosetests.exe"
+  - nosetests
