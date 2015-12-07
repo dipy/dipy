@@ -17,6 +17,11 @@ environment:
       PYTHON_ARCH: "32"
       MINICONDA: C:\Miniconda3
 
+    - PYTHON: "C:\\Python35"
+      PYTHON_VERSION: "3.5.1"
+      PYTHON_ARCH: "32"
+      MINICONDA: C:\Miniconda3
+
 init:
   - "ECHO %PYTHON% %PYTHON_VERSION% %PYTHON_ARCH% %MINICONDA%"
 
