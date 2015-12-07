@@ -21,7 +21,6 @@ if sys.version_info[0] < 3:
 else:
     from urllib.request import urlopen
 
-
 # Set a user-writeable file-system location to put files:
 if 'DIPY_HOME' in os.environ:
     dipy_home = os.environ['DIPY_HOME']
