@@ -186,23 +186,26 @@ def test_affreg_all_transforms():
     # Test affine registration using all transforms with typical settings
 
     # Make sure dictionary entries are processed in the same order regardless
-    # of the platform.
-    # Otherwise any random numbers drawn within the loop would make
-    # the test non-deterministic even if we fix the seed before the loop.
-    # Right now, this test does not draw any samples,
-    # but we still sort the entries
-    # to prevent future related failures.
+    # of the platform. Otherwise any random numbers drawn within the loop would
+    # make the test non-deterministic even if we fix the seed before the loop.
+    # Right now, this test does not draw any samples, but we still sort the
+    # entries to prevent future related failures.
     for ttype in sorted(factors):
         dim = ttype[1]
         if dim == 2:
             nslices = 1
         else:
-            nslices = 45
+            nslices = 20
         factor = factors[ttype][0]
         sampling_pc = factors[ttype][1]
-        transform = regtransforms[ttype]
-        static, moving, static_grid2world, moving_grid2world, smask, mmask, T = \
-            setup_random_transform(transform, factor, nslices, 1.0)
+        trans = regtransforms[ttype]
+        # Shorthand:
+        srt = setup_random_transform
+        static, moving, static_g2w, moving_g2w, smask, mmask, T = srt(
+                                                                      trans,
+                                                                      factor,
+                                                                      nslices,
+                                                                      1.0)
         # Sum of absolute differences
         start_sad = np.abs(static - moving).sum()
         metric = imaffine.MutualInformationMetric(32, sampling_pc)
@@ -215,7 +218,7 @@ def test_affreg_all_transforms():
                                              options=None)
         x0 = transform.get_identity_parameters()
         affine_map = affreg.optimize(static, moving, transform, x0,
-                                     static_grid2world, moving_grid2world)
+                                     static_g2w, moving_g2w)
         transformed = affine_map.transform(moving)
         # Sum of absolute differences
         end_sad = np.abs(static - transformed).sum()
