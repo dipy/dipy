@@ -18,13 +18,14 @@ def test_stop_conditions():
     """
     # TissueTypes.TRACKPOINT = 1
     # TissueTypes.ENDPOINT = 2
-    # TissueType.INVALIDPOINT = 0
+    # TissueTypes.INVALIDPOINT = 0
     tissue = np.array([[2, 1, 1, 2, 1],
                        [2, 2, 1, 1, 2],
                        [1, 1, 1, 1, 1],
                        [1, 1, 1, 2, 2],
                        [0, 1, 1, 1, 2],
-                       [2, 1, 1, 0, 2]])
+                       [0, 1, 1, 0, 2],
+                       [1, 0, 1, 1, 1]])
     tissue = tissue[None]
 
     class SimpleTissueClassifier(TissueClassifier):
@@ -38,34 +39,63 @@ def test_stop_conditions():
         def initial_direction(self, point):
             # Test tracking along the rows (z direction)
             # of the tissue array above
+            p = np.round(point)
+            if (any(p < 0) or
+                any(p >= tissue.shape) or
+                tissue[p[0], p[1], p[2]] == TissueTypes.INVALIDPOINT):
+                return np.array([])
             return np.array([[0., 0., 1.]])
 
         def get_direction(self, p, d):
             # Always keep previous direction
             return 0
 
-    # Create a seeds along the second column of every row, ie along [:, 1]
-    x = np.array([0., 0, 0, 0, 0, 0])
-    y = np.array([0., 1, 2, 3, 4, 5])
-    z = np.array([1., 1, 1, 0, 1, 1])
+    # Create a seeds along
+    x = np.array([0., 0, 0, 0, 0, 0, 0])
+    y = np.array([0., 1, 2, 3, 4, 5, 6])
+    z = np.array([1., 1, 1, 0, 1, 1, 1])
     seeds = np.column_stack([x, y, z])
 
     # Set up tracking
     dg = SimpleDirectionGetter()
     tc = SimpleTissueClassifier()
-    streamlines = LocalTracking(dg, tc, seeds, np.eye(4), 1., return_all=False)
-    streamlines = iter(streamlines)
+
+    streamlines_not_all = LocalTracking(direction_getter=dg,
+                                        tissue_classifier=tc,
+                                        seeds=seeds,
+                                        affine=np.eye(4),
+                                        step_size=1.,
+                                        return_all=False)
+    streamlines_all = LocalTracking(direction_getter=dg,
+                                    tissue_classifier=tc,
+                                    seeds=seeds,
+                                    affine=np.eye(4),
+                                    step_size=1.,
+                                    return_all=True)
+
+    streamlines_not_all = iter(streamlines_not_all) # valid streamlines only
+    streamlines_all = iter(streamlines_all) # all streamlines
 
     # Check that the first streamline stops at 0 and 3 (ENDPOINT)
-    sl = next(streamlines)
     y = 0
+    sl = next(streamlines_not_all)
+    npt.assert_equal(sl[0], [0, y, 0])
+    npt.assert_equal(sl[-1], [0, y, 3])
+    npt.assert_equal(len(sl), 4)
+
+    sl = next(streamlines_all)
     npt.assert_equal(sl[0], [0, y, 0])
     npt.assert_equal(sl[-1], [0, y, 3])
     npt.assert_equal(len(sl), 4)
 
     # Check that the first streamline stops at 0 and 4 (ENDPOINT)
-    sl = next(streamlines)
     y = 1
+    sl = next(streamlines_not_all)
+    npt.assert_equal(sl[0], [0, y, 0])
+    npt.assert_equal(sl[-1], [0, y, 4])
+    npt.assert_equal(len(sl), 5)
+
+    sl = next(streamlines_all)
     npt.assert_equal(sl[0], [0, y, 0])
     npt.assert_equal(sl[-1], [0, y, 4])
     npt.assert_equal(len(sl), 5)
@@ -73,21 +103,53 @@ def test_stop_conditions():
     # This streamline should be the same as above. This row does not have
     # ENDPOINTs, but the streamline should stop at the edge and not include
     # OUTSIDEIMAGE points.
-    sl = next(streamlines)
     y = 2
+    sl = next(streamlines_not_all)
+    npt.assert_equal(sl[0], [0, y, 0])
+    npt.assert_equal(sl[-1], [0, y, 4])
+    npt.assert_equal(len(sl), 5)
+
+    sl = next(streamlines_all)
     npt.assert_equal(sl[0], [0, y, 0])
     npt.assert_equal(sl[-1], [0, y, 4])
     npt.assert_equal(len(sl), 5)
 
     # If we seed on the edge, the first (or last) point in the streamline
     # should be the seed.
-    sl = next(streamlines)
     y = 3
+    sl = next(streamlines_not_all)
     npt.assert_equal(sl[0], seeds[y])
 
-    # The last 2 seeds should not produce streamlines, INVALIDPOINT streamlines
-    # are rejected.
-    npt.assert_equal(len(list(streamlines)), 0)
+    sl = next(streamlines_all)
+    npt.assert_equal(sl[0], seeds[y])
+
+    # The last 3 seeds should not produce streamlines,
+    # INVALIDPOINT streamlines are rejected (return_all=False).
+    npt.assert_equal(len(list(streamlines_not_all)), 0)
+
+    # The last 3 seeds should produce invalid streamlines,
+    # INVALIDPOINT streamlines are kept (return_all=True).
+    # The streamline stops at 0 (INVALIDPOINT) and 4 (ENDPOINT)
+    y=4
+    sl = next(streamlines_all)
+    npt.assert_equal(sl[0], [0, y, 0])
+    npt.assert_equal(sl[-1], [0, y, 4])
+    npt.assert_equal(len(sl), 5)
+
+    # The streamline stops at 0 (INVALIDPOINT) and 4 (INVALIDPOINT)
+    y=5
+    sl = next(streamlines_all)
+    npt.assert_equal(sl[0], [0, y, 0])
+    npt.assert_equal(sl[-1], [0, y, 3])
+    npt.assert_equal(len(sl), 4)
+
+    # The last streamline should contain only one point, the seed point,
+    # because no valid inital direction was returned.
+    y=6
+    sl = next(streamlines_all)
+    npt.assert_equal(sl[0], seeds[y])
+    npt.assert_equal(sl[-1], seeds[y])
+    npt.assert_equal(len(sl), 1)
 
     bad_affine = np.eye(3.)
     npt.assert_raises(ValueError, LocalTracking, dg, tc, seeds, bad_affine, 1.)
