@@ -242,7 +242,6 @@ def _piesno_3D(data, N, alpha=0.01, l=100, itermax=100, eps=1e-5,
             prev_idx = found_idx
 
     for n in range(itermax):
-
         if np.abs(sigma - sigma_prev) < eps:
             break
 

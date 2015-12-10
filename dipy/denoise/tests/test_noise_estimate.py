@@ -66,6 +66,11 @@ def test_piesno():
     assert_(np.all(sigma == 0))
     assert_(np.all(mask == 0))
 
+    # Check if no noise points found in array it exits
+    sigma = _piesno_3D(1000*np.ones_like(rician_noise), N=1, alpha=0.01, l=1, eps=1e-10,
+             return_mask=False, initial_estimation=10)
+    assert_(np.all(sigma == 10))
+
 def test_estimate_sigma():
 
     sigma = estimate_sigma(np.ones((7, 7, 7)), disable_background_masking=True)
