@@ -40,6 +40,8 @@ def test_btable_prepare():
     bt4 = gradient_table(btab.T)
     npt.assert_array_equal(bt4.bvecs, bvecs)
     npt.assert_array_equal(bt4.bvals, bvals)
+    # Test for proper inputs (expects either bvals/bvecs or 4 by n):
+    assert_raises(ValueError, gradient_table, bvecs)
 
 
 def test_GradientTable():
