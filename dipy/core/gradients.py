@@ -261,10 +261,12 @@ def reorient_bvecs(gtab, affines):
     ----------
     gtab : a GradientTable class instance.
         The nominal gradient table with which the data were acquired.
-    affines : list or ndarray of shape (n, 4, 4)
-        Each entry in this list or array contains an affine transformation
-        that encodes the rotation that was applied to the image corresponding
-        to this bvector as part of a motion correction procedure.
+    affines : list or ndarray of shape (n, 4, 4) or (n, 3, 3)
+        Each entry in this list or array contain either an affine
+        transformation (4,4) or a rotation matrix (3, 3).
+        In both cases, the transformations encode the rotation that was applied
+        to the image corresponding to one of the non-zero gradient directions
+        (ordered according to their order in `gtab.bvecs[~gtab.b0s_mask]`)
 
     Returns
     -------
@@ -284,10 +286,15 @@ def reorient_bvecs(gtab, affines):
         raise ValueError(e_s)
 
     for i, aff in enumerate(affines):
-        # Remove the translation component:
-        aff_no_trans = aff[:3, :3]
-        # Decompose into rotation and scaling components:
-        R, S = la.polar(aff_no_trans)
+        if aff.shape == (4, 4):
+            # This must be an affine!
+            # Remove the translation component:
+            aff_no_trans = aff[:3, :3]
+            # Decompose into rotation and scaling components:
+            R, S = la.polar(aff_no_trans)
+        elif aff.shape == (3, 3):
+            # We assume this is a rotation matrix:
+            R = aff
         Rinv = la.inv(R)
         # Apply the inverse of the rotation to the corresponding gradient
         # direction:

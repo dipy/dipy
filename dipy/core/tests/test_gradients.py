@@ -239,6 +239,11 @@ def test_reorient_bvecs():
     # vectors:
     npt.assert_almost_equal(gt.bvecs, new_gt.bvecs)
 
+    # We should be able to pass just the 3-by-3 rotation components to the same
+    # effect:
+    new_gt = reorient_bvecs(gt_rot, np.array(rotation_affines)[:, :3, :3])
+    npt.assert_almost_equal(gt.bvecs, new_gt.bvecs)
+
     # Verify that giving the wrong number of affines raises an error:
     full_affines.append(np.zeros((4, 4)))
     assert_raises(ValueError, reorient_bvecs, gt_rot, full_affines)
