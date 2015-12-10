@@ -24,7 +24,7 @@ environment:
 
 init:
   - "ECHO %PYTHON% %PYTHON_VERSION% %PYTHON_ARCH% %MINICONDA%"
-
+  - systeminfo
 install:
   - "set PATH=%MINICONDA%;%MINICONDA%\\Scripts;%PATH%"
   - conda config --set always_yes yes --set changeps1 no
