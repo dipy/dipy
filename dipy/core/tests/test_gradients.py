@@ -1,4 +1,4 @@
-from nose.tools import assert_true
+from nose.tools import assert_true, assert_raises
 
 import numpy as np
 import numpy.testing as npt
@@ -184,6 +184,7 @@ def test_qvalues():
     bt = gradient_table(bvals, bvecs, big_delta=8, small_delta=6)
     npt.assert_almost_equal(bt.qvals, qvals)
 
+
 def test_reorient_bvecs():
     sq2 = np.sqrt(2) / 2
     bvals = np.concatenate([[0], np.ones(6) * 1000])
@@ -196,9 +197,49 @@ def test_reorient_bvecs():
                       [0, sq2, sq2]])
 
     gt = gradient_table_from_bvals_bvecs(bvals, bvecs, b0_threshold=0)
-    rots = np.zeros((3, 6))
-    new_gt = reorient_bvecs(gt, rots)
+    # The simple case: all affines are identity:
+    affs = np.zeros((6, 4, 4))
+    for i in range(4):
+        affs[:, i, i] = 1
+
+    # We should get back the same b-vectors:
+    new_gt = reorient_bvecs(gt, affs)
     npt.assert_equal(gt.bvecs, new_gt.bvecs)
+
+    # Now apply some rotations to these suckers:
+    rotation_affines = []
+    rotated_bvecs = bvecs[:]
+    for i in np.where(~gt.b0s_mask)[0]:
+        rot_ang = np.random.rand()
+        cos_rot = np.cos(rot_ang)
+        sin_rot = np.sin(rot_ang)
+        rotation_affines.append(np.array([[1, 0, 0, 0],
+                                         [0, cos_rot, -sin_rot, 0],
+                                         [0, sin_rot, cos_rot, 0],
+                                         [0, 0, 0, 1]]))
+        rotated_bvecs[i] = np.dot(rotation_affines[-1][:3, :3],
+                                  bvecs[i])
+
+    # Copy over the rotation affines:
+    full_affines = rotation_affines[:]
+    # And add some scaling and translation to each one to make this harder:
+    for i in range(len(full_affines)):
+        full_affines[i] = np.dot(full_affines[i],
+                                 np.array([[2.5, 0, 0, -10],
+                                           [0, 2.2, 0, 20],
+                                           [0, 0, 1, 0],
+                                           [0, 0, 0, 1]]))
+
+    gt_rot = gradient_table_from_bvals_bvecs(bvals,
+                                             rotated_bvecs, b0_threshold=0)
+    new_gt = reorient_bvecs(gt_rot, full_affines)
+    # At the end of all this, we should be able to recover the original
+    # vectors:
+    npt.assert_almost_equal(gt.bvecs, new_gt.bvecs)
+
+    # Verify that giving the wrong number of affines raises an error:
+    full_affines.append(np.zeros((4, 4)))
+    assert_raises(ValueError, reorient_bvecs, gt_rot, full_affines)
 
 
 if __name__ == "__main__":

@@ -3,6 +3,7 @@ from __future__ import division, print_function, absolute_import
 from ..utils.six import string_types
 
 import numpy as np
+import scipy.linalg as la
 
 from ..io import gradients as io
 from .onetime import auto_attr
@@ -246,28 +247,28 @@ def gradient_table(bvals, bvecs=None, big_delta=None, small_delta=None,
                                            atol=atol)
 
 
-def reorient_bvecs(gtab, rots):
+def reorient_bvecs(gtab, affines):
     """
     Reorient the directions in a GradientTable according
 
     When correcting for motion, rotation of the diffusion-weighted volumes
     might cause systematic bias in rotationally invariant measures, such as FA
     and MD, and also cause characteristic biases in tractography, unless the
-    gradient directions are appropriatel reoriented to compensate for this
+    gradient directions are appropriately reoriented to compensate for this
     effect [Leemans2009]_.
 
     Parameters
     ----------
     gtab : a GradientTable class instance.
         The nominal gradient table with which the data were acquired.
-    rots : (n, 3) array.
-        The x, y, z rotations (in radians) associated with the motion
-        parameters for each of the volumes in the experiment.
+    affines : list or ndarray of shape (n, 4, 4)
+        Each entry in this list or array contains an affine transformation
+        that encodes the rotation that was applied to the image corresponding
+        to this bvector as part of a motion correction procedure.
 
     Returns
     -------
     gtab : a GradientTable class instance with the reoriented directions
-
 
     References
     ----------
@@ -276,22 +277,21 @@ def reorient_bvecs(gtab, rots):
        MRM, 61: 1336-1349
     """
     new_bvecs = gtab.bvecs[~gtab.b0s_mask]
-    for i, r in enumerate(rots):
-        # We compose the rotation matrix from x, y, z rotations (see appendix
-        # in Leemans and Jones 2009):
-        R =   np.array([[1, 0, 0],
-                        [0, np.cos(r[0]), np.sin(r[0])],
-                        [0, -np.sin(r[0]), np.cos(r[0])]])
 
-        R = np.dot(R, np.array([[np.cos(r[1]), 0,np.sin(r[1])],
-                                [0, 1, 0],
-                                [-np.sin(r[1]),0,np.cos(r[1])]]))
+    if new_bvecs.shape[0] != len(affines):
+        e_s = "Number of affine transformations must match number of "
+        e_s += "non-zero gradients"
+        raise ValueError(e_s)
 
-        R = np.dot(R, np.array([[np.cos(r[2]), np.sin(r[2]), 0],
-                                [-np.sin(r[2]), np.cos(r[2]), 0],
-                                [0, 0, 1]]))
-        R = np.linalg.inv(R)
-        new_bvecs[i] = np.dot(R, new_bvecs[i])
+    for i, aff in enumerate(affines):
+        # Remove the translation component:
+        aff_no_trans = aff[:3, :3]
+        # Decompose into rotation and scaling components:
+        R, S = la.polar(aff_no_trans)
+        Rinv = la.inv(R)
+        # Apply the inverse of the rotation to the corresponding gradient
+        # direction:
+        new_bvecs[i] = np.dot(Rinv, new_bvecs[i])
 
     return_bvecs = np.zeros(gtab.bvecs.shape)
     return_bvecs[~gtab.b0s_mask] = new_bvecs
