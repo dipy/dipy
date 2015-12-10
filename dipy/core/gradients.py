@@ -89,7 +89,7 @@ class GradientTable(object):
 
 
 def gradient_table_from_bvals_bvecs(bvals, bvecs, b0_threshold=0, atol=1e-2,
-                                  **kwargs):
+                                    **kwargs):
     """Creates a GradientTable from a bvals array and a bvecs array
 
     Parameters
@@ -221,9 +221,9 @@ def gradient_table(bvals, bvecs=None, big_delta=None, small_delta=None,
     # If you provided strings with full paths, we go and load those from
     # the files:
     if isinstance(bvals, string_types):
-          bvals, _ = io.read_bvals_bvecs(bvals, None)
+        bvals, _ = io.read_bvals_bvecs(bvals, None)
     if isinstance(bvecs, string_types):
-          _, bvecs = io.read_bvals_bvecs(None, bvecs)
+        _, bvecs = io.read_bvals_bvecs(None, bvecs)
 
     bvals = np.asarray(bvals)
     # If bvecs is None we expect bvals to be an (N, 4) or (4, N) array.
@@ -239,7 +239,7 @@ def gradient_table(bvals, bvecs=None, big_delta=None, small_delta=None,
                              " array containing both bvals and bvecs")
     else:
         bvecs = np.asarray(bvecs)
-        if (bvecs.shape[1] > bvecs.shape[0])  and bvecs.shape[0]>1:
+        if (bvecs.shape[1] > bvecs.shape[0]) and bvecs.shape[0] > 1:
             bvecs = bvecs.T
     return gradient_table_from_bvals_bvecs(bvals, bvecs, big_delta=big_delta,
                                            small_delta=small_delta,
