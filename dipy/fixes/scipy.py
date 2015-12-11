@@ -45,55 +45,6 @@ def polar(a, side="right"):
     .. [2] N. J. Higham, "Functions of Matrices: Theory and Computation",
            SIAM, 2008.
 
-    Examples
-    --------
-    >>> from scipy.linalg import polar
-    >>> a = np.array([[1, -1], [2, 4]])
-    >>> u, p = polar(a)
-    >>> u
-    array([[ 0.85749293, -0.51449576],
-           [ 0.51449576,  0.85749293]])
-    >>> p
-    array([[ 1.88648444,  1.2004901 ],
-           [ 1.2004901 ,  3.94446746]])
-
-    A non-square example, with m < n:
-
-    >>> b = np.array([[0.5, 1, 2], [1.5, 3, 4]])
-    >>> u, p = polar(b)
-    >>> u
-    array([[-0.21196618, -0.42393237,  0.88054056],
-           [ 0.39378971,  0.78757942,  0.4739708 ]])
-    >>> p
-    array([[ 0.48470147,  0.96940295,  1.15122648],
-           [ 0.96940295,  1.9388059 ,  2.30245295],
-           [ 1.15122648,  2.30245295,  3.65696431]])
-    >>> u.dot(p)   # Verify the decomposition.
-    array([[ 0.5,  1. ,  2. ],
-           [ 1.5,  3. ,  4. ]])
-    >>> u.dot(u.T)   # The rows of u are orthonormal.
-    array([[  1.00000000e+00,  -2.07353665e-17],
-           [ -2.07353665e-17,   1.00000000e+00]])
-
-    Another non-square example, with m > n:
-
-    >>> c = b.T
-    >>> u, p = polar(c)
-    >>> u
-    array([[-0.21196618,  0.39378971],
-           [-0.42393237,  0.78757942],
-           [ 0.88054056,  0.4739708 ]])
-    >>> p
-    array([[ 1.23116567,  1.93241587],
-           [ 1.93241587,  4.84930602]])
-    >>> u.dot(p)   # Verify the decomposition.
-    array([[ 0.5,  1.5],
-           [ 1. ,  3. ],
-           [ 2. ,  4. ]])
-    >>> u.T.dot(u)  # The columns of u are orthonormal.
-    array([[  1.00000000e+00,  -1.26363763e-16],
-           [ -1.26363763e-16,   1.00000000e+00]])
-
     Notes
     -----
     Copyright (c) 2001, 2002 Enthought, Inc.
