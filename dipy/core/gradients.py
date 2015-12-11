@@ -3,7 +3,11 @@ from __future__ import division, print_function, absolute_import
 from ..utils.six import string_types
 
 import numpy as np
-import scipy.linalg as la
+try:
+    from scipy.linalg import polar
+except ImportError:   # Some elderly scipy doesn't have polar
+    from dipy.fixes.scipy import polar
+from scipy.linalg import inv
 
 from ..io import gradients as io
 from .onetime import auto_attr
@@ -291,11 +295,11 @@ def reorient_bvecs(gtab, affines):
             # Remove the translation component:
             aff_no_trans = aff[:3, :3]
             # Decompose into rotation and scaling components:
-            R, S = la.polar(aff_no_trans)
+            R, S = polar(aff_no_trans)
         elif aff.shape == (3, 3):
             # We assume this is a rotation matrix:
             R = aff
-        Rinv = la.inv(R)
+        Rinv = inv(R)
         # Apply the inverse of the rotation to the corresponding gradient
         # direction:
         new_bvecs[i] = np.dot(Rinv, new_bvecs[i])
