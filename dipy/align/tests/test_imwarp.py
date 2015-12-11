@@ -6,7 +6,6 @@ from numpy.testing import (assert_equal,
                            assert_array_equal,
                            assert_array_almost_equal,
                            assert_raises)
-from ...__config__ import USING_VC_SSE2, USING_GCC_SSE2
 from ...data import get_data
 from .. import floating
 from .. import imwarp as imwarp
@@ -15,7 +14,6 @@ from .. import vector_fields as vfu
 from .. import VerbosityLevels
 from ..imwarp import DiffeomorphicMap
 
-NO_SSE2 = not (USING_VC_SSE2 or USING_GCC_SSE2)
 
 def test_mult_aff():
     r""" Registration: test matrix multiplication using None as identity
@@ -370,7 +368,6 @@ def simple_callback(sdr, status):
         sdr.ITER_END_CALLED = 1
 
 
-@npt.dec.skipif(NO_SSE2)
 def test_ssd_2d_demons():
     r''' Registration: test 2D SyN with SSD metric, demons-like optimizer
 
@@ -433,7 +430,6 @@ def test_ssd_2d_demons():
     assert_equal(optimizer.ITER_END_CALLED, 1)
 
 
-@npt.dec.skipif(NO_SSE2)
 def test_ssd_2d_gauss_newton():
     r''' Registration: test 2D SyN with SSD metric, Gauss-Newton optimizer
 
@@ -584,7 +580,6 @@ def get_synthetic_warped_circle(nslices):
     return circle_3d, wcircle_3d
 
 
-@npt.dec.skipif(NO_SSE2)
 def test_ssd_3d_demons():
     r''' Registration: test 3D SyN with SSD metric, demons-like optimizer
 
@@ -626,7 +621,6 @@ def test_ssd_3d_demons():
     assert(reduced > 0.9)
 
 
-@npt.dec.skipif(NO_SSE2)
 def test_ssd_3d_gauss_newton():
     r''' Registration: test 3D SyN with SSD metric, Gauss-Newton optimizer
 
@@ -668,8 +662,6 @@ def test_ssd_3d_gauss_newton():
     assert(reduced > 0.9)
 
 
-
-@npt.dec.skipif(NO_SSE2)
 def test_cc_2d():
     r''' Registration: test 2D SyN with CC metric
 
@@ -706,7 +698,6 @@ def test_cc_2d():
     assert(reduced > 0.9)
 
 
-@npt.dec.skipif(NO_SSE2)
 def test_cc_3d():
     r''' Registration: test 3D SyN with CC metric
 
@@ -751,7 +742,6 @@ def test_cc_3d():
     assert(reduced > 0.9)
 
 
-@npt.dec.skipif(NO_SSE2)
 def test_em_3d_gauss_newton():
     r''' Registration: test 3D SyN with EM metric, Gauss-Newton optimizer
 
@@ -799,7 +789,6 @@ def test_em_3d_gauss_newton():
     assert(reduced > 0.9)
 
 
-@npt.dec.skipif(NO_SSE2)
 def test_em_2d_gauss_newton():
     r''' Registration: test 2D SyN with EM metric, Gauss-Newton optimizer
 
@@ -841,7 +830,6 @@ def test_em_2d_gauss_newton():
     assert(reduced > 0.9)
 
 
-@npt.dec.skipif(NO_SSE2)
 def test_em_3d_demons():
     r''' Registration: test 3D SyN with EM metric, demons-like optimizer
 
@@ -889,7 +877,6 @@ def test_em_3d_demons():
     assert(reduced > 0.9)
 
 
-@npt.dec.skipif(NO_SSE2)
 def test_em_2d_demons():
     r''' Registration: test 2D SyN with EM metric, demons-like optimizer
 
