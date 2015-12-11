@@ -18,8 +18,7 @@ from ..imwarp import DiffeomorphicMap
 NO_SSE2 = not (USING_VC_SSE2 or USING_GCC_SSE2)
 
 def test_mult_aff():
-    r"""mult_aff from imwarp returns the matrix product A.dot(B) considering
-    None as the identity
+    r""" Registration: test matrix multiplication using None as identity
     """
     A = np.array([[1.0, 2.0], [3.0, 4.0]])
     B = np.array([[2.0, 0.0], [0.0, 2.0]])
@@ -39,15 +38,16 @@ def test_mult_aff():
 
 
 def test_diffeomorphic_map_2d():
-    r"""
-    Creates a random displacement field that exactly maps pixels from an input
-    image to an output image. First a discrete random assignment between the
-    images is generated, then each pair of mapped points are transformed to
-    the physical space by assigning a pair of arbitrary, fixed affine matrices
-    to input and output images, and finaly the difference between their
-    positions is taken as the displacement vector. The resulting displacement,
-    although operating in physical space, maps the points exactly (up to
-    numerical precision).
+    r""" Registration: test 2D DiffeomorphicMap
+
+    Creates a random displacement field that exactly maps pixels from an
+    input image to an output image. First a discrete random assignment
+    between the images is generated, then each pair of mapped points are
+    transformed to the physical space by assigning a pair of arbitrary,
+    fixed affine matrices to input and output images, and finaly the
+    difference between their positions is taken as the displacement vector.
+    The resulting displacement, although operating in physical space,
+    maps the points exactly (up to numerical precision).
     """
     np.random.seed(2022966)
     domain_shape = (10, 10)
@@ -71,7 +71,8 @@ def test_diffeomorphic_map_2d():
     codomain_grid2world = gt_affine
     disp, assign = vfu.create_random_displacement_2d(
                         np.array(domain_shape, dtype=np.int32),
-                        domain_grid2world,np.array(codomain_shape, dtype=np.int32),
+                        domain_grid2world,np.array(codomain_shape,
+                                                   dtype=np.int32),
                         codomain_grid2world)
     disp = np.array(disp, dtype=floating)
     assign = np.array(assign)
@@ -179,14 +180,15 @@ def test_diffeomorphic_map_2d():
 
 
 def test_diffeomorphic_map_simplification_2d():
-    r"""
+    r""" Registration: test simplification of 2D diffeomorphic maps
+
     Create an invertible deformation field, and define a DiffeomorphicMap
     using different voxel-to-space transforms for domain, codomain, and
     reference discretizations, also use a non-identity pre-aligning matrix.
     Warp a circle using the diffeomorphic map to obtain the expected warped
-    circle. Now simplify the DiffeomorphicMap and warp the same circle using
-    this simplified map. Verify that the two warped circles are equal up to
-    numerical precision.
+    circle. Now simplify the DiffeomorphicMap and warp the same circle
+    using this simplified map. Verify that the two warped circles are equal
+    up to numerical precision.
     """
     #create a simple affine transformation
     dom_shape = (64, 64)
@@ -206,7 +208,8 @@ def test_diffeomorphic_map_simplification_2d():
     # Create the invertible displacement fields and the circle
     radius = 16
     circle = vfu.create_circle(cod_shape[0], cod_shape[1], radius)
-    d, dinv = vfu.create_harmonic_fields_2d(dom_shape[0], dom_shape[1], 0.3, 6)
+    d, dinv = vfu.create_harmonic_fields_2d(dom_shape[0],
+                                            dom_shape[1], 0.3, 6)
     #Define different voxel-to-space transforms for domain, codomain and
     #reference grid, also, use a non-identity pre-align transform
     D = gt_affine
@@ -241,14 +244,15 @@ def test_diffeomorphic_map_simplification_2d():
 
 
 def test_diffeomorphic_map_simplification_3d():
-    r"""
+    r""" Registration: test simplification of 3D diffeomorphic maps
+
     Create an invertible deformation field, and define a DiffeomorphicMap
     using different voxel-to-space transforms for domain, codomain, and
     reference discretizations, also use a non-identity pre-aligning matrix.
     Warp a sphere using the diffeomorphic map to obtain the expected warped
-    sphere. Now simplify the DiffeomorphicMap and warp the same sphere using
-    this simplified map. Verify that the two warped spheres are equal up to
-    numerical precision.
+    sphere. Now simplify the DiffeomorphicMap and warp the same sphere
+    using this simplified map. Verify that the two warped spheres are equal
+    up to numerical precision.
     """
     #create a simple affine transformation
     domain_shape = (64, 64, 64)
@@ -307,10 +311,13 @@ def test_diffeomorphic_map_simplification_3d():
     assert_equal(simplified.disp_world2grid, None)
 
 def test_optimizer_exceptions():
+    r""" Registration: test exceptions from SyN
+    """
     #An arbitrary valid metric
     metric = metrics.SSDMetric(2)
     # The metric must not be None
-    assert_raises(ValueError, imwarp.SymmetricDiffeomorphicRegistration, None)
+    assert_raises(ValueError, imwarp.SymmetricDiffeomorphicRegistration,
+                  None)
     # The iterations list must not be empty
     assert_raises(ValueError, imwarp.SymmetricDiffeomorphicRegistration,
                   metric, [])
@@ -325,6 +332,8 @@ def test_optimizer_exceptions():
 
 
 def test_get_direction_and_spacings():
+    r""" Registration: test direction and spacings from affine transforms
+    """
     xrot = 0.5
     yrot = 0.75
     zrot = 1.0
@@ -342,6 +351,7 @@ def test_get_direction_and_spacings():
     assert_array_almost_equal(spacings, spacings_gt)
 
 def simple_callback(sdr, status):
+    r""" Registration: verify callback function is called from SyN """
     if status == imwarp.RegistrationStages.INIT_START:
         sdr.INIT_START_CALLED = 1
     if status == imwarp.RegistrationStages.INIT_END:
@@ -360,21 +370,12 @@ def simple_callback(sdr, status):
         sdr.ITER_END_CALLED = 1
 
 
-def subsample_profile(profile, nsamples):
-    plen = len(profile)
-    stride = np.max([1, (plen - 1) // (nsamples - 1)])
-    subsampled = np.array(
-        profile[:(1 + (nsamples - 1) * stride):stride])
-    return subsampled
-
 @npt.dec.skipif(NO_SSE2)
 def test_ssd_2d_demons():
-    r'''
-    Classical Circle-To-C experiment for 2D Monomodal registration. This test
-    is intended to detect regressions only: we saved the energy profile (the
-    sequence of energy values at each iteration) of a working version of SSD in
-    2D using the Demons step, and this test checks that the current energy
-    profile matches the saved one.
+    r''' Registration: test 2D SyN with SSD metric, demons-like optimizer
+
+    Classical Circle-To-C experiment for 2D monomodal registration. We
+    verify that the final registration is of good quality.
     '''
     fname_moving = get_data('reg_o')
     fname_static = get_data('reg_c')
@@ -434,12 +435,10 @@ def test_ssd_2d_demons():
 
 @npt.dec.skipif(NO_SSE2)
 def test_ssd_2d_gauss_newton():
-    r'''
-    Classical Circle-To-C experiment for 2D Monomodal registration. This test
-    is intended to detect regressions only: we saved the energy profile (the
-    sequence of energy values at each iteration) of a working version of SSD
-    in 2D using the Gauss Newton step, and this test checks that the current
-    energy profile matches the saved one.
+    r''' Registration: test 2D SyN with SSD metric, Gauss-Newton optimizer
+
+    Classical Circle-To-C experiment for 2D monomodal registration. We
+    verify that the final registration is of good quality.
     '''
     fname_moving = get_data('reg_o')
     fname_static = get_data('reg_c')
@@ -497,7 +496,7 @@ def test_ssd_2d_gauss_newton():
 
 
 def get_warped_stacked_image(image, nslices, b, m):
-    r""" Deform `image` with invertible field and for a 3D image with it
+    r""" Creates a volume by stacking copies of a deformed image
 
     The image is deformed under an invertible field, and a 3D volume is
     generated as follows:
@@ -587,15 +586,11 @@ def get_synthetic_warped_circle(nslices):
 
 @npt.dec.skipif(NO_SSE2)
 def test_ssd_3d_demons():
-    r'''
+    r''' Registration: test 3D SyN with SSD metric, demons-like optimizer
+
     Register a stack of circles ('cylinder') before and after warping them
-    with a synthetic diffeomorphism. This test is intended to detect
-    regressions only: we saved the energy profile (the sequence of energy
-    values at each iteration) of a working version of SSD in 3D using the
-    Demons step, and this test checks that the current energy profile matches
-    the saved one. The validation of the "working version" was done by
-    registering the 18 manually annotated T1 brain MRI database IBSR with each
-    other and computing the jaccard index for all 31 common anatomical regions.
+    with a synthetic diffeomorphism. We verify that the final registration
+    is of good quality.
     '''
     moving, static = get_synthetic_warped_circle(30)
     moving[...,:8] = 0
@@ -633,16 +628,11 @@ def test_ssd_3d_demons():
 
 @npt.dec.skipif(NO_SSE2)
 def test_ssd_3d_gauss_newton():
-    r'''
-    Register a stack of circles ('cylinder') before and after warping them with
-    a synthetic diffeomorphism. This test is intended to detect regressions
-    only: we saved the energy profile (the sequence of energy values at each
-    iteration) of a working version of SSD in 3D using the Gauss-Newton step,
-    and this test checks that the current energy profile matches the saved
-    one. The validation of the "working version" was
-    done by registering the 18 manually annotated T1 brain MRI database IBSR
-    with each other and computing the jaccard index for all 31 common
-    anatomical regions.
+    r''' Registration: test 3D SyN with SSD metric, Gauss-Newton optimizer
+
+    Register a stack of circles ('cylinder') before and after warping them
+    with a synthetic diffeomorphism. We verify that the final registration
+    is of good quality.
     '''
     moving, static = get_synthetic_warped_circle(35)
     moving[...,:10] = 0
@@ -681,12 +671,11 @@ def test_ssd_3d_gauss_newton():
 
 @npt.dec.skipif(NO_SSE2)
 def test_cc_2d():
-    r'''
-    Register a circle to itself after warping it under a synthetic invertible
-    map. This test is intended to detect regressions only: we saved the energy
-    profile (the sequence of energy values at each iteration) of a working
-    version of CC in 2D, and this test checks that the current energy profile
-    matches the saved one.
+    r''' Registration: test 2D SyN with CC metric
+
+    Register a coronal slice from a T1w brain MRI before and after warping
+    it under a synthetic invertible map. We verify that the final
+    registration is of good quality.
     '''
     fname = get_data('t1_coronal_slice')
     nslices = 1
@@ -719,19 +708,12 @@ def test_cc_2d():
 
 @npt.dec.skipif(NO_SSE2)
 def test_cc_3d():
-    r'''
-    Register a stack of circles ('cylinder') before and after warping them with
-    a synthetic diffeomorphism. This test
-    is intended to detect regressions only: we saved the energy profile (the
-    sequence of energy values at each iteration) of a working version of CC in
-    3D, and this test checks that the current energy profile matches the saved
-    one. The validation of the "working version" was done by registering the
-    18 manually annotated T1 brain MRI database IBSR with each other and
-    computing the jaccard index for all 31 common anatomical regions. The
-    "working version" of CC in 3D obtains very similar results as
-    those reported for ANTS on the same database with the same number of
-    iterations. Any modification that produces a change in the energy profile
-    should be carefully validated to ensure no accuracy loss.
+    r''' Registration: test 3D SyN with CC metric
+
+    Register a volume created by stacking copies of a coronal slice from
+    a T1w brain MRI before and after warping it under a synthetic
+    invertible map. We verify that the final registration is of good
+    quality.
     '''
     fname = get_data('t1_coronal_slice')
     nslices = 21
@@ -771,19 +753,12 @@ def test_cc_3d():
 
 @npt.dec.skipif(NO_SSE2)
 def test_em_3d_gauss_newton():
-    r'''
-    Register a stack of circles ('cylinder') before and after warping them with
-    a synthetic diffeomorphism. This test
-    is intended to detect regressions only: we saved the energy profile (the
-    sequence of energy values at each iteration) of a working version of EM in
-    3D, and this test checks that the current energy profile matches the saved
-    one. The validation of the "working version" was
-    done by registering the 18 manually annotated T1 brain MRI database IBSR
-    with each other and computing the jaccard index for all 31 common
-    anatomical regions. The "working version" of EM in 3D obtains very similar
-    results as those reported for ANTS on the same database. Any modification
-    that produces a change in the energy profile should be carefully validated
-    to ensure no accuracy loss.
+    r''' Registration: test 3D SyN with EM metric, Gauss-Newton optimizer
+
+    Register a volume created by stacking copies of a coronal slice from
+    a T1w brain MRI before and after warping it under a synthetic
+    invertible map. We verify that the final registration is of good
+    quality.
     '''
     fname = get_data('t1_coronal_slice')
     nslices = 21
@@ -826,12 +801,11 @@ def test_em_3d_gauss_newton():
 
 @npt.dec.skipif(NO_SSE2)
 def test_em_2d_gauss_newton():
-    r'''
-    Register a circle to itself after warping it under a synthetic invertible
-    map. This test is intended to detect regressions only: we saved the energy
-    profile (the sequence of energy values at each iteration) of a working
-    version of EM in 2D, and this test checks that the current energy profile
-    matches the saved one.
+    r''' Registration: test 2D SyN with EM metric, Gauss-Newton optimizer
+
+    Register a coronal slice from a T1w brain MRI before and after warping
+    it under a synthetic invertible map. We verify that the final
+    registration is of good quality.
     '''
 
     fname = get_data('t1_coronal_slice')
@@ -869,19 +843,12 @@ def test_em_2d_gauss_newton():
 
 @npt.dec.skipif(NO_SSE2)
 def test_em_3d_demons():
-    r'''
-    Register a stack of circles ('cylinder') before and after warping them with
-    a synthetic diffeomorphism. This test
-    is intended to detect regressions only: we saved the energy profile (the
-    sequence of energy values at each iteration) of a working version of EM in
-    3D, and this test checks that the current energy profile matches the saved
-    one. The validation of the "working version" was
-    done by registering the 18 manually annotated T1 brain MRI database IBSR
-    with each other and computing the jaccard index for all 31 common
-    anatomical regions. The "working version" of EM in 3D obtains very similar
-    results as those reported for ANTS on the same database. Any modification
-    that produces a change in the energy profile should be carefully validated
-    to ensure no accuracy loss.
+    r''' Registration: test 3D SyN with EM metric, demons-like optimizer
+
+    Register a volume created by stacking copies of a coronal slice from
+    a T1w brain MRI before and after warping it under a synthetic
+    invertible map. We verify that the final registration is of good
+    quality.
     '''
     fname = get_data('t1_coronal_slice')
     nslices = 21
@@ -924,12 +891,11 @@ def test_em_3d_demons():
 
 @npt.dec.skipif(NO_SSE2)
 def test_em_2d_demons():
-    r'''
-    Register a circle to itself after warping it under a synthetic invertible
-    map. This test is intended to detect regressions only: we saved the energy
-    profile (the sequence of energy values at each iteration) of a working
-    version of EM in 2D, and this test checks that the current energy profile
-    matches the saved one.
+    r''' Registration: test 2D SyN with EM metric, demons-like optimizer
+
+    Register a coronal slice from a T1w brain MRI before and after warping
+    it under a synthetic invertible map. We verify that the final
+    registration is of good quality.
     '''
     fname = get_data('t1_coronal_slice')
     nslices = 1
@@ -965,7 +931,6 @@ def test_em_2d_demons():
 
 
 if __name__=='__main__':
-    test_scale_space_exceptions()
     test_optimizer_exceptions()
     test_mult_aff()
     test_diffeomorphic_map_2d()
