@@ -201,6 +201,12 @@ def _piesno_3D(data, N, alpha=0.01, l=100, itermax=100, eps=1e-5,
     Journal of Magnetic Resonance 2009; 197: 108-119.
     """
 
+    if np.all(data == 0):
+        if return_mask:
+            return 0, np.zeros(data.shape[:-1], dtype=np.bool)
+
+        return 0
+
     if N in opt_quantile:
         q = opt_quantile[N]
     else:
@@ -217,53 +223,45 @@ def _piesno_3D(data, N, alpha=0.01, l=100, itermax=100, eps=1e-5,
     K = data.shape[-1]
     sum_m2 = np.sum(data**2, axis=-1, dtype=np.float32)
 
-    sigma = np.zeros(phi.shape, dtype=phi.dtype)
-    mask = np.zeros(phi.shape + data.shape[:-1])
+    sigma_prev = 0
+    sigma = m
+    prev_idx = 0
+    mask = np.zeros(data.shape[:-1], dtype=np.bool)
 
     lambda_minus = _inv_nchi_cdf(N, K, alpha/2)
     lambda_plus = _inv_nchi_cdf(N, K, 1 - alpha/2)
 
-    pos = 0
-    max_length_omega = 0
 
-    for num, sig in enumerate(phi):
+    for sigma_init in phi:
 
-        sig_prev = 0
-        omega_size = 1
-        idx = np.zeros(sum_m2.shape, dtype=np.bool)
+        s = sum_m2 / (2 * K * sigma_init**2)
+        found_idx = np.sum(np.logical_and(lambda_minus <= s, s <= lambda_plus), dtype=np.int16)
 
-        for n in range(itermax):
+        if found_idx > prev_idx:
+            sigma = sigma_init
+            prev_idx = found_idx
 
-            if np.abs(sig - sig_prev) < eps:
-                break
+    for n in range(itermax):
+        if np.abs(sigma - sigma_prev) < eps:
+            break
 
-            s = sum_m2 / (2 * K * sig**2)
-            idx = np.logical_and(lambda_minus <= s, s <= lambda_plus)
-            omega = data[idx, :]
+        s = sum_m2 / (2 * K * sigma**2)
+        mask[...] = np.logical_and(lambda_minus <= s, s <= lambda_plus)
+        omega = data[mask, :]
 
-            # If no point meets the criterion, exit
-            if omega.size == 0:
-                omega_size = 0
-                break
+        # If no point meets the criterion, exit
+        if omega.size == 0:
+            break
 
-            sig_prev = sig
+        sigma_prev = sigma
 
-            # Numpy percentile must range in 0 to 100, hence q*100
-            sig = np.percentile(omega, q * 100) / denom
-            omega_size = omega.size / K
-
-        # Remember the biggest omega array as giving the optimal
-        # sigma amongst all initial estimates from phi
-        if omega_size > max_length_omega:
-            pos, max_length_omega = num, omega_size
-
-        sigma[num] = sig
-        mask[num] = idx
+        # Numpy percentile must range in 0 to 100, hence q*100
+        sigma = np.percentile(omega, q * 100) / denom
 
     if return_mask:
-        return sigma[pos], mask[pos]
+        return sigma, mask
 
-    return sigma[pos]
+    return sigma
 
 
 def estimate_sigma(arr, disable_background_masking=False, N=0):
