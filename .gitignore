@@ -28,3 +28,4 @@ __config__.py
 .DS_Store
 .coverage
 .buildbot.patch
+.eggs/
