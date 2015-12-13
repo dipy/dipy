@@ -6,6 +6,7 @@ from os.path import join as pjoin, split as psplit, splitext, dirname, exists
 import tempfile
 import shutil
 
+from distutils.version import LooseVersion
 from distutils.command.install_scripts import install_scripts
 from distutils.errors import CompileError, LinkError
 
@@ -192,3 +193,65 @@ def add_flag_checking(build_ext_class, flag_defines, top_package_dir=''):
             build_ext_class.build_extensions(self)
 
     return Checker
+
+
+def get_pkg_version(pkg_name):
+    """ Return package version for `pkg_name` if installed
+
+    Returns
+    -------
+    pkg_version : str or None
+        Return None if package not importable.  Return 'unknown' if standard
+        ``__version__`` string not present. Otherwise return version string.
+    """
+    try:
+        pkg = __import__(pkg_name)
+    except ImportError:
+        return None
+    try:
+        return pkg.__version__
+    except AttributeError:
+        return 'unknown'
+
+
+def version_error_msg(pkg_name, found_ver, min_ver):
+    """ Return informative error message for version or None
+    """
+    if found_ver is None:
+        return 'We need package {0}, but not importable'.format(pkg_name)
+    if found_ver == 'unknown':
+        return 'We need {0} version {1}, but cannot get version'.format(
+            pkg_name, min_ver)
+    if LooseVersion(found_ver) >= LooseVersion(min_ver):
+        return None
+    return 'We need {0} version {1}, but found version {2}'.format(
+        pkg_name, found_ver, min_ver)
+
+
+class Bunch(object):
+    def __init__(self, vars):
+        for key, name in vars.items():
+            if key.startswith('__'):
+                continue
+            self.__dict__[key] = name
+
+
+def read_vars_from(ver_file):
+    """ Read variables from Python text file
+
+    Parameters
+    ----------
+    ver_file : str
+        Filename of file to read
+
+    Returns
+    -------
+    info_vars : Bunch instance
+        Bunch object where variables read from `ver_file` appear as
+        attributes
+    """
+    # Use exec for compabibility with Python 3
+    ns = {}
+    with open(ver_file, 'rt') as fobj:
+        exec(fobj.read(), ns)
+    return Bunch(ns)
