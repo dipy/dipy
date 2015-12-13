@@ -1,7 +1,6 @@
 import os
 from os.path import splitext, sep as filesep, join as pjoin, relpath
 from hashlib import sha1
-from subprocess import check_call
 
 from distutils.command.build_ext import build_ext
 from distutils.command.sdist import sdist
@@ -143,12 +142,17 @@ def build_stamp(pyxes, include_dirs=()):
         hash>; "c_filename", <c filemane>; "c_hash", <c file SHA1 hash>.
     """
     pyx_defs = {}
+    from Cython.Compiler.Main import compile
+    from Cython.Compiler.CmdLine import parse_command_line
     includes = sum([['--include-dir', d] for d in include_dirs], [])
     for source in pyxes:
         base, ext = splitext(source)
         pyx_hash = sha1(open(source, 'rt').read()).hexdigest()
         c_filename = base + '.c'
-        check_call(['cython'] + includes + [source])
+        options, sources = parse_command_line(includes + [source])
+        result = compile(sources, options)
+        if result.num_errors > 0:
+            raise RuntimeError('Cython failed to compile ' + source)
         c_hash = sha1(open(c_filename, 'rt').read()).hexdigest()
         pyx_defs[source] = dict(pyx_hash=pyx_hash,
                                 c_filename=c_filename,
