@@ -18,6 +18,7 @@ python:
     - 3.2
     - 3.3
     - 3.4
+    - 3.5
 matrix:
   include:
     - python: 2.7
@@ -53,6 +54,8 @@ before_install:
     - virtualenv $VENV_ARGS venv
     - source venv/bin/activate
     - python --version # just to check
+    # Needed for Python 3.5 wheel fetching
+    - pip install -U pip
     - retry pip install nose;
     - wheelhouse_pip_install $DEPENDS;
     - if [ "${COVERAGE}" == "1" ]; then
