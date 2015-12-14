@@ -16,7 +16,7 @@ from ..imwarp import DiffeomorphicMap
 
 
 def test_mult_aff():
-    r""" Registration: test matrix multiplication using None as identity
+    r""" Test matrix multiplication using None as identity
     """
     A = np.array([[1.0, 2.0], [3.0, 4.0]])
     B = np.array([[2.0, 0.0], [0.0, 2.0]])
@@ -36,7 +36,7 @@ def test_mult_aff():
 
 
 def test_diffeomorphic_map_2d():
-    r""" Registration: test 2D DiffeomorphicMap
+    r""" Test 2D DiffeomorphicMap
 
     Creates a random displacement field that exactly maps pixels from an
     input image to an output image. First a discrete random assignment
@@ -178,7 +178,7 @@ def test_diffeomorphic_map_2d():
 
 
 def test_diffeomorphic_map_simplification_2d():
-    r""" Registration: test simplification of 2D diffeomorphic maps
+    r""" Test simplification of 2D diffeomorphic maps
 
     Create an invertible deformation field, and define a DiffeomorphicMap
     using different voxel-to-space transforms for domain, codomain, and
@@ -242,7 +242,7 @@ def test_diffeomorphic_map_simplification_2d():
 
 
 def test_diffeomorphic_map_simplification_3d():
-    r""" Registration: test simplification of 3D diffeomorphic maps
+    r""" Test simplification of 3D diffeomorphic maps
 
     Create an invertible deformation field, and define a DiffeomorphicMap
     using different voxel-to-space transforms for domain, codomain, and
@@ -309,7 +309,7 @@ def test_diffeomorphic_map_simplification_3d():
     assert_equal(simplified.disp_world2grid, None)
 
 def test_optimizer_exceptions():
-    r""" Registration: test exceptions from SyN
+    r""" Test exceptions from SyN
     """
     #An arbitrary valid metric
     metric = metrics.SSDMetric(2)
@@ -330,7 +330,7 @@ def test_optimizer_exceptions():
 
 
 def test_get_direction_and_spacings():
-    r""" Registration: test direction and spacings from affine transforms
+    r""" Test direction and spacings from affine transforms
     """
     xrot = 0.5
     yrot = 0.75
@@ -349,7 +349,7 @@ def test_get_direction_and_spacings():
     assert_array_almost_equal(spacings, spacings_gt)
 
 def simple_callback(sdr, status):
-    r""" Registration: verify callback function is called from SyN """
+    r""" Verify callback function is called from SyN """
     if status == imwarp.RegistrationStages.INIT_START:
         sdr.INIT_START_CALLED = 1
     if status == imwarp.RegistrationStages.INIT_END:
@@ -369,7 +369,7 @@ def simple_callback(sdr, status):
 
 
 def test_ssd_2d_demons():
-    r''' Registration: test 2D SyN with SSD metric, demons-like optimizer
+    r''' Test 2D SyN with SSD metric, demons-like optimizer
 
     Classical Circle-To-C experiment for 2D monomodal registration. We
     verify that the final registration is of good quality.
@@ -431,7 +431,7 @@ def test_ssd_2d_demons():
 
 
 def test_ssd_2d_gauss_newton():
-    r''' Registration: test 2D SyN with SSD metric, Gauss-Newton optimizer
+    r''' Test 2D SyN with SSD metric, Gauss-Newton optimizer
 
     Classical Circle-To-C experiment for 2D monomodal registration. We
     verify that the final registration is of good quality.
@@ -503,18 +503,18 @@ def get_warped_stacked_image(image, nslices, b, m):
 
     Parameters
     ----------
-    image: 2d array shape(r, c)
+    image : 2d array shape(r, c)
         the image to be deformed
-    nslices: int
+    nslices : int
         the number of slices in the final volume
     b, m : float
         parameters of the harmonic field (as in [1]).
 
     Returns
     -------
-    vol : array shape(r, c, `nslices`)
+    vol : array shape(r, c) if `nslices`==1 else (r, c, `nslices`)
         the volumed generated using the undeformed image
-    wvol :
+    wvol : array shape(r, c) if `nslices`==1 else (r, c, `nslices`)
         the volumed generated using the warped image
 
     References
@@ -581,7 +581,7 @@ def get_synthetic_warped_circle(nslices):
 
 
 def test_ssd_3d_demons():
-    r''' Registration: test 3D SyN with SSD metric, demons-like optimizer
+    r''' Test 3D SyN with SSD metric, demons-like optimizer
 
     Register a stack of circles ('cylinder') before and after warping them
     with a synthetic diffeomorphism. We verify that the final registration
@@ -622,7 +622,7 @@ def test_ssd_3d_demons():
 
 
 def test_ssd_3d_gauss_newton():
-    r''' Registration: test 3D SyN with SSD metric, Gauss-Newton optimizer
+    r''' Test 3D SyN with SSD metric, Gauss-Newton optimizer
 
     Register a stack of circles ('cylinder') before and after warping them
     with a synthetic diffeomorphism. We verify that the final registration
@@ -663,7 +663,7 @@ def test_ssd_3d_gauss_newton():
 
 
 def test_cc_2d():
-    r''' Registration: test 2D SyN with CC metric
+    r''' Test 2D SyN with CC metric
 
     Register a coronal slice from a T1w brain MRI before and after warping
     it under a synthetic invertible map. We verify that the final
@@ -699,7 +699,7 @@ def test_cc_2d():
 
 
 def test_cc_3d():
-    r''' Registration: test 3D SyN with CC metric
+    r''' Test 3D SyN with CC metric
 
     Register a volume created by stacking copies of a coronal slice from
     a T1w brain MRI before and after warping it under a synthetic
@@ -743,7 +743,7 @@ def test_cc_3d():
 
 
 def test_em_3d_gauss_newton():
-    r''' Registration: test 3D SyN with EM metric, Gauss-Newton optimizer
+    r''' Test 3D SyN with EM metric, Gauss-Newton optimizer
 
     Register a volume created by stacking copies of a coronal slice from
     a T1w brain MRI before and after warping it under a synthetic
@@ -790,7 +790,7 @@ def test_em_3d_gauss_newton():
 
 
 def test_em_2d_gauss_newton():
-    r''' Registration: test 2D SyN with EM metric, Gauss-Newton optimizer
+    r''' Test 2D SyN with EM metric, Gauss-Newton optimizer
 
     Register a coronal slice from a T1w brain MRI before and after warping
     it under a synthetic invertible map. We verify that the final
@@ -831,7 +831,7 @@ def test_em_2d_gauss_newton():
 
 
 def test_em_3d_demons():
-    r''' Registration: test 3D SyN with EM metric, demons-like optimizer
+    r''' Test 3D SyN with EM metric, demons-like optimizer
 
     Register a volume created by stacking copies of a coronal slice from
     a T1w brain MRI before and after warping it under a synthetic
@@ -878,7 +878,7 @@ def test_em_3d_demons():
 
 
 def test_em_2d_demons():
-    r''' Registration: test 2D SyN with EM metric, demons-like optimizer
+    r''' Test 2D SyN with EM metric, demons-like optimizer
 
     Register a coronal slice from a T1w brain MRI before and after warping
     it under a synthetic invertible map. We verify that the final
@@ -915,22 +915,3 @@ def test_em_2d_demons():
     reduced = 1.0 - final_energy/starting_energy
 
     assert(reduced > 0.9)
-
-
-if __name__=='__main__':
-    test_optimizer_exceptions()
-    test_mult_aff()
-    test_diffeomorphic_map_2d()
-    test_diffeomorphic_map_simplification_2d()
-    test_diffeomorphic_map_simplification_3d()
-    test_get_direction_and_spacings()
-    test_ssd_2d_demons()
-    test_ssd_2d_gauss_newton()
-    test_ssd_3d_demons()
-    test_ssd_3d_gauss_newton()
-    test_cc_2d()
-    test_cc_3d()
-    test_em_2d_gauss_newton()
-    test_em_3d_gauss_newton()
-    test_em_3d_demons()
-    test_em_2d_demons()
