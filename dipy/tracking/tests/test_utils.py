@@ -4,6 +4,8 @@ from ...utils.six.moves import xrange
 
 import numpy as np
 import nose
+import nibabel as nib
+
 from dipy.io.bvectxt import orientation_from_string
 from dipy.tracking.utils import (affine_for_trackvis, connectivity_matrix,
                                  density_map, length, move_streamlines,
@@ -11,7 +13,7 @@ from dipy.tracking.utils import (affine_for_trackvis, connectivity_matrix,
                                  reorder_voxels_affine, seeds_from_mask,
                                  random_seeds_from_mask, target,
                                  _rmi, unique_rows, near_roi,
-                                 reduce_rois)
+                                 reduce_rois, vals_from_img)
 from dipy.tracking._utils import _to_voxel_coordinates
 
 import dipy.tracking.metrics as metrix
@@ -607,3 +609,21 @@ def test_reduce_rois():
                                            [True, True])
     npt.assert_equal(include_roi, roi1 + roi2)
     npt.assert_equal(exclude_roi, np.zeros((4, 4, 4)))
+
+
+def test_vals_from_img():
+    img = nib.Nifti1Image(np.arange(2000).reshape(20, 10, 10), np.eye(4))
+    streamlines = [np.array([[1, 0, 0],
+                             [1.5, 0, 0],
+                             [2, 0, 0],
+                             [2.5, 0, 0]]),
+                   np.array([[2, 0, 0],
+                             [3.1, 0, 0],
+                             [3.9, 0, 0],
+                             [4.1, 0, 0]])]
+
+    vv = vals_from_img(img, np.array(streamlines))
+
+    # Interpolation is to floating point precision:
+    npt.assert_almost_equal(vv, [[100., 150., 200., 250.],
+                                 [200., 310., 390., 410.]])

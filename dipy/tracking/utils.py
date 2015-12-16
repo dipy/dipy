@@ -53,6 +53,7 @@ from warnings import warn
 
 from nibabel.affines import apply_affine
 from scipy.spatial.distance import cdist
+from scipy.interpolate import RegularGridInterpolator
 
 from dipy.core.geometry import dist_to_corner
 
@@ -955,3 +956,50 @@ def reduce_rois(rois, include):
             exclude_roi |= rois[i]
 
     return include_roi, exclude_roi
+
+
+def vals_from_img(img, streamlines, affine=None):
+    """
+    Parameters
+    ----------
+    img : Nifti1Image
+        3D image to index into. Registered to the diffusion data
+        from which you tracked, but can have any resolution.
+
+    streamlines : ndarray or list
+        If array, of shape (n_streamlines, n_nodes, 3)
+        If list, len(n_streamlines) with (n_nodes, 3) array in
+        each element of the list.
+
+    affine : ndarray, shape (4, 4)
+        Affine transformation from voxels (image coordinates) to streamlines.
+        Default: identity.
+
+    Return
+    ------
+    array or list (depending on the input) : values interpolate to each
+        coordinate along the length of each streamline
+
+
+    """
+    data = img.get_data()
+    rgi = RegularGridInterpolator((np.arange(data.shape[0]),
+                                   np.arange(data.shape[1]),
+                                   np.arange(data.shape[2])), data)
+    if isinstance(streamlines, list):
+        if affine is not None:
+            streamlines = dtu.move_streamlines(streamlines,
+                                               np.linalg.inv(affine))
+        vals = []
+        for sl in streamlines:
+            vals.append(rgi(sl))
+    elif isinstance(streamlines, np.ndarray):
+        sl_shape = streamlines.shape
+        sl_cat = streamlines.reshape(sl_shape[0] * sl_shape[1], 3)
+        if affine is not None:
+            sl_cat = np.dot(sl_cat, affine[:3, :3]) + affine[:3, 3]
+        # So that we can index in one operation:
+        vals = rgi(sl_cat)
+        vals = vals.reshape(sl_shape[0], sl_shape[1])
+
+    return vals
