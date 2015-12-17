@@ -29,9 +29,9 @@ if force_setuptools:
 # MANIFEST
 from distutils.core import setup
 from distutils.extension import Extension
-from distutils.command import build_py, build_ext
+from distutils.command.build_py import build_py as du_build_py
+from distutils.command.build_ext import build_ext as du_build_ext
 
-import cythexts
 from cythexts import cyproc_exts, get_pyx_sdist, derror_maker
 from setup_helpers import (install_scripts_bat, add_flag_checking,
                            get_pkg_version, version_error_msg, read_vars_from)
@@ -120,15 +120,15 @@ try:
 except ImportError: # No nibabel
     msg = ('Need nisext package from nibabel installation'
            ' - please install nibabel first')
-    pybuilder = derror_maker(build_py.build_py, msg)
-    extbuilder = derror_maker(build_ext.build_ext, msg)
+    pybuilder = derror_maker(du_build_py, msg)
+    extbuilder = derror_maker(du_build_ext, msg)
 else: # We have nibabel
     pybuilder = get_comrec_build('dipy')
     # Cython is a dependency for building extensions, iff we don't have stamped
     # up pyx and c files.
     build_ext = cyproc_exts(EXTS, info.CYTHON_MIN_VERSION, 'pyx-stamps')
     # build_ext is default when we don't need cython
-    need_cython = not build_ext is cythexts.build_ext
+    need_cython = build_ext is not du_build_ext
     # Add openmp flags if they work
     simple_test_c = """int main(int argc, char** argv) { return(0); }"""
     omp_test_c = """#include <omp.h>
