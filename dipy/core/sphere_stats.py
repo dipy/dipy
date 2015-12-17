@@ -7,7 +7,7 @@ import dipy.core.geometry as geometry
 from itertools import permutations
 
 def random_uniform_on_sphere(n=1, coords='xyz'):
-    r'''Random unit vectors from a uniform distribution on the sphere. 
+    r'''Random unit vectors from a uniform distribution on the sphere.
 
     Parameters
     -----------
@@ -21,7 +21,7 @@ def random_uniform_on_sphere(n=1, coords='xyz'):
     Notes
     ------
     The uniform distribution on the sphere, parameterized by spherical
-    coordinates $(\theta, \phi)$, should verify $\phi\sim U[0,2\pi]$, while 
+    coordinates $(\theta, \phi)$, should verify $\phi\sim U[0,2\pi]$, while
     $z=\cos(\theta)\sim U[-1,1]$.
 
     References
@@ -37,11 +37,11 @@ def random_uniform_on_sphere(n=1, coords='xyz'):
     ---------
     >>> from dipy.core.sphere_stats import random_uniform_on_sphere
     >>> X = random_uniform_on_sphere(4, 'radians')
-    >>> X.shape
-    (4, 2)
+    >>> X.shape == (4, 2)
+    True
     >>> X = random_uniform_on_sphere(4, 'xyz')
-    >>> X.shape
-    (4, 3)
+    >>> X.shape == (4, 3)
+    True
     '''
     z = np.random.uniform(-1, 1, n)
     theta = np.arccos(z)

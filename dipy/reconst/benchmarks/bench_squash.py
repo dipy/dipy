@@ -65,8 +65,8 @@ def old_squash(arr, mask=None, fill=0):
     array([0, 2, 2])
     >>> arr.fill(np.ones(2))
     >>> r = old_squash(arr)
-    >>> r.shape
-    (3, 2)
+    >>> r.shape == (3, 2)
+    True
     >>> r.dtype
     dtype('float64')
 
