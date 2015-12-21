@@ -1,5 +1,6 @@
-from nose.tools import assert_true, assert_raises
+import warnings
 
+from nose.tools import assert_true, assert_raises
 import numpy as np
 import numpy.testing as npt
 
@@ -247,6 +248,13 @@ def test_reorient_bvecs():
     # Verify that giving the wrong number of affines raises an error:
     full_affines.append(np.zeros((4, 4)))
     assert_raises(ValueError, reorient_bvecs, gt_rot, full_affines)
+
+
+def test_nan_bvecs():
+    fdata, fbvals, fbvecs = get_data()
+    with warnings.catch_warnings(True) as w:
+        gtab = gradient_table(fbvals, fbvecs)
+        npt.assert_(len(w) == 0)
 
 
 if __name__ == "__main__":

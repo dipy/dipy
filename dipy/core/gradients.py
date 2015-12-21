@@ -243,7 +243,7 @@ def gradient_table(bvals, bvecs=None, big_delta=None, small_delta=None,
                              " array containing both bvals and bvecs")
     else:
         bvecs = np.asarray(bvecs)
-        if (bvecs.shape[1] > bvecs.shape[0]) and bvecs.shape[0] > 1:
+        if (bvecs.shape[1] > bvecs.shape[0])  and bvecs.shape[0] > 1:
             bvecs = bvecs.T
     return gradient_table_from_bvals_bvecs(bvals, bvecs, big_delta=big_delta,
                                            small_delta=small_delta,
