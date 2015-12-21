@@ -239,7 +239,7 @@ def sfm_design_matrix(gtab, sphere, response, mode='signal'):
     A canonical tensor approximating corpus-callosum voxels [Rokem2014]_:
 
     >>> tensor_matrix = sfm_design_matrix(gtab, sphere,
-                                          [0.0015, 0.0005, 0.0005])
+    ...                                   [0.0015, 0.0005, 0.0005])
 
     A 'stick' function ([Behrens2007]_):
 
