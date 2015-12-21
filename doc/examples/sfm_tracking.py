@@ -6,7 +6,7 @@ Tracking with the Sparse Fascicle Model
 ==================================================
 
 Tracking requires a per-voxel model. Here, the model is the Sparse Fascicle
-Model, described in [Rokem2014]_. This model reconstructs the diffusion signal
+Model, described in [Rokem2015]_. This model reconstructs the diffusion signal
 as a combination of the signals from different fascicles (see also
 :ref:`sfm-reconst`).
 
@@ -160,9 +160,9 @@ save_trk("sfm_detr.trk", streamlines, affine, labels.shape)
 References
 ----------
 
-.. [Rokem2014] Ariel Rokem, Jason D. Yeatman, Franco Pestilli, Kendrick
+.. [Rokem2015] Ariel Rokem, Jason D. Yeatman, Franco Pestilli, Kendrick
    N. Kay, Aviv Mezer, Stefan van der Walt, Brian A. Wandell
-   (2014). Evaluating the accuracy of diffusion MRI models in white
-   matter. http://arxiv.org/abs/1411.0721
+   (2015). Evaluating the accuracy of diffusion MRI models in white
+   matter. PLoS ONE 10(4): e0123272. doi:10.1371/journal.pone.0123272
 
 """

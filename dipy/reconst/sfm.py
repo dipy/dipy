@@ -1,15 +1,15 @@
 """
 This is an implementation of the sparse fascicle model described in
-[Rokem2014a]_. The multi b-value version of this model is described in
-[Rokem2014b]_.
+[Rokem2015]_. The multi b-value version of this model is described in
+[Rokem2014]_.
 
 
-.. [Rokem2014a] Ariel Rokem, Jason D. Yeatman, Franco Pestilli, Kendrick
+.. [Rokem2015] Ariel Rokem, Jason D. Yeatman, Franco Pestilli, Kendrick
    N. Kay, Aviv Mezer, Stefan van der Walt, Brian A. Wandell
-   (2014). Evaluating the accuracy of diffusion MRI models in white
-   matter. http://arxiv.org/abs/1411.0721
+   (2015). Evaluating the accuracy of diffusion MRI models in white
+   matter. PLoS ONE 10(4): e0123272. doi:10.1371/journal.pone.0123272
 
-.. [Rokem2014b] Ariel Rokem, Kimberly L. Chan, Jason D. Yeatman, Franco
+.. [Rokem2014] Ariel Rokem, Kimberly L. Chan, Jason D. Yeatman, Franco
    Pestilli,  Brian A. Wandell (2014). Evaluating the accuracy of diffusion
    models at multiple b-values with cross-validation. ISMRM 2014.
 """
@@ -232,12 +232,12 @@ def sfm_design_matrix(gtab, sphere, response, mode='signal'):
 
     Notes
     -----
-    .. [Rokem2014a] Ariel Rokem, Jason D. Yeatman, Franco Pestilli, Kendrick
+    .. [Rokem2015] Ariel Rokem, Jason D. Yeatman, Franco Pestilli, Kendrick
        N. Kay, Aviv Mezer, Stefan van der Walt, Brian A. Wandell
-       (2014). Evaluating the accuracy of diffusion MRI models in white
-       matter. http://arxiv.org/abs/1411.0721
+       (2015). Evaluating the accuracy of diffusion MRI models in white
+       matter. PLoS ONE 10(4): e0123272. doi:10.1371/journal.pone.0123272
 
-    .. [Rokem2014b] Ariel Rokem, Kimberly L. Chan, Jason D. Yeatman, Franco
+    .. [Rokem2014] Ariel Rokem, Kimberly L. Chan, Jason D. Yeatman, Franco
        Pestilli,  Brian A. Wandell (2014). Evaluating the accuracy of diffusion
        models at multiple b-values with cross-validation. ISMRM 2014.
 
@@ -315,12 +315,12 @@ class SparseFascicleModel(ReconstModel, Cache):
 
         Notes
         -----
-        This is an implementation of the SFM, described in [Rokem2014]_.
+        This is an implementation of the SFM, described in [Rokem2015]_.
 
         .. [Rokem2014] Ariel Rokem, Jason D. Yeatman, Franco Pestilli, Kendrick
            N. Kay, Aviv Mezer, Stefan van der Walt, Brian A. Wandell
            (2014). Evaluating the accuracy of diffusion MRI models in white
-           matter. http://arxiv.org/abs/1411.0721
+           matter. PLoS ONE 10(4): e0123272. doi:10.1371/journal.pone.0123272
 
         .. [Zou2005] Zou H, Hastie T (2005). Regularization and variable
            selection via the elastic net. J R Stat Soc B:301-320
