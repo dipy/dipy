@@ -251,8 +251,15 @@ def test_reorient_bvecs():
 
 
 def test_nan_bvecs():
+    """
+    Test that the presence of nan's in b-vectors doesn't raise warnings.
+
+    In previous versions, the presence of NaN in b-vectors was taken to
+    indicate a 0 b-value, but also raised a warning when testing for the length
+    of these vectors. This checks that it doesn't happen.
+    """
     fdata, fbvals, fbvecs = get_data()
-    with warnings.catch_warnings(True) as w:
+    with warnings.catch_warnings(record=True) as w:
         gtab = gradient_table(fbvals, fbvecs)
         npt.assert_(len(w) == 0)
 
