@@ -34,7 +34,7 @@ from distutils.command.build_ext import build_ext as du_build_ext
 
 from cythexts import cyproc_exts, get_pyx_sdist, derror_maker
 from setup_helpers import (install_scripts_bat, add_flag_checking,
-                           get_pkg_version, version_error_msg, read_vars_from)
+                           SetupDependency, read_vars_from)
 
 # Get version and release info, which is all stored in dipy/info.py
 info = read_vars_from(pjoin('dipy', 'info.py'))
@@ -138,29 +138,19 @@ else: # We have nibabel
             [['-msse2', '-mfpmath=sse'], [], simple_test_c, 'USING_GCC_SSE2'],
             [['-fopenmp'], ['-fopenmp'], omp_test_c, 'HAVE_OPENMP']], 'dipy')
 
-# Hard and soft dependency checking
-# pkg_import_name, version_str, setuptools_field, heavy_yes_no
-cython_dep = ((('Cython', info.CYTHON_MIN_VERSION, 'setup_requires', False),)
-              if need_cython else ())
-DEPS = (
-    (('numpy', info.NUMPY_MIN_VERSION, 'setup_requires', True),) +
-    cython_dep +
-    (('scipy', info.SCIPY_MIN_VERSION, 'install_requires', True),
-     ('nibabel', info.NIBABEL_MIN_VERSION, 'install_requires', False)))
-
-for name, min_ver, req_type, heavy in DEPS:
-    found_ver = get_pkg_version(name)
-    ver_err_msg = version_error_msg(name, found_ver, min_ver)
-    if not using_setuptools:
-        if ver_err_msg != None:
-            raise RuntimeError(ver_err_msg)
-    else:  # Using setuptools
-        # Add packages to given section of setup/install_requires
-        if ver_err_msg != None or not heavy:
-            new_req = '{0}>={1}'.format(name, min_ver)
-            old_reqs = extra_setuptools_args.get(req_type, [])
-            extra_setuptools_args[req_type] = old_reqs + [new_req]
-
+if need_cython:
+    SetupDependency('Cython', info.CYTHON_MIN_VERSION,
+                    req_type='setup_requires',
+                    heavy=False).check_fill(extra_setuptools_args)
+SetupDependency('numpy', info.NUMPY_MIN_VERSION,
+                req_type='setup_requires',
+                heavy=True).check_fill(extra_setuptools_args)
+SetupDependency('scipy', info.SCIPY_MIN_VERSION,
+                req_type='install_requires',
+                heavy=True).check_fill(extra_setuptools_args)
+SetupDependency('nibabel', info.NIBABEL_MIN_VERSION,
+                req_type='install_requires',
+                heavy=False).check_fill(extra_setuptools_args)
 
 cmdclass = dict(
     build_py=pybuilder,
