@@ -126,9 +126,9 @@ else: # We have nibabel
     pybuilder = get_comrec_build('dipy')
     # Cython is a dependency for building extensions, iff we don't have stamped
     # up pyx and c files.
-    build_ext = cyproc_exts(EXTS, info.CYTHON_MIN_VERSION, 'pyx-stamps')
-    # build_ext is default when we don't need cython
-    need_cython = build_ext is not du_build_ext
+    build_ext, need_cython = cyproc_exts(EXTS,
+                                         info.CYTHON_MIN_VERSION,
+                                         'pyx-stamps')
     # Add openmp flags if they work
     simple_test_c = """int main(int argc, char** argv) { return(0); }"""
     omp_test_c = """#include <omp.h>

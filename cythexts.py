@@ -94,6 +94,8 @@ def cyproc_exts(exts, cython_min_version,
         Can be ``build_ext`` input (if we have good c files) or cython
         ``build_ext`` if we have a good cython, or a class raising an informative
         error on ``run()``
+    need_cython : bool
+        True if we need Cython to build extensions, False otherwise.
     """
     if stamped_pyx_ok(exts, hash_stamps_fname):
         # Replace pyx with c files, use standard builder
@@ -106,7 +108,7 @@ def cyproc_exts(exts, cython_min_version,
                 else:
                     sources.append(source)
             mod.sources = sources
-        return build_ext
+        return build_ext, False
     # We need cython
     try:
         from Cython.Compiler.Version import version as cyversion
@@ -114,14 +116,14 @@ def cyproc_exts(exts, cython_min_version,
         return derror_maker(build_ext,
                             'Need cython>={0} to build extensions '
                             'but cannot import "Cython"'.format(
-                            cython_min_version))
+                            cython_min_version)), True
     if LooseVersion(cyversion) >= cython_min_version:
         from Cython.Distutils import build_ext as extbuilder
-        return extbuilder
+        return extbuilder, True
     return derror_maker(build_ext,
                         'Need cython>={0} to build extensions'
                         'but found cython version {1}'.format(
-                        cython_min_version, cyversion))
+                        cython_min_version, cyversion)), True
 
 
 def build_stamp(pyxes, include_dirs=()):
