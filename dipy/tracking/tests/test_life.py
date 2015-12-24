@@ -82,10 +82,20 @@ def test_streamline_signal():
 
 
 def test_voxel2streamline():
-    streamline = [[[1, 2, 3], [4, 5, 3], [5, 6, 3], [6, 7, 3]],
+    streamline = [[[1.1, 2.4, 2.9], [4, 5, 3], [5, 6, 3], [6, 7, 3]],
                   [[1, 2, 3], [4, 5, 3], [5, 6, 3]]]
     affine = np.eye(4)
     v2f, v2fn = life.voxel2streamline(streamline, False, affine)
+    npt.assert_equal(v2f, {0: [0, 1], 1: [0, 1], 2: [0, 1], 3: [0]})
+    npt.assert_equal(v2fn, {0: {0: [0], 1: [1], 2: [2], 3: [3]},
+                            1: {0: [0], 1: [1], 2: [2]}})
+    affine = np.array([[0.9, 0, 0, 10],
+                       [0, 0.9, 0, -100],
+                       [0, 0, 0.9, 2],
+                       [0, 0, 0, 1]])
+
+    xform_sl = life.transform_streamlines(streamline, np.linalg.inv(affine))
+    v2f, v2fn = life.voxel2streamline(xform_sl, False, affine)
     npt.assert_equal(v2f, {0: [0, 1], 1: [0, 1], 2: [0, 1], 3: [0]})
     npt.assert_equal(v2fn, {0: {0: [0], 1: [1], 2: [2], 3: [3]},
                             1: {0: [0], 1: [1], 2: [2]}})
@@ -176,4 +186,4 @@ def test_fit_data():
     # Lower error than the matlab implementation for these data:
     npt.assert_(np.median(model_rmse) < np.median(matlab_rmse))
     # And a moderate correlation with the Matlab implementation weights:
-    npt.assert_(np.corrcoef(matlab_weights, life_fit.beta)[0, 1] > 0.68)
+    npt.assert_(np.corrcoef(matlab_weights, life_fit.beta)[0, 1] > 0.6)

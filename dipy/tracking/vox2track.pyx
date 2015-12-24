@@ -54,7 +54,7 @@ def _voxel2streamline(sl,
     cdef dict v2fn = {}
     # In each fiber:
     for s_idx in range(len(sl)):
-        sl_as_idx = np.array(sl[s_idx]).astype(int)
+        sl_as_idx = np.round(sl[s_idx]).astype(int)
         v2fn[s_idx] = {}
         # In each voxel present in there:
         for node_idx in range(len(sl_as_idx)):

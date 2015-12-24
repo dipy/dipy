@@ -307,9 +307,10 @@ def voxel2streamline(streamline, transformed=False, affine=None,
 
     if unique_idx is None:
         all_coords = np.concatenate(transformed_streamline)
-        unique_idx = unique_rows(np.round(all_coords).astype(np.intp))
+        unique_idx = unique_rows(np.round(all_coords))
 
-    return _voxel2streamline(transformed_streamline, unique_idx)
+    return _voxel2streamline(transformed_streamline,
+                             unique_idx.astype(np.intp))
 
 
 class FiberModel(ReconstModel):
@@ -348,8 +349,8 @@ class FiberModel(ReconstModel):
         affine : 4 by 4 array
             Mapping from the streamline coordinates to the data
         evals : list (3 items, optional)
-            The eigenvalues of the canonical tensor used as a response function.
-            Default:[0.001, 0, 0].
+            The eigenvalues of the canonical tensor used as a response
+            function. Default:[0.001, 0, 0].
         sphere: `dipy.core.Sphere` instance.
             Whether to approximate (and cache) the signal on a discrete
             sphere. This may confer a significant speed-up in setting up the
@@ -368,7 +369,7 @@ class FiberModel(ReconstModel):
         streamline = transform_streamlines(streamline, affine)
         # Assign some local variables, for shorthand:
         all_coords = np.concatenate(streamline)
-        vox_coords = unique_rows(all_coords.astype(int))
+        vox_coords = unique_rows(np.round(all_coords).astype(np.intp))
         del all_coords
         # We only consider the diffusion-weighted signals:
         n_bvecs = self.gtab.bvals[~self.gtab.b0s_mask].shape[0]
@@ -380,8 +381,8 @@ class FiberModel(ReconstModel):
         # Preallocate these, which will be used to generate the sparse
         # matrix:
         f_matrix_sig = np.zeros(n_unique_f * n_bvecs, dtype=np.float)
-        f_matrix_row = np.zeros(n_unique_f * n_bvecs, dtype=np.int)
-        f_matrix_col = np.zeros(n_unique_f * n_bvecs, dtype=np.int)
+        f_matrix_row = np.zeros(n_unique_f * n_bvecs, dtype=np.intp)
+        f_matrix_col = np.zeros(n_unique_f * n_bvecs, dtype=np.intp)
 
         fiber_signal = []
         for s_idx, s in enumerate(streamline):
@@ -398,7 +399,7 @@ class FiberModel(ReconstModel):
         range_bvecs = np.arange(n_bvecs).astype(int)
         # In each voxel:
         for v_idx in range(vox_coords.shape[0]):
-            mat_row_idx = (range_bvecs + v_idx * n_bvecs).astype(np.int32)
+            mat_row_idx = (range_bvecs + v_idx * n_bvecs).astype(np.intp)
             # For each fiber in that voxel:
             for f_idx in v2f[v_idx]:
                 # For each fiber-voxel combination, store the row/column
