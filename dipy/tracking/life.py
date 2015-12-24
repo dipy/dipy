@@ -53,7 +53,8 @@ def gradient(f):
     ----
     This is a simplified implementation of gradient that is part of numpy
     1.8. In order to mitigate the effects of changes added to this
-    implementation in version 1.9 of numpy, we include this implementation here.
+    implementation in version 1.9 of numpy, we include this implementation
+    here.
     """
     f = np.asanyarray(f)
     N = len(f.shape)  # number of dimensions
@@ -306,9 +307,7 @@ def voxel2streamline(streamline, transformed=False, affine=None,
 
     if unique_idx is None:
         all_coords = np.concatenate(transformed_streamline)
-        unique_idx = unique_rows(all_coords.astype(int))
-    else:
-        unique_idx = unique_idx
+        unique_idx = unique_rows(np.round(all_coords).astype(np.intp))
 
     return _voxel2streamline(transformed_streamline, unique_idx)
 
@@ -399,11 +398,8 @@ class FiberModel(ReconstModel):
         range_bvecs = np.arange(n_bvecs).astype(int)
         # In each voxel:
         for v_idx in range(vox_coords.shape[0]):
-            # dbg:
-            #if not np.mod(v_idx, 1000):
-            #    print("voxel %s"%(100*float(v_idx)/n_vox))
             mat_row_idx = (range_bvecs + v_idx * n_bvecs).astype(np.int32)
-            #For each fiber in that voxel:
+            # For each fiber in that voxel:
             for f_idx in v2f[v_idx]:
                 # For each fiber-voxel combination, store the row/column
                 # indices in the pre-allocated linear arrays
@@ -490,8 +486,8 @@ class FiberModel(ReconstModel):
             affine = np.eye(4)
         life_matrix, vox_coords = \
             self.setup(streamline, affine, evals=evals, sphere=sphere)
-        to_fit, weighted_signal, b0_signal, relative_signal, mean_sig, vox_data=\
-            self._signals(data, vox_coords)
+        (to_fit, weighted_signal, b0_signal, relative_signal, mean_sig,
+         vox_data) = self._signals(data, vox_coords)
         beta = opt.sparse_nnls(to_fit, life_matrix)
         return FiberFit(self, life_matrix, vox_coords, to_fit, beta,
                         weighted_signal, b0_signal, relative_signal, mean_sig,
