@@ -6,10 +6,13 @@ Pestilli, F., Yeatman, J, Rokem, A. Kay, K. and Wandell B.A. (2014). Validation
 and statistical inference in living connectomes. Nature Methods 11:
 1058-1063. doi:10.1038/nmeth.3098
 """
+import os.path as op
+import tempfile
 import numpy as np
 import scipy.sparse as sps
 import scipy.linalg as la
 
+from dipy.utils.optpkg import optional_package
 from dipy.reconst.base import ReconstModel, ReconstFit
 from dipy.utils.six.moves import range
 from dipy.tracking.utils import unique_rows
@@ -17,6 +20,8 @@ from dipy.tracking.streamline import transform_streamlines
 from dipy.tracking.vox2track import _voxel2streamline
 import dipy.data as dpd
 import dipy.core.optimize as opt
+
+tb, has_tables, _ = optional_package('tables')
 
 
 def gradient(f):
@@ -326,7 +331,7 @@ class FiberModel(ReconstModel):
         B.A. (2014). Validation and statistical inference in living
         connectomes. Nature Methods.
     """
-    def __init__(self, gtab):
+    def __init__(self, gtab, use_tables=False):
         """
         Parameters
         ----------
@@ -335,6 +340,7 @@ class FiberModel(ReconstModel):
         """
         # Initialize the super-class:
         ReconstModel.__init__(self, gtab)
+        self.use_tables = use_tables
 
     def setup(self, streamline, affine, evals=[0.001, 0, 0], sphere=None):
         """
@@ -367,10 +373,8 @@ class FiberModel(ReconstModel):
         if affine is None:
             affine = np.eye(4)
         streamline = transform_streamlines(streamline, affine)
-        # Assign some local variables, for shorthand:
-        all_coords = np.concatenate(streamline)
-        vox_coords = unique_rows(np.round(all_coords).astype(np.intp))
-        del all_coords
+        vox_coords = unique_rows(
+                         np.round(np.concatenate(streamline)).astype(np.intp))
         # We only consider the diffusion-weighted signals:
         n_bvecs = self.gtab.bvals[~self.gtab.b0s_mask].shape[0]
         v2f, v2fn = voxel2streamline(streamline, transformed=True,
@@ -378,11 +382,36 @@ class FiberModel(ReconstModel):
         # How many fibers in each voxel (this will determine how many
         # components are in the matrix):
         n_unique_f = len(np.hstack(v2f.values()))
-        # Preallocate these, which will be used to generate the sparse
-        # matrix:
-        f_matrix_sig = np.zeros(n_unique_f * n_bvecs, dtype=np.float)
-        f_matrix_row = np.zeros(n_unique_f * n_bvecs, dtype=np.intp)
-        f_matrix_col = np.zeros(n_unique_f * n_bvecs, dtype=np.intp)
+
+        if self.use_tables:
+            f = tempfile.NamedTemporaryFile(suffix='.h5')
+            f.close()
+            life_matrix = tb.open_file(f.name,
+                                       'a')
+            atom_sig = tb.Atom.from_kind('float')
+            f_matrix_sig = life_matrix.create_carray(life_matrix.root, 'sig',
+                                                     atom_sig,
+                                                     [n_unique_f * n_bvecs])
+            atom_row = tb.Atom.from_kind('int')
+            f_matrix_row = life_matrix.create_carray(life_matrix.root, 'row',
+                                                     atom_row,
+                                                     [n_unique_f * n_bvecs])
+            atom_col = tb.Atom.from_kind('int')
+            f_matrix_col = life_matrix.create_carray(life_matrix.root, 'col',
+                                                     atom_col,
+                                                     [n_unique_f * n_bvecs])
+            atom_shape = tb.Atom.from_kind('int')
+            f_matrix_shape = life_matrix.create_carray(life_matrix.root,
+                                                       'shape',
+                                                       atom_shape, [2])
+            f_matrix_shape[:] = np.array([n_unique_f * n_bvecs,
+                                          len(streamline)])
+        else:
+            # Preallocate these, which will be used to generate the sparse
+            # matrix:
+            f_matrix_sig = np.zeros(n_unique_f * n_bvecs, dtype=np.float)
+            f_matrix_row = np.zeros(n_unique_f * n_bvecs, dtype=np.intp)
+            f_matrix_col = np.zeros(n_unique_f * n_bvecs, dtype=np.intp)
 
         fiber_signal = []
         for s_idx, s in enumerate(streamline):
@@ -416,10 +445,13 @@ class FiberModel(ReconstModel):
                 keep_ct = keep_ct + n_bvecs
 
         del v2f, v2fn
-        # Allocate the sparse matrix, using the more memory-efficient 'csr'
-        # format:
-        life_matrix = sps.csr_matrix((f_matrix_sig,
-                                     [f_matrix_row, f_matrix_col]))
+        if self.use_tables:
+            life_matrix.close()
+        else:
+            # Allocate the sparse matrix, using the more memory-efficient 'csr'
+            # format:
+            life_matrix = sps.csr_matrix((f_matrix_sig,
+                                         [f_matrix_row, f_matrix_col]))
 
         return life_matrix, vox_coords
 
@@ -489,7 +521,11 @@ class FiberModel(ReconstModel):
             self.setup(streamline, affine, evals=evals, sphere=sphere)
         (to_fit, weighted_signal, b0_signal, relative_signal, mean_sig,
          vox_data) = self._signals(data, vox_coords)
-        beta = opt.sparse_nnls(to_fit, life_matrix)
+        if self.use_tables:
+            beta = opt.sparse_sgd(to_fit, life_matrix)
+        else:
+            beta = opt.sparse_nnls(to_fit, life_matrix)
+
         return FiberFit(self, life_matrix, vox_coords, to_fit, beta,
                         weighted_signal, b0_signal, relative_signal, mean_sig,
                         vox_data, streamline, affine, evals)

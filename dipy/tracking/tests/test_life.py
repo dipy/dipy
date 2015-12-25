@@ -18,6 +18,9 @@ import dipy.core.optimize as opt
 import dipy.core.ndindex as nd
 import dipy.core.gradients as grad
 import dipy.reconst.dti as dti
+from dipy.utils.optpkg import optional_package
+
+tb, has_tables, _ = optional_package('tables')
 
 THIS_DIR = op.dirname(__file__)
 
@@ -187,3 +190,24 @@ def test_fit_data():
     npt.assert_(np.median(model_rmse) < np.median(matlab_rmse))
     # And a moderate correlation with the Matlab implementation weights:
     npt.assert_(np.corrcoef(matlab_weights, life_fit.beta)[0, 1] > 0.6)
+
+
+@npt.dec.skipif(not has_tables)
+def test_fit_pytables():
+    fdata, fbval, fbvec = dpd.get_data('small_25')
+    gtab = grad.gradient_table(fbval, fbvec)
+    ni_data = nib.load(fdata)
+    data = ni_data.get_data()
+    dtmodel = dti.TensorModel(gtab)
+    dtfit = dtmodel.fit(data)
+    sphere = dpd.get_sphere()
+    peak_idx = dti.quantize_evecs(dtfit.evecs, sphere.vertices)
+    eu = edx.EuDX(dtfit.fa.astype('f8'), peak_idx,
+                  seeds=list(nd.ndindex(data.shape[:-1])),
+                  odf_vertices=sphere.vertices, a_low=0)
+    tensor_streamlines = [streamline for streamline in eu]
+    life_model = life.FiberModel(gtab)
+    life_model_tb = life.FiberModel(gtab, use_tables=True)
+    life_fit = life_model.fit(data, tensor_streamlines)
+    life_fit_tb = life_model_tb.fit(data, tensor_streamlines)
+    npt.assert_equal(life_fit.beta, life_fit_tb.beta)
