@@ -34,18 +34,17 @@ def test_streamline_tensors():
     evals = [0.0012, 0.0006, 0.0004]
     streamline_tensors = life.streamline_tensors(streamline, evals=evals)
     npt.assert_array_almost_equal(streamline_tensors[0],
-                                  np.array([[ 0.0009,  0.0003,  0.    ],
-                                            [ 0.0003,  0.0009,  0.    ],
-                                            [ 0.    ,  0.    ,  0.0004]]))
+                                  np.array([[0.0009, 0.0003, 0.],
+                                            [0.0003, 0.0009, 0.],
+                                            [0., 0., 0.0004]]))
 
-    
     # Get the eigenvalues/eigenvectors:
     eigvals, eigvecs = la.eig(streamline_tensors[0])
     eigvecs = eigvecs[np.argsort(eigvals)[::-1]]
     eigvals = eigvals[np.argsort(eigvals)[::-1]]
 
     npt.assert_array_almost_equal(eigvals,
-                                  np.array([ 0.0012, 0.0006, 0.0004]))
+                                  np.array([0.0012, 0.0006, 0.0004]))
 
     npt.assert_array_almost_equal(eigvecs[0],
                                   np.array([0.70710678, -0.70710678, 0.]))
@@ -71,7 +70,7 @@ def test_streamline_signal():
     gtab = dpg.gradient_table(bval_file, bvec_file)
     evals = [0.0015, 0.0005, 0.0005]
     streamline1 = [[[1, 2, 3], [4, 5, 3], [5, 6, 3], [6, 7, 3]],
-           [[1, 2, 3], [4, 5, 3], [5, 6, 3]]]
+                   [[1, 2, 3], [4, 5, 3], [5, 6, 3]]]
 
     sig1 = [life.streamline_signal(s, gtab, evals) for s in streamline1]
 
@@ -83,13 +82,23 @@ def test_streamline_signal():
 
 
 def test_voxel2streamline():
-    streamline = [[[1, 2, 3], [4, 5, 3], [5, 6, 3], [6, 7, 3]],
-          [[1, 2, 3], [4, 5, 3], [5, 6, 3]]]
+    streamline = [[[1.1, 2.4, 2.9], [4, 5, 3], [5, 6, 3], [6, 7, 3]],
+                  [[1, 2, 3], [4, 5, 3], [5, 6, 3]]]
     affine = np.eye(4)
     v2f, v2fn = life.voxel2streamline(streamline, False, affine)
-    npt.assert_equal(v2f, {0:[0,1], 1:[0,1], 2:[0,1], 3:[0]})
-    npt.assert_equal(v2fn, {0: {0:[0], 1:[1], 2:[2], 3:[3]},
-                            1: {0:[0], 1:[1], 2:[2]}})
+    npt.assert_equal(v2f, {0: [0, 1], 1: [0, 1], 2: [0, 1], 3: [0]})
+    npt.assert_equal(v2fn, {0: {0: [0], 1: [1], 2: [2], 3: [3]},
+                            1: {0: [0], 1: [1], 2: [2]}})
+    affine = np.array([[0.9, 0, 0, 10],
+                       [0, 0.9, 0, -100],
+                       [0, 0, 0.9, 2],
+                       [0, 0, 0, 1]])
+
+    xform_sl = life.transform_streamlines(streamline, np.linalg.inv(affine))
+    v2f, v2fn = life.voxel2streamline(xform_sl, False, affine)
+    npt.assert_equal(v2f, {0: [0, 1], 1: [0, 1], 2: [0, 1], 3: [0]})
+    npt.assert_equal(v2fn, {0: {0: [0], 1: [1], 2: [2], 3: [3]},
+                            1: {0: [0], 1: [1], 2: [2]}})
 
 
 def test_FiberModel_init():
@@ -103,7 +112,7 @@ def test_FiberModel_init():
     FM = life.FiberModel(gtab)
 
     streamline = [[[1, 2, 3], [4, 5, 3], [5, 6, 3], [6, 7, 3]],
-          [[1, 2, 3], [4, 5, 3], [5, 6, 3]]]
+                  [[1, 2, 3], [4, 5, 3], [5, 6, 3]]]
 
     affine = np.eye(4)
 
@@ -113,7 +122,8 @@ def test_FiberModel_init():
                                np.array([[1, 2, 3], [4, 5, 3],
                                          [5, 6, 3], [6, 7, 3]]))
 
-        npt.assert_equal(fiber_matrix.shape, (len(vox_coords)*64, len(streamline)))
+        npt.assert_equal(fiber_matrix.shape, (len(vox_coords) * 64,
+                                              len(streamline)))
 
 
 def test_FiberFit():
@@ -127,7 +137,7 @@ def test_FiberFit():
     evals = [0.0015, 0.0005, 0.0005]
 
     streamline = [[[1, 2, 3], [4, 5, 3], [5, 6, 3], [6, 7, 3]],
-          [[1, 2, 3], [4, 5, 3], [5, 6, 3]]]
+                  [[1, 2, 3], [4, 5, 3], [5, 6, 3]]]
 
     fiber_matrix, vox_coords = FM.setup(streamline, None, evals)
 
@@ -176,4 +186,4 @@ def test_fit_data():
     # Lower error than the matlab implementation for these data:
     npt.assert_(np.median(model_rmse) < np.median(matlab_rmse))
     # And a moderate correlation with the Matlab implementation weights:
-    npt.assert_(np.corrcoef(matlab_weights, life_fit.beta)[0, 1] > 0.68)
+    npt.assert_(np.corrcoef(matlab_weights, life_fit.beta)[0, 1] > 0.6)
