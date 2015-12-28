@@ -47,6 +47,7 @@ def _voxel2streamline(sl,
     """
     # Define local counters:
     cdef int s_idx, node_idx, voxel_id, ii
+    cdef int n_unique_f = 0
     cdef dict vox_dict = {}
     for ii in range(len(unique_idx)):
         vox = unique_idx[ii]
@@ -70,7 +71,8 @@ def _voxel2streamline(sl,
             # Add that combination to the array:
             # All the nodes going through this voxel are noted:
             v2fn[voxel_id, s_idx, node_idx] = True
-    return v2fn
+            n_unique_f = n_unique_f + 1
+    return n_unique_f, v2fn
 
 
 def streamline_mapping(streamlines, voxel_size=None, affine=None,

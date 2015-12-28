@@ -20,7 +20,6 @@ from dipy.tracking.vox2track import _voxel2streamline
 import dipy.data as dpd
 import dipy.core.optimize as opt
 
-
 def gradient(f):
     """
     Return the gradient of an N-dimensional array.
@@ -219,19 +218,10 @@ class LifeSignalMaker(object):
         evals : list of 3 items
             The eigenvalues of the canonical tensor to use in calculating the
             signal.
-        n_points : `dipy.core.Sphere` class instance
-            The discrete sphere to use as an approximation for the continuous
-            sphere on which the signal is represented. If integer - we will use
-            an instance of one of the symmetric spheres cached in
-            `dps.get_sphere`. If a 'dipy.core.Sphere' class instance is
-            provided, we will use this object. Default: the :mod:`dipy.data`
-            symmetric sphere with 724 vertices
         """
         if sphere is None:
-            self.sphere = dpd.get_sphere('symmetric724')
-        else:
-            self.sphere = sphere
-
+            sphere = dpd.get_sphere('symmetric724')
+        self.sphere = sphere
         self.gtab = gtab
         self.evals = evals
         # Initialize an empty dict to fill with signals for each of the sphere
@@ -255,14 +245,23 @@ class LifeSignalMaker(object):
 
         return self.signal[idx]
 
-    def streamline_signal(self, streamline):
+    def streamline_signal(self, streamline, node=None):
         """
         Approximate the signal for a given streamline
         """
-        grad = streamline_gradients(streamline)
-        sig_out = np.zeros((grad.shape[0], self.signal.shape[-1]))
-        for ii, g in enumerate(grad):
-            sig_out[ii] = self.calc_signal(g)
+        if node is None:
+            grad = streamline_gradients(streamline)
+            sig_out = np.zeros((grad.shape[0], self.signal.shape[-1]))
+            for ii, g in enumerate(grad):
+                sig_out[ii] = self.calc_signal(g)
+        else:
+            if node == 0:
+                g = streamline_gradients(streamline[:2])[0]
+            elif node == streamline.shape[0]:
+                g = streamline_gradients(streamline[-2:])[1]
+            else:
+                g = streamline_gradients(streamline[node - 1:node + 1])[1]
+            sig_out = self.calc_signal(g)
         return sig_out
 
 
@@ -361,10 +360,11 @@ class FiberModel(ReconstModel):
             an approximation. Defaults to use the 724-vertex symmetric sphere
             from :mod:`dipy.data`
         """
-        if sphere is not False:
-            SignalMaker = LifeSignalMaker(self.gtab,
-                                          evals=evals,
-                                          sphere=sphere)
+        if sphere is None:
+            sphere = dpd.get_sphere('symmetric724')
+        SignalMaker = LifeSignalMaker(self.gtab,
+                                      evals=evals,
+                                      sphere=sphere)
 
         if affine is None:
             affine = np.eye(4)
@@ -375,13 +375,12 @@ class FiberModel(ReconstModel):
         vox_coords = unique_rows(np.round(cat_streamline).astype(np.intp))
         # We only consider the diffusion-weighted signals:
         n_bvecs = self.gtab.bvals[~self.gtab.b0s_mask].shape[0]
-        v2fn = voxel2streamline(streamline, transformed=True,
-                                affine=affine, unique_idx=vox_coords)
+        n_unique_f, v2fn = voxel2streamline(streamline, transformed=True,
+                                            affine=affine,
+                                            unique_idx=vox_coords)
 
-        # How many fibers in each voxel (this will determine how many
-        # components are in the matrix):
-        n_unique_f = np.sum(v2fn)
         f_matrix_shape = (n_unique_f * n_bvecs, len(streamline))
+
         tmpdir = tempfile.tempdir
         f_matrix_sig = np.memmap(op.join(tmpdir, 'life_sig.dat'),
                                  dtype=np.float,
@@ -396,25 +395,6 @@ class FiberModel(ReconstModel):
                                  dtype=np.intp,
                                  mode='w+', shape=(n_unique_f * n_bvecs,))
 
-        fiber_signal = np.memmap(op.join(tmpdir, 'life_fiber_sig.dat'),
-                                 dtype=np.float,
-                                 mode='w+',
-                                 shape=(sum_nodes, n_bvecs))
-        idx_into_signal = 0
-        for s_idx, s in enumerate(streamline):
-            if sphere is not False:
-                this_signal = SignalMaker.streamline_signal(s)
-            else:
-                this_signal = streamline_signal(s, self.gtab, evals)
-
-            fiber_signal[idx_into_signal:idx_into_signal +
-                         this_signal.shape[0]] = this_signal
-            idx_into_signal = idx_into_signal + this_signal.shape[0]
-
-        del streamline
-        if sphere is not False:
-            del SignalMaker
-
         keep_ct = 0
         range_bvecs = np.arange(n_bvecs).astype(int)
         # In each voxel:
@@ -428,14 +408,16 @@ class FiberModel(ReconstModel):
                 f_matrix_col[keep_ct:keep_ct+n_bvecs] = f_idx
                 vox_fiber_sig = np.zeros(n_bvecs)
                 for node_idx in np.where(v2fn[v_idx, f_idx])[0]:
+                    this_signal = \
+                         SignalMaker.streamline_signal(streamline[f_idx],
+                                                       node=node_idx)
                     # Sum the signal from each node of the fiber in that voxel:
-                    vox_fiber_sig += \
-                        fiber_signal[np.sum(n_nodes[:f_idx]) + node_idx]
+                    vox_fiber_sig += this_signal
                 # And add the summed thing into the corresponding rows:
                 f_matrix_sig[keep_ct:keep_ct+n_bvecs] += vox_fiber_sig
                 keep_ct = keep_ct + n_bvecs
 
-        del v2fn, fiber_signal
+        del v2fn
         life_matrix = sps.csr_matrix((f_matrix_sig,
                                       [f_matrix_row, f_matrix_col]))
 

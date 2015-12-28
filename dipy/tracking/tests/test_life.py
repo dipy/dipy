@@ -88,7 +88,7 @@ def test_voxel2streamline():
                    [4, 5, 3], [5, 6, 3], [6, 7, 3]],
                   [[1, 2, 3], [4, 5, 3], [5, 6, 3]]]
     affine = np.eye(4)
-    v2fn = life.voxel2streamline(streamline, False, affine)
+    n_unique_f, v2fn = life.voxel2streamline(streamline, False, affine)
 
     true_v2fn = np.memmap(op.join(tempfile.tempdir, 'life_v2f.dat'),
                           dtype=np.bool,
@@ -112,7 +112,7 @@ def test_voxel2streamline():
                        [0, 0, 0, 1]])
 
     xform_sl = life.transform_streamlines(streamline, np.linalg.inv(affine))
-    v2fn = life.voxel2streamline(xform_sl, False, affine)
+    n_unique_f, v2fn = life.voxel2streamline(xform_sl, False, affine)
     npt.assert_equal(v2fn, true_v2fn)
 
 
@@ -131,7 +131,7 @@ def test_FiberModel_init():
 
     affine = np.eye(4)
 
-    for sphere in [None, False, dpd.get_sphere('symmetric362')]:
+    for sphere in [None, dpd.get_sphere('symmetric362')]:
         fiber_matrix, vox_coords = FM.setup(streamline, affine, sphere=sphere)
         npt.assert_array_equal(np.array(vox_coords),
                                np.array([[1, 2, 3], [4, 5, 3],
