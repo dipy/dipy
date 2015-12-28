@@ -83,39 +83,6 @@ def test_streamline_signal():
     npt.assert_array_equal(sig2[0], sig1[0])
 
 
-def test_voxel2streamline():
-    streamline = [[[1.1, 2.3, 2.9], [1.1, 2.4, 3],
-                   [4, 5, 3], [5, 6, 3], [6, 7, 3]],
-                  [[1, 2, 3], [4, 5, 3], [5, 6, 3]]]
-    affine = np.eye(4)
-    n_unique_f, v2fn = life.voxel2streamline(streamline, False, affine)
-
-    true_v2fn = np.memmap(op.join(tempfile.tempdir, 'life_v2f.dat'),
-                          dtype=np.bool,
-                          mode='w+',
-                          shape=(4, 2, 5))
-
-    true_v2fn[:] = np.array([[[True, True, False, False, False],
-                              [True, False, False, False, False]],
-                             [[False, False,  True, False, False],
-                              [False,  True, False, False, False]],
-                             [[False, False, False,  True, False],
-                              [False, False,  True, False, False]],
-                             [[False, False, False, False,  True],
-                              [False, False, False, False, False]]])
-
-    npt.assert_equal(v2fn, true_v2fn)
-
-    affine = np.array([[0.9, 0, 0, 10],
-                       [0, 0.9, 0, -100],
-                       [0, 0, 0.9, 2],
-                       [0, 0, 0, 1]])
-
-    xform_sl = life.transform_streamlines(streamline, np.linalg.inv(affine))
-    n_unique_f, v2fn = life.voxel2streamline(xform_sl, False, affine)
-    npt.assert_equal(v2fn, true_v2fn)
-
-
 def test_FiberModel_init():
     # Get some small amount of data:
     data_file, bval_file, bvec_file = dpd.get_data('small_64D')

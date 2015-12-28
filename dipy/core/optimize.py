@@ -19,7 +19,7 @@ if not SCIPY_LESS_0_12:
 else:
     from scipy.optimize import fmin_l_bfgs_b, fmin_powell
 
-tb, has_tables, _ = optional_package('tables')
+lm, has_tables, _ = optional_package('sklearn.linear_model')
 
 
 class Optimizer(object):
@@ -398,7 +398,7 @@ def sparse_nnls(y, X,
 
 def sparse_sgd(y, X,
                momentum=0,
-               prop_select=0.1,
+               prop_select=0.01,
                step_size=0.1,
                non_neg=True,
                prop_bad_checks=0.1,
@@ -448,87 +448,76 @@ def sparse_sgd(y, X,
     -------
     h_best: The best estimate of the parameters.
     """
-    if isinstance(X, tb.file.File):
-        use_tables = True
-        if not X.isopen:
-            X = tb.open_file(X.filename)
-        X_shape = X.root.shape[:]
+    if isinstance(X, dict):
+        use_memmap = True
+        Xdata = X['data']
+        X_shape = X['shape']
     else:
-        use_tables = False
+        use_memmap = False
         X_shape = X.shape
 
     num_data = y.shape[0]
     num_regressors = X_shape[1]
     n_select = np.round(prop_select * num_data)
-
-    # Initialize the parameters at the origin:
-    h = np.zeros(num_regressors)
-
-    # If nothing good happens, we'll return that in the end:
-    h_best = np.zeros(num_regressors)
-    gradient = np.zeros(num_regressors)
-
     iteration = 0
-    ss_residuals = []  # This will hold the residuals in each iteration
-    ss_residuals_min = np.inf   # Keep track of the best solution so far
-    ss_residuals_to_mean = np.sum((y - np.mean(y))**2)  # The variance of y
+    ms_residuals = []  # This will hold the mean residuals^2 in each iteration
+    ms_residuals_min = np.inf   # Keep track of the best solution so far
+    ms_residuals_to_mean = np.mean((y - np.mean(y))**2)  # The variance of y
     rsq_max = -np.inf   # This will keep track of the best r squared so far
     count_bad = 0  # Number of times estimation error has gone up.
     error_checks = 0  # How many error checks have we done so far
+    SGDR = lm.SGDRegressor(penalty='none',
+                           warm_start=np.zeros(num_regressors))
 
+    # We always select all columns:
+    col = np.array(range(X_shape[1]) * n_select)
     while 1:
-        # indices of data points to select
-        idx = np.floor(np.random.rand(n_select) * num_data).astype(int)
+        # indices of data points/rows to select:
+        rows = np.floor(np.random.rand(n_select) * num_data).astype(int)
         # Select for this round
-        y0 = y[idx]
-        if use_tables:
-            col = X.root.col[idx]
-            row = range(len(idx))
-            data = X.root.sig[idx]
-            X0 = sps.coo_matrix((data, (row, col)),
-                                shape=(len(idx), X_shape[1]))
+        y0 = y[rows]
+        if use_memmap:
+            # Grab the data for all columns in each row:
+            data = Xdata[(rows + np.arange(X_shape[1])[:, None]).T.ravel()]
+            X0 = sps.csr_matrix((data, (range(n_select.astype(int)), col)),
+                                shape=(n_select, X_shape[1]))
         else:
-            X0 = X[idx]
+            X0 = X[rows]
 
-        if iteration > 1:
-            # The gradient is (Kay 2008 supplemental page 27):
-            gradient = spdot(X0.T, spdot(X0, h) - y0)
-            gradient = gradient + momentum * gradient
-            # Normalize to unit-length
-            unit_length_gradient = gradient / np.sqrt(np.dot(gradient,
-                                                             gradient))
-            # Update the parameters in the direction of the gradient:
-            h = h - step_size * unit_length_gradient
-
-            if non_neg:
-                # Set negative values to 0:
-                h[h < 0] = 0
+        SGDR.partial_fit(X0, y0)
+        if non_neg:
+            # Set negative values to 0:
+            SGDR.coef_[SGDR.coef_ < 0] = 0
 
         # Every once in a while check whether it's converged:
         if np.mod(iteration, check_error_iter) == 0:
             print("Checking at %s" % iteration)
-            if use_tables:
+            if use_memmap:
                 y_hat = np.zeros(y.shape)
-                for ii in range(np.prod(X_shape)):
-                    y_hat[X.root.row[ii]] = (y_hat[X.root.row[ii]] +
-                                             X.root.sig[ii]*h[X.root.col[ii]])
+                for chunk in range(np.round(n_chunks).astype(int) - 1):
+                    rows = np.range(chunk * n_select, (chunk + 1) * n_select)
+                    data = Xdata[(rows +
+                                  np.arange(X_shape[1])[:, None]).T.ravel()]
+                    X0 = sps.csr_matrix((data,
+                                        (range(n_select.astype(int)), col)),
+                                        shape=(n_select, X_shape[1]))
+                    y_hat[rows] = SGDR.predict(X0)
             else:
-                y_hat = spdot(X, h)
-            # This calculates the sum of squared residuals at this point:
-            ss_residuals.append(np.sum(np.power(y - y_hat, 2)))
-            rsq_est = rsq(ss_residuals[-1], ss_residuals_to_mean)
+                y_hat = SGDR.predict(X)
+            ms_residuals.append(np.mean(np.power(y - y_hat, 2)))
+            rsq_est = rsq(ms_residuals[-1], ms_residuals_to_mean)
             if verbose:
-                print("Itn #:%03d | SSE: %.1f | R2=%.1f " %
+                print("Itn #:%03d | MSE: %.1f | R2=%.1f " %
                       (iteration,
-                       ss_residuals[-1],
-                          rsq_est))
+                       ms_residuals[-1],
+                       rsq_est))
 
             # Did we do better this time around?
-            if ss_residuals[-1] < ss_residuals_min:
+            if ms_residuals[-1] < ms_residuals_min:
                 # Update your expectations about the minimum error:
-                ss_residuals_min = ss_residuals[-1]
+                ms_residuals_min = ms_residuals[-1]
                 n_iterations = iteration  # iterations to best solution so far.
-                h_best = h  # Best params so far
+                h_best = SGDR.coef_  # Best params so far
 
                 # Are we generally (over iterations) converging on
                 # improvement in r-squared?
@@ -541,11 +530,11 @@ def sparse_sgd(y, X,
                 count_bad += 1
 
             if count_bad >= np.max([max_error_checks,
-                                    np.round(prop_bad_checks*error_checks)]):
+                                    np.round(prop_bad_checks * error_checks)]):
                 print("\nOptimization terminated after %s iterations" %
                       iteration)
                 print("R2= %.1f " % rsq_max)
-                print("Sum of squared residuals= %.1f" % ss_residuals_min)
+                print("Sum of squared residuals= %.1f" % ms_residuals_min)
 
                 # Break out here, because this means that not enough
                 # improvement has happened recently

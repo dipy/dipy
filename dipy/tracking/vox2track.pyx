@@ -16,65 +16,6 @@ cdef extern from "dpy_math.h":
     double floor(double x)
 
 
-@cython.boundscheck(False)
-@cython.wraparound(False)
-@cython.profile(False)
-def _voxel2streamline(sl,
-                      cnp.ndarray[cnp.npy_intp, ndim=2] unique_idx):
-    """
-    Maps voxels to streamlines and streamlines to voxels, for setting up
-    the LiFE equations matrix
-
-    Parameters
-    ----------
-    sl : list
-        A collection of streamlines, each n by 3, with n being the number of
-        nodes in the fiber.
-
-    unique_idx : array.
-       The unique indices in the streamlines
-
-    Returns
-    -------
-    v2f, v2fn : tuple of dicts
-
-    The first dict in the tuple answers the question: Given a voxel (from
-    the unique indices in this model), which fibers pass through it?
-
-    The second answers the question: Given a streamline, for each voxel that
-    this streamline passes through, which nodes of that streamline are in that
-    voxel?
-    """
-    # Define local counters:
-    cdef int s_idx, node_idx, voxel_id, ii
-    cdef int n_unique_f = 0
-    cdef dict vox_dict = {}
-    for ii in range(len(unique_idx)):
-        vox = unique_idx[ii]
-        vox_dict[vox[0], vox[1], vox[2]] = ii
-    # Outputs are the following:
-    tmpdir = tempfile.tempdir
-    n_nodes = np.array([s.shape[0] for s in sl])
-    v2fn = np.memmap(op.join(tmpdir, 'life_v2fn.dat'),
-                             dtype=np.bool,
-                             mode='w+',
-                             shape=(len(unique_idx), len(sl), np.max(n_nodes)))
-
-    # In each fiber:
-    for s_idx in range(len(sl)):
-        sl_as_idx = np.round(sl[s_idx]).astype(int)
-        # In each voxel present in there:
-        for node_idx in range(len(sl_as_idx)):
-            node = sl_as_idx[node_idx]
-            # What serial number is this voxel in the unique voxel indices:
-            voxel_id = vox_dict[node[0], node[1], node[2]]
-            # Add that combination to the array:
-            # All the nodes going through this voxel are noted:
-            v2fn[voxel_id, s_idx, node_idx] = True
-            n_unique_f = n_unique_f + 1
-    return n_unique_f, v2fn
-
-
 def streamline_mapping(streamlines, voxel_size=None, affine=None,
                        mapping_as_streamlines=False):
     """Creates a mapping from voxel indices to streamlines.

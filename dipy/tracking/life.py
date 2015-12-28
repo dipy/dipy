@@ -11,6 +11,7 @@ import tempfile
 import numpy as np
 import scipy.sparse as sps
 import scipy.linalg as la
+import scipy.spatial.distance as dist
 
 from dipy.reconst.base import ReconstModel, ReconstFit
 from dipy.utils.six.moves import range
@@ -19,6 +20,7 @@ from dipy.tracking.streamline import transform_streamlines
 from dipy.tracking.vox2track import _voxel2streamline
 import dipy.data as dpd
 import dipy.core.optimize as opt
+
 
 def gradient(f):
     """
@@ -265,54 +267,6 @@ class LifeSignalMaker(object):
         return sig_out
 
 
-def voxel2streamline(streamline, transformed=False, affine=None,
-                     unique_idx=None):
-    """
-    Maps voxels to streamlines and streamlines to voxels, for setting up
-    the LiFE equations matrix
-
-    Parameters
-    ----------
-    streamline : list
-        A collection of streamlines, each n by 3, with n being the number of
-        nodes in the fiber.
-
-    affine : 4 by 4 array (optional)
-       Defines the spatial transformation from streamline to data.
-       Default: np.eye(4)
-
-    transformed : bool (optional)
-        Whether the streamlines have been already transformed (in which case
-        they don't need to be transformed in here).
-
-    unique_idx : array (optional).
-       The unique indices in the streamlines
-
-    Returns
-    -------
-    v2f, v2fn : tuple of dicts
-
-    The first dict in the tuple answers the question: Given a voxel (from
-    the unique indices in this model), which fibers pass through it?
-
-    The second answers the question: Given a streamline, for each voxel that
-    this streamline passes through, which nodes of that streamline are in that
-    voxel?
-    """
-    if transformed:
-        transformed_streamline = streamline
-    else:
-        if affine is None:
-            affine = np.eye(4)
-        transformed_streamline = transform_streamlines(streamline, affine)
-
-    if unique_idx is None:
-        all_coords = np.concatenate(transformed_streamline)
-        unique_idx = unique_rows(np.round(all_coords))
-
-    return _voxel2streamline(transformed_streamline,
-                             unique_idx.astype(np.intp))
-
 
 class FiberModel(ReconstModel):
     """
@@ -362,10 +316,10 @@ class FiberModel(ReconstModel):
         """
         if sphere is None:
             sphere = dpd.get_sphere('symmetric724')
+
         SignalMaker = LifeSignalMaker(self.gtab,
                                       evals=evals,
                                       sphere=sphere)
-
         if affine is None:
             affine = np.eye(4)
         streamline = transform_streamlines(streamline, affine)
@@ -375,25 +329,21 @@ class FiberModel(ReconstModel):
         vox_coords = unique_rows(np.round(cat_streamline).astype(np.intp))
         # We only consider the diffusion-weighted signals:
         n_bvecs = self.gtab.bvals[~self.gtab.b0s_mask].shape[0]
-        n_unique_f, v2fn = voxel2streamline(streamline, transformed=True,
-                                            affine=affine,
-                                            unique_idx=vox_coords)
-
-        f_matrix_shape = (n_unique_f * n_bvecs, len(streamline))
+        f_matrix_shape = (sum_nodes * n_bvecs, len(streamline))
 
         tmpdir = tempfile.tempdir
         f_matrix_sig = np.memmap(op.join(tmpdir, 'life_sig.dat'),
                                  dtype=np.float,
                                  mode='w+',
-                                 shape=(n_unique_f * n_bvecs,))
+                                 shape=(sum_nodes * n_bvecs,))
 
         f_matrix_row = np.memmap(op.join(tmpdir, 'life_row.dat'),
                                  dtype=np.intp,
-                                 mode='w+', shape=(n_unique_f * n_bvecs,))
+                                 mode='w+', shape=(sum_nodes * n_bvecs,))
 
         f_matrix_col = np.memmap(op.join(tmpdir, 'life_col.dat'),
                                  dtype=np.intp,
-                                 mode='w+', shape=(n_unique_f * n_bvecs,))
+                                 mode='w+', shape=(sum_nodes * n_bvecs,))
 
         keep_ct = 0
         range_bvecs = np.arange(n_bvecs).astype(int)
@@ -401,27 +351,30 @@ class FiberModel(ReconstModel):
         for v_idx in range(vox_coords.shape[0]):
             mat_row_idx = (range_bvecs + v_idx * n_bvecs).astype(np.intp)
             # For each fiber in that voxel:
-            for f_idx in np.where(v2fn[v_idx])[0]:
-                # For each fiber-voxel combination, store the row/column
-                # indices in the pre-allocated linear arrays
-                f_matrix_row[keep_ct:keep_ct+n_bvecs] = mat_row_idx
-                f_matrix_col[keep_ct:keep_ct+n_bvecs] = f_idx
-                vox_fiber_sig = np.zeros(n_bvecs)
-                for node_idx in np.where(v2fn[v_idx, f_idx])[0]:
-                    this_signal = \
-                         SignalMaker.streamline_signal(streamline[f_idx],
-                                                       node=node_idx)
-                    # Sum the signal from each node of the fiber in that voxel:
-                    vox_fiber_sig += this_signal
-                # And add the summed thing into the corresponding rows:
-                f_matrix_sig[keep_ct:keep_ct+n_bvecs] += vox_fiber_sig
-                keep_ct = keep_ct + n_bvecs
+            for sl_idx, s in enumerate(streamline):
+                v_s_dist = dist.cdist(np.round(s).astype(np.intp),
+                                      np.array([vox_coords[v_idx]]))
+                nodes_in_vox = np.where(v_s_dist == 0)[0]
+                if len(nodes_in_vox) > 0:
+                    # For each fiber-voxel combination, store the row/column
+                    # indices in the pre-allocated linear arrays
+                    f_matrix_row[keep_ct:keep_ct+n_bvecs] = mat_row_idx
+                    f_matrix_col[keep_ct:keep_ct+n_bvecs] = sl_idx
+                    vox_fiber_sig = np.zeros(n_bvecs)
+                    for node_idx in nodes_in_vox:
+                        this_signal = \
+                             SignalMaker.streamline_signal(s,
+                                                           node=node_idx)
+                        # Sum the signal from each node of the fiber in that
+                        # voxel:
+                        vox_fiber_sig += this_signal
+                    # And add the summed thing into the corresponding rows:
+                    f_matrix_sig[keep_ct:keep_ct+n_bvecs] += vox_fiber_sig
+                    keep_ct = keep_ct + n_bvecs
 
-        del v2fn
         life_matrix = sps.csr_matrix((f_matrix_sig,
                                       [f_matrix_row, f_matrix_col]))
 
-        #return f_matrix_sig, f_matrix_row, f_matrix_col, vox_coords
         return life_matrix, vox_coords
 
     def _signals(self, data, vox_coords):

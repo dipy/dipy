@@ -1,3 +1,4 @@
+import os.path as op
 import tempfile
 import numpy as np
 import scipy.sparse as sps
@@ -7,8 +8,6 @@ from dipy.utils.optpkg import optional_package
 from dipy.core.optimize import (Optimizer, SCIPY_LESS_0_12, sparse_nnls, spdot,
                                 sparse_sgd)
 import dipy.core.optimize as opt
-
-tb, has_tables, _ = optional_package('tables')
 
 
 def func(x):
@@ -186,39 +185,32 @@ def test_sparse_sgd():
     npt.assert_array_almost_equal(beta_hat, beta_hat_sparse, decimal=1)
 
 
-@npt.dec.skipif(not has_tables)
-def test_sparse_sgd_tables():
+def test_sparse_sgd_memmap():
     beta = np.random.rand(10)
     X = np.random.randn(1000, 10)
     y = np.dot(X, beta)
 
-    # Generate the HDF5 file with information about all this:
-    f = tempfile.NamedTemporaryFile(suffix='.h5')
-    f.close()
-    Xfile = tb.open_file(f.name, 'a')
-    atom_sig = tb.Atom.from_kind('float')
-    X_sig = Xfile.create_carray(Xfile.root, 'sig',
-                                atom_sig, [np.prod(X.shape)])
+    tmpdir = tempfile.tempdir
+    # Generate the memmap dict structure expected here:
+    X_sig = np.memmap(op.join(tmpdir, 'X_sig.dat'),
+                      dtype=np.float,
+                      mode='w+',
+                      shape=(np.prod(X.shape), ))
     X_sig[:] = X.ravel()
-    atom_row = tb.Atom.from_kind('int')
-    X_row = Xfile.create_carray(Xfile.root, 'row',
-                                atom_row, [np.prod(X.shape)])
-    X_row[:] = np.array(10 * range(1000))
-    atom_col = tb.Atom.from_kind('int')
-    X_col = Xfile.create_carray(Xfile.root, 'col',
-                                atom_col, [np.prod(X.shape)])
-    atom_shape = tb.Atom.from_kind('int')
-    X_col[:] = np.array(1000 * range(10))
-    X_shape = Xfile.create_carray(Xfile.root, 'shape',
-                                  atom_shape, [2])
-    X_shape[:] = np.array(X.shape)
+    X_shape = X.shape
+
+    Xfile = {"data": X_sig,
+             "shape": X_shape}
+
     # Solve with SparseSGD, both from the file and from the array:
     beta_hat = sparse_sgd(y, X)
-    beta_hat_sparse = sparse_sgd(y, Xfile)
+    beta_hat_sparse = sparse_sgd(y, sps.csr_matrix(X))
+    beta_hat_memmap = sparse_sgd(y, Xfile)
     # We should be able to get back the right answer for this simple case
     npt.assert_array_almost_equal(beta, beta_hat, decimal=1)
     npt.assert_array_almost_equal(beta, beta_hat_sparse, decimal=1)
-    npt.assert_array_almost_equal(beta_hat, beta_hat_sparse)
+    npt.assert_array_almost_equal(beta, beta_hat_memmap, decimal=1)
+    #npt.assert_array_almost_equal(beta_hat, beta_hat_sparse)
 
 
 if __name__ == '__main__':
