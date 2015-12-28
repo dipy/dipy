@@ -84,7 +84,8 @@ def test_streamline_signal():
 
 
 def test_voxel2streamline():
-    streamline = [[[1.1, 2.4, 2.9], [4, 5, 3], [5, 6, 3], [6, 7, 3]],
+    streamline = [[[1.1, 2.3, 2.9], [1.1, 2.4, 3],
+                   [4, 5, 3], [5, 6, 3], [6, 7, 3]],
                   [[1, 2, 3], [4, 5, 3], [5, 6, 3]]]
     affine = np.eye(4)
     v2f, v2fn = life.voxel2streamline(streamline, False, affine)
@@ -94,8 +95,9 @@ def test_voxel2streamline():
                          mode='w+',
                          shape=(4, 2))
     true_v2f[:] = np.array([[1, 1], [1, 1], [1, 1], [1, 0]])
+
     npt.assert_equal(v2f, true_v2f)
-    npt.assert_equal(v2fn, {0: {0: [0], 1: [1], 2: [2], 3: [3]},
+    npt.assert_equal(v2fn, {0: {0: [0, 1], 1: [2], 2: [3], 3: [4]},
                             1: {0: [0], 1: [1], 2: [2]}})
     affine = np.array([[0.9, 0, 0, 10],
                        [0, 0.9, 0, -100],
@@ -105,7 +107,7 @@ def test_voxel2streamline():
     xform_sl = life.transform_streamlines(streamline, np.linalg.inv(affine))
     v2f, v2fn = life.voxel2streamline(xform_sl, False, affine)
     npt.assert_equal(v2f, true_v2f)
-    npt.assert_equal(v2fn, {0: {0: [0], 1: [1], 2: [2], 3: [3]},
+    npt.assert_equal(v2fn, {0: {0: [0, 1], 1: [2], 2: [3], 3: [4]},
                             1: {0: [0], 1: [1], 2: [2]}})
 
 
