@@ -2,6 +2,8 @@
 """This module contains the parts of dipy.tracking.utils that need to be
 implemented in cython.
 """
+import os.path as op
+import tempfile
 import cython
 
 import numpy as np
@@ -49,8 +51,12 @@ def _voxel2streamline(sl,
     for ii in range(len(unique_idx)):
         vox = unique_idx[ii]
         vox_dict[vox[0], vox[1], vox[2]] = ii
-    # Outputs are these dicts:
-    cdef dict v2f = {}
+    # Outputs are the following:
+    tmpdir = tempfile.tempdir
+    v2f = np.memmap(op.join(tmpdir, 'life_v2f.dat'),
+                            dtype=np.bool,
+                            mode='w+',
+                            shape=(len(unique_idx), len(sl)))
     cdef dict v2fn = {}
     # In each fiber:
     for s_idx in range(len(sl)):
@@ -61,12 +67,8 @@ def _voxel2streamline(sl,
             node = sl_as_idx[node_idx]
             # What serial number is this voxel in the unique voxel indices:
             voxel_id = vox_dict[node[0], node[1], node[2]]
-            # Add that combination to the dict:
-            if voxel_id in v2f:
-                if s_idx not in v2f[voxel_id]:
-                    v2f[voxel_id].append(s_idx)
-            else:
-                v2f[voxel_id] = [s_idx]
+            # Add that combination to the array:
+            v2f[voxel_id][s_idx] = 1
             # All the nodes going through this voxel get its number:
             if voxel_id in v2fn[s_idx]:
                 v2fn[s_idx][voxel_id].append(node_idx)
