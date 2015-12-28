@@ -88,27 +88,32 @@ def test_voxel2streamline():
                    [4, 5, 3], [5, 6, 3], [6, 7, 3]],
                   [[1, 2, 3], [4, 5, 3], [5, 6, 3]]]
     affine = np.eye(4)
-    v2f, v2fn = life.voxel2streamline(streamline, False, affine)
+    v2fn = life.voxel2streamline(streamline, False, affine)
 
-    true_v2f = np.memmap(op.join(tempfile.tempdir, 'life_v2f.dat'),
-                         dtype=np.bool,
-                         mode='w+',
-                         shape=(4, 2))
-    true_v2f[:] = np.array([[1, 1], [1, 1], [1, 1], [1, 0]])
+    true_v2fn = np.memmap(op.join(tempfile.tempdir, 'life_v2f.dat'),
+                          dtype=np.bool,
+                          mode='w+',
+                          shape=(4, 2, 5))
 
-    npt.assert_equal(v2f, true_v2f)
-    npt.assert_equal(v2fn, {0: {0: [0, 1], 1: [2], 2: [3], 3: [4]},
-                            1: {0: [0], 1: [1], 2: [2]}})
+    true_v2fn[:] = np.array([[[True, True, False, False, False],
+                              [True, False, False, False, False]],
+                             [[False, False,  True, False, False],
+                              [False,  True, False, False, False]],
+                             [[False, False, False,  True, False],
+                              [False, False,  True, False, False]],
+                             [[False, False, False, False,  True],
+                              [False, False, False, False, False]]])
+
+    npt.assert_equal(v2fn, true_v2fn)
+
     affine = np.array([[0.9, 0, 0, 10],
                        [0, 0.9, 0, -100],
                        [0, 0, 0.9, 2],
                        [0, 0, 0, 1]])
 
     xform_sl = life.transform_streamlines(streamline, np.linalg.inv(affine))
-    v2f, v2fn = life.voxel2streamline(xform_sl, False, affine)
-    npt.assert_equal(v2f, true_v2f)
-    npt.assert_equal(v2fn, {0: {0: [0, 1], 1: [2], 2: [3], 3: [4]},
-                            1: {0: [0], 1: [1], 2: [2]}})
+    v2fn = life.voxel2streamline(xform_sl, False, affine)
+    npt.assert_equal(v2fn, true_v2fn)
 
 
 def test_FiberModel_init():

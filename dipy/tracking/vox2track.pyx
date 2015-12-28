@@ -53,28 +53,24 @@ def _voxel2streamline(sl,
         vox_dict[vox[0], vox[1], vox[2]] = ii
     # Outputs are the following:
     tmpdir = tempfile.tempdir
-    v2f = np.memmap(op.join(tmpdir, 'life_v2f.dat'),
-                            dtype=np.bool,
-                            mode='w+',
-                            shape=(len(unique_idx), len(sl)))
-    cdef dict v2fn = {}
+    n_nodes = np.array([s.shape[0] for s in sl])
+    v2fn = np.memmap(op.join(tmpdir, 'life_v2fn.dat'),
+                             dtype=np.bool,
+                             mode='w+',
+                             shape=(len(unique_idx), len(sl), np.max(n_nodes)))
+
     # In each fiber:
     for s_idx in range(len(sl)):
         sl_as_idx = np.round(sl[s_idx]).astype(int)
-        v2fn[s_idx] = {}
         # In each voxel present in there:
         for node_idx in range(len(sl_as_idx)):
             node = sl_as_idx[node_idx]
             # What serial number is this voxel in the unique voxel indices:
             voxel_id = vox_dict[node[0], node[1], node[2]]
             # Add that combination to the array:
-            v2f[voxel_id][s_idx] = 1
-            # All the nodes going through this voxel get its number:
-            if voxel_id in v2fn[s_idx]:
-                v2fn[s_idx][voxel_id].append(node_idx)
-            else:
-                v2fn[s_idx][voxel_id] = [node_idx]
-    return v2f ,v2fn
+            # All the nodes going through this voxel are noted:
+            v2fn[voxel_id, s_idx, node_idx] = True
+    return v2fn
 
 
 def streamline_mapping(streamlines, voxel_size=None, affine=None,

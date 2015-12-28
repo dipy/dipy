@@ -375,12 +375,13 @@ class FiberModel(ReconstModel):
         vox_coords = unique_rows(np.round(cat_streamline).astype(np.intp))
         # We only consider the diffusion-weighted signals:
         n_bvecs = self.gtab.bvals[~self.gtab.b0s_mask].shape[0]
-        v2f, v2fn = voxel2streamline(streamline, transformed=True,
-                                     affine=affine, unique_idx=vox_coords)
+        v2fn = voxel2streamline(streamline, transformed=True,
+                                affine=affine, unique_idx=vox_coords)
 
         # How many fibers in each voxel (this will determine how many
         # components are in the matrix):
-        n_unique_f = np.sum(v2f)
+        n_unique_f = np.sum(v2fn)
+        f_matrix_shape = (n_unique_f * n_bvecs, len(streamline))
         tmpdir = tempfile.tempdir
         f_matrix_sig = np.memmap(op.join(tmpdir, 'life_sig.dat'),
                                  dtype=np.float,
@@ -394,8 +395,6 @@ class FiberModel(ReconstModel):
         f_matrix_col = np.memmap(op.join(tmpdir, 'life_col.dat'),
                                  dtype=np.intp,
                                  mode='w+', shape=(n_unique_f * n_bvecs,))
-
-        f_matrix_shape = (n_unique_f * n_bvecs, len(streamline))
 
         fiber_signal = np.memmap(op.join(tmpdir, 'life_fiber_sig.dat'),
                                  dtype=np.float,
@@ -422,22 +421,21 @@ class FiberModel(ReconstModel):
         for v_idx in range(vox_coords.shape[0]):
             mat_row_idx = (range_bvecs + v_idx * n_bvecs).astype(np.intp)
             # For each fiber in that voxel:
-            for f_idx in np.where(v2f[v_idx])[0]:
+            for f_idx in np.where(v2fn[v_idx])[0]:
                 # For each fiber-voxel combination, store the row/column
                 # indices in the pre-allocated linear arrays
                 f_matrix_row[keep_ct:keep_ct+n_bvecs] = mat_row_idx
                 f_matrix_col[keep_ct:keep_ct+n_bvecs] = f_idx
-
                 vox_fiber_sig = np.zeros(n_bvecs)
-                for node_idx in v2fn[f_idx][v_idx]:
+                for node_idx in np.where(v2fn[v_idx, f_idx])[0]:
                     # Sum the signal from each node of the fiber in that voxel:
                     vox_fiber_sig += \
-                     fiber_signal[np.sum(n_nodes[:f_idx])+node_idx]
+                        fiber_signal[np.sum(n_nodes[:f_idx]) + node_idx]
                 # And add the summed thing into the corresponding rows:
                 f_matrix_sig[keep_ct:keep_ct+n_bvecs] += vox_fiber_sig
                 keep_ct = keep_ct + n_bvecs
 
-        del v2f, v2fn, fiber_signal
+        del v2fn, fiber_signal
         life_matrix = sps.csr_matrix((f_matrix_sig,
                                       [f_matrix_row, f_matrix_col]))
 
