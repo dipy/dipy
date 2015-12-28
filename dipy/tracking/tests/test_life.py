@@ -80,7 +80,7 @@ def test_streamline_signal():
 
     sig2 = [life.streamline_signal(s, gtab, evals) for s in streamline2]
 
-    npt.assert_array_equal(streamline2[0], streamline1[0])
+    npt.assert_array_equal(sig2[0], sig1[0])
 
 
 def test_voxel2streamline():
