@@ -176,15 +176,14 @@ class FiberModel(ReconstModel):
         # Initialize the super-class:
         ReconstModel.__init__(self, gtab)
 
-    def fit(self, data, streamline, affine=None,
-            evals=[0.001, 0, 0], sphere=None):
+    def fit(self, data, streamline, affine=None, evals=[0.001, 0, 0],
+            sphere=None):
         """
-        Set up the necessary components for the LiFE model: the matrix of
-        fiber-contributions to the DWI signal, and the coordinates of voxels
-        for which the equations will be solved
+        Fit the LiFE model.
 
         Parameters
         ----------
+        data : ndarray
         streamline : list
             Streamlines, each is an array of shape (n, 3)
         affine : 4 by 4 array
@@ -197,11 +196,11 @@ class FiberModel(ReconstModel):
             sphere. This may confer a significant speed-up in setting up the
             problem, but is not as accurate. If `False`, we use the exact
             gradients along the streamlines to calculate the matrix, instead of
-            an approximation. Defaults to use the 724-vertex symmetric sphere
-            from :mod:`dipy.data`
+            an approximation. Defaults to use the :mod:`dipy.data`
+            `default_sphere`.
         """
         if sphere is None:
-            sphere = dpd.get_sphere('symmetric724')
+            sphere = dpd.get_sphere()
 
         SignalMaker = LifeSignalMaker(self.gtab,
                                       evals=evals,
@@ -209,14 +208,28 @@ class FiberModel(ReconstModel):
 
         if affine is None:
             affine = np.eye(4)
+
         streamline = transform_streamlines(streamline, affine)
-        cat_streamline = np.concatenate(streamline)
+        sl_as_coords = [np.round(s).astype(np.intp) for s in streamline]
+        cat_streamline = np.concatenate(sl_as_coords)
         sum_nodes = cat_streamline.shape[0]
-        vox_coords = unique_rows(np.round(cat_streamline).astype(np.intp))
-        v2f = streamline_mapping(streamline, voxel_size=None, affine=affine)
+        vox_coords = unique_rows(cat_streamline)
+        v2f = streamline_mapping(sl_as_coords, affine=np.eye(4))
 
         (to_fit, weighted_signal, b0_signal, relative_signal, mean_sig,
          vox_data) = self._signals(data, vox_coords)
+
+        closest = {}
+        for sl_idx, ss in enumerate(streamline):
+            closest[sl_idx] = []
+            for node_idx in range(ss.shape[0]):
+                if node_idx == 0:
+                    g = ss[1] - ss[0]
+                elif node_idx == ss.shape[0]:
+                    g = ss[-1] - ss[-2]
+                else:
+                    g = ss[node_idx] - ss[node_idx-1]
+                closest[sl_idx].append(SignalMaker.sphere.find_closest(g))
 
         # We only consider the diffusion-weighted signals in fitting:
         n_bvecs = self.gtab.bvals[~self.gtab.b0s_mask].shape[0]
@@ -244,7 +257,7 @@ class FiberModel(ReconstModel):
                                   vox_coords[v_idx][1],
                                   vox_coords[v_idx][2]]:
                     s = streamline[sl_idx]
-                    s_as_coords = np.round(s).astype(np.intp)
+                    s_as_coords = sl_as_coords[sl_idx]
                     find_vox = np.logical_and(
                         np.logical_and(
                                 s_as_coords[:, 0] == vox_coords[v_idx][0],
@@ -261,14 +274,7 @@ class FiberModel(ReconstModel):
                     f_matrix_col[ii*n_bvecs:ii*n_bvecs+n_bvecs] = sl_idx
                     vox_fib_sig = np.zeros(n_bvecs)
                     for node_idx in nodes_in_vox:
-                        if node_idx == 0:
-                            g = ss[1] - ss[0]
-                        elif node_idx == ss.shape[0]:
-                            g = ss[-1] - ss[-2]
-                        else:
-                            g = ss[node_idx] - ss[node_idx-1]
-
-                        signal_idx = SignalMaker.sphere.find_closest(g)
+                        signal_idx = closest[sl_idx][node_idx]
                         this_signal = SignalMaker.signal[signal_idx]
                         # Sum the signal from each node of the fiber in that
                         # voxel:
@@ -305,7 +311,6 @@ class FiberModel(ReconstModel):
                 else:
                     count_bad += 1
                 if count_bad >= max_error_checks:
-                    print(iteration)
                     return FiberFit(self,
                                     life_matrix,
                                     vox_coords,
