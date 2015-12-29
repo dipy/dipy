@@ -171,47 +171,5 @@ def test_sparse_nnls():
     npt.assert_array_almost_equal(beta_hat, beta_hat_sparse)
 
 
-def test_sparse_sgd():
-    beta = np.random.rand(10)
-    X = np.random.randn(1000, 10)
-    y = np.dot(X, beta)
-    beta_hat = sparse_sgd(y, X)
-    beta_hat_sparse = sparse_sgd(y, sps.csr_matrix(X))
-    # We should be able to get back (approximately) the right answer for this
-    # simple case
-    npt.assert_array_almost_equal(beta, beta_hat, decimal=1)
-    npt.assert_array_almost_equal(beta, beta_hat_sparse, decimal=1)
-    # Given stochasticity, answers are only approximately identical:
-    npt.assert_array_almost_equal(beta_hat, beta_hat_sparse, decimal=1)
-
-
-def test_sparse_sgd_memmap():
-    beta = np.random.rand(10)
-    X = np.random.randn(1000, 10)
-    y = np.dot(X, beta)
-
-    tmpdir = tempfile.tempdir
-    # Generate the memmap dict structure expected here:
-    X_sig = np.memmap(op.join(tmpdir, 'X_sig.dat'),
-                      dtype=np.float,
-                      mode='w+',
-                      shape=(np.prod(X.shape), ))
-    X_sig[:] = X.ravel()
-    X_shape = X.shape
-
-    Xfile = {"data": X_sig,
-             "shape": X_shape}
-
-    # Solve with SparseSGD, both from the file and from the array:
-    beta_hat = sparse_sgd(y, X)
-    beta_hat_sparse = sparse_sgd(y, sps.csr_matrix(X))
-    beta_hat_memmap = sparse_sgd(y, Xfile)
-    # We should be able to get back the right answer for this simple case
-    npt.assert_array_almost_equal(beta, beta_hat, decimal=1)
-    npt.assert_array_almost_equal(beta, beta_hat_sparse, decimal=1)
-    npt.assert_array_almost_equal(beta, beta_hat_memmap, decimal=1)
-    #npt.assert_array_almost_equal(beta_hat, beta_hat_sparse)
-
-
 if __name__ == '__main__':
     npt.run_module_suite()

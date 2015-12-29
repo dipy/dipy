@@ -6,8 +6,6 @@ Pestilli, F., Yeatman, J, Rokem, A. Kay, K. and Wandell B.A. (2014). Validation
 and statistical inference in living connectomes. Nature Methods 11:
 1058-1063. doi:10.1038/nmeth.3098
 """
-import os.path as op
-import tempfile
 import numpy as np
 import scipy.sparse as sps
 import scipy.linalg as la
@@ -17,61 +15,9 @@ from dipy.reconst.base import ReconstModel, ReconstFit
 from dipy.utils.six.moves import range
 from dipy.tracking.utils import unique_rows
 from dipy.tracking.streamline import transform_streamlines
-from dipy.tracking.vox2track import _voxel2streamline
 import dipy.data as dpd
 import dipy.core.optimize as opt
-
-
-def gradient(f):
-    """
-    Return the gradient of an N-dimensional array.
-
-    The gradient is computed using central differences in the interior
-    and first differences at the boundaries. The returned gradient hence has
-    the same shape as the input array.
-
-    Parameters
-    ----------
-    f : 2d array
-
-    Returns
-    -------
-    gradient :
-        The derivative of `f` with respect to the first dimension
-
-    Note
-    ----
-    This is a *much* simplified implementation of the `gradient` that was part
-    of numpy 1.8. Should not be used for anything else.
-    """
-    # use central differences on interior and first differences on endpoints
-    # create slice objects --- initially all are [:, :, ..., :]
-    out = np.empty_like(f)
-    # 1D equivalent -- out[1:-1] = (f[2:] - f[:-2])/2.0
-    out[1:-1] = (f[2:] - f[:-1])/2.0
-    # 1D equivalent -- out[0] = (f[1] - f[0])
-    out[0] = (f[1] - f[0])
-    # 1D equivalent -- out[-1] = (f[-1] - f[-2])
-    out[-1] = (f[-1] - f[-2])
-    return out
-
-
-def streamline_gradients(streamline):
-    """
-    Calculate the gradients of the streamline along the spatial dimension
-
-    Parameters
-    ----------
-    streamline : array-like of shape (n, 3)
-        The 3d coordinates of a single streamline
-
-    Returns
-    -------
-    Array of shape (3, n): Spatial gradients along the length of the
-    streamline.
-
-    """
-    return np.array(gradient(np.asarray(streamline)))
+from vox2track import streamline_mapping
 
 
 def grad_tensor(grad, evals):
@@ -207,62 +153,6 @@ class LifeSignalMaker(object):
         return self.signal[idx]
 
 
-def voxel2streamline(streamline, transformed=False, affine=None,
-                     unique_idx=None):
-    """
-    Maps voxels to streamlines.
-
-    Parameters
-    ----------
-    sl : list
-        A collection of streamlines, each n by 3, with n being the number of
-        nodes in the fiber.
-
-    unique_idx : array.
-       The unique indices in the streamlines
-
-    Returns
-    -------
-    v2f : memmap array
-    """
-    if transformed:
-        sl = streamline
-    else:
-        if affine is None:
-            affine = np.eye(4)
-        sl = transform_streamlines(streamline, affine)
-
-    if unique_idx is None:
-        all_coords = np.concatenate(transformed_streamline)
-        unique_idx = unique_rows(np.round(all_coords))
-
-    vox_dict = {}
-    for ii, vox in enumerate(unique_idx):
-        vox_dict[vox[0], vox[1], vox[2]] = ii
-    # Outputs are the following:
-    n_unique_f = 0
-    tmpdir = tempfile.tempdir
-    n_nodes = np.array([s.shape[0] for s in sl])
-    # v2f = np.memmap(op.join(tmpdir, 'life_v2f.dat'),
-    #                 dtype=np.bool,
-    #                 mode='w+',
-    #                 shape=(len(unique_idx), len(sl)))
-    v2f = np.zeros((len(unique_idx), len(sl)))
-
-    # In each fiber:
-    for s_idx, s in enumerate(sl):
-        sl_as_idx = np.round(s).astype(np.intp)
-        # In each voxel present in there:
-        for node in sl_as_idx:
-            # What serial number is this voxel in the unique voxel indices:
-            voxel_id = vox_dict[node[0], node[1], node[2]]
-            # Add that combination to the array:
-            # All the nodes going through this voxel are noted:
-            v2f[voxel_id, s_idx] = True
-            n_unique_f = n_unique_f + 1
-    return v2f, n_unique_f
-
-
 class FiberModel(ReconstModel):
     """
     A class for representing and solving predictive models based on
@@ -321,15 +211,9 @@ class FiberModel(ReconstModel):
             affine = np.eye(4)
         streamline = transform_streamlines(streamline, affine)
         cat_streamline = np.concatenate(streamline)
-        sl_id = []
-        for ii, s in enumerate(streamline):
-            sl_id.append(np.ones(s.shape[0]) * ii)
-        sl_id = np.concatenate(sl_id)
         sum_nodes = cat_streamline.shape[0]
         vox_coords = unique_rows(np.round(cat_streamline).astype(np.intp))
-        v2f, n_unique_f = voxel2streamline(streamline, transformed=True,
-                                           affine=affine,
-                                           unique_idx=vox_coords)
+        v2f = streamline_mapping(streamline, voxel_size=None, affine=affine)
 
         (to_fit, weighted_signal, b0_signal, relative_signal, mean_sig,
          vox_data) = self._signals(data, vox_coords)
@@ -356,7 +240,9 @@ class FiberModel(ReconstModel):
                 mat_row_idx = (range_bvecs + v_idx * n_bvecs).astype(np.intp)
                 # For each fiber in that voxel:
                 s_in_vox = []
-                for sl_idx in np.where(v2f[v_idx])[0]:
+                for sl_idx in v2f[vox_coords[v_idx][0],
+                                  vox_coords[v_idx][1],
+                                  vox_coords[v_idx][2]]:
                     s = streamline[sl_idx]
                     s_as_coords = np.round(s).astype(np.intp)
                     find_vox = np.logical_and(
@@ -432,7 +318,8 @@ class FiberModel(ReconstModel):
                                     vox_data,
                                     streamline,
                                     affine,
-                                    evals)
+                                    evals,
+                                    v2f)
                 error_checks += 1
             else:
                 beta = beta - step_size * delta
@@ -475,7 +362,7 @@ class FiberFit(ReconstFit):
     """
     def __init__(self, fiber_model, life_matrix, vox_coords, to_fit, beta,
                  weighted_signal, b0_signal, relative_signal, mean_sig,
-                 vox_data, streamline, affine, evals):
+                 vox_data, streamline, affine, evals, v2f):
         """
         Parameters
         ----------
@@ -496,6 +383,7 @@ class FiberFit(ReconstFit):
         self.streamline = streamline
         self.affine = affine
         self.evals = evals
+        self.v2f = v2f
 
     def predict(self, gtab=None, S0=None, sphere=None):
         """
@@ -536,35 +424,45 @@ class FiberFit(ReconstFit):
             mat_row_idx = (range_bvecs + v_idx * n_bvecs).astype(np.intp)
             # For each fiber in that voxel:
             s_in_vox = []
-            for sl_idx, s in enumerate(self.streamline):
-                v_s_dist = dist.cdist(np.round(s).astype(np.intp),
-                                      np.array([self.vox_coords[v_idx]]))
-                nodes_in_vox = np.where(v_s_dist == 0)[0]
-                if len(nodes_in_vox) > 0:
-                    s_in_vox.append((sl_idx, s, nodes_in_vox))
-            f_matrix_row = np.zeros(len(s_in_vox) * n_bvecs)
-            f_matrix_col = np.zeros(len(s_in_vox) * n_bvecs)
-            f_matrix_sig = np.zeros(len(s_in_vox) * n_bvecs)
+            for sl_idx in self.v2f[self.vox_coords[v_idx][0],
+                                   self.vox_coords[v_idx][1],
+                                   self.vox_coords[v_idx][2]]:
+                s = self.streamline[sl_idx]
+                s_as_coords = np.round(s).astype(np.intp)
+                find_vox = np.logical_and(
+                    np.logical_and(
+                            s_as_coords[:, 0] == self.vox_coords[v_idx][0],
+                            s_as_coords[:, 1] == self.vox_coords[v_idx][1]),
+                            s_as_coords[:, 2] == self.vox_coords[v_idx][2])
+                nodes_in_vox = np.where(find_vox)[0]
+                s_in_vox.append((sl_idx, s, nodes_in_vox))
+            f_matrix_row = np.zeros(len(s_in_vox) * n_bvecs, dtype=np.intp)
+            f_matrix_col = np.zeros(len(s_in_vox) * n_bvecs, dtype=np.intp)
+            f_matrix_sig = np.zeros(len(s_in_vox) * n_bvecs,
+                                    dtype=np.float)
             for ii, (sl_idx, ss, nodes_in_vox) in enumerate(s_in_vox):
-                f_matrix_row[ii*n_bvecs:ii*n_bvecs+n_bvecs] = mat_row_idx
+                f_matrix_row[ii*n_bvecs:ii*n_bvecs+n_bvecs] = range_bvecs
                 f_matrix_col[ii*n_bvecs:ii*n_bvecs+n_bvecs] = sl_idx
                 vox_fib_sig = np.zeros(n_bvecs)
                 for node_idx in nodes_in_vox:
-                    this_signal = \
-                         SignalMaker.streamline_signal(ss,
-                                                       node=node_idx)
+                    if node_idx == 0:
+                        g = ss[1] - ss[0]
+                    elif node_idx == ss.shape[0]:
+                        g = ss[-1] - ss[-2]
+                    else:
+                        g = ss[node_idx] - ss[node_idx-1]
+
+                    signal_idx = SignalMaker.sphere.find_closest(g)
+                    this_signal = SignalMaker.signal[signal_idx]
                     # Sum the signal from each node of the fiber in that
                     # voxel:
                     vox_fib_sig += this_signal
                 # And add the summed thing into the corresponding rows:
                 f_matrix_sig[ii*n_bvecs:ii*n_bvecs+n_bvecs] += vox_fib_sig
 
-            life_matrix = sps.csr_matrix((f_matrix_sig,
-                                          [f_matrix_row, f_matrix_col]),
-                                         shape=f_matrix_shape)
-
-            pred_weighted[mat_row_idx] = opt.spdot(life_matrix,
-                                                   self.beta)[mat_row_idx]
+            life_matrix = np.zeros((n_bvecs, self.beta.shape[0]))
+            life_matrix[f_matrix_row, f_matrix_col] = f_matrix_sig
+            pred_weighted[mat_row_idx] = np.dot(life_matrix, self.beta)
 
         pred = np.empty((self.vox_coords.shape[0], gtab.bvals.shape[0]))
         pred[..., ~gtab.b0s_mask] = pred_weighted.reshape(
