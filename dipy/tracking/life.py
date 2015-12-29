@@ -41,30 +41,18 @@ def gradient(f):
 
     Note
     ----
-    This is a much simplified implementation of the `gradient` that was part of
-    numpy 1.8, that assumes many things. Should not be used for anything else
+    This is a *much* simplified implementation of the `gradient` that was part
+    of numpy 1.8. Should not be used for anything else.
     """
     # use central differences on interior and first differences on endpoints
     # create slice objects --- initially all are [:, :, ..., :]
-    slice1 = [slice(None)]
-    slice2 = [slice(None)]
-    slice3 = [slice(None)]
     out = np.empty_like(f)
-    slice1[0] = slice(1, -1)
-    slice2[0] = slice(2, None)
-    slice3[0] = slice(None, -2)
     # 1D equivalent -- out[1:-1] = (f[2:] - f[:-2])/2.0
-    out[slice1] = (f[slice2] - f[slice3])/2.0
-    slice1[0] = 0
-    slice2[0] = 1
-    slice3[0] = 0
+    out[1:-1] = (f[2:] - f[:-1])/2.0
     # 1D equivalent -- out[0] = (f[1] - f[0])
-    out[slice1] = (f[slice2] - f[slice3])
-    slice1[0] = -1
-    slice2[0] = -1
-    slice3[0] = -2
+    out[0] = (f[1] - f[0])
     # 1D equivalent -- out[-1] = (f[-1] - f[-2])
-    out[slice1] = (f[slice2] - f[slice3])
+    out[-1] = (f[-1] - f[-2])
     return out
 
 
@@ -214,6 +202,7 @@ class LifeSignalMaker(object):
             g = gradient(streamline[-2:])[1]
         else:
             g = gradient(streamline[node - 1:node + 1])[1]
+
         idx = self.sphere.find_closest(g)
         return self.signal[idx]
 
@@ -361,49 +350,58 @@ class FiberModel(ReconstModel):
         error_checks = 0  # How many error checks have we done so far
         step_size = 0.01
         y_hat = np.zeros(to_fit.shape)
-
         while 1:
-            gradient = np.zeros(beta.shape)
+            delta = np.zeros(beta.shape)
             for v_idx in range(vox_coords.shape[0]):
                 mat_row_idx = (range_bvecs + v_idx * n_bvecs).astype(np.intp)
                 # For each fiber in that voxel:
                 s_in_vox = []
                 for sl_idx in np.where(v2f[v_idx])[0]:
                     s = streamline[sl_idx]
-                    v_s_dist = dist.cdist(np.round(s).astype(np.intp),
-                                          np.array([vox_coords[v_idx]]))
-                    nodes_in_vox = np.where(v_s_dist == 0)[0]
+                    s_as_coords = np.round(s).astype(np.intp)
+                    find_vox = np.logical_and(
+                        np.logical_and(
+                                s_as_coords[:, 0] == vox_coords[v_idx][0],
+                                s_as_coords[:, 1] == vox_coords[v_idx][1]),
+                                s_as_coords[:, 2] == vox_coords[v_idx][2])
+                    nodes_in_vox = np.where(find_vox)[0]
                     s_in_vox.append((sl_idx, s, nodes_in_vox))
                 f_matrix_row = np.zeros(len(s_in_vox) * n_bvecs, dtype=np.intp)
                 f_matrix_col = np.zeros(len(s_in_vox) * n_bvecs, dtype=np.intp)
                 f_matrix_sig = np.zeros(len(s_in_vox) * n_bvecs,
                                         dtype=np.float)
                 for ii, (sl_idx, ss, nodes_in_vox) in enumerate(s_in_vox):
-                    f_matrix_row[ii*n_bvecs:ii*n_bvecs+n_bvecs] = mat_row_idx
+                    f_matrix_row[ii*n_bvecs:ii*n_bvecs+n_bvecs] = range_bvecs
                     f_matrix_col[ii*n_bvecs:ii*n_bvecs+n_bvecs] = sl_idx
                     vox_fib_sig = np.zeros(n_bvecs)
                     for node_idx in nodes_in_vox:
-                        this_signal = \
-                             SignalMaker.streamline_signal(ss,
-                                                           node=node_idx)
+                        if node_idx == 0:
+                            g = ss[1] - ss[0]
+                        elif node_idx == ss.shape[0]:
+                            g = ss[-1] - ss[-2]
+                        else:
+                            g = ss[node_idx] - ss[node_idx-1]
+
+                        signal_idx = SignalMaker.sphere.find_closest(g)
+                        this_signal = SignalMaker.signal[signal_idx]
                         # Sum the signal from each node of the fiber in that
                         # voxel:
                         vox_fib_sig += this_signal
                     # And add the summed thing into the corresponding rows:
                     f_matrix_sig[ii*n_bvecs:ii*n_bvecs+n_bvecs] += vox_fib_sig
-                #life_matrix = np.zeros((n_bvecs, beta.shape[0]))
-                #life_matrix[:, f_matrix_col] = f_matrix_sig
-                life_matrix = sps.coo_matrix((f_matrix_sig,
-                                             [f_matrix_row, f_matrix_col]),
-                                             shape=f_matrix_shape)
+
+                life_matrix = np.zeros((n_bvecs, beta.shape[0]))
+                life_matrix[f_matrix_row, f_matrix_col] = f_matrix_sig
+
                 if (iteration > 1 and
                    (np.mod(iteration, check_error_iter) == 0)):
                     y_hat[mat_row_idx] = opt.spdot(life_matrix, beta)
                 else:
-                    Xh = opt.spdot(life_matrix, beta)
-                    margin = Xh - to_fit
-                    XtX = opt.spdot(life_matrix.T, margin)
-                    gradient = gradient + XtX
+                    margin = -to_fit
+                    Xh = np.dot(life_matrix, beta)
+                    margin[mat_row_idx] = Xh - to_fit[mat_row_idx]
+                    XtX = np.dot(life_matrix.T, margin[mat_row_idx])
+                    delta = delta + XtX
 
             if iteration > 1 and (np.mod(iteration, check_error_iter) == 0):
                 sse = np.sum((to_fit - y_hat) ** 2)
@@ -437,7 +435,7 @@ class FiberModel(ReconstModel):
                                     evals)
                 error_checks += 1
             else:
-                beta = beta - step_size * gradient
+                beta = beta - step_size * delta
                 # Set negative values to 0 (non-negative!)
                 beta[beta < 0] = 0
             iteration += 1
