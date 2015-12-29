@@ -32,75 +32,40 @@ def gradient(f):
 
     Parameters
     ----------
-    f : array_like
-      An N-dimensional array containing samples of a scalar function.
+    f : 2d array
 
     Returns
     -------
-    gradient : ndarray
-      N arrays of the same shape as `f` giving the derivative of `f` with
-      respect to each dimension.
-
-    Examples
-    --------
-    >>> x = np.array([1, 2, 4, 7, 11, 16], dtype=np.float)
-    >>> gradient(x)
-    array([ 1. ,  1.5,  2.5,  3.5,  4.5,  5. ])
-
-    >>> gradient(np.array([[1, 2, 6], [3, 4, 5]], dtype=np.float))
-    [array([[ 2.,  2., -1.],
-           [ 2.,  2., -1.]]), array([[ 1. ,  2.5,  4. ],
-           [ 1. ,  1. ,  1. ]])]
+    gradient :
+        The derivative of `f` with respect to the first dimension
 
     Note
     ----
-    This is a simplified implementation of gradient that is part of numpy
-    1.8. In order to mitigate the effects of changes added to this
-    implementation in version 1.9 of numpy, we include this implementation
-    here.
+    This is a much simplified implementation of the `gradient` that was part of
+    numpy 1.8, that assumes many things. Should not be used for anything else
     """
-    f = np.asanyarray(f)
-    N = len(f.shape)  # number of dimensions
-    dx = [1.0]*N
-
     # use central differences on interior and first differences on endpoints
-    outvals = []
-
     # create slice objects --- initially all are [:, :, ..., :]
-    slice1 = [slice(None)]*N
-    slice2 = [slice(None)]*N
-    slice3 = [slice(None)]*N
-
-    for axis in range(N):
-        # select out appropriate parts for this dimension
-        out = np.empty_like(f)
-        slice1[axis] = slice(1, -1)
-        slice2[axis] = slice(2, None)
-        slice3[axis] = slice(None, -2)
-        # 1D equivalent -- out[1:-1] = (f[2:] - f[:-2])/2.0
-        out[slice1] = (f[slice2] - f[slice3])/2.0
-        slice1[axis] = 0
-        slice2[axis] = 1
-        slice3[axis] = 0
-        # 1D equivalent -- out[0] = (f[1] - f[0])
-        out[slice1] = (f[slice2] - f[slice3])
-        slice1[axis] = -1
-        slice2[axis] = -1
-        slice3[axis] = -2
-        # 1D equivalent -- out[-1] = (f[-1] - f[-2])
-        out[slice1] = (f[slice2] - f[slice3])
-
-        # divide by step size
-        outvals.append(out / dx[axis])
-        # reset the slice object in this dimension to ":"
-        slice1[axis] = slice(None)
-        slice2[axis] = slice(None)
-        slice3[axis] = slice(None)
-
-    if N == 1:
-        return outvals[0]
-    else:
-        return outvals
+    slice1 = [slice(None)]
+    slice2 = [slice(None)]
+    slice3 = [slice(None)]
+    out = np.empty_like(f)
+    slice1[0] = slice(1, -1)
+    slice2[0] = slice(2, None)
+    slice3[0] = slice(None, -2)
+    # 1D equivalent -- out[1:-1] = (f[2:] - f[:-2])/2.0
+    out[slice1] = (f[slice2] - f[slice3])/2.0
+    slice1[0] = 0
+    slice2[0] = 1
+    slice3[0] = 0
+    # 1D equivalent -- out[0] = (f[1] - f[0])
+    out[slice1] = (f[slice2] - f[slice3])
+    slice1[0] = -1
+    slice2[0] = -1
+    slice3[0] = -2
+    # 1D equivalent -- out[-1] = (f[-1] - f[-2])
+    out[slice1] = (f[slice2] - f[slice3])
+    return out
 
 
 def streamline_gradients(streamline):
@@ -118,7 +83,7 @@ def streamline_gradients(streamline):
     streamline.
 
     """
-    return np.array(gradient(np.asarray(streamline))[0])
+    return np.array(gradient(np.asarray(streamline)))
 
 
 def grad_tensor(grad, evals):
@@ -224,47 +189,89 @@ class LifeSignalMaker(object):
         if sphere is None:
             sphere = dpd.get_sphere('symmetric724')
         self.sphere = sphere
-        self.gtab = gtab
-        self.evals = evals
+        bvecs = gtab.bvecs[~gtab.b0s_mask]
+        bvals = gtab.bvals[~gtab.b0s_mask]
         # Initialize an empty dict to fill with signals for each of the sphere
         # vertices:
         self.signal = np.empty((self.sphere.vertices.shape[0],
                                 np.sum(~gtab.b0s_mask)))
-        # We'll need to keep track of what we've already calculated:
-        self._calculated = []
 
-    def calc_signal(self, xyz):
-        idx = self.sphere.find_closest(xyz)
-        if idx not in self._calculated:
-            bvecs = self.gtab.bvecs[~self.gtab.b0s_mask]
-            bvals = self.gtab.bvals[~self.gtab.b0s_mask]
-            tensor = grad_tensor(self.sphere.vertices[idx], self.evals)
+        # Calculate it all on init:
+        for idx in range(sphere.vertices.shape[0]):
+            tensor = grad_tensor(self.sphere.vertices[idx], evals)
             ADC = np.diag(np.dot(np.dot(bvecs, tensor), bvecs.T))
             sig = np.exp(-bvals * ADC)
             sig = sig - np.mean(sig)
             self.signal[idx] = sig
-            self._calculated.append(idx)
-
-        return self.signal[idx]
 
     def streamline_signal(self, streamline, node=None):
         """
         Approximate the signal for a given streamline
         """
-        if node is None:
-            grad = streamline_gradients(streamline)
-            sig_out = np.zeros((grad.shape[0], self.signal.shape[-1]))
-            for ii, g in enumerate(grad):
-                sig_out[ii] = self.calc_signal(g)
+        if node == 0:
+            g = gradient(streamline[:2])[0]
+        elif node == streamline.shape[0]:
+            g = gradient(streamline[-2:])[1]
         else:
-            if node == 0:
-                g = streamline_gradients(streamline[:2])[0]
-            elif node == streamline.shape[0]:
-                g = streamline_gradients(streamline[-2:])[1]
-            else:
-                g = streamline_gradients(streamline[node - 1:node + 1])[1]
-            sig_out = self.calc_signal(g)
-        return sig_out
+            g = gradient(streamline[node - 1:node + 1])[1]
+        idx = self.sphere.find_closest(g)
+        return self.signal[idx]
+
+
+def voxel2streamline(streamline, transformed=False, affine=None,
+                     unique_idx=None):
+    """
+    Maps voxels to streamlines.
+
+    Parameters
+    ----------
+    sl : list
+        A collection of streamlines, each n by 3, with n being the number of
+        nodes in the fiber.
+
+    unique_idx : array.
+       The unique indices in the streamlines
+
+    Returns
+    -------
+    v2f : memmap array
+    """
+    if transformed:
+        sl = streamline
+    else:
+        if affine is None:
+            affine = np.eye(4)
+        sl = transform_streamlines(streamline, affine)
+
+    if unique_idx is None:
+        all_coords = np.concatenate(transformed_streamline)
+        unique_idx = unique_rows(np.round(all_coords))
+
+    vox_dict = {}
+    for ii, vox in enumerate(unique_idx):
+        vox_dict[vox[0], vox[1], vox[2]] = ii
+    # Outputs are the following:
+    n_unique_f = 0
+    tmpdir = tempfile.tempdir
+    n_nodes = np.array([s.shape[0] for s in sl])
+    # v2f = np.memmap(op.join(tmpdir, 'life_v2f.dat'),
+    #                 dtype=np.bool,
+    #                 mode='w+',
+    #                 shape=(len(unique_idx), len(sl)))
+    v2f = np.zeros((len(unique_idx), len(sl)))
+
+    # In each fiber:
+    for s_idx, s in enumerate(sl):
+        sl_as_idx = np.round(s).astype(np.intp)
+        # In each voxel present in there:
+        for node in sl_as_idx:
+            # What serial number is this voxel in the unique voxel indices:
+            voxel_id = vox_dict[node[0], node[1], node[2]]
+            # Add that combination to the array:
+            # All the nodes going through this voxel are noted:
+            v2f[voxel_id, s_idx] = True
+            n_unique_f = n_unique_f + 1
+    return v2f, n_unique_f
 
 
 class FiberModel(ReconstModel):
@@ -314,23 +321,26 @@ class FiberModel(ReconstModel):
             an approximation. Defaults to use the 724-vertex symmetric sphere
             from :mod:`dipy.data`
         """
-
-        if affine is None:
-            affine = np.eye(4)
-
         if sphere is None:
             sphere = dpd.get_sphere('symmetric724')
 
         SignalMaker = LifeSignalMaker(self.gtab,
                                       evals=evals,
                                       sphere=sphere)
+
         if affine is None:
             affine = np.eye(4)
         streamline = transform_streamlines(streamline, affine)
-        n_nodes = np.array([s.shape[0] for s in streamline])
         cat_streamline = np.concatenate(streamline)
+        sl_id = []
+        for ii, s in enumerate(streamline):
+            sl_id.append(np.ones(s.shape[0]) * ii)
+        sl_id = np.concatenate(sl_id)
         sum_nodes = cat_streamline.shape[0]
         vox_coords = unique_rows(np.round(cat_streamline).astype(np.intp))
+        v2f, n_unique_f = voxel2streamline(streamline, transformed=True,
+                                           affine=affine,
+                                           unique_idx=vox_coords)
 
         (to_fit, weighted_signal, b0_signal, relative_signal, mean_sig,
          vox_data) = self._signals(data, vox_coords)
@@ -339,7 +349,6 @@ class FiberModel(ReconstModel):
         n_bvecs = self.gtab.bvals[~self.gtab.b0s_mask].shape[0]
         f_matrix_shape = (to_fit.shape[0], len(streamline))
         beta = np.zeros(f_matrix_shape[-1])
-        gradient = np.zeros(beta.shape)
         range_bvecs = np.arange(n_bvecs).astype(int)
 
         # Optimization related stuff:
@@ -352,23 +361,23 @@ class FiberModel(ReconstModel):
         error_checks = 0  # How many error checks have we done so far
         step_size = 0.01
         y_hat = np.zeros(to_fit.shape)
-        se = (y_hat - to_fit) ** 2
-        sse_by_vox = np.sum(se.reshape(vox_coords.shape[0], -1), -1)
-        vox_by_sse = np.argsort(sse_by_vox)[::-1]  # From largest to smallest
+
         while 1:
+            gradient = np.zeros(beta.shape)
             for v_idx in range(vox_coords.shape[0]):
                 mat_row_idx = (range_bvecs + v_idx * n_bvecs).astype(np.intp)
                 # For each fiber in that voxel:
                 s_in_vox = []
-                for sl_idx, s in enumerate(streamline):
+                for sl_idx in np.where(v2f[v_idx])[0]:
+                    s = streamline[sl_idx]
                     v_s_dist = dist.cdist(np.round(s).astype(np.intp),
                                           np.array([vox_coords[v_idx]]))
                     nodes_in_vox = np.where(v_s_dist == 0)[0]
-                    if len(nodes_in_vox) > 0:
-                        s_in_vox.append((sl_idx, s, nodes_in_vox))
-                f_matrix_row = np.zeros(len(s_in_vox) * n_bvecs)
-                f_matrix_col = np.zeros(len(s_in_vox) * n_bvecs)
-                f_matrix_sig = np.zeros(len(s_in_vox) * n_bvecs)
+                    s_in_vox.append((sl_idx, s, nodes_in_vox))
+                f_matrix_row = np.zeros(len(s_in_vox) * n_bvecs, dtype=np.intp)
+                f_matrix_col = np.zeros(len(s_in_vox) * n_bvecs, dtype=np.intp)
+                f_matrix_sig = np.zeros(len(s_in_vox) * n_bvecs,
+                                        dtype=np.float)
                 for ii, (sl_idx, ss, nodes_in_vox) in enumerate(s_in_vox):
                     f_matrix_row[ii*n_bvecs:ii*n_bvecs+n_bvecs] = mat_row_idx
                     f_matrix_col[ii*n_bvecs:ii*n_bvecs+n_bvecs] = sl_idx
@@ -382,17 +391,19 @@ class FiberModel(ReconstModel):
                         vox_fib_sig += this_signal
                     # And add the summed thing into the corresponding rows:
                     f_matrix_sig[ii*n_bvecs:ii*n_bvecs+n_bvecs] += vox_fib_sig
-
-                life_matrix = sps.csr_matrix((f_matrix_sig,
-                                              [f_matrix_row, f_matrix_col]),
+                #life_matrix = np.zeros((n_bvecs, beta.shape[0]))
+                #life_matrix[:, f_matrix_col] = f_matrix_sig
+                life_matrix = sps.coo_matrix((f_matrix_sig,
+                                             [f_matrix_row, f_matrix_col]),
                                              shape=f_matrix_shape)
-                if iteration > 1 and (np.mod(iteration, check_error_iter) == 0):
-                    y_hat[mat_row_idx] = opt.spdot(life_matrix,
-                                                   beta)[mat_row_idx]
+                if (iteration > 1 and
+                   (np.mod(iteration, check_error_iter) == 0)):
+                    y_hat[mat_row_idx] = opt.spdot(life_matrix, beta)
                 else:
-                    gradient = gradient + opt.spdot(life_matrix.T,
-                                                    opt.spdot(life_matrix,
-                                                            beta) - to_fit)
+                    Xh = opt.spdot(life_matrix, beta)
+                    margin = Xh - to_fit
+                    XtX = opt.spdot(life_matrix.T, margin)
+                    gradient = gradient + XtX
 
             if iteration > 1 and (np.mod(iteration, check_error_iter) == 0):
                 sse = np.sum((to_fit - y_hat) ** 2)
@@ -410,6 +421,7 @@ class FiberModel(ReconstModel):
                 else:
                     count_bad += 1
                 if count_bad >= max_error_checks:
+                    print(iteration)
                     return FiberFit(self,
                                     life_matrix,
                                     vox_coords,
