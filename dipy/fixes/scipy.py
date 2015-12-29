@@ -20,7 +20,7 @@ def polar(a, side="right"):
 
     Parameters
     ----------
-    a : (m, n) array_like
+    a : array_like, shape (m, n).
         The array to be factored.
     side : {'left', 'right'}, optional
         Determines whether a right or left polar decomposition is computed.
@@ -29,7 +29,7 @@ def polar(a, side="right"):
 
     Returns
     -------
-    u : (m, n) ndarray
+    u : ndarray, shape (m, n)
         If `a` is square, then `u` is unitary.  If m > n, then the columns
         of `a` are orthonormal, and if m < n, then the rows of `u` are
         orthonormal.

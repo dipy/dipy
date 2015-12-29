@@ -252,8 +252,7 @@ def gradient_table(bvals, bvecs=None, big_delta=None, small_delta=None,
 
 
 def reorient_bvecs(gtab, affines):
-    """
-    Reorient the directions in a GradientTable according
+    """Reorient the directions in a GradientTable.
 
     When correcting for motion, rotation of the diffusion-weighted volumes
     might cause systematic bias in rotationally invariant measures, such as FA
@@ -263,7 +262,7 @@ def reorient_bvecs(gtab, affines):
 
     Parameters
     ----------
-    gtab : a GradientTable class instance.
+    gtab : GradientTable
         The nominal gradient table with which the data were acquired.
     affines : list or ndarray of shape (n, 4, 4) or (n, 3, 3)
         Each entry in this list or array contain either an affine
