@@ -259,9 +259,9 @@ class FiberModel(ReconstModel):
                     s = streamline[sl_idx]
                     s_as_coords = sl_as_coords[sl_idx]
                     find_vox = np.logical_and(
-                        np.logical_and(
-                                s_as_coords[:, 0] == vox_coords[v_idx][0],
-                                s_as_coords[:, 1] == vox_coords[v_idx][1]),
+                      np.logical_and(
+                                     s_as_coords[:, 0] == vox_coords[v_idx][0],
+                                     s_as_coords[:, 1] == vox_coords[v_idx][1]),
                                 s_as_coords[:, 2] == vox_coords[v_idx][2])
                     nodes_in_vox = np.where(find_vox)[0]
                     s_in_vox.append((sl_idx, s, nodes_in_vox))
@@ -287,7 +287,7 @@ class FiberModel(ReconstModel):
 
                 if (iteration > 1 and
                    (np.mod(iteration, check_error_iter) == 0)):
-                    y_hat[mat_row_idx] = opt.spdot(life_matrix, beta)
+                    y_hat[mat_row_idx] = np.dot(life_matrix, beta)
                 else:
                     margin = -to_fit
                     Xh = np.dot(life_matrix, beta)
