@@ -267,7 +267,6 @@ class LifeSignalMaker(object):
         return sig_out
 
 
-
 class FiberModel(ReconstModel):
     """
     A class for representing and solving predictive models based on
@@ -291,7 +290,8 @@ class FiberModel(ReconstModel):
         # Initialize the super-class:
         ReconstModel.__init__(self, gtab)
 
-    def setup(self, streamline, affine, evals=[0.001, 0, 0], sphere=None):
+    def fit(self, data, streamline, affine=None,
+            evals=[0.001, 0, 0], sphere=None):
         """
         Set up the necessary components for the LiFE model: the matrix of
         fiber-contributions to the DWI signal, and the coordinates of voxels
@@ -314,6 +314,10 @@ class FiberModel(ReconstModel):
             an approximation. Defaults to use the 724-vertex symmetric sphere
             from :mod:`dipy.data`
         """
+
+        if affine is None:
+            affine = np.eye(4)
+
         if sphere is None:
             sphere = dpd.get_sphere('symmetric724')
 
@@ -327,55 +331,105 @@ class FiberModel(ReconstModel):
         cat_streamline = np.concatenate(streamline)
         sum_nodes = cat_streamline.shape[0]
         vox_coords = unique_rows(np.round(cat_streamline).astype(np.intp))
-        # We only consider the diffusion-weighted signals:
+
+        (to_fit, weighted_signal, b0_signal, relative_signal, mean_sig,
+         vox_data) = self._signals(data, vox_coords)
+
+        # We only consider the diffusion-weighted signals in fitting:
         n_bvecs = self.gtab.bvals[~self.gtab.b0s_mask].shape[0]
-        f_matrix_shape = (sum_nodes * n_bvecs, len(streamline))
-
-        tmpdir = tempfile.tempdir
-        f_matrix_sig = np.memmap(op.join(tmpdir, 'life_sig.dat'),
-                                 dtype=np.float,
-                                 mode='w+',
-                                 shape=(sum_nodes * n_bvecs,))
-
-        f_matrix_row = np.memmap(op.join(tmpdir, 'life_row.dat'),
-                                 dtype=np.intp,
-                                 mode='w+', shape=(sum_nodes * n_bvecs,))
-
-        f_matrix_col = np.memmap(op.join(tmpdir, 'life_col.dat'),
-                                 dtype=np.intp,
-                                 mode='w+', shape=(sum_nodes * n_bvecs,))
-
-        keep_ct = 0
+        f_matrix_shape = (to_fit.shape[0], len(streamline))
+        beta = np.zeros(f_matrix_shape[-1])
         range_bvecs = np.arange(n_bvecs).astype(int)
-        # In each voxel:
-        for v_idx in range(vox_coords.shape[0]):
-            mat_row_idx = (range_bvecs + v_idx * n_bvecs).astype(np.intp)
-            # For each fiber in that voxel:
-            for sl_idx, s in enumerate(streamline):
-                v_s_dist = dist.cdist(np.round(s).astype(np.intp),
-                                      np.array([vox_coords[v_idx]]))
-                nodes_in_vox = np.where(v_s_dist == 0)[0]
-                if len(nodes_in_vox) > 0:
-                    # For each fiber-voxel combination, store the row/column
-                    # indices in the pre-allocated linear arrays
-                    f_matrix_row[keep_ct:keep_ct+n_bvecs] = mat_row_idx
-                    f_matrix_col[keep_ct:keep_ct+n_bvecs] = sl_idx
-                    vox_fiber_sig = np.zeros(n_bvecs)
+
+        # Optimization related stuff:
+        iteration = 0
+        ss_residuals_min = np.inf
+        check_error_iter = 10
+        converge_on_sse = 0.99
+        sse_best = np.inf
+        max_error_checks = 10
+        error_checks = 0  # How many error checks have we done so far
+        y_hat = np.zeros(to_fit.shape)
+        #se = (y_hat - to_fit) ** 2
+        #sse_by_vox = np.sum(se, -1)
+        #vox_by_sse = np.argsort(sse_by_vox)[::-1]  # From largest to smallest
+        while 1:
+            #v_idx = vox_by_sse[0]
+            for v_idx in range(vox_coords.shape[0]):
+                mat_row_idx = (range_bvecs + v_idx * n_bvecs).astype(np.intp)
+                # For each fiber in that voxel:
+                s_in_vox = []
+                for sl_idx, s in enumerate(streamline):
+                    v_s_dist = dist.cdist(np.round(s).astype(np.intp),
+                                          np.array([vox_coords[v_idx]]))
+                    nodes_in_vox = np.where(v_s_dist == 0)[0]
+                    if len(nodes_in_vox) > 0:
+                        s_in_vox.append((sl_idx, s, nodes_in_vox))
+                f_matrix_row = np.zeros(len(s_in_vox) * n_bvecs)
+                f_matrix_col = np.zeros(len(s_in_vox) * n_bvecs)
+                f_matrix_sig = np.zeros(len(s_in_vox) * n_bvecs)
+                for ii, (sl_idx, ss, nodes_in_vox) in enumerate(s_in_vox):
+                    f_matrix_row[ii*n_bvecs:ii*n_bvecs+n_bvecs] = mat_row_idx
+                    f_matrix_col[ii*n_bvecs:ii*n_bvecs+n_bvecs] = sl_idx
+                    vox_fib_sig = np.zeros(n_bvecs)
                     for node_idx in nodes_in_vox:
                         this_signal = \
-                             SignalMaker.streamline_signal(s,
+                             SignalMaker.streamline_signal(ss,
                                                            node=node_idx)
                         # Sum the signal from each node of the fiber in that
                         # voxel:
-                        vox_fiber_sig += this_signal
+                        vox_fib_sig += this_signal
                     # And add the summed thing into the corresponding rows:
-                    f_matrix_sig[keep_ct:keep_ct+n_bvecs] += vox_fiber_sig
-                    keep_ct = keep_ct + n_bvecs
+                    f_matrix_sig[ii*n_bvecs:ii*n_bvecs+n_bvecs] += vox_fib_sig
 
-        life_matrix = sps.csr_matrix((f_matrix_sig,
-                                      [f_matrix_row, f_matrix_col]))
+                life_matrix = sps.csr_matrix((f_matrix_sig,
+                                              [f_matrix_row, f_matrix_col]),
+                                             shape=f_matrix_shape)
 
-        return life_matrix, vox_coords
+                gradient = opt.spdot(life_matrix.T,
+                                     opt.spdot(life_matrix, beta) -
+                                     to_fit)
+
+                step_size = 0.1
+                beta = beta - step_size * gradient
+                # Set negative values to 0 (non-negative!)
+                beta[beta < 0] = 0
+                if (iteration > 1 and
+                   (np.mod(iteration, check_error_iter) == 0)):
+                    y_hat[mat_row_idx] = opt.spdot(life_matrix, beta)
+            if iteration > 1 and (np.mod(iteration, check_error_iter) == 0):
+                sse = np.sum((to_fit - y_hat) ** 2)
+                # Did we do better this time around?
+                if sse < ss_residuals_min:
+                    # Update your expectations about the minimum error:
+                    ss_residuals_min = sse
+                    beta_best = beta
+                    # Are we generally (over iterations) converging?
+                    if sse < sse_best:
+                        sse_best = sse
+                        count_bad = 0
+                    else:
+                        count_bad += 1
+                else:
+                    count_bad += 1
+                if count_bad >= max_error_checks:
+                    return FiberFit(self,
+                                    life_matrix,
+                                    vox_coords,
+                                    to_fit,
+                                    beta_best,
+                                    weighted_signal,
+                                    b0_signal,
+                                    relative_signal,
+                                    mean_sig,
+                                    vox_data,
+                                    streamline,
+                                    affine,
+                                    evals)
+
+                error_checks += 1
+            iteration += 1
+
 
     def _signals(self, data, vox_coords):
         """
@@ -404,51 +458,6 @@ class FiberModel(ReconstModel):
         return (to_fit, weighted_signal, b0_signal, relative_signal, mean_sig,
                 vox_data)
 
-    def fit(self, data, streamline, affine=None, evals=[0.001, 0, 0],
-            sphere=None):
-        """
-        Fit the LiFE FiberModel for data and a set of streamlines associated
-        with this data
-
-        Parameters
-        ----------
-        data : 4D array
-           Diffusion-weighted data
-
-        streamline : list
-           A bunch of streamlines
-
-        affine: 4 by 4 array (optional)
-           The affine to go from the streamline coordinates to the data
-           coordinates. Defaults to use `np.eye(4)`
-
-        evals : list (optional)
-           The eigenvalues of the tensor response function used in constructing
-           the model signal. Default: [0.001, 0, 0]
-
-        sphere: `dipy.core.Sphere` instance, or False
-            Whether to approximate (and cache) the signal on a discrete
-            sphere. This may confer a significant speed-up in setting up the
-            problem, but is not as accurate. If `False`, we use the exact
-            gradients along the streamlines to calculate the matrix, instead of
-            an approximation.
-
-        Returns
-        -------
-        FiberFit class instance
-        """
-        if affine is None:
-            affine = np.eye(4)
-        life_matrix, vox_coords = \
-            self.setup(streamline, affine, evals=evals, sphere=sphere)
-        (to_fit, weighted_signal, b0_signal, relative_signal, mean_sig,
-         vox_data) = self._signals(data, vox_coords)
-        beta = opt.sparse_nnls(to_fit, life_matrix)
-
-        return FiberFit(self, life_matrix, vox_coords, to_fit, beta,
-                        weighted_signal, b0_signal, relative_signal, mean_sig,
-                        vox_data, streamline, affine, evals)
-
 
 class FiberFit(ReconstFit):
     """
@@ -467,7 +476,6 @@ class FiberFit(ReconstFit):
         """
         ReconstFit.__init__(self, fiber_model, vox_data)
 
-        self.life_matrix = life_matrix
         self.vox_coords = vox_coords
         self.fit_data = to_fit
         self.beta = beta
@@ -479,7 +487,7 @@ class FiberFit(ReconstFit):
         self.affine = affine
         self.evals = evals
 
-    def predict(self, gtab=None, S0=None):
+    def predict(self, gtab=None, S0=None, sphere=None):
         """
         Predict the signal
 
@@ -500,24 +508,63 @@ class FiberFit(ReconstFit):
         # offset, according to the isotropic part of the signal, which was
         # removed prior to fitting:
         if gtab is None:
-            _matrix = self.life_matrix
             gtab = self.model.gtab
-        else:
-            _model = FiberModel(gtab)
-            _matrix, _ = _model.setup(self.streamline,
-                                      self.affine,
-                                      self.evals)
 
-        pred_weighted = np.reshape(opt.spdot(_matrix, self.beta),
-                                   (self.vox_coords.shape[0],
-                                    np.sum(~gtab.b0s_mask)))
+        if sphere is None:
+            sphere = dpd.get_sphere('symmetric724')
+
+        SignalMaker = LifeSignalMaker(gtab,
+                                      evals=self.evals,
+                                      sphere=sphere)
+
+        n_bvecs = gtab.bvals[~gtab.b0s_mask].shape[0]
+        f_matrix_shape = (self.fit_data.shape[0], len(self.streamline))
+        range_bvecs = np.arange(n_bvecs).astype(int)
+        pred_weighted = np.zeros(self.fit_data.shape)
+
+        for v_idx in range(self.vox_coords.shape[0]):
+            mat_row_idx = (range_bvecs + v_idx * n_bvecs).astype(np.intp)
+            # For each fiber in that voxel:
+            s_in_vox = []
+            for sl_idx, s in enumerate(self.streamline):
+                v_s_dist = dist.cdist(np.round(s).astype(np.intp),
+                                      np.array([self.vox_coords[v_idx]]))
+                nodes_in_vox = np.where(v_s_dist == 0)[0]
+                if len(nodes_in_vox) > 0:
+                    s_in_vox.append((sl_idx, s, nodes_in_vox))
+            f_matrix_row = np.zeros(len(s_in_vox) * n_bvecs)
+            f_matrix_col = np.zeros(len(s_in_vox) * n_bvecs)
+            f_matrix_sig = np.zeros(len(s_in_vox) * n_bvecs)
+            for ii, (sl_idx, ss, nodes_in_vox) in enumerate(s_in_vox):
+                f_matrix_row[ii*n_bvecs:ii*n_bvecs+n_bvecs] = mat_row_idx
+                f_matrix_col[ii*n_bvecs:ii*n_bvecs+n_bvecs] = sl_idx
+                vox_fib_sig = np.zeros(n_bvecs)
+                for node_idx in nodes_in_vox:
+                    this_signal = \
+                         SignalMaker.streamline_signal(ss,
+                                                       node=node_idx)
+                    # Sum the signal from each node of the fiber in that
+                    # voxel:
+                    vox_fib_sig += this_signal
+                # And add the summed thing into the corresponding rows:
+                f_matrix_sig[ii*n_bvecs:ii*n_bvecs+n_bvecs] += vox_fib_sig
+
+            life_matrix = sps.csr_matrix((f_matrix_sig,
+                                          [f_matrix_row, f_matrix_col]),
+                                         shape=f_matrix_shape)
+
+            pred_weighted[mat_row_idx] = opt.spdot(life_matrix,
+                                                   self.beta)[mat_row_idx]
 
         pred = np.empty((self.vox_coords.shape[0], gtab.bvals.shape[0]))
+        pred[..., ~gtab.b0s_mask] = pred_weighted.reshape(
+                                            pred[..., ~gtab.b0s_mask].shape)
         if S0 is None:
             S0 = self.b0_signal
 
         pred[..., gtab.b0s_mask] = S0[:, None]
         pred[..., ~gtab.b0s_mask] =\
-            (pred_weighted + self.mean_signal[:, None]) * S0[:, None]
+            (pred[..., ~gtab.b0s_mask] +
+             self.mean_signal[:, None]) * S0[:, None]
 
         return pred
