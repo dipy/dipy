@@ -53,7 +53,6 @@ from warnings import warn
 
 from nibabel.affines import apply_affine
 from scipy.spatial.distance import cdist
-from scipy.interpolate import RegularGridInterpolator
 
 from dipy.core.geometry import dist_to_corner
 
@@ -63,7 +62,8 @@ from ..utils.six.moves import xrange, map
 import numpy as np
 from numpy import (asarray, ceil, dot, empty, eye, sqrt)
 from dipy.io.bvectxt import ornt_mapping
-from . import metrics
+import dipy.align.vector_fields as vfu
+from dipy.tracking import metrics
 
 # Import helper functions shared with vox2track
 from ._utils import (_mapping_to_voxel, _to_voxel_coordinates)
@@ -982,24 +982,22 @@ def vals_from_img(img, streamlines, affine=None):
 
 
     """
-    data = img.get_data()
-    rgi = RegularGridInterpolator((np.arange(data.shape[0]),
-                                   np.arange(data.shape[1]),
-                                   np.arange(data.shape[2])), data)
+    data = img.get_data().astype(np.float)
     if isinstance(streamlines, list):
         if affine is not None:
             streamlines = dtu.move_streamlines(streamlines,
                                                np.linalg.inv(affine))
         vals = []
         for sl in streamlines:
-            vals.append(rgi(sl))
+            vals.append(vfu.interpolate_scalar_3d(data, sl))
+
     elif isinstance(streamlines, np.ndarray):
         sl_shape = streamlines.shape
         sl_cat = streamlines.reshape(sl_shape[0] * sl_shape[1], 3)
         if affine is not None:
             sl_cat = np.dot(sl_cat, affine[:3, :3]) + affine[:3, 3]
         # So that we can index in one operation:
-        vals = rgi(sl_cat)
-        vals = vals.reshape(sl_shape[0], sl_shape[1])
+        vals = vfu.interpolate_scalar_3d(data, sl_cat)[0]
+        vals = np.reshape(vals, (sl_shape[0], sl_shape[1]))
 
     return vals
