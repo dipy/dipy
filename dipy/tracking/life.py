@@ -17,7 +17,7 @@ from dipy.tracking.utils import unique_rows
 from dipy.tracking.streamline import transform_streamlines
 import dipy.data as dpd
 import dipy.core.optimize as opt
-from dipy.tracking.vox2track import streamline_mapping
+from dipy.tracking.vox2track import streamline_mapping, track_counts
 
 
 def grad_tensor(grad, evals):
@@ -191,7 +191,7 @@ class FiberModel(ReconstModel):
         y_hat = np.zeros(to_fit.shape)
 
         # Cache some facts about relationship between voxels and fibers:
-        max_s_per_vox = 0
+        max_s_per_vox = np.max([len(t) for t in v2f.values()])
         s_in_vox = {}
         for v_idx in range(vox_coords.shape[0]):
             s_in_vox[v_idx] = []
@@ -207,8 +207,6 @@ class FiberModel(ReconstModel):
                   sl_as_coords[sl_idx][:, 2] == vox_coords[v_idx][2])
                 nodes_in_vox = np.where(find_vox)[0]
                 s_in_vox[v_idx].append((sl_idx, nodes_in_vox))
-                if len(s_in_vox[v_idx]) > max_s_per_vox:
-                    max_s_per_vox = len(s_in_vox[v_idx])
 
         life_matrix = np.zeros((n_bvecs, beta.shape[0]))
         row_col_list = np.array([np.zeros(n * n_bvecs, dtype=np.intp)
@@ -277,7 +275,9 @@ class FiberModel(ReconstModel):
                                     streamline,
                                     affine,
                                     evals,
-                                    v2f)
+                                    v2f,
+                                    closest,
+                                    s_in_vox)
                 error_checks += 1
             else:
                 beta = beta - step_size * delta
@@ -292,7 +292,7 @@ class FiberFit(ReconstFit):
     """
     def __init__(self, fiber_model, life_matrix, vox_coords, to_fit, beta,
                  weighted_signal, b0_signal, relative_signal, mean_sig,
-                 vox_data, streamline, affine, evals, v2f):
+                 vox_data, streamline, affine, evals, v2f, closest, s_in_vox):
         """
         Parameters
         ----------
@@ -314,6 +314,8 @@ class FiberFit(ReconstFit):
         self.affine = affine
         self.evals = evals
         self.v2f = v2f
+        self.closest = closest
+        self.s_in_vox = s_in_vox
 
     def predict(self, gtab=None, S0=None, sphere=None):
         """
@@ -350,48 +352,32 @@ class FiberFit(ReconstFit):
         pred_weighted = np.zeros(self.fit_data.shape)
 
         for v_idx in range(self.vox_coords.shape[0]):
-            mat_row_idx = (range_bvecs + v_idx * n_bvecs).astype(np.intp)
-            # For each fiber in that voxel:
-            s_in_vox = []
-            for sl_idx in self.v2f[self.vox_coords[v_idx][0],
-                                   self.vox_coords[v_idx][1],
-                                   self.vox_coords[v_idx][2]]:
-                s = self.streamline[sl_idx]
-                s_as_coords = np.round(s).astype(np.intp)
-                find_vox = np.logical_and(
-                    np.logical_and(
-                            s_as_coords[:, 0] == self.vox_coords[v_idx][0],
-                            s_as_coords[:, 1] == self.vox_coords[v_idx][1]),
-                            s_as_coords[:, 2] == self.vox_coords[v_idx][2])
-                nodes_in_vox = np.where(find_vox)[0]
-                s_in_vox.append((sl_idx, s, nodes_in_vox))
-            f_matrix_row = np.zeros(len(s_in_vox) * n_bvecs, dtype=np.intp)
-            f_matrix_col = np.zeros(len(s_in_vox) * n_bvecs, dtype=np.intp)
-            f_matrix_sig = np.zeros(len(s_in_vox) * n_bvecs,
-                                    dtype=np.float)
-            for ii, (sl_idx, ss, nodes_in_vox) in enumerate(s_in_vox):
-                f_matrix_row[ii*n_bvecs:ii*n_bvecs+n_bvecs] = range_bvecs
-                f_matrix_col[ii*n_bvecs:ii*n_bvecs+n_bvecs] = sl_idx
-                vox_fib_sig = np.zeros(n_bvecs)
-                for node_idx in nodes_in_vox:
-                    if node_idx == 0:
-                        g = ss[1] - ss[0]
-                    elif node_idx == ss.shape[0]:
-                        g = ss[-1] - ss[-2]
-                    else:
-                        g = ss[node_idx] - ss[node_idx-1]
+                mat_row_idx = (range_bvecs + v_idx * n_bvecs).astype(np.intp)
+                s_in_vox = self.s_in_vox[v_idx]
+                f_matrix_row = np.zeros(len(s_in_vox) *
+                                        n_bvecs, dtype=np.intp)
+                f_matrix_col = np.zeros(len(s_in_vox) *
+                                        n_bvecs, dtype=np.intp)
+                f_matrix_sig = np.zeros(len(s_in_vox) *
+                                        n_bvecs, dtype=np.float)
+                for ii, (sl_idx, nodes_in_vox) in enumerate(s_in_vox):
+                    ss = self.streamline[sl_idx]
+                    f_matrix_row[ii*n_bvecs:ii*n_bvecs+n_bvecs] = range_bvecs
+                    f_matrix_col[ii*n_bvecs:ii*n_bvecs+n_bvecs] = sl_idx
+                    vox_fib_sig = np.zeros(n_bvecs)
+                    for node_idx in nodes_in_vox:
+                        signal_idx = self.closest[sl_idx][node_idx]
+                        this_signal = signal_maker[signal_idx]
+                        # Sum the signal from each node of the fiber in that
+                        # voxel:
+                        vox_fib_sig += this_signal
+                    # And add the summed thing into the corresponding rows:
+                    f_matrix_sig[ii*n_bvecs:ii*n_bvecs+n_bvecs] += vox_fib_sig
 
-                    signal_idx = sphere.find_closest(g)
-                    this_signal = signal_maker[signal_idx]
-                    # Sum the signal from each node of the fiber in that
-                    # voxel:
-                    vox_fib_sig += this_signal
-                # And add the summed thing into the corresponding rows:
-                f_matrix_sig[ii*n_bvecs:ii*n_bvecs+n_bvecs] += vox_fib_sig
+                life_matrix = np.zeros((n_bvecs, self.beta.shape[0]))
+                life_matrix[f_matrix_row, f_matrix_col] = f_matrix_sig
 
-            life_matrix = np.zeros((n_bvecs, self.beta.shape[0]))
-            life_matrix[f_matrix_row, f_matrix_col] = f_matrix_sig
-            pred_weighted[mat_row_idx] = np.dot(life_matrix, self.beta)
+                pred_weighted[mat_row_idx] = np.dot(life_matrix, self.beta)
 
         pred = np.empty((self.vox_coords.shape[0], gtab.bvals.shape[0]))
         pred[..., ~gtab.b0s_mask] = pred_weighted.reshape(
