@@ -17,7 +17,7 @@ from dipy.tracking.utils import unique_rows
 from dipy.tracking.streamline import transform_streamlines
 import dipy.data as dpd
 from dipy.tracking.vox2track import streamline_mapping, track_counts
-from dipy.tracking.spdot import spdot, spdot_t
+from dipy.tracking.spdot import spdot, spdot_t, gradient_change
 
 def grad_tensor(grad, evals):
     """
@@ -238,13 +238,15 @@ class FiberModel(ReconstModel):
                                                f_matrix_col,
                                                f_matrix_sig,
                                                beta,
+                                               f_matrix_row.shape[0],
                                                mat_row_idx.shape[0])
                 else:
-                    Xh = spdot(f_matrix_row, f_matrix_col,
-                               f_matrix_sig, beta, mat_row_idx.shape[0])
-                    margin = Xh - to_fit[mat_row_idx]
-                    XtXh = spdot_t(f_matrix_row, f_matrix_col,
-                                   f_matrix_sig, margin, delta.shape)
+                    XtXh = gradient_change(f_matrix_row,
+                                           f_matrix_col,
+                                           f_matrix_sig, beta,
+                                           to_fit[mat_row_idx],
+                                           mat_row_idx.shape[0],
+                                           delta.shape[0])
                     delta = delta + XtXh
 
             if iteration > 1 and (np.mod(iteration, check_error_iter) == 0):
@@ -378,6 +380,7 @@ class FiberFit(ReconstFit):
                                                    f_matrix_col,
                                                    f_matrix_sig,
                                                    self.beta,
+                                                   f_matrix_row.shape[0],
                                                    mat_row_idx.shape[0])
 
         pred = np.empty((self.vox_coords.shape[0], gtab.bvals.shape[0]))
