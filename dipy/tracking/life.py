@@ -22,13 +22,13 @@ from dipy.tracking.vox2track import streamline_mapping
 
 def grad_tensor(grad, evals):
     """
-    Calculate the 3 by 3 tensor for a given spatial gradient, given a canonical
-    tensor shape (also as a 3 by 3), pointing at [1,0,0]
+    Calculate the 3 by 3 tensor for a given spatial gradient.
 
     Parameters
     ----------
     grad : 1d array of shape (3,)
-        The spatial gradient (e.g between two nodes of a streamline).
+        The orientation of the tensor (for example, the spatial gradient
+        between two nodes of a streamline).
 
     evals: 1d array of shape (3,)
         The eigenvalues of a canonical tensor to be used as a response
@@ -40,56 +40,6 @@ def grad_tensor(grad, evals):
     # This is the 3 by 3 tensor after rotation:
     T = np.dot(np.dot(R, np.diag(evals)), R.T)
     return T
-
-
-class LifeSignalMaker(object):
-    """
-    A class for generating signals from streamlines in an efficient and speedy
-    manner.
-    """
-    def __init__(self, gtab, evals=[0.001, 0, 0], sphere=None):
-        """
-        Initialize a signal maker
-
-        Parameters
-        ----------
-        gtab : GradientTable class instance
-            The gradient table on which the signal is calculated.
-        evals : list of 3 items
-            The eigenvalues of the canonical tensor to use in calculating the
-            signal.
-        """
-        if sphere is None:
-            sphere = dpd.get_sphere('symmetric724')
-        self.sphere = sphere
-        bvecs = gtab.bvecs[~gtab.b0s_mask]
-        bvals = gtab.bvals[~gtab.b0s_mask]
-        # Initialize an empty dict to fill with signals for each of the sphere
-        # vertices:
-        self.signal = np.empty((self.sphere.vertices.shape[0],
-                                np.sum(~gtab.b0s_mask)))
-
-        # Calculate it all on initialization:
-        for idx in range(sphere.vertices.shape[0]):
-            tensor = grad_tensor(self.sphere.vertices[idx], evals)
-            ADC = np.diag(np.dot(np.dot(bvecs, tensor), bvecs.T))
-            sig = np.exp(-bvals * ADC)
-            sig = sig - np.mean(sig)
-            self.signal[idx] = sig
-
-    def streamline_signal(self, streamline, node):
-        """
-        Approximate the signal for a given streamline
-        """
-        if node == 0:
-            g = gradient(streamline[:2])[0]
-        elif node == streamline.shape[0]:
-            g = gradient(streamline[-2:])[1]
-        else:
-            g = gradient(streamline[node - 1:node + 1])[1]
-
-        idx = self.sphere.find_closest(g)
-        return self.signal[idx]
 
 
 class FiberModel(ReconstModel):
@@ -114,6 +64,64 @@ class FiberModel(ReconstModel):
         """
         # Initialize the super-class:
         ReconstModel.__init__(self, gtab)
+
+
+    def signal_maker(self, evals=[0.001, 0, 0], sphere=None):
+        """
+        Initialize a signal maker
+
+        Parameters
+        ----------
+        gtab : GradientTable class instance
+            The gradient table on which the signal is calculated.
+        evals : list of 3 items
+            The eigenvalues of the canonical tensor to use in calculating the
+            signal.
+        """
+        if sphere is None:
+            sphere = dpd.get_sphere()
+
+        bvecs = self.gtab.bvecs[~self.gtab.b0s_mask]
+        bvals = self.gtab.bvals[~self.gtab.b0s_mask]
+        # This will be the output
+        signal = np.empty((sphere.vertices.shape[0], bvals.shape[0]))
+
+        # Calculate for every direction on the sphere:
+        for idx in range(sphere.vertices.shape[0]):
+            tensor = grad_tensor(sphere.vertices[idx], evals)
+            ADC = np.diag(np.dot(np.dot(bvecs, tensor), bvecs.T))
+            sig = np.exp(-bvals * ADC)
+            sig = sig - np.mean(sig)
+            signal[idx] = sig
+
+        return signal
+
+    def _signals(self, data, vox_coords):
+        """
+        Helper function to extract and separate all the signals we need to fit
+        and evaluate a fit of this model
+
+        Parameters
+        ----------
+        data : 4D array
+
+        vox_coords: n by 3 array
+            The coordinates into the data array of the fiber nodes.
+        """
+        # Fitting is done on the S0-normalized-and-demeaned diffusion-weighted
+        # signal:
+        idx_tuple = (vox_coords[:, 0], vox_coords[:, 1], vox_coords[:, 2])
+        # We'll look at a 2D array, extracting the data from the voxels:
+        vox_data = data[idx_tuple]
+        weighted_signal = vox_data[:, ~self.gtab.b0s_mask]
+        b0_signal = np.mean(vox_data[:, self.gtab.b0s_mask], -1)
+        relative_signal = (weighted_signal/b0_signal[:, None])
+
+        # The mean of the relative signal across directions in each voxel:
+        mean_sig = np.mean(relative_signal, -1)
+        to_fit = (relative_signal - mean_sig[:, None]).ravel()
+        return (to_fit, weighted_signal, b0_signal, relative_signal, mean_sig,
+                vox_data)
 
     def fit(self, data, streamline, affine=None, evals=[0.001, 0, 0],
             sphere=None, check_error_iter=5, converge_on_sse=0.8,
@@ -142,9 +150,8 @@ class FiberModel(ReconstModel):
         if sphere is None:
             sphere = dpd.get_sphere()
 
-        SignalMaker = LifeSignalMaker(self.gtab,
-                                      evals=evals,
-                                      sphere=sphere)
+        signal_maker = self.signal_maker(evals=evals,
+                                         sphere=sphere)
 
         if affine is None:
             affine = np.eye(4)
@@ -169,7 +176,7 @@ class FiberModel(ReconstModel):
                     g = ss[-1] - ss[-2]
                 else:
                     g = ss[node_idx] - ss[node_idx-1]
-                closest[sl_idx].append(SignalMaker.sphere.find_closest(g))
+                closest[sl_idx].append(sphere.find_closest(g))
 
         # We only consider the diffusion-weighted signals in fitting:
         n_bvecs = self.gtab.bvals[~self.gtab.b0s_mask].shape[0]
@@ -195,9 +202,9 @@ class FiberModel(ReconstModel):
                               vox_coords[v_idx][2]]:
                 find_vox = np.logical_and(
                   np.logical_and(
-                sl_as_coords[sl_idx][:, 0] == vox_coords[v_idx][0],
-                sl_as_coords[sl_idx][:, 1] == vox_coords[v_idx][1]),
-                sl_as_coords[sl_idx][:, 2] == vox_coords[v_idx][2])
+                    sl_as_coords[sl_idx][:, 0] == vox_coords[v_idx][0],
+                    sl_as_coords[sl_idx][:, 1] == vox_coords[v_idx][1]),
+                  sl_as_coords[sl_idx][:, 2] == vox_coords[v_idx][2])
                 nodes_in_vox = np.where(find_vox)[0]
                 s_in_vox[v_idx].append((sl_idx, nodes_in_vox))
                 if len(s_in_vox[v_idx]) > max_s_per_vox:
@@ -222,7 +229,7 @@ class FiberModel(ReconstModel):
                     vox_fib_sig = np.zeros(n_bvecs)
                     for node_idx in nodes_in_vox:
                         signal_idx = closest[sl_idx][node_idx]
-                        this_signal = SignalMaker.signal[signal_idx]
+                        this_signal = signal_maker[signal_idx]
                         # Sum the signal from each node of the fiber in that
                         # voxel:
                         vox_fib_sig += this_signal
@@ -279,34 +286,6 @@ class FiberModel(ReconstModel):
             iteration += 1
 
 
-    def _signals(self, data, vox_coords):
-        """
-        Helper function to extract and separate all the signals we need to fit
-        and evaluate a fit of this model
-
-        Parameters
-        ----------
-        data : 4D array
-
-        vox_coords: n by 3 array
-            The coordinates into the data array of the fiber nodes.
-        """
-        # Fitting is done on the S0-normalized-and-demeaned diffusion-weighted
-        # signal:
-        idx_tuple = (vox_coords[:, 0], vox_coords[:, 1], vox_coords[:, 2])
-        # We'll look at a 2D array, extracting the data from the voxels:
-        vox_data = data[idx_tuple]
-        weighted_signal = vox_data[:, ~self.gtab.b0s_mask]
-        b0_signal = np.mean(vox_data[:, self.gtab.b0s_mask], -1)
-        relative_signal = (weighted_signal/b0_signal[:, None])
-
-        # The mean of the relative signal across directions in each voxel:
-        mean_sig = np.mean(relative_signal, -1)
-        to_fit = (relative_signal - mean_sig[:, None]).ravel()
-        return (to_fit, weighted_signal, b0_signal, relative_signal, mean_sig,
-                vox_data)
-
-
 class FiberFit(ReconstFit):
     """
     A fit of the LiFE model to diffusion data
@@ -360,11 +339,10 @@ class FiberFit(ReconstFit):
             gtab = self.model.gtab
 
         if sphere is None:
-            sphere = dpd.get_sphere('symmetric724')
+            sphere = dpd.get_sphere()
 
-        SignalMaker = LifeSignalMaker(gtab,
-                                      evals=self.evals,
-                                      sphere=sphere)
+        signal_maker = self.model.signal_maker(evals=self.evals,
+                                               sphere=sphere)
 
         n_bvecs = gtab.bvals[~gtab.b0s_mask].shape[0]
         f_matrix_shape = (self.fit_data.shape[0], len(self.streamline))
@@ -403,8 +381,8 @@ class FiberFit(ReconstFit):
                     else:
                         g = ss[node_idx] - ss[node_idx-1]
 
-                    signal_idx = SignalMaker.sphere.find_closest(g)
-                    this_signal = SignalMaker.signal[signal_idx]
+                    signal_idx = sphere.find_closest(g)
+                    this_signal = signal_maker[signal_idx]
                     # Sum the signal from each node of the fiber in that
                     # voxel:
                     vox_fib_sig += this_signal
