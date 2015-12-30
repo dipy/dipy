@@ -1,6 +1,4 @@
 import os
-import os.path as op
-import tempfile
 
 import numpy as np
 import numpy.testing as npt

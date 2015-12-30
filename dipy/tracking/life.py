@@ -16,9 +16,8 @@ from dipy.utils.six.moves import range
 from dipy.tracking.utils import unique_rows
 from dipy.tracking.streamline import transform_streamlines
 import dipy.data as dpd
-import dipy.core.optimize as opt
 from dipy.tracking.vox2track import streamline_mapping, track_counts
-
+from dipy.tracking.spdot import spdot, spdot_t
 
 def grad_tensor(grad, evals):
     """
@@ -196,10 +195,10 @@ class FiberModel(ReconstModel):
         for v_idx in range(vox_coords.shape[0]):
             s_in_vox[v_idx] = []
             mat_row_idx = (range_bvecs + v_idx * n_bvecs).astype(np.intp)
+            this_vox = (vox_coords[v_idx][0], vox_coords[v_idx][1],
+                        vox_coords[v_idx][2])
             # For each fiber in that voxel:
-            for sl_idx in v2f[vox_coords[v_idx][0],
-                              vox_coords[v_idx][1],
-                              vox_coords[v_idx][2]]:
+            for sl_idx in v2f[this_vox]:
                 find_vox = np.logical_and(
                   np.logical_and(
                     sl_as_coords[sl_idx][:, 0] == vox_coords[v_idx][0],
@@ -208,7 +207,6 @@ class FiberModel(ReconstModel):
                 nodes_in_vox = np.where(find_vox)[0]
                 s_in_vox[v_idx].append((sl_idx, nodes_in_vox))
 
-        life_matrix = np.zeros((n_bvecs, beta.shape[0]))
         row_col_list = np.array([np.zeros(n * n_bvecs, dtype=np.intp)
                                  for n in range(1, max_s_per_vox+1)])
         sigs_list = np.array([np.zeros(n * n_bvecs, dtype=np.float)
@@ -216,7 +214,7 @@ class FiberModel(ReconstModel):
         while 1:
             delta = np.zeros(beta.shape)
             for v_idx in range(vox_coords.shape[0]):
-                mat_row_idx = (range_bvecs + v_idx * n_bvecs).astype(np.intp)
+                mat_row_idx = range_bvecs + v_idx * n_bvecs
                 f_matrix_row = row_col_list[len(s_in_vox[v_idx])-1].copy()
                 f_matrix_col = row_col_list[len(s_in_vox[v_idx])-1].copy()
                 f_matrix_sig = sigs_list[len(s_in_vox[v_idx])-1].copy()
@@ -234,17 +232,20 @@ class FiberModel(ReconstModel):
                     # And add the summed thing into the corresponding rows:
                     f_matrix_sig[ii*n_bvecs:ii*n_bvecs+n_bvecs] += vox_fib_sig
 
-                life_matrix[:] = 0
-                life_matrix[f_matrix_row, f_matrix_col] = f_matrix_sig
-
                 if (iteration > 1 and
                    (np.mod(iteration, check_error_iter) == 0)):
-                    y_hat[mat_row_idx] = np.dot(life_matrix, beta)
+                    y_hat[mat_row_idx] = spdot(f_matrix_row,
+                                               f_matrix_col,
+                                               f_matrix_sig,
+                                               beta,
+                                               mat_row_idx.shape[0])
                 else:
-                    Xh = np.dot(life_matrix, beta)
+                    Xh = spdot(f_matrix_row, f_matrix_col,
+                               f_matrix_sig, beta, mat_row_idx.shape[0])
                     margin = Xh - to_fit[mat_row_idx]
-                    XtX = np.dot(life_matrix.T, margin)
-                    delta = delta + XtX
+                    XtXh = spdot_t(f_matrix_row, f_matrix_col,
+                                   f_matrix_sig, margin, delta.shape)
+                    delta = delta + XtXh
 
             if iteration > 1 and (np.mod(iteration, check_error_iter) == 0):
                 sse = np.sum((to_fit - y_hat) ** 2)
@@ -263,7 +264,6 @@ class FiberModel(ReconstModel):
                     count_bad += 1
                 if count_bad >= max_error_checks:
                     return FiberFit(self,
-                                    life_matrix,
                                     vox_coords,
                                     to_fit,
                                     beta_best,
@@ -290,7 +290,7 @@ class FiberFit(ReconstFit):
     """
     A fit of the LiFE model to diffusion data
     """
-    def __init__(self, fiber_model, life_matrix, vox_coords, to_fit, beta,
+    def __init__(self, fiber_model, vox_coords, to_fit, beta,
                  weighted_signal, b0_signal, relative_signal, mean_sig,
                  vox_data, streamline, affine, evals, v2f, closest, s_in_vox):
         """
@@ -374,10 +374,11 @@ class FiberFit(ReconstFit):
                     # And add the summed thing into the corresponding rows:
                     f_matrix_sig[ii*n_bvecs:ii*n_bvecs+n_bvecs] += vox_fib_sig
 
-                life_matrix = np.zeros((n_bvecs, self.beta.shape[0]))
-                life_matrix[f_matrix_row, f_matrix_col] = f_matrix_sig
-
-                pred_weighted[mat_row_idx] = np.dot(life_matrix, self.beta)
+                pred_weighted[mat_row_idx] = spdot(f_matrix_row,
+                                                   f_matrix_col,
+                                                   f_matrix_sig,
+                                                   self.beta,
+                                                   mat_row_idx.shape[0])
 
         pred = np.empty((self.vox_coords.shape[0], gtab.bvals.shape[0]))
         pred[..., ~gtab.b0s_mask] = pred_weighted.reshape(
