@@ -5,8 +5,7 @@ import scipy.sparse as sps
 import numpy.testing as npt
 
 from dipy.utils.optpkg import optional_package
-from dipy.core.optimize import (Optimizer, SCIPY_LESS_0_12, sparse_nnls, spdot,
-                                sparse_sgd)
+from dipy.core.optimize import Optimizer, SCIPY_LESS_0_12, sparse_nnls, spdot
 import dipy.core.optimize as opt
 
 
