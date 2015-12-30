@@ -50,6 +50,7 @@ from __future__ import division, print_function, absolute_import
 
 from functools import wraps
 from warnings import warn
+import types
 
 from nibabel.affines import apply_affine
 from scipy.spatial.distance import cdist
@@ -983,13 +984,15 @@ def vals_from_img(img, streamlines, affine=None):
 
     """
     data = img.get_data().astype(np.float)
-    if isinstance(streamlines, list):
-        if affine is not None:
-            streamlines = dtu.move_streamlines(streamlines,
-                                               np.linalg.inv(affine))
+    if affine is not None:
+        streamlines = move_streamlines(streamlines,
+                                       np.linalg.inv(affine))
+
+    if (isinstance(streamlines, list) or
+            isinstance(streamlines, types.GeneratorType)):
         vals = []
         for sl in streamlines:
-            vals.append(vfu.interpolate_scalar_3d(data, sl))
+            vals.append(vfu.interpolate_scalar_3d(data, sl)[0])
 
     elif isinstance(streamlines, np.ndarray):
         sl_shape = streamlines.shape

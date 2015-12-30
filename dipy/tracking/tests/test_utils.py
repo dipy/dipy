@@ -622,8 +622,30 @@ def test_vals_from_img():
                              [3.9, 0, 0],
                              [4.1, 0, 0]])]
 
+    vv = vals_from_img(img, streamlines)
+    npt.assert_almost_equal(vv, [[100., 150., 200., 250.],
+                                 [200., 310., 390., 410.]])
+
     vv = vals_from_img(img, np.array(streamlines))
 
-    # Interpolation is to floating point precision:
+    npt.assert_almost_equal(vv, [[100., 150., 200., 250.],
+                                 [200., 310., 390., 410.]])
+
+    affine = np.eye(4)
+    affine[:, 3] = [-100, 10, 1, 1]
+    x_streamlines = move_streamlines(streamlines, affine)
+
+    vv = vals_from_img(img, x_streamlines, affine=affine)
+    npt.assert_almost_equal(vv, [[100., 150., 200., 250.],
+                                 [200., 310., 390., 410.]])
+
+    # The generator has already been consumed so needs to be regenerated:
+    x_streamlines = list(move_streamlines(streamlines, affine))
+    vv = vals_from_img(img, x_streamlines, affine=affine)
+    npt.assert_almost_equal(vv, [[100., 150., 200., 250.],
+                                 [200., 310., 390., 410.]])
+
+    vv = vals_from_img(img, np.array(x_streamlines), affine=affine)
+
     npt.assert_almost_equal(vv, [[100., 150., 200., 250.],
                                  [200., 310., 390., 410.]])
