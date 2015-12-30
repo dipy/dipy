@@ -3,6 +3,11 @@ from __future__ import division, print_function, absolute_import
 from ..utils.six import string_types
 
 import numpy as np
+try:
+    from scipy.linalg import polar
+except ImportError:   # Some elderly scipy doesn't have polar
+    from dipy.fixes.scipy import polar
+from scipy.linalg import inv
 
 from ..io import gradients as io
 from .onetime import auto_attr
@@ -88,7 +93,7 @@ class GradientTable(object):
 
 
 def gradient_table_from_bvals_bvecs(bvals, bvecs, b0_threshold=0, atol=1e-2,
-                                  **kwargs):
+                                    **kwargs):
     """Creates a GradientTable from a bvals array and a bvecs array
 
     Parameters
@@ -220,9 +225,9 @@ def gradient_table(bvals, bvecs=None, big_delta=None, small_delta=None,
     # If you provided strings with full paths, we go and load those from
     # the files:
     if isinstance(bvals, string_types):
-          bvals, _ = io.read_bvals_bvecs(bvals, None)
+        bvals, _ = io.read_bvals_bvecs(bvals, None)
     if isinstance(bvecs, string_types):
-          _, bvecs = io.read_bvals_bvecs(None, bvecs)
+        _, bvecs = io.read_bvals_bvecs(None, bvecs)
 
     bvals = np.asarray(bvals)
     # If bvecs is None we expect bvals to be an (N, 4) or (4, N) array.
@@ -238,9 +243,66 @@ def gradient_table(bvals, bvecs=None, big_delta=None, small_delta=None,
                              " array containing both bvals and bvecs")
     else:
         bvecs = np.asarray(bvecs)
-        if (bvecs.shape[1] > bvecs.shape[0])  and bvecs.shape[0]>1:
+        if (bvecs.shape[1] > bvecs.shape[0]) and bvecs.shape[0] > 1:
             bvecs = bvecs.T
     return gradient_table_from_bvals_bvecs(bvals, bvecs, big_delta=big_delta,
                                            small_delta=small_delta,
                                            b0_threshold=b0_threshold,
                                            atol=atol)
+
+
+def reorient_bvecs(gtab, affines):
+    """Reorient the directions in a GradientTable.
+
+    When correcting for motion, rotation of the diffusion-weighted volumes
+    might cause systematic bias in rotationally invariant measures, such as FA
+    and MD, and also cause characteristic biases in tractography, unless the
+    gradient directions are appropriately reoriented to compensate for this
+    effect [Leemans2009]_.
+
+    Parameters
+    ----------
+    gtab : GradientTable
+        The nominal gradient table with which the data were acquired.
+    affines : list or ndarray of shape (n, 4, 4) or (n, 3, 3)
+        Each entry in this list or array contain either an affine
+        transformation (4,4) or a rotation matrix (3, 3).
+        In both cases, the transformations encode the rotation that was applied
+        to the image corresponding to one of the non-zero gradient directions
+        (ordered according to their order in `gtab.bvecs[~gtab.b0s_mask]`)
+
+    Returns
+    -------
+    gtab : a GradientTable class instance with the reoriented directions
+
+    References
+    ----------
+    .. [Leemans2009] The B-Matrix Must Be Rotated When Correcting for
+       Subject Motion in DTI Data. Leemans, A. and Jones, D.K. (2009).
+       MRM, 61: 1336-1349
+    """
+    new_bvecs = gtab.bvecs[~gtab.b0s_mask]
+
+    if new_bvecs.shape[0] != len(affines):
+        e_s = "Number of affine transformations must match number of "
+        e_s += "non-zero gradients"
+        raise ValueError(e_s)
+
+    for i, aff in enumerate(affines):
+        if aff.shape == (4, 4):
+            # This must be an affine!
+            # Remove the translation component:
+            aff_no_trans = aff[:3, :3]
+            # Decompose into rotation and scaling components:
+            R, S = polar(aff_no_trans)
+        elif aff.shape == (3, 3):
+            # We assume this is a rotation matrix:
+            R = aff
+        Rinv = inv(R)
+        # Apply the inverse of the rotation to the corresponding gradient
+        # direction:
+        new_bvecs[i] = np.dot(Rinv, new_bvecs[i])
+
+    return_bvecs = np.zeros(gtab.bvecs.shape)
+    return_bvecs[~gtab.b0s_mask] = new_bvecs
+    return gradient_table(gtab.bvals, return_bvecs)
