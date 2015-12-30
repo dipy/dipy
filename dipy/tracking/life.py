@@ -17,7 +17,7 @@ from dipy.tracking.utils import unique_rows
 from dipy.tracking.streamline import transform_streamlines
 import dipy.data as dpd
 import dipy.core.optimize as opt
-from vox2track import streamline_mapping
+from dipy.tracking.vox2track import streamline_mapping
 
 
 def grad_tensor(grad, evals):
