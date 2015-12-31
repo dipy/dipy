@@ -1,7 +1,4 @@
 """ A unified interface for performing and debugging optimization problems.
-
-Only L-BFGS-B and Powell is supported in this class for versions of
-Scipy < 0.12. All optimizers are available for scipy >= 0.12.
 """
 import abc
 from distutils.version import LooseVersion
@@ -10,7 +7,6 @@ import scipy
 import scipy.sparse as sps
 import scipy.optimize as opt
 from dipy.utils.six import with_metaclass
-from dipy.utils.optpkg import optional_package
 
 SCIPY_LESS_0_12 = LooseVersion(scipy.version.short_version) < '0.12'
 
@@ -18,8 +14,6 @@ if not SCIPY_LESS_0_12:
     from scipy.optimize import minimize
 else:
     from scipy.optimize import fmin_l_bfgs_b, fmin_powell
-
-lm, has_tables, _ = optional_package('sklearn.linear_model')
 
 
 class Optimizer(object):
@@ -120,6 +114,11 @@ class Optimizer(object):
         evolution : bool, optional
             save history of x for each iteration. Only available using Scipy
             >= 0.12.
+
+        Note
+        ----
+        Only L-BFGS-B and Powell is supported in this class for versions of
+        Scipy < 0.12. All optimizers are available for scipy >= 0.12.
 
         See also
         ---------
