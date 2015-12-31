@@ -444,7 +444,8 @@ def random_seeds_from_mask(mask, seeds_count=1, seed_count_per_voxel=True, affin
     If ``seed_count_per_voxel`` is ``True``, this function is
     similar to ``seeds_from_mask()``, with the difference that instead of evenly
     distributing the seeds, it randomly places the seeds within the voxels
-    specified by the ``mask``.
+    specified by the ``mask``. The initial random conditions can be set using
+    ``numpy.random.seed(...)``, prior to call this function.
 
     Parameters
     ----------
