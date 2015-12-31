@@ -11,7 +11,6 @@ and statistical inference in living connectomes. Nature Methods 11:
 import numpy as np
 import scipy.sparse as sps
 import scipy.linalg as la
-import scipy.spatial.distance as dist
 
 from dipy.reconst.base import ReconstModel, ReconstFit
 from dipy.utils.six.moves import range
@@ -333,7 +332,12 @@ class FiberModel(ReconstModel):
         """
         Parameters
         ----------
-        gtab : a GradientTable class instance
+        gtab : GradientTable
+        conserve_memory : bool
+            Whether to use a memory-efficient version of fitting. This version
+            of fitting performs out-of-core fitting, instead of representing
+            the model explicitely. Therefore, this model will not have a
+            life_matrix attribute.
         """
         # Initialize the super-class:
         ReconstModel.__init__(self, gtab)
@@ -656,13 +660,15 @@ class FiberModel(ReconstModel):
                                                f_matrix_row.shape[0],
                                                mat_row_idx.shape[0])
                 else:
-                    XtXh = gradient_change(f_matrix_row,
-                                           f_matrix_col,
-                                           f_matrix_sig, beta,
-                                           to_fit[mat_row_idx],
-                                           mat_row_idx.shape[0],
-                                           delta.shape[0])
-                    delta = delta + XtXh
+                    # Calculate the gradient contribution from this voxel:
+                    XtXby = gradient_change(f_matrix_row,
+                                            f_matrix_col,
+                                            f_matrix_sig, beta,
+                                            to_fit[mat_row_idx],
+                                            mat_row_idx.shape[0],
+                                            delta.shape[0])
+                    # Add them up:
+                    delta = delta + XtXby
 
             if iteration > 1 and (np.mod(iteration, check_error_iter) == 0):
                 sse = np.sum((to_fit - y_hat) ** 2)
