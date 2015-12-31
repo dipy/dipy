@@ -1,15 +1,19 @@
+from copy import deepcopy
 from warnings import warn
+import types
 
+from scipy.spatial.distance import cdist
 import numpy as np
 from nibabel.affines import apply_affine
+
 from dipy.tracking.streamlinespeed import set_number_of_points
 from dipy.tracking.streamlinespeed import length
 from dipy.tracking.streamlinespeed import compress_streamlines
 import dipy.tracking.utils as ut
 from dipy.tracking.utils import streamline_near_roi
 from dipy.core.geometry import dist_to_corner
-from scipy.spatial.distance import cdist
-from copy import deepcopy
+import dipy.align.vector_fields as vfu
+
 
 def unlist_streamlines(streamlines):
     """ Return the streamlines not as a list but as an array and an offset
@@ -323,3 +327,48 @@ def orient_by_rois(streamlines, roi1, roi2, affine=None, copy=True):
             new_sl[idx] = sl[::-1]
 
     return new_sl
+
+
+def scalar_values(data, streamlines, affine=None):
+    """Extract values of a scalar along each streamline.
+
+    Parameters
+    ----------
+    data : 3D array
+        Scalar values to be extracted.
+
+    streamlines : ndarray or list
+        If array, of shape (n_streamlines, n_nodes, 3)
+        If list, len(n_streamlines) with (n_nodes, 3) array in
+        each element of the list.
+
+    affine : ndarray, shape (4, 4)
+        Affine transformation from voxels (image coordinates) to streamlines.
+        Default: identity.
+
+    Return
+    ------
+    array or list (depending on the input) : values interpolate to each
+        coordinate along the length of each streamline
+    """
+    data = data.astype(np.float)
+    if affine is not None:
+        streamlines = ut.move_streamlines(streamlines,
+                                          np.linalg.inv(affine))
+
+    if (isinstance(streamlines, list) or
+            isinstance(streamlines, types.GeneratorType)):
+        vals = []
+        for sl in streamlines:
+            vals.append(vfu.interpolate_scalar_3d(data, sl)[0])
+
+    elif isinstance(streamlines, np.ndarray):
+        sl_shape = streamlines.shape
+        sl_cat = streamlines.reshape(sl_shape[0] * sl_shape[1], 3)
+        if affine is not None:
+            sl_cat = np.dot(sl_cat, affine[:3, :3]) + affine[:3, 3]
+        # So that we can index in one operation:
+        vals = vfu.interpolate_scalar_3d(data, sl_cat)[0]
+        vals = np.reshape(vals, (sl_shape[0], sl_shape[1]))
+
+    return vals

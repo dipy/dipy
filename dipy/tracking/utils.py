@@ -50,7 +50,6 @@ from __future__ import division, print_function, absolute_import
 
 from functools import wraps
 from warnings import warn
-import types
 
 from nibabel.affines import apply_affine
 from scipy.spatial.distance import cdist
@@ -63,7 +62,6 @@ from ..utils.six.moves import xrange, map
 import numpy as np
 from numpy import (asarray, ceil, dot, empty, eye, sqrt)
 from dipy.io.bvectxt import ornt_mapping
-import dipy.align.vector_fields as vfu
 from dipy.tracking import metrics
 
 # Import helper functions shared with vox2track
@@ -957,50 +955,3 @@ def reduce_rois(rois, include):
             exclude_roi |= rois[i]
 
     return include_roi, exclude_roi
-
-
-def vals_from_img(img, streamlines, affine=None):
-    """
-    Parameters
-    ----------
-    img : Nifti1Image
-        3D image to index into. Registered to the diffusion data
-        from which you tracked, but can have any resolution.
-
-    streamlines : ndarray or list
-        If array, of shape (n_streamlines, n_nodes, 3)
-        If list, len(n_streamlines) with (n_nodes, 3) array in
-        each element of the list.
-
-    affine : ndarray, shape (4, 4)
-        Affine transformation from voxels (image coordinates) to streamlines.
-        Default: identity.
-
-    Return
-    ------
-    array or list (depending on the input) : values interpolate to each
-        coordinate along the length of each streamline
-
-
-    """
-    data = img.get_data().astype(np.float)
-    if affine is not None:
-        streamlines = move_streamlines(streamlines,
-                                       np.linalg.inv(affine))
-
-    if (isinstance(streamlines, list) or
-            isinstance(streamlines, types.GeneratorType)):
-        vals = []
-        for sl in streamlines:
-            vals.append(vfu.interpolate_scalar_3d(data, sl)[0])
-
-    elif isinstance(streamlines, np.ndarray):
-        sl_shape = streamlines.shape
-        sl_cat = streamlines.reshape(sl_shape[0] * sl_shape[1], 3)
-        if affine is not None:
-            sl_cat = np.dot(sl_cat, affine[:3, :3]) + affine[:3, 3]
-        # So that we can index in one operation:
-        vals = vfu.interpolate_scalar_3d(data, sl_cat)[0]
-        vals = np.reshape(vals, (sl_shape[0], sl_shape[1]))
-
-    return vals

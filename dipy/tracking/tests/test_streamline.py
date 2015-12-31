@@ -9,6 +9,7 @@ from nose.tools import assert_true, assert_equal, assert_almost_equal
 from numpy.testing import (assert_array_equal, assert_array_almost_equal,
                            assert_raises, run_module_suite)
 
+import dipy.tracking.utils as ut
 from dipy.tracking.streamline import (set_number_of_points,
                                       length as ds_length,
                                       relist_streamlines,
@@ -18,7 +19,8 @@ from dipy.tracking.streamline import (set_number_of_points,
                                       select_random_set_of_streamlines,
                                       compress_streamlines,
                                       select_by_rois,
-                                      orient_by_rois)
+                                      orient_by_rois,
+                                      scalar_values)
 
 
 streamline = np.array([[82.20181274,  91.36505890,  43.15737152],
@@ -798,6 +800,46 @@ def test_orient_by_rois():
                         flipped_sl = [s + affine[:3, 3] for s in flipped_sl]
 
                 npt.assert_equal(new_streamlines, flipped_sl)
+
+
+def test_scalar_values():
+    data = np.arange(2000).reshape(20, 10, 10)
+    streamlines = [np.array([[1, 0, 0],
+                             [1.5, 0, 0],
+                             [2, 0, 0],
+                             [2.5, 0, 0]]),
+                   np.array([[2, 0, 0],
+                             [3.1, 0, 0],
+                             [3.9, 0, 0],
+                             [4.1, 0, 0]])]
+
+    vv = scalar_values(data, streamlines)
+    npt.assert_almost_equal(vv, [[100., 150., 200., 250.],
+                                 [200., 310., 390., 410.]])
+
+    vv = scalar_values(data, np.array(streamlines))
+
+    npt.assert_almost_equal(vv, [[100., 150., 200., 250.],
+                                 [200., 310., 390., 410.]])
+
+    affine = np.eye(4)
+    affine[:, 3] = [-100, 10, 1, 1]
+    x_streamlines = ut.move_streamlines(streamlines, affine)
+
+    vv = scalar_values(data, x_streamlines, affine=affine)
+    npt.assert_almost_equal(vv, [[100., 150., 200., 250.],
+                                 [200., 310., 390., 410.]])
+
+    # The generator has already been consumed so needs to be regenerated:
+    x_streamlines = list(ut.move_streamlines(streamlines, affine))
+    vv = scalar_values(data, x_streamlines, affine=affine)
+    npt.assert_almost_equal(vv, [[100., 150., 200., 250.],
+                                 [200., 310., 390., 410.]])
+
+    vv = scalar_values(data, np.array(x_streamlines), affine=affine)
+
+    npt.assert_almost_equal(vv, [[100., 150., 200., 250.],
+                                 [200., 310., 390., 410.]])
 
 
 if __name__ == '__main__':
