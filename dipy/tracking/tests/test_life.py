@@ -206,4 +206,4 @@ def test_fit_data():
     life_fit_memory = life_model_memory.fit(data, tensor_streamlines)
     npt.assert_almost_equal(life_fit_memory.beta, life_fit.beta, decimal=1)
     p_model_mem = life_fit_memory.predict()
-    npt.assert_(np.corrcoef(p_model, p_model_mem)[0, 1] > 0.98)
+    npt.assert_(np.corrcoef(p_model, p_model_mem)[0, 1] > 0.9999)
