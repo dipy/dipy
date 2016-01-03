@@ -425,12 +425,12 @@ class ApiDocWriter(object):
         written_modules = []
 
         for ulm, mods in module_by_ulm.items():
-            print "Generating docs for %s:" % ulm
+            print ("Generating docs for %s:" % ulm)
             document_head = []
             document_body = []
 
             for m in mods:
-                print "  -> " + m
+                print ("  -> " + m)
                 head, body = self.generate_api_doc(m)
 
                 document_head.append(head)
