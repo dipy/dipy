@@ -106,6 +106,9 @@ class LocalTracking(object):
         for s in self.seeds:
             s = np.dot(lin, s) + offset
             directions = dg.initial_direction(s)
+            if directions.size == 0 and self.return_all:
+                # only the seed position
+                yield [s]
             directions = directions[:max_cross]
             for first_step in directions:
                 stepsF, tissue_class = local_tracker(dg, tc, s, first_step,
