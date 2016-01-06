@@ -329,13 +329,16 @@ def orient_by_rois(streamlines, roi1, roi2, affine=None, copy=True):
     return new_sl
 
 
-def scalar_values(data, streamlines, affine=None):
-    """Extract values of a scalar along each streamline.
+def _extract_vals(data, streamlines, affine=None, threedvec=False):
+    """
+    Helper function for use with `values_from_volume`.
 
     Parameters
     ----------
-    data : 3D array
-        Scalar values to be extracted.
+    data : 3D or 4D array
+        Scalar (for 3D) and vector (for 4D) values to be extracted. For 4D
+        data, interpolation will be done on the 3 spatial dimensions in each
+        volume.
 
     streamlines : ndarray or list
         If array, of shape (n_streamlines, n_nodes, 3)
@@ -345,6 +348,12 @@ def scalar_values(data, streamlines, affine=None):
     affine : ndarray, shape (4, 4)
         Affine transformation from voxels (image coordinates) to streamlines.
         Default: identity.
+
+    threedvec : bool
+        Whether the last dimension has length 3. This is a special case in
+        which we can use :func:`vfu.interpolate_vector_3d` for the
+        interploation of 4D volumes without looping over the elements of the
+        last dimension.
 
     Return
     ------
@@ -360,15 +369,75 @@ def scalar_values(data, streamlines, affine=None):
             isinstance(streamlines, types.GeneratorType)):
         vals = []
         for sl in streamlines:
-            vals.append(vfu.interpolate_scalar_3d(data, sl)[0])
+            if threedvec:
+                vals.append(list(vfu.interpolate_vector_3d(data, sl)[0]))
+            else:
+                vals.append(list(vfu.interpolate_scalar_3d(data, sl)[0]))
 
     elif isinstance(streamlines, np.ndarray):
         sl_shape = streamlines.shape
         sl_cat = streamlines.reshape(sl_shape[0] * sl_shape[1], 3)
         if affine is not None:
             sl_cat = np.dot(sl_cat, affine[:3, :3]) + affine[:3, 3]
+
         # So that we can index in one operation:
-        vals = vfu.interpolate_scalar_3d(data, sl_cat)[0]
-        vals = np.reshape(vals, (sl_shape[0], sl_shape[1]))
+        if threedvec:
+            vals = np.array(vfu.interpolate_vector_3d(data, sl_cat)[0])
+        else:
+            vals = np.array(vfu.interpolate_scalar_3d(data, sl_cat)[0])
+        vals = np.reshape(vals, (sl_shape[0], sl_shape[1], -1)).squeeze()
 
     return vals
+
+
+def values_from_volume(data, streamlines, affine=None):
+    """Extract values of a scalar/vector along each streamline from a volume.
+
+    Parameters
+    ----------
+    data : 3D or 4D array
+        Scalar (for 3D) and vector (for 4D) values to be extracted. For 4D
+        data, interpolation will be done on the 3 spatial dimensions in each
+        volume.
+
+    streamlines : ndarray or list
+        If array, of shape (n_streamlines, n_nodes, 3)
+        If list, len(n_streamlines) with (n_nodes, 3) array in
+        each element of the list.
+
+    affine : ndarray, shape (4, 4)
+        Affine transformation from voxels (image coordinates) to streamlines.
+        Default: identity.
+
+    Return
+    ------
+    array or list (depending on the input) : values interpolate to each
+        coordinate along the length of each streamline
+    """
+    data = np.asarray(data)
+    if len(data.shape) == 4:
+        if data.shape[-1] == 3:
+            return _extract_vals(data, streamlines, affine=affine,
+                                 threedvec=True)
+        if isinstance(streamlines, types.GeneratorType):
+            streamlines = list(streamlines)
+        vals = []
+        for ii in range(data.shape[-1]):
+            vals.append(_extract_vals(data[..., ii], streamlines,
+                        affine=affine))
+
+        if isinstance(vals[-1], np.ndarray):
+            return np.swapaxes(np.array(vals), 2, 1).T
+        else:
+            new_vals = []
+            for sl_idx in range(len(streamlines)):
+                sl_vals = []
+                for ii in range(data.shape[-1]):
+                    sl_vals.append(vals[ii][sl_idx])
+                new_vals.append(np.array(sl_vals).T)
+            return new_vals
+
+    elif len(data.shape) == 3:
+        return _extract_vals(data, streamlines, affine=affine)
+    else:
+        raise ValueError("Data needs to have 3 or 4 dimensions")
