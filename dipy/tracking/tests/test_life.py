@@ -167,11 +167,11 @@ def test_FiberFit():
 
     FMM = life.FiberModel(gtab, conserve_memory=True)
     fitm = FMM.fit(this_data, streamline)
-    npt.assert_almost_equal(fitm.predict()[1],
+    npt.assert_almost_equal(fitm.predict(streamline)[1],
                             fitm.data[1], decimal=-1)
 
     # Predict with an input GradientTable
-    npt.assert_almost_equal(fitm.predict(gtab)[1],
+    npt.assert_almost_equal(fitm.predict(streamline, gtab)[1],
                             fitm.data[1], decimal=-1)
 
     npt.assert_almost_equal(
@@ -205,5 +205,5 @@ def test_fit_data():
     life_model_memory = life.FiberModel(gtab, conserve_memory=True)
     life_fit_memory = life_model_memory.fit(data, tensor_streamlines)
     npt.assert_almost_equal(life_fit_memory.beta, life_fit.beta, decimal=1)
-    p_model_mem = life_fit_memory.predict()
+    p_model_mem = life_fit_memory.predict(tensor_streamlines)
     npt.assert_(np.corrcoef(p_model, p_model_mem)[0, 1] > 0.9999)
