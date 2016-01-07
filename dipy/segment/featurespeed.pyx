@@ -41,7 +41,7 @@ cdef class Feature(object):
         """ Cython version of `Feature.infer_shape`. """
         with gil:
             shape = self.infer_shape(np.asarray(datum))
-            if type(shape) is int:
+            if np.asarray(shape).ndim == 0:
                 return tuple2shape((1, shape))
             elif len(shape) == 1:
                 return tuple2shape((1,) + shape)

@@ -30,7 +30,7 @@ cdef struct Shape:
 cdef Shape shape_from_memview(Data data) nogil
 
 
-cdef Shape tuple2shape(dims)
+cdef Shape tuple2shape(dims) except *
 
 
 cdef shape2tuple(Shape shape)
