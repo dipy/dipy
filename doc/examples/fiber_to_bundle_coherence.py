@@ -1,39 +1,40 @@
+# -*- coding: utf-8 -*-
 """
 ==============================================
 Fiber to bundle coherence measures
 ==============================================
 
 This demo presents the fiber to bundle coherence (FBC) quantitative 
-measure of the alignment of each fiber with the surrounding fiber bundles.
-these measures are useful in “cleaning” the results of tractography algorithms, 
-since low FBCs indicate which fibers are isolated and poorly aligned with their 
-neighbors, see Fig. 1.
+measure of the alignment of each fiber with the surrounding fiber bundles
+[Meesters_HBM]_. These measures are useful in “cleaning” the results of 
+tractography algorithms, since low FBCs indicate which fibers are isolated and 
+poorly aligned with their neighbors, see Fig. 1.
 
 .. figure:: fbc_illustration.png
    :align: center
 
    On the left this figure illustrates (in 2D) the contribution of two fiber 
    points to the kernel density estimator. The kernel density estimator is the 
-   sum over all such locally aligned kernels. The LFBC shown on the right 
-   color-coded for each fiber, is obtained by evaluating the kernel density 
-   estimator along the fibers. One spurious fiber is present which is isolated 
-   and badly aligned with the other fibers, and can be identified by a low LFBC 
-   value in the region where it deviates from the bundle.  Adapted from 
-   [Portegies2015_PLoSOne]_.
+   sum over all such locally aligned kernels. The local fiber to bundle coherence
+   shown on the right color-coded for each fiber, is obtained by evaluating the
+   kernel density estimator along the fibers. One spurious fiber is present which
+   is isolated and badly aligned with the other fibers, and can be identified 
+   by a low LFBC value in the region where it deviates from the bundle. 
+   Figure adapted from [Portegies2015_PLoSOne]_.
 
 Here we implement FBC measures based on kernel density estimation in the 
 non-flat 5D position-orientation domain. First we compute the kernel density 
 estimator induced by the full lifted output of the tractography. Then, the 
 Local FBC (LFBC) is the result of evaluating the estimator along each element 
-of the lifted fiber. A measure for the entire fiber, the relative FBC (RFBC), 
-is calculated by selecting the region of the fiber with the lowest average LFBC.
+of the lifted fiber. A whole fiber measure, the relative FBC (RFBC), is calculated 
+by the minimum of the moving average LFBC along the fiber.
 Details of the computation of FBC can be found in [Portegies2015_PLoSOne]_.
 
 """
 
 """
 The FBC measures are evaluated on the Stanford HARDI dataset (150 orientations, 
-    b=2000s/mm^2). 
+    b=2000s/mm^2) which is one of the standard example datasets in DIPY. 
 """
 import numpy as np
 import os.path as op
@@ -61,7 +62,8 @@ selectionmask[xa:xb, ya:yb, za:zb] = True
 The data is first fitted to Constant Solid Angle (CDA) ODF Model. CSA is a good
 choice to estimate general fractional anisotropy (GFA), which the tissue 
 classifier can use to restrict fiber tracking to those areas where the ODF 
-shows significant restricted diffusion.
+shows significant restricted diffusion, thus creating a region-of-interest in 
+which the computations are done.
 """
 
 # Perform CSA
@@ -82,8 +84,8 @@ classifier = ThresholdTissueClassifier(csa_peaks.gfa, 0.25)
 
 """
 In order to perform probabilistic fiber tracking we first fit the data to the
-Constrained Spherical Deconvolution (CSD) model. This model represents each 
-voxel in the data set as a collection of small white matter fibers with 
+Constrained Spherical Deconvolution (CSD) model in DIPY. This model represents 
+each voxel in the data set as a collection of small white matter fibers with 
 different orientations. The density of fibers along each orientation is known 
 as the Fiber Orientation Distribution (FOD), used in the fiber tracking.
 """
@@ -109,8 +111,8 @@ prob_dg = ProbabilisticDirectionGetter.from_shcoeff(csd_fit_shm,
 """
 The optic radiation is reconstructed by tracking fibers from the calcarine sulcus
  (visual cortex V1) to the lateral geniculate nucleus (LGN). We seed from the 
- calcarine sulcus by selecting a region-of-interest (ROI) cube with an edge 
- length of 3 voxels.
+ calcarine sulcus by selecting a region-of-interest (ROI) cube of dimensions 
+ 3x3x3 voxels.
 """
 
 # Set a seed region region for tractography. 
@@ -139,7 +141,7 @@ streamlines = list(streamlines)
 
 """
 In order to select only the fibers that enter into the LGN, another ROI is created
-from a cube with edge length 5. The near_roi command is used to find the fibers
+from a cube of size 5x5x5 voxels. The near_roi command is used to find the fibers
 that traverse through this ROI.
 """
 
@@ -149,7 +151,7 @@ rad = 5
 mask_lgn[35-rad:35+rad,42-rad:42+rad,28-rad:28+rad] = True
 
 # Select all the fibers that enter the LGN and discard all others
-filtered_fibers2 = utils.near_roi(streamlines, mask_lgn, tol=1, affine=affine)
+filtered_fibers2 = utils.near_roi(streamlines, mask_lgn, tol=1.8, affine=affine)
 sfil = []
 for i in range(len(streamlines)):
     if filtered_fibers2[i]:
@@ -157,10 +159,13 @@ for i in range(len(streamlines)):
 streamlines = list(sfil)
 
 """
-A lookup-table is created, containing rotated versions of the kernel :math:`P_t` 
-sampled over a discrete set of orientations. In order to ensure rotationally 
-invariant processing, the discrete orientations are required to be equally 
-distributed over a sphere. By default, a sphere with 100 directions is used.
+Inspired by [Paulo_Eurographics]_, a lookup-table is created, containing rotated 
+versions of the fiber propagation kernel :math:`P_t` [DuitsAndFranken_JMIV]_ 
+rotated over a discrete set of orientations. See the [[ link to Contextual 
+enhancement demo page ]] for more details regarding the kernel. In order to ensure
+rotationally invariant processing, the discrete orientations 
+are required to be equally distributed over a sphere. By default, a sphere with 
+100 directions is used obtained from electrostatic repulsion in DIPY.
 """
 
 # compute lookup table
@@ -183,9 +188,10 @@ fbc = FBCMeasures(streamlines, k)
 
 """
 After calculating the FBC measures, a threshold can be chosen on the relative
-FBC (RFBC) in order to remove spurious fibers. In this example we show the results
-for threshold 0 (i.e. all fibers are included) and 0.2 (removing the 20 perfect 
-    most spurious fibers).
+FBC (RFBC) in order to remove spurious fibers. Recall that the relative FBC (RFBC)
+is calculated by the minimum of the moving average LFBC along the fiber. In this 
+example we show the results for threshold 0 (i.e. all fibers are included) and 
+0.2 (removing the 20 percent most spurious fibers).
 """
 
 # calculate LFBC for original fibers
@@ -198,7 +204,7 @@ fbc_sl_thres, clrs_thres, rfbc_thres = fbc.get_points_rfbc_thresholded(0.2,
 
 """
 The results of FBC measures are visualized, showing the original fibers colored
-by LFBC, and the fibers after cleaning up.
+by LFBC, and the fibers after the cleaning procedure via RFBC thresholding.
 """
 
 # visualize the results
@@ -213,25 +219,23 @@ lineactor = actor.line(fbc_sl_orig, clrs_orig, linewidth=0.2)
 fvtk.add(ren, lineactor)
 
 # horizontal (axial) slice of T1 data
-vol_actor2 = fvtk.slicer(t1_data, affine=affine)
-vol_actor2.display(None, None, 44)
-fvtk.add(ren, vol_actor2)
+vol_actor1 = fvtk.slicer(t1_data, affine=affine)
+vol_actor1.display(None, None, 20)
+fvtk.add(ren, vol_actor1)
 
 # vertical (sagittal) slice of T1 data
-vol_actor3 = fvtk.slicer(t1_data, affine=affine)
-vol_actor3.display(70, None, None)
-fvtk.add(ren, vol_actor3)
+vol_actor2 = fvtk.slicer(t1_data, affine=affine)
+vol_actor2.display(35, None, None)
+fvtk.add(ren, vol_actor2)
 
 # show original fibers
-fvtk.camera(ren, pos=(-264, 285, 45), focal=(0, -14, 9), viewup=(0, 0, 1), 
+fvtk.camera(ren, pos=(-264, 285, 85), focal=(0, -14, 9), viewup=(0, 0, 1), 
                 verbose=False)
-fvtk.show(ren)
 fvtk.record(ren, n_frames=1, out_path='OR_before.png', size=(600, 600))
 
 # show thresholded fibers
 fvtk.rm(ren, lineactor)
 fvtk.add(ren, actor.line(fbc_sl_thres, clrs_thres, linewidth=0.2))
-fvtk.show(ren)
 fvtk.record(ren, n_frames=1, out_path='OR_after.png', size=(600, 600))
 
 """
@@ -248,11 +252,20 @@ fvtk.record(ren, n_frames=1, out_path='OR_after.png', size=(600, 600))
    The tractography result is cleaned (shown in bottom) by removing fibers with 
    a relative FBC (RFBC) lower than the threshold tau=0.2.
 
-   
+Acknowledgements
+~~~~~~~~~~~~~~~~~~~~~~
+Funded by the European Research Council under the European Community's Seventh 
+Framework Programme (FP7/2007-2014) / ERC grant agreement no. 335555.
+The techniques are developed in close collaboration with Pauly Ossenblok of the 
+Academic Center of Epileptology Kempenhaeghe & Maastricht UMC+. 
 
 References
 ~~~~~~~~~~~~~~~~~~~~~~
 
+.. [Meesters_HBM] S. Meesters, G. Sanguinetti, E. Garyfallidis, J. Portegies,
+                  P. Ossenblok, R. Duits. (2015) Cleaning output of tractography 
+                  via fiber to bundle coherence, a new open source implementation.
+                  Human Brain Mapping conference 2015 (submitted)
 .. [Portegies2015_PLoSOne] J. Portegies, R. Fick, G. Sanguinetti, S. Meesters, 
                  G.Girard, and R. Duits. (2015) Improving Fiber Alignment in HARDI 
                  by Combining Contextual PDE flow with Constrained Spherical 
@@ -260,11 +273,9 @@ References
 .. [DuitsAndFranken_JMIV] Duits, R. and Franken, E. (2011) Morphological and
                       Linear Scale Spaces for Fiber Enhancement in DWI-MRI.
                       J Math Imaging Vis, 46(3):326-368.
-
-Include HBM abstract Here
-Include Paulo Rodriguez here
-Remove DuitsAndFranken?
-
-Mention here Kempenhaeghe and ERC
+.. [Paulo_Eurographics] P. Rodrigues, R. Duits, B. Romeny, A. Vilanova (2010).
+                  Accelerated Diffusion Operators for Enhancing DW-MRI. 
+                  Eurographics Workshop on Visual Computing for Biology and 
+                  Medicine. The Eurographics Association.
 
 """
