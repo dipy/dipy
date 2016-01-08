@@ -387,6 +387,11 @@ def _extract_vals(data, streamlines, affine=None, threedvec=False):
             vals = np.array(vfu.interpolate_scalar_3d(data, sl_cat)[0])
         vals = np.reshape(vals, (sl_shape[0], sl_shape[1], -1)).squeeze()
 
+    else:
+        raise RuntimeError("Extracting values from a volume ",
+                           "requires streamlines input as an array, ",
+                           "a list of arrays, or a streamline generator.")
+
     return vals
 
 

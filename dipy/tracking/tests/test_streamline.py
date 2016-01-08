@@ -856,6 +856,19 @@ def test_values_from_volume():
         for ii, v in enumerate(vv):
             npt.assert_almost_equal(v, ans2[ii])
 
+    # We raise an error if the streamlines fed don't make sense. In this
+    # case, a tuple instead of a list, generator or array
+    nonsense_sl = (np.array([[1, 0, 0],
+                             [1.5, 0, 0],
+                             [2, 0, 0],
+                             [2.5, 0, 0]]),
+                   np.array([[2, 0, 0],
+                             [3.1, 0, 0],
+                             [3.9, 0, 0],
+                             [4.1, 0, 0]]))
+
+    npt.assert_raises(RuntimeError, values_from_volume, data, nonsense_sl)
+
 
 if __name__ == '__main__':
     run_module_suite()
