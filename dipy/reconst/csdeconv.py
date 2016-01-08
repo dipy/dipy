@@ -678,13 +678,13 @@ def odf_deconv(odf_sh, R, B_reg, lambda_=1., tau=0.1, r2_term=False):
 
 def odf_sh_to_sharp(odfs_sh, sphere, basis=None, ratio=3 / 15., sh_order=8,
                     lambda_=1., tau=0.1, r2_term=False):
-    r""" Sharpen odfs using the spherical deconvolution transform [1]_
+    r""" Sharpen odfs using the sharpening deconvolution transform [2]_
 
     This function can be used to sharpen any smooth ODF spherical function. In
     theory, this should only be used to sharpen QballModel ODFs, but in
     practice, one can play with the deconvolution ratio and sharpen almost any
     ODF-like spherical function. The constrained-regularization is stable and
-    will not only sharp the ODF peaks but also regularize the noisy peaks.
+    will not only sharpen the ODF peaks but also regularize the noisy peaks.
 
     Parameters
     ----------
