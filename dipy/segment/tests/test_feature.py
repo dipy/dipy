@@ -1,3 +1,4 @@
+import sys
 import numpy as np
 import dipy.segment.metric as dipymetric
 from dipy.segment.featurespeed import extract
@@ -286,7 +287,10 @@ def test_using_python_feature_with_cython_metric():
 
     class ArcLengthFeature(dipymetric.Feature):
         def infer_shape(self, streamline):
-            return np.int64(1)
+            if sys.version_info > (3,):
+                return 1
+
+            return long(1)
 
         def extract(self, streamline):
             return np.sum(np.sqrt(np.sum((streamline[1:] - streamline[:-1]) ** 2)))
