@@ -286,7 +286,7 @@ def test_using_python_feature_with_cython_metric():
 
     class ArcLengthFeature(dipymetric.Feature):
         def infer_shape(self, streamline):
-            return long(1)
+            return np.int64(1)
 
         def extract(self, streamline):
             return np.sum(np.sqrt(np.sum((streamline[1:] - streamline[:-1]) ** 2)))
