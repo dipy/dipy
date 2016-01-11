@@ -285,10 +285,13 @@ def test_using_python_feature_with_cython_metric():
     d2 = metric.dist(features1, features2)
     assert_equal(d1, d2)
 
+    # Python 2.7 on Windows 64 bits uses long type instead of int for
+    # constants integer. We make sure the code is robust to such behaviour
+    # by explicitly testing it.
     class ArcLengthFeature(dipymetric.Feature):
         def infer_shape(self, streamline):
             if sys.version_info > (3,):
-                return 1
+                return 1  # In Python 3, constant integer are of type long.
 
             return long(1)
 
