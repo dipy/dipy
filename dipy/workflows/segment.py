@@ -45,8 +45,10 @@ def median_otsu_flow(input_files, out_dir='', save_masked=False,
 
     Outputs
     -------
-    mask : Binary nifti file representing the computed mask.
-    masked : Nifti file representing the masked input. This file is saved
+    mask : Nifti File
+           Binary volume representing the computed mask.
+    masked : Nifti File
+            Volume representing the masked input. This file is saved
             save_masked is True.
     """
     for fpath in glob(input_files):

@@ -5,6 +5,8 @@ from dipy.workflows.base import IntrospectiveArgumentParser
 
 parser = IntrospectiveArgumentParser()
 parser.add_workflow(median_otsu_flow)
+print parser.get_outputs()
+
 
 if __name__ == "__main__":
     args = parser.get_flow_args()
