@@ -88,7 +88,7 @@ def nargs_flow(variable_ints, optional_int=2):
 def test_nargs():
     sys.argv = [sys.argv[0]]
     var_args = ['1', '2', '3', '4', '5', '6', '7', '8']
-    optionnals = ['--optionnal_int', '2']
+    optionnals = ['--optional_int', '2']
     sys.argv.extend(var_args + optionnals)
 
     parser = IntrospectiveArgumentParser()
@@ -96,13 +96,3 @@ def test_nargs():
     args = parser.get_flow_args()
     var_ints, opt_int = nargs_flow(**args)
     npt.assert_equal(len(var_ints), len(var_args))
-
-
-
-
-
-
-
-
-
-
