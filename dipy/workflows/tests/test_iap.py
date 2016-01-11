@@ -73,17 +73,17 @@ def inputs_from_results(results, keys=None):
     return inputs
 
 
-def nargs_flow(variable_ints, optionnal_int=2):
+def nargs_flow(variable_ints, optional_int=2):
     """ Workflow used to test the nargs argument.
 
     Parameters
     ----------
     variable_ints : variable int
         variable number of strings
-    optionnal_int : int
-        optionnal int argument
+    optional_int : int
+        optional int argument
     """
-    return variable_ints, optionnal_int
+    return variable_ints, optional_int
 
 def test_nargs():
     sys.argv = [sys.argv[0]]
