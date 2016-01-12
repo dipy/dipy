@@ -1,3 +1,4 @@
+import sys
 import numpy as np
 import dipy.segment.metric as dipymetric
 from dipy.segment.featurespeed import extract
@@ -277,6 +278,29 @@ def test_using_python_feature_with_cython_metric():
     # Test using Python Feature with Cython Metric
     feature = Identity()
     metric = dipymetric.AveragePointwiseEuclideanMetric(feature)
+    d1 = dipymetric.dist(metric, s1, s2)
+
+    features1 = metric.feature.extract(s1)
+    features2 = metric.feature.extract(s2)
+    d2 = metric.dist(features1, features2)
+    assert_equal(d1, d2)
+
+    # Python 2.7 on Windows 64 bits uses long type instead of int for
+    # constants integer. We make sure the code is robust to such behaviour
+    # by explicitly testing it.
+    class ArcLengthFeature(dipymetric.Feature):
+        def infer_shape(self, streamline):
+            if sys.version_info > (3,):
+                return 1  # In Python 3, constant integer are of type long.
+
+            return long(1)
+
+        def extract(self, streamline):
+            return np.sum(np.sqrt(np.sum((streamline[1:] - streamline[:-1]) ** 2)))
+
+    # Test using Python Feature with Cython Metric
+    feature = ArcLengthFeature()
+    metric = dipymetric.EuclideanMetric(feature)
     d1 = dipymetric.dist(metric, s1, s2)
 
     features1 = metric.feature.extract(s1)

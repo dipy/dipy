@@ -30,7 +30,7 @@ cdef Shape shape_from_memview(Data data) nogil:
     return shape
 
 
-cdef Shape tuple2shape(dims):
+cdef Shape tuple2shape(dims) except *:
     """ Converts a Python's tuple into a `Shape` Cython's struct.
 
     Parameters
