@@ -417,7 +417,15 @@ def values_from_volume(data, streamlines, affine=None):
     Return
     ------
     array or list (depending on the input) : values interpolate to each
-        coordinate along the length of each streamline
+        coordinate along the length of each streamline.
+
+    Notes
+    -----
+    Values are extracted from the image based on the 3D coordinates of the
+    nodes that comprise the points in the streamline, without any interpolation
+    into segments between the nodes. Using this function with streamlines that
+    have been resampled into a very small number of nodes will result in very
+    few values.
     """
     data = np.asarray(data)
     if len(data.shape) == 4:
