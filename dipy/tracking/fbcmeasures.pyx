@@ -37,14 +37,15 @@ cdef class FBCMeasures:
             
         References
         -------
-        [Meesters_HBM] S. Meesters, G. Sanguinetti, E. Garyfallidis, J. Portegies,
-                     P. Ossenblok, R. Duits. (2015) Cleaning output of tractography 
-                     via fiber to bundle coherence, a new open source implementation.
-                     Human Brain Mapping conference 2015 (submitted)
-        [Portegies2015b] J. Portegies, R. Fick, G. Sanguinetti, S. Meesters, G.Girard,
-                     and R. Duits. (2015) Improving Fiber Alignment in HARDI by 
-                     Combining Contextual PDE flow with Constrained Spherical 
-                     Deconvolution. PLoS One.
+        [Meesters2016_HBM] S. Meesters, G. Sanguinetti, E. Garyfallidis, 
+                     J. Portegies, P. Ossenblok, R. Duits. (2016) Cleaning output 
+                     of tractography via fiber to bundle coherence, a new open 
+                     source implementation. Human Brain Mapping conference 2015 
+                     (submitted).
+        [Portegies2015b] J. Portegies, R. Fick, G. Sanguinetti, S. Meesters, 
+                     G.Girard, and R. Duits. (2015) Improving Fiber Alignment in 
+                     HARDI by Combining Contextual PDE flow with Constrained 
+                     Spherical Deconvolution. PLoS One.
         """
         self.compute(streamlines, kernel)
         

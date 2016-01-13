@@ -6,7 +6,7 @@ Fiber to bundle coherence measures
 
 This demo presents the fiber to bundle coherence (FBC) quantitative 
 measure of the alignment of each fiber with the surrounding fiber bundles
-[Meesters_HBM]_. These measures are useful in “cleaning” the results of 
+[Meesters2016_HBM]_. These measures are useful in “cleaning” the results of 
 tractography algorithms, since low FBCs indicate which fibers are isolated and 
 poorly aligned with their neighbors, see Fig. 1.
 
@@ -262,10 +262,10 @@ Academic Center of Epileptology Kempenhaeghe & Maastricht UMC+.
 References
 ~~~~~~~~~~~~~~~~~~~~~~
 
-.. [Meesters_HBM] S. Meesters, G. Sanguinetti, E. Garyfallidis, J. Portegies,
-                  P. Ossenblok, R. Duits. (2015) Cleaning output of tractography 
+.. [Meesters2016_HBM] S. Meesters, G. Sanguinetti, E. Garyfallidis, J. Portegies,
+                  P. Ossenblok, R. Duits. (2016) Cleaning output of tractography 
                   via fiber to bundle coherence, a new open source implementation.
-                  Human Brain Mapping conference 2015 (submitted)
+                  Human Brain Mapping conference 2016 (submitted)
 .. [Portegies2015_PLoSOne] J. Portegies, R. Fick, G. Sanguinetti, S. Meesters, 
                  G.Girard, and R. Duits. (2015) Improving Fiber Alignment in HARDI 
                  by Combining Contextual PDE flow with Constrained Spherical 
