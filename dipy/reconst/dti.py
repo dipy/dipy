@@ -50,7 +50,7 @@ def _roll_evals(evals, axis=-1):
 
 
 def _min_positive_signal(data):
-    """ Helper function to establish the minimun positive signal of a given
+    """ Helper function to establish the minimum positive signal of a given
     data
 
     Parameters
@@ -62,7 +62,7 @@ def _min_positive_signal(data):
     Returns
     -------
     min_signal : float
-        Minimun positive signal of the given data
+        Minimum positive signal of the given data
     """
     data = data.ravel()
     if np.all(data == 0):
