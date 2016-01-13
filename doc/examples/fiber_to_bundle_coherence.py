@@ -229,7 +229,7 @@ vol_actor2.display(35, None, None)
 fvtk.add(ren, vol_actor2)
 
 # show original fibers
-fvtk.camera(ren, pos=(-264, 285, 85), focal=(0, -14, 9), viewup=(0, 0, 1), 
+fvtk.camera(ren, pos=(-264, 285, 155), focal=(0, -14, 9), viewup=(0, 0, 1), 
                 verbose=False)
 fvtk.record(ren, n_frames=1, out_path='OR_before.png', size=(600, 600))
 
