@@ -52,6 +52,9 @@ cdef class EnhancementKernel:
             
         References
         -------
+        [Meesters2016_ISMRM] S. Meesters, G. Sanguinetti, E. Garyfallidis, J. Portegies,
+                  R. Duits. (2015) Fast implementations of contextual PDE’s for 
+                  HARDI data processing in DIPY. ISMRM 2016 conf. (submitted)
         [DuitsAndFranken2011] Duits, R. and Franken, E. (2011) Morphological and
                           Linear Scale Spaces for Fiber Enhancement in DWI-MRI.
                           J Math Imaging Vis, 46(3):326-368.

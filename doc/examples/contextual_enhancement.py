@@ -5,7 +5,7 @@ Contextual enhancement
 ==============================================
 
 This demo presents an example of crossing-preserving contextual enhancement of 
-FOD/ODF fields, implementing the contextual PDE framework of 
+FOD/ODF fields [Meesters2016_ISMRM_], implementing the contextual PDE framework of 
 [Portegies2015_PLoSOne]_ for processing HARDI data. The aim is to enhance the 
 alignment of elongated structures in the data such that crossing/junctions are 
 maintained while reducing noise and small incoherent structures. This is achieved
@@ -120,10 +120,11 @@ csd_fit_noisy = csd_model_noisy.fit(data_noisy_small)
 csd_shm_noisy = csd_fit_noisy.shm_coeff
 
 """
-A lookup-table is created, containing rotated versions of the kernel :math:`P_t` 
-sampled over a discrete set of orientations. In order to ensure rotationally 
-invariant processing, the discrete orientations are required to be equally 
-distributed over a sphere. By default, a sphere with 100 directions is used.
+Inspired by [Paulo_Eurographics_], a lookup-table is created, containing rotated 
+versions of the kernel :math:`P_t` sampled over a discrete set of orientations. 
+In order to ensure rotationally invariant processing, the discrete orientations 
+are required to be equally distributed over a sphere. By default, a sphere with 
+100 directions is used.
 """
 
 from dipy.denoise.enhancement_kernel import EnhancementKernel
@@ -254,6 +255,9 @@ fvtk.record(ren, out_path='enhancements.png', size=(1024, 1024))
 References
 ~~~~~~~~~~~~~~~~~~~~~~
 
+.. [Meesters2016_ISMRM] S. Meesters, G. Sanguinetti, E. Garyfallidis, J. Portegies,
+                  R. Duits. (2015) Fast implementations of contextual PDE’s for 
+                  HARDI data processing in DIPY. ISMRM 2016 conf. (submitted)
 .. [Portegies2015_PLoSOne] J. Portegies, R. Fick, G. Sanguinetti, S. Meesters, 
                  G.Girard, and R. Duits. (2015) Improving Fiber Alignment in HARDI 
                  by Combining Contextual PDE flow with Constrained Spherical 
@@ -266,5 +270,9 @@ References
 .. [DuitsAndFranken_JMIV] Duits, R. and Franken, E. (2011) Morphological and
                       Linear Scale Spaces for Fiber Enhancement in DWI-MRI.
                       J Math Imaging Vis, 46(3):326-368.
+.. [Paulo_Eurographics] P. Rodrigues, R. Duits, B. Romeny, A. Vilanova (2010).
+                  Accelerated Diffusion Operators for Enhancing DW-MRI. 
+                  Eurographics Workshop on Visual Computing for Biology and 
+                  Medicine. The Eurographics Association.
 
 """
