@@ -106,6 +106,7 @@ class FreeWaterTensorModel(ReconstModel):
         args, kwargs : arguments and key-word arguments passed to the
            fit_method. See fwdti.wls_fit_tensor, fwdti.nls_fit_tensor for
            details
+
         min_signal : float
             The minimum signal value. Needs to be a strictly positive
             number. Default: minimal signal in the data provided to `fit`.
@@ -198,6 +199,7 @@ class FreeWaterTensorFit(TensorFit):
     """ Class for fitting the Free Water Tensor Model """
     def __init__(self, model, model_params):
         """ Initialize a FreeWaterTensorFit class instance.
+
         Since the free water tensor model is an extension of DTI, class
         instance is defined as subclass of the TensorFit from dti.py
 
@@ -205,34 +207,23 @@ class FreeWaterTensorFit(TensorFit):
         ----------
         model : FreeWaterTensorModel Class instance
             Class instance containing the free water tensor model for the fit
-        model_params : ndarray (x, y, z, 14) or (n, 14)
+        model_params : ndarray (x, y, z, 13) or (n, 13)
             All parameters estimated from the free water tensor model.
             Parameters are ordered as follows:
                 1) Three diffusion tensor's eigenvalues
                 2) Three lines of the eigenvector matrix each containing the
                    first, second and third coordinates of the eigenvector
                 3) The volume fraction of the free water compartment
-                4) The estimate of the non diffusion-weighted signal S0
         """
         TensorFit.__init__(self, model, model_params)
 
-    @property
-    def f(self):
-        """ Returns the free water diffusion volume fraction f """
-        return self.model_params[..., 12]
-        
-    @property
-    def S0(self):
-        """ Returns the non-diffusion weighted signal estimate """
-        return self.model_params[..., 13]
-
-    def predict(self, gtab):
+    def predict(self, gtab, S0=1):
         r""" Given a free water tensor model fit, predict the signal on the
         vertices of a gradient table
 
         Parameters
         ----------
-        fwdti_params : ndarray (x, y, z, 14) or (n, 14)
+        dki_params : ndarray (x, y, z, 13) or (n, 13)
             All parameters estimated from the free water tensor model.
             Parameters are ordered as follows:
                 1) Three diffusion tensor's eigenvalues
