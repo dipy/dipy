@@ -809,52 +809,54 @@ def test_values_from_volume():
     data4d_3vec = np.arange(6000).reshape(20, 10, 10, 3)
     # The other where the last dimension is not 3:
     data4d_2vec = np.arange(4000).reshape(20, 10, 10, 2)
-    for data in [data3d, data4d_3vec, data4d_2vec]:
-        sl1 = [np.array([[1, 0, 0],
-                         [1.5, 0, 0],
-                         [2, 0, 0],
-                         [2.5, 0, 0]]),
-               np.array([[2, 0, 0],
-                         [3.1, 0, 0],
-                         [3.9, 0, 0],
-                         [4.1, 0, 0]])]
+    for dt in [np.float32, np.float64]:
+        for data in [data3d, data4d_3vec, data4d_2vec]:
+            sl1 = [np.array([[1, 0, 0],
+                             [1.5, 0, 0],
+                             [2, 0, 0],
+                             [2.5, 0, 0]]).astype(dt),
+                   np.array([[2, 0, 0],
+                             [3.1, 0, 0],
+                             [3.9, 0, 0],
+                             [4.1, 0, 0]]).astype(dt)]
 
-        ans1 = [[data[1, 0, 0],
-                 data[1, 0, 0] + (data[2, 0, 0] - data[1, 0, 0]) / 2,
-                 data[2, 0, 0],
-                 data[2, 0, 0] + (data[3, 0, 0] - data[2, 0, 0]) / 2],
-                [data[2, 0, 0],
-                 data[3, 0, 0] + (data[4, 0, 0] - data[3, 0, 0]) * 0.1,
-                 data[3, 0, 0] + (data[4, 0, 0] - data[3, 0, 0]) * 0.9,
-                 data[4, 0, 0] + (data[5, 0, 0] - data[4, 0, 0]) * 0.1]]
+            ans1 = [[data[1, 0, 0],
+                     data[1, 0, 0] + (data[2, 0, 0] - data[1, 0, 0]) / 2,
+                     data[2, 0, 0],
+                     data[2, 0, 0] + (data[3, 0, 0] - data[2, 0, 0]) / 2],
+                    [data[2, 0, 0],
+                     data[3, 0, 0] + (data[4, 0, 0] - data[3, 0, 0]) * 0.1,
+                     data[3, 0, 0] + (data[4, 0, 0] - data[3, 0, 0]) * 0.9,
+                     data[4, 0, 0] + (data[5, 0, 0] - data[4, 0, 0]) * 0.1]]
 
-        vv = values_from_volume(data, sl1)
-        npt.assert_almost_equal(vv, ans1)
+            vv = values_from_volume(data, sl1)
+            npt.assert_almost_equal(vv, ans1)
 
-        vv = values_from_volume(data, np.array(sl1))
-        npt.assert_almost_equal(vv, ans1)
+            vv = values_from_volume(data, np.array(sl1))
+            npt.assert_almost_equal(vv, ans1)
 
-        affine = np.eye(4)
-        affine[:, 3] = [-100, 10, 1, 1]
-        x_sl1 = ut.move_streamlines(sl1, affine)
+            affine = np.eye(4)
+            affine[:, 3] = [-100, 10, 1, 1]
+            x_sl1 = ut.move_streamlines(sl1, affine)
 
-        vv = values_from_volume(data, x_sl1, affine=affine)
-        npt.assert_almost_equal(vv, ans1)
+            vv = values_from_volume(data, x_sl1, affine=affine)
+            npt.assert_almost_equal(vv, ans1)
 
-        # The generator has already been consumed so needs to be regenerated:
-        x_sl1 = list(ut.move_streamlines(sl1, affine))
-        vv = values_from_volume(data, x_sl1, affine=affine)
-        npt.assert_almost_equal(vv, ans1)
+            # The generator has already been consumed so needs to be
+            # regenerated:
+            x_sl1 = list(ut.move_streamlines(sl1, affine))
+            vv = values_from_volume(data, x_sl1, affine=affine)
+            npt.assert_almost_equal(vv, ans1)
 
-        vv = values_from_volume(data, np.array(x_sl1), affine=affine)
-        npt.assert_almost_equal(vv, ans1)
+            vv = values_from_volume(data, np.array(x_sl1), affine=affine)
+            npt.assert_almost_equal(vv, ans1)
 
-        # Test for lists of streamlines with different numbers of nodes:
-        sl2 = [sl1[0][:-1], sl1[1]]
-        ans2 = [ans1[0][:-1], ans1[1]]
-        vv = values_from_volume(data, sl2)
-        for ii, v in enumerate(vv):
-            npt.assert_almost_equal(v, ans2[ii])
+            # Test for lists of streamlines with different numbers of nodes:
+            sl2 = [sl1[0][:-1], sl1[1]]
+            ans2 = [ans1[0][:-1], ans1[1]]
+            vv = values_from_volume(data, sl2)
+            for ii, v in enumerate(vv):
+                npt.assert_almost_equal(v, ans2[ii])
 
     # We raise an error if the streamlines fed don't make sense. In this
     # case, a tuple instead of a list, generator or array
@@ -868,8 +870,6 @@ def test_values_from_volume():
                              [4.1, 0, 0]]))
 
     npt.assert_raises(RuntimeError, values_from_volume, data, nonsense_sl)
-
-    extracted = values_from_volume(np.ones((10,10,10)), [streamline])
 
 
 if __name__ == '__main__':
