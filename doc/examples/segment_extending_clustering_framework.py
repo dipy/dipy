@@ -5,7 +5,7 @@ Enhancing QuickBundles with different metrics and features
 
 QuickBundles is a flexible algorithm that requires only a distance metric and
 an adjacency threshold to perform clustering. There is a wide variety of metrics
-that could be uses to cluster streamlines.
+that could be used to cluster streamlines.
 
 The purpose of this tutorial is to show how to easily create new `Feature` and
 new `Metric` classes that can be used by QuickBundles.
