@@ -869,6 +869,8 @@ def test_values_from_volume():
 
     npt.assert_raises(RuntimeError, values_from_volume, data, nonsense_sl)
 
+    extracted = values_from_volume(np.ones((10,10,10)), [streamline])
+
 
 if __name__ == '__main__':
     run_module_suite()
