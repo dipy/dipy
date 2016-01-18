@@ -33,7 +33,7 @@ class SimplePmfGen(PmfGen):
 class SHCoeffPmfGen(PmfGen):
 
     def __init__(self, shcoeff, sphere, basis_type):
-        self.shcoeff = shcoeff#.astype(np.float32)
+        self.shcoeff = shcoeff.astype(np.float64)
         self.sphere = sphere
         sh_order = order_from_ncoef(shcoeff.shape[-1])
         try:
