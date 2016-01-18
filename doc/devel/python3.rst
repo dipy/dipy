@@ -28,7 +28,7 @@ As the first code line of the file, to use Python 3 behavior by default.
 Print
 *****
 
-In Python 3, ``print`` is  function. Please use the ``__future__`` import above,
+In Python 3, ``print`` is a function. Please use the ``__future__`` import above,
 and the function form:``print(something)``, whenever ``print`` is used.
 
 ********

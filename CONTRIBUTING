@@ -66,10 +66,13 @@ compliance of your code with PEP8.
 ### Documentation
 
 We use [sphinx](http://www.sphinx-doc.org/en/stable/contents.html) for
-documentation. We welocme contributions of examples, and suggestions for
+documentation. We welcome contributions of examples, and suggestions for
 changes in the documentation, but please make sure that changes that are
 introduced render properly into the html format that is used for the Dipy
-website
+website.
+
+When documenting functions, modules, class or methods we follow the
+[numpy docstring standard](https://github.com/numpy/numpy/blob/master/doc/HOWTO_DOCUMENT.rst.txt#docstring-standard).
 
 The documentation includes an extensive library of
 [examples](http://nipy.org/dipy/examples_index.html). These are Python files
