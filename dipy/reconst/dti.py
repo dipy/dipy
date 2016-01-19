@@ -1218,7 +1218,7 @@ def iter_fit_tensor(step=1e4):
             if step >= size:
                 return fit_tensor(design_matrix, data, *args, **kwargs)
             data = data.reshape(-1, data.shape[-1])
-            dtiparams = np.empty((size, 12), dtype=np.float64)
+            dtiparams = np.empty((size, 12), dtype=np.float32)
             for i in range(0, size, step):
                 dtiparams[i:i+step] = fit_tensor(design_matrix, data[i:i+step],
                                                  *args, **kwargs)
