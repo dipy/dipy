@@ -5,8 +5,8 @@ Contextual enhancement
 ==============================================
 
 This demo presents an example of crossing-preserving contextual enhancement of 
-FOD/ODF fields [Meesters2016_ISMRM_], implementing the contextual PDE framework of 
-[Portegies2015_PLoSOne]_ for processing HARDI data. The aim is to enhance the 
+FOD/ODF fields [Meesters2016_ISMRM_], implementing the contextual PDE framework 
+of [Portegies2015_PLoSOne]_ for processing HARDI data. The aim is to enhance the 
 alignment of elongated structures in the data such that crossing/junctions are 
 maintained while reducing noise and small incoherent structures. This is achieved
  via a hypo-elliptic 2nd order PDE in the domain of coupled positions and 
@@ -95,7 +95,7 @@ data = img.get_data()
 
 # Add Rician noise
 np.random.seed = 1234
-data_noisy = add_noise(data, 3, 500 , noise_type='rician')
+data_noisy = add_noise(data, 3, 500, noise_type='rician')
 
 # Select a small part of it
 data_small = data[25:40, 65:80, 35:42]
@@ -153,13 +153,13 @@ spike_shm_conv = convolve(sf_to_sh(spike, k.get_sphere(), sh_order=8), k,
 
 sphere = get_sphere('symmetric724')
 spike_sf_conv = sh_to_sf(spike_shm_conv, sphere, sh_order=8)
-model_kernel = fvtk.sphere_funcs((spike_sf_conv*6)[3,:,:,:],
+model_kernel = fvtk.sphere_funcs((spike_sf_conv * 6)[3,:,:,:],
                                   sphere, 
                                   norm=False, 
                                   radial_scale=True)
 fvtk.add(ren, model_kernel)
 fvtk.camera(ren, pos=(30, 0, 0), focal=(0, 0, 0), viewup=(0, 0, 1), verbose=False)
-fvtk.record(ren, out_path='kernel.png', size=(1024,1024))
+fvtk.record(ren, out_path='kernel.png', size=(900, 900))
 
 """
 .. figure:: kernel.png
@@ -194,8 +194,8 @@ csd_sf_enh_sharp = sh_to_sf(csd_shm_enh_sharp, sphere, sh_order=8)
 csd_sf_enh_sharp = csd_sf_enh_sharp * np.amax(csd_sf_orig)/np.amax(csd_sf_enh_sharp)
 
 """ 
-The end results are visualized. It can be observed that the end result after diffusion 
-and sharpening is closer to the original noiseless dataset.
+The end results are visualized. It can be observed that the end result after 
+diffusion and sharpening is closer to the original noiseless dataset.
 """
 
 csd_sf_orig_slice = csd_sf_orig[:,:,[3],:]
@@ -207,7 +207,7 @@ ren = fvtk.ren()
 
 # original ODF field
 fodf_spheres_org = fvtk.sphere_funcs(csd_sf_orig_slice, 
-                                     sphere, 
+                                     sphere,
                                      scale=2, 
                                      norm=False, 
                                      radial_scale=True)
@@ -233,7 +233,7 @@ fodf_spheres_enh.SetPosition(35, 0, 0)
 fvtk.add(ren, fodf_spheres_enh)
 
 # Additional sharpening
-fodf_spheres_enh_sharp = fvtk.sphere_funcs(csd_sf_enh_sharp_slice*1.5, 
+fodf_spheres_enh_sharp = fvtk.sphere_funcs(csd_sf_enh_sharp_slice * 1.5, 
                                            sphere, 
                                            scale=2, 
                                            norm=False, 
@@ -241,7 +241,7 @@ fodf_spheres_enh_sharp = fvtk.sphere_funcs(csd_sf_enh_sharp_slice*1.5,
 fodf_spheres_enh_sharp.SetPosition(35, 35, 0)
 fvtk.add(ren, fodf_spheres_enh_sharp)
 
-fvtk.record(ren, out_path='enhancements.png', size=(1024, 1024))
+fvtk.record(ren, out_path='enhancements.png', size=(900, 900))
 
 """
 
@@ -255,24 +255,24 @@ fvtk.record(ren, out_path='enhancements.png', size=(1024, 1024))
 References
 ~~~~~~~~~~~~~~~~~~~~~~
 
-.. [Meesters2016_ISMRM] S. Meesters, G. Sanguinetti, E. Garyfallidis, J. Portegies,
-                  R. Duits. (2015) Fast implementations of contextual PDE’s for 
-                  HARDI data processing in DIPY. ISMRM 2016 conf. (submitted)
+.. [Meesters2016_ISMRM] S. Meesters, G. Sanguinetti, E. Garyfallidis, 
+                        J. Portegies, R. Duits. (2015) Fast implementations of 
+                        contextual PDE’s for HARDI data processing in DIPY. 
+                        ISMRM 2016 conf. (submitted)
 .. [Portegies2015_PLoSOne] J. Portegies, R. Fick, G. Sanguinetti, S. Meesters, 
-                 G.Girard, and R. Duits. (2015) Improving Fiber Alignment in HARDI 
-                 by Combining Contextual PDE flow with Constrained Spherical 
-                 Deconvolution. PLoS One.
+                           G.Girard, and R. Duits. (2015) Improving Fiber 
+                           Alignment in HARDI by Combining Contextual PDE flow 
+                           with Constrained Spherical Deconvolution. PLoS One.
 .. [Portegies2015_SSVM] J. Portegies, G. Sanguinetti, S. Meesters, and R. Duits. 
-                 (2015) New Approximation of a Scale Space Kernel on SE(3) and
-                 Applications in Neuroimaging. Fifth International
-                 Conference on Scale Space and Variational Methods in
-                 Computer Vision
-.. [DuitsAndFranken_JMIV] Duits, R. and Franken, E. (2011) Morphological and
-                      Linear Scale Spaces for Fiber Enhancement in DWI-MRI.
-                      J Math Imaging Vis, 46(3):326-368.
+                        (2015) New Approximation of a Scale Space Kernel on SE(3) 
+                        and Applications in Neuroimaging. Fifth International
+                        Conference on Scale Space and Variational Methods in
+                        Computer Vision
+.. [DuitsAndFranken_JMIV] R. Duits and E. Franken (2011) Morphological and
+                          Linear Scale Spaces for Fiber Enhancement in DWI-MRI.
+                          J Math Imaging Vis, 46(3):326-368.
 .. [Paulo_Eurographics] P. Rodrigues, R. Duits, B. Romeny, A. Vilanova (2010).
-                  Accelerated Diffusion Operators for Enhancing DW-MRI. 
-                  Eurographics Workshop on Visual Computing for Biology and 
-                  Medicine. The Eurographics Association.
-
+                        Accelerated Diffusion Operators for Enhancing DW-MRI. 
+                        Eurographics Workshop on Visual Computing for Biology and 
+                        Medicine. The Eurographics Association.
 """

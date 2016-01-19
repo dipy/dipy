@@ -25,12 +25,10 @@ cdef class EnhancementKernel:
     cdef object sphere
     cdef object num_threads
 
-    ## Python functions
-
     def __init__(self, D33, D44, t, force_recompute=False,
-                    orientations=None, test_mode=False, num_threads=None):
+                 orientations=None, test_mode=False, num_threads=None):
         """ Compute a look-up table for the contextual
-            enhancement kernel
+        enhancement kernel
 
         Parameters
         ----------
@@ -38,7 +36,7 @@ cdef class EnhancementKernel:
             Spatial diffusion
         D44 : float
             Angular diffusion
-        t   : float
+        t : float
             Diffusion time
         force_recompute : boolean
             Always compute the look-up table even if it is available
@@ -51,22 +49,23 @@ cdef class EnhancementKernel:
             Computes the lookup-table in one direction only
             
         References
-        -------
-        [Meesters2016_ISMRM] S. Meesters, G. Sanguinetti, E. Garyfallidis, J. Portegies,
-                  R. Duits. (2015) Fast implementations of contextual PDE’s for 
-                  HARDI data processing in DIPY. ISMRM 2016 conf. (submitted)
-        [DuitsAndFranken2011] Duits, R. and Franken, E. (2011) Morphological and
-                          Linear Scale Spaces for Fiber Enhancement in DWI-MRI.
-                          J Math Imaging Vis, 46(3):326-368.
-        [Portegies2015] J. Portegies, G. Sanguinetti, S. Meesters, and R. Duits. (2015)
-                     New Approximation of a Scale Space Kernel on SE(3) and
-                     Applications in Neuroimaging. Fifth International
-                     Conference on Scale Space and Variational Methods in
-                     Computer Vision
-        [Portegies2015b] J. Portegies, R. Fick, G. Sanguinetti, S. Meesters, G.Girard,
-                     and R. Duits. (2015) Improving Fiber Alignment in HARDI by 
-                     Combining Contextual PDE flow with Constrained Spherical 
-                     Deconvolution. PLoS One.
+        ----------
+        [Meesters2016_ISMRM] S. Meesters, G. Sanguinetti, E. Garyfallidis, 
+                             J. Portegies, R. Duits. (2015) Fast implementations 
+                             of contextual PDE’s for HARDI data processing in 
+                             DIPY. ISMRM 2016 conf. (submitted)
+        [DuitsAndFranken2011] R. Duits and E. Franken (2011) Morphological and
+                              Linear Scale Spaces for Fiber Enhancement in 
+                              DWI-MRI. J Math Imaging Vis, 46(3):326-368.
+        [Portegies2015] J. Portegies, G. Sanguinetti, S. Meesters, and R. Duits.
+                        (2015) New Approximation of a Scale Space Kernel on SE(3) 
+                        and Applications in Neuroimaging. Fifth International
+                        Conference on Scale Space and Variational Methods in
+                        Computer Vision
+        [Portegies2015b] J. Portegies, R. Fick, G. Sanguinetti, S. Meesters, 
+                         G. Girard, and R. Duits. (2015) Improving Fiber 
+                         Alignment in HARDI by Combining Contextual PDE flow with 
+                         Constrained Spherical Deconvolution. PLoS One.
         """
 
         # save parameters as class members
@@ -83,7 +82,7 @@ cdef class EnhancementKernel:
             n_pts = orientations
             theta = np.pi * np.random.rand(n_pts)
             phi = 2 * np.pi * np.random.rand(n_pts)
-            hsph_initial  = HemiSphere(theta=theta, phi=phi)
+            hsph_initial = HemiSphere(theta=theta, phi=phi)
             sphere, potential = disperse_charges(hsph_initial , 5000)
         else:
             # use default
@@ -132,24 +131,22 @@ cdef class EnhancementKernel:
     def evaluate_kernel(self, x, y, r, v):
         return self.k2(x, y, r, v)
 
-    # Cython functions
-
     @cython.wraparound(False)
     @cython.boundscheck(False)
     @cython.nonecheck(False)
     @cython.cdivision(True)
-    cdef void create_lookup_table(self, test_mode = False):
+    cdef void create_lookup_table(self, test_mode=False):
         """ Compute the look-up table based on the parameters set
-            during class initialization
+        during class initialization
         """
         self.estimate_kernel_size()
 
         cdef:
             double [:, :] orientations = np.copy(self.orientations)
-            int OR1 = orientations.shape[0]
-            int OR2 = orientations.shape[0]
-            int N = self.kernelsize
-            int hn = (N-1)/2
+            cnp.npy_intp OR1 = orientations.shape[0]
+            cnp.npy_intp OR2 = orientations.shape[0]
+            cnp.npy_intp N = self.kernelsize
+            cnp.npy_intp hn = (N-1)/2
             cnp.npy_intp angv, angr, xp, yp, zp
             double [:] x
             double [:] y
@@ -167,11 +164,12 @@ cdef class EnhancementKernel:
         y = np.zeros(3) # constant at (0,0,0)
 
         with nogil:
+
             for angv in range(OR1):
                 for angr in range(OR2):
-                    for xp in range(-hn, hn+1):
-                        for yp in range(-hn, hn+1):
-                            for zp in range(-hn, hn+1):
+                    for xp in range(-hn, hn + 1):
+                        for yp in range(-hn, hn + 1):
+                            for zp in range(-hn, hn + 1):
 
                                 x[0] = xp
                                 x[1] = yp
@@ -179,9 +177,9 @@ cdef class EnhancementKernel:
 
                                 lookuptablelocal[angv,
                                                  angr,
-                                                 xp+hn,
-                                                 yp+hn,
-                                                 zp+hn] = self.k2(x, y, orientations[angr,:], orientations[angv,:])
+                                                 xp + hn,
+                                                 yp + hn,
+                                                 zp + hn] = self.k2(x, y, orientations[angr,:], orientations[angv,:])
 
         # save to class member
         self.lookuptable = lookuptablelocal
@@ -192,7 +190,7 @@ cdef class EnhancementKernel:
     @cython.cdivision(True)
     cdef void estimate_kernel_size(self):
         """ Estimates the dimensions the kernel should
-            have based on the kernel parameters.
+        have based on the kernel parameters.
         """
 
         cdef:
@@ -211,20 +209,20 @@ cdef class EnhancementKernel:
         self.kernelmax = self.k2(x, y, r, v);
 
         with nogil:
+
             # determine a good kernel size
             i = 0.0
             while True:
                 i += 0.1
                 x[2] = i
-                kval = self.k2(x, y, r, v)/self.kernelmax
+                kval = self.k2(x, y, r, v) / self.kernelmax
                 if(kval < 0.1):
                     break;
 
-        N = ceil(i)*2
-        if N%2 == 0:
+        N = ceil(i) * 2
+        if N % 2 == 0:
             N -= 1
 
-        #print("max kernel val: %f" % self.kernelmax);
         print("Dimensions of kernel: %dx%dx%d" % (N, N, N))
 
         self.kernelsize = N
@@ -233,9 +231,9 @@ cdef class EnhancementKernel:
     @cython.boundscheck(False)
     @cython.nonecheck(False)
     cdef double k2(self, double [:] x, double [:] y,
-                double [:] r, double [:] v) nogil:
+                   double [:] r, double [:] v) nogil:
         """ Evaluate the kernel at position x relative to
-            position y, with orientation r relative to orientation v.
+        position y, with orientation r relative to orientation v.
         """
         cdef:
             double [:] a
@@ -247,10 +245,12 @@ cdef class EnhancementKernel:
             double kernelval
 
         with gil:
-            a = np.subtract(x,y)
+
+            a = np.subtract(x, y)
             transm = np.transpose(R(euler_angles(v)))
-            arg1 = np.dot(transm,a)
-            arg2p = np.dot(transm,r)
+            arg1 = np.dot(transm, a)
+            arg2p = np.dot(transm, r)
+
         arg2 = euler_angles(arg2p)
 
         c = self.coordinate_map(arg1[0], arg1[1], arg1[2],
@@ -264,8 +264,8 @@ cdef class EnhancementKernel:
     @cython.nonecheck(False)
     @cython.cdivision(True)
     cdef double [:] coordinate_map(self, double x, double y,
-                                    double z, double beta,
-                                    double gamma) nogil:
+                                   double z, double beta,
+                                   double gamma) nogil:
         """ Compute a coordinate map for the kernel
 
         Parameters
@@ -292,8 +292,11 @@ cdef class EnhancementKernel:
             double q
             double cg
             double cotq2
+
         with gil:
+
             c = np.zeros(6)
+
         if beta == 0:
             c[0] = x
             c[1] = y
@@ -304,22 +307,23 @@ cdef class EnhancementKernel:
             q = fabs(beta)
             cg = cos(gamma)
             sg = sin(gamma)
-            cotq2 = 1.0/tan(q/2)
+            cotq2 = 1.0 / tan(q/2)
 
             c[0] = -0.5*z*beta*cg + \
-                    x*(1-(beta*beta*cg*cg*(1 - 0.5*q*cotq2))/(q*q)) - \
-                     (y*beta*beta*cg*(1-0.5*q*cotq2)*sg)/(q*q)
+                    x*(1 - (beta*beta*cg*cg * (1 - 0.5*q*cotq2)) / (q*q)) - \
+                    (y*beta*beta*cg*sg * (1 - 0.5*q*cotq2)) / (q*q)
             c[1] = -0.5*z*beta*sg - \
-                    (x*beta*beta*cg*(1-0.5*q*cotq2)*sg)/(q*q) + \
-                    y*(1-(beta*beta*(1-0.5*q*cotq2)*sg*sg)/(q*q))
+                    (x*beta*beta*cg*sg * (1 - 0.5*q*cotq2)) / (q*q) + \
+                    y * (1 - (beta*beta*sg*sg * (1 - 0.5*q*cotq2)) / (q*q))
             c[2] = 0.5*x*beta*cg + 0.5*y*beta*sg + \
-                    z*(1+((1-0.5*q*cotq2)*(-beta*beta*cg*cg - \
-                    beta*beta*sg*sg))/(q*q))
+                   z * (1 + ((1 - 0.5*q*cotq2) * (-beta*beta*cg*cg - \
+                        beta*beta*sg*sg)) / (q*q))
             c[3] = beta * (-sg)
             c[4] = beta * cg
             c[5] = 0
 
         with gil:
+
             return np.array(c)
 
     @cython.wraparound(False)
@@ -329,22 +333,17 @@ cdef class EnhancementKernel:
     cdef double kernel(self, double [:] c) nogil:
         """ Evaluate the kernel based on the coordinate map.
         """
-        return 1/(8*sqrt(2))*sqrt(PI)*self.t* \
-                sqrt(self.t*self.D33)*sqrt(self.D33*self.D44) * \
-                1/(16*PI*PI*self.D33*self.D33*self.D44*self.D44* \
-                self.t*self.t*self.t*self.t) * \
-                exp(-sqrt( (c[0]*c[0] + c[1]*c[1])/(self.D33*self.D44) \
-                 + (c[2]*c[2]/self.D33 + \
-                 (c[3]*c[3]+c[4]*c[4])/self.D44)*(c[2]*c[2]/self.D33 + \
-                  (c[3]*c[3]+c[4]*c[4])/self.D44) + \
-                  c[5]*c[5]/self.D44)/(4*self.t));
-
-
-#### MATH FUNCTIONS ####
+        return 1 / (8*sqrt(2)) * \
+               sqrt(PI)*self.t*sqrt(self.t*self.D33)*sqrt(self.D33*self.D44) * \
+               1 / (16*PI*PI*self.D33*self.D33*self.D44*self.D44*self.t*self.t* \
+                    self.t*self.t) * \
+               exp(-sqrt((c[0]*c[0] + c[1]*c[1]) / (self.D33*self.D44) + \
+                   (c[2]*c[2] / self.D33 + (c[3]*c[3]+c[4]*c[4]) / self.D44) * \
+                   (c[2]*c[2] / self.D33 + (c[3]*c[3]+c[4]*c[4]) / self.D44) + \
+                    c[5]*c[5]/self.D44) / (4*self.t));
 
 cdef double PI = 3.1415926535897932
 
-# @cython.cdivision(True)
 @cython.wraparound(False)
 @cython.boundscheck(False)
 cdef double [:] euler_angles(double [:] input) nogil:
@@ -358,23 +357,25 @@ cdef double [:] euler_angles(double [:] input) nogil:
     x = input[0]
     y = input[1]
     z = input[2]
+
     with gil:
+
         output = np.zeros(3)
 
     # handle the case (0,0,1)
-    if x*x < 10e-6 and y*y < 10e-6 and (z-1)*(z-1) < 10e-6:
+    if x*x < 10e-6 and y*y < 10e-6 and (z-1) * (z-1) < 10e-6:
         output[0] = 0
         output[1] = 0
 
     # handle the case (0,0,-1)
-    elif x*x < 10e-6 and y*y < 10e-6 and (z+1)*(z+1) < 10e-6:
+    elif x*x < 10e-6 and y*y < 10e-6 and (z+1) * (z+1) < 10e-6:
         output[0] = PI
         output[1] = 0
 
     # all other cases
     else:
         output[0] = acos(z)
-        output[1] = atan2(y,x)
+        output[1] = atan2(y, x)
 
     with gil:
 
@@ -404,16 +405,16 @@ cdef double [:,:] R(double [:] input) nogil:
     cg = cos(gamma)
     sg = sin(gamma)
 
-    output[0] = cb*cg
+    output[0] = cb * cg
     output[1] = -sg
-    output[2] = cg*sb
-    output[3] = cb*sg
+    output[2] = cg * sb
+    output[3] = cb * sg
     output[4] = cg
-    output[5] = sb*sg
+    output[5] = sb * sg
     output[6] = -sb
     output[7] = 0
     output[8] = cb
 
     with gil:
 
-        return np.reshape(output,(3,3))
+        return np.reshape(output, (3,3))
