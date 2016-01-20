@@ -803,6 +803,7 @@ def test_orient_by_rois():
 
 
 def test_values_from_volume():
+    decimal = 4
     data3d = np.arange(2000).reshape(20, 10, 10)
     # Test two cases of 4D data (handled differently)
     # One where the last dimension is length 3:
@@ -830,33 +831,33 @@ def test_values_from_volume():
                      data[4, 0, 0] + (data[5, 0, 0] - data[4, 0, 0]) * 0.1]]
 
             vv = values_from_volume(data, sl1)
-            npt.assert_almost_equal(vv, ans1)
+            npt.assert_almost_equal(vv, ans1, decimal=decimal)
 
             vv = values_from_volume(data, np.array(sl1))
-            npt.assert_almost_equal(vv, ans1)
+            npt.assert_almost_equal(vv, ans1, decimal=decimal)
 
             affine = np.eye(4)
             affine[:, 3] = [-100, 10, 1, 1]
             x_sl1 = ut.move_streamlines(sl1, affine)
 
             vv = values_from_volume(data, x_sl1, affine=affine)
-            npt.assert_almost_equal(vv, ans1)
+            npt.assert_almost_equal(vv, ans1, decimal=decimal)
 
             # The generator has already been consumed so needs to be
             # regenerated:
             x_sl1 = list(ut.move_streamlines(sl1, affine))
             vv = values_from_volume(data, x_sl1, affine=affine)
-            npt.assert_almost_equal(vv, ans1)
+            npt.assert_almost_equal(vv, ans1, decimal=decimal)
 
             vv = values_from_volume(data, np.array(x_sl1), affine=affine)
-            npt.assert_almost_equal(vv, ans1)
+            npt.assert_almost_equal(vv, ans1, decimal=decimal)
 
             # Test for lists of streamlines with different numbers of nodes:
             sl2 = [sl1[0][:-1], sl1[1]]
             ans2 = [ans1[0][:-1], ans1[1]]
             vv = values_from_volume(data, sl2)
             for ii, v in enumerate(vv):
-                npt.assert_almost_equal(v, ans2[ii])
+                npt.assert_almost_equal(v, ans2[ii], decimal=decimal)
 
     # We raise an error if the streamlines fed don't make sense. In this
     # case, a tuple instead of a list, generator or array

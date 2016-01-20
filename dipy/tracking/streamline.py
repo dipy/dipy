@@ -369,16 +369,20 @@ def _extract_vals(data, streamlines, affine=None, threedvec=False):
             isinstance(streamlines, types.GeneratorType)):
         vals = []
         for sl in streamlines:
+
             if threedvec:
-                vals.append(list(vfu.interpolate_vector_3d(data, sl)[0]))
+                vals.append(list(vfu.interpolate_vector_3d(data,
+                                 sl.astype(np.float))[0]))
             else:
-                vals.append(list(vfu.interpolate_scalar_3d(data, sl)[0]))
+                vals.append(list(vfu.interpolate_scalar_3d(data,
+                                 sl.astype(np.float))[0]))
 
     elif isinstance(streamlines, np.ndarray):
         sl_shape = streamlines.shape
         sl_cat = streamlines.reshape(sl_shape[0] * sl_shape[1], 3)
         if affine is not None:
-            sl_cat = np.dot(sl_cat, affine[:3, :3]) + affine[:3, 3]
+            sl_cat = (np.dot(sl_cat, affine[:3, :3]) +
+                      affine[:3, 3]).astype(np.float)
 
         # So that we can index in one operation:
         if threedvec:
