@@ -102,6 +102,7 @@ class FreeWaterTensorModel(ReconstModel):
                 fwdti.wls_fit_tensor
             'NLS' for non-linear least square fit according to [1]_
                 fwdti.wls_fit_tensor
+
             callable has to have the signature:
               fit_method(design_matrix, data, *args, **kwargs)
         args, kwargs : arguments and key-word arguments passed to the
@@ -223,7 +224,7 @@ class FreeWaterTensorFit(TensorFit):
 
         Parameters
         ----------
-        dki_params : ndarray (x, y, z, 13) or (n, 13)
+        fwdti_params : ndarray (x, y, z, 13) or (n, 13)
             All parameters estimated from the free water tensor model.
             Parameters are ordered as follows:
                 1) Three diffusion tensor's eigenvalues
