@@ -172,22 +172,21 @@ class FreeWaterTensorModel(ReconstModel):
             out_shape = data.shape[:-1] + (-1, )
             fwdti_params = params_in_mask.reshape(out_shape)
         else:
-            fwdti_params = np.zeros(data.shape[:-1] + (14,))
+            fwdti_params = np.zeros(data.shape[:-1] + (13,))
             fwdti_params[mask, :] = params_in_mask
 
-        return FreeWaterTensorFit(self, fwdti_params)
+        return TensorFit(self, fwdti_params)
 
-    def predict(self, fwdti_params):
-        """ Predict a signal for this TensorModel class instance given
-        parameters.
+    def predict(self, fwdti_params, S0=1):
+        """
+        Predict a signal for this TensorModel class instance given parameters.
 
         Parameters
         ----------
         fwdti_params : ndarray
-            The last dimension should have 14 parameters: the 12 tensor
+            The last dimension should have 13 parameters: the 12 tensor
             parameters (3 eigenvalues, followed by the 3 corresponding
-            eigenvectors), the volume fraction of the free water compartment
-            and the estimate of the non diffusion-weighted signal S0.
+            eigenvectors) and the volume fraction of the free water compartment
         S0 : float or ndarray
             The non diffusion-weighted signal in every voxel, or across all
             voxels. Default: 1
@@ -666,4 +665,4 @@ common_fit_methods = {'WLLS': wls_fit_tensor,
                       'WLS': wls_fit_tensor,
                       'NLLS': nlls_fit_tensor,
                       'NLS': nlls_fit_tensor,
-                      }
+                    }
