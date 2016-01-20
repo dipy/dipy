@@ -4,18 +4,20 @@ from __future__ import division, print_function, absolute_import
 
 from .base import ReconstModel
 
-from dipy.reconst.dti import (TensorFit)
+from dipy.reconst.dti import (TensorFit, design_matrix, _min_positive_signal)
+
+import numpy as np
 
 
-def fwdti_prediction(fwdti_params, gtab, S0):
+def fwdti_prediction(params, gtab, S0):
     """
     Predict a signal given the parameters of the free water diffusion tensor
     model.
 
     Parameters
     ----------
-    fwdti_params : ndarray
-        Tensor parameters. The last dimension should have the 12 tensor
+    Params : ndarray
+        Model parameters. The last dimension should have the 12 tensor
         parameters (3 eigenvalues, followed by the 3 corresponding
         eigenvectors) and the volume fraction of the free water compartment
 
@@ -69,9 +71,9 @@ def fwdti_prediction(fwdti_params, gtab, S0):
 
 
 class FreeWaterTensorModel(ReconstModel):
-    """ Diffusion Tensor
+    """ Class for the Free Water Elimitation Diffusion Tensor Model
     """
-    def __init__(self, gtab, fit_method="WLS", *args, **kwargs):
+    def __init__(self, gtab, fit_method="NLS", *args, **kwargs):
         """ Free Water Diffusion Tensor Model [1]_.
 
         Parameters
@@ -80,15 +82,8 @@ class FreeWaterTensorModel(ReconstModel):
 
         fit_method : str or callable
             str can be one of the following:
-            'WLS' for weighted least squares
-                dti.wls_fit_tensor
-            'LS' or 'OLS' for ordinary least squares
-                dti.ols_fit_tensor
-            'NLLS' for non-linear least-squares
-                dti.nlls_fit_tensor
-            'RT' or 'restore' or 'RESTORE' for RESTORE robust tensor
-                fitting [3]_
-                dti.restore_fit_tensor
+            'NLS' for non-linear least square fit according to [1]_
+                fwdti.nlls_fit_tensor
 
             callable has to have the signature:
               fit_method(design_matrix, data, *args, **kwargs)
@@ -102,10 +97,10 @@ class FreeWaterTensorModel(ReconstModel):
 
         References
         ----------
-        .. [1] Pasternak, O., Sochen, N., Gur, Y., Intrator, N., Assaf, Y.,
-               2009. Free water elimination and mapping from diffusion MRI.
-               Magn. Reson. Med. 62, 717–730.
-               http://dx.doi.org/10.1002/mrm.22055.
+        .. [1] Hoy, A.R., Koay, C.G., Kecskemeti, S.R., Alexander, A.L., 2014.
+               Optimization of a free water elimination two-compartmental model
+               for diffusion tensor imaging. NeuroImage 103, 323-333.
+               doi: 10.1016/j.neuroimage.2014.09.053
         """
         ReconstModel.__init__(self, gtab)
 
@@ -162,22 +157,23 @@ class FreeWaterTensorModel(ReconstModel):
 
         if mask is None:
             out_shape = data.shape[:-1] + (-1, )
-            dti_params = params_in_mask.reshape(out_shape)
+            fwdti_params = params_in_mask.reshape(out_shape)
         else:
-            dti_params = np.zeros(data.shape[:-1] + (12,))
-            dti_params[mask, :] = params_in_mask
+            fwdti_params = np.zeros(data.shape[:-1] + (13,))
+            fwdti_params[mask, :] = params_in_mask
 
-        return TensorFit(self, dti_params)
+        return TensorFit(self, fwdti_params)
 
-    def predict(self, dti_params, S0=1):
+    def predict(self, fwdti_params, S0=1):
         """
         Predict a signal for this TensorModel class instance given parameters.
 
         Parameters
         ----------
-        dti_params : ndarray
-            The last dimension should have 12 tensor parameters: 3
-            eigenvalues, followed by the 3 eigenvectors
+        fwdti_params : ndarray
+            The last dimension should have 13 parameters: the 12 tensor
+            parameters (3 eigenvalues, followed by the 3 corresponding
+            eigenvectors) and the volume fraction of the free water compartment
 
         S0 : float or ndarray
             The non diffusion-weighted signal in every voxel, or across all
@@ -238,3 +234,7 @@ class FreeWaterTensorFit(TensorFit):
             edit
         """
         return fwdti_prediction(self.model_params, gtab, S0)
+        
+common_fit_methods = {'NLS': nlls_fit_tensor,
+                      'NLLS': nlls_fit_tensor,
+                      }
