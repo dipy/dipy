@@ -5,7 +5,7 @@ from __future__ import division, print_function, absolute_import
 from .base import ReconstModel
 
 from dipy.reconst.dti import (TensorFit, design_matrix, _min_positive_signal,
-                              iter_fit_tensor, _ols_fit_matrix)
+                              _ols_fit_matrix)
 
 import numpy as np
 
@@ -84,14 +84,17 @@ class FreeWaterTensorModel(ReconstModel):
 
         fit_method : str or callable
             str can be one of the following:
+            'WLS' for weighted linear least square fit according to [1]_
+                fwdti.wls_fit_tensor
             'NLS' for non-linear least square fit according to [1]_
-                fwdti.nlls_fit_tensor
+                fwdti.wls_fit_tensor
 
             callable has to have the signature:
               fit_method(design_matrix, data, *args, **kwargs)
 
         args, kwargs : arguments and key-word arguments passed to the
-           fit_method. See dti.wls_fit_tensor, dti.ols_fit_tensor for details
+           fit_method. See fwdti.wls_fit_tensor, fwdti.nls_fit_tensor for
+           details
 
         min_signal : float
             The minimum signal value. Needs to be a strictly positive
@@ -126,7 +129,7 @@ class FreeWaterTensorModel(ReconstModel):
             raise ValueError(e_s)
 
     def fit(self, data, mask=None):
-        """ Fit method of the DTI model class
+        """ Fit method of the free water elinimation DTI model class
 
         Parameters
         ----------
@@ -136,7 +139,6 @@ class FreeWaterTensorModel(ReconstModel):
         mask : array
             A boolean array used to mark the coordinates in the data that
             should be analyzed that has the shape data.shape[:-1]
-
         """
         if mask is None:
             # Flatten it to 2D either way:
@@ -212,7 +214,7 @@ class FreeWaterTensorFit(TensorFit):
 
         Parameters
         ----------
-        dki_params : ndarray (x, y, z, 13) or (n, 13)
+        fwdti_params : ndarray (x, y, z, 13) or (n, 13)
             All parameters estimated from the free water tensor model.
             Parameters are ordered as follows:
                 1) Three diffusion tensor's eigenvalues
@@ -238,8 +240,7 @@ class FreeWaterTensorFit(TensorFit):
         return fwdti_prediction(self.model_params, gtab, S0)
 
 
-@iter_fit_tensor()
-def wls_fit_tensor(design_matrix, data):
+def wls_fit_tensor(design_matrix, data, fprecision=0.01):
     r"""
     Computes weighted least squares (WLS) fit to calculate self-diffusion
     tensor using a linear regression model [1]_.
@@ -252,44 +253,21 @@ def wls_fit_tensor(design_matrix, data):
     data : array ([X, Y, Z, ...], g)
         Data or response variables holding the data. Note that the last
         dimension should contain the data. It makes no copies of data.
+    fprecision : float, optional
+        Precision of the free water compartment volume fraction. Default is set
+        to 0.01.
 
     Returns
     -------
-    eigvals : array (..., 3)
-        Eigenvalues from eigen decomposition of the tensor.
-    eigvecs : array (..., 3, 3)
-        Associated eigenvectors from eigen decomposition of the tensor.
-        Eigenvectors are columnar (e.g. eigvecs[:,j] is associated with
-        eigvals[j])
-
-
-    See Also
-    --------
-    decompose_tensor
+    All parameters estimated from the free water tensor model.
+    Parameters are ordered as follows:
+        1) Three diffusion tensor's eigenvalues
+        2) Three lines of the eigenvector matrix each containing the
+           first, second and third coordinates of the eigenvector
+        3) The volume fraction of the free water compartment
 
     Notes
     -----
-    In Chung, et al. 2006, the regression of the WLS fit needed an unbiased
-    preliminary estimate of the weights and therefore the ordinary least
-    squares (OLS) estimates were used. A "two pass" method was implemented:
-
-        1. calculate OLS estimates of the data
-        2. apply the OLS estimates as weights to the WLS fit of the data
-
-    This ensured heteroscadasticity could be properly modeled for various
-    types of bootstrap resampling (namely residual bootstrap).
-
-    .. math::
-
-        y = \mathrm{data} \\
-        X = \mathrm{design matrix} \\
-        \hat{\beta}_\mathrm{WLS} =
-        \mathrm{desired regression coefficients (e.g. tensor)}\\
-        \\
-        \hat{\beta}_\mathrm{WLS} = (X^T W X)^{-1} X^T W y \\
-        \\
-        W = \mathrm{diag}((X \hat{\beta}_\mathrm{OLS})^2),
-        \mathrm{where} \hat{\beta}_\mathrm{OLS} = (X^T X)^{-1} X^T y
 
     References
     ----------
@@ -313,6 +291,5 @@ def wls_fit_tensor(design_matrix, data):
     return dti_params
 
 
-common_fit_methods = {'NLS': nlls_fit_tensor,
-                      'NLLS': nlls_fit_tensor,
+common_fit_methods = {'WLLS': wls_fit_tensor
                       }
