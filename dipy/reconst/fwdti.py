@@ -4,10 +4,12 @@ from __future__ import division, print_function, absolute_import
 
 from .base import ReconstModel
 
-from dipy.reconst.dti import (TensorFit, design_matrix, _min_positive_signal)
+from dipy.reconst.dti import (TensorFit, design_matrix, _min_positive_signal,
+                              iter_fit_tensor, _ols_fit_matrix)
 
 import numpy as np
 
+from dipy.utils.arrfuncs import pinv
 
 def fwdti_prediction(params, gtab, S0):
     """
@@ -234,7 +236,83 @@ class FreeWaterTensorFit(TensorFit):
             edit
         """
         return fwdti_prediction(self.model_params, gtab, S0)
-        
+
+
+@iter_fit_tensor()
+def wls_fit_tensor(design_matrix, data):
+    r"""
+    Computes weighted least squares (WLS) fit to calculate self-diffusion
+    tensor using a linear regression model [1]_.
+
+    Parameters
+    ----------
+    design_matrix : array (g, 7)
+        Design matrix holding the covariants used to solve for the regression
+        coefficients.
+    data : array ([X, Y, Z, ...], g)
+        Data or response variables holding the data. Note that the last
+        dimension should contain the data. It makes no copies of data.
+
+    Returns
+    -------
+    eigvals : array (..., 3)
+        Eigenvalues from eigen decomposition of the tensor.
+    eigvecs : array (..., 3, 3)
+        Associated eigenvectors from eigen decomposition of the tensor.
+        Eigenvectors are columnar (e.g. eigvecs[:,j] is associated with
+        eigvals[j])
+
+
+    See Also
+    --------
+    decompose_tensor
+
+    Notes
+    -----
+    In Chung, et al. 2006, the regression of the WLS fit needed an unbiased
+    preliminary estimate of the weights and therefore the ordinary least
+    squares (OLS) estimates were used. A "two pass" method was implemented:
+
+        1. calculate OLS estimates of the data
+        2. apply the OLS estimates as weights to the WLS fit of the data
+
+    This ensured heteroscadasticity could be properly modeled for various
+    types of bootstrap resampling (namely residual bootstrap).
+
+    .. math::
+
+        y = \mathrm{data} \\
+        X = \mathrm{design matrix} \\
+        \hat{\beta}_\mathrm{WLS} =
+        \mathrm{desired regression coefficients (e.g. tensor)}\\
+        \\
+        \hat{\beta}_\mathrm{WLS} = (X^T W X)^{-1} X^T W y \\
+        \\
+        W = \mathrm{diag}((X \hat{\beta}_\mathrm{OLS})^2),
+        \mathrm{where} \hat{\beta}_\mathrm{OLS} = (X^T X)^{-1} X^T y
+
+    References
+    ----------
+    .. [1] Chung, SW., Lu, Y., Henry, R.G., 2006. Comparison of bootstrap
+       approaches for estimation of uncertainties of DTI parameters.
+       NeuroImage 33, 531-541.
+    """
+    tol = 1e-6
+
+    # Produce a first guess of the tensor parameters using DTI WLLS fit,
+    # however without decomposing the tensor in eigenvalues and eigenvectors
+    data = np.asarray(data)
+    ols_fit = _ols_fit_matrix(design_matrix)
+    log_s = np.log(data)
+    w = np.exp(np.einsum('...ij,...j', ols_fit, log_s))
+    dti_params = np.einsum('...ij,...j', pinv(design_matrix * w[..., None]),
+                           w * log_s)
+    
+    # WLLS procedure of the free water elimination model
+
+    return dti_params
+
+
 common_fit_methods = {'NLS': nlls_fit_tensor,
                       'NLLS': nlls_fit_tensor,
                       }
