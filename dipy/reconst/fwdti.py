@@ -19,6 +19,7 @@ from dipy.core.sphere import Sphere
 from .vec_val_sum import vec_val_vect
 from dipy.core.ndindex import ndindex
 
+from dipy.utils.arrfuncs import pinv
 
 def fwdti_prediction(params, gtab, Diso=3.0e-3):
     """ Signal prediction given the free water DTI model parameters.
