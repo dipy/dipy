@@ -121,7 +121,7 @@ from dipy.tracking import utils
 mask = np.zeros(data.shape[:-1], 'bool')
 rad = 3
 mask[26-rad:26+rad, 29-rad:29+rad, 31-rad:31+rad] = True
-seeds = utils.seeds_from_mask(mask, density=[4,4,4], affine=affine)
+seeds = utils.seeds_from_mask(mask, density=[4, 4, 4], affine=affine)
 
 """
 Local Tracking is used for probabilistic tractography which takes the direction
@@ -148,7 +148,7 @@ that traverse through this ROI.
 # Set a mask for the lateral geniculate nucleus (LGN)
 mask_lgn = np.zeros(data.shape[:-1], 'bool')
 rad = 5
-mask_lgn[35-rad:35+rad,42-rad:42+rad,28-rad:28+rad] = True
+mask_lgn[35-rad:35+rad, 42-rad:42+rad, 28-rad:28+rad] = True
 
 # Select all the fibers that enter the LGN and discard all others
 filtered_fibers2 = utils.near_roi(streamlines, mask_lgn, tol=1.8, affine=affine)
@@ -195,12 +195,12 @@ example we show the results for threshold 0 (i.e. all fibers are included) and
 """
 
 # calculate LFBC for original fibers
-fbc_sl_orig, clrs_orig, rfbc_orig = fbc.get_points_rfbc_thresholded(0, 
-                                                                  emphasis=0.01)
+fbc_sl_orig, clrs_orig, rfbc_orig = \
+  fbc.get_points_rfbc_thresholded(0, emphasis=0.01)
 
 # apply a threshold on the RFBC to remove spurious fibers
-fbc_sl_thres, clrs_thres, rfbc_thres = fbc.get_points_rfbc_thresholded(0.2, 
-                                                                  emphasis=0.01)
+fbc_sl_thres, clrs_thres, rfbc_thres = \
+  fbc.get_points_rfbc_thresholded(0.2, emphasis=0.01)
 
 """
 The results of FBC measures are visualized, showing the original fibers colored
@@ -230,13 +230,13 @@ fvtk.add(ren, vol_actor2)
 
 # show original fibers
 fvtk.camera(ren, pos=(-264, 285, 155), focal=(0, -14, 9), viewup=(0, 0, 1), 
-                verbose=False)
-fvtk.record(ren, n_frames=1, out_path='OR_before.png', size=(600, 600))
+            verbose=False)
+fvtk.record(ren, n_frames=1, out_path='OR_before.png', size=(900, 900))
 
 # show thresholded fibers
 fvtk.rm(ren, lineactor)
 fvtk.add(ren, actor.line(fbc_sl_thres, clrs_thres, linewidth=0.2))
-fvtk.record(ren, n_frames=1, out_path='OR_after.png', size=(600, 600))
+fvtk.record(ren, n_frames=1, out_path='OR_after.png', size=(900, 900))
 
 """
 
@@ -263,19 +263,20 @@ References
 ~~~~~~~~~~~~~~~~~~~~~~
 
 .. [Meesters2016_HBM] S. Meesters, G. Sanguinetti, E. Garyfallidis, J. Portegies,
-                  P. Ossenblok, R. Duits. (2016) Cleaning output of tractography 
-                  via fiber to bundle coherence, a new open source implementation.
-                  Human Brain Mapping conference 2016 (submitted)
+                      P. Ossenblok, R. Duits. (2016) Cleaning output of 
+                      tractography via fiber to bundle coherence, a new open 
+                      source implementation. Human Brain Mapping conference 2016 
+                      (submitted)
 .. [Portegies2015_PLoSOne] J. Portegies, R. Fick, G. Sanguinetti, S. Meesters, 
-                 G.Girard, and R. Duits. (2015) Improving Fiber Alignment in HARDI 
-                 by Combining Contextual PDE flow with Constrained Spherical 
-                 Deconvolution. PLoS One.
+                           G.Girard, and R. Duits. (2015) Improving Fiber 
+                           Alignment in HARDI by Combining Contextual PDE flow 
+                           with Constrained Spherical Deconvolution. PLoS One.
 .. [DuitsAndFranken_JMIV] Duits, R. and Franken, E. (2011) Morphological and
-                      Linear Scale Spaces for Fiber Enhancement in DWI-MRI.
-                      J Math Imaging Vis, 46(3):326-368.
+                          Linear Scale Spaces for Fiber Enhancement in DWI-MRI.
+                          J Math Imaging Vis, 46(3):326-368.
 .. [Paulo_Eurographics] P. Rodrigues, R. Duits, B. Romeny, A. Vilanova (2010).
-                  Accelerated Diffusion Operators for Enhancing DW-MRI. 
-                  Eurographics Workshop on Visual Computing for Biology and 
-                  Medicine. The Eurographics Association.
+                        Accelerated Diffusion Operators for Enhancing DW-MRI. 
+                        Eurographics Workshop on Visual Computing for Biology and 
+                        Medicine. The Eurographics Association.
 
 """
