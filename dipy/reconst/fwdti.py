@@ -11,9 +11,8 @@ import scipy.optimize as opt
 from .base import ReconstModel
 
 from dipy.reconst.dti import (TensorFit, design_matrix, _min_positive_signal,
-                              decompose_tensor, from_lower_triangular,
-                              lower_triangular, apparent_diffusion_coef)
-from dipy.reconst.dki import _positive_evals
+                              _ols_fit_matrix, decompose_tensor,
+                              from_lower_triangular)
 
 from dipy.core.sphere import Sphere
 from .vec_val_sum import vec_val_vect
@@ -278,6 +277,7 @@ def wls_fit_tensor(design_matrix, data, Diso=3e-3, piterations=3,
        approaches for estimation of uncertainties of DTI parameters.
        NeuroImage 33, 531-541.
     """
+    tol = 1e-6
 
     # preparing data and initializing parametres
     data = np.asarray(data)
@@ -295,8 +295,11 @@ def wls_fit_tensor(design_matrix, data, Diso=3e-3, piterations=3,
     # To simplify and use same notation of [1]
     W = design_matrix
 
+    # Initialize the vector here values of f will be saved
+    F = np.empty(data.shape[:-1])
+
     # looping the WLS solution for all voxels
-    index = ndindex(data.shape[-1])
+    index = ndindex(data.shape[:-1])
     for v in index:
         df = 1  # initialize precision
         flow = 0  # lower f evaluated
@@ -311,11 +314,32 @@ def wls_fit_tensor(design_matrix, data, Diso=3e-3, piterations=3,
             for p in range(piterations):
                 # Free-water adjusted signal
                 y = np.log((SI - FS*S0[v]*SFW) / (1 - FS))
-                S = np.diag(np.dot(W, params[v]))
-                params[v] = np.linalg.pinv(W.T)
-            ns = 19
 
-    return y
+                # Estimate tissue's tensor from inv(A.T*S2*A)*A.T*S2*y
+                S2 = np.diag(np.square(np.dot(W, params[v])))
+                WS2 = np.dot(W.T, S2)
+                invWS2W = np.linalg.pinv(np.dot(WS2, W))
+                new_params = np.dot(np.dot(invWS2W, WS2), y)
+
+                # compute F2
+                S0r = np.matlib.repmat(S0[v], data.shape[-1], 1)
+                SIpred = (1-FS)*np.exp(np.dot(W, new_params)) + FS*S0r*SFW
+                F2 = np.sum(np.square(SI - SIpred))
+
+                # Select params for lower F2
+                Mind = np.argmin(F2)
+                F[v] = FS[Mind]
+                params[v] = new_params[Mind]
+                S0[v] = new_params[Mind, 6]
+            # refining precision
+            flow = F[v] - df
+            fhig = F[v] - df
+            ns = 19
+    evals, evecs = decompose_tensor(from_lower_triangular(params),
+                                    min_diffusivity= tol/-design_matrix.min())
+    fw_params = np.concatenate((evals, evecs[..., 0], evecs[..., 1],
+                                 evecs[..., 2], F), axis=-1)
+    return fw_params
 
 
 common_fit_methods = {'WLLS': wls_fit_tensor,
