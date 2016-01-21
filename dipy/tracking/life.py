@@ -651,7 +651,7 @@ class FiberModel(ReconstModel):
                     # And add the summed thing into the corresponding rows:
                     f_matrix_sig[ii*n_bvecs:ii*n_bvecs+n_bvecs] += vox_fib_sig
 
-                if iteration == 0 or np.mod(iteration, check_error_iter):
+                if np.mod(iteration, check_error_iter):
                     # Calculate the gradient contribution from this voxel:
                     XtXby = gradient_change(f_matrix_row,
                                             f_matrix_col,
@@ -671,7 +671,7 @@ class FiberModel(ReconstModel):
                                                f_matrix_row.shape[0],
                                                mat_row_idx.shape[0])
 
-            if iteration == 0 or np.mod(iteration, check_error_iter):
+            if np.mod(iteration, check_error_iter):
                 beta = beta - step_size * delta
                 # Set negative values to 0 (non-negative!)
                 beta[beta < 0] = 0
