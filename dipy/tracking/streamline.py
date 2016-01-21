@@ -379,10 +379,10 @@ def _extract_vals(data, streamlines, affine=None, threedvec=False):
 
     elif isinstance(streamlines, np.ndarray):
         sl_shape = streamlines.shape
-        sl_cat = streamlines.reshape(sl_shape[0] * sl_shape[1], 3)
+        sl_cat = streamlines.reshape(sl_shape[0] *
+                                     sl_shape[1], 3).astype(np.float)
         if affine is not None:
-            sl_cat = (np.dot(sl_cat, affine[:3, :3]) +
-                      affine[:3, 3]).astype(np.float)
+            sl_cat = (np.dot(sl_cat, affine[:3, :3]) + affine[:3, 3])
 
         # So that we can index in one operation:
         if threedvec:
