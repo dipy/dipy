@@ -88,8 +88,9 @@ def fwdti_prediction(params, gtab, Diso=3.0e-3):
 
 
 class FreeWaterTensorModel(ReconstModel):
-    """ Class for the Free Water Elimitation Diffusion Tensor Model """
-    def __init__(self, gtab, fit_method="NLS", *args, **kwargs):
+    """ Class for the Free Water Elimitation Diffusion Tensor Model
+    """
+    def __init__(self, gtab, fit_method="WLS", *args, **kwargs):
         """ Free Water Diffusion Tensor Model [1]_.
 
         Parameters
@@ -281,64 +282,123 @@ def wls_fit_tensor(design_matrix, data, Diso=3e-3, piterations=3,
 
     # preparing data and initializing parametres
     data = np.asarray(data)
-    ols_fit = _ols_fit_matrix(design_matrix)
-    log_s = np.log(data)
-    w = np.exp(np.einsum('...ij,...j', ols_fit, log_s))
-    params = np.einsum('...ij,...j', pinv(design_matrix * w[..., None]),
-                        w * log_s)
-    S0 = np.exp(params[..., 6])
+    data_flat = data.reshape((-1, data.shape[-1]))
+    fw_params = np.empty((len(data_flat), 13))
 
+    # inverting design matrix and defining minimun diffusion aloud
+    min_diffusivity = tol / -design_matrix.min()
+    inv_design = np.linalg.pinv(design_matrix)
+
+    # lopping WLS solution on all data voxels
+    for vox in range(len(data_flat)):
+        fw_params[vox] = _wls_iter(design_matrix, inv_design, data_flat[vox],
+                                    min_diffusivity)
+
+    # Reshape data according to the input data shape
+    fw_params = fw_params.reshape((data.shape[:-1]) + (13,))
+
+    return fw_params
+
+
+def _wls_iter(design_matrix, inv_design, sig, min_diffusivity, Diso=3e-3,
+              piterations=3, riterations=2, ):
+    """ Helper function used by wls_fit_tensor - Applies WLS fit of the
+    water free elimination model to single voxel signals.
+
+    Parameters
+    ----------
+    design_matrix : array (g, 7)
+        Design matrix holding the covariants used to solve for the regression
+        coefficients
+    inv_design : array (g, 7)
+        Inverse of the design matrix.
+    sig : array (g, )
+        Diffusion-weighted signal for a single voxel data.
+    min_diffusivity : float
+        Because negative eigenvalues are not physical and small eigenvalues,
+        much smaller than the diffusion weighting, cause quite a lot of noise
+        in metrics such as fa, diffusivity values smaller than
+        `min_diffusivity` are replaced with `min_diffusivity`.
+    Diso : float, optional
+        Value of the free water isotropic diffusion. Default is set to 3e-3
+        $mm^{2}.s^{-1}$. Please ajust this value if you are assuming different
+        units of diffusion.
+    piterations : inter, optional
+        Number of iterations used to refine the precision of f. Default is set
+        to 3 corresponding to a precision of 0.01.
+    riterations : inter, optional
+        Number of iteration repetitions with adapted S0. To insure that S0 is
+        taken as a model free parameter Each precision iteration is repeated
+        riterations times with adapted S0.
+
+    Returns
+    -------
+    All parameters estimated from the free water tensor model.
+    Parameters are ordered as follows:
+        1) Three diffusion tensor's eigenvalues
+        2) Three lines of the eigenvector matrix each containing the
+           first, second and third coordinates of the eigenvector
+        3) The volume fraction of the free water compartment
+    """
+    W = design_matrix
+
+    # DTI ordinary linear least square solution
+    log_s = np.log(sig)
+    ols_result = np.dot(inv_design, log_s)
+
+    # Define weights as diag(yn**2)
+    S2 = np.diag(np.exp(2 * np.dot(W, ols_result)))
+
+    # DTI weighted linear least square solution
+    WTS2 = np.dot(W.T, S2)
+    inv_WT_S2_W = np.linalg.pinv(np.dot(WTS2, W))
+    WT_S2_LS = np.dot(WTS2, log_s)
+    params = np.dot(inv_WT_S2_W, WT_S2_LS)
+    
     # General free-water signal contribution
     fwsig = np.exp(np.dot(design_matrix, 
                           np.array([Diso, 0, Diso, 0, 0, Diso])))
 
-    # To simplify and use same notation of [1]
-    W = design_matrix
-
-    # Initialize the vector here values of f will be saved
-    F = np.empty(data.shape[:-1])
-
-    # looping the WLS solution for all voxels
-    index = ndindex(data.shape[:-1])
-    for v in index:
-        df = 1  # initialize precision
-        flow = 0  # lower f evaluated
-        fhig = 1  # higher f evaluated
-        ns = 9  # initial number of samples per iteration
+    df = 1  # initialize precision
+    flow = 0  # lower f evaluated
+    fhig = 1  # higher f evaluated
+    ns = 9  # initial number of samples per iteration
+    nvol = len(sig)
+    for p in range(piterations):
+        df = df * 0.1
+        fs = np.linspace(flow+df, fhig-df, num=ns)  # sampling f
+        # repeat fw contribution for all the samples
+        SFW = np.matlib.repmat(fwsig, 1, ns)
+        FS, SI = np.meshgrid(fs, sig)
         for p in range(piterations):
-            df = df * 0.1
-            fs = np.linspace(flow+df, fhig-df, num=ns)  # sampling f
-            # repeat fw contribution for all the samples
-            SFW = np.matlib.repmat(fwsig, 1, ns)
-            FS, SI = np.meshgrid(fs, data[v])
-            for p in range(piterations):
-                # Free-water adjusted signal
-                y = np.log((SI - FS*S0[v]*SFW) / (1 - FS))
+            # Free-water adjusted signal
+            y = np.log((SI - FS*params[6]*SFW) / (1 - FS))
 
-                # Estimate tissue's tensor from inv(A.T*S2*A)*A.T*S2*y
-                S2 = np.diag(np.square(np.dot(W, params[v])))
-                WS2 = np.dot(W.T, S2)
-                invWS2W = np.linalg.pinv(np.dot(WS2, W))
-                new_params = np.dot(np.dot(invWS2W, WS2), y)
+            # Estimate tissue's tensor from inv(A.T*S2*A)*A.T*S2*y
+            S2 = np.diag(np.square(np.dot(W, params)))
+            WS2 = np.dot(W.T, S2)
+            invWS2W = np.linalg.pinv(np.dot(WS2, W))
+            all_new_params = np.dot(np.dot(invWS2W, WS2), y)
 
-                # compute F2
-                S0r = np.matlib.repmat(S0[v], data.shape[-1], 1)
-                SIpred = (1-FS)*np.exp(np.dot(W, new_params)) + FS*S0r*SFW
-                F2 = np.sum(np.square(SI - SIpred))
+            # compute F2
+            S0r = np.matlib.repmat(all_new_params[:, 6], nvol, 1)
+            SIpred = (1-FS)*np.exp(np.dot(W, all_new_params)) + FS*S0r*SFW
+            F2 = np.sum(np.square(SI - SIpred))
 
-                # Select params for lower F2
-                Mind = np.argmin(F2)
-                F[v] = FS[Mind]
-                params[v] = new_params[Mind]
-                S0[v] = new_params[Mind, 6]
-            # refining precision
-            flow = F[v] - df
-            fhig = F[v] - df
-            ns = 19
+            # Select params for lower F2
+            Mind = np.argmin(F2)
+            params = all_new_params[Mind]
+        # Updated f
+        f = FS[Mind]
+        # refining precision
+        flow = f - df
+        fhig = f - df
+        ns = 19
+
     evals, evecs = decompose_tensor(from_lower_triangular(params),
-                                    min_diffusivity= tol/-design_matrix.min())
+                                    min_diffusivity=min_diffusivity)
     fw_params = np.concatenate((evals, evecs[..., 0], evecs[..., 1],
-                                 evecs[..., 2], F), axis=-1)
+                                evecs[..., 2], f), axis=-1)
     return fw_params
 
 
