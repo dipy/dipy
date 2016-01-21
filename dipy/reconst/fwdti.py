@@ -11,6 +11,8 @@ import numpy as np
 
 from dipy.utils.arrfuncs import pinv
 
+from dipy.core.ndindex import ndindex
+
 def fwdti_prediction(params, gtab, S0):
     """
     Predict a signal given the parameters of the free water diffusion tensor
@@ -240,9 +242,9 @@ class FreeWaterTensorFit(TensorFit):
         return fwdti_prediction(self.model_params, gtab, S0)
 
 
-def wls_fit_tensor(design_matrix, data, fprecision=0.01):
-    r"""
-    Computes weighted least squares (WLS) fit to calculate self-diffusion
+def wls_fit_tensor(design_matrix, data, Diso=3e-3, piterations=3,
+                   riterations=2):
+    r""" Computes weighted least squares (WLS) fit to calculate self-diffusion
     tensor using a linear regression model [1]_.
 
     Parameters
@@ -253,9 +255,17 @@ def wls_fit_tensor(design_matrix, data, fprecision=0.01):
     data : array ([X, Y, Z, ...], g)
         Data or response variables holding the data. Note that the last
         dimension should contain the data. It makes no copies of data.
-    fprecision : float, optional
-        Precision of the free water compartment volume fraction. Default is set
-        to 0.01.
+    Diso : float, optional
+        Value of the free water isotropic diffusion. Default is set to 3e-3
+        $mm^{2}.s^{-1}$. Please ajust this value if you are assuming different
+        units of diffusion.
+    piterations : inter, optional
+        Number of iterations used to refine the precision of f. Default is set
+        to 3 corresponding to a precision of 0.01.
+    riterations : inter, optional
+        Number of iteration repetitions with adapted S0. To insure that S0 is
+        taken as a model free parameter Each precision iteration is repeated
+        riterations times with adapted S0.
 
     Returns
     -------
@@ -266,16 +276,12 @@ def wls_fit_tensor(design_matrix, data, fprecision=0.01):
            first, second and third coordinates of the eigenvector
         3) The volume fraction of the free water compartment
 
-    Notes
-    -----
-
     References
     ----------
     .. [1] Chung, SW., Lu, Y., Henry, R.G., 2006. Comparison of bootstrap
        approaches for estimation of uncertainties of DTI parameters.
        NeuroImage 33, 531-541.
     """
-    tol = 1e-6
 
     # Produce a first guess of the tensor parameters using DTI WLLS fit,
     # however without decomposing the tensor in eigenvalues and eigenvectors
@@ -283,13 +289,40 @@ def wls_fit_tensor(design_matrix, data, fprecision=0.01):
     ols_fit = _ols_fit_matrix(design_matrix)
     log_s = np.log(data)
     w = np.exp(np.einsum('...ij,...j', ols_fit, log_s))
-    dti_params = np.einsum('...ij,...j', pinv(design_matrix * w[..., None]),
-                           w * log_s)
-    
-    # WLLS procedure of the free water elimination model
+    params = np.einsum('...ij,...j', pinv(design_matrix * w[..., None]),
+                        w * log_s)
+    S0 = np.exp(params[..., 6])
 
-    return dti_params
+    # General free-water signal contribution
+    fwsig = np.exp(np.dot(design_matrix, 
+                          np.array([Diso, 0, Diso, 0, 0, Diso])))
+
+    # To simplify and use same notation of [1]
+    W = design_matrix
+
+    # looping the WLS solution for all voxels
+    index = ndindex(data.shape[-1])
+    for v in index:
+        df = 1  # initialize precision
+        flow = 0  # lower f evaluated
+        fhig = 1  # higher f evaluated
+        ns = 9  # initial number of samples per iteration
+        for p in range(piterations):
+            df = df * 0.1
+            fs = np.linspace(flow+df, fhig-df, num=ns)  # sampling f
+            # repeat fw contribution for all the samples
+            SFW = np.matlib.repmat(fwsig, 1, ns)
+            FS, SI = np.meshgrid(fs, data[v])
+            for p in range(piterations):
+                # Free-water adjusted signal
+                y = np.log((SI - FS*S0[v]*SFW) / (1 - FS))
+                S = np.diag(np.dot(W, params[v]))
+                params[v] = np.linalg.pinv(W.T)
+            ns = 19
+
+    return y
 
 
-common_fit_methods = {'WLLS': wls_fit_tensor
+common_fit_methods = {'WLLS': wls_fit_tensor,
+                      'WLS': wls_fit_tensor
                       }
