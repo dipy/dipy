@@ -11,8 +11,7 @@ import scipy.optimize as opt
 from .base import ReconstModel
 
 from dipy.reconst.dti import (TensorFit, design_matrix, _min_positive_signal,
-                              _ols_fit_matrix, decompose_tensor,
-                              from_lower_triangular)
+                              decompose_tensor, from_lower_triangular)
 
 from dipy.core.sphere import Sphere
 from .vec_val_sum import vec_val_vect
@@ -301,7 +300,7 @@ def wls_fit_tensor(design_matrix, data, Diso=3e-3, piterations=3,
 
 
 def _wls_iter(design_matrix, inv_design, sig, min_diffusivity, Diso=3e-3,
-              piterations=3, riterations=2, ):
+              piterations=3, riterations=2):
     """ Helper function used by wls_fit_tensor - Applies WLS fit of the
     water free elimination model to single voxel signals.
 
@@ -357,7 +356,7 @@ def _wls_iter(design_matrix, inv_design, sig, min_diffusivity, Diso=3e-3,
     
     # General free-water signal contribution
     fwsig = np.exp(np.dot(design_matrix, 
-                          np.array([Diso, 0, Diso, 0, 0, Diso])))
+                          np.array([Diso, 0, Diso, 0, 0, Diso, -np.log(1.)])))
 
     df = 1  # initialize precision
     flow = 0  # lower f evaluated
@@ -368,11 +367,12 @@ def _wls_iter(design_matrix, inv_design, sig, min_diffusivity, Diso=3e-3,
         df = df * 0.1
         fs = np.linspace(flow+df, fhig-df, num=ns)  # sampling f
         # repeat fw contribution for all the samples
-        SFW = np.matlib.repmat(fwsig, 1, ns)
+        SFW = np.array([fwsig,]*ns)
         FS, SI = np.meshgrid(fs, sig)
-        for p in range(piterations):
+        for r in range(riterations):
             # Free-water adjusted signal
-            y = np.log((SI - FS*params[6]*SFW) / (1 - FS))
+            S0 = np.exp(-params[6])
+            y = np.log((SI - FS*S0*SFW.T) / (1 - FS))
 
             # Estimate tissue's tensor from inv(A.T*S2*A)*A.T*S2*y
             S2 = np.diag(np.square(np.dot(W, params)))
@@ -381,15 +381,15 @@ def _wls_iter(design_matrix, inv_design, sig, min_diffusivity, Diso=3e-3,
             all_new_params = np.dot(np.dot(invWS2W, WS2), y)
 
             # compute F2
-            S0r = np.matlib.repmat(all_new_params[:, 6], nvol, 1)
-            SIpred = (1-FS)*np.exp(np.dot(W, all_new_params)) + FS*S0r*SFW
-            F2 = np.sum(np.square(SI - SIpred))
+            S0r = np.exp(-np.array([all_new_params[6],]*nvol))
+            SIpred = (1-FS)*np.exp(np.dot(W, all_new_params)) + FS*S0r*SFW.T
+            F2 = np.sum(np.square(SI - SIpred), axis=0)
 
             # Select params for lower F2
             Mind = np.argmin(F2)
-            params = all_new_params[Mind]
+            params = all_new_params[:, Mind]
         # Updated f
-        f = FS[Mind]
+        f = fs[Mind]
         # refining precision
         flow = f - df
         fhig = f - df
@@ -397,8 +397,8 @@ def _wls_iter(design_matrix, inv_design, sig, min_diffusivity, Diso=3e-3,
 
     evals, evecs = decompose_tensor(from_lower_triangular(params),
                                     min_diffusivity=min_diffusivity)
-    fw_params = np.concatenate((evals, evecs[..., 0], evecs[..., 1],
-                                evecs[..., 2], f), axis=-1)
+    fw_params = np.concatenate((evals, evecs[0], evecs[1], evecs[2], 
+                                np.array([f])), axis=0)
     return fw_params
 
 
