@@ -63,8 +63,7 @@ class MapmriModel(ReconstModel):
                  laplacian_weighting='GCV',
                  positivity_constraint=False,
                  anisotropic_scaling=True,
-                 eigenvalue_threshold=1e-04,
-                 bmax_threshold=2000):
+                 eigenvalue_threshold=1e-04):
         r""" Analytical and continuous modeling of the diffusion signal with
         respect to the MAPMRI basis [1]_.
 
@@ -222,8 +221,8 @@ class MapmriModel(ReconstModel):
             w_s += "and you may be subject to this license when using the "
             w_s += "positivity constraint. "
             warn(w_s)
-            rmax = 2 * np.sqrt(10 * evals.max() * self.tau)
-            r_index, r_grad = create_rspace(11, rmax)
+            rmax = np.sqrt(5) * mu.max()
+            r_index, r_grad = create_rspace(35, rmax)
             K = mapmri_psi_matrix(
                 self.radial_order,  mu, r_grad[0:len(r_grad) / 2, :])
 
@@ -761,7 +760,7 @@ def create_rspace(gridsize, radius_max):
     vecs = []
     for i in range(-radius, radius + 1):
         for j in range(-radius, radius + 1):
-            for k in range(-radius, radius + 1):
+            for k in range(0, radius + 1):
                 vecs.append([i, j, k])
 
     vecs = np.array(vecs, dtype=np.float32)
