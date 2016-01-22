@@ -5,15 +5,18 @@ from __future__ import division, print_function, absolute_import
 from .base import ReconstModel
 
 from dipy.reconst.dti import (TensorFit, design_matrix, _min_positive_signal,
-                              decompose_tensor, from_lower_triangular)
+                              decompose_tensor, from_lower_triangular,
+                              apparent_diffusion_coef)
+
+from ..core.sphere import Sphere
+from .vec_val_sum import vec_val_vect
 
 import numpy as np
 
 from dipy.utils.arrfuncs import pinv
 
-from dipy.core.ndindex import ndindex
 
-def fwdti_prediction(params, gtab, S0):
+def fwdti_prediction(params, gtab, S0, Diso=3.0e-3):
     """
     Predict a signal given the parameters of the free water diffusion tensor
     model.
@@ -32,6 +35,11 @@ def fwdti_prediction(params, gtab, S0):
         The non diffusion-weighted signal in every voxel, or across all
         voxels. Default: 1
 
+    Diso : float, optional
+        Value of the free water isotropic diffusion. Default is set to 3e-3
+        $mm^{2}.s^{-1}$. Please ajust this value if you are assuming different
+        units of diffusion.
+
     Notes
     -----
     The predicted signal is given by:
@@ -49,29 +57,31 @@ def fwdti_prediction(params, gtab, S0):
            Free water elimination and mapping from diffusion MRI. Magn. Reson.
            Med. 62, 717-739. http://dx.doi.org/10.1002/mrm.22055.
     """
-    #evals = dti_params[..., :3]
-    #evecs = dti_params[..., 3:].reshape(dti_params.shape[:-1] + (3, 3))
-    #qform = vec_val_vect(evecs, evals)
-    #sphere = Sphere(xyz=gtab.bvecs[~gtab.b0s_mask])
-    #adc = apparent_diffusion_coef(qform, sphere)
-    #
-    #if isinstance(S0, np.ndarray):
-    #    # If it's an array, we need to give it one more dimension:
-    #    S0 = S0[..., None]
-    #
-    # # First do the calculation for the diffusion weighted measurements:
-    # pre_pred_sig = S0 * np.exp(-gtab.bvals[~gtab.b0s_mask] * adc)
-    #
+    evals = params[..., :3]
+    evecs = params[..., 3:-2].reshape(params.shape[:-1] + (3, 3))
+    f = params[..., -1]
+    qform = vec_val_vect(evecs, evals)
+    sphere = Sphere(xyz=gtab.bvecs[~gtab.b0s_mask])
+    adc = apparent_diffusion_coef(qform, sphere)
+
+    if isinstance(S0, np.ndarray):
+        # If it's an array, we need to give it one more dimension:
+        S0 = S0[..., None]
+
+    # First do the calculation for the diffusion weighted measurements:
+    pre_pred_sig = S0 * ((1 - f) * np.exp(-gtab.bvals[~gtab.b0s_mask] * adc) +
+                         f * np.exp(-gtab.bvals[~gtab.b0s_mask] * Diso))
+
     # Then we need to sort out what goes where:
-    # pred_sig = np.zeros(pre_pred_sig.shape[:-1] + (gtab.bvals.shape[0],))
-    #
+    pred_sig = np.zeros(pre_pred_sig.shape[:-1] + (gtab.bvals.shape[0],))
+
     # These are the diffusion-weighted values
-    # pred_sig[..., ~gtab.b0s_mask] = pre_pred_sig
-    #
+    pred_sig[..., ~gtab.b0s_mask] = pre_pred_sig
+
     # For completeness, we predict the mean S0 for the non-diffusion
     # weighted measurements, which is our best guess:
-    # pred_sig[..., gtab.b0s_mask] = S0
-    # return pred_sig
+    pred_sig[..., gtab.b0s_mask] = S0
+    return pred_sig
 
 
 class FreeWaterTensorModel(ReconstModel):
