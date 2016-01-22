@@ -655,9 +655,6 @@ def read_cenir_multib(bvals=None):
     gtab : a GradientTable class instance
     img : nibabel.Nifti1Image
 
-    Notes
-    -----
-    Details of acquisition and processing are availble
     """
     files, folder = fetch_cenir_multib(with_raw=False)
     if bvals is None:
@@ -698,7 +695,7 @@ CENIR_notes = \
     Notes
     -----
     Details of the acquisition and processing, and additional meta-data are
-    avalible through `UW researchworks <https://digital.lib.washington.edu/researchworks/handle/1773/33311>`_
+    available through `UW researchworks <https://digital.lib.washington.edu/researchworks/handle/1773/33311>`_
     """
 
 fetch_cenir_multib.__doc__ += CENIR_notes
