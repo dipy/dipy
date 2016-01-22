@@ -372,8 +372,9 @@ class SparseFascicleModel(ReconstModel, Cache):
 
         Returns
         -------
-        ndarray : each column is a rotated version of the response function.
-
+        ndarray
+            The design matrix, where each column is a rotated version of the
+            response function.
         """
         return sfm_design_matrix(self.gtab, self.sphere, self.response,
                                  'signal')
