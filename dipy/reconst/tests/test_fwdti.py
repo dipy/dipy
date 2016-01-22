@@ -44,5 +44,5 @@ def test_fwdti_singlevoxel():
     fwefit = fwdm.fit(S_conta)
     FAfwe = fwefit.fa
 
-    assert_almost_equal(FAdti, FAfwe)
+    assert_almost_equal(FAdti, FAfwe, decimal=3)
 

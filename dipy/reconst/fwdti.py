@@ -397,7 +397,7 @@ def _wls_iter(design_matrix, inv_design, sig, min_diffusivity, Diso=3e-3,
         f = fs[Mind]
         # refining precision
         flow = f - df
-        fhig = f - df
+        fhig = f + df
         ns = 19
 
     evals, evecs = decompose_tensor(from_lower_triangular(params),
