@@ -10,6 +10,7 @@
  reconst_dti.py
  reconst_gqi.py
  reconst_dsid.py
+ reconst_dki.py
  kfold_xval.py
  reslice_datasets.py
  segment_quickbundles.py
