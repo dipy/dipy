@@ -76,6 +76,11 @@ Diffusion Tensor Imaging
 - :ref:`example_restore_dti`
 
 
+Diffusion Kurtosis Imaging
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+- :ref:`example_reconst_dki`
+
+
 Q-Ball Constant Solid Angle
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
