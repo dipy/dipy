@@ -7,8 +7,9 @@ import numpy as np
 import numpy.testing as npt
 
 def test_enhancement_kernel():
-    """ Test if the kernel values are correct, at the same time check if the 
-    the lookup-table of the kernel."""
+    """ Test if the kernel values are correct by comparison against the values
+    originally calculated by implementation in Mathematica, and at the same time 
+    checks the symmetry of the kernel."""
 
     D33 = 1.0
     D44 = 0.04

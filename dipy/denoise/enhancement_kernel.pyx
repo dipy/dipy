@@ -3,10 +3,6 @@ cimport numpy as cnp
 cimport cython
 import os.path
 
-cimport safe_openmp as openmp
-from safe_openmp cimport have_openmp
-from cython.parallel import prange, threadid, parallel
-
 from dipy.data import get_sphere
 from dipy.core.sphere import disperse_charges, Sphere, HemiSphere
 from tempfile import gettempdir
@@ -20,13 +16,12 @@ cdef class EnhancementKernel:
     cdef double t
     cdef int kernelsize
     cdef double kernelmax
-    cdef double [:, :] orientations
+    cdef double [:, :] orientationsList
     cdef double [:, :, :, :, ::1] lookuptable
     cdef object sphere
-    cdef object num_threads
 
     def __init__(self, D33, D44, t, force_recompute=False,
-                 orientations=None, test_mode=False, num_threads=None):
+                 orientations=None, test_mode=False, verbose=True):
         """ Compute a look-up table for the contextual
         enhancement kernel
 
@@ -47,6 +42,8 @@ cdef class EnhancementKernel:
             The default sphere is 'repulsion100'.
         test_mode : boolean
             Computes the lookup-table in one direction only
+        verbose : boolean
+            Enable verbose mode.
             
         References
         ----------
@@ -74,32 +71,30 @@ cdef class EnhancementKernel:
         self.t = t
 
         # define a sphere
-        if type(orientations) is Sphere:
+        if isinstance(orientations, Sphere):
             # use the sphere defined by the user
             sphere = orientations
-        elif type(orientations) is int:
+        elif isinstance(orientations, (int, long, float)):
             # electrostatic repulsion based on number of orientations
-            n_pts = orientations
+            n_pts = int(orientations)
             theta = np.pi * np.random.rand(n_pts)
             phi = 2 * np.pi * np.random.rand(n_pts)
             hsph_initial = HemiSphere(theta=theta, phi=phi)
-            sphere, potential = disperse_charges(hsph_initial , 5000)
+            sphere, potential = disperse_charges(hsph_initial, 5000)
         else:
             # use default
             sphere = get_sphere('repulsion100')
-        self.orientations = sphere.vertices
+        self.orientationsList = sphere.vertices
         self.sphere = sphere
-
-        # save openmp settings
-        self.num_threads = num_threads
         
         # file location of the lut table for saving/loading
-        kernellutpath = "%s/kernel_d33@%4.2f_d44@%4.2f_t@%4.2f_numverts%d.npy" \
-                        % (gettempdir(), D33, D44, t, len(self.orientations))
+        kernellutpath = os.path.join(gettempdir(), 
+                                     "kernel_d33@%4.2f_d44@%4.2f_t@%4.2f_numverts%d.npy" \
+                                       % (D33, D44, t, len(self.orientationsList)))
 
         # create a lookup table in testing mode
         if test_mode:
-            self.create_lookup_table(True)
+            self.create_lookup_table(test_mode=True, verbose=verbose)
             return
 
         # if LUT exists, load
@@ -110,7 +105,7 @@ cdef class EnhancementKernel:
         # else, create
         else:
             print "The kernel doesn't exist yet. Computing..."
-            self.create_lookup_table()
+            self.create_lookup_table(test_mode=False, verbose=verbose)
             np.save(kernellutpath, self.lookuptable)
             
     def get_lookup_table(self):
@@ -121,7 +116,7 @@ cdef class EnhancementKernel:
     def get_orientations(self):
         """ Return the orientations.
         """
-        return self.orientations
+        return self.orientationsList
         
     def get_sphere(self):
         """ Get the sphere corresponding with the orientations
@@ -135,14 +130,21 @@ cdef class EnhancementKernel:
     @cython.boundscheck(False)
     @cython.nonecheck(False)
     @cython.cdivision(True)
-    cdef void create_lookup_table(self, test_mode=False):
+    cdef void create_lookup_table(self, test_mode=False, verbose=True):
         """ Compute the look-up table based on the parameters set
         during class initialization
+
+        Parameters
+        ----------
+        test_mode : boolean
+            Computes the lookup-table in one direction only
+        verbose : boolean
+            Enable verbose mode.
         """
-        self.estimate_kernel_size()
+        self.estimate_kernel_size(verbose=verbose)
 
         cdef:
-            double [:, :] orientations = np.copy(self.orientations)
+            double [:, :] orientations = np.copy(self.orientationsList)
             cnp.npy_intp OR1 = orientations.shape[0]
             cnp.npy_intp OR2 = orientations.shape[0]
             cnp.npy_intp N = self.kernelsize
@@ -188,9 +190,14 @@ cdef class EnhancementKernel:
     @cython.boundscheck(False)
     @cython.nonecheck(False)
     @cython.cdivision(True)
-    cdef void estimate_kernel_size(self):
+    cdef void estimate_kernel_size(self, verbose=True):
         """ Estimates the dimensions the kernel should
         have based on the kernel parameters.
+
+        Parameters
+        ----------
+        verbose : boolean
+            Enable verbose mode.
         """
 
         cdef:
@@ -333,20 +340,20 @@ cdef class EnhancementKernel:
     cdef double kernel(self, double [:] c) nogil:
         """ Evaluate the kernel based on the coordinate map.
         """
-        return 1 / (8*sqrt(2)) * \
-               sqrt(PI)*self.t*sqrt(self.t*self.D33)*sqrt(self.D33*self.D44) * \
-               1 / (16*PI*PI*self.D33*self.D33*self.D44*self.D44*self.t*self.t* \
-                    self.t*self.t) * \
-               exp(-sqrt((c[0]*c[0] + c[1]*c[1]) / (self.D33*self.D44) + \
+        cdef double output = 1 / (8*sqrt(2))
+        output *= sqrt(PI)*self.t*sqrt(self.t*self.D33)*sqrt(self.D33*self.D44)
+        output *= 1 / (16*PI*PI*self.D33*self.D33*self.D44*self.D44*self.t*self.t*self.t*self.t)
+        output *= exp(-sqrt((c[0]*c[0] + c[1]*c[1]) / (self.D33*self.D44) + \
                    (c[2]*c[2] / self.D33 + (c[3]*c[3]+c[4]*c[4]) / self.D44) * \
                    (c[2]*c[2] / self.D33 + (c[3]*c[3]+c[4]*c[4]) / self.D44) + \
                     c[5]*c[5]/self.D44) / (4*self.t));
+        return output
 
 cdef double PI = 3.1415926535897932
 
 @cython.wraparound(False)
 @cython.boundscheck(False)
-cdef double [:] euler_angles(double [:] input) nogil:
+cdef double [:] euler_angles(double [:] inp) nogil:
 
     cdef:
         double x
@@ -354,9 +361,9 @@ cdef double [:] euler_angles(double [:] input) nogil:
         double z
         double [:] output
 
-    x = input[0]
-    y = input[1]
-    z = input[2]
+    x = inp[0]
+    y = inp[1]
+    z = inp[2]
 
     with gil:
 
@@ -383,7 +390,7 @@ cdef double [:] euler_angles(double [:] input) nogil:
 
 @cython.wraparound(False)
 @cython.boundscheck(False)
-cdef double [:,:] R(double [:] input) nogil:
+cdef double [:,:] R(double [:] inp) nogil:
 
     cdef:
         double beta
@@ -394,8 +401,8 @@ cdef double [:,:] R(double [:] input) nogil:
         double cg
         double sg
 
-    beta = input[0]
-    gamma = input[1]
+    beta = inp[0]
+    gamma = inp[1]
     
     with gil:
         output = np.zeros(9)

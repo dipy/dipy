@@ -19,10 +19,15 @@ def convolve(odfs_sh, kernel, sh_order, test_mode=False, num_threads=None):
     ----------
     odfs : array of double
         The ODF data in spherical harmonics format
-    lut : array of double
+    kernel : array of double
         The 5D lookup table
+    sh_order : integer
+        Maximal spherical harmonics order
     test_mode : boolean
         Reduced convolution in one direction only for testing
+    num_threads : int
+            Number of threads. If None (default) then all available threads
+            will be used.
         
     Returns
     -------
@@ -75,10 +80,13 @@ def convolve_sf(odfs_sf, kernel, test_mode=False, num_threads=None):
     ----------
     odfs : array of double
         The ODF data sampled on a sphere
-    lut : array of double
+    kernel : array of double
         The 5D lookup table
     test_mode : boolean
         Reduced convolution in one direction only for testing
+    num_threads : int
+            Number of threads. If None (default) then all available threads
+            will be used.
 
     Returns
     -------
@@ -111,6 +119,9 @@ cdef double [:, :, :, ::1] perform_convolution (double [:, :, :, ::1] odfs,
         The 5D lookup table
     test_mode : boolean
         Reduced convolution in one direction only for testing
+    num_threads : int
+            Number of threads. If None (default) then all available threads
+            will be used.
         
     Returns
     -------
@@ -179,6 +190,7 @@ cdef double [:, :, :, ::1] perform_convolution (double [:, :, :, ::1] odfs,
                             output[cx, cy, cz, corient] = \
                                 totalval[corient, cx, cy, cz]
 
+    # Reset number of OpenMP cores to default
     if have_openmp and num_threads is not None:
         openmp.omp_set_num_threads(all_cores)
 
