@@ -36,13 +36,16 @@ def test_fwdti_singlevoxel():
     FAdti = dtifit.fa
 
     # Simulation when water contamination is added
+    gtf = 0.50  #ground truth volume fraction
     mevals = np.array([[0.0017, 0.0003, 0.0003], [0.003, 0.003, 0.003]])
     S_conta, peaks = multi_tensor(gtab_2s, mevals, S0=100,
                                   angles=[(0, 0), (0, 0)],
-                                  fractions=[50, 50], snr=None)
+                                  fractions=[(1-gtf) * 100, gtf*100], snr=None)
     fwdm = fwdti.FreeWaterTensorModel(gtab_2s, 'WLS')
     fwefit = fwdm.fit(S_conta)
     FAfwe = fwefit.fa
+    Ffwe = fwefit.f
 
     assert_almost_equal(FAdti, FAfwe, decimal=3)
+    assert_almost_equal(Ffwe, gtf, decimal=3)
 

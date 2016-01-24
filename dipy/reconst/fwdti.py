@@ -178,7 +178,7 @@ class FreeWaterTensorModel(ReconstModel):
             fwdti_params = np.zeros(data.shape[:-1] + (13,))
             fwdti_params[mask, :] = params_in_mask
 
-        return TensorFit(self, fwdti_params)
+        return FreeWaterTensorFit(self, fwdti_params)
 
     def predict(self, fwdti_params, S0=1):
         """
