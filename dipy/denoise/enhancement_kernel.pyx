@@ -106,7 +106,7 @@ cdef class EnhancementKernel:
         # else, create
         else:
             print "The kernel doesn't exist yet. Computing..."
-            self.create_lookup_table(verbose=verbose)
+            self.create_lookup_table(verbose)
             np.save(kernellutpath, self.lookuptable)
             
     def get_lookup_table(self):
@@ -140,7 +140,7 @@ cdef class EnhancementKernel:
         verbose : boolean
             Enable verbose mode.
         """
-        self.estimate_kernel_size(verbose=verbose)
+        self.estimate_kernel_size(verbose)
 
         cdef:
             double [:, :] orientations = np.copy(self.orientations_list)
