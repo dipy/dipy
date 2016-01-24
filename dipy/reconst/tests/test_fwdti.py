@@ -67,3 +67,31 @@ def test_fwdti_precision():
 
     assert_almost_equal(Ffwe, gtf, decimal=5)
     assert_almost_equal(FAdti, FAfwe, decimal=5)
+
+
+def test_fwdti_multi_voxel():
+    # 8 voxels tested
+    DWI = np.zeros((2, 2, 2, len(gtab_2s.bvals)))
+    Fref = np.zeros((2, 2, 2))
+    FAref = np.zeros((2, 2, 2))
+    # Diffusion of tissue and water compartments are constant for all voxel
+    mevals = np.array([[0.0017, 0.0003, 0.0003], [0.003, 0.003, 0.003]])
+
+    # volume fractions are random
+    for i in range(2):
+        for j in range(2):
+            gtf = random.uniform(0, 1)
+            S, p = multi_tensor(gtab_2s, mevals, S0=100,
+                                angles=[(0, 0), (0, 0)],
+                                fractions=[(1-gtf) * 100, gtf*100], snr=None)
+            DWI[i, j, 0] = S
+            Fref[i, j, 0] = gtf
+            FAref[i, j, 0] = FAdti
+
+    fwdm = fwdti.FreeWaterTensorModel(gtab_2s, 'WLS')
+    fwefit = fwdm.fit(DWI)
+    FAfwe = fwefit.fa
+    Ffwe = fwefit.f
+
+    assert_array_almost_equal(Ffwe, Fref, decimal=2)
+    
