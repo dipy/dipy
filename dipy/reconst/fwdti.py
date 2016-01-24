@@ -313,7 +313,9 @@ def wls_fit_tensor(design_matrix, data, Diso=3e-3, piterations=3,
     # lopping WLS solution on all data voxels
     for vox in range(len(data_flat)):
         fw_params[vox] = _wls_iter(design_matrix, inv_design, data_flat[vox],
-                                    min_diffusivity)
+                                    min_diffusivity, Diso=Diso,
+                                    piterations=piterations,
+                                    riterations=riterations)
 
     # Reshape data according to the input data shape
     fw_params = fw_params.reshape((data.shape[:-1]) + (13,))

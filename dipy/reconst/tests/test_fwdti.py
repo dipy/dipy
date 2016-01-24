@@ -24,17 +24,17 @@ bvals_2s = np.concatenate((bvals, bvals * 1.5), axis=0)
 bvecs_2s = np.concatenate((bvecs, bvecs), axis=0)
 gtab_2s = gradient_table(bvals_2s, bvecs_2s)
 
+# Simulation a typical DT and DW signal for no water contamination
+dt = np.array([0.0017, 0, 0.0003, 0, 0, 0.0003])
+evals, evecs = decompose_tensor(from_lower_triangular(dt))
+S_tissue = single_tensor(gtab_2s, S0=100, evals=evals, evecs=evecs,
+                         snr=None)
+dm = dti.TensorModel(gtab_2s, 'WLS')
+dtifit = dm.fit(S_tissue)
+FAdti = dtifit.fa
+
 
 def test_fwdti_singlevoxel():
-    # Simulation a typical DT and DW signal for no water contamination
-    dt = np.array([0.0017, 0, 0.0003, 0, 0, 0.0003])
-    evals, evecs = decompose_tensor(from_lower_triangular(dt))
-    S_tissue = single_tensor(gtab_2s, S0=100, evals=evals, evecs=evecs,
-                             snr=None)
-    dm = dti.TensorModel(gtab_2s, 'WLS')
-    dtifit = dm.fit(S_tissue)
-    FAdti = dtifit.fa
-
     # Simulation when water contamination is added
     gtf = 0.50  #ground truth volume fraction
     mevals = np.array([[0.0017, 0.0003, 0.0003], [0.003, 0.003, 0.003]])
@@ -49,3 +49,18 @@ def test_fwdti_singlevoxel():
     assert_almost_equal(FAdti, FAfwe, decimal=3)
     assert_almost_equal(Ffwe, gtf, decimal=3)
 
+
+def test_fwdti_precision():
+    # Simulation when water contamination is added
+    gtf = 0.63416  #ground truth volume fraction
+    mevals = np.array([[0.0017, 0.0003, 0.0003], [0.003, 0.003, 0.003]])
+    S_conta, peaks = multi_tensor(gtab_2s, mevals, S0=100,
+                                  angles=[(0, 0), (0, 0)],
+                                  fractions=[(1-gtf) * 100, gtf*100], snr=None)
+    fwdm = fwdti.FreeWaterTensorModel(gtab_2s, 'WLS', piterations=5)
+    fwefit = fwdm.fit(S_conta)
+    FAfwe = fwefit.fa
+    Ffwe = fwefit.f
+
+    assert_almost_equal(Ffwe, gtf, decimal=5)
+    assert_almost_equal(FAdti, FAfwe, decimal=5)
