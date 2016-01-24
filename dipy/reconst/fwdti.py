@@ -221,6 +221,13 @@ class FreeWaterTensorFit(TensorFit):
         """
         TensorFit.__init__(self, model, model_params)
 
+    @property
+    def f(self):
+        """
+        Returns the free water diffusion volume fraction f
+        """
+        return self.model_params[..., 12]
+
     def predict(self, gtab, S0=1):
         r""" Given a free water tensor model fit, predict the signal on the
         vertices of a gradient table
