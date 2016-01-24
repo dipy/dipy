@@ -9,10 +9,10 @@ FOD/ODF fields [Meesters2016_ISMRM_], implementing the contextual PDE framework
 of [Portegies2015_PLoSOne]_ for processing HARDI data. The aim is to enhance the 
 alignment of elongated structures in the data such that crossing/junctions are 
 maintained while reducing noise and small incoherent structures. This is achieved
- via a hypo-elliptic 2nd order PDE in the domain of coupled positions and 
- orientations :math:`\mathbb{R}^3 \rtimes S^2`. This domain carries a non-flat 
- geometrical differential structure that allows including a notion of alignment 
- between neighboring points. 
+via a hypo-elliptic 2nd order PDE in the domain of coupled positions and 
+orientations :math:`\mathbb{R}^3 \rtimes S^2`. This domain carries a non-flat 
+geometrical differential structure that allows including a notion of alignment 
+between neighboring points. 
 
 Let :math:`({\bf y},{\bf n}) \in \mathbb{R}^3\rtimes S^2` where 
 :math:`{\bf y} \in \mathbb{R}^{3}` denotes the spatial part, and 
@@ -24,33 +24,26 @@ PDE with evolution time :math:`t\geq 0` is given by:
 .. math::
 
     \begin{cases}
-	\frac{\partial}{\partial t} W({\bf y},{\bf n},t) &= ((D^{33}({\bf n} \cdot 
-	        \nabla)^2 + D^{44} \Delta_{S^2})W)({\bf y},{\bf n},t)
-	\\ W({\bf y},{\bf n},0) &= U({\bf y},{\bf n})
-	\end{cases},
+  \frac{\partial}{\partial t} W({\bf y},{\bf n},t) &= ((D^{33}({\bf n} \cdot 
+          \nabla)^2 + D^{44} \Delta_{S^2})W)({\bf y},{\bf n},t)
+  \\ W({\bf y},{\bf n},0) &= U({\bf y},{\bf n})
+  \end{cases},
 
 where:
 
-* :math:`D^{33}>0` is  the coefficient for the spatial smoothing (which goes 
-	only in the direction of :math:`n`);
+* :math:`D^{33}>0` is  the coefficient for the spatial smoothing (which goes only in the direction of :math:`n`);
 
-* :math:`D^{44}>0` is the coefficient for the angular smoothing 
-(here :math:`\Delta_{S^2}` denotes the Laplace-Beltrami operator 
-	on the sphere :math:`S^2`);
+* :math:`D^{44}>0` is the coefficient for the angular smoothing (here :math:`\Delta_{S^2}` denotes the Laplace-Beltrami operator on the sphere :math:`S^2`);
 
-* :math:`U:\mathbb{R}^3\rtimes S^2 \to \mathbb{R}` is the initial condition 
-given by the noisy FOD/ODF’s field.
+* :math:`U:\mathbb{R}^3\rtimes S^2 \to \mathbb{R}` is the initial condition given by the noisy FOD/ODF’s field.
 
-This equation is solved via a shift-twist convolution (denoted by 
-	:math:`\ast_{\mathbb{R}^3\rtimes S^2}`) with its corresponding kernel 
-:math:`P_t:\mathbb{R}^3\rtimes S^2 \to \mathbb{R}^+`:
+This equation is solved via a shift-twist convolution (denoted by :math:`\ast_{\mathbb{R}^3\rtimes S^2}`) with its corresponding kernel :math:`P_t:\mathbb{R}^3\rtimes S^2 \to \mathbb{R}^+`:
 
 .. math::
 
-	W(\vec{y},\vec{n},t) = (P_t \ast_{\mathbb{R}^3 \rtimes S^2} U)(\vec{y},\vec{n}) 
-	= \int_{\mathbb{R}^3} \int_{S^2} P_t (R^T_{\vec{n}^\prime}(\vec{y}-\vec{y}^\prime),
-	 R^T_{\vec{n}^\prime} \vec{n} ) U(\vec{y}^\prime, \vec{n}^\prime) 
-\hspace{0.2em} d\sigma (\vec{n}^\prime) d\vec{y}^\prime.
+  W(\vec{y},\vec{n},t) = (P_t \ast_{\mathbb{R}^3 \rtimes S^2} U)(\vec{y},\vec{n}) 
+  = \int_{\mathbb{R}^3} \int_{S^2} P_t (R^T_{\vec{n}^\prime}(\vec{y}-\vec{y}^\prime),
+   R^T_{\vec{n}^\prime} \vec{n} ) U(\vec{y}^\prime, \vec{n}^\prime)
 
 Here, :math:`R_{\bf n}` is any 3D rotation that maps the vector :math:`(0,0,1)` 
 onto :math:`{\bf n}`.
@@ -60,19 +53,19 @@ takes into account the non-flat structure of the space :math:`\mathbb{R}^3\rtime
 
 The kernel :math:`P_t` has a stochastic interpretation [DuitsAndFranken_JMIV]_. 
 It can be seen as the limiting distribution obtained by accumulating random walks
- of particles in the position/orientation domain, where in each step the particles
-  can (randomly) move forward/backward along their current orientation, and (randomly)
-   change their orientation.  This is an extension to the 3D case of the process 
-   for contour enhancement of 2D images. 
+of particles in the position/orientation domain, where in each step the particles
+can (randomly) move forward/backward along their current orientation, and (randomly)
+change their orientation.  This is an extension to the 3D case of the process 
+for contour enhancement of 2D images. 
 
-.. figure:: stochastic_process.png
+.. figure:: _static/stochastic_process.png
    :align: center
 
    The random motion of particles (a) and it's corresponding probability map (b)
     in 2D. The 3D kernel is shown on the right. Adapted from [Portegies2015_PLoSOne]_.
 
 In practice, as the exact analytical formulas for the kernel :math:`P_t` are unknown,
- we use the approximation given in [Portegies2015_SSVM]_. 
+we use the approximation given in [Portegies2015_SSVM]_.
 
 """
 
@@ -253,7 +246,7 @@ fvtk.record(ren, out_path='enhancements.png', size=(900, 900))
    of noisy data. Top-right: After enhancement and sharpening of noisy data.
 
 References
-~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~
 
 .. [Meesters2016_ISMRM] S. Meesters, G. Sanguinetti, E. Garyfallidis, 
                         J. Portegies, R. Duits. (2015) Fast implementations of 

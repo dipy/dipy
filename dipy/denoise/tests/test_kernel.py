@@ -1,6 +1,7 @@
 from dipy.denoise.enhancement_kernel import EnhancementKernel
 from dipy.denoise.shift_twist_convolution import convolve_sf
 from dipy.reconst.shm import sh_to_sf, sf_to_sh
+from dipy.core.sphere import Sphere
 from dipy.data import get_sphere
 
 import numpy as np
@@ -14,7 +15,7 @@ def test_enhancement_kernel():
     D33 = 1.0
     D44 = 0.04
     t = 1
-    k = EnhancementKernel(D33, D44, t, test_mode=True)
+    k = EnhancementKernel(D33, D44, t, orientations=0)
 
     y = np.array([0., 0., 0.])
     v = np.array([0., 0., 1.])
@@ -57,7 +58,8 @@ def test_spike():
     D33 = 1.0
     D44 = 0.04
     t = 1
-    k = EnhancementKernel(D33, D44, t, test_mode=True)
+    num_orientations = 5
+    k = EnhancementKernel(D33, D44, t, orientations=num_orientations)
 
     # create a delta spike
     numorientations = k.get_orientations().shape[0]
@@ -73,6 +75,23 @@ def test_spike():
         totalsum += np.sum(np.array(k.get_lookup_table())[i, 0, :, :, :] - \
                     np.array(csd_enh)[:, :, :, i])    
     npt.assert_equal(totalsum, 0.0)
+
+def test_kernel_input():
+    """ Test the kernel for inputs of type Sphere, type int and for input None"""
+
+    sph = Sphere(1, 0, 0)
+    D33 = 1.0
+    D44 = 0.04
+    t = 1
+    k = EnhancementKernel(D33, D44, t, orientations=sph)
+    npt.assert_equal(k.get_lookup_table().shape, (1, 1, 7, 7, 7))
+
+    num_orientations = 2
+    k = EnhancementKernel(D33, D44, t, orientations=num_orientations)
+    npt.assert_equal(k.get_lookup_table().shape, (2, 2, 7, 7, 7))
+
+    k = EnhancementKernel(D33, D44, t, orientations=0)
+    npt.assert_equal(k.get_lookup_table().shape, (0, 0, 7, 7, 7))
 
 
 if __name__ == '__main__':

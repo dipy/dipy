@@ -16,12 +16,12 @@ cdef class EnhancementKernel:
     cdef double t
     cdef int kernelsize
     cdef double kernelmax
-    cdef double [:, :] orientationsList
+    cdef double [:, :] orientations_list
     cdef double [:, :, :, :, ::1] lookuptable
     cdef object sphere
 
     def __init__(self, D33, D44, t, force_recompute=False,
-                 orientations=None, test_mode=False, verbose=True):
+                 orientations=None, verbose=True):
         """ Compute a look-up table for the contextual
         enhancement kernel
 
@@ -40,8 +40,6 @@ cdef class EnhancementKernel:
             Specify the number of orientations to be used with
             electrostatic repulsion, or provide a Sphere object.
             The default sphere is 'repulsion100'.
-        test_mode : boolean
-            Computes the lookup-table in one direction only
         verbose : boolean
             Enable verbose mode.
             
@@ -77,25 +75,28 @@ cdef class EnhancementKernel:
         elif isinstance(orientations, (int, long, float)):
             # electrostatic repulsion based on number of orientations
             n_pts = int(orientations)
-            theta = np.pi * np.random.rand(n_pts)
-            phi = 2 * np.pi * np.random.rand(n_pts)
-            hsph_initial = HemiSphere(theta=theta, phi=phi)
-            sphere, potential = disperse_charges(hsph_initial, 5000)
+            if n_pts == 0:
+                sphere = None
+            else:
+                theta = np.pi * np.random.rand(n_pts)
+                phi = 2 * np.pi * np.random.rand(n_pts)
+                hsph_initial = HemiSphere(theta=theta, phi=phi)
+                sphere, potential = disperse_charges(hsph_initial, 5000)
         else:
             # use default
             sphere = get_sphere('repulsion100')
-        self.orientationsList = sphere.vertices
-        self.sphere = sphere
+
+        if sphere is not None:
+            self.orientations_list = sphere.vertices
+            self.sphere = sphere
+        else:
+            self.orientations_list = np.zeros((0,0))
+            self.sphere = None
         
         # file location of the lut table for saving/loading
         kernellutpath = os.path.join(gettempdir(), 
                                      "kernel_d33@%4.2f_d44@%4.2f_t@%4.2f_numverts%d.npy" \
-                                       % (D33, D44, t, len(self.orientationsList)))
-
-        # create a lookup table in testing mode
-        if test_mode:
-            self.create_lookup_table(test_mode=True, verbose=verbose)
-            return
+                                       % (D33, D44, t, len(self.orientations_list)))
 
         # if LUT exists, load
         if not force_recompute and os.path.isfile(kernellutpath):
@@ -105,7 +106,7 @@ cdef class EnhancementKernel:
         # else, create
         else:
             print "The kernel doesn't exist yet. Computing..."
-            self.create_lookup_table(test_mode=False, verbose=verbose)
+            self.create_lookup_table(verbose=verbose)
             np.save(kernellutpath, self.lookuptable)
             
     def get_lookup_table(self):
@@ -116,7 +117,7 @@ cdef class EnhancementKernel:
     def get_orientations(self):
         """ Return the orientations.
         """
-        return self.orientationsList
+        return self.orientations_list
         
     def get_sphere(self):
         """ Get the sphere corresponding with the orientations
@@ -130,21 +131,19 @@ cdef class EnhancementKernel:
     @cython.boundscheck(False)
     @cython.nonecheck(False)
     @cython.cdivision(True)
-    cdef void create_lookup_table(self, test_mode=False, verbose=True):
+    cdef void create_lookup_table(self, verbose=True):
         """ Compute the look-up table based on the parameters set
         during class initialization
 
         Parameters
         ----------
-        test_mode : boolean
-            Computes the lookup-table in one direction only
         verbose : boolean
             Enable verbose mode.
         """
         self.estimate_kernel_size(verbose=verbose)
 
         cdef:
-            double [:, :] orientations = np.copy(self.orientationsList)
+            double [:, :] orientations = np.copy(self.orientations_list)
             cnp.npy_intp OR1 = orientations.shape[0]
             cnp.npy_intp OR2 = orientations.shape[0]
             cnp.npy_intp N = self.kernelsize
@@ -155,11 +154,7 @@ cdef class EnhancementKernel:
             cdef double [:, :, :, :, ::1] lookuptablelocal
             double kmax = self.kernelmax
             double l1norm
-            double kernelval  
-
-        # For testing, only compute one orientation of r
-        if test_mode:
-            OR2 = 1
+            double kernelval
 
         lookuptablelocal = np.zeros((OR1, OR2, N, N, N))
         x = np.zeros(3)
