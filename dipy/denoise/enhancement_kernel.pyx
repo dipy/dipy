@@ -100,14 +100,17 @@ cdef class EnhancementKernel:
 
         # if LUT exists, load
         if not force_recompute and os.path.isfile(kernellutpath):
-            print "The kernel already exists. Loading from " + kernellutpath
+            if verbose:
+                print "The kernel already exists. Loading from " + kernellutpath
             self.lookuptable = np.load(kernellutpath)
 
         # else, create
         else:
-            print "The kernel doesn't exist yet. Computing..."
+            if verbose:
+                print "The kernel doesn't exist yet. Computing..."
             self.create_lookup_table(verbose)
-            np.save(kernellutpath, self.lookuptable)
+            if self.sphere is not None:
+                np.save(kernellutpath, self.lookuptable)
             
     def get_lookup_table(self):
         """ Return the computed look-up table.
@@ -125,6 +128,24 @@ cdef class EnhancementKernel:
         return self.sphere
 
     def evaluate_kernel(self, x, y, r, v):
+        """ Evaluate the kernel at position x relative to
+        position y, with orientation r relative to orientation v.
+
+        Parameters
+        ----------
+        x : 1D ndarray
+            Position x
+        y : 1D ndarray
+            Position y
+        r : 1D ndarray
+            Orientation r
+        v : 1D ndarray
+            Orientation v
+
+        Returns
+        -------
+        kernel_value : double
+        """
         return self.k2(x, y, r, v)
 
     @cython.wraparound(False)
@@ -225,7 +246,8 @@ cdef class EnhancementKernel:
         if N % 2 == 0:
             N -= 1
 
-        print("Dimensions of kernel: %dx%dx%d" % (N, N, N))
+        if verbose:
+            print("Dimensions of kernel: %dx%dx%d" % (N, N, N))
 
         self.kernelsize = N
 
@@ -236,6 +258,21 @@ cdef class EnhancementKernel:
                    double [:] r, double [:] v) nogil:
         """ Evaluate the kernel at position x relative to
         position y, with orientation r relative to orientation v.
+
+        Parameters
+        ----------
+        x : 1D ndarray
+            Position x
+        y : 1D ndarray
+            Position y
+        r : 1D ndarray
+            Orientation r
+        v : 1D ndarray
+            Orientation v
+
+        Returns
+        -------
+        kernel_value : double
         """
         cdef:
             double [:] a
@@ -285,7 +322,7 @@ cdef class EnhancementKernel:
 
         Returns
         -------
-        c : array of double
+        c : 1D ndarray
             array of coordinates for kernel
         """
 
@@ -333,7 +370,16 @@ cdef class EnhancementKernel:
     @cython.nonecheck(False)
     @cython.cdivision(True)
     cdef double kernel(self, double [:] c) nogil:
-        """ Evaluate the kernel based on the coordinate map.
+        """ Internal function, evaluates the kernel based on the coordinate map.
+
+        Parameters
+        ----------
+        c : 1D ndarray
+            array of coordinates for kernel
+
+        Returns
+        -------
+        kernel_value : double
         """
         cdef double output = 1 / (8*sqrt(2))
         output *= sqrt(PI)*self.t*sqrt(self.t*self.D33)*sqrt(self.D33*self.D44)
@@ -349,7 +395,17 @@ cdef double PI = 3.1415926535897932
 @cython.wraparound(False)
 @cython.boundscheck(False)
 cdef double [:] euler_angles(double [:] inp) nogil:
+    """ Compute the Euler angles for a given input vector
 
+    Parameters
+    ----------
+    inp : 1D ndarray
+        Input vector
+
+    Returns
+    -------
+    euler_angles : 1D ndarray
+    """
     cdef:
         double x
         double y
@@ -386,7 +442,17 @@ cdef double [:] euler_angles(double [:] inp) nogil:
 @cython.wraparound(False)
 @cython.boundscheck(False)
 cdef double [:,:] R(double [:] inp) nogil:
+    """ Compute the Rotation matrix for a given input vector
 
+    Parameters
+    ----------
+    inp : 1D ndarray
+        Input vector
+
+    Returns
+    -------
+    rotation_matrix : 2D ndarray
+    """
     cdef:
         double beta
         double gamma
