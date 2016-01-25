@@ -396,7 +396,13 @@ def _wls_iter(design_matrix, inv_design, sig, min_diffusivity, Diso=3e-3,
         for r in range(riterations):
             # Free-water adjusted signal
             S0 = np.exp(-params[6])
-            y = np.log((SI - FS*S0*SFW.T) / (1 - FS))
+            SA = SI - FS*S0*SFW.T
+            # SA < 0 means that the signal components from the free water
+            # component is larger than the total fiber. This cases are present
+            # for inapropriate large volume fractions (given the current S0
+            # value estimated). To avoid the log of negative values:
+            SA[SA <= 0] = 0.0001  # same min signal assumed in dti.py
+            y = np.log(SA / (1-FS))
 
             # Estimate tissue's tensor from inv(A.T*S2*A)*A.T*S2*y
             S2 = np.diag(np.square(np.dot(W, params)))
