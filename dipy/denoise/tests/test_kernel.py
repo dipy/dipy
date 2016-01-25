@@ -15,7 +15,7 @@ def test_enhancement_kernel():
     D33 = 1.0
     D44 = 0.04
     t = 1
-    k = EnhancementKernel(D33, D44, t, orientations=0)
+    k = EnhancementKernel(D33, D44, t, orientations=0, force_recompute=True)
 
     y = np.array([0., 0., 0.])
     v = np.array([0., 0., 1.])
@@ -59,7 +59,7 @@ def test_spike():
     D44 = 0.04
     t = 1
     num_orientations = 5
-    k = EnhancementKernel(D33, D44, t, orientations=num_orientations)
+    k = EnhancementKernel(D33, D44, t, orientations=num_orientations, force_recompute=True)
 
     # create a delta spike
     numorientations = k.get_orientations().shape[0]
@@ -83,14 +83,14 @@ def test_kernel_input():
     D33 = 1.0
     D44 = 0.04
     t = 1
-    k = EnhancementKernel(D33, D44, t, orientations=sph)
+    k = EnhancementKernel(D33, D44, t, orientations=sph, force_recompute=True)
     npt.assert_equal(k.get_lookup_table().shape, (1, 1, 7, 7, 7))
 
     num_orientations = 2
-    k = EnhancementKernel(D33, D44, t, orientations=num_orientations)
+    k = EnhancementKernel(D33, D44, t, orientations=num_orientations, force_recompute=True)
     npt.assert_equal(k.get_lookup_table().shape, (2, 2, 7, 7, 7))
 
-    k = EnhancementKernel(D33, D44, t, orientations=0)
+    k = EnhancementKernel(D33, D44, t, orientations=0, force_recompute=True)
     npt.assert_equal(k.get_lookup_table().shape, (0, 0, 7, 7, 7))
 
 
