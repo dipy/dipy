@@ -109,8 +109,9 @@ Statistical evaluation
 
 - :ref:`example_kfold_xval`
 
+------------------------------------------
 Crossing-preserving contextual enhancement
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+------------------------------------------
 
 - :ref:`example_contextual_enhancement`
 

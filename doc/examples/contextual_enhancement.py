@@ -58,8 +58,8 @@ particles can (randomly) move forward/backward along their current orientation,
 and (randomly) change their orientation.  This is an extension to the 3D case of
 the process for contour enhancement of 2D images.
 
-.. figure:: _static/stochastic_process.png
-   :scale: 50 %
+.. figure:: _static/stochastic_process.jpg
+   :scale: 60 %
    :align: center
 
    The random motion of particles (a) and it's corresponding probability map (b) in 2D. The 3D kernel is shown on the right. Adapted from [Portegies2015_PLoSOne]_.
