@@ -17,7 +17,7 @@ cdef class EnhancementKernel:
     cdef int kernelsize
     cdef double kernelmax
     cdef double [:, :] orientations_list
-    cdef double [:, :, :, :, ::1] lookuptable
+    cdef double [:, :, :, :, :] lookuptable
     cdef object sphere
 
     def __init__(self, D33, D44, t, force_recompute=False,
@@ -172,7 +172,7 @@ cdef class EnhancementKernel:
             cnp.npy_intp angv, angr, xp, yp, zp
             double [:] x
             double [:] y
-            cdef double [:, :, :, :, ::1] lookuptablelocal
+            cdef double [:, :, :, :, :] lookuptablelocal
             double kmax = self.kernelmax
             double l1norm
             double kernelval
