@@ -133,7 +133,7 @@ window.record(renderer, out_path='bundle3.png', size=(600, 600))
 .. figure:: bundle3.png
    :align: center
 
-   **Every point with a color from FA using a non default colomap**.
+   **Every point with a color from FA using a non default colormap**.
 
 
 Show every bundle with a specific color
