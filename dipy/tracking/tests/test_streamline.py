@@ -839,6 +839,7 @@ def test_values_from_volume():
             affine = np.eye(4)
             affine[:, 3] = [-100, 10, 1, 1]
             x_sl1 = ut.move_streamlines(sl1, affine)
+            x_sl2 = ut.move_streamlines(sl1, affine)
 
             vv = values_from_volume(data, x_sl1, affine=affine)
             npt.assert_almost_equal(vv, ans1, decimal=decimal)
@@ -849,8 +850,14 @@ def test_values_from_volume():
             vv = values_from_volume(data, x_sl1, affine=affine)
             npt.assert_almost_equal(vv, ans1, decimal=decimal)
 
+            # Test that the streamlines haven't mutated:
+            l_sl2 = list(x_sl2)
+            npt.assert_equal(x_sl1, l_sl2)
+
             vv = values_from_volume(data, np.array(x_sl1), affine=affine)
             npt.assert_almost_equal(vv, ans1, decimal=decimal)
+            npt.assert_equal(np.array(x_sl1), np.array(l_sl2))
+
 
             # Test for lists of streamlines with different numbers of nodes:
             sl2 = [sl1[0][:-1], sl1[1]]

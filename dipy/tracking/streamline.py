@@ -366,9 +366,9 @@ def _extract_vals(data, streamlines, affine=None, threedvec=False):
         if affine is not None:
             streamlines = ut.move_streamlines(streamlines,
                                               np.linalg.inv(affine))
+
         vals = []
         for sl in streamlines:
-
             if threedvec:
                 vals.append(list(vfu.interpolate_vector_3d(data,
                                  sl.astype(np.float))[0]))
