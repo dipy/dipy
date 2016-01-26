@@ -361,12 +361,11 @@ def _extract_vals(data, streamlines, affine=None, threedvec=False):
         coordinate along the length of each streamline
     """
     data = data.astype(np.float)
-    if affine is not None:
-        streamlines = ut.move_streamlines(streamlines,
-                                          np.linalg.inv(affine))
-
     if (isinstance(streamlines, list) or
             isinstance(streamlines, types.GeneratorType)):
+        if affine is not None:
+            streamlines = ut.move_streamlines(streamlines,
+                                              np.linalg.inv(affine))
         vals = []
         for sl in streamlines:
 
@@ -381,8 +380,11 @@ def _extract_vals(data, streamlines, affine=None, threedvec=False):
         sl_shape = streamlines.shape
         sl_cat = streamlines.reshape(sl_shape[0] *
                                      sl_shape[1], 3).astype(np.float)
+
         if affine is not None:
-            sl_cat = (np.dot(sl_cat, affine[:3, :3]) + affine[:3, 3])
+            inv_affine = np.linalg.inv(affine)
+            sl_cat = (np.dot(sl_cat, inv_affine[:3, :3]) +
+                      inv_affine[:3, 3])
 
         # So that we can index in one operation:
         if threedvec:
@@ -417,8 +419,8 @@ def values_from_volume(data, streamlines, affine=None):
     affine : ndarray, shape (4, 4)
         Affine transformation from voxels (image coordinates) to streamlines.
         Default: identity. For example, if no affine is provided and the first
-        coordinate of the first streamline is ``[1, 0, 0]``, data[1, 0, 0] would
-        be returned as the value for that streamline coordinate
+        coordinate of the first streamline is ``[1, 0, 0]``, data[1, 0, 0]
+        would be returned as the value for that streamline coordinate
 
     Return
     ------
