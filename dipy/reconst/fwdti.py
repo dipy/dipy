@@ -13,8 +13,6 @@ from .vec_val_sum import vec_val_vect
 
 import numpy as np
 
-from dipy.utils.arrfuncs import pinv
-
 
 def fwdti_prediction(params, gtab, S0, Diso=3.0e-3):
     """
@@ -58,7 +56,7 @@ def fwdti_prediction(params, gtab, S0, Diso=3.0e-3):
            Med. 62, 717-739. http://dx.doi.org/10.1002/mrm.22055.
     """
     evals = params[..., :3]
-    evecs = params[..., 3:-2].reshape(params.shape[:-1] + (3, 3))
+    evecs = params[..., 3:-1].reshape(params.shape[:-1] + (3, 3))
     f = params[..., -1]
     qform = vec_val_vect(evecs, evals)
     sphere = Sphere(xyz=gtab.bvecs[~gtab.b0s_mask])

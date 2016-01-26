@@ -6,6 +6,7 @@ import numpy as np
 import random
 import dipy.reconst.dti as dti
 import dipy.reconst.fwdti as fwdti
+from dipy.reconst.fwdti import fwdti_prediction
 from numpy.testing import (assert_array_almost_equal, assert_array_equal,
                            assert_almost_equal)
 from nose.tools import assert_raises
@@ -92,3 +93,17 @@ def test_fwdti_multi_voxel():
 
     assert_array_almost_equal(Ffwe, Fref, decimal=1)
     
+
+def test_fwdti_predictions():
+    # single voxel case
+    gtf = 0.50  #ground truth volume fraction
+    S0=100
+    mevals = np.array([[0.0017, 0.0003, 0.0003], [0.003, 0.003, 0.003]])
+    S_conta, peaks = multi_tensor(gtab_2s, mevals, S0=S0,
+                                  angles=[(0, 0), (0, 0)],
+                                  fractions=[(1-gtf) * 100, gtf*100], snr=None)
+    fwdm = fwdti.FreeWaterTensorModel(gtab_2s, 'WLS')
+    fwefit = fwdm.fit(S_conta)
+
+    S_pred1 = fwdti_prediction(fwefit.model_params, gtab_2s, S0)
+    assert_array_almost_equal(S_pred1, S_conta, decimal=1)
