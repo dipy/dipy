@@ -416,7 +416,9 @@ def values_from_volume(data, streamlines, affine=None):
 
     affine : ndarray, shape (4, 4)
         Affine transformation from voxels (image coordinates) to streamlines.
-        Default: identity.
+        Default: identity. For example, if no affine is provided and the first
+        coordinate of the first streamline is ``[1, 0, 0]``, data[1, 0, 0] would
+        be returned as the value for that streamline coordinate
 
     Return
     ------
