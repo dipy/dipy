@@ -21,10 +21,10 @@ from dipy.core.sphere import Sphere
 from .vec_val_sum import vec_val_vect
 from dipy.core.ndindex import ndindex
 
-from dipy.utils.arrfuncs import pinv
-
-def fwdti_prediction(params, gtab, Diso=3.0e-3):
-    """ Signal prediction given the free water DTI model parameters.
+def fwdti_prediction(params, gtab, S0, Diso=3.0e-3):
+    """
+    Predict a signal given the parameters of the free water diffusion tensor
+    model.
 
     Parameters
     ----------
@@ -64,7 +64,7 @@ def fwdti_prediction(params, gtab, Diso=3.0e-3):
            doi: 10.1016/j.neuroimage.2014.09.053
     """
     evals = params[..., :3]
-    evecs = params[..., 3:-2].reshape(params.shape[:-1] + (3, 3))
+    evecs = params[..., 3:-1].reshape(params.shape[:-1] + (3, 3))
     f = params[..., -1]
     qform = vec_val_vect(evecs, evals)
     sphere = Sphere(xyz=gtab.bvecs[~gtab.b0s_mask])
