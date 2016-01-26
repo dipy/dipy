@@ -69,7 +69,7 @@ copy the actor first.
 slice_actor2 = slice_actor.copy()
 
 """
-Now we have a new ``slice_actor`` which displays the middle slice of saggital
+Now we have a new ``slice_actor`` which displays the middle slice of sagittal
 plane.
 """
 
