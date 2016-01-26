@@ -93,5 +93,5 @@ def test_fwdti_multi_voxel():
     FAfwe = fwefit.fa
     Ffwe = fwefit.f
 
-    assert_array_almost_equal(Ffwe, Fref, decimal=2)
+    assert_array_almost_equal(Ffwe, Fref, decimal=1)
     
