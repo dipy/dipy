@@ -228,7 +228,7 @@ cdef cnp.npy_intp _nearest_direction(double* dx,
     qa_thr : float
         Threshold for QA, we want everything higher than this threshold.
     ang_thr : float
-        Angle theshold, we only select fiber orientation within this range.
+        Angle threshold, we only select fiber orientation within this range.
     direction : double array shape (3,)
         The fiber orientation to be considered in the interpolation.  The array
         gets modified in-place.
@@ -416,7 +416,7 @@ def eudx_both_directions(cnp.ndarray[double, ndim=1] seed,
     qa_thr : float
         Threshold for QA, we want everything higher than this threshold.
     ang_thr : float
-        Angle theshold, we only select fiber orientation within this range.
+        Angle threshold, we only select fiber orientation within this range.
     step_sz : double
     total_weight : double
     max_points : cnp.npy_intp
