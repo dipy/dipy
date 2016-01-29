@@ -183,7 +183,7 @@ cdef void c_set_number_of_points(Streamline streamline, Streamline out) nogil:
             j += 1
             k += 1
 
-    # Last resampled point always the one from orignal streamline.
+    # Last resampled point always the one from original streamline.
     for dim in range(D):
         out[new_N-1,dim] = streamline[N-1,dim]
 
