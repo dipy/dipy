@@ -18,7 +18,7 @@ or only the 'valid' ones.
 
 This example is an extension of the
 :ref:`example_deterministic_fiber_tracking` example. We begin by loading the
-data, creating a seeding mask of the white matter voxels of the corpus callosum,
+data, creating a seeding mask from white matter voxels of the corpus callosum,
 fitting a Constrained Spherical Deconvolution (CSD) reconstruction
 model and creating the maximum deterministic direction getter.
 """
