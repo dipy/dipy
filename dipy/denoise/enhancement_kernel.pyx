@@ -289,12 +289,10 @@ cdef class EnhancementKernel:
             transm = np.transpose(R(euler_angles(v)))
             arg1 = np.dot(transm, a)
             arg2p = np.dot(transm, r)
-
-        arg2 = euler_angles(arg2p)
-
-        c = self.coordinate_map(arg1[0], arg1[1], arg1[2],
-                                arg2[0], arg2[1])
-        kernelval = self.kernel(c)
+            arg2 = euler_angles(arg2p)
+            c = self.coordinate_map(arg1[0], arg1[1], arg1[2],
+                                    arg2[0], arg2[1])
+            kernelval = self.kernel(c)
 
         return kernelval
 
@@ -361,9 +359,7 @@ cdef class EnhancementKernel:
             c[4] = beta * cg
             c[5] = 0
 
-        with gil:
-
-            return np.array(c)
+        return c
 
     @cython.wraparound(False)
     @cython.boundscheck(False)
@@ -435,9 +431,7 @@ cdef double [:] euler_angles(double [:] inp) nogil:
         output[0] = acos(z)
         output[1] = atan2(y, x)
 
-    with gil:
-
-        return output
+    return output
 
 @cython.wraparound(False)
 @cython.boundscheck(False)
@@ -466,6 +460,7 @@ cdef double [:,:] R(double [:] inp) nogil:
     gamma = inp[1]
     
     with gil:
+        
         output = np.zeros(9)
 
     cb = cos(beta)

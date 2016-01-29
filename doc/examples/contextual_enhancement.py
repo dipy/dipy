@@ -172,7 +172,7 @@ csd_shm_enh = convolve(csd_shm_noisy, k, sh_order=8)
 
 
 """
-The Spherical Deconvolution Transform is applied to sharpen the ODF field.
+The Sharpening Deconvolution Transform is applied to sharpen the ODF field.
 """
 
 # Sharpen via the Spherical Deconvolution Transform
@@ -268,6 +268,6 @@ References
                           Linear Scale Spaces for Fiber Enhancement in DWI-MRI.
                           J Math Imaging Vis, 46(3):326-368.
 
-.. [RodirguesEurographics] P. Rodrigues, R. Duits, B. Romeny, A. Vilanova
+.. [RodriguesEurographics] P. Rodrigues, R. Duits, B. Romeny, A. Vilanova
                            (2010). Accelerated Diffusion Operators for Enhancing DW-MRI. Eurographics Workshop on Visual Computing for Biology and Medicine. The Eurographics Association.
 """
