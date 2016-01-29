@@ -36,7 +36,7 @@ def nlmeans(arr, sigma, mask=None, patch_radius=1, block_radius=5,
         sigma = np.ones(arr.shape, dtype=np.float64) * sigma
         return nlmeans_3d(arr, mask, sigma,
                           patch_radius, block_radius,
-                          rician).astype(arr.dtype)
+                          rician, num_threads).astype(arr.dtype)
 
     elif arr.ndim == 4:
         denoised_arr = np.zeros_like(arr)
