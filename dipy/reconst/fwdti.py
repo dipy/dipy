@@ -330,7 +330,7 @@ def _wls_iter(design_matrix, inv_design, sig, min_diffusivity, Diso=3e-3,
     ----------
     design_matrix : array (g, 7)
         Design matrix holding the covariants used to solve for the regression
-        coefficients
+        coefficients.
     inv_design : array (g, 7)
         Inverse of the design matrix.
     sig : array (g, )
