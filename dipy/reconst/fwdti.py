@@ -139,7 +139,7 @@ class FreeWaterTensorModel(ReconstModel):
             raise ValueError(e_s)
 
     def fit(self, data, mask=None):
-        """ Fit method of the free water elinimation DTI model class
+        """ Fit method of the free water elimination DTI model class
 
         Parameters
         ----------
@@ -378,7 +378,7 @@ def _wls_iter(design_matrix, inv_design, sig, min_diffusivity, Diso=3e-3,
     
     # General free-water signal contribution
     fwsig = np.exp(np.dot(design_matrix, 
-                          np.array([Diso, 0, Diso, 0, 0, Diso, -np.log(1.)])))
+                          np.array([Diso, 0, Diso, 0, 0, Diso, 0])))
 
     df = 1  # initialize precision
     flow = 0  # lower f evaluated
