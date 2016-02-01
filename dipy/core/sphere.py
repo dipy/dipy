@@ -517,7 +517,6 @@ def interp_rbf(data, sphere_origin, sphere_target,
     epsilon : float
         Radial basis function spread parameter. Defaults to approximate average
         distance between nodes.
-    a good start
     smooth : float
         values greater than zero increase the smoothness of the
         approximation with 0 as pure interpolation. Default: 0.1
