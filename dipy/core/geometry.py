@@ -850,7 +850,7 @@ def vec2vec_rotmat(u, v):
 
     w = np.cross(u, v)
     w = w / np.linalg.norm(w)
-
+    
     # vp is in plane of u,v,  perpendicular to u
     vp = (v - (np.dot(u, v) * u))
     vp = vp / np.linalg.norm(vp)
@@ -895,4 +895,3 @@ def compose_transformations(*mats):
         prev = np.dot(mat, prev)
 
     return prev
-

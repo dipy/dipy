@@ -3,8 +3,11 @@ from __future__ import division, print_function
 import numpy as np
 import nibabel as nib
 
-from numpy.testing import assert_almost_equal, assert_equal, assert_array_almost_equal
-from dipy.denoise.noise_estimate import _inv_nchi_cdf, piesno, estimate_sigma
+from numpy.testing import (assert_almost_equal, assert_equal, assert_,
+                           assert_array_almost_equal)
+from dipy.denoise.noise_estimate import (_inv_nchi_cdf, piesno, estimate_sigma,
+                                         _piesno_3D)
+
 import dipy.data
 
 # See page 5 of the reference paper for tested values
@@ -29,6 +32,26 @@ def test_piesno():
     sigma = piesno(test_piesno_data, N=8, alpha=0.01, l=1, eps=1e-10, return_mask=False)
     assert_almost_equal(sigma, 0.010749458025559)
 
+<<<<<<< HEAD
+=======
+    noise1 = (np.random.randn(100, 100, 100) * 50) + 10
+    noise2 = (np.random.randn(100, 100, 100) * 50) + 10
+    rician_noise = np.sqrt(noise1**2 + noise2**2)
+    sigma, mask = piesno(rician_noise, N=1, alpha=0.01, l=1, eps=1e-10, return_mask=True)
+
+    # less than 3% of error?
+    assert_(np.abs(sigma - 50) / sigma < 0.03)
+
+    # Test using the median as the initial estimation
+    initial_estimation = (np.median(sigma) /
+                          np.sqrt(2 * _inv_nchi_cdf(1, 1, 0.5)))
+    sigma, mask = _piesno_3D(rician_noise, N=1, alpha=0.01, l=1, eps=1e-10,
+                             return_mask=True,
+                             initial_estimation=initial_estimation)
+
+    assert_(np.abs(sigma - 50) / sigma < 0.03)
+
+>>>>>>> 1868e71... BF: Cannot coerce into bool (?).
 
 def test_estimate_sigma():
 
@@ -56,10 +79,22 @@ def test_estimate_sigma():
 
     arr = np.zeros((3, 3, 3))
     arr[0, 0, 0] = 1
+<<<<<<< HEAD
     sigma = estimate_sigma(arr, disable_background_masking=True)
     assert_array_almost_equal(sigma, 0.46291005)
 
     arr = np.zeros((3, 3, 3, 3))
+=======
+    sigma = estimate_sigma(arr, disable_background_masking=True, N=4)
+    assert_array_almost_equal(sigma, 0.46291005 / np.sqrt(0.4834941393603609))
+
+    arr = np.zeros((3, 3, 3))
+    arr[0, 0, 0] = 1
+    sigma = estimate_sigma(arr, disable_background_masking=True, N=0)
+    assert_array_almost_equal(sigma, 0.46291005 / np.sqrt(1))
+    arr = np.zeros((3, 3, 3, 3))
+
+>>>>>>> 1868e71... BF: Cannot coerce into bool (?).
     arr[0, 0, 0] = 1
     sigma = estimate_sigma(arr, disable_background_masking=True)
     assert_array_almost_equal(sigma, np.array([0.46291005, 0.46291005, 0.46291005]))
