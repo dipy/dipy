@@ -35,6 +35,8 @@ vtk, have_vtk, setup_module = optional_package('vtk')
 colors, have_vtk_colors, _ = optional_package('vtk.util.colors')
 numpy_support, have_ns, _ = optional_package('vtk.util.numpy_support')
 _, have_imread, _ = optional_package('Image')
+if not have_imread:
+    _, have_imread, _ = optional_package('PIL')
 
 if have_vtk:
     version = vtk.vtkVersion.GetVTKSourceVersion().split(' ')[-1]

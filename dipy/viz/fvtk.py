@@ -67,6 +67,12 @@ if have_vtk:
                                  show, record, snapshot)
     from dipy.viz.actor import line, streamtube, slicer, axes
 
+    try:
+        from vtk import vtkVolumeTextureMapper2D
+        have_vtk_texture_mapper2D = True
+    except:
+        have_vtk_texture_mapper2D = False
+
 
 def dots(points, color=(1, 0, 0), opacity=1, dot_size=5):
     """ Create one or more 3d points
@@ -479,6 +485,9 @@ def volume(vol, voxsz=(1.0, 1.0, 1.0), affine=None, center_origin=1,
             colormap[i, 0], colormap[i, 1], colormap[i, 2], colormap[i, 3])
 
     if(maptype == 0):
+        if not have_vtk_texture_mapper2D:
+            raise ValueError("VolumeTextureMapper2D is not available in your "
+                             "version of VTK")
 
         property = vtk.vtkVolumeProperty()
         property.SetColor(color)

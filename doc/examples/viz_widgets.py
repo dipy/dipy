@@ -9,7 +9,7 @@ In this example we will create: a) two parallel steamtubes, b) add some buttons
 which will change the opacity of these tubes and c) move the streamtubes using
 a slider.
 """
-
+from __future__ import print_function
 import numpy as np
 from dipy.viz import window, actor, widget
 from dipy.data import fetch_viz_icons, read_viz_icons
@@ -99,7 +99,7 @@ And we add a simple clickable text overlay at the bottom left corner.
 
 
 def text_clicked(obj, event):
-    print "Awesome!"
+    print("Awesome!")
 
 text = widget.text(show_manager.iren, show_manager.ren,
                    message="Powered by DIPY",

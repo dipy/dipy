@@ -1,4 +1,4 @@
-# from __future__ import division, print_function, absolute_import
+from __future__ import division, print_function, absolute_import
 
 import numpy as np
 
@@ -157,7 +157,7 @@ def slicer(data, affine=None, value_range=None, opacity=1.,
 
         def display(self, x=None, y=None, z=None):
             if x is None and y is None and z is None:
-                self.display_extent(ex1, ex2, ey1, ey2, ez2/2, ez2/2)
+                self.display_extent(ex1, ex2, ey1, ey2, ez2//2, ez2//2)
             if x is not None:
                 self.display_extent(x, x, ey1, ey2, ez1, ez2)
             if y is not None:
