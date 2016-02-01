@@ -11,7 +11,8 @@ from numpy.testing import (assert_array_almost_equal, assert_array_equal,
                            assert_almost_equal)
 from nose.tools import assert_raises
 from dipy.reconst.dti import (from_lower_triangular, decompose_tensor)
-from dipy.sims.voxel import (multi_tensor, single_tensor)
+from dipy.sims.voxel import (multi_tensor, single_tensor, _check_directions,
+                             all_tensor_evecs)
 from dipy.io.gradients import read_bvals_bvecs
 from dipy.core.gradients import gradient_table
 from dipy.data import get_data
@@ -96,14 +97,37 @@ def test_fwdti_multi_voxel():
 
 def test_fwdti_predictions():
     # single voxel case
+    # test funtion
     gtf = 0.50  #ground truth volume fraction
     S0=100
+    angles = [(0, 0), (0, 0)]
     mevals = np.array([[0.0017, 0.0003, 0.0003], [0.003, 0.003, 0.003]])
     S_conta, peaks = multi_tensor(gtab_2s, mevals, S0=S0,
-                                  angles=[(0, 0), (0, 0)],
+                                  angles=angles,
                                   fractions=[(1-gtf) * 100, gtf*100], snr=None)
-    fwdm = fwdti.FreeWaterTensorModel(gtab_2s, 'WLS')
-    fwefit = fwdm.fit(S_conta)
+    R = all_tensor_evecs(peaks[0])
+    R = R.reshape((9))
+    model_params = np.concatenate(([0.0017, 0.0003, 0.0003], R, [gtf]), axis=0)
+    S_pred1 = fwdti_prediction(model_params, gtab_2s, S0)
+    assert_array_almost_equal(S_pred1, S_conta)
 
-    S_pred1 = fwdti_prediction(fwefit.model_params, gtab_2s, S0)
-    assert_array_almost_equal(S_pred1, S_conta, decimal=1)
+    # Testing in model class
+    fwdm = fwdti.FreeWaterTensorModel(gtab_2s, 'WLS')
+    S_pred2 = fwdm.predict(model_params, S0=S0)
+    assert_array_almost_equal(S_pred2, S_conta)
+
+    # Testing in fit class
+    fwefit = fwdm.fit(S_conta)
+    # Adjust simulations according to model parameters (note here testing the
+    # robustness of fit is not the objective)
+    mevals_ad = np.array([fwefit.model_params[0:3], [0.003, 0.003, 0.003]])
+    angles_ad = fwefit.model_params[3:-1].reshape(3, 3)
+    gtf_ad = fwefit.model_params[-1]
+    S_conta_ad, peaks = multi_tensor(gtab_2s, mevals_ad, S0=S0,
+                                     angles=angles_ad,
+                                     fractions=[(1-gtf_ad) * 100, gtf_ad*100],
+                                     snr=None)
+    S_pred3 = fwefit.predict(gtab_2s, S0=S0)
+    assert_array_almost_equal(S_pred3, S_conta_ad)
+    
+
