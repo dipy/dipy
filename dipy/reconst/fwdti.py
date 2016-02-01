@@ -366,7 +366,7 @@ def _wls_iter(design_matrix, inv_design, sig, min_diffusivity, Diso=3e-3,
     inv_WT_S2_W = np.linalg.pinv(np.dot(WTS2, W))
     WT_S2_LS = np.dot(WTS2, log_s)
     params = np.dot(inv_WT_S2_W, WT_S2_LS)
-    
+
     # General free-water signal contribution
     fwsig = np.exp(np.dot(design_matrix, 
                           np.array([Diso, 0, Diso, 0, 0, Diso, 0])))
