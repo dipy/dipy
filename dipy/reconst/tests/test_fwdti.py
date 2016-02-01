@@ -41,7 +41,7 @@ def test_fwdti_singlevoxel():
     gtf = 0.50  #ground truth volume fraction
     mevals = np.array([[0.0017, 0.0003, 0.0003], [0.003, 0.003, 0.003]])
     S_conta, peaks = multi_tensor(gtab_2s, mevals, S0=100,
-                                  angles=[(0, 0), (0, 0)],
+                                  angles=[(90, 0), (90, 0)],
                                   fractions=[(1-gtf) * 100, gtf*100], snr=None)
     fwdm = fwdti.FreeWaterTensorModel(gtab_2s, 'WLS')
     fwefit = fwdm.fit(S_conta)
@@ -57,7 +57,7 @@ def test_fwdti_precision():
     gtf = 0.63416  #ground truth volume fraction
     mevals = np.array([[0.0017, 0.0003, 0.0003], [0.003, 0.003, 0.003]])
     S_conta, peaks = multi_tensor(gtab_2s, mevals, S0=100,
-                                  angles=[(0, 0), (0, 0)],
+                                  angles=[(90, 0), (90, 0)],
                                   fractions=[(1-gtf) * 100, gtf*100], snr=None)
     fwdm = fwdti.FreeWaterTensorModel(gtab_2s, 'WLS', piterations=5)
     fwefit = fwdm.fit(S_conta)
@@ -82,7 +82,7 @@ def test_fwdti_multi_voxel():
         for j in range(2):
             gtf = GTF[0, i, j]
             S, p = multi_tensor(gtab_2s, mevals, S0=100,
-                                angles=[(0, 0), (0, 0)],
+                                angles=[(90, 0), (90, 0)],
                                 fractions=[(1-gtf) * 100, gtf*100], snr=None)
             DWI[0, i, j] = S
             FAref[0, i, j] = FAdti
@@ -100,7 +100,7 @@ def test_fwdti_predictions():
     # test funtion
     gtf = 0.50  #ground truth volume fraction
     S0=100
-    angles = [(0, 0), (0, 0)]
+    angles = [(90, 0), (90, 0)]
     mevals = np.array([[0.0017, 0.0003, 0.0003], [0.003, 0.003, 0.003]])
     S_conta, peaks = multi_tensor(gtab_2s, mevals, S0=S0,
                                   angles=angles,
@@ -128,8 +128,5 @@ def test_fwdti_predictions():
                                      fractions=[(1-gtf_ad) * 100, gtf_ad*100],
                                      snr=None)
     S_pred3 = fwefit.predict(gtab_2s, S0=S0)
-    assert_array_almost_equal(S_pred3, S_conta_ad)
-    
+    assert_array_almost_equal(S_pred3, S_conta_ad, decimal=5)
 
-    S_pred1 = fwdti_prediction(fwefit.model_params, gtab_2s, S0)
-    assert_array_almost_equal(S_pred1, S_conta, decimal=1)
