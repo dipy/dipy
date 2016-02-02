@@ -21,6 +21,8 @@ https://mail.python.org/mailman/listinfo/neuroimaging
 Please see the users' forum at
 https://neurostars.org
 
+Please join the gitter chatroom `here <https://gitter.im/nipy/dipy>`_.
+
 Code
 ====
 
