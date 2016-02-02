@@ -87,8 +87,10 @@ img, gtab = read_stanford_hardi()
 data = img.get_data()
 
 # Add Rician noise
-np.random.seed = 1234
-data_noisy = add_noise(data, 3, 500, noise_type='rician')
+from dipy.segment.mask import median_otsu
+b0_mask, mask = median_otsu(data)
+np.random.seed(1)
+data_noisy = add_noise(data, 1, np.mean(data[mask]), noise_type='rician')
 
 # Select a small part of it
 data_small = data[25:40, 65:80, 35:42]
@@ -175,7 +177,7 @@ csd_shm_enh = convolve(csd_shm_noisy, k, sh_order=8)
 The Sharpening Deconvolution Transform is applied to sharpen the ODF field.
 """
 
-# Sharpen via the Spherical Deconvolution Transform
+# Sharpen via the Sharpening Deconvolution Transform
 from dipy.reconst.csdeconv import odf_sh_to_sharp
 csd_shm_enh_sharp = odf_sh_to_sharp(csd_shm_enh, sphere,  sh_order=8, lambda_=0.1)
 
