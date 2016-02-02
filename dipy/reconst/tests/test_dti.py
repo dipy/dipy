@@ -685,7 +685,9 @@ def test_predict():
     S0 = 1
     p = dtif.predict(gtab, S0)
     assert_equal(p.shape, data.shape)
-
+    # Assign the step through kwarg:
+    p = dtif.predict(gtab, S0, step=1)
+    assert_equal(p.shape, data.shape)
 
 def test_eig_from_lo_tri():
     psphere = get_sphere('symmetric362')
