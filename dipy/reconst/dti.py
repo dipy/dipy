@@ -1133,7 +1133,7 @@ class TensorFit(object):
         """
         return apparent_diffusion_coef(self.quadratic_form, sphere)
 
-    def predict(self, gtab, S0=1):
+    def predict(self, gtab, S0=1, step=1e4):
         r"""
         Given a model fit, predict the signal on the vertices of a sphere
 
@@ -1162,7 +1162,27 @@ class TensorFit(object):
         which a signal is to be predicted and $b$ is the b value provided in
         the GradientTable input for that direction
         """
-        return tensor_prediction(self.model_params[..., 0:12], gtab, S0=S0)
+        shape = self.model_params.shape[:-1]
+        size = np.prod(shape)
+        step = self.model.kwargs.get('step', size)
+        #if step == 2:
+        #    1/0.
+        if step >= size:
+            return tensor_prediction(self.model_params[..., 0:12], gtab, S0=S0)
+        params = np.reshape(self.model_params,
+                            (-1, self.model_params.shape[-1]))
+        predict = np.empty((size, gtab.bvals.shape[0]))
+        if isinstance(S0, np.ndarray):
+            S0 = S0.ravel()
+        for i in range(0, size, step):
+            if isinstance(S0, np.ndarray):
+                this_S0 = S0[i:i+step]
+            else:
+                this_S0 = S0
+            predict[i:i+step] = tensor_prediction(params[i:i+step], gtab,
+                                                  S0=this_S0)
+        return predict.reshape(shape + (gtab.bvals.shape[0], ))
+
 
 
 def iter_fit_tensor(step=1e4):
