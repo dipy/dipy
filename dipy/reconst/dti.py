@@ -681,26 +681,12 @@ def tensor_prediction(dti_params, gtab, S0):
     evals = dti_params[..., :3]
     evecs = dti_params[..., 3:].reshape(dti_params.shape[:-1] + (3, 3))
     qform = vec_val_vect(evecs, evals)
-    sphere = Sphere(xyz=gtab.bvecs[~gtab.b0s_mask])
-    adc = apparent_diffusion_coef(qform, sphere)
+    del evals, evecs
+    lower_tri = lower_triangular(qform, S0)
+    del qform
 
-    if isinstance(S0, np.ndarray):
-        # If it's an array, we need to give it one more dimension:
-        S0 = S0[..., None]
-
-    # First do the calculation for the diffusion weighted measurements:
-    pre_pred_sig = S0 * np.exp(-gtab.bvals[~gtab.b0s_mask] * adc)
-
-    # Then we need to sort out what goes where:
-    pred_sig = np.zeros(pre_pred_sig.shape[:-1] + (gtab.bvals.shape[0],))
-
-    # These are the diffusion-weighted values
-    pred_sig[..., ~gtab.b0s_mask] = pre_pred_sig
-
-    # For completeness, we predict the mean S0 for the non-diffusion
-    # weighted measurements, which is our best guess:
-    pred_sig[..., gtab.b0s_mask] = S0
-    return pred_sig
+    D = design_matrix(gtab)
+    return np.exp(np.dot(lower_tri, D.T))
 
 
 class TensorModel(ReconstModel):
