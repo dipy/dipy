@@ -39,7 +39,7 @@ def test_stop_conditions():
         def initial_direction(self, point):
             # Test tracking along the rows (z direction)
             # of the tissue array above
-            p = np.round(point)
+            p = np.round(point).astype(int)
             if (any(p < 0) or
                 any(p >= tissue.shape) or
                 tissue[p[0], p[1], p[2]] == TissueTypes.INVALIDPOINT):
@@ -154,7 +154,7 @@ def test_stop_conditions():
     bad_affine = np.eye(3)
     npt.assert_raises(ValueError, LocalTracking, dg, tc, seeds, bad_affine, 1.)
 
-    bad_affine = np.eye(4.)
+    bad_affine = np.eye(4)
     bad_affine[0, 1] = 1.
     npt.assert_raises(ValueError, LocalTracking, dg, tc, seeds, bad_affine, 1.)
 
