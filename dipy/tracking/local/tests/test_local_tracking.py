@@ -151,7 +151,7 @@ def test_stop_conditions():
     npt.assert_equal(sl[-1], seeds[y])
     npt.assert_equal(len(sl), 1)
 
-    bad_affine = np.eye(3.)
+    bad_affine = np.eye(3)
     npt.assert_raises(ValueError, LocalTracking, dg, tc, seeds, bad_affine, 1.)
 
     bad_affine = np.eye(4.)
