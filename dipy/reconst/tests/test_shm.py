@@ -278,7 +278,7 @@ def test_SphHarmFit():
     assert_equal(item.shape, ())
     slice = fit[0]
     assert_equal(slice.shape, (4, 5))
-    slice = fit[..., 0]
+    slice = fit[:, :, 0]
     assert_equal(slice.shape, (3, 4))
 
 
