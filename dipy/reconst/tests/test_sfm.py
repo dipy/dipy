@@ -1,3 +1,4 @@
+import warnings
 import numpy as np
 import numpy.testing as npt
 import nibabel as nib
@@ -79,7 +80,9 @@ def test_sfm_background():
     to_fit = data[0,0,0]
     to_fit[gtab.b0s_mask] = 0
     sfmodel = sfm.SparseFascicleModel(gtab, solver='NNLS')
-    sffit = sfmodel.fit(to_fit)
+    ## Warnings raised because sfmodel.fit causes division by zero in sfm.py
+    with warnings.catch_warnings(record=True) as w:
+        sffit = sfmodel.fit(to_fit)
     npt.assert_equal(sffit.beta, np.zeros_like(sffit.beta))
 
 

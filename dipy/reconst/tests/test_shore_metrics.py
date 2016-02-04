@@ -1,3 +1,4 @@
+import warnings
 import numpy as np
 from dipy.data import get_gtab_taiwan_dsi
 from numpy.testing import (assert_almost_equal,
@@ -43,7 +44,14 @@ def test_shore_metrics():
     lambdaL = 1e-12
     asm = ShoreModel(gtab, radial_order=radial_order,
                      zeta=zeta, lambdaN=lambdaN, lambdaL=lambdaL)
-    asmfit = asm.fit(S)
+
+    ## Warning raised because asm.fit calls shore_matrix which calls
+    ## cart2sphere from geometry module with current gtab raising division
+    ## by zero at line #128 in geometry.py.
+
+    with warnings.catch_warnings(record=True) as w:
+        asmfit = asm.fit(S)
+        assert_equal(len(w) > 0, True)
     c_shore = asmfit.shore_coeff
 
     cmat = shore_matrix(radial_order, zeta, gtab)
