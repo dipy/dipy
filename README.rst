@@ -1,6 +1,8 @@
 ======
  DIPY
 ======
+.. image:: https://travis-ci.org/nipy/dipy.svg?branch=master
+    :target: https://travis-ci.org/nipy/dipy
 
 DIPY is a python toolbox for analysis of MR diffusion imaging.
 
