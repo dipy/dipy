@@ -49,16 +49,20 @@ class MapmriModel(ReconstModel):
 
     .. [6] Hosseinbor et al. "Bessel fourier orientation reconstruction
            (bfor): An analytical diffusion propagator reconstruction for hybrid
-           diffusion imaging and computation of q-space indices. NeuroImage 64,
+           diffusion imaging and computation of q-space indices". NeuroImage 64,
            2013, 650–670.
 
     .. [7] Craven et al. "Smoothing Noisy Data with Spline Functions."
            NUMER MATH 31.4 (1978): 377-403.
+           
+    .. [8] Avram et al. "Clinical feasibility of using mean apparent
+           propagator (MAP) MRI to characterize brain tissue microstructure".
+           NeuroImage 2015, in press.
     """
 
     def __init__(self,
                  gtab,
-                 radial_order=4,
+                 radial_order=6,
                  laplacian_regularization=True,
                  laplacian_weighting='GCV',
                  positivity_constraint=False,
@@ -387,7 +391,7 @@ class MapmriFit(ReconstFit):
         References
         ----------
         .. [5] Cheng, J., 2014. Estimation and Processing of Ensemble Average
-           Propagator and Its Features in Diffusion MRI. Ph.D. Thesis.
+        Propagator and Its Features in Diffusion MRI. Ph.D. Thesis.
         """
         mu = self.mu
         ind_mat = self.model.ind_mat
@@ -396,11 +400,16 @@ class MapmriFit(ReconstFit):
         for i in range(ind_mat.shape[0]):
             nx, ny, nz = ind_mat[i]
             if not(nx % 2) and not(ny % 2) and not(nz % 2):
-                msd += self._mapmri_coef[i] * (-1) ** (0.5 * (- nx - ny - nz)) *\
-                    np.pi ** (3 / 2.0) *\
-                    ((1 + 2 * nx) * mu[0] ** 2 + (1 + 2 * ny) * mu[1] ** 2 + (1 + 2 * nz) * mu[2] ** 2) /\
-                    (np.sqrt(2 ** (-nx - ny - nz) * factorial(nx) * factorial(ny) * factorial(nz)) *
-                     gamma(0.5 - 0.5 * nx) * gamma(0.5 - 0.5 * ny) * gamma(0.5 - 0.5 * nz))
+                msd += (
+                self._mapmri_coef[i] * (-1) ** (0.5 * (- nx - ny - nz)) *
+                    np.pi ** (3 / 2.0) *
+                    ((1 + 2 * nx) * mu[0] ** 2 + (1 + 2 * ny) *
+                    mu[1] ** 2 + (1 + 2 * nz) * mu[2] ** 2) /
+                    (np.sqrt(2 ** (-nx - ny - nz) * 
+                            factorial(nx) * factorial(ny) * factorial(nz)) *
+                     gamma(0.5 - 0.5 * nx) * gamma(0.5 - 0.5 * ny) *
+                     gamma(0.5 - 0.5 * nz))
+                )
 
         return msd
 
@@ -412,9 +421,9 @@ class MapmriFit(ReconstFit):
         References
         ----------
         .. [6] Hosseinbor et al. "Bessel fourier orientation reconstruction
-           (bfor): An analytical diffusion propagator reconstruction for hybrid
-           diffusion imaging and computation of q-space indices. NeuroImage 64,
-           2013, 650–670.
+        (bfor): An analytical diffusion propagator reconstruction for hybrid
+        diffusion imaging and computation of q-space indices. NeuroImage 64,
+        2013, 650–670.
         """
         ux, uy, uz = self.mu
         ind_mat = self.model.ind_mat
@@ -423,7 +432,7 @@ class MapmriFit(ReconstFit):
         for i in range(ind_mat.shape[0]):
             nx, ny, nz = ind_mat[i]
 
-            if not nx % 2 and not ny % 2 and not nz % 2:  # gamma evaluates to infinity if argument is 0
+            if not nx % 2 and not ny % 2 and not nz % 2:
                 numerator = 8 * np.pi ** 2 * (ux * uy * uz) ** 3 *\
                     np.sqrt(factorial(nx) * factorial(ny) * factorial(nz)) *\
                     gamma(0.5 - 0.5 * nx) * gamma(0.5 - 0.5 * ny) * \
@@ -444,7 +453,16 @@ class MapmriFit(ReconstFit):
         .. [1] Ozarslan E. et. al, "Mean apparent propagator (MAP) MRI: A novel
         diffusion imaging method for mapping tissue microstructure",
         NeuroImage, 2013.
+        
+        .. [8] Avram et al. "Clinical feasibility of using mean apparent
+        propagator (MAP) MRI to characterize brain tissue microstructure".
+        NeuroImage 2015, in press. 
         """
+        if self.model.bval_threshold > 2000.:
+            msg = 'model bval_threshold must be lower than 2000 for the '
+            msg += 'non_Gaussianity to be physically meaningful [8].'
+            warn(msg)
+
         coef = self._mapmri_coef
         return np.sqrt(1 - coef[0] ** 2 / np.sum(coef ** 2))
         
@@ -456,7 +474,16 @@ class MapmriFit(ReconstFit):
         .. [1] Ozarslan E. et. al, "Mean apparent propagator (MAP) MRI: A novel
         diffusion imaging method for mapping tissue microstructure",
         NeuroImage, 2013.
+        
+        .. [8] Avram et al. "Clinical feasibility of using mean apparent
+        propagator (MAP) MRI to characterize brain tissue microstructure".
+        NeuroImage 2015, in press.
         """
+        if self.model.bval_threshold > 2000.:
+            msg = 'model bval_threshold must be lower than 2000 for the '
+            msg += 'non_Gaussianity to be physically meaningful [8].'
+            warn(msg)
+
         ind_mat = self.model.ind_mat
         coef = self._mapmri_coef
         a_par = np.zeros_like(coef)
@@ -480,7 +507,16 @@ class MapmriFit(ReconstFit):
         .. [1] Ozarslan E. et. al, "Mean apparent propagator (MAP) MRI: A novel
         diffusion imaging method for mapping tissue microstructure",
         NeuroImage, 2013.
+        
+        .. [8] Avram et al. "Clinical feasibility of using mean apparent
+        propagator (MAP) MRI to characterize brain tissue microstructure".
+        NeuroImage 2015, in press.
         """
+        if self.model.bval_threshold > 2000.:
+            msg = 'model bval_threshold must be lower than 2000 for the '
+            msg += 'non_Gaussianity to be physically meaningful [8].'
+            warn(msg)
+
         ind_mat = self.model.ind_mat
         coef = self._mapmri_coef
         a_perp = np.zeros_like(coef)
