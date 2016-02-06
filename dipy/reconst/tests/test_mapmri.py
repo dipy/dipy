@@ -15,8 +15,7 @@ def int_func(n):
                                            * np.sqrt(2**(n + 1) * factorial(n))))
     return f
 
-
-def test_mapmri_metrics():
+def test_mapmri_fitting_and_pdf_correctness():
     gtab = get_gtab_taiwan_dsi()
     mevals = np.array(([0.0015, 0.0003, 0.0003],
                        [0.0015, 0.0003, 0.0003]))
@@ -27,7 +26,6 @@ def test_mapmri_metrics():
     # since we are testing without noise we can use higher order and lower
     # lambdas, with respect to the default.
     radial_order = 6
-    lambd = 1e-8
 
     # test mapmri_indices
     indices = mapmri_index_matrix(radial_order)
@@ -38,7 +36,8 @@ def test_mapmri_metrics():
 
     # test MAPMRI fitting
 
-    mapm = MapmriModel(gtab, radial_order=radial_order, lambd=lambd)
+    mapm= MapmriModel(gtab, radial_order=radial_order,
+                      laplacian_weighting=0.02)
     mapfit = mapm.fit(S)
     c_map = mapfit.mapmri_coeff
 
@@ -60,7 +59,7 @@ def test_mapmri_metrics():
 
     assert_almost_equal(integral, 1.0, 3)
 
-    # compare the shore pdf with the ground truth multi_tensor pdf
+    # compare the mapmri pdf with the ground truth multi_tensor pdf
 
     sphere = get_sphere('symmetric724')
     v = sphere.vertices
@@ -74,31 +73,48 @@ def test_mapmri_metrics():
     nmse_pdf = np.sqrt(np.sum((pdf_mt - pdf_map) ** 2)) / (pdf_mt.sum())
     assert_almost_equal(nmse_pdf, 0.0, 2)
 
-    # test MAPMRI metrics
-    tau = 1 / (4 * np.pi ** 2)
+def test_mapmri_metrics():
+    gtab = get_gtab_taiwan_dsi()
+    l1, l2, l3 = 0.0015, 0.0003, 0.0003
+    mevals = np.array(([l1, l2, l3],
+                       [l1, l2, l3]))
     angl = [(0, 0), (0, 0)]
     S, sticks = MultiTensor(gtab, mevals, S0=100.0, angles=angl,
                             fractions=[50, 50], snr=None)
-
-    mapm = MapmriModel(gtab, radial_order=radial_order, lambd=lambd)
+    
+    # since we are testing without noise we can use higher order and lower lambdas, with respect to the default.
+    radial_order = 6
+    
+    # test MAPMRI q-space indices
+    
+    mapm= MapmriModel(gtab, radial_order=radial_order,
+                    laplacian_regularization=False)
     mapfit = mapm.fit(S)
-
-    # RTOP
-    gt_rtop = 1.0 / np.sqrt((4 * np.pi * tau)**3 *
-                            mevals[0, 0] * mevals[0, 1] * mevals[0, 2])
-    rtop = mapfit.rtop()
-    assert_almost_equal(rtop, gt_rtop, 4)
-
-    # RTAP
-    gt_rtap = 1.0 / np.sqrt((4 * np.pi * tau)**2 * mevals[0, 1] * mevals[0, 2])
-    rtap = mapfit.rtap()
-    assert_almost_equal(rtap, gt_rtap, 4)
-
-    # RTPP
-    gt_rtpp = 1.0 / np.sqrt((4 * np.pi * tau) * mevals[0, 0])
-    rtpp = mapfit.rtpp()
-    assert_almost_equal(rtpp, gt_rtpp, 4)
-
+    
+    tau = 1 / (4 * np.pi ** 2)
+    
+    # ground truth indices estimated from the DTI tensor
+    rtpp_gt = 1. / (2 * np.sqrt(np.pi * l1 * tau))
+    rtap_gt = (
+        1. / (2 * np.sqrt(np.pi * l2 * tau)) * 1. /
+        (2 * np.sqrt(np.pi * l3 * tau))
+    )
+    rtop_gt = rtpp_gt * rtap_gt
+    msd_gt = 2 * (l1 + l2 + l3) * tau
+    qiv_gt = (
+        (64 * np.pi ** (7 / 2.) * (l1 * l2 * l3 * tau ** 3) ** (3 / 2.)) /
+        ((l2 * l3 + l1 * (l2 + l3)) * tau ** 2)
+    )
+    
+    
+    assert_almost_equal(mapfit.rtap(), rtap_gt, 5)
+    assert_almost_equal(mapfit.rtpp(), rtpp_gt, 5)
+    assert_almost_equal(mapfit.rtop(), rtop_gt, 5)
+    assert_almost_equal(mapfit.ng(), 0., 5)
+    assert_almost_equal(mapfit.ng_parallel(), 0., 5)
+    assert_almost_equal(mapfit.ng_perpendicular(), 0., 5)
+    assert_almost_equal(mapfit.msd(), msd_gt, 5)
+    assert_almost_equal(mapfit.qiv(), qiv_gt, 5)
 
 if __name__ == '__main__':
     run_module_suite()

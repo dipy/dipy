@@ -63,7 +63,8 @@ class MapmriModel(ReconstModel):
                  laplacian_weighting='GCV',
                  positivity_constraint=False,
                  anisotropic_scaling=True,
-                 eigenvalue_threshold=1e-04):
+                 eigenvalue_threshold=1e-04,
+                 bval_threshold = np.inf):
         r""" Analytical and continuous modeling of the diffusion signal with
         respect to the MAPMRI basis [1]_.
 
@@ -138,21 +139,20 @@ class MapmriModel(ReconstModel):
         self.bvecs = gtab.bvecs
         self.gtab = gtab
         self.radial_order = radial_order
+        self.bval_threshold = bval_threshold
 
         self.laplacian_regularization = laplacian_regularization
-        if laplacian_weighting == 'GCV' or \
-                np.isscalar(laplacian_weighting) or \
-                type(laplacian_weighting) == np.ndarray:
-            if np.isscalar(laplacian_weighting) and \
-                    laplacian_weighting < 0.:
-                msg = "Laplacian Regularization weighting must be positive."
-                raise ValueError(msg)
-            if type(laplacian_weighting) == np.ndarray and \
-                    laplacian_weighting.min() < 0.:
-                msg = "Laplacian Regularization weighting must be positive."
-                raise ValueError(msg)
-            else:
-                self.laplacian_weighting = laplacian_weighting
+        if self.laplacian_regularization:
+            msg = "Laplacian Regularization weighting must 'GCV', "
+            msg += "a positive float or an array of positive floats."
+            if isinstance(laplacian_weighting, str):
+                if laplacian_weighting != 'GCV':
+                    raise ValueError(msg)
+            elif isinstance(laplacian_weighting, float) or \
+                 isinstance(laplacian_weighting, np.ndarray):
+                 if np.sum(laplacian_weighting < 0) > 0:
+                     raise ValueError(msg)
+            self.laplacian_weighting = laplacian_weighting
 
         self.R_mat, self.L_mat, self.S_mat = mapmri_RLS_regularization_matrices(
             radial_order)
@@ -170,15 +170,19 @@ class MapmriModel(ReconstModel):
         else:
             self.tau = gtab.big_delta - gtab.small_delta / 3.0
         self.eigenvalue_threshold = eigenvalue_threshold
-
-        self.tenmodel = dti.TensorModel(gtab)
+        
+        self.cutoff = gtab.bvals<self.bval_threshold
+        gtab_cutoff = gradient_table(bvals=self.gtab.bvals[self.cutoff],
+                                     bvecs=self.gtab.bvecs[self.cutoff])
+        self.tenmodel = dti.TensorModel(gtab_cutoff)
+        
         self.ind_mat = mapmri_index_matrix(self.radial_order)
         self.Bm = b_mat(self.ind_mat)
 
     @multi_voxel_fit
     def fit(self, data):
 
-        tenfit = self.tenmodel.fit(data)
+        tenfit = self.tenmodel.fit(data[self.cutoff])
         evals = tenfit.evals
         R = tenfit.evecs
         evals = np.clip(evals, self.eigenvalue_threshold, evals.max())
@@ -213,15 +217,14 @@ class MapmriModel(ReconstModel):
             if not have_cvxopt:
                 raise ValueError(
                 'CVXOPT package needed to enforce constraints')
-            w_s = "The implementation of MAPMRI does not depend on CVXOPT "
-            w_s += "(http://cvxopt.org/). It can be used with only the "
-            w_s += "laplacian regularization. CVXOPT is licensed "
+            w_s = "The MAPMRI positivity constraint depends on CVXOPT "
+            w_s += "(http://cvxopt.org/). CVXOPT is licensed "
             w_s += "under the GPL (see: http://cvxopt.org/copyright.html) "
             w_s += "and you may be subject to this license when using the "
-            w_s += "positivity constraint. "
+            w_s += "positivity constraint."
             warn(w_s)
-            rmax = np.sqrt(5) * mu.max()
-            r_index, r_grad = create_rspace(35, rmax)
+            #rmax = np.sqrt(5) * mu.max()
+            r_index, r_grad = create_rspace(10, 20e-03)
             K = mapmri_psi_matrix(
                 self.radial_order,  mu, r_grad[0:len(r_grad) / 2, :])
 
@@ -386,7 +389,6 @@ class MapmriFit(ReconstFit):
         .. [5] Cheng, J., 2014. Estimation and Processing of Ensemble Average
            Propagator and Its Features in Diffusion MRI. Ph.D. Thesis.
         """
-
         mu = self.mu
         ind_mat = self.model.ind_mat
 
@@ -433,6 +435,66 @@ class MapmriFit(ReconstFit):
                 qiv += self._mapmri_coef[i] * (numerator / denominator)
 
         return qiv
+        
+    def ng(self):
+        r""" Calculates the analytical non-Gaussiannity (NG) [1]_.
+        
+        References
+        ----------
+        .. [1] Ozarslan E. et. al, "Mean apparent propagator (MAP) MRI: A novel
+        diffusion imaging method for mapping tissue microstructure",
+        NeuroImage, 2013.
+        """
+        coef = self._mapmri_coef
+        return np.sqrt(1 - coef[0] ** 2 / np.sum(coef ** 2))
+        
+    def ng_parallel(self):
+        r""" Calculates the analytical parallel non-Gaussiannity (NG) [1]_.
+        
+        References
+        ----------
+        .. [1] Ozarslan E. et. al, "Mean apparent propagator (MAP) MRI: A novel
+        diffusion imaging method for mapping tissue microstructure",
+        NeuroImage, 2013.
+        """
+        ind_mat = self.model.ind_mat
+        coef = self._mapmri_coef
+        a_par = np.zeros_like(coef)
+        a0 = np.zeros_like(coef)
+        
+        for i in range(coef.shape[0]):
+            n1, n2, n3 = ind_mat[i]
+            if (n2 % 2 + n3 % 2) == 0:
+                a_par[i] = coef[i] * (-1) ** ((n2 + n3) / 2) *\
+                            np.sqrt(factorial(n2) * factorial(n3)) /\
+                            (factorial2(n2) * factorial2(n3))
+                if n1 == 0:
+                    a0[i] = a_par[i]
+        return np.sqrt(1 - np.sum(a0 ** 2) / np.sum(a_par ** 2))
+
+    def ng_perpendicular(self):
+        r""" Calculates the analytical perpendicular non-Gaussiannity (NG) [1]_.
+        
+        References
+        ----------
+        .. [1] Ozarslan E. et. al, "Mean apparent propagator (MAP) MRI: A novel
+        diffusion imaging method for mapping tissue microstructure",
+        NeuroImage, 2013.
+        """
+        ind_mat = self.model.ind_mat
+        coef = self._mapmri_coef
+        a_perp = np.zeros_like(coef)
+        a00 = np.zeros_like(coef)
+        
+        for i in range(coef.shape[0]):
+            n1, n2, n3 = ind_mat[i]
+            if n1 % 2 == 0:
+                if n2 % 2 == 0 and n3 % 2 == 0:
+                    a_perp[i] = coef[i] * (-1) ** (n1 / 2) *\
+                               np.sqrt(factorial(n1)) / factorial2(n1)
+                    if n2 == 0 and n3 == 0:
+                        a00[i] = a_perp[i]
+        return np.sqrt(1 - np.sum(a00 ** 2) / np.sum(a_perp ** 2))
 
     def fitted_signal(self, gtab=None):
         """ 
