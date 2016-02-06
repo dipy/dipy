@@ -156,7 +156,8 @@ class RecoBundles(object):
                   slr_method='L-BFGS-B',
                   slr_use_centroids=False,
                   slr_progressive=False,
-                  pruning_thr=10):
+                  pruning_thr=10,
+                  pruning_distance='mdf'):
 
         self.reduction_thr = reduction_thr
         t = time()
@@ -184,7 +185,8 @@ class RecoBundles(object):
         else:
             self.transf_streamlines = self.neighb_streamlines
             self.transf_matrix = np.eye(4)
-        self.prune_what_not_in_model(pruning_thr=pruning_thr)
+        self.prune_what_not_in_model(pruning_thr=pruning_thr,
+                                     pruning_distance=pruning_distance)
 
         if self.verbose:
             print('Total duration of recognition time is %0.3f sec.\n'
@@ -410,7 +412,8 @@ class RecoBundles(object):
 
             print(' Duration %0.3f sec. \n' % (time() - t,))
 
-    def prune_what_not_in_model(self, mdf_thr=5, pruning_thr=10):
+    def prune_what_not_in_model(self, mdf_thr=5, pruning_thr=10,
+                                pruning_distance='mdf'):
 
         if pruning_thr < 0:
             print('Pruning_thr has to be greater or equal to 0')
@@ -436,9 +439,14 @@ class RecoBundles(object):
         self.rtransf_centroids = rtransf_cluster_map.centroids
         self.nb_rtransf_centroids = len(self.rtransf_centroids)
 
-        dist_matrix = bundles_distances_mdf(self.model_centroids,
-                                            self.rtransf_centroids)
-
+        if pruning_distance.lower() == 'mdf':
+            dist_matrix = bundles_distances_mdf(self.model_centroids,
+                                                self.rtransf_centroids)
+        elif pruning_distance.lower() == 'mam':
+            dist_matrix = bundles_distances_mam(self.model_centroids,
+                                                self.rtransf_centroids)
+        else:
+            raise ValueError('Given pruning distance is not available')
         dist_matrix[np.isnan(dist_matrix)] = np.inf
         dist_matrix[dist_matrix > pruning_thr] = np.inf
 

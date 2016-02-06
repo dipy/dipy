@@ -86,7 +86,8 @@ from dipy.io.pickles import save_pickle, load_pickle
 def recognize_bundles_flow(streamline_files, model_bundle_files,
                            out_dir=None, clust_thr=15.,
                            reduction_thr=10., model_clust_thr=5.,
-                           pruning_thr=5., slr=True, slr_metric=None,
+                           pruning_thr=5., pruning_distance='mdf',
+                           slr=True, slr_metric=None,
                            slr_transform='similarity', slr_progressive=True,
                            slr_matrix='small', verbose=True, debug=False):
     """ Recognize bundles
@@ -102,11 +103,13 @@ def recognize_bundles_flow(streamline_files, model_bundle_files,
     clust_thr : float, optional
         MDF distance threshold for all streamlines
     reduction_thr : float, optional
-        Reduce search space by (mm). (default 20)
+        Reduce search space by (mm) (default 20)
     model_clust_thr : float, optional
         MDF distance threshold for the model bundles (default 5)
     pruning_thr : float, optional
         Pruning after matching (default 5).
+    pruning_distance : string, optional
+        Pruning distance type can be mdf or mam (default mdf)
     slr : bool, optional
         Enable local Streamline-based Linear Registration (default True).
     slr_metric : string, optional
@@ -232,7 +235,8 @@ def recognize_bundles_flow(streamline_files, model_bundle_files,
                 slr_method='L-BFGS-B',
                 slr_use_centroids=False,
                 slr_progressive=slr_progressive,
-                pruning_thr=float(pruning_thr))
+                pruning_thr=float(pruning_thr),
+                pruning_distance=pruning_distance)
 
 # TODO add option to return recognized bundle in the space that you want
 # Or better return the labels of the bundle which I currently do.
