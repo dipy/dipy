@@ -49,16 +49,20 @@ class MapmriModel(ReconstModel):
 
     .. [6] Hosseinbor et al. "Bessel fourier orientation reconstruction
            (bfor): An analytical diffusion propagator reconstruction for hybrid
-           diffusion imaging and computation of q-space indices. NeuroImage 64,
+           diffusion imaging and computation of q-space indices". NeuroImage 64,
            2013, 650–670.
 
     .. [7] Craven et al. "Smoothing Noisy Data with Spline Functions."
            NUMER MATH 31.4 (1978): 377-403.
+
+    .. [8] Avram et al. "Clinical feasibility of using mean apparent
+           propagator (MAP) MRI to characterize brain tissue microstructure".
+           NeuroImage 2015, in press.
     """
 
     def __init__(self,
                  gtab,
-                 radial_order=4,
+                 radial_order=6,
                  laplacian_regularization=True,
                  laplacian_weighting='GCV',
                  positivity_constraint=False,
