@@ -11,6 +11,7 @@ from dipy.core.geometry import dist_to_corner
 from scipy.spatial.distance import cdist
 from copy import deepcopy
 
+
 def unlist_streamlines(streamlines):
     """ Return the streamlines not as a list but as an array and an offset
 

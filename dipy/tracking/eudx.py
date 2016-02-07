@@ -4,6 +4,7 @@ from dipy.tracking import utils
 from dipy.tracking.propspeed import eudx_both_directions
 from dipy.data import get_sphere
 
+
 class EuDX(object):
 
     '''Euler Delta Crossings
