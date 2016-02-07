@@ -170,12 +170,15 @@ def test_signature():
     assert doc['Signature'].startswith('numpy.multivariate_normal(')
     assert doc['Signature'].endswith('spam=None)')
 
+
 def test_summary():
     assert doc['Summary'][0].startswith('Draw values')
     assert doc['Summary'][-1].endswith('covariance.')
 
+
 def test_extended_summary():
     assert doc['Extended Summary'][0].startswith('The multivariate normal')
+
 
 def test_parameters():
     assert_equal(len(doc['Parameters']), 3)
@@ -186,12 +189,14 @@ def test_parameters():
     assert desc[0].startswith('Covariance matrix')
     assert doc['Parameters'][0][-1][-2] == '   (1+2+3)/3'
 
+
 def test_other_parameters():
     assert_equal(len(doc['Other Parameters']), 1)
     assert_equal([n for n, _, _ in doc['Other Parameters']], ['spam'])
     arg, arg_type, desc = doc['Other Parameters'][0]
     assert_equal(arg_type, 'parrot')
     assert desc[0].startswith('A parrot off its mortal coil')
+
 
 def test_returns():
     assert_equal(len(doc['Returns']), 2)
@@ -207,23 +212,28 @@ def test_returns():
     assert desc[0].startswith('This is not a real')
     assert desc[-1].endswith('anonymous return values.')
 
+
 def test_notes():
     assert doc['Notes'][0].startswith('Instead')
     assert doc['Notes'][-1].endswith('definite.')
     assert_equal(len(doc['Notes']), 17)
 
+
 def test_references():
     assert doc['References'][0].startswith('..')
     assert doc['References'][-1].endswith('2001.')
+
 
 def test_examples():
     assert doc['Examples'][0].startswith('>>>')
     assert doc['Examples'][-1].endswith('True]')
 
+
 def test_index():
     assert_equal(doc['index']['default'], 'random')
     assert_equal(len(doc['index']), 2)
     assert_equal(len(doc['index']['refguide']), 2)
+
 
 def non_blank_line_by_line_compare(a, b):
     a = textwrap.dedent(a)
@@ -235,6 +245,8 @@ def non_blank_line_by_line_compare(a, b):
             raise AssertionError("Lines %s of a and b differ: "
                                  "\n>>> %s\n<<< %s\n" %
                                  (n, line, b[n]))
+
+
 def test_str():
     # doc_txt has the order of Notes and See Also sections flipped.
     # This should be handled automatically, and so, one thing this test does
@@ -359,29 +371,30 @@ doc2 = NumpyDocString("""
         If None, the index is into the flattened array, otherwise along
         the specified axis""")
 
+
 def test_parameters_without_extended_description():
     assert_equal(len(doc2['Parameters']), 2)
 
 doc3 = NumpyDocString("""
-    my_signature(*params, **kwds)
+my_signature(*params, **kwds)
 
-    Return this and that.
-    """)
+Return this and that.
+""")
 
-doc5 = NumpyDocString(
-    """
-    a.something()
+doc5 = NumpyDocString("""
+a.something()
 
-    Raises
-    ------
-    LinAlgException
-        If array is singular.
+Raises
+------
+LinAlgException
+    If array is singular.
 
-    Warns
-    -----
-    SomeWarning
-        If needed
-    """)
+Warns
+-----
+SomeWarning
+    If needed
+""")
+
 
 def test_raises():
     assert_equal(len(doc5['Raises']), 1)
@@ -389,15 +402,16 @@ def test_raises():
     assert_equal(name, 'LinAlgException')
     assert_equal(desc, ['If array is singular.'])
 
+
 def test_warns():
     assert_equal(len(doc5['Warns']), 1)
     name, _, desc = doc5['Warns'][0]
     assert_equal(name, 'SomeWarning')
     assert_equal(desc, ['If needed'])
 
+
 def test_see_also():
-    doc6 = NumpyDocString(
-    """
+    doc6 = NumpyDocString("""
     z(x,theta)
 
     See Also
@@ -447,17 +461,18 @@ doc7 = NumpyDocString("""
 def test_empty_first_line():
     assert doc7['Summary'][0].startswith('Doc starts')
 
+
 def test_duplicate_signature():
     # Duplicate function signatures occur e.g. in ufuncs, when the
     # automatic mechanism adds one, and a more detailed comes from the
     # docstring itself.
 
     doc = NumpyDocString(
-    """
-    z(x1, x2)
+        """
+        z(x1, x2)
 
-    z(a, theta)
-    """)
+        z(a, theta)
+        """)
 
     assert doc['Signature'].strip() == 'z(a, theta)'
 
