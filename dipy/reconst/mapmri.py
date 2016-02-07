@@ -49,12 +49,12 @@ class MapmriModel(ReconstModel):
 
     .. [6] Hosseinbor et al. "Bessel fourier orientation reconstruction
            (bfor): An analytical diffusion propagator reconstruction for hybrid
-           diffusion imaging and computation of q-space indices". NeuroImage 64,
-           2013, 650–670.
+           diffusion imaging and computation of q-space indices". NeuroImage
+           64, 2013, 650–670.
 
     .. [7] Craven et al. "Smoothing Noisy Data with Spline Functions."
            NUMER MATH 31.4 (1978): 377-403.
-           
+
     .. [8] Avram et al. "Clinical feasibility of using mean apparent
            propagator (MAP) MRI to characterize brain tissue microstructure".
            NeuroImage 2015, in press.
@@ -68,19 +68,19 @@ class MapmriModel(ReconstModel):
                  positivity_constraint=False,
                  anisotropic_scaling=True,
                  eigenvalue_threshold=1e-04,
-                 bval_threshold = np.inf):
+                 bval_threshold=np.inf):
         r""" Analytical and continuous modeling of the diffusion signal with
         respect to the MAPMRI basis [1]_.
 
-        The main idea is to model the diffusion signal as a linear combination of
-        the continuous functions presented in [2]_ but extending it in three
+        The main idea is to model the diffusion signal as a linear combination
+        of the continuous functions presented in [2]_ but extending it in three
         dimensions.
 
         The main difference with the SHORE proposed in [3]_ is that MAPMRI 3D
-        extension is provided using a set of three basis functions for the radial
-        part, one for the signal along x, one for y and one for z, while [3]_
-        uses one basis function to model the radial part and real Spherical
-        Harmonics to model the angular part.
+        extension is provided using a set of three basis functions for the
+        radial part, one for the signal along x, one for y and one for z, while
+        [3]_ uses one basis function to model the radial part and real
+        Spherical Harmonics to model the angular part.
         From the MAPMRI coefficients is possible to use the analytical formulae
         to estimate the ODF.
 
@@ -113,12 +113,14 @@ class MapmriModel(ReconstModel):
                diffusion imaging method for mapping tissue microstructure",
                NeuroImage, 2013.
 
-        .. [2] Ozarslan E. et. al, "Simple harmonic oscillator based reconstruction
-               and estimation for one-dimensional q-space magnetic resonance
-               1D-SHORE)", eapoc Intl Soc Mag Reson Med, vol. 16, p. 35., 2008.
+        .. [2] Ozarslan E. et. al, "Simple harmonic oscillator based
+               reconstruction and estimation for one-dimensional q-space
+               magnetic resonance 1D-SHORE)", eapoc Intl Soc Mag Reson Med,
+               vol. 16, p. 35., 2008.
 
-        .. [3] Ozarslan E. et. al, "Simple harmonic oscillator based reconstruction
-               and estimation for three-dimensional q-space mri", ISMRM 2009.
+        .. [3] Ozarslan E. et. al, "Simple harmonic oscillator based
+               reconstruction and estimation for three-dimensional q-space
+               mri", ISMRM 2009.
 
         Examples
         --------
@@ -131,7 +133,10 @@ class MapmriModel(ReconstModel):
         >>> data, gtab = dsi_voxels()
         >>> sphere = get_sphere('symmetric724')
         >>> from dipy.sims.voxel import SticksAndBall
-        >>> data, golden_directions = SticksAndBall(gtab, d=0.0015, S0=1, angles=[(0, 0), (90, 0)], fractions=[50, 50], snr=None)
+        >>> data, golden_directions = SticksAndBall(gtab, d=0.0015, S0=1,
+                                                    angles=[(0, 0), (90, 0)],
+                                                    fractions=[50, 50],
+                                                    snr=None)
         >>> from dipy.reconst.mapmri import MapmriModel
         >>> radial_order = 4
         >>> map_model = MapmriModel(gtab, radial_order=radial_order)
@@ -152,10 +157,12 @@ class MapmriModel(ReconstModel):
             if isinstance(laplacian_weighting, str):
                 if laplacian_weighting != 'GCV':
                     raise ValueError(msg)
-            elif isinstance(laplacian_weighting, float) or \
-                 isinstance(laplacian_weighting, np.ndarray):
-                 if np.sum(laplacian_weighting < 0) > 0:
-                     raise ValueError(msg)
+            elif (
+                isinstance(laplacian_weighting, float) or
+                isinstance(laplacian_weighting, np.ndarray)
+            ):
+                if np.sum(laplacian_weighting < 0) > 0:
+                    raise ValueError(msg)
             self.laplacian_weighting = laplacian_weighting
 
         self.R_mat, self.L_mat, self.S_mat = mapmri_RLS_regularization_matrices(
@@ -174,12 +181,12 @@ class MapmriModel(ReconstModel):
         else:
             self.tau = gtab.big_delta - gtab.small_delta / 3.0
         self.eigenvalue_threshold = eigenvalue_threshold
-        
-        self.cutoff = gtab.bvals<self.bval_threshold
+
+        self.cutoff = gtab.bvals < self.bval_threshold
         gtab_cutoff = gradient_table(bvals=self.gtab.bvals[self.cutoff],
                                      bvecs=self.gtab.bvecs[self.cutoff])
         self.tenmodel = dti.TensorModel(gtab_cutoff)
-        
+
         self.ind_mat = mapmri_index_matrix(self.radial_order)
         self.Bm = b_mat(self.ind_mat)
 
@@ -201,7 +208,7 @@ class MapmriModel(ReconstModel):
         qvecs = np.dot(self.gtab.bvecs, R)
         q = qvecs * qvals[:, None]
         M = mapmri_phi_matrix(self.radial_order, mu, q.T)
-        
+
         if self.laplacian_regularization:
             laplacian_matrix = mapmri_laplacian_reg_matrix(
                 self.ind_mat, mu, self.R_mat, self.L_mat, self.S_mat)
@@ -227,7 +234,7 @@ class MapmriModel(ReconstModel):
             w_s += "and you may be subject to this license when using the "
             w_s += "positivity constraint."
             warn(w_s)
-            #rmax = np.sqrt(5) * mu.max()
+            # rmax = np.sqrt(5) * mu.max()
             r_index, r_grad = create_rspace(10, 20e-03)
             K = mapmri_psi_matrix(
                 self.radial_order,  mu, r_grad[0:len(r_grad) / 2, :])
@@ -376,11 +383,14 @@ class MapmriFit(ReconstFit):
         rtop = 0
         const = 1 / \
             np.sqrt(
-                8 * np.pi ** 3 * (self.mu[0] ** 2 * self.mu[1] ** 2 * self.mu[2] ** 2))
+                8 * np.pi ** 3 * (self.mu[0] ** 2 * self.mu[1] ** 2 *
+                                  self.mu[2] ** 2))
         for i in range(self.ind_mat.shape[0]):
             if Bm[i] > 0.0:
-                rtop += (-1.0) ** ((self.ind_mat[i, 0] + self.ind_mat[i, 1] + self.ind_mat[
-                    i, 2]) / 2.0) * self._mapmri_coef[i] * Bm[i]
+                rtop += (-1.0) ** (
+                    (self.ind_mat[i, 0] + self.ind_mat[i, 1] +
+                     self.ind_mat[i, 2])
+                    / 2.0) * self._mapmri_coef[i] * Bm[i]
         return const * rtop
 
     def msd(self):
@@ -401,15 +411,15 @@ class MapmriFit(ReconstFit):
             nx, ny, nz = ind_mat[i]
             if not(nx % 2) and not(ny % 2) and not(nz % 2):
                 msd += (
-                self._mapmri_coef[i] * (-1) ** (0.5 * (- nx - ny - nz)) *
+                    self._mapmri_coef[i] * (-1) ** (0.5 * (- nx - ny - nz)) *
                     np.pi ** (3 / 2.0) *
                     ((1 + 2 * nx) * mu[0] ** 2 + (1 + 2 * ny) *
                     mu[1] ** 2 + (1 + 2 * nz) * mu[2] ** 2) /
-                    (np.sqrt(2 ** (-nx - ny - nz) * 
-                            factorial(nx) * factorial(ny) * factorial(nz)) *
-                     gamma(0.5 - 0.5 * nx) * gamma(0.5 - 0.5 * ny) *
-                     gamma(0.5 - 0.5 * nz))
-                )
+                    (np.sqrt(2 ** (-nx - ny - nz) *
+                    factorial(nx) * factorial(ny) * factorial(nz)) *
+                    gamma(0.5 - 0.5 * nx) * gamma(0.5 - 0.5 * ny) *
+                    gamma(0.5 - 0.5 * nz))
+                    )
 
         return msd
 
@@ -444,19 +454,19 @@ class MapmriFit(ReconstFit):
                 qiv += self._mapmri_coef[i] * (numerator / denominator)
 
         return qiv
-        
+
     def ng(self):
         r""" Calculates the analytical non-Gaussiannity (NG) [1]_.
-        
+
         References
         ----------
         .. [1] Ozarslan E. et. al, "Mean apparent propagator (MAP) MRI: A novel
         diffusion imaging method for mapping tissue microstructure",
         NeuroImage, 2013.
-        
+
         .. [8] Avram et al. "Clinical feasibility of using mean apparent
         propagator (MAP) MRI to characterize brain tissue microstructure".
-        NeuroImage 2015, in press. 
+        NeuroImage 2015, in press.
         """
         if self.model.bval_threshold > 2000.:
             msg = 'model bval_threshold must be lower than 2000 for the '
@@ -465,16 +475,16 @@ class MapmriFit(ReconstFit):
 
         coef = self._mapmri_coef
         return np.sqrt(1 - coef[0] ** 2 / np.sum(coef ** 2))
-        
+
     def ng_parallel(self):
         r""" Calculates the analytical parallel non-Gaussiannity (NG) [1]_.
-        
+
         References
         ----------
         .. [1] Ozarslan E. et. al, "Mean apparent propagator (MAP) MRI: A novel
         diffusion imaging method for mapping tissue microstructure",
         NeuroImage, 2013.
-        
+
         .. [8] Avram et al. "Clinical feasibility of using mean apparent
         propagator (MAP) MRI to characterize brain tissue microstructure".
         NeuroImage 2015, in press.
@@ -488,26 +498,26 @@ class MapmriFit(ReconstFit):
         coef = self._mapmri_coef
         a_par = np.zeros_like(coef)
         a0 = np.zeros_like(coef)
-        
+
         for i in range(coef.shape[0]):
             n1, n2, n3 = ind_mat[i]
             if (n2 % 2 + n3 % 2) == 0:
                 a_par[i] = coef[i] * (-1) ** ((n2 + n3) / 2) *\
-                            np.sqrt(factorial(n2) * factorial(n3)) /\
-                            (factorial2(n2) * factorial2(n3))
+                    np.sqrt(factorial(n2) * factorial(n3)) /\
+                    (factorial2(n2) * factorial2(n3))
                 if n1 == 0:
                     a0[i] = a_par[i]
         return np.sqrt(1 - np.sum(a0 ** 2) / np.sum(a_par ** 2))
 
     def ng_perpendicular(self):
         r""" Calculates the analytical perpendicular non-Gaussiannity (NG) [1]_.
-        
+
         References
         ----------
         .. [1] Ozarslan E. et. al, "Mean apparent propagator (MAP) MRI: A novel
         diffusion imaging method for mapping tissue microstructure",
         NeuroImage, 2013.
-        
+
         .. [8] Avram et al. "Clinical feasibility of using mean apparent
         propagator (MAP) MRI to characterize brain tissue microstructure".
         NeuroImage 2015, in press.
@@ -521,23 +531,21 @@ class MapmriFit(ReconstFit):
         coef = self._mapmri_coef
         a_perp = np.zeros_like(coef)
         a00 = np.zeros_like(coef)
-        
+
         for i in range(coef.shape[0]):
             n1, n2, n3 = ind_mat[i]
             if n1 % 2 == 0:
                 if n2 % 2 == 0 and n3 % 2 == 0:
                     a_perp[i] = coef[i] * (-1) ** (n1 / 2) *\
-                               np.sqrt(factorial(n1)) / factorial2(n1)
+                        np.sqrt(factorial(n1)) / factorial2(n1)
                     if n2 == 0 and n3 == 0:
                         a00[i] = a_perp[i]
         return np.sqrt(1 - np.sum(a00 ** 2) / np.sum(a_perp ** 2))
 
     def fitted_signal(self, gtab=None):
-        """ 
+        """
         Recovers the fitted signal for the given gradient table. If no gradient
         table is given it recovers the signal for the gtab of the data.
-        
-        
         """
         if gtab is None:
             E = self.signal(self.model.gtab)
@@ -641,8 +649,10 @@ def b_mat(ind_mat):
     for i in range(ind_mat.shape[0]):
         n1, n2, n3 = ind_mat[i]
         K = int(not(n1 % 2) and not(n2 % 2) and not(n3 % 2))
-        B[i] = K * np.sqrt(factorial(n1) * factorial(n2) * factorial(n3)
-                           ) / (factorial2(n1) * factorial2(n2) * factorial2(n3))
+        B[i] = (
+            K * np.sqrt(factorial(n1) * factorial(n2) * factorial(n3)) /
+            (factorial2(n1) * factorial2(n2) * factorial2(n3))
+            )
 
     return B
 
@@ -1086,7 +1096,11 @@ def mapmri_laplacian_reg_matrix(ind_mat, mu, R_mat, L_mat, S_mat):
 
     for i in range(n_elem):
         for j in range(i, n_elem):
-            if (x[i] - x[j]) % 2 == 0 and (y[i] - y[j]) % 2 == 0 and (z[i] - z[j]) % 2 == 0:
+            if (
+               (x[i] - x[j]) % 2 == 0 and
+               (y[i] - y[j]) % 2 == 0 and
+               (z[i] - z[j]) % 2 == 0
+               ):
                 LR[i, j] = LR[j, i] = \
                     (ux ** 3 / (uy * uz)) *\
                     R_mat[x[i], x[j]] * S_mat[y[i], y[j]] * S_mat[z[i], z[j]] +\
