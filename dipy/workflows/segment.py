@@ -85,7 +85,8 @@ from dipy.io.pickles import save_pickle, load_pickle
 
 def recognize_bundles_flow(streamline_files, model_bundle_files,
                            out_dir=None, clust_thr=15.,
-                           reduction_thr=10., model_clust_thr=5.,
+                           reduction_thr=10., reduction_distance='mdf',
+                           model_clust_thr=5.,
                            pruning_thr=5., pruning_distance='mdf',
                            slr=True, slr_metric=None,
                            slr_transform='similarity', slr_progressive=True,
@@ -104,6 +105,8 @@ def recognize_bundles_flow(streamline_files, model_bundle_files,
         MDF distance threshold for all streamlines
     reduction_thr : float, optional
         Reduce search space by (mm) (default 20)
+    reduction_distance : string, optional
+        Reduction distance type can be mdf or mam (default mdf)
     model_clust_thr : float, optional
         MDF distance threshold for the model bundles (default 5)
     pruning_thr : float, optional
@@ -227,6 +230,7 @@ def recognize_bundles_flow(streamline_files, model_bundle_files,
                 model_bundle,
                 model_clust_thr=float(model_clust_thr),
                 reduction_thr=float(reduction_thr),
+                reduction_distance=reduction_distance,
                 slr=slr,
                 slr_metric=slr_metric,
                 slr_x0=slr_transform,
