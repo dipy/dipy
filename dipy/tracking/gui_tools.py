@@ -40,7 +40,7 @@ main_view = View(Group(Group(
                              Item( 'probabilistic' ),
                              show_border=True),
                        Group(
-                             #Item( 'integrator' ),
+                             # Item( 'integrator' ),
                              Item( 'seed_largest_peak', ),
                              Item( 'track_two_directions' ),
                              Item( 'start_direction', editor=ArrayEditor(),
@@ -57,7 +57,7 @@ main_view = View(Group(Group(
                              Item( 'save_streamlines_to' ),
                              Item( 'save_counts_to' ),
                              show_border=True),
-                       orientation = 'vertical'),
+                       orientation='vertical'),
                 buttons=['OK', 'Cancel'], width=600, close_result=False,
                 resizable=True, scrollable=True)
 
@@ -75,4 +75,3 @@ def gui_track(interface=None):
         interface.save_streamlines(streamlines, interface.save_streamlines_to)
     if interface.save_counts_to:
         interface.save_counts(streamlines, interface.save_counts_to)
-
