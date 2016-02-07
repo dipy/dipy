@@ -18,7 +18,7 @@ def slider(iren, ren, callback, min_value=0, max_value=255, value=125,
            size=(50, 0),
            label_format="%0.0lf",
            color=(0.5, 0.5, 0.5),
-           selected_color = (0.9, 0.2, 0.1)):
+           selected_color=(0.9, 0.2, 0.1)):
     """ A 2D slider widget
 
     Parameters

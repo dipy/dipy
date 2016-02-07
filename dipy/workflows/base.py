@@ -4,6 +4,7 @@ import inspect
 
 from dipy.workflows.docstring_parser import NumpyDocString
 
+
 class IntrospectiveArgumentParser(arg.ArgumentParser):
 
     def __init__(self, prog=None, usage=None, description=None, epilog=None,
@@ -88,14 +89,14 @@ class IntrospectiveArgumentParser(arg.ArgumentParser):
                        'action': 'store'}
 
             if is_optionnal:
-               _kwargs["metavar"] = dtype.__name__
+                _kwargs["metavar"] = dtype.__name__
 
             if dtype is bool:
                 _kwargs['type'] = int
                 _kwargs['choices'] = [0, 1]
 
             if isnarg:
-                 _kwargs['nargs'] = '*'
+                _kwargs['nargs'] = '*'
 
             self.add_argument(*_args, **_kwargs)
 
@@ -138,4 +139,3 @@ class IntrospectiveArgumentParser(arg.ArgumentParser):
 
     def get_outputs(self):
         return self.outputs
-

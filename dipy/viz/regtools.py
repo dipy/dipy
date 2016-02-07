@@ -17,6 +17,7 @@ def _tile_plot(imgs, titles, **kwargs):
 
     return fig
 
+
 def overlay_images(img0, img1, title0='', title_mid='', title1='', fname=None):
     r""" Plot two images one on top of the other using red and green channels.
 
@@ -72,6 +73,7 @@ def overlay_images(img0, img1, title0='', title_mid='', title1='', fname=None):
         fig.savefig(fname, bbox_inches='tight')
 
     return fig
+
 
 def draw_lattice_2d(nrows, ncols, delta):
     r"""Create a regular lattice of nrows x ncols squares.
@@ -307,6 +309,7 @@ def plot_slices(V, slice_indices=None, fname=None):
         fig.savefig(fname, bbox_inches='tight')
 
     return fig
+
 
 def overlay_slices(L, R, slice_index=None, slice_type=1, ltitle='Left',
                    rtitle='Right', fname=None):
