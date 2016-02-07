@@ -30,7 +30,8 @@ POSSIBILITY OF SUCH DAMAGE.
 # -*- encoding:utf-8 -*-
 from __future__ import division, absolute_import, print_function
 
-import sys, textwrap
+import sys
+import textwrap
 
 from dipy.workflows.docstring_parser import NumpyDocString
 from nose.tools import *
@@ -178,7 +179,7 @@ def test_extended_summary():
 
 def test_parameters():
     assert_equal(len(doc['Parameters']), 3)
-    assert_equal([n for n,_,_ in doc['Parameters']], ['mean','cov','shape'])
+    assert_equal([n for n, _, _ in doc['Parameters']], ['mean', 'cov', 'shape'])
 
     arg, arg_type, desc = doc['Parameters'][1]
     assert_equal(arg_type, '(N, N) ndarray')
@@ -224,16 +225,16 @@ def test_index():
     assert_equal(len(doc['index']), 2)
     assert_equal(len(doc['index']['refguide']), 2)
 
-def non_blank_line_by_line_compare(a,b):
+def non_blank_line_by_line_compare(a, b):
     a = textwrap.dedent(a)
     b = textwrap.dedent(b)
     a = [l.rstrip() for l in a.split('\n') if l.strip()]
     b = [l.rstrip() for l in b.split('\n') if l.strip()]
-    for n,line in enumerate(a):
+    for n, line in enumerate(a):
         if not line == b[n]:
             raise AssertionError("Lines %s of a and b differ: "
                                  "\n>>> %s\n<<< %s\n" %
-                                 (n,line,b[n]))
+                                 (n, line, b[n]))
 def test_str():
     # doc_txt has the order of Notes and See Also sections flipped.
     # This should be handled automatically, and so, one thing this test does
@@ -347,7 +348,6 @@ standard deviation:
    :refguide: random;distributions, random;gauss""")
 
 
-
 doc2 = NumpyDocString("""
     Returns array of indices of the maximum values of along the given axis.
 
@@ -385,15 +385,15 @@ doc5 = NumpyDocString(
 
 def test_raises():
     assert_equal(len(doc5['Raises']), 1)
-    name,_,desc = doc5['Raises'][0]
-    assert_equal(name,'LinAlgException')
-    assert_equal(desc,['If array is singular.'])
+    name, _, desc = doc5['Raises'][0]
+    assert_equal(name, 'LinAlgException')
+    assert_equal(desc, ['If array is singular.'])
 
 def test_warns():
     assert_equal(len(doc5['Warns']), 1)
-    name,_,desc = doc5['Warns'][0]
-    assert_equal(name,'SomeWarning')
-    assert_equal(desc,['If needed'])
+    name, _, desc = doc5['Warns'][0]
+    assert_equal(name, 'SomeWarning')
+    assert_equal(desc, ['If needed'])
 
 def test_see_also():
     doc6 = NumpyDocString(
