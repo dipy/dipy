@@ -223,17 +223,15 @@ class MapmriModel(ReconstModel):
                                         self.ind_mat.shape[0]))
 
         if self.positivity_constraint:
-            if not have_cvxopt:
-                raise ValueError(
-                'CVXOPT package needed to enforce constraints')
             w_s = "The MAPMRI positivity constraint depends on CVXOPT "
             w_s += "(http://cvxopt.org/). CVXOPT is licensed "
             w_s += "under the GPL (see: http://cvxopt.org/copyright.html) "
             w_s += "and you may be subject to this license when using the "
             w_s += "positivity constraint."
             warn(w_s)
-            # rmax = np.sqrt(5) * mu.max()
-            r_grad = create_rspace(10, 20e-03)
+            gridsize = 10
+            max_radius = 20e-3 # 20 microns maximum radius
+            r_grad = create_rspace(gridsize, max_radius)
             K = mapmri_psi_matrix(self.radial_order,  mu, r_grad)
 
             Q = cvxopt.matrix(np.dot(M.T, M) + lopt * laplacian_matrix)
