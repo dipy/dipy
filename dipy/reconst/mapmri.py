@@ -233,9 +233,8 @@ class MapmriModel(ReconstModel):
             w_s += "positivity constraint."
             warn(w_s)
             # rmax = np.sqrt(5) * mu.max()
-            r_index, r_grad = create_rspace(10, 20e-03)
-            K = mapmri_psi_matrix(
-                self.radial_order,  mu, r_grad[0:len(r_grad) / 2, :])
+            r_grad = create_rspace(10, 20e-03)
+            K = mapmri_psi_matrix(self.radial_order,  mu, r_grad)
 
             Q = cvxopt.matrix(np.dot(M.T, M) + lopt * laplacian_matrix)
             p = cvxopt.matrix(-1 * np.dot(M.T, data))
@@ -782,9 +781,8 @@ def create_rspace(gridsize, radius_max):
     vecs = np.array(vecs, dtype=np.float32)
     tab = vecs / radius
     tab = tab * radius_max
-    vecs = vecs + radius
 
-    return vecs, tab
+    return tab
 
 
 def delta(n, m):
