@@ -149,7 +149,7 @@ def boys2rgb(v):
     X = X + hh8 * ss67
 
     X = X + hh10 * cc89
-    X = X + hh9 *  ss89
+    X = X + hh9 * ss89
 
     Y = 0.0
 
