@@ -31,7 +31,7 @@ def test_plot_2d_diffeomorphic_map():
     npt.assert_equal(ff[1].shape, mv_shape)
     # Can specify shape
     ff = regtools.plot_2d_diffeomorphic_map(mapping,
-                                            delta = 10,
+                                            delta=10,
                                             direct_grid_shape=(7, 8),
                                             inverse_grid_shape=(9, 10))
     npt.assert_equal(ff[0].shape, (7, 8))
