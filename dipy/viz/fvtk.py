@@ -673,8 +673,11 @@ def contour(vol, voxsz=(1.0, 1.0, 1.0), affine=None, levels=[50],
     return ass
 
 
-lowercase_cm_name = {'blues':'Blues', 'accent':'Accent'}
+lowercase_cm_name = {'blues': 'Blues', 'accent': 'Accent'}
+
+
 def create_colormap(v, name='jet', auto=True):
+
     """Create colors from a specific colormap and return it
     as an array of shape (N,3) where every row gives the corresponding
     r,g,b value. The colormaps we use are similar with those of pylab.
