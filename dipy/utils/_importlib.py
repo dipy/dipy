@@ -3,6 +3,7 @@
 # code compatible with Python 2.3.
 import sys
 
+
 def _resolve_name(name, package, level):
     """Return the absolute name of the module to be imported."""
     if not hasattr(package, 'rindex'):
