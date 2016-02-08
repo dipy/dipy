@@ -4,6 +4,7 @@ import inspect
 
 from dipy.workflows.docstring_parser import NumpyDocString
 
+
 class IntrospectiveArgumentParser(arg.ArgumentParser):
 
     def __init__(self, prog=None, usage=None, description=None, epilog=None,
@@ -47,9 +48,12 @@ class IntrospectiveArgumentParser(arg.ArgumentParser):
         iap = IntrospectiveArgumentParser
         if epilog is None:
             epilog = \
-                "Garyfallidis, E., M. Brett, B. Amirbekian, A. Rokem, S. Van Der " \
-                "Walt, M. Descoteaux, and I. Nimmo-Smith. Dipy, a library for the " \
-                "analysis of diffusion MRI data. Frontiers in Neuroinformatics," \
+                "Garyfallidis, E., M. Brett, B. Amirbekian,"\
+                "A. Rokem, S. Van Der "\
+                "Walt, M. Descoteaux, and I. Nimmo-Smith."\
+                " Dipy, a library for the " \
+                "analysis of diffusion MRI data."\
+                " Frontiers in Neuroinformatics," \
                 " 1-18, 2014."
 
         super(iap, self).__init__(prog, usage, description, epilog, version,
@@ -88,14 +92,14 @@ class IntrospectiveArgumentParser(arg.ArgumentParser):
                        'action': 'store'}
 
             if is_optionnal:
-               _kwargs["metavar"] = dtype.__name__
+                _kwargs["metavar"] = dtype.__name__
 
             if dtype is bool:
                 _kwargs['type'] = int
                 _kwargs['choices'] = [0, 1]
 
             if isnarg:
-                 _kwargs['nargs'] = '*'
+                _kwargs['nargs'] = '*'
 
             self.add_argument(*_args, **_kwargs)
 
@@ -138,4 +142,3 @@ class IntrospectiveArgumentParser(arg.ArgumentParser):
 
     def get_outputs(self):
         return self.outputs
-
