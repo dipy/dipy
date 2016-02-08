@@ -1,6 +1,7 @@
 from os.path import join, dirname, isabs, exists
 from os import makedirs
 
+
 def choose_create_out_dir(out_dir, root_path):
     """Analyses the parameters and returns the appropriate output path.
     It creates the directory if it does not exists.
