@@ -30,8 +30,16 @@ def horizon(tractograms, data, affine, cluster=False, cluster_thr=15.,
     ren = window.Renderer()
     global centroid_actors
     centroid_actors = []
+
+    # np.random.seed(42)
+    prng = np.random.RandomState(1838)
+
     for streamlines in tractograms:
 
+        if random_colors:
+            colors = prng.random_sample(3)
+        else:
+            colors = None
         print(' Number of streamlines loaded {} \n'.format(len(streamlines)))
 
         if cluster:
@@ -54,19 +62,15 @@ def horizon(tractograms, data, affine, cluster=False, cluster_thr=15.,
                 # set_trace()
                 if check_range(c, length_lt, length_gt):
                     if sizes[i] > clusters_lt and sizes[i] < clusters_gt:
-                        act = actor.streamtube([c], linewidth=linewidths[i],
+                        act = actor.streamtube([c], colors,
+                                               linewidth=linewidths[i],
                                                lod=False)
                         centroid_actors.append(act)
                         ren.add(act)
                         visible_cluster_id.append(i)
         else:
-            if not random_colors:
-                ren.add(actor.line(streamlines,
-                                   opacity=1., lod_points=10 ** 5))
-            else:
-                colors = np.random.rand(3)
-                ren.add(actor.line(streamlines, colors,
-                                   opacity=1., lod_points=10 ** 5))
+            ren.add(actor.line(streamlines, colors,
+                               opacity=1., lod_points=10 ** 5))
 
     class SimpleTrackBallNoBB(window.vtk.vtkInteractorStyleTrackballCamera):
         def HighlightProp(self, p):
