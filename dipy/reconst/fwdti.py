@@ -12,7 +12,7 @@ from .base import ReconstModel
 
 from dipy.reconst.dti import (TensorFit, design_matrix, _min_positive_signal,
                               decompose_tensor, from_lower_triangular,
-                              apparent_diffusion_coef)
+                              lower_triangular, apparent_diffusion_coef)
 from dipy.reconst.dki import _positive_evals
 
 from dipy.core.sphere import Sphere
@@ -447,9 +447,10 @@ def _nlls_err_func(tensor_elements, design_matrix, data, Diso=3e-3,
     """
     f = tensor_elements[7]
     # This is the predicted signal given the params:
-    y = (1-f) * np.exp(np.dot(design_matrix, tensor_elements)) + \
+    y = (1-f) * np.exp(np.dot(design_matrix, tensor_elements[:7])) + \
         f * np.exp(np.dot(design_matrix,
-                          np.array([Diso, 0, Diso, 0, 0, Diso])))
+                          np.array([Diso, 0, Diso, 0, 0, Diso, 
+                                    tensor_elements[6]])))
 
     # Compute the residuals
     residuals = data - y
@@ -542,7 +543,15 @@ def nlls_fit_tensor(design_matrix, data, fw_params=None, Diso=3e-3,
         if np.all(flat_data[vox] == 0):
             raise ValueError("The data in this voxel contains only zeros")
 
-        start_params = fw_params[vox]
+        params = fw_params[vox]
+
+        # converting evals and evecs to diffusion tensor elements
+        evals = params[:3]
+        evecs = params[3:12].reshape((3, 3))
+        dt = lower_triangular(np.dot(np.dot(evecs, np.diag(evals)), evecs.T))
+        f = params[12]
+        s0 = params[13]
+        start_params = np.concatenate((dt, [-np.log(s0), f]), axis=0)
         # Do the optimization in this voxel:
         # if jac:
             #this_tensor, status = opt.leastsq(_nlls_err_func, start_params,
@@ -552,9 +561,10 @@ def nlls_fit_tensor(design_matrix, data, fw_params=None, Diso=3e-3,
             #                                        sigma),
             #                                  Dfun=_nlls_jacobian_func)
         #else:
-        this_tensor, status = opt.leastsq(_nlls_err_func, start_params,
+        this_tensor, status = opt.leastsq(_nlls_err_func, start_params[:8],
                                           args=(design_matrix,
                                                 flat_data[vox],
+                                                Diso,
                                                 weighting,
                                                 sigma))
 
@@ -563,7 +573,9 @@ def nlls_fit_tensor(design_matrix, data, fw_params=None, Diso=3e-3,
             evals, evecs = decompose_tensor(
                                from_lower_triangular(this_tensor[:6]))
             fw_params[vox, :3] = evals
-            fw_params[vox, 3:] = evecs.ravel()
+            fw_params[vox, 3:12] = evecs.ravel()
+            fw_params[vox, 12] = this_tensor[7]
+            fw_params[vox, 13] = np.exp(-this_tensor[6])
         # If leastsq failed to converge and produced nans, we'll resort to the
         # OLS solution in this voxel:
         except np.linalg.LinAlgError:
@@ -571,8 +583,10 @@ def nlls_fit_tensor(design_matrix, data, fw_params=None, Diso=3e-3,
                               from_lower_triangular(start_params[:6]))
             fw_params[vox, :3] = evals
             fw_params[vox, 3:] = evecs.ravel()
+            fw_params[vox, 12] = start_params[7]
+            fw_params[vox, 13] = np.exp(-start_params[6])
 
-    fw_params.shape = data.shape[:-1] + (13,)
+    fw_params.shape = data.shape[:-1] + (14,)
     return fw_params
 
 

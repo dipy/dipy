@@ -41,7 +41,7 @@ FAref = np.zeros((2, 2, 2))
 # Diffusion of tissue and water compartments are constant for all voxel
 mevals = np.array([[0.0017, 0.0003, 0.0003], [0.003, 0.003, 0.003]])
 # volume fractions
-GTF = np.array([[[0.06, 0.71], [0.33, 0.89]],
+GTF = np.array([[[0.06, 0.71], [0.33, 0.93]],
                 [[0., 0,], [0., 0.]]])
 # model_params ground truth (to be fill)
 model_params_mv = np.zeros((2, 2, 2, 14))         
@@ -74,6 +74,15 @@ def test_fwdti_singlevoxel():
     assert_almost_equal(FAdti, FAfwe, decimal=3)
     assert_almost_equal(Ffwe, gtf, decimal=3)
 
+    # Test non-linear fit
+    fwdm = fwdti.FreeWaterTensorModel(gtab_2s, 'NLS')
+    fwefit = fwdm.fit(S_conta)
+    FAfwe = fwefit.fa
+    Ffwe = fwefit.f
+
+    assert_almost_equal(FAdti, FAfwe)
+    assert_almost_equal(Ffwe, gtf)
+
 
 def test_fwdti_precision():
     # Simulation when water contamination is added
@@ -92,7 +101,7 @@ def test_fwdti_precision():
 
 
 def test_fwdti_multi_voxel():
-    fwdm = fwdti.FreeWaterTensorModel(gtab_2s, 'WLS')
+    fwdm = fwdti.FreeWaterTensorModel(gtab_2s, 'NLS')
     fwefit = fwdm.fit(DWI)
     Ffwe = fwefit.f
 
