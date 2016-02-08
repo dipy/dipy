@@ -19,9 +19,6 @@ from dipy.core.sphere import Sphere
 from .vec_val_sum import vec_val_vect
 from dipy.core.ndindex import ndindex
 
-from dipy.core.sphere import Sphere
-from .vec_val_sum import vec_val_vect
-from dipy.core.ndindex import ndindex
 
 def fwdti_prediction(params, gtab, S0, Diso=3.0e-3):
     """
@@ -32,24 +29,12 @@ def fwdti_prediction(params, gtab, S0, Diso=3.0e-3):
     params : ndarray
         Model parameters. The last dimension should have the 12 tensor
         parameters (3 eigenvalues, followed by the 3 corresponding
-<<<<<<< HEAD
-        eigenvectors) the volume fraction of the free water compartment, and
-        the non diffusion-weighted signal S0
-    gtab : a GradientTable class instance
-        The gradient table for this prediction
-    Diso : float, optional
-        Value of the free water isotropic diffusion. Default is set to 3e-3
-        $mm^{2}.s^{-1}$. Please adjust this value if you are assuming different
-        units of diffusion.
-
-=======
         eigenvectors) and the volume fraction of the free water compartment
     gtab : a GradientTable class instance
         The gradient table for this prediction
     S0 : float or ndarray
         The non diffusion-weighted signal in every voxel, or across all
         voxels. Default: 1
->>>>>>> TEST, BF, RF: fw_prediction is now able to predict the signal for multi-voxel parameters.
     Diso : float, optional
         Value of the free water isotropic diffusion. Default is set to 3e-3
         $mm^{2}.s^{-1}$. Please ajust this value if you are assuming different
@@ -431,6 +416,169 @@ def _wls_iter(design_matrix, inv_design, sig, min_diffusivity, Diso=3e-3,
     return fw_params
 
 
+def _nlls_err_func(tensor_elements, design_matrix, data, Diso=3e-3,
+                   weighting=None, sigma=None):
+    """
+    Error function for the non-linear least-squares fit of the tensor water
+    elimination model.
+
+    Parameters
+    ----------
+    tensor_elements : array (8, )
+        The six independent elements of the diffusion tensor followed by
+        -log(S0) and the volume fraction f of the water elimination compartment
+
+    design_matrix : array
+        The design matrix
+
+    data : array
+        The voxel signal in all gradient directions
+
+    weighting : str (optional).
+         Whether to use the Geman McClure weighting criterion (see [1]_
+         for details)
+
+    sigma : float or float array (optional)
+        If 'sigma' weighting is used, we will weight the error function
+        according to the background noise estimated either in aggregate over
+        all directions (when a float is provided), or to an estimate of the
+        noise in each diffusion-weighting direction (if an array is
+        provided). If 'gmm', the Geman-Mclure M-estimator is used for
+        weighting.
+    """
+    f = tensor_elements[7]
+    # This is the predicted signal given the params:
+    y = (1-f) * np.exp(np.dot(design_matrix, tensor_elements)) + \
+        f * np.exp(np.dot(design_matrix,
+                          np.array([Diso, 0, Diso, 0, 0, Diso])))
+
+    # Compute the residuals
+    residuals = data - y
+
+    # If we don't want to weight the residuals, we are basically done:
+    if weighting is None:
+        # And we return the SSE:
+        return residuals
+    se = residuals ** 2
+    # If the user provided a sigma (e.g 1.5267 * std(background_noise), as
+    # suggested by Chang et al.) we will use it:
+    if weighting == 'sigma':
+        if sigma is None:
+            e_s = "Must provide sigma value as input to use this weighting"
+            e_s += " method"
+            raise ValueError(e_s)
+        w = 1/(sigma**2)
+
+    elif weighting == 'gmm':
+        # We use the Geman McClure M-estimator to compute the weights on the
+        # residuals:
+        C = 1.4826 * np.median(np.abs(residuals - np.median(residuals)))
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore")
+            w = 1/(se + C**2)
+            # The weights are normalized to the mean weight (see p. 1089):
+            w = w/np.mean(w)
+
+    # Return the weighted residuals:
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")
+        return np.sqrt(w * se)
+
+
+def nlls_fit_tensor(design_matrix, data, fw_params=None, Diso=3e-3,
+                    weighting=None, sigma=None, jac=False):
+    """
+    Fit the water elimination tensor model using the non-linear least-squares.
+
+    Parameters
+    ----------
+    design_matrix : array (g, 7)
+        Design matrix holding the covariants used to solve for the regression
+        coefficients.
+
+    data : array ([X, Y, Z, ...], g)
+        Data or response variables holding the data. Note that the last
+        dimension should contain the data. It makes no copies of data.
+
+    fw_params: ([X, Y, Z, ...], 13), optional
+           A first model parameters guess (3 eigenvalues follow the coordinates
+           of 3 eigenvalues and the volume fraction of the free water
+           compartment). If the initial fw_paramters are not given, function
+           will use the WLS free water elimination algorithm to estimate the
+           parameters first guess.
+           Default: None
+
+    Diso : float, optional
+        Value of the free water isotropic diffusion. Default is set to 3e-3
+        $mm^{2}.s^{-1}$. Please ajust this value if you are assuming different
+        units of diffusion.
+
+    weighting: str
+           the weighting scheme to use in considering the
+           squared-error. Default behavior is to use uniform weighting. Other
+           options: 'sigma' 'gmm'
+
+    sigma: float
+        If the 'sigma' weighting scheme is used, a value of sigma needs to be
+        provided here. According to [Chang2005]_, a good value to use is
+        1.5267 * std(background_noise), where background_noise is estimated
+        from some part of the image known to contain no signal (only noise).
+
+    jac : bool
+        Use the Jacobian? Default: False
+
+    Returns
+    -------
+    nlls_params: for each voxel the eigen-values and eigen-vectors of the
+        tissue tensor and the volume fraction of the free water compartment.
+    """
+    # Flatten for the iteration over voxels:
+    flat_data = data.reshape((-1, data.shape[-1]))
+
+    # Use the WLS method parameters as the starting point if fw_params is None:
+    if fw_params==None:
+        fw_params = wls_fit_tensor(design_matrix, flat_data,  Diso=Diso)
+
+    for vox in range(flat_data.shape[0]):
+        if np.all(flat_data[vox] == 0):
+            raise ValueError("The data in this voxel contains only zeros")
+
+        start_params = fw_params[vox]
+        # Do the optimization in this voxel:
+        # if jac:
+            #this_tensor, status = opt.leastsq(_nlls_err_func, start_params,
+            #                                  args=(design_matrix,
+            #                                        flat_data[vox],
+            #                                        weighting,
+            #                                        sigma),
+            #                                  Dfun=_nlls_jacobian_func)
+        #else:
+        this_tensor, status = opt.leastsq(_nlls_err_func, start_params,
+                                          args=(design_matrix,
+                                                flat_data[vox],
+                                                weighting,
+                                                sigma))
+
+        # The parameters are the evals and the evecs:
+        try:
+            evals, evecs = decompose_tensor(
+                               from_lower_triangular(this_tensor[:6]))
+            fw_params[vox, :3] = evals
+            fw_params[vox, 3:] = evecs.ravel()
+        # If leastsq failed to converge and produced nans, we'll resort to the
+        # OLS solution in this voxel:
+        except np.linalg.LinAlgError:
+            evals, evecs = decompose_tensor(
+                              from_lower_triangular(start_params[:6]))
+            fw_params[vox, :3] = evals
+            fw_params[vox, 3:] = evecs.ravel()
+
+    fw_params.shape = data.shape[:-1] + (13,)
+    return fw_params
+
+
 common_fit_methods = {'WLLS': wls_fit_tensor,
-                      'WLS': wls_fit_tensor
+                      'WLS': wls_fit_tensor,
+                      'NLLS': nlls_fit_tensor,
+                      'NLS': nlls_fit_tensor,
                       }
