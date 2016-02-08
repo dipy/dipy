@@ -20,7 +20,7 @@ from .vec_val_sum import vec_val_vect
 from dipy.core.ndindex import ndindex
 
 
-def fwdti_prediction(params, gtab, S0, Diso=3.0e-3):
+def fwdti_prediction(params, gtab, Diso=3.0e-3):
     """
     Predict a signal given the parameters of the free water diffusion tensor
     model.
@@ -29,12 +29,10 @@ def fwdti_prediction(params, gtab, S0, Diso=3.0e-3):
     params : ndarray
         Model parameters. The last dimension should have the 12 tensor
         parameters (3 eigenvalues, followed by the 3 corresponding
-        eigenvectors) and the volume fraction of the free water compartment
+        eigenvectors) the volume fraction of the free water compartment, and
+        the non diffusion-weighted signal S0
     gtab : a GradientTable class instance
         The gradient table for this prediction
-    S0 : float or ndarray
-        The non diffusion-weighted signal in every voxel, or across all
-        voxels. Default: 1
     Diso : float, optional
         Value of the free water isotropic diffusion. Default is set to 3e-3
         $mm^{2}.s^{-1}$. Please ajust this value if you are assuming different
@@ -57,23 +55,20 @@ def fwdti_prediction(params, gtab, S0, Diso=3.0e-3):
            doi: 10.1016/j.neuroimage.2014.09.053
     """
     evals = params[..., :3]
-    evecs = params[..., 3:-1].reshape(params.shape[:-1] + (3, 3))
-    f = params[..., -1]
+    evecs = params[..., 3:-2].reshape(params.shape[:-1] + (3, 3))
+    f = params[..., 12]
+    S0 = params[..., 13]
     qform = vec_val_vect(evecs, evals)
     sphere = Sphere(xyz=gtab.bvecs[~gtab.b0s_mask])
     adc = apparent_diffusion_coef(qform, sphere)
     mask = _positive_evals(evals[..., 0], evals[..., 1], evals[..., 2])
-
-    if isinstance(S0, np.ndarray):
-        # If it's an array, we need to give it one more dimension:
-        S0 = S0[..., None]
 
     # First do the calculation for the diffusion weighted measurements:
     pred_sig = np.zeros(f.shape + (gtab.bvals.shape[0],))
     index = ndindex(f.shape)
     for v in index:
         if mask[v]:
-            pre_pred_sig = S0 * \
+            pre_pred_sig = S0[v] * \
             ((1 - f[v]) * np.exp(-gtab.bvals[~gtab.b0s_mask] * adc[v]) +
             f[v] * np.exp(-gtab.bvals[~gtab.b0s_mask] * Diso))
 
@@ -85,7 +80,7 @@ def fwdti_prediction(params, gtab, S0, Diso=3.0e-3):
 
             # For completeness, we predict the mean S0 for the non-diffusion
             # weighted measurements, which is our best guess:
-            pred_s[..., gtab.b0s_mask] = S0
+            pred_s[..., gtab.b0s_mask] = S0[v]
             pred_sig[v] = pred_s
 
     return pred_sig
@@ -178,7 +173,7 @@ class FreeWaterTensorModel(ReconstModel):
 
         return FreeWaterTensorFit(self, fwdti_params)
 
-    def predict(self, fwdti_params, S0=1):
+    def predict(self, fwdti_params):
         """
         Predict a signal for this TensorModel class instance given parameters.
         Parameters
@@ -221,7 +216,7 @@ class FreeWaterTensorFit(TensorFit):
         """
         return self.model_params[..., 12]
 
-    def predict(self, gtab, S0=1):
+    def predict(self, gtab):
         r""" Given a free water tensor model fit, predict the signal on the
         vertices of a gradient table
         Parameters
@@ -278,6 +273,7 @@ def wls_fit_tensor(design_matrix, data, Diso=3e-3, piterations=3,
         2) Three lines of the eigenvector matrix each containing the
            first, second and third coordinates of the eigenvector
         3) The volume fraction of the free water compartment
+        4) The estimate of the non diffusion-weighted signal S0
     References
     ----------
     .. [1] Chung, SW., Lu, Y., Henry, R.G., 2006. Comparison of bootstrap
@@ -289,7 +285,7 @@ def wls_fit_tensor(design_matrix, data, Diso=3e-3, piterations=3,
     # preparing data and initializing parametres
     data = np.asarray(data)
     data_flat = data.reshape((-1, data.shape[-1]))
-    fw_params = np.empty((len(data_flat), 13))
+    fw_params = np.empty((len(data_flat), 14))
 
     # inverting design matrix and defining minimun diffusion aloud
     min_diffusivity = tol / -design_matrix.min()
@@ -303,7 +299,7 @@ def wls_fit_tensor(design_matrix, data, Diso=3e-3, piterations=3,
                                     riterations=riterations)
 
     # Reshape data according to the input data shape
-    fw_params = fw_params.reshape((data.shape[:-1]) + (13,))
+    fw_params = fw_params.reshape((data.shape[:-1]) + (14,))
 
     return fw_params
 
@@ -345,6 +341,7 @@ def _wls_iter(design_matrix, inv_design, sig, min_diffusivity, Diso=3e-3,
         2) Three lines of the eigenvector matrix each containing the
            first, second and third coordinates of the eigenvector
         3) The volume fraction of the free water compartment
+        4) The estimate of the non diffusion-weighted signal S0
     """
     W = design_matrix
 
@@ -409,10 +406,12 @@ def _wls_iter(design_matrix, inv_design, sig, min_diffusivity, Diso=3e-3,
         fhig = f + df
         ns = 19
 
+    S0 = np.exp(-params[6])
+
     evals, evecs = decompose_tensor(from_lower_triangular(params),
                                     min_diffusivity=min_diffusivity)
     fw_params = np.concatenate((evals, evecs[0], evecs[1], evecs[2], 
-                                np.array([f])), axis=0)
+                                np.array([f]), np.array([S0])), axis=0)
     return fw_params
 
 

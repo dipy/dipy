@@ -44,7 +44,7 @@ mevals = np.array([[0.0017, 0.0003, 0.0003], [0.003, 0.003, 0.003]])
 GTF = np.array([[[0.06, 0.71], [0.33, 0.89]],
                 [[0., 0,], [0., 0.]]])
 # model_params ground truth (to be fill)
-model_params_mv = np.zeros((2, 2, 2, 13))              
+model_params_mv = np.zeros((2, 2, 2, 14))         
 for i in range(2):
     for j in range(2):
         gtf = GTF[0, i, j]
@@ -56,7 +56,7 @@ for i in range(2):
         R = all_tensor_evecs(p[0])
         R = R.reshape((9))
         model_params_mv[0, i, j] = np.concatenate(([0.0017, 0.0003, 0.0003],
-                                                   R, [gtf]), axis=0)
+                                                   R, [gtf, 100]), axis=0)
 
 
 def test_fwdti_singlevoxel():
@@ -111,13 +111,14 @@ def test_fwdti_predictions():
                                   fractions=[(1-gtf) * 100, gtf*100], snr=None)
     R = all_tensor_evecs(peaks[0])
     R = R.reshape((9))
-    model_params = np.concatenate(([0.0017, 0.0003, 0.0003], R, [gtf]), axis=0)
-    S_pred1 = fwdti_prediction(model_params, gtab_2s, S0)
+    model_params = np.concatenate(([0.0017, 0.0003, 0.0003], R, [gtf, 100]),
+                                  axis=0)
+    S_pred1 = fwdti_prediction(model_params, gtab_2s)
     assert_array_almost_equal(S_pred1, S_conta)
 
     # Testing in model class
     fwdm = fwdti.FreeWaterTensorModel(gtab_2s, 'WLS')
-    S_pred2 = fwdm.predict(model_params, S0=S0)
+    S_pred2 = fwdm.predict(model_params)
     assert_array_almost_equal(S_pred2, S_conta)
 
     # Testing in fit class
@@ -125,17 +126,18 @@ def test_fwdti_predictions():
     # Adjust simulations according to model parameters (note here testing the
     # robustness of fit is not the objective)
     mevals_ad = np.array([fwefit.model_params[0:3], [0.003, 0.003, 0.003]])
-    angles_ad = fwefit.model_params[3:-1].reshape(3, 3)
-    gtf_ad = fwefit.model_params[-1]
+    angles_ad = fwefit.model_params[3:-2].reshape(3, 3)
+    gtf_ad = fwefit.model_params[-2]
+    S0 = fwefit.model_params[-1]
     S_conta_ad, peaks = multi_tensor(gtab_2s, mevals_ad, S0=S0,
                                      angles=angles_ad,
                                      fractions=[(1-gtf_ad) * 100, gtf_ad*100],
                                      snr=None)
-    S_pred3 = fwefit.predict(gtab_2s, S0=S0)
+    S_pred3 = fwefit.predict(gtab_2s)
     assert_array_almost_equal(S_pred3, S_conta_ad, decimal=5)
 
     # Multi voxel simulation
-    S_pred1 = fwdti_prediction(model_params_mv, gtab_2s, S0)
+    S_pred1 = fwdti_prediction(model_params_mv, gtab_2s)
     assert_array_almost_equal(S_pred1, DWI)
-    S_pred2 = fwdm.predict(model_params_mv, S0=S0)
+    S_pred2 = fwdm.predict(model_params_mv)
     assert_array_almost_equal(S_pred2, DWI)
