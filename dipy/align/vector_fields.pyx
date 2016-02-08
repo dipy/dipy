@@ -431,7 +431,7 @@ cdef inline int _interpolate_scalar_nn_3d(number[:, :, :] volume, double dkk,
     return 1
 
 
-def interpolate_scalar_3d(floating[:, :, :] image, double[:, :] locations):
+def interpolate_scalar_3d(floating[:, :, :] image, locations):
     r"""Trilinear interpolation of a 3D scalar image
 
     Interpolates the 3D image at the given locations. This function is
@@ -461,10 +461,11 @@ def interpolate_scalar_3d(floating[:, :, :] image, double[:, :] locations):
         cnp.npy_intp n = locations.shape[0]
         floating[:] out = np.zeros(shape=(n,), dtype=ftype)
         int[:] inside = np.empty(shape=(n,), dtype=np.int32)
+        double[:,:] _locations = np.array(locations, dtype=np.float64)
     with nogil:
         for i in range(n):
             inside[i] = _interpolate_scalar_3d[floating](image,
-                locations[i, 0], locations[i, 1], locations[i, 2], &out[i])
+                _locations[i, 0], _locations[i, 1], _locations[i, 2], &out[i])
     return np.asarray(out), np.asarray(inside)
 
 

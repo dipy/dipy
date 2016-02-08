@@ -4,6 +4,8 @@ from ...utils.six.moves import xrange
 
 import numpy as np
 import nose
+import nibabel as nib
+
 from dipy.io.bvectxt import orientation_from_string
 from dipy.tracking.utils import (affine_for_trackvis, connectivity_matrix,
                                  density_map, length, move_streamlines,
