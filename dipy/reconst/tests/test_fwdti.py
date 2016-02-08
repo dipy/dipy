@@ -35,6 +35,29 @@ dm = dti.TensorModel(gtab_2s, 'WLS')
 dtifit = dm.fit(S_tissue)
 FAdti = dtifit.fa
 
+# Simulation of 8 voxels tested
+DWI = np.zeros((2, 2, 2, len(gtab_2s.bvals)))
+FAref = np.zeros((2, 2, 2))
+# Diffusion of tissue and water compartments are constant for all voxel
+mevals = np.array([[0.0017, 0.0003, 0.0003], [0.003, 0.003, 0.003]])
+# volume fractions
+GTF = np.array([[[0.06, 0.71], [0.33, 0.89]],
+                [[0., 0,], [0., 0.]]])
+# model_params ground truth (to be fill)
+model_params_mv = np.zeros((2, 2, 2, 13))              
+for i in range(2):
+    for j in range(2):
+        gtf = GTF[0, i, j]
+        S, p = multi_tensor(gtab_2s, mevals, S0=100,
+                            angles=[(90, 0), (90, 0)],
+                            fractions=[(1-gtf) * 100, gtf*100], snr=None)
+        DWI[0, i, j] = S
+        FAref[0, i, j] = FAdti
+        R = all_tensor_evecs(p[0])
+        R = R.reshape((9))
+        model_params_mv[0, i, j] = np.concatenate(([0.0017, 0.0003, 0.0003],
+                                                   R, [gtf]), axis=0)
+
 
 def test_fwdti_singlevoxel():
     # Simulation when water contamination is added
@@ -69,27 +92,8 @@ def test_fwdti_precision():
 
 
 def test_fwdti_multi_voxel():
-    # 8 voxels tested
-    DWI = np.zeros((2, 2, 2, len(gtab_2s.bvals)))
-    FAref = np.zeros((2, 2, 2))
-    # Diffusion of tissue and water compartments are constant for all voxel
-    mevals = np.array([[0.0017, 0.0003, 0.0003], [0.003, 0.003, 0.003]])
-
-    # volume fractions
-    GTF = np.array([[[0.06, 0.71], [0.33, 0.89]],
-                    [[0., 0,], [0., 0.]]])
-    for i in range(2):
-        for j in range(2):
-            gtf = GTF[0, i, j]
-            S, p = multi_tensor(gtab_2s, mevals, S0=100,
-                                angles=[(90, 0), (90, 0)],
-                                fractions=[(1-gtf) * 100, gtf*100], snr=None)
-            DWI[0, i, j] = S
-            FAref[0, i, j] = FAdti
-
     fwdm = fwdti.FreeWaterTensorModel(gtab_2s, 'WLS')
     fwefit = fwdm.fit(DWI)
-    FAfwe = fwefit.fa
     Ffwe = fwefit.f
 
     assert_array_almost_equal(Ffwe, GTF, decimal=2)
@@ -129,4 +133,10 @@ def test_fwdti_predictions():
                                      snr=None)
     S_pred3 = fwefit.predict(gtab_2s, S0=S0)
     assert_array_almost_equal(S_pred3, S_conta_ad, decimal=5)
-    
+
+    # Multi voxel simulation
+    S_pred1 = fwdti_prediction(model_params_mv, gtab_2s, S0)
+    assert_array_almost_equal(S_pred1, DWI)
+    S_pred2 = fwdm.predict(model_params_mv, S0=S0)
+    assert_array_almost_equal(S_pred2, DWI)
+
