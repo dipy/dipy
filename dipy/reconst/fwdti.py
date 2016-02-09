@@ -89,7 +89,7 @@ def fwdti_prediction(params, gtab, Diso=3.0e-3):
 class FreeWaterTensorModel(ReconstModel):
     """ Class for the Free Water Elimitation Diffusion Tensor Model
     """
-    def __init__(self, gtab, fit_method="WLS", *args, **kwargs):
+    def __init__(self, gtab, fit_method="NLS", *args, **kwargs):
         """ Free Water Diffusion Tensor Model [1]_.
         Parameters
         ----------
@@ -168,7 +168,7 @@ class FreeWaterTensorModel(ReconstModel):
             out_shape = data.shape[:-1] + (-1, )
             fwdti_params = params_in_mask.reshape(out_shape)
         else:
-            fwdti_params = np.zeros(data.shape[:-1] + (13,))
+            fwdti_params = np.zeros(data.shape[:-1] + (14,))
             fwdti_params[mask, :] = params_in_mask
 
         return FreeWaterTensorFit(self, fwdti_params)
@@ -179,9 +179,10 @@ class FreeWaterTensorModel(ReconstModel):
         Parameters
         ----------
         fwdti_params : ndarray
-            The last dimension should have 13 parameters: the 12 tensor
+            The last dimension should have 14 parameters: the 12 tensor
             parameters (3 eigenvalues, followed by the 3 corresponding
-            eigenvectors) and the volume fraction of the free water compartment
+            eigenvectors), the volume fraction of the free water compartment
+            and the estimate of the non diffusion-weighted signal S0.
         S0 : float or ndarray
             The non diffusion-weighted signal in every voxel, or across all
             voxels. Default: 1
@@ -199,13 +200,14 @@ class FreeWaterTensorFit(TensorFit):
         ----------
         model : FreeWaterTensorModel Class instance
             Class instance containing the free water tensor model for the fit
-        model_params : ndarray (x, y, z, 13) or (n, 13)
+        model_params : ndarray (x, y, z, 14) or (n, 14)
             All parameters estimated from the free water tensor model.
             Parameters are ordered as follows:
                 1) Three diffusion tensor's eigenvalues
                 2) Three lines of the eigenvector matrix each containing the
                    first, second and third coordinates of the eigenvector
                 3) The volume fraction of the free water compartment
+                4) The estimate of the non diffusion-weighted signal S0
         """
         TensorFit.__init__(self, model, model_params)
 
@@ -221,13 +223,14 @@ class FreeWaterTensorFit(TensorFit):
         vertices of a gradient table
         Parameters
         ----------
-        fwdti_params : ndarray (x, y, z, 13) or (n, 13)
+        fwdti_params : ndarray (x, y, z, 14) or (n, 14)
             All parameters estimated from the free water tensor model.
             Parameters are ordered as follows:
                 1) Three diffusion tensor's eigenvalues
                 2) Three lines of the eigenvector matrix each containing the
                    first, second and third coordinates of the eigenvector
                 3) The volume fraction of the free water compartment
+                4) The estimate of the non diffusion-weighted signal S0
         gtab : a GradientTable class instance
             The gradient table for this prediction
         S0 : float or ndarray (optional)
@@ -500,12 +503,13 @@ def nlls_fit_tensor(design_matrix, data, fw_params=None, Diso=3e-3,
         Data or response variables holding the data. Note that the last
         dimension should contain the data. It makes no copies of data.
 
-    fw_params: ([X, Y, Z, ...], 13), optional
-           A first model parameters guess (3 eigenvalues follow the coordinates
-           of 3 eigenvalues and the volume fraction of the free water
-           compartment). If the initial fw_paramters are not given, function
-           will use the WLS free water elimination algorithm to estimate the
-           parameters first guess.
+    fw_params: ([X, Y, Z, ...], 14), optional
+           A first model parameters guess (3 eigenvalues, 3 coordinates
+           of 3 eigenvalues, the volume fraction of the free water
+           compartment, and the estimate of the non diffusion-weighted signal
+           S0). If the initial fw_paramters are not given, function will use
+           the WLS free water elimination algorithm to estimate the parameters
+           first guess.
            Default: None
 
     Diso : float, optional

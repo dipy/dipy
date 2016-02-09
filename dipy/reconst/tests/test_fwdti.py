@@ -150,3 +150,25 @@ def test_fwdti_predictions():
     assert_array_almost_equal(S_pred1, DWI)
     S_pred2 = fwdm.predict(model_params_mv)
     assert_array_almost_equal(S_pred2, DWI)
+
+
+def test_fwdti_errors():
+    # 1st error - if a unknown fit method is given to the FWTM
+    assert_raises(ValueError, fwdti.FreeWaterTensorModel, gtab_2s,
+                  fit_method="pKT")
+    # 2nd error - if min_signal is negative
+    assert_raises(ValueError, fwdti.FreeWaterTensorModel, gtab_2s,
+                  min_signal=-1)
+    # 3rd error - if incorrect mask is given
+    fwdtiM = fwdti.FreeWaterTensorModel(gtab_2s)
+    incorrect_mask = np.array([[True, True, False], [True, False, False]])
+    assert_raises(ValueError, fwdtiM.fit, DWI, mask=incorrect_mask)
+
+    # Testing the correct usage
+    fwdtiM = fwdti.FreeWaterTensorModel(gtab_2s, min_signal=1)
+    correct_mask = np.zeros((2, 2, 2))
+    correct_mask[0, :, :] = 1;
+    correct_mask = correct_mask > 0
+    fwdtiF = fwdtiM.fit(DWI, mask=correct_mask)
+    assert_array_almost_equal(fwdtiF.fa, FAref)
+    assert_array_almost_equal(fwdtiF.f, GTF)
