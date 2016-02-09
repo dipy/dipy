@@ -581,7 +581,7 @@ def nlls_fit_tensor(design_matrix, data, fw_params=None, Diso=3e-3,
             fw_params[vox, 12] = this_tensor[7]
             fw_params[vox, 13] = np.exp(-this_tensor[6])
         # If leastsq failed to converge and produced nans, we'll resort to the
-        # OLS solution in this voxel:
+        # WLS solution in this voxel:
         except np.linalg.LinAlgError:
             evals, evecs = decompose_tensor(
                               from_lower_triangular(start_params[:6]))
