@@ -82,6 +82,15 @@ def test_fwdti_singlevoxel():
 
     assert_almost_equal(FAdti, FAfwe)
     assert_almost_equal(Ffwe, gtf)
+    
+    # Test non-linear fit, when no first quess is given
+    fwdm = fwdti.FreeWaterTensorModel(gtab_2s, 'NLS', fw_params=None)
+    fwefit = fwdm.fit(S_conta)
+    FAfwe = fwefit.fa
+    Ffwe = fwefit.f
+
+    assert_almost_equal(FAdti, FAfwe)
+    assert_almost_equal(Ffwe, gtf)
 
 
 def test_fwdti_precision():
@@ -172,3 +181,27 @@ def test_fwdti_errors():
     fwdtiF = fwdtiM.fit(DWI, mask=correct_mask)
     assert_array_almost_equal(fwdtiF.fa, FAref)
     assert_array_almost_equal(fwdtiF.f, GTF)
+
+    # 4th error - if a sigma is selected by no value of sigma is given for
+    # in the non-linear approach to performe restore
+    fwdm = fwdti.FreeWaterTensorModel(gtab_2s, 'NLS', weighting='sigma')
+    assert_raises(ValueError, fwdm.fit, DWI)
+
+
+def test_fwdti_restore():
+    # Restore have to work well even in nonproblematic cases
+    # Simulate a signal corrupted by free water diffusion contamination
+    gtf = 0.50  #ground truth volume fraction
+    mevals = np.array([[0.0017, 0.0003, 0.0003], [0.003, 0.003, 0.003]])
+    S_conta, peaks = multi_tensor(gtab_2s, mevals, S0=100,
+                                  angles=[(90, 0), (90, 0)],
+                                  fractions=[(1-gtf) * 100, gtf*100], snr=None)
+    fwdm = fwdti.FreeWaterTensorModel(gtab_2s, 'NLS', weighting='sigma',
+                                      sigma = 4)
+    fwdtiF = fwdm.fit(S_conta)
+    assert_array_almost_equal(fwdtiF.fa, FAdti)
+    assert_array_almost_equal(fwdtiF.f, gtf)
+    fwdm2 = fwdti.FreeWaterTensorModel(gtab_2s, 'NLS', weighting='gmm')
+    fwdtiF2 = fwdm2.fit(S_conta)
+    assert_array_almost_equal(fwdtiF2.fa, FAdti)
+    assert_array_almost_equal(fwdtiF2.f, gtf)
