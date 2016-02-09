@@ -1,15 +1,17 @@
 """
+The Sparse Fascicle Model.
+
 This is an implementation of the sparse fascicle model described in
-[Rokem2014a]_. The multi b-value version of this model is described in
-[Rokem2014b]_.
+[Rokem2015]_. The multi b-value version of this model is described in
+[Rokem2014]_.
 
 
-.. [Rokem2014a] Ariel Rokem, Jason D. Yeatman, Franco Pestilli, Kendrick
+.. [Rokem2015] Ariel Rokem, Jason D. Yeatman, Franco Pestilli, Kendrick
    N. Kay, Aviv Mezer, Stefan van der Walt, Brian A. Wandell
-   (2014). Evaluating the accuracy of diffusion MRI models in white
-   matter. http://arxiv.org/abs/1411.0721
+   (2015). Evaluating the accuracy of diffusion MRI models in white
+   matter. PLoS ONE 10(4): e0123272. doi:10.1371/journal.pone.0123272
 
-.. [Rokem2014b] Ariel Rokem, Kimberly L. Chan, Jason D. Yeatman, Franco
+.. [Rokem2014] Ariel Rokem, Kimberly L. Chan, Jason D. Yeatman, Franco
    Pestilli,  Brian A. Wandell (2014). Evaluating the accuracy of diffusion
    models at multiple b-values with cross-validation. ISMRM 2014.
 """
@@ -46,6 +48,23 @@ if not has_sklearn:
 # Isotropic signal models: these are models of the part of the signal that
 # changes with b-value, but does not change with direction. This collection is
 # extensible, by inheriting from IsotropicModel/IsotropicFit below:
+
+# First, a helper function to derive the fit signal for these models:
+def _to_fit_iso(data, gtab):
+    data_no_b0 = data[..., ~gtab.b0s_mask]
+    nzb0 = data_no_b0 > 0
+    nzb0_idx = np.where(nzb0)
+    zb0_idx = np.where(~nzb0)
+    if np.sum(gtab.b0s_mask) > 0:
+        s0 = np.mean(data[..., gtab.b0s_mask], -1)
+        to_fit = np.empty(data_no_b0.shape)
+        to_fit[nzb0_idx] = data_no_b0[nzb0_idx] / s0[nzb0_idx[0]]
+        to_fit[zb0_idx] = 0
+    else:
+        to_fit = data_no_b0
+    return to_fit
+
+
 class IsotropicModel(ReconstModel):
     """
     A base-class for the representation of isotropic signals.
@@ -56,7 +75,7 @@ class IsotropicModel(ReconstModel):
     """
     def __init__(self, gtab):
         """
-        Initialize an IsotropicModel
+        Initialize an IsotropicModel.
 
         Parameters
         ----------
@@ -66,8 +85,10 @@ class IsotropicModel(ReconstModel):
 
     def fit(self, data):
         """
-        Fit an IsotropicModel. This boils down to finding the mean
-        diffusion-weighted signal in each voxel
+        Fit an IsotropicModel.
+
+        This boils down to finding the mean diffusion-weighted signal in each
+        voxel
 
         Parameters
         ----------
@@ -77,25 +98,19 @@ class IsotropicModel(ReconstModel):
         -------
         IsotropicFit class instance.
         """
-        data_no_b0 = data[..., ~self.gtab.b0s_mask]
-        if np.sum(self.gtab.b0s_mask) > 0:
-            s0 = np.mean(data[..., self.gtab.b0s_mask], -1)
-            to_fit = data_no_b0 / s0[..., None]
-        else:
-            to_fit = data_no_b0
+        to_fit = _to_fit_iso(data, self.gtab)
         params = np.mean(np.reshape(to_fit, (-1, to_fit.shape[-1])), -1)
-
         return IsotropicFit(self, params)
 
 
 class IsotropicFit(ReconstFit):
     """
     A fit object for representing the isotropic signal as the mean of the
-    diffusion-weighted signal
+    diffusion-weighted signal.
     """
     def __init__(self, model, params):
         """
-        Initialize an IsotropicFit object
+        Initialize an IsotropicFit object.
 
         Parameters
         ----------
@@ -111,9 +126,10 @@ class IsotropicFit(ReconstFit):
 
     def predict(self, gtab=None):
         """
-        Predict the isotropic signal, based on a gradient table. In this case,
-        the (naive!) prediction will be the mean of the diffusion-weighted
-        signal in the voxels.
+        Predict the isotropic signal.
+
+        Based on a gradient table. In this case, the (naive!) prediction will
+        be the mean of the diffusion-weighted signal in the voxels.
 
         Parameters
         ----------
@@ -124,7 +140,9 @@ class IsotropicFit(ReconstFit):
         if gtab is None:
             gtab = self.model.gtab
         return self.params[..., np.newaxis] + np.zeros((self.params.shape[0],
-                                                        np.sum(~gtab.b0s_mask)))
+                                                        np.sum(~gtab.b0s_mask))
+                                                       )
+
 
 class ExponentialIsotropicModel(IsotropicModel):
     """
@@ -141,16 +159,11 @@ class ExponentialIsotropicModel(IsotropicModel):
         -------
         ExponentialIsotropicFit class instance.
         """
-        data = np.reshape(data, (-1, data.shape[-1]))
-
-        data_no_b0 = data[..., ~self.gtab.b0s_mask]
-        if np.sum(self.gtab.b0s_mask) > 0:
-            s0 = np.mean(data[..., self.gtab.b0s_mask], -1)
-            to_fit = np.log(data_no_b0 / s0[..., None])
-        else:
-            to_fit = np.log(data_no_b0)
-
-        # Fitting to the log-transformed relative data:
+        to_fit = _to_fit_iso(data, self.gtab)
+        # Fitting to the log-transformed relative data is much faster:
+        nz_idx = to_fit > 0
+        to_fit[nz_idx] = np.log(to_fit[nz_idx])
+        to_fit[~nz_idx] = -np.inf
         p = nanmean(to_fit / self.gtab.bvals[~self.gtab.b0s_mask], -1)
         params = -p
         return ExponentialIsotropicFit(self, params)
@@ -175,7 +188,8 @@ class ExponentialIsotropicFit(IsotropicFit):
         if gtab is None:
             gtab = self.model.gtab
         return np.exp(-gtab.bvals[~gtab.b0s_mask] *
-                      (np.zeros((self.params.shape[0], np.sum(~gtab.b0s_mask))) +
+                      (np.zeros((self.params.shape[0],
+                       np.sum(~gtab.b0s_mask))) +
                        self.params[..., np.newaxis]))
 
 
@@ -224,7 +238,8 @@ def sfm_design_matrix(gtab, sphere, response, mode='signal'):
 
     A canonical tensor approximating corpus-callosum voxels [Rokem2014]_:
 
-    >>> tensor_matrix = sfm_design_matrix(gtab, sphere, [0.0015, 0.0005, 0.0005])
+    >>> tensor_matrix = sfm_design_matrix(gtab, sphere,
+    ...                                   [0.0015, 0.0005, 0.0005])
 
     A 'stick' function ([Behrens2007]_):
 
@@ -232,12 +247,12 @@ def sfm_design_matrix(gtab, sphere, response, mode='signal'):
 
     Notes
     -----
-    .. [Rokem2014a] Ariel Rokem, Jason D. Yeatman, Franco Pestilli, Kendrick
+    .. [Rokem2015] Ariel Rokem, Jason D. Yeatman, Franco Pestilli, Kendrick
        N. Kay, Aviv Mezer, Stefan van der Walt, Brian A. Wandell
-       (2014). Evaluating the accuracy of diffusion MRI models in white
-       matter. http://arxiv.org/abs/1411.0721
+       (2015). Evaluating the accuracy of diffusion MRI models in white
+       matter. PLoS ONE 10(4): e0123272. doi:10.1371/journal.pone.0123272
 
-    .. [Rokem2014b] Ariel Rokem, Kimberly L. Chan, Jason D. Yeatman, Franco
+    .. [Rokem2014] Ariel Rokem, Kimberly L. Chan, Jason D. Yeatman, Franco
        Pestilli,  Brian A. Wandell (2014). Evaluating the accuracy of diffusion
        models at multiple b-values with cross-validation. ISMRM 2014.
 
@@ -315,12 +330,12 @@ class SparseFascicleModel(ReconstModel, Cache):
 
         Notes
         -----
-        This is an implementation of the SFM, described in [Rokem2014]_.
+        This is an implementation of the SFM, described in [Rokem2015]_.
 
         .. [Rokem2014] Ariel Rokem, Jason D. Yeatman, Franco Pestilli, Kendrick
            N. Kay, Aviv Mezer, Stefan van der Walt, Brian A. Wandell
            (2014). Evaluating the accuracy of diffusion MRI models in white
-           matter. http://arxiv.org/abs/1411.0721
+           matter. PLoS ONE 10(4): e0123272. doi:10.1371/journal.pone.0123272
 
         .. [Zou2005] Zou H, Hastie T (2005). Regularization and variable
            selection via the elastic net. J R Stat Soc B:301-320
@@ -352,12 +367,21 @@ class SparseFascicleModel(ReconstModel, Cache):
 
     @auto_attr
     def design_matrix(self):
+        """
+        The design matrix for a SFM.
+
+        Returns
+        -------
+        ndarray
+            The design matrix, where each column is a rotated version of the
+            response function.
+        """
         return sfm_design_matrix(self.gtab, self.sphere, self.response,
                                  'signal')
 
     def fit(self, data, mask=None):
         """
-        Fit the SparseFascicleModel object to data
+        Fit the SparseFascicleModel object to data.
 
         Parameters
         ----------
@@ -375,31 +399,36 @@ class SparseFascicleModel(ReconstModel, Cache):
 
         """
         if mask is None:
-            flat_data = np.reshape(data, (-1, data.shape[-1]))
+            # Flatten it to 2D either way:
+            data_in_mask = np.reshape(data, (-1, data.shape[-1]))
         else:
+            # Check for valid shape of the mask
+            if mask.shape != data.shape[:-1]:
+                raise ValueError("Mask is not the same shape as data.")
             mask = np.array(mask, dtype=bool, copy=False)
-            flat_data = np.reshape(data[mask], (-1, data.shape[-1]))
+            data_in_mask = np.reshape(data[mask], (-1, data.shape[-1]))
 
         # Fitting is done on the relative signal (S/S0):
-        flat_S0 = np.mean(flat_data[..., self.gtab.b0s_mask], -1)
-        flat_S = flat_data[..., ~self.gtab.b0s_mask] / flat_S0[..., None]
-        isotropic = self.isotropic(self.gtab).fit(flat_data)
-        flat_params = np.zeros((flat_data.shape[0],
+        flat_S0 = np.mean(data_in_mask[..., self.gtab.b0s_mask], -1)
+        flat_S = (data_in_mask[..., ~self.gtab.b0s_mask] /
+                  flat_S0[..., None])
+        isotropic = self.isotropic(self.gtab).fit(data_in_mask)
+        flat_params = np.zeros((data_in_mask.shape[0],
                                 self.design_matrix.shape[-1]))
 
+        isopredict = isotropic.predict()
         for vox, vox_data in enumerate(flat_S):
-            if np.any(~np.isfinite(vox_data)) or np.all(vox_data==0) :
-                # In voxels in which S0 is 0, we just want to keep the
-                # parameters at all-zeros, and avoid nasty sklearn errors:
-                break
-
-            fit_it = vox_data - isotropic.predict()[vox]
-            flat_params[vox] = self.solver.fit(self.design_matrix,
+            # In voxels in which S0 is 0, we just want to keep the
+            # parameters at all-zeros, and avoid nasty sklearn errors:
+            if not (np.any(~np.isfinite(vox_data)) or np.all(vox_data == 0)):
+                fit_it = vox_data - isopredict[vox]
+                flat_params[vox] = self.solver.fit(self.design_matrix,
                                                    fit_it).coef_
+
         if mask is None:
             out_shape = data.shape[:-1] + (-1, )
             beta = flat_params.reshape(out_shape)
-            S0 = flat_S0.reshape(out_shape).squeeze()
+            S0 = flat_S0.reshape(data.shape[:-1])
         else:
             beta = np.zeros(data.shape[:-1] +
                             (self.design_matrix.shape[-1],))
