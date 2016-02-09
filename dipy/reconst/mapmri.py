@@ -2,8 +2,11 @@
 import numpy as np
 from dipy.reconst.multi_voxel import multi_voxel_fit
 from dipy.reconst.base import ReconstModel, ReconstFit
-from scipy.special import hermite, gamma
+from dipy.reconst.cache import Cache
+from scipy.special import hermite, gamma, genlaguerre
 from scipy.misc import factorial, factorial2
+from dipy.core.geometry import cart2sphere
+from dipy.reconst.shm import real_sph_harm, sph_harm_ind_list
 import dipy.reconst.dti as dti
 from warnings import warn
 from dipy.core.gradients import gradient_table
@@ -12,7 +15,7 @@ from ..utils.optpkg import optional_package
 cvxopt, have_cvxopt, _ = optional_package("cvxopt")
 
 
-class MapmriModel(ReconstModel):
+class MapmriModel(Cache):
 
     r"""Mean Apparent Propagator MRI (MAPMRI) [1]_ of the diffusion signal.
 
@@ -41,8 +44,9 @@ class MapmriModel(ReconstModel):
            estimation via Compressive Sensing in diffusion MRI", Medical
            Image Analysis, 2013.
 
-    .. [4] Fick et al. "Laplacian-Regularized MAP-MRI: Improving Axonal
-           Caliber", ISBI, 2015.
+    .. [4] Fick et al. "MAPL: Tissue Microstructure Estimation Using 
+           Laplacian-Regularized MAP-MRI and its Application to HCP Data",
+           NeuroImage, Submitted.
 
     .. [5] Cheng, J., 2014. Estimation and Processing of Ensemble Average
            Propagator and Its Features in Diffusion MRI. Ph.D. Thesis.
@@ -64,11 +68,12 @@ class MapmriModel(ReconstModel):
                  gtab,
                  radial_order=6,
                  laplacian_regularization=True,
-                 laplacian_weighting='GCV',
+                 laplacian_weighting=0.2,
                  positivity_constraint=False,
                  anisotropic_scaling=True,
                  eigenvalue_threshold=1e-04,
-                 bval_threshold=np.inf):
+                 bval_threshold=np.inf,
+                 DTI_scale_estimation=True):
         r""" Analytical and continuous modeling of the diffusion signal with
         respect to the MAPMRI basis [1]_.
 
@@ -149,6 +154,7 @@ class MapmriModel(ReconstModel):
         self.gtab = gtab
         self.radial_order = radial_order
         self.bval_threshold = bval_threshold
+        self.DTI_scale_estimation=DTI_scale_estimation
 
         self.laplacian_regularization = laplacian_regularization
         if self.laplacian_regularization:
@@ -164,9 +170,6 @@ class MapmriModel(ReconstModel):
                 if np.sum(laplacian_weighting < 0) > 0:
                     raise ValueError(msg)
             self.laplacian_weighting = laplacian_weighting
-
-        self.R_mat, self.L_mat, self.S_mat = mapmri_RLS_regularization_matrices(
-            radial_order)
 
         self.positivity_constraint = positivity_constraint
         if self.positivity_constraint:
@@ -187,8 +190,35 @@ class MapmriModel(ReconstModel):
                                      bvecs=self.gtab.bvecs[self.cutoff])
         self.tenmodel = dti.TensorModel(gtab_cutoff)
 
-        self.ind_mat = mapmri_index_matrix(self.radial_order)
-        self.Bm = b_mat(self.ind_mat)
+        self.quick_fit = False
+        if self.anisotropic_scaling:
+            self.ind_mat = mapmri_index_matrix(self.radial_order)
+            self.Bm = b_mat(self.ind_mat)
+            self.R_mat, self.L_mat, self.S_mat = mapmri_RLS_regularization_matrices(
+            radial_order)
+        else:
+            self.ind_mat = mapmri_isotropic_index_matrix(self.radial_order)
+            self.Bm = b_mat_isotropic(self.ind_mat)
+            if self.laplacian_regularization:
+                self.laplacian_matrix = mapmri_isotropic_laplacian_reg_matrix(
+                                                              radial_order, 1.)
+            
+            qvals = np.sqrt(self.gtab.bvals / self.tau) / (2 * np.pi)
+            q = gtab.bvecs * qvals[:, None]
+            if self.DTI_scale_estimation:
+                self.M_mu_independent = mapmri_isotropic_M_mu_independent(self.radial_order, q)
+            else:
+                D = 0.7e-3 # average choice for white matter diffusivity
+                mumean = np.sqrt(2 * D * self.tau)
+                self.mu = np.array([mumean, mumean, mumean])
+                self.M = mapmri_isotropic_phi_matrix(radial_order, mumean, q)
+                if (self.laplacian_regularization and
+                    isinstance(laplacian_weighting, float) and 
+                    not positivity_constraint):
+                    MMt = (np.dot(self.M.T, self.M) +
+                        laplacian_weighting * mumean * self.laplacian_matrix)
+                    self.MMt_inv_Mt = np.dot(np.linalg.pinv(MMt), self.M.T)
+                    self.quick_fit = True
 
     @multi_voxel_fit
     def fit(self, data):
@@ -197,21 +227,32 @@ class MapmriModel(ReconstModel):
         evals = tenfit.evals
         R = tenfit.evecs
         evals = np.clip(evals, self.eigenvalue_threshold, evals.max())
+        qvals = np.sqrt(self.gtab.bvals / self.tau) / (2 * np.pi)
         if self.anisotropic_scaling:
             mu = np.sqrt(evals * 2 * self.tau)
-
+            qvecs = np.dot(self.gtab.bvecs, R)
+            q = qvecs * qvals[:, None]
+            M = mapmri_phi_matrix(self.radial_order, mu, q.T)
         else:
-            mumean = np.sqrt(evals.mean() * 2 * self.tau)
-            mu = np.array([mumean, mumean, mumean])
-
-        qvals = np.sqrt(self.gtab.bvals / self.tau) / (2 * np.pi)
-        qvecs = np.dot(self.gtab.bvecs, R)
-        q = qvecs * qvals[:, None]
-        M = mapmri_phi_matrix(self.radial_order, mu, q.T)
+            if self.quick_fit:
+                lopt = self.laplacian_weighting
+                coef = np.dot(self.MMt_inv_Mt, data)
+                coef = coef / sum(coef * self.Bm)
+                return MapmriFit(self, coef, self.mu, R, self.ind_mat, lopt)
+            else:
+                mumean = np.sqrt(evals.mean() * 2 * self.tau)
+                mu = np.array([mumean, mumean, mumean])
+                q = self.gtab.bvecs * qvals[:, None]
+                M_mu_dependent = mapmri_isotropic_M_mu_dependent(self.radial_order, 
+                                                                mu[0], qvals)
+                M = M_mu_dependent * self.M_mu_independent
 
         if self.laplacian_regularization:
-            laplacian_matrix = mapmri_laplacian_reg_matrix(
-                self.ind_mat, mu, self.R_mat, self.L_mat, self.S_mat)
+            if self.anisotropic_scaling:
+                laplacian_matrix = mapmri_laplacian_reg_matrix(
+                    self.ind_mat, mu, self.R_mat, self.L_mat, self.S_mat)
+            else:
+                laplacian_matrix = self.laplacian_matrix * mu[0]
             if self.laplacian_weighting == 'GCV':
                 lopt = generalized_crossvalidation(data, M, laplacian_matrix)
             elif np.isscalar(self.laplacian_weighting):
@@ -234,8 +275,10 @@ class MapmriModel(ReconstModel):
             gridsize = 10
             max_radius = 20e-3 # 20 microns maximum radius
             r_grad = create_rspace(gridsize, max_radius)
-            K = mapmri_psi_matrix(self.radial_order,  mu, r_grad)
-
+            if self.anisotropic_scaling:
+                K = mapmri_psi_matrix(self.radial_order, mu, r_grad)
+            else:
+                K = mapmri_isotropic_psi_matrix(self.radial_order, mu[0], r_grad)
             Q = cvxopt.matrix(np.dot(M.T, M) + lopt * laplacian_matrix)
             p = cvxopt.matrix(-1 * np.dot(M.T, data))
             G = cvxopt.matrix(-1 * K)
@@ -251,10 +294,7 @@ class MapmriModel(ReconstModel):
                 np.linalg.inv(np.dot(M.T, M) + lopt * laplacian_matrix), M.T)
             coef = np.dot(pseudoInv, data)
 
-        E0 = 0
-        for i in range(self.ind_mat.shape[0]):
-            E0 = E0 + coef[i] * self.Bm[i]
-        coef = coef / E0
+        coef = coef / sum(coef * self.Bm)
 
         return MapmriFit(self, coef, mu, R, self.ind_mat, lopt)
 
@@ -305,7 +345,7 @@ class MapmriFit(ReconstFit):
         """
         return self._mapmri_coef
 
-    def odf(self, sphere, s=0):
+    def odf(self, sphere, s=2):
         r""" Calculates the analytical Orientation Distribution Function (ODF)
         from the signal [1]_ Eq. 32.
 
@@ -320,11 +360,47 @@ class MapmriFit(ReconstFit):
         diffusion imaging method for mapping tissue microstructure",
         NeuroImage, 2013.
         """
+        
+        if self.model.anisotropic_scaling:
+            v_ = sphere.vertices
+            v = np.dot(v_, self.R)
+            I_s = mapmri_odf_matrix(self.radial_order, self.mu, s, v)
+            odf = np.dot(I_s, self._mapmri_coef)
+        else:
+            I = self.model.cache_get('ODF_matrix', key=(sphere, s))
+            if I is None:
+                I = mapmri_isotropic_odf_matrix(self.radial_order, 1,
+                                                s, sphere.vertices)
+                self.model.cache_set('ODF_matrix', (sphere, s), I)
+    
+            odf = self.mu[0] ** s * np.dot(I, self._mapmri_coef)
+        
+        return odf
+        
+    def odf_sh(self, s=2):
+        r""" Calculates the real analytical odf for a given discrete sphere.
+        Computes the design matrix of the ODF for the given sphere vertices
+        and radial moment. The radial moment s acts as a
+        sharpening method [1,2].
+        ..math::
+            :nowrap:
+                \begin{equation}\label{eq:ODF}
+                    \textrm{ODF}_s(\textbf{u}_r)=\int r^{2+s}
+                    P(r\cdot \textbf{u}_r)dr.
+                \end{equation}
+        """
+        if self.model.anisotropic_scaling:
+            msg = 'odf in spherical harmonics not yet implemented for '
+            msg += 'anisotropic implementation'
+            ValueError(msg)
+        I = self.model.cache_get('ODF_sh_matrix', key=(self.radial_order, s))
 
-        v_ = sphere.vertices
-        v = np.dot(v_, self.R)
-        I_s = mapmri_odf_matrix(self.radial_order, self.mu, s, v)
-        odf = np.dot(I_s, self._mapmri_coef)
+        if I is None:
+            I = mapmri_isotropic_odf_sh_matrix(self.radial_order, 1, s)
+            self.model.cache_set('ODF_sh_matrix', (self.radial_order, s), I)
+
+        odf = self.mu[0] ** s * np.dot(I, self._mapmri_coef)
+        
         return odf
 
     def rtpp(self):
@@ -338,13 +414,41 @@ class MapmriFit(ReconstFit):
         NeuroImage, 2013.
         """
         Bm = self.model.Bm
-        rtpp = 0
-        const = 1 / (np.sqrt(2 * np.pi) * self.mu[0])
-        for i in range(self.ind_mat.shape[0]):
-            if Bm[i] > 0.0:
-                rtpp += (-1.0) ** (self.ind_mat[i, 0] /
-                                2.0) * self._mapmri_coef[i] * Bm[i]
-        return const * rtpp
+        ind_mat = self.ind_mat
+        if self.model.anisotropic_scaling:
+            rtpp = 0
+            const = 1 / (np.sqrt(2 * np.pi) * self.mu[0])
+            for i in range(ind_mat.shape[0]):
+                if Bm[i] > 0.0:
+                    rtpp += (-1.0) ** (ind_mat[i, 0] /
+                                    2.0) * self._mapmri_coef[i] * Bm[i]
+            return const * rtpp
+        
+        else:
+            rtpp_vec = np.zeros((ind_mat.shape[0]))
+            count = 0
+            for n in range(0, self.model.radial_order + 1, 2):
+                    for j in range(1, 2 + n / 2):
+                        l = n + 2 - 2 * j
+                        const = (-1/2.0) ** (l/2) / np.sqrt(np.pi)
+                        matsum = 0
+                        for k in range(0, j):
+                            matsum += (-1) ** k * \
+                                binomialfloat(j + l - 0.5, j - k - 1) *\
+                                gamma(l / 2 + k + 1 / 2.0) /\
+                                (factorial(k) * 0.5 ** (l / 2 + 1 / 2.0 + k))
+                        for m in range(-l, l + 1):
+                            rtpp_vec[count] = const * matsum
+                            count += 1
+        
+            direction = np.array(self.R[:, 0], ndmin=2)
+            r, theta, phi = cart2sphere(direction[:, 0], direction[:, 1],
+                                            direction[:, 2])
+    
+            rtpp = self._mapmri_coef * (1 / self.mu[0]) *\
+                rtpp_vec * real_sph_harm(ind_mat[:, 2], ind_mat[:, 1], theta, phi)
+    
+            return rtpp.sum()
 
     def rtap(self):
         r""" Calculates the analytical return to the axis probability (RTAP)
@@ -357,14 +461,41 @@ class MapmriFit(ReconstFit):
         NeuroImage, 2013.
         """
         Bm = self.model.Bm
-        rtap = 0
-        const = 1 / (2 * np.pi * self.mu[1] * self.mu[2])
-        for i in range(self.ind_mat.shape[0]):
-            if Bm[i] > 0.0:
-                rtap += (-1.0) ** (
-                (self.ind_mat[i, 1] + self.ind_mat[i, 2])
-                / 2.0) * self._mapmri_coef[i] * Bm[i]
-        return const * rtap
+        ind_mat = self.ind_mat
+        if self.model.anisotropic_scaling:
+            rtap = 0
+            const = 1 / (2 * np.pi * self.mu[1] * self.mu[2])
+            for i in range(ind_mat.shape[0]):
+                if Bm[i] > 0.0:
+                    rtap += (-1.0) ** (
+                    (ind_mat[i, 1] + ind_mat[i, 2])
+                    / 2.0) * self._mapmri_coef[i] * Bm[i]
+            return const * rtap
+        else:
+            rtap_vec = np.zeros((ind_mat.shape[0]))
+            count = 0
+        
+            for n in range(0, self.model.radial_order + 1, 2):
+                for j in range(1, 2 + n / 2):
+                    l = n + 2 - 2 * j
+                    kappa = ((-1) ** (j - 1) * 2 ** (-(l + 3) / 2.0)) / np.pi
+                    matsum = 0
+                    for k in range(0, j):
+                        matsum = matsum + ((-1) ** k *
+                                        binomialfloat(j + l - 0.5, j - k - 1) *
+                                        gamma((l + 1) / 2.0 + k)) /\
+                            (factorial(k) * 0.5 ** ((l + 1) / 2.0 + k))
+                    for m in range(-l, l + 1):
+                        rtap_vec[count] = kappa * matsum
+                        count += 1
+            rtap_vec *= 2
+            
+            direction = np.array(self.R[:, 0], ndmin=2)
+            r, theta, phi = cart2sphere(direction[:, 0],
+                                            direction[:, 1], direction[:, 2])
+            rtap = self._mapmri_coef * (1 / self.mu[0] ** 2) *\
+                rtap_vec * real_sph_harm(ind_mat[:, 2], ind_mat[:, 1], theta, phi)
+            return rtap.sum()
 
     def rtop(self):
         r""" Calculates the analytical return to the origin probability (RTOP)
@@ -377,19 +508,27 @@ class MapmriFit(ReconstFit):
         NeuroImage, 2013.
         """
         Bm = self.model.Bm
-        rtop = 0
-        const = 1 / \
-            np.sqrt(
-                8 * np.pi ** 3 * (self.mu[0] ** 2 * self.mu[1] ** 2 *
-                                  self.mu[2] ** 2))
-        for i in range(self.ind_mat.shape[0]):
-            if Bm[i] > 0.0:
-                rtop += (-1.0) ** (
-                    (self.ind_mat[i, 0] + self.ind_mat[i, 1] +
-                     self.ind_mat[i, 2])
-                    / 2.0) * self._mapmri_coef[i] * Bm[i]
-        return const * rtop
-
+        
+        if self.model.anisotropic_scaling:
+            rtop = 0
+            const = 1 / \
+                np.sqrt(
+                    8 * np.pi ** 3 * (self.mu[0] ** 2 * self.mu[1] ** 2 *
+                                    self.mu[2] ** 2))
+            for i in range(self.ind_mat.shape[0]):
+                if Bm[i] > 0.0:
+                    rtop += (-1.0) ** (
+                        (self.ind_mat[i, 0] + self.ind_mat[i, 1] +
+                        self.ind_mat[i, 2])
+                        / 2.0) * self._mapmri_coef[i] * Bm[i]
+            rtop = const * rtop
+        else:
+            const = 1 / (2 * np.sqrt(2.0) * np.pi ** (3 / 2.0))
+            rtop_vec = const * (-1.0) ** (self.model.ind_mat[:, 0]-1) * Bm
+            rtop = (1 / self.mu[0] ** 3) * rtop_vec * self._mapmri_coef
+            rtop = rtop.sum()
+        return rtop
+        
     def msd(self):
         r""" Calculates the analytical Mean Squared Displacement (MSD).
         The analytical formula was derived through the Laplacian of the origin
@@ -400,24 +539,29 @@ class MapmriFit(ReconstFit):
         .. [5] Cheng, J., 2014. Estimation and Processing of Ensemble Average
         Propagator and Its Features in Diffusion MRI. Ph.D. Thesis.
         """
+        
         mu = self.mu
         ind_mat = self.model.ind_mat
-
-        msd = 0
-        for i in range(ind_mat.shape[0]):
-            nx, ny, nz = ind_mat[i]
-            if not(nx % 2) and not(ny % 2) and not(nz % 2):
-                msd += (
-                    self._mapmri_coef[i] * (-1) ** (0.5 * (- nx - ny - nz)) *
-                    np.pi ** (3 / 2.0) *
-                    ((1 + 2 * nx) * mu[0] ** 2 + (1 + 2 * ny) *
-                    mu[1] ** 2 + (1 + 2 * nz) * mu[2] ** 2) /
-                    (np.sqrt(2 ** (-nx - ny - nz) *
-                    factorial(nx) * factorial(ny) * factorial(nz)) *
-                    gamma(0.5 - 0.5 * nx) * gamma(0.5 - 0.5 * ny) *
-                    gamma(0.5 - 0.5 * nz))
-                    )
-
+        if self.model.anisotropic_scaling:
+            msd = 0
+            for i in range(ind_mat.shape[0]):
+                nx, ny, nz = ind_mat[i]
+                if not(nx % 2) and not(ny % 2) and not(nz % 2):
+                    msd += (
+                        self._mapmri_coef[i] * (-1) ** (0.5 * (- nx - ny - nz)) *
+                        np.pi ** (3 / 2.0) *
+                        ((1 + 2 * nx) * mu[0] ** 2 + (1 + 2 * ny) *
+                        mu[1] ** 2 + (1 + 2 * nz) * mu[2] ** 2) /
+                        (np.sqrt(2 ** (-nx - ny - nz) *
+                        factorial(nx) * factorial(ny) * factorial(nz)) *
+                        gamma(0.5 - 0.5 * nx) * gamma(0.5 - 0.5 * ny) *
+                        gamma(0.5 - 0.5 * nz))
+                        )
+        else:
+            Bm = self.model.Bm
+            msd_vec = (4 * ind_mat[:, 0] - 1) * Bm
+            msd = self.mu[0] ** 2 * msd_vec * self._mapmri_coef
+            msd = msd.sum()
         return msd
 
     def qiv(self):
@@ -435,21 +579,28 @@ class MapmriFit(ReconstFit):
         ux, uy, uz = self.mu
         ind_mat = self.model.ind_mat
 
-        qiv = 0
-        for i in range(ind_mat.shape[0]):
-            nx, ny, nz = ind_mat[i]
-
-            if not nx % 2 and not ny % 2 and not nz % 2:
-                numerator = 8 * np.pi ** 2 * (ux * uy * uz) ** 3 *\
-                    np.sqrt(factorial(nx) * factorial(ny) * factorial(nz)) *\
-                    gamma(0.5 - 0.5 * nx) * gamma(0.5 - 0.5 * ny) * \
-                    gamma(0.5 - 0.5 * nz)
-
-                denominator = np.sqrt(2 ** (-1 + nx + ny + nz)) *\
-                    ((1 + 2 * nx) * uy ** 2 * uz ** 2 + ux ** 2 *
-                     ((1 + 2 * nz) * uy ** 2 + (1 + 2 * ny) * uz ** 2))
-                qiv += self._mapmri_coef[i] * (numerator / denominator)
-
+        if self.model.anisotropic_scaling:
+            qiv = 0
+            for i in range(ind_mat.shape[0]):
+                nx, ny, nz = ind_mat[i]
+    
+                if not nx % 2 and not ny % 2 and not nz % 2:
+                    numerator = 8 * np.pi ** 2 * (ux * uy * uz) ** 3 *\
+                        np.sqrt(factorial(nx) * factorial(ny) * factorial(nz)) *\
+                        gamma(0.5 - 0.5 * nx) * gamma(0.5 - 0.5 * ny) * \
+                        gamma(0.5 - 0.5 * nz)
+    
+                    denominator = np.sqrt(2 ** (-1 + nx + ny + nz)) *\
+                        ((1 + 2 * nx) * uy ** 2 * uz ** 2 + ux ** 2 *
+                        ((1 + 2 * nz) * uy ** 2 + (1 + 2 * ny) * uz ** 2))
+                    qiv += self._mapmri_coef[i] * (numerator / denominator)
+        else:
+            Bm = self.model.Bm
+            j = ind_mat[:,0]
+            qiv_vec = (8 * (-1) ** (1 - j) * np.sqrt(2) * np.pi ** (7 / 2.)) / ((4 * j - 1) * Bm)
+            qiv_vec[-np.isfinite(qiv_vec)]=0.
+            qiv = ux ** 5 * qiv_vec * self._mapmri_coef
+            qiv = qiv.sum()
         return qiv
 
     def ng(self):
@@ -461,14 +612,18 @@ class MapmriFit(ReconstFit):
         diffusion imaging method for mapping tissue microstructure",
         NeuroImage, 2013.
 
-        .. [8] Avram et al. "Clinical feasibility of using mean apparent
+        .. [2] Avram et al. "Clinical feasibility of using mean apparent
         propagator (MAP) MRI to characterize brain tissue microstructure".
         NeuroImage 2015, in press.
         """
         if self.model.bval_threshold > 2000.:
             msg = 'model bval_threshold must be lower than 2000 for the '
-            msg += 'non_Gaussianity to be physically meaningful [8].'
+            msg += 'non_Gaussianity to be physically meaningful [2].'
             warn(msg)
+        if not self.model.anisotropic_scaling:
+            msg = 'Parallel non-Gaussianity is not defined using '
+            msd += 'isotropic scaling.'
+            ValueError(msg)
 
         coef = self._mapmri_coef
         return np.sqrt(1 - coef[0] ** 2 / np.sum(coef ** 2))
@@ -482,14 +637,18 @@ class MapmriFit(ReconstFit):
         diffusion imaging method for mapping tissue microstructure",
         NeuroImage, 2013.
 
-        .. [8] Avram et al. "Clinical feasibility of using mean apparent
+        .. [2] Avram et al. "Clinical feasibility of using mean apparent
         propagator (MAP) MRI to characterize brain tissue microstructure".
         NeuroImage 2015, in press.
         """
         if self.model.bval_threshold > 2000.:
-            msg = 'model bval_threshold must be lower than 2000 for the '
-            msg += 'non_Gaussianity to be physically meaningful [8].'
+            msg = 'Model bval_threshold must be lower than 2000 for the '
+            msg += 'non_Gaussianity to be physically meaningful [2].'
             warn(msg)
+        if not self.model.anisotropic_scaling:
+            msg = 'Parallel non-Gaussianity is not defined using '
+            msd += 'isotropic scaling.'
+            ValueError(msg)
 
         ind_mat = self.model.ind_mat
         coef = self._mapmri_coef
@@ -515,14 +674,18 @@ class MapmriFit(ReconstFit):
         diffusion imaging method for mapping tissue microstructure",
         NeuroImage, 2013.
 
-        .. [8] Avram et al. "Clinical feasibility of using mean apparent
+        .. [2] Avram et al. "Clinical feasibility of using mean apparent
         propagator (MAP) MRI to characterize brain tissue microstructure".
         NeuroImage 2015, in press.
         """
         if self.model.bval_threshold > 2000.:
             msg = 'model bval_threshold must be lower than 2000 for the '
-            msg += 'non_Gaussianity to be physically meaningful [8].'
+            msg += 'non_Gaussianity to be physically meaningful [2].'
             warn(msg)
+        if not self.model.anisotropic_scaling:
+            msg = 'Parallel non-Gaussianity is not defined using '
+            msd += 'isotropic scaling.'
+            ValueError(msg)
 
         ind_mat = self.model.ind_mat
         coef = self._mapmri_coef
@@ -559,9 +722,13 @@ class MapmriFit(ReconstFit):
         else:
             gtab = qvals_or_gtab
             qvals = np.sqrt(gtab.bvals / self.model.tau) / (2 * np.pi)
-            q = np.dot(qvals[:, None] * gtab.bvecs, self.R)
 
-        M = mapmri_phi_matrix(self.radial_order, self.mu, q.T)
+        if self.model.anisotropic_scaling:
+            q = np.dot(qvals[:, None] * gtab.bvecs, self.R)
+            M = mapmri_phi_matrix(self.radial_order, self.mu, q.T)
+        else:
+            q = qvals[:, None] * gtab.bvecs
+            M = mapmri_isotropic_phi_matrix(self.radial_order, self.mu[0], q)
 
         E = np.dot(M, self._mapmri_coef)
         return E
@@ -653,6 +820,32 @@ def b_mat(ind_mat):
 
     return B
 
+def b_mat_isotropic(ind_mat_isotropic):
+    r""" Calculates the isotropic B coefficients from [1]_ Appendix, Fig 8.
+
+    Parameters
+    ----------
+    index_matrix : array, shape (N,3)
+        ordering of the basis in x, y, z
+
+    Returns
+    -------
+    B : array, shape (N,)
+        B coefficients for the basis
+
+    References
+    ----------
+    .. [1] Ozarslan E. et. al, "Mean apparent propagator (MAP) MRI: A novel
+    diffusion imaging method for mapping tissue microstructure",
+    NeuroImage, 2013.
+    """
+
+    b_mat = np.zeros((ind_mat_isotropic.shape[0]))
+    for i in range(ind_mat_isotropic.shape[0]):
+        if ind_mat_isotropic[i, 1] == 0:
+            b_mat[i] = genlaguerre(ind_mat_isotropic[i, 0] - 1, 0.5)(0)
+
+    return b_mat
 
 def mapmri_phi_1d(n, q, mu):
     r""" One dimensional MAPMRI basis function from [1]_ Eq. 4.
@@ -926,6 +1119,313 @@ def mapmri_EAP(r_list, radial_order, coeff, mu, R):
 
     return data_out
 
+def mapmri_isotropic_M_mu_independent(radial_order, q):
+    r"""Computed the u0 independent part of the design matrix.
+    """
+    ind_mat = mapmri_isotropic_index_matrix(radial_order)
+
+    qval, theta, phi = cart2sphere(q[:, 0], q[:, 1],
+                                   q[:, 2])
+    theta[np.isnan(theta)] = 0
+
+    n_elem = ind_mat.shape[0]
+    n_rgrad = theta.shape[0]
+    Q_mu_independent = np.zeros((n_rgrad, n_elem))
+
+    counter = 0
+    for n in range(0, radial_order + 1, 2):
+        for j in range(1, 2 + n / 2):
+            l = n + 2 - 2 * j
+            const = np.sqrt(4 * np.pi) * (-1) ** (-l / 2) * \
+                (2 * np.pi ** 2 * qval ** 2) ** (l / 2)
+            for m in range(-1 * (n + 2 - 2 * j), (n + 3 - 2 * j)):
+                Q_mu_independent[:, counter] = const * \
+                    real_sph_harm(m, l, theta, phi)
+                counter += 1
+    return Q_mu_independent
+
+
+def mapmri_isotropic_M_mu_dependent(radial_order, mu, qval):
+    '''Computed the u0 dependent part of the design matrix. [2]
+    See mapmri_isotropic_Q_mu_independent for help.
+    '''
+    ind_mat = mapmri_isotropic_index_matrix(radial_order)
+
+    n_elem = ind_mat.shape[0]
+    n_qgrad = qval.shape[0]
+    Q_u0_dependent = np.zeros((n_qgrad, n_elem))
+
+    counter = 0
+
+    for n in range(0, radial_order + 1, 2):
+        for j in range(1, 2 + n / 2):
+            l = n + 2 - 2 * j
+            const = mu ** l * np.exp(-2 * np.pi ** 2 * mu ** 2 * qval ** 2) *\
+                genlaguerre(j - 1, l + 0.5)(4 * np.pi ** 2 * mu ** 2 *
+                                            qval ** 2)
+            for m in range(-l, l + 1):
+                Q_u0_dependent[:, counter] = const
+                counter += 1
+
+    return Q_u0_dependent
+
+
+def mapmri_isotropic_phi_matrix(radial_order, mu, q):
+    r""" Three dimensional isotropic MAPMRI signal basis function from [1]_ 
+    Eq. 57.
+
+    Parameters
+    ----------
+    n : array, shape (3,)
+        order of the basis function for x, y, z
+    q : array, shape (N,3)
+        points in the q-space in which evaluate the basis
+    mu : float,
+        isotropic scale factor of the basis
+
+    References
+    ----------
+    .. [1] Ozarslan E. et. al, "Mean apparent propagator (MAP) MRI: A novel
+    diffusion imaging method for mapping tissue microstructure",
+    NeuroImage, 2013.
+    """
+    qval, theta, phi = cart2sphere(q[:, 0], q[:, 1],
+                                   q[:, 2])
+    theta[np.isnan(theta)] = 0
+
+    ind_mat = mapmri_isotropic_index_matrix(radial_order)
+
+    n_elem = ind_mat.shape[0]
+    n_qgrad = q.shape[0]
+    M = np.zeros((n_qgrad, n_elem))
+
+    counter = 0
+    for n in range(0, radial_order + 1, 2):
+        for j in range(1, 2 + n / 2):
+            l = n + 2 - 2 * j
+            const = (-1) ** (l / 2) * np.sqrt(4.0 * np.pi) *\
+                (2 * np.pi ** 2 * mu ** 2 * qval ** 2) ** (l / 2) *\
+                np.exp(-2 * np.pi ** 2 * mu ** 2 * qval ** 2) *\
+                genlaguerre(j - 1, l + 0.5)(4 * np.pi ** 2 * mu ** 2 *
+                                            qval ** 2)
+            for m in range(-l, l+1):
+                M[:, counter] = const * real_sph_harm(m, l, theta, phi)
+                counter += 1
+    return M
+
+
+def mapmri_isotropic_K_mu_independent(radial_order, rgrad):
+    '''Computes mu independent part of K [2]. Same trick as with Q. [2]
+    '''
+    r, theta, phi = cart2sphere(rgrad[:, 0], rgrad[:, 1],
+                                rgrad[:, 2])
+    theta[np.isnan(theta)] = 0
+
+    ind_mat = mapmri_isotropic_index_matrix(radial_order)
+
+    n_elem = ind_mat.shape[0]
+    n_rgrad = rgrad.shape[0]
+    K = np.zeros((n_rgrad, n_elem))
+
+    counter = 0
+    for n in range(0, radial_order + 1, 2):
+        for j in range(1, 2 + n / 2):
+            l = n + 2 - 2 * j
+            const = (-1) ** (j - 1) *\
+                (np.sqrt(2) * np.pi) ** (-1) *\
+                (r ** 2 / 2) ** (l / 2)
+            for m in range(-l, l+1):
+                K[:, counter] = const * real_sph_harm(m, l, theta, phi)
+                counter += 1
+    return K
+
+
+def mapmri_isotropic_K_mu_dependent(radial_order, mu, rgrad):
+    '''Computes mu dependent part of K [2]. Same trick as with Q. [2]
+    '''
+    r, theta, phi = cart2sphere(rgrad[:, 0], rgrad[:, 1],
+                                rgrad[:, 2])
+    theta[np.isnan(theta)] = 0
+
+    ind_mat = mapmri_isotropic_index_matrix(radial_order)
+
+    n_elem = ind_mat.shape[0]
+    n_rgrad = rgrad.shape[0]
+    K = np.zeros((n_rgrad, n_elem))
+
+    counter = 0
+    for n in range(0, radial_order + 1, 2):
+        for j in range(1, 2 + n / 2):
+            l = n + 2 - 2 * j
+            const = (mu ** 3) ** (-1) * mu ** (-l) *\
+                np.exp(-r ** 2 / (2 * mu ** 2)) *\
+                genlaguerre(j - 1, l + 0.5)(r ** 2 / mu ** 2)
+            for m in range(-l, l + 1):
+                K[:, counter] = const
+                counter += 1
+    return K
+
+
+def mapmri_isotropic_psi_matrix(radial_order, mu, rgrad):
+    r""" Three dimensional isotropic MAPMRI propagator basis function from [1]_ 
+    Eq. 61.
+
+    Parameters
+    ----------
+    n : array, shape (3,)
+        order of the basis function for x, y, z
+    rgrad : array, shape (N,3)
+        points in the r-space in which evaluate the basis
+    mu : array, shape (3,)
+        isotropic scale factor of the basis
+
+    References
+    ----------
+    .. [1] Ozarslan E. et. al, "Mean apparent propagator (MAP) MRI: A novel
+    diffusion imaging method for mapping tissue microstructure",
+    NeuroImage, 2013.
+    """
+
+    r, theta, phi = cart2sphere(rgrad[:, 0], rgrad[:, 1],
+                                rgrad[:, 2])
+    theta[np.isnan(theta)] = 0
+
+    ind_mat = mapmri_isotropic_index_matrix(radial_order)
+
+    n_elem = ind_mat.shape[0]
+    n_rgrad = rgrad.shape[0]
+    K = np.zeros((n_rgrad, n_elem))
+
+    counter = 0
+    for n in range(0, radial_order + 1, 2):
+        for j in range(1, 2 + n / 2):
+            l = n + 2 - 2 * j
+            const = (-1) ** (j - 1) * \
+                    (np.sqrt(2) * np.pi * mu ** 3) ** (-1) *\
+                    (r ** 2 / (2 * mu ** 2)) ** (l / 2) *\
+                np.exp(- r ** 2 / (2 * mu ** 2)) *\
+                genlaguerre(j - 1, l + 0.5)(r ** 2 / mu ** 2)
+            for m in range(-l, l + 1):
+                K[:, counter] = const * real_sph_harm(m, l, theta, phi)
+                counter += 1
+
+    return K
+    
+def binomialfloat(n, k):
+    """Custom Binomial function
+    """
+    return factorial(n) / (factorial(n - k) * factorial(k))
+
+
+def mapmri_isotropic_odf_matrix(radial_order, mu, s, vertices):
+    r"""The ODF in terms of SHORE coefficients for arbitrary radial moment
+    can be given as [2]:
+    """
+    r, theta, phi = cart2sphere(vertices[:, 0], vertices[:, 1],
+                                vertices[:, 2])
+
+    theta[np.isnan(theta)] = 0
+    ind_mat = mapmri_isotropic_index_matrix(radial_order)
+    n_vert = vertices.shape[0]
+    n_elem = ind_mat.shape[0]
+    odf_mat = np.zeros((n_vert, n_elem))
+
+    counter = 0
+    for n in range(0, radial_order + 1, 2):
+        for j in range(1, 2 + n / 2):
+            l = n + 2 - 2 * j
+            kappa = ((-1) ** (j - 1) * 2 ** (-(l + 3) / 2.0) * mu ** s) / np.pi
+            matsum = 0
+            for k in range(0, j):
+                matsum += ((-1) ** k * binomialfloat(j + l - 0.5, j - k - 1) *
+                           gamma((l + s + 3) / 2.0 + k)) /\
+                    (factorial(k) * 0.5 ** ((l + s + 3) / 2.0 + k))
+            for m in range(-l, l + 1):
+                odf_mat[:, counter] = kappa * matsum *\
+                    real_sph_harm(m, l, theta, phi)
+                counter += 1
+
+    return odf_mat
+
+def mapmri_isotropic_odf_sh_matrix(radial_order, mu, s):
+    r"""Directly returns the spherical harmonic coefficients of the ODF of
+    arbitrary radial moment. It uses the same computation as the function
+    above, but only the radial component of P(r)r^s is integrated. The
+    SHORE coefficients are then summed where l,m overlap with the l,m 
+    order of the real, symmetric spherical harmonic formulation. [2]
+    """
+    sh_mat = sph_harm_ind_list(radial_order)
+    ind_mat = mapmri_isotropic_index_matrix(radial_order)
+    n_elem_shore = ind_mat.shape[0]
+    n_elem_sh = sh_mat[0].shape[0]
+    odf_sh_mat = np.zeros((n_elem_sh, n_elem_shore))
+
+    counter = 0
+    for n in range(0, radial_order + 1, 2):
+        for j in range(1, 2 + n / 2):
+            l = n + 2 - 2 * j
+            kappa = ((-1) ** (j - 1) * 2 ** (-(l + 3) / 2.0) * mu ** s) / np.pi
+            matsum = 0
+            for k in range(0, j):
+                matsum += ((-1) ** k * binomialfloat(j + l - 0.5, j - k - 1) *
+                           gamma((l + s + 3) / 2.0 + k)) /\
+                    (factorial(k) * 0.5 ** ((l + s + 3) / 2.0 + k))
+            for m in range(-l, l + 1):
+                index_overlap = np.all([l == sh_mat[1], m == sh_mat[0]], 0)
+                odf_sh_mat[:, counter] = kappa * matsum * index_overlap
+                counter += 1
+
+    return odf_sh_mat
+    
+def mapmri_isotropic_laplacian_reg_matrix(radial_order, mu):
+    r'''
+    The Laplacian regularization matrix [2].
+    '''
+    ind_mat = mapmri_isotropic_index_matrix(radial_order)
+
+    n_elem = ind_mat.shape[0]
+
+    LR = np.zeros((n_elem, n_elem))
+
+    for i in range(n_elem):
+        for k in range(i, n_elem):
+            if ind_mat[i, 1] == ind_mat[k, 1] and \
+               ind_mat[i, 2] == ind_mat[k, 2]:
+                ji = ind_mat[i, 0]
+                jk = ind_mat[k, 0]
+                l = ind_mat[i, 1]
+                if ji == (jk + 2):
+                    LR[i, k] = LR[k, i] = 2 ** (2 - l) * np.pi ** 2 * mu *\
+                        gamma(5 / 2.0 + jk + l) / gamma(jk)
+                elif ji == (jk + 1):
+                    LR[i, k] = LR[k, i] = 2 ** (2 - l) * np.pi ** 2 * mu *\
+                        (-3 + 4 * ji + 2 * l) * gamma(3 / 2.0 + jk + l) /\
+                        gamma(jk)
+                elif ji == jk:
+                    LR[i, k] = 2 ** (-l) * np.pi ** 2 * mu *\
+                        (3 + 24 * ji ** 2 + 4 * (-2 + l) *
+                         l + 12 * ji * (-1 + 2 * l)) *\
+                        gamma(1 / 2.0 + ji + l) / gamma(ji)
+                elif ji == (jk - 1):
+                    LR[i, k] = LR[k, i] = 2 ** (2 - l) * np.pi ** 2 * mu *\
+                        (-3 + 4 * jk + 2 * l) * gamma(3 / 2.0 + ji + l) /\
+                        gamma(ji)
+                elif ji == (jk - 2):
+                    LR[i, k] = LR[k, i] = 2 ** (2 - l) * np.pi ** 2 * mu *\
+                        gamma(5 / 2.0 + ji + l) / gamma(ji)
+
+    return LR
+    
+def mapmri_isotropic_index_matrix(radial_order):
+    """Computes the SHORE basis order indices according to [1].
+    """
+    index_matrix = []
+    for n in range(0, radial_order + 1, 2):
+        for j in range(1, 2 + n / 2):
+            for m in range(-1 * (n + 2 - 2 * j), (n + 3 - 2 * j)):
+                index_matrix.append([j, n + 2 - 2 * j, m])
+
+    return np.array(index_matrix)
 
 def create_rspace(gridsize, radius_max):
     """ Create the real space table, that contains the points in which
