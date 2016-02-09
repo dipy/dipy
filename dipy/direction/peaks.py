@@ -243,7 +243,7 @@ def _peaks_from_model_parallel(model, data, sphere, relative_peak_threshold,
                            mode='w+',
                            shape=(data.shape[0], npeaks))
         if return_sh:
-            nbr_shm_coeff = (sh_order + 2) * (sh_order + 1) / 2
+            nbr_shm_coeff = (sh_order + 2) * (sh_order + 1) // 2
             pam.shm_coeff = np.memmap(path.join(tmpdir, 'shm.npy'),
                                       dtype=pam_res[0].shm_coeff.dtype,
                                       mode='w+',
