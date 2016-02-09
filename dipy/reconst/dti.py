@@ -681,26 +681,12 @@ def tensor_prediction(dti_params, gtab, S0):
     evals = dti_params[..., :3]
     evecs = dti_params[..., 3:].reshape(dti_params.shape[:-1] + (3, 3))
     qform = vec_val_vect(evecs, evals)
-    sphere = Sphere(xyz=gtab.bvecs[~gtab.b0s_mask])
-    adc = apparent_diffusion_coef(qform, sphere)
+    del evals, evecs
+    lower_tri = lower_triangular(qform, S0)
+    del qform
 
-    if isinstance(S0, np.ndarray):
-        # If it's an array, we need to give it one more dimension:
-        S0 = S0[..., None]
-
-    # First do the calculation for the diffusion weighted measurements:
-    pre_pred_sig = S0 * np.exp(-gtab.bvals[~gtab.b0s_mask] * adc)
-
-    # Then we need to sort out what goes where:
-    pred_sig = np.zeros(pre_pred_sig.shape[:-1] + (gtab.bvals.shape[0],))
-
-    # These are the diffusion-weighted values
-    pred_sig[..., ~gtab.b0s_mask] = pre_pred_sig
-
-    # For completeness, we predict the mean S0 for the non-diffusion
-    # weighted measurements, which is our best guess:
-    pred_sig[..., gtab.b0s_mask] = S0
-    return pred_sig
+    D = design_matrix(gtab)
+    return np.exp(np.dot(lower_tri, D.T))
 
 
 class TensorModel(ReconstModel):
@@ -1133,7 +1119,7 @@ class TensorFit(object):
         """
         return apparent_diffusion_coef(self.quadratic_form, sphere)
 
-    def predict(self, gtab, S0=1):
+    def predict(self, gtab, S0=1, step=None):
         r"""
         Given a model fit, predict the signal on the vertices of a sphere
 
@@ -1162,7 +1148,26 @@ class TensorFit(object):
         which a signal is to be predicted and $b$ is the b value provided in
         the GradientTable input for that direction
         """
-        return tensor_prediction(self.model_params[..., 0:12], gtab, S0=S0)
+        shape = self.model_params.shape[:-1]
+        size = np.prod(shape)
+        if step is None:
+            step = self.model.kwargs.get('step', size)
+        if step >= size:
+            return tensor_prediction(self.model_params[..., 0:12], gtab, S0=S0)
+        params = np.reshape(self.model_params,
+                            (-1, self.model_params.shape[-1]))
+        predict = np.empty((size, gtab.bvals.shape[0]))
+        if isinstance(S0, np.ndarray):
+            S0 = S0.ravel()
+        for i in range(0, size, step):
+            if isinstance(S0, np.ndarray):
+                this_S0 = S0[i:i+step]
+            else:
+                this_S0 = S0
+            predict[i:i+step] = tensor_prediction(params[i:i+step], gtab,
+                                                  S0=this_S0)
+        return predict.reshape(shape + (gtab.bvals.shape[0], ))
+
 
 
 def iter_fit_tensor(step=1e4):
