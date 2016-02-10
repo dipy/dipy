@@ -170,7 +170,7 @@ class EuDX(object):
         return utils.move_streamlines(voxel_tracks, self.affine)
 
     def _voxel_tracks(self, seed_voxels):
-        ''' This is were all the fun starts '''
+        ''' This is where all the fun starts '''
         if seed_voxels is not None and seed_voxels.dtype != np.float64:
             # This is a private method so users should never see this error. If
             # you've reached this error, there is a bug somewhere.
