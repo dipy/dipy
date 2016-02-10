@@ -137,7 +137,7 @@ def streamline_mapping(streamlines, voxel_size=None, affine=None,
     for i, sl in enumerate(streamlines):
         voxel_indices = _to_voxel_coordinates(sl, lin, offset)
 
-        # Get the unique voxels every streamline passes though
+        # Get the unique voxels every streamline passes through
         uniq_points = set()
         for j in range(voxel_indices.shape[0]):
             point = (voxel_indices[j, 0],
