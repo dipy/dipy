@@ -347,7 +347,8 @@ def assign_bundle_labels_flow(streamline_file, labels_files, verbose=True):
             os.path.dirname(lf),
             base + '_of_' + os.path.basename(streamline_file))
         nib.streamlines.save(recognized_trkfile, fname)
-        print(fname)
+        if verbose:
+            print('Bundle saved in \n {} '.format(fname))
 
 
 def kdtrees_bundles_flow(streamline_file, labels_file,
