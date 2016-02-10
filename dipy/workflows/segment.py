@@ -328,8 +328,6 @@ def assign_bundle_labels_flow(streamline_file, labels_files, verbose=True):
     if isinstance(labels_files, string_types):
         lfiles = glob(labels_files)
 
-    from ipdb import set_trace
-    # set_trace()
     streamlines_trk = nib.streamlines.load(streamline_file)
     streamlines = streamlines_trk.streamlines
 
@@ -337,7 +335,6 @@ def assign_bundle_labels_flow(streamline_file, labels_files, verbose=True):
 
         labels = np.load(lf)
         recognized_bundle = streamlines[labels.tolist()]
-        set_trace()
         recognized_tractogram = nib.streamlines.Tractogram(recognized_bundle)
         recognized_trkfile = nib.streamlines.TrkFile(
             recognized_tractogram,
