@@ -1,0 +1,13 @@
+#! /usr/bin/env python
+
+from dipy.workflows.segment import assign_bundle_labels_flow
+from dipy.workflows.base import IntrospectiveArgumentParser
+
+parser = IntrospectiveArgumentParser()
+
+parser.add_workflow(assign_bundle_labels_flow)
+
+if __name__ == '__main__':
+
+    args = parser.get_flow_args()
+    assign_bundle_labels_flow(**args)

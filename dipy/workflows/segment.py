@@ -175,7 +175,7 @@ def recognize_bundles_flow(streamline_files, model_bundle_files,
 
     print('### RecoBundles ###')
 
-    # Streamline file
+    # Streamline files where the recognition will take place
     for sf in sfiles:
         print('# Streamline file')
         print(sf)
@@ -310,6 +310,44 @@ def recognize_bundles_flow(streamline_files, model_bundle_files,
 
             print('Centroids of streamlines saved in \n {} '
                   .format(sf_centroids))
+
+
+def assign_bundle_labels_flow(streamline_file, labels_files, verbose=True):
+    """ Show recognized bundles in their original space
+
+    Parameters
+    ----------
+    streamline_file : string
+    labels_files : string
+    verbose : bool, optional
+        Print standard output (default True)
+    """
+    print(streamline_file)
+    print(labels_files)
+
+    if isinstance(labels_files, string_types):
+        lfiles = glob(labels_files)
+
+    from ipdb import set_trace
+    # set_trace()
+    streamlines_trk = nib.streamlines.load(streamline_file)
+    streamlines = streamlines_trk.streamlines
+
+    for lf in lfiles:
+
+        labels = np.load(lf)
+        recognized_bundle = streamlines[labels.tolist()]
+        set_trace()
+        recognized_tractogram = nib.streamlines.Tractogram(recognized_bundle)
+        recognized_trkfile = nib.streamlines.TrkFile(
+            recognized_tractogram,
+            header=streamlines_trk.header)
+        base = os.path.splitext(os.path.basename(lf))[0].split('_labels')[0]
+        fname = os.path.join(
+            os.path.dirname(lf),
+            base + '_of_' + os.path.basename(streamline_file))
+        nib.streamlines.save(recognized_trkfile, fname)
+        print(fname)
 
 
 def kdtrees_bundles_flow(streamline_file, labels_file,
