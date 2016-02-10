@@ -243,6 +243,32 @@ cdef void c_set_number_of_points(Streamline streamline, Streamline out) nogil:
     free(arclengths)
 
 
+cdef void c_set_number_of_points_from_arraysequence(Streamline points, long[:] offsets, long[:] lengths, long nb_points, Streamline out) nogil:
+    cdef:
+        np.npy_intp i, j, k
+        np.npy_intp offset, length
+        np.npy_intp offset_out = 0
+        double dn, sum_dn_sqr
+
+    for i in range(offsets.shape[0]):
+        offset = offsets[i]
+        length = lengths[i]
+
+        #arclengths[i] = 0
+        #for j in range(1, lengths[i]):
+        #    sum_dn_sqr = 0.0
+        #    for k in range(points.shape[1]):
+        #        dn = points[offset+j, k] - points[offset+j-1, k]
+        #        sum_dn_sqr += dn*dn
+
+        #    arclengths[i] += sqrt(sum_dn_sqr)
+
+        c_set_number_of_points(points[offset:offset+length, :],
+                               out[offset_out:offset_out+nb_points, :])
+
+        offset_out += nb_points
+
+
 def set_number_of_points(streamlines, nb_points=3):
     ''' Change the number of points of streamlines
         (either by downsampling or upsampling)
@@ -285,6 +311,23 @@ def set_number_of_points(streamlines, nb_points=3):
     [10, 10]
 
     '''
+    if isinstance(streamlines, Streamlines):
+        if len(streamlines) == 0:
+            return Streamlines()
+
+        dtype = streamlines._data.dtype
+        modified_streamlines = Streamlines()
+        modified_streamlines._data = np.zeros((len(streamlines)*nb_points, 3), dtype=dtype)
+        modified_streamlines._offsets = nb_points * np.arange(len(streamlines), dtype=np.intp)
+        modified_streamlines._lengths = nb_points * np.ones(len(streamlines), dtype=np.intp)
+
+        if dtype == np.float32:
+            c_set_number_of_points_from_arraysequence[float2d](streamlines._data, streamlines._offsets, streamlines._lengths, nb_points, modified_streamlines._data)
+        else:
+            c_set_number_of_points_from_arraysequence[double2d](streamlines._data, streamlines._offsets, streamlines._lengths, nb_points, modified_streamlines._data)
+
+        return modified_streamlines
+
     only_one_streamlines = False
     if type(streamlines) is np.ndarray:
         only_one_streamlines = True

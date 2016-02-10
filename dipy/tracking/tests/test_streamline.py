@@ -234,6 +234,10 @@ def test_set_number_of_points():
         assert_array_almost_equal(modified_streamlines_cython[i],
                                   modified_streamline_python, 5)
 
+    # ArraySequence
+    modified_streamlines_as_seq_cython = set_number_of_points(Streamlines(streamlines), nb_points)
+    assert_array_almost_equal(modified_streamlines_as_seq_cython, modified_streamlines_cython)
+
     modified_streamlines_cython = set_number_of_points(
         streamlines_64bit, nb_points)
 
@@ -241,6 +245,10 @@ def test_set_number_of_points():
         modified_streamline_python = set_number_of_points_python(s, nb_points)
         assert_array_almost_equal(modified_streamlines_cython[i],
                                   modified_streamline_python)
+
+    # ArraySequence
+    modified_streamlines_as_seq_cython = set_number_of_points(Streamlines(streamlines_64bit), nb_points)
+    assert_array_almost_equal(modified_streamlines_as_seq_cython, modified_streamlines_cython)
 
     # Test streamlines with mixed dtype
     streamlines_mixed_dtype = [streamline,
