@@ -622,7 +622,7 @@ class MapmriFit(ReconstFit):
             warn(msg)
         if not self.model.anisotropic_scaling:
             msg = 'Parallel non-Gaussianity is not defined using '
-            msd += 'isotropic scaling.'
+            msg += 'isotropic scaling.'
             ValueError(msg)
 
         coef = self._mapmri_coef
@@ -647,7 +647,7 @@ class MapmriFit(ReconstFit):
             warn(msg)
         if not self.model.anisotropic_scaling:
             msg = 'Parallel non-Gaussianity is not defined using '
-            msd += 'isotropic scaling.'
+            msg += 'isotropic scaling.'
             ValueError(msg)
 
         ind_mat = self.model.ind_mat
@@ -684,7 +684,7 @@ class MapmriFit(ReconstFit):
             warn(msg)
         if not self.model.anisotropic_scaling:
             msg = 'Parallel non-Gaussianity is not defined using '
-            msd += 'isotropic scaling.'
+            msg += 'isotropic scaling.'
             ValueError(msg)
 
         ind_mat = self.model.ind_mat
@@ -718,47 +718,49 @@ class MapmriFit(ReconstFit):
         gradient table.
         '''
         if isinstance(qvals_or_gtab, np.ndarray):
-            q = np.dot(qvals_or_gtab, self.R)
+            q = qvals_or_gtab
+            qvals = np.linalg.norm(q, axis=1)
         else:
             gtab = qvals_or_gtab
             qvals = np.sqrt(gtab.bvals / self.model.tau) / (2 * np.pi)
+            q = qvals[:, None] * gtab.bvecs
 
         if self.model.anisotropic_scaling:
-            q = np.dot(qvals[:, None] * gtab.bvecs, self.R)
-            M = mapmri_phi_matrix(self.radial_order, self.mu, q.T)
+            q_rot = np.dot(q, self.R)
+            M = mapmri_phi_matrix(self.radial_order, self.mu, q_rot.T)
         else:
-            q = qvals[:, None] * gtab.bvecs
             M = mapmri_isotropic_phi_matrix(self.radial_order, self.mu[0], q)
 
         E = np.dot(M, self._mapmri_coef)
         return E
 
-    def predict(self, gtab, S0=1.0):
+    def pdf(self, r_points):
+        """ Diffusion propagator on a given set of real points.
+            if the array r_points is non writeable, then intermediate
+            results are cached for faster recalculation
         """
-        Predict a signal for this MapmriModel class instance given a gradient
-        table.
-
-        Parameters
-        ----------
-        gtab : GradientTable,
-            gradient directions and bvalues container class
-
-        S0 : float or ndarray
-            The non diffusion-weighted signal in every voxel, or across all
-            voxels. Default: 1
-        """
-        if (gtab.big_delta is None) or (gtab.small_delta is None):
-            tau = 1 / (4 * np.pi ** 2)
+        if self.model.anisotropic_scaling:
+            r_point_rotated = np.dot(r_points, self.R)
+            K = mapmri_psi_matrix(self.radial_order, self.mu, r_point_rotated)
+            EAP = np.dot(K, self._mapmri_coef)
         else:
-            tau = gtab.big_delta - gtab.small_delta / 3.0
+            if not r_points.flags.writeable:
+                K_independent = self.model.cache_get(
+                    'mapmri_matrix_pdf_independent', key=hash(r_points.data))
+                if K_independent is None:
+                    K_independent = mapmri_isotropic_K_mu_independent(
+                                    self.radial_order, r_points)
+                    self.model.cache_set('mapmri_matrix_pdf_independent',
+                        hash(r_points.data), K_independent)
+                K_dependent = mapmri_isotropic_K_mu_dependent(
+                               self.radial_order, self.mu[0], r_points)
+                K = K_dependent * K_independent
+            else:
+                K = mapmri_isotropic_psi_matrix(
+                               self.radial_order, self.mu[0], r_points)
+            EAP = np.dot(K, self._mapmri_coef)
 
-        qvals = np.sqrt(gtab.bvals / tau) / (2 * np.pi)
-        qvecs = np.dot(gtab.bvecs, self.R)
-        q = qvecs * qvals[:, None]
-        s_mat = mapmri_phi_matrix(self.radial_order, self.mu, q.T)
-        S_reconst = S0 * np.dot(s_mat, self._mapmri_coef)
-
-        return S_reconst
+        return EAP
 
 
 def mapmri_index_matrix(radial_order):
