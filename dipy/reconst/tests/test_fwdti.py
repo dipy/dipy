@@ -88,9 +88,11 @@ def test_fwdti_singlevoxel():
     fwefit = fwdm.fit(S_conta)
     FAfwe = fwefit.fa
     Ffwe = fwefit.f
+    S0fwe = fwefit.S0
 
     assert_almost_equal(FAdti, FAfwe)
     assert_almost_equal(Ffwe, gtf)
+    assert_almost_equal(S0fwe, 100)
 
 
 def test_fwdti_precision():

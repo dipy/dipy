@@ -217,6 +217,13 @@ class FreeWaterTensorFit(TensorFit):
         Returns the free water diffusion volume fraction f
         """
         return self.model_params[..., 12]
+        
+    @property
+    def S0(self):
+        """
+        Returns the non-diffusion weighted signal estimate
+        """
+        return self.model_params[..., 13]
 
     def predict(self, gtab):
         r""" Given a free water tensor model fit, predict the signal on the
