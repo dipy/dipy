@@ -17,6 +17,7 @@ def _tile_plot(imgs, titles, **kwargs):
 
     return fig
 
+
 def overlay_images(img0, img1, title0='', title_mid='', title1='', fname=None):
     r""" Plot two images one on top of the other using red and green channels.
 
@@ -49,8 +50,8 @@ def overlay_images(img0, img1, title0='', title_mid='', title1='', fname=None):
         image is not saved.
     """
     # Normalize the input images to [0,255]
-    img0 = 255*((img0 - img0.min()) / (img0.max() - img0.min()))
-    img1 = 255*((img1 - img1.min()) / (img1.max() - img1.min()))
+    img0 = 255 * ((img0 - img0.min()) / (img0.max() - img0.min()))
+    img1 = 255 * ((img1 - img1.min()) / (img1.max() - img1.min()))
 
     # Create the color images
     img0_red = np.zeros(shape=(img0.shape) + (3,), dtype=np.uint8)
@@ -65,13 +66,14 @@ def overlay_images(img0, img1, title0='', title_mid='', title1='', fname=None):
     overlay[..., 1] = img1
 
     fig = _tile_plot([img0_red, overlay, img1_green],
-                      [title0, title_mid, title1])
+                     [title0, title_mid, title1])
 
     # If a file name was given, save the figure
     if fname is not None:
         fig.savefig(fname, bbox_inches='tight')
 
     return fig
+
 
 def draw_lattice_2d(nrows, ncols, delta):
     r"""Create a regular lattice of nrows x ncols squares.
@@ -99,7 +101,7 @@ def draw_lattice_2d(nrows, ncols, delta):
         C = 1 + (delta + 1) * ncols
     """
     lattice = np.ndarray((1 + (delta + 1) * nrows,
-                         1 + (delta + 1) * ncols),
+                          1 + (delta + 1) * ncols),
                          dtype=np.float64)
 
     # Fill the lattice with "white"
@@ -107,7 +109,7 @@ def draw_lattice_2d(nrows, ncols, delta):
 
     # Draw the horizontal lines in "black"
     for i in range(nrows + 1):
-        lattice[i*(delta + 1), :] = 0
+        lattice[i * (delta + 1), :] = 0
 
     # Draw the vertical lines in "black"
     for j in range(ncols + 1):
@@ -278,7 +280,8 @@ def plot_slices(V, slice_indices=None, fname=None):
     V : array, shape (S, R, C)
         the 3D volume to extract the slices from
     slice_indices : array, shape (3,) (optional)
-        the indices of the sagital (slice_indices[0]), coronal (slice_indices[1])
+        the indices of the sagital (slice_indices[0]), coronal
+        (slice_indices[1])
         and axial (slice_indices[2]) slices to be displayed. If None, the
         middle slices along each direction are displayed.
     fname : string (optional)
@@ -286,7 +289,7 @@ def plot_slices(V, slice_indices=None, fname=None):
         figure is not saved to disk.
     """
     if slice_indices is None:
-        slice_indices = np.array(V.shape)//2
+        slice_indices = np.array(V.shape) // 2
 
     # Normalize the intensities to [0, 255]
     sh = V.shape
@@ -299,14 +302,15 @@ def plot_slices(V, slice_indices=None, fname=None):
     sagittal = np.asarray(V[slice_indices[0], :, :]).astype(np.uint8).T
 
     fig = _tile_plot([axial, coronal, sagittal],
-                      ['Axial', 'Coronal', 'Sagittal'],
-                      cmap=plt.cm.gray, origin='lower')
+                     ['Axial', 'Coronal', 'Sagittal'],
+                     cmap=plt.cm.gray, origin='lower')
 
     # Save the figure if requested
     if fname is not None:
         fig.savefig(fname, bbox_inches='tight')
 
     return fig
+
 
 def overlay_slices(L, R, slice_index=None, slice_type=1, ltitle='Left',
                    rtitle='Right', fname=None):
@@ -354,19 +358,19 @@ def overlay_slices(L, R, slice_index=None, slice_type=1, ltitle='Left',
     # the slices (note the transpositions)
     if slice_type is 0:
         if slice_index is None:
-            slice_index = sh[0]//2
+            slice_index = sh[0] // 2
         colorImage = np.zeros(shape=(sh[2], sh[1], 3), dtype=np.uint8)
         ll = np.asarray(L[slice_index, :, :]).astype(np.uint8).T
         rr = np.asarray(R[slice_index, :, :]).astype(np.uint8).T
     elif slice_type is 1:
         if slice_index is None:
-            slice_index = sh[1]//2
+            slice_index = sh[1] // 2
         colorImage = np.zeros(shape=(sh[2], sh[0], 3), dtype=np.uint8)
         ll = np.asarray(L[:, slice_index, :]).astype(np.uint8).T
         rr = np.asarray(R[:, slice_index, :]).astype(np.uint8).T
     elif slice_type is 2:
         if slice_index is None:
-            slice_index = sh[2]//2
+            slice_index = sh[2] // 2
         colorImage = np.zeros(shape=(sh[1], sh[0], 3), dtype=np.uint8)
         ll = np.asarray(L[:, :, slice_index]).astype(np.uint8).T
         rr = np.asarray(R[:, :, slice_index]).astype(np.uint8).T
@@ -382,8 +386,8 @@ def overlay_slices(L, R, slice_index=None, slice_type=1, ltitle='Left',
     colorImage[..., 1] = rr * (rr > rr[0, 0])
 
     fig = _tile_plot([ll, colorImage, rr],
-                      [ltitle, 'Overlay', rtitle],
-                      cmap=plt.cm.gray, origin='lower')
+                     [ltitle, 'Overlay', rtitle],
+                     cmap=plt.cm.gray, origin='lower')
 
     # Save the figure to disk, if requested
     if fname is not None:
