@@ -18,7 +18,7 @@ def slider(iren, ren, callback, min_value=0, max_value=255, value=125,
            size=(50, 0),
            label_format="%0.0lf",
            color=(0.5, 0.5, 0.5),
-           selected_color = (0.9, 0.2, 0.1)):
+           selected_color=(0.9, 0.2, 0.1)):
     """ A 2D slider widget
 
     Parameters
@@ -133,8 +133,10 @@ def slider(iren, ren, callback, min_value=0, max_value=255, value=125,
     def _place_widget(obj, event):
         slider.place(ren)
 
-    iren.GetRenderWindow().AddObserver(vtk.vtkCommand.StartEvent, _place_widget)
-    iren.GetRenderWindow().AddObserver(vtk.vtkCommand.ModifiedEvent, _place_widget)
+    iren.GetRenderWindow().AddObserver(
+        vtk.vtkCommand.StartEvent, _place_widget)
+    iren.GetRenderWindow().AddObserver(
+        vtk.vtkCommand.ModifiedEvent, _place_widget)
 
     return slider
 
@@ -218,8 +220,10 @@ def button(iren, ren, callback, fname, right_normalized_pos=(.98, .9),
     def _place_widget(obj, event):
         button.place(ren)
 
-    iren.GetRenderWindow().AddObserver(vtk.vtkCommand.StartEvent, _place_widget)
-    iren.GetRenderWindow().AddObserver(vtk.vtkCommand.ModifiedEvent, _place_widget)
+    iren.GetRenderWindow().AddObserver(
+        vtk.vtkCommand.StartEvent, _place_widget)
+    iren.GetRenderWindow().AddObserver(
+        vtk.vtkCommand.ModifiedEvent, _place_widget)
 
     return button
 
@@ -315,8 +319,10 @@ def text(iren, ren, callback, message="DIPY",
     def _place_widget(obj, event):
         text_widget.place(ren)
 
-    iren.GetRenderWindow().AddObserver(vtk.vtkCommand.StartEvent, _place_widget)
-    iren.GetRenderWindow().AddObserver(vtk.vtkCommand.ModifiedEvent, _place_widget)
+    iren.GetRenderWindow().AddObserver(
+        vtk.vtkCommand.StartEvent, _place_widget)
+    iren.GetRenderWindow().AddObserver(
+        vtk.vtkCommand.ModifiedEvent, _place_widget)
 
     text_widget.On()
 

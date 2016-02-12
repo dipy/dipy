@@ -1,8 +1,10 @@
 ''' Fvtk module implements simple visualization functions using VTK.
 
 The main idea is the following:
-A window can have one or more renderers. A renderer can have none, one or more actors. Examples of actors are a sphere, line, point etc.
-You basically add actors in a renderer and in that way you can visualize the forementioned objects e.g. sphere, line ...
+A window can have one or more renderers. A renderer can have none,
+one or more actors. Examples of actors are a sphere, line, point etc.
+You basically add actors in a renderer and in that way you can
+visualize the forementioned objects e.g. sphere, line ...
 
 Examples
 ---------
@@ -284,7 +286,8 @@ def volume(vol, voxsz=(1.0, 1.0, 1.0), affine=None, center_origin=1,
         As given by volumeimages.
     center_origin : int {0,1}
         It considers that the center of the volume is the
-        point ``(-vol.shape[0]/2.0+0.5,-vol.shape[1]/2.0+0.5,-vol.shape[2]/2.0+0.5)``.
+        point ``(-vol.shape[0]/2.0+0.5,-vol.shape[1]/2.0+0.5,
+            -vol.shape[2]/2.0+0.5)``.
     info : int {0,1}
         If 1 it prints out some info about the volume, the method and the
         dataset.
@@ -292,7 +295,8 @@ def volume(vol, voxsz=(1.0, 1.0, 1.0), affine=None, center_origin=1,
         Use trilinear interpolation, default 1, gives smoother rendering. If
         you want faster interpolation use 0 (Nearest).
     maptype : int {0,1}
-        The maptype is a very important parameter which affects the raycasting algorithm in use for the rendering.
+        The maptype is a very important parameter which affects the
+        raycasting algorithm in use for the rendering.
         The options are:
         If 0 then vtkVolumeTextureMapper2D is used.
         If 1 then vtkVolumeRayCastFunction is used.
@@ -437,8 +441,12 @@ def volume(vol, voxsz=(1.0, 1.0, 1.0), affine=None, center_origin=1,
     if affine is not None:
 
         aff = vtk.vtkMatrix4x4()
-        aff.DeepCopy((affine[0, 0], affine[0, 1], affine[0, 2], affine[0, 3], affine[1, 0], affine[1, 1], affine[1, 2], affine[1, 3], affine[2, 0], affine[
-                     2, 1], affine[2, 2], affine[2, 3], affine[3, 0], affine[3, 1], affine[3, 2], affine[3, 3]))
+        aff.DeepCopy((affine[0, 0], affine[0, 1], affine[0, 2],
+                      affine[0, 3], affine[1, 0], affine[1, 1],
+                      affine[1, 2], affine[1, 3], affine[2, 0],
+                      affine[2, 1], affine[2, 2], affine[2, 3],
+                      affine[3, 0], affine[3, 1], affine[3, 2],
+                      affine[3, 3]))
         # aff.DeepCopy((affine[0,0],affine[0,1],affine[0,2],0,affine[1,0],affine[1,1],affine[1,2],0,affine[2,0],affine[2,1],affine[2,2],0,affine[3,0],affine[3,1],affine[3,2],1))
         # aff.DeepCopy((affine[0,0],affine[0,1],affine[0,2],127.5,affine[1,0],affine[1,1],affine[1,2],-127.5,affine[2,0],affine[2,1],affine[2,2],-127.5,affine[3,0],affine[3,1],affine[3,2],1))
 
@@ -472,7 +480,9 @@ def volume(vol, voxsz=(1.0, 1.0, 1.0), affine=None, center_origin=1,
         # changeFilter.SetInput(im)
         if center_origin:
             changeFilter.SetOutputOrigin(
-                -vol.shape[0] / 2.0 + 0.5, -vol.shape[1] / 2.0 + 0.5, -vol.shape[2] / 2.0 + 0.5)
+                -vol.shape[0] / 2.0 + 0.5,
+                -vol.shape[1] / 2.0 + 0.5,
+                -vol.shape[2] / 2.0 + 0.5)
             print('ChangeFilter ', changeFilter.GetOutputOrigin())
 
     opacity = vtk.vtkPiecewiseFunction()
@@ -673,7 +683,9 @@ def contour(vol, voxsz=(1.0, 1.0, 1.0), affine=None, levels=[50],
     return ass
 
 
-lowercase_cm_name = {'blues':'Blues', 'accent':'Accent'}
+lowercase_cm_name = {'blues': 'Blues', 'accent': 'Accent'}
+
+
 def create_colormap(v, name='jet', auto=True):
     """Create colors from a specific colormap and return it
     as an array of shape (N,3) where every row gives the corresponding
@@ -907,14 +919,15 @@ def peaks(peaks_dirs, peaks_values=None, scale=2.2, colors=(1, 0, 0)):
                 pv = 1.
 
             symm = np.vstack((-peaks_dirs[ijk][i] * pv + xyz,
-                               peaks_dirs[ijk][i] * pv + xyz))
+                              peaks_dirs[ijk][i] * pv + xyz))
 
             list_dirs.append(symm)
 
     return line(list_dirs, colors)
 
 
-def tensor(evals, evecs, scalar_colors=None, sphere=None, scale=2.2, norm=True):
+def tensor(evals, evecs, scalar_colors=None,
+           sphere=None, scale=2.2, norm=True):
     """Plot many tensors as ellipsoids simultaneously.
 
     Parameters
