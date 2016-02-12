@@ -55,8 +55,7 @@ def sph_project(vertices, val, ax=None, vmin=None, vmax=None, cmap=None,
     --------
     >>> from dipy.data import get_sphere
     >>> verts = get_sphere('symmetric724').vertices
-    >>> ax = sph_project(verts.T, np.random.rand(len(verts.T))) # skip
-    if not has_basemap
+    >>> ax = sph_project(verts.T, np.random.rand(len(verts.T))) # skip if not has_basemap
     """
     if ax is None:
         fig, ax = plt.subplots(1)
