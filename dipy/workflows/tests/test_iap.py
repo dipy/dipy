@@ -2,6 +2,7 @@ import numpy.testing as npt
 import sys
 from dipy.workflows.base import IntrospectiveArgumentParser
 
+
 def dummy_flow(positional_str, positional_bool, positional_int,
                positional_float, optional_str='default', optional_bool=False,
                optional_int=0, optional_float=1.0, optional_float_2=2.0):
@@ -29,8 +30,8 @@ def dummy_flow(positional_str, positional_bool, positional_int,
         optional float argument #2 (default 2.0)
     """
     return positional_str, positional_bool, positional_int,\
-           positional_float, optional_str, optional_bool,\
-           optional_int, optional_float, optional_float_2
+        positional_float, optional_str, optional_bool,\
+        optional_int, optional_float, optional_float_2
 
 
 def test_iap():
@@ -62,12 +63,13 @@ def test_iap():
     return_values = dummy_flow(**args)
     npt.assert_array_equal(return_values, all_results + [2.0])
 
+
 def inputs_from_results(results, keys=None):
     prefix = '--'
     inputs = []
     for idx, result in enumerate(results):
         if keys is not None:
-            inputs.append(prefix+keys[idx])
+            inputs.append(prefix + keys[idx])
         inputs.append(str(result))
 
     return inputs
@@ -84,6 +86,7 @@ def nargs_flow(variable_ints, optional_int=2):
         optional int argument
     """
     return variable_ints, optional_int
+
 
 def test_nargs():
     sys.argv = [sys.argv[0]]
