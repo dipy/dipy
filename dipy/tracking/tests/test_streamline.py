@@ -858,7 +858,6 @@ def test_values_from_volume():
             npt.assert_almost_equal(vv, ans1, decimal=decimal)
             npt.assert_equal(np.array(x_sl1), np.array(l_sl2))
 
-
             # Test for lists of streamlines with different numbers of nodes:
             sl2 = [sl1[0][:-1], sl1[1]]
             ans2 = [ans1[0][:-1], ans1[1]]
@@ -878,6 +877,15 @@ def test_values_from_volume():
                              [4.1, 0, 0]]))
 
     npt.assert_raises(RuntimeError, values_from_volume, data, nonsense_sl)
+
+    # For some use-cases we might have singleton streamlines (with only one
+    # node each):
+    data3D = np.ones((2, 2, 2))
+    streamlines = np.ones((10, 1, 3))
+    npt.assert_equal(values_from_volume(data3D, streamlines).shape, (10, 1))
+    data4D = np.ones((2, 2, 2, 2))
+    streamlines = np.ones((10, 1, 3))
+    npt.assert_equal(values_from_volume(data4D, streamlines).shape, (10, 1, 2))
 
 
 if __name__ == '__main__':
