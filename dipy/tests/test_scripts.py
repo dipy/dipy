@@ -6,6 +6,7 @@ Run scripts and check outputs
 """
 from __future__ import division, print_function, absolute_import
 
+import glob
 import os
 import shutil
 
@@ -121,3 +122,25 @@ def test_qb_commandline():
                '--out_file', 'tracks300.trk']
         out = run_command(cmd)
         assert_equal(out[0], 0)
+
+@nt.dec.skipif(no_mpl)
+def test_qb_commandline_output_path_handling():
+    with InTemporaryDirectory():
+        # Create temporary subdirectory for input and for output
+        os.mkdir('work')
+        os.mkdir('output')
+
+        os.chdir('work')
+        tracks_file = get_data('fornix')
+
+        # Need to specify an output directory with a "../" style path
+        # to trigger old bug.
+        cmd = ["dipy_quickbundles", tracks_file, '--pkl_file', 'mypickle.pkl',
+               '--out_file', '../output/tracks300.trk']
+        out = run_command(cmd)
+        assert_equal(out[0], 0)
+
+        # Make sure the files were created in the output directory
+        os.chdir('../')
+        output_files_list = glob.glob('output/tracks300_*.trk')
+        assert_true(output_files_list)
