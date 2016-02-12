@@ -4,24 +4,35 @@
 Diffusion Imaging In Python
 ###########################
 
-Dipy_ is a **free** and **open source** software project for computational neuroanatomy, 
-focusing mainly on **diffusion** *magnetic resonance imaging* (dMRI) analysis. It implements a 
-broad range of algorithms for denoising, registration, reconstruction, tracking, clustering, 
+Dipy_ is a **free** and **open source** software project for computational neuroanatomy,
+focusing mainly on **diffusion** *magnetic resonance imaging* (dMRI) analysis. It implements a
+broad range of algorithms for denoising, registration, reconstruction, tracking, clustering,
 visualization, and statistical analysis of MRI data.
 
 **********
 Highlights
 **********
 
-**Dipy 0.10** is now available. New features in this release include: 
+**Dipy 0.11.0** is now available. New features include:
 
+- New framework for contextual enhancement of ODFs.
+- Compatibility with numpy (1.11).
+- Compatibility with VTK 7.0 which supports Python 3.x.
+- Faster PIESNO for noise estimation.
+- Reorient gradient directions according to motion correction parameters.
+- Dropped support for Python 3.2.
+- Reduced memory usage in DTI.
+- DSI now can use datasets with multiple b0s.
+- Fixed different issues with Windows 64bit and Python 3.5.
+
+**Dipy 0.10.1** is now available. New features in this release include:
 
 - Compatibility with new versions of scipy (0.16) and numpy (1.10).
 - New cleaner visualization API, including compatibility with VTK 6, and functions to create your own interactive visualizations.
-- Diffusion Kurtosis Imaging(DKI): Google Summer of Code work by Rafael Henriques.
-- Mean Apparent Propagator (MAP) MRI - tissue microstructure estimation.
+- Diffusion Kurtosis Imaging (DKI): Google Summer of Code work by Rafael Henriques.
+- Mean Apparent Propagator (MAP) MRI for tissue microstructure estimation.
 - Anisotropic Power Maps from spherical harmonic coefficients.
-- Affine registration.
+- A new framework for affine registration of images.
 
 See :ref:`older highlights <old_highlights>`.
 
@@ -30,9 +41,10 @@ See :ref:`older highlights <old_highlights>`.
 Announcements
 *************
 
-- :ref:`Dipy 0.10 <release0.10>` released November ??, 2015.
-- :ref:`Dipy 0.9.2 <release0.9>` released, March 18th, 2015.
-- :ref:`Dipy 0.8.0 <release0.8>` released, 6 January, 2015.
+- :ref:`Dipy 0.11 <release0.11>` released February 15, 2015.
+- :ref:`Dipy 0.10 <release0.10>` released December 4, 2015.
+- :ref:`Dipy 0.9.2 <release0.9>` released, March 18, 2015.
+- :ref:`Dipy 0.8.0 <release0.8>` released, January 6, 2015.
 - Dipy_ was an official exhibitor in `HBM 2015 <http://ohbm.loni.usc.edu>`_.
 - Dipy was featured in `The Scientist Magazine <http://www.the-scientist.com/?articles.view/articleNo/41266/title/White-s-the-Matter>`_, Nov, 2014.
 - `Dipy paper`_ accepted in Frontiers of Neuroinformatics, January 22nd, 2014.
@@ -98,7 +110,7 @@ Support
 
 We acknowledge support from the following organizations:
 
-- The Gordon and Betty Moore Foundation and the Alfred P. Sloan Foundation, through the 
+- The Gordon and Betty Moore Foundation and the Alfred P. Sloan Foundation, through the
   University of Washington eScience Institute Data Science Environment.
 
 - Google supported the work of Rafael Neto Henriques and Julio Villalon through the Google
