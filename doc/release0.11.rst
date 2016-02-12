@@ -22,7 +22,6 @@ The following 16 authors contributed 230 commits.
 * Samuel St-Jean
 * Stephan Meesters
 * Vatsala Swaroop
-* omarocegueda
 
 
 We closed a total of 120 issues, 46 pull requests and 74 regular issues;
