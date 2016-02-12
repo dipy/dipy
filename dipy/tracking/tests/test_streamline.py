@@ -879,6 +879,18 @@ def test_values_from_volume():
 
     npt.assert_raises(RuntimeError, values_from_volume, data, nonsense_sl)
 
+    # For some use-cases we might have singleton streamlines (with only one
+    # node each):
+
+    data3D = np.ones((2,2,2))
+    streamlines = np.ones((10, 2, 3))
+    npt.assert_equal(values_from_volume(data3D, streamlines).shape, (10, 2))
+    streamlines = np.ones((10, 1, 3))
+    npt.assert_equal(values_from_volume(data3D, streamlines).shape, (10, 1))
+    data4D = np.ones((2, 2, 2, 2))
+    streamlines = np.ones((10, 1, 3))
+    values_from_volume(data4D, streamlines).shape
+
 
 if __name__ == '__main__':
     run_module_suite()
