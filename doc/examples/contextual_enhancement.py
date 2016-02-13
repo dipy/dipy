@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """
 ==============================================
-Contextual enhancement
+Crossing-preserving contextual enhancement
 ==============================================
 
 This demo presents an example of crossing-preserving contextual enhancement of
