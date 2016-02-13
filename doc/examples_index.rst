@@ -40,7 +40,8 @@ Basic SNR estimation
 - :ref:`example_snr_in_cc`
 
 Robust noise estimation with PIESNO
-~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 - :ref:`example_piesno`
 
 Denoising
@@ -76,7 +77,7 @@ Diffusion Tensor Imaging
 - :ref:`example_restore_dti`
 
 
-Diffusion Kurtosis Imaging
+Diffusion Kurtosis Imaging (NEW)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 - :ref:`example_reconst_dki`
 
@@ -114,27 +115,22 @@ Statistical evaluation
 
 - :ref:`example_kfold_xval`
 
-------------------------------------------
-Crossing-preserving contextual enhancement
-------------------------------------------
+------------------------------------------------
+Crossing-preserving contextual enhancement (NEW)
+------------------------------------------------
 
 - :ref:`example_contextual_enhancement`
 
 
-------------------------------------
-Fiber tracking (NEW - Experimental)
-------------------------------------
+--------------------
+Fiber tracking (NEW)
+--------------------
 
 - :ref:`example_introduction_to_basic_tracking`
 - :ref:`example_probabilistic_fiber_tracking`
 - :ref:`example_deterministic_fiber_tracking`
 - :ref:`example_tracking_tissue_classifier`
 - :ref:`example_sfm_tracking`
-
----------------
-Fiber tracking
----------------
-
 - :ref:`example_tracking_eudx_tensor`
 - :ref:`example_tracking_eudx_odf`
 
@@ -157,14 +153,14 @@ Streamline analysis and connectivity
 Registration
 ------------------
 
-Image-based Registration
-~~~~~~~~~~~~~~~~~~~~~~~~~
+Image-based Registration (NEW)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 - :ref:`example_affine_registration_3d`
 - :ref:`example_syn_registration_2d`
 - :ref:`example_syn_registration_3d`
 
-Streamline-based Registration
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Streamline-based Registration (NEW)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 - :ref:`example_bundle_registration`
 
 ------------
@@ -204,9 +200,9 @@ File Formats
 
 - :ref:`example_streamline_formats`
 
--------------
-Visualization
--------------
+-------------------
+Visualization (NEW)
+-------------------
 
 - :ref:`example_viz_advanced`
 - :ref:`example_viz_slice`

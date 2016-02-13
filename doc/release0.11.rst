@@ -1,4 +1,4 @@
-.. _release0.10:
+.. _release0.11:
 
 ====================================
  Release notes for Dipy version 0.11
@@ -25,7 +25,7 @@ The following 16 authors contributed 230 commits.
 
 
 We closed a total of 120 issues, 46 pull requests and 74 regular issues;
-this is the full list (generated with the script 
+this is the full list (generated with the script
 :file:`tools/github_stats.py`):
 
 Pull Requests (46):

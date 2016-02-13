@@ -69,7 +69,8 @@ eg_index_contents = open(EG_INDEX_FNAME, 'rt').read()
 # also to be added in the following file (valid_examples.txt). This helps
 # with debugging the examples and the documentation only a few examples at
 # the time.
-flist_name = pjoin(os.path.dirname(os.getcwd()), 'examples', 'valid_examples.txt')
+flist_name = pjoin(os.path.dirname(os.getcwd()), 'examples',
+                   'valid_examples.txt')
 flist = open(flist_name, "r")
 validated_examples = flist.readlines()
 flist.close()
@@ -99,10 +100,9 @@ for example in validated_examples:
         print(msg)
 
 # Run the conversion from .py to rst file
-check_call('python ../../tools/ex2rst --project dipy --outdir . .',
-            shell=True)
+check_call('python ../../tools/ex2rst --project dipy --outdir . .', shell=True)
 
-#added the path so that scripts can import other scripts on the same directory
+# added the path so that scripts can import other scripts on the same directory
 sys.path.insert(0, os.getcwd())
 
 # Execute each python script in the directory.
@@ -117,10 +117,12 @@ if use_xvfb:
     display.start()
 
 for script in validated_examples:
+    namespace = {}
     figure_basename = os.path.join('fig', os.path.splitext(script)[0])
-    print script
-    execfile(script)
-    plt.close('all')
+    print(script)
+    execfile(script, namespace)
+    del namespace
+    # plt.close('all')
 
 if use_xvfb:
     display.stop()
