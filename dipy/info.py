@@ -10,7 +10,7 @@ _version_major = 0
 _version_minor = 11
 _version_micro = 0
 _version_extra = 'dev'
-#_version_extra = ''
+# _version_extra = ''
 
 # Format expected by setup.py and doc/source/conf.py: string of form "X.Y.Z"
 __version__ = "%s.%s.%s%s" % (_version_major,
@@ -26,7 +26,7 @@ CLASSIFIERS = ["Development Status :: 3 - Alpha",
                "Programming Language :: Python",
                "Topic :: Scientific/Engineering"]
 
-description  = 'Diffusion MRI utilities in python'
+description = 'Diffusion MRI utilities in python'
 
 # Note: this long_description is actually a copy/paste from the top-level
 # README.rst, so that it shows up nicely on PyPI.  So please remember to edit
@@ -79,10 +79,10 @@ under the GPL license.
 
 # versions for dependencies
 # Check these versions against .travis.yml and requirements.txt
-NUMPY_MIN_VERSION='1.7.1'
-SCIPY_MIN_VERSION='0.9'
-CYTHON_MIN_VERSION='0.18'
-NIBABEL_MIN_VERSION='1.2.0'
+NUMPY_MIN_VERSION   = '1.7.1'
+SCIPY_MIN_VERSION   = '0.9'
+CYTHON_MIN_VERSION  = '0.18'
+NIBABEL_MIN_VERSION = '1.2.0'
 
 # Main setup parameters
 NAME                = 'dipy'
