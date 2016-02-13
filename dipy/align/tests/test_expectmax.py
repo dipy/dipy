@@ -75,10 +75,10 @@ def test_compute_em_demons_step_2d():
     # Pixels with gradient!=0 and sigma_i_sq=0
     sqnrm = sq_norm_grad_G[random_labels == 1]
     sigma_i_sq[random_labels == 1] = 0
-    expected[random_labels == 1, 0] = delta_field[
-        random_labels == 1] * grad_G[random_labels == 1, 0] / sqnrm
-    expected[random_labels == 1, 1] = delta_field[
-        random_labels == 1] * grad_G[random_labels == 1, 1] / sqnrm
+    expected[random_labels == 1, 0] = (delta_field[random_labels == 1] *
+                                       grad_G[random_labels == 1, 0] / sqnrm)
+    expected[random_labels == 1, 1] = (delta_field[random_labels == 1] *
+                                       grad_G[random_labels == 1, 1] / sqnrm)
 
     # Pixels with gradient=0 and sigma_i_sq=0
     sigma_i_sq[random_labels == 2] = 0
@@ -212,12 +212,12 @@ def test_compute_em_demons_step_3d():
     # Pixels with gradient!=0 and sigma_i_sq=0
     sqnrm = sq_norm_grad_G[random_labels == 1]
     sigma_i_sq[random_labels == 1] = 0
-    expected[random_labels == 1, 0] = delta_field[
-        random_labels == 1] * grad_G[random_labels == 1, 0] / sqnrm
-    expected[random_labels == 1, 1] = delta_field[
-        random_labels == 1] * grad_G[random_labels == 1, 1] / sqnrm
-    expected[random_labels == 1, 2] = delta_field[
-        random_labels == 1] * grad_G[random_labels == 1, 2] / sqnrm
+    expected[random_labels == 1, 0] = (delta_field[random_labels == 1] *
+                                       grad_G[random_labels == 1, 0] / sqnrm)
+    expected[random_labels == 1, 1] = (delta_field[random_labels == 1] *
+                                       grad_G[random_labels == 1, 1] / sqnrm)
+    expected[random_labels == 1, 2] = (delta_field[random_labels == 1] *
+                                       grad_G[random_labels == 1, 2] / sqnrm)
 
     # Pixels with gradient=0 and sigma_i_sq=0
     sigma_i_sq[random_labels == 2] = 0
@@ -308,8 +308,8 @@ def test_quantize_positive_2d():
 
     # make sure additive noise doesn't change the quantization result
     noise_amplitude = np.min([delta / 4.0, min_positive / 4.0])
-    noise = np.random.ranf(np.size(true_quantization)).reshape(
-        img_shape) * noise_amplitude
+    sz = np.size(true_quantization)
+    noise = np.random.ranf(sz).reshape(img_shape) * noise_amplitude
     noise = noise.astype(floating)
     input_image = np.ndarray(img_shape, dtype=floating)
     # assign intensities plus noise
@@ -372,8 +372,8 @@ def test_quantize_positive_3d():
 
     # make sure additive noise doesn't change the quantization result
     noise_amplitude = np.min([delta / 4.0, min_positive / 4.0])
-    noise = np.random.ranf(np.size(true_quantization)).reshape(
-        img_shape) * noise_amplitude
+    sz = np.size(true_quantization)
+    noise = np.random.ranf(sz).reshape(img_shape) * noise_amplitude
     noise = noise.astype(floating)
     input_image = np.ndarray(img_shape, dtype=floating)
     # assign intensities plus noise
