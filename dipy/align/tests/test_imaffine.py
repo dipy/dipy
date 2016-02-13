@@ -54,7 +54,7 @@ def test_transform_centers_of_mass_3d():
 
     # Create arbitrary image-to-space transforms
     axis = np.array([.5, 2.0, 1.5])
-    t = 0.15 #translation factor
+    t = 0.15  # translation factor
     trans = np.array([[1, 0, 0, -t*shape[0]],
                       [0, 1, 0, -t*shape[1]],
                       [0, 0, 1, -t*shape[2]],
@@ -62,11 +62,11 @@ def test_transform_centers_of_mass_3d():
     trans_inv = npl.inv(trans)
 
     for rotation_angle in [-1 * np.pi/6.0, 0.0, np.pi/5.0]:
-        for scale_factor in [0.83,  1.3, 2.07]: #scale
-            rot = np.zeros(shape=(4,4))
+        for scale_factor in [0.83,  1.3, 2.07]:  # scale
+            rot = np.zeros(shape=(4, 4))
             rot[:3, :3] = geometry.rodrigues_axis_rotation(axis,
                                                            rotation_angle)
-            rot[3,3] = 1.0
+            rot[3, 3] = 1.0
             scale = np.array([[1 * scale_factor, 0, 0, 0],
                               [0, 1 * scale_factor, 0, 0],
                               [0, 0, 1 * scale_factor, 0],
@@ -78,7 +78,7 @@ def test_transform_centers_of_mass_3d():
             # Expected translation
             c_static = static_grid2world.dot((32, 32, 32, 1))[:3]
             c_moving = moving_grid2world.dot((16, 16, 16, 1))[:3]
-            expected = np.eye(4);
+            expected = np.eye(4)
             expected[:3, 3] = c_moving - c_static
 
             # Implementation under test
@@ -90,10 +90,10 @@ def test_transform_centers_of_mass_3d():
 def test_transform_geometric_centers_3d():
     # Create arbitrary image-to-space transforms
     axis = np.array([.5, 2.0, 1.5])
-    t = 0.15 #translation factor
+    t = 0.15  # translation factor
 
-    for theta in [-1 * np.pi/6.0, 0.0, np.pi/5.0]: #rotation angle
-        for s in [0.83,  1.3, 2.07]: #scale
+    for theta in [-1 * np.pi/6.0, 0.0, np.pi/5.0]:  # rotation angle
+        for s in [0.83,  1.3, 2.07]:  # scale
             m_shapes = [(256, 256, 128), (255, 255, 127), (64, 127, 142)]
             for shape_moving in m_shapes:
                 s_shapes = [(256, 256, 128), (255, 255, 127), (64, 127, 142)]
@@ -105,9 +105,9 @@ def test_transform_geometric_centers_3d():
                                       [0, 0, 1, -t*shape_static[2]],
                                       [0, 0, 0, 1]])
                     trans_inv = npl.inv(trans)
-                    rot = np.zeros(shape=(4,4))
+                    rot = np.zeros(shape=(4, 4))
                     rot[:3, :3] = geometry.rodrigues_axis_rotation(axis, theta)
-                    rot[3,3] = 1.0
+                    rot[3, 3] = 1.0
                     scale = np.array([[1 * s, 0, 0, 0],
                                       [0, 1 * s, 0, 0],
                                       [0, 0, 1 * s, 0],
@@ -117,28 +117,28 @@ def test_transform_geometric_centers_3d():
                     moving_grid2world = npl.inv(static_grid2world)
 
                     # Expected translation
-                    c_static = np.array(shape_static, dtype = np.float64) * 0.5
+                    c_static = np.array(shape_static, dtype=np.float64) * 0.5
                     c_static = tuple(c_static)
                     c_static = static_grid2world.dot(c_static+(1,))[:3]
-                    c_moving = np.array(shape_moving, dtype = np.float64) * 0.5
+                    c_moving = np.array(shape_moving, dtype=np.float64) * 0.5
                     c_moving = tuple(c_moving)
                     c_moving = moving_grid2world.dot(c_moving+(1,))[:3]
-                    expected = np.eye(4);
+                    expected = np.eye(4)
                     expected[:3, 3] = c_moving - c_static
 
                     # Implementation under test
-                    actual = imaffine.transform_geometric_centers(static,
-                        static_grid2world, moving, moving_grid2world)
+                    actual = imaffine.transform_geometric_centers
+                    (static, static_grid2world, moving, moving_grid2world)
                     assert_array_almost_equal(actual.affine, expected)
 
 
 def test_transform_origins_3d():
     # Create arbitrary image-to-space transforms
     axis = np.array([.5, 2.0, 1.5])
-    t = 0.15 #translation factor
+    t = 0.15  # translation factor
 
-    for theta in [-1 * np.pi/6.0, 0.0, np.pi/5.0]: #rotation angle
-        for s in [0.83,  1.3, 2.07]: #scale
+    for theta in [-1 * np.pi/6.0, 0.0, np.pi/5.0]:  # rotation angle
+        for s in [0.83,  1.3, 2.07]:  # scale
             m_shapes = [(256, 256, 128), (255, 255, 127), (64, 127, 142)]
             for shape_moving in m_shapes:
                 s_shapes = [(256, 256, 128), (255, 255, 127), (64, 127, 142)]
@@ -150,9 +150,9 @@ def test_transform_origins_3d():
                                       [0, 0, 1, -t*shape_static[2]],
                                       [0, 0, 0, 1]])
                     trans_inv = npl.inv(trans)
-                    rot = np.zeros(shape=(4,4))
+                    rot = np.zeros(shape=(4, 4))
                     rot[:3, :3] = geometry.rodrigues_axis_rotation(axis, theta)
-                    rot[3,3] = 1.0
+                    rot[3, 3] = 1.0
                     scale = np.array([[1*s, 0, 0, 0],
                                       [0, 1*s, 0, 0],
                                       [0, 0, 1*s, 0],
@@ -164,12 +164,12 @@ def test_transform_origins_3d():
                     # Expected translation
                     c_static = static_grid2world[:3, 3]
                     c_moving = moving_grid2world[:3, 3]
-                    expected = np.eye(4);
+                    expected = np.eye(4)
                     expected[:3, 3] = c_moving - c_static
 
                     # Implementation under test
-                    actual = imaffine.transform_origins(static, static_grid2world,
-                                                    moving, moving_grid2world)
+                    actual = imaffine.transform_origins
+                    (static, static_grid2world, moving, moving_grid2world)
                     assert_array_almost_equal(actual.affine, expected)
 
 
@@ -192,7 +192,7 @@ def test_affreg_all_transforms():
         transform = regtransforms[ttype]
 
         static, moving, static_grid2world, moving_grid2world, smask, mmask, T = \
-                        setup_random_transform(transform, factor, nslices, 1.0)
+            setup_random_transform(transform, factor, nslices, 1.0)
         # Sum of absolute differences
         start_sad = np.abs(static - moving).sum()
         metric = imaffine.MutualInformationMetric(32, sampling_pc)
@@ -210,7 +210,7 @@ def test_affreg_all_transforms():
         # Sum of absolute differences
         end_sad = np.abs(static - transformed).sum()
         reduction = 1 - end_sad / start_sad
-        print("%s>>%f"%(ttype, reduction))
+        print("%s>>%f" % (ttype, reduction))
         assert(reduction > 0.9)
 
     # Verify that exception is raised if level_iters is empty
@@ -238,7 +238,7 @@ def test_affreg_defaults():
         id_param = transform.get_identity_parameters()
 
         static, moving, static_grid2world, moving_grid2world, smask, mmask, T = \
-                        setup_random_transform(transform, factor, nslices, 1.0)
+            setup_random_transform(transform, factor, nslices, 1.0)
         # Sum of absolute differences
         start_sad = np.abs(static - moving).sum()
 
@@ -264,14 +264,14 @@ def test_affreg_defaults():
             # Sum of absolute differences
             end_sad = np.abs(static - transformed).sum()
             reduction = 1 - end_sad / start_sad
-            print("%s>>%f"%(ttype, reduction))
+            print("%s>>%f" % (ttype, reduction))
             assert(reduction > 0.9)
 
             transformed_inv = affine_map.transform_inverse(static)
             # Sum of absolute differences
             end_sad = np.abs(moving - transformed_inv).sum()
             reduction = 1 - end_sad / start_sad
-            print("%s>>%f"%(ttype, reduction))
+            print("%s>>%f" % (ttype, reduction))
             assert(reduction > 0.9)
 
 
@@ -376,7 +376,7 @@ def create_affine_transforms(dim, translations, rotations, scales, rot_axis=None
 
             for s in scales:  # scale
                 scale = np.eye(dim + 1) * s
-                scale[dim,dim] = 1
+                scale[dim, dim] = 1
 
             affine = trans.dot(scale.dot(rot.dot(trans_inv)))
             transforms.append(affine)
@@ -505,7 +505,7 @@ def test_affine_map():
             affine_map = imaffine.AffineMap(np.eye(dim),
                                             cod_shape[:dim], None,
                                             dom_shape[:dim], None)
-            for sh in [(2,), (2,2,2,2)]:
+            for sh in [(2,), (2, 2, 2, 2)]:
                 img = np.zeros(sh)
                 assert_raises(ValueError, affine_map.transform, img)
                 assert_raises(ValueError, affine_map.transform_inverse, img)
@@ -520,11 +520,10 @@ def test_affine_map():
             assert_raises(AffineInversionError, affine_map.set_affine, aff_inf)
 
 
-
 def test_MIMetric_invalid_params():
     transform = regtransforms[('AFFINE', 3)]
-    static = np.random.rand(20,20,20)
-    moving = np.random.rand(20,20,20)
+    static = np.random.rand(20, 20, 20)
+    moving = np.random.rand(20, 20, 20)
     n = transform.get_number_of_parameters()
     sampling_proportion = 0.3
     theta_sing = np.zeros(n)
