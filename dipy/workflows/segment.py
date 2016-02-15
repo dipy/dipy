@@ -184,6 +184,8 @@ def recognize_bundles_flow(streamline_files, model_bundle_files,
             print('File {} does not exist'.format(sf))
             return
 
+        base_sf = os.path.splitext(os.path.basename(sf))[0]
+
         t = time()
         trkfile = nib.streamlines.load(sf)
         streamlines = trkfile.streamlines
@@ -261,13 +263,15 @@ def recognize_bundles_flow(streamline_files, model_bundle_files,
             if out_dir is None:
                 out_dir = ''
 
+            base_mb = os.path.splitext(os.path.basename(mb))[0]
+
             sf_bundle_file = os.path.join(
                 out_dir,
-                os.path.basename(mb))
+                base_mb + '_of_' + base_sf + '.trk')
 
             sf_bundle_labels = os.path.join(
                 out_dir,
-                os.path.splitext(os.path.basename(mb))[0] + '_labels.npy')
+                base_mb + '_of_' + base_sf + '_labels.npy')
 
             # if not os.path.exists(os.path.dirname(sf_bundle_file)):
             #     os.makedirs(os.path.dirname(sf_bundle_file))
@@ -288,7 +292,7 @@ def recognize_bundles_flow(streamline_files, model_bundle_files,
             if debug:
                 sf_bundle_neighb = os.path.join(
                     out_dir,
-                    os.path.splitext(os.path.basename(mb))[0] + '_neighb.trk')
+                    base_mb + '_of_' + base_sf + '_neighb.trk')
 
                 neighb_tractogram = nib.streamlines.Tractogram(
                     rb.neighb_streamlines)
@@ -301,7 +305,7 @@ def recognize_bundles_flow(streamline_files, model_bundle_files,
         if debug:
             sf_centroids = os.path.join(
                 os.path.dirname(sf),
-                os.path.splitext(os.path.basename(sf))[0] + '_centroids.trk')
+                base_sf + '_centroids.trk')
 
             centroid_tractogram = nib.streamlines.Tractogram(
                 rb.centroids)

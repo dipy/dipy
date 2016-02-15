@@ -48,15 +48,22 @@ def whole_brain_slr_flow(moving_streamlines_files,
     if verbose:
         print('# Static streamlines file')
         print(static_streamlines_file)
-        print('# Moving streamlines files')
+
+    if not path.exists(static_streamlines_file):
+        print('File {} does not exist'.format(static_streamlines_file))
+        return
 
     for sf in sfiles:
 
         if verbose:
+            print('# Moving streamlines files')
             print(sf)
 
-        moving_streamlines, hdr = load_trk(sf)
+        if not path.exists(sf):
+            print('File {} does not exist'.format(sf))
+            return
 
+        moving_streamlines, hdr = load_trk(sf)
         ret = whole_brain_slr(static_streamlines, moving_streamlines,
                               x0=slr_transform,
                               maxiter=maxiter, select_random=select_random,
