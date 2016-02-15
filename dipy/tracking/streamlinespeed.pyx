@@ -208,7 +208,7 @@ def set_number_of_points(streamlines, nb_points=3):
     Returns
     -------
     modified_streamlines : one or a list of array-like shape (`nb_points`,3)
-       array representing x,y,z of `nb_points` points that where interpolated.
+       array representing x,y,z of `nb_points` points that were interpolated.
 
     Examples
     --------
