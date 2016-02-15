@@ -19,7 +19,7 @@ from nibabel.tmpdirs import InTemporaryDirectory
 
 from dipy.data import get_data
 
-# Quickbundles command-line requires matplotlib: 
+# Quickbundles command-line requires matplotlib:
 try:
     import matplotlib
     no_mpl = False
@@ -29,11 +29,12 @@ except ImportError:
 from .scriptrunner import ScriptRunner
 
 runner = ScriptRunner(
-    script_sdir = 'bin',
-    debug_print_var = 'NIPY_DEBUG_PRINT')
+    script_sdir='bin',
+    debug_print_var='NIPY_DEBUG_PRINT')
 run_command = runner.run_command
 
 DATA_PATH = abspath(pjoin(dirname(__file__), 'data'))
+
 
 def test_dipy_peak_extraction():
     # test dipy_peak_extraction script
@@ -93,7 +94,8 @@ def test_dipy_fit_tensor_again():
         shutil.copyfile(bval, "small_25.bval")
         shutil.copyfile(bvec, "small_25.bvec")
         # Call script
-        cmd = ["dipy_fit_tensor", "--save-tensor", "--mask=none", "small_25.nii.gz"]
+        cmd = ["dipy_fit_tensor", "--save-tensor",
+               "--mask=none", "small_25.nii.gz"]
         out = run_command(cmd)
         assert_equal(out[0], 0)
         # Get expected values
@@ -112,6 +114,7 @@ def test_dipy_fit_tensor_again():
         ten_shape = shape + (1, 6)
         assert_image_shape_affine("small_25_tensor.nii.gz", ten_shape,
                                   affine)
+
 
 @nt.dec.skipif(no_mpl)
 def test_qb_commandline():
