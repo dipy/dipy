@@ -136,7 +136,7 @@ def test_qb_commandline_output_path_handling():
         # Need to specify an output directory with a "../" style path
         # to trigger old bug.
         cmd = ["dipy_quickbundles", tracks_file, '--pkl_file', 'mypickle.pkl',
-               '--out_file', '../output/tracks300.trk']
+               '--out_file', os.path.join('..', 'output', 'tracks300.trk')]
         out = run_command(cmd)
         assert_equal(out[0], 0)
 
