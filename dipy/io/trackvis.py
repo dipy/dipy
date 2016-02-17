@@ -3,6 +3,7 @@ import numpy as np
 
 from dipy.tracking import utils
 
+
 def save_trk(filename, points, vox_to_ras, shape):
     """A temporary helper function for saving trk files.
 
@@ -29,4 +30,3 @@ def save_trk(filename, points, vox_to_ras, shape):
     hdr['voxel_size'] = zooms[:3]
 
     nib.trackvis.write(filename, data, hdr)
-
