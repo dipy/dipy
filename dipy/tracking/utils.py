@@ -561,7 +561,7 @@ def target(streamlines, target_mask, affine, include=True):
         The affine transform from voxel indices to streamline points.
     include : bool, default True
         If True, streamlines passing through `target_mask` are kept. If False,
-        the streamlines not passing throught `target_mask` are kept.
+        the streamlines not passing through `target_mask` are kept.
 
     Returns
     -------
