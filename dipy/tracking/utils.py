@@ -93,7 +93,7 @@ except ImportError:
 
 
 def density_map(streamlines, vol_dims, voxel_size=None, affine=None):
-    """Counts the number of unique streamlines that pass though each voxel.
+    """Counts the number of unique streamlines that pass through each voxel.
 
     Parameters
     ----------
@@ -120,9 +120,9 @@ def density_map(streamlines, vol_dims, voxel_size=None, affine=None):
 
     Notes
     -----
-    A streamline can pass though a voxel even if one of the points of the
+    A streamline can pass through a voxel even if one of the points of the
     streamline does not lie in the voxel. For example a step from [0,0,0] to
-    [0,0,2] passes though [0,0,1]. Consider subsegmenting the streamlines when
+    [0,0,2] passes through [0,0,1]. Consider subsegmenting the streamlines when
     the edges of the voxels are smaller than the steps of the streamlines.
 
     """
@@ -560,13 +560,13 @@ def target(streamlines, target_mask, affine, include=True):
     affine : array (4, 4)
         The affine transform from voxel indices to streamline points.
     include : bool, default True
-        If True, streamlines passing though `target_mask` are kept. If False,
-        the streamlines not passing thought `target_mask` are kept.
+        If True, streamlines passing through `target_mask` are kept. If False,
+        the streamlines not passing throught `target_mask` are kept.
 
     Returns
     -------
     streamlines : generator
-        A sequence of streamlines that pass though `target_mask`.
+        A sequence of streamlines that pass through `target_mask`.
 
     Raises
     ------
