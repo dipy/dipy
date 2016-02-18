@@ -956,15 +956,20 @@ def mapmri_isotropic_phi_matrix(radial_order, mu, q):
     for n in range(0, radial_order + 1, 2):
         for j in range(1, 2 + n // 2):
             l = n + 2 - 2 * j
-            const = (-1) ** (l / 2) * np.sqrt(4.0 * np.pi) *\
-                (2 * np.pi ** 2 * mu ** 2 * qval ** 2) ** (l / 2) *\
-                np.exp(-2 * np.pi ** 2 * mu ** 2 * qval ** 2) *\
-                genlaguerre(j - 1, l + 0.5)(4 * np.pi ** 2 * mu ** 2 *
-                                            qval ** 2)
+            const = mapmri_isotropic_radial_signal_basis(j, l, mu, qval)
             for m in range(-l, l+1):
                 M[:, counter] = const * real_sph_harm(m, l, theta, phi)
                 counter += 1
     return M
+
+
+def mapmri_isotropic_radial_signal_basis(j, l, mu, qval):
+    const = (-1) ** (l / 2) * np.sqrt(4.0 * np.pi) *\
+            (2 * np.pi ** 2 * mu ** 2 * qval ** 2) ** (l / 2) *\
+        np.exp(-2 * np.pi ** 2 * mu ** 2 * qval ** 2) *\
+        genlaguerre(j - 1, l + 0.5)(4 * np.pi ** 2 * mu ** 2 *
+                                    qval ** 2)
+    return const
 
 
 def mapmri_isotropic_M_mu_independent(radial_order, q):
@@ -1051,16 +1056,20 @@ def mapmri_isotropic_psi_matrix(radial_order, mu, rgrad):
     for n in range(0, radial_order + 1, 2):
         for j in range(1, 2 + n // 2):
             l = n + 2 - 2 * j
-            const = (-1) ** (j - 1) * \
-                    (np.sqrt(2) * np.pi * mu ** 3) ** (-1) *\
-                    (r ** 2 / (2 * mu ** 2)) ** (l / 2) *\
-                np.exp(- r ** 2 / (2 * mu ** 2)) *\
-                genlaguerre(j - 1, l + 0.5)(r ** 2 / mu ** 2)
+            const = mapmri_isotropic_radial_pdf_basis(j, l, mu, r)
             for m in range(-l, l + 1):
                 K[:, counter] = const * real_sph_harm(m, l, theta, phi)
                 counter += 1
-
     return K
+
+
+def mapmri_isotropic_radial_pdf_basis(j, l, mu, r):
+    const = (-1) ** (j - 1) * \
+                    (np.sqrt(2) * np.pi * mu ** 3) ** (-1) *\
+                    (r ** 2 / (2 * mu ** 2)) ** (l / 2) *\
+        np.exp(- r ** 2 / (2 * mu ** 2)) *\
+        genlaguerre(j - 1, l + 0.5)(r ** 2 / mu ** 2)
+    return const
 
 
 def mapmri_isotropic_K_mu_independent(radial_order, rgrad):

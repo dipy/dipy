@@ -37,17 +37,62 @@ def test_orthogonality_basis_functions():
     qmax = 1000
 
     int1 = integrate.quad(lambda x:
-        np.real(mapmri.mapmri_phi_1d(0, x, diffusivity)) *
-        np.real(mapmri.mapmri_phi_1d(2, x, diffusivity)), qmin, qmax)
+                          np.real(mapmri.mapmri_phi_1d(0, x, diffusivity)) *
+                          np.real(mapmri.mapmri_phi_1d(2, x, diffusivity)),
+                          qmin, qmax)
     int2 = integrate.quad(lambda x:
-        np.real(mapmri.mapmri_phi_1d(2, x, diffusivity)) *
-        np.real(mapmri.mapmri_phi_1d(4, x, diffusivity)), qmin, qmax)
+                          np.real(mapmri.mapmri_phi_1d(2, x, diffusivity)) *
+                          np.real(mapmri.mapmri_phi_1d(4, x, diffusivity)),
+                          qmin, qmax)
     int3 = integrate.quad(lambda x:
-        np.real(mapmri.mapmri_phi_1d(4, x, diffusivity)) *
-        np.real(mapmri.mapmri_phi_1d(6, x, diffusivity)), qmin, qmax)
+                          np.real(mapmri.mapmri_phi_1d(4, x, diffusivity)) *
+                          np.real(mapmri.mapmri_phi_1d(6, x, diffusivity)),
+                          qmin, qmax)
     int4 = integrate.quad(lambda x:
-        np.real(mapmri.mapmri_phi_1d(6, x, diffusivity)) *
-        np.real(mapmri.mapmri_phi_1d(8, x, diffusivity)), qmin, qmax)
+                          np.real(mapmri.mapmri_phi_1d(6, x, diffusivity)) *
+                          np.real(mapmri.mapmri_phi_1d(8, x, diffusivity)),
+                          qmin, qmax)
+
+    # checking for first 5 basis functions if they are indeed orthogonal
+    assert_almost_equal(int1, 0.)
+    assert_almost_equal(int2, 0.)
+    assert_almost_equal(int3, 0.)
+    assert_almost_equal(int4, 0.)
+
+    # do the same for the isotropic mapmri basis functions
+    # only j>0, l=0 basis functions have an integral > 0
+    # however we need to normalize to check the orthonormality
+
+    C1 = mapmri.mapmri_isotropic_radial_pdf_basis(1, 0, diffusivity, 0)
+    C2 = mapmri.mapmri_isotropic_radial_pdf_basis(2, 0, diffusivity, 0)
+    C3 = mapmri.mapmri_isotropic_radial_pdf_basis(3, 0, diffusivity, 0)
+    C4 = mapmri.mapmri_isotropic_radial_pdf_basis(4, 0, diffusivity, 0)
+    C5 = mapmri.mapmri_isotropic_radial_pdf_basis(4, 0, diffusivity, 0)
+
+    int1 = integrate.quad(lambda q:
+                          mapmri.mapmri_isotropic_radial_signal_basis(
+                              1, 0, diffusivity, q) *
+                          mapmri.mapmri_isotropic_radial_signal_basis(
+                              2, 0, diffusivity, q) /
+                          C1 / C2, qmin, qmax)
+    int2 = integrate.quad(lambda q:
+                          mapmri.mapmri_isotropic_radial_signal_basis(
+                              2, 0, diffusivity, q) *
+                          mapmri.mapmri_isotropic_radial_signal_basis(
+                              3, 0, diffusivity, q) /
+                          C2 / C3, qmin, qmax)
+    int3 = integrate.quad(lambda q:
+                          mapmri.mapmri_isotropic_radial_signal_basis(
+                              3, 0, diffusivity, q) *
+                          mapmri.mapmri_isotropic_radial_signal_basis(
+                              4, 0, diffusivity, q) /
+                          C3 / C4, qmin, qmax)
+    int4 = integrate.quad(lambda q:
+                          mapmri.mapmri_isotropic_radial_signal_basis(
+                              4, 0, diffusivity, q) *
+                          mapmri.mapmri_isotropic_radial_signal_basis(
+                              5, 0, diffusivity, q) /
+                          C4 / C5, qmin, qmax)
 
     # checking for first 5 basis functions if they are indeed orthogonal
     assert_almost_equal(int1, 0.)
@@ -81,8 +126,8 @@ def test_mapmri_signal_fitting(radial_order=6):
 
     # do the same for isotropic implementation
     mapm = MapmriModel(gtab, radial_order=radial_order,
-                   laplacian_weighting=0.0001,
-                   anisotropic_scaling=False)
+                       laplacian_weighting=0.0001,
+                       anisotropic_scaling=False)
     mapfit = mapm.fit(S)
     S_reconst = mapfit.predict(gtab, 1.0)
 
@@ -115,7 +160,6 @@ def test_mapmri_pdf_integral_unity(radial_order=6):
         integral += c_map[i] * int_func(n1) * int_func(n2) * int_func(n3)
 
     assert_almost_equal(integral, 1.0, 3)
-
 
     # test if numerical integral of odf is equal to one
     odf = mapfit.odf(sphere, s=0)
@@ -204,6 +248,7 @@ def test_mapmri_metrics_anisotropic(radial_order=6):
     assert_almost_equal(mapfit.msd(), msd_gt, 5)
     assert_almost_equal(mapfit.qiv(), qiv_gt, 5)
 
+
 def test_mapmri_laplacian_anisotropic(radial_order=6):
     gtab = get_gtab_taiwan_dsi()
     l1, l2, l3 = [0.0015, 0.0003, 0.0003]
@@ -232,9 +277,10 @@ def test_mapmri_laplacian_anisotropic(radial_order=6):
 
     assert_almost_equal(norm_of_laplacian, norm_of_laplacian_gt)
 
+
 def test_mapmri_laplacian_isotropic(radial_order=6):
     gtab = get_gtab_taiwan_dsi()
-    l1, l2, l3 = [0.0003, 0.0003, 0.0003] # isotropic diffusivities
+    l1, l2, l3 = [0.0003, 0.0003, 0.0003]  # isotropic diffusivities
     S = generate_signal_crossing(gtab, l1, l2, l3, angle2=0)
 
     mapm = MapmriModel(gtab, radial_order=radial_order,
@@ -260,6 +306,7 @@ def test_mapmri_laplacian_isotropic(radial_order=6):
 
     assert_almost_equal(norm_of_laplacian, norm_of_laplacian_gt)
 
+
 def test_signal_fitting_equality_anisotropic_isotropic(radial_order=6):
     gtab = get_gtab_taiwan_dsi()
     l1, l2, l3 = [0.0015, 0.0003, 0.0003]
@@ -267,7 +314,6 @@ def test_signal_fitting_equality_anisotropic_isotropic(radial_order=6):
     gridsize = 17
     radius_max = 0.07
     r_points = mapmri.create_rspace(gridsize, radius_max)
-
 
     tenmodel = dti.TensorModel(gtab)
     evals = tenmodel.fit(S).evals
@@ -285,9 +331,9 @@ def test_signal_fitting_equality_anisotropic_isotropic(radial_order=6):
     K_iso = mapmri.mapmri_isotropic_psi_matrix(radial_order, mumean, r_points)
 
     coef_aniso = np.dot(np.dot(np.linalg.inv(np.dot(M_aniso.T, M_aniso)),
-        M_aniso.T), S)
+                               M_aniso.T), S)
     coef_iso = np.dot(np.dot(np.linalg.inv(np.dot(M_iso.T, M_iso)),
-        M_iso.T), S)
+                             M_iso.T), S)
     # test if anisotropic and isotropic implementation produce equal results
     # if the same isotropic scale factors are used
     s_fitted_aniso = np.dot(M_aniso, coef_aniso)
@@ -313,16 +359,18 @@ def test_signal_fitting_equality_anisotropic_isotropic(radial_order=6):
     assert_array_almost_equal(s_fitted_aniso_norm,
                               s_fitted_implemented_isotropic)
 
+
 def test_mapmri_isotropic_design_matrix_separability(radial_order=6):
     gtab = get_gtab_taiwan_dsi()
     tau = 1 / (4 * np.pi ** 2)
     qvals = np.sqrt(gtab.bvals / tau) / (2 * np.pi)
     q = gtab.bvecs * qvals[:, None]
-    mu = 0.0003 #random value
+    mu = 0.0003  # random value
 
     M = mapmri.mapmri_isotropic_phi_matrix(radial_order, mu, q)
     M_independent = mapmri.mapmri_isotropic_M_mu_independent(radial_order, q)
-    M_dependent = mapmri.mapmri_isotropic_M_mu_dependent(radial_order, mu, qvals)
+    M_dependent = mapmri.mapmri_isotropic_M_mu_dependent(radial_order, mu,
+                                                         qvals)
 
     M_reconstructed = M_independent * M_dependent
 
@@ -331,7 +379,7 @@ def test_mapmri_isotropic_design_matrix_separability(radial_order=6):
 
 def test_mapmri_metrics_isotropic(radial_order=6):
     gtab = get_gtab_taiwan_dsi()
-    l1, l2, l3 = [0.0003, 0.0003, 0.0003] # isotropic diffusivities
+    l1, l2, l3 = [0.0003, 0.0003, 0.0003]  # isotropic diffusivities
     S = generate_signal_crossing(gtab, l1, l2, l3, angle2=0)
 
     # test MAPMRI q-space indices
@@ -493,11 +541,11 @@ def test_laplacian_regularization(radial_order=6):
 
     # test if anisotropic and isotropic implementation produce equal results
     # if the same isotropic scale factors are used
-    s_fitted_aniso = np.dot(M_aniso,
-        np.dot(np.dot(np.linalg.inv(np.dot(M_aniso.T, M_aniso)), M_aniso.T), S)
+    s_fitted_aniso = np.dot(M_aniso, np.dot(np.dot(
+        np.linalg.inv(np.dot(M_aniso.T, M_aniso)), M_aniso.T), S)
         )
-    s_fitted_iso = np.dot(M_iso,
-        np.dot(np.dot(np.linalg.inv(np.dot(M_iso.T, M_iso)), M_iso.T), S)
+    s_fitted_iso = np.dot(M_iso, np.dot(np.dot(
+        np.linalg.inv(np.dot(M_iso.T, M_iso)), M_iso.T), S)
         )
 
     assert_array_almost_equal(s_fitted_aniso, s_fitted_iso)
