@@ -4,12 +4,13 @@ from numpy.testing import (assert_almost_equal,
                            assert_array_almost_equal,
                            assert_equal,
                            run_module_suite)
-from dipy.reconst.mapmri import MapmriModel, mapmri_index_matrix, mapmri_EAP
+from dipy.reconst.mapmri import MapmriModel, mapmri_index_matrix
 from dipy.reconst import dti, mapmri
 from dipy.sims.voxel import (MultiTensor, all_tensor_evecs,  multi_tensor_pdf)
 from scipy.special import gamma
 from scipy.misc import factorial
 from dipy.data import get_sphere
+from dipy.sims.voxel import add_noise
 
 
 def int_func(n):
@@ -52,13 +53,25 @@ def test_mapmri_signal_fitting(radial_order=6):
     S = S / S[0]
     nmse_signal = np.sqrt(np.sum((S - S_reconst) ** 2)) / (S.sum())
     assert_almost_equal(nmse_signal, 0.0, 3)
+    
+    # do the same for isotropic implementation
+    mapm = MapmriModel(gtab, radial_order=radial_order,
+                   laplacian_weighting=0.0001,
+                   anisotropic_scaling=False)
+    mapfit = mapm.fit(S)
+    S_reconst = mapfit.predict(gtab, 1.0)
+    
+    # test the signal reconstruction
+    S = S / S[0]
+    nmse_signal = np.sqrt(np.sum((S - S_reconst) ** 2)) / (S.sum())
+    assert_almost_equal(nmse_signal, 0.0, 3)
 
 
 def test_mapmri_pdf_integral_unity(radial_order=6):
     gtab = get_gtab_taiwan_dsi()
     l1, l2, l3 = [0.0015, 0.0003, 0.0003]
     S = generate_signal_crossing(gtab, l1, l2, l3)
-
+    sphere = get_sphere('symmetric724')
     # test MAPMRI fitting
 
     mapm = MapmriModel(gtab, radial_order=radial_order,
@@ -85,6 +98,9 @@ def test_mapmri_pdf_integral_unity(radial_order=6):
     assert_almost_equal(odf_sum, 1.0, 2)
 
     # do the same for isotropic implementation
+    radius_max = 0.04  # 40 microns
+    gridsize = 17
+    r_points = mapmri.create_rspace(gridsize, radius_max)
     mapm = MapmriModel(gtab, radial_order=radial_order,
                        laplacian_weighting=0.02,
                        anisotropic_scaling=False)
@@ -105,28 +121,24 @@ def test_mapmri_compare_fitted_pdf_with_multi_tensor(radial_order=6):
     gtab = get_gtab_taiwan_dsi()
     l1, l2, l3 = [0.0015, 0.0003, 0.0003]
     S = generate_signal_crossing(gtab, l1, l2, l3)
-
+    
+    radius_max = 0.02  # 40 microns
+    gridsize = 10
+    r_points = mapmri.create_rspace(gridsize, radius_max)
+    
     # test MAPMRI fitting
     mapm = MapmriModel(gtab, radial_order=radial_order,
-                       laplacian_weighting=0.02)
+                       laplacian_weighting=0.0001)
     mapfit = mapm.fit(S)
-    c_map = mapfit.mapmri_coeff
-
-    R = mapfit.mapmri_R
-    mu = mapfit.mapmri_mu
 
     # compare the mapmri pdf with the ground truth multi_tensor pdf
 
     mevals = np.array(([l1, l2, l3],
                        [l1, l2, l3]))
     angl = [(0, 0), (60, 0)]
-    sphere = get_sphere('symmetric724')
-    v = sphere.vertices
-    radius = 10e-3
-    r_points = v * radius
     pdf_mt = multi_tensor_pdf(r_points, mevals=mevals,
                               angles=angl, fractions=[50, 50])
-    pdf_map = mapmri_EAP(r_points, radial_order, c_map, mu, R)
+    pdf_map = mapfit.pdf(r_points)
 
     nmse_pdf = np.sqrt(np.sum((pdf_mt - pdf_map) ** 2)) / (pdf_mt.sum())
     assert_almost_equal(nmse_pdf, 0.0, 2)
@@ -227,6 +239,10 @@ def test_signal_fitting_equality_anisotropic_isotropic(radial_order=6):
     gtab = get_gtab_taiwan_dsi()
     l1, l2, l3 = [0.0015, 0.0003, 0.0003]
     S = generate_signal_crossing(gtab, l1, l2, l3, angle2=60)
+    gridsize = 17
+    radius_max = 0.07
+    r_points = mapmri.create_rspace(gridsize, radius_max)
+    
 
     tenmodel = dti.TensorModel(gtab)
     evals = tenmodel.fit(S).evals
@@ -238,17 +254,19 @@ def test_signal_fitting_equality_anisotropic_isotropic(radial_order=6):
     q = gtab.bvecs * qvals[:, None]
     
     M_aniso = mapmri.mapmri_phi_matrix(radial_order, mu, q.T)
+    K_aniso = mapmri.mapmri_psi_matrix(radial_order, mu, r_points)
+    
     M_iso = mapmri.mapmri_isotropic_phi_matrix(radial_order, mumean, q)
+    K_iso = mapmri.mapmri_isotropic_psi_matrix(radial_order, mumean, r_points)
 
+    coef_aniso = np.dot(np.dot(np.linalg.inv(np.dot(M_aniso.T, M_aniso)),
+        M_aniso.T), S)
+    coef_iso = np.dot(np.dot(np.linalg.inv(np.dot(M_iso.T, M_iso)),
+        M_iso.T), S)
     # test if anisotropic and isotropic implementation produce equal results
     # if the same isotropic scale factors are used
-    s_fitted_aniso = np.dot(M_aniso, 
-        np.dot(np.dot(np.linalg.inv(np.dot(M_aniso.T, M_aniso)), M_aniso.T), S)
-        )
-    s_fitted_iso = np.dot(M_iso,
-        np.dot(np.dot(np.linalg.inv(np.dot(M_iso.T, M_iso)), M_iso.T), S)
-        )
-        
+    s_fitted_aniso = np.dot(M_aniso, coef_aniso)
+    s_fitted_iso = np.dot(M_iso, coef_iso)
     assert_array_almost_equal(s_fitted_aniso, s_fitted_iso)
 
     # the same test for the PDF
@@ -319,43 +337,8 @@ def test_mapmri_metrics_isotropic(radial_order=6):
     assert_almost_equal(mapfit.msd(), msd_gt, 5)
     assert_almost_equal(mapfit.qiv(), qiv_gt, 5)
 
-def test_mapmri_metrics_anisotropic(radial_order=6):
-    gtab = get_gtab_taiwan_dsi()
-    l1, l2, l3 = [0.0015, 0.0003, 0.0003]
-    S = generate_signal_crossing(gtab, l1, l2, l3, angle2=0)
-
-    # test MAPMRI q-space indices
-
-    mapm = MapmriModel(gtab, radial_order=radial_order,
-                       laplacian_regularization=False,
-                       anisotropic_scaling=False)
-    mapfit = mapm.fit(S)
-
-    tau = 1 / (4 * np.pi ** 2)
-
-    # ground truth indices estimated from the DTI tensor
-    rtpp_gt = 1. / (2 * np.sqrt(np.pi * l1 * tau))
-    rtap_gt = (
-        1. / (2 * np.sqrt(np.pi * l2 * tau)) * 1. /
-        (2 * np.sqrt(np.pi * l3 * tau))
-    )
-    rtop_gt = rtpp_gt * rtap_gt
-    msd_gt = 2 * (l1 + l2 + l3) * tau
-    qiv_gt = (
-        (64 * np.pi ** (7 / 2.) * (l1 * l2 * l3 * tau ** 3) ** (3 / 2.)) /
-        ((l2 * l3 + l1 * (l2 + l3)) * tau ** 2)
-    )
-
-    assert_almost_equal(mapfit.rtap(), rtap_gt, 5)
-    assert_almost_equal(mapfit.rtpp(), rtpp_gt, 5)
-    assert_almost_equal(mapfit.rtop(), rtop_gt, 5)
-    assert_almost_equal(mapfit.ng(), 0., 5)
-    assert_almost_equal(mapfit.ng_parallel(), 0., 5)
-    assert_almost_equal(mapfit.ng_perpendicular(), 0., 5)
-    assert_almost_equal(mapfit.msd(), msd_gt, 5)
-    assert_almost_equal(mapfit.qiv(), qiv_gt, 5)
     
-def test_mapmri_laplacian_anisotropic(radial_order=6):
+def test_positivity_constraint(radial_order=6):
     gtab = get_gtab_taiwan_dsi()
     l1, l2, l3 = [0.0015, 0.0003, 0.0003]
     S = generate_signal_crossing(gtab, l1, l2, l3, angle2=60)
@@ -505,58 +488,6 @@ def test_laplacian_regularization(radial_order=6):
     
     assert_array_almost_equal(s_fitted_aniso_norm, 
                               s_fitted_implemented_isotropic)
-    
-def test_mapmri_isotropic_design_matrix_separability(radial_order=6):
-    gtab = get_gtab_taiwan_dsi()
-    tau = 1 / (4 * np.pi ** 2)
-    qvals = np.sqrt(gtab.bvals / tau) / (2 * np.pi)
-    q = gtab.bvecs * qvals[:, None]
-    mu = 0.0003 #random value
-    
-    M = mapmri.mapmri_isotropic_phi_matrix(radial_order, mu, q)
-    M_independent = mapmri.mapmri_isotropic_M_mu_independent(radial_order, q)
-    M_dependent = mapmri.mapmri_isotropic_M_mu_dependent(radial_order, mu, qvals)
-    
-    M_reconstructed = M_independent * M_dependent
-    
-    assert_array_almost_equal(M, M_reconstructed)
-    
-    
-def test_mapmri_metrics_isotropic(radial_order=6):
-    gtab = get_gtab_taiwan_dsi()
-    l1, l2, l3 = [0.0003, 0.0003, 0.0003] # isotropic diffusivities
-    S = generate_signal_crossing(gtab, l1, l2, l3, angle2=0)
-
-    laplacian_norm_unreg = np.dot(
-        coef_unreg, np.dot(coef_unreg, laplacian_matrix))
-    laplacian_norm_laplacian = np.dot(
-        coef_laplacian, np.dot(coef_laplacian, laplacian_matrix))
-
-    mapm = MapmriModel(gtab, radial_order=radial_order,
-                       laplacian_regularization=False,
-                       anisotropic_scaling=False)
-    mapfit = mapm.fit(S)
-
-    tau = 1 / (4 * np.pi ** 2)
-
-    # ground truth indices estimated from the DTI tensor
-    rtpp_gt = 1. / (2 * np.sqrt(np.pi * l1 * tau))
-    rtap_gt = (
-        1. / (2 * np.sqrt(np.pi * l2 * tau)) * 1. /
-        (2 * np.sqrt(np.pi * l3 * tau))
-    )
-    rtop_gt = rtpp_gt * rtap_gt
-    msd_gt = 2 * (l1 + l2 + l3) * tau
-    qiv_gt = (
-        (64 * np.pi ** (7 / 2.) * (l1 * l2 * l3 * tau ** 3) ** (3 / 2.)) /
-        ((l2 * l3 + l1 * (l2 + l3)) * tau ** 2)
-    )
-
-    assert_almost_equal(mapfit.rtap(), rtap_gt, 5)
-    assert_almost_equal(mapfit.rtpp(), rtpp_gt, 5)
-    assert_almost_equal(mapfit.rtop(), rtop_gt, 4)
-    assert_almost_equal(mapfit.msd(), msd_gt, 5)
-    assert_almost_equal(mapfit.qiv(), qiv_gt, 5)
 
 if __name__ == '__main__':
     run_module_suite()

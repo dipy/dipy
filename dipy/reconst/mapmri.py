@@ -755,12 +755,12 @@ class MapmriFit(ReconstFit):
         table is given it recovers the signal for the gtab of the data.
         """
         if gtab is None:
-            E = self.signal(self.model.gtab)
+            E = self.predict(self.model.gtab)
         else:
-            E = self.signal(gtab)
+            E = self.predict(gtab)
         return E
 
-    def signal(self, qvals_or_gtab):
+    def predict(self, qvals_or_gtab, S0=1.):
         r'''Recovers the reconstructed signal for any qvalue array or
         gradient table.
         '''
@@ -778,7 +778,7 @@ class MapmriFit(ReconstFit):
         else:
             M = mapmri_isotropic_phi_matrix(self.radial_order, self.mu[0], q)
 
-        E = np.dot(M, self._mapmri_coef)
+        E = S0 * np.dot(M, self._mapmri_coef)
         return E
 
     def pdf(self, r_points):
