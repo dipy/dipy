@@ -11,6 +11,8 @@ from scipy.special import gamma
 from scipy.misc import factorial
 from dipy.data import get_sphere
 from dipy.sims.voxel import add_noise
+import scipy.integrate as integrate
+import scipy.special as special
 
 
 def int_func(n):
@@ -29,6 +31,32 @@ def generate_signal_crossing(gtab, lambda1, lambda2, lambda3, angle2=60):
     S, sticks = MultiTensor(gtab, mevals, S0=100.0, angles=angl,
                             fractions=[50, 50], snr=None)
     return S
+
+
+def test_orthogonality_basis_functions():
+    # numerical integration parameters
+    diffusivity = 0.0015
+    qmin = 0
+    qmax = 1000
+    
+    int1 = integrate.quad(lambda x: 
+        np.real(mapmri.mapmri_phi_1d(0, x, diffusivity)) *
+        np.real(mapmri.mapmri_phi_1d(2, x, diffusivity)), qmin, qmax)
+    int2 = integrate.quad(lambda x: 
+        np.real(mapmri.mapmri_phi_1d(2, x, diffusivity)) *
+        np.real(mapmri.mapmri_phi_1d(4, x, diffusivity)), qmin, qmax)
+    int3 = integrate.quad(lambda x: 
+        np.real(mapmri.mapmri_phi_1d(4, x, diffusivity)) *
+        np.real(mapmri.mapmri_phi_1d(6, x, diffusivity)), qmin, qmax)
+    int4 = integrate.quad(lambda x: 
+        np.real(mapmri.mapmri_phi_1d(6, x, diffusivity)) *
+        np.real(mapmri.mapmri_phi_1d(8, x, diffusivity)), qmin, qmax)
+    
+    # checking for first 5 basis functions if they are indeed orthogonal
+    assert_almost_equal(int1, 0.)
+    assert_almost_equal(int2, 0.)
+    assert_almost_equal(int3, 0.)
+    assert_almost_equal(int4, 0.)
 
 
 def test_mapmri_number_of_coefficients(radial_order=6):
