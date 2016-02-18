@@ -470,7 +470,7 @@ class MapmriFit(ReconstFit):
             rtpp_vec = np.zeros((ind_mat.shape[0]))
             count = 0
             for n in range(0, self.model.radial_order + 1, 2):
-                    for j in range(1, 2 + n / 2):
+                    for j in range(1, 2 + n // 2):
                         l = n + 2 - 2 * j
                         const = (-1/2.0) ** (l/2) / np.sqrt(np.pi)
                         matsum = 0
@@ -518,7 +518,7 @@ class MapmriFit(ReconstFit):
             count = 0
 
             for n in range(0, self.model.radial_order + 1, 2):
-                for j in range(1, 2 + n / 2):
+                for j in range(1, 2 + n // 2):
                     l = n + 2 - 2 * j
                     kappa = ((-1) ** (j - 1) * 2 ** (-(l + 3) / 2.0)) / np.pi
                     matsum = 0
@@ -954,7 +954,7 @@ def mapmri_isotropic_phi_matrix(radial_order, mu, q):
 
     counter = 0
     for n in range(0, radial_order + 1, 2):
-        for j in range(1, 2 + n / 2):
+        for j in range(1, 2 + n // 2):
             l = n + 2 - 2 * j
             const = (-1) ** (l / 2) * np.sqrt(4.0 * np.pi) *\
                 (2 * np.pi ** 2 * mu ** 2 * qval ** 2) ** (l / 2) *\
@@ -982,7 +982,7 @@ def mapmri_isotropic_M_mu_independent(radial_order, q):
 
     counter = 0
     for n in range(0, radial_order + 1, 2):
-        for j in range(1, 2 + n / 2):
+        for j in range(1, 2 + n // 2):
             l = n + 2 - 2 * j
             const = np.sqrt(4 * np.pi) * (-1) ** (-l / 2) * \
                 (2 * np.pi ** 2 * qval ** 2) ** (l / 2)
@@ -1005,7 +1005,7 @@ def mapmri_isotropic_M_mu_dependent(radial_order, mu, qval):
     counter = 0
 
     for n in range(0, radial_order + 1, 2):
-        for j in range(1, 2 + n / 2):
+        for j in range(1, 2 + n // 2):
             l = n + 2 - 2 * j
             const = mu ** l * np.exp(-2 * np.pi ** 2 * mu ** 2 * qval ** 2) *\
                 genlaguerre(j - 1, l + 0.5)(4 * np.pi ** 2 * mu ** 2 *
@@ -1049,7 +1049,7 @@ def mapmri_isotropic_psi_matrix(radial_order, mu, rgrad):
 
     counter = 0
     for n in range(0, radial_order + 1, 2):
-        for j in range(1, 2 + n / 2):
+        for j in range(1, 2 + n // 2):
             l = n + 2 - 2 * j
             const = (-1) ** (j - 1) * \
                     (np.sqrt(2) * np.pi * mu ** 3) ** (-1) *\
@@ -1078,7 +1078,7 @@ def mapmri_isotropic_K_mu_independent(radial_order, rgrad):
 
     counter = 0
     for n in range(0, radial_order + 1, 2):
-        for j in range(1, 2 + n / 2):
+        for j in range(1, 2 + n // 2):
             l = n + 2 - 2 * j
             const = (-1) ** (j - 1) *\
                 (np.sqrt(2) * np.pi) ** (-1) *\
@@ -1104,7 +1104,7 @@ def mapmri_isotropic_K_mu_dependent(radial_order, mu, rgrad):
 
     counter = 0
     for n in range(0, radial_order + 1, 2):
-        for j in range(1, 2 + n / 2):
+        for j in range(1, 2 + n // 2):
             l = n + 2 - 2 * j
             const = (mu ** 3) ** (-1) * mu ** (-l) *\
                 np.exp(-r ** 2 / (2 * mu ** 2)) *\
@@ -1162,7 +1162,7 @@ def mapmri_isotropic_odf_matrix(radial_order, mu, s, vertices):
 
     counter = 0
     for n in range(0, radial_order + 1, 2):
-        for j in range(1, 2 + n / 2):
+        for j in range(1, 2 + n // 2):
             l = n + 2 - 2 * j
             kappa = ((-1) ** (j - 1) * 2 ** (-(l + 3) / 2.0) * mu ** s) / np.pi
             matsum = 0
@@ -1217,7 +1217,7 @@ def mapmri_isotropic_odf_sh_matrix(radial_order, mu, s):
 
     counter = 0
     for n in range(0, radial_order + 1, 2):
-        for j in range(1, 2 + n / 2):
+        for j in range(1, 2 + n // 2):
             l = n + 2 - 2 * j
             kappa = ((-1) ** (j - 1) * 2 ** (-(l + 3) / 2.0) * mu ** s) / np.pi
             matsum = 0
