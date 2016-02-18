@@ -1312,7 +1312,7 @@ def mapmri_isotropic_index_matrix(radial_order):
     """
     index_matrix = []
     for n in range(0, radial_order + 1, 2):
-        for j in range(1, 2 + n / 2):
+        for j in range(1, 2 + n // 2):
             for m in range(-1 * (n + 2 - 2 * j), (n + 3 - 2 * j)):
                 index_matrix.append([j, n + 2 - 2 * j, m])
 
@@ -1346,7 +1346,7 @@ def create_rspace(gridsize, radius_max):
     vecs = np.array(vecs, dtype=np.float32)
 
     # there are points in the corners farther than sphere radius
-    points_inside_sphere = np.linalg.norm(vecs, axis=1) <= radius
+    points_inside_sphere = np.sqrt(np.einsum('ij,ij->i', vecs, vecs)) <= radius
     vecs_inside_sphere = vecs[points_inside_sphere]
 
     tab = vecs_inside_sphere / radius
@@ -1465,18 +1465,18 @@ def mapmri_RLS_reg_matrices(radial_order):
     NeuroImage, Under Review.
     """
     R = np.zeros((radial_order + 1, radial_order + 1))
-    for i in xrange(radial_order + 1):
-        for j in xrange(radial_order + 1):
+    for i in range(radial_order + 1):
+        for j in range(radial_order + 1):
             R[i, j] = map_laplace_r(i, j)
 
     L = np.zeros((radial_order + 1, radial_order + 1))
-    for i in xrange(radial_order + 1):
-        for j in xrange(radial_order + 1):
+    for i in range(radial_order + 1):
+        for j in range(radial_order + 1):
             L[i, j] = map_laplace_l(i, j)
 
     S = np.zeros((radial_order + 1, radial_order + 1))
-    for i in xrange(radial_order + 1):
-        for j in xrange(radial_order + 1):
+    for i in range(radial_order + 1):
+        for j in range(radial_order + 1):
             S[i, j] = map_laplace_s(i, j)
     return R, L, S
 
