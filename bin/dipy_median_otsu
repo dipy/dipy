@@ -1,0 +1,11 @@
+#! /usr/bin/env python
+
+from dipy.workflows.segment import median_otsu_flow
+from dipy.workflows.base import IntrospectiveArgumentParser
+
+parser = IntrospectiveArgumentParser()
+parser.add_workflow(median_otsu_flow)
+
+if __name__ == "__main__":
+    args = parser.get_flow_args()
+    median_otsu_flow(**args)
