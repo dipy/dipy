@@ -12,11 +12,77 @@ from dipy.reconst.dti import (TensorModel, color_fa, fractional_anisotropy,
                               lower_triangular, mode as get_mode)
 
 
-def compute_dti_metrics(input_files, masks, bvalues, bvectors, out_dir, tensor,
-                        fa, ga, rgb, md, ad, rd, mode, evec, eval):
+def compute_dti_metrics(input_files, mask_files, bvalues, bvectors, out_dir='', tensor='tensors.nii.gz',
+                        fa='fa.nii.gz', ga='ga.nii.gz', rgb='rgb.nii.gz',
+                        md='md.nii.gz', ad='ad.nii.gz', rd='rd.nii.gz',
+                        mode='mode.nii.gz', evec='evecs.nii.gz', eval='evals.nii.gz'):
+
+    """ Workflow for tensor reconstruction and DTI metrics computing.
+    It a tensor recontruction on the files by 'globing' ``input_files`` and
+    saves the dti metrics in a directory specified by ``out_dir``.
+
+    Parameters
+    ----------
+    input_files : string
+        Path to the input volumes. This path may contain wildcards to process
+        multiple inputs at once.
+    mask_files : string
+        Path to the input masks. This path may contain wildcards to use
+        multiple masks at once.
+    bvalues : string
+        Path to the bvalues files. This path may contain wildcards to use
+        multiple bvalues files at once.
+    bvectors : string
+        Path to the bvalues files. This path may contain wildcards to use
+        multiple bvalues files at once.
+    out_dir : string, optional
+        Output directory (default input file directory)
+    tensor : string, optional
+        Name of the tensors volume to be saved (default 'tensors.nii.gz')
+    fa : string, optional
+        Name of the fractionnal anisotropy volume to be saved (default 'fa.nii.gz')
+    ga : string, optional
+        Name of the geodesic anisotropy volume to be saved (default 'ga.nii.gz')
+    rgb : string, optional
+        Name of the color fa volume to be saved (default 'rgb.nii.gz')
+    md : string, optional
+        Name of the mean diffusivity volume to be saved (default 'md.nii.gz')
+    ad : string, optional
+        Name of the axial diffusivity volume to be saved (default 'ad.nii.gz')
+    rd : string, optional
+        Name of the radial diffusivity volume to be saved (default 'rd.nii.gz')
+    mode : string, optional
+        Name of the mode volume to be saved (default 'mode.nii.gz')
+    evecs : string, optional
+        Name of the mean eigen vectors volume to be saved (default 'evecs.nii.gz')
+    evals : string, optional
+        Name of the eigen vvalues to be saved (default 'evals.nii.gz')
+
+    Outputs
+    -------
+    fa : Nifti file
+        Fractionnal anisotropy volume
+    ga : string, optional
+        Name of the geodesic anisotropy volume to be saved (default 'ga.nii.gz')
+    BREAK GHEREEHAWFHFHV
+    rgb : string, optional
+        Name of the color fa volume to be saved (default 'rgb.nii.gz')
+    md : string, optional
+        Name of the mean diffusivity volume to be saved (default 'md.nii.gz')
+    ad : string, optional
+        Name of the axial diffusivity volume to be saved (default 'ad.nii.gz')
+    rd : string, optional
+        Name of the radial diffusivity volume to be saved (default 'rd.nii.gz')
+    mode : string, optional
+        Name of the mode volume to be saved (default 'mode.nii.gz')
+    evecs : string, optional
+        Name of the mean eigen vectors volume to be saved (default 'evecs.nii.gz')
+    evals : string, optional
+        Name of the eigen vvalues to be saved (default 'evals.nii.gz')
+    """
 
     for dwi, mask, bval, bvec in zip(glob(input_files),
-                                     glob(masks),
+                                     glob(mask_files),
                                      glob(bvalues),
                                      glob(bvectors)):
 
