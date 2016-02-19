@@ -12,10 +12,10 @@ from dipy.reconst.dti import (TensorModel, color_fa, fractional_anisotropy,
                               lower_triangular, mode as get_mode)
 
 
-def compute_dti_metrics(dwis, masks, bvalues, bvectors, out_dir, tensor,
+def compute_dti_metrics(input_files, masks, bvalues, bvectors, out_dir, tensor,
                         fa, ga, rgb, md, ad, rd, mode, evec, eval):
 
-    for dwi, mask, bval, bvec in zip(glob(dwis),
+    for dwi, mask, bval, bvec in zip(glob(input_files),
                                      glob(masks),
                                      glob(bvalues),
                                      glob(bvectors)):
