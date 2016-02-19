@@ -411,6 +411,7 @@ def test_mapmri_metrics_isotropic(radial_order=6):
     assert_almost_equal(mapfit.qiv(), qiv_gt, 5)
 
 
+@np.testing.dec.skipif(not mapmri.have_cvxopt)
 def test_positivity_constraint(radial_order=6):
     gtab = get_gtab_taiwan_dsi()
     l1, l2, l3 = [0.0015, 0.0003, 0.0003]
