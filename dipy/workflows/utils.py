@@ -1,6 +1,5 @@
 from os.path import join, dirname, isabs, exists
 from os import makedirs
-from glob import glob
 
 
 def choose_create_out_dir(out_dir, root_path):
@@ -24,21 +23,3 @@ def choose_create_out_dir(out_dir, root_path):
         result_path = out_dir
 
     return result_path
-
-def int_param(val):
-    return int(val) if val != 'None' else None
-
-def bool_param(val):
-    return (val == 'True') if val != 'None' else None
-
-def int_list_param(val, sep=' '):
-    if val == 'None':
-        return None
-
-    return val.split(sep)
-
-def all_files_exist(file_path):
-    dirs = glob(dirname(file_path))
-    files = glob(file_path)
-
-    return len(files) > 0 and (len(files) == len(dirs))
