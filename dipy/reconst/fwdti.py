@@ -1,5 +1,5 @@
-#!/usr/bin/python
-""" Classes and functions for fitting tensors """
+""" Classes and functions for fitting tensors without free water
+contamination """
 from __future__ import division, print_function, absolute_import
 
 import warnings
@@ -21,12 +21,11 @@ from dipy.core.ndindex import ndindex
 
 
 def fwdti_prediction(params, gtab, Diso=3.0e-3):
-    """
-    Predict a signal given the parameters of the free water diffusion tensor
-    model.
+    """ Signal prediction given the free water DTI model parameters.
+
     Parameters
     ----------
-    Params : ndarray
+    params : ndarray
         Model parameters. The last dimension should have the 12 tensor
         parameters (3 eigenvalues, followed by the 3 corresponding
         eigenvectors) the volume fraction of the free water compartment, and
@@ -35,8 +34,9 @@ def fwdti_prediction(params, gtab, Diso=3.0e-3):
         The gradient table for this prediction
     Diso : float, optional
         Value of the free water isotropic diffusion. Default is set to 3e-3
-        $mm^{2}.s^{-1}$. Please ajust this value if you are assuming different
+        $mm^{2}.s^{-1}$. Please adjust this value if you are assuming different
         units of diffusion.
+
     Notes
     -----
     The predicted signal is given by:
@@ -47,11 +47,13 @@ def fwdti_prediction(params, gtab, Diso=3.0e-3):
     quadratic form of the tensor determined by the input parameters, $f$ is the
     free water diffusion compartment, $D_{iso}$ is the free water diffusivity
     which is equal to $3 * 10^{-3} mm^{2}s^{-1} [1]_.
+
     References
     ----------
-    .. [1] Pasternak, O., Sochen, N., Gur, Y., Intrator, N., Assaf, Y., 2009.
-           Free water elimination and mapping from diffusion MRI. Magn. Reson.
-           Med. 62, 717-739. http://dx.doi.org/10.1002/mrm.22055.
+    .. [1] Hoy, A.R., Koay, C.G., Kecskemeti, S.R., Alexander, A.L., 2014.
+           Optimization of a free water elimination two-compartmental model
+           for diffusion tensor imaging. NeuroImage 103, 323-333.
+           doi: 10.1016/j.neuroimage.2014.09.053
     """
     evals = params[..., :3]
     evecs = params[..., 3:-2].reshape(params.shape[:-1] + (3, 3))
@@ -86,10 +88,10 @@ def fwdti_prediction(params, gtab, Diso=3.0e-3):
 
 
 class FreeWaterTensorModel(ReconstModel):
-    """ Class for the Free Water Elimitation Diffusion Tensor Model
-    """
+    """ Class for the Free Water Elimitation Diffusion Tensor Model """
     def __init__(self, gtab, fit_method="NLS", *args, **kwargs):
         """ Free Water Diffusion Tensor Model [1]_.
+
         Parameters
         ----------
         gtab : GradientTable class instance
@@ -107,6 +109,7 @@ class FreeWaterTensorModel(ReconstModel):
         min_signal : float
             The minimum signal value. Needs to be a strictly positive
             number. Default: minimal signal in the data provided to `fit`.
+
         References
         ----------
         .. [1] Hoy, A.R., Koay, C.G., Kecskemeti, S.R., Alexander, A.L., 2014.
@@ -116,7 +119,6 @@ class FreeWaterTensorModel(ReconstModel):
         """
         ReconstModel.__init__(self, gtab)
 
-        # Code and comments have still to be addapted
         if not callable(fit_method):
             try:
                 fit_method = common_fit_methods[fit_method]
@@ -137,6 +139,7 @@ class FreeWaterTensorModel(ReconstModel):
 
     def fit(self, data, mask=None):
         """ Fit method of the free water elimination DTI model class
+
         Parameters
         ----------
         data : array
@@ -174,8 +177,9 @@ class FreeWaterTensorModel(ReconstModel):
         return FreeWaterTensorFit(self, fwdti_params)
 
     def predict(self, fwdti_params):
-        """
-        Predict a signal for this TensorModel class instance given parameters.
+        """ Predict a signal for this TensorModel class instance given
+        parameters.
+
         Parameters
         ----------
         fwdti_params : ndarray
@@ -191,11 +195,12 @@ class FreeWaterTensorModel(ReconstModel):
 
 
 class FreeWaterTensorFit(TensorFit):
-    """ Class for fitting the Free Water Tensor Model"""
+    """ Class for fitting the Free Water Tensor Model """
     def __init__(self, model, model_params):
         """ Initialize a FreeWaterTensorFit class instance.
         Since the free water tensor model is an extension of DTI, class
         instance is defined as subclass of the TensorFit from dti.py
+
         Parameters
         ----------
         model : FreeWaterTensorModel Class instance
@@ -213,21 +218,18 @@ class FreeWaterTensorFit(TensorFit):
 
     @property
     def f(self):
-        """
-        Returns the free water diffusion volume fraction f
-        """
+        """ Returns the free water diffusion volume fraction f """
         return self.model_params[..., 12]
         
     @property
     def S0(self):
-        """
-        Returns the non-diffusion weighted signal estimate
-        """
+        """ Returns the non-diffusion weighted signal estimate """
         return self.model_params[..., 13]
 
     def predict(self, gtab):
         r""" Given a free water tensor model fit, predict the signal on the
         vertices of a gradient table
+
         Parameters
         ----------
         fwdti_params : ndarray (x, y, z, 14) or (n, 14)
@@ -240,14 +242,6 @@ class FreeWaterTensorFit(TensorFit):
                 4) The estimate of the non diffusion-weighted signal S0
         gtab : a GradientTable class instance
             The gradient table for this prediction
-        S0 : float or ndarray (optional)
-            The non diffusion-weighted signal in every voxel, or across all
-            voxels. Default: 1
-        Notes
-        -----
-        The predicted signal is given by:
-        .. math::
-            edit
         """
         return fwdti_prediction(self.model_params, gtab)
 
@@ -256,6 +250,7 @@ def wls_fit_tensor(design_matrix, data, Diso=3e-3, piterations=3,
                    riterations=2):
     r""" Computes weighted least squares (WLS) fit to calculate self-diffusion
     tensor using a linear regression model [1]_.
+
     Parameters
     ----------
     design_matrix : array (g, 7)
@@ -275,6 +270,7 @@ def wls_fit_tensor(design_matrix, data, Diso=3e-3, piterations=3,
         Number of iteration repetitions with adapted S0. To insure that S0 is
         taken as a model free parameter Each precision iteration is repeated
         riterations times with adapted S0.
+
     Returns
     -------
     All parameters estimated from the free water tensor model.
@@ -284,6 +280,7 @@ def wls_fit_tensor(design_matrix, data, Diso=3e-3, piterations=3,
            first, second and third coordinates of the eigenvector
         3) The volume fraction of the free water compartment
         4) The estimate of the non diffusion-weighted signal S0
+
     References
     ----------
     .. [1] Chung, SW., Lu, Y., Henry, R.G., 2006. Comparison of bootstrap
@@ -318,6 +315,7 @@ def _wls_iter(design_matrix, inv_design, sig, min_diffusivity, Diso=3e-3,
               piterations=3, riterations=2):
     """ Helper function used by wls_fit_tensor - Applies WLS fit of the
     water free elimination model to single voxel signals.
+
     Parameters
     ----------
     design_matrix : array (g, 7)
@@ -343,6 +341,7 @@ def _wls_iter(design_matrix, inv_design, sig, min_diffusivity, Diso=3e-3,
         Number of iteration repetitions with adapted S0. To insure that S0 is
         taken as a model free parameter Each precision iteration is repeated
         riterations times with adapted S0.
+
     Returns
     -------
     All parameters estimated from the free water tensor model.
@@ -409,6 +408,7 @@ def _wls_iter(design_matrix, inv_design, sig, min_diffusivity, Diso=3e-3,
             # Select params for lower F2
             Mind = np.argmin(F2)
             params = all_new_params[:, Mind]
+
         # Updated f
         f = fs[Mind]
         # refining precision
@@ -563,15 +563,7 @@ def nlls_fit_tensor(design_matrix, data, fw_params=None, Diso=3e-3,
         f = params[12]
         s0 = params[13]
         start_params = np.concatenate((dt, [-np.log(s0), f]), axis=0)
-        # Do the optimization in this voxel:
-        # if jac:
-            #this_tensor, status = opt.leastsq(_nlls_err_func, start_params,
-            #                                  args=(design_matrix,
-            #                                        flat_data[vox],
-            #                                        weighting,
-            #                                        sigma),
-            #                                  Dfun=_nlls_jacobian_func)
-        #else:
+
         this_tensor, status = opt.leastsq(_nlls_err_func, start_params[:8],
                                           args=(design_matrix,
                                                 flat_data[vox],
