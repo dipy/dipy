@@ -6,8 +6,6 @@
 
 GitHub stats for 2015/12/03 - 2016/02/21 (tag: 0.10)
 
-These lists are automatically generated, and may be incomplete or contain duplicates.
-
 The following 16 authors contributed 271 commits.
 
 * Ariel Rokem
