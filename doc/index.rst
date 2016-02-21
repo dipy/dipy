@@ -20,7 +20,7 @@ Highlights
 - Compatibility with VTK 7.0 which supports Python 3.x.
 - Faster PIESNO for noise estimation.
 - Reorient gradient directions according to motion correction parameters.
-- Dropped support for Python 3.2.
+- Supporting Python 3.3+ but not 3.2.
 - Reduced memory usage in DTI.
 - DSI now can use datasets with multiple b0s.
 - Fixed different issues with Windows 64bit and Python 3.5.
@@ -41,7 +41,7 @@ See :ref:`older highlights <old_highlights>`.
 Announcements
 *************
 
-- :ref:`Dipy 0.11 <release0.11>` released February 15, 2015.
+- :ref:`Dipy 0.11 <release0.11>` released February 21, 2015.
 - :ref:`Dipy 0.10 <release0.10>` released December 4, 2015.
 - :ref:`Dipy 0.9.2 <release0.9>` released, March 18, 2015.
 - :ref:`Dipy 0.8.0 <release0.8>` released, January 6, 2015.
