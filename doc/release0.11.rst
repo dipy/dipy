@@ -4,16 +4,18 @@
  Release notes for Dipy version 0.11
 ====================================
 
-GitHub stats for 2015/12/03 - 2016/02/12 (tag: 0.10)
+GitHub stats for 2015/12/03 - 2016/02/21 (tag: 0.10)
 
-The following 16 authors contributed 230 commits.
+The following 16 authors contributed 271 commits.
 
 * Ariel Rokem
 * Bago Amirbekian
+* Bishakh Ghosh
 * Eleftherios Garyfallidis
 * Gabriel Girard
 * Gregory R. Lee
 * Himanshu Mishra
+* Jean-Christophe Houde
 * Marc-Alexandre Côté
 * Matthew Brett
 * Matthieu Dumont
@@ -24,12 +26,21 @@ The following 16 authors contributed 230 commits.
 * Vatsala Swaroop
 
 
-We closed a total of 120 issues, 46 pull requests and 74 regular issues;
-this is the full list (generated with the script
+We closed a total of 144 issues, 55 pull requests and 89 regular issues;
+this is the full list (generated with the script 
 :file:`tools/github_stats.py`):
 
-Pull Requests (46):
+Pull Requests (55):
 
+* :ghpull:`933`: Updating release dates
+* :ghpull:`925`: fix typos
+* :ghpull:`915`: BF: correct handling of output paths in dipy_quickbundles.
+* :ghpull:`922`: Fix PEP8 in top-level tests
+* :ghpull:`921`: fix typo
+* :ghpull:`918`: Fix PEP8 in test_expectmax
+* :ghpull:`917`: Website 0.11 update and more devs
+* :ghpull:`916`: Getting website ready for 0.11 release
+* :ghpull:`914`: DOC: Update release notes for 0.11
 * :ghpull:`910`: Singleton sl vals
 * :ghpull:`908`: Fix pep8 errors in viz
 * :ghpull:`911`: fix typo
@@ -77,8 +88,23 @@ Pull Requests (46):
 * :ghpull:`794`: RF: Allow setting the verbosity of the AffineRegistration while running it
 * :ghpull:`801`: TST: add Python 3.5 to travis-ci test matrix
 
-Issues (74):
+Issues (89):
 
+* :ghissue:`933`: Updating release dates
+* :ghissue:`925`: fix typos
+* :ghissue:`915`: BF: correct handling of output paths in dipy_quickbundles.
+* :ghissue:`922`: Fix PEP8 in top-level tests
+* :ghissue:`886`: PEP8 in top-level tests
+* :ghissue:`921`: fix typo
+* :ghissue:`918`: Fix PEP8 in test_expectmax
+* :ghissue:`863`: PEP8 in test_expectmax
+* :ghissue:`919`: STYLE:PEP8 workflows
+* :ghissue:`896`: STYLE: PEP8 for workflows folder
+* :ghissue:`917`: Website 0.11 update and more devs
+* :ghissue:`900`: SLR example needs updating
+* :ghissue:`906`: Compiling the website needs too much memory
+* :ghissue:`916`: Getting website ready for 0.11 release
+* :ghissue:`914`: DOC: Update release notes for 0.11
 * :ghissue:`910`: Singleton sl vals
 * :ghissue:`908`: Fix pep8 errors in viz
 * :ghissue:`890`: PEP8 in viz
