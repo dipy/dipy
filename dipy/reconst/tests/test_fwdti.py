@@ -83,7 +83,7 @@ def test_fwdti_singlevoxel():
     assert_almost_equal(FAdti, FAfwe)
     assert_almost_equal(Ffwe, gtf)
     
-    # Test non-linear fit, when no first quess is given
+    # Test non-linear fit, when no first guess is given
     fwdm = fwdti.FreeWaterTensorModel(gtab_2s, 'NLS', fw_params=None)
     fwefit = fwdm.fit(S_conta)
     FAfwe = fwefit.fa
@@ -97,7 +97,7 @@ def test_fwdti_singlevoxel():
 
 def test_fwdti_precision():
     # Simulation when water contamination is added
-    gtf = 0.63416  #ground truth volume fraction
+    gtf = 0.63416  # ground truth volume fraction
     mevals = np.array([[0.0017, 0.0003, 0.0003], [0.003, 0.003, 0.003]])
     S_conta, peaks = multi_tensor(gtab_2s, mevals, S0=100,
                                   angles=[(90, 0), (90, 0)],
@@ -122,7 +122,7 @@ def test_fwdti_multi_voxel():
 def test_fwdti_predictions():
     # single voxel case
     # test funtion
-    gtf = 0.50  #ground truth volume fraction
+    gtf = 0.50  # ground truth volume fraction
     S0=100
     angles = [(90, 0), (90, 0)]
     mevals = np.array([[0.0017, 0.0003, 0.0003], [0.003, 0.003, 0.003]])
@@ -184,14 +184,13 @@ def test_fwdti_errors():
     assert_array_almost_equal(fwdtiF.fa, FAref)
     assert_array_almost_equal(fwdtiF.f, GTF)
 
-    # 4th error - if a sigma is selected by no value of sigma is given for
-    # in the non-linear approach to performe restore
+    # 4th error - if a sigma is selected by no value of sigma is given
     fwdm = fwdti.FreeWaterTensorModel(gtab_2s, 'NLS', weighting='sigma')
     assert_raises(ValueError, fwdm.fit, DWI)
 
 
 def test_fwdti_restore():
-    # Restore have to work well even in nonproblematic cases
+    # Restore has to work well even in nonproblematic cases
     # Simulate a signal corrupted by free water diffusion contamination
     gtf = 0.50  #ground truth volume fraction
     mevals = np.array([[0.0017, 0.0003, 0.0003], [0.003, 0.003, 0.003]])
