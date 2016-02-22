@@ -277,7 +277,7 @@ class MapmriModel(Cache):
             mu = np.sqrt(evals * 2 * self.tau)
             qvecs = np.dot(self.gtab.bvecs, R)
             q = qvecs * qvals[:, None]
-            M = mapmri_phi_matrix(self.radial_order, mu, q.T)
+            M = mapmri_phi_matrix(self.radial_order, mu, q)
         else:
             if self.quick_fit:
                 lopt = self.laplacian_weighting
@@ -775,7 +775,7 @@ class MapmriFit(ReconstFit):
 
         if self.model.anisotropic_scaling:
             q_rot = np.dot(q, self.R)
-            M = mapmri_phi_matrix(self.radial_order, self.mu, q_rot.T)
+            M = mapmri_phi_matrix(self.radial_order, self.mu, q_rot)
         else:
             M = mapmri_isotropic_phi_matrix(self.radial_order, self.mu[0], q)
 
@@ -929,32 +929,6 @@ def mapmri_phi_1d(n, q, mu):
     return phi
 
 
-def mapmri_phi_3d(n, q, mu):
-    r""" Three dimensional MAPMRI basis function from [1]_ Eq. 23.
-
-    Parameters
-    ----------
-    n : array, shape (3,)
-        order of the basis function for x, y, z
-    q : array, shape (N,3)
-        points in the q-space in which evaluate the basis
-    mu : array, shape (3,)
-        scale factors of the basis for x, y, z
-
-    References
-    ----------
-    .. [1] Ozarslan E. et. al, "Mean apparent propagator (MAP) MRI: A novel
-    diffusion imaging method for mapping tissue microstructure",
-    NeuroImage, 2013.
-    """
-
-    n1, n2, n3 = n
-    qx, qy, qz = q
-    mux, muy, muz = mu
-    phi = mapmri_phi_1d
-    return np.real(phi(n1, qx, mux) * phi(n2, qy, muy) * phi(n3, qz, muz))
-
-
 def mapmri_phi_matrix(radial_order, mu, q_gradients):
     r"""Compute the MAPMRI phi matrix for the signal [1]_
 
@@ -976,10 +950,30 @@ def mapmri_phi_matrix(radial_order, mu, q_gradients):
 
     ind_mat = mapmri_index_matrix(radial_order)
     n_elem = ind_mat.shape[0]
-    n_qgrad = q_gradients.shape[1]
+    n_qgrad = q_gradients.shape[0]    
+
+    qx, qy, qz = q_gradients.T
+    mux, muy, muz = mu
+
+    Mx_storage = np.array(np.zeros((n_qgrad, radial_order + 1)),
+                          dtype=complex)
+    My_storage = np.array(np.zeros((n_qgrad, radial_order + 1)),
+                          dtype=complex)
+    Mz_storage = np.array(np.zeros((n_qgrad, radial_order + 1)),
+                          dtype=complex)
     M = np.zeros((n_qgrad, n_elem))
-    for j in range(n_elem):
-        M[:, j] = mapmri_phi_3d(ind_mat[j], q_gradients, mu)
+
+    for n in range(radial_order + 1):
+        Mx_storage[:, n] = mapmri_phi_1d(n, qx, mux)
+        My_storage[:, n] = mapmri_phi_1d(n, qy, muy)
+        Mz_storage[:, n] = mapmri_phi_1d(n, qz, muz)
+    
+    counter = 0
+    for nx, ny, nz in ind_mat:
+        M[:, counter] = (
+            np.real(Mx_storage[:, nx] * My_storage[:, ny] * Mz_storage[:, nz])
+            )
+        counter += 1
 
     return M
 
@@ -1011,31 +1005,6 @@ def mapmri_psi_1d(n, x, mu):
     return psi
 
 
-def mapmri_psi_3d(n, r, mu):
-    r""" Three dimensional MAPMRI propagator basis function from [1]_ Eq. 22.
-
-    Parameters
-    ----------
-    n : array, shape (3,)
-        order of the basis function for x, y, z
-    q : array, shape (N,3)
-        points in the q-space in which evaluate the basis
-    mu : array, shape (3,)
-        scale factors of the basis for x, y, z
-
-    References
-    ----------
-    .. [1] Ozarslan E. et. al, "Mean apparent propagator (MAP) MRI: A novel
-    diffusion imaging method for mapping tissue microstructure",
-    NeuroImage, 2013.
-    """
-    n1, n2, n3 = n
-    x, y, z = r.T
-    mux, muy, muz = mu
-    psi = mapmri_psi_1d
-    return psi(n1, x, mux) * psi(n2, y, muy) * psi(n3, z, muz)
-
-
 def mapmri_psi_matrix(radial_order, mu, rgrad):
     r"""Compute the MAPMRI psi matrix for the propagator [1]_
 
@@ -1057,10 +1026,26 @@ def mapmri_psi_matrix(radial_order, mu, rgrad):
 
     ind_mat = mapmri_index_matrix(radial_order)
     n_elem = ind_mat.shape[0]
-    n_rgrad = rgrad.shape[0]
-    K = np.zeros((n_rgrad, n_elem))
-    for j in range(n_elem):
-        K[:, j] = mapmri_psi_3d(ind_mat[j], rgrad, mu)
+    n_qgrad = rgrad.shape[0]    
+    rx, ry, rz = rgrad.T
+    mux, muy, muz = mu
+
+    Kx_storage = np.zeros((n_qgrad, radial_order + 1))
+    Ky_storage = np.zeros((n_qgrad, radial_order + 1))
+    Kz_storage = np.zeros((n_qgrad, radial_order + 1))
+    K = np.zeros((n_qgrad, n_elem))
+
+    for n in range(radial_order + 1):
+        Kx_storage[:, n] = mapmri_psi_1d(n, rx, mux)
+        Ky_storage[:, n] = mapmri_psi_1d(n, ry, muy)
+        Kz_storage[:, n] = mapmri_psi_1d(n, rz, muz)
+    
+    counter = 0
+    for nx, ny, nz in ind_mat:
+        K[:, counter] = (
+            np.real(Kx_storage[:, nx] * Ky_storage[:, ny] * Kz_storage[:, nz])
+            )
+        counter += 1
 
     return K
 
