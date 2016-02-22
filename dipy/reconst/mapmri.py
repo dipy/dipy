@@ -950,7 +950,7 @@ def mapmri_phi_matrix(radial_order, mu, q_gradients):
 
     ind_mat = mapmri_index_matrix(radial_order)
     n_elem = ind_mat.shape[0]
-    n_qgrad = q_gradients.shape[0]    
+    n_qgrad = q_gradients.shape[0]
 
     qx, qy, qz = q_gradients.T
     mux, muy, muz = mu
@@ -967,7 +967,7 @@ def mapmri_phi_matrix(radial_order, mu, q_gradients):
         Mx_storage[:, n] = mapmri_phi_1d(n, qx, mux)
         My_storage[:, n] = mapmri_phi_1d(n, qy, muy)
         Mz_storage[:, n] = mapmri_phi_1d(n, qz, muz)
-    
+
     counter = 0
     for nx, ny, nz in ind_mat:
         M[:, counter] = (
@@ -1026,7 +1026,7 @@ def mapmri_psi_matrix(radial_order, mu, rgrad):
 
     ind_mat = mapmri_index_matrix(radial_order)
     n_elem = ind_mat.shape[0]
-    n_qgrad = rgrad.shape[0]    
+    n_qgrad = rgrad.shape[0]
     rx, ry, rz = rgrad.T
     mux, muy, muz = mu
 
@@ -1039,7 +1039,7 @@ def mapmri_psi_matrix(radial_order, mu, rgrad):
         Kx_storage[:, n] = mapmri_psi_1d(n, rx, mux)
         Ky_storage[:, n] = mapmri_psi_1d(n, ry, muy)
         Kz_storage[:, n] = mapmri_psi_1d(n, rz, muz)
-    
+
     counter = 0
     for nx, ny, nz in ind_mat:
         K[:, counter] = (
