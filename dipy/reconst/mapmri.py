@@ -492,51 +492,6 @@ class MapmriFit(ReconstFit):
 
             return rtpp.sum()
 
-    def rtpp2(self):
-        r""" Calculates the analytical return to the plane probability (RTPP)
-        [1]_.
-
-        References
-        ----------
-        .. [1] Ozarslan E. et. al, "Mean apparent propagator (MAP) MRI: A novel
-        diffusion imaging method for mapping tissue microstructure",
-        NeuroImage, 2013.
-        """
-        Bm = self.model.Bm
-        ind_mat = self.ind_mat
-        if self.model.anisotropic_scaling:
-            sel = Bm > 0.  # select only relevant coefficients
-            const = 1 / (np.sqrt(2 * np.pi) * self.mu[0])
-            ind_sum = (-1.0) ** (ind_mat[sel, 0] / 2.0)
-            rtpp_vec = const * Bm[sel] * ind_sum * self._mapmri_coef[sel]
-            rtpp = rtpp_vec.sum()
-        else:
-            rtpp_vec = np.zeros((ind_mat.shape[0]))
-            count = 0
-            for n in range(0, self.model.radial_order + 1, 2):
-                    for j in range(1, 2 + n // 2):
-                        l = n + 2 - 2 * j
-                        const = (-1/2.0) ** (l/2) / np.sqrt(np.pi)
-                        matsum = 0
-                        for k in range(0, j):
-                            matsum += (-1) ** k * \
-                                binomialfloat(j + l - 0.5, j - k - 1) *\
-                                gamma(l / 2 + k + 1 / 2.0) /\
-                                (factorial(k) * 0.5 ** (l / 2 + 1 / 2.0 + k))
-                        for m in range(-l, l + 1):
-                            rtpp_vec[count] = const * matsum
-                            count += 1
-
-            direction = np.array(self.R[:, 0], ndmin=2)
-            r, theta, phi = cart2sphere(direction[:, 0], direction[:, 1],
-                                        direction[:, 2])
-
-            rtpp_vec = self._mapmri_coef * (1 / self.mu[0]) *\
-                rtpp_vec * real_sph_harm(ind_mat[:, 2], ind_mat[:, 1],
-                                         theta, phi)
-            rtpp = rtpp_vec.sum()
-        return rtpp
-
     def rtap(self):
         r""" Calculates the analytical return to the axis probability (RTAP)
         [1]_.
