@@ -822,7 +822,7 @@ def mapmri_psi_matrix(radial_order, mu, rgrad):
     counter = 0
     for nx, ny, nz in ind_mat:
         K[:, counter] = (
-            np.real(Kx_storage[:, nx] * Ky_storage[:, ny] * Kz_storage[:, nz])
+            Kx_storage[:, nx] * Ky_storage[:, ny] * Kz_storage[:, nz]
             )
         counter += 1
 
