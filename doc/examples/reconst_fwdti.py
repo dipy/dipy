@@ -59,7 +59,7 @@ with the voxel reconstruction. This can be done by first instantiating the
 FreeWaterTensorModel in the following way:
 """
 
-fwdtimodel = fwdti.FreeWaterTensorModel(gtab)
+fwdtimodel = fwdti.FreeWaterTensorModel(gtab, 'NLS', cholesky=False)
 
 """
 To fit the data using the defined model object, we call the ``fit`` function of

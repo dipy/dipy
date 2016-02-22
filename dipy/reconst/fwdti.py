@@ -426,7 +426,7 @@ def _wls_iter(design_matrix, inv_design, sig, min_diffusivity, Diso=3e-3,
 
 
 def _nlls_err_func(tensor_elements, design_matrix, data, Diso=3e-3,
-                   weighting=None, sigma=None):
+                   weighting=None, sigma=None, cholesky=False):
     """ Error function for the non-linear least-squares fit of the tensor water
     elimination model.
 
@@ -453,13 +453,24 @@ def _nlls_err_func(tensor_elements, design_matrix, data, Diso=3e-3,
         noise in each diffusion-weighting direction (if an array is
         provided). If 'gmm', the Geman-Mclure M-estimator is used for
         weighting.
+    
+    cholesky : bool, optional 
+        If true it uses cholesky decomposition to insure that diffusion tensor
+        is positive define.
+        Default: True
     """
-    f = tensor_elements[7]
+    tensor = np.copy(tensor_elements)
+    if cholesky:
+        tensor[:6] = cholesky_to_lower_triangular(tensor[:6])
+        f = 0.5 * (1 + np.sin(tensor[7] - np.pi/2))
+    else:
+        f = np.copy(tensor[7])
+
     # This is the predicted signal given the params:
-    y = (1-f) * np.exp(np.dot(design_matrix, tensor_elements[:7])) + \
+    y = (1-f) * np.exp(np.dot(design_matrix, tensor[:7])) + \
         f * np.exp(np.dot(design_matrix,
                           np.array([Diso, 0, Diso, 0, 0, Diso, 
-                                    tensor_elements[6]])))
+                                    tensor[6]])))
 
     # Compute the residuals
     residuals = data - y
@@ -495,7 +506,7 @@ def _nlls_err_func(tensor_elements, design_matrix, data, Diso=3e-3,
 
 
 def nlls_fit_tensor(design_matrix, data, fw_params=None, Diso=3e-3,
-                    weighting=None, sigma=None, jac=False):
+                    weighting=None, sigma=None, cholesky=False):
     """
     Fit the water elimination tensor model using the non-linear least-squares.
 
@@ -523,19 +534,21 @@ def nlls_fit_tensor(design_matrix, data, fw_params=None, Diso=3e-3,
         $mm^{2}.s^{-1}$. Please ajust this value if you are assuming different
         units of diffusion.
 
-    weighting: str
+    weighting: str, optional
            the weighting scheme to use in considering the
            squared-error. Default behavior is to use uniform weighting. Other
            options: 'sigma' 'gmm'
 
-    sigma: float
+    sigma: float, optional
         If the 'sigma' weighting scheme is used, a value of sigma needs to be
         provided here. According to [Chang2005]_, a good value to use is
         1.5267 * std(background_noise), where background_noise is estimated
         from some part of the image known to contain no signal (only noise).
 
-    jac : bool
-        Use the Jacobian? Default: False
+    cholesky : bool, optional 
+        If true it uses cholesky decomposition to insure that diffusion tensor
+        is positive define.
+        Default: True
 
     Returns
     -------
@@ -563,32 +576,33 @@ def nlls_fit_tensor(design_matrix, data, fw_params=None, Diso=3e-3,
         dt = lower_triangular(np.dot(np.dot(evecs, np.diag(evals)), evecs.T))
         f = params[12]
         s0 = params[13]
-        start_params = np.concatenate((dt, [-np.log(s0), f]), axis=0)
+
+        if cholesky:
+            start_params = np.concatenate((lower_triangular_to_cholesky(dt),
+                                           [-np.log(s0),
+                                            np.arcsin(2*f - 1) + np.pi/2]),
+                                          axis=0)
+        else:
+            start_params = np.concatenate((dt, [-np.log(s0), f]), axis=0)
 
         this_tensor, status = opt.leastsq(_nlls_err_func, start_params[:8],
                                           args=(design_matrix,
                                                 flat_data[vox],
                                                 Diso,
                                                 weighting,
-                                                sigma))
+                                                sigma,
+                                                cholesky))
+                                                
+        if cholesky:
+            this_tensor[:6] = cholesky_to_lower_triangular(this_tensor[:6])
+            this_tensor[7] =  0.5 * (1 + np.sin(this_tensor[7] - np.pi/2))
 
         # The parameters are the evals and the evecs:
-        try:
-            evals, evecs = decompose_tensor(
-                               from_lower_triangular(this_tensor[:6]))
-            fw_params[vox, :3] = evals
-            fw_params[vox, 3:12] = evecs.ravel()
-            fw_params[vox, 12] = this_tensor[7]
-            fw_params[vox, 13] = np.exp(-this_tensor[6])
-        # If leastsq failed to converge and produced nans, we'll resort to the
-        # WLS solution in this voxel:
-        except np.linalg.LinAlgError:
-            evals, evecs = decompose_tensor(
-                              from_lower_triangular(start_params[:6]))
-            fw_params[vox, :3] = evals
-            fw_params[vox, 3:] = evecs.ravel()
-            fw_params[vox, 12] = start_params[7]
-            fw_params[vox, 13] = np.exp(-start_params[6])
+        evals, evecs = decompose_tensor(from_lower_triangular(this_tensor[:6]))
+        fw_params[vox, :3] = evals
+        fw_params[vox, 3:12] = evecs.ravel()
+        fw_params[vox, 12] = this_tensor[7]
+        fw_params[vox, 13] = np.exp(-this_tensor[6])
 
     fw_params.shape = data.shape[:-1] + (14,)
     return fw_params
