@@ -118,6 +118,14 @@ def test_fwdti_multi_voxel():
 
     assert_array_almost_equal(Ffwe, GTF, decimal=2)
     
+    # Test multi voxels with initial guess
+    fwdm_wlls = fwdti.FreeWaterTensorModel(gtab_2s, 'WLS')
+    fwefit_wlls = fwdm_wlls.fit(DWI)
+    fwe_initial = fwefit_wlls.model_params
+    fwdm = fwdti.FreeWaterTensorModel(gtab_2s, fw_params=fwe_initial)
+
+    assert_array_almost_equal(Ffwe, GTF, decimal=2)
+    
 
 def test_fwdti_predictions():
     # single voxel case

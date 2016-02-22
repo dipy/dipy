@@ -427,8 +427,7 @@ def _wls_iter(design_matrix, inv_design, sig, min_diffusivity, Diso=3e-3,
 
 def _nlls_err_func(tensor_elements, design_matrix, data, Diso=3e-3,
                    weighting=None, sigma=None):
-    """
-    Error function for the non-linear least-squares fit of the tensor water
+    """ Error function for the non-linear least-squares fit of the tensor water
     elimination model.
 
     Parameters
@@ -550,6 +549,8 @@ def nlls_fit_tensor(design_matrix, data, fw_params=None, Diso=3e-3,
     if fw_params==None:
         fw_params = wls_fit_tensor(design_matrix, flat_data,  Diso=Diso)
 
+    fw_params = fw_params.reshape((-1, fw_params.shape[-1]))
+    
     for vox in range(flat_data.shape[0]):
         if np.all(flat_data[vox] == 0):
             raise ValueError("The data in this voxel contains only zeros")
