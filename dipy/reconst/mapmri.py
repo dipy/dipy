@@ -437,7 +437,7 @@ class MapmriFit(ReconstFit):
         if self.model.anisotropic_scaling:
             msg = 'odf in spherical harmonics not yet implemented for '
             msg += 'anisotropic implementation'
-            ValueError(msg)
+            raise ValueError(msg)
         I = self.model.cache_get('ODF_sh_matrix', key=(self.radial_order, s))
 
         if I is None:
@@ -671,7 +671,7 @@ class MapmriFit(ReconstFit):
         if not self.model.anisotropic_scaling:
             msg = 'Parallel non-Gaussianity is not defined using '
             msg += 'isotropic scaling.'
-            ValueError(msg)
+            raise ValueError(msg)
 
         coef = self._mapmri_coef
         return np.sqrt(1 - coef[0] ** 2 / np.sum(coef ** 2))
@@ -696,7 +696,7 @@ class MapmriFit(ReconstFit):
         if not self.model.anisotropic_scaling:
             msg = 'Parallel non-Gaussianity is not defined using '
             msg += 'isotropic scaling.'
-            ValueError(msg)
+            raise ValueError(msg)
 
         ind_mat = self.model.ind_mat
         coef = self._mapmri_coef
@@ -733,7 +733,7 @@ class MapmriFit(ReconstFit):
         if not self.model.anisotropic_scaling:
             msg = 'Parallel non-Gaussianity is not defined using '
             msg += 'isotropic scaling.'
-            ValueError(msg)
+            raise ValueError(msg)
 
         ind_mat = self.model.ind_mat
         coef = self._mapmri_coef
