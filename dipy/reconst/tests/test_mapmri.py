@@ -324,7 +324,7 @@ def test_signal_fitting_equality_anisotropic_isotropic(radial_order=6):
     qvals = np.sqrt(gtab.bvals / tau) / (2 * np.pi)
     q = gtab.bvecs * qvals[:, None]
 
-    M_aniso = mapmri.mapmri_phi_matrix(radial_order, mu, q.T)
+    M_aniso = mapmri.mapmri_phi_matrix(radial_order, mu, q)
     K_aniso = mapmri.mapmri_psi_matrix(radial_order, mu, r_points)
 
     M_iso = mapmri.mapmri_isotropic_phi_matrix(radial_order, mumean, q)
@@ -537,7 +537,7 @@ def test_laplacian_regularization(radial_order=6):
     qvals = np.sqrt(gtab.bvals / tau) / (2 * np.pi)
     q = gtab.bvecs * qvals[:, None]
 
-    M_aniso = mapmri.mapmri_phi_matrix(radial_order, mu, q.T)
+    M_aniso = mapmri.mapmri_phi_matrix(radial_order, mu, q)
     M_iso = mapmri.mapmri_isotropic_phi_matrix(radial_order, mumean, q)
 
     # test if anisotropic and isotropic implementation produce equal results
