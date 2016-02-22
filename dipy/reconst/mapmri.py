@@ -461,13 +461,12 @@ class MapmriFit(ReconstFit):
         Bm = self.model.Bm
         ind_mat = self.ind_mat
         if self.model.anisotropic_scaling:
-            rtpp = 0
+            sel = Bm > 0.  # select only relevant coefficients
             const = 1 / (np.sqrt(2 * np.pi) * self.mu[0])
-            for i in range(ind_mat.shape[0]):
-                if Bm[i] > 0.0:
-                    rtpp += ((-1.0) ** (ind_mat[i, 0] / 2.0)
-                             * self._mapmri_coef[i] * Bm[i])
-            return const * rtpp
+            ind_sum = (-1.0) ** (ind_mat[sel, 0] / 2.0)
+            rtpp_vec = const * Bm[sel] * ind_sum * self._mapmri_coef[sel]
+            rtpp = rtpp_vec.sum()
+            return rtpp
 
         else:
             rtpp_vec = np.zeros((ind_mat.shape[0]))
@@ -496,6 +495,51 @@ class MapmriFit(ReconstFit):
 
             return rtpp.sum()
 
+    def rtpp2(self):
+        r""" Calculates the analytical return to the plane probability (RTPP)
+        [1]_.
+
+        References
+        ----------
+        .. [1] Ozarslan E. et. al, "Mean apparent propagator (MAP) MRI: A novel
+        diffusion imaging method for mapping tissue microstructure",
+        NeuroImage, 2013.
+        """
+        Bm = self.model.Bm
+        ind_mat = self.ind_mat
+        if self.model.anisotropic_scaling:
+            sel = Bm > 0.  # select only relevant coefficients
+            const = 1 / (np.sqrt(2 * np.pi) * self.mu[0])
+            ind_sum = (-1.0) ** (ind_mat[sel, 0] / 2.0)
+            rtpp_vec = const * Bm[sel] * ind_sum * self._mapmri_coef[sel]
+            rtpp = rtpp_vec.sum()
+        else:
+            rtpp_vec = np.zeros((ind_mat.shape[0]))
+            count = 0
+            for n in range(0, self.model.radial_order + 1, 2):
+                    for j in range(1, 2 + n // 2):
+                        l = n + 2 - 2 * j
+                        const = (-1/2.0) ** (l/2) / np.sqrt(np.pi)
+                        matsum = 0
+                        for k in range(0, j):
+                            matsum += (-1) ** k * \
+                                binomialfloat(j + l - 0.5, j - k - 1) *\
+                                gamma(l / 2 + k + 1 / 2.0) /\
+                                (factorial(k) * 0.5 ** (l / 2 + 1 / 2.0 + k))
+                        for m in range(-l, l + 1):
+                            rtpp_vec[count] = const * matsum
+                            count += 1
+
+            direction = np.array(self.R[:, 0], ndmin=2)
+            r, theta, phi = cart2sphere(direction[:, 0], direction[:, 1],
+                                        direction[:, 2])
+
+            rtpp_vec = self._mapmri_coef * (1 / self.mu[0]) *\
+                rtpp_vec * real_sph_harm(ind_mat[:, 2], ind_mat[:, 1],
+                                         theta, phi)
+            rtpp = rtpp_vec.sum()
+        return rtpp
+
     def rtap(self):
         r""" Calculates the analytical return to the axis probability (RTAP)
         [1]_.
@@ -509,13 +553,11 @@ class MapmriFit(ReconstFit):
         Bm = self.model.Bm
         ind_mat = self.ind_mat
         if self.model.anisotropic_scaling:
-            rtap = 0
-            const = 1 / (2 * np.pi * self.mu[1] * self.mu[2])
-            for i in range(ind_mat.shape[0]):
-                if Bm[i] > 0.0:
-                    rtap += ((-1.0) ** ((ind_mat[i, 1] + ind_mat[i, 2]) / 2.0)
-                             * self._mapmri_coef[i] * Bm[i])
-            return const * rtap
+            sel = Bm > 0.  # select only relevant coefficients
+            const = 1 / (2 * np.pi * np.prod(self.mu[1:]))
+            ind_sum = (-1.0) ** ((np.sum(ind_mat[sel, 1:], axis=1) / 2.0))
+            rtap_vec = const * Bm[sel] * ind_sum * self._mapmri_coef[sel]
+            rtap = np.sum(rtap_vec)
         else:
             rtap_vec = np.zeros((ind_mat.shape[0]))
             count = 0
@@ -538,10 +580,11 @@ class MapmriFit(ReconstFit):
             direction = np.array(self.R[:, 0], ndmin=2)
             r, theta, phi = cart2sphere(direction[:, 0],
                                         direction[:, 1], direction[:, 2])
-            rtap = self._mapmri_coef * (1 / self.mu[0] ** 2) *\
+            rtap_vec = self._mapmri_coef * (1 / self.mu[0] ** 2) *\
                 rtap_vec * real_sph_harm(ind_mat[:, 2], ind_mat[:, 1],
                                          theta, phi)
-            return rtap.sum()
+            rtap = rtap_vec.sum()
+        return rtap
 
     def rtop(self):
         r""" Calculates the analytical return to the origin probability (RTOP)
@@ -556,91 +599,90 @@ class MapmriFit(ReconstFit):
         Bm = self.model.Bm
 
         if self.model.anisotropic_scaling:
-            rtop = 0
-            const = 1 / \
-                np.sqrt(
-                    8 * np.pi ** 3 * (self.mu[0] ** 2 * self.mu[1] ** 2 *
-                                      self.mu[2] ** 2))
-            for i in range(self.ind_mat.shape[0]):
-                if Bm[i] > 0.0:
-                    rtop += (-1.0) ** (
-                        (self.ind_mat[i, 0] + self.ind_mat[i, 1] +
-                         self.ind_mat[i, 2])
-                        / 2.0) * self._mapmri_coef[i] * Bm[i]
-            rtop = const * rtop
+            const = 1 / (np.sqrt(8 * np.pi ** 3) * np.prod(self.mu))
+            ind_sum = (-1.0) ** (np.sum(self.ind_mat, axis=1) / 2)
+            rtop_vec = const * ind_sum * Bm * self._mapmri_coef
+            rtop = rtop_vec.sum()
         else:
             const = 1 / (2 * np.sqrt(2.0) * np.pi ** (3 / 2.0))
-            rtop_vec = const * (-1.0) ** (self.model.ind_mat[:, 0]-1) * Bm
+            rtop_vec = const * (-1.0) ** (self.ind_mat[:, 0] - 1) * Bm
             rtop = (1 / self.mu[0] ** 3) * rtop_vec * self._mapmri_coef
             rtop = rtop.sum()
         return rtop
 
     def msd(self):
         r""" Calculates the analytical Mean Squared Displacement (MSD).
-        The analytical formula was derived through the Laplacian of the origin
-        of the estimated signal [4].
+        It is defined as the Laplacian of the origin of the estimated signal
+        [1]. The analytical formula for the MAP-MRI basis was derived in [2].
 
         References
         ----------
-        .. [5] Cheng, J., 2014. Estimation and Processing of Ensemble Average
+        .. [1] Cheng, J., 2014. Estimation and Processing of Ensemble Average
         Propagator and Its Features in Diffusion MRI. Ph.D. Thesis.
+
+        .. [2]_ Fick et al. "MAPL: Tissue Microstructure Estimation Using
+        Laplacian-Regularized MAP-MRI and its Application to HCP Data",
+        NeuroImage, Under Review.
         """
 
         mu = self.mu
         ind_mat = self.model.ind_mat
+        Bm = self.model.Bm
+        sel = self.model.Bm > 0.  # select only relevant coefficients
+        mapmri_coef = self._mapmri_coef[sel]
         if self.model.anisotropic_scaling:
-            msd = 0
-            for i in range(ind_mat.shape[0]):
-                nx, ny, nz = ind_mat[i]
-                if not(nx % 2) and not(ny % 2) and not(nz % 2):
-                    msd += (
-                        self._mapmri_coef[i] *
-                        (-1) ** (0.5 * (- nx - ny - nz)) *
-                        np.pi ** (3 / 2.0) *
-                        ((1 + 2 * nx) * mu[0] ** 2 + (1 + 2 * ny) *
-                         mu[1] ** 2 + (1 + 2 * nz) * mu[2] ** 2) /
-                        (np.sqrt(2 ** (-nx - ny - nz) *
-                         factorial(nx) * factorial(ny) * factorial(nz)) *
-                         gamma(0.5 - 0.5 * nx) * gamma(0.5 - 0.5 * ny) *
-                         gamma(0.5 - 0.5 * nz))
-                        )
+            ind_sum = np.sum(ind_mat[sel], axis=1)
+            nx, ny, nz = ind_mat[sel].T
+            msd_vec = (mapmri_coef *
+                       (-1) ** (0.5 * (-ind_sum)) *
+                       np.pi ** (3 / 2.0) *
+                       ((1 + 2 * nx) * mu[0] ** 2 + (1 + 2 * ny) *
+                        mu[1] ** 2 + (1 + 2 * nz) * mu[2] ** 2) /
+                       (np.sqrt(2. ** (-ind_sum) * factorial(nx) *
+                                factorial(ny) * factorial(nz)) *
+                        gamma(0.5 - 0.5 * nx) * gamma(0.5 - 0.5 * ny) *
+                        gamma(0.5 - 0.5 * nz))
+                       )
+            msd = msd_vec.sum()
         else:
-            Bm = self.model.Bm
-            msd_vec = (4 * ind_mat[:, 0] - 1) * Bm
-            msd = self.mu[0] ** 2 * msd_vec * self._mapmri_coef
+            msd_vec = (4 * ind_mat[sel, 0] - 1) * Bm[sel]
+            msd = self.mu[0] ** 2 * msd_vec * mapmri_coef
             msd = msd.sum()
         return msd
 
     def qiv(self):
         r""" Calculates the analytical Q-space Inverse Variance (QIV).
-        The analytical formula was derived through the Laplacian of the origin
-        of the estimated propagator [5].
+        It is defined as the inverse of the Laplacian of the origin of the
+        estimated propagator [1] .The analytical formula for the MAP-MRI basis
+        was derived in [2].
 
         References
         ----------
-        .. [6] Hosseinbor et al. "Bessel fourier orientation reconstruction
+        .. [1] Hosseinbor et al. "Bessel fourier orientation reconstruction
         (bfor): An analytical diffusion propagator reconstruction for hybrid
         diffusion imaging and computation of q-space indices. NeuroImage 64,
         2013, 650–670.
+
+        .. [2]_ Fick et al. "MAPL: Tissue Microstructure Estimation Using
+        Laplacian-Regularized MAP-MRI and its Application to HCP Data",
+        NeuroImage, Under Review.
         """
         ux, uy, uz = self.mu
         ind_mat = self.model.ind_mat
-
         if self.model.anisotropic_scaling:
-            qiv = 0
-            for i in range(ind_mat.shape[0]):
-                nx, ny, nz = ind_mat[i]
+            sel = self.model.Bm > 0  # select only relevant coefficients
+            nx, ny, nz = ind_mat[sel].T
 
-                if not nx % 2 and not ny % 2 and not nz % 2:
-                    numerator = 8 * np.pi ** 2 * (ux * uy * uz) ** 3 *\
-                        np.sqrt(factorial(nx) * factorial(ny) * factorial(nz)) *\
-                        gamma(0.5 - 0.5 * nx) * gamma(0.5 - 0.5 * ny) * \
-                        gamma(0.5 - 0.5 * nz)
+            numerator = 8 * np.pi ** 2 * (ux * uy * uz) ** 3 *\
+                np.sqrt(factorial(nx) * factorial(ny) * factorial(nz)) *\
+                gamma(0.5 - 0.5 * nx) * gamma(0.5 - 0.5 * ny) * \
+                gamma(0.5 - 0.5 * nz)
 
-                    denominator = np.sqrt(2 ** (-1 + nx + ny + nz)) *\
-                        ((1 + 2 * nx) * uy ** 2 * uz ** 2 + ux ** 2 *
-                         ((1 + 2 * nz) * uy ** 2 + (1 + 2 * ny) * uz ** 2))
-                    qiv += self._mapmri_coef[i] * (numerator / denominator)
+            denominator = np.sqrt(2. ** (-1 + nx + ny + nz)) *\
+                ((1 + 2 * nx) * uy ** 2 * uz ** 2 + ux ** 2 *
+                 ((1 + 2 * nz) * uy ** 2 + (1 + 2 * ny) * uz ** 2))
+            qiv_vec = self._mapmri_coef[sel] * (numerator / denominator)
+            qiv = qiv_vec.sum()
         else:
             Bm = self.model.Bm
             j = ind_mat[:, 0]
