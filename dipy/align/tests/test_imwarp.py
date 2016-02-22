@@ -960,3 +960,107 @@ def test_em_2d_demons():
     reduced = 1.0 - final_energy / starting_energy
 
     assert(reduced > 0.9)
+
+
+def test_coordinate_mapping():
+    r"""Test coordinate mapping with DiffeomorphicMap
+
+    1. Create a random displacement field and a small affine transform to map
+       grid to world coordinates.
+    2. Create a DiffeomorphicMap with the previously created field and affine
+       transform.
+    3. Create a random input image.
+    4. Select a few non-boundary voxels from the domain grid.
+    5. Warp the input image with the DiffeomorphicMap and interpolate the
+       **warped image** at the selected locations. The result is the
+       `expected` array.
+    6. Map only the selected points using the DiffeomorphicMap and
+       interpolate the **input image** at the warped points. The result is the
+       `actual` array, which should be almost equal to the `expected` array.
+    """
+    np.random.seed(1741332)
+    for dim in range(2, 4):
+        npoints = 100
+        points = np.empty((npoints, dim), dtype=np.float64)
+        if dim == 2:
+            domain_shape = (10, 10)
+            codomain_shape = (15, 15)
+            nr = domain_shape[0]
+            nc = domain_shape[1]
+            s = 1.1
+            t = 0.25
+            trans = np.array([[1, 0, -t*nr],
+                              [0, 1, -t*nc],
+                              [0, 0, 1]])
+            trans_inv = np.linalg.inv(trans)
+            scale = np.array([[1*s, 0, 0],
+                              [0, 1*s, 0],
+                              [0, 0, 1]])
+            gt_affine = trans_inv.dot(scale.dot(trans))
+            n = codomain_shape[0] * codomain_shape[1]
+            moving_image = np.random.randint(0, 10, n).reshape(codomain_shape)
+            moving_image = moving_image.astype(np.float64)
+            # Select a few grid coordinates not at the boundary of the domain
+            points[:, 0] = np.random.randint(1, nr-1, npoints)
+            points[:, 1] = np.random.randint(1, nc-1, npoints)
+            random_df = vfu.create_random_displacement_2d
+            interpolate_f = vfu.interpolate_scalar_2d
+        else:
+            domain_shape = (10, 10, 10)
+            codomain_shape = (15, 15, 15)
+            nr = domain_shape[0]
+            nc = domain_shape[1]
+            ns = domain_shape[2]
+            s = 1.1
+            t = 0.25
+            trans = np.array([[1, 0, 0, -t*ns],
+                              [0, 1, 0, -t*nr],
+                              [0, 0, 1, -t*nc],
+                              [0, 0, 0, 1]])
+            trans_inv = np.linalg.inv(trans)
+            scale = np.array([[1*s, 0, 0, 0],
+                              [0, 1*s, 0, 0],
+                              [0, 0, 1*s, 0],
+                              [0, 0, 0, 1]])
+            gt_affine = trans_inv.dot(scale.dot(trans))
+            n = codomain_shape[0] * codomain_shape[1] * codomain_shape[2]
+            moving_image = np.random.randint(0, 10, n).reshape(codomain_shape)
+            moving_image = moving_image.astype(np.float64)
+            # Select a few grid coordinates not at the boundary of the domain
+            points[:, 0] = np.random.randint(1, nr-1, npoints)
+            points[:, 1] = np.random.randint(1, nc-1, npoints)
+            points[:, 2] = np.random.randint(1, ns-1, npoints)
+            random_df = vfu.create_random_displacement_3d
+            interpolate_f = vfu.interpolate_scalar_3d
+
+        #create the random displacement field
+        domain_grid2world = gt_affine
+        codomain_grid2world = gt_affine
+        disp, assign = random_df(np.array(domain_shape, dtype=np.int32),
+                                 domain_grid2world,
+                                 np.array(codomain_shape, dtype=np.int32),
+                                 codomain_grid2world)
+        disp = disp.astype(floating)
+        # Create a DiffeomorphicMap instance
+        diff_map = imwarp.DiffeomorphicMap(dim, domain_shape,
+                                           domain_grid2world, domain_shape,
+                                           domain_grid2world, codomain_shape,
+                                           codomain_grid2world, None)
+        diff_map.forward = disp
+
+        # Here, expected is obtained after two interpolation steps, therefore
+        # we need to increase the tolerance when comparing against the result
+        # using only one interpolation step (we set decimal=5 below)
+        warped = diff_map.transform(moving_image, 'linear')
+        expected, inside = interpolate_f(warped, points)
+
+        # Now map the points with the implementation under test
+        # Specify how to map the given array to world coordinates
+        in2world = diff_map.domain_grid2world
+        # Request mapping back from world to grid coordinates
+        world2out = diff_map.domain_world2grid
+        # Execute warping
+        wpoints = diff_map.transform_points(points, in2world, world2out)
+        # Interpolate at warped points and verify it's equal to direct warping
+        actual, inside = interpolate_f(moving_image, wpoints)
+        assert_array_almost_equal(actual, expected, decimal=5)
