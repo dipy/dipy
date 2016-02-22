@@ -434,7 +434,7 @@ class MapmriFit(ReconstFit):
         if self.model.anisotropic_scaling:
             msg = 'odf in spherical harmonics not yet implemented for '
             msg += 'anisotropic implementation'
-            ValueError(msg)
+            raise ValueError(msg)
         I = self.model.cache_get('ODF_sh_matrix', key=(self.radial_order, s))
 
         if I is None:
