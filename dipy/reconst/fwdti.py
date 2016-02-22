@@ -594,6 +594,69 @@ def nlls_fit_tensor(design_matrix, data, fw_params=None, Diso=3e-3,
     return fw_params
 
 
+def lower_triangular_to_cholesky(tensor_elements):
+    """ Perfoms Cholesky decompostion of the diffusion tensor 
+    
+    Parameters
+    ----------
+    tensor_elements : array (6,)
+        Array containing the six elements of diffusion tensor's lower
+        triangular.
+
+    Returns
+    -------
+    cholesky_elements : array (6,)
+        Array containing the six Cholesky's decomposition elements
+        (R0, R1, R2, R3, R4, R5) [1]_.
+
+    References
+    ----------
+    .. [1] Koay, C.G., Carew, J.D., Alexander, A.L., Basser, P.J.,
+           Meyerand, M.E., 2006. Investigation of anomalous estimates of
+           tensor-derived quantities in diffusion tensor imaging. Magnetic
+           Resonance in Medicine, 55(4), 930-936. doi:10.1002/mrm.20832
+    """
+    R0 = np.sqrt(tensor_elements[0])
+    R3 = tensor_elements[1] / R0
+    R1 = np.sqrt(tensor_elements[2] - R3**2)
+    R5 = tensor_elements[3] / R0
+    R4 = (tensor_elements[4] - R3*R5) / R1
+    R2 = np.sqrt(tensor_elements[5] - R4**2 - R5**2)
+
+    return np.array([R0, R1, R2, R3, R4, R5])
+
+
+def cholesky_to_lower_triangular(R):
+    """ Convert Cholesky decompostion elements to the diffusion tensor elements
+    
+    Parameters
+    ----------
+    R : array (6,)
+        Array containing the six Cholesky's decomposition elements
+        (R0, R1, R2, R3, R4, R5) [1]_.    
+
+    Returns
+    -------
+    tensor_elements : array (6,)
+        Array containing the six elements of diffusion tensor's lower
+        triangular.
+
+    References
+    ----------
+    .. [1] Koay, C.G., Carew, J.D., Alexander, A.L., Basser, P.J.,
+           Meyerand, M.E., 2006. Investigation of anomalous estimates of
+           tensor-derived quantities in diffusion tensor imaging. Magnetic
+           Resonance in Medicine, 55(4), 930-936. doi:10.1002/mrm.20832
+    """
+    Dxx = R[0]**2
+    Dxy = R[0]*R[3]
+    Dyy = R[1]**2 + R[3]**2
+    Dxz = R[0]*R[5]
+    Dyz = R[1]*R[4] + R[3]*R[5]
+    Dzz = R[2]**2 + R[4]**2 + R[5]**2
+    return np.array([Dxx, Dxy, Dyy, Dxz, Dyz, Dzz])
+
+
 common_fit_methods = {'WLLS': wls_fit_tensor,
                       'WLS': wls_fit_tensor,
                       'NLLS': nlls_fit_tensor,

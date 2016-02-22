@@ -11,8 +11,10 @@ from numpy.testing import (assert_array_almost_equal, assert_array_equal,
                            assert_almost_equal)
 from nose.tools import assert_raises
 from dipy.reconst.dti import (from_lower_triangular, decompose_tensor)
+from dipy.reconst.fwdti import (lower_triangular_to_cholesky,
+                                cholesky_to_lower_triangular)
 from dipy.sims.voxel import (multi_tensor, single_tensor, _check_directions,
-                             all_tensor_evecs)
+                             all_tensor_evecs, multi_tensor_dki)
 from dipy.io.gradients import read_bvals_bvecs
 from dipy.core.gradients import gradient_table
 from dipy.data import get_data
@@ -214,3 +216,13 @@ def test_fwdti_restore():
     fwdtiF2 = fwdm2.fit(S_conta)
     assert_array_almost_equal(fwdtiF2.fa, FAdti)
     assert_array_almost_equal(fwdtiF2.f, gtf)
+
+
+def test_cholesky():
+    S, dt, kt = multi_tensor_dki(gtab, mevals, S0=100,
+                                 angles=[(45., 45.), (45., 45.)],
+                                 fractions=[80, 20])
+    R = lower_triangular_to_cholesky(dt)
+    tensor = cholesky_to_lower_triangular(R)
+    assert_array_almost_equal(dt, tensor)
+
