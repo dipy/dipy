@@ -258,22 +258,83 @@ class DiffeomorphicMap(object):
         self.backward = np.zeros(tuple(self.disp_shape) + (self.dim,),
                                  dtype=floating)
 
-    def _get_warping_function(self, interpolation):
-        """Appropriate warping function for the given interpolation type
+    def _get_warping_function(self, interpolation, warp_coordinates=False):
+        r"""Appropriate warping function for the given interpolation type
 
         Returns the right warping function from vector_fields that must be
         called for the specified data dimension and interpolation type
+
+        Parameters
+        ----------
+        interpolation : string, either 'linear' or 'nearest'
+            specifies the type of interpolation used for image warping. It
+            does not have any effect if `warp_coordinates` is True, in which
+            case no interpolation is intended to be performed.
+        warp_coordinates : Boolean,
+            if False, then returns the right image warping function for this
+            DiffeomorphicMap dimension and the specified `interpolation`. If
+            True, then returns the right coordinate warping function.
         """
         if self.dim == 2:
+            if warp_coordinates:
+                return vfu.warp_coordinates_2d
             if interpolation == 'linear':
                 return vfu.warp_2d
             else:
                 return vfu.warp_2d_nn
         else:
+            if warp_coordinates:
+                return vfu.warp_coordinates_3d
             if interpolation == 'linear':
                 return vfu.warp_3d
             else:
                 return vfu.warp_3d_nn
+
+    def _warp_coordinates_forward(self, points, coord2world=None,
+                                  world2coord=None):
+        r"""Warps the list of points in the forward direction
+
+        Applies this diffeomorphic map to the list of points given by `points`.
+        We assume that the points' coordinates are mapped to world coordinates
+        by applying the `coord2world` affine transform. The warped coordinates
+        are given in world coordinates unless `world2coord` affine transform
+        is specified, in which case the warped points will be transformed
+        to the corresponding coordinate system.
+
+        Parameters
+        ----------
+        points :
+        coord2world :
+        world2coord :
+        """
+        warp_f = self._get_warping_function(None, warp_coordinates=True)
+        coord2prealigned = mult_aff(self.prealign, coord2world)
+        out = warp_f(points, self.forward, coord2prealigned, world2coord,
+                     self.disp_world2grid)
+        return out
+
+    def _warp_coordinates_backward(self, points, coord2world=None,
+                                   world2coord=None):
+        r"""Warps the list of points in the backward direction
+
+        Applies this diffeomorphic map to the list of points given by `points`.
+        We assume that the points' coordinates are mapped to world coordinates
+        by applying the `coord2world` affine transform. The warped coordinates
+        are given in world coordinates unless `world2coord` affine transform
+        is specified, in which case the warped points will be transformed
+        to the corresponding coordinate system.
+
+        Parameters
+        ----------
+        points :
+        coord2world :
+        world2coord :
+        """
+        warp_f = self._get_warping_function(None, warp_coordinates=True)
+        world2invprealigned = mult_aff(world2coord, self.prealign_inv)
+        out = warp_f(points, self.backward, coord2world, world2invprealigned,
+                     self.disp_world2grid)
+        return out
 
     def _warp_forward(self, image, interpolation='linear',
                       image_world2grid=None, out_shape=None,
@@ -586,6 +647,26 @@ class DiffeomorphicMap(object):
                                          image_world2grid, out_shape,
                                          out_grid2world)
         return np.asarray(warped)
+
+    def transform_points(self, points, coord2world=None,
+                         world2coord=None):
+        if self.is_inverse:
+            out = self._warp_coordinates_backward(points, coord2world,
+                                                  world2coord)
+        else:
+            out = self._warp_coordinates_forward(points, coord2world,
+                                                 world2coord)
+        return out
+
+    def transform_points_inverse(self, points, coord2world=None,
+                                 world2coord=None):
+        if self.is_inverse:
+            out = self._warp_coordinates_forward(points, coord2world,
+                                                 world2coord)
+        else:
+            out = self._warp_coordinates_backward(points, coord2world,
+                                                  world2coord)
+        return out
 
     def inverse(self):
         """Inverse of this DiffeomorphicMap instance
