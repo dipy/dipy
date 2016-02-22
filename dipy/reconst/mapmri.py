@@ -633,16 +633,17 @@ class MapmriFit(ReconstFit):
         if self.model.anisotropic_scaling:
             ind_sum = np.sum(ind_mat[sel], axis=1)
             nx, ny, nz = ind_mat[sel].T
-            msd_vec = (mapmri_coef *
-                       (-1) ** (0.5 * (-ind_sum)) *
-                       np.pi ** (3 / 2.0) *
-                       ((1 + 2 * nx) * mu[0] ** 2 + (1 + 2 * ny) *
-                        mu[1] ** 2 + (1 + 2 * nz) * mu[2] ** 2) /
-                       (np.sqrt(2. ** (-ind_sum) * factorial(nx) *
-                                factorial(ny) * factorial(nz)) *
-                        gamma(0.5 - 0.5 * nx) * gamma(0.5 - 0.5 * ny) *
-                        gamma(0.5 - 0.5 * nz))
-                       )
+
+            numerator = (-1) ** (0.5 * (-ind_sum)) * np.pi ** (3 / 2.0) *\
+                ((1 + 2 * nx) * mu[0] ** 2 + (1 + 2 * ny) *
+                 mu[1] ** 2 + (1 + 2 * nz) * mu[2] ** 2)
+
+            denominator = np.sqrt(2. ** (-ind_sum) * factorial(nx) *
+                                  factorial(ny) * factorial(nz)) *\
+                gamma(0.5 - 0.5 * nx) * gamma(0.5 - 0.5 * ny) *\
+                gamma(0.5 - 0.5 * nz)
+
+            msd_vec = self._mapmri_coef[sel] * (numerator / denominator)
             msd = msd_vec.sum()
         else:
             msd_vec = (4 * ind_mat[sel, 0] - 1) * Bm[sel]
@@ -681,6 +682,7 @@ class MapmriFit(ReconstFit):
             denominator = np.sqrt(2. ** (-1 + nx + ny + nz)) *\
                 ((1 + 2 * nx) * uy ** 2 * uz ** 2 + ux ** 2 *
                  ((1 + 2 * nz) * uy ** 2 + (1 + 2 * ny) * uz ** 2))
+
             qiv_vec = self._mapmri_coef[sel] * (numerator / denominator)
             qiv = qiv_vec.sum()
         else:
