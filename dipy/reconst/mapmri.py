@@ -927,8 +927,7 @@ def mapmri_isotropic_phi_matrix(radial_order, mu, q):
     diffusion imaging method for mapping tissue microstructure",
     NeuroImage, 2013.
     """
-    qval, theta, phi = cart2sphere(q[:, 0], q[:, 1],
-                                   q[:, 2])
+    qval, theta, phi = cart2sphere(q[:, 0], q[:, 1], q[:, 2])
     theta[np.isnan(theta)] = 0
 
     ind_mat = mapmri_isotropic_index_matrix(radial_order)
@@ -949,11 +948,14 @@ def mapmri_isotropic_phi_matrix(radial_order, mu, q):
 
 
 def mapmri_isotropic_radial_signal_basis(j, l, mu, qval):
-    const = (-1) ** (l / 2) * np.sqrt(4.0 * np.pi) *\
-            (2 * np.pi ** 2 * mu ** 2 * qval ** 2) ** (l / 2) *\
-        np.exp(-2 * np.pi ** 2 * mu ** 2 * qval ** 2) *\
-        genlaguerre(j - 1, l + 0.5)(4 * np.pi ** 2 * mu ** 2 *
-                                    qval ** 2)
+    r"""Radial part of the isotropic 1D-SHORE signal basis.
+    """
+    pi2_mu2_q2 = 2 * np.pi ** 2 * mu ** 2 * qval ** 2
+    const = (
+        (-1) ** (l / 2) * np.sqrt(4.0 * np.pi) *
+        (pi2_mu2_q2) ** (l / 2) * np.exp(-pi2_mu2_q2) *
+        genlaguerre(j - 1, l + 0.5)(2 * pi2_mu2_q2)
+        )
     return const
 
 
@@ -962,8 +964,7 @@ def mapmri_isotropic_M_mu_independent(radial_order, q):
     """
     ind_mat = mapmri_isotropic_index_matrix(radial_order)
 
-    qval, theta, phi = cart2sphere(q[:, 0], q[:, 1],
-                                   q[:, 2])
+    qval, theta, phi = cart2sphere(q[:, 0], q[:, 1], q[:, 2])
     theta[np.isnan(theta)] = 0
 
     n_elem = ind_mat.shape[0]
@@ -991,15 +992,14 @@ def mapmri_isotropic_M_mu_dependent(radial_order, mu, qval):
     n_elem = ind_mat.shape[0]
     n_qgrad = qval.shape[0]
     Q_u0_dependent = np.zeros((n_qgrad, n_elem))
+    pi2q2mu2 = 2 * np.pi ** 2 * mu ** 2 * qval ** 2
 
     counter = 0
-
     for n in range(0, radial_order + 1, 2):
         for j in range(1, 2 + n // 2):
             l = n + 2 - 2 * j
-            const = mu ** l * np.exp(-2 * np.pi ** 2 * mu ** 2 * qval ** 2) *\
-                genlaguerre(j - 1, l + 0.5)(4 * np.pi ** 2 * mu ** 2 *
-                                            qval ** 2)
+            const = mu ** l * np.exp(-pi2q2mu2) *\
+                genlaguerre(j - 1, l + 0.5)(2 * pi2q2mu2)
             for m in range(-l, l + 1):
                 Q_u0_dependent[:, counter] = const
                 counter += 1
@@ -1049,11 +1049,13 @@ def mapmri_isotropic_psi_matrix(radial_order, mu, rgrad):
 
 
 def mapmri_isotropic_radial_pdf_basis(j, l, mu, r):
-    const = (-1) ** (j - 1) * \
-                    (np.sqrt(2) * np.pi * mu ** 3) ** (-1) *\
-                    (r ** 2 / (2 * mu ** 2)) ** (l / 2) *\
-        np.exp(- r ** 2 / (2 * mu ** 2)) *\
-        genlaguerre(j - 1, l + 0.5)(r ** 2 / mu ** 2)
+    r"""Radial part of the isotropic 1D-SHORE PDF basis.
+    """
+    r2u2 = r ** 2 / (2 * mu ** 2)
+    const = (
+        (-1) ** (j - 1) / (np.sqrt(2) * np.pi * mu ** 3) *
+        r2u2 ** (l / 2) * np.exp(-r2u2) * genlaguerre(j - 1, l + 0.5)(2 * r2u2)
+        )
     return const
 
 
@@ -1089,20 +1091,18 @@ def mapmri_isotropic_K_mu_dependent(radial_order, mu, rgrad):
     r, theta, phi = cart2sphere(rgrad[:, 0], rgrad[:, 1],
                                 rgrad[:, 2])
     theta[np.isnan(theta)] = 0
-
     ind_mat = mapmri_isotropic_index_matrix(radial_order)
-
     n_elem = ind_mat.shape[0]
     n_rgrad = rgrad.shape[0]
     K = np.zeros((n_rgrad, n_elem))
+    r2mu2 = r ** 2 / (2 * mu ** 2)
 
     counter = 0
     for n in range(0, radial_order + 1, 2):
         for j in range(1, 2 + n // 2):
             l = n + 2 - 2 * j
             const = (mu ** 3) ** (-1) * mu ** (-l) *\
-                np.exp(-r ** 2 / (2 * mu ** 2)) *\
-                genlaguerre(j - 1, l + 0.5)(r ** 2 / mu ** 2)
+                np.exp(-r2mu2) * genlaguerre(j - 1, l + 0.5)(2 * r2mu2)
             for m in range(-l, l + 1):
                 K[:, counter] = const
                 counter += 1
