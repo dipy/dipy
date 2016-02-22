@@ -1178,6 +1178,149 @@ def downsample_displacement_field_2d(floating[:, :, :] field):
     return np.asarray(down)
 
 
+def warp_coordinates_3d(points,  floating[:, :, :, :] d1,
+                        double[:, :] in2world,
+                        double[:, :] world2out,
+                        double[:, :] field_world2grid):
+    r"""
+    Parameters
+    ----------
+    points : array, shape (n, 3)
+    d1 : array, shape (S, R, C, 3)
+    in2world : array, shape (4, 4)
+    world2out : array, shape (4, 4)
+    field_world2grid : array, shape (4, 4)
+    """
+    cdef:
+        cnp.npy_intp n = points.shape[0]
+        cnp.npy_intp i
+        double x, y, z, wx, wy, wz, gx, gy, gz
+        double[:,:] out = np.zeros(shape=(n, 3), dtype=np.float64)
+        double[:,:] _points = np.array(points, dtype=np.float64)
+        double[:,:] in2grid
+        int inside
+        floating[:] tmp = np.zeros(shape=(3,), dtype = np.asarray(d1).dtype)
+    # in2grid maps points to displacement's grid
+    if in2world is None:  # then points are already in world coordinates
+        in2grid = field_world2grid
+    elif field_world2grid is None:  # then the grid is in world coordinates
+        in2grid = in2world
+    else:
+        in2grid = np.dot(field_world2grid, in2world)
+
+    with nogil:
+        for i in range(n):
+            x = _points[i, 0]
+            y = _points[i, 1]
+            z = _points[i, 2]
+
+            # Map points to world coordinates
+            if in2world is not None:
+                wx = _apply_affine_3d_x0(x, y, z, 1, in2world)
+                wy = _apply_affine_3d_x1(x, y, z, 1, in2world)
+                wz = _apply_affine_3d_x2(x, y, z, 1, in2world)
+            else:
+                wx = x
+                wy = y
+                wz = z
+
+            # Map points to deformation field's grid
+            if in2grid is not None:
+                gx = _apply_affine_3d_x0(x, y, z, 1, in2grid)
+                gy = _apply_affine_3d_x1(x, y, z, 1, in2grid)
+                gz = _apply_affine_3d_x2(x, y, z, 1, in2grid)
+            else:
+                gx = x
+                gy = y
+                gz = z
+
+            # Interpolate deformation field at (gx, gy, gz)
+            inside = _interpolate_vector_3d[floating](d1, gx, gy, gz, tmp)
+
+            # Warp input point
+            wx += tmp[0]
+            wy += tmp[1]
+            wz += tmp[2]
+
+            # Map warped point to requested out coordinates
+            if world2out is not None:
+                out[i, 0] = _apply_affine_3d_x0(wx, wy, wz, 1, world2out)
+                out[i, 1] = _apply_affine_3d_x1(wx, wy, wz, 1, world2out)
+                out[i, 2] = _apply_affine_3d_x2(wx, wy, wz, 1, world2out)
+            else:
+                out[i, 0] = wx
+                out[i, 1] = wy
+                out[i, 2] = wz
+    return np.asarray(out)
+
+
+def warp_coordinates_2d(points,  floating[:, :, :] d1,
+                        double[:, :] in2world,
+                        double[:, :] world2out,
+                        double[:, :] field_world2grid):
+    r"""
+    Parameters
+    ----------
+    points : array, shape (n, 2)
+    d1 : array, shape (S, R, C, 2)
+    in2world : array, shape (3, 3)
+    world2out : array, shape (3, 3)
+    field_world2grid : array, shape (3, 3)
+    """
+    cdef:
+        cnp.npy_intp n = points.shape[0]
+        cnp.npy_intp i
+        double x, y, wx, wy, gx, gy
+        double[:,:] out = np.zeros(shape=(n, 2), dtype=np.float64)
+        double[:,:] _points = np.array(points, dtype=np.float64)
+        double[:,:] in2grid
+        int inside
+        floating[:] tmp = np.zeros(shape=(2,), dtype = np.asarray(d1).dtype)
+    # in2grid maps points to displacement's grid
+    if in2world is None:  # then points are already in world coordinates
+        in2grid = field_world2grid
+    elif field_world2grid is None:  # then the grid is in world coordinates
+        in2grid = in2world
+    else:
+        in2grid = np.dot(field_world2grid, in2world)
+    with nogil:
+        for i in range(n):
+            x = _points[i, 0]
+            y = _points[i, 1]
+
+            # Map points to world coordinates
+            if in2world is not None:
+                wx = _apply_affine_2d_x0(x, y, 1, in2world)
+                wy = _apply_affine_2d_x1(x, y, 1, in2world)
+            else:
+                wx = x
+                wy = y
+
+            # Map points to deformation field's grid
+            if in2grid is not None:
+                gx = _apply_affine_2d_x0(x, y, 1, in2grid)
+                gy = _apply_affine_2d_x1(x, y, 1, in2grid)
+            else:
+                gx = x
+                gy = y
+
+            # Interpolate deformation field at (gx, gy, gz)
+            inside = _interpolate_vector_2d[floating](d1, gx, gy, tmp)
+
+            # Warp input point
+            wx += tmp[0]
+            wy += tmp[1]
+
+            # Map warped point to requested out coordinates
+            if world2out is not None:
+                out[i, 0] = _apply_affine_2d_x0(wx, wy, 1, world2out)
+                out[i, 1] = _apply_affine_2d_x1(wx, wy, 1, world2out)
+            else:
+                out[i, 0] = wx
+                out[i, 1] = wy
+    return np.asarray(out)
+
+
 def warp_3d(floating[:, :, :] volume, floating[:, :, :, :] d1,
             double[:, :] affine_idx_in=None,
             double[:, :] affine_idx_out=None,
