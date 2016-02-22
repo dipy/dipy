@@ -7,13 +7,12 @@ import random
 import dipy.reconst.dti as dti
 import dipy.reconst.fwdti as fwdti
 from dipy.reconst.fwdti import fwdti_prediction
-from numpy.testing import (assert_array_almost_equal, assert_array_equal,
-                           assert_almost_equal)
+from numpy.testing import (assert_array_almost_equal, assert_almost_equal)
 from nose.tools import assert_raises
 from dipy.reconst.dti import (from_lower_triangular, decompose_tensor)
 from dipy.reconst.fwdti import (lower_triangular_to_cholesky,
                                 cholesky_to_lower_triangular)
-from dipy.sims.voxel import (multi_tensor, single_tensor, _check_directions,
+from dipy.sims.voxel import (multi_tensor, single_tensor,
                              all_tensor_evecs, multi_tensor_dki)
 from dipy.io.gradients import read_bvals_bvecs
 from dipy.core.gradients import gradient_table
@@ -43,7 +42,7 @@ FAref = np.zeros((2, 2, 2))
 # Diffusion of tissue and water compartments are constant for all voxel
 mevals = np.array([[0.0017, 0.0003, 0.0003], [0.003, 0.003, 0.003]])
 # volume fractions
-GTF = np.array([[[0.06, 0.71], [0.33, 0.93]],
+GTF = np.array([[[0.06, 0.71], [0.33, 0.91]],
                 [[0., 0,], [0., 0.]]])
 # model_params ground truth (to be fill)
 model_params_mv = np.zeros((2, 2, 2, 14))         
@@ -77,7 +76,7 @@ def test_fwdti_singlevoxel():
     assert_almost_equal(Ffwe, gtf, decimal=3)
 
     # Test non-linear fit
-    fwdm = fwdti.FreeWaterTensorModel(gtab_2s, 'NLS')
+    fwdm = fwdti.FreeWaterTensorModel(gtab_2s, 'NLS', cholesky=False)
     fwefit = fwdm.fit(S_conta)
     FAfwe = fwefit.fa
     Ffwe = fwefit.f
@@ -86,7 +85,8 @@ def test_fwdti_singlevoxel():
     assert_almost_equal(Ffwe, gtf)
     
     # Test non-linear fit, when no first guess is given
-    fwdm = fwdti.FreeWaterTensorModel(gtab_2s, 'NLS', fw_params=None)
+    fwdm = fwdti.FreeWaterTensorModel(gtab_2s, 'NLS', fw_params=None,
+                                      cholesky=False)
     fwefit = fwdm.fit(S_conta)
     FAfwe = fwefit.fa
     Ffwe = fwefit.f
@@ -114,19 +114,28 @@ def test_fwdti_precision():
 
 
 def test_fwdti_multi_voxel():
-    fwdm = fwdti.FreeWaterTensorModel(gtab_2s, 'NLS')
+    fwdm = fwdti.FreeWaterTensorModel(gtab_2s, 'NLS', cholesky=False)
     fwefit = fwdm.fit(DWI)
     Ffwe = fwefit.f
 
-    assert_array_almost_equal(Ffwe, GTF, decimal=2)
+    assert_array_almost_equal(Ffwe, GTF)
+    
+    # Test cholesky
+    fwdm = fwdti.FreeWaterTensorModel(gtab_2s, 'NLS', cholesky=True)
+    fwefit = fwdm.fit(DWI)
+    Ffwe = fwefit.f
+
+    assert_array_almost_equal(Ffwe, GTF)
     
     # Test multi voxels with initial guess
     fwdm_wlls = fwdti.FreeWaterTensorModel(gtab_2s, 'WLS')
     fwefit_wlls = fwdm_wlls.fit(DWI)
     fwe_initial = fwefit_wlls.model_params
     fwdm = fwdti.FreeWaterTensorModel(gtab_2s, fw_params=fwe_initial)
+    fwefit = fwdm.fit(DWI)
+    Ffwe = fwefit.f
 
-    assert_array_almost_equal(Ffwe, GTF, decimal=2)
+    assert_array_almost_equal(Ffwe, GTF)
     
 
 def test_fwdti_predictions():
@@ -218,7 +227,7 @@ def test_fwdti_restore():
     assert_array_almost_equal(fwdtiF2.f, gtf)
 
 
-def test_cholesky():
+def test_cholesky_functions():
     S, dt, kt = multi_tensor_dki(gtab, mevals, S0=100,
                                  angles=[(45., 45.), (45., 45.)],
                                  fractions=[80, 20])
