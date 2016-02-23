@@ -13,6 +13,12 @@ from dipy.data import get_sphere
 from dipy.sims.voxel import add_noise
 import scipy.integrate as integrate
 import scipy.special as special
+from scipy.special import jn
+from dipy.core.sphere_stats import angular_similarity
+from dipy.direction.peaks import gfa, peak_directions
+from dipy.reconst.tests.test_dsi import sticks_and_ball_dummies
+from dipy.core.subdivide_octahedron import create_unit_sphere
+from dipy.reconst.shm import sh_to_sf
 
 
 def int_func(n):
@@ -30,7 +36,25 @@ def generate_signal_crossing(gtab, lambda1, lambda2, lambda3, angle2=60):
     angl = [(0, 0), (angle2, 0)]
     S, sticks = MultiTensor(gtab, mevals, S0=100.0, angles=angl,
                             fractions=[50, 50], snr=None)
-    return S
+    return S, sticks
+
+
+def callaghan_perpendicular(q, R):
+    return (2 * jn(1, 2 * np.pi * q * R)) ** 2 / (2 * np.pi * q * R) ** 2
+
+
+def gaussian_parallel(q, tau, D=0.7e-3):
+    return np.exp(-(2 * np.pi * q) ** 2 * tau * D)
+
+
+def signal_cylinder_callaghan(qvec, tau, R):
+    # assumes cylinder axis is aligned with qx
+    q_norm = np.sqrt(np.einsum('ij,ij->i', qvec, qvec))
+    q_perp = np.sqrt(np.einsum('ij,ij->i', qvec[:, 1:], qvec[:, 1:]))
+    q_par = qvec[:, 0]
+    E = callaghan_perpendicular(q_perp, R) * gaussian_parallel(q_par, tau)
+    E[q_norm == 0.] = 1.
+    return E
 
 
 def test_orthogonality_basis_functions():
@@ -115,7 +139,7 @@ def test_mapmri_number_of_coefficients(radial_order=6):
 def test_mapmri_signal_fitting(radial_order=6):
     gtab = get_gtab_taiwan_dsi()
     l1, l2, l3 = [0.0015, 0.0003, 0.0003]
-    S = generate_signal_crossing(gtab, l1, l2, l3)
+    S, _ = generate_signal_crossing(gtab, l1, l2, l3)
 
     mapm = MapmriModel(gtab, radial_order=radial_order,
                        laplacian_weighting=0.02)
@@ -143,7 +167,7 @@ def test_mapmri_signal_fitting(radial_order=6):
 def test_mapmri_pdf_integral_unity(radial_order=6):
     gtab = get_gtab_taiwan_dsi()
     l1, l2, l3 = [0.0015, 0.0003, 0.0003]
-    S = generate_signal_crossing(gtab, l1, l2, l3)
+    S, _ = generate_signal_crossing(gtab, l1, l2, l3)
     sphere = get_sphere('symmetric724')
     # test MAPMRI fitting
 
@@ -192,7 +216,7 @@ def test_mapmri_pdf_integral_unity(radial_order=6):
 def test_mapmri_compare_fitted_pdf_with_multi_tensor(radial_order=6):
     gtab = get_gtab_taiwan_dsi()
     l1, l2, l3 = [0.0015, 0.0003, 0.0003]
-    S = generate_signal_crossing(gtab, l1, l2, l3)
+    S, _ = generate_signal_crossing(gtab, l1, l2, l3)
 
     radius_max = 0.02  # 40 microns
     gridsize = 10
@@ -219,14 +243,13 @@ def test_mapmri_compare_fitted_pdf_with_multi_tensor(radial_order=6):
 def test_mapmri_metrics_anisotropic(radial_order=6):
     gtab = get_gtab_taiwan_dsi()
     l1, l2, l3 = [0.0015, 0.0003, 0.0003]
-    S = generate_signal_crossing(gtab, l1, l2, l3, angle2=0)
+    S, _ = generate_signal_crossing(gtab, l1, l2, l3, angle2=0)
 
     # test MAPMRI q-space indices
 
     mapm = MapmriModel(gtab, radial_order=radial_order,
                        laplacian_regularization=False)
     mapfit = mapm.fit(S)
-
     tau = 1 / (4 * np.pi ** 2)
 
     # ground truth indices estimated from the DTI tensor
@@ -255,12 +278,11 @@ def test_mapmri_metrics_anisotropic(radial_order=6):
 def test_mapmri_laplacian_anisotropic(radial_order=6):
     gtab = get_gtab_taiwan_dsi()
     l1, l2, l3 = [0.0015, 0.0003, 0.0003]
-    S = generate_signal_crossing(gtab, l1, l2, l3, angle2=0)
+    S, _ = generate_signal_crossing(gtab, l1, l2, l3, angle2=0)
 
     mapm = MapmriModel(gtab, radial_order=radial_order,
                        laplacian_regularization=False)
     mapfit = mapm.fit(S)
-
     tau = 1 / (4 * np.pi ** 2)
 
     # ground truth norm of laplacian of tensor
@@ -284,13 +306,12 @@ def test_mapmri_laplacian_anisotropic(radial_order=6):
 def test_mapmri_laplacian_isotropic(radial_order=6):
     gtab = get_gtab_taiwan_dsi()
     l1, l2, l3 = [0.0003, 0.0003, 0.0003]  # isotropic diffusivities
-    S = generate_signal_crossing(gtab, l1, l2, l3, angle2=0)
+    S, _ = generate_signal_crossing(gtab, l1, l2, l3, angle2=0)
 
     mapm = MapmriModel(gtab, radial_order=radial_order,
                        laplacian_regularization=False,
                        anisotropic_scaling=False)
     mapfit = mapm.fit(S)
-
     tau = 1 / (4 * np.pi ** 2)
 
     # ground truth norm of laplacian of tensor
@@ -313,7 +334,7 @@ def test_mapmri_laplacian_isotropic(radial_order=6):
 def test_signal_fitting_equality_anisotropic_isotropic(radial_order=6):
     gtab = get_gtab_taiwan_dsi()
     l1, l2, l3 = [0.0015, 0.0003, 0.0003]
-    S = generate_signal_crossing(gtab, l1, l2, l3, angle2=60)
+    S, _ = generate_signal_crossing(gtab, l1, l2, l3, angle2=60)
     gridsize = 17
     radius_max = 0.07
     r_points = mapmri.create_rspace(gridsize, radius_max)
@@ -321,10 +342,9 @@ def test_signal_fitting_equality_anisotropic_isotropic(radial_order=6):
     tenmodel = dti.TensorModel(gtab)
     evals = tenmodel.fit(S).evals
     tau = 1 / (4 * np.pi ** 2)
-    
+
+    # estimate isotropic scale factor
     u0 = mapmri.isotropic_scale_factor(evals * 2 * tau)
-    
-    #mumean = np.sqrt(evals.mean() * 2 * tau)
     mu = np.array([u0, u0, u0])
 
     qvals = np.sqrt(gtab.bvals / tau) / (2 * np.pi)
@@ -377,7 +397,6 @@ def test_mapmri_isotropic_design_matrix_separability(radial_order=6):
     M_independent = mapmri.mapmri_isotropic_M_mu_independent(radial_order, q)
     M_dependent = mapmri.mapmri_isotropic_M_mu_dependent(radial_order, mu,
                                                          qvals)
-
     M_reconstructed = M_independent * M_dependent
 
     assert_array_almost_equal(M, M_reconstructed)
@@ -386,7 +405,7 @@ def test_mapmri_isotropic_design_matrix_separability(radial_order=6):
 def test_mapmri_metrics_isotropic(radial_order=6):
     gtab = get_gtab_taiwan_dsi()
     l1, l2, l3 = [0.0003, 0.0003, 0.0003]  # isotropic diffusivities
-    S = generate_signal_crossing(gtab, l1, l2, l3, angle2=0)
+    S, _ = generate_signal_crossing(gtab, l1, l2, l3, angle2=0)
 
     # test MAPMRI q-space indices
 
@@ -417,11 +436,40 @@ def test_mapmri_metrics_isotropic(radial_order=6):
     assert_almost_equal(mapfit.qiv(), qiv_gt, 5)
 
 
+def test_estimate_radius_with_rtap(radius_gt=5e-3):
+    gtab = get_gtab_taiwan_dsi()
+    tau = 1 / (4 * np.pi ** 2)
+    qvals = np.sqrt(gtab.bvals / tau) / (2 * np.pi)
+    qvecs = qvals[:, None] * gtab.bvecs
+    # we estimate the infinite diffusion time case for a perfectly reflecting
+    # cylinder using the Callaghan model
+    E = signal_cylinder_callaghan(qvecs, tau, radius_gt)
+
+    # estimate radius using anisotropic MAP-MRI.
+    mapmod = mapmri.MapmriModel(gtab, radial_order=6,
+                                laplacian_regularization=True,
+                                laplacian_weighting=0.01)
+    mapfit = mapmod.fit(E)
+    radius_estimated = np.sqrt(1 / (np.pi * mapfit.rtap()))
+    assert_almost_equal(radius_estimated, radius_gt, 6)
+
+    # estimate radius using isotropic MAP-MRI.
+    # note that the radial order is higher and the precision is lower due to
+    # less accurate signal extrapolation.
+    mapmod = mapmri.MapmriModel(gtab, radial_order=8,
+                                laplacian_regularization=True,
+                                laplacian_weighting=0.01,
+                                anisotropic_scaling=False)
+    mapfit = mapmod.fit(E)
+    radius_estimated = np.sqrt(1 / (np.pi * mapfit.rtap()))
+    assert_almost_equal(radius_estimated, radius_gt, 4)
+
+
 @np.testing.dec.skipif(not mapmri.have_cvxopt)
 def test_positivity_constraint(radial_order=6):
     gtab = get_gtab_taiwan_dsi()
     l1, l2, l3 = [0.0015, 0.0003, 0.0003]
-    S = generate_signal_crossing(gtab, l1, l2, l3, angle2=60)
+    S, _ = generate_signal_crossing(gtab, l1, l2, l3, angle2=60)
     S_noise = add_noise(S, snr=20, S0=100.)
 
     gridsize = 10
@@ -473,7 +521,7 @@ def test_positivity_constraint(radial_order=6):
 def test_laplacian_regularization(radial_order=6):
     gtab = get_gtab_taiwan_dsi()
     l1, l2, l3 = [0.0015, 0.0003, 0.0003]
-    S = generate_signal_crossing(gtab, l1, l2, l3, angle2=60)
+    S, _ = generate_signal_crossing(gtab, l1, l2, l3, angle2=60)
     S_noise = add_noise(S, snr=20, S0=100.)
 
     weight_array = np.linspace(0, 1., 101)
@@ -544,6 +592,59 @@ def test_laplacian_regularization(radial_order=6):
 
     assert_equal(laplacian_norm_laplacian < laplacian_norm_unreg, True)
 
+
+def test_shore_odf(radial_order=6):
+    gtab = get_gtab_taiwan_dsi()
+
+    # load symmetric 724 sphere
+    sphere = get_sphere('symmetric724')
+
+    # load icosahedron sphere
+    l1, l2, l3 = [0.0015, 0.0003, 0.0003]
+    data, golden_directions = generate_signal_crossing(gtab, l1, l2, l3,
+                                                       angle2=90)
+    mapmod = MapmriModel(gtab, radial_order=radial_order,
+                         laplacian_regularization=True,
+                         laplacian_weighting=0.01)
+    # symmetric724
+    sphere2 = create_unit_sphere(5)
+    mapfit = mapmod.fit(data)
+    odf = mapfit.odf(sphere)
+
+    directions, _, _ = peak_directions(odf, sphere, .35, 25)
+    assert_equal(len(directions), 2)
+    assert_almost_equal(
+        angular_similarity(directions, golden_directions), 2, 1)
+
+    # 5 subdivisions
+    odf = mapfit.odf(sphere2)
+    directions, _, _ = peak_directions(odf, sphere2, .35, 25)
+    assert_equal(len(directions), 2)
+    assert_almost_equal(
+        angular_similarity(directions, golden_directions), 2, 1)
+
+    sb_dummies = sticks_and_ball_dummies(gtab)
+    for sbd in sb_dummies:
+        data, golden_directions = sb_dummies[sbd]
+        asmfit = mapmod.fit(data)
+        odf = asmfit.odf(sphere2)
+        directions, _, _ = peak_directions(odf, sphere2, .35, 25)
+        if len(directions) <= 3:
+            assert_equal(len(directions), len(golden_directions))
+        if len(directions) > 3:
+            assert_equal(gfa(odf) < 0.1, True)
+
+    # for the isotropic implementation check if the odf spherical harmonics
+    # actually represent the discrete sphere function.
+    mapmod = MapmriModel(gtab, radial_order=radial_order,
+                         laplacian_regularization=True,
+                         laplacian_weighting=0.01,
+                         anisotropic_scaling=False)
+    mapfit = mapmod.fit(data)
+    odf = mapfit.odf(sphere)
+    odf_sh = mapfit.odf_sh()
+    odf_from_sh = sh_to_sf(odf_sh, sphere, radial_order, basis_type=None)
+    assert_almost_equal(odf, odf_from_sh, 10)
 
 if __name__ == '__main__':
     run_module_suite()

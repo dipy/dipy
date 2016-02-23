@@ -285,8 +285,8 @@ class MapmriModel(Cache):
                 coef = coef / sum(coef * self.Bm)
                 return MapmriFit(self, coef, self.mu, R, self.ind_mat, lopt)
             else:
-                mumean = isotropic_scale_factor(evals * 2 * self.tau)
-                mu = np.array([mumean, mumean, mumean])
+                u0 = isotropic_scale_factor(evals * 2 * self.tau)
+                mu = np.array([u0, u0, u0])
                 q = self.gtab.bvecs * qvals[:, None]
                 M_mu_dependent = mapmri_isotropic_M_mu_dependent(
                     self.radial_order, mu[0], qvals)
@@ -641,12 +641,11 @@ class MapmriFit(ReconstFit):
             qiv_vec = self._mapmri_coef[sel] * (numerator / denominator)
             qiv = qiv_vec.sum()
         else:
-            Bm = self.model.Bm
-            j = ind_mat[:, 0]
+            sel = self.model.Bm > 0.
+            j = ind_mat[sel, 0]
             qiv_vec = ((8 * (-1) ** (1 - j) * np.sqrt(2) * np.pi ** (7 / 2.))
-                       / ((4 * j - 1) * Bm))
-            qiv_vec[-np.isfinite(qiv_vec)] = 0.
-            qiv = ux ** 5 * qiv_vec * self._mapmri_coef
+                       / ((4 * j - 1) * self.model.Bm[sel]))
+            qiv = ux ** 5 * qiv_vec * self._mapmri_coef[sel]
             qiv = qiv.sum()
         return qiv
 
@@ -812,7 +811,7 @@ class MapmriFit(ReconstFit):
 
 def isotropic_scale_factor(mu_squared):
     r"""Estimated isotropic scaling factor _[1] Eq. (49)
-    
+
     References
     ----------
     .. [1] Ozarslan E. et. al, "Mean apparent propagator (MAP) MRI: A novel
@@ -824,6 +823,7 @@ def isotropic_scale_factor(mu_squared):
                            3 * X * Y * Z])
     u0 = np.sqrt(np.real(np.roots(coef_array).max()))
     return u0
+
 
 def mapmri_index_matrix(radial_order):
     r""" Calculates the indices for the MAPMRI [1]_ basis in x, y and z.
