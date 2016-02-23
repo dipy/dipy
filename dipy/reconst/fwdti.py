@@ -594,16 +594,17 @@ def nlls_fit_tensor(design_matrix, data, fw_params=None, Diso=3e-3,
         evals = params[:3]
         evecs = params[3:12].reshape((3, 3))
         dt = lower_triangular(np.dot(np.dot(evecs, np.diag(evals)), evecs.T))
-        f = params[12]
         s0 = params[13]
 
         # Cholesky decomposition if requested
         if cholesky:
             dt = lower_triangular_to_cholesky(dt)
-        
+
         # f transformation if requested
         if f_transform:
-            f = np.arcsin(2*f - 1) + np.pi/2
+            f = np.arcsin(2*params[12] - 1) + np.pi/2
+        else:
+            f = params[12]
 
         # Use the Levenberg-Marquardt algorithm wrapped in opt.leastsq
         start_params = np.concatenate((dt, [-np.log(s0), f]), axis=0)
@@ -625,11 +626,11 @@ def nlls_fit_tensor(design_matrix, data, fw_params=None, Diso=3e-3,
             this_tensor[7] =  0.5 * (1 + np.sin(this_tensor[7] - np.pi/2))
 
         # The parameters are the evals and the evecs:
+        fw_params[vox, 12] = this_tensor[7]
+        fw_params[vox, 13] = np.exp(-this_tensor[6])
         evals, evecs = decompose_tensor(from_lower_triangular(this_tensor[:6]))
         fw_params[vox, :3] = evals
         fw_params[vox, 3:12] = evecs.ravel()
-        fw_params[vox, 12] = this_tensor[7]
-        fw_params[vox, 13] = np.exp(-this_tensor[6])
 
     fw_params.shape = data.shape[:-1] + (14,)
     return fw_params
