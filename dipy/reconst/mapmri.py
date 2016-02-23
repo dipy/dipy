@@ -282,8 +282,8 @@ class MapmriModel(Cache):
                 coef = coef / sum(coef * self.Bm)
                 return MapmriFit(self, coef, self.mu, R, self.ind_mat, lopt)
             else:
-                mumean = isotropic_scale_factor(evals * 2 * self.tau)
-                mu = np.array([mumean, mumean, mumean])
+                u0 = isotropic_scale_factor(evals * 2 * self.tau)
+                mu = np.array([u0, u0, u0])
                 q = self.gtab.bvecs * qvals[:, None]
                 M_mu_dependent = mapmri_isotropic_M_mu_dependent(
                     self.radial_order, mu[0], qvals)
@@ -602,6 +602,7 @@ def isotropic_scale_factor(mu_squared):
                            3 * X * Y * Z])
     u0 = np.sqrt(np.real(np.roots(coef_array).max()))
     return u0
+
 
 def mapmri_index_matrix(radial_order):
     r""" Calculates the indices for the MAPMRI [1]_ basis in x, y and z.
