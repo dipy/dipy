@@ -285,7 +285,8 @@ class MapmriModel(Cache):
                 coef = coef / sum(coef * self.Bm)
                 return MapmriFit(self, coef, self.mu, R, self.ind_mat, lopt)
             else:
-                mumean = np.sqrt(evals.mean() * 2 * self.tau)
+                mumean = isotropic_scale_factor(evals * 2 * self.tau)
+                #mumean = np.sqrt(evals.mean() * 2 * self.tau)
                 mu = np.array([mumean, mumean, mumean])
                 q = self.gtab.bvecs * qvals[:, None]
                 M_mu_dependent = mapmri_isotropic_M_mu_dependent(
@@ -749,6 +750,26 @@ class MapmriFit(ReconstFit):
                         a00[i] = a_perp[i]
         return np.sqrt(1 - np.sum(a00 ** 2) / np.sum(a_perp ** 2))
 
+    def pa_dti(self, eta=0.4):
+        """Returns the propagator anisotropy of an anisotropic Gaussian
+        propagator _[1] Eq. (A.8).
+        
+        References
+        ----------
+        .. _[1] Avram et al. "Clinical feasibility of using mean apparent
+        propagator (MAP) MRI to characterize brain tissue microstructure".
+        NeuroImage 2015, in press.
+        """
+        ux, uy, uz = self.mu
+        u0 = self.mu.mean()
+        sin_theta_dti = np.sqrt(1 - 
+                                (8 * np.pi ** 3 * np.prod(self.mu)) /
+                                ((ux ** 2 + u0 ** 2) *
+                                 (uy ** 2 + u0 ** 2) *
+                                 (uz ** 2 + u0 ** 2)))
+        pa_dti = sigma(sin_theta_dti, eta)
+        return pa_dti
+
     def fitted_signal(self, gtab=None):
         """
         Recovers the fitted signal for the given gradient table. If no gradient
@@ -809,6 +830,33 @@ class MapmriFit(ReconstFit):
 
         return EAP
 
+
+def sigma(t, eta):
+    r"""Function used in estimating propagator anisotropy _[1] Eq. (A.7)
+    
+    References
+    ----------
+    .. _[1] Avram et al. "Clinical feasibility of using mean apparent
+    propagator (MAP) MRI to characterize brain tissue microstructure".
+    NeuroImage 2015, in press.
+    """
+    return t ** (3 * eta) / (1 - 3 * t ** eta + 3 * t ** (2 * eta))
+
+
+def isotropic_scale_factor(mu_squared):
+    r"""Estimated isotropic scaling factor _[1] Eq. (49)
+    
+    References
+    ----------
+    .. [1] Ozarslan E. et. al, "Mean apparent propagator (MAP) MRI: A novel
+    diffusion imaging method for mapping tissue microstructure",
+    NeuroImage, 2013.
+    """
+    X, Y, Z = mu_squared
+    coef_array = np.array([-3, -(X + Y + Z), (X * Y + X * Z + Y * Z),
+                           3 * X * Y * Z])
+    u0 = np.sqrt(np.roots(coef_array).max())
+    return u0
 
 def mapmri_index_matrix(radial_order):
     r""" Calculates the indices for the MAPMRI [1]_ basis in x, y and z.
