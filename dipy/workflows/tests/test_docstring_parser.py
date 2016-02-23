@@ -1,7 +1,8 @@
 """
 This was taken directly from the file test_docscrape.py of numpydoc package.
 
-Copyright (C) 2008 Stefan van der Walt <stefan@mentat.za.net>, Pauli Virtanen <pav@iki.fi>
+Copyright (C) 2008 Stefan van der Walt <stefan@mentat.za.net>,
+Pauli Virtanen <pav@iki.fi>
 
 Redistribution and use in source and binary forms, with or without
 modification, are permitted provided that the following conditions are
@@ -30,15 +31,16 @@ POSSIBILITY OF SUCH DAMAGE.
 # -*- encoding:utf-8 -*-
 from __future__ import division, absolute_import, print_function
 
-import sys, textwrap
+import sys
+import textwrap
 
 from dipy.workflows.docstring_parser import NumpyDocString
 from nose.tools import *
 
 if sys.version_info[0] >= 3:
-    sixu = lambda s: s
+    def sixu(s): return s
 else:
-    sixu = lambda s: unicode(s, 'unicode_escape')
+    def sixu(s): return unicode(s, 'unicode_escape')
 
 
 doc_txt = '''\
@@ -169,28 +171,34 @@ def test_signature():
     assert doc['Signature'].startswith('numpy.multivariate_normal(')
     assert doc['Signature'].endswith('spam=None)')
 
+
 def test_summary():
     assert doc['Summary'][0].startswith('Draw values')
     assert doc['Summary'][-1].endswith('covariance.')
 
+
 def test_extended_summary():
     assert doc['Extended Summary'][0].startswith('The multivariate normal')
 
+
 def test_parameters():
     assert_equal(len(doc['Parameters']), 3)
-    assert_equal([n for n,_,_ in doc['Parameters']], ['mean','cov','shape'])
+    assert_equal(
+        [n for n, _, _ in doc['Parameters']], ['mean', 'cov', 'shape'])
 
     arg, arg_type, desc = doc['Parameters'][1]
     assert_equal(arg_type, '(N, N) ndarray')
     assert desc[0].startswith('Covariance matrix')
     assert doc['Parameters'][0][-1][-2] == '   (1+2+3)/3'
 
+
 def test_other_parameters():
     assert_equal(len(doc['Other Parameters']), 1)
-    assert_equal([n for n,_,_ in doc['Other Parameters']], ['spam'])
+    assert_equal([n for n, _, _ in doc['Other Parameters']], ['spam'])
     arg, arg_type, desc = doc['Other Parameters'][0]
     assert_equal(arg_type, 'parrot')
     assert desc[0].startswith('A parrot off its mortal coil')
+
 
 def test_returns():
     assert_equal(len(doc['Returns']), 2)
@@ -206,40 +214,47 @@ def test_returns():
     assert desc[0].startswith('This is not a real')
     assert desc[-1].endswith('anonymous return values.')
 
+
 def test_notes():
     assert doc['Notes'][0].startswith('Instead')
     assert doc['Notes'][-1].endswith('definite.')
     assert_equal(len(doc['Notes']), 17)
 
+
 def test_references():
     assert doc['References'][0].startswith('..')
     assert doc['References'][-1].endswith('2001.')
 
+
 def test_examples():
     assert doc['Examples'][0].startswith('>>>')
     assert doc['Examples'][-1].endswith('True]')
+
 
 def test_index():
     assert_equal(doc['index']['default'], 'random')
     assert_equal(len(doc['index']), 2)
     assert_equal(len(doc['index']['refguide']), 2)
 
-def non_blank_line_by_line_compare(a,b):
+
+def non_blank_line_by_line_compare(a, b):
     a = textwrap.dedent(a)
     b = textwrap.dedent(b)
     a = [l.rstrip() for l in a.split('\n') if l.strip()]
     b = [l.rstrip() for l in b.split('\n') if l.strip()]
-    for n,line in enumerate(a):
+    for n, line in enumerate(a):
         if not line == b[n]:
             raise AssertionError("Lines %s of a and b differ: "
                                  "\n>>> %s\n<<< %s\n" %
-                                 (n,line,b[n]))
+                                 (n, line, b[n]))
+
+
 def test_str():
     # doc_txt has the order of Notes and See Also sections flipped.
     # This should be handled automatically, and so, one thing this test does
     # is to make sure that See Also precedes Notes in the output.
     non_blank_line_by_line_compare(str(doc),
-"""numpy.multivariate_normal(mean, cov, shape=None, spam=None)
+                                   """numpy.multivariate_normal(mean, cov, shape=None, spam=None)
 
 Draw values from a multivariate normal distribution with specified
 mean and covariance.
@@ -347,7 +362,6 @@ standard deviation:
    :refguide: random;distributions, random;gauss""")
 
 
-
 doc2 = NumpyDocString("""
     Returns array of indices of the maximum values of along the given axis.
 
@@ -358,6 +372,7 @@ doc2 = NumpyDocString("""
     axis : {None, integer}
         If None, the index is into the flattened array, otherwise along
         the specified axis""")
+
 
 def test_parameters_without_extended_description():
     assert_equal(len(doc2['Parameters']), 2)
@@ -383,21 +398,24 @@ doc5 = NumpyDocString(
         If needed
     """)
 
+
 def test_raises():
     assert_equal(len(doc5['Raises']), 1)
-    name,_,desc = doc5['Raises'][0]
-    assert_equal(name,'LinAlgException')
-    assert_equal(desc,['If array is singular.'])
+    name, _, desc = doc5['Raises'][0]
+    assert_equal(name, 'LinAlgException')
+    assert_equal(desc, ['If array is singular.'])
+
 
 def test_warns():
     assert_equal(len(doc5['Warns']), 1)
-    name,_,desc = doc5['Warns'][0]
-    assert_equal(name,'SomeWarning')
-    assert_equal(desc,['If needed'])
+    name, _, desc = doc5['Warns'][0]
+    assert_equal(name, 'SomeWarning')
+    assert_equal(desc, ['If needed'])
+
 
 def test_see_also():
     doc6 = NumpyDocString(
-    """
+        """
     z(x,theta)
 
     See Also
@@ -447,13 +465,14 @@ doc7 = NumpyDocString("""
 def test_empty_first_line():
     assert doc7['Summary'][0].startswith('Doc starts')
 
+
 def test_duplicate_signature():
     # Duplicate function signatures occur e.g. in ufuncs, when the
     # automatic mechanism adds one, and a more detailed comes from the
     # docstring itself.
 
     doc = NumpyDocString(
-    """
+        """
     z(x1, x2)
 
     z(a, theta)
