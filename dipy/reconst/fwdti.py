@@ -426,7 +426,8 @@ def wls_fit_tensor(design_matrix, data, Diso=3e-3, piterations=3,
 
 
 def _nlls_err_func(tensor_elements, design_matrix, data, Diso=3e-3,
-                   weighting=None, sigma=None, cholesky=False):
+                   weighting=None, sigma=None, cholesky=False,
+                   f_transform=False):
     """ Error function for the non-linear least-squares fit of the tensor water
     elimination model.
 
@@ -434,7 +435,11 @@ def _nlls_err_func(tensor_elements, design_matrix, data, Diso=3e-3,
     ----------
     tensor_elements : array (8, )
         The six independent elements of the diffusion tensor followed by
-        -log(S0) and the volume fraction f of the water elimination compartment
+        -log(S0) and the volume fraction f of the water elimination
+        compartment. Note that if cholesky is set to true, tensor elements are
+        assumed to be written as Cholesky's decomposition elements. If
+        f_transform is true, volume fraction f has to be converted to
+        ft = arcsin(2*f - 1) + pi/2 
 
     design_matrix : array
         The design matrix
@@ -455,16 +460,24 @@ def _nlls_err_func(tensor_elements, design_matrix, data, Diso=3e-3,
         weighting.
     
     cholesky : bool, optional 
-        If true it uses cholesky decomposition to insure that diffusion tensor
-        is positive define.
+        If true, the diffusion tensor elements were decomposed using cholesky
+        decomposition. See fwdti.nlls_fit_tensor
+        Default: False
+
+    f_transform : bool, optional
+        If true, the water volume fraction was converted to
+        ft = arcsin(2*f - 1) + pi/2, insuring f estimates between 0 and 1.
+        See fwdti.nlls_fit_tensor
         Default: True
     """
     tensor = np.copy(tensor_elements)
     if cholesky:
         tensor[:6] = cholesky_to_lower_triangular(tensor[:6])
+
+    if f_transform:
         f = 0.5 * (1 + np.sin(tensor[7] - np.pi/2))
     else:
-        f = np.copy(tensor[7])
+        f = tensor[7]
 
     # This is the predicted signal given the params:
     y = (1-f) * np.exp(np.dot(design_matrix, tensor[:7])) + \
@@ -506,7 +519,8 @@ def _nlls_err_func(tensor_elements, design_matrix, data, Diso=3e-3,
 
 
 def nlls_fit_tensor(design_matrix, data, fw_params=None, Diso=3e-3,
-                    weighting=None, sigma=None, cholesky=False):
+                    weighting=None, sigma=None, cholesky=False,
+                    f_transform=True):
     """
     Fit the water elimination tensor model using the non-linear least-squares.
 
@@ -548,6 +562,12 @@ def nlls_fit_tensor(design_matrix, data, fw_params=None, Diso=3e-3,
     cholesky : bool, optional 
         If true it uses cholesky decomposition to insure that diffusion tensor
         is positive define.
+        Default: False
+
+    f_transform : bool, optional
+        If true, the water volume fractions is converted during the convergence 
+        procedure to ft = arcsin(2*f - 1) + pi/2, insuring f estimates between
+        0 and 1.
         Default: True
 
     Returns
@@ -577,24 +597,31 @@ def nlls_fit_tensor(design_matrix, data, fw_params=None, Diso=3e-3,
         f = params[12]
         s0 = params[13]
 
+        # Cholesky decomposition if requested
         if cholesky:
-            start_params = np.concatenate((lower_triangular_to_cholesky(dt),
-                                           [-np.log(s0),
-                                            np.arcsin(2*f - 1) + np.pi/2]),
-                                          axis=0)
-        else:
-            start_params = np.concatenate((dt, [-np.log(s0), f]), axis=0)
+            dt = lower_triangular_to_cholesky(dt)
+        
+        # f transformation if requested
+        if f_transform:
+            f = np.arcsin(2*f - 1) + np.pi/2
 
+        # Use the Levenberg-Marquardt algorithm wrapped in opt.leastsq
+        start_params = np.concatenate((dt, [-np.log(s0), f]), axis=0)
         this_tensor, status = opt.leastsq(_nlls_err_func, start_params[:8],
                                           args=(design_matrix,
                                                 flat_data[vox],
                                                 Diso,
                                                 weighting,
                                                 sigma,
-                                                cholesky))
+                                                cholesky,
+                                                f_transform))
                                                 
+        # Invert the cholesky decomposition if this was requested
         if cholesky:
             this_tensor[:6] = cholesky_to_lower_triangular(this_tensor[:6])
+
+        # Invert f transformation if this was requested
+        if f_transform:
             this_tensor[7] =  0.5 * (1 + np.sin(this_tensor[7] - np.pi/2))
 
         # The parameters are the evals and the evecs:
