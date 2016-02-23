@@ -318,8 +318,11 @@ def test_signal_fitting_equality_anisotropic_isotropic(radial_order=6):
     tenmodel = dti.TensorModel(gtab)
     evals = tenmodel.fit(S).evals
     tau = 1 / (4 * np.pi ** 2)
-    mumean = np.sqrt(evals.mean() * 2 * tau)
-    mu = np.array([mumean, mumean, mumean])
+
+    u0 = mapmri.isotropic_scale_factor(evals * 2 * tau)
+
+    #mumean = np.sqrt(evals.mean() * 2 * tau)
+    mu = np.array([u0, u0, u0])
 
     qvals = np.sqrt(gtab.bvals / tau) / (2 * np.pi)
     q = gtab.bvecs * qvals[:, None]
@@ -327,8 +330,8 @@ def test_signal_fitting_equality_anisotropic_isotropic(radial_order=6):
     M_aniso = mapmri.mapmri_phi_matrix(radial_order, mu, q)
     K_aniso = mapmri.mapmri_psi_matrix(radial_order, mu, r_points)
 
-    M_iso = mapmri.mapmri_isotropic_phi_matrix(radial_order, mumean, q)
-    K_iso = mapmri.mapmri_isotropic_psi_matrix(radial_order, mumean, r_points)
+    M_iso = mapmri.mapmri_isotropic_phi_matrix(radial_order, u0, q)
+    K_iso = mapmri.mapmri_isotropic_psi_matrix(radial_order, u0, r_points)
 
     coef_aniso = np.dot(np.dot(np.linalg.inv(np.dot(M_aniso.T, M_aniso)),
                                M_aniso.T), S)
@@ -345,7 +348,7 @@ def test_signal_fitting_equality_anisotropic_isotropic(radial_order=6):
     pdf_fitted_iso = np.dot(K_iso, coef_iso)
 
     assert_array_almost_equal(pdf_fitted_aniso / pdf_fitted_iso,
-                              np.ones_like(pdf_fitted_aniso), 4)
+                              np.ones_like(pdf_fitted_aniso), 3)
 
     # test if the implemented version also produces the same result
     mapm = MapmriModel(gtab, radial_order=radial_order,
@@ -528,40 +531,16 @@ def test_laplacian_regularization(radial_order=6):
     laplacian_matrix = mapmri.mapmri_isotropic_laplacian_reg_matrix(
         radial_order, mu[0])
 
-    tenmodel = dti.TensorModel(gtab)
-    evals = tenmodel.fit(S).evals
-    tau = 1 / (4 * np.pi ** 2)
-    mumean = np.sqrt(evals.mean() * 2 * tau)
-    mu = np.array([mumean, mumean, mumean])
+    coef_unreg = mapmod_unreg.fit(S_noise)._mapmri_coef
+    coef_laplacian = mapfit_laplacian._mapmri_coef
 
-    qvals = np.sqrt(gtab.bvals / tau) / (2 * np.pi)
-    q = gtab.bvecs * qvals[:, None]
+    laplacian_norm_unreg = np.dot(
+        coef_unreg, np.dot(coef_unreg, laplacian_matrix))
+    laplacian_norm_laplacian = np.dot(
+        coef_laplacian, np.dot(coef_laplacian, laplacian_matrix))
 
-    M_aniso = mapmri.mapmri_phi_matrix(radial_order, mu, q)
-    M_iso = mapmri.mapmri_isotropic_phi_matrix(radial_order, mumean, q)
+    assert_equal(laplacian_norm_laplacian < laplacian_norm_unreg, True)
 
-    # test if anisotropic and isotropic implementation produce equal results
-    # if the same isotropic scale factors are used
-    s_fitted_aniso = np.dot(M_aniso, np.dot(np.dot(
-        np.linalg.inv(np.dot(M_aniso.T, M_aniso)), M_aniso.T), S)
-        )
-    s_fitted_iso = np.dot(M_iso, np.dot(np.dot(
-        np.linalg.inv(np.dot(M_iso.T, M_iso)), M_iso.T), S)
-        )
-
-    assert_array_almost_equal(s_fitted_aniso, s_fitted_iso)
-
-    # test if the implemented version also produces the same result
-    mapm = MapmriModel(gtab, radial_order=radial_order,
-                       laplacian_regularization=False,
-                       anisotropic_scaling=False)
-    s_fitted_implemented_isotropic = mapm.fit(S).fitted_signal()
-
-    # normalize non-implemented fitted signal with b0 value
-    s_fitted_aniso_norm = s_fitted_aniso / s_fitted_aniso.max()
-
-    assert_array_almost_equal(s_fitted_aniso_norm,
-                              s_fitted_implemented_isotropic)
 
 if __name__ == '__main__':
     run_module_suite()
