@@ -3,6 +3,7 @@
 # code compatible with Python 2.3.
 import sys
 
+
 def _resolve_name(name, package, level):
     """Return the absolute name of the module to be imported."""
     if not hasattr(package, 'rindex'):
@@ -13,7 +14,7 @@ def _resolve_name(name, package, level):
             dot = package.rindex('.', 0, dot)
         except ValueError:
             raise ValueError("attempted relative import beyond top-level "
-                              "package")
+                             "package")
     return "%s.%s" % (package[:dot], name)
 
 

@@ -1,6 +1,7 @@
 ''' Utilities for testing '''
 from os.path import dirname, abspath, join as pjoin
 
+
 # set path to example data
 IO_DATA_PATH = abspath(pjoin(dirname(__file__),
                              '..', 'io', 'tests', 'data'))
