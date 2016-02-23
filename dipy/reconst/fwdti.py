@@ -246,71 +246,6 @@ class FreeWaterTensorFit(TensorFit):
         return fwdti_prediction(self.model_params, gtab)
 
 
-def wls_fit_tensor(design_matrix, data, Diso=3e-3, piterations=3,
-                   riterations=2):
-    r""" Computes weighted least squares (WLS) fit to calculate self-diffusion
-    tensor using a linear regression model [1]_.
-
-    Parameters
-    ----------
-    design_matrix : array (g, 7)
-        Design matrix holding the covariants used to solve for the regression
-        coefficients.
-    data : array ([X, Y, Z, ...], g)
-        Data or response variables holding the data. Note that the last
-        dimension should contain the data. It makes no copies of data.
-    Diso : float, optional
-        Value of the free water isotropic diffusion. Default is set to 3e-3
-        $mm^{2}.s^{-1}$. Please ajust this value if you are assuming different
-        units of diffusion.
-    piterations : inter, optional
-        Number of iterations used to refine the precision of f. Default is set
-        to 3 corresponding to a precision of 0.01.
-    riterations : inter, optional
-        Number of iteration repetitions with adapted S0. To insure that S0 is
-        taken as a model free parameter Each precision iteration is repeated
-        riterations times with adapted S0.
-
-    Returns
-    -------
-    All parameters estimated from the free water tensor model.
-    Parameters are ordered as follows:
-        1) Three diffusion tensor's eigenvalues
-        2) Three lines of the eigenvector matrix each containing the
-           first, second and third coordinates of the eigenvector
-        3) The volume fraction of the free water compartment
-        4) The estimate of the non diffusion-weighted signal S0
-
-    References
-    ----------
-    .. [1] Chung, SW., Lu, Y., Henry, R.G., 2006. Comparison of bootstrap
-       approaches for estimation of uncertainties of DTI parameters.
-       NeuroImage 33, 531-541.
-    """
-    tol = 1e-6
-
-    # preparing data and initializing parametres
-    data = np.asarray(data)
-    data_flat = data.reshape((-1, data.shape[-1]))
-    fw_params = np.empty((len(data_flat), 14))
-
-    # inverting design matrix and defining minimun diffusion aloud
-    min_diffusivity = tol / -design_matrix.min()
-    inv_design = np.linalg.pinv(design_matrix)
-
-    # lopping WLS solution on all data voxels
-    for vox in range(len(data_flat)):
-        fw_params[vox] = _wls_iter(design_matrix, inv_design, data_flat[vox],
-                                    min_diffusivity, Diso=Diso,
-                                    piterations=piterations,
-                                    riterations=riterations)
-
-    # Reshape data according to the input data shape
-    fw_params = fw_params.reshape((data.shape[:-1]) + (14,))
-
-    return fw_params
-
-
 def _wls_iter(design_matrix, inv_design, sig, min_diffusivity, Diso=3e-3,
               piterations=3, riterations=2):
     """ Helper function used by wls_fit_tensor - Applies WLS fit of the
@@ -422,6 +357,71 @@ def _wls_iter(design_matrix, inv_design, sig, min_diffusivity, Diso=3e-3,
                                     min_diffusivity=min_diffusivity)
     fw_params = np.concatenate((evals, evecs[0], evecs[1], evecs[2], 
                                 np.array([f]), np.array([S0])), axis=0)
+    return fw_params
+
+
+def wls_fit_tensor(design_matrix, data, Diso=3e-3, piterations=3,
+                   riterations=2):
+    r""" Computes weighted least squares (WLS) fit to calculate self-diffusion
+    tensor using a linear regression model [1]_.
+
+    Parameters
+    ----------
+    design_matrix : array (g, 7)
+        Design matrix holding the covariants used to solve for the regression
+        coefficients.
+    data : array ([X, Y, Z, ...], g)
+        Data or response variables holding the data. Note that the last
+        dimension should contain the data. It makes no copies of data.
+    Diso : float, optional
+        Value of the free water isotropic diffusion. Default is set to 3e-3
+        $mm^{2}.s^{-1}$. Please ajust this value if you are assuming different
+        units of diffusion.
+    piterations : inter, optional
+        Number of iterations used to refine the precision of f. Default is set
+        to 3 corresponding to a precision of 0.01.
+    riterations : inter, optional
+        Number of iteration repetitions with adapted S0. To insure that S0 is
+        taken as a model free parameter Each precision iteration is repeated
+        riterations times with adapted S0.
+
+    Returns
+    -------
+    All parameters estimated from the free water tensor model.
+    Parameters are ordered as follows:
+        1) Three diffusion tensor's eigenvalues
+        2) Three lines of the eigenvector matrix each containing the
+           first, second and third coordinates of the eigenvector
+        3) The volume fraction of the free water compartment
+        4) The estimate of the non diffusion-weighted signal S0
+
+    References
+    ----------
+    .. [1] Chung, SW., Lu, Y., Henry, R.G., 2006. Comparison of bootstrap
+       approaches for estimation of uncertainties of DTI parameters.
+       NeuroImage 33, 531-541.
+    """
+    tol = 1e-6
+
+    # preparing data and initializing parametres
+    data = np.asarray(data)
+    data_flat = data.reshape((-1, data.shape[-1]))
+    fw_params = np.empty((len(data_flat), 14))
+
+    # inverting design matrix and defining minimun diffusion aloud
+    min_diffusivity = tol / -design_matrix.min()
+    inv_design = np.linalg.pinv(design_matrix)
+
+    # lopping WLS solution on all data voxels
+    for vox in range(len(data_flat)):
+        fw_params[vox] = _wls_iter(design_matrix, inv_design, data_flat[vox],
+                                    min_diffusivity, Diso=Diso,
+                                    piterations=piterations,
+                                    riterations=riterations)
+
+    # Reshape data according to the input data shape
+    fw_params = fw_params.reshape((data.shape[:-1]) + (14,))
+
     return fw_params
 
 
