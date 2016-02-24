@@ -84,8 +84,8 @@ def horizon(tractograms, data, affine, cluster=False, cluster_thr=15.,
     show_m.initialize()
 
     if data is not None:
-        #from dipy.core.geometry import rodrigues_axis_rotation
-        #affine[:3, :3] = np.dot(affine[:3, :3], rodrigues_axis_rotation((0, 0, 1), 45))
+        # from dipy.core.geometry import rodrigues_axis_rotation
+        # affine[:3, :3] = np.dot(affine[:3, :3], rodrigues_axis_rotation((0, 0, 1), 45))
 
         image_actor = actor.slicer(data, affine)
         image_actor.opacity(slicer_opacity)
@@ -96,7 +96,7 @@ def horizon(tractograms, data, affine, cluster=False, cluster_thr=15.,
 
         def change_slice(obj, event):
             z = int(np.round(obj.get_value()))
-            #image_actor.display(None, None, z)
+            # image_actor.display(None, None, z)
             image_actor.display(None, z, None)
 
         slider = widget.slider(show_m.iren, show_m.ren,
