@@ -1,10 +1,12 @@
+from __future__ import division, print_function, absolute_import
+
 from glob import glob
 import os
 
 import nibabel as nib
 
 from dipy.denoise.nlmeans import nlmeans
-from dipy.denoise.noise_estimate import piesno, estimate_sigma
+from dipy.denoise.noise_estimate import estimate_sigma
 from dipy.workflows.utils import choose_create_out_dir
 
 
@@ -34,7 +36,7 @@ def nlmeans_flow(input_files, out_dir='',
            The denoised volume.
     """
     for fpath in glob(input_files):
-        print ''
+        print('')
         print('Denoising {0}'.format(fpath))
 
         image = nib.load(fpath)
@@ -42,7 +44,7 @@ def nlmeans_flow(input_files, out_dir='',
 
         if sigma == 0:
             sigma = estimate_sigma(data)
-            print 'Found sigma {0}'.format(sigma)
+            print('Found sigma {0}'.format(sigma))
 
         denoised_data = nlmeans(data, sigma)
         denoised_image = nib.Nifti1Image(
