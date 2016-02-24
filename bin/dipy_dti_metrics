@@ -1,56 +1,12 @@
 #! /usr/bin/env python
 from __future__ import division, print_function
-from dipy.workflows.reconst import compute_dti_metrics
+from dipy.workflows.reconst import dti_metrics_flow
 from dipy.workflows.base import IntrospectiveArgumentParser
 
 parser = IntrospectiveArgumentParser()
-parser.add_workflow(compute_dti_metrics)
-
-
-DESCRIPTION = """
-    Script to compute all of the Diffusion Tensor Imaging (DTI) metrics.\n\n
-    By default, will output all available metrics, using default names.
-    Specific names can be specified using the metrics flags that are listed in
-    the "Metrics files flags" section.\n\n
-    If --not_all is set, only the metrics specified explicitly by the flags
-    will be output.\n\n
-    The available metrics are: fractional anisotropy (FA), axial diffusivisty
-    (AD), radial diffusivity (RD), mean diffusivity (MD), mode,
-    red-green-blue colored FA (rgb), principal tensor e-vector and tensor
-    coefficients (dxx, dxy, dxz, dyy, dyz, dzz).
-    """
+parser.add_workflow(dti_metrics_flow)
 
 if __name__ == "__main__":
-    if not args.not_all:
-        if args.fa == '':
-            args.fa = 'fa.nii.gz'
-        if args.ga == '':
-            args.ga = 'ga.nii.gz'
-        if args.rgb == '':
-            args.rgb = 'rgb.nii.gz'
-        if args.md == '':
-            args.md = 'md.nii.gz'
-        if args.ad == '':
-            args.ad = 'ad.nii.gz'
-        if args.rd == '':
-            args.rd = 'rd.nii.gz'
-        if args.mode == '':
-            args.mode = 'mode.nii.gz'
-        if args.tensor == '':
-            args.tensor = 'tensor.nii.gz'
-        if args.evec == '':
-            args.evec = 'tensor_evecs.nii.gz'
-        if args.eval == '':
-            args.eval = 'tensor_evals.nii.gz'
+    args = parser.get_flow_args()
+    dti_metrics_flow(**args)
 
-    arglist = [args.fa, args.rgb, args.md, args.ad, args.rd, args.mode,
-               args.tensor, args.evec, args.ga]
-
-    if args.not_all and not any(arglist):
-        p.error('When using --not_all, you need to specify at least ' +
-                     'one metric to output.')
-
-    compute_dti_metrics(args.input, args.mask, args.bvals, args.bvecs,
-                        args.out_dir, args.tensor, args.fa, args.ga, args.rgb,
-                        args.md, args.ad, args.rd, args.mode, args.evec,
-                        args.eval)
