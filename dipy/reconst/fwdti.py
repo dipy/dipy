@@ -247,7 +247,7 @@ class FreeWaterTensorFit(TensorFit):
 
 
 def _wls_iter(design_matrix, inv_design, sig, min_diffusivity, Diso=3e-3,
-              piterations=3, riterations=2):
+              piterations=3, S0=None):
     """ Helper function used by wls_fit_tensor - Applies WLS fit of the
     water free elimination model to single voxel signals.
 
@@ -272,10 +272,6 @@ def _wls_iter(design_matrix, inv_design, sig, min_diffusivity, Diso=3e-3,
     piterations : inter, optional
         Number of iterations used to refine the precision of f. Default is set
         to 3 corresponding to a precision of 0.01.
-    riterations : inter, optional
-        Number of iteration repetitions with adapted S0. To insure that S0 is
-        taken as a model free parameter Each precision iteration is repeated
-        riterations times with adapted S0.
 
     Returns
     -------
@@ -291,10 +287,9 @@ def _wls_iter(design_matrix, inv_design, sig, min_diffusivity, Diso=3e-3,
 
     # DTI ordinary linear least square solution
     log_s = np.log(sig)
-    ols_result = np.dot(inv_design, log_s)
 
-    # Define weights as diag(yn**2)
-    S2 = np.diag(np.exp(2 * np.dot(W, ols_result)))
+    # Define weights
+    S2 = np.diag(sig**2)
 
     # DTI weighted linear least square solution
     WTS2 = np.dot(W.T, S2)
@@ -311,15 +306,12 @@ def _wls_iter(design_matrix, inv_design, sig, min_diffusivity, Diso=3e-3,
     fhig = 1  # higher f evaluated
     ns = 9  # initial number of samples per iteration
     nvol = len(sig)
-    for p in range(piterations):
-        df = df * 0.1
-        fs = np.linspace(flow+df, fhig-df, num=ns)  # sampling f
-        # repeat fw contribution for all the samples
-        SFW = np.array([fwsig,]*ns)
-        FS, SI = np.meshgrid(fs, sig)
-        for r in range(riterations):
-            # Free-water adjusted signal
-            S0 = np.exp(-params[6])
+    if S0 is not None:
+        for p in range(piterations):
+            df = df * 0.1
+            fs = np.linspace(flow+df, fhig-df, num=ns)  # sampling f
+            SFW = np.array([fwsig,]*ns)  # repeat contributions for all values
+            FS, SI = np.meshgrid(fs, sig)
             SA = SI - FS*S0*SFW.T
             # SA < 0 means that the signal components from the free water
             # component is larger than the total fiber. This cases are present
@@ -327,31 +319,40 @@ def _wls_iter(design_matrix, inv_design, sig, min_diffusivity, Diso=3e-3,
             # value estimated). To avoid the log of negative values:
             SA[SA <= 0] = 0.0001  # same min signal assumed in dti.py
             y = np.log(SA / (1-FS))
-
-            # Estimate tissue's tensor from inv(A.T*S2*A)*A.T*S2*y
-            S2 = np.diag(np.square(np.dot(W, params)))
-            WTS2 = np.dot(W.T, S2)
-            inv_WT_S2_W = np.linalg.pinv(np.dot(WTS2, W))
-            invWTS2W_WTS2 = np.dot(inv_WT_S2_W, WTS2)
             all_new_params = np.dot(invWTS2W_WTS2, y)
 
-            # compute F2
+            # Select params for lower F2
+            SIpred = (1-FS)*np.exp(np.dot(W, all_new_params)) + FS*S0*SFW.T
+            F2 = np.sum(np.square(SI - SIpred), axis=0)
+            Mind = np.argmin(F2)
+            params = all_new_params[:, Mind]
+            f = fs[Mind]  # Updated f
+            flow = f - df  # refining precision
+            fhig = f + df
+            ns = 19
+    else:
+        for p in range(piterations):
+            df = df * 0.1
+            fs = np.linspace(flow+df, fhig-df, num=ns)  # sampling f
+            SFW = np.array([fwsig,]*ns)  # repeat contributions for all values
+            FS, SI = np.meshgrid(fs, sig)
+            S0 = np.exp(-params[6])  # S0 is now taken as a model parameter
+            SA = SI - FS*S0*SFW.T
+            SA[SA <= 0] = 0.0001  # same min signal assumed in dti.py
+            y = np.log(SA / (1-FS))
+            all_new_params = np.dot(invWTS2W_WTS2, y)
+
+            # Select params for lower F2
             S0r = np.exp(-np.array([all_new_params[6],]*nvol))
             SIpred = (1-FS)*np.exp(np.dot(W, all_new_params)) + FS*S0r*SFW.T
             F2 = np.sum(np.square(SI - SIpred), axis=0)
-
-            # Select params for lower F2
             Mind = np.argmin(F2)
             params = all_new_params[:, Mind]
-
-        # Updated f
-        f = fs[Mind]
-        # refining precision
-        flow = f - df
-        fhig = f + df
-        ns = 19
-
-    S0 = np.exp(-params[6])
+            f = fs[Mind]  # Updated f
+            flow = f - df  # refining precision
+            fhig = f + df
+            ns = 19
+        S0 = np.exp(-params[6])
 
     evals, evecs = decompose_tensor(from_lower_triangular(params),
                                     min_diffusivity=min_diffusivity)
@@ -360,8 +361,7 @@ def _wls_iter(design_matrix, inv_design, sig, min_diffusivity, Diso=3e-3,
     return fw_params
 
 
-def wls_fit_tensor(design_matrix, data, Diso=3e-3, piterations=3,
-                   riterations=2):
+def wls_fit_tensor(design_matrix, data, Diso=3e-3, piterations=3, S0=None):
     r""" Computes weighted least squares (WLS) fit to calculate self-diffusion
     tensor using a linear regression model [1]_.
 
@@ -380,10 +380,10 @@ def wls_fit_tensor(design_matrix, data, Diso=3e-3, piterations=3,
     piterations : inter, optional
         Number of iterations used to refine the precision of f. Default is set
         to 3 corresponding to a precision of 0.01.
-    riterations : inter, optional
-        Number of iteration repetitions with adapted S0. To insure that S0 is
-        taken as a model free parameter Each precision iteration is repeated
-        riterations times with adapted S0.
+    S0 : array ([X, Y, Z]), optional
+        Non diffusion weighted signal (i.e. signal for b-value=0). If not
+        given, S0 will be taken as a model parameter (which is likely to
+        decrease methods robustness)
 
     Returns
     -------
@@ -413,11 +413,18 @@ def wls_fit_tensor(design_matrix, data, Diso=3e-3, piterations=3,
     inv_design = np.linalg.pinv(design_matrix)
 
     # lopping WLS solution on all data voxels
-    for vox in range(len(data_flat)):
-        fw_params[vox] = _wls_iter(design_matrix, inv_design, data_flat[vox],
-                                    min_diffusivity, Diso=Diso,
-                                    piterations=piterations,
-                                    riterations=riterations)
+    if S0 is None:
+        for vox in range(len(data_flat)):
+            fw_params[vox] = _wls_iter(design_matrix, inv_design,
+                                       data_flat[vox], min_diffusivity,
+                                       Diso=Diso, piterations=piterations)
+    else:
+        S0 = S0.ravel()
+        for vox in range(len(data_flat)):
+            fw_params[vox] = _wls_iter(design_matrix, inv_design,
+                                       data_flat[vox], min_diffusivity,
+                                       Diso=Diso, piterations=piterations,
+                                       S0=S0[vox])
 
     # Reshape data according to the input data shape
     fw_params = fw_params.reshape((data.shape[:-1]) + (14,))

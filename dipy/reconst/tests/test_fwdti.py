@@ -28,6 +28,7 @@ bvecs_2s = np.concatenate((bvecs, bvecs), axis=0)
 gtab_2s = gradient_table(bvals_2s, bvecs_2s)
 
 # Simulation a typical DT and DW signal for no water contamination
+S0 = np.array(100)
 dt = np.array([0.0017, 0, 0.0003, 0, 0, 0.0003])
 evals, evecs = decompose_tensor(from_lower_triangular(dt))
 S_tissue = single_tensor(gtab_2s, S0=100, evals=evals, evecs=evecs,
@@ -44,6 +45,8 @@ mevals = np.array([[0.0017, 0.0003, 0.0003], [0.003, 0.003, 0.003]])
 # volume fractions
 GTF = np.array([[[0.06, 0.71], [0.33, 0.91]],
                 [[0., 0,], [0., 0.]]])
+# S0 multivoxel
+S0m = 100 * np.ones((2, 2, 2))
 # model_params ground truth (to be fill)
 model_params_mv = np.zeros((2, 2, 2, 14))         
 for i in range(2):
@@ -67,7 +70,7 @@ def test_fwdti_singlevoxel():
     S_conta, peaks = multi_tensor(gtab_2s, mevals, S0=100,
                                   angles=[(90, 0), (90, 0)],
                                   fractions=[(1-gtf) * 100, gtf*100], snr=None)
-    fwdm = fwdti.FreeWaterTensorModel(gtab_2s, 'WLS')
+    fwdm = fwdti.FreeWaterTensorModel(gtab_2s, 'WLS', S0=S0)
     fwefit = fwdm.fit(S_conta)
     FAfwe = fwefit.fa
     Ffwe = fwefit.f
@@ -104,7 +107,7 @@ def test_fwdti_precision():
     S_conta, peaks = multi_tensor(gtab_2s, mevals, S0=100,
                                   angles=[(90, 0), (90, 0)],
                                   fractions=[(1-gtf) * 100, gtf*100], snr=None)
-    fwdm = fwdti.FreeWaterTensorModel(gtab_2s, 'WLS', piterations=5)
+    fwdm = fwdti.FreeWaterTensorModel(gtab_2s, 'WLS', piterations=5, S0=S0)
     fwefit = fwdm.fit(S_conta)
     FAfwe = fwefit.fa
     Ffwe = fwefit.f
@@ -128,7 +131,7 @@ def test_fwdti_multi_voxel():
     assert_array_almost_equal(Ffwe, GTF)
     
     # Test multi voxels with initial guess
-    fwdm_wlls = fwdti.FreeWaterTensorModel(gtab_2s, 'WLS')
+    fwdm_wlls = fwdti.FreeWaterTensorModel(gtab_2s, 'WLS', S0=S0m)
     fwefit_wlls = fwdm_wlls.fit(DWI)
     fwe_initial = fwefit_wlls.model_params
     fwdm = fwdti.FreeWaterTensorModel(gtab_2s, fw_params=fwe_initial)
@@ -142,10 +145,9 @@ def test_fwdti_predictions():
     # single voxel case
     # test funtion
     gtf = 0.50  # ground truth volume fraction
-    S0=100
     angles = [(90, 0), (90, 0)]
     mevals = np.array([[0.0017, 0.0003, 0.0003], [0.003, 0.003, 0.003]])
-    S_conta, peaks = multi_tensor(gtab_2s, mevals, S0=S0,
+    S_conta, peaks = multi_tensor(gtab_2s, mevals, S0=100,
                                   angles=angles,
                                   fractions=[(1-gtf) * 100, gtf*100], snr=None)
     R = all_tensor_evecs(peaks[0])
@@ -156,7 +158,7 @@ def test_fwdti_predictions():
     assert_array_almost_equal(S_pred1, S_conta)
 
     # Testing in model class
-    fwdm = fwdti.FreeWaterTensorModel(gtab_2s, 'WLS')
+    fwdm = fwdti.FreeWaterTensorModel(gtab_2s, 'WLS', S0=S0)
     S_pred2 = fwdm.predict(model_params)
     assert_array_almost_equal(S_pred2, S_conta)
 
@@ -167,8 +169,8 @@ def test_fwdti_predictions():
     mevals_ad = np.array([fwefit.model_params[0:3], [0.003, 0.003, 0.003]])
     angles_ad = fwefit.model_params[3:-2].reshape(3, 3)
     gtf_ad = fwefit.model_params[-2]
-    S0 = fwefit.model_params[-1]
-    S_conta_ad, peaks = multi_tensor(gtab_2s, mevals_ad, S0=S0,
+    S0ad = fwefit.model_params[-1]
+    S_conta_ad, peaks = multi_tensor(gtab_2s, mevals_ad, S0=S0ad,
                                      angles=angles_ad,
                                      fractions=[(1-gtf_ad) * 100, gtf_ad*100],
                                      snr=None)
