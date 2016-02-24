@@ -240,6 +240,9 @@ def set_number_of_points(streamlines, nb_points=3):
     if len(streamlines) == 0:
         return []
 
+    if nb_points < 2:
+        raise ValueError("nb_points must be at least 2")
+        
     dtype = streamlines[0].dtype
     for streamline in streamlines:
         if streamline.dtype != dtype:
