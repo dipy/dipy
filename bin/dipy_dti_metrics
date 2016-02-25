@@ -9,4 +9,3 @@ parser.add_workflow(dti_metrics_flow)
 if __name__ == "__main__":
     args = parser.get_flow_args()
     dti_metrics_flow(**args)
-

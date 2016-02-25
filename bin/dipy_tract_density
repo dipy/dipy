@@ -1,19 +1,12 @@
 #! /usr/bin/env python
 
 from __future__ import division, print_function
-from dipy.fixes import argparse as arg
-from dipy.workflows.tract_metrics import tract_density
+from dipy.workflows.tract_metrics import tract_density_flow
+from dipy.workflows.base import IntrospectiveArgumentParser
 
-parser = arg.ArgumentParser()
-parser.add_argument('tracts', action='store', metavar='tracts',
-                    help='Path of the tract file.')
-parser.add_argument('ref', action='store',
-                    help='Path of the reference file.')
-parser.add_argument('--factor', action='store', metavar='factor', type=float,
-                    default=1.0, help='Upsampling factor.')
-parser.add_argument('--out_dir', type=str, default='',
-                    help='Path to output the resulting tract density file.')
+parser = IntrospectiveArgumentParser()
+parser.add_workflow(tract_density_flow)
 
 if __name__ == "__main__":
-    params = parser.parse_args()
-    tract_density(params.tracts, params.ref, params.factor, params.out_dir)
+    args = parser.get_flow_args()
+    tract_density_flow(**args)
