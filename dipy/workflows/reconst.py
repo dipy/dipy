@@ -99,7 +99,7 @@ def dti_metrics_flow(input_files, mask_files, bvalues, bvectors, out_dir='',
         else:
             mask = nib.load(mask).get_data().astype(np.bool)
 
-        tenfit = get_fitted_tensor(data, mask, bval, bvec)
+        tenfit, _ = get_fitted_tensor(data, mask, bval, bvec)
 
         out_dir_path = choose_create_out_dir(out_dir, dwi)
 
@@ -166,4 +166,4 @@ def get_fitted_tensor(data, mask, bval, bvec):
     tenmodel = TensorModel(gtab)
     tenfit = tenmodel.fit(data, mask)
 
-    return tenfit
+    return tenfit, gtab

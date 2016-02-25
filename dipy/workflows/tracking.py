@@ -75,10 +75,38 @@ def EuDX_tracking_flow(ref, peaks_values, peaks_indexes, out_dir='',
                            streamlines_trk,
                            hdr)
 
-def deterministic_tracking_flow(dwi_paths, mask_paths, bvalues, bvectors, out_dir=''):
+def deterministic_tracking_flow(input_files, mask_files, bvalues, bvectors,
+                                out_dir='', tractogram='deterministic_tractogram.trk'):
+    """ Workflow for deterministic tracking. Tracking is done by
+        'globing' ``input_files``, ``peaks_values``, and ``peaks_indexes``
+         and saves the tracks in a directory specified by ``out_dir``.
 
-    for dwi, mask, bval, bvec in zip(glob(dwi_paths),
-                                     glob(mask_paths),
+    Parameters
+    ----------
+    input_files : string
+        Path to the input volumes. This path may contain wildcards to process
+        multiple inputs at once.
+    mask_files : string
+        Path to the input masks. This path may contain wildcards to use
+        multiple masks at once.
+    bvalues : string
+        Path to the bvalues files. This path may contain wildcards to use
+        multiple bvalues files at once.
+    bvectors : string
+        Path to the bvalues files. This path may contain wildcards to use
+        multiple bvalues files at once.
+    out_dir : string, optional
+        Output directory (default input file directory)
+    tractogram : string, optional
+        Name of the tractogram file to be saved (default 'tractogram.trk')
+    Outputs
+    -------
+    tractogram : tck file
+        This file contains the resulting tractogram.
+    """
+
+    for dwi, mask, bval, bvec in zip(glob(input_files),
+                                     glob(mask_files),
                                      glob(bvalues),
                                      glob(bvectors)):
 
@@ -119,7 +147,7 @@ def deterministic_tracking_flow(dwi_paths, mask_paths, bvalues, bvectors, out_di
         hdr['n_count'] = len(streamlines_trk)
         hdr['origin'] = affine[:3, 3]
 
-        nib.trackvis.write(os.path.join(out_dir_path, 'tractogram.trk'),
+        nib.trackvis.write(os.path.join(out_dir_path, tractogram),
                            streamlines_trk,  hdr)
 
 
