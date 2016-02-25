@@ -3,7 +3,6 @@ import os
 
 import numpy as np
 import nibabel as nib
-import pickle
 
 from dipy.reconst.peaks import peaks_from_model, reshape_peaks_for_visualization
 from dipy.data import get_sphere
@@ -11,15 +10,54 @@ from dipy.core.gradients import gradient_table
 from dipy.io.gradients import read_bvals_bvecs
 from dipy.reconst.csdeconv import ConstrainedSphericalDeconvModel, auto_response
 
+from dipy.workflows.utils import choose_create_out_dir
 
-def compute_fodf(input, mask, bvalues, bvectors, out_dir):
-    print glob(input)
-    print glob(mask)
-    print glob(bvalues)
-    print glob(bvectors)
+def fodf_flow(input_files, mask_files, bvalues, bvectors, out_dir='',
+              fodf='fodf.nii.gz', peaks='peaks.nii.gz',
+              peaks_values='peaks_values.nii.gz',
+              peaks_indices='peaks_indices.nii.gz'):
+    """ Workflow for peaks computation. Peaks computation is done by 'globing'
+        ``input_files`` and saves the peaks in a directory specified by
+        ``out_dir``.
 
-    for dwi, maskfile, bval, bvec in zip(glob(input),
-                                         glob(mask),
+    Parameters
+    ----------
+    input_files : string
+        Path to the input volumes. This path may contain wildcards to process
+        multiple inputs at once.
+    mask_files : string
+        Path to the input masks. This path may contain wildcards to use
+        multiple masks at once.
+    bvalues : string
+        Path to the bvalues files. This path may contain wildcards to use
+        multiple bvalues files at once.
+    bvectors : string
+        Path to the bvalues files. This path may contain wildcards to use
+        multiple bvalues files at once.
+    out_dir : string, optional
+        Output directory (default input file directory)
+    fodf : string, optional
+        Name of the fodf volume to be saved (default 'fodf.nii.gz')
+    peaks : string, optional
+        Name of the peaks volume to be saved (default 'peaks.nii.gz')
+    peaks_values : string, optional
+        Name of the peaks_values volume to be saved (default 'peaks_values.nii.gz')
+    peaks_indices : string, optional
+        Name of the peaks_indices volume to be saved (default 'peaks_indices.nii.gz')
+    Outputs
+    -------
+    fodf : Nifti file
+        Fodf volume
+    peaks : Nifti file
+        Peaks volume
+    peaks_values : Nifti file
+        Peaks_values volume
+    peaks_indices : string, optional
+        Peaks_indices volume
+    """
+
+    for dwi, maskfile, bval, bvec in zip(glob(input_files),
+                                         glob(mask_files),
                                          glob(bvalues),
                                          glob(bvectors)):
 
@@ -74,26 +112,19 @@ def compute_fodf(input, mask, bvalues, bvectors, out_dir):
                                      normalize_peaks=True,
                                      parallel=False)
 
-        if out_dir == '':
-            out_dir_path = os.path.dirname(dwi)
-        elif not os.path.isabs(out_dir):
-            out_dir_path = os.path.join(os.path.dirname(dwi), out_dir)
-            if not os.path.exists(out_dir_path):
-                os.makedirs(out_dir_path)
-        else:
-            out_dir_path = out_dir
+        out_dir_path = choose_create_out_dir(out_dir, dwi)
 
         nib.save(nib.Nifti1Image(peaks_csd.shm_coeff.astype(np.float32),
                                  affine),
-                 os.path.join(out_dir_path, 'fodf.nii.gz'))
+                 os.path.join(out_dir_path, fodf))
 
         nib.save(nib.Nifti1Image(reshape_peaks_for_visualization(peaks_csd),
                                  affine),
-                 os.path.join(out_dir_path, 'peaks.nii.gz'))
+                 os.path.join(out_dir_path, peaks))
 
         nib.save(nib.Nifti1Image(peaks_csd.peak_values.astype(np.float32),
                                  affine),
-                 os.path.join(out_dir_path, 'peaks_values.nii.gz'))
+                 os.path.join(out_dir_path, peaks_values))
 
         nib.save(nib.Nifti1Image(peaks_csd.peak_indices, affine),
-                 os.path.join(out_dir_path, 'peaks_indices.nii.gz'))
+                 os.path.join(out_dir_path, peaks_indices))
