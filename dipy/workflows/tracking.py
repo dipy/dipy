@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-
 from __future__ import division
 
 import os
@@ -19,11 +18,36 @@ from dipy.data import default_sphere
 from dipy.direction import DeterministicMaximumDirectionGetter
 
 
-def track_EuDX(ref, peaks_values, peaks_idx, out_dir=''):
-    # Load Data volumes
+def EuDX_tracking_flow(ref, peaks_values, peaks_indexes, out_dir='',
+                       tractogram='tractogram.trk'):
+
+    """ Workflow for Eulder delta crossings tracking. Tracking is done by
+        'globing' ``input_files``, ``peaks_values``, and ``peaks_indexes``
+         and saves the tracks in a directory specified by ``out_dir``.
+
+    Parameters
+    ----------
+    ref : string
+        Path to the reference volume files. This path may contain wildcards to process
+        multiple inputs at once.
+    peaks_values : string
+        Path to the peaks values files. This path may contain wildcards to use
+        multiple masks at once.
+    peaks_indexes : string
+        Path to the peaks indexes files. This path may contain wildcards to use
+        multiple bvalues files at once.
+    out_dir : string, optional
+        Output directory (default input file directory)
+    tractogram : string, optional
+        Name of the tractogram file to be saved (default 'tractogram.trk')
+    Outputs
+    -------
+    tractogram : tck file
+        This file contains the resulting tractogram.
+    """
     for ref_path, peaks_values_path, peaks_idx_path in zip(glob(ref),
                                                            glob(peaks_values),
-                                                           glob(peaks_idx)):
+                                                           glob(peaks_indexes)):
         ref_img = nib.load(ref_path)
         ref_vol = ref_img.get_data()
         voxel_size = ref_img.get_header().get_zooms()[:3]
@@ -39,7 +63,6 @@ def track_EuDX(ref, peaks_values, peaks_idx, out_dir=''):
 
         # Save streamlines (tracking results)
         streamlines_trk = [(sl, None, None) for sl in tracks_iter]
-        print 'after list comp'
 
         hdr = nib.trackvis.empty_header()
         hdr['voxel_size'] = voxel_size
@@ -47,16 +70,8 @@ def track_EuDX(ref, peaks_values, peaks_idx, out_dir=''):
         hdr['dim'] = ref_vol.shape
         hdr['n_count'] = len(streamlines_trk)
 
-        if out_dir == '':
-            out_dir_path = os.path.dirname(ref_path)
-        elif not os.path.isabs(out_dir):
-            out_dir_path = os.path.join(os.path.dirname(ref_path), out_dir)
-            if not os.path.exists(out_dir_path):
-                os.makedirs(out_dir_path)
-        else:
-            out_dir_path = out_dir
-
-        nib.trackvis.write(os.path.join(out_dir_path, 'tractogram.trk'),
+        out_dir_path = choose_create_out_dir(out_dir, ref)
+        nib.trackvis.write(os.path.join(out_dir_path, tractogram),
                            streamlines_trk,
                            hdr)
 
@@ -66,6 +81,7 @@ def deterministic_tracking_flow(dwi_paths, mask_paths, bvalues, bvectors, out_di
                                      glob(mask_paths),
                                      glob(bvalues),
                                      glob(bvectors)):
+
         print('Deterministic tracking on {0}'.format(dwi))
         dwi_img = nib.load(dwi)
         affine = dwi_img.get_affine()
