@@ -99,7 +99,7 @@ def dti_metrics_flow(input_files, mask_files, bvalues, bvectors, out_dir='',
         else:
             mask = nib.load(mask).get_data().astype(np.bool)
 
-        tenfit, _ = get_fitted_tensor(data, mask, bval, bvec)
+        tenfit = get_fitted_tensor(data, mask, bval, bvec)
 
         out_dir_path = choose_create_out_dir(out_dir, dwi)
 
@@ -107,8 +107,6 @@ def dti_metrics_flow(input_files, mask_files, bvalues, bvectors, out_dir='',
         FA[np.isnan(FA)] = 0
         FA = np.clip(FA, 0, 1)
 
-        # Get the Tensor values and format them for visualisation
-        # in the Fibernavigator.
         tensor_vals = lower_triangular(tenfit.quadratic_form)
         correct_order = [0, 1, 3, 2, 4, 5]
         tensor_vals_reordered = tensor_vals[..., correct_order]
@@ -168,4 +166,4 @@ def get_fitted_tensor(data, mask, bval, bvec):
     tenmodel = TensorModel(gtab)
     tenfit = tenmodel.fit(data, mask)
 
-    return tenfit, gtab
+    return tenfit
