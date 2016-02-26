@@ -44,13 +44,13 @@ def test_skipper():
     f2 = doctest_skip_parser(f)
     assert_true(f is f2)
     assert_equal(f2.__doc__,
-                 """ Header
+        """ Header
 
-                 >>> something
-                 >>> something + else
-                 >>> a = 1 # doctest: +SKIP
-                 >>> something2   # doctest: +SKIP
-                 """)
+        >>> something
+        >>> something + else
+        >>> a = 1 # doctest: +SKIP
+        >>> something2   # doctest: +SKIP
+        """)
     del HAVE_AMODULE
     f.__doc__ = docstring
     assert_raises(NameError, doctest_skip_parser, f)
