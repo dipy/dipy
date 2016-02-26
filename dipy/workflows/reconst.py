@@ -12,7 +12,6 @@ from dipy.reconst.dti import (TensorModel, color_fa, fractional_anisotropy,
                               geodesic_anisotropy, mean_diffusivity,
                               axial_diffusivity, radial_diffusivity,
                               lower_triangular, mode as get_mode)
-
 from dipy.workflows.utils import choose_create_out_dir
 
 def dti_metrics_flow(input_files, mask_files, bvalues, bvectors, out_dir='',
