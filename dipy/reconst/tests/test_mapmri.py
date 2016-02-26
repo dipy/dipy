@@ -291,8 +291,8 @@ def test_mapmri_laplacian_anisotropic(radial_order=6):
 
     # check if estimated laplacian corresponds with ground truth
     laplacian_matrix = mapmri.mapmri_laplacian_reg_matrix(
-        mapm.ind_mat, mapfit.mu, mapm.R_mat,
-        mapm.L_mat, mapm.S_mat)
+        mapm.ind_mat, mapfit.mu, mapm.S_mat,
+        mapm.T_mat, mapm.U_mat)
 
     coef = mapfit._mapmri_coef
     norm_of_laplacian = np.dot(np.dot(coef, laplacian_matrix), coef)
@@ -542,8 +542,8 @@ def test_laplacian_regularization(radial_order=6):
     mu = mapfit_laplacian.mu
     R = mapfit_laplacian.R
     laplacian_matrix = mapmri.mapmri_laplacian_reg_matrix(
-        mapmod_laplacian.ind_mat, mu, mapmod_laplacian.R_mat,
-        mapmod_laplacian.L_mat, mapmod_laplacian.S_mat)
+        mapmod_laplacian.ind_mat, mu, mapmod_laplacian.S_mat,
+        mapmod_laplacian.T_mat, mapmod_laplacian.U_mat)
 
     coef_unreg = mapmod_unreg.fit(S_noise)._mapmri_coef
     coef_laplacian = mapfit_laplacian._mapmri_coef
