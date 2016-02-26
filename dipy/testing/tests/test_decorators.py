@@ -31,14 +31,13 @@ def test_skipper():
     f2 = doctest_skip_parser(f)
     assert_true(f is f2)
     assert_equal(f2.__doc__,
-                 """ Header
+        """ Header
 
-                 >>> something # doctest: +SKIP
-                 >>> something + else
-                 >>> a = 1
-                 >>> something2
-                 """
-                 )
+        >>> something # doctest: +SKIP
+        >>> something + else
+        >>> a = 1
+        >>> something2
+        """)
     HAVE_AMODULE = True
     HAVE_BMODULE = False
     f.__doc__ = docstring
