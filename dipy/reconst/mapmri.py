@@ -237,7 +237,7 @@ class MapmriModel(Cache):
         if self.anisotropic_scaling:
             self.ind_mat = mapmri_index_matrix(self.radial_order)
             self.Bm = b_mat(self.ind_mat)
-            self.R_mat, self.L_mat, self.S_mat = mapmri_RLS_reg_matrices(
+            self.S_mat, self.T_mat, self.U_mat = mapmri_STU_reg_matrices(
                 radial_order)
         else:
             self.ind_mat = mapmri_isotropic_index_matrix(self.radial_order)
@@ -295,7 +295,7 @@ class MapmriModel(Cache):
         if self.laplacian_regularization:
             if self.anisotropic_scaling:
                 laplacian_matrix = mapmri_laplacian_reg_matrix(
-                    self.ind_mat, mu, self.R_mat, self.L_mat, self.S_mat)
+                    self.ind_mat, mu, self.S_mat, self.T_mat, self.U_mat)
             else:
                 laplacian_matrix = self.laplacian_matrix * mu[0]
             if self.laplacian_weighting == 'GCV':
@@ -392,7 +392,7 @@ class MapmriFit(ReconstFit):
 
     def odf(self, sphere, s=2):
         r""" Calculates the analytical Orientation Distribution Function (ODF)
-        from the signal [1]_ Eq. 32.
+        from the signal [1]_ Eq. (32).
 
         Parameters
         ----------
@@ -425,14 +425,19 @@ class MapmriFit(ReconstFit):
     def odf_sh(self, s=2):
         r""" Calculates the real analytical odf for a given discrete sphere.
         Computes the design matrix of the ODF for the given sphere vertices
-        and radial moment. The radial moment s acts as a
-        sharpening method [1,2].
-        ..math::
-            :nowrap:
-                \begin{equation}\label{eq:ODF}
-                    \textrm{ODF}_s(\textbf{u}_r)=\int r^{2+s}
-                    P(r\cdot \textbf{u}_r)dr.
-                \end{equation}
+        and radial moment [1]_ eq. (32). The radial moment s acts as a
+        sharpening method. The analytical equation for the spherical ODF basis
+        is given in [2]_ eq. (C8).
+        
+        References
+        ----------
+        .. [1] Ozarslan E. et. al, "Mean apparent propagator (MAP) MRI: A novel
+        diffusion imaging method for mapping tissue microstructure",
+        NeuroImage, 2013.
+
+        .. [1]_ Fick et al. "MAPL: Tissue Microstructure Estimation Using
+        Laplacian-Regularized MAP-MRI and its Application to HCP Data",
+        NeuroImage, Under Review.
         """
         if self.model.anisotropic_scaling:
             msg = 'odf in spherical harmonics not yet implemented for '
@@ -450,13 +455,18 @@ class MapmriFit(ReconstFit):
 
     def rtpp(self):
         r""" Calculates the analytical return to the plane probability (RTPP)
-        [1]_.
+        [1]_ eq. (42). The analytical formula for the isotropic MAP-MRI
+        basis was derived in [2]_ eq. (C11).
 
         References
         ----------
         .. [1] Ozarslan E. et. al, "Mean apparent propagator (MAP) MRI: A novel
         diffusion imaging method for mapping tissue microstructure",
         NeuroImage, 2013.
+
+        .. [2]_ Fick et al. "MAPL: Tissue Microstructure Estimation Using
+        Laplacian-Regularized MAP-MRI and its Application to HCP Data",
+        NeuroImage, Under Review.
         """
         Bm = self.model.Bm
         ind_mat = self.ind_mat
@@ -497,13 +507,18 @@ class MapmriFit(ReconstFit):
 
     def rtap(self):
         r""" Calculates the analytical return to the axis probability (RTAP)
-        [1]_.
+        [1]_ eq. (40, 44a). The analytical formula for the isotropic MAP-MRI
+        basis was derived in [2]_ eq. (C11).
 
         References
         ----------
         .. [1] Ozarslan E. et. al, "Mean apparent propagator (MAP) MRI: A novel
         diffusion imaging method for mapping tissue microstructure",
         NeuroImage, 2013.
+
+        .. [2]_ Fick et al. "MAPL: Tissue Microstructure Estimation Using
+        Laplacian-Regularized MAP-MRI and its Application to HCP Data",
+        NeuroImage, Under Review.
         """
         Bm = self.model.Bm
         ind_mat = self.ind_mat
@@ -543,13 +558,18 @@ class MapmriFit(ReconstFit):
 
     def rtop(self):
         r""" Calculates the analytical return to the origin probability (RTOP)
-        [1]_.
+        [1]_ eq. (36, 43). The analytical formula for the isotropic MAP-MRI
+        basis was derived in [2]_ eq. (C11).
 
         References
         ----------
         .. [1] Ozarslan E. et. al, "Mean apparent propagator (MAP) MRI: A novel
         diffusion imaging method for mapping tissue microstructure",
         NeuroImage, 2013.
+
+        .. [2]_ Fick et al. "MAPL: Tissue Microstructure Estimation Using
+        Laplacian-Regularized MAP-MRI and its Application to HCP Data",
+        NeuroImage, Under Review.
         """
         Bm = self.model.Bm
 
@@ -568,7 +588,8 @@ class MapmriFit(ReconstFit):
     def msd(self):
         r""" Calculates the analytical Mean Squared Displacement (MSD).
         It is defined as the Laplacian of the origin of the estimated signal
-        [1]. The analytical formula for the MAP-MRI basis was derived in [2].
+        [1]_. The analytical formula for the MAP-MRI basis was derived in [2]_
+        eq. (C13, D1).
 
         References
         ----------
@@ -609,8 +630,8 @@ class MapmriFit(ReconstFit):
     def qiv(self):
         r""" Calculates the analytical Q-space Inverse Variance (QIV).
         It is defined as the inverse of the Laplacian of the origin of the
-        estimated propagator [1] .The analytical formula for the MAP-MRI basis
-        was derived in [2].
+        estimated propagator [1]_ eq. (22). The analytical formula for the
+        MAP-MRI basis was derived in [2]_ eq. (C14, D2).
 
         References
         ----------
@@ -641,7 +662,7 @@ class MapmriFit(ReconstFit):
             qiv_vec = self._mapmri_coef[sel] * (numerator / denominator)
             qiv = qiv_vec.sum()
         else:
-            sel = self.model.Bm > 0.
+            sel = self.model.Bm > 0.  # select only relevant coefficients
             j = ind_mat[sel, 0]
             qiv_vec = ((8 * (-1) ** (1 - j) * np.sqrt(2) * np.pi ** (7 / 2.))
                        / ((4 * j - 1) * self.model.Bm[sel]))
@@ -650,7 +671,10 @@ class MapmriFit(ReconstFit):
         return qiv
 
     def ng(self):
-        r""" Calculates the analytical non-Gaussiannity (NG) [1]_.
+        r""" Calculates the analytical non-Gaussiannity (NG) [1]_. 
+        For the NG to be meaningful the mapmri scale factors must be
+        estimated only on data representing Gaussian diffusion of spins, i.e.,
+        bvals smaller than about 2000 s/mm^2 [2]_.
 
         References
         ----------
@@ -676,6 +700,9 @@ class MapmriFit(ReconstFit):
 
     def ng_parallel(self):
         r""" Calculates the analytical parallel non-Gaussiannity (NG) [1]_.
+        For the NG to be meaningful the mapmri scale factors must be
+        estimated only on data representing Gaussian diffusion of spins, i.e.,
+        bvals smaller than about 2000 s/mm^2 [2]_.
 
         References
         ----------
@@ -712,7 +739,10 @@ class MapmriFit(ReconstFit):
         return np.sqrt(1 - np.sum(a0 ** 2) / np.sum(a_par ** 2))
 
     def ng_perpendicular(self):
-        r""" Calculates the analytical perpendicular non-Gaussiannity (NG) [1]_.
+        r""" Calculates the analytical perpendicular non-Gaussiannity (NG)
+        [1]_. For the NG to be meaningful the mapmri scale factors must be
+        estimated only on data representing Gaussian diffusion of spins, i.e.,
+        bvals smaller than about 2000 s/mm^2 [2]_.
 
         References
         ----------
@@ -810,8 +840,18 @@ class MapmriFit(ReconstFit):
 
 
 def isotropic_scale_factor(mu_squared):
-    r"""Estimated isotropic scaling factor _[1] Eq. (49)
+    r"""Estimated isotropic scaling factor _[1] Eq. (49).
 
+    Parameters
+    ----------
+    mu_squared : array, shape (N,3)
+        squared scale factors of mapmri basis in x, y, z
+
+    Returns
+    -------
+    u0 : float
+        closest isotropic scale factor for the isotropic basis
+ 
     References
     ----------
     .. [1] Ozarslan E. et. al, "Mean apparent propagator (MAP) MRI: A novel
@@ -821,6 +861,7 @@ def isotropic_scale_factor(mu_squared):
     X, Y, Z = mu_squared
     coef_array = np.array([-3, -(X + Y + Z), (X * Y + X * Z + Y * Z),
                            3 * X * Y * Z])
+    # take the real, positive root of the problem.
     u0 = np.sqrt(np.real(np.roots(coef_array).max()))
     return u0
 
@@ -853,8 +894,8 @@ def mapmri_index_matrix(radial_order):
     return np.array(index_matrix)
 
 
-def b_mat(ind_mat):
-    r""" Calculates the B coefficients from [1]_ Eq. 27.
+def b_mat(index_matrix):
+    r""" Calculates the B coefficients from [1]_ Eq. (27).
 
     Parameters
     ----------
@@ -873,9 +914,9 @@ def b_mat(ind_mat):
     NeuroImage, 2013.
     """
 
-    B = np.zeros(ind_mat.shape[0])
-    for i in range(ind_mat.shape[0]):
-        n1, n2, n3 = ind_mat[i]
+    B = np.zeros(index_matrix.shape[0])
+    for i in range(index_matrix.shape[0]):
+        n1, n2, n3 = index_matrix[i]
         K = int(not(n1 % 2) and not(n2 % 2) and not(n3 % 2))
         B[i] = (
             K * np.sqrt(factorial(n1) * factorial(n2) * factorial(n3)) /
@@ -885,18 +926,18 @@ def b_mat(ind_mat):
     return B
 
 
-def b_mat_isotropic(ind_mat_isotropic):
-    r""" Calculates the isotropic B coefficients from [1]_ Appendix, Fig 8.
+def b_mat_isotropic(index_matrix):
+    r""" Calculates the isotropic B coefficients from [1]_ Fig 8.
 
     Parameters
     ----------
     index_matrix : array, shape (N,3)
-        ordering of the basis in x, y, z
+        ordering of the isotropic basis in j, l, m
 
     Returns
     -------
     B : array, shape (N,)
-        B coefficients for the basis
+        B coefficients for the isotropic basis
 
     References
     ----------
@@ -905,16 +946,16 @@ def b_mat_isotropic(ind_mat_isotropic):
     NeuroImage, 2013.
     """
 
-    b_mat = np.zeros((ind_mat_isotropic.shape[0]))
-    for i in range(ind_mat_isotropic.shape[0]):
-        if ind_mat_isotropic[i, 1] == 0:
-            b_mat[i] = genlaguerre(ind_mat_isotropic[i, 0] - 1, 0.5)(0)
+    B = np.zeros((index_matrix.shape[0]))
+    for i in range(index_matrix.shape[0]):
+        if index_matrix[i, 1] == 0:
+            B[i] = genlaguerre(index_matrix[i, 0] - 1, 0.5)(0)
 
-    return b_mat
+    return B
 
 
 def mapmri_phi_1d(n, q, mu):
-    r""" One dimensional MAPMRI basis function from [1]_ Eq. 4.
+    r""" One dimensional MAPMRI basis function from [1]_ Eq. (4).
 
     Parameters
     -------
@@ -944,7 +985,7 @@ def mapmri_phi_1d(n, q, mu):
 
 
 def mapmri_phi_matrix(radial_order, mu, q_gradients):
-    r"""Compute the MAPMRI phi matrix for the signal [1]_
+    r"""Compute the MAPMRI phi matrix for the signal [1]_ eq. (23).
 
     Parameters
     ----------
@@ -993,7 +1034,7 @@ def mapmri_phi_matrix(radial_order, mu, q_gradients):
 
 
 def mapmri_psi_1d(n, x, mu):
-    r""" One dimensional MAPMRI propagator basis function from [1]_ Eq. 10.
+    r""" One dimensional MAPMRI propagator basis function from [1]_ Eq. (10).
 
     Parameters
     ----------
@@ -1020,7 +1061,7 @@ def mapmri_psi_1d(n, x, mu):
 
 
 def mapmri_psi_matrix(radial_order, mu, rgrad):
-    r"""Compute the MAPMRI psi matrix for the propagator [1]_
+    r"""Compute the MAPMRI psi matrix for the propagator [1]_ eq. (22).
 
     Parameters
     ----------
@@ -1065,7 +1106,7 @@ def mapmri_psi_matrix(radial_order, mu, rgrad):
 
 
 def mapmri_odf_matrix(radial_order, mu, s, vertices):
-    r"""Compute the MAPMRI ODF matrix [1]_  Eq. 33.
+    r"""Compute the MAPMRI ODF matrix [1]_  Eq. (33).
 
     Parameters
     ----------
@@ -1113,7 +1154,7 @@ def mapmri_odf_matrix(radial_order, mu, s, vertices):
 
 
 def _odf_cfunc(n1, n2, n3, a, b, g, s):
-    r"""Compute the MAPMRI ODF function from [1]_  Eq. 34.
+    r"""Compute the MAPMRI ODF function from [1]_  Eq. (34).
 
     References
     ----------
@@ -1145,16 +1186,16 @@ def _odf_cfunc(n1, n2, n3, a, b, g, s):
 
 def mapmri_isotropic_phi_matrix(radial_order, mu, q):
     r""" Three dimensional isotropic MAPMRI signal basis function from [1]_
-    Eq. 57.
+    Eq. (61).
 
     Parameters
     ----------
-    n : array, shape (3,)
-        order of the basis function for x, y, z
+    radial_order : unsigned int,
+        radial order of the mapmri basis.
+    mu : float,
+        positive isotropic scale factor of the basis
     q : array, shape (N,3)
         points in the q-space in which evaluate the basis
-    mu : float,
-        isotropic scale factor of the basis
 
     References
     ----------
@@ -1183,7 +1224,24 @@ def mapmri_isotropic_phi_matrix(radial_order, mu, q):
 
 
 def mapmri_isotropic_radial_signal_basis(j, l, mu, qval):
-    r"""Radial part of the isotropic 1D-SHORE signal basis.
+    r"""Radial part of the isotropic 1D-SHORE signal basis [1]_ eq. (61).
+
+    Parameters
+    ----------
+    j : unsigned int,
+        a positive integer related to the radial order
+    l : unsigned int,
+        the spherical harmonic order
+    mu : float,
+        isotropic scale factor of the basis
+    qval : float,
+        points in the q-space in which evaluate the basis
+
+    References
+    ----------
+    .. [1] Ozarslan E. et. al, "Mean apparent propagator (MAP) MRI: A novel
+    diffusion imaging method for mapping tissue microstructure",
+    NeuroImage, 2013.
     """
     pi2_mu2_q2 = 2 * np.pi ** 2 * mu ** 2 * qval ** 2
     const = (
@@ -1244,16 +1302,16 @@ def mapmri_isotropic_M_mu_dependent(radial_order, mu, qval):
 
 def mapmri_isotropic_psi_matrix(radial_order, mu, rgrad):
     r""" Three dimensional isotropic MAPMRI propagator basis function from [1]_
-    Eq. 61.
+    Eq. (61).
 
     Parameters
     ----------
-    n : array, shape (3,)
-        order of the basis function for x, y, z
+    radial_order : unsigned int,
+        radial order of the mapmri basis.
+    mu : float,
+        positive isotropic scale factor of the basis
     rgrad : array, shape (N,3)
         points in the r-space in which evaluate the basis
-    mu : array, shape (3,)
-        isotropic scale factor of the basis
 
     References
     ----------
@@ -1284,7 +1342,24 @@ def mapmri_isotropic_psi_matrix(radial_order, mu, rgrad):
 
 
 def mapmri_isotropic_radial_pdf_basis(j, l, mu, r):
-    r"""Radial part of the isotropic 1D-SHORE PDF basis.
+    r"""Radial part of the isotropic 1D-SHORE propagator basis [1]_ eq. (61).
+
+    Parameters
+    ----------
+    j : unsigned int,
+        a positive integer related to the radial order
+    l : unsigned int,
+        the spherical harmonic order
+    mu : float,
+        isotropic scale factor of the basis
+    r : float,
+        points in the r-space in which evaluate the basis
+
+    References
+    ----------
+    .. [1] Ozarslan E. et. al, "Mean apparent propagator (MAP) MRI: A novel
+    diffusion imaging method for mapping tissue microstructure",
+    NeuroImage, 2013.
     """
     r2u2 = r ** 2 / (2 * mu ** 2)
     const = (
@@ -1352,7 +1427,8 @@ def binomialfloat(n, k):
 
 def mapmri_isotropic_odf_matrix(radial_order, mu, s, vertices):
     r"""Compute the isotropic MAPMRI ODF matrix [1]_ Eq. 32 but for the
-    isotropic propagator in [1]_ eq. 60. Analytical derivation in [2]_.
+    isotropic propagator in [1]_ eq. (60). Analytical derivation in
+    [2]_ eq. (C8).
 
     Parameters
     ----------
@@ -1409,10 +1485,10 @@ def mapmri_isotropic_odf_matrix(radial_order, mu, s, vertices):
 
 def mapmri_isotropic_odf_sh_matrix(radial_order, mu, s):
     r"""Compute the isotropic MAPMRI ODF matrix [1]_ Eq. 32 for the isotropic
-    propagator in [1]_ eq. 60. Here we do not compute the sphere function but
+    propagator in [1]_ eq. (60). Here we do not compute the sphere function but
     the spherical harmonics by only integrating the radial part of the
     propagator. We use the same derivation of the ODF in the isotropic
-    implementation as in [2]_.
+    implementation as in [2]_ eq. (C8).
 
     Parameters
     ----------
@@ -1464,7 +1540,7 @@ def mapmri_isotropic_odf_sh_matrix(radial_order, mu, s):
 
 def mapmri_isotropic_laplacian_reg_matrix(radial_order, mu):
     r''' Computes the Laplacian regularization matrix for MAP-MRI's isotropic
-    implementation [1]_.
+    implementation [1]_ eq. (C7).
 
     Parameters
     ----------
@@ -1521,7 +1597,7 @@ def mapmri_isotropic_laplacian_reg_matrix(radial_order, mu):
 
 
 def mapmri_isotropic_index_matrix(radial_order):
-    r""" Calculates the indices for the isotropic MAPMRI [1]_ basis.
+    r""" Calculates the indices for the isotropic MAPMRI basis [1]_ Fig 8.
 
     Parameters
     ----------
@@ -1590,8 +1666,8 @@ def delta(n, m):
     return 0
 
 
-def map_laplace_s(n, m):
-    """ S(n, m) static matrix for Laplacian regularization [1]_.
+def map_laplace_u(n, m):
+    """ S(n, m) static matrix for Laplacian regularization [1]_ eq. (13).
     Parameters
     ----------
     n, m : unsigned int
@@ -1599,8 +1675,8 @@ def map_laplace_s(n, m):
 
     Returns
     -------
-    R, L, S : Matrices, shape (N_coef,N_coef)
-        Regularization submatrices
+    U : float,
+        Analytical integral of $\phi_n(q) * \phi_m(q)$
 
     References
     ----------
@@ -1611,8 +1687,8 @@ def map_laplace_s(n, m):
     return (-1) ** n * delta(n, m) / (2 * np.sqrt(np.pi))
 
 
-def map_laplace_l(n, m):
-    """ L(m, n) static matrix for Laplacian regularization [1]_.
+def map_laplace_t(n, m):
+    """ L(m, n) static matrix for Laplacian regularization [1]_ eq. (12).
     Parameters
     ----------
     n, m : unsigned int
@@ -1620,8 +1696,8 @@ def map_laplace_l(n, m):
 
     Returns
     -------
-    R, L, S : Matrices, shape (N_coef,N_coef)
-        Regularization submatrices
+    T : float
+        Analytical integral of $\phi_n(q) * \phi_m''(q)$
 
     References
     ----------
@@ -1635,8 +1711,8 @@ def map_laplace_l(n, m):
     return np.pi ** (3 / 2.) * (-1) ** (n + 1) * (a + b + c)
 
 
-def map_laplace_r(n, m):
-    """ R(m,n) static matrix for Laplacian regularization [1]_.
+def map_laplace_s(n, m):
+    """ R(m,n) static matrix for Laplacian regularization [1]_ eq. (11).
     Parameters
     ----------
     n, m : unsigned int
@@ -1644,8 +1720,8 @@ def map_laplace_r(n, m):
 
     Returns
     -------
-    R, L, S : Matrices, shape (N_coef,N_coef)
-        Regularization submatrices
+    S : float
+        Analytical integral of $\phi_n''(q) * \phi_m''(q)$
 
     References
     ----------
@@ -1673,9 +1749,9 @@ def map_laplace_r(n, m):
     return k * (a0 + an2 + an4 + am2 + am4)
 
 
-def mapmri_RLS_reg_matrices(radial_order):
+def mapmri_STU_reg_matrices(radial_order):
     """ Generates the static portions of the Laplacian regularization matrix
-    according to [1]_.
+    according to [1]_ eq. (11, 12, 13).
 
     Parameters
     ----------
@@ -1684,7 +1760,7 @@ def mapmri_RLS_reg_matrices(radial_order):
 
     Returns
     -------
-    R, L, S : Matrices, shape (N_coef,N_coef)
+    S, T, U : Matrices, shape (N_coef,N_coef)
         Regularization submatrices
 
     References
@@ -1693,26 +1769,26 @@ def mapmri_RLS_reg_matrices(radial_order):
     Laplacian-Regularized MAP-MRI and its Application to HCP Data",
     NeuroImage, Under Review.
     """
-    R = np.zeros((radial_order + 1, radial_order + 1))
-    for i in range(radial_order + 1):
-        for j in range(radial_order + 1):
-            R[i, j] = map_laplace_r(i, j)
-
-    L = np.zeros((radial_order + 1, radial_order + 1))
-    for i in range(radial_order + 1):
-        for j in range(radial_order + 1):
-            L[i, j] = map_laplace_l(i, j)
-
     S = np.zeros((radial_order + 1, radial_order + 1))
     for i in range(radial_order + 1):
         for j in range(radial_order + 1):
             S[i, j] = map_laplace_s(i, j)
-    return R, L, S
+
+    T = np.zeros((radial_order + 1, radial_order + 1))
+    for i in range(radial_order + 1):
+        for j in range(radial_order + 1):
+            T[i, j] = map_laplace_t(i, j)
+
+    U = np.zeros((radial_order + 1, radial_order + 1))
+    for i in range(radial_order + 1):
+        for j in range(radial_order + 1):
+            U[i, j] = map_laplace_u(i, j)
+    return S, T, U
 
 
-def mapmri_laplacian_reg_matrix(ind_mat, mu, R_mat, L_mat, S_mat):
-    """ Puts the Laplacian regularization matrix together [1]_.
-    The static parts in R, L and S are multiplied and divided by the
+def mapmri_laplacian_reg_matrix(ind_mat, mu, S_mat, T_mat, U_mat):
+    """ Puts the Laplacian regularization matrix together [1]_ eq. (10).
+    The static parts in S, T and U are multiplied and divided by the
     voxel-specific scale factors.
 
     Parameters
@@ -1721,7 +1797,7 @@ def mapmri_laplacian_reg_matrix(ind_mat, mu, R_mat, L_mat, S_mat):
         Basis order matrix
     mu : array, shape (3,)
         scale factors of the basis for x, y, z
-    R, L, S : matrices, shape (N_coef,N_coef)
+    S, T, U : matrices, shape (N_coef,N_coef)
         Regularization submatrices
 
     Returns
@@ -1752,23 +1828,23 @@ def mapmri_laplacian_reg_matrix(ind_mat, mu, R_mat, L_mat, S_mat):
                ):
                 LR[i, j] = LR[j, i] = \
                     (ux ** 3 / (uy * uz)) *\
-                    R_mat[x[i], x[j]] * S_mat[y[i], y[j]] * S_mat[z[i], z[j]] +\
+                    S_mat[x[i], x[j]] * U_mat[y[i], y[j]] * U_mat[z[i], z[j]] +\
                     (uy ** 3 / (ux * uz)) *\
-                    R_mat[y[i], y[j]] * S_mat[z[i], z[j]] * S_mat[x[i], x[j]] +\
+                    S_mat[y[i], y[j]] * U_mat[z[i], z[j]] * U_mat[x[i], x[j]] +\
                     (uz ** 3 / (ux * uy)) *\
-                    R_mat[z[i], z[j]] * S_mat[x[i], x[j]] * S_mat[y[i], y[j]] +\
+                    S_mat[z[i], z[j]] * U_mat[x[i], x[j]] * U_mat[y[i], y[j]] +\
                     2 * ((ux * uy) / uz) *\
-                    L_mat[x[i], x[j]] * L_mat[y[i], y[j]] * S_mat[z[i], z[j]] +\
+                    T_mat[x[i], x[j]] * T_mat[y[i], y[j]] * U_mat[z[i], z[j]] +\
                     2 * ((ux * uz) / uy) *\
-                    L_mat[x[i], x[j]] * L_mat[z[i], z[j]] * S_mat[y[i], y[j]] +\
+                    T_mat[x[i], x[j]] * T_mat[z[i], z[j]] * U_mat[y[i], y[j]] +\
                     2 * ((uz * uy) / ux) *\
-                    L_mat[z[i], z[j]] * L_mat[y[i], y[j]] * S_mat[x[i], x[j]]
+                    T_mat[z[i], z[j]] * T_mat[y[i], y[j]] * U_mat[x[i], x[j]]
 
     return LR
 
 
 def generalized_crossvalidation(data, M, LR, weights_array=None):
-    """Generalized Cross Validation Function [1]_.
+    """Generalized Cross Validation Function [1]_ eq. (15).
     Here weights_array is a numpy array with all values that should be
     considered in the GCV. It will run through the weights until the cost
     function starts to increase, then stop and take the last value as the
