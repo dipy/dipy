@@ -11,7 +11,7 @@ from dipy.workflows.utils import choose_create_out_dir
 
 
 def nlmeans_flow(input_files, out_dir='',
-                 out_filename='dwi_2x2x2_nlmeans.nii.gz', sigma=0):
+                 denoised='dwi_2x2x2_nlmeans.nii.gz', sigma=0):
     """ Workflow wrapping the nlmeans denoising method.
 
     It applies nlmeans denoise on each file found by 'globing'
@@ -51,7 +51,7 @@ def nlmeans_flow(input_files, out_dir='',
             denoised_data, image.get_affine(), image.get_header())
 
         out_dir_path = choose_create_out_dir(out_dir, fpath)
-        out_file_path = os.path.join(out_dir_path, out_filename)
+        out_file_path = os.path.join(out_dir_path, denoised)
 
         denoised_image.to_filename(out_file_path)
         print('Denoised volume saved as {0}'.format(out_file_path))
