@@ -122,8 +122,7 @@ class EuDX(object):
         >>> ten = model.fit(data)
         >>> sphere = get_sphere('symmetric724')
         >>> ind = quantize_evecs(ten.evecs, sphere.vertices)
-        >>> eu = EuDX(a=ten.fa, ind=ind, seeds=100,
-                      odf_vertices=sphere.vertices, a_low=.2)
+        >>> eu = EuDX(a=ten.fa, ind=ind, seeds=100, odf_vertices=sphere.vertices, a_low=.2)
         >>> tracks = [e for e in eu]
 
         Notes
