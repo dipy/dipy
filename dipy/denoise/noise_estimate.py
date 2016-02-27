@@ -105,8 +105,8 @@ def piesno(data, N, alpha=0.01, l=100, itermax=100, eps=1e-5,
         q = 0.5
 
     # Initial estimation of sigma
-    initial_estimation = np.percentile(data, q * 100) / \
-        np.sqrt(2 * _inv_nchi_cdf(N, 1, q))
+    initial_estimation = (np.percentile(data, q * 100) / 
+                          np.sqrt(2 * _inv_nchi_cdf(N, 1, q)))
 
     if data.ndim == 4:
 
