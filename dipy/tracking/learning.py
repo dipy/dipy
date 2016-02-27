@@ -89,8 +89,7 @@ def detect_corresponding_tracks_plus(indices, tracks1, indices2, tracks2):
     >>> bundle2=[B,A]
     >>> indices=[0,1]
     >>> indices2=indices
-    >>> arr=tl.detect_corresponding_tracks_plus(indices,bundle1,indices2,
-    >>>                                         bundle2)
+    >>> arr=tl.detect_corresponding_tracks_plus(indices,bundle1,indices2, bundle2)
 
     Notes
     -------
