@@ -17,49 +17,50 @@ iview.width = 600
 I.trait_view('traits_view', iview)
 
 main_view = View(Group(Group(
-                             Item( 'dwi_images' ),
-                             Item( 'all_inputs' ),
-                             Item( 'min_signal' ),
-                             Item( 'seed_roi' ),
-                             Item( 'seed_density', editor=ArrayEditor() ),
+                             Item('dwi_images'),
+                             Item('all_inputs'),
+                             Item('min_signal'),
+                             Item('seed_roi'),
+                             Item('seed_density', editor=ArrayEditor()),
                              show_border=True),
                        Group(
-                             Item( 'smoothing_kernel_type' ),
-                             Item( 'smoothing_kernel' ),
+                             Item('smoothing_kernel_type'),
+                             Item('smoothing_kernel'),
                              show_border=True),
                        Group(
-                             Item( 'interpolator' ),
-                             Item( 'model_type' ),
-                             Item( 'sh_order' ),
-                             Item( 'Lambda' ),
-                             Item( 'sphere_coverage' ),
-                             Item( 'min_peak_spacing' ),
-                             Item( 'min_relative_peak' ),
+                             Item('interpolator'),
+                             Item('model_type'),
+                             Item('sh_order'),
+                             Item('Lambda'),
+                             Item('sphere_coverage'),
+                             Item('min_peak_spacing'),
+                             Item('min_relative_peak'),
                              show_border=True),
                        Group(
-                             Item( 'probabilistic' ),
+                             Item('probabilistic'),
                              show_border=True),
                        Group(
-                             #Item( 'integrator' ),
-                             Item( 'seed_largest_peak', ),
-                             Item( 'track_two_directions' ),
-                             Item( 'start_direction', editor=ArrayEditor(),
-                                   enabled_when='not (seed_largest_peak and '
-                                                'track_two_directions)'),
-                             Item( 'fa_threshold' ),
-                             Item( 'max_turn_angle' ),
+                             # Item( 'integrator' ),
+                             Item('seed_largest_peak',),
+                             Item('track_two_directions'),
+                             Item('start_direction', editor=ArrayEditor(),
+                                  enabled_when='not (seed_largest_peak and '
+                                               'track_two_directions)'),
+                             Item('fa_threshold'),
+                             Item('max_turn_angle'),
                              show_border=True),
                        Group(
-                             Item( 'stop_on_target' ),
-                             Item( 'targets' ),
+                             Item('stop_on_target'),
+                             Item('targets'),
                              show_border=True),
                        Group(
-                             Item( 'save_streamlines_to' ),
-                             Item( 'save_counts_to' ),
+                             Item('save_streamlines_to'),
+                             Item('save_counts_to'),
                              show_border=True),
-                       orientation = 'vertical'),
-                buttons=['OK', 'Cancel'], width=600, close_result=False,
-                resizable=True, scrollable=True)
+                       orientation='vertical'),
+                 buttons=['OK', 'Cancel'], width=600, close_result=False,
+                 resizable=True, scrollable=True)
+
 
 def gui_track(interface=None):
     if interface is None:
@@ -75,4 +76,3 @@ def gui_track(interface=None):
         interface.save_streamlines(streamlines, interface.save_streamlines_to)
     if interface.save_counts_to:
         interface.save_counts(streamlines, interface.save_counts_to)
-
