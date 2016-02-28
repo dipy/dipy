@@ -38,7 +38,8 @@ def slicer(data, affine=None, value_range=None, opacity=1.,
     opacity : float
         Opacity of 0 means completely transparent and 1 completely visible.
     lookup_colormap : vtkLookupTable
-        If None (default) then a grayscale map is created.
+        If None (default) then a grayscale map is created. It doesn't apply
+        to rgb volumes where the lookup colormap is ignored.
     interpolation : string
         If 'linear' (default) then linear interpolation is used on the final
         texture mapping. If 'nearest' then nearest neighbor interpolation is
@@ -53,6 +54,8 @@ def slicer(data, affine=None, value_range=None, opacity=1.,
         coordinates as calculated by the affine parameter.
 
     """
+
+    # Verify number of components
     if data.ndim != 3:
         if data.ndim == 4:
             if data.shape[3] != 3:
@@ -64,12 +67,14 @@ def slicer(data, affine=None, value_range=None, opacity=1.,
     else:
         nb_components = 1
 
+    # Rescale data
     if value_range is None:
         data = np.interp(data, xp=[data.min(), data.max()], fp=[0, 255])
     else:
         data = np.interp(data, xp=[value_range[0], value_range[1]], fp=[0, 255])
     data = data.astype('uint8')
 
+    # Allocate VTK Image Data
     im = vtk.vtkImageData()
     if major_version <= 5:
         im.SetScalarTypeToUnsignedChar()
@@ -80,29 +85,19 @@ def slicer(data, affine=None, value_range=None, opacity=1.,
     I, J, K = data.shape[:3]
     im.SetDimensions(I, J, K)
     voxsz = (1., 1., 1.)
-    # im.SetOrigin(0,0,0)
     im.SetSpacing(voxsz[2], voxsz[0], voxsz[1])
 
-    # copy data
-    # what I do below is the same as what is commented here but much faster
-    # for index in ndindex(data.shape):
-    #     i, j, k = index
-    #     im.SetScalarComponentFromFloat(i, j, k, 0, data[i, j, k])
-    data = np.swapaxes(data, 0, 2)
-    data = np.ascontiguousarray(data)
-
+    # Set numpy data to VTK Image Data
+    data = np.ascontiguousarray(np.swapaxes(data, 0, 2))
     if nb_components == 1:
         data = data.ravel()
     else:
         data = np.reshape(data, [np.prod(data.shape[:3]), data.shape[3]])
+    im.GetPointData().SetScalars(numpy_support.numpy_to_vtk(data, deep=0))
 
-    uchar_array = numpy_support.numpy_to_vtk(data, deep=0)
-    im.GetPointData().SetScalars(uchar_array)
-
+    # Set the transform
     if affine is None:
         affine = np.eye(4)
-
-    # Set the transform (identity if none given)
     transform = vtk.vtkTransform()
     transform_matrix = vtk.vtkMatrix4x4()
     transform_matrix.DeepCopy((
@@ -118,17 +113,15 @@ def slicer(data, affine=None, value_range=None, opacity=1.,
     set_input(image_resliced, im)
     image_resliced.SetResliceTransform(transform)
     image_resliced.AutoCropOutputOn()
-
     # Adding this will allow to support anisotropic voxels
     # and also gives the opportunity to slice per voxel coordinates
-
     RZS = affine[:3, :3]
     zooms = np.sqrt(np.sum(RZS * RZS, axis=0))
     image_resliced.SetOutputSpacing(*zooms)
-
     image_resliced.SetInterpolationModeToLinear()
     image_resliced.Update()
 
+    # Set the lookup table
     if nb_components == 1:
         if lookup_colormap is None:
             # Create a black/white lookup table.
@@ -136,13 +129,14 @@ def slicer(data, affine=None, value_range=None, opacity=1.,
         else:
             lut = lookup_colormap
 
+    # Set image and display extents
     x1, x2, y1, y2, z1, z2 = im.GetExtent()
     ex1, ex2, ey1, ey2, ez1, ez2 = image_resliced.GetOutput().GetExtent()
 
+    # Define VTK Image Actor
     class ImageActor(vtk.vtkImageActor):
-
         def input_connection(self, output):
-            if vtk.VTK_MAJOR_VERSION <= 5:
+            if major_version <= 5:
                 self.SetInput(output.GetOutput())
             else:
                 self.GetMapper().SetInputConnection(output.GetOutputPort())
@@ -151,7 +145,7 @@ def slicer(data, affine=None, value_range=None, opacity=1.,
 
         def display_extent(self, x1, x2, y1, y2, z1, z2):
             self.SetDisplayExtent(x1, x2, y1, y2, z1, z2)
-            if vtk.VTK_MAJOR_VERSION > 5:
+            if major_version >= 6:
                 self.Update()
 
         def display(self, x=None, y=None, z=None):
@@ -165,7 +159,7 @@ def slicer(data, affine=None, value_range=None, opacity=1.,
                 self.display_extent(ex1, ex2, ey1, ey2, z, z)
 
         def opacity(self, value):
-            if vtk.VTK_MAJOR_VERSION <= 5:
+            if major_version <= 5:
                 self.SetOpacity(value)
             else:
                 self.GetProperty().SetOpacity(value)
