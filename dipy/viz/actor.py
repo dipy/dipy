@@ -73,16 +73,15 @@ def slicer(data, affine=None, value_range=None, opacity=1.,
     im = vtk.vtkImageData()
     if major_version <= 5:
         im.SetScalarTypeToUnsignedChar()
+        im.SetNumberOfScalarComponents(nb_components)
+        im.AllocateScalars()
+    else:
+        im.AllocateScalars(vtk.VTK_UNSIGNED_CHAR, nb_components)
     I, J, K = data.shape[:3]
     im.SetDimensions(I, J, K)
     voxsz = (1., 1., 1.)
     # im.SetOrigin(0,0,0)
     im.SetSpacing(voxsz[2], voxsz[0], voxsz[1])
-    if major_version <= 5:
-        im.AllocateScalars()
-        im.SetNumberOfScalarComponents(nb_components)
-    else:
-        im.AllocateScalars(vtk.VTK_UNSIGNED_CHAR, nb_components)
 
     # copy data
     # what I do below is the same as what is commented here but much faster
