@@ -65,15 +65,15 @@ def slicer(data, affine=None, value_range=None, opacity=1.,
         nb_components = 1
 
     if value_range is None:
-        vol = np.interp(data, xp=[data.min(), data.max()], fp=[0, 255])
+        data = np.interp(data, xp=[data.min(), data.max()], fp=[0, 255])
     else:
-        vol = np.interp(data, xp=[value_range[0], value_range[1]], fp=[0, 255])
-    vol = vol.astype('uint8')
+        data = np.interp(data, xp=[value_range[0], value_range[1]], fp=[0, 255])
+    data = data.astype('uint8')
 
     im = vtk.vtkImageData()
     if major_version <= 5:
         im.SetScalarTypeToUnsignedChar()
-    I, J, K = vol.shape[:3]
+    I, J, K = data.shape[:3]
     im.SetDimensions(I, J, K)
     voxsz = (1., 1., 1.)
     # im.SetOrigin(0,0,0)
@@ -86,18 +86,18 @@ def slicer(data, affine=None, value_range=None, opacity=1.,
 
     # copy data
     # what I do below is the same as what is commented here but much faster
-    # for index in ndindex(vol.shape):
+    # for index in ndindex(data.shape):
     #     i, j, k = index
-    #     im.SetScalarComponentFromFloat(i, j, k, 0, vol[i, j, k])
-    vol = np.swapaxes(vol, 0, 2)
-    vol = np.ascontiguousarray(vol)
+    #     im.SetScalarComponentFromFloat(i, j, k, 0, data[i, j, k])
+    data = np.swapaxes(data, 0, 2)
+    data = np.ascontiguousarray(data)
 
     if nb_components == 1:
-        vol = vol.ravel()
+        data = data.ravel()
     else:
-        vol = np.reshape(vol, [np.prod(vol.shape[:3]), vol.shape[3]])
+        data = np.reshape(data, [np.prod(data.shape[:3]), data.shape[3]])
 
-    uchar_array = numpy_support.numpy_to_vtk(vol, deep=0)
+    uchar_array = numpy_support.numpy_to_vtk(data, deep=0)
     im.GetPointData().SetScalars(uchar_array)
 
     if affine is None:
