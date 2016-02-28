@@ -67,21 +67,23 @@ def slicer(data, affine=None, value_range=None, opacity=1.,
     else:
         nb_components = 1
 
-    # Rescale data
-    if value_range is None:
-        data = np.interp(data, xp=[data.min(), data.max()], fp=[0, 255])
-    else:
-        data = np.interp(data, xp=[value_range[0], value_range[1]], fp=[0, 255])
-    data = data.astype('uint8')
-
     # Allocate VTK Image Data
     im = vtk.vtkImageData()
-    if major_version <= 5:
-        im.SetScalarTypeToUnsignedChar()
-        im.SetNumberOfScalarComponents(nb_components)
-        im.AllocateScalars()
+    if nb_components == 1:
+        if value_range is None:
+            value_range = (np.min(data), np.max(data))
+        else:
+            # Rescale data
+            data[data < value_range[0]] = value_range[0]
+            data[data > value_range[1]] = value_range[1]
     else:
-        im.AllocateScalars(vtk.VTK_UNSIGNED_CHAR, nb_components)
+        data = data.astype('uint8')
+        if major_version <= 5:
+            im.SetScalarTypeToUnsignedChar()
+            im.SetNumberOfScalarComponents(nb_components)
+            im.AllocateScalars()
+        else:
+            im.AllocateScalars(vtk.VTK_UNSIGNED_CHAR, nb_components)
     I, J, K = data.shape[:3]
     im.SetDimensions(I, J, K)
     voxsz = (1., 1., 1.)
@@ -125,7 +127,8 @@ def slicer(data, affine=None, value_range=None, opacity=1.,
     if nb_components == 1:
         if lookup_colormap is None:
             # Create a black/white lookup table.
-            lut = colormap_lookup_table((0, 255), (0, 0), (0, 0), (0, 1))
+            lut = colormap_lookup_table((value_range[0], value_range[1]),
+                                        (0, 0), (0, 0), (0, 1))
         else:
             lut = lookup_colormap
 
