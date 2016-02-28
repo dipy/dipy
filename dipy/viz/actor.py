@@ -378,7 +378,7 @@ def line(lines, colors=None, opacity=1, linewidth=1,
     linewidth : float, optional
         Line thickness. Default is 1.
     spline_subdiv : int, optional
-        Number of splines subdivision to smooth streamtubes. Default is None
+        Number of splines subdivision to smooth streamlines. Default is None
         which means no subdivision.
     lod : bool
         Use vtkLODActor(level of detail) rather than vtkActor. Default is True.
