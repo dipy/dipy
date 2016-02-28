@@ -67,7 +67,7 @@ def test_feature_resample():
     assert_raises(ValueError, ResampleFeature, nb_points=0)
 
     max_points = max(map(len, [s1, s2, s3, s4]))
-    for nb_points in [1, 5, 2*max_points]:
+    for nb_points in [2, 5, 2*max_points]:
         for feature in [dipymetric.ResampleFeature(nb_points), ResampleFeature(nb_points)]:
             for s in [s1, s2, s3, s4]:
                 # Test method infer_shape
