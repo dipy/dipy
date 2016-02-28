@@ -27,13 +27,13 @@ def detect_corresponding_tracks(indices, tracks1, tracks2):
     ----------
     >>> import numpy as np
     >>> import dipy.tracking.learning as tl
-    >>> A=np.array([[0,0,0],[1,1,1],[2,2,2]])
-    >>> B=np.array([[1,0,0],[2,0,0],[3,0,0]])
-    >>> C=np.array([[0,0,-1],[0,0,-2],[0,0,-3]])
-    >>> bundle1=[A,B,C]
-    >>> bundle2=[B,A]
-    >>> indices=[0,1]
-    >>> arr=tl.detect_corresponding_tracks(indices,bundle1,bundle2)
+    >>> A = np.array([[0, 0, 0], [1, 1, 1], [2, 2, 2]])
+    >>> B = np.array([[1, 0, 0], [2, 0, 0], [3, 0, 0]])
+    >>> C = np.array([[0, 0, -1], [0, 0, -2], [0, 0, -3]])
+    >>> bundle1 = [A, B, C]
+    >>> bundle2 = [B, A]
+    >>> indices = [0, 1]
+    >>> arr = tl.detect_corresponding_tracks(indices, bundle1, bundle2)
 
     Notes
     -------
@@ -82,14 +82,14 @@ def detect_corresponding_tracks_plus(indices, tracks1, indices2, tracks2):
     ----------
     >>> import numpy as np
     >>> import dipy.tracking.learning as tl
-    >>> A=np.array([[0,0,0],[1,1,1],[2,2,2]])
-    >>> B=np.array([[1,0,0],[2,0,0],[3,0,0]])
-    >>> C=np.array([[0,0,-1],[0,0,-2],[0,0,-3]])
-    >>> bundle1=[A,B,C]
-    >>> bundle2=[B,A]
-    >>> indices=[0,1]
-    >>> indices2=indices
-    >>> arr=tl.detect_corresponding_tracks_plus(indices,bundle1,indices2, bundle2)
+    >>> A = np.array([[0, 0, 0], [1, 1, 1], [2, 2, 2]])
+    >>> B = np.array([[1, 0, 0], [2, 0, 0], [3, 0, 0]])
+    >>> C = np.array([[0, 0, -1], [0, 0, -2], [0, 0, -3]])
+    >>> bundle1 = [A, B, C]
+    >>> bundle2 = [B, A]
+    >>> indices = [0, 1]
+    >>> indices2 = indices
+    >>> arr = tl.detect_corresponding_tracks_plus(indices, bundle1, indices2, bundle2)
 
     Notes
     -------
