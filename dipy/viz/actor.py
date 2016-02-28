@@ -32,13 +32,15 @@ def slicer(data, affine=None, value_range=None, opacity=1.,
         Grid to space (usually RAS 1mm) transformation matrix. Default is None.
         If None then the identity matrix is used.
     value_range : None or tuple (2,)
-        If None then the values will be interpolated from (data.min(),
-        data.max()) to (0, 255). Otherwise from (value_range[0],
-        value_range[1]) to (0, 255).
+        Range from wich to build the lookup_colormap that will be taken to
+        display the data. If None then the values will be
+        (data.min(), data.max()). This has no effect for color (3 components)
+        images.
     opacity : float
         Opacity of 0 means completely transparent and 1 completely visible.
     lookup_colormap : vtkLookupTable
-        If None (default) then a grayscale map is created.
+        If None (default) then a grayscale map is created. This has no effect
+        for color (3 components) images.
     interpolation : string
         If 'linear' (default) then linear interpolation is used on the final
         texture mapping. If 'nearest' then nearest neighbor interpolation is
@@ -64,41 +66,27 @@ def slicer(data, affine=None, value_range=None, opacity=1.,
     else:
         nb_components = 1
 
-    if value_range is None:
-        vol = np.interp(data, xp=[data.min(), data.max()], fp=[0, 255])
-    else:
-        vol = np.interp(data, xp=[value_range[0], value_range[1]], fp=[0, 255])
-    vol = vol.astype('uint8')
-
     im = vtk.vtkImageData()
-    if major_version <= 5:
-        im.SetScalarTypeToUnsignedChar()
-    I, J, K = vol.shape[:3]
+    I, J, K = data.shape[:3]
     im.SetDimensions(I, J, K)
-    voxsz = (1., 1., 1.)
-    # im.SetOrigin(0,0,0)
-    im.SetSpacing(voxsz[2], voxsz[0], voxsz[1])
-    if major_version <= 5:
-        im.AllocateScalars()
-        im.SetNumberOfScalarComponents(nb_components)
-    else:
-        im.AllocateScalars(vtk.VTK_UNSIGNED_CHAR, nb_components)
 
-    # copy data
-    # what I do below is the same as what is commented here but much faster
-    # for index in ndindex(vol.shape):
-    #     i, j, k = index
-    #     im.SetScalarComponentFromFloat(i, j, k, 0, vol[i, j, k])
-    vol = np.swapaxes(vol, 0, 2)
-    vol = np.ascontiguousarray(vol)
+    data = np.swapaxes(data, 0, 2)
+    data = np.ascontiguousarray(data)
 
     if nb_components == 1:
-        vol = vol.ravel()
+        data = data.ravel()
     else:
-        vol = np.reshape(vol, [np.prod(vol.shape[:3]), vol.shape[3]])
+        data = np.reshape(data, [np.prod(data.shape[:3]), data.shape[3]])
 
-    uchar_array = numpy_support.numpy_to_vtk(vol, deep=0)
-    im.GetPointData().SetScalars(uchar_array)
+    if nb_components == 1:
+        if lookup_colormap is None:
+            if value_range is None:
+                value_range = (np.min(data), np.max(data))
+            lut = colormap_lookup_table(value_range, (0, 0), (0, 0), (0, 1))
+        else:
+            lut = lookup_colormap
+
+    im.GetPointData().SetScalars(numpy_support.numpy_to_vtk(data, deep=0))
 
     if affine is None:
         affine = np.eye(4)
@@ -122,20 +110,12 @@ def slicer(data, affine=None, value_range=None, opacity=1.,
 
     # Adding this will allow to support anisotropic voxels
     # and also gives the opportunity to slice per voxel coordinates
-
     RZS = affine[:3, :3]
     zooms = np.sqrt(np.sum(RZS * RZS, axis=0))
     image_resliced.SetOutputSpacing(*zooms)
 
     image_resliced.SetInterpolationModeToLinear()
     image_resliced.Update()
-
-    if nb_components == 1:
-        if lookup_colormap is None:
-            # Create a black/white lookup table.
-            lut = colormap_lookup_table((0, 255), (0, 0), (0, 0), (0, 1))
-        else:
-            lut = lookup_colormap
 
     x1, x2, y1, y2, z1, z2 = im.GetExtent()
     ex1, ex2, ey1, ey2, ez1, ez2 = image_resliced.GetOutput().GetExtent()
@@ -378,7 +358,7 @@ def line(lines, colors=None, opacity=1, linewidth=1,
     linewidth : float, optional
         Line thickness. Default is 1.
     spline_subdiv : int, optional
-        Number of splines subdivision to smooth streamtubes. Default is None
+        Number of splines subdivision to smooth streamlines. Default is None
         which means no subdivision.
     lod : bool
         Use vtkLODActor(level of detail) rather than vtkActor. Default is True.
