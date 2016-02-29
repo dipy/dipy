@@ -34,12 +34,13 @@ def slicer(data, affine=None, value_range=None, opacity=1.,
     value_range : None or tuple (2,)
         If None then the values will be interpolated from (data.min(),
         data.max()) to (0, 255). Otherwise from (value_range[0],
-        value_range[1]) to (0, 255).
+        value_range[1]) to (0, 255). This parameter is ignored if `data` is an
+        RGB volume.
     opacity : float
         Opacity of 0 means completely transparent and 1 completely visible.
     lookup_colormap : vtkLookupTable
-        If None (default) then a grayscale map is created. It doesn't apply
-        to rgb volumes where the lookup colormap is ignored.
+        If None (default) then a grayscale map is created. This parameter is
+        ignored if `data` is an RGB volume.
     interpolation : string
         If 'linear' (default) then linear interpolation is used on the final
         texture mapping. If 'nearest' then nearest neighbor interpolation is
