@@ -11,12 +11,13 @@ from dipy.denoise.stabilizer import (_test_marcumq_cython, _test_beta,
     _test_fixed_point_k, _test_xi, fixed_point_finder, chi_to_gauss,
     _test_inv_cdf_gauss, _test_multifactorial)
 
-from distutils.version import LooseVersion
-
 try:
     from scipy.special import factorialk
 except ImportError:
     from scipy.misc import factorialk # old scipy has it here instead
+
+from distutils.version import LooseVersion
+import scipy
     
 if LooseVersion(scipy.version.short_version) >= LooseVersion('0.16.1'):
     SCIPY_16_PLUS = True
