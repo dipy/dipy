@@ -68,10 +68,6 @@ before_install:
     - retry pip install nose;
     - wheelhouse_pip_install $DEPENDS;
 
-
-    - retry pip install nose # always
-    - wheelhouse_pip_install $DEPENDS
-
     - if [ "${COVERAGE}" == "1" ]; then
       pip install coverage;
       pip install coveralls;
