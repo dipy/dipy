@@ -2,11 +2,7 @@
 
 from __future__ import division, print_function
 from dipy.workflows.tract_metrics import tract_density_flow
-from dipy.workflows.base import IntrospectiveArgumentParser
-
-parser = IntrospectiveArgumentParser()
-parser.add_workflow(tract_density_flow)
+from base_script import run_flow
 
 if __name__ == "__main__":
-    args = parser.get_flow_args()
-    tract_density_flow(**args)
+    run_flow(tract_density_flow)

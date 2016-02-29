@@ -1,16 +1,11 @@
 #! /usr/bin/env python
 
 from __future__ import division, print_function
-from dipy.workflows.base import IntrospectiveArgumentParser
 from dipy.workflows.tracking import deterministic_tracking_flow
-
-parser = IntrospectiveArgumentParser()
-parser.add_workflow(deterministic_tracking_flow)
+from base_script import run_flow
 
 if __name__ == "__main__":
-    args = parser.get_flow_args()
-    deterministic_tracking_flow(**args)
-
+    run_flow(deterministic_tracking_flow)
 
 
 
