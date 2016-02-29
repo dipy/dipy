@@ -11,10 +11,18 @@ from dipy.denoise.stabilizer import (_test_marcumq_cython, _test_beta,
     _test_fixed_point_k, _test_xi, fixed_point_finder, chi_to_gauss,
     _test_inv_cdf_gauss, _test_multifactorial)
 
+from distutils.version import LooseVersion
+
 try:
     from scipy.special import factorialk
 except ImportError:
     from scipy.misc import factorialk # old scipy has it here instead
+    
+if LooseVersion(scipy.version.short_version) >= LooseVersion('0.16.1'):
+    SCIPY_16_PLUS = True
+    from scipy.special import hyp1f1 as scipy1f1
+ else:
+    SCIPY_16_PLUS = False
     
 # hispeed is the closed source java reference implementation,
 # from which most values are taken from.
@@ -34,6 +42,7 @@ def test_beta():
     assert_almost_equal(_test_beta(12), 4.848227898082543, decimal=10)
 
 
+@np.testing.dec.skipif(not (have_cython_gsl or SCIPY_16_PLUS))
 def test_xi():
     # Values taken from hispeed.SignalFixedPointFinder.xi
     assert_almost_equal(_test_xi(50, 2, 2), 0.9976038446303619)
@@ -41,6 +50,7 @@ def test_xi():
     assert_almost_equal(_test_xi(4, 1, 12), 0.697674262651006)
 
 
+@np.testing.dec.skipif(not (have_cython_gsl or SCIPY_16_PLUS))
 def test_fixed_point_finder():
     # Values taken from hispeed.SignalFixedPointFinder.fixedPointFinder
     assert_almost_equal(fixed_point_finder(650, 45, 1), 648.4366584016703)
