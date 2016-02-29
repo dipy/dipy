@@ -25,8 +25,15 @@ if LooseVersion(scipy.version.short_version) >= LooseVersion('0.16.1'):
 else:
     SCIPY_16_PLUS = False
     
+try:
+    import cython_gsl
+except ImportError:
+    have_cython_gsl = False
+else:
+    have_cython_gsl = True
+
 # hispeed is the closed source java reference implementation,
-# from which most values are taken from.
+# from which most values are taken.
 
 
 def test_inv_cdf_gauss():
