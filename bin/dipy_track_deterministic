@@ -6,6 +6,3 @@ from base_script import run_flow
 
 if __name__ == "__main__":
     run_flow(deterministic_tracking_flow)
-
-
-
