@@ -6,20 +6,23 @@ from numpy.testing import (assert_array_equal,
                            assert_equal,
                            assert_raises)
 
+
 def test_number_of_parameters():
-    expected_params = {('TRANSLATION', 2) : 2,
-                       ('TRANSLATION', 3) : 3,
-                       ('ROTATION', 2) : 1,
-                       ('ROTATION', 3) : 3,
-                       ('RIGID', 2) : 3,
-                       ('RIGID', 3) : 6,
-                       ('SCALING', 2) : 1,
-                       ('SCALING', 3) : 1,
-                       ('AFFINE', 2) : 6,
-                       ('AFFINE', 3) : 12}
+    expected_params = {('TRANSLATION', 2): 2,
+                       ('TRANSLATION', 3): 3,
+                       ('ROTATION', 2): 1,
+                       ('ROTATION', 3): 3,
+                       ('RIGID', 2): 3,
+                       ('RIGID', 3): 6,
+                       ('SCALING', 2): 1,
+                       ('SCALING', 3): 1,
+                       ('AFFINE', 2): 6,
+                       ('AFFINE', 3): 12}
 
     for ttype, transform in regtransforms.items():
-        assert_equal(transform.get_number_of_parameters(), expected_params[ttype])
+        assert_equal(
+            transform.get_number_of_parameters(),
+            expected_params[ttype])
 
 
 def test_param_to_matrix_2d():
@@ -64,8 +67,8 @@ def test_param_to_matrix_2d():
     transform = regtransforms[('AFFINE', 2)]
     theta = rng.uniform(size=(6,))
     expected = np.eye(3)
-    expected[0,:] = theta[:3]
-    expected[1,:] = theta[3:6]
+    expected[0, :] = theta[:3]
+    expected[1, :] = theta[3:6]
     actual = transform.param_to_matrix(theta)
     assert_array_almost_equal(actual, expected)
 
@@ -101,17 +104,17 @@ def test_param_to_matrix_3d():
     cc = np.cos(theta[2])
     sc = np.sin(theta[2])
 
-    X = np.array([[1,  0,  0 ],
+    X = np.array([[1, 0, 0],
                   [0, ca, -sa],
-                  [0, sa,  ca]])
-    Y = np.array([[cb,  0, sb],
-                  [0,   1,  0],
+                  [0, sa, ca]])
+    Y = np.array([[cb, 0, sb],
+                  [0, 1, 0],
                   [-sb, 0, cb]])
     Z = np.array([[cc, -sc, 0],
-                  [sc,  cc, 0],
-                  [0 ,   0, 1]])
+                  [sc, cc, 0],
+                  [0, 0, 1]])
 
-    R = Z.dot(X.dot(Y)) # Apply in order: Y, X, Z (Y goes to the right)
+    R = Z.dot(X.dot(Y))  # Apply in order: Y, X, Z (Y goes to the right)
     expected = np.eye(4)
     expected[:3, :3] = R[:3, :3]
     actual = transform.param_to_matrix(theta)
@@ -127,17 +130,17 @@ def test_param_to_matrix_3d():
     cc = np.cos(theta[2])
     sc = np.sin(theta[2])
 
-    X = np.array([[1,  0,  0 ],
+    X = np.array([[1, 0, 0],
                   [0, ca, -sa],
-                  [0, sa,  ca]])
-    Y = np.array([[cb,  0, sb],
-                  [0,   1,  0],
+                  [0, sa, ca]])
+    Y = np.array([[cb, 0, sb],
+                  [0, 1, 0],
                   [-sb, 0, cb]])
     Z = np.array([[cc, -sc, 0],
-                  [sc,  cc, 0],
-                  [0 ,   0, 1]])
+                  [sc, cc, 0],
+                  [0, 0, 1]])
 
-    R = Z.dot(X.dot(Y)) # Apply in order: Y, X, Z (Y goes to the right)
+    R = Z.dot(X.dot(Y))  # Apply in order: Y, X, Z (Y goes to the right)
     expected = np.eye(4)
     expected[:3, :3] = R[:3, :3]
     expected[:3, 3] = theta[3:6]
@@ -159,9 +162,9 @@ def test_param_to_matrix_3d():
     transform = regtransforms[('AFFINE', 3)]
     theta = rng.uniform(size=(12,))
     expected = np.eye(4)
-    expected[0,:] = theta[:4]
-    expected[1,:] = theta[4:8]
-    expected[2,:] = theta[8:12]
+    expected[0, :] = theta[:4]
+    expected[1, :] = theta[4:8]
+    expected[2, :] = theta[8:12]
     actual = transform.param_to_matrix(theta)
     assert_array_almost_equal(actual, expected)
 
@@ -187,7 +190,7 @@ def test_identity_parameters():
 
 def test_jacobian_functions():
     rng = np.random.RandomState()
-    #Compare the analytical Jacobians with their numerical approximations
+    # Compare the analytical Jacobians with their numerical approximations
     h = 1e-8
     nsamples = 50
 
@@ -211,11 +214,12 @@ def test_jacobian_functions():
                 dtheta[i] += h
                 dT = np.array(transform.param_to_matrix(dtheta))
                 g = (dT - T).dot(x_hom) / h
-                expected[:,i] = g[:dim]
+                expected[:, i] = g[:dim]
 
             assert_array_almost_equal(actual, expected, decimal=5)
 
-    # Test ValueError is raised when theta parameter doesn't have the right length
+    # Test ValueError is raised when theta parameter doesn't have the right
+    # length
     for transform in regtransforms.values():
         n = transform.get_number_of_parameters()
 
@@ -248,7 +252,7 @@ def test_invalid_transform():
     assert_equal(actual, expected)
 
 
-if __name__=='__main__':
+if __name__ == '__main__':
     test_number_of_parameters()
     test_jacobian_functions()
     test_param_to_matrix_2d()
