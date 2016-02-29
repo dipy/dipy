@@ -68,6 +68,7 @@ def slicer(data, affine=None, value_range=None, opacity=1.,
         nb_components = 1
 
     # Allocate VTK Image Data
+    data = np.copy(data)
     im = vtk.vtkImageData()
     if nb_components == 1:
         if value_range is None:
