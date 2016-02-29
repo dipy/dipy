@@ -121,7 +121,6 @@ for modulename, other_sources, language in (
     ('dipy.denoise.denspeed', [], 'c'),
     ('dipy.denoise.enhancement_kernel', [], 'c'),
     ('dipy.denoise.shift_twist_convolution', [], 'c'),
-    ('dipy.denoise.hyp1f1', [], 'c'),
     ('dipy.align.vector_fields', [], 'c'),
     ('dipy.align.sumsqdiff', [], 'c'),
     ('dipy.align.expectmax', [], 'c'),
