@@ -1,5 +1,6 @@
 from __future__ import division, print_function, absolute_import
 from os.path import join as pjoin
+import os
 from glob import glob
 
 import nibabel as nib
@@ -12,7 +13,8 @@ from dipy.workflows.fodf import fodf_flow
 from dipy.workflows.tracking import deterministic_tracking_flow
 from dipy.workflows.tract_metrics import tract_density_flow
 
-def simple_pipeline_flow(input_files, bvalues, bvectors, work_dir=''):
+def simple_pipeline_flow(input_files, bvalues, bvectors, work_dir='',
+                         resume=False):
     """ A simple dwi processing pipeline with the following steps:
         -Denoising
         -Masking
@@ -34,6 +36,8 @@ def simple_pipeline_flow(input_files, bvalues, bvectors, work_dir=''):
         multiple bvalues files at once.
     work_dir : string, optional
         Working directory (default input file directory)
+    resume : bool, optional
+        If true, the pipeline will not run tasks if the output exists.
     """
 
     for dwi, bval, bvec in zip(glob(input_files),
@@ -43,36 +47,30 @@ def simple_pipeline_flow(input_files, bvalues, bvectors, work_dir=''):
         work_dir = choose_create_out_dir(work_dir, dwi)
 
         mask_filename = pjoin(work_dir, 'brain_mask.nii.gz')
-        median_otsu_flow(dwi, out_dir=work_dir, mask=mask_filename)
+        if os.path.exists(mask_filename) is False or resume is False:
+            median_otsu_flow(dwi, out_dir=work_dir, mask=mask_filename)
 
         denoised_dwi = pjoin(work_dir, 'dwi_2x2x2_nlmeans.nii.gz')
-        nlmeans_flow(dwi, out_dir=work_dir, denoised=denoised_dwi)
-
-
-        #if not params.resume or not all_files_exist(denoised_dwi):
-        #    print 'path does not exists {0}'.format(denoised_dwi)
-        #    nlmeans_flow(params.input, out_dir='work')
-
-        #mask_fname = fname + '_nlmeans_mask' + ext
-        #mask_path = os.path.join(work_dir, mask_fname)
-
-        #if not params.resume or not all_files_exist(mask_path):
-        #    median_otsu_flow(denoised_dwi, '', 'True', '4', '4')
+        if os.path.exists(denoised_dwi) is False or resume is False:
+            nlmeans_flow(dwi, out_dir=work_dir, denoised=denoised_dwi)
 
         metrics_dir = pjoin(work_dir, 'metrics')
         fa_path = pjoin(metrics_dir, 'fa.nii.gz')
-        dti_metrics_flow(denoised_dwi, mask_filename, bval, bvec,
-                         out_dir=metrics_dir)
+        if os.path.exists(fa_path) is False or resume is False:
+            dti_metrics_flow(denoised_dwi, mask_filename, bval, bvec,
+                             out_dir=metrics_dir)
 
-        #fodf_path = pjoin(metrics_dir, 'fodf.nii.gz')
-        #if not params.resume or not all_files_exist(fodf_path):
         peaks_dir = pjoin(work_dir, 'peaks')
-        fodf_flow(denoised_dwi, mask_filename, bval, bvec, out_dir=peaks_dir)
+        if os.path.exists(peaks_dir) is False or resume is False:
+            fodf_flow(denoised_dwi, mask_filename, bval, bvec, out_dir=peaks_dir)
 
         tractograms_dir = pjoin(work_dir, 'tractograms')
         tractogram = 'deterministic_tractogram.trk'
-        deterministic_tracking_flow(denoised_dwi, mask_filename, bval, bvec,
-                                    out_dir=tractograms_dir,
-                                    tractogram=tractogram)
+        if os.path.exists(tractogram) is False or resume is False:
+            deterministic_tracking_flow(denoised_dwi, mask_filename, bval, bvec,
+                                        out_dir=tractograms_dir,
+                                        tractogram=tractogram)
 
-        tract_density_flow(tractogram, fa_path, out_dir=metrics_dir)
+        tdi = os.path.join(metrics_dir, 'tdi.nii.gz')
+        if os.path.exists(tractogram) is False or resume is False:
+            tract_density_flow(tractogram, fa_path, out_dir=metrics_dir, tdi=tdi)

@@ -47,7 +47,6 @@ def tract_density_flow(tractograms, ref_files, out_dir='', up_factor=1.0,
 
         streamlines = [i * up_factor for i in tract]
 
-
         # Need to fix scaling
         affine = np.eye(4)
         # Need to adjust the affine to take upsampling into account
