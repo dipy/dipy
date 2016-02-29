@@ -3,8 +3,6 @@ from os.path import join as pjoin
 import os
 from glob import glob
 
-import nibabel as nib
-import numpy as np
 from dipy.workflows.utils import choose_create_out_dir
 from dipy.workflows.segment import median_otsu_flow
 from dipy.workflows.denoise import nlmeans_flow
@@ -38,6 +36,9 @@ def simple_pipeline_flow(input_files, bvalues, bvectors, work_dir='',
         Working directory (default input file directory)
     resume : bool, optional
         If true, the pipeline will not run tasks if the output exists.
+
+    Outputs
+    -------
     """
 
     for dwi, bval, bvec in zip(glob(input_files),
@@ -66,6 +67,7 @@ def simple_pipeline_flow(input_files, bvalues, bvectors, work_dir='',
 
         tractograms_dir = pjoin(work_dir, 'tractograms')
         tractogram = 'deterministic_tractogram.trk'
+
         if os.path.exists(tractogram) is False or resume is False:
             deterministic_tracking_flow(denoised_dwi, mask_filename, bval, bvec,
                                         out_dir=tractograms_dir,
