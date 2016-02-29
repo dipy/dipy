@@ -75,7 +75,7 @@ def slicer(data, affine=None, value_range=None, opacity=1.,
         if value_range is None:
             value_range = (np.min(data), np.max(data))
         else:
-            # Rescale data
+            # Clamping data to specified value range
             data[data < value_range[0]] = value_range[0]
             data[data > value_range[1]] = value_range[1]
     else:
