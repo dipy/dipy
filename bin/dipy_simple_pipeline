@@ -2,11 +2,7 @@
 
 from __future__ import division, print_function
 from dipy.workflows.pipelines import simple_pipeline_flow
-from dipy.workflows.base import IntrospectiveArgumentParser
-
-parser = IntrospectiveArgumentParser()
-parser.add_workflow(simple_pipeline_flow)
+from base_script import run_flow
 
 if __name__ == "__main__":
-    args = parser.get_flow_args()
-    simple_pipeline_flow(**args)
+    run_flow(simple_pipeline_flow)
