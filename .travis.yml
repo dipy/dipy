@@ -25,7 +25,6 @@ env:
         - VENV_ARGS="--python=python"
         - INSTALL_TYPE="setup"
 python:
-    - 2.6
     - 3.3
     - 3.4
     - 3.5
@@ -52,18 +51,11 @@ matrix:
         - LIBGL_ALWAYS_INDIRECT=y
         - VENV_ARGS="--system-site-packages --python=/usr/bin/python2.7"
         - TEST_WITH_XVFB=true
-        - DEPENDS="cython==0.18 numpy==1.6.0 scipy==0.9.0 nibabel==1.2.0"
-
-    # Test cythongsl and scipy 0.17 codepath separately, since only one is needed
-
     - python: 2.7
       env:
         - INSTALL_TYPE=requirements
-        - DEPENDS="cython numpy scipy matplotlib h5py nibabel cvxopt scikit_learn cythongsl"
+        - DEPENDS="cython numpy scipy matplotlib h5py nibabel cvxopt scikit_learn"
         - pip install cythongsl
-    - python: 2.7
-      env:
-        - DEPENDS="cython numpy scipy matplotlib h5py nibabel cvxopt scikit_learn scipy"
 
 before_install:
     - source tools/travis_tools.sh
