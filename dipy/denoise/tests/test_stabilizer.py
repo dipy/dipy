@@ -21,7 +21,7 @@ except ImportError:
 if LooseVersion(scipy.version.short_version) >= LooseVersion('0.16.1'):
     SCIPY_16_PLUS = True
     from scipy.special import hyp1f1 as scipy1f1
- else:
+else:
     SCIPY_16_PLUS = False
     
 # hispeed is the closed source java reference implementation,
