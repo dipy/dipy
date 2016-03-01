@@ -88,9 +88,10 @@ data = img.get_data()
 
 # Add Rician noise
 from dipy.segment.mask import median_otsu
-b0_mask, mask = median_otsu(data)
+b0_slice = data[:, :, :, 1]
+b0_mask, mask = median_otsu(b0_slice)
 np.random.seed(1)
-data_noisy = add_noise(data, 1, np.mean(data[mask]), noise_type='rician')
+data_noisy = add_noise(data, 4.5, np.mean(b0_slice[mask]), noise_type='rician')
 
 # Select a small part of it
 data_small = data[25:40, 65:80, 35:42]
@@ -246,7 +247,7 @@ fvtk.record(ren, out_path='enhancements.png', size=(900, 900))
    :align: center
 
    The results after enhancements. Top-left: original noiseless data.
-   Bottom-left: original data with added Rician noise (SNR=2). Bottom-right:
+   Bottom-left: original data with added Rician noise (SNR=4.5). Bottom-right:
    After enhancement of noisy data. Top-right: After enhancement and sharpening
    of noisy data.
 
@@ -266,10 +267,12 @@ References
                         and Applications in Neuroimaging. Fifth International
                         Conference on Scale Space and Variational Methods in
                         Computer Vision
-.. [DuitsAndFranken_JMIV] R. Duits and E. Franken (2011) Morphological and
-                          Linear Scale Spaces for Fiber Enhancement in DWI-MRI.
-                          J Math Imaging Vis, 46(3):326-368.
-
+.. [DuitsAndFranken_JMIV] R. Duits and E. Franken (2011) Left-invariant diffusions 
+                        on the space of positions and orientations and their 
+                        application to crossing-preserving smoothing of HARDI 
+                        images. International Journal of Computer Vision, 92:231-264.
 .. [RodriguesEurographics] P. Rodrigues, R. Duits, B. Romeny, A. Vilanova
-                           (2010). Accelerated Diffusion Operators for Enhancing DW-MRI. Eurographics Workshop on Visual Computing for Biology and Medicine. The Eurographics Association.
+                           (2010). Accelerated Diffusion Operators for Enhancing DW-MRI. 
+                           Eurographics Workshop on Visual Computing for Biology and Medicine. 
+                           The Eurographics Association.
 """
