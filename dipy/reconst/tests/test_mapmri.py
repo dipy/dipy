@@ -11,8 +11,8 @@ from dipy.data import get_sphere
 
 
 def int_func(n):
-    f = np.sqrt(2) * factorial(n) / float(((gamma(1 + n / 2.0))
-                                           * np.sqrt(2**(n + 1) * factorial(n))))
+    f = np.sqrt(2) * factorial(n) / float(((gamma(1 + n / 2.0)) *
+                                          np.sqrt(2**(n + 1) * factorial(n))))
     return f
 
 
