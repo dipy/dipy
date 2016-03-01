@@ -30,10 +30,10 @@ def winding(xyz):
 
     turn = 0
     for j in range(len(xyz)-1):
-<<<<<<< HEAD
         v0 = proj[j]
         v1 = proj[j+1]
         v = np.dot(v0, v1)/(np.linalg.norm(v0)*np.linalg.norm(v1))
+        v = np.clip(v, -1, 1)
         tmp = np.arccos(v)
         turn += tmp
 
