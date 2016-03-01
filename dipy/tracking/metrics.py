@@ -36,14 +36,6 @@ def winding(xyz):
         v = np.dot(v0, v1)/(np.linalg.norm(v0)*np.linalg.norm(v1))
         tmp = np.arccos(v)
         turn += tmp
-=======
-        v0=proj[j]
-        v1=proj[j+1]
-        v=np.dot(v0,v1)/(np.linalg.norm(v0)*np.linalg.norm(v1))
-        v = np.clip(v, -1, 1)
-        tmp=np.arccos(v)
-        turn+=tmp
->>>>>>> 059d8824a7e785ed8280d469999c05380120306d
 
     return np.rad2deg(turn)
 
