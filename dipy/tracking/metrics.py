@@ -33,6 +33,7 @@ def winding(xyz):
         v0 = proj[j]
         v1 = proj[j+1]
         v = np.dot(v0, v1)/(np.linalg.norm(v0)*np.linalg.norm(v1))
+        v = np.clip(v, -1, 1)
         tmp = np.arccos(v)
         turn += tmp
 
