@@ -5,6 +5,7 @@ from nose.tools import assert_true, assert_false, \
 from numpy.testing import assert_array_equal, assert_array_almost_equal
 import dipy.tracking.vox2track as tvo
 
+
 def tracks_to_expected(tracks, vol_dims):
     # simulate expected behavior of module
     vol_dims = np.array(vol_dims, dtype=np.int32)
@@ -15,7 +16,7 @@ def tracks_to_expected(tracks, vol_dims):
         ti = np.round(t).astype(np.int32)
         for p_no, p in enumerate(ti):
             if np.any(p < 0):
-                p[p<0] = 0
+                p[p < 0] = 0
             too_high = p >= vol_dims
             if np.any(too_high):
                 p[too_high] = vol_dims[too_high]-1
@@ -28,7 +29,7 @@ def tracks_to_expected(tracks, vol_dims):
                 elements[p].append(val)
             else:
                 elements[p] = [val]
-            counts[p] +=1
+            counts[p] += 1
     return counts, elements
 
 
@@ -39,11 +40,11 @@ def test_track_volumes():
                [0, 1, 1]],)
     tracks = [np.array(t) for t in tracks]
     ex_counts, ex_els = tracks_to_expected(tracks, vol_dims)
-    tcs, tes = tvo.track_counts(tracks, vol_dims, [1,1,1])
+    tcs, tes = tvo.track_counts(tracks, vol_dims, [1, 1, 1])
     assert_array_equal(tcs, ex_counts)
-    assert_array_equal( tes, ex_els)
+    assert_array_equal(tes, ex_els)
     # check only counts returned for return_elements=False
-    tcs = tvo.track_counts(tracks, vol_dims, [1,1,1], False)
+    tcs = tvo.track_counts(tracks, vol_dims, [1, 1, 1], False)
     assert_array_equal(tcs, ex_counts)
 
     # non-unique points, non-integer points, points outside
@@ -59,9 +60,9 @@ def test_track_volumes():
                [1, 11, 0]])
     tracks = [np.array(t) for t in tracks]
     ex_counts, ex_els = tracks_to_expected(tracks, vol_dims)
-    tcs, tes = tvo.track_counts(tracks, vol_dims, [1,1,1])
-    assert_array_equal( tcs, ex_counts)
-    assert_array_equal( tes, ex_els)
+    tcs, tes = tvo.track_counts(tracks, vol_dims, [1, 1, 1])
+    assert_array_equal(tcs, ex_counts)
+    assert_array_equal(tes, ex_els)
     # points with non-unit voxel sizes
     vox_sizes = [1.4, 2.1, 3.7]
     float_tracks = []
@@ -70,7 +71,3 @@ def test_track_volumes():
     tcs, tes = tvo.track_counts(float_tracks, vol_dims, vox_sizes)
     assert_array_equal(tcs, ex_counts)
     assert_array_equal(tes, ex_els)
-    
-               
-              
-             
