@@ -30,7 +30,7 @@ def bench_vec_val_vect():
     repeat = 100
     shape = (100, 100)
     evecs, evals = randn(*(shape + (3, 3))), randn(*(shape + (3,)))
-    etime = measure("np.einsum('...ij,...j,...kj->...ik', evecs, evals,
+    etime = measure("np.einsum('...ij,...j,...kj->...ik', evecs, evals, \
                                evecs)",
                     repeat)
     vtime = measure("vec_val_vect(evecs, evals)", repeat)
