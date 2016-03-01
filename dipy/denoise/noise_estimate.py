@@ -114,10 +114,24 @@ def piesno(data, N, alpha=0.01, l=100, itermax=100, eps=1e-5,
         mask_noise = np.zeros(data.shape[:-1], dtype=np.bool)
 
         for idx in range(data.shape[-2]):
-            sigma[idx], mask_noise[..., idx] = _piesno_3D(data[..., idx, :], N, alpha=alpha, l=l, itermax=itermax, eps=eps, return_mask=True, initial_estimation=initial_estimation)
+            sigma[idx], mask_noise[..., idx] = _piesno_3D(data[..., idx, :], 
+                                                          N,
+                                                          alpha=alpha,
+                                                          l=l,
+                                                          itermax=itermax,
+                                                          eps=eps,
+                                                          return_mask=True,
+                                                          initial_estimation=initial_estimation)
 
     else:
-        sigma, mask_noise = _piesno_3D(data, N, alpha=alpha, l=l, itermax=itermax, eps=eps, return_mask=True, initial_estimation=initial_estimation)
+        sigma, mask_noise = _piesno_3D(data,
+                                       N,
+                                       alpha=alpha,
+                                       l=l,
+                                       itermax=itermax,
+                                       eps=eps,
+                                       return_mask=True,
+                                       initial_estimation=initial_estimation)
 
     if return_mask:
         return sigma, mask_noise
