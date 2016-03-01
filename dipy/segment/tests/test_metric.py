@@ -8,7 +8,9 @@ from numpy.testing import assert_array_equal, assert_raises, run_module_suite
 
 def norm(x, ord=None, axis=None):
     if axis is not None:
-        return np.apply_along_axis(np.linalg.norm, axis, x.astype(np.float64), ord)
+        return np.apply_along_axis(
+            np.linalg.norm, axis, x.astype(
+                np.float64), ord)
 
     return np.linalg.norm(x.astype(np.float64), ord=ord)
 
@@ -24,10 +26,10 @@ z = np.sin(np.linspace(0, np.pi, nb_points))  # Bending
 s = np.array([x, y, z], dtype=dtype).T
 
 # Create trivial streamlines
-s1 = np.array([np.arange(10, dtype=dtype)]*3).T  # 10x3
-s2 = np.arange(3*10, dtype=dtype).reshape((-1, 3))[::-1]  # 10x3
-s3 = np.array([np.arange(5, dtype=dtype)]*4)  # 5x4
-s4 = np.array([np.arange(5, dtype=dtype)]*3)  # 5x3
+s1 = np.array([np.arange(10, dtype=dtype)] * 3).T  # 10x3
+s2 = np.arange(3 * 10, dtype=dtype).reshape((-1, 3))[::-1]  # 10x3
+s3 = np.array([np.arange(5, dtype=dtype)] * 4)  # 5x4
+s4 = np.array([np.arange(5, dtype=dtype)] * 3)  # 5x3
 streamlines = [s, s1, s2, s3, s4]
 
 
@@ -35,8 +37,12 @@ def test_metric_minimum_average_direct_flip():
     feature = dipymetric.IdentityFeature()
 
     class MinimumAverageDirectFlipMetric(dipymetric.Metric):
+
         def __init__(self, feature):
-            super(MinimumAverageDirectFlipMetric, self).__init__(feature=feature)
+            super(
+                MinimumAverageDirectFlipMetric,
+                self).__init__(
+                feature=feature)
 
         @property
         def is_order_invariant(self):
@@ -46,7 +52,7 @@ def test_metric_minimum_average_direct_flip():
             return shape1[0] == shape2[0]
 
         def dist(self, v1, v2):
-            average_euclidean = lambda x, y: np.mean(norm(x-y, axis=1))
+            average_euclidean = lambda x, y: np.mean(norm(x - y, axis=1))
             dist_direct = average_euclidean(v1, v2)
             dist_flipped = average_euclidean(v1, v2[::-1])
             return min(dist_direct, dist_flipped)
@@ -60,14 +66,14 @@ def test_metric_minimum_average_direct_flip():
 
         # Translation
         offset = np.array([0.8, 1.3, 5], dtype=dtype)
-        assert_almost_equal(metric.dist(s, s+offset), norm(offset), 5)
+        assert_almost_equal(metric.dist(s, s + offset), norm(offset), 5)
 
         # Scaling
         M_scaling = np.diag([1.2, 2.8, 3]).astype(dtype)
         s_mean = np.mean(s, axis=0)
         s_zero_mean = s - s_mean
         s_scaled = np.dot(M_scaling, s_zero_mean.T).T + s_mean
-        d = np.mean(norm((np.diag(M_scaling)-1)*s_zero_mean, axis=1))
+        d = np.mean(norm((np.diag(M_scaling) - 1) * s_zero_mean, axis=1))
         assert_almost_equal(metric.dist(s, s_scaled), d, 5)
 
         # Rotation
@@ -78,19 +84,30 @@ def test_metric_minimum_average_direct_flip():
         s_zero_mean = s - s_mean
         s_rotated = np.dot(M_rotation, s_zero_mean.T).T + s_mean
 
-        opposite = norm(np.cross(rot_axis, s_zero_mean), axis=1) / norm(rot_axis)
-        distances = np.sqrt(2*opposite**2 * (1 - np.cos(60.*np.pi/180.))).astype(dtype)
+        opposite = norm(
+            np.cross(
+                rot_axis,
+                s_zero_mean),
+            axis=1) / norm(rot_axis)
+        distances = np.sqrt(
+            2 * opposite**2 * (1 - np.cos(60. * np.pi / 180.))).astype(dtype)
         d = np.mean(distances)
         assert_almost_equal(metric.dist(s, s_rotated), d, 5)
 
-        for s1, s2 in itertools.product(*[streamlines]*2):  # All possible pairs
-            # Extract features since metric doesn't work directly on streamlines
+        for s1, s2 in itertools.product(
+                *[streamlines] * 2):  # All possible pairs
+            # Extract features since metric doesn't work directly on
+            # streamlines
             f1 = metric.feature.extract(s1)
             f2 = metric.feature.extract(s2)
 
             # Test method are_compatible
             same_nb_points = f1.shape[0] == f2.shape[0]
-            assert_equal(metric.are_compatible(f1.shape, f2.shape), same_nb_points)
+            assert_equal(
+                metric.are_compatible(
+                    f1.shape,
+                    f2.shape),
+                same_nb_points)
 
             # Test method dist if features are compatible
             if metric.are_compatible(f1.shape, f2.shape):
@@ -104,7 +121,8 @@ def test_metric_minimum_average_direct_flip():
 
         # This metric type is order invariant
         assert_true(metric.is_order_invariant)
-        for s1, s2 in itertools.product(*[streamlines]*2):  # All possible pairs
+        for s1, s2 in itertools.product(
+                *[streamlines] * 2):  # All possible pairs
             f1 = metric.feature.extract(s1)
             f2 = metric.feature.extract(s2)
 
@@ -126,6 +144,7 @@ def test_metric_cosine():
     feature = dipymetric.VectorOfEndpointsFeature()
 
     class CosineMetric(dipymetric.Metric):
+
         def __init__(self, feature):
             super(CosineMetric, self).__init__(feature=feature)
 
@@ -150,7 +169,7 @@ def test_metric_cosine():
         # Test special cases of the cosine distance.
         v0 = np.array([[0, 0, 0]], dtype=np.float32)
         v1 = np.array([[1, 2, 3]], dtype=np.float32)
-        v2 = np.array([[1, -1./2, 0]], dtype=np.float32)
+        v2 = np.array([[1, -1. / 2, 0]], dtype=np.float32)
         v3 = np.array([[-1, -2, -3]], dtype=np.float32)
 
         assert_equal(metric.dist(v0, v0), 0.)   # dot-dot
@@ -159,8 +178,10 @@ def test_metric_cosine():
         assert_equal(metric.dist(v1, v2), 0.5)  # orthogonal
         assert_equal(metric.dist(v1, v3), 1.)   # opposite
 
-        for s1, s2 in itertools.product(*[streamlines]*2):  # All possible pairs
-            # Extract features since metric doesn't work directly on streamlines
+        for s1, s2 in itertools.product(
+                *[streamlines] * 2):  # All possible pairs
+            # Extract features since metric doesn't work directly on
+            # streamlines
             f1 = metric.feature.extract(s1)
             f2 = metric.feature.extract(s2)
 
@@ -182,7 +203,8 @@ def test_metric_cosine():
 
         # This metric type is not order invariant
         assert_false(metric.is_order_invariant)
-        for s1, s2 in itertools.product(*[streamlines]*2):  # All possible pairs
+        for s1, s2 in itertools.product(
+                *[streamlines] * 2):  # All possible pairs
             f1 = metric.feature.extract(s1)
             f2 = metric.feature.extract(s2)
 
@@ -215,7 +237,7 @@ def test_distance_matrix():
     for dtype in [np.int32, np.int64, np.float32, np.float64]:
         # Compute distances of all tuples spawn by the Cartesian product
         # of `data` with itself.
-        data = (np.random.rand(4, 10, 3)*10).astype(dtype)
+        data = (np.random.rand(4, 10, 3) * 10).astype(dtype)
         D = dipymetric.distance_matrix(metric, data)
         assert_equal(D.shape, (len(data), len(data)))
         assert_array_equal(np.diag(D), np.zeros(len(data)))
@@ -226,17 +248,19 @@ def test_distance_matrix():
 
         for i in range(len(data)):
             for j in range(len(data)):
-                assert_equal(D[i, j], dipymetric.dist(metric, data[i], data[j]))
+                assert_equal(D[i, j], dipymetric.dist(
+                    metric, data[i], data[j]))
 
         # Compute distances of all tuples spawn by the Cartesian product
         # of `data` with `data2`.
-        data2 = (np.random.rand(3, 10, 3)*10).astype(dtype)
+        data2 = (np.random.rand(3, 10, 3) * 10).astype(dtype)
         D = dipymetric.distance_matrix(metric, data, data2)
         assert_equal(D.shape, (len(data), len(data2)))
 
         for i in range(len(data)):
             for j in range(len(data2)):
-                assert_equal(D[i, j], dipymetric.dist(metric, data[i], data2[j]))
+                assert_equal(D[i, j], dipymetric.dist(
+                    metric, data[i], data2[j]))
 
 
 if __name__ == '__main__':
