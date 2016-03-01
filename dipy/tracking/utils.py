@@ -436,16 +436,17 @@ def seeds_from_mask(mask, density=[1, 1, 1], voxel_size=None, affine=None):
     return seeds
 
 
-def random_seeds_from_mask(mask, seeds_count=1, seed_count_per_voxel=True, affine=None):
+def random_seeds_from_mask(mask, seeds_count=1, seed_count_per_voxel=True,
+                           affine=None):
     """Creates randomly placed seeds for fiber tracking from a binary mask.
 
     Seeds points are placed randomly distributed in voxels of ``mask``
     which are ``True``.
     If ``seed_count_per_voxel`` is ``True``, this function is
-    similar to ``seeds_from_mask()``, with the difference that instead of evenly
-    distributing the seeds, it randomly places the seeds within the voxels
-    specified by the ``mask``. The initial random conditions can be set using
-    ``numpy.random.seed(...)``, prior to calling this function.
+    similar to ``seeds_from_mask()``, with the difference that instead of
+    evenly distributing the seeds, it randomly places the seeds within the
+    voxels specified by the ``mask``. The initial random conditions can be set
+    using ``numpy.random.seed(...)``, prior to calling this function.
 
     Parameters
     ----------
@@ -812,8 +813,8 @@ def affine_for_trackvis(voxel_size, voxel_order=None, dim=None,
         Mapping from the voxel indices of the reference image to trackvis
         space.
     """
-    if (voxel_order is not None or dim is not None or
-        ref_img_voxel_order is not None):
+    if ((voxel_order is not None or dim is not None or
+         ref_img_voxel_order is not None)):
         raise NotImplemented
 
     # Create affine
