@@ -113,7 +113,8 @@ def test_LSCv2():
 
 
 def test_bundles_distances_mam():
-    xyz1A = np.array([[0, 0, 0], [1, 0, 0], [2, 0, 0]], dtype='float32')
+    xyz1A = np.array([[0, 0, 0], [1, 0, 0], [2, 0, 0], [3, 0, 0],
+                     dtype='float32')
     xyz2A = np.array([[0, 1, 1], [1, 0, 1], [2, 3, -2]], dtype='float32')
     xyz1B = np.array([[-1, 0, 0], [2, 0, 0], [2, 3, 0], [3, 0, 0]],
                      dtype='float32')
@@ -124,8 +125,7 @@ def test_bundles_distances_mam():
 
 
 def test_bundles_distances_mdf():
-    xyz1A = np.array([[0, 0, 0], [1, 0, 0], [2, 0, 0], [3, 0, 0]],
-                     dtype='float32')
+    xyz1A = np.array([[0, 0, 0], [1, 0, 0], [2, 0, 0]], dtype='float32')
     xyz2A = np.array([[0, 1, 1], [1, 0, 1], [2, 3, -2]], dtype='float32')
     xyz3A = np.array([[0, 0, 0], [1, 0, 0], [3, 0, 0]], dtype='float32')
     xyz1B = np.array([[-1, 0, 0], [2, 0, 0], [2, 3, 0]], dtype='float32')
