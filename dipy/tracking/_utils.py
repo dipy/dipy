@@ -64,5 +64,3 @@ def _to_voxel_coordinates(streamline, lin_T, offset):
         raise IndexError('streamline has points that map to negative voxel'
                          ' indices')
     return inds.astype(int)
-
-
