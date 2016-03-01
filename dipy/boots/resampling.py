@@ -1,14 +1,8 @@
 #!/usr/bin/python
 
-# import modules
-import time
-import sys
-import os
-import traceback
-import optparse
 import numpy as np
 import scipy as sp
-from copy import copy, deepcopy
+
 
 import warnings
 
@@ -170,10 +164,10 @@ def __calc_z0(x, p_0, statistic, eps, a_hat, sigma_hat):
         b_hat[i] = __tt_dot_dot(i, x, p_0, statistic, eps)
         tt_dot[i] = __tt_dot(i, x, p_0, statistic, eps)
     b_hat = b_hat / (2 * n**2)
-    c_q_hat = (__tt(x, (1 - eps) * p_0 + eps * tt_dot /
-                    (n**2 * sigma_hat), statistic) +
-               __tt(x, (1 - eps) * p_0 - eps * tt_dot /
-                    (n**2 * sigma_hat), statistic) -
+    c_q_hat = (__tt(x, ((1 - eps) * p_0 + eps * tt_dot /
+                        (n**2 * sigma_hat)), statistic) +
+               __tt(x, ((1 - eps) * p_0 - eps * tt_dot /
+                        (n**2 * sigma_hat)), statistic) -
                2 * __tt(x, p_0, statistic)) / eps**2
     return a_hat - (b_hat / sigma_hat - c_q_hat)
 
@@ -208,8 +202,8 @@ def __tt_dot(i, x, p_0, statistic, eps):
     """
     e = np.zeros(x.shape)
     e[i] = 1
-    return ((__tt(x, (1 - eps) * p_0 + eps * e[i], statistic) -
-            __tt(x, p_0, statistic)) / eps)
+    return ((__tt(x, ((1 - eps) * p_0 + eps * e[i]), statistic) -
+             __tt(x, p_0, statistic)) / eps)
 
 
 def __tt_dot_dot(i, x, p_0, statistic, eps):
@@ -219,8 +213,8 @@ def __tt_dot_dot(i, x, p_0, statistic, eps):
     e = np.zeros(x.shape)
     e[i] = 1
     return (__tt_dot(i, x, p_0, statistic, eps) / eps +
-            (__tt(x, (1 - eps) * p_0 - eps * e[i], statistic) -
-            __tt(x, p_0, statistic)) / eps**2)
+            (__tt(x, ((1 - eps) * p_0 - eps * e[i]), statistic) -
+             __tt(x, p_0, statistic)) / eps**2)
 
 
 def jackknife(pdf, statistic=np.std, M=None):
