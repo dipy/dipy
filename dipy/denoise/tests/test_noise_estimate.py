@@ -97,14 +97,9 @@ def test_estimate_sigma():
     arr = np.zeros((3, 3, 3))
     arr[0, 0, 0] = 1
     sigma = estimate_sigma(arr, disable_background_masking=False, N=1)
-<<<<<<< HEAD
-    assert_array_almost_equal(sigma, 0.10286889997472792 /
-                              np.sqrt(0.42920367320510366))
-=======
     assert_array_almost_equal(sigma,
                               (0.10286889997472792 /
                                np.sqrt(0.42920367320510366)))
->>>>>>> ce3767d0d5cb3776e0d4dddf0b09ca087a3cb66d
 
     arr = np.zeros((3, 3, 3, 3))
     arr[0, 0, 0] = 1
