@@ -1,5 +1,6 @@
 from __future__ import division, print_function, absolute_import
 
+import logging
 from glob import glob
 from os.path import join, basename, splitext
 
@@ -57,8 +58,7 @@ def median_otsu_flow(input_files, out_dir='', mask='brain_mask.nii.gz',
             save_masked is True.
     """
     for fpath in glob(input_files):
-        print('')
-        print('Applying median_otsu segmentation on {0}'.format(fpath))
+        logging.info('Applying median_otsu segmentation on {0}'.format(fpath))
         img = nib.load(fpath)
         volume = img.get_data()
 
@@ -71,10 +71,10 @@ def median_otsu_flow(input_files, out_dir='', mask='brain_mask.nii.gz',
         mask_img = nib.Nifti1Image(mask_volume.astype(np.float32), img.get_affine())
         mask_out_path = join(out_dir_path, mask)
         mask_img.to_filename(mask_out_path)
-        print('Mask saved as {0}'.format(mask_out_path))
+        logging.info('Mask saved as {0}'.format(mask_out_path))
 
         if save_masked:
             masked_img = nib.Nifti1Image(masked_volume, img.get_affine(), img.get_header())
             masked_out_path = join(out_dir_path, masked)
             masked_img.to_filename(masked_out_path)
-            print('Masked volume saved as {0}'.format(masked_out_path))
+            logging.info('Masked volume saved as {0}'.format(masked_out_path))
