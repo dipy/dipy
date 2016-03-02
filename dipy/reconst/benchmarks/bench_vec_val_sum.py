@@ -21,7 +21,8 @@ try:
 except AttributeError:
     with_einsum = dec.skipif(True, "Need einsum for benchmark")
 else:
-    with_einsum = lambda f : f
+    with_einsum = lambda f: f
+
 
 @with_einsum
 def bench_vec_val_vect():
