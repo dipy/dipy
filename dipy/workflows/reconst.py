@@ -1,5 +1,6 @@
 from __future__ import division, print_function, absolute_import
 
+import logging
 import os.path
 from glob import glob
 
@@ -15,10 +16,10 @@ from dipy.reconst.dti import (TensorModel, color_fa, fractional_anisotropy,
 from dipy.workflows.utils import choose_create_out_dir
 
 def dti_metrics_flow(input_files, mask_files, bvalues, bvectors, out_dir='',
-                     tensor='tensors.nii.gz', fa='fa.nii.gz', ga='ga.nii.gz',
-                     rgb='rgb.nii.gz', md='md.nii.gz', ad='ad.nii.gz',
-                     rd='rd.nii.gz', mode='mode.nii.gz', evec='evecs.nii.gz',
-                     eval='evals.nii.gz'):
+                     b0_threshold=0.0, tensor='tensors.nii.gz', fa='fa.nii.gz',
+                     ga='ga.nii.gz', rgb='rgb.nii.gz', md='md.nii.gz',
+                     ad='ad.nii.gz', rd='rd.nii.gz', mode='mode.nii.gz',
+                     evec='evecs.nii.gz', eval='evals.nii.gz'):
 
     """ Workflow for tensor reconstruction and DTI metrics computing.
     It a tensor recontruction on the files by 'globing' ``input_files`` and
@@ -40,6 +41,8 @@ def dti_metrics_flow(input_files, mask_files, bvalues, bvectors, out_dir='',
         multiple bvalues files at once.
     out_dir : string, optional
         Output directory (default input file directory)
+    b0_threshold: float, optional
+        Threshold used to find b=0 directions
     tensor : string, optional
         Name of the tensors volume to be saved (default 'tensors.nii.gz')
     fa : string, optional
@@ -88,7 +91,7 @@ def dti_metrics_flow(input_files, mask_files, bvalues, bvectors, out_dir='',
                                      glob(bvalues),
                                      glob(bvectors)):
 
-        print('Computing dti metrics for {0}'.format(dwi))
+        logging.info('Computing dti metrics for {0}'.format(dwi))
         img = nib.load(dwi)
         data = img.get_data()
         affine = img.get_affine()
@@ -98,7 +101,7 @@ def dti_metrics_flow(input_files, mask_files, bvalues, bvectors, out_dir='',
         else:
             mask = nib.load(mask).get_data().astype(np.bool)
 
-        tenfit, _ = get_fitted_tensor(data, mask, bval, bvec)
+        tenfit, _ = get_fitted_tensor(data, mask, bval, bvec, b0_threshold)
 
         out_dir_path = choose_create_out_dir(out_dir, dwi)
 
@@ -146,21 +149,13 @@ def dti_metrics_flow(input_files, mask_files, bvalues, bvectors, out_dir='',
         evals_img = nib.Nifti1Image(tenfit.evals.astype(np.float32), affine)
         nib.save(evals_img, os.path.join(out_dir_path, eval))
 
+        logging.info('All dti metrics saved in {0}'.format(out_dir_path))
 
-def get_fitted_tensor(data, mask, bval, bvec):
-    # Get tensors
-    print('Tensor estimation...')
+
+def get_fitted_tensor(data, mask, bval, bvec, b0_threshold=0):
+    logging.info('Tensor estimation...')
     bvals, bvecs = read_bvals_bvecs(bval, bvec)
-    if bvals.min() != 0:
-        if bvals.min() > 20:
-            raise ValueError('The minimal bvalue is greater than 20. ' +
-                             'This is highly suspicious. Please check ' +
-                             'your data to ensure everything is correct.\n' +
-                             'Value found: {0}'.format(bvals.min()))
-        else:
-            gtab = gradient_table(bvals, bvecs, b0_threshold=bvals.min())
-    else:
-        gtab = gradient_table(bvals, bvecs)
+    gtab = gradient_table(bvals, bvecs, b0_threshold=b0_threshold)
 
     tenmodel = TensorModel(gtab)
     tenfit = tenmodel.fit(data, mask)

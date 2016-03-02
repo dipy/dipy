@@ -1,3 +1,4 @@
+import logging
 from glob import glob
 import os
 
@@ -13,7 +14,7 @@ from dipy.reconst.csdeconv import ConstrainedSphericalDeconvModel, auto_response
 from dipy.workflows.utils import choose_create_out_dir
 
 def fodf_flow(input_files, mask_files, bvalues, bvectors, out_dir='',
-              fodf='fodf.nii.gz', peaks='peaks.nii.gz',
+              b0_threshold=0.0, fodf='fodf.nii.gz', peaks='peaks.nii.gz',
               peaks_values='peaks_values.nii.gz',
               peaks_indices='peaks_indices.nii.gz'):
     """ Workflow for peaks computation. Peaks computation is done by 'globing'
@@ -36,6 +37,8 @@ def fodf_flow(input_files, mask_files, bvalues, bvectors, out_dir='',
         multiple bvalues files at once.
     out_dir : string, optional
         Output directory (default input file directory)
+    b0_threshold : float, optional
+        Threshold used to find b=0 directions
     fodf : string, optional
         Name of the fodf volume to be saved (default 'fodf.nii.gz')
     peaks : string, optional
@@ -61,27 +64,16 @@ def fodf_flow(input_files, mask_files, bvalues, bvectors, out_dir='',
                                          glob(bvalues),
                                          glob(bvectors)):
 
-        print('Computing fiber odfs for {0}'.format(dwi))
+        logging.info('Computing fiber odfs for {0}'.format(dwi))
         vol = nib.load(dwi)
         data = vol.get_data()
         affine = vol.get_affine()
 
         bvals, bvecs = read_bvals_bvecs(bval, bvec)
-        if bvals.min() != 0:
-            if bvals.min() > 20:
-                raise ValueError('The minimal bvalue is greater than 20. ' +
-                                 'This is highly suspicious. Please check ' +
-                                 'your data to ensure everything is correct.\n' +
-                                 'Value found: {0}'.format(bvals.min()))
-
-            gtab = gradient_table(bvals, bvecs, b0_threshold=bvals.min())
-        else:
-            gtab = gradient_table(bvals, bvecs)
-
+        gtab = gradient_table(bvals, bvecs, b0_threshold=b0_threshold)
         mask_vol = nib.load(maskfile).get_data().astype(np.bool)
 
         sh_order = 8
-
         if data.shape[-1] < 15:
             raise ValueError('You need at least 15 unique DWI volumes to '
                              'compute fiber odfs. You currently have: {0}'
@@ -93,8 +85,8 @@ def fodf_flow(input_files, mask_files, bvalues, bvectors, out_dir='',
         response, ratio = auto_response(gtab, data)
         response = list(response)
 
-        print("Eigenvalues for the frf of the input data are :", response[0])
-        print("Ratio for smallest to largest eigen value is", ratio)
+        logging.info("Eigenvalues for the frf of the input data are :", response[0])
+        logging.info("Ratio for smallest to largest eigen value is", ratio)
 
         peaks_sphere = get_sphere('symmetric362')
 
@@ -128,3 +120,5 @@ def fodf_flow(input_files, mask_files, bvalues, bvectors, out_dir='',
 
         nib.save(nib.Nifti1Image(peaks_csd.peak_indices, affine),
                  os.path.join(out_dir_path, peaks_indices))
+
+        logging.info('Finished computing fiber odfs.')

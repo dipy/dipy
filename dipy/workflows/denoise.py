@@ -1,5 +1,6 @@
 from __future__ import division, print_function, absolute_import
 
+import logging
 from glob import glob
 import os
 
@@ -36,15 +37,14 @@ def nlmeans_flow(input_files, out_dir='',
            The denoised volume.
     """
     for fpath in glob(input_files):
-        print('')
-        print('Denoising {0}'.format(fpath))
-
+        logging.info('Denoising {0}'.format(fpath))
         image = nib.load(fpath)
         data = image.get_data()
 
         if sigma == 0:
+            logging.info('Estimating sigma')
             sigma = estimate_sigma(data)
-            print('Found sigma {0}'.format(sigma))
+            logging.debug('Found sigma {0}'.format(sigma))
 
         denoised_data = nlmeans(data, sigma)
         denoised_image = nib.Nifti1Image(
@@ -54,5 +54,5 @@ def nlmeans_flow(input_files, out_dir='',
         out_file_path = os.path.join(out_dir_path, denoised)
 
         denoised_image.to_filename(out_file_path)
-        print('Denoised volume saved as {0}'.format(out_file_path))
+        logging('Denoised volume saved as {0}'.format(out_file_path))
 

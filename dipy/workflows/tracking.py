@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 from __future__ import division
 
+import logging
 import os
 from glob import glob
 import nibabel as nib
@@ -48,6 +49,7 @@ def EuDX_tracking_flow(ref, peaks_values, peaks_indexes, out_dir='',
     for ref_path, peaks_values_path, peaks_idx_path in zip(glob(ref),
                                                            glob(peaks_values),
                                                            glob(peaks_indexes)):
+        logging.info('EuDX tracking on {0}'.format(peaks_values_path))
         ref_img = nib.load(ref_path)
         ref_vol = ref_img.get_data()
         voxel_size = ref_img.get_header().get_zooms()[:3]
@@ -71,9 +73,9 @@ def EuDX_tracking_flow(ref, peaks_values, peaks_indexes, out_dir='',
         hdr['n_count'] = len(streamlines_trk)
 
         out_dir_path = choose_create_out_dir(out_dir, ref)
-        nib.trackvis.write(os.path.join(out_dir_path, tractogram),
-                           streamlines_trk,
-                           hdr)
+        tractogram_path = os.path.join(out_dir_path, tractogram)
+        nib.trackvis.write(tractogram_path, streamlines_trk, hdr)
+        logging.info('Saved {0}'.format(tractogram_path))
 
 def deterministic_tracking_flow(input_files, mask_files, bvalues, bvectors,
                                 out_dir='', tractogram='deterministic_tractogram.trk'):
@@ -110,7 +112,7 @@ def deterministic_tracking_flow(input_files, mask_files, bvalues, bvectors,
                                      glob(bvalues),
                                      glob(bvectors)):
 
-        print('Deterministic tracking on {0}'.format(dwi))
+        logging.info('Deterministic tracking on {0}'.format(dwi))
         dwi_img = nib.load(dwi)
         affine = dwi_img.get_affine()
         dwi_data = dwi_img.get_data()
@@ -121,7 +123,7 @@ def deterministic_tracking_flow(input_files, mask_files, bvalues, bvectors,
         tenfit, gtab = get_fitted_tensor(dwi_data, mask_data, bval, bvec)
         FA = fractional_anisotropy(tenfit.evals)
 
-        seed_mask = FA > 0.2
+        seed_mask = FA > 0.7
         seeds = utils.seeds_from_mask(seed_mask, density=1, affine=affine)
         csd_model = ConstrainedSphericalDeconvModel(gtab, None, sh_order=6)
         csd_fit = csd_model.fit(dwi_data, mask=mask_data)
@@ -147,8 +149,10 @@ def deterministic_tracking_flow(input_files, mask_files, bvalues, bvectors,
         hdr['n_count'] = len(streamlines_trk)
         hdr['origin'] = affine[:3, 3]
 
-        nib.trackvis.write(os.path.join(out_dir_path, tractogram),
-                           streamlines_trk,  hdr)
+        tractogram_path = os.path.join(out_dir_path, tractogram)
+        nib.trackvis.write(tractogram_path, streamlines_trk,  hdr)
+
+        logging.info('Saved {0}'.format(tractogram_path))
 
 
 
