@@ -470,9 +470,10 @@ def test_joint_pdf_gradients_sparse():
         spacing = np.ones(dim + 1, dtype=np.float64)
         mgrad, inside = vf.sparse_gradient(moving.astype(np.float32),
                                            sp_to_moving, spacing, samples)
-        parzen_hist.update_gradient_sparse(theta, transform, intensities_static,
-                                           intensities_moving, samples[..., :dim],
-                                           mgrad)
+        parzen_hist.update_gradient_sparse(
+          theta, transform, intensities_static,
+          intensities_moving, samples[..., :dim],
+          mgrad)
         # Get the gradient of the joint distribution w.r.t. the transform
         # parameters
         actual = np.copy(parzen_hist.joint_grad)
