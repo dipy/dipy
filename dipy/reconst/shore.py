@@ -18,6 +18,7 @@ cvxopt, have_cvxopt, _ = optional_package("cvxopt")
 if have_cvxopt:
     import cvxopt.solvers
 
+
 class ShoreModel(Cache):
 
     r"""Simple Harmonic Oscillator based Reconstruction and Estimation
