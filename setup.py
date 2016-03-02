@@ -223,7 +223,7 @@ def main(**extra_args):
                           pjoin('bin', 'dipy_simple_pipeline'),
                           pjoin('bin', 'dipy_track_deterministic'),
                           pjoin('bin', 'dipy_track_EuDX'),
-                          pjoin('bin', 'dipy_tract_density')],
+                          pjoin('bin', 'dipy_track_density')],
           cmdclass = cmdclass,
           **extra_args
         )

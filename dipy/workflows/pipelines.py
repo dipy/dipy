@@ -9,7 +9,7 @@ from dipy.workflows.denoise import nlmeans_flow
 from dipy.workflows.reconst import dti_metrics_flow
 from dipy.workflows.fodf import fodf_flow
 from dipy.workflows.tracking import deterministic_tracking_flow
-from dipy.workflows.tract_metrics import tract_density_flow
+from dipy.workflows.track_metrics import track_density_flow
 
 def simple_pipeline_flow(input_files, bvalues, bvectors, work_dir='',
                          resume=False):
@@ -75,4 +75,4 @@ def simple_pipeline_flow(input_files, bvalues, bvectors, work_dir='',
 
         tdi = os.path.join(metrics_dir, 'tdi.nii.gz')
         if os.path.exists(tractogram) is False or resume is False:
-            tract_density_flow(tractogram, fa_path, out_dir=metrics_dir, tdi=tdi)
+            track_density_flow(tractogram, fa_path, out_dir=metrics_dir, tdi=tdi)
