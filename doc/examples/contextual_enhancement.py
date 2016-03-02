@@ -51,7 +51,7 @@ onto :math:`{\bf n}`.
 Note that the shift-twist convolution differs from a Euclidean convolution and
 takes into account the non-flat structure of the space :math:`\mathbb{R}^3\rtimes S^2`.
 
-The kernel :math:`P_t` has a stochastic interpretation [DuitsAndFranken_JMIV]_.
+The kernel :math:`P_t` has a stochastic interpretation [DuitsAndFranken_IJCV]_.
 It can be seen as the limiting distribution obtained by accumulating random
 walks of particles in the position/orientation domain, where in each step the
 particles can (randomly) move forward/backward along their current orientation,
@@ -267,7 +267,7 @@ References
                         and Applications in Neuroimaging. Fifth International
                         Conference on Scale Space and Variational Methods in
                         Computer Vision
-.. [DuitsAndFranken_JMIV] R. Duits and E. Franken (2011) Left-invariant diffusions 
+.. [DuitsAndFranken_IJCV] R. Duits and E. Franken (2011) Left-invariant diffusions 
                         on the space of positions and orientations and their 
                         application to crossing-preserving smoothing of HARDI 
                         images. International Journal of Computer Vision, 92:231-264.
