@@ -10,7 +10,8 @@ import tractconverter
 from dipy.tracking.utils import density_map
 from dipy.workflows.utils import choose_create_out_dir
 
-def tract_density_flow(tractograms, ref_files, out_dir='', up_factor=1.0,
+
+def track_density_flow(tractograms, ref_files, out_dir='', up_factor=1.0,
                        tdi='tdi.nii.gz'):
     """ Workflow for tract density computation.
 

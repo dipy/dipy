@@ -2,7 +2,7 @@
 
 from __future__ import division, print_function
 from dipy.workflows.pipelines import simple_pipeline_flow
-from base_script import run_flow
+from flow_runner import run_flow
 
 if __name__ == "__main__":
     run_flow(simple_pipeline_flow)
