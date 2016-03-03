@@ -465,7 +465,6 @@ def _nlls_err_func(tensor_elements, design_matrix, data, Diso=3e-3,
         noise in each diffusion-weighting direction (if an array is
         provided). If 'gmm', the Geman-Mclure M-estimator is used for
         weighting.
-    
     cholesky : bool, optional 
         If true, the diffusion tensor elements were decomposed using cholesky
         decomposition. See fwdti.nlls_fit_tensor
@@ -590,6 +589,10 @@ def nlls_fit_tensor(design_matrix, data, fw_params=None, Diso=3e-3,
         fw_params = wls_fit_tensor(design_matrix, flat_data,  Diso=Diso)
 
     fw_params = fw_params.reshape((-1, fw_params.shape[-1]))
+
+    # if bounds==None:
+    #     bounds = ([0., -Diso, 0., -Diso, -Diso, 0., -10., 0.],
+    #               [Diso, Diso, Diso, Diso, Diso, Diso, 10., 1.])
     
     for vox in range(flat_data.shape[0]):
         if np.all(flat_data[vox] == 0):
@@ -615,6 +618,17 @@ def nlls_fit_tensor(design_matrix, data, fw_params=None, Diso=3e-3,
 
         # Use the Levenberg-Marquardt algorithm wrapped in opt.leastsq
         start_params = np.concatenate((dt, [-np.log(s0), f]), axis=0)
+        # lb = np.array(bounds[0])
+        # ub = np.array(bounds[1])
+        # start_params[start_params<lb] = lb[start_params<lb]
+        # start_params[start_params>ub] = ub[start_params>ub]
+        # out = opt.least_squares(_nlls_err_func, start_params[:8],
+        #                         args=(design_matrix, flat_data[vox],
+        #                              Diso, weighting, sigma, cholesky,
+        #                              f_transform),
+        #                         bounds=bounds)
+        # this_tensor = out.x
+
         this_tensor, status = opt.leastsq(_nlls_err_func, start_params[:8],
                                           args=(design_matrix,
                                                 flat_data[vox],
@@ -623,7 +637,7 @@ def nlls_fit_tensor(design_matrix, data, fw_params=None, Diso=3e-3,
                                                 sigma,
                                                 cholesky,
                                                 f_transform))
-                                                
+
         # Invert the cholesky decomposition if this was requested
         if cholesky:
             this_tensor[:6] = cholesky_to_lower_triangular(this_tensor[:6])
