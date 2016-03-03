@@ -978,7 +978,8 @@ def perpendicular_directions(v, num=30, half=False):
         \frac{v_{y}v_{z}\sin(a_{i})+v_{x}\cos(a_{i})}
         {\sqrt{{v_{x}}^{2}+{v_{z}}^{2}}} \right  ]
 
-    For more details on this calculation, see ` here <http://gsoc2015dipydki.blogspot.it/2015/07/rnh-post-8-computing-perpendicular.html>`_.
+    For more details on this calculation, see ` here
+    <http://gsoc2015dipydki.blogspot.it/2015/07/rnh-post-8-computing-perpendicular.html>`_.
     """
     v = np.array(v, dtype=float)
 

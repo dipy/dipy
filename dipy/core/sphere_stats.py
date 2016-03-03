@@ -6,6 +6,7 @@ import numpy as np
 import dipy.core.geometry as geometry
 from itertools import permutations
 
+
 def random_uniform_on_sphere(n=1, coords='xyz'):
     r'''Random unit vectors from a uniform distribution on the sphere.
 
@@ -55,6 +56,7 @@ def random_uniform_on_sphere(n=1, coords='xyz'):
     if coords == 'degrees':
         return np.rad2deg(angles)
 
+
 def eigenstats(points, alpha=0.05):
     r'''Principal direction and confidence ellipse
 
@@ -66,7 +68,8 @@ def eigenstats(points, alpha=0.05):
     points : arraey_like (N,3)
         array of points on the sphere of radius 1 in $\mathbb{R}^3$
     alpha : real or None
-        1 minus the coverage for the confidence ellipsoid, e.g. 0.05 for 95% coverage.
+        1 minus the coverage for the confidence ellipsoid, e.g. 0.05 for 95%
+        coverage.
 
     Returns
     -------
@@ -90,7 +93,7 @@ def eigenstats(points, alpha=0.05):
     polar_centroid = np.array(geometry.cart2sphere(x,y,z))*rad2deg
     '''
 
-    cross = np.dot(points.T,points)/n
+    cross = np.dot(points.T, points)/n
     # cross-covariance of points
 
     evals, evecs = np.linalg.eigh(cross)
@@ -102,34 +105,34 @@ def eigenstats(points, alpha=0.05):
     tau = evals[order]
     # the ordered eigenvalues
 
-    h = evecs[:,order]
+    h = evecs[:, order]
     # the eigenvectors in corresponding order
 
-    h[:,2] = h[:,2]*np.sign(h[2,2])
+    h[:, 2] = h[:, 2]*np.sign(h[2, 2])
     # map the first principal direction into upper hemisphere
 
-    centre = np.array(geometry.cart2sphere(*h[:,2]))[1:]*rad2deg
+    centre = np.array(geometry.cart2sphere(*h[:, 2]))[1:]*rad2deg
     # the spherical coordinates of the first principal direction
 
-    e = np.zeros((2,2))
+    e = np.zeros((2, 2))
 
-    p0 = np.dot(points,h[:,0])
-    p1 = np.dot(points,h[:,1])
-    p2 = np.dot(points,h[:,2])
+    p0 = np.dot(points, h[:, 0])
+    p1 = np.dot(points, h[:, 1])
+    p2 = np.dot(points, h[:, 2])
     # the principal coordinates of the points
 
-    e[0,0] = np.sum((p0**2)*(p2**2))/(n*(tau[0]-tau[2])**2)
-    e[1,1] = np.sum((p1**2)*(p2**2))/(n*(tau[1]-tau[2])**2)
-    e[0,1] = np.sum((p0*p1*(p2**2))/(n*(tau[0]-tau[2])*(tau[1]-tau[2])))
-    e[1,0] = e[0,1]
+    e[0, 0] = np.sum((p0**2)*(p2**2))/(n*(tau[0]-tau[2])**2)
+    e[1, 1] = np.sum((p1**2)*(p2**2))/(n*(tau[1]-tau[2])**2)
+    e[0, 1] = np.sum((p0*p1*(p2**2))/(n*(tau[0]-tau[2])*(tau[1]-tau[2])))
+    e[1, 0] = e[0, 1]
     # e is a 2x2 helper matrix
 
-    b1 = np.array([np.NaN,np.NaN])
+    b1 = np.array([np.NaN, np.NaN])
 
     d = -2*np.log(alpha)/n
-    s,w = np.linalg.eig(e)
+    s, w = np.linalg.eig(e)
     g = np.sqrt(d*s)
-    b1= np.arcsin(g)*rad2deg
+    b1 = np.arcsin(g)*rad2deg
     # b1 are the estimated 100*(1-alpha)% confidence ellipsoid semi-axes
     # in degrees
 
@@ -155,7 +158,8 @@ def eigenstats(points, alpha=0.05):
             b2= np.arcsin(g)*rad2deg
     '''
 
-def compare_orientation_sets(S,T):
+
+def compare_orientation_sets(S, T):
     r'''Computes the mean cosine distance of the best match between
     points of two sets of vectors S and T (angular similarity)
 
@@ -200,11 +204,13 @@ def compare_orientation_sets(S,T):
         m = n
         n = a
 
-    v = [np.sum([np.abs(np.dot(p[i],T[i])) for i in range(n)]) for p in permutations(S,n)]
+    v = [np.sum([np.abs(np.dot(p[i], T[i])) for i in range(n)])
+         for p in permutations(S, n)]
     return np.max(v)/np.float(n)
-    #return np.max(v)*np.float(n)/np.float(m)
+    # return np.max(v)*np.float(n)/np.float(m)
 
-def angular_similarity(S,T):
+
+def angular_similarity(S, T):
     r'''Computes the cosine distance of the best match between
     points of two sets of vectors S and T
 
@@ -285,6 +291,7 @@ def angular_similarity(S,T):
         v.append(np.sum(angles))
     print(v)
     """
-    v = [np.sum([np.abs(np.dot(p[i],T[i])) for i in range(n)]) for p in permutations(S,n)]
+    v = [np.sum([np.abs(np.dot(p[i], T[i])) for i in range(n)])
+         for p in permutations(S, n)]
 
-    return np.float(np.max(v))#*np.float(n)/np.float(m)
+    return np.float(np.max(v))  # *np.float(n)/np.float(m)
