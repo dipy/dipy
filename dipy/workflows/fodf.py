@@ -2,6 +2,8 @@ import logging
 from glob import glob
 import os
 
+from ast import literal_eval
+
 import numpy as np
 import nibabel as nib
 
@@ -14,7 +16,7 @@ from dipy.reconst.csdeconv import ConstrainedSphericalDeconvModel, auto_response
 from dipy.workflows.utils import choose_create_out_dir, glob_or_value
 
 def fodf_flow(input_files, bvalues, bvectors, out_dir='',
-              mask_files=None, b0_threshold=0.0, fodf='fodf.nii.gz',
+              mask_files=None, b0_threshold=0.0, frf=[15,4,4], fodf='fodf.nii.gz',
               peaks='peaks.nii.gz', peaks_values='peaks_values.nii.gz',
               peaks_indices='peaks_indices.nii.gz'):
     """ Workflow for peaks computation. Peaks computation is done by 'globing'
@@ -39,6 +41,8 @@ def fodf_flow(input_files, bvalues, bvectors, out_dir='',
         multiple masks at once. (default: No mask used)
     b0_threshold : float, optional
         Threshold used to find b=0 directions
+    frf : tuple, optional
+        Fiber response function to me mutiplied by 10**-4 (default: 15,4,4)
     fodf : string, optional
         Name of the fodf volume to be saved (default 'fodf.nii.gz')
     peaks : string, optional
@@ -64,7 +68,7 @@ def fodf_flow(input_files, bvalues, bvectors, out_dir='',
                                          globed_mask,
                                          glob(bvalues),
                                          glob(bvectors)):
-
+        print(frf)
         logging.info('Computing fiber odfs for {0}'.format(dwi))
         vol = nib.load(dwi)
         data = vol.get_data()
@@ -79,12 +83,18 @@ def fodf_flow(input_files, bvalues, bvectors, out_dir='',
             raise ValueError('You need at least 15 unique DWI volumes to '
                              'compute fiber odfs. You currently have: {0}'
                              ' DWI volumes.'.format(data.shape[-1]))
-
         elif data.shape[-1] < 30:
             sh_order = 6
 
+
         response, ratio = auto_response(gtab, data)
         response = list(response)
+
+        if frf is not None:
+            l01 = np.array(literal_eval(frf), dtype=np.float64)
+            l01 *= 10**-4
+            response[0] = np.array([l01[0], l01[1], l01[1]])
+            ratio = l01[1] / l01[0]
 
         logging.info('Eigenvalues for the frf of the input data are : {0}'.format(response[0]))
         logging.info('Ratio for smallest to largest eigen value is {0}'.format(ratio))
