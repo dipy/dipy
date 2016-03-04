@@ -35,12 +35,11 @@ def simple_pipeline_flow(input_files, bvalues, bvectors, work_dir='',
     work_dir : string, optional
         Working directory (default input file directory)
     resume : bool, optional
-        If true, the pipeline will not run tasks if the output exists.
+        If enabled, the pipeline will not run tasks if the output exists.
 
     Outputs
     -------
     """
-
     for dwi, bval, bvec in zip(glob(input_files),
                                      glob(bvalues),
                                      glob(bvectors)):

@@ -91,8 +91,12 @@ class IntrospectiveArgumentParser(arg.ArgumentParser):
                 _kwargs["metavar"] = dtype.__name__
 
             if dtype is bool:
-                _kwargs['type'] = int
-                _kwargs['choices'] = [0, 1]
+                _kwargs['action'] = 'store_true'
+                default_ = {}
+                default_[arg] = False
+                self.set_defaults(**default_)
+                del _kwargs['type']
+                del _kwargs['metavar']
 
             if isnarg:
                 _kwargs['nargs'] = '*'
