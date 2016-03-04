@@ -12,7 +12,7 @@ from dipy.segment.mask import median_otsu
 
 
 def median_otsu_flow(input_files, out_dir='', mask='brain_mask.nii.gz',
-                     masked='dwi_2x2x2_masked.nii.gz', save_masked=False,
+                     masked='dwi_masked.nii.gz', save_masked=False,
                      median_radius=4, numpass=4, autocrop=False,
                      vol_idx=None, dilate=None):
     """ Workflow wrapping the median_otsu segmentation method.
@@ -31,7 +31,7 @@ def median_otsu_flow(input_files, out_dir='', mask='brain_mask.nii.gz',
     mask : string, optional
         Name of the mask volume to be saved (default 'brain_mask.nii.gz')
     masked : string, optional
-        Name of the masked volume to be saved (default 'dwi_2x2x2_masked.nii.gz')
+        Name of the masked volume to be saved (default 'dwi_masked.nii.gz')
     save_masked : bool
         Save mask
     median_radius : int, optional
