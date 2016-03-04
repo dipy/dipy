@@ -11,11 +11,11 @@ from dipy.core.gradients import gradient_table
 from dipy.io.gradients import read_bvals_bvecs
 from dipy.reconst.csdeconv import ConstrainedSphericalDeconvModel, auto_response
 
-from dipy.workflows.utils import choose_create_out_dir
+from dipy.workflows.utils import choose_create_out_dir, glob_or_value
 
-def fodf_flow(input_files, mask_files, bvalues, bvectors, out_dir='',
-              b0_threshold=0.0, fodf='fodf.nii.gz', peaks='peaks.nii.gz',
-              peaks_values='peaks_values.nii.gz',
+def fodf_flow(input_files, bvalues, bvectors, out_dir='',
+              mask_files=None, b0_threshold=0.0, fodf='fodf.nii.gz',
+              peaks='peaks.nii.gz', peaks_values='peaks_values.nii.gz',
               peaks_indices='peaks_indices.nii.gz'):
     """ Workflow for peaks computation. Peaks computation is done by 'globing'
         ``input_files`` and saves the peaks in a directory specified by
@@ -26,9 +26,6 @@ def fodf_flow(input_files, mask_files, bvalues, bvectors, out_dir='',
     input_files : string
         Path to the input volumes. This path may contain wildcards to process
         multiple inputs at once.
-    mask_files : string
-        Path to the input masks. This path may contain wildcards to use
-        multiple masks at once.
     bvalues : string
         Path to the bvalues files. This path may contain wildcards to use
         multiple bvalues files at once.
@@ -37,6 +34,9 @@ def fodf_flow(input_files, mask_files, bvalues, bvectors, out_dir='',
         multiple bvalues files at once.
     out_dir : string, optional
         Output directory (default input file directory)
+    mask_files : string
+        Path to the input masks. This path may contain wildcards to use
+        multiple masks at once. (default: No mask used)
     b0_threshold : float, optional
         Threshold used to find b=0 directions
     fodf : string, optional
@@ -59,8 +59,9 @@ def fodf_flow(input_files, mask_files, bvalues, bvectors, out_dir='',
         Peaks_indices volume
     """
 
-    for dwi, maskfile, bval, bvec in zip(glob(input_files),
-                                         glob(mask_files),
+    globed_dwi, globed_mask = glob_or_value(input_files, mask_files)
+    for dwi, maskfile, bval, bvec in zip(globed_dwi,
+                                         globed_mask,
                                          glob(bvalues),
                                          glob(bvectors)):
 
