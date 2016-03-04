@@ -85,8 +85,8 @@ def fodf_flow(input_files, mask_files, bvalues, bvectors, out_dir='',
         response, ratio = auto_response(gtab, data)
         response = list(response)
 
-        logging.info("Eigenvalues for the frf of the input data are :", response[0])
-        logging.info("Ratio for smallest to largest eigen value is", ratio)
+        logging.info('Eigenvalues for the frf of the input data are : {0}'.format(response[0]))
+        logging.info('Ratio for smallest to largest eigen value is {0}'.format(ratio))
 
         peaks_sphere = get_sphere('symmetric362')
 

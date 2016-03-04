@@ -2,6 +2,7 @@ from __future__ import division, print_function, absolute_import
 from os.path import join as pjoin
 import os
 from glob import glob
+import logging
 
 from dipy.workflows.utils import choose_create_out_dir
 from dipy.workflows.segment import median_otsu_flow
@@ -44,34 +45,52 @@ def simple_pipeline_flow(input_files, bvalues, bvectors, work_dir='',
                                      glob(bvalues),
                                      glob(bvectors)):
 
+        basename = os.path.basename(dwi)
+        while '.' in basename:
+            basename = os.path.splitext(basename)[0]
+
+        nifti_basename = basename + '_{0}.nii.gz'
         work_dir = choose_create_out_dir(work_dir, dwi)
 
-        mask_filename = pjoin(work_dir, 'brain_mask.nii.gz')
+        mask_filename = pjoin(work_dir, nifti_basename.format('mask'))
         if os.path.exists(mask_filename) is False or resume is False:
             median_otsu_flow(dwi, out_dir=work_dir, mask=mask_filename)
+        else:
+            logging.info('Skipped median otsu segmentation')
 
-        denoised_dwi = pjoin(work_dir, 'dwi_2x2x2_nlmeans.nii.gz')
+        denoised_dwi = pjoin(work_dir, nifti_basename.format('nlmeans'))
         if os.path.exists(denoised_dwi) is False or resume is False:
             nlmeans_flow(dwi, out_dir=work_dir, denoised=denoised_dwi)
+        else:
+            logging.info('Skipped nlmeans denoise')
 
         metrics_dir = pjoin(work_dir, 'metrics')
         fa_path = pjoin(metrics_dir, 'fa.nii.gz')
         if os.path.exists(fa_path) is False or resume is False:
             dti_metrics_flow(denoised_dwi, mask_filename, bval, bvec,
                              out_dir=metrics_dir)
+        else:
+            logging.info('Skipped dti metrics')
 
         peaks_dir = pjoin(work_dir, 'peaks')
         if os.path.exists(peaks_dir) is False or resume is False:
             fodf_flow(denoised_dwi, mask_filename, bval, bvec, out_dir=peaks_dir)
+        else:
+            logging.info('Skipped fodf')
 
         tractograms_dir = pjoin(work_dir, 'tractograms')
         tractogram = 'deterministic_tractogram.trk'
 
-        if os.path.exists(tractogram) is False or resume is False:
+        tractogram_path = pjoin(tractograms_dir, tractogram)
+        if os.path.exists(tractogram_path) is False or resume is False:
             deterministic_tracking_flow(denoised_dwi, mask_filename, bval, bvec,
                                         out_dir=tractograms_dir,
                                         tractogram=tractogram)
+        else:
+            logging.info('Skipped deterministic tracking')
 
         tdi = os.path.join(metrics_dir, 'tdi.nii.gz')
-        if os.path.exists(tractogram) is False or resume is False:
-            track_density_flow(tractogram, fa_path, out_dir=metrics_dir, tdi=tdi)
+        if os.path.exists(tdi) is False or resume is False:
+            track_density_flow(tractogram_path, fa_path, out_dir=metrics_dir, tdi=tdi)
+        else:
+            logging.info('Skipped track density')
