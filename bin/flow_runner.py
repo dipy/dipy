@@ -26,6 +26,7 @@ def run_flow(flow):
     logging.basicConfig(filename=args['log_file'],
                         format='%(levelname)s:%(message)s',
                         level=get_level(args['log_level']))
+
     # Keep only workflow related parameters
     del args['log_level']
     del args['log_file']
