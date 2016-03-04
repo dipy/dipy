@@ -13,9 +13,9 @@ from dipy.reconst.dti import (TensorModel, color_fa, fractional_anisotropy,
                               geodesic_anisotropy, mean_diffusivity,
                               axial_diffusivity, radial_diffusivity,
                               lower_triangular, mode as get_mode)
-from dipy.workflows.utils import choose_create_out_dir
+from dipy.workflows.utils import choose_create_out_dir, glob_or_value
 
-def dti_metrics_flow(input_files, mask_files, bvalues, bvectors, out_dir='',
+def dti_metrics_flow(input_files, bvalues, bvectors, out_dir='', mask_files=None,
                      b0_threshold=0.0, tensor='tensors.nii.gz', fa='fa.nii.gz',
                      ga='ga.nii.gz', rgb='rgb.nii.gz', md='md.nii.gz',
                      ad='ad.nii.gz', rd='rd.nii.gz', mode='mode.nii.gz',
@@ -30,9 +30,6 @@ def dti_metrics_flow(input_files, mask_files, bvalues, bvectors, out_dir='',
     input_files : string
         Path to the input volumes. This path may contain wildcards to process
         multiple inputs at once.
-    mask_files : string
-        Path to the input masks. This path may contain wildcards to use
-        multiple masks at once.
     bvalues : string
         Path to the bvalues files. This path may contain wildcards to use
         multiple bvalues files at once.
@@ -41,8 +38,11 @@ def dti_metrics_flow(input_files, mask_files, bvalues, bvectors, out_dir='',
         multiple bvalues files at once.
     out_dir : string, optional
         Output directory (default input file directory)
-    b0_threshold: float, optional
-        Threshold used to find b=0 directions
+    mask_files : string
+        Path to the input masks. This path may contain wildcards to use
+        multiple masks at once. (default: No mask used)
+    b0_threshold : float, optional
+        Threshold used to find b=0 directions (default 0.0)
     tensor : string, optional
         Name of the tensors volume to be saved (default 'tensors.nii.gz')
     fa : string, optional
@@ -86,8 +86,9 @@ def dti_metrics_flow(input_files, mask_files, bvalues, bvectors, out_dir='',
         Eigen vvalues
     """
 
-    for dwi, mask, bval, bvec in zip(glob(input_files),
-                                     glob(mask_files),
+    globed_dwi, globed_mask = glob_or_value(input_files, mask_files)
+    for dwi, mask, bval, bvec in zip(globed_dwi,
+                                     globed_mask,
                                      glob(bvalues),
                                      glob(bvectors)):
 
