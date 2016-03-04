@@ -12,7 +12,7 @@ from dipy.workflows.utils import choose_create_out_dir
 
 
 def nlmeans_flow(input_files, out_dir='',
-                 denoised='dwi_2x2x2_nlmeans.nii.gz', sigma=0):
+                 denoised='dwi_nlmeans.nii.gz', sigma=0):
     """ Workflow wrapping the nlmeans denoising method.
 
     It applies nlmeans denoise on each file found by 'globing'
@@ -27,9 +27,9 @@ def nlmeans_flow(input_files, out_dir='',
     out_dir : string, optional
         Output directory (default input file directory)
     out_filename : string, optional
-        Name of the resuting denoised volume (default dwi_2x2x2_nlmeans.nii.gz)
-    sigma : float,
-        Radius (in voxels) of the applied median filter(default 4)
+        Name of the resuting denoised volume (default: dwi_nlmeans.nii.gz)
+    sigma : float, optional
+        Sigma parameter to pass to the nlmeans algorithm (default: auto estimation).
 
     Outputs
     -------
