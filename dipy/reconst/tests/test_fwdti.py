@@ -44,11 +44,11 @@ FAref = np.zeros((2, 2, 2))
 mevals = np.array([[0.0017, 0.0003, 0.0003], [0.003, 0.003, 0.003]])
 # volume fractions
 GTF = np.array([[[0.06, 0.71], [0.33, 0.91]],
-                [[0., 0,], [0., 0.]]])
+                [[0., 0.], [0., 0.]]])
 # S0 multivoxel
 S0m = 100 * np.ones((2, 2, 2))
 # model_params ground truth (to be fill)
-model_params_mv = np.zeros((2, 2, 2, 14))         
+model_params_mv = np.zeros((2, 2, 2, 14))
 for i in range(2):
     for j in range(2):
         gtf = GTF[0, i, j]
@@ -65,7 +65,7 @@ for i in range(2):
 
 def test_fwdti_singlevoxel():
     # Simulation when water contamination is added
-    gtf = 0.50  #ground truth volume fraction
+    gtf = 0.50  # ground truth volume fraction
     mevals = np.array([[0.0017, 0.0003, 0.0003], [0.003, 0.003, 0.003]])
     S_conta, peaks = multi_tensor(gtab_2s, mevals, S0=100,
                                   angles=[(90, 0), (90, 0)],
@@ -86,7 +86,7 @@ def test_fwdti_singlevoxel():
 
     assert_almost_equal(FAdti, FAfwe)
     assert_almost_equal(Ffwe, gtf)
-    
+
     # Test non-linear fit, when no first guess is given
     fwdm = fwdti.FreeWaterTensorModel(gtab_2s, 'NLS', fw_params=None,
                                       cholesky=False)
@@ -122,14 +122,14 @@ def test_fwdti_multi_voxel():
     Ffwe = fwefit.f
 
     assert_array_almost_equal(Ffwe, GTF)
-    
+
     # Test cholesky
     fwdm = fwdti.FreeWaterTensorModel(gtab_2s, 'NLS', cholesky=True)
     fwefit = fwdm.fit(DWI)
     Ffwe = fwefit.f
 
     assert_array_almost_equal(Ffwe, GTF)
-    
+
     # Test multi voxels with initial guess
     fwdm_wlls = fwdti.FreeWaterTensorModel(gtab_2s, 'WLS', S0=S0m)
     fwefit_wlls = fwdm_wlls.fit(DWI)
@@ -139,7 +139,7 @@ def test_fwdti_multi_voxel():
     Ffwe = fwefit.f
 
     assert_array_almost_equal(Ffwe, GTF)
-    
+
 
 def test_fwdti_predictions():
     # single voxel case
@@ -193,7 +193,7 @@ def test_fwdti_errors():
     # Testing the correct usage
     fwdtiM = fwdti.FreeWaterTensorModel(gtab_2s, min_signal=1)
     correct_mask = np.zeros((2, 2, 2))
-    correct_mask[0, :, :] = 1;
+    correct_mask[0, :, :] = 1
     correct_mask = correct_mask > 0
     fwdtiF = fwdtiM.fit(DWI, mask=correct_mask)
     assert_array_almost_equal(fwdtiF.fa, FAref)
@@ -207,13 +207,13 @@ def test_fwdti_errors():
 def test_fwdti_restore():
     # Restore has to work well even in nonproblematic cases
     # Simulate a signal corrupted by free water diffusion contamination
-    gtf = 0.50  #ground truth volume fraction
+    gtf = 0.50  # ground truth volume fraction
     mevals = np.array([[0.0017, 0.0003, 0.0003], [0.003, 0.003, 0.003]])
     S_conta, peaks = multi_tensor(gtab_2s, mevals, S0=100,
                                   angles=[(90, 0), (90, 0)],
                                   fractions=[(1-gtf) * 100, gtf*100], snr=None)
     fwdm = fwdti.FreeWaterTensorModel(gtab_2s, 'NLS', weighting='sigma',
-                                      sigma = 4)
+                                      sigma=4)
     fwdtiF = fwdm.fit(S_conta)
     assert_array_almost_equal(fwdtiF.fa, FAdti)
     assert_array_almost_equal(fwdtiF.f, gtf)
