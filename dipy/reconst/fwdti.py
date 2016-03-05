@@ -588,10 +588,10 @@ def nlls_fit_tensor(design_matrix, data, fw_params=None, Diso=3e-3,
     flat_data = data.reshape((-1, data.shape[-1]))
 
     # Use the WLS method parameters as the starting point if fw_params is None:
-    if fw_params is None:
+    if np.any(fw_params) is None:
         fw_params = wls_fit_tensor(design_matrix, flat_data,  Diso=Diso)
-
-    fw_params = fw_params.reshape((-1, fw_params.shape[-1]))
+    else:
+        fw_params = fw_params.reshape((-1, fw_params.shape[-1]))
 
     # if bounds==None:
     #     bounds = ([0., -Diso, 0., -Diso, -Diso, 0., -10., 0.],
