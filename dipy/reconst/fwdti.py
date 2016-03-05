@@ -88,7 +88,7 @@ def fwdti_prediction(params, gtab, Diso=3.0e-3):
 
 
 class FreeWaterTensorModel(ReconstModel):
-    """ Class for the Free Water Elimitation Diffusion Tensor Model """
+    """ Class for the Free Water Elimination Diffusion Tensor Model """
     def __init__(self, gtab, fit_method="NLS", *args, **kwargs):
         """ Free Water Diffusion Tensor Model [1]_.
 
@@ -409,7 +409,7 @@ def wls_fit_tensor(design_matrix, data, Diso=3e-3, piterations=3, S0=None):
     """
     tol = 1e-6
 
-    # preparing data and initializing parametres
+    # preparing data and initializing parameters
     data = np.asarray(data)
     data_flat = data.reshape((-1, data.shape[-1]))
     fw_params = np.empty((len(data_flat), 14))
@@ -418,7 +418,7 @@ def wls_fit_tensor(design_matrix, data, Diso=3e-3, piterations=3, S0=None):
     min_diffusivity = tol / -design_matrix.min()
     inv_design = np.linalg.pinv(design_matrix)
 
-    # lopping WLS solution on all data voxels
+    # looping WLS solution on all data voxels
     if S0 is None:
         for vox in range(len(data_flat)):
             fw_params[vox] = _wls_iter(design_matrix, inv_design,

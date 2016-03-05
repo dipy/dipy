@@ -38,7 +38,7 @@ data = img.get_data()
 affine = img.get_affine()
 
 """
-Before fitting the data, we preform some data pre-processing. We first compute
+Before fitting the data, we perform some data pre-processing. We first compute
 a brain mask to avoid unnecessary calculations on the background of the image.
 """
 
@@ -139,7 +139,7 @@ From the figure, we can see that ...
 
 In addition to the standard diffusion statistics, the FreeWaterDiffusionFit
 instance can be used to display the volume fraction of the free water diffusion
-componet
+component.
 """
 
 F = fwdtifit.f
