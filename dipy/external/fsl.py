@@ -108,7 +108,7 @@ def flirt2aff(mat, in_img, ref_img):
 
     A negative determinant for the image affine is the common case, of an image
     with a x voxel flip.  Analyze images don't store affines and flirt assumes
-    anegative determinant in these cases.
+    a negative determinant in these cases.
 
     For positive determinant affines, flirt starts *inspace* and / or
     *refspace* with an x voxel flip.  The mapping implied for an x voxel flip
