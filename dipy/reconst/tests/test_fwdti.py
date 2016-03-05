@@ -143,7 +143,6 @@ def test_fwdti_multi_voxel():
 
 def test_fwdti_predictions():
     # single voxel case
-    # test funtion
     gtf = 0.50  # ground truth volume fraction
     angles = [(90, 0), (90, 0)]
     mevals = np.array([[0.0017, 0.0003, 0.0003], [0.003, 0.003, 0.003]])
@@ -158,30 +157,25 @@ def test_fwdti_predictions():
     assert_array_almost_equal(S_pred1, S_conta)
 
     # Testing in model class
-    fwdm = fwdti.FreeWaterTensorModel(gtab_2s, 'WLS', S0=S0)
+    fwdm = fwdti.FreeWaterTensorModel(gtab_2s)
     S_pred2 = fwdm.predict(model_params)
     assert_array_almost_equal(S_pred2, S_conta)
 
     # Testing in fit class
     fwefit = fwdm.fit(S_conta)
-    # Adjust simulations according to model parameters (note here testing the
-    # robustness of fit is not the objective)
-    mevals_ad = np.array([fwefit.model_params[0:3], [0.003, 0.003, 0.003]])
-    angles_ad = fwefit.model_params[3:-2].reshape(3, 3)
-    gtf_ad = fwefit.model_params[-2]
-    S0ad = fwefit.model_params[-1]
-    S_conta_ad, peaks = multi_tensor(gtab_2s, mevals_ad, S0=S0ad,
-                                     angles=angles_ad,
-                                     fractions=[(1-gtf_ad) * 100, gtf_ad*100],
-                                     snr=None)
     S_pred3 = fwefit.predict(gtab_2s)
-    assert_array_almost_equal(S_pred3, S_conta_ad, decimal=5)
+    assert_array_almost_equal(S_pred3, S_conta, decimal=5)
 
     # Multi voxel simulation
-    S_pred1 = fwdti_prediction(model_params_mv, gtab_2s)
+    S_pred1 = fwdti_prediction(model_params_mv, gtab_2s)  # function
     assert_array_almost_equal(S_pred1, DWI)
-    S_pred2 = fwdm.predict(model_params_mv)
+    S_pred2 = fwdm.predict(model_params_mv)  # Model class
     assert_array_almost_equal(S_pred2, DWI)
+    fwefit = fwdm.fit(DWI)  # Fit class
+    S_pred3 = fwefit.predict(gtab_2s)
+    assert_array_almost_equal(S_pred3, DWI)
+    S_pred4 = fwefit.predict(gtab_2s, step=2)  # Assign smaller step
+    assert_array_almost_equal(S_pred4, DWI)
 
 
 def test_fwdti_errors():

@@ -226,24 +226,30 @@ class FreeWaterTensorFit(TensorFit):
         """ Returns the non-diffusion weighted signal estimate """
         return self.model_params[..., 13]
 
-    def predict(self, gtab):
+    def predict(self, gtab, step=None):
         r""" Given a free water tensor model fit, predict the signal on the
         vertices of a gradient table
 
         Parameters
         ----------
-        fwdti_params : ndarray (x, y, z, 14) or (n, 14)
-            All parameters estimated from the free water tensor model.
-            Parameters are ordered as follows:
-                1) Three diffusion tensor's eigenvalues
-                2) Three lines of the eigenvector matrix each containing the
-                   first, second and third coordinates of the eigenvector
-                3) The volume fraction of the free water compartment
-                4) The estimate of the non diffusion-weighted signal S0
         gtab : a GradientTable class instance
             The gradient table for this prediction
+
+        step : int, optional
+            Number of voxels to be processed simultaneously
         """
-        return fwdti_prediction(self.model_params, gtab)
+        shape = self.model_params.shape[:-1]
+        size = np.prod(shape)
+        if step is None:
+            step = self.model.kwargs.get('step', size)
+        if step >= size:
+            return fwdti_prediction(self.model_params, gtab)
+        params = np.reshape(self.model_params,
+                            (-1, self.model_params.shape[-1]))
+        predict = np.empty((size, gtab.bvals.shape[0]))
+        for i in range(0, size, step):
+            predict[i:i+step] = fwdti_prediction(params[i:i+step], gtab)
+        return predict.reshape(shape + (gtab.bvals.shape[0], ))
 
 
 def _wls_iter(design_matrix, inv_design, sig, min_diffusivity, Diso=3e-3,
