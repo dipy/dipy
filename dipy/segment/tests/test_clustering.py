@@ -296,23 +296,15 @@ def test_cluster_map_add_cluster():
         assert_equal(cluster, clusters[-1])
 
     assert_array_equal(
-        list(
-            itertools.chain(
-                *clusters)),
-        list(
-            itertools.chain(
-                *list_of_indices)))
+        list(itertools.chain(*clusters)),
+        list(itertools.chain(*list_of_indices)))
 
     # Test adding multiple clusters at once.
     clusters = ClusterMap()
     clusters.add_cluster(*list_of_cluster_objects)
     assert_array_equal(
-        list(
-            itertools.chain(
-                *clusters)),
-        list(
-            itertools.chain(
-                *list_of_indices)))
+        list(itertools.chain(*clusters)),
+        list(itertools.chain(*list_of_indices)))
 
 
 def test_cluster_map_remove_cluster():
@@ -484,16 +476,8 @@ def test_cluster_map_get_small_and_large_clusters():
     cluster_map.add_cluster(*small_clusters)
 
     # Randomly generate small clusters
-    indices = [
-        rng.randint(
-            0,
-            10,
-            size=i) for i in range(
-            nb_clusters +
-            1,
-            2 *
-            nb_clusters +
-            1)]
+    indices = [rng.randint(0,10,size=i) 
+                for i in range(nb_clusters +1, 2*nb_clusters+1)]
     large_clusters = [Cluster(indices=indices[i]) for i in range(nb_clusters)]
     cluster_map.add_cluster(*large_clusters)
 
@@ -561,11 +545,9 @@ def test_cluster_map_comparison_with_int():
 def test_cluster_map_comparison_with_object():
     nb_clusters = 4
     cluster_map = ClusterMap()
-    # clusters = []
     for i in range(nb_clusters):
         new_cluster = Cluster(indices=range(i))
         cluster_map.add_cluster(new_cluster)
-        # clusters.append(new_cluster)
 
     # Comparison with another ClusterMap object
     other_cluster_map = copy.deepcopy(cluster_map)
@@ -608,12 +590,8 @@ def test_cluster_map_centroid_add_cluster():
 
     assert_equal(type(clusters.centroids), list)
     assert_array_equal(
-        list(
-            itertools.chain(
-                *clusters.centroids)),
-        list(
-            itertools.chain(
-                *centroids)))
+        list(itertools.chain(*clusters.centroids)),
+        list(itertools.chain(*centroids)))
 
     # Check adding features of different sizes (shorter and longer)
     features_shape_short = (1, features_shape[1] - 3)
