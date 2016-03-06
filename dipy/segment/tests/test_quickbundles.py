@@ -77,12 +77,11 @@ def test_quickbundles_2D():
     data += [rng.randn(1, 2) + np.array([-10, -10]) for i in range(5)]
     data = np.array(data, dtype=dtype)
 
-    clusters_truth = [
-        [0], [
-            1, 2], [
-            3, 4, 5], [
-                6, 7, 8, 9], [
-                    10, 11, 12, 13, 14]]
+    clusters_truth = [[0], 
+                                [1, 2], 
+                                [3, 4, 5], 
+                                [6, 7, 8, 9], 
+                                [10, 11, 12, 13, 14]]
 
     # # Uncomment the following to visualize this test
     # import pylab as plt
@@ -108,8 +107,7 @@ def test_quickbundles_2D():
             for cluster_truth in clusters_truth:
                 if cluster_truth[0] in cluster.indices:
                     assert_equal(
-                        sorted(
-                            cluster.indices),
+                        sorted(cluster.indices),
                         sorted(cluster_truth))
 
     # Cluster each cluster again using a small threshold
@@ -118,11 +116,8 @@ def test_quickbundles_2D():
             data, metric, threshold=0, ordering=cluster.indices)
         assert_equal(len(subclusters), len(cluster))
         assert_equal(
-            sorted(
-                itertools.chain(
-                    *subclusters)),
-            sorted(
-                cluster.indices))
+            sorted(itertools.chain(*subclusters)),
+            sorted(cluster.indices))
 
     # A very large threshold should produce only 1 cluster
     clusters = quickbundles(data, metric, threshold=np.inf)
@@ -148,12 +143,8 @@ def test_quickbundles_streamlines():
     # Set `refdata` to return indices instead of actual data points.
     clusters.refdata = None
     assert_array_equal(
-        list(
-            itertools.chain(
-                *clusters)),
-        list(
-            itertools.chain(
-                *clusters_truth)))
+        list(itertools.chain(*clusters)),
+        list(itertools.chain(*clusters_truth)))
 
     # Cluster read-only data
     for datum in rdata:
