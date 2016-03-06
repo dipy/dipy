@@ -89,8 +89,8 @@ def test_metric_minimum_average_direct_flip():
                 rot_axis,
                 s_zero_mean),
             axis=1) / norm(rot_axis)
-        distances = np.sqrt(
-            2 * opposite**2 * (1 - np.cos(60. * np.pi / 180.))).astype(dtype)
+        distances = np.sqrt(2 * opposite**2 *
+                        (1 - np.cos(60. * np.pi / 180.))).astype(dtype)
         d = np.mean(distances)
         assert_almost_equal(metric.dist(s, s_rotated), d, 5)
 
@@ -104,9 +104,7 @@ def test_metric_minimum_average_direct_flip():
             # Test method are_compatible
             same_nb_points = f1.shape[0] == f2.shape[0]
             assert_equal(
-                metric.are_compatible(
-                    f1.shape,
-                    f2.shape),
+                metric.are_compatible(f1.shape,f2.shape),
                 same_nb_points)
 
             # Test method dist if features are compatible
