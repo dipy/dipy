@@ -256,14 +256,8 @@ def test_feature_extract():
             return 1
 
         def extract(self, streamline):
-            return np.sum(
-                np.sqrt(
-                    np.sum(
-                        (streamline[
-                            1:] -
-                            streamline[
-                            :-
-                            1]) ** 2)))
+            return np.sum(np.sqrt(np.sum((streamline[1:] -
+                                          streamline[:-1]) ** 2)))
 
     nb_streamlines = 100
     feature_shape = (1, 1)  # One scalar represented as a 2D array
@@ -322,14 +316,8 @@ def test_using_python_feature_with_cython_metric():
             return long(1)
 
         def extract(self, streamline):
-            return np.sum(
-                np.sqrt(
-                    np.sum(
-                        (streamline[
-                            1:] -
-                            streamline[
-                            :-
-                            1]) ** 2)))
+            return np.sum(np.sqrt(np.sum((streamline[1:] -
+                                          streamline[:-1]) ** 2)))
 
     # Test using Python Feature with Cython Metric
     feature = ArcLengthFeature()
