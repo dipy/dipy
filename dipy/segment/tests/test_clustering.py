@@ -34,17 +34,10 @@ def test_cluster_attributes_and_constructor():
     assert_equal(len(cluster), 0)
 
     # Duplicate
-    assert_equal(
-        cluster,
-        Cluster(
-            cluster.id,
-            cluster.indices,
-            cluster.refdata))
-    assert_false(
-        cluster != Cluster(
-            cluster.id,
-            cluster.indices,
-            cluster.refdata))
+    assert_equal(cluster,Cluster(cluster.id,
+                cluster.indices, cluster.refdata))
+    assert_false(cluster != Cluster(cluster.id,
+                cluster.indices, cluster.refdata))
 
     # Invalid comparison
     assert_raises(TypeError, cluster.__cmp__, cluster)
@@ -148,14 +141,14 @@ def test_cluster_str_and_repr():
     cluster = Cluster()
     cluster.assign(*indices)
     assert_equal(str(cluster), "[" + ", ".join(map(str, indices)) + "]")
-    assert_equal(
-        repr(cluster), "Cluster([" + ", ".join(map(str, indices)) + "])")
+    assert_equal(repr(cluster), 
+                "Cluster([" + ", ".join(map(str, indices)) + "])")
 
     # Test with specifying refdata in ClusterMap
     cluster.refdata = data
     assert_equal(str(cluster), "[" + ", ".join(map(str, indices)) + "]")
-    assert_equal(
-        repr(cluster), "Cluster([" + ", ".join(map(str, indices)) + "])")
+    assert_equal(repr(cluster), 
+                "Cluster([" + ", ".join(map(str, indices)) + "])")
 
 
 def test_cluster_centroid_attributes_and_constructor():
@@ -482,16 +475,13 @@ def test_cluster_map_get_small_and_large_clusters():
     cluster_map.add_cluster(*large_clusters)
 
     assert_equal(len(cluster_map), 2 * nb_clusters)
-    assert_equal(len(cluster_map.get_small_clusters(
-        nb_clusters)), len(small_clusters))
-    assert_arrays_equal(
-        cluster_map.get_small_clusters(nb_clusters),
+    assert_equal(len(cluster_map.get_small_clusters(nb_clusters)), 
+    len(small_clusters))
+    assert_arrays_equal(cluster_map.get_small_clusters(nb_clusters),
         small_clusters)
-    assert_equal(len(cluster_map.get_large_clusters(
-        nb_clusters + 1)), len(large_clusters))
-    assert_arrays_equal(
-        cluster_map.get_large_clusters(
-            nb_clusters + 1),
+    assert_equal(len(cluster_map.get_large_clusters(nb_clusters + 1)), 
+    len(large_clusters))
+    assert_arrays_equal(cluster_map.get_large_clusters(nb_clusters + 1),
         large_clusters)
 
 
@@ -648,9 +638,8 @@ def test_cluster_map_centroid_iter():
     clusters = []
     for i in range(nb_clusters):
         new_centroid = np.zeros_like(features)
-        new_cluster = ClusterCentroid(
-            new_centroid, indices=rng.randint(
-                0, len(data), size=10))
+        new_cluster = ClusterCentroid(new_centroid, 
+                indices=rng.randint(0, len(data), size=10))
         cluster_map.add_cluster(new_cluster)
         clusters.append(new_cluster)
 
@@ -685,9 +674,8 @@ def test_cluster_map_centroid_getitem():
         assert_equal(cluster_map[i], clusters[i])
 
     # Test advanced indexing
-    assert_array_equal(
-        cluster_map[advanced_indices], [
-            clusters[i] for i in advanced_indices])
+    assert_array_equal(cluster_map[advanced_indices], 
+    [clusters[i] for i in advanced_indices])
 
     # Test index out of bounds
     assert_raises(IndexError, cluster_map.__getitem__, len(clusters))
