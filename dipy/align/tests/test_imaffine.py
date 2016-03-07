@@ -482,8 +482,8 @@ def test_affine_map():
             expected_nn = oracle_nn(img, dom_shape[:dim], aff_inv_inv)
 
             affine_map = imaffine.AffineMap(aff_inv,
-                                            cod_shape[
-                                                :dim], codomain_grid2world,
+                                            cod_shape[:dim],
+                                            codomain_grid2world,
                                             dom_shape[:dim], domain_grid2world)
             actual_linear = affine_map.transform_inverse(img, interp='linear')
             actual_nn = affine_map.transform_inverse(img, interp='nearest')
