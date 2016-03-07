@@ -112,7 +112,7 @@ def horizon(tractograms, data, affine, cluster=False, cluster_thr=15.,
 
     global size
     size = ren.GetSize()
-    ren.background((1, 0.5, 0))
+    # ren.background((1, 0.5, 0))
     global picked_actors
     picked_actors = {}
 
