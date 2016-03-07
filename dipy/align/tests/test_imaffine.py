@@ -132,10 +132,8 @@ def test_transform_geometric_centers_3d():
                     expected[:3, 3] = c_moving - c_static
 
                     # Implementation under test
-                    actual = imaffine.transform_geometric_centers(static,
-                                                                  static_grid2world,
-                                                                  moving,
-                                                                  moving_grid2world)
+                    actual = imaffine.transform_geometric_centers(
+                        static, static_grid2world, moving, moving_grid2world)
                     assert_array_almost_equal(actual.affine, expected)
 
 
@@ -289,9 +287,9 @@ def test_mi_gradient():
     np.random.seed(2022966)
     # Test the gradient of mutual information
     h = 1e-5
-    # Make sure dictionary entries are processed in the same order regardless of
-    # the platform. Otherwise any random numbers drawn within the loop would make
-    # the test non-deterministic even if we fix the seed before the loop:
+    # Make sure dictionary entries are processed in the same order regardless
+    # of the platform. Otherwise any random numbers drawn within the loop would
+    # make the test non-deterministic even if we fix the seed before the loop:
     # in this case the samples are drawn with `np.random.randn` below
 
     for ttype in sorted(factors):
@@ -473,9 +471,10 @@ def test_affine_map():
 
             # AffineMap will use the inverse of the input matrix when we call
             # `transform_inverse`. Since the inverse of the inverse of a matrix
-            # is not exactly equal to the original matrix (numerical limitations)
-            # we need to invert the matrix twice to make sure the oracle and the
-            # implementation under test apply the same transform
+            # is not exactly equal to the original matrix (numerical
+            #  limitations) we need to invert the matrix twice to make sure
+            # the oracle and the implementation under test apply the same
+            # transform
             aff_inv = None if affine is None else npl.inv(affine)
             aff_inv_inv = None if aff_inv is None else npl.inv(aff_inv)
             expected_linear = oracle_linear(img, dom_shape[:dim],
