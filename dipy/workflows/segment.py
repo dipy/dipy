@@ -13,13 +13,15 @@ from dipy.segment.mask import median_otsu
 
 def median_otsu_flow(input_files, out_dir='', mask='brain_mask.nii.gz',
                      masked='dwi_masked.nii.gz', save_masked=False,
-                     median_radius=4, numpass=4, autocrop=False,
+                     median_radius=2, numpass=5, autocrop=False,
                      vol_idx=None, dilate=None):
     """ Workflow wrapping the median_otsu segmentation method.
 
-    It applies median_otsu segmentation on each file found by 'globing'
+    Applies median_otsu segmentation on each file found by 'globing'
     ``input_files`` and saves the results in a directory specified by
     ``out_dir``.
+
+    For a quick brain segmentation, use --numpass 5 and --median_radius 2
 
     Parameters
     ----------
@@ -35,9 +37,9 @@ def median_otsu_flow(input_files, out_dir='', mask='brain_mask.nii.gz',
     save_masked : bool
         Save mask
     median_radius : int, optional
-        Radius (in voxels) of the applied median filter(default 4)
+        Radius (in voxels) of the applied median filter(default 2)
     numpass : int, optional
-        Number of pass of the median filter (default 4)
+        Number of pass of the median filter (default 5)
     autocrop : bool, optional
         If True, the masked input_volumes will also be cropped using the
         bounding box defined by the masked data. Should be on if DWI is
