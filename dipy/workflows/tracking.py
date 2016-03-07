@@ -7,6 +7,10 @@ from glob import glob
 import nibabel as nib
 import numpy as np
 
+from tractconverter.formats.trk import TRK
+from tractconverter.formats.tck import TCK
+from tractconverter import convert as convert_tracks
+
 from dipy.tracking.eudx import EuDX
 from dipy.data import get_sphere
 from dipy.reconst.csdeconv import ConstrainedSphericalDeconvModel
@@ -19,7 +23,7 @@ from dipy.data import default_sphere
 from dipy.direction import DeterministicMaximumDirectionGetter
 
 
-def EuDX_tracking_flow(ref, peaks_values, peaks_indexes, out_dir='',
+def EuDX_tracking_flow(peaks_values, peaks_indexes, out_dir='',
                        tractogram='tractogram.trk'):
 
     """ Workflow for Eulder delta crossings tracking. Tracking is done by
@@ -28,9 +32,6 @@ def EuDX_tracking_flow(ref, peaks_values, peaks_indexes, out_dir='',
 
     Parameters
     ----------
-    ref : string
-        Path to the reference volume files. This path may contain wildcards to process
-        multiple inputs at once.
     peaks_values : string
         Path to the peaks values files. This path may contain wildcards to use
         multiple masks at once.
@@ -46,15 +47,13 @@ def EuDX_tracking_flow(ref, peaks_values, peaks_indexes, out_dir='',
     tractogram : tck file
         This file contains the resulting tractogram.
     """
-    for ref_path, peaks_values_path, peaks_idx_path in zip(glob(ref),
-                                                           glob(peaks_values),
+    for peaks_values_path, peaks_idx_path in zip(glob(peaks_values),
                                                            glob(peaks_indexes)):
         logging.info('EuDX tracking on {0}'.format(peaks_values_path))
-        ref_img = nib.load(ref_path)
-        ref_vol = ref_img.get_data()
-        voxel_size = ref_img.get_header().get_zooms()[:3]
 
-        peaks_idx = nib.load(peaks_idx_path).get_data()
+        peaks_idx_img = nib.load(peaks_idx_path)
+        voxel_size = peaks_idx_img.get_header().get_zooms()[:3]
+        peaks_idx = peaks_idx_img.get_data()
         peaks_value = nib.load(peaks_values_path).get_data()
 
         # Run Dipy EuDX Tracking
@@ -69,12 +68,12 @@ def EuDX_tracking_flow(ref, peaks_values, peaks_indexes, out_dir='',
         hdr = nib.trackvis.empty_header()
         hdr['voxel_size'] = voxel_size
         hdr['voxel_order'] = 'LAS'
-        hdr['dim'] = ref_vol.shape
+        hdr['dim'] = peaks_idx_img.shape[:3]
         hdr['n_count'] = len(streamlines_trk)
 
-        out_dir_path = choose_create_out_dir(out_dir, ref)
+        out_dir_path = choose_create_out_dir(out_dir, peaks_values)
         tractogram_path = os.path.join(out_dir_path, tractogram)
-        nib.trackvis.write(tractogram_path, streamlines_trk, hdr)
+        nib.trackvis.write(tractogram_path, streamlines_trk, hdr, points_space='voxel')
         logging.info('Saved {0}'.format(tractogram_path))
 
 def deterministic_tracking_flow(input_files, mask_files, bvalues, bvectors,
@@ -123,7 +122,7 @@ def deterministic_tracking_flow(input_files, mask_files, bvalues, bvectors,
         tenfit, gtab = get_fitted_tensor(dwi_data, mask_data, bval, bvec)
         FA = fractional_anisotropy(tenfit.evals)
 
-        seed_mask = FA > 0.7
+        seed_mask = FA > 0.2
         seeds = utils.seeds_from_mask(seed_mask, density=1, affine=affine)
         csd_model = ConstrainedSphericalDeconvModel(gtab, None, sh_order=6)
         csd_fit = csd_model.fit(dwi_data, mask=mask_data)
@@ -150,7 +149,7 @@ def deterministic_tracking_flow(input_files, mask_files, bvalues, bvectors,
         hdr['origin'] = affine[:3, 3]
 
         tractogram_path = os.path.join(out_dir_path, tractogram)
-        nib.trackvis.write(tractogram_path, streamlines_trk,  hdr)
+        nib.trackvis.write(tractogram_path, streamlines_trk,  hdr, points_space='voxel')
 
         logging.info('Saved {0}'.format(tractogram_path))
 
