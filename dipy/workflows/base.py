@@ -62,9 +62,11 @@ class IntrospectiveArgumentParser(arg.ArgumentParser):
     def add_workflow(self, workflow):
         specs = inspect.getargspec(workflow)
         doc = inspect.getdoc(workflow)
-        self.doc = NumpyDocString(doc)['Parameters']
+        npds = NumpyDocString(doc)
+        self.doc = npds['Parameters']
+        self.description = ' '.join(npds['Extended Summary'])
 
-        self.outputs = NumpyDocString(doc)['Outputs']
+        self.outputs = npds['Outputs']
 
         args = specs.args
         defaults = specs.defaults
@@ -99,14 +101,6 @@ class IntrospectiveArgumentParser(arg.ArgumentParser):
             elif dtype is bool:
                 _kwargs['type'] = int
                 _kwargs['choices'] = [0, 1]
-
-            if dtype is bool:
-                _kwargs['action'] = 'store_true'
-                default_ = {}
-                default_[arg] = False
-                self.set_defaults(**default_)
-                del _kwargs['type']
-                del _kwargs['metavar']
 
             if dtype is tuple:
                 _kwargs['type'] = str
