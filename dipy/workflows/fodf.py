@@ -16,9 +16,9 @@ from dipy.reconst.csdeconv import ConstrainedSphericalDeconvModel, auto_response
 from dipy.workflows.utils import choose_create_out_dir, glob_or_value
 
 def fodf_flow(input_files, bvalues, bvectors, out_dir='',
-              mask_files=None, b0_threshold=0.0, frf=[15,4,4], fodf='fodf.nii.gz',
-              peaks='peaks.nii.gz', peaks_values='peaks_values.nii.gz',
-              peaks_indices='peaks_indices.nii.gz'):
+              mask_files=None, b0_threshold=0.0, frf=[15.0, 4.0, 4.0],
+              fodf='fodf.nii.gz', peaks='peaks.nii.gz',
+              peaks_values='peaks_values.nii.gz', peaks_indices='peaks_indices.nii.gz'):
     """ Workflow for peaks computation. Peaks computation is done by 'globing'
         ``input_files`` and saves the peaks in a directory specified by
         ``out_dir``.
@@ -91,7 +91,11 @@ def fodf_flow(input_files, bvalues, bvectors, out_dir='',
         response = list(response)
 
         if frf is not None:
-            l01 = np.array(literal_eval(frf), dtype=np.float64)
+            if isinstance(frf, str):
+                l01 = np.array(literal_eval(frf), dtype=np.float64)
+            else:
+                l01 = np.array(frf)
+
             l01 *= 10**-4
             response[0] = np.array([l01[0], l01[1], l01[1]])
             ratio = l01[1] / l01[0]

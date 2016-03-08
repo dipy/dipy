@@ -52,12 +52,13 @@ def track_density_flow(tractograms, ref_files, out_dir='', up_factor=1.0,
         # Need to fix scaling
         affine = np.eye(4)
         affine[:3, :3] = ref.get_affine()[:3, :3]
+        #affine[:3, :] += 0.5
         # Need to adjust the affine to take upsampling into account
         tdi_map = density_map(streamlines, data_shape, affine=affine)
         affine[0, 0] /= up_factor
         affine[1, 1] /= up_factor
         affine[2, 2] /= up_factor
-        affine[:3, :] = ref.get_affine()[:3, :] * up_factor
+        affine[:3, :] = (ref.get_affine()[:3, :] * up_factor)
 
         map_img = nib.Nifti1Image(tdi_map.astype(np.float32), affine)
 
