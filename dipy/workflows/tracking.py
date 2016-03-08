@@ -76,6 +76,7 @@ def EuDX_tracking_flow(peaks_values, peaks_indexes, out_dir='',
         nib.trackvis.write(tractogram_path, streamlines_trk, hdr, points_space='voxel')
         logging.info('Saved {0}'.format(tractogram_path))
 
+
 def deterministic_tracking_flow(input_files, mask_files, bvalues, bvectors,
                                 out_dir='', tractogram='deterministic_tractogram.trk'):
     """ Workflow for deterministic tracking. Tracking is done by

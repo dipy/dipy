@@ -37,6 +37,7 @@ def track_density_flow(tractograms, ref_files, out_dir='', up_factor=1.0,
     """
     for tract_file, ref_file in zip(glob(tractograms), glob(ref_files)):
         logging.info('Computing track density for {0}'.format(tract_file))
+        logging.info('Upsampling factor: {0}'.format(up_factor))
         ref = nib.load(ref_file)
         ref_head = ref.get_header()
         pos_factor = ref_head['pixdim'][1:4] / up_factor
