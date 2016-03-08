@@ -67,14 +67,15 @@ def simple_pipeline_flow(input_files, bvalues, bvectors, work_dir='',
         metrics_dir = pjoin(work_dir, 'metrics')
         fa_path = pjoin(metrics_dir, 'fa.nii.gz')
         if os.path.exists(fa_path) is False or resume is False:
-            dti_metrics_flow(denoised_dwi, mask_filename, bval, bvec,
-                             out_dir=metrics_dir)
+            dti_metrics_flow(denoised_dwi, bval, bvec,
+                             out_dir=metrics_dir, mask_files=mask_filename)
         else:
             logging.info('Skipped dti metrics')
 
         peaks_dir = pjoin(work_dir, 'peaks')
         if os.path.exists(peaks_dir) is False or resume is False:
-            fodf_flow(denoised_dwi, mask_filename, bval, bvec, out_dir=peaks_dir)
+            fodf_flow(denoised_dwi, bval, bvec, out_dir=peaks_dir,
+                      mask_files=mask_filename)
         else:
             logging.info('Skipped fodf')
 

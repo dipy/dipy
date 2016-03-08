@@ -123,7 +123,7 @@ def deterministic_tracking_flow(input_files, mask_files, bvalues, bvectors,
         tenfit, gtab = get_fitted_tensor(dwi_data, mask_data, bval, bvec)
         FA = fractional_anisotropy(tenfit.evals)
 
-        seed_mask = FA > 0.2
+        seed_mask = FA > 0.8
         seeds = utils.seeds_from_mask(seed_mask, density=1, affine=affine)
         csd_model = ConstrainedSphericalDeconvModel(gtab, None, sh_order=6)
         csd_fit = csd_model.fit(dwi_data, mask=mask_data)
@@ -143,11 +143,10 @@ def deterministic_tracking_flow(input_files, mask_files, bvalues, bvectors,
         streamlines_trk = [(sl, None, None) for sl in streamlines]
 
         hdr = nib.trackvis.empty_header()
-        hdr['voxel_size'] = np.array(voxel_size) * np.diagonal(affine)[:-1]
+        hdr['voxel_size'] = voxel_size
         hdr['voxel_order'] = 'LAS'
         hdr['dim'] = dwi_img.shape[:-1]
         hdr['n_count'] = len(streamlines_trk)
-        hdr['origin'] = affine[:3, 3]
 
         tractogram_path = os.path.join(out_dir_path, tractogram)
         nib.trackvis.write(tractogram_path, streamlines_trk,  hdr, points_space='voxel')

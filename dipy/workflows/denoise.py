@@ -54,5 +54,5 @@ def nlmeans_flow(input_files, out_dir='',
         out_file_path = os.path.join(out_dir_path, denoised)
 
         denoised_image.to_filename(out_file_path)
-        logging('Denoised volume saved as {0}'.format(out_file_path))
+        logging.info('Denoised volume saved as {0}'.format(out_file_path))
 
