@@ -2,6 +2,7 @@
 from __future__ import division, print_function
 import os
 from glob import glob
+import logging
 
 import numpy as np
 import nibabel as nib
@@ -35,10 +36,9 @@ def track_density_flow(tractograms, ref_files, out_dir='', up_factor=1.0,
         Track density volume.
     """
     for tract_file, ref_file in zip(glob(tractograms), glob(ref_files)):
-        print('Computing tract density for {0}'.format(tract_file))
+        logging.info('Computing track density for {0}'.format(tract_file))
         ref = nib.load(ref_file)
         ref_head = ref.get_header()
-        print(up_factor)
         pos_factor = ref_head['pixdim'][1:4] / up_factor
         data_shape = np.array(ref.shape) * up_factor
         data_shape = tuple(data_shape.astype('int32'))
@@ -50,12 +50,13 @@ def track_density_flow(tractograms, ref_files, out_dir='', up_factor=1.0,
 
         # Need to fix scaling
         affine = np.eye(4)
+        affine[:3, :3] = ref.get_affine()[:3, :3]
         # Need to adjust the affine to take upsampling into account
+        tdi_map = density_map(streamlines, data_shape, affine=affine)
         affine[0, 0] /= up_factor
         affine[1, 1] /= up_factor
         affine[2, 2] /= up_factor
-        affine[:3, :] = ref.get_affine()[:3, :]
-        tdi_map = density_map(streamlines, data_shape, affine=affine)
+        affine[:3, :] = ref.get_affine()[:3, :] * up_factor
 
         map_img = nib.Nifti1Image(tdi_map.astype(np.float32), affine)
 
@@ -68,3 +69,5 @@ def track_density_flow(tractograms, ref_files, out_dir='', up_factor=1.0,
         map_img.get_header().set_qform(ref_head.get_qform())
         map_img.get_header().set_sform(ref_head.get_sform())
         map_img.to_filename(os.path.join(out_dir_path, tdi))
+        logging.info('Track density map saved as: {0}'.
+                     format(os.path.join(out_dir_path, tdi)))
