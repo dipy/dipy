@@ -9,7 +9,7 @@ from dipy.workflows.segment import median_otsu_flow
 from dipy.workflows.denoise import nlmeans_flow
 from dipy.workflows.reconst import dti_metrics_flow
 from dipy.workflows.fodf import fodf_flow
-from dipy.workflows.tracking import deterministic_tracking_flow
+from dipy.workflows.tracking import EuDX_tracking_flow
 from dipy.workflows.track_metrics import track_density_flow
 
 def simple_pipeline_flow(input_files, bvalues, bvectors, work_dir='',
@@ -73,25 +73,32 @@ def simple_pipeline_flow(input_files, bvalues, bvectors, work_dir='',
             logging.info('Skipped dti metrics')
 
         peaks_dir = pjoin(work_dir, 'peaks')
+        peaks_values = pjoin(peaks_dir, 'peaks_values.nii.gz')
+        peaks_indices = pjoin(peaks_dir, 'peaks_indices.nii.gz')
+
         if os.path.exists(peaks_dir) is False or resume is False:
             fodf_flow(denoised_dwi, bval, bvec, out_dir=peaks_dir,
-                      mask_files=mask_filename)
+                      mask_files=mask_filename, peaks_values=peaks_values,
+                      peaks_indices=peaks_indices)
         else:
             logging.info('Skipped fodf')
 
         tractograms_dir = pjoin(work_dir, 'tractograms')
-        tractogram = 'deterministic_tractogram.trk'
-
+        tractogram = 'eudx_tractogram.trk'
         tractogram_path = pjoin(tractograms_dir, tractogram)
         if os.path.exists(tractogram_path) is False or resume is False:
-            deterministic_tracking_flow(denoised_dwi, mask_filename, bval, bvec,
-                                        out_dir=tractograms_dir,
-                                        tractogram=tractogram)
+            EuDX_tracking_flow(peaks_values, peaks_indices,
+                               out_dir=tractograms_dir, tractogram=tractogram)
         else:
-            logging.info('Skipped deterministic tracking')
+           logging.info('Skipped deterministic tracking')
 
         tdi = os.path.join(metrics_dir, 'tdi.nii.gz')
+        tdi_2x = os.path.join(metrics_dir, 'tdi_2x.nii.gz')
         if os.path.exists(tdi) is False or resume is False:
-            track_density_flow(tractogram_path, fa_path, out_dir=metrics_dir, tdi=tdi)
+            track_density_flow(tractogram_path, fa_path, out_dir=metrics_dir,
+                               tdi=tdi)
+
+            track_density_flow(tractogram_path, fa_path, out_dir=metrics_dir,
+                               tdi=tdi_2x, up_factor=2.0)
         else:
             logging.info('Skipped track density')
