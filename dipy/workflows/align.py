@@ -10,7 +10,8 @@ from dipy.io.trackvis import load_trk, save_trk
 def whole_brain_slr_flow(moving_streamlines_files,
                          static_streamlines_file, out_dir=None,
                          slr_transform='affine', slr_progressive=True,
-                         maxiter=150, select_random=50000, verbose=True):
+                         maxiter=150, select_random=50000, verbose=True,
+                         debug=False):
     """ Whole brain Streamline-based Registration
 
     Parameters
@@ -35,7 +36,7 @@ def whole_brain_slr_flow(moving_streamlines_files,
     verbose : bool, optional
         Print results as they are being generated. From the command
         line call this using 0 (False) or 1 (True).
-
+    debug : bool, optional
     """
 
     if isinstance(moving_streamlines_files, string_types):
@@ -80,30 +81,34 @@ def whole_brain_slr_flow(moving_streamlines_files,
         if out_dir is None:
             out_dir = path.dirname(sf)
 
-        moved_bundle_file = path.join(out_dir,
-                                      moving_basename + '_moved' + ext)
-        moving_centroids_file = path.join(
-            out_dir,
-            moving_basename + '_moving_centroids' + ext)
-        static_centroids_file = path.join(
-            out_dir,
-            static_basename + '_' + moving_basename + '_static_centroids' + ext)
-        moved_centroids_file = path.join(
-            out_dir, moving_basename + '_moved_centroids' + ext)
+        moved_streamlines_file = path.join(
+            out_dir, moving_basename + '__to__' + static_basename + ext)
+
         mat_file = path.join(
             out_dir,
-            moving_basename + '_to_' + static_basename + '_affine.txt')
+            moving_basename + '__to__' + static_basename + '_affine.txt')
 
-        save_trk(moved_bundle_file, moved_streamlines, hdr=hdr_static)
-        save_trk(static_centroids_file, static_centroids, hdr=hdr_static)
-        save_trk(moving_centroids_file, moving_centroids, hdr=hdr)
-        save_trk(moved_centroids_file, moved_centroids, hdr=hdr_static)
+        save_trk(moved_streamlines_file, moved_streamlines, hdr=hdr_static)
         np.savetxt(mat_file, mat)
 
-        if verbose:
-            print('\n Saved results at:')
-            print(moved_bundle_file)
+        if debug:
+            moving_centroids_file = path.join(
+                out_dir,
+                moving_basename + '_moving_centroids_' + ext)
+            static_centroids_file = path.join(
+                out_dir,
+                static_basename + '_' + '_static_centroids' + ext)
+            moved_centroids_file = path.join(
+                out_dir, moving_basename + '_moved_centroids' + ext)
+            save_trk(static_centroids_file, static_centroids, hdr=hdr_static)
+            save_trk(moving_centroids_file, moving_centroids, hdr=hdr)
+            save_trk(moved_centroids_file, moved_centroids, hdr=hdr_static)
+            print('\n Saved debugging results at:')
             print(static_centroids_file)
             print(moving_centroids_file)
             print(moved_centroids_file)
+
+        if verbose:
+            print('\n Saved results at:')
+            print(moved_streamlines_file)
             print(mat_file)
