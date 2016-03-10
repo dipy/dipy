@@ -39,10 +39,11 @@ def convolve(odfs_sh, kernel, sh_order, test_mode=False, num_threads=None):
     [Meesters2016_ISMRM] S. Meesters, G. Sanguinetti, E. Garyfallidis, 
                          J. Portegies, R. Duits. (2015) Fast implementations of 
                          contextual PDE’s for HARDI data processing in DIPY. 
-                         ISMRM 2016 conf. (submitted)
-    [DuitsAndFranken2011] R. Duits and E. Franken (2011) Morphological and
-                          Linear Scale Spaces for Fiber Enhancement in DWI-MRI.
-                          J Math Imaging Vis, 46(3):326-368.
+                         ISMRM 2016 conference.
+    [DuitsAndFranken_IJCV] R. Duits and E. Franken (2011) Left-invariant diffusions 
+                        on the space of positions and orientations and their 
+                        application to crossing-preserving smoothing of HARDI 
+                        images. International Journal of Computer Vision, 92:231-264.
     [Portegies2015] J. Portegies, G. Sanguinetti, S. Meesters, and R. Duits. 
                     (2015) New Approximation of a Scale Space Kernel on SE(3) and
                     Applications in Neuroimaging. Fifth International
