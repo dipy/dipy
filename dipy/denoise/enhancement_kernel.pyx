@@ -48,7 +48,7 @@ cdef class EnhancementKernel:
         [Meesters2016_ISMRM] S. Meesters, G. Sanguinetti, E. Garyfallidis, 
                              J. Portegies, R. Duits. (2015) Fast implementations 
                              of contextual PDE’s for HARDI data processing in 
-                             DIPY. ISMRM 2016 conf. (submitted)
+                             DIPY. ISMRM 2016 conference.
         [DuitsAndFranken_IJCV] R. Duits and E. Franken (2011) Left-invariant diffusions 
                         on the space of positions and orientations and their 
                         application to crossing-preserving smoothing of HARDI 
