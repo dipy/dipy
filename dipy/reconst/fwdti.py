@@ -458,7 +458,10 @@ def _nlls_err_func(tensor_elements, design_matrix, data, Diso=3e-3,
 
     data : array
         The voxel signal in all gradient directions
-
+    Diso : float, optional
+        Value of the free water isotropic diffusion. Default is set to 3e-3
+        $mm^{2}.s^{-1}$. Please ajust this value if you are assuming different
+        units of diffusion.
     weighting : str (optional).
          Whether to use the Geman McClure weighting criterion (see [1]_
          for details)
@@ -528,9 +531,54 @@ def _nlls_err_func(tensor_elements, design_matrix, data, Diso=3e-3,
         return np.sqrt(w * se)
 
 
+def _nlls_jacobian_func(tensor_elements, design_matrix, data, Diso=3e-3,
+                        weighting=None, sigma=None, cholesky=False,
+                        f_transform=False):
+    """The Jacobian is the first derivative of the least squares error
+    function.
+
+    Parameters
+    ----------
+    tensor_elements : array (8, )
+        The six independent elements of the diffusion tensor followed by
+        -log(S0) and the volume fraction f of the water elimination
+        compartment. Note that if f_transform is true, volume fraction f is
+        converted to ft = arcsin(2*f - 1) + pi/2
+    design_matrix : array
+        The design matrix
+    Diso : float, optional
+        Value of the free water isotropic diffusion. Default is set to 3e-3
+        $mm^{2}.s^{-1}$. Please ajust this value if you are assuming different
+        units of diffusion.
+    f_transform : bool, optional
+        If true, the water volume fraction was converted to
+        ft = arcsin(2*f - 1) + pi/2, insuring f estimates between 0 and 1.
+        See fwdti.nlls_fit_tensor
+        Default: True
+    """
+    tensor = np.copy(tensor_elements)
+    if f_transform:
+        f = 0.5 * (1 + np.sin(tensor[7] - np.pi/2))
+    else:
+        f = tensor[7]
+
+    t = np.exp(np.dot(design_matrix, tensor[:7]))
+    s = np.exp(np.dot(design_matrix,
+                      np.array([Diso, 0, Diso, 0, 0, Diso, tensor[6]])))
+    T = (f-1.0) * t[:, None] * design_matrix
+    S = np.zeros(design_matrix.shape)
+    S[:, 6] = f * s
+
+    if f_transform:
+        df = (t-s) * (0.5*np.cos(tensor[7]-np.pi/2))
+    else:
+        df = (t-s)
+    return np.concatenate((T - S, df[:, None]), axis=1)
+
+
 def nlls_fit_tensor(design_matrix, data, fw_params=None, Diso=3e-3,
                     weighting=None, sigma=None, cholesky=False,
-                    f_transform=True):
+                    f_transform=True, jac=False):
     """
     Fit the water elimination tensor model using the non-linear least-squares.
 
@@ -578,6 +626,8 @@ def nlls_fit_tensor(design_matrix, data, fw_params=None, Diso=3e-3,
         procedure to ft = arcsin(2*f - 1) + pi/2, insuring f estimates between
         0 and 1.
         Default: True
+    jac : bool
+        Use the Jacobian? Default: True
 
     Returns
     -------
@@ -594,9 +644,10 @@ def nlls_fit_tensor(design_matrix, data, fw_params=None, Diso=3e-3,
         fw_params = fw_params.reshape((-1, fw_params.shape[-1]))
 
     # if bounds==None:
-    #     bounds = ([0., -Diso, 0., -Diso, -Diso, 0., -10., 0.],
-    #               [Diso, Diso, Diso, Diso, Diso, Diso, 10., 1.])
-
+    """
+    bounds = ([0., -Diso, 0., -Diso, -Diso, 0., -10., 0],
+              [Diso, Diso, Diso, Diso, Diso, Diso, 10., 1])
+    """
     for vox in range(flat_data.shape[0]):
         if np.all(flat_data[vox] == 0):
             raise ValueError("The data in this voxel contains only zeros")
@@ -621,25 +672,46 @@ def nlls_fit_tensor(design_matrix, data, fw_params=None, Diso=3e-3,
 
         # Use the Levenberg-Marquardt algorithm wrapped in opt.leastsq
         start_params = np.concatenate((dt, [-np.log(s0), f]), axis=0)
-        # lb = np.array(bounds[0])
-        # ub = np.array(bounds[1])
-        # start_params[start_params<lb] = lb[start_params<lb]
-        # start_params[start_params>ub] = ub[start_params>ub]
-        # out = opt.least_squares(_nlls_err_func, start_params[:8],
-        #                         args=(design_matrix, flat_data[vox],
-        #                              Diso, weighting, sigma, cholesky,
-        #                              f_transform),
-        #                         bounds=bounds)
-        # this_tensor = out.x
+        """
+        lb = np.array(bounds[0])
+        ub = np.array(bounds[1])
+        start_params[start_params<lb] = lb[start_params<lb]
+        start_params[start_params>ub] = ub[start_params>ub]       
+        if jac:
+            out = opt.least_squares(_nlls_err_func, start_params[:8],
+                                    args=(design_matrix, flat_data[vox],
+                                          Diso, weighting, sigma, cholesky,
+                                          f_transform),
+                                    jac=_nlls_jacobian_func,
+                                    bounds=bounds)
+        else:
+            out = opt.least_squares(_nlls_err_func, start_params[:8],
+                                    args=(design_matrix, flat_data[vox],
+                                          Diso, weighting, sigma, cholesky,
+                                          f_transform),
+                                    bounds=bounds)
+        this_tensor = out.x
+        """
+        if jac:
+            this_tensor, status = opt.leastsq(_nlls_err_func, start_params[:8],
+                                              args=(design_matrix,
+                                                    flat_data[vox],
+                                                    Diso,
+                                                    weighting,
+                                                    sigma,
+                                                    cholesky,
+                                                    f_transform),
+                                              Dfun=_nlls_jacobian_func)
+        else:
+            this_tensor, status = opt.leastsq(_nlls_err_func, start_params[:8],
+                                              args=(design_matrix,
+                                                    flat_data[vox],
+                                                    Diso,
+                                                    weighting,
+                                                    sigma,
+                                                    cholesky,
+                                                    f_transform))
 
-        this_tensor, status = opt.leastsq(_nlls_err_func, start_params[:8],
-                                          args=(design_matrix,
-                                                flat_data[vox],
-                                                Diso,
-                                                weighting,
-                                                sigma,
-                                                cholesky,
-                                                f_transform))
 
         # Invert the cholesky decomposition if this was requested
         if cholesky:

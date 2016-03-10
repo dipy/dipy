@@ -231,3 +231,25 @@ def test_cholesky_functions():
     tensor = cholesky_to_lower_triangular(R)
     assert_array_almost_equal(dt, tensor)
 
+
+def test_fwdti_jac_multi_voxel():
+    fwdm = fwdti.FreeWaterTensorModel(gtab_2s, 'WLS', S0=S0m[0, :])
+    fwefit = fwdm.fit(DWI[0, :, :])
+    fw_params_initial = fwefit.model_params
+
+    # no f transform
+    fwdm = fwdti.FreeWaterTensorModel(gtab_2s, 'NLS',
+                                      fw_params=fw_params_initial,
+                                      f_transform=False, jac=True)
+    fwefit = fwdm.fit(DWI[0, :, :])
+    Ffwe = fwefit.f
+    assert_array_almost_equal(Ffwe, GTF[0, :])
+    
+    # with f transform
+    fwdm = fwdti.FreeWaterTensorModel(gtab_2s, 'NLS',
+                                      fw_params=fw_params_initial,
+                                      f_transform=True, jac=True)
+    fwefit = fwdm.fit(DWI[0, :, :])
+    Ffwe = fwefit.f
+    assert_array_almost_equal(Ffwe, GTF[0, :])
+
