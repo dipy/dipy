@@ -1,15 +1,15 @@
 #!/usr/bin/python
 
-#import modules
-import time
-import sys, os, traceback, optparse
 import numpy as np
 import scipy as sp
-from copy import copy, deepcopy
+
 
 import warnings
 
-warnings.warn("This module is most likely to change both as a name and in structure in the future",FutureWarning)
+warningMsg = "This module is most likely to change both as\
+                a name and in structure in the future"
+warnings.warn(warningMsg, FutureWarning)
+
 
 def bs_se(bs_pdf):
     """
@@ -18,7 +18,8 @@ def bs_se(bs_pdf):
     N = len(bs_pdf)
     return np.std(bs_pdf) * np.sqrt(N / (N - 1))
 
-def bootstrap(x, statistic = bs_se, B = 1000, alpha = 0.95):
+
+def bootstrap(x, statistic=bs_se, B=1000, alpha=0.95):
     """
     Bootstrap resampling [1]_ to accurately estimate the standard error and
     confidence interval of a desired statistic of a probability distribution
@@ -68,17 +69,18 @@ def bootstrap(x, statistic = bs_se, B = 1000, alpha = 0.95):
         look at the jackknife. Ann. Stat. 7, 1-26.
     """
     N = len(x)
-    pdf_mask = np.ones((N,),dtype='int16')
+    pdf_mask = np.ones((N,), dtype='int16')
     bs_pdf = np.empty((B,))
 
     for ii in range(0, B):
-        #resample with replacement
+        # resample with replacement
         rand_index = np.int16(np.round(np.random.random(N) * (N - 1)))
         bs_pdf[ii] = statistic(x[rand_index])
 
-    return bs_pdf, bs_se(bs_pdf), abc(x, statistic, alpha = alpha)
+    return bs_pdf, bs_se(bs_pdf), abc(x, statistic, alpha=alpha)
 
-def abc(x, statistic = bs_se , alpha = 0.05, eps = 1e-5):
+
+def abc(x, statistic=bs_se, alpha=0.05, eps=1e-5):
     """
     Calculates the bootstrap confidence interval by approximating the BCa.
 
@@ -114,7 +116,7 @@ def abc(x, statistic = bs_se , alpha = 0.05, eps = 1e-5):
     ..  [2] DiCiccio, T.J., Efron, B., 1996. Bootstrap Confidence Intervals.
         Statistical Science. 11, 3, 189-228.
     """
-    #define base variables -- n, p_0, sigma_hat, delta_hat
+    # define base variables -- n, p_0, sigma_hat, delta_hat
     n = len(x)
     p_0 = np.ones(x.shape) / n
     sigma_hat = np.zeros(x.shape)
@@ -123,7 +125,7 @@ def abc(x, statistic = bs_se , alpha = 0.05, eps = 1e-5):
         sigma_hat[i] = __tt_dot(i, x, p_0, statistic, eps)**2
         delta_hat[i] = __tt_dot(i, x, p_0, statistic, eps)
     sigma_hat = (sigma_hat / n**2)**0.5
-    #estimate the bias (z_0) and the acceleration (a_hat)
+    # estimate the bias (z_0) and the acceleration (a_hat)
     a_hat = np.zeros(x.shape)
     a_num = np.zeros(x.shape)
     a_dem = np.zeros(x.shape)
@@ -132,17 +134,19 @@ def abc(x, statistic = bs_se , alpha = 0.05, eps = 1e-5):
         a_dem[i] = __tt_dot(i, x, p_0, statistic, eps)**2
     a_hat = 1 / 6 * a_num / a_dem**1.5
     z_0 = __calc_z0(x, p_0, statistic, eps, a_hat, sigma_hat)
-    #define helper variables -- w and l
+    # define helper variables -- w and l
     w = z_0 + __calc_z_alpha(1 - alpha)
     l = w / (1 - a_hat * w)**2
     return __tt(x, p_0 + l * delta_hat / sigma_hat, statistic)
+
 
 def __calc_z_alpha(alpha):
     """
     Classic "quantile function" that calculates inverse of cdf of standard
     normal.
     """
-    return  2**0.5 * sp.special.erfinv(2 * alpha - 1)
+    return 2**0.5 * sp.special.erfinv(2 * alpha - 1)
+
 
 def __calc_z0(x, p_0, statistic, eps, a_hat, sigma_hat):
     """
@@ -160,14 +164,15 @@ def __calc_z0(x, p_0, statistic, eps, a_hat, sigma_hat):
         b_hat[i] = __tt_dot_dot(i, x, p_0, statistic, eps)
         tt_dot[i] = __tt_dot(i, x, p_0, statistic, eps)
     b_hat = b_hat / (2 * n**2)
-    c_q_hat = (__tt(x, (1 - eps) * p_0 + eps * tt_dot / (n**2 * sigma_hat)
-                                                              , statistic) +
-               __tt(x, (1 - eps) * p_0 - eps * tt_dot / (n**2 * sigma_hat)
-                                                              , statistic) -
-               2 * __tt(x, p_0, statistic) ) / eps**2
+    c_q_hat = (__tt(x, ((1 - eps) * p_0 + eps * tt_dot /
+                        (n**2 * sigma_hat)), statistic) +
+               __tt(x, ((1 - eps) * p_0 - eps * tt_dot /
+                        (n**2 * sigma_hat)), statistic) -
+               2 * __tt(x, p_0, statistic)) / eps**2
     return a_hat - (b_hat / sigma_hat - c_q_hat)
 
-def __tt(x, p_0, statistic = bs_se):
+
+def __tt(x, p_0, statistic=bs_se):
     """
     Function that calculates desired statistic from observable data and a
     given proportional weighting.
@@ -190,14 +195,16 @@ def __tt(x, p_0, statistic = bs_se):
     """
     return statistic(x / p_0)
 
+
 def __tt_dot(i, x, p_0, statistic, eps):
     """
     First numerical derivative of __tt
     """
     e = np.zeros(x.shape)
     e[i] = 1
-    return ( (__tt(x, (1 - eps) * p_0 + eps * e[i], statistic) -
-              __tt(x, p_0, statistic)) / eps )
+    return ((__tt(x, ((1 - eps) * p_0 + eps * e[i]), statistic) -
+             __tt(x, p_0, statistic)) / eps)
+
 
 def __tt_dot_dot(i, x, p_0, statistic, eps):
     """
@@ -206,10 +213,11 @@ def __tt_dot_dot(i, x, p_0, statistic, eps):
     e = np.zeros(x.shape)
     e[i] = 1
     return (__tt_dot(i, x, p_0, statistic, eps) / eps +
-           (__tt(x, (1 - eps) * p_0 - eps * e[i], statistic) -
-            __tt(x, p_0, statistic)) / eps**2)
+            (__tt(x, ((1 - eps) * p_0 - eps * e[i]), statistic) -
+             __tt(x, p_0, statistic)) / eps**2)
 
-def jackknife(pdf, statistic = np.std, M = None):
+
+def jackknife(pdf, statistic=np.std, M=None):
     """
     Jackknife resampling [3]_ to quickly estimate the bias and standard
     error of a desired statistic in a probability distribution function (pdf).
@@ -263,29 +271,31 @@ def jackknife(pdf, statistic = np.std, M = None):
            look at the jackknife. Ann. Stat. 7, 1-26.
     """
     N = len(pdf)
-    pdf_mask = np.ones((N,),dtype='int16') #keeps track of all n - 1 indexes
+    pdf_mask = np.ones((N,), dtype='int16')  # keeps track of all n - 1 indexes
     mask_index = np.copy(pdf_mask)
-    if M == None:
+    if M is None:
         M = N
     M = np.minimum(M, N - 1)
     jk_pdf = np.empty((M,))
 
     for ii in range(0, M):
         rand_index = np.round(np.random.random() * (N - 1))
-        #choose a unique random sample to remove
-        while pdf_mask[rand_index] == 0 :
+        # choose a unique random sample to remove
+        while pdf_mask[rand_index] == 0:
             rand_index = np.round(np.random.random() * (N - 1))
-        #set mask to zero for chosen random index so not to choose again
+        # set mask to zero for chosen random index so not to choose again
         pdf_mask[rand_index] = 0
         mask_index[rand_index] = 0
-        jk_pdf[ii] = statistic(pdf[mask_index > 0]) #compute n-1 statistic
+        jk_pdf[ii] = statistic(pdf[mask_index > 0])  # compute n-1 statistic
         mask_index[rand_index] = 1
 
-    return jk_pdf, (N - 1) * (np.mean(jk_pdf) - statistic(pdf)), np.sqrt(N -
-                                                          1) * np.std(jk_pdf)
+    return (jk_pdf, (N - 1) * (np.mean(jk_pdf) - statistic(pdf)),
+            np.sqrt(N - 1) * np.std(jk_pdf))
+
 
 def residual_bootstrap(data):
     pass
+
 
 def repetition_bootstrap(data):
     pass
