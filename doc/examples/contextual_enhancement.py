@@ -90,12 +90,13 @@ data = img.get_data()
 from dipy.segment.mask import median_otsu
 b0_slice = data[:, :, :, 1]
 b0_mask, mask = median_otsu(b0_slice)
-np.random.seed(2)
+np.random.seed(1)
 data_noisy = add_noise(data, 10.0, np.mean(b0_slice[mask]), noise_type='rician')
 
-# Select a small part of it
-data_small = data[25:40, 65:80, 35:42]
-data_noisy_small = data_noisy[25:40, 65:80, 35:42]
+# Select a small part of it.
+padding = 3 # Include a larger region to avoid boundary effects
+data_small = data[25-padding:40+padding, 65-padding:80+padding, 35:42]
+data_noisy_small = data_noisy[25-padding:40+padding, 65-padding:80+padding, 35:42]
 
 """
 Fit an initial model to the data, in this case Constrained Spherical
@@ -189,17 +190,17 @@ csd_sf_enh = sh_to_sf(csd_shm_enh, sphere, sh_order=8)
 csd_sf_enh_sharp = sh_to_sf(csd_shm_enh_sharp, sphere, sh_order=8)
 
 # Normalize the sharpened ODFs
-csd_sf_enh_sharp = csd_sf_enh_sharp * np.amax(csd_sf_orig)/np.amax(csd_sf_enh_sharp)
+csd_sf_enh_sharp = csd_sf_enh_sharp * np.amax(csd_sf_orig)/np.amax(csd_sf_enh_sharp) * 1.25
 
 """
 The end results are visualized. It can be observed that the end result after
 diffusion and sharpening is closer to the original noiseless dataset.
 """
 
-csd_sf_orig_slice = csd_sf_orig[:, :, [3], :]
-csd_sf_noisy_slice = csd_sf_noisy[:, :, [3], :]
-csd_sf_enh_slice = csd_sf_enh[:, :, [3], :]
-csd_sf_enh_sharp_slice = csd_sf_enh_sharp[:, :, [3], :]
+csd_sf_orig_slice = csd_sf_orig[padding:-padding, padding:-padding, [3], :]
+csd_sf_noisy_slice = csd_sf_noisy[padding:-padding, padding:-padding, [3], :]
+csd_sf_enh_slice = csd_sf_enh[padding:-padding, padding:-padding, [3], :]
+csd_sf_enh_sharp_slice = csd_sf_enh_sharp[padding:-padding, padding:-padding, [3], :]
 
 ren = fvtk.ren()
 
@@ -231,7 +232,7 @@ fodf_spheres_enh.SetPosition(35, 0, 0)
 fvtk.add(ren, fodf_spheres_enh)
 
 # Additional sharpening
-fodf_spheres_enh_sharp = fvtk.sphere_funcs(csd_sf_enh_sharp_slice * 1.5,
+fodf_spheres_enh_sharp = fvtk.sphere_funcs(csd_sf_enh_sharp_slice,
                                            sphere,
                                            scale=2,
                                            norm=False,
