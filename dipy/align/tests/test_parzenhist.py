@@ -1,6 +1,5 @@
 import numpy as np
 import scipy as sp
-import scipy.ndimage as ndimage
 from functools import reduce
 from operator import mul
 from dipy.core.ndindex import ndindex
@@ -316,25 +315,25 @@ def setup_random_transform(transform, rfactor, nslices=45, sigma=1):
 
 
 def test_joint_pdf_gradients_dense():
-    # Compare the analytical and numerical (finite differences) gradient of 
-    # the joint distribution (i.e. derivatives of each histogram cell) w.r.t. 
-    # the transform parameters. Since the histograms are discrete partitions 
-    # of the image intensities, the finite difference approximation is 
-    # normally not very close to the analytical derivatives. Other sources of 
-    # error are the interpolation used when transforming the images and the 
-    # boundary intensities introduced when interpolating outside of the image 
-    # (i.e. some "zeros" are introduced at the boundary which affect the 
-    # numerical derivatives but is not taken into account by the analytical 
-    # derivatives). Thus, we need to relax the verification. Instead of 
-    # looking for the analytical and numerical gradients to be very close to 
-    # each other, we will verify that they approximately point in the same 
+    # Compare the analytical and numerical (finite differences) gradient of
+    # the joint distribution (i.e. derivatives of each histogram cell) w.r.t.
+    # the transform parameters. Since the histograms are discrete partitions
+    # of the image intensities, the finite difference approximation is
+    # normally not very close to the analytical derivatives. Other sources of
+    # error are the interpolation used when transforming the images and the
+    # boundary intensities introduced when interpolating outside of the image
+    # (i.e. some "zeros" are introduced at the boundary which affect the
+    # numerical derivatives but is not taken into account by the analytical
+    # derivatives). Thus, we need to relax the verification. Instead of
+    # looking for the analytical and numerical gradients to be very close to
+    # each other, we will verify that they approximately point in the same
     # direction by testing if the angle they form is close to zero.
     h = 1e-4
 
-    # Make sure dictionary entries are processed in the same order regardless 
-    # of the platform. Otherwise any random numbers drawn within the loop 
-    # would make the test non-deterministic even if we fix the seed before 
-    # the loop. Right now, this test does not draw any samples, but we still 
+    # Make sure dictionary entries are processed in the same order regardless
+    # of the platform. Otherwise any random numbers drawn within the loop
+    # would make the test non-deterministic even if we fix the seed before
+    # the loop. Right now, this test does not draw any samples, but we still
     # sort the entries to prevent future related failures.
     for ttype in sorted(factors):
         dim = ttype[1]
@@ -370,8 +369,8 @@ def test_joint_pdf_gradients_dense():
                                     spacing, shape, grid_to_space)
         id = transform.get_identity_parameters()
         parzen_hist.update_gradient_dense(
-            id, transform, static.astype(np.float64), 
-            moved.astype(np.float64), grid_to_space, 
+            id, transform, static.astype(np.float64),
+            moved.astype(np.float64), grid_to_space,
             mgrad, smask, mmask)
         actual = np.copy(parzen_hist.joint_grad)
         # Now we have the gradient of the joint distribution w.r.t. the
@@ -414,10 +413,10 @@ def test_joint_pdf_gradients_dense():
 def test_joint_pdf_gradients_sparse():
     h = 1e-4
 
-    # Make sure dictionary entries are processed in the same order regardless 
-    # of the platform. Otherwise any random numbers drawn within the loop 
-    # would make the test non-deterministic even if we fix the seed before 
-    # the loop.Right now, this test does not draw any samples, but we still 
+    # Make sure dictionary entries are processed in the same order regardless
+    # of the platform. Otherwise any random numbers drawn within the loop
+    # would make the test non-deterministic even if we fix the seed before
+    # the loop.Right now, this test does not draw any samples, but we still
     # sort the entries to prevent future related failures.
 
     for ttype in sorted(factors):
@@ -471,9 +470,9 @@ def test_joint_pdf_gradients_sparse():
         mgrad, inside = vf.sparse_gradient(moving.astype(np.float32),
                                            sp_to_moving, spacing, samples)
         parzen_hist.update_gradient_sparse(
-          theta, transform, intensities_static,
-          intensities_moving, samples[..., :dim],
-          mgrad)
+            theta, transform, intensities_static,
+            intensities_moving, samples[..., :dim],
+            mgrad)
         # Get the gradient of the joint distribution w.r.t. the transform
         # parameters
         actual = np.copy(parzen_hist.joint_grad)
@@ -606,7 +605,7 @@ def test_exceptions():
         invalid_vals = np.empty((nsamples + 1), dtype=np.float64)
         invalid_points_dim = np.empty((nsamples, dim + 2), dtype=np.float64)
         invalid_points_len = np.empty((nsamples + 1, dim), dtype=np.float64)
-        
+
         C = [(invalid_vals, valid_vals, valid_points, valid_grad),
              (valid_vals, invalid_vals, valid_points, valid_grad),
              (valid_vals, valid_vals, invalid_points_dim, valid_grad),
@@ -615,7 +614,7 @@ def test_exceptions():
              (valid_vals, valid_vals, valid_points, invalid_grad_type),
              (valid_vals, valid_vals, valid_points, invalid_grad_dim),
              (valid_vals, valid_vals, valid_points, invalid_grad_len)]
-        
+
         for s, m, p, g in C:
             assert_raises(ValueError, H.update_gradient_sparse,
                           theta, transform, s, m, p, g)
