@@ -1,6 +1,5 @@
 from __future__ import print_function
 import numpy as np
-import numpy.testing as npt
 import nibabel.eulerangles as eulerangles
 from numpy.testing import (assert_equal,
                            assert_array_equal,
@@ -69,7 +68,7 @@ def test_diffeomorphic_map_2d():
     codomain_grid2world = gt_affine
     disp, assign = vfu.create_random_displacement_2d(
         np.array(domain_shape, dtype=np.int32),
-        domain_grid2world, np.array(codomain_shape,dtype=np.int32),
+        domain_grid2world, np.array(codomain_shape, dtype=np.int32),
         codomain_grid2world)
     disp = np.array(disp, dtype=floating)
     assign = np.array(assign)
