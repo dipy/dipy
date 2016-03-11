@@ -91,7 +91,7 @@ from dipy.segment.mask import median_otsu
 b0_slice = data[:, :, :, 1]
 b0_mask, mask = median_otsu(b0_slice)
 np.random.seed(2)
-data_noisy = add_noise(data, 7.5, np.mean(b0_slice[mask]), noise_type='rician')
+data_noisy = add_noise(data, 10.0, np.mean(b0_slice[mask]), noise_type='rician')
 
 # Select a small part of it
 data_small = data[25:40, 65:80, 35:42]
