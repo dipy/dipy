@@ -126,7 +126,7 @@ except ImportError: # No nibabel
     extbuilder = derror_maker(du_build_ext, msg)
 else: # We have nibabel
     pybuilder = get_comrec_build('dipy')
-    # Cython is a dependency for building extensions, iff we don't have stamped
+    # Cython is a dependency for building extensions, if we don't have stamped
     # up pyx and c files.
     build_ext, need_cython = cyproc_exts(EXTS,
                                          info.CYTHON_MIN_VERSION,
