@@ -953,17 +953,17 @@ def test_compose_vector_fields_2d():
     target_grid2world = gt_affine
 
     disp1, assign1 = vfu.create_random_displacement_2d(
-        np.array(input_shape, dtype=np.int32), 
-        input_grid2world, 
-        np.array(tgt_sh, dtype=np.int32), 
+        np.array(input_shape, dtype=np.int32),
+        input_grid2world,
+        np.array(tgt_sh, dtype=np.int32),
         target_grid2world)
     disp1 = np.array(disp1, dtype=floating)
     assign1 = np.array(assign1)
 
     disp2, assign2 = vfu.create_random_displacement_2d(
-        np.array(input_shape, dtype=np.int32), 
-        input_grid2world, 
-        np.array(tgt_sh, dtype=np.int32), 
+        np.array(input_shape, dtype=np.int32),
+        input_grid2world,
+        np.array(tgt_sh, dtype=np.int32),
         target_grid2world)
     disp2 = np.array(disp2, dtype=floating)
     assign2 = np.array(assign2)
@@ -1088,8 +1088,8 @@ def test_compose_vector_fields_3d():
     target_grid2world = gt_affine
 
     disp1, assign1 = vfu.create_random_displacement_3d(
-        np.array(input_shape, dtype=np.int32), 
-        input_grid2world, np.array(tgt_sh, dtype=np.int32), 
+        np.array(input_shape, dtype=np.int32),
+        input_grid2world, np.array(tgt_sh, dtype=np.int32),
         target_grid2world)
     disp1 = np.array(disp1, dtype=floating)
     assign1 = np.array(assign1)
