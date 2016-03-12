@@ -304,7 +304,7 @@ def estimate_sigma(arr, disable_background_masking=False, N=0):
     it is expected to perform ok on diffusion MRI data, but might oversmooth
     some regions and leave others un-denoised for spatially varying noise
     profiles. Consider using :func:`piesno` to estimate sigma instead if visual
-    inacuracies are apparent in the denoised result.
+    inaccuracies are apparent in the denoised result.
 
     Reference
     -------
