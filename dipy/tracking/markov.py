@@ -337,10 +337,10 @@ class ProbabilisticOdfWeightedTracker(MarkovIntegrator):
 
     References
     ----------
-    .. [1] Jeurissen, B., Leemans, A., Jones, D. K., Tournier, J.-D., & Sijbers,
-           J. (2011). Probabilistic fiber tracking using the residual bootstrap
-           with constrained spherical deconvolution. Human Brain Mapping, 32(3),
-           461-479. doi:10.1002/hbm.21032
+    .. [1] Jeurissen, B., Leemans, A., Jones, D. K., Tournier, J.-D., &
+           Sijbers, J. (2011). Probabilistic fiber tracking using the residual
+           bootstrap with constrained spherical deconvolution. Human Brain
+           Mapping, 32(3), 461-479. doi:10.1002/hbm.21032
     .. [2] J-D. Tournier, F. Calamante, D. G. Gadian, A. Connelly (2005).
            Probabilistic fibre tracking through regions containing crossing
            fibres. http://cds.ismrm.org/ismrm-2005/Files/01343.pdf
