@@ -36,6 +36,40 @@ def _log(msg):
     print(msg)
 
 
+def update_progressbar(progress):
+    """Show progressbar
+
+    Takes a number between 0 and 1 to indicate progress from 0 to 100%.
+
+    """
+    # Try to set the bar_length according to the console size
+    try:
+        rows, columns = os.popen('stty size', 'r').read().split()
+        bar_length = int(columns) - 35
+        if(not (bar_length > 1)):
+            bar_length = 20
+    except:
+        # Default value if determination of console size fails
+        bar_length = 20
+    block = int(round(bar_length*progress))
+    text = "\rDownload Progress: [{0}] {1:.2f}%".format(
+        "#"*block + "-"*(bar_length-block), progress*100)
+    sys.stdout.write(text)
+    sys.stdout.flush()
+
+
+def copyfileobj_withprogress(fsrc, fdst, total_length, length=16*1024):
+    copied = 0
+    while True:
+        buf = fsrc.read(length)
+        if not buf:
+            break
+        fdst.write(buf)
+        copied += len(buf)
+        progress = float(copied)/float(total_length)
+        update_progressbar(progress)
+
+
 def _already_there_msg(folder):
     """
     Prints a message indicating that a certain data-set is already in place
@@ -81,8 +115,14 @@ def check_md5(filename, stored_md5=None):
 
 def _get_file_data(fname, url):
     with contextlib.closing(urlopen(url)) as opener:
+        if sys.version_info[0] < 3:
+            response_size = opener.headers['content-length']
+        else:
+            # python3.x
+            response_size = opener.getheader("Content-Length")
+
         with open(fname, 'wb') as data:
-            copyfileobj(opener, data)
+            copyfileobj_withprogress(opener, data, response_size)
 
 
 def fetch_data(files, folder, data_size=None):
