@@ -41,7 +41,7 @@ cdef class FBCMeasures:
                            J. Portegies, P. Ossenblok, R. Duits. (2016) Cleaning 
                            output of tractography via fiber to bundle coherence, 
                            a new open source implementation. Human Brain Mapping 
-                           conference 2015 (submitted).
+                           conference 2015.
         [Portegies2015b] J. Portegies, R. Fick, G. Sanguinetti, S. Meesters, 
                          G.Girard, and R. Duits. (2015) Improving Fiber Alignment 
                          in HARDI by Combining Contextual PDE flow with 
@@ -70,7 +70,7 @@ cdef class FBCMeasures:
             1) a collection of streamlines, each n by 3, with n 
             being the number of nodes in the fiber that remain after filtering 
             2) the r,g,b values of the local fiber to bundle coherence (LFBC) 
-            3) the relative fiber to bundel coherence (RFBC)
+            3) the relative fiber to bundle coherence (RFBC)
         """
         if showInfo:
             print "median RFBC: " + str(np.median(self.streamlines_rfbc))
@@ -81,11 +81,11 @@ cdef class FBCMeasures:
         # logarithmic transform of color values to emphasize spurious fibers
         minval = np.nanmin(self.streamlines_lfbc)
         maxval = np.nanmax(self.streamlines_lfbc)
-        lfbc_log = np.log((self.streamlines_lfbc - minval)/
+        lfbc_log = np.log((self.streamlines_lfbc - minval) /
                         (maxval - minval + 10e-10) + emphasis )
         minval = np.nanmin(lfbc_log)
         maxval = np.nanmax(lfbc_log)
-        lfbc_log = (lfbc_log - minval)/(maxval - minval)
+        lfbc_log = (lfbc_log - minval) / (maxval - minval)
 
         # define color interpolation functions
         x = np.linspace(0, 1, num=4, endpoint=True)
@@ -192,7 +192,7 @@ cdef class FBCMeasures:
         # get lookup table info
         lut = kernel.get_lookup_table()
         N = lut.shape[2]
-        hn = (N - 1)/2
+        hn = (N-1) / 2
         
         # prepare numpy arrays for speed
         streamlines = np.zeros((numberOfFibers, maxLength, dim), 

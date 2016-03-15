@@ -133,8 +133,7 @@ from dipy.tracking.local import LocalTracking
 from dipy.viz import fvtk
 from dipy.viz.colormap import line_colors
 
-streamlines = LocalTracking(prob_dg, classifier, seeds, affine,
-                            step_size=.5)
+streamlines = LocalTracking(prob_dg, classifier, seeds, affine, step_size=.5)
 
 # Compute streamlines and store as a list.
 streamlines = list(streamlines)
@@ -160,7 +159,7 @@ streamlines = list(sfil)
 
 """
 Inspired by [Paulo_Eurographics]_, a lookup-table is created, containing rotated 
-versions of the fiber propagation kernel :math:`P_t` [DuitsAndFranken_JMIV]_ 
+versions of the fiber propagation kernel :math:`P_t` [DuitsAndFranken_IJCV]_ 
 rotated over a discrete set of orientations. See the [[ link to Contextual 
 enhancement demo page ]] for more details regarding the kernel. In order to ensure
 rotationally invariant processing, the discrete orientations 
@@ -200,7 +199,7 @@ fbc_sl_orig, clrs_orig, rfbc_orig = \
 
 # apply a threshold on the RFBC to remove spurious fibers
 fbc_sl_thres, clrs_thres, rfbc_thres = \
-  fbc.get_points_rfbc_thresholded(0.2, emphasis=0.01)
+  fbc.get_points_rfbc_thresholded(0.125, emphasis=0.01)
 
 """
 The results of FBC measures are visualized, showing the original fibers colored
@@ -265,15 +264,15 @@ References
 .. [Meesters2016_HBM] S. Meesters, G. Sanguinetti, E. Garyfallidis, J. Portegies,
                       P. Ossenblok, R. Duits. (2016) Cleaning output of 
                       tractography via fiber to bundle coherence, a new open 
-                      source implementation. Human Brain Mapping conference 2016 
-                      (submitted)
+                      source implementation. Human Brain Mapping conference 2016.
 .. [Portegies2015_PLoSOne] J. Portegies, R. Fick, G. Sanguinetti, S. Meesters, 
                            G.Girard, and R. Duits. (2015) Improving Fiber 
                            Alignment in HARDI by Combining Contextual PDE flow 
                            with Constrained Spherical Deconvolution. PLoS One.
-.. [DuitsAndFranken_JMIV] Duits, R. and Franken, E. (2011) Morphological and
-                          Linear Scale Spaces for Fiber Enhancement in DWI-MRI.
-                          J Math Imaging Vis, 46(3):326-368.
+.. [DuitsAndFranken_IJCV] R. Duits and E. Franken (2011) Left-invariant diffusions 
+                        on the space of positions and orientations and their 
+                        application to crossing-preserving smoothing of HARDI 
+                        images. International Journal of Computer Vision, 92:231-264.
 .. [Paulo_Eurographics] P. Rodrigues, R. Duits, B. Romeny, A. Vilanova (2010).
                         Accelerated Diffusion Operators for Enhancing DW-MRI. 
                         Eurographics Workshop on Visual Computing for Biology and 
