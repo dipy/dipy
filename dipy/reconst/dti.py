@@ -1132,6 +1132,9 @@ class TensorFit(object):
            The mean non-diffusion weighted signal in each voxel. Default: 1 in
            all voxels.
 
+        step : int
+            The chunk size as a number of voxels.
+
         Notes
         -----
         The predicted signal is given by:
