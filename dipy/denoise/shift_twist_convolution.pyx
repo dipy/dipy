@@ -64,9 +64,9 @@ def convolve(odfs_sh, kernel, sh_order, test_mode=False, num_threads=None):
                                  kernel.get_lookup_table(),
                                  test_mode,
                                  num_threads)
-
+    
     # normalize the output
-    output_norm = output * np.amax(odfs_dsf)/np.amax(output)
+    output_norm = np.multiply(output, np.amax(odfs_dsf)/np.amax(output))
     
     # convert back to SH
     output_sh = sf_to_sh(output_norm, sphere, sh_order=sh_order)
