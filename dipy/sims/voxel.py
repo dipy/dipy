@@ -176,9 +176,9 @@ def sticks_and_ball(gtab, d=0.0015, S0=100, angles=[(0, 0), (90, 0)],
     sticks = _check_directions(angles)
 
     for (i, g) in enumerate(gtab.bvecs[1:]):
-        S[i + 1] = f0*np.exp(-gtab.bvals[i + 1]*d) + \
-            np.sum([fractions[j]*np.exp(-gtab.bvals[i + 1]*d*np.dot(s, g)**2)
-                   for (j, s) in enumerate(sticks)])
+        S[i + 1] = f0 * np.exp(-gtab.bvals[i + 1] * d) + \
+            np.sum([fractions[j] * np.exp(-gtab.bvals[i + 1] * d * np.dot(s, g)**2)
+                    for (j, s) in enumerate(sticks)])
 
         S[i + 1] = S0 * S[i + 1]
 
@@ -298,16 +298,15 @@ def multi_tensor(gtab, mevals, S0=100, angles=[(0, 0), (90, 0)],
     sticks = _check_directions(angles)
 
     for i in range(len(fractions)):
-            S = S + fractions[i] * single_tensor(gtab, S0=S0, evals=mevals[i],
-                                                 evecs=all_tensor_evecs(
-                                                     sticks[i]), snr=None)
+        S = S + fractions[i] * single_tensor(gtab, S0=S0, evals=mevals[i],
+                                             evecs=all_tensor_evecs(
+                                                 sticks[i]), snr=None)
 
     return add_noise(S, snr, S0), sticks
 
 
 def multi_tensor_dki(gtab, mevals, S0=100, angles=[(90., 0.), (90., 0.)],
                      fractions=[50, 50], snr=20):
-
     r""" Simulate the diffusion-weight signal, diffusion and kurtosis tensors
     based on the DKI model
 
@@ -386,7 +385,7 @@ def multi_tensor_dki(gtab, mevals, S0=100, angles=[(90., 0.), (90., 0.)],
     # compute voxel's DT
     DT = np.zeros((3, 3))
     for i in range(len(fractions)):
-        DT = DT + fractions[i]*D_comps[i]
+        DT = DT + fractions[i] * D_comps[i]
     dt = np.array([DT[0][0], DT[0][1], DT[1][1], DT[0][2], DT[1][2], DT[2][2]])
 
     # compute voxel's MD
@@ -462,7 +461,7 @@ def kurtosis_element(D_comps, frac, ind_i, ind_j, ind_k, ind_l, DT=None,
     if DT is None:
         DT = np.zeros((3, 3))
         for i in range(len(frac)):
-            DT = DT + frac[i]*D_comps[i]
+            DT = DT + frac[i] * D_comps[i]
 
     if MD is None:
         MD = (DT[0][0] + DT[1][1] + DT[2][2]) / 3
@@ -471,13 +470,13 @@ def kurtosis_element(D_comps, frac, ind_i, ind_j, ind_k, ind_l, DT=None,
 
     for f in range(len(frac)):
         wijkl = wijkl + frac[f] * (
-                D_comps[f][ind_i][ind_j]*D_comps[f][ind_k][ind_l] +
-                D_comps[f][ind_i][ind_k]*D_comps[f][ind_j][ind_l] +
-                D_comps[f][ind_i][ind_l]*D_comps[f][ind_j][ind_k])
+            D_comps[f][ind_i][ind_j] * D_comps[f][ind_k][ind_l] +
+            D_comps[f][ind_i][ind_k] * D_comps[f][ind_j][ind_l] +
+            D_comps[f][ind_i][ind_l] * D_comps[f][ind_j][ind_k])
 
-    wijkl = (wijkl - DT[ind_i][ind_j]*DT[ind_k][ind_l] -
-             DT[ind_i][ind_k]*DT[ind_j][ind_l] -
-             DT[ind_i][ind_l]*DT[ind_j][ind_k]) / (MD**2)
+    wijkl = (wijkl - DT[ind_i][ind_j] * DT[ind_k][ind_l] -
+             DT[ind_i][ind_k] * DT[ind_j][ind_l] -
+             DT[ind_i][ind_l] * DT[ind_j][ind_k]) / (MD**2)
 
     return wijkl
 
@@ -523,7 +522,7 @@ def DKI_signal(gtab, dt, kt, S0=150, snr=None):
 
     # define vector of DKI parameters
     MD = (dt[0] + dt[2] + dt[5]) / 3
-    X = np.concatenate((dt, kt*MD*MD, np.array([np.log(S0)])), axis=0)
+    X = np.concatenate((dt, kt * MD * MD, np.array([np.log(S0)])), axis=0)
 
     # Compute signals based on the DKI model
     S = np.exp(dot(A, X))
@@ -531,7 +530,6 @@ def DKI_signal(gtab, dt, kt, S0=150, snr=None):
     S = add_noise(S, snr, S0)
 
     return S
-
 
 
 def single_tensor_odf(r, evals=None, evecs=None):
