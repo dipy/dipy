@@ -2,10 +2,9 @@ import numpy as np
 from dipy.tracking.streamline import (transform_streamlines,
                                       set_number_of_points, length,
                                       select_random_set_of_streamlines)
-from dipy.segment.clustering import (QuickBundles, QuickBundlesX,
+from dipy.segment.clustering import (QuickBundlesX,
                                      ClusterMapCentroid, ClusterCentroid,
                                      AveragePointwiseEuclideanMetric)
-from dipy.segment.metric import IdentityFeature, ResampleFeature
 from dipy.tracking.distances import (bundles_distances_mdf,
                                      bundles_distances_mam)
 from dipy.align.streamlinear import (StreamlineLinearRegistration,
@@ -16,8 +15,9 @@ from dipy.align.bundlemin import distance_matrix_mdf
 from time import time
 from itertools import chain
 from scipy.spatial import cKDTree
-from ipdb import set_trace
 
+from nibabel.streamlines.array_sequence import ArraySequence
+from nibabel.affines import apply_affine
 
 def check_range(streamline, gt, lt):
     length_s = length(streamline)
@@ -125,7 +125,7 @@ class RecoBundles(object):
 
         t = time()
         if self.verbose:
-            print('# Cluster streamlines using QuickBundles')
+            print('# Cluster streamlines using QBx')
             print(' Tractogram has %d streamlines'
                   % (len(self.streamlines), ))
             print(' Size is %0.3f MB' % (nbytes(self.streamlines),))
@@ -200,21 +200,14 @@ class RecoBundles(object):
         self.model_clust_thr = model_clust_thr
         t = time()
         if self.verbose:
-            print('# Cluster model bundle using QuickBundles')
+            print('# Cluster model bundle using QBx')
             print(' Model bundle has %d streamlines'
                   % (len(self.model_bundle), ))
             print(' Distance threshold %0.3f' % (model_clust_thr,))
+        thresholds = [40, 25, 20, model_clust_thr]
 
-        rmodel_bundle = set_number_of_points(self.model_bundle, nb_pts)
-        rmodel_bundle = [s.astype('f4') for s in rmodel_bundle]
-
-        self.resampled_model_bundle = rmodel_bundle
-
-        feature = IdentityFeature()
-        metric = AveragePointwiseEuclideanMetric(feature)
-        qb = QuickBundles(threshold=model_clust_thr, metric=metric)
-
-        self.model_cluster_map = qb.cluster(rmodel_bundle)
+        self.model_cluster_map = qbx_with_merge(self.model_bundle, thresholds, nb_pts=nb_pts,
+                                                select_randomly=500000, verbose=self.verbose)
         self.model_centroids = self.model_cluster_map.centroids
         self.nb_model_centroids = len(self.model_centroids)
 
@@ -231,11 +224,13 @@ class RecoBundles(object):
             print(' Reduction distance {}'.format(reduction_distance))
 
         if reduction_distance.lower() == 'mdf':
-            print(' Using MDF')
+            if self.verbose:
+                print(' Using MDF')
             centroid_matrix = bundles_distances_mdf(self.model_centroids,
                                                     self.centroids)
         elif reduction_distance.lower() == 'mam':
-            print(' Using MAM')
+            if self.verbose:
+                print(' Using MAM')
             centroid_matrix = bundles_distances_mdf(self.model_centroids,
                                                     self.centroids)
         else:
@@ -251,16 +246,11 @@ class RecoBundles(object):
         # TODO overflow with the next line
         close_clusters = self.cluster_map[close_clusters_indices]
 
-        # close_clusters = [self.cluster_map[i]
-        #                  for i in np.where(mins != np.inf)[0]]:
-        # close_centroids = [cluster.centroid for cluster in close_clusters]
-
         close_centroids = [self.centroids[i]
                            for i in close_clusters_indices]
         close_indices = [cluster.indices for cluster in close_clusters]
 
-        close_streamlines = list(chain(*close_clusters))
-
+        close_streamlines = ArraySequence(chain(*close_clusters))
         self.centroid_matrix = centroid_matrix.copy()
 
         self.neighb_streamlines = close_streamlines
@@ -319,11 +309,10 @@ class RecoBundles(object):
         else:
             static = self.model_centroids
 
-            moving_all = set_number_of_points(self.neighb_streamlines, nb_pts)
-            feature = IdentityFeature()
-            metric = AveragePointwiseEuclideanMetric(feature)
-            qb = QuickBundles(threshold=5, metric=metric)
-            cluster_map = qb.cluster(moving_all)
+            thresholds = [40, 30, 20, 10, 5]
+            cluster_map = qbx_with_merge(moving_all, thresholds, nb_pts=nb_pts,
+                                         select_randomly=500000, verbose=self.verbose)
+
             moving = cluster_map.centroids
 
         if progressive == False:
@@ -398,9 +387,10 @@ class RecoBundles(object):
                 slm = slm_c
             else:
                 raise ValueError('Incorrect SLR transform')
-
-        self.transf_streamlines = transform_streamlines(
-            self.neighb_streamlines, slm.matrix)
+        self.transf_streamlines = self.neighb_streamlines.copy()
+        self.transf_streamlines._data = apply_affine(slm.matrix, self.transf_streamlines._data)
+        #self.transf_streamlines = transform_streamlines(
+        #    self.neighb_streamlines, slm.matrix)
 
         self.transf_matrix = slm.matrix
         self.slr_bmd = slm.fopt
@@ -437,27 +427,24 @@ class RecoBundles(object):
 
         t = time()
 
-        rtransf_streamlines = set_number_of_points(self.transf_streamlines, 20)
-
-        feature = IdentityFeature()
-        metric = AveragePointwiseEuclideanMetric(feature)
-        qb = QuickBundles(threshold=mdf_thr, metric=metric)
-        rtransf_cluster_map = qb.cluster(rtransf_streamlines)
+        thresholds = [40, 30, 20, 10, mdf_thr]
+        self.rtransf_cluster_map = qbx_with_merge(self.transf_streamlines, thresholds, nb_pts=20,
+                                                  select_randomly=500000, verbose=self.verbose)
 
         if self.verbose:
             print(' QB Duration %0.3f sec. \n' % (time() - t, ))
 
-        self.rtransf_streamlines = rtransf_streamlines
-        self.rtransf_cluster_map = rtransf_cluster_map
-        self.rtransf_centroids = rtransf_cluster_map.centroids
+        self.rtransf_centroids = self.rtransf_cluster_map.centroids
         self.nb_rtransf_centroids = len(self.rtransf_centroids)
 
         if pruning_distance.lower() == 'mdf':
-            print(' Using MDF')
+            if self.verbose:
+                print(' Using MDF')
             dist_matrix = bundles_distances_mdf(self.model_centroids,
                                                 self.rtransf_centroids)
         elif pruning_distance.lower() == 'mam':
-            print(' Using MAM')
+            if self.verbose:
+                print(' Using MAM')
             dist_matrix = bundles_distances_mam(self.model_centroids,
                                                 self.rtransf_centroids)
         else:
@@ -513,11 +500,9 @@ class KDTreeBundles(object):
 
     def build_kdtree(self, nb_pts=20, mdf_thr=10, mam_metric='mdf',
                      leaf_size=10):
-
-        feature = ResampleFeature(nb_points=nb_pts)
-        metric = AveragePointwiseEuclideanMetric(feature)
-        qb = QuickBundles(threshold=mdf_thr, metric=metric)
-        cluster_map = qb.cluster(self.model_bundle)
+        thresholds = [40, 30, 20, 10, mdf_thr]
+        cluster_map = qbx_with_merge(self.model_bundle, thresholds, nb_pts=nb_pts,
+                                     select_randomly=500000, verbose=self.verbose)
 
         print('Number of centroids %d' % (len(cluster_map.centroids),))
 

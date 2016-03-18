@@ -1,6 +1,6 @@
 # Init for tracking module
 """ Tracking objects """
-from nibabel.streamlines import CompactList as Streamlines
+from nibabel.streamlines import ArraySequence as Streamlines
 
 # Test callable
 from numpy.testing import Tester
