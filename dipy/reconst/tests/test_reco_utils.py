@@ -4,10 +4,10 @@
 import numpy as np
 
 from dipy.reconst.recspeed import (adj_to_countarrs,
-                                                  argmax_from_countarrs)
+                                   argmax_from_countarrs)
 
 from nose.tools import assert_true, assert_false, \
-     assert_equal, assert_raises
+    assert_equal, assert_raises
 
 from numpy.testing import assert_array_equal, assert_array_almost_equal
 
@@ -32,7 +32,7 @@ def test_argmax_from_countarrs():
     # when contigous - OK
     adj_inds = adj_inds_raw.copy()
     inds = argmax_from_countarrs(vals, vertinds, adj_counts, adj_inds)
-    #yield assert_array_equal(inds, [5, 6, 7, 8, 9])
+    # yield assert_array_equal(inds, [5, 6, 7, 8, 9])
     # test for errors - first - not contiguous
     #
     # The tests below cause odd errors and segfaults with numpy SVN

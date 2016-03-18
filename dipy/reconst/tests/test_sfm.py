@@ -111,10 +111,12 @@ def test_sfm_stick():
 
 def test_sfm_sklearnlinearsolver():
     class SillySolver(opt.SKLearnLinearSolver):
+
         def fit(self, X, y):
             self.coef_ = np.ones(X.shape[-1])
 
     class EvenSillierSolver(object):
+
         def fit(self, X, y):
             self.coef_ = np.ones(X.shape[-1])
 
@@ -138,7 +140,7 @@ def test_exponential_iso():
 
     for data, gtab in zip([data_dti, data_multi], [gtab_dti, gtab_multi]):
         sfmodel = sfm.SparseFascicleModel(
-                  gtab, isotropic=sfm.ExponentialIsotropicModel)
+            gtab, isotropic=sfm.ExponentialIsotropicModel)
 
         sffit1 = sfmodel.fit(data[0, 0, 0])
         sphere = dpd.get_sphere()

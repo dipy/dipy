@@ -26,6 +26,7 @@ from dipy.reconst.quick_squash import quick_squash
 
 from numpy.testing import measure, dec
 
+
 def old_squash(arr, mask=None, fill=0):
     """Try and make a standard array from an object array
 
