@@ -45,15 +45,15 @@
 import numpy as np
 import numpy.linalg as npl
 import scipy.ndimage as ndimage
-from ..core.optimize import Optimizer
-from ..core.optimize import SCIPY_LESS_0_12
-from . import vector_fields as vf
-from . import VerbosityLevels
-from .parzenhist import (ParzenJointHistogram,
+from dipy.core.optimize import Optimizer
+from dipy.core.optimize import SCIPY_LESS_0_12
+from dipy.align import vector_fields as vf
+from dipy.align import VerbosityLevels
+from dipy.align.parzenhist import (ParzenJointHistogram,
                          sample_domain_regular,
                          compute_parzen_mi)
-from .imwarp import (get_direction_and_spacings, ScaleSpace)
-from .scalespace import IsotropicScaleSpace
+from dipy.align.imwarp import (get_direction_and_spacings, ScaleSpace)
+from dipy.align.scalespace import IsotropicScaleSpace
 from warnings import warn
 
 _interp_options = ['nearest', 'linear']
