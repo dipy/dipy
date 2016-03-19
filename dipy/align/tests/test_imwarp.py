@@ -5,13 +5,13 @@ from numpy.testing import (assert_equal,
                            assert_array_equal,
                            assert_array_almost_equal,
                            assert_raises)
-from ...data import get_data
-from .. import floating
-from .. import imwarp as imwarp
-from .. import metrics as metrics
-from .. import vector_fields as vfu
-from .. import VerbosityLevels
-from ..imwarp import DiffeomorphicMap
+from dipy.data import get_data
+from dipy.align import floating
+from dipy.align import imwarp as imwarp
+from dipy.align import metrics as metrics
+from dipy.align import vector_fields as vfu
+from dipy.align import VerbosityLevels
+from dipy.align.imwarp import DiffeomorphicMap
 
 
 def test_mult_aff():
