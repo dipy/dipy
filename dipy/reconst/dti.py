@@ -1133,7 +1133,13 @@ class TensorFit(object):
            all voxels.
 
         step : int
-            The chunk size as a number of voxels.
+            The chunk size as a number of voxels. Optional parameter with default value 10,000.
+
+            In order to increase speed of processing, tensor fitting is done simultaneously
+            over many voxels. This parameter sets the number of voxels that will be fit at 
+            once in each iteration. A larger step value should speed things up, but it will 
+            also take up more memory. It is advisable to keep an eye on memory consumption 
+            as this value is increased.
 
         Notes
         -----
@@ -1185,7 +1191,13 @@ def iter_fit_tensor(step=1e4):
     Parameters
     ----------
     step : int
-        The chunk size as a number of voxels.
+        The chunk size as a number of voxels. Optional parameter with default value 10,000.
+
+        In order to increase speed of processing, tensor fitting is done simultaneously
+        over many voxels. This parameter sets the number of voxels that will be fit at 
+        once in each iteration. A larger step value should speed things up, but it will 
+        also take up more memory. It is advisable to keep an eye on memory consumption 
+        as this value is increased.
     """
 
     def iter_decorator(fit_tensor):
