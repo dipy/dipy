@@ -177,7 +177,10 @@ if __name__ == "__main__":
         all_authors = check_output(author_cmd).splitlines()
         unique_authors = sorted(set(all_authors))
 
-        print("The following %i authors contributed %i commits." % (len(unique_authors), ncommits))
+        if (len(unique_authors) != 0):
+            print("The following %i authors contributed %i commits." % (len(unique_authors), ncommits))
+        else:
+            print("No author has contributed to any commits during this period.")
         print()
         print('\n'.join(unique_authors))
         print()
