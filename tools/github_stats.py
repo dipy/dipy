@@ -177,13 +177,13 @@ if __name__ == "__main__":
         all_authors = check_output(author_cmd).splitlines()
         unique_authors = sorted(set(all_authors))
 
-        if (len(unique_authors) != 0):
+        if len(unique_authors) == 0:
+            print("No commits during this period.")
+        else: 
             print("The following %i authors contributed %i commits." % (len(unique_authors), ncommits))
-        else:
-            print("No author has contributed to any commits during this period.")
-        print()
-        print('\n'.join(unique_authors))
-        print()
+ +          print()
+            print('\n'.join(unique_authors))
+            print()
 
     print()
     print("We closed a total of %d issues, %d pull requests and %d regular issues;\n"
