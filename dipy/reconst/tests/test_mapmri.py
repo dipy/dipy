@@ -590,7 +590,7 @@ def test_laplacian_regularization(radial_order=6):
     assert_equal(laplacian_norm_laplacian < laplacian_norm_unreg, True)
 
 
-def test_shore_odf(radial_order=6):
+def test_mapmri_odf(radial_order=6):
     gtab = get_gtab_taiwan_dsi()
 
     # load symmetric 724 sphere
