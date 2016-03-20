@@ -173,9 +173,6 @@ def test_mapmri_pdf_integral_unity(radial_order=6):
     mapfit = mapm.fit(S)
     c_map = mapfit.mapmri_coeff
 
-    R = mapfit.mapmri_R
-    mu = mapfit.mapmri_mu
-
     # test if the analytical integral of the pdf is equal to one
     indices = mapmri_index_matrix(radial_order)
     integral = 0
@@ -268,6 +265,40 @@ def test_mapmri_metrics_anisotropic(radial_order=6):
     assert_almost_equal(mapfit.ng(), 0., 5)
     assert_almost_equal(mapfit.ng_parallel(), 0., 5)
     assert_almost_equal(mapfit.ng_perpendicular(), 0., 5)
+    assert_almost_equal(mapfit.msd(), msd_gt, 5)
+    assert_almost_equal(mapfit.qiv(), qiv_gt, 5)
+
+
+def test_mapmri_metrics_isotropic(radial_order=6):
+    gtab = get_gtab_taiwan_dsi()
+    l1, l2, l3 = [0.0003, 0.0003, 0.0003]  # isotropic diffusivities
+    S, _ = generate_signal_crossing(gtab, l1, l2, l3, angle2=0)
+
+    # test MAPMRI q-space indices
+
+    mapm = MapmriModel(gtab, radial_order=radial_order,
+                       laplacian_regularization=False,
+                       anisotropic_scaling=False)
+    mapfit = mapm.fit(S)
+
+    tau = 1 / (4 * np.pi ** 2)
+
+    # ground truth indices estimated from the DTI tensor
+    rtpp_gt = 1. / (2 * np.sqrt(np.pi * l1 * tau))
+    rtap_gt = (
+        1. / (2 * np.sqrt(np.pi * l2 * tau)) * 1. /
+        (2 * np.sqrt(np.pi * l3 * tau))
+    )
+    rtop_gt = rtpp_gt * rtap_gt
+    msd_gt = 2 * (l1 + l2 + l3) * tau
+    qiv_gt = (
+        (64 * np.pi ** (7 / 2.) * (l1 * l2 * l3 * tau ** 3) ** (3 / 2.)) /
+        ((l2 * l3 + l1 * (l2 + l3)) * tau ** 2)
+    )
+
+    assert_almost_equal(mapfit.rtap(), rtap_gt, 5)
+    assert_almost_equal(mapfit.rtpp(), rtpp_gt, 5)
+    assert_almost_equal(mapfit.rtop(), rtop_gt, 4)
     assert_almost_equal(mapfit.msd(), msd_gt, 5)
     assert_almost_equal(mapfit.qiv(), qiv_gt, 5)
 
@@ -399,40 +430,6 @@ def test_mapmri_isotropic_design_matrix_separability(radial_order=6):
     assert_array_almost_equal(M, M_reconstructed)
 
 
-def test_mapmri_metrics_isotropic(radial_order=6):
-    gtab = get_gtab_taiwan_dsi()
-    l1, l2, l3 = [0.0003, 0.0003, 0.0003]  # isotropic diffusivities
-    S, _ = generate_signal_crossing(gtab, l1, l2, l3, angle2=0)
-
-    # test MAPMRI q-space indices
-
-    mapm = MapmriModel(gtab, radial_order=radial_order,
-                       laplacian_regularization=False,
-                       anisotropic_scaling=False)
-    mapfit = mapm.fit(S)
-
-    tau = 1 / (4 * np.pi ** 2)
-
-    # ground truth indices estimated from the DTI tensor
-    rtpp_gt = 1. / (2 * np.sqrt(np.pi * l1 * tau))
-    rtap_gt = (
-        1. / (2 * np.sqrt(np.pi * l2 * tau)) * 1. /
-        (2 * np.sqrt(np.pi * l3 * tau))
-    )
-    rtop_gt = rtpp_gt * rtap_gt
-    msd_gt = 2 * (l1 + l2 + l3) * tau
-    qiv_gt = (
-        (64 * np.pi ** (7 / 2.) * (l1 * l2 * l3 * tau ** 3) ** (3 / 2.)) /
-        ((l2 * l3 + l1 * (l2 + l3)) * tau ** 2)
-    )
-
-    assert_almost_equal(mapfit.rtap(), rtap_gt, 5)
-    assert_almost_equal(mapfit.rtpp(), rtpp_gt, 5)
-    assert_almost_equal(mapfit.rtop(), rtop_gt, 4)
-    assert_almost_equal(mapfit.msd(), msd_gt, 5)
-    assert_almost_equal(mapfit.qiv(), qiv_gt, 5)
-
-
 def test_estimate_radius_with_rtap(radius_gt=5e-3):
     gtab = get_gtab_taiwan_dsi()
     tau = 1 / (4 * np.pi ** 2)
@@ -540,7 +537,6 @@ def test_laplacian_regularization(radial_order=6):
 
     # test if laplacian reduced the norm of the laplacian in the reconstruction
     mu = mapfit_laplacian.mu
-    R = mapfit_laplacian.R
     laplacian_matrix = mapmri.mapmri_laplacian_reg_matrix(
         mapmod_laplacian.ind_mat, mu, mapmod_laplacian.S_mat,
         mapmod_laplacian.T_mat, mapmod_laplacian.U_mat)
