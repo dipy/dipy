@@ -73,7 +73,7 @@ class MapmriModel(Cache):
                  anisotropic_scaling=True,
                  eigenvalue_threshold=1e-04,
                  bval_threshold=np.inf,
-                 DTI_scale_estimation=True,
+                 dti_scale_estimation=True,
                  pos_grid=10,
                  pos_radius=20e-3):
         r""" Analytical and continuous modeling of the diffusion signal with
@@ -135,7 +135,7 @@ class MapmriModel(Cache):
             meaning this value should set to a lower value (b<2000 s/mm2)
             such that the scale factors are estimated on signal points that
             reasonably represent the spins at Gaussian diffusion.
-        DTI_scale_estimation : bool,
+        dti_scale_estimation : bool,
             Whether or not DTI fitting is used to estimate the isotropic scale
             factor for isotropic MAP-MRI.
             When set to False vastly increases fitting speed by presetting
@@ -189,7 +189,7 @@ class MapmriModel(Cache):
         self.gtab = gtab
         self.radial_order = radial_order
         self.bval_threshold = bval_threshold
-        self.DTI_scale_estimation = DTI_scale_estimation
+        self.dti_scale_estimation = dti_scale_estimation
         self.pos_grid = pos_grid
         self.pos_radius = pos_radius
 
@@ -245,7 +245,7 @@ class MapmriModel(Cache):
 
             qvals = np.sqrt(self.gtab.bvals / self.tau) / (2 * np.pi)
             q = gtab.bvecs * qvals[:, None]
-            if self.DTI_scale_estimation:
+            if self.dti_scale_estimation:
                 self.M_mu_independent = mapmri_isotropic_M_mu_independent(
                     self.radial_order, q)
             else:
