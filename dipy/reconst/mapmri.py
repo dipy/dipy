@@ -428,7 +428,7 @@ class MapmriFit(ReconstFit):
         and radial moment [1]_ eq. (32). The radial moment s acts as a
         sharpening method. The analytical equation for the spherical ODF basis
         is given in [2]_ eq. (C8).
-        
+
         References
         ----------
         .. [1] Ozarslan E. et. al, "Mean apparent propagator (MAP) MRI: A novel
@@ -671,7 +671,7 @@ class MapmriFit(ReconstFit):
         return qiv
 
     def ng(self):
-        r""" Calculates the analytical non-Gaussiannity (NG) [1]_. 
+        r""" Calculates the analytical non-Gaussiannity (NG) [1]_.
         For the NG to be meaningful the mapmri scale factors must be
         estimated only on data representing Gaussian diffusion of spins, i.e.,
         bvals smaller than about 2000 s/mm^2 [2]_.
@@ -812,8 +812,8 @@ class MapmriFit(ReconstFit):
 
     def pdf(self, r_points):
         """ Diffusion propagator on a given set of real points.
-            if the array r_points is non writeable, then intermediate
-            results are cached for faster recalculation
+        if the array r_points is non writeable, then intermediate
+        results are cached for faster recalculation
         """
         if self.model.anisotropic_scaling:
             r_point_rotated = np.dot(r_points, self.R)
@@ -851,7 +851,7 @@ def isotropic_scale_factor(mu_squared):
     -------
     u0 : float
         closest isotropic scale factor for the isotropic basis
- 
+
     References
     ----------
     .. [1] Ozarslan E. et. al, "Mean apparent propagator (MAP) MRI: A novel
