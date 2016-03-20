@@ -1,6 +1,6 @@
 import numpy as np
-from .. import floating
-from .. import sumsqdiff as ssd
+from dipy.align import floating
+from dipy.align import sumsqdiff as ssd
 from numpy.testing import (assert_equal,
                            assert_almost_equal,
                            assert_array_almost_equal,
