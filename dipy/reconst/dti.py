@@ -1169,7 +1169,6 @@ class TensorFit(object):
         return predict.reshape(shape + (gtab.bvals.shape[0], ))
 
 
-
 def iter_fit_tensor(step=1e4):
     """Wrap a fit_tensor func and iterate over chunks of data with given length
 
@@ -1788,10 +1787,10 @@ def decompose_tensor(tensor, min_diffusivity=0):
         eigvals[..., j])
 
     """
-    #outputs multiplicity as well so need to unique
+    # outputs multiplicity as well so need to unique
     eigenvals, eigenvecs = eigh(tensor)
 
-    #need to sort the eigenvalues and associated eigenvectors
+    # need to sort the eigenvalues and associated eigenvectors
     if eigenvals.ndim == 1:
         # this is a lot faster when dealing with a single voxel
         order = eigenvals.argsort()[::-1]

@@ -200,13 +200,15 @@ class DiffusionSpectrumFit(OdfFit):
 
     def rtop_pdf(self, normalized=True):
         r""" Calculates the return to origin probability from the propagator, which is
-        the propagator evaluated at zero (see Descoteaux et Al. [1]_, Tuch [2]_, Wu et al. [3]_)
+        the propagator evaluated at zero
+        (see Descoteaux et Al. [1]_, Tuch [2]_, Wu et al. [3]_)
         rtop = P(0)
 
         Parameters
         ----------
         normalized : boolean
-            default true, normalize the propagator by its sum in order to obtain a pdf
+            default true, normalize the propagator by its sum in order
+            to obtain a pdf
 
         Returns
         -------
@@ -248,7 +250,8 @@ class DiffusionSpectrumFit(OdfFit):
         Parameters
         ----------
         normalized : boolean
-            default true, normalize the propagator by its sum in order to obtain a pdf
+            default true, normalize the propagator by its sum in order
+            to obtain a pdf
 
         Returns
         -------
@@ -645,8 +648,8 @@ def LR_deconv(prop, psf, numit=5, acc_factor=1):
         reBlurred = np.real(np.fft.ifftn(otf * np.fft.fftn(prop_deconv)))
         reBlurred[reBlurred < eps] = eps
         # Update the estimate
-        prop_deconv = prop_deconv * (np.real(np.fft.ifftn(otf *
-                                                          np.fft.fftn((prop / reBlurred) + eps)))) ** acc_factor
+        prop_deconv = prop_deconv * (np.real(np.fft.ifftn(
+            otf * np.fft.fftn((prop / reBlurred) + eps)))) ** acc_factor
         # Enforce positivity
         prop_deconv = np.clip(prop_deconv, 0, np.inf)
     return prop_deconv / prop_deconv.sum()
