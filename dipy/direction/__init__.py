@@ -1,4 +1,4 @@
 
-from .probabilistic_direction_getter import (ProbabilisticDirectionGetter,
-                                             DeterministicMaximumDirectionGetter)
+from .probabilistic_direction_getter import ProbabilisticDirectionGetter
+from .probabilistic_direction_getter import DeterministicMaximumDirectionGetter
 from .peaks import *

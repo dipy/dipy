@@ -326,8 +326,8 @@ def _peaks_from_model_parallel_sub(args):
 def peaks_from_model(model, data, sphere, relative_peak_threshold,
                      min_separation_angle, mask=None, return_odf=False,
                      return_sh=True, gfa_thr=0, normalize_peaks=False,
-                     sh_order=8, sh_basis_type=None, npeaks=5, B=None, invB=None,
-                     parallel=False, nbr_processes=None):
+                     sh_order=8, sh_basis_type=None, npeaks=5, B=None,
+                     invB=None, parallel=False, nbr_processes=None):
     """Fits the model to data and computes peaks and metrics
 
     Parameters

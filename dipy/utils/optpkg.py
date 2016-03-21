@@ -21,6 +21,7 @@ else:
     class OptionalImportError(ImportError):
         pass
 
+
 def optional_package(name, trip_msg=None):
     """ Return package-like thing and module setup for package `name`
 
@@ -80,17 +81,17 @@ def optional_package(name, trip_msg=None):
         pkg = importlib.import_module(name)
     except ImportError:
         pass
-    else: # import worked
+    else:  # import worked
         # top level module
-        return pkg, True, lambda : None
+        return pkg, True, lambda: None
     if trip_msg is None:
         trip_msg = ('We need package %s for these functions, but '
                     '``import %s`` raised an ImportError'
                     % (name, name))
     pkg = TripWire(trip_msg)
+
     def setup_module():
         if have_nose:
             raise nose.plugins.skip.SkipTest('No %s for these tests'
                                              % name)
     return pkg, False, setup_module
-

@@ -15,8 +15,9 @@ from nose.tools import assert_true, assert_false, assert_equal, assert_raises
 NATIVE_ORDER = '<' if sys.byteorder == 'little' else '>'
 SWAPPED_ORDER = '>' if sys.byteorder == 'little' else '<'
 
+
 def test_as_native():
-    arr = np.arange(5) # native
+    arr = np.arange(5)  # native
     assert_equal(arr.dtype.byteorder, '=')
     narr = as_native_array(arr)
     assert_true(arr is narr)

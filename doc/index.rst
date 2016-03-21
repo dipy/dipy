@@ -41,7 +41,7 @@ See :ref:`older highlights <old_highlights>`.
 Announcements
 *************
 
-- :ref:`Dipy 0.11 <release0.11>` released February 21, 2015.
+- :ref:`Dipy 0.11 <release0.11>` released February 21, 2016.
 - :ref:`Dipy 0.10 <release0.10>` released December 4, 2015.
 - :ref:`Dipy 0.9.2 <release0.9>` released, March 18, 2015.
 - :ref:`Dipy 0.8.0 <release0.8>` released, January 6, 2015.

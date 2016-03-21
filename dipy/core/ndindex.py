@@ -3,6 +3,7 @@ from __future__ import division, print_function, absolute_import
 import numpy as np
 from numpy.lib.stride_tricks import as_strided
 
+
 def ndindex(shape):
     """
     An N-dimensional iterator object to index arrays.

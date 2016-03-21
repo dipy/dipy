@@ -561,12 +561,12 @@ def interp_rbf(data, sphere_origin, sphere_target,
     if epsilon is not None:
         kwargs = {'function': function,
                   'epsilon': epsilon,
-                  'smooth' : smooth,
-                  'norm' : norm}
+                  'smooth': smooth,
+                  'norm': norm}
     else:
         kwargs = {'function': function,
                   'smooth': smooth,
-                  'norm' : norm}
+                  'norm': norm}
 
     rbfi = Rbf(sphere_origin.x, sphere_origin.y, sphere_origin.z, data,
                **kwargs)
