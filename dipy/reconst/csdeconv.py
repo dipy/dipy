@@ -140,8 +140,9 @@ class ConstrainedSphericalDeconvModel(SphHarmModel):
         else:
             self.sphere = reg_sphere
 
-        r, theta, phi = cart2sphere(
-            self.sphere.x, self.sphere.y, self.sphere.z)
+        r, theta, phi = cart2sphere(self.sphere.x,
+                                    self.sphere.y,
+                                    self.sphere.z)
         self.B_reg = real_sph_harm(m, n, theta[:, None], phi[:, None])
 
         if response is None:
