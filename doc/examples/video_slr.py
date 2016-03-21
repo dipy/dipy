@@ -149,7 +149,7 @@ def write_movie(bundles, transforms, size=(1280, 720),
     ren.zoom(1.5)
     ren.reset_clipping_range()
 
-    repeat_time = 20
+    repeat_time = 10
     cnt = 0
     time = 0
 
@@ -171,11 +171,18 @@ def write_movie(bundles, transforms, size=(1280, 720),
 
         print(time)
         if time == 0:
+            middle_message.VisibilityOn()
+            static_actor.VisibilityOff()
+            moving_actor.VisibilityOff()
             ref_message.VisibilityOff()
             iteration_message.VisibilityOff()
+            description_message.VisibilityOff()
 
         if time == 2000:
             middle_message.VisibilityOff()
+            static_actor.VisibilityOn()
+            moving_actor.VisibilityOn()
+            description_message.VisibilityOn()
             msg = 'Two bundles in their native space'
             description_message.set_message(msg)
             description_message.Modified()
