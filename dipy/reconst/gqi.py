@@ -173,8 +173,8 @@ def npa(self, odf, width=5):
     psi0 = t0[1] ** 2
     psi1 = t1[1] ** 2
     psi2 = t2[1] ** 2
-    npa = np.sqrt((psi0 - psi1) ** 2 + (psi1 - psi2) ** 2 + (psi2 - psi0)
-                  ** 2) / np.sqrt(2 * (psi0 ** 2 + psi1 ** 2 + psi2 ** 2))
+    npa = np.sqrt((psi0 - psi1) ** 2 + (psi1 - psi2) ** 2 + (psi2 - psi0) ** 2) 
+                  / np.sqrt(2 * (psi0 ** 2 + psi1 ** 2 + psi2 ** 2))
     # print 'tom >>>> ',t0,t1,t2,npa
 
     return t0, t1, t2, npa
