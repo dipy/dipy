@@ -292,8 +292,9 @@ class ConstrainedSDTModel(SphHarmModel):
         else:
             self.sphere = reg_sphere
 
-        r, theta, phi = cart2sphere(
-            self.sphere.x, self.sphere.y, self.sphere.z)
+        r, theta, phi = cart2sphere(self.sphere.x,
+                                    self.sphere.y,
+                                    self.sphere.z)
         self.B_reg = real_sph_harm(m, n, theta[:, None], phi[:, None])
 
         self.R, self.P = forward_sdt_deconv_mat(ratio, n)
@@ -819,7 +820,8 @@ def auto_response(gtab, data, roi_center=None, roi_radius=10, fa_thr=0.7,
         ci, cj, ck = roi_center
     w = roi_radius
     roi = data[int(ci - w):int(ci + w), 
-              int(cj - w):int(cj + w), int(ck - w):int(ck + w)]
+               int(cj - w):int(cj + w),
+               int(ck - w):int(ck + w)]
     tenfit = ten.fit(roi)
     FA = fractional_anisotropy(tenfit.evals)
     FA[np.isnan(FA)] = 0
