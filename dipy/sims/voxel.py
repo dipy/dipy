@@ -299,8 +299,7 @@ def multi_tensor(gtab, mevals, S0=100, angles=[(0, 0), (90, 0)],
 
     for i in range(len(fractions)):
         S = S + fractions[i] * single_tensor(gtab, S0=S0, evals=mevals[i],
-                                             evecs=all_tensor_evecs(
-                                                 sticks[i]), snr=None)
+                                             evecs=all_tensor_evecs(sticks[i]), snr=None)
 
     return add_noise(S, snr, S0), sticks
 
