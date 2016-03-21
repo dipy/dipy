@@ -818,7 +818,8 @@ def auto_response(gtab, data, roi_center=None, roi_radius=10, fa_thr=0.7,
     else:
         ci, cj, ck = roi_center
     w = roi_radius
-    roi = data[int(ci - w): int(ci + w), int(cj - w)               : int(cj + w), int(ck - w): int(ck + w)]
+    roi = data[int(ci - w):int(ci + w), 
+              int(cj - w):int(cj + w), int(ck - w):int(ck + w)]
     tenfit = ten.fit(roi)
     FA = fractional_anisotropy(tenfit.evals)
     FA[np.isnan(FA)] = 0
