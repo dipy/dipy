@@ -57,7 +57,7 @@ def test_phantom():
     l1, l2, l3 = 1500e-6, 400e-6, 400e-6
     expected_fa = (np.sqrt(0.5) * np.sqrt((l1 - l2)**2 + 
                    (l2 - l3)**2 + (l3 - l1)**2) / 
-                   np.sqrt(l1**2 + l2**2 + l3**2)))
+                   np.sqrt(l1**2 + l2**2 + l3**2))
 
     assert_array_almost_equal(FA.max(), expected_fa, decimal=2)
 
