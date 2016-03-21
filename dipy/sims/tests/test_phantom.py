@@ -68,7 +68,7 @@ def test_add_noise():
     N = 50
     S0 = 100
 
-    options=dict(func=f,
+    options = dict(func=f,
                    t=np.linspace(0, 2 * np.pi, N),
                    datashape=(10, 10, 10, len(bvals)),
                    origin=(5, 5, 5),
