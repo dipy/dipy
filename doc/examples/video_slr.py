@@ -274,6 +274,6 @@ from time import time as tim
 
 t = tim()
 
-write_movie(bundles, transforms, video_fname='slr_1.avi')
+write_movie(bundles, transforms, video_fname='slr_1_for_alex.avi')
 
 print('Done in %0.3f' % (tim() - t, ))
