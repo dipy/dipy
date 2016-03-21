@@ -573,7 +573,7 @@ class DiffusionSpectrumDeconvFit(DiffusionSpectrumFit):
         self.model.cache_set('deconv_psf', self.model.gtab, DSID_PSF)
         # apply fourier transform
         Pr = fftshift(np.abs(np.real(fftn(ifftshift(Sq),
-                                          3 * (self.qgrid_sz, )))))
+                      3 * (self.qgrid_sz, )))))
         # threshold propagator
         Pr = threshold_propagator(Pr)
         # apply LR deconvolution
