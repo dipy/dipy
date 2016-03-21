@@ -81,33 +81,37 @@ def show_both_bundles(bundles, colors=None, size=(1080, 600),
         window.record(ren, n_frames=1, out_path=fname, size=size)
 
 
-def write_movie(bundles, transforms, size=(1280, 720), video_fname='test.avi'):
+def write_movie(bundles, transforms, size=(1280, 720),
+                video_fname='test.avi',
+                default_font_size=24, large_font_size=42, small_font_size=20):
 
-    global show_m, mw, moving_actor, cnt, first_message, time, moved_actor, cnt_trans, stamp_time
+    global show_m, mw, moving_actor, cnt, middle_message, time, moved_actor, cnt_trans, stamp_time
 
-    first_message = actor.text_overlay('Streamline-based Linear Registration (SLR)',
-                                       position=(size[0]/2 - 300, size[1]/2),
-                                       color=(0, 0, 0),
-                                       font_size=32)
+    middle_message = actor.text_overlay(
+        'Streamline-based Linear Registration (SLR)',
+        position=(size[0]/2 - 400, size[1]/2),
+        color=(0, 0, 0),
+        font_size=large_font_size, bold=True)
 
-    ref_message = actor.text_overlay('Garyfallidis et al., Neuroimage 2015',
-                                     position=(10, 10),
-                                     color=(0, 0, 0),
-                                     font_size=14,
-                                     font_family='Times', bold=False)
+    ref_message = actor.text_overlay(
+        'Garyfallidis et al., Neuroimage 2015',
+        position=(size[0]/2 + 250, 650),
+        color=(0, 0, 0),
+        font_size=small_font_size,
+        font_family='Times', bold=False)
 
-    iteration_message = actor.text_overlay('SLR \nIterations',
+    iteration_message = actor.text_overlay('SLR Iterations',
                                            position=(10, 650),
                                            color=(0, 0, 0),
-                                           font_size=14,
+                                           font_size=small_font_size,
                                            font_family='Times', bold=True)
 
-    description_message = actor.text_overlay('The SLR is an algorithm for linear registration \nof streamlines using streamline distances',
-                                             position=(1280/2, 10),
+    description_message = actor.text_overlay('The SLR is an algorithm for linear registration \nof bundles using streamline distances',
+                                             position=(size[0]/2, 25),
                                              color=(0, 0, 0),
-                                             font_size=20,
+                                             font_size=default_font_size + 10,
                                              justification='center',
-                                             bold=False)
+                                             bold=True)
 
     static_bundle = bundles[0]
     moving_bundle = bundles[1]
@@ -116,7 +120,7 @@ def write_movie(bundles, transforms, size=(1280, 720), video_fname='test.avi'):
     ren = window.Renderer()
     ren.background((1., 1., 1))
 
-    ren.add(first_message)
+    ren.add(middle_message)
     ren.add(ref_message)
     ren.add(iteration_message)
     ren.add(description_message)
@@ -159,20 +163,34 @@ def write_movie(bundles, transforms, size=(1280, 720), video_fname='test.avi'):
         if cnt_trans < len(transforms):
             mat = transforms[cnt_trans]
             moving_actor.SetUserMatrix(numpy_to_vtk_matrix(mat))
-            iteration_message.set_message('SLR \nIteration #' + str(cnt_trans))
+            iteration_message.set_message('SLR Iteration #' + str(cnt_trans))
             cnt_trans += 1
 
     def timer_callback(obj, event):
         global cnt, time, cnt_trans, stamp_time
 
+        print(time)
+        if time == 0:
+            ref_message.VisibilityOff()
+            iteration_message.VisibilityOff()
+
+        if time == 2000:
+            middle_message.VisibilityOff()
+            msg = 'Two bundles in their native space'
+            description_message.set_message(msg)
+            description_message.Modified()
+
         if time == 3000:
+            middle_message.VisibilityOff()
+            msg = 'Orange bundle will register \n to the red bundle'
+            description_message.set_message(msg)
+            description_message.Modified()
+            iteration_message.VisibilityOn()
 
-            first_message.VisibilityOff()
-
-        if time > 1000 and cnt % 10 == 0:
+        if time > 3000 and cnt % 10 == 0:
             apply_transformation()
 
-        if cnt_trans == len(transforms) and stamp_time==0:
+        if cnt_trans == len(transforms) and stamp_time == 0:
 
             print('Show description')
             msg = 'Registration finished! \n Visualizing only the points to highlight the overlap.'
@@ -187,7 +205,7 @@ def write_movie(bundles, transforms, size=(1280, 720), video_fname='test.avi'):
             static_dots.GetProperty().SetOpacity(.5)
             moved_dots.GetProperty().SetOpacity(.5)
 
-        if time == stamp_time + 5000:
+        if time == 8500:
 
             ren.add(static_actor)
             ren.add(moving_actor)
@@ -196,19 +214,20 @@ def write_movie(bundles, transforms, size=(1280, 720), video_fname='test.avi'):
             msg = 'Showing final registration.'
             description_message.set_message(msg)
             description_message.Modified()
+            ref_message.VisibilityOn()
 
-        if time == 20000:
+        if time == 10000:
 
-            first_message.VisibilityOn()
+            middle_message.VisibilityOn()
 
         ren.reset_clipping_range()
         show_m.ren.azimuth(.4)
         show_m.render()
         mw.write()
 
-        #print('Time %d' % (time,))
-        #print('Cnt %d' % (cnt,))
-        #print('Len transforms %d' % (cnt_trans,))
+        # print('Time %d' % (time,))
+        # print('Cnt %d' % (cnt,))
+        # print('Len transforms %d' % (cnt_trans,))
         time = repeat_time * cnt
         cnt += 1
 
@@ -248,7 +267,10 @@ for bundle_type in ['af.left']:  # 'cst.right', 'cc_1']:
 #                      colors=[fvtk.colors.orange, fvtk.colors.red],
 #                      show=True)
 
-    slr = StreamlineLinearRegistration(x0='affine', evolution=True)
+    slr = StreamlineLinearRegistration(x0='affine', evolution=True,
+                                       options={'maxcor': 10, 'ftol': 1e-7,
+                                                'gtol': 1e-5, 'eps': 1e-8,
+                                                'maxiter': 19})
     slm = slr.optimize(static=sbundle1, moving=sbundle2)
 
     bundle2_moved = slm.transform(bundle2)
@@ -274,6 +296,6 @@ from time import time as tim
 
 t = tim()
 
-write_movie(bundles, transforms, video_fname='slr_1_for_alex.avi')
+write_movie(bundles, transforms, video_fname='slr_af.left.avi')
 
 print('Done in %0.3f' % (tim() - t, ))
