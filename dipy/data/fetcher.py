@@ -36,6 +36,41 @@ def _log(msg):
     print(msg)
 
 
+def update_progressbar(progress, total_length):
+    """Show progressbar
+
+    Takes a number between 0 and 1 to indicate progress from 0 to 100%.
+
+    """
+    # Try to set the bar_length according to the console size
+    try:
+        rows, columns = os.popen('stty size', 'r').read().split()
+        bar_length = int(columns) - 46
+        if(not (bar_length > 1)):
+            bar_length = 20
+    except:
+        # Default value if determination of console size fails
+        bar_length = 20
+    block = int(round(bar_length*progress))
+    size_string = "{0:.2f} MB".format(float(total_length)/(1024*1024))
+    text = "\rDownload Progress: [{0}] {1:.2f}%  of {2}".format(
+        "#"*block + "-"*(bar_length-block), progress*100, size_string)
+    sys.stdout.write(text)
+    sys.stdout.flush()
+
+
+def copyfileobj_withprogress(fsrc, fdst, total_length, length=16*1024):
+    copied = 0
+    while True:
+        buf = fsrc.read(length)
+        if not buf:
+            break
+        fdst.write(buf)
+        copied += len(buf)
+        progress = float(copied)/float(total_length)
+        update_progressbar(progress, total_length)
+
+
 def _already_there_msg(folder):
     """
     Prints a message indicating that a certain data-set is already in place
@@ -81,11 +116,17 @@ def check_md5(filename, stored_md5=None):
 
 def _get_file_data(fname, url):
     with contextlib.closing(urlopen(url)) as opener:
+        if sys.version_info[0] < 3:
+            response_size = opener.headers['content-length']
+        else:
+            # python3.x
+            response_size = opener.getheader("Content-Length")
+
         with open(fname, 'wb') as data:
-            copyfileobj(opener, data)
+            copyfileobj_withprogress(opener, data, response_size)
 
 
-def fetch_data(files, folder, data_size=None):
+def fetch_data(files, folder):
     """Downloads files to folder and checks their md5 checksums
 
     Parameters
@@ -97,9 +138,7 @@ def fetch_data(files, folder, data_size=None):
     folder : str
         The directory where to save the file, the directory will be created if
         it does not already exist.
-    data_size : str, optional
-        A string describing the size of the data (e.g. "91 MB") to be logged to
-        the screen. Default does not produce any information about data size.
+
     Raises
     ------
     FetcherError
@@ -110,9 +149,6 @@ def fetch_data(files, folder, data_size=None):
     if not os.path.exists(folder):
         _log("Creating new folder %s" % (folder))
         os.makedirs(folder)
-
-    if data_size is not None:
-        _log('Data size is approximately %s' % data_size)
 
     all_skip = True
     for f in files:
@@ -131,7 +167,7 @@ def fetch_data(files, folder, data_size=None):
 
 
 def _make_fetcher(name, folder, baseurl, remote_fnames, local_fnames,
-                  md5_list=None, doc="", data_size=None, msg=None,
+                  md5_list=None, doc="", msg=None,
                   unzip=False):
     """ Create a new fetcher
 
@@ -153,9 +189,6 @@ def _make_fetcher(name, folder, baseurl, remote_fnames, local_fnames,
         files. Default: None, skipping checking md5.
     doc : str, optional.
         Documentation of the fetcher.
-    data_size : str, optional.
-        If provided, is sent as a message to the user before downloading
-        starts.
     msg : str, optional.
         A message to print to screen when fetching takes place. Default (None)
         is to print nothing
@@ -173,7 +206,7 @@ def _make_fetcher(name, folder, baseurl, remote_fnames, local_fnames,
         for i, (f, n), in enumerate(zip(remote_fnames, local_fnames)):
             files[n] = (baseurl + f, md5_list[i] if
                         md5_list is not None else None)
-        fetch_data(files, folder, data_size)
+        fetch_data(files, folder)
 
         if msg is not None:
             print(msg)
@@ -212,8 +245,7 @@ fetch_isbi2013_2shell = _make_fetcher(
     ['42911a70f232321cf246315192d69c42',
      '90e8cf66e0f4d9737a3b3c0da24df5ea',
      '4b7aa2757a1ccab140667b76e8075cb1'],
-    doc="Download a 2-shell software phantom dataset",
-    data_size="")
+    doc="Download a 2-shell software phantom dataset")
 
 fetch_stanford_labels = _make_fetcher(
     "fetch_stanford_labels",
@@ -280,8 +312,7 @@ fetch_taiwan_ntu_dsi = _make_fetcher(
      'a95eb1be44748c20214dc7aa654f9e6b',
      '7fa1d5e272533e832cc7453eeba23f44'],
     doc="Download a DSI dataset with 203 gradient directions",
-    msg="See DSI203_license.txt for LICENSE. For the complete datasets please visit : http://dsi-studio.labsolver.org",
-    data_size="91MB")
+    msg="See DSI203_license.txt for LICENSE. For the complete datasets please visit : http://dsi-studio.labsolver.org")
 
 fetch_syn_data = _make_fetcher(
     "fetch_syn_data",
@@ -291,7 +322,6 @@ fetch_syn_data = _make_fetcher(
     ['t1.nii.gz', 'b0.nii.gz'],
     ['701bda02bb769655c7d4a9b1df2b73a6',
      'e4b741f0c77b6039e67abb2885c97a78'],
-    data_size="12MB",
     doc="Download t1 and b0 volumes from the same session")
 
 fetch_mni_template = _make_fetcher(
@@ -307,8 +337,7 @@ fetch_mni_template = _make_fetcher(
     ['6e2168072e80aa4c0c20f1e6e52ec0c8',
      'f41f2e1516d880547fbf7d6a83884f0d',
      '1ea8f4f1e41bc17a94602e48141fdbc8'],
-    doc = "Fetch the MNI T2 and T1 template files",
-    data_size="35MB")
+    doc = "Fetch the MNI T2 and T1 template files")
 
 fetch_scil_b0 = _make_fetcher(
     "fetch_scil_b0",
@@ -317,7 +346,6 @@ fetch_scil_b0 = _make_fetcher(
     ['datasets_multi-site_all_companies.zip'],
     ['datasets_multi-site_all_companies.zip'],
     None,
-    data_size="9.2MB",
     doc="Download b=0 datasets from multiple MR systems (GE, Philips, Siemens) and different magnetic fields (1.5T and 3T)",
     unzip=True)
 
@@ -327,7 +355,6 @@ fetch_viz_icons = _make_fetcher("fetch_viz_icons",
                                 ['icomoon.tar.gz'],
                                 ['icomoon.tar.gz'],
                                 ['94a07cba06b4136b6687396426f1e380'],
-                                data_size="12KB",
                                 doc="Download icons for dipy.viz",
                                 unzip=True)
 
@@ -338,7 +365,6 @@ fetch_bundles_2_subjects = _make_fetcher(
     ['bundles_2_subjects.tar.gz'],
     ['bundles_2_subjects.tar.gz'],
     ['97756fbef11ce2df31f1bedf1fc7aac7'],
-    data_size="234MB",
     doc="Download 2 subjects from the SNAIL dataset with their bundles",
     unzip=True)
 
