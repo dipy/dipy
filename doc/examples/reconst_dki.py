@@ -207,7 +207,7 @@ ax.flat[7].imshow(dti_RD, cmap='gray')
 ax.flat[7].set_title('RD (DTI)')
 
 plt.show()
-fig1.savefig('Diffusion_tensor_measures_from_DTI_and_DKI.png')
+#fig1.savefig('Diffusion_tensor_measures_from_DTI_and_DKI.png')
 
 """
 .. figure:: Diffusion_tensor_measures_from_DTI_and_DKI.png
@@ -252,7 +252,7 @@ ax.flat[2].imshow(RK, cmap='gray')
 ax.flat[2].set_title('RK')
 
 plt.show()
-fig2.savefig('Kurtosis_tensor_standard_measures.png')
+#fig2.savefig('Kurtosis_tensor_standard_measures.png')
 
 """
 .. figure:: Kurtosis_tensor_standard_measures.png
