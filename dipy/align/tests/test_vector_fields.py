@@ -31,13 +31,13 @@ def test_random_displacement_field_2d():
     # Create an arbitrary image-to-space transform
     t = 0.15  # translation factor
 
-    trans = np.array([[1, 0, -t*from_shape[0]],
-                      [0, 1, -t*from_shape[1]],
+    trans = np.array([[1, 0, -t * from_shape[0]],
+                      [0, 1, -t * from_shape[1]],
                       [0, 0, 1]])
     trans_inv = np.linalg.inv(trans)
 
     for theta in [-1 * np.pi / 6.0, 0.0, np.pi / 5.0]:  # rotation angle
-        for s in [0.83,  1.3, 2.07]:  # scale
+        for s in [0.83, 1.3, 2.07]:  # scale
             ct = np.cos(theta)
             st = np.sin(theta)
 
@@ -45,8 +45,8 @@ def test_random_displacement_field_2d():
                             [st, ct, 0],
                             [0, 0, 1]])
 
-            scale = np.array([[1*s, 0, 0],
-                              [0, 1*s, 0],
+            scale = np.array([[1 * s, 0, 0],
+                              [0, 1 * s, 0],
                               [0, 0, 1]])
 
             from_grid2world = trans_inv.dot(scale.dot(rot.dot(trans)))
@@ -107,21 +107,21 @@ def test_random_displacement_field_3d():
     # Create an arbitrary image-to-space transform
     t = 0.15  # translation factor
 
-    trans = np.array([[1, 0, 0, -t*from_shape[0]],
-                      [0, 1, 0, -t*from_shape[1]],
-                      [0, 0, 1, -t*from_shape[2]],
+    trans = np.array([[1, 0, 0, -t * from_shape[0]],
+                      [0, 1, 0, -t * from_shape[1]],
+                      [0, 0, 1, -t * from_shape[2]],
                       [0, 0, 0, 1]])
     trans_inv = np.linalg.inv(trans)
 
     for theta in [-1 * np.pi / 6.0, 0.0, np.pi / 5.0]:  # rotation angle
-        for s in [0.83,  1.3, 2.07]:  # scale
+        for s in [0.83, 1.3, 2.07]:  # scale
             rot = np.zeros(shape=(4, 4))
             rot[:3, :3] = geometry.rodrigues_axis_rotation(axis, theta)
             rot[3, 3] = 1.0
 
-            scale = np.array([[1*s, 0, 0, 0],
-                              [0, 1*s, 0, 0],
-                              [0, 0, 1*s, 0],
+            scale = np.array([[1 * s, 0, 0, 0],
+                              [0, 1 * s, 0, 0],
+                              [0, 0, 1 * s, 0],
                               [0, 0, 0, 1]])
 
             from_grid2world = trans_inv.dot(scale.dot(rot.dot(trans)))
@@ -165,8 +165,8 @@ def test_random_displacement_field_3d():
 def test_harmonic_fields_2d():
     nrows = 64
     ncols = 67
-    mid_row = nrows//2
-    mid_col = ncols//2
+    mid_row = nrows // 2
+    mid_col = ncols // 2
     expected_d = np.empty(shape=(nrows, ncols, 2))
     expected_d_inv = np.empty(shape=(nrows, ncols, 2))
     for b in [0.1, 0.3, 0.7]:
@@ -193,9 +193,9 @@ def test_harmonic_fields_3d():
     nslices = 25
     nrows = 34
     ncols = 37
-    mid_slice = nslices//2
-    mid_row = nrows//2
-    mid_col = ncols//2
+    mid_slice = nslices // 2
+    mid_row = nrows // 2
+    mid_col = ncols // 2
     expected_d = np.empty(shape=(nslices, nrows, ncols, 3))
     expected_d_inv = np.empty(shape=(nslices, nrows, ncols, 3))
     for b in [0.3, 0.7]:
@@ -225,8 +225,8 @@ def test_harmonic_fields_3d():
 
 def test_circle():
     sh = (64, 61)
-    cr = sh[0]//2
-    cc = sh[1]//2
+    cr = sh[0] // 2
+    cc = sh[1] // 2
     x_0 = np.asarray(range(sh[0]))
     x_1 = np.asarray(range(sh[1]))
     X = np.empty((2,) + sh, dtype=np.float64)
@@ -242,9 +242,9 @@ def test_circle():
 
 def test_sphere():
     sh = (64, 61, 57)
-    cs = sh[0]//2
-    cr = sh[1]//2
-    cc = sh[2]//2
+    cs = sh[0] // 2
+    cr = sh[1] // 2
+    cc = sh[2] // 2
     x_0 = np.asarray(range(sh[0]))
     x_1 = np.asarray(range(sh[1]))
     x_2 = np.asarray(range(sh[2]))
@@ -267,8 +267,8 @@ def test_interpolate_scalar_2d():
     image = np.empty(target_shape, dtype=floating)
     image[...] = np.random.randint(0, 10, np.size(image)).reshape(target_shape)
 
-    extended_image = np.zeros((sz+2, sz+2), dtype=floating)
-    extended_image[1:sz+1, 1:sz+1] = image[...]
+    extended_image = np.zeros((sz + 2, sz + 2), dtype=floating)
+    extended_image[1:sz + 1, 1:sz + 1] = image[...]
 
     # Select some coordinates inside the image to interpolate at
     nsamples = 200
@@ -288,7 +288,7 @@ def test_interpolate_scalar_2d():
     # Test interpolation stability along the boundary
     epsilon = 5e-8
     for k in range(2):
-        for offset in [0, sz-1]:
+        for offset in [0, sz - 1]:
             delta = ((np.random.ranf(nsamples) * 2) - 1) * epsilon
             locations[:, k] = delta + offset
             locations[:, (k + 1) % 2] = np.random.ranf(nsamples) * (sz - 1)
@@ -368,8 +368,8 @@ def test_interpolate_scalar_3d():
     image = np.empty(target_shape, dtype=floating)
     image[...] = np.random.randint(0, 10, np.size(image)).reshape(target_shape)
 
-    extended_image = np.zeros((sz+2, sz+2, sz+2), dtype=floating)
-    extended_image[1:sz+1, 1:sz+1, 1:sz+1] = image[...]
+    extended_image = np.zeros((sz + 2, sz + 2, sz + 2), dtype=floating)
+    extended_image[1:sz + 1, 1:sz + 1, 1:sz + 1] = image[...]
 
     # Select some coordinates inside the image to interpolate at
     nsamples = 800
@@ -389,7 +389,7 @@ def test_interpolate_scalar_3d():
     # Test interpolation stability along the boundary
     epsilon = 5e-8
     for k in range(3):
-        for offset in [0, sz-1]:
+        for offset in [0, sz - 1]:
             delta = ((np.random.ranf(nsamples) * 2) - 1) * epsilon
             locations[:, k] = delta + offset
             locations[:, (k + 1) % 3] = np.random.ranf(nsamples) * (sz - 1)
@@ -411,12 +411,12 @@ def test_interpolate_vector_3d():
     np.random.seed(7711219)
     sz = 64
     target_shape = (sz, sz, sz)
-    field = np.empty(target_shape+(3,), dtype=floating)
+    field = np.empty(target_shape + (3,), dtype=floating)
     field[...] =\
-        np.random.randint(0, 10, np.size(field)).reshape(target_shape+(3,))
+        np.random.randint(0, 10, np.size(field)).reshape(target_shape + (3,))
 
-    extended_field = np.zeros((sz+2, sz+2, sz+2, 3), dtype=floating)
-    extended_field[1:sz+1, 1:sz+1, 1:sz+1] = field
+    extended_field = np.zeros((sz + 2, sz + 2, sz + 2, 3), dtype=floating)
+    extended_field[1:sz + 1, 1:sz + 1, 1:sz + 1] = field
     # Select some coordinates to interpolate at
     nsamples = 800
     locations =\
@@ -438,7 +438,7 @@ def test_interpolate_vector_3d():
     # Test interpolation stability along the boundary
     epsilon = 5e-8
     for k in range(3):
-        for offset in [0, sz-1]:
+        for offset in [0, sz - 1]:
             delta = ((np.random.ranf(nsamples) * 2) - 1) * epsilon
             locations[:, k] = delta + offset
             locations[:, (k + 1) % 3] = np.random.ranf(nsamples) * (sz - 1)
@@ -463,11 +463,11 @@ def test_interpolate_vector_2d():
     np.random.seed(1271244)
     sz = 64
     target_shape = (sz, sz)
-    field = np.empty(target_shape+(2,), dtype=floating)
+    field = np.empty(target_shape + (2,), dtype=floating)
     field[...] =\
         np.random.randint(0, 10, np.size(field)).reshape(target_shape + (2,))
-    extended_field = np.zeros((sz+2, sz+2, 2), dtype=floating)
-    extended_field[1:sz+1, 1:sz+1] = field
+    extended_field = np.zeros((sz + 2, sz + 2, 2), dtype=floating)
+    extended_field[1:sz + 1, 1:sz + 1] = field
     # Select some coordinates to interpolate at
     nsamples = 200
     locations =\
@@ -489,7 +489,7 @@ def test_interpolate_vector_2d():
     # Test interpolation stability along the boundary
     epsilon = 5e-8
     for k in range(2):
-        for offset in [0, sz-1]:
+        for offset in [0, sz - 1]:
             delta = ((np.random.ranf(nsamples) * 2) - 1) * epsilon
             locations[:, k] = delta + offset
             locations[:, (k + 1) % 2] = np.random.ranf(nsamples) * (sz - 1)
@@ -530,7 +530,7 @@ def test_warping_2d():
     # Create grid coordinates
     x_0 = np.asarray(range(sh[0]))
     x_1 = np.asarray(range(sh[1]))
-    X = np.empty((3,)+sh, dtype=np.float64)
+    X = np.empty((3,) + sh, dtype=np.float64)
     O = np.ones(sh)
     X[0, ...] = x_0[:, None] * O
     X[1, ...] = x_1[None, :] * O
@@ -538,14 +538,14 @@ def test_warping_2d():
 
     # Select an arbitrary translation matrix
     t = 0.1
-    trans = np.array([[1, 0, -t*nr],
-                      [0, 1, -t*nc],
+    trans = np.array([[1, 0, -t * nr],
+                      [0, 1, -t * nc],
                       [0, 0, 1]])
     trans_inv = np.linalg.inv(trans)
 
     # Select arbitrary rotation and scaling matrices
     for theta in [-1 * np.pi / 6.0, 0.0, np.pi / 6.0]:  # rotation angle
-        for s in [0.42,  1.3, 2.15]:  # scale
+        for s in [0.42, 1.3, 2.15]:  # scale
             ct = np.cos(theta)
             st = np.sin(theta)
 
@@ -553,8 +553,8 @@ def test_warping_2d():
                             [st, ct, 0],
                             [0, 0, 1]])
 
-            scale = np.array([[1*s, 0, 0],
-                              [0, 1*s, 0],
+            scale = np.array([[1 * s, 0, 0],
+                              [0, 1 * s, 0],
                               [0, 0, 1]])
 
             aff = trans_inv.dot(scale.dot(rot.dot(trans)))
@@ -574,8 +574,8 @@ def test_warping_2d():
             # transform
             dcopy = np.copy(d)
             vfu.reorient_vector_field_2d(dcopy, field_grid2world)
-            extended_dcopy = np.zeros((nr+2, nc+2, 2), dtype=floating)
-            extended_dcopy[1:nr+1, 1:nc+1, :] = dcopy
+            extended_dcopy = np.zeros((nr + 2, nc + 2, 2), dtype=floating)
+            extended_dcopy[1:nr + 1, 1:nc + 1, :] = dcopy
 
             # Compute the warping coordinates (see warp_2d documentation)
             Y = np.apply_along_axis(A.dot, 0, X)[0:2, ...]
@@ -647,22 +647,22 @@ def test_warping_3d():
     axis = np.array([.5, 2.0, 1.5])
     # Select an arbitrary translation matrix
     t = 0.1
-    trans = np.array([[1, 0, 0, -t*ns],
-                      [0, 1, 0, -t*nr],
-                      [0, 0, 1, -t*nc],
+    trans = np.array([[1, 0, 0, -t * ns],
+                      [0, 1, 0, -t * nr],
+                      [0, 0, 1, -t * nc],
                       [0, 0, 0, 1]])
     trans_inv = np.linalg.inv(trans)
 
     # Select arbitrary rotation and scaling matrices
     for theta in [-1 * np.pi / 5.0, 0.0, np.pi / 5.0]:  # rotation angle
-        for s in [0.45,  1.1, 2.0]:  # scale
+        for s in [0.45, 1.1, 2.0]:  # scale
             rot = np.zeros(shape=(4, 4))
             rot[:3, :3] = geometry.rodrigues_axis_rotation(axis, theta)
             rot[3, 3] = 1.0
 
-            scale = np.array([[1*s, 0, 0, 0],
-                              [0, 1*s, 0, 0],
-                              [0, 0, 1*s, 0],
+            scale = np.array([[1 * s, 0, 0, 0],
+                              [0, 1 * s, 0, 0],
+                              [0, 0, 1 * s, 0],
                               [0, 0, 0, 1]])
 
             aff = trans_inv.dot(scale.dot(rot.dot(trans)))
@@ -683,8 +683,9 @@ def test_warping_3d():
             dcopy = np.copy(d)
             vfu.reorient_vector_field_3d(dcopy, field_grid2world)
 
-            extended_dcopy = np.zeros((ns+2, nr+2, nc+2, 3), dtype=floating)
-            extended_dcopy[1:ns+1, 1:nr+1, 1:nc+1, :] = dcopy
+            extended_dcopy = np.zeros(
+                (ns + 2, nr + 2, nc + 2, 3), dtype=floating)
+            extended_dcopy[1:ns + 1, 1:nr + 1, 1:nc + 1, :] = dcopy
 
             # Compute the warping coordinates (see warp_2d documentation)
             Y = np.apply_along_axis(A.dot, 0, X)[0:3, ...]
@@ -749,12 +750,12 @@ def test_affine_transforms_2d():
 
     # Generate affine transforms
     t = 0.3
-    trans = np.array([[1, 0, -t*nr],
-                      [0, 1, -t*nc],
+    trans = np.array([[1, 0, -t * nr],
+                      [0, 1, -t * nc],
                       [0, 0, 1]])
     trans_inv = np.linalg.inv(trans)
     for theta in [-1 * np.pi / 5.0, 0.0, np.pi / 5.0]:  # rotation angle
-        for s in [0.5,  1.0, 2.0]:  # scale
+        for s in [0.5, 1.0, 2.0]:  # scale
             ct = np.cos(theta)
             st = np.sin(theta)
 
@@ -762,8 +763,8 @@ def test_affine_transforms_2d():
                             [st, ct, 0],
                             [0, 0, 1]])
 
-            scale = np.array([[1*s, 0, 0],
-                              [0, 1*s, 0],
+            scale = np.array([[1 * s, 0, 0],
+                              [0, 1 * s, 0],
                               [0, 0, 1]])
 
             gt_affine = trans_inv.dot(scale.dot(rot.dot(trans)))
@@ -772,23 +773,26 @@ def test_affine_transforms_2d():
             Y = np.apply_along_axis(gt_affine.dot, 0, X)[0:2, ...]
 
             expected = map_coordinates(circle, Y, order=1)
-            warped = vfu.transform_2d_affine(circle,
-                np.array(d_shape, dtype=np.int32), gt_affine)
+            warped = vfu.transform_2d_affine(
+                circle, np.array(
+                    d_shape, dtype=np.int32), gt_affine)
             assert_array_almost_equal(warped, expected)
 
             # Test affine warping with nearest-neighbor interpolation
             expected = map_coordinates(circle, Y, order=0)
-            warped = vfu.transform_2d_affine_nn(circle,
-                np.array(d_shape, dtype=np.int32), gt_affine)
+            warped = vfu.transform_2d_affine_nn(
+                circle, np.array(d_shape, dtype=np.int32), gt_affine)
             assert_array_almost_equal(warped, expected)
 
     # Test the affine = None case
-    warped = vfu.transform_2d_affine(circle,
-        np.array(codomain_shape, dtype=np.int32), None)
+    warped = vfu.transform_2d_affine(
+        circle, np.array(
+            codomain_shape, dtype=np.int32), None)
     assert_array_equal(warped, circle)
 
-    warped = vfu.transform_2d_affine_nn(circle,
-        np.array(codomain_shape, dtype=np.int32), None)
+    warped = vfu.transform_2d_affine_nn(
+        circle, np.array(
+            codomain_shape, dtype=np.int32), None)
     assert_array_equal(warped, circle)
 
     # Test exception is raised when the affine transform matrix is not valid
@@ -798,10 +802,25 @@ def test_affine_transforms_2d():
     shape = np.array(codomain_shape, dtype=np.int32)
     # Exceptions from transform_2d
     assert_raises(ValueError, vfu.transform_2d_affine, circle, shape, invalid)
-    assert_raises(ValueError, vfu.transform_2d_affine, circle, shape, invalid_nan)
+    assert_raises(
+        ValueError,
+        vfu.transform_2d_affine,
+        circle,
+        shape,
+        invalid_nan)
     # Exceptions from transform_2d_nn
-    assert_raises(ValueError, vfu.transform_2d_affine_nn, circle, shape, invalid)
-    assert_raises(ValueError, vfu.transform_2d_affine_nn, circle, shape, invalid_nan)
+    assert_raises(
+        ValueError,
+        vfu.transform_2d_affine_nn,
+        circle,
+        shape,
+        invalid)
+    assert_raises(
+        ValueError,
+        vfu.transform_2d_affine_nn,
+        circle,
+        shape,
+        invalid_nan)
 
 
 def test_affine_transforms_3d():
@@ -825,7 +844,7 @@ def test_affine_transforms_3d():
     x_0 = np.asarray(range(d_shape[0]))
     x_1 = np.asarray(range(d_shape[1]))
     x_2 = np.asarray(range(d_shape[2]))
-    X = np.empty((4,)+d_shape, dtype=np.float64)
+    X = np.empty((4,) + d_shape, dtype=np.float64)
     O = np.ones(d_shape)
     X[0, ...] = x_0[:, None, None] * O
     X[1, ...] = x_1[None, :, None] * O
@@ -836,20 +855,20 @@ def test_affine_transforms_3d():
     # Select an arbitrary rotation axis
     axis = np.array([.5, 2.0, 1.5])
     t = 0.3
-    trans = np.array([[1, 0, 0, -t*ns],
-                      [0, 1, 0, -t*nr],
-                      [0, 0, 1, -t*nc],
+    trans = np.array([[1, 0, 0, -t * ns],
+                      [0, 1, 0, -t * nr],
+                      [0, 0, 1, -t * nc],
                       [0, 0, 0, 1]])
     trans_inv = np.linalg.inv(trans)
     for theta in [-1 * np.pi / 5.0, 0.0, np.pi / 5.0]:  # rotation angle
-        for s in [0.45,  1.1, 2.3]:  # scale
+        for s in [0.45, 1.1, 2.3]:  # scale
             rot = np.zeros(shape=(4, 4))
             rot[:3, :3] = geometry.rodrigues_axis_rotation(axis, theta)
             rot[3, 3] = 1.0
 
-            scale = np.array([[1*s, 0, 0, 0],
-                              [0, 1*s, 0, 0],
-                              [0, 0, 1*s, 0],
+            scale = np.array([[1 * s, 0, 0, 0],
+                              [0, 1 * s, 0, 0],
+                              [0, 0, 1 * s, 0],
                               [0, 0, 0, 1]])
 
             gt_affine = trans_inv.dot(scale.dot(rot.dot(trans)))
@@ -858,24 +877,23 @@ def test_affine_transforms_3d():
             Y = np.apply_along_axis(gt_affine.dot, 0, X)[0:3, ...]
 
             expected = map_coordinates(sphere, Y, order=1)
-            transformed = vfu.transform_3d_affine(sphere,
-                np.array(d_shape, dtype=np.int32), gt_affine)
+            transformed = vfu.transform_3d_affine(
+                sphere, np.array(d_shape, dtype=np.int32), gt_affine)
             assert_array_almost_equal(transformed, expected)
 
             # Test affine transform with nearest-neighbor interpolation
             expected = map_coordinates(sphere, Y, order=0)
-            transformed = vfu.transform_3d_affine_nn(sphere,
-                np.array(d_shape, dtype=np.int32), gt_affine)
+            transformed = vfu.transform_3d_affine_nn(
+                sphere, np.array(d_shape, dtype=np.int32), gt_affine)
             assert_array_almost_equal(transformed, expected)
 
     # Test the affine = None case
-    transformed = vfu.transform_3d_affine(sphere,
-        np.array(codomain_shape, dtype=np.int32), None)
+    transformed = vfu.transform_3d_affine(
+        sphere, np.array(codomain_shape, dtype=np.int32), None)
     assert_array_equal(transformed, sphere)
 
-    transformed = vfu.transform_3d_affine_nn(sphere,
-                                   np.array(codomain_shape, dtype=np.int32),
-                                   None)
+    transformed = vfu.transform_3d_affine_nn(
+        sphere, np.array(codomain_shape, dtype=np.int32), None)
     assert_array_equal(transformed, sphere)
 
     # Test exception is raised when the affine transform matrix is not valid
@@ -885,10 +903,25 @@ def test_affine_transforms_3d():
     shape = np.array(codomain_shape, dtype=np.int32)
     # Exceptions from transform_3d_affine
     assert_raises(ValueError, vfu.transform_3d_affine, sphere, shape, invalid)
-    assert_raises(ValueError, vfu.transform_3d_affine, sphere, shape, invalid_nan)
+    assert_raises(
+        ValueError,
+        vfu.transform_3d_affine,
+        sphere,
+        shape,
+        invalid_nan)
     # Exceptions from transform_3d_affine_nn
-    assert_raises(ValueError, vfu.transform_3d_affine_nn, sphere, shape, invalid)
-    assert_raises(ValueError, vfu.transform_3d_affine_nn, sphere, shape, invalid_nan)
+    assert_raises(
+        ValueError,
+        vfu.transform_3d_affine_nn,
+        sphere,
+        shape,
+        invalid)
+    assert_raises(
+        ValueError,
+        vfu.transform_3d_affine_nn,
+        sphere,
+        shape,
+        invalid_nan)
 
 
 def test_compose_vector_fields_2d():
@@ -919,21 +952,19 @@ def test_compose_vector_fields_2d():
     input_grid2world = gt_affine
     target_grid2world = gt_affine
 
-    disp1, assign1 = vfu.create_random_displacement_2d(np.array(input_shape,
-                                                       dtype=np.int32),
-                                                       input_grid2world,
-                                                       np.array(tgt_sh,
-                                                       dtype=np.int32),
-                                                       target_grid2world)
+    disp1, assign1 = vfu.create_random_displacement_2d(
+        np.array(input_shape, dtype=np.int32),
+        input_grid2world,
+        np.array(tgt_sh, dtype=np.int32),
+        target_grid2world)
     disp1 = np.array(disp1, dtype=floating)
     assign1 = np.array(assign1)
 
-    disp2, assign2 = vfu.create_random_displacement_2d(np.array(input_shape,
-                                                       dtype=np.int32),
-                                                       input_grid2world,
-                                                       np.array(tgt_sh,
-                                                       dtype=np.int32),
-                                                       target_grid2world)
+    disp2, assign2 = vfu.create_random_displacement_2d(
+        np.array(input_shape, dtype=np.int32),
+        input_grid2world,
+        np.array(tgt_sh, dtype=np.int32),
+        target_grid2world)
     disp2 = np.array(disp2, dtype=floating)
     assign2 = np.array(assign2)
 
@@ -962,7 +993,7 @@ def test_compose_vector_fields_2d():
 
     for time_scaling in [0.25, 0.5, 1.0, 2.0, 4.0]:
         composition, stats = vfu.compose_vector_fields_2d(disp1,
-                                                          disp2/time_scaling,
+                                                          disp2 / time_scaling,
                                                           premult_index,
                                                           premult_disp,
                                                           time_scaling, None)
@@ -998,8 +1029,9 @@ def test_compose_vector_fields_2d():
     O = np.ones(input_shape)
     X[..., 0] = x_0[:, None] * O
     X[..., 1] = x_1[None, :] * O
-    random_labels = np.random.randint(0, 2, input_shape[0]*input_shape[1]*2)
-    random_labels = random_labels.reshape(input_shape+(2,))
+    random_labels = np.random.randint(
+        0, 2, input_shape[0] * input_shape[1] * 2)
+    random_labels = random_labels.reshape(input_shape + (2,))
     values = np.array([-1, tgt_sh[0]])
     disp1 = (values[random_labels] - X).astype(floating)
     composition, stats = vfu.compose_vector_fields_2d(disp1,
@@ -1040,14 +1072,14 @@ def test_compose_vector_fields_3d():
     nc = input_shape[2]
     s = 1.5
     t = 2.5
-    trans = np.array([[1, 0, 0, -t*ns],
-                      [0, 1, 0, -t*nr],
-                      [0, 0, 1, -t*nc],
+    trans = np.array([[1, 0, 0, -t * ns],
+                      [0, 1, 0, -t * nr],
+                      [0, 0, 1, -t * nc],
                       [0, 0, 0, 1]])
     trans_inv = np.linalg.inv(trans)
-    scale = np.array([[1*s, 0, 0, 0],
-                      [0, 1*s, 0, 0],
-                      [0, 0, 1*s, 0],
+    scale = np.array([[1 * s, 0, 0, 0],
+                      [0, 1 * s, 0, 0],
+                      [0, 0, 1 * s, 0],
                       [0, 0, 0, 1]])
     gt_affine = trans_inv.dot(scale.dot(trans))
 
@@ -1055,21 +1087,17 @@ def test_compose_vector_fields_3d():
     input_grid2world = gt_affine
     target_grid2world = gt_affine
 
-    disp1, assign1 = vfu.create_random_displacement_3d(np.array(input_shape,
-                                                       dtype=np.int32),
-                                                       input_grid2world,
-                                                       np.array(tgt_sh,
-                                                       dtype=np.int32),
-                                                       target_grid2world)
+    disp1, assign1 = vfu.create_random_displacement_3d(
+        np.array(input_shape, dtype=np.int32),
+        input_grid2world, np.array(tgt_sh, dtype=np.int32),
+        target_grid2world)
     disp1 = np.array(disp1, dtype=floating)
     assign1 = np.array(assign1)
 
-    disp2, assign2 = vfu.create_random_displacement_3d(np.array(input_shape,
-                                                       dtype=np.int32),
-                                                       input_grid2world,
-                                                       np.array(tgt_sh,
-                                                       dtype=np.int32),
-                                                       target_grid2world)
+    disp2, assign2 = vfu.create_random_displacement_3d(
+        np.array(
+            input_shape, dtype=np.int32), input_grid2world, np.array(
+            tgt_sh, dtype=np.int32), target_grid2world)
     disp2 = np.array(disp2, dtype=floating)
     assign2 = np.array(assign2)
 
@@ -1101,7 +1129,7 @@ def test_compose_vector_fields_3d():
 
     for time_scaling in [0.25, 0.5, 1.0, 2.0, 4.0]:
         composition, stats = vfu.compose_vector_fields_3d(disp1,
-                                                          disp2/time_scaling,
+                                                          disp2 / time_scaling,
                                                           premult_index,
                                                           premult_disp,
                                                           time_scaling, None)
@@ -1117,7 +1145,7 @@ def test_compose_vector_fields_3d():
 
         # test updating the displacement field instead of creating a new one
         composition = disp1.copy()
-        vfu.compose_vector_fields_3d(composition, disp2/time_scaling,
+        vfu.compose_vector_fields_3d(composition, disp2 / time_scaling,
                                      premult_index, premult_disp,
                                      time_scaling, composition)
         # apply the implementation under test
@@ -1141,7 +1169,7 @@ def test_compose_vector_fields_3d():
     X[..., 2] = x_2[None, None, :] * O
     sz = input_shape[0] * input_shape[1] * input_shape[2] * 3
     random_labels = np.random.randint(0, 2, sz)
-    random_labels = random_labels.reshape(input_shape+(3,))
+    random_labels = random_labels.reshape(input_shape + (3,))
     values = np.array([-1, tgt_sh[0]])
     disp1 = (values[random_labels] - X).astype(floating)
     composition, stats = vfu.compose_vector_fields_3d(disp1,
@@ -1176,8 +1204,8 @@ def test_invert_vector_field_2d():
     # Create an arbitrary image-to-space transform
     t = 2.5  # translation factor
 
-    trans = np.array([[1, 0, -t*nr],
-                      [0, 1, -t*nc],
+    trans = np.array([[1, 0, -t * nr],
+                      [0, 1, -t * nc],
                       [0, 0, 1]])
     trans_inv = np.linalg.inv(trans)
 
@@ -1186,7 +1214,7 @@ def test_invert_vector_field_2d():
     dinv = np.asarray(dinv).astype(floating)
 
     for theta in [-1 * np.pi / 5.0, 0.0, np.pi / 5.0]:  # rotation angle
-        for s in [0.5,  1.0, 2.0]:  # scale
+        for s in [0.5, 1.0, 2.0]:  # scale
             ct = np.cos(theta)
             st = np.sin(theta)
 
@@ -1194,8 +1222,8 @@ def test_invert_vector_field_2d():
                             [st, ct, 0],
                             [0, 0, 1]])
 
-            scale = np.array([[1*s, 0, 0],
-                              [0, 1*s, 0],
+            scale = np.array([[1 * s, 0, 0],
+                              [0, 1 * s, 0],
                               [0, 0, 1]])
 
             gt_affine = trans_inv.dot(scale.dot(rot.dot(trans)))
@@ -1239,9 +1267,9 @@ def test_invert_vector_field_3d():
     axis = np.array([2.0, 0.5, 1.0])
     t = 2.5  # translation factor
 
-    trans = np.array([[1, 0, 0, -t*ns],
-                      [0, 1, 0, -t*nr],
-                      [0, 0, 1, -t*nc],
+    trans = np.array([[1, 0, 0, -t * ns],
+                      [0, 1, 0, -t * nr],
+                      [0, 0, 1, -t * nc],
                       [0, 0, 0, 1]])
     trans_inv = np.linalg.inv(trans)
 
@@ -1250,13 +1278,13 @@ def test_invert_vector_field_3d():
     dinv = np.asarray(dinv).astype(floating)
 
     for theta in [-1 * np.pi / 5.0, 0.0, np.pi / 5.0]:  # rotation angle
-        for s in [0.5,  1.0, 2.0]:  # scale
+        for s in [0.5, 1.0, 2.0]:  # scale
             rot = np.zeros(shape=(4, 4))
             rot[:3, :3] = geometry.rodrigues_axis_rotation(axis, theta)
             rot[3, 3] = 1.0
-            scale = np.array([[1*s, 0, 0, 0],
-                              [0, 1*s, 0, 0],
-                              [0, 0, 1*s, 0],
+            scale = np.array([[1 * s, 0, 0, 0],
+                              [0, 1 * s, 0, 0],
+                              [0, 0, 1 * s, 0],
                               [0, 0, 0, 1]])
 
             gt_affine = trans_inv.dot(scale.dot(rot.dot(trans)))
@@ -1273,10 +1301,8 @@ def test_invert_vector_field_3d():
             # force more iteration by changing the parameters.
             # We will investigate this issue with more detail in the future.
 
-            inv_approx =\
-                vfu.invert_vector_field_fixed_point_3d(dcopy, gt_affine_inv,
-                                                       np.array([s, s, s])*0.5,
-                                                       40, 1e-7)
+            inv_approx = vfu.invert_vector_field_fixed_point_3d(
+                dcopy, gt_affine_inv, np.array([s, s, s]) * 0.5, 40, 1e-7)
 
             mapping = imwarp.DiffeomorphicMap(3, (nr, nc), gt_affine)
             mapping.forward = dcopy
@@ -1349,7 +1375,7 @@ def test_downsample_scalar_field_2d():
             c = image[::2, 1::2]
             d = image[1::2, 1::2]
 
-            expected = 0.25*(a + b + c + d)
+            expected = 0.25 * (a + b + c + d)
 
             if reduce_r:
                 expected[-1, :] *= 2
@@ -1381,7 +1407,7 @@ def test_downsample_displacement_field_2d():
             c = field[::2, 1::2, :]
             d = field[1::2, 1::2, :]
 
-            expected = 0.25*(a + b + c + d)
+            expected = 0.25 * (a + b + c + d)
 
             if reduce_r:
                 expected[-1, :, :] *= 2
@@ -1422,7 +1448,7 @@ def test_downsample_scalar_field_3d():
                 cc = image[::2, 1::2, 1::2]
                 dd = image[1::2, 1::2, 1::2]
 
-                expected = 0.125*(a + b + c + d + aa + bb + cc + dd)
+                expected = 0.125 * (a + b + c + d + aa + bb + cc + dd)
 
                 if reduce_s:
                     expected[-1, :, :] *= 2
@@ -1465,7 +1491,7 @@ def test_downsample_displacement_field_3d():
                 cc = field[::2, 1::2, 1::2, :]
                 dd = field[1::2, 1::2, 1::2, :]
 
-                expected = 0.125*(a + b + c + d + aa + bb + cc + dd)
+                expected = 0.125 * (a + b + c + d + aa + bb + cc + dd)
 
                 if reduce_s:
                     expected[-1, :, :, :] *= 2
@@ -1646,7 +1672,7 @@ def test_gradient_3d():
     x_0 = np.asarray(range(shape[0]))
     x_1 = np.asarray(range(shape[1]))
     x_2 = np.asarray(range(shape[2]))
-    X = np.zeros(shape+(4,), dtype=np.float64)
+    X = np.zeros(shape + (4,), dtype=np.float64)
     O = np.ones(shape)
     X[..., 0] = x_0[:, None, None] * O
     X[..., 1] = x_1[None, :, None] * O

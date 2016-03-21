@@ -7,11 +7,11 @@ import numpy as np
 import numpy.linalg as npl
 import scipy as sp
 import nibabel as nib
-from . import vector_fields as vfu
-from . import floating
-from . import VerbosityLevels
-from . import Bunch
-from .scalespace import ScaleSpace
+from dipy.align import vector_fields as vfu
+from dipy.align import floating
+from dipy.align import VerbosityLevels
+from dipy.align import Bunch
+from dipy.align.scalespace import ScaleSpace
 
 RegistrationStages = Bunch(INIT_START=0,
                            INIT_END=1,
