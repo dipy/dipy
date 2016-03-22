@@ -12,7 +12,7 @@ except ImportError:
 else:
     have_nose = True
 
-from .tripwire import TripWire
+from dipy.utils.tripwire import TripWire
 
 if have_nose:
     class OptionalImportError(ImportError, nose.SkipTest):
