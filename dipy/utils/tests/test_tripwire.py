@@ -1,7 +1,7 @@
 """ Testing tripwire module.
 """
 
-from ..tripwire import TripWire, is_tripwire, TripWireError
+from dipy.utils.tripwire import TripWire, is_tripwire, TripWireError
 
 from nose import SkipTest
 from nose.tools import (assert_true, assert_false, assert_raises,
