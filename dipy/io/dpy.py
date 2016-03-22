@@ -11,7 +11,7 @@
 import numpy as np
 
 # Conditional import machinery for pytables
-from ..utils.optpkg import optional_package
+from dipy.utils.optpkg import optional_package
 
 # Allow import, but disable doctests, if we don't have pytables
 tables, have_tables, setup_module = optional_package('tables')
