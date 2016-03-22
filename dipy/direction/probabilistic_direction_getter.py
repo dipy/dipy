@@ -2,7 +2,7 @@
 Implementation of a probabilistic direction getter based on sampling from
 discrete distribution (pmf) at each step of the tracking."""
 import numpy as np
-from .peaks import peak_directions, default_sphere
+from dipy.direction.peaks import peak_directions, default_sphere
 from dipy.reconst.shm import order_from_ncoef, sph_harm_lookup
 from dipy.tracking.local.direction_getter import DirectionGetter
 from dipy.tracking.local.interpolation import trilinear_interpolate4d
