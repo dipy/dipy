@@ -4,7 +4,7 @@ import os
 import sys
 import subprocess
 
-from .utils.six.moves import configparser
+from dipy.utils.six.moves import configparser
 
 COMMIT_INFO_FNAME = 'COMMIT_INFO.txt'
 
