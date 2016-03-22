@@ -11,6 +11,9 @@ class Layout(object):
     def apply(self, actors):
         """ Positions the actors according to a certain layout.
         """
+        if len(actors) == 0:
+            return
+
         positions = self.compute_positions(actors)
 
         for a, pos in zip(actors, positions):
