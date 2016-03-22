@@ -4,11 +4,11 @@ from warnings import warn
 try:
     from traitsui.api import Item, Group, View, ArrayEditor
 except ImportError:
-    from ..utils.optpkg import OptionalImportError
+    from dipy.utils.optpkg import OptionalImportError
     raise OptionalImportError("You must have traits to use this module")
-from .interfaces import InputData
+from tracking.interfaces import InputData
 
-from ..tracking.interfaces import InputData, ShmTrackingInterface
+from dipy.tracking.interfaces import InputData, ShmTrackingInterface
 
 I = InputData()
 iview = I.trait_view()
