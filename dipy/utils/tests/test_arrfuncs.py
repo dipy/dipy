@@ -5,7 +5,7 @@ import sys
 
 import numpy as np
 
-from ..arrfuncs import as_native_array, pinv, eigh
+from dipy.utils.arrfuncs import as_native_array, pinv, eigh
 
 from numpy.testing import (assert_array_almost_equal,
                            assert_array_equal)
