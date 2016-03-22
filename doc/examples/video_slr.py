@@ -85,7 +85,7 @@ def write_movie(bundles, transforms, size=(1280, 720),
                 video_fname='test.avi',
                 default_font_size=24, large_font_size=42, small_font_size=20):
 
-    global show_m, mw, moving_actor, cnt, middle_message, time, moved_actor, cnt_trans, stamp_time
+    global show_m, mw, moving_actor, cnt, middle_message, time, moved_actor, cnt_trans, reg_finished_time, start_rotation
 
     middle_message = actor.text_overlay(
         'Streamline-based Linear Registration (SLR)',
@@ -138,6 +138,15 @@ def write_movie(bundles, transforms, size=(1280, 720),
     ren.add(static_actor)
     ren.add(moving_actor)
 
+    static_actor.VisibilityOff()
+    moving_actor.VisibilityOff()
+
+    ren.add(static_dots)
+    ren.add(moved_dots)
+
+    static_dots.VisibilityOff()
+    moved_dots.VisibilityOff()
+
     show_m = window.ShowManager(ren, size=size, order_transparent=False)
     show_m.initialize()
 
@@ -156,7 +165,8 @@ def write_movie(bundles, transforms, size=(1280, 720),
     np.set_printoptions(3, suppress=True)
 
     cnt_trans = 0
-    stamp_time = 0
+    reg_finished_time = 0
+    start_rotation = False
 
     def apply_transformation():
         global cnt_trans
@@ -167,18 +177,16 @@ def write_movie(bundles, transforms, size=(1280, 720),
             cnt_trans += 1
 
     def timer_callback(obj, event):
-        global cnt, time, cnt_trans, stamp_time
+        global cnt, time, cnt_trans, reg_finished_time, start_rotation
 
         print(time)
         if time == 0:
             middle_message.VisibilityOn()
-            static_actor.VisibilityOff()
-            moving_actor.VisibilityOff()
             ref_message.VisibilityOff()
             iteration_message.VisibilityOff()
             description_message.VisibilityOff()
 
-        if time == 2000:
+        if time == 800:
             middle_message.VisibilityOff()
             static_actor.VisibilityOn()
             moving_actor.VisibilityOn()
@@ -187,37 +195,43 @@ def write_movie(bundles, transforms, size=(1280, 720),
             description_message.set_message(msg)
             description_message.Modified()
 
-        if time == 3000:
-            middle_message.VisibilityOff()
+        if time == 1600:
             msg = 'Orange bundle will register \n to the red bundle'
+            description_message.set_message(msg)
+            description_message.Modified()
+
+        if time == 2400:
+            msg = 'Registration started'
             description_message.set_message(msg)
             description_message.Modified()
             iteration_message.VisibilityOn()
 
-        if time > 3000 and cnt % 10 == 0:
+        if time > 2400 and cnt % 10 == 0:
             apply_transformation()
 
-        if cnt_trans == len(transforms) and stamp_time == 0:
+        if cnt_trans == len(transforms) and reg_finished_time == 0:
 
             print('Show description')
             msg = 'Registration finished! \n Visualizing only the points to highlight the overlap.'
             description_message.set_message(msg)
             description_message.Modified()
 
-            stamp_time = time
-            ren.rm(static_actor)
-            ren.rm(moving_actor)
-            ren.add(static_dots)
-            ren.add(moved_dots)
+            # reg_finished_time = time
+            start_rotation = True
+            static_actor.VisibilityOff()
+            moving_actor.VisibilityOff()
+            static_dots.VisibilityOn()
+            moved_dots.VisibilityOn()
             static_dots.GetProperty().SetOpacity(.5)
             moved_dots.GetProperty().SetOpacity(.5)
 
-        if time == 8500:
+        if time == 6000:
 
-            ren.add(static_actor)
-            ren.add(moving_actor)
-            ren.rm(static_dots)
-            ren.rm(moved_dots)
+            # WHY???
+            static_dots.VisibilityOff()
+            moved_dots.VisibilityOff()
+            static_actor.VisibilityOn()
+            moving_actor.VisibilityOn()
             msg = 'Showing final registration.'
             description_message.set_message(msg)
             description_message.Modified()
@@ -226,9 +240,13 @@ def write_movie(bundles, transforms, size=(1280, 720),
         if time == 10000:
 
             middle_message.VisibilityOn()
+            description_message.VisibilityOff()
 
         ren.reset_clipping_range()
-        show_m.ren.azimuth(.4)
+
+        if start_rotation and time < 10000:
+            show_m.ren.azimuth(.8)
+
         show_m.render()
         mw.write()
 
