@@ -59,7 +59,7 @@ def test_check_directions():
     # Testing more than one direction simultaneously
     angles = np.array([[90, 0], [30, 0]])
     sticks = _check_directions(angles)
-    ref_vec = [np.sin(np.pi*30/180), 0, np.cos(np.pi*30/180)]
+    ref_vec = [np.sin(np.pi * 30 / 180), 0, np.cos(np.pi * 30 / 180)]
     assert_array_almost_equal(sticks, [[1, 0, 0], ref_vec])
     # Testing directions not aligned to planes x = 0, y = 0, or z = 0
     the1 = 0
@@ -68,12 +68,12 @@ def test_check_directions():
     phi2 = 45
     angles = np.array([(the1, phi1), (the2, phi2)])
     sticks = _check_directions(angles)
-    ref_vec1 = (np.sin(np.pi*the1/180) * np.cos(np.pi*phi1/180),
-                np.sin(np.pi*the1/180) * np.sin(np.pi*phi1/180),
-                np.cos(np.pi*the1/180))
-    ref_vec2 = (np.sin(np.pi*the2/180) * np.cos(np.pi*phi2/180),
-                np.sin(np.pi*the2/180) * np.sin(np.pi*phi2/180),
-                np.cos(np.pi*the2/180))
+    ref_vec1 = (np.sin(np.pi * the1 / 180) * np.cos(np.pi * phi1 / 180),
+                np.sin(np.pi * the1 / 180) * np.sin(np.pi * phi1 / 180),
+                np.cos(np.pi * the1 / 180))
+    ref_vec2 = (np.sin(np.pi * the2 / 180) * np.cos(np.pi * phi2 / 180),
+                np.sin(np.pi * the2 / 180) * np.sin(np.pi * phi2 / 180),
+                np.cos(np.pi * the2 / 180))
     assert_array_almost_equal(sticks, [ref_vec1, ref_vec2])
 
 
@@ -121,7 +121,7 @@ def test_multi_tensor():
     s1 = single_tensor(gtab, 100, mevals[0], mevecs[0], snr=None)
     s2 = single_tensor(gtab, 100, mevals[1], mevecs[1], snr=None)
 
-    Ssingle = 0.5*s1 + 0.5*s2
+    Ssingle = 0.5 * s1 + 0.5 * s2
 
     S, sticks = MultiTensor(gtab, mevals, S0=100, angles=[(90, 45), (45, 90)],
                             fractions=[50, 50], snr=None)
@@ -144,11 +144,11 @@ def test_snr():
 
 
 def test_all_tensor_evecs():
-    e0 = np.array([1/np.sqrt(2), 1/np.sqrt(2), 0])
+    e0 = np.array([1 / np.sqrt(2), 1 / np.sqrt(2), 0])
 
     # Vectors are returned column-wise!
-    desired = np.array([[1/np.sqrt(2), 1/np.sqrt(2), 0],
-                        [-1/np.sqrt(2), 1/np.sqrt(2), 0],
+    desired = np.array([[1 / np.sqrt(2), 1 / np.sqrt(2), 0],
+                        [-1 / np.sqrt(2), 1 / np.sqrt(2), 0],
                         [0, 0, 1]]).T
 
     assert_array_almost_equal(all_tensor_evecs(e0), desired)
@@ -166,7 +166,7 @@ def test_kurtosis_elements():
                        [0.00099, 0, 0], [0.00226, 0.00087, 0.00087]])
     angles = [(80, 10), (80, 10), (20, 30), (20, 30)]
     fie = 0.49  # intra axonal water fraction
-    frac = [fie * 50, (1-fie) * 50, fie * 50, (1-fie) * 50]
+    frac = [fie * 50, (1 - fie) * 50, fie * 50, (1 - fie) * 50]
     sticks = _check_directions(angles)
     mD = np.zeros((len(frac), 3, 3))
     for i in range(len(frac)):
@@ -176,7 +176,7 @@ def test_kurtosis_elements():
     # compute global DT
     D = np.zeros((3, 3))
     for i in range(len(frac)):
-        D = D + frac[i]*mD[i]
+        D = D + frac[i] * mD[i]
 
     # compute voxel's MD
     MD = (D[0][0] + D[1][1] + D[2][2]) / 3
@@ -208,7 +208,7 @@ def test_kurtosis_elements():
         for j in xyz:
             for k in xyz:
                 for l in xyz:
-                    key = (i+1) * (j+1) * (k+1) * (l+1)
+                    key = (i + 1) * (j + 1) * (k + 1) * (l + 1)
                     assert_almost_equal(kurtosis_element(mD, frac, i, k, j, l),
                                         kt_ref[key])
                     # Testing optional funtion inputs
@@ -288,7 +288,7 @@ def test_DKI_crossing_fibers_simulations():
                        [0.00099, 0, 0], [0.00226, 0.00087, 0.00087]])
     angles = [(80, 10), (80, 10), (20, 30), (20, 30)]
     fie = 0.49
-    frac = [fie*50, (1 - fie)*50, fie*50, (1 - fie)*50]
+    frac = [fie * 50, (1 - fie) * 50, fie * 50, (1 - fie) * 50]
     signal, dt, kt = multi_tensor_dki(gtab_2s, mevals, angles=angles,
                                       fractions=frac, snr=None)
     # in this simulations dt and kt cannot have zero elements
