@@ -887,6 +887,19 @@ cdef class QuickBundles(object):
 
         return stats
 
+    cdef object _build_clustermap(self):
+        clusters = ClusterMapCentroid()
+        cdef int k
+        for k in range(self.clusters.c_size()):
+            cluster = ClusterCentroid(np.asarray(self.clusters.centroids[k].features).copy())
+            cluster.indices = np.asarray(<int[:self.clusters.clusters_size[k]]> self.clusters.clusters_indices[k]).copy()
+            clusters.add_cluster(cluster)
+
+        return clusters
+
+    def get_cluster_map(self):
+        return self._build_clustermap()
+
 
 def evaluate_aabbb_checks():
     cdef:

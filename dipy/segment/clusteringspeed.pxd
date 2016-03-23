@@ -88,6 +88,7 @@ cdef class QuickBundles(object):
     cdef NearestCluster find_nearest_cluster(QuickBundles self, Data2D features) nogil except *
     cdef int assignment_step(QuickBundles self, Data2D datum, int datum_id) nogil except -1
     cdef void update_step(QuickBundles self, int cluster_id) nogil except *
+    cdef object _build_clustermap(self)
 
 
 cdef class QuickBundlesX(object):

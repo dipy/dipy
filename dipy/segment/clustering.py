@@ -581,6 +581,118 @@ class QuickBundles(Clustering):
         return cluster_map
 
 
+class QuickBundlesOnline(Clustering):
+    r""" Clusters streamlines using QuickBundles [Garyfallidis12]_.
+
+    Given a list of streamlines, the QuickBundles algorithm sequentially
+    assigns each streamline to its closest bundle in $\mathcal{O}(Nk)$ where
+    $N$ is the number of streamlines and $k$ is the final number of bundles.
+    If for a given streamline its closest bundle is farther than `threshold`,
+    a new bundle is created and the streamline is assigned to it except if the
+    number of bundles has already exceeded `max_nb_clusters`.
+
+    Parameters
+    ----------
+    threshold : float
+        The maximum distance from a bundle for a streamline to be still
+        considered as part of it.
+    metric : str or `Metric` object (optional)
+        The distance metric to use when comparing two streamlines. By default,
+        the Minimum average Direct-Flip (MDF) distance [Garyfallidis12]_ is
+        used and streamlines are automatically resampled so they have 12 points.
+    max_nb_clusters : int
+        Limits the creation of bundles.
+
+    Examples
+    --------
+    >>> from dipy.segment.clustering import QuickBundles
+    >>> from dipy.data import get_data
+    >>> from nibabel import trackvis as tv
+    >>> streams, hdr = tv.read(get_data('fornix'))
+    >>> streamlines = [i[0] for i in streams]
+    >>> # Segment fornix with a treshold of 10mm and streamlines resampled to 12 points.
+    >>> qb = QuickBundles(threshold=10.)
+    >>> clusters = qb.cluster(streamlines)
+    >>> len(clusters)
+    4
+    >>> list(map(len, clusters))
+    [61, 191, 47, 1]
+    >>> # Resampling streamlines differently is done explicitly as follows.
+    >>> # Note this has an impact on the speed and the accuracy (tradeoff).
+    >>> from dipy.segment.metric import ResampleFeature
+    >>> from dipy.segment.metric import AveragePointwiseEuclideanMetric
+    >>> feature = ResampleFeature(nb_points=2)
+    >>> metric = AveragePointwiseEuclideanMetric(feature)
+    >>> qb = QuickBundles(threshold=10., metric=metric)
+    >>> clusters = qb.cluster(streamlines)
+    >>> len(clusters)
+    4
+    >>> list(map(len, clusters))
+    [58, 142, 72, 28]
+
+
+    References
+    ----------
+    .. [Garyfallidis12] Garyfallidis E. et al., QuickBundles a method for
+                        tractography simplification, Frontiers in Neuroscience,
+                        vol 6, no 175, 2012.
+    """
+    def __init__(self, threshold, metric="MDF_12points",
+                 max_nb_clusters=np.iinfo('i4').max, bvh=False):
+        self.threshold = threshold
+        self.max_nb_clusters = max_nb_clusters
+        self.bvh = bvh
+
+        if isinstance(metric, Metric):
+            self.metric = metric
+        elif metric == "MDF_12points":
+            feature = ResampleFeature(nb_points=12)
+            self.metric = AveragePointwiseEuclideanMetric(feature)
+        else:
+            raise ValueError("Unknown metric: {0}".format(metric))
+
+        self._cluster_fct = None
+        self._dirty = True
+
+    @property
+    def clusters(self):
+        if self._dirty:
+            self._clusters = self._qb_state.get_cluster_map()
+
+        return self._clusters
+
+    def cluster(self, streamline, idx=None):
+        """ Clusters `streamlines` into bundles.
+
+        Performs quickbundles algorithm using predefined metric and threshold.
+
+        Parameters
+        ----------
+        streamlines : list of 2D arrays
+            Each 2D array represents a sequence of 3D points (points, 3).
+        ordering : iterable of indices
+            Specifies the order in which data points will be clustered.
+
+        Returns
+        -------
+        `ClusterMapCentroid` object
+            Result of the clustering.
+        """
+        from dipy.segment.clustering_algorithms import quickbundles_online
+        if self._cluster_fct is None:
+            self._idx = -1
+            features_shape = self.metric.feature.infer_shape(streamline)
+            self._cluster_fct = quickbundles_online(features_shape, self.metric,
+                                                    threshold=self.threshold,
+                                                    max_nb_clusters=self.max_nb_clusters,
+                                                    bvh=self.bvh)
+
+        self._idx = self._idx + 1 if idx is None else idx
+        self._qb_state, cluster_id = self._cluster_fct(streamline, self._idx)
+        self._dirty = True
+        return cluster_id
+
+
 class QuickBundlesX(Clustering):
     r""" Clusters streamlines using QuickBundlesX.
 

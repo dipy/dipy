@@ -10,48 +10,14 @@ from dipy.viz import actor, window, utils, fvtk
 from dipy.data.fetcher import fetch_bundles_2_subjects, read_bundles_2_subjects
 import numpy as np
 from dipy.core.geometry import rodrigues_axis_rotation
-from dipy.segment.clustering import QuickBundles
-from dipy.segment.metric import dist
+from dipy.segment.clustering import QuickBundles, QuickBundlesOnline
 from dipy.viz.colormap import distinguishable_colormap
 import vtk
 import nibabel as nib
 
 
 qb = QuickBundles(threshold=20)
-
-
-def replay_clustering(clusters):
-    Ns = np.zeros(len(clusters), dtype=int)
-    nb_points = 50
-    centroids = [np.zeros((nb_points, 3), dtype=np.float32) for c in clusters]
-
-    cluster_iters = map(lambda c: iter(c.indices), clusters)
-    nexts = [next(cluster_iter) for cluster_iter in cluster_iters]
-
-    nb_iters_done = 0
-    while nb_iters_done < len(clusters):
-        cluster_id = np.argmin(nexts)
-        streamlines_id = nexts[cluster_id]
-
-        # Check if we need to flip the streamlines first
-        s = clusters.refdata[streamlines_id]
-        if dist(qb.metric, clusters.refdata[streamlines_id][::-1], centroids[cluster_id]) < dist(qb.metric, clusters.refdata[streamlines_id], centroids[cluster_id]):
-            s = clusters.refdata[streamlines_id][::-1]
-
-        s = set_number_of_points(s, nb_points)
-        centroids[cluster_id] = ((centroids[cluster_id]*Ns[cluster_id]) + s) / (Ns[cluster_id]+1)
-
-        id_in_cluster = Ns[cluster_id]
-        Ns[cluster_id] += 1
-
-        yield streamlines_id, cluster_id, id_in_cluster, centroids[cluster_id], Ns[cluster_id]
-
-        try:
-            nexts[cluster_id] = next(cluster_iters[cluster_id])
-        except StopIteration:
-            # print "Cluster #{} exhausted".format(cluster_id)
-            nb_iters_done += 1
-            nexts[cluster_id] = np.inf
+qbo = QuickBundlesOnline(threshold=20)
 
 
 # Script
@@ -77,14 +43,15 @@ indices = range(len(tractogram))
 rng.shuffle(indices)
 streamlines = tractogram.streamlines[indices[:1000]].copy()
 
-# Perform clustering
+# Perform clustering to know home many clusters we will get.
 clusters = qb.cluster(streamlines)
+# This will be use to display individual cluster on the right panel.
 clusters_as_array_sequence = [nib.streamlines.ArraySequence(c) for c in clusters]
 
 bg = (0, 0, 0)
 # Create actors
 colormap = list(itertools.islice(distinguishable_colormap(bg=bg, exclude=[(1, 1, 1)]), len(clusters)))
-colormap = [(1, 1, 1)] + colormap + [(0, 0, 0)]
+colormap = colormap + [(1, 1, 1), (0, 0, 0)]
 
 lut = vtk.vtkLookupTable()
 lut.SetNumberOfTableValues(len(colormap))
@@ -92,32 +59,22 @@ lut.Build()
 for i, color in enumerate(colormap):
     lut.SetTableValue(i, tuple(color) + (1,))
 
-lut.SetTableValue(0, (1, 1, 1, 0.25))
+lut.SetTableValue(len(colormap)-2, (1, 1, 1, 0.25))  # Semi-invisible
 lut.SetTableValue(len(colormap)-1, (0, 0, 0, 0.))  # Invisible
 lut.SetTableRange(0, len(colormap)-1)
 
 global streamlines_color
-streamlines_color = np.zeros(len(streamlines), dtype="float32")
+streamlines_color = (len(colormap)-2)*np.ones(len(streamlines), dtype="float32")  # Semi-invisible
 brain_actor = actor.line(streamlines, colors=streamlines_color, lookup_colormap=lut, linewidth=1.5)
-
-# Create an actor for each cluster
-lut2 = vtk.vtkLookupTable()
-lut2.SetNumberOfTableValues(len(colormap))
-lut2.Build()
-for i, color in enumerate(colormap):
-    lut2.SetTableValue(i, tuple(color) + (1,))
-
-lut2.SetTableValue(0, (1, 1, 1, 0))
-lut2.SetTableRange(0, len(colormap))
 
 cluster_actors = []
 for c in clusters:
-    cluster_color = np.zeros(len(c), dtype="float32")
-    cluster_actor = actor.line(c, colors=cluster_color, lookup_colormap=lut2, linewidth=1.5)
+    cluster_color = (len(colormap)-1)*np.ones(len(c), dtype="float32")  # Invisible
+    cluster_actor = actor.line(c, colors=cluster_color, lookup_colormap=lut, linewidth=1.5)
     cluster_actors.append(cluster_actor)
 
 # Create renderers
-# Main renderder
+# Main renderder (used for the interaction)
 global screen_size
 screen_size = (0, 0)
 ren_main = window.Renderer()
@@ -128,7 +85,7 @@ show_m.window.SetNumberOfLayers(2)
 ren_main.SetLayer(1)
 ren_main.InteractiveOff()
 
-# Outlierness renderer
+# Left renderer that contains the brain.
 ren_brain = window.Renderer()
 show_m.window.AddRenderer(ren_brain)
 ren_brain.background(bg)
@@ -136,6 +93,7 @@ ren_brain.SetViewport(0, 0, 0.5, 1)
 ren_brain.add(brain_actor)
 ren_brain.reset_camera_tight()
 
+# Right renderers: one per cluster.
 grid_cell_positions = utils.get_grid_cells_position([ren_brain.GetSize()]*len(clusters), aspect_ratio=9/16.)
 grid_dim = (len(np.unique(grid_cell_positions[:, 0])), len(np.unique(grid_cell_positions[:, 1])))
 
@@ -154,8 +112,9 @@ for y in range(grid_dim[1])[::-1]:
         ren.background(bg)
         ren.SetViewport(0.5+x/(grid_dim[0]/0.5), y/grid_dim[1], 0.5+(x+1)/(grid_dim[0]/0.5), (y+1)/grid_dim[1])
         ren.add(cluster_actors[cpt])
-        ren.SetActiveCamera(ren_brain.GetActiveCamera())
+        ren.SetActiveCamera(ren_brain.GetActiveCamera())  # Sync camera with the left one.
         cpt += 1
+
 
 global cnt, time, stamp_time
 repeat_time = 10
@@ -163,50 +122,47 @@ cnt = 0
 time = 0
 stamp_time = 0
 
-global replay, stream_actor
-replay = replay_clustering(clusters)
+global streamline_idx
+streamline_idx = 0
 
-centroid_actors = [None] * len(clusters)
+# Prepare placeholders for the centroids' streamtube
+centroid_actors = [actor.line(np.array([[0, 0, 0]]), colors=(0, 0, 0))] * len(clusters)
 
 
 def timer_callback(obj, event):
-    global cnt, time, stamp_time
+    global cnt, time, stamp_time, streamline_idx
 
     print "Frame #{:,}".format(cnt)
 
-    try:
-        streamlines_idx, cluster_id, id_in_cluster, centroid, N = next(replay)
+    if streamline_idx < len(streamlines):
+        cluster_id = qbo.cluster(streamlines[streamline_idx], streamline_idx)
 
         # Display updated centroid
-        if centroid_actors[cluster_id] is None:
-            centroid_actors[cluster_id] = actor.streamtube([centroid], colormap[cluster_id+1], linewidth=0.2+np.log(N)/2)
-        else:
-            ren_brain.RemoveActor(centroid_actors[cluster_id])
-            centroid_actors[cluster_id] = actor.streamtube([centroid], colormap[cluster_id+1], linewidth=0.2+np.log(N)/2)
-
+        ren_brain.RemoveActor(centroid_actors[cluster_id])
+        centroid_actors[cluster_id] = actor.streamtube([qbo.clusters[cluster_id].centroid], colormap[cluster_id], linewidth=0.2+np.log(len(qbo.clusters[cluster_id]))/2)
         ren_brain.add(centroid_actors[cluster_id])
 
         # Replace color
         scalars = brain_actor.GetMapper().GetInput().GetPointData().GetScalars()
-        start = streamlines._offsets[streamlines_idx]
-        end = start + streamlines._lengths[streamlines_idx]
+        start = streamlines._offsets[streamline_idx]
+        end = start + streamlines._lengths[streamline_idx]
         for i in range(start, end):
-            scalars.SetValue(i, len(colormap)-1)
+            scalars.SetValue(i, len(colormap)-1)  # Make streamlines invisible.
 
         scalars.Modified()
 
         # Show streamlines in the clusters view.
         scalars = cluster_actors[cluster_id].GetMapper().GetInput().GetPointData().GetScalars()
-        start = clusters_as_array_sequence[cluster_id]._offsets[id_in_cluster]
-        end = start + clusters_as_array_sequence[cluster_id]._lengths[id_in_cluster]
+        start = clusters_as_array_sequence[cluster_id]._offsets[len(qbo.clusters[cluster_id])-1]
+        end = start + clusters_as_array_sequence[cluster_id]._lengths[len(qbo.clusters[cluster_id])-1]
         for i in range(start, end):
-            scalars.SetValue(i, cluster_id+1)
+            scalars.SetValue(i, cluster_id)  # Make streamlines visible.
 
         scalars.Modified()
 
         show_m.render()
-    except StopIteration:
-        pass
+
+        streamline_idx += 1
 
     cnt += 1
 
