@@ -34,9 +34,9 @@ class TimeLineManager(object):
 
         title = actor.text_overlay(
             ' ',
-            position=(self.size[0] / 2 - 400, self.size[1] / 2),
+            position=(self.size[0] / 2, self.size[1] / 2),
             color=(0, 0, 0),
-            font_size=self.large_font_size, bold=True)
+            font_size=self.large_font_size, bold=True, justification='center')
 
         top_right = actor.text_overlay(
             ' ',

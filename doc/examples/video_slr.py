@@ -169,32 +169,42 @@ def write_movie(bundles, transforms, size=(1280, 720),
     title = 'Streamline-based Linear Registration (SLR) \n'
     title += 'Garyfallidis et al. Neuroimage 2015'
 
-    tm.add_sub(0, ['title'], [title])
-    tm.add_sub(3, ['title'], [' '])
-    tm.add_state(4, [static_actor, moving_actor], ['on', 'on'])
-    tm.add_sub(5, ['sub'], ['Two bundles in their native space'])
-    tm.add_sub(8, ['sub'], ['The orange bundle will register to the red'])
-    tm.add_sub(11, ['sub'], ['Registration started'])
+    t = 0
+    tm.add_sub(t, ['title'], [title])
+    t += 5
+    tm.add_sub(t, ['title'], [' '])
+    tm.add_state(t, [static_actor, moving_actor], ['on', 'on'])
+    t += 2
+    tm.add_sub(t, ['sub'], ['Two bundles in their native space'])
+    t += 3
+    tm.add_sub(t, ['sub'], ['The orange bundle will register to the red'])
+    t += 2
+    tm.add_sub(t, ['sub'], ['Registration started'])
 
     tm.add_event(
-        11, 6,
+        t, 6,
         [apply_transformation2],
         [(moving_actor, tm.top_left)])
 
-    tm.add_sub(15, ['sub'], ['Registration finished'])
+    t += 5
+    tm.add_sub(t, ['sub'], ['Registration finished'])
+    t += 2
     tm.add_sub(
-        18,
+        t,
         ['sub', 'top_right'],
         ['Highlighting overlap', 'Garyfallidis et al. Neuroimage 2015'])
 
-    tm.add_state(20, [static_dots, moved_dots], ['on', 'on'])
-    tm.add_state(22, [static_actor, moving_actor], ['off', 'off'])
+    t += 2
+    tm.add_state(t, [static_dots, moved_dots], ['on', 'on'])
+    t += 2
+    tm.add_state(t, [static_actor, moving_actor], ['off', 'off'])
     tm.add_event(
-        22, 10,
+        t, 10,
         [rotate_camera], [(show_m.ren, 2)])
 
-    tm.add_state(32, [static_actor, moving_actor], ['on', 'on'])
-    tm.add_state(32, [static_dots, moved_dots], ['off', 'off'])
+    t += 10
+    tm.add_state(t, [static_actor, moving_actor], ['on', 'on'])
+    tm.add_state(t, [static_dots, moved_dots], ['off', 'off'])
 
     def timer_callback(obj, event):
 
