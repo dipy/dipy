@@ -169,6 +169,30 @@ def quickbundles(streamlines, Metric metric, double threshold,
     return results
 
 
+def quickbundles_online(features_shape, Metric metric, double threshold,
+                        long max_nb_clusters=BIGGEST_INT, bvh=False):
+
+    # Threshold of np.inf is not supported, set it to 'biggest_double'
+    threshold = min(threshold, BIGGEST_DOUBLE)
+    # Threshold of -np.inf is not supported, set it to 0
+    threshold = max(threshold, 0)
+
+    cdef QuickBundles qb = QuickBundles(features_shape, metric, threshold, max_nb_clusters, bvh)
+    cdef int cluster_id
+
+    def _step(streamline, int idx):
+        if not streamline.flags.writeable or streamline.dtype != np.float32:
+            streamline = streamline.astype(np.float32)
+
+        cluster_id = qb.assignment_step(streamline, idx)
+        # The update step is performed right after the assignement step instead
+        # of after all streamlines have been assigned like k-means algorithm.
+        qb.update_step(cluster_id)
+        return qb, cluster_id
+
+    return _step
+
+
 def quickbundlesX(streamlines, Metric metric, thresholds, ordering=None):
     """ Clusters streamlines using QuickBundles.
 
