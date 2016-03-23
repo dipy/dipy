@@ -1,6 +1,6 @@
 import numpy as np
 
-from .localtrack import local_tracker
+from local.localtrack import local_tracker
 from dipy.align import Bunch
 from dipy.tracking import utils
 
