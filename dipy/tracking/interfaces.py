@@ -21,23 +21,23 @@ from scipy.ndimage import convolve
 try:
     import traits.api as T
 except ImportError:
-    from ..utils.optpkg import OptionalImportError
+    from dipy.utils.optpkg import OptionalImportError
     raise OptionalImportError("You must have traits to use this module")
 
 import nibabel as nib
 from nibabel.trackvis import write, empty_header
 
-from ..reconst.shm import (SlowAdcOpdfModel, MonoExpOpdfModel, QballOdfModel,
+from dipy.reconst.shm import (SlowAdcOpdfModel, MonoExpOpdfModel, QballOdfModel,
                           normalize_data, ClosestPeakSelector,
                           ResidualBootstrapWrapper, hat, lcr_matrix,
                           bootstrap_data_array, NND_ClosestPeakSelector)
-from ..reconst.interpolate import (TriLinearInterpolator,
+from dipy.reconst.interpolate import (TriLinearInterpolator,
                                   NearestNeighborInterpolator)
-from ..tracking.integration import (BoundryIntegrator, FixedStepIntegrator,
+from dipy.tracking.integration import (BoundryIntegrator, FixedStepIntegrator,
                                    generate_streamlines)
-from ..tracking.utils import (seeds_from_mask, target, merge_streamlines,
+from dipy.tracking.utils import (seeds_from_mask, target, merge_streamlines,
                              density_map)
-from ..io.bvectxt import (read_bvec_file, orientation_to_string,
+from dipy.io.bvectxt import (read_bvec_file, orientation_to_string,
                          reorient_vectors)
 
 nifti_file = T.File(filter=['Nifti Files', '*.nii.gz',

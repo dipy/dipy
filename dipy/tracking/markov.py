@@ -13,12 +13,12 @@ dipy.reconst.interpolate
 """
 from __future__ import division, print_function, absolute_import
 
-from ..utils.six.moves import xrange
+from dipy.utils.six.moves import xrange
 
 import numpy as np
-from ..reconst.interpolate import OutsideImage, NearestNeighborInterpolator
+from dipy.reconst.interpolate import OutsideImage, NearestNeighborInterpolator
 from dipy.direction.peaks import default_sphere, peak_directions
-from . import utils
+from tracking import utils
 
 
 class DirectionFinder(object):

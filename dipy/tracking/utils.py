@@ -57,7 +57,7 @@ from scipy.spatial.distance import cdist
 from dipy.core.geometry import dist_to_corner
 
 from collections import defaultdict
-from ..utils.six.moves import xrange, map
+from dipy.utils.six.moves import xrange, map
 
 import numpy as np
 from numpy import (asarray, ceil, dot, empty, eye, sqrt)
@@ -65,7 +65,7 @@ from dipy.io.bvectxt import ornt_mapping
 from dipy.tracking import metrics
 
 # Import helper functions shared with vox2track
-from ._utils import (_mapping_to_voxel, _to_voxel_coordinates)
+from tracking._utils import (_mapping_to_voxel, _to_voxel_coordinates)
 
 
 def _rmi(index, dims):
