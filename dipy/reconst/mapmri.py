@@ -20,10 +20,10 @@ class MapmriModel(ReconstModel):
     dimensions.
     The main difference with the SHORE proposed in [3]_ is that MAPMRI 3D
     extension is provided using a set of three basis functions for the radial
-    part, one for the signal along x, one for y and one for z, while [3]_ 
+    part, one for the signal along x, one for y and one for z, while [3]_
     uses one basis function to model the radial part and real Spherical
     Harmonics to model the angular part.
-    From the MAPMRI coefficients is possible to use the analytical formulae 
+    From the MAPMRI coefficients is possible to use the analytical formulae
     to estimate the ODF.
 
     References
@@ -52,16 +52,16 @@ class MapmriModel(ReconstModel):
         r""" Analytical and continuous modeling of the diffusion signal with
         respect to the MAPMRI basis [1]_.
 
-        The main idea is to model the diffusion signal as a linear combination of
-        the continuous functions presented in [2]_ but extending it in three
+        The main idea is to model the diffusion signal as a linear combination
+        of the continuous functions presented in [2]_ but extending it in three
         dimensions.
 
         The main difference with the SHORE proposed in [3]_ is that MAPMRI 3D
-        extension is provided using a set of three basis functions for the radial
-        part, one for the signal along x, one for y and one for z, while [3]_ 
-        uses one basis function to model the radial part and real Spherical
-        Harmonics to model the angular part.
-        From the MAPMRI coefficients is possible to use the analytical formulae 
+        extension is provided using a set of three basis functions for the
+        radial part, one for the signal along x, one for y and one for z,
+        while [3]_ uses one basis function to model the radial part and real
+        Spherical Harmonics to model the angular part.
+        From the MAPMRI coefficients is possible to use the analytical formulae
         to estimate the ODF.
 
 
@@ -79,7 +79,7 @@ class MapmriModel(ReconstModel):
             If false, force the basis function to be identical in the three
             dimensions (SHORE like).
         eigenvalue_threshold : float,
-            set the minimum of the tensor eigenvalues in order to avoid 
+            set the minimum of the tensor eigenvalues in order to avoid
             stability problem
         bmax_threshold : float,
             set the maximum b-value for the tensor estimation
@@ -90,12 +90,14 @@ class MapmriModel(ReconstModel):
                diffusion imaging method for mapping tissue microstructure",
                NeuroImage, 2013.
 
-        .. [2] Ozarslan E. et. al, "Simple harmonic oscillator based reconstruction
-               and estimation for one-dimensional q-space magnetic resonance
-               1D-SHORE)", eapoc Intl Soc Mag Reson Med, vol. 16, p. 35., 2008.
+        .. [2] Ozarslan E. et. al, "Simple harmonic oscillator based
+               reconstruction and estimation for one-dimensional q-space
+               magnetic resonance 1D-SHORE)", eapoc Intl Soc Mag Reson Med,
+               vol. 16, p. 35., 2008.
 
-        .. [3] Ozarslan E. et. al, "Simple harmonic oscillator based reconstruction
-               and estimation for three-dimensional q-space mri", ISMRM 2009.
+        .. [3] Ozarslan E. et. al, "Simple harmonic oscillator based
+               reconstruction and estimation for three-dimensional
+               q-space mri", ISMRM 2009.
 
         Examples
         --------
@@ -301,8 +303,9 @@ class MapmriFit(ReconstFit):
         const = 1 / (2 * np.pi * self.mu[1] * self.mu[2])
         for i in range(self.ind_mat.shape[0]):
             if Bm[i] > 0.0:
-                rtap += (-1.0) ** (
-                    (self.ind_mat[i, 1] + self.ind_mat[i, 2]) / 2.0) * self._mapmri_coef[i] * Bm[i]
+                rtap += (((-1.0) ** ((self.ind_mat[i, 1] +
+                                      self.ind_mat[i, 2]) /
+                                     2.0)) * self._mapmri_coef[i] * Bm[i])
         return const * rtap
 
     def rtop(self):
@@ -319,11 +322,17 @@ class MapmriFit(ReconstFit):
         rtop = 0
         const = 1 / \
             np.sqrt(
-                8 * np.pi ** 3 * (self.mu[0] ** 2 * self.mu[1] ** 2 * self.mu[2] ** 2))
+                8 * np.pi ** 3 *
+                (self.mu[0] ** 2 *
+                 self.mu[1] ** 2 *
+                 self.mu[2] ** 2))
+
         for i in range(self.ind_mat.shape[0]):
             if Bm[i] > 0.0:
-                rtop += (-1.0) ** ((self.ind_mat[i, 0] + self.ind_mat[i, 1] + self.ind_mat[
-                    i, 2]) / 2.0) * self._mapmri_coef[i] * Bm[i]
+                rtop += ((-1.0) ** ((self.ind_mat[i, 0] +
+                                     self.ind_mat[i, 1] +
+                                     self.ind_mat[i, 2]) / 2.0) *
+                         self._mapmri_coef[i] * Bm[i])
         return const * rtop
 
     def predict(self, gtab, S0=1.0):
@@ -406,8 +415,8 @@ def b_mat(ind_mat):
     for i in range(ind_mat.shape[0]):
         n1, n2, n3 = ind_mat[i]
         K = int(not(n1 % 2) and not(n2 % 2) and not(n3 % 2))
-        B[i] = K * np.sqrt(factorial(n1) * factorial(n2) * factorial(n3)
-                           ) / (factorial2(n1) * factorial2(n2) * factorial2(n3))
+        B[i] = (K * np.sqrt(factorial(n1) * factorial(n2) * factorial(n3)) /
+                (factorial2(n1) * factorial2(n2) * factorial2(n3)))
 
     return B
 
@@ -607,7 +616,8 @@ def mapmri_odf_matrix(radial_order, mu, s, vertices):
     mux, muy, muz = mu
     # Eq, 35a
     rho = 1.0 / np.sqrt((vertices[:, 0] / mux) ** 2 +
-                        (vertices[:, 1] / muy) ** 2 + (vertices[:, 2] / muz) ** 2)
+                        (vertices[:, 1] / muy) ** 2 +
+                        (vertices[:, 2] / muz) ** 2)
     # Eq, 35b
     alpha = 2 * rho * (vertices[:, 0] / mux)
     # Eq, 35c

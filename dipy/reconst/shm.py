@@ -491,6 +491,7 @@ class SphHarmModel(OdfModel, Cache):
 
 class QballBaseModel(SphHarmModel):
     """To be subclassed by Qball type models."""
+
     def __init__(self, gtab, sh_order, smooth=0.006, min_signal=1.,
                  assume_normed=False):
         """Creates a model that can be used to fit or sample diffusion data
@@ -678,6 +679,7 @@ class OpdtModel(QballBaseModel):
            probability density functions in high angular resolution diffusion
            imaging.
     """
+
     def _set_fit_matrix(self, B, L, F, smooth):
         invB = smooth_pinv(B, sqrt(smooth) * L)
         L = L[:, None]
@@ -809,6 +811,7 @@ class ResidualBootstrapWrapper(object):
     There wrapper than samples the residual boostrap distribution of signal and
     returns that sample.
     """
+
     def __init__(self, signal_object, B, where_dwi, min_signal=1.):
         """Builds a ResidualBootstrapWapper
 
@@ -1037,7 +1040,8 @@ def anisotropic_power(sh_coeffs, norm_factor=0.00001, power=2,
     A l=2 SH coeffecient matrix will then be composed of a IxJxKx6 volume.
     The power, $n$ is usually set to $n=2$.
 
-    The final AP image is then shifted by -log(normal_factor), to be strictly non-negative. Remaining values < 0 are discarded (set to 0), per default,
+    The final AP image is then shifted by -log(normal_factor), to be strictly
+    non-negative. Remaining values < 0 are discarded (set to 0), per default,
     and this option is controlled throug the `non_negative` key word argument.
 
     References
