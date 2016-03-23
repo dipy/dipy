@@ -8,7 +8,7 @@ class TimeLineManager(object):
                  size=(1280, 720),
                  default_font_size=24,
                  large_font_size=42,
-                 small_font_size=20):
+                 small_font_size=20, reset_clipping=True):
         self.states = []
         self.second = 0
         self.actors = actors
@@ -22,6 +22,7 @@ class TimeLineManager(object):
         self.default_font_size = default_font_size
         self.large_font_size = large_font_size
         self.small_font_size = small_font_size
+        self.reset_clipping = reset_clipping
         self.initialize_subs()
 
         for act in self.actors:
@@ -130,7 +131,8 @@ class TimeLineManager(object):
                 for func, args in zip(functions, args):
                     func(*args)
 
-        self.show_m.ren.reset_clipping_range()
+        if self.reset_clipping:
+            self.show_m.ren.reset_clipping_range()
         self.show_m.render()
         self.movie_writer.write()
 

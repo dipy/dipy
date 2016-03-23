@@ -16,8 +16,8 @@ import vtk
 import nibabel as nib
 
 
-qb = QuickBundles(threshold=20)
-qbo = QuickBundlesOnline(threshold=20)
+qb = QuickBundles(threshold=30)
+qbo = QuickBundlesOnline(threshold=30)
 
 
 # Script
@@ -48,7 +48,7 @@ clusters = qb.cluster(streamlines)
 # This will be use to display individual cluster on the right panel.
 clusters_as_array_sequence = [nib.streamlines.ArraySequence(c) for c in clusters]
 
-bg = (0, 0, 0)
+bg = (0.2, 0.2, 0.2)
 # Create actors
 colormap = list(itertools.islice(distinguishable_colormap(bg=bg, exclude=[(1, 1, 1)]), len(clusters)))
 colormap = colormap + [(1, 1, 1), (0, 0, 0)]
@@ -137,7 +137,7 @@ streamline_idx = 0
 centroid_actors = [actor.line(np.array([[0, 0, 0]]), colors=(0, 0, 0))] * len(clusters)
 
 
-def timer_callback(obj, event):
+def main_event():
     global cnt, time, stamp_time, streamline_idx
 
     print "Frame #{:,}".format(cnt)
@@ -168,12 +168,37 @@ def timer_callback(obj, event):
 
         scalars.Modified()
 
-        show_m.render()
+        #show_m.render()
 
         streamline_idx += 1
 
     cnt += 1
 
+
+
+from dipy.viz import timeline
+
+global tm
+tm = timeline.TimeLineManager(show_m, [],
+                              'boo.avi')
+
+t = 0
+tm.add_sub(t, ['title'], ['Online QuickBundles'])
+
+tm.add_event(
+    t, 10,
+    [main_event],
+    [[]])
+
+def timer_callback(obj, event):
+    global tm
+    tm.execute()
+    #main_event()
+    #show_m.render()
+
 show_m.add_timer_callback(True, repeat_time, timer_callback)
 show_m.render()
 show_m.start()
+
+del tm
+del show_m
