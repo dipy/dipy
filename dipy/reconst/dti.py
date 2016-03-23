@@ -103,8 +103,8 @@ def fractional_anisotropy(evals, axis=-1):
     all_zero = (evals == 0).all(axis=0)
     ev1, ev2, ev3 = evals
     fa = np.sqrt(0.5 * ((ev1 - ev2) ** 2 +
-                 (ev2 - ev3) ** 2 +
-                 (ev3 - ev1) ** 2) /
+                        (ev2 - ev3) ** 2 +
+                        (ev3 - ev1) ** 2) /
                  ((evals * evals).sum(0) + all_zero))
 
     return fa
@@ -181,7 +181,7 @@ def geodesic_anisotropy(evals, axis=-1):
     idx = np.nonzero(ev1)
 
     # this is the definition in [1]_
-    detD = np.power(ev1 * ev2 * ev3, 1/3.)
+    detD = np.power(ev1 * ev2 * ev3, 1 / 3.)
     log1[idx] = np.log(ev1[idx] / detD[idx])
     log2[idx] = np.log(ev2[idx] / detD[idx])
     log3[idx] = np.log(ev3[idx] / detD[idx])
@@ -692,6 +692,7 @@ def tensor_prediction(dti_params, gtab, S0):
 class TensorModel(ReconstModel):
     """ Diffusion Tensor
     """
+
     def __init__(self, gtab, fit_method="WLS", *args, **kwargs):
         """ A Diffusion Tensor Model [1]_, [2]_.
 
@@ -720,6 +721,17 @@ class TensorModel(ReconstModel):
         min_signal : float
             The minimum signal value. Needs to be a strictly positive
             number. Default: minimal signal in the data provided to `fit`.
+
+        Note
+        -----
+        In order to increase speed of processing, tensor fitting is done simultaneously
+        over many voxels. Many fit_methods use the 'step' parameter to set the number of
+        voxels that will be fit at once in each iteration. This is the chunk size as a 
+        number of voxels. A larger step value should speed things up, but it will also 
+        take up more memory. It is advisable to keep an eye on memory consumption as 
+        this value is increased.
+
+        Example : In :func:`iter_fit_tensor` we have a default step value of 1e4            
 
         References
         ----------
@@ -812,6 +824,7 @@ class TensorModel(ReconstModel):
 
 
 class TensorFit(object):
+
     def __init__(self, model, model_params):
         """ Initialize a TensorFit class instance.
         """
@@ -1132,6 +1145,15 @@ class TensorFit(object):
            The mean non-diffusion weighted signal in each voxel. Default: 1 in
            all voxels.
 
+        step : int
+            The chunk size as a number of voxels. Optional parameter with default value 10,000.
+
+            In order to increase speed of processing, tensor fitting is done simultaneously
+            over many voxels. This parameter sets the number of voxels that will be fit at 
+            once in each iteration. A larger step value should speed things up, but it will 
+            also take up more memory. It is advisable to keep an eye on memory consumption 
+            as this value is increased.
+
         Notes
         -----
         The predicted signal is given by:
@@ -1161,13 +1183,12 @@ class TensorFit(object):
             S0 = S0.ravel()
         for i in range(0, size, step):
             if isinstance(S0, np.ndarray):
-                this_S0 = S0[i:i+step]
+                this_S0 = S0[i:i + step]
             else:
                 this_S0 = S0
-            predict[i:i+step] = tensor_prediction(params[i:i+step], gtab,
-                                                  S0=this_S0)
+            predict[i:i + step] = tensor_prediction(params[i:i + step], gtab,
+                                                    S0=this_S0)
         return predict.reshape(shape + (gtab.bvals.shape[0], ))
-
 
 
 def iter_fit_tensor(step=1e4):
@@ -1182,7 +1203,13 @@ def iter_fit_tensor(step=1e4):
     Parameters
     ----------
     step : int
-        The chunk size as a number of voxels.
+        The chunk size as a number of voxels. Optional parameter with default value 10,000.
+
+        In order to increase speed of processing, tensor fitting is done simultaneously
+        over many voxels. This parameter sets the number of voxels that will be fit at 
+        once in each iteration. A larger step value should speed things up, but it will 
+        also take up more memory. It is advisable to keep an eye on memory consumption 
+        as this value is increased.
     """
 
     def iter_decorator(fit_tensor):
@@ -1225,8 +1252,8 @@ def iter_fit_tensor(step=1e4):
             data = data.reshape(-1, data.shape[-1])
             dtiparams = np.empty((size, 12), dtype=np.float64)
             for i in range(0, size, step):
-                dtiparams[i:i+step] = fit_tensor(design_matrix, data[i:i+step],
-                                                 *args, **kwargs)
+                dtiparams[i:i + step] = fit_tensor(design_matrix, data[i:i + step],
+                                                   *args, **kwargs)
             return dtiparams.reshape(shape + (12, ))
 
         return wrapped_fit_tensor
@@ -1449,7 +1476,7 @@ def _nlls_err_func(tensor, design_matrix, data, weighting=None,
             e_s = "Must provide sigma value as input to use this weighting"
             e_s += " method"
             raise ValueError(e_s)
-        w = 1/(sigma**2)
+        w = 1 / (sigma**2)
 
     elif weighting == 'gmm':
         # We use the Geman McClure M-estimator to compute the weights on the
@@ -1457,9 +1484,9 @@ def _nlls_err_func(tensor, design_matrix, data, weighting=None,
         C = 1.4826 * np.median(np.abs(residuals - np.median(residuals)))
         with warnings.catch_warnings():
             warnings.simplefilter("ignore")
-            w = 1/(se + C**2)
+            w = 1 / (se + C**2)
             # The weights are normalized to the mean weight (see p. 1089):
-            w = w/np.mean(w)
+            w = w / np.mean(w)
 
     # Return the weighted residuals:
     with warnings.catch_warnings():
@@ -1554,14 +1581,14 @@ def nlls_fit_tensor(design_matrix, data, weighting=None,
         # The parameters are the evals and the evecs:
         try:
             evals, evecs = decompose_tensor(
-                               from_lower_triangular(this_tensor[:6]))
+                from_lower_triangular(this_tensor[:6]))
             dti_params[vox, :3] = evals
             dti_params[vox, 3:] = evecs.ravel()
         # If leastsq failed to converge and produced nans, we'll resort to the
         # OLS solution in this voxel:
         except np.linalg.LinAlgError:
             evals, evecs = decompose_tensor(
-                              from_lower_triangular(start_params[:6]))
+                from_lower_triangular(start_params[:6]))
             dti_params[vox, :3] = evals
             dti_params[vox, 3:] = evecs.ravel()
 
@@ -1687,14 +1714,14 @@ def restore_fit_tensor(design_matrix, data, sigma=None, jac=True):
         # The parameters are the evals and the evecs:
         try:
             evals, evecs = decompose_tensor(
-                               from_lower_triangular(this_tensor[:6]))
+                from_lower_triangular(this_tensor[:6]))
             dti_params[vox, :3] = evals
             dti_params[vox, 3:] = evecs.ravel()
         # If leastsq failed to converge and produced nans, we'll resort to the
         # OLS solution in this voxel:
         except np.linalg.LinAlgError:
             evals, evecs = decompose_tensor(
-                               from_lower_triangular(start_params[:6]))
+                from_lower_triangular(start_params[:6]))
             dti_params[vox, :3] = evals
             dti_params[vox, 3:] = evecs.ravel()
 
@@ -1788,10 +1815,10 @@ def decompose_tensor(tensor, min_diffusivity=0):
         eigvals[..., j])
 
     """
-    #outputs multiplicity as well so need to unique
+    # outputs multiplicity as well so need to unique
     eigenvals, eigenvecs = eigh(tensor)
 
-    #need to sort the eigenvalues and associated eigenvectors
+    # need to sort the eigenvalues and associated eigenvectors
     if eigenvals.ndim == 1:
         # this is a lot faster when dealing with a single voxel
         order = eigenvals.argsort()[::-1]
