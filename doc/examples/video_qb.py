@@ -155,7 +155,14 @@ def main_event():
         start = streamlines._offsets[streamline_idx]
         end = start + streamlines._lengths[streamline_idx]
         for i in range(start, end):
-            scalars.SetValue(i, len(colormap)-1)  # Make streamlines invisible.
+            scalars.SetValue(i, cluster_id)  # Highlight streamline
+
+        if streamline_idx > 0:
+            scalars = brain_actor.GetMapper().GetInput().GetPointData().GetScalars()
+            start = streamlines._offsets[streamline_idx-1]
+            end = start + streamlines._lengths[streamline_idx-1]
+            for i in range(start, end):
+                scalars.SetValue(i, len(colormap)-1)  # Make streamline invisible
 
         scalars.Modified()
 
