@@ -6,12 +6,12 @@ from numpy.testing import (assert_array_equal,
                            assert_raises)
 from scipy.ndimage.interpolation import map_coordinates
 from nibabel.affines import apply_affine, from_matvec
-from ...core import geometry
-from .. import floating
-from .. import imwarp
-from .. import vector_fields as vfu
-from ..transforms import regtransforms
-from ..parzenhist import sample_domain_regular
+from dipy.core import geometry
+from dipy.align import floating
+from dipy.align import imwarp
+from dipy.align import vector_fields as vfu
+from dipy.align.transforms import regtransforms
+from dipy.align.parzenhist import sample_domain_regular
 
 
 def test_random_displacement_field_2d():
