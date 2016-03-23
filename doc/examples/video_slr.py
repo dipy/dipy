@@ -8,6 +8,7 @@ from dipy.tracking.streamline import (set_number_of_points,
 from dipy.viz import actor, window, utils, fvtk
 from dipy.data.fetcher import fetch_bundles_2_subjects, read_bundles_2_subjects
 import numpy as np
+from ipdb import set_trace
 
 
 def vtk_matrix_to_numpy(matrix):
@@ -85,7 +86,7 @@ def write_movie(bundles, transforms, size=(1280, 720),
                 video_fname='test.avi',
                 default_font_size=24, large_font_size=42, small_font_size=20):
 
-    global show_m, mw, moving_actor, cnt, middle_message, time, moved_actor, cnt_trans, reg_finished_time, start_rotation
+    global show_m, mw, moving_actor, cnt, middle_message, time, moved_actor, cnt_trans, reg_finished_time, start_rotation, frame, second
 
     middle_message = actor.text_overlay(
         'Streamline-based Linear Registration (SLR)',
@@ -120,10 +121,10 @@ def write_movie(bundles, transforms, size=(1280, 720),
     ren = window.Renderer()
     ren.background((1., 1., 1))
 
-    ren.add(middle_message)
-    ren.add(ref_message)
-    ren.add(iteration_message)
-    ren.add(description_message)
+    # ren.add(middle_message)
+    # ren.add(ref_message)
+    # ren.add(iteration_message)
+    # ren.add(description_message)
 
     static_actor = actor.line(static_bundle, fvtk.colors.red, linewidth=1.5)
     moving_actor = actor.line(moving_bundle, fvtk.colors.orange, linewidth=1.5)
@@ -158,9 +159,10 @@ def write_movie(bundles, transforms, size=(1280, 720),
     ren.zoom(1.5)
     ren.reset_clipping_range()
 
-    repeat_time = 10
+    repeat_frame = 10
     cnt = 0
-    time = 0
+    frame = 0
+    second = 0
 
     np.set_printoptions(3, suppress=True)
 
@@ -176,98 +178,197 @@ def write_movie(bundles, transforms, size=(1280, 720),
             iteration_message.set_message('SLR Iteration #' + str(cnt_trans))
             cnt_trans += 1
 
-    def timer_callback(obj, event):
-        global cnt, time, cnt_trans, reg_finished_time, start_rotation
-
-        print(time)
-        if time == 0:
-            middle_message.VisibilityOn()
-            ref_message.VisibilityOff()
-            iteration_message.VisibilityOff()
-            description_message.VisibilityOff()
-
-        if time == 800:
-            middle_message.VisibilityOff()
-            static_actor.VisibilityOn()
-            moving_actor.VisibilityOn()
-            description_message.VisibilityOn()
-            msg = 'Two bundles in their native space'
-            description_message.set_message(msg)
-            description_message.Modified()
-
-        if time == 1600:
-            msg = 'Orange bundle will register \n to the red bundle'
-            description_message.set_message(msg)
-            description_message.Modified()
-
-        if time == 2400:
-            msg = 'Registration started'
-            description_message.set_message(msg)
-            description_message.Modified()
+    def apply_transformation2(moving_actor, iteration_message):
+        global cnt_trans
+        if cnt_trans < len(transforms):
+            index = np.int(np.floor(cnt_trans))
+            mat = transforms[index]
+            moving_actor.SetUserMatrix(numpy_to_vtk_matrix(mat))
+            iteration_message.set_message(
+                'SLR Iteration #' + str(index))
+            iteration_message.Modified()
             iteration_message.VisibilityOn()
+            cnt_trans += 1. / 5
+            print(cnt_trans)
 
-        if time > 2400 and cnt % 10 == 0:
-            apply_transformation()
+    def rotate_camera(ren, angle=0.8):
+        ren.azimuth(angle)
 
-        if cnt_trans == len(transforms) and start_rotation is False:
 
-            # print('Show description')
-            msg = 'Registration finished! \n Visualizing only the points to highlight the overlap.'
-            description_message.set_message(msg)
-            description_message.Modified()
+    class TimeLineManager(object):
+        def __init__(self, show_m, actors, video_fname):
+            self.events = []
+            self.second = 0
+            self.actors = actors
+            self.subs = []
+            self.frame = 0
+            self.repeat_frame = 10
+            self.fps = 25
+            self.show_m = show_m
+            self.initialize_subs()
+            self.repeaters = []
 
-            # reg_finished_time = time
-            start_rotation = True
-            static_actor.VisibilityOff()
-            moving_actor.VisibilityOff()
-            static_dots.VisibilityOn()
-            moved_dots.VisibilityOn()
-            static_dots.GetProperty().SetOpacity(.5)
-            moved_dots.GetProperty().SetOpacity(.5)
+            for act in self.actors:
+                act.VisibilityOff()
 
-        if time == 6000:
+            self.movie_writer = window.MovieWriter(video_fname, show_m.window)
+            self.movie_writer.start()
 
-            # WHY???
-            static_dots.VisibilityOff()
-            moved_dots.VisibilityOff()
-            static_actor.VisibilityOn()
-            moving_actor.VisibilityOn()
+        def initialize_subs(self):
 
-            msg = 'Showing final registration.'
-            description_message.set_message(msg)
-            description_message.Modified()
-            ref_message.VisibilityOn()
+            title = actor.text_overlay(
+                ' ',
+                position=(size[0]/2 - 400, size[1]/2),
+                color=(0, 0, 0),
+                font_size=large_font_size, bold=True)
 
-        if time == 10000:
+            top_right = actor.text_overlay(
+                ' ',
+                position=(size[0]/2 + 250, 650),
+                color=(0, 0, 0),
+                font_size=small_font_size,
+                font_family='Times', bold=True)
 
-            middle_message.VisibilityOn()
-            description_message.VisibilityOff()
+            top_left = actor.text_overlay(
+                ' ',
+                position=(10, 650),
+                color=(0, 0, 0),
+                font_size=small_font_size,
+                font_family='Times', bold=True)
 
-        ren.reset_clipping_range()
+            sub = actor.text_overlay(
+                ' ',
+                position=(size[0]/2, 25),
+                color=(0, 0, 0),
+                font_size=default_font_size + 10,
+                justification='center',
+                bold=True)
 
-        if start_rotation and time < 10000:
-            show_m.ren.azimuth(.8)
+            self.top_left = top_left
+            self.top_right = top_right
+            self.title = title
+            self.sub = sub
 
-        show_m.render()
-        mw.write()
+            self.show_m.ren.add(self.top_left)
+            self.show_m.ren.add(self.top_right)
+            self.show_m.ren.add(self.title)
+            self.show_m.ren.add(self.sub)
 
-        # print('Time %d' % (time,))
-        # print('Cnt %d' % (cnt,))
-        # print('Len transforms %d' % (cnt_trans,))
-        print('Second %.3f' % (time / repeat_time / 25))
-        time = repeat_time * cnt
-        cnt += 1
+            self.top_left.VisibilityOff()
+            self.top_right.VisibilityOff()
+            self.title.VisibilityOff()
+            self.sub.VisibilityOff()
 
-    mw = window.MovieWriter(video_fname, show_m.window)
-    mw.start()
+        def add_event(self, second, actors, actions):
 
-    show_m.add_timer_callback(True, repeat_time, timer_callback)
+            self.events.append((second, actors, actions))
+
+        def add_sub(self, second, positions, messages):
+
+            self.subs.append((second, positions, messages))
+
+        def add_repeater(self, second, duration, functions, args):
+
+            self.repeaters.append((second, duration, functions, args))
+
+        def execute(self):
+            for event in self.events:
+                if self.second == event[0]:
+                    actors = event[1]
+                    actions = event[2]
+                    for act, action in zip(actors, actions):
+                        if action == 'on':
+                            act.VisibilityOn()
+                        if action == 'off':
+                            act.VisibilityOff()
+
+            for sub in self.subs:
+                if self.second == sub[0]:
+                    positions = sub[1]
+                    messages = sub[2]
+                    for position, message in zip(positions, messages):
+                        if position == 'top_left':
+                            self.top_left.set_message(message)
+                            self.top_left.Modified()
+                            self.top_left.VisibilityOn()
+                        if position == 'top_right':
+                            self.top_right.set_message(message)
+                            self.top_right.Modified()
+                            self.top_right.VisibilityOn()
+                        if position == 'title':
+                            self.title.set_message(message)
+                            self.title.Modified()
+                            self.title.VisibilityOn()
+                        if position == 'sub':
+                            self.sub.set_message(message)
+                            self.sub.Modified()
+                            self.sub.VisibilityOn()
+
+            for repeater in self.repeaters:
+                second = repeater[0]
+                duration = repeater[1]
+                functions = repeater[2]
+                args = repeater[3]
+
+                if self.second >= second and self.second < second + duration:
+                    for func, args in zip(functions, args):
+                        func(*args)
+
+            self.show_m.ren.reset_clipping_range()
+            self.show_m.render()
+            self.movie_writer.write()
+
+            self.frame += 1
+            self.second = self.frame / np.float(self.fps)
+            print('Second %0.2f' % (self.second,))
+
+    global tm
+
+    tm = TimeLineManager(
+        show_m,
+        actors=[static_actor, moving_actor, static_dots, moved_dots],
+        video_fname=video_fname)
+
+    tm.add_sub(0, ['title'], ['Streamline-based Linear Registration (SLR)'])
+    tm.add_sub(3, ['title'], [' '])
+    tm.add_event(4, [static_actor, moving_actor], ['on', 'on'])
+    tm.add_sub(5, ['sub'], ['Two bundles in their native space'])
+    tm.add_sub(8, ['sub'], ['The orange bundle will register to the red'])
+    tm.add_sub(11, ['sub'], ['Registration started'])
+
+    tm.add_repeater(
+        11, 6,
+        [apply_transformation2],
+        [(moving_actor, tm.top_left)])
+
+    tm.add_sub(17, ['sub'], ['Registration finished'])
+    tm.add_sub(
+        20,
+        ['sub', 'top_right'],
+        ['Highlighting overlap', 'Garyfallidis et al. Neuroimage 2015'])
+
+    tm.add_event(20, [static_actor, moving_actor], ['off', 'off'])
+    tm.add_event(20, [static_dots, moved_dots], ['on', 'on'])
+    tm.add_repeater(
+        20, 10,
+        [rotate_camera], [(show_m.ren, 5)])
+
+    tm.add_event(20, [static_actor, moving_actor], ['on', 'on'])
+    tm.add_event(24, [static_dots, moved_dots], ['off', 'off'])
+
+
+    def timer_callback(obj, event):
+
+        tm.execute()
+
+    show_m.add_timer_callback(True, repeat_frame, timer_callback)
 
     show_m.render()
     show_m.start()
-
-    del mw
+    del tm
     del show_m
+    # del mw
+    # del show_m
 
 
 fetch_bundles_2_subjects()
@@ -323,6 +424,6 @@ from time import time as tim
 
 t = tim()
 
-write_movie(bundles, transforms, video_fname='slr_af.left.avi')
+write_movie(bundles, transforms, video_fname='slr_af.left_new_timeline.avi')
 
 print('Done in %0.3f' % (tim() - t, ))
