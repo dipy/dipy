@@ -1,5 +1,5 @@
 import numpy as np
-from ..utils.optpkg import optional_package
+from dipy.utils.optpkg import optional_package
 matplotlib, has_mpl, setup_module = optional_package("matplotlib")
 plt, _, _ = optional_package("matplotlib.pyplot")
 
