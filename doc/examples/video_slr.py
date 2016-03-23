@@ -209,9 +209,9 @@ def write_movie(bundles, transforms, size=(1280, 720),
         if time > 2400 and cnt % 10 == 0:
             apply_transformation()
 
-        if cnt_trans == len(transforms) and reg_finished_time == 0:
+        if cnt_trans == len(transforms) and start_rotation is False:
 
-            print('Show description')
+            # print('Show description')
             msg = 'Registration finished! \n Visualizing only the points to highlight the overlap.'
             description_message.set_message(msg)
             description_message.Modified()
@@ -232,6 +232,7 @@ def write_movie(bundles, transforms, size=(1280, 720),
             moved_dots.VisibilityOff()
             static_actor.VisibilityOn()
             moving_actor.VisibilityOn()
+
             msg = 'Showing final registration.'
             description_message.set_message(msg)
             description_message.Modified()
@@ -253,6 +254,7 @@ def write_movie(bundles, transforms, size=(1280, 720),
         # print('Time %d' % (time,))
         # print('Cnt %d' % (cnt,))
         # print('Len transforms %d' % (cnt_trans,))
+        print('Second %.3f' % (time / repeat_time / 25))
         time = repeat_time * cnt
         cnt += 1
 
