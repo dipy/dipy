@@ -307,16 +307,18 @@ def test_set_number_of_points_memory_leaks():
     for dtype in dtypes:
         rng = np.random.RandomState(1234)
         NB_STREAMLINES = 10000
-        streamlines = [rng.randn(rng.randint(10, 100), 3).astype(dtype) for _ in range(NB_STREAMLINES)]
+        streamlines = [rng.randn(rng.randint(10, 100), 3).astype(dtype)
+                       for _ in range(NB_STREAMLINES)]
 
         list_refcount_before = get_type_refcount()["list"]
 
         rstreamlines = set_number_of_points(streamlines, nb_points=2)
         list_refcount_after = get_type_refcount()["list"]
-        del rstreamlines  # Delete `rstreamlines` because it holds a reference to `list`.
+        del rstreamlines  # Delete `rstreamlines` because it holds a reference
+        #                   to `list`.
 
-        # Calling `set_number_of_points` should increase the refcount of `list` by one
-        # since we kept the returned value.
+        # Calling `set_number_of_points` should increase the refcount of `list`
+        #  by one since we kept the returned value.
         assert_equal(list_refcount_after, list_refcount_before+1)
 
     # Test mixed dtypes
@@ -332,8 +334,8 @@ def test_set_number_of_points_memory_leaks():
     rstreamlines = set_number_of_points(streamlines, nb_points=2)
     list_refcount_after = get_type_refcount()["list"]
 
-    # Calling `set_number_of_points` should increase the refcount of `list` by one
-    # since we kept the returned value.
+    # Calling `set_number_of_points` should increase the refcount of `list`
+    #  by one since we kept the returned value.
     assert_equal(list_refcount_after, list_refcount_before+1)
 
 
@@ -419,7 +421,8 @@ def test_length_memory_leaks():
     for dtype in dtypes:
         rng = np.random.RandomState(1234)
         NB_STREAMLINES = 10000
-        streamlines = [rng.randn(rng.randint(10, 100), 3).astype(dtype) for _ in range(NB_STREAMLINES)]
+        streamlines = [rng.randn(rng.randint(10, 100), 3).astype(dtype)
+                       for _ in range(NB_STREAMLINES)]
 
         list_refcount_before = get_type_refcount()["list"]
 
@@ -639,16 +642,18 @@ def test_compress_streamlines_memory_leaks():
     for dtype in dtypes:
         rng = np.random.RandomState(1234)
         NB_STREAMLINES = 10000
-        streamlines = [rng.randn(rng.randint(10, 100), 3).astype(dtype) for _ in range(NB_STREAMLINES)]
+        streamlines = [rng.randn(rng.randint(10, 100), 3).astype(dtype)
+                       for _ in range(NB_STREAMLINES)]
 
         list_refcount_before = get_type_refcount()["list"]
 
         cstreamlines = compress_streamlines(streamlines)
         list_refcount_after = get_type_refcount()["list"]
-        del cstreamlines  # Delete `cstreamlines` because it holds a reference to `list`.
+        del cstreamlines  # Delete `cstreamlines` because it holds a reference
+        #                   to `list`.
 
-        # Calling `compress_streamlines` should increase the refcount of `list` by one
-        # since we kept the returned value.
+        # Calling `compress_streamlines` should increase the refcount of `list`
+        # by one since we kept the returned value.
         assert_equal(list_refcount_after, list_refcount_before+1)
 
     # Test mixed dtypes
@@ -664,9 +669,10 @@ def test_compress_streamlines_memory_leaks():
     cstreamlines = compress_streamlines(streamlines)
     list_refcount_after = get_type_refcount()["list"]
 
-    # Calling `compress_streamlines` should increase the refcount of `list` by one
-    # since we kept the returned value.
+    # Calling `compress_streamlines` should increase the refcount of `list` by
+    # one since we kept the returned value.
     assert_equal(list_refcount_after, list_refcount_before+1)
+
 
 def test_select_by_rois():
     streamlines = [np.array([[0, 0., 0.9],

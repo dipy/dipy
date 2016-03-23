@@ -42,7 +42,7 @@ def test_stop_conditions():
             p = np.round(point).astype(int)
             if (any(p < 0) or
                 any(p >= tissue.shape) or
-                tissue[p[0], p[1], p[2]] == TissueTypes.INVALIDPOINT):
+               tissue[p[0], p[1], p[2]] == TissueTypes.INVALIDPOINT):
                 return np.array([])
             return np.array([[0., 0., 1.]])
 
@@ -73,8 +73,8 @@ def test_stop_conditions():
                                     step_size=1.,
                                     return_all=True)
 
-    streamlines_not_all = iter(streamlines_not_all) # valid streamlines only
-    streamlines_all = iter(streamlines_all) # all streamlines
+    streamlines_not_all = iter(streamlines_not_all)  # valid streamlines only
+    streamlines_all = iter(streamlines_all)  # all streamlines
 
     # Check that the first streamline stops at 0 and 3 (ENDPOINT)
     y = 0
@@ -130,14 +130,14 @@ def test_stop_conditions():
     # The last 3 seeds should produce invalid streamlines,
     # INVALIDPOINT streamlines are kept (return_all=True).
     # The streamline stops at 0 (INVALIDPOINT) and 4 (ENDPOINT)
-    y=4
+    y = 4
     sl = next(streamlines_all)
     npt.assert_equal(sl[0], [0, y, 0])
     npt.assert_equal(sl[-1], [0, y, 4])
     npt.assert_equal(len(sl), 5)
 
     # The streamline stops at 0 (INVALIDPOINT) and 4 (INVALIDPOINT)
-    y=5
+    y = 5
     sl = next(streamlines_all)
     npt.assert_equal(sl[0], [0, y, 0])
     npt.assert_equal(sl[-1], [0, y, 3])
@@ -145,7 +145,7 @@ def test_stop_conditions():
 
     # The last streamline should contain only one point, the seed point,
     # because no valid inital direction was returned.
-    y=6
+    y = 6
     sl = next(streamlines_all)
     npt.assert_equal(sl[0], seeds[y])
     npt.assert_equal(sl[-1], seeds[y])

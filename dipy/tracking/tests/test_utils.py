@@ -553,7 +553,6 @@ def test_random_seeds_from_mask():
     assert_true(np.all((seeds > 1.5) & (seeds < 2.5)))
 
 
-
 def test_connectivity_matrix_shape():
 
     # Labels: z-planes have labels 0,1,2
