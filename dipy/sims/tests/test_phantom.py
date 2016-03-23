@@ -80,7 +80,7 @@ def test_add_noise():
     vol = orbital_phantom(gtab, **options)
 
     for snr in [10, 20, 30, 50]:
-        vol_noise = orbital_phantom(gtab, snr = snr, **options)
+        vol_noise = orbital_phantom(gtab, snr=snr, **options)
 
         sigma = S0 / snr
 
