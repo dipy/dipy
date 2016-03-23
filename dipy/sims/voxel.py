@@ -307,7 +307,6 @@ def multi_tensor(gtab, mevals, S0=100, angles=[(0, 0), (90, 0)],
 
 def multi_tensor_dki(gtab, mevals, S0=100, angles=[(90., 0.), (90., 0.)],
                      fractions=[50, 50], snr=20):
-
     r""" Simulate the diffusion-weight signal, diffusion and kurtosis tensors
     based on the DKI model
 
@@ -531,7 +530,6 @@ def DKI_signal(gtab, dt, kt, S0=150, snr=None):
     S = add_noise(S, snr, S0)
 
     return S
-
 
 
 def single_tensor_odf(r, evals=None, evecs=None):
