@@ -181,10 +181,19 @@ def write_movie(bundles, transforms, size=(1280, 720),
     def apply_transformation2(moving_actor, iteration_message):
         global cnt_trans
         if cnt_trans < len(transforms):
-            mat = transforms[cnt_trans]
+            index = np.int(np.floor(cnt_trans))
+            mat = transforms[index]
             moving_actor.SetUserMatrix(numpy_to_vtk_matrix(mat))
-            iteration_message.set_message('SLR Iteration #' + str(cnt_trans))
-            cnt_trans += 1
+            iteration_message.set_message(
+                'SLR Iteration #' + str(index))
+            iteration_message.Modified()
+            iteration_message.VisibilityOn()
+            cnt_trans += 1. / 5
+            print(cnt_trans)
+
+    def rotate_camera(ren, angle=0.8):
+        ren.azimuth(angle)
+
 
     class TimeLineManager(object):
         def __init__(self, show_m, actors, video_fname):
@@ -300,7 +309,8 @@ def write_movie(bundles, transforms, size=(1280, 720),
                 duration = repeater[1]
                 functions = repeater[2]
                 args = repeater[3]
-                if self.second == second and self.second < second + duration:
+
+                if self.second >= second and self.second < second + duration:
                     for func, args in zip(functions, args):
                         func(*args)
 
@@ -309,118 +319,52 @@ def write_movie(bundles, transforms, size=(1280, 720),
             self.movie_writer.write()
 
             self.frame += 1
-            self.second = self.frame / self.fps
-            print(self.second)
+            self.second = self.frame / np.float(self.fps)
+            print('Second %0.2f' % (self.second,))
 
     global tm
 
-    tm = TimeLineManager(show_m,
-                         actors=[static_actor, moving_actor],
-                         video_fname='test.avi')
+    tm = TimeLineManager(
+        show_m,
+        actors=[static_actor, moving_actor, static_dots, moved_dots],
+        video_fname=video_fname)
 
-    tm.add_event(5, [static_actor, moving_actor], ['on', 'on'])
-    tm.add_event(10, [static_actor, moving_actor], ['off', 'off'])
-    tm.add_sub(10, ['sub'], ['Timeline Rocks'])
-    tm.add_sub(14, ['sub'], [' '])
-    tm.add_event(15, [static_actor, moving_actor], ['on', 'on'])
+    tm.add_sub(0, ['title'], ['Streamline-based Linear Registration (SLR)'])
+    tm.add_sub(3, ['title'], [' '])
+    tm.add_event(4, [static_actor, moving_actor], ['on', 'on'])
+    tm.add_sub(5, ['sub'], ['Two bundles in their native space'])
+    tm.add_sub(8, ['sub'], ['The orange bundle will register to the red'])
+    tm.add_sub(11, ['sub'], ['Registration started'])
+
     tm.add_repeater(
-        15, 20,
+        11, 6,
         [apply_transformation2],
         [(moving_actor, tm.top_left)])
+
+    tm.add_sub(17, ['sub'], ['Registration finished'])
+    tm.add_sub(
+        20,
+        ['sub', 'top_right'],
+        ['Highlighting overlap', 'Garyfallidis et al. Neuroimage 2015'])
+
+    tm.add_event(20, [static_actor, moving_actor], ['off', 'off'])
+    tm.add_event(20, [static_dots, moved_dots], ['on', 'on'])
+    tm.add_repeater(
+        20, 10,
+        [rotate_camera], [(show_m.ren, 5)])
+
+    tm.add_event(20, [static_actor, moving_actor], ['on', 'on'])
+    tm.add_event(24, [static_dots, moved_dots], ['off', 'off'])
 
 
     def timer_callback(obj, event):
 
         tm.execute()
 
-        # global cnt, second, frame, cnt_trans, reg_finished_time, start_rotation
-
-        # print(frame)
-        # if second == 0:
-        #     middle_message.VisibilityOn()
-        #     ref_message.VisibilityOff()
-        #     iteration_message.VisibilityOff()
-        #     description_message.VisibilityOff()
-        #
-        # if second == 3:
-        #     middle_message.VisibilityOff()
-        #     static_actor.VisibilityOn()
-        #     moving_actor.VisibilityOn()
-        #     description_message.VisibilityOn()
-        #     msg = 'Two bundles in their native space'
-        #     description_message.set_message(msg)
-        #     description_message.Modified()
-        #
-        # if second == 4:
-        #     msg = 'Orange bundle will register \n to the red bundle'
-        #     description_message.set_message(msg)
-        #     description_message.Modified()
-        #
-        # if second == 6:
-        #     msg = 'Registration started'
-        #     description_message.set_message(msg)
-        #     description_message.Modified()
-        #     iteration_message.VisibilityOn()
-        #
-        # if second > 6 and cnt % 10 == 0:
-        #     apply_transformation()
-        #
-        # if cnt_trans == len(transforms) and start_rotation is False:
-        #
-        #     # print('Show description')
-        #     msg = 'Registration finished! \n Visualizing only the points to highlight the overlap.'
-        #     description_message.set_message(msg)
-        #     description_message.Modified()
-        #
-        #     # reg_finished_frame = frame
-        #     start_rotation = True
-        #     static_actor.VisibilityOff()
-        #     moving_actor.VisibilityOff()
-        #     static_dots.VisibilityOn()
-        #     moved_dots.VisibilityOn()
-        #     static_dots.GetProperty().SetOpacity(.5)
-        #     moved_dots.GetProperty().SetOpacity(.5)
-        #
-        # if second == 10:
-        #
-        #     static_dots.VisibilityOff()
-        #     moved_dots.VisibilityOff()
-        #     static_actor.VisibilityOn()
-        #     moving_actor.VisibilityOn()
-        #
-        #     msg = 'Showing final registration.'
-        #     description_message.set_message(msg)
-        #     description_message.Modified()
-        #     ref_message.VisibilityOn()
-        #
-        # if second == 12:
-        #
-        #     middle_message.VisibilityOn()
-        #     description_message.VisibilityOff()
-        #
-        # ren.reset_clipping_range()
-        #
-        # if start_rotation and second < 10:
-        #     show_m.ren.azimuth(.8)
-        #
-        # show_m.render()
-        # mw.write()
-        #
-        # # print('Time %d' % (time,))
-        # # print('Cnt %d' % (cnt,))
-        # # print('Len transforms %d' % (cnt_trans,))
-        # # print('Second %.3f' % (frame / repeat_frame / 25))
-        # frame = repeat_frame * cnt
-        #
-        # second = frame / repeat_frame / 25
-        # print('Second %d' % (second,))
-        # cnt += 1
-
     show_m.add_timer_callback(True, repeat_frame, timer_callback)
 
     show_m.render()
     show_m.start()
-
     del tm
     del show_m
     # del mw
@@ -480,6 +424,6 @@ from time import time as tim
 
 t = tim()
 
-write_movie(bundles, transforms, video_fname='slr_af.left_new.avi')
+write_movie(bundles, transforms, video_fname='slr_af.left_new_timeline.avi')
 
 print('Done in %0.3f' % (tim() - t, ))
