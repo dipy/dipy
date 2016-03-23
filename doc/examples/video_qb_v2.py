@@ -1,3 +1,5 @@
+from __future__ import division
+
 import itertools
 from dipy.align.streamlinear import StreamlineLinearRegistration
 from dipy.tracking.streamline import (set_number_of_points,
@@ -42,21 +44,29 @@ def replay_clustering(clusters):
 # Script
 fetch_bundles_2_subjects()
 
-subj1 = read_bundles_2_subjects('subj_1', ['fa', 't1'],
-                                ['af.left', 'cst.left', 'cst.right', 'cc_1', 'cc_2'])
+bundle_names = ['af.left', 'af.right', 'cc_1', 'cc_2', 'cc_3', 'cc_4', 'cc_5', 'cc_6', 'cc_7', 'cg.left', 'cg.right', 'cst.left', 'cst.right', 'ifof.left', 'ifof.right', 'ilf.left', 'ilf.right', 'mdlf.left', 'mdlf.right', 'slf1.left', 'slf1.right', 'slf2.left', 'slf2.right', 'slf_3.left', 'slf_3.right', 'uf.left', 'uf.right']
+subj1 = read_bundles_2_subjects('subj_1', ['fa', 't1'], bundle_names)
 
-tractogram = nib.streamlines.Tractogram(subj1['af.left'])
-streamlines = tractogram.streamlines
+rng = np.random.RandomState(42)
+tractogram = nib.streamlines.Tractogram(subj1[bundle_names[0]])
+for bundle_name in bundle_names[1:]:
+    tractogram.streamlines.extend(subj1[bundle_name])
+
+tractogram.streamlines._data.astype(np.float32)
+
+indices = range(len(tractogram))
+rng.shuffle(indices)
+streamlines = tractogram.streamlines[indices[:1000]]
 
 rot_axis = np.array([1, 0, 0], dtype=np.float32)
 M_rotation = np.eye(4)
-M_rotation[:3, :3] = rodrigues_axis_rotation(rot_axis, 90.).astype(np.float32)
+M_rotation[:3, :3] = rodrigues_axis_rotation(rot_axis, 270.).astype(np.float32)
 rot_axis = np.array([0, 1, 0], dtype=np.float32)
 M_rotation2 = np.eye(4)
-M_rotation2[:3, :3] = rodrigues_axis_rotation(rot_axis, 90.).astype(np.float32)
+M_rotation2[:3, :3] = rodrigues_axis_rotation(rot_axis, 270.).astype(np.float32)
 tractogram.apply_affine(np.dot(M_rotation2, M_rotation))
 
-qb = QuickBundles(threshold=12)
+qb = QuickBundles(threshold=20)
 clusters = qb.cluster(streamlines)
 clusters_as_array_sequence = [nib.streamlines.ArraySequence(c) for c in clusters]
 
@@ -66,13 +76,13 @@ colormap = list(itertools.islice(distinguishable_colormap(bg=bg, exclude=[(1, 1,
 colormap = [(1, 1, 1)] + colormap
 
 lut = vtk.vtkLookupTable()
-lut.SetNumberOfTableValues(len(clusters))
+lut.SetNumberOfTableValues(len(colormap))
 lut.Build()
 for i, color in enumerate(colormap):
     lut.SetTableValue(i, tuple(color) + (1,))
 
-lut.SetTableValue(0, (1, 1, 1, 0.5))
-lut.SetTableRange(0, len(clusters))
+lut.SetTableValue(0, (1, 1, 1, 0.25))
+lut.SetTableRange(0, len(colormap))
 
 global streamlines_color
 streamlines_color = np.zeros(len(streamlines), dtype="float32")
@@ -80,21 +90,19 @@ brain_actor = actor.line(streamlines, colors=streamlines_color, lookup_colormap=
 
 # Create an actor for each cluster
 lut2 = vtk.vtkLookupTable()
-lut2.SetNumberOfTableValues(len(clusters))
+lut2.SetNumberOfTableValues(len(colormap))
 lut2.Build()
 for i, color in enumerate(colormap):
     lut2.SetTableValue(i, tuple(color) + (1,))
 
 lut2.SetTableValue(0, (1, 1, 1, 0))
-lut2.SetTableRange(0, len(clusters))
+lut2.SetTableRange(0, len(colormap))
 
 cluster_actors = []
 for c in clusters:
     cluster_color = np.zeros(len(c), dtype="float32")
     cluster_actor = actor.line(c, colors=cluster_color, lookup_colormap=lut2, linewidth=1.5)
     cluster_actors.append(cluster_actor)
-
-grid_actor = actor.grid(cluster_actors, aspect_ratio=9/16.)
 
 # Create renderers
 # Main renderder
@@ -116,14 +124,26 @@ ren_brain.SetViewport(0, 0, 0.5, 1)
 ren_brain.add(brain_actor)
 ren_brain.reset_camera_tight()
 
-ren_clusters = window.Renderer()
-show_m.window.AddRenderer(ren_clusters)
-ren_clusters.background(bg)
-ren_clusters.SetViewport(0.5, 0, 1, 1)
-ren_clusters.add(grid_actor)
-ren_clusters.reset_camera_tight()
-# ren_clusters.SetActiveCamera(ren_brain.GetActiveCamera())
+grid_cell_positions = utils.get_grid_cells_position([ren_brain.GetSize()]*len(clusters), aspect_ratio=9/16.)
+grid_dim = (len(np.unique(grid_cell_positions[:, 0])), len(np.unique(grid_cell_positions[:, 1])))
 
+cpt = 0
+grid_renderers = []
+for y in range(grid_dim[1])[::-1]:
+    if cpt >= len(clusters):
+        break
+
+    for x in range(grid_dim[0]):
+        if cpt >= len(clusters):
+            break
+
+        ren = window.Renderer()
+        show_m.window.AddRenderer(ren)
+        ren.background(bg)
+        ren.SetViewport(0.5+x/(grid_dim[0]/0.5), y/grid_dim[1], 0.5+(x+1)/(grid_dim[0]/0.5), (y+1)/grid_dim[1])
+        ren.add(cluster_actors[cpt])
+        ren.SetActiveCamera(ren_brain.GetActiveCamera())
+        cpt += 1
 
 global cnt, time, stamp_time
 repeat_time = 10
@@ -159,7 +179,7 @@ def timer_callback(obj, event):
         scalars.Modified()
 
         # Show streamlines in the clusters view.
-        scalars = grid_actor.items[cluster_id].GetMapper().GetInput().GetPointData().GetScalars()
+        scalars = cluster_actors[cluster_id].GetMapper().GetInput().GetPointData().GetScalars()
         start = clusters_as_array_sequence[cluster_id]._offsets[id_in_cluster]
         end = start + clusters_as_array_sequence[cluster_id]._lengths[id_in_cluster]
         for i in range(start, end):
