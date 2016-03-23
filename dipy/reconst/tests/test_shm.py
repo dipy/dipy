@@ -28,6 +28,7 @@ from dipy.reconst.shm import (real_sph_harm, real_sym_sh_basis,
                               spherical_harmonics, anisotropic_power,
                               calculate_max_order)
 
+
 def test_order_from_ncoeff():
     """
 
@@ -66,7 +67,7 @@ def test_real_sph_harm():
                               0.5 / sqrt(pi))
     assert_array_almost_equal(rsh(-2, 2, pi / 5, pi / 3),
                               0.25 * sqrt(15. / (2. * pi)) *
-                             (sin(pi / 5.)) ** 2. * cos(0 + 2. * pi / 3) *
+                              (sin(pi / 5.)) ** 2. * cos(0 + 2. * pi / 3) *
                               sqrt(2))
     assert_array_almost_equal(rsh(2, 2, pi / 5, pi / 3),
                               -1 * 0.25 * sqrt(15. / (2. * pi)) *
@@ -417,6 +418,7 @@ def test_faster_sph_harm():
     sh2 = sph_harm_sp(m, n, theta[:, None], phi[:, None])
 
     assert_array_almost_equal(sh, sh2, 8)
+
 
 def test_anisotropic_power():
     for n_coeffs in [6, 15, 28, 45, 66, 91]:
