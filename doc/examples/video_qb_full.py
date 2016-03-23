@@ -103,17 +103,16 @@ global streamline_idx
 streamline_idx = 0
 
 position, focal_point, view_up, _, _ = utils.auto_camera(brain_actor,
-                                                         15, 'max')
-ren.reset_camera()
+                                                         10, 'max')
+ren_brain.reset_camera_tight()
 view_up = (0, 0., 1)
-ren.set_camera(position, focal_point, view_up)
-ren.zoom(1.5)
-ren.reset_clipping_range()
-
+ren_brain.set_camera(position, focal_point, view_up)
+ren_brain.zoom(1.5)
+ren_brain.reset_clipping_range()
 
 
 def main_event():
-    ren_brain.azimuth(20)
+    ren_brain.azimuth(1)
 
 
 
