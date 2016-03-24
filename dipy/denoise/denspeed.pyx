@@ -58,14 +58,14 @@ def nlmeans_3d(arr, mask=None, sigma=None, patch_radius=1,
         raise ValueError('sigma needs to be a 3D ndarray', sigma.shape)
 
     arr = np.ascontiguousarray(arr, dtype='f8')
-    arr = add_padding_reflection(arr, block_radius)
-    mask = add_padding_reflection(mask.astype('f8'), block_radius)
+    arr = add_padding_reflection(arr, block_radius + patch_radius)
+    mask = add_padding_reflection(mask.astype('f8'), block_radius + patch_radius)
     sigma = np.ascontiguousarray(sigma, dtype='f8')
-    sigma = add_padding_reflection(sigma.astype('f8'), block_radius)
+    sigma = add_padding_reflection(sigma.astype('f8'), block_radius + patch_radius)
     arrnlm = _nlmeans_3d(arr, mask, sigma, patch_radius, block_radius,
                          rician, num_threads)
 
-    return remove_padding(arrnlm, block_radius)
+    return remove_padding(arrnlm, block_radius+patch_radius)
 
 
 @cython.wraparound(False)
@@ -103,10 +103,9 @@ def _nlmeans_3d(double [:, :, ::1] arr, double [:, :, ::1] mask,
 
     # move the block
     with nogil, parallel():
-
-        for i in prange(B, I - B):
-            for j in range(B, J - B):
-                for k in range(B, K - B):
+        for i in range(B+P, I - B-P):
+            for j in range(B+P, J - B-P):
+                for k in range(B+P, K - B-P):
 
                     if mask[i, j, k] == 0:
                         continue
@@ -153,49 +152,53 @@ cdef double process_block(double [:, :, ::1] arr,
 
     cdef:
         cnp.npy_intp m, n, o, M, N, O, a, b, c, cnt, step
-        double patch_vol_size
+        double patch_vol_size,block_vol_size
         double summ, d, w, sumw, sum_out, x, sigm
         double * W
         double * cache
         double * sigma_block
         double denom
         cnp.npy_intp BS = B * 2 + 1
+        cnp.npy_intp PS = P * 2 + 1
+        cnp.npy_intp TS = PS + BS - 1
 
     cnt = 0
     sumw = 0
     patch_vol_size = (P + P + 1) * (P + P + 1) * (P + P + 1)
+    block_vol_size = (B + B + 1) * (B + B + 1) * (B + B + 1)
+    
 
-    W = <double *> malloc(BS * BS * BS * sizeof(double))
-    cache = <double *> malloc(BS * BS * BS * sizeof(double))
-    sigma_block = <double *> malloc(BS * BS * BS * sizeof(double))
+    W = <double *> malloc(PS * PS * PS * sizeof(double))
+    cache = <double *> malloc(TS * TS * TS * sizeof(double))
+    sigma_block = <double *> malloc(TS * TS * TS * sizeof(double))
 
     # (i, j, k) coordinates are the center of the static patch
     # copy block in cache
-    copy_block_3d(cache, BS, BS, BS, arr, i - B, j - B, k - B)
-    copy_block_3d(sigma_block, BS, BS, BS, sigma, i - B, j - B, k - B)
+    copy_block_3d(cache, PS + BS- 1, PS + BS - 1, PS + BS - 1, arr, i - P - B, j - P - B, k - P - B)
+    copy_block_3d(sigma_block, PS + BS- 1, PS + BS - 1, PS + BS - 1, arr, i - P - B, j - P - B, k - P - B)
 
     # calculate weights between the central patch and the moving patch in block
     # (m, n, o) coordinates are the center of the moving patch
     # (a, b, c) run inside both patches
-    for m in range(P, BS - P):
-        for n in range(P, BS - P):
-            for o in range(P, BS - P):
+    for m in range(-P, P + 1):
+        for n in range(-P, P + 1):
+            for o in range(-P, P + 1):
 
                 summ = 0
                 sigm = 0
 
                 # calculate square distance
-                for a in range(-P, P + 1):
-                    for b in range(-P, P + 1):
-                        for c in range(-P, P + 1):
+                for a in range(-B, B + 1):
+                    for b in range(-B, B + 1):
+                        for c in range(-B, B + 1):
 
                             # this line takes most of the time! mem access
-                            d = cache[(B + a) * BS * BS + (B + b) * BS + (B + c)] - cache[(m + a) * BS * BS + (n + b) * BS + (o + c)]
+                            d = cache[(P + B + a) * TS * TS + (P + B + b) * TS + (P + B + c)] - cache[(P + B + m + a) * TS * TS + (P + B + n + b) * TS + (P + B + o + c)]
                             summ += d * d
-                            sigm += sigma_block[(m + a) * BS * BS + (n + b) * BS + (o + c)]
+                            sigm += sigma_block[(P + B + m + a) * TS * TS + (P + B + n + b) * TS + (P + B + o + c)]
 
-                denom = sqrt(2) * (sigm / patch_vol_size)**2
-                w = exp(-(summ / patch_vol_size) / denom)
+                denom = (sigm / block_vol_size)**2
+                w = exp(-(summ / block_vol_size) / denom)
                 sumw += w
                 W[cnt] = w
                 cnt += 1
@@ -205,16 +208,16 @@ cdef double process_block(double [:, :, ::1] arr,
 
     # calculate normalized weights and sums of the weights with the positions
     # of the patches
-    for m in range(P, BS - P):
-        for n in range(P, BS - P):
-            for o in range(P, BS - P):
+    for m in range(-P, P + 1):
+        for n in range(-P, P + 1):
+            for o in range(-P, P + 1):
 
                 if sumw > 0:
                     w = W[cnt] / sumw
                 else:
                     w = 0
 
-                x = cache[m * BS * BS + n * BS + o]
+                x = cache[(P + B + m) * TS * TS + (P + B + n) * TS + (P + B + o)]
                 sum_out += w * x * x
                 cnt += 1
 
