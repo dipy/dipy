@@ -1,6 +1,7 @@
 # distutils: language = c
 # cython: wraparound=False, cdivision=True, boundscheck=False, initializedcheck=False
 
+cimport cython
 import numpy as np
 cimport numpy as cnp
 
@@ -434,7 +435,7 @@ cdef class QuickBundlesX(object):
         # Update AABB
         aabb_creation(node.centroid, node.aabb)
 
-    cdef void _insert_in(self, CentroidNode* node, StreamlineInfos* streamline_infos) nogil:
+    cdef void _insert_in(self, CentroidNode* node, StreamlineInfos* streamline_infos, int[:] path) nogil:
         cdef:
             float dist, dist_flip
             cnp.npy_intp k
@@ -474,15 +475,18 @@ cdef class QuickBundlesX(object):
             nearest_cluster.id = self._add_child(node)
 
         streamline_infos.use_flip = nearest_cluster.flip
-        self._insert_in(node.children[nearest_cluster.id], streamline_infos)
+        path[node.level] = nearest_cluster.id
+        self._insert_in(node.children[nearest_cluster.id], streamline_infos, path)
 
-    cpdef void insert(self, Data2D datum, int datum_idx):
+    cpdef object insert(self, Data2D datum, int datum_idx):
         self.metric.feature.c_extract(datum, self.current_streamline.features)
         self.metric.feature.c_extract(datum[::-1], self.current_streamline.features_flip)
         self.current_streamline.idx = datum_idx
 
         aabb_creation(self.current_streamline.features, self.current_streamline.aabb)
-        self._insert_in(self.root, self.current_streamline)
+        path = -1 * np.ones(self.nb_levels, dtype=np.int32)
+        self._insert_in(self.root, self.current_streamline, path)
+        return path
 
     def __str__(self):
         return print_node(self.root)
@@ -514,10 +518,11 @@ cdef class QuickBundlesX(object):
             cluster.indices = np.asarray(<int[:node.size]> node.indices).copy()
             self.clusters.add_cluster(cluster)
 
+    @cython.wraparound(True)
     def get_clusters(self, int level):
         self.clusters = ClusterMapCentroid()
-        self.level = level
-
+        levels = range(self.nb_levels+1)  # Level 0 is the root
+        self.level = levels[level]
         self.traverse_postorder(self.root, self._fetch_level)
         return self.clusters
 
