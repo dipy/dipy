@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 ''' Installation script for dipy package '''
 
-import numpy as np
 import os
 import sys
 from copy import deepcopy
@@ -34,7 +33,8 @@ from distutils.command.build_ext import build_ext as du_build_ext
 
 from cythexts import cyproc_exts, get_pyx_sdist, derror_maker
 from setup_helpers import (install_scripts_bat, add_flag_checking,
-                           SetupDependency, read_vars_from)
+                           SetupDependency, read_vars_from,
+                           make_np_ext_builder)
 
 # Get version and release info, which is all stored in dipy/info.py
 info = read_vars_from(pjoin('dipy', 'info.py'))
@@ -73,8 +73,7 @@ if using_setuptools:
 EXTS = []
 
 # We use some defs from npymath, but we don't want to link against npymath lib
-ext_kwargs = {'include_dirs':[np.get_include()]}
-ext_kwargs['include_dirs'].append('src')
+ext_kwargs = {'include_dirs':['src']}  # We add np.get_include() later
 
 for modulename, other_sources, language in (
     ('dipy.reconst.peak_direction_getter', [], 'c'),
@@ -140,12 +139,17 @@ else: # We have nibabel
             [['-msse2', '-mfpmath=sse'], [], simple_test_c, 'USING_GCC_SSE2'],
             [['-fopenmp'], ['-fopenmp'], omp_test_c, 'HAVE_OPENMP']], 'dipy')
 
+
+# Use ext builder to add np.get_include() at build time, not during setup.py
+# execution.
+extbuilder = make_np_ext_builder(extbuilder)
+
 if need_cython:
     SetupDependency('Cython', info.CYTHON_MIN_VERSION,
-                    req_type='setup_requires',
-                    heavy=False).check_fill(extra_setuptools_args)
+                    req_type='install_requires',
+                    heavy=True).check_fill(extra_setuptools_args)
 SetupDependency('numpy', info.NUMPY_MIN_VERSION,
-                req_type='setup_requires',
+                req_type='install_requires',
                 heavy=True).check_fill(extra_setuptools_args)
 SetupDependency('scipy', info.SCIPY_MIN_VERSION,
                 req_type='install_requires',

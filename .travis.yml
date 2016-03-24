@@ -56,10 +56,12 @@ matrix:
     - python: 2.7
       env:
         - INSTALL_TYPE=wheel
+        # Dependency checking should get all needed dependencies
+        - DEPENDS=""
     - python: 2.7
       env:
         - INSTALL_TYPE=requirements
-        - DEPENDS=
+        - DEPENDS=""
 before_install:
     - source tools/travis_tools.sh
     - virtualenv $VENV_ARGS venv
