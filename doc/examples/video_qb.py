@@ -81,12 +81,15 @@ colormap = list(itertools.islice(distinguishable_colormap(bg=bg, exclude=[(0, 0,
 lut = create_colors_lookup_table(colormap)
 semi_visible_color = int(lut.GetNumberOfColors()-2)
 invisible_color = int(lut.GetNumberOfColors()-1)
-from ipdb import set_trace as dbg
-dbg()
 
-global streamlines_color
 streamlines_color = semi_visible_color * np.ones(len(streamlines), dtype="float32")
 brain_actor = actor.line(streamlines, colors=streamlines_color, lookup_colormap=lut, linewidth=1.5)
+
+streamlines_color = np.zeros(len(streamlines), dtype="float32")
+for i, c in enumerate(clusters):
+    streamlines_color[c.indices] = i
+
+clustered_brain_actor = actor.line(streamlines, colors=streamlines_color, lookup_colormap=lut, linewidth=1.5)
 
 cluster_actors = []
 for c in clusters:
@@ -110,6 +113,7 @@ show_m.window.AddRenderer(ren_brain)
 ren_brain.background(bg)
 ren_brain.SetViewport(0, 0, 0.349, 1)
 ren_brain.add(brain_actor)
+ren_brain.add(clustered_brain_actor)
 ren_brain.reset_camera_tight()
 
 # Middle renderer that contains the centroids.
@@ -149,23 +153,62 @@ for y in range(grid_dim[1])[::-1]:
         cpt += 1
 
 
+# Add captions
+text_picking = actor.text_overlay('Picking streamlines',
+                                  position=(ren_brain.size()[0]//2, 25),
+                                  color=(0, 0, 0),
+                                  font_size=34,
+                                  justification='center',
+                                  bold=True)
+ren_main.add(text_picking)
+
+text_updating = actor.text_overlay('Updating centroids ',
+                                   position=(ren_brain.size()[0]+ren_centroids.size()[0]//2, 25),
+                                   color=(0, 0, 0),
+                                   font_size=34,
+                                   justification='center',
+                                   bold=True)
+ren_main.add(text_updating)
+
+offset = (ren_main.size()[0] - (ren_brain.size()[0]+ren_centroids.size()[0])) // 2
+text_clusters = actor.text_overlay('Top 12 biggest clusters',
+                                   position=(ren_main.size()[0] - offset, 25),
+                                   color=(0, 0, 0),
+                                   font_size=34,
+                                   justification='center',
+                                   bold=True)
+ren_main.add(text_clusters)
+
+
 global cnt, time, stamp_time
 repeat_time = 10
 cnt = 0
 time = 0
 stamp_time = 0
 
-global streamline_idx
+global frame, last_frame_with_updates, streamline_idx
+frame = 0
+last_frame_with_updates = 0
 streamline_idx = 0
 
 # Prepare placeholders for the centroids' streamtube
 centroid_actors = [actor.line(np.array([[0, 0, 0]]), colors=(0, 0, 0))] * len(clusters)
 
 
-def main_event():
-    global streamline_idx
+def main_event(speed=1):
+    global last_frame_with_updates, frame, streamline_idx
 
-    if streamline_idx < len(streamlines):
+    if streamline_idx >= len(streamlines):
+        return
+
+    nb_streamlines_to_cluster = int((frame-last_frame_with_updates)*speed)
+    frame += 1
+
+    if nb_streamlines_to_cluster < 1:
+        return
+
+    last_frame_with_updates = frame
+    for i in range(nb_streamlines_to_cluster):
         cluster_id = qbo.cluster(streamlines[streamline_idx], streamline_idx)
 
         # Display updated centroid
@@ -203,6 +246,25 @@ def main_event():
         streamline_idx += 1
 
 
+def show_clustered_brain(already_done=[False]):
+    if already_done[0]:
+        return
+
+    # Highligth streamline being clustered.
+    scalars = brain_actor.GetMapper().GetInput().GetPointData().GetScalars()
+    start = streamlines._offsets[streamline_idx]
+    end = start + streamlines._lengths[streamline_idx]
+    for i in range(start, end):
+        scalars.SetValue(i, cluster_id)  # Highlight streamline
+
+    already_done[0] = True
+
+
+
+def rotate_camera(angle=0.8):
+    ren_brain.azimuth(angle)
+
+
 from dipy.viz import timeline
 
 global tm
@@ -210,12 +272,48 @@ tm = timeline.TimeLineManager(show_m, [],
                               'boo.avi')
 
 t = 0
-tm.add_sub(t, ['title'], ['Online QuickBundles'])
+tm.add_state(t, [text_picking, text_updating, text_clusters], ['off', 'off', 'off'])
+tm.add_state(t, [brain_actor, clustered_brain_actor], ['on', 'off'])
 
+tm.add_event(
+    t, 3,
+    [rotate_camera],
+    [[5]])
+
+t += 3
+tm.add_state(t, [text_picking, text_updating, text_clusters], ['on', 'off', 'off'])
+tm.add_state(t+1, [text_picking, text_updating, text_clusters], ['on', 'on', 'off'])
+tm.add_state(t+2, [text_picking, text_updating, text_clusters], ['on', 'on', 'on'])
 tm.add_event(
     t, 10,
     [main_event],
-    [[]])
+    [[0.05]])
+
+t += 10
+tm.add_event(
+    t, 5,
+    [main_event],
+    [[0.1]])
+
+t += 5
+tm.add_event(
+    t, 5,
+    [main_event],
+    [[1]])
+
+tm.add_event(
+    t, np.inf,
+    [rotate_camera],
+    [[2]])
+
+t += 5
+tm.add_event(
+    t, 20,
+    [main_event],
+    [[4]])
+
+t += 20
+tm.add_state(t, [brain_actor, clustered_brain_actor], ['off', 'on'])
 
 
 def timer_callback(obj, event):
