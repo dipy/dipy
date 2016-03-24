@@ -283,6 +283,8 @@ frame = 0
 last_frame_with_updates = 0
 streamline_idx = 0
 
+highlighted_streamlines_actor = [actor.streamtube(np.array([[0, 0, 0]]), colors=(0, 0, 0), linewidth=0.5)]
+
 
 def main_event(speed=1):
     global last_frame_with_updates, frame, streamline_idx
@@ -321,21 +323,11 @@ def main_event(speed=1):
             scalars.Modified()
 
         # Highligth streamline being clustered.
-        scalars = brain_actor.GetMapper().GetInput().GetPointData().GetScalars()
-        start = streamlines._offsets[streamline_idx]
-        end = start + streamlines._lengths[streamline_idx]
-        for i in range(start, end):
-            scalars.SetTuple4(i, *color)  # Make streamline visible.
-
-        # Un-highligth previous streamline.
-        if streamline_idx > 0:
-            scalars = brain_actor.GetMapper().GetInput().GetPointData().GetScalars()
-            start = streamlines._offsets[streamline_idx-1]
-            end = start + streamlines._lengths[streamline_idx-1]
-            for i in range(start, end):
-                scalars.SetTuple4(i, *(0, 0, 0, int(255*0.25)))  # Make streamline semi-visible.
-
-        scalars.Modified()
+        ren_brain.RemoveActor(highlighted_streamlines_actor[0])
+        ren_brain.RemoveActor(brain_actor)
+        highlighted_streamlines_actor[0] = actor.line([streamlines[streamline_idx]], colors=[np.array(color)/255.], linewidth=5)
+        ren_brain.add(highlighted_streamlines_actor[0])
+        ren_brain.add(brain_actor)
 
         show_m.render()
         streamline_idx += 1

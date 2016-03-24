@@ -193,6 +193,7 @@ streamline_idx = 0
 
 # Prepare placeholders for the centroids' streamtube
 centroid_actors = [actor.line(np.array([[0, 0, 0]]), colors=(0, 0, 0))] * len(clusters)
+highlighted_streamlines_actor = [actor.streamtube(np.array([[0, 0, 0]]), colors=(0, 0, 0), linewidth=0.5)]
 
 
 def main_event(speed=1):
@@ -217,21 +218,11 @@ def main_event(speed=1):
         ren_centroids.add(centroid_actors[cluster_id])
 
         # Highligth streamline being clustered.
-        scalars = brain_actor.GetMapper().GetInput().GetPointData().GetScalars()
-        start = streamlines._offsets[streamline_idx]
-        end = start + streamlines._lengths[streamline_idx]
-        for i in range(start, end):
-            scalars.SetValue(i, cluster_id)  # Highlight streamline
-
-        # Un-highligth previous streamline.
-        if streamline_idx > 0:
-            scalars = brain_actor.GetMapper().GetInput().GetPointData().GetScalars()
-            start = streamlines._offsets[streamline_idx-1]
-            end = start + streamlines._lengths[streamline_idx-1]
-            for i in range(start, end):
-                scalars.SetValue(i, semi_visible_color)
-
-        scalars.Modified()
+        ren_brain.RemoveActor(highlighted_streamlines_actor[0])
+        ren_brain.RemoveActor(brain_actor)
+        highlighted_streamlines_actor[0] = actor.line([streamlines[streamline_idx]], colors=[cluster_id], lookup_colormap=lut, linewidth=5)
+        ren_brain.add(highlighted_streamlines_actor[0])
+        ren_brain.add(brain_actor)
 
         # Show streamlines in the clusters view.
         scalars = cluster_actors[cluster_id].GetMapper().GetInput().GetPointData().GetScalars()
