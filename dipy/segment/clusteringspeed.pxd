@@ -106,8 +106,8 @@ cdef class QuickBundlesX(object):
 
     cdef int _add_child(self, CentroidNode* node) nogil
     cdef void _update_node(self, CentroidNode* node, StreamlineInfos* streamline_infos) nogil
-    cdef void _insert_in(self, CentroidNode* node, StreamlineInfos* streamline_infos) nogil
-    cpdef void insert(self, Data2D datum, int datum_idx)
+    cdef void _insert_in(self, CentroidNode* node, StreamlineInfos* streamline_infos, int[:] path) nogil
+    cpdef object insert(self, Data2D datum, int datum_idx)
     cdef void traverse_postorder(self, CentroidNode* node, void (*visit)(QuickBundlesX, CentroidNode*))
     cdef void _dealloc_node(self, CentroidNode* node)
     cdef void _fetch_level(self, CentroidNode* node)

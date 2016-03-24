@@ -750,3 +750,88 @@ class QuickBundlesX(Clustering):
 
         #cluster_map.refdata = streamlines
         return qbx
+
+
+class QuickBundlesXOnline(Clustering):
+    r""" Clusters streamlines using QuickBundlesX.
+
+    TODO
+
+    Parameters
+    ----------
+    thresholds : list of float
+        Thresholds to use for each clustering layer. A threshold represents the
+        maximum distance from a cluster for a streamline to be still considered
+        as part of it.
+    metric : str or `Metric` object (optional)
+        The distance metric to use when comparing two streamlines. By default,
+        the Minimum average Direct-Flip (MDF) distance [Garyfallidis12]_ is
+        used and streamlines are automatically resampled so they have 12 points.
+
+    References
+    ----------
+    .. [Garyfallidis12] Garyfallidis E. et al., QuickBundles a method for
+                        tractography simplification, Frontiers in Neuroscience,
+                        vol 6, no 175, 2012.
+    """
+    def __init__(self, thresholds, metric="MDF_12points"):
+        self.thresholds = thresholds
+
+        if isinstance(metric, Metric):
+            self.metric = metric
+        elif metric == "MDF_12points":
+            feature = ResampleFeature(nb_points=12)
+            self.metric = AveragePointwiseEuclideanMetric(feature)
+        else:
+            raise ValueError("Unknown metric: {0}".format(metric))
+
+        self._cluster_fct = None
+        self._dirty = True
+
+    @property
+    def clusters(self):
+        """ Last level clusters. """
+        if self._dirty:
+            self._clusters = self.get_clusters_at_level(-1)
+
+        return self._clusters
+
+    def get_clusters_at_level(self, level):
+        return self._qbx_state.get_clusters(level)
+
+    @property
+    def tree_cluster_map(self):
+        if self._dirty:
+            self._tree_cluster_map = self._qbx_state.get_tree_cluster_map()
+
+        return self._tree_cluster_map
+
+    def cluster(self, streamline, idx=None):
+        """ Clusters `streamlines` into bundles.
+
+        Performs quickbundles algorithm using predefined metric and threshold.
+
+        Parameters
+        ----------
+        streamlines : list of 2D arrays
+            Each 2D array represents a sequence of 3D points (points, 3).
+        ordering : iterable of indices
+            Specifies the order in which data points will be clustered.
+
+        Returns
+        -------
+        `ClusterMapCentroid` object
+            Result of the clustering.
+        """
+        from dipy.segment.clustering_algorithms import quickbundlesX_online
+
+        if self._cluster_fct is None:
+            self._idx = -1
+            features_shape = self.metric.feature.infer_shape(streamline)
+            self._cluster_fct = quickbundlesX_online(features_shape, self.metric,
+                                                     thresholds=self.thresholds)
+
+        self._idx = self._idx + 1 if idx is None else idx
+        self._qbx_state, path = self._cluster_fct(streamline, self._idx)
+        self._dirty = True
+        return path
