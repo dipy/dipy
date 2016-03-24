@@ -366,12 +366,12 @@ global tm
 tm = timeline.TimeLineManager(show_m, [],
                               'video_qbx.avi')
 
-title = 'QuickBundlesX: \n'
+title = 'QuickBundlesX \n'
 title += 'Garyfallidis et al. ISMRM 2016'
 
 t = 0
 tm.add_state(t, [text_picking, text_clusters], ['off', 'off'])
-tm.add_state(t, [brain_actor, clustered_brain_actor], ['off', 'off'])
+tm.add_state(t, [brain_actor, clustered_brain_actor, line_actor], ['off', 'off', 'off'])
 tm.add_sub(t, ['title'], [title])
 
 t += 5
@@ -386,7 +386,7 @@ tm.add_event(
 
 t += 3
 tm.add_state(t, [text_picking, text_clusters], ['on', 'off'])
-tm.add_state(t+1, [text_picking, text_clusters], ['on', 'on'])
+tm.add_state(t+1, [text_picking, text_clusters, line_actor], ['on', 'on', 'on'])
 tm.add_event(
     t, 10,
     [main_event],
