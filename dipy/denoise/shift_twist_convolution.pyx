@@ -11,6 +11,11 @@ from dipy.denoise.enhancement_kernel import EnhancementKernel
 from dipy.data import get_sphere
 from dipy.reconst.shm import sh_to_sf, sf_to_sh
 
+def numpy_mult():
+    m = np.ones(3, np.float64)
+    m * np.amax(m)
+    np.multiply(m, np.amax(m))
+
 def convolve(odfs_sh, kernel, sh_order, test_mode=False, num_threads=None):
     """ Perform the shift-twist convolution with the ODF data and 
     the lookup-table of the kernel.
@@ -54,7 +59,7 @@ def convolve(odfs_sh, kernel, sh_order, test_mode=False, num_threads=None):
                      Combining Contextual PDE flow with Constrained Spherical 
                      Deconvolution. PLoS One.
     """
-    
+
     # convert the ODFs from SH basis to DSF
     sphere = kernel.get_sphere()
     odfs_dsf = sh_to_sf(odfs_sh, sphere, sh_order=sh_order, basis_type=None)
@@ -73,7 +78,7 @@ def convolve(odfs_sh, kernel, sh_order, test_mode=False, num_threads=None):
     
     return output_sh
     
-def convolve_sf(odfs_sf, kernel, test_mode=False, num_threads=None):
+def convolve_sf(odfs_sf, kernel, test_mode=False, num_threads=None, numpy_test=False):
     """ Perform the shift-twist convolution with the ODF data and 
     the lookup-table of the kernel.
 
@@ -99,7 +104,14 @@ def convolve_sf(odfs_sf, kernel, test_mode=False, num_threads=None):
                                  kernel.get_lookup_table(),
                                  test_mode,
                                  num_threads)
-    return output
+
+    # numpy test (temporary)
+    if numpy_test:
+        output_norm = output * np.amax(output)/np.amax(output)
+    else:
+        output_norm = np.multiply(output, np.amax(output)/np.amax(output))
+
+    return output_norm
     
 @cython.wraparound(False)
 @cython.boundscheck(False)

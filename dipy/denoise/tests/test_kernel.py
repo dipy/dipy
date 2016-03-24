@@ -93,6 +93,24 @@ def test_kernel_input():
     k = EnhancementKernel(D33, D44, t, orientations=0, force_recompute=True)
     npt.assert_equal(k.get_lookup_table().shape, (0, 0, 7, 7, 7))
 
+def test_numpy_mult():
+    """ Temporary test for array multiplication in Cython with Numpy 1.12.0"""
+    
+    # create kernel
+    D33 = 1.0
+    D44 = 0.04
+    t = 1
+    num_orientations = 5
+    k = EnhancementKernel(D33, D44, t, orientations=num_orientations, force_recompute=True)
+
+    # create a delta spike
+    numorientations = k.get_orientations().shape[0]
+    spike = np.zeros((7, 7, 7, numorientations), dtype=np.float64)
+    spike[3, 3, 3, 0] = 1
+
+    # convolve kernel with delta spike
+    csd_enh = convolve_sf(spike, k, test_mode=True, numpy_test=True)
+
 
 if __name__ == '__main__':
     npt.run_module_suite()
