@@ -16,8 +16,8 @@ import vtk
 import nibabel as nib
 
 
-qb = QuickBundles(threshold=20)
-qbo = QuickBundlesOnline(threshold=20)
+qb = QuickBundles(threshold=30)
+qbo = QuickBundlesOnline(threshold=30)
 
 
 # Script
@@ -48,7 +48,7 @@ clusters = qb.cluster(streamlines)
 # This will be use to display individual cluster on the right panel.
 clusters_as_array_sequence = [nib.streamlines.ArraySequence(c) for c in clusters]
 
-bg = (0, 0, 0)
+bg = (1, 1, 1)
 # Create actors
 colormap = list(itertools.islice(distinguishable_colormap(bg=bg, exclude=[(1, 1, 1)]), len(clusters)))
 colormap = colormap + [(1, 1, 1), (0, 0, 0)]
@@ -59,13 +59,15 @@ lut.Build()
 for i, color in enumerate(colormap):
     lut.SetTableValue(i, tuple(color) + (1,))
 
-lut.SetTableValue(len(colormap)-2, (1, 1, 1, 0.25))  # Semi-invisible
+# lut.SetTableValue(len(colormap)-2, (1, 1, 1, 0.25))  # Semi-invisible
+lut.SetTableValue(len(colormap)-2, (0, 0, 0, 0.25))  # Semi-invisible
 lut.SetTableValue(len(colormap)-1, (0, 0, 0, 0.))  # Invisible
 lut.SetTableRange(0, len(colormap)-1)
 
 global streamlines_color
 streamlines_color = (len(colormap)-2)*np.ones(len(streamlines), dtype="float32")  # Semi-invisible
 brain_actor = actor.line(streamlines, colors=streamlines_color, lookup_colormap=lut, linewidth=1.5)
+# brain_actor = actor.streamtube(streamlines, colors=streamlines_color, lookup_colormap=lut, linewidth=0.2)
 
 cluster_actors = []
 for c in clusters:
@@ -79,25 +81,36 @@ global screen_size
 screen_size = (0, 0)
 ren_main = window.Renderer()
 ren_main.background(bg)
+# show_m = window.ShowManager(ren_main, size=(1280, 720), order_transparent=True, interactor_style="trackball")
 show_m = window.ShowManager(ren_main, size=(1280, 720), interactor_style="trackball")
 show_m.initialize()
 show_m.window.SetNumberOfLayers(2)
 ren_main.SetLayer(1)
 ren_main.InteractiveOff()
 
-# Left renderer that contains the brain.
+# Upper-Left renderer that contains the brain being clustered.
 ren_brain = window.Renderer()
 show_m.window.AddRenderer(ren_brain)
 ren_brain.background(bg)
-ren_brain.SetViewport(0, 0, 0.5, 1)
+ren_brain.SetViewport(0, 0, 0.349, 1)
 ren_brain.add(brain_actor)
 ren_brain.reset_camera_tight()
+
+# Upper-Left renderer that contains the centroids.
+ren_centroids = window.Renderer()
+show_m.window.AddRenderer(ren_centroids)
+ren_centroids.background(bg)
+ren_centroids.SetViewport(0.35, 0, 0.699, 1)
+#ren_centroids.add(centroids_actor)
+ren_centroids.SetActiveCamera(ren_brain.GetActiveCamera())  # Sync camera with the left one.
 
 # Right renderers: one per cluster.
 grid_cell_positions = utils.get_grid_cells_position([ren_brain.GetSize()]*len(clusters), aspect_ratio=9/16.)
 grid_dim = (len(np.unique(grid_cell_positions[:, 0])), len(np.unique(grid_cell_positions[:, 1])))
+grid_dim = (3, 4)
 
 cpt = 0
+sorted_clusters_indices = np.argsort(map(len, clusters))[::-1]
 grid_renderers = []
 for y in range(grid_dim[1])[::-1]:
     if cpt >= len(clusters):
@@ -110,11 +123,11 @@ for y in range(grid_dim[1])[::-1]:
         ren = window.Renderer()
         show_m.window.AddRenderer(ren)
         ren.background(bg)
-        ren.SetViewport(0.5+x/(grid_dim[0]/0.5), y/grid_dim[1], 0.5+(x+1)/(grid_dim[0]/0.5), (y+1)/grid_dim[1])
-        ren.add(cluster_actors[cpt])
+        offset = 0.7
+        ren.SetViewport(offset+x/(grid_dim[0]/(1-offset)), y/grid_dim[1], offset+(x+1)/(grid_dim[0]/(1-offset)), (y+1)/grid_dim[1])
+        ren.add(cluster_actors[sorted_clusters_indices[cpt]])
         ren.SetActiveCamera(ren_brain.GetActiveCamera())  # Sync camera with the left one.
         cpt += 1
-
 
 global cnt, time, stamp_time
 repeat_time = 10
@@ -138,16 +151,23 @@ def timer_callback(obj, event):
         cluster_id = qbo.cluster(streamlines[streamline_idx], streamline_idx)
 
         # Display updated centroid
-        ren_brain.RemoveActor(centroid_actors[cluster_id])
+        ren_centroids.RemoveActor(centroid_actors[cluster_id])
         centroid_actors[cluster_id] = actor.streamtube([qbo.clusters[cluster_id].centroid], colormap[cluster_id], linewidth=0.2+np.log(len(qbo.clusters[cluster_id]))/2)
-        ren_brain.add(centroid_actors[cluster_id])
+        ren_centroids.add(centroid_actors[cluster_id])
 
         # Replace color
         scalars = brain_actor.GetMapper().GetInput().GetPointData().GetScalars()
         start = streamlines._offsets[streamline_idx]
         end = start + streamlines._lengths[streamline_idx]
         for i in range(start, end):
-            scalars.SetValue(i, len(colormap)-1)  # Make streamlines invisible.
+            scalars.SetValue(i, cluster_id)  # Highlight streamline
+
+        if streamline_idx > 0:
+            scalars = brain_actor.GetMapper().GetInput().GetPointData().GetScalars()
+            start = streamlines._offsets[streamline_idx-1]
+            end = start + streamlines._lengths[streamline_idx-1]
+            for i in range(start, end):
+                scalars.SetValue(i, len(colormap)-2)  # Make streamline invisible
 
         scalars.Modified()
 
