@@ -154,7 +154,7 @@ for y in range(grid_dim[1])[::-1]:
 
 
 # Add captions
-text_picking = actor.text_overlay('Picking streamlines',
+text_picking = actor.text_overlay('Next streamline',
                                   position=(ren_brain.size()[0]//2, 25),
                                   color=(0, 0, 0),
                                   font_size=34,
@@ -162,7 +162,7 @@ text_picking = actor.text_overlay('Picking streamlines',
                                   bold=True)
 ren_main.add(text_picking)
 
-text_updating = actor.text_overlay('Updating centroids ',
+text_updating = actor.text_overlay('Centroids ',
                                    position=(ren_brain.size()[0]+ren_centroids.size()[0]//2, 25),
                                    color=(0, 0, 0),
                                    font_size=34,
@@ -171,7 +171,7 @@ text_updating = actor.text_overlay('Updating centroids ',
 ren_main.add(text_updating)
 
 offset = (ren_main.size()[0] - (ren_brain.size()[0]+ren_centroids.size()[0])) // 2
-text_clusters = actor.text_overlay('Top 12 biggest clusters',
+text_clusters = actor.text_overlay('12 largest clusters',
                                    position=(ren_main.size()[0] - offset, 25),
                                    color=(0, 0, 0),
                                    font_size=34,
@@ -269,10 +269,20 @@ from dipy.viz import timeline
 
 global tm
 tm = timeline.TimeLineManager(show_m, [],
-                              'boo.avi')
+                              'video_qb.avi')
+
+title = 'QuickBundles for tractography simplification \n'
+title += 'Garyfallidis et al. Frontiers 2012'
 
 t = 0
 tm.add_state(t, [text_picking, text_updating, text_clusters], ['off', 'off', 'off'])
+tm.add_state(t, [brain_actor, clustered_brain_actor], ['off', 'off'])
+tm.add_sub(t, ['title'], [title])
+
+t += 5
+tm.add_sub(t, ['title'], [' '])
+
+
 tm.add_state(t, [brain_actor, clustered_brain_actor], ['on', 'off'])
 
 tm.add_event(
@@ -314,6 +324,16 @@ tm.add_event(
 
 t += 20
 tm.add_state(t, [brain_actor, clustered_brain_actor], ['off', 'on'])
+
+def change_picking_msg(text_picking):
+    text_picking.set_message('Final clusters')
+    text_picking.Modified()
+
+tm.add_event(
+    t, 20,
+    [change_picking_msg],
+    [[text_picking]])
+
 
 
 def timer_callback(obj, event):
