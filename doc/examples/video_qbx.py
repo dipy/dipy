@@ -14,6 +14,8 @@ from dipy.segment.clustering import QuickBundlesX, QuickBundlesXOnline
 from dipy.viz.colormap import distinguishable_colormap
 import vtk
 import nibabel as nib
+from dipy.viz.fvtk import colors
+
 
 # Some settings for the video
 bg = (1, 1, 1)  # White
@@ -250,7 +252,7 @@ def _add_node_actor_to_renderer(node):
 tree.traverse_postorder(tree.root, _add_node_actor_to_renderer)
 
 ren_tree.add(*text_actors)
-ren_tree.add(line_actor)
+# ren_tree.add(line_actor)
 ren_tree.reset_camera_tight()
 
 
@@ -284,10 +286,11 @@ last_frame_with_updates = 0
 streamline_idx = 0
 
 highlighted_streamlines_actor = [actor.streamtube(np.array([[0, 0, 0]]), colors=(0, 0, 0), linewidth=0.5)]
-
+lines_actor = [actor.streamtube(np.array([[0, 0, 0]]), colors=(0, 0, 0), linewidth=0.5)]
+lines = []
 
 def main_event(speed=1):
-    global last_frame_with_updates, frame, streamline_idx
+    global last_frame_with_updates, frame, streamline_idx, lines
 
     if streamline_idx >= len(streamlines):
         return
@@ -307,7 +310,13 @@ def main_event(speed=1):
         # Show streamlines in the clusters tree view.
         node = tree.root
         node2 = tree2.root
+        line = []
         for level, cluster_id in enumerate(path):
+            if hasattr(node, 'actor'):
+                line.append(np.array([node.actor.GetCenter(), node.children[cluster_id].actor.GetCenter()]))
+            else:
+                line.append(np.array([line_actor.GetCenter(), node.children[cluster_id].actor.GetCenter()]))
+
             node = node.children[cluster_id]
             node2 = node2.children[cluster_id]
 
@@ -322,12 +331,19 @@ def main_event(speed=1):
 
             scalars.Modified()
 
+        lines.extend(line)
+
         # Highligth streamline being clustered.
         ren_brain.RemoveActor(highlighted_streamlines_actor[0])
         ren_brain.RemoveActor(brain_actor)
         highlighted_streamlines_actor[0] = actor.line([streamlines[streamline_idx]], colors=[np.array(color)/255.], linewidth=5)
         ren_brain.add(highlighted_streamlines_actor[0])
         ren_brain.add(brain_actor)
+
+        # Draw tree lines
+        ren_tree.RemoveActor(lines_actor[0])
+        lines_actor[0] = actor.streamtube(lines, colors.grey, linewidth=1, opacity=0.6)
+        ren_tree.add(lines_actor[0])
 
         show_m.render()
         streamline_idx += 1
