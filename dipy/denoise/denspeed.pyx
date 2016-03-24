@@ -197,7 +197,7 @@ cdef double process_block(double [:, :, ::1] arr,
                             summ += d * d
                             sigm += sigma_block[(P + B + m + a) * TS * TS + (P + B + n + b) * TS + (P + B + o + c)]
 
-                denom = (sigm / block_vol_size)**2
+                denom = sqrt(2) * (sigm / block_vol_size)**2
                 w = exp(-(summ / block_vol_size) / denom)
                 sumw += w
                 W[cnt] = w
