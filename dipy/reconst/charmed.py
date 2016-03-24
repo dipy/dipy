@@ -1,6 +1,7 @@
 import numpy as np
 from scipy.optimize import curve_fit, leastsq
 from dipy.reconst import dti
+from dipy.reconst.base import ReconstModel
 import numpy as np
 import dipy.data as dpd
 import dipy.core.gradients as dpg
