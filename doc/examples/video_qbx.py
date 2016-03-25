@@ -1,5 +1,6 @@
 from __future__ import division
 
+import sys
 import itertools
 from dipy.align.streamlinear import StreamlineLinearRegistration
 from dipy.tracking.streamline import (set_number_of_points,
@@ -20,6 +21,7 @@ from dipy.viz.fvtk import colors
 # Some settings for the video
 bg = (1, 1, 1)  # White
 qb_thresholds = [40, 30, 20]
+rng = np.random.RandomState(42)
 
 
 def load_streamlines(nb_streamlines=1000):
@@ -31,7 +33,6 @@ def load_streamlines(nb_streamlines=1000):
                     'slf2.right', 'slf_3.left', 'slf_3.right', 'uf.left', 'uf.right']
     subj1 = read_bundles_2_subjects('subj_1', ['fa', 't1'], bundle_names)
 
-    rng = np.random.RandomState(42)
     tractogram = nib.streamlines.Tractogram(subj1[bundle_names[0]])
     for bundle_name in bundle_names[1:]:
         tractogram.streamlines.extend(subj1[bundle_name])
@@ -345,8 +346,74 @@ def main_event(speed=1):
         lines_actor[0] = actor.streamtube(lines, colors.grey, linewidth=1, opacity=0.6)
         ren_tree.add(lines_actor[0])
 
-        show_m.render()
         streamline_idx += 1
+
+    show_m.render()
+
+def main_event_step_by_step(speed=0.05, nb_streamlines=10):
+    global last_frame_with_updates, frame, streamline_idx, lines
+
+    while True:
+        if streamline_idx >= nb_streamlines:
+            print "Step by step done"
+            yield
+            continue
+
+        nb_streamlines_to_cluster = int((frame-last_frame_with_updates)*speed)
+        frame += 1
+
+        if nb_streamlines_to_cluster < 1:
+            yield
+            continue
+
+        last_frame_with_updates = frame
+        for i in range(nb_streamlines_to_cluster):
+            path = qbo.cluster(streamlines[streamline_idx], streamline_idx)
+            tree2 = qbo.tree_cluster_map
+
+            # Show streamlines in the clusters tree view.
+            node = tree.root
+            node2 = tree2.root
+            for level, cluster_id in enumerate(path):
+                if hasattr(node, 'actor'):
+                    line = np.array([node.actor.GetCenter(), node.children[cluster_id].actor.GetCenter()])
+                else:
+                    line = np.array([line_actor.GetCenter(), node.children[cluster_id].actor.GetCenter()])
+
+                node = node.children[cluster_id]
+                node2 = node2.children[cluster_id]
+
+                id_streamline_in_cluster = len(node2)-1
+                scalars = node.actor.GetMapper().GetInput().GetPointData().GetScalars()
+                start = node.arr_seq._offsets[id_streamline_in_cluster]
+                end = start + node.arr_seq._lengths[id_streamline_in_cluster]
+
+                for i in range(start, end):
+                    color = scalars.GetTuple4(i)[:3] + (255,)
+                    scalars.SetTuple4(i, *color)  # Make streamline visible.
+
+                scalars.Modified()
+                lines.append(line)
+
+                # Highligth streamline being clustered.
+                ren_brain.RemoveActor(highlighted_streamlines_actor[0])
+                ren_brain.RemoveActor(brain_actor)
+                highlighted_streamlines_actor[0] = actor.line([streamlines[streamline_idx]], colors=[np.array(color)/255.], linewidth=5)
+                ren_brain.add(highlighted_streamlines_actor[0])
+                ren_brain.add(brain_actor)
+
+                # Draw tree lines
+                ren_tree.RemoveActor(lines_actor[0])
+                lines_actor[0] = actor.streamtube(lines, colors.grey, linewidth=1, opacity=0.6)
+                ren_tree.add(lines_actor[0])
+
+                show_m.render()
+
+                # Slow down the process
+                for _ in range(10):
+                    yield
+
+            streamline_idx += 1
 
 
 def show_clustered_brain(already_done=[False]):
@@ -362,10 +429,54 @@ def show_clustered_brain(already_done=[False]):
 
     already_done[0] = True
 
+def show_clusters_of_level(level, memoized=[None], existing_actors=[None, None]):
+    if memoized[0] != level:  # Avoid unnecessary computations
+        memoized[0] = level
+
+        # Remove old lines
+        ren_tree.RemoveActor(lines_actor[0])
+
+        ren_tree.RemoveActor(line_actor)
+        ren_tree.add(line_actor)
+
+        for lvl in range(1, len(qb_thresholds)+1):
+
+            for i, n in enumerate(tree.get_clusters(lvl)):
+                scalars = n.actor.GetMapper().GetInput().GetPointData().GetScalars()
+
+                color = scalars.GetTuple4(0)[:3] + (5,)
+                for j in range(scalars.GetNumberOfTuples()):
+                    scalars.SetTuple4(j, *color)  # Make streamline visible.
+
+                scalars.Modified()
+
+        streamlines_color = np.zeros((len(streamlines), 3), dtype="float32")
+        for i, n in enumerate(tree.get_clusters(level)):
+            scalars = n.actor.GetMapper().GetInput().GetPointData().GetScalars()
+            streamlines_color[n.indices] = np.array(scalars.GetTuple4(0)[:3])/255.
+
+            color = scalars.GetTuple4(0)[:3] + (255,)
+            for j in range(scalars.GetNumberOfTuples()):
+                scalars.SetTuple4(j, *color)  # Make streamline visible.
+
+            scalars.Modified()
+
+        if existing_actors[0] is not None:
+            ren_brain.RemoveActor(existing_actors[0])
+
+        # final_clusters_actor
+        existing_actors[0] = actor.line(streamlines, colors=streamlines_color, linewidth=1.5)
+        ren_brain.add(existing_actors[0])
+        show_m.render()
 
 
 def rotate_camera(angle=0.8):
     ren_brain.azimuth(angle)
+
+
+def change_msg(text_actor, msg):
+    text_actor.set_message(msg)
+    text_actor.Modified()
 
 
 from dipy.viz import timeline
@@ -379,7 +490,7 @@ title += 'Garyfallidis et al. ISMRM 2016'
 
 t = 0
 tm.add_state(t, [text_picking, text_clusters], ['off', 'off'])
-tm.add_state(t, [brain_actor, clustered_brain_actor, line_actor], ['off', 'off', 'off'])
+tm.add_state(t, [brain_actor, clustered_brain_actor], ['off', 'off'])
 tm.add_sub(t, ['title'], [title])
 
 t += 5
@@ -394,13 +505,13 @@ tm.add_event(
 
 t += 3
 tm.add_state(t, [text_picking, text_clusters], ['on', 'off'])
-tm.add_state(t+1, [text_picking, text_clusters, line_actor], ['on', 'on', 'on'])
+tm.add_state(t+1, [text_picking, text_clusters], ['on', 'on'])
 tm.add_event(
-    t, 10,
-    [main_event],
-    [[0.05]])
+    t, 7,
+    [next],
+    [[main_event_step_by_step(speed=0.1, nb_streamlines=4)]])
 
-t += 10
+t += 7
 tm.add_event(
     t, 5,
     [main_event],
@@ -424,17 +535,42 @@ tm.add_event(
     [[4]])
 
 t += 20
-tm.add_state(t, [brain_actor, clustered_brain_actor], ['off', 'on'])
-
-def change_picking_msg(text_picking):
-    text_picking.set_message('Final clusters')
-    text_picking.Modified()
+tm.add_state(t, [brain_actor], ['off'])
+tm.add_state(t, [text_picking, text_clusters], ['on', 'off'])
+tm.add_event(t, 4,
+             [show_clusters_of_level],
+             [[1]])
 
 tm.add_event(
-    t, 20,
-    [change_picking_msg],
-    [[text_picking]])
+    t, 4,
+    [change_msg],
+    [[text_picking, 'Final clusters at layer 1']])
 
+t+=4
+tm.add_event(t, 4,
+             [show_clusters_of_level],
+             [[2]])
+
+tm.add_event(
+    t, 4,
+    [change_msg],
+    [[text_picking, 'Final clusters at layer 2']])
+
+t+=4
+tm.add_event(t, 4,
+             [show_clusters_of_level],
+             [[3]])
+
+tm.add_event(
+    t, 4,
+    [change_msg],
+    [[text_picking, 'Final clusters at layer 3']])
+
+t+=4
+tm.add_event(
+    t, np.inf,
+    [sys.exit],
+    [[]])
 
 def timer_callback(obj, event):
     global tm
