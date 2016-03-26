@@ -10,18 +10,6 @@ import json
 from nibabel import load
 from os.path import join as pjoin, dirname
 
-if sys.version_info[0] < 3:
-    import cPickle
-
-    def loads_compat(bytes):
-        return cPickle.loads(bytes)
-else:  # Python 3
-    import pickle
-    # Need to load pickles saved in Python 2
-
-    def loads_compat(bytes):
-        return pickle.loads(bytes, encoding='latin1')
-
 import gzip
 import numpy as np
 from dipy.core.gradients import GradientTable, gradient_table
@@ -55,6 +43,18 @@ from dipy.data.fetcher import (fetch_scil_b0,
 
 from ..utils.arrfuncs import as_native_array
 from dipy.tracking.streamline import relist_streamlines
+
+if sys.version_info[0] < 3:
+    import cPickle
+
+    def loads_compat(bytes):
+        return cPickle.loads(bytes)
+else:  # Python 3
+    import pickle
+    # Need to load pickles saved in Python 2
+
+    def loads_compat(bytes):
+        return pickle.loads(bytes, encoding='latin1')
 
 
 DATA_DIR = pjoin(dirname(__file__), 'files')
@@ -201,8 +201,10 @@ def get_data(name='small_64D'):
         'small_64D' small region of interest nifti,bvecs,bvals 64 directions
         'small_101D' small region of interest nifti,bvecs,bvals 101 directions
         'aniso_vox' volume with anisotropic voxel size as Nifti
-        'fornix' 300 tracks in Trackvis format (from Pittsburgh Brain Competition)
-        'gqi_vectors' the scanner wave vectors needed for a GQI acquisitions of 101 directions tested on Siemens 3T Trio
+        'fornix' 300 tracks in Trackvis format (from Pittsburgh
+            Brain Competition)
+        'gqi_vectors' the scanner wave vectors needed for a GQI acquisitions
+            of 101 directions tested on Siemens 3T Trio
         'small_25' small ROI (10x8x2) DTI data (b value 2000, 25 directions)
         'test_piesno' slice of N=8, K=14 diffusion data
         'reg_c' small 2D image used for validating registration

@@ -4,11 +4,6 @@ import os
 import sys
 import contextlib
 
-if sys.version_info[0] < 3:
-    from urllib2 import urlopen
-else:
-    from urllib.request import urlopen
-
 from os.path import join as pjoin
 from hashlib import md5
 from shutil import copyfileobj
@@ -20,6 +15,12 @@ import tarfile
 import zipfile
 from dipy.core.gradients import gradient_table
 from dipy.io.gradients import read_bvals_bvecs
+
+if sys.version_info[0] < 3:
+    from urllib2 import urlopen
+else:
+    from urllib.request import urlopen
+
 
 # Set a user-writeable file-system location to put files:
 dipy_home = pjoin(os.path.expanduser('~'), '.dipy')
@@ -312,7 +313,8 @@ fetch_taiwan_ntu_dsi = _make_fetcher(
      'a95eb1be44748c20214dc7aa654f9e6b',
      '7fa1d5e272533e832cc7453eeba23f44'],
     doc="Download a DSI dataset with 203 gradient directions",
-    msg="See DSI203_license.txt for LICENSE. For the complete datasets please visit : http://dsi-studio.labsolver.org")
+    msg="See DSI203_license.txt for LICENSE. For the complete datasets please visit : \
+         http://dsi-studio.labsolver.org")
 
 fetch_syn_data = _make_fetcher(
     "fetch_syn_data",
@@ -337,7 +339,7 @@ fetch_mni_template = _make_fetcher(
     ['6e2168072e80aa4c0c20f1e6e52ec0c8',
      'f41f2e1516d880547fbf7d6a83884f0d',
      '1ea8f4f1e41bc17a94602e48141fdbc8'],
-    doc = "Fetch the MNI T2 and T1 template files")
+    doc="Fetch the MNI T2 and T1 template files")
 
 fetch_scil_b0 = _make_fetcher(
     "fetch_scil_b0",
@@ -346,7 +348,8 @@ fetch_scil_b0 = _make_fetcher(
     ['datasets_multi-site_all_companies.zip'],
     ['datasets_multi-site_all_companies.zip'],
     None,
-    doc="Download b=0 datasets from multiple MR systems (GE, Philips, Siemens) and different magnetic fields (1.5T and 3T)",
+    doc="Download b=0 datasets from multiple MR systems (GE, Philips, Siemens) \
+         and different magnetic fields (1.5T and 3T)",
     unzip=True)
 
 fetch_viz_icons = _make_fetcher("fetch_viz_icons",
@@ -657,8 +660,7 @@ def fetch_cenir_multib(with_raw=False):
                          '4e4324c676f5a97b3ded8bbb100bf6e5'])
 
     files = {}
-    baseurl = \
-'https://digital.lib.washington.edu/researchworks/bitstream/handle/1773/33311/'
+    baseurl = 'https://digital.lib.washington.edu/researchworks/bitstream/handle/1773/33311/'
 
     for f, m in zip(fname_list, md5_list):
         files[f] = (baseurl + f, m)
