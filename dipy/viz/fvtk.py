@@ -18,7 +18,7 @@ For more information on VTK there many neat examples in
 http://www.vtk.org/Wiki/VTK/Tutorials/External_Tutorials
 '''
 from __future__ import division, print_function, absolute_import
-from warnings import warn, simplefilter
+from warnings import warn
 
 from dipy.utils.six.moves import xrange
 
@@ -76,9 +76,8 @@ if have_vtk:
         have_vtk_texture_mapper2D = False
 
 else:
-    simplefilter('default')
     msg = "Optional package VTK is not installed"
-    warn(msg, ImportWarning, stacklevel=2)
+    warn(msg)
 
 
 def dots(points, color=(1, 0, 0), opacity=1, dot_size=5):
