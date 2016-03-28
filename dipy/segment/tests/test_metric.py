@@ -84,10 +84,7 @@ def test_metric_minimum_average_direct_flip():
         s_zero_mean = s - s_mean
         s_rotated = np.dot(M_rotation, s_zero_mean.T).T + s_mean
 
-        opposite = norm(
-            np.cross(
-                rot_axis,
-                s_zero_mean),
+        opposite = norm(np.cross(rot_axis, s_zero_mean),
             axis=1) / norm(rot_axis)
         distances = np.sqrt(2 * opposite**2 *
                         (1 - np.cos(60. * np.pi / 180.))).astype(dtype)
