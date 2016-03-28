@@ -5,7 +5,7 @@ from os.path import dirname, abspath, join as pjoin
 IO_DATA_PATH = abspath(pjoin(dirname(__file__),
                              '..', 'io', 'tests', 'data'))
 
-from dipy.testing.spherepoints import sphere_points
+from .spherepoints import sphere_points
 from dipy.testing.decorators import doctest_skip_parser
 from numpy.testing import assert_array_equal
 
