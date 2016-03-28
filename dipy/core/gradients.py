@@ -1,6 +1,6 @@
 from __future__ import division, print_function, absolute_import
 
-from ..utils.six import string_types
+from dipy.utils.six import string_types
 
 import numpy as np
 try:
@@ -9,9 +9,9 @@ except ImportError:   # Some elderly scipy doesn't have polar
     from dipy.fixes.scipy import polar
 from scipy.linalg import inv
 
-from ..io import gradients as io
-from .onetime import auto_attr
-from .geometry import vector_norm
+from dipy.io import gradients as io
+from dipy.core.onetime import auto_attr
+from dipy.core.geometry import vector_norm
 
 
 class GradientTable(object):

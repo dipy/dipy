@@ -4,7 +4,7 @@ import numpy as np
 import numpy.testing as nt
 import warnings
 
-from ...utils.six.moves import xrange
+from dipy.utils.six.moves import xrange
 
 from dipy.core.sphere import (Sphere, HemiSphere, unique_edges, unique_sets,
                               faces_from_sphere_vertices, HemiSphere,
