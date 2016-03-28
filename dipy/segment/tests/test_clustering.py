@@ -295,9 +295,8 @@ def test_cluster_map_add_cluster():
     # Test adding multiple clusters at once.
     clusters = ClusterMap()
     clusters.add_cluster(*list_of_cluster_objects)
-    assert_array_equal(
-        list(itertools.chain(*clusters)),
-        list(itertools.chain(*list_of_indices)))
+    assert_array_equal(list(itertools.chain(*clusters)),
+                        list(itertools.chain(*list_of_indices)))
 
 
 def test_cluster_map_remove_cluster():
