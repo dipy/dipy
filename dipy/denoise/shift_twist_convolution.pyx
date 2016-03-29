@@ -11,11 +11,6 @@ from dipy.denoise.enhancement_kernel import EnhancementKernel
 from dipy.data import get_sphere
 from dipy.reconst.shm import sh_to_sf, sf_to_sh
 
-def numpy_mult():
-    m = np.ones(3, np.float64)
-    m * np.amax(m)
-    np.multiply(m, np.amax(m))
-
 def convolve(odfs_sh, kernel, sh_order, test_mode=False, num_threads=None):
     """ Perform the shift-twist convolution with the ODF data and 
     the lookup-table of the kernel.
