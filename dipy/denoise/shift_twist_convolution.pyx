@@ -11,7 +11,7 @@ from dipy.denoise.enhancement_kernel import EnhancementKernel
 from dipy.data import get_sphere
 from dipy.reconst.shm import sh_to_sf, sf_to_sh
 
-def convolve(odfs_sh, kernel, sh_order, test_mode=False, num_threads=None):
+def convolve(odfs_sh, kernel, sh_order, test_mode=False, num_threads=None, normalize=True):
     """ Perform the shift-twist convolution with the ODF data and 
     the lookup-table of the kernel.
 
@@ -28,11 +28,14 @@ def convolve(odfs_sh, kernel, sh_order, test_mode=False, num_threads=None):
     num_threads : int
             Number of threads. If None (default) then all available threads
             will be used.
+    normalize : boolean
+        Apply max-normalization to the output such that its value range matches 
+        the input ODF data.
         
     Returns
     -------
     output : array of double
-        The ODF data after convolution enhancement
+        The ODF data after convolution enhancement in spherical harmonics format
         
     References
     ----------
@@ -66,14 +69,15 @@ def convolve(odfs_sh, kernel, sh_order, test_mode=False, num_threads=None):
                                  num_threads)
     
     # normalize the output
-    output_norm = np.multiply(output, np.amax(odfs_dsf)/np.amax(output))
+    if normalize:
+        output = np.multiply(output, np.amax(odfs_dsf)/np.amax(output))
     
     # convert back to SH
-    output_sh = sf_to_sh(output_norm, sphere, sh_order=sh_order)
+    output_sh = sf_to_sh(output, sphere, sh_order=sh_order)
     
     return output_sh
     
-def convolve_sf(odfs_sf, kernel, test_mode=False, num_threads=None, numpy_test=False):
+def convolve_sf(odfs_sf, kernel, test_mode=False, num_threads=None, normalize=True):
     """ Perform the shift-twist convolution with the ODF data and 
     the lookup-table of the kernel.
 
@@ -88,11 +92,14 @@ def convolve_sf(odfs_sf, kernel, test_mode=False, num_threads=None, numpy_test=F
     num_threads : int
             Number of threads. If None (default) then all available threads
             will be used.
+    normalize : boolean
+        Apply max-normalization to the output such that its value range matches 
+        the input ODF data.
 
     Returns
     -------
     output : array of double
-        The ODF data after convolution enhancement
+        The ODF data after convolution enhancement, sampled on a sphere
     """
     # perform the convolution
     output = perform_convolution(odfs_sf, 
@@ -100,13 +107,11 @@ def convolve_sf(odfs_sf, kernel, test_mode=False, num_threads=None, numpy_test=F
                                  test_mode,
                                  num_threads)
 
-    # numpy test (temporary)
-    if numpy_test:
-        output_norm = output * np.amax(output)/np.amax(output)
-    else:
-        output_norm = np.multiply(output, np.amax(output)/np.amax(output))
+    # normalize the output
+    if normalize:
+        output = np.multiply(output, np.amax(odfs_sf)/np.amax(output))
 
-    return output_norm
+    return output
     
 @cython.wraparound(False)
 @cython.boundscheck(False)
