@@ -45,7 +45,7 @@ def update_progressbar(progress, total_length):
     """
     # Try to set the bar_length according to the console size
     try:
-        rows, columns = os.popen('stty size', 'r').read().split()
+        columns = os.popen('tput cols', 'r').read()
         bar_length = int(columns) - 46
         if(not (bar_length > 1)):
             bar_length = 20
