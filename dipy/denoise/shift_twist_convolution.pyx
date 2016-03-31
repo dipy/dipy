@@ -40,7 +40,7 @@ def convolve(odfs_sh, kernel, sh_order, test_mode=False, num_threads=None, norma
     References
     ----------
     [Meesters2016_ISMRM] S. Meesters, G. Sanguinetti, E. Garyfallidis, 
-                         J. Portegies, R. Duits. (2015) Fast implementations of 
+                         J. Portegies, R. Duits. (2016) Fast implementations of 
                          contextual PDE’s for HARDI data processing in DIPY. 
                          ISMRM 2016 conference.
     [DuitsAndFranken_IJCV] R. Duits and E. Franken (2011) Left-invariant diffusions 

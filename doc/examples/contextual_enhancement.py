@@ -248,7 +248,7 @@ fvtk.record(ren, out_path='enhancements.png', size=(900, 900))
    :align: center
 
    The results after enhancements. Top-left: original noiseless data.
-   Bottom-left: original data with added Rician noise (SNR=4.5). Bottom-right:
+   Bottom-left: original data with added Rician noise (SNR=10). Bottom-right:
    After enhancement of noisy data. Top-right: After enhancement and sharpening
    of noisy data.
 
@@ -256,7 +256,7 @@ References
 ~~~~~~~~~~
 
 .. [Meesters2016_ISMRM] S. Meesters, G. Sanguinetti, E. Garyfallidis,
-                        J. Portegies, R. Duits. (2015) Fast implementations of
+                        J. Portegies, R. Duits. (2016) Fast implementations of
                         contextual PDE’s for HARDI data processing in DIPY.
                         ISMRM 2016 conference.
 .. [Portegies2015_PLoSOne] J. Portegies, R. Fick, G. Sanguinetti, S. Meesters,
