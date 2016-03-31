@@ -1,5 +1,6 @@
 import numpy as np
 
+
 def otsu(image, nbins=256):
     """
     Return threshold value based on Otsu's method.

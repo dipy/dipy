@@ -15,6 +15,7 @@ class Identity:
     (e.g. list, tuple). Indexing an instance of this class will return the
     index provided instead of the element. It does not support slicing.
     """
+
     def __getitem__(self, idx):
         return idx
 
@@ -40,6 +41,7 @@ class Cluster(object):
     A cluster does not contain actual data but instead knows how to
     retrieve them using its `ClusterMap` object.
     """
+
     def __init__(self, id=0, indices=None, refdata=Identity()):
         self.id = id
         self.refdata = refdata
@@ -73,7 +75,8 @@ class Cluster(object):
         elif type(idx) is list:
             return [self[i] for i in idx]
 
-        raise TypeError("Index must be a int or a slice! Not " + str(type(idx)))
+        raise TypeError("Index must be a int or a slice! Not " +
+                        str(type(idx)))
 
     def __iter__(self):
         return (self[i] for i in range(len(self)))
@@ -126,6 +129,7 @@ class ClusterCentroid(Cluster):
     A cluster does not contain actual data but instead knows how to
     retrieve them using its `ClusterMapCentroid` object.
     """
+
     def __init__(self, centroid, id=0, indices=None, refdata=Identity()):
         super(ClusterCentroid, self).__init__(id, indices, refdata)
         self.centroid = centroid.copy()
@@ -175,6 +179,7 @@ class ClusterMap(object):
     refdata : list
         Actual elements that clustered indices refer to.
     """
+
     def __init__(self, refdata=Identity()):
         self._clusters = []
         self.refdata = refdata
@@ -216,7 +221,8 @@ class ClusterMap(object):
             a list of `Cluster` objects.
         """
         if isinstance(idx, np.ndarray) and idx.dtype == np.bool:
-            return [self.clusters[i] for i, take_it in enumerate(idx) if take_it]
+            return [self.clusters[i]
+                    for i, take_it in enumerate(idx) if take_it]
         elif type(idx) is slice:
             return [self.clusters[i] for i in range(*idx.indices(len(self)))]
         elif type(idx) is list:
@@ -264,12 +270,15 @@ class ClusterMap(object):
             elif op is operator.ne:
                 return not self == other
 
-            raise NotImplementedError("Can only check if two ClusterMap instances are equal or not.")
+            raise NotImplementedError(
+                "Can only check if two ClusterMap instances are equal or not.")
 
         elif isinstance(other, int):
             return np.array([op(len(cluster), other) for cluster in self])
 
-        raise NotImplementedError("ClusterMap only supports comparison with a int or another instance of Clustermap.")
+        raise NotImplementedError(
+            "ClusterMap only supports comparison with \
+            a int or another instance of Clustermap.")
 
     def __eq__(self, other):
         return self._richcmp(other, operator.eq)
@@ -401,7 +410,8 @@ class Clustering(object):
         `ClusterMap` object
             Result of the clustering.
         """
-        raise NotImplementedError("Subclass has to define method 'cluster(data, ordering)'!")
+        raise NotImplementedError(
+            "Subclass has to define method 'cluster(data, ordering)'!")
 
 
 class QuickBundles(Clustering):
@@ -422,7 +432,8 @@ class QuickBundles(Clustering):
     metric : str or `Metric` object (optional)
         The distance metric to use when comparing two streamlines. By default,
         the Minimum average Direct-Flip (MDF) distance [Garyfallidis12]_ is
-        used and streamlines are automatically resampled so they have 12 points.
+        used and streamlines are automatically resampled so they have
+        12 points.
     max_nb_clusters : int
         Limits the creation of bundles.
 
@@ -460,7 +471,9 @@ class QuickBundles(Clustering):
                         tractography simplification, Frontiers in Neuroscience,
                         vol 6, no 175, 2012.
     """
-    def __init__(self, threshold, metric="MDF_12points", max_nb_clusters=np.iinfo('i4').max):
+
+    def __init__(self, threshold, metric="MDF_12points",
+                 max_nb_clusters=np.iinfo('i4').max):
         self.threshold = threshold
         self.max_nb_clusters = max_nb_clusters
 
