@@ -48,17 +48,15 @@ class QuickBundles(object):
             self.tracksd = [downsample(track, self.pts) for track in tracks]
         else:
             self.tracksd = tracks
-        self.clustering = local_skeleton_clustering(
-            self.tracksd, self.dist_thr)
+        self.clustering = local_skeleton_clustering(self.tracksd, 
+        self.dist_thr)
         self.virts = None
         self.exemps = None
 
     def virtuals(self):
         if self.virts is None:
-            self.virts = [
-                self.clustering[c]['hidden'] /
-                np.float(
-                    self.clustering[c]['N']) for c in self.clustering]
+            self.virts = [self.clustering[c]['hidden'] /
+                np.float(self.clustering[c]['N']) for c in self.clustering]
         return self.virts
 
     @property
@@ -74,8 +72,8 @@ class QuickBundles(object):
                 tracks = self.tracksd
             for c in C:
                 cluster = [tracks[i] for i in C[c]['indices']]
-                D = bundles_distances_mdf(
-                    [C[c]['hidden'] / float(C[c]['N'])], cluster)
+                D = bundles_distances_mdf( [C[c]['hidden'] / 
+                float(C[c]['N'])], cluster)
                 D = D.ravel()
                 si = np.argmin(D)
                 self.exempsi.append(si)
