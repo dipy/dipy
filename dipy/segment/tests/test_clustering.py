@@ -222,9 +222,8 @@ def test_cluster_centroid_getitem():
         assert_equal(cluster[i], indices[i])
 
     # Test advanced indexing
-    assert_array_equal(
-        cluster[advanced_indices], [
-            indices[i] for i in advanced_indices])
+    assert_array_equal(cluster[advanced_indices], 
+                        [indices[i] for i in advanced_indices])
 
     # Test index out of bounds
     assert_raises(IndexError, cluster.__getitem__, len(cluster))
@@ -404,9 +403,8 @@ def test_cluster_map_getitem():
         assert_equal(cluster_map[i], clusters[i])
 
     # Test advanced indexing
-    assert_array_equal(
-        cluster_map[advanced_indices], [
-            clusters[i] for i in advanced_indices])
+    assert_array_equal(cluster_map[advanced_indices], 
+                        [clusters[i] for i in advanced_indices])
 
     # Test index out of bounds
     assert_raises(IndexError, cluster_map.__getitem__, len(clusters))
@@ -475,13 +473,13 @@ def test_cluster_map_get_small_and_large_clusters():
 
     assert_equal(len(cluster_map), 2 * nb_clusters)
     assert_equal(len(cluster_map.get_small_clusters(nb_clusters)), 
-    len(small_clusters))
+                 len(small_clusters))
     assert_arrays_equal(cluster_map.get_small_clusters(nb_clusters),
-        small_clusters)
+                         small_clusters)
     assert_equal(len(cluster_map.get_large_clusters(nb_clusters + 1)), 
-    len(large_clusters))
+                 len(large_clusters))
     assert_arrays_equal(cluster_map.get_large_clusters(nb_clusters + 1),
-        large_clusters)
+                        large_clusters)
 
 
 def test_cluster_map_comparison_with_int():
@@ -578,9 +576,8 @@ def test_cluster_map_centroid_add_cluster():
         assert_equal(cluster, clusters[-1])
 
     assert_equal(type(clusters.centroids), list)
-    assert_array_equal(
-        list(itertools.chain(*clusters.centroids)),
-        list(itertools.chain(*centroids)))
+    assert_array_equal(list(itertools.chain(*clusters.centroids)),
+                        list(itertools.chain(*centroids)))
 
     # Check adding features of different sizes (shorter and longer)
     features_shape_short = (1, features_shape[1] - 3)
