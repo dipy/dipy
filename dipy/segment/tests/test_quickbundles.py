@@ -78,10 +78,10 @@ def test_quickbundles_2D():
     data = np.array(data, dtype=dtype)
 
     clusters_truth = [[0], 
-                                [1, 2], 
-                                [3, 4, 5], 
-                                [6, 7, 8, 9], 
-                                [10, 11, 12, 13, 14]]
+                        [1, 2], 
+                        [3, 4, 5], 
+                        [6, 7, 8, 9], 
+                        10, 11, 12, 13, 14]]
 
     # # Uncomment the following to visualize this test
     # import pylab as plt
@@ -106,18 +106,16 @@ def test_quickbundles_2D():
             # Find the corresponding cluster in 'clusters_truth'
             for cluster_truth in clusters_truth:
                 if cluster_truth[0] in cluster.indices:
-                    assert_equal(
-                        sorted(cluster.indices),
-                        sorted(cluster_truth))
+                    assert_equal(sorted(cluster.indices),
+                                sorted(cluster_truth))
 
     # Cluster each cluster again using a small threshold
     for cluster in clusters:
         subclusters = quickbundles(
             data, metric, threshold=0, ordering=cluster.indices)
         assert_equal(len(subclusters), len(cluster))
-        assert_equal(
-            sorted(itertools.chain(*subclusters)),
-            sorted(cluster.indices))
+        assert_equal(sorted(itertools.chain(*subclusters)),
+                        sorted(cluster.indices))
 
     # A very large threshold should produce only 1 cluster
     clusters = quickbundles(data, metric, threshold=np.inf)
@@ -129,8 +127,8 @@ def test_quickbundles_2D():
     clusters = quickbundles(data, metric, threshold=0)
     assert_equal(len(clusters), len(data))
     assert_array_equal(list(map(len, clusters)), np.ones(len(data)))
-    assert_array_equal(
-        [idx for cluster in clusters for idx in cluster.indices], range(len(data)))
+    assert_array_equal([idx for cluster in clusters for idx in cluster.indices], 
+                        range(len(data)))
 
 
 def test_quickbundles_streamlines():
@@ -142,9 +140,8 @@ def test_quickbundles_streamlines():
     assert_equal(clusters.refdata, rdata)
     # Set `refdata` to return indices instead of actual data points.
     clusters.refdata = None
-    assert_array_equal(
-        list(itertools.chain(*clusters)),
-        list(itertools.chain(*clusters_truth)))
+    assert_array_equal(list(itertools.chain(*clusters)),
+                        list(itertools.chain(*clusters_truth)))
 
     # Cluster read-only data
     for datum in rdata:
