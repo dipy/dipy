@@ -81,9 +81,8 @@ def test_feature_resample():
                 # Test method extract
                 features = feature.extract(s)
                 assert_equal(features.shape, (nb_points, s.shape[1]))
-                assert_array_almost_equal(
-                    features, set_number_of_points(
-                        s, nb_points))
+                assert_array_almost_equal(features, 
+                                          set_number_of_points(s, nb_points))
 
             # This feature type is not order invariant
             assert_false(feature.is_order_invariant)
