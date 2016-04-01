@@ -75,8 +75,8 @@ class Cluster(object):
         elif isinstance(idx, list):
             return [self[i] for i in idx]
 
-        raise TypeError(
-            "Index must be a int or a slice! Not " + str(type(idx)))
+        msg = "Index must be a int or a slice! Not " + str(type(idx))
+        raise TypeError(msg)
 
     def __iter__(self):
         return (self[i] for i in range(len(self)))
