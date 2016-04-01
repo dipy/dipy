@@ -8,9 +8,8 @@ from numpy.testing import assert_array_equal, assert_raises, run_module_suite
 
 def norm(x, ord=None, axis=None):
     if axis is not None:
-        return np.apply_along_axis(
-            np.linalg.norm, axis, x.astype(
-                np.float64), ord)
+        return np.apply_along_axis(np.linalg.norm, axis, 
+                                    x.astype(np.float64), ord)
 
     return np.linalg.norm(x.astype(np.float64), ord=ord)
 
@@ -85,7 +84,7 @@ def test_metric_minimum_average_direct_flip():
         s_rotated = np.dot(M_rotation, s_zero_mean.T).T + s_mean
 
         opposite = norm(np.cross(rot_axis, s_zero_mean),
-            axis=1) / norm(rot_axis)
+                        axis=1) / norm(rot_axis)
         distances = np.sqrt(2 * opposite**2 *
                         (1 - np.cos(60. * np.pi / 180.))).astype(dtype)
         d = np.mean(distances)
@@ -243,8 +242,8 @@ def test_distance_matrix():
 
         for i in range(len(data)):
             for j in range(len(data)):
-                assert_equal(D[i, j], dipymetric.dist(
-                    metric, data[i], data[j]))
+                assert_equal(D[i, j], 
+                            dipymetric.dist(metric, data[i], data[j]))
 
         # Compute distances of all tuples spawn by the Cartesian product
         # of `data` with `data2`.
@@ -254,8 +253,8 @@ def test_distance_matrix():
 
         for i in range(len(data)):
             for j in range(len(data2)):
-                assert_equal(D[i, j], dipymetric.dist(
-                    metric, data[i], data2[j]))
+                assert_equal(D[i, j], 
+                            dipymetric.dist(metric, data[i], data2[j]))
 
 
 if __name__ == '__main__':
