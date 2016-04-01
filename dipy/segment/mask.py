@@ -10,7 +10,7 @@ from scipy.ndimage.filters import median_filter
 try:
     from skimage.filters import threshold_otsu as otsu
 except:
-    from .threshold import otsu
+    from dipy.segment.threshold import otsu
 
 from scipy.ndimage import binary_dilation, generate_binary_structure
 
