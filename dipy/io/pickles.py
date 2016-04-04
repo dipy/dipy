@@ -1,6 +1,6 @@
 """ Load and save pickles """
 # Python 3 merged cPickle into pickle
-from ..utils.six.moves import cPickle
+from dipy.utils.six.moves import cPickle
 
 
 def save_pickle(fname, dix):
