@@ -9,13 +9,22 @@ language: python
 cache:
   directories:
     - $HOME/.cache/pip
+
+addons:
+  apt:
+    packages:
+      - libblas-dev
+      - liblapack-dev
+      - libatlas3gf-base
+      - libgsl0-dev
+      - libgsl0ldbl
+
 env:
     global:
         - DEPENDS="cython numpy scipy matplotlib h5py nibabel cvxopt"
         - VENV_ARGS="--python=python"
         - INSTALL_TYPE="setup"
 python:
-    - 2.6
     - 3.3
     - 3.4
     - 3.5
@@ -43,32 +52,22 @@ matrix:
         - VENV_ARGS="--system-site-packages --python=/usr/bin/python2.7"
         - TEST_WITH_XVFB=true
     - python: 2.7
-      sudo: true   # This is set to true for apt-get
-      env:
-        - VTK=1
-        - VTK_VER="python-vtk6"
-        - LIBGL_ALWAYS_INDIRECT=y
-        - VENV_ARGS="--system-site-packages --python=/usr/bin/python2.7"
-        - TEST_WITH_XVFB=true
-    - python: 2.7
-      env:
-        - INSTALL_TYPE=sdist
-    - python: 2.7
-      env:
-        - INSTALL_TYPE=wheel
-    - python: 2.7
       env:
         - INSTALL_TYPE=requirements
-        - DEPENDS=
+        - DEPENDS="cython numpy scipy matplotlib h5py nibabel cvxopt scikit_learn"
+        - pip install cythongsl
+
 before_install:
     - source tools/travis_tools.sh
     - virtualenv $VENV_ARGS venv
     - source venv/bin/activate
     - python --version # just to check
+
     # Needed for Python 3.5 wheel fetching
     - pip install -U pip
     - retry pip install nose;
     - wheelhouse_pip_install $DEPENDS;
+
     - if [ "${COVERAGE}" == "1" ]; then
       pip install coverage;
       pip install coveralls;

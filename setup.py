@@ -8,6 +8,15 @@ from copy import deepcopy
 from os.path import join as pjoin, dirname, exists
 from glob import glob
 
+try:
+    import cython_gsl
+except ImportError:
+    have_cython_gsl = False
+    print("Could not find cython_gsl, the gsl support is disabled in dipy.denoise.stabilizer.pyx!")
+else:
+    have_cython_gsl = True
+    print("Compiling with cython_gsl support.")
+
 # BEFORE importing distutils, remove MANIFEST. distutils doesn't properly
 # update it when the contents of directories change.
 if exists('MANIFEST'): os.remove('MANIFEST')
@@ -69,6 +78,21 @@ if using_setuptools:
     nibabel_spec = 'nibabel>=' + info.NIBABEL_MIN_VERSION
     Distribution(dict(setup_requires=nibabel_spec))
 
+else:
+    extra_setuptools_args = {}
+    from distutils.command import install
+
+# Import distutils _after_ potential setuptools import above, and after removing
+# MANIFEST
+from distutils.core import setup
+from Cython.Distutils.extension import Extension
+from distutils.command import build_py
+from Cython.Distutils import build_ext
+
+from cythexts import cyproc_exts, get_pyx_sdist, derror_maker
+from setup_helpers import install_scripts_bat, add_flag_checking
+
+
 # Define extensions
 EXTS = []
 
@@ -108,9 +132,28 @@ for modulename, other_sources, language in (
     pyx_src = pjoin(*modulename.split('.')) + '.pyx'
     EXTS.append(Extension(modulename, [pyx_src] + other_sources,
                           language=language,
+                          cython_compile_time_env={'have_cython_gsl': have_cython_gsl},
                           **deepcopy(ext_kwargs)))  # deepcopy lists
 
+# Build gsl cython extension if present, if not it will use mpmath.
+pyxfile = 'dipy/denoise/stabilizer.pyx'
+ext_name = "dipy.denoise.stabilizer"
+if have_cython_gsl:
+    cython_gsl_ext = Extension(ext_name,
+                               [pyxfile],
+                               libraries=cython_gsl.get_libraries(),
+                               library_dirs=[cython_gsl.get_library_dir()],
+                               cython_compile_time_env={'have_cython_gsl': have_cython_gsl},
+                               cython_include_dirs=[cython_gsl.get_cython_include_dir()],
+                               include_dirs=[np.get_include()])
+else:
+    cython_gsl_ext = Extension(ext_name,
+                               [pyxfile],
+                               language=language,
+                               cython_compile_time_env={'have_cython_gsl': have_cython_gsl},
+                               **deepcopy(ext_kwargs))
 
+EXTS.append(cython_gsl_ext)
 # Do our own build and install time dependency checking. setup.py gets called in
 # many different ways, and may be called just to collect information (egg_info).
 # We need to set up tripwires to raise errors when actually doing things, like
