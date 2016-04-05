@@ -360,6 +360,75 @@ def _F2m(a, b, c):
     return F2
 
 
+def _directional_kurtosis(dt, MD, kt, V, min_diffusivity=0, min_kurtosis=-1):
+    r""" Helper function that calculate the apparent kurtosis coefficient (AKC)
+    in each direction of a sphere for a single voxel.
+
+    Parameters
+    ----------
+    dt : array (6,)
+        elements of the diffusion tensor of the voxel.
+    MD : float
+        mean diffusivity of the voxel
+    kt : array (15,)
+        elements of the kurtosis tensor of the voxel.
+    V : array (g, 3)
+        g directions of a Sphere in Cartesian coordinates
+    min_diffusivity : float (optional)
+        Because negative eigenvalues are not physical and small eigenvalues
+        cause quite a lot of noise in diffusion based metrics, diffusivity
+        values smaller than `min_diffusivity` are replaced with
+        `min_diffusivity`. defaut = 0
+    min_kurtosis : float (optional)
+        Because high amplitude negative values of kurtosis are not physicaly
+        and biologicaly pluasible, and these causes huge artefacts in kurtosis
+        based measures, directional kurtosis values than `min_kurtosis` are
+        replaced with `min_kurtosis`. defaut = -1
+
+    Returns
+    --------
+    AKC : ndarray (g,)
+        Apparent kurtosis coefficient (AKC) in all g directions of a sphere for
+        a single voxel.
+
+    See Also
+    --------
+    apparent_kurtosis_coef
+    """
+    ADC = \
+        V[:, 0] * V[:, 0] * dt[0] + \
+        2 * V[:, 0] * V[:, 1] * dt[1] + \
+        V[:, 1] * V[:, 1] * dt[2] + \
+        2 * V[:, 0] * V[:, 2] * dt[3] + \
+        2 * V[:, 1] * V[:, 2] * dt[4] + \
+        V[:, 2] * V[:, 2] * dt[5]
+
+    if min_diffusivity is not None:
+        ADC = ADC.clip(min=min_diffusivity)
+
+    AKC = \
+        V[:, 0] * V[:, 0] * V[:, 0] * V[:, 0] * kt[0] + \
+        V[:, 1] * V[:, 1] * V[:, 1] * V[:, 1] * kt[1] + \
+        V[:, 2] * V[:, 2] * V[:, 2] * V[:, 2] * kt[2] + \
+        4 * V[:, 0] * V[:, 0] * V[:, 0] * V[:, 1] * kt[3] + \
+        4 * V[:, 0] * V[:, 0] * V[:, 0] * V[:, 2] * kt[4] + \
+        4 * V[:, 0] * V[:, 1] * V[:, 1] * V[:, 1] * kt[5] + \
+        4 * V[:, 1] * V[:, 1] * V[:, 1] * V[:, 2] * kt[6] + \
+        4 * V[:, 0] * V[:, 2] * V[:, 2] * V[:, 2] * kt[7] + \
+        4 * V[:, 1] * V[:, 2] * V[:, 2] * V[:, 2] * kt[8] + \
+        6 * V[:, 0] * V[:, 0] * V[:, 1] * V[:, 1] * kt[9] + \
+        6 * V[:, 0] * V[:, 0] * V[:, 2] * V[:, 2] * kt[10] + \
+        6 * V[:, 1] * V[:, 1] * V[:, 2] * V[:, 2] * kt[11] + \
+        12 * V[:, 0] * V[:, 0] * V[:, 1] * V[:, 2] * kt[12] + \
+        12 * V[:, 0] * V[:, 1] * V[:, 1] * V[:, 2] * kt[13] + \
+        12 * V[:, 0] * V[:, 1] * V[:, 2] * V[:, 2] * kt[14]
+
+    if min_kurtosis is not None:
+        AKC = AKC.clip(min=min_kurtosis)
+
+    return (MD/ADC) ** 2 * AKC
+
+
 def apparent_kurtosis_coef(dki_params, sphere, min_diffusivity=0,
                            min_kurtosis=-1):
     r""" Calculate the apparent kurtosis coefficient (AKC) in each direction
@@ -443,75 +512,6 @@ def apparent_kurtosis_coef(dki_params, sphere, min_diffusivity=0,
     AKC[rel_i] = AKCi
 
     return AKC.reshape((outshape + (len(V),)))
-
-
-def _directional_kurtosis(dt, MD, kt, V, min_diffusivity=0, min_kurtosis=-1):
-    r""" Helper function that calculate the apparent kurtosis coefficient (AKC)
-    in each direction of a sphere for a single voxel.
-
-    Parameters
-    ----------
-    dt : array (6,)
-        elements of the diffusion tensor of the voxel.
-    MD : float
-        mean diffusivity of the voxel
-    kt : array (15,)
-        elements of the kurtosis tensor of the voxel.
-    V : array (g, 3)
-        g directions of a Sphere in Cartesian coordinates
-    min_diffusivity : float (optional)
-        Because negative eigenvalues are not physical and small eigenvalues
-        cause quite a lot of noise in diffusion based metrics, diffusivity
-        values smaller than `min_diffusivity` are replaced with
-        `min_diffusivity`. defaut = 0
-    min_kurtosis : float (optional)
-        Because high amplitude negative values of kurtosis are not physicaly
-        and biologicaly pluasible, and these causes huge artefacts in kurtosis
-        based measures, directional kurtosis values than `min_kurtosis` are
-        replaced with `min_kurtosis`. defaut = -1
-
-    Returns
-    --------
-    AKC : ndarray (g,)
-        Apparent kurtosis coefficient (AKC) in all g directions of a sphere for
-        a single voxel.
-
-    See Also
-    --------
-    apparent_kurtosis_coef
-    """
-    ADC = \
-        V[:, 0] * V[:, 0] * dt[0] + \
-        2 * V[:, 0] * V[:, 1] * dt[1] + \
-        V[:, 1] * V[:, 1] * dt[2] + \
-        2 * V[:, 0] * V[:, 2] * dt[3] + \
-        2 * V[:, 1] * V[:, 2] * dt[4] + \
-        V[:, 2] * V[:, 2] * dt[5]
-
-    if min_diffusivity is not None:
-        ADC = ADC.clip(min=min_diffusivity)
-
-    AKC = \
-        V[:, 0] * V[:, 0] * V[:, 0] * V[:, 0] * kt[0] + \
-        V[:, 1] * V[:, 1] * V[:, 1] * V[:, 1] * kt[1] + \
-        V[:, 2] * V[:, 2] * V[:, 2] * V[:, 2] * kt[2] + \
-        4 * V[:, 0] * V[:, 0] * V[:, 0] * V[:, 1] * kt[3] + \
-        4 * V[:, 0] * V[:, 0] * V[:, 0] * V[:, 2] * kt[4] + \
-        4 * V[:, 0] * V[:, 1] * V[:, 1] * V[:, 1] * kt[5] + \
-        4 * V[:, 1] * V[:, 1] * V[:, 1] * V[:, 2] * kt[6] + \
-        4 * V[:, 0] * V[:, 2] * V[:, 2] * V[:, 2] * kt[7] + \
-        4 * V[:, 1] * V[:, 2] * V[:, 2] * V[:, 2] * kt[8] + \
-        6 * V[:, 0] * V[:, 0] * V[:, 1] * V[:, 1] * kt[9] + \
-        6 * V[:, 0] * V[:, 0] * V[:, 2] * V[:, 2] * kt[10] + \
-        6 * V[:, 1] * V[:, 1] * V[:, 2] * V[:, 2] * kt[11] + \
-        12 * V[:, 0] * V[:, 0] * V[:, 1] * V[:, 2] * kt[12] + \
-        12 * V[:, 0] * V[:, 1] * V[:, 1] * V[:, 2] * kt[13] + \
-        12 * V[:, 0] * V[:, 1] * V[:, 2] * V[:, 2] * kt[14]
-
-    if min_kurtosis is not None:
-        AKC = AKC.clip(min=min_kurtosis)
-
-    return (MD/ADC) ** 2 * AKC
 
 
 def _kt_maxima_converge(ang, dt, MD, kt):
