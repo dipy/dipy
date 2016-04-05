@@ -656,3 +656,30 @@ def test_kurtosis_maxima():
     # simulations parameters (apart from fiber directions) are equal
     assert_almost_equal(k_max_cross, RK)
 
+
+def test_single_fiber_model():
+    # single fiber simulate (which is the assumption of our model)
+    fie = 0.49
+    ADi = 0.00099
+    ADe = 0.00226
+    RDi = 0
+    RDe = 0.00087
+
+    # prepare simulation:
+    theta = random.uniform(0, 180)
+    phi = random.uniform(0, 320)
+    angles = [(theta, phi), (theta, phi)]
+    mevals = np.array([[ADi, RDi, RDi], [ADe, RDe, RDe]])
+    frac = [fie*100, (1 - fie)*100]
+    signal, dt, kt = multi_tensor_dki(gtab_2s, mevals, angles=angles,
+                                      fractions=frac, snr=None)
+    # DKI fit
+    dkiM = dki.DiffusionKurtosisModel(gtab_2s, fit_method="WLS")
+    dkiF = dkiM.fit(signal)
+
+    # Single fiber model
+    sphere = get_sphere('symmetric724')
+    AWF = dki.single_fiber_model(dkiF.model_params, sphere, mask=None,
+                                 gtol=1e-5)
+    assert_almost_equal(AWF, fie)
+
