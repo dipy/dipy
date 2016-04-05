@@ -1051,7 +1051,85 @@ def axial_kurtosis(dki_params, min_kurtosis=0, max_kurtosis=3):
     return AK.reshape(outshape)
 
 
+<<<<<<< HEAD
 def dki_prediction(dki_params, gtab, S0=1.):
+=======
+def single_fiber_model(dki_params, sphere, mask=None, gtol=1e-5):
+    """ Computes the white matter integrity measures from dki
+
+    Parameters
+    ----------
+    dki_params : ndarray (x, y, z, 27) or (n, 27)
+        All parameters estimated from the diffusion kurtosis model.
+        Parameters are ordered as follow:
+            1) Three diffusion tensor's eingenvalues
+            2) Three lines of the eigenvector matrix each containing the first,
+               second and third coordinates of the eigenvector
+            3) Fifteen elements of the kurtosis tensor
+    sphere : Sphere class instance, optional
+        The sphere providing sample directions for the initial search of the
+        maxima value of kurtosis.
+    gtol : float, optional
+        This input is to refine kurtosis maxima under the precision of the
+        directions sampled on the sphere class instance. The gradient of the
+        convergence procedure must be less than gtol before succesful
+        termination. If gtol is None, fiber direction is directly taken from 
+        the initial sampled directions of the given sphere object
+    mask : ndarray (x, y, z, 27) or (n, 27)
+    
+    Returns
+    --------
+    AWF : ndarray (x, y, z, 27) or (n, 27)
+        Axonal Water Fraction
+    Da : ndarray (x, y, z, 27) or (n, 27)
+        Axonal Diffusivity
+    ADe : ndarray (x, y, z, 27) or (n, 27)
+        Axial Diffusivity of extra-cellular compartment
+    RDe : ndarray (x, y, z, 27) or (n, 27)
+        Radial Diffusivity of extra-cellular compartment
+    tort : ndarray (x, y, z, 27) or (n, 27)
+        Tortuosity
+
+    Notes
+    -----
+    """
+    shape = dki_params.shape[:-1]
+
+    # select voxels where to find fiber directions
+    if mask is None:
+        mask = np.ones(shape, dtype='bool')
+    else:
+        if mask.shape != shape:
+            raise ValueError("Mask is not the same shape as data.")
+
+    evals, evecs, kt = split_dki_param(dki_params)
+    # select non-zero voxels
+    # (when #677 is merged replace this code lines by function _positive_evals)
+    # pos_evals = _positive_evals(evals[..., 0], evals[..., 1], evals[..., 2])
+    er = np.finfo(evals.ravel()[0]).eps * 1e3
+    pos_evals = np.logical_and(evals[..., 0] > er,
+                               np.logical_and(evals[..., 1] > er,
+                                              evals[..., 2] > er))
+
+    mask = np.logical_and(mask, pos_evals)
+
+    kt_max = np.zeros(mask.shape) 
+
+    for idx in ndindex(shape):
+        if not mask[idx]:
+            continue
+        DT = np.dot(np.dot(evecs[idx], np.diag(evals[idx])), evecs[idx].T)
+        dt = lower_triangular(DT)
+        kt_max[idx], da = kurtosis_maxima(dt, np.mean(evals[idx]), kt[idx],
+                                          sphere, gtol=1e-5)
+
+    AWF = kt_max / (kt_max + 3)
+
+    return AWF
+
+
+def dki_prediction(dki_params, gtab, S0=150):
+>>>>>>> NF: First version of the function to compute Els Fieremans model (GSoC version)
     """ Predict a signal given diffusion kurtosis imaging parameters.
 
     Parameters
