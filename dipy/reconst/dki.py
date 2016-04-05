@@ -12,6 +12,7 @@ from dipy.reconst.utils import dki_design_matrix as design_matrix
 from dipy.utils.six.moves import range
 from ..core.onetime import auto_attr
 from .base import ReconstModel
+from dipy.core.geometry import sphere2cart
 from dipy.core.ndindex import ndindex
 
 
@@ -514,6 +515,38 @@ def _directional_kurtosis(dt, MD, kt, V, min_diffusivity=0, min_kurtosis=-1):
         AKC = AKC.clip(min=min_kurtosis)
 
     return (MD / ADC) ** 2 * AKC
+
+
+def _kt_maxima_converge(ang, dt, MD, kt):
+    """ Helper function that computes the negate of the directional kurtosis
+    of a voxel along a given directions in polar coordinates.
+
+    Parameters
+    ----------
+    ang : array (2,)
+        arrays containing the two polar angles
+    dt : array (6,)
+        elements of the diffusion tensor of the voxel.
+    MD : float
+        mean diffusivity of the voxel
+    kt : array (15,)
+        elements of the kurtosis tensor of the voxel.
+
+    Returns
+    -------
+    neg_kt : float
+        The negated values of the directional kurtosis for the given direction.
+
+    Notes
+    -----
+    This function is used to refine the kurtosis maxima estimate
+    
+    See also
+    --------
+    dipy.reconst.dki.kurtosis_maxima
+    """
+    n = np.array([sphere2cart(1, ang[0], ang[1])])
+    return - _directional_kurtosis(dt, MD, kt, n)
 
 
 def mean_kurtosis(dki_params, min_kurtosis=0, max_kurtosis=3):
