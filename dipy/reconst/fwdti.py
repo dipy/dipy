@@ -627,7 +627,7 @@ def nlls_fit_tensor(design_matrix, data, fw_params=None, Diso=3e-3,
         0 and 1.
         Default: True
     jac : bool
-        Use the Jacobian? Default: True
+        Use the Jacobian? Default: False
 
     Returns
     -------
@@ -643,11 +643,6 @@ def nlls_fit_tensor(design_matrix, data, fw_params=None, Diso=3e-3,
     else:
         fw_params = fw_params.reshape((-1, fw_params.shape[-1]))
 
-    # if bounds==None:
-    """
-    bounds = ([0., -Diso, 0., -Diso, -Diso, 0., -10., 0],
-              [Diso, Diso, Diso, Diso, Diso, Diso, 10., 1])
-    """
     for vox in range(flat_data.shape[0]):
         if np.all(flat_data[vox] == 0):
             raise ValueError("The data in this voxel contains only zeros")
@@ -672,26 +667,6 @@ def nlls_fit_tensor(design_matrix, data, fw_params=None, Diso=3e-3,
 
         # Use the Levenberg-Marquardt algorithm wrapped in opt.leastsq
         start_params = np.concatenate((dt, [-np.log(s0), f]), axis=0)
-        """
-        lb = np.array(bounds[0])
-        ub = np.array(bounds[1])
-        start_params[start_params<lb] = lb[start_params<lb]
-        start_params[start_params>ub] = ub[start_params>ub]       
-        if jac:
-            out = opt.least_squares(_nlls_err_func, start_params[:8],
-                                    args=(design_matrix, flat_data[vox],
-                                          Diso, weighting, sigma, cholesky,
-                                          f_transform),
-                                    jac=_nlls_jacobian_func,
-                                    bounds=bounds)
-        else:
-            out = opt.least_squares(_nlls_err_func, start_params[:8],
-                                    args=(design_matrix, flat_data[vox],
-                                          Diso, weighting, sigma, cholesky,
-                                          f_transform),
-                                    bounds=bounds)
-        this_tensor = out.x
-        """
         if jac:
             this_tensor, status = opt.leastsq(_nlls_err_func, start_params[:8],
                                               args=(design_matrix,
