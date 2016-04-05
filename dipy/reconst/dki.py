@@ -3,6 +3,7 @@
 from __future__ import division, print_function, absolute_import
 
 import numpy as np
+import scipy.optimize as opt
 from dipy.reconst.dti import (TensorFit, mean_diffusivity, axial_diffusivity,
                               radial_diffusivity, from_lower_triangular,
                               lower_triangular, decompose_tensor,
@@ -10,9 +11,9 @@ from dipy.reconst.dti import (TensorFit, mean_diffusivity, axial_diffusivity,
 
 from dipy.reconst.utils import dki_design_matrix as design_matrix
 from dipy.utils.six.moves import range
-from ..core.onetime import auto_attr
 from .base import ReconstModel
-from dipy.core.geometry import sphere2cart
+from dipy.core.geometry import (sphere2cart, cart2sphere)
+from .recspeed import local_maxima
 from dipy.core.ndindex import ndindex
 
 
@@ -544,6 +545,61 @@ def _kt_maxima_converge(ang, dt, MD, kt):
     """
     n = np.array([sphere2cart(1, ang[0], ang[1])])
     return - _directional_kurtosis(dt, MD, kt, n)
+
+
+def kurtosis_maxima(dt, MD, kt, sphere, gtol=1e-5):
+    """ Computes the maxima value of a single voxel kurtosis tensor
+
+    Parameters
+    ----------
+    dt : array (6,)
+        elements of the diffusion tensor of the voxel.
+    MD : float
+        mean diffusivity of the voxel
+    kt : array (15,)
+        elements of the kurtosis tensor of the voxel.
+    sphere : Sphere class instance, optional
+        The sphere providing sample directions for the initial search of the
+        maxima value of kurtosis.
+    gtol : float, optional
+        This input is to refine kurtosis maxima under the precision of the
+        directions sampled on the sphere class instance. The gradient of the
+        convergence procedure must be less than gtol before succesful
+        termination. If gtol is None, fiber direction is directly taken from 
+        the initial sampled directions of the given sphere object
+    
+    Returns
+    --------
+    max_value : float
+        kurtosis tensor maxima value
+    max_dir : array (3,)
+        Cartesian coordinates of the direction of the maxima kurtosis value 
+    """
+    # Estimation of maxima kurtosis candidates
+    AKC = _directional_kurtosis(dt, MD, kt, sphere.vertices)
+    max_val, ind = local_maxima(AKC, sphere.edges)
+    n = len(max_val)
+    max_dir = sphere.vertices[ind]
+
+    # Select the maxima from the candidates
+    max_value = max(max_val)
+    max_direction = max_dir[np.argmax(max_val.argmax)]
+
+    # refine maxima direction
+    if gtol is not None:
+        for p in range(n):
+            r, theta, phi = cart2sphere(max_dir[p, 0], max_dir[p, 1],
+                                        max_dir[p, 2])
+            ang = np.array([theta, phi])
+            ang[:] = opt.fmin_bfgs(_kt_maxima_converge, ang, args=(dt, MD, kt),
+                                   gtol=gtol, disp=False, retall=False)
+            k_dir = np.array([sphere2cart(1., ang[0], ang[1])])
+            k_val = _directional_kurtosis(dt, MD, kt, k_dir)
+            if k_val > max_value:
+                max_value = k_val
+                max_direction = k_dir
+
+    return max_value, max_direction
 
 
 def mean_kurtosis(dki_params, min_kurtosis=0, max_kurtosis=3):
