@@ -14,9 +14,11 @@ from dipy.core.gradients import gradient_table
 from dipy.data import get_data
 from dipy.reconst.dti import (from_lower_triangular, decompose_tensor)
 from dipy.reconst.dki import (mean_kurtosis, carlson_rf,  carlson_rd,
-                              axial_kurtosis, radial_kurtosis, _positive_evals)
+                              axial_kurtosis, radial_kurtosis, _positive_evals,
+                              lower_triangular)
 
 from dipy.core.sphere import Sphere
+from dipy.data import get_sphere
 
 from dipy.core.geometry import perpendicular_directions
 
@@ -561,3 +563,33 @@ def test_dki_errors():
     assert_array_almost_equal(dkiF.model_params, multi_params)
     # test a incorrect mask
     assert_raises(ValueError, dkiM.fit, DWI, mask=mask_not_correct)
+
+
+def test_kurtosis_maxima():
+    # TEST 1
+    # simulate a crossing fibers interserting at 70 degrees. The first fiber
+    # is aligned to the x-axis while the second fiber is aligned to the x-z
+    # plane with an angular deviation of 70 degrees from the first one.
+    # According to Neto Henriques et al, 2015 (NeuroImage 111: 85-99), the
+    # kurtosis tensor of this simulation will have a maxima aligned to axis y
+    angles = [(90, 0), (90, 0), (20, 0), (20, 0)]
+    signal_70, dt_70, kt_70 = multi_tensor_dki(gtab_2s, mevals_cross, S0=100,
+                                               angles=angles,
+                                               fractions=frac_cross, snr=None)
+    # prepare inputs
+    dkiM = dki.DiffusionKurtosisModel(gtab_2s, fit_method="OLS")
+    dkiF = dkiM.fit(signal_70)
+    MD = dkiF.md
+    kt = dkiF.kt
+    R = dkiF.evecs
+    evals = dkiF.evals
+    dt = lower_triangular(np.dot(np.dot(R, np.diag(evals)), R.T))
+    sphere = get_sphere('symmetric724')
+
+    # compute maxima
+    k_max_cross, max_dir = dki.kurtosis_maxima(dt, MD, kt, sphere, gtol=1e-5)
+    
+    yaxis = np.array([0., 1., 0.])
+    cos_angle = np.abs(np.dot(max_dir[0], yaxis))
+    assert_almost_equal(cos_angle, 1.)
+
