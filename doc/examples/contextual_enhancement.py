@@ -41,9 +41,9 @@ This equation is solved via a shift-twist convolution (denoted by :math:`\ast_{\
 
 .. math::
 
-  W(\vec{y},\vec{n},t) = (P_t \ast_{\mathbb{R}^3 \rtimes S^2} U)(\vec{y},\vec{n})
-  = \int_{\mathbb{R}^3} \int_{S^2} P_t (R^T_{\vec{n}^\prime}(\vec{y}-\vec{y}^\prime),
-   R^T_{\vec{n}^\prime} \vec{n} ) U(\vec{y}^\prime, \vec{n}^\prime)
+  W({\bf y},{\bf n},t) = (P_t \ast_{\mathbb{R}^3 \rtimes S^2} U)({\bf y},{\bf n})
+  = \int_{\mathbb{R}^3} \int_{S^2} P_t (R^T_{{\bf n}^\prime}({\bf y}-{\bf y}^\prime),
+   R^T_{{\bf n}^\prime} {\bf n} ) U({\bf y}^\prime, {\bf n}^\prime)
 
 Here, :math:`R_{\bf n}` is any 3D rotation that maps the vector :math:`(0,0,1)`
 onto :math:`{\bf n}`.
@@ -51,7 +51,7 @@ onto :math:`{\bf n}`.
 Note that the shift-twist convolution differs from a Euclidean convolution and
 takes into account the non-flat structure of the space :math:`\mathbb{R}^3\rtimes S^2`.
 
-The kernel :math:`P_t` has a stochastic interpretation [DuitsAndFranken_JMIV]_.
+The kernel :math:`P_t` has a stochastic interpretation [DuitsAndFranken_IJCV]_.
 It can be seen as the limiting distribution obtained by accumulating random
 walks of particles in the position/orientation domain, where in each step the
 particles can (randomly) move forward/backward along their current orientation,
@@ -88,13 +88,15 @@ data = img.get_data()
 
 # Add Rician noise
 from dipy.segment.mask import median_otsu
-b0_mask, mask = median_otsu(data)
+b0_slice = data[:, :, :, 1]
+b0_mask, mask = median_otsu(b0_slice)
 np.random.seed(1)
-data_noisy = add_noise(data, 1, np.mean(data[mask]), noise_type='rician')
+data_noisy = add_noise(data, 10.0, np.mean(b0_slice[mask]), noise_type='rician')
 
-# Select a small part of it
-data_small = data[25:40, 65:80, 35:42]
-data_noisy_small = data_noisy[25:40, 65:80, 35:42]
+# Select a small part of it.
+padding = 3 # Include a larger region to avoid boundary effects
+data_small = data[25-padding:40+padding, 65-padding:80+padding, 35:42]
+data_noisy_small = data_noisy[25-padding:40+padding, 65-padding:80+padding, 35:42]
 
 """
 Fit an initial model to the data, in this case Constrained Spherical
@@ -188,17 +190,17 @@ csd_sf_enh = sh_to_sf(csd_shm_enh, sphere, sh_order=8)
 csd_sf_enh_sharp = sh_to_sf(csd_shm_enh_sharp, sphere, sh_order=8)
 
 # Normalize the sharpened ODFs
-csd_sf_enh_sharp = csd_sf_enh_sharp * np.amax(csd_sf_orig)/np.amax(csd_sf_enh_sharp)
+csd_sf_enh_sharp = csd_sf_enh_sharp * np.amax(csd_sf_orig)/np.amax(csd_sf_enh_sharp) * 1.25
 
 """
 The end results are visualized. It can be observed that the end result after
 diffusion and sharpening is closer to the original noiseless dataset.
 """
 
-csd_sf_orig_slice = csd_sf_orig[:, :, [3], :]
-csd_sf_noisy_slice = csd_sf_noisy[:, :, [3], :]
-csd_sf_enh_slice = csd_sf_enh[:, :, [3], :]
-csd_sf_enh_sharp_slice = csd_sf_enh_sharp[:, :, [3], :]
+csd_sf_orig_slice = csd_sf_orig[padding:-padding, padding:-padding, [3], :]
+csd_sf_noisy_slice = csd_sf_noisy[padding:-padding, padding:-padding, [3], :]
+csd_sf_enh_slice = csd_sf_enh[padding:-padding, padding:-padding, [3], :]
+csd_sf_enh_sharp_slice = csd_sf_enh_sharp[padding:-padding, padding:-padding, [3], :]
 
 ren = fvtk.ren()
 
@@ -230,7 +232,7 @@ fodf_spheres_enh.SetPosition(35, 0, 0)
 fvtk.add(ren, fodf_spheres_enh)
 
 # Additional sharpening
-fodf_spheres_enh_sharp = fvtk.sphere_funcs(csd_sf_enh_sharp_slice * 1.5,
+fodf_spheres_enh_sharp = fvtk.sphere_funcs(csd_sf_enh_sharp_slice,
                                            sphere,
                                            scale=2,
                                            norm=False,
@@ -246,7 +248,7 @@ fvtk.record(ren, out_path='enhancements.png', size=(900, 900))
    :align: center
 
    The results after enhancements. Top-left: original noiseless data.
-   Bottom-left: original data with added Rician noise (SNR=2). Bottom-right:
+   Bottom-left: original data with added Rician noise (SNR=10). Bottom-right:
    After enhancement of noisy data. Top-right: After enhancement and sharpening
    of noisy data.
 
@@ -254,9 +256,9 @@ References
 ~~~~~~~~~~
 
 .. [Meesters2016_ISMRM] S. Meesters, G. Sanguinetti, E. Garyfallidis,
-                        J. Portegies, R. Duits. (2015) Fast implementations of
+                        J. Portegies, R. Duits. (2016) Fast implementations of
                         contextual PDE’s for HARDI data processing in DIPY.
-                        ISMRM 2016 conf. (submitted)
+                        ISMRM 2016 conference.
 .. [Portegies2015_PLoSOne] J. Portegies, R. Fick, G. Sanguinetti, S. Meesters,
                            G.Girard, and R. Duits. (2015) Improving Fiber
                            Alignment in HARDI by Combining Contextual PDE flow
@@ -266,10 +268,12 @@ References
                         and Applications in Neuroimaging. Fifth International
                         Conference on Scale Space and Variational Methods in
                         Computer Vision
-.. [DuitsAndFranken_JMIV] R. Duits and E. Franken (2011) Morphological and
-                          Linear Scale Spaces for Fiber Enhancement in DWI-MRI.
-                          J Math Imaging Vis, 46(3):326-368.
-
+.. [DuitsAndFranken_IJCV] R. Duits and E. Franken (2011) Left-invariant diffusions 
+                        on the space of positions and orientations and their 
+                        application to crossing-preserving smoothing of HARDI 
+                        images. International Journal of Computer Vision, 92:231-264.
 .. [RodriguesEurographics] P. Rodrigues, R. Duits, B. Romeny, A. Vilanova
-                           (2010). Accelerated Diffusion Operators for Enhancing DW-MRI. Eurographics Workshop on Visual Computing for Biology and Medicine. The Eurographics Association.
+                           (2010). Accelerated Diffusion Operators for Enhancing DW-MRI. 
+                           Eurographics Workshop on Visual Computing for Biology and Medicine. 
+                           The Eurographics Association.
 """

@@ -3,7 +3,7 @@ import numpy as np
 
 from nibabel.tmpdirs import InTemporaryDirectory
 
-from ..dpy import Dpy, have_tables
+from dipy.io.dpy import Dpy, have_tables
 
 
 from nose.tools import assert_true, assert_false, \

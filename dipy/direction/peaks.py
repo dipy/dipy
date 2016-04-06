@@ -5,7 +5,7 @@ from itertools import repeat
 from os import path
 from warnings import warn
 
-from ..utils.six.moves import xrange
+from dipy.utils.six.moves import xrange
 
 from nibabel.tmpdirs import InTemporaryDirectory
 

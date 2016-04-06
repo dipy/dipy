@@ -10,7 +10,7 @@ This recursive method will avoid the common problem of the polar singularity,
 produced by 2d (lon-lat) parameterization methods.
 
 """
-from .sphere import unit_octahedron, HemiSphere
+from dipy.core.sphere import unit_octahedron, HemiSphere
 
 
 def create_unit_sphere(recursion_level=2):

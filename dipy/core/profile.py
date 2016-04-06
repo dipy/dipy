@@ -4,7 +4,7 @@
 import os
 import subprocess
 
-from ..utils.optpkg import optional_package
+from dipy.utils.optpkg import optional_package
 
 cProfile, _, _ = optional_package('cProfile')
 pstats, _, _ = optional_package('pstats',

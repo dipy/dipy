@@ -27,7 +27,7 @@ import numpy as np
 from dipy.core.ndindex import ndindex
 
 # Conditional import machinery for vtk
-from ..utils.optpkg import optional_package
+from dipy.utils.optpkg import optional_package
 
 # Allow import, but disable doctests if we don't have vtk
 vtk, have_vtk, setup_module = optional_package('vtk')

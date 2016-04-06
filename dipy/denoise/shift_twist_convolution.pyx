@@ -11,7 +11,7 @@ from dipy.denoise.enhancement_kernel import EnhancementKernel
 from dipy.data import get_sphere
 from dipy.reconst.shm import sh_to_sf, sf_to_sh
 
-def convolve(odfs_sh, kernel, sh_order, test_mode=False, num_threads=None):
+def convolve(odfs_sh, kernel, sh_order, test_mode=False, num_threads=None, normalize=True):
     """ Perform the shift-twist convolution with the ODF data and 
     the lookup-table of the kernel.
 
@@ -28,21 +28,25 @@ def convolve(odfs_sh, kernel, sh_order, test_mode=False, num_threads=None):
     num_threads : int
             Number of threads. If None (default) then all available threads
             will be used.
+    normalize : boolean
+        Apply max-normalization to the output such that its value range matches 
+        the input ODF data.
         
     Returns
     -------
     output : array of double
-        The ODF data after convolution enhancement
+        The ODF data after convolution enhancement in spherical harmonics format
         
     References
     ----------
     [Meesters2016_ISMRM] S. Meesters, G. Sanguinetti, E. Garyfallidis, 
-                         J. Portegies, R. Duits. (2015) Fast implementations of 
+                         J. Portegies, R. Duits. (2016) Fast implementations of 
                          contextual PDE’s for HARDI data processing in DIPY. 
-                         ISMRM 2016 conf. (submitted)
-    [DuitsAndFranken2011] R. Duits and E. Franken (2011) Morphological and
-                          Linear Scale Spaces for Fiber Enhancement in DWI-MRI.
-                          J Math Imaging Vis, 46(3):326-368.
+                         ISMRM 2016 conference.
+    [DuitsAndFranken_IJCV] R. Duits and E. Franken (2011) Left-invariant diffusions 
+                        on the space of positions and orientations and their 
+                        application to crossing-preserving smoothing of HARDI 
+                        images. International Journal of Computer Vision, 92:231-264.
     [Portegies2015] J. Portegies, G. Sanguinetti, S. Meesters, and R. Duits. 
                     (2015) New Approximation of a Scale Space Kernel on SE(3) and
                     Applications in Neuroimaging. Fifth International
@@ -53,7 +57,7 @@ def convolve(odfs_sh, kernel, sh_order, test_mode=False, num_threads=None):
                      Combining Contextual PDE flow with Constrained Spherical 
                      Deconvolution. PLoS One.
     """
-    
+
     # convert the ODFs from SH basis to DSF
     sphere = kernel.get_sphere()
     odfs_dsf = sh_to_sf(odfs_sh, sphere, sh_order=sh_order, basis_type=None)
@@ -63,16 +67,17 @@ def convolve(odfs_sh, kernel, sh_order, test_mode=False, num_threads=None):
                                  kernel.get_lookup_table(),
                                  test_mode,
                                  num_threads)
-
+    
     # normalize the output
-    output_norm = output * np.amax(odfs_dsf)/np.amax(output)
+    if normalize:
+        output = np.multiply(output, np.amax(odfs_dsf)/np.amax(output))
     
     # convert back to SH
-    output_sh = sf_to_sh(output_norm, sphere, sh_order=sh_order)
+    output_sh = sf_to_sh(output, sphere, sh_order=sh_order)
     
     return output_sh
     
-def convolve_sf(odfs_sf, kernel, test_mode=False, num_threads=None):
+def convolve_sf(odfs_sf, kernel, test_mode=False, num_threads=None, normalize=True):
     """ Perform the shift-twist convolution with the ODF data and 
     the lookup-table of the kernel.
 
@@ -87,17 +92,25 @@ def convolve_sf(odfs_sf, kernel, test_mode=False, num_threads=None):
     num_threads : int
             Number of threads. If None (default) then all available threads
             will be used.
+    normalize : boolean
+        Apply max-normalization to the output such that its value range matches 
+        the input ODF data.
 
     Returns
     -------
     output : array of double
-        The ODF data after convolution enhancement
+        The ODF data after convolution enhancement, sampled on a sphere
     """
     # perform the convolution
     output = perform_convolution(odfs_sf, 
                                  kernel.get_lookup_table(),
                                  test_mode,
                                  num_threads)
+
+    # normalize the output
+    if normalize:
+        output = np.multiply(output, np.amax(odfs_sf)/np.amax(output))
+
     return output
     
 @cython.wraparound(False)
