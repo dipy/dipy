@@ -212,6 +212,7 @@ fig1.savefig('Diffusion_tensor_measures_from_DTI_and_DKI.png')
 """
 .. figure:: Diffusion_tensor_measures_from_DTI_and_DKI.png
    :align: center
+
    **Diffusion tensor measures obtain from the diffusion tensor estimated from
    DKI (upper panels) and DTI (lower panels).**.
 
@@ -257,6 +258,7 @@ fig2.savefig('Kurtosis_tensor_standard_measures.png')
 """
 .. figure:: Kurtosis_tensor_standard_measures.png
    :align: center
+   
    **Kurtosis tensor standard measures obtain from the kurtosis tensor.**.
 
 The non-Gaussian behaviour of the diffusion signal is larger when water
