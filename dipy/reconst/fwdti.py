@@ -12,7 +12,9 @@ from .base import ReconstModel
 
 from dipy.reconst.dti import (TensorFit, design_matrix, _min_positive_signal,
                               decompose_tensor, from_lower_triangular,
-                              lower_triangular, apparent_diffusion_coef)
+                              lower_triangular, apparent_diffusion_coef,
+                              mean_diffusivity)
+from dipy.reconst.dti import wls_fit_tensor as dti_wls_fit
 from dipy.reconst.dki import _positive_evals
 
 from dipy.core.sphere import Sphere
@@ -367,7 +369,8 @@ def _wls_iter(design_matrix, inv_design, sig, min_diffusivity, Diso=3e-3,
     return fw_params
 
 
-def wls_fit_tensor(design_matrix, data, Diso=3e-3, piterations=3, S0=None):
+def wls_fit_tensor(design_matrix, data, Diso=3e-3, piterations=3, S0=None,
+                   mdreg=2.7e-3):
     r""" Computes weighted least squares (WLS) fit to calculate self-diffusion
     tensor using a linear regression model [1]_.
 
@@ -389,7 +392,14 @@ def wls_fit_tensor(design_matrix, data, Diso=3e-3, piterations=3, S0=None):
     S0 : array ([X, Y, Z]), optional
         Non diffusion weighted signal (i.e. signal for b-value=0). If not
         given, S0 will be taken as a model parameter (which is likely to
-        decrease methods robustness)
+        decrease methods robustness).
+    mdreg : float, optimal
+        DTI's mean diffusivity regularization threshold. If standard DTI
+        diffusion tensor's mean diffusivity is almost near the free water
+        diffusion value, the diffusion signal is assumed to be only free water
+        diffusion (i.e. volume fraction will be set to 1 and tissue's diffusion
+        parameters are set to zero). Default md_reg is 2.7e-3 $mm^{2}.s^{-1}$
+        (corresponding to 90% of the free water diffusion value).        
 
     Returns
     -------
@@ -412,27 +422,36 @@ def wls_fit_tensor(design_matrix, data, Diso=3e-3, piterations=3, S0=None):
     # preparing data and initializing parameters
     data = np.asarray(data)
     data_flat = data.reshape((-1, data.shape[-1]))
-    fw_params = np.empty((len(data_flat), 14))
+    fw_params = np.zeros((len(data_flat), 14))
 
     # inverting design matrix and defining minimun diffusion aloud
     min_diffusivity = tol / -design_matrix.min()
     inv_design = np.linalg.pinv(design_matrix)
 
+    # Computing WLS DTI solution for MD regularization
+    dti_params = dti_wls_fit(design_matrix, data)
+    md = mean_diffusivity(dti_params[..., :3])
+    cond = md > mdreg  # removal condition
+    fw_params_p = fw_params[~cond, :]
+    data_flat_p = data_flat[~cond, ]
+
     # looping WLS solution on all data voxels
     if S0 is None:
-        for vox in range(len(data_flat)):
-            fw_params[vox] = _wls_iter(design_matrix, inv_design,
-                                       data_flat[vox], min_diffusivity,
-                                       Diso=Diso, piterations=piterations)
+        for vox in range(len(data_flat_p)):
+            fw_params_p[vox] = _wls_iter(design_matrix, inv_design,
+                                         data_flat_p[vox], min_diffusivity,
+                                         Diso=Diso, piterations=piterations)
     else:
         S0 = S0.ravel()
         for vox in range(len(data_flat)):
-            fw_params[vox] = _wls_iter(design_matrix, inv_design,
-                                       data_flat[vox], min_diffusivity,
-                                       Diso=Diso, piterations=piterations,
-                                       S0=S0[vox])
+            fw_params_p[vox] = _wls_iter(design_matrix, inv_design,
+                                         data_flat_p[vox], min_diffusivity,
+                                         Diso=Diso, piterations=piterations,
+                                         S0=S0[vox])
 
     # Reshape data according to the input data shape
+    fw_params[~cond, :] = fw_params_p
+    fw_params[cond, 12] = 1
     fw_params = fw_params.reshape((data.shape[:-1]) + (14,))
 
     return fw_params
