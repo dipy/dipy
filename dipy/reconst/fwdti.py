@@ -436,7 +436,7 @@ def wls_fit_tensor(design_matrix, data, S0=None, Diso=3e-3, piterations=3,
 
     # looping WLS solution on all data voxels
     if S0 is None:
-        S0 = np.zeros(data_flat.shape[-1])
+        S0 = np.zeros(len(data_flat))
         S0_p = np.zeros(len(data_flat_p))
         for vox in range(len(data_flat_p)):
             fw_params_p[vox], S0_p[vox] = _wls_iter(design_matrix, inv_design,
@@ -687,9 +687,11 @@ def nlls_fit_tensor(design_matrix, data, fw_params=None, S0=None, Diso=3e-3,
 
     # Initializing fw_params according to selected initial guess
     if np.any(fw_params) is None:
-        fw_params = np.zeros((len(flat_data), 14))
-        fw_params[~cond, :12] = dti_params[~cond, :]
-        fw_params[~cond, 12] = 0.2
+        if np.any(S0) is None:
+            fw_params, S0 = wls_fit_tensor(design_matrix, flat_data, Diso=Diso)
+        else:
+            fw_params, S0 = wls_fit_tensor(design_matrix, flat_data, S0=S0,
+                                           Diso=Diso)
     else:
         fw_params = fw_params.reshape((-1, fw_params.shape[-1]))
 
