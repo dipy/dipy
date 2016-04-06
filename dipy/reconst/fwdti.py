@@ -262,8 +262,6 @@ def _wls_iter(design_matrix, sig, min_diffusivity, Diso=3e-3, piterations=3,
     design_matrix : array (g, 7)
         Design matrix holding the covariants used to solve for the regression
         coefficients.
-    inv_design : array (g, 7)
-        Inverse of the design matrix.
     sig : array (g, )
         Diffusion-weighted signal for a single voxel data.
     min_diffusivity : float
@@ -425,7 +423,6 @@ def wls_fit_tensor(design_matrix, data, S0=None, Diso=3e-3, piterations=3,
 
     # inverting design matrix and defining minimun diffusion aloud
     min_diffusivity = tol / -design_matrix.min()
-    inv_design = np.linalg.pinv(design_matrix)
 
     # Computing WLS DTI solution for MD regularization
     dti_params = dti_wls_fit(design_matrix, data_flat)
