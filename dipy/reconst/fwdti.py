@@ -252,8 +252,8 @@ class FreeWaterTensorFit(TensorFit):
         return predict.reshape(shape + (gtab.bvals.shape[0], ))
 
 
-def _wls_iter(design_matrix, inv_design, sig, min_diffusivity, Diso=3e-3,
-              piterations=3, S0=None):
+def _wls_iter(design_matrix, sig, min_diffusivity, Diso=3e-3, piterations=3,
+              S0=None):
     """ Helper function used by wls_fit_tensor - Applies WLS fit of the
     water free elimination model to single voxel signals.
 
@@ -439,7 +439,7 @@ def wls_fit_tensor(design_matrix, data, S0=None, Diso=3e-3, piterations=3,
         S0 = np.zeros(len(data_flat))
         S0_p = np.zeros(len(data_flat_p))
         for vox in range(len(data_flat_p)):
-            fw_params_p[vox], S0_p[vox] = _wls_iter(design_matrix, inv_design,
+            fw_params_p[vox], S0_p[vox] = _wls_iter(design_matrix,
                                                     data_flat_p[vox],
                                                     min_diffusivity,
                                                     Diso=Diso,
@@ -448,7 +448,7 @@ def wls_fit_tensor(design_matrix, data, S0=None, Diso=3e-3, piterations=3,
         S0 = S0.ravel()
         S0_p = S0[~cond]
         for vox in range(len(data_flat_p)):
-            fw_params_p[vox], S0_p[vox] = _wls_iter(design_matrix, inv_design,
+            fw_params_p[vox], S0_p[vox] = _wls_iter(design_matrix,
                                                     data_flat_p[vox],
                                                     min_diffusivity,
                                                     Diso=Diso,
