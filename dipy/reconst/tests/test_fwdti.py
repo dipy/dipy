@@ -74,18 +74,22 @@ def test_fwdti_singlevoxel():
     fwefit = fwdm.fit(S_conta)
     FAfwe = fwefit.fa
     Ffwe = fwefit.f
+    S0fwe = fwefit.S0
 
     assert_almost_equal(FAdti, FAfwe, decimal=3)
     assert_almost_equal(Ffwe, gtf, decimal=3)
+    assert_almost_equal(S0fwe, S0, decimal=3)
 
     # Test non-linear fit
     fwdm = fwdti.FreeWaterTensorModel(gtab_2s, 'NLS', cholesky=False)
     fwefit = fwdm.fit(S_conta)
     FAfwe = fwefit.fa
     Ffwe = fwefit.f
+    S0fwe = fwefit.S0
 
     assert_almost_equal(FAdti, FAfwe)
     assert_almost_equal(Ffwe, gtf)
+    assert_almost_equal(S0fwe, S0, decimal=3)
 
     # Test non-linear fit, when no first guess is given
     fwdm = fwdti.FreeWaterTensorModel(gtab_2s, 'NLS', fw_params=None,
@@ -153,28 +157,28 @@ def test_fwdti_predictions():
     R = R.reshape((9))
     model_params = np.concatenate(([0.0017, 0.0003, 0.0003], R, [gtf, 100]),
                                   axis=0)
-    S_pred1 = fwdti_prediction(model_params, gtab_2s)
+    S_pred1 = fwdti_prediction(model_params, gtab_2s, S0=100)
     assert_array_almost_equal(S_pred1, S_conta)
 
     # Testing in model class
     fwdm = fwdti.FreeWaterTensorModel(gtab_2s)
-    S_pred2 = fwdm.predict(model_params)
+    S_pred2 = fwdm.predict(model_params, S0=100)
     assert_array_almost_equal(S_pred2, S_conta)
 
     # Testing in fit class
     fwefit = fwdm.fit(S_conta)
-    S_pred3 = fwefit.predict(gtab_2s)
+    S_pred3 = fwefit.predict(gtab_2s, S0=100)
     assert_array_almost_equal(S_pred3, S_conta, decimal=5)
 
     # Multi voxel simulation
-    S_pred1 = fwdti_prediction(model_params_mv, gtab_2s)  # function
+    S_pred1 = fwdti_prediction(model_params_mv, gtab_2s, S0=100)  # function
     assert_array_almost_equal(S_pred1, DWI)
-    S_pred2 = fwdm.predict(model_params_mv)  # Model class
+    S_pred2 = fwdm.predict(model_params_mv, S0=100)  # Model class
     assert_array_almost_equal(S_pred2, DWI)
     fwefit = fwdm.fit(DWI)  # Fit class
-    S_pred3 = fwefit.predict(gtab_2s)
+    S_pred3 = fwefit.predict(gtab_2s, S0=100)
     assert_array_almost_equal(S_pred3, DWI)
-    S_pred4 = fwefit.predict(gtab_2s, step=2)  # Assign smaller step
+    S_pred4 = fwefit.predict(gtab_2s, S0=100, step=2)  # Assign smaller step
     assert_array_almost_equal(S_pred4, DWI)
 
 
@@ -212,12 +216,17 @@ def test_fwdti_restore():
     S_conta, peaks = multi_tensor(gtab_2s, mevals, S0=100,
                                   angles=[(90, 0), (90, 0)],
                                   fractions=[(1-gtf) * 100, gtf*100], snr=None)
+    # initial guess
+    fwdm_ini = fwdti.FreeWaterTensorModel(gtab_2s, 'WLS', S0=S0)
+    fwdfit_ini = fwdm_ini.fit(S_conta)
     fwdm = fwdti.FreeWaterTensorModel(gtab_2s, 'NLS', weighting='sigma',
                                       sigma=4)
     fwdtiF = fwdm.fit(S_conta)
     assert_array_almost_equal(fwdtiF.fa, FAdti)
     assert_array_almost_equal(fwdtiF.f, gtf)
-    fwdm2 = fwdti.FreeWaterTensorModel(gtab_2s, 'NLS', weighting='gmm')
+    # Weighting seem to need a better initial guess
+    fwdm2 = fwdti.FreeWaterTensorModel(gtab_2s, 'NLS', weighting='gmm', 
+                                       fw_params=fwdfit_ini.model_params)
     fwdtiF2 = fwdm2.fit(S_conta)
     assert_array_almost_equal(fwdtiF2.fa, FAdti)
     assert_array_almost_equal(fwdtiF2.f, gtf)
@@ -240,6 +249,7 @@ def test_fwdti_jac_multi_voxel():
     # no f transform
     fwdm = fwdti.FreeWaterTensorModel(gtab_2s, 'NLS',
                                       fw_params=fw_params_initial,
+                                      S0=S0m[0, :],
                                       f_transform=False, jac=True)
     fwefit = fwdm.fit(DWI[0, :, :])
     Ffwe = fwefit.f
@@ -248,6 +258,7 @@ def test_fwdti_jac_multi_voxel():
     # with f transform
     fwdm = fwdti.FreeWaterTensorModel(gtab_2s, 'NLS',
                                       fw_params=fw_params_initial,
+                                      S0=S0m[0, :],
                                       f_transform=True, jac=True)
     fwefit = fwdm.fit(DWI[0, :, :])
     Ffwe = fwefit.f
