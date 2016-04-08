@@ -16,7 +16,7 @@ from dipy.reconst.dti import (TensorFit, design_matrix, _min_positive_signal,
 from dipy.reconst.dti import wls_fit_tensor as dti_wls_fit
 from dipy.reconst.dki import _positive_evals
 
-from .vec_val_sum import vec_val_vect
+from dipy.reconst.vec_val_sum import vec_val_vect
 from dipy.core.ndindex import ndindex
 
 
