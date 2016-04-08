@@ -250,8 +250,8 @@ class FreeWaterTensorFit(TensorFit):
         return predict.reshape(shape + (gtab.bvals.shape[0], ))
 
 
-def _wls_iter(design_matrix, sig, min_diffusivity, Diso=3e-3, piterations=3,
-              S0=None):
+def _wls_iter(design_matrix, sig, min_diffusivity, min_signal, Diso=3e-3,
+              piterations=3, S0=None):
     """ Helper function used by wls_fit_tensor - Applies WLS fit of the
     water free elimination model to single voxel signals.
 
@@ -267,6 +267,9 @@ def _wls_iter(design_matrix, sig, min_diffusivity, Diso=3e-3, piterations=3,
         much smaller than the diffusion weighting, cause quite a lot of noise
         in metrics such as fa, diffusivity values smaller than
         `min_diffusivity` are replaced with `min_diffusivity`.
+    min_signal : float
+        The minimum signal value. Needs to be a strictly positive
+        number. Default: minimal signal in the data provided to `fit`.
     Diso : float, optional
         Value of the free water isotropic diffusion. Default is set to 3e-3
         $mm^{2}.s^{-1}$. Please ajust this value if you are assuming different
@@ -284,6 +287,15 @@ def _wls_iter(design_matrix, sig, min_diffusivity, Diso=3e-3, piterations=3,
            first, second and third coordinates of the eigenvector
         3) The volume fraction of the free water compartment
         4) The estimate of the non diffusion-weighted signal S0
+    fw_params : ndarray (13,)
+        Array containing in the last dimention the free water model parameters
+        in the following order:
+            1) Three diffusion tensor's eigenvalues
+            2) Three lines of the eigenvector matrix each containing the
+               first, second and third coordinates of the eigenvector
+            3) The volume fraction of the free water compartment
+    S0 : float
+        Final estimate of the non diffusion-weighted signal S0.
     """
     W = design_matrix
 
@@ -318,8 +330,9 @@ def _wls_iter(design_matrix, sig, min_diffusivity, Diso=3e-3, piterations=3,
             # SA < 0 means that the signal components from the free water
             # component is larger than the total fiber. This cases are present
             # for inapropriate large volume fractions (given the current S0
-            # value estimated). To avoid the log of negative values:
-            SA[SA <= 0] = 0.0001  # same min signal assumed in dti.py
+            # value estimated). To overcome this issue negative SA are replaced
+            # by data's min positive signal. 
+            SA[SA <= 0] = min_signal
             y = np.log(SA / (1-FS))
             all_new_params = np.dot(invWTS2W_WTS2, y)
 
@@ -340,7 +353,7 @@ def _wls_iter(design_matrix, sig, min_diffusivity, Diso=3e-3, piterations=3,
             FS, SI = np.meshgrid(fs, sig)
             S0 = np.exp(-params[6])  # S0 is now taken as a model parameter
             SA = SI - FS*S0*SFW.T
-            SA[SA <= 0] = 0.0001  # same min signal assumed in dti.py
+            SA[SA <= 0] = min_signal  # Overcaming issue of negative SA
             y = np.log(SA / (1-FS))
             all_new_params = np.dot(invWTS2W_WTS2, y)
 
@@ -399,8 +412,8 @@ def wls_fit_tensor(design_matrix, data, S0=None, Diso=3e-3, piterations=3,
     Returns
     -------
     fw_params : ndarray (x, y, z, 13)
-        Matrix containing in the dimention the free water model parameters in
-        the following order:
+        Matrix containing in the last dimention the free water model parameters
+        in the following order:
             1) Three diffusion tensor's eigenvalues
             2) Three lines of the eigenvector matrix each containing the
                first, second and third coordinates of the eigenvector
@@ -439,6 +452,7 @@ def wls_fit_tensor(design_matrix, data, S0=None, Diso=3e-3, piterations=3,
             fw_params_p[vox], S0_p[vox] = _wls_iter(design_matrix,
                                                     data_flat_p[vox],
                                                     min_diffusivity,
+                                                    min_signal=tol,
                                                     Diso=Diso,
                                                     piterations=piterations)
     else:
@@ -449,6 +463,7 @@ def wls_fit_tensor(design_matrix, data, S0=None, Diso=3e-3, piterations=3,
             fw_params_p[vox], S0_p[vox] = _wls_iter(design_matrix,
                                                     data_flat_p[vox],
                                                     min_diffusivity,
+                                                    min_signal=tol,
                                                     Diso=Diso,
                                                     piterations=piterations,
                                                     S0=S0i[vox])
