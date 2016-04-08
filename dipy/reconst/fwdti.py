@@ -488,7 +488,7 @@ def wls_fit_tensor(design_matrix, data, S0=None, Diso=3e-3, piterations=3,
     return fw_params, S0f
 
 
-def _nlls_err_func(tensor_elements, design_matrix, data, Diso=3e-3,
+def _nls_err_func(tensor_elements, design_matrix, data, Diso=3e-3,
                    weighting=None, sigma=None, cholesky=False,
                    f_transform=False):
     """ Error function for the non-linear least-squares fit of the tensor water
@@ -525,13 +525,13 @@ def _nlls_err_func(tensor_elements, design_matrix, data, Diso=3e-3,
         weighting.
     cholesky : bool, optional
         If true, the diffusion tensor elements were decomposed using cholesky
-        decomposition. See fwdti.nlls_fit_tensor
+        decomposition. See fwdti.nls_fit_tensor
         Default: False
 
     f_transform : bool, optional
         If true, the water volume fraction was converted to
         ft = arcsin(2*f - 1) + pi/2, insuring f estimates between 0 and 1.
-        See fwdti.nlls_fit_tensor
+        See fwdti.nls_fit_tensor
         Default: True
     """
     tensor = np.copy(tensor_elements)
@@ -581,7 +581,7 @@ def _nlls_err_func(tensor_elements, design_matrix, data, Diso=3e-3,
         return np.sqrt(w * se)
 
 
-def _nlls_jacobian_func(tensor_elements, design_matrix, data, Diso=3e-3,
+def _nls_jacobian_func(tensor_elements, design_matrix, data, Diso=3e-3,
                         weighting=None, sigma=None, cholesky=False,
                         f_transform=False):
     """The Jacobian is the first derivative of the least squares error
@@ -603,7 +603,7 @@ def _nlls_jacobian_func(tensor_elements, design_matrix, data, Diso=3e-3,
     f_transform : bool, optional
         If true, the water volume fraction was converted to
         ft = arcsin(2*f - 1) + pi/2, insuring f estimates between 0 and 1.
-        See fwdti.nlls_fit_tensor
+        See fwdti.nls_fit_tensor
         Default: True
     """
     tensor = np.copy(tensor_elements)
@@ -626,7 +626,7 @@ def _nlls_jacobian_func(tensor_elements, design_matrix, data, Diso=3e-3,
     return np.concatenate((T - S, df[:, None]), axis=1)
 
 
-def nlls_fit_tensor(design_matrix, data, fw_params=None, S0=None, Diso=3e-3,
+def nls_fit_tensor(design_matrix, data, fw_params=None, S0=None, Diso=3e-3,
                     weighting=None, sigma=None, cholesky=False,
                     f_transform=True, jac=False, mdreg=2.7e-3):
     """
@@ -757,7 +757,7 @@ def nlls_fit_tensor(design_matrix, data, fw_params=None, S0=None, Diso=3e-3,
         # Use the Levenberg-Marquardt algorithm wrapped in opt.leastsq
         start_params = np.concatenate((dt, [-np.log(s0), f]), axis=0)
         if jac:
-            this_tensor, status = opt.leastsq(_nlls_err_func, start_params[:8],
+            this_tensor, status = opt.leastsq(_nls_err_func, start_params[:8],
                                               args=(design_matrix,
                                                     flat_data[vox],
                                                     Diso,
@@ -765,9 +765,9 @@ def nlls_fit_tensor(design_matrix, data, fw_params=None, S0=None, Diso=3e-3,
                                                     sigma,
                                                     cholesky,
                                                     f_transform),
-                                              Dfun=_nlls_jacobian_func)
+                                              Dfun=_nls_jacobian_func)
         else:
-            this_tensor, status = opt.leastsq(_nlls_err_func, start_params[:8],
+            this_tensor, status = opt.leastsq(_nls_err_func, start_params[:8],
                                               args=(design_matrix,
                                                     flat_data[vox],
                                                     Diso,
@@ -869,6 +869,6 @@ def cholesky_to_lower_triangular(R):
 
 common_fit_methods = {'WLLS': wls_fit_tensor,
                       'WLS': wls_fit_tensor,
-                      'NLLS': nlls_fit_tensor,
-                      'NLS': nlls_fit_tensor,
+                      'NLLS': nls_fit_tensor,
+                      'NLS': nls_fit_tensor,
                       }
