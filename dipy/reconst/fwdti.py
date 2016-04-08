@@ -149,6 +149,15 @@ class FreeWaterTensorModel(ReconstModel):
             mask = np.array(mask, dtype=bool, copy=False)
             data_in_mask = np.reshape(data[mask], (-1, data.shape[-1]))
 
+        # Check if at least three b-values are given
+        bmag = int(np.log10(self.gtab.bvals.max()))
+        b = self.gtab.bvals.copy() / (10 ** (bmag-1))  # normalize b units
+        b = b.round()
+        uniqueb = np.unique(b) 
+        if len(uniqueb) < 3:
+            mes = "fwdti fit requires data for at least 2 non zero b-values"
+            raise ValueError(mes)
+
         if self.min_signal is None:
             min_signal = _min_positive_signal(data)
         else:

@@ -194,6 +194,11 @@ def test_fwdti_errors():
     incorrect_mask = np.array([[True, True, False], [True, False, False]])
     assert_raises(ValueError, fwdtiM.fit, DWI, mask=incorrect_mask)
 
+    # 4rd error - if data with only one non zero b-value is given
+    fwdtiM = fwdti.FreeWaterTensorModel(gtab)
+    S_tissue = single_tensor(gtab, S0=100, evals=evals, evecs=evecs, snr=None)
+    assert_raises(ValueError, fwdtiM.fit, S_tissue)
+
     # Testing the correct usage
     fwdtiM = fwdti.FreeWaterTensorModel(gtab_2s, min_signal=1)
     correct_mask = np.zeros((2, 2, 2))
