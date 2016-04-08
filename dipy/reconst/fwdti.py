@@ -12,12 +12,10 @@ from .base import ReconstModel
 
 from dipy.reconst.dti import (TensorFit, design_matrix, _min_positive_signal,
                               decompose_tensor, from_lower_triangular,
-                              lower_triangular, apparent_diffusion_coef,
-                              mean_diffusivity)
+                              lower_triangular, mean_diffusivity)
 from dipy.reconst.dti import wls_fit_tensor as dti_wls_fit
 from dipy.reconst.dki import _positive_evals
 
-from dipy.core.sphere import Sphere
 from .vec_val_sum import vec_val_vect
 from dipy.core.ndindex import ndindex
 
