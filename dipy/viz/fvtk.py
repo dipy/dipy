@@ -76,8 +76,7 @@ if have_vtk:
         have_vtk_texture_mapper2D = False
 
 else:
-    msg = """Optional package VTK is not installed. 
-             Some dipy.viz functions might not work"""
+    msg = "Python VTK is not installed"
     warn(msg)
 
 
