@@ -3,15 +3,13 @@
 Reconstruct with Diffusion Spectrum Imaging
 ===========================================
 
-We show how to apply Diffusion Spectrum Imaging (Wedeen et al. Science 2012) to
+We show how to apply Diffusion Spectrum Imaging [Wedeen08]_ to
 diffusion MRI datasets of Cartesian keyhole diffusion gradients.
 
 First import the necessary modules:
 """
 
-import nibabel as nib
 from dipy.data import fetch_taiwan_ntu_dsi, read_taiwan_ntu_dsi, get_sphere
-from dipy.align.aniso2iso import resample
 from dipy.reconst.dsi import DiffusionSpectrumModel
 
 """
@@ -103,9 +101,39 @@ for index in ndindex(dataslice.shape[:2]):
 
 """
 If you really want to save the PDFs of a full dataset on the disc we recommend
-using memory maps (numpy.memmap) but still have in mind that if you do that for
-example for a dataset of volume size ``(96, 96, 60)`` you will need about 20
-which can take less space when reasonable spheres (with < 1000 vertices) are.
+using memory maps (``numpy.memmap``) but still have in mind that even if you do 
+that for example for a dataset of volume size ``(96, 96, 60)`` you will need about 
+2.5 GBytes which can take less space when reasonable spheres (with < 1000 vertices) 
+are used.
+
+Let's now calculate a map of Generalized Fractional Anisotropy (GFA) [Tuch04]_ 
+using the DSI ODFs.
+"""
+
+from dipy.reconst.odf import gfa
+
+GFA = gfa(ODF)
+
+import matplotlib.pyplot as plt
+
+fig_hist, ax = plt.subplots(1)
+ax.set_axis_off()
+plt.imshow(GFA.T)
+plt.savefig('dsi_gfa.png', bbox_inches='tight', origin='lower', cmap='gray')
+
+"""
+.. figure:: dsi_gfa.png
+   :align: center
+
+See also :ref:`example_reconst_dsi_metrics` for calculating different types 
+of DSI maps.
+
+
+.. [Wedeen08] Wedeen et al., Diffusion spectrum magnetic resonance imaging (DSI) 
+            tractography of crossing fibers, Neuroimage, vol 41, no 4, 
+            1267-1277, 2008.
+
+.. [Tuch04] Tuch, D.S, Q-ball imaging, MRM, vol 52, no 6, 1358-1372, 2004. 
 
 .. include:: ../links_names.inc
 

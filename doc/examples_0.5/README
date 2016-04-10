@@ -1,8 +1,0 @@
-Examples
---------
-
-These are the dipy examples.  They are built as docs in the dipy
-``examples_built`` directory in the documentation.
-
-If you add an example (yes please!), please remember to add it also to the
-``examples_index.rst`` file listing in the ``doc`` directory.

@@ -21,7 +21,7 @@ Where $\mathbf{g}$ is a unit vector in 3 space indicating the direction of
 measurement and b are the parameters of measurement, such as the strength and
 duration of diffusion-weighting gradient. $S(\mathbf{g}, b)$ is the
 diffusion-weighted signal measured and $S_0$ is the signal conducted in a
-measurement with no diffusion weighting. \mathbf{D} is a positive-definite quadratic
+measurement with no diffusion weighting. $\mathbf{D}$ is a positive-definite quadratic
 form, which contains six free parameters to be fit. These six parameters are:
 
 .. math::
@@ -100,18 +100,24 @@ mask module.
 
 from dipy.segment.mask import median_otsu
 
-maskdata, mask = median_otsu(data, 3, 2, True, range(0,10))
+maskdata, mask = median_otsu(data, 3, 1, True,
+                             vol_idx=range(10, 50), dilate=2)
+print('maskdata.shape (%d, %d, %d, %d)' % maskdata.shape)
 
 """
+maskdata.shape ``(72, 87, 59, 160)``
+
 Now that we have prepared the datasets we can go forward with the voxel
 reconstruction. First, we instantiate the Tensor model in the following way.
 """
+
 tenmodel = dti.TensorModel(gtab)
 
 """
 Fitting the data is very simple. We just need to call the fit method of the
 TensorModel in the following way:
 """
+
 tenfit = tenmodel.fit(maskdata)
 
 """
@@ -131,12 +137,11 @@ the tensor:
                     \lambda_3)^2+(\lambda_2-\lambda_3)^2}{\lambda_1^2+
                     \lambda_2^2+\lambda_3^2}}
 
-Note that FA should be interperted carefully. It may be an indication of the
+Note that FA should be interpreted carefully. It may be an indication of the
 density of packing of fibers in a voxel, and the amount of myelin wrapping these
 axons, but it is not always a measure of "tissue integrity". For example, FA
 may decrease in locations in which there is fanning of white matter fibers, or
 where more than one population of white matter fibers crosses.
-
 """
 
 print('Computing anisotropy measures (FA, MD, RGB)')
@@ -213,15 +218,16 @@ sphere = get_sphere('symmetric724')
 from dipy.viz import fvtk
 ren = fvtk.ren()
 
-evals = tenfit.evals[20:50,55:85, 38:39]
-evecs = tenfit.evecs[20:50,55:85, 38:39]
+evals = tenfit.evals[13:43, 44:74, 28:29]
+evecs = tenfit.evecs[13:43, 44:74, 28:29]
 
 """
-We can color the ellipsoids using the ``color_fa`` values that we calculated 
-above. In this example we additionally normalize the values to increase the contrast.
+We can color the ellipsoids using the ``color_fa`` values that we calculated
+above. In this example we additionally normalize the values to increase the
+contrast.
 """
 
-cfa = RGB[20:50, 55:85, 38:39]
+cfa = RGB[13:43, 44:74, 28:29]
 cfa /= cfa.max()
 
 fvtk.add(ren, fvtk.tensor(evals, evecs, cfa, sphere))
@@ -243,7 +249,7 @@ Finally, we can visualize the tensor orientation distribution functions
 for the same area as we did with the ellipsoids.
 """
 
-tensor_odfs = tenmodel.fit(data[20:50,55:85, 38:39]).odf(sphere)
+tensor_odfs = tenmodel.fit(data[20:50, 55:85, 38:39]).odf(sphere)
 
 fvtk.add(ren, fvtk.sphere_funcs(tensor_odfs, sphere, colormap=None))
 #fvtk.show(r)

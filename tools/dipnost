@@ -30,10 +30,20 @@ def id(self):
             name = "%s.%s" % (pk, name)
     return name
 
-# Monkeypatch.  Yes, it's nasty
-doctests.DocTestCase.id = id
-
+def prepare_imports():
+    # Set matplotlib backend as 'agg'
+    try:
+        import matplotlib as mpl
+    except ImportError:
+        pass
+    else:
+        mpl.use('agg')
 
 if __name__ == '__main__':
+    # Monkeypatch.  Yes, it's nasty
+    doctests.DocTestCase.id = id
+    # Set mpl backend
+    prepare_imports()
+    # Enable doctests
     argv = sys.argv + ['--with-doctest']
     nose.core.TestProgram(argv=argv, addplugins=[doctests.Doctest()])

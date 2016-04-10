@@ -1,35 +1,113 @@
 # vim ft=yaml
-# travis-ci.org definition for nipy build
-#
-# We pretend to be erlang because we need can't use the python support in
-# travis-ci; it uses virtualenvs, they do not have numpy, scipy, matplotlib,
-# and it is impractical to build them
-language: erlang
+# Multiple lines can be made a single "virtual line" because of the way that
+# Travis munges each line before executing it to print out the exit status.
+# It's okay for it to be on multiple physical lines, so long as you remember:
+# - There can't be any leading "-"s - All newlines will be removed, so use
+# ";"s
+sudo: false  # To use travis container infrastructure
+language: python
+cache:
+  directories:
+    - $HOME/.cache/pip
 env:
-    # Enable python 2 and python 3 builds. Python3 available in Ubuntu 12.04.
-    - PYTHON=python PYSUF=''
-    - PYTHON=python3 PYSUF=3
+    global:
+        - DEPENDS="cython numpy scipy matplotlib h5py nibabel cvxopt"
+        - VENV_ARGS="--python=python"
+        - INSTALL_TYPE="setup"
+python:
+    - 2.6
+    - 3.3
+    - 3.4
+    - 3.5
+matrix:
+  include:
+    - python: 2.7
+      env:
+        - COVERAGE=1
+    # To test minimum dependencies
+    - python: 2.7
+      env:
+        - COVERAGE=1
+        # Check these values against requirements.txt and dipy/info.py
+        - DEPENDS="cython==0.18 numpy==1.7.1 scipy==0.9.0 nibabel==1.2.0"
+    - python: 2.7
+      env:
+        - DEPENDS="cython numpy scipy matplotlib h5py nibabel cvxopt scikit_learn"
+    # To test vtk functionality
+    - python: 2.7
+      sudo: true   # This is set to true for apt-get
+      env:
+        - VTK=1
+        - VTK_VER="python-vtk"
+        - LIBGL_ALWAYS_INDIRECT=y
+        - VENV_ARGS="--system-site-packages --python=/usr/bin/python2.7"
+        - TEST_WITH_XVFB=true
+    - python: 2.7
+      sudo: true   # This is set to true for apt-get
+      env:
+        - VTK=1
+        - VTK_VER="python-vtk6"
+        - LIBGL_ALWAYS_INDIRECT=y
+        - VENV_ARGS="--system-site-packages --python=/usr/bin/python2.7"
+        - TEST_WITH_XVFB=true
+    - python: 2.7
+      env:
+        - INSTALL_TYPE=sdist
+    - python: 2.7
+      env:
+        - INSTALL_TYPE=wheel
+    - python: 2.7
+      env:
+        - INSTALL_TYPE=requirements
+        - DEPENDS=
+before_install:
+    - source tools/travis_tools.sh
+    - virtualenv $VENV_ARGS venv
+    - source venv/bin/activate
+    - python --version # just to check
+    # Needed for Python 3.5 wheel fetching
+    - pip install -U pip
+    - retry pip install nose;
+    - wheelhouse_pip_install $DEPENDS;
+    - if [ "${COVERAGE}" == "1" ]; then
+      pip install coverage;
+      pip install coveralls;
+      fi
+    - if [ "${VTK}" == "1" ]; then
+          sudo apt-get update;
+          sudo apt-get install -y $VTK_VER;
+          sudo apt-get install -y xvfb;
+          sudo apt-get install -y python-tk;
+          sudo apt-get install -y python-imaging;
+          retry pip install xvfbwrapper;
+      fi
 install:
-    - sudo apt-get update
-    - sudo apt-get install $PYTHON-dev
-    - sudo apt-get install $PYTHON-numpy
-    - sudo apt-get install $PYTHON-scipy
-    - sudo apt-get install $PYTHON-setuptools
-    - sudo apt-get install $PYTHON-nose
-    - sudo easy_install$PYSUF nibabel # Latest pypi
-    # Cython easy_install breaks with error about refnanny.c; maybe something
-    # to do with having a previous cython version;
-    # http://mail.python.org/pipermail//cython-devel/2012-April/002344.html
-    - curl -O http://www.cython.org/release/Cython-0.18.zip
-    - unzip Cython-0.18.zip
-    - cd Cython-0.18
-    - sudo python$PYSUF setup.py install
-    - cd ..
-    # Dipy
-    - $PYTHON setup.py build
-    - sudo $PYTHON setup.py install
+    - |
+      if [ "$INSTALL_TYPE" == "setup" ]; then
+          python setup.py install
+      elif [ "$INSTALL_TYPE" == "sdist" ]; then
+        python setup_egg.py egg_info  # check egg_info while we're here
+        python setup_egg.py sdist
+        wheelhouse_pip_install dist/*.tar.gz
+      elif [ "$INSTALL_TYPE" == "wheel" ]; then
+        pip install wheel
+        python setup_egg.py bdist_wheel
+        wheelhouse_pip_install dist/*.whl
+      elif [ "$INSTALL_TYPE" == "requirements" ]; then
+        wheelhouse_pip_install -r requirements.txt
+        python setup.py install
+      fi
+# command to run tests, e.g. python setup.py test
 script:
     # Change into an innocuous directory and find tests from installation
-    - mkdir for_test
-    - cd for_test
-    - nosetests$PYSUF --with-doctest `$PYTHON -c "import os; import dipy; print(os.path.dirname(dipy.__file__))"`
+    - mkdir for_testing
+    - cd for_testing
+    # No figure windows for mpl; quote to hide : from travis-ci yaml parsing
+    - 'echo "backend : agg" > matplotlibrc'
+    - if [ "${COVERAGE}" == "1" ]; then
+      cp ../.coveragerc .;
+      COVER_ARGS="--with-coverage --cover-package dipy";
+      fi
+    - nosetests --with-doctest --verbose $COVER_ARGS dipy
+after_success:
+    - if [ "${COVERAGE}" == "1" ]; then coveralls; fi

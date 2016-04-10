@@ -18,8 +18,8 @@ import subprocess
 from optparse import OptionParser
 from getpass import getuser
 
-#USER_README = 'docs/README.txt'
-#DEV_README = SRC_DIR + 'README.txt'
+#USER_README = 'docs/README.rst'
+#DEV_README = SRC_DIR + 'README.rst'
 
 BUILD_DIR = 'build'
 DIST_DIR = 'dist'
@@ -79,12 +79,12 @@ def copy_readme():
     """Copy a user README with info regarding the website, instead of
     the developer README which tells one how to build the source.
     """
-    print 'Copy user README.txt for installer.'
+    print 'Copy user README.rst for installer.'
     shutil.copy(USER_README, DEV_README)
 
 def revert_readme():
     """Revert the developer README."""
-    print 'Reverting README.txt...'
+    print 'Reverting README.rst...'
     cmd = 'svn revert %s' % DEV_README
     shellcmd(cmd)
 
@@ -108,7 +108,7 @@ def build():
                       help="python interpreter executable",
                       metavar="PYTHON_EXE")
     parser.add_option("-r", "--readme", dest="readme",
-                      default='README.txt',
+                      default='README.rst',
                       help="README file",
                       metavar="README")
     parser.add_option("-s", "--sudo", dest="sudo",

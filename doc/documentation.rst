@@ -18,6 +18,7 @@ Contents:
    devel/index
    theory/index
    reference/index
+   api_changes
 
 Indices and tables
 ==================

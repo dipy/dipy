@@ -28,7 +28,7 @@
 {# This block gets put at the top of the sidebar #}
 {% block sidebarlogo %}
 
-  
+
 <h4> Site Navigation </h4>
   <ul>
     <li><a href="{{pathto('documentation')}}">Documentation</a></li>
@@ -42,9 +42,9 @@
     <li><a class="reference external"
 	href="http://nipy.org/software/projects/">NIPY Projects</a></li>
     <li><a class="reference external"
-	href="http://mail.scipy.org/mailman/listinfo/nipy-devel">Mailing List</a></li>
+	href="https://mail.python.org/mailman/listinfo/neuroimaging">Mailing List</a></li>
     <li><a class="reference external"
-	href="http://nipy.org/software/license/index.html">License</a></li>
+	href="http://nipy.org/nipy/license.html">License</a></li>
   </ul>
 
 {% endblock %}
@@ -59,7 +59,7 @@
   <script type="text/javascript">
     function mlsearch(curobj)
     {
-    curobj.q.value="site:mail.scipy.org/pipermail/nipy-devel/ "+curobj.userquery.value
+    curobj.q.value="site:mail.python.org/pipermail/neuroimaging/ "+curobj.userquery.value
     }
   </script>
   <form action="http://www.google.com/search" method="get" onSubmit="mlsearch(this)">
@@ -67,7 +67,7 @@
     <input name="q" type="hidden" />
   </form>
 </div>
-  
+
 <div id="searchbox-site" style="display: none">
   <h3>{{ _('Search this site') }}</h3>
     <form class="search" action="{{ pathto('search') }}" method="get">
@@ -87,5 +87,11 @@
    macro, so the only way to add something to the bottom of the sidebar is to
    put it here, at the end of the sidebarsearch block (before it closes).
    #}
+<script>
+     ((window.gitter = {}).chat = {}).options = {
+       room: 'nipy/dipy'
+     };
+</script>
+<script src="https://sidecar.gitter.im/dist/sidecar.v1.js" async defer></script>
 
 {%- endblock %}

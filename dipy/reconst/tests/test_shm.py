@@ -4,23 +4,40 @@ import numpy.linalg as npl
 
 from nose.tools import assert_equal, assert_raises, assert_true
 from numpy.testing import assert_array_equal, assert_array_almost_equal
+import numpy.testing as npt
+from scipy.special import sph_harm as sph_harm_sp
 
 from dipy.core.sphere import hemi_icosahedron
 from dipy.core.gradients import gradient_table
 from dipy.sims.voxel import single_tensor
-from ..odf import peak_directions
+from dipy.direction.peaks import peak_directions
 from dipy.reconst.shm import sf_to_sh, sh_to_sf
 from dipy.reconst.interpolate import NearestNeighborInterpolator
 from dipy.sims.voxel import multi_tensor_odf
 from dipy.data import mrtrix_spherical_functions
+from dipy.reconst import odf
 
 
 from dipy.reconst.shm import (real_sph_harm, real_sym_sh_basis,
                               real_sym_sh_mrtrix, sph_harm_ind_list,
+                              order_from_ncoef,
                               OpdtModel, normalize_data, hat, lcr_matrix,
                               smooth_pinv, bootstrap_data_array,
                               bootstrap_data_voxel, ResidualBootstrapWrapper,
-                              OpdtModel, CsaOdfModel, QballModel, SphHarmFit)
+                              CsaOdfModel, QballModel, SphHarmFit,
+                              spherical_harmonics, anisotropic_power,
+                              calculate_max_order)
+
+
+def test_order_from_ncoeff():
+    """
+
+    """
+    # Just try some out:
+    for sh_order in [2, 4, 6, 8, 12, 24]:
+        m, n = sph_harm_ind_list(sh_order)
+        n_coef = m.shape[0]
+        npt.assert_equal(order_from_ncoef(n_coef), sh_order)
 
 
 def test_sph_harm_ind_list():
@@ -50,7 +67,7 @@ def test_real_sph_harm():
                               0.5 / sqrt(pi))
     assert_array_almost_equal(rsh(-2, 2, pi / 5, pi / 3),
                               0.25 * sqrt(15. / (2. * pi)) *
-                             (sin(pi / 5.)) ** 2. * cos(0 + 2. * pi / 3) *
+                              (sin(pi / 5.)) ** 2. * cos(0 + 2. * pi / 3) *
                               sqrt(2))
     assert_array_almost_equal(rsh(2, 2, pi / 5, pi / 3),
                               -1 * 0.25 * sqrt(15. / (2. * pi)) *
@@ -237,6 +254,21 @@ class TestQballModel(object):
         assert_equal(model.B.shape[1], 28)
         assert_equal(max(model.n), 6)
 
+    def test_gfa(self):
+        signal, gtab, expected = make_fake_signal()
+        signal = np.ones((2, 3, 4, 1)) * signal
+        sphere = hemi_icosahedron.subdivide(3)
+        model = self.model(gtab, 6, min_signal=1e-5)
+        fit = model.fit(signal)
+        gfa_shm = fit.gfa
+        gfa_odf = odf.gfa(fit.odf(sphere))
+        assert_array_almost_equal(gfa_shm, gfa_odf, 3)
+
+        # gfa should be 0 if all coefficients are 0 (masked areas)
+        mask = np.zeros(signal.shape[:-1])
+        fit = model.fit(signal, mask)
+        assert_array_equal(fit.gfa, 0)
+
 
 def test_SphHarmFit():
     coef = np.zeros((3, 4, 5, 45))
@@ -247,7 +279,7 @@ def test_SphHarmFit():
     assert_equal(item.shape, ())
     slice = fit[0]
     assert_equal(slice.shape, (4, 5))
-    slice = fit[..., 0]
+    slice = fit[:, :, 0]
     assert_equal(slice.shape, (3, 4))
 
 
@@ -326,10 +358,9 @@ def test_sf_to_sh():
     sphere = hemi_icosahedron.subdivide(2)
 
     mevals = np.array(([0.0015, 0.0003, 0.0003], [0.0015, 0.0003, 0.0003]))
-    mevecs = [np.array([[1, 0, 0], [0, 1, 0], [0, 0, 1]]),
-              np.array([[0, 1, 0], [1, 0, 0], [0, 0, 1]])]
+    angles = [(0, 0), (90, 0)]
 
-    odf = multi_tensor_odf(sphere.vertices, [0.5, 0.5], mevals, mevecs)
+    odf = multi_tensor_odf(sphere.vertices, mevals, angles, [50, 50])
 
     # 1D case with the 3 bases functions
     odf_sh = sf_to_sh(odf, sphere, 8)
@@ -349,6 +380,75 @@ def test_sf_to_sh():
     odf2d_sh = sf_to_sh(odf2d, sphere, 8)
     odf2d_sf = sh_to_sf(odf2d_sh, sphere, 8)
     assert_array_almost_equal(odf2d, odf2d_sf, 2)
+
+
+def test_faster_sph_harm():
+
+    sh_order = 8
+    m, n = sph_harm_ind_list(sh_order)
+    theta = np.array([1.61491146,  0.76661665,  0.11976141,  1.20198246,  1.74066314,
+                      1.5925956 ,  2.13022055,  0.50332859,  1.19868988,  0.78440679,
+                      0.50686938,  0.51739718,  1.80342999,  0.73778957,  2.28559395,
+                      1.29569064,  1.86877091,  0.39239191,  0.54043037,  1.61263047,
+                      0.72695314,  1.90527318,  1.58186125,  0.23130073,  2.51695237,
+                      0.99835604,  1.2883426 ,  0.48114057,  1.50079318,  1.07978624,
+                      1.9798903 ,  2.36616966,  2.49233299,  2.13116602,  1.36801518,
+                      1.32932608,  0.95926683,  1.070349  ,  0.76355762,  2.07148422,
+                      1.50113501,  1.49823314,  0.89248164,  0.22187079,  1.53805373,
+                      1.9765295 ,  1.13361568,  1.04908355,  1.68737368,  1.91732452,
+                      1.01937457,  1.45839   ,  0.49641525,  0.29087155,  0.52824641,
+                      1.29875871,  1.81023541,  1.17030475,  2.24953206,  1.20280498,
+                      0.76399964,  2.16109722,  0.79780421,  0.87154509])
+
+    phi = np.array([-1.5889514 , -3.11092733, -0.61328674, -2.4485381 ,  2.88058822,
+                    2.02165946, -1.99783366,  2.71235211,  1.41577992, -2.29413676,
+                    -2.24565773, -1.55548635,  2.59318232, -1.84672472, -2.33710739,
+                    2.12111948,  1.87523722, -1.05206575, -2.85381987, -2.22808984,
+                    2.3202034 , -2.19004474, -1.90358372,  2.14818373,  3.1030696 ,
+                    -2.86620183, -2.19860123, -0.45468447, -3.0034923 ,  1.73345011,
+                    -2.51716288,  2.49961525, -2.68782986,  2.69699056,  1.78566133,
+                    -1.59119705, -2.53378963, -2.02476738,  1.36924987,  2.17600517,
+                    2.38117241,  2.99021511, -1.4218007 , -2.44016802, -2.52868164,
+                    3.01531658,  2.50093627, -1.70745826, -2.7863931 , -2.97359741,
+                    2.17039906,  2.68424643,  1.77896086,  0.45476215,  0.99734418,
+                    -2.73107896,  2.28815009,  2.86276506,  3.09450274, -3.09857384,
+                    -1.06955885, -2.83826831,  1.81932195,  2.81296654])
+
+    sh = spherical_harmonics(m, n, theta[:, None], phi[:, None])
+    sh2 = sph_harm_sp(m, n, theta[:, None], phi[:, None])
+
+    assert_array_almost_equal(sh, sh2, 8)
+
+
+def test_anisotropic_power():
+    for n_coeffs in [6, 15, 28, 45, 66, 91]:
+        for norm_factor in [0.0005, 0.00001]:
+
+            # Create some really simple cases:
+            coeffs = np.ones((3, n_coeffs))
+            max_order = calculate_max_order(coeffs.shape[-1])
+            # For the case where all coeffs == 1, the ap is simply log of the
+            # number of even orders up to the maximal order:
+            analytic = (np.log(len(range(2, max_order + 2, 2))) -
+                        np.log(norm_factor))
+
+            answers = [analytic] * 3
+            apvals = anisotropic_power(coeffs, norm_factor=norm_factor)
+            assert_array_almost_equal(apvals, answers)
+            # Test that this works for single voxel arrays as well:
+            assert_array_almost_equal(
+                anisotropic_power(coeffs[1], norm_factor=norm_factor),
+                answers[1])
+
+
+def test_calculate_max_order():
+    """Based on the table in:
+    http://jdtournier.github.io/mrtrix-0.2/tractography/preprocess.html
+    """
+    orders = [2, 4, 6, 8, 10, 12]
+    n_coeffs = [6, 15, 28, 45, 66, 91]
+    for o, n in zip(orders, n_coeffs):
+        assert_equal(calculate_max_order(n), o)
 
 
 if __name__ == "__main__":

@@ -18,6 +18,7 @@ import sys
 import shutil
 from subprocess import check_call
 from glob import glob
+import numpy as np
 
 # Third-party imports
 
@@ -63,35 +64,71 @@ if not os.getcwd().endswith(pjoin('doc','examples_built')):
 
 # Copy the py files; check they are in the examples list and warn if not
 eg_index_contents = open(EG_INDEX_FNAME, 'rt').read()
-pyfilelist = [fname for fname in os.listdir(EG_SRC_DIR)
-              if fname.endswith('.py')]
-for fname in pyfilelist:
-    shutil.copyfile(pjoin(EG_SRC_DIR, fname), fname)
-    froot, _ = splitext(fname)
-    if froot not in eg_index_contents:
-        print 'Example %s not in index file %s' % (EG_SRC_DIR, EG_INDEX_FNAME)
+
+# Here I am adding an extra step. The list of examples to be executed need
+# also to be added in the following file (valid_examples.txt). This helps
+# with debugging the examples and the documentation only a few examples at
+# the time.
+flist_name = pjoin(os.path.dirname(os.getcwd()), 'examples',
+                   'valid_examples.txt')
+flist = open(flist_name, "r")
+validated_examples = flist.readlines()
+flist.close()
+
+# Parse "#" in lines
+validated_examples = [line.split("#", 1)[0] for line in validated_examples]
+# Remove leading and trailing white space from example names
+validated_examples = [line.strip() for line in validated_examples]
+# Remove blank lines
+validated_examples = filter(None, validated_examples)
+
+for example in validated_examples:
+    fullpath = pjoin(EG_SRC_DIR, example)
+    if not example.endswith(".py"):
+        print ("%s not a python file, skipping." % example)
+        continue
+    elif not os.path.isfile(fullpath):
+        print ("Cannot find file, %s, skipping." % example)
+        continue
+    shutil.copyfile(fullpath, example)
+
+    # Check that example file is included in the docs
+    file_root = example[:-3]
+    if file_root not in eg_index_contents:
+        msg = "Example, %s, not in index file %s."
+        msg = msg % (example, EG_INDEX_FNAME)
+        print(msg)
 
 # Run the conversion from .py to rst file
-check_call('python ../../tools/ex2rst --project dipy --outdir . .',
-            shell=True)
+check_call('python ../../tools/ex2rst --project dipy --outdir . .', shell=True)
 
-#added the path so that scripts can import other scripts on the same directory
+# added the path so that scripts can import other scripts on the same directory
 sys.path.insert(0, os.getcwd())
 
 # Execute each python script in the directory.
 if not os.path.isdir('fig'):
     os.mkdir('fig')
 
-for script in glob('*.py'):
-    figure_basename = os.path.join('fig', os.path.splitext(script)[0])
-    print script
+use_xvfb = os.environ.get('TEST_WITH_XVFB', False)
 
-    execfile(script)
-    plt.close('all')
+if use_xvfb:
+    from xvfbwrapper import Xvfb
+    display = Xvfb(width=1920, height=1080)
+    display.start()
+
+for script in validated_examples:
+    namespace = {}
+    figure_basename = os.path.join('fig', os.path.splitext(script)[0])
+    print(script)
+    execfile(script, namespace)
+    del namespace
+    # plt.close('all')
+
+if use_xvfb:
+    display.stop()
 
 # clean up stray images, pickles, npy files, etc
 for globber in ('*.nii.gz', '*.dpy', '*.npy', '*.pkl', '*.mat', '*.img',
                 '*.hdr'):
     for fname in glob(globber):
         os.unlink(fname)
-

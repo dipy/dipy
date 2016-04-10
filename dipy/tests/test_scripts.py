@@ -2,19 +2,15 @@
 # vi: set ft=python sts=4 ts=4 sw=4 et:
 """ Test scripts
 
-If we appear to be running from the development directory, use the scripts in
-the top-level folder ``scripts``.  Otherwise try and get the scripts from the
-path
+Run scripts and check outputs
 """
 from __future__ import division, print_function, absolute_import
 
-import sys
+import glob
 import os
 import shutil
 
-from os.path import dirname, join as pjoin, isfile, isdir, abspath, realpath
-
-from subprocess import Popen, PIPE
+from os.path import (dirname, join as pjoin, abspath)
 
 from nose.tools import assert_true, assert_false, assert_equal
 import numpy.testing as nt
@@ -24,43 +20,21 @@ from nibabel.tmpdirs import InTemporaryDirectory
 
 from dipy.data import get_data
 
-# Need shell to get path to correct executables
-USE_SHELL = True
+# Quickbundles command-line requires matplotlib:
+try:
+    import matplotlib
+    no_mpl = False
+except ImportError:
+    no_mpl = True
 
-DEBUG_PRINT = os.environ.get('NIPY_DEBUG_PRINT', False)
+from .scriptrunner import ScriptRunner
+
+runner = ScriptRunner(
+    script_sdir='bin',
+    debug_print_var='NIPY_DEBUG_PRINT')
+run_command = runner.run_command
 
 DATA_PATH = abspath(pjoin(dirname(__file__), 'data'))
-
-def local_script_dir(script_sdir):
-    # Check for presence of scripts in development directory.  ``realpath``
-    # checks for the situation where the development directory has been linked
-    # into the path.
-    below_us_2 = realpath(pjoin(dirname(__file__), '..', '..'))
-    devel_script_dir = pjoin(below_us_2, script_sdir)
-    if isfile(pjoin(below_us_2, 'setup.py')) and isdir(devel_script_dir):
-        return devel_script_dir
-    return None
-
-LOCAL_SCRIPT_DIR = local_script_dir('bin')
-
-def run_command(cmd, check_code=True):
-    if not LOCAL_SCRIPT_DIR is None:
-        # Windows can't run script files without extensions natively so we need
-        # to run local scripts (no extensions) via the Python interpreter.  On
-        # Unix, we might have the wrong incantation for the Python interpreter
-        # in the hash bang first line in the source file.  So, either way, run
-        # the script through the Python interpreter
-        cmd = "%s %s" % (sys.executable, pjoin(LOCAL_SCRIPT_DIR, cmd))
-    if DEBUG_PRINT:
-        print("Running command '%s'" % cmd)
-    proc = Popen(cmd, stdout=PIPE, stderr=PIPE, shell=USE_SHELL)
-    stdout, stderr = proc.communicate()
-    if proc.poll() == None:
-        proc.terminate()
-    if check_code and proc.returncode != 0:
-        raise RuntimeError('Command "%s" failed with stdout\n%s\nstderr\n%s\n'
-                           % (cmd, stdout, stderr))
-    return proc.returncode, stdout, stderr
 
 
 def test_dipy_peak_extraction():
@@ -91,25 +65,21 @@ def assert_image_shape_affine(filename, shape, affine):
     nt.assert_array_almost_equal(image.get_affine(), affine)
 
 
-def test_dipy_fit_tensor():
-    with InTemporaryDirectory() as tmp:
+def test_dipy_fit_tensor_again():
+    with InTemporaryDirectory():
         dwi, bval, bvec = get_data("small_25")
-
         # Copy data to tmp directory
         shutil.copyfile(dwi, "small_25.nii.gz")
         shutil.copyfile(bval, "small_25.bval")
         shutil.copyfile(bvec, "small_25.bvec")
-
         # Call script
         cmd = ["dipy_fit_tensor", "--mask=none", "small_25.nii.gz"]
-        out = run_command(" ".join(cmd))
+        out = run_command(cmd)
         assert_equal(out[0], 0)
-
         # Get expected values
         img = nib.load("small_25.nii.gz")
         affine = img.get_affine()
         shape = img.shape[:-1]
-
         # Check expected outputs
         assert_image_shape_affine("small_25_fa.nii.gz", shape, affine)
         assert_image_shape_affine("small_25_t2di.nii.gz", shape, affine)
@@ -118,24 +88,21 @@ def test_dipy_fit_tensor():
         assert_image_shape_affine("small_25_md.nii.gz", shape, affine)
         assert_image_shape_affine("small_25_rd.nii.gz", shape, affine)
 
-    with InTemporaryDirectory() as tmp:
+    with InTemporaryDirectory():
         dwi, bval, bvec = get_data("small_25")
-
         # Copy data to tmp directory
         shutil.copyfile(dwi, "small_25.nii.gz")
         shutil.copyfile(bval, "small_25.bval")
         shutil.copyfile(bvec, "small_25.bvec")
-
         # Call script
-        cmd = ["dipy_fit_tensor", "--save-tensor", "--mask=none", "small_25.nii.gz"]
-        out = run_command(" ".join(cmd))
+        cmd = ["dipy_fit_tensor", "--save-tensor",
+               "--mask=none", "small_25.nii.gz"]
+        out = run_command(cmd)
         assert_equal(out[0], 0)
-
         # Get expected values
         img = nib.load("small_25.nii.gz")
         affine = img.get_affine()
         shape = img.shape[:-1]
-
         # Check expected outputs
         assert_image_shape_affine("small_25_fa.nii.gz", shape, affine)
         assert_image_shape_affine("small_25_t2di.nii.gz", shape, affine)
@@ -149,3 +116,34 @@ def test_dipy_fit_tensor():
         assert_image_shape_affine("small_25_tensor.nii.gz", ten_shape,
                                   affine)
 
+
+@nt.dec.skipif(no_mpl)
+def test_qb_commandline():
+    with InTemporaryDirectory():
+        tracks_file = get_data('fornix')
+        cmd = ["dipy_quickbundles", tracks_file, '--pkl_file', 'mypickle.pkl',
+               '--out_file', 'tracks300.trk']
+        out = run_command(cmd)
+        assert_equal(out[0], 0)
+
+@nt.dec.skipif(no_mpl)
+def test_qb_commandline_output_path_handling():
+    with InTemporaryDirectory():
+        # Create temporary subdirectory for input and for output
+        os.mkdir('work')
+        os.mkdir('output')
+
+        os.chdir('work')
+        tracks_file = get_data('fornix')
+
+        # Need to specify an output directory with a "../" style path
+        # to trigger old bug.
+        cmd = ["dipy_quickbundles", tracks_file, '--pkl_file', 'mypickle.pkl',
+               '--out_file', os.path.join('..', 'output', 'tracks300.trk')]
+        out = run_command(cmd)
+        assert_equal(out[0], 0)
+
+        # Make sure the files were created in the output directory
+        os.chdir('../')
+        output_files_list = glob.glob('output/tracks300_*.trk')
+        assert_true(output_files_list)

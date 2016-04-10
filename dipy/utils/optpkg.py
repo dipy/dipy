@@ -1,13 +1,18 @@
 """ Routines to support optional packages """
 
 try:
+    import importlib
+except ImportError:
+    import dipy.utils._importlib as importlib
+
+try:
     import nose
 except ImportError:
     have_nose = False
 else:
     have_nose = True
 
-from .tripwire import TripWire
+from dipy.utils.tripwire import TripWire
 
 if have_nose:
     class OptionalImportError(ImportError, nose.SkipTest):
@@ -15,6 +20,7 @@ if have_nose:
 else:
     class OptionalImportError(ImportError):
         pass
+
 
 def optional_package(name, trip_msg=None):
     """ Return package-like thing and module setup for package `name`
@@ -71,23 +77,21 @@ def optional_package(name, trip_msg=None):
     >>> hasattr(subpkg, 'dirname')
     True
     """
-    # fromlist=[''] results in submodule being returned, rather than the top
-    # level module.  See help(__import__)
     try:
-        pkg = __import__(name, fromlist=[''])
+        pkg = importlib.import_module(name)
     except ImportError:
         pass
-    else: # import worked
+    else:  # import worked
         # top level module
-        return pkg, True, lambda : None
+        return pkg, True, lambda: None
     if trip_msg is None:
         trip_msg = ('We need package %s for these functions, but '
                     '``import %s`` raised an ImportError'
                     % (name, name))
     pkg = TripWire(trip_msg)
+
     def setup_module():
         if have_nose:
             raise nose.plugins.skip.SkipTest('No %s for these tests'
                                              % name)
     return pkg, False, setup_module
-

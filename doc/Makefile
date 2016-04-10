@@ -1,12 +1,5 @@
 # Makefile for Sphinx documentation
 #
-# "https://sourceforge.net/apps/trac/sourceforge/wiki/Release files for
-# download".  To use, set your sourceforge username with 'export
-# SF_USER=garyfallidis' or similar, then 'make upload-website'
-#SF_USER ?= matthewbrett
-SF_USER ?= garyfallidis
-WWW_SF=nipy@web.sourceforge.net:/home/groups/n/ni/nipy/htdocs/dipy
-RSYNC_SF=rsync -rzhvp --delete --chmod=Dg+s,g+rw
 
 # You can set these variables from the command line.
 SPHINXOPTS    =
@@ -23,6 +16,7 @@ ALLSPHINXOPTS   = -d _build/doctrees $(PAPEROPT_$(PAPER)) $(SPHINXOPTS) .
 help:
 	@echo "Please use \`make <target>' where <target> is one of"
 	@echo "  html      to make standalone HTML files"
+	@echo "  api       to make the auto-generated API files"
 	@echo "  dirhtml   to make HTML files named index.html in directories"
 	@echo "  pickle    to make pickle files"
 	@echo "  json      to make JSON files"
@@ -33,9 +27,17 @@ help:
 	@echo "  linkcheck to check all external links for integrity"
 	@echo "  doctest   to run all doctests embedded in the documentation (if enabled)"
 
-clean: examples-clean
+clean: api-clean examples-clean
 	-rm -rf _build/*
 	-rm *-stamp
+
+api-clean:
+	rm -rf reference/*.rst
+
+api:
+	@mkdir -p reference
+	$(PYTHON) tools/build_modref_templates.py dipy reference
+	@echo "Build API docs...done."
 
 examples-clean:
 	-cd examples_built && rm -rf *.py *.rst *.png fig
@@ -49,9 +51,9 @@ examples-tgz: rstexamples
 gitwash-update:
 	python ../tools/gitwash_dumper.py devel dipy --repo-name=dipy --github-user=nipy \
             --project-url=http://nipy.org/dipy \
-            --project-ml-url=http://mail.scipy.org/mailman/listinfo/nipy-devel
+            --project-ml-url=https://mail.python.org/mailman/listinfo/neuroimaging
 
-html: rstexamples html-after-examples
+html: api rstexamples html-after-examples
 	# build full docs including examples
 
 html-after-examples:
@@ -125,19 +127,5 @@ pdf-stamp: latex
 	cd _build/latex && make all-pdf
 	touch $@
 
-# This one udates for the specific user named at the top of the makefile
-upload-website: upload-website-$(SF_USER)
-
-upload-website-%: html examples-tgz
-	$(RSYNC_SF) _build/html/* _build/latex/*.pdf $*,$(WWW_SF)
-
-# This one udates for the specific user named at the top of the makefile
-upload-examples: upload-examples-$(SF_USER)
-
-upload-examples-%: examples-tgz
-	$(RSYNC_SF) ../dist/*-doc-examples.tar.gz $*,$(WWW_SF)
-
-#upload-website-%: pdf-stamp html
-#	$(RSYNC_SF) _build/html/* _build/latex/*.pdf $*,$(WWW_SF)
-
-
+upload: html
+	./upload-gh-pages.sh _build/html/ dipy nipy

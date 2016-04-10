@@ -5,7 +5,7 @@ Deterministic Tracking with EuDX on Tensor Fields
 =================================================
 
 In this example we do deterministic fiber tracking on Tensor fields with EuDX
-(Garyfallidis, PhD thesis, 2012).
+[Garyfallidis12]_.
 
 This example requires to import example `reconst_dti.py` to run. EuDX was
 primarily made with cpu efficiency in mind. Therefore, it should be useful to
@@ -71,7 +71,7 @@ the peaks and odf_vertices are the vertices of the input sphere.
 
 from dipy.tracking.eudx import EuDX
 
-eu = EuDX(FA, peak_indices, odf_vertices = sphere.vertices, a_low=0.2)
+eu = EuDX(FA.astype('f8'), peak_indices, seeds=50000, odf_vertices = sphere.vertices, a_low=0.2)
 
 tensor_streamlines = [streamline for streamline in eu]
 
@@ -114,7 +114,7 @@ except ImportError:
 Create a scene.
 """
 
-r=fvtk.ren()
+ren = fvtk.ren()
 
 """
 Every streamline will be coloured according to its orientation
@@ -127,16 +127,20 @@ fvtk.line adds a streamline actor for streamline visualization
 and fvtk.add adds this actor in the scene
 """
 
-fvtk.add(r, fvtk.line(tensor_streamlines, line_colors(tensor_streamlines)))
+fvtk.add(ren, fvtk.streamtube(tensor_streamlines, line_colors(tensor_streamlines)))
 
 print('Saving illustration as tensor_tracks.png')
-fvtk.record(r, n_frames=1, out_path='tensor_tracking.png', size=(600, 600))
+
+ren.SetBackground(1, 1, 1)
+fvtk.record(ren, n_frames=1, out_path='tensor_tracks.png', size=(600, 600))
 
 """
-.. figure:: tensor_tracking.png
+.. figure:: tensor_tracks.png
    :align: center
 
    **Deterministic streamlines with EuDX on a Tensor Field**.
+
+.. [Garyfallidis12] Garyfallidis E., "Towards an accurate brain tractography", PhD thesis, University of Cambridge, 2012.
 
 .. include:: ../links_names.inc
 

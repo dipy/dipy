@@ -1,7 +1,7 @@
 """
-=================================================
-Brain segmentation with dipy.segment.mask.
-=================================================
+===================================
+Brain segmentation with median_otsu
+===================================
 
 We show how to extract brain information and mask from a b0 image using dipy's
 segment.mask module.
@@ -15,13 +15,13 @@ import nibabel as nib
 """
 Download and read the data for this tutorial.
 
-The scil_b0 dataset contains different data from different companies and models.
-For this example, the data comes from a 3 tesla GE MRI.
+The scil_b0 dataset contains different data from different companies and
+models. For this example, the data comes from a 1.5 tesla Siemens MRI.
 """
 
-from dipy.data import fetch_scil_b0, read_scil_b0
+from dipy.data.fetcher import fetch_scil_b0, read_siemens_scil_b0
 fetch_scil_b0()
-img = read_scil_b0()
+img = read_siemens_scil_b0()
 data = np.squeeze(img.get_data())
 
 """
@@ -33,12 +33,12 @@ Segment the brain using dipy's mask module.
 ``median_otsu`` returns the segmented brain data and a binary mask of the brain.
 It is possible to fine tune the parameters of ``median_otsu`` (``median_radius``
 and ``num_pass``) if extraction yields incorrect results but the default
-parameters work well on most volumes. For this example, default parameters (4,
-4) will be used.
+parameters work well on most volumes. For this example, we used 2 as
+``median_radius`` and 1 as ``num_pass``
 """
 
 from dipy.segment.mask import median_otsu
-b0_mask, mask = median_otsu(data, 4, 4)
+b0_mask, mask = median_otsu(data, 2, 1)
 
 """
 Saving the segmentation results is very easy using nibabel. We need the b0_mask,
@@ -50,7 +50,7 @@ both images in float32.
 mask_img = nib.Nifti1Image(mask.astype(np.float32), img.get_affine())
 b0_img = nib.Nifti1Image(b0_mask.astype(np.float32), img.get_affine())
 
-fname = 'ge_3t'
+fname = 'se_1.5t'
 nib.save(mask_img, fname + '_binary_mask.nii.gz')
 nib.save(b0_img, fname + '_mask.nii.gz')
 
@@ -59,16 +59,26 @@ Quick view of the results middle slice using matplotlib.
 """
 
 import matplotlib.pyplot as plt
+from dipy.core.histeq import histeq
 
-slice = data.shape[2]/2
+sli = data.shape[2] / 2
 plt.figure('Brain segmentation')
-plt.subplot(1,2,1)
-plt.imshow(data[:,:,slice])
-plt.subplot(1,2,2)
-plt.imshow(b0_mask[:,:,slice])
-plt.show()
+plt.subplot(1, 2, 1).set_axis_off()
+plt.imshow(histeq(data[:, :, sli].astype('float')).T,
+           cmap='gray', origin='lower')
+
+plt.subplot(1, 2, 2).set_axis_off()
+plt.imshow(histeq(b0_mask[:, :, sli].astype('float')).T,
+           cmap='gray', origin='lower')
+
+plt.savefig('median_otsu.png')
 
 """
+.. figure:: median_otsu.png
+   :align: center
+
+   **An application of median_otsu for brain segmentation**.
+
 ``median_otsu`` can also automatically crop the outputs to remove the largest
 possible number of background voxels. This makes outputted data significantly
 smaller.  auto cropping in ``median_otsu`` is activated by setting the
@@ -82,6 +92,7 @@ Saving cropped data using nibabel as demonstrated previously.
 """
 
 mask_img_crop = nib.Nifti1Image(mask_crop.astype(np.float32), img.get_affine())
-b0_img_crop = nib.Nifti1Image(b0_mask_crop.astype(np.float32), img.get_affine())
-nib.save(mask_img_crop, fname+'_binary_mask_crop.nii.gz')
-nib.save(b0_img_crop, fname+'_mask_crop.nii.gz')
+b0_img_crop = nib.Nifti1Image(
+    b0_mask_crop.astype(np.float32), img.get_affine())
+nib.save(mask_img_crop, fname + '_binary_mask_crop.nii.gz')
+nib.save(b0_img_crop, fname + '_mask_crop.nii.gz')

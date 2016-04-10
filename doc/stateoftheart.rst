@@ -4,29 +4,35 @@
 A quick overview of features
 ============================
 
-Here are just a few of the state-of-the-art technologies and algorithms which are provided in Dipy_:
+Here are just a few of the state-of-the-art :ref:`technologies <examples>` and algorithms which are provided in Dipy_:
 
-- Reconstruction algorithms e.g. DSI, GQI, DTI, QBI.
-- Fiber tracking algorithms e.g. Deterministic, Probabilistic.
+- Reconstruction algorithms: CSD, DSI, GQI, DTI, DKI, QBI, SHORE and MAPMRI.
+- Fiber tracking algorithms: deterministic and probabilistic.
 - Simple interactive visualization of ODFs and streamlines.
-- Apply different operations on streamlines.
+- Apply different operations on streamlines (selection, resampling, registration).
 - Simplify large datasets of streamlines using QuickBundles clustering.
 - Reslice datasets with anisotropic voxels to isotropic.
 - Calculate distances/correspondences between streamlines.
-- Deal with huge tractographies without memory restrictions (.dpy).
+- Deal with huge streamline datasets without memory restrictions (using the .dpy file format).
+- Visualize streamlines in the same space as anatomical images.
 
 With the help of some external tools you can also:
 
-- Warp/Register tractographies into another space e.g. MNI space (with nipy or
-  fsl).
 - Read many different file formats e.g. Trackvis or Nifti (with nibabel).
 - Examine your datasets interactively (with ipython).
 
-For a full list of the features implemented in the most recent release cycle, check out the release notes
+For more information on specific algorithms we recommend starting by looking at Dipy's :ref:`gallery <examples>` of examples.
+
+For a full list of the features implemented in the most recent release cycle, check out the release notes.
 
 .. toctree::
    :maxdepth: 1
 
+   release0.11
+   release0.10
+   release0.9
+   release0.8
+   release0.7
    release0.6
 
 =================

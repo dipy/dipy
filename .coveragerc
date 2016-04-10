@@ -1,0 +1,6 @@
+[run]
+branch = True
+source = dipy
+include = */dipy/*
+omit =
+    */setup.py
