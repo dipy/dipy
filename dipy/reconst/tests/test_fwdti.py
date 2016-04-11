@@ -48,7 +48,7 @@ GTF = np.array([[[0.06, 0.71], [0.33, 0.91]],
 # S0 multivoxel
 S0m = 100 * np.ones((2, 2, 2))
 # model_params ground truth (to be fill)
-model_params_mv = np.zeros((2, 2, 2, 14))
+model_params_mv = np.zeros((2, 2, 2, 13))
 for i in range(2):
     for j in range(2):
         gtf = GTF[0, i, j]
@@ -60,7 +60,7 @@ for i in range(2):
         R = all_tensor_evecs(p[0])
         R = R.reshape((9))
         model_params_mv[0, i, j] = np.concatenate(([0.0017, 0.0003, 0.0003],
-                                                   R, [gtf, 100]), axis=0)
+                                                   R, [gtf]), axis=0)
 
 
 def test_fwdti_singlevoxel():
@@ -155,7 +155,7 @@ def test_fwdti_predictions():
                                   fractions=[(1-gtf) * 100, gtf*100], snr=None)
     R = all_tensor_evecs(peaks[0])
     R = R.reshape((9))
-    model_params = np.concatenate(([0.0017, 0.0003, 0.0003], R, [gtf, 100]),
+    model_params = np.concatenate(([0.0017, 0.0003, 0.0003], R, [gtf]),
                                   axis=0)
     S_pred1 = fwdti_prediction(model_params, gtab_2s, S0=100)
     assert_array_almost_equal(S_pred1, S_conta)

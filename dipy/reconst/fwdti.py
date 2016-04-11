@@ -8,7 +8,7 @@ import numpy as np
 
 import scipy.optimize as opt
 
-from .base import ReconstModel
+from dipy.reconst.base import ReconstModel
 
 from dipy.reconst.dti import (TensorFit, design_matrix, _min_positive_signal,
                               decompose_tensor, from_lower_triangular,
@@ -58,7 +58,7 @@ def fwdti_prediction(params, gtab, S0=1, Diso=3.0e-3):
            doi: 10.1016/j.neuroimage.2014.09.053
     """
     evals = params[..., :3]
-    evecs = params[..., 3:-2].reshape(params.shape[:-1] + (3, 3))
+    evecs = params[..., 3:-1].reshape(params.shape[:-1] + (3, 3))
     f = params[..., 12]
     qform = vec_val_vect(evecs, evals)
     lower_dt = lower_triangular(qform, S0)
@@ -173,7 +173,7 @@ class FreeWaterTensorModel(ReconstModel):
             fwdti_params = params_in_mask.reshape(out_shape)
             S0 = S0_im.reshape(data.shape[:-1])
         else:
-            fwdti_params = np.zeros(data.shape[:-1] + (14,))
+            fwdti_params = np.zeros(data.shape[:-1] + (13,))
             fwdti_params[mask, :] = params_in_mask
             S0 = np.zeros(data.shape[:-1])
             S0[mask] = S0_im 
@@ -187,9 +187,9 @@ class FreeWaterTensorModel(ReconstModel):
         Parameters
         ----------
         fwdti_params : ndarray
-            The last dimension should have 14 parameters: the 12 tensor
+            The last dimension should have 13 parameters: the 12 tensor
             parameters (3 eigenvalues, followed by the 3 corresponding
-            eigenvectors).
+            eigenvectors) and the free water volume fraction.
         S0 : float or ndarray
             The non diffusion-weighted signal in every voxel, or across all
             voxels. Default: 1
@@ -208,7 +208,7 @@ class FreeWaterTensorFit(TensorFit):
         ----------
         model : FreeWaterTensorModel Class instance
             Class instance containing the free water tensor model for the fit
-        model_params : ndarray (x, y, z, 14) or (n, 14)
+        model_params : ndarray (x, y, z, 13) or (n, 13)
             All parameters estimated from the free water tensor model.
             Parameters are ordered as follows:
                 1) Three diffusion tensor's eigenvalues
@@ -379,7 +379,7 @@ def _wls_iter(design_matrix, sig, min_diffusivity, min_signal, Diso=3e-3,
     evals, evecs = decompose_tensor(from_lower_triangular(params),
                                     min_diffusivity=min_diffusivity)
     fw_params = np.concatenate((evals, evecs[0], evecs[1], evecs[2],
-                                np.array([f]), np.array([S0])), axis=0)
+                                np.array([f])), axis=0)
 
     return fw_params, S0
 
@@ -438,8 +438,8 @@ def wls_fit_tensor(design_matrix, data, S0=None, Diso=3e-3, piterations=3,
 
     # preparing data and initializing parameters
     data = np.asarray(data)
-    data_flat = data.reshape((-1, data.shape[-1]))
-    fw_params = np.zeros((len(data_flat), 14))
+    data_flat = np.reshape(data, (-1, data.shape[-1]))
+    fw_params = np.zeros((len(data_flat), 13))
     S0f = np.zeros(len(data_flat))
 
     # inverting design matrix and defining minimun diffusion aloud
@@ -478,9 +478,9 @@ def wls_fit_tensor(design_matrix, data, S0=None, Diso=3e-3, piterations=3,
     # Reshape data according to the input data shape
     fw_params[~cond, :] = fw_params_p
     fw_params[cond, 12] = 1  # Only free water
-    fw_params = fw_params.reshape((data.shape[:-1]) + (14,))
+    fw_params = fw_params.reshape((data.shape[:-1]) + (13,))
     S0f[~cond] = S0_p
-    S0f[cond] = np.mean(data[cond, :] / 
+    S0f[cond] = np.mean(data_flat[cond, :] / 
                         np.exp(np.dot(design_matrix[..., :6],
                                       np.array([Diso, 0, Diso, 0, 0, Diso]))),
                         -1)  # Only free water
@@ -640,7 +640,7 @@ def nls_fit_tensor(design_matrix, data, fw_params=None, S0=None, Diso=3e-3,
     data : ndarray ([X, Y, Z, ...], g)
         Data or response variables holding the data. Note that the last
         dimension should contain the data. It makes no copies of data.
-    fw_params : ndarray ([X, Y, Z, ...], 14), optional
+    fw_params : ndarray ([X, Y, Z, ...], 13), optional
         A first model parameters guess (3 eigenvalues, 3 coordinates
         of 3 eigenvalues, and the volume fraction of the free water
         compartment). If the initial fw_paramters are not given, the function
@@ -712,7 +712,7 @@ def nls_fit_tensor(design_matrix, data, fw_params=None, S0=None, Diso=3e-3,
                                             Diso=Diso)
         else:
             fw_paramsc, S0f = wls_fit_tensor(design_matrix, flat_data, S0=S0,
-                                           Diso=Diso)
+                                             Diso=Diso)
     else:
         fw_paramsc = fw_params.copy()
         fw_paramsc = fw_paramsc.reshape((-1, fw_params.shape[-1]))
@@ -794,9 +794,9 @@ def nls_fit_tensor(design_matrix, data, fw_params=None, S0=None, Diso=3e-3,
 
     fw_paramsc[~cond, :] = fw_params_p
     fw_paramsc[cond, 12] = 1  # Only free water
-    fw_paramsc = fw_paramsc.reshape((data.shape[:-1]) + (14,))
+    fw_paramsc = fw_paramsc.reshape((data.shape[:-1]) + (13,))
     S0f[~cond] = S0_p
-    S0f[cond] = np.mean(data[cond, :] / 
+    S0f[cond] = np.mean(flat_data[cond, :] / 
                         np.exp(np.dot(design_matrix[..., :6],
                                       np.array([Diso, 0, Diso, 0, 0, Diso]))),
                         -1)  # Only free water
