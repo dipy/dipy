@@ -21,7 +21,13 @@ cdef class FBCMeasures:
     cdef double [:, :] streamlines_lfbc
     cdef double [:] streamlines_rfbc
     
-    def __init__(self, streamlines, kernel, num_threads=None):
+    def __init__(self, 
+                 streamlines, 
+                 kernel,  
+                 min_fiberlength=10,
+                 max_windowsize=7,
+                 num_threads=None, 
+                 verbose=False):
         """ Compute the fiber to bundle coherence measures for a set of 
         streamlines.
 
@@ -32,8 +38,14 @@ cdef class FBCMeasures:
             nodes in the fiber.
         kernel : Kernel object
             A diffusion kernel object created from EnhancementKernel.
+        min_fiberlength : int
+            Fibers with fewer points than minimum_length are excluded from FBC computation.
+        max_windowsize : int
+            The maximal window size used to calculate the average LFBC region
         num_threads : int
             Number of threads to use for OpenMP.
+        verbose : boolean
+            Enable verbose mode.
             
         References
         ----------
@@ -41,27 +53,32 @@ cdef class FBCMeasures:
                            J. Portegies, P. Ossenblok, R. Duits. (2016) Cleaning 
                            output of tractography via fiber to bundle coherence, 
                            a new open source implementation. Human Brain Mapping 
-                           conference 2015.
+                           conference 2016.
         [Portegies2015b] J. Portegies, R. Fick, G. Sanguinetti, S. Meesters, 
                          G.Girard, and R. Duits. (2015) Improving Fiber Alignment 
                          in HARDI by Combining Contextual PDE flow with 
                          Constrained Spherical Deconvolution. PLoS One.
         """
-        self.compute(streamlines, kernel)
+        self.compute(streamlines, 
+                     kernel, 
+                     min_fiberlength, 
+                     max_windowsize, 
+                     num_threads, 
+                     verbose)
         
-    def get_points_rfbc_thresholded(self, threshold, showInfo=False, emphasis=.5):
+    def get_points_rfbc_thresholded(self, threshold, emphasis=.5, verbose=False):
         """ Set a threshold on the RFBC to remove spurious fibers.
 
         Parameters
         ----------
         threshold : float
             The threshold to set on the RFBC, should be within 0 and 1.
-        showInfo : boolean
-            Prints info about the found RFBC for the set of fibers such as median,
-            mean, min and max values.
         emphasis : float
             Enhances the coloring of the fibers by LFBC. Increasing emphasis will
             stress spurious fibers by logarithmic weighting.
+        verbose : boolean
+            Prints info about the found RFBC for the set of fibers such as median,
+            mean, min and max values.
             
         Returns
         -------
@@ -72,7 +89,7 @@ cdef class FBCMeasures:
             2) the r,g,b values of the local fiber to bundle coherence (LFBC) 
             3) the relative fiber to bundle coherence (RFBC)
         """
-        if showInfo:
+        if verbose:
             print "median RFBC: " + str(np.median(self.streamlines_rfbc))
             print "mean RFBC: " + str(np.mean(self.streamlines_rfbc))
             print "min RFBC: " + str(np.min(self.streamlines_rfbc))
@@ -97,24 +114,24 @@ cdef class FBCMeasures:
         fb = interp1d(x, b, bounds_error=False, fill_value=0)
 
         # select fibers above the RFBC threshold
-        streamlinelist = []
-        rfbclist = []
-        lfbclist = []
+        streamline_out = []
+        color_out = []
+        rfbc_out = []
         for i in range(len(self.streamlines_rfbc)):
             rfbc = self.streamlines_rfbc[i]
             lfbc = lfbc_log[i]
             if rfbc > threshold:
                 fiber = np.array(self.streamline_points[i])
                 fiber = fiber[0:self.streamline_length[i] - 1]
-                streamlinelist.append(fiber)
+                streamline_out.append(fiber)
 
-                rfbclist.append(rfbc)
+                rfbc_out.append(rfbc)
 
                 lfbc = lfbc[0:self.streamline_length[i] - 1]
-                lfbcfiberlist = np.transpose([fr(lfbc), fg(lfbc), fb(lfbc)])
-                lfbclist.append(lfbcfiberlist.tolist())
+                lfbc_colors = np.transpose([fr(lfbc), fg(lfbc), fb(lfbc)])
+                color_out.append(lfbc_colors.tolist())
 
-        return streamlinelist, lfbclist, rfbclist
+        return streamline_out, color_out, rfbc_out
     
     @cython.wraparound(False)
     @cython.boundscheck(False)
@@ -123,7 +140,10 @@ cdef class FBCMeasures:
     cdef void compute(self, 
                       py_streamlines,
                       kernel,
-                      num_threads=None):
+                      min_fiberlength,
+                      max_windowsize,
+                      num_threads=None,
+                      verbose=False):
         """ Compute the fiber to bundle coherence measures for a set of 
         streamlines.
 
@@ -134,12 +154,18 @@ cdef class FBCMeasures:
             nodes in the fiber.
         kernel : Kernel object
             A diffusion kernel object created from EnhancementKernel.
+        min_fiberlength : int
+            Fibers with fewer points than minimum_length are excluded from FBC computation.
+        max_windowsize : int
+            The maximal window size used to calculate the average LFBC region
         num_threads : int
             Number of threads to use for OpenMP.
+        verbose : boolean
+            Enable verbose mode.
         """
         cdef:
-            int numberOfFibers
-            int maxLength
+            int num_fibers
+            int max_length
             int dim
             double [:, :, :] streamlines
             int [:] streamlines_length
@@ -147,8 +173,8 @@ cdef class FBCMeasures:
             int [:, :] streamlines_nearestp
             double [:, :] streamline_scores
             double [:] tangent
-            int lineId, pointId
-            int lineId2, pointId2
+            int line_id, point_id
+            int line_id2, point_id2
             double score
             int xd, yd, zd
             double [:, :, :, :, ::1] lut
@@ -175,17 +201,17 @@ cdef class FBCMeasures:
         # remove these.
         streamlines_length = np.array([len(x) for x in py_streamlines], 
                                 dtype=np.int32)
-        minLength = min(streamlines_length)
-        if minLength < 10:
+        min_length = min(streamlines_length)
+        if min_length < min_fiberlength:
             print("The minimum fiber length is 10 points. \
                     Shorter fibers were found and removed.")
-            py_streamlines = [x for x in py_streamlines if len(x) >= 10]
+            py_streamlines = [x for x in py_streamlines if len(x) >= min_fiberlength]
             streamlines_length = np.array([len(x) for x in py_streamlines], 
                                     dtype=np.int32)
-            minLength = min(streamlines_length)
-        numberOfFibers = len(py_streamlines)
+            min_length = min(streamlines_length)
+        num_fibers = len(py_streamlines)
         self.streamline_length = streamlines_length
-        maxLength = max(streamlines_length)
+        max_length = max(streamlines_length)
         
         dim = 3
 
@@ -193,88 +219,91 @@ cdef class FBCMeasures:
         lut = kernel.get_lookup_table()
         N = lut.shape[2]
         hn = (N-1) / 2
+        print("N:"+str(N))
         
         # prepare numpy arrays for speed
-        streamlines = np.zeros((numberOfFibers, maxLength, dim), 
+        streamlines = np.zeros((num_fibers, max_length, dim), 
                                 dtype=np.float64) * np.nan
-        streamlines_tangents = np.zeros((numberOfFibers, maxLength, dim), 
+        streamlines_tangents = np.zeros((num_fibers, max_length, dim), 
                                 dtype=np.float64)
-        streamlines_nearestp = np.zeros((numberOfFibers, maxLength), 
+        streamlines_nearestp = np.zeros((num_fibers, max_length), 
                                 dtype=np.int32)
-        streamline_scores = np.zeros((numberOfFibers, maxLength), 
+        streamline_scores = np.zeros((num_fibers, max_length), 
                                 dtype=np.float64) * np.nan
         
         # copy python streamlines into numpy array
-        for lineId in range(numberOfFibers):
-            for pointId in range(streamlines_length[lineId]):
+        for line_id in range(num_fibers):
+            for point_id in range(streamlines_length[line_id]):
                 for dim in range(3):
-                    streamlines[lineId, pointId, dim] = \
-                        py_streamlines[lineId][pointId][dim]
+                    streamlines[line_id, point_id, dim] = \
+                        py_streamlines[line_id][point_id][dim]
         self.streamline_points = streamlines
         
         # compute tangents
-        for lineId in range(numberOfFibers):
-            for pointId in range(streamlines_length[lineId] - 1):
-                tangent = np.subtract(streamlines[lineId, pointId + 1], 
-                                        streamlines[lineId, pointId])
-                streamlines_tangents[lineId, pointId] = np.divide(tangent, 
+        for line_id in range(num_fibers):
+            for point_id in range(streamlines_length[line_id] - 1):
+                tangent = np.subtract(streamlines[line_id, point_id + 1], 
+                                        streamlines[line_id, point_id])
+                streamlines_tangents[line_id, point_id] = np.divide(tangent, 
                                             np.sqrt(np.dot(tangent, tangent)))
         
         # estimate which kernel LUT index corresponds to angles
         tree = KDTree(kernel.get_orientations())
-        for lineId in range(numberOfFibers):
-            for pointId in range(streamlines_length[lineId] - 1):
-                streamlines_nearestp[lineId, pointId] = \
-                    tree.query(streamlines[lineId, pointId])[1]
+        for line_id in range(num_fibers):
+            for point_id in range(streamlines_length[line_id] - 1):
+                streamlines_nearestp[line_id, point_id] = \
+                    tree.query(streamlines[line_id, point_id])[1]
         
         # arrays for parallel computing
-        score_mp = np.zeros(numberOfFibers)
-        xd_mp = np.zeros(numberOfFibers, dtype=np.int32)
-        yd_mp = np.zeros(numberOfFibers, dtype=np.int32)
-        zd_mp = np.zeros(numberOfFibers, dtype=np.int32)
+        score_mp = np.zeros(num_fibers)
+        xd_mp = np.zeros(num_fibers, dtype=np.int32)
+        yd_mp = np.zeros(num_fibers, dtype=np.int32)
+        zd_mp = np.zeros(num_fibers, dtype=np.int32)
 
-        if have_openmp:
-            print("Running in parallel!")
-        else:
-            print("No OpenMP...")
+        if verbose:
+            if have_openmp:
+                print("Running in parallel!")
+            else:
+                print("No OpenMP...")
 
         # compute fiber LFBC measures
         with nogil:
 
-            for lineId in prange(numberOfFibers, schedule='guided'):
-                for pointId in range(streamlines_length[lineId] - 1):
-                    score_mp[lineId] = 0.0
-                    for lineId2 in range(numberOfFibers):
+            for line_id in prange(num_fibers, schedule='guided'):
+                for point_id in range(streamlines_length[line_id] - 1):
+                    score_mp[line_id] = 0.0
+                    for line_id2 in range(num_fibers):
                     
                         # skip lfbc computation with itself
-                        if lineId == lineId2:
+                        if line_id == line_id2:
                             continue
                             
-                        for pointId2 in range(streamlines_length[lineId2] - 1):
+                        for point_id2 in range(streamlines_length[line_id2] - 1):
                             # compute displacement
-                            xd_mp[lineId] = int(streamlines[lineId, pointId, 0] 
-                            - streamlines[lineId2, pointId2, 0] + 0.5)
-                            yd_mp[lineId] = int(streamlines[lineId, pointId, 1] 
-                            - streamlines[lineId2, pointId2, 1] + 0.5)
-                            zd_mp[lineId] = int(streamlines[lineId, pointId, 2] 
-                            - streamlines[lineId2, pointId2, 2] + 0.5)
+                            xd_mp[line_id] = int(streamlines[line_id, point_id, 0] 
+                            - streamlines[line_id2, point_id2, 0] + 0.5)
+                            yd_mp[line_id] = int(streamlines[line_id, point_id, 1] 
+                            - streamlines[line_id2, point_id2, 1] + 0.5)
+                            zd_mp[line_id] = int(streamlines[line_id, point_id, 2] 
+                            - streamlines[line_id2, point_id2, 2] + 0.5)
                             
                             # if position is outside the kernel bounds, skip
-                            if xd_mp[lineId] > hn or -xd_mp[lineId] > hn or \
-                               yd_mp[lineId] > hn or -yd_mp[lineId] > hn or \
-                               zd_mp[lineId] > hn or -zd_mp[lineId] > hn:
+                            if xd_mp[line_id] > hn or -xd_mp[line_id] > hn or \
+                               yd_mp[line_id] > hn or -yd_mp[line_id] > hn or \
+                               zd_mp[line_id] > hn or -zd_mp[line_id] > hn:
                                 continue
                             
                             # grab kernel value from LUT
-                            score_mp[lineId] += \
-                                        lut[streamlines_nearestp[lineId, pointId], 
-                                        streamlines_nearestp[lineId2, pointId2], 
-                                        hn+xd_mp[lineId], 
-                                        hn+yd_mp[lineId], 
-                                        hn+zd_mp[lineId]]  # ang_v, ang_r, x, y, z
+                            score_mp[line_id] += \
+                                        lut[streamlines_nearestp[line_id, point_id], 
+                                        streamlines_nearestp[line_id2, point_id2], 
+                                        hn+xd_mp[line_id], 
+                                        hn+yd_mp[line_id], 
+                                        hn+zd_mp[line_id]]  # ang_v, ang_r, x, y, z
                                     
-                    streamline_scores[lineId, pointId] = score_mp[lineId]
+                    streamline_scores[line_id, point_id] = score_mp[line_id]
 
+        # Reset number of OpenMP cores to default
         if have_openmp and num_threads is not None:
             openmp.omp_set_num_threads(all_cores)
         
@@ -283,9 +312,10 @@ cdef class FBCMeasures:
         
         # compute RFBC for each fiber
         self.streamlines_rfbc = compute_rfbc(streamlines_length, 
-                                              streamline_scores)
+                                              streamline_scores,
+                                              max_windowsize)
         
-def compute_rfbc(streamlines_length, streamline_scores):
+def compute_rfbc(streamlines_length, streamline_scores, max_windowsize=7):
     """ Compute the relative fiber to bundle coherence (RFBC)
 
     Parameters
@@ -295,23 +325,25 @@ def compute_rfbc(streamlines_length, streamline_scores):
     streamlines_scores : 2D double array
         Contains the local fiber to bundle coherence (LFBC) for each streamline 
         element.
+    max_windowsize : int
+        The maximal window size used to calculate the average LFBC region
 
     Returns
     ----------
     output: normalized lowest average LFBC region along the fiber
     """
 
-    # finds the region of the fiber with minimal length if 7 points in which the
+    # finds the region of the fiber with maximal length of max_windowsize in which the
     # LFBC is the lowest
-    intLength = min(np.amin(streamlines_length), 7)
-    intValue = np.apply_along_axis(lambda x: min_moving_average(x[~np.isnan(x)], intLength), 
+    int_length = min(np.amin(streamlines_length), max_windowsize)
+    int_value = np.apply_along_axis(lambda x: min_moving_average(x[~np.isnan(x)], int_length), 
                                     1, streamline_scores)
-    averageTotal = np.mean(np.apply_along_axis(
+    avg_total = np.mean(np.apply_along_axis(
                 lambda x:np.mean(np.extract(x[~np.isnan(x)] >= 0, x[~np.isnan(x)])), 1, streamline_scores))
-    if not averageTotal == 0:
-        return intValue / averageTotal
+    if not avg_total == 0:
+        return int_value / avg_total
     else:
-        return intValue
+        return int_value
             
 def min_moving_average(a, n):
     """ Return the lowest cumulative sum for the score of a streamline segment
