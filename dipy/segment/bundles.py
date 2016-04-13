@@ -37,7 +37,7 @@ def qbx_with_merge(streamlines, thresholds,
     t = time()
     len_s = len(streamlines)
     if select_randomly is None:
-            select_randomly = len_s
+        select_randomly = len_s
     indices = np.random.choice(len_s, min(select_randomly, len_s),
                                replace=False)
     sample_streamlines = set_number_of_points(streamlines, nb_pts)
