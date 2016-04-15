@@ -452,6 +452,26 @@ cdef cnp.npy_intp copy_block_3d(double * dest,
     return 1
 
 
+@cython.wraparound(False)
+@cython.boundscheck(False)
+cdef cnp.npy_intp copy_block_3d_back(double [:, :, ::1] dest,
+                                     cnp.npy_intp min_i,
+                                     cnp.npy_intp min_j,
+                                     cnp.npy_intp min_k,
+                                     double * source,
+                                     cnp.npy_intp I,
+                                     cnp.npy_intp J,
+                                     cnp.npy_intp K) nogil:
+
+    cdef cnp.npy_intp i, j
+
+    for i in range(I):
+        for j in range(J):
+            memcpy(&dest[i + min_i, j + min_j, min_k], &source[i * J * K  + j * K], K * sizeof(double))
+
+    return 1
+
+
 def cpu_count():
     if have_openmp:
         return openmp.omp_get_num_procs()
