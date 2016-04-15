@@ -62,10 +62,10 @@ def nlmeans_3d(arr, mask=None, sigma=None, patch_radius=1,
     mask = add_padding_reflection(mask.astype('f8'), block_radius)
     sigma = np.ascontiguousarray(sigma, dtype='f8')
     sigma = add_padding_reflection(sigma.astype('f8'), block_radius)
-    
+
     if num_threads == 1:
         arrnlm = _nlmeans_3d_conv(arr, mask, sigma, patch_radius, block_radius,
-                                  rician, num_threads)
+                                  rician)
         return arrnlm
     else:
         arrnlm = _nlmeans_3d(arr, mask, sigma, patch_radius, block_radius,
@@ -458,3 +458,13 @@ def cpu_count():
     else:
         return 1
 
+
+@cython.wraparound(False)
+@cython.boundscheck(False)
+cdef cnp.npy_intp get_flattened_index(cnp.npy_intp x,
+                                      cnp.npy_intp y,
+                                      cnp.npy_intp z,
+                                      cnp.npy_intp I,
+                                      cnp.npy_intp J,
+                                      cnp.npy_intp K) nogil:
+    return K*J*x+K*y+z
