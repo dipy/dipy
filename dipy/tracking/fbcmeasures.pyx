@@ -238,6 +238,9 @@ cdef class FBCMeasures:
                     streamlines[line_id, point_id, dim] = \
                         py_streamlines[line_id][point_id][dim]
         self.streamline_points = streamlines
+
+        print("streamlines:")
+        print(np.asarray(streamlines))
         
         # compute tangents
         for line_id in range(num_fibers):
@@ -246,6 +249,9 @@ cdef class FBCMeasures:
                                         streamlines[line_id, point_id])
                 streamlines_tangents[line_id, point_id] = np.divide(tangent, 
                                             np.sqrt(np.dot(tangent, tangent)))
+
+        print("tangents:")
+        print(np.asarray(streamlines_tangents))
         
         # estimate which kernel LUT index corresponds to angles
         tree = KDTree(kernel.get_orientations())
@@ -253,6 +259,9 @@ cdef class FBCMeasures:
             for point_id in range(streamlines_length[line_id] - 1):
                 streamlines_nearestp[line_id, point_id] = \
                     tree.query(streamlines[line_id, point_id])[1]
+
+        print("tangents:")
+        print(np.asarray(streamlines_nearestp))
         
         # arrays for parallel computing
         score_mp = np.zeros(num_fibers)
@@ -309,11 +318,17 @@ cdef class FBCMeasures:
         
         # Save LFBC as class member
         self.streamlines_lfbc = streamline_scores
+
+        print("LFBC:")
+        print(np.asarray(self.streamlines_lfbc))
         
         # compute RFBC for each fiber
         self.streamlines_rfbc = compute_rfbc(streamlines_length, 
                                               streamline_scores,
                                               max_windowsize)
+
+        print("RFBC:")
+        print(np.asarray(self.streamlines_rfbc))
         
 def compute_rfbc(streamlines_length, streamline_scores, max_windowsize=7):
     """ Compute the relative fiber to bundle coherence (RFBC)

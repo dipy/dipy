@@ -37,8 +37,11 @@ def test_fbc():
         fbc.get_points_rfbc_thresholded(0, emphasis=0.01)
 
     # check RFBC against tested value
+    print("average rfbc:")
+    print(np.mean(rfbc_orig))
     npt.assert_almost_equal(np.mean(rfbc_orig), 1.0549502181194517)
 
 
 if __name__ == '__main__':
-   npt.run_module_suite()
+   test_fbc()
+   #npt.run_module_suite()
