@@ -43,5 +43,5 @@ def test_fbc():
 
 
 if __name__ == '__main__':
-   test_fbc()
-   #npt.run_module_suite()
+   # test_fbc()
+   npt.run_module_suite()
