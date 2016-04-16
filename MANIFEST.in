@@ -6,6 +6,7 @@ recursive-include tools *
 recursive-include src *
 # setup utilities
 include setup_helpers.py
+include version_helpers.py
 include cythexts.py
 recursive-include fake_pyrex *
 # put this stuff back into setup.py (package_data) once I'm enlightened

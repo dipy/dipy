@@ -28,13 +28,12 @@ if force_setuptools:
 # MANIFEST
 from distutils.core import setup
 from distutils.extension import Extension
-from distutils.command.build_py import build_py as du_build_py
-from distutils.command.build_ext import build_ext as du_build_ext
 
-from cythexts import cyproc_exts, get_pyx_sdist, derror_maker
+from cythexts import cyproc_exts, get_pyx_sdist
 from setup_helpers import (install_scripts_bat, add_flag_checking,
                            SetupDependency, read_vars_from,
                            make_np_ext_builder)
+from version_helpers import get_comrec_build
 
 # Get version and release info, which is all stored in dipy/info.py
 info = read_vars_from(pjoin('dipy', 'info.py'))
@@ -56,18 +55,6 @@ if using_setuptools:
         extras_require = dict(
             doc=['Sphinx>=1.0'],
             test=['nose>=0.10.1']))
-    # I removed numpy and scipy from install requires because easy_install seems
-    # to want to fetch these if they are already installed, meaning of course
-    # that there's a long fragile and unnecessary compile before the install
-    # finishes.
-    # If running setuptools and nibabel is not installed, we have to force
-    # setuptools to install nibabel locally for the script to continue.  This
-    # hack is from
-    # http://stackoverflow.com/questions/12060925/best-way-to-share-code-across-several-setup-py-scripts
-    # with thanks
-    from setuptools.dist import Distribution
-    nibabel_spec = 'nibabel>=' + info.NIBABEL_MIN_VERSION
-    Distribution(dict(setup_requires=nibabel_spec))
 
 # Define extensions
 EXTS = []
@@ -116,29 +103,21 @@ for modulename, other_sources, language in (
 # building, rather than unconditionally in the setup.py import or exec
 # We may make tripwire versions of build_ext, build_py, install
 need_cython = True
-try:
-    from nisext.sexts import get_comrec_build
-except ImportError: # No nibabel
-    msg = ('Need nisext package from nibabel installation'
-           ' - please install nibabel first')
-    pybuilder = derror_maker(du_build_py, msg)
-    extbuilder = derror_maker(du_build_ext, msg)
-else: # We have nibabel
-    pybuilder = get_comrec_build('dipy')
-    # Cython is a dependency for building extensions, iff we don't have stamped
-    # up pyx and c files.
-    build_ext, need_cython = cyproc_exts(EXTS,
-                                         info.CYTHON_MIN_VERSION,
-                                         'pyx-stamps')
-    # Add openmp flags if they work
-    simple_test_c = """int main(int argc, char** argv) { return(0); }"""
-    omp_test_c = """#include <omp.h>
-    int main(int argc, char** argv) { return(0); }"""
-    extbuilder = add_flag_checking(
-        build_ext, [[['/arch:SSE2'], [], simple_test_c, 'USING_VC_SSE2'],
-            [['-msse2', '-mfpmath=sse'], [], simple_test_c, 'USING_GCC_SSE2'],
-            [['-fopenmp'], ['-fopenmp'], omp_test_c, 'HAVE_OPENMP']], 'dipy')
-
+pybuilder = get_comrec_build('dipy')
+# Cython is a dependency for building extensions, iff we don't have stamped
+# up pyx and c files.
+build_ext, need_cython = cyproc_exts(EXTS,
+                                     info.CYTHON_MIN_VERSION,
+                                     'pyx-stamps')
+# Add openmp flags if they work
+simple_test_c = """int main(int argc, char** argv) { return(0); }"""
+omp_test_c = """#include <omp.h>
+int main(int argc, char** argv) { return(0); }"""
+extbuilder = add_flag_checking(
+    build_ext, [
+        [['/arch:SSE2'], [], simple_test_c, 'USING_VC_SSE2'],
+        [['-msse2', '-mfpmath=sse'], [], simple_test_c, 'USING_GCC_SSE2'],
+        [['-fopenmp'], ['-fopenmp'], omp_test_c, 'HAVE_OPENMP']], 'dipy')
 
 # Use ext builder to add np.get_include() at build time, not during setup.py
 # execution.
