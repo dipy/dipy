@@ -392,7 +392,7 @@ def set_polydata_colors(polydata, colors):
 
 
 ##########################################
-# Update/ Refresh PolyData
+# Update/Refresh PolyData
 ##########################################
 def update_polydata_normals(polydata):
     """ generate and update polydata normal
@@ -413,13 +413,66 @@ def update_polydata_normals(polydata):
     vtk_normals = normals_gen.GetOutput().GetPointData().GetNormals()
     polydata.GetPointData().SetNormals(vtk_normals)
 
-def update_polydata(polydata):
-    """ update polydata
+
+##########################################
+# Transform vtkPolyData : vtkPolyDataMapper, vtkActor
+##########################################
+
+def get_polymapper_from_polydata(polydata):
+    """ get vtkPolyDataMapper from a vtkPolyData
 
     Parameters
     ----------
     polydata : vtkPolyData
+    
+    
+    Returns
+    -------
+    poly_mapper : vtkPolyDataMapper
     """
-    if vtk.VTK_MAJOR_VERSION <= 5:
-        polydata.Update()
+    poly_mapper = set_input(vtk.vtkPolyDataMapper(), polydata)
+    poly_mapper.ScalarVisibilityOn()
+    poly_mapper.InterpolateScalarsBeforeMappingOn()
+    poly_mapper.Update()
+    poly_mapper.StaticOn()
+    return poly_mapper
+
+def get_actor_from_polymapper(poly_mapper, light=(0.1, 0.15, 0.05)):
+    """ get vtkActor from a vtkPolyDataMapper
+
+    Parameters
+    ----------
+    poly_mapper : vtkPolyDataMapper
+    
+    
+    Returns
+    -------
+    actor : vtkActor
+    """
+    actor = vtk.vtkActor()
+    actor.SetMapper(poly_mapper)
+    # actor.GetProperty().SetRepresentationToWireframe()
+    actor.GetProperty().BackfaceCullingOn()
+    actor.GetProperty().SetInterpolationToPhong()
+    # actor.GetProperty().SetInterpolationToFlat()
+
+    actor.GetProperty().SetAmbient(light[0])  # .3
+    actor.GetProperty().SetDiffuse(light[1])  # .3
+    actor.GetProperty().SetSpecular(light[2])  # .3
+    return actor
+
+def get_actor_from_polydata(polydata):
+    """ get vtkActor from a vtkPolyData
+
+    Parameters
+    ----------
+    polydata : vtkPolyData
+    
+    
+    Returns
+    -------
+    actor : vtkActor
+    """
+    poly_mapper = get_polymapper_from_polydata(polydata)
+    return get_actor_from_polymapper(poly_mapper)
 

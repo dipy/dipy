@@ -52,7 +52,7 @@ def load_polydata(file_name):
 
     reader.SetFileName(file_name)
     reader.Update()
-    print(file_name + " Mesh " + file_extension + "Loaded")
+    #print(file_name + " Mesh " + file_extension + " Loaded")
     return reader.GetOutput()
 
 
