@@ -37,6 +37,7 @@ def test_make_fetcher():
 
         # create local HTTP Server
         testfile_url = pathname2url(op.split(symmetric362)[0] + op.sep)
+        testfile_url = urljoin("file:", testfile_url)
         test_server_url = "http://127.0.0.1:8000/"
         print(testfile_url)
         print(symmetric362)
@@ -75,6 +76,7 @@ def test_fetch_data():
         newfile = op.join(tmpdir, "testfile.txt")
         # Test that the fetcher can get a file
         testfile_url = pathname2url(symmetric362)
+        testfile_url = urljoin("file:", testfile_url)
         print(testfile_url)
         testfile_dir, testfile_name = op.split(testfile_url)
         # create local HTTP Server
