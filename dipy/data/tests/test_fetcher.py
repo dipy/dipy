@@ -2,13 +2,6 @@ import tempfile
 import os.path as op
 import sys
 import os
-try:
-    from urllib import url2pathname
-    from urlparse import urljoin
-except ImportError:
-    from urllib.request import pathname2url
-    from urllib.parse import urljoin
-
 import numpy.testing as npt
 from nibabel.tmpdirs import TemporaryDirectory
 import dipy.data.fetcher as fetcher
