@@ -4,8 +4,10 @@ import sys
 import os
 try:
     from urllib import pathname2url
+    from urlparse import urljoin
 except ImportError:
     from urllib.request import pathname2url
+    from urllib.parse import urljoin
 
 import numpy.testing as npt
 from nibabel.tmpdirs import TemporaryDirectory
