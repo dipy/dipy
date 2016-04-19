@@ -5,6 +5,8 @@ from dipy.viz import fvtk
 from dipy.viz.colormap import line_colors
 from dipy.viz import window, actor
 
+from dipy.core.sphere import Sphere
+
 import numpy as np
 import numpy.testing as npt
 
@@ -25,9 +27,13 @@ def test_fbc():
     D33 = 1.0
     D44 = 0.04
     t = 1
-    np.random.seed(1)
-    num_orientations = 15
-    k = EnhancementKernel(D33, D44, t, orientations=num_orientations, force_recompute=True)
+    sphere = Sphere(xyz=np.array([[ 0.82819078,  0.51050355,  0.23127074],
+                                 [-0.10761926, -0.95554309,  0.27450957],
+                                 [ 0.4101745,  -0.07154038,  0.90919682],
+                                 [-0.75573448,  0.64854889,  0.09082809],
+                                 [-0.56874549,  0.01377562,  0.8223982 ]]))
+    k = EnhancementKernel(D33, D44, t, orientations=sphere, force_recompute=True)
+    print(np.asarray(k.get_orientations()))
 
     # run FBC
     fbc = FBCMeasures(streamlines, k, verbose=True)
@@ -39,7 +45,7 @@ def test_fbc():
     # check RFBC against tested value
     print("average rfbc:")
     print(np.mean(rfbc_orig))
-    npt.assert_almost_equal(np.mean(rfbc_orig), 1.0358429897750634)
+    npt.assert_almost_equal(np.mean(rfbc_orig), 1.0500466494329224)
 
 
 if __name__ == '__main__':
