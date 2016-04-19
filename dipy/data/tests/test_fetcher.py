@@ -3,7 +3,7 @@ import os.path as op
 import sys
 import os
 try:
-    from urllib import pathname2url
+    from urllib import url2pathname
     from urlparse import urljoin
 except ImportError:
     from urllib.request import pathname2url
@@ -38,8 +38,7 @@ def test_make_fetcher():
         stored_md5 = fetcher._get_file_md5(symmetric362)
 
         # create local HTTP Server
-        testfile_url = pathname2url(op.split(symmetric362)[0] + op.sep)
-        testfile_url = urljoin("file:", testfile_url)
+        testfile_url = op.split(symmetric362)[0] + os.sep
         test_server_url = "http://127.0.0.1:8000/"
         print(testfile_url)
         print(symmetric362)
@@ -77,15 +76,14 @@ def test_fetch_data():
 
         newfile = op.join(tmpdir, "testfile.txt")
         # Test that the fetcher can get a file
-        testfile_url = pathname2url(symmetric362)
-        testfile_url = urljoin("file:", testfile_url)
+        testfile_url = symmetric362
         print(testfile_url)
         testfile_dir, testfile_name = op.split(testfile_url)
         # create local HTTP Server
         test_server_url = "http://127.0.0.1:8001/" + testfile_name
         current_dir = os.getcwd()
         # change pwd to directory containing testfile.
-        os.chdir(testfile_dir)
+        os.chdir(testfile_dir + os.sep)
         # use different port as shutdown() takes time to release socket.
         server = HTTPServer(('localhost', 8001), SimpleHTTPRequestHandler)
         server_thread = Thread(target=server.serve_forever)
