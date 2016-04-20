@@ -1629,7 +1629,7 @@ def generalized_crossvalidation(data, M, LR, weights_array=None):
         Basis order matrix
     M : matrix, shape (N, Ncoef)
         mapmri observation matrix
-    LR : matrix, shape (N_coef,N_coef)
+    LR : matrix, shape (N_coef, N_coef)
         regularization matrix
     weights_array : array (N_of_weights)
         array of optional regularization weights
@@ -1646,14 +1646,14 @@ def generalized_crossvalidation(data, M, LR, weights_array=None):
     """
 
     if weights_array is None:
-        lrange = np.linspace(0, 1, 21)[1:]  # reasonably fast standard range
+        lrange = np.linspace(0.05, 1, 20)  # reasonably fast standard range
     else:
         lrange = weights_array
 
     samples = lrange.shape[0]
     MMt = np.dot(M.T, M)
     K = len(data)
-    gcvold = gcvnew = 10e10
+    gcvold = gcvnew = 10e10 # set initialization gcv threshold very high
     i = -1
     while gcvold >= gcvnew and i < samples - 2:
         gcvold = gcvnew
