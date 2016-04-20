@@ -287,7 +287,7 @@ def hindered_fit(maskdata, gtab):
 
 
 def hindered_and_restricted_signal(xdata, theta_H, phi_H, theta_R, phi_R,
-                                   lambda_per, lambda_par, Dif_par, f):
+                                   lambda_per, lambda_par, Dif_par, f, noise):
     r""" Signal prediction at high b values
     Parameters
     ----------
@@ -336,7 +336,9 @@ def hindered_and_restricted_signal(xdata, theta_H, phi_H, theta_R, phi_R,
                                                (2 - ((99/112) *
                                                      ((R**2)/(Dif_per *
                                                               Tau)))))))
-    return (f)*E_R + (1-f)*E_H
+    E = (f)*E_R + (1-f)*E_H
+    E = np.sqrt((E**2) + (noise**2))
+	return E
 
 
 def hind_and_rest_fit(maskdata, gtab, hind_param):
@@ -357,6 +359,7 @@ def hind_and_rest_fit(maskdata, gtab, hind_param):
         3) Axial and radial diffusivities in hindered compartment
         4) Axial diffusivity in restricted compartment
         5) Volume fraction of restricted compartment
+        6) Noise
     Notes
     -----
     References
@@ -368,13 +371,13 @@ def hind_and_rest_fit(maskdata, gtab, hind_param):
     intial_params = intial_conditions_prediction(a, maskdata)
     charmed_params = np.empty(voxels, dtype=object)
     # Specifying the boundaries
-    lb = np.array([-np.pi, 0, -np.pi, 0, 1e-10, 1e-10, 1e-10, 0])
-    ub = np.array([np.pi, np.pi, np.pi, np.pi, 1e5, 1e5, 1e5, 1])
+    lb = np.array([-np.pi, 0, -np.pi, 0, 1e-10, 1e-10, 1e-10, 0, 0])
+    ub = np.array([np.pi, np.pi, np.pi, np.pi, 1e5, 1e5, 1e5, 1, 1])
     for vox in range(voxels):
         xdata = [x]
         x0 = [hind_param[vox][0], hind_param[vox][1], hind_param[vox][0],
               hind_param[vox][1], intial_params['lambda_per'][vox],
-              intial_params['lambda_par'][vox], Dif_per, 0.3]
+              intial_params['lambda_par'][vox], Dif_per, 0.3, 0.03]
         charmed_params[vox], popt = curve_fit(hindered_and_restricted_signal,
                                               xdata, ydata[vox], p0=x0,
                                               bounds=(lb, ub), method='trf')
