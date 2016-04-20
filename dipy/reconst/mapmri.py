@@ -138,12 +138,12 @@ class MapmriModel(Cache):
         dti_scale_estimation : bool,
             Whether or not DTI fitting is used to estimate the isotropic scale
             factor for isotropic MAP-MRI.
-            When set to False vastly increases fitting speed by presetting
-            the isotropic tissue diffusivity to typical white matter
-            diffusivity of D=0.7e-3. Can only be used in combination with
+            When set to False the algorithm presets the isotropic tissue
+            diffusivity to that of typical white matter D=0.7e-3 _[5]. This
+            vastly increases fitting speed but at the cost of reduced fitting
+            quality. Can only be used in combination with
             anisotropic_scaling=False, laplacian_regularization=True and
             regularization_weight set to a float.
-            WARNING: This may reduce fitting quality.
 
         References
         ----------
@@ -163,6 +163,10 @@ class MapmriModel(Cache):
         .. [4] Fick, Rutger HJ, et al. "MAPL: Tissue microstructure estimation
                using Laplacian-regularized MAP-MRI and its application to HCP
                data." NeuroImage (2016).
+
+        .. [5] Merlet S. et. al, "Continuous diffusion signal, EAP and ODF
+               estimation via Compressive Sensing in diffusion MRI", Medical
+               Image Analysis, 2013.
 
         Examples
         --------
