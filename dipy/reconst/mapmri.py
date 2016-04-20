@@ -160,9 +160,9 @@ class MapmriModel(Cache):
                reconstruction and estimation for three-dimensional q-space
                mri", ISMRM 2009.
 
-        .. [4] Fick et al. "MAPL: Tissue Microstructure Estimation Using
-               Laplacian-Regularized MAP-MRI and its Application to HCP Data",
-               NeuroImage, Under Review.
+        .. [4] Fick, Rutger HJ, et al. "MAPL: Tissue microstructure estimation
+               using Laplacian-regularized MAP-MRI and its application to HCP
+               data." NeuroImage (2016).
 
         Examples
         --------
@@ -435,9 +435,9 @@ class MapmriFit(ReconstFit):
         diffusion imaging method for mapping tissue microstructure",
         NeuroImage, 2013.
 
-        .. [1]_ Fick et al. "MAPL: Tissue Microstructure Estimation Using
-        Laplacian-Regularized MAP-MRI and its Application to HCP Data",
-        NeuroImage, Under Review.
+        .. [1]_ Fick, Rutger HJ, et al. "MAPL: Tissue microstructure estimation
+        using Laplacian-regularized MAP-MRI and its application to HCP data."
+        NeuroImage (2016).
         """
         if self.model.anisotropic_scaling:
             msg = 'odf in spherical harmonics not yet implemented for '
@@ -464,9 +464,9 @@ class MapmriFit(ReconstFit):
         diffusion imaging method for mapping tissue microstructure",
         NeuroImage, 2013.
 
-        .. [2]_ Fick et al. "MAPL: Tissue Microstructure Estimation Using
-        Laplacian-Regularized MAP-MRI and its Application to HCP Data",
-        NeuroImage, Under Review.
+        .. [2]_ Fick, Rutger HJ, et al. "MAPL: Tissue microstructure estimation
+        using Laplacian-regularized MAP-MRI and its application to HCP data."
+        NeuroImage (2016).
         """
         Bm = self.model.Bm
         ind_mat = self.ind_mat
@@ -516,9 +516,9 @@ class MapmriFit(ReconstFit):
         diffusion imaging method for mapping tissue microstructure",
         NeuroImage, 2013.
 
-        .. [2]_ Fick et al. "MAPL: Tissue Microstructure Estimation Using
-        Laplacian-Regularized MAP-MRI and its Application to HCP Data",
-        NeuroImage, Under Review.
+        .. [2]_ Fick, Rutger HJ, et al. "MAPL: Tissue microstructure estimation
+        using Laplacian-regularized MAP-MRI and its application to HCP data."
+        NeuroImage (2016).
         """
         Bm = self.model.Bm
         ind_mat = self.ind_mat
@@ -567,9 +567,9 @@ class MapmriFit(ReconstFit):
         diffusion imaging method for mapping tissue microstructure",
         NeuroImage, 2013.
 
-        .. [2]_ Fick et al. "MAPL: Tissue Microstructure Estimation Using
-        Laplacian-Regularized MAP-MRI and its Application to HCP Data",
-        NeuroImage, Under Review.
+        .. [2]_ Fick, Rutger HJ, et al. "MAPL: Tissue microstructure estimation
+        using Laplacian-regularized MAP-MRI and its application to HCP data."
+        NeuroImage (2016).
         """
         Bm = self.model.Bm
 
@@ -596,9 +596,9 @@ class MapmriFit(ReconstFit):
         .. [1] Cheng, J., 2014. Estimation and Processing of Ensemble Average
         Propagator and Its Features in Diffusion MRI. Ph.D. Thesis.
 
-        .. [2]_ Fick et al. "MAPL: Tissue Microstructure Estimation Using
-        Laplacian-Regularized MAP-MRI and its Application to HCP Data",
-        NeuroImage, Under Review.
+        .. [2]_ Fick, Rutger HJ, et al. "MAPL: Tissue microstructure estimation
+        using Laplacian-regularized MAP-MRI and its application to HCP data."
+        NeuroImage (2016).
         """
 
         mu = self.mu
@@ -1452,9 +1452,9 @@ def mapmri_isotropic_odf_matrix(radial_order, mu, s, vertices):
     diffusion imaging method for mapping tissue microstructure",
     NeuroImage, 2013.
 
-    .. [2]_ Fick et al. "MAPL: Tissue Microstructure Estimation Using
-    Laplacian-Regularized MAP-MRI and its Application to HCP Data",
-    NeuroImage, Under Review.
+    .. [2]_ Fick, Rutger HJ, et al. "MAPL: Tissue microstructure estimation
+    using Laplacian-regularized MAP-MRI and its application to HCP data."
+    NeuroImage (2016).
     """
     r, theta, phi = cart2sphere(vertices[:, 0], vertices[:, 1],
                                 vertices[:, 2])
@@ -1510,9 +1510,9 @@ def mapmri_isotropic_odf_sh_matrix(radial_order, mu, s):
     diffusion imaging method for mapping tissue microstructure",
     NeuroImage, 2013.
 
-    .. [2]_ Fick et al. "MAPL: Tissue Microstructure Estimation Using
-    Laplacian-Regularized MAP-MRI and its Application to HCP Data",
-    NeuroImage, Under Review.
+    .. [2]_ Fick, Rutger HJ, et al. "MAPL: Tissue microstructure estimation
+    using Laplacian-regularized MAP-MRI and its application to HCP data."
+    NeuroImage (2016).
     """
     sh_mat = sph_harm_ind_list(radial_order)
     ind_mat = mapmri_isotropic_index_matrix(radial_order)
@@ -1556,9 +1556,9 @@ def mapmri_isotropic_laplacian_reg_matrix(radial_order, mu):
 
     References
     ----------
-    .. [1]_ Fick et al. "MAPL: Tissue Microstructure Estimation Using
-    Laplacian-Regularized MAP-MRI and its Application to HCP Data",
-    NeuroImage, Under Review.
+    .. [1]_ Fick, Rutger HJ, et al. "MAPL: Tissue microstructure estimation
+    using Laplacian-regularized MAP-MRI and its application to HCP data."
+    NeuroImage (2016).
     '''
     ind_mat = mapmri_isotropic_index_matrix(radial_order)
 
@@ -1680,9 +1680,9 @@ def map_laplace_u(n, m):
 
     References
     ----------
-    .. [1]_ Fick et al. "MAPL: Tissue Microstructure Estimation Using
-    Laplacian-Regularized MAP-MRI and its Application to HCP Data",
-    NeuroImage, Under Review.
+    .. [1]_ Fick, Rutger HJ, et al. "MAPL: Tissue microstructure estimation
+    using Laplacian-regularized MAP-MRI and its application to HCP data."
+    NeuroImage (2016).
     """
     return (-1) ** n * delta(n, m) / (2 * np.sqrt(np.pi))
 
@@ -1701,9 +1701,9 @@ def map_laplace_t(n, m):
 
     References
     ----------
-    .. [1]_ Fick et al. "MAPL: Tissue Microstructure Estimation Using
-    Laplacian-Regularized MAP-MRI and its Application to HCP Data",
-    NeuroImage, Under Review.
+    .. [1]_ Fick, Rutger HJ, et al. "MAPL: Tissue microstructure estimation
+    using Laplacian-regularized MAP-MRI and its application to HCP data."
+    NeuroImage (2016).
     """
     a = np.sqrt((m - 1) * m) * delta(m - 2, n)
     b = np.sqrt((n - 1) * n) * delta(n - 2, m)
@@ -1725,9 +1725,9 @@ def map_laplace_s(n, m):
 
     References
     ----------
-    .. [1]_ Fick et al. "MAPL: Tissue Microstructure Estimation Using
-    Laplacian-Regularized MAP-MRI and its Application to HCP Data",
-    NeuroImage, Under Review.
+    .. [1]_ Fick, Rutger HJ, et al. "MAPL: Tissue microstructure estimation
+    using Laplacian-regularized MAP-MRI and its application to HCP data."
+    NeuroImage (2016).
     """
 
     k = 2 * np.pi ** (7 / 2.) * (-1) ** (n)
@@ -1765,9 +1765,9 @@ def mapmri_STU_reg_matrices(radial_order):
 
     References
     ----------
-    .. [1]_ Fick et al. "MAPL: Tissue Microstructure Estimation Using
-    Laplacian-Regularized MAP-MRI and its Application to HCP Data",
-    NeuroImage, Under Review.
+    .. [1]_ Fick, Rutger HJ, et al. "MAPL: Tissue microstructure estimation
+    using Laplacian-regularized MAP-MRI and its application to HCP data."
+    NeuroImage (2016).
     """
     S = np.zeros((radial_order + 1, radial_order + 1))
     for i in range(radial_order + 1):
@@ -1807,9 +1807,9 @@ def mapmri_laplacian_reg_matrix(ind_mat, mu, S_mat, T_mat, U_mat):
 
     References
     ----------
-    .. [1]_ Fick et al. "MAPL: Tissue Microstructure Estimation Using
-    Laplacian-Regularized MAP-MRI and its Application to HCP Data",
-    NeuroImage, Under Review.
+    .. [1]_ Fick, Rutger HJ, et al. "MAPL: Tissue microstructure estimation
+    using Laplacian-regularized MAP-MRI and its application to HCP data."
+    NeuroImage (2016).
     """
     ux, uy, uz = mu
 
