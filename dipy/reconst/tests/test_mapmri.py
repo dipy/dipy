@@ -147,6 +147,25 @@ def test_mapmri_signal_fitting(radial_order=6):
     assert_almost_equal(nmse_signal, 0.0, 3)
 
 
+def test_mapmri_signal_fitting_over_radial_order(order_max=8):
+    gtab = get_gtab_taiwan_dsi()
+    l1, l2, l3 = [0.0012, 0.0003, 0.0003]
+    S, _ = generate_signal_crossing(gtab, l1, l2, l3, angle2=60)
+
+    # take radial order 0, 4 and 8
+    orders = np.arange(0, 9, 4)
+    error_array = np.zeros(len(orders))
+
+    for i, order in enumerate(orders):
+        mapm = MapmriModel(gtab, radial_order=order,
+                           laplacian_regularization=False)
+        mapfit = mapm.fit(S)
+        S_reconst = mapfit.predict(gtab, 100.0)
+        error_array[i] = np.mean((S - S_reconst) ** 2)
+    # check if the fitting error decreases as radial order increases
+    assert_equal(np.diff(error_array) < 0., True)
+
+
 def test_mapmri_pdf_integral_unity(radial_order=6):
     gtab = get_gtab_taiwan_dsi()
     l1, l2, l3 = [0.0015, 0.0003, 0.0003]
