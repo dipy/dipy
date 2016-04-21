@@ -243,9 +243,8 @@ class MapmriModel(Cache):
         else:
             self.ind_mat = mapmri_isotropic_index_matrix(self.radial_order)
             self.Bm = b_mat_isotropic(self.ind_mat)
-            if self.laplacian_regularization:
-                self.laplacian_matrix = mapmri_isotropic_laplacian_reg_matrix(
-                    radial_order, 1.)
+            self.laplacian_matrix = mapmri_isotropic_laplacian_reg_matrix(
+                radial_order, 1.)
 
             qvals = np.sqrt(self.gtab.bvals / self.tau) / (2 * np.pi)
             q = gtab.bvecs * qvals[:, None]
