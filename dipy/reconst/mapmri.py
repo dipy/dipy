@@ -246,9 +246,8 @@ class MapmriModel(Cache):
         else:
             self.ind_mat = mapmri_isotropic_index_matrix(self.radial_order)
             self.Bm = b_mat_isotropic(self.ind_mat)
-            if self.laplacian_regularization:
-                self.laplacian_matrix = mapmri_isotropic_laplacian_reg_matrix(
-                    radial_order, 1.)
+            self.laplacian_matrix = mapmri_isotropic_laplacian_reg_matrix(
+                radial_order, 1.)
 
             qvals = np.sqrt(self.gtab.bvals / self.tau) / (2 * np.pi)
             q = gtab.bvecs * qvals[:, None]
@@ -644,9 +643,9 @@ class MapmriFit(ReconstFit):
         diffusion imaging and computation of q-space indices. NeuroImage 64,
         2013, 650–670.
 
-        .. [2]_ Fick et al. "MAPL: Tissue Microstructure Estimation Using
-        Laplacian-Regularized MAP-MRI and its Application to HCP Data",
-        NeuroImage, Under Review.
+        .. [2]_ Fick, Rutger HJ, et al. "MAPL: Tissue microstructure estimation
+        using Laplacian-regularized MAP-MRI and its application to HCP data."
+        NeuroImage (2016).
         """
         ux, uy, uz = self.mu
         ind_mat = self.model.ind_mat
@@ -782,6 +781,31 @@ class MapmriFit(ReconstFit):
                         a00[i] = a_perp[i]
         return np.sqrt(1 - np.sum(a00 ** 2) / np.sum(a_perp ** 2))
 
+    def norm_of_laplacian_signal(self):
+        """ Calculates the norm of the laplacian of the fitted signal [1]_.
+        This information could be useful to assess if the extrapolation of the
+        fitted signal contains spurious oscillations. A high laplacian may
+        indicate that these are present, and any q-space indices that
+        use integrals of the signal may be corrupted (e.g. RTOP, RTAP, RTPP,
+        QIV).
+        
+        References
+        ----------
+        .. [1]_ Fick, Rutger HJ, et al. "MAPL: Tissue microstructure estimation
+        using Laplacian-regularized MAP-MRI and its application to HCP data."
+        NeuroImage (2016).
+        """
+        if self.model.anisotropic_scaling:
+            laplacian_matrix = mapmri_laplacian_reg_matrix(
+                    self.model.ind_mat, self.mu,
+                    self.model.S_mat, self.model.T_mat, self.model.U_mat)
+        else:
+            laplacian_matrix = self.mu[0] * self.model.laplacian_matrix
+        
+        norm_of_laplacian = np.dot(np.dot(self._mapmri_coef, laplacian_matrix),
+                                   self._mapmri_coef)
+        return norm_of_laplacian
+                    
     def fitted_signal(self, gtab=None):
         """
         Recovers the fitted signal for the given gradient table. If no gradient
