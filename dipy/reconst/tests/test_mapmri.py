@@ -6,7 +6,10 @@ from numpy.testing import (assert_almost_equal,
                            run_module_suite)
 from dipy.reconst.mapmri import MapmriModel, mapmri_index_matrix
 from dipy.reconst import dti, mapmri
-from dipy.sims.voxel import (MultiTensor, all_tensor_evecs,  multi_tensor_pdf)
+from dipy.sims.voxel import (MultiTensor,
+                             multi_tensor_pdf,
+                             single_tensor,
+                             cylinders_and_ball_soderman)
 from scipy.special import gamma
 from scipy.misc import factorial
 from dipy.data import get_sphere
@@ -34,24 +37,6 @@ def generate_signal_crossing(gtab, lambda1, lambda2, lambda3, angle2=60):
     S, sticks = MultiTensor(gtab, mevals, S0=100.0, angles=angl,
                             fractions=[50, 50], snr=None)
     return S, sticks
-
-
-def callaghan_perpendicular(q, R):
-    return (2 * jn(1, 2 * np.pi * q * R)) ** 2 / (2 * np.pi * q * R) ** 2
-
-
-def gaussian_parallel(q, tau, D=0.7e-3):
-    return np.exp(-(2 * np.pi * q) ** 2 * tau * D)
-
-
-def signal_cylinder_callaghan(qvec, tau, R):
-    # assumes cylinder axis is aligned with qx
-    q_norm = np.sqrt(np.einsum('ij,ij->i', qvec, qvec))
-    q_perp = np.sqrt(np.einsum('ij,ij->i', qvec[:, 1:], qvec[:, 1:]))
-    q_par = qvec[:, 0]
-    E = callaghan_perpendicular(q_perp, R) * gaussian_parallel(q_par, tau)
-    E[q_norm == 0.] = 1.
-    return E
 
 
 def test_orthogonality_basis_functions():
@@ -433,11 +418,10 @@ def test_mapmri_isotropic_design_matrix_separability(radial_order=6):
 def test_estimate_radius_with_rtap(radius_gt=5e-3):
     gtab = get_gtab_taiwan_dsi()
     tau = 1 / (4 * np.pi ** 2)
-    qvals = np.sqrt(gtab.bvals / tau) / (2 * np.pi)
-    qvecs = qvals[:, None] * gtab.bvecs
     # we estimate the infinite diffusion time case for a perfectly reflecting
     # cylinder using the Callaghan model
-    E = signal_cylinder_callaghan(qvecs, tau, radius_gt)
+    E = cylinders_and_ball_soderman(gtab, tau, radii=[radius_gt], snr=None,
+                                    angles=[(0, 90)], fractions=[100])[0]
 
     # estimate radius using anisotropic MAP-MRI.
     mapmod = mapmri.MapmriModel(gtab, radial_order=6,
@@ -445,7 +429,7 @@ def test_estimate_radius_with_rtap(radius_gt=5e-3):
                                 laplacian_weighting=0.01)
     mapfit = mapmod.fit(E)
     radius_estimated = np.sqrt(1 / (np.pi * mapfit.rtap()))
-    assert_almost_equal(radius_estimated, radius_gt, 6)
+    assert_almost_equal(radius_estimated, radius_gt, 5)
 
     # estimate radius using isotropic MAP-MRI.
     # note that the radial order is higher and the precision is lower due to
