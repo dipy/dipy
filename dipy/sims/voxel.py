@@ -240,9 +240,9 @@ def gaussian_parallel(q, tau, D=0.7e-3):
     return np.exp(-(2 * np.pi * q) ** 2 * tau * D)
 
 
-def signal_cylinder_soderman(gtab, tau, radii=[5e-3, 5e-3], D=0.7e-3, S0=100,
-                             angles=[(0, 0), (90, 0)],
-                             fractions=[35, 35], snr=20):
+def cylinders_and_ball_soderman(gtab, tau, radii=[5e-3, 5e-3], D=0.7e-3,
+                                S0=100, angles=[(0, 0), (90, 0)],
+                                fractions=[35, 35], snr=20):
     r""" Calculates the three-dimensional signal attenuation E(q) originating
     from within a cylinder of radius R using the Soderman approximation [1]_.
     The diffusion signal is assumed to be separable perpendicular and parallel
