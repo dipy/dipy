@@ -9,7 +9,8 @@ from dipy.reconst import dti, mapmri
 from dipy.sims.voxel import (MultiTensor,
                              multi_tensor_pdf,
                              single_tensor,
-                             cylinders_and_ball_soderman)
+                             cylinders_and_ball_soderman,
+                             callaghan_perpendicular)
 from scipy.special import gamma
 from scipy.misc import factorial
 from dipy.data import get_sphere
@@ -257,7 +258,7 @@ def test_mapmri_metrics_anisotropic(radial_order=6):
 def test_mapmri_metrics_isotropic(radial_order=6):
     gtab = get_gtab_taiwan_dsi()
     l1, l2, l3 = [0.0003, 0.0003, 0.0003]  # isotropic diffusivities
-    S, _ = generate_signal_crossing(gtab, l1, l2, l3, angle2=0)
+    S = single_tensor(gtab, evals=np.r_[l1, l2, l3])
 
     # test MAPMRI q-space indices
 
@@ -291,7 +292,7 @@ def test_mapmri_metrics_isotropic(radial_order=6):
 def test_mapmri_laplacian_anisotropic(radial_order=6):
     gtab = get_gtab_taiwan_dsi()
     l1, l2, l3 = [0.0015, 0.0003, 0.0003]
-    S, _ = generate_signal_crossing(gtab, l1, l2, l3, angle2=0)
+    S = single_tensor(gtab, evals=np.r_[l1, l2, l3])
 
     mapm = MapmriModel(gtab, radial_order=radial_order,
                        laplacian_regularization=False)
@@ -319,7 +320,7 @@ def test_mapmri_laplacian_anisotropic(radial_order=6):
 def test_mapmri_laplacian_isotropic(radial_order=6):
     gtab = get_gtab_taiwan_dsi()
     l1, l2, l3 = [0.0003, 0.0003, 0.0003]  # isotropic diffusivities
-    S, _ = generate_signal_crossing(gtab, l1, l2, l3, angle2=0)
+    S = single_tensor(gtab, evals=np.r_[l1, l2, l3])
 
     mapm = MapmriModel(gtab, radial_order=radial_order,
                        laplacian_regularization=False,
