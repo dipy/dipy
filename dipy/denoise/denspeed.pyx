@@ -62,10 +62,184 @@ def nlmeans_3d(arr, mask=None, sigma=None, patch_radius=1,
     mask = add_padding_reflection(mask.astype('f8'), block_radius)
     sigma = np.ascontiguousarray(sigma, dtype='f8')
     sigma = add_padding_reflection(sigma.astype('f8'), block_radius)
-    arrnlm = _nlmeans_3d(arr, mask, sigma, patch_radius, block_radius,
-                         rician, num_threads)
 
-    return remove_padding(arrnlm, block_radius)
+    if num_threads == 1:
+        arrnlm = _nlmeans_3d_conv(arr, mask, sigma, patch_radius, block_radius,
+                                  rician)
+        return arrnlm
+    else:
+        arrnlm = _nlmeans_3d(arr, mask, sigma, patch_radius, block_radius,
+                             rician, num_threads)
+
+        return remove_padding(arrnlm, block_radius)
+
+
+@cython.wraparound(False)
+@cython.boundscheck(False)
+def _nlmeans_3d_conv(double [:, :, ::1] arr, double [:, :, ::1] mask, double [:, :, ::1] sigma,
+                       patch_radius=1, block_radius=5, rician=True):
+    """ This algorithm denoises the value of every voxel (i, j, k) by
+    calculating a weight between a moving 3D patch and a static 3D patch
+    centered at (i, j, k). The moving patch can only move inside a
+    3D block.
+    """
+
+    cdef:
+        cnp.npy_intp i, j, k, I, J, K, l, m, n, L, M, N, x, y, z
+        double[:, :, ::1] out
+        cnp.npy_intp P = patch_radius
+        cnp.npy_intp B = block_radius
+
+    I = arr.shape[0]-2*B
+    J = arr.shape[1]-2*B
+    K = arr.shape[2]-2*B
+
+    out = np.empty([I, J, K])
+
+    out = process_block_conv(arr, mask, I, J, K, B, P, sigma)
+
+    new = np.asarray(out)
+
+    if rician:
+        new -= 2 * np.asarray(remove_padding(sigma, block_radius))**2
+        new[new < 0] = 0
+
+    return np.sqrt(new)
+
+
+@cython.wraparound(False)
+@cython.boundscheck(False)
+@cython.cdivision(True)
+cdef double[:, :, ::1] process_block_conv(double [:, :, ::1] arr,
+                                 double [:, :, ::1] mask, cnp.npy_intp I,
+                                 cnp.npy_intp J, cnp.npy_intp K, cnp.npy_intp B,
+                                 cnp.npy_intp P, double [:, :, ::1] sigma):
+    """ Process the block; optimized with convolution
+    Parameters
+    ----------
+    arr : 3D array
+        C contiguous array of doubles
+    mask: 3D array
+        C contiguous array of doubles
+    I, J, K : int
+        shape of block
+    B : int
+        block radius
+    P : int
+        patch radius
+    sigma : 3D array
+        local noise standard deviation
+    Returns
+    -------
+    new_value : double
+    """
+
+    cdef:
+        cnp.npy_intp m, n, o, a, b, c, x, y, z, i, step, thread_id
+        double patch_vol_size
+        double v
+        double * cache
+        double * mask_cache
+        double * sigma_block
+        double * denom_block
+        double [:, :, ::1] buffer_out
+        double * sumw
+        double * sum_out
+        double * d
+        double denom
+        double single_w
+        double single_d
+        double d_conv
+        double s_conv
+        cnp.npy_intp * BS
+        cnp.npy_intp * PS
+
+    BS = <cnp.npy_intp *> malloc(3 * sizeof(cnp.npy_intp))
+    BS[0] = B * 2 + I
+    BS[1] = B * 2 + J
+    BS[2] = B * 2 + K
+    PS = <cnp.npy_intp *> malloc(3 * sizeof(cnp.npy_intp))
+    PS[0] = P * 2 + I
+    PS[1] = P * 2 + J
+    PS[2] = P * 2 + K
+
+    patch_vol_size = (P + P + 1) * (P + P + 1) * (P + P + 1)
+
+    sumw = <double *> malloc(I * J * K * sizeof(double))
+    sum_out = <double *> malloc(I * J * K * sizeof(double))
+
+    d = <double *> malloc(PS[0] * PS[1]  * PS[2] * sizeof(double))
+    cache = <double *> malloc(BS[0] * BS[1] * BS[2] * sizeof(double))
+    mask_cache = <double *> malloc(BS[0] * BS[1] * BS[2] * sizeof(double))
+    sigma_block = <double *> malloc(BS[0] * BS[1] * BS[2] * sizeof(double))
+    denom_block = <double *> malloc((BS[0]-P) * (BS[1]-P) * (BS[2]-P) * sizeof(double))
+    copy_block_3d(cache, BS[0], BS[1], BS[2], arr, 0, 0, 0)
+    copy_block_3d(mask_cache, BS[0], BS[1], BS[2], mask, 0, 0, 0)
+    copy_block_3d(sigma_block, BS[0], BS[1], BS[2], sigma, 0, 0, 0)
+
+    for a in range(I * J * K):
+        sumw[a] = 0
+        sum_out[a] = 0
+
+    # Calculate denom upfront
+    for a in range(P, BS[0]-P):
+        for b in range(P, BS[1]-P):
+            for c in range(P, BS[0]-P):
+                s_conv = 0
+                for x in range(-P, P + 1):
+                    for y in range(-P, P + 1):
+                        for z in range(-P, P + 1):
+                            s_conv += sigma_block[get_flattened_index(a+x, b+y, c+z, BS[0], BS[1], BS[2])]
+
+                denom_block[get_flattened_index(a-P, b-P, c-P, BS[0]-P, BS[1]-P, BS[2]-P)] = \
+                        sqrt(2) * s_conv**2 / patch_vol_size
+
+    for m in range(P, 2 * B + 1 - P):
+        for n in range(P, 2 * B + 1 - P):
+            for o in range(P, 2 * B + 1 - P):
+
+                # Calculate square distance batch
+                for a in range(-P, P + I):
+                    for b in range(-P, P + J):
+                        for c in range(-P, P + K):
+                            single_d =  \
+                                cache[get_flattened_index(B+a, B+b, B+c, BS[0], BS[1], BS[2])] - \
+                                cache[get_flattened_index(m+a, n+b, o+c, BS[0], BS[1], BS[2])]
+                            # d[P+a, P+b, P+c] = single_d*single_d
+                            d[get_flattened_index(P+a, P+b, P+c, PS[0], PS[1], PS[2])] = single_d * single_d
+
+                # Convolution
+                for a in range(0, I):                    
+                    for b in range(0, J):
+                        for c in range(0, K):
+                            if mask_cache[get_flattened_index(a+B, b+B, c+B, BS[0], BS[1], BS[2])] != 0:
+                                d_conv = 0.
+                                for x in range(-P, P + 1):
+                                    for y in range(-P, P + 1):
+                                        for z in range(-P, P + 1):
+                                            d_conv += d[get_flattened_index(P+a+x, P+b+y, P+c+z, PS[0], PS[1], PS[2])]
+                                single_w = exp(- d_conv / denom_block[get_flattened_index(a+m-P, b+n-P, c+o-P, BS[0]-P, BS[1]-P, BS[2]-P)])
+                                sumw[get_flattened_index(a, b, c, I, J, K)] += single_w
+                                v = cache[get_flattened_index(a+m, b+n, c+o, BS[0], BS[1], BS[2])]
+                                sum_out[get_flattened_index(a, b, c, I, J, K)] += single_w * v * v
+
+
+    for a in range(0, I * J * K):
+        if sumw[a] == 0:
+            sum_out[a] = 0
+        else:
+            sum_out[a] /= sumw[a]
+
+    buffer_out = np.empty((I, J, K))
+    copy_block_3d_back(buffer_out, 0, 0, 0, sum_out, I, J, K)    
+    
+    free(cache)
+    free(mask_cache)
+    free(d)
+    free(sumw)
+    free(sum_out)
+    free(sigma_block)
+    return buffer_out
 
 
 @cython.wraparound(False)
@@ -104,7 +278,7 @@ def _nlmeans_3d(double [:, :, ::1] arr, double [:, :, ::1] mask,
     # move the block
     with nogil, parallel():
 
-        for i in prange(B, I - B):
+        for i in prange(B, I - B, schedule="guided"):
             for j in range(B, J - B):
                 for k in range(B, K - B):
 
@@ -278,9 +452,39 @@ cdef cnp.npy_intp copy_block_3d(double * dest,
     return 1
 
 
+@cython.wraparound(False)
+@cython.boundscheck(False)
+cdef cnp.npy_intp copy_block_3d_back(double [:, :, ::1] dest,
+                                     cnp.npy_intp min_i,
+                                     cnp.npy_intp min_j,
+                                     cnp.npy_intp min_k,
+                                     double * source,
+                                     cnp.npy_intp I,
+                                     cnp.npy_intp J,
+                                     cnp.npy_intp K) nogil:
+
+    cdef cnp.npy_intp i, j
+
+    for i in range(I):
+        for j in range(J):
+            memcpy(&dest[i + min_i, j + min_j, min_k], &source[i * J * K  + j * K], K * sizeof(double))
+
+    return 1
+
+
 def cpu_count():
     if have_openmp:
         return openmp.omp_get_num_procs()
     else:
         return 1
 
+
+@cython.wraparound(False)
+@cython.boundscheck(False)
+cdef cnp.npy_intp get_flattened_index(cnp.npy_intp x,
+                                      cnp.npy_intp y,
+                                      cnp.npy_intp z,
+                                      cnp.npy_intp I,
+                                      cnp.npy_intp J,
+                                      cnp.npy_intp K) nogil:
+    return K*J*x+K*y+z
