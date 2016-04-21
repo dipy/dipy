@@ -338,7 +338,7 @@ def hindered_and_restricted_signal(xdata, theta_H, phi_H, theta_R, phi_R,
                                                               Tau)))))))
     E = (f)*E_R + (1-f)*E_H
     E = np.sqrt((E**2) + (noise**2))
-	return E
+    return E
 
 
 def hind_and_rest_fit(maskdata, gtab, hind_param):
