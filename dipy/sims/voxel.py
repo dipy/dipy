@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 from __future__ import division
 
 import numpy as np
@@ -5,6 +6,7 @@ from numpy import dot
 from dipy.core.geometry import sphere2cart
 from dipy.core.geometry import vec2vec_rotmat
 from dipy.reconst.utils import dki_design_matrix
+from scipy.special import jn
 
 # Diffusion coefficients for white matter tracts, in mm^2/s
 #
