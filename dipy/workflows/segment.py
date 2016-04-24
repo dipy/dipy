@@ -244,21 +244,21 @@ def recognize_bundles_flow(streamline_files, model_bundle_files,
                 pruning_thr=float(pruning_thr),
                 pruning_distance=pruning_distance)
 
-# TODO add option to return recognized bundle in the space that you want
-# Or better return the labels of the bundle which I currently do.
-#            extracted_bundle, mat2 = recognize_bundles(
-#                model_bundle, moved_streamlines,
-#                close_centroids_thr=close_centroids_thr,
-#                clean_thr=clean_thr,
-#                local_slr=local_slr,
-#                expand_thr=expand_thr,
-#                scale_range=scale_range,
-#                verbose=verbose,
-#                return_full=False)
-#
-#            extracted_bundle_initial = transform_streamlines(
-#                extracted_bundle,
-#                np.linalg.inv(np.dot(mat2, mat)))
+    # TODO add option to return recognized bundle in the space that you want
+    # Or better return the labels of the bundle which I currently do.
+    #            extracted_bundle, mat2 = recognize_bundles(
+    #                model_bundle, moved_streamlines,
+    #                close_centroids_thr=close_centroids_thr,
+    #                clean_thr=clean_thr,
+    #                local_slr=local_slr,
+    #                expand_thr=expand_thr,
+    #                scale_range=scale_range,
+    #                verbose=verbose,
+    #                return_full=False)
+    #
+    #            extracted_bundle_initial = transform_streamlines(
+    #                extracted_bundle,
+    #                np.linalg.inv(np.dot(mat2, mat)))
 
             if out_dir is None:
                 out_dir = ''
@@ -268,6 +268,10 @@ def recognize_bundles_flow(streamline_files, model_bundle_files,
             sf_bundle_file = os.path.join(
                 out_dir,
                 base_mb + '_of_' + base_sf + '.trk')
+
+            sf_bundle_file_initial = os.path.join(
+                out_dir,
+                base_mb + '_of_' + base_sf + '_initial.trk')
 
             sf_bundle_labels = os.path.join(
                 out_dir,
@@ -288,6 +292,9 @@ def recognize_bundles_flow(streamline_files, model_bundle_files,
                   .format(sf_bundle_file))
             print('Recognized bundle labels saved in \n {} '
                   .format(sf_bundle_labels))
+            print('Recognized bundle in initial saved in \n {} '
+                  .format(sf_bundle_file_initial))
+
 
             if debug:
                 sf_bundle_neighb = os.path.join(

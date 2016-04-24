@@ -118,40 +118,53 @@ class InteractorStyleImageAndTrackballActor(vtkInteractorStyleUser):
         interactor.AddObserver("MouseWheelBackwardEvent", self.on_mouse_wheel_backward)
 
 
-class LuiManager():
+def cube(color=None, size=(0.2, 0.2, 0.2), center=None):
+    cube = vtk.vtkCubeSource()
+    cube.SetXLength(size[0])
+    cube.SetYLength(size[1])
+    cube.SetZLength(size[2])
+    if center is not None:
+        cube.SetCenter(*center)
+    cubeMapper = vtk.vtkPolyDataMapper()
+    cubeMapper.SetInputConnection(cube.GetOutputPort())
+    cubeActor = vtk.vtkActor()
+    cubeActor.SetMapper(cubeMapper)
+    if color is not None:
+        cubeActor.GetProperty().SetColor(color)
+    return cubeActor
 
-    def connect(self, actor, lui):
 
-        pass
+small_cube_actor = cube((1, 0, 0), (5, 5, 5), center=(0, 0, 0))
+large_cube_actor = cube(None, (10, 10, 10), center=(20, 0, 0))
 
 
-
-ax1 = actor.axes(); #text_3d('Hell... O')
-ax2 = actor.axes()
-
-def ax1_callback(*args, **kwargs):
-    print('Yo')
-    pos = np.array(ax2.GetPosition())
+def small_cube_callback(*args, **kwargs):
+    print('Right click on small cube')
+    pos = np.array(large_cube_actor.GetPosition())
     pos[0] -= .25
-    ax2.SetPosition(tuple(pos))
+    large_cube_actor.SetPosition(tuple(pos))
 
-ax1.AddObserver("RightButtonPressEvent", ax1_callback)
+small_cube_actor.AddObserver("RightButtonPressEvent", small_cube_callback)
 
 
+def large_cube_callback(*args, **kwargs):
+    print('Right click on large cube')
+    scale = np.array(small_cube_actor.GetScale())
+    scale[0] += .25
+    scale[1] += .25
+    scale[2] += .25
+    small_cube_actor.SetScale(tuple(scale))
+
+large_cube_actor.AddObserver("RightButtonPressEvent", large_cube_callback)
 
 renderer = window.ren()
 
 iren_style = InteractorStyleImageAndTrackballActor(renderer=renderer)
 
-renderer.add(ax1)
-renderer.add(ax2)
+renderer.add(small_cube_actor)
+renderer.add(large_cube_actor)
 
-ax2.SetPosition(10, 0, 0)
-
-def print_wow():
-    print('Locate')
-
-# ax2.AddObserver()
+large_cube_actor.SetPosition(15, 0, 0)
 
 # set_trace()
 

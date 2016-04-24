@@ -12,6 +12,7 @@ if have_vtk:
     vtkInteractorStyleUser = vtk.vtkInteractorStyleUser
 else:
     vtkInteractorStyleUser = object
+from ipdb import set_trace
 
 
 class InteractorStyleImageAndTrackballActor(vtkInteractorStyleUser):
@@ -110,6 +111,9 @@ class InteractorStyleBundlesGrid(InteractorStyleImageAndTrackballActor):
     CLOCKWISE_ROTATION_Y = np.array([10, 0, 1, 0])
     ANTICLOCKWISE_ROTATION_X = np.array([-10, 1, 0, 0])
     CLOCKWISE_ROTATION_X = np.array([10, 1, 0, 0])
+    ANTICLOCKWISE_ROTATION_Z = np.array([-10, 0, 0, 1])
+    CLOCKWISE_ROTATION_Z = np.array([10, 0, 0, 1])
+
 
     def __init__(self, bundles_actors):
         InteractorStyleImageAndTrackballActor.__init__(self)
@@ -117,6 +121,7 @@ class InteractorStyleBundlesGrid(InteractorStyleImageAndTrackballActor):
 
     def on_key_pressed(self, obj, evt):
         has_changed = False
+        #set_trace()
         if obj.GetKeySym() == "Left":
             has_changed = True
             for a in self.bundles_actors:
@@ -133,6 +138,16 @@ class InteractorStyleBundlesGrid(InteractorStyleImageAndTrackballActor):
             has_changed = True
             for a in self.bundles_actors:
                 self.rotate(a, self.CLOCKWISE_ROTATION_X)
+        elif obj.GetKeySym() == "Prior":
+            has_changed = True
+            for a in self.bundles_actors:
+                self.rotate(a, self.ANTICLOCKWISE_ROTATION_Z)
+        elif obj.GetKeySym() == "Next":
+            has_changed = True
+            for a in self.bundles_actors:
+                self.rotate(a, self.CLOCKWISE_ROTATION_Z)
+
+
 
         if has_changed:
             obj.GetInteractor().Render()
