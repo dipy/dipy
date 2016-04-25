@@ -132,6 +132,7 @@ def test_tensor_model():
         assert_true(tensor_fit.model is tensor_model)
         assert_equal(tensor_fit.shape, Y.shape[:-1])
         assert_array_almost_equal(tensor_fit.evals[0], evals)
+        assert_array_almost_equal(tensor_fit.S0_hat, b0, decimal=3)
         # Test that the eigenvectors are correct, one-by-one:
         for i in range(3):
             # Eigenvectors have intrinsic sign ambiguity
