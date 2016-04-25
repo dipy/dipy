@@ -1146,7 +1146,7 @@ class TensorFit(object):
         """
         return apparent_diffusion_coef(self.quadratic_form, sphere)
 
-    def predict(self, gtab, S0=1, step=None):
+    def predict(self, gtab, S0=None, step=None):
         r"""
         Given a model fit, predict the signal on the vertices of a sphere
 
