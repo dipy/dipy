@@ -18,7 +18,7 @@ except ImportError:
 import nibabel as nib
 from nibabel.trackvis import write, empty_header
 
-from ..reconst.shm import (SlowAdcOpdfModel, MonoExpOpdfModel, QballOdfModel,
+from ..reconst.shm import (OpdtModel, CsaOdfModel, QballOdfModel,
                            normalize_data, ClosestPeakSelector,
                            ResidualBootstrapWrapper, hat, lcr_matrix,
                            bootstrap_data_array, NND_ClosestPeakSelector)
