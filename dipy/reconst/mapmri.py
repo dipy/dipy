@@ -44,9 +44,9 @@ class MapmriModel(Cache):
            estimation via Compressive Sensing in diffusion MRI", Medical
            Image Analysis, 2013.
 
-    .. [4] Fick et al. "MAPL: Tissue Microstructure Estimation Using
-           Laplacian-Regularized MAP-MRI and its Application to HCP Data",
-           NeuroImage, Submitted.
+    .. [4] Fick, Rutger HJ, et al. "MAPL: Tissue microstructure estimation
+           using Laplacian-regularized MAP-MRI and its application to HCP
+           data." NeuroImage (2016).
 
     .. [5] Cheng, J., 2014. Estimation and Processing of Ensemble Average
            Propagator and Its Features in Diffusion MRI. Ph.D. Thesis.
