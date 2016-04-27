@@ -327,12 +327,26 @@ class MapmriModel(Cache):
                 K_dependent = mapmri_isotropic_K_mu_dependent(
                     self.radial_order, mu[0], constraint_grid)
                 K = K_dependent * self.pos_K_independent
-            Q = cvxopt.matrix(np.dot(M.T, M) + lopt * laplacian_matrix)
-            p = cvxopt.matrix(-1 * np.dot(M.T, data))
+                
+            data = data / data[self.gtab.b0s_mask].mean()
+            M0 = M[self.gtab.b0s_mask, :]
+            M0_mean = M0.mean(0)[None, :]
+            Mprime = np.r_[M0_mean, M[~self.gtab.b0s_mask, :]]
+            Q = cvxopt.matrix(np.ascontiguousarray(
+                np.dot(Mprime.T, Mprime) + lopt * laplacian_matrix))
+            
+            data_b0 = data[self.gtab.b0s_mask].mean()
+            data_single_b0 = np.r_[
+                data_b0, data[~self.gtab.b0s_mask]] / data_b0
+            p = cvxopt.matrix(np.ascontiguousarray(
+                -1 * np.dot(Mprime.T, data_single_b0))
+            )
             G = cvxopt.matrix(-1 * K)
-            h = cvxopt.matrix(np.zeros((K.shape[0])), (K.shape[0], 1))
+            h = cvxopt.matrix((1e-10) * np.ones((K.shape[0])), (K.shape[0], 1))
+            A = cvxopt.matrix(np.ascontiguousarray(M0_mean))
+            b = cvxopt.matrix(np.array([1.]))
             cvxopt.solvers.options['show_progress'] = False
-            sol = cvxopt.solvers.qp(Q, p, G, h)
+            sol = cvxopt.solvers.qp(Q, p, G, h, A, b)
             if sol['status'] != 'optimal':
                 warn('Optimization did not find a solution')
 
