@@ -20,7 +20,7 @@ def run_flow(flow):
 
     parser.add_argument('--log_file', action='store', dest='log_file',
                         metavar='string', required=False, default='',
-                        help='Log messsages display level')
+                        help='Log file to be saved.')
 
     args = parser.get_flow_args()
     logging.basicConfig(filename=args['log_file'],

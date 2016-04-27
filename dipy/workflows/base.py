@@ -47,6 +47,7 @@ class IntrospectiveArgumentParser(arg.ArgumentParser):
         iap = IntrospectiveArgumentParser
         if epilog is None:
             epilog = \
+                "References: \n" \
                 "Garyfallidis, E., M. Brett, B. Amirbekian, A. Rokem, S. Van Der " \
                 "Walt, M. Descoteaux, and I. Nimmo-Smith. Dipy, a library for the " \
                 "analysis of diffusion MRI data. Frontiers in Neuroinformatics," \
