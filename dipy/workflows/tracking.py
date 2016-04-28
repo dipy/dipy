@@ -78,7 +78,8 @@ def EuDX_tracking_flow(peaks_values, peaks_indexes, out_dir='',
 
 
 def deterministic_tracking_flow(input_files, mask_files, bvalues, bvectors,
-                                out_dir='', tractogram='deterministic_tractogram.trk'):
+                                out_dir='',
+                                out_tractogram='deterministic_tractogram.trk'):
     """ Workflow for deterministic tracking. Tracking is done by
         'globing' ``input_files``, ``peaks_values``, and ``peaks_indexes``
          and saves the tracks in a directory specified by ``out_dir``.
@@ -99,14 +100,9 @@ def deterministic_tracking_flow(input_files, mask_files, bvalues, bvectors,
         multiple bvalues files at once.
     out_dir : string, optional
         Output directory (default input file directory)
-    tractogram : string, optional
+    out_tractogram : string, optional
         Name of the tractogram file to be saved (default 'tractogram.trk')
-    Outputs
-    -------
-    tractogram : tck file
-        This file contains the resulting tractogram.
     """
-
     for dwi, mask, bval, bvec in zip(glob(input_files),
                                      glob(mask_files),
                                      glob(bvalues),
@@ -148,7 +144,7 @@ def deterministic_tracking_flow(input_files, mask_files, bvalues, bvectors,
         hdr['dim'] = dwi_img.shape[:-1]
         hdr['n_count'] = len(streamlines_trk)
 
-        tractogram_path = os.path.join(out_dir_path, tractogram)
+        tractogram_path = os.path.join(out_dir_path, out_tractogram)
         nib.trackvis.write(tractogram_path, streamlines_trk,  hdr, points_space='voxel')
 
         logging.info('Saved {0}'.format(tractogram_path))
