@@ -369,7 +369,7 @@ def test_signal_fitting_equality_anisotropic_isotropic(radial_order=6):
     l1, l2, l3 = [0.0015, 0.0003, 0.0003]
     S, _ = generate_signal_crossing(gtab, l1, l2, l3, angle2=60)
     gridsize = 17
-    radius_max = 0.07
+    radius_max = 0.02
     r_points = mapmri.create_rspace(gridsize, radius_max)
 
     tenmodel = dti.TensorModel(gtab)
@@ -470,8 +470,8 @@ def test_positivity_constraint(radial_order=6):
     S, _ = generate_signal_crossing(gtab, l1, l2, l3, angle2=60)
     S_noise = add_noise(S, snr=20, S0=100.)
 
-    gridsize = 10
-    max_radius = 20e-3  # 20 microns maximum radius
+    gridsize = 20
+    max_radius = 15e-3  # 20 microns maximum radius
     r_grad = mapmri.create_rspace(gridsize, max_radius)
 
     # the posivitivity constraint does not make the pdf completely positive
@@ -487,7 +487,9 @@ def test_positivity_constraint(radial_order=6):
 
     mapmod_constraint = MapmriModel(gtab, radial_order=radial_order,
                                     laplacian_regularization=False,
-                                    positivity_constraint=True)
+                                    positivity_constraint=True,
+                                    pos_grid=gridsize,
+                                    pos_radius='adaptive')
     mapfit_constraint = mapmod_constraint.fit(S_noise)
     pdf = mapfit_constraint.pdf(r_grad)
     pdf_negative_constraint = pdf[pdf < 0].sum()
@@ -507,7 +509,9 @@ def test_positivity_constraint(radial_order=6):
     mapmod_constraint = MapmriModel(gtab, radial_order=radial_order,
                                     laplacian_regularization=False,
                                     positivity_constraint=True,
-                                    anisotropic_scaling=False)
+                                    anisotropic_scaling=False,
+                                    pos_grid=gridsize,
+                                    pos_radius='adaptive')
     mapfit_constraint = mapmod_constraint.fit(S_noise)
     pdf = mapfit_constraint.pdf(r_grad)
     pdf_negative_constraint = pdf[pdf < 0].sum()
