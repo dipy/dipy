@@ -59,11 +59,11 @@ small_delta parameters in the gradient table.
 
 bvals = [1000, 2000, 3000]
 img, gtab = read_cenir_multib(bvals)
-# example_big_delta = 0.03
-# example_small_delta = 0.01
-# gtab = gradient_table(bvals=gtab.bvals, bvecs=gtab.bvecs,
-#                       small_delta = example_small_delta,
-#                       big_delta=example_big_delta)
+big_delta = 0.0365  # seconds
+small_delta = 0.0157  # seconds
+gtab = gradient_table(bvals=gtab.bvals, bvecs=gtab.bvecs,
+                      small_delta = big_delta,
+                      big_delta=small_delta)
 data = img.get_data()
 data_small = data[40:65, 50:51, 35:60]
 
@@ -145,82 +145,29 @@ mapfit_both_aniso = map_model_both_aniso.fit(data_small)
 """
 From the fitted models we will first illustrate the estimation of q-space
 indices. For completeness, we will compare the estimation using only laplacian
-regularization, positivity constraint or both.
-
-From top to bottom, we first show the RTOP, RTAP and RTPP [Ozarslan2013]_.
+regularization, positivity constraint or both. We first show the RTOP
+[Ozarslan2013]_.
 """
 
 # generating RTOP plots
 fig = plt.figure(figsize=(10, 5))
-ax1 = fig.add_subplot(2, 3, 1, title=r'RTOP - Laplacian')
+ax1 = fig.add_subplot(1, 3, 1, title=r'RTOP - Laplacian')
 ax1.set_axis_off()
 ind = ax1.imshow(mapfit_laplacian_aniso.rtop()[:, 0, :].T,
                  interpolation='nearest', origin='lower', cmap=plt.cm.gray,
-                 vmin = 1e5, vmax=19e5)
+                 vmin=0, vmax=5e7)
 
-ax2 = fig.add_subplot(2, 3, 2, title=r'RTOP - Positivity')
+ax2 = fig.add_subplot(1, 3, 2, title=r'RTOP - Positivity')
 ax2.set_axis_off()
 ind = ax2.imshow(mapfit_positivity_aniso.rtop()[:, 0, :].T,
                  interpolation='nearest', origin='lower', cmap=plt.cm.gray,
-                 vmin = 1e5, vmax=19e5)
+                 vmin=0, vmax=5e7)
 
-ax3 = fig.add_subplot(2, 3, 3, title=r'RTOP - Both')
+ax3 = fig.add_subplot(1, 3, 3, title=r'RTOP - Both')
 ax3.set_axis_off()
 ind = ax3.imshow(mapfit_both_aniso.rtop()[:, 0, :].T,
                  interpolation='nearest', origin='lower', cmap=plt.cm.gray,
-                 vmin = 1e5, vmax=19e5)
-divider = make_axes_locatable(ax3)
-cax = divider.append_axes("right", size="5%", pad=0.05)
-plt.colorbar(ind, cax=cax)
-
-# generation RTAP plots
-fig = plt.figure(figsize=(10, 5))
-ax1 = fig.add_subplot(2, 3, 4, title=r'RTAP - Laplacian')
-ax1.set_axis_off()
-ind = ax1.imshow(mapfit_laplacian_aniso.rtap()[:, 0, :].T,
-                 interpolation='nearest', origin='lower', cmap=plt.cm.gray,
-                 vmin=2e3, vmax=27e3
-                 )
-
-ax2 = fig.add_subplot(2, 3, 5, title=r'RTAP - Positivity')
-ax2.set_axis_off()
-ind = ax2.imshow(mapfit_positivity_aniso.rtap()[:, 0, :].T,
-                 interpolation='nearest', origin='lower', cmap=plt.cm.gray,
-                 vmin=2e3, vmax=27e3
-                 )
-
-ax3 = fig.add_subplot(2, 3, 6, title=r'RTAP - Both')
-ax3.set_axis_off()
-ind = ax3.imshow(mapfit_both_aniso.rtap()[:, 0, :].T,
-                 interpolation='nearest', origin='lower', cmap=plt.cm.gray,
-                 vmin=2e3, vmax=27e3
-                 )
-divider = make_axes_locatable(ax3)
-cax = divider.append_axes("right", size="5%", pad=0.05)
-plt.colorbar(ind, cax=cax)
-
-# generation RTPP plots
-fig = plt.figure(figsize=(10, 5))
-ax1 = fig.add_subplot(2, 3, 4, title=r'RTPP - Laplacian')
-ax1.set_axis_off()
-ind = ax1.imshow(mapfit_laplacian_aniso.rtpp()[:, 0, :].T,
-                 interpolation='nearest', origin='lower', cmap=plt.cm.gray,
-                 vmin=40, vmax=80
-                 )
-
-ax2 = fig.add_subplot(2, 3, 5, title=r'RTPP - Positivity')
-ax2.set_axis_off()
-ind = ax2.imshow(mapfit_positivity_aniso.rtpp()[:, 0, :].T,
-                 interpolation='nearest', origin='lower', cmap=plt.cm.gray,
-                 vmin=40, vmax=80
-                 )
-
-ax3 = fig.add_subplot(2, 3, 6, title=r'RTPP - Both')
-ax3.set_axis_off()
-ind = ax3.imshow(mapfit_both_aniso.rtpp()[:, 0, :].T,
-                 interpolation='nearest', origin='lower', cmap=plt.cm.gray,
-                 vmin=40, vmax=80
-                 )
+                 vmin=0, vmax=5e7)
 divider = make_axes_locatable(ax3)
 cax = divider.append_axes("right", size="5%", pad=0.05)
 plt.colorbar(ind, cax=cax)
@@ -230,37 +177,32 @@ plt.savefig('MAPMRI_maps_regularization.png')
 .. figure:: MAPMRI_maps_regularization.png
    :align: center
 
-It can be seen that the maps of the laplacian regularization (left) and using
-both positivity and laplacian (right) appear quite smooth and similar, but only
-using positivity (middle) results in a bit noisier maps, especially in the
-corpus callosum. This shows that adding a bit of laplacian regularization
-indeed helps the estimation of these scalar maps.
-
-This can further be illustrated by visualizing the analytic norm of the
-laplacian of the fitted signal for the same slice. 
+It can be seen that all maps appear quite smooth and similar. Though, it is
+possible to see some subtle differences near the corpus callosum. The
+similarity and differences in reconstruction can be further illustrated by
+visualizing the analytic norm of the laplacian of the fitted signal. 
 """
 
-# generation norm of laplacian plots
 fig = plt.figure(figsize=(10, 5))
-ax1 = fig.add_subplot(2, 3, 4, title=r'Laplacian norm - Laplacian')
+ax1 = fig.add_subplot(1, 3, 1, title=r'Laplacian norm - Laplacian')
 ax1.set_axis_off()
 ind = ax1.imshow(mapfit_laplacian_aniso.norm_of_laplacian_signal()[:, 0, :].T,
                  interpolation='nearest', origin='lower', cmap=plt.cm.gray,
-                 vmin=0, vmax=8
+                 vmin=0, vmax=3
                  )
 
-ax2 = fig.add_subplot(2, 3, 5, title=r'Laplacian norm - Positivity')
+ax2 = fig.add_subplot(1, 3, 2, title=r'Laplacian norm - Positivity')
 ax2.set_axis_off()
 ind = ax2.imshow(mapfit_positivity_aniso.norm_of_laplacian_signal()[:, 0, :].T,
                  interpolation='nearest', origin='lower', cmap=plt.cm.gray,
-                 vmin=0, vmax=8
+                 vmin=0, vmax=3
                  )
 
-ax3 = fig.add_subplot(2, 3, 6, title=r'Laplacian norm - Both')
+ax3 = fig.add_subplot(1, 3, 3, title=r'Laplacian norm - Both')
 ax3.set_axis_off()
 ind = ax3.imshow(mapfit_both_aniso.norm_of_laplacian_signal()[:, 0, :].T,
                  interpolation='nearest', origin='lower', cmap=plt.cm.gray,
-                 vmin=0, vmax=8
+                 vmin=0, vmax=3
                  )
 divider = make_axes_locatable(ax3)
 cax = divider.append_axes("right", size="5%", pad=0.05)
@@ -274,11 +216,10 @@ plt.savefig('MAPMRI_norm_laplacian.png')
 A high laplacian norm indicates that the gradient in the three-dimensional
 signal reconstruction changes a lot - something that may indicate spurious
 oscillations. In the laplacian reconstruction (left) we see that there are some
-isolated voxels that have a significantly higher norm than the rest. In the
-positivity constraint reconstruction the norm is higher in general in the
-corpus callosum area, which may explain why the scalar index estimation above
-looks more noisy. When both methods are used together we get a smoother
-picture, showing no spurious high-norm voxels.
+isolated voxels that have a higher norm than the rest. In the
+positivity constraint reconstruction the norm is already smoother. When both
+methods are used together the overall norm gets smoother still, since both
+smoothness of the signal and positivity of the propagator are imposed.
 
 From now on we just use the combined approach, show all maps we can generate
 and explain their significance.
@@ -347,8 +288,6 @@ physically meaningful we must use a b-value threshold in the MAPMRI model. This
 threshold makes the scale estimation in MAPMRI only use samples that
 realistically describe Gaussian diffusion, i.e., at low b-values.
 """
-# To estimate the Non-Gaussianity with meaning we must use a bvalue threshold
-# for the scale estimation.
 map_model_both_ng = mapmri.MapmriModel(gtab, radial_order=radial_order,
                             laplacian_regularization=True,
                             laplacian_weighting=.05,
@@ -426,6 +365,8 @@ sphere = get_sphere('symmetric724')
 
 """
 Compute the ODFs
+The radial order s can be increased to sharpen the results, but it might
+also make the odfs noisier. Always check the results visually.
 """
 
 odf = mapfit_both_iso.odf(sphere, s=2)

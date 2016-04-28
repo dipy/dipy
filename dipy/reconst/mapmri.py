@@ -74,8 +74,8 @@ class MapmriModel(Cache):
                  eigenvalue_threshold=1e-04,
                  bval_threshold=np.inf,
                  dti_scale_estimation=True,
-                 pos_grid=10,
-                 pos_radius=20e-3):
+                 pos_grid=15,
+                 pos_radius='adaptive'):
         r""" Analytical and continuous modeling of the diffusion signal with
         respect to the MAPMRI basis [1]_.
 
@@ -118,7 +118,7 @@ class MapmriModel(Cache):
             Regularize using the Laplacian of the MAP-MRI basis.
         laplacian_weighting: string or scalar or ndarray,
             The string 'GCV' makes it use generalized cross-validation to find
-            the regularization weight [3]. A scalar sets the regularization
+            the regularization weight [4]. A scalar sets the regularization
             weight to that value. A numpy array of values will make the GCV
             function find the optimal value among those values.
         positivity_constraint : bool,
@@ -197,8 +197,6 @@ class MapmriModel(Cache):
         self.radial_order = radial_order
         self.bval_threshold = bval_threshold
         self.dti_scale_estimation = dti_scale_estimation
-        self.pos_grid = pos_grid
-        self.pos_radius = pos_radius
 
         self.laplacian_regularization = laplacian_regularization
         if self.laplacian_regularization:
@@ -220,10 +218,21 @@ class MapmriModel(Cache):
             if not have_cvxopt:
                 raise ValueError(
                     'CVXOPT package needed to enforce constraints')
-            constraint_grid = create_rspace(pos_grid, pos_radius)
-            self.constraint_grid = constraint_grid
-            self.pos_K_independent = mapmri_isotropic_K_mu_independent(
-                radial_order, constraint_grid)
+            msg = "pos_radius must be 'adaptive' or a positive float"
+            if isinstance(pos_radius, str):
+                if pos_radius != 'adaptive':
+                    raise ValueError(msg)
+            elif isinstance(pos_radius, float):
+                if pos_radius <= 0:
+                    raise ValueError(msg)
+                self.constraint_grid = create_rspace(pos_grid, pos_radius)
+                if not anisotropic_scaling:
+                    self.pos_K_independent = mapmri_isotropic_K_mu_independent(
+                        radial_order, self.constraint_grid)
+            else:
+                raise ValueError(msg)
+            self.pos_grid = pos_grid
+            self.pos_radius = pos_radius
 
         self.anisotropic_scaling = anisotropic_scaling
         if (gtab.big_delta is None) or (gtab.small_delta is None):
@@ -276,6 +285,7 @@ class MapmriModel(Cache):
         R = tenfit.evecs
         evals = np.clip(evals, self.eigenvalue_threshold, evals.max())
         qvals = np.sqrt(self.gtab.bvals / self.tau) / (2 * np.pi)
+        mu_max = max(np.sqrt(evals * 2 * self.tau))  # used for constraint
         if self.anisotropic_scaling:
             mu = np.sqrt(evals * 2 * self.tau)
             qvecs = np.dot(self.gtab.bvecs, R)
@@ -320,14 +330,25 @@ class MapmriModel(Cache):
             w_s += "and you may be subject to this license when using the "
             w_s += "positivity constraint."
             warn(w_s)
-            constraint_grid = self.constraint_grid
+            if self.pos_radius == 'adaptive':
+                # custom constraint grid based on scale factor [Avram2015]
+                constraint_grid = create_rspace(self.pos_grid,
+                                                np.sqrt(5) * mu_max)
+            else:
+                constraint_grid = self.constraint_grid
             if self.anisotropic_scaling:
                 K = mapmri_psi_matrix(self.radial_order, mu, constraint_grid)
             else:
-                K_dependent = mapmri_isotropic_K_mu_dependent(
-                    self.radial_order, mu[0], constraint_grid)
-                K = K_dependent * self.pos_K_independent
-                
+                if self.pos_radius == 'adaptive':
+                    # grid changes per voxel. Recompute entire K matrix.
+                    K = mapmri_isotropic_psi_matrix(self.radial_order, mu[0],
+                                                constraint_grid)
+                else:
+                    # grid is static. Only compute mu-dependent part of K.
+                    K_dependent = mapmri_isotropic_K_mu_dependent(
+                        self.radial_order, mu[0], constraint_grid)
+                    K = K_dependent * self.pos_K_independent
+
             data = data / data[self.gtab.b0s_mask].mean()
             M0 = M[self.gtab.b0s_mask, :]
             M0_mean = M0.mean(0)[None, :]
@@ -346,11 +367,13 @@ class MapmriModel(Cache):
             A = cvxopt.matrix(np.ascontiguousarray(M0_mean))
             b = cvxopt.matrix(np.array([1.]))
             cvxopt.solvers.options['show_progress'] = False
-            sol = cvxopt.solvers.qp(Q, p, G, h, A, b)
-            if sol['status'] != 'optimal':
+            try:
+                sol = cvxopt.solvers.qp(Q, p, G, h, A, b)
+                coef = np.array(sol['x'])[:, 0]
+            except ValueError:
                 warn('Optimization did not find a solution')
-
-            coef = np.array(sol['x'])[:, 0]
+                coef = np.dot(np.linalg.pinv(M), data)  # least squares
+            
         else:
             pseudoInv = np.dot(
                 np.linalg.inv(np.dot(M.T, M) + lopt * laplacian_matrix), M.T)
