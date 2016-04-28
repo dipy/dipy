@@ -67,13 +67,17 @@ class IntrospectiveArgumentParser(arg.ArgumentParser):
         self.doc = npds['Parameters']
         self.description = ' '.join(npds['Extended Summary'])
 
-        self.outputs = npds['Outputs']
+        self.outputs =\
+            [param for param in npds['Parameters'] if 'out_' in param[0]]
 
         args = specs.args
         defaults = specs.defaults
 
         len_args = len(args)
         len_defaults = len(defaults)
+
+        output_args = \
+            self.add_argument_group('output arguments')
 
         for i, arg in enumerate(args):
             prefix = ''
@@ -109,7 +113,10 @@ class IntrospectiveArgumentParser(arg.ArgumentParser):
             if isnarg:
                 _kwargs['nargs'] = '*'
 
-            self.add_argument(*_args, **_kwargs)
+            if 'out_' in arg:
+                output_args.add_argument(*_args, **_kwargs)
+            else:
+                self.add_argument(*_args, **_kwargs)
 
     def _select_dtype(self, text):
         text = text.lower()
