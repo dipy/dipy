@@ -37,9 +37,6 @@ def simple_pipeline_flow(input_files, bvalues, bvectors, work_dir='',
         Working directory (default input file directory)
     resume : bool, optional
         If enabled, the pipeline will not run tasks if the output exists.
-
-    Outputs
-    -------
     """
     for dwi, bval, bvec in zip(glob(input_files),
                                      glob(bvalues),
@@ -54,21 +51,21 @@ def simple_pipeline_flow(input_files, bvalues, bvectors, work_dir='',
 
         mask_filename = pjoin(work_dir, nifti_basename.format('mask'))
         if os.path.exists(mask_filename) is False or resume is False:
-            median_otsu_flow(dwi, out_dir=work_dir, mask=mask_filename)
+            median_otsu_flow(dwi, out_dir=work_dir, out_mask=mask_filename)
         else:
             logging.info('Skipped median otsu segmentation')
 
         denoised_dwi = pjoin(work_dir, nifti_basename.format('nlmeans'))
         if os.path.exists(denoised_dwi) is False or resume is False:
-            nlmeans_flow(dwi, out_dir=work_dir, denoised=denoised_dwi)
+            nlmeans_flow(dwi, out_dir=work_dir, out_denoised=denoised_dwi)
         else:
             logging.info('Skipped nlmeans denoise')
 
         metrics_dir = pjoin(work_dir, 'metrics')
         fa_path = pjoin(metrics_dir, 'fa.nii.gz')
         if os.path.exists(fa_path) is False or resume is False:
-            dti_metrics_flow(denoised_dwi, bval, bvec,
-                             out_dir=metrics_dir, mask_files=mask_filename)
+            dti_metrics_flow(denoised_dwi, bval, bvec, mask_files=mask_filename,
+                             out_dir=metrics_dir)
         else:
             logging.info('Skipped dti metrics')
 
@@ -77,9 +74,9 @@ def simple_pipeline_flow(input_files, bvalues, bvectors, work_dir='',
         peaks_indices = pjoin(peaks_dir, 'peaks_indices.nii.gz')
 
         if os.path.exists(peaks_dir) is False or resume is False:
-            fodf_flow(denoised_dwi, bval, bvec, out_dir=peaks_dir,
-                      mask_files=mask_filename, peaks_values=peaks_values,
-                      peaks_indices=peaks_indices)
+            fodf_flow(denoised_dwi, bval, bvec, mask_files=mask_filename,
+                      out_dir=peaks_dir, out_peaks_values=peaks_values,
+                      out_peaks_indices=peaks_indices)
         else:
             logging.info('Skipped fodf')
 
@@ -88,7 +85,7 @@ def simple_pipeline_flow(input_files, bvalues, bvectors, work_dir='',
         tractogram_path = pjoin(tractograms_dir, tractogram)
         if os.path.exists(tractogram_path) is False or resume is False:
             EuDX_tracking_flow(peaks_values, peaks_indices,
-                               out_dir=tractograms_dir, tractogram=tractogram)
+                               out_dir=tractograms_dir, out_tractogram=tractogram)
         else:
            logging.info('Skipped deterministic tracking')
 
@@ -96,9 +93,9 @@ def simple_pipeline_flow(input_files, bvalues, bvectors, work_dir='',
         tdi_2x = os.path.join(metrics_dir, 'tdi_2x.nii.gz')
         if os.path.exists(tdi) is False or resume is False:
             track_density_flow(tractogram_path, fa_path, out_dir=metrics_dir,
-                               tdi=tdi)
+                               out_tdi=tdi)
 
             track_density_flow(tractogram_path, fa_path, out_dir=metrics_dir,
-                               tdi=tdi_2x, up_factor=2.0)
+                               out_tdi=tdi_2x, up_factor=2.0)
         else:
             logging.info('Skipped track density')

@@ -15,10 +15,10 @@ from dipy.reconst.csdeconv import ConstrainedSphericalDeconvModel, auto_response
 
 from dipy.workflows.utils import choose_create_out_dir, glob_or_value
 
-def fodf_flow(input_files, bvalues, bvectors, out_dir='',
-              mask_files=None, b0_threshold=0.0, frf=[15.0, 4.0, 4.0],
-              fodf='fodf.nii.gz', peaks='peaks.nii.gz',
-              peaks_values='peaks_values.nii.gz', peaks_indices='peaks_indices.nii.gz'):
+def fodf_flow(input_files, bvalues, bvectors, mask_files=None, b0_threshold=0.0,
+              frf=[15.0, 4.0, 4.0], out_dir='', out_fodf='fodf.nii.gz',
+              out_peaks='peaks.nii.gz', out_peaks_values='peaks_values.nii.gz',
+              out_peaks_indices='peaks_indices.nii.gz'):
     """ Workflow for peaks computation. Peaks computation is done by 'globing'
         ``input_files`` and saves the peaks in a directory specified by
         ``out_dir``.
@@ -34,8 +34,6 @@ def fodf_flow(input_files, bvalues, bvectors, out_dir='',
     bvectors : string
         Path to the bvalues files. This path may contain wildcards to use
         multiple bvalues files at once.
-    out_dir : string, optional
-        Output directory (default input file directory)
     mask_files : string
         Path to the input masks. This path may contain wildcards to use
         multiple masks at once. (default: No mask used)
@@ -43,24 +41,16 @@ def fodf_flow(input_files, bvalues, bvectors, out_dir='',
         Threshold used to find b=0 directions
     frf : tuple, optional
         Fiber response function to me mutiplied by 10**-4 (default: 15,4,4)
-    fodf : string, optional
+    out_dir : string, optional
+        Output directory (default input file directory)
+    out_fodf : string, optional
         Name of the fodf volume to be saved (default 'fodf.nii.gz')
-    peaks : string, optional
+    out_peaks : string, optional
         Name of the peaks volume to be saved (default 'peaks.nii.gz')
-    peaks_values : string, optional
+    out_peaks_values : string, optional
         Name of the peaks_values volume to be saved (default 'peaks_values.nii.gz')
-    peaks_indices : string, optional
+    out_peaks_indices : string, optional
         Name of the peaks_indices volume to be saved (default 'peaks_indices.nii.gz')
-    Outputs
-    -------
-    fodf : Nifti file
-        Fodf volume
-    peaks : Nifti file
-        Peaks volume
-    peaks_values : Nifti file
-        Peaks_values volume
-    peaks_indices : string, optional
-        Peaks_indices volume
     """
 
     globed_dwi, globed_mask = glob_or_value(input_files, mask_files)
@@ -85,7 +75,6 @@ def fodf_flow(input_files, bvalues, bvectors, out_dir='',
                              ' DWI volumes.'.format(data.shape[-1]))
         elif data.shape[-1] < 30:
             sh_order = 6
-
 
         response, ratio = auto_response(gtab, data)
         response = list(response)
@@ -123,17 +112,17 @@ def fodf_flow(input_files, bvalues, bvectors, out_dir='',
 
         nib.save(nib.Nifti1Image(peaks_csd.shm_coeff.astype(np.float32),
                                  affine),
-                 os.path.join(out_dir_path, fodf))
+                 os.path.join(out_dir_path, out_fodf))
 
         nib.save(nib.Nifti1Image(reshape_peaks_for_visualization(peaks_csd),
                                  affine),
-                 os.path.join(out_dir_path, peaks))
+                 os.path.join(out_dir_path, out_peaks))
 
         nib.save(nib.Nifti1Image(peaks_csd.peak_values.astype(np.float32),
                                  affine),
-                 os.path.join(out_dir_path, peaks_values))
+                 os.path.join(out_dir_path, out_peaks_values))
 
         nib.save(nib.Nifti1Image(peaks_csd.peak_indices, affine),
-                 os.path.join(out_dir_path, peaks_indices))
+                 os.path.join(out_dir_path, out_peaks_indices))
 
         logging.info('Finished computing fiber odfs.')

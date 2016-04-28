@@ -11,10 +11,10 @@ from dipy.workflows.utils import choose_create_out_dir
 from dipy.segment.mask import median_otsu
 
 
-def median_otsu_flow(input_files, out_dir='', mask='brain_mask.nii.gz',
-                     masked='dwi_masked.nii.gz', save_masked=False,
+def median_otsu_flow(input_files, save_masked=False,
                      median_radius=2, numpass=5, autocrop=False,
-                     vol_idx=None, dilate=None):
+                     vol_idx=None, dilate=None, out_dir='',
+                     out_mask='brain_mask.nii.gz', out_masked='dwi_masked.nii.gz',):
     """ Workflow wrapping the median_otsu segmentation method.
 
     Applies median_otsu segmentation on each file found by 'globing'
@@ -28,12 +28,6 @@ def median_otsu_flow(input_files, out_dir='', mask='brain_mask.nii.gz',
     input_files : string
         Path to the input volumes. This path may contain wildcards to process
         multiple inputs at once.
-    out_dir : string, optional
-        Output directory (default input file directory)
-    mask : string, optional
-        Name of the mask volume to be saved (default 'brain_mask.nii.gz')
-    masked : string, optional
-        Name of the masked volume to be saved (default 'dwi_masked.nii.gz')
     save_masked : bool
         Save mask
     median_radius : int, optional
@@ -50,14 +44,12 @@ def median_otsu_flow(input_files, out_dir='', mask='brain_mask.nii.gz',
         4D array)
     dilate : string, optional
         number of iterations for binary dilation (default 'None')
-
-    Outputs
-    -------
-    mask : Nifti File
-           Binary volume representing the computed mask.
-    masked : Nifti File
-            Volume representing the masked input. This file is saved
-            save_masked is True.
+    out_dir : string, optional
+        Output directory (default input file directory)
+    out_mask : string, optional
+        Name of the mask volume to be saved (default 'brain_mask.nii.gz')
+    out_masked : string, optional
+        Name of the masked volume to be saved (default 'dwi_masked.nii.gz')
     """
     for fpath in glob(input_files):
         logging.info('Applying median_otsu segmentation on {0}'.format(fpath))
@@ -71,12 +63,12 @@ def median_otsu_flow(input_files, out_dir='', mask='brain_mask.nii.gz',
         out_dir_path = choose_create_out_dir(out_dir, fpath)
 
         mask_img = nib.Nifti1Image(mask_volume.astype(np.float32), img.get_affine())
-        mask_out_path = join(out_dir_path, mask)
+        mask_out_path = join(out_dir_path, out_mask)
         mask_img.to_filename(mask_out_path)
         logging.info('Mask saved as {0}'.format(mask_out_path))
 
         if save_masked:
             masked_img = nib.Nifti1Image(masked_volume, img.get_affine(), img.get_header())
-            masked_out_path = join(out_dir_path, masked)
+            masked_out_path = join(out_dir_path, out_masked)
             masked_img.to_filename(masked_out_path)
             logging.info('Masked volume saved as {0}'.format(masked_out_path))
