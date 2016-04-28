@@ -12,8 +12,8 @@ from dipy.tracking.utils import density_map
 from dipy.workflows.utils import choose_create_out_dir
 
 
-def track_density_flow(tractograms, ref_files, out_dir='', up_factor=1.0,
-                       tdi='tdi.nii.gz'):
+def track_density_flow(tractograms, ref_files, up_factor=1.0, out_dir='',
+                       out_tdi='tdi.nii.gz'):
     """ Workflow for tract density computation.
 
     Parameters
@@ -24,16 +24,12 @@ def track_density_flow(tractograms, ref_files, out_dir='', up_factor=1.0,
     ref_files : string
         Path to the reference volumes. This path may contain wildcards to use
         multiple masks at once.
-    out_dir : string, optional
-        Output directory (default input file directory)
     up_factor : float, optional
         Factor by which to upsample the resulting volume. (default 1.0)
-    tdi : string, optional
+    out_dir : string, optional
+        Output directory (default input file directory)
+    out_tdi : string, optional
         Tract density file name (default 'tdi.nii.gz')
-    Outputs
-    -------
-    tdi : Nifti file
-        Track density volume.
     """
     for tract_file, ref_file in zip(glob(tractograms), glob(ref_files)):
         logging.info('Computing track density for {0}'.format(tract_file))
@@ -70,6 +66,6 @@ def track_density_flow(tractograms, ref_files, out_dir='', up_factor=1.0,
         map_img.get_header().set_zooms(pos_factor)
         map_img.get_header().set_qform(ref_head.get_qform())
         map_img.get_header().set_sform(ref_head.get_sform())
-        map_img.to_filename(os.path.join(out_dir_path, tdi))
+        map_img.to_filename(os.path.join(out_dir_path, out_tdi))
         logging.info('Track density map saved as: {0}'.
-                     format(os.path.join(out_dir_path, tdi)))
+                     format(os.path.join(out_dir_path, out_tdi)))

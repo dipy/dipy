@@ -11,8 +11,8 @@ from dipy.denoise.noise_estimate import estimate_sigma
 from dipy.workflows.utils import choose_create_out_dir
 
 
-def nlmeans_flow(input_files, out_dir='',
-                 denoised='dwi_nlmeans.nii.gz', sigma=0):
+def nlmeans_flow(input_files, sigma=0, out_dir='',
+                 out_denoised='dwi_nlmeans.nii.gz'):
     """ Workflow wrapping the nlmeans denoising method.
 
     It applies nlmeans denoise on each file found by 'globing'
@@ -24,17 +24,12 @@ def nlmeans_flow(input_files, out_dir='',
     input_files : string
         Path to the input volumes. This path may contain wildcards to process
         multiple inputs at once.
-    out_dir : string, optional
-        Output directory (default input file directory)
-    out_filename : string, optional
-        Name of the resuting denoised volume (default: dwi_nlmeans.nii.gz)
     sigma : float, optional
         Sigma parameter to pass to the nlmeans algorithm (default: auto estimation).
-
-    Outputs
-    -------
-    denoised : Nifti File
-           The denoised volume.
+    out_dir : string, optional
+        Output directory (default input file directory)
+    out_denoised : string, optional
+        Name of the resuting denoised volume (default: dwi_nlmeans.nii.gz)
     """
     for fpath in glob(input_files):
         logging.info('Denoising {0}'.format(fpath))
@@ -51,7 +46,7 @@ def nlmeans_flow(input_files, out_dir='',
             denoised_data, image.get_affine(), image.get_header())
 
         out_dir_path = choose_create_out_dir(out_dir, fpath)
-        out_file_path = os.path.join(out_dir_path, denoised)
+        out_file_path = os.path.join(out_dir_path, out_denoised)
 
         denoised_image.to_filename(out_file_path)
         logging.info('Denoised volume saved as {0}'.format(out_file_path))
