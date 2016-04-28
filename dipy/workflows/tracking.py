@@ -24,7 +24,7 @@ from dipy.direction import DeterministicMaximumDirectionGetter
 
 
 def EuDX_tracking_flow(peaks_values, peaks_indexes, out_dir='',
-                       tractogram='tractogram.trk'):
+                       out_tractogram='tractogram.trk'):
 
     """ Workflow for Eulder delta crossings tracking. Tracking is done by
         'globing' ``input_files``, ``peaks_values``, and ``peaks_indexes``
@@ -40,12 +40,8 @@ def EuDX_tracking_flow(peaks_values, peaks_indexes, out_dir='',
         multiple bvalues files at once.
     out_dir : string, optional
         Output directory (default input file directory)
-    tractogram : string, optional
+    out_tractogram : string, optional
         Name of the tractogram file to be saved (default 'tractogram.trk')
-    Outputs
-    -------
-    tractogram : tck file
-        This file contains the resulting tractogram.
     """
     for peaks_values_path, peaks_idx_path in zip(glob(peaks_values),
                                                            glob(peaks_indexes)):
@@ -72,7 +68,7 @@ def EuDX_tracking_flow(peaks_values, peaks_indexes, out_dir='',
         hdr['n_count'] = len(streamlines_trk)
 
         out_dir_path = choose_create_out_dir(out_dir, peaks_values)
-        tractogram_path = os.path.join(out_dir_path, tractogram)
+        tractogram_path = os.path.join(out_dir_path, out_tractogram)
         nib.trackvis.write(tractogram_path, streamlines_trk, hdr, points_space='voxel')
         logging.info('Saved {0}'.format(tractogram_path))
 
@@ -148,14 +144,3 @@ def deterministic_tracking_flow(input_files, mask_files, bvalues, bvectors,
         nib.trackvis.write(tractogram_path, streamlines_trk,  hdr, points_space='voxel')
 
         logging.info('Saved {0}'.format(tractogram_path))
-
-
-
-
-
-
-
-
-
-
-
