@@ -77,7 +77,7 @@ class IntrospectiveArgumentParser(arg.ArgumentParser):
         len_defaults = len(defaults)
 
         output_args = \
-            self.add_argument_group('output arguments')
+            self.add_argument_group('output arguments(optional)')
 
         for i, arg in enumerate(args):
             prefix = ''
