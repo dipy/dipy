@@ -2,6 +2,10 @@ import os.path as path
 import numpy.testing as npt
 from glob import glob
 from ipdb import set_trace
+from dipy.workflows.multi_io import (OutputGenerator,
+                                     concatenate_inputs,
+                                     connect_output_paths,
+                                     mix_inputs, lprint)
 
 
 def common_start(sa, sb):
@@ -14,25 +18,6 @@ def common_start(sa, sb):
                 return
 
     return ''.join(_iter())
-
-
-def connect_output_paths(inputs, out_dir, out_files):
-    outputs = []
-    if isinstance(inputs, basestring):
-        inputs = [inputs]
-    if isinstance(out_files, basestring):
-        out_files = [out_files]
-
-    for inp in inputs:
-        dname = out_dir + path.dirname(inp)
-        base = path.splitext(path.basename(inp))[0]
-        new_out_files = []
-        for out_file in out_files:
-            new_out_files.append(
-                path.join(dname, base + '_' + out_file))
-        outputs.append(new_out_files)
-
-    return outputs
 
 
 def test_one_set_of_inputs():
@@ -82,48 +67,6 @@ def test_one_set_of_inputs():
     print('\n')
 
 
-def concatenate_inputs(multi_inputs):
-
-    mixing_names = []
-    for inps in zip(*multi_inputs):
-        mixing_name = ''
-        for i, inp in enumerate(inps):
-            mixing_name += path.splitext(path.basename(inp))[0]
-            if i < len(inps) - 1:
-                mixing_name += '_'
-        mixing_names.append(mixing_name)
-    return mixing_names
-
-
-def split_ext(fname):
-    ext = path.splitext(path.basename(fname))[1]
-    base = path.splitext(path.basename(fname))[0]
-    if ext == '.gz':
-        ext = path.splitext(path.basename(base))[1]
-        if ext == '.nii':
-            base = path.splitext(path.basename(fname))[0]
-    return base
-
-
-def concatenate_many_to_one_inputs(inputs1, inputs2):
-
-    mixing_names = []
-    for inp in inputs1:
-        mixing_name = ''
-        mixing_name += path.splitext(path.basename(inp))[0]
-        mixing_name += '_'
-        mixing_name += path.splitext(path.basename(inputs2))[0]
-        # print(mixing_name)
-        mixing_names.append(mixing_name)
-
-    return mixing_names
-
-
-def lprint(list_):
-    for l in list_:
-        print(l)
-
-
 def test_many_sets_of_inputs():
 
     print('Concatenating sets of inputs mixing')
@@ -158,7 +101,7 @@ def test_many_sets_of_inputs():
     print('\n>> Inputs_2')
     print(inputs_2)
 
-    mixing_names = concatenate_many_to_one_inputs(inputs_1, inputs_2)
+    mixing_names = mix_inputs(inputs_1, inputs_2)
     # lprint(mixing_names)
 
     outputs = connect_output_paths(mixing_names, out_dir, out_files)
@@ -166,8 +109,16 @@ def test_many_sets_of_inputs():
     lprint(outputs)
 
 
+def test_output_generator():
+
+    i1 = '../data/*.bv*'
+    i2 = '../data/files/'
+    # CREATE TINY FOLDERS AND FILES UNDER DATA
+
+    pass
+
 
 if __name__ == '__main__':
 
-    # test_one_set_of_inputs()
+    test_one_set_of_inputs()
     test_many_sets_of_inputs()
