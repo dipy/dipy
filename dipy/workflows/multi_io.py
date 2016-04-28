@@ -1,19 +1,93 @@
 from glob import glob
+import os.path as path
 
 
-class MultiIOFileConnector():
+def connect_output_paths(inputs, out_dir, out_files):
 
-    def set_inputs(inputs):
-        self.inputs = inputs
+    outputs = []
+    if isinstance(inputs, basestring):
+        inputs = [inputs]
+    if isinstance(out_files, basestring):
+        out_files = [out_files]
 
-    def set_outputs(outputs):
-        self.outputs = outputs
+    for inp in inputs:
+        dname = out_dir + path.dirname(inp)
+        base = path.splitext(path.basename(inp))[0]
+        new_out_files = []
+        for out_file in out_files:
+            new_out_files.append(
+                path.join(dname, base + '_' + out_file))
+        outputs.append(new_out_files)
 
-    def set_out_dir(out_dir):
+    return outputs
+
+
+def concatenate_inputs(multi_inputs):
+
+    mixing_names = []
+    for inps in zip(*multi_inputs):
+        mixing_name = ''
+        for i, inp in enumerate(inps):
+            mixing_name += path.splitext(path.basename(inp))[0]
+            if i < len(inps) - 1:
+                mixing_name += '_'
+        mixing_names.append(mixing_name)
+    return mixing_names
+
+
+def split_ext(fname):
+
+    ext = path.splitext(path.basename(fname))[1]
+    base = path.splitext(path.basename(fname))[0]
+    if ext == '.gz':
+        ext = path.splitext(path.basename(base))[1]
+        if ext == '.nii':
+            base = path.splitext(path.basename(fname))[0]
+    return base
+
+
+def mix_inputs(inputs1, inputs2):
+
+    mixing_names = []
+    for inp in inputs1:
+        mixing_name = ''
+        mixing_name += path.splitext(path.basename(inp))[0]
+        mixing_name += '_'
+        mixing_name += path.splitext(path.basename(inputs2))[0]
+        # print(mixing_name)
+        mixing_names.append(mixing_name)
+
+    return mixing_names
+
+
+def lprint(list_):
+    for l in list_:
+        print(l)
+
+
+class OutputGenerator(object):
+
+    def __init__(self, verbose=False):
+        self.verbose = verbose
+
+    def set_inputs(self, *args):
+        self.inputs = list(args)
+
+    def set_out_dir(self, out_dir):
         self.out_dir = out_dir
 
-    def sync_input_outputs(out_dir, sync_type='many_to_many'):
+    def set_out_fnames(self, *args):
+        self.out_fnames = list(args)
 
-        for fpath in glob(input_files), globout):
+    def create_outputs(self, out_dir):
 
-        pass
+        if len(self.inputs) == 1:
+            self.outputs = connect_output_paths(self.inputs,
+                                                self.out_dir,
+                                                self.out_files)
+        elif len(self.inputs) > 1:
+            self.outputs = connect_output_paths(mix_inputs(self.inputs),
+                                                self.out_dir,
+                                                self.out_files)
+        else:
+            raise ImportError('No inputs')
