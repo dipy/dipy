@@ -7,10 +7,7 @@ from glob import glob
 import nibabel as nib
 import numpy as np
 
-from tractconverter.formats.trk import TRK
-from tractconverter.formats.tck import TCK
-from tractconverter import convert as convert_tracks
-
+from dipy.io.trackvis import save_trk
 from dipy.tracking.eudx import EuDX
 from dipy.data import get_sphere
 from dipy.reconst.csdeconv import ConstrainedSphericalDeconvModel
@@ -44,7 +41,7 @@ def EuDX_tracking_flow(peaks_values, peaks_indexes, out_dir='',
         Name of the tractogram file to be saved (default 'tractogram.trk')
     """
     for peaks_values_path, peaks_idx_path in zip(glob(peaks_values),
-                                                           glob(peaks_indexes)):
+                                                 glob(peaks_indexes)):
         logging.info('EuDX tracking on {0}'.format(peaks_values_path))
 
         peaks_idx_img = nib.load(peaks_idx_path)
@@ -59,17 +56,13 @@ def EuDX_tracking_flow(peaks_values, peaks_indexes, out_dir='',
                            seeds=100000)
 
         # Save streamlines (tracking results)
-        streamlines_trk = [(sl, None, None) for sl in tracks_iter]
+        streamlines_trk = [(sl) for sl in tracks_iter]
 
-        hdr = nib.trackvis.empty_header()
-        hdr['voxel_size'] = voxel_size
-        hdr['voxel_order'] = 'LAS'
-        hdr['dim'] = peaks_idx_img.shape[:3]
-        hdr['n_count'] = len(streamlines_trk)
-
+        translation = peaks_idx_img.get_affine()
+        translation[:3, 3] = 0
         out_dir_path = choose_create_out_dir(out_dir, peaks_values)
         tractogram_path = os.path.join(out_dir_path, out_tractogram)
-        nib.trackvis.write(tractogram_path, streamlines_trk, hdr, points_space='voxel')
+        save_trk(tractogram_path, streamlines_trk, transfo=translation)
         logging.info('Saved {0}'.format(tractogram_path))
 
 
@@ -132,15 +125,10 @@ def deterministic_tracking_flow(input_files, mask_files, bvalues, bvectors,
 
         out_dir_path = choose_create_out_dir(out_dir, dwi)
 
-        streamlines_trk = [(sl, None, None) for sl in streamlines]
-
-        hdr = nib.trackvis.empty_header()
-        hdr['voxel_size'] = voxel_size
-        hdr['voxel_order'] = 'LAS'
-        hdr['dim'] = dwi_img.shape[:-1]
-        hdr['n_count'] = len(streamlines_trk)
-
+        streamlines_trk = [(sl) for sl in streamlines]
+        translation = np.eye(4)
+        translation[:3, 3] = dwi_img.get_affine()[:3, 3] * -1.0
         tractogram_path = os.path.join(out_dir_path, out_tractogram)
-        nib.trackvis.write(tractogram_path, streamlines_trk,  hdr, points_space='voxel')
+        save_trk(tractogram_path, streamlines_trk, transfo=translation)
 
         logging.info('Saved {0}'.format(tractogram_path))
