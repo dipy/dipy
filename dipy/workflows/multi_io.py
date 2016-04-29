@@ -1,3 +1,4 @@
+import numpy as np
 from glob import glob
 import os.path as path
 
@@ -10,14 +11,33 @@ def connect_output_paths(inputs, out_dir, out_files):
     if isinstance(out_files, basestring):
         out_files = [out_files]
 
-    for inp in inputs:
-        dname = out_dir + path.dirname(inp)
-        base = path.splitext(path.basename(inp))[0]
-        new_out_files = []
-        for out_file in out_files:
-            new_out_files.append(
-                path.join(dname, base + '_' + out_file))
-        outputs.append(new_out_files)
+    # from ipdb import set_trace
+    # set_trace()
+
+    sizes_of_inputs = [len(inp) for inp in inputs]
+
+    if len(inputs) > 1:
+        if np.sum(np.diff(sizes_of_inputs)) == 0:
+            mixing_names = concatenate_inputs(inputs)
+
+            for (mix_inp, inp) in zip(mixing_names, inputs[0]):
+                dname = path.join(out_dir, path.dirname(inp))
+                updated_out_files = []
+                for out_file in out_files:
+                    updated_out_files.append(
+                        path.join(dname, mix_inp + '_' + out_file))
+                outputs.append(updated_out_files)
+
+    elif len(inputs) == 1:
+
+        for inp in inputs:
+            dname = path.join(out_dir, path.dirname(inp))
+            base = path.splitext(path.basename(inp))[0]
+            new_out_files = []
+            for out_file in out_files:
+                new_out_files.append(
+                    path.join(dname, base + '_' + out_file))
+            outputs.append(new_out_files)
 
     return outputs
 
@@ -71,7 +91,8 @@ class OutputGenerator(object):
         self.verbose = verbose
 
     def set_inputs(self, *args):
-        self.inputs = list(args)
+        self.input_args = list(args)
+        self.inputs = [sorted(glob(inp)) for inp in self.input_args]
 
     def set_out_dir(self, out_dir):
         self.out_dir = out_dir
@@ -79,15 +100,15 @@ class OutputGenerator(object):
     def set_out_fnames(self, *args):
         self.out_fnames = list(args)
 
-    def create_outputs(self, out_dir):
+    def create_outputs(self):
 
         if len(self.inputs) == 1:
             self.outputs = connect_output_paths(self.inputs,
                                                 self.out_dir,
                                                 self.out_files)
         elif len(self.inputs) > 1:
-            self.outputs = connect_output_paths(mix_inputs(self.inputs),
+            self.outputs = connect_output_paths(self.inputs,
                                                 self.out_dir,
-                                                self.out_files)
+                                                self.out_fnames)
         else:
             raise ImportError('No inputs')

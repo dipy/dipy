@@ -1,3 +1,5 @@
+import os
+import numpy as np
 import os.path as path
 import numpy.testing as npt
 from glob import glob
@@ -111,14 +113,55 @@ def test_many_sets_of_inputs():
 
 def test_output_generator():
 
-    i1 = '../data/*.bv*'
-    i2 = '../data/files/'
-    # CREATE TINY FOLDERS AND FILES UNDER DATA
+    d1 = '/tmp/data/s1/'
+    d2 = '/tmp/data/s2/'
+    d3 = '/tmp/data/s3/'
 
-    pass
+    if not os.path.exists(d1):
+        os.makedirs(d1)
+        os.makedirs(d2)
+        os.makedirs(d3)
+
+    in1 = d1 + 'test.txt'
+    np.savetxt(in1, np.arange(10))
+    in2 = d2 + 'test.txt'
+    np.savetxt(in2, 2 * np.arange(10))
+    in3 = d3 + 'test.txt'
+    np.savetxt(in3, 3 * np.arange(10))
+
+    d1_2 = '/tmp/data/s1/other/'
+    d2_2 = '/tmp/data/s2/other/'
+    d3_2 = '/tmp/data/s3/other/'
+
+    if not os.path.exists(d1_2):
+        os.makedirs(d1_2)
+        os.makedirs(d2_2)
+        os.makedirs(d3_2)
+
+    in1_2 = d1_2 + 'test2.txt'
+    np.savetxt(in1_2, np.arange(10))
+    in2_2 = d2_2 + 'test2.txt'
+    np.savetxt(in2_2, 2 * np.arange(10))
+    in3_2 = d3_2 + 'test2.txt'
+    np.savetxt(in3_2, 3 * np.arange(10))
+
+    out_dir = '/tmp/out/'
+    if not os.path.exists(out_dir):
+        os.makedirs(out_dir)
+
+    out_files = ['out_info.txt', 'out_summary.txt']
+
+    og = OutputGenerator(verbose=True)
+    og.set_inputs('/tmp/data/s*/test.txt', '/tmp/data/s*/other/test2.txt')
+    og.set_out_dir(out_dir)
+    og.set_out_fnames(*out_files)
+    og.create_outputs()
+
+    set_trace()
 
 
 if __name__ == '__main__':
 
-    test_one_set_of_inputs()
-    test_many_sets_of_inputs()
+    # test_one_set_of_inputs()
+    # test_many_sets_of_inputs()
+    test_output_generator()
