@@ -21,7 +21,7 @@ class TissueClassifierHMRF(object):
 
         pass
 
-    def classify(self, image, nclasses, beta, max_iter):
+    def classify(self, image, nclasses, beta):
         r"""
         This method uses the Maximum a posteriori - Markov Random Field
         approach for segmentation by using the Iterative Conditional Modes and
@@ -37,7 +37,7 @@ class TissueClassifierHMRF(object):
                 smoothing parameter, the higher this number the smoother the
                 output will be.
         max_iter : float,
-                    number of desired iterations. Usually between 0 and 0.5
+                    number of desired iterations.
 
         Returns
         -------
@@ -60,6 +60,9 @@ class TissueClassifierHMRF(object):
             image = np.interp(image, [0, image.max()], [0.0, 1.0])
 
         mu, sigma = com.initialize_param_uniform(image, nclasses)
+
+#        mu = np.array([0.0, 0.03, 0.5, 0.8])
+#        sigma = np.array([0.01, 0.01, 0.15, 0.15])
         sigmasq = sigma ** 2
 
         neglogl = com.negloglikelihood(image, mu, sigmasq, nclasses)
@@ -74,9 +77,9 @@ class TissueClassifierHMRF(object):
 
         final_segmentation = np.empty_like(image)
         initial_segmentation = seg_init.copy()
-#        energies = []
+        tolerance = 0.0001   # 1% of every 5 interations
 
-        for i in range(max_iter):
+        for i in range(100):
 
             if self.verbose:
                 print('>> Iteration: ' + str(i))
@@ -98,10 +101,22 @@ class TissueClassifierHMRF(object):
                 self.energies.append(energy)
                 self.energies_sum.append(energy[energy > -np.inf].sum())
 
+            if i % 10 == 0 and i != 0:
+
+                tol = tolerance * (np.amax(self.energies_sum) -
+                                   np.amin(self.energies_sum))
+
+                test_dist = np.absolute(np.amax(self.energies_sum[np.size(self.energies_sum) - 5: i]) - np.amin(self.energies_sum[np.size(self.energies_sum) - 5: i]))
+
+                if test_dist < tol:
+
+                    break
+
             seg_init = final_segmentation.copy()
             mu = mu_upd.copy()
             sigmasq = sigmasq_upd.copy()
 
         PVE = PVE[..., 1:]
+        EN = self.energies_sum
 
-        return initial_segmentation, final_segmentation, PVE
+        return initial_segmentation, final_segmentation, PVE, EN
