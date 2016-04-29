@@ -1,6 +1,7 @@
 import numpy as np
 from glob import glob
 import os.path as path
+from ipdb import set_trace
 
 
 def connect_output_paths(inputs, out_dir, out_files):
@@ -11,13 +12,31 @@ def connect_output_paths(inputs, out_dir, out_files):
     if isinstance(out_files, basestring):
         out_files = [out_files]
 
-    # from ipdb import set_trace
-    # set_trace()
-
     sizes_of_inputs = [len(inp) for inp in inputs]
 
     if len(inputs) > 1:
+
         if np.sum(np.diff(sizes_of_inputs)) == 0:
+            mixing_names = concatenate_inputs(inputs)
+
+            for (mix_inp, inp) in zip(mixing_names, inputs[0]):
+                dname = path.join(out_dir, path.dirname(inp))
+                updated_out_files = []
+                for out_file in out_files:
+                    updated_out_files.append(
+                        path.join(dname, mix_inp + '_' + out_file))
+                outputs.append(updated_out_files)
+
+        else:
+            max_size = np.max(sizes_of_inputs)
+            min_size = np.min(sizes_of_inputs)
+            if min_size > 1 and min_size != max_size:
+                raise ImportError('Size of input issue')
+            elif min_size == 1:
+                for i, sz in enumerate(sizes_of_inputs):
+                    if sz == min_size:
+                        inputs[i] = max_size * inputs[i]
+
             mixing_names = concatenate_inputs(inputs)
 
             for (mix_inp, inp) in zip(mixing_names, inputs[0]):
@@ -30,7 +49,7 @@ def connect_output_paths(inputs, out_dir, out_files):
 
     elif len(inputs) == 1:
 
-        for inp in inputs:
+        for inp in inputs[0]:
             dname = path.join(out_dir, path.dirname(inp))
             base = path.splitext(path.basename(inp))[0]
             new_out_files = []
@@ -101,12 +120,7 @@ class OutputGenerator(object):
         self.out_fnames = list(args)
 
     def create_outputs(self):
-
-        if len(self.inputs) == 1:
-            self.outputs = connect_output_paths(self.inputs,
-                                                self.out_dir,
-                                                self.out_files)
-        elif len(self.inputs) > 1:
+        if len(self.inputs) >= 1:
             self.outputs = connect_output_paths(self.inputs,
                                                 self.out_dir,
                                                 self.out_fnames)

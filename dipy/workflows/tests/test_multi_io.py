@@ -144,6 +144,14 @@ def test_output_generator():
     np.savetxt(in2_2, 2 * np.arange(10))
     in3_2 = d3_2 + 'test2.txt'
     np.savetxt(in3_2, 3 * np.arange(10))
+    in3_2 = d3_2 + 'test2.txt'
+    np.savetxt(in3_2, 3 * np.arange(10))
+
+    template_dir = '/tmp/template/'
+    if not os.path.exists(template_dir):
+        os.makedirs(template_dir)
+
+    np.savetxt(template_dir + 'avg.txt', 10 * np.arange(10))
 
     out_dir = '/tmp/out/'
     if not os.path.exists(out_dir):
@@ -151,11 +159,50 @@ def test_output_generator():
 
     out_files = ['out_info.txt', 'out_summary.txt']
 
+    # print('Two wild inputs')
+    #
+    # og = OutputGenerator(verbose=True)
+    # og.set_inputs('/tmp/data/s*/test.txt', '/tmp/data/s*/other/test2.txt')
+    # og.set_out_dir(out_dir)
+    # og.set_out_fnames(*out_files)
+    # og.create_outputs()
+    #
+    # print(og.outputs)
+    # print('\n')
+    #
+    # print('One wild input and one single')
+    #
+    # og = OutputGenerator(verbose=True)
+    # og.set_inputs('/tmp/data/s*/test.txt', '/tmp/template/avg.txt')
+    # og.set_out_dir(out_dir)
+    # og.set_out_fnames(*out_files)
+    # og.create_outputs()
+    #
+    # print(og.outputs)
+    # print('\n')
+    #
+    # print('One single and one single inputs')
+    #
+    # og = OutputGenerator(verbose=True)
+    # og.set_inputs('/tmp/data/s1/test.txt', '/tmp/template/avg.txt')
+    # og.set_out_dir(out_dir)
+    # og.set_out_fnames(*out_files)
+    # og.create_outputs()
+    #
+    # print(og.outputs)
+    # print('\n')
+
+    print('One single input')
+
     og = OutputGenerator(verbose=True)
-    og.set_inputs('/tmp/data/s*/test.txt', '/tmp/data/s*/other/test2.txt')
+    og.set_inputs('/tmp/data/s1/test.txt')
     og.set_out_dir(out_dir)
     og.set_out_fnames(*out_files)
     og.create_outputs()
+
+    print(og.outputs)
+    print('\n')
+
 
     set_trace()
 
