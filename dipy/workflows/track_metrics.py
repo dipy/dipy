@@ -63,9 +63,9 @@ def track_density_flow(tractograms, ref_files, up_factor=1.0, out_dir='',
 
         out_dir_path = choose_create_out_dir(out_dir, tractograms)
 
-        map_img.get_header().set_zooms(pos_factor)
-        map_img.get_header().set_qform(ref_head.get_qform())
-        map_img.get_header().set_sform(ref_head.get_sform())
+        map_img.header().set_zooms(pos_factor)
+        map_img.header().set_qform(ref_head.get_qform())
+        map_img.header().set_sform(ref_head.get_sform())
         map_img.to_filename(os.path.join(out_dir_path, out_tdi))
         logging.info('Track density map saved as: {0}'.
                      format(os.path.join(out_dir_path, out_tdi)))
