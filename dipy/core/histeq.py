@@ -18,12 +18,12 @@ def histeq(arr, num_bins=256):
     result : ndarray
         Histogram equalized image.
     """
-    #get image histogram
+    # get image histogram
     histo, bins = np.histogram(arr.flatten(), num_bins, normed=True)
     cdf = histo.cumsum()
     cdf = 255 * cdf / cdf[-1]
 
-    #use linear interpolation of cdf to find new pixel values
+    # use linear interpolation of cdf to find new pixel values
     result = np.interp(arr.flatten(), bins[:-1], cdf)
 
     return result.reshape(arr.shape)

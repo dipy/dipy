@@ -45,15 +45,15 @@
 import numpy as np
 import numpy.linalg as npl
 import scipy.ndimage as ndimage
-from ..core.optimize import Optimizer
-from ..core.optimize import SCIPY_LESS_0_12
-from . import vector_fields as vf
-from . import VerbosityLevels
-from .parzenhist import (ParzenJointHistogram,
-                         sample_domain_regular,
-                         compute_parzen_mi)
-from .imwarp import (get_direction_and_spacings, ScaleSpace)
-from .scalespace import IsotropicScaleSpace
+from dipy.core.optimize import Optimizer
+from dipy.core.optimize import SCIPY_LESS_0_12
+from dipy.align import vector_fields as vf
+from dipy.align import VerbosityLevels
+from dipy.align.parzenhist import (ParzenJointHistogram,
+                                   sample_domain_regular,
+                                   compute_parzen_mi)
+from dipy.align.imwarp import (get_direction_and_spacings, ScaleSpace)
+from dipy.align.scalespace import IsotropicScaleSpace
 from warnings import warn
 
 _interp_options = ['nearest', 'linear']
@@ -69,6 +69,7 @@ class AffineInversionError(Exception):
 
 
 class AffineMap(object):
+
     def __init__(self, affine, domain_grid_shape=None, domain_grid2world=None,
                  codomain_grid_shape=None, codomain_grid2world=None):
         """ AffineMap
@@ -362,6 +363,7 @@ class AffineMap(object):
 
 
 class MutualInformationMetric(object):
+
     def __init__(self, nbins=32, sampling_proportion=None):
         r""" Initializes an instance of the Mutual Information metric
 
@@ -579,8 +581,13 @@ class MutualInformationMetric(object):
                                             self.static.shape,
                                             grid_to_world)
                 # The Jacobian must be evaluated at the pre-aligned points
-                H.update_gradient_dense(params, self.transform, static_values,
-                                        moving_values, static2prealigned, mgrad)
+                H.update_gradient_dense(
+                    params,
+                    self.transform,
+                    static_values,
+                    moving_values,
+                    static2prealigned,
+                    mgrad)
             else:  # Sparse case
                 # Compute the gradient of moving at the sampling points
                 # which are already given in physical space coordinates
@@ -673,6 +680,7 @@ class MutualInformationMetric(object):
 
 
 class AffineRegistration(object):
+
     def __init__(self,
                  metric=None,
                  level_iters=None,
@@ -680,8 +688,9 @@ class AffineRegistration(object):
                  factors=None,
                  method='L-BFGS-B',
                  ss_sigma_factor=None,
-                 options=None):
-        r""" Initializes an instance of the AffineRegistration class
+                 options=None,
+                 verbosity=VerbosityLevels.STATUS):
+        """ Initializes an instance of the AffineRegistration class
 
         Parameters
         ----------
@@ -722,7 +731,6 @@ class AffineRegistration(object):
             extra optimization options. The default is None, implying
             no extra options are passed to the optimizer.
         """
-
         self.metric = metric
 
         if self.metric is None:
@@ -748,7 +756,25 @@ class AffineRegistration(object):
                 sigmas = [3, 1, 0]
             self.factors = factors
             self.sigmas = sigmas
-        self.verbosity = VerbosityLevels.STATUS
+
+        self.verbosity = verbosity
+
+    # Separately add a string that tells about the verbosity kwarg. This needs
+    # to be separate, because it is set as a module-wide option in __init__:
+    docstring_addendum =\
+        """verbosity: int (one of {0, 1, 2, 3}), optional
+            Set the verbosity level of the algorithm:
+            0 : do not print anything
+            1 : print information about the current status of the algorithm
+            2 : print high level information of the components involved in
+                the registration that can be used to detect a failing
+                component.
+            3 : print as much information as possible to isolate the cause
+                of a bug.
+            Default: % s
+    """ % VerbosityLevels.STATUS
+
+    __init__.__doc__ = __init__.__doc__ + docstring_addendum
 
     def _init_optimizer(self, static, moving, transform, params0,
                         static_grid2world, moving_grid2world,
@@ -797,22 +823,25 @@ class AffineRegistration(object):
         self.params0 = params0
         if starting_affine is None:
             self.starting_affine = np.eye(self.dim + 1)
-        elif starting_affine == 'mass':
-            affine_map = transform_centers_of_mass(static,
-                                                   static_grid2world,
-                                                   moving,
-                                                   moving_grid2world)
-            self.starting_affine = affine_map.affine
-        elif starting_affine == 'voxel-origin':
-            affine_map = transform_origins(static, static_grid2world,
-                                           moving, moving_grid2world)
-            self.starting_affine = affine_map.affine
-        elif starting_affine == 'centers':
-            affine_map = transform_geometric_centers(static,
-                                                     static_grid2world,
-                                                     moving,
-                                                     moving_grid2world)
-            self.starting_affine = affine_map.affine
+        elif isinstance(starting_affine, str):
+            if starting_affine == 'mass':
+                affine_map = transform_centers_of_mass(static,
+                                                       static_grid2world,
+                                                       moving,
+                                                       moving_grid2world)
+                self.starting_affine = affine_map.affine
+            elif starting_affine == 'voxel-origin':
+                affine_map = transform_origins(static, static_grid2world,
+                                               moving, moving_grid2world)
+                self.starting_affine = affine_map.affine
+            elif starting_affine == 'centers':
+                affine_map = transform_geometric_centers(static,
+                                                         static_grid2world,
+                                                         moving,
+                                                         moving_grid2world)
+                self.starting_affine = affine_map.affine
+            else:
+                raise ValueError('Invalid starting_affine strategy')
         elif (isinstance(starting_affine, np.ndarray) and
               starting_affine.shape >= (self.dim, self.dim + 1)):
             self.starting_affine = starting_affine
@@ -957,7 +986,8 @@ class AffineRegistration(object):
                                 method=self.method, jac=self.metric.gradient,
                                 options=self.options)
             else:
-                opt = Optimizer(self.metric.distance_and_gradient, self.params0,
+                opt = Optimizer(self.metric.distance_and_gradient,
+                                self.params0,
                                 method=self.method, jac=True,
                                 options=self.options)
             params = opt.xopt
@@ -979,7 +1009,7 @@ def align_centers_of_mass(static, static_grid2world,
     msg += " dipy.align.imaffine.transform_centers_of_mass instead."
     warn(msg)
     return transform_centers_of_mass(static, static_grid2world,
-                                       moving, moving_grid2world)
+                                     moving, moving_grid2world)
 
 
 def align_geometric_centers(static, static_grid2world,
@@ -997,7 +1027,7 @@ def align_origins(static, static_grid2world,
     msg += " dipy.align.imaffine.transform_origins instead."
     warn(msg)
     return transform_origins(static, static_grid2world,
-                                       moving, moving_grid2world)
+                             moving, moving_grid2world)
 
 
 def transform_centers_of_mass(static, static_grid2world,
@@ -1028,9 +1058,9 @@ def transform_centers_of_mass(static, static_grid2world,
     if moving_grid2world is None:
         moving_grid2world = np.eye(dim + 1)
     c_static = ndimage.measurements.center_of_mass(np.array(static))
-    c_static = static_grid2world.dot(c_static+(1,))
+    c_static = static_grid2world.dot(c_static + (1,))
     c_moving = ndimage.measurements.center_of_mass(np.array(moving))
-    c_moving = moving_grid2world.dot(c_moving+(1,))
+    c_moving = moving_grid2world.dot(c_moving + (1,))
     transform = np.eye(dim + 1)
     transform[:dim, dim] = (c_moving - c_static)[:dim]
     affine_map = AffineMap(transform,
@@ -1070,9 +1100,9 @@ def transform_geometric_centers(static, static_grid2world,
     if moving_grid2world is None:
         moving_grid2world = np.eye(dim + 1)
     c_static = tuple((np.array(static.shape, dtype=np.float64)) * 0.5)
-    c_static = static_grid2world.dot(c_static+(1,))
+    c_static = static_grid2world.dot(c_static + (1,))
     c_moving = tuple((np.array(moving.shape, dtype=np.float64)) * 0.5)
-    c_moving = moving_grid2world.dot(c_moving+(1,))
+    c_moving = moving_grid2world.dot(c_moving + (1,))
     transform = np.eye(dim + 1)
     transform[:dim, dim] = (c_moving - c_static)[:dim]
     affine_map = AffineMap(transform,

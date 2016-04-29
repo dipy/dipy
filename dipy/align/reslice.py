@@ -53,8 +53,8 @@ def reslice(data, affine, zooms, new_zooms, order=1, mode='constant', cval=0,
     >>> fimg = get_data('aniso_vox')
     >>> img = nib.load(fimg)
     >>> data = img.get_data()
-    >>> data.shape
-    (58, 58, 24)
+    >>> data.shape == (58, 58, 24)
+    True
     >>> affine = img.get_affine()
     >>> zooms = img.get_header().get_zooms()[:3]
     >>> zooms
@@ -63,11 +63,13 @@ def reslice(data, affine, zooms, new_zooms, order=1, mode='constant', cval=0,
     >>> new_zooms
     (3.0, 3.0, 3.0)
     >>> data2, affine2 = reslice(data, affine, zooms, new_zooms)
-    >>> data2.shape
-    (77, 77, 40)
+    >>> data2.shape == (77, 77, 40)
+    True
     """
-    R = np.array(new_zooms) / np.array(zooms)
-    new_shape = np.array(zooms)/np.array(new_zooms) * np.array(data.shape[:3])
+    new_zooms = np.array(new_zooms, dtype='f8')
+    zooms = np.array(zooms, dtype='f8')
+    R = new_zooms / zooms
+    new_shape = zooms / new_zooms * np.array(data.shape[:3])
     new_shape = tuple(np.round(new_shape).astype('i8'))
     kwargs = {'matrix': R, 'output_shape': new_shape, 'order': order,
               'mode': mode, 'cval': cval}

@@ -1,11 +1,13 @@
-from nose.tools import assert_true
+import warnings
 
+from nose.tools import assert_true, assert_raises
 import numpy as np
 import numpy.testing as npt
 
 from dipy.data import get_data
 from dipy.core.gradients import (gradient_table, GradientTable,
-                                 gradient_table_from_bvals_bvecs)
+                                 gradient_table_from_bvals_bvecs,
+                                 reorient_bvecs)
 from dipy.io.gradients import read_bvals_bvecs
 
 
@@ -39,6 +41,8 @@ def test_btable_prepare():
     bt4 = gradient_table(btab.T)
     npt.assert_array_equal(bt4.bvecs, bvecs)
     npt.assert_array_equal(bt4.bvals, bvals)
+    # Test for proper inputs (expects either bvals/bvecs or 4 by n):
+    assert_raises(ValueError, gradient_table, bvecs)
 
 
 def test_GradientTable():
@@ -182,6 +186,83 @@ def test_qvalues():
     qvals = np.sqrt(bvals / 6) / (2 * np.pi)
     bt = gradient_table(bvals, bvecs, big_delta=8, small_delta=6)
     npt.assert_almost_equal(bt.qvals, qvals)
+
+
+def test_reorient_bvecs():
+    sq2 = np.sqrt(2) / 2
+    bvals = np.concatenate([[0], np.ones(6) * 1000])
+    bvecs = np.array([[0, 0, 0],
+                      [1, 0, 0],
+                      [0, 1, 0],
+                      [0, 0, 1],
+                      [sq2, sq2, 0],
+                      [sq2, 0, sq2],
+                      [0, sq2, sq2]])
+
+    gt = gradient_table_from_bvals_bvecs(bvals, bvecs, b0_threshold=0)
+    # The simple case: all affines are identity
+    affs = np.zeros((6, 4, 4))
+    for i in range(4):
+        affs[:, i, i] = 1
+
+    # We should get back the same b-vectors
+    new_gt = reorient_bvecs(gt, affs)
+    npt.assert_equal(gt.bvecs, new_gt.bvecs)
+
+    # Now apply some rotations
+    rotation_affines = []
+    rotated_bvecs = bvecs[:]
+    for i in np.where(~gt.b0s_mask)[0]:
+        rot_ang = np.random.rand()
+        cos_rot = np.cos(rot_ang)
+        sin_rot = np.sin(rot_ang)
+        rotation_affines.append(np.array([[1, 0, 0, 0],
+                                         [0, cos_rot, -sin_rot, 0],
+                                         [0, sin_rot, cos_rot, 0],
+                                         [0, 0, 0, 1]]))
+        rotated_bvecs[i] = np.dot(rotation_affines[-1][:3, :3],
+                                  bvecs[i])
+
+    # Copy over the rotation affines
+    full_affines = rotation_affines[:]
+    # And add some scaling and translation to each one to make this harder
+    for i in range(len(full_affines)):
+        full_affines[i] = np.dot(full_affines[i],
+                                 np.array([[2.5, 0, 0, -10],
+                                           [0, 2.2, 0, 20],
+                                           [0, 0, 1, 0],
+                                           [0, 0, 0, 1]]))
+
+    gt_rot = gradient_table_from_bvals_bvecs(bvals,
+                                             rotated_bvecs, b0_threshold=0)
+    new_gt = reorient_bvecs(gt_rot, full_affines)
+    # At the end of all this, we should be able to recover the original
+    # vectors
+    npt.assert_almost_equal(gt.bvecs, new_gt.bvecs)
+
+    # We should be able to pass just the 3-by-3 rotation components to the same
+    # effect
+    new_gt = reorient_bvecs(gt_rot, np.array(rotation_affines)[:, :3, :3])
+    npt.assert_almost_equal(gt.bvecs, new_gt.bvecs)
+
+    # Verify that giving the wrong number of affines raises an error:
+    full_affines.append(np.zeros((4, 4)))
+    assert_raises(ValueError, reorient_bvecs, gt_rot, full_affines)
+
+
+def test_nan_bvecs():
+    """
+    Test that the presence of nan's in b-vectors doesn't raise warnings.
+
+    In previous versions, the presence of NaN in b-vectors was taken to
+    indicate a 0 b-value, but also raised a warning when testing for the length
+    of these vectors. This checks that it doesn't happen.
+    """
+    fdata, fbvals, fbvecs = get_data()
+    with warnings.catch_warnings(record=True) as w:
+        gtab = gradient_table(fbvals, fbvecs)
+        npt.assert_(len(w) == 0)
+
 
 if __name__ == "__main__":
     from numpy.testing import run_module_suite

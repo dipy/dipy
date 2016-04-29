@@ -106,4 +106,3 @@ prob_dg = ProbabilisticDirectionGetter.from_shcoeff(fod_coeff, max_angle=30.,
 streamlines = LocalTracking(prob_dg, classifier, seeds, affine, step_size=.5)
 save_trk("probabilistic_peaks_from_model.trk", streamlines, affine,
          labels.shape)
-

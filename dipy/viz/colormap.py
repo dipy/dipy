@@ -117,7 +117,7 @@ def boys2rgb(v):
     hh5 = 6 * xy / 5.5
     hh6 = (1 / 1.176) * .125 * (35 * z4 - 30 * z2 + 3)
     hh7 = 2.5 * x * (7 * z3 - 3 * z) / 3.737
-    hh8 = 2.5 * y * (7 * z3 - 3 * z)/3.737
+    hh8 = 2.5 * y * (7 * z3 - 3 * z) / 3.737
     hh9 = ((x2 - y2) * 7.5 * (7 * z2 - 1)) / 15.85
     hh10 = ((2 * xy) * (7.5 * (7 * z2 - 1))) / 15.85
     hh11 = 105 * (4 * x3 * z - 3 * xz * (1 - z2)) / 59.32
@@ -149,7 +149,7 @@ def boys2rgb(v):
     X = X + hh8 * ss67
 
     X = X + hh10 * cc89
-    X = X + hh9 *  ss89
+    X = X + hh9 * ss89
 
     Y = 0.0
 
@@ -227,7 +227,7 @@ def orient2rgb(v):
 
     if v.ndim == 2:
         orientn = np.sqrt(v[:, 0] ** 2 + v[:, 1] ** 2 + v[:, 2] ** 2)
-        orientn.shape = orientn.shape+(1,)
+        orientn.shape = orientn.shape + (1,)
         orient = np.abs(v / orientn)
 
     return orient

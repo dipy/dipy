@@ -1,4 +1,4 @@
-#! /usr/bin/env python
+#!python
 from dipy.fixes import argparse as arg
 import os
 import warnings 
@@ -54,7 +54,7 @@ if __name__ == "__main__":
 
 
             if params.out_file:
-                this_split = params.out_file.split('.')
+                this_split = os.path.splitext(params.out_file)
                 out_fname_clust = this_split[0] + '_%s'%(c + 1) + '.trk'
             else:
                 out_fname_clust = split[0] + '_%s'%(c + 1) + split[1]
@@ -63,7 +63,7 @@ if __name__ == "__main__":
             trackvis.write(out_fname_clust, new_streamlines, hdr)
 
         if params.out_file:
-            this_split = params.out_file.split('.')
+            this_split = os.path.splitext(params.out_file)
             out_fname_cent = this_split[0] + '_centroids' + '.trk'
         else:
             out_fname_cent = split[0] + '_centroids' + split[1]

@@ -1,5 +1,5 @@
-""" Testing visualization with fvtk
-"""
+"""Testing visualization with fvtk."""
+import os
 import numpy as np
 
 from dipy.viz import fvtk
@@ -8,10 +8,15 @@ from dipy import data
 import numpy.testing as npt
 from dipy.testing.decorators import xvfb_it
 
+use_xvfb = os.environ.get('TEST_WITH_XVFB', False)
+if use_xvfb == 'skip':
+    skip_it = True
+else:
+    skip_it = False
 
+
+@npt.dec.skipif(not fvtk.have_vtk or not fvtk.have_vtk_colors or skip_it)
 @xvfb_it
-@npt.dec.skipif(not fvtk.have_vtk)
-@npt.dec.skipif(not fvtk.have_vtk_colors)
 def test_fvtk_functions():
     # This tests will fail if any of the given actors changed inputs or do
     # not exist
@@ -64,9 +69,8 @@ def test_fvtk_functions():
     fvtk.add(r, p2)
 
 
+@npt.dec.skipif(not fvtk.have_vtk or not fvtk.have_vtk_colors or skip_it)
 @xvfb_it
-@npt.dec.skipif(not fvtk.have_vtk)
-@npt.dec.skipif(not fvtk.have_vtk_colors)
 def test_fvtk_ellipsoid():
 
     evals = np.array([1.4, .35, .35]) * 10 ** (-3)

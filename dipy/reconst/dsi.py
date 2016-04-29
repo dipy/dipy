@@ -1,10 +1,9 @@
 import numpy as np
 from scipy.ndimage import map_coordinates
 from scipy.fftpack import fftn, fftshift, ifftshift
-from dipy.reconst.odf import OdfModel, OdfFit, gfa
+from dipy.reconst.odf import OdfModel, OdfFit
 from dipy.reconst.cache import Cache
 from dipy.reconst.multi_voxel import multi_voxel_fit
-from dipy.reconst.recspeed import local_maxima, remove_similar_vertices
 
 
 class DiffusionSpectrumModel(OdfModel, Cache):
@@ -114,8 +113,9 @@ class DiffusionSpectrumModel(OdfModel, Cache):
         self.qgrid_size = qgrid_size
         # necessary shifting for centering
         self.origin = self.qgrid_size // 2
+
         # hanning filter width
-        self.filter = hanning_filter(gtab, filter_width)
+        self.filter = hanning_filter(gtab, filter_width, self.origin)
         # odf sampling radius
         self.qradius = np.arange(r_start, r_end, r_step)
         self.qradiusn = len(self.qradius)
@@ -159,12 +159,12 @@ class DiffusionSpectrumFit(OdfFit):
         # create the signal volume
         Sq = np.zeros((self.qgrid_sz, self.qgrid_sz, self.qgrid_sz))
         # fill q-space
+
         for i in range(len(values)):
             qx, qy, qz = self.model.qgrid[i]
             Sq[qx, qy, qz] += values[i]
         # apply fourier transform
-        Pr = fftshift(np.real(fftn(ifftshift(Sq),
-                                   3 * (self.qgrid_sz, ))))
+        Pr = fftshift(np.real(fftn(ifftshift(Sq), 3 * (self.qgrid_sz, ))))
         # clipping negative values to 0 (ringing artefact)
         Pr = np.clip(Pr, 0, Pr.max())
 
@@ -222,7 +222,7 @@ class DiffusionSpectrumFit(OdfFit):
          PhD Thesis, 2002.
 
         .. [3] Wu Y. et. al, "Computation of Diffusion Function Measures
-        in q -Space Using Magnetic Resonance Hybrid Diffusion Imaging", 
+        in q -Space Using Magnetic Resonance Hybrid Diffusion Imaging",
         IEEE TRANSACTIONS ON MEDICAL IMAGING, vol. 27, No. 6, p. 858-865, 2008
 
         """
@@ -309,7 +309,7 @@ def create_qspace(gtab, origin):
     ----------
     gtab : GradientTable
     origin : (3,) ndarray
-        center of the qspace
+        center of qspace
 
     Returns
     -------
@@ -317,23 +317,45 @@ def create_qspace(gtab, origin):
         qspace coordinates
     """
     # create the q-table from bvecs and bvals
-    qtable = create_qtable(gtab)
+    qtable = create_qtable(gtab, origin)
+
     # center and index in qspace volume
     qgrid = qtable + origin
     return qgrid.astype('i8')
 
 
-def create_qtable(gtab):
+def create_qtable(gtab, origin):
     """ create a normalized version of gradients
+
+    Parameters
+    ----------
+    gtab : GradientTable
+    origin : (3,) ndarray
+        center of qspace
+
+    Returns
+    -------
+    qtable : ndarray
     """
+
     bv = gtab.bvals
-    bmin = np.sort(bv)[1]
+    bsorted = np.sort(bv[np.bitwise_not(gtab.b0s_mask)])
+    for i in range(len(bsorted)):
+        bmin = bsorted[i]
+        try:
+            if np.sqrt(bv.max() / bmin) > origin + 1:
+                continue
+            else:
+                break
+        except ZeroDivisionError:
+            continue
+
     bv = np.sqrt(bv / bmin)
     qtable = np.vstack((bv, bv, bv)).T * gtab.bvecs
     return np.floor(qtable + .5)
 
 
-def hanning_filter(gtab, filter_width):
+def hanning_filter(gtab, filter_width, origin):
     """ create a hanning window
 
     The signal is premultiplied by a Hanning window before
@@ -344,6 +366,8 @@ def hanning_filter(gtab, filter_width):
     ----------
     gtab : GradientTable
     filter_width : int
+    origin : (3,) ndarray
+        center of qspace
 
     Returns
     -------
@@ -351,7 +375,7 @@ def hanning_filter(gtab, filter_width):
         where N is the number of non-b0 gradient directions
 
     """
-    qtable = create_qtable(gtab)
+    qtable = create_qtable(gtab, origin)
     # calculate r - hanning filter free parameter
     r = np.sqrt(qtable[:, 0] ** 2 + qtable[:, 1] ** 2 + qtable[:, 2] ** 2)
     # setting hanning filter width and hanning

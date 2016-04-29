@@ -250,7 +250,7 @@ def test_ProbabilisticOdfWeightedTracker():
 
     class MyFit(object):
         def __init__(self, n):
-            self.n = n
+            self.n = int(n)
 
         def odf(self, sphere):
             return odf_list[self.n]

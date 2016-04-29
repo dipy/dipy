@@ -53,7 +53,8 @@ def gradient(f):
     ----
     This is a simplified implementation of gradient that is part of numpy
     1.8. In order to mitigate the effects of changes added to this
-    implementation in version 1.9 of numpy, we include this implementation here.
+    implementation in version 1.9 of numpy, we include this implementation
+    here.
     """
     f = np.asanyarray(f)
     N = len(f.shape)  # number of dimensions
@@ -306,11 +307,10 @@ def voxel2streamline(streamline, transformed=False, affine=None,
 
     if unique_idx is None:
         all_coords = np.concatenate(transformed_streamline)
-        unique_idx = unique_rows(all_coords.astype(int))
-    else:
-        unique_idx = unique_idx
+        unique_idx = unique_rows(np.round(all_coords))
 
-    return _voxel2streamline(transformed_streamline, unique_idx)
+    return _voxel2streamline(transformed_streamline,
+                             unique_idx.astype(np.intp))
 
 
 class FiberModel(ReconstModel):
@@ -349,8 +349,8 @@ class FiberModel(ReconstModel):
         affine : 4 by 4 array
             Mapping from the streamline coordinates to the data
         evals : list (3 items, optional)
-            The eigenvalues of the canonical tensor used as a response function.
-            Default:[0.001, 0, 0].
+            The eigenvalues of the canonical tensor used as a response
+            function. Default:[0.001, 0, 0].
         sphere: `dipy.core.Sphere` instance.
             Whether to approximate (and cache) the signal on a discrete
             sphere. This may confer a significant speed-up in setting up the
@@ -369,7 +369,7 @@ class FiberModel(ReconstModel):
         streamline = transform_streamlines(streamline, affine)
         # Assign some local variables, for shorthand:
         all_coords = np.concatenate(streamline)
-        vox_coords = unique_rows(all_coords.astype(int))
+        vox_coords = unique_rows(np.round(all_coords).astype(np.intp))
         del all_coords
         # We only consider the diffusion-weighted signals:
         n_bvecs = self.gtab.bvals[~self.gtab.b0s_mask].shape[0]
@@ -381,8 +381,8 @@ class FiberModel(ReconstModel):
         # Preallocate these, which will be used to generate the sparse
         # matrix:
         f_matrix_sig = np.zeros(n_unique_f * n_bvecs, dtype=np.float)
-        f_matrix_row = np.zeros(n_unique_f * n_bvecs, dtype=np.int)
-        f_matrix_col = np.zeros(n_unique_f * n_bvecs, dtype=np.int)
+        f_matrix_row = np.zeros(n_unique_f * n_bvecs, dtype=np.intp)
+        f_matrix_col = np.zeros(n_unique_f * n_bvecs, dtype=np.intp)
 
         fiber_signal = []
         for s_idx, s in enumerate(streamline):
@@ -399,11 +399,8 @@ class FiberModel(ReconstModel):
         range_bvecs = np.arange(n_bvecs).astype(int)
         # In each voxel:
         for v_idx in range(vox_coords.shape[0]):
-            # dbg:
-            #if not np.mod(v_idx, 1000):
-            #    print("voxel %s"%(100*float(v_idx)/n_vox))
-            mat_row_idx = (range_bvecs + v_idx * n_bvecs).astype(np.int32)
-            #For each fiber in that voxel:
+            mat_row_idx = (range_bvecs + v_idx * n_bvecs).astype(np.intp)
+            # For each fiber in that voxel:
             for f_idx in v2f[v_idx]:
                 # For each fiber-voxel combination, store the row/column
                 # indices in the pre-allocated linear arrays
@@ -490,8 +487,8 @@ class FiberModel(ReconstModel):
             affine = np.eye(4)
         life_matrix, vox_coords = \
             self.setup(streamline, affine, evals=evals, sphere=sphere)
-        to_fit, weighted_signal, b0_signal, relative_signal, mean_sig, vox_data=\
-            self._signals(data, vox_coords)
+        (to_fit, weighted_signal, b0_signal, relative_signal, mean_sig,
+         vox_data) = self._signals(data, vox_coords)
         beta = opt.sparse_nnls(to_fit, life_matrix)
         return FiberFit(self, life_matrix, vox_coords, to_fit, beta,
                         weighted_signal, b0_signal, relative_signal, mean_sig,

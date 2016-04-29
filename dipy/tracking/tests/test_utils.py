@@ -4,6 +4,8 @@ from ...utils.six.moves import xrange
 
 import numpy as np
 import nose
+import nibabel as nib
+
 from dipy.io.bvectxt import orientation_from_string
 from dipy.tracking.utils import (affine_for_trackvis, connectivity_matrix,
                                  density_map, length, move_streamlines,
@@ -516,13 +518,38 @@ def test_seeds_from_mask():
 def test_random_seeds_from_mask():
 
     mask = np.random.random_integers(0, 1, size=(4, 6, 3))
-    seeds = random_seeds_from_mask(mask, seeds_per_voxel=24)
+    seeds = random_seeds_from_mask(mask,
+                                   seeds_count=24,
+                                   seed_count_per_voxel=True)
     assert_equal(mask.sum() * 24, len(seeds))
+    seeds = random_seeds_from_mask(mask,
+                                   seeds_count=0,
+                                   seed_count_per_voxel=True)
+    assert_equal(0, len(seeds))
 
     mask[:] = False
     mask[2, 2, 2] = True
-    seeds = random_seeds_from_mask(mask, seeds_per_voxel=8)
+    seeds = random_seeds_from_mask(mask,
+                                   seeds_count=8,
+                                   seed_count_per_voxel=True)
     assert_equal(mask.sum() * 8, len(seeds))
+    assert_true(np.all((seeds > 1.5) & (seeds < 2.5)))
+
+    seeds = random_seeds_from_mask(mask,
+                                   seeds_count=24,
+                                   seed_count_per_voxel=False)
+    assert_equal(24, len(seeds))
+    seeds = random_seeds_from_mask(mask,
+                                   seeds_count=0,
+                                   seed_count_per_voxel=False)
+    assert_equal(0, len(seeds))
+
+    mask[:] = False
+    mask[2, 2, 2] = True
+    seeds = random_seeds_from_mask(mask,
+                                   seeds_count=100,
+                                   seed_count_per_voxel=False)
+    assert_equal(100, len(seeds))
     assert_true(np.all((seeds > 1.5) & (seeds < 2.5)))
 
 

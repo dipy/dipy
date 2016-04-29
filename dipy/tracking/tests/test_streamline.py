@@ -9,6 +9,7 @@ from nose.tools import assert_true, assert_equal, assert_almost_equal
 from numpy.testing import (assert_array_equal, assert_array_almost_equal,
                            assert_raises, run_module_suite)
 
+import dipy.tracking.utils as ut
 from dipy.tracking.streamline import (set_number_of_points,
                                       length as ds_length,
                                       relist_streamlines,
@@ -18,7 +19,8 @@ from dipy.tracking.streamline import (set_number_of_points,
                                       select_random_set_of_streamlines,
                                       compress_streamlines,
                                       select_by_rois,
-                                      orient_by_rois)
+                                      orient_by_rois,
+                                      values_from_volume)
 
 
 streamline = np.array([[82.20181274,  91.36505890,  43.15737152],
@@ -294,6 +296,10 @@ def test_set_number_of_points():
     assert_equal(len(set_number_of_points(streamlines_readonly, nb_points=42)),
                  len(streamlines_readonly))
 
+    # Test if nb_points is less than 2
+    assert_raises(ValueError, set_number_of_points, [np.ones((10, 3)),
+                  np.ones((10, 3))], nb_points=1)
+
 
 def test_set_number_of_points_memory_leaks():
     # Test some dtypes
@@ -301,16 +307,18 @@ def test_set_number_of_points_memory_leaks():
     for dtype in dtypes:
         rng = np.random.RandomState(1234)
         NB_STREAMLINES = 10000
-        streamlines = [rng.randn(rng.randint(10, 100), 3).astype(dtype) for _ in range(NB_STREAMLINES)]
+        streamlines = [rng.randn(rng.randint(10, 100), 3).astype(dtype)
+                       for _ in range(NB_STREAMLINES)]
 
         list_refcount_before = get_type_refcount()["list"]
 
         rstreamlines = set_number_of_points(streamlines, nb_points=2)
         list_refcount_after = get_type_refcount()["list"]
-        del rstreamlines  # Delete `rstreamlines` because it holds a reference to `list`.
+        del rstreamlines  # Delete `rstreamlines` because it holds a reference
+        #                   to `list`.
 
-        # Calling `set_number_of_points` should increase the refcount of `list` by one
-        # since we kept the returned value.
+        # Calling `set_number_of_points` should increase the refcount of `list`
+        #  by one since we kept the returned value.
         assert_equal(list_refcount_after, list_refcount_before+1)
 
     # Test mixed dtypes
@@ -326,8 +334,8 @@ def test_set_number_of_points_memory_leaks():
     rstreamlines = set_number_of_points(streamlines, nb_points=2)
     list_refcount_after = get_type_refcount()["list"]
 
-    # Calling `set_number_of_points` should increase the refcount of `list` by one
-    # since we kept the returned value.
+    # Calling `set_number_of_points` should increase the refcount of `list`
+    #  by one since we kept the returned value.
     assert_equal(list_refcount_after, list_refcount_before+1)
 
 
@@ -413,7 +421,8 @@ def test_length_memory_leaks():
     for dtype in dtypes:
         rng = np.random.RandomState(1234)
         NB_STREAMLINES = 10000
-        streamlines = [rng.randn(rng.randint(10, 100), 3).astype(dtype) for _ in range(NB_STREAMLINES)]
+        streamlines = [rng.randn(rng.randint(10, 100), 3).astype(dtype)
+                       for _ in range(NB_STREAMLINES)]
 
         list_refcount_before = get_type_refcount()["list"]
 
@@ -633,16 +642,18 @@ def test_compress_streamlines_memory_leaks():
     for dtype in dtypes:
         rng = np.random.RandomState(1234)
         NB_STREAMLINES = 10000
-        streamlines = [rng.randn(rng.randint(10, 100), 3).astype(dtype) for _ in range(NB_STREAMLINES)]
+        streamlines = [rng.randn(rng.randint(10, 100), 3).astype(dtype)
+                       for _ in range(NB_STREAMLINES)]
 
         list_refcount_before = get_type_refcount()["list"]
 
         cstreamlines = compress_streamlines(streamlines)
         list_refcount_after = get_type_refcount()["list"]
-        del cstreamlines  # Delete `cstreamlines` because it holds a reference to `list`.
+        del cstreamlines  # Delete `cstreamlines` because it holds a reference
+        #                   to `list`.
 
-        # Calling `compress_streamlines` should increase the refcount of `list` by one
-        # since we kept the returned value.
+        # Calling `compress_streamlines` should increase the refcount of `list`
+        # by one since we kept the returned value.
         assert_equal(list_refcount_after, list_refcount_before+1)
 
     # Test mixed dtypes
@@ -658,9 +669,10 @@ def test_compress_streamlines_memory_leaks():
     cstreamlines = compress_streamlines(streamlines)
     list_refcount_after = get_type_refcount()["list"]
 
-    # Calling `compress_streamlines` should increase the refcount of `list` by one
-    # since we kept the returned value.
+    # Calling `compress_streamlines` should increase the refcount of `list` by
+    # one since we kept the returned value.
     assert_equal(list_refcount_after, list_refcount_before+1)
+
 
 def test_select_by_rois():
     streamlines = [np.array([[0, 0., 0.9],
@@ -798,6 +810,92 @@ def test_orient_by_rois():
                         flipped_sl = [s + affine[:3, 3] for s in flipped_sl]
 
                 npt.assert_equal(new_streamlines, flipped_sl)
+
+
+def test_values_from_volume():
+    decimal = 4
+    data3d = np.arange(2000).reshape(20, 10, 10)
+    # Test two cases of 4D data (handled differently)
+    # One where the last dimension is length 3:
+    data4d_3vec = np.arange(6000).reshape(20, 10, 10, 3)
+    # The other where the last dimension is not 3:
+    data4d_2vec = np.arange(4000).reshape(20, 10, 10, 2)
+    for dt in [np.float32, np.float64]:
+        for data in [data3d, data4d_3vec, data4d_2vec]:
+            sl1 = [np.array([[1, 0, 0],
+                             [1.5, 0, 0],
+                             [2, 0, 0],
+                             [2.5, 0, 0]]).astype(dt),
+                   np.array([[2, 0, 0],
+                             [3.1, 0, 0],
+                             [3.9, 0, 0],
+                             [4.1, 0, 0]]).astype(dt)]
+
+            ans1 = [[data[1, 0, 0],
+                     data[1, 0, 0] + (data[2, 0, 0] - data[1, 0, 0]) / 2,
+                     data[2, 0, 0],
+                     data[2, 0, 0] + (data[3, 0, 0] - data[2, 0, 0]) / 2],
+                    [data[2, 0, 0],
+                     data[3, 0, 0] + (data[4, 0, 0] - data[3, 0, 0]) * 0.1,
+                     data[3, 0, 0] + (data[4, 0, 0] - data[3, 0, 0]) * 0.9,
+                     data[4, 0, 0] + (data[5, 0, 0] - data[4, 0, 0]) * 0.1]]
+
+            vv = values_from_volume(data, sl1)
+            npt.assert_almost_equal(vv, ans1, decimal=decimal)
+
+            vv = values_from_volume(data, np.array(sl1))
+            npt.assert_almost_equal(vv, ans1, decimal=decimal)
+
+            affine = np.eye(4)
+            affine[:, 3] = [-100, 10, 1, 1]
+            x_sl1 = ut.move_streamlines(sl1, affine)
+            x_sl2 = ut.move_streamlines(sl1, affine)
+
+            vv = values_from_volume(data, x_sl1, affine=affine)
+            npt.assert_almost_equal(vv, ans1, decimal=decimal)
+
+            # The generator has already been consumed so needs to be
+            # regenerated:
+            x_sl1 = list(ut.move_streamlines(sl1, affine))
+            vv = values_from_volume(data, x_sl1, affine=affine)
+            npt.assert_almost_equal(vv, ans1, decimal=decimal)
+
+            # Test that the streamlines haven't mutated:
+            l_sl2 = list(x_sl2)
+            npt.assert_equal(x_sl1, l_sl2)
+
+            vv = values_from_volume(data, np.array(x_sl1), affine=affine)
+            npt.assert_almost_equal(vv, ans1, decimal=decimal)
+            npt.assert_equal(np.array(x_sl1), np.array(l_sl2))
+
+            # Test for lists of streamlines with different numbers of nodes:
+            sl2 = [sl1[0][:-1], sl1[1]]
+            ans2 = [ans1[0][:-1], ans1[1]]
+            vv = values_from_volume(data, sl2)
+            for ii, v in enumerate(vv):
+                npt.assert_almost_equal(v, ans2[ii], decimal=decimal)
+
+    # We raise an error if the streamlines fed don't make sense. In this
+    # case, a tuple instead of a list, generator or array
+    nonsense_sl = (np.array([[1, 0, 0],
+                             [1.5, 0, 0],
+                             [2, 0, 0],
+                             [2.5, 0, 0]]),
+                   np.array([[2, 0, 0],
+                             [3.1, 0, 0],
+                             [3.9, 0, 0],
+                             [4.1, 0, 0]]))
+
+    npt.assert_raises(RuntimeError, values_from_volume, data, nonsense_sl)
+
+    # For some use-cases we might have singleton streamlines (with only one
+    # node each):
+    data3D = np.ones((2, 2, 2))
+    streamlines = np.ones((10, 1, 3))
+    npt.assert_equal(values_from_volume(data3D, streamlines).shape, (10, 1))
+    data4D = np.ones((2, 2, 2, 2))
+    streamlines = np.ones((10, 1, 3))
+    npt.assert_equal(values_from_volume(data4D, streamlines).shape, (10, 1, 2))
 
 
 if __name__ == '__main__':

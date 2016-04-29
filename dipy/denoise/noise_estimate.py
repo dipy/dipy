@@ -24,7 +24,8 @@ opt_quantile = {1: 0.79681213002002,
               128: 0.5322811923303339}
 
 
-def piesno(data, N, alpha=0.01, l=100, itermax=100, eps=1e-5, return_mask=False):
+def piesno(data, N, alpha=0.01, l=100, itermax=100, eps=1e-5,
+           return_mask=False):
     """
     Probabilistic Identification and Estimation of Noise (PIESNO).
 
@@ -36,8 +37,8 @@ def piesno(data, N, alpha=0.01, l=100, itermax=100, eps=1e-5, return_mask=False)
 
     N : int
         The number of phase array coils of the MRI scanner.
-        If your scanner does a SENSE reconstruction, ALWAYS use N=1, as the noise
-        profile is always Rician.
+        If your scanner does a SENSE reconstruction, ALWAYS use N=1, as the
+        noise profile is always Rician.
         If your scanner does a GRAPPA reconstruction, set N as the number
         of phase array coils.
 
@@ -71,7 +72,8 @@ def piesno(data, N, alpha=0.01, l=100, itermax=100, eps=1e-5, return_mask=False)
     ------
     This function assumes two things : 1. The data has a noisy, non-masked
     background and 2. The data is a repetition of the same measurements
-    along the last axis, i.e. dMRI or fMRI data, not structural data like T1/T2.
+    along the last axis, i.e. dMRI or fMRI data, not structural data like
+    T1/T2.
 
     This function processes the data slice by slice, as originally designed in
     the paper. Use it to get a slice by slice estimation of the noise, as in
@@ -103,7 +105,8 @@ def piesno(data, N, alpha=0.01, l=100, itermax=100, eps=1e-5, return_mask=False)
         q = 0.5
 
     # Initial estimation of sigma
-    initial_estimation = np.percentile(data, q * 100) / np.sqrt(2 * _inv_nchi_cdf(N, 1, q))
+    initial_estimation = (np.percentile(data, q * 100) / 
+                          np.sqrt(2 * _inv_nchi_cdf(N, 1, q)))
 
     if data.ndim == 4:
 
@@ -111,7 +114,8 @@ def piesno(data, N, alpha=0.01, l=100, itermax=100, eps=1e-5, return_mask=False)
         mask_noise = np.zeros(data.shape[:-1], dtype=np.bool)
 
         for idx in range(data.shape[-2]):
-            sigma[idx], mask_noise[..., idx] = _piesno_3D(data[..., idx, :], N,
+            sigma[idx], mask_noise[..., idx] = _piesno_3D(data[..., idx, :], 
+                                                          N,
                                                           alpha=alpha,
                                                           l=l,
                                                           itermax=itermax,
@@ -120,7 +124,8 @@ def piesno(data, N, alpha=0.01, l=100, itermax=100, eps=1e-5, return_mask=False)
                                                           initial_estimation=initial_estimation)
 
     else:
-        sigma, mask_noise = _piesno_3D(data, N,
+        sigma, mask_noise = _piesno_3D(data,
+                                       N,
                                        alpha=alpha,
                                        l=l,
                                        itermax=itermax,
@@ -185,7 +190,8 @@ def _piesno_3D(data, N, alpha=0.01, l=100, itermax=100, eps=1e-5,
     ------
     This function assumes two things : 1. The data has a noisy, non-masked
     background and 2. The data is a repetition of the same measurements
-    along the last axis, i.e. dMRI or fMRI data, not structural data like T1/T2.
+    along the last axis, i.e. dMRI or fMRI data, not structural data like
+    T1/T2.
 
     References
     ------------
@@ -200,6 +206,12 @@ def _piesno_3D(data, N, alpha=0.01, l=100, itermax=100, eps=1e-5,
     and its applications in MRI."
     Journal of Magnetic Resonance 2009; 197: 108-119.
     """
+
+    if np.all(data == 0):
+        if return_mask:
+            return 0, np.zeros(data.shape[:-1], dtype=np.bool)
+
+        return 0
 
     if N in opt_quantile:
         q = opt_quantile[N]
@@ -217,53 +229,45 @@ def _piesno_3D(data, N, alpha=0.01, l=100, itermax=100, eps=1e-5,
     K = data.shape[-1]
     sum_m2 = np.sum(data**2, axis=-1, dtype=np.float32)
 
-    sigma = np.zeros(phi.shape, dtype=phi.dtype)
-    mask = np.zeros(phi.shape + data.shape[:-1])
+    sigma_prev = 0
+    sigma = m
+    prev_idx = 0
+    mask = np.zeros(data.shape[:-1], dtype=np.bool)
 
     lambda_minus = _inv_nchi_cdf(N, K, alpha/2)
     lambda_plus = _inv_nchi_cdf(N, K, 1 - alpha/2)
 
-    pos = 0
-    max_length_omega = 0
+    for sigma_init in phi:
 
-    for num, sig in enumerate(phi):
+        s = sum_m2 / (2 * K * sigma_init**2)
+        found_idx = np.sum(np.logical_and(lambda_minus <= s, s <= lambda_plus),
+                           dtype=np.int16)
 
-        sig_prev = 0
-        omega_size = 1
-        idx = np.zeros(sum_m2.shape, dtype=np.bool)
+        if found_idx > prev_idx:
+            sigma = sigma_init
+            prev_idx = found_idx
 
-        for n in range(itermax):
+    for n in range(itermax):
+        if np.abs(sigma - sigma_prev) < eps:
+            break
 
-            if np.abs(sig - sig_prev) < eps:
-                break
+        s = sum_m2 / (2 * K * sigma**2)
+        mask[...] = np.logical_and(lambda_minus <= s, s <= lambda_plus)
+        omega = data[mask, :]
 
-            s = sum_m2 / (2 * K * sig**2)
-            idx = np.logical_and(lambda_minus <= s, s <= lambda_plus)
-            omega = data[idx, :]
+        # If no point meets the criterion, exit
+        if omega.size == 0:
+            break
 
-            # If no point meets the criterion, exit
-            if omega.size == 0:
-                omega_size = 0
-                break
+        sigma_prev = sigma
 
-            sig_prev = sig
-
-            # Numpy percentile must range in 0 to 100, hence q*100
-            sig = np.percentile(omega, q * 100) / denom
-            omega_size = omega.size / K
-
-        # Remember the biggest omega array as giving the optimal
-        # sigma amongst all initial estimates from phi
-        if omega_size > max_length_omega:
-            pos, max_length_omega = num, omega_size
-
-        sigma[num] = sig
-        mask[num] = idx
+        # Numpy percentile must range in 0 to 100, hence q*100
+        sigma = np.percentile(omega, q * 100) / denom
 
     if return_mask:
-        return sigma[pos], mask[pos]
+        return sigma, mask
 
-    return sigma[pos]
+    return sigma
 
 
 def estimate_sigma(arr, disable_background_masking=False, N=0):
@@ -282,7 +286,8 @@ def estimate_sigma(arr, disable_background_masking=False, N=0):
         Number of coils of the receiver array. Use N = 1 in case of a SENSE
         reconstruction (Philips scanners) or the number of coils for a GRAPPA
         reconstruction (Siemens and GE). Use 0 to disable the correction factor,
-        as for example if the noise is Gaussian distributed. See [1] for more information.
+        as for example if the noise is Gaussian distributed. See [1] for more
+        information.
 
     Returns
     -------
@@ -297,9 +302,9 @@ def estimate_sigma(arr, disable_background_masking=False, N=0):
     (see [1]_, equation 18) with theta = 0.
     Since this function was introduced in [2]_ for T1 imaging,
     it is expected to perform ok on diffusion MRI data, but might oversmooth
-    some regions and leave others un-denoised for spatially varying noise profiles.
-    Consider using :func:`piesno` to estimate sigma instead if visual inacuracies
-    are apparent in the denoised result.
+    some regions and leave others un-denoised for spatially varying noise
+    profiles. Consider using :func:`piesno` to estimate sigma instead if visual
+    inaccuracies are apparent in the denoised result.
 
     Reference
     -------
@@ -307,9 +312,9 @@ def estimate_sigma(arr, disable_background_masking=False, N=0):
     scheme for signal extraction from noisy magnitude MR signals.
     Journal of Magnetic Resonance), 179(2), 317-22.
 
-    .. [2] Coupe, P., Yger, P., Prima, S., Hellier, P., Kervrann, C., Barillot, C., 2008.
-    An optimized blockwise nonlocal means denoising filter for 3-D magnetic
-    resonance images, IEEE Trans. Med. Imaging 27, 425-41.
+    .. [2] Coupe, P., Yger, P., Prima, S., Hellier, P., Kervrann, C., Barillot,
+    C., 2008. An optimized blockwise nonlocal means denoising filter for 3-D
+    magnetic resonance images, IEEE Trans. Med. Imaging 27, 425-41.
     """
     k = np.zeros((3, 3, 3), dtype=np.int8)
 
@@ -320,8 +325,9 @@ def estimate_sigma(arr, disable_background_masking=False, N=0):
     k[1, 1, 0] = 1
     k[1, 1, 2] = 1
 
-    # Precomputed factor from Koay 2006, this corrects the bias of magnitude image
-    correction_factor = {0: 1, # No correction
+    # Precomputed factor from Koay 2006, this corrects the bias of magnitude
+    # image
+    correction_factor = {0: 1,  # No correction
                          1: 0.42920367320510366,
                          4: 0.4834941393603609,
                          6: 0.4891759468548269,

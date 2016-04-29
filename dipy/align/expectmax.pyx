@@ -109,7 +109,7 @@ def quantize_positive_2d(floating[:, :] v, int num_levels):
                     out[i, j] = 0
                     hist[0] += 1
 
-    return out, levels, hist
+    return np.asarray(out), np.array(levels), np.array(hist)
 
 
 def quantize_positive_3d(floating[:, :, :] v, int num_levels):
@@ -209,7 +209,7 @@ def quantize_positive_3d(floating[:, :, :] v, int num_levels):
                     else:
                         out[k, i, j] = 0
                         hist[0] += 1
-    return out, levels, hist
+    return np.asarray(out), np.asarray(levels), np.asarray(hist)
 
 
 def compute_masked_class_stats_2d(int[:, :] mask, floating[:, :] v,
@@ -276,7 +276,7 @@ def compute_masked_class_stats_2d(int[:, :] mask, floating[:, :] v,
                 variances[i] /= counts[i]
             else:
                 variances[i] = INF64
-    return means, variances
+    return np.asarray(means), np.asarray(variances)
 
 
 def compute_masked_class_stats_3d(int[:, :, :] mask, floating[:, :, :] v,
@@ -345,7 +345,7 @@ def compute_masked_class_stats_3d(int[:, :, :] mask, floating[:, :, :] v,
                 variances[i] /= counts[i]
             else:
                 variances[i] = INF64
-    return means, variances
+    return np.asarray(means), np.asarray(variances)
 
 @cython.boundscheck(False)
 @cython.wraparound(False)
@@ -441,7 +441,7 @@ def compute_em_demons_step_2d(floating[:,:] delta_field,
                         prod = sigma_sq_x * delta
                         out[i, j, 0] = prod * gradient_moving[i, j, 0] / den
                         out[i, j, 1] = prod * gradient_moving[i, j, 1] / den
-    return out, energy
+    return np.asarray(out), energy
 
 @cython.boundscheck(False)
 @cython.wraparound(False)
@@ -549,4 +549,4 @@ def compute_em_demons_step_3d(floating[:,:,:] delta_field,
                                 gradient_moving[k, i, j, 1] / den)
                             out[k, i, j, 2] = (sigma_sq_x * delta *
                                 gradient_moving[k, i, j, 2] / den)
-    return out, energy
+    return np.asarray(out), energy

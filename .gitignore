@@ -27,3 +27,5 @@ pyx-stamps
 __config__.py
 .DS_Store
 .coverage
+.buildbot.patch
+.eggs/

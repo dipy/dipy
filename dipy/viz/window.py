@@ -6,13 +6,21 @@ from copy import copy
 
 try:
     import Tkinter as tkinter
+    has_tkinter = True
 except ImportError:
-    import tkinter
+    try:
+        import tkinter
+        has_tkinter = True
+    except ImportError:
+        has_tkinter = False
 
 try:
     import tkFileDialog as filedialog
 except ImportError:
-    from tkinter import filedialog
+    try:
+        from tkinter import filedialog
+    except ImportError:
+        has_tkinter = False
 
 # Conditional import machinery for vtk
 from dipy.utils.optpkg import optional_package
@@ -27,6 +35,8 @@ vtk, have_vtk, setup_module = optional_package('vtk')
 colors, have_vtk_colors, _ = optional_package('vtk.util.colors')
 numpy_support, have_ns, _ = optional_package('vtk.util.numpy_support')
 _, have_imread, _ = optional_package('Image')
+if not have_imread:
+    _, have_imread, _ = optional_package('PIL')
 
 if have_vtk:
     version = vtk.vtkVersion.GetVTKSourceVersion().split(' ')[-1]
@@ -359,7 +369,7 @@ class ShowManager(object):
         >>> showm = window.ShowManager(renderer)
         >>> # showm.initialize()
         >>> # showm.render()
-        >>> # start()
+        >>> # showm.start()
         """
 
         self.ren = ren

@@ -166,10 +166,10 @@ def normalized_vector(vec, axis=-1):
     >>> np.allclose(np.array(vec) / l2n, nvec)
     True
     >>> vec = np.array([[1, 2, 3]])
-    >>> vec.shape
-    (1, 3)
-    >>> normalized_vector(vec).shape
-    (1, 3)
+    >>> vec.shape == (1, 3)
+    True
+    >>> normalized_vector(vec).shape == (1, 3)
+    True
     '''
     return vec / vector_norm(vec, axis, keepdims=True)
 

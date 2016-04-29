@@ -21,7 +21,7 @@ from dipy.reconst.shm import (sph_harm_ind_list, real_sph_harm,
                               real_sym_sh_basis, sh_to_rh, forward_sdeconv_mat,
                               SphHarmModel)
 
-from dipy.reconst.peaks import peaks_from_model
+from dipy.direction.peaks import peaks_from_model
 from dipy.core.geometry import vec2vec_rotmat
 
 
@@ -352,11 +352,11 @@ def forward_sdt_deconv_mat(ratio, n, r2_term=False):
         The degree of spherical harmonic function associated with each row of
         the deconvolution matrix. Only even degrees are allowed.
     r2_term : bool
-        True if ODF comes from an ODF computed from a model using the $r^2$ term
-        in the integral. For example, DSI, GQI, SHORE, CSA, Tensor, Multi-tensor
-        ODFs. This results in using the proper analytical response function
-        solution solving from the single-fiber ODF with the r^2 term. This
-        derivation is not published anywhere but is very similar to [1]_.
+        True if ODF comes from an ODF computed from a model using the $r^2$
+        term in the integral. For example, DSI, GQI, SHORE, CSA, Tensor,
+        Multi-tensor ODFs. This results in using the proper analytical response
+        function solution solving from the single-fiber ODF with the r^2 term.
+        This derivation is not published anywhere but is very similar to [1]_.
 
     Returns
     -------
@@ -373,20 +373,20 @@ def forward_sdt_deconv_mat(ratio, n, r2_term=False):
     if np.any(n % 2):
         raise ValueError("n has odd degrees, expecting only even degrees")
     n_degrees = n.max() // 2 + 1
-    sdt = np.zeros(n_degrees) # SDT matrix
-    frt = np.zeros(n_degrees) # FRT (Funk-Radon transform) q-ball matrix
+    sdt = np.zeros(n_degrees)  # SDT matrix
+    frt = np.zeros(n_degrees)  # FRT (Funk-Radon transform) q-ball matrix
 
     for l in np.arange(0, n_degrees*2, 2):
-        if r2_term :
+        if r2_term:
             sharp = quad(lambda z: lpn(l, z)[0][-1] * gamma(1.5) *
-                         np.sqrt( ratio / (4 * np.pi ** 3) ) /
+                         np.sqrt(ratio / (4 * np.pi ** 3)) /
                          np.power((1 - (1 - ratio) * z ** 2), 1.5), -1., 1.)
-        else :
+        else:
             sharp = quad(lambda z: lpn(l, z)[0][-1] *
                          np.sqrt(1 / (1 - (1 - ratio) * z * z)), -1., 1.)
 
-        sdt[l / 2] = sharp[0]
-        frt[l / 2] = 2 * np.pi * lpn(l, 0)[0][-1]
+        sdt[l // 2] = sharp[0]
+        frt[l // 2] = 2 * np.pi * lpn(l, 0)[0][-1]
 
     idx = n // 2
     b = sdt[idx]
@@ -678,13 +678,13 @@ def odf_deconv(odf_sh, R, B_reg, lambda_=1., tau=0.1, r2_term=False):
 
 def odf_sh_to_sharp(odfs_sh, sphere, basis=None, ratio=3 / 15., sh_order=8,
                     lambda_=1., tau=0.1, r2_term=False):
-    r""" Sharpen odfs using the spherical deconvolution transform [1]_
+    r""" Sharpen odfs using the sharpening deconvolution transform [2]_
 
     This function can be used to sharpen any smooth ODF spherical function. In
     theory, this should only be used to sharpen QballModel ODFs, but in
     practice, one can play with the deconvolution ratio and sharpen almost any
     ODF-like spherical function. The constrained-regularization is stable and
-    will not only sharp the ODF peaks but also regularize the noisy peaks.
+    will not only sharpen the ODF peaks but also regularize the noisy peaks.
 
     Parameters
     ----------
@@ -811,11 +811,11 @@ def auto_response(gtab, data, roi_center=None, roi_radius=10, fa_thr=0.7,
 
     ten = TensorModel(gtab)
     if roi_center is None:
-        ci, cj, ck = np.array(data.shape[:3]) / 2
+        ci, cj, ck = np.array(data.shape[:3]) // 2
     else:
         ci, cj, ck = roi_center
     w = roi_radius
-    roi = data[ci - w: ci + w, cj - w: cj + w, ck - w: ck + w]
+    roi = data[int(ci - w): int(ci + w), int(cj - w): int(cj + w), int(ck - w): int(ck + w)]
     tenfit = ten.fit(roi)
     FA = fractional_anisotropy(tenfit.evals)
     FA[np.isnan(FA)] = 0
@@ -964,7 +964,7 @@ def recursive_response(gtab, data, mask=None, sh_order=8, peak_thr=0.01,
     where_dwi = lazy_index(~gtab.b0s_mask)
     response_p = np.ones(len(n))
 
-    for num_it in range(1, iter):
+    for num_it in range(iter):
         r_sh_all = np.zeros(len(n))
         csd_model = ConstrainedSphericalDeconvModel(gtab, res_obj,
                                                     sh_order=sh_order)
@@ -983,7 +983,7 @@ def recursive_response(gtab, data, mask=None, sh_order=8, peak_thr=0.01,
         data = data[single_peak_mask]
         dirs = dirs[single_peak_mask]
 
-        for num_vox in range(0, data.shape[0]):
+        for num_vox in range(data.shape[0]):
             rotmat = vec2vec_rotmat(dirs[num_vox, 0], np.array([0, 0, 1]))
 
             rot_gradients = np.dot(rotmat, gtab.gradients.T).T

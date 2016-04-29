@@ -1,15 +1,19 @@
+from copy import deepcopy
 from warnings import warn
+import types
 
+from scipy.spatial.distance import cdist
 import numpy as np
 from nibabel.affines import apply_affine
+
 from dipy.tracking.streamlinespeed import set_number_of_points
 from dipy.tracking.streamlinespeed import length
 from dipy.tracking.streamlinespeed import compress_streamlines
 import dipy.tracking.utils as ut
 from dipy.tracking.utils import streamline_near_roi
 from dipy.core.geometry import dist_to_corner
-from scipy.spatial.distance import cdist
-from copy import deepcopy
+import dipy.align.vector_fields as vfu
+
 
 def unlist_streamlines(streamlines):
     """ Return the streamlines not as a list but as an array and an offset
@@ -323,3 +327,139 @@ def orient_by_rois(streamlines, roi1, roi2, affine=None, copy=True):
             new_sl[idx] = sl[::-1]
 
     return new_sl
+
+
+def _extract_vals(data, streamlines, affine=None, threedvec=False):
+    """
+    Helper function for use with `values_from_volume`.
+
+    Parameters
+    ----------
+    data : 3D or 4D array
+        Scalar (for 3D) and vector (for 4D) values to be extracted. For 4D
+        data, interpolation will be done on the 3 spatial dimensions in each
+        volume.
+
+    streamlines : ndarray or list
+        If array, of shape (n_streamlines, n_nodes, 3)
+        If list, len(n_streamlines) with (n_nodes, 3) array in
+        each element of the list.
+
+    affine : ndarray, shape (4, 4)
+        Affine transformation from voxels (image coordinates) to streamlines.
+        Default: identity.
+
+    threedvec : bool
+        Whether the last dimension has length 3. This is a special case in
+        which we can use :func:`vfu.interpolate_vector_3d` for the
+        interploation of 4D volumes without looping over the elements of the
+        last dimension.
+
+    Return
+    ------
+    array or list (depending on the input) : values interpolate to each
+        coordinate along the length of each streamline
+    """
+    data = data.astype(np.float)
+    if (isinstance(streamlines, list) or
+            isinstance(streamlines, types.GeneratorType)):
+        if affine is not None:
+            streamlines = ut.move_streamlines(streamlines,
+                                              np.linalg.inv(affine))
+
+        vals = []
+        for sl in streamlines:
+            if threedvec:
+                vals.append(list(vfu.interpolate_vector_3d(data,
+                                 sl.astype(np.float))[0]))
+            else:
+                vals.append(list(vfu.interpolate_scalar_3d(data,
+                                 sl.astype(np.float))[0]))
+
+    elif isinstance(streamlines, np.ndarray):
+        sl_shape = streamlines.shape
+        sl_cat = streamlines.reshape(sl_shape[0] *
+                                     sl_shape[1], 3).astype(np.float)
+
+        if affine is not None:
+            inv_affine = np.linalg.inv(affine)
+            sl_cat = (np.dot(sl_cat, inv_affine[:3, :3]) +
+                      inv_affine[:3, 3])
+
+        # So that we can index in one operation:
+        if threedvec:
+            vals = np.array(vfu.interpolate_vector_3d(data, sl_cat)[0])
+        else:
+            vals = np.array(vfu.interpolate_scalar_3d(data, sl_cat)[0])
+        vals = np.reshape(vals, (sl_shape[0], sl_shape[1], -1))
+        if vals.shape[-1] == 1:
+            vals = np.reshape(vals, vals.shape[:-1])
+    else:
+        raise RuntimeError("Extracting values from a volume ",
+                           "requires streamlines input as an array, ",
+                           "a list of arrays, or a streamline generator.")
+
+    return vals
+
+
+def values_from_volume(data, streamlines, affine=None):
+    """Extract values of a scalar/vector along each streamline from a volume.
+
+    Parameters
+    ----------
+    data : 3D or 4D array
+        Scalar (for 3D) and vector (for 4D) values to be extracted. For 4D
+        data, interpolation will be done on the 3 spatial dimensions in each
+        volume.
+
+    streamlines : ndarray or list
+        If array, of shape (n_streamlines, n_nodes, 3)
+        If list, len(n_streamlines) with (n_nodes, 3) array in
+        each element of the list.
+
+    affine : ndarray, shape (4, 4)
+        Affine transformation from voxels (image coordinates) to streamlines.
+        Default: identity. For example, if no affine is provided and the first
+        coordinate of the first streamline is ``[1, 0, 0]``, data[1, 0, 0]
+        would be returned as the value for that streamline coordinate
+
+    Return
+    ------
+    array or list (depending on the input) : values interpolate to each
+        coordinate along the length of each streamline.
+
+    Notes
+    -----
+    Values are extracted from the image based on the 3D coordinates of the
+    nodes that comprise the points in the streamline, without any interpolation
+    into segments between the nodes. Using this function with streamlines that
+    have been resampled into a very small number of nodes will result in very
+    few values.
+    """
+    data = np.asarray(data)
+    if len(data.shape) == 4:
+        if data.shape[-1] == 3:
+            return _extract_vals(data, streamlines, affine=affine,
+                                 threedvec=True)
+        if isinstance(streamlines, types.GeneratorType):
+            streamlines = list(streamlines)
+        vals = []
+        for ii in range(data.shape[-1]):
+            vals.append(_extract_vals(data[..., ii], streamlines,
+                        affine=affine))
+
+        if isinstance(vals[-1], np.ndarray):
+            return np.swapaxes(np.array(vals), 2, 1).T
+        else:
+            new_vals = []
+            for sl_idx in range(len(streamlines)):
+                sl_vals = []
+                for ii in range(data.shape[-1]):
+                    sl_vals.append(vals[ii][sl_idx])
+                new_vals.append(np.array(sl_vals).T)
+            return new_vals
+
+    elif len(data.shape) == 3:
+        return _extract_vals(data, streamlines, affine=affine)
+    else:
+        raise ValueError("Data needs to have 3 or 4 dimensions")

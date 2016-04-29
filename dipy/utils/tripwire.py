@@ -1,7 +1,8 @@
 """ Class to raise error for missing modules or other misfortunes
 """
 
-class TripWireError(Exception):
+
+class TripWireError(AttributeError):
     """ Exception if trying to use TripWire object """
 
 

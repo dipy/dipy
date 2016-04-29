@@ -7,11 +7,11 @@ import numpy as np
 import numpy.linalg as npl
 import scipy as sp
 import nibabel as nib
-from . import vector_fields as vfu
-from . import floating
-from . import VerbosityLevels
-from . import Bunch
-from .scalespace import ScaleSpace
+from dipy.align import vector_fields as vfu
+from dipy.align import floating
+from dipy.align import VerbosityLevels
+from dipy.align import Bunch
+from dipy.align.scalespace import ScaleSpace
 
 RegistrationStages = Bunch(INIT_START=0,
                            INIT_END=1,
@@ -198,6 +198,32 @@ class DiffeomorphicMap(object):
         self.forward = None
         self.backward = None
 
+    def interpret_matrix(self, obj):
+        ''' Try to interpret `obj` as a matrix
+
+        Some operations are performed faster if we know in advance if a matrix
+        is the identity (so we can skip the actual matrix-vector
+        multiplication). This function returns None if the given object
+        is None or the 'identity' string. It returns the same object if it is
+        a numpy array. It raises an exception otherwise.
+
+        Parameters
+        ----------
+        obj : object
+            any object
+
+        Returns
+        ----------
+        obj : object
+            the same object given as argument if `obj` is None or a numpy
+            array. None if `obj` is the 'identity' string.
+        '''
+        if (obj is None) or isinstance(obj, np.ndarray):
+            return obj
+        if isinstance(obj, str) and (obj == 'identity'):
+            return None
+        raise ValueError('Invalid matrix')
+
     def get_forward_field(self):
         r"""Deformation field to transform an image in the forward direction
 
@@ -326,10 +352,10 @@ class DiffeomorphicMap(object):
         if out_grid2world is None:
             out_grid2world = self.domain_grid2world
 
-        W = None if image_world2grid == 'identity' else image_world2grid
+        W = self.interpret_matrix(image_world2grid)
         Dinv = self.disp_world2grid
         P = self.prealign
-        S = None if out_grid2world == 'identity' else out_grid2world
+        S = self.interpret_matrix(out_grid2world)
 
         # this is the matrix which we need to multiply the voxel coordinates
         # to interpolate on the forward displacement field ("in"side the
@@ -438,10 +464,10 @@ class DiffeomorphicMap(object):
         if out_grid2world is None:
             out_grid2world = self.codomain_grid2world
 
-        W = None if image_world2grid == 'identity' else image_world2grid
+        W = self.interpret_matrix(image_world2grid)
         Dinv = self.disp_world2grid
         Pinv = self.prealign_inv
-        S = None if out_grid2world == 'identity' else out_grid2world
+        S = self.interpret_matrix(out_grid2world)
 
         # this is the matrix which we need to multiply the voxel coordinates
         # to interpolate on the backward displacement field ("in"side the
@@ -1434,4 +1460,6 @@ class SymmetricDiffeomorphicRegistration(DiffeomorphicRegistration):
                              static_grid2world, moving_grid2world, prealign)
         self._optimize()
         self._end_optimizer()
+        self.static_to_ref.forward = np.array(self.static_to_ref.forward)
+        self.static_to_ref.backward = np.array(self.static_to_ref.backward)
         return self.static_to_ref

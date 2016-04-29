@@ -18,13 +18,16 @@ or only the 'valid' ones.
 
 This example is an extension of the
 :ref:`example_deterministic_fiber_tracking` example. We begin by loading the
-data, fitting a Constrained Spherical Deconvolution (CSD) reconstruction
+data, creating a seeding mask from white matter voxels of the corpus callosum,
+fitting a Constrained Spherical Deconvolution (CSD) reconstruction
 model and creating the maximum deterministic direction getter.
 """
 
 import numpy as np
 
-from dipy.data import read_stanford_labels, default_sphere
+from dipy.data import (read_stanford_labels,
+                       default_sphere,
+                       read_stanford_pve_maps)
 from dipy.direction import DeterministicMaximumDirectionGetter
 from dipy.io.trackvis import save_trk
 from dipy.reconst.csdeconv import (ConstrainedSphericalDeconvModel,
@@ -37,12 +40,14 @@ from dipy.viz.colormap import line_colors
 ren = fvtk.ren()
 
 hardi_img, gtab, labels_img = read_stanford_labels()
+_, _, img_pve_wm = read_stanford_pve_maps()
 data = hardi_img.get_data()
 labels = labels_img.get_data()
 affine = hardi_img.get_affine()
+white_matter = img_pve_wm.get_data()
 
-seed_mask = labels == 2
-white_matter = (labels == 1) | (labels == 2)
+seed_mask = np.logical_and(labels == 2, white_matter == 1)
+
 seeds = utils.seeds_from_mask(seed_mask, density=2, affine=affine)
 
 response, ratio = auto_response(gtab, data, roi_radius=10, fa_thr=0.7)
@@ -154,7 +159,7 @@ nearest-neighborhood interpolation at the tracking position.
 
 from dipy.tracking.local import BinaryTissueClassifier
 
-binary_classifier = BinaryTissueClassifier(white_matter)
+binary_classifier = BinaryTissueClassifier(white_matter == 1)
 
 fig = plt.figure()
 plt.xticks([])
@@ -222,7 +227,6 @@ at the tracking position.
 - 'INVALIDPOINT': exclude_map > 0.5.
 """
 
-from dipy.data import read_stanford_pve_maps
 from dipy.tracking.local import ActTissueClassifier
 
 img_pve_csf, img_pve_gm, img_pve_wm = read_stanford_pve_maps()

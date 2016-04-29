@@ -2,7 +2,7 @@ import numpy as np
 from dipy.data import get_sphere, get_3shell_gtab, get_isbi2013_2shell_gtab
 from dipy.reconst.shore import ShoreModel
 from dipy.reconst.shm import QballModel, sh_to_sf
-from dipy.reconst.peaks import gfa, peak_directions
+from dipy.direction.peaks import gfa, peak_directions
 from numpy.testing import (assert_equal,
                            assert_almost_equal,
                            run_module_suite,
@@ -34,15 +34,14 @@ def test_shore_odf():
     odf_from_sh = sh_to_sf(odf_sh, sphere, 6, basis_type=None)
     assert_almost_equal(odf, odf_from_sh, 10)
 
-
-    directions, _ , _ = peak_directions(odf, sphere, .35, 25)
+    directions, _, _ = peak_directions(odf, sphere, .35, 25)
     assert_equal(len(directions), 2)
     assert_almost_equal(
         angular_similarity(directions, golden_directions), 2, 1)
 
     # 5 subdivisions
     odf = asmfit.odf(sphere2)
-    directions, _ , _ = peak_directions(odf, sphere2, .35, 25)
+    directions, _, _ = peak_directions(odf, sphere2, .35, 25)
     assert_equal(len(directions), 2)
     assert_almost_equal(
         angular_similarity(directions, golden_directions), 2, 1)
@@ -59,7 +58,7 @@ def test_shore_odf():
             assert_equal(gfa(odf) < 0.1, True)
 
 
-def test_multivox_shore():    
+def test_multivox_shore():
     gtab = get_3shell_gtab()
 
     data = np.random.random([20, 30, 1, gtab.gradients.shape[0]])

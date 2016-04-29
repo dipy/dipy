@@ -6,22 +6,31 @@
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions are met:
 #
-#  * Redistributions of source code must retain the above copyright notice, this
-#    list of conditions and the following disclaimer.
+#  * Redistributions of source code must retain the above copyright notice,
+#    this list of conditions and the following disclaimer.
 #  * Redistributions in binary form must reproduce the above copyright notice,
 #    this list of conditions and the following disclaimer in the documentation
 #    and/or other materials provided with the distribution.
 #
 # THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
 # AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
-# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
-# DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
-# FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
-# DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
-# SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
-# CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
-# OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
-# OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+# ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+# LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+# CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+# SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+# INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER
+# IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+# ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+# POSSIBILITY OF SUCH DAMAGE.
+
+import copy as _copy
+import os as _os
+import re as _re
+import sys as _sys
+import textwrap as _textwrap
+
+from gettext import gettext as _
 
 """Command-line parsing library
 
@@ -97,15 +106,6 @@ __all__ = [
     'ArgumentDefaultsHelpFormatter',
 ]
 
-
-import copy as _copy
-import os as _os
-import re as _re
-import sys as _sys
-import textwrap as _textwrap
-
-from gettext import gettext as _
-
 try:
     _set = set
 except NameError:
@@ -147,6 +147,7 @@ PARSER = '==PARSER=='
 # =============================
 # Utility functions and classes
 # =============================
+
 
 class _AttributeHolder(object):
     """Abstract base class that provides __repr__.
@@ -644,7 +645,7 @@ class HelpFormatter(object):
     def _fill_text(self, text, width, indent):
         text = self._whitespace_matcher.sub(' ', text).strip()
         return _textwrap.fill(text, width, initial_indent=indent,
-                                           subsequent_indent=indent)
+                              subsequent_indent=indent)
 
     def _get_help_string(self, action):
         return action.help
@@ -697,7 +698,7 @@ def _get_action_name(argument):
     if argument is None:
         return None
     elif argument.option_strings:
-        return  '/'.join(argument.option_strings)
+        return '/'.join(argument.option_strings)
     elif argument.metavar not in (None, SUPPRESS):
         return argument.metavar
     elif argument.dest not in (None, SUPPRESS):
@@ -728,6 +729,7 @@ class ArgumentError(Exception):
 # ==============
 # Action classes
 # ==============
+
 
 class Action(_AttributeHolder):
     """Information about how to convert command line strings to Python objects.
@@ -1148,6 +1150,7 @@ class FileType(object):
 # ===========================
 # Optional and Positional Parsing
 # ===========================
+
 
 class Namespace(_AttributeHolder):
     """Simple object for storing attributes.
@@ -2019,7 +2022,8 @@ class ArgumentParser(_AttributeHolder, _ActionsContainer):
         # if multiple actions match, the option string was ambiguous
         if len(option_tuples) > 1:
             options = ', '.join([option_string
-                for action, option_string, explicit_arg in option_tuples])
+                                for action, option_string, explicit_arg in
+                                option_tuples])
             tup = arg_string, options
             self.error(_('ambiguous option: %s could match %s') % tup)
 
@@ -2176,7 +2180,7 @@ class ArgumentParser(_AttributeHolder, _ActionsContainer):
     def _get_value(self, action, arg_string):
         type_func = self._registry_get('type', action.type, action.type)
         if not hasattr(type_func, '__call__'):
-            if not hasattr(type_func, '__bases__'): # classic classes
+            if not hasattr(type_func, '__bases__'):  # classic classes
                 msg = _('%r is not callable')
                 raise ArgumentError(action, msg % type_func)
 

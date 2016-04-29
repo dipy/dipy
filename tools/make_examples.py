@@ -69,7 +69,8 @@ eg_index_contents = open(EG_INDEX_FNAME, 'rt').read()
 # also to be added in the following file (valid_examples.txt). This helps
 # with debugging the examples and the documentation only a few examples at
 # the time.
-flist_name = pjoin(os.path.dirname(os.getcwd()), 'examples', 'valid_examples.txt')
+flist_name = pjoin(os.path.dirname(os.getcwd()), 'examples',
+                   'valid_examples.txt')
 flist = open(flist_name, "r")
 validated_examples = flist.readlines()
 flist.close()
@@ -99,22 +100,32 @@ for example in validated_examples:
         print(msg)
 
 # Run the conversion from .py to rst file
-check_call('python ../../tools/ex2rst --project dipy --outdir . .',
-            shell=True)
+check_call('python ../../tools/ex2rst --project dipy --outdir . .', shell=True)
 
-#added the path so that scripts can import other scripts on the same directory
+# added the path so that scripts can import other scripts on the same directory
 sys.path.insert(0, os.getcwd())
 
 # Execute each python script in the directory.
 if not os.path.isdir('fig'):
     os.mkdir('fig')
 
-for script in validated_examples:
-    figure_basename = os.path.join('fig', os.path.splitext(script)[0])
-    print script
+use_xvfb = os.environ.get('TEST_WITH_XVFB', False)
 
-    execfile(script)
-    plt.close('all')
+if use_xvfb:
+    from xvfbwrapper import Xvfb
+    display = Xvfb(width=1920, height=1080)
+    display.start()
+
+for script in validated_examples:
+    namespace = {}
+    figure_basename = os.path.join('fig', os.path.splitext(script)[0])
+    print(script)
+    execfile(script, namespace)
+    del namespace
+    # plt.close('all')
+
+if use_xvfb:
+    display.stop()
 
 # clean up stray images, pickles, npy files, etc
 for globber in ('*.nii.gz', '*.dpy', '*.npy', '*.pkl', '*.mat', '*.img',

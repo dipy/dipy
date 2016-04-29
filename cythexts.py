@@ -1,7 +1,6 @@
 import os
 from os.path import splitext, sep as filesep, join as pjoin, relpath
 from hashlib import sha1
-from subprocess import check_call
 
 from distutils.command.build_ext import build_ext
 from distutils.command.sdist import sdist
@@ -95,6 +94,8 @@ def cyproc_exts(exts, cython_min_version,
         Can be ``build_ext`` input (if we have good c files) or cython
         ``build_ext`` if we have a good cython, or a class raising an informative
         error on ``run()``
+    need_cython : bool
+        True if we need Cython to build extensions, False otherwise.
     """
     if stamped_pyx_ok(exts, hash_stamps_fname):
         # Replace pyx with c files, use standard builder
@@ -107,7 +108,7 @@ def cyproc_exts(exts, cython_min_version,
                 else:
                     sources.append(source)
             mod.sources = sources
-        return build_ext
+        return build_ext, False
     # We need cython
     try:
         from Cython.Compiler.Version import version as cyversion
@@ -115,14 +116,14 @@ def cyproc_exts(exts, cython_min_version,
         return derror_maker(build_ext,
                             'Need cython>={0} to build extensions '
                             'but cannot import "Cython"'.format(
-                            cython_min_version))
+                            cython_min_version)), True
     if LooseVersion(cyversion) >= cython_min_version:
         from Cython.Distutils import build_ext as extbuilder
-        return extbuilder
+        return extbuilder, True
     return derror_maker(build_ext,
                         'Need cython>={0} to build extensions'
                         'but found cython version {1}'.format(
-                        cython_min_version, cyversion))
+                        cython_min_version, cyversion)), True
 
 
 def build_stamp(pyxes, include_dirs=()):
@@ -143,12 +144,17 @@ def build_stamp(pyxes, include_dirs=()):
         hash>; "c_filename", <c filemane>; "c_hash", <c file SHA1 hash>.
     """
     pyx_defs = {}
+    from Cython.Compiler.Main import compile
+    from Cython.Compiler.CmdLine import parse_command_line
     includes = sum([['--include-dir', d] for d in include_dirs], [])
     for source in pyxes:
         base, ext = splitext(source)
         pyx_hash = sha1(open(source, 'rt').read()).hexdigest()
         c_filename = base + '.c'
-        check_call(['cython'] + includes + [source])
+        options, sources = parse_command_line(includes + [source])
+        result = compile(sources, options)
+        if result.num_errors > 0:
+            raise RuntimeError('Cython failed to compile ' + source)
         c_hash = sha1(open(c_filename, 'rt').read()).hexdigest()
         pyx_defs[source] = dict(pyx_hash=pyx_hash,
                                 c_filename=c_filename,

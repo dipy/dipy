@@ -5,6 +5,7 @@
  reconst_csa.py
  reconst_csd_parallel.py
  reconst_csd.py
+ reconst_dki.py
  reconst_dsi_metrics.py
  reconst_dsi.py
  reconst_dti.py
@@ -44,3 +45,4 @@
  viz_slice.py
  viz_bundles.py
  viz_widgets.py
+ contextual_enhancement.py

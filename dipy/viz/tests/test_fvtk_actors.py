@@ -9,10 +9,19 @@ from dipy.tracking.streamline import center_streamlines, transform_streamlines
 from dipy.align.tests.test_streamlinear import fornix_streamlines
 from dipy.testing.decorators import xvfb_it
 
-run_test = actor.have_vtk and actor.have_vtk_colors and window.have_imread
+use_xvfb = os.environ.get('TEST_WITH_XVFB', False)
+if use_xvfb == 'skip':
+    skip_it = True
+else:
+    skip_it = False
+
+run_test = (actor.have_vtk and
+            actor.have_vtk_colors and
+            window.have_imread and
+            not skip_it)
 
 if actor.have_vtk:
-    if actor.major_version == 5 and os.environ.get('TEST_WITH_XVFB', False):
+    if actor.major_version == 5 and use_xvfb:
         skip_slicer = True
     else:
         skip_slicer = False
@@ -107,9 +116,49 @@ def test_slicer():
     report = window.analyze_snapshot(arr, find_objects=True)
     npt.assert_equal(report.objects, 1)
 
+    renderer.clear()
 
-@xvfb_it
+    data = (255 * np.random.rand(50, 50, 50))
+    affine = np.diag([1, 3, 2, 1])
+    slicer = actor.slicer(data, affine, interpolation='nearest')
+    slicer.display(None, None, 25)
+
+    renderer.add(slicer)
+    renderer.reset_camera()
+    renderer.reset_clipping_range()
+
+    arr = window.snapshot(renderer, offscreen=False)
+    report = window.analyze_snapshot(arr, find_objects=True)
+    npt.assert_equal(report.objects, 1)
+    npt.assert_equal(data.shape, slicer.shape)
+
+    renderer.clear()
+
+    data = (255 * np.random.rand(50, 50, 50))
+    affine = np.diag([1, 3, 2, 1])
+
+    from dipy.align.reslice import reslice
+
+    data2, affine2 = reslice(data, affine, zooms=(1, 3, 2),
+                             new_zooms=(1, 1, 1))
+
+    slicer = actor.slicer(data2, affine2, interpolation='linear')
+    slicer.display(None, None, 25)
+
+    renderer.add(slicer)
+    renderer.reset_camera()
+    renderer.reset_clipping_range()
+
+    # window.show(renderer, reset_camera=False)
+    arr = window.snapshot(renderer, offscreen=False)
+    report = window.analyze_snapshot(arr, find_objects=True)
+    npt.assert_equal(report.objects, 1)
+    npt.assert_array_equal([1, 3, 2] * np.array(data.shape),
+                           np.array(slicer.shape))
+
+
 @npt.dec.skipif(not run_test)
+@xvfb_it
 def test_streamtube_and_line_actors():
     renderer = window.renderer()
 

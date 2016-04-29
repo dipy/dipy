@@ -10,7 +10,7 @@ from scipy.special import sph_harm as sph_harm_sp
 from dipy.core.sphere import hemi_icosahedron
 from dipy.core.gradients import gradient_table
 from dipy.sims.voxel import single_tensor
-from dipy.reconst.peaks import peak_directions
+from dipy.direction.peaks import peak_directions
 from dipy.reconst.shm import sf_to_sh, sh_to_sf
 from dipy.reconst.interpolate import NearestNeighborInterpolator
 from dipy.sims.voxel import multi_tensor_odf
@@ -27,6 +27,7 @@ from dipy.reconst.shm import (real_sph_harm, real_sym_sh_basis,
                               CsaOdfModel, QballModel, SphHarmFit,
                               spherical_harmonics, anisotropic_power,
                               calculate_max_order)
+
 
 def test_order_from_ncoeff():
     """
@@ -66,7 +67,7 @@ def test_real_sph_harm():
                               0.5 / sqrt(pi))
     assert_array_almost_equal(rsh(-2, 2, pi / 5, pi / 3),
                               0.25 * sqrt(15. / (2. * pi)) *
-                             (sin(pi / 5.)) ** 2. * cos(0 + 2. * pi / 3) *
+                              (sin(pi / 5.)) ** 2. * cos(0 + 2. * pi / 3) *
                               sqrt(2))
     assert_array_almost_equal(rsh(2, 2, pi / 5, pi / 3),
                               -1 * 0.25 * sqrt(15. / (2. * pi)) *
@@ -278,7 +279,7 @@ def test_SphHarmFit():
     assert_equal(item.shape, ())
     slice = fit[0]
     assert_equal(slice.shape, (4, 5))
-    slice = fit[..., 0]
+    slice = fit[:, :, 0]
     assert_equal(slice.shape, (3, 4))
 
 
@@ -417,6 +418,7 @@ def test_faster_sph_harm():
     sh2 = sph_harm_sp(m, n, theta[:, None], phi[:, None])
 
     assert_array_almost_equal(sh, sh2, 8)
+
 
 def test_anisotropic_power():
     for n_coeffs in [6, 15, 28, 45, 66, 91]:

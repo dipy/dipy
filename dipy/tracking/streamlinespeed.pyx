@@ -183,7 +183,7 @@ cdef void c_set_number_of_points(Streamline streamline, Streamline out) nogil:
             j += 1
             k += 1
 
-    # Last resampled point always the one from orignal streamline.
+    # Last resampled point always the one from original streamline.
     for dim in range(D):
         out[new_N-1,dim] = streamline[N-1,dim]
 
@@ -208,7 +208,7 @@ def set_number_of_points(streamlines, nb_points=3):
     Returns
     -------
     modified_streamlines : one or a list of array-like shape (`nb_points`,3)
-       array representing x,y,z of `nb_points` points that where interpolated.
+       array representing x,y,z of `nb_points` points that were interpolated.
 
     Examples
     --------
@@ -240,6 +240,9 @@ def set_number_of_points(streamlines, nb_points=3):
     if len(streamlines) == 0:
         return []
 
+    if nb_points < 2:
+        raise ValueError("nb_points must be at least 2")
+        
     dtype = streamlines[0].dtype
     for streamline in streamlines:
         if streamline.dtype != dtype:

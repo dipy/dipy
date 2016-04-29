@@ -7,6 +7,7 @@ Simple volume slicing
 Here we present an example for visualizing slices from 3D images.
 
 """
+from __future__ import division
 
 import os
 import nibabel as nib
@@ -69,11 +70,11 @@ copy the actor first.
 slice_actor2 = slice_actor.copy()
 
 """
-Now we have a new ``slice_actor`` which displays the middle slice of saggital
+Now we have a new ``slice_actor`` which displays the middle slice of sagittal
 plane.
 """
 
-slice_actor2.display(slice_actor2.shape[0]/2, None, None)
+slice_actor2.display(slice_actor2.shape[0]//2, None, None)
 
 renderer.add(slice_actor2)
 

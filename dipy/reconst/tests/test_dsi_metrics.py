@@ -4,7 +4,6 @@ from dipy.data import get_data
 from dipy.core.gradients import gradient_table
 from numpy.testing import (assert_almost_equal,
                            run_module_suite)
-from dipy.reconst.dsi import DiffusionSpectrumModel
 from dipy.sims.voxel import (SticksAndBall,
                              MultiTensor)
 
@@ -15,12 +14,13 @@ def test_dsi_metrics():
     data, golden_directions = SticksAndBall(gtab, d=0.0015, S0=100,
                                             angles=[(0, 0), (60, 0)],
                                             fractions=[50, 50], snr=None)
-    data = data / float(data[0])
+
     dsmodel = DiffusionSpectrumModel(gtab, qgrid_size=21, filter_width=4500)
     rtop_signal_norm = dsmodel.fit(data).rtop_signal()
     rtop_pdf_norm = dsmodel.fit(data).rtop_pdf()
     rtop_pdf = dsmodel.fit(data).rtop_pdf(normalized=False)
-    assert_almost_equal(rtop_signal_norm, rtop_pdf, 10)
+    assert_almost_equal(rtop_signal_norm, rtop_pdf, 6)
+    dsmodel = DiffusionSpectrumModel(gtab, qgrid_size=21, filter_width=4500)
     mevals = np.array(([0.0015, 0.0003, 0.0003], [0.0015, 0.0003, 0.0003]))
     S_0, sticks_0 = MultiTensor(gtab, mevals, S0=100,
                                 angles=[(0, 0), (60, 0)],

@@ -134,12 +134,12 @@ cdef class CythonMetric(Metric):
         -----
         This method calls its Cython version `self.c_are_compatible` accordingly.
         """
-        if type(shape1) is int:
+        if np.asarray(shape1).ndim == 0:
             shape1 = (1, shape1)
         elif len(shape1) == 1:
             shape1 = (1,) + shape1
 
-        if type(shape2) is int:
+        if np.asarray(shape2).ndim == 0:
             shape2 = (1, shape2)
         elif len(shape2) == 1:
             shape2 = (1,) + shape2
@@ -165,6 +165,29 @@ cdef class CythonMetric(Metric):
         -----
         This method calls its Cython version `self.c_dist` accordingly.
         """
+        # If needed, we convert features to 2D arrays.
+        features1 = np.asarray(features1)
+        if features1.ndim == 0:
+            features1 = features1[np.newaxis, np.newaxis]
+        elif features1.ndim == 1:
+            features1 = features1[np.newaxis]
+        elif features1.ndim == 2:
+            pass
+        else:
+            raise TypeError("Only scalar, 1D or 2D array features are"
+                            " supported for parameter 'features1'!")
+
+        features2 = np.asarray(features2)
+        if features2.ndim == 0:
+            features2 = features2[np.newaxis, np.newaxis]
+        elif features2.ndim == 1:
+            features2 = features2[np.newaxis]
+        elif features2.ndim == 2:
+            pass
+        else:
+            raise TypeError("Only scalar, 1D or 2D array features are"
+                            " supported for parameter 'features2'!")
+
         if not self.are_compatible(features1.shape, features2.shape):
             raise ValueError("Features are not compatible according to this metric!")
 
@@ -406,18 +429,14 @@ cpdef double dist(Metric metric, datum1, datum2) except -1:
     double
         Distance between two data points.
     """
-    shape1 = metric.feature.infer_shape(datum1)
-    shape2 = metric.feature.infer_shape(datum2)
-
-    if not metric.are_compatible(shape1, shape2):
-        raise ValueError("Data features' shapes must be compatible!")
-
     datum1 = datum1 if datum1.flags.writeable and datum1.dtype is np.float32 else datum1.astype(np.float32)
     datum2 = datum2 if datum2.flags.writeable and datum2.dtype is np.float32 else datum2.astype(np.float32)
 
     cdef:
-        Data2D features1 = np.empty(shape1, np.float32)
-        Data2D features2 = np.empty(shape2, np.float32)
+        Shape shape1 = metric.feature.c_infer_shape(datum1)
+        Shape shape2 = metric.feature.c_infer_shape(datum2)
+        Data2D features1 = np.empty(shape2tuple(shape1), np.float32)
+        Data2D features2 = np.empty(shape2tuple(shape2), np.float32)
 
     metric.feature.c_extract(datum1, features1)
     metric.feature.c_extract(datum2, features2)

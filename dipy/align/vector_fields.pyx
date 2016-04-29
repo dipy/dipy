@@ -56,7 +56,7 @@ def interpolate_vector_2d(floating[:, :, :] field, double[:, :] locations):
         for i in range(n):
             inside[i] = _interpolate_vector_2d[floating](field,
                 locations[i, 0], locations[i, 1], out[i])
-    return out, inside
+    return np.asarray(out), np.asarray(inside)
 
 
 cdef inline int _interpolate_vector_2d(floating[:, :, :] field, double dii,
@@ -166,7 +166,7 @@ def interpolate_scalar_2d(floating[:, :] image, double[:, :] locations):
         for i in range(n):
             inside[i] = _interpolate_scalar_2d[floating](image,
                 locations[i, 0], locations[i, 1], &out[i])
-    return out, inside
+    return np.asarray(out), np.asarray(inside)
 
 
 cdef inline int _interpolate_scalar_2d(floating[:, :] image, double dii,
@@ -270,7 +270,7 @@ def interpolate_scalar_nn_2d(number[:, :] image, double[:, :] locations):
         for i in range(n):
             inside[i] = _interpolate_scalar_nn_2d[number](image,
                 locations[i, 0], locations[i, 1], &out[i])
-    return out, inside
+    return np.asarray(out), np.asarray(inside)
 
 
 cdef inline int _interpolate_scalar_nn_2d(number[:, :] image, double dii,
@@ -363,7 +363,7 @@ def interpolate_scalar_nn_3d(number[:, :, :] image, double[:, :] locations):
         for i in range(n):
             inside[i] = _interpolate_scalar_nn_3d[number](image,
                 locations[i, 0], locations[i, 1], locations[i, 2], &out[i])
-    return out, inside
+    return np.asarray(out), np.asarray(inside)
 
 
 cdef inline int _interpolate_scalar_nn_3d(number[:, :, :] volume, double dkk,
@@ -431,7 +431,7 @@ cdef inline int _interpolate_scalar_nn_3d(number[:, :, :] volume, double dkk,
     return 1
 
 
-def interpolate_scalar_3d(floating[:, :, :] image, double[:, :] locations):
+def interpolate_scalar_3d(floating[:, :, :] image, locations):
     r"""Trilinear interpolation of a 3D scalar image
 
     Interpolates the 3D image at the given locations. This function is
@@ -461,11 +461,12 @@ def interpolate_scalar_3d(floating[:, :, :] image, double[:, :] locations):
         cnp.npy_intp n = locations.shape[0]
         floating[:] out = np.zeros(shape=(n,), dtype=ftype)
         int[:] inside = np.empty(shape=(n,), dtype=np.int32)
+        double[:,:] _locations = np.array(locations, dtype=np.float64)
     with nogil:
         for i in range(n):
             inside[i] = _interpolate_scalar_3d[floating](image,
-                locations[i, 0], locations[i, 1], locations[i, 2], &out[i])
-    return out, inside
+                _locations[i, 0], _locations[i, 1], _locations[i, 2], &out[i])
+    return np.asarray(out), np.asarray(inside)
 
 
 cdef inline int _interpolate_scalar_3d(floating[:, :, :] volume,
@@ -598,7 +599,7 @@ def interpolate_vector_3d(floating[:, :, :, :] field, double[:, :] locations):
         for i in range(n):
             inside[i] = _interpolate_vector_3d[floating](field,
                 locations[i, 0], locations[i, 1], locations[i, 2], out[i])
-    return out, inside
+    return np.asarray(out), np.asarray(inside)
 
 
 cdef inline int _interpolate_vector_3d(floating[:, :, :, :] field, double dkk,
@@ -909,7 +910,7 @@ def compose_vector_fields_2d(floating[:, :, :] d1, floating[:, :, :] d2,
 
     _compose_vector_fields_2d[floating](d1, d2, premult_index, premult_disp,
                                         time_scaling, comp, stats)
-    return comp, stats
+    return np.asarray(comp), np.asarray(stats)
 
 
 cdef void _compose_vector_fields_3d(floating[:, :, :, :] d1,
@@ -1121,7 +1122,7 @@ def compose_vector_fields_3d(floating[:, :, :, :] d1, floating[:, :, :, :] d2,
 
     _compose_vector_fields_3d[floating](d1, d2, premult_index, premult_disp,
                                         time_scaling, comp, stats)
-    return comp, stats
+    return np.asarray(comp), np.asarray(stats)
 
 
 def invert_vector_field_fixed_point_2d(floating[:, :, :] d,
@@ -1225,7 +1226,7 @@ def invert_vector_field_fixed_point_2d(floating[:, :, :] d,
             iter_count += 1
         stats[0] = substats[1]
         stats[1] = iter_count
-    return p
+    return np.asarray(p)
 
 
 def invert_vector_field_fixed_point_3d(floating[:, :, :, :] d,
@@ -1339,7 +1340,7 @@ def invert_vector_field_fixed_point_3d(floating[:, :, :, :] d,
             iter_count += 1
         stats[0] = error
         stats[1] = iter_count
-    return p
+    return np.asarray(p)
 
 
 def simplify_warp_function_2d(floating[:, :, :] d,
@@ -1455,7 +1456,7 @@ def simplify_warp_function_2d(floating[:, :, :] d,
                 else:
                     out[i, j, 0] = di
                     out[i, j, 1] = dj
-    return out
+    return np.asarray(out)
 
 
 def simplify_warp_function_3d(floating[:, :, :, :] d,
@@ -1553,7 +1554,7 @@ def simplify_warp_function_3d(floating[:, :, :, :] d,
                             k, i, j, 1, affine_idx_in)
                         dj = _apply_affine_3d_x2(
                             k, i, j, 1, affine_idx_in)
-                        inside = _interpolate_vector_3d[floating](d, dk, di, 
+                        inside = _interpolate_vector_3d[floating](d, dk, di,
                                                                   dj, tmp)
                         dkk = tmp[0]
                         dii = tmp[1]
@@ -1582,7 +1583,7 @@ def simplify_warp_function_3d(floating[:, :, :, :] d,
                         out[k, i, j, 0] = dk
                         out[k, i, j, 1] = di
                         out[k, i, j, 2] = dj
-    return out
+    return np.asarray(out)
 
 
 def reorient_vector_field_2d(floating[:, :, :] d,
@@ -1709,7 +1710,7 @@ def downsample_scalar_field_3d(floating[:, :, :] field):
                 for j in range(nnc):
                     if cnt[k, i, j] > 0:
                         down[k, i, j] /= cnt[k, i, j]
-    return down
+    return np.asarray(down)
 
 
 def downsample_displacement_field_3d(floating[:, :, :, :] field):
@@ -1761,7 +1762,7 @@ def downsample_displacement_field_3d(floating[:, :, :, :] field):
                         down[k, i, j, 0] /= cnt[k, i, j]
                         down[k, i, j, 1] /= cnt[k, i, j]
                         down[k, i, j, 2] /= cnt[k, i, j]
-    return down
+    return np.asarray(down)
 
 
 def downsample_scalar_field_2d(floating[:, :] field):
@@ -1802,7 +1803,7 @@ def downsample_scalar_field_2d(floating[:, :] field):
             for j in range(nnc):
                 if cnt[i, j] > 0:
                     down[i, j] /= cnt[i, j]
-    return down
+    return np.asarray(down)
 
 
 def downsample_displacement_field_2d(floating[:, :, :] field):
@@ -1845,7 +1846,7 @@ def downsample_displacement_field_2d(floating[:, :, :] field):
                 if cnt[i, j] > 0:
                     down[i, j, 0] /= cnt[i, j]
                     down[i, j, 1] /= cnt[i, j]
-    return down
+    return np.asarray(down)
 
 
 def warp_3d(floating[:, :, :] volume, floating[:, :, :, :] d1,
@@ -1976,7 +1977,7 @@ def warp_3d(floating[:, :, :] volume, floating[:, :, :, :] d1,
                     inside = _interpolate_scalar_3d[floating](volume, dkk,
                                                               dii, djj,
                                                               &warped[k,i,j])
-    return warped
+    return np.asarray(warped)
 
 
 def transform_3d_affine(floating[:, :, :] volume, int[:] ref_shape,
@@ -2042,7 +2043,7 @@ def transform_3d_affine(floating[:, :, :] volume, int[:] ref_shape,
                         djj = j
                     inside = _interpolate_scalar_3d[floating](volume, dkk,
                         dii, djj, &out[k,i,j])
-    return out
+    return np.asarray(out)
 
 
 def warp_3d_nn(number[:, :, :] volume, floating[:, :, :, :] d1,
@@ -2172,7 +2173,7 @@ def warp_3d_nn(number[:, :, :] volume, floating[:, :, :, :] d1,
 
                     inside = _interpolate_scalar_nn_3d[number](volume, dkk, dii, djj,
                                                        &warped[k,i,j])
-    return warped
+    return np.asarray(warped)
 
 
 def transform_3d_affine_nn(number[:, :, :] volume, int[:] ref_shape,
@@ -2237,7 +2238,7 @@ def transform_3d_affine_nn(number[:, :, :] volume, int[:] ref_shape,
                         djj = j
                     _interpolate_scalar_nn_3d[number](volume, dkk, dii, djj,
                                                       &out[k,i,j])
-    return out
+    return np.asarray(out)
 
 
 def warp_2d(floating[:, :] image, floating[:, :, :] d1,
@@ -2351,7 +2352,7 @@ def warp_2d(floating[:, :] image, floating[:, :, :] d1,
                 # Interpolate the input image at the resulting location
                 _interpolate_scalar_2d[floating](image, dii, djj,
                                                  &warped[i, j])
-    return warped
+    return np.asarray(warped)
 
 
 def transform_2d_affine(floating[:, :] image, int[:] ref_shape,
@@ -2411,7 +2412,7 @@ def transform_2d_affine(floating[:, :] image, int[:] ref_shape,
                     djj = j
                 _interpolate_scalar_2d[floating](image, dii, djj,
                                                  &out[i, j])
-    return out
+    return np.asarray(out)
 
 
 def warp_2d_nn(number[:, :] image, floating[:, :, :] d1,
@@ -2525,7 +2526,7 @@ def warp_2d_nn(number[:, :] image, floating[:, :, :] d1,
                 # Interpolate the input image at the resulting location
                 _interpolate_scalar_nn_2d[number](image, dii, djj,
                                                   &warped[i, j])
-    return warped
+    return np.asarray(warped)
 
 
 def transform_2d_affine_nn(number[:, :] image, int[:] ref_shape,
@@ -2585,7 +2586,7 @@ def transform_2d_affine_nn(number[:, :] image, int[:] ref_shape,
                     djj = j
                 _interpolate_scalar_nn_2d[number](image, dii, djj,
                                                   &out[i, j])
-    return out
+    return np.asarray(out)
 
 
 def resample_displacement_field_3d(floating[:, :, :, :] field,
@@ -2630,7 +2631,7 @@ def resample_displacement_field_3d(floating[:, :, :, :] field,
                 djj = <double> j * factors[2]
                 _interpolate_vector_3d[floating](field, dkk, dii, djj,
                                                  expanded[k, i, j])
-    return expanded
+    return np.asarray(expanded)
 
 
 def resample_displacement_field_2d(floating[:, :, :] field, double[:] factors,
@@ -2671,7 +2672,7 @@ def resample_displacement_field_2d(floating[:, :, :] field, double[:] factors,
             djj = j*factors[1]
             inside = _interpolate_vector_2d[floating](field, dii, djj,
                                                       expanded[i, j])
-    return expanded
+    return np.asarray(expanded)
 
 
 def create_random_displacement_2d(int[:] from_shape,
@@ -2753,7 +2754,7 @@ def create_random_displacement_2d(int[:] from_shape,
             output[i, j, 0] = dii - di
             output[i, j, 1] = djj - dj
 
-    return output, int_field
+    return np.asarray(output), np.asarray(int_field)
 
 
 def create_random_displacement_3d(int[:] from_shape, double[:, :] from_grid2world,
@@ -2840,7 +2841,7 @@ def create_random_displacement_3d(int[:] from_shape, double[:, :] from_grid2worl
                 output[k, i, j, 1] = dii - di
                 output[k, i, j, 2] = djj - dj
 
-    return output, int_field
+    return np.asarray(output), np.asarray(int_field)
 
 
 def create_harmonic_fields_2d(cnp.npy_intp nrows, cnp.npy_intp ncols,
@@ -2890,7 +2891,7 @@ def create_harmonic_fields_2d(cnp.npy_intp nrows, cnp.npy_intp ncols,
             inv[i, j, 0] = b * np.cos(m * theta) * ii
             inv[i, j, 1] = b * np.cos(m * theta) * jj
 
-    return d, inv
+    return np.asarray(d), np.asarray(inv)
 
 
 def create_harmonic_fields_3d(int nslices, cnp.npy_intp nrows,
@@ -2949,7 +2950,7 @@ def create_harmonic_fields_3d(int nslices, cnp.npy_intp nrows,
                 inv[k, i, j, 1] = b * np.cos(m * theta) * ii
                 inv[k, i, j, 2] = b * np.cos(m * theta) * jj
 
-    return d, inv
+    return np.asarray(d), np.asarray(inv)
 
 
 def create_circle(cnp.npy_intp nrows, cnp.npy_intp ncols, cnp.npy_intp radius):
@@ -2986,7 +2987,7 @@ def create_circle(cnp.npy_intp nrows, cnp.npy_intp ncols, cnp.npy_intp radius):
                 c[i, j] = 1
             else:
                 c[i, j] = 0
-    return c
+    return np.asarray(c)
 
 
 def create_sphere(cnp.npy_intp nslices, cnp.npy_intp nrows,
@@ -3030,7 +3031,7 @@ def create_sphere(cnp.npy_intp nslices, cnp.npy_intp nrows,
                     s[k, i, j] = 1
                 else:
                     s[k, i, j] = 0
-    return s
+    return np.asarray(s)
 
 
 def _gradient_3d(floating[:, :, :] img, double[:, :] img_world2grid,
@@ -3370,7 +3371,7 @@ def _sparse_gradient_2d(floating[:, :] img, double[:, :] img_world2grid,
                 dx[p] = sample_points[i, p]
 
 
-def gradient(img, img_world2grid, img_spacing, out_shape, 
+def gradient(img, img_world2grid, img_spacing, out_shape,
              out_grid2world):
     r""" Gradient of an image in physical space
 
@@ -3414,7 +3415,7 @@ def gradient(img, img_world2grid, img_spacing, out_shape,
     jd_grad(img, img_world2grid.astype(np.float64),
             img_spacing.astype(np.float64),
             out_grid2world.astype(np.float64), out, inside)
-    return out, inside
+    return np.asarray(out), np.asarray(inside)
 
 
 def sparse_gradient(img, img_world2grid, img_spacing, sample_points):
@@ -3455,4 +3456,4 @@ def sparse_gradient(img, img_world2grid, img_spacing, sample_points):
         jd_grad = _sparse_gradient_3d
     jd_grad(img, img_world2grid.astype(np.float64),
             img_spacing.astype(np.float64), sample_points, out, inside)
-    return out, inside
+    return np.asarray(out), np.asarray(inside)

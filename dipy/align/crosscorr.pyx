@@ -145,7 +145,7 @@ def precompute_cc_factors_3d(floating[:, :, :] static, floating[:, :, :] moving,
                         Imean * sums[SI] + sums[CNT] * Imean * Imean)
                     factors[s, r, c, 4] = (sums[SJ2] - Jmean * sums[SJ] -
                         Jmean * sums[SJ] + sums[CNT] * Jmean * Jmean)
-    return factors
+    return np.asarray(factors)
 
 
 @cython.boundscheck(False)
@@ -200,7 +200,7 @@ def precompute_cc_factors_3d_test(floating[:, :, :] static,
                         Imean * sums[SI] + sums[CNT] * Imean * Imean)
                     factors[s, r, c, 4] = (sums[SJ2] - Jmean * sums[SJ] -
                         Jmean * sums[SJ] + sums[CNT] * Jmean * Jmean)
-    return factors
+    return np.asarray(factors)
 
 
 @cython.boundscheck(False)
@@ -272,7 +272,7 @@ def compute_cc_forward_step_3d(floating[:, :, :, :] grad_static,
                     out[s, r, c, 0] -= temp * grad_static[s, r, c, 0]
                     out[s, r, c, 1] -= temp * grad_static[s, r, c, 1]
                     out[s, r, c, 2] -= temp * grad_static[s, r, c, 2]
-    return out, energy
+    return np.asarray(out), energy
 
 @cython.boundscheck(False)
 @cython.wraparound(False)
@@ -346,7 +346,7 @@ def compute_cc_backward_step_3d(floating[:, :, :, :] grad_moving,
                     out[s, r, c, 0] -= temp * grad_moving[s, r, c, 0]
                     out[s, r, c, 1] -= temp * grad_moving[s, r, c, 1]
                     out[s, r, c, 2] -= temp * grad_moving[s, r, c, 2]
-    return out, energy
+    return np.asarray(out), energy
 
 
 @cython.boundscheck(False)
@@ -460,7 +460,7 @@ def precompute_cc_factors_2d(floating[:, :] static, floating[:, :] moving,
                     Imean * sums[SI] + sums[CNT] * Imean * Imean)
                 factors[r, c, 4] = (sums[SJ2] - Jmean * sums[SJ] -
                     Jmean * sums[SJ] + sums[CNT] * Jmean * Jmean)
-    return factors
+    return np.asarray(factors)
 
 
 @cython.boundscheck(False)
@@ -510,7 +510,7 @@ def precompute_cc_factors_2d_test(floating[:, :] static, floating[:, :] moving,
                     Imean * sums[SI] + sums[CNT] * Imean * Imean)
                 factors[r, c, 4] = (sums[SJ2] - Jmean * sums[SJ] -
                     Jmean * sums[SJ] + sums[CNT] * Jmean * Jmean)
-    return factors
+    return np.asarray(factors)
 
 
 @cython.boundscheck(False)
@@ -584,7 +584,7 @@ def compute_cc_forward_step_2d(floating[:, :, :] grad_static,
                 temp = 2.0 * sfm / (sff * smm) * (Ji - sfm / sff * Ii)
                 out[r, c, 0] -= temp * grad_static[r, c, 0]
                 out[r, c, 1] -= temp * grad_static[r, c, 1]
-    return out, energy
+    return np.asarray(out), energy
 
 
 @cython.boundscheck(False)
@@ -652,4 +652,4 @@ def compute_cc_backward_step_2d(floating[:, :, :] grad_moving,
                 temp = 2.0 * sfm / (sff * smm) * (Ii - sfm / smm * Ji)
                 out[r, c, 0] -= temp * grad_moving[r, c, 0]
                 out[r, c, 1] -= temp * grad_moving[r, c, 1]
-    return out, energy
+    return np.asarray(out), energy

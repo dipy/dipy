@@ -1,4 +1,5 @@
-numpy>=1.6
+# Check against .travis.yml file and dipy/info.py
+numpy>=1.7.1
 scipy>=0.9
 cython>=0.18
 nibabel>=1.2

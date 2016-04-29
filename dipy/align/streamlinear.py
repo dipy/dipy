@@ -202,7 +202,7 @@ class StreamlineLinearRegistration(object):
             Initial parametrization for the optimization.
 
             If 1D array with:
-                a) 6 elements then only rigid registration is parformed with
+                a) 6 elements then only rigid registration is performed with
                 the 3 first elements for translation and 3 for rotation.
                 b) 7 elements also isotropic scaling is performed (similarity).
                 c) 12 elements then translation, rotation (in degrees),
@@ -668,7 +668,7 @@ def decompose_matrix44(mat, size=12):
     """
     scale, shear, angles, translate, _ = decompose_matrix(mat)
 
-    t = np.zeros(12.)
+    t = np.zeros(12)
     t[:3] = translate
     t[3: 6] = np.rad2deg(angles)
     if size == 6:

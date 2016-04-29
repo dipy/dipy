@@ -18,22 +18,22 @@ from os.path import (dirname, join as pjoin, isfile, isdir, realpath, pathsep)
 
 from subprocess import Popen, PIPE
 
-try: # Python 2
+try:  # Python 2
     string_types = basestring,
-except NameError: # Python 3
+except NameError:  # Python 3
     string_types = str,
 
 
 def _get_package():
     """ Workaround for missing ``__package__`` in Python 3.2
     """
-    if '__package__' in globals() and not __package__ is None:
+    if(('__package__' in globals()) and (__package__ is not None)):
         return __package__
     return __name__.split('.', 1)[0]
 
 
 # Same as __package__ for Python 2.6, 2.7 and >= 3.3
-MY_PACKAGE=_get_package()
+MY_PACKAGE = _get_package()
 
 
 def local_script_dir(script_sdir):
@@ -66,12 +66,12 @@ class ScriptRunner(object):
     Finds local scripts and local modules if running in the development
     directory, otherwise finds system scripts and modules.
     """
+
     def __init__(self,
-                 script_sdir = 'scripts',
-                 module_sdir = MY_PACKAGE,
-                 debug_print_var = None,
-                 output_processor = lambda x : x
-                ):
+                 script_sdir='scripts',
+                 module_sdir=MY_PACKAGE,
+                 debug_print_var=None,
+                 output_processor=lambda x: x):
         """ Init ScriptRunner instance
 
         Parameters
@@ -120,12 +120,13 @@ class ScriptRunner(object):
             cmd = [cmd]
         else:
             cmd = list(cmd)
-        if not self.local_script_dir is None:
-            # Windows can't run script files without extensions natively so we need
-            # to run local scripts (no extensions) via the Python interpreter.  On
-            # Unix, we might have the wrong incantation for the Python interpreter
-            # in the hash bang first line in the source file.  So, either way, run
-            # the script through the Python interpreter
+        if self.local_script_dir is not None:
+            # Windows can't run script files without extensions
+            # natively so we need to run local scripts (no extensions)
+            # via the Python interpreter.  On Unix, we might have the
+            # wrong incantation for the Python interpreter
+            # in the hash bang first line in the source file. So, either way,
+            # run the script through the Python interpreter
             cmd = [sys.executable,
                    pjoin(self.local_script_dir, cmd[0])] + cmd[1:]
         elif os.name == 'nt':
@@ -139,10 +140,10 @@ class ScriptRunner(object):
         if self.debug_print:
             print("Running command '%s'" % cmd)
         env = os.environ
-        if not self.local_module_dir is None:
-            # module likely comes from the current working directory. We might need
-            # that directory on the path if we're running the scripts from a
-            # temporary directory
+        if self.local_module_dir is not None:
+            # module likely comes from the current working directory.
+            # We might need that directory on the path if we're running
+            # the scripts from a temporary directory
             env = env.copy()
             pypath = env.get('PYTHONPATH', None)
             if pypath is None:
@@ -151,7 +152,7 @@ class ScriptRunner(object):
                 env['PYTHONPATH'] = self.local_module_dir + pathsep + pypath
         proc = Popen(cmd, stdout=PIPE, stderr=PIPE, env=env)
         stdout, stderr = proc.communicate()
-        if proc.poll() == None:
+        if proc.poll() is None:
             proc.terminate()
         if check_code and proc.returncode != 0:
             raise RuntimeError(

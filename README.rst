@@ -16,9 +16,12 @@ Mailing Lists
 =============
 
 Please see the developers' list at
-http://mail.scipy.org/mailman/listinfo/nipy-devel
+https://mail.python.org/mailman/listinfo/neuroimaging
+
 Please see the users' forum at
 https://neurostars.org
+
+Please join the gitter chatroom `here <https://gitter.im/nipy/dipy>`_.
 
 Code
 ====
