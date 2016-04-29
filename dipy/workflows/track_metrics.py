@@ -8,6 +8,7 @@ import numpy as np
 import nibabel as nib
 import tractconverter
 
+from dipy.io.trackvis import load_trk
 from dipy.tracking.utils import density_map
 from dipy.workflows.utils import choose_create_out_dir
 
@@ -40,21 +41,17 @@ def track_density_flow(tractograms, ref_files, up_factor=1.0, out_dir='',
         data_shape = np.array(ref.shape) * up_factor
         data_shape = tuple(data_shape.astype('int32'))
 
-        tract_format = tractconverter.detect_format(tract_file)
-        tract = tract_format(tract_file, anatFile=ref_file)
-
-        streamlines = [i * up_factor for i in tract]
+        streamlines, hdr = load_trk(tract_file)
 
         # Need to fix scaling
         affine = np.eye(4)
         affine[:3, :3] = ref.get_affine()[:3, :3]
-        #affine[:3, :] += 0.5
         # Need to adjust the affine to take upsampling into account
         tdi_map = density_map(streamlines, data_shape, affine=affine)
-        affine[0, 0] /= up_factor
-        affine[1, 1] /= up_factor
-        affine[2, 2] /= up_factor
-        affine[:3, :] = (ref.get_affine()[:3, :] * up_factor)
+        #affine[0, 0] *= up_factor
+        #affine[1, 1] *= up_factor
+        #affine[2, 2] *= up_factor
+        #affine[:3, :] = (ref.get_affine()[:3, :] * up_factor)
 
         map_img = nib.Nifti1Image(tdi_map.astype(np.float32), affine)
 
@@ -63,9 +60,9 @@ def track_density_flow(tractograms, ref_files, up_factor=1.0, out_dir='',
 
         out_dir_path = choose_create_out_dir(out_dir, tractograms)
 
-        map_img.header().set_zooms(pos_factor)
-        map_img.header().set_qform(ref_head.get_qform())
-        map_img.header().set_sform(ref_head.get_sform())
+        map_img.header.set_zooms(pos_factor)
+        map_img.header.set_qform(ref_head.get_qform())
+        map_img.header.set_sform(ref_head.get_sform())
         map_img.to_filename(os.path.join(out_dir_path, out_tdi))
         logging.info('Track density map saved as: {0}'.
                      format(os.path.join(out_dir_path, out_tdi)))
