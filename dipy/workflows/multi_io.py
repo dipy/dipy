@@ -58,7 +58,7 @@ def connect_output_paths(inputs, out_dir, out_files):
                     path.join(dname, base + '_' + out_file))
             outputs.append(new_out_files)
 
-    return outputs
+    return inputs, outputs
 
 
 def concatenate_inputs(multi_inputs):
@@ -104,7 +104,7 @@ def lprint(list_):
         print(l)
 
 
-class OutputGenerator(object):
+class OutputCreator(object):
 
     def __init__(self, verbose=False):
         self.verbose = verbose
@@ -121,8 +121,13 @@ class OutputGenerator(object):
 
     def create_outputs(self):
         if len(self.inputs) >= 1:
-            self.outputs = connect_output_paths(self.inputs,
-                                                self.out_dir,
-                                                self.out_fnames)
+            self.updated_inputs, self.outputs = connect_output_paths(
+                self.inputs,
+                self.out_dir,
+                self.out_fnames)
         else:
             raise ImportError('No inputs')
+
+    def __iter__(self):
+        for i, o in zip(self.inputs, self.outputs):
+            yield i, o
