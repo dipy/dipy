@@ -89,10 +89,10 @@ def basename(fname):
 
 
 class OutputCreator(object):
-    """ Create output filenames that work nicely with muiltiple input files
+    """ Create output filenames that work nicely with muiltiple input files from multiple directories (processing multiple subjects with one command)
 
     Use information from input files, out_dir and out_fnames to generate correct outputs which can come from long lists of multiple or single
-    inputs
+    inputs.
     """
 
     def __init__(self):
