@@ -51,7 +51,8 @@ def connect_output_paths(inputs, out_dir, out_files):
 
         for inp in inputs[0]:
             dname = path.join(out_dir, path.dirname(inp))
-            base = path.splitext(path.basename(inp))[0]
+            # base = path.splitext(path.basename(inp))[0]
+            base = basename(inp)
             new_out_files = []
             for out_file in out_files:
                 new_out_files.append(
@@ -62,20 +63,22 @@ def connect_output_paths(inputs, out_dir, out_files):
 
 
 def concatenate_inputs(multi_inputs):
+    """ Concatenate list of inputs
+    """
 
     mixing_names = []
     for inps in zip(*multi_inputs):
         mixing_name = ''
         for i, inp in enumerate(inps):
-            mixing_name += path.splitext(path.basename(inp))[0]
+            # mixing_name += path.splitext(path.basename(inp))[0]
+            mixing_name += basename(inp)
             if i < len(inps) - 1:
                 mixing_name += '_'
         mixing_names.append(mixing_name)
     return mixing_names
 
 
-def split_ext(fname):
-
+def basename(fname):
     ext = path.splitext(path.basename(fname))[1]
     base = path.splitext(path.basename(fname))[0]
     if ext == '.gz':
@@ -85,29 +88,15 @@ def split_ext(fname):
     return base
 
 
-def mix_inputs(inputs1, inputs2):
-
-    mixing_names = []
-    for inp in inputs1:
-        mixing_name = ''
-        mixing_name += path.splitext(path.basename(inp))[0]
-        mixing_name += '_'
-        mixing_name += path.splitext(path.basename(inputs2))[0]
-        # print(mixing_name)
-        mixing_names.append(mixing_name)
-
-    return mixing_names
-
-
-def lprint(list_):
-    for l in list_:
-        print(l)
-
-
 class OutputCreator(object):
+    """ Create output filenames that work nicely with muiltiple input files
 
-    def __init__(self, verbose=False):
-        self.verbose = verbose
+    Use information from input files, out_dir and out_fnames to generate correct outputs which can come from long lists of multiple or single
+    inputs
+    """
+
+    def __init__(self):
+        pass
 
     def set_inputs(self, *args):
         self.input_args = list(args)
@@ -129,5 +118,8 @@ class OutputCreator(object):
             raise ImportError('No inputs')
 
     def __iter__(self):
-        for i, o in zip(self.inputs, self.outputs):
-            yield i, o
+        I = np.array(self.inputs).T
+        O = np.array(self.outputs)
+        IO = np.concatenate([I, O], axis=1)
+        for i_o in IO:
+            yield i_o
