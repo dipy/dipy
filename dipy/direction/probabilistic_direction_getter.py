@@ -81,7 +81,7 @@ class ProbabilisticDirectionGetter(PeakDirectionGetter):
 
     """
     @classmethod
-    def from_pmf(klass, pmf, max_angle, sphere, pmf_threshold=0, **kwargs):
+    def from_pmf(klass, pmf, max_angle, sphere, pmf_threshold=0.1, **kwargs):
         """Constructor for making a DirectionGetter from an array of Pmfs
 
         Parameters
@@ -120,7 +120,7 @@ class ProbabilisticDirectionGetter(PeakDirectionGetter):
         return klass(pmf_gen, max_angle, sphere, pmf_threshold, **kwargs)
 
     @classmethod
-    def from_shcoeff(klass, shcoeff, max_angle, sphere, pmf_threshold=0,
+    def from_shcoeff(klass, shcoeff, max_angle, sphere, pmf_threshold=0.1,
                      basis_type=None, **kwargs):
         """Probabilistic direction getter from a distribution of directions
         on the sphere.
@@ -160,7 +160,7 @@ class ProbabilisticDirectionGetter(PeakDirectionGetter):
         pmf_gen = SHCoeffPmfGen(shcoeff, sphere, basis_type)
         return klass(pmf_gen, max_angle, sphere, pmf_threshold, **kwargs)
 
-    def __init__(self, pmf_gen, max_angle, sphere=None, pmf_threshold=0,
+    def __init__(self, pmf_gen, max_angle, sphere=None, pmf_threshold=0.1,
                  **kwargs):
         """Direction getter from a pmf generator.
 
