@@ -21,7 +21,7 @@ class TissueClassifierHMRF(object):
 
         pass
 
-    def classify(self, image, nclasses, beta):
+    def classify(self, image, nclasses, beta, tolerance):
         r"""
         This method uses the Maximum a posteriori - Markov Random Field
         approach for segmentation by using the Iterative Conditional Modes and
@@ -77,7 +77,7 @@ class TissueClassifierHMRF(object):
 
         final_segmentation = np.empty_like(image)
         initial_segmentation = seg_init.copy()
-        tolerance = 0.0001   # 1% of every 5 interations
+#        tolerance = 0.0000001
 
         for i in range(100):
 
