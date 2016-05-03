@@ -23,7 +23,7 @@ import matplotlib.pyplot as plt
 from dipy.denoise.nlmeans import nlmeans
 from dipy.denoise.noise_estimate import estimate_sigma
 from dipy.data import fetch_tissue_data, read_tissue_data
-from dipy.segment.tissue_2 import TissueClassifierHMRF
+from dipy.segment.tissue import TissueClassifierHMRF
 
 """
 First we fetch the T1 volume from the Syn dataset and will determine its shape.
@@ -66,7 +66,7 @@ plt.savefig('t1_image.png', bbox_inches='tight', pad_inches=0)
 
    **T1-weighted image of healthy adult**.
 
-Now we will define the other three parameters for the segmentation algorithm.
+Now we will define the other two parameters for the segmentation algorithm.
 We will segment three classes, namely corticospinal fluid (CSF), white matter (WM) and 
 gray matter (GM),
 """
@@ -75,10 +75,16 @@ nclass = 3
 
 """
 Then, the smoothnes factor of the segmentation. Good performance is achieved
-with values between 0 and 0.5
+with values between 0 and 0.5.
 """
 
 beta = 0.1
+
+"""
+Now we set the convergence criterion.
+"""
+
+tolerance = 0.01
 
 """
 Now we call an instace of the class TissueClassifierHMRF and its method
@@ -87,7 +93,8 @@ called classify and input the parameters defined above to perform the segmentati
 
 hmrf = TissueClassifierHMRF(save_history=True)
 initial_segmentation, final_segmentation, PVE, EN = hmrf.classify(t1,
-                                                                  nclass, beta)
+                                                                  nclass, beta,
+                                                                  tolerance)
 
 fig = plt.figure()
 a = fig.add_subplot(1, 2, 1)
