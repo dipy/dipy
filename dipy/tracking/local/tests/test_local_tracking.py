@@ -214,7 +214,7 @@ def test_ProbabilisticOdfWeightedTracker():
     pmf_lookup = np.array([[0., 0., 1.],
                            [1., 0., 0.],
                            [0., 1., 0.],
-                           [.5, .5, 0.]])
+                           [.6, .4, 0.]])
     simple_image = np.array([[0, 1, 0, 0, 0, 0],
                              [0, 1, 0, 0, 0, 0],
                              [0, 3, 2, 2, 2, 0],
@@ -230,21 +230,21 @@ def test_ProbabilisticOdfWeightedTracker():
     mask = (simple_image > 0).astype(float)
     tc = ThresholdTissueClassifier(mask, .5)
 
-    dg = ProbabilisticDirectionGetter.from_pmf(pmf, 90, sphere)
+    dg = ProbabilisticDirectionGetter.from_pmf(pmf, 90, sphere, pmf_threshold=0.1)
     streamlines = LocalTracking(dg, tc, seeds, np.eye(4), 1.)
 
-    expected = [np.array([[0.,  1.,  0.],
-                          [1.,  1.,  0.],
-                          [2.,  1.,  0.],
-                          [2.,  2.,  0.],
-                          [2.,  3.,  0.],
-                          [2.,  4.,  0.],
-                          [2.,  5.,  0.]]),
-                np.array([[0.,  1.,  0.],
-                          [1.,  1.,  0.],
-                          [2.,  1.,  0.],
-                          [3.,  1.,  0.],
-                          [4.,  1.,  0.]])]
+    expected = [np.array([[0., 1., 0.],
+                          [1., 1., 0.],
+                          [2., 1., 0.],
+                          [2., 2., 0.],
+                          [2., 3., 0.],
+                          [2., 4., 0.],
+                          [2., 5., 0.]]),
+                np.array([[0., 1., 0.],
+                          [1., 1., 0.],
+                          [2., 1., 0.],
+                          [3., 1., 0.],
+                          [4., 1., 0.]])]
 
     def allclose(x, y):
         return x.shape == y.shape and np.allclose(x, y)
@@ -260,12 +260,20 @@ def test_ProbabilisticOdfWeightedTracker():
     npt.assert_(all(path))
 
     # The first path is not possible if 90 degree turns are excluded
-    dg = ProbabilisticDirectionGetter.from_pmf(pmf, 80, sphere)
+    dg = ProbabilisticDirectionGetter.from_pmf(pmf, 80, sphere,
+                                               pmf_threshold=0.1)
     streamlines = LocalTracking(dg, tc, seeds, np.eye(4), 1.)
 
     for sl in streamlines:
         npt.assert_(np.allclose(sl, expected[1]))
 
+    # The first path is not possible if pmf_threshold>0.4 degree turns are excluded
+    dg = ProbabilisticDirectionGetter.from_pmf(pmf, 90, sphere,
+                                               pmf_threshold=0.5)
+    streamlines = LocalTracking(dg, tc, seeds, np.eye(4), 1.)
+
+    for sl in streamlines:
+        npt.assert_(np.allclose(sl, expected[1]))
 
 def test_MaximumDeterministicTracker():
     """This tests that the Maximum Deterministic Direction Getter plays nice
@@ -294,21 +302,25 @@ def test_MaximumDeterministicTracker():
     mask = (simple_image > 0).astype(float)
     tc = ThresholdTissueClassifier(mask, .5)
 
-    dg = DeterministicMaximumDirectionGetter.from_pmf(pmf, 90, sphere)
+    dg = DeterministicMaximumDirectionGetter.from_pmf(pmf, 90, sphere,
+                                                      pmf_threshold=0.1)
     streamlines = LocalTracking(dg, tc, seeds, np.eye(4), 1.)
 
-    expected = [np.array([[0.,  1.,  0.],
-                          [1.,  1.,  0.],
-                          [2.,  1.,  0.],
-                          [2.,  2.,  0.],
-                          [2.,  3.,  0.],
-                          [2.,  4.,  0.],
-                          [2.,  5.,  0.]]),
-                np.array([[0.,  1.,  0.],
-                          [1.,  1.,  0.],
-                          [2.,  1.,  0.],
-                          [3.,  1.,  0.],
-                          [4.,  1.,  0.]])]
+    expected = [np.array([[0., 1., 0.],
+                          [1., 1., 0.],
+                          [2., 1., 0.],
+                          [2., 2., 0.],
+                          [2., 3., 0.],
+                          [2., 4., 0.],
+                          [2., 5., 0.]]),
+                np.array([[0., 1., 0.],
+                          [1., 1., 0.],
+                          [2., 1., 0.],
+                          [3., 1., 0.],
+                          [4., 1., 0.]]),
+                np.array([[0., 1., 0.],
+                          [1., 1., 0.],
+                          [2., 1., 0.]])]
 
     def allclose(x, y):
         return x.shape == y.shape and np.allclose(x, y)
@@ -318,11 +330,23 @@ def test_MaximumDeterministicTracker():
             raise AssertionError()
 
     # The first path is not possible if 90 degree turns are excluded
-    dg = DeterministicMaximumDirectionGetter.from_pmf(pmf, 80, sphere)
+    dg = DeterministicMaximumDirectionGetter.from_pmf(pmf, 80, sphere,
+                                                      pmf_threshold=0.1)
     streamlines = LocalTracking(dg, tc, seeds, np.eye(4), 1.)
 
     for sl in streamlines:
         npt.assert_(np.allclose(sl, expected[1]))
+
+    # Both path are not possible if 90 degree turns are exclude and
+    # if pmf_threhold is superior to 0.4. Streamlines should stop at
+    # the crossing
+
+    dg = DeterministicMaximumDirectionGetter.from_pmf(pmf, 80, sphere,
+                                                      pmf_threshold=0.5)
+    streamlines = LocalTracking(dg, tc, seeds, np.eye(4), 1.)
+
+    for sl in streamlines:
+        npt.assert_(np.allclose(sl, expected[2]))
 
 if __name__ == "__main__":
     npt.run_module_suite()
