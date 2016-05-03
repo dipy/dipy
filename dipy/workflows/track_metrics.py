@@ -36,8 +36,6 @@ def track_density_flow(tractograms, ref_files, up_factor=1.0, out_dir='',
         logging.info('Computing track density for {0}'.format(tract_file))
         logging.info('Upsampling factor: {0}'.format(up_factor))
         ref = nib.load(ref_file)
-        ref_head = ref.get_header()
-        pos_factor = ref_head['pixdim'][1:4] / up_factor
         data_shape = np.array(ref.shape) * up_factor
         data_shape = tuple(data_shape.astype('int32'))
 
@@ -47,22 +45,14 @@ def track_density_flow(tractograms, ref_files, up_factor=1.0, out_dir='',
         affine = np.eye(4)
         affine[:3, :3] = ref.get_affine()[:3, :3]
         # Need to adjust the affine to take upsampling into account
+        affine[0, 0] /= up_factor
+        affine[1, 1] /= up_factor
+        affine[2, 2] /= up_factor
+        affine[:3, 3:] = -0.5 * (up_factor - 1.0)
         tdi_map = density_map(streamlines, data_shape, affine=affine)
-        #affine[0, 0] *= up_factor
-        #affine[1, 1] *= up_factor
-        #affine[2, 2] *= up_factor
-        #affine[:3, :] = (ref.get_affine()[:3, :] * up_factor)
 
-        map_img = nib.Nifti1Image(tdi_map.astype(np.float32), affine)
-
-        if len(tdi_map.shape) > 3:
-            pos_factor += [1]
-
+        map_img = nib.Nifti1Image(tdi_map.astype(np.float32), ref.get_affine())
         out_dir_path = choose_create_out_dir(out_dir, tractograms)
-
-        map_img.header.set_zooms(pos_factor)
-        map_img.header.set_qform(ref_head.get_qform())
-        map_img.header.set_sform(ref_head.get_sform())
         map_img.to_filename(os.path.join(out_dir_path, out_tdi))
         logging.info('Track density map saved as: {0}'.
                      format(os.path.join(out_dir_path, out_tdi)))
