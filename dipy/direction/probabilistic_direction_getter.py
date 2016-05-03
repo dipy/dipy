@@ -249,7 +249,7 @@ class ProbabilisticDirectionGetter(PeakDirectionGetter):
         """
         # point and direction are passed in as cython memory views
         pmf = self.pmf_gen.get_pmf(point)
-        pmf.clip(self.pmf_threshold, out=pmf)
+        pmf[pmf < self.pmf_threshold] = 0
         cdf = (self._adj_matrix[tuple(direction)] * pmf).cumsum()
         if cdf[-1] == 0:
             return 1
@@ -286,7 +286,7 @@ class DeterministicMaximumDirectionGetter(ProbabilisticDirectionGetter):
         """
         # point and direction are passed in as cython memory views
         pmf = self.pmf_gen.get_pmf(point)
-        pmf.clip(self.pmf_threshold, out=pmf)
+        pmf[pmf < self.pmf_threshold] = 0
         cdf = self._adj_matrix[tuple(direction)] * pmf
         idx = np.argmax(cdf)
 
