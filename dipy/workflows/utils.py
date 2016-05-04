@@ -28,6 +28,7 @@ def choose_create_out_dir(out_dir, root_path):
     root_path : string
         Directory where input data is located.
     """
+
     if out_dir == '':
         result_path = dirname(root_path)
     elif not isabs(out_dir):
