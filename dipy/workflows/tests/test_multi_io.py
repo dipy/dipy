@@ -66,6 +66,7 @@ def test_output_generator():
         og.set_out_fnames(*out_files)
 
         og.create_outputs()
+        print(out_dir)
         npt.assert_equal(np.array(og.outputs).shape, (3, 2))
         print(og.outputs)
         print('\n')
@@ -83,6 +84,7 @@ def test_output_generator():
         og.set_out_fnames(*out_files)
         og.create_outputs()
 
+        print(out_dir)
         npt.assert_equal(np.array(og.outputs).shape, (3, 2))
         print(og.outputs)
         print('\n')
@@ -100,6 +102,7 @@ def test_output_generator():
         og.set_out_fnames(*out_files)
         og.create_outputs()
 
+        print(out_dir)
         npt.assert_equal(np.array(og.outputs).shape, (1, 2))
         print(og.outputs)
         print('\n')
@@ -116,6 +119,7 @@ def test_output_generator():
         og.set_out_fnames(*out_files)
         og.create_outputs()
 
+        print(out_dir)
         npt.assert_equal(np.array(og.outputs).shape, (1, 2))
         print(og.outputs)
         print('\n')
@@ -133,6 +137,7 @@ def test_output_generator():
         og.set_out_fnames(*out_files)
         og.create_outputs()
 
+        print(out_dir)
         npt.assert_equal(np.array(og.outputs).shape, (1, 2))
         print(og.outputs)
         print('\n')
@@ -152,6 +157,7 @@ def test_output_generator():
         og.set_out_fnames(*out_files)
         og.create_outputs()
 
+        print(out_dir)
         npt.assert_equal(np.array(og.outputs).shape, (1, 2))
         print(og.outputs)
         print('\n')
@@ -171,6 +177,8 @@ def test_output_generator():
         og.set_out_fnames(*out_files)
 
         og.create_outputs()
+
+        print(out_dir)
         npt.assert_equal(np.array(og.outputs).shape, (3, 2))
         print(og.outputs)
         print('\n')
@@ -193,6 +201,8 @@ def test_output_generator():
         og.set_out_fnames(*out_files)
 
         og.create_outputs()
+
+        print(out_dir)
         npt.assert_equal(np.array(og.outputs).shape, (3, 2))
         print(og.outputs)
         print('\n')
@@ -219,6 +229,7 @@ def test_output_generator():
 
         og.create_outputs()
 
+        print(out_dir)
         npt.assert_equal(np.array(og.outputs).shape, (1, 1))
         print(og.outputs)
         print('\n')
@@ -242,6 +253,7 @@ def test_output_generator():
 
         og.create_outputs()
 
+        print(out_dir)
         npt.assert_equal(np.array(og.outputs).shape, (1, 1))
         print(og.outputs)
         print('\n')
@@ -264,6 +276,7 @@ def test_output_generator():
 
         og.create_outputs()
 
+        print(out_dir)
         npt.assert_equal(np.array(og.outputs).shape, (1, 1))
         print(og.outputs)
         print('\n')
@@ -286,6 +299,7 @@ def test_output_generator():
 
         og.create_outputs()
 
+        print(out_dir)
         npt.assert_equal(np.array(og.outputs).shape, (1, 1))
         print(og.outputs)
         print('\n')
