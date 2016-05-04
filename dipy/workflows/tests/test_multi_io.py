@@ -161,6 +161,28 @@ def test_output_generator():
             print(out1)
             print(out2)
 
+        print('Two long inputs and input_structure True')
+
+        og = OutputCreator(input_structure=True)
+        og.set_inputs(path.join(tmpdir, 'data', 's*', 'test.txt'),
+                      path.join(tmpdir, 'data', 's*', 'other', 'test2.txt'))
+
+        og.set_out_dir(out_dir)
+        og.set_out_fnames(*out_files)
+
+        og.create_outputs()
+        npt.assert_equal(np.array(og.outputs).shape, (3, 2))
+        print(og.outputs)
+        print('\n')
+
+        for inp1, inp2, out1, out2 in og:
+            print(inp1)
+            print(inp2)
+            print(out1)
+            print(out2)
+
+        print('\n')
+
         print('Two long inputs and input_structure False')
 
         og = OutputCreator(input_structure=False)
@@ -175,11 +197,105 @@ def test_output_generator():
         print(og.outputs)
         print('\n')
 
-        for i_o in og:
-            print(i_o)
+        for inp1, inp2, out1, out2 in og:
+            print(inp1)
+            print(inp2)
+            print(out1)
+            print(out2)
+
+        # set_trace()
+        print('\n')
+
+        out_files = ['out_info_yoga.txt']
+
+        print('Two single inputs, one output and input_structure True')
+
+        og = OutputCreator(input_structure=True)
+        og.set_inputs(path.join(tmpdir, 'data', 's1', 'test.txt'),
+                      path.join(tmpdir, 'data', 's1', 'other', 'test2.txt'))
+
+        og.set_out_dir(out_dir)
+        og.set_out_fnames(*out_files)
+
+        og.create_outputs()
+
+        npt.assert_equal(np.array(og.outputs).shape, (1, 1))
+        print(og.outputs)
+        print('\n')
+
+        for inp1, inp2, out1 in og:
+            print(inp1)
+            print(inp2)
+            print(out1)
+
+        # set_trace()
+        print('\n')
+
+        print('Two single inputs, one output and input_structure False')
+
+        og = OutputCreator(input_structure=False)
+        og.set_inputs(path.join(tmpdir, 'data', 's1', 'test.txt'),
+                      path.join(tmpdir, 'data', 's1', 'other', 'test2.txt'))
+
+        og.set_out_dir(out_dir)
+        og.set_out_fnames(*out_files)
+
+        og.create_outputs()
+
+        npt.assert_equal(np.array(og.outputs).shape, (1, 1))
+        print(og.outputs)
+        print('\n')
+
+        for inp1, inp2, out1 in og:
+            print(inp1)
+            print(inp2)
+            print(out1)
+
+        # set_trace()
+        print('\n')
+
+        print('One single input, one output and input_structure False')
+
+        og = OutputCreator(input_structure=False)
+        og.set_inputs(path.join(tmpdir, 'data', 's1', 'test.txt'))
+
+        og.set_out_dir(out_dir)
+        og.set_out_fnames(*out_files)
+
+        og.create_outputs()
+
+        npt.assert_equal(np.array(og.outputs).shape, (1, 1))
+        print(og.outputs)
+        print('\n')
+
+        for inp1, out1 in og:
+            print(inp1)
+            print(out1)
+
+        # set_trace()
         print('\n')
 
 
+        print('One single input, one output and input_structure True')
+
+        og = OutputCreator(input_structure=True)
+        og.set_inputs(path.join(tmpdir, 'data', 's1', 'test.txt'))
+
+        og.set_out_dir(out_dir)
+        og.set_out_fnames(*out_files)
+
+        og.create_outputs()
+
+        npt.assert_equal(np.array(og.outputs).shape, (1, 1))
+        print(og.outputs)
+        print('\n')
+
+        for inp1, out1 in og:
+            print(inp1)
+            print(out1)
+
+        # set_trace()
+        print('\n')
 
 
 if __name__ == '__main__':

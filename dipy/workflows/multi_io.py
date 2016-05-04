@@ -1,8 +1,25 @@
+import os
 import numpy as np
 from glob import glob
 import os.path as path
 from ipdb import set_trace
 from dipy.workflows.utils import choose_create_out_dir
+
+
+def common_start(sa, sb):
+    """ Returns the longest common substring from the beginning of sa and sb """
+    def _iter():
+        for a, b in zip(sa, sb):
+            if a == b:
+                yield a
+            else:
+                return
+
+    return ''.join(_iter())
+
+
+def slash_to_under(dir_str):
+    return ''.join(dir_str.replace('/', '_'))
 
 
 def connect_output_paths(inputs, out_dir, out_files, input_structure=True):
@@ -21,11 +38,24 @@ def connect_output_paths(inputs, out_dir, out_files, input_structure=True):
             mixing_names = concatenate_inputs(inputs)
 
             for (mix_inp, inp) in zip(mixing_names, inputs[0]):
-                dname = path.join(out_dir, path.dirname(inp))
+                if input_structure:
+                    if path.isabs(out_dir):
+                        dname = path.join(out_dir, path.dirname(inp))
+                    if not path.isabs(out_dir):
+                        dname = path.join(
+                            os.getcwd(), out_dir + path.dirname(inp))
+                else:
+                    dname = out_dir
                 updated_out_files = []
                 for out_file in out_files:
-                    updated_out_files.append(
-                        path.join(dname, mix_inp + '_' + out_file))
+                    if input_structure:
+                        updated_out_files.append(
+                            path.join(dname, mix_inp + '_' + out_file))
+                    else:
+                        updated_out_files.append(
+                            path.join(
+                                dname,
+                                slash_to_under(path.dirname(inp) + '__' + mix_inp) + '_' + out_file))
                 outputs.append(updated_out_files)
 
         else:
@@ -41,20 +71,40 @@ def connect_output_paths(inputs, out_dir, out_files, input_structure=True):
             mixing_names = concatenate_inputs(inputs)
 
             for (mix_inp, inp) in zip(mixing_names, inputs[0]):
-                dname = path.join(out_dir, path.dirname(inp))
+
+                if input_structure:
+                    if not path.isabs(out_dir):
+                        dname = path.join(
+                            os.getcwd(), out_dir + path.dirname(inp))
+                    if path.isabs(out_dir):
+                        dname = path.join(out_dir, path.dirname(inp))
+                else:
+                    dname = out_dir
                 updated_out_files = []
                 for out_file in out_files:
-                    updated_out_files.append(
-                        path.join(dname, mix_inp + '_' + out_file))
+                    if input_structure:
+                        updated_out_files.append(
+                            path.join(dname, mix_inp + '_' + out_file))
+                    else:
+                        updated_out_files.append(
+                            path.join(
+                                dname,
+                                slash_to_under(path.dirname(inp) + '__' + mix_inp) + '_' + out_file))
                 outputs.append(updated_out_files)
 
     elif len(inputs) == 1:
 
         for inp in inputs[0]:
+
             if input_structure:
-                dname = path.join(out_dir, path.dirname(inp))
+                if path.isabs(out_dir):
+                    dname = path.join(out_dir, path.dirname(inp))
+                if not path.isabs(out_dir):
+                    dname = path.join(
+                        os.getcwd(), out_dir + path.dirname(inp))
             else:
                 dname = out_dir
+
             # base = path.splitext(path.basename(inp))[0]
             base = basename(inp)
             new_out_files = []
