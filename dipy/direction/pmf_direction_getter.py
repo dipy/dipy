@@ -1,5 +1,5 @@
 """
-Implementation of a probabilistic direction getter based on sampling from
+Implementation of direction getters based on sampling from
 discrete distribution (pmf) at each step of the tracking."""
 import numpy as np
 from dipy.direction.peaks import peak_directions, default_sphere
