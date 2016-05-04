@@ -1,5 +1,5 @@
 
-from .pmf_direction_getter import ProbabilisticDirectionGetter
-from .pmf_direction_getter import DeterministicMaximumDirectionGetter
-from .direction_getter import DirectionGetter
-from .peaks import *
+from dipy.direction.pmf_direction_getter import ProbabilisticDirectionGetter
+from dipy.direction.pmf_direction_getter import DeterministicMaximumDirectionGetter
+from dipy.direction.direction_getter import DirectionGetter
+from dipy.direction.peaks import *
