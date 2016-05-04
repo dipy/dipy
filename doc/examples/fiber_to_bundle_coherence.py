@@ -24,9 +24,10 @@ poorly aligned with their neighbors, see Fig. 1.
 
 Here we implement FBC measures based on kernel density estimation in the 
 non-flat 5D position-orientation domain. First we compute the kernel density 
-estimator induced by the full lifted output of the tractography. Then, the 
-Local FBC (LFBC) is the result of evaluating the estimator along each element 
-of the lifted fiber. A whole fiber measure, the relative FBC (RFBC), is calculated 
+estimator induced by the full lifted output (defined in the space of positions 
+and orientations) of the tractography. Then, the Local FBC (LFBC) is the 
+result of evaluating the estimator along each element of the lifted fiber. 
+A whole fiber measure, the relative FBC (RFBC), is calculated 
 by the minimum of the moving average LFBC along the fiber.
 Details of the computation of FBC can be found in [Portegies2015_PLoSOne]_.
 
@@ -253,8 +254,6 @@ fvtk.record(ren, n_frames=1, out_path='OR_after.png', size=(900, 900))
 
 Acknowledgements
 ~~~~~~~~~~~~~~~~~~~~~~
-Funded by the European Research Council under the European Community's Seventh 
-Framework Programme (FP7/2007-2014) / ERC grant agreement no. 335555.
 The techniques are developed in close collaboration with Pauly Ossenblok of the 
 Academic Center of Epileptology Kempenhaeghe & Maastricht UMC+. 
 

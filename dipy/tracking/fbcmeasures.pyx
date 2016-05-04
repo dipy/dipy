@@ -164,9 +164,7 @@ cdef class FBCMeasures:
             Enable verbose mode.
         """
         cdef:
-            int num_fibers
-            int max_length
-            int dim
+            int num_fibers, max_length, dim
             double [:, :, :] streamlines
             int [:] streamlines_length
             double [:, :, :] streamlines_tangent
@@ -176,17 +174,12 @@ cdef class FBCMeasures:
             int line_id, point_id
             int line_id2, point_id2
             double score
-            int xd, yd, zd
+            double [:] score_mp
+            int [:] xd_mp, yd_mp, zd_mp
+            int xd, yd, zd, N, hn
             double [:, :, :, :, ::1] lut
-            int N
-            int hn
             int threads_to_use = -1
             int all_cores = openmp.omp_get_num_procs()
-
-            double [:] score_mp
-            int [:] xd_mp
-            int [:] yd_mp
-            int [:] zd_mp
 
         if num_threads is not None:
             threads_to_use = num_threads
