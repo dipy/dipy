@@ -40,7 +40,7 @@ def connect_output_paths(inputs, out_dir, out_files, input_structure=True):
             for (mix_inp, inp) in zip(mixing_names, inputs[0]):
                 if input_structure:
                     if path.isabs(out_dir):
-                        dname = path.join(out_dir, path.dirname(inp))
+                        dname = out_dir + path.dirname(inp)
                     if not path.isabs(out_dir):
                         dname = path.join(
                             os.getcwd(), out_dir + path.dirname(inp))
@@ -77,7 +77,7 @@ def connect_output_paths(inputs, out_dir, out_files, input_structure=True):
                         dname = path.join(
                             os.getcwd(), out_dir + path.dirname(inp))
                     if path.isabs(out_dir):
-                        dname = path.join(out_dir, path.dirname(inp))
+                        dname = out_dir + path.dirname(inp)
                 else:
                     dname = out_dir
                 updated_out_files = []
@@ -98,7 +98,7 @@ def connect_output_paths(inputs, out_dir, out_files, input_structure=True):
 
             if input_structure:
                 if path.isabs(out_dir):
-                    dname = path.join(out_dir, path.dirname(inp))
+                    dname = out_dir + path.dirname(inp)
                 if not path.isabs(out_dir):
                     dname = path.join(
                         os.getcwd(), out_dir + path.dirname(inp))
