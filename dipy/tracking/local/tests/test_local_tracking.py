@@ -3,10 +3,12 @@ import numpy.testing as npt
 
 from dipy.core.sphere import HemiSphere, unit_octahedron
 from dipy.core.gradients import gradient_table
-from dipy.tracking.local import (LocalTracking, ThresholdTissueClassifier,
-                                 DirectionGetter, TissueClassifier)
+from dipy.tracking.local import (LocalTracking,
+                                 ThresholdTissueClassifier,
+                                 TissueClassifier)
 from dipy.direction import (ProbabilisticDirectionGetter,
-                            DeterministicMaximumDirectionGetter)
+                            DeterministicMaximumDirectionGetter,
+                            DirectionGetter)
 from dipy.tracking.local.interpolation import trilinear_interpolate4d
 
 from dipy.tracking.local.localtracking import TissueTypes

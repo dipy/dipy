@@ -16,9 +16,9 @@ from dipy.reconst.recspeed import (local_maxima, remove_similar_vertices,
                                    search_descending)
 from dipy.core.sphere import HemiSphere, Sphere
 from dipy.data import default_sphere
+from dipy.direction.peak_direction_getter import PeaksAndMetricsDirectionGetter
 from dipy.core.ndindex import ndindex
 from dipy.reconst.shm import sh_to_sf_matrix
-from dipy.reconst.peak_direction_getter import PeaksAndMetricsDirectionGetter
 
 
 def peak_directions_nl(sphere_eval, relative_peak_threshold=.25,

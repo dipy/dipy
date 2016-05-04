@@ -63,14 +63,14 @@ EXTS = []
 ext_kwargs = {'include_dirs':['src']}  # We add np.get_include() later
 
 for modulename, other_sources, language in (
-    ('dipy.reconst.peak_direction_getter', [], 'c'),
+    ('dipy.direction.peak_direction_getter', [], 'c'),
+    ('dipy.direction.direction_getter', [], 'c'),
     ('dipy.reconst.recspeed', [], 'c'),
     ('dipy.reconst.vec_val_sum', [], 'c'),
     ('dipy.reconst.quick_squash', [], 'c'),
     ('dipy.tracking.distances', [], 'c'),
     ('dipy.tracking.streamlinespeed', [], 'c'),
     ('dipy.tracking.local.localtrack', [], 'c'),
-    ('dipy.tracking.local.direction_getter', [], 'c'),
     ('dipy.tracking.local.tissue_classifier', [], 'c'),
     ('dipy.tracking.local.interpolation', [], 'c'),
     ('dipy.tracking.vox2track', [], 'c'),

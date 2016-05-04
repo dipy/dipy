@@ -1,6 +1,6 @@
 cimport cython
 cimport numpy as np
-from .direction_getter cimport DirectionGetter
+from dipy.direction.direction_getter cimport DirectionGetter
 from .tissue_classifier cimport (TissueClassifier, TissueClass, TRACKPOINT,
                                  ENDPOINT, OUTSIDEIMAGE, INVALIDPOINT)
 
