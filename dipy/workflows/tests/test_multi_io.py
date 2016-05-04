@@ -66,13 +66,14 @@ def test_output_generator():
         og.set_out_fnames(*out_files)
 
         og.create_outputs()
-        print(out_dir)
         npt.assert_equal(np.array(og.outputs).shape, (3, 2))
-        print(og.outputs)
-        print('\n')
 
-        for i_o in og:
-            print(i_o)
+        for inp1, inp2, out1, out2 in og:
+            print(inp1)
+            print(inp2)
+            print(out1)
+            print(out2)
+
         print('\n')
 
         print('One long input and one single')
@@ -84,13 +85,13 @@ def test_output_generator():
         og.set_out_fnames(*out_files)
         og.create_outputs()
 
-        print(out_dir)
         npt.assert_equal(np.array(og.outputs).shape, (3, 2))
-        print(og.outputs)
-        print('\n')
 
-        for i_o in og:
-            print(i_o)
+        for inp1, inp2, out1, out2 in og:
+            print(inp1)
+            print(inp2)
+            print(out1)
+            print(out2)
         print('\n')
 
         print('One single and one single input')
@@ -102,13 +103,13 @@ def test_output_generator():
         og.set_out_fnames(*out_files)
         og.create_outputs()
 
-        print(out_dir)
         npt.assert_equal(np.array(og.outputs).shape, (1, 2))
-        print(og.outputs)
-        print('\n')
 
-        for i_o in og:
-            print(i_o)
+        for inp1, inp2, out1, out2 in og:
+            print(inp1)
+            print(inp2)
+            print(out1)
+            print(out2)
         print('\n')
 
         print('One single input')
@@ -119,15 +120,13 @@ def test_output_generator():
         og.set_out_fnames(*out_files)
         og.create_outputs()
 
-        print(out_dir)
         npt.assert_equal(np.array(og.outputs).shape, (1, 2))
-        print(og.outputs)
-        print('\n')
 
         for in1, out1, out2 in og:
             print(in1)
             print(out1)
             print(out2)
+        print('\n')
 
         print('One single output but do not keep input structure')
 
@@ -137,19 +136,17 @@ def test_output_generator():
         og.set_out_fnames(*out_files)
         og.create_outputs()
 
-        print(out_dir)
         npt.assert_equal(np.array(og.outputs).shape, (1, 2))
-        print(og.outputs)
-        print('\n')
 
         for in1, out1, out2 in og:
             print(in1)
             print(out1)
             print(out2)
-
-        print('Do not keep input structure and relative out_dir')
+        print('\n')
 
         out_dir = 'out'
+
+        print('Do not keep input structure and relative out_dir')
 
         og = OutputCreator(input_structure=False)
         og.set_inputs(path.join(tmpdir, 'data', 's1', 'test.txt'))
@@ -157,15 +154,13 @@ def test_output_generator():
         og.set_out_fnames(*out_files)
         og.create_outputs()
 
-        print(out_dir)
         npt.assert_equal(np.array(og.outputs).shape, (1, 2))
-        print(og.outputs)
-        print('\n')
 
         for in1, out1, out2 in og:
             print(in1)
             print(out1)
             print(out2)
+        print('\n')
 
         print('Two long inputs and input_structure True')
 
@@ -178,10 +173,7 @@ def test_output_generator():
 
         og.create_outputs()
 
-        print(out_dir)
         npt.assert_equal(np.array(og.outputs).shape, (3, 2))
-        print(og.outputs)
-        print('\n')
 
         for inp1, inp2, out1, out2 in og:
             print(inp1)
@@ -202,10 +194,7 @@ def test_output_generator():
 
         og.create_outputs()
 
-        print(out_dir)
         npt.assert_equal(np.array(og.outputs).shape, (3, 2))
-        print(og.outputs)
-        print('\n')
 
         for inp1, inp2, out1, out2 in og:
             print(inp1)
@@ -229,10 +218,7 @@ def test_output_generator():
 
         og.create_outputs()
 
-        print(out_dir)
         npt.assert_equal(np.array(og.outputs).shape, (1, 1))
-        print(og.outputs)
-        print('\n')
 
         for inp1, inp2, out1 in og:
             print(inp1)
@@ -253,10 +239,7 @@ def test_output_generator():
 
         og.create_outputs()
 
-        print(out_dir)
         npt.assert_equal(np.array(og.outputs).shape, (1, 1))
-        print(og.outputs)
-        print('\n')
 
         for inp1, inp2, out1 in og:
             print(inp1)
@@ -276,10 +259,7 @@ def test_output_generator():
 
         og.create_outputs()
 
-        print(out_dir)
         npt.assert_equal(np.array(og.outputs).shape, (1, 1))
-        print(og.outputs)
-        print('\n')
 
         for inp1, out1 in og:
             print(inp1)
@@ -287,7 +267,6 @@ def test_output_generator():
 
         # set_trace()
         print('\n')
-
 
         print('One single input, one output and input_structure True')
 
@@ -299,10 +278,7 @@ def test_output_generator():
 
         og.create_outputs()
 
-        print(out_dir)
         npt.assert_equal(np.array(og.outputs).shape, (1, 1))
-        print(og.outputs)
-        print('\n')
 
         for inp1, out1 in og:
             print(inp1)
