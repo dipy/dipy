@@ -267,7 +267,7 @@ def test_ProbabilisticOdfWeightedTracker():
     for sl in streamlines:
         npt.assert_(np.allclose(sl, expected[1]))
 
-    # The first path is not possible if pmf_threshold > 0.4 degree
+    # The first path is not possible if pmf_threshold > 0.4
     dg = ProbabilisticDirectionGetter.from_pmf(pmf, 90, sphere,
                                                pmf_threshold=0.5)
     streamlines = LocalTracking(dg, tc, seeds, np.eye(4), 1.)
