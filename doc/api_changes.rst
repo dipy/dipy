@@ -5,6 +5,16 @@ API changes
 Here we provide information about functions or classes that have been removed,
 renamed or are deprecated (not recommended) during different release circles.
 
+Dipy 0.12 Changes
+-----------------
+
+**Tracking**
+``probabilistic_direction_getter.ProbabilisticDirectionGetter`` input parameters
+have changed. Now the optional parameter ``pmf_threshold=0.1`` (previously fixed
+to 0.0) removes directions with probability lower than ``pmf_threshold`` from
+the probability mass function (pmf) when selecting the tracking direction.
+
+
 Dipy 0.10 Changes
 -----------------
 
