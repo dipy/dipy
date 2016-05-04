@@ -2,9 +2,10 @@ import numpy as np
 from glob import glob
 import os.path as path
 from ipdb import set_trace
+from dipy.workflows.utils import choose_create_out_dir
 
 
-def connect_output_paths(inputs, out_dir, out_files):
+def connect_output_paths(inputs, out_dir, out_files, input_structure=True):
 
     outputs = []
     if isinstance(inputs, basestring):
@@ -50,13 +51,20 @@ def connect_output_paths(inputs, out_dir, out_files):
     elif len(inputs) == 1:
 
         for inp in inputs[0]:
-            dname = path.join(out_dir, path.dirname(inp))
+            if input_structure:
+                dname = path.join(out_dir, path.dirname(inp))
+            else:
+                dname = out_dir
             # base = path.splitext(path.basename(inp))[0]
             base = basename(inp)
             new_out_files = []
             for out_file in out_files:
-                new_out_files.append(
-                    path.join(dname, base + '_' + out_file))
+                if input_structure:
+                    new_out_files.append(
+                        path.join(dname, base + '_' + out_file))
+                else:
+                    new_out_files.append(
+                        path.join(out_dir, out_file))
             outputs.append(new_out_files)
 
     return inputs, outputs
@@ -95,8 +103,8 @@ class OutputCreator(object):
     inputs.
     """
 
-    def __init__(self):
-        pass
+    def __init__(self, input_structure=True):
+        self.input_structure = input_structure
 
     def set_inputs(self, *args):
         self.input_args = list(args)
@@ -113,7 +121,7 @@ class OutputCreator(object):
             self.updated_inputs, self.outputs = connect_output_paths(
                 self.inputs,
                 self.out_dir,
-                self.out_fnames)
+                self.out_fnames, self.input_structure)
         else:
             raise ImportError('No inputs')
 

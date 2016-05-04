@@ -125,6 +125,62 @@ def test_output_generator():
             print(out1)
             print(out2)
 
+        print('One single output but do not keep input structure')
+
+        og = OutputCreator(input_structure=False)
+        og.set_inputs(path.join(tmpdir, 'data', 's1', 'test.txt'))
+        og.set_out_dir(out_dir)
+        og.set_out_fnames(*out_files)
+        og.create_outputs()
+
+        npt.assert_equal(np.array(og.outputs).shape, (1, 2))
+        print(og.outputs)
+        print('\n')
+
+        for in1, out1, out2 in og:
+            print(in1)
+            print(out1)
+            print(out2)
+
+        print('Do not keep input structure and relative out_dir')
+
+        out_dir = 'out'
+
+        og = OutputCreator(input_structure=False)
+        og.set_inputs(path.join(tmpdir, 'data', 's1', 'test.txt'))
+        og.set_out_dir(out_dir)
+        og.set_out_fnames(*out_files)
+        og.create_outputs()
+
+        npt.assert_equal(np.array(og.outputs).shape, (1, 2))
+        print(og.outputs)
+        print('\n')
+
+        for in1, out1, out2 in og:
+            print(in1)
+            print(out1)
+            print(out2)
+
+        print('Two long inputs and input_structure False')
+
+        og = OutputCreator(input_structure=False)
+        og.set_inputs(path.join(tmpdir, 'data', 's*', 'test.txt'),
+                      path.join(tmpdir, 'data', 's*', 'other', 'test2.txt'))
+
+        og.set_out_dir(out_dir)
+        og.set_out_fnames(*out_files)
+
+        og.create_outputs()
+        npt.assert_equal(np.array(og.outputs).shape, (3, 2))
+        print(og.outputs)
+        print('\n')
+
+        for i_o in og:
+            print(i_o)
+        print('\n')
+
+
+
 
 if __name__ == '__main__':
 
