@@ -267,7 +267,7 @@ def test_ProbabilisticOdfWeightedTracker():
     for sl in streamlines:
         npt.assert_(np.allclose(sl, expected[1]))
 
-    # The first path is not possible if pmf_threshold>0.4 degree turns are excluded
+    # The first path is not possible if pmf_threshold > 0.4 degree
     dg = ProbabilisticDirectionGetter.from_pmf(pmf, 90, sphere,
                                                pmf_threshold=0.5)
     streamlines = LocalTracking(dg, tc, seeds, np.eye(4), 1.)
@@ -338,7 +338,7 @@ def test_MaximumDeterministicTracker():
         npt.assert_(np.allclose(sl, expected[1]))
 
     # Both path are not possible if 90 degree turns are exclude and
-    # if pmf_threhold is superior to 0.4. Streamlines should stop at
+    # if pmf_threhold is larger than 0.4. Streamlines should stop at
     # the crossing
 
     dg = DeterministicMaximumDirectionGetter.from_pmf(pmf, 80, sphere,

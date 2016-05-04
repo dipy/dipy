@@ -172,9 +172,6 @@ class ProbabilisticDirectionGetter(PeakDirectionGetter):
         max_angle : float, [0, 90]
             The maximum allowed angle between incoming direction and new
             direction.
-        mpmf_threshold : float, [0, 1.]
-            The maximum allowed angle between incoming direction and new
-            direction.
         sphere : Sphere
             The set of directions to be used for tracking.
         pmf_threshold : float [0., 1.]
