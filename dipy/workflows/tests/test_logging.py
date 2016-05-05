@@ -10,8 +10,7 @@ from dipy.workflows.segment import median_otsu_flow
 from nose.tools import assert_true
 
 def test_logging_consistency():
-
-     with TemporaryDirectory() as tmpdir:
+    with TemporaryDirectory() as tmpdir:
         data_path, _, _ = get_data('small_25')
         prog_log = os.path.join(tmpdir, 'prog_log.txt')
         format = '%(levelname)s:%(message)s'
