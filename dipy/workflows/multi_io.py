@@ -143,6 +143,14 @@ def basename(fname):
             base = path.splitext(path.basename(fname))[0]
     return base
 
+def io_iterator(inputs, out_dir, fnames, input_structure=True):
+    io_it = IOIterator(input_structure=input_structure)
+    io_it.set_inputs(*inputs)
+    io_it.set_out_dir(out_dir)
+    io_it.set_out_fnames(*fnames)
+    io_it.create_outputs()
+
+    return io_it
 
 class IOIterator(object):
     """ Create output filenames that work nicely with muiltiple input files from multiple directories (processing multiple subjects with one command)
