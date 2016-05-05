@@ -2,7 +2,7 @@ import os
 import numpy as np
 import os.path as path
 import numpy.testing as npt
-from dipy.workflows.multi_io import IOIterator
+from dipy.workflows.multi_io import IOIterator, io_iterator
 from nibabel.tmpdirs import TemporaryDirectory
 
 
@@ -203,6 +203,13 @@ def test_output_generator():
         # set_trace()
         print('\n')
 
+        print('Single line creation')
+        io_it = io_iterator(og.input_args, og.out_dir, og.out_fnames,
+                            og.input_structure)
+
+        for it1, it2 in zip(io_it, og):
+            npt.assert_equal(np.array(it1), np.array(it2))
+
         out_files = ['out_info_yoga.txt']
 
         print('Two single inputs, one output and input_structure True')
@@ -284,7 +291,6 @@ def test_output_generator():
 
         # set_trace()
         print('\n')
-
 
 if __name__ == '__main__':
 
