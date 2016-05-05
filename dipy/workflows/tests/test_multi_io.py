@@ -2,9 +2,7 @@ import os
 import numpy as np
 import os.path as path
 import numpy.testing as npt
-from glob import glob
-from ipdb import set_trace
-from dipy.workflows.multi_io import OutputCreator
+from dipy.workflows.multi_io import IOIterator
 from nibabel.tmpdirs import TemporaryDirectory
 
 
@@ -58,7 +56,7 @@ def test_output_generator():
 
         print('Two long inputs')
 
-        og = OutputCreator()
+        og = IOIterator()
         og.set_inputs(path.join(tmpdir, 'data', 's*', 'test.txt'),
                       path.join(tmpdir, 'data', 's*', 'other', 'test2.txt'))
 
@@ -78,7 +76,7 @@ def test_output_generator():
 
         print('One long input and one single')
 
-        og = OutputCreator()
+        og = IOIterator()
         og.set_inputs(path.join(tmpdir, 'data', 's*', 'test.txt'),
                       path.join(tmpdir, 'template', 'avg.txt'))
         og.set_out_dir(out_dir)
@@ -96,7 +94,7 @@ def test_output_generator():
 
         print('One single and one single input')
 
-        og = OutputCreator()
+        og = IOIterator()
         og.set_inputs(path.join(tmpdir, 'data', 's1', 'test.txt'),
                       path.join(tmpdir, 'template', 'avg.txt'))
         og.set_out_dir(out_dir)
@@ -114,7 +112,7 @@ def test_output_generator():
 
         print('One single input')
 
-        og = OutputCreator()
+        og = IOIterator()
         og.set_inputs(path.join(tmpdir, 'data', 's1', 'test.txt'))
         og.set_out_dir(out_dir)
         og.set_out_fnames(*out_files)
@@ -130,7 +128,7 @@ def test_output_generator():
 
         print('One single output but do not keep input structure')
 
-        og = OutputCreator(input_structure=False)
+        og = IOIterator(input_structure=False)
         og.set_inputs(path.join(tmpdir, 'data', 's1', 'test.txt'))
         og.set_out_dir(out_dir)
         og.set_out_fnames(*out_files)
@@ -148,7 +146,7 @@ def test_output_generator():
 
         print('Do not keep input structure and relative out_dir')
 
-        og = OutputCreator(input_structure=False)
+        og = IOIterator(input_structure=False)
         og.set_inputs(path.join(tmpdir, 'data', 's1', 'test.txt'))
         og.set_out_dir(out_dir)
         og.set_out_fnames(*out_files)
@@ -164,7 +162,7 @@ def test_output_generator():
 
         print('Two long inputs and input_structure True')
 
-        og = OutputCreator(input_structure=True)
+        og = IOIterator(input_structure=True)
         og.set_inputs(path.join(tmpdir, 'data', 's*', 'test.txt'),
                       path.join(tmpdir, 'data', 's*', 'other', 'test2.txt'))
 
@@ -185,7 +183,7 @@ def test_output_generator():
 
         print('Two long inputs and input_structure False')
 
-        og = OutputCreator(input_structure=False)
+        og = IOIterator(input_structure=False)
         og.set_inputs(path.join(tmpdir, 'data', 's*', 'test.txt'),
                       path.join(tmpdir, 'data', 's*', 'other', 'test2.txt'))
 
@@ -209,7 +207,7 @@ def test_output_generator():
 
         print('Two single inputs, one output and input_structure True')
 
-        og = OutputCreator(input_structure=True)
+        og = IOIterator(input_structure=True)
         og.set_inputs(path.join(tmpdir, 'data', 's1', 'test.txt'),
                       path.join(tmpdir, 'data', 's1', 'other', 'test2.txt'))
 
@@ -230,7 +228,7 @@ def test_output_generator():
 
         print('Two single inputs, one output and input_structure False')
 
-        og = OutputCreator(input_structure=False)
+        og = IOIterator(input_structure=False)
         og.set_inputs(path.join(tmpdir, 'data', 's1', 'test.txt'),
                       path.join(tmpdir, 'data', 's1', 'other', 'test2.txt'))
 
@@ -251,7 +249,7 @@ def test_output_generator():
 
         print('One single input, one output and input_structure False')
 
-        og = OutputCreator(input_structure=False)
+        og = IOIterator(input_structure=False)
         og.set_inputs(path.join(tmpdir, 'data', 's1', 'test.txt'))
 
         og.set_out_dir(out_dir)
@@ -270,7 +268,7 @@ def test_output_generator():
 
         print('One single input, one output and input_structure True')
 
-        og = OutputCreator(input_structure=True)
+        og = IOIterator(input_structure=True)
         og.set_inputs(path.join(tmpdir, 'data', 's1', 'test.txt'))
 
         og.set_out_dir(out_dir)
