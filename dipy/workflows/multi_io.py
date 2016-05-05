@@ -2,7 +2,7 @@ import os
 import numpy as np
 from glob import glob
 import os.path as path
-
+import inspect
 
 def common_start(sa, sb):
     """ Returns the longest common substring from the beginning of sa and sb """
@@ -151,6 +151,33 @@ def io_iterator(inputs, out_dir, fnames, input_structure=True):
     io_it.create_outputs()
 
     return io_it
+
+def io_iterator_(frame, fnc):
+    args, _, _, values = inspect.getargvalues(frame)
+    specs = inspect.getargspec(fnc)
+    spargs = specs.args
+    defaults = specs.defaults
+
+    len_args = len(spargs)
+    len_defaults = len(defaults)
+    split_at = len_args - len_defaults
+
+    inputs = []
+    outputs = []
+    out_dir = ''
+
+    # inputs
+    for arv in args[:split_at]:
+        inputs.append(values[arv])
+
+    # defaults
+    for arv in args[split_at:]:
+        if arv == 'out_dir':
+            out_dir = values[arv]
+        elif 'out_' in arv:
+            outputs.append(values[arv])
+
+    return io_iterator(inputs, out_dir, outputs)
 
 class IOIterator(object):
     """ Create output filenames that work nicely with muiltiple input files from multiple directories (processing multiple subjects with one command)
