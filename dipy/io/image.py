@@ -1,8 +1,6 @@
 from __future__ import division, print_function, absolute_import
 
 import nibabel as nib
-import numpy as np
-
 
 def load_nifti(fname, return_img=False, return_voxsize=False):
     img = nib.load(fname)
@@ -17,3 +15,7 @@ def load_nifti(fname, return_img=False, return_voxsize=False):
         ret_val.append(img)
 
     return tuple(ret_val)
+
+def save_nifti(fname, data, affine):
+    result_img = nib.Nifti1Image(data, affine)
+    result_img.to_filename(fname)
