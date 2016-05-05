@@ -25,8 +25,7 @@ def test_logging_consistency():
 
         cmd_log = os.path.join(tmpdir, 'cmd_log.txt')
         cmd_line = \
-            'python ../../../bin/dipy_median_otsu {0}' \
-            ' --out_dir {1} --log_file {2} --log_level {3}'.\
+            'dipy_median_otsu {0} --out_dir {1} --log_file {2} --log_level {3}'.\
                 format(data_path, tmpdir, cmd_log, level)
 
         subprocess.call(cmd_line.split(' '))
