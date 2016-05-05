@@ -2,8 +2,6 @@ import os
 import numpy as np
 from glob import glob
 import os.path as path
-from ipdb import set_trace
-from dipy.workflows.utils import choose_create_out_dir
 
 
 def common_start(sa, sb):
@@ -146,7 +144,7 @@ def basename(fname):
     return base
 
 
-class OutputCreator(object):
+class IOIterator(object):
     """ Create output filenames that work nicely with muiltiple input files from multiple directories (processing multiple subjects with one command)
 
     Use information from input files, out_dir and out_fnames to generate correct outputs which can come from long lists of multiple or single
