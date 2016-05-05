@@ -1,13 +1,12 @@
 from __future__ import division, print_function, absolute_import
 
 import logging
-from glob import glob
-from os.path import join, basename, splitext
-
 import nibabel as nib
 import numpy as np
 
-from dipy.workflows.utils import choose_create_out_dir
+import inspect
+
+from dipy.workflows.multi_io import io_iterator, io_iterator_
 from dipy.segment.mask import median_otsu
 
 
@@ -51,7 +50,11 @@ def median_otsu_flow(input_files, save_masked=False,
     out_masked : string, optional
         Name of the masked volume to be saved (default 'dwi_masked.nii.gz')
     """
-    for fpath in glob(input_files):
+
+    frame = inspect.currentframe()
+    io_it = io_iterator_(frame, median_otsu_flow)
+
+    for fpath, mask_out_path, masked_out_path in io_it:
         logging.info('Applying median_otsu segmentation on {0}'.format(fpath))
         img = nib.load(fpath)
         volume = img.get_data()
@@ -60,15 +63,11 @@ def median_otsu_flow(input_files, save_masked=False,
                                    numpass, autocrop,
                                    vol_idx, dilate)
 
-        out_dir_path = choose_create_out_dir(out_dir, fpath)
-
         mask_img = nib.Nifti1Image(mask_volume.astype(np.float32), img.get_affine())
-        mask_out_path = join(out_dir_path, out_mask)
         mask_img.to_filename(mask_out_path)
         logging.info('Mask saved as {0}'.format(mask_out_path))
 
         if save_masked:
             masked_img = nib.Nifti1Image(masked_volume, img.get_affine(), img.get_header())
-            masked_out_path = join(out_dir_path, out_masked)
             masked_img.to_filename(masked_out_path)
             logging.info('Masked volume saved as {0}'.format(masked_out_path))
