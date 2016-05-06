@@ -50,16 +50,16 @@ def median_otsu_flow(input_files, save_masked=False,
     out_masked : string, optional
         Name of the masked volume to be saved (default 'dwi_masked.nii.gz')
     """
-    io_it = io_iterator_(inspect.currentframe(), median_otsu_flow)
+    io_it = io_iterator_(inspect.currentframe(), median_otsu_flow,
+                         input_structure=False)
 
     for fpath, mask_out_path, masked_out_path in io_it:
         logging.info('Applying median_otsu segmentation on {0}'.format(fpath))
         img = nib.load(fpath)
         volume = img.get_data()
 
-        masked_volume, mask_volume = median_otsu(volume, median_radius,
-                                   numpass, autocrop,
-                                   vol_idx, dilate)
+        masked_volume, mask_volume = median_otsu(volume, median_radius, numpass,
+                                                 autocrop, vol_idx, dilate)
 
         mask_img = nib.Nifti1Image(mask_volume.astype(np.float32), img.get_affine())
         mask_img.to_filename(mask_out_path)
