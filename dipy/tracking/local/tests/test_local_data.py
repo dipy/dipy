@@ -15,28 +15,29 @@ import dipy.reconst.dti as dti
 from dipy.reconst.dti import fractional_anisotropy
 
 
-fdata, fbval, fbvec = dpd.get_data('small_101D')
-img = nib.load(fdata)
-gtab = dpg.gradient_table(fbval, fbvec)
-data = img.get_data()
-affine = img.get_affine()
+def test_local_tracking_with_data():
+    fdata, fbval, fbvec = dpd.get_data('small_101D')
+    img = nib.load(fdata)
+    gtab = dpg.gradient_table(fbval, fbvec)
+    data = img.get_data()
+    affine = img.get_affine()
 
-seed_mask = np.ones(data.shape[:3])
-seeds = utils.seeds_from_mask(seed_mask, density=1, affine=affine)
-csd_model = ConstrainedSphericalDeconvModel(gtab, None, sh_order=6)
-csd_fit = csd_model.fit(data, mask=seed_mask)
-
-
-tensor_model = dti.TensorModel(gtab)
-tenfit = tensor_model.fit(data, mask=seed_mask)
-
-FA = fractional_anisotropy(tenfit.evals)
-classifier = ThresholdTissueClassifier(FA, .2)
+    seed_mask = np.ones(data.shape[:3])
+    seeds = utils.seeds_from_mask(seed_mask, density=1, affine=affine)
+    csd_model = ConstrainedSphericalDeconvModel(gtab, None, sh_order=6)
+    csd_fit = csd_model.fit(data, mask=seed_mask)
 
 
-detmax_dg = DeterministicMaximumDirectionGetter.from_shcoeff(
-                                                    csd_fit.shm_coeff,
-                                                    max_angle=30.,
-                                                    sphere=default_sphere)
+    tensor_model = dti.TensorModel(gtab)
+    tenfit = tensor_model.fit(data, mask=seed_mask)
 
-streamlines = LocalTracking(detmax_dg, classifier, seeds, affine, step_size=.5)
+    FA = fractional_anisotropy(tenfit.evals)
+    classifier = ThresholdTissueClassifier(FA, .2)
+
+
+    detmax_dg = DeterministicMaximumDirectionGetter.from_shcoeff(
+                                                        csd_fit.shm_coeff,
+                                                        max_angle=30.,
+                                                        sphere=default_sphere)
+
+    streamlines = LocalTracking(detmax_dg, classifier, seeds, affine, step_size=.5)
