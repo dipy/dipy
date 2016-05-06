@@ -37,6 +37,7 @@ def connect_output_paths(inputs, out_dir, out_files, input_structure=True):
 
             for (mix_inp, inp) in zip(mixing_names, inputs[0]):
                 if input_structure:
+                    inp = os.path.splitdrive(inp)[1]
                     if path.isabs(out_dir):
                         dname = out_dir + path.dirname(inp)
                     if not path.isabs(out_dir):
@@ -47,6 +48,7 @@ def connect_output_paths(inputs, out_dir, out_files, input_structure=True):
                 updated_out_files = []
                 for out_file in out_files:
                     if input_structure:
+                        inp = os.path.splitdrive(inp)[1]
                         updated_out_files.append(
                             path.join(dname, mix_inp + '_' + out_file))
                     else:
@@ -71,6 +73,7 @@ def connect_output_paths(inputs, out_dir, out_files, input_structure=True):
             for (mix_inp, inp) in zip(mixing_names, inputs[0]):
 
                 if input_structure:
+                    inp = os.path.splitdrive(inp)[1]
                     if not path.isabs(out_dir):
                         dname = path.join(
                             os.getcwd(), out_dir + path.dirname(inp))
@@ -81,6 +84,7 @@ def connect_output_paths(inputs, out_dir, out_files, input_structure=True):
                 updated_out_files = []
                 for out_file in out_files:
                     if input_structure:
+                        inp = os.path.splitdrive(inp)[1]
                         updated_out_files.append(
                             path.join(dname, mix_inp + '_' + out_file))
                     else:
@@ -95,6 +99,7 @@ def connect_output_paths(inputs, out_dir, out_files, input_structure=True):
         for inp in inputs[0]:
 
             if input_structure:
+                inp = os.path.splitdrive(inp)[1]
                 if path.isabs(out_dir):
                     dname = out_dir + path.dirname(inp)
                 if not path.isabs(out_dir):
@@ -108,6 +113,7 @@ def connect_output_paths(inputs, out_dir, out_files, input_structure=True):
             new_out_files = []
             for out_file in out_files:
                 if input_structure:
+                    inp = os.path.splitdrive(inp)[1]
                     new_out_files.append(
                         path.join(dname, base + '_' + out_file))
                 else:
@@ -152,7 +158,7 @@ def io_iterator(inputs, out_dir, fnames, input_structure=True):
 
     return io_it
 
-def io_iterator_(frame, fnc):
+def io_iterator_(frame, fnc, input_structure=True):
     args, _, _, values = inspect.getargvalues(frame)
     specs = inspect.getargspec(fnc)
     spargs = specs.args
@@ -177,7 +183,7 @@ def io_iterator_(frame, fnc):
         elif 'out_' in arv:
             outputs.append(values[arv])
 
-    return io_iterator(inputs, out_dir, outputs)
+    return io_iterator(inputs, out_dir, outputs, input_structure)
 
 class IOIterator(object):
     """ Create output filenames that work nicely with muiltiple input files from multiple directories (processing multiple subjects with one command)
