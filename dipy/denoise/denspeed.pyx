@@ -19,6 +19,7 @@ def nlmeans_3d(arr, mask=None, sigma=None, patch_radius=1,
                block_radius=5, rician=True, num_threads=None):
     """ Non-local means for denoising 3D images
 
+
     Parameters
     ----------
     arr : 3D ndarray
@@ -59,19 +60,23 @@ def nlmeans_3d(arr, mask=None, sigma=None, patch_radius=1,
 
     arr = np.ascontiguousarray(arr, dtype='f8')
     arr = add_padding_reflection(arr, block_radius + patch_radius)
-    mask = add_padding_reflection(mask.astype('f8'), block_radius + patch_radius)
+    mask = add_padding_reflection(
+        mask.astype('f8'),
+        block_radius + patch_radius)
     sigma = np.ascontiguousarray(sigma, dtype='f8')
-    sigma = add_padding_reflection(sigma.astype('f8'), block_radius + patch_radius)
+    sigma = add_padding_reflection(
+        sigma.astype('f8'),
+        block_radius + patch_radius)
     arrnlm = _nlmeans_3d(arr, mask, sigma, patch_radius, block_radius,
                          rician, num_threads)
 
-    return remove_padding(arrnlm, block_radius+patch_radius)
+    return remove_padding(arrnlm, block_radius + patch_radius)
 
 
 @cython.wraparound(False)
 @cython.boundscheck(False)
-def _nlmeans_3d(double [:, :, ::1] arr, double [:, :, ::1] mask,
-                double [:, :, ::1] sigma, patch_radius=1, block_radius=5,
+def _nlmeans_3d(double[:, :, ::1] arr, double[:, :, ::1] mask,
+                double[:, :, ::1] sigma, patch_radius=1, block_radius=5,
                 rician=True, num_threads=None):
     """ This algorithm denoises the value of every voxel (i, j, k) by
     calculating a weight between a moving 3D patch and a static 3D patch
@@ -81,7 +86,7 @@ def _nlmeans_3d(double [:, :, ::1] arr, double [:, :, ::1] mask,
 
     cdef:
         cnp.npy_intp i, j, k, I, J, K
-        double [:, :, ::1] out = np.zeros_like(arr)
+        double[:, :, ::1] out = np.zeros_like(arr)
         double summ = 0
         cnp.npy_intp P = patch_radius
         cnp.npy_intp B = block_radius
@@ -103,9 +108,9 @@ def _nlmeans_3d(double [:, :, ::1] arr, double [:, :, ::1] mask,
 
     # move the block
     with nogil, parallel():
-        for i in range(B+P, I - B-P):
-            for j in range(B+P, J - B-P):
-                for k in range(B+P, K - B-P):
+        for i in prange(B + P, I - B - P):
+            for j in range(B + P, J - B - P):
+                for k in range(B + P, K - B - P):
 
                     if mask[i, j, k] == 0:
                         continue
@@ -127,9 +132,9 @@ def _nlmeans_3d(double [:, :, ::1] arr, double [:, :, ::1] mask,
 @cython.wraparound(False)
 @cython.boundscheck(False)
 @cython.cdivision(True)
-cdef double process_block(double [:, :, ::1] arr,
+cdef double process_block(double[:, :, ::1] arr,
                           cnp.npy_intp i, cnp.npy_intp j, cnp.npy_intp k,
-                          cnp.npy_intp B, cnp.npy_intp P, double [:, :, ::1] sigma) nogil:
+                          cnp.npy_intp B, cnp.npy_intp P, double[:, :, ::1] sigma) nogil:
     """ Process the block with center at (i, j, k)
 
     Parameters
@@ -152,7 +157,7 @@ cdef double process_block(double [:, :, ::1] arr,
 
     cdef:
         cnp.npy_intp m, n, o, M, N, O, a, b, c, cnt, step
-        double patch_vol_size,block_vol_size
+        double patch_vol_size, block_vol_size
         double summ, d, w, sumw, sum_out, x, sigm
         double * W
         double * cache
@@ -166,16 +171,31 @@ cdef double process_block(double [:, :, ::1] arr,
     sumw = 0
     patch_vol_size = (P + P + 1) * (P + P + 1) * (P + P + 1)
     block_vol_size = (B + B + 1) * (B + B + 1) * (B + B + 1)
-    
 
-    W = <double *> malloc(PS * PS * PS * sizeof(double))
-    cache = <double *> malloc(TS * TS * TS * sizeof(double))
-    sigma_block = <double *> malloc(TS * TS * TS * sizeof(double))
+    W = <double * > malloc(PS * PS * PS * sizeof(double))
+    cache = <double * > malloc(TS * TS * TS * sizeof(double))
+    sigma_block = <double * > malloc(TS * TS * TS * sizeof(double))
 
     # (i, j, k) coordinates are the center of the static patch
     # copy block in cache
-    copy_block_3d(cache, PS + BS- 1, PS + BS - 1, PS + BS - 1, arr, i - P - B, j - P - B, k - P - B)
-    copy_block_3d(sigma_block, PS + BS- 1, PS + BS - 1, PS + BS - 1, arr, i - P - B, j - P - B, k - P - B)
+    copy_block_3d(
+        cache,
+        PS + BS - 1,
+        PS + BS - 1,
+        PS + BS - 1,
+        arr,
+        i - P - B,
+        j - P - B,
+        k - P - B)
+    copy_block_3d(
+        sigma_block,
+        PS + BS - 1,
+        PS + BS - 1,
+        PS + BS - 1,
+        arr,
+        i - P - B,
+        j - P - B,
+        k - P - B)
 
     # calculate weights between the central patch and the moving patch in block
     # (m, n, o) coordinates are the center of the moving patch
@@ -193,9 +213,11 @@ cdef double process_block(double [:, :, ::1] arr,
                         for c in range(-B, B + 1):
 
                             # this line takes most of the time! mem access
-                            d = cache[(P + B + a) * TS * TS + (P + B + b) * TS + (P + B + c)] - cache[(P + B + m + a) * TS * TS + (P + B + n + b) * TS + (P + B + o + c)]
+                            d = cache[(P + B + a) * TS * TS + (P + B + b) * TS + (P + B + c)] - cache[
+                                (P + B + m + a) * TS * TS + (P + B + n + b) * TS + (P + B + o + c)]
                             summ += d * d
-                            sigm += sigma_block[(P + B + m + a) * TS * TS + (P + B + n + b) * TS + (P + B + o + c)]
+                            sigm += sigma_block[(P + B + m + a) * TS *
+                                                TS + (P + B + n + b) * TS + (P + B + o + c)]
 
                 denom = sqrt(2) * (sigm / block_vol_size)**2
                 w = exp(-(summ / block_vol_size) / denom)
@@ -217,7 +239,8 @@ cdef double process_block(double [:, :, ::1] arr,
                 else:
                     w = 0
 
-                x = cache[(P + B + m) * TS * TS + (P + B + n) * TS + (P + B + o)]
+                x = cache[(P + B + m) * TS * TS +
+                          (P + B + n) * TS + (P + B + o)]
                 sum_out += w * x * x
                 cnt += 1
 
@@ -228,16 +251,22 @@ cdef double process_block(double [:, :, ::1] arr,
     return sum_out
 
 
-def add_padding_reflection(double [:, :, ::1] arr, padding):
+def add_padding_reflection(double[:, :, ::1] arr, padding):
     cdef:
-        double [:, :, ::1] final
+        double[:, :, ::1] final
         cnp.npy_intp i, j, k
         cnp.npy_intp B = padding
-        cnp.npy_intp [::1] indices_i = correspond_indices(arr.shape[0], padding)
-        cnp.npy_intp [::1] indices_j = correspond_indices(arr.shape[1], padding)
-        cnp.npy_intp [::1] indices_k = correspond_indices(arr.shape[2], padding)
+        cnp.npy_intp[::1] indices_i = correspond_indices(arr.shape[0], padding)
+        cnp.npy_intp[::1] indices_j = correspond_indices(arr.shape[1], padding)
+        cnp.npy_intp[::1] indices_k = correspond_indices(arr.shape[2], padding)
 
-    final = np.zeros(np.array((arr.shape[0], arr.shape[1], arr.shape[2])) + 2*padding)
+    final = np.zeros(
+        np.array(
+            (arr.shape[0],
+             arr.shape[1],
+             arr.shape[2])) +
+        2 *
+        padding)
 
     for i in range(final.shape[0]):
         for j in range(final.shape[1]):
@@ -248,9 +277,11 @@ def add_padding_reflection(double [:, :, ::1] arr, padding):
 
 
 def correspond_indices(dim_size, padding):
-    return np.ascontiguousarray(np.hstack((np.arange(1, padding + 1)[::-1],
-                                np.arange(dim_size),
-                                np.arange(dim_size - padding - 1, dim_size - 1)[::-1])),
+    return np.ascontiguousarray(np.hstack((np.arange(1,
+                                                     padding + 1)[::-1],
+                                           np.arange(dim_size),
+                                           np.arange(dim_size - padding - 1,
+                                                     dim_size - 1)[::-1])),
                                 dtype=np.intp)
 
 
@@ -267,7 +298,7 @@ cdef cnp.npy_intp copy_block_3d(double * dest,
                                 cnp.npy_intp I,
                                 cnp.npy_intp J,
                                 cnp.npy_intp K,
-                                double [:, :, ::1] source,
+                                double[:, :, ::1] source,
                                 cnp.npy_intp min_i,
                                 cnp.npy_intp min_j,
                                 cnp.npy_intp min_k) nogil:
@@ -276,7 +307,7 @@ cdef cnp.npy_intp copy_block_3d(double * dest,
 
     for i in range(I):
         for j in range(J):
-            memcpy(&dest[i * J * K  + j * K], &source[i + min_i, j + min_j, min_k], K * sizeof(double))
+            memcpy(& dest[i * J * K + j * K], & source[i + min_i, j + min_j, min_k], K * sizeof(double))
 
     return 1
 
@@ -286,4 +317,3 @@ def cpu_count():
         return openmp.omp_get_num_procs()
     else:
         return 1
-
