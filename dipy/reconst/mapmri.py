@@ -378,12 +378,12 @@ class MapmriModel(Cache):
 
         coef = coef / sum(coef * self.Bm)
 
-        return MapmriFit(self, coef, mu, R, self.ind_mat, lopt)
+        return MapmriFit(self, coef, mu, R, lopt)
 
 
 class MapmriFit(ReconstFit):
 
-    def __init__(self, model, mapmri_coef, mu, R, ind_mat, lopt):
+    def __init__(self, model, mapmri_coef, mu, R, lopt):
         """ Calculates diffusion properties for a single voxel
 
         Parameters
@@ -406,7 +406,6 @@ class MapmriFit(ReconstFit):
         self.radial_order = model.radial_order
         self.mu = mu
         self.R = R
-        self.ind_mat = ind_mat
         self.lopt = lopt
 
     @property
@@ -506,7 +505,7 @@ class MapmriFit(ReconstFit):
         NeuroImage (2016).
         """
         Bm = self.model.Bm
-        ind_mat = self.ind_mat
+        ind_mat = self.model.ind_mat
         if self.model.anisotropic_scaling:
             sel = Bm > 0.  # select only relevant coefficients
             const = 1 / (np.sqrt(2 * np.pi) * self.mu[0])
@@ -558,7 +557,7 @@ class MapmriFit(ReconstFit):
         NeuroImage (2016).
         """
         Bm = self.model.Bm
-        ind_mat = self.ind_mat
+        ind_mat = self.model.ind_mat
         if self.model.anisotropic_scaling:
             sel = Bm > 0.  # select only relevant coefficients
             const = 1 / (2 * np.pi * np.prod(self.mu[1:]))
