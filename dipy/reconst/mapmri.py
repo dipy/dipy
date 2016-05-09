@@ -381,12 +381,12 @@ class MapmriModel(Cache):
 
         coef = coef / sum(coef * self.Bm)
 
-        return MapmriFit(self, coef, mu, R, self.ind_mat, lopt)
+        return MapmriFit(self, coef, mu, R, lopt)
 
 
 class MapmriFit(ReconstFit):
 
-    def __init__(self, model, mapmri_coef, mu, R, ind_mat, lopt):
+    def __init__(self, model, mapmri_coef, mu, R, lopt):
         """ Calculates diffusion properties for a single voxel
 
         Parameters
@@ -409,7 +409,6 @@ class MapmriFit(ReconstFit):
         self.radial_order = model.radial_order
         self.mu = mu
         self.R = R
-        self.ind_mat = ind_mat
         self.lopt = lopt
 
     @property
@@ -509,7 +508,7 @@ class MapmriFit(ReconstFit):
         NeuroImage (2016).
         """
         Bm = self.model.Bm
-        ind_mat = self.ind_mat
+        ind_mat = self.model.ind_mat
         if self.model.anisotropic_scaling:
             sel = Bm > 0.  # select only relevant coefficients
             const = 1 / (np.sqrt(2 * np.pi) * self.mu[0])
@@ -561,7 +560,7 @@ class MapmriFit(ReconstFit):
         NeuroImage (2016).
         """
         Bm = self.model.Bm
-        ind_mat = self.ind_mat
+        ind_mat = self.model.ind_mat
         if self.model.anisotropic_scaling:
             sel = Bm > 0.  # select only relevant coefficients
             const = 1 / (2 * np.pi * np.prod(self.mu[1:]))
@@ -615,12 +614,12 @@ class MapmriFit(ReconstFit):
 
         if self.model.anisotropic_scaling:
             const = 1 / (np.sqrt(8 * np.pi ** 3) * np.prod(self.mu))
-            ind_sum = (-1.0) ** (np.sum(self.ind_mat, axis=1) / 2)
+            ind_sum = (-1.0) ** (np.sum(self.model.ind_mat, axis=1) / 2)
             rtop_vec = const * ind_sum * Bm * self._mapmri_coef
             rtop = rtop_vec.sum()
         else:
             const = 1 / (2 * np.sqrt(2.0) * np.pi ** (3 / 2.0))
-            rtop_vec = const * (-1.0) ** (self.ind_mat[:, 0] - 1) * Bm
+            rtop_vec = const * (-1.0) ** (self.model.ind_mat[:, 0] - 1) * Bm
             rtop = (1 / self.mu[0] ** 3) * rtop_vec * self._mapmri_coef
             rtop = rtop.sum()
         return rtop
