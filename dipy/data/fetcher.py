@@ -4,11 +4,6 @@ import os
 import sys
 import contextlib
 
-if sys.version_info[0] < 3:
-    from urllib2 import urlopen
-else:
-    from urllib.request import urlopen
-
 from os.path import join as pjoin
 from hashlib import md5
 from shutil import copyfileobj
@@ -20,6 +15,12 @@ import tarfile
 import zipfile
 from dipy.core.gradients import gradient_table
 from dipy.io.gradients import read_bvals_bvecs
+
+if sys.version_info[0] < 3:
+    from urllib2 import urlopen
+else:
+    from urllib.request import urlopen
+
 
 # Set a user-writeable file-system location to put files:
 dipy_home = pjoin(os.path.expanduser('~'), '.dipy')
@@ -34,6 +35,41 @@ def _log(msg):
     For now, just prints the message
     """
     print(msg)
+
+
+def update_progressbar(progress, total_length):
+    """Show progressbar
+
+    Takes a number between 0 and 1 to indicate progress from 0 to 100%.
+
+    """
+    # Try to set the bar_length according to the console size
+    try:
+        columns = os.popen('tput cols', 'r').read()
+        bar_length = int(columns) - 46
+        if(not (bar_length > 1)):
+            bar_length = 20
+    except:
+        # Default value if determination of console size fails
+        bar_length = 20
+    block = int(round(bar_length*progress))
+    size_string = "{0:.2f} MB".format(float(total_length)/(1024*1024))
+    text = "\rDownload Progress: [{0}] {1:.2f}%  of {2}".format(
+        "#"*block + "-"*(bar_length-block), progress*100, size_string)
+    sys.stdout.write(text)
+    sys.stdout.flush()
+
+
+def copyfileobj_withprogress(fsrc, fdst, total_length, length=16*1024):
+    copied = 0
+    while True:
+        buf = fsrc.read(length)
+        if not buf:
+            break
+        fdst.write(buf)
+        copied += len(buf)
+        progress = float(copied)/float(total_length)
+        update_progressbar(progress, total_length)
 
 
 def _already_there_msg(folder):
@@ -81,8 +117,20 @@ def check_md5(filename, stored_md5=None):
 
 def _get_file_data(fname, url):
     with contextlib.closing(urlopen(url)) as opener:
+        if sys.version_info[0] < 3:
+            try:
+                response_size = opener.headers['content-length']
+            except KeyError:
+                response_size = None
+        else:
+            # python3.x
+            # returns none if header not found
+            response_size = opener.getheader("Content-Length")
         with open(fname, 'wb') as data:
-            copyfileobj(opener, data)
+            if(response_size is None):
+                copyfileobj(opener, data)
+            else:
+                copyfileobj_withprogress(opener, data, response_size)
 
 
 def fetch_data(files, folder, data_size=None):
@@ -280,7 +328,8 @@ fetch_taiwan_ntu_dsi = _make_fetcher(
      'a95eb1be44748c20214dc7aa654f9e6b',
      '7fa1d5e272533e832cc7453eeba23f44'],
     doc="Download a DSI dataset with 203 gradient directions",
-    msg="See DSI203_license.txt for LICENSE. For the complete datasets please visit : http://dsi-studio.labsolver.org",
+    msg="See DSI203_license.txt for LICENSE. For the complete datasets please visit : \
+         http://dsi-studio.labsolver.org",
     data_size="91MB")
 
 fetch_syn_data = _make_fetcher(
@@ -307,7 +356,7 @@ fetch_mni_template = _make_fetcher(
     ['6e2168072e80aa4c0c20f1e6e52ec0c8',
      'f41f2e1516d880547fbf7d6a83884f0d',
      '1ea8f4f1e41bc17a94602e48141fdbc8'],
-    doc = "Fetch the MNI T2 and T1 template files",
+    doc="Fetch the MNI T2 and T1 template files",
     data_size="35MB")
 
 fetch_scil_b0 = _make_fetcher(
@@ -317,8 +366,9 @@ fetch_scil_b0 = _make_fetcher(
     ['datasets_multi-site_all_companies.zip'],
     ['datasets_multi-site_all_companies.zip'],
     None,
+    doc="Download b=0 datasets from multiple MR systems (GE, Philips, Siemens) \
+         and different magnetic fields (1.5T and 3T)",
     data_size="9.2MB",
-    doc="Download b=0 datasets from multiple MR systems (GE, Philips, Siemens) and different magnetic fields (1.5T and 3T)",
     unzip=True)
 
 fetch_viz_icons = _make_fetcher("fetch_viz_icons",
@@ -631,8 +681,7 @@ def fetch_cenir_multib(with_raw=False):
                          '4e4324c676f5a97b3ded8bbb100bf6e5'])
 
     files = {}
-    baseurl = \
-'https://digital.lib.washington.edu/researchworks/bitstream/handle/1773/33311/'
+    baseurl = 'https://digital.lib.washington.edu/researchworks/bitstream/handle/1773/33311/'
 
     for f, m in zip(fname_list, md5_list):
         files[f] = (baseurl + f, m)
@@ -751,7 +800,7 @@ def read_bundles_2_subjects(subj_id='subj_1', metrics=['fa'],
     References
     ----------
 
-    .. [1] Renaud, E., M. Descoteaux, M. Bernier, E. Garyfallidis,
+    .. [1] Renauld, E., M. Descoteaux, M. Bernier, E. Garyfallidis,
     K. Whittingstall, "Morphology of thalamus, LGN and optic radiation do not
     influence EEG alpha waves", Plos One (under submission), 2015.
 

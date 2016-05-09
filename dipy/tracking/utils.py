@@ -93,7 +93,7 @@ except ImportError:
 
 
 def density_map(streamlines, vol_dims, voxel_size=None, affine=None):
-    """Counts the number of unique streamlines that pass though each voxel.
+    """Counts the number of unique streamlines that pass through each voxel.
 
     Parameters
     ----------
@@ -120,9 +120,9 @@ def density_map(streamlines, vol_dims, voxel_size=None, affine=None):
 
     Notes
     -----
-    A streamline can pass though a voxel even if one of the points of the
+    A streamline can pass through a voxel even if one of the points of the
     streamline does not lie in the voxel. For example a step from [0,0,0] to
-    [0,0,2] passes though [0,0,1]. Consider subsegmenting the streamlines when
+    [0,0,2] passes through [0,0,1]. Consider subsegmenting the streamlines when
     the edges of the voxels are smaller than the steps of the streamlines.
 
     """
@@ -436,16 +436,17 @@ def seeds_from_mask(mask, density=[1, 1, 1], voxel_size=None, affine=None):
     return seeds
 
 
-def random_seeds_from_mask(mask, seeds_count=1, seed_count_per_voxel=True, affine=None):
+def random_seeds_from_mask(mask, seeds_count=1, seed_count_per_voxel=True,
+                           affine=None):
     """Creates randomly placed seeds for fiber tracking from a binary mask.
 
     Seeds points are placed randomly distributed in voxels of ``mask``
     which are ``True``.
     If ``seed_count_per_voxel`` is ``True``, this function is
-    similar to ``seeds_from_mask()``, with the difference that instead of evenly
-    distributing the seeds, it randomly places the seeds within the voxels
-    specified by the ``mask``. The initial random conditions can be set using
-    ``numpy.random.seed(...)``, prior to calling this function.
+    similar to ``seeds_from_mask()``, with the difference that instead of
+    evenly distributing the seeds, it randomly places the seeds within the
+    voxels specified by the ``mask``. The initial random conditions can be set
+    using ``numpy.random.seed(...)``, prior to calling this function.
 
     Parameters
     ----------
@@ -560,13 +561,13 @@ def target(streamlines, target_mask, affine, include=True):
     affine : array (4, 4)
         The affine transform from voxel indices to streamline points.
     include : bool, default True
-        If True, streamlines passing though `target_mask` are kept. If False,
-        the streamlines not passing thought `target_mask` are kept.
+        If True, streamlines passing through `target_mask` are kept. If False,
+        the streamlines not passing through `target_mask` are kept.
 
     Returns
     -------
     streamlines : generator
-        A sequence of streamlines that pass though `target_mask`.
+        A sequence of streamlines that pass through `target_mask`.
 
     Raises
     ------
@@ -812,8 +813,8 @@ def affine_for_trackvis(voxel_size, voxel_order=None, dim=None,
         Mapping from the voxel indices of the reference image to trackvis
         space.
     """
-    if (voxel_order is not None or dim is not None or
-        ref_img_voxel_order is not None):
+    if ((voxel_order is not None or dim is not None or
+         ref_img_voxel_order is not None)):
         raise NotImplemented
 
     # Create affine

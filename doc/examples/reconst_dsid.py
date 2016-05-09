@@ -11,6 +11,7 @@ with higher angular resolution.
 In this example we will show with simulated data how this method's ODF performs
 against standard DSI ODF and a ground truth multi tensor ODF.
 """
+
 import numpy as np
 from dipy.sims.voxel import multi_tensor, multi_tensor_odf
 from dipy.data import get_data, get_sphere

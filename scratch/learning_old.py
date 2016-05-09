@@ -1,7 +1,7 @@
 ''' Learning algorithms for tractography'''
 
 import numpy as np
-from . import track_metrics as tm
+from dipy.core import track_metrics as tm
 import dipy.core.track_performance as pf
 from scipy import ndimage as nd
 import itertools

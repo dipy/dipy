@@ -3,8 +3,8 @@ from numpy.testing import (assert_equal,
                            assert_array_equal,
                            assert_array_almost_equal,
                            assert_raises)
-from .. import floating
-from .. import expectmax as em
+from dipy.align import floating
+from dipy.align import expectmax as em
 
 
 def test_compute_em_demons_step_2d():

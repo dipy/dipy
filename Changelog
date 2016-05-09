@@ -24,14 +24,14 @@ Dipy
 
 The code found in Dipy was created by the people found in the AUTHOR file.
 
-* 0.11 (Friday, February 12th, 2016)
+* 0.11 (Sunday, February 21st, 2016)
 
 - New framework for contextual enhancement of ODFs.
 - Compatibility with numpy (1.11).
 - Compatibility with VTK 7.0 which supports Python 3.x.
 - Faster PIESNO for noise estimation.
 - Reorient gradient directions according to motion correction parameters.
-- Dropped support for Python 3.2.
+- Supporting Python 3.3+ but not 3.2.
 - Reduced memory usage in DTI.
 - DSI now can use datasets with multiple b0s.
 - Fixed different issues with Windows 64bit and Python 3.5.

@@ -62,7 +62,7 @@ def add_noise(vol, snr=1.0, S0=None, noise_type='rician'):
     return np.reshape(vol_flat, orig_shape)
 
 
-def diff2eigenvectors(dx,dy,dz):
+def diff2eigenvectors(dx, dy, dz):
     """ numerical derivatives 2 eigenvectors
     """
     basis = np.eye(3)
@@ -197,54 +197,54 @@ def orbital_phantom(gtab=None,
 
 if __name__ == "__main__":
 
-    ## TODO: this can become a nice tutorial for generating phantoms
+    # TODO: this can become a nice tutorial for generating phantoms
 
     def f(t):
-        x=np.sin(t)
-        y=np.cos(t)
-        #z=np.zeros(t.shape)
-        z=np.linspace(-1,1,len(x))
-        return x,y,z
+        x = np.sin(t)
+        y = np.cos(t)
+        # z=np.zeros(t.shape)
+        z = np.linspace(-1, 1, len(x))
+        return x, y, z
 
-    #helix
-    vol=orbital_phantom(func=f)
+    # helix
+    vol = orbital_phantom(func=f)
 
     def f2(t):
-        x=np.linspace(-1,1,len(t))
-        y=np.linspace(-1,1,len(t))
-        z=np.zeros(x.shape)
-        return x,y,z
+        x = np.linspace(-1, 1, len(t))
+        y = np.linspace(-1, 1, len(t))
+        z = np.zeros(x.shape)
+        return x, y, z
 
-    #first direction
-    vol2=orbital_phantom(func=f2)
+    # first direction
+    vol2 = orbital_phantom(func=f2)
 
     def f3(t):
-        x=np.linspace(-1,1,len(t))
-        y=-np.linspace(-1,1,len(t))
-        z=np.zeros(x.shape)
-        return x,y,z
+        x = np.linspace(-1, 1, len(t))
+        y = -np.linspace(-1, 1, len(t))
+        z = np.zeros(x.shape)
+        return x, y, z
 
-    #second direction
-    vol3=orbital_phantom(func=f3)
-    #double crossing
-    vol23=vol2+vol3
+    # second direction
+    vol3 = orbital_phantom(func=f3)
+    # double crossing
+    vol23 = vol2 + vol3
 
-    #"""
+    # """
     def f4(t):
-        x=np.zeros(t.shape)
-        y=np.zeros(t.shape)
-        z=np.linspace(-1,1,len(t))
-        return x,y,z
+        x = np.zeros(t.shape)
+        y = np.zeros(t.shape)
+        z = np.linspace(-1, 1, len(t))
+        return x, y, z
 
-    #triple crossing
-    vol4=orbital_phantom(func=f4)
-    vol234=vol23+vol4
+    # triple crossing
+    vol4 = orbital_phantom(func=f4)
+    vol234 = vol23 + vol4
 
-    voln=add_rician_noise(vol234)
+    voln = add_rician_noise(vol234)
 
-    #"""
+    # """
 
-    #r=fvtk.ren()
-    #fvtk.add(r,fvtk.volume(vol234[...,0]))
-    #fvtk.show(r)
-    #vol234n=add_rician_noise(vol234,20)
+    # r=fvtk.ren()
+    # fvtk.add(r,fvtk.volume(vol234[...,0]))
+    # fvtk.show(r)
+    # vol234n=add_rician_noise(vol234,20)

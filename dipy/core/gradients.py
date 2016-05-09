@@ -1,6 +1,6 @@
 from __future__ import division, print_function, absolute_import
 
-from ..utils.six import string_types
+from dipy.utils.six import string_types
 
 import numpy as np
 try:
@@ -9,9 +9,9 @@ except ImportError:   # Some elderly scipy doesn't have polar
     from dipy.fixes.scipy import polar
 from scipy.linalg import inv
 
-from ..io import gradients as io
-from .onetime import auto_attr
-from .geometry import vector_norm
+from dipy.io import gradients as io
+from dipy.core.onetime import auto_attr
+from dipy.core.geometry import vector_norm
 
 
 class GradientTable(object):
@@ -150,6 +150,7 @@ def gradient_table_from_bvals_bvecs(bvals, bvecs, b0_threshold=0, atol=1e-2,
 
     return grad_table
 
+
 def gradient_table(bvals, bvecs=None, big_delta=None, small_delta=None,
                    b0_threshold=0, atol=1e-2):
     """A general function for creating diffusion MR gradients.
@@ -244,7 +245,7 @@ def gradient_table(bvals, bvecs=None, big_delta=None, small_delta=None,
                              " array containing both bvals and bvecs")
     else:
         bvecs = np.asarray(bvecs)
-        if (bvecs.shape[1] > bvecs.shape[0])  and bvecs.shape[0] > 1:
+        if (bvecs.shape[1] > bvecs.shape[0]) and bvecs.shape[0] > 1:
             bvecs = bvecs.T
     return gradient_table_from_bvals_bvecs(bvals, bvecs, big_delta=big_delta,
                                            small_delta=small_delta,

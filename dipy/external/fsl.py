@@ -107,12 +107,12 @@ def flirt2aff(mat, in_img, ref_img):
     *refspace* is simply *voxtrans* for the reference image.
 
     A negative determinant for the image affine is the common case, of an image
-    with a x voxel flip.  Analyze images don't store affines and flirt assumes a
-    negative determinant in these cases.
+    with a x voxel flip.  Analyze images don't store affines and flirt assumes
+    a negative determinant in these cases.
 
-    For positive determinant affines, flirt starts *inspace* and / or *refspace*
-    with an x voxel flip.  The mapping implied for an x voxel flip for image
-    with shape (N_i, N_j, N_k) is:
+    For positive determinant affines, flirt starts *inspace* and / or
+    *refspace* with an x voxel flip.  The mapping implied for an x voxel flip
+    for image with shape (N_i, N_j, N_k) is:
 
         [[-1, 0, 0, N_i - 1],
          [ 0, 1, 0,       0],
@@ -125,8 +125,8 @@ def flirt2aff(mat, in_img, ref_img):
     given by the input image first axis length.  Similarly the mapping from
     reference voxel coordinates to *refspace*, if the reference image has a
     positive determinant, is ``np.dot(ref_voxtrans, ref_x_flip)`` - where
-    ``ref_x_flip`` is the matrix above with ``N_i`` given by the reference image
-    first axis length.
+    ``ref_x_flip`` is the matrix above with ``N_i`` given by the reference
+    image first axis length.
     """
     in_hdr = in_img.get_header()
     ref_hdr = ref_img.get_header()
@@ -216,8 +216,10 @@ def warp_displacements(ffa, flaff, fdis, fref, ffaw, order=1):
     # hold the displacements' shape reshaping
     di, dj, dk, dl = disdata.shape
     # do the interpolation using map coordinates
-    # the list of points where the interpolation is done given by the reshaped in 2D A2 (list of 3d points in fa index)
-    W = mc(fadata, A2.reshape(di * dj * dk, dl).T, order=order).reshape(di, dj, dk)
+    # the list of points where the interpolation is done given by the reshaped
+    # in 2D A2 (list of 3d points in fa index)
+    W = mc(fadata, A2.reshape(di * dj * dk, dl).T, order=order).reshape(di, dj,
+                                                                        dk)
     # save the warped image
     Wimg = nib.Nifti1Image(W, refaff)
     nib.save(Wimg, ffaw)
@@ -286,9 +288,12 @@ def warp_displacements_tracks(fdpy, ffa, fmat, finv, fdis, fdisa, fref, fdpyw):
     shape = nib.load(ffa).get_data().shape
 
     # transform the displacements affine back to image space
-    disaff0 = affine_transform(disaff[..., 0], res[:3, :3], res[:3, 3], shape, order=1)
-    disaff1 = affine_transform(disaff[..., 1], res[:3, :3], res[:3, 3], shape, order=1)
-    disaff2 = affine_transform(disaff[..., 2], res[:3, :3], res[:3, 3], shape, order=1)
+    disaff0 = affine_transform(disaff[..., 0], res[:3, :3], res[:3, 3], shape,
+                               order=1)
+    disaff1 = affine_transform(disaff[..., 1], res[:3, :3], res[:3, 3], shape,
+                               order=1)
+    disaff2 = affine_transform(disaff[..., 2], res[:3, :3], res[:3, 3], shape,
+                               order=1)
 
     # remove the transformed affine from the invwarp displacements
     di = invwdata[:, :, :, 0] + disaff0
@@ -297,7 +302,8 @@ def warp_displacements_tracks(fdpy, ffa, fmat, finv, fdis, fdisa, fref, fdpyw):
 
     dprw = Dpy(fdpyw, 'r+')
     rows = len(dprw.f.root.streamlines.tracks)
-    blocks = np.round(np.linspace(0, rows, 10)).astype(int)  # lets work in blocks
+    blocks = np.round(np.linspace(0, rows, 10)).astype(int)  # lets work in
+    #                                                                   blocks
     # print rows
     for i in range(len(blocks) - 1):
         # print blocks[i],blocks[i+1]
@@ -312,7 +318,8 @@ def warp_displacements_tracks(fdpy, ffa, fmat, finv, fdis, fdisa, fref, fdpyw):
         # and then to mni world space
         caboodlew = np.dot(WI2, refaff[:3, :3].T) + refaff[:3, 3]
         # write back
-        dprw.f.root.streamlines.tracks[blocks[i]:blocks[i + 1]] = caboodlew.astype('f4')
+        dprw.f.root.streamlines.tracks[blocks[i]:blocks[i + 1]] = (
+            caboodlew.astype('f4'))
     dprw.close()
 
 
@@ -329,14 +336,14 @@ def pipe(cmd, print_sto=True, print_ste=True):
 
     print_ste : boolean
          Print standard error (stderr) or not (default: True)
-         
+
     """
     p = Popen(cmd, shell=True, stdout=PIPE, stderr=PIPE)
     sto = p.stdout.readlines()
     ste = p.stderr.readlines()
-    if print_sto :
+    if print_sto:
         print(sto)
-    if print_ste :
+    if print_ste:
         print(ste)
 
 
@@ -378,7 +385,8 @@ def run_flirt_imgs(in_img, ref_img, dof=6, flags=''):
         affine such that, if ``[i, j, k]`` is a coordinate in voxels in the
         `in_img`, and ``[p, q, r]`` are the equivalent voxel coordinates in the
         reference image, then
-        ``[p, q, r] = np.dot(in_vox2out_vox[:3,:3]), [i, j, k] + in_vox2out_vox[:3,3])``
+        ``[p, q, r] = np.dot(in_vox2out_vox[:3,:3]),
+                             [i, j, k] + in_vox2out_vox[:3,3])``
 
     """
     omat = 'reg.mat'
@@ -397,8 +405,8 @@ def run_flirt_imgs(in_img, ref_img, dof=6, flags=''):
 
 
 def apply_warp(in_nii, affine_mat, nonlin_nii, out_nii):
-    cmd = 'applywarp --ref=${FSLDIR}/data/standard/FMRIB58_FA_1mm --in=' + in_nii + ' --warp=' + nonlin_nii + \
-        ' --out=' + out_nii
+    cmd = 'applywarp --ref=${FSLDIR}/data/standard/FMRIB58_FA_1mm --in=' + \
+        in_nii + ' --warp=' + nonlin_nii + ' --out=' + out_nii
     print(cmd)
     pipe(cmd)
 
@@ -420,10 +428,15 @@ def create_displacements(fin, fmat, fnonlin, finvw, fdisp, fdispa, fref):
 
     commands = []
     commands.append('flirt -ref ' + fref + ' -in ' + fin + ' -omat ' + fmat)
-    commands.append('fnirt --in=' + fin + ' --aff=' + fmat + ' --cout=' + fnonlin + ' --config=FA_2_FMRIB58_1mm')
-    commands.append('invwarp --ref=' + fin + ' --warp=' + fnonlin + ' --out=' + finvw)
-    commands.append('fnirtfileutils --in=' + fnonlin + ' --ref=${FSLDIR}/data/standard/FMRIB58_FA_1mm --out=' + fdisp)
-    commands.append('fnirtfileutils --in=' + fnonlin + ' --ref=${FSLDIR}/data/standard/FMRIB58_FA_1mm --out=' +
+    commands.append('fnirt --in=' + fin + ' --aff=' + fmat + ' --cout=' +
+                    fnonlin + ' --config=FA_2_FMRIB58_1mm')
+    commands.append('invwarp --ref=' + fin + ' --warp=' + fnonlin + ' --out=' +
+                    finvw)
+    commands.append('fnirtfileutils --in=' + fnonlin +
+                    ' --ref=${FSLDIR}/data/standard/FMRIB58_FA_1mm --out=' +
+                    fdisp)
+    commands.append('fnirtfileutils --in=' + fnonlin +
+                    ' --ref=${FSLDIR}/data/standard/FMRIB58_FA_1mm --out=' +
                     fdispa + ' --withaff')
     for c in commands:
         print(c)

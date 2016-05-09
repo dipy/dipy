@@ -27,7 +27,7 @@ import numpy as np
 from dipy.core.ndindex import ndindex
 
 # Conditional import machinery for vtk
-from ..utils.optpkg import optional_package
+from dipy.utils.optpkg import optional_package
 
 # Allow import, but disable doctests if we don't have vtk
 vtk, have_vtk, setup_module = optional_package('vtk')
@@ -74,6 +74,10 @@ if have_vtk:
         have_vtk_texture_mapper2D = True
     except:
         have_vtk_texture_mapper2D = False
+
+else:
+    msg = "Python VTK is not installed"
+    warn(msg)
 
 
 def dots(points, color=(1, 0, 0), opacity=1, dot_size=5):

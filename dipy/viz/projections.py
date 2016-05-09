@@ -7,7 +7,7 @@ ODFs.
 
 import numpy as np
 import scipy.interpolate as interp
-from ..utils.optpkg import optional_package
+from dipy.utils.optpkg import optional_package
 import dipy.core.geometry as geo
 from dipy.testing import doctest_skip_parser
 

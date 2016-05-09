@@ -1,5 +1,5 @@
 from dipy.denoise.enhancement_kernel import EnhancementKernel
-from dipy.denoise.shift_twist_convolution import convolve_sf
+from dipy.denoise.shift_twist_convolution import convolve, convolve_sf
 from dipy.reconst.shm import sh_to_sf, sf_to_sh
 from dipy.core.sphere import Sphere
 from dipy.data import get_sphere
@@ -67,7 +67,7 @@ def test_spike():
     spike[3, 3, 3, 0] = 1
 
     # convolve kernel with delta spike
-    csd_enh = convolve_sf(spike, k, test_mode=True)
+    csd_enh = convolve_sf(spike, k, test_mode=True, normalize=False)
 
     # check if kernel matches with the convolved delta spike
     totalsum = 0.0
@@ -75,6 +75,31 @@ def test_spike():
         totalsum += np.sum(np.array(k.get_lookup_table())[i, 0, :, :, :] - \
                     np.array(csd_enh)[:, :, :, i])    
     npt.assert_equal(totalsum, 0.0)
+
+def test_normalization():
+    """ Test the normalization routine applied after a convolution"""
+    # create kernel
+    D33 = 1.0
+    D44 = 0.04
+    t = 1
+    num_orientations = 5
+    k = EnhancementKernel(D33, D44, t, orientations=num_orientations, force_recompute=True)
+
+    # create a constant dataset
+    numorientations = k.get_orientations().shape[0]
+    spike = np.ones((7, 7, 7, numorientations), dtype=np.float64)
+
+    # convert dataset to SH
+    spike_sh = sf_to_sh(spike, k.get_sphere(), sh_order=8)
+
+    # convolve kernel with delta spike and apply normalization
+    csd_enh = convolve(spike_sh, k, sh_order=8, test_mode=True, normalize=True)
+
+    # convert dataset to DSF
+    csd_enh_dsf = sh_to_sf(csd_enh, k.get_sphere(), sh_order=8, basis_type=None)
+
+    # test if the normalization is performed correctly
+    npt.assert_almost_equal(np.amax(csd_enh_dsf), np.amax(spike))
 
 def test_kernel_input():
     """ Test the kernel for inputs of type Sphere, type int and for input None"""
@@ -92,7 +117,6 @@ def test_kernel_input():
 
     k = EnhancementKernel(D33, D44, t, orientations=0, force_recompute=True)
     npt.assert_equal(k.get_lookup_table().shape, (0, 0, 7, 7, 7))
-
 
 if __name__ == '__main__':
     npt.run_module_suite()

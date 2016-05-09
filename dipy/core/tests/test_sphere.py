@@ -4,7 +4,7 @@ import numpy as np
 import numpy.testing as nt
 import warnings
 
-from ...utils.six.moves import xrange
+from dipy.utils.six.moves import xrange
 
 from dipy.core.sphere import (Sphere, HemiSphere, unique_edges, unique_sets,
                               faces_from_sphere_vertices, HemiSphere,
@@ -27,6 +27,7 @@ verts = unit_octahedron.vertices
 edges = unit_octahedron.edges
 oct_faces = unit_octahedron.faces
 r, theta, phi = cart2sphere(*verts.T)
+
 
 def test_sphere_construct_args():
     nt.assert_raises(ValueError, Sphere)
@@ -161,6 +162,7 @@ def test_sphere_subdivide():
     # It might be good to also test the vertices somehow if we can think of a
     # good test for them.
 
+
 def test_sphere_find_closest():
     sphere1 = unit_octahedron.subdivide(4)
     for ii in range(sphere1.vertices.shape[0]):
@@ -171,7 +173,8 @@ def test_hemisphere_find_closest():
     hemisphere1 = hemi_icosahedron.subdivide(4)
     for ii in range(hemisphere1.vertices.shape[0]):
         nt.assert_equal(hemisphere1.find_closest(hemisphere1.vertices[ii]), ii)
-        nt.assert_equal(hemisphere1.find_closest(-hemisphere1.vertices[ii]), ii)
+        nt.assert_equal(hemisphere1.find_closest(-hemisphere1.vertices[ii]),
+                        ii)
         nt.assert_equal(hemisphere1.find_closest(hemisphere1.vertices[ii] * 2),
                         ii)
 
@@ -267,7 +270,7 @@ def test_hemisphere_faces():
          [ -1,  0,  t],
          [  0,  t,  1],
          [  0, -t,  1],
-        ])
+         ])
     vertices /= vector_norm(vertices, keepdims=True)
     faces = np.array(
         [[0, 1, 2],
@@ -280,7 +283,7 @@ def test_hemisphere_faces():
          [2, 3, 5],
          [0, 4, 5],
          [1, 4, 5],
-        ])
+         ])
     edges = np.array(
         [(0, 1),
          (0, 2),
@@ -297,7 +300,7 @@ def test_hemisphere_faces():
          (3, 4),
          (3, 5),
          (4, 5),
-        ])
+         ])
 
     h = HemiSphere(xyz=vertices)
     nt.assert_equal(len(h.edges), len(edges))
@@ -319,6 +322,7 @@ def test_get_force():
     nt.assert_array_almost_equal(force[1, [0, 2]], 0)
     nt.assert_(force[1, 1] > 0)
 
+
 def test_disperse_charges():
     charges = np.array([[1., 0, 0],
                         [0, 1., 0],
@@ -329,33 +333,34 @@ def test_disperse_charges():
     a = np.sqrt(3)/2
     charges = np.array([[3./5, 4./5, 0],
                         [4./5, 3./5, 0]])
-    expected_charges =  np.array([[0, 1., 0],
-                                  [1., 0, 0]])
+    expected_charges = np.array([[0, 1., 0],
+                                 [1., 0, 0]])
     d_sphere, pot = disperse_charges(HemiSphere(xyz=charges), 1000, .2)
     nt.assert_array_almost_equal(expected_charges, d_sphere.vertices)
     for ii in xrange(1, len(pot)):
-        #check that the potential of the system is going down
+        # check that the potential of the system is going down
         nt.assert_(pot[ii] - pot[ii-1] <= 0)
 
     # Check that the disperse_charges does not blow up with a large constant
     d_sphere, pot = disperse_charges(HemiSphere(xyz=charges), 1000, 20.)
     nt.assert_array_almost_equal(expected_charges, d_sphere.vertices)
     for ii in xrange(1, len(pot)):
-        #check that the potential of the system is going down
+        # check that the potential of the system is going down
         nt.assert_(pot[ii] - pot[ii-1] <= 0)
 
-    #check that the function seems to work with a larger number of charges
-    charges = np.arange(21).reshape(7,3)
+    # check that the function seems to work with a larger number of charges
+    charges = np.arange(21).reshape(7, 3)
     norms = np.sqrt((charges*charges).sum(-1))
     charges = charges / norms[:, None]
     d_sphere, pot = disperse_charges(HemiSphere(xyz=charges), 1000, .05)
     for ii in xrange(1, len(pot)):
-        #check that the potential of the system is going down
+        # check that the potential of the system is going down
         nt.assert_(pot[ii] - pot[ii-1] <= 0)
-    #check that the resulting charges all lie on the unit sphere
+    # check that the resulting charges all lie on the unit sphere
     d_charges = d_sphere.vertices
     norms = np.sqrt((d_charges*d_charges).sum(-1))
     nt.assert_array_almost_equal(norms, 1)
+
 
 def test_interp_rbf():
     def data_func(s, a, b):
@@ -372,10 +377,11 @@ def test_interp_rbf():
         nt.assert_(np.mean(np.abs(interp_data_a - expected)) < 0.1)
 
     # Test that using the euclidean norm raises a warning
-    # (following https://docs.python.org/2/library/warnings.html#testing-warnings)
+    # (following
+    # https://docs.python.org/2/library/warnings.html#testing-warnings)
     with warnings.catch_warnings(record=True) as w:
         warnings.simplefilter("always")
-        interp_data_en = interp_rbf(data, s0, s1, norm ="euclidean_norm")
+        interp_data_en = interp_rbf(data, s0, s1, norm="euclidean_norm")
         nt.assert_(len(w) == 1)
         nt.assert_(issubclass(w[-1].category, DeprecationWarning))
         nt.assert_("deprecated" in str(w[-1].message))

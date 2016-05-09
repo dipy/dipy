@@ -3,7 +3,10 @@ from dipy.data import get_gtab_taiwan_dsi
 from numpy.testing import (assert_almost_equal,
                            assert_equal,
                            run_module_suite)
-from dipy.reconst.shore import ShoreModel, shore_matrix, shore_indices, shore_order
+from dipy.reconst.shore import (ShoreModel,
+                                shore_matrix,
+                                shore_indices,
+                                shore_order)
 from dipy.sims.voxel import (
     MultiTensor, all_tensor_evecs, multi_tensor_odf, single_tensor_odf,
     multi_tensor_rtop, multi_tensor_msd, multi_tensor_pdf)
@@ -36,7 +39,8 @@ def test_shore_metrics():
     assert_equal(radial_order, radial_order2)
     assert_equal(c, c2)
 
-    # since we are testing without noise we can use higher order and lower lambdas, with respect to the default.
+    # since we are testing without noise we can use higher order and lower
+    # lambdas, with respect to the default.
     radial_order = 8
     zeta = 700
     lambdaN = 1e-12
@@ -56,12 +60,14 @@ def test_shore_metrics():
 
     # test if the analytical integral of the pdf is equal to one
     integral = 0
-    for n in range(int((radial_order)/2 +1)):
-        integral += c_shore[n] * (np.pi**(-1.5) * zeta **(-1.5) * genlaguerre(n,0.5)(0)) ** 0.5
+    for n in range(int((radial_order)/2 + 1)):
+        integral += c_shore[n] * (np.pi**(-1.5) * zeta ** (-1.5) *
+                                  genlaguerre(n, 0.5)(0)) ** 0.5
 
     assert_almost_equal(integral, 1.0, 10)
 
-    # test if the integral of the pdf calculated on a discrete grid is equal to one
+    # test if the integral of the pdf calculated on a discrete grid is equal to
+    # one
     pdf_discrete = asmfit.pdf_grid(17, 40e-3)
     integral = pdf_discrete.sum()
     assert_almost_equal(integral, 1.0, 1)
@@ -73,7 +79,7 @@ def test_shore_metrics():
     radius = 10e-3
     pdf_shore = asmfit.pdf(v * radius)
     pdf_mt = multi_tensor_pdf(v * radius, mevals=mevals,
-                              angles=angl, fractions= [50, 50])
+                              angles=angl, fractions=[50, 50])
 
     nmse_pdf = np.sqrt(np.sum((pdf_mt - pdf_shore) ** 2)) / (pdf_mt.sum())
     assert_almost_equal(nmse_pdf, 0.0, 2)
@@ -83,7 +89,8 @@ def test_shore_metrics():
     rtop_shore_pdf = asmfit.rtop_pdf()
     assert_almost_equal(rtop_shore_signal, rtop_shore_pdf, 9)
     rtop_mt = multi_tensor_rtop([.5, .5], mevals=mevals)
-    assert_equal(rtop_mt / rtop_shore_signal <1.10 and rtop_mt / rtop_shore_signal > 0.95, True)
+    assert_equal(rtop_mt / rtop_shore_signal < 1.10 and
+                 rtop_mt / rtop_shore_signal > 0.95, True)
 
     # compare the shore msd with the ground truth multi_tensor msd
     msd_mt = multi_tensor_msd([.5, .5], mevals=mevals)
