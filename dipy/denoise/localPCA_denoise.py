@@ -73,12 +73,22 @@ def localPCA_denoise(arr, sigma, patch_radius=2, tou=0, rician=True):
             			# compute the mean and normalize
             			X[:,l] = X[:,l] - np.mean(X[:,l])
 
-		# compute EVD of the covariance matrix of X get the matrices W and D, hence get matrix Y = XW
-		# Threshold matrix D and then compute X_est = YW_transpose D_est
-		# When the block covers each pixel identify it into the label matrix theta
-		# Also update the estimate matrix which is X_est * theta
-		
-		# After estimation pass it through a function ~ rician adaptation
+					# Compute the covariance matrix C = X_transpose X
+					C = np.transpose(X).dot(X)
+					# compute EVD of the covariance matrix of X get the matrices W and D, hence get matrix Y = XW
+					# Threshold matrix D and then compute X_est = YW_transpose D_est
+					[d,W] = np.linalg.eigh(C)
+					d[d < tou[i][j][k][0]] = 0
+					D_hat = np.diag(d)
+					Y = X.dot(W)
+					# When the block covers each pixel identify it into the label matrix theta
+					X_est = Y.dot(np.transpose(W))
+					X_est = X_est.dot(D_hat)
+
+					# generate a theta matrix for patch around i,j,k and store it's theta value			
+					# Also update the estimate matrix which is X_est * theta
+					
+					# After estimation pass it through a function ~ rician adaptation
 
 	else:
 		raise ValueError("Only 4D array are supported!", arr.shape)
