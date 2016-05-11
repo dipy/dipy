@@ -411,6 +411,18 @@ def test_signal_fitting_equality_anisotropic_isotropic(radial_order=6):
     assert_array_almost_equal(s_fitted_aniso_norm,
                               s_fitted_implemented_isotropic)
 
+    # test if norm of signal laplacians are the same
+    laplacian_matrix_iso = mapmri.mapmri_isotropic_laplacian_reg_matrix(
+                           radial_order, mu[0])
+    ind_mat = mapmri.mapmri_index_matrix(radial_order)
+    S_mat, T_mat, U_mat = mapmri.mapmri_STU_reg_matrices(radial_order)
+    laplacian_matrix_aniso = mapmri.mapmri_laplacian_reg_matrix(
+        ind_mat, mu, S_mat, T_mat, U_mat)
+
+    norm_aniso = np.dot(coef_aniso, np.dot(coef_aniso, laplacian_matrix_aniso))
+    norm_iso = np.dot(coef_iso, np.dot(coef_iso, laplacian_matrix_iso))
+    assert_almost_equal(norm_iso, norm_aniso)
+
 
 def test_mapmri_isotropic_design_matrix_separability(radial_order=6):
     gtab = get_gtab_taiwan_dsi()
