@@ -384,10 +384,8 @@ def test_signal_fitting_equality_anisotropic_isotropic(radial_order=6):
     M_iso = mapmri.mapmri_isotropic_phi_matrix(radial_order, u0, q)
     K_iso = mapmri.mapmri_isotropic_psi_matrix(radial_order, u0, r_points)
 
-    coef_aniso = np.dot(np.dot(np.linalg.inv(np.dot(M_aniso.T, M_aniso)),
-                               M_aniso.T), S)
-    coef_iso = np.dot(np.dot(np.linalg.inv(np.dot(M_iso.T, M_iso)),
-                             M_iso.T), S)
+    coef_aniso = np.dot(np.linalg.pinv(M_aniso), S)
+    coef_iso = np.dot(np.linalg.pinv(M_iso), S)
     # test if anisotropic and isotropic implementation produce equal results
     # if the same isotropic scale factors are used
     s_fitted_aniso = np.dot(M_aniso, coef_aniso)
