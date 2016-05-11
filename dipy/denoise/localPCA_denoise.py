@@ -57,18 +57,23 @@ def localPCA_denoise(arr, sigma, patch_radius=2, tou=0, rician=True):
 		dims[1] = arr.shape[1]
 		dims[2] = arr.shape[2]
 		dims[3] = arr.shape[3]
+		# declare arrays for theta and thetax
+		theta = np.zeros(arr.shape,dtype = float64)
+		thetax = np.zeros(arr.shape,dtype = float64)
+		patch_size = 2 * patch_radius + 1
 
 		for k in range(0, dims[2], 2):
-        	for i in range(0, dims[1], 2):
-            	for j in range(0, dims[0], 2):
+        	for j in range(0, dims[1], 2):
+            	for i in range(0, dims[0], 2):
             		
-            		X = np.zeros(patch_radius * patch_radius * patch_radius, dims[3])
-            		
+            		X = np.zeros(patch_size * patch_size * patch_size, dims[3])
+
             		for l in range(0,dims[3],1):
             			
 						# create the matrix X and normalize it
-						temp = arr[...,l]
-            			temp = temp.reshape(patch_radius * patch_radius * patch_radius)
+						temp = arr[i - patch_radius : i + patch_radius + 1,j - patch_radius : j + patch_radius + 1,
+						 	k - patch_radius : k + patch_radius + 1,l]
+            			temp = temp.reshape(patch_size * patch_size * patch_size)
             			X[:,l] = temp
             			# compute the mean and normalize
             			X[:,l] = X[:,l] - np.mean(X[:,l])
@@ -85,10 +90,23 @@ def localPCA_denoise(arr, sigma, patch_radius=2, tou=0, rician=True):
 					X_est = Y.dot(np.transpose(W))
 					X_est = X_est.dot(D_hat)
 
-					# generate a theta matrix for patch around i,j,k and store it's theta value			
-					# Also update the estimate matrix which is X_est * theta
-					
-					# After estimation pass it through a function ~ rician adaptation
+					for l in range(0,dims[3],1):
+						# generate a theta matrix for patch around i,j,k and store it's theta value
+						# Also update the estimate matrix which is X_est * theta
+						temp = X_est[:,l]
+						temp = temp.reshape(patch_size * patch_size * patch_size)
+						theta[i - patch_radius : i + patch_radius + 1,j - patch_radius : j + patch_radius + 1,
+						 	k - patch_radius : k + patch_radius + 1 ,l] = theta[i - patch_radius : i + patch_radius + 1,j - patch_radius : j + patch_radius + 1,
+						 	k - patch_radius : k + patch_radius + 1 ,l] + 1/(1 + np.linalg.norm(d,ord=0))
+
+						thetax[i - patch_radius : i + patch_radius + 1,j - patch_radius : j + patch_radius + 1,
+						 	k - patch_radius : k + patch_radius + 1 ,l] = thetax[i - patch_radius : i + patch_radius + 1,j - patch_radius : j + patch_radius + 1,
+						 	k - patch_radius : k + patch_radius + 1 ,l] + temp / (1 + np.linalg.norm(d,ord=0))
+
+		# the final denoised without rician adaptation
+		denoised_arr = thetax / theta
+		# After estimation pass it through a function ~ rician adaptation
+
 
 	else:
 		raise ValueError("Only 4D array are supported!", arr.shape)
