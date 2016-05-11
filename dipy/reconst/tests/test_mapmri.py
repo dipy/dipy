@@ -70,9 +70,8 @@ def test_orthogonality_basis_functions():
     assert_almost_equal(int4, 0.)
 
     # do the same for the isotropic mapmri basis functions
-    # only j>0, l=0 basis functions have an integral > 0
-    # however we need to normalize to check the orthonormality
-
+    # we already know the spherical harmonics are orthonormal
+    # only check j>0, l=0 basis functions
     C1 = mapmri.mapmri_isotropic_radial_pdf_basis(1, 0, diffusivity, 0)
     C2 = mapmri.mapmri_isotropic_radial_pdf_basis(2, 0, diffusivity, 0)
     C3 = mapmri.mapmri_isotropic_radial_pdf_basis(3, 0, diffusivity, 0)
