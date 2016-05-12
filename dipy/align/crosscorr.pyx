@@ -4,6 +4,7 @@ import numpy as np
 cimport cython
 cimport numpy as cnp
 from fused_types cimport floating
+from cython.parallel import parallel, prange
 
 
 cdef inline int _int_max(int a, int b) nogil:
@@ -77,11 +78,13 @@ def precompute_cc_factors_3d(floating[:, :, :] static, floating[:, :, :] moving,
         double Imean, Jmean
         floating[:, :, :, :] factors = np.zeros((ns, nr, nc, 5),
                                                 dtype=np.asarray(static).dtype)
-        double[:, :] lines = np.zeros((6, side), dtype=np.float64)
-        double[:] sums = np.zeros((6,), dtype=np.float64)
+        # added dimension of size nr to avoid thread conflicts below
+        double[:, :, :] lines = np.zeros((nr, 6, side), dtype=np.float64)
+        double[:, :] sums = np.zeros((nr, 6,), dtype=np.float64)
 
-    with nogil:
-        for r in range(nr):
+    with nogil, parallel():
+        # compute rows in parallel
+        for r in prange(nr):
             firstr = _int_max(0, r - radius)
             lastr = _int_min(nr - 1, r + radius)
             for c in range(nc):
@@ -90,7 +93,7 @@ def precompute_cc_factors_3d(floating[:, :, :] static, floating[:, :, :] moving,
                 # compute factors for line [:,r,c]
                 for t in range(6):
                     for q in range(side):
-                        lines[t,q] = 0
+                        lines[r, t, q] = 0
 
                 # Compute all slices and set the sums on the fly
                 # compute each slice [k, i={r-radius..r+radius}, j={c-radius,
@@ -98,35 +101,35 @@ def precompute_cc_factors_3d(floating[:, :, :] static, floating[:, :, :] moving,
                 for k in range(ns):
                     q = k % side
                     for t in range(6):
-                        sums[t] -= lines[t, q]
-                        lines[t, q] = 0
+                        sums[r, t] -= lines[r, t, q]
+                        lines[r, t, q] = 0
                     for i in range(firstr, lastr + 1):
                         for j in range(firstc, lastc + 1):
-                            lines[SI, q] += static[k, i, j]
-                            lines[SI2, q] += static[k, i, j] * static[k, i, j]
-                            lines[SJ, q] += moving[k, i, j]
-                            lines[SJ2, q] += moving[k, i, j] * moving[k, i, j]
-                            lines[SIJ, q] += static[k, i, j] * moving[k, i, j]
-                            lines[CNT, q] += 1
+                            lines[r, SI, q] += static[k, i, j]
+                            lines[r, SI2, q] += static[k, i, j] * static[k, i, j]
+                            lines[r, SJ, q] += moving[k, i, j]
+                            lines[r, SJ2, q] += moving[k, i, j] * moving[k, i, j]
+                            lines[r, SIJ, q] += static[k, i, j] * moving[k, i, j]
+                            lines[r, CNT, q] += 1
 
                     for t in range(6):
-                        sums[t] = 0
+                        sums[r, t] = 0
                         for qq in range(side):
-                            sums[t] += lines[t, qq]
+                            sums[r, t] += lines[r, t, qq]
                     if(k >= radius):
                         # s is the voxel that is affected by the cube with
                         # slices [s - radius..s + radius, :, :]
                         s = k - radius
-                        Imean = sums[SI] / sums[CNT]
-                        Jmean = sums[SJ] / sums[CNT]
+                        Imean = sums[r, SI] / sums[r, CNT]
+                        Jmean = sums[r, SJ] / sums[r, CNT]
                         factors[s, r, c, 0] = static[s, r, c] - Imean
                         factors[s, r, c, 1] = moving[s, r, c] - Jmean
-                        factors[s, r, c, 2] = (sums[SIJ] - Jmean * sums[SI] -
-                            Imean * sums[SJ] + sums[CNT] * Jmean * Imean)
-                        factors[s, r, c, 3] = (sums[SI2] - Imean * sums[SI] -
-                            Imean * sums[SI] + sums[CNT] * Imean * Imean)
-                        factors[s, r, c, 4] = (sums[SJ2] - Jmean * sums[SJ] -
-                            Jmean * sums[SJ] + sums[CNT] * Jmean * Jmean)
+                        factors[s, r, c, 2] = (sums[r, SIJ] - Jmean * sums[r, SI] -
+                            Imean * sums[r, SJ] + sums[r, CNT] * Jmean * Imean)
+                        factors[s, r, c, 3] = (sums[r, SI2] - Imean * sums[r, SI] -
+                            Imean * sums[r, SI] + sums[r, CNT] * Imean * Imean)
+                        factors[s, r, c, 4] = (sums[r, SJ2] - Jmean * sums[r, SJ] -
+                            Jmean * sums[r, SJ] + sums[r, CNT] * Jmean * Jmean)
                 # Finally set the values at the end of the line
                 for s in range(ns - radius, ns):
                     # this would be the last slice to be processed for voxel
@@ -134,17 +137,17 @@ def precompute_cc_factors_3d(floating[:, :, :] static, floating[:, :, :] moving,
                     k = s + radius
                     q = k % side
                     for t in range(6):
-                        sums[t] -= lines[t, q]
-                    Imean = sums[SI] / sums[CNT]
-                    Jmean = sums[SJ] / sums[CNT]
+                        sums[r, t] -= lines[r, t, q]
+                    Imean = sums[r, SI] / sums[r, CNT]
+                    Jmean = sums[r, SJ] / sums[r, CNT]
                     factors[s, r, c, 0] = static[s, r, c] - Imean
                     factors[s, r, c, 1] = moving[s, r, c] - Jmean
-                    factors[s, r, c, 2] = (sums[SIJ] - Jmean * sums[SI] -
-                        Imean * sums[SJ] + sums[CNT] * Jmean * Imean)
-                    factors[s, r, c, 3] = (sums[SI2] - Imean * sums[SI] -
-                        Imean * sums[SI] + sums[CNT] * Imean * Imean)
-                    factors[s, r, c, 4] = (sums[SJ2] - Jmean * sums[SJ] -
-                        Jmean * sums[SJ] + sums[CNT] * Jmean * Jmean)
+                    factors[s, r, c, 2] = (sums[r, SIJ] - Jmean * sums[r, SI] -
+                        Imean * sums[r, SJ] + sums[r, CNT] * Jmean * Imean)
+                    factors[s, r, c, 3] = (sums[r, SI2] - Imean * sums[r, SI] -
+                        Imean * sums[r, SI] + sums[r, CNT] * Imean * Imean)
+                    factors[s, r, c, 4] = (sums[r, SJ2] - Jmean * sums[r, SJ] -
+                        Jmean * sums[r, SJ] + sums[r, CNT] * Jmean * Jmean)
     return np.asarray(factors)
 
 
@@ -398,50 +401,51 @@ def precompute_cc_factors_2d(floating[:, :] static, floating[:, :] moving,
         cnp.npy_intp r, c, i, j, t, q, qq, firstc, lastc
         double Imean, Jmean
         floating[:, :, :] factors = np.zeros((nr, nc, 5), dtype=ftype)
-        double[:, :] lines = np.zeros((6, side), dtype=np.float64)
-        double[:] sums = np.zeros((6,), dtype=np.float64)
+        # added dimension of size nc to avoid thread conflicts below
+        double[:, :, :] lines = np.zeros((nc, 6, side), dtype=np.float64)
+        double[:, :] sums = np.zeros((nc, 6,), dtype=np.float64)
 
-    with nogil:
-
-        for c in range(nc):
+    with nogil, parallel():
+        # compute columns in parallel
+        for c in prange(nc):
             firstc = _int_max(0, c - radius)
             lastc = _int_min(nc - 1, c + radius)
             # compute factors for row [:,c]
             for t in range(6):
                 for q in range(side):
-                    lines[t,q] = 0
+                    lines[c, t, q] = 0
             # Compute all rows and set the sums on the fly
             # compute row [i, j = {c-radius, c + radius}]
             for i in range(nr):
                 q = i % side
                 for t in range(6):
-                    lines[t, q] = 0
+                    lines[c, t, q] = 0
                 for j in range(firstc, lastc + 1):
-                    lines[SI, q] += static[i, j]
-                    lines[SI2, q] += static[i, j] * static[i, j]
-                    lines[SJ, q] += moving[i, j]
-                    lines[SJ2, q] += moving[i, j] * moving[i, j]
-                    lines[SIJ, q] += static[i, j] * moving[i, j]
-                    lines[CNT, q] += 1
+                    lines[c, SI, q] += static[i, j]
+                    lines[c, SI2, q] += static[i, j] * static[i, j]
+                    lines[c, SJ, q] += moving[i, j]
+                    lines[c, SJ2, q] += moving[i, j] * moving[i, j]
+                    lines[c, SIJ, q] += static[i, j] * moving[i, j]
+                    lines[c, CNT, q] += 1
 
                 for t in range(6):
-                    sums[t] = 0
+                    sums[c, t] = 0
                     for qq in range(side):
-                        sums[t] += lines[t, qq]
+                        sums[c, t] += lines[c, t, qq]
                 if(i >= radius):
                     # r is the pixel that is affected by the cube with slices
                     # [r - radius.. r + radius, :]
                     r = i - radius
-                    Imean = sums[SI] / sums[CNT]
-                    Jmean = sums[SJ] / sums[CNT]
+                    Imean = sums[c, SI] / sums[c, CNT]
+                    Jmean = sums[c, SJ] / sums[c, CNT]
                     factors[r, c, 0] = static[r, c] - Imean
                     factors[r, c, 1] = moving[r, c] - Jmean
-                    factors[r, c, 2] = (sums[SIJ] - Jmean * sums[SI] -
-                        Imean * sums[SJ] + sums[CNT] * Jmean * Imean)
-                    factors[r, c, 3] = (sums[SI2] - Imean * sums[SI] -
-                        Imean * sums[SI] + sums[CNT] * Imean * Imean)
-                    factors[r, c, 4] = (sums[SJ2] - Jmean * sums[SJ] -
-                        Jmean * sums[SJ] + sums[CNT] * Jmean * Jmean)
+                    factors[r, c, 2] = (sums[c, SIJ] - Jmean * sums[c, SI] -
+                        Imean * sums[c, SJ] + sums[c, CNT] * Jmean * Imean)
+                    factors[r, c, 3] = (sums[c, SI2] - Imean * sums[c, SI] -
+                        Imean * sums[c, SI] + sums[c, CNT] * Imean * Imean)
+                    factors[r, c, 4] = (sums[c, SJ2] - Jmean * sums[c, SJ] -
+                        Jmean * sums[c, SJ] + sums[c, CNT] * Jmean * Jmean)
             # Finally set the values at the end of the line
             for r in range(nr - radius, nr):
                 # this would be the last slice to be processed for pixel
@@ -449,17 +453,17 @@ def precompute_cc_factors_2d(floating[:, :] static, floating[:, :] moving,
                 i = r + radius
                 q = i % side
                 for t in range(6):
-                    sums[t] -= lines[t, q]
-                Imean = sums[SI] / sums[CNT]
-                Jmean = sums[SJ] / sums[CNT]
+                    sums[c, t] -= lines[c, t, q]
+                Imean = sums[c, SI] / sums[c, CNT]
+                Jmean = sums[c, SJ] / sums[c, CNT]
                 factors[r, c, 0] = static[r, c] - Imean
                 factors[r, c, 1] = moving[r, c] - Jmean
-                factors[r, c, 2] = (sums[SIJ] - Jmean * sums[SI] -
-                    Imean * sums[SJ] + sums[CNT] * Jmean * Imean)
-                factors[r, c, 3] = (sums[SI2] - Imean * sums[SI] -
-                    Imean * sums[SI] + sums[CNT] * Imean * Imean)
-                factors[r, c, 4] = (sums[SJ2] - Jmean * sums[SJ] -
-                    Jmean * sums[SJ] + sums[CNT] * Jmean * Jmean)
+                factors[r, c, 2] = (sums[c, SIJ] - Jmean * sums[c, SI] -
+                    Imean * sums[c, SJ] + sums[c, CNT] * Jmean * Imean)
+                factors[r, c, 3] = (sums[c, SI2] - Imean * sums[c, SI] -
+                    Imean * sums[c, SI] + sums[c, CNT] * Imean * Imean)
+                factors[r, c, 4] = (sums[c, SJ2] - Jmean * sums[c, SJ] -
+                    Jmean * sums[c, SJ] + sums[c, CNT] * Jmean * Jmean)
     return np.asarray(factors)
 
 
@@ -565,9 +569,9 @@ def compute_cc_forward_step_2d(floating[:, :, :] grad_static,
         double Ii, Ji, sfm, sff, smm, localCorrelation, temp
         floating[:, :, :] out = np.zeros((nr, nc, 2),
                                          dtype=np.asarray(grad_static).dtype)
-    with nogil:
+    with nogil, parallel():
 
-        for r in range(radius, nr-radius):
+        for r in prange(radius, nr-radius):
             for c in range(radius, nc-radius):
                 Ii = factors[r, c, 0]
                 Ji = factors[r, c, 1]
@@ -633,9 +637,9 @@ def compute_cc_backward_step_2d(floating[:, :, :] grad_moving,
         floating[:, :, :] out = np.zeros((nr, nc, 2),
                                              dtype=ftype)
 
-    with nogil:
+    with nogil, parallel():
 
-        for r in range(radius, nr-radius):
+        for r in prange(radius, nr-radius):
             for c in range(radius, nc-radius):
                 Ii = factors[r, c, 0]
                 Ji = factors[r, c, 1]
