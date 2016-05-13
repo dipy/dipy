@@ -2985,7 +2985,7 @@ def create_circle(cnp.npy_intp nrows, cnp.npy_intp ncols, cnp.npy_intp radius):
         for j in range(ncols):
             ii = i - mid_row
             jj = j - mid_col
-            r = np.sqrt(ii*ii + jj*jj)
+            r = sqrt(ii*ii + jj*jj)
             if r <= radius:
                 c[i, j] = 1
             else:
@@ -3029,7 +3029,7 @@ def create_sphere(cnp.npy_intp nslices, cnp.npy_intp nrows,
                 kk = k - mid_slice
                 ii = i - mid_row
                 jj = j - mid_col
-                r = np.sqrt(ii*ii + jj*jj + kk*kk)
+                r = sqrt(ii*ii + jj*jj + kk*kk)
                 if r <= radius:
                     s[k, i, j] = 1
                 else:
