@@ -7,6 +7,7 @@ from dipy.utils.omp import (cpu_count, thread_count, default_threads,
                             have_openmp)
 
 from nose.tools import assert_equal
+from numpy.testing import run_module_suite
 
 
 def test_set_omp_threads():
@@ -32,10 +33,15 @@ def test_default_threads():
     if have_openmp:
         try:
             expected_threads = int(os.environ.get('OMP_NUM_THREADS', None))
-            if expected_threads < 1 or expected_threads > cpu_count():
+            if expected_threads < 1:
                 raise ValueError("invalid number of threads")
         except (ValueError, TypeError):
             expected_threads = cpu_count()
     else:
         expected_threads = 1
     assert_equal(default_threads, expected_threads)
+
+
+if __name__ == '__main__':
+
+    run_module_suite()
