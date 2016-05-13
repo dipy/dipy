@@ -1,5 +1,5 @@
 import numpy as np
-
+from dipy.denoise.rician_adaptation import rician_adaptation
 
 def localPCA_denoise(arr, sigma, patch_radius=2, tou=0, rician=True):
 	'''
@@ -105,8 +105,11 @@ def localPCA_denoise(arr, sigma, patch_radius=2, tou=0, rician=True):
 
 		# the final denoised without rician adaptation
 		denoised_arr = thetax / theta
+		
 		# After estimation pass it through a function ~ rician adaptation
+		denoised_arr = rician_adaptation(denoised_arr,sigma)
 
+		return denoised_arr
 
 	else:
 		raise ValueError("Only 4D array are supported!", arr.shape)
