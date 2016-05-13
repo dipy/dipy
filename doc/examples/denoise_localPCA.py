@@ -1,41 +1,33 @@
+"""
+===============================
+Denoise images using Local PCA 
+===============================
+
+"""
+
 import numpy as np
-from dipy.denoise.rician_adaptation import rician_adaptation
+import nibabel as nib
+import matplotlib.pyplot as plt
+from time import time
+from dipy.denoise.localPCA_denoise import localPCA_denoise
+from dipy.denoise.noise_estimate import estimate_sigma
+from dipy.data import fetch_sherbrooke_3shell, read_sherbrooke_3shell
 
-def localPCA_denoise(arr, sigma, patch_radius=1, tou=0, rician=True):
-    '''
-    Local PCA Based Denoising of Diffusion Datasets
+fetch_sherbrooke_3shell()
+img, gtab = read_sherbrooke_3shell()
 
-    References
-    ----------
-    Diffusion Weighted Image Denoising Using Overcomplete Local PCA
-    Manjon JV, Coupe P, Concha L, Buades A, Collins DL
+data = img.get_data()
+affine = img.get_affine()
 
-    Parameters
-    ----------
-    arr : A 4D array which is to be denoised
-    sigma : float or 3D array
-        standard deviation of the noise estimated from the data
-    patch_radius : The radius of the local patch to
-                be taken around each voxel
-    tou : float or 3D array
-        threshold parameter for diagonal matrix thresholding,
-        default value = (2.3 * sigma * sigma)
-    rician : boolean
-        If True the noise is estimated as Rician, otherwise Gaussian noise
-        is assumed.
+# currently just taking the small patch of the data to preserv time
 
-    Returns
-    -------
-
-    denoised_arr : 4D array
-        this is the denoised array of the same size as that of
-        arr (input data) 
-
-    '''
-
-    # Read the array and fix the dimensions
-
-    if arr.ndim == 4:
+data = data[0:50,0:50,0:50,0:10]
+sigma = estimate_sigma(data, N=4)
+arr = data
+tou = 0
+patch_radius = 1
+# out = localPCA_denoise(data,sigma)
+if arr.ndim == 4:
 
         if tou == 0:
             tou = 2.3 * sigma * sigma
@@ -56,13 +48,14 @@ def localPCA_denoise(arr, sigma, patch_radius=1, tou=0, rician=True):
 
         patch_size = 2 * patch_radius + 1
 
-        for k in range(patch_radius, arr.shape[2] - patch_radius, 1):
+        for k in range(patch_radius, arr.shape[2] - patch_radius , 1):
             print k
-            for j in range(patch_radius, arr.shape[1] - patch_radius, 1):
+            for j in range(patch_radius, arr.shape[1] - patch_radius , 1):
                 for i in range(patch_radius, arr.shape[0] - patch_radius , 1):
                     
                     X = np.zeros((patch_size * patch_size * patch_size, arr.shape[3]))
-
+                    M = np.zeros(arr.shape[3])
+                    SD = np.zeros(arr.shape[3])
                     for l in range(0, arr.shape[3], 1):
                         
                         # create the matrix X and normalize it
@@ -73,6 +66,7 @@ def localPCA_denoise(arr, sigma, patch_radius=1, tou=0, rician=True):
                         # compute the mean and normalize
                         M[l] = np.mean(X[:,l])
                         X[:,l] = (X[:,l] - M[l])
+                        
 
                     # Compute the covariance matrix C = X_transpose X
                     C = np.transpose(X).dot(X)
@@ -90,7 +84,7 @@ def localPCA_denoise(arr, sigma, patch_radius=1, tou=0, rician=True):
                     for l in range(0,arr.shape[3],1):
                         # generate a theta matrix for patch around i,j,k and store it's theta value
                         # Also update the estimate matrix which is X_est * theta
-                        temp = X_est[:,l] + M[l]
+                        temp = (X_est[:,l] + M[l])
                         temp = temp.reshape(patch_size , patch_size , patch_size)
                         theta[i - patch_radius : i + patch_radius + 1,j - patch_radius : j + patch_radius + 1,
                              k - patch_radius : k + patch_radius + 1 ,l] = theta[i - patch_radius : i + patch_radius + 1,j - patch_radius : j + patch_radius + 1,
@@ -104,13 +98,21 @@ def localPCA_denoise(arr, sigma, patch_radius=1, tou=0, rician=True):
         denoised_arr = thetax / theta
         
         # After estimation pass it through a function ~ rician adaptation
-        denoised_arr = rician_adaptation(denoised_arr,sigma)
+        # denoised_arr = rician_adaptation(denoised_arr,sigma)
 
-        return denoised_arr
+        # return denoised_arr
+before = data[:,:,19,1]
+after = denoised_arr[:,:,19,1]
+difference = np.abs(after.astype('f8') - before.astype('f8'))
+fig, ax = plt.subplots(1, 3)
+ax[0].imshow(before, cmap='gray', origin='lower')
+ax[0].set_title('before')
+ax[1].imshow(after, cmap='gray', origin='lower')
+ax[1].set_title('after')
+ax[2].imshow(difference, cmap='gray', origin='lower')
+ax[2].set_title('difference')
 
-    else:
-        raise ValueError("Only 4D array are supported!", arr.shape)
-    
+for i in range(3):
+    ax[i].set_axis_off()
 
-
-
+plt.show()
