@@ -43,7 +43,15 @@ default_threads = _get_default_threads()
 
 
 cdef void set_num_threads(num_threads):
-    """Set OpenMP to use this ``num_threads`` threads."""
+    """Set the number of threads to be used by OpenMP
+
+    This function does nothing if OpenMP is not available.
+
+    Parameters
+    ----------
+    num_threads : int
+        Desired number of threads for OpenMP accelerated code.
+    """
     cdef:
         int threads_to_use
     if num_threads is not None:
@@ -57,7 +65,10 @@ cdef void set_num_threads(num_threads):
 
 
 cdef void restore_default_num_threads():
-    """Restore OpenMP to using the default number of threads."""
+    """Restore OpenMP to using the default number of threads.
+
+    This function does nothing if OpenMP is not available
+    """
     if openmp.have_openmp:
         openmp.omp_set_num_threads(<int> default_threads)
 
