@@ -98,8 +98,7 @@ def _nlmeans_3d(double[:, :, ::1] arr, double[:, :, ::1] mask,
     J = arr.shape[1]
     K = arr.shape[2]
 
-    if have_openmp:
-        set_num_threads(num_threads)
+    set_num_threads(num_threads)
 
     # move the block
     with nogil, parallel():
@@ -112,7 +111,7 @@ def _nlmeans_3d(double[:, :, ::1] arr, double[:, :, ::1] mask,
 
                     out[i, j, k] = process_block(arr, i, j, k, B, P, sigma)
 
-    if have_openmp and num_threads is not None:
+    if num_threads is not None:
         restore_default_num_threads()
 
     new = np.asarray(out)
