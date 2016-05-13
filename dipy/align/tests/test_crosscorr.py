@@ -1,7 +1,10 @@
+from time import time
 import numpy as np
-from numpy.testing import assert_array_almost_equal
+from numpy.testing import (assert_array_almost_equal, assert_equal,
+                           run_module_suite)
 from dipy.align import floating
 from dipy.align import crosscorr as cc
+from dipy.denoise.denspeed import cpu_count
 
 
 def test_cc_factors_2d():
@@ -214,8 +217,91 @@ def test_compute_cc_steps_3d():
         assert_array_almost_equal(actual, expected)
 
 
+def test_cc_threads():
+    radius = 4
+    rstate = np.random.RandomState(1234)
+    for ndim in [2, 3]:
+        if ndim == 2:
+            N = 128
+            precomp_func = cc.precompute_cc_factors_2d
+            forward_func = cc.compute_cc_forward_step_2d
+            backward_func = cc.compute_cc_backward_step_2d
+        elif ndim == 3:
+            N = 48
+            precomp_func = cc.precompute_cc_factors_3d
+            forward_func = cc.compute_cc_forward_step_3d
+            backward_func = cc.compute_cc_backward_step_3d
+        # test data
+        im_shape = (N, ) * ndim
+        static = rstate.standard_normal(im_shape)
+        moving = rstate.standard_normal(im_shape)
+        grad = rstate.standard_normal(im_shape + (ndim, ))
+
+        print('cpu count %d' % (cpu_count(),))
+
+        print('1')
+        t = time()
+        factors = precomp_func(static, moving, radius, num_threads=1)
+        duration_1core_pre = time() - t
+        t = time()
+        out_f, energy_f = forward_func(grad, factors, radius, num_threads=1)
+        duration_1core_forward = time() - t
+        t = time()
+        out_b, energy_b = backward_func(grad, factors, radius, num_threads=1)
+        duration_1core_backward = time() - t
+        print("  pre: {} s".format(duration_1core_pre))
+        print("  forward: {} s".format(duration_1core_forward))
+        print("  back: {} s".format(duration_1core_backward))
+
+        print('All')
+        t = time()
+        factors_all = precomp_func(static, moving, radius, num_threads=None)
+        duration_all_core_pre = time() - t
+        t = time()
+        out_f_all, energy_f_all = forward_func(grad, factors_all, radius,
+                                               num_threads=None)
+        duration_all_core_forward = time() - t
+        t = time()
+        out_b_all, energy_b_all = backward_func(grad, factors_all, radius,
+                                                num_threads=None)
+        duration_all_core_backward = time() - t
+        print("  pre: {} s".format(duration_all_core_pre))
+        print("  forward: {} s".format(duration_all_core_forward))
+        print("  back: {} s".format(duration_all_core_backward))
+
+        print('2')
+        t = time()
+        factors2 = precomp_func(static, moving, radius, num_threads=2)
+        duration_2core_pre = time() - t
+        t = time()
+        out_f2, energy_f2 = forward_func(grad, factors2, radius, num_threads=2)
+        duration_2core_forward = time() - t
+        t = time()
+        out_b2, energy_b2 = backward_func(grad, factors2, radius,
+                                          num_threads=2)
+        duration_2core_backward = time() - t
+        print("  pre: {} s".format(duration_2core_pre))
+        print("  forward: {} s".format(duration_2core_forward))
+        print("  back: {} s".format(duration_2core_backward))
+
+        # verify same result regardless of threading
+        assert_array_almost_equal(factors, factors2)
+        assert_array_almost_equal(out_f, out_f2)
+        assert_array_almost_equal(out_b, out_b2)
+        assert_array_almost_equal(factors, factors_all)
+        assert_array_almost_equal(out_f, out_f_all)
+        assert_array_almost_equal(out_b, out_b_all)
+
+        # Only verify speedups for the precomputation routine which is the
+        # slowest of the three.  For the small sizes tested here, the other
+        # routines may not always be faster in the multithreaded case.
+        if cpu_count() > 2:
+            assert_equal(duration_all_core_pre < duration_2core_pre, True)
+            assert_equal(duration_2core_pre < duration_1core_pre, True)
+
+        if cpu_count() == 2:
+            assert_equal(duration_2core_pre < duration_1core_pre, True)
+
+
 if __name__ == '__main__':
-    test_cc_factors_2d()
-    test_cc_factors_3d()
-    test_compute_cc_steps_2d()
-    test_compute_cc_steps_3d()
+    run_module_suite()
