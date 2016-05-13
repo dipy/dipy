@@ -7,12 +7,13 @@ import numpy as np
 cimport numpy as cnp
 cimport cython
 from .fused_types cimport floating, number
-from libc.math cimport cos, atan2
 
 
 cdef extern from "dpy_math.h" nogil:
     double floor(double)
     double sqrt(double)
+    double cos(double)
+    double atan2(double, double)
 
 
 def is_valid_affine(double[:, :] M, int dim):
