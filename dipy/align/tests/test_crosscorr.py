@@ -4,7 +4,7 @@ from numpy.testing import (assert_array_almost_equal, assert_equal,
                            run_module_suite)
 from dipy.align import floating
 from dipy.align import crosscorr as cc
-from dipy.denoise.denspeed import cpu_count
+from dipy.utils.omp import cpu_count, thread_count, default_threads
 
 
 def test_cc_factors_2d():
@@ -222,12 +222,12 @@ def test_cc_threads():
     rstate = np.random.RandomState(1234)
     for ndim in [2, 3]:
         if ndim == 2:
-            N = 128
+            N = 512
             precomp_func = cc.precompute_cc_factors_2d
             forward_func = cc.compute_cc_forward_step_2d
             backward_func = cc.compute_cc_backward_step_2d
         elif ndim == 3:
-            N = 48
+            N = 96
             precomp_func = cc.precompute_cc_factors_3d
             forward_func = cc.compute_cc_forward_step_3d
             backward_func = cc.compute_cc_backward_step_3d
@@ -237,7 +237,9 @@ def test_cc_threads():
         moving = rstate.standard_normal(im_shape)
         grad = rstate.standard_normal(im_shape + (ndim, ))
 
-        print('cpu count %d' % (cpu_count(),))
+        print('cpu count %d' % cpu_count())
+        print('thread count %d' % thread_count())
+        print('default threads %d' % default_threads)
 
         print('1')
         t = time()
@@ -252,6 +254,21 @@ def test_cc_threads():
         print("  pre: {} s".format(duration_1core_pre))
         print("  forward: {} s".format(duration_1core_forward))
         print("  back: {} s".format(duration_1core_backward))
+
+        print('2')
+        t = time()
+        factors2 = precomp_func(static, moving, radius, num_threads=2)
+        duration_2core_pre = time() - t
+        t = time()
+        out_f2, energy_f2 = forward_func(grad, factors2, radius, num_threads=2)
+        duration_2core_forward = time() - t
+        t = time()
+        out_b2, energy_b2 = backward_func(grad, factors2, radius,
+                                          num_threads=2)
+        duration_2core_backward = time() - t
+        print("  pre: {} s".format(duration_2core_pre))
+        print("  forward: {} s".format(duration_2core_forward))
+        print("  back: {} s".format(duration_2core_backward))
 
         print('All')
         t = time()
@@ -268,21 +285,6 @@ def test_cc_threads():
         print("  pre: {} s".format(duration_all_core_pre))
         print("  forward: {} s".format(duration_all_core_forward))
         print("  back: {} s".format(duration_all_core_backward))
-
-        print('2')
-        t = time()
-        factors2 = precomp_func(static, moving, radius, num_threads=2)
-        duration_2core_pre = time() - t
-        t = time()
-        out_f2, energy_f2 = forward_func(grad, factors2, radius, num_threads=2)
-        duration_2core_forward = time() - t
-        t = time()
-        out_b2, energy_b2 = backward_func(grad, factors2, radius,
-                                          num_threads=2)
-        duration_2core_backward = time() - t
-        print("  pre: {} s".format(duration_2core_pre))
-        print("  forward: {} s".format(duration_2core_forward))
-        print("  back: {} s".format(duration_2core_backward))
 
         # verify same result regardless of threading
         assert_array_almost_equal(factors, factors2)
