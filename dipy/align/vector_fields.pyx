@@ -7,6 +7,9 @@ import numpy as np
 cimport numpy as cnp
 cimport cython
 from .fused_types cimport floating, number
+from libc.math cimport cos, atan2
+
+
 cdef extern from "dpy_math.h" nogil:
     double floor(double)
     double sqrt(double)
@@ -49,7 +52,7 @@ def interpolate_vector_2d(floating[:, :, :] field, double[:, :] locations):
     """
     ftype = np.asarray(field).dtype
     cdef:
-        cnp.npy_intp n = locations.shape[0]
+        cnp.npy_intp i, n = locations.shape[0]
         floating[:, :] out = np.zeros(shape=(n, 2), dtype=ftype)
         int[:] inside = np.empty(shape=(n,), dtype=np.int32)
     with nogil:
@@ -159,7 +162,7 @@ def interpolate_scalar_2d(floating[:, :] image, double[:, :] locations):
     """
     ftype = np.asarray(image).dtype
     cdef:
-        cnp.npy_intp n = locations.shape[0]
+        cnp.npy_intp i, n = locations.shape[0]
         floating[:] out = np.zeros(shape=(n,), dtype=ftype)
         int[:] inside = np.empty(shape=(n,), dtype=np.int32)
     with nogil:
@@ -263,7 +266,7 @@ def interpolate_scalar_nn_2d(number[:, :] image, double[:, :] locations):
     """
     ftype = np.asarray(image).dtype
     cdef:
-        cnp.npy_intp n = locations.shape[0]
+        cnp.npy_intp i, n = locations.shape[0]
         number[:] out = np.zeros(shape=(n,), dtype=ftype)
         int[:] inside = np.empty(shape=(n,), dtype=np.int32)
     with nogil:
@@ -356,7 +359,7 @@ def interpolate_scalar_nn_3d(number[:, :, :] image, double[:, :] locations):
     """
     ftype = np.asarray(image).dtype
     cdef:
-        cnp.npy_intp n = locations.shape[0]
+        cnp.npy_intp i, n = locations.shape[0]
         number[:] out = np.zeros(shape=(n,), dtype=ftype)
         int[:] inside = np.empty(shape=(n,), dtype=np.int32)
     with nogil:
@@ -458,7 +461,7 @@ def interpolate_scalar_3d(floating[:, :, :] image, locations):
     """
     ftype = np.asarray(image).dtype
     cdef:
-        cnp.npy_intp n = locations.shape[0]
+        cnp.npy_intp i, n = locations.shape[0]
         floating[:] out = np.zeros(shape=(n,), dtype=ftype)
         int[:] inside = np.empty(shape=(n,), dtype=np.int32)
         double[:,:] _locations = np.array(locations, dtype=np.float64)
@@ -592,7 +595,7 @@ def interpolate_vector_3d(floating[:, :, :, :] field, double[:, :] locations):
     """
     ftype = np.asarray(field).dtype
     cdef:
-        cnp.npy_intp n = locations.shape[0]
+        cnp.npy_intp i, n = locations.shape[0]
         floating[:, :] out = np.zeros(shape=(n, 3), dtype=ftype)
         int[:] inside = np.empty(shape=(n,), dtype=np.int32)
     with nogil:
@@ -2790,7 +2793,7 @@ def create_random_displacement_3d(int[:] from_shape, double[:, :] from_grid2worl
     """
     cdef:
         cnp.npy_intp i, j, k, ri, rj, rk
-        double di, dj, dii, djj
+        double di, dj, dk, dii, djj, dkk
         int[:, :, :, :] int_field = np.empty(tuple(from_shape) + (3,),
                                                dtype=np.int32)
         double[:, :, :, :] output = np.zeros(tuple(from_shape) + (3,),
@@ -2885,11 +2888,11 @@ def create_harmonic_fields_2d(cnp.npy_intp nrows, cnp.npy_intp ncols,
         for j in range(ncols):
             ii = i - mid_row
             jj = j - mid_col
-            theta = np.arctan2(ii, jj)
-            d[i, j, 0] = ii * (1.0 / (1 + b * np.cos(m * theta)) - 1.0)
-            d[i, j, 1] = jj * (1.0 / (1 + b * np.cos(m * theta)) - 1.0)
-            inv[i, j, 0] = b * np.cos(m * theta) * ii
-            inv[i, j, 1] = b * np.cos(m * theta) * jj
+            theta = atan2(ii, jj)
+            d[i, j, 0] = ii * (1.0 / (1 + b * cos(m * theta)) - 1.0)
+            d[i, j, 1] = jj * (1.0 / (1 + b * cos(m * theta)) - 1.0)
+            inv[i, j, 0] = b * cos(m * theta) * ii
+            inv[i, j, 1] = b * cos(m * theta) * jj
 
     return np.asarray(d), np.asarray(inv)
 
@@ -2942,13 +2945,13 @@ def create_harmonic_fields_3d(int nslices, cnp.npy_intp nrows,
                 kk = k - mid_slice
                 ii = i - mid_row
                 jj = j - mid_col
-                theta = np.arctan2(ii, jj)
-                d[k, i, j, 0] = kk * (1.0 / (1 + b * np.cos(m * theta)) - 1.0)
-                d[k, i, j, 1] = ii * (1.0 / (1 + b * np.cos(m * theta)) - 1.0)
-                d[k, i, j, 2] = jj * (1.0 / (1 + b * np.cos(m * theta)) - 1.0)
-                inv[k, i, j, 0] = b * np.cos(m * theta) * kk
-                inv[k, i, j, 1] = b * np.cos(m * theta) * ii
-                inv[k, i, j, 2] = b * np.cos(m * theta) * jj
+                theta = atan2(ii, jj)
+                d[k, i, j, 0] = kk * (1.0 / (1 + b * cos(m * theta)) - 1.0)
+                d[k, i, j, 1] = ii * (1.0 / (1 + b * cos(m * theta)) - 1.0)
+                d[k, i, j, 2] = jj * (1.0 / (1 + b * cos(m * theta)) - 1.0)
+                inv[k, i, j, 0] = b * cos(m * theta) * kk
+                inv[k, i, j, 1] = b * cos(m * theta) * ii
+                inv[k, i, j, 2] = b * cos(m * theta) * jj
 
     return np.asarray(d), np.asarray(inv)
 
