@@ -58,12 +58,12 @@ def interpolate_vector_2d(floating[:, :, :] field, double[:, :] locations):
     with nogil:
         for i in range(n):
             inside[i] = _interpolate_vector_2d[floating](field,
-                locations[i, 0], locations[i, 1], out[i])
+                locations[i, 0], locations[i, 1], &out[i, 0])
     return np.asarray(out), np.asarray(inside)
 
 
 cdef inline int _interpolate_vector_2d(floating[:, :, :] field, double dii,
-                                       double djj, floating[:] out) nogil:
+                                       double djj, floating *out) nogil:
     r"""Bilinear interpolation of a 2D vector field
 
     Interpolates the 2D displacement field at (dii, djj) and stores the
@@ -601,13 +601,13 @@ def interpolate_vector_3d(floating[:, :, :, :] field, double[:, :] locations):
     with nogil:
         for i in range(n):
             inside[i] = _interpolate_vector_3d[floating](field,
-                locations[i, 0], locations[i, 1], locations[i, 2], out[i])
+                locations[i, 0], locations[i, 1], locations[i, 2], &out[i, 0])
     return np.asarray(out), np.asarray(inside)
 
 
 cdef inline int _interpolate_vector_3d(floating[:, :, :, :] field, double dkk,
                                        double dii, double djj,
-                                       floating[:] out) nogil:
+                                       floating* out) nogil:
     r"""Trilinear interpolation of a 3D vector field
 
     Interpolates the 3D displacement field at (dkk, dii, djj) and stores the
@@ -829,7 +829,7 @@ cdef void _compose_vector_fields_2d(floating[:, :, :] d1, floating[:, :, :] d2,
             # in the neighborhood of a previously updated vector from d2,
             # which may be problematic
             inside = _interpolate_vector_2d[floating](d2, diii, djjj,
-                                                      comp[i, j])
+                                                      &comp[i, j, 0])
 
             if inside == 1:
                 comp[i, j, 0] = time_scaling * comp[i, j, 0] + dii
@@ -841,7 +841,9 @@ cdef void _compose_vector_fields_2d(floating[:, :, :] d1, floating[:, :, :] d2,
                 if(maxNorm < nn):
                     maxNorm = nn
             else:
-                comp[i, j, :] = 0
+                comp[i, j, 0] = 0
+                comp[i, j, 1] = 0
+
     meanNorm /= cnt
     stats[0] = sqrt(maxNorm)
     stats[1] = sqrt(meanNorm)
@@ -1033,8 +1035,8 @@ cdef void _compose_vector_fields_3d(floating[:, :, :, :] d1,
                 # If d2 and comp are the same array, then (dkkk, diii, djjj)
                 # may be in the neighborhood of a previously updated vector
                 # from d2, which may be problematic
-                inside = _interpolate_vector_3d[floating](d2, dkkk, diii,
-                                                          djjj, comp[k, i, j])
+                inside = _interpolate_vector_3d[floating](d2, dkkk, diii, djjj,
+                                                          &comp[k, i, j, 0])
 
                 if inside == 1:
                     comp[k, i, j, 0] = t * comp[k, i, j, 0] + dkk
@@ -1048,7 +1050,9 @@ cdef void _compose_vector_fields_3d(floating[:, :, :, :] d1,
                     if(maxNorm < nn):
                         maxNorm = nn
                 else:
-                    comp[k, i, j, :] = 0
+                    comp[k, i, j, 0] = 0
+                    comp[k, i, j, 1] = 0
+                    comp[k, i, j, 2] = 0
     meanNorm /= cnt
     stats[0] = sqrt(maxNorm)
     stats[1] = sqrt(meanNorm)
@@ -1436,7 +1440,7 @@ def simplify_warp_function_2d(floating[:, :, :] d,
                         i, j, 1, affine_idx_in)
                     dj = _apply_affine_2d_x1(
                         i, j, 1, affine_idx_in)
-                    _interpolate_vector_2d[floating](d, di, dj, tmp)
+                    _interpolate_vector_2d[floating](d, di, dj, &tmp[0])
                     dii = tmp[0]
                     djj = tmp[1]
 
@@ -1558,7 +1562,7 @@ def simplify_warp_function_3d(floating[:, :, :, :] d,
                         dj = _apply_affine_3d_x2(
                             k, i, j, 1, affine_idx_in)
                         inside = _interpolate_vector_3d[floating](d, dk, di,
-                                                                  dj, tmp)
+                                                                  dj, &tmp[0])
                         dkk = tmp[0]
                         dii = tmp[1]
                         djj = tmp[2]
@@ -1948,7 +1952,7 @@ def warp_3d(floating[:, :, :] volume, floating[:, :, :, :] d1,
                         dj = _apply_affine_3d_x2(
                             k, i, j, 1, affine_idx_in)
                         inside = _interpolate_vector_3d[floating](d1, dk, di,
-                                                                  dj, tmp)
+                                                                  dj, &tmp[0])
                         dkk = tmp[0]
                         dii = tmp[1]
                         djj = tmp[2]
@@ -2145,7 +2149,7 @@ def warp_3d_nn(number[:, :, :] volume, floating[:, :, :, :] d1,
                         dj = _apply_affine_3d_x2(
                             k, i, j, 1, affine_idx_in)
                         inside = _interpolate_vector_3d[floating](d1, dk, di,
-                                                                  dj, tmp)
+                                                                  dj, &tmp[0])
                         dkk = tmp[0]
                         dii = tmp[1]
                         djj = tmp[2]
@@ -2330,7 +2334,7 @@ def warp_2d(floating[:, :] image, floating[:, :, :] d1,
                         i, j, 1, affine_idx_in)
                     dj = _apply_affine_2d_x1(
                         i, j, 1, affine_idx_in)
-                    _interpolate_vector_2d[floating](d1, di, dj, tmp)
+                    _interpolate_vector_2d[floating](d1, di, dj, &tmp[0])
                     dii = tmp[0]
                     djj = tmp[1]
 
@@ -2504,7 +2508,7 @@ def warp_2d_nn(number[:, :] image, floating[:, :, :] d1,
                         i, j, 1, affine_idx_in)
                     dj = _apply_affine_2d_x1(
                         i, j, 1, affine_idx_in)
-                    _interpolate_vector_2d[floating](d1, di, dj, tmp)
+                    _interpolate_vector_2d[floating](d1, di, dj, &tmp[0])
                     dii = tmp[0]
                     djj = tmp[1]
 
@@ -2633,7 +2637,7 @@ def resample_displacement_field_3d(floating[:, :, :, :] field,
                 dii = <double> i * factors[1]
                 djj = <double> j * factors[2]
                 _interpolate_vector_3d[floating](field, dkk, dii, djj,
-                                                 expanded[k, i, j])
+                                                 &expanded[k, i, j, 0])
     return np.asarray(expanded)
 
 
@@ -2674,7 +2678,7 @@ def resample_displacement_field_2d(floating[:, :, :] field, double[:] factors,
             dii = i*factors[0]
             djj = j*factors[1]
             inside = _interpolate_vector_2d[floating](field, dii, djj,
-                                                      expanded[i, j])
+                                                      &expanded[i, j, 0])
     return np.asarray(expanded)
 
 
@@ -3179,7 +3183,9 @@ def _sparse_gradient_3d(floating[:, :, :] img,
         h[2] = 0.5 * img_spacing[2]
         for i in range(n):
             inside[i] = 1
-            dx[:] = sample_points[i, :3]
+            dx[0] = sample_points[i, 0]
+            dx[1] = sample_points[i, 1]
+            dx[2] = sample_points[i, 2]
             for p in range(3):
                 # Compute coordinates of point dx on img's grid
                 dx[p] = sample_points[i, p] - h[p]
@@ -3345,7 +3351,8 @@ def _sparse_gradient_2d(floating[:, :] img, double[:, :] img_world2grid,
         h[1] = 0.5 * img_spacing[1]
         for i in range(n):
             inside[i] = 1
-            dx[:] = sample_points[i, :2]
+            dx[0] = sample_points[i, 0]
+            dx[1] = sample_points[i, 1]
             for p in range(2):
                 # Compute coordinates of point dx on img's grid
                 dx[p] = sample_points[i, p] - h[p]
@@ -3415,9 +3422,13 @@ def gradient(img, img_world2grid, img_spacing, out_shape,
         jd_grad = _gradient_3d
     else:
         raise ValueError('Undefined gradient for image dimension %d' % (dim,))
-    jd_grad(img, img_world2grid.astype(np.float64),
-            img_spacing.astype(np.float64),
-            out_grid2world.astype(np.float64), out, inside)
+    if img_world2grid.dtype != np.float64:
+        img_world2grid = img_world2grid.astype(np.float64)
+    if img_spacing.dtype != np.float64:
+        img_spacing = img_spacing.astype(np.float64)
+    if out_grid2world.dtype != np.float64:
+        out_grid2world = out_grid2world.astype(np.float64)
+    jd_grad(img, img_world2grid, img_spacing, out_grid2world, out, inside)
     return np.asarray(out), np.asarray(inside)
 
 
@@ -3457,6 +3468,9 @@ def sparse_gradient(img, img_world2grid, img_spacing, sample_points):
         jd_grad = _sparse_gradient_2d
     else:
         jd_grad = _sparse_gradient_3d
-    jd_grad(img, img_world2grid.astype(np.float64),
-            img_spacing.astype(np.float64), sample_points, out, inside)
+    if img_world2grid.dtype != np.float64:
+        img_world2grid = img_world2grid.astype(np.float64)
+    if img_spacing.dtype != np.float64:
+        img_spacing = img_spacing.astype(np.float64)
+    jd_grad(img, img_world2grid, img_spacing, sample_points, out, inside)
     return np.asarray(out), np.asarray(inside)
