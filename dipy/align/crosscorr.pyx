@@ -5,6 +5,8 @@ cimport cython
 cimport numpy as cnp
 from fused_types cimport floating
 from cython.parallel import parallel, prange
+cimport safe_openmp as openmp
+from safe_openmp cimport have_openmp
 
 
 cdef inline int _int_max(int a, int b) nogil:
@@ -28,11 +30,31 @@ cdef enum:
     SIJ = 4
     CNT = 5
 
+
+cdef void _set_num_threads(num_threads):
+    cdef:
+        int all_cores = openmp.omp_get_num_procs()
+        int threads_to_use = -1
+    if num_threads is not None:
+        threads_to_use = num_threads
+    else:
+        threads_to_use = all_cores
+
+    if have_openmp:
+        openmp.omp_set_dynamic(0)
+        openmp.omp_set_num_threads(threads_to_use)
+
+
+cdef void _restore_all_threads():
+    cdef int all_cores = openmp.omp_get_num_procs()
+    openmp.omp_set_num_threads(all_cores)
+
+
 @cython.boundscheck(False)
 @cython.wraparound(False)
 @cython.cdivision(True)
 def precompute_cc_factors_3d(floating[:, :, :] static, floating[:, :, :] moving,
-                             cnp.npy_intp radius):
+                             cnp.npy_intp radius, num_threads=None):
     r"""Precomputations to quickly compute the gradient of the CC Metric
 
     Pre-computes the separate terms of the cross correlation metric and image
@@ -82,6 +104,7 @@ def precompute_cc_factors_3d(floating[:, :, :] static, floating[:, :, :] moving,
         double[:, :, :] lines = np.zeros((nr, 6, side), dtype=np.float64)
         double[:, :] sums = np.zeros((nr, 6,), dtype=np.float64)
 
+    _set_num_threads(num_threads)
     with nogil, parallel():
         # compute rows in parallel
         for r in prange(nr):
@@ -148,6 +171,8 @@ def precompute_cc_factors_3d(floating[:, :, :] static, floating[:, :, :] moving,
                         Imean * sums[r, SI] + sums[r, CNT] * Imean * Imean)
                     factors[s, r, c, 4] = (sums[r, SJ2] - Jmean * sums[r, SJ] -
                         Jmean * sums[r, SJ] + sums[r, CNT] * Jmean * Jmean)
+    if have_openmp and num_threads is not None:
+        _restore_all_threads()
     return np.asarray(factors)
 
 
@@ -211,7 +236,7 @@ def precompute_cc_factors_3d_test(floating[:, :, :] static,
 @cython.cdivision(True)
 def compute_cc_forward_step_3d(floating[:, :, :, :] grad_static,
                                floating[:, :, :, :] factors,
-                               cnp.npy_intp radius):
+                               cnp.npy_intp radius, num_threads=None):
     r"""Gradient of the CC Metric w.r.t. the forward transformation
 
     Computes the gradient of the Cross Correlation metric for symmetric
@@ -255,8 +280,9 @@ def compute_cc_forward_step_3d(floating[:, :, :, :] grad_static,
         double Ii, Ji, sfm, sff, smm, localCorrelation, temp
         floating[:, :, :, :] out = np.zeros((ns, nr, nc, 3),
                                             dtype=np.asarray(grad_static).dtype)
-    with nogil:
-        for s in range(radius, ns-radius):
+    _set_num_threads(num_threads)
+    with nogil, parallel():
+        for s in prange(radius, ns-radius):
             for r in range(radius, nr-radius):
                 for c in range(radius, nc-radius):
                     Ii = factors[s, r, c, 0]
@@ -275,6 +301,8 @@ def compute_cc_forward_step_3d(floating[:, :, :, :] grad_static,
                     out[s, r, c, 0] -= temp * grad_static[s, r, c, 0]
                     out[s, r, c, 1] -= temp * grad_static[s, r, c, 1]
                     out[s, r, c, 2] -= temp * grad_static[s, r, c, 2]
+    if have_openmp and num_threads is not None:
+        _restore_all_threads()
     return np.asarray(out), energy
 
 @cython.boundscheck(False)
@@ -283,7 +311,7 @@ def compute_cc_forward_step_3d(floating[:, :, :, :] grad_static,
 
 def compute_cc_backward_step_3d(floating[:, :, :, :] grad_moving,
                                 floating[:, :, :, :] factors,
-                                cnp.npy_intp radius):
+                                cnp.npy_intp radius, num_threads=None):
     r"""Gradient of the CC Metric w.r.t. the backward transformation
 
     Computes the gradient of the Cross Correlation metric for symmetric
@@ -328,9 +356,9 @@ def compute_cc_backward_step_3d(floating[:, :, :, :] grad_moving,
         double Ii, Ji, sfm, sff, smm, localCorrelation, temp
         floating[:, :, :, :] out = np.zeros((ns, nr, nc, 3), dtype=ftype)
 
-    with nogil:
-
-        for s in range(radius, ns-radius):
+    _set_num_threads(num_threads)
+    with nogil, parallel():
+        for s in prange(radius, ns-radius):
             for r in range(radius, nr-radius):
                 for c in range(radius, nc-radius):
                     Ii = factors[s, r, c, 0]
@@ -349,6 +377,8 @@ def compute_cc_backward_step_3d(floating[:, :, :, :] grad_moving,
                     out[s, r, c, 0] -= temp * grad_moving[s, r, c, 0]
                     out[s, r, c, 1] -= temp * grad_moving[s, r, c, 1]
                     out[s, r, c, 2] -= temp * grad_moving[s, r, c, 2]
+    if have_openmp and num_threads is not None:
+        _restore_all_threads()
     return np.asarray(out), energy
 
 
@@ -356,7 +386,7 @@ def compute_cc_backward_step_3d(floating[:, :, :, :] grad_moving,
 @cython.wraparound(False)
 @cython.cdivision(True)
 def precompute_cc_factors_2d(floating[:, :] static, floating[:, :] moving,
-                             cnp.npy_intp radius):
+                             cnp.npy_intp radius, num_threads=None):
     r"""Precomputations to quickly compute the gradient of the CC Metric
 
     Pre-computes the separate terms of the cross correlation metric [Avants08]
@@ -405,6 +435,7 @@ def precompute_cc_factors_2d(floating[:, :] static, floating[:, :] moving,
         double[:, :, :] lines = np.zeros((nc, 6, side), dtype=np.float64)
         double[:, :] sums = np.zeros((nc, 6,), dtype=np.float64)
 
+    _set_num_threads(num_threads)
     with nogil, parallel():
         # compute columns in parallel
         for c in prange(nc):
@@ -464,6 +495,8 @@ def precompute_cc_factors_2d(floating[:, :] static, floating[:, :] moving,
                     Imean * sums[c, SI] + sums[c, CNT] * Imean * Imean)
                 factors[r, c, 4] = (sums[c, SJ2] - Jmean * sums[c, SJ] -
                     Jmean * sums[c, SJ] + sums[c, CNT] * Jmean * Jmean)
+    if have_openmp and num_threads is not None:
+        _restore_all_threads()
     return np.asarray(factors)
 
 
@@ -487,7 +520,6 @@ def precompute_cc_factors_2d_test(floating[:, :] static, floating[:, :] moving,
         double[:] sums = np.zeros((6,), dtype=np.float64)
 
     with nogil:
-
         for r in range(nr):
             firstr = _int_max(0, r - radius)
             lastr = _int_min(nr - 1, r + radius)
@@ -523,7 +555,7 @@ def precompute_cc_factors_2d_test(floating[:, :] static, floating[:, :] moving,
 
 def compute_cc_forward_step_2d(floating[:, :, :] grad_static,
                                floating[:, :, :] factors,
-                               cnp.npy_intp radius):
+                               cnp.npy_intp radius, num_threads=None):
     r"""Gradient of the CC Metric w.r.t. the forward transformation
 
     Computes the gradient of the Cross Correlation metric for symmetric
@@ -569,8 +601,8 @@ def compute_cc_forward_step_2d(floating[:, :, :] grad_static,
         double Ii, Ji, sfm, sff, smm, localCorrelation, temp
         floating[:, :, :] out = np.zeros((nr, nc, 2),
                                          dtype=np.asarray(grad_static).dtype)
+    _set_num_threads(num_threads)
     with nogil, parallel():
-
         for r in prange(radius, nr-radius):
             for c in range(radius, nc-radius):
                 Ii = factors[r, c, 0]
@@ -588,6 +620,8 @@ def compute_cc_forward_step_2d(floating[:, :, :] grad_static,
                 temp = 2.0 * sfm / (sff * smm) * (Ji - sfm / sff * Ii)
                 out[r, c, 0] -= temp * grad_static[r, c, 0]
                 out[r, c, 1] -= temp * grad_static[r, c, 1]
+    if have_openmp and num_threads is not None:
+        _restore_all_threads()
     return np.asarray(out), energy
 
 
@@ -596,7 +630,7 @@ def compute_cc_forward_step_2d(floating[:, :, :] grad_static,
 @cython.cdivision(True)
 def compute_cc_backward_step_2d(floating[:, :, :] grad_moving,
                                 floating[:, :, :] factors,
-                                cnp.npy_intp radius):
+                                cnp.npy_intp radius, num_threads=None):
     r"""Gradient of the CC Metric w.r.t. the backward transformation
 
     Computes the gradient of the Cross Correlation metric for symmetric
@@ -637,8 +671,8 @@ def compute_cc_backward_step_2d(floating[:, :, :] grad_moving,
         floating[:, :, :] out = np.zeros((nr, nc, 2),
                                              dtype=ftype)
 
+    _set_num_threads(num_threads)
     with nogil, parallel():
-
         for r in prange(radius, nr-radius):
             for c in range(radius, nc-radius):
                 Ii = factors[r, c, 0]
@@ -656,4 +690,6 @@ def compute_cc_backward_step_2d(floating[:, :, :] grad_moving,
                 temp = 2.0 * sfm / (sff * smm) * (Ii - sfm / smm * Ji)
                 out[r, c, 0] -= temp * grad_moving[r, c, 0]
                 out[r, c, 1] -= temp * grad_moving[r, c, 1]
+    if have_openmp and num_threads is not None:
+        _restore_all_threads()
     return np.asarray(out), energy
