@@ -55,11 +55,16 @@ matrix:
         - INSTALL_TYPE=sdist
     - python: 2.7
       env:
+        - INSTALL_TYPE=pip
+        # Dependency checking should get all needed dependencies
+        - DEPENDS=""
+    - python: 2.7
+      env:
         - INSTALL_TYPE=wheel
     - python: 2.7
       env:
         - INSTALL_TYPE=requirements
-        - DEPENDS=
+        - DEPENDS=""
 before_install:
     - source tools/travis_tools.sh
     - virtualenv $VENV_ARGS venv
@@ -68,7 +73,7 @@ before_install:
     # Needed for Python 3.5 wheel fetching
     - pip install -U pip
     - retry pip install nose;
-    - wheelhouse_pip_install $DEPENDS;
+    - if [ -n "$DEPENDS" ]; then wheelhouse_pip_install $DEPENDS; fi
     - if [ "${COVERAGE}" == "1" ]; then
       pip install coverage;
       pip install coveralls;
@@ -85,6 +90,8 @@ install:
     - |
       if [ "$INSTALL_TYPE" == "setup" ]; then
           python setup.py install
+      elif [ "$INSTALL_TYPE" == "pip" ]; then
+          wheelhouse_pip_install .
       elif [ "$INSTALL_TYPE" == "sdist" ]; then
         python setup_egg.py egg_info  # check egg_info while we're here
         python setup_egg.py sdist
