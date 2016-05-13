@@ -32,7 +32,7 @@ def _get_default_threads():
     if have_openmp:
         try:
             default_threads = int(os.environ.get('OMP_NUM_THREADS', None))
-            if default_threads < 1 or default_threads > openmp.omp_get_num_procs():
+            if default_threads < 1:
                 raise ValueError("invalid number of threads")
         except (ValueError, TypeError):
             default_threads = openmp.omp_get_num_procs()
