@@ -241,7 +241,7 @@ def test_cc_threads():
         print('thread count %d' % thread_count())
         print('default threads %d' % default_threads)
 
-        print('1')
+        print('1 thread')
         t = time()
         factors = precomp_func(static, moving, radius, num_threads=1)
         duration_1core_pre = time() - t
@@ -251,11 +251,11 @@ def test_cc_threads():
         t = time()
         out_b, energy_b = backward_func(grad, factors, radius, num_threads=1)
         duration_1core_backward = time() - t
-        print("  pre: {} s".format(duration_1core_pre))
-        print("  forward: {} s".format(duration_1core_forward))
-        print("  back: {} s".format(duration_1core_backward))
+        print("  pre: %0.5f s" % duration_1core_pre)
+        print("  forward: %0.5f s" % duration_1core_forward)
+        print("  back: %0.5f s" % duration_1core_backward)
 
-        print('2')
+        print('2 threads')
         t = time()
         factors2 = precomp_func(static, moving, radius, num_threads=2)
         duration_2core_pre = time() - t
@@ -266,11 +266,11 @@ def test_cc_threads():
         out_b2, energy_b2 = backward_func(grad, factors2, radius,
                                           num_threads=2)
         duration_2core_backward = time() - t
-        print("  pre: {} s".format(duration_2core_pre))
-        print("  forward: {} s".format(duration_2core_forward))
-        print("  back: {} s".format(duration_2core_backward))
+        print("  pre: %0.5f s" % duration_2core_pre)
+        print("  forward: %0.5f s" % duration_2core_forward)
+        print("  back: %0.5f s" % duration_2core_backward)
 
-        print('All')
+        print('%d threads (default)' % default_threads)
         t = time()
         factors_all = precomp_func(static, moving, radius, num_threads=None)
         duration_all_core_pre = time() - t
@@ -282,9 +282,9 @@ def test_cc_threads():
         out_b_all, energy_b_all = backward_func(grad, factors_all, radius,
                                                 num_threads=None)
         duration_all_core_backward = time() - t
-        print("  pre: {} s".format(duration_all_core_pre))
-        print("  forward: {} s".format(duration_all_core_forward))
-        print("  back: {} s".format(duration_all_core_backward))
+        print("  pre: %0.5f s" % duration_all_core_pre)
+        print("  forward: %0.5f s" % duration_all_core_forward)
+        print("  back: %0.5g s" % duration_all_core_backward)
 
         # verify same result regardless of threading
         assert_array_almost_equal(factors, factors2)
@@ -297,7 +297,7 @@ def test_cc_threads():
         # Only verify speedups for the precomputation routine which is the
         # slowest of the three.  For the small sizes tested here, the other
         # routines may not always be faster in the multithreaded case.
-        if cpu_count() > 2:
+        if cpu_count() > 2 and default_threads > 2:
             assert_equal(duration_all_core_pre < duration_2core_pre, True)
             assert_equal(duration_2core_pre < duration_1core_pre, True)
 
