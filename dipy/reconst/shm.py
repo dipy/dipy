@@ -203,9 +203,9 @@ def real_sph_harm(m, n, theta, phi):
 
     Where the real harmonic $Y^m_n$ is defined to be:
 
-        Real($Y^m_n$) * sqrt(2) if m > 0
-        $Y^m_n$                 if m == 0
-        Imag($Y^m_n$) * sqrt(2) if m < 0
+        Imag($Y^m_n$) * sqrt(2)     if m > 0
+        $Y^0_n$                     if m = 0
+        Real($Y^|m|_n$) * sqrt(2)   if m < 0
 
     This may take scalar or array arguments. The inputs will be broadcasted
     against each other.
@@ -245,7 +245,7 @@ def real_sym_sh_mrtrix(sh_order, theta, phi):
     $Y^m_n$ is defined to be::
 
         Real($Y^m_n$)       if m > 0
-        $Y^m_n$             if m == 0
+        $Y^0_n$             if m = 0
         Imag($Y^|m|_n$)     if m < 0
 
     This may take scalar or array arguments. The inputs will be broadcasted
@@ -291,7 +291,7 @@ def real_sym_sh_basis(sh_order, theta, phi):
     be:
 
         Imag($Y^m_n$) * sqrt(2)     if m > 0
-        $Y^m_n$                     if m == 0
+        $Y^0_n$                     if m = 0
         Real($Y^|m|_n$) * sqrt(2)   if m < 0
 
     This may take scalar or array arguments. The inputs will be broadcasted
