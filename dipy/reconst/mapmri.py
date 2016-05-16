@@ -194,6 +194,9 @@ class MapmriModel(Cache):
         self.bvals = gtab.bvals
         self.bvecs = gtab.bvecs
         self.gtab = gtab
+        if radial_order < 0 or radial_order % 2:
+            msg = "radial_order must be a positive, even number."
+            raise ValueError(msg)  
         self.radial_order = radial_order
         self.bval_threshold = bval_threshold
         self.dti_scale_estimation = dti_scale_estimation
