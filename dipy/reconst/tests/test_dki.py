@@ -579,7 +579,7 @@ def test_dki_errors():
     assert_raises(ValueError, dkiM.fit, DWI, mask=mask_not_correct)
 
 
-def test_kurtosis_maxima():
+def test_kurtosis_maximum():
     # TEST 1
     # simulate a crossing fibers interserting at 70 degrees. The first fiber
     # is aligned to the x-axis while the second fiber is aligned to the x-z
@@ -601,7 +601,7 @@ def test_kurtosis_maxima():
     sphere = get_sphere('symmetric724')
 
     # compute maxima
-    k_max_cross, max_dir = dki.kurtosis_maxima(dt, MD, kt, sphere, gtol=1e-5)
+    k_max_cross, max_dir = dki.kurtosis_maximum(dt, MD, kt, sphere, gtol=1e-5)
     
     yaxis = np.array([0., 1., 0.])
     cos_angle = np.abs(np.dot(max_dir[0], yaxis))
@@ -640,7 +640,7 @@ def test_kurtosis_maxima():
     dt = lower_triangular(np.dot(np.dot(R, np.diag(evals)), R.T))
 
     # compute maxima
-    k_max, max_dir = dki.kurtosis_maxima(dt, MD, kt, sphere, gtol=1e-5)
+    k_max, max_dir = dki.kurtosis_maximum(dt, MD, kt, sphere, gtol=1e-5)
 
     # check if max direction is perpendicular to fiber direction
     fdir = np.array([sphere2cart(1., np.deg2rad(theta), np.deg2rad(phi))])
