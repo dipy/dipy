@@ -952,7 +952,7 @@ def _kt_maxima_converge(ang, dt, MD, kt):
     
     See also
     --------
-    dipy.reconst.dki.kurtosis_maxima
+    dipy.reconst.dki.kurtosis_maximum
     """
     n = np.array([sphere2cart(1, ang[0], ang[1])])
     return -1. * _directional_kurtosis(dt, MD, kt, n)
