@@ -926,13 +926,22 @@ def dki_prediction(dki_params, gtab, S0=150):
     fevecs = evecs.reshape((-1,) + evecs.shape[-2:])
     fkt = kt.reshape((-1, kt.shape[-1]))
     pred_sig = np.zeros((len(fevals), len(gtab.bvals)))
-
-    # lopping for all voxels
+    if isinstance(S0, np.ndarray):
+        S0_vol = np.reshape(S0, (len(fevals)))
+    else:
+        S0_vol = S0
+    # looping for all voxels
     for v in range(len(pred_sig)):
         DT = np.dot(np.dot(fevecs[v], np.diag(fevals[v])), fevecs[v].T)
         dt = lower_triangular(DT)
         MD = (dt[0] + dt[2] + dt[5]) / 3
-        X = np.concatenate((dt, fkt[v]*MD*MD, np.array([np.log(S0)])), axis=0)
+        if isinstance(S0_vol, np.ndarray):
+            this_S0 = S0_vol[v]
+        else:
+            this_S0 = S0_vol
+        X = np.concatenate((dt, fkt[v]*MD*MD,
+                            np.array([np.log(this_S0)])),
+                           axis=0)
         pred_sig[v] = np.exp(np.dot(A, X))
 
     # Reshape data according to the shape of dki_params
