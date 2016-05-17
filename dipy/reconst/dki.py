@@ -11,9 +11,9 @@ from dipy.reconst.dti import (TensorFit, mean_diffusivity, axial_diffusivity,
 
 from dipy.reconst.utils import dki_design_matrix as design_matrix
 from dipy.utils.six.moves import range
-from .base import ReconstModel
+from dipy.reconst.base import ReconstModel
 from dipy.core.geometry import (sphere2cart, cart2sphere)
-from .recspeed import local_maxima
+from dipy.reconst.recspeed import local_maxima
 from dipy.core.ndindex import ndindex
 
 
@@ -365,8 +365,8 @@ def _F2m(a, b, c):
 
 
 def _directional_kurtosis(dt, MD, kt, V, min_diffusivity=0, min_kurtosis=-1):
-    r""" Helper function that calculate the apparent kurtosis coefficient (AKC)
-    in each direction of a sphere for a single voxel.
+    r""" Helper function that calculates the apparent kurtosis coefficient
+    (AKC) in each direction of a sphere for a single voxel.
 
     Parameters
     ----------
@@ -384,9 +384,9 @@ def _directional_kurtosis(dt, MD, kt, V, min_diffusivity=0, min_kurtosis=-1):
         values smaller than `min_diffusivity` are replaced with
         `min_diffusivity`. defaut = 0
     min_kurtosis : float (optional)
-        Because high amplitude negative values of kurtosis are not physicaly
-        and biologicaly pluasible, and these causes huge artefacts in kurtosis
-        based measures, directional kurtosis values than `min_kurtosis` are
+        Because high-amplitude negative values of kurtosis are not physicaly
+        and biologicaly plausible, and these cause artefacts in kurtosis-based
+        measures, directional kurtosis values smaller than `min_kurtosis` are
         replaced with `min_kurtosis`. defaut = -1
 
     Returns
@@ -435,7 +435,7 @@ def _directional_kurtosis(dt, MD, kt, V, min_diffusivity=0, min_kurtosis=-1):
 
 def apparent_kurtosis_coef(dki_params, sphere, min_diffusivity=0,
                            min_kurtosis=-1):
-    r""" Calculate the apparent kurtosis coefficient (AKC) in each direction
+    r""" Calculates the apparent kurtosis coefficient (AKC) in each direction
     of a sphere.
 
     Parameters
