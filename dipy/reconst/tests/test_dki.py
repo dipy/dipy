@@ -630,7 +630,7 @@ def test_kurtosis_maximum():
     # check if max direction is perpendicular to fiber direction
     fdir = np.array([sphere2cart(1., np.deg2rad(theta), np.deg2rad(phi))])
     cos_angle = np.abs(np.dot(max_dir[0], fdir[0]))
-    assert_almost_equal(cos_angle, 0.)
+    assert_almost_equal(cos_angle, 0., decimal=5)
     
     # check if max direction is equal to expected value
     assert_almost_equal(k_max, RK)
