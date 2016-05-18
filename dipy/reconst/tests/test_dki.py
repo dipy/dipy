@@ -679,7 +679,7 @@ def test_single_fiber_model():
 
     # Single fiber model
     sphere = get_sphere('symmetric724')
-    AWF = dki.single_fiber_model(dkiF.model_params, sphere, mask=None,
-                                 gtol=1e-5)
+    AWF = dki.axonal_water_fraction(dkiF.model_params, sphere, mask=None,
+                                    gtol=1e-5)
     assert_almost_equal(AWF, fie)
 
