@@ -21,6 +21,20 @@ If you are on Debian or Ubuntu Linux we recommend you try
 
 .. _install-packages:
 
+
+Using Anaconda:
+===============
+
+On all platforms, you can use Anaconda_ to install Dipy. To do so issue the following two commands in a terminal::
+
+    conda config --add channels conda-forge
+	conda install dipy
+
+#. Some of the visualization methods require the VTK_ library and this can be installed separately (but only on Python 2)::
+
+		conda install vtk
+
+
 Using packages:
 ===============
 
