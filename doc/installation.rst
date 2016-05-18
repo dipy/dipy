@@ -32,7 +32,7 @@ On all platforms, you can use Anaconda_ to install Dipy. To do so issue the foll
 
 #. Some of the visualization methods require the VTK_ library and this can be installed separately (but only on Python 2)::
 
-		conda install vtk
+    conda install vtk
 
 
 Using packages:
