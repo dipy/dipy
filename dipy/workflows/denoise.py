@@ -1,14 +1,14 @@
 from __future__ import division, print_function, absolute_import
 
 import logging
-from glob import glob
-import os
+import inspect
 
 import nibabel as nib
 
 from dipy.denoise.nlmeans import nlmeans
 from dipy.denoise.noise_estimate import estimate_sigma
-from dipy.workflows.utils import choose_create_out_dir
+from dipy.workflows.multi_io import io_iterator_
+
 
 
 def nlmeans_flow(input_files, sigma=0, out_dir='',
@@ -31,7 +31,10 @@ def nlmeans_flow(input_files, sigma=0, out_dir='',
     out_denoised : string, optional
         Name of the resuting denoised volume (default: dwi_nlmeans.nii.gz)
     """
-    for fpath in glob(input_files):
+    io_it = io_iterator_(inspect.currentframe(), nlmeans_flow,
+                         input_structure=False)
+
+    for fpath, odenoised in io_it:
         logging.info('Denoising {0}'.format(fpath))
         image = nib.load(fpath)
         data = image.get_data()
@@ -45,9 +48,6 @@ def nlmeans_flow(input_files, sigma=0, out_dir='',
         denoised_image = nib.Nifti1Image(
             denoised_data, image.get_affine(), image.get_header())
 
-        out_dir_path = choose_create_out_dir(out_dir, fpath)
-        out_file_path = os.path.join(out_dir_path, out_denoised)
-
-        denoised_image.to_filename(out_file_path)
-        logging.info('Denoised volume saved as {0}'.format(out_file_path))
+        denoised_image.to_filename(odenoised)
+        logging.info('Denoised volume saved as {0}'.format(odenoised))
 
