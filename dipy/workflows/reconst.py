@@ -2,7 +2,7 @@ from __future__ import division, print_function, absolute_import
 
 import logging
 import os.path
-from glob import glob
+import inspect
 
 import nibabel as nib
 import numpy as np
@@ -13,9 +13,11 @@ from dipy.reconst.dti import (TensorModel, color_fa, fractional_anisotropy,
                               geodesic_anisotropy, mean_diffusivity,
                               axial_diffusivity, radial_diffusivity,
                               lower_triangular, mode as get_mode)
-from dipy.workflows.utils import choose_create_out_dir, glob_or_value
 
-def dti_metrics_flow(input_files, bvalues, bvectors, mask_files=None,
+from dipy.workflows.multi_io import io_iterator_
+
+
+def dti_metrics_flow(input_files, bvalues, bvectors, mask_files,
                      b0_threshold=0.0, out_dir='', out_tensor='tensors.nii.gz',
                      out_fa='fa.nii.gz', out_ga='ga.nii.gz', out_rgb='rgb.nii.gz',
                      out_md='md.nii.gz', out_ad='ad.nii.gz', out_rd='rd.nii.gz',
@@ -65,11 +67,10 @@ def dti_metrics_flow(input_files, bvalues, bvectors, mask_files=None,
         Name of the eigen vvalues to be saved (default 'evals.nii.gz')
     """
 
-    globed_dwi, globed_mask = glob_or_value(input_files, mask_files)
-    for dwi, mask, bval, bvec in zip(globed_dwi,
-                                     globed_mask,
-                                     glob(bvalues),
-                                     glob(bvectors)):
+    io_it = io_iterator_(inspect.currentframe(), dti_metrics_flow,
+                         input_structure=False)
+    for dwi, bval, bvec, mask, otensor, ofa, oga, orgb, omd, oad, ord, omode,\
+        oevecs, oevals, in io_it:
 
         logging.info('Computing dti metrics for {0}'.format(dwi))
         img = nib.load(dwi)
@@ -83,8 +84,6 @@ def dti_metrics_flow(input_files, bvalues, bvectors, mask_files=None,
 
         tenfit, _ = get_fitted_tensor(data, mask, bval, bvec, b0_threshold)
 
-        out_dir_path = choose_create_out_dir(out_dir, dwi)
-
         FA = fractional_anisotropy(tenfit.evals)
         FA[np.isnan(FA)] = 0
         FA = np.clip(FA, 0, 1)
@@ -94,42 +93,42 @@ def dti_metrics_flow(input_files, bvalues, bvectors, mask_files=None,
         tensor_vals_reordered = tensor_vals[..., correct_order]
         fiber_tensors = nib.Nifti1Image(tensor_vals_reordered.astype(
             np.float32), affine)
-        nib.save(fiber_tensors, os.path.join(out_dir_path, out_tensor))
+        nib.save(fiber_tensors, otensor)
 
         fa_img = nib.Nifti1Image(FA.astype(np.float32), affine)
-        nib.save(fa_img, os.path.join(out_dir_path, out_fa))
+        nib.save(fa_img, ofa)
 
         GA = geodesic_anisotropy(tenfit.evals)
         ga_img = nib.Nifti1Image(GA.astype(np.float32), affine)
-        nib.save(ga_img, os.path.join(out_dir_path, out_ga))
+        nib.save(ga_img, oga)
 
         RGB = color_fa(FA, tenfit.evecs)
         rgb_img = nib.Nifti1Image(np.array(255 * RGB, 'uint8'), affine)
-        nib.save(rgb_img, os.path.join(out_dir_path, out_rgb))
+        nib.save(rgb_img, orgb)
 
         MD = mean_diffusivity(tenfit.evals)
         md_img = nib.Nifti1Image(MD.astype(np.float32), affine)
-        nib.save(md_img, os.path.join(out_dir_path, out_md))
+        nib.save(md_img, omd)
 
         AD = axial_diffusivity(tenfit.evals)
         ad_img = nib.Nifti1Image(AD.astype(np.float32), affine)
-        nib.save(ad_img, os.path.join(out_dir_path, out_ad))
+        nib.save(ad_img, oad)
 
         RD = radial_diffusivity(tenfit.evals)
         rd_img = nib.Nifti1Image(RD.astype(np.float32), affine)
-        nib.save(rd_img, os.path.join(out_dir_path, out_rd))
+        nib.save(rd_img, ord)
 
         MODE = get_mode(tenfit.quadratic_form)
         mode_img = nib.Nifti1Image(MODE.astype(np.float32), affine)
-        nib.save(mode_img, os.path.join(out_dir_path, out_mode))
+        nib.save(mode_img, omode)
 
         evecs_img = nib.Nifti1Image(tenfit.evecs.astype(np.float32), affine)
-        nib.save(evecs_img, os.path.join(out_dir_path, out_evec))
+        nib.save(evecs_img, oevecs)
 
         evals_img = nib.Nifti1Image(tenfit.evals.astype(np.float32), affine)
-        nib.save(evals_img, os.path.join(out_dir_path, out_eval))
-
-        logging.info('All dti metrics saved in {0}'.format(out_dir_path))
+        nib.save(evals_img, oevals)
+        logging.info('All dti metrics saved in {0}'.
+                     format(os.path.dirname(oevals)))
 
 
 def get_fitted_tensor(data, mask, bval, bvec, b0_threshold=0):

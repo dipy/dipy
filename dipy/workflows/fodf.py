@@ -1,6 +1,6 @@
 import logging
-from glob import glob
 import os
+import inspect
 
 from ast import literal_eval
 
@@ -12,10 +12,10 @@ from dipy.data import get_sphere
 from dipy.core.gradients import gradient_table
 from dipy.io.gradients import read_bvals_bvecs
 from dipy.reconst.csdeconv import ConstrainedSphericalDeconvModel, auto_response
+from dipy.workflows.multi_io import io_iterator_
 
-from dipy.workflows.utils import choose_create_out_dir, glob_or_value
 
-def fodf_flow(input_files, bvalues, bvectors, mask_files=None, b0_threshold=0.0,
+def fodf_flow(input_files, bvalues, bvectors, mask_files, b0_threshold=0.0,
               frf=[15.0, 4.0, 4.0], out_dir='', out_fodf='fodf.nii.gz',
               out_peaks='peaks.nii.gz', out_peaks_values='peaks_values.nii.gz',
               out_peaks_indices='peaks_indices.nii.gz'):
@@ -52,13 +52,11 @@ def fodf_flow(input_files, bvalues, bvectors, mask_files=None, b0_threshold=0.0,
     out_peaks_indices : string, optional
         Name of the peaks_indices volume to be saved (default 'peaks_indices.nii.gz')
     """
+    io_it = io_iterator_(inspect.currentframe(), fodf_flow,
+                         input_structure=False)
 
-    globed_dwi, globed_mask = glob_or_value(input_files, mask_files)
-    for dwi, maskfile, bval, bvec in zip(globed_dwi,
-                                         globed_mask,
-                                         glob(bvalues),
-                                         glob(bvectors)):
-        print(frf)
+    for dwi, bval, bvec, maskfile, ofodf, opeaks, opeaks_values, opeaks_idx in io_it:
+
         logging.info('Computing fiber odfs for {0}'.format(dwi))
         vol = nib.load(dwi)
         data = vol.get_data()
@@ -108,21 +106,17 @@ def fodf_flow(input_files, bvalues, bvectors, mask_files=None, b0_threshold=0.0,
                                      normalize_peaks=True,
                                      parallel=False)
 
-        out_dir_path = choose_create_out_dir(out_dir, dwi)
-
         nib.save(nib.Nifti1Image(peaks_csd.shm_coeff.astype(np.float32),
-                                 affine),
-                 os.path.join(out_dir_path, out_fodf))
+                                 affine), ofodf)
 
         nib.save(nib.Nifti1Image(reshape_peaks_for_visualization(peaks_csd),
-                                 affine),
-                 os.path.join(out_dir_path, out_peaks))
+                                 affine), opeaks)
 
         nib.save(nib.Nifti1Image(peaks_csd.peak_values.astype(np.float32),
-                                 affine),
-                 os.path.join(out_dir_path, out_peaks_values))
+                                 affine), opeaks_values)
 
-        nib.save(nib.Nifti1Image(peaks_csd.peak_indices, affine),
-                 os.path.join(out_dir_path, out_peaks_indices))
+        nib.save(nib.Nifti1Image(peaks_csd.peak_indices, affine), opeaks_idx)
 
-        logging.info('Finished computing fiber odfs.')
+        logging.info('Fiber odfs saved in {0}'.format(os.path.dirname(opeaks)))
+
+        return io_it
