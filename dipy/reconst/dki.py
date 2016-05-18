@@ -1009,8 +1009,8 @@ def kurtosis_maximum(dt, MD, kt, sphere, gtol=1e-5):
     return max_value, max_direction
 
 
-def single_fiber_model(dki_params, sphere, mask=None, gtol=1e-5):
-    """ Computes the white matter integrity measures from dki
+def axonal_water_fraction(dki_params, sphere, mask=None, gtol=1e-5):
+    """ Computes the DKI based axonal water fraction [1]_.
 
     Parameters
     ----------
@@ -1045,8 +1045,11 @@ def single_fiber_model(dki_params, sphere, mask=None, gtol=1e-5):
     tort : ndarray (x, y, z, 27) or (n, 27)
         Tortuosity
 
-    Notes
-    -----
+    References
+    ----------
+    .. [1] Fieremans E, Jensen JH, Helpern JA, 2011. White matter
+           characterization with diffusional kurtosis imaging.
+           Neuroimage 58(1):177-88. doi: 10.1016/j.neuroimage.2011.06.006
     """
     shape = dki_params.shape[:-1]
 
