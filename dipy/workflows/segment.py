@@ -6,14 +6,14 @@ import numpy as np
 
 import inspect
 
-from dipy.workflows.multi_io import io_iterator, io_iterator_
+from dipy.workflows.multi_io import io_iterator_
 from dipy.segment.mask import median_otsu
 
 
 def median_otsu_flow(input_files, save_masked=False,
-                     median_radius=2, numpass=5, autocrop=False,
-                     vol_idx=None, dilate=None, out_dir='',
-                     out_mask='brain_mask.nii.gz', out_masked='dwi_masked.nii.gz',):
+                     median_radius=2, numpass=5, autocrop=False, vol_idx=None,
+                     dilate=None, out_dir='', out_mask='brain_mask.nii.gz',
+                     out_masked='dwi_masked.nii.gz'):
     """ Workflow wrapping the median_otsu segmentation method.
 
     Applies median_otsu segmentation on each file found by 'globing'

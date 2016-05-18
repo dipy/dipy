@@ -2,8 +2,8 @@
 from __future__ import division
 
 import logging
-import os
-from glob import glob
+import inspect
+
 import nibabel as nib
 import numpy as np
 
@@ -14,10 +14,10 @@ from dipy.reconst.csdeconv import ConstrainedSphericalDeconvModel
 from dipy.tracking import utils
 from dipy.tracking.local import (ThresholdTissueClassifier, LocalTracking)
 from dipy.workflows.reconst import get_fitted_tensor
-from dipy.workflows.utils import choose_create_out_dir
 from dipy.reconst.dti import fractional_anisotropy
 from dipy.data import default_sphere
 from dipy.direction import DeterministicMaximumDirectionGetter
+from dipy.workflows.multi_io import io_iterator_
 
 
 def EuDX_tracking_flow(peaks_values, peaks_indexes, out_dir='',
@@ -40,12 +40,13 @@ def EuDX_tracking_flow(peaks_values, peaks_indexes, out_dir='',
     out_tractogram : string, optional
         Name of the tractogram file to be saved (default 'tractogram.trk')
     """
-    for peaks_values_path, peaks_idx_path in zip(glob(peaks_values),
-                                                 glob(peaks_indexes)):
+    io_it = io_iterator_(inspect.currentframe(), EuDX_tracking_flow,
+                         input_structure=False)
+
+    for peaks_values_path, peaks_idx_path, out_tract in io_it:
         logging.info('EuDX tracking on {0}'.format(peaks_values_path))
 
         peaks_idx_img = nib.load(peaks_idx_path)
-        voxel_size = peaks_idx_img.get_header().get_zooms()[:3]
         peaks_idx = peaks_idx_img.get_data()
         peaks_value = nib.load(peaks_values_path).get_data()
 
@@ -60,10 +61,10 @@ def EuDX_tracking_flow(peaks_values, peaks_indexes, out_dir='',
 
         translation = peaks_idx_img.get_affine()
         translation[:3, 3] = 0
-        out_dir_path = choose_create_out_dir(out_dir, peaks_values)
-        tractogram_path = os.path.join(out_dir_path, out_tractogram)
-        save_trk(tractogram_path, streamlines_trk, transfo=translation)
-        logging.info('Saved {0}'.format(tractogram_path))
+        save_trk(out_tract, streamlines_trk, transfo=translation)
+        logging.info('Saved {0}'.format(out_tract))
+
+    return io_it
 
 
 def deterministic_tracking_flow(input_files, mask_files, bvalues, bvectors,
@@ -92,10 +93,11 @@ def deterministic_tracking_flow(input_files, mask_files, bvalues, bvectors,
     out_tractogram : string, optional
         Name of the tractogram file to be saved (default 'tractogram.trk')
     """
-    for dwi, mask, bval, bvec in zip(glob(input_files),
-                                     glob(mask_files),
-                                     glob(bvalues),
-                                     glob(bvectors)):
+
+    io_it = io_iterator_(inspect.currentframe(), deterministic_tracking_flow,
+                         input_structure=False)
+
+    for dwi, mask, bval, bvec, out_tract in io_it:
 
         logging.info('Deterministic tracking on {0}'.format(dwi))
         dwi_img = nib.load(dwi)
@@ -123,12 +125,11 @@ def deterministic_tracking_flow(input_files, mask_files, bvalues, bvectors,
         streamlines = \
             LocalTracking(detmax_dg, classifier, seeds, affine, step_size=.5)
 
-        out_dir_path = choose_create_out_dir(out_dir, dwi)
-
         streamlines_trk = [(sl) for sl in streamlines]
         translation = np.eye(4)
         translation[:3, 3] = dwi_img.get_affine()[:3, 3] * -1.0
-        tractogram_path = os.path.join(out_dir_path, out_tractogram)
-        save_trk(tractogram_path, streamlines_trk, transfo=translation)
+        save_trk(out_tract, streamlines_trk, transfo=translation)
 
-        logging.info('Saved {0}'.format(tractogram_path))
+        logging.info('Saved {0}'.format(out_tract))
+
+    return io_it
