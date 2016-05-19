@@ -17,7 +17,7 @@ def common_start(sa, sb):
 
 
 def slash_to_under(dir_str):
-    return ''.join(dir_str.replace('/', '_'))
+    return ''.join(dir_str.replace(os.pathsep, '_'))
 
 
 def connect_output_paths(inputs, out_dir, out_files, input_structure=True):
@@ -146,7 +146,7 @@ def basename(fname):
     if ext == '.gz':
         ext = path.splitext(path.basename(base))[1]
         if ext == '.nii':
-            base = path.splitext(path.basename(fname))[0]
+            base = path.splitext(path.basename(base))[0]
     return base
 
 def io_iterator(inputs, out_dir, fnames, input_structure=True):
