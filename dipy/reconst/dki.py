@@ -1034,19 +1034,21 @@ def axonal_water_fraction(dki_params, sphere, mask=None, gtol=1e-5):
         convergence procedure must be less than gtol before successful
         termination. If gtol is None, fiber direction is directly taken from 
         the initial sampled directions of the given sphere object
-    mask : ndarray (x, y, z, 27) or (n, 27)
+    mask : ndarray
+        A boolean array used to mark the coordinates in the data that should be
+        analyzed that has the shape dki_params.shape[:-1]
     
     Returns
     --------
-    AWF : ndarray (x, y, z, 27) or (n, 27)
+    AWF : ndarray (x, y, z) or (n)
         Axonal Water Fraction
-    Da : ndarray (x, y, z, 27) or (n, 27)
+    Da : ndarray (x, y, z) or (n)
         Axonal Diffusivity
-    ADe : ndarray (x, y, z, 27) or (n, 27)
+    ADe : ndarray (x, y, z) or (n)
         Axial Diffusivity of extra-cellular compartment
-    RDe : ndarray (x, y, z, 27) or (n, 27)
+    RDe : ndarray (x, y, z) or (n)
         Radial Diffusivity of extra-cellular compartment
-    tort : ndarray (x, y, z, 27) or (n, 27)
+    tort : ndarray (x, y, z) or (n)
         Tortuosity
 
     References
@@ -1062,7 +1064,7 @@ def axonal_water_fraction(dki_params, sphere, mask=None, gtol=1e-5):
         mask = np.ones(shape, dtype='bool')
     else:
         if mask.shape != shape:
-            raise ValueError("Mask is not the same shape as data.")
+            raise ValueError("Mask is not the same shape as dki_params.")
 
     evals, evecs, kt = split_dki_param(dki_params)
 
@@ -1083,6 +1085,82 @@ def axonal_water_fraction(dki_params, sphere, mask=None, gtol=1e-5):
     AWF = kt_max / (kt_max + 3)
 
     return AWF
+
+
+def diffusion_components(dki_params, sphere, awf=None, mask=None):
+    """ Extracts the intra and extra-cellular diffusion tensors of well aligned
+    fibers from diffusion kurtosis imaging parameters [1]_.
+
+    Parameters
+    ----------
+    dki_params : ndarray (x, y, z, 27) or (n, 27)
+        All parameters estimated from the diffusion kurtosis model.
+        Parameters are ordered as follow:
+            1) Three diffusion tensor's eingenvalues
+            2) Three lines of the eigenvector matrix each containing the first,
+               second and third coordinates of the eigenvector
+            3) Fifteen elements of the kurtosis tensor
+    sphere : Sphere class instance, optional
+        The sphere providing sample directions to sample the intra and extra
+        cellular diffusion tensors. For more details see Fieremans et al.,
+        2011.
+    awk : ndarray (optional)
+        Array containing values of the axonal water fraction that has the shape
+        dki_params.shape[:-1]. If not given this will be automatically computed
+        using function axonal_water_fraction with function's default precision.
+    mask : ndarray (optional)
+        A boolean array used to mark the coordinates in the data that should be
+        analyzed that has the shape dki_params.shape[:-1]
+
+    Returns
+    --------
+    EDT : ndarray (x, y, z, 12) or (n, 12)
+        Parameters of the extra-cellular diffusion tensor.
+    IDT : ndarray (x, y, z, 12) or (n, 12)
+        Parameters of the extra-cellular diffusion tensor.
+        
+    Notes
+    -----
+    Parameters of both extra-cellular and intra-cellular diffusion tensors are
+    order as follow:
+        1) Three diffusion tensor's eingenvalues
+        2) Three lines of the eigenvector matrix each containing the first,
+        second and third coordinates of the eigenvector
+
+    References
+    ----------
+    .. [1] Fieremans E, Jensen JH, Helpern JA, 2011. White matter
+           characterization with diffusional kurtosis imaging.
+           Neuroimage 58(1):177-88. doi: 10.1016/j.neuroimage.2011.06.006
+    """
+    shape = dki_params.shape[:-1]
+
+    # select voxels where to find fiber directions
+    if mask is None:
+        mask = np.ones(shape, dtype='bool')
+    else:
+        if mask.shape != shape:
+            raise ValueError("Mask is not the same shape as dki_params.")
+
+    # check shape or compute awf values    
+    if awf is None:
+        awf = axonal_water_fraction(dki_params, sphere, mask=mask) 
+    else:
+        if awf.shape != shape:
+            raise ValueError("awf array is not the same shape as dki_params.")
+
+    di = apparent_diffusion_coef(dki_params, sphere)
+    ki = apparent_kurtosis_coef(dki_params, sphere)
+
+    EDi = di * (1 + np.sqrt(ki*awf / (3-3*awf)))
+    IDi = di * (1 - np.sqrt(ki*awf / (3-3*awf)))
+
+    # Lines below are still work in progress
+    EDT = EDi
+    IDT = IDi
+
+    return EDT, IDT
+    
 
 
 def dki_prediction(dki_params, gtab, S0=150):
