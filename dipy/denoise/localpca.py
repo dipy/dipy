@@ -1,7 +1,6 @@
 import numpy as np
-from dipy.denoise.rician_adaptation import rician_adaptation
 
-def localPCA_denoise(arr, sigma, patch_radius=1, tou=0, rician=True):
+def localpca(arr, sigma, patch_radius=1, tou=0, rician=True):
     '''
     Local PCA Based Denoising of Diffusion Datasets
 

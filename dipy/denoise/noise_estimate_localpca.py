@@ -15,7 +15,7 @@ from dipy.data import fetch_sherbrooke_3shell, read_sherbrooke_3shell
 from dipy.data import fetch_stanford_hardi, read_stanford_hardi
 
 
-def estimate_sigma_LPCA(data,gtab):
+def estimate_sigma_localpca(data,gtab):
     
     # first identify the number of the b0 images
     K = gtab.b0s_mask[gtab.b0s_mask].size
