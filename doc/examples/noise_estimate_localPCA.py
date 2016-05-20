@@ -15,15 +15,15 @@ from dipy.data import fetch_sherbrooke_3shell, read_sherbrooke_3shell
 from dipy.data import fetch_stanford_hardi, read_stanford_hardi
 
 
-# fetch_sherbrooke_3shell()
-# img, gtab = read_sherbrooke_3shell()
+fetch_sherbrooke_3shell()
+img, gtab = read_sherbrooke_3shell()
 
-fetch_stanford_hardi()
-img, gtab = read_stanford_hardi()
+# fetch_stanford_hardi()
+# img, gtab = read_stanford_hardi()
 
 data = img.get_data()
 affine = img.get_affine()
-# data = data[20:60,20:60,20:40,:]
+# data = data[20:60,20:60,20:59,:]
 # identify the b0 images from the dataset
 
 # first identify the number of the b0 images
@@ -42,16 +42,18 @@ if(K>1):
     M = np.mean(X,axis = 0)
     X = X - M
     C = np.transpose(X).dot(X)
-
+    C = C/data0.shape[3]
     # Do PCA and find the lowest principal component
     [d,W] = np.linalg.eigh(C)
+    d[d < 0] = 0;
+    d_new = d[d != 0]
     # we want eigen vectors of XX^T so we do
     V = X.dot(W)
     # unit normalize the clolumns of V
-    # V = V / np.linalg.norm(V, ord=2, axis=0)
+    V = V / np.linalg.norm(V, ord=2, axis=0)
     # As the W is sorted in increasing eignevalue order, so is V
-    # choose the smallest principle component
-    I = V[:,0].reshape(data.shape[0], data.shape[1], data.shape[2])
+    # choose the smallest positive principle component
+    I = V[:,d.shape[0] - d_new.shape[0]].reshape(data.shape[0], data.shape[1], data.shape[2])
     
 
 else:
@@ -68,16 +70,18 @@ else:
     M = np.mean(X,axis = 0)
     X = X - M
     C = np.transpose(X).dot(X)
-
+    C = C/data0.shape[3]
     # Do PCA and find the lowest principal component
     [d,W] = np.linalg.eigh(C)
+    d[d < 0] = 0;
+    d_new = d[d != 0]
     # we want eigen vectors of XX^T so we do
     V = X.dot(W)
     # unit normalize the clolumns of V
-    # V = V / np.linalg.norm(V, ord=2, axis=0)
+    V = V / np.linalg.norm(V, ord=2, axis=0)
     # As the W is sorted in increasing eignevalue order, so is V
     # choose the smallest principle component
-    I = V[:,0].reshape(data.shape[0], data.shape[1], data.shape[2])
+    I = V[:,d.shape[0] - d_new.shape[0]].reshape(data.shape[0], data.shape[1], data.shape[2])
 
 
 
@@ -118,8 +122,8 @@ for l in range(data.shape[3]):
 
 print "SNR correction done"
 # smoothing by lpf
-sigma_corrr = ndimage.gaussian_filter(sigma_corr,5)
-sigmar = ndimage.gaussian_filter(sigma,5)
+sigma_corrr = ndimage.gaussian_filter(sigma_corr,3)
+sigmar = ndimage.gaussian_filter(sigma,3)
 
 # display
 fig, ax = plt.subplots(2, 3)

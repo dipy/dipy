@@ -12,22 +12,35 @@ from time import time
 from dipy.denoise.localPCA_denoise import localPCA_denoise
 from dipy.denoise.rician_adaptation import rician_adaptation
 from dipy.denoise.noise_estimate import estimate_sigma
+from dipy.denoise.noise_estimate_LPCA import estimate_sigma_LPCA
 from dipy.data import fetch_sherbrooke_3shell, read_sherbrooke_3shell
+from dipy.data import fetch_stanford_hardi, read_stanford_hardi
 
 fetch_sherbrooke_3shell()
 img, gtab = read_sherbrooke_3shell()
+
+# fetch_stanford_hardi()
+# img, gtab = read_stanford_hardi()
+
 
 data = img.get_data()
 affine = img.get_affine()
 
 # currently just taking the small patch of the data to preserv time
 
-data = data[:,:,10:32,0:10]
-sigma = estimate_sigma(data, N=4)
+data = data[:,:,10:32,:]
+
+[sigma,sigma_c] = estimate_sigma_LPCA(data,gtab)
+# identify the b0 images from the dataset
+
+# first identify the number of the b0 images
+
+# sigma = estimate_sigma(data, N=4)
+# sigma = sigma_c
 arr = data
 tou = 0
 patch_radius = 1
-# out = localPCA_denoise(data,sigma)
+
 if arr.ndim == 4:
 
         if tou == 0:
@@ -54,21 +67,19 @@ if arr.ndim == 4:
             for j in range(patch_radius, arr.shape[1] - patch_radius , 1):
                 for i in range(patch_radius, arr.shape[0] - patch_radius , 1):
                     
-                    X = np.zeros((patch_size * patch_size * patch_size, arr.shape[3]))
+                    X = np.zeros((arr.shape[3], patch_size * patch_size * patch_size))
                     M = np.zeros(arr.shape[3])
 
-                    for l in range(0, arr.shape[3], 1):
-                        
-                        # create the matrix X and normalize it
-                        temp = arr[i - patch_radius : i + patch_radius + 1,j - patch_radius : j + patch_radius + 1,
-                             k - patch_radius : k + patch_radius + 1,l]
-                        temp = temp.reshape(patch_size * patch_size * patch_size)
-                        X[:,l] = temp
+                    temp = arr[i - patch_radius : i + patch_radius + 1,j - patch_radius : j + patch_radius + 1,
+                         k - patch_radius : k + patch_radius + 1,:]
+                    temp = temp.reshape(patch_size * patch_size * patch_size, arr.shape[3])
+                    X = temp.transpose()
                         # compute the mean and normalize
-                        M[l] = np.mean(X[:,l])
-                        X[:,l] = (X[:,l] - M[l])
+                    M = np.mean(X,axis=1)
+                    X = X - np.array([M,]*X.shape[1],dtype=np.float64).transpose()
                         
 
+                    # using the PCA trick
                     # Compute the covariance matrix C = X_transpose X
                     C = np.transpose(X).dot(X)
                     C = C/arr.shape[3]
@@ -77,37 +88,37 @@ if arr.ndim == 4:
                     [d,W] = np.linalg.eigh(C)
                     d[d < tou[i][j][k][0]] = 0
                     D_hat = np.diag(d)
-                    Y = X.dot(W)
-                    # When the block covers each pixel identify it into the label matrix theta
-                    X_est = Y.dot(np.transpose(W))
-                    X_est = X_est.dot(D_hat)
+                    # Y = X.dot(W)
+                    # # When the block covers each pixel identify it into the label matrix theta
+                    # X_est = Y.dot(np.transpose(W))
+                    X_est = X.dot(D_hat)
+                    
+                    # generate a theta matrix for patch around i,j,k and store it's theta value
+                    temp = X_est + np.array([M,]*X_est.shape[1], dtype = np.float64).transpose()
+                    temp = temp.reshape(patch_size, patch_size, patch_size, arr.shape[3])
+                    # Also update the estimate matrix which is X_est * theta
+                        
+                    theta[i - patch_radius : i + patch_radius + 1,j - patch_radius : j + patch_radius + 1,
+                         k - patch_radius : k + patch_radius + 1 ,:] = theta[i - patch_radius : i + patch_radius + 1,j - patch_radius : j + patch_radius + 1,
+                         k - patch_radius : k + patch_radius + 1 ,:] + 1/(1 + np.linalg.norm(d,ord=0))
 
-                    for l in range(0,arr.shape[3],1):
-                        # generate a theta matrix for patch around i,j,k and store it's theta value
-                        # Also update the estimate matrix which is X_est * theta
-                        temp = (X_est[:,l] + M[l])
-                        temp = temp.reshape(patch_size , patch_size , patch_size)
-                        theta[i - patch_radius : i + patch_radius + 1,j - patch_radius : j + patch_radius + 1,
-                             k - patch_radius : k + patch_radius + 1 ,l] = theta[i - patch_radius : i + patch_radius + 1,j - patch_radius : j + patch_radius + 1,
-                             k - patch_radius : k + patch_radius + 1 ,l] + 1/(1 + np.linalg.norm(d,ord=0))
-
-                        thetax[i - patch_radius : i + patch_radius + 1,j - patch_radius : j + patch_radius + 1,
-                             k - patch_radius : k + patch_radius + 1 ,l] = thetax[i - patch_radius : i + patch_radius + 1,j - patch_radius : j + patch_radius + 1,
-                             k - patch_radius : k + patch_radius + 1 ,l] + temp / (1 + np.linalg.norm(d,ord=0))
+                    thetax[i - patch_radius : i + patch_radius + 1,j - patch_radius : j + patch_radius + 1,
+                         k - patch_radius : k + patch_radius + 1 ,:] = thetax[i - patch_radius : i + patch_radius + 1,j - patch_radius : j + patch_radius + 1,
+                         k - patch_radius : k + patch_radius + 1 ,:] + temp / (1 + np.linalg.norm(d,ord=0))
 
         # the final denoised without rician adaptation
         denoised_arr = thetax / theta
         
         # After estimation pass it through a function ~ rician adaptation
         eta_phi = np.genfromtxt('/Users/Riddhish/Documents/GSOC/DIPY/dipy/dipy/denoise/lut.csv')
-	    # as the lookup table was generated by keeping phi values as
-	    # phi = linspace(0,25,10000)
-	    # the index of the eta table is 
-	    # index = floor(phi*10000/25) = floor(phi*400)
-	    # for each x/sigma compute eta(x/sigma) from the lut
+        # as the lookup table was generated by keeping phi values as
+        # phi = linspace(0,25,10000)
+        # the index of the eta table is 
+        # index = floor(phi*10000/25) = floor(phi*400)
+        # for each x/sigma compute eta(x/sigma) from the lut
         phi = denoised_arr / sigma
         phi[abs(phi)>25] = 0
-        denoised_arr = sigma * eta_phi[np.floor(abs(phi * 400)).astype(np.int64)]
+        # denoised_arr = sigma * eta_phi[np.floor(abs(phi * 400)).astype(np.int64)]
 
 
         # return denoised_arr
@@ -126,5 +137,3 @@ for i in range(3):
     ax[i].set_axis_off()
 
 plt.show()
-plt.savefig('denoised.png', bbox_inches='tight')
-
