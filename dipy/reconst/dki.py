@@ -1023,9 +1023,9 @@ def axonal_water_fraction(dki_params, sphere, mask=None, gtol=1e-5):
             3) Fifteen elements of the kurtosis tensor
     sphere : Sphere class instance, optional
         The sphere providing sample directions for the initial search of the
-        maxima value of kurtosis.
+        maximal value of kurtosis.
     gtol : float, optional
-        This input is to refine kurtosis maximal under the precision of the
+        This input is to refine kurtosis maxima under the precision of the
         directions sampled on the sphere class instance. The gradient of the
         convergence procedure must be less than gtol before successful
         termination. If gtol is None, fiber direction is directly taken from 
@@ -1061,14 +1061,9 @@ def axonal_water_fraction(dki_params, sphere, mask=None, gtol=1e-5):
             raise ValueError("Mask is not the same shape as data.")
 
     evals, evecs, kt = split_dki_param(dki_params)
-    # select non-zero voxels
-    # (when #677 is merged replace this code lines by function _positive_evals)
-    # pos_evals = _positive_evals(evals[..., 0], evals[..., 1], evals[..., 2])
-    er = np.finfo(evals.ravel()[0]).eps * 1e3
-    pos_evals = np.logical_and(evals[..., 0] > er,
-                               np.logical_and(evals[..., 1] > er,
-                                              evals[..., 2] > er))
 
+    # select non-zero voxels
+    pos_evals = _positive_evals(evals[..., 0], evals[..., 1], evals[..., 2])
     mask = np.logical_and(mask, pos_evals)
 
     kt_max = np.zeros(mask.shape) 
