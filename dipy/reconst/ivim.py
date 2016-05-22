@@ -73,7 +73,7 @@ class IvimModel(ReconstModel):
     """Ivim model
     """
 
-    def __init__(self, gtab, fit_method="one_stage_fit", *args, **kwargs):
+    def __init__(self, gtab, fit_method="OLS", *args, **kwargs):
         """ A Ivim Model
         Parameters
         ----------
@@ -116,3 +116,65 @@ class IvimModel(ReconstModel):
             e_s = "The `min_signal` key-word argument needs to be strictly"
             e_s += " positive."
             raise ValueError(e_s)
+
+    def fit(self, data, mask=None):
+        """ Fit method of the Ivim model class
+
+        Parameters
+        ----------
+        data : array
+            The measured signal from one voxel.
+
+        mask : array
+            A boolean array used to mark the coordinates in the data that
+            should be analyzed that has the shape data.shape[:-1]
+
+        """
+        if mask is None:
+                # Flatten it to 2D either way:
+            data_in_mask = np.reshape(data, (-1, data.shape[-1]))
+        else:
+            # Check for valid shape of the mask
+            if mask.shape != data.shape[:-1]:
+                raise ValueError("Mask is not the same shape as data.")
+            mask = np.array(mask, dtype=bool, copy=False)
+            data_in_mask = np.reshape(data[mask], (-1, data.shape[-1]))
+
+        if self.min_signal is None:
+            min_signal = _min_positive_signal(data)
+        else:
+            min_signal = self.min_signal
+
+        data_in_mask = np.maximum(data_in_mask, min_signal)
+        # Change this according to the fit_method
+        # params_in_mask = self.fit_method(self.design_matrix, data_in_mask,
+        #                                  *self.args, **self.kwargs)
+
+        if mask is None:
+            out_shape = data.shape[:-1] + (-1, )
+            ivim_params = params_in_mask.reshape(out_shape)
+        else:
+            ivim_params = np.zeros(data.shape[:-1] + (3,))
+            ivim_params[mask, :] = params_in_mask
+
+        return IvimFit(self, ivim_params)
+
+    def predict(self, ivim_params, S0=1):
+        """
+        Predict a signal for this IvimModel class instance given parameters.
+
+        Parameters
+        ----------
+        ivim_params : ndarray
+            The last dimension should have 3 parameters: f, D, D_star
+
+        S0 : float or ndarray
+            The non diffusion-weighted signal in every voxel, or across all
+            voxels. Default: 1
+        """
+        return ivim_prediction(ivim_params, self.gtab, S0)
+
+
+common_fit_methods = {'OLS': ols_fit,
+                      'NLLS': nlls_fit_tensor,
+                      }
