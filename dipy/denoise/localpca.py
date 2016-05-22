@@ -56,7 +56,7 @@ def localpca(arr, sigma, patch_radius=1, tou=0, rician=True):
         patch_size = 2 * patch_radius + 1
 
         for k in range(patch_radius, arr.shape[2] - patch_radius, 1):
-            print k
+            print(k)
             for j in range(patch_radius, arr.shape[1] - patch_radius, 1):
                 for i in range(patch_radius, arr.shape[0] - patch_radius , 1):
                     
@@ -103,7 +103,6 @@ def localpca(arr, sigma, patch_radius=1, tou=0, rician=True):
         denoised_arr = thetax / theta
         
         # After estimation pass it through a function ~ rician adaptation
-        denoised_arr = rician_adaptation(denoised_arr,sigma)
 
         return denoised_arr
 

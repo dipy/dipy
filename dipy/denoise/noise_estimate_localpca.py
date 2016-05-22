@@ -8,12 +8,7 @@ Estimate Noise Levels for LocalPCA Datasets
 import numpy as np
 import nibabel as nib
 import scipy as sp
-import matplotlib.pyplot as plt
-from time import time
 from scipy import ndimage
-from dipy.data import fetch_sherbrooke_3shell, read_sherbrooke_3shell
-from dipy.data import fetch_stanford_hardi, read_stanford_hardi
-
 
 def estimate_sigma_localpca(data,gtab):
     
@@ -21,7 +16,7 @@ def estimate_sigma_localpca(data,gtab):
     K = gtab.b0s_mask[gtab.b0s_mask].size
 
     if(K>1):
-        print "MUBE Estimate"
+        print("MUBE Estimate")
         # If multiple b0 values then 
         data0 = data[...,gtab.b0s_mask]
         # MUBE Noise Estimate
@@ -48,7 +43,7 @@ def estimate_sigma_localpca(data,gtab):
         
 
     else:
-        print "SIBE Estimate"
+        print("SIBE Estimate")
         # if only one b0 value then
         # SIBE Noise Estimate
         data0 = data[...,~gtab.b0s_mask]
@@ -95,7 +90,6 @@ def estimate_sigma_localpca(data,gtab):
 
     sigma = sigma / count[...,0]             
 
-    print "Initial estimate of local noise variance"
     # Compute the local mean of for the data                    
     mean = mean / count
 
@@ -111,7 +105,6 @@ def estimate_sigma_localpca(data,gtab):
         eta = 2 + snr**2 - (np.pi / 8) * np.exp(-0.5 * (snr**2)) * ((2 + snr**2) * sp.special.j0(0.25 *(snr**2)) + (snr**2) * sp.special.j1(0.25 *(snr**2)))**2
         sigma_corr[...,l] = sigma / eta
 
-    print "SNR correction done"
     # smoothing by lpf
     sigma_corrr = ndimage.gaussian_filter(sigma_corr,5)
     sigmar = ndimage.gaussian_filter(sigma,5)
