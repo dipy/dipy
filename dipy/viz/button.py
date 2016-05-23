@@ -21,32 +21,27 @@ else:
 numpy_support, have_ns, _ = optional_package('vtk.util.numpy_support')
 
 
-class InteractorStyleImageAndTrackballActor(vtkInteractorStyleUser):
-    """ Interactive manipulation of the camera specialized for images that can
-    also manipulates objects in the scene independent of each other.
+class CustomInteractorStyle(vtkInteractorStyleUser):
+    """ Interactive manipulation of the camera that can also manipulates
+    objects in the scene independent of each other.
 
-    This interactor style allows the user to interactively manipulate (pan and
-    zoom) the camera. It also allows the user to interact (rotate, pan, etc.)
-    with objects in the scene independent of each other. It is specially
-    designed to work with a grid of actors.
+    This interactor style allows the user to interactively manipulate (pan,
+    rotate and zoom) the camera. It also allows the user to interact (click,
+    scroll, etc.) with objects in the scene independent of each other.
 
     Several events are overloaded from its superclass `vtkInteractorStyle`,
-    hence the mouse bindings are different. (The bindings keep the camera's
-    view plane normal perpendicular to the x-y plane.)
+    hence the mouse bindings are different.
 
     In summary the mouse events for this interaction style are as follows:
-    - Left mouse button: rotates the selected object around its center point
-    - Ctrl + left mouse button: spins the selected object around its view plane normal
-    - Shift + left mouse button: pans the selected object
-    - Middle mouse button: pans the camera
+    - Left mouse button: rotates the camera
     - Right mouse button: dollys the camera
     - Mouse wheel: dollys the camera
+    - Middle mouse button: pans the camera
 
     """
     def __init__(self, renderer):
         self.renderer = renderer
-        self.trackball_interactor_style = vtk.vtkInteractorStyleTrackballActor()
-        self.image_interactor_style = vtk.vtkInteractorStyleImage()
+        self.trackball_interactor_style = vtk.vtkInteractorStyleTrackballCamera()
 
     def on_left_button_pressed(self, obj, evt):
         self.trackball_interactor_style.OnLeftButtonDown()
@@ -61,31 +56,30 @@ class InteractorStyleImageAndTrackballActor(vtkInteractorStyleUser):
         # Use a picker to see which actor is under the mouse
         picker = vtk.vtkPropPicker()
         picker.Pick(clickPos[0], clickPos[1], 0, self.renderer)
-        actor = picker.GetProp3D()
+        actor = picker.GetProp()
         # print(actor)
         if actor is not None:
             actor.InvokeEvent(evt)
 
-        self.image_interactor_style.OnRightButtonDown()
+        self.trackball_interactor_style.OnRightButtonDown()
 
     def on_right_button_released(self, obj, evt):
-        self.image_interactor_style.OnRightButtonUp()
+        self.trackball_interactor_style.OnRightButtonUp()
 
     def on_middle_button_pressed(self, obj, evt):
-        self.image_interactor_style.OnMiddleButtonDown()
+        self.trackball_interactor_style.OnMiddleButtonDown()
 
     def on_middle_button_released(self, obj, evt):
-        self.image_interactor_style.OnMiddleButtonUp()
+        self.trackball_interactor_style.OnMiddleButtonUp()
 
     def on_mouse_moved(self, obj, evt):
         self.trackball_interactor_style.OnMouseMove()
-        self.image_interactor_style.OnMouseMove()
 
     def on_mouse_wheel_forward(self, obj, evt):
-        self.image_interactor_style.OnMouseWheelForward()
+        self.trackball_interactor_style.OnMouseWheelForward()
 
     def on_mouse_wheel_backward(self, obj, evt):
-        self.image_interactor_style.OnMouseWheelBackward()
+        self.trackball_interactor_style.OnMouseWheelBackward()
 
     def SetInteractor(self, interactor):
         # Internally these `InteractorStyle` objects need an handle to a
@@ -93,10 +87,9 @@ class InteractorStyleImageAndTrackballActor(vtkInteractorStyleUser):
         # However, this has a the side effect of adding directly their
         # observers to `interactor`!
         self.trackball_interactor_style.SetInteractor(interactor)
-        self.image_interactor_style.SetInteractor(interactor)
 
         # Remove all observers previously set. Those were *most likely* set by
-        # `vtkInteractorStyleTrackballActor` and `vtkInteractorStyleImage`.
+        # `vtkInteractorStyleTrackballCamera`.
         #
         # Note: Be sure that no observer has been manually added to the
         #       `interactor` before setting the InteractorStyle.
@@ -212,6 +205,7 @@ def cube(color=None, size=(0.2, 0.2, 0.2), center=None):
 
 def button_callback(*args, **kwargs):
     pos = np.array(cube_actor.GetPosition())
+    print(pos)
     pos[0] += 2
     cube_actor.SetPosition(tuple(pos))
 
@@ -224,7 +218,7 @@ filename = read_viz_icons(fname='stop2.png')
 button_actor = create_button(file_name=filename, callback=button_callback, position=(100, -100, 10))
 
 renderer = window.ren()
-iren_style = InteractorStyleImageAndTrackballActor(renderer=renderer)
+iren_style = CustomInteractorStyle(renderer=renderer)
 renderer.add(button_actor)
 renderer.add(cube_actor)
 
