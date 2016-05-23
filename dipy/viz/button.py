@@ -184,6 +184,16 @@ def figure(pic, interpolation='nearest'):
     return image_actor
 
 
+def create_button(file_name, callback, position=(0.1, 0.1, 0.1), center=None):
+    button = figure(file_name)
+    button.AddObserver("RightButtonPressEvent", callback)
+    if center is not None:
+        button.SetCenter(*center)
+    button.SetPosition(position[0], position[1], position[2])
+
+    return button
+
+
 def cube(color=None, size=(0.2, 0.2, 0.2), center=None):
     cube = vtk.vtkCubeSource()
     cube.SetXLength(size[0])
@@ -202,7 +212,7 @@ def cube(color=None, size=(0.2, 0.2, 0.2), center=None):
 
 def button_callback(*args, **kwargs):
     pos = np.array(cube_actor.GetPosition())
-    pos[0] += 1
+    pos[0] += 2
     cube_actor.SetPosition(tuple(pos))
 
 
@@ -210,9 +220,8 @@ cube_actor = cube((1, 0, 0), (50, 50, 50), center=(0, 0, 0))
 
 fetch_viz_icons()
 filename = read_viz_icons(fname='stop2.png')
-button_actor = figure(filename)
-button_actor.AddObserver("RightButtonPressEvent", button_callback)
-button_actor.SetPosition(100, -100, 10)
+
+button_actor = create_button(file_name=filename, callback=button_callback, position=(100, -100, 10))
 
 renderer = window.ren()
 iren_style = InteractorStyleImageAndTrackballActor(renderer=renderer)
