@@ -1,4 +1,5 @@
 import numpy as np
+from dipy.data import read_rician_lut
 
 def localpca(arr, sigma, patch_radius=1, tou=0, rician=True):
     '''
@@ -37,7 +38,7 @@ def localpca(arr, sigma, patch_radius=1, tou=0, rician=True):
     if arr.ndim == 4:
 
         if tou == 0:
-            tou = 2.3 * sigma * sigma
+            tou = 2.3 * 2.3 * sigma 
 
         if isinstance(sigma, np.ndarray) and sigma.ndim == 3:
 
@@ -61,50 +62,64 @@ def localpca(arr, sigma, patch_radius=1, tou=0, rician=True):
                 for i in range(patch_radius, arr.shape[0] - patch_radius , 1):
                     
                     X = np.zeros((patch_size * patch_size * patch_size, arr.shape[3]))
+                    M = np.zeros(arr.shape[3])
 
-                    for l in range(0, arr.shape[3], 1):
+                    temp = arr[i - patch_radius : i + patch_radius + 1,j - patch_radius : j + patch_radius + 1,
+                         k - patch_radius : k + patch_radius + 1,:]
+                    X = temp.reshape(patch_size * patch_size * patch_size, arr.shape[3])
+                    # compute the mean and normalize
+                    M = np.mean(X,axis=1)
+                    X = X - np.array([M,]*X.shape[1],dtype=np.float64).transpose()
                         
-                        # create the matrix X and normalize it
-                        temp = arr[i - patch_radius : i + patch_radius + 1,j - patch_radius : j + patch_radius + 1,
-                             k - patch_radius : k + patch_radius + 1,l]
-                        temp = temp.reshape(patch_size * patch_size * patch_size)
-                        X[:,l] = temp
-                        # compute the mean and normalize
-                        M[l] = np.mean(X[:,l])
-                        X[:,l] = (X[:,l] - M[l])
-
+                    # using the PCA trick
                     # Compute the covariance matrix C = X_transpose X
                     C = np.transpose(X).dot(X)
                     C = C/arr.shape[3]
                     # compute EVD of the covariance matrix of X get the matrices W and D, hence get matrix Y = XW
                     # Threshold matrix D and then compute X_est = YW_transpose D_est
                     [d,W] = np.linalg.eigh(C)
-                    d[d < tou[i][j][k][0]] = 0
+                    d[d < tou[i][j][k][:]] = 0
                     D_hat = np.diag(d)
-                    Y = X.dot(W)
-                    # When the block covers each pixel identify it into the label matrix theta
-                    X_est = Y.dot(np.transpose(W))
-                    X_est = X_est.dot(D_hat)
+                    # Y = X.dot(W)
+                    # # When the block covers each pixel identify it into the label matrix theta
+                    # X_est = Y.dot(np.transpose(W))
+                    X_est = X.dot(D_hat)
 
-                    for l in range(0,arr.shape[3],1):
-                        # generate a theta matrix for patch around i,j,k and store it's theta value
-                        # Also update the estimate matrix which is X_est * theta
-                        temp = X_est[:,l] + M[l]
-                        temp = temp.reshape(patch_size , patch_size , patch_size)
-                        theta[i - patch_radius : i + patch_radius + 1,j - patch_radius : j + patch_radius + 1,
-                             k - patch_radius : k + patch_radius + 1 ,l] = theta[i - patch_radius : i + patch_radius + 1,j - patch_radius : j + patch_radius + 1,
-                             k - patch_radius : k + patch_radius + 1 ,l] + 1/(1 + np.linalg.norm(d,ord=0))
+                    temp = X_est + np.array([M,]*X_est.shape[1], dtype = np.float64).transpose()
+                    temp = temp.reshape(patch_size, patch_size, patch_size, arr.shape[3])
+                    # Also update the estimate matrix which is X_est * theta
+                        
+                    theta[i - patch_radius : i + patch_radius + 1,j - patch_radius : j + patch_radius + 1,
+                         k - patch_radius : k + patch_radius + 1 ,:] = theta[i - patch_radius : i + patch_radius + 1,j - patch_radius : j + patch_radius + 1,
+                         k - patch_radius : k + patch_radius + 1 ,:] + 1/(1 + np.linalg.norm(d,ord=0))
 
-                        thetax[i - patch_radius : i + patch_radius + 1,j - patch_radius : j + patch_radius + 1,
-                             k - patch_radius : k + patch_radius + 1 ,l] = thetax[i - patch_radius : i + patch_radius + 1,j - patch_radius : j + patch_radius + 1,
-                             k - patch_radius : k + patch_radius + 1 ,l] + temp / (1 + np.linalg.norm(d,ord=0))
+                    thetax[i - patch_radius : i + patch_radius + 1,j - patch_radius : j + patch_radius + 1,
+                         k - patch_radius : k + patch_radius + 1 ,:] = thetax[i - patch_radius : i + patch_radius + 1,j - patch_radius : j + patch_radius + 1,
+                         k - patch_radius : k + patch_radius + 1 ,:] + temp / (1 + np.linalg.norm(d,ord=0))
+
 
         # the final denoised without rician adaptation
         denoised_arr = thetax / theta
-        
+
+        eta_phi = read_rician_lut()
+        # as the lookup table was generated by keeping phi values as
+        # phi = linspace(0,15,1000)
+        # we need to find the index of the closest value of arr/sigma from the dataset
+        eta_phi = eta_phi[1:200]
+        corrected_arr = np.zeros_like(denoised_arr)
+        phi = denoised_arr / np.sqrt(sigma)
+        opt_diff = np.abs(phi - eta_phi[0])
+        for i in range(eta_phi.size):
+            print(i)
+            if(i!=0):
+                new_diff = np.abs(phi - eta_phi[i])
+                corrected_arr[new_diff < opt_diff] = i
+                opt_diff[new_diff<opt_diff] = new_diff[new_diff<opt_diff]
+
+        corrected_arr = np.sqrt(sigma) * corrected_arr * 15.0/1000.0
         # After estimation pass it through a function ~ rician adaptation
 
-        return denoised_arr
+        return corrected_arr
 
     else:
         raise ValueError("Only 4D array are supported!", arr.shape)

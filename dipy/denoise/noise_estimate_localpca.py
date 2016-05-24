@@ -28,7 +28,7 @@ def estimate_sigma_localpca(data,gtab):
         M = np.mean(X,axis = 0)
         X = X - M
         C = np.transpose(X).dot(X)
-        C = C/data0.shape[3]
+        # C = C/data0.shape[3]
         # Do PCA and find the lowest principal component
         [d,W] = np.linalg.eigh(C)
         d[d < 0] = 0;
@@ -56,7 +56,7 @@ def estimate_sigma_localpca(data,gtab):
         M = np.mean(X,axis = 0)
         X = X - M
         C = np.transpose(X).dot(X)
-        C = C/data0.shape[3]
+        # C = C/data0.shape[3]
         # Do PCA and find the lowest principal component
         [d,W] = np.linalg.eigh(C)
         d[d < 0] = 0;
@@ -68,8 +68,6 @@ def estimate_sigma_localpca(data,gtab):
         # As the W is sorted in increasing eignevalue order, so is V
         # choose the smallest principle component
         I = V[:,d.shape[0] - d_new.shape[0]].reshape(data.shape[0], data.shape[1], data.shape[2])
-
-
 
     sigma = np.zeros(I.shape, dtype = np.float64)
     count = np.zeros_like(data)
@@ -102,11 +100,12 @@ def estimate_sigma_localpca(data,gtab):
     for l in range(data.shape[3]):
         print(l)
         snr = mean[...,l] / np.sqrt(sigma)
-        eta = 2 + snr**2 - (np.pi / 8) * np.exp(-0.5 * (snr**2)) * ((2 + snr**2) * sp.special.j0(0.25 *(snr**2)) + (snr**2) * sp.special.j1(0.25 *(snr**2)))**2
+        eta = 2 + snr**2 - (np.pi / 8) * np.exp(-0.5 * (snr**2)) * ((2 + snr**2) * sp.special.iv(0,0.25 *(snr**2)) + (snr**2) * sp.special.iv(1,0.25 *(snr**2)))**2
         sigma_corr[...,l] = sigma / eta
 
     # smoothing by lpf
-    sigma_corrr = ndimage.gaussian_filter(sigma_corr,5)
-    sigmar = ndimage.gaussian_filter(sigma,5)
+    sigma_corr[np.isnan(sigma_corr)] = 0
+    sigma_corrr = ndimage.gaussian_filter(sigma_corr,3)
+    sigmar = ndimage.gaussian_filter(sigma,3)
 
     return [sigmar,sigma_corrr]
