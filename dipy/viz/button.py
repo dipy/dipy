@@ -57,15 +57,18 @@ class CustomInteractorStyle(vtkInteractorStyleUser):
         picker = vtk.vtkPropPicker()
         picker.Pick(clickPos[0], clickPos[1], 0, self.renderer)
         actor = picker.GetProp3D()
+
+        # set_trace()
         # print(actor)
         if actor is not None:
             actor.InvokeEvent(evt)
         else:
-            actor = picker.GetProp()
+            actor = picker.GetViewProp()
+            # set_trace()
             if actor is not None:
                 actor.InvokeEvent(evt)
             else:
-                "No Actor Selected" 
+                "No Actor Selected"
 
         self.trackball_interactor_style.OnRightButtonDown()
 
@@ -142,7 +145,7 @@ def figure(pic):
     imageDataGeometryFilter = vtk.vtkImageDataGeometryFilter()
     imageDataGeometryFilter.SetInputConnection(png.GetOutputPort())
     imageDataGeometryFilter.Update()
-     
+
     mapper = vtk.vtkPolyDataMapper2D()
     mapper.SetInputConnection(imageDataGeometryFilter.GetOutputPort())
 
@@ -192,6 +195,9 @@ fetch_viz_icons()
 filename = read_viz_icons(fname='stop2.png')
 
 button_actor = create_button(file_name=filename, callback=button_callback)
+
+cube_actor_1.AddObserver("RightButtonPressEvent", button_callback)
+cube_actor_2.AddObserver("RightButtonPressEvent", button_callback)
 
 renderer = window.ren()
 iren_style = CustomInteractorStyle(renderer=renderer)
