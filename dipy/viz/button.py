@@ -56,18 +56,15 @@ class CustomInteractorStyle(vtkInteractorStyleUser):
         # Use a picker to see which actor is under the mouse
         picker = vtk.vtkPropPicker()
         picker.Pick(clickPos[0], clickPos[1], 0, self.renderer)
-        actor = picker.GetProp3D()
-
-        # set_trace()
-        # print(actor)
-        if actor is not None:
-            actor.InvokeEvent(evt)
+        actor_3D = picker.GetProp3D()
+        if actor_3D is not None:
+            actor_3D.InvokeEvent(evt)
         else:
             # actor = picker.GetActor2D()
-            actor = picker.GetViewProp()
+            actor_2D = picker.GetViewProp()
             # set_trace()
-            if actor is not None:
-                actor.InvokeEvent(evt)
+            if actor_2D is not None:
+                actor_2D.InvokeEvent(evt)
             else:
                 "No Actor Selected"
 
@@ -183,10 +180,12 @@ def cube(color=None, size=(0.2, 0.2, 0.2), center=None):
 
 
 def button_callback(*args, **kwargs):
-    pos = np.array(cube_actor_1.GetPosition())
-    print(pos)
-    pos[0] += 20
-    cube_actor_1.SetPosition(tuple(pos))
+    pos_1 = np.array(cube_actor_1.GetPosition())
+    pos_1[0] += 2
+    cube_actor_1.SetPosition(tuple(pos_1))
+    pos_2 = np.array(cube_actor_2.GetPosition())
+    pos_2[1] += 2
+    cube_actor_2.SetPosition(tuple(pos_2))
 
 
 cube_actor_1 = cube((1, 0, 0), (50, 50, 50), center=(0, 0, 0))
@@ -196,9 +195,6 @@ fetch_viz_icons()
 filename = read_viz_icons(fname='stop2.png')
 
 button_actor = create_button(file_name=filename, callback=button_callback)
-
-cube_actor_1.AddObserver("RightButtonPressEvent", button_callback)
-cube_actor_2.AddObserver("RightButtonPressEvent", button_callback)
 
 renderer = window.ren()
 iren_style = CustomInteractorStyle(renderer=renderer)
