@@ -17,6 +17,11 @@ from dipy.core.geometry import vector_norm
 class GradientTable(object):
     """Diffusion gradient information
 
+    Note: gradients are the full vectors, not just the unit vectors.
+    The GradientTable object is immutable. Do NOT assign attributes.
+    If you have your gradient table in a bval & bvec format, we recommend
+    using the factory function gradient_table
+
     Parameters
     ----------
     gradients : array_like (N, 3)
