@@ -4,7 +4,7 @@ import os
 import sys
 import contextlib
 
-from os.path import join as pjoin, dirname
+from os.path import join as pjoin
 from hashlib import md5
 from shutil import copyfileobj
 
@@ -391,12 +391,6 @@ fetch_bundles_2_subjects = _make_fetcher(
     data_size="234MB",
     doc="Download 2 subjects from the SNAIL dataset with their bundles",
     unzip=True)
-
-def read_rician_lut():
-    file_path = pjoin(dirname(__file__), 'files/lut.csv')
-    print("Fetching the Rician adaptation look up table")
-    eta_phi = np.genfromtxt(file_path)
-    return eta_phi
 
 def read_scil_b0():
     """ Load GE 3T b0 image form the scil b0 dataset.
