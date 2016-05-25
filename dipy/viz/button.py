@@ -56,10 +56,16 @@ class CustomInteractorStyle(vtkInteractorStyleUser):
         # Use a picker to see which actor is under the mouse
         picker = vtk.vtkPropPicker()
         picker.Pick(clickPos[0], clickPos[1], 0, self.renderer)
-        actor = picker.GetProp()
+        actor = picker.GetProp3D()
         # print(actor)
         if actor is not None:
             actor.InvokeEvent(evt)
+        else:
+            actor = picker.GetProp()
+            if actor is not None:
+                actor.InvokeEvent(evt)
+            else:
+                "No Actor Selected" 
 
         self.trackball_interactor_style.OnRightButtonDown()
 
@@ -116,73 +122,42 @@ class CustomInteractorStyle(vtkInteractorStyleUser):
         interactor.AddObserver("MouseWheelBackwardEvent", self.on_mouse_wheel_backward)
 
 
-def figure(pic, interpolation='nearest'):
-    """ Return a figure as an image actor
+def figure(pic):
+    """ Return a figure as a 2D actor
 
     Parameters
     ----------
-    pic : filename or numpy RGBA array
-
-    interpolation : str
-        Options are nearest, linear or cubic. Default is nearest.
+    pic : filename
 
     Returns
     -------
-    image_actor : vtkImageActor
+    image_actor : vtkTexturedActor2D
     """
 
-    if isinstance(pic, string_types):
-        png = vtk.vtkPNGReader()
-        png.SetFileName(pic)
-        png.Update()
-        vtk_image_data = png.GetOutput()
-    else:
+    png = vtk.vtkPNGReader()
+    png.SetFileName(pic)
+    png.Update()
 
-        if pic.ndim == 3 and pic.shape[2] == 4:
+    # Convert the image to a polydata
+    imageDataGeometryFilter = vtk.vtkImageDataGeometryFilter()
+    imageDataGeometryFilter.SetInputConnection(png.GetOutputPort())
+    imageDataGeometryFilter.Update()
+     
+    mapper = vtk.vtkPolyDataMapper2D()
+    mapper.SetInputConnection(imageDataGeometryFilter.GetOutputPort())
 
-            vtk_image_data = vtk.vtkImageData()
-            if major_version <= 5:
-                vtk_image_data.SetScalarTypeToUnsignedChar()
+    image_actor = vtk.vtkTexturedActor2D()
+    image_actor.SetMapper(mapper)
 
-            if major_version <= 5:
-                vtk_image_data.AllocateScalars()
-                vtk_image_data.SetNumberOfScalarComponents(4)
-            else:
-                vtk_image_data.AllocateScalars(vtk.VTK_UNSIGNED_CHAR, 4)
-
-            # width, height
-            vtk_image_data.SetDimensions(pic.shape[1], pic.shape[0], 1)
-            vtk_image_data.SetExtent(0, pic.shape[1] - 1,
-                                     0, pic.shape[0] - 1,
-                                     0, 0)
-            pic_tmp = np.swapaxes(pic, 0, 1)
-            pic_tmp = pic.reshape(pic.shape[1] * pic.shape[0], 4)
-            pic_tmp = np.ascontiguousarray(pic_tmp)
-            uchar_array = numpy_support.numpy_to_vtk(pic_tmp, deep=True)
-            vtk_image_data.GetPointData().SetScalars(uchar_array)
-
-    image_actor = vtk.vtkImageActor()
-    image_actor.SetInputData(vtk_image_data)
-
-    if interpolation == 'nearest':
-        image_actor.GetProperty().SetInterpolationTypeToNearest()
-
-    if interpolation == 'linear':
-        image_actor.GetProperty().SetInterpolationTypeToLinear()
-
-    if interpolation == 'cubic':
-        image_actor.GetProperty().SetInterpolationTypeToCubic()
-
-    image_actor.Update()
     return image_actor
 
 
-def create_button(file_name, callback, position=(0.1, 0.1, 0.1), center=None):
+def create_button(file_name, callback, position=(0, 0), center=None):
     button = figure(file_name)
     button.AddObserver("RightButtonPressEvent", callback)
     if center is not None:
-        button.SetCenter(*center)
-    button.SetPosition(position[0], position[1], position[2])
+         button.SetCenter(*center)
+    button.SetPosition(position[0], position[1])
 
     return button
 
@@ -204,23 +179,25 @@ def cube(color=None, size=(0.2, 0.2, 0.2), center=None):
 
 
 def button_callback(*args, **kwargs):
-    pos = np.array(cube_actor.GetPosition())
+    pos = np.array(cube_actor_1.GetPosition())
     print(pos)
-    pos[0] += 2
-    cube_actor.SetPosition(tuple(pos))
+    pos[0] += 20
+    cube_actor_1.SetPosition(tuple(pos))
 
 
-cube_actor = cube((1, 0, 0), (50, 50, 50), center=(0, 0, 0))
+cube_actor_1 = cube((1, 0, 0), (50, 50, 50), center=(0, 0, 0))
+cube_actor_2 = cube((0, 1, 0), (10, 10, 10), center=(100, 0, 0))
 
 fetch_viz_icons()
 filename = read_viz_icons(fname='stop2.png')
 
-button_actor = create_button(file_name=filename, callback=button_callback, position=(100, -100, 10))
+button_actor = create_button(file_name=filename, callback=button_callback)
 
 renderer = window.ren()
 iren_style = CustomInteractorStyle(renderer=renderer)
 renderer.add(button_actor)
-renderer.add(cube_actor)
+renderer.add(cube_actor_1)
+renderer.add(cube_actor_2)
 
 # set_trace()
 
