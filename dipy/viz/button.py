@@ -63,6 +63,7 @@ class CustomInteractorStyle(vtkInteractorStyleUser):
         if actor is not None:
             actor.InvokeEvent(evt)
         else:
+            # actor = picker.GetActor2D()
             actor = picker.GetViewProp()
             # set_trace()
             if actor is not None:
