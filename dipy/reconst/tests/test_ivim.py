@@ -18,6 +18,11 @@ from dipy.reconst.ivim import ivim_function
 from dipy.data import get_data, dsi_voxels, get_sphere
 import dipy.core.gradients as grad
 from dipy.sims.voxel import single_tensor
+from dipy.io.gradients import read_bvals_bvecs
+from dipy.core.gradients import (gradient_table, GradientTable,
+                                 gradient_table_from_bvals_bvecs,
+                                 reorient_bvecs)
+from dipy.sims.voxel import multi_tensor
 
 
 def test_nlls_fit():
@@ -39,13 +44,13 @@ def test_nlls_fit():
     ivim_model = ivim.IvimModel(gtab)
     ivim_fit = ivim_model.fit(data)
 
-    S0, f_est, D_star_est, D_est = ivim_fit.model_params
+    S0_est, f_est, D_star_est, D_est = ivim_fit.model_params
     est_signal = ivim.ivim_function(bvals,
                                     S0_est,
                                     f_est,
                                     D_star_est,
                                     D_est)
 
-    assert_equal(est_signal.shape, data.shape[:-1])
+    assert_equal(est_signal.shape, data.shape)
     assert_array_almost_equal(est_signal, data)
     assert_array_almost_equal(ivim_fit.model_params, [S0, f, D_star, D])

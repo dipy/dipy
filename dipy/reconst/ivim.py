@@ -7,7 +7,7 @@ import numpy as np
 from scipy.optimize import curve_fit
 
 from dipy.core.gradients import gradient_table
-from base import ReconstModel
+from dipy.reconst.base import ReconstModel
 from dipy.reconst.dti import _min_positive_signal
 
 
