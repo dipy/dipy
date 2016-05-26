@@ -56,17 +56,16 @@ class CustomInteractorStyle(vtkInteractorStyleUser):
         # Use a picker to see which actor is under the mouse
         picker = vtk.vtkPropPicker()
         picker.Pick(clickPos[0], clickPos[1], 0, self.renderer)
-        actor_3D = picker.GetProp3D()
-        if actor_3D is not None:
-            actor_3D.InvokeEvent(evt)
+        # actor = picker.GetActor2D()
+        actor_2D = picker.GetViewProp()
+        if actor_2D is not None:
+            actor_2D.InvokeEvent(evt)
         else:
-            # actor = picker.GetActor2D()
-            actor_2D = picker.GetViewProp()
-            # set_trace()
-            if actor_2D is not None:
-                actor_2D.InvokeEvent(evt)
+            actor_3D = picker.GetProp3D()
+            if actor_3D is not None:
+                actor_3D.InvokeEvent(evt)
             else:
-                "No Actor Selected"
+                pass
 
         self.trackball_interactor_style.OnRightButtonDown()
 
