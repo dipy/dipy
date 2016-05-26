@@ -44,6 +44,22 @@ class CustomInteractorStyle(vtkInteractorStyleUser):
         self.trackball_interactor_style = vtk.vtkInteractorStyleTrackballCamera()
 
     def on_left_button_pressed(self, obj, evt):
+        clickPos = self.GetInteractor().GetEventPosition()
+
+        # Use a picker to see which actor is under the mouse
+        picker = vtk.vtkPropPicker()
+        picker.Pick(clickPos[0], clickPos[1], 0, self.renderer)
+        # actor = picker.GetActor2D()
+        actor_2D = picker.GetViewProp()
+        if actor_2D is not None:
+            actor_2D.InvokeEvent(evt)
+        else:
+            actor_3D = picker.GetProp3D()
+            if actor_3D is not None:
+                actor_3D.InvokeEvent(evt)
+            else:
+                pass
+
         self.trackball_interactor_style.OnLeftButtonDown()
 
     def on_left_button_released(self, obj, evt):
@@ -151,10 +167,8 @@ def figure(pic):
 
     return image_actor
 
-
-def create_button(file_name, callback, position=(0, 0), center=None):
+def create_button(file_name, position=(0, 0), center=None):
     button = figure(file_name)
-    button.AddObserver("RightButtonPressEvent", callback)
     if center is not None:
          button.SetCenter(*center)
     button.SetPosition(position[0], position[1])
@@ -178,7 +192,7 @@ def cube(color=None, size=(0.2, 0.2, 0.2), center=None):
     return cubeActor
 
 
-def button_callback(*args, **kwargs):
+def move_button_callback(*args, **kwargs):
     pos_1 = np.array(cube_actor_1.GetPosition())
     pos_1[0] += 2
     cube_actor_1.SetPosition(tuple(pos_1))
@@ -186,6 +200,25 @@ def button_callback(*args, **kwargs):
     pos_2[1] += 2
     cube_actor_2.SetPosition(tuple(pos_2))
 
+state = 0
+
+def modify_button_callback(*args, **kwargs):
+    global state
+    if state == 0:
+        pic = read_viz_icons(fname='play3.png')
+        state = 1
+    else:
+        pic = read_viz_icons(fname='stop2.png')
+        state = 0
+    png = vtk.vtkPNGReader()
+    png.SetFileName(pic)
+    png.Update()
+
+    imageDataGeometryFilter = vtk.vtkImageDataGeometryFilter()
+    imageDataGeometryFilter.SetInputConnection(png.GetOutputPort())
+    imageDataGeometryFilter.Update()
+
+    button_actor.GetMapper().SetInputConnection(imageDataGeometryFilter.GetOutputPort())
 
 cube_actor_1 = cube((1, 0, 0), (50, 50, 50), center=(0, 0, 0))
 cube_actor_2 = cube((0, 1, 0), (10, 10, 10), center=(100, 0, 0))
@@ -193,7 +226,9 @@ cube_actor_2 = cube((0, 1, 0), (10, 10, 10), center=(100, 0, 0))
 fetch_viz_icons()
 filename = read_viz_icons(fname='stop2.png')
 
-button_actor = create_button(file_name=filename, callback=button_callback)
+button_actor = create_button(file_name=filename)
+button_actor.AddObserver("RightButtonPressEvent", move_button_callback)
+button_actor.AddObserver("LeftButtonPressEvent", modify_button_callback)
 
 renderer = window.ren()
 iren_style = CustomInteractorStyle(renderer=renderer)
