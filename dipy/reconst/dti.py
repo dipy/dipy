@@ -1106,7 +1106,7 @@ class TensorFit(object):
             evecs = self.evecs
         lower = 4 * np.pi * np.sqrt(np.prod(evals, -1))
         projection = np.dot(sphere.vertices, evecs)
-        projection /= np.sqrt(self.evals[mask])
+        projection /= np.sqrt(evals)
         odf[mask] = ((vector_norm(projection) ** -3) / lower).T
         return odf
 
