@@ -727,12 +727,12 @@ class TensorModel(ReconstModel):
         -----
         In order to increase speed of processing, tensor fitting is done simultaneously
         over many voxels. Many fit_methods use the 'step' parameter to set the number of
-        voxels that will be fit at once in each iteration. This is the chunk size as a 
-        number of voxels. A larger step value should speed things up, but it will also 
-        take up more memory. It is advisable to keep an eye on memory consumption as 
+        voxels that will be fit at once in each iteration. This is the chunk size as a
+        number of voxels. A larger step value should speed things up, but it will also
+        take up more memory. It is advisable to keep an eye on memory consumption as
         this value is increased.
 
-        Example : In :func:`iter_fit_tensor` we have a default step value of 1e4            
+        Example : In :func:`iter_fit_tensor` we have a default step value of 1e4
 
         References
         ----------
@@ -1154,9 +1154,9 @@ class TensorFit(object):
             The chunk size as a number of voxels. Optional parameter with default value 10,000.
 
             In order to increase speed of processing, tensor fitting is done simultaneously
-            over many voxels. This parameter sets the number of voxels that will be fit at 
-            once in each iteration. A larger step value should speed things up, but it will 
-            also take up more memory. It is advisable to keep an eye on memory consumption 
+            over many voxels. This parameter sets the number of voxels that will be fit at
+            once in each iteration. A larger step value should speed things up, but it will
+            also take up more memory. It is advisable to keep an eye on memory consumption
             as this value is increased.
 
         Notes
@@ -1211,9 +1211,9 @@ def iter_fit_tensor(step=1e4):
         The chunk size as a number of voxels. Optional parameter with default value 10,000.
 
         In order to increase speed of processing, tensor fitting is done simultaneously
-        over many voxels. This parameter sets the number of voxels that will be fit at 
-        once in each iteration. A larger step value should speed things up, but it will 
-        also take up more memory. It is advisable to keep an eye on memory consumption 
+        over many voxels. This parameter sets the number of voxels that will be fit at
+        once in each iteration. A larger step value should speed things up, but it will
+        also take up more memory. It is advisable to keep an eye on memory consumption
         as this value is increased.
     """
 
