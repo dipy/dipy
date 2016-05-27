@@ -1094,11 +1094,10 @@ class TensorFit(object):
            Tractography. ftp://ftp-sop.inria.fr/athena/Publications/PhDs/descoteaux_thesis.pdf
         """
         odf = np.zeros((self.evals.shape[:-1] + (sphere.vertices.shape[0],)))
-
-        mask = np.where((self.evals[..., 0] > 0) &
-                        (self.evals[..., 1] > 0) &
-                        (self.evals[..., 2] > 0))
         if len(self.evals.shape) > 1:
+            mask = np.where((self.evals[..., 0] > 0) &
+                            (self.evals[..., 1] > 0) &
+                            (self.evals[..., 2] > 0))
             evals = self.evals[mask]
             evecs = self.evecs[mask]
         else:
@@ -1107,7 +1106,11 @@ class TensorFit(object):
         lower = 4 * np.pi * np.sqrt(np.prod(evals, -1))
         projection = np.dot(sphere.vertices, evecs)
         projection /= np.sqrt(evals)
-        odf[mask] = ((vector_norm(projection) ** -3) / lower).T
+        result = ((vector_norm(projection) ** -3) / lower).T
+        if len(self.evals.shape) > 1:
+            odf[mask] = result
+        else:
+            odf = result
         return odf
 
     def adc(self, sphere):
