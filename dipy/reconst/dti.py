@@ -1093,17 +1093,21 @@ class TensorFit(object):
            Resolution Diffusion MRI: from Local Estimation to Segmentation and
            Tractography. ftp://ftp-sop.inria.fr/athena/Publications/PhDs/descoteaux_thesis.pdf
         """
-        lower = 4 * np.pi * np.sqrt(np.prod(self.evals, -1))
-        projection = np.dot(sphere.vertices, self.evecs)
-        with warnings.catch_warnings():
-            warnings.simplefilter("ignore")
-            projection /= np.sqrt(self.evals)
-            odf = (vector_norm(projection) ** -3) / lower
-        # Zero evals are non-physical, we replace nans with zeros
-        any_zero = (self.evals == 0).any(-1)
-        odf = np.where(any_zero, 0, odf)
-        # Move odf to be on the last dimension
-        odf = np.rollaxis(odf, 0, odf.ndim)
+        odf = np.zeros((self.evals.shape[:-1] + (sphere.vertices.shape[0],)))
+
+        mask = np.where((self.evals[..., 0] > 0) &
+                        (self.evals[..., 1] > 0) &
+                        (self.evals[..., 2] > 0))
+        if len(self.evals.shape) > 1:
+            evals = self.evals[mask]
+            evecs = self.evecs[mask]
+        else:
+            evals = self.evals
+            evecs = self.evecs
+        lower = 4 * np.pi * np.sqrt(np.prod(evals, -1))
+        projection = np.dot(sphere.vertices, evecs)
+        projection /= np.sqrt(self.evals[mask])
+        odf[mask] = ((vector_norm(projection) ** -3) / lower).T
         return odf
 
     def adc(self, sphere):
