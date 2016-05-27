@@ -117,7 +117,7 @@ cdef class FBCMeasures:
         streamline_out = []
         color_out = []
         rfbc_out = []
-        for i in range(len(self.streamlines_rfbc)):
+        for i in range((self.streamlines_rfbc).shape[0]):
             rfbc = self.streamlines_rfbc[i]
             lfbc = lfbc_log[i]
             if rfbc > threshold:
@@ -192,16 +192,15 @@ cdef class FBCMeasures:
         
         # if the fibers are too short FBC measures cannot be applied, 
         # remove these.
-        streamlines_length = np.array([len(x) for x in py_streamlines], 
+        streamlines_length = np.array([x.shape[0] for x in py_streamlines], 
                                 dtype=np.int32)
         min_length = min(streamlines_length)
         if min_length < min_fiberlength:
             print("The minimum fiber length is 10 points. \
                     Shorter fibers were found and removed.")
-            py_streamlines = [x for x in py_streamlines if len(x) >= min_fiberlength]
-            streamlines_length = np.array([len(x) for x in py_streamlines], 
+            py_streamlines = [x for x in py_streamlines if x.shape[0] >= min_fiberlength]
+            streamlines_length = np.array([x.shape[0] for x in py_streamlines], 
                                     dtype=np.int32)
-            min_length = min(streamlines_length)
         num_fibers = len(py_streamlines)
         self.streamline_length = streamlines_length
         max_length = max(streamlines_length)
