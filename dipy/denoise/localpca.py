@@ -93,10 +93,10 @@ def localpca(arr, sigma, patch_radius=1, tou=0, rician=True):
 
                     d[d < sigma[i,j,k]] = 0
                     D_hat = np.diag(d)
-                    # Y = X.dot(W)
-                    # # When the block covers each pixel identify it into the label matrix theta
-                    # X_est = Y.dot(np.transpose(W))
-                    X_est = X.dot(D_hat)
+                    Y = X.dot(W)
+                    # When the block covers each pixel identify it into the label matrix theta
+                    X_est = Y.dot(np.transpose(W))
+                    X_est = X_est.dot(D_hat)
 
                     temp = X_est + np.array([M,]*X_est.shape[1], dtype = np.float64).transpose()
                     temp = temp.reshape(patch_size, patch_size, patch_size, arr.shape[3])

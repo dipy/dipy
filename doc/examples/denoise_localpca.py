@@ -112,7 +112,6 @@ if arr.ndim == 4:
                         sigma[i,j,k] = 0
 
                     d[d < sigma[i,j,k]] = 0
-                    d[d>0] = 1
                     D_hat = np.diag(d)
                     Y = X.dot(W)
                     # # When the block covers each pixel identify it into the label matrix theta
