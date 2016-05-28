@@ -36,17 +36,18 @@ def localpca(arr, sigma, patch_radius=1, tou=0, rician=True):
     # Read the array and fix the dimensions
 
     if arr.ndim == 4:
+        sigma = np.zeros(arr[...,0].shape,dtype = np.float64)
 
-        if tou == 0:
-            tou = 2.3 * 2.3 * sigma 
+        # if tou == 0:
+        #     tou = 2.3 * 2.3 * sigma 
 
-        if isinstance(sigma, np.ndarray) and sigma.ndim == 3:
+        # if isinstance(sigma, np.ndarray) and sigma.ndim == 3:
 
-            sigma = (np.ones(arr.shape, dtype=np.float64) * sigma[..., np.newaxis])
-            tou = (np.ones(arr.shape, dtype=np.float64) * tou[..., np.newaxis])
-        else:
-            sigma = np.ones(arr.shape, dtype=np.float64) * sigma
-            tou = np.ones(arr.shape, dtype=np.float64) * tou    
+        #     sigma = (np.ones(arr.shape, dtype=np.float64) * sigma[..., np.newaxis])
+        #     tou = (np.ones(arr.shape, dtype=np.float64) * tou[..., np.newaxis])
+        # else:
+        #     sigma = np.ones(arr.shape, dtype=np.float64) * sigma
+        #     tou = np.ones(arr.shape, dtype=np.float64) * tou    
         
         # loop around and find the 3D patch for each direction at each pixel
         
@@ -78,7 +79,19 @@ def localpca(arr, sigma, patch_radius=1, tou=0, rician=True):
                     # compute EVD of the covariance matrix of X get the matrices W and D, hence get matrix Y = XW
                     # Threshold matrix D and then compute X_est = YW_transpose D_est
                     [d,W] = np.linalg.eigh(C)
-                    d[d < tou[i][j][k][:]] = 0
+                    # for sigma estimate we perform the median estimation
+
+                    # find the median of the standard deviation of the eigenvalues
+                    median_sqrt = np.median(np.sqrt(d[d > alpha]))
+                    if(np.isnan(median_sqrt)):
+                        median_sqrt = 0
+                    # Chop of the positive eigenvalues whose standard deviation is more that 2 times that of the above quantity
+                    # Take the remaining eigenvalues and estimate sigma
+                    sigma[i,j,k] = beta * beta * np.median(d[np.sqrt(d[d > alpha]) < 2 * median_sqrt])
+                    if(np.isnan(sigma[i,j,k])):
+                        sigma[i,j,k] = 0
+
+                    d[d < sigma[i,j,k]] = 0
                     D_hat = np.diag(d)
                     # Y = X.dot(W)
                     # # When the block covers each pixel identify it into the label matrix theta
