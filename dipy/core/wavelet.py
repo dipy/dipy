@@ -1,5 +1,5 @@
 import numpy as np
-from dipy.denoise import ornlm
+from dipy.denoise import nlmeans_block
 
 '''
  Functions for Wavelet Transforms in 3D domain
@@ -78,12 +78,12 @@ def afb3D_A(x, af, d):
     lo = np.zeros((L + n1Half, N2, N3))
     hi = np.zeros((L + n1Half, N2, N3))
     for k in xrange(N3):
-        lo[:, :, k] = ornlm.firdn(x[:, :, k], lpf)
+        lo[:, :, k] = nlmeans_block.firdn(x[:, :, k], lpf)
     lo[:L] = lo[:L] + lo[n1Half:n1Half + L, :, :]
     lo = lo[:n1Half, :, :]
 
     for k in xrange(N3):
-        hi[:, :, k] = ornlm.firdn(x[:, :, k], hpf)
+        hi[:, :, k] = nlmeans_block.firdn(x[:, :, k], hpf)
     hi[:L] = hi[:L] + hi[n1Half:n1Half + L, :, :]
     hi = hi[:n1Half, :, :]
     # permute dimensions of x (inverse permutation)
@@ -115,8 +115,8 @@ def sfb3D_A(lo, hi, sf, d):
     L = sf.shape[0]
     y = np.zeros((N + L - 2, N2, N3))
     for k in xrange(N3):
-        y[:, :, k] = (np.array(ornlm.upfir(lo[:, :, k], lpf)) +
-                      np.array(ornlm.upfir(hi[:, :, k], hpf)))
+        y[:, :, k] = (np.array(nlmeans_block.upfir(lo[:, :, k], lpf)) +
+                      np.array(nlmeans_block.upfir(hi[:, :, k], hpf)))
     y[:(L - 2), :, :] = y[:(L - 2), :, :] + y[N:(N + L - 2), :, :]
     y = y[:N, :, :]
     y = cshift3D(y, 1 - L / 2, 0)
