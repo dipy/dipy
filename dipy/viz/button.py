@@ -135,32 +135,49 @@ class CustomInteractorStyle(vtkInteractorStyleUser):
         interactor.AddObserver("MouseWheelBackwardEvent", self.on_mouse_wheel_backward)
 
 
-class EventSet(object):
-    """ Set of events for the button class. Each event is stored as a 
-    (event-type, callback) tuple.
-    """
-
-    def __init__(self):
-        self.events = []
-
-    def add(self, event, callback):
-        self.events.append((event, callback))
-
-
 class Button(object):
     """ Currently implements a 2D overlay button and is of type vtkTexturedActor2D. 
 
     """
 
-    def __init__(self, fname):
-        self.actor = self.build_button_actor(fname)
+    def __init__(self, icon_fnames):
+        self.state = 0
+        self.state_icons = self.build_icons(icon_fnames)
+        self.actor = self.build_actor(self.state_icons[0])
 
-    def build_button_actor(self, fname, position=(0, 0), center=None):
+    def build_icons(self, icon_fnames):
+        """ Converts filenames to vtkImageDataGeometryFilters
+        A peprocessing step to prevent re-read of filenames during every state change
+
+        Parameters
+        ----------
+        icon_fnames : A list of filenames
+
+        Returns
+        -------
+        icons : A list of corresponding vtkImageDataGeometryFilters
+        """
+        icons = []
+        for icon_fname in icon_fnames:
+            png = vtk.vtkPNGReader()
+            png.SetFileName(icon_fname)
+            png.Update()
+
+            # Convert the image to a polydata
+            imageDataGeometryFilter = vtk.vtkImageDataGeometryFilter()
+            imageDataGeometryFilter.SetInputConnection(png.GetOutputPort())
+            imageDataGeometryFilter.Update()
+
+            icons.append(imageDataGeometryFilter)
+
+        return icons
+
+    def build_actor(self, icon, position=(0, 0), center=None):
         """ Return an image as a 2D actor with a specific position
 
         Parameters
         ----------
-        fname : filename
+        icon : imageDataGeometryFilter
         position : a two tuple
         center : a two tuple 
 
@@ -168,17 +185,9 @@ class Button(object):
         -------
         button : vtkTexturedActor2D
         """
-        png = vtk.vtkPNGReader()
-        png.SetFileName(fname)
-        png.Update()
-
-        # Convert the image to a polydata
-        imageDataGeometryFilter = vtk.vtkImageDataGeometryFilter()
-        imageDataGeometryFilter.SetInputConnection(png.GetOutputPort())
-        imageDataGeometryFilter.Update()
-
+        
         mapper = vtk.vtkPolyDataMapper2D()
-        mapper.SetInputConnection(imageDataGeometryFilter.GetOutputPort())
+        mapper.SetInputConnection(icon.GetOutputPort())
 
         button = vtk.vtkTexturedActor2D()
         button.SetMapper(mapper)
@@ -189,32 +198,33 @@ class Button(object):
 
         return button
 
-    def add_events(self, event_set):
+    def add_event(self, event_type, callback):
         """ Adds events to button actor
 
         Parameters
         ----------
-        event_set : EventSet
+        event_type: event code
+        callback: callback function
         """
-        for event in event_set.events:
-            self.actor.AddObserver(event[0], event[1])
+        self.actor.AddObserver(event_type, callback)
 
-    def modify_icon(self, fname):
+    def set_icon(self, icon):
         """ Modifies the icon used by the vtkTexturedActor2D
 
         Parameters
         ----------
-        fname : filename
+        icon : imageDataGeometryFilter
         """
-        png = vtk.vtkPNGReader()
-        png.SetFileName(fname)
-        png.Update()
+        self.actor.GetMapper().SetInputConnection(icon.GetOutputPort())
 
-        imageDataGeometryFilter = vtk.vtkImageDataGeometryFilter()
-        imageDataGeometryFilter.SetInputConnection(png.GetOutputPort())
-        imageDataGeometryFilter.Update()
-
-        self.actor.GetMapper().SetInputConnection(imageDataGeometryFilter.GetOutputPort())
+    def change_state(self):
+        """ Increments the state of the Button
+            Also changes the icon
+        """
+        self.state += 1
+        if self.state == len(self.state_icons):
+            self.state = 0
+        self.set_icon(self.state_icons[self.state])
     
 
 def cube(color=None, size=(0.2, 0.2, 0.2), center=None):
@@ -236,12 +246,17 @@ def cube(color=None, size=(0.2, 0.2, 0.2), center=None):
 cube_actor_1 = cube((1, 0, 0), (50, 50, 50), center=(0, 0, 0))
 cube_actor_2 = cube((0, 1, 0), (10, 10, 10), center=(100, 0, 0))
 
-filename = read_viz_icons(fname='stop2.png')
 
-button = Button(fname=filename)
+icon_files = []
+icon_files.append(read_viz_icons(fname='stop2.png'))
+icon_files.append(read_viz_icons(fname='play3.png'))
+icon_files.append(read_viz_icons(fname='plus.png'))
+icon_files.append(read_viz_icons(fname='cross.png'))
 
 
-def move_button_callback(self, *args, **kwargs):
+button = Button(icon_fnames=icon_files)
+
+def move_button_callback(*args, **kwargs):
     pos_1 = np.array(cube_actor_1.GetPosition())
     pos_1[0] += 2
     cube_actor_1.SetPosition(tuple(pos_1))
@@ -249,24 +264,12 @@ def move_button_callback(self, *args, **kwargs):
     pos_2[1] += 2
     cube_actor_2.SetPosition(tuple(pos_2))
 
-state = 0
+def modify_button_callback(*args, **kwargs):
+    button.change_state()
 
+button.add_event("RightButtonPressEvent", move_button_callback)
+button.add_event("LeftButtonPressEvent", modify_button_callback)
 
-def modify_button_callback(self, *args, **kwargs):
-    global state
-    if state == 0:
-        pic = read_viz_icons(fname='play3.png')
-        state = 1
-    else:
-        pic = read_viz_icons(fname='stop2.png')
-        state = 0
-    button.modify_icon(fname=pic)
-    
-
-button_events = EventSet()
-button_events.add("RightButtonPressEvent", move_button_callback)
-button_events.add("LeftButtonPressEvent", modify_button_callback)
-button.add_events(button_events)
 
 renderer = window.ren()
 iren_style = CustomInteractorStyle(renderer=renderer)
