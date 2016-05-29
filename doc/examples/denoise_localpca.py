@@ -42,33 +42,33 @@ den_data = np.array(den_data[20:90,20:90,10:15,:])
 mini = np.min(data)
 maxi = np.max(data)
 data = (data -mini) * 255.0 / maxi 
-# [sigma,sigma_c] = estimate_sigma_localpca(data,gtab)
-# # identify the b0 images from the dataset
-# sigma = sigma_c
+[sigma,sigma_c] = estimate_sigma_localpca(data,gtab)
+# identify the b0 images from the dataset
+sigma = sigma_c
 # first identify the number of the b0 images
 arr = data
 tou = 0
 patch_radius = 1
 
-beta = 1.29
-alpha = 1.01e-6
+# beta = 1.29
+# alpha = 1.01e-6
 t = time()
 if arr.ndim == 4:
 
-        # if tou == 0:
-        #     tou = 2.3 * 2.3 * sigma 
+        if tou == 0:
+            tou = 2.3 * 2.3 * sigma 
 
-        # if isinstance(sigma, np.ndarray) and sigma.ndim == 3:
+        if isinstance(sigma, np.ndarray) and sigma.ndim == 3:
 
-        #     sigma = (np.ones(arr.shape, dtype=np.float64) * sigma[..., np.newaxis])
-        #     tou = (np.ones(arr.shape, dtype=np.float64) * tou[..., np.newaxis])
-        # else:
-        #     sigma = np.ones(arr.shape, dtype=np.float64) * sigma
-        #     tou = np.ones(arr.shape, dtype=np.float64) * tou    
+            sigma = (np.ones(arr.shape, dtype=np.float64) * sigma[..., np.newaxis])
+            tou = (np.ones(arr.shape, dtype=np.float64) * tou[..., np.newaxis])
+        else:
+            sigma = np.ones(arr.shape, dtype=np.float64) * sigma
+            tou = np.ones(arr.shape, dtype=np.float64) * tou    
         
         # loop around and find the 3D patch for each direction at each pixel
-        tou = np.zeros(arr[...,0].shape,dtype = np.float64)
-        sigma = np.zeros(arr[...,0].shape,dtype = np.float64)
+        numeig = np.zeros(arr[...,0].shape,dtype = np.float64)
+        # sigma = np.zeros(arr[...,0].shape,dtype = np.float64)
 
         # declare arrays for theta and thetax
         theta = np.zeros(arr.shape, dtype = np.float64)
@@ -102,17 +102,20 @@ if arr.ndim == 4:
                     # for sigma estimate we perform the median estimation
 
                     # find the median of the standard deviation of the eigenvalues
-                    median_sqrt = np.median(np.sqrt(d[d > alpha]))
-                    if(np.isnan(median_sqrt)):
-                        median_sqrt = 0
-                    # Chop of the positive eigenvalues whose standard deviation is more that 2 times that of the above quantity
-                    # Take the remaining eigenvalues and estimate sigma
-                    sigma[i,j,k] = beta * beta * np.median(d[np.sqrt(d[d > alpha]) < 2 * median_sqrt])
-                    if(np.isnan(sigma[i,j,k])):
-                        sigma[i,j,k] = 0
+                    # median_sqrt = np.median(np.sqrt(d[d > alpha]))
+                    # if(np.isnan(median_sqrt)):
+                    #     median_sqrt = 0
+                    # # Chop of the positive eigenvalues whose standard deviation is more that 2 times that of the above quantity
+                    # # Take the remaining eigenvalues and estimate sigma
+                    # sigma[i,j,k] = beta * beta * np.median(d[np.sqrt(d[d > alpha]) < 2 * median_sqrt])
+                    # if(np.isnan(sigma[i,j,k])):
+                    #     sigma[i,j,k] = 0
 
-                    d[d < sigma[i,j,k]] = 0
+                    d[d < tou[i,j,k,:]] = 0
+                    d[d > 0] = 1
+                    numeig[i,j,k] = np.sum(d)
                     D_hat = np.diag(d)
+
                     Y = X.dot(W)
                     # # When the block covers each pixel identify it into the label matrix theta
                     X_est = Y.dot(np.transpose(W))
@@ -177,7 +180,7 @@ den_matlab = den_data[:,:,2,19]
 den_python = denoised_arr[:,:,2,19]
 diff_matlab = np.abs(orig.astype('f8') - den_matlab.astype('f8'))
 diff_python = np.abs(orig.astype('f8') - den_python.astype('f8'))
-fig, ax = plt.subplots(2, 3)
+fig, ax = plt.subplots(2, 4)
 ax[0,0].imshow(orig,cmap = 'gray', origin = 'lower')
 ax[0,0].set_title('Original')
 ax[0,1].imshow(den_matlab,cmap = 'gray', origin = 'lower')
@@ -190,4 +193,6 @@ ax[1,1].imshow(den_python,cmap = 'gray', origin = 'lower')
 ax[1,1].set_title('Python Output')
 ax[1,2].imshow(diff_python,cmap = 'gray', origin = 'lower')
 ax[1,2].set_title('Python Residual')
+ax[1,3].imshow(numeig[:,:,2],cmap = 'jet', origin = 'lower')
+ax[1,3].set_title('Retained eigenvalues')
 plt.show()
