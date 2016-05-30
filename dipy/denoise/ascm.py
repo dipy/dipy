@@ -58,7 +58,7 @@ def ascm(ima, fimau, fimao, h):
     w1 = wavelet.dwt3D(pad1, 1, af)
     w2 = wavelet.dwt3D(pad2, 1, af)
     w3 = wavelet.dwt3D(pad3, 1, af)
-    for i in xrange(7):
+    for i in range(7):
         tmp = np.array(w3[0][i])
         tmp = tmp[:(s[0] // 2), :(s[1] // 2), :(s[2] // 2)]
         sigY = np.std(tmp, ddof=1)
