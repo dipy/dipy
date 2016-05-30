@@ -21,15 +21,14 @@ def test_nlls_fit():
     bvecs = get_bvecs(N)
     gtab = gradient_table(bvals, bvecs.T)
 
-    f, D_star, D = 0.06, 0.0072, 0.00097
+    S0, f, D_star, D = 1.0, 0.06, 0.0072, 0.00097
 
     mevals = np.array(([D_star, D_star, D_star], [D, D, D]))
     # This gives an isotropic signal
 
-    signal = multi_tensor(gtab, mevals, snr=None, fractions=[
+    signal = multi_tensor(gtab, mevals, snr=None, S0=S0, fractions=[
                           f * 100, 100 * (1 - f)])
     data = signal[0]
-    S0 = data[0]
     ivim_model = IvimModel(gtab)
     ivim_fit = ivim_model.fit(data)
 
@@ -83,7 +82,7 @@ def generate_multivoxel_data(gtab, params):
     for parameters in params:
         S0, f, D_star, D = parameters
         mevals = np.array(([D_star, D_star, D_star], [D, D, D]))
-        signal = multi_tensor(gtab, mevals, snr=None, fractions=[
+        signal = multi_tensor(gtab, mevals, S0=S0, snr=None, fractions=[
             f * 100, 100 * (1 - f)])
         data.append(signal[0])
     return np.array(data)
