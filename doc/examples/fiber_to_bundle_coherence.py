@@ -10,14 +10,15 @@ measure of the alignment of each fiber with the surrounding fiber bundles
 tractography algorithms, since low FBCs indicate which fibers are isolated and 
 poorly aligned with their neighbors, see Fig. 1.
 
-.. figure:: fbc_illustration.png
+.. figure:: _static/fbc_illustration.png
+   :scale: 60 %
    :align: center
 
    On the left this figure illustrates (in 2D) the contribution of two fiber 
    points to the kernel density estimator. The kernel density estimator is the 
-   sum over all such locally aligned kernels. The local fiber to bundle coherence
-   shown on the right color-coded for each fiber, is obtained by evaluating the
-   kernel density estimator along the fibers. One spurious fiber is present which
+   sum over all such locally aligned kernels. The local fiber to bundle coherence 
+   shown on the right color-coded for each fiber, is obtained by evaluating the 
+   kernel density estimator along the fibers. One spurious fiber is present which 
    is isolated and badly aligned with the other fibers, and can be identified 
    by a low LFBC value in the region where it deviates from the bundle. 
    Figure adapted from [Portegies2015_PLoSOne]_.
