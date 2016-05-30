@@ -55,17 +55,21 @@ class IvimModel(ReconstModel):
             e_s += " positive."
             raise ValueError(e_s)
 
-    def fit(self, data, mask=None):
+    def fit(self, data, mask=None, **kwargs):
         """ Fit method of the Ivim model class
 
         Parameters
         ----------
         data : array
             The measured signal from one voxel.
-
         mask : array
             A boolean array used to mark the coordinates in the data that
             should be analyzed that has the shape data.shape[:-1]
+        guess_params : array
+            Initial guesses for the parameters S0, f, D_star and D
+            Default guess_params = [1.0, 0.10, 0.001, 0.0009]
+            Dimension can either be 1 or (N, 4) where N is the number of
+            voxels in the data.
 
         """
         if mask is None:
@@ -83,9 +87,20 @@ class IvimModel(ReconstModel):
         else:
             min_signal = self.min_signal
 
+        guess_params = kwargs.pop("guess_params", None)
+        # Generate guess_parameters for all voxels
+        if guess_params is None:
+            guess_params = np.ones(
+                (data.shape[0], 4)) * [1.0, 0.10, 0.001, 0.0009]
+        else:
+            if guess_params.shape != (data.shape[0], 4):
+                raise ValueError(
+                    "Guess params should be of shape (num_voxels,4)")
+
         data_in_mask = np.maximum(data_in_mask, min_signal)
+
         # Lookup design matrix for vectorization ?
-        params_in_mask = self.fit_method(data_in_mask, self.gtab)
+        params_in_mask = self.fit_method(data_in_mask, self.gtab, guess_params)
 
         if mask is None:
             out_shape = data.shape[:-1] + (-1, )
@@ -123,7 +138,7 @@ class IvimFit(object):
         return self.model_params.shape[:-1]
 
 
-def nlls_fit(data, gtab, jac=False):
+def nlls_fit(data, gtab, guess_params):
     """
     Fit the ivim params using non-linear least-squares.
 
@@ -147,7 +162,7 @@ def nlls_fit(data, gtab, jac=False):
     ivim_params = np.empty((flat_data.shape[0], 4))
     for vox in range(flat_data.shape[0]):
         popt, pcov = curve_fit(ivim_function, bvals, flat_data[vox],
-                               p0=[1.0, 0.10, 0.001, 0.001])
+                               guess_params[vox])
         ivim_params[vox, :4] = popt
 
     ivim_params.shape = data.shape[:-1] + (4,)
