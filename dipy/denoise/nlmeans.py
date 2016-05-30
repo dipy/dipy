@@ -43,7 +43,7 @@ def nlmeans(arr, sigma, mask=None, patch_radius=1, block_radius=5,
 
         if type == 'blockwise':
             sigma = estimate_sigma(arr, N=4)
-            return np.array(nlmeans_block(np.double(arr), patch_radius, block_radius, sigma[0], rician))
+            return np.array(nlmeans_block(np.double(arr), patch_radius, block_radius, sigma[0], rician)).astype(arr.dtype)
         else:    
             sigma = np.ones(arr.shape, dtype=np.float64) * sigma
             return nlmeans_3d(arr, mask, sigma,
@@ -57,8 +57,7 @@ def nlmeans(arr, sigma, mask=None, patch_radius=1, block_radius=5,
             for i in range(arr.shape[-1]):
                 sigma = estimate_sigma(arr[..., i], N=4)
                 denoised_arr[..., i] = np.array(nlmeans_block(np.double(arr[..., i]),patch_radius,block_radius,sigma[0]))
-
-            return denoised_arr    
+            return denoised_arr.astype(arr.dtype)   
         else:
             if isinstance(sigma, np.ndarray) and sigma.ndim == 3:
                 sigma = (np.ones(arr.shape, dtype=np.float64) *
@@ -75,7 +74,7 @@ def nlmeans(arr, sigma, mask=None, patch_radius=1, block_radius=5,
                                                   rician,
                                                   num_threads).astype(arr.dtype)
 
-            return denoised_arr
+            return denoised_arr.astype(arr.dtype)
 
     else:
         raise ValueError("Only 3D or 4D array are supported!", arr.shape)

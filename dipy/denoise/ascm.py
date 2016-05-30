@@ -35,9 +35,9 @@ def ascm(ima, fimau, fimao, h):
     
     s = fimau.shape
     p = [0, 0, 0]
-    p[0] = 2**math.ceil(math.log(s[0], 2))
-    p[1] = 2**math.ceil(math.log(s[1], 2))
-    p[2] = 2**math.ceil(math.log(s[2], 2))
+    p[0] = np.int(2**math.ceil(math.log(s[0], 2)))
+    p[1] = np.int(2**math.ceil(math.log(s[1], 2)))
+    p[2] = np.int(2**math.ceil(math.log(s[2], 2)))
     pad1 = np.zeros((p[0], p[1], p[2]))
     pad2 = np.zeros((p[0], p[1], p[2]))
     pad3 = np.zeros((p[0], p[1], p[2]))
@@ -75,4 +75,4 @@ def ascm(ima, fimau, fimao, h):
     w3[1] = w1[1]
     fima = wavelet.idwt3D(w3, 1, sf)
     fima = fima[:s[0], :s[1], :s[2]]
-    return fima
+    return fima.astype(ima.dtype)

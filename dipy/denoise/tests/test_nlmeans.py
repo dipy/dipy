@@ -16,25 +16,29 @@ def test_nlmeans_padding():
     S0n2 = remove_padding(S0n, 5)
     assert_equal(S0.shape, S0n2.shape)
 
-
 def test_nlmeans_static():
     S0 = 100 * np.ones((20, 20, 20), dtype='f8')
     S0n = nlmeans(S0, sigma=np.ones((20, 20, 20)), rician=False)
+    S0nb = nlmeans(S0, sigma=np.ones((20, 20, 20)), rician=False, type='blockwise')
     assert_array_almost_equal(S0, S0n)
-
+    assert_array_almost_equal(S0, S0nb)
 
 def test_nlmeans_random_noise():
     S0 = 100 + 2 * np.random.standard_normal((22, 23, 30))
 
     S0n = nlmeans(S0, sigma=np.ones((22, 23, 30)) * np.std(S0), rician=False)
+    S0nb = nlmeans(S0, sigma=np.ones((22, 23, 30)) * np.std(S0), rician=False, type='blockwise')
 
     print(S0.mean(), S0.min(), S0.max())
     print(S0n.mean(), S0n.min(), S0n.max())
+    print(S0nb.mean(), S0nb.min(), S0nb.max())
 
     assert_(S0n.min() > S0.min())
     assert_(S0n.max() < S0.max())
     assert_equal(np.round(S0n.mean()), 100)
-
+    assert_(S0nb.min() > S0.min())
+    assert_(S0nb.max() < S0.max())
+    assert_equal(np.round(S0nb.mean()), 100)
 
 def test_nlmeans_boundary():
     # nlmeans preserves boundaries
@@ -56,7 +60,6 @@ def test_nlmeans_boundary():
     assert_(S0[9, 9, 9] > 290)
     assert_(S0[10, 10, 10] < 110)
 
-
 def test_nlmeans_4D_and_mask():
     S0 = 200 * np.ones((20, 20, 20, 3), dtype='f8')
 
@@ -67,8 +70,7 @@ def test_nlmeans_4D_and_mask():
     assert_equal(S0.shape, S0n.shape)
     assert_equal(np.round(S0n[10, 10, 10]), 200)
     assert_equal(S0n[8, 8, 8], 0)
-
-
+    
 def test_nlmeans_dtype():
 
     S0 = 200 * np.ones((20, 20, 20, 3), dtype='f4')
@@ -76,13 +78,16 @@ def test_nlmeans_dtype():
     mask[10:14, 10:14, 10:14] = 1
     S0n = nlmeans(S0, sigma=1, mask=mask, rician=True)
     assert_equal(S0.dtype, S0n.dtype)
+    S0n = nlmeans(S0, sigma=1, mask=mask, rician=True, type='blockwise')
+    assert_equal(S0.dtype, S0n.dtype)
 
     S0 = 200 * np.ones((20, 20, 20), dtype=np.uint16)
     mask = np.zeros((20, 20, 20))
     mask[10:14, 10:14, 10:14] = 1
     S0n = nlmeans(S0, sigma=np.ones((20, 20, 20)), mask=mask, rician=True)
     assert_equal(S0.dtype, S0n.dtype)
-
+    S0n = nlmeans(S0, sigma=np.ones((20, 20, 20)), mask=mask, rician=True, type='blockwise')
+    assert_equal(S0.dtype, S0n.dtype)
 
 def test_nlmeans_4d_3dsigma_and_threads():
     # Input is 4D data and 3D sigma
@@ -127,6 +132,5 @@ def test_nlmeans_4d_3dsigma_and_threads():
 
 
 if __name__ == '__main__':
-
-    # test_nlmeans_4d_3dsigma_and_threads()
+    
     run_module_suite()
