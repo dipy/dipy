@@ -1,29 +1,13 @@
-""" Testing DTI
+""" Testing IVIM
 
 """
-from __future__ import division, print_function, absolute_import
-
 import numpy as np
-from nose.tools import (assert_true, assert_equal,
-                        assert_almost_equal, assert_raises)
-import numpy.testing as npt
-from numpy.testing import (assert_array_equal, assert_array_almost_equal,
-                           assert_)
-import nibabel as nib
+from numpy.testing import (assert_array_equal, assert_array_almost_equal)
 
-import scipy.optimize as opt
-
-from dipy.reconst import ivim as ivim
-from dipy.reconst.ivim import ivim_function
-from dipy.data import get_data, dsi_voxels, get_sphere
-import dipy.core.gradients as grad
-from dipy.sims.voxel import single_tensor
-from dipy.io.gradients import read_bvals_bvecs
-from dipy.core.gradients import (gradient_table, GradientTable,
-                                 gradient_table_from_bvals_bvecs,
-                                 reorient_bvecs)
+from dipy.reconst.ivim import ivim_function, IvimModel
+from dipy.core.gradients import gradient_table
 from dipy.sims.voxel import multi_tensor
-from dipy.core.sphere import disperse_charges, Sphere, HemiSphere
+from dipy.core.sphere import disperse_charges, HemiSphere
 
 
 def test_nlls_fit():
