@@ -141,9 +141,11 @@ class Button(object):
     """
 
     def __init__(self, icon_fnames):
-        self.state = 0
-        self.state_icons = self.build_icons(icon_fnames)
-        self.actor = self.build_actor(self.state_icons[0])
+        self.icons = self.build_icons(icon_fnames)
+        self.icon_names = list(self.icons.keys())
+        self.current_icon_id = 0
+        self.current_icon_name = self.icon_names[self.current_icon_id]
+        self.actor = self.build_actor(self.icons[self.current_icon_name])
 
     def build_icons(self, icon_fnames):
         """ Converts filenames to vtkImageDataGeometryFilters
@@ -157,8 +159,8 @@ class Button(object):
         -------
         icons : A list of corresponding vtkImageDataGeometryFilters
         """
-        icons = []
-        for icon_fname in icon_fnames:
+        icons = {}
+        for icon_name, icon_fname in icon_fnames.items():
             png = vtk.vtkPNGReader()
             png.SetFileName(icon_fname)
             png.Update()
@@ -168,7 +170,7 @@ class Button(object):
             imageDataGeometryFilter.SetInputConnection(png.GetOutputPort())
             imageDataGeometryFilter.Update()
 
-            icons.append(imageDataGeometryFilter)
+            icons[icon_name] = imageDataGeometryFilter
 
         return icons
 
@@ -198,7 +200,7 @@ class Button(object):
 
         return button
 
-    def add_event(self, event_type, callback):
+    def add_callback(self, event_type, callback):
         """ Adds events to button actor
 
         Parameters
@@ -217,14 +219,18 @@ class Button(object):
         """
         self.actor.GetMapper().SetInputConnection(icon.GetOutputPort())
 
-    def change_state(self):
+    def next_icon_name(self):
+        self.current_icon_id += 1
+        if self.current_icon_id == len(self.icons):
+            self.current_icon_id = 0
+        self.current_icon_name = self.icon_names[self.current_icon_id]
+
+    def next_icon(self):
         """ Increments the state of the Button
             Also changes the icon
         """
-        self.state += 1
-        if self.state == len(self.state_icons):
-            self.state = 0
-        self.set_icon(self.state_icons[self.state])
+        self.next_icon_name()
+        self.set_icon(self.icons[self.current_icon_name])
     
 
 def cube(color=None, size=(0.2, 0.2, 0.2), center=None):
@@ -247,11 +253,11 @@ cube_actor_1 = cube((1, 0, 0), (50, 50, 50), center=(0, 0, 0))
 cube_actor_2 = cube((0, 1, 0), (10, 10, 10), center=(100, 0, 0))
 
 
-icon_files = []
-icon_files.append(read_viz_icons(fname='stop2.png'))
-icon_files.append(read_viz_icons(fname='play3.png'))
-icon_files.append(read_viz_icons(fname='plus.png'))
-icon_files.append(read_viz_icons(fname='cross.png'))
+icon_files = {}
+icon_files['stop'] = read_viz_icons(fname='stop2.png')
+icon_files['play'] = read_viz_icons(fname='play3.png')
+icon_files['plus'] = read_viz_icons(fname='plus.png')
+icon_files['cross'] = read_viz_icons(fname='cross.png')
 
 
 button = Button(icon_fnames=icon_files)
@@ -265,10 +271,10 @@ def move_button_callback(*args, **kwargs):
     cube_actor_2.SetPosition(tuple(pos_2))
 
 def modify_button_callback(*args, **kwargs):
-    button.change_state()
+    button.next_icon()
 
-button.add_event("RightButtonPressEvent", move_button_callback)
-button.add_event("LeftButtonPressEvent", modify_button_callback)
+button.add_callback("RightButtonPressEvent", move_button_callback)
+button.add_callback("LeftButtonPressEvent", modify_button_callback)
 
 
 renderer = window.ren()
