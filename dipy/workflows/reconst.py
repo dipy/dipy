@@ -150,7 +150,6 @@ def get_fitted_tensor(data, mask, bval, bvec, b0_threshold=0):
 def reconst_csd_flow(input_files, bvalues, bvectors, mask_files,
                      b0_threshold=0.0,
                      frf=[15.0, 4.0, 4.0], out_dir='',
-                     out_fodf='sh.nii.gz',
                      out_peaks='peaks.npz'):
     """ Workflow for peaks computation. Peaks computation is done by 'globing'
         ``input_files`` and saves the peaks in a directory specified by
@@ -182,8 +181,8 @@ def reconst_csd_flow(input_files, bvalues, bvectors, mask_files,
     io_it = io_iterator_(inspect.currentframe(), reconst_csd_flow,
                          input_structure=False)
 
-    for dwi, bval, bvec, maskfile, ofodf, \
-            opeaks, opeaks_values, opeaks_idx in io_it:
+    for dwi, bval, bvec, maskfile, \
+            opeaks in io_it:
 
         logging.info('Computing fiber odfs for {0}'.format(dwi))
         vol = nib.load(dwi)
