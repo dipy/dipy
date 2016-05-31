@@ -3,17 +3,22 @@ from __future__ import division, print_function, absolute_import
 import logging
 import os.path
 import inspect
-
+from ast import literal_eval
 import nibabel as nib
 import numpy as np
 
 from dipy.core.gradients import gradient_table
+from dipy.reconst.peaks import peaks_from_model
+from dipy.data import get_sphere
 from dipy.io.gradients import read_bvals_bvecs
+from dipy.io.peaks import save_peaks
+from dipy.io.image import save_nifti
 from dipy.reconst.dti import (TensorModel, color_fa, fractional_anisotropy,
                               geodesic_anisotropy, mean_diffusivity,
                               axial_diffusivity, radial_diffusivity,
                               lower_triangular, mode as get_mode)
-
+from dipy.reconst.csdeconv import (ConstrainedSphericalDeconvModel,
+                                   auto_response)
 from dipy.workflows.multi_io import io_iterator_
 
 
@@ -70,7 +75,7 @@ def dti_metrics_flow(input_files, bvalues, bvectors, mask_files,
     io_it = io_iterator_(inspect.currentframe(), dti_metrics_flow,
                          input_structure=False)
     for dwi, bval, bvec, mask, otensor, ofa, oga, orgb, omd, oad, ord, omode,\
-        oevecs, oevals, in io_it:
+            oevecs, oevals, in io_it:
 
         logging.info('Computing dti metrics for {0}'.format(dwi))
         img = nib.load(dwi)
@@ -140,3 +145,100 @@ def get_fitted_tensor(data, mask, bval, bvec, b0_threshold=0):
     tenfit = tenmodel.fit(data, mask)
 
     return tenfit, gtab
+
+
+def reconst_csd_flow(input_files, bvalues, bvectors, mask_files,
+                     b0_threshold=0.0,
+                     frf=[15.0, 4.0, 4.0], out_dir='',
+                     out_fodf='sh.nii.gz',
+                     out_peaks='peaks.npz'):
+    """ Workflow for peaks computation. Peaks computation is done by 'globing'
+        ``input_files`` and saves the peaks in a directory specified by
+        ``out_dir``.
+
+    Parameters
+    ----------
+    input_files : string
+        Path to the input volumes. This path may contain wildcards to process
+        multiple inputs at once.
+    bvalues : string
+        Path to the bvalues files. This path may contain wildcards to use
+        multiple bvalues files at once.
+    bvectors : string
+        Path to the bvalues files. This path may contain wildcards to use
+        multiple bvalues files at once.
+    mask_files : string
+        Path to the input masks. This path may contain wildcards to use
+        multiple masks at once. (default: No mask used)
+    b0_threshold : float, optional
+        Threshold used to find b=0 directions
+    frf : tuple, optional
+        Fiber response function to me mutiplied by 10**-4 (default: 15,4,4)
+    out_dir : string, optional
+        Output directory (default input file directory)
+    out_peaks : string, optional
+        Name of the peaks volume to be saved (default 'peaks.npz')
+    """
+    io_it = io_iterator_(inspect.currentframe(), reconst_csd_flow,
+                         input_structure=False)
+
+    for dwi, bval, bvec, maskfile, ofodf, \
+            opeaks, opeaks_values, opeaks_idx in io_it:
+
+        logging.info('Computing fiber odfs for {0}'.format(dwi))
+        vol = nib.load(dwi)
+        data = vol.get_data()
+        affine = vol.get_affine()
+
+        bvals, bvecs = read_bvals_bvecs(bval, bvec)
+        gtab = gradient_table(bvals, bvecs, b0_threshold=b0_threshold)
+        mask_vol = nib.load(maskfile).get_data().astype(np.bool)
+
+        sh_order = 8
+        if data.shape[-1] < 15:
+            raise ValueError('You need at least 15 unique DWI volumes to '
+                             'compute fiber odfs. You currently have: {0}'
+                             ' DWI volumes.'.format(data.shape[-1]))
+        elif data.shape[-1] < 30:
+            sh_order = 6
+
+        response, ratio = auto_response(gtab, data)
+        response = list(response)
+
+        if frf is not None:
+            if isinstance(frf, str):
+                l01 = np.array(literal_eval(frf), dtype=np.float64)
+            else:
+                l01 = np.array(frf)
+
+            l01 *= 10**-4
+            response[0] = np.array([l01[0], l01[1], l01[1]])
+            ratio = l01[1] / l01[0]
+
+        logging.info('Eigenvalues for the frf of the input data are :{0}'
+                     .format(response[0]))
+        logging.info('Ratio for smallest to largest eigen value is {0}'
+                     .format(ratio))
+
+        peaks_sphere = get_sphere('symmetric362')
+
+        csd_model = ConstrainedSphericalDeconvModel(gtab, response,
+                                                    sh_order=sh_order)
+
+        peaks_csd = peaks_from_model(model=csd_model,
+                                     data=data,
+                                     sphere=peaks_sphere,
+                                     relative_peak_threshold=.5,
+                                     min_separation_angle=25,
+                                     mask=mask_vol,
+                                     return_sh=True,
+                                     sh_order=sh_order,
+                                     normalize_peaks=True,
+                                     parallel=False)
+        peaks_csd.affine = affine
+
+        save_peaks(opeaks, peaks_csd)
+
+        logging.info('Peaks saved in {0}'.format(os.path.dirname(opeaks)))
+
+        return io_it
