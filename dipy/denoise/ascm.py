@@ -4,8 +4,6 @@ from dipy.core import wavelet
 
 
 def ascm(ima, fimau, fimao, h):
-
-
     '''
     Adaptive Soft Coefficient Matching
 
@@ -28,11 +26,11 @@ def ascm(ima, fimau, fimao, h):
             standard deviation=h
     References
     ----------
-    3D Adaptive Multiresolution Non-Local Means Filter, P. Coupe a, 
-    J. V. Manjon,M. Robles, D. L. Collin         
-    
+    3D Adaptive Multiresolution Non-Local Means Filter, P. Coupe a,
+    J. V. Manjon,M. Robles, D. L. Collin
+
     '''
-    
+
     s = fimau.shape
     p = [0, 0, 0]
     p[0] = np.int(2**math.ceil(math.log(s[0], 2)))
@@ -75,4 +73,4 @@ def ascm(ima, fimau, fimao, h):
     w3[1] = w1[1]
     fima = wavelet.idwt3D(w3, 1, sf)
     fima = fima[:s[0], :s[1], :s[2]]
-    return fima.astype(ima.dtype)
+    return fima

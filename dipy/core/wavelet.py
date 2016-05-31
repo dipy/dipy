@@ -14,7 +14,7 @@ from dipy.denoise import nlmeans_block
 def cshift3D(x, m, d):
     '''
     3D Circular Shift
-    
+
     USAGE:
        y = cshift3D(x, m, d)
     INPUT:
@@ -28,6 +28,7 @@ def cshift3D(x, m, d):
     '''
     s = x.shape
     idx = (np.array(range(s[d])) + (s[d] - m % s[d])) % s[d]
+    idx = np.array(idx, dtype=np.int64)
     if d == 0:
         return x[idx, :, :]
     elif d == 1:
@@ -48,11 +49,10 @@ def permutationInverse(perm):
 
 
 def afb3D_A(x, af, d):
-    
     '''
     3D Analysis Filter Bank
      (along one dimension only)
-    
+
      [lo, hi] = afb3D_A(x, af, d);
     INPUT:
         x - N1xN2xN2 matrix, where min(N1,N2,N3) > 2*length(filter)
@@ -97,7 +97,7 @@ def sfb3D_A(lo, hi, sf, d):
     '''
     3D Synthesis Filter Bank
      (along single dimension only)
-    
+
      y = sfb3D_A(lo, hi, sf, d);
      sf - synthesis filters
      d  - dimension of filtering
@@ -129,7 +129,7 @@ def sfb3D_A(lo, hi, sf, d):
 def sfb3D(lo, hi, sf1, sf2=None, sf3=None):
     '''
     3D Synthesis Filter Bank
-    
+
     USAGE:
        y = sfb3D(lo, hi, sf1, sf2, sf3);
     INPUT:
@@ -203,7 +203,7 @@ def afb3D(x, af1, af2=None, af3=None):
 def dwt3D(x, J, af):
     '''
     3-D Discrete Wavelet Transform
-    
+
     USAGE:
        w = dwt3D(x, stages, af)
     INPUT:
@@ -227,7 +227,7 @@ def dwt3D(x, J, af):
 def idwt3D(w, J, sf):
     '''
     Inverse 3-D Discrete Wavelet Transform
-    
+
     USAGE:
        y = idwt3D(w, J, sf)
     INPUT:
