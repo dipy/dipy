@@ -5,7 +5,7 @@ from dipy.direction.peaks import (PeaksAndMetrics,
 from dipy.io.image import save_nifti
 
 
-def load_peaks(fname):
+def load_peaks(fname, verbose=True):
     """ Load PeaksAndMetrics NPZ file
     """
 
@@ -19,12 +19,25 @@ def load_peaks(fname):
     pam.shm_coeff = pam_dix['shm_coeff']
     pam.sphere = pam_dix['sphere']
     pam.B = pam_dix['B']
-    pam.invB = pam_dix['invB']
     pam.total_weight = pam_dix['total_weight']
     pam.ang_thr = pam_dix['ang_thr']
     pam.gfa = pam_dix['gfa']
     pam.qa = pam_dix['qa']
     pam.odf = pam_dix['odf']
+
+    if verbose:
+        print('Affine')
+        print(pam.affine)
+        print('Dirs Shape')
+        print(pam.peak_dirs.shape)
+        print('SH Shape')
+        print(pam.shm_coeff.shape)
+        print('ODF')
+        print(pam.odf.shape)
+        print('Total weight')
+        print(pam.total_weight)
+        print('Angular threshold')
+        print(pam.ang_thr)
 
     return pam
 
@@ -46,7 +59,6 @@ def save_peaks(fname, pam, compressed=True):
               shm_coeff=pam.shm_coeff,
               sphere=pam.sphere,
               B=pam.B,
-              invB=pam.invB,
               total_weight=pam.total_weight,
               ang_thr=pam.ang_thr,
               gfa=pam.gfa,
