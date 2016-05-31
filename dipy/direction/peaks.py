@@ -158,7 +158,7 @@ def peak_directions(odf, sphere, relative_peak_threshold=.5,
 
 
 class PeaksAndMetrics(PeaksAndMetricsDirectionGetter):
-    pass
+    affine = np.eye(4)
 
 
 def _peaks_from_model_parallel(model, data, sphere, relative_peak_threshold,
