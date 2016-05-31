@@ -8,6 +8,8 @@ import nibabel as nib
 import numpy as np
 
 from dipy.io.trackvis import save_trk
+from dipy.io.image import load_nifti
+from dipy.io.peaks import load_peaks
 from dipy.tracking.eudx import EuDX
 from dipy.data import get_sphere
 from dipy.reconst.csdeconv import ConstrainedSphericalDeconvModel
@@ -18,6 +20,57 @@ from dipy.reconst.dti import fractional_anisotropy
 from dipy.data import default_sphere
 from dipy.direction import DeterministicMaximumDirectionGetter
 from dipy.workflows.multi_io import io_iterator_
+
+
+def det_track_flow(peaks_files, stopping_files, use_sh=False,
+                   out_dir='', out_tractogram='tractogram.trk'):
+
+    """ Workflow for deterministic tracking
+
+    Parameters
+    ----------
+    peaks_files : string
+       Path to the peaks values files. This path may contain wildcards to use
+       multiple masks at once.
+    stopping_files : string
+        Path of FA or other images used for stopping criteria for tracking.
+    use_sh : bool
+        Use spherical harmonics saved in peask to find the maximum peak cone.
+    out_dir : string, optional
+       Output directory (default input file directory)
+    out_tractogram : string, optional
+       Name of the tractogram file to be saved (default 'tractogram.trk')
+    """
+    io_it = io_iterator_(inspect.currentframe(), EuDX_tracking_flow,
+                         input_structure=False)
+
+    for peaks_path, stopping_path, out_tract in io_it:
+        logging.info('Deterministic tracking on {0}'.format(peaks_path))
+        pam = load_peaks(peaks_path)
+        stop, affine = load_nifti(stopping_path)
+        classifier = ThresholdTissueClassifier(stop, .25)
+        seed_mask = stop > .2
+        seeds = utils.seeds_from_mask(
+                seed_mask, density=[2, 2, 2], affine=affine)
+
+        if use_sh:
+            detmax_dg = \
+                DeterministicMaximumDirectionGetter.from_shcoeff(
+                    pam.shm_coeff,
+                    max_angle=30.,
+                    sphere=pam.sphere)
+
+            streamlines = \
+                LocalTracking(detmax_dg, classifier, seeds, affine,
+                              step_size=.5)
+
+        else:
+            streamlines = LocalTracking(pam, classifier,
+                                        seeds, affine, step_size=.5)
+
+        # Compute streamlines and store as a list.
+        streamlines = list(streamlines)
+        save_trk(out_tract, streamlines)
 
 
 def EuDX_tracking_flow(peaks_values, peaks_indexes, out_dir='',
