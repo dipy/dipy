@@ -5,4 +5,4 @@ from dipy.workflows.reconst import reconst_csd_flow
 from flow_runner import run_flow
 
 if __name__ == "__main__":
-    run_flow(fodf_flow)
+    run_flow(reconst_csd_flow)
