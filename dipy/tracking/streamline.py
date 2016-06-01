@@ -240,7 +240,7 @@ def select_by_rois(streamlines, rois, include, mode=None, affine=None,
         tol = dtc
     elif tol < dtc:
         w_s = "Tolerance input provided would create gaps in your"
-        w_s += " inclusion ROI. Setting to: %s" % dist_to_corner
+        w_s += " inclusion ROI. Setting to: %s" % dtc
         warn(w_s)
         tol = dtc
     include_roi, exclude_roi = ut.reduce_rois(rois, include)

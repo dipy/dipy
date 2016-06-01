@@ -6,6 +6,8 @@ import numpy as np
 
 import random
 
+import warnings
+
 from dipy.core.geometry import (sphere2cart, cart2sphere,
                                 nearest_pos_semi_def,
                                 sphere_distance,
@@ -69,10 +71,14 @@ def test_sphere_cart():
     xyz = sphere2cart(r, theta, phi)
     yield assert_array_almost_equal, xyz, pt
 
-    # Test full circle on x=0, y=0, z=0
-    x, y, z = sphere2cart(*cart2sphere(0., 0., 0.))
-    yield assert_array_equal, (x, y, z), (0., 0., 0.)
+    ## np.arccos(z / r) will produce NaN in the result. Hence,
+    ## the raised warning in being catched.
 
+    # Test full circle on x=0, y=0, z=0
+    with warnings.catch_warnings(record=True) as w:
+        x, y, z = sphere2cart(*cart2sphere(0., 0., 0.))
+        assert_equal(len(w) > 0, True)
+    yield assert_array_equal, (x, y, z), (0., 0., 0.)
 
 def test_invert_transform():
     n = 100.

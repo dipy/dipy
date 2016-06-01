@@ -707,7 +707,7 @@ def test_select_by_rois():
 
     # Setting tolerance too low gets overridden:
     selection = select_by_rois(streamlines, [mask1, mask2], [True, False],
-                               tol=0.1)
+                               tol=0.87)
     npt.assert_array_equal(list(selection), [streamlines[1]])
 
     selection = select_by_rois(streamlines, [mask1, mask2], [True, True],

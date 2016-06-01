@@ -95,7 +95,14 @@ def test_recursive_response_calibration():
     assert_equal(directions_single.shape[0], 1)
     assert_equal(directions_gt_single.shape[0], 1)
 
-    sphere = Sphere(xyz=gtab.gradients[where_dwi])
+    ## In the instantiation of Sphere object with current xyz, cart2sphere
+    ## function is called from the geometry module. The ``r`` in the result
+    ## is not close to 1, and hence the warnings raised.
+
+    with warnings.catch_warnings(record=True) as w:
+        sphere = Sphere(xyz=gtab.gradients[where_dwi])
+        assert_equal(len(w) > 0, True)
+
     sf = response.on_sphere(sphere)
     S = np.concatenate(([response.S0], sf))
 
@@ -206,9 +213,11 @@ def test_csdeconv():
                                   roi_radius=30, fa_thr=0.5,
                                   return_number_of_voxels=True)
     assert_equal(nvoxels, 1000)
-    _, _, nvoxels = auto_response(gtab, big_S, roi_center=(5, 5, 4),
-                                  roi_radius=30, fa_thr=1,
-                                  return_number_of_voxels=True)
+    with warnings.catch_warnings(record=True) as w:
+        _, _, nvoxels = auto_response(gtab, big_S, roi_center=(5, 5, 4),
+                                      roi_radius=30, fa_thr=1,
+                                      return_number_of_voxels=True)
+        assert_equal(len(w) > 0, True)
     assert_equal(nvoxels, 0)
 
 
@@ -260,7 +269,12 @@ def test_odfdeconv():
         ConstrainedSDTModel(gtab, ratio, sh_order=8)
         assert_equal(len(w) > 0, False)
 
-    csd_fit = csd.fit(np.zeros_like(S))
+    ## The csd.fit function raises a division by zero warnings by numpy at
+    ## Line # 314 in csdeconv.py
+
+    with warnings.catch_warnings(record=True) as w:
+        csd_fit = csd.fit(np.zeros_like(S))
+        assert_equal(len(w) > 0, True)
     fodf = csd_fit.odf(sphere)
     assert_array_equal(fodf, np.zeros_like(fodf))
 
