@@ -3,6 +3,7 @@ import numpy as np
 from dipy.direction.peaks import (PeaksAndMetrics,
                                   reshape_peaks_for_visualization)
 from dipy.io.image import save_nifti
+from dipy.core.sphere import HemiSphere, Sphere
 
 
 def load_peaks(fname, verbose=True):
@@ -17,7 +18,7 @@ def load_peaks(fname, verbose=True):
     pam.peak_values = pam_dix['peak_values']
     pam.peak_indices = pam_dix['peak_indices']
     pam.shm_coeff = pam_dix['shm_coeff']
-    pam.sphere = pam_dix['sphere']
+    pam.sphere = Sphere(xyz=pam_dix['sphere_vertices'])
     pam.B = pam_dix['B']
     pam.total_weight = pam_dix['total_weight']
     pam.ang_thr = pam_dix['ang_thr']
@@ -38,6 +39,9 @@ def load_peaks(fname, verbose=True):
         print(pam.total_weight)
         print('Angular threshold')
         print(pam.ang_thr)
+        print('Sphere vertices shape')
+        print(pam.sphere.vertices.shape)
+
 
     return pam
 
@@ -57,7 +61,7 @@ def save_peaks(fname, pam, compressed=True):
               peak_values=pam.peak_values,
               peak_indices=pam.peak_indices,
               shm_coeff=pam.shm_coeff,
-              sphere=pam.sphere,
+              sphere_vertices=pam.sphere.vertices,
               B=pam.B,
               total_weight=pam.total_weight,
               ang_thr=pam.ang_thr,
