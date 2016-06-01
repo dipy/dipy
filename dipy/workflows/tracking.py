@@ -20,6 +20,7 @@ from dipy.reconst.dti import fractional_anisotropy
 from dipy.data import default_sphere
 from dipy.direction import DeterministicMaximumDirectionGetter
 from dipy.workflows.multi_io import io_iterator_
+from ipdb import set_trace
 
 
 def det_track_flow(peaks_files, stopping_files, use_sh=False,
