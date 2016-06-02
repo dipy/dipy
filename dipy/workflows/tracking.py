@@ -60,7 +60,7 @@ def det_track_flow(peaks_files, stopping_files, seeding_files,
         classifier = ThresholdTissueClassifier(stop,
                                                stopping_thr)
         # seed_mask = stop > .2
-        seed_mask, _ = load_nifti(stopping_path)
+        seed_mask, _ = load_nifti(seeding_path)
         seeds = utils.seeds_from_mask(
             seed_mask,
             density=[seed_density, seed_density, seed_density],
