@@ -97,8 +97,7 @@ def EuDX_tracking_flow(peaks_values, peaks_indexes, out_dir='',
     out_tractogram : string, optional
         Name of the tractogram file to be saved (default 'tractogram.trk')
     """
-    io_it = io_iterator_(inspect.currentframe(), EuDX_tracking_flow,
-                         input_structure=False)
+    io_it = io_iterator_(inspect.currentframe(), EuDX_tracking_flow)
 
     for peaks_values_path, peaks_idx_path, out_tract in io_it:
         logging.info('EuDX tracking on {0}'.format(peaks_values_path))
@@ -151,8 +150,7 @@ def deterministic_tracking_flow(input_files, mask_files, bvalues, bvectors,
         Name of the tractogram file to be saved (default 'tractogram.trk')
     """
 
-    io_it = io_iterator_(inspect.currentframe(), deterministic_tracking_flow,
-                         input_structure=False)
+    io_it = io_iterator_(inspect.currentframe(), deterministic_tracking_flow)
 
     for dwi, mask, bval, bvec, out_tract in io_it:
 

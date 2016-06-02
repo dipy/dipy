@@ -32,8 +32,7 @@ def track_density_flow(tractograms, ref_files, up_factor=1.0, out_dir='',
         Tract density file name (default 'tdi.nii.gz')
     """
 
-    io_it = io_iterator_(inspect.currentframe(), track_density_flow,
-                         input_structure=False)
+    io_it = io_iterator_(inspect.currentframe(), track_density_flow)
 
     for tract_file, ref_file, tdi_out in io_it:
         logging.info('Computing track density for {0}'.format(tract_file))
