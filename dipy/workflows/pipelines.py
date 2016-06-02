@@ -20,7 +20,7 @@ def simple_pipeline_flow(input_files, bvalues, bvectors, resume=False,
         -Denoising
         -Masking
         -DTI reconstruction
-        -HARDI recontructio
+        -HARDI recontruction
         -Deterministic tracking
         -Tracts metrics
 
