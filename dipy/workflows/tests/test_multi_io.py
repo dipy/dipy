@@ -9,6 +9,24 @@ from nibabel.tmpdirs import TemporaryDirectory
 def test_output_generator():
 
     with TemporaryDirectory() as tmpdir:
+        og = IOIterator(output_strategy='append', mix_names=True)
+        og.set_inputs('/home/matth/sda3/data/subj*/dwi.nii.gz', '/home/matth/sda3/data/subj*/*bval',
+                      '/home/matth/sda3/data/subj*/*bvec',
+                      '/home/matth/sda3/data/atlas/downsampling_atlas/rat_b0_atlas.nii.gz')
+
+        og.set_out_dir('work')
+        og.set_out_fnames('out1.nii.gz', 'stats.csv')
+        og.create_outputs()
+
+        for inp1, inp2, inp3, inp4, out1, out2 in og:
+            print(inp1)
+            print(inp2)
+            print(inp3)
+            print(inp4)
+            print(out1)
+            print(out2)
+
+        return
 
         d1 = path.join(tmpdir, 'data', 's1')
         d2 = path.join(tmpdir, 'data', 's2')
