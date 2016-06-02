@@ -4,30 +4,46 @@ from __future__ import division, print_function, absolute_import
 import warnings
 import functools
 import numpy as np
-from scipy.optimize import curve_fit
+from scipy.optimize import minimize, leastsq
 
 from dipy.core.gradients import gradient_table
 from dipy.reconst.base import ReconstModel
 from dipy.reconst.dti import _min_positive_signal
 
 
-def ivim_function(bvals, S0, f, D_star, D):
+def ivim_function(params, bvals):
+    """The ivim function
+    Parameters
+    ----------
+    params : array
+             The IVIM parameters [S0, f, D_star, D]
+
+    bvals  : array
+             bvalues
+    """
+    S0, f, D_star, D = params
     S = S0 * (f * np.exp(-bvals * D_star) + (1 - f) * np.exp(-bvals * D))
     return S
+
+
+def _ivim_error(params, bvals, signal):
+    """Error function to be used in fitting the model
+    """
+    return signal - ivim_function(params, bvals)
 
 
 class IvimModel(ReconstModel):
     """Ivim model
     """
 
-    def __init__(self, gtab, fit_method="NLLS", *args, **kwargs):
+    def __init__(self, gtab, split_b=200.0, min_signal=None):
         """
         An IVIM model
 
         Parameters
         ----------
         gtab : GradientTable class instance
-        fit_method : Non linear least squares
+        split_b : split the data at this b-value for a two stage fit
 
         References
         ----------
@@ -40,22 +56,13 @@ class IvimModel(ReconstModel):
         """
         ReconstModel.__init__(self, gtab)
 
-        if not callable(fit_method):
-            try:
-                fit_method = common_fit_methods[fit_method]
-            except KeyError:
-                e_s = '"' + str(fit_method) + '" is not a known method '
-                raise ValueError(e_s)
-        self.fit_method = fit_method  # Add more fit methods (check dti)
-        self.args = args
-        self.kwargs = kwargs
-        self.min_signal = self.kwargs.pop('min_signal', None)
+        self.min_signal = min_signal
         if self.min_signal is not None and self.min_signal <= 0:
             e_s = "The `min_signal` key-word argument needs to be strictly"
             e_s += " positive."
             raise ValueError(e_s)
 
-    def fit(self, data, mask=None, **kwargs):
+    def fit(self, data, mask=None, x0=None, fit_method="one_stage"):
         """ Fit method of the Ivim model class
 
         Parameters
@@ -65,9 +72,10 @@ class IvimModel(ReconstModel):
         mask : array
             A boolean array used to mark the coordinates in the data that
             should be analyzed that has the shape data.shape[:-1]
-        guess_params : array
+        x0 : array
             Initial guesses for the parameters S0, f, D_star and D
-            Default guess_params = [1.0, 0.10, 0.001, 0.0009]
+            Default x0 = [1.0, 0.10, 0.001, 0.0009]
+            These guess parameters are taken from the Federau paper
             Dimension can either be 1 or (N, 4) where N is the number of
             voxels in the data.
 
@@ -87,20 +95,25 @@ class IvimModel(ReconstModel):
         else:
             min_signal = self.min_signal
 
-        guess_params = kwargs.pop("guess_params", None)
         # Generate guess_parameters for all voxels
-        if guess_params is None:
-            guess_params = np.ones(
+        if x0 is None:
+            x0 = np.ones(
                 (data.shape[0], 4)) * [1.0, 0.10, 0.001, 0.0009]
         else:
-            if guess_params.shape != (data.shape[0], 4):
+            if x0.shape != (data.shape[0], 4):
                 raise ValueError(
                     "Guess params should be of shape (num_voxels,4)")
 
         data_in_mask = np.maximum(data_in_mask, min_signal)
 
-        # Lookup design matrix for vectorization ?
-        params_in_mask = self.fit_method(data_in_mask, self.gtab, guess_params)
+        if fit_method == "one_stage":
+            params_in_mask = one_stage(data_in_mask, self.gtab,
+                                           x0)
+        elif fit_method == "two_stage":
+            pass
+        else:
+            raise ValueError("""Fit method must be either
+                             'one_stage' or 'two_stage'""")
 
         if mask is None:
             out_shape = data.shape[:-1] + (-1, )
@@ -138,9 +151,9 @@ class IvimFit(object):
         return self.model_params.shape[:-1]
 
 
-def nlls_fit(data, gtab, guess_params):
+def one_stage(data, gtab, x0, jac=False, bounds=None):
     """
-    Fit the ivim params using non-linear least-squares.
+    Fit the ivim params using least-squares.
 
     Parameters
     ----------
@@ -153,7 +166,7 @@ def nlls_fit(data, gtab, guess_params):
 
     Returns
     -------
-    nlls_params: the S0, f, D_star, D value for each voxel.
+    ivim_params: the S0, f, D_star, D value for each voxel.
 
     """
     flat_data = data.reshape((-1, data.shape[-1]))
@@ -161,12 +174,10 @@ def nlls_fit(data, gtab, guess_params):
     bvals = gtab.bvals
     ivim_params = np.empty((flat_data.shape[0], 4))
     for vox in range(flat_data.shape[0]):
-        popt, pcov = curve_fit(ivim_function, bvals, flat_data[vox],
-                               guess_params[vox])
-        ivim_params[vox, :4] = popt
+        res = leastsq(_ivim_error,
+                      x0[vox],
+                      args=(bvals, flat_data[vox]))
+        ivim_params[vox, :4] = res[0]
 
     ivim_params.shape = data.shape[:-1] + (4,)
     return ivim_params
-
-
-common_fit_methods = {'NLLS': nlls_fit}

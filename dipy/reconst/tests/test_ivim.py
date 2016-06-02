@@ -32,12 +32,7 @@ def test_nlls_fit():
     ivim_model = IvimModel(gtab)
     ivim_fit = ivim_model.fit(data)
 
-    S0_est, f_est, D_star_est, D_est = ivim_fit.model_params
-    est_signal = ivim_function(bvals,
-                               S0_est,
-                               f_est,
-                               D_star_est,
-                               D_est)
+    est_signal = ivim_function(ivim_fit.model_params, bvals)
 
     assert_array_equal(est_signal.shape, data.shape)
     assert_array_almost_equal(est_signal, data)
