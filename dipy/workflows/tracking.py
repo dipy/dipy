@@ -23,7 +23,7 @@ from dipy.workflows.multi_io import io_iterator_
 from ipdb import set_trace
 
 
-def det_track_flow(peaks_files, stopping_files, use_sh=False,
+def det_track_flow(peaks_files, stopping_files, seed_density=1, use_sh=False,
                    out_dir='', out_tractogram='tractogram.trk'):
 
     """ Workflow for deterministic tracking
@@ -35,6 +35,8 @@ def det_track_flow(peaks_files, stopping_files, use_sh=False,
        multiple masks at once.
     stopping_files : string
         Path of FA or other images used for stopping criteria for tracking.
+    seed_density : int
+        Number of seeds per dimension inside voxel. Default is 1.
     use_sh : bool
         Use spherical harmonics saved in peask to find the maximum peak cone.
     out_dir : string, optional
@@ -42,8 +44,8 @@ def det_track_flow(peaks_files, stopping_files, use_sh=False,
     out_tractogram : string, optional
        Name of the tractogram file to be saved (default 'tractogram.trk')
     """
-    io_it = io_iterator_(inspect.currentframe(), EuDX_tracking_flow,
-                         input_structure=False)
+    io_it = io_iterator_(inspect.currentframe(), det_track_flow,
+                         output_strategy='append')
 
     for peaks_path, stopping_path, out_tract in io_it:
         logging.info('Deterministic tracking on {0}'.format(peaks_path))
@@ -52,7 +54,8 @@ def det_track_flow(peaks_files, stopping_files, use_sh=False,
         classifier = ThresholdTissueClassifier(stop, .25)
         seed_mask = stop > .2
         seeds = utils.seeds_from_mask(
-                seed_mask, density=[2, 2, 2], affine=affine)
+            seed_mask,
+            density=[seed_density, seed_density, seed_density], affine=affine)
 
         if use_sh:
             detmax_dg = \

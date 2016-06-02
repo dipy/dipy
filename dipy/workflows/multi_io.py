@@ -95,7 +95,8 @@ def basename(fname):
     return base
 
 
-def io_iterator(inputs, out_dir, fnames, output_strategy='append', mix_names=True):
+def io_iterator(inputs, out_dir, fnames, output_strategy='append',
+                mix_names=False):
     io_it = IOIterator(output_strategy=output_strategy, mix_names=mix_names)
     io_it.set_inputs(*inputs)
     io_it.set_out_dir(out_dir)
@@ -105,7 +106,7 @@ def io_iterator(inputs, out_dir, fnames, output_strategy='append', mix_names=Tru
     return io_it
 
 
-def io_iterator_(frame, fnc, output_strategy='append', mix_names=True):
+def io_iterator_(frame, fnc, output_strategy='append', mix_names=False):
     args, _, _, values = inspect.getargvalues(frame)
     specs = inspect.getargspec(fnc)
     spargs = specs.args
@@ -140,7 +141,7 @@ class IOIterator(object):
     inputs.
     """
 
-    def __init__(self, output_strategy='append', mix_names=True):
+    def __init__(self, output_strategy='append', mix_names=False):
         self.output_strategy = output_strategy
         self.mix_names = mix_names
 
