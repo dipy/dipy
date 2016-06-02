@@ -4,7 +4,7 @@ from __future__ import division, print_function, absolute_import
 import warnings
 import functools
 import numpy as np
-from scipy.optimize import minimize, leastsq
+from scipy.optimize import leastsq
 
 from dipy.core.gradients import gradient_table
 from dipy.reconst.base import ReconstModel

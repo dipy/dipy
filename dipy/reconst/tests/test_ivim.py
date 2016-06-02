@@ -10,9 +10,9 @@ from dipy.sims.voxel import multi_tensor
 from dipy.core.sphere import disperse_charges, HemiSphere
 
 
-def test_nlls_fit():
+def test_fit():
     """
-    Test the implementation of NLLS
+    Test the implementation of the fitting
     """
     bvals = np.array([0., 10., 20., 30., 40., 60., 80., 100.,
                       120., 140., 160., 180., 200., 220., 240.,
