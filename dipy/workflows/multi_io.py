@@ -4,6 +4,7 @@ from glob import glob
 import os.path as path
 import inspect
 
+
 def common_start(sa, sb):
     """ Returns the longest common substring from the beginning of sa and sb """
     def _iter():
@@ -17,10 +18,10 @@ def common_start(sa, sb):
 
 
 def slash_to_under(dir_str):
-    return ''.join(dir_str.replace(os.pathsep, '_'))
+    return ''.join(dir_str.replace('/', '_'))
 
 
-def connect_output_paths(inputs, out_dir, out_files, input_structure=True):
+def connect_output_paths(inputs, out_dir, out_files, output_strategy='append'):
 
     outputs = []
     if isinstance(inputs, basestring):
@@ -36,8 +37,8 @@ def connect_output_paths(inputs, out_dir, out_files, input_structure=True):
             mixing_names = concatenate_inputs(inputs)
 
             for (mix_inp, inp) in zip(mixing_names, inputs[0]):
-                if input_structure:
-                    inp = os.path.splitdrive(inp)[1]
+                if output_strategy == 'prepend':
+                    #inp = os.path.splitdrive(inp)[1]
                     if path.isabs(out_dir):
                         dname = out_dir + path.dirname(inp)
                     if not path.isabs(out_dir):
@@ -47,8 +48,8 @@ def connect_output_paths(inputs, out_dir, out_files, input_structure=True):
                     dname = out_dir
                 updated_out_files = []
                 for out_file in out_files:
-                    if input_structure:
-                        inp = os.path.splitdrive(inp)[1]
+                    if output_strategy == 'prepend':
+                        #inp = os.path.splitdrive(inp)[1]
                         updated_out_files.append(
                             path.join(dname, mix_inp + '_' + out_file))
                     else:
@@ -72,8 +73,8 @@ def connect_output_paths(inputs, out_dir, out_files, input_structure=True):
 
             for (mix_inp, inp) in zip(mixing_names, inputs[0]):
 
-                if input_structure:
-                    inp = os.path.splitdrive(inp)[1]
+                if output_strategy == 'prepend':
+                    #inp = os.path.splitdrive(inp)[1]
                     if not path.isabs(out_dir):
                         dname = path.join(
                             os.getcwd(), out_dir + path.dirname(inp))
@@ -83,8 +84,8 @@ def connect_output_paths(inputs, out_dir, out_files, input_structure=True):
                     dname = out_dir
                 updated_out_files = []
                 for out_file in out_files:
-                    if input_structure:
-                        inp = os.path.splitdrive(inp)[1]
+                    if output_strategy == 'prepend':
+                        #inp = os.path.splitdrive(inp)[1]
                         updated_out_files.append(
                             path.join(dname, mix_inp + '_' + out_file))
                     else:
@@ -98,8 +99,8 @@ def connect_output_paths(inputs, out_dir, out_files, input_structure=True):
 
         for inp in inputs[0]:
 
-            if input_structure:
-                inp = os.path.splitdrive(inp)[1]
+            if output_strategy == 'prepend':
+                #inp = os.path.splitdrive(inp)[1]
                 if path.isabs(out_dir):
                     dname = out_dir + path.dirname(inp)
                 if not path.isabs(out_dir):
@@ -112,8 +113,8 @@ def connect_output_paths(inputs, out_dir, out_files, input_structure=True):
             base = basename(inp)
             new_out_files = []
             for out_file in out_files:
-                if input_structure:
-                    inp = os.path.splitdrive(inp)[1]
+                if output_strategy == 'prepend':
+                    #inp = os.path.splitdrive(inp)[1]
                     new_out_files.append(
                         path.join(dname, base + '_' + out_file))
                 else:
@@ -146,7 +147,8 @@ def basename(fname):
     if ext == '.gz':
         ext = path.splitext(path.basename(base))[1]
         if ext == '.nii':
-            base = path.splitext(path.basename(base))[0]
+            base = path.splitext(path.basename(fname))[0]
+            #base = path.splitext(path.basename(base))[0]
     return base
 
 def io_iterator(inputs, out_dir, fnames, input_structure=True):
@@ -192,8 +194,9 @@ class IOIterator(object):
     inputs.
     """
 
-    def __init__(self, input_structure=True):
-        self.input_structure = input_structure
+    def __init__(self, output_strategy='append'):
+        self.output_strategy = output_strategy
+        #self.input_structure = input_structure
 
     def set_inputs(self, *args):
         self.input_args = list(args)
@@ -210,7 +213,7 @@ class IOIterator(object):
             self.updated_inputs, self.outputs = connect_output_paths(
                 self.inputs,
                 self.out_dir,
-                self.out_fnames, self.input_structure)
+                self.out_fnames, self.output_strategy)
         else:
             raise ImportError('No inputs')
 
