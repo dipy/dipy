@@ -51,7 +51,7 @@ def median_otsu_flow(input_files, save_masked=False,
         Name of the masked volume to be saved (default 'dwi_masked.nii.gz')
     """
     io_it = io_iterator_(inspect.currentframe(), median_otsu_flow,
-                         input_structure=False)
+                         input_structure=True)
 
     for fpath, mask_out_path, masked_out_path in io_it:
         logging.info('Applying median_otsu segmentation on {0}'.format(fpath))
