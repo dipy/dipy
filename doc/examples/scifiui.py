@@ -1,10 +1,11 @@
 import numpy as np
 
-# Conditional import machinery for vtk.
 from dipy.data import read_viz_icons
+
+# Conditional import machinery for vtk.
 from dipy.utils.optpkg import optional_package
 
-from dipy.viz import actor, window
+from dipy.viz import actor, window, gui
 from ipdb import set_trace
 
 # Allow import, but disable doctests if we don't have vtk.
@@ -18,7 +19,6 @@ else:
     vtkInteractorStyleUser = object
 
 numpy_support, have_ns, _ = optional_package('vtk.util.numpy_support')
-
 
 class CustomInteractorStyle(vtkInteractorStyleUser):
     """ Interactive manipulation of the camera that can also manipulates
@@ -100,6 +100,18 @@ class CustomInteractorStyle(vtkInteractorStyleUser):
     def on_mouse_wheel_backward(self, obj, evt):
         self.trackball_interactor_style.OnMouseWheelBackward()
 
+    def on_key_press(self, obj, evt):
+        # actor = picker.GetActor2D()
+        actor_2d = self.picker.GetViewProp()
+        if actor_2d is not None:
+            actor_2d.InvokeEvent(evt)
+        else:
+            actor_3d = self.picker.GetProp3D()
+            if actor_3d is not None:
+                actor_3d.InvokeEvent(evt)
+            else:
+                pass
+
     def SetInteractor(self, interactor):
         # Internally these `InteractorStyle` objects need an handle to a
         # `vtkWindowInteractor` object and this is done via `SetInteractor`.
@@ -128,110 +140,12 @@ class CustomInteractorStyle(vtkInteractorStyleUser):
         self.AddObserver("MiddleButtonPressEvent", self.on_middle_button_pressed)
         self.AddObserver("MiddleButtonReleaseEvent", self.on_middle_button_released)
         self.AddObserver("MouseMoveEvent", self.on_mouse_moved)
+        self.AddObserver("KeyPressEvent", self.on_key_press)
 
         # These observers need to be added directly to the interactor because
         # `vtkInteractorStyleUser` does not forward these events.
         interactor.AddObserver("MouseWheelForwardEvent", self.on_mouse_wheel_forward)
         interactor.AddObserver("MouseWheelBackwardEvent", self.on_mouse_wheel_backward)
-
-
-class Button(object):
-    """ Currently implements a 2D overlay button and is of type vtkTexturedActor2D. 
-
-    """
-
-    def __init__(self, icon_fnames):
-        self.icons = self.build_icons(icon_fnames)
-        self.icon_names = list(self.icons.keys())
-        self.current_icon_id = 0
-        self.current_icon_name = self.icon_names[self.current_icon_id]
-        self.actor = self.build_actor(self.icons[self.current_icon_name])
-
-    def build_icons(self, icon_fnames):
-        """ Converts filenames to vtkImageDataGeometryFilters
-        A peprocessing step to prevent re-read of filenames during every state change
-
-        Parameters
-        ----------
-        icon_fnames : A list of filenames
-
-        Returns
-        -------
-        icons : A list of corresponding vtkImageDataGeometryFilters
-        """
-        icons = {}
-        for icon_name, icon_fname in icon_fnames.items():
-            png = vtk.vtkPNGReader()
-            png.SetFileName(icon_fname)
-            png.Update()
-
-            # Convert the image to a polydata
-            imageDataGeometryFilter = vtk.vtkImageDataGeometryFilter()
-            imageDataGeometryFilter.SetInputConnection(png.GetOutputPort())
-            imageDataGeometryFilter.Update()
-
-            icons[icon_name] = imageDataGeometryFilter
-
-        return icons
-
-    def build_actor(self, icon, position=(0, 0), center=None):
-        """ Return an image as a 2D actor with a specific position
-
-        Parameters
-        ----------
-        icon : imageDataGeometryFilter
-        position : a two tuple
-        center : a two tuple 
-
-        Returns
-        -------
-        button : vtkTexturedActor2D
-        """
-        
-        mapper = vtk.vtkPolyDataMapper2D()
-        mapper.SetInputConnection(icon.GetOutputPort())
-
-        button = vtk.vtkTexturedActor2D()
-        button.SetMapper(mapper)
-
-        if center is not None:
-            button.SetCenter(*center)
-        button.SetPosition(position[0], position[1])
-
-        return button
-
-    def add_callback(self, event_type, callback):
-        """ Adds events to button actor
-
-        Parameters
-        ----------
-        event_type: event code
-        callback: callback function
-        """
-        self.actor.AddObserver(event_type, callback)
-
-    def set_icon(self, icon):
-        """ Modifies the icon used by the vtkTexturedActor2D
-
-        Parameters
-        ----------
-        icon : imageDataGeometryFilter
-        """
-        self.actor.GetMapper().SetInputConnection(icon.GetOutputPort())
-
-    def next_icon_name(self):
-        self.current_icon_id += 1
-        if self.current_icon_id == len(self.icons):
-            self.current_icon_id = 0
-        self.current_icon_name = self.icon_names[self.current_icon_id]
-
-    def next_icon(self):
-        """ Increments the state of the Button
-            Also changes the icon
-        """
-        self.next_icon_name()
-        self.set_icon(self.icons[self.current_icon_name])
-    
 
 def cube(color=None, size=(0.2, 0.2, 0.2), center=None):
     cube = vtk.vtkCubeSource()
@@ -252,15 +166,13 @@ def cube(color=None, size=(0.2, 0.2, 0.2), center=None):
 cube_actor_1 = cube((1, 0, 0), (50, 50, 50), center=(0, 0, 0))
 cube_actor_2 = cube((0, 1, 0), (10, 10, 10), center=(100, 0, 0))
 
-
 icon_files = {}
 icon_files['stop'] = read_viz_icons(fname='stop2.png')
 icon_files['play'] = read_viz_icons(fname='play3.png')
 icon_files['plus'] = read_viz_icons(fname='plus.png')
 icon_files['cross'] = read_viz_icons(fname='cross.png')
 
-
-button = Button(icon_fnames=icon_files)
+button = gui.Button(icon_fnames=icon_files)
 
 def move_button_callback(*args, **kwargs):
     pos_1 = np.array(cube_actor_1.GetPosition())
@@ -277,11 +189,20 @@ button.add_callback("RightButtonPressEvent", move_button_callback)
 button.add_callback("LeftButtonPressEvent", modify_button_callback)
 
 
+text = gui.TextBox(text="Some Text")
+
+def key_press_callback(*args, **kwargs):
+    # key = obj.GetKeySym()
+    # print(key)
+
+text.add_callback("KeyPressEvent", key_press_callback)
+
 renderer = window.ren()
 iren_style = CustomInteractorStyle(renderer=renderer)
 renderer.add(button.actor)
 renderer.add(cube_actor_1)
 renderer.add(cube_actor_2)
+renderer.add(text.actor)
 
 # set_trace()
 
