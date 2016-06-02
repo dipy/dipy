@@ -167,8 +167,9 @@ class TextActor(vtk.vtkTextActor):
 
 class TextBox(object):
 
-    def __init__(self, text):
-        self.actor = self.build_actor(text)
+    def __init__(self, text=""):
+        self.text = text
+        self.actor = self.build_actor(self.text)
 
     def build_actor(self, text, position=(100, 0), color=(1, 1, 1),
                  font_size=12, font_family='Arial', justification='left',
@@ -194,3 +195,11 @@ class TextBox(object):
         callback: callback function
         """
         self.actor.AddObserver(event_type, callback)
+
+    def add_character(self, character):
+        self.text += character
+        self.actor.message(self.text)
+
+    def remove_character(self):
+        self.text = self.text[:-1]
+        self.actor.message(self.text)
