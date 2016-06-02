@@ -151,8 +151,8 @@ def basename(fname):
             #base = path.splitext(path.basename(base))[0]
     return base
 
-def io_iterator(inputs, out_dir, fnames, input_structure=True):
-    io_it = IOIterator(input_structure=input_structure)
+def io_iterator(inputs, out_dir, fnames, output_strategy='append'):
+    io_it = IOIterator(output_strategy=output_strategy)
     io_it.set_inputs(*inputs)
     io_it.set_out_dir(out_dir)
     io_it.set_out_fnames(*fnames)
@@ -160,7 +160,8 @@ def io_iterator(inputs, out_dir, fnames, input_structure=True):
 
     return io_it
 
-def io_iterator_(frame, fnc, input_structure=True):
+
+def io_iterator_(frame, fnc, output_strategy='append'):
     args, _, _, values = inspect.getargvalues(frame)
     specs = inspect.getargspec(fnc)
     spargs = specs.args
@@ -185,7 +186,7 @@ def io_iterator_(frame, fnc, input_structure=True):
         elif 'out_' in arv:
             outputs.append(values[arv])
 
-    return io_iterator(inputs, out_dir, outputs, input_structure)
+    return io_iterator(inputs, out_dir, outputs, output_strategy)
 
 class IOIterator(object):
     """ Create output filenames that work nicely with muiltiple input files from multiple directories (processing multiple subjects with one command)
@@ -214,8 +215,18 @@ class IOIterator(object):
                 self.inputs,
                 self.out_dir,
                 self.out_fnames, self.output_strategy)
+
+            self.create_directories()
+
         else:
             raise ImportError('No inputs')
+
+    def create_directories(self):
+        for outputs in self.outputs:
+            for output in outputs:
+                directory = path.dirname(output)
+                if not os.path.exists(directory):
+                    os.makedirs(directory)
 
     def __iter__(self):
         I = np.array(self.inputs).T
