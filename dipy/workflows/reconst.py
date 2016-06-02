@@ -178,8 +178,7 @@ def reconst_csd_flow(input_files, bvalues, bvectors, mask_files,
     out_peaks : string, optional
         Name of the peaks volume to be saved (default 'peaks.npz')
     """
-    io_it = io_iterator_(inspect.currentframe(), reconst_csd_flow,
-                         input_structure=False)
+    io_it = io_iterator_(inspect.currentframe(), reconst_csd_flow)
 
     for dwi, bval, bvec, maskfile, \
             opeaks in io_it:

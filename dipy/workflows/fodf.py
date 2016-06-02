@@ -52,8 +52,7 @@ def fodf_flow(input_files, bvalues, bvectors, mask_files, b0_threshold=0.0,
     out_peaks_indices : string, optional
         Name of the peaks_indices volume to be saved (default 'peaks_indices.nii.gz')
     """
-    io_it = io_iterator_(inspect.currentframe(), fodf_flow,
-                         input_structure=False)
+    io_it = io_iterator_(inspect.currentframe(), fodf_flow)
 
     for dwi, bval, bvec, maskfile, ofodf, opeaks, opeaks_values, opeaks_idx in io_it:
 
