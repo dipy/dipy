@@ -31,8 +31,7 @@ def nlmeans_flow(input_files, sigma=0, out_dir='',
     out_denoised : string, optional
         Name of the resuting denoised volume (default: dwi_nlmeans.nii.gz)
     """
-    io_it = io_iterator_(inspect.currentframe(), nlmeans_flow,
-                         input_structure=False)
+    io_it = io_iterator_(inspect.currentframe(), nlmeans_flow)
 
     for fpath, odenoised in io_it:
         logging.info('Denoising {0}'.format(fpath))
