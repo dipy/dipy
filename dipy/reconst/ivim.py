@@ -4,7 +4,7 @@ from __future__ import division, print_function, absolute_import
 import warnings
 import functools
 import numpy as np
-from scipy.optimize import leastsq
+from scipy.optimize import minimize
 
 from dipy.core.gradients import gradient_table
 from dipy.reconst.base import ReconstModel
@@ -29,7 +29,7 @@ def ivim_function(params, bvals):
 def _ivim_error(params, bvals, signal):
     """Error function to be used in fitting the model
     """
-    return signal - ivim_function(params, bvals)
+    return np.linalg.norm(signal - ivim_function(params, bvals))
 
 
 class IvimModel(ReconstModel):
@@ -108,7 +108,7 @@ class IvimModel(ReconstModel):
 
         if fit_method == "one_stage":
             params_in_mask = one_stage(data_in_mask, self.gtab,
-                                           x0)
+                                       x0)
         elif fit_method == "two_stage":
             pass
         else:
@@ -153,7 +153,7 @@ class IvimFit(object):
 
 def one_stage(data, gtab, x0, jac=False, bounds=None):
     """
-    Fit the ivim params using least-squares.
+    Fit the ivim params using minimize
 
     Parameters
     ----------
@@ -174,10 +174,9 @@ def one_stage(data, gtab, x0, jac=False, bounds=None):
     bvals = gtab.bvals
     ivim_params = np.empty((flat_data.shape[0], 4))
     for vox in range(flat_data.shape[0]):
-        res = leastsq(_ivim_error,
-                      x0[vox],
-                      args=(bvals, flat_data[vox]))
-        ivim_params[vox, :4] = res[0]
-
+        res = minimize(_ivim_error,
+                       x0[vox],
+                       args=(bvals, flat_data[vox]))
+        ivim_params[vox, :4] = res.x
     ivim_params.shape = data.shape[:-1] + (4,)
     return ivim_params
