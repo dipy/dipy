@@ -22,11 +22,18 @@ from dipy.reconst.csdeconv import (ConstrainedSphericalDeconvModel,
 from dipy.workflows.multi_io import io_iterator_
 
 
-def dti_metrics_flow(input_files, bvalues, bvectors, mask_files,
-                     b0_threshold=0.0, out_dir='', out_tensor='tensors.nii.gz',
-                     out_fa='fa.nii.gz', out_ga='ga.nii.gz', out_rgb='rgb.nii.gz',
-                     out_md='md.nii.gz', out_ad='ad.nii.gz', out_rd='rd.nii.gz',
-                     out_mode='mode.nii.gz', out_evec='evecs.nii.gz', out_eval='evals.nii.gz'):
+def reconst_dti_flow(input_files, bvalues, bvectors, mask_files,
+                     b0_threshold=0.0, out_dir='',
+                     out_tensor='tensors.nii.gz',
+                     out_fa='fa.nii.gz',
+                     out_ga='ga.nii.gz',
+                     out_rgb='rgb.nii.gz',
+                     out_md='md.nii.gz',
+                     out_ad='ad.nii.gz',
+                     out_rd='rd.nii.gz',
+                     out_mode='mode.nii.gz',
+                     out_evec='evecs.nii.gz',
+                     out_eval='evals.nii.gz'):
 
     """ Workflow for tensor reconstruction and DTI metrics computing.
     It a tensor recontruction on the files by 'globing' ``input_files`` and
