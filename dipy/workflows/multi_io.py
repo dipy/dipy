@@ -21,8 +21,7 @@ def slash_to_under(dir_str):
     return ''.join(dir_str.replace('/', '_'))
 
 
-def connect_output_paths(inputs, out_dir, out_files, output_strategy='append'):
-
+def connect_output_paths(inputs, out_dir, out_files, output_strategy='append', mix_names=True):
     outputs = []
     if isinstance(inputs, basestring):
         inputs = [inputs]
@@ -31,96 +30,42 @@ def connect_output_paths(inputs, out_dir, out_files, output_strategy='append'):
 
     sizes_of_inputs = [len(inp) for inp in inputs]
 
-    if len(inputs) > 1:
+    max_size = np.max(sizes_of_inputs)
+    min_size = np.min(sizes_of_inputs)
+    if min_size > 1 and min_size != max_size:
+        raise ImportError('Size of input issue')
 
-        if np.sum(np.diff(sizes_of_inputs)) == 0:
-            mixing_names = concatenate_inputs(inputs)
+    elif min_size == 1:
+        for i, sz in enumerate(sizes_of_inputs):
+            if sz == min_size:
+                inputs[i] = max_size * inputs[i]
 
-            for (mix_inp, inp) in zip(mixing_names, inputs[0]):
-                if output_strategy == 'prepend':
-                    #inp = os.path.splitdrive(inp)[1]
-                    if path.isabs(out_dir):
-                        dname = out_dir + path.dirname(inp)
-                    if not path.isabs(out_dir):
-                        dname = path.join(
-                            os.getcwd(), out_dir + path.dirname(inp))
-                else:
-                    dname = out_dir
-                updated_out_files = []
-                for out_file in out_files:
-                    if output_strategy == 'prepend':
-                        #inp = os.path.splitdrive(inp)[1]
-                        updated_out_files.append(
-                            path.join(dname, mix_inp + '_' + out_file))
-                    else:
-                        updated_out_files.append(
-                            path.join(
-                                dname,
-                                slash_to_under(path.dirname(inp) + '__' + mix_inp) + '_' + out_file))
-                outputs.append(updated_out_files)
+    if mix_names:
 
-        else:
-            max_size = np.max(sizes_of_inputs)
-            min_size = np.min(sizes_of_inputs)
-            if min_size > 1 and min_size != max_size:
-                raise ImportError('Size of input issue')
-            elif min_size == 1:
-                for i, sz in enumerate(sizes_of_inputs):
-                    if sz == min_size:
-                        inputs[i] = max_size * inputs[i]
+        mixing_prefixes = concatenate_inputs(inputs)
+    else:
+        mixing_prefixes = [''] * len(inputs[0])
 
-            mixing_names = concatenate_inputs(inputs)
+    for (mix_pref, inp) in zip(mixing_prefixes, inputs[0]):
+        inp_dirname = path.dirname(inp)
+        if output_strategy == 'prepend':
+            if path.isabs(out_dir):
+                dname = out_dir + inp_dirname
+            if not path.isabs(out_dir):
+                dname = path.join(
+                    os.getcwd(), out_dir + inp_dirname)
 
-            for (mix_inp, inp) in zip(mixing_names, inputs[0]):
+        elif output_strategy == 'append':
+            dname = path.join(inp_dirname, out_dir)
 
-                if output_strategy == 'prepend':
-                    #inp = os.path.splitdrive(inp)[1]
-                    if not path.isabs(out_dir):
-                        dname = path.join(
-                            os.getcwd(), out_dir + path.dirname(inp))
-                    if path.isabs(out_dir):
-                        dname = out_dir + path.dirname(inp)
-                else:
-                    dname = out_dir
-                updated_out_files = []
-                for out_file in out_files:
-                    if output_strategy == 'prepend':
-                        #inp = os.path.splitdrive(inp)[1]
-                        updated_out_files.append(
-                            path.join(dname, mix_inp + '_' + out_file))
-                    else:
-                        updated_out_files.append(
-                            path.join(
-                                dname,
-                                slash_to_under(path.dirname(inp) + '__' + mix_inp) + '_' + out_file))
-                outputs.append(updated_out_files)
+        else: #absolute
+            dname = out_dir
 
-    elif len(inputs) == 1:
+        updated_out_files = []
+        for out_file in out_files:
+            updated_out_files.append(path.join(dname, mix_pref + out_file))
 
-        for inp in inputs[0]:
-
-            if output_strategy == 'prepend':
-                #inp = os.path.splitdrive(inp)[1]
-                if path.isabs(out_dir):
-                    dname = out_dir + path.dirname(inp)
-                if not path.isabs(out_dir):
-                    dname = path.join(
-                        os.getcwd(), out_dir + path.dirname(inp))
-            else:
-                dname = out_dir
-
-            # base = path.splitext(path.basename(inp))[0]
-            base = basename(inp)
-            new_out_files = []
-            for out_file in out_files:
-                if output_strategy == 'prepend':
-                    #inp = os.path.splitdrive(inp)[1]
-                    new_out_files.append(
-                        path.join(dname, base + '_' + out_file))
-                else:
-                    new_out_files.append(
-                        path.join(out_dir, out_file))
-            outputs.append(new_out_files)
+        outputs.append(updated_out_files)
 
     return inputs, outputs
 
@@ -133,11 +78,9 @@ def concatenate_inputs(multi_inputs):
     for inps in zip(*multi_inputs):
         mixing_name = ''
         for i, inp in enumerate(inps):
-            # mixing_name += path.splitext(path.basename(inp))[0]
-            mixing_name += basename(inp)
-            if i < len(inps) - 1:
-                mixing_name += '_'
-        mixing_names.append(mixing_name)
+            mixing_name += basename(inp) + '_'
+
+        mixing_names.append(mixing_name + '_')
     return mixing_names
 
 
@@ -148,11 +91,12 @@ def basename(fname):
         ext = path.splitext(path.basename(base))[1]
         if ext == '.nii':
             base = path.splitext(path.basename(fname))[0]
-            #base = path.splitext(path.basename(base))[0]
+            base = path.splitext(path.basename(base))[0]
     return base
 
-def io_iterator(inputs, out_dir, fnames, output_strategy='append'):
-    io_it = IOIterator(output_strategy=output_strategy)
+
+def io_iterator(inputs, out_dir, fnames, output_strategy='append', mix_names=True):
+    io_it = IOIterator(output_strategy=output_strategy, mix_names=mix_names)
     io_it.set_inputs(*inputs)
     io_it.set_out_dir(out_dir)
     io_it.set_out_fnames(*fnames)
@@ -161,7 +105,7 @@ def io_iterator(inputs, out_dir, fnames, output_strategy='append'):
     return io_it
 
 
-def io_iterator_(frame, fnc, output_strategy='append'):
+def io_iterator_(frame, fnc, output_strategy='append', mix_names=True):
     args, _, _, values = inspect.getargvalues(frame)
     specs = inspect.getargspec(fnc)
     spargs = specs.args
@@ -186,7 +130,8 @@ def io_iterator_(frame, fnc, output_strategy='append'):
         elif 'out_' in arv:
             outputs.append(values[arv])
 
-    return io_iterator(inputs, out_dir, outputs, output_strategy)
+    return io_iterator(inputs, out_dir, outputs, output_strategy, mix_names)
+
 
 class IOIterator(object):
     """ Create output filenames that work nicely with muiltiple input files from multiple directories (processing multiple subjects with one command)
@@ -195,9 +140,9 @@ class IOIterator(object):
     inputs.
     """
 
-    def __init__(self, output_strategy='append'):
+    def __init__(self, output_strategy='append', mix_names=True):
         self.output_strategy = output_strategy
-        #self.input_structure = input_structure
+        self.mix_names = mix_names
 
     def set_inputs(self, *args):
         self.input_args = list(args)
@@ -214,7 +159,9 @@ class IOIterator(object):
             self.updated_inputs, self.outputs = connect_output_paths(
                 self.inputs,
                 self.out_dir,
-                self.out_fnames, self.output_strategy)
+                self.out_fnames,
+                self.output_strategy,
+                self.mix_names)
 
             self.create_directories()
 
@@ -225,7 +172,7 @@ class IOIterator(object):
         for outputs in self.outputs:
             for output in outputs:
                 directory = path.dirname(output)
-                if not os.path.exists(directory):
+                if not (directory == '' or os.path.exists(directory)):
                     os.makedirs(directory)
 
     def __iter__(self):

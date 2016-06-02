@@ -73,7 +73,7 @@ def dti_metrics_flow(input_files, bvalues, bvectors, mask_files,
     """
 
     io_it = io_iterator_(inspect.currentframe(), dti_metrics_flow,
-                         input_structure=False)
+                         output_strategy='append')
     for dwi, bval, bvec, mask, otensor, ofa, oga, orgb, omd, oad, ord, omode,\
             oevecs, oevals, in io_it:
 
