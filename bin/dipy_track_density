@@ -5,4 +5,4 @@ from dipy.workflows.track_metrics import TrackDensityFlow
 from flow_runner import run_flow
 
 if __name__ == "__main__":
-    run_flow(TrackDensityFlow)
+    run_flow(TrackDensityFlow())

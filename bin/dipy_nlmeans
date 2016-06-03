@@ -5,4 +5,4 @@ from dipy.workflows.denoise import NLMeansFlow
 from flow_runner import run_flow
 
 if __name__ == "__main__":
-    run_flow(NLMeansFlow)
+    run_flow(NLMeansFlow())
