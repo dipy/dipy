@@ -269,7 +269,7 @@ def test_generate_bvecs():
     """
     # Test if the generated bvectors are unit vectors
     bvecs = generate_bvecs(100)
-    norm = np.linalg.norm(bvecs, axis=1)
+    norm = [np.linalg.norm(v) for v in bvecs]
     npt.assert_almost_equal(norm, np.ones(100))
 
     # Test if two generated vectors are almost orthogonal
