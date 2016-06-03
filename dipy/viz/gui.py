@@ -15,8 +15,16 @@ else:
 
 numpy_support, have_ns, _ = optional_package('vtk.util.numpy_support')
 
+class UI(object):
 
-class Button(object):
+    def __init__(self):
+        self.ui_param = None
+
+    def set_ui_param(self, ui_param):
+        self.ui_param = ui_param
+
+
+class Button(UI):
     """ Currently implements a 2D overlay button and is of type vtkTexturedActor2D. 
 
     """
@@ -165,7 +173,7 @@ class TextActor(vtk.vtkTextActor):
         return self.GetDisplayPosition()
 
 
-class TextBox(object):
+class TextBox(UI):
 
     def __init__(self, text=""):
         self.text = text
@@ -198,8 +206,8 @@ class TextBox(object):
 
     def add_character(self, character):
         self.text += character
-        self.actor.message(self.text)
+        self.actor.set_message(self.text)
 
     def remove_character(self):
         self.text = self.text[:-1]
-        self.actor.message(self.text)
+        self.actor.set_message(self.text)

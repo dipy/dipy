@@ -104,6 +104,11 @@ class CustomInteractorStyle(vtkInteractorStyleUser):
         # actor = picker.GetActor2D()
         actor_2d = self.picker.GetViewProp()
         if actor_2d is not None:
+            ui_list = self.renderer.ui_list
+            for ui_item in ui_list:
+                if ui_item.actor == actor_2d:
+                    ui_item.set_ui_param(obj.GetKeySym())
+                    break
             actor_2d.InvokeEvent(evt)
         else:
             actor_3d = self.picker.GetProp3D()
@@ -192,17 +197,20 @@ button.add_callback("LeftButtonPressEvent", modify_button_callback)
 text = gui.TextBox(text="Some Text")
 
 def key_press_callback(*args, **kwargs):
-    # key = obj.GetKeySym()
-    # print(key)
+    key = text.ui_param
+    if key == "Backspace":
+        text.remove_character()
+    else:
+        text.add_character(key)
 
 text.add_callback("KeyPressEvent", key_press_callback)
 
 renderer = window.ren()
 iren_style = CustomInteractorStyle(renderer=renderer)
-renderer.add(button.actor)
+renderer.add(button)
 renderer.add(cube_actor_1)
 renderer.add(cube_actor_2)
-renderer.add(text.actor)
+renderer.add(text)
 
 # set_trace()
 
