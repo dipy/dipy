@@ -1,17 +1,33 @@
-def clean_string(teststr):
-    if teststr[:2] == "\n\n":
-        teststr = teststr[2:]
-    if teststr[-2:] == "\n\n":
-        teststr = teststr[:-2]
-    return teststr
+import os
+from nbformat.v4 import new_notebook, new_code_cell, new_markdown_cell
+import nbformat.v4 as nbf
+import codecs
 
 
-def make_notebook(fname):
-    file_path = os.path.join(directory, fname)
-    f = open(file_path, "r")
-    fdata = f.read()
-    f.close()
-    allcells = fdata.split("\"\"\"")
+def clean_string(test_str):
+    """Take a string and remove the newline characters"""
+    if test_str[:2] == "\n\n":
+        test_str = test_str[2:]
+    if test_str[-2:] == "\n\n":
+        test_str = test_str[:-2]
+    return test_str
+
+
+def make_notebook(example):
+    """Generate Ipython notebook of the given example
+    Paramters
+    ---------
+    example : str 
+              The raw text of the python example
+
+    Returns
+    -------
+    notebook : str
+               Ipython notebook in the form of a raw text which can be
+               written to a file.
+
+    """
+    allcells = example.split("\"\"\"")
 
     textcells = [clean_string(allcells[i]) for i in range(1, len(allcells), 2)]
     codecells = [clean_string(allcells[i]) for i in range(2, len(allcells), 2)]
@@ -33,18 +49,56 @@ def make_notebook(fname):
                            'language': 'python',
                        }
                        )
+    return nb0
+    # f = codecs.open("../examples_notebook/" + fname +
+    #                 '.ipynb', encoding='utf-8', mode='w')
+    # nbf.write(nb0, f, 4)
+    # f.close()
 
-    f = codecs.open("../examples_notebook/" + fname +
-                    '.ipynb', encoding='utf-8', mode='w')
-    nbf.write(nb0, f, 4)
+
+def read_example(fname, directory="../doc/examples/"):
+    """Read the example python file to convert to Ipython notebook
+    Parameters
+    ----------
+    fname :     str
+                Filename of the python example
+
+    directory : str
+                Directory in which the .py examples are located. This has
+                to specified and changed based on the folder from which we 
+                call the make_notebook function
+
+                Default to ../doc/examples/
+    Returns
+    -------
+    None
+    """
+
+    file_path = os.path.join(directory, fname)
+    f = open(file_path, "r")
+    fdata = f.read()
     f.close()
 
-file_list = validated_examples
-directory = "../examples"
 
-for fname in file_list:
+def write_notebook(nbo, fname, directory):
+    """Write the given notebook into a file
+    Parameters
+    ----------
+    nbo : str
+          Notebook as raw_text
+
+    fname : str
+            Filename of the notebook
+
+    directory: str
+            Parent directory
+    """
+    file_path = os.path.join(directory, fname)
+    nbname = codecs.open(str(fname) + ".ipynb",
+                         encoding='utf-8', mode='w')
     try:
-        make_notebook(fname)
+        nbf.write(make_notebook(data), nbname, 4)
+        nbname.close()
+        return 0
     except:
-        print("Some error")
-        continue
+        return 1
