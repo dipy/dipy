@@ -22,7 +22,6 @@ def run_flow(flow):
     parser.add_argument('--mix_names', dest='mix_names',
                         action='store_true', default=False,
                         help='Prepend mixed input names to output names.')
-    #parser.set_defaults(mix_names=False)
 
     # Add logging parameters common to all workflows
     parser.add_argument('--log_level', action='store', dest='log_level',

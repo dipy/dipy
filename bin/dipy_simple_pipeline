@@ -1,8 +1,8 @@
 #! /usr/bin/env python
 
 from __future__ import division, print_function
-from dipy.workflows.pipelines import simple_pipeline_flow
+from dipy.workflows.pipelines import SimplePipelineFlow
 from flow_runner import run_flow
 
 if __name__ == "__main__":
-    run_flow(simple_pipeline_flow)
+    run_flow(SimplePipelineFlow)
