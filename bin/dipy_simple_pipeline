@@ -5,4 +5,4 @@ from dipy.workflows.pipelines import SimplePipelineFlow
 from flow_runner import run_flow
 
 if __name__ == "__main__":
-    run_flow(SimplePipelineFlow)
+    run_flow(SimplePipelineFlow())
