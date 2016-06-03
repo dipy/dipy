@@ -71,8 +71,8 @@ class ClassicFlow(Workflow):
 
             # Create seeding mask
             mask_flow = MaskFlow(**flow_base_params)
-            MaskFlow.run(fa, greater_than=0.4)
-            fa_seed_mask = MaskFlow.last_generated_outputs[0][0]
+            mask_flow.run(fa, greater_than=0.4)
+            fa_seed_mask = mask_flow.last_generated_outputs[0][0]
 
             # Deterministic Tracking
             tracking_flow = DetTrackFlow(**flow_base_params)
@@ -82,66 +82,3 @@ class ClassicFlow(Workflow):
             # Tract density
             tdi_flow = TrackDensityFlow(**flow_base_params)
             tdi_flow.run(det_tracts, fa)
-            '''
-
-
-            nifti_basename = basename + '_{0}.nii.gz'
-
-            #mask_filename = pjoin(out_dir, nifti_basename.format('mask'))
-            #if os.path.exists(mask_filename) is False or resume is False:
-            #    median_otsu_flow(dwi, out_dir=out_dir, out_mask=mask_filename)
-            #else:
-            #    logging.info('Skipped median otsu segmentation')
-
-            mask_filename = nifti_basename.format('mask')
-            if os.path.exists(mask_filename) is False or resume is False:
-                median_otsu_flow(dwi, out_dir=out_dir, out_mask=mask_filename)
-            else:
-                logging.info('Skipped median otsu segmentation')
-
-            denoised_dwi = pjoin(out_dir, nifti_basename.format('nlmeans'))
-            if os.path.exists(denoised_dwi) is False or resume is False:
-                nlmeans_flow(dwi, out_dir=out_dir, out_denoised=denoised_dwi)
-            else:
-                logging.info('Skipped nlmeans denoise')
-
-            metrics_dir = pjoin(out_dir, 'metrics')
-            fa_path = pjoin(metrics_dir, 'fa.nii.gz')
-            if os.path.exists(fa_path) is False or resume is False:
-                dti_metrics_flow(denoised_dwi, bval, bvec, mask_files=mask_filename,
-                                 out_dir=metrics_dir)
-            else:
-                logging.info('Skipped dti metrics')
-
-            peaks_dir = pjoin(out_dir, 'peaks')
-            peaks_values = pjoin(peaks_dir, 'peaks_values.nii.gz')
-            peaks_indices = pjoin(peaks_dir, 'peaks_indices.nii.gz')
-
-            if os.path.exists(peaks_dir) is False or resume is False:
-                fodf_flow(denoised_dwi, bval, bvec, mask_files=mask_filename,
-                          out_dir=peaks_dir, out_peaks_values=peaks_values,
-                          out_peaks_indices=peaks_indices)
-            else:
-                logging.info('Skipped fodf')
-
-            tractograms_dir = pjoin(out_dir, 'tractograms')
-            tractogram = 'eudx_tractogram.trk'
-            tractogram_path = pjoin(tractograms_dir, tractogram)
-            if os.path.exists(tractogram_path) is False or resume is False:
-                EuDX_tracking_flow(peaks_values, peaks_indices,
-                                   out_dir=tractograms_dir, out_tractogram=tractogram)
-            else:
-               logging.info('Skipped deterministic tracking')
-
-            tdi = os.path.join(metrics_dir, 'tdi.nii.gz')
-            tdi_2x = os.path.join(metrics_dir, 'tdi_2x.nii.gz')
-            if os.path.exists(tdi) is False or resume is False:
-                track_density_flow(tractogram_path, fa_path, out_dir=metrics_dir,
-                                   out_tdi=tdi)
-
-                track_density_flow(tractogram_path, fa_path, out_dir=metrics_dir,
-                                   out_tdi=tdi_2x, up_factor=2.0)
-            else:
-                logging.info('Skipped track density')
-
-            '''
