@@ -889,7 +889,7 @@ def axial_kurtosis(dki_params, min_kurtosis=0, max_kurtosis=3):
     return AK.reshape(outshape)
 
 
-def dki_prediction(dki_params, gtab, S0=150):
+def dki_prediction(dki_params, gtab, S0=100):
     """ Predict a signal given diffusion kurtosis imaging parameters.
 
     Parameters
@@ -1038,7 +1038,7 @@ class DiffusionKurtosisModel(ReconstModel):
 
         return DiffusionKurtosisFit(self, dki_params)
 
-    def predict(self, dki_params, S0=1):
+    def predict(self, dki_params, S0=100):
         """ Predict a signal for this DKI model class instance given
         parameters.
 
@@ -1263,7 +1263,7 @@ class DiffusionKurtosisFit(TensorFit):
         """
         return radial_kurtosis(self.model_params, min_kurtosis, max_kurtosis)
 
-    def predict(self, gtab, S0=1):
+    def predict(self, gtab, S0=100):
         r""" Given a DKI model fit, predict the signal on the vertices of a
         gradient table
 

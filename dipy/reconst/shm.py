@@ -616,7 +616,7 @@ class SphHarmFit(OdfFit):
         """
         return self._shm_coef
 
-    def predict(self, gtab=None, S0=1.0):
+    def predict(self, gtab=None, S0=100.0):
         """
         Predict the diffusion signal from the model coefficients.
 

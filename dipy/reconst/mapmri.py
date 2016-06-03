@@ -108,7 +108,7 @@ class MapmriModel(ReconstModel):
         >>> data, gtab = dsi_voxels()
         >>> sphere = get_sphere('symmetric724')
         >>> from dipy.sims.voxel import SticksAndBall
-        >>> data, golden_directions = SticksAndBall(gtab, d=0.0015, S0=1, angles=[(0, 0), (90, 0)], fractions=[50, 50], snr=None)
+        >>> data, golden_directions = SticksAndBall(gtab, d=0.0015, S0=100, angles=[(0, 0), (90, 0)], fractions=[50, 50], snr=None)
         >>> from dipy.reconst.mapmri import MapmriModel
         >>> radial_order = 4
         >>> map_model = MapmriModel(gtab, radial_order=radial_order)
@@ -326,7 +326,7 @@ class MapmriFit(ReconstFit):
                     i, 2]) / 2.0) * self._mapmri_coef[i] * Bm[i]
         return const * rtop
 
-    def predict(self, gtab, S0=1.0):
+    def predict(self, gtab, S0=100.0):
         """
         Predict a signal for this MapmriModel class instance given a gradient
         table.
