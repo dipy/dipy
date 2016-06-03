@@ -70,7 +70,7 @@ class IntrospectiveArgumentParser(arg.ArgumentParser):
         self.outputs =\
             [param for param in npds['Parameters'] if 'out_' in param[0]]
 
-        args = specs.args
+        args = specs.args[1:]
         defaults = specs.defaults
 
         len_args = len(args)
