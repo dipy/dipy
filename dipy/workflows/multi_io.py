@@ -108,8 +108,12 @@ def io_iterator(inputs, out_dir, fnames, output_strategy='append',
 
 def io_iterator_(frame, fnc, output_strategy='append', mix_names=False):
     args, _, _, values = inspect.getargvalues(frame)
+    args.remove('self')
+    del values['self']
+
     specs = inspect.getargspec(fnc)
     spargs = specs.args
+    spargs.remove('self')
     defaults = specs.defaults
 
     len_args = len(spargs)

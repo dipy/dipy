@@ -3,15 +3,26 @@ import logging
 
 from dipy.workflows.base import IntrospectiveArgumentParser
 
+
 def get_level(lvl):
     try:
         return logging._levelNames[lvl]
     except:
         return logging.INFO
 
+
 def run_flow(flow):
     parser = IntrospectiveArgumentParser()
-    parser.add_workflow(flow)
+    parser.add_workflow(flow.run)
+
+    parser.add_argument('--out_strat', action='store', dest='out_strat',
+                        metavar='string', required=False, default='append',
+                        help='Strategy to manage output creation.')
+
+    parser.add_argument('--mix_names', dest='mix_names',
+                        action='store_true', default=False,
+                        help='Prepend mixed input names to output names.')
+    #parser.set_defaults(mix_names=False)
 
     # Add logging parameters common to all workflows
     parser.add_argument('--log_level', action='store', dest='log_level',
@@ -27,8 +38,13 @@ def run_flow(flow):
                         format='%(levelname)s:%(message)s',
                         level=get_level(args['log_level']))
 
+    flow._output_strategy = args['out_strat']
+    flow._mix_names = args['mix_names']
+
     # Keep only workflow related parameters
     del args['log_level']
     del args['log_file']
+    del args['out_strat']
+    del args['mix_names']
 
-    flow(**args)
+    flow.run(**args)
