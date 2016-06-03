@@ -38,7 +38,7 @@ def estimate_sigma_localpca(data, gtab):
     M = np.mean(X, axis=0)
     X = X - M
     C = np.transpose(X).dot(X)
-    # C = C/data0.shape[3]
+    C = C / M.shape[0]
     # Do PCA and find the lowest principal component
     [d, W] = np.linalg.eigh(C)
     d[d < 0] = 0
@@ -49,62 +49,59 @@ def estimate_sigma_localpca(data, gtab):
     # V = V / np.linalg.norm(V, ord=2, axis=0)
     # As the W is sorted in increasing eignevalue order, so is V
     # choose the smallest principle component
-    I = V[
-        :,
-        d.shape[0] -
-        d_new.shape[0]].reshape(
+    I = V[:, d.shape[0] - d_new.shape[0]].reshape(
         data.shape[0],
         data.shape[1],
         data.shape[2])
 
     sigma = np.zeros(I.shape, dtype=np.float64)
-    count = np.zeros_like(data)
-    mean = np.zeros_like(data).astype(np.float64)
+    count = np.zeros_like(I)
+    mean = np.zeros_like(I).astype(np.float64)
+
+    # for i in range(1, I.shape[0] - 1):
+    #     print(i)
+    #     for j in range(1, I.shape[1] - 1):
+    #         for k in range(1, I.shape[2] - 1):
+
+    #             sigma[i, j, k] += np.var(I[i - 1:i + 2,
+    #                                        j - 1:j + 2,
+    #                                        k - 1:k + 2])
+    #             temp = data[i - 1:i + 2, j - 1:j + 2, k - 1:k + 2, :]
+    #             mean[
+    #                 i, j, k] = np.mean(temp)
 
     for i in range(1, I.shape[0] - 1):
         print(i)
         for j in range(1, I.shape[1] - 1):
             for k in range(1, I.shape[2] - 1):
 
-                sigma[i, j, k] += np.var(I[i - 1:i + 2,
-                                           j - 1:j + 2, k - 1:k + 2])
+                temp = I[i - 1:i + 2, j - 1:j + 2, k - 1:k + 2]
+                temp = (temp - np.mean(temp)) * (temp - np.mean(temp))
+                sigma[i - 1:i + 2, j - 1:j + 2, k - 1:k + 2] += temp
                 temp = data[i - 1:i + 2, j - 1:j + 2, k - 1:k + 2, :]
-                mean[
-                    i, j, k, :] += np.mean(np.mean(np.mean(temp, axis=0), axis=0), axis=0)
+                mean[i - 1:i + 2, j - 1:j + 2, k - 1:k + 2] += np.mean(temp)
+                count[i - 1:i + 2, j - 1:j + 2, k - 1:k + 2] += 1
 
-    # for i in range(1,I.shape[0] - 1):
-    #     print(i)
-    #     for j in range(1, I.shape[1] - 1):
-    #         for k in range(1, I.shape[2] - 1):
+    sigma = sigma / count
 
-    #             temp = I[i-1:i+2, j-1:j+2, k-1:k+2]
-    #             temp = (temp - np.mean(temp)) * (temp - np.mean(temp))
-    #             sigma[i-1:i+2, j-1:j+2, k-1:k+2] += temp
-    #             temp = data[i-1:i+2, j-1:j+2, k-1:k+2, :]
-    #             mean[i-1:i+2, j-1:j+2, k-1:k+2, :] +=  np.mean(np.mean(np.mean(temp,axis = 0),axis=0),axis=0)
-    #             count[i-1:i+2, j-1:j+2, k-1:k+2,:] += 1
-
-    # sigma = sigma / count[...,0]
-
-    # # Compute the local mean of for the data
-    # mean = mean / count
+    # Compute the local mean of for the data
+    mean = mean / count
     snr = np.zeros_like(I).astype(np.float64)
     sigma_corr = np.zeros_like(data).astype(np.float64)
 
     # find the SNR and make the correction
     # SNR Correction
 
-    for l in range(data.shape[3]):
-        print(l)
-        snr = mean[..., l] / np.sqrt(sigma)
-        eta = 2 + snr**2 - (np.pi / 8) * np.exp(-0.5 * (snr**2)) * ((2 + snr**2) * sp.special.iv(
-            0, 0.25 * (snr**2)) + (snr**2) * sp.special.iv(1, 0.25 * (snr**2)))**2
-        sigma_corr[..., l] = sigma / eta
+    # for l in range(data.shape[3]):
+    snr = mean / np.sqrt(sigma)
+    eta = 2 + snr**2 - (np.pi / 8) * np.exp(-0.5 * (snr**2)) * ((2 + snr**2) * sp.special.iv(
+        0, 0.25 * (snr**2)) + (snr**2) * sp.special.iv(1, 0.25 * (snr**2)))**2
+    sigma_corr = sigma / eta
 
     # smoothing by lpf
     sigma_corr[np.isnan(sigma_corr)] = 0
-    sigma_corr_mean = np.mean(sigma_corr, axis=3)
-    sigma_corrr = ndimage.gaussian_filter(sigma_corr_mean, 3)
+    # sigma_corr_mean = np.mean(sigma_corr, axis=3)
+    sigma_corrr = ndimage.gaussian_filter(sigma_corr, 3)
     sigmar = ndimage.gaussian_filter(sigma, 3)
 
     return [sigmar, sigma_corrr]
