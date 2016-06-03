@@ -50,10 +50,6 @@ def make_notebook(example):
                        }
                        )
     return nb0
-    # f = codecs.open("../examples_notebook/" + fname +
-    #                 '.ipynb', encoding='utf-8', mode='w')
-    # nbf.write(nb0, f, 4)
-    # f.close()
 
 
 def read_example(fname, directory="../doc/examples/"):
@@ -78,6 +74,7 @@ def read_example(fname, directory="../doc/examples/"):
     f = open(file_path, "r")
     fdata = f.read()
     f.close()
+    return fdata
 
 
 def write_notebook(nbo, fname, directory):
@@ -92,6 +89,10 @@ def write_notebook(nbo, fname, directory):
 
     directory: str
             Parent directory
+
+    Returns
+    -------
+        Returns 1 if conversion isn't successful
     """
     file_path = os.path.join(directory, fname)
     nbname = codecs.open(str(fname) + ".ipynb",
