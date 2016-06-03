@@ -15,6 +15,10 @@ def run_flow(flow):
     parser = IntrospectiveArgumentParser()
     parser.add_workflow(flow.run)
 
+    parser.add_argument('--force', dest='force',
+                        action='store_true', default=False,
+                        help='Force overwriting output files.')
+
     parser.add_argument('--out_strat', action='store', dest='out_strat',
                         metavar='string', required=False, default='append',
                         help='Strategy to manage output creation.')
@@ -41,6 +45,7 @@ def run_flow(flow):
     flow._mix_names = args['mix_names']
 
     # Keep only workflow related parameters
+    del args['force']
     del args['log_level']
     del args['log_file']
     del args['out_strat']
