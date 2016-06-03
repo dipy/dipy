@@ -220,7 +220,7 @@ def main(**extra_args):
                           pjoin('bin', 'dipy_dti_metrics'),
                           pjoin('bin', 'dipy_fodf'),
                           pjoin('bin', 'dipy_median_otsu'),
-                          pjoin('bin', 'dipy_simple_pipeline'),
+                          pjoin('bin', 'dipy_classic_flow'),
                           pjoin('bin', 'dipy_track_deterministic'),
                           pjoin('bin', 'dipy_track_EuDX'),
                           pjoin('bin', 'dipy_track_density')],
