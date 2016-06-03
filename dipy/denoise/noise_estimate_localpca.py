@@ -71,7 +71,6 @@ def estimate_sigma_localpca(data, gtab):
     #                 i, j, k] = np.mean(temp)
 
     for i in range(1, I.shape[0] - 1):
-        print(i)
         for j in range(1, I.shape[1] - 1):
             for k in range(1, I.shape[2] - 1):
 
@@ -91,17 +90,17 @@ def estimate_sigma_localpca(data, gtab):
 
     # find the SNR and make the correction
     # SNR Correction
-
+    print("Noise estimation done without correction")
     # for l in range(data.shape[3]):
     snr = mean / np.sqrt(sigma)
     eta = 2 + snr**2 - (np.pi / 8) * np.exp(-0.5 * (snr**2)) * ((2 + snr**2) * sp.special.iv(
         0, 0.25 * (snr**2)) + (snr**2) * sp.special.iv(1, 0.25 * (snr**2)))**2
     sigma_corr = sigma / eta
-
+    print("Noise estimate corrected for rician noise")
     # smoothing by lpf
     sigma_corr[np.isnan(sigma_corr)] = 0
     # sigma_corr_mean = np.mean(sigma_corr, axis=3)
     sigma_corrr = ndimage.gaussian_filter(sigma_corr, 3)
     sigmar = ndimage.gaussian_filter(sigma, 3)
-
+    print("Noise estimation finished")
     return [sigmar, sigma_corrr]

@@ -39,8 +39,8 @@ affine = img.get_affine()
 
 # currently just taking the small patch of the data to preserv time
 
-data = np.array(data[20:100, 20:100, 10:15, :])
-den_data = np.array(den_data[20:100, 20:100, 10:15, :])
+# data = np.array(data[20:100, 20:100, 10:15, :])
+# den_data = np.array(den_data[20:100, 20:100, 10:15, :])
 
 [sigma, sigma_c] = estimate_sigma_localpca(data, gtab)
 # identify the b0 images from the dataset

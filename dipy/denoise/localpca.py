@@ -58,7 +58,6 @@ def localpca(arr, sigma, patch_radius=1, rician=True):
         patch_size = 2 * patch_radius + 1
 
         for k in range(patch_radius, arr.shape[2] - patch_radius, 1):
-            print k
             for j in range(patch_radius, arr.shape[1] - patch_radius, 1):
                 for i in range(patch_radius, arr.shape[0] - patch_radius, 1):
 
@@ -113,7 +112,7 @@ def localpca(arr, sigma, patch_radius=1, rician=True):
                           :] = theta[i - patch_radius: i + patch_radius + 1,
                                      j - patch_radius: j + patch_radius + 1,
                                      k - patch_radius: k + patch_radius + 1,
-                                     :] + 1 / (1 + np.linalg.norm(d,
+                                     :] + 1.0 / (1.0 + np.linalg.norm(d,
                                                                   ord=0))
 
                     thetax[i - patch_radius: i + patch_radius + 1,
@@ -127,7 +126,6 @@ def localpca(arr, sigma, patch_radius=1, rician=True):
 
         # the final denoised without rician adaptation
         denoised_arr = thetax / theta
-
         # phi = np.linspace(0,15,1000)
         # # # we need to find the index of the closest value of arr/sigma from the dataset
         # eta_phi = np.sqrt(np.pi/2) * np.exp(-0.5 * phi**2) * (((1 + 0.5 * phi**2) * sp.special.iv(0,0.25 * phi**2) + (0.5 * phi**2) * sp.special.iv(1,0.25 * phi**2))**2)
