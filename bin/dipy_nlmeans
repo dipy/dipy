@@ -1,8 +1,8 @@
 #! /usr/bin/env python
 
 from __future__ import division, print_function
-from dipy.workflows.denoise import nlmeans_flow
+from dipy.workflows.denoise import NLMeansFlow
 from flow_runner import run_flow
 
 if __name__ == "__main__":
-    run_flow(nlmeans_flow)
+    run_flow(NLMeansFlow)
