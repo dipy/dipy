@@ -180,7 +180,7 @@ class TextBox(UI):
         self.actor = self.build_actor(self.text)
 
     def build_actor(self, text, position=(100, 0), color=(1, 1, 1),
-                 font_size=12, font_family='Arial', justification='left',
+                 font_size=18, font_family='Arial', justification='left',
                  bold=False, italic=False, shadow=False):
 
         text_actor = TextActor()
