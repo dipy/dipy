@@ -62,7 +62,10 @@ class IvimModel(ReconstModel):
             e_s += " positive."
             raise ValueError(e_s)
 
-    def fit(self, data, mask=None, x0=None, fit_method="one_stage"):
+    def fit(self, data, mask=None, x0=None, fit_method="one_stage",
+            jac=False, bounds=((0, 150.), (0, 1.), (0, 1.), (0, 1.)),
+            tol=None,
+            method="L-BFGS-B"):
         """ Fit method of the Ivim model class
 
         Parameters
@@ -78,7 +81,20 @@ class IvimModel(ReconstModel):
             These guess parameters are taken from the Federau paper
             Dimension can either be 1 or (N, 4) where N is the number of
             voxels in the data.
+        fit_method: str
+            Use one-stage fitting or two-stage fitting.
+        jac : Boolean
+            Use the Jacobian
+        bounds : tuple
+            Bounds for the various parameters
+        tol : float
+            tolerance for convergence
+        method : str
+            Fitting algorithm to use from scipy.optimize
 
+        Returns
+        -------
+        IvimFit object
         """
         if mask is None:
             # Flatten it to 2D either way:
@@ -108,7 +124,8 @@ class IvimModel(ReconstModel):
 
         if fit_method == "one_stage":
             params_in_mask = one_stage(data_in_mask, self.gtab,
-                                       x0)
+                                       x0, jac=jac, bounds=bounds, tol=tol,
+                                       method=method)
         elif fit_method == "two_stage":
             pass
         else:
@@ -151,7 +168,7 @@ class IvimFit(object):
         return self.model_params.shape[:-1]
 
 
-def one_stage(data, gtab, x0, jac=False, bounds=None):
+def one_stage(data, gtab, x0, jac, bounds, tol, method):
     """
     Fit the ivim params using minimize
 
@@ -176,7 +193,8 @@ def one_stage(data, gtab, x0, jac=False, bounds=None):
     for vox in range(flat_data.shape[0]):
         res = minimize(_ivim_error,
                        x0[vox],
-                       args=(bvals, flat_data[vox]))
+                       args=(bvals, flat_data[vox]), bounds=bounds,
+                       tol=tol, method=method, jac=jac)
         ivim_params[vox, :4] = res.x
     ivim_params.shape = data.shape[:-1] + (4,)
     return ivim_params
