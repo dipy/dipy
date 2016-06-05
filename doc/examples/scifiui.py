@@ -138,6 +138,8 @@ class CustomInteractorStyle(vtkInteractorStyleUser):
         # adds the necessary hooks to listen to this instance's observers.
         vtk.vtkInteractorStyle.SetInteractor(self, interactor)
 
+        interactor.RemoveObservers(vtk.vtkCommand.CharEvent)
+
         self.AddObserver("LeftButtonPressEvent", self.on_left_button_pressed)
         self.AddObserver("LeftButtonReleaseEvent", self.on_left_button_released)
         self.AddObserver("RightButtonPressEvent", self.on_right_button_pressed)
