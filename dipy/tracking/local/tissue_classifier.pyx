@@ -94,7 +94,32 @@ cdef class ThresholdTissueClassifier(TissueClassifier):
             return ENDPOINT
 
 
-cdef class ActTissueClassifier(TissueClassifier):
+cdef class ConstrainedTissueClassifier(TissueClassifier):
+    r"""
+    Abstract class that takes as input inclued and excluded tissue maps.
+
+    cdef:
+        double interp_out_double[1]
+        double[:]  interp_out_view = interp_out_view
+        double[:, :, :] include_map, exclude_map
+
+    """
+    def __cinit__(self, include_map, exclude_map, **kw):
+        self.interp_out_view = self.interp_out_double
+        self.include_map = np.asarray(include_map, 'float64')
+        self.exclude_map = np.asarray(exclude_map, 'float64')
+
+    #@cython.boundscheck(False)
+    #@cython.wraparound(False)
+    #@cython.initializedcheck(False)
+    #cpdef TissueClass check_point(self, double[::1] point) except PYERROR:
+#        cdef:
+#            double include_result, exclude_result
+#            int include_err, exclude_err
+#        return ENDPOINT
+
+
+cdef class ActTissueClassifier(ConstrainedTissueClassifier):
     r"""
     Anatomically-Constrained Tractography (ACT) stopping criteria from [1]_.
     This implements the use of partial volume fraction (PVE) maps to
@@ -114,11 +139,6 @@ cdef class ActTissueClassifier(TissueClassifier):
     streamlines tractography through effective use of anatomical
     information." NeuroImage, 63(3), 1924–1938, 2012.
     """
-
-    def __cinit__(self, include_map, exclude_map):
-        self.interp_out_view = self.interp_out_double
-        self.include_map = np.asarray(include_map, 'float64')
-        self.exclude_map = np.asarray(exclude_map, 'float64')
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
@@ -155,3 +175,73 @@ cdef class ActTissueClassifier(TissueClassifier):
             return INVALIDPOINT
         else:
             return TRACKPOINT
+
+
+cdef class CmcTissueClassifier(ConstrainedTissueClassifier):
+    r"""
+    Continuous map criterion (CMC) stopping criteria from [1]_.
+    This implements the use of partial volume fraction (PVE) maps to
+    determine when the tracking stops.
+    cdef:
+        double interp_out_double[1]
+        double[:]  interp_out_view = interp_out_view
+        double[:, :, :] include_map, exclude_map
+        double step_size
+        double average_voxel_size
+        double correction_factor
+
+    References
+    ----------
+    .. [1] Girard, G., Whittingstall, K., Deriche, R., & Descoteaux, M.
+    "Towards quantitative connectivity analysis: reducing tractography biases."
+    NeuroImage, 98, 266–278, 2014.
+    """
+
+    def __cinit__(self, include_map, exclude_map, step_size, average_voxel_size):
+        self.step_size = step_size
+        self.average_voxel_size = average_voxel_size
+        self.correction_factor = step_size / average_voxel_size
+
+    @cython.boundscheck(False)
+    @cython.wraparound(False)
+    @cython.initializedcheck(False)
+    cpdef TissueClass check_point(self, double[::1] point) except PYERROR:
+        cdef:
+            double include_result, exclude_result
+            int include_err, exclude_err
+
+        include_err = _trilinear_interpolate_c_4d(self.include_map[..., None],
+                                                  point, self.interp_out_view)
+        include_result = self.interp_out_view[0]
+
+        exclude_err = _trilinear_interpolate_c_4d(self.exclude_map[..., None],
+                                                  point, self.interp_out_view)
+        exclude_result = self.interp_out_view[0]
+
+        if include_err == -1 or exclude_err == -1:
+            return OUTSIDEIMAGE
+        elif include_err == -2 or exclude_err == -2:
+            raise ValueError("Point has wrong shape")
+        elif include_err != 0:
+            # This should never happen
+            raise RuntimeError("Unexpected interpolation error " +
+                               "(include_map - code:%i)" % include_err)
+        elif exclude_err != 0:
+            # This should never happen
+            raise RuntimeError("Unexpected interpolation error " +
+                               "(exclude_map - code:%i)" % exclude_err)
+
+        # test if the tracking contiues
+        num = max(0, (1 - include_result - exclude_result))
+        den = num + include_result + exclude_result
+        p = (num / den) ** self.correction_factor
+        if np.random.random() < p:
+            return TRACKPOINT
+
+        # test if the tracking stopped in the include tissue map
+        p = (include_result / (include_result + exclude_result))
+        if np.random.random() < p:
+            return ENDPOINT
+
+        # the tracking stopped in the exclude tissue map
+        return INVALIDPOINT

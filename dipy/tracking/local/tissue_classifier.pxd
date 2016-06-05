@@ -15,18 +15,27 @@ cdef class TissueClassifier:
     cpdef TissueClass check_point(self, double[::1] point) except PYERROR
 
 cdef class BinaryTissueClassifier(TissueClassifier):
-    cdef:  
+    cdef:
         unsigned char [:, :, :] mask
     pass
 
 cdef class ThresholdTissueClassifier(TissueClassifier):
     cdef:
-        double threshold        
+        double threshold
         double[:, :, :] metric_map
     pass
 
-cdef class ActTissueClassifier(TissueClassifier):
-    cdef:        
+cdef class ConstrainedTissueClassifier(TissueClassifier):
+    cdef:
         double[:, :, :] include_map, exclude_map
     pass
 
+cdef class ActTissueClassifier(ConstrainedTissueClassifier):
+    pass
+
+cdef class CmcTissueClassifier(ConstrainedTissueClassifier):
+    cdef:
+        double step_size
+        double average_voxel_size
+        double correction_factor
+    pass
