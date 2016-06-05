@@ -3,6 +3,8 @@ from dipy.utils.optpkg import optional_package
 
 from ipdb import set_trace
 
+import math
+
 # Allow import, but disable doctests if we don't have vtk.
 vtk, have_vtk, setup_module = optional_package('vtk')
 
@@ -173,19 +175,18 @@ class TextActor(vtk.vtkTextActor):
     def get_position(self, position):
         return self.GetDisplayPosition()
 
-    def set_minimum_size(self, min_size):
-        self.SetMinimumSize(min_size)
-
 
 class TextBox(UI):
 
-    def __init__(self, text=""):
+    def __init__(self, text="Enter Text"):
         self.text = text
         self.actor = self.build_actor(self.text)
+        self.n_lines = 0
+        self.init = True 
 
     def build_actor(self, text, position=(100, 10), color=(1, 1, 1),
                  font_size=18, font_family='Arial', justification='left',
-                 bold=False, italic=False, shadow=False, min_size=(50,50)):
+                 bold=False, italic=False, shadow=False):
 
         text_actor = TextActor()
         text_actor.set_position(position)
@@ -195,7 +196,6 @@ class TextBox(UI):
         text_actor.justification(justification)
         text_actor.font_style(bold, italic, shadow)
         text_actor.color(color)
-        text_actor.set_minimum_size(min_size)
 
         return text_actor
 
@@ -210,9 +210,27 @@ class TextBox(UI):
         self.actor.AddObserver(event_type, callback)
 
     def add_character(self, character):
+        if self.init == True:
+            self.text = ""
+            self.init = False
         self.text += character
+        text_length = len(self.text.replace('\n', ''))
+        text_lines = math.floor(text_length/10)
+        print(text_length, end=" ")
+        print(repr(self.text))
+        if text_lines > self.n_lines:
+            self.text += "\n"
+            self.n_lines += 1
         self.actor.set_message(self.text)
 
     def remove_character(self):
+        if self.init == True:
+            self.init = False
+        if self.text[-2:] == "\n":
+            self.text = self.text[:-2]
         self.text = self.text[:-1]
+        text_length = len(self.text.replace('\n', ''))
+        text_lines = math.floor(text_length/10)
+        if text_lines < self.n_lines:
+            self.n_lines -= 1
         self.actor.set_message(self.text)
