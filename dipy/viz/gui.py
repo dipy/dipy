@@ -15,6 +15,7 @@ else:
 
 numpy_support, have_ns, _ = optional_package('vtk.util.numpy_support')
 
+
 class UI(object):
 
     def __init__(self):
@@ -172,6 +173,9 @@ class TextActor(vtk.vtkTextActor):
     def get_position(self, position):
         return self.GetDisplayPosition()
 
+    def set_minimum_size(self, min_size):
+        self.SetMinimumSize(min_size)
+
 
 class TextBox(UI):
 
@@ -179,9 +183,9 @@ class TextBox(UI):
         self.text = text
         self.actor = self.build_actor(self.text)
 
-    def build_actor(self, text, position=(100, 0), color=(1, 1, 1),
+    def build_actor(self, text, position=(100, 10), color=(1, 1, 1),
                  font_size=18, font_family='Arial', justification='left',
-                 bold=False, italic=False, shadow=False):
+                 bold=False, italic=False, shadow=False, min_size=(50,50)):
 
         text_actor = TextActor()
         text_actor.set_position(position)
@@ -191,6 +195,7 @@ class TextBox(UI):
         text_actor.justification(justification)
         text_actor.font_style(bold, italic, shadow)
         text_actor.color(color)
+        text_actor.set_minimum_size(min_size)
 
         return text_actor
 

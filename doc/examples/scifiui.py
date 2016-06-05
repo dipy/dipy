@@ -204,6 +204,7 @@ def key_press_callback(*args, **kwargs):
         text.remove_character()
     else:
         text.add_character(key)
+    showm.render()
 
 text.add_callback("KeyPressEvent", key_press_callback)
 
