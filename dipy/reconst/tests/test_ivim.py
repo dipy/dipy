@@ -10,9 +10,40 @@ from dipy.sims.voxel import multi_tensor
 from dipy.core.sphere import disperse_charges, HemiSphere
 
 
-def test_fit():
+def test_fit_minimize():
     """
-    Test the implementation of the fitting
+    Test the implementation of the fitting with minimize
+    """
+    bvals = np.array([0., 10., 20., 30., 40., 60., 80., 100.,
+                      120., 140., 160., 180., 200., 220., 240.,
+                      260., 280., 300., 350., 400., ])
+    N = len(bvals)
+    bvecs = get_bvecs(N)
+    gtab = gradient_table(bvals, bvecs.T)
+
+    S0, f, D_star, D = 1.0, 0.06, 0.0072, 0.00097
+
+    mevals = np.array(([D_star, D_star, D_star], [D, D, D]))
+    # This gives an isotropic signal
+
+    signal = multi_tensor(gtab, mevals, snr=None, S0=S0, fractions=[
+                          f * 100, 100 * (1 - f)])
+    data = np.array([signal[0], ])
+
+    guess = np.array([[1.0, 0.10, 0.001, 0.0001], ])
+    ivim_model = IvimModel(gtab)
+    ivim_fit = ivim_model.fit(data, routine="minimize", x0=guess, tol=1e-7)
+
+    est_signal = np.array([ivim_function(ivim_fit.model_params[0], bvals), ])
+
+    assert_array_equal(est_signal.shape, data.shape)
+    assert_array_almost_equal(est_signal, data)
+    assert_array_almost_equal(ivim_fit.model_params[0], [S0, f, D_star, D])
+
+
+def test_fit_leastsq():
+    """
+    Test the implementation of the fitting with minimize
     """
     bvals = np.array([0., 10., 20., 30., 40., 60., 80., 100.,
                       120., 140., 160., 180., 200., 220., 240.,
@@ -30,7 +61,7 @@ def test_fit():
                           f * 100, 100 * (1 - f)])
     data = signal[0]
     ivim_model = IvimModel(gtab)
-    ivim_fit = ivim_model.fit(data)
+    ivim_fit = ivim_model.fit(data, routine="leastsq")
 
     est_signal = ivim_function(ivim_fit.model_params, bvals)
 

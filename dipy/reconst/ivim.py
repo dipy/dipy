@@ -4,7 +4,7 @@ from __future__ import division, print_function, absolute_import
 import warnings
 import functools
 import numpy as np
-from scipy.optimize import minimize
+from scipy.optimize import minimize, leastsq
 
 from dipy.core.gradients import gradient_table
 from dipy.reconst.base import ReconstModel
@@ -29,7 +29,7 @@ def ivim_function(params, bvals):
 def _ivim_error(params, bvals, signal):
     """Error function to be used in fitting the model
     """
-    return np.linalg.norm(signal - ivim_function(params, bvals))
+    return (signal - ivim_function(params, bvals))**2
 
 
 class IvimModel(ReconstModel):
@@ -62,10 +62,9 @@ class IvimModel(ReconstModel):
             e_s += " positive."
             raise ValueError(e_s)
 
-    def fit(self, data, mask=None, x0=None, fit_method="one_stage",
+    def fit(self, data, mask=None, x0=None, fit_method="one_stage", routine="leastsq",
             jac=False, bounds=((0, 150.), (0, 1.), (0, 1.), (0, 1.)),
-            tol=None,
-            method="L-BFGS-B"):
+            tol=None, algorithm=None):
         """ Fit method of the Ivim model class
 
         Parameters
@@ -123,9 +122,10 @@ class IvimModel(ReconstModel):
         data_in_mask = np.maximum(data_in_mask, min_signal)
 
         if fit_method == "one_stage":
-            params_in_mask = one_stage(data_in_mask, self.gtab,
-                                       x0, jac=jac, bounds=bounds, tol=tol,
-                                       method=method)
+            params_in_mask = one_stage(data_in_mask, self.gtab, x0,
+                                       jac, bounds, tol,
+                                       routine,
+                                       algorithm)
         elif fit_method == "two_stage":
             pass
         else:
@@ -168,7 +168,7 @@ class IvimFit(object):
         return self.model_params.shape[:-1]
 
 
-def one_stage(data, gtab, x0, jac, bounds, tol, method):
+def one_stage(data, gtab, x0, jac, bounds, tol, routine, algorithm):
     """
     Fit the ivim params using minimize
 
@@ -190,11 +190,38 @@ def one_stage(data, gtab, x0, jac, bounds, tol, method):
     # Flatten for the iteration over voxels:
     bvals = gtab.bvals
     ivim_params = np.empty((flat_data.shape[0], 4))
-    for vox in range(flat_data.shape[0]):
-        res = minimize(_ivim_error,
-                       x0[vox],
-                       args=(bvals, flat_data[vox]), bounds=bounds,
-                       tol=tol, method=method, jac=jac)
-        ivim_params[vox, :4] = res.x
+
+    if routine == 'minimize':
+        result = _minimize(flat_data, bvals, x0, ivim_params,
+                           bounds, tol, jac, algorithm)
+    elif routine == "leastsq":
+        result = _leastsq(flat_data, bvals, x0, ivim_params)
     ivim_params.shape = data.shape[:-1] + (4,)
     return ivim_params
+
+
+def _minimize(flat_data, bvals, x0, ivim_params,
+              bounds, tol, jac, algorithm):
+    """Use minimize for finding ivim_params"""
+    sum_sq = lambda params, bvals, signal: np.sum(
+        _ivim_error(params, bvals, signal))
+
+    res = []
+    for vox in range(flat_data.shape[0]):
+        res += minimize(sum_sq,
+                        x0[vox],
+                        args=(bvals, flat_data[vox]), bounds=bounds,
+                        tol=tol, method=algorithm, jac=jac)
+        ivim_params[vox, :4] = res.x
+    return res
+
+
+def _leastsq(flat_data, bvals, x0, ivim_params):
+    """Use minimize for finding ivim_params"""
+    res = []
+    for vox in range(flat_data.shape[0]):
+        res += leastsq(_ivim_error,
+                       x0[vox],
+                       args=(bvals, flat_data[vox]))
+        ivim_params[vox, :4] = res[0]
+    return res
