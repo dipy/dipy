@@ -2,6 +2,8 @@
  DIPY
 ======
 
+.. image:: https://coveralls.io/repos/github/nipy/dipy/badge.svg?branch=master :target: https://coveralls.io/github/nipy/dipy?branch=master 
+
 DIPY is a python toolbox for analysis of MR diffusion imaging.
 
 DIPY is for research only; please do not use results from DIPY for
