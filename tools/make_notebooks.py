@@ -1,7 +1,26 @@
+#!/usr/bin/env python
+"""Run the py->ipynb notebook conversion.
+"""
 import os
+from os.path import join as pjoin, abspath, splitext
+
 from nbformat.v4 import new_notebook, new_code_cell, new_markdown_cell
-import nbformat.v4 as nbf
+import nbformat as nbf
+
 import codecs
+
+import sys
+
+# Where things are
+EG_INDEX_FNAME = abspath('examples_index.rst')
+EG_SRC_DIR = abspath('examples')
+
+# print (os.getcwd())
+# if not os.getcwd().endswith(pjoin('doc', 'examples_built')):
+#     raise OSError('This must be run from the doc directory')
+
+# Copy the py files; check they are in the examples list and warn if not
+eg_index_contents = open(EG_INDEX_FNAME, 'rt').read()
 
 
 def clean_string(test_str):
@@ -77,11 +96,11 @@ def read_example(fname, directory="../doc/examples/"):
     return fdata
 
 
-def write_notebook(nbo, fname, directory):
+def write_notebook(notebook, fname, directory):
     """Write the given notebook into a file
     Parameters
     ----------
-    nbo : str
+    notebook : str
           Notebook as raw_text
 
     fname : str
@@ -94,12 +113,50 @@ def write_notebook(nbo, fname, directory):
     -------
         Returns 1 if conversion isn't successful
     """
-    file_path = os.path.join(directory, fname)
-    nbname = codecs.open(str(fname) + ".ipynb",
+    if not os.path.isdir("ipython_notebooks"):
+        os.mkdir("ipython_notebooks")
+
+    nbname = codecs.open("ipython_notebooks/" + str(fname) + ".ipynb",
                          encoding='utf-8', mode='w')
-    try:
-        nbf.write(make_notebook(data), nbname, 4)
-        nbname.close()
-        return 0
-    except:
-        return 1
+
+    nbf.write(notebook, nbname, 4)
+    nbname.close()
+
+
+def valid_examples():
+    """Get the valid examples to be converted"""
+    flist_name = pjoin(os.path.dirname(os.getcwd()), 'doc', 'examples',
+                       'valid_examples.txt')
+    flist = open(flist_name, "r")
+    validated_examples = flist.readlines()
+    flist.close()
+
+    # Parse "#" in lines
+    validated_examples = [line.split("#", 1)[0] for line in validated_examples]
+    # Remove leading and trailing white space from example names
+    validated_examples = [line.strip() for line in validated_examples]
+    # Remove blank lines
+    validated_examples = filter(None, validated_examples)
+
+    for example in validated_examples:
+        fullpath = pjoin(EG_SRC_DIR, example)
+        if not example.endswith(".py"):
+            print("%s not a python file, skipping." % example)
+            continue
+        elif not os.path.isfile(fullpath):
+            print("Cannot find file, %s, skipping." % example)
+            continue
+
+        # Check that example file is included in the docs
+        file_root = example[:-3]
+        if file_root not in eg_index_contents:
+            msg = "Example, %s, not in index file %s."
+            msg = msg % (example, EG_INDEX_FNAME)
+            print(msg)
+    return validated_examples
+
+# if __name__ == "__main__":
+validated_examples = valid_examples()
+for fname in validated_examples:
+    notebook = make_notebook(read_example(fname))
+    write_notebook(notebook, fname.split(".")[0], "examples_built")

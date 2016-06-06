@@ -124,6 +124,10 @@ rstexamples-stamp:
 	cd examples_built && ../../tools/make_examples.py
 	touch $@
 
+ipynbexamples:
+	$(PYTHON) ../tools/make_notebooks.py
+	@echo "Notebooks can be found in doc/ipython_notebooks"
+
 pdf: pdf-stamp
 pdf-stamp: latex
 	cd _build/latex && make all-pdf
