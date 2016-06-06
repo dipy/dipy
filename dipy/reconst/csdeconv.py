@@ -214,7 +214,7 @@ class ConstrainedSphericalDeconvModel(SphHarmModel):
         S0 = np.asarray(S0)[..., None]
         scaling = S0 / self.response_scaling
         # This is the key operation: convolve and multiply by S0:
-        pre_pred_sig = scaling * np.dot(predict_matrix, sh_coeff)
+        pre_pred_sig = scaling * np.dot(sh_coeff, predict_matrix.T)
 
         # Now put everything in its right place:
         pred_sig = np.zeros(pre_pred_sig.shape[:-1] + (gtab.bvals.shape[0],))
