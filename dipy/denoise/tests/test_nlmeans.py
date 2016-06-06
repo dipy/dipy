@@ -19,8 +19,8 @@ def test_nlmeans_padding():
 
 def test_nlmeans_static():
     S0 = 100 * np.ones((20, 20, 20), dtype='f8')
-    S0n = nlmeans(S0, sigma=np.ones((20, 20, 20)), rician=False)
-    S0nb = nlmeans(S0, sigma=np.ones((20, 20, 20)),
+    S0n = nlmeans(S0, sigma=np.zeros((20, 20, 20)), rician=False)
+    S0nb = nlmeans(S0, sigma=np.zeros((20, 20, 20)),
                    rician=False, avg_type='blockwise')
     assert_array_almost_equal(S0, S0n)
     assert_array_almost_equal(S0, S0nb)

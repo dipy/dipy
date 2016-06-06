@@ -9,11 +9,11 @@ from dipy.denoise.ascm import ascm
 
 def test_ascm_static():
     S0 = 100 * np.ones((20, 20, 20), dtype='f8')
-    S0n1 = nlmeans(S0, sigma=np.ones((20, 20, 20)), rician=False,
+    S0n1 = nlmeans(S0, sigma=np.zeros((20, 20, 20)), rician=False,
                    patch_radius=1, block_radius=1, avg_type='blockwise')
-    S0n2 = nlmeans(S0, sigma=np.ones((20, 20, 20)), rician=False,
+    S0n2 = nlmeans(S0, sigma=np.zeros((20, 20, 20)), rician=False,
                    patch_radius=2, block_radius=1, avg_type='blockwise')
-    S0n = ascm(S0, S0n1, S0n2, 1)
+    S0n = ascm(S0, S0n1, S0n2, 0)
     assert_array_almost_equal(S0, S0n)
 
 
