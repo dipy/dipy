@@ -3,7 +3,6 @@ from __future__ import division, print_function
 import numpy as np
 from dipy.denoise.denspeed import nlmeans_3d
 from dipy.denoise.nlmeans_block import nlmeans_block
-from dipy.denoise.noise_estimate import estimate_sigma
 
 
 def nlmeans(arr, sigma, mask=None, patch_radius=1, block_radius=5,
@@ -43,7 +42,7 @@ def nlmeans(arr, sigma, mask=None, patch_radius=1, block_radius=5,
     [1] "Impact of Rician Adapted Non-Local Means Filtering on HARDI"
     Descoteaux, Maxim and Wiest-Daessle`, Nicolas and Prima, Sylvain and Barillot,
     Christian and Deriche, Rachid
-    MICCAI – 2008
+    MICCAI 2008
 
     [2] P. Coupe, P. Yger, S. Prima, P. Hellier, C. Kervrann, C. Barillot,
     "An Optimized Blockwise Non Local Means Denoising Filter for 3D Magnetic
@@ -52,15 +51,14 @@ def nlmeans(arr, sigma, mask=None, patch_radius=1, block_radius=5,
     """
 
     if arr.ndim == 3:
-
         if avg_type == 'blockwise':
-            sigma = estimate_sigma(arr, N=4)
+            sigma = np.ones(arr.shape, dtype=np.float64) * sigma
             return np.array(
                 nlmeans_block(
                     np.double(arr),
                     patch_radius,
                     block_radius,
-                    sigma[0],
+                    sigma[0,0,0],
                     rician)).astype(
                 arr.dtype)
         else:
@@ -71,19 +69,19 @@ def nlmeans(arr, sigma, mask=None, patch_radius=1, block_radius=5,
 
     elif arr.ndim == 4:
         denoised_arr = np.zeros_like(arr)
-        if avg_type == 'blockwise':
-            for i in range(arr.shape[-1]):
-                sigma = estimate_sigma(arr[..., i], N=4)
-                denoised_arr[..., i] = np.array(nlmeans_block(
-                    np.double(arr[..., i]), patch_radius, block_radius, sigma[0]))
-            return denoised_arr.astype(arr.dtype)
-        else:
-            if isinstance(sigma, np.ndarray) and sigma.ndim == 3:
+
+        if isinstance(sigma, np.ndarray) and sigma.ndim == 3:
                 sigma = (np.ones(arr.shape, dtype=np.float64) *
                          sigma[..., np.newaxis])
-            else:
-                sigma = np.ones(arr.shape, dtype=np.float64) * sigma
+        else:
+            sigma = np.ones(arr.shape, dtype=np.float64) * sigma
 
+        if avg_type == 'blockwise':
+            for i in range(arr.shape[-1]):
+                denoised_arr[..., i] = np.array(nlmeans_block(
+                    np.double(arr[..., i]), patch_radius, block_radius, sigma[0,0,0,0]))
+            return denoised_arr.astype(arr.dtype)
+        else:
             for i in range(arr.shape[-1]):
                 denoised_arr[...,
                              i] = nlmeans_3d(arr[...,

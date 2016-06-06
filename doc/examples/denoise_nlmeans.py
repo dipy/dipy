@@ -112,7 +112,7 @@ References
 .. [1] "Impact of Rician Adapted Non-Local Means Filtering on HARDI"
 	Descoteaux, Maxim and Wiest-Daessle`, Nicolas and Prima, Sylvain and Barillot,
 	Christian and Deriche, Rachid
-	MICCAI – 2008
+	MICCAI 2008
 
 .. [2] P. Coupe, P. Yger, S. Prima, P. Hellier, C. Kervrann, C. Barillot,
    "An Optimized Blockwise Non Local Means Denoising Filter for 3D Magnetic
