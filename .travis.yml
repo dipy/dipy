@@ -74,10 +74,7 @@ before_install:
     - pip install -U pip
     - retry pip install nose;
     - if [ -n "$DEPENDS" ]; then wheelhouse_pip_install $DEPENDS; fi
-    - if [ "${COVERAGE}" == "1" ]; then
-      pip install coverage;
-      pip install coveralls;
-      fi
+    - if [ "${COVERAGE}" == "1" ]; then pip install coverage coveralls codecov; fi
     - if [ "${VTK}" == "1" ]; then
           sudo apt-get update;
           sudo apt-get install -y $VTK_VER;
@@ -117,4 +114,4 @@ script:
       fi
     - nosetests --with-doctest --verbose $COVER_ARGS dipy
 after_success:
-    - if [ "${COVERAGE}" == "1" ]; then coveralls; fi
+    - if [ "${COVERAGE}" == "1" ]; then coveralls; codecov; fi
