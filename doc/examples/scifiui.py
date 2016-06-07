@@ -196,7 +196,7 @@ button.add_callback("RightButtonPressEvent", move_button_callback)
 button.add_callback("LeftButtonPressEvent", modify_button_callback)
 
 
-text = gui.TextBox()
+text = gui.TextBox(height=3, width=10)
 
 def key_press_callback(*args, **kwargs):
     key = text.ui_param

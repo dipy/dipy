@@ -178,10 +178,11 @@ class TextActor(vtk.vtkTextActor):
 
 class TextBox(UI):
 
-    def __init__(self, text="Enter Text"):
+    def __init__(self, width, height, text="Enter Text"):
         self.text = text
         self.actor = self.build_actor(self.text)
-        self.n_lines = 0
+        self.width = width
+        self.height = height
         self.init = True 
 
     def build_actor(self, text, position=(100, 10), color=(1, 1, 1),
@@ -209,28 +210,37 @@ class TextBox(UI):
         """
         self.actor.AddObserver(event_type, callback)
 
+    def width_set_text(self, text):
+        multi_line_text = ""
+        for i in range(len(text)):
+            multi_line_text += text[i]
+            if (i+1)%self.width == 0:
+                multi_line_text += "\n"
+        return multi_line_text.rstrip("\n")
+
+    def showable_text(self):
+        showable_length = self.height*self.width
+        ret_text = self.text[-1*showable_length:]
+        return ret_text
+
     def add_character(self, character):
+        if len(character) > 1 and character != "space":
+            return
         if self.init == True:
             self.text = ""
             self.init = False
-        self.text += character
-        text_length = len(self.text.replace('\n', ''))
-        text_lines = math.floor(text_length/10)
-        print(text_length, end=" ")
-        print(repr(self.text))
-        if text_lines > self.n_lines:
-            self.text += "\n"
-            self.n_lines += 1
-        self.actor.set_message(self.text)
+        if character == "space":
+            self.text += " "
+        else:
+            self.text += character
+        self.render_text()
 
     def remove_character(self):
         if self.init == True:
             self.init = False
-        if self.text[-2:] == "\n":
-            self.text = self.text[:-2]
         self.text = self.text[:-1]
-        text_length = len(self.text.replace('\n', ''))
-        text_lines = math.floor(text_length/10)
-        if text_lines < self.n_lines:
-            self.n_lines -= 1
-        self.actor.set_message(self.text)
+        self.render_text()
+
+    def render_text(self):
+        text = self.showable_text()
+        self.actor.set_message(self.width_set_text(text))
