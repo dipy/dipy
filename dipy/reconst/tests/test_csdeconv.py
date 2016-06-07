@@ -417,6 +417,14 @@ def test_csd_predict():
     csd_fit = csd.fit(S)
     npt.assert_array_almost_equal(coeff, csd_fit.shm_coeff)
 
+    # Test predict on nd-data set
+    S_nd = np.zeros((2, 3, 4, S.size))
+    S_nd[:] = S
+    fit = csd.fit(S_nd)
+    predict1 = fit.predict()
+    predict2 = csd.predict(fit.shm_coeff)
+    npt.assert_array_almost_equal(predict1, predict2)
+
 
 def test_csd_predict_multi():
     """
