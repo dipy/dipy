@@ -11,6 +11,7 @@ import dipy.reconst.dti as dti
 from warnings import warn
 from dipy.core.gradients import gradient_table
 from ..utils.optpkg import optional_package
+from scipy.optimize import fmin_l_bfgs_b
 
 cvxopt, have_cvxopt, _ = optional_package("cvxopt")
 
@@ -116,11 +117,10 @@ class MapmriModel(Cache):
             an even integer that represent the order of the basis
         laplacian_regularization: bool,
             Regularize using the Laplacian of the MAP-MRI basis.
-        laplacian_weighting: string or scalar or ndarray,
+        laplacian_weighting: string or scalar,
             The string 'GCV' makes it use generalized cross-validation to find
             the regularization weight [4]. A scalar sets the regularization
-            weight to that value. A numpy array of values will make the GCV
-            function find the optimal value among those values.
+            weight to that value.
         positivity_constraint : bool,
             Constrain the propagator to be positive.
         anisotropic_scaling : bool,
@@ -200,15 +200,12 @@ class MapmriModel(Cache):
 
         self.laplacian_regularization = laplacian_regularization
         if self.laplacian_regularization:
-            msg = "Laplacian Regularization weighting must be 'GCV', "
-            msg += "a positive float or an array of positive floats."
+            msg = "Laplacian Regularization weighting must be 'GCV' "
+            msg += "or a positive float."
             if isinstance(laplacian_weighting, str):
                 if laplacian_weighting != 'GCV':
                     raise ValueError(msg)
-            elif (
-                isinstance(laplacian_weighting, float) or
-                isinstance(laplacian_weighting, np.ndarray)
-            ):
+            elif isinstance(laplacian_weighting, float):
                 if np.sum(laplacian_weighting < 0) > 0:
                     raise ValueError(msg)
             self.laplacian_weighting = laplacian_weighting
@@ -315,9 +312,7 @@ class MapmriModel(Cache):
                 lopt = generalized_crossvalidation(data, M, laplacian_matrix)
             elif np.isscalar(self.laplacian_weighting):
                 lopt = self.laplacian_weighting
-            elif type(self.laplacian_weighting) == np.ndarray:
-                lopt = generalized_crossvalidation(data, M, laplacian_matrix,
-                                                   self.laplacian_weighting)
+
         else:
             lopt = 0.
             laplacian_matrix = np.ones((self.ind_mat.shape[0],
@@ -1654,27 +1649,24 @@ def mapmri_laplacian_reg_matrix(ind_mat, mu, S_mat, T_mat, U_mat):
     return LR
 
 
-def generalized_crossvalidation(data, M, LR, weights_array=None):
+def generalized_crossvalidation(data, M, LR, gcv_startpoint=5e-2):
     """Generalized Cross Validation Function [1]_ eq. (15).
-    Here weights_array is a numpy array with all values that should be
-    considered in the GCV. It will run through the weights until the cost
-    function starts to increase, then stop and take the last value as the
-    optimum weight.
+    Finds optimal regularization weight based on generalized cross-validation.
 
     Parameters
     ----------
     data : array (N),
-        Basis order matrix
+        data array
     M : matrix, shape (N, Ncoef)
         mapmri observation matrix
     LR : matrix, shape (N_coef, N_coef)
         regularization matrix
-    weights_array : array (N_of_weights)
-        array of optional regularization weights
+    gcv_startpoint : float
+        startpoint for the gcv optimization
 
     Returns
     -------
-    lopt : float,
+    optimal_lambda : float,
         optimal regularization weight
 
     References
@@ -1682,24 +1674,28 @@ def generalized_crossvalidation(data, M, LR, weights_array=None):
     .. [1]_ Craven et al. "Smoothing Noisy Data with Spline Functions."
         NUMER MATH 31.4 (1978): 377-403.
     """
-
-    if weights_array is None:
-        lrange = np.linspace(0.05, 1, 20)  # reasonably fast standard range
-    else:
-        lrange = weights_array
-
-    samples = lrange.shape[0]
     MMt = np.dot(M.T, M)
     K = len(data)
-    gcvold = gcvnew = 10e10 # set initialization gcv threshold very high
-    i = -1
-    while gcvold >= gcvnew and i < samples - 2:
-        gcvold = gcvnew
-        i = i + 1
-        S = np.dot(np.dot(M, np.linalg.pinv(MMt + lrange[i] * LR)), M.T)
-        trS = np.matrix.trace(S)
-        normyytilde = np.linalg.norm(data - np.dot(S, data), 2)
-        gcvnew = normyytilde / (K - trS)
+    input_stuff = (data, M, MMt, K, LR)
 
-    lopt = lrange[i - 1]
-    return lopt
+    bounds = ((1e-5, 10),)
+    res=fmin_l_bfgs_b(lambda x,
+                      input_stuff: GCV_cost_function(x, input_stuff),
+                      (gcv_startpoint),
+                      args=(input_stuff,),
+                      approx_grad=True,
+                      bounds=bounds,
+                      disp=True, pgtol=1e-10, factr=10.)
+    optimal_lambda = res[0][0]
+    return optimal_lambda
+
+
+def GCV_cost_function(weight, input_stuff):
+    """The GCV cost function that is iterated [4]
+    """
+    data, M, MMt, K, LR = input_stuff
+    S = np.dot(np.dot(M, np.linalg.pinv(MMt + weight * LR)), M.T)
+    trS = np.matrix.trace(S)
+    normyytilde = np.linalg.norm(data - np.dot(S, data), 2)
+    gcv_value = normyytilde / (K - trS)
+    return gcv_value
