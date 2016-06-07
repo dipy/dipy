@@ -1,15 +1,12 @@
 import numpy as np
 import scipy as sp
+import dipy.denoise.fast_local_covariance as fcov
 
 
 def localpca(arr, sigma, patch_radius=1, rician=True):
+
     '''
     Local PCA Based Denoising of Diffusion Datasets
-
-    References
-    ----------
-    Diffusion Weighted Image Denoising Using Overcomplete Local PCA
-    Manjon JV, Coupe P, Concha L, Buades A, Collins DL
 
     Parameters
     ----------
@@ -18,9 +15,6 @@ def localpca(arr, sigma, patch_radius=1, rician=True):
         standard deviation of the noise estimated from the data
     patch_radius : The radius of the local patch to
                 be taken around each voxel
-    tou : float or 3D array
-        threshold parameter for diagonal matrix thresholding,
-        default value = (2.3 * sigma * sigma)
     rician : boolean
         If True the noise is estimated as Rician, otherwise Gaussian noise
         is assumed.
@@ -31,6 +25,11 @@ def localpca(arr, sigma, patch_radius=1, rician=True):
     denoised_arr : 4D array
         this is the denoised array of the same size as that of
         arr (input data)
+
+    References
+    ----------
+    Diffusion Weighted Image Denoising Using Overcomplete Local PCA
+    Manjon JV, Coupe P, Concha L, Buades A, Collins DL
 
     '''
 
@@ -48,14 +47,20 @@ def localpca(arr, sigma, patch_radius=1, rician=True):
             tou = np.ones(arr.shape, dtype=np.float64) * tou
 
         # loop around and find the 3D patch for each direction at each pixel
-        numeig = np.zeros(arr[..., 0].shape, dtype=np.float64)
-        # sigma = np.zeros(arr[...,0].shape,dtype = np.float64)
 
         # declare arrays for theta and thetax
         theta = np.zeros(arr.shape, dtype=np.float64)
         thetax = np.zeros(arr.shape, dtype=np.float64)
 
         patch_size = 2 * patch_radius + 1
+
+        # find local covariance and mean
+        n = np.array([arr.shape[0], arr.shape[1], arr.shape[2], arr.shape[3]], dtype=np.int32)
+        
+        lcov = np.zeros(tuple(n)+(arr.shape[3],), dtype=np.float64)
+        lmean = np.zeros(tuple(n), dtype = np.float64)
+
+        fcov.fast_local_covariance(arr.astype(np.float64), patch_radius, lcov, lmean)
 
         for k in range(patch_radius, arr.shape[2] - patch_radius, 1):
             for j in range(patch_radius, arr.shape[1] - patch_radius, 1):
@@ -74,22 +79,18 @@ def localpca(arr, sigma, patch_radius=1, rician=True):
                         patch_size,
                         arr.shape[3])
                     # compute the mean and normalize
-                    M = np.mean(X, axis=0)
+                    M = lmean[i,j,k,:]
                     X = X - np.array([M, ] * X.shape[0],
                                      dtype=np.float64)
 
                     # Compute the covariance matrix C = X_transpose X
-                    C = np.transpose(X).dot(X)
-                    C = C / M.shape[0]
+                    C = lcov[i,j,k,:,:]
                     # compute EVD of the covariance matrix of X get the matrices W and D, hence get matrix Y = XW
                     # Threshold matrix D and then compute X_est = YW_transpose
                     # D_est
                     [d, W] = np.linalg.eigh(C)
 
                     d[d < tou[i, j, k, :]] = 0
-                    d[d > 0] = 1
-                    numeig[i, j, k] = np.sum(d)
-                    D_hat = np.diag(d)
                     # Y = X.dot(W)
                     W_hat = W * 0
                     W_hat[:, d > 0] = W[:, d > 0]

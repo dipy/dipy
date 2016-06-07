@@ -48,7 +48,7 @@ sigma = sigma_c
 t = time()
 
 # perform the local PCA denoising
-denoised_arr = localpca(data,sigma)
+denoised_arr = localpca(data,sigma,patch_radius=1)
 
 print("time taken", -t + time())
 orig = data[:, :,2, 10]
@@ -73,5 +73,5 @@ ax[1,1].set_title('Python Output')
 ax[1,2].imshow(diff_python, cmap='gray', origin='lower')
 ax[1,2].set_title('Python Residual')
 
-# nib.save(nib.Nifti1Image(denoised_arr, affine), '/Users/Riddhish/Documents/GSOC/DIPY/data/final.nii')
+nib.save(nib.Nifti1Image(denoised_arr, affine), '/Users/Riddhish/Documents/GSOC/DIPY/data/final.nii')
 plt.show()
