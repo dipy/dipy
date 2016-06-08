@@ -46,7 +46,7 @@ fetch_cenir_multib(with_raw=False)
 
 """
 For this example we select only the shell with b-values equal to the one of the
-Human Connectome Project (HCP). 
+Human Connectome Project (HCP).
 
 data contains the voxel data and gtab contains a GradientTable
 object (gradient information e.g. b-values). For example, to show the b-values
@@ -62,7 +62,7 @@ img, gtab = read_cenir_multib(bvals)
 big_delta = 0.0365  # seconds
 small_delta = 0.0157  # seconds
 gtab = gradient_table(bvals=gtab.bvals, bvecs=gtab.bvecs,
-                      small_delta = big_delta,
+                      small_delta=big_delta,
                       big_delta=small_delta)
 data = img.get_data()
 data_small = data[40:65, 50:51, 35:60]
@@ -180,7 +180,7 @@ plt.savefig('MAPMRI_maps_regularization.png')
 It can be seen that all maps appear quite smooth and similar. Though, it is
 possible to see some subtle differences near the corpus callosum. The
 similarity and differences in reconstruction can be further illustrated by
-visualizing the analytic norm of the laplacian of the fitted signal. 
+visualizing the analytic norm of the laplacian of the fitted signal.
 """
 
 fig = plt.figure(figsize=(10, 5))
@@ -255,7 +255,7 @@ plt.savefig('MAPMRI_maps.png')
 """
 .. figure:: MAPMRI_maps.png
    :align: center
-   
+
 From left to right:
 - Mean Squared Displacement (MSD) is a measure for how far protons are able to
   diffuse. a decrease in MSD indicates protons are hindered/restricted more,
@@ -279,7 +279,7 @@ From left to right:
   eigenvector of a diffusion tensor during both gradient pulses. RTPP is
   related to the length of a pore [Ozarslan2013]_ but in practice should be
   similar to that of Gaussian diffusion.
-  
+
 It is also possible to estimate the amount of non-Gaussian diffusion in every
 voxel [Ozarslan2013]_. This quantity is estimated through the ratio between
 Gaussian volume (MAPMRI's first basis function) and the non-Gaussian volume
@@ -289,10 +289,10 @@ threshold makes the scale estimation in MAPMRI only use samples that
 realistically describe Gaussian diffusion, i.e., at low b-values.
 """
 map_model_both_ng = mapmri.MapmriModel(gtab, radial_order=radial_order,
-                            laplacian_regularization=True,
-                            laplacian_weighting=.05,
-                            positivity_constraint=True,
-                            bval_threshold=2000)
+                                       laplacian_regularization=True,
+                                       laplacian_weighting=.05,
+                                       positivity_constraint=True,
+                                       bval_threshold=2000)
 
 mapfit_both_ng = map_model_both_ng.fit(data_small)
 
@@ -328,7 +328,7 @@ plt.savefig('MAPMRI_ng.png')
 """
 .. figure:: MAPMRI_ng.png
    :align: center
-   
+
 On the left we see the overall NG and on the right the directional
 perpendicular NG and parallel NG. The NG ranges from 1 (completely
 non-Gaussian) to 0 (completely Gaussian). The overall NG of a voxel is always
@@ -350,10 +350,10 @@ needs more generic and needs more basis functions to approximate the signal.
 """
 radial_order = 8
 map_model_both_iso = mapmri.MapmriModel(gtab, radial_order=radial_order,
-                          laplacian_regularization=True,
-                          laplacian_weighting=.1,
-                          positivity_constraint=True,
-                          anisotropic_scaling=False)
+                                        laplacian_regularization=True,
+                                        laplacian_weighting=.1,
+                                        positivity_constraint=True,
+                                        anisotropic_scaling=False)
 
 mapfit_both_iso = map_model_both_iso.fit(data_small)
 
@@ -394,13 +394,13 @@ fvtk.record(r, n_frames=1, out_path='odfs.png', size=(600, 600))
 .. [Fick2016]_ Fick, Rutger HJ, et al. "MAPL: Tissue microstructure estimation
                using Laplacian-regularized MAP-MRI and its application to HCP
                data." NeuroImage (2016).
-        
+
 .. [Craven1978]_ Craven et al. "Smoothing Noisy Data with Spline Functions."
                NUMER MATH 31.4 (1978): 377-403.
 
 .. [Hosseinbor2013]_ Hosseinbor et al. "Bessel fourier orientation
                reconstruction (bfor): an analytical diffusion propagator
-               reconstruction for hybrid diffusion imaging and computation 
+               reconstruction for hybrid diffusion imaging and computation
                of q-space indices. NeuroImage 64, 650–670.
 .. [Fick2016b]_ Fick et al. "A sensitivity analysis of Q-space indices with
                respect to changes in axonal diameter, dispersion and tissue
