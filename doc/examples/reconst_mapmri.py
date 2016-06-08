@@ -62,7 +62,7 @@ img, gtab = read_cenir_multib(bvals)
 big_delta = 0.0365  # seconds
 small_delta = 0.0157  # seconds
 gtab = gradient_table(bvals=gtab.bvals, bvecs=gtab.bvecs,
-                      small_delta = big_delta,
+                      small_delta=big_delta,
                       big_delta=small_delta)
 data = img.get_data()
 data_small = data[40:65, 50:51, 35:60]
@@ -289,10 +289,10 @@ threshold makes the scale estimation in MAPMRI only use samples that
 realistically describe Gaussian diffusion, i.e., at low b-values.
 """
 map_model_both_ng = mapmri.MapmriModel(gtab, radial_order=radial_order,
-                            laplacian_regularization=True,
-                            laplacian_weighting=.05,
-                            positivity_constraint=True,
-                            bval_threshold=2000)
+                                       laplacian_regularization=True,
+                                       laplacian_weighting=.05,
+                                       positivity_constraint=True,
+                                       bval_threshold=2000)
 
 mapfit_both_ng = map_model_both_ng.fit(data_small)
 
@@ -350,10 +350,10 @@ needs more generic and needs more basis functions to approximate the signal.
 """
 radial_order = 8
 map_model_both_iso = mapmri.MapmriModel(gtab, radial_order=radial_order,
-                          laplacian_regularization=True,
-                          laplacian_weighting=.1,
-                          positivity_constraint=True,
-                          anisotropic_scaling=False)
+                                        laplacian_regularization=True,
+                                        laplacian_weighting=.1,
+                                        positivity_constraint=True,
+                                        anisotropic_scaling=False)
 
 mapfit_both_iso = map_model_both_iso.fit(data_small)
 
