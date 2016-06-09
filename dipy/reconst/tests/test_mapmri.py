@@ -23,6 +23,7 @@ from dipy.direction.peaks import gfa, peak_directions
 from dipy.reconst.tests.test_dsi import sticks_and_ball_dummies
 from dipy.core.subdivide_octahedron import create_unit_sphere
 from dipy.reconst.shm import sh_to_sf
+import time
 
 
 def int_func(n):
@@ -140,6 +141,50 @@ def test_mapmri_signal_fitting(radial_order=6):
     S = S / S[0]
     nmse_signal = np.sqrt(np.sum((S - S_reconst) ** 2)) / (S.sum())
     assert_almost_equal(nmse_signal, 0.0, 3)
+
+
+def test_mapmri_isotropic_static_scale_factor(radial_order=6):
+    gtab = get_gtab_taiwan_dsi()
+    D = 0.7e-3
+    tau = 1 / (4 * np.pi ** 2)
+    mu = np.sqrt(D * 2 * tau)
+
+    l1, l2, l3 = [D, D, D]
+    S = single_tensor(gtab, evals=np.r_[l1, l2, l3])
+    S_array = np.tile(S, (5, 1))
+
+    stat_weight = 0.1
+    mapm_scale_stat_reg_stat = MapmriModel(gtab,
+                                           radial_order=radial_order,
+                                           anisotropic_scaling=False,
+                                           dti_scale_estimation=False,
+                                           static_diffusivity=D,
+                                           laplacian_regularization=True,
+                                           laplacian_weighting=stat_weight)
+    mapm_scale_adapt_reg_stat = MapmriModel(gtab,
+                                            radial_order=radial_order,
+                                            anisotropic_scaling=False,
+                                            dti_scale_estimation=True,
+                                            laplacian_regularization=True,
+                                            laplacian_weighting=stat_weight)
+
+    start = time.time()
+    mapf_scale_stat_reg_stat = mapm_scale_stat_reg_stat.fit(S_array)
+    time_scale_stat_reg_stat = time.time() - start
+
+    start = time.time()
+    mapf_scale_adapt_reg_stat = mapm_scale_adapt_reg_stat.fit(S_array)
+    time_scale_adapt_reg_stat = time.time() - start
+
+    # test if indeed the scale factor is fixed now
+    assert_equal(np.all(mapf_scale_stat_reg_stat.mu == mu),
+                True)
+    # test if computation time is shorter
+    assert_equal(time_scale_stat_reg_stat < time_scale_adapt_reg_stat,
+                True)
+    # check if the fitted signal is the same
+    assert_almost_equal(mapf_scale_stat_reg_stat.fitted_signal(),
+                        mapf_scale_adapt_reg_stat.fitted_signal())
 
 
 def test_mapmri_signal_fitting_over_radial_order(order_max=8):
