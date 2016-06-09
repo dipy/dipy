@@ -11,7 +11,7 @@ import dipy.reconst.dti as dti
 from warnings import warn
 from dipy.core.gradients import gradient_table
 from ..utils.optpkg import optional_package
-from scipy.optimize import fmin_l_bfgs_b
+from dipy.core.optimize import Optimizer
 
 cvxopt, have_cvxopt, _ = optional_package("cvxopt")
 
@@ -1992,24 +1992,20 @@ def generalized_crossvalidation(data, M, LR, gcv_startpoint=5e-2):
     """
     MMt = np.dot(M.T, M)
     K = len(data)
-    input_stuff = (data, M, MMt, K, LR)
-
     bounds = ((1e-5, 10),)
-    res = fmin_l_bfgs_b(lambda x,
-                        input_stuff: GCV_cost_function(x, input_stuff),
-                        (gcv_startpoint),
-                        args=(input_stuff,),
-                        approx_grad=True,
-                        bounds=bounds,
-                        disp=False, pgtol=1e-10, factr=10.)
-    optimal_lambda = res[0][0]
+    solver = Optimizer(fun=gcv_cost_function,
+                       x0=(gcv_startpoint,),
+                       args = ((data, M, MMt, K, LR),),
+                       bounds=bounds)
+    
+    optimal_lambda = solver.xopt
     return optimal_lambda
 
 
-def GCV_cost_function(weight, input_stuff):
+def gcv_cost_function(weight, args):
     """The GCV cost function that is iterated [4]
     """
-    data, M, MMt, K, LR = input_stuff
+    data, M, MMt, K, LR = args
     S = np.dot(np.dot(M, np.linalg.pinv(MMt + weight * LR)), M.T)
     trS = np.matrix.trace(S)
     normyytilde = np.linalg.norm(data - np.dot(S, data), 2)
