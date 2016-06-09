@@ -11,6 +11,7 @@ from nose.tools import assert_true, assert_equal, assert_almost_equal
 from numpy.testing import (assert_array_equal, assert_array_almost_equal,
                            assert_raises, run_module_suite)
 
+from dipy.tracking import Streamlines
 import dipy.tracking.utils as ut
 from dipy.tracking.streamline import (set_number_of_points,
                                       length as ds_length,
@@ -347,9 +348,17 @@ def test_length():
     length_streamline_python = length_python(streamline)
     assert_almost_equal(length_streamline_cython, length_streamline_python)
 
+    # ArraySequence
+    length_streamline_arrseq = ds_length(Streamlines([streamline]))
+    assert_almost_equal(length_streamline_arrseq, length_streamline_cython)
+
     length_streamline_cython = ds_length(streamline_64bit)
     length_streamline_python = length_python(streamline_64bit)
     assert_almost_equal(length_streamline_cython, length_streamline_python)
+
+    # ArraySequence
+    length_streamline_arrseq = ds_length(Streamlines([streamline_64bit]))
+    assert_almost_equal(length_streamline_arrseq, length_streamline_cython)
 
     # Test computing length of multiple streamlines of different nb_points
     length_streamlines_cython = ds_length(streamlines)
@@ -359,12 +368,32 @@ def test_length():
         assert_array_almost_equal(length_streamlines_cython[i],
                                   length_streamline_python)
 
+    # ArraySequence
+    length_streamlines_arrseq = ds_length(Streamlines(streamlines))
+    assert_array_almost_equal(length_streamlines_arrseq,
+                              length_streamlines_cython)
+
     length_streamlines_cython = ds_length(streamlines_64bit)
 
     for i, s in enumerate(streamlines_64bit):
         length_streamline_python = length_python(s)
         assert_array_almost_equal(length_streamlines_cython[i],
                                   length_streamline_python)
+
+    # ArraySequence
+    length_streamlines_arrseq = ds_length(Streamlines(streamlines_64bit))
+    assert_array_almost_equal(length_streamlines_arrseq,
+                              length_streamlines_cython)
+
+    # Test on a sliced ArraySequence
+    length_streamlines_cython = ds_length(streamlines_64bit[::2])
+    length_streamlines_arrseq = ds_length(Streamlines(streamlines_64bit[::2]))
+    assert_array_almost_equal(length_streamlines_arrseq,
+                              length_streamlines_cython)
+    length_streamlines_cython = ds_length(streamlines_64bit[::-1])
+    length_streamlines_arrseq = ds_length(Streamlines(streamlines_64bit[::-1]))
+    assert_array_almost_equal(length_streamlines_arrseq,
+                              length_streamlines_cython)
 
     # Test streamlines having mixed dtype
     streamlines_mixed_dtype = [streamline,
