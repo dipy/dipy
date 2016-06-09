@@ -315,8 +315,8 @@ def test_mapmri_laplacian_anisotropic(radial_order=6):
 
     # ground truth norm of laplacian of tensor
     norm_of_laplacian_gt = (
-        (3 * (l1 ** 2 + l2 ** 2 + l3 ** 2) + 2 * l2 * l3 + 2 * l1 * (l2 + l3))
-        * (np.pi ** (5 / 2.) * tau) /
+        (3 * (l1 ** 2 + l2 ** 2 + l3 ** 2) +
+         2 * l2 * l3 + 2 * l1 * (l2 + l3)) * (np.pi ** (5 / 2.) * tau) /
         (np.sqrt(2 * l1 * l2 * l3 * tau))
         )
 
@@ -344,8 +344,8 @@ def test_mapmri_laplacian_isotropic(radial_order=6):
 
     # ground truth norm of laplacian of tensor
     norm_of_laplacian_gt = (
-        (3 * (l1 ** 2 + l2 ** 2 + l3 ** 2) + 2 * l2 * l3 + 2 * l1 * (l2 + l3))
-        * (np.pi ** (5 / 2.) * tau) /
+        (3 * (l1 ** 2 + l2 ** 2 + l3 ** 2) +
+         2 * l2 * l3 + 2 * l1 * (l2 + l3)) * (np.pi ** (5 / 2.) * tau) /
         (np.sqrt(2 * l1 * l2 * l3 * tau))
         )
 
@@ -539,8 +539,8 @@ def test_laplacian_regularization(radial_order=6):
                                          laplacian_regularization=True,
                                          laplacian_weighting=weight_array)
     mapmod_laplacian_gcv = MapmriModel(gtab, radial_order=radial_order,
-                                         laplacian_regularization=True,
-                                         laplacian_weighting="GCV")
+                                       laplacian_regularization=True,
+                                       laplacian_weighting="GCV")
 
     # test the Generalized Cross Validation
     # test if GCV gives zero if there is no noise
@@ -579,13 +579,13 @@ def test_laplacian_regularization(radial_order=6):
                                laplacian_weighting=weight_array,
                                anisotropic_scaling=False)
     mapmod_laplacian_array = MapmriModel(gtab, radial_order=radial_order,
-                                   laplacian_regularization=True,
-                                   laplacian_weighting=weight_array,
-                                   anisotropic_scaling=False)
+                                         laplacian_regularization=True,
+                                         laplacian_weighting=weight_array,
+                                         anisotropic_scaling=False)
     mapmod_laplacian_gcv = MapmriModel(gtab, radial_order=radial_order,
-                                laplacian_regularization=True,
-                                laplacian_weighting="GCV",
-                                anisotropic_scaling=False)
+                                       laplacian_regularization=True,
+                                       laplacian_weighting="GCV",
+                                       anisotropic_scaling=False)
 
     # test the Generalized Cross Validation
     # test if GCV gives zero if there is no noise
