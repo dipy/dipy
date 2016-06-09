@@ -15,7 +15,6 @@ class Identity:
     (e.g. list, tuple). Indexing an instance of this class will return the
     index provided instead of the element. It does not support slicing.
     """
-
     def __getitem__(self, idx):
         return idx
 
@@ -41,7 +40,6 @@ class Cluster(object):
     A cluster does not contain actual data but instead knows how to
     retrieve them using its `ClusterMap` object.
     """
-
     def __init__(self, id=0, indices=None, refdata=Identity()):
         self.id = id
         self.refdata = refdata
@@ -75,8 +73,8 @@ class Cluster(object):
         elif type(idx) is list:
             return [self[i] for i in idx]
 
-        raise TypeError("Index must be a int or a slice! Not " +
-                        str(type(idx)))
+        msg = "Index must be a int or a slice! Not '{0}'".format(type(idx))
+        raise TypeError(msg)
 
     def __iter__(self):
         return (self[i] for i in range(len(self)))
@@ -136,9 +134,9 @@ class ClusterCentroid(Cluster):
         self.new_centroid = centroid.copy()
 
     def __eq__(self, other):
-        return isinstance(other, ClusterCentroid) \
-            and np.all(self.centroid == other.centroid) \
-            and super(ClusterCentroid, self).__eq__(other)
+        return (isinstance(other, ClusterCentroid) and
+                np.all(self.centroid == other.centroid) and
+                super(ClusterCentroid, self).__eq__(other))
 
     def assign(self, id_datum, features):
         """ Assigns a data point to this cluster.
@@ -179,7 +177,6 @@ class ClusterMap(object):
     refdata : list
         Actual elements that clustered indices refer to.
     """
-
     def __init__(self, refdata=Identity()):
         self._clusters = []
         self.refdata = refdata
@@ -276,9 +273,9 @@ class ClusterMap(object):
         elif isinstance(other, int):
             return np.array([op(len(cluster), other) for cluster in self])
 
-        raise NotImplementedError(
-            "ClusterMap only supports comparison with \
-            a int or another instance of Clustermap.")
+        msg = ("ClusterMap only supports comparison with a int or another"
+               " instance of Clustermap.")
+        raise NotImplementedError(msg)
 
     def __eq__(self, other):
         return self._richcmp(other, operator.eq)
@@ -410,8 +407,8 @@ class Clustering(object):
         `ClusterMap` object
             Result of the clustering.
         """
-        raise NotImplementedError(
-            "Subclass has to define method 'cluster(data, ordering)'!")
+        msg = "Subclass has to define method 'cluster(data, ordering)'!"
+        raise NotImplementedError(msg)
 
 
 class QuickBundles(Clustering):
@@ -444,7 +441,8 @@ class QuickBundles(Clustering):
     >>> from nibabel import trackvis as tv
     >>> streams, hdr = tv.read(get_data('fornix'))
     >>> streamlines = [i[0] for i in streams]
-    >>> # Segment fornix with a treshold of 10mm and streamlines resampled to 12 points.
+    >>> # Segment fornix with a treshold of 10mm and streamlines resampled
+    >>> # to 12 points.
     >>> qb = QuickBundles(threshold=10.)
     >>> clusters = qb.cluster(streamlines)
     >>> len(clusters)
