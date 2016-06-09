@@ -538,27 +538,36 @@ def test_laplacian_regularization(radial_order=6):
     mapmod_unreg = MapmriModel(gtab, radial_order=radial_order,
                                laplacian_regularization=False,
                                laplacian_weighting=weight_array)
-    mapmod_laplacian = MapmriModel(gtab, radial_order=radial_order,
-                                   laplacian_regularization=True,
-                                   laplacian_weighting=weight_array)
+    mapmod_laplacian_array = MapmriModel(gtab, radial_order=radial_order,
+                                         laplacian_regularization=True,
+                                         laplacian_weighting=weight_array)
+    mapmod_laplacian_gcv = MapmriModel(gtab, radial_order=radial_order,
+                                         laplacian_regularization=True,
+                                         laplacian_weighting="GCV")
 
     # test the Generalized Cross Validation
     # test if GCV gives zero if there is no noise
-    mapfit_laplacian = mapmod_laplacian.fit(S)
-    assert_equal(mapfit_laplacian.lopt, 0.)
+    mapfit_laplacian_array = mapmod_laplacian_array.fit(S)
+    assert_equal(mapfit_laplacian_array.lopt, 0.)
 
     # test if GCV gives higher values if there is noise
-    mapfit_laplacian = mapmod_laplacian.fit(S_noise)
-    assert_equal(mapfit_laplacian.lopt > 0., True)
-
+    mapfit_laplacian_array = mapmod_laplacian_array.fit(S_noise)
+    lopt_array = mapfit_laplacian_array.lopt
+    assert_equal(lopt_array > 0., True)
+    
+    # test if continuous GCV gives the same the one based on an array
+    mapfit_laplacian_gcv = mapmod_laplacian_gcv.fit(S_noise)
+    lopt_gcv = mapfit_laplacian_gcv.lopt
+    assert_almost_equal(lopt_array, lopt_gcv, 2)
+    
     # test if laplacian reduced the norm of the laplacian in the reconstruction
-    mu = mapfit_laplacian.mu
+    mu = mapfit_laplacian_gcv.mu
     laplacian_matrix = mapmri.mapmri_laplacian_reg_matrix(
-        mapmod_laplacian.ind_mat, mu, mapmod_laplacian.S_mat,
-        mapmod_laplacian.T_mat, mapmod_laplacian.U_mat)
+        mapmod_laplacian_gcv.ind_mat, mu, mapmod_laplacian_gcv.S_mat,
+        mapmod_laplacian_gcv.T_mat, mapmod_laplacian_gcv.U_mat)
 
     coef_unreg = mapmod_unreg.fit(S_noise)._mapmri_coef
-    coef_laplacian = mapfit_laplacian._mapmri_coef
+    coef_laplacian = mapfit_laplacian_gcv._mapmri_coef
 
     laplacian_norm_unreg = np.dot(
         coef_unreg, np.dot(coef_unreg, laplacian_matrix))
@@ -572,27 +581,37 @@ def test_laplacian_regularization(radial_order=6):
                                laplacian_regularization=False,
                                laplacian_weighting=weight_array,
                                anisotropic_scaling=False)
-    mapmod_laplacian = MapmriModel(gtab, radial_order=radial_order,
+    mapmod_laplacian_array = MapmriModel(gtab, radial_order=radial_order,
                                    laplacian_regularization=True,
                                    laplacian_weighting=weight_array,
                                    anisotropic_scaling=False)
+    mapmod_laplacian_gcv = MapmriModel(gtab, radial_order=radial_order,
+                                laplacian_regularization=True,
+                                laplacian_weighting="GCV",
+                                anisotropic_scaling=False)
 
     # test the Generalized Cross Validation
     # test if GCV gives zero if there is no noise
-    mapfit_laplacian = mapmod_laplacian.fit(S)
-    assert_equal(mapfit_laplacian.lopt, 0.)
+    mapfit_laplacian_array = mapmod_laplacian_array.fit(S)
+    assert_equal(mapfit_laplacian_array.lopt, 0.)
 
     # test if GCV gives higher values if there is noise
-    mapfit_laplacian = mapmod_laplacian.fit(S_noise)
-    assert_equal(mapfit_laplacian.lopt > 0., True)
+    mapfit_laplacian_array = mapmod_laplacian_array.fit(S_noise)
+    lopt_array = mapfit_laplacian_array.lopt
+    assert_equal(lopt_array > 0., True)
+
+    # test if continuous GCV gives the same the one based on an array
+    mapfit_laplacian_gcv = mapmod_laplacian_gcv.fit(S_noise)
+    lopt_gcv = mapfit_laplacian_gcv.lopt
+    assert_almost_equal(lopt_array, lopt_gcv, 2)
 
     # test if laplacian reduced the norm of the laplacian in the reconstruction
-    mu = mapfit_laplacian.mu
+    mu = mapfit_laplacian_gcv.mu
     laplacian_matrix = mapmri.mapmri_isotropic_laplacian_reg_matrix(
         radial_order, mu[0])
 
     coef_unreg = mapmod_unreg.fit(S_noise)._mapmri_coef
-    coef_laplacian = mapfit_laplacian._mapmri_coef
+    coef_laplacian = mapfit_laplacian_gcv._mapmri_coef
 
     laplacian_norm_unreg = np.dot(
         coef_unreg, np.dot(coef_unreg, laplacian_matrix))
