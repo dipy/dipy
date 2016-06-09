@@ -1,21 +1,21 @@
 # distutils: language = c
 # cython: wraparound=False, cdivision=True, boundscheck=False
 
-import numpy as np
-cimport numpy as np
 import cython
-
+import numpy as np
 from libc.math cimport sqrt
 
 from dipy.tracking import Streamlines
+
+cimport numpy as np
 
 cdef extern from "dpy_math.h" nogil:
     bint dpy_isnan(double x)
 
 cdef extern from "stdlib.h" nogil:
     ctypedef unsigned long size_t
-    void free(void *ptr)
-    void *malloc(size_t size)
+    void free(void * ptr)
+    void * malloc(size_t size)
 
 
 cdef double c_length(Streamline streamline) nogil:
@@ -35,7 +35,9 @@ cdef double c_length(Streamline streamline) nogil:
     return out
 
 
-cdef void c_arclengths_from_arraysequence(Streamline points, long[:] offsets, long[:] lengths, double[:] arclengths) nogil:
+cdef void c_arclengths_from_arraysequence(Streamline points,
+                                          long[:] offsets, long[:] lengths,
+                                          double[:] arclengths) nogil:
     cdef:
         np.npy_intp i, j, k
         np.npy_intp offset
@@ -57,7 +59,7 @@ cdef void c_arclengths_from_arraysequence(Streamline points, long[:] offsets, lo
 def length(streamlines):
     ''' Euclidean length of streamlines
 
-    This will give length in mm if streamlines are expressed in world coordinates.
+    Length is in mm only if streamlines are expressed in world coordinates.
 
     Parameters
     ------------
@@ -86,7 +88,8 @@ def length(streamlines):
     True
     >>> streamlines = [streamline, np.vstack([streamline, streamline[::-1]])]
     >>> expected_lengths = [expected_length, 2*expected_length]
-    >>> np.allclose(expected_lengths, [length(streamlines[0]), length(streamlines[1])])
+    >>> lengths = [length(streamlines[0]), length(streamlines[1])]
+    >>> np.allclose(lengths, expected_lengths)
     True
     >>> length([])
     0.0
@@ -100,10 +103,16 @@ def length(streamlines):
 
         arclengths = np.zeros(len(streamlines), dtype=np.float64)
 
-        if streamlines._data.dtype == np.float32:
-            c_arclengths_from_arraysequence[float2d](streamlines._data, streamlines._offsets, streamlines._lengths, arclengths)
+        if streamlines.data.dtype == np.float32:
+            c_arclengths_from_arraysequence[float2d](streamlines.data,
+                                                     streamlines._offsets,
+                                                     streamlines._lengths,
+                                                     arclengths)
         else:
-            c_arclengths_from_arraysequence[double2d](streamlines._data, streamlines._offsets, streamlines._lengths, arclengths)
+            c_arclengths_from_arraysequence[double2d](streamlines.data,
+                                                      streamlines._offsets,
+                                                      streamlines._lengths,
+                                                      arclengths)
 
         return arclengths
 
@@ -132,7 +141,8 @@ def length(streamlines):
             # HACK: To avoid memleaks we have to recast with astype(dtype).
             streamline = streamlines[i].astype(dtype)
             if dtype != np.float32 and dtype != np.float64:
-                dtype = np.float64 if dtype == np.int64 or dtype == np.uint64 else np.float32
+                is_integer = dtype == np.int64 or dtype == np.uint64
+                dtype = np.float64 if is_integer else np.float32
                 streamline = streamlines[i].astype(dtype)
 
             if dtype == np.float32:
@@ -153,12 +163,14 @@ def length(streamlines):
             streamline = streamlines[i].astype(dtype)
             streamlines_length[i] = c_length[double2d](streamline)
     elif dtype == np.int64 or dtype == np.uint64:
-        # All streamlines are composed of int64 or uint64 points so convert them in float64 one at the time
+        # All streamlines are composed of int64 or uint64 points so convert
+        # them in float64 one at the time.
         for i in range(len(streamlines)):
             streamline = streamlines[i].astype(np.float64)
             streamlines_length[i] = c_length[double2d](streamline)
     else:
-        # All streamlines are composed of points with a dtype fitting in 32bits so convert them in float32 one at the time
+        # All streamlines are composed of points with a dtype fitting in
+        # 32 bits so convert them in float32 one at the time.
         for i in range(len(streamlines)):
             streamline = streamlines[i].astype(np.float32)
             streamlines_length[i] = c_length[float2d](streamline)
@@ -282,7 +294,7 @@ def set_number_of_points(streamlines, nb_points=3):
 
     if nb_points < 2:
         raise ValueError("nb_points must be at least 2")
-        
+
     dtype = streamlines[0].dtype
     for streamline in streamlines:
         if streamline.dtype != dtype:
