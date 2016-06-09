@@ -9,6 +9,7 @@ from scipy.optimize import minimize, leastsq
 from dipy.core.gradients import gradient_table
 from dipy.reconst.base import ReconstModel
 from dipy.reconst.dti import _min_positive_signal
+from dipy.reconst.dti import TensorModel, mean_diffusivity
 
 
 def ivim_function(params, bvals):
@@ -55,7 +56,7 @@ class IvimModel(ReconstModel):
                    MR imaging." Radiology 265.3 (2012): 874-881.
         """
         ReconstModel.__init__(self, gtab)
-
+        self.split_b = split_b
         self.min_signal = min_signal
         if self.min_signal is not None and self.min_signal <= 0:
             e_s = "The `min_signal` key-word argument needs to be strictly"
@@ -127,7 +128,10 @@ class IvimModel(ReconstModel):
                                        routine,
                                        algorithm, gtol, ftol, eps)
         elif fit_method == "two_stage":
-            pass
+            params_in_mask = two_stage(data_in_mask, self.gtab, x0,
+                                       self.split_b, jac, bounds, tol,
+                                       routine,
+                                       algorithm, gtol, ftol, eps)
         else:
             raise ValueError("""Fit method must be either
                              'one_stage' or 'two_stage'""")
@@ -229,3 +233,40 @@ def _leastsq(flat_data, bvals, x0, ivim_params):
         ivim_params[vox, :4] = res[0]
         result += res
     return result
+
+
+def two_stage(data, gtab, x0,
+              split_b, jac, bounds, tol,
+              routine, algorithm, gtol, ftol, eps):
+    """
+    Fit the ivim params using a two stage fit
+
+    Parameters
+    ----------
+    data : array ([X, Y, Z, ...], g)
+        Data or response variables holding the data. Note that the last
+        dimension should contain the data. It makes no copies of data.
+
+    jac : bool
+        Use the Jacobian? Default: False
+
+    Returns
+    -------
+    ivim_params: the S0, f, D_star, D value for each voxel.
+
+    """
+    flat_data = data.reshape((-1, data.shape[-1]))
+    # Flatten for the iteration over voxels:
+    bvals_ge_split = gtab.bvals[gtab.bvals > split_b]
+    bvecs_ge_split = gtab.bvecs[gtab.bvals > split_b]
+    gtab_ge_split = gradient_table(bvals_ge_split, bvecs_ge_split.T)
+
+    tensor_model = TensorModel(gtab_ge_split)
+    tenfit = tensor_model.fit(data[..., gtab.bvals > split_b])
+
+    D_guess = mean_diffusivity(tenfit.evals)
+
+    x0[:, 3] = D_guess
+
+    return one_stage(data, gtab, x0, jac, bounds, tol, routine, algorithm,
+                     gtol, ftol, eps)
