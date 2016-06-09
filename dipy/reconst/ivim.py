@@ -63,8 +63,8 @@ class IvimModel(ReconstModel):
             raise ValueError(e_s)
 
     def fit(self, data, mask=None, x0=None, fit_method="one_stage", routine="leastsq",
-            jac=False, bounds=((0, 150.), (0, 1.), (0, 1.), (0, 1.)),
-            tol=None, algorithm=None):
+            jac=False, bounds=((0, 1.), (0, 1.), (0, 1.), (0, 1.)), tol=1e-25, algorithm='L-BFGS-B',
+            gtol=1e-25, ftol=1e-25, eps=1e-15):
         """ Fit method of the Ivim model class
 
         Parameters
@@ -125,7 +125,7 @@ class IvimModel(ReconstModel):
             params_in_mask = one_stage(data_in_mask, self.gtab, x0,
                                        jac, bounds, tol,
                                        routine,
-                                       algorithm)
+                                       algorithm, gtol, ftol, eps)
         elif fit_method == "two_stage":
             pass
         else:
@@ -168,7 +168,8 @@ class IvimFit(object):
         return self.model_params.shape[:-1]
 
 
-def one_stage(data, gtab, x0, jac, bounds, tol, routine, algorithm):
+def one_stage(data, gtab, x0, jac, bounds, tol, routine, algorithm,
+              gtol, ftol, eps):
     """
     Fit the ivim params using minimize
 
@@ -193,7 +194,7 @@ def one_stage(data, gtab, x0, jac, bounds, tol, routine, algorithm):
 
     if routine == 'minimize':
         result = _minimize(flat_data, bvals, x0, ivim_params,
-                           bounds, tol, jac, algorithm)
+                           bounds, tol, jac, algorithm, gtol, ftol, eps)
     elif routine == "leastsq":
         result = _leastsq(flat_data, bvals, x0, ivim_params)
     ivim_params.shape = data.shape[:-1] + (4,)
@@ -201,27 +202,30 @@ def one_stage(data, gtab, x0, jac, bounds, tol, routine, algorithm):
 
 
 def _minimize(flat_data, bvals, x0, ivim_params,
-              bounds, tol, jac, algorithm):
+              bounds, tol, jac, algorithm, gtol, ftol, eps):
     """Use minimize for finding ivim_params"""
     sum_sq = lambda params, bvals, signal: np.sum(
         _ivim_error(params, bvals, signal))
 
-    res = []
+    result = []
     for vox in range(flat_data.shape[0]):
-        res += minimize(sum_sq,
-                        x0[vox],
-                        args=(bvals, flat_data[vox]), bounds=bounds,
-                        tol=tol, method=algorithm, jac=jac)
+        res = minimize(sum_sq,
+                       x0[vox],
+                       args=(bvals, flat_data[vox]), bounds=bounds,
+                       tol=tol, method=algorithm, jac=jac,
+                       options={'gtol': gtol, 'ftol': ftol, 'eps': eps})
         ivim_params[vox, :4] = res.x
-    return res
+        result += res
+    return result
 
 
 def _leastsq(flat_data, bvals, x0, ivim_params):
     """Use minimize for finding ivim_params"""
-    res = []
+    result = []
     for vox in range(flat_data.shape[0]):
-        res += leastsq(_ivim_error,
-                       x0[vox],
-                       args=(bvals, flat_data[vox]))
+        res = leastsq(_ivim_error,
+                      x0[vox],
+                      args=(bvals, flat_data[vox]))
         ivim_params[vox, :4] = res[0]
-    return res
+        result += res
+    return result
