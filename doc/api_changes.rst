@@ -7,6 +7,13 @@ renamed or are deprecated (not recommended) during different release circles.
 
 Dipy 0.12 Changes
 -----------------
+**Dropped support for Python 2.6***
+
+It has been 6 years since the release of Python 2.7, and multiple other
+versions have been released since. As far as we know, Dipy still works well
+on Python 2.6, but we no longer test on this version, and we recommend that
+users upgrade to Python 2.7 or newer to use Dipy.
+
 
 **Tracking**
 ``probabilistic_direction_getter.ProbabilisticDirectionGetter`` input parameters
