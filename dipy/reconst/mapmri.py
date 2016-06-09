@@ -75,6 +75,7 @@ class MapmriModel(Cache):
                  eigenvalue_threshold=1e-04,
                  bval_threshold=np.inf,
                  dti_scale_estimation=True,
+                 static_diffusivity=0.7e-3,
                  pos_grid=15,
                  pos_radius='adaptive'):
         r""" Analytical and continuous modeling of the diffusion signal with
@@ -246,7 +247,6 @@ class MapmriModel(Cache):
                                      bvecs=self.gtab.bvecs[self.cutoff])
         self.tenmodel = dti.TensorModel(gtab_cutoff)
 
-        self.quick_fit = False
         if self.anisotropic_scaling:
             self.ind_mat = mapmri_index_matrix(self.radial_order)
             self.Bm = b_mat(self.ind_mat)
@@ -264,7 +264,7 @@ class MapmriModel(Cache):
                 self.M_mu_independent = mapmri_isotropic_M_mu_independent(
                     self.radial_order, q)
             else:
-                D = 0.7e-3  # average choice for white matter diffusivity
+                D = static_diffusivity
                 mumean = np.sqrt(2 * D * self.tau)
                 self.mu = np.array([mumean, mumean, mumean])
                 self.M = mapmri_isotropic_phi_matrix(radial_order, mumean, q)
@@ -275,11 +275,9 @@ class MapmriModel(Cache):
                            laplacian_weighting * mumean *
                            self.laplacian_matrix)
                     self.MMt_inv_Mt = np.dot(np.linalg.pinv(MMt), self.M.T)
-                    self.quick_fit = True
 
     @multi_voxel_fit
     def fit(self, data):
-
         tenfit = self.tenmodel.fit(data[self.cutoff])
         evals = tenfit.evals
         R = tenfit.evecs
@@ -292,18 +290,23 @@ class MapmriModel(Cache):
             q = qvecs * qvals[:, None]
             M = mapmri_phi_matrix(self.radial_order, mu, q)
         else:
-            if self.quick_fit:
+            try:
+                self.MMt_inv_Mt
                 lopt = self.laplacian_weighting
                 coef = np.dot(self.MMt_inv_Mt, data)
                 coef = coef / sum(coef * self.Bm)
-                return MapmriFit(self, coef, self.mu, R, self.ind_mat, lopt)
-            else:
-                u0 = isotropic_scale_factor(evals * 2 * self.tau)
-                mu = np.array([u0, u0, u0])
-                q = self.gtab.bvecs * qvals[:, None]
-                M_mu_dependent = mapmri_isotropic_M_mu_dependent(
-                    self.radial_order, mu[0], qvals)
-                M = M_mu_dependent * self.M_mu_independent
+                return MapmriFit(self, coef, self.mu, R, lopt)
+            except AttributeError:
+                try:
+                    M = self.M
+                    mu = self.mu
+                except AttributeError:
+                    u0 = isotropic_scale_factor(evals * 2 * self.tau)
+                    mu = np.array([u0, u0, u0])
+                    q = self.gtab.bvecs * qvals[:, None]
+                    M_mu_dependent = mapmri_isotropic_M_mu_dependent(
+                        self.radial_order, mu[0], qvals)
+                    M = M_mu_dependent * self.M_mu_independent
 
         if self.laplacian_regularization:
             if self.anisotropic_scaling:
