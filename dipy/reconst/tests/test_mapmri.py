@@ -576,7 +576,7 @@ def test_laplacian_regularization(radial_order=6):
     S, _ = generate_signal_crossing(gtab, l1, l2, l3, angle2=60)
     S_noise = add_noise(S, snr=20, S0=100.)
 
-    weight_array = np.linspace(0, 1., 101)
+    weight_array = np.linspace(0, .3, 301)
     mapmod_unreg = MapmriModel(gtab, radial_order=radial_order,
                                laplacian_regularization=False,
                                laplacian_weighting=weight_array)
@@ -588,14 +588,14 @@ def test_laplacian_regularization(radial_order=6):
                                        laplacian_weighting="GCV")
 
     # test the Generalized Cross Validation
-    # test if GCV gives zero if there is no noise
+    # test if GCV gives very low if there is no noise
     mapfit_laplacian_array = mapmod_laplacian_array.fit(S)
-    assert_equal(mapfit_laplacian_array.lopt, 0.)
+    assert_equal(mapfit_laplacian_array.lopt < 0.01, True)
 
     # test if GCV gives higher values if there is noise
     mapfit_laplacian_array = mapmod_laplacian_array.fit(S_noise)
     lopt_array = mapfit_laplacian_array.lopt
-    assert_equal(lopt_array > 0., True)
+    assert_equal(lopt_array > 0.01, True)
 
     # test if continuous GCV gives the same the one based on an array
     mapfit_laplacian_gcv = mapmod_laplacian_gcv.fit(S_noise)
@@ -635,12 +635,12 @@ def test_laplacian_regularization(radial_order=6):
     # test the Generalized Cross Validation
     # test if GCV gives zero if there is no noise
     mapfit_laplacian_array = mapmod_laplacian_array.fit(S)
-    assert_equal(mapfit_laplacian_array.lopt, 0.)
+    assert_equal(mapfit_laplacian_array.lopt < 0.01, True)
 
     # test if GCV gives higher values if there is noise
     mapfit_laplacian_array = mapmod_laplacian_array.fit(S_noise)
     lopt_array = mapfit_laplacian_array.lopt
-    assert_equal(lopt_array > 0., True)
+    assert_equal(lopt_array > 0.01, True)
 
     # test if continuous GCV gives the same the one based on an array
     mapfit_laplacian_gcv = mapmod_laplacian_gcv.fit(S_noise)
