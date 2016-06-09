@@ -7,6 +7,7 @@ Simple volume slicing
 Here we present an example for visualizing slices from 3D images.
 
 """
+
 from __future__ import division
 
 import os
