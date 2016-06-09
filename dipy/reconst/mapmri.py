@@ -71,13 +71,13 @@ class MapmriModel(Cache):
                  laplacian_regularization=True,
                  laplacian_weighting=0.2,
                  positivity_constraint=False,
+                 pos_grid=15,
+                 pos_radius='adaptive',
                  anisotropic_scaling=True,
                  eigenvalue_threshold=1e-04,
                  bval_threshold=np.inf,
                  dti_scale_estimation=True,
-                 static_diffusivity=0.7e-3,
-                 pos_grid=15,
-                 pos_radius='adaptive'):
+                 static_diffusivity=0.7e-3):
         r""" Analytical and continuous modeling of the diffusion signal with
         respect to the MAPMRI basis [1]_.
 
@@ -121,30 +121,41 @@ class MapmriModel(Cache):
         laplacian_weighting: string or scalar,
             The string 'GCV' makes it use generalized cross-validation to find
             the regularization weight [4]. A scalar sets the regularization
-            weight to that value.
+            weight to that value and an array will make it selected the
+            optimal weight from the values in the array.
         positivity_constraint : bool,
             Constrain the propagator to be positive.
+        pos_grid : integer,
+            The number of points in the grid that is used in the positivity
+            constraint.
+        pos_radius : float or string,
+            If set to a float, the maximum distance the the positivity
+            constraint constrains to posivity is that value. If set to
+            `adaptive', the maximum distance is dependent on the estimated
+            tissue diffusivity.
         anisotropic_scaling : bool,
-            If false, force the basis function to be identical in the three
-            dimensions (SHORE like).
+            If True, uses the standard anisotropic MAP-MRI basis. If False,
+            uses the isotropic MAP-MRI basis (equal to 3D-SHORE).
         eigenvalue_threshold : float,
-            set the minimum of the tensor eigenvalues in order to avoid
-            stability problem
+            Sets the minimum of the tensor eigenvalues in order to avoid
+            stability problem.
         bval_threshold : float,
-            sets the b-value threshold to be used in the scale factor
-            estimation. In order for the stimated non-Gaussianity to have
-            meaning this value should set to a lower value (b<2000 s/mm2)
+            Sets the b-value threshold to be used in the scale factor
+            estimation. In order for the estimated non-Gaussianity to have
+            meaning this value should set to a lower value (b<2000 s/mm^2)
             such that the scale factors are estimated on signal points that
             reasonably represent the spins at Gaussian diffusion.
         dti_scale_estimation : bool,
             Whether or not DTI fitting is used to estimate the isotropic scale
             factor for isotropic MAP-MRI.
             When set to False the algorithm presets the isotropic tissue
-            diffusivity to that of typical white matter D=0.7e-3 _[5]. This
-            vastly increases fitting speed but at the cost of reduced fitting
-            quality. Can only be used in combination with
-            anisotropic_scaling=False, laplacian_regularization=True and
-            regularization_weight set to a float.
+            diffusivity to static_diffusivity. This vastly increases fitting
+            speed but at the cost of slightly reduced fitting quality. Can
+            still be used in combination with regularization and constraints. 
+        static_diffusivity : float,
+            the tissue diffusivity that is used when dti_scale_estimation is
+            set to False. The default is that of typical white matter
+            D=0.7e-3 _[5].
 
         References
         ----------
