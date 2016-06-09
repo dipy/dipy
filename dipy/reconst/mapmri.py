@@ -866,12 +866,12 @@ class MapmriFit(ReconstFit):
         table is given it recovers the signal for the gtab of the data.
         """
         if gtab is None:
-            E = self.predict(self.model.gtab)
+            E = self.predict(self.model.gtab, S0=1.)
         else:
-            E = self.predict(gtab)
+            E = self.predict(gtab, S0=1.)
         return E
 
-    def predict(self, qvals_or_gtab, S0=1.):
+    def predict(self, qvals_or_gtab, S0=100.):
         r'''Recovers the reconstructed signal for any qvalue array or
         gradient table.
         '''
