@@ -151,7 +151,7 @@ class MapmriModel(Cache):
             When set to False the algorithm presets the isotropic tissue
             diffusivity to static_diffusivity. This vastly increases fitting
             speed but at the cost of slightly reduced fitting quality. Can
-            still be used in combination with regularization and constraints. 
+            still be used in combination with regularization and constraints.
         static_diffusivity : float,
             the tissue diffusivity that is used when dti_scale_estimation is
             set to False. The default is that of typical white matter
@@ -366,7 +366,7 @@ class MapmriModel(Cache):
                         self.radial_order, mu[0], constraint_grid)
                     K = K_dependent * self.pos_K_independent
 
-            data = data / data[self.gtab.b0s_mask].mean()
+            data = np.asarray(data / data[self.gtab.b0s_mask].mean())
             M0 = M[self.gtab.b0s_mask, :]
             M0_mean = M0.mean(0)[None, :]
             Mprime = np.r_[M0_mean, M[~self.gtab.b0s_mask, :]]
