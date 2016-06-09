@@ -272,8 +272,8 @@ class MapmriModel(Cache):
                    isinstance(laplacian_weighting, float) and
                    not positivity_constraint):
                     MMt = (np.dot(self.M.T, self.M) +
-                           laplacian_weighting * mumean
-                           * self.laplacian_matrix)
+                           laplacian_weighting * mumean *
+                           self.laplacian_matrix)
                     self.MMt_inv_Mt = np.dot(np.linalg.pinv(MMt), self.M.T)
                     self.quick_fit = True
 
@@ -316,8 +316,8 @@ class MapmriModel(Cache):
             elif np.isscalar(self.laplacian_weighting):
                 lopt = self.laplacian_weighting
             elif type(self.laplacian_weighting) == np.ndarray:
-                lopt = generalized_crossvalidation_array(data,
-                        M, laplacian_matrix, self.laplacian_weighting)
+                lopt = generalized_crossvalidation_array(data, M,
+                                    laplacian_matrix, self.laplacian_weighting)
         else:
             lopt = 0.
             laplacian_matrix = np.ones((self.ind_mat.shape[0],
@@ -342,7 +342,7 @@ class MapmriModel(Cache):
                 if self.pos_radius == 'adaptive':
                     # grid changes per voxel. Recompute entire K matrix.
                     K = mapmri_isotropic_psi_matrix(self.radial_order, mu[0],
-                                                constraint_grid)
+                                                    constraint_grid)
                 else:
                     # grid is static. Only compute mu-dependent part of K.
                     K_dependent = mapmri_isotropic_K_mu_dependent(
@@ -1674,14 +1674,14 @@ def generalized_crossvalidation_array(data, M, LR, weights_array=None):
     """
 
     if weights_array is None:
-       lrange = np.linspace(0.05, 1, 20)  # reasonably fast standard range
+        lrange = np.linspace(0.05, 1, 20)  # reasonably fast standard range
     else:
         lrange = weights_array
 
     samples = lrange.shape[0]
     MMt = np.dot(M.T, M)
     K = len(data)
-    gcvold = gcvnew = 10e10 # set initialization gcv threshold very high
+    gcvold = gcvnew = 10e10  # set initialization gcv threshold very high
     i = -1
     while gcvold >= gcvnew and i < samples - 2:
         gcvold = gcvnew
@@ -1724,13 +1724,13 @@ def generalized_crossvalidation(data, M, LR, gcv_startpoint=5e-2):
     input_stuff = (data, M, MMt, K, LR)
 
     bounds = ((1e-5, 10),)
-    res=fmin_l_bfgs_b(lambda x,
-                      input_stuff: GCV_cost_function(x, input_stuff),
-                      (gcv_startpoint),
-                      args=(input_stuff,),
-                      approx_grad=True,
-                      bounds=bounds,
-                      disp=False, pgtol=1e-10, factr=10.)
+    res = fmin_l_bfgs_b(lambda x,
+                        input_stuff: GCV_cost_function(x, input_stuff),
+                        (gcv_startpoint),
+                        args=(input_stuff,),
+                        approx_grad=True,
+                        bounds=bounds,
+                        disp=False, pgtol=1e-10, factr=10.)
     optimal_lambda = res[0][0]
     return optimal_lambda
 
