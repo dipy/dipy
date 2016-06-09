@@ -196,7 +196,7 @@ class MapmriModel(Cache):
         self.gtab = gtab
         if radial_order < 0 or radial_order % 2:
             msg = "radial_order must be a positive, even number."
-            raise ValueError(msg)  
+            raise ValueError(msg)
         self.radial_order = radial_order
         self.bval_threshold = bval_threshold
         self.dti_scale_estimation = dti_scale_estimation
@@ -275,8 +275,8 @@ class MapmriModel(Cache):
                    isinstance(laplacian_weighting, float) and
                    not positivity_constraint):
                     MMt = (np.dot(self.M.T, self.M) +
-                           laplacian_weighting * mumean
-                           * self.laplacian_matrix)
+                           laplacian_weighting * mumean *
+                           self.laplacian_matrix)
                     self.MMt_inv_Mt = np.dot(np.linalg.pinv(MMt), self.M.T)
                     self.quick_fit = True
 
@@ -319,8 +319,8 @@ class MapmriModel(Cache):
             elif np.isscalar(self.laplacian_weighting):
                 lopt = self.laplacian_weighting
             elif type(self.laplacian_weighting) == np.ndarray:
-                lopt = generalized_crossvalidation_array(data,
-                        M, laplacian_matrix, self.laplacian_weighting)
+                lopt = generalized_crossvalidation_array(data, M,
+                                    laplacian_matrix, self.laplacian_weighting)
         else:
             lopt = 0.
             laplacian_matrix = np.ones((self.ind_mat.shape[0],
@@ -345,7 +345,7 @@ class MapmriModel(Cache):
                 if self.pos_radius == 'adaptive':
                     # grid changes per voxel. Recompute entire K matrix.
                     K = mapmri_isotropic_psi_matrix(self.radial_order, mu[0],
-                                                constraint_grid)
+                                                    constraint_grid)
                 else:
                     # grid is static. Only compute mu-dependent part of K.
                     K_dependent = mapmri_isotropic_K_mu_dependent(
@@ -358,7 +358,7 @@ class MapmriModel(Cache):
             Mprime = np.r_[M0_mean, M[~self.gtab.b0s_mask, :]]
             Q = cvxopt.matrix(np.ascontiguousarray(
                 np.dot(Mprime.T, Mprime) + lopt * laplacian_matrix))
-            
+
             data_b0 = data[self.gtab.b0s_mask].mean()
             data_single_b0 = np.r_[
                 data_b0, data[~self.gtab.b0s_mask]] / data_b0
@@ -376,7 +376,7 @@ class MapmriModel(Cache):
             except ValueError:
                 warn('Optimization did not find a solution')
                 coef = np.dot(np.linalg.pinv(M), data)  # least squares
-            
+
         else:
             pseudoInv = np.dot(
                 np.linalg.inv(np.dot(M.T, M) + lopt * laplacian_matrix), M.T)
@@ -706,8 +706,9 @@ class MapmriFit(ReconstFit):
         else:
             sel = self.model.Bm > 0.  # select only relevant coefficients
             j = ind_mat[sel, 0]
-            qiv_vec = ((8 * (-1) ** (1 - j) * np.sqrt(2) * np.pi ** (7 / 2.))
-                       / ((4 * j - 1) * self.model.Bm[sel]))
+            qiv_vec = ((8 * (-1) ** (1 - j) *
+                        np.sqrt(2) * np.pi ** (7 / 2.)) / ((4 * j - 1) *
+                                                           self.model.Bm[sel]))
             qiv = ux ** 5 * qiv_vec * self._mapmri_coef[sel]
             qiv = qiv.sum()
         return qiv
@@ -827,7 +828,7 @@ class MapmriFit(ReconstFit):
         indicate that these are present, and any q-space indices that
         use integrals of the signal may be corrupted (e.g. RTOP, RTAP, RTPP,
         QIV).
-        
+
         References
         ----------
         .. [1]_ Fick, Rutger HJ, et al. "MAPL: Tissue microstructure estimation
@@ -840,11 +841,11 @@ class MapmriFit(ReconstFit):
                     self.model.S_mat, self.model.T_mat, self.model.U_mat)
         else:
             laplacian_matrix = self.mu[0] * self.model.laplacian_matrix
-        
+
         norm_of_laplacian = np.dot(np.dot(self._mapmri_coef, laplacian_matrix),
                                    self._mapmri_coef)
         return norm_of_laplacian
-                    
+
     def fitted_signal(self, gtab=None):
         """
         Recovers the fitted signal for the given gradient table. If no gradient
@@ -1930,14 +1931,14 @@ def generalized_crossvalidation_array(data, M, LR, weights_array=None):
     """
 
     if weights_array is None:
-       lrange = np.linspace(0.05, 1, 20)  # reasonably fast standard range
+        lrange = np.linspace(0.05, 1, 20)  # reasonably fast standard range
     else:
         lrange = weights_array
 
     samples = lrange.shape[0]
     MMt = np.dot(M.T, M)
     K = len(data)
-    gcvold = gcvnew = 10e10 # set initialization gcv threshold very high
+    gcvold = gcvnew = 10e10  # set initialization gcv threshold very high
     i = -1
     while gcvold >= gcvnew and i < samples - 2:
         gcvold = gcvnew
@@ -1980,13 +1981,13 @@ def generalized_crossvalidation(data, M, LR, gcv_startpoint=5e-2):
     input_stuff = (data, M, MMt, K, LR)
 
     bounds = ((1e-5, 10),)
-    res=fmin_l_bfgs_b(lambda x,
-                      input_stuff: GCV_cost_function(x, input_stuff),
-                      (gcv_startpoint),
-                      args=(input_stuff,),
-                      approx_grad=True,
-                      bounds=bounds,
-                      disp=False, pgtol=1e-10, factr=10.)
+    res = fmin_l_bfgs_b(lambda x,
+                        input_stuff: GCV_cost_function(x, input_stuff),
+                        (gcv_startpoint),
+                        args=(input_stuff,),
+                        approx_grad=True,
+                        bounds=bounds,
+                        disp=False, pgtol=1e-10, factr=10.)
     optimal_lambda = res[0][0]
     return optimal_lambda
 
