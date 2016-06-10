@@ -1,6 +1,7 @@
 from __future__ import division, print_function, absolute_import
 
 import inspect
+import logging
 
 from dipy.workflows.workflow import Workflow
 from dipy.workflows.segment import MedianOtsuFlow
@@ -54,9 +55,12 @@ class ClassicFlow(Workflow):
             dwi_mask, _ = mo_flow.last_generated_outputs[0]
 
             # Denoising
-            nl_flow = NLMeansFlow(**flow_base_params)
-            nl_flow.run(dwi, sigma=0.001, out_dir=out_dir)
-            denoised = nl_flow.last_generated_outputs[0][0]
+
+            logging.warning('Denoising disabled for now.')
+            #nl_flow = NLMeansFlow(**flow_base_params)
+            #nl_flow.run(dwi, sigma=0.001, out_dir=out_dir)
+            #denoised = nl_flow.last_generated_outputs[0][0]
+            denoised = dwi #temporary
 
             # DTI reconstruction
             dti_flow = ReconsDtiFlow(**flow_base_params)
@@ -80,5 +84,6 @@ class ClassicFlow(Workflow):
             det_tracts = tracking_flow.last_generated_outputs[0][0]
 
             # Tract density
-            tdi_flow = TrackDensityFlow(**flow_base_params)
-            tdi_flow.run(det_tracts, fa)
+            logging.warning('TDI disabled for now.')
+            #tdi_flow = TrackDensityFlow(**flow_base_params)
+            #tdi_flow.run(det_tracts, fa)
