@@ -317,7 +317,7 @@ def real_sym_sh_basis(sh_order, theta, phi):
 
     References
     ----------
-    .. [1] http://code.google.com/p/fibernavigator/
+    .. [1] https://github.com/scilus/fibernavigator
 
     """
     m, n = sph_harm_ind_list(sh_order)
