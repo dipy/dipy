@@ -83,5 +83,5 @@ def det_track_flow(peaks_files, stopping_files, seeding_files,
 
         # Compute streamlines and store as a list.
         streamlines = list(streamlines)
-        save_trk(out_tract, streamlines)
+        save_trk(out_tract, streamlines, transfo=affine)
         logging.info('Saved {0}'.format(out_tract))
