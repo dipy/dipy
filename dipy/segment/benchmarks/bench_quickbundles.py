@@ -11,7 +11,7 @@ also run the doctests, let's hope they pass.
 
 Run this benchmark with:
 
-    nosetests -s --match '(?:^|[\\b_\\.//-])[Bb]ench' /path/to/bench_quickbundles.py
+    nosetests -s --match '(?:^|[\\b_\\.//-])[Bb]ench' bench_quickbundles.py
 """
 import numpy as np
 import nibabel as nib

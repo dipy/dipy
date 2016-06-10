@@ -4,8 +4,10 @@ from dipy.tracking.distances import local_skeleton_clustering
 from dipy.tracking.distances import bundles_distances_mdf
 from warnings import warn
 
-warn(DeprecationWarning("Module 'dipy.segment.quickbundles' is deprecated, \
-                         use module 'dipy.segment.clustering' instead"))
+deprecation_msg = ("Class 'dipy.segment.quickbundles.QuickBundles' is"
+                   " deprecated, instead use module "
+                   " 'dipy.segment.clustering.QuickBundles'.")
+warn(DeprecationWarning(deprecation_msg))
 
 
 class QuickBundles(object):
@@ -14,32 +16,26 @@ class QuickBundles(object):
         """ Highly efficient trajectory clustering
 
         Parameters
-        -----------
-        tracks : sequence of (N,3) ... (M,3) arrays,
-                    trajectories (or tractography or streamlines)
-
-        dist_thr : float,
-                    distance threshold in the space of the tracks
-        pts : int,
-                number of points for simplifying the tracks
+        ----------
+        tracks : sequence of (N,3) ... (M,3) arrays
+            trajectories (or tractography or streamlines)
+        dist_thr : float
+            distance threshold in the space of the tracks
+        pts : int
+            number of points for simplifying the tracks
 
         Methods
-        --------
+        -------
         clustering() returns a dict holding with the clustering result
         virtuals() gives the virtuals (track centroids) of the clusters
         exemplars() gives the exemplars (track medoids) of the clusters
 
-        Citation
-        ---------
-
+        References
+        ----------
         E.Garyfallidis, "Towards an accurate brain tractography",
         PhD thesis, 2012
-
         """
-        warn(DeprecationWarning("Class 'dipy.segment.quickbundles.QuickBundles' \
-                                is deprecated, use module \
-                                'dipy.segment.clustering.QuickBundles' \
-                                instead"))
+        warn(DeprecationWarning(deprecation_msg))
 
         self.dist_thr = dist_thr
         self.pts = pts

@@ -32,8 +32,6 @@ def multi_median(input, median_radius, numpass):
     input : ndarray
         Filtered input volume.
     """
-    outvol = np.zeros_like(input)
-
     # Array representing the size of the median window in each dimension.
     medarr = np.ones_like(input.shape) * ((median_radius * 2) + 1)
 
