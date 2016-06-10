@@ -13,7 +13,7 @@ warn(DeprecationWarning(deprecation_msg))
 class QuickBundles(object):
 
     def __init__(self, tracks, dist_thr=4., pts=12):
-        """ Highly efficient trajectory clustering
+        """ Highly efficient trajectory clustering [Garyfallidis12]_.
 
         Parameters
         ----------
@@ -32,8 +32,9 @@ class QuickBundles(object):
 
         References
         ----------
-        E.Garyfallidis, "Towards an accurate brain tractography",
-        PhD thesis, 2012
+        .. [Garyfallidis12] Garyfallidis E. et al., QuickBundles a method for
+                            tractography simplification,
+                            Frontiers in Neuroscience, vol 6, no 175, 2012.
         """
         warn(DeprecationWarning(deprecation_msg))
 
