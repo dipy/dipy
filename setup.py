@@ -213,7 +213,7 @@ def main(**extra_args):
                           [pjoin('data', 'files', '*')
                           ]},
           data_files=[('share/doc/dipy/examples',
-                       glob(pjoin('doc','examples','*.py')))],
+                       glob(pjoin('doc', 'examples','*.py')))],
           scripts      = [pjoin('bin', 'dipy_quickbundles'),
                           pjoin('bin', 'dipy_reconst_csd'),
                           pjoin('bin', 'dipy_median_otsu'),
