@@ -398,7 +398,7 @@ fetch_ivim = _make_fetcher(
     'https://ndownloader.figshare.com/files/',
     ['5305243', '5305246', '5305249'],
     ['ivim.nii.gz', 'ivim.bval', 'ivim.bvec'],
-    ['0b523e606fad898e44d6c249deaa0d70', 
+    ['cda596f89dc2676af7d9bf1cabccf600', 
     'f03d89f84aa9a9397103a400e43af43a',
     'fb633a06b02807355e49ccd85cb92565'],
     doc="Download IVIM dataset")
@@ -869,3 +869,4 @@ def read_ivim():
     gtab = gradient_table(bvals, bvecs)
     img = nib.load(fraw)
     return img, gtab
+
