@@ -363,6 +363,8 @@ class MapmriModel(Cache):
                         self.radial_order, mu[0], constraint_grid)
                     K = K_dependent * self.pos_K_independent
 
+            if isinstance(data, np.memmap):
+                data = np.asarray(data)
             data = np.asarray(data / data[self.gtab.b0s_mask].mean())
             M0 = M[self.gtab.b0s_mask, :]
             M0_mean = M0.mean(0)[None, :]
