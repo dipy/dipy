@@ -2,6 +2,7 @@ from __future__ import division, print_function, absolute_import
 
 import inspect
 import logging
+import os
 
 from dipy.workflows.workflow import Workflow
 from dipy.workflows.segment import MedianOtsuFlow
@@ -55,32 +56,49 @@ class ClassicFlow(Workflow):
             dwi_mask, _ = mo_flow.last_generated_outputs[0]
 
             # Denoising
+            skip_denoise = True
+            nl_flow = NLMeansFlow(output_strategy=self._output_strategy,
+                                  mix_names=self._mix_names,
+                                  force=self._force_overwrite,
+                                  skip=skip_denoise)
 
-            logging.warning('Denoising disabled for now.')
-            #nl_flow = NLMeansFlow(**flow_base_params)
-            #nl_flow.run(dwi, sigma=0.001, out_dir=out_dir)
-            #denoised = nl_flow.last_generated_outputs[0][0]
-            denoised = dwi #temporary
+            nl_flow.run(dwi, sigma=0.001, out_dir=out_dir)
+            denoised = nl_flow.last_generated_outputs[0][0]
 
             # DTI reconstruction
-            dti_flow = ReconsDtiFlow(**flow_base_params)
+            dti_flow = ReconsDtiFlow(output_strategy='append',
+                                     mix_names=self._mix_names,
+                                     force=self._force_overwrite)
+
             dti_flow.run(denoised, bval, bvec, dwi_mask, out_dir='metrics')
             tensor, fa, ga, rgb, md, ad, rd, mode, evecs, evals = \
                 dti_flow.last_generated_outputs[0]
 
             # CSD Recontruction
-            csd_flow = ReconstCSDFlow(**flow_base_params)
-            csd_flow.run(denoised, bval, bvec, mask_files=dwi_mask)
+            csd_flow = ReconstCSDFlow(output_strategy='append',
+                                      mix_names=self._mix_names,
+                                      force=self._force_overwrite)
+
+            csd_flow.run(denoised, bval, bvec, mask_files=dwi_mask,
+                         out_dir='csd')
+
             peaks_file = csd_flow.last_generated_outputs[0][0]
 
             # Create seeding mask
-            mask_flow = MaskFlow(**flow_base_params)
-            mask_flow.run(fa, greater_than=0.4)
+            track_dir = os.path.join(os.path.dirname(denoised), 'tracking')
+            mask_flow = MaskFlow(output_strategy='absolute',
+                                 mix_names=self._mix_names,
+                                 force=self._force_overwrite)
+
+            mask_flow.run(fa, greater_than=0.4, out_dir=track_dir)
             fa_seed_mask = mask_flow.last_generated_outputs[0][0]
 
             # Deterministic Tracking
-            tracking_flow = DetTrackFlow(**flow_base_params)
-            tracking_flow.run(peaks_file, fa, fa_seed_mask)
+            tracking_flow = DetTrackFlow(output_strategy='absolute',
+                                         mix_names=self._mix_names,
+                                         force=self._force_overwrite)
+
+            tracking_flow.run(peaks_file, fa, fa_seed_mask, out_dir=track_dir)
             det_tracts = tracking_flow.last_generated_outputs[0][0]
 
             # Tract density

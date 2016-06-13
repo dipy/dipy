@@ -10,12 +10,13 @@ from dipy.workflows.multi_io import io_iterator_
 class Workflow(object):
 
     def __init__(self, output_strategy='append', mix_names=False,
-                 force=False):
+                 force=False, skip=False):
 
         self._output_strategy = output_strategy
         self._mix_names = mix_names
         self.last_generated_outputs = None
         self._force_overwrite = force
+        self._skip = skip
 
     def get_io_iterator(self, frame):
         io_it = io_iterator_(frame, self.run,
