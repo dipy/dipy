@@ -70,8 +70,8 @@ data_small = data[40:65, 50:51, 35:60]
 print('data.shape (%d, %d, %d, %d)' % data.shape)
 
 """
-The MAPMRI Model can now be instantiated. The radial_ordermdetermines the
-expansion order of the basis, i.e., how manymbasis functions are used to
+The MAPMRI Model can now be instantiated. The radial_order determines the
+expansion order of the basis, i.e., how many basis functions are used to
 approximate the signal.
 
 First, we must decide to use the anisotropic or isotropic MAPMRI basis. As was
@@ -79,36 +79,36 @@ shown in [Fick2016]_, the isotropic basis is best used for tractography
 purposes, as the anisotropic basis has a bias towards smaller crossing angles
 in the ODF. For signal fitting and estimation of scalar quantities the
 anisotropic basis is suggested. The choice can be made by setting
-anisotropic_scaling=True or False.
+"anisotropic_scaling=True" or "anisotropic_scaling=False".
 
-First, we must select the method of regularizing and/or constraining the basis
-fitting.
-- laplacian_regularization=True makes it use laplacian regularization
+First, we must select the method of regularization and/or constraining the
+basis fitting.
+- "laplacian_regularization=True" makes it use Laplacian regularization
   [Fick2016]_. This method essentially reduces spurious oscillations in the
-  reconstruction by minimizing the laplacian of the fitted signal.
+  reconstruction by minimizing the Laplacian of the fitted signal.
   Several options can be given to select the regularization weight:
-      -regularization_weighting="GCV" uses generalized cross-validation
-       [Craven1978]_ to find an optimal weight from a standard range.
-      -regularization_weighting=0.2 for example would ommit the GCV and
-       just set it to 0.2 (found to be reasonable in HCP data [Fick2016]).
-      -regularization_weighting=np.array(weights) would make the GCV use
+      -"regularization_weighting="GCV"" uses generalized cross-validation
+       [Craven1978]_ to find an optimal weight.
+      -"regularization_weighting=0.2" for example would omit the GCV and
+       just set it to 0.2 (found to be reasonable in HCP data [Fick2016]_).
+      -"regularization_weighting=np.array(weights)" would make the GCV use
        a custom range to find an optimal weight.
-- positivity_constraint=True makes it use the positivity constraint on the
+- "positivity_constraint=True" makes it use the positivity constraint on the
   diffusion propagator [Ozarslan2013]_. This method constrains the final
   solution of the diffusion propagator to be positive at a set of discrete
   points, since negative values should not exist.
-      -the pos_grid and pos_radius affect the location and number of
+      -the "pos_grid" and "pos_radius" affect the location and number of
        constraint points in the diffusion propagator.
 
 Both methods do a good job of producing viable solutions to the signal fitting
-in practice. The difference is that the laplacian regularization imposes
+in practice. The difference is that the Laplacian regularization imposes
 smoothness over the entire signal, including the extrapolation beyond the
 measured signal. In practice this results in, but does not guarantee positive
 solutions of the diffusion propagator. The positivity constraint guarantees a
 positive solution in a set of discrete points, which in general results in
 smooth solutions, but does not guarantee it.
 
-A suggested strategy is to use a low laplacian weight together with the
+A suggested strategy is to use a low Laplacian weight together with the
 positivity constraint. In this way both desired properties are guaranteed in
 the final solution.
 
@@ -144,7 +144,7 @@ mapfit_positivity_aniso = map_model_positivity_aniso.fit(data_small)
 mapfit_both_aniso = map_model_both_aniso.fit(data_small)
 """
 From the fitted models we will first illustrate the estimation of q-space
-indices. For completeness, we will compare the estimation using only laplacian
+indices. For completeness, we will compare the estimation using only Laplacian
 regularization, positivity constraint or both. We first show the RTOP
 [Ozarslan2013]_.
 """
@@ -180,7 +180,7 @@ plt.savefig('MAPMRI_maps_regularization.png')
 It can be seen that all maps appear quite smooth and similar. Though, it is
 possible to see some subtle differences near the corpus callosum. The
 similarity and differences in reconstruction can be further illustrated by
-visualizing the analytic norm of the laplacian of the fitted signal.
+visualizing the analytic norm of the Laplacian of the fitted signal.
 """
 
 fig = plt.figure(figsize=(10, 5))
@@ -213,9 +213,9 @@ plt.savefig('MAPMRI_norm_laplacian.png')
 .. figure:: MAPMRI_norm_laplacian.png
    :align: center
 
-A high laplacian norm indicates that the gradient in the three-dimensional
+A high Laplacian norm indicates that the gradient in the three-dimensional
 signal reconstruction changes a lot - something that may indicate spurious
-oscillations. In the laplacian reconstruction (left) we see that there are some
+oscillations. In the Laplacian reconstruction (left) we see that there are some
 isolated voxels that have a higher norm than the rest. In the
 positivity constraint reconstruction the norm is already smoother. When both
 methods are used together the overall norm gets smoother still, since both
@@ -263,7 +263,7 @@ From left to right:
 - Q-space Inverse Variance (QIV) is a measure of variance in the signal, which
   is said to have higher contrast to white matter than the MSD
   [Hosseinbor2013]_. We also showed that QIV has high sensitivity to tissue
-  composition change in a simulation study [Fick2016b].
+  composition change in a simulation study [Fick2016b]_.
 - Return to origin probability (RTOP) quantifies the probability that a proton
   will be at the same position at the first and second diffusion gradient
   pulse. A higher RTOP indicates that the volume a spin is inside of is
@@ -273,7 +273,7 @@ From left to right:
   the probability that a proton will be along the axis of the main eigenvector
   of a diffusion tensor during both diffusion gradient pulses. RTAP has been
   related to the apparent axon diameter [Ozarslan2013, Fick2016]_ under several
-  strong hypothesis on the tissue composition and acquisition protocol.
+  strong assumptions on the tissue composition and acquisition protocol.
 - Return to plane probability (RTPP) is a directional index that quantifies the
   probability that a proton will be on the plane perpendicular to the main
   eigenvector of a diffusion tensor during both gradient pulses. RTPP is
