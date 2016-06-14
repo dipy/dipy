@@ -200,10 +200,7 @@ text = gui.TextBox(height=3, width=10)
 
 def key_press_callback(*args, **kwargs):
     key = text.ui_param
-    if key == "Backspace":
-        text.remove_character()
-    else:
-        text.add_character(key)
+    text.handle_character(key)
     showm.render()
 
 text.add_callback("KeyPressEvent", key_press_callback)
