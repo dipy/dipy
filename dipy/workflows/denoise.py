@@ -33,7 +33,7 @@ class NLMeansFlow(Workflow):
             Name of the resuting denoised volume (default: dwi_nlmeans.nii.gz)
         """
         io_it = self.get_io_iterator(inspect.currentframe())
-
+        print('sigma ', sigma)
         for fpath, odenoised in io_it:
             if self._skip:
                 shutil.copy(fpath, odenoised)

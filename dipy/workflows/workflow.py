@@ -55,6 +55,12 @@ class Workflow(object):
 
         return True
 
-
     def run(self):
         pass
+
+    def get_sub_runs(self):
+        return []
+
+    def set_sub_flows_optionals(self, opts):
+        raise Exception('Error: {} does not have subworkflows.'.
+                        format(self.__class__))
