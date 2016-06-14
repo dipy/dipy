@@ -114,12 +114,11 @@ class IvimModel(ReconstModel):
         # Generate guess_parameters for all voxels
         if x0 is None:
             x0 = np.ones(
-                (data.shape[0], 4)) * [1.0, 0.10, 0.001, 0.0009]
+                (data.shape[:-1] + (4,))) * [1.0, 0.10, 0.001, 0.0009]
         else:
             if x0.shape != (data.shape[0], 4):
                 raise ValueError(
                     "Guess params should be of shape (num_voxels,4)")
-
         data_in_mask = np.maximum(data_in_mask, min_signal)
 
         if fit_method == "one_stage":
@@ -192,20 +191,21 @@ def one_stage(data, gtab, x0, jac, bounds, tol, routine, algorithm,
 
     """
     flat_data = data.reshape((-1, data.shape[-1]))
+    flat_x0 = x0.reshape(-1, x0.shape[-1])
     # Flatten for the iteration over voxels:
     bvals = gtab.bvals
     ivim_params = np.empty((flat_data.shape[0], 4))
 
     if routine == 'minimize':
-        result = _minimize(flat_data, bvals, x0, ivim_params,
+        result = _minimize(flat_data, bvals, flat_x0, ivim_params,
                            bounds, tol, jac, algorithm, gtol, ftol, eps)
     elif routine == "leastsq":
-        result = _leastsq(flat_data, bvals, x0, ivim_params)
+        result = _leastsq(flat_data, bvals, flat_x0, ivim_params)
     ivim_params.shape = data.shape[:-1] + (4,)
     return ivim_params
 
 
-def _minimize(flat_data, bvals, x0, ivim_params,
+def _minimize(flat_data, bvals, flat_x0, ivim_params,
               bounds, tol, jac, algorithm, gtol, ftol, eps):
     """Use minimize for finding ivim_params"""
     sum_sq = lambda params, bvals, signal: np.sum(
@@ -214,7 +214,7 @@ def _minimize(flat_data, bvals, x0, ivim_params,
     result = []
     for vox in range(flat_data.shape[0]):
         res = minimize(sum_sq,
-                       x0[vox],
+                       flat_x0[vox],
                        args=(bvals, flat_data[vox]), bounds=bounds,
                        tol=tol, method=algorithm, jac=jac,
                        options={'gtol': gtol, 'ftol': ftol, 'eps': eps})
@@ -223,12 +223,12 @@ def _minimize(flat_data, bvals, x0, ivim_params,
     return result
 
 
-def _leastsq(flat_data, bvals, x0, ivim_params):
+def _leastsq(flat_data, bvals, flat_x0, ivim_params):
     """Use minimize for finding ivim_params"""
     result = []
     for vox in range(flat_data.shape[0]):
         res = leastsq(_ivim_error,
-                      x0[vox],
+                      flat_x0[vox],
                       args=(bvals, flat_data[vox]))
         ivim_params[vox, :4] = res[0]
         result += res
