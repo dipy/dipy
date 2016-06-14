@@ -61,8 +61,8 @@ class IntrospectiveArgumentParser(arg.ArgumentParser):
         self.doc = None
 
     def add_workflow(self, workflow):
-        specs = inspect.getargspec(workflow)
-        doc = inspect.getdoc(workflow)
+        specs = inspect.getargspec(workflow.run)
+        doc = inspect.getdoc(workflow.run)
         npds = NumpyDocString(doc)
         self.doc = npds['Parameters']
         self.description = ' '.join(npds['Extended Summary'])
@@ -117,6 +117,68 @@ class IntrospectiveArgumentParser(arg.ArgumentParser):
                 output_args.add_argument(*_args, **_kwargs)
             else:
                 self.add_argument(*_args, **_kwargs)
+
+        return self.add_sub_flow_args(workflow.get_sub_runs())
+
+    # Definitly a refact possible to not reuse code from the above method and
+    # support multiple nested pipelines.
+    def add_sub_flow_args(self, sub_flows):
+        sub_flow_optionnals = {}
+        for name, flow in sub_flows:
+            sub_flow_optionnals[name] = {}
+            specs = inspect.getargspec(flow)
+            doc = inspect.getdoc(flow)
+            npds = NumpyDocString(doc)
+            _doc = npds['Parameters']
+
+            args = specs.args[1:]
+            defaults = specs.defaults
+
+            len_args = len(args)
+            len_defaults = len(defaults)
+
+            flow_args = \
+                self.add_argument_group('{0} arguments(optional)'.
+                                        format(name))
+
+            for i, arg in enumerate(args):
+                is_not_optionnal = i < len_args - len_defaults
+                if 'out_' in arg or is_not_optionnal:
+                    continue
+
+                sub_flow_optionnals[name][arg] = None
+                prefix = '--'
+                typestr = _doc[i][1]
+                dtype, isnarg = self._select_dtype(typestr)
+                help_msg = ''.join(_doc[i][2])
+
+                _args = ['{0}{1}'.format(prefix, arg)]
+                _kwargs = {'help': help_msg,
+                           'type': dtype,
+                           'action': 'store'}
+
+                _kwargs['metavar'] = dtype.__name__
+                if dtype is bool:
+                    _kwargs['action'] = 'store_true'
+                    default_ = {}
+                    default_[arg] = False
+                    self.set_defaults(**default_)
+                    del _kwargs['type']
+                    del _kwargs['metavar']
+                elif dtype is bool:
+                    _kwargs['type'] = int
+                    _kwargs['choices'] = [0, 1]
+
+
+                if dtype is tuple:
+                    _kwargs['type'] = str
+
+                if isnarg:
+                    _kwargs['nargs'] = '*'
+
+                flow_args.add_argument(*_args, **_kwargs)
+
+        return sub_flow_optionnals
 
     def _select_dtype(self, text):
         text = text.lower()
