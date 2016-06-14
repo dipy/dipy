@@ -103,5 +103,7 @@ class ClassicFlow(Workflow):
 
             # Tract density
             logging.warning('TDI disabled for now.')
-            #tdi_flow = TrackDensityFlow(**flow_base_params)
-            #tdi_flow.run(det_tracts, fa)
+            tdi_flow = TrackDensityFlow(output_strategy='absolute',
+                                        mix_names=self._mix_names,
+                                        force=self._force_overwrite)
+            tdi_flow.run(det_tracts, fa, out_dir=track_dir)
