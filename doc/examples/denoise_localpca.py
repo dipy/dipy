@@ -11,6 +11,7 @@ import nibabel as nib
 import matplotlib.pyplot as plt
 from time import time
 from dipy.denoise.localpca import localpca
+from dipy.denoise.fast_lpca import fast_lpca
 from dipy.io import read_bvals_bvecs
 from dipy.core.gradients import gradient_table
 from dipy.denoise.noise_estimate_localpca import estimate_sigma_localpca
@@ -39,8 +40,8 @@ affine = img.get_affine()
 
 # currently just taking the small patch of the data to preserv time
 
-# data = np.array(data[20:100, 20:100, 10:15, :])
-# den_data = np.array(den_data[20:100, 20:100, 10:15, :])
+data = np.array(data[20:100, 20:100, 10:15, :])
+den_data = np.array(den_data[20:100, 20:100, 10:15, :])
 
 [sigma, sigma_c] = estimate_sigma_localpca(data, gtab)
 # identify the b0 images from the dataset
@@ -50,7 +51,23 @@ t = time()
 # perform the local PCA denoising
 denoised_arr = localpca(data,sigma,patch_radius=1)
 
-print("time taken", -t + time())
+print("time taken slow", -t + time())
+
+t = time()
+if isinstance(sigma, np.ndarray) and sigma.ndim == 3:
+
+    sigma = (np.ones(data.shape, dtype=np.float64)
+                     * sigma[..., np.newaxis])
+else:
+    sigma = np.ones(data.shape, dtype=np.float64) * sigma
+# perform the local PCA denoising
+denoised_arr_fast = fast_lpca(data.astype(np.float64),1,sigma)
+
+print("time taken fast", -t + time())
+
+# difference between fast and slow implementations
+dd = np.abs(denoised_arr_fast - denoised_arr)
+print("Max. difference: %e"%(dd.max(),))
 orig = data[:, :,2, 10]
 rmse = np.sum(np.abs(denoised_arr[:,:,:,:] - 
     den_data[:,:,:,:])) / np.sum(np.abs(den_data[:,:,:,:]))

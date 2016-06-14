@@ -1,6 +1,5 @@
 import numpy as np
 import scipy as sp
-import dipy.denoise.fast_local_covariance as fcov
 
 
 def localpca(arr, sigma, patch_radius=1, rician=True):
@@ -57,11 +56,6 @@ def localpca(arr, sigma, patch_radius=1, rician=True):
         # find local covariance and mean
         n = np.array([arr.shape[0], arr.shape[1], arr.shape[2], arr.shape[3]], dtype=np.int32)
         
-        lcov = np.zeros(tuple(n)+(arr.shape[3],), dtype=np.float64)
-        lmean = np.zeros(tuple(n), dtype = np.float64)
-
-        fcov.fast_local_covariance(arr.astype(np.float64), patch_radius, lcov, lmean)
-
         for k in range(patch_radius, arr.shape[2] - patch_radius, 1):
             for j in range(patch_radius, arr.shape[1] - patch_radius, 1):
                 for i in range(patch_radius, arr.shape[0] - patch_radius, 1):
@@ -79,12 +73,16 @@ def localpca(arr, sigma, patch_radius=1, rician=True):
                         patch_size,
                         arr.shape[3])
                     # compute the mean and normalize
-                    M = lmean[i,j,k,:]
+                    M = np.mean(X, axis=0)
                     X = X - np.array([M, ] * X.shape[0],
-                                     dtype=np.float64)
-
+                                      dtype=np.float64)
+ 
+                     # Compute the covariance matrix C = X_transpose X
+                    C = np.transpose(X).dot(X)
+                    C = C / M.shape[0]
+                    
                     # Compute the covariance matrix C = X_transpose X
-                    C = lcov[i,j,k,:,:]
+                    # C = lcov[i,j,k,:,:]
                     # compute EVD of the covariance matrix of X get the matrices W and D, hence get matrix Y = XW
                     # Threshold matrix D and then compute X_est = YW_transpose
                     # D_est
