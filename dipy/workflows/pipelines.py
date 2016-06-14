@@ -4,7 +4,7 @@ import inspect
 import logging
 import os
 
-from dipy.workflows.workflow import Workflow
+from dipy.workflows.pipeline import Pipeline
 from dipy.workflows.segment import MedianOtsuFlow
 from dipy.workflows.denoise import NLMeansFlow
 from dipy.workflows.reconst import ReconsDtiFlow
@@ -14,7 +14,18 @@ from dipy.workflows.track_metrics import TrackDensityFlow
 from dipy.workflows.mask import MaskFlow
 
 
-class ClassicFlow(Workflow):
+class ClassicFlow(Pipeline):
+
+    def _get_sub_flows(self):
+        return [
+            MedianOtsuFlow,
+            NLMeansFlow,
+            ReconsDtiFlow,
+            ReconstCSDFlow,
+            DetTrackFlow,
+            TrackDensityFlow,
+            MaskFlow
+        ]
 
     def run(self, input_files, bvalues, bvectors, resume=False, out_dir=''):
         """ A simple dwi processing pipeline with the following steps:
@@ -52,7 +63,7 @@ class ClassicFlow(Workflow):
         for dwi, bval, bvec in io_it:
             # Masking
             mo_flow = MedianOtsuFlow(**flow_base_params)
-            mo_flow.run(dwi, out_dir=out_dir)
+            self.run_sub_flow(mo_flow, dwi, out_dir=out_dir)
             dwi_mask, _ = mo_flow.last_generated_outputs[0]
 
             # Denoising
@@ -62,7 +73,7 @@ class ClassicFlow(Workflow):
                                   force=self._force_overwrite,
                                   skip=skip_denoise)
 
-            nl_flow.run(dwi, out_dir=out_dir)
+            self.run_sub_flow(nl_flow, dwi, out_dir=out_dir)
             denoised = nl_flow.last_generated_outputs[0][0]
 
             # DTI reconstruction
@@ -70,7 +81,8 @@ class ClassicFlow(Workflow):
                                      mix_names=self._mix_names,
                                      force=self._force_overwrite)
 
-            dti_flow.run(denoised, bval, bvec, dwi_mask, out_dir='metrics')
+            self.run_sub_flow(dti_flow, denoised, bval, bvec, dwi_mask,
+                              out_dir='metrics')
             tensor, fa, ga, rgb, md, ad, rd, mode, evecs, evals = \
                 dti_flow.last_generated_outputs[0]
 
@@ -79,9 +91,8 @@ class ClassicFlow(Workflow):
                                       mix_names=self._mix_names,
                                       force=self._force_overwrite)
 
-            csd_flow.run(denoised, bval, bvec, mask_files=dwi_mask,
+            self.run_sub_flow(csd_flow, denoised, bval, bvec, mask_files=dwi_mask,
                          out_dir='csd')
-
             peaks_file = csd_flow.last_generated_outputs[0][0]
 
             # Create seeding mask
@@ -90,7 +101,7 @@ class ClassicFlow(Workflow):
                                  mix_names=self._mix_names,
                                  force=self._force_overwrite)
 
-            mask_flow.run(fa, greater_than=0.4, out_dir=track_dir)
+            self.run_sub_flow(mask_flow, fa, out_dir=track_dir)
             fa_seed_mask = mask_flow.last_generated_outputs[0][0]
 
             # Deterministic Tracking
@@ -98,7 +109,8 @@ class ClassicFlow(Workflow):
                                          mix_names=self._mix_names,
                                          force=self._force_overwrite)
 
-            tracking_flow.run(peaks_file, fa, fa_seed_mask, out_dir=track_dir)
+            self.run_sub_flow(tracking_flow, peaks_file, fa, fa_seed_mask,
+                              out_dir=track_dir)
             det_tracts = tracking_flow.last_generated_outputs[0][0]
 
             # Tract density
@@ -106,9 +118,18 @@ class ClassicFlow(Workflow):
             tdi_flow = TrackDensityFlow(output_strategy='absolute',
                                         mix_names=self._mix_names,
                                         force=self._force_overwrite)
-            tdi_flow.run(det_tracts, fa, out_dir=track_dir)
+            self.run_sub_flow(tdi_flow, det_tracts, fa, out_dir=track_dir)
 
-class BaseMetricsFlow(Workflow):
+
+class BaseMetricsFlow(Pipeline):
+
+    def _get_sub_flows(self):
+        return [
+            MedianOtsuFlow,
+            NLMeansFlow,
+            ReconsDtiFlow
+        ]
+
     def run(self, input_files, bvalues, bvectors, out_dir=''):
         """ A simple dwi processing pipeline with the following steps:
             -Denoising
@@ -141,24 +162,27 @@ class BaseMetricsFlow(Workflow):
         }
 
         for dwi, bval, bvec in io_it:
+
             # Masking
             mo_flow = MedianOtsuFlow(**flow_base_params)
-            mo_flow.run(dwi, out_dir=out_dir)
+            self.run_sub_flow(mo_flow, dwi, out_dir=out_dir)
             dwi_mask, _ = mo_flow.last_generated_outputs[0]
 
             # Denoising
-            skip_denoise = True
+            skip_denoise = False
             nl_flow = NLMeansFlow(output_strategy=self._output_strategy,
                                   mix_names=self._mix_names,
                                   force=self._force_overwrite,
                                   skip=skip_denoise)
 
-            nl_flow.run(dwi, out_dir=out_dir)
+            self.run_sub_flow(nl_flow, dwi, out_dir=out_dir)
             denoised = nl_flow.last_generated_outputs[0][0]
+
 
             # DTI reconstruction
             dti_flow = ReconsDtiFlow(output_strategy='append',
                                      mix_names=self._mix_names,
                                      force=self._force_overwrite)
 
-            dti_flow.run(denoised, bval, bvec, dwi_mask, out_dir='metrics')
+            self.run_sub_flow(dti_flow, denoised, bval, bvec, dwi_mask,
+                              out_dir='metrics')

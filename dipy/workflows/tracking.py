@@ -1,16 +1,17 @@
 #!/usr/bin/env python
 from __future__ import division
 
-import logging
 import inspect
+import logging
+import numpy as np
 
-from dipy.io.trackvis import save_trk
+from dipy.direction import DeterministicMaximumDirectionGetter
 from dipy.io.image import load_nifti
 from dipy.io.peaks import load_peaks
+from dipy.io.trackvis import save_trk
 from dipy.tracking import utils
 from dipy.tracking.local import (ThresholdTissueClassifier,
                                  LocalTracking)
-from dipy.direction import DeterministicMaximumDirectionGetter
 from dipy.workflows.multi_io import io_iterator_
 
 
@@ -83,5 +84,20 @@ def det_track_flow(peaks_files, stopping_files, seeding_files,
 
         # Compute streamlines and store as a list.
         streamlines = list(streamlines)
-        save_trk(out_tract, streamlines, transfo=affine)
+
+        # This probably needs to go, this is the only I found to get consistently
+        # working tracks
+        #new_aff = np.eye(4)
+        #new_aff[:3, 3:] = new_aff[:3, 3:]
+        #new_sl = utils.move_streamlines(streamlines, np.linalg.inv(affine))
+        #affine[:3, 3:] *= np.sign(np.diag(affine[3:, 3:]))
+        transfo = np.eye(4)
+        #transfo[:3, 3] -= 0.5
+        transfo[:3, 3] =\
+            affine[:3, 3] * np.sign(np.diag(affine[:3, :3])) * -1.0
+
+        #transfo[:3, 3] -= 0.5 #np.sign(np.diag(affine[:3, :3])) * 0.5
+
+        print(transfo)
+        save_trk(out_tract, streamlines, transfo=transfo)
         logging.info('Saved {0}'.format(out_tract))

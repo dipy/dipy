@@ -13,8 +13,9 @@ def get_level(lvl):
 
 def run_flow(flow):
     parser = IntrospectiveArgumentParser()
-    parser.add_workflow(flow.run)
+    sub_flows_dicts = parser.add_workflow(flow)
 
+    # Common workflow arguments
     parser.add_argument('--force', dest='force',
                         action='store_true', default=False,
                         help='Force overwriting output files.')
@@ -37,6 +38,8 @@ def run_flow(flow):
                         help='Log file to be saved.')
 
     args = parser.get_flow_args()
+
+
     logging.basicConfig(filename=args['log_file'],
                         format='%(levelname)s:%(message)s',
                         level=get_level(args['log_level']))
@@ -50,5 +53,14 @@ def run_flow(flow):
     del args['log_file']
     del args['out_strat']
     del args['mix_names']
+
+    # Remove subflows related params
+    for sub_flow, params_dict in sub_flows_dicts.iteritems():
+        for key, _ in params_dict.iteritems():
+            if key in args.keys():
+                params_dict[key] = args.pop(key)
+
+    if sub_flows_dicts:
+        flow.set_sub_flows_optionals(sub_flows_dicts)
 
     flow.run(**args)
