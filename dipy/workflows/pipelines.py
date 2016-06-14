@@ -62,7 +62,7 @@ class ClassicFlow(Workflow):
                                   force=self._force_overwrite,
                                   skip=skip_denoise)
 
-            nl_flow.run(dwi, sigma=0.001, out_dir=out_dir)
+            nl_flow.run(dwi, out_dir=out_dir)
             denoised = nl_flow.last_generated_outputs[0][0]
 
             # DTI reconstruction
@@ -107,3 +107,58 @@ class ClassicFlow(Workflow):
                                         mix_names=self._mix_names,
                                         force=self._force_overwrite)
             tdi_flow.run(det_tracts, fa, out_dir=track_dir)
+
+class BaseMetricsFlow(Workflow):
+    def run(self, input_files, bvalues, bvectors, out_dir=''):
+        """ A simple dwi processing pipeline with the following steps:
+            -Denoising
+            -Masking
+            -DTI reconstruction
+            -HARDI recontruction
+            -Deterministic tracking
+            -Tracts metrics
+
+        Parameters
+        ----------
+        input_files : string
+            Path to the dwi volumes. This path may contain wildcards to process
+            multiple inputs at once.
+        bvalues : string
+            Path to the bvalues files. This path may contain wildcards to use
+            multiple bvalues files at once.
+        bvectors : string
+            Path to the bvalues files. This path may contain wildcards to use
+            multiple bvalues files at once.
+        out_dir : string, optional
+            Working directory (default input file directory)
+        """
+        io_it = self.get_io_iterator(inspect.currentframe())
+
+        flow_base_params = {
+            'output_strategy': self._output_strategy,
+            'mix_names': self._mix_names,
+            'force': self._force_overwrite
+        }
+
+        for dwi, bval, bvec in io_it:
+            # Masking
+            mo_flow = MedianOtsuFlow(**flow_base_params)
+            mo_flow.run(dwi, out_dir=out_dir)
+            dwi_mask, _ = mo_flow.last_generated_outputs[0]
+
+            # Denoising
+            skip_denoise = True
+            nl_flow = NLMeansFlow(output_strategy=self._output_strategy,
+                                  mix_names=self._mix_names,
+                                  force=self._force_overwrite,
+                                  skip=skip_denoise)
+
+            nl_flow.run(dwi, out_dir=out_dir)
+            denoised = nl_flow.last_generated_outputs[0][0]
+
+            # DTI reconstruction
+            dti_flow = ReconsDtiFlow(output_strategy='append',
+                                     mix_names=self._mix_names,
+                                     force=self._force_overwrite)
+
+            dti_flow.run(denoised, bval, bvec, dwi_mask, out_dir='metrics')
