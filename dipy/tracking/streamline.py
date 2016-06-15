@@ -293,7 +293,7 @@ def orient_by_rois(streamlines, roi1, roi2, affine=None, copy=True):
     >>> roi2 = np.zeros_like(roi1)
     >>> roi1[0, 0, 0] = True
     >>> roi2[1, 0, 0] = True
-    >>> orient_by_rois(streamlines, roi1, roi2)
+    >>> list(orient_by_rois(streamlines, roi1, roi2))
     [array([[ 0.,  0.,  0.],
            [ 1.,  0.,  0.],
            [ 2.,  0.,  0.]]), array([[ 0.,  0.,  0.],
