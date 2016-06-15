@@ -278,7 +278,7 @@ def two_stage(data, gtab, x0,
     # The guess for f is given by 1 - S0/C, where S0 is the data(b = 0) value
 
     C = data[..., gtab.bvals == split_b][0] - D_guess * split_b
-    f_guess = data[..., 0] / C
+    f_guess = 1.0 - data[..., 0] / C
     x0[..., 1] = f_guess
 
     return one_stage(data, gtab, x0, jac, bounds, tol, routine, algorithm,
