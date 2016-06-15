@@ -12,6 +12,7 @@ from dipy.core.gradients import gradient_table
 from dipy.reconst.peaks import peaks_from_model
 from dipy.data import get_sphere
 from dipy.io.gradients import read_bvals_bvecs
+
 from dipy.io.peaks import save_peaks, peaks_to_niftis
 from dipy.reconst.dti import (TensorModel, color_fa, fractional_anisotropy,
                               geodesic_anisotropy, mean_diffusivity,
@@ -19,128 +20,133 @@ from dipy.reconst.dti import (TensorModel, color_fa, fractional_anisotropy,
                               lower_triangular, mode as get_mode)
 from dipy.reconst.csdeconv import (ConstrainedSphericalDeconvModel,
                                    auto_response)
-from dipy.workflows.multi_io import io_iterator_
+
+from dipy.reconst.shm import CsaOdfModel
+
+from dipy.workflows.workflow import Workflow
 
 
-def reconst_dti_flow(input_files, bvalues, bvectors, mask_files,
-                     b0_threshold=0.0, out_dir='',
-                     out_tensor='tensors.nii.gz',
-                     out_fa='fa.nii.gz',
-                     out_ga='ga.nii.gz',
-                     out_rgb='rgb.nii.gz',
-                     out_md='md.nii.gz',
-                     out_ad='ad.nii.gz',
-                     out_rd='rd.nii.gz',
-                     out_mode='mode.nii.gz',
-                     out_evec='evecs.nii.gz',
-                     out_eval='evals.nii.gz'):
+class ReconsDtiFlow(Workflow):
 
-    """ Workflow for tensor reconstruction and DTI metrics computing.
-    It a tensor recontruction on the files by 'globing' ``input_files`` and
-    saves the dti metrics in a directory specified by ``out_dir``.
+    def run(self, input_files, bvalues, bvectors, mask_files,
+                         b0_threshold=0.0, out_dir='',
+                         out_tensor='tensors.nii.gz',
+                         out_fa='fa.nii.gz',
+                         out_ga='ga.nii.gz',
+                         out_rgb='rgb.nii.gz',
+                         out_md='md.nii.gz',
+                         out_ad='ad.nii.gz',
+                         out_rd='rd.nii.gz',
+                         out_mode='mode.nii.gz',
+                         out_evec='evecs.nii.gz',
+                         out_eval='evals.nii.gz'):
 
-    Parameters
-    ----------
-    input_files : string
-        Path to the input volumes. This path may contain wildcards to process
-        multiple inputs at once.
-    bvalues : string
-        Path to the bvalues files. This path may contain wildcards to use
-        multiple bvalues files at once.
-    bvectors : string
-        Path to the bvalues files. This path may contain wildcards to use
-        multiple bvalues files at once.
-    mask_files : string
-        Path to the input masks. This path may contain wildcards to use
-        multiple masks at once. (default: No mask used)
-    b0_threshold : float, optional
-        Threshold used to find b=0 directions (default 0.0)
-    out_dir : string, optional
-        Output directory (default input file directory)
-    out_tensor : string, optional
-        Name of the tensors volume to be saved (default 'tensors.nii.gz')
-    out_fa : string, optional
-        Name of the fractionnal anisotropy volume to be saved (default 'fa.nii.gz')
-    out_ga : string, optional
-        Name of the geodesic anisotropy volume to be saved (default 'ga.nii.gz')
-    out_rgb : string, optional
-        Name of the color fa volume to be saved (default 'rgb.nii.gz')
-    out_md : string, optional
-        Name of the mean diffusivity volume to be saved (default 'md.nii.gz')
-    out_ad : string, optional
-        Name of the axial diffusivity volume to be saved (default 'ad.nii.gz')
-    out_rd : string, optional
-        Name of the radial diffusivity volume to be saved (default 'rd.nii.gz')
-    out_mode : string, optional
-        Name of the mode volume to be saved (default 'mode.nii.gz')
-    out_evecs : string, optional
-        Name of the eigen vectors volume to be saved (default 'evecs.nii.gz')
-    out_evals : string, optional
-        Name of the eigen vvalues to be saved (default 'evals.nii.gz')
-    """
+        """ Workflow for tensor reconstruction and DTI metrics computing.
+        It a tensor recontruction on the files by 'globing' ``input_files`` and
+        saves the dti metrics in a directory specified by ``out_dir``.
 
-    io_it = io_iterator_(inspect.currentframe(), dti_metrics_flow,
-                         output_strategy='append')
-    for dwi, bval, bvec, mask, otensor, ofa, oga, orgb, omd, oad, ord, omode,\
-            oevecs, oevals, in io_it:
+        Parameters
+        ----------
+        input_files : string
+            Path to the input volumes. This path may contain wildcards to process
+            multiple inputs at once.
+        bvalues : string
+            Path to the bvalues files. This path may contain wildcards to use
+            multiple bvalues files at once.
+        bvectors : string
+            Path to the bvalues files. This path may contain wildcards to use
+            multiple bvalues files at once.
+        mask_files : string
+            Path to the input masks. This path may contain wildcards to use
+            multiple masks at once. (default: No mask used)
+        b0_threshold : float, optional
+            Threshold used to find b=0 directions (default 0.0)
+        out_dir : string, optional
+            Output directory (default input file directory)
+        out_tensor : string, optional
+            Name of the tensors volume to be saved (default 'tensors.nii.gz')
+        out_fa : string, optional
+            Name of the fractionnal anisotropy volume to be saved (default 'fa.nii.gz')
+        out_ga : string, optional
+            Name of the geodesic anisotropy volume to be saved (default 'ga.nii.gz')
+        out_rgb : string, optional
+            Name of the color fa volume to be saved (default 'rgb.nii.gz')
+        out_md : string, optional
+            Name of the mean diffusivity volume to be saved (default 'md.nii.gz')
+        out_ad : string, optional
+            Name of the axial diffusivity volume to be saved (default 'ad.nii.gz')
+        out_rd : string, optional
+            Name of the radial diffusivity volume to be saved (default 'rd.nii.gz')
+        out_mode : string, optional
+            Name of the mode volume to be saved (default 'mode.nii.gz')
+        out_evecs : string, optional
+            Name of the eigen vectors volume to be saved (default 'evecs.nii.gz')
+        out_evals : string, optional
+            Name of the eigen vvalues to be saved (default 'evals.nii.gz')
+        """
 
-        logging.info('Computing dti metrics for {0}'.format(dwi))
-        img = nib.load(dwi)
-        data = img.get_data()
-        affine = img.get_affine()
+        io_it = self.get_io_iterator(inspect.currentframe())
 
-        if mask is None:
-            mask = None
-        else:
-            mask = nib.load(mask).get_data().astype(np.bool)
+        for dwi, bval, bvec, mask, otensor, ofa, oga, orgb, omd, oad, ord, omode,\
+                oevecs, oevals, in io_it:
 
-        tenfit, _ = get_fitted_tensor(data, mask, bval, bvec, b0_threshold)
+            logging.info('Computing dti metrics for {0}'.format(dwi))
+            img = nib.load(dwi)
+            data = img.get_data()
+            affine = img.get_affine()
 
-        FA = fractional_anisotropy(tenfit.evals)
-        FA[np.isnan(FA)] = 0
-        FA = np.clip(FA, 0, 1)
+            if mask is None:
+                mask = None
+            else:
+                mask = nib.load(mask).get_data().astype(np.bool)
 
-        tensor_vals = lower_triangular(tenfit.quadratic_form)
-        correct_order = [0, 1, 3, 2, 4, 5]
-        tensor_vals_reordered = tensor_vals[..., correct_order]
-        fiber_tensors = nib.Nifti1Image(tensor_vals_reordered.astype(
-            np.float32), affine)
-        nib.save(fiber_tensors, otensor)
+            tenfit, _ = get_fitted_tensor(data, mask, bval, bvec, b0_threshold)
 
-        fa_img = nib.Nifti1Image(FA.astype(np.float32), affine)
-        nib.save(fa_img, ofa)
+            FA = fractional_anisotropy(tenfit.evals)
+            FA[np.isnan(FA)] = 0
+            FA = np.clip(FA, 0, 1)
 
-        GA = geodesic_anisotropy(tenfit.evals)
-        ga_img = nib.Nifti1Image(GA.astype(np.float32), affine)
-        nib.save(ga_img, oga)
+            tensor_vals = lower_triangular(tenfit.quadratic_form)
+            correct_order = [0, 1, 3, 2, 4, 5]
+            tensor_vals_reordered = tensor_vals[..., correct_order]
+            fiber_tensors = nib.Nifti1Image(tensor_vals_reordered.astype(
+                np.float32), affine)
+            nib.save(fiber_tensors, otensor)
 
-        RGB = color_fa(FA, tenfit.evecs)
-        rgb_img = nib.Nifti1Image(np.array(255 * RGB, 'uint8'), affine)
-        nib.save(rgb_img, orgb)
+            fa_img = nib.Nifti1Image(FA.astype(np.float32), affine)
+            nib.save(fa_img, ofa)
 
-        MD = mean_diffusivity(tenfit.evals)
-        md_img = nib.Nifti1Image(MD.astype(np.float32), affine)
-        nib.save(md_img, omd)
+            GA = geodesic_anisotropy(tenfit.evals)
+            ga_img = nib.Nifti1Image(GA.astype(np.float32), affine)
+            nib.save(ga_img, oga)
 
-        AD = axial_diffusivity(tenfit.evals)
-        ad_img = nib.Nifti1Image(AD.astype(np.float32), affine)
-        nib.save(ad_img, oad)
+            RGB = color_fa(FA, tenfit.evecs)
+            rgb_img = nib.Nifti1Image(np.array(255 * RGB, 'uint8'), affine)
+            nib.save(rgb_img, orgb)
 
-        RD = radial_diffusivity(tenfit.evals)
-        rd_img = nib.Nifti1Image(RD.astype(np.float32), affine)
-        nib.save(rd_img, ord)
+            MD = mean_diffusivity(tenfit.evals)
+            md_img = nib.Nifti1Image(MD.astype(np.float32), affine)
+            nib.save(md_img, omd)
 
-        MODE = get_mode(tenfit.quadratic_form)
-        mode_img = nib.Nifti1Image(MODE.astype(np.float32), affine)
-        nib.save(mode_img, omode)
+            AD = axial_diffusivity(tenfit.evals)
+            ad_img = nib.Nifti1Image(AD.astype(np.float32), affine)
+            nib.save(ad_img, oad)
 
-        evecs_img = nib.Nifti1Image(tenfit.evecs.astype(np.float32), affine)
-        nib.save(evecs_img, oevecs)
+            RD = radial_diffusivity(tenfit.evals)
+            rd_img = nib.Nifti1Image(RD.astype(np.float32), affine)
+            nib.save(rd_img, ord)
 
-        evals_img = nib.Nifti1Image(tenfit.evals.astype(np.float32), affine)
-        nib.save(evals_img, oevals)
-        logging.info('All dti metrics saved in {0}'.
-                     format(os.path.dirname(oevals)))
+            MODE = get_mode(tenfit.quadratic_form)
+            mode_img = nib.Nifti1Image(MODE.astype(np.float32), affine)
+            nib.save(mode_img, omode)
+
+            evecs_img = nib.Nifti1Image(tenfit.evecs.astype(np.float32), affine)
+            nib.save(evecs_img, oevecs)
+
+            evals_img = nib.Nifti1Image(tenfit.evals.astype(np.float32), affine)
+            nib.save(evals_img, oevals)
+            logging.info('All dti metrics saved in {0}'.
+                         format(os.path.dirname(oevals)))
 
 
 def get_fitted_tensor(data, mask, bval, bvec, b0_threshold=0):
@@ -156,9 +162,9 @@ def get_fitted_tensor(data, mask, bval, bvec, b0_threshold=0):
 class ReconstCSDFlow(Workflow):
 
     def run(self, input_files, bvalues, bvectors, mask_files, b0_threshold=0.0,
-            frf=[15.0, 4.0, 4.0], extract_pam_values=False, out_dir='', out_pam='pam.npz',
-            out_shm='shm.nii.gz', out_peaks_dir='peaks_dirs.nii.gz',
-            out_peaks_values='peaks_values.nii.gz',
+            frf=[15.0, 4.0, 4.0], extract_pam_values=False, reconst_model='csd',
+            out_dir='', out_pam='pam.npz', out_shm='shm.nii.gz',
+            out_peaks_dir='peaks_dirs.nii.gz', out_peaks_values='peaks_values.nii.gz',
             out_peaks_indices='peaks_indices.nii.gz', out_gfa='gfa.nii.gz'):
         """ Workflow for peaks computation. Peaks computation is done by 'globing'
             ``input_files`` and saves the peaks in a directory specified by
@@ -184,6 +190,8 @@ class ReconstCSDFlow(Workflow):
             Fiber response function to me mutiplied by 10**-4 (default: 15,4,4)
         extract_pam_values : bool, optional
             Wheter or not to save pam volumes as single nifti files.
+        reconst_model : string, optional
+            Which model to use for reconstruction (default 'csd')
         out_dir : string, optional
             Output directory (default input file directory)
         out_pam : string, optional
@@ -245,10 +253,13 @@ class ReconstCSDFlow(Workflow):
 
             peaks_sphere = get_sphere('symmetric362')
 
-            csd_model = ConstrainedSphericalDeconvModel(gtab, response,
+            if reconst_model == 'csd':
+                model = ConstrainedSphericalDeconvModel(gtab, response,
                                                         sh_order=sh_order)
+            else:
+                model = CsaOdfModel(gtab, sh_order)
 
-            peaks_csd = peaks_from_model(model=csd_model,
+            peaks_csd = peaks_from_model(model=model,
                                          data=data,
                                          sphere=peaks_sphere,
                                          relative_peak_threshold=.5,

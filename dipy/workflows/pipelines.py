@@ -193,4 +193,8 @@ class BaseMetricsFlow(Pipeline):
                                       force=self._force_overwrite)
 
             self.run_sub_flow(csd_flow, denoised, bval, bvec, dwi_mask,
-                              out_dir='peaks')
+                              out_dir='peaks_csd', )
+
+            # CSA reconstruction
+            self.run_sub_flow(csd_flow, denoised, bval, bvec, dwi_mask,
+                              out_dir='peaks_csa', reconst_model='csa')
