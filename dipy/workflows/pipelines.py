@@ -163,14 +163,13 @@ class BaseMetricsFlow(Pipeline):
         }
 
         for dwi, bval, bvec in io_it:
-
             # Masking
             mo_flow = MedianOtsuFlow(**flow_base_params)
             self.run_sub_flow(mo_flow, dwi, out_dir=out_dir)
             dwi_mask, _ = mo_flow.last_generated_outputs[0]
 
             # Denoising
-            skip_denoise = False
+            skip_denoise = True
             nl_flow = NLMeansFlow(output_strategy=self._output_strategy,
                                   mix_names=self._mix_names,
                                   force=self._force_overwrite,
