@@ -4,7 +4,9 @@ from __future__ import division, print_function, absolute_import
 import warnings
 import functools
 import numpy as np
-from scipy.optimize import minimize, leastsq
+from dipy.core.optimize import Optimizer
+
+from scipy.optimize import leastsq
 
 from dipy.core.gradients import gradient_table
 from dipy.reconst.base import ReconstModel
@@ -213,13 +215,13 @@ def _minimize(flat_data, bvals, flat_x0, ivim_params,
 
     result = []
     for vox in range(flat_data.shape[0]):
-        res = minimize(sum_sq,
-                       flat_x0[vox],
-                       args=(bvals, flat_data[vox]), bounds=bounds,
-                       tol=tol, method=algorithm, jac=jac,
-                       options={'gtol': gtol, 'ftol': ftol, 'eps': eps})
-        ivim_params[vox, :4] = res.x
-        result += res
+        res = Optimizer(sum_sq,
+                        flat_x0[vox],
+                        args=(bvals, flat_data[vox]), bounds=bounds,
+                        tol=tol, method=algorithm, jac=jac,
+                        options={'gtol': gtol, 'ftol': ftol, 'eps': eps})
+        ivim_params[vox, :4] = res.xopt
+        result += [res]
     return result
 
 
@@ -231,7 +233,7 @@ def _leastsq(flat_data, bvals, flat_x0, ivim_params):
                       flat_x0[vox],
                       args=(bvals, flat_data[vox]))
         ivim_params[vox, :4] = res[0]
-        result += res
+        result += [res]
     return result
 
 
