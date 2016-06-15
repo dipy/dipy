@@ -183,7 +183,9 @@ class TextBox(UI):
         self.actor = self.build_actor(self.text)
         self.width = width
         self.height = height
-        self.carat_pos = 0
+        self.window_left = 0
+        self.window_right = 0
+        self.caret_pos = 0
         self.init = True 
 
     def build_actor(self, text, position=(100, 10), color=(1, 1, 1),
@@ -221,8 +223,8 @@ class TextBox(UI):
 
     def showable_text(self):
         showable_length = self.height*self.width - 1
-        ret_text = self.text[-1*showable_length:]
-        ret_text = ret_text[:self.carat_pos] + "|" + ret_text[self.carat_pos:]
+        ret_text = self.text[self.window_left:self.window_right]
+        ret_text = ret_text[:self.caret_pos] + "|" + ret_text[self.caret_pos:]
         return ret_text
 
     def add_character(self, character):
@@ -231,32 +233,41 @@ class TextBox(UI):
         if self.init:
             self.text = ""
             self.init = False
+            self.caret_pos = 0
         if character == "space":
-            self.text += " "
+            self.text = self.text[:self.window_left+self.caret_pos] + " " + self.text[self.window_left+self.caret_pos:]
         else:
-            self.text += character
+            self.text = self.text[:self.window_left+self.caret_pos] + character + self.text[self.window_left+self.caret_pos:]
         self.move_right()
+        if self.window_right-self.window_left == self.height*self.width-1:
+            self.window_left += 1
+        self.window_right += 1
         self.render_text()
 
     def remove_character(self):
         if self.init:
             self.init = False
-        self.text = self.text[:-1]
+        self.text = self.text = self.text[:self.window_left+self.caret_pos-1] + self.text[self.window_left+self.caret_pos:]
         if len(self.text) < self.height*self.width:
             self.move_left()
+        if self.window_right-self.window_left == self.height*self.width-1:
+            self.window_left -= 1
+            if self.window_left < 0:
+                self.window_left = 0
+        self.window_right -= 1
+        if self.window_right < 0:
+            self.window_right = 0
         self.render_text()
 
     def move_left(self):
-        self.carat_pos -= 1
-        if self.carat_pos < 0:
-            self.carat_pos = 0
-        self.render_text()
+        self.caret_pos -= 1
+        if self.caret_pos < 0:
+            self.caret_pos = 0
 
     def move_right(self):
-        self.carat_pos += 1
-        if self.carat_pos > self.height*self.width:
-            self.carat_pos = self.height*self.width
-        self.render_text()
+        self.caret_pos += 1
+        if self.caret_pos > self.height*self.width:
+            self.caret_pos = self.height*self.width
 
     def render_text(self):
         text = self.showable_text()
@@ -267,7 +278,22 @@ class TextBox(UI):
             self.remove_character()
         elif character == "Left":
             self.move_left()
+            if self.caret_pos == 0:
+                if self.window_right-self.window_left == self.height*self.width-1:
+                    self.window_left -= 1
+                    if self.window_left < 0:
+                        self.window_left = 0
+                    self.window_right -= 1
+                    if self.window_right < 0:
+                        self.window_right = 0
+            self.render_text()
         elif character == "Right":
             self.move_right()
+            if self.caret_pos == self.height*self.width:
+                if self.window_right-self.window_left == self.height*self.width-1:
+                    if self.window_right < len(self.text):
+                        self.window_left += 1
+                        self.window_right += 1
+            self.render_text()
         else:
             self.add_character(character)
