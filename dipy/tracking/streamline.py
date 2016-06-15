@@ -324,9 +324,9 @@ def orient_by_rois(streamlines, roi1, roi2, affine=None, copy=True):
         min1 = np.argmin(dist1, 0)
         min2 = np.argmin(dist2, 0)
         if min1[0] > min2[0]:
-            new_sl[idx] = sl[::-1]
-
-    return new_sl
+            yield sl[::-1]
+        else:
+            yield sl
 
 
 def _extract_vals(data, streamlines, affine=None, threedvec=False):

@@ -809,7 +809,7 @@ def test_orient_by_rois():
                     if affine is not None:
                         flipped_sl = [s + affine[:3, 3] for s in flipped_sl]
 
-                npt.assert_equal(new_streamlines, flipped_sl)
+                npt.assert_equal(list(new_streamlines), flipped_sl)
 
 
 def test_values_from_volume():
