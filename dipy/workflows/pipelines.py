@@ -91,8 +91,9 @@ class ClassicFlow(Pipeline):
                                       mix_names=self._mix_names,
                                       force=self._force_overwrite)
 
-            self.run_sub_flow(csd_flow, denoised, bval, bvec, mask_files=dwi_mask,
-                         out_dir='csd')
+            self.run_sub_flow(csd_flow, denoised, bval, bvec,
+                              mask_files=dwi_mask, out_dir='peaks_csd',
+                              extract_pam_values=True)
             peaks_file = csd_flow.last_generated_outputs[0][0]
 
             # Create seeding mask
@@ -115,10 +116,10 @@ class ClassicFlow(Pipeline):
 
             # Tract density
             logging.warning('TDI disabled for now.')
-            tdi_flow = TrackDensityFlow(output_strategy='absolute',
-                                        mix_names=self._mix_names,
-                                        force=self._force_overwrite)
-            self.run_sub_flow(tdi_flow, det_tracts, fa, out_dir=track_dir)
+            #tdi_flow = TrackDensityFlow(output_strategy='absolute',
+            #                           mix_names=self._mix_names,
+            #                            force=self._force_overwrite)
+            #self.run_sub_flow(tdi_flow, det_tracts, fa, out_dir=track_dir)
 
 
 class BaseMetricsFlow(Pipeline):
@@ -193,8 +194,9 @@ class BaseMetricsFlow(Pipeline):
                                       force=self._force_overwrite)
 
             self.run_sub_flow(csd_flow, denoised, bval, bvec, dwi_mask,
-                              out_dir='peaks_csd', )
+                              out_dir='peaks_csd', extract_pam_values=True)
 
             # CSA reconstruction
             self.run_sub_flow(csd_flow, denoised, bval, bvec, dwi_mask,
-                              out_dir='peaks_csa', reconst_model='csa')
+                              out_dir='peaks_csa', reconst_model='csa',
+                              extract_pam_values=True)
