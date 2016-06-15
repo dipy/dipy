@@ -127,7 +127,8 @@ class BaseMetricsFlow(Pipeline):
         return [
             MedianOtsuFlow,
             NLMeansFlow,
-            ReconsDtiFlow
+            ReconsDtiFlow,
+            ReconstCSDFlow
         ]
 
     def run(self, input_files, bvalues, bvectors, out_dir=''):
@@ -186,3 +187,11 @@ class BaseMetricsFlow(Pipeline):
 
             self.run_sub_flow(dti_flow, denoised, bval, bvec, dwi_mask,
                               out_dir='metrics')
+
+            # CSD Reconstruction
+            csd_flow = ReconstCSDFlow(output_strategy='append',
+                                      mix_names=self._mix_names,
+                                      force=self._force_overwrite)
+
+            self.run_sub_flow(csd_flow, denoised, bval, bvec, dwi_mask,
+                              out_dir='peaks')
