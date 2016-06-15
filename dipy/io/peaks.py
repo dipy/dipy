@@ -75,6 +75,7 @@ def peaks_to_niftis(pam,
                     fname_dirs,
                     fname_values,
                     fname_indices,
+                    fname_gfa,
                     reshape_dirs=False):
         """ Save SH, directions, indices and values of peaks to Nifti.
         """
@@ -92,3 +93,5 @@ def peaks_to_niftis(pam,
                    pam.affine)
 
         save_nifti(fname_indices, pam.peak_indices, pam.affine)
+
+        save_nifti(fname_gfa, pam.gfa, pam.affine)
