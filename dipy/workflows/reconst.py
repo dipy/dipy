@@ -26,18 +26,11 @@ from dipy.workflows.workflow import Workflow
 
 class ReconstDtiFlow(Workflow):
 
-    def run(self, input_files, bvalues, bvectors, mask_files,
-                         b0_threshold=0.0, out_dir='',
-                         out_tensor='tensors.nii.gz',
-                         out_fa='fa.nii.gz',
-                         out_ga='ga.nii.gz',
-                         out_rgb='rgb.nii.gz',
-                         out_md='md.nii.gz',
-                         out_ad='ad.nii.gz',
-                         out_rd='rd.nii.gz',
-                         out_mode='mode.nii.gz',
-                         out_evec='evecs.nii.gz',
-                         out_eval='evals.nii.gz'):
+    def run(self, input_files, bvalues, bvectors, mask_files, b0_threshold=0.0,
+            out_dir='', out_tensor='tensors.nii.gz', out_fa='fa.nii.gz',
+            out_ga='ga.nii.gz', out_rgb='rgb.nii.gz', out_md='md.nii.gz',
+            out_ad='ad.nii.gz', out_rd='rd.nii.gz', out_mode='mode.nii.gz',
+            out_evec='evecs.nii.gz', out_eval='evals.nii.gz'):
 
         """ Workflow for tensor reconstruction and DTI metrics computing.
         It a tensor recontruction on the files by 'globing' ``input_files`` and
@@ -46,8 +39,8 @@ class ReconstDtiFlow(Workflow):
         Parameters
         ----------
         input_files : string
-            Path to the input volumes. This path may contain wildcards to process
-            multiple inputs at once.
+            Path to the input volumes. This path may contain wildcards to
+            process multiple inputs at once.
         bvalues : string
             Path to the bvalues files. This path may contain wildcards to use
             multiple bvalues files at once.
@@ -64,29 +57,35 @@ class ReconstDtiFlow(Workflow):
         out_tensor : string, optional
             Name of the tensors volume to be saved (default 'tensors.nii.gz')
         out_fa : string, optional
-            Name of the fractionnal anisotropy volume to be saved (default 'fa.nii.gz')
+            Name of the fractionnal anisotropy volume to be saved
+            (default 'fa.nii.gz')
         out_ga : string, optional
-            Name of the geodesic anisotropy volume to be saved (default 'ga.nii.gz')
+            Name of the geodesic anisotropy volume to be saved
+            (default 'ga.nii.gz')
         out_rgb : string, optional
             Name of the color fa volume to be saved (default 'rgb.nii.gz')
         out_md : string, optional
-            Name of the mean diffusivity volume to be saved (default 'md.nii.gz')
+            Name of the mean diffusivity volume to be saved
+            (default 'md.nii.gz')
         out_ad : string, optional
-            Name of the axial diffusivity volume to be saved (default 'ad.nii.gz')
+            Name of the axial diffusivity volume to be saved
+            (default 'ad.nii.gz')
         out_rd : string, optional
-            Name of the radial diffusivity volume to be saved (default 'rd.nii.gz')
+            Name of the radial diffusivity volume to be saved
+            (default 'rd.nii.gz')
         out_mode : string, optional
             Name of the mode volume to be saved (default 'mode.nii.gz')
-        out_evecs : string, optional
-            Name of the eigen vectors volume to be saved (default 'evecs.nii.gz')
-        out_evals : string, optional
+        out_evec : string, optional
+            Name of the eigen vectors volume to be saved
+            (default 'evecs.nii.gz')
+        out_eval : string, optional
             Name of the eigen vvalues to be saved (default 'evals.nii.gz')
         """
 
         io_it = self.get_io_iterator(inspect.currentframe())
 
-        for dwi, bval, bvec, mask, otensor, ofa, oga, orgb, omd, oad, ord, omode,\
-                oevecs, oevals, in io_it:
+        for dwi, bval, bvec, mask, otensor, ofa, oga, orgb, omd, oad, ord, \
+            omode, oevecs, oevals in io_it:
 
             logging.info('Computing dti metrics for {0}'.format(dwi))
             img = nib.load(dwi)
@@ -162,7 +161,8 @@ class ReconstCSDFlow(Workflow):
     def run(self, input_files, bvalues, bvectors, mask_files, b0_threshold=0.0,
             frf=[15.0, 4.0, 4.0], extract_pam_values=False, reconst_model='csd',
             out_dir='', out_pam='pam.npz', out_shm='shm.nii.gz',
-            out_peaks_dir='peaks_dirs.nii.gz', out_peaks_values='peaks_values.nii.gz',
+            out_peaks_dir='peaks_dirs.nii.gz',
+            out_peaks_values='peaks_values.nii.gz',
             out_peaks_indices='peaks_indices.nii.gz', out_gfa='gfa.nii.gz'):
         """ Workflow for peaks computation. Peaks computation is done by 'globing'
             ``input_files`` and saves the peaks in a directory specified by
@@ -171,8 +171,8 @@ class ReconstCSDFlow(Workflow):
         Parameters
         ----------
         input_files : string
-            Path to the input volumes. This path may contain wildcards to process
-            multiple inputs at once.
+            Path to the input volumes. This path may contain wildcards to
+            process multiple inputs at once.
         bvalues : string
             Path to the bvalues files. This path may contain wildcards to use
             multiple bvalues files at once.

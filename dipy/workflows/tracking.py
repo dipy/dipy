@@ -85,20 +85,6 @@ def det_track_flow(peaks_files, stopping_files, seeding_files,
 
         # Compute streamlines and store as a list.
         streamlines = list(streamlines)
-
-        # This probably needs to go, this is the only I found to get consistently
-        # working tracks
-        #new_aff = np.eye(4)
-        #new_aff[:3, 3:] = new_aff[:3, 3:]
-        #new_sl = utils.move_streamlines(streamlines, np.linalg.inv(affine))
-        #affine[:3, 3:] *= np.sign(np.diag(affine[3:, 3:]))
-        transfo = np.eye(4)
-        #transfo[:3, 3] -= 0.5
-        transfo[:3, 3] =\
-            affine[:3, 3] * np.sign(np.diag(affine[:3, :3])) * -1.0
-
-        #transfo[:3, 3] -= 0.5 #np.sign(np.diag(affine[:3, :3])) * 0.5
-
-        print(transfo)
-        save_trk(out_tract, streamlines, transfo=transfo)
+        # Currently not working with 2x2x2 vols.
+        save_trk(out_tract, streamlines, transfo=affine)
         logging.info('Saved {0}'.format(out_tract))
