@@ -15,7 +15,7 @@ from dipy.reconst.base import ReconstModel
 from dipy.core.geometry import (sphere2cart, cart2sphere)
 from dipy.reconst.recspeed import local_maxima
 from dipy.core.ndindex import ndindex
-
+from dipy.reconst.vec_val_sum import vec_val_vect
 
 def _positive_evals(L1, L2, L3, er=2e-7):
     """ Helper function that indentifies which voxels in a array have all
