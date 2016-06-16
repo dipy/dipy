@@ -20,13 +20,16 @@ from numpy.testing import assert_array_equal
 from dipy.data import get_data
 from nibabel import trackvis as tv
 
-from dipy.tracking import Streamlines
+from dipy.tracking import NIBABEL_LESS_2_1
 from dipy.tracking.streamline import (set_number_of_points,
                                       length,
                                       compress_streamlines)
 from dipy.tracking.tests.test_streamline import (set_number_of_points_python,
                                                  length_python,
                                                  compress_streamlines_python)
+
+if not NIBABEL_LESS_2_1:
+    from dipy.tracking import Streamlines
 
 DATA = {}
 
@@ -43,7 +46,8 @@ def setup():
     DATA['streamlines'] = generate_streamlines(nb_streamlines,
                                                min_nb_points, max_nb_points,
                                                rng=rng)
-    DATA['streamlines_arrseq'] = Streamlines(DATA['streamlines'])
+    if not NIBABEL_LESS_2_1:
+        DATA['streamlines_arrseq'] = Streamlines(DATA['streamlines'])
 
 
 def generate_streamlines(nb_streamlines, min_nb_points, max_nb_points, rng):
@@ -91,16 +95,19 @@ def bench_length():
     print("Cython time: {0:.3}sec".format(cython_time))
     print("Speed up of {0:.2f}x".format(python_time/cython_time))
 
-    streamlines = DATA['streamlines_arrseq']
-    cython_time_arrseq = measure("length(streamlines)", repeat)
-    print("Cython time (ArraySequence): {0:.3}sec".format(cython_time_arrseq))
-    print("Speed up of {0:.2f}x".format(python_time/cython_time_arrseq))
-
-    # Make sure all methods produce the same results.
+    # Make sure it produces the same results.
     assert_array_equal([length_python(s) for s in DATA["streamlines"]],
                        length(DATA["streamlines"]))
-    assert_array_equal(length(DATA["streamlines"]),
-                       length(DATA["streamlines_arrseq"]))
+
+    if not NIBABEL_LESS_2_1:
+        streamlines = DATA['streamlines_arrseq']
+        cython_time_arrseq = measure("length(streamlines)", repeat)
+        print("Cython time (ArrSeq): {0:.3}sec".format(cython_time_arrseq))
+        print("Speed up of {0:.2f}x".format(python_time/cython_time_arrseq))
+
+        # Make sure it produces the same results.
+        assert_array_equal(length(DATA["streamlines"]),
+                           length(DATA["streamlines_arrseq"]))
 
 
 def bench_compress_streamlines():
