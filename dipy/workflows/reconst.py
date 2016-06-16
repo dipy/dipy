@@ -156,7 +156,8 @@ def get_fitted_tensor(data, mask, bval, bvec, b0_threshold=0):
 
     return tenfit, gtab
 
-class ReconstCSDFlow(Workflow):
+
+class ReconstODFFlow(Workflow):
 
     def run(self, input_files, bvalues, bvectors, mask_files, b0_threshold=0.0,
             frf=[15.0, 4.0, 4.0], extract_pam_values=False, reconst_model='csd',
