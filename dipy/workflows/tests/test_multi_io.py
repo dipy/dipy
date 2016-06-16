@@ -1,16 +1,19 @@
-import os
 import numpy as np
-import os.path as path
 import numpy.testing as npt
-from dipy.workflows.multi_io import IOIterator, io_iterator
+import os
+import os.path as path
+
 from nibabel.tmpdirs import TemporaryDirectory
+
+from dipy.workflows.multi_io import IOIterator, io_iterator
 
 
 def test_output_generator():
 
     with TemporaryDirectory() as tmpdir:
         og = IOIterator(output_strategy='append', mix_names=True)
-        og.set_inputs('/home/matth/sda3/data/subj*/dwi.nii.gz', '/home/matth/sda3/data/subj*/*bval',
+        og.set_inputs('/home/matth/sda3/data/subj*/dwi.nii.gz',
+                      '/home/matth/sda3/data/subj*/*bval',
                       '/home/matth/sda3/data/subj*/*bvec',
                       '/home/matth/sda3/data/atlas/downsampling_atlas/rat_b0_atlas.nii.gz')
 

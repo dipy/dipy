@@ -1,4 +1,5 @@
 from __future__ import division, print_function, absolute_import
+
 import logging
 
 from dipy.workflows.base import IntrospectiveArgumentParser

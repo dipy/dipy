@@ -16,7 +16,7 @@ class Pipeline(Workflow):
         return sub_runs
 
     def _get_sub_flows(self):
-        raise AttributeError('Error: _get_sub_flows() needs to be defined for {}'.
+        raise AttributeError('Error: _get_sub_flows() has to be defined for {}'.
                              format(self.__class__))
 
     def set_sub_flows_optionals(self, opts):

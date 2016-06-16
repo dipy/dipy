@@ -1,10 +1,10 @@
 from __future__ import division, print_function, absolute_import
 
+import inspect
 import logging
-import nibabel as nib
 import numpy as np
 
-import inspect
+import nibabel as nib
 
 from dipy.segment.mask import median_otsu
 from dipy.workflows.workflow import Workflow

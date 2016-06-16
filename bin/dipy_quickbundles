@@ -1,14 +1,14 @@
 #!python
-from dipy.fixes import argparse as arg
-import os
-import warnings 
-import dipy.io.pickles as pkl
-
 import numpy as np
+import os
 import scipy.io as sio
+import warnings
 
 from nibabel import trackvis
+
+import dipy.io.pickles as pkl
 import dipy.segment.quickbundles as qb
+from dipy.fixes import argparse as arg
 
 parser = arg.ArgumentParser(description='Segment a fiber-group into clusters using the QuickBundles algorithm (Garyfallidis et al. 2012)')
 

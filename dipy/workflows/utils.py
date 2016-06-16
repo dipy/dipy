@@ -1,8 +1,8 @@
-from os.path import join, dirname, isabs, exists
-from os import makedirs
 from glob import glob
+from os import makedirs
+from os.path import join, dirname, isabs, exists
 
-# FIND NEW PARAM NAMES
+
 def glob_or_value(globable, maybe_globable, default=None):
     globed_globable = glob(globable)
     try:

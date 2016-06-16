@@ -4,14 +4,14 @@ import inspect
 import logging
 import os
 
-from dipy.workflows.pipeline import Pipeline
-from dipy.workflows.segment import MedianOtsuFlow
 from dipy.workflows.denoise import NLMeansFlow
-from dipy.workflows.reconst import ReconsDtiFlow
-from dipy.workflows.reconst import ReconstCSDFlow
-from dipy.workflows.tracking import DetTrackFlow
-from dipy.workflows.track_metrics import TrackDensityFlow
 from dipy.workflows.mask import MaskFlow
+from dipy.workflows.pipeline import Pipeline
+from dipy.workflows.reconst import ReconstCSDFlow
+from dipy.workflows.reconst import ReconstDtiFlow
+from dipy.workflows.segment import MedianOtsuFlow
+from dipy.workflows.track_metrics import TrackDensityFlow
+from dipy.workflows.tracking import DetTrackFlow
 
 
 class ClassicFlow(Pipeline):
@@ -20,7 +20,7 @@ class ClassicFlow(Pipeline):
         return [
             MedianOtsuFlow,
             NLMeansFlow,
-            ReconsDtiFlow,
+            ReconstDtiFlow,
             ReconstCSDFlow,
             DetTrackFlow,
             TrackDensityFlow,
@@ -77,9 +77,9 @@ class ClassicFlow(Pipeline):
             denoised = nl_flow.last_generated_outputs[0][0]
 
             # DTI reconstruction
-            dti_flow = ReconsDtiFlow(output_strategy='append',
-                                     mix_names=self._mix_names,
-                                     force=self._force_overwrite)
+            dti_flow = ReconstDtiFlow(output_strategy='append',
+                                      mix_names=self._mix_names,
+                                      force=self._force_overwrite)
 
             self.run_sub_flow(dti_flow, denoised, bval, bvec, dwi_mask,
                               out_dir='metrics')
@@ -128,7 +128,7 @@ class BaseMetricsFlow(Pipeline):
         return [
             MedianOtsuFlow,
             NLMeansFlow,
-            ReconsDtiFlow,
+            ReconstDtiFlow,
             ReconstCSDFlow
         ]
 
@@ -181,9 +181,9 @@ class BaseMetricsFlow(Pipeline):
 
 
             # DTI reconstruction
-            dti_flow = ReconsDtiFlow(output_strategy='append',
-                                     mix_names=self._mix_names,
-                                     force=self._force_overwrite)
+            dti_flow = ReconstDtiFlow(output_strategy='append',
+                                      mix_names=self._mix_names,
+                                      force=self._force_overwrite)
 
             self.run_sub_flow(dti_flow, denoised, bval, bvec, dwi_mask,
                               out_dir='metrics')
