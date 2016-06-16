@@ -5,9 +5,10 @@ from __future__ import division, print_function, absolute_import
 import numpy as np
 import scipy.optimize as opt
 from dipy.reconst.dti import (TensorFit, mean_diffusivity, axial_diffusivity,
-                              radial_diffusivity, from_lower_triangular,
-                              lower_triangular, decompose_tensor,
-                              _min_positive_signal)
+                              radial_diffusivity, apparent_diffusion_coef,
+                              from_lower_triangular, lower_triangular,
+                              decompose_tensor, _min_positive_signal,
+                              eig_from_lo_tri)
 
 from dipy.reconst.utils import dki_design_matrix as design_matrix
 from dipy.utils.six.moves import range
@@ -15,7 +16,7 @@ from dipy.reconst.base import ReconstModel
 from dipy.core.geometry import (sphere2cart, cart2sphere)
 from dipy.reconst.recspeed import local_maxima
 from dipy.core.ndindex import ndindex
-
+from dipy.reconst.vec_val_sum import vec_val_vect
 
 def _positive_evals(L1, L2, L3, er=2e-7):
     """ Helper function that indentifies which voxels in a array have all
@@ -1113,12 +1114,12 @@ def diffusion_components(dki_params, sphere, awf=None, mask=None):
     EDT : ndarray (x, y, z, 12) or (n, 12)
         Parameters of the extra-cellular diffusion tensor.
     IDT : ndarray (x, y, z, 12) or (n, 12)
-        Parameters of the extra-cellular diffusion tensor.
+        Parameters of the intra-cellular diffusion tensor.
         
     Notes
     -----
-    Parameters of both extra-cellular and intra-cellular diffusion tensors are
-    order as follow:
+    The parameters of both extra-cellular and intra-cellular diffusion tensors
+    are order as follow:
         1) Three diffusion tensor's eingenvalues
         2) Three lines of the eigenvector matrix each containing the first,
         second and third coordinates of the eigenvector
@@ -1131,32 +1132,41 @@ def diffusion_components(dki_params, sphere, awf=None, mask=None):
     """
     shape = dki_params.shape[:-1]
 
-    # select voxels where to find fiber directions
+    # select voxels where to applied the single fiber model
     if mask is None:
         mask = np.ones(shape, dtype='bool')
     else:
         if mask.shape != shape:
             raise ValueError("Mask is not the same shape as dki_params.")
 
-    # check shape or compute awf values    
+    # check or compute awf values    
     if awf is None:
         awf = axonal_water_fraction(dki_params, sphere, mask=mask) 
     else:
         if awf.shape != shape:
             raise ValueError("awf array is not the same shape as dki_params.")
 
-    di = apparent_diffusion_coef(dki_params, sphere)
+    # Compute directional extra and intra-cellular diffusion samples
+    evals, evecs, kt = split_dki_param(dki_params)
+    dt = from_lower_triangular(vec_val_vect(evecs, evals))
+    di = apparent_diffusion_coef(dt, sphere)
     ki = apparent_kurtosis_coef(dki_params, sphere)
-
     EDi = di * (1 + np.sqrt(ki*awf / (3-3*awf)))
     IDi = di * (1 - np.sqrt(ki*awf / (3-3*awf)))
 
-    # Lines below are still work in progress
-    EDT = EDi
-    IDT = IDi
+    # Reconstruct the extra and intra-cellular diffusion tensors
+    B = np.zeros((sphere.shape[0], 6))
+    B[:, 0] = sphere[:, 0] * sphere[:, 0]  # Bxx
+    B[:, 1] = sphere[:, 0] * sphere[:, 1] * 2.  # Bxy
+    B[:, 2] = sphere[:, 1] * sphere[:, 1]   # Byy
+    B[:, 3] = sphere[:, 0] * sphere[:, 2] * 2.  # Bxz
+    B[:, 4] = sphere[:, 1] * sphere[:, 2] * 2.  # Byz
+    B[:, 5] = sphere[:, 2] * sphere[:, 2]   # Bzz
+    pinvB = np.linalg.pinv(B)
+    EDT = eig_from_lo_tri(np.dot(pinvB, EDi))
+    IDT = eig_from_lo_tri(np.dot(pinvB, IDi))
 
     return EDT, IDT
-    
 
 
 def dki_prediction(dki_params, gtab, S0=150):
