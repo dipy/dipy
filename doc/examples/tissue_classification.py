@@ -84,17 +84,23 @@ beta = 0.1
 Now we set the convergence criterion.
 """
 
-tolerance = 0.01
+tolerance = 0.00001
 
 """
-Now we call an instace of the class TissueClassifierHMRF and its method
+Now we call an instance of the class TissueClassifierHMRF and its method
 called classify and input the parameters defined above to perform the segmentation task.
 """
 
-hmrf = TissueClassifierHMRF(save_history=True)
-initial_segmentation, final_segmentation, PVE, EN = hmrf.classify(t1,
-                                                                  nclass, beta,
-                                                                  tolerance)
+import time
+t0 = time.time()
+
+hmrf = TissueClassifierHMRF()
+initial_segmentation, final_segmentation, PVE = hmrf.classify(t1, nclass, beta,
+                                                              tolerance)
+
+t1 = time.time()
+total_time = t1-t0
+print('Total time:' + str(total_time))
 
 fig = plt.figure()
 a = fig.add_subplot(1, 2, 1)

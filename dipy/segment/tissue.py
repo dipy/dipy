@@ -52,6 +52,7 @@ class TissueClassifierHMRF(object):
         """
 
         nclasses = nclasses + 1  # One extra class for the background
+        energy_sum = []
 
         com = ConstantObservationModel()
         icm = IteratedConditionalModes()
@@ -77,7 +78,6 @@ class TissueClassifierHMRF(object):
 
         final_segmentation = np.empty_like(image)
         initial_segmentation = seg_init.copy()
-#        tolerance = 0.0000001
 
         for i in range(100):
 
@@ -94,6 +94,7 @@ class TissueClassifierHMRF(object):
                                          mu_upd, sigmasq_upd, nclasses)
 
             final_segmentation, energy = icm.icm_ising(negll, beta, seg_init)
+            energy_sum.append(energy[energy > -np.inf].sum())
 
             if self.save_history:
                 self.segmentations.append(final_segmentation)
@@ -103,10 +104,10 @@ class TissueClassifierHMRF(object):
 
             if i % 10 == 0 and i != 0:
 
-                tol = tolerance * (np.amax(self.energies_sum) -
-                                   np.amin(self.energies_sum))
+                tol = tolerance * (np.amax(energy_sum) -
+                                   np.amin(energy_sum))
 
-                test_dist = np.absolute(np.amax(self.energies_sum[np.size(self.energies_sum) - 5: i]) - np.amin(self.energies_sum[np.size(self.energies_sum) - 5: i]))
+                test_dist = np.absolute(np.amax(energy_sum[np.size(energy_sum) - 5: i]) - np.amin(energy_sum[np.size(energy_sum) - 5: i]))
 
                 if test_dist < tol:
 
@@ -117,6 +118,5 @@ class TissueClassifierHMRF(object):
             sigmasq = sigmasq_upd.copy()
 
         PVE = PVE[..., 1:]
-        EN = self.energies_sum
 
-        return initial_segmentation, final_segmentation, PVE, EN
+        return initial_segmentation, final_segmentation, PVE
