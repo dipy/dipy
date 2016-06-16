@@ -7,7 +7,7 @@ import os
 from dipy.workflows.denoise import NLMeansFlow
 from dipy.workflows.mask import MaskFlow
 from dipy.workflows.combined_workflow import CombinedWorkflow
-from dipy.workflows.reconst import ReconstCSDFlow
+from dipy.workflows.reconst import ReconstODFFlow
 from dipy.workflows.reconst import ReconstDtiFlow
 from dipy.workflows.segment import MedianOtsuFlow
 from dipy.workflows.track_metrics import TrackDensityFlow
@@ -21,7 +21,7 @@ class ClassicFlow(CombinedWorkflow):
             MedianOtsuFlow,
             NLMeansFlow,
             ReconstDtiFlow,
-            ReconstCSDFlow,
+            ReconstODFFlow,
             DetTrackFlow,
             TrackDensityFlow,
             MaskFlow
@@ -87,7 +87,7 @@ class ClassicFlow(CombinedWorkflow):
                 dti_flow.last_generated_outputs[0]
 
             # CSD Recontruction
-            csd_flow = ReconstCSDFlow(output_strategy='append',
+            csd_flow = ReconstODFFlow(output_strategy='append',
                                       mix_names=self._mix_names,
                                       force=self._force_overwrite)
 
@@ -129,7 +129,7 @@ class BaseMetricsFlow(CombinedWorkflow):
             MedianOtsuFlow,
             NLMeansFlow,
             ReconstDtiFlow,
-            ReconstCSDFlow
+            ReconstODFFlow
         ]
 
     def run(self, input_files, bvalues, bvectors, out_dir=''):
@@ -188,7 +188,7 @@ class BaseMetricsFlow(CombinedWorkflow):
                               out_dir='metrics')
 
             # CSD Reconstruction
-            csd_flow = ReconstCSDFlow(output_strategy='append',
+            csd_flow = ReconstODFFlow(output_strategy='append',
                                       mix_names=self._mix_names,
                                       force=self._force_overwrite)
 
