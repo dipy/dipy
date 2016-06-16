@@ -30,8 +30,8 @@ POSSIBILITY OF SUCH DAMAGE.
 
 from __future__ import division, absolute_import, print_function
 
-import textwrap
 import re
+import textwrap
 from warnings import warn
 
 

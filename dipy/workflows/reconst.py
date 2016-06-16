@@ -1,32 +1,30 @@
 from __future__ import division, print_function, absolute_import
 
-import logging
-import os.path
 import inspect
-from ast import literal_eval
-import nibabel as nib
+import logging
 import numpy as np
+import os.path
+from ast import literal_eval
+
+import nibabel as nib
 
 from dipy.workflows.workflow import Workflow
 from dipy.core.gradients import gradient_table
-from dipy.reconst.peaks import peaks_from_model
 from dipy.data import get_sphere
 from dipy.io.gradients import read_bvals_bvecs
-
 from dipy.io.peaks import save_peaks, peaks_to_niftis
+from dipy.reconst.csdeconv import (ConstrainedSphericalDeconvModel,
+                                   auto_response)
 from dipy.reconst.dti import (TensorModel, color_fa, fractional_anisotropy,
                               geodesic_anisotropy, mean_diffusivity,
                               axial_diffusivity, radial_diffusivity,
                               lower_triangular, mode as get_mode)
-from dipy.reconst.csdeconv import (ConstrainedSphericalDeconvModel,
-                                   auto_response)
-
+from dipy.reconst.peaks import peaks_from_model
 from dipy.reconst.shm import CsaOdfModel
-
 from dipy.workflows.workflow import Workflow
 
 
-class ReconsDtiFlow(Workflow):
+class ReconstDtiFlow(Workflow):
 
     def run(self, input_files, bvalues, bvectors, mask_files,
                          b0_threshold=0.0, out_dir='',

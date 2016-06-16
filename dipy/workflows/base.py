@@ -1,7 +1,6 @@
-from dipy.fixes import argparse as arg
-
 import inspect
 
+from dipy.fixes import argparse as arg
 from dipy.workflows.docstring_parser import NumpyDocString
 
 

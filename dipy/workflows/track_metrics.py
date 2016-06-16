@@ -1,10 +1,9 @@
-
 from __future__ import division, print_function
 
-import logging
 import inspect
-
+import logging
 import numpy as np
+
 import nibabel as nib
 
 from dipy.io.trackvis import load_trk

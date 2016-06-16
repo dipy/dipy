@@ -21,7 +21,8 @@ def slash_to_under(dir_str):
     return ''.join(dir_str.replace('/', '_'))
 
 
-def connect_output_paths(inputs, out_dir, out_files, output_strategy='append', mix_names=True):
+def connect_output_paths(inputs, out_dir, out_files, output_strategy='append',
+                         mix_names=True):
     outputs = []
     if isinstance(inputs, basestring):
         inputs = [inputs]
@@ -58,7 +59,7 @@ def connect_output_paths(inputs, out_dir, out_files, output_strategy='append', m
         elif output_strategy == 'append':
             dname = path.join(inp_dirname, out_dir)
 
-        else: #absolute
+        else:
             dname = out_dir
 
         updated_out_files = []
@@ -139,10 +140,11 @@ def io_iterator_(frame, fnc, output_strategy='append', mix_names=False):
 
 
 class IOIterator(object):
-    """ Create output filenames that work nicely with muiltiple input files from multiple directories (processing multiple subjects with one command)
+    """ Create output filenames that work nicely with muiltiple input files from
+    multiple directories (processing multiple subjects with one command)
 
-    Use information from input files, out_dir and out_fnames to generate correct outputs which can come from long lists of multiple or single
-    inputs.
+    Use information from input files, out_dir and out_fnames to generate correct
+    outputs which can come from long lists of multiple or single inputs.
     """
 
     def __init__(self, output_strategy='append', mix_names=False):

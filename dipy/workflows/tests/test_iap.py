@@ -1,5 +1,6 @@
 import numpy.testing as npt
 import sys
+
 from dipy.workflows.base import IntrospectiveArgumentParser
 
 
