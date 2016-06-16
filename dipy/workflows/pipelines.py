@@ -122,7 +122,7 @@ class ClassicFlow(CombinedWorkflow):
             #self.run_sub_flow(tdi_flow, det_tracts, fa, out_dir=track_dir)
 
 
-class BaseMetricsFlow(CombinedWorkflow):
+class QuickFlow(CombinedWorkflow):
 
     def _get_sub_flows(self):
         return [

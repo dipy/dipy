@@ -218,7 +218,7 @@ def main(**extra_args):
                           pjoin('bin', 'dipy_reconst_csd'),
                           pjoin('bin', 'dipy_median_otsu'),
                           pjoin('bin', 'dipy_classic_flow'),
-                          pjoin('bin', 'dipy_base_metrics_flow'),
+                          pjoin('bin', 'dipy_quick_flow'),
                           pjoin('bin', 'dipy_track_density'),
                           pjoin('bin', 'dipy_det_track')],
           cmdclass = cmdclass,
