@@ -4,11 +4,11 @@ import inspect
 import logging
 import os
 
+from dipy.workflows.combined_workflow import CombinedWorkflow
 from dipy.workflows.denoise import NLMeansFlow
 from dipy.workflows.mask import MaskFlow
-from dipy.workflows.combined_workflow import CombinedWorkflow
-from dipy.workflows.reconst import ReconstODFFlow
-from dipy.workflows.reconst import ReconstDtiFlow
+from dipy.workflows.reconst import \
+    (ReconstCSDFlow, ReconstCSAFlow, ReconstDtiFlow)
 from dipy.workflows.segment import MedianOtsuFlow
 from dipy.workflows.track_metrics import TrackDensityFlow
 from dipy.workflows.tracking import DetTrackFlow
@@ -21,7 +21,7 @@ class ClassicFlow(CombinedWorkflow):
             MedianOtsuFlow,
             NLMeansFlow,
             ReconstDtiFlow,
-            ReconstODFFlow,
+            ReconstCSDFlow,
             DetTrackFlow,
             TrackDensityFlow,
             MaskFlow
@@ -87,7 +87,7 @@ class ClassicFlow(CombinedWorkflow):
                 dti_flow.last_generated_outputs[0]
 
             # CSD Recontruction
-            csd_flow = ReconstODFFlow(output_strategy='append',
+            csd_flow = ReconstCSDFlow(output_strategy='append',
                                       mix_names=self._mix_names,
                                       force=self._force_overwrite)
 
@@ -129,7 +129,8 @@ class QuickFlow(CombinedWorkflow):
             MedianOtsuFlow,
             NLMeansFlow,
             ReconstDtiFlow,
-            ReconstODFFlow
+            ReconstCSDFlow,
+            ReconstCSAFlow
         ]
 
     def run(self, input_files, bvalues, bvectors, out_dir=''):
@@ -188,7 +189,7 @@ class QuickFlow(CombinedWorkflow):
                               out_dir='metrics')
 
             # CSD Reconstruction
-            csd_flow = ReconstODFFlow(output_strategy='append',
+            csd_flow = ReconstCSDFlow(output_strategy='append',
                                       mix_names=self._mix_names,
                                       force=self._force_overwrite)
 
@@ -196,6 +197,9 @@ class QuickFlow(CombinedWorkflow):
                               out_dir='peaks_csd', extract_pam_values=True)
 
             # CSA reconstruction
-            self.run_sub_flow(csd_flow, denoised, bval, bvec, dwi_mask,
+            csa_flow = ReconstCSAFlow(output_strategy='append',
+                                      mix_names=self._mix_names,
+                                      force=self._force_overwrite)
+            self.run_sub_flow(csa_flow, denoised, bval, bvec, dwi_mask,
                               out_dir='peaks_csa', reconst_model='csa',
                               extract_pam_values=True)
