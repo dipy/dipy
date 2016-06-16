@@ -1139,7 +1139,7 @@ def diffusion_components(dki_params, sphere, awf=None, mask=None):
         if mask.shape != shape:
             raise ValueError("Mask is not the same shape as dki_params.")
 
-    # check or compute awf values    
+    # check or compute awf values
     if awf is None:
         awf = axonal_water_fraction(dki_params, sphere, mask=mask) 
     else:
@@ -1148,20 +1148,19 @@ def diffusion_components(dki_params, sphere, awf=None, mask=None):
 
     # Compute directional extra and intra-cellular diffusion samples
     evals, evecs, kt = split_dki_param(dki_params)
-    dt = from_lower_triangular(vec_val_vect(evecs, evals))
-    di = apparent_diffusion_coef(dt, sphere)
+    di = apparent_diffusion_coef(vec_val_vect(evecs, evals), sphere)
     ki = apparent_kurtosis_coef(dki_params, sphere)
-    EDi = di * (1 + np.sqrt(ki*awf / (3-3*awf)))
-    IDi = di * (1 - np.sqrt(ki*awf / (3-3*awf)))
+    EDi = di * (1 + np.sqrt(ki*awf / (3.0-3.0*awf)))
+    IDi = di * (1 - np.sqrt(ki * (1.0-awf) / (3.0*awf)))
 
     # Reconstruct the extra and intra-cellular diffusion tensors
-    B = np.zeros((sphere.shape[0], 6))
-    B[:, 0] = sphere[:, 0] * sphere[:, 0]  # Bxx
-    B[:, 1] = sphere[:, 0] * sphere[:, 1] * 2.  # Bxy
-    B[:, 2] = sphere[:, 1] * sphere[:, 1]   # Byy
-    B[:, 3] = sphere[:, 0] * sphere[:, 2] * 2.  # Bxz
-    B[:, 4] = sphere[:, 1] * sphere[:, 2] * 2.  # Byz
-    B[:, 5] = sphere[:, 2] * sphere[:, 2]   # Bzz
+    B = np.zeros((sphere.x.size, 6))
+    B[:, 0] = sphere.x * sphere.x  # Bxx
+    B[:, 1] = sphere.x * sphere.y * 2. # Bxy
+    B[:, 2] = sphere.y * sphere.y   # Byy
+    B[:, 3] = sphere.x * sphere.z * 2.  # Bxz
+    B[:, 4] = sphere.y * sphere.z * 2.  # Byz
+    B[:, 5] = sphere.z * sphere.z  # Bzz
     pinvB = np.linalg.pinv(B)
     EDT = eig_from_lo_tri(np.dot(pinvB, EDi))
     IDT = eig_from_lo_tri(np.dot(pinvB, IDi))
