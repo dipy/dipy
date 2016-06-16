@@ -47,10 +47,10 @@ class IntrospectiveArgumentParser(arg.ArgumentParser):
         if epilog is None:
             epilog = \
                 "References: \n" \
-                "Garyfallidis, E., M. Brett, B. Amirbekian, A. Rokem, S. Van Der " \
-                "Walt, M. Descoteaux, and I. Nimmo-Smith. Dipy, a library for the " \
-                "analysis of diffusion MRI data. Frontiers in Neuroinformatics," \
-                " 1-18, 2014."
+                "Garyfallidis, E., M. Brett, B. Amirbekian, A. Rokem," \
+                " S. Van Der Walt, M. Descoteaux, and I. Nimmo-Smith. Dipy, a" \
+                " library for the analysis of diffusion MRI data. Frontiers " \
+                "in Neuroinformatics, 1-18, 2014."
 
         super(iap, self).__init__(prog, usage, description, epilog, version,
                                   parents, formatter_class, prefix_chars,
@@ -167,7 +167,6 @@ class IntrospectiveArgumentParser(arg.ArgumentParser):
                 elif dtype is bool:
                     _kwargs['type'] = int
                     _kwargs['choices'] = [0, 1]
-
 
                 if dtype is tuple:
                     _kwargs['type'] = str

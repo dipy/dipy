@@ -6,7 +6,7 @@ import os
 
 from dipy.workflows.denoise import NLMeansFlow
 from dipy.workflows.mask import MaskFlow
-from dipy.workflows.pipeline import Pipeline
+from dipy.workflows.combined_workflow import CombinedWorkflow
 from dipy.workflows.reconst import ReconstCSDFlow
 from dipy.workflows.reconst import ReconstDtiFlow
 from dipy.workflows.segment import MedianOtsuFlow
@@ -14,7 +14,7 @@ from dipy.workflows.track_metrics import TrackDensityFlow
 from dipy.workflows.tracking import DetTrackFlow
 
 
-class ClassicFlow(Pipeline):
+class ClassicFlow(CombinedWorkflow):
 
     def _get_sub_flows(self):
         return [
@@ -122,7 +122,7 @@ class ClassicFlow(Pipeline):
             #self.run_sub_flow(tdi_flow, det_tracts, fa, out_dir=track_dir)
 
 
-class BaseMetricsFlow(Pipeline):
+class BaseMetricsFlow(CombinedWorkflow):
 
     def _get_sub_flows(self):
         return [
@@ -178,7 +178,6 @@ class BaseMetricsFlow(Pipeline):
 
             self.run_sub_flow(nl_flow, dwi, out_dir=out_dir)
             denoised = nl_flow.last_generated_outputs[0][0]
-
 
             # DTI reconstruction
             dti_flow = ReconstDtiFlow(output_strategy='append',
