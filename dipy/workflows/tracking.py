@@ -12,7 +12,8 @@ from dipy.io.trackvis import save_trk
 from dipy.tracking import utils
 from dipy.tracking.local import (ThresholdTissueClassifier,
                                  LocalTracking)
-from dipy.workflows.multi_io import io_iterator_
+
+from dipy.workflows.workflow import Workflow
 
 
 def det_track_flow(peaks_files, stopping_files, seeding_files,

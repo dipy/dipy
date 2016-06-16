@@ -1,7 +1,7 @@
 from __future__ import division, print_function, absolute_import
 
-import logging
 import inspect
+import logging
 import shutil
 
 import nibabel as nib
@@ -23,10 +23,11 @@ class NLMeansFlow(Workflow):
         Parameters
         ----------
         input_files : string
-            Path to the input volumes. This path may contain wildcards to process
-            multiple inputs at once.
+            Path to the input volumes. This path may contain wildcards to
+            process multiple inputs at once.
         sigma : float, optional
-            Sigma parameter to pass to the nlmeans algorithm (default: auto estimation).
+            Sigma parameter to pass to the nlmeans algorithm
+            (default: auto estimation).
         out_dir : string, optional
             Output directory (default input file directory)
         out_denoised : string, optional
@@ -54,4 +55,3 @@ class NLMeansFlow(Workflow):
 
                 denoised_image.to_filename(odenoised)
                 logging.info('Denoised volume saved as {0}'.format(odenoised))
-

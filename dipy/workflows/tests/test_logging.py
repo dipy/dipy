@@ -5,7 +5,7 @@ import subprocess
 
 from nibabel.tmpdirs import TemporaryDirectory
 from dipy.data import get_data
-from dipy.workflows.segment import median_otsu_flow
+from dipy.workflows.segment import MedianOtsuFlow
 
 from nose.tools import assert_true
 
@@ -20,12 +20,12 @@ def test_logging_consistency():
                             format=format,
                             level=level)
 
-        median_otsu_flow(data_path, out_dir=tmpdir)
+        MedianOtsuFlow(data_path, out_dir=tmpdir)
 
         cmd_log = os.path.join(tmpdir, 'cmd_log.txt')
         cmd_line = \
-            'dipy_median_otsu {0} --out_dir {1} --log_file {2} --log_level {3}'.\
-                format(data_path, tmpdir, cmd_log, level)
+            'dipy_median_otsu {0} --out_dir {1} --log_file {2} --log_level {3}'\
+             .format(data_path, tmpdir, cmd_log, level)
 
         subprocess.call(cmd_line.split(' '))
         same_content = filecmp.cmp(prog_log, cmd_log)

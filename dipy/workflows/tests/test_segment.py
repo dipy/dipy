@@ -1,10 +1,11 @@
-from os.path import join, basename, splitext
-import nibabel as nib
 import numpy.testing as npt
+from os.path import join
 
-from dipy.workflows.segment import median_otsu_flow
-from dipy.segment.mask import median_otsu
+import nibabel as nib
+
 from dipy.data import get_data
+from dipy.segment.mask import median_otsu
+from dipy.workflows.segment import MedianOtsuFlow
 
 
 def test_median_otsu_flow():
@@ -20,10 +21,10 @@ def test_median_otsu_flow():
 
         mask_name = 'mask.nii.gz'
         masked_name = 'masked.nii.gz'
-        median_otsu_flow(data_path, out_dir=out_dir, save_masked=save_masked,
-                         median_radius=median_radius, numpass=numpass,
-                         autocrop=autocrop, vol_idx=vol_idx, dilate=dilate,
-                         mask=mask_name, masked=masked_name)
+        MedianOtsuFlow(data_path, out_dir=out_dir, save_masked=save_masked,
+                       median_radius=median_radius, numpass=numpass,
+                       autocrop=autocrop, vol_idx=vol_idx, dilate=dilate,
+                       mask=mask_name, masked=masked_name)
 
         masked, mask = median_otsu(volume, median_radius,
                                    numpass, autocrop,

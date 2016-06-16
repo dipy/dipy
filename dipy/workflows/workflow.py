@@ -1,8 +1,7 @@
 from __future__ import division, print_function, absolute_import
 
-import os
-
 import logging
+import os
 
 from dipy.workflows.multi_io import io_iterator_
 
@@ -39,14 +38,14 @@ class Workflow(object):
 
         if len(duplicates) > 0:
             if self._force_overwrite:
-                logging.info('The following output files are about to be' +
+                logging.info('The following output files are about to be'
                              ' overwritten.')
 
             else:
-                logging.info('The following output files already exist, the ' +
-                             'workflow will not continue processing any further.' +
-                             ' Add the --force flag to allow output files ' +
-                             ' overwrite.')
+                logging.info('The following output files already exist, the '
+                             'workflow will not continue processing any '
+                             'further. Add the --force flag to allow output '
+                             'files overwrite.')
 
             for dup in duplicates:
                 logging.info(dup)
