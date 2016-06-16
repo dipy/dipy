@@ -26,8 +26,8 @@ class MedianOtsuFlow(Workflow):
         Parameters
         ----------
         input_files : string
-            Path to the input volumes. This path may contain wildcards to process
-            multiple inputs at once.
+            Path to the input volumes. This path may contain wildcards to
+            process multiple inputs at once.
         save_masked : bool
             Save mask
         median_radius : int, optional
@@ -40,8 +40,8 @@ class MedianOtsuFlow(Workflow):
             upsampled to 1x1x1 resolution. (default False)
         vol_idx : string, optional
             1D array representing indices of ``axis=3`` of a 4D `input_volume`
-            'None' (the default) corresponds to ``(0,)`` (assumes first volume in
-            4D array)
+            'None' (the default) corresponds to ``(0,)`` (assumes first volume
+            in 4D array)
         dilate : string, optional
             number of iterations for binary dilation (default 'None')
         out_dir : string, optional

@@ -40,7 +40,6 @@ def run_flow(flow):
 
     args = parser.get_flow_args()
 
-
     logging.basicConfig(filename=args['log_file'],
                         format='%(levelname)s:%(message)s',
                         level=get_level(args['log_level']))
@@ -65,3 +64,4 @@ def run_flow(flow):
         flow.set_sub_flows_optionals(sub_flows_dicts)
 
     flow.run(**args)
+
