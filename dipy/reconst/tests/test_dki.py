@@ -8,7 +8,7 @@ import dipy.reconst.dki as dki
 from numpy.testing import (assert_array_almost_equal, assert_array_equal,
                            assert_almost_equal)
 from nose.tools import assert_raises
-from dipy.sims.voxel import multi_tensor_dki
+from dipy.sims.voxel import (multi_tensor_dki, _check_directions)
 from dipy.io.gradients import read_bvals_bvecs
 from dipy.core.gradients import gradient_table
 from dipy.data import get_data
@@ -677,9 +677,21 @@ def test_single_fiber_model():
     dkiM = dki.DiffusionKurtosisModel(gtab_2s, fit_method="WLS")
     dkiF = dkiM.fit(signal)
 
-    # Single fiber model
+    # Axonal Water Fraction
     sphere = get_sphere('symmetric724')
     AWF = dki.axonal_water_fraction(dkiF.model_params, sphere, mask=None,
                                     gtol=1e-5)
     assert_almost_equal(AWF, fie)
+
+    # Extra-cellular and intra-cellular components
+    EDT, IDT = dki.diffusion_components(dkiF.model_params, sphere)
+    # check eigenvalues
+    assert_array_almost_equal(EDT[0:3], np.array([ADe, RDe, RDe]))
+    assert_array_almost_equal(IDT[0:3], np.array([ADi, RDi, RDi]))
+    # first eigenvalue should be the direction of the fibers
+    fiber_direction = _check_directions([(theta, phi)])
+    f_norm = abs(np.dot(fiber_direction, np.array((EDT[3], EDT[6], EDT[9]))))
+    assert_almost_equal(f_norm, 1.)
+    f_norm = abs(np.dot(fiber_direction, np.array((IDT[3], IDT[6], IDT[9]))))
+    assert_almost_equal(f_norm, 1.)
 
