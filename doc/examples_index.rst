@@ -12,6 +12,11 @@ Examples
 .. contents::
    :depth: 2
 
+---------------
+Workflows (NEW)
+---------------
+- :ref:`example_workflow_creation`
+- :ref:`example_combined_workflow_creation`
 
 -----------
 Quick Start
