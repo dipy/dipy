@@ -200,5 +200,4 @@ class QuickFlow(CombinedWorkflow):
                                       mix_names=self._mix_names,
                                       force=self._force_overwrite)
             self.run_sub_flow(csa_flow, denoised, bval, bvec, dwi_mask,
-                              out_dir='peaks_csa', reconst_model='csa',
-                              extract_pam_values=True)
+                              out_dir='peaks_csa', extract_pam_values=True)
