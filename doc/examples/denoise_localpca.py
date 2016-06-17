@@ -69,11 +69,11 @@ print("time taken fast", -t + time())
 dd = np.abs(denoised_arr_fast - denoised_arr)
 print("Max. difference: %e"%(dd.max(),))
 orig = data[:, :,2, 10]
-rmse = np.sum(np.abs(denoised_arr[:,:,:,:] - 
+rmse = np.sum(np.abs(denoised_arr_fast[:,:,:,:] - 
     den_data[:,:,:,:])) / np.sum(np.abs(den_data[:,:,:,:]))
 print("RMSE between python and matlab output", rmse)
 den_matlab = den_data[:, :, 2, 10]
-den_python = denoised_arr[:, :, 2, 10]
+den_python = denoised_arr_fast[:, :, 2, 10]
 diff_matlab = np.abs(orig.astype('f8') - den_matlab.astype('f8'))
 diff_python = np.abs(orig.astype('f8') - den_python.astype('f8'))
 fig, ax = plt.subplots(2, 3)

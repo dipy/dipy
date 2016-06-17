@@ -66,6 +66,7 @@ cdef void update_matrix(double[:,:] out, double[:,:] cov, int utype)nogil:
 @cython.boundscheck(False)
 @cython.wraparound(False)
 @cython.cdivision(True)
+@cython.profile(True)
 def fast_lpca(double[:,:,:,:] I, int radius, double[:,:,:,:] sigma):
     '''
     Local PCA Based Denoising of Diffusion Datasets
@@ -104,19 +105,28 @@ def fast_lpca(double[:,:,:,:] I, int radius, double[:,:,:,:] sigma):
         cnp.npy_intp ndiff = I.shape[3]
         cnp.npy_intp m = 1 + (2 * radius)
         cnp.npy_intp cur_i, prev_i, i, j, k, ii, nsamples
+        cnp.npy_intp i0, j0, k0, p0, p, q, r, s
+        double l0norm
         double[:,:,:,:,:] T = np.zeros((2, n1, n2, ndiff, ndiff))
         double[:,:,:,:] S = np.zeros((2, n1, n2, ndiff))
         double[:,:] cov = np.empty((ndiff, ndiff))
         double[:] mu = np.empty(ndiff)
         double[:] x
+        double[:,:,:,:] theta = np.zeros((n0, n1, n2, ndiff))
+        double[:,:,:,:] thetax = np.zeros((n0, n1, n2, ndiff))
+        double[:,:] X = np.zeros((m * m * m, ndiff))
+        double[:] temp = np.zeros(ndiff)
+        double[:,:] P = np.zeros((ndiff,ndiff))
 
-    theta = np.zeros((n0, n1, n2, ndiff))
-    thetax = np.zeros((n0, n1, n2, ndiff))
+    nsamples = m * m * m
+    #theta = np.zeros((n0, n1, n2, ndiff))
+    #thetax = np.zeros((n0, n1, n2, ndiff))
+    
     tou = np.array(sigma) * 2.3 * 2.3
+
     # out[...] = 0
     # meanout[...] = 0
     with nogil:
-        nsamples = m * m * m
         cur_i = 1
         for i in range(n0):
             cur_i = 1 - cur_i
@@ -199,57 +209,41 @@ def fast_lpca(double[:,:,:,:] I, int radius, double[:,:,:,:] sigma):
                         #Local covariance ready
                         # update_matrix(out[i-radius, j-radius, k-radius], cov, 0)
                         # update_vector(meanout[i-radius, j-radius, k-radius], mu, 0)
-
-                    with gil:
-                        # eigen value decomposition
-                        [d,W] = np.linalg.eigh(cov)
                         
-                        if((i >= radius and i < n0-radius) and (j >= radius and j < n1-radius) and (k >= radius and k < n2-radius)):
-                        # make the projection and reconstruct
-                            temp = I[i - radius: i + radius + 1,
-                                       j - radius: j + radius + 1,
-                                       k - radius: k + radius + 1, :]
-                            temp = np.array(temp)
-                            
-                            X = temp.reshape(m * m * m, ndiff)
-                            X = X - np.array([mu, ] * X.shape[0],
-                                             dtype=np.float64)
+                        i0 = i - radius 
+                        j0 = j - radius
+                        k0 = k - radius
 
-                            d[d < tou[i, j, k, :]] = 0
+                        with gil:
+                            # eigen value decomposition
+                            [d,W] = np.linalg.eigh(cov)
+                            d[d < tou[i0, j0, k0, :]] = 0
+                            l0norm = 1.0/(1 + np.linalg.norm(d,ord=0))
                             # Y = X.dot(W)
                             W_hat = W * 0
                             W_hat[:, d > 0] = W[:, d > 0]
+                            P = W_hat.dot(np.transpose(W_hat))                         
+                        
+                        # make the projection and reconstruct
+                        for p in range(i0 - radius, i0 + radius + 1):
+                            for q in range(j0 - radius, j0 + radius + 1):
+                                for r in range(k0 - radius, k0 + radius + 1):
 
-                            Y = X.dot(W_hat)
-                            X_est = Y.dot(np.transpose(W_hat))
+                                    p0 = p + q * m + r * m
+                                    for s in range(ndiff):
+                                        temp[s] = I[p, q, r, s] - mu[s]
 
-                            # add the mean
-                            temp = X_est + \
-                                np.array([mu, ] * X_est.shape[0], dtype=np.float64)
-                            # Get the block 
-                            temp = temp.reshape(m, m, m, ndiff)
-                            
-                            # Also update the estimate matrix which is X_est * theta
-                            # average using the blockwise method
+                                    with gil:
+                                        temp = np.array(temp).dot(P)
+                                    
+                                    for s in range(ndiff):
+                                        temp[s] = temp[s] + mu[s]
+                                        theta[p,q,r,s] += l0norm            
+                                        thetax[p,q,r,s] +=  temp[s] * l0norm
 
-                            theta[i - radius: i + radius + 1,
-                                  j - radius: j + radius + 1,
-                                  k - radius: k + radius + 1,
-                                  :] = theta[i - radius: i + radius + 1,
-                                             j - radius: j + radius + 1,
-                                             k - radius: k + radius + 1,
-                                             :] +  1.0 / (1.0 + np.linalg.norm(d,
-                                                                  ord=0))
-
-                            thetax[i - radius: i + radius + 1,
-                                   j - radius: j + radius + 1,
-                                   k - radius: k + radius + 1,
-                                   :] = thetax[i - radius: i + radius + 1,
-                                               j - radius: j + radius + 1,
-                                               k - radius: k + radius + 1,
-                                               :] + temp / (1 + np.linalg.norm(d,ord=0))
                         
 
-    out = thetax / theta
+    out = np.divide(thetax,theta)
 
     return out
+
