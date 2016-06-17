@@ -51,7 +51,7 @@ class MedianOtsuFlow(Workflow):
         out_masked : string, optional
             Name of the masked volume to be saved (default 'dwi_masked.nii.gz')
         """
-        io_it = self.get_io_iterator_()
+        io_it = self.get_io_iterator()
 
         for fpath, mask_out_path, masked_out_path in io_it:
             logging.info('Applying median_otsu segmentation on {0}'.
