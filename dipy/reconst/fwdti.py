@@ -21,7 +21,7 @@ from dipy.core.ndindex import ndindex
 
 
 def fwdti_prediction(params, gtab, S0=1, Diso=3.0e-3):
-    """ Signal prediction given the free water DTI model parameters.
+    r""" Signal prediction given the free water DTI model parameters.
 
     Parameters
     ----------
@@ -63,12 +63,12 @@ def fwdti_prediction(params, gtab, S0=1, Diso=3.0e-3):
     qform = vec_val_vect(evecs, evals)
     lower_dt = lower_triangular(qform, S0)
     lower_diso = lower_dt.copy()
-    lower_diso[..., 0] =  lower_diso[..., 2] = lower_diso[..., 5] = Diso
-    lower_diso[..., 1] =  lower_diso[..., 3] = lower_diso[..., 4] = 0
+    lower_diso[..., 0] = lower_diso[..., 2] = lower_diso[..., 5] = Diso
+    lower_diso[..., 1] = lower_diso[..., 3] = lower_diso[..., 4] = 0
     D = design_matrix(gtab)
 
     pred_sig = np.zeros(f.shape + (gtab.bvals.shape[0],))
-    mask = _positive_evals(evals[..., 0], evals[..., 1], evals[..., 2])    
+    mask = _positive_evals(evals[..., 0], evals[..., 1], evals[..., 2])
     index = ndindex(f.shape)
     for v in index:
         if mask[v]:
@@ -140,7 +140,7 @@ class FreeWaterTensorModel(ReconstModel):
             should be analyzed that has the shape data.shape[:-1]
         """
         if mask is None:
-            # Flatten it to 2D either way:
+            # Flatten mask to 2D:
             data_in_mask = np.reshape(data, (-1, data.shape[-1]))
         else:
             # Check for valid shape of the mask
@@ -153,7 +153,7 @@ class FreeWaterTensorModel(ReconstModel):
         bmag = int(np.log10(self.gtab.bvals.max()))
         b = self.gtab.bvals.copy() / (10 ** (bmag-1))  # normalize b units
         b = b.round()
-        uniqueb = np.unique(b) 
+        uniqueb = np.unique(b)
         if len(uniqueb) < 3:
             mes = "fwdti fit requires data for at least 2 non zero b-values"
             raise ValueError(mes)
@@ -176,7 +176,7 @@ class FreeWaterTensorModel(ReconstModel):
             fwdti_params = np.zeros(data.shape[:-1] + (13,))
             fwdti_params[mask, :] = params_in_mask
             S0 = np.zeros(data.shape[:-1])
-            S0[mask] = S0_im 
+            S0[mask] = S0_im
 
         return FreeWaterTensorFit(self, fwdti_params, S0)
 
@@ -235,7 +235,7 @@ class FreeWaterTensorFit(TensorFit):
         ----------
         gtab : a GradientTable class instance
             The gradient table for this prediction
-        
+
         S0 : float array
            The mean non-diffusion weighted signal in each voxel. Default: 1 in
            all voxels.
@@ -254,7 +254,7 @@ class FreeWaterTensorFit(TensorFit):
         predict = np.empty((size, gtab.bvals.shape[0]))
         for i in range(0, size, step):
             predict[i:i+step] = fwdti_prediction(params[i:i+step], gtab, S0=S0)
-        return predict.reshape(shape + (gtab.bvals.shape[0], ))
+        return predict.reshape(shape + (gtab.bvals.shape[0],))
 
 
 def _wls_iter(design_matrix, sig, min_diffusivity, min_signal, Diso=3e-3,
@@ -338,7 +338,7 @@ def _wls_iter(design_matrix, sig, min_diffusivity, min_signal, Diso=3e-3,
             # component is larger than the total fiber. This cases are present
             # for inapropriate large volume fractions (given the current S0
             # value estimated). To overcome this issue negative SA are replaced
-            # by data's min positive signal. 
+            # by data's min positive signal.
             SA[SA <= 0] = min_signal
             y = np.log(SA / (1-FS))
             all_new_params = np.dot(invWTS2W_WTS2, y)
@@ -414,7 +414,7 @@ def wls_fit_tensor(design_matrix, data, S0=None, Diso=3e-3, piterations=3,
         diffusion value, the diffusion signal is assumed to be only free water
         diffusion (i.e. volume fraction will be set to 1 and tissue's diffusion
         parameters are set to zero). Default md_reg is 2.7e-3 $mm^{2}.s^{-1}$
-        (corresponding to 90% of the free water diffusion value).        
+        (corresponding to 90% of the free water diffusion value).
 
     Returns
     -------
@@ -480,17 +480,18 @@ def wls_fit_tensor(design_matrix, data, S0=None, Diso=3e-3, piterations=3,
     params_out[cond, 12] = 1  # Only free water
     params_out = params_out.reshape((data.shape[:-1]) + (13,))
     S0out[~cond] = S0cond
-    S0out[cond] = np.mean(data_flat[cond, :] / 
+    S0out[cond] = np.mean(data_flat[cond, :] /
                           np.exp(np.dot(design_matrix[..., :6],
-                                        np.array([Diso, 0, Diso, 0, 0, Diso]))),
+                                        np.array([Diso, 0, Diso,
+                                                  0, 0, Diso]))),
                           -1)  # Only free water
     S0out = S0out.reshape(data.shape[:-1])
     return params_out, S0out
 
 
 def _nls_err_func(tensor_elements, design_matrix, data, Diso=3e-3,
-                   weighting=None, sigma=None, cholesky=False,
-                   f_transform=False):
+                  weighting=None, sigma=None, cholesky=False,
+                  f_transform=False):
     """ Error function for the non-linear least-squares fit of the tensor water
     elimination model.
 
@@ -582,8 +583,8 @@ def _nls_err_func(tensor_elements, design_matrix, data, Diso=3e-3,
 
 
 def _nls_jacobian_func(tensor_elements, design_matrix, data, Diso=3e-3,
-                        weighting=None, sigma=None, cholesky=False,
-                        f_transform=False):
+                       weighting=None, sigma=None, cholesky=False,
+                       f_transform=False):
     """The Jacobian is the first derivative of the least squares error
     function.
 
@@ -627,8 +628,8 @@ def _nls_jacobian_func(tensor_elements, design_matrix, data, Diso=3e-3,
 
 
 def nls_fit_tensor(design_matrix, data, fw_params=None, S0=None, Diso=3e-3,
-                    weighting=None, sigma=None, cholesky=False,
-                    f_transform=True, jac=False, mdreg=2.7e-3):
+                   weighting=None, sigma=None, cholesky=False,
+                   f_transform=True, jac=False, mdreg=2.7e-3):
     """
     Fit the water elimination tensor model using the non-linear least-squares.
 
@@ -723,7 +724,8 @@ def nls_fit_tensor(design_matrix, data, fw_params=None, S0=None, Diso=3e-3,
     # If is still None is parameters initial guess was given but not S0
     if np.any(S0) is None:
         evals = dtiparams[..., :3]
-        evecs = np.reshape(dtiparams[..., 3:12], (data_flat.shape[0],) + (3, 3))
+        evecs = np.reshape(dtiparams[..., 3:12],
+                           (data_flat.shape[0],) + (3, 3))
         dti_low_tri = lower_triangular(vec_val_vect(evecs, evals))
         S0out = np.mean(data_flat /
                         np.exp(np.dot(dti_low_tri, design_matrix[..., :6].T)),
@@ -779,7 +781,6 @@ def nls_fit_tensor(design_matrix, data, fw_params=None, S0=None, Diso=3e-3,
                                                     cholesky,
                                                     f_transform))
 
-
         # Invert the cholesky decomposition if this was requested
         if cholesky:
             this_tensor[:6] = cholesky_to_lower_triangular(this_tensor[:6])
@@ -800,7 +801,7 @@ def nls_fit_tensor(design_matrix, data, fw_params=None, S0=None, Diso=3e-3,
     params_out = np.reshape(params_out, (data.shape[:-1]) + (13,))
     S0out[~cond] = S0_cond
     S0out[cond] = \
-        np.mean(data_flat[cond, :] / \
+        np.mean(data_flat[cond, :] /
                 np.exp(np.dot(design_matrix[..., :6],
                               np.array([Diso, 0, Diso, 0, 0, Diso]))),
                 -1)  # Only free water
@@ -809,7 +810,7 @@ def nls_fit_tensor(design_matrix, data, fw_params=None, S0=None, Diso=3e-3,
 
 
 def lower_triangular_to_cholesky(tensor_elements):
-    """ Perfoms Cholesky decompostion of the diffusion tensor
+    """ Perfoms Cholesky decomposition of the diffusion tensor
 
     Parameters
     ----------
