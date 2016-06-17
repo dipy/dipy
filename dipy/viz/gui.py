@@ -227,11 +227,11 @@ class TextBox(UI):
             self.init = False
             self.caret_pos = 0
 
-        if character == "Backspace":
+        if character.lower() == "backspace" :
             self.remove_character()
-        elif character == "Left":
+        elif character.lower() == "left":
             self.move_left()
-        elif character == "Right":
+        elif character.lower() == "right":
             self.move_right()
         else:
             self.add_character(character)
@@ -264,9 +264,9 @@ class TextBox(UI):
             self.window_left -= 1
 
     def add_character(self, character):
-        if len(character) > 1 and character != "space":
+        if len(character) > 1 and character.lower() != "space":
             return
-        if character == "space":
+        if character.lower() == "space":
             character = " "
         self.text = self.text[:self.caret_pos] + character + self.text[self.caret_pos:]
         self.move_caret_right()
@@ -279,9 +279,12 @@ class TextBox(UI):
             return
         self.text = self.text[:self.caret_pos-1] + self.text[self.caret_pos:]
         self.move_caret_left()
+        if len(self.text) < self.height*self.width-1:
+            self.right_move_left()
         if self.window_right-self.window_left == self.height*self.width-1:
-            self.left_move_left()
-        self.right_move_left()
+            if self.window_left > 0:
+                self.left_move_left()
+                self.right_move_left()
 
     def move_left(self):
         self.move_caret_left()
