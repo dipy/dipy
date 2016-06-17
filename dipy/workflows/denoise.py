@@ -1,6 +1,5 @@
 from __future__ import division, print_function, absolute_import
 
-import inspect
 import logging
 import shutil
 
@@ -33,7 +32,7 @@ class NLMeansFlow(Workflow):
         out_denoised : string, optional
             Name of the resuting denoised volume (default: dwi_nlmeans.nii.gz)
         """
-        io_it = self.get_io_iterator(inspect.currentframe())
+        io_it = self.get_io_iterator()
         print('sigma ', sigma)
         for fpath, odenoised in io_it:
             if self._skip:

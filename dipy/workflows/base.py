@@ -60,6 +60,17 @@ class IntrospectiveArgumentParser(arg.ArgumentParser):
         self.doc = None
 
     def add_workflow(self, workflow):
+        """ Take a workflow object and use introspection to extract the parameters,
+            types and docstrings of its run method. Then add these parameters
+            to the current arparser's own params to parse. If the workflow is of
+            type combined_workflow, the optional input parameters of its
+            sub workflows will also be added.
+
+            Parameters
+            -----------
+            workflow : dipy.workflows.workflow.Workflow
+                Workflow from which to infer parameters.
+        """
         specs = inspect.getargspec(workflow.run)
         doc = inspect.getdoc(workflow.run)
         npds = NumpyDocString(doc)
@@ -122,6 +133,17 @@ class IntrospectiveArgumentParser(arg.ArgumentParser):
     # Definitly a refact possible to not reuse code from the above method and
     # support multiple nested pipelines.
     def add_sub_flow_args(self, sub_flows):
+        """ Take a list workflow objects and use introspection to extract the
+            parameters, types and docstrings of their run method. Only the
+            optional input parameters are extracted for these as they are
+            treated as sub workflows.
+
+            Parameters
+            -----------
+            sub_flows : array of dipy.workflows.workflow.Workflow
+                Workflows to inspect.
+        """
+
         sub_flow_optionnals = {}
         for name, flow in sub_flows:
             sub_flow_optionnals[name] = {}
@@ -179,6 +201,14 @@ class IntrospectiveArgumentParser(arg.ArgumentParser):
         return sub_flow_optionnals
 
     def _select_dtype(self, text):
+        """ Analyses a docstring parameter line and returns the good argparser
+            type.
+
+            Parameters
+            -----------
+            text : string
+                Parameter text line to inspect.
+        """
         text = text.lower()
         nargs_str = 'variable'
         is_nargs = nargs_str in text
@@ -198,6 +228,9 @@ class IntrospectiveArgumentParser(arg.ArgumentParser):
         return arg_type, is_nargs
 
     def get_flow_args(self, args=None, namespace=None):
+        """ Returns the parsed arguments as a dictionary directly passable to
+            the workflow.
+        """
         ns_args = self.parse_args(args, namespace)
         dct = vars(ns_args)
 

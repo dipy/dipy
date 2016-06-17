@@ -28,7 +28,7 @@ class MaskFlow(Workflow):
         out_mask : string, optional
            Name of the masked file (default 'mask.nii.gz')
         """
-        io_it = self.get_io_iterator(inspect.currentframe())
+        io_it = self.get_io_iterator_()
 
         for input_path, out_mask_path in io_it:
             logging.info('Creating mask of {0}'
