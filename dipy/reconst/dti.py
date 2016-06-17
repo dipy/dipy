@@ -702,15 +702,16 @@ class TensorModel(ReconstModel):
 
         fit_method : str or callable
             str can be one of the following:
+            
             'WLS' for weighted least squares
-                dti.wls_fit_tensor
+                :func:`dti.wls_fit_tensor`
             'LS' or 'OLS' for ordinary least squares
-                dti.ols_fit_tensor
+                :func:`dti.ols_fit_tensor`
             'NLLS' for non-linear least-squares
-                dti.nlls_fit_tensor
+                :func:`dti.nlls_fit_tensor`
             'RT' or 'restore' or 'RESTORE' for RESTORE robust tensor
                 fitting [3]_
-                dti.restore_fit_tensor
+                :func:`dti.restore_fit_tensor`
 
             callable has to have the signature:
               fit_method(design_matrix, data, *args, **kwargs)
