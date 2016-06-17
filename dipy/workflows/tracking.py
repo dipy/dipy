@@ -82,8 +82,6 @@ def det_track_flow(peaks_files, stopping_files, seeding_files,
             streamlines = LocalTracking(pam, classifier,
                                         seeds, affine, step_size=.5)
 
-        # Compute streamlines and store as a list.
-        streamlines = list(streamlines)
         # Currently not working with 2x2x2 vols.
-        save_trk(out_tract, streamlines, transfo=affine)
+        save_trk(out_tract, streamlines, affine_to_rasmm=affine)
         logging.info('Saved {0}'.format(out_tract))
