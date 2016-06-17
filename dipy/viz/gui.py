@@ -221,79 +221,91 @@ class TextBox(UI):
                 multi_line_text += "\n"
         return multi_line_text.rstrip("\n")
 
-    def showable_text(self):
-        showable_length = self.height*self.width - 1
-        ret_text = self.text[self.window_left:self.window_right]
-        ret_text = ret_text[:self.caret_pos] + "|" + ret_text[self.caret_pos:]
-        return ret_text
-
-    def add_character(self, character):
-        if len(character) > 1 and character != "space":
-            return
+    def handle_character(self, character):
         if self.init:
             self.text = ""
             self.init = False
             self.caret_pos = 0
-        if character == "space":
-            self.text = self.text[:self.window_left+self.caret_pos] + " " + self.text[self.window_left+self.caret_pos:]
-        else:
-            self.text = self.text[:self.window_left+self.caret_pos] + character + self.text[self.window_left+self.caret_pos:]
-        self.move_right()
-        if self.window_right-self.window_left == self.height*self.width-1:
-            self.window_left += 1
-        self.window_right += 1
-        self.render_text()
 
-    def remove_character(self):
-        if self.init:
-            self.init = False
-        self.text = self.text = self.text[:self.window_left+self.caret_pos-1] + self.text[self.window_left+self.caret_pos:]
-        if len(self.text) < self.height*self.width:
-            self.move_left()
-        if self.window_right-self.window_left == self.height*self.width-1:
-            self.window_left -= 1
-            if self.window_left < 0:
-                self.window_left = 0
-        self.window_right -= 1
-        if self.window_right < 0:
-            self.window_right = 0
-        self.render_text()
-
-    def move_left(self):
-        self.caret_pos -= 1
-        if self.caret_pos < 0:
-            self.caret_pos = 0
-
-    def move_right(self):
-        self.caret_pos += 1
-        if self.caret_pos > self.height*self.width:
-            self.caret_pos = self.height*self.width
-
-    def render_text(self):
-        text = self.showable_text()
-        self.actor.set_message(self.width_set_text(text))
-
-    def handle_character(self, character):
         if character == "Backspace":
             self.remove_character()
         elif character == "Left":
             self.move_left()
-            if self.caret_pos == 0:
-                if self.window_right-self.window_left == self.height*self.width-1:
-                    self.window_left -= 1
-                    if self.window_left < 0:
-                        self.window_left = 0
-                    self.window_right -= 1
-                    if self.window_right < 0:
-                        self.window_right = 0
-            self.render_text()
         elif character == "Right":
             self.move_right()
-            if self.caret_pos == self.height*self.width:
-                if self.window_right-self.window_left == self.height*self.width-1:
-                    if self.window_right < len(self.text):
-                        self.window_left += 1
-                        self.window_right += 1
-            self.render_text()
         else:
             self.add_character(character)
+        self.render_text()
+
+    def move_caret_right(self):
+        self.caret_pos += 1
+        if self.caret_pos > len(self.text):
+            self.caret_pos = len(self.text)
+
+    def move_caret_left(self):
+        self.caret_pos -= 1
+        if self.caret_pos < 0:
+            self.caret_pos = 0
+    
+    def right_move_right(self):
+        if self.window_right <= len(self.text):
+            self.window_right += 1
+
+    def right_move_left(self):
+        if self.window_right > 0:
+            self.window_right -= 1
+
+    def left_move_right(self):
+        if self.window_left <= len(self.text):
+            self.window_left += 1
+
+    def left_move_left(self):
+        if self.window_left > 0:
+            self.window_left -= 1
+
+    def add_character(self, character):
+        if len(character) > 1 and character != "space":
+            return
+        if character == "space":
+            character = " "
+        self.text = self.text[:self.caret_pos] + character + self.text[self.caret_pos:]
+        self.move_caret_right()
+        if self.window_right-self.window_left == self.height*self.width-1:
+            self.left_move_right()
+        self.right_move_right()
+
+    def remove_character(self):
+        if self.caret_pos == 0:
+            return
+        self.text = self.text[:self.caret_pos-1] + self.text[self.caret_pos:]
+        self.move_caret_left()
+        if self.window_right-self.window_left == self.height*self.width-1:
+            self.left_move_left()
+        self.right_move_left()
+
+    def move_left(self):
+        self.move_caret_left()
+        if self.caret_pos == self.window_left-1:
+            if self.window_right-self.window_left == self.height*self.width-1:
+                self.left_move_left()
+                self.right_move_left()
+
+    def move_right(self):
+        self.move_caret_right()
+        if self.caret_pos == self.window_right+1:
+            if self.window_right-self.window_left == self.height*self.width-1:
+                self.left_move_right()
+                self.right_move_right()
+
+    def showable_text(self, show_carat):
+        if show_carat:
+            ret_text = self.text[:self.caret_pos] + "|" + self.text[self.caret_pos:]
+        else:
+            ret_text = self.text
+        ret_text = ret_text[self.window_left:self.window_right+1]
+        return ret_text
+
+    def render_text(self):
+        text = self.showable_text(True)
+        self.actor.set_message(self.width_set_text(text))
+        print(self.text, self.caret_pos, self.window_left, self.window_right)
