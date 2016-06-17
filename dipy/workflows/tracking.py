@@ -1,9 +1,7 @@
 #!/usr/bin/env python
 from __future__ import division
 
-import inspect
 import logging
-import numpy as np
 
 from dipy.direction import DeterministicMaximumDirectionGetter
 from dipy.io.image import load_nifti
@@ -22,6 +20,7 @@ def det_track_flow(peaks_files, stopping_files, seeding_files,
                    use_sh=False,
                    out_dir='',
                    out_tractogram='tractogram.trk'):
+
 
     """ Workflow for deterministic tracking
 

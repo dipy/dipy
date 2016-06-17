@@ -208,7 +208,7 @@ class ReconstCSDFlow(Workflow):
         out_gfa : string, optional
             Name of the generalise fa volume to be saved (default 'gfa.nii.gz')
         """
-        io_it = self.get_io_iterator(inspect.currentframe())
+        io_it = self.get_io_iterator()
 
         for dwi, bval, bvec, maskfile, opam, oshm, opeaks_dir, opeaks_values,\
             opeaks_indices, ogfa in io_it:
@@ -325,7 +325,7 @@ class ReconstCSAFlow(Workflow):
                 out_gfa : string, optional
                     Name of the generalise fa volume to be saved (default 'gfa.nii.gz')
                 """
-                io_it = self.get_io_iterator(inspect.currentframe())
+                io_it = self.get_io_iterator()
 
                 for dwi, bval, bvec, maskfile, opam, oshm, opeaks_dir,\
                     opeaks_values, opeaks_indices, ogfa in io_it:

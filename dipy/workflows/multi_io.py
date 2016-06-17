@@ -23,6 +23,28 @@ def slash_to_under(dir_str):
 
 def connect_output_paths(inputs, out_dir, out_files, output_strategy='append',
                          mix_names=True):
+    """ Generates a list of output files paths absed on input files and
+        output strategies.
+
+    Parameters:
+        inputs : array
+            List of input paths.
+        out_dir : string
+            The output directory.
+        out_files : array
+            List of output files.
+        output_strategy : string
+            Which strategy to use to generate the output paths.
+                'append': Add out_dir to the path of the input.
+                'prepend': Add the input path directory tree to out_dir.
+                'absolute': Put directly in out_dir.
+        mix_names : bool
+            Wheter or not prepend a string composed of a mix of the input names
+            to the final output name.
+
+    Returns:
+        A list of output file paths.
+    """
     outputs = []
     if isinstance(inputs, basestring):
         inputs = [inputs]
@@ -74,7 +96,6 @@ def connect_output_paths(inputs, out_dir, out_files, output_strategy='append',
 def concatenate_inputs(multi_inputs):
     """ Concatenate list of inputs
     """
-
     mixing_names = []
     for inps in zip(*multi_inputs):
         mixing_name = ''
@@ -98,6 +119,22 @@ def basename(fname):
 
 def io_iterator(inputs, out_dir, fnames, output_strategy='append',
                 mix_names=False):
+    """ Creates an IOIterator from the parameters.
+
+    Parameters:
+        inputs : array
+            List of input files.
+        out_dir : string
+            Output directory.
+        fnames : array
+            File names of all outputs to be created.
+        output_strategy : string
+            Controls the behavior of the IOIterator for output paths.
+        mix_names : bool
+            Whether or not to append a mix of input names at the begining.
+    Returns:
+        Properly instanciated IOIterator object.
+    """
     io_it = IOIterator(output_strategy=output_strategy, mix_names=mix_names)
     io_it.set_inputs(*inputs)
     io_it.set_out_dir(out_dir)
@@ -108,6 +145,20 @@ def io_iterator(inputs, out_dir, fnames, output_strategy='append',
 
 
 def io_iterator_(frame, fnc, output_strategy='append', mix_names=False):
+    """ Creates an IOIterator using introspection.
+
+        Parameters:
+            frame : frameobject
+                Contains the info about the current local variables values.
+            fnc : function
+                The function to inspect
+            output_strategy : string
+                Controls the behavior of the IOIterator for output paths.
+            mix_names : bool
+                Whether or not to append a mix of input names at the begining.
+        Returns:
+            Properly instanciated IOIterator object.
+    """
     args, _, _, values = inspect.getargvalues(frame)
     args.remove('self')
     del values['self']
@@ -140,7 +191,7 @@ def io_iterator_(frame, fnc, output_strategy='append', mix_names=False):
 
 
 class IOIterator(object):
-    """ Create output filenames that work nicely with muiltiple input files from
+    """ Create output filenames that work nicely with multiple input files from
     multiple directories (processing multiple subjects with one command)
 
     Use information from input files, out_dir and out_fnames to generate correct

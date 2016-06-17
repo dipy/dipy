@@ -1,6 +1,5 @@
 from __future__ import division, print_function, absolute_import
 
-import inspect
 import logging
 import os
 
@@ -52,7 +51,7 @@ class ClassicFlow(CombinedWorkflow):
         out_dir : string, optional
             Working directory (default input file directory)
         """
-        io_it = self.get_io_iterator(inspect.currentframe())
+        io_it = self.get_io_iterator()
 
         flow_base_params = {
             'output_strategy': self._output_strategy,
@@ -156,7 +155,7 @@ class QuickFlow(CombinedWorkflow):
         out_dir : string, optional
             Working directory (default input file directory)
         """
-        io_it = self.get_io_iterator(inspect.currentframe())
+        io_it = self.get_io_iterator()
 
         flow_base_params = {
             'output_strategy': self._output_strategy,
