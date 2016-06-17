@@ -1,6 +1,5 @@
 from __future__ import division, print_function, absolute_import
 
-import inspect
 import logging
 import numpy as np
 import os.path
@@ -82,7 +81,7 @@ class ReconstDtiFlow(Workflow):
             Name of the eigen vvalues to be saved (default 'evals.nii.gz')
         """
 
-        io_it = self.get_io_iterator(inspect.currentframe())
+        io_it = self.get_io_iterator()
 
         for dwi, bval, bvec, mask, otensor, ofa, oga, orgb, omd, oad, ord, \
             omode, oevecs, oevals in io_it:
