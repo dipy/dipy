@@ -289,6 +289,7 @@ class MapmriModel(Cache):
 
     @multi_voxel_fit
     def fit(self, data):
+        errorcode = 0
         tenfit = self.tenmodel.fit(data[self.cutoff])
         evals = tenfit.evals
         R = tenfit.evecs
@@ -326,7 +327,11 @@ class MapmriModel(Cache):
             else:
                 laplacian_matrix = self.laplacian_matrix * mu[0]
             if self.laplacian_weighting is 'GCV':
-                lopt = generalized_crossvalidation(data, M, laplacian_matrix)
+                try:
+                    lopt = generalized_crossvalidation(data, M, laplacian_matrix)
+                except np.linalg.linalg.LinAlgError:
+                    lopt = 0.05
+                    errorcode = 1
             elif np.isscalar(self.laplacian_weighting):
                 lopt = self.laplacian_weighting
             elif type(self.laplacian_weighting) == np.ndarray:
@@ -387,22 +392,33 @@ class MapmriModel(Cache):
                 sol = cvxopt.solvers.qp(Q, p, G, h, A, b)
                 coef = np.array(sol['x'])[:, 0]
             except ValueError:
+                errorcode = 2
                 warn('Optimization did not find a solution')
-                coef = np.dot(np.linalg.pinv(M), data)  # least squares
+                try:
+                    coef = np.dot(np.linalg.pinv(M), data)  # least squares
+                except np.linalg.linalg.LinAlgError:
+                    errorcode = 3
+                    coef = np.zeros(M.shape[1])
+                    return MapmriFit(self, coef, mu, R, lopt, errorcode)
 
         else:
-            pseudoInv = np.dot(
-                np.linalg.inv(np.dot(M.T, M) + lopt * laplacian_matrix), M.T)
-            coef = np.dot(pseudoInv, data)
+            try:
+                pseudoInv = np.dot(
+                    np.linalg.inv(np.dot(M.T, M) + lopt * laplacian_matrix), M.T)
+                coef = np.dot(pseudoInv, data)
+            except np.linalg.linalg.LinAlgError:
+                errorcode = 1
+                coef = np.zeros(M.shape[1])
+                return MapmriFit(self, coef, mu, R, lopt, errorcode)
 
         coef = coef / sum(coef * self.Bm)
 
-        return MapmriFit(self, coef, mu, R, lopt)
+        return MapmriFit(self, coef, mu, R, lopt, errorcode)
 
 
 class MapmriFit(ReconstFit):
 
-    def __init__(self, model, mapmri_coef, mu, R, lopt):
+    def __init__(self, model, mapmri_coef, mu, R, lopt, errorcode):
         """ Calculates diffusion properties for a single voxel
 
         Parameters
@@ -415,8 +431,15 @@ class MapmriFit(ReconstFit):
             scale parameters vector for x, y and z
         R : array, shape (3,3)
             rotation matrix
-        ind_mat : array, shape (N,3)
-            indices of the basis for x, y and z
+        lopt : float,
+            regularization weight used for laplacian regularization
+        errorcode : int
+            provides information on whether errors occurred in the fitting
+            of each voxel. 0 means no problem, 1 means a LinAlgError
+            occurred when trying to invert the design matrix. 2 means the
+            positivity constraint was unable to solve the problem. 3 means
+            that after positivity constraint failed, also matrix inversion
+            failed.
         """
 
         self.model = model
@@ -426,6 +449,7 @@ class MapmriFit(ReconstFit):
         self.mu = mu
         self.R = R
         self.lopt = lopt
+        self.errorcode = errorcode
 
     @property
     def mapmri_mu(self):
