@@ -254,7 +254,6 @@ cpdef upfir(double[:, :] image, double[:] h):
 
 
 def nlmeans_block(double[:, :, :]image, int v, int f, double h, rician=True):
-
     '''
     Non-Local Means Denoising Using Blockwise Averaging
 
