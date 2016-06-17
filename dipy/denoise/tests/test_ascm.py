@@ -62,16 +62,8 @@ def test_ascm_rmse_with_nlmeans():
 
     assert_(np.sum(np.abs(S0 - S0n)) / np.sum(S0) <
             np.sum(np.abs(S0 - S0n1)) / np.sum(S0))
-    assert_(
-        np.sum(
-            np.abs(
-                S0 -
-                S0n)) /
-        np.sum(S0) < np.sum(
-            np.abs(
-                S0 -
-                S0_noise)) /
-        np.sum(S0))
+    assert_(np.sum(np.abs(S0 - S0n)) / np.sum(S0) < 
+            np.sum(np.abs(S0 - S0_noise)) / np.sum(S0))
     assert_(90 < np.mean(S0n) < 110)
 
 

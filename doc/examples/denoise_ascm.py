@@ -95,9 +95,9 @@ nib.save(nib.Nifti1Image(den_final, affine), 'denoised_ascm.nii.gz')
 References
 ----------
 
-..  [1] : Pierrick Coupe, Jose Manjon, Montserrat Robles, Louis Collins.
+..  [1] Pierrick Coupe, Jose Manjon, Montserrat Robles, Louis Collins.
     Adaptive Multiresolution Non-Local Means Filter for 3D MR Image Denoising.
     IET Image Processing, Institution of Engineering and Technology,
-    2011. <hal-00645538>
+    2011. <00645538>
 
 """

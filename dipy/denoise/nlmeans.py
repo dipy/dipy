@@ -53,14 +53,9 @@ def nlmeans(arr, sigma, mask=None, patch_radius=1, block_radius=5,
     if arr.ndim == 3:
         if avg_type == 'blockwise':
             sigma = np.ones(arr.shape, dtype=np.float64) * sigma
-            return np.array(
-                nlmeans_block(
-                    np.double(arr),
-                    patch_radius,
-                    block_radius,
-                    sigma[0,0,0],
-                    rician)).astype(
-                arr.dtype)
+            return np.array(nlmeans_block(np.double(arr), patch_radius,
+                    block_radius, sigma[0,0,0], rician)).astype(
+                    arr.dtype)
         else:
             sigma = np.ones(arr.shape, dtype=np.float64) * sigma
             return nlmeans_3d(arr, mask, sigma,
@@ -79,7 +74,7 @@ def nlmeans(arr, sigma, mask=None, patch_radius=1, block_radius=5,
         if avg_type == 'blockwise':
             for i in range(arr.shape[-1]):
                 denoised_arr[..., i] = np.array(nlmeans_block(
-                    np.double(arr[..., i]), patch_radius, block_radius, sigma[0,0,0,0]))
+                np.double(arr[..., i]), patch_radius, block_radius, sigma[0,0,0,0]))
             return denoised_arr.astype(arr.dtype)
         else:
             for i in range(arr.shape[-1]):
