@@ -53,6 +53,7 @@ def run_flow(flow):
                         level=get_level(args['log_level']))
 
     # Output management parameters
+    flow._force_overwrite = args['force']
     flow._output_strategy = args['out_strat']
     flow._mix_names = args['mix_names']
 
