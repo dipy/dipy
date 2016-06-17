@@ -88,10 +88,12 @@ class FreeWaterTensorModel(ReconstModel):
         gtab : GradientTable class instance
         fit_method : str or callable
             str can be one of the following:
+
             'WLS' for weighted linear least square fit according to [1]_
-                fwdti.wls_fit_tensor
+                :func:`fwdti.wls_fit_tensor`
             'NLS' for non-linear least square fit according to [1]_
-                fwdti.wls_fit_tensor
+                :func:`fwdti.nls_fit_tensor`
+
             callable has to have the signature:
               fit_method(design_matrix, data, *args, **kwargs)
         args, kwargs : arguments and key-word arguments passed to the
@@ -140,7 +142,7 @@ class FreeWaterTensorModel(ReconstModel):
             should be analyzed that has the shape data.shape[:-1]
         """
         if mask is None:
-            # Flatten mask to 2D:
+            # Flatten data to 2D:
             data_in_mask = np.reshape(data, (-1, data.shape[-1]))
         else:
             # Check for valid shape of the mask
