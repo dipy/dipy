@@ -1,10 +1,10 @@
 from __future__ import division, print_function, absolute_import
 
+import inspect
 import logging
 import os
 
 from dipy.workflows.multi_io import io_iterator_
-
 
 class Workflow(object):
 
@@ -17,8 +17,8 @@ class Workflow(object):
         self._force_overwrite = force
         self._skip = skip
 
-    def get_io_iterator(self, frame):
-        io_it = io_iterator_(frame, self.run,
+    def get_io_iterator(self):
+        io_it = io_iterator_(inspect.currentframe(1), self.run,
                              output_strategy=self._output_strategy,
                              mix_names=self._mix_names)
 

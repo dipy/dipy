@@ -1,6 +1,5 @@
 from __future__ import division, print_function
 
-import inspect
 import logging
 import numpy as np
 
@@ -33,7 +32,7 @@ class TrackDensityFlow(Workflow):
             Tract density file name (default 'tdi.nii.gz')
         """
 
-        io_it = self.get_io_iterator(inspect.currentframe())
+        io_it = self.get_io_iterator()
 
         for tract_file, ref_file, tdi_out in io_it:
             logging.info('Computing track density for {0}'.format(tract_file))
