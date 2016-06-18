@@ -222,20 +222,18 @@ class TextBox(UI):
         return multi_line_text.rstrip("\n")
 
     def handle_character(self, character):
-        if self.init:
-            self.text = ""
-            self.init = False
-            self.caret_pos = 0
-
-        if character.lower() == "backspace" :
-            self.remove_character()
-        elif character.lower() == "left":
-            self.move_left()
-        elif character.lower() == "right":
-            self.move_right()
+        if character.lower() == "return":
+            self.render_text(False)
         else:
-            self.add_character(character)
-        self.render_text()
+            if character.lower() == "backspace" :
+                self.remove_character()
+            elif character.lower() == "left":
+                self.move_left()
+            elif character.lower() == "right":
+                self.move_right()
+            else:
+                self.add_character(character)
+            self.render_text()
 
     def move_caret_right(self):
         self.caret_pos += 1
@@ -300,15 +298,21 @@ class TextBox(UI):
                 self.left_move_right()
                 self.right_move_right()
 
-    def showable_text(self, show_carat):
-        if show_carat:
+    def showable_text(self, show_caret):
+        if show_caret:
             ret_text = self.text[:self.caret_pos] + "|" + self.text[self.caret_pos:]
         else:
             ret_text = self.text
         ret_text = ret_text[self.window_left:self.window_right+1]
         return ret_text
 
-    def render_text(self):
-        text = self.showable_text(True)
+    def render_text(self, show_caret=True):
+        text = self.showable_text(show_caret)
         self.actor.set_message(self.width_set_text(text))
-        print(self.text, self.caret_pos, self.window_left, self.window_right)
+
+    def edit_mode(self):
+        if self.init:
+            self.text = ""
+            self.init = False
+            self.caret_pos = 0
+        self.render_text()

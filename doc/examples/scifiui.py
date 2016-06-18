@@ -43,6 +43,7 @@ class CustomInteractorStyle(vtkInteractorStyleUser):
         self.trackball_interactor_style = vtk.vtkInteractorStyleTrackballCamera()
         # Use a picker to see which actor is under the mouse
         self.picker = vtk.vtkPropPicker()
+        self.chosenElement = None
 
     def on_left_button_pressed(self, obj, evt):
         click_pos = self.GetInteractor().GetEventPosition()
@@ -51,10 +52,12 @@ class CustomInteractorStyle(vtkInteractorStyleUser):
         # actor = picker.GetActor2D()
         actor_2d = self.picker.GetViewProp()
         if actor_2d is not None:
+            self.chosenElement = actor_2d
             actor_2d.InvokeEvent(evt)
         else:
             actor_3d = self.picker.GetProp3D()
             if actor_3d is not None:
+                self.chosenElement = actor_3d
                 actor_3d.InvokeEvent(evt)
             else:
                 pass
@@ -72,10 +75,12 @@ class CustomInteractorStyle(vtkInteractorStyleUser):
         # actor = picker.GetActor2D()
         actor_2d = self.picker.GetViewProp()
         if actor_2d is not None:
+            self.chosenElement = actor_2d
             actor_2d.InvokeEvent(evt)
         else:
             actor_3d = self.picker.GetProp3D()
             if actor_3d is not None:
+                self.chosenElement = actor_3d
                 actor_3d.InvokeEvent(evt)
             else:
                 pass
@@ -101,21 +106,15 @@ class CustomInteractorStyle(vtkInteractorStyleUser):
         self.trackball_interactor_style.OnMouseWheelBackward()
 
     def on_key_press(self, obj, evt):
-        # actor = picker.GetActor2D()
-        actor_2d = self.picker.GetViewProp()
-        if actor_2d is not None:
-            ui_list = self.renderer.ui_list
+        ui_list = self.renderer.ui_list
+        if self.chosenElement is not None:
             for ui_item in ui_list:
-                if ui_item.actor == actor_2d:
+                if ui_item.actor == self.chosenElement:
                     ui_item.set_ui_param(obj.GetKeySym())
                     break
-            actor_2d.InvokeEvent(evt)
-        else:
-            actor_3d = self.picker.GetProp3D()
-            if actor_3d is not None:
-                actor_3d.InvokeEvent(evt)
-            else:
-                pass
+            self.chosenElement.InvokeEvent(evt)
+            if obj.GetKeySym().lower() == "return":
+                self.chosenElement = None
 
     def SetInteractor(self, interactor):
         # Internally these `InteractorStyle` objects need an handle to a
@@ -203,7 +202,12 @@ def key_press_callback(*args, **kwargs):
     text.handle_character(key)
     showm.render()
 
+def select_text_callback(*args, **kwargs):
+    text.edit_mode()
+    showm.render()
+
 text.add_callback("KeyPressEvent", key_press_callback)
+text.add_callback("LeftButtonPressEvent", select_text_callback)
 
 renderer = window.ren()
 iren_style = CustomInteractorStyle(renderer=renderer)
