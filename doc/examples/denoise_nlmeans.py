@@ -31,7 +31,7 @@ data = data[..., 1]
 
 print("vol size", data.shape)
 
-t = time()
+
 
 """
 In order to call ``nlmeans`` first you need to estimate the standard deviation
@@ -40,7 +40,7 @@ Siemens scanner with a 4 array head coil.
 """
 
 sigma = estimate_sigma(data, N=4)
-
+t = time()
 """
 Compare results by both the approaches to nlmeans averaging
 1) Blockwise averaging [1]
@@ -55,6 +55,8 @@ den = nlmeans(
     block_radius=1,
     rician=True,
     avg_type='blockwise')
+print("total time blockwise", time() - t)
+t = time()
 den_v = nlmeans(
     data,
     sigma=sigma,
@@ -63,8 +65,8 @@ den_v = nlmeans(
     block_radius=1,
     rician=True,
     avg_type='voxelwise')
+print("total time voxelwise", time() - t)
 
-print("total time", time() - t)
 
 axial_middle = data.shape[2] / 2
 

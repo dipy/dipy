@@ -1,7 +1,7 @@
 cimport cython
 from cython.view cimport array as cvarray
+from libc.math cimport sqrt, exp
 import numpy as np
-import math
 
 __all__ = ['firdn', 'upfir', 'nlmeans_block']
 
@@ -67,9 +67,14 @@ def _upfir_matrix(double[:, :] F, double[:] h, double[:, :] out):
     for j in range(m):
         _upfir_vector(F[:, j], h, out[:, j])
 
-
-def _average_block(double[:, :, :] ima, int x, int y, int z,
-                   double[:, :, :] average, double weight):
+@cython.boundscheck(False)
+@cython.wraparound(False)
+@cython.cdivision(True)
+cdef void _average_block(double[:, :, :] ima, int x, int y, int z,
+                   double[:, :, :] average, double weight) nogil:
+    '''
+    Computes the weighted average of the patches in a blockwise manner
+    '''
     cdef int a, b, c, x_pos, y_pos, z_pos
     cdef int is_outside
     cdef int count = 0
@@ -92,9 +97,15 @@ def _average_block(double[:, :, :] ima, int x, int y, int z,
                 else:
                     average[a, b, c] += weight * (ima[y_pos, x_pos, z_pos]**2)
 
+@cython.boundscheck(False)
+@cython.wraparound(False)
+@cython.cdivision(True)
+cdef void _value_block(double[:, :, :] estimate, double[:, :, :] Label, int x, int y,
+                 int z, double[:, :, :] average, double global_sum, double hh, int rician_int) nogil:
 
-def _value_block(double[:, :, :] estimate, double[:, :, :] Label, int x, int y,
-                 int z, double[:, :, :] average, double global_sum, double hh, rician=True):
+    '''
+    Computes the final estimate of the denoised image
+    '''
     cdef int is_outside, a, b, c, x_pos, y_pos, z_pos, count = 0
     cdef double value = 0.0
     cdef double denoised_value = 0.0
@@ -115,12 +126,12 @@ def _value_block(double[:, :, :] estimate, double[:, :, :] Label, int x, int y,
                     is_outside = 1
                 if (is_outside == 0):
                     value = estimate[y_pos, x_pos, z_pos]
-                    if (rician):
+                    if (rician_int):
                         denoised_value = (average[a, b, c] / global_sum) - hh
                     else:
                         denoised_value = (average[a, b, c] / global_sum)
                     if (denoised_value > 0):
-                        denoised_value = np.sqrt(denoised_value)
+                        denoised_value = sqrt(denoised_value)
                     else:
                         denoised_value = 0.0
                     value += denoised_value
@@ -129,14 +140,17 @@ def _value_block(double[:, :, :] estimate, double[:, :, :] Label, int x, int y,
                     Label[y_pos, x_pos, z_pos] = label + 1
 
 
-def _distance(double[:, :, :] image, int x, int y, int z,
-              int nx, int ny, int nz, int f):
+@cython.boundscheck(False)
+@cython.wraparound(False)
+@cython.cdivision(True)
+cdef double _distance(double[:, :, :] image, int x, int y, int z,
+              int nx, int ny, int nz, int f) nogil:
     '''
     Computes the distance between two square subpatches of image located at
     p and q, respectively. If the centered squares lie beyond the boundaries
     of image, they are mirrored.
     '''
-    cdef double d, acu, distancetotal
+    cdef double acu, distancetotal
     cdef int i, j, k, ni1, nj1, ni2, nj2, nk1, nk2
     cdef int sx = image.shape[1], sy = image.shape[0], sz = image.shape[2]
     acu = 0
@@ -177,35 +191,43 @@ def _distance(double[:, :, :] image, int x, int y, int z,
                 distancetotal += (image[nj1, ni1, nk1] -
                                   image[nj2, ni2, nk2])**2
                 acu = acu + 1
-    d = distancetotal / acu
-    return d
+    return distancetotal / acu
 
-
-def _local_mean(double[:, :, :]ima, int x, int y, int z):
-    cdef int[:] dims = cvarray((3,), itemsize=sizeof(int), format="i")
-    dims[0] = ima.shape[0]
-    dims[1] = ima.shape[1]
-    dims[2] = ima.shape[2]
+@cython.boundscheck(False)
+@cython.wraparound(False)
+@cython.cdivision(True)
+cdef double _local_mean(double[:, :, :]ima, int x, int y, int z) nogil:
+    '''
+    local mean of a 3x3x3 patch centered at x,y,z
+    '''
+    cdef int dims0 = ima.shape[0]
+    cdef int dims1 = ima.shape[1]
+    cdef int dims2 = ima.shape[2]
     cdef double ss = 0
     cdef int px, py, pz, dx, dy, dz, nx, ny, nz
     for px in range(x - 1, x + 2):
         for py in range(y - 1, y + 2):
             for pz in range(z - 1, z + 2):
                 px = (-px if px < 0 else (2 *
-                                          dims[0] - px - 1 if px >= dims[0] else px))
+                                          dims0 - px - 1 if px >= dims0 else px))
                 py = (-py if py < 0 else (2 *
-                                          dims[1] - py - 1 if py >= dims[1] else py))
+                                          dims1 - py - 1 if py >= dims1 else py))
                 pz = (-pz if pz < 0 else (2 *
-                                          dims[2] - pz - 1 if pz >= dims[2] else pz))
+                                          dims2 - pz - 1 if pz >= dims2 else pz))
                 ss += ima[px, py, pz]
+
     return ss / 27.0
 
-
-def _local_variance(double[:, :, :] ima, double mean, int x, int y, int z):
-    cdef int[:] dims = cvarray((3,), itemsize=sizeof(int), format="i")
-    dims[0] = ima.shape[0]
-    dims[1] = ima.shape[1]
-    dims[2] = ima.shape[2]
+@cython.boundscheck(False)
+@cython.wraparound(False)
+@cython.cdivision(True)
+cdef double _local_variance(double[:, :, :] ima, double mean, int x, int y, int z) nogil:
+    '''
+    local variance of a 3x3x3 patch centered at x,y,z
+    '''
+    dims0 = ima.shape[0]
+    dims1 = ima.shape[1]
+    dims2 = ima.shape[2]
     cdef int cnt = 0
     cdef double ss = 0
     cdef int dx, dy, dz, nx, ny, nz
@@ -213,7 +235,7 @@ def _local_variance(double[:, :, :] ima, double mean, int x, int y, int z):
         for py in range(y - 1, y + 2):
             for pz in range(z - 1, z + 2):
                 if ((px >= 0 and py >= 0 and pz > 0) and
-                        (px < dims[0] and py < dims[1] and pz < dims[2])):
+                        (px < dims0 and py < dims1 and pz < dims2)):
                     ss += (ima[px, py, pz] - mean) * (ima[px, py, pz] - mean)
                     cnt += 1
     return ss / (cnt - 1)
@@ -253,6 +275,9 @@ cpdef upfir(double[:, :] image, double[:] h):
     return filtered
 
 
+@cython.boundscheck(False)
+@cython.wraparound(False)
+@cython.cdivision(True)
 def nlmeans_block(double[:, :, :]image, int v, int f, double h, rician=True):
     '''
     Non-Local Means Denoising Using Blockwise Averaging
@@ -284,6 +309,7 @@ def nlmeans_block(double[:, :, :]image, int v, int f, double h, rician=True):
     dims[0] = image.shape[0]
     dims[1] = image.shape[1]
     dims[2] = image.shape[2]
+    cdef int rician_int = np.int(rician)
     cdef double hh = 2 * h * h
     cdef int Ndims = (2 * f + 1)**3
     cdef int nvox = dims[0] * dims[1] * dims[2]
@@ -294,64 +320,66 @@ def nlmeans_block(double[:, :, :]image, int v, int f, double h, rician=True):
     cdef double[:, :, :] Estimate = np.zeros_like(image)
     cdef double[:, :, :] Label = np.zeros_like(image)
     cdef int i, j, k, ni, nj, nk
-    cdef double mm
-    for k in range(dims[2]):
-        for i in range(dims[1]):
-            for j in range(dims[0]):
-                mm = _local_mean(image, j, i, k)
-                means[j, i, k] = mm
-                variances[j, i, k] = _local_variance(image, mm, j, i, k)
+    cdef double t1, t2
     cdef double epsilon = 0.00001
     cdef double mu1 = 0.95
     cdef double var1 = 0.5 + 1e-7
-    cdef double totalWeight, wmax, d, w
-    for k in range(0, dims[2], 2):
-        for i in range(0, dims[1], 2):
-            for j in range(0, dims[0], 2):
-                average[...] = 0
-                totalWeight = 0
-                if (means[j, i, k] <= epsilon) or (
-                        variances[j, i, k] <= epsilon):
-                    wmax = 1.0
-                    _average_block(image, i, j, k, average, wmax)
-                    totalWeight += wmax
-                    _value_block(Estimate, Label, i, j, k,
-                                 average, totalWeight, hh)
-                else:
-                    wmax = 0
-                    for nk in range(k - v, k + v + 1):
-                        for ni in range(i - v, i + v + 1):
-                            for nj in range(j - v, j + v + 1):
-                                if((ni == i)and(nj == j)and(nk == k)):
-                                    continue
-                                if ((ni < 0) or (nj < 0) or (nk < 0) or (
-                                        nj >= dims[0]) or (ni >= dims[1]) or (nk >= dims[2])):
-                                    continue
-                                if ((means[nj, ni, nk] <= epsilon) or
-                                        (variances[nj, ni, nk] <= epsilon)):
-                                    continue
-                                t1 = (means[j, i, k]) / (means[nj, ni, nk])
-                                t2 = (variances[j, i, k]) / \
-                                    (variances[nj, ni, nk])
-                                if ((t1 > mu1) and (t1 < (1 / mu1)) and
-                                        (t2 > var1) and (t2 < (1 / var1))):
-                                    d = _distance(
-                                        image, i, j, k, ni, nj, nk, f)
-                                    w = math.exp(-d / (h * h))
-                                    if(w > wmax):
-                                        wmax = w
-                                    _average_block(
-                                        image, ni, nj, nk, average, w)
-                                    totalWeight += w
-
-                    if(totalWeight != 0.0):
+    cdef double d
+    cdef double totalWeight, wmax, w
+    with nogil:
+        for k in range(dims[2]):
+            for i in range(dims[1]):
+                for j in range(dims[0]):
+                    means[j, i, k] = _local_mean(image, j, i, k)
+                    variances[j, i, k] = _local_variance(image, means[j, i, k], j, i, k)
+        for k in range(0, dims[2], 2):
+            for i in range(0, dims[1], 2):
+                for j in range(0, dims[0], 2):
+                    average[...] = 0
+                    totalWeight = 0
+                    if (means[j, i, k] <= epsilon) or (
+                            variances[j, i, k] <= epsilon):
+                        wmax = 1.0
+                        _average_block(image, i, j, k, average, wmax)
+                        totalWeight += wmax
                         _value_block(Estimate, Label, i, j, k,
-                                     average, totalWeight, hh, rician)
-    for k in range(0, image.shape[2]):
-        for i in range(0, image.shape[1]):
-            for j in range(0, image.shape[0]):
-                if(Label[j, i, k] == 0.0):
-                    fima[j, i, k] = image[j, i, k]
-                else:
-                    fima[j, i, k] = Estimate[j, i, k] / Label[j, i, k]
+                                     average, totalWeight, hh, rician_int)
+                    else:
+                        wmax = 0
+                        for nk in range(k - v, k + v + 1):
+                            for ni in range(i - v, i + v + 1):
+                                for nj in range(j - v, j + v + 1):
+                                    if((ni == i)and(nj == j)and(nk == k)):
+                                        continue
+                                    if ((ni < 0) or (nj < 0) or (nk < 0) or (
+                                            nj >= dims[0]) or (ni >= dims[1]) or (nk >= dims[2])):
+                                        continue
+                                    if ((means[nj, ni, nk] <= epsilon) or
+                                            (variances[nj, ni, nk] <= epsilon)):
+                                        continue
+                                    t1 = (means[j, i, k]) / (means[nj, ni, nk])
+                                    t2 = (variances[j, i, k]) / \
+                                        (variances[nj, ni, nk])
+                                    if ((t1 > mu1) and (t1 < (1 / mu1)) and
+                                            (t2 > var1) and (t2 < (1 / var1))):
+                                        d = _distance(image, i, j, k, ni, nj, nk, f)
+                                        w = exp(-d / (h * h))
+                                        if(w > wmax):
+                                            wmax = w
+                                        _average_block(
+                                            image, ni, nj, nk, average, w)
+                                        totalWeight += w
+
+                        if(totalWeight != 0.0):
+                            _value_block(Estimate, Label, i, j, k,
+                                         average, totalWeight, hh, rician_int)
+
+        for k in range(0, dims[2]):
+            for i in range(0, dims[1]):
+                for j in range(0, dims[0]):
+                    if(Label[j, i, k] == 0.0):
+                        fima[j, i, k] = image[j, i, k]
+                    else:
+                        fima[j, i, k] = Estimate[j, i, k] / Label[j, i, k]
+
     return fima
