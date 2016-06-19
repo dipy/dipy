@@ -7,7 +7,10 @@ cimport numpy as cnp
 @cython.wraparound(False)
 @cython.cdivision(True)
 cdef void fast_mat_mul(double[:, :] A, double[:, :] B, double[:, :] out) nogil:
-    # we are computing A*B
+    '''
+    Fast matrix multiplication 
+    out = AB
+    '''
     cdef:
         cnp.npy_intp i, j, k
         double s
@@ -28,7 +31,10 @@ cdef void fast_mat_mul(double[:, :] A, double[:, :] B, double[:, :] out) nogil:
 @cython.wraparound(False)
 @cython.cdivision(True)
 cdef void fast_vecmat_mul(double[:] x, double[:, :] A, double[:] out) nogil:
-    # we are computing x*A
+    '''
+    Fast vector multiplication with matrix
+    out = xA
+    '''
     cdef:
         cnp.npy_intp i, j
         double s
@@ -110,25 +116,17 @@ def fast_lpca(double[:, :, :, :] I, int radius, double[:, :, :, :] sigma):
     '''
     Local PCA Based Denoising of Diffusion Datasets
 
-    References
-    ----------
-    Diffusion Weighted Image Denoising Using Overcomplete Local PCA
-    Manjon JV, Coupe P, Concha L, Buades A, Collins DL
-
     Parameters
     ----------
     I : A 4D array which is to be denoised
-    sigma : float or 3D array
+
+    sigma : 4D array
         standard deviation of the noise estimated from the data
+        If the sigma is a float or a 3D array one muct convert it
+        into a 4D array before passing
+
     radius : The radius of the local patch to
              be taken around each voxel
-    tou : float or 3D array
-        threshold parameter for diagonal matrix thresholding,
-        default value = (2.3 * sigma * sigma)
-    rician : boolean
-        If True the noise is estimated as Rician, otherwise Gaussian noise
-        is assumed.
-
     Returns
     -------
 
@@ -136,7 +134,18 @@ def fast_lpca(double[:, :, :, :] I, int radius, double[:, :, :, :] sigma):
         this is the denoised array of the same size as that of
         arr (input data)
 
-    '''
+    References
+    ----------
+    [1] Diffusion Weighted Image Denoising Using Overcomplete Local PCA
+        Manjon JV, Coupe P, Concha L, Buades A, Collins DL
+        
+    [2] On the computation of integrals over fixed-size rectangles of 
+        arbitrary dimension
+        Omar Ocegueda, Oscar Dalmau, Eleftherios Garyfallidis, 
+        Maxime Descoteaux, Mariano Rivera
+
+    '''     
+
     cdef:
         cnp.npy_intp n0 = I.shape[0]
         cnp.npy_intp n1 = I.shape[1]
@@ -160,7 +169,6 @@ def fast_lpca(double[:, :, :, :] I, int radius, double[:, :, :, :] sigma):
         double[:, :] W_hat = np.zeros((ndiff, ndiff))
         double[:, :] W_hatt = np.zeros((ndiff, ndiff))
 
-    nsamples = m * m * m
     with nogil:
         cur_i = 1
         for i in range(n0):

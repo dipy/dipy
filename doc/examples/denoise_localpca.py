@@ -15,9 +15,6 @@ from dipy.denoise.fast_lpca import fast_lpca
 from dipy.io import read_bvals_bvecs
 from dipy.core.gradients import gradient_table
 from dipy.denoise.noise_estimate_localpca import estimate_sigma_localpca
-# from dipy.data import fetch_sherbrooke_3shell, read_sherbrooke_3shell
-# from dipy.data import fetch_taiwan_ntu_dsi, read_taiwan_ntu_dsi
-# from dipy.data import fetch_stanford_hardi, read_stanford_hardi
 
 img = nib.load('/Users/Riddhish/Documents/GSOC/DIPY/data/test.nii')
 den_img = nib.load(
@@ -33,10 +30,10 @@ affine = img.get_affine()
 
 # data = np.array(data[20:100, 20:100, 10:15, :])
 # den_data = np.array(den_data[20:100, 20:100, 10:15, :])
-
-[sigma, sigma_c] = estimate_sigma_localpca(data, gtab)
+t = time()
+sigma = estimate_sigma_localpca(data, gtab)
+print("Sigma estimation time", time() - t)
 # identify the b0 images from the dataset
-sigma = sigma_c
 t = time()
 
 # perform the local PCA denoising
