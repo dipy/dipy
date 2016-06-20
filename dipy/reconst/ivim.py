@@ -32,7 +32,7 @@ def ivim_function(params, bvals):
 def _ivim_error(params, bvals, signal):
     """Error function to be used in fitting the model
     """
-    return (signal - ivim_function(params, bvals))**2
+    return (signal - ivim_function(params, bvals))
 
 
 class IvimModel(ReconstModel):
@@ -211,7 +211,7 @@ def _minimize(flat_data, bvals, flat_x0, ivim_params,
               bounds, tol, jac, algorithm, gtol, ftol, eps):
     """Use minimize for finding ivim_params"""
     sum_sq = lambda params, bvals, signal: np.sum(
-        _ivim_error(params, bvals, signal))
+        _ivim_error(params, bvals, signal)**2)
 
     result = []
     for vox in range(flat_data.shape[0]):
