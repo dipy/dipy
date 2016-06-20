@@ -2,6 +2,7 @@ import numpy.testing as npt
 from os.path import join
 
 import nibabel as nib
+from nibabel.tmpdirs import TemporaryDirectory
 
 from dipy.data import get_data
 from dipy.segment.mask import median_otsu
@@ -9,7 +10,7 @@ from dipy.workflows.segment import MedianOtsuFlow
 
 
 def test_median_otsu_flow():
-    with nib.tmpdirs.InTemporaryDirectory() as out_dir:
+    with TemporaryDirectory() as out_dir:
         data_path, _, _ = get_data('small_25')
         volume = nib.load(data_path).get_data()
         save_masked = True
@@ -21,10 +22,12 @@ def test_median_otsu_flow():
 
         mask_name = 'mask.nii.gz'
         masked_name = 'masked.nii.gz'
-        MedianOtsuFlow(data_path, out_dir=out_dir, save_masked=save_masked,
-                       median_radius=median_radius, numpass=numpass,
-                       autocrop=autocrop, vol_idx=vol_idx, dilate=dilate,
-                       mask=mask_name, masked=masked_name)
+        mo_flow = MedianOtsuFlow()
+        mo_flow.run(data_path, out_dir=out_dir, save_masked=save_masked,
+                             median_radius=median_radius, numpass=numpass,
+                             autocrop=autocrop, vol_idx=vol_idx, dilate=dilate)
+
+        mask_name, masked_name = mo_flow.last_generated_outputs[0]
 
         masked, mask = median_otsu(volume, median_radius,
                                    numpass, autocrop,
@@ -35,3 +38,6 @@ def test_median_otsu_flow():
 
         result_masked_data = nib.load(join(out_dir, masked_name)).get_data()
         npt.assert_array_equal(result_masked_data, masked)
+
+if __name__ == '__main__':
+    test_median_otsu_flow()

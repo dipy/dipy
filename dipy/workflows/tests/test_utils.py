@@ -5,7 +5,6 @@ from nibabel.tmpdirs import InTemporaryDirectory
 
 from dipy.workflows.utils import choose_create_out_dir
 
-
 def test_choose_create_out_dir():
     with InTemporaryDirectory() as tmp_dir:
         root_path = join(tmp_dir, 'fake_file.nii')

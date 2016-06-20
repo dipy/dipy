@@ -6,8 +6,8 @@ import os
 
 from dipy.workflows.multi_io import io_iterator_
 
-class Workflow(object):
 
+class Workflow(object):
     def __init__(self, output_strategy='append', mix_names=False,
                  force=False, skip=False):
 
@@ -23,10 +23,10 @@ class Workflow(object):
                              mix_names=self._mix_names)
 
         self.last_generated_outputs = io_it.outputs
-
         if self.manage_output_overwrite():
             return io_it
         else:
+            self.last_generated_outputs = []
             return []
 
     def manage_output_overwrite(self):
