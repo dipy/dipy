@@ -50,4 +50,4 @@ class CombinedWorkflow(Workflow):
             command line. This is a convinience method to make sub flow running
             more intuitive on the concrete CombinedWorkflow side.
         """
-        flow.run(*args, **self.get_optionals(type(flow), **kwargs))
+        return flow.run(*args, **self.get_optionals(type(flow), **kwargs))

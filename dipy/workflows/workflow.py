@@ -55,7 +55,8 @@ class Workflow(object):
         return True
 
     def run(self):
-        pass
+        raise Exception('Error: {} does not have a run method.'.
+                        format(self.__class__))
 
     def get_sub_runs(self):
         return []
