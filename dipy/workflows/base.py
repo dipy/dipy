@@ -130,8 +130,6 @@ class IntrospectiveArgumentParser(arg.ArgumentParser):
 
         return self.add_sub_flow_args(workflow.get_sub_runs())
 
-    # Definitly a refact possible to not reuse code from the above method and
-    # support multiple nested pipelines.
     def add_sub_flow_args(self, sub_flows):
         """ Take a list workflow objects and use introspection to extract the
             parameters, types and docstrings of their run method. Only the

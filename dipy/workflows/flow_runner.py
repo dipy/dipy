@@ -73,5 +73,5 @@ def run_flow(flow):
     if sub_flows_dicts:
         flow.set_sub_flows_optionals(sub_flows_dicts)
 
-    flow.run(**args)
+    return flow.run(**args)
 

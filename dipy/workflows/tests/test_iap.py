@@ -2,44 +2,9 @@ import numpy.testing as npt
 import sys
 
 from dipy.workflows.base import IntrospectiveArgumentParser
-
-from dipy.workflows.workflow import Workflow
-
-
-class DummyFlow(Workflow):
-
-    def run(self, positional_str, positional_bool, positional_int,
-            positional_float, optional_str='default', optional_bool=False,
-            optional_int=0, optional_float=1.0, optional_float_2=2.0,
-            out_dir=''):
-        """ Workflow used to test the introspective argument parser.
-
-        Parameters
-        ----------
-        positional_str : string
-            positional string argument
-        positional_bool : bool
-            positional bool argument
-        positional_int : int
-            positional int argument
-        positional_float : float
-            positional float argument
-        optional_str : string, optional
-            optional string argument (default 'default')
-        optional_bool : bool, optional
-            optional bool argument (default False)
-        optional_int : int, optional
-            optional int argument (default 0)
-        optional_float : float, optional
-            optional float argument (default 1.0)
-        optional_float_2 : float, optional
-            optional float argument #2 (default 2.0)
-        out_dir : string
-            output directory (default '')
-        """
-        return positional_str, positional_bool, positional_int,\
-               positional_float, optional_str, optional_bool,\
-               optional_int, optional_float, optional_float_2
+from dipy.workflows.flow_runner import run_flow
+from dipy.workflows.tests.workflow_tests_utils import TestFlow, \
+    DummyCombinedWorkflow
 
 
 def test_iap():
@@ -58,7 +23,7 @@ def test_iap():
 
     sys.argv.extend(inputs)
     parser = IntrospectiveArgumentParser()
-    dummy_flow = DummyFlow()
+    dummy_flow = TestFlow()
     parser.add_workflow(dummy_flow)
     args = parser.get_flow_args()
     all_keys = pos_keys + opt_keys
@@ -71,6 +36,39 @@ def test_iap():
     # Test if **args really fits dummy_flow's arguments
     return_values = dummy_flow.run(**args)
     npt.assert_array_equal(return_values, all_results + [2.0])
+
+
+def test_flow_runner():
+    old_argv = sys.argv
+    sys.argv = [sys.argv[0]]
+
+    opt_keys = ['param_combined', 'param1', 'param2', 'force', 'out_strat',
+                'mix_names']
+
+    pos_results = ['dipy.txt']
+    opt_results = [30, 10, 20, True, 'aboslute', True]
+
+    inputs = inputs_from_results(opt_results, opt_keys, optionnal=True)
+    inputs.extend(inputs_from_results(pos_results))
+
+    sys.argv.extend(inputs)
+
+    dcwf = DummyCombinedWorkflow()
+    param1, param2, combined = run_flow(dcwf)
+
+    # generic flow params
+    assert dcwf._force_overwrite
+    assert dcwf._output_strategy == 'aboslute'
+    assert dcwf._mix_names
+
+    # sub flow params
+    assert param1 == 10
+    assert param2 == 20
+
+    # parent flow param
+    assert combined == 30
+
+    sys.argv = old_argv
 
 
 def inputs_from_results(results, keys=None, optionnal=False):
@@ -87,4 +85,4 @@ def inputs_from_results(results, keys=None, optionnal=False):
 
 if __name__ == '__main__':
     test_iap()
-
+    test_flow_runner()
