@@ -12,6 +12,8 @@ from dipy.core.gradients import gradient_table
 from dipy.reconst.base import ReconstModel
 from dipy.reconst.dti import _min_positive_signal
 from dipy.reconst.dti import TensorModel, mean_diffusivity
+from .vec_val_sum import vec_val_vect
+from dipy.core.sphere import Sphere
 
 
 def ivim_function(params, bvals):
@@ -277,9 +279,28 @@ def two_stage(data, gtab, x0,
 
     # The guess for f is given by 1 - S0/C, where S0 is the data(b = 0) value
 
-    C = data[..., gtab.bvals == split_b][0] - D_guess * split_b
-    f_guess = 1.0 - data[..., 0] / C
+    # C = data[..., gtab.bvals == split_b][0] - D_guess * split_b
+    # f_guess = 1.0 - C / data[..., 0]
     x0[..., 1] = f_guess
+    x0[..., 3] = D_guess * 10
 
+    dti_params = tenfit.model_params
+
+    S0_hat = get_S0_guess(dti_params, data, gtab_ge_split)
+    x0[..., 0] = S0_hat
     return one_stage(data, gtab, x0, jac, bounds, tol, routine, algorithm,
                      gtol, ftol, eps)
+
+
+def get_S0_guess(dti_params, data, gtab):
+    evecs = dti_params[..., 3:12].reshape((dti_params.shape[:-1] + (3, 3)))
+    evals = dti_params[..., :3]
+    qform = vec_val_vect(evecs, evals)
+
+    sphere = Sphere(xyz=gtab.bvecs[~gtab.b0s_mask])
+    ADC = apparent_diffusion_coef(qform, sphere)
+
+    S0_hat = np.mean(data[..., ~gtab.b0s_mask] /
+                     np.exp(-gtab.bvals[~gtab.b0s_mask] * ADC),
+                     -1)
+    return S0_hat
