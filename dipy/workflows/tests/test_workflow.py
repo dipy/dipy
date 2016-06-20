@@ -1,7 +1,10 @@
+from nose.tools import assert_raises
+
 from nibabel.tmpdirs import TemporaryDirectory
 
 from dipy.data import get_data
 from dipy.workflows.segment import MedianOtsuFlow
+from dipy.workflows.workflow import Workflow
 
 
 def test_force_overwrite():
@@ -23,5 +26,23 @@ def test_force_overwrite():
         outputs = mo_flow.last_generated_outputs
         assert len(outputs) > 0
 
+
+def test_set_sub_flows_optionals():
+    wf = Workflow()
+    assert_raises(Exception, wf.set_sub_flows_optionals, None)
+
+
+def test_get_sub_runs():
+    wf = Workflow()
+    assert len(wf.get_sub_runs()) == 0
+
+
+def test_run():
+    wf = Workflow()
+    assert_raises(Exception, wf.run, None)
+
 if __name__ == '__main__':
     test_force_overwrite()
+    test_set_sub_flows_optionals()
+    test_get_sub_runs()
+    test_run()
