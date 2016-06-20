@@ -81,7 +81,6 @@ def test_output_generator():
         expected_output_1 = os.path.join(out_dir, out_files[0])
         expected_output_2 = os.path.join(out_dir, out_files[1])
 
-        #set_idx =
         for io_it_vals, expected_input in zip(og, globbed_input1):
             inp1, out1, out2 = io_it_vals
             assert expected_input == expected_input
