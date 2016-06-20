@@ -201,6 +201,7 @@ class IOIterator(object):
     def __init__(self, output_strategy='append', mix_names=False):
         self.output_strategy = output_strategy
         self.mix_names = mix_names
+        self.inputs = []
 
     def set_inputs(self, *args):
         self.input_args = list(args)
