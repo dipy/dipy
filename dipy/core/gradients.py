@@ -310,16 +310,3 @@ def reorient_bvecs(gtab, affines):
     return_bvecs = np.zeros(gtab.bvecs.shape)
     return_bvecs[~gtab.b0s_mask] = new_bvecs
     return gradient_table(gtab.bvals, return_bvecs)
-
-
-def generate_b_vectors(N):
-    """Function to generate arbitary b-vectors of length N
-    This may be used for testing or various simulations.
-    It uses the disperse_charges function from dipy.core.sphere
-    Refer to the example gradients_spheres for details"""
-    theta = np.pi * np.random.rand(N)
-    phi = 2 * np.pi * np.random.rand(N)
-    hsph_initial = HemiSphere(theta=theta, phi=phi)
-    hsph_updated, potential = disperse_charges(hsph_initial, 5000)
-    vertices = hsph_updated.vertices
-    return vertices
