@@ -64,7 +64,6 @@ def connect_output_paths(inputs, out_dir, out_files, output_strategy='append',
                 inputs[i] = max_size * inputs[i]
 
     if mix_names:
-
         mixing_prefixes = concatenate_inputs(inputs)
     else:
         mixing_prefixes = [''] * len(inputs[0])
@@ -100,21 +99,19 @@ def concatenate_inputs(multi_inputs):
     for inps in zip(*multi_inputs):
         mixing_name = ''
         for i, inp in enumerate(inps):
-            mixing_name += basename(inp) + '_'
+            mixing_name += basename_without_extension(inp) + '_'
 
         mixing_names.append(mixing_name + '_')
     return mixing_names
 
 
-def basename(fname):
-    ext = path.splitext(path.basename(fname))[1]
-    base = path.splitext(path.basename(fname))[0]
-    if ext == '.gz':
-        ext = path.splitext(path.basename(base))[1]
-        if ext == '.nii':
-            base = path.splitext(path.basename(fname))[0]
-            base = path.splitext(path.basename(base))[0]
-    return base
+def basename_without_extension(fname):
+    base = path.basename(fname)
+    result = base.split('.')[0]
+    if result[-4:] == '.nii':
+        result = result.split('.')[0]
+
+    return result
 
 
 def io_iterator(inputs, out_dir, fnames, output_strategy='append',
