@@ -158,3 +158,30 @@ def generate_multivoxel_data(gtab, params):
     # assert_array_equal(est_signal_two.shape, data_two.shape)
     # assert_array_almost_equal(est_signal_two, data_two)
     # assert_array_almost_equal(ivim_fit_two.model_params, params)
+
+def test_predict():
+    """
+    Test model prediction API
+    """
+    bvals = np.array([0., 10., 20., 30., 40., 60., 80., 100.,
+                      120., 140., 160., 180., 200., 220., 240.,
+                      260., 280., 300., 350., 400., 500., 600.,
+                      700., 800., 900., 1000.])
+    N = len(bvals)
+    bvecs = get_bvecs(N)
+    gtab = gradient_table(bvals, bvecs.T)
+
+    S0, f, D_star, D = 1.0, 0.2052, 0.00473, 0.00066
+
+    mevals = np.array(([D_star, D_star, D_star], [D, D, D]))
+    # This gives an isotropic signal
+
+    signal = multi_tensor(gtab, mevals, snr=None, S0=S0, fractions=[
+                          f * 100, 100 * (1 - f)])
+    data = signal[0]
+    ivim_model = IvimModel(gtab)
+    ivim_fit = ivim_model.fit(data, routine="leastsq")
+
+    p = ivim_fit.predict(gtab)
+    assert_array_equal(p.shape, data.shape)
+    assert_array_almost_equal(p, data)

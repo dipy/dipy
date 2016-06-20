@@ -148,6 +148,18 @@ class IvimModel(ReconstModel):
 
         return IvimFit(self, ivim_params)
 
+        def predict(self, ivim_params):
+            """
+            Predict a signal for this IvimModel class instance given parameters.
+
+            Parameters
+            ----------
+            ivim_params : ndarray
+                The last dimension should have 4 parameters: S0, f, D_star and D
+            """
+
+            return ivim_function(ivim_params, self.gtab.bvals)
+
 
 class IvimFit(object):
 
@@ -173,6 +185,29 @@ class IvimFit(object):
     @property
     def shape(self):
         return self.model_params.shape[:-1]
+
+    def predict(self, gtab, step=None, S0=1.0):
+        r"""
+        Given a model fit, predict the signal.
+
+        Parameters
+        ----------
+        gtab : a GradientTable class instance
+            This encodes the directions for which a prediction is made
+
+        Notes
+        -----
+        The predicted signal is given by:
+
+        .. math ::
+
+
+
+        Where:
+        .. math ::
+
+        """
+        return ivim_function(self.model_params, gtab.bvals)
 
 
 def one_stage(data, gtab, x0, jac, bounds, tol, routine, algorithm,
