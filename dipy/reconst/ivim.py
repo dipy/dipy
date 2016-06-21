@@ -10,7 +10,7 @@ from scipy.optimize import leastsq
 
 from dipy.core.gradients import gradient_table
 from dipy.reconst.base import ReconstModel
-from dipy.reconst.dti import _min_positive_signal
+from dipy.reconst.dti import _min_positive_signal, apparent_diffusion_coef
 from dipy.reconst.dti import TensorModel, mean_diffusivity
 from .vec_val_sum import vec_val_vect
 from dipy.core.sphere import Sphere
@@ -307,22 +307,11 @@ def two_stage(data, gtab, x0,
 
     x0[..., 3] = D_guess
 
-    # Calculate the intercept for straight line considering bvals > split_b
-    # This will be a straight line with slope D_guess(m). If y = mx + C is the line
-    # we can get the intercept by putting x = split_b, y = data(split_b)
-    # Thus, C = data(b = split_b) - D_guess*split_b
-
-    # The guess for f is given by 1 - S0/C, where S0 is the data(b = 0) value
-
-    # C = data[..., gtab.bvals == split_b][0] - D_guess * split_b
-    # f_guess = 1.0 - C / data[..., 0]
-    x0[..., 1] = f_guess
-    x0[..., 3] = D_guess * 10
-
     dti_params = tenfit.model_params
 
     S0_hat = get_S0_guess(dti_params, data, gtab_ge_split)
-    x0[..., 0] = S0_hat
+    f_guess = 1.0 - S0_hat / data[..., 0]
+    x0[..., 0] = f_guess
     return one_stage(data, gtab, x0, jac, bounds, tol, routine, algorithm,
                      gtol, ftol, eps)
 
