@@ -351,7 +351,8 @@ def nlmeans_block(double[:, :, :]image, int v, int f, double h, rician=True):
         for k in range(0, dims[2], 2):
             for i in range(0, dims[1], 2):
                 for j in range(0, dims[0], 2):
-                    average[...] = 0
+                    with gil:
+                        average[...] = 0
                     totalWeight = 0
                     if (means[j, i, k] <= epsilon) or (
                             variances[j, i, k] <= epsilon):
