@@ -4,32 +4,41 @@ from dipy.core import wavelet
 
 
 def ascm(ima, fimau, fimao, h):
-    '''
-    Adaptive Soft Coefficient Matching
+    """Adaptive Soft Coefficient Matching
 
     Combines two filtered 3D-images at different resolutions and the orginal
     image. Returns the resulting combined image.
+
     Parameters
     ----------
-        ima: the original (not filtered) image
-        fimau : 3D double array,
-            filtered image with optimized non-local means using a small block
-            (suggested:3x3), which corresponds to a "high resolution" filter.
-        fimao : 3D double array,
-            filtered image with optimized non-local means using a small block
-            (suggested:5x5), which corresponds to a "low resolution" filter.
-        h: the estimated standard deviation of the Gaussian random variables
-            that explain the rician noise. Note: In P. Coupe et al. the
-            rician noise was simulated as sqrt((f+x)^2 + (y)^2) where f is
-            the pixel value and x and y are independent realizations of a
-            random variable with Normal distribution, with mean=0 and
-            standard deviation=h
+    ima: the original (not filtered) image
+    fimau : 3D double array,
+        filtered image with optimized non-local means using a small block
+        (suggested:3x3), which corresponds to a "high resolution" filter.
+    fimao : 3D double array,
+        filtered image with optimized non-local means using a small block
+        (suggested:5x5), which corresponds to a "low resolution" filter.
+    h: the estimated standard deviation of the Gaussian random variables
+        that explain the rician noise. Note: In P. Coupe et al. the
+        rician noise was simulated as sqrt((f+x)^2 + (y)^2) where f is
+        the pixel value and x and y are independent realizations of a
+        random variable with Normal distribution, with mean=0 and
+        standard deviation=h
+
+    Returns
+    -------
+    fima: 3D double array
+        output denoised array which is of the same shape as that of
+        the input
+
     References
     ----------
-    3D Adaptive Multiresolution Non-Local Means Filter, P. Coupe a,
-    J. V. Manjon,M. Robles, D. L. Collin
+    [1] Pierrick Coupe, Jose Manjon, Montserrat Robles, Louis Collins.
+        "Multiresolution Non-Local Means Filter for 3D MR Image Denoising"
+        IET Image Processing, Institution of Engineering and Technology,
+        2011
 
-    '''
+    """
 
     s = fimau.shape
     p = [0, 0, 0]

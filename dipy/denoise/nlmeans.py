@@ -38,15 +38,19 @@ def nlmeans(arr, sigma, mask=None, patch_radius=1, block_radius=5,
 
     References
     ----------
-
-    [1] "Impact of Rician Adapted Non-Local Means Filtering on HARDI"
-    Descoteaux, Maxim and Wiest-Daessle`, Nicolas and Prima, Sylvain and Barillot,
-    Christian and Deriche, Rachid
-    MICCAI 2008
+    [1] Descoteaux, Maxim and Wiest-Daessle`, Nicolas and Prima, Sylvain and Barillot,
+        Christian and Deriche, Rachid
+        "Impact of Rician Adapted Non-Local Means Filtering on HARDI"
+        MICCAI 2008
 
     [2] P. Coupe, P. Yger, S. Prima, P. Hellier, C. Kervrann, C. Barillot,
-    "An Optimized Blockwise Non Local Means Denoising Filter for 3D Magnetic
-    Resonance Images", IEEE Transactions on Medical Imaging, 27(4):425-441, 2008.
+        "An Optimized Blockwise Non Local Means Denoising Filter for 3D Magnetic
+        Resonance Images" 
+        IEEE Transactions on Medical Imaging, 27(4):425-441, 2008
+
+    [3] Pierrick Coupe, Jose Manjon, Montserrat Robles, Louis Collins.
+        "Multiresolution Non-Local Means Filter for 3D MR Image Denoising"
+        IET Image Processing, Institution of Engineering and Technology, 2011
 
     """
 

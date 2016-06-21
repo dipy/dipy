@@ -72,9 +72,9 @@ def _upfir_matrix(double[:, :] F, double[:] h, double[:, :] out):
 @cython.cdivision(True)
 cdef void _average_block(double[:, :, :] ima, int x, int y, int z,
                    double[:, :, :] average, double weight) nogil:
-    '''
+    """
     Computes the weighted average of the patches in a blockwise manner
-    '''
+    """
     cdef int a, b, c, x_pos, y_pos, z_pos
     cdef int is_outside
     cdef int count = 0
@@ -103,9 +103,9 @@ cdef void _average_block(double[:, :, :] ima, int x, int y, int z,
 cdef void _value_block(double[:, :, :] estimate, double[:, :, :] Label, int x, int y,
                  int z, double[:, :, :] average, double global_sum, double hh, int rician_int) nogil:
 
-    '''
+    """
     Computes the final estimate of the denoised image
-    '''
+    """
     cdef int is_outside, a, b, c, x_pos, y_pos, z_pos, count = 0
     cdef double value = 0.0
     cdef double denoised_value = 0.0
@@ -145,11 +145,11 @@ cdef void _value_block(double[:, :, :] estimate, double[:, :, :] Label, int x, i
 @cython.cdivision(True)
 cdef double _distance(double[:, :, :] image, int x, int y, int z,
               int nx, int ny, int nz, int f) nogil:
-    '''
+    """
     Computes the distance between two square subpatches of image located at
     p and q, respectively. If the centered squares lie beyond the boundaries
     of image, they are mirrored.
-    '''
+    """
     cdef double acu, distancetotal
     cdef int i, j, k, ni1, nj1, ni2, nj2, nk1, nk2
     cdef int sx = image.shape[1], sy = image.shape[0], sz = image.shape[2]
@@ -197,9 +197,9 @@ cdef double _distance(double[:, :, :] image, int x, int y, int z,
 @cython.wraparound(False)
 @cython.cdivision(True)
 cdef double _local_mean(double[:, :, :]ima, int x, int y, int z) nogil:
-    '''
+    """
     local mean of a 3x3x3 patch centered at x,y,z
-    '''
+    """
     cdef int dims0 = ima.shape[0]
     cdef int dims1 = ima.shape[1]
     cdef int dims2 = ima.shape[2]
@@ -222,9 +222,9 @@ cdef double _local_mean(double[:, :, :]ima, int x, int y, int z) nogil:
 @cython.wraparound(False)
 @cython.cdivision(True)
 cdef double _local_variance(double[:, :, :] ima, double mean, int x, int y, int z) nogil:
-    '''
+    """
     local variance of a 3x3x3 patch centered at x,y,z
-    '''
+    """
     dims0 = ima.shape[0]
     dims1 = ima.shape[1]
     dims2 = ima.shape[2]
@@ -241,15 +241,16 @@ cdef double _local_variance(double[:, :, :] ima, double mean, int x, int y, int 
     return ss / (cnt - 1)
 
 cpdef firdn(double[:, :] image, double[:] h):
-    '''
+    """
     Applies the filter given by the convolution kernel 'h' columnwise to
     'image', then subsamples by 2. This is a special case of the matlab's
     'upfirdn' function, ported to python. Returns the filtered image.
+    
     Parameters
     ----------
         image:  the input image to be filtered
         h:      the convolution kernel
-    '''
+    """
     nrows = image.shape[0]
     ncols = image.shape[1]
     ll = h.shape[0]
@@ -258,15 +259,16 @@ cpdef firdn(double[:, :] image, double[:] h):
     return filtered
 
 cpdef upfir(double[:, :] image, double[:] h):
-    '''
+    """
     Upsamples the columns of the input image by 2, then applies the
     convolution kernel 'h' (again, columnwise). This is a special case of the
     matlab's 'upfirdn' function, ported to python. Returns the filtered image.
+    
     Parameters
     ----------
         image:  the input image to be filtered
         h:      the convolution kernel
-    '''
+    """
     nrows = image.shape[0]
     ncols = image.shape[1]
     ll = h.shape[0]
@@ -279,31 +281,45 @@ cpdef upfir(double[:, :] image, double[:] h):
 @cython.wraparound(False)
 @cython.cdivision(True)
 def nlmeans_block(double[:, :, :]image, int v, int f, double h, rician=True):
-    '''
-    Non-Local Means Denoising Using Blockwise Averaging
-
+    """Non-Local Means Denoising Using Blockwise Averaging
     
     Parameters
     ----------
-        image: 3D double ndarray
-            the input image, corrupted with rician noise
-        v:  int
-            similar patches in the non-local means are searched for locally,
-            inside a cube of side 2*v+1 centered at each voxel of interest.
-        f:  int
-            the size of the block to be used (2*f+1)x(2*f+1)x(2*f+1) in the
-            blockwise non-local means implementation (the Coupe's proposal).
-        h:  double
-            the estimated amount of rician noise in the input image: in P.
-            Coupe et al. the rician noise was simulated as
-            sqrt((f+x)^2 + (y)^2) where f is the pixel value and x and y are
-            independent realizations of a random variable with Normal
-            distribution, with mean=0 and standard deviation=h
-        rician: boolean
-            If True the noise is estimated as Rician, otherwise Gaussian noise
-            is assumed.
+    image: 3D double ndarray
+        the input image, corrupted with rician noise
+    v:  int
+        similar patches in the non-local means are searched for locally,
+        inside a cube of side 2*v+1 centered at each voxel of interest.
+    f:  int
+        the size of the block to be used (2*f+1)x(2*f+1)x(2*f+1) in the
+        blockwise non-local means implementation (the Coupe's proposal).
+    h:  double
+        the estimated amount of rician noise in the input image: in P.
+        Coupe et al. the rician noise was simulated as
+        sqrt((f+x)^2 + (y)^2) where f is the pixel value and x and y are
+        independent realizations of a random variable with Normal
+        distribution, with mean=0 and standard deviation=h
+    rician: boolean
+        If True the noise is estimated as Rician, otherwise Gaussian noise
+        is assumed.
 
-    '''
+    Returns
+    -------
+    fima: 3D double array
+        the denoised output which has the same shape as input image.
+
+    References
+    ----------
+    [1] P. Coupe, P. Yger, S. Prima, P. Hellier, C. Kervrann, C. Barillot,
+        "An Optimized Blockwise Non Local Means Denoising Filter for 3D Magnetic
+        Resonance Images" 
+        IEEE Transactions on Medical Imaging, 27(4):425-441, 2008
+
+    [2] Pierrick Coupe, Jose Manjon, Montserrat Robles, Louis Collins.
+        "Multiresolution Non-Local Means Filter for 3D MR Image Denoising"
+        IET Image Processing, Institution of Engineering and Technology, 2011
+
+    """
 
     cdef int[:] dims = cvarray((3,), itemsize=sizeof(int), format="i")
     dims[0] = image.shape[0]
