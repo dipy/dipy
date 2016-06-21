@@ -225,6 +225,7 @@ class TextBox(UI):
         if character.lower() == "return":
             self.render_text(False)
         else:
+            print(character)
             if character.lower() == "backspace" :
                 self.remove_character()
             elif character.lower() == "left":
@@ -300,7 +301,7 @@ class TextBox(UI):
 
     def showable_text(self, show_caret):
         if show_caret:
-            ret_text = self.text[:self.caret_pos] + "|" + self.text[self.caret_pos:]
+            ret_text = self.text[:self.caret_pos] + "_" + self.text[self.caret_pos:]
         else:
             ret_text = self.text
         ret_text = ret_text[self.window_left:self.window_right+1]
