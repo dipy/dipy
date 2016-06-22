@@ -1,8 +1,9 @@
 import numpy.testing as npt
 from os.path import join
-from dipy.workflows.utils import choose_create_out_dir
+
 from nibabel.tmpdirs import InTemporaryDirectory
 
+from dipy.workflows.utils import choose_create_out_dir
 
 def test_choose_create_out_dir():
     with InTemporaryDirectory() as tmp_dir:

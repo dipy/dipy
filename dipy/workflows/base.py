@@ -1,7 +1,6 @@
-from dipy.fixes import argparse as arg
-
 import inspect
 
+from dipy.fixes import argparse as arg
 from dipy.workflows.docstring_parser import NumpyDocString
 
 
@@ -47,10 +46,11 @@ class IntrospectiveArgumentParser(arg.ArgumentParser):
         iap = IntrospectiveArgumentParser
         if epilog is None:
             epilog = \
-                "Garyfallidis, E., M. Brett, B. Amirbekian, A. Rokem, S. Van Der " \
-                "Walt, M. Descoteaux, and I. Nimmo-Smith. Dipy, a library for the " \
-                "analysis of diffusion MRI data. Frontiers in Neuroinformatics," \
-                " 1-18, 2014."
+                "References: \n" \
+                "Garyfallidis, E., M. Brett, B. Amirbekian, A. Rokem," \
+                " S. Van Der Walt, M. Descoteaux, and I. Nimmo-Smith. Dipy, a" \
+                " library for the analysis of diffusion MRI data. Frontiers " \
+                "in Neuroinformatics, 1-18, 2014."
 
         super(iap, self).__init__(prog, usage, description, epilog, version,
                                   parents, formatter_class, prefix_chars,
@@ -60,17 +60,34 @@ class IntrospectiveArgumentParser(arg.ArgumentParser):
         self.doc = None
 
     def add_workflow(self, workflow):
-        specs = inspect.getargspec(workflow)
-        doc = inspect.getdoc(workflow)
-        self.doc = NumpyDocString(doc)['Parameters']
+        """ Take a workflow object and use introspection to extract the parameters,
+            types and docstrings of its run method. Then add these parameters
+            to the current arparser's own params to parse. If the workflow is of
+            type combined_workflow, the optional input parameters of its
+            sub workflows will also be added.
 
-        self.outputs = NumpyDocString(doc)['Outputs']
+            Parameters
+            -----------
+            workflow : dipy.workflows.workflow.Workflow
+                Workflow from which to infer parameters.
+        """
+        specs = inspect.getargspec(workflow.run)
+        doc = inspect.getdoc(workflow.run)
+        npds = NumpyDocString(doc)
+        self.doc = npds['Parameters']
+        self.description = ' '.join(npds['Extended Summary'])
 
-        args = specs.args
+        self.outputs =\
+            [param for param in npds['Parameters'] if 'out_' in param[0]]
+
+        args = specs.args[1:]
         defaults = specs.defaults
 
         len_args = len(args)
         len_defaults = len(defaults)
+
+        output_args = \
+            self.add_argument_group('output arguments(optional)')
 
         for i, arg in enumerate(args):
             prefix = ''
@@ -88,18 +105,108 @@ class IntrospectiveArgumentParser(arg.ArgumentParser):
                        'action': 'store'}
 
             if is_optionnal:
-                _kwargs["metavar"] = dtype.__name__
-
-            if dtype is bool:
+                _kwargs['metavar'] = dtype.__name__
+                if dtype is bool:
+                    _kwargs['action'] = 'store_true'
+                    default_ = {}
+                    default_[arg] = False
+                    self.set_defaults(**default_)
+                    del _kwargs['type']
+                    del _kwargs['metavar']
+            elif dtype is bool:
                 _kwargs['type'] = int
                 _kwargs['choices'] = [0, 1]
+
+            if dtype is tuple:
+                _kwargs['type'] = str
 
             if isnarg:
                 _kwargs['nargs'] = '*'
 
-            self.add_argument(*_args, **_kwargs)
+            if 'out_' in arg:
+                output_args.add_argument(*_args, **_kwargs)
+            else:
+                self.add_argument(*_args, **_kwargs)
+
+        return self.add_sub_flow_args(workflow.get_sub_runs())
+
+    def add_sub_flow_args(self, sub_flows):
+        """ Take a list workflow objects and use introspection to extract the
+            parameters, types and docstrings of their run method. Only the
+            optional input parameters are extracted for these as they are
+            treated as sub workflows.
+
+            Parameters
+            -----------
+            sub_flows : array of dipy.workflows.workflow.Workflow
+                Workflows to inspect.
+        """
+
+        sub_flow_optionnals = {}
+        for name, flow in sub_flows:
+            sub_flow_optionnals[name] = {}
+            specs = inspect.getargspec(flow)
+            doc = inspect.getdoc(flow)
+            npds = NumpyDocString(doc)
+            _doc = npds['Parameters']
+
+            args = specs.args[1:]
+            defaults = specs.defaults
+
+            len_args = len(args)
+            len_defaults = len(defaults)
+
+            flow_args = \
+                self.add_argument_group('{0} arguments(optional)'.
+                                        format(name))
+
+            for i, arg in enumerate(args):
+                is_not_optionnal = i < len_args - len_defaults
+                if 'out_' in arg or is_not_optionnal:
+                    continue
+
+                sub_flow_optionnals[name][arg] = None
+                prefix = '--'
+                typestr = _doc[i][1]
+                dtype, isnarg = self._select_dtype(typestr)
+                help_msg = ''.join(_doc[i][2])
+
+                _args = ['{0}{1}'.format(prefix, arg)]
+                _kwargs = {'help': help_msg,
+                           'type': dtype,
+                           'action': 'store'}
+
+                _kwargs['metavar'] = dtype.__name__
+                if dtype is bool:
+                    _kwargs['action'] = 'store_true'
+                    default_ = {}
+                    default_[arg] = False
+                    self.set_defaults(**default_)
+                    del _kwargs['type']
+                    del _kwargs['metavar']
+                elif dtype is bool:
+                    _kwargs['type'] = int
+                    _kwargs['choices'] = [0, 1]
+
+                if dtype is tuple:
+                    _kwargs['type'] = str
+
+                if isnarg:
+                    _kwargs['nargs'] = '*'
+
+                flow_args.add_argument(*_args, **_kwargs)
+
+        return sub_flow_optionnals
 
     def _select_dtype(self, text):
+        """ Analyses a docstring parameter line and returns the good argparser
+            type.
+
+            Parameters
+            -----------
+            text : string
+                Parameter text line to inspect.
+        """
         text = text.lower()
         nargs_str = 'variable'
         is_nargs = nargs_str in text
@@ -113,10 +220,15 @@ class IntrospectiveArgumentParser(arg.ArgumentParser):
             arg_type = float
         if 'bool' in text:
             arg_type = bool
+        if 'tuple' in text:
+            arg_type = tuple
 
         return arg_type, is_nargs
 
     def get_flow_args(self, args=None, namespace=None):
+        """ Returns the parsed arguments as a dictionary directly passable to
+            the workflow.
+        """
         ns_args = self.parse_args(args, namespace)
         dct = vars(ns_args)
 
