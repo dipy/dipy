@@ -26,7 +26,6 @@ class Workflow(object):
         if self.manage_output_overwrite():
             return io_it
         else:
-            self.last_generated_outputs = []
             return []
 
     def manage_output_overwrite(self):
