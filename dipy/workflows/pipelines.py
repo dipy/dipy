@@ -13,7 +13,7 @@ from dipy.workflows.track_metrics import TrackDensityFlow
 from dipy.workflows.tracking import DetTrackFlow
 
 
-class ClassicFlow(CombinedWorkflow):
+class ClassicPipeline(CombinedWorkflow):
 
     def _get_sub_flows(self):
         return [
@@ -121,7 +121,7 @@ class ClassicFlow(CombinedWorkflow):
             #self.run_sub_flow(tdi_flow, det_tracts, fa, out_dir=track_dir)
 
 
-class QuickFlow(CombinedWorkflow):
+class FODFPipeline(CombinedWorkflow):
 
     def _get_sub_flows(self):
         return [
