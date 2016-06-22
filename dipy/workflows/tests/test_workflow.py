@@ -1,5 +1,7 @@
 from nose.tools import assert_raises
 
+import os
+
 from nibabel.tmpdirs import TemporaryDirectory
 
 from dipy.data import get_data
@@ -13,18 +15,22 @@ def test_force_overwrite():
         mo_flow = MedianOtsuFlow(output_strategy='absolute')
 
         # Generate the first results
-        mo_flow.run(data_path, out_dir=out_dir, save_masked=True)
+        mo_flow.run(data_path, out_dir=out_dir)
+        mask_file = mo_flow.last_generated_outputs[0][0]
+        first_time = os.path.getmtime(mask_file)
 
-        # re-run with no force overwrite, should have any outputs
-        mo_flow.run(data_path, out_dir=out_dir, save_masked=True)
-        outputs = mo_flow.last_generated_outputs
-        assert len(outputs) == 0
+        # re-run with no force overwrite, modified time should not change
+        mo_flow.run(data_path, out_dir=out_dir)
+        mask_file = mo_flow.last_generated_outputs[0][0]
+        second_time = os.path.getmtime(mask_file)
+        assert first_time == second_time
 
-        # re-run with force overwrite, should have outputs
+        # re-run with force overwrite, modified time should change
         mo_flow._force_overwrite = True
-        mo_flow.run(data_path, out_dir=out_dir, save_masked=True)
-        outputs = mo_flow.last_generated_outputs
-        assert len(outputs) > 0
+        mo_flow.run(data_path, out_dir=out_dir)
+        mask_file = mo_flow.last_generated_outputs[0][0]
+        third_time = os.path.getmtime(mask_file)
+        assert third_time != second_time
 
 
 def test_set_sub_flows_optionals():
