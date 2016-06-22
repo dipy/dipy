@@ -311,7 +311,7 @@ def two_stage(data, gtab, x0,
 
     S0_hat = get_S0_guess(dti_params, data, gtab_ge_split)
     f_guess = 1.0 - S0_hat / data[..., 0]
-    x0[..., 0] = f_guess
+    x0[..., 1] = f_guess
     return one_stage(data, gtab, x0, jac, bounds, tol, routine, algorithm,
                      gtol, ftol, eps)
 
