@@ -1,4 +1,3 @@
- workflow_creation.py
  quick_start.py
  tracking_quick_start.py
  brain_extraction_dwi.py
@@ -47,3 +46,5 @@
  viz_bundles.py
  viz_widgets.py
  contextual_enhancement.py
+ workflow_creation.py
+ combined_workflow_creation.py
