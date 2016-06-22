@@ -1060,8 +1060,12 @@ def anisotropic_power(sh_coeffs, norm_factor=0.00001, power=2,
         ap += ap_i
         n_start = n_stop
 
-    # Shift the map to be mostly non-negative:
-    log_ap = np.log(ap) - np.log(norm_factor)
+    # Shift the map to be mostly non-negative,
+    # only applying the log operation to non-zero elements
+    # to avoid getting numpy warnings on log(0).
+    # Also avoids getting voxels with -inf when non_negative=False.
+    log_ap = np.zeros_like(ap)
+    log_ap[ap > 0] = np.log(ap[ap > 0]) - np.log(norm_factor)
 
     # Deal with residual negative values:
     if non_negative:
