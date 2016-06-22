@@ -12,11 +12,6 @@ Examples
 .. contents::
    :depth: 2
 
----------------
-Workflows (NEW)
----------------
-- :ref:`example_workflow_creation`
-- :ref:`example_combined_workflow_creation`
 
 -----------
 Quick Start
@@ -214,6 +209,12 @@ Visualization (NEW)
 - :ref:`example_viz_slice`
 - :ref:`example_viz_bundles`
 - :ref:`example_viz_widgets`
+
+---------------
+Workflows (NEW)
+---------------
+- :ref:`example_workflow_creation`
+- :ref:`example_combined_workflow_creation`
 
 .. In order to build the examples, you'll need (on Debian)
     sudo apt-get install python-tables python-matplotib python-vtk
