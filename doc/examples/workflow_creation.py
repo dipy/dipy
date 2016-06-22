@@ -11,8 +11,8 @@ $ dipy_nlmeans t1.nii.gz t1_denoised.nii.gz
 """
 
 """
-First create your workflow file append_text_flow.py in the ../dipy/workflows
-directory. Then put the following code in it.
+First create your workflow. Usually this would be in its own python file in
+the ../dipy/workflows directory.
 """
 
 import shutil
@@ -29,83 +29,68 @@ from dipy.workflows.workflow import Workflow
 
 
 class AppendTextFlow(Workflow):
-    """
-    ``AppendTextFlow`` is the name of our workflow. Note that it needs to extend
-    Workflow for everything to work properly. It will append text to a file.
-    """
 
     def run(self, input_files, text_to_append='dipy', out_dir='',
             out_file='append.txt'):
         """
-            ``AppendTextFlow`` is the name of our workflow. Note that it needs
-            to extend Workflow for everything to work properly. It will append
-            text to a file.
+        Parameters
+        ----------
+        input_files : string
+            Path to the input files. This path may contain wildcards to
+            process multiple inputs at once.
 
-            It is mandatory to have out_dir as a parameter. It is also mandatory
-            to put 'out_' in front of every parameter that is going to be an
-            output. Lastly, all out_ params needs to be at the end of the params
-            list.
+        text_to_append : string, optional
+            Text that will be appended to the file. (default 'dipy')
 
-            The following docstring part is very important, you need to document
-            every parameter as they will be used with inspection to build the
-            command line argument parser.
+        out_dir : string, optional
+            Where the resulting file will be saved. (default '')
 
-            Parameters
-            ----------
-            input_files : string
-                Path to the input files. This path may contain wildcards to
-                process multiple inputs at once.
+        out_file : string, optional
+            Name of the result file to be saved. (default 'append.txt')
+        """
 
-            text_to_append : string, optional
-                Text that will be appended to the file. (default 'dipy')
+        """
+        ``AppendTextFlow`` is the name of our workflow. Note that it needs
+        to extend Workflow for everything to work properly. It will append
+        text to a file.
 
-            out_dir : string, optional
-                Where the resulting file will be saved. (default '')
+        It is mandatory to have out_dir as a parameter. It is also mandatory
+        to put 'out_' in front of every parameter that is going to be an
+        output. Lastly, all out_ params needs to be at the end of the params
+        list.
 
-            out_file : string, optional
-                Name of the result file to be saved. (default 'append.txt')
+        The class docstring part is very important, you need to document
+        every parameter as they will be used with inspection to build the
+        command line argument parser.
         """
 
         io_it = self.get_io_iterator()
-        """
-        Use this in every workflow you create. This creates and ``IOIterator``
-        object that create output file names and directory structure based on
-        the inputs and some other advnaced output strategy parameters.
-        """
 
         for in_file, out_file in io_it:
 
-            """
-            Iterating on the ``IOIterator`` object you created previously you
-            conveniently get all input and output paths for every input file
-            found when globbin the input parameters.
-            """
-
-
             shutil.copy(in_file, out_file)
-
-            """
-            Create the new file.
-            """
 
             with open(out_file, 'a') as myfile:
                 myfile.write(text_to_append)
 
-            """
-            Append the text and close file.
-            """
+"""
+Use self.get_io_iterator() in every workflow you create. This creates
+an ``IOIterator`` object that create output file names and directory structure
+based on the inputs and some other advanced output strategy parameters.
+
+Iterating on the ``IOIterator`` object you created previously you
+conveniently get all input and output paths for every input file
+found when globbin the input parameters.
+
+The code in the loop is the actual workflow processing code. It can be anything.
+For the example, it just appends text to an input file.
+"""
 
 """
-This is it for the workflow file! Now to be able to call it easily via command
-line, you need to create one last file. In ../dipy/bin/ create a file named
-dipy_append_text (note that there is not extension, this file is to be
-executable)
-Then put the folowing code in you new file.
-"""
 
-from dipy.workflows.append_text_flow import AppendTextFlow
-"""
-This is your previously created workflow.
+This is it for the workflow! Now to be able to call it easily via command
+line, you need to add this bit of code. Usually this is in a sperate
+executable file located in ../dipy/bin/.
 """
 
 from dipy.workflows.flow_runner import run_flow
@@ -122,7 +107,7 @@ line.
 
 Now just call the script you just made with -h to see the argparser help text.
 
-\> dipy_append_text --help
+`python workflow_creation.py --help`
 
 You should see all your parameters available along with some extra common ones
 like logging file and force overwrite. Also all the documentation you wrote
@@ -130,7 +115,7 @@ about each parameter is there.
 
 Now call it for real with a text file
 
-\> dipy_append_text ./text_file.txt
+`python workflow_creation.py ./text_file.txt`
 """
 
 
