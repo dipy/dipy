@@ -11,12 +11,13 @@ class CombinedWorkflow(Workflow):
         super(CombinedWorkflow, self).__init__(output_strategy, mix_names, force, skip)
 
     def get_sub_runs(self):
-        """ Returns a list of tuples (sub flow name, sub flow run method)
+        """ Returns a list of tuples
+            (sub flow name, sub flow run method, sub flow short name)
             to be used in the sub flow parameters extraction.
         """
         sub_runs = []
         for flow in self._get_sub_flows():
-            sub_runs.append((flow.__name__, flow.run))
+            sub_runs.append((flow.__name__, flow.run, flow.get_short_name()))
 
         return sub_runs
 

@@ -143,7 +143,7 @@ class IntrospectiveArgumentParser(arg.ArgumentParser):
         """
 
         sub_flow_optionnals = {}
-        for name, flow in sub_flows:
+        for name, flow, short_name in sub_flows:
             sub_flow_optionnals[name] = {}
             specs = inspect.getargspec(flow)
             doc = inspect.getdoc(flow)
@@ -160,18 +160,20 @@ class IntrospectiveArgumentParser(arg.ArgumentParser):
                 self.add_argument_group('{0} arguments(optional)'.
                                         format(name))
 
-            for i, arg in enumerate(args):
+            for i, arg_name in enumerate(args):
                 is_not_optionnal = i < len_args - len_defaults
-                if 'out_' in arg or is_not_optionnal:
+                if 'out_' in arg_name or is_not_optionnal:
                     continue
 
-                sub_flow_optionnals[name][arg] = None
+                arg_name = '{0}.{1}'.format(short_name, arg_name)
+                sub_flow_optionnals[name][arg_name] = None
                 prefix = '--'
                 typestr = _doc[i][1]
                 dtype, isnarg = self._select_dtype(typestr)
                 help_msg = ''.join(_doc[i][2])
 
-                _args = ['{0}{1}'.format(prefix, arg)]
+
+                _args = ['{0}{1}'.format(prefix, arg_name)]
                 _kwargs = {'help': help_msg,
                            'type': dtype,
                            'action': 'store'}
@@ -180,7 +182,7 @@ class IntrospectiveArgumentParser(arg.ArgumentParser):
                 if dtype is bool:
                     _kwargs['action'] = 'store_true'
                     default_ = {}
-                    default_[arg] = False
+                    default_[arg_name] = False
                     self.set_defaults(**default_)
                     del _kwargs['type']
                     del _kwargs['metavar']

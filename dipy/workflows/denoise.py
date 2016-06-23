@@ -11,6 +11,10 @@ from dipy.workflows.workflow import Workflow
 
 
 class NLMeansFlow(Workflow):
+    @classmethod
+    def get_short_name(cls):
+        return 'nlmeans'
+
     def run(self, input_files, sigma=0, out_dir='',
             out_denoised='dwi_nlmeans.nii.gz'):
         """ Workflow wrapping the nlmeans denoising method.
