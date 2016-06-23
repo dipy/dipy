@@ -45,12 +45,12 @@ class IntrospectiveArgumentParser(arg.ArgumentParser):
 
         iap = IntrospectiveArgumentParser
         if epilog is None:
-            epilog = \
-                "References: \n" \
-                "Garyfallidis, E., M. Brett, B. Amirbekian, A. Rokem," \
-                " S. Van Der Walt, M. Descoteaux, and I. Nimmo-Smith. Dipy, a" \
-                " library for the analysis of diffusion MRI data. Frontiers " \
-                "in Neuroinformatics, 1-18, 2014."
+            epilog =\
+                ("References: \n"
+                 "Garyfallidis, E., M. Brett, B. Amirbekian, A. Rokem,"
+                 " S. Van Der Walt, M. Descoteaux, and I. Nimmo-Smith. Dipy, a"
+                 " library for the analysis of diffusion MRI data. Frontiers"
+                 " in Neuroinformatics, 1-18, 2014.")
 
         super(iap, self).__init__(prog, usage, description, epilog, version,
                                   parents, formatter_class, prefix_chars,
@@ -77,8 +77,8 @@ class IntrospectiveArgumentParser(arg.ArgumentParser):
         self.doc = npds['Parameters']
         self.description = ' '.join(npds['Extended Summary'])
 
-        self.outputs =\
-            [param for param in npds['Parameters'] if 'out_' in param[0]]
+        self.outputs = [param for param in npds['Parameters'] if
+                        'out_' in param[0]]
 
         args = specs.args[1:]
         defaults = specs.defaults
@@ -142,9 +142,9 @@ class IntrospectiveArgumentParser(arg.ArgumentParser):
                 Workflows to inspect.
         """
 
-        sub_flow_optionnals = {}
-        for name, flow in sub_flows:
-            sub_flow_optionnals[name] = {}
+        sub_flow_optionals = {}
+        for name, flow, short_name in sub_flows:
+            sub_flow_optionals[name] = {}
             specs = inspect.getargspec(flow)
             doc = inspect.getdoc(flow)
             npds = NumpyDocString(doc)
@@ -160,18 +160,20 @@ class IntrospectiveArgumentParser(arg.ArgumentParser):
                 self.add_argument_group('{0} arguments(optional)'.
                                         format(name))
 
-            for i, arg in enumerate(args):
+            for i, arg_name in enumerate(args):
                 is_not_optionnal = i < len_args - len_defaults
-                if 'out_' in arg or is_not_optionnal:
+                if 'out_' in arg_name or is_not_optionnal:
                     continue
 
-                sub_flow_optionnals[name][arg] = None
+                arg_name = '{0}.{1}'.format(short_name, arg_name)
+                sub_flow_optionals[name][arg_name] = None
                 prefix = '--'
                 typestr = _doc[i][1]
                 dtype, isnarg = self._select_dtype(typestr)
                 help_msg = ''.join(_doc[i][2])
 
-                _args = ['{0}{1}'.format(prefix, arg)]
+
+                _args = ['{0}{1}'.format(prefix, arg_name)]
                 _kwargs = {'help': help_msg,
                            'type': dtype,
                            'action': 'store'}
@@ -180,7 +182,7 @@ class IntrospectiveArgumentParser(arg.ArgumentParser):
                 if dtype is bool:
                     _kwargs['action'] = 'store_true'
                     default_ = {}
-                    default_[arg] = False
+                    default_[arg_name] = False
                     self.set_defaults(**default_)
                     del _kwargs['type']
                     del _kwargs['metavar']
@@ -196,7 +198,7 @@ class IntrospectiveArgumentParser(arg.ArgumentParser):
 
                 flow_args.add_argument(*_args, **_kwargs)
 
-        return sub_flow_optionnals
+        return sub_flow_optionals
 
     def _select_dtype(self, text):
         """ Analyses a docstring parameter line and returns the good argparser

@@ -11,6 +11,10 @@ from dipy.workflows.workflow import Workflow
 
 
 class MedianOtsuFlow(Workflow):
+    @classmethod
+    def get_short_name(cls):
+        return 'medotsu'
+
 
     def run(self, input_files, save_masked=False, median_radius=2, numpass=5,
             autocrop=False, vol_idx=None, dilate=None, out_dir='',

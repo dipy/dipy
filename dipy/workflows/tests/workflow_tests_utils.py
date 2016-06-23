@@ -3,6 +3,11 @@ from dipy.workflows.combined_workflow import CombinedWorkflow
 
 
 class DummyWorkflow1(Workflow):
+
+    @classmethod
+    def get_short_name(cls):
+        return 'dwf1'
+
     def run(self, inputs, param1=1, out_dir='', output_1='out1.txt'):
         """ Workflow used to test combined workflows in general.
 
@@ -21,6 +26,11 @@ class DummyWorkflow1(Workflow):
 
 
 class DummyWorkflow2(Workflow):
+
+    @classmethod
+    def get_short_name(cls):
+        return 'dwf2'
+
     def run(self, inputs, param2=2, out_dir='', output_1='out2.txt'):
         """ Workflow used to test combined workflows in general.
 

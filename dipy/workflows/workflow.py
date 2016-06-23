@@ -10,7 +10,9 @@ from dipy.workflows.multi_io import io_iterator_
 class Workflow(object):
     def __init__(self, output_strategy='append', mix_names=False,
                  force=False, skip=False):
-
+        """ The basic workflow object, it takes care of any workflow operation that
+        is common. Every new workflow should extend this class.
+        """
         self._output_strategy = output_strategy
         self._mix_names = mix_names
         self.last_generated_outputs = None
@@ -18,6 +20,10 @@ class Workflow(object):
         self._skip = skip
 
     def get_io_iterator(self):
+        """ Use a couple of inspection tricks to build an IOIterator using the
+        previous frame(values of local variables and other contextuals) and the
+        run method's docstring.
+        """
         io_it = io_iterator_(inspect.currentframe(1), self.run,
                              output_strategy=self._output_strategy,
                              mix_names=self._mix_names)
@@ -29,6 +35,11 @@ class Workflow(object):
             return []
 
     def manage_output_overwrite(self):
+        """ Check if a file will be overwritten upon processing the inputs.
+        If it is bound to happen, an action is taken depending on
+        self._force_overwrite (or --force via command line). A log message is
+        output independently of the outcome to tell the user something happened.
+        """
         duplicates = []
         for output_list in self.last_generated_outputs:
             for output in output_list:
@@ -54,12 +65,34 @@ class Workflow(object):
         return True
 
     def run(self):
+        """ Since this is an abstract class, raise exception if this code is
+        reached (not impletemented in child class or literally called on this
+        class)
+        """
         raise Exception('Error: {} does not have a run method.'.
                         format(self.__class__))
 
     def get_sub_runs(self):
+        """ No sub runs since this is a simple workflow.
+        """
         return []
 
     def set_sub_flows_optionals(self, opts):
+        """ This code shouldnt be reached. Raise exception.
+        """
         raise Exception('Error: {} does not have subworkflows.'.
                         format(self.__class__))
+
+    @classmethod
+    def get_short_name(cls):
+        """ The short name is used by CombinedWorkflows and the argparser to
+        subdivide the commandline parameters avoiding the trouble of having
+        subworkflows parameters with the same name. Ex: A combined workflow with
+        dti reconstruction and csd reconstruction might en up with the
+        b0_threshold parameter. Using short names, we will have dti.b0_threshold
+        and csd.b0_threshold available.
+
+        Returns class name by default but it is strongly advised to set it to
+        something shorter and easier to write on commandline.
+        """
+        return cls.__name__
