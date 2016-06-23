@@ -54,7 +54,7 @@ class CustomInteractorStyle(vtkInteractorStyleUser):
         actor_2d = self.picker.GetViewProp()
         if actor_2d is not None:
             self.chosenElement = actor_2d
-            self.add_ui_param(gui.Slider, click_pos)
+            self.add_ui_param(gui.SliderLine, click_pos)
             actor_2d.InvokeEvent(evt)
         else:
             actor_3d = self.picker.GetProp3D()
@@ -114,13 +114,13 @@ class CustomInteractorStyle(vtkInteractorStyleUser):
             if obj.GetKeySym().lower() == "return":
                 self.chosenElement = None
 
-    def add_ui_param(self, classname, ui_param):
+    def add_ui_param(self, class_name, ui_param):
         ui_list = self.renderer.ui_list
         for ui_item in ui_list:
-                if ui_item.actor == self.chosenElement:
-                    if isinstance(ui_item, classname):
-                        ui_item.set_ui_param(ui_param)
-                        break
+            if ui_item.actor == self.chosenElement:
+                if isinstance(ui_item, class_name):
+                    ui_item.set_ui_param(ui_param)
+                    break
 
     def SetInteractor(self, interactor):
         # Internally these `InteractorStyle` objects need an handle to a
@@ -204,33 +204,46 @@ button.add_callback("RightButtonPressEvent", move_button_callback)
 button.add_callback("LeftButtonPressEvent", modify_button_callback)
 
 
-text = gui.TextBox(height=3, width=10)
+# text = gui.TextBox(height=3, width=10)
+#
+#
+# def key_press_callback(*args, **kwargs):
+#     key = text.ui_param
+#     text.handle_character(key)
+#     showm.render()
+#
+#
+# def select_text_callback(*args, **kwargs):
+#     text.edit_mode()
+#     showm.render()
+#
+#     text.add_callback("KeyPressEvent", key_press_callback)
+#     text.add_callback("LeftButtonPressEvent", select_text_callback)
 
 
-def key_press_callback(*args, **kwargs):
-    key = text.ui_param
-    text.handle_character(key)
-    showm.render()
+slider = gui.Slider()
 
 
-def select_text_callback(*args, **kwargs):
-    text.edit_mode()
-    showm.render()
+def line_click_callback(*args, **kwargs):
+    position = slider.slider_line.ui_param
+    slider.slider_disk.set_position(position)
+    length = slider.slider_line.end_point[0] - slider.slider_line.start_point[0]
+    pos = position[0] - slider.slider_line.start_point[0]
+    percentage = (pos/length)*100
+    slider.text.set_message(str(int(percentage)) + "%")
 
-text.add_callback("KeyPressEvent", key_press_callback)
-text.add_callback("LeftButtonPressEvent", select_text_callback)
+slider.slider_line.add_callback("LeftButtonPressEvent", line_click_callback)
 
-
-line = gui.Slider()
 
 renderer = window.ren()
 iren_style = CustomInteractorStyle(renderer=renderer)
 renderer.add(button)
 renderer.add(cube_actor_1)
 renderer.add(cube_actor_2)
-renderer.add(text)
-renderer.add(line.slider_line)
-renderer.add(line.slider_disk)
+# renderer.add(text)
+renderer.add(slider.slider_line)
+renderer.add(slider.slider_disk)
+renderer.add(slider.text)
 
 # set_trace()
 

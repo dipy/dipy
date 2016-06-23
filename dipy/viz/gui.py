@@ -422,8 +422,8 @@ class TextBox(UI):
 
 
 class Slider(UI):
-    def __init__(self, start_point=(200, 20), end_point=(300, 20), line_width=2, inner_radius=1,
-                 outer_radius=10, position=(250, 20)):
+    def __init__(self, start_point=(100, 20), end_point=(300, 20), line_width=6, inner_radius=5,
+                 outer_radius=15, position=(250, 20)):
         """
 
         Parameters
@@ -438,6 +438,27 @@ class Slider(UI):
         super().__init__()
         self.slider_line = SliderLine(start_point=start_point, end_point=end_point, line_width=line_width)
         self.slider_disk = SliderDisk(position=position, inner_radius=inner_radius, outer_radius=outer_radius)
+        self.text = self.make_text(position=start_point,
+                                   percentage=(position[0]-start_point[0])*100/(end_point[0]-start_point[0]))
+
+    def make_text(self, position, percentage):
+        actor = TextActor()
+
+        actor.set_position((position[0]-40, position[1]-10))
+        actor.set_message(str(int(percentage))+"%")
+
+        return actor
+
+    def add_callback(self, event_type, callback, component):
+        """ Adds events to an actor
+
+        Parameters
+        ----------
+        event_type: event code
+        callback: callback function
+        component: component
+        """
+        component.actor.AddObserver(event_type, callback)
 
 
 class SliderLine(UI):
@@ -452,6 +473,8 @@ class SliderLine(UI):
         line_width
         """
         super().__init__()
+        self.start_point = start_point
+        self.end_point = end_point
         self.actor = self.build_actor(start_point=start_point, end_point=end_point, line_width=line_width)
 
     def build_actor(self, start_point, end_point, line_width):
@@ -484,6 +507,16 @@ class SliderLine(UI):
 
         return actor
 
+    def add_callback(self, event_type, callback):
+        """ Adds events to the actor
+
+        Parameters
+        ----------
+        event_type: event code
+        callback: callback function
+        """
+        self.actor.AddObserver(event_type, callback)
+
 
 class SliderDisk(UI):
 
@@ -498,6 +531,7 @@ class SliderDisk(UI):
         """
         super().__init__()
         self.actor = self.build_actor(position=position, inner_radius=inner_radius, outer_radius=outer_radius)
+        self.pos_height = position[1]
 
     def build_actor(self, position, inner_radius, outer_radius):
         # create source
@@ -532,3 +566,12 @@ class SliderDisk(UI):
         actor.SetPosition(position[0], position[1])
 
         return actor
+
+    def set_position(self, position):
+        """ Sets the disk's position
+
+        Parameters
+        ----------
+        position
+        """
+        self.actor.SetPosition(position[0], self.pos_height)
