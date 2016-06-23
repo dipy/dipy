@@ -214,10 +214,7 @@ def main(**extra_args):
                           ]},
           data_files=[('share/doc/dipy/examples',
                        glob(pjoin('doc','examples','*.py')))],
-          scripts      = [pjoin('bin', 'dipy_peak_extraction'),
-                          pjoin('bin', 'dipy_fit_tensor'),
-                          pjoin('bin', 'dipy_sh_estimate'),
-                          pjoin('bin', 'dipy_quickbundles')],
+          scripts      = [pjoin('bin', 'dipy_median_otsu')],
           cmdclass = cmdclass,
           **extra_args
         )
