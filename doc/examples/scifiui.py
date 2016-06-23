@@ -20,6 +20,7 @@ else:
 
 numpy_support, have_ns, _ = optional_package('vtk.util.numpy_support')
 
+
 class CustomInteractorStyle(vtkInteractorStyleUser):
     """ Interactive manipulation of the camera that can also manipulates
     objects in the scene independent of each other.
@@ -53,6 +54,7 @@ class CustomInteractorStyle(vtkInteractorStyleUser):
         actor_2d = self.picker.GetViewProp()
         if actor_2d is not None:
             self.chosenElement = actor_2d
+            self.add_ui_param(gui.Slider, click_pos)
             actor_2d.InvokeEvent(evt)
         else:
             actor_3d = self.picker.GetProp3D()
@@ -106,15 +108,19 @@ class CustomInteractorStyle(vtkInteractorStyleUser):
         self.trackball_interactor_style.OnMouseWheelBackward()
 
     def on_key_press(self, obj, evt):
-        ui_list = self.renderer.ui_list
         if self.chosenElement is not None:
-            for ui_item in ui_list:
-                if ui_item.actor == self.chosenElement:
-                    ui_item.set_ui_param(obj.GetKeySym())
-                    break
+            self.add_ui_param(gui.TextBox, obj.GetKeySym())
             self.chosenElement.InvokeEvent(evt)
             if obj.GetKeySym().lower() == "return":
                 self.chosenElement = None
+
+    def add_ui_param(self, classname, ui_param):
+        ui_list = self.renderer.ui_list
+        for ui_item in ui_list:
+                if ui_item.actor == self.chosenElement:
+                    if isinstance(ui_item, classname):
+                        ui_item.set_ui_param(ui_param)
+                        break
 
     def SetInteractor(self, interactor):
         # Internally these `InteractorStyle` objects need an handle to a
@@ -153,6 +159,7 @@ class CustomInteractorStyle(vtkInteractorStyleUser):
         interactor.AddObserver("MouseWheelForwardEvent", self.on_mouse_wheel_forward)
         interactor.AddObserver("MouseWheelBackwardEvent", self.on_mouse_wheel_backward)
 
+
 def cube(color=None, size=(0.2, 0.2, 0.2), center=None):
     cube = vtk.vtkCubeSource()
     cube.SetXLength(size[0])
@@ -172,13 +179,14 @@ def cube(color=None, size=(0.2, 0.2, 0.2), center=None):
 cube_actor_1 = cube((1, 0, 0), (50, 50, 50), center=(0, 0, 0))
 cube_actor_2 = cube((0, 1, 0), (10, 10, 10), center=(100, 0, 0))
 
-icon_files = {}
+icon_files = dict()
 icon_files['stop'] = read_viz_icons(fname='stop2.png')
 icon_files['play'] = read_viz_icons(fname='play3.png')
 icon_files['plus'] = read_viz_icons(fname='plus.png')
 icon_files['cross'] = read_viz_icons(fname='cross.png')
 
 button = gui.Button(icon_fnames=icon_files)
+
 
 def move_button_callback(*args, **kwargs):
     pos_1 = np.array(cube_actor_1.GetPosition())
@@ -187,6 +195,7 @@ def move_button_callback(*args, **kwargs):
     pos_2 = np.array(cube_actor_2.GetPosition())
     pos_2[1] += 2
     cube_actor_2.SetPosition(tuple(pos_2))
+
 
 def modify_button_callback(*args, **kwargs):
     button.next_icon()
@@ -197,10 +206,12 @@ button.add_callback("LeftButtonPressEvent", modify_button_callback)
 
 text = gui.TextBox(height=3, width=10)
 
+
 def key_press_callback(*args, **kwargs):
     key = text.ui_param
     text.handle_character(key)
     showm.render()
+
 
 def select_text_callback(*args, **kwargs):
     text.edit_mode()
@@ -209,12 +220,17 @@ def select_text_callback(*args, **kwargs):
 text.add_callback("KeyPressEvent", key_press_callback)
 text.add_callback("LeftButtonPressEvent", select_text_callback)
 
+
+line = gui.Slider()
+
 renderer = window.ren()
 iren_style = CustomInteractorStyle(renderer=renderer)
 renderer.add(button)
 renderer.add(cube_actor_1)
 renderer.add(cube_actor_2)
 renderer.add(text)
+renderer.add(line.slider_line)
+renderer.add(line.slider_disk)
 
 # set_trace()
 
