@@ -173,6 +173,36 @@ class TextActor(vtk.vtkTextActor):
         return self.GetDisplayPosition()
 
 
+class Text(UI):
+
+    def __init__(self, text, position):
+        super().__init__()
+        self.actor = self.build_actor(text=text, position=position)
+
+    def build_actor(self, text, position):
+        """
+
+        Parameters
+        ----------
+        text
+        position
+
+        Returns
+        -------
+        actor
+
+        """
+        actor = TextActor()
+
+        actor.set_message(text)
+        actor.set_position(position)
+
+        return actor
+
+    def set_message(self, text):
+        self.actor.set_message(text)
+
+
 class TextBox(UI):
     def __init__(self, width, height, text="Enter Text"):
         """
@@ -442,12 +472,9 @@ class Slider(UI):
                                    percentage=(position[0]-start_point[0])*100/(end_point[0]-start_point[0]))
 
     def make_text(self, position, percentage):
-        actor = TextActor()
+        text = Text(text=str(int(percentage))+"%", position=(position[0]-40, position[1]-10))
 
-        actor.set_position((position[0]-40, position[1]-10))
-        actor.set_message(str(int(percentage))+"%")
-
-        return actor
+        return text
 
     def add_callback(self, event_type, callback, component):
         """ Adds events to an actor
