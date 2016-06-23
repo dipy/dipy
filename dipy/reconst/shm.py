@@ -317,7 +317,7 @@ def real_sym_sh_basis(sh_order, theta, phi):
 
     References
     ----------
-    .. [1] http://code.google.com/p/fibernavigator/
+    .. [1] https://github.com/scilus/fibernavigator
 
     """
     m, n = sph_harm_ind_list(sh_order)
@@ -383,7 +383,7 @@ def order_from_ncoef(ncoef):
 
 
 def smooth_pinv(B, L):
-    """Regularized psudo-inverse
+    """Regularized pseudo-inverse
 
     Computes a regularized least square inverse of B
 
@@ -401,7 +401,7 @@ def smooth_pinv(B, L):
     Notes
     -----
     In the literature this inverse is often written $(B^{T}B+L^{2})^{-1}B^{T}$.
-    However here this inverse is implemented using the psudo-inverse because it
+    However here this inverse is implemented using the pseudo-inverse because it
     is more numerically stable than the direct implementation of the matrix
     product.
 
