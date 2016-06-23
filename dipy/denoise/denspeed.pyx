@@ -169,33 +169,25 @@ cdef double process_block(double[:, :, ::1] arr,
 
     cnt = 0
     sumw = 0
-    patch_vol_size = (P + P + 1) * (P + P + 1) * (P + P + 1)
-    block_vol_size = (B + B + 1) * (B + B + 1) * (B + B + 1)
+    patch_vol_size = (PS) * (PS) * (PS)
+    block_vol_size = (BS) * (BS) * (BS)
 
-    W = <double *> malloc(PS * PS * PS * sizeof(double))
-    cache = <double *> malloc(TS * TS * TS * sizeof(double))
-    sigma_block = <double *> malloc(TS * TS * TS * sizeof(double))
+    W = <double * > malloc(PS * PS * PS * sizeof(double))
+    cache = <double * > malloc(TS * TS * TS * sizeof(double))
+    sigma_block = <double * > malloc(TS * TS * TS * sizeof(double))
 
     # (i, j, k) coordinates are the center of the static patch
     # copy block in cache
-    copy_block_3d(
-        cache,
-        PS + BS - 1,
-        PS + BS - 1,
-        PS + BS - 1,
-        arr,
-        i - P - B,
-        j - P - B,
-        k - P - B)
-    copy_block_3d(
-        sigma_block,
-        PS + BS - 1,
-        PS + BS - 1,
-        PS + BS - 1,
-        arr,
-        i - P - B,
-        j - P - B,
-        k - P - B)
+    copy_block_3d(cache, TS, TS, TS,
+                  arr,
+                  i - P - B,
+                  j - P - B,
+                  k - P - B)
+    copy_block_3d(sigma_block, TS, TS, TS,
+                  arr,
+                  i - P - B,
+                  j - P - B,
+                  k - P - B)
 
     # calculate weights between the central patch and the moving patch in block
     # (m, n, o) coordinates are the center of the moving patch
@@ -219,8 +211,8 @@ cdef double process_block(double[:, :, ::1] arr,
                             sigm += sigma_block[(P + B + m + a) * TS *
                                                 TS + (P + B + n + b) * TS + (P + B + o + c)]
 
-                denom = sqrt(2) * (sigm / block_vol_size)**2
-                w = exp(-(summ / block_vol_size) / denom)
+                denom = (sigm / patch_vol_size)**2
+                w = exp(-(summ) / denom)
                 sumw += w
                 W[cnt] = w
                 cnt += 1
@@ -307,7 +299,7 @@ cdef cnp.npy_intp copy_block_3d(double * dest,
 
     for i in range(I):
         for j in range(J):
-            memcpy(&dest[i * J * K + j * K], &source[i + min_i, j + min_j, min_k], K * sizeof(double))
+            memcpy( & dest[i * J * K + j * K], & source[i + min_i, j + min_j, min_k], K * sizeof(double))
 
     return 1
 
