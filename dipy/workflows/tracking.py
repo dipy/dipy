@@ -14,6 +14,9 @@ from dipy.workflows.workflow import Workflow
 
 
 class DetTrackFlow(Workflow):
+    @classmethod
+    def get_short_name(cls):
+        return 'tracking'
 
     def run(self, peaks_files, stopping_files, seeding_files,
             stopping_thr=0.2,

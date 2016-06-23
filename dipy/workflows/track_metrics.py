@@ -11,6 +11,9 @@ from dipy.workflows.workflow import Workflow
 
 
 class TrackDensityFlow(Workflow):
+    @classmethod
+    def get_short_name(cls):
+        return 'tdi'
 
     def run(self, tractograms, ref_files, up_factor=1.0,
             out_dir='', out_tdi='tdi.nii.gz'):

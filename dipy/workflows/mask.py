@@ -10,6 +10,10 @@ from dipy.workflows.workflow import Workflow
 
 
 class MaskFlow(Workflow):
+    @classmethod
+    def get_short_name(cls):
+        return 'mask'
+
     def run(self, input_files, greater_than=0.2, less_than=np.inf, out_dir='',
             out_mask='mask.nii.gz'):
 

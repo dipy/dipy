@@ -63,3 +63,7 @@ class Workflow(object):
     def set_sub_flows_optionals(self, opts):
         raise Exception('Error: {} does not have subworkflows.'.
                         format(self.__class__))
+
+    @classmethod
+    def get_short_name(cls):
+        return cls.__name__
