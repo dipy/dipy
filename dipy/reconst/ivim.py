@@ -148,17 +148,17 @@ class IvimModel(ReconstModel):
 
         return IvimFit(self, ivim_params)
 
-        def predict(self, ivim_params):
-            """
-            Predict a signal for this IvimModel class instance given parameters.
+    def predict(self, ivim_params):
+        """
+        Predict a signal for this IvimModel class instance given parameters.
 
-            Parameters
-            ----------
-            ivim_params : ndarray
-                The last dimension should have 4 parameters: S0, f, D_star and D
-            """
+        Parameters
+        ----------
+        ivim_params : ndarray
+            The last dimension should have 4 parameters: S0, f, D_star and D
+        """
 
-            return ivim_function(ivim_params, self.gtab.bvals)
+        return ivim_function(ivim_params, self.gtab.bvals)
 
 
 class IvimFit(object):
