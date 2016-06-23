@@ -25,12 +25,12 @@ class UI(object):
 
 
 class Button(UI):
-    """ Currently implements a 2D overlay button and is of type vtkTexturedActor2D. 
+    """ Currently implements a 2D overlay button and is of type vtkTexturedActor2D.
 
     """
 
     def __init__(self, icon_fnames):
-        super().__init__()
+        super(Button, self).__init__()
         self.icons = self.build_icons(icon_fnames)
         self.icon_names = list(self.icons.keys())
         self.current_icon_id = 0
@@ -71,7 +71,7 @@ class Button(UI):
         ----------
         icon : imageDataGeometryFilter
         position : a two tuple
-        center : a two tuple 
+        center : a two tuple
 
         Returns
         -------
@@ -176,7 +176,7 @@ class TextActor(vtk.vtkTextActor):
 class Text(UI):
 
     def __init__(self, text, position):
-        super().__init__()
+        super(Text, self).__init__()
         self.actor = self.build_actor(text=text, position=position)
 
     def build_actor(self, text, position):
@@ -213,7 +213,7 @@ class TextBox(UI):
         height
         text
         """
-        super().__init__()
+        super(TextBox, self).__init__()
         self.text = text
         self.actor = self.build_actor(self.text)
         self.width = width
@@ -465,7 +465,7 @@ class Slider(UI):
         end_point
         line_width
         """
-        super().__init__()
+        super(Slider, self).__init__()
         self.slider_line = SliderLine(start_point=start_point, end_point=end_point, line_width=line_width)
         self.slider_disk = SliderDisk(position=position, inner_radius=inner_radius, outer_radius=outer_radius)
         self.text = self.make_text(position=start_point,
@@ -499,7 +499,7 @@ class SliderLine(UI):
         end_point
         line_width
         """
-        super().__init__()
+        super(SliderLine, self).__init__()
         self.start_point = start_point
         self.end_point = end_point
         self.actor = self.build_actor(start_point=start_point, end_point=end_point, line_width=line_width)
@@ -556,7 +556,7 @@ class SliderDisk(UI):
         inner_radius
         outer_radius
         """
-        super().__init__()
+        super(SliderDisk, self).__init__()
         self.actor = self.build_actor(position=position, inner_radius=inner_radius, outer_radius=outer_radius)
         self.pos_height = position[1]
 
