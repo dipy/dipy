@@ -1037,7 +1037,8 @@ def anisotropic_power(sh_coeffs, norm_factor=0.00001, power=2,
     A l=2 SH coefficient matrix will then be composed of a IxJxKx6 volume.
     The power, $n$ is usually set to $n=2$.
 
-    The final AP image is then shifted by -log(norm_factor), to be strictly non-negative. Remaining values < 0 are discarded (set to 0), per default,
+    The final AP image is then shifted by -log(norm_factor), to be strictly
+    non-negative. Remaining values < 0 are discarded (set to 0), per default,
     and this option is controlled through the `non_negative` keyword argument.
 
     References
