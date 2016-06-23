@@ -42,7 +42,7 @@ def test_flow_runner():
     old_argv = sys.argv
     sys.argv = [sys.argv[0]]
 
-    opt_keys = ['param_combined', 'param1', 'param2', 'force', 'out_strat',
+    opt_keys = ['param_combined', 'dwf1.param1', 'dwf2.param2', 'force', 'out_strat',
                 'mix_names']
 
     pos_results = ['dipy.txt']

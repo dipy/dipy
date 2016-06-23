@@ -42,8 +42,13 @@ def test_sub_runs():
     dcwf = DummyCombinedWorkflow()
     runs = dcwf.get_sub_runs()
 
-    assert runs[0] == (DummyWorkflow1.__name__, DummyWorkflow1.run)
-    assert runs[1] == (DummyWorkflow2.__name__, DummyWorkflow2.run)
+    assert runs[0] == (DummyWorkflow1.__name__,
+                       DummyWorkflow1.run,
+                       DummyWorkflow1.get_short_name())
+
+    assert runs[1] == (DummyWorkflow2.__name__,
+                       DummyWorkflow2.run,
+                       DummyWorkflow2.get_short_name())
 
 
 if __name__ == '__main__':
