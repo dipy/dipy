@@ -19,6 +19,7 @@ numpy_support, have_ns, _ = optional_package('vtk.util.numpy_support')
 class UI(object):
     def __init__(self):
         self.ui_param = None
+        self.ui_list = list()
 
     def set_ui_param(self, ui_param):
         self.ui_param = ui_param
@@ -36,6 +37,8 @@ class Button(UI):
         self.current_icon_id = 0
         self.current_icon_name = self.icon_names[self.current_icon_id]
         self.actor = self.build_actor(self.icons[self.current_icon_name])
+
+        self.ui_list.append(self)
 
     def build_icons(self, icon_fnames):
         """ Converts filenames to vtkImageDataGeometryFilters
@@ -179,6 +182,8 @@ class Text(UI):
         super(Text, self).__init__()
         self.actor = self.build_actor(text=text, position=position)
 
+        self.ui_list.append(self)
+
     def build_actor(self, text, position):
         """
 
@@ -222,6 +227,8 @@ class TextBox(UI):
         self.window_right = 0
         self.caret_pos = 0
         self.init = True
+
+        self.ui_list.append(self)
 
     def build_actor(self, text, position=(100, 10), color=(1, 1, 1),
                     font_size=18, font_family='Arial', justification='left',
@@ -452,7 +459,7 @@ class TextBox(UI):
 
 
 class Slider(UI):
-    def __init__(self, start_point=(100, 20), end_point=(300, 20), line_width=6, inner_radius=5,
+    def __init__(self, start_point=(200, 20), end_point=(300, 20), line_width=10, inner_radius=5,
                  outer_radius=15, position=(250, 20)):
         """
 
@@ -470,6 +477,10 @@ class Slider(UI):
         self.slider_disk = SliderDisk(position=position, inner_radius=inner_radius, outer_radius=outer_radius)
         self.text = self.make_text(position=start_point,
                                    percentage=(position[0]-start_point[0])*100/(end_point[0]-start_point[0]))
+
+        self.ui_list.append(self.slider_line)
+        self.ui_list.append(self.slider_disk)
+        self.ui_list.append(self.text)
 
     def make_text(self, position, percentage):
         text = Text(text=str(int(percentage))+"%", position=(position[0]-40, position[1]-10))
@@ -503,6 +514,8 @@ class SliderLine(UI):
         self.start_point = start_point
         self.end_point = end_point
         self.actor = self.build_actor(start_point=start_point, end_point=end_point, line_width=line_width)
+
+        self.ui_list.append(self)
 
     def build_actor(self, start_point, end_point, line_width):
         """
@@ -559,6 +572,8 @@ class SliderDisk(UI):
         super(SliderDisk, self).__init__()
         self.actor = self.build_actor(position=position, inner_radius=inner_radius, outer_radius=outer_radius)
         self.pos_height = position[1]
+
+        self.ui_list.append(self)
 
     def build_actor(self, position, inner_radius, outer_radius):
         # create source

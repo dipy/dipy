@@ -204,21 +204,21 @@ button.add_callback("RightButtonPressEvent", move_button_callback)
 button.add_callback("LeftButtonPressEvent", modify_button_callback)
 
 
-# text = gui.TextBox(height=3, width=10)
-#
-#
-# def key_press_callback(*args, **kwargs):
-#     key = text.ui_param
-#     text.handle_character(key)
-#     showm.render()
-#
-#
-# def select_text_callback(*args, **kwargs):
-#     text.edit_mode()
-#     showm.render()
-#
-#     text.add_callback("KeyPressEvent", key_press_callback)
-#     text.add_callback("LeftButtonPressEvent", select_text_callback)
+text = gui.TextBox(height=3, width=10)
+
+
+def key_press_callback(*args, **kwargs):
+    key = text.ui_param
+    text.handle_character(key)
+    showm.render()
+
+
+def select_text_callback(*args, **kwargs):
+    text.edit_mode()
+    showm.render()
+
+text.add_callback("KeyPressEvent", key_press_callback)
+text.add_callback("LeftButtonPressEvent", select_text_callback)
 
 
 slider = gui.Slider()
@@ -241,9 +241,7 @@ renderer.add(button)
 renderer.add(cube_actor_1)
 renderer.add(cube_actor_2)
 # renderer.add(text)
-renderer.add(slider.slider_line)
-renderer.add(slider.slider_disk)
-renderer.add(slider.text)
+renderer.add(slider)
 
 # set_trace()
 
