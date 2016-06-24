@@ -299,28 +299,44 @@ def two_stage(data, gtab, x0,
     flat_data = data.reshape((-1, data.shape[-1]))
     flat_x0 = x0.reshape(-1, x0.shape[-1])
     # Flatten for the iteration over voxels:
+    bvals = gtab.bvals
+    ivim_params = np.empty((flat_data.shape[0], 4))
+
+    flat_x0[..., 0] = flat_data[..., 0]
+    D_guess = get_D_guess(flat_data, gtab, split_b)
+    S0_hat = get_S0_guess(flat_data, gtab, split_b)
+    f_guess = 1 - S0_hat / flat_data[..., 0]
+
+    flat_x0[..., 1] = f_guess
+    flat_x0[..., 3] = D_guess
+
+    if routine == 'minimize':
+        result = _minimize(flat_data, bvals, flat_x0, ivim_params,
+                           bounds, tol, jac, algorithm, gtol, ftol, eps)
+    elif routine == "leastsq":
+        result = _leastsq(flat_data, bvals, flat_x0, ivim_params)
+    ivim_params.shape = data.shape[:-1] + (4,)
+    return ivim_params
+
+
+def get_D_guess(data, gtab, split_b):
     bvals_ge_split = gtab.bvals[gtab.bvals > split_b]
     bvecs_ge_split = gtab.bvecs[gtab.bvals > split_b]
     gtab_ge_split = gradient_table(bvals_ge_split, bvecs_ge_split.T)
+    tensor_model = TensorModel(gtab_ge_split)
+    tenfit = tensor_model.fit(data[..., gtab.bvals > split_b])
+    D_guess = mean_diffusivity(tenfit.evals)
+    return D_guess
 
+
+def get_S0_guess(data, gtab, split_b):
+    bvals_ge_split = gtab.bvals[gtab.bvals > split_b]
+    bvecs_ge_split = gtab.bvecs[gtab.bvals > split_b]
+    gtab_ge_split = gradient_table(bvals_ge_split, bvecs_ge_split.T)
     tensor_model = TensorModel(gtab_ge_split)
     tenfit = tensor_model.fit(data[..., gtab.bvals > split_b])
 
-    D_guess = mean_diffusivity(tenfit.evals)
-
-    flat_x0[..., 3] = D_guess
-
     dti_params = tenfit.model_params
-
-    S0_hat = get_S0_guess(dti_params, data, gtab_ge_split)
-    f_guess = 1.0 - S0_hat / data[..., 0]
-    flat_x0[..., 1] = f_guess
-    flat_x0[..., 0] = flat_data[..., 0]
-    return one_stage(flat_data, gtab, flat_x0, jac, bounds, tol, routine, algorithm,
-                     gtol, ftol, eps)
-
-
-def get_S0_guess(dti_params, data, gtab):
     evecs = dti_params[..., 3:12].reshape((dti_params.shape[:-1] + (3, 3)))
     evals = dti_params[..., :3]
     qform = vec_val_vect(evecs, evals)
