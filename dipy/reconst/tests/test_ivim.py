@@ -22,7 +22,7 @@ def test_fit_minimize():
     bvecs = generate_bvecs(N)
     gtab = gradient_table(bvals, bvecs.T)
 
-    S0, f, D_star, D = 7000.0, 0.2052, 0.00473, 0.00066
+    S0, f, D_star, D = 1.0, 0.132, 0.00885, 0.000921
 
     mevals = np.array(([D_star, D_star, D_star], [D, D, D]))
     # This gives an isotropic signal
@@ -53,7 +53,7 @@ def test_fit_leastsq():
     bvecs = generate_bvecs(N)
     gtab = gradient_table(bvals, bvecs.T)
 
-    S0, f, D_star, D = 7000.0, 0.2052, 0.00473, 0.00066
+    S0, f, D_star, D = 1.0, 0.132, 0.00885, 0.000921
 
     mevals = np.array(([D_star, D_star, D_star], [D, D, D]))
     # This gives an isotropic signal
@@ -80,7 +80,7 @@ def test_multivoxel():
     N = len(bvals)
     bvecs = generate_bvecs(N)
     gtab = gradient_table(bvals, bvecs.T)
-    params = [[7000.0, 0.2052, 0.00473, 0.00066], [7000.0, 0.18, 0.00555, 0.0007]]
+    params = [[1.0, 0.2052, 0.00473, 0.00066], [1.0, 0.132, 0.00885, 0.000921]]
 
     data = generate_multivoxel_data(gtab, params)
     ivim_model = IvimModel(gtab)
@@ -113,7 +113,7 @@ def test_two_stage():
     bvecs = generate_bvecs(N)
     gtab = gradient_table(bvals, bvecs.T)
 
-    S0, f, D_star, D = 7000.0, 0.2052, 0.00473, 0.00066
+    S0, f, D_star, D = 1.0, 0.132, 0.00885, 0.000921
 
     mevals = np.array(([D_star, D_star, D_star], [D, D, D]))
     # This gives an isotropic signal
@@ -144,7 +144,7 @@ def test_predict():
     bvecs = generate_bvecs(N)
     gtab = gradient_table(bvals, bvecs.T)
 
-    S0, f, D_star, D = 7000.0, 0.2052, 0.00473, 0.00066
+    S0, f, D_star, D = 1.0, 0.132, 0.00885, 0.000921
 
     mevals = np.array(([D_star, D_star, D_star], [D, D, D]))
     # This gives an isotropic signal
