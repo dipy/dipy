@@ -31,7 +31,7 @@ data = data[..., 1]
 
 print("vol size", data.shape)
 
-
+# lets create a noisy data with gaussian data
 
 """
 In order to call ``nlmeans`` first you need to estimate the standard deviation
@@ -40,6 +40,8 @@ Siemens scanner with a 4 array head coil.
 """
 
 sigma = estimate_sigma(data, N=4)
+
+
 t = time()
 """
 Compare results by both the approaches to nlmeans averaging
