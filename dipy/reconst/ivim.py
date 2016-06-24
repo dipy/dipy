@@ -124,6 +124,7 @@ class IvimModel(ReconstModel):
                 raise ValueError(
                     "Guess params should be of shape (num_voxels,4)")
         data_in_mask = np.maximum(data_in_mask, min_signal)
+        x0 = np.reshape(x0[mask], (-1, x0.shape[-1]))
 
         if fit_method == "one_stage":
             params_in_mask = one_stage(data_in_mask, self.gtab, x0,
@@ -234,6 +235,7 @@ def one_stage(data, gtab, x0, jac, bounds, tol, routine, algorithm,
     # Flatten for the iteration over voxels:
     bvals = gtab.bvals
     ivim_params = np.empty((flat_data.shape[0], 4))
+    flat_x0[..., 0] = flat_data[..., 0]
 
     if routine == 'minimize':
         result = _minimize(flat_data, bvals, flat_x0, ivim_params,
@@ -295,6 +297,7 @@ def two_stage(data, gtab, x0,
 
     """
     flat_data = data.reshape((-1, data.shape[-1]))
+    flat_x0 = x0.reshape(-1, x0.shape[-1])
     # Flatten for the iteration over voxels:
     bvals_ge_split = gtab.bvals[gtab.bvals > split_b]
     bvecs_ge_split = gtab.bvecs[gtab.bvals > split_b]
@@ -305,14 +308,15 @@ def two_stage(data, gtab, x0,
 
     D_guess = mean_diffusivity(tenfit.evals)
 
-    x0[..., 3] = D_guess
+    flat_x0[..., 3] = D_guess
 
     dti_params = tenfit.model_params
 
     S0_hat = get_S0_guess(dti_params, data, gtab_ge_split)
     f_guess = 1.0 - S0_hat / data[..., 0]
-    x0[..., 1] = f_guess
-    return one_stage(data, gtab, x0, jac, bounds, tol, routine, algorithm,
+    flat_x0[..., 1] = f_guess
+    flat_x0[..., 0] = flat_data[..., 0]
+    return one_stage(flat_data, gtab, flat_x0, jac, bounds, tol, routine, algorithm,
                      gtol, ftol, eps)
 
 
