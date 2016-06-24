@@ -104,7 +104,7 @@ def _nlmeans_3d(double[:, :, ::1] arr, double[:, :, ::1] mask,
     # move the block
     with nogil, parallel():
 
-        for i in prange(B, I - B):
+        for i in prange(B, I - B, schedule="dynamic"):
             for j in range(B, J - B):
                 for k in range(B, K - B):
 
