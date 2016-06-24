@@ -165,9 +165,9 @@ cdef double process_block(double[:, :, ::1] arr,
     sumw = 0
     patch_vol_size = (P + P + 1) * (P + P + 1) * (P + P + 1)
 
-    W = <double * > malloc(BS * BS * BS * sizeof(double))
-    cache = <double * > malloc(BS * BS * BS * sizeof(double))
-    sigma_block = <double * > malloc(BS * BS * BS * sizeof(double))
+    W = <double *> malloc(BS * BS * BS * sizeof(double))
+    cache = <double *> malloc(BS * BS * BS * sizeof(double))
+    sigma_block = <double *> malloc(BS * BS * BS * sizeof(double))
 
     # (i, j, k) coordinates are the center of the static patch
     # copy block in cache
@@ -283,7 +283,7 @@ cdef cnp.npy_intp copy_block_3d(double * dest,
 
     for i in range(I):
         for j in range(J):
-            memcpy(& dest[i * J * K  + j * K], & source[i + min_i, j + min_j, min_k], K * sizeof(double))
+            memcpy(&dest[i * J * K  + j * K], &source[i + min_i, j + min_j, min_k], K * sizeof(double))
 
     return 1
 
