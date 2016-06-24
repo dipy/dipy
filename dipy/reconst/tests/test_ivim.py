@@ -5,7 +5,7 @@ import numpy as np
 from numpy.testing import (assert_array_equal, assert_array_almost_equal)
 
 from dipy.reconst.ivim import ivim_function, IvimModel
-from dipy.core.gradients import gradient_table
+from dipy.core.gradients import gradient_table, generate_bvecs
 from dipy.sims.voxel import multi_tensor
 from dipy.core.sphere import disperse_charges, HemiSphere
 
@@ -19,7 +19,7 @@ def test_fit_minimize():
                       260., 280., 300., 350., 400., 500., 600.,
                       700., 800., 900., 1000.])
     N = len(bvals)
-    bvecs = get_bvecs(N)
+    bvecs = generate_bvecs(N)
     gtab = gradient_table(bvals, bvecs.T)
 
     S0, f, D_star, D = 1.0, 0.2052, 0.00473, 0.00066
@@ -50,7 +50,7 @@ def test_fit_leastsq():
                       260., 280., 300., 350., 400., 500., 600.,
                       700., 800., 900., 1000.])
     N = len(bvals)
-    bvecs = get_bvecs(N)
+    bvecs = generate_bvecs(N)
     gtab = gradient_table(bvals, bvecs.T)
 
     S0, f, D_star, D = 1.0, 0.2052, 0.00473, 0.00066
@@ -78,7 +78,7 @@ def test_multivoxel():
                       260., 280., 300., 350., 400., 500., 600.,
                       700., 800., 900., 1000.])
     N = len(bvals)
-    bvecs = get_bvecs(N)
+    bvecs = generate_bvecs(N)
     gtab = gradient_table(bvals, bvecs.T)
     params = [[1.0, 0.2052, 0.00473, 0.00066], [1.0, 0.18, 0.00555, 0.0007]]
 
@@ -91,16 +91,6 @@ def test_multivoxel():
     assert_array_equal(est_signal.shape, data.shape)
     assert_array_almost_equal(est_signal, data)
     assert_array_almost_equal(ivim_fit.model_params, params)
-
-
-def get_bvecs(N):
-    """Generate bvectors for N bvalues"""
-    theta = np.pi * np.random.rand(N)
-    phi = 2 * np.pi * np.random.rand(N)
-    hsph_initial = HemiSphere(theta=theta, phi=phi)
-    hsph_updated, potential = disperse_charges(hsph_initial, 5000)
-    vertices = hsph_updated.vertices
-    return vertices
 
 
 def generate_multivoxel_data(gtab, params):
@@ -120,7 +110,7 @@ def test_two_stage():
                       260., 280., 300., 350., 400., 500., 600.,
                       700., 800., 900., 1000.])
     N = len(bvals)
-    bvecs = get_bvecs(N)
+    bvecs = generate_bvecs(N)
     gtab = gradient_table(bvals, bvecs.T)
 
     S0, f, D_star, D = 1.0, 0.2052, 0.00473, 0.00066
@@ -151,7 +141,7 @@ def test_predict():
                       260., 280., 300., 350., 400., 500., 600.,
                       700., 800., 900., 1000.])
     N = len(bvals)
-    bvecs = get_bvecs(N)
+    bvecs = generate_bvecs(N)
     gtab = gradient_table(bvals, bvecs.T)
 
     S0, f, D_star, D = 1.0, 0.2052, 0.00473, 0.00066
