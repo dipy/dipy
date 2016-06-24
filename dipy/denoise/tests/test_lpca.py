@@ -12,6 +12,7 @@ from dipy.core.sphere import disperse_charges, HemiSphere
 from dipy.sims.voxel import multi_tensor
 from time import time
 
+
 def rfiw_phantom(gtab, snr=None):
     """retangle fiber immersed in water"""
 
@@ -47,7 +48,7 @@ def rfiw_phantom(gtab, snr=None):
     f = np.array([0., 1., 0.6, 0.18, 0.30, 0.15, 0.50, 0.35, 0.70, 0.42])
 
     # Define S0 for each voxel (in index order)
-    S0 = S1*f + S2*(1-f)
+    S0 = S1 * f + S2 * (1 - f)
 
     # multi tensor simulations assume that each water pull as constant S0
     # since I am assuming that tissue and water voxels have different S0,
@@ -55,14 +56,15 @@ def rfiw_phantom(gtab, snr=None):
     # constant S0 are assumed constant. Doing this correction, simulations will
     # be analogous to simulates that S0 are different for each media. (For more
     # datails on this contact the phantom designer)
-    f1 = f * S1/S0
+    f1 = f * S1 / S0
 
     mevals = np.array([[ADr, RDr, RDr], [ADh, RDh, RDh],
                        [Dwater, Dwater, Dwater]])
-    angles=[(0, 0, 1), (0, 0, 1), (0, 0, 1)]
+    angles = [(0, 0, 1), (0, 0, 1), (0, 0, 1)]
     DWI = np.zeros((10, 10, 10, gtab.bvals.size))
     for i in range(10):
-        fractions = [f1[i]*fia*100, f1[i] * (1-fia) * 100, (1 - f1[i]) * 100]
+        fractions = [f1[i] * fia * 100, f1[i] *
+                     (1 - fia) * 100, (1 - f1[i]) * 100]
         sig, direction = multi_tensor(gtab, mevals, S0=S0[i], angles=angles,
                                       fractions=fractions, snr=None)
         DWI[slice_ind == i, :] = sig
@@ -70,10 +72,12 @@ def rfiw_phantom(gtab, snr=None):
     if snr is None:
         return DWI
     else:
-        sigma = S2 * 1.0 /snr
+        sigma = S2 * 1.0 / snr
         n1 = np.random.normal(0, sigma, size=DWI.shape)
         n2 = np.random.normal(0, sigma, size=DWI.shape)
-        return [np.sqrt((DWI/np.sqrt(2) + n1)**2 + (DWI/np.sqrt(2) + n2)**2) , sigma]
+        return [np.sqrt((DWI / np.sqrt(2) + n1)**2 +
+                        (DWI / np.sqrt(2) + n2)**2), sigma]
+
 
 def gen_gtab():
     # generate the phantom data
@@ -106,10 +110,12 @@ def gen_gtab():
     # and 60 directions for b-value 2000)
     bvals = np.hstack((np.zeros(6), 300 * np.ones(8),
                        1000 * np.ones(30), 2000 * np.ones(60)))
-    bvecs = np.vstack((np.zeros((6, 3)), directions8, directions30, directions60))
+    bvecs = np.vstack((np.zeros((6, 3)), directions8,
+                       directions30, directions60))
     gtab = gradient_table(bvals, bvecs)
 
     return gtab
+
 
 def test_lpca_static():
     S0 = 100 * np.ones((20, 20, 20, 20), dtype='f8')
@@ -148,6 +154,7 @@ def test_lpca_boundary_behaviour():
     assert_(rmse > 0.0001)
     assert_equal(np.round(S0n_first.mean()), 100)
 
+
 def test_lpca_rmse():
     S0 = 100 + 2 * np.random.standard_normal((22, 23, 30, 20))
 
@@ -157,6 +164,7 @@ def test_lpca_rmse():
     print(rmse)
     # error should be less than 5%
     assert_(rmse < 0.05)
+
 
 def test_lpca_sharpness():
     S0 = np.ones((30, 30, 30, 20)) * 100
@@ -172,21 +180,25 @@ def test_lpca_sharpness():
 
     assert_(edg < 2)
 
+
 def test_phantom():
 
     gtab = gen_gtab()
     DWI_clean = rfiw_phantom(gtab, snr=None)
     [DWI, sigma] = rfiw_phantom(gtab, snr=30)
     # To test without rician correction
-    temp = (DWI_clean/sigma)**2
-    DWI_clean_wrc = sigma * np.sqrt(np.pi/2) * np.exp(-0.5 * temp) * ((1 + 0.5*temp) * sp.special.iv(0, 0.25 * temp) + 0.5*temp * sp.special.iv(1,0.25*temp))**2
+    temp = (DWI_clean / sigma)**2
+    DWI_clean_wrc = sigma * np.sqrt(np.pi / 2) * np.exp(-0.5 * temp) * ((1 + 0.5 * temp) * sp.special.iv(
+        0, 0.25 * temp) + 0.5 * temp * sp.special.iv(1, 0.25 * temp))**2
     DWI_den = localpca(DWI, sigma)
     rmse_den = np.sum(np.abs(DWI_clean - DWI_den)) / np.sum(np.abs(DWI_clean))
     rmse_noisy = np.sum(np.abs(DWI_clean - DWI)) / np.sum(np.abs(DWI_clean))
 
-    rmse_den_wrc = np.sum(np.abs(DWI_clean_wrc - DWI_den)) / np.sum(np.abs(DWI_clean_wrc))
-    rmse_noisy_wrc = np.sum(np.abs(DWI_clean_wrc - DWI)) / np.sum(np.abs(DWI_clean_wrc))
-    
+    rmse_den_wrc = np.sum(np.abs(DWI_clean_wrc - DWI_den)
+                          ) / np.sum(np.abs(DWI_clean_wrc))
+    rmse_noisy_wrc = np.sum(np.abs(DWI_clean_wrc - DWI)) / \
+        np.sum(np.abs(DWI_clean_wrc))
+
     print("rmse noisy", rmse_noisy)
     print("rmse den", rmse_den)
     print("rmse noisy", rmse_noisy_wrc)
