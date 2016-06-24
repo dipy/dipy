@@ -3,6 +3,13 @@
 Denoise images using Local PCA
 ===============================
 
+Using the local PCA based denoising for diffusion
+images [Manjon2013]_ we can state of the art 
+results. The advantage of local PCA over the other denoising
+methods is that it takes into the account the directional
+information of the diffusion data as well.
+
+Let's load the necessary modules
 """
 
 import numpy as np
@@ -15,6 +22,10 @@ from dipy.denoise.fast_lpca import fast_lpca
 from dipy.io import read_bvals_bvecs
 from dipy.core.gradients import gradient_table
 from dipy.denoise.noise_estimate_localpca import estimate_sigma_localpca
+
+"""
+Load one of the datasets, it has 21 gradients and 1 b0 image
+"""
 
 img = nib.load('/Users/Riddhish/Documents/GSOC/DIPY/data/test.nii')
 den_img = nib.load(
@@ -30,6 +41,13 @@ affine = img.get_affine()
 
 # data = np.array(data[20:100, 20:100, 10:15, :])
 # den_data = np.array(den_data[20:100, 20:100, 10:15, :])
+
+"""
+We use a special noise estimation method for getting the sigma
+to be used in local PCA algorithm. This is also proposed in [Manjon2013]_
+It takes both data and the gradient table object as inputs and returns an 
+estimate of local noise standard deviation as a 3D array
+"""
 t = time()
 sigma = estimate_sigma_localpca(data, gtab)
 print("Sigma estimation time", time() - t)
@@ -41,6 +59,9 @@ denoised_arr = localpca(data,sigma,patch_radius=1)
 
 print("time taken slow", -t + time())
 
+"""
+Simple remapping the sigma into a 4D array as the algorithm takes that as an input
+"""
 t = time()
 if isinstance(sigma, np.ndarray) and sigma.ndim == 3:
 
@@ -62,21 +83,36 @@ rmse = np.sum(np.abs(denoised_arr_fast[:,:,:,:] -
 print("RMSE between python and matlab output", rmse)
 den_matlab = den_data[:, :, 2, 10]
 den_python = denoised_arr_fast[:, :, 2, 10]
+"""
+Let us plot the axial slice of the k= 10 direction, and the residuals
+"""
 diff_matlab = np.abs(orig.astype('f8') - den_matlab.astype('f8'))
 diff_python = np.abs(orig.astype('f8') - den_python.astype('f8'))
 fig, ax = plt.subplots(2, 3)
-ax[0, 0].imshow(orig, cmap='gray', origin='lower')
+ax[0, 0].imshow(orig, cmap='gray', origin='lower' , interpolation='none')
 ax[0, 0].set_title('Original')
-ax[0, 1].imshow(den_matlab, cmap='gray', origin='lower')
+ax[0, 1].imshow(den_matlab, cmap='gray', origin='lower',interpolation='none')
 ax[0, 1].set_title('Matlab Output')
-ax[0, 2].imshow(diff_matlab, cmap='gray', origin='lower')
+ax[0, 2].imshow(diff_matlab, cmap='gray', origin='lower', interpolation='none')
 ax[0, 2].set_title('Matlab Residual')
-ax[1,0].imshow(orig, cmap='gray', origin='lower')
+ax[1,0].imshow(orig, cmap='gray', origin='lower', interpolation='none')
 ax[1,0].set_title('Original')
-ax[1,1].imshow(den_python, cmap='gray', origin='lower')
+ax[1,1].imshow(den_python, cmap='gray', origin='lower', interpolation='none')
 ax[1,1].set_title('Python Output')
-ax[1,2].imshow(diff_python, cmap='gray', origin='lower')
+ax[1,2].imshow(diff_python, cmap='gray', origin='lower', interpolation='none')
 ax[1,2].set_title('Python Residual')
 
-nib.save(nib.Nifti1Image(denoised_arr, affine), '/Users/Riddhish/Documents/GSOC/DIPY/data/final.nii')
+"""
+Save the denoised output in nifty file format
+"""
+nib.save(nib.Nifti1Image(denoised_arr_fast, affine), '/Users/Riddhish/Documents/GSOC/DIPY/data/final.nii')
 plt.show()
+
+"""
+.. [Manjon2013] Manjon JV, Coupe P, Concha L, Buades A, Collins DL
+        "Diffusion Weighted Image Denoising Using Overcomplete
+         Local PCA" 2013
+
+.. include:: ../links_names.inc
+
+"""
