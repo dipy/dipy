@@ -9,7 +9,7 @@ from time import time
 
 def test_nlmeans_static():
     S0 = 100 * np.ones((20, 20, 20), dtype='f8')
-    S0nb = non_local_means(S0, sigma=np.zeros((20, 20, 20)),
+    S0nb = non_local_means(S0, sigma=np.ones((20, 20, 20)),
                            rician=False)
     assert_array_almost_equal(S0, S0nb)
 
@@ -80,4 +80,3 @@ def test_nlmeans_dtype():
 if __name__ == '__main__':
 
     run_module_suite()
-    # test_nlmeans_static()
