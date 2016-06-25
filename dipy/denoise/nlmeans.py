@@ -2,11 +2,10 @@ from __future__ import division, print_function
 
 import numpy as np
 from dipy.denoise.denspeed import nlmeans_3d
-from dipy.denoise.nlmeans_block import nlmeans_block
 
 
 def nlmeans(arr, sigma, mask=None, patch_radius=1, block_radius=5,
-            rician=True, num_threads=None, avg_type='voxelwise'):
+            rician=True, num_threads=None):
     """ Non-local means for denoising 3D and 4D images
 
     Parameters
@@ -26,10 +25,6 @@ def nlmeans(arr, sigma, mask=None, patch_radius=1, block_radius=5,
     num_threads : int
         Number of threads. If None (default) then all available threads
         will be used (all CPU cores).
-    avg_type : string
-        Denotes the type of nlmeans approach followed, we have two options
-        the 'voxelwise' averaging which is the default and the 'blockwise'
-        averaging.
 
     Returns
     -------
@@ -43,57 +38,35 @@ def nlmeans(arr, sigma, mask=None, patch_radius=1, block_radius=5,
         "Impact of Rician Adapted Non-Local Means Filtering on HARDI"
         MICCAI 2008
 
-    [2] P. Coupe, P. Yger, S. Prima, P. Hellier, C. Kervrann, C. Barillot,
-        "An Optimized Blockwise Non Local Means Denoising Filter for 3D Magnetic
-        Resonance Images" 
-        IEEE Transactions on Medical Imaging, 27(4):425-441, 2008
-
-    [3] Pierrick Coupe, Jose Manjon, Montserrat Robles, Louis Collins.
-        "Multiresolution Non-Local Means Filter for 3D MR Image Denoising"
-        IET Image Processing, Institution of Engineering and Technology, 2011
-
     """
 
     if arr.ndim == 3:
-        if avg_type == 'blockwise':
-            sigma = np.ones(arr.shape, dtype=np.float64) * sigma
-            return np.array(nlmeans_block(np.double(arr), patch_radius,
-                    block_radius, sigma[0,0,0], rician)).astype(
-                    arr.dtype)
-        else:
-            sigma = np.ones(arr.shape, dtype=np.float64) * sigma
-            return nlmeans_3d(arr, mask, sigma,
-                              patch_radius, block_radius,
-                              rician, num_threads).astype(arr.dtype)
+        print("WARNING: This version of nlmeans has been deprecated, use non_local_means")
+        sigma = np.ones(arr.shape, dtype=np.float64) * sigma
+        return nlmeans_3d(arr, mask, sigma,
+                          patch_radius, block_radius,
+                          rician, num_threads).astype(arr.dtype)
 
     elif arr.ndim == 4:
+        print("WARNING: This version of nlmeans has been deprecated, use non_local_means")
         denoised_arr = np.zeros_like(arr)
 
         if isinstance(sigma, np.ndarray) and sigma.ndim == 3:
-                sigma = (np.ones(arr.shape, dtype=np.float64) *
-                         sigma[..., np.newaxis])
+            sigma = (np.ones(arr.shape, dtype=np.float64) *
+                     sigma[..., np.newaxis])
         else:
             sigma = np.ones(arr.shape, dtype=np.float64) * sigma
 
-        if avg_type == 'blockwise':
-            for i in range(arr.shape[-1]):
-                denoised_arr[..., i] = np.array(nlmeans_block(
-                np.double(arr[..., i]), patch_radius, block_radius, sigma[0,0,0,0]))
-            return denoised_arr.astype(arr.dtype)
-        else:
-            for i in range(arr.shape[-1]):
-                denoised_arr[...,
-                             i] = nlmeans_3d(arr[...,
-                                                 i],
-                                             mask,
-                                             sigma[...,
-                                                   i],
-                                             patch_radius,
-                                             block_radius,
-                                             rician,
-                                             num_threads).astype(arr.dtype)
+        for i in range(arr.shape[-1]):
+            denoised_arr[..., i] = nlmeans_3d(arr[..., i],
+                                              mask,
+                                              sigma[..., i],
+                                              patch_radius,
+                                              block_radius,
+                                              rician,
+                                              num_threads).astype(arr.dtype)
 
-            return denoised_arr.astype(arr.dtype)
+        return denoised_arr
 
     else:
         raise ValueError("Only 3D or 4D array are supported!", arr.shape)

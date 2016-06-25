@@ -67,11 +67,12 @@ def _upfir_matrix(double[:, :] F, double[:] h, double[:, :] out):
     for j in range(m):
         _upfir_vector(F[:, j], h, out[:, j])
 
+
 @cython.boundscheck(False)
 @cython.wraparound(False)
 @cython.cdivision(True)
 cdef void _average_block(double[:, :, :] ima, int x, int y, int z,
-                   double[:, :, :] average, double weight) nogil:
+                         double[:, :, :] average, double weight) nogil:
     """
     Computes the weighted average of the patches in a blockwise manner
     """
@@ -97,11 +98,12 @@ cdef void _average_block(double[:, :, :] ima, int x, int y, int z,
                 else:
                     average[a, b, c] += weight * (ima[y_pos, x_pos, z_pos]**2)
 
+
 @cython.boundscheck(False)
 @cython.wraparound(False)
 @cython.cdivision(True)
 cdef void _value_block(double[:, :, :] estimate, double[:, :, :] Label, int x, int y,
-                 int z, double[:, :, :] average, double global_sum, double hh, int rician_int) nogil:
+                       int z, double[:, :, :] average, double global_sum, double hh, int rician_int) nogil:
 
     """
     Computes the final estimate of the denoised image
@@ -144,7 +146,7 @@ cdef void _value_block(double[:, :, :] estimate, double[:, :, :] Label, int x, i
 @cython.wraparound(False)
 @cython.cdivision(True)
 cdef double _distance(double[:, :, :] image, int x, int y, int z,
-              int nx, int ny, int nz, int f) nogil:
+                      int nx, int ny, int nz, int f) nogil:
     """
     Computes the distance between two square subpatches of image located at
     p and q, respectively. If the centered squares lie beyond the boundaries
@@ -193,6 +195,7 @@ cdef double _distance(double[:, :, :] image, int x, int y, int z,
                 acu = acu + 1
     return distancetotal / acu
 
+
 @cython.boundscheck(False)
 @cython.wraparound(False)
 @cython.cdivision(True)
@@ -208,15 +211,16 @@ cdef double _local_mean(double[:, :, :]ima, int x, int y, int z) nogil:
     for px in range(x - 1, x + 2):
         for py in range(y - 1, y + 2):
             for pz in range(z - 1, z + 2):
-                px = (-px if px < 0 else (2 *
-                                          dims0 - px - 1 if px >= dims0 else px))
-                py = (-py if py < 0 else (2 *
-                                          dims1 - py - 1 if py >= dims1 else py))
-                pz = (-pz if pz < 0 else (2 *
-                                          dims2 - pz - 1 if pz >= dims2 else pz))
+                px = (-px if px < 0 else (2 * dims0 -
+                                          px - 1 if px >= dims0 else px))
+                py = (-py if py < 0 else (2 * dims1 -
+                                          py - 1 if py >= dims1 else py))
+                pz = (-pz if pz < 0 else (2 * dims2 -
+                                          pz - 1 if pz >= dims2 else pz))
                 ss += ima[px, py, pz]
 
     return ss / 27.0
+
 
 @cython.boundscheck(False)
 @cython.wraparound(False)
@@ -245,7 +249,7 @@ cpdef firdn(double[:, :] image, double[:] h):
     Applies the filter given by the convolution kernel 'h' columnwise to
     'image', then subsamples by 2. This is a special case of the matlab's
     'upfirdn' function, ported to python. Returns the filtered image.
-    
+
     Parameters
     ----------
         image:  the input image to be filtered
@@ -263,7 +267,7 @@ cpdef upfir(double[:, :] image, double[:] h):
     Upsamples the columns of the input image by 2, then applies the
     convolution kernel 'h' (again, columnwise). This is a special case of the
     matlab's 'upfirdn' function, ported to python. Returns the filtered image.
-    
+
     Parameters
     ----------
         image:  the input image to be filtered
@@ -280,13 +284,15 @@ cpdef upfir(double[:, :] image, double[:] h):
 @cython.boundscheck(False)
 @cython.wraparound(False)
 @cython.cdivision(True)
-def nlmeans_block(double[:, :, :]image, int v, int f, double h, rician=True):
+def nlmeans_block(double[:, :, :]image, double[:, :, :] mask, int v, int f, double h, int rician):
     """Non-Local Means Denoising Using Blockwise Averaging
-    
+
     Parameters
     ----------
     image: 3D double ndarray
         the input image, corrupted with rician noise
+    mask : 3D double ndarray
+        the input mask
     v:  int
         similar patches in the non-local means are searched for locally,
         inside a cube of side 2*v+1 centered at each voxel of interest.
@@ -312,7 +318,7 @@ def nlmeans_block(double[:, :, :]image, int v, int f, double h, rician=True):
     ----------
     [1] P. Coupe, P. Yger, S. Prima, P. Hellier, C. Kervrann, C. Barillot,
         "An Optimized Blockwise Non Local Means Denoising Filter for 3D Magnetic
-        Resonance Images" 
+        Resonance Images"
         IEEE Transactions on Medical Imaging, 27(4):425-441, 2008
 
     [2] Pierrick Coupe, Jose Manjon, Montserrat Robles, Louis Collins.
@@ -325,7 +331,6 @@ def nlmeans_block(double[:, :, :]image, int v, int f, double h, rician=True):
     dims[0] = image.shape[0]
     dims[1] = image.shape[1]
     dims[2] = image.shape[2]
-    cdef int rician_int = np.int(rician)
     cdef double hh = 2 * h * h
     cdef int Ndims = (2 * f + 1)**3
     cdef int nvox = dims[0] * dims[1] * dims[2]
@@ -342,12 +347,14 @@ def nlmeans_block(double[:, :, :]image, int v, int f, double h, rician=True):
     cdef double var1 = 0.5 + 1e-7
     cdef double d
     cdef double totalWeight, wmax, w
+
     with nogil:
         for k in range(dims[2]):
             for i in range(dims[1]):
                 for j in range(dims[0]):
                     means[j, i, k] = _local_mean(image, j, i, k)
-                    variances[j, i, k] = _local_variance(image, means[j, i, k], j, i, k)
+                    variances[j, i, k] = _local_variance(
+                        image, means[j, i, k], j, i, k)
         for k in range(0, dims[2], 2):
             for i in range(0, dims[1], 2):
                 for j in range(0, dims[0], 2):
@@ -360,7 +367,7 @@ def nlmeans_block(double[:, :, :]image, int v, int f, double h, rician=True):
                         _average_block(image, i, j, k, average, wmax)
                         totalWeight += wmax
                         _value_block(Estimate, Label, i, j, k,
-                                     average, totalWeight, hh, rician_int)
+                                     average, totalWeight, hh, rician)
                     else:
                         wmax = 0
                         for nk in range(k - v, k + v + 1):
@@ -371,15 +378,16 @@ def nlmeans_block(double[:, :, :]image, int v, int f, double h, rician=True):
                                     if ((ni < 0) or (nj < 0) or (nk < 0) or (
                                             nj >= dims[0]) or (ni >= dims[1]) or (nk >= dims[2])):
                                         continue
-                                    if ((means[nj, ni, nk] <= epsilon) or
-                                            (variances[nj, ni, nk] <= epsilon)):
+                                    if ((means[nj, ni, nk] <= epsilon) or (
+                                            variances[nj, ni, nk] <= epsilon)):
                                         continue
                                     t1 = (means[j, i, k]) / (means[nj, ni, nk])
                                     t2 = (variances[j, i, k]) / \
                                         (variances[nj, ni, nk])
                                     if ((t1 > mu1) and (t1 < (1 / mu1)) and
                                             (t2 > var1) and (t2 < (1 / var1))):
-                                        d = _distance(image, i, j, k, ni, nj, nk, f)
+                                        d = _distance(
+                                            image, i, j, k, ni, nj, nk, f)
                                         w = exp(-d / (h * h))
                                         if(w > wmax):
                                             wmax = w
@@ -389,14 +397,19 @@ def nlmeans_block(double[:, :, :]image, int v, int f, double h, rician=True):
 
                         if(totalWeight != 0.0):
                             _value_block(Estimate, Label, i, j, k,
-                                         average, totalWeight, hh, rician_int)
+                                         average, totalWeight, hh, rician)
 
         for k in range(0, dims[2]):
             for i in range(0, dims[1]):
                 for j in range(0, dims[0]):
-                    if(Label[j, i, k] == 0.0):
-                        fima[j, i, k] = image[j, i, k]
+
+                    if mask[j, i, k] == 0:
+                        fima[j, i, k] = 0
+
                     else:
-                        fima[j, i, k] = Estimate[j, i, k] / Label[j, i, k]
+                        if(Label[j, i, k] == 0.0):
+                            fima[j, i, k] = image[j, i, k]
+                        else:
+                            fima[j, i, k] = Estimate[j, i, k] / Label[j, i, k]
 
     return fima

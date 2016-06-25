@@ -3,7 +3,7 @@
 Denoise images using Adaptive Soft Coefficient Matching (ASCM)
 ==============================================================
 
-Using the non-local means based adaptive denoising [1]_ you can denoise 3D or
+Using the non-local means based adaptive denoising [Coupe11]_ you can denoise 3D or
 4D images and boost the SNR of your datasets.
 
 """
@@ -15,9 +15,12 @@ from dipy.data import fetch_sherbrooke_3shell
 from dipy.data import read_sherbrooke_3shell
 from dipy.denoise.noise_estimate import estimate_sigma
 from time import time
-from dipy.denoise.nlmeans import nlmeans
+from dipy.denoise.non_local_means import non_local_means
 from dipy.denoise.ascm import ascm
 
+"""
+Choose one of the data from the datasets in DIPY
+"""
 fetch_sherbrooke_3shell()
 img, gtab = read_sherbrooke_3shell()
 
@@ -42,26 +45,31 @@ coeficient matching.
 sigma = estimate_sigma(data, N=4)
 
 # Smaller block denoising: More sharp less denoised
-den_small = nlmeans(
+"""
+Non-local means with a smaller patch size => less smoothing, more sharpness
+"""
+den_small = non_local_means(
     data,
     sigma=sigma,
-    mask=None,
+    mask=mask,
     patch_radius=1,
     block_radius=1,
-    rician=True,
-    avg_type='blockwise')
+    rician=True)
 # Larger block denoising: Less sharp and more denoised
-den_large = nlmeans(
+"""
+Non-local means with larger patch size => more smoothing, less sharpness
+"""
+den_large = non_local_means(
     data,
     sigma=sigma,
-    mask=None,
+    mask=mask,
     patch_radius=2,
     block_radius=1,
-    rician=True,
-    avg_type='blockwise')
+    rician=True)
 
 # Now perform the adaptive soft coefficient matching
 """
+Now we perform the adaptive soft coefficient matching
 Empirically we set the parameter h in ascm to be the average of the local
 noise variance, sigma itself here in this case
 """
@@ -69,6 +77,9 @@ den_final = np.array(ascm(data, den_small, den_large, sigma[0]))
 
 print("total time", time() - t)
 
+"""
+Plot the axial slice of the data, it's denoised output and the residual
+"""
 axial_middle = data.shape[2] / 2
 
 original = data[:, :, axial_middle].T
@@ -95,7 +106,7 @@ nib.save(nib.Nifti1Image(den_final, affine), 'denoised_ascm.nii.gz')
 References
 ----------
 
-..  [1] Pierrick Coupe, Jose Manjon, Montserrat Robles, Louis Collins.
+..  [Coupe11] Pierrick Coupe, Jose Manjon, Montserrat Robles, Louis Collins.
     Adaptive Multiresolution Non-Local Means Filter for 3D MR Image Denoising.
     IET Image Processing, Institution of Engineering and Technology,
     2011. <00645538>

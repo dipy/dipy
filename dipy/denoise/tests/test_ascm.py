@@ -10,9 +10,9 @@ from dipy.denoise.ascm import ascm
 def test_ascm_static():
     S0 = 100 * np.ones((20, 20, 20), dtype='f8')
     S0n1 = nlmeans(S0, sigma=np.zeros((20, 20, 20)), rician=False,
-                   patch_radius=1, block_radius=1, avg_type='blockwise')
+                   patch_radius=1, block_radius=1)
     S0n2 = nlmeans(S0, sigma=np.zeros((20, 20, 20)), rician=False,
-                   patch_radius=2, block_radius=1, avg_type='blockwise')
+                   patch_radius=2, block_radius=1)
     S0n = ascm(S0, S0n1, S0n2, 0)
     assert_array_almost_equal(S0, S0n)
 
@@ -20,9 +20,9 @@ def test_ascm_static():
 def test_ascm_random_noise():
     S0 = 100 + 2 * np.random.standard_normal((22, 23, 30))
     S0n1 = nlmeans(S0, sigma=np.ones((22, 23, 30)), rician=False,
-                   patch_radius=1, block_radius=1, avg_type='blockwise')
+                   patch_radius=1, block_radius=1)
     S0n2 = nlmeans(S0, sigma=np.ones((22, 23, 30)), rician=False,
-                   patch_radius=2, block_radius=1, avg_type='blockwise')
+                   patch_radius=2, block_radius=1)
     S0n = ascm(S0, S0n1, S0n2, 1)
 
     print(S0.mean(), S0.min(), S0.max())
@@ -46,16 +46,14 @@ def test_ascm_rmse_with_nlmeans():
         sigma=400,
         rician=False,
         patch_radius=1,
-        block_radius=1,
-        avg_type='blockwise')
+        block_radius=1)
     print("Smaller patch RMSE", np.sum(np.abs(S0 - S0n1)) / np.sum(S0))
     S0n2 = nlmeans(
         S0_noise,
         sigma=400,
         rician=False,
         patch_radius=2,
-        block_radius=2,
-        avg_type='blockwise')
+        block_radius=2)
     print("Larger patch RMSE", np.sum(np.abs(S0 - S0n2)) / np.sum(S0))
     S0n = ascm(S0, S0n1, S0n2, 400)
     print("ASCM RMSE", np.sum(np.abs(S0 - S0n)) / np.sum(S0))
@@ -78,8 +76,7 @@ def test_sharpness():
         sigma=400,
         rician=False,
         patch_radius=1,
-        block_radius=1,
-        avg_type='blockwise')
+        block_radius=1)
     edg1 = np.abs(np.mean(S0n1[8, 10:20, 10:20] - S0n1[12, 10:20, 10:20]) - 50)
     print("Edge gradient smaller patch", edg1)
     S0n2 = nlmeans(
@@ -87,8 +84,7 @@ def test_sharpness():
         sigma=400,
         rician=False,
         patch_radius=2,
-        block_radius=2,
-        avg_type='blockwise')
+        block_radius=2)
     edg2 = np.abs(np.mean(S0n2[8, 10:20, 10:20] - S0n2[12, 10:20, 10:20]) - 50)
     print("Edge gradient larger patch", edg2)
     S0n = ascm(S0, S0n1, S0n2, 400)

@@ -3,7 +3,7 @@
 Denoise images using Non-Local Means (NLMEANS)
 ==============================================
 
-Using the non-local means filter [1]_ ,[2]_ you can denoise 3D or 4D images and
+Using the non-local means filter [Coupe08]_ and [Coupe11]_ and  you can denoise 3D or 4D images and
 boost the SNR of your datasets. You can also decide between modeling the noise
 as Gaussian or Rician (default).
 
@@ -13,7 +13,7 @@ import numpy as np
 import nibabel as nib
 import matplotlib.pyplot as plt
 from time import time
-from dipy.denoise.nlmeans import nlmeans
+from dipy.denoise.non_local_means import non_local_means
 from dipy.denoise.noise_estimate import estimate_sigma
 from dipy.data import fetch_sherbrooke_3shell, read_sherbrooke_3shell
 
@@ -34,7 +34,7 @@ print("vol size", data.shape)
 # lets create a noisy data with gaussian data
 
 """
-In order to call ``nlmeans`` first you need to estimate the standard deviation
+In order to call ``non_local_means`` first you need to estimate the standard deviation
 of the noise. We use N=4 since the Sherbrooke dataset was acquired on a 1.5T
 Siemens scanner with a 4 array head coil.
 """
@@ -44,56 +44,38 @@ sigma = estimate_sigma(data, N=4)
 
 t = time()
 """
-Compare results by both the approaches to nlmeans averaging
-1) Blockwise averaging [1]
-2) Voxelwise averaging (default) [2]
+Calling the main function ``non_local_means``
 """
 
-den = nlmeans(
+den = non_local_means(
     data,
     sigma=sigma,
-    mask=None,
+    mask=mask,
     patch_radius=1,
     block_radius=1,
-    rician=True,
-    avg_type='blockwise')
+    rician=True)
 print("total time blockwise", time() - t)
-t = time()
-den_v = nlmeans(
-    data,
-    sigma=sigma,
-    mask=None,
-    patch_radius=1,
-    block_radius=1,
-    rician=True,
-    avg_type='voxelwise')
-print("total time voxelwise", time() - t)
 
-
+"""
+We show the axial slice and how it has been denoised
+"""
 axial_middle = data.shape[2] / 2
 
 before = data[:, :, axial_middle].T
 after = den[:, :, axial_middle].T
-after_v = den_v[:, :, axial_middle].T
+
 difference = np.abs(after.astype('f8') - before.astype('f8'))
-difference_v = np.abs(after_v.astype('f8') - before.astype('f8'))
+
 difference[~mask[:, :, axial_middle].T] = 0
-difference_v[~mask[:, :, axial_middle].T] = 0
 
-fig, ax = plt.subplots(2, 3)
-ax[0, 0].imshow(before, cmap='gray', origin='lower')
-ax[0, 0].set_title('before')
-ax[0, 1].imshow(after, cmap='gray', origin='lower')
-ax[0, 1].set_title('after (blockwise)')
-ax[0, 2].imshow(difference, cmap='gray', origin='lower')
-ax[0, 2].set_title('difference (blockwise)')
-ax[1, 0].imshow(before, cmap='gray', origin='lower')
-ax[1, 0].set_title('before')
-ax[1, 1].imshow(after_v, cmap='gray', origin='lower')
-ax[1, 1].set_title('after (voxelwise)')
-ax[1, 2].imshow(difference_v, cmap='gray', origin='lower')
-ax[1, 2].set_title('difference (voxelwise)')
 
+fig, ax = plt.subplots(1, 3)
+ax[0].imshow(before, cmap='gray', origin='lower')
+ax[0].set_title('before')
+ax[1].imshow(after, cmap='gray', origin='lower')
+ax[1].set_title('after (blockwise)')
+ax[2].imshow(difference, cmap='gray', origin='lower')
+ax[2].set_title('difference (blockwise)')
 
 plt.show()
 plt.savefig('denoised.png', bbox_inches='tight')
@@ -105,22 +87,20 @@ plt.savefig('denoised.png', bbox_inches='tight')
    **Showing the middle axial slice without (left) and with (right) NLMEANS denoising**.
 """
 
-nib.save(nib.Nifti1Image(den, affine), 'denoised_blockwise.nii.gz')
-nib.save(nib.Nifti1Image(den_v, affine), 'denoised_voxelwise.nii.gz')
+nib.save(nib.Nifti1Image(den, affine), 'denoised.nii.gz')
 
 """
 
 References
 ----------
 
-.. [1] "Impact of Rician Adapted Non-Local Means Filtering on HARDI"
-	Descoteaux, Maxim and Wiest-Daessle`, Nicolas and Prima, Sylvain and Barillot,
-	Christian and Deriche, Rachid
-	MICCAI 2008
-
-.. [2] P. Coupe, P. Yger, S. Prima, P. Hellier, C. Kervrann, C. Barillot,
+.. [Coupe08] P. Coupe, P. Yger, S. Prima, P. Hellier, C. Kervrann, C. Barillot,
    "An Optimized Blockwise Non Local Means Denoising Filter for 3D Magnetic
    Resonance Images", IEEE Transactions on Medical Imaging, 27(4):425-441, 2008.
+
+.. [Coupe11] Pierrick Coupe, Jose Manjon, Montserrat Robles, Louis Collins.
+    "Adaptive Multiresolution Non-Local Means Filter for 3D MR Image Denoising"
+    IET Image Processing, Institution of Engineering and Technology, 2011
 
 .. include:: ../links_names.inc
 """
