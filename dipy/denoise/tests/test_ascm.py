@@ -3,15 +3,15 @@ from numpy.testing import (run_module_suite,
                            assert_,
                            assert_equal,
                            assert_array_almost_equal)
-from dipy.denoise.nlmeans import nlmeans
+from dipy.denoise.non_local_means import non_local_means
 from dipy.denoise.ascm import ascm
 
 
 def test_ascm_static():
     S0 = 100 * np.ones((20, 20, 20), dtype='f8')
-    S0n1 = nlmeans(S0, sigma=np.zeros((20, 20, 20)), rician=False,
+    S0n1 = non_local_means(S0, sigma=np.zeros((20, 20, 20)), rician=False,
                    patch_radius=1, block_radius=1)
-    S0n2 = nlmeans(S0, sigma=np.zeros((20, 20, 20)), rician=False,
+    S0n2 = non_local_means(S0, sigma=np.zeros((20, 20, 20)), rician=False,
                    patch_radius=2, block_radius=1)
     S0n = ascm(S0, S0n1, S0n2, 0)
     assert_array_almost_equal(S0, S0n)
@@ -19,9 +19,9 @@ def test_ascm_static():
 
 def test_ascm_random_noise():
     S0 = 100 + 2 * np.random.standard_normal((22, 23, 30))
-    S0n1 = nlmeans(S0, sigma=np.ones((22, 23, 30)), rician=False,
+    S0n1 = non_local_means(S0, sigma=np.ones((22, 23, 30)), rician=False,
                    patch_radius=1, block_radius=1)
-    S0n2 = nlmeans(S0, sigma=np.ones((22, 23, 30)), rician=False,
+    S0n2 = non_local_means(S0, sigma=np.ones((22, 23, 30)), rician=False,
                    patch_radius=2, block_radius=1)
     S0n = ascm(S0, S0n1, S0n2, 1)
 
@@ -41,14 +41,14 @@ def test_ascm_rmse_with_nlmeans():
     S0_noise = S0 + 20 * np.random.standard_normal((30, 30, 30))
     print("Original RMSE", np.sum(np.abs(S0 - S0_noise)) / np.sum(S0))
 
-    S0n1 = nlmeans(
+    S0n1 = non_local_means(
         S0_noise,
         sigma=400,
         rician=False,
         patch_radius=1,
         block_radius=1)
     print("Smaller patch RMSE", np.sum(np.abs(S0 - S0n1)) / np.sum(S0))
-    S0n2 = nlmeans(
+    S0n2 = non_local_means(
         S0_noise,
         sigma=400,
         rician=False,
@@ -71,7 +71,7 @@ def test_sharpness():
     S0[10:20, 10:20, 10:20] = 50
     S0[20:30, 20:30, 20:30] = 0
     S0_noise = S0 + 20 * np.random.standard_normal((30, 30, 30))
-    S0n1 = nlmeans(
+    S0n1 = non_local_means(
         S0_noise,
         sigma=400,
         rician=False,
@@ -79,7 +79,7 @@ def test_sharpness():
         block_radius=1)
     edg1 = np.abs(np.mean(S0n1[8, 10:20, 10:20] - S0n1[12, 10:20, 10:20]) - 50)
     print("Edge gradient smaller patch", edg1)
-    S0n2 = nlmeans(
+    S0n2 = non_local_means(
         S0_noise,
         sigma=400,
         rician=False,
