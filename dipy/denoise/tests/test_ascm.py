@@ -1,4 +1,6 @@
 import numpy as np
+import dipy.data as dpd
+import nibabel as nib
 from numpy.testing import (run_module_suite,
                            assert_,
                            assert_equal,
@@ -6,10 +8,7 @@ from numpy.testing import (run_module_suite,
 from dipy.denoise.non_local_means import non_local_means
 from dipy.denoise.noise_estimate import estimate_sigma
 from dipy.data import fetch_stanford_t1, read_stanford_t1
-import dipy.data as dpd
-import nibabel as nib
 from dipy.denoise.ascm import ascm
-import matplotlib.pyplot as plt
 
 
 def test_ascm_static():
