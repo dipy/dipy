@@ -98,7 +98,6 @@ for i in range(3):
     ax[i].set_axis_off()
 
 plt.show()
-plt.savefig('denoised.png', bbox_inches='tight')
 
 nib.save(nib.Nifti1Image(den_final, affine), 'denoised_ascm.nii.gz')
 

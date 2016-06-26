@@ -4,15 +4,20 @@ from numpy.testing import (run_module_suite,
                            assert_equal,
                            assert_array_almost_equal)
 from dipy.denoise.non_local_means import non_local_means
+from dipy.denoise.noise_estimate import estimate_sigma
+from dipy.data import fetch_stanford_t1, read_stanford_t1
+import dipy.data as dpd
+import nibabel as nib
 from dipy.denoise.ascm import ascm
+import matplotlib.pyplot as plt
 
 
 def test_ascm_static():
     S0 = 100 * np.ones((20, 20, 20), dtype='f8')
     S0n1 = non_local_means(S0, sigma=np.zeros((20, 20, 20)), rician=False,
-                   patch_radius=1, block_radius=1)
+                           patch_radius=1, block_radius=1)
     S0n2 = non_local_means(S0, sigma=np.zeros((20, 20, 20)), rician=False,
-                   patch_radius=2, block_radius=1)
+                           patch_radius=2, block_radius=1)
     S0n = ascm(S0, S0n1, S0n2, 0)
     assert_array_almost_equal(S0, S0n)
 
@@ -20,9 +25,9 @@ def test_ascm_static():
 def test_ascm_random_noise():
     S0 = 100 + 2 * np.random.standard_normal((22, 23, 30))
     S0n1 = non_local_means(S0, sigma=np.ones((22, 23, 30)), rician=False,
-                   patch_radius=1, block_radius=1)
+                           patch_radius=1, block_radius=1)
     S0n2 = non_local_means(S0, sigma=np.ones((22, 23, 30)), rician=False,
-                   patch_radius=2, block_radius=1)
+                           patch_radius=2, block_radius=1)
     S0n = ascm(S0, S0n1, S0n2, 1)
 
     print(S0.mean(), S0.min(), S0.max())
@@ -60,7 +65,7 @@ def test_ascm_rmse_with_nlmeans():
 
     assert_(np.sum(np.abs(S0 - S0n)) / np.sum(S0) <
             np.sum(np.abs(S0 - S0n1)) / np.sum(S0))
-    assert_(np.sum(np.abs(S0 - S0n)) / np.sum(S0) < 
+    assert_(np.sum(np.abs(S0 - S0n)) / np.sum(S0) <
             np.sum(np.abs(S0 - S0_noise)) / np.sum(S0))
     assert_(90 < np.mean(S0n) < 110)
 
@@ -95,5 +100,35 @@ def test_sharpness():
     assert_(edg2 > edg)
     assert_(np.abs(edg1 - edg) < 1.5)
 
+
+def test_ascm_accuracy():
+    test_ascm_data_ref = nib.load(dpd.get_data("ascm_test")).get_data()
+    test_data = nib.load(dpd.get_data("aniso_vox")).get_data()
+
+    # the test data was constructed in this manner
+    mask = test_data > 50
+    sigma = estimate_sigma(test_data, N=4)
+
+    den_small = non_local_means(
+        test_data,
+        sigma=sigma,
+        mask=mask,
+        patch_radius=1,
+        block_radius=1,
+        rician=True)
+
+    den_large = non_local_means(
+        test_data,
+        sigma=sigma,
+        mask=mask,
+        patch_radius=2,
+        block_radius=1,
+        rician=True)
+
+    S0n = np.array(ascm(test_data, den_small, den_large, sigma[0]))
+
+    assert_array_almost_equal(S0n, test_ascm_data_ref)
+
 if __name__ == '__main__':
+
     run_module_suite()
