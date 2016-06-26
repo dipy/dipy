@@ -66,6 +66,8 @@ class ConstantObservationModel(object):
             double[:] sigma = np.empty((nclasses,), dtype=np.float64)
 
         _initialize_param_uniform(image, mu, sigma)
+#        mu = np.sort(np.array(mu))
+        
         return np.array(mu), np.array(sigma)
 
 
@@ -91,13 +93,22 @@ class ConstantObservationModel(object):
         """
         mu = np.zeros(nclass)
         std = np.zeros(nclass)
-
-        for i in range(0, nclass):
-
-            H = input_image[seg_image == i]
-
-            mu[i] = np.mean(H, -1)
-            std[i] = np.std(H, -1)
+        num_vox = np.zeros(nclass)
+        
+        for index in ndindex(np.shape(input_image)):
+            
+            s = seg_image[index]            
+            v = input_image[index]
+            
+            for i in range(0, nclass):
+            
+                if s == i:
+                    mu[i] += v
+                    std[i] += v*v
+                    num_vox[i] += 1
+         
+        mu = mu/num_vox
+        std = np.sqrt(std/num_vox - mu**2)
 
         return mu, std
 
@@ -446,7 +457,7 @@ class IteratedConditionalModes(object):
                 3D initial segmentation
         """
 
-        seg = np.zeros(nloglike.shape[:3]).astype(np.float64)
+        seg = np.zeros(nloglike.shape[:3]).astype(np.int16)
 
         _initialize_maximum_likelihood(nloglike, seg)
 
@@ -535,7 +546,8 @@ class IteratedConditionalModes(object):
         return PLN
 
 
-cdef void _initialize_maximum_likelihood(double[:,:,:,:] nloglike, double[:,:,:] seg) nogil:
+cdef void _initialize_maximum_likelihood(double[:,:,:,:] nloglike,
+                                         cnp.npy_short[:,:,:] seg) nogil:
     
     r""" Initializes the segmentation of an image with given neg-log-likelihood
 
@@ -561,7 +573,9 @@ cdef void _initialize_maximum_likelihood(double[:,:,:,:] nloglike, double[:,:,:]
         cnp.npy_intp nz = nloglike.shape[2]
         cnp.npy_intp nclasses = nloglike.shape[3]
         double min_energy
-        int best_class
+        cnp.npy_short best_class
+    
+    
     for x in range(nx):
         for y in range(ny):
             for z in range(nz):
@@ -569,13 +583,15 @@ cdef void _initialize_maximum_likelihood(double[:,:,:,:] nloglike, double[:,:,:]
                 best_class = -1
                 for k in range(nclasses):
                     if (best_class == -1) or (nloglike[x,y,z,k] < min_energy):
+#                    if (nloglike[x,y,z,k] < min_energy):
                         best_class = k
                         min_energy = nloglike[x,y,z,k]
                 seg[x,y,z] = best_class
 
 
-cdef void _icm_ising(double[:,:,:,:] nloglike, double beta, double[:,:,:] seg,
-                     double[:,:,:] energy, double[:,:,:] new_seg) nogil:
+cdef void _icm_ising(double[:,:,:,:] nloglike, double beta, 
+                     cnp.npy_short[:,:,:] seg, double[:,:,:] energy, 
+                     cnp.npy_short[:,:,:] new_seg) nogil:
     
     r""" Executes one iteration of the ICM algorithm for MRF MAP estimation
     The prior distribution of the MRF is a Gibbs distribution with the
@@ -620,7 +636,7 @@ cdef void _icm_ising(double[:,:,:,:] nloglike, double beta, double[:,:,:] seg,
         cnp.npy_intp x, y, z, xx, yy, zz, i, j, k
         double min_energy = NPY_INFINITY
         double this_energy = NPY_INFINITY
-        int best_class
+        cnp.npy_short best_class
 
     for x in range(nx):
         for y in range(ny):
@@ -657,7 +673,7 @@ cdef void _icm_ising(double[:,:,:,:] nloglike, double beta, double[:,:,:] seg,
                 energy[x, y, z] = min_energy
 
 
-cdef void _prob_class_given_neighb(double[:, :, :] seg, double beta,
+cdef void _prob_class_given_neighb(cnp.npy_short[:, :, :] seg, double beta,
                                    int classid, double[:, :, :] P_L_N) nogil:
     
     r""" Conditional probability of the label given the neighborhood
