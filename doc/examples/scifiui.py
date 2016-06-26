@@ -44,22 +44,28 @@ class CustomInteractorStyle(vtkInteractorStyleUser):
         self.trackball_interactor_style = vtk.vtkInteractorStyleTrackballCamera()
         # Use a picker to see which actor is under the mouse
         self.picker = vtk.vtkPropPicker()
-        self.chosenElement = None
+        self.chosen_element = None
+
+    def get_ui_item(self, selected_actor):
+        ui_list = self.renderer.ui_list
+        for ui_item in ui_list:
+            if ui_item.actor == selected_actor:
+                return ui_item
 
     def on_left_button_pressed(self, obj, evt):
         click_pos = self.GetInteractor().GetEventPosition()
 
         self.picker.Pick(click_pos[0], click_pos[1], 0, self.renderer)
-        # actor = picker.GetActor2D()
         actor_2d = self.picker.GetViewProp()
         if actor_2d is not None:
-            self.chosenElement = actor_2d
+            self.chosen_element = self.get_ui_item(actor_2d)
+            print(self.chosen_element)
             self.add_ui_param(gui.SliderLine, click_pos)
             actor_2d.InvokeEvent(evt)
         else:
             actor_3d = self.picker.GetProp3D()
             if actor_3d is not None:
-                self.chosenElement = actor_3d
+                self.chosen_element = self.get_ui_item(actor_3d)
                 actor_3d.InvokeEvent(evt)
             else:
                 pass
@@ -67,6 +73,10 @@ class CustomInteractorStyle(vtkInteractorStyleUser):
         self.trackball_interactor_style.OnLeftButtonDown()
 
     def on_left_button_released(self, obj, evt):
+        if self.chosen_element is not None:
+            if isinstance(self.chosen_element, gui.SliderDisk):
+                self.chosen_element = None
+
         self.trackball_interactor_style.OnLeftButtonUp()
 
     def on_right_button_pressed(self, obj, evt):
@@ -74,15 +84,14 @@ class CustomInteractorStyle(vtkInteractorStyleUser):
         click_pos = self.GetInteractor().GetEventPosition()
 
         self.picker.Pick(click_pos[0], click_pos[1], 0, self.renderer)
-        # actor = picker.GetActor2D()
         actor_2d = self.picker.GetViewProp()
         if actor_2d is not None:
-            self.chosenElement = actor_2d
+            self.chosen_element = self.get_ui_item(actor_2d)
             actor_2d.InvokeEvent(evt)
         else:
             actor_3d = self.picker.GetProp3D()
             if actor_3d is not None:
-                self.chosenElement = actor_3d
+                self.chosen_element = self.get_ui_item(actor_3d)
                 actor_3d.InvokeEvent(evt)
             else:
                 pass
@@ -99,6 +108,10 @@ class CustomInteractorStyle(vtkInteractorStyleUser):
         self.trackball_interactor_style.OnMiddleButtonUp()
 
     def on_mouse_moved(self, obj, evt):
+        if self.chosen_element is not None:
+            mouse_pos = self.GetInteractor().GetEventPosition()
+            self.add_ui_param(gui.SliderDisk, mouse_pos)
+            self.chosen_element.actor.InvokeEvent(evt)
         self.trackball_interactor_style.OnMouseMove()
 
     def on_mouse_wheel_forward(self, obj, evt):
@@ -108,16 +121,16 @@ class CustomInteractorStyle(vtkInteractorStyleUser):
         self.trackball_interactor_style.OnMouseWheelBackward()
 
     def on_key_press(self, obj, evt):
-        if self.chosenElement is not None:
+        if self.chosen_element is not None:
             self.add_ui_param(gui.TextBox, obj.GetKeySym())
-            self.chosenElement.InvokeEvent(evt)
+            self.chosen_element.actor.InvokeEvent(evt)
             if obj.GetKeySym().lower() == "return":
-                self.chosenElement = None
+                self.chosen_element = None
 
     def add_ui_param(self, class_name, ui_param):
         ui_list = self.renderer.ui_list
         for ui_item in ui_list:
-            if ui_item.actor == self.chosenElement:
+            if ui_item == self.chosen_element:
                 if isinstance(ui_item, class_name):
                     ui_item.set_ui_param(ui_param)
                     break
@@ -230,8 +243,26 @@ def line_click_callback(*args, **kwargs):
     length = slider.slider_line.end_point[0] - slider.slider_line.start_point[0]
     pos = position[0] - slider.slider_line.start_point[0]
     percentage = (pos/length)*100
+    if percentage < 0:
+        percentage = 0
+    if percentage > 100:
+        percentage = 100
     slider.text.set_message(str(int(percentage)) + "%")
 
+
+def disk_move_callback(*args, **kwargs):
+    position = slider.slider_disk.ui_param
+    slider.slider_disk.set_position(position)
+    length = slider.slider_line.end_point[0] - slider.slider_line.start_point[0]
+    pos = position[0] - slider.slider_line.start_point[0]
+    percentage = (pos/length)*100
+    if percentage < 0:
+        percentage = 0
+    if percentage > 100:
+        percentage = 100
+    slider.text.set_message(str(int(percentage)) + "%")
+
+slider.slider_disk.add_callback("MouseMoveEvent", disk_move_callback)
 slider.slider_line.add_callback("LeftButtonPressEvent", line_click_callback)
 
 

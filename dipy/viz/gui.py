@@ -303,7 +303,6 @@ class TextBox(UI):
         if character.lower() == "return":
             self.render_text(False)
         else:
-            print(character)
             if character.lower() == "backspace":
                 self.remove_character()
             elif character.lower() == "left":
@@ -459,7 +458,7 @@ class TextBox(UI):
 
 
 class Slider(UI):
-    def __init__(self, start_point=(200, 20), end_point=(300, 20), line_width=10, inner_radius=5,
+    def __init__(self, start_point=(200, 20), end_point=(300, 20), line_width=5, inner_radius=5,
                  outer_radius=15, position=(250, 20)):
         """
 
@@ -474,12 +473,13 @@ class Slider(UI):
         """
         super(Slider, self).__init__()
         self.slider_line = SliderLine(start_point=start_point, end_point=end_point, line_width=line_width)
-        self.slider_disk = SliderDisk(position=position, inner_radius=inner_radius, outer_radius=outer_radius)
+        self.slider_disk = SliderDisk(position=position, inner_radius=inner_radius, outer_radius=outer_radius,
+                                      start_point=start_point, end_point=end_point)
         self.text = self.make_text(position=start_point,
                                    percentage=(position[0]-start_point[0])*100/(end_point[0]-start_point[0]))
 
-        self.ui_list.append(self.slider_line)
         self.ui_list.append(self.slider_disk)
+        self.ui_list.append(self.slider_line)
         self.ui_list.append(self.text)
 
     def make_text(self, position, percentage):
@@ -560,7 +560,7 @@ class SliderLine(UI):
 
 class SliderDisk(UI):
 
-    def __init__(self, position, inner_radius, outer_radius):
+    def __init__(self, position, inner_radius, outer_radius, start_point, end_point):
         """
 
         Parameters
@@ -572,6 +572,9 @@ class SliderDisk(UI):
         super(SliderDisk, self).__init__()
         self.actor = self.build_actor(position=position, inner_radius=inner_radius, outer_radius=outer_radius)
         self.pos_height = position[1]
+
+        self.start_point = start_point
+        self.end_point = end_point
 
         self.ui_list.append(self)
 
@@ -616,4 +619,19 @@ class SliderDisk(UI):
         ----------
         position
         """
-        self.actor.SetPosition(position[0], self.pos_height)
+        x_position = position[0]
+        if x_position < self.start_point[0]:
+            x_position = self.start_point[0]
+        if x_position > self.end_point[0]:
+            x_position = self.end_point[0]
+        self.actor.SetPosition(x_position, self.pos_height)
+
+    def add_callback(self, event_type, callback):
+        """ Adds events to the actor
+
+        Parameters
+        ----------
+        event_type: event code
+        callback: callback function
+        """
+        self.actor.AddObserver(event_type, callback)
