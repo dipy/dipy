@@ -1,10 +1,5 @@
 # -*- coding: utf-8 -*-
 """
-Created on Wed Apr 20 15:57:42 2016
-
-@author: jvillalo
-"""
-"""
 =======================================================
 Tissue Classification of a T1-weighted Strutural Image
 =======================================================
@@ -18,10 +13,7 @@ and bias field corrected.
 """
 
 import numpy as np
-#import nibabel as nib
 import matplotlib.pyplot as plt
-from dipy.denoise.nlmeans import nlmeans
-from dipy.denoise.noise_estimate import estimate_sigma
 from dipy.data import fetch_tissue_data, read_tissue_data
 from dipy.segment.tissue import TissueClassifierHMRF
 
@@ -35,16 +27,7 @@ t1 = t1_img.get_data()
 print('t1.shape (%d, %d, %d)' % t1.shape)
 
 """
-Once we have fetched the T1 volume, we proceed to denoise it with the NLM algorithm.
-"""
-
-t1 = np.interp(t1, [0, 400], [0, 1])
-sigma = estimate_sigma(t1)
-print(sigma)
-t1 = nlmeans(t1, sigma=sigma)
-
-"""
-We will look at the axial and the coronal slices of the image.
+We have fetched the T1 volume. Now we will look at the axial and the coronal slices of the image.
 """
 
 fig = plt.figure()
@@ -84,7 +67,16 @@ beta = 0.1
 Now we set the convergence criterion.
 """
 
-tolerance = 0.00001
+#tolerance = 0.00001
+
+"""
+We can also set the number of iterations. By default this parameter is set to
+100 iterations, but the tolerance value will ensure that the ICM (Iterated
+Conditional Modes) loop converges before 100 iterations. If the ICM have not
+converged once the 100 iterations have been reached the loop will stop anyway.
+"""
+
+#max_iter = 100
 
 """
 Now we call an instance of the class TissueClassifierHMRF and its method
@@ -95,8 +87,7 @@ import time
 t0 = time.time()
 
 hmrf = TissueClassifierHMRF()
-initial_segmentation, final_segmentation, PVE = hmrf.classify(t1, nclass, beta,
-                                                              tolerance)
+initial_segmentation, final_segmentation, PVE = hmrf.classify(t1, nclass, beta, max_iter=15)
 
 t1 = time.time()
 total_time = t1-t0
@@ -153,5 +144,4 @@ plt.savefig('probabilities.png', bbox_inches='tight', pad_inches=0)
 
 .. [Zhang2001] Zhang, Y., Brady, M. and Smith, S. Segmentation of Brain MR Images Through a Hidden Markov Random Field Model and the Expectation-Maximization Algorithm IEEE Transactions on Medical Imaging, 20(1): 45-56, 2001
 .. [Avants2011] Avants, B. B., Tustison, N. J., Wu, J., Cook, P. A. and Gee, J. C. An open source multivariate framework for n-tissue segmentation with evaluation on public data. Neuroinformatics, 9(4): 381–400, 2011.
-
 """
