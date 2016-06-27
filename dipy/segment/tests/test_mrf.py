@@ -23,7 +23,7 @@ max_iter = 10
 background_noise = True
 
 # Making squares
-square = np.zeros((256, 256, 3))
+square = np.zeros((256, 256, 3), dtype=np.int16)
 square[42:213, 42:213, :] = 1
 square[71:185, 71:185, :] = 2
 square[99:157, 99:157, :] = 3
