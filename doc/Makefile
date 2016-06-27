@@ -37,6 +37,8 @@ api-clean:
 api:
 	@mkdir -p reference
 	$(PYTHON) tools/build_modref_templates.py dipy reference
+	@mkdir -p reference_cmd
+	$(PYTHON) tools/docgen_cmd.py dipy reference_cmd
 	@echo "Build API docs...done."
 
 examples-clean:
