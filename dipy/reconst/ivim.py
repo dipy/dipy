@@ -69,7 +69,7 @@ class IvimModel(ReconstModel):
 
     def fit(self, data, mask=None, x0=None, fit_method="one_stage", routine="minimize",
             jac=False, bounds=((0, None), (0, 1.), (0, 1.), (0, 1.)), tol=1e-25, algorithm='L-BFGS-B',
-            gtol=1e-25, ftol=1e-25, eps=1e-15):
+            gtol=1e-25, ftol=1e-25, eps=1e-15, maxiter=1000):
         """ Fit method of the Ivim model class
 
         Parameters
@@ -130,12 +130,12 @@ class IvimModel(ReconstModel):
             params_in_mask = one_stage(data_in_mask, self.gtab, x0,
                                        jac, bounds, tol,
                                        routine,
-                                       algorithm, gtol, ftol, eps)
+                                       algorithm, gtol, ftol, eps, maxiter)
         elif fit_method == "two_stage":
             params_in_mask = two_stage(data_in_mask, self.gtab, x0,
                                        self.split_b, jac, bounds, tol,
                                        routine,
-                                       algorithm, gtol, ftol, eps)
+                                       algorithm, gtol, ftol, eps, maxiter)
         else:
             raise ValueError("""Fit method must be either
                              'one_stage' or 'two_stage'""")
@@ -212,7 +212,7 @@ class IvimFit(object):
 
 
 def one_stage(data, gtab, x0, jac, bounds, tol, routine, algorithm,
-              gtol, ftol, eps):
+              gtol, ftol, eps, maxiter):
     """
     Fit the ivim params using minimize
 
@@ -239,7 +239,7 @@ def one_stage(data, gtab, x0, jac, bounds, tol, routine, algorithm,
 
     if routine == 'minimize':
         result = _minimize(flat_data, bvals, flat_x0, ivim_params,
-                           bounds, tol, jac, algorithm, gtol, ftol, eps)
+                           bounds, tol, jac, algorithm, gtol, ftol, eps, maxiter)
     elif routine == "leastsq":
         result = _leastsq(flat_data, bvals, flat_x0, ivim_params)
     ivim_params.shape = data.shape[:-1] + (4,)
@@ -247,7 +247,7 @@ def one_stage(data, gtab, x0, jac, bounds, tol, routine, algorithm,
 
 
 def _minimize(flat_data, bvals, flat_x0, ivim_params,
-              bounds, tol, jac, algorithm, gtol, ftol, eps):
+              bounds, tol, jac, algorithm, gtol, ftol, eps, maxiter):
     """Use minimize for finding ivim_params"""
     sum_sq = lambda params, bvals, signal: np.sum(
         _ivim_error(params, bvals, signal)**2)
@@ -258,7 +258,7 @@ def _minimize(flat_data, bvals, flat_x0, ivim_params,
                         flat_x0[vox],
                         args=(bvals, flat_data[vox]), bounds=bounds,
                         tol=tol, method=algorithm, jac=jac,
-                        options={'gtol': gtol, 'ftol': ftol, 'eps': eps})
+                        options={'gtol': gtol, 'ftol': ftol, 'eps': eps, 'maxiter': maxiter})
         ivim_params[vox, :4] = res.xopt
         result += [res]
     return result
@@ -278,7 +278,7 @@ def _leastsq(flat_data, bvals, flat_x0, ivim_params):
 
 def two_stage(data, gtab, x0,
               split_b, jac, bounds, tol,
-              routine, algorithm, gtol, ftol, eps):
+              routine, algorithm, gtol, ftol, eps, maxiter):
     """
     Fit the ivim params using a two stage fit
 
@@ -312,7 +312,7 @@ def two_stage(data, gtab, x0,
 
     if routine == 'minimize':
         result = _minimize(flat_data, bvals, flat_x0, ivim_params,
-                           bounds, tol, jac, algorithm, gtol, ftol, eps)
+                           bounds, tol, jac, algorithm, gtol, ftol, eps, maxiter)
     elif routine == "leastsq":
         result = _leastsq(flat_data, bvals, flat_x0, ivim_params)
     ivim_params.shape = data.shape[:-1] + (4,)
