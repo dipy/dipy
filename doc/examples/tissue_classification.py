@@ -27,7 +27,8 @@ t1 = t1_img.get_data()
 print('t1.shape (%d, %d, %d)' % t1.shape)
 
 """
-We have fetched the T1 volume. Now we will look at the axial and the coronal slices of the image.
+We have fetched the T1 volume. Now we will look at the axial and the coronal
+slices of the image.
 """
 
 fig = plt.figure()
@@ -50,8 +51,8 @@ plt.savefig('t1_image.png', bbox_inches='tight', pad_inches=0)
    **T1-weighted image of healthy adult**.
 
 Now we will define the other two parameters for the segmentation algorithm.
-We will segment three classes, namely corticospinal fluid (CSF), white matter (WM) and 
-gray matter (GM),
+We will segment three classes, namely corticospinal fluid (CSF), white matter
+(WM) and gray matter (GM).
 """
 
 nclass = 3
@@ -64,30 +65,19 @@ with values between 0 and 0.5.
 beta = 0.1
 
 """
-Now we set the convergence criterion.
-"""
-
-#tolerance = 0.00001
-
-"""
-We can also set the number of iterations. By default this parameter is set to
-100 iterations, but the tolerance value will ensure that the ICM (Iterated
-Conditional Modes) loop converges before 100 iterations. If the ICM have not
-converged once the 100 iterations have been reached the loop will stop anyway.
-"""
-
-#max_iter = 100
-
-"""
-Now we call an instance of the class TissueClassifierHMRF and its method
-called classify and input the parameters defined above to perform the segmentation task.
+We could also set the number of iterations. By default this parameter is set to
+100 iterations, but most of the times the the ICM (Iterated Conditional Modes)
+loop will converge before reaching the 100th iteration.
+After setting the necessary parameters we can now call an instance of the class
+TissueClassifierHMRF and its method called classify and input the parameters
+defined above to perform the segmentation task.
 """
 
 import time
 t0 = time.time()
 
 hmrf = TissueClassifierHMRF()
-initial_segmentation, final_segmentation, PVE = hmrf.classify(t1, nclass, beta, max_iter=15)
+initial_segmentation, final_segmentation, PVE = hmrf.classify(t1, nclass, beta)
 
 t1 = time.time()
 total_time = t1-t0
@@ -134,6 +124,7 @@ imgplot = plt.imshow(img_cor, cmap="gray")
 a.axis('off')
 a.set_title('White Matter')
 plt.savefig('probabilities.png', bbox_inches='tight', pad_inches=0)
+plt.show()
 
 """
 .. figure:: probabilities.png
