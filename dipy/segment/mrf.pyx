@@ -66,7 +66,6 @@ class ConstantObservationModel(object):
             double[:] sigma = np.empty((nclasses,), dtype=np.float64)
 
         _initialize_param_uniform(image, mu, sigma)
-#        mu = np.sort(np.array(mu))
         
         return np.array(mu), np.array(sigma)
 
