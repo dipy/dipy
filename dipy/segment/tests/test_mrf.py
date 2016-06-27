@@ -345,17 +345,32 @@ def test_classify():
     imgseg = TissueClassifierHMRF()
 
     beta = 0.1
-    tolerance = 0.00001
+    tolerance = 0.0001
+    max_iter = 10
 
     npt.assert_equal(image.max(), 1)
     npt.assert_equal(image.min(), 0)
 
+    # First we test without setting iterations and tolerance
+    seg_init, seg_final, PVE = imgseg.classify(image, nclasses, beta)
+
+    npt.assert_equal(seg_final.max(), nclasses)
+    npt.assert_equal(seg_final.min(), 0)
+
+    # Second we test it with just changing the tolerance
     seg_init, seg_final, PVE = imgseg.classify(image, nclasses, beta,
                                                tolerance)
 
     npt.assert_equal(seg_final.max(), nclasses)
     npt.assert_equal(seg_final.min(), 0)
 
+    # Third we test it with just the iterations
+    seg_init, seg_final, PVE = imgseg.classify(image, nclasses, beta, max_iter)
+
+    npt.assert_equal(seg_final.max(), nclasses)
+    npt.assert_equal(seg_final.min(), 0)
+
+    # Next we test saving the history of accumulated energies from ICM
     imgseg = TissueClassifierHMRF(save_history=True)
 
     seg_init, seg_final, PVE = imgseg.classify(200 * image, nclasses,
