@@ -4,7 +4,6 @@ from numpy.testing import (run_module_suite,
                            assert_,
                            assert_equal,
                            assert_array_almost_equal)
-from dipy.denoise.noise_estimate_localpca import estimate_sigma_localpca
 from dipy.denoise.localpca import localpca
 from dipy.sims.voxel import multi_tensor
 from dipy.core.gradients import gradient_table
