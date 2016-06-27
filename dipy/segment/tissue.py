@@ -67,7 +67,9 @@ class TissueClassifierHMRF(object):
             image = np.interp(image, [0, image.max()], [0.0, 1.0])
 
         mu, sigma = com.initialize_param_uniform(image, nclasses)
-
+        p = np.argsort(mu)
+        mu = mu[p]
+        sigma = sigma[p]
         sigmasq = sigma ** 2
 
         neglogl = com.negloglikelihood(image, mu, sigmasq, nclasses)
@@ -90,25 +92,19 @@ class TissueClassifierHMRF(object):
                 if self.verbose:
                     print('>> Iteration: ' + str(i))
 
-                PLN = icm.prob_neighborhood(seg_init,
-                                            beta, nclasses)
+                PLN = icm.prob_neighborhood(seg_init, beta, nclasses)
                 PVE = com.prob_image(image_gauss, nclasses, mu, sigmasq, PLN)
-                mu_u, sigmasq_u = com.update_param(image_gauss, PVE, mu,
-                                                       nclasses)
 
-                ind = np.argsort(mu_u)
+                mu_upd, sigmasq_upd = com.update_param(image_gauss,
+                                                       PVE, mu, nclasses)
+                ind = np.argsort(mu_upd)
+                mu_upd = mu_upd[ind]
+                sigmasq_upd = sigmasq_upd[ind]
 
-                mu_upd = mu_u[ind[0]], mu_u[ind[1]], mu_u[ind[2]], mu_u[ind[3]]
-                sigmasq_upd = sigmasq_u[ind[0]], sigmasq_u[ind[1]], sigmasq_u[ind[2]], sigmasq_u[ind[3]]
-                
-                mu_upd = np.asarray(mu_upd)
-                sigmasq_upd = np.asarray(sigmasq_upd)               
-                
                 negll = com.negloglikelihood(image_gauss,
                                              mu_upd, sigmasq_upd, nclasses)
-
-                final_segmentation, energy = icm.icm_ising(negll, beta,
-                                                           seg_init)
+                final_segmentation, energy = icm.icm_ising(negll,
+                                                           beta, seg_init)
 
                 if self.save_history:
                     self.segmentations.append(final_segmentation)
@@ -128,25 +124,19 @@ class TissueClassifierHMRF(object):
                 if self.verbose:
                     print('>> Iteration: ' + str(i))
 
-                PLN = icm.prob_neighborhood(seg_init,
-                                            beta, nclasses)
+                PLN = icm.prob_neighborhood(seg_init, beta, nclasses)
                 PVE = com.prob_image(image_gauss, nclasses, mu, sigmasq, PLN)
-                mu_u, sigmasq_u = com.update_param(image_gauss, PVE, mu,
-                                                       nclasses)
-                                                       
-                ind = np.argsort(mu_u)
 
-                mu_upd = mu_u[ind[0]], mu_u[ind[1]], mu_u[ind[2]], mu_u[ind[3]]
-                sigmasq_upd = sigmasq_u[ind[0]], sigmasq_u[ind[1]], sigmasq_u[ind[2]], sigmasq_u[ind[3]]
-                
-                mu_upd = np.asarray(mu_upd)
-                sigmasq_upd = np.asarray(sigmasq_upd)                                       
+                mu_upd, sigmasq_upd = com.update_param(image_gauss,
+                                                       PVE, mu, nclasses)
+                ind = np.argsort(mu_upd)
+                mu_upd = mu_upd[ind]
+                sigmasq_upd = sigmasq_upd[ind]
 
                 negll = com.negloglikelihood(image_gauss,
                                              mu_upd, sigmasq_upd, nclasses)
-
-                final_segmentation, energy = icm.icm_ising(negll, beta,
-                                                           seg_init)
+                final_segmentation, energy = icm.icm_ising(negll,
+                                                           beta, seg_init)
                 energy_sum.append(energy[energy > -np.inf].sum())
 
                 if self.save_history:
@@ -156,7 +146,7 @@ class TissueClassifierHMRF(object):
                     self.energies_sum.append(energy[energy > -np.inf].sum())
 
                 if tolerance is None:
-                    tolerance = 1e-02
+                    tolerance = 1e-05
 
                 if i % 10 == 0 and i != 0:
 
