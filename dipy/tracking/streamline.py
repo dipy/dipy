@@ -260,26 +260,68 @@ def select_by_rois(streamlines, rois, include, mode=None, affine=None,
             yield sl
 
 
-def orient_by_rois(streamlines, roi1, roi2, affine=None, copy=True):
+def _orient_generator(out, roi1, roi2):
+    """
+    Helper function to `orient_by_rois`
+
+    Performs the inner loop separately. This is needed, because functions with
+    `yield` always return a generator
+    """
+    for idx, sl in enumerate(out):
+        dist1 = cdist(sl, roi1, 'euclidean')
+        dist2 = cdist(sl, roi2, 'euclidean')
+        min1 = np.argmin(dist1, 0)
+        min2 = np.argmin(dist2, 0)
+        if min1[0] > min2[0]:
+            yield sl[::-1]
+        else:
+            yield sl
+
+
+def _orient_list(out, roi1, roi2):
+    """
+    Helper function to `orient_by_rois`
+
+    Performs the inner loop separately. This is needed, because functions with
+    `yield` always return a generator.
+    """
+    for idx, sl in enumerate(out):
+        dist1 = cdist(sl, roi1, 'euclidean')
+        dist2 = cdist(sl, roi2, 'euclidean')
+        min1 = np.argmin(dist1, 0)
+        min2 = np.argmin(dist2, 0)
+        if min1[0] > min2[0]:
+            out[idx] = sl[::-1]
+    return out
+
+
+def orient_by_rois(streamlines, roi1, roi2, out=None, as_generator=False,
+                   affine=None):
     """Orient a set of streamlines according to a pair of ROIs
 
     Parameters
     ----------
-    streamlines : list
-        List of 3d arrays. Each array contains the xyz coordinates of a single
-        streamline.
+    streamlines : list or generator
+        List or generator of 2d arrays of 3d coordinates. Each array contains
+        the xyz coordinates of a single streamline.
     roi1, roi2 : ndarray
         Binary masks designating the location of the regions of interest, or
         coordinate arrays (n-by-3 array with ROI coordinate in each row).
+    out : list
+        A list to assign the output into (for example, this could be the
+        input `streamlines`, in which case the change will be made in-place).
+        If None (default), a copy of the original input is made and that copy
+        is returned, so that the input is retained
+    as_generator : bool
+        Whether to return a generator as output. Default: False
     affine : ndarray
         Affine transformation from voxels to streamlines. Default: identity.
-    copy : bool
-        Whether to make a copy of the input, or mutate the input inplace.
 
     Returns
     -------
-    streamlines : list
-        The same 3D arrays, but reoriented with respect to the ROIs
+    streamlines : list or generator
+        The same 3D arrays as a list or generator, but reoriented with respect
+        to the ROIs
 
     Examples
     --------
@@ -293,7 +335,7 @@ def orient_by_rois(streamlines, roi1, roi2, affine=None, copy=True):
     >>> roi2 = np.zeros_like(roi1)
     >>> roi1[0, 0, 0] = True
     >>> roi2[1, 0, 0] = True
-    >>> list(orient_by_rois(streamlines, roi1, roi2))
+    >>> orient_by_rois(streamlines, roi1, roi2)
     [array([[ 0.,  0.,  0.],
            [ 1.,  0.,  0.],
            [ 2.,  0.,  0.]]), array([[ 0.,  0.,  0.],
@@ -301,7 +343,6 @@ def orient_by_rois(streamlines, roi1, roi2, affine=None, copy=True):
            [ 2.,  0.,  0.]])]
 
     """
-
     # If we don't already have coordinates on our hands:
     if len(roi1.shape) == 3:
         roi1 = np.asarray(np.where(roi1.astype(bool))).T
@@ -312,21 +353,23 @@ def orient_by_rois(streamlines, roi1, roi2, affine=None, copy=True):
         roi1 = apply_affine(affine, roi1)
         roi2 = apply_affine(affine, roi2)
 
-    # Make a copy, so you don't change the output in place:
-    if copy:
-        new_sl = deepcopy(streamlines)
-    else:
-        new_sl = streamlines
+    if as_generator:
+        if out is not None:
+            w_s = "Cannot set output, when input is a generator"
+            raise ValueError(w_s)
+        return _orient_generator(streamlines, roi1, roi2)
 
-    for idx, sl in enumerate(streamlines):
-        dist1 = cdist(sl, roi1, 'euclidean')
-        dist2 = cdist(sl, roi2, 'euclidean')
-        min1 = np.argmin(dist1, 0)
-        min2 = np.argmin(dist2, 0)
-        if min1[0] > min2[0]:
-            yield sl[::-1]
+    else:
+        # If it's a generator on input, we may as well generate it
+        # here and now:
+        if isinstance(streamlines, types.GeneratorType):
+            out = list(streamlines)
+        elif out is None:
+            # Make a copy, so you don't change the output in place:
+            out = deepcopy(streamlines)
         else:
-            yield sl
+            out = streamlines
+        return _orient_list(out, roi1, roi2)
 
 
 def _extract_vals(data, streamlines, affine=None, threedvec=False):
