@@ -13,8 +13,10 @@ from distutils.version import LooseVersion as V
 
 
 def sh3(cmd):
-    """Execute command in a subshell, return stdout, stderr
-    If anything appears in stderr, print it out to sys.stderr"""
+    """
+    Execute command in a subshell, return stdout, stderr
+    If anything appears in stderr, print it out to sys.stderr
+    """
     p = Popen(cmd, stdout=PIPE, stderr=PIPE, shell=True)
     out, err = p.communicate()
     retcode = p.returncode
@@ -27,6 +29,23 @@ def sh3(cmd):
 def abort(error):
     print('*WARNING* API documentation not generated: %s' % error)
     exit()
+
+
+def get_rst_string(module_name, help_string):
+    """
+    Generate rst text for module
+    """
+    dashes = "========================\n"
+
+    rst_text = ""
+    rst_text += dashes
+    rst_text += module_name + "\n"
+    rst_text += dashes + "\n"
+    rst_text += "::\n\n"
+    for line in help_string.split("\n"):
+        rst_text += "  " + line + "\n"
+    rst_text += "\n\n"
+    return rst_text
 
 
 if __name__ == '__main__':
@@ -63,6 +82,7 @@ if __name__ == '__main__':
     # generate docs
     bin_folder = pjoin('..', 'bin')
 
+    command_list = []
     for f in listdir(bin_folder):
         if f.startswith("dipy_"):
             try:
@@ -75,8 +95,23 @@ if __name__ == '__main__':
             err = err.decode("utf-8")
             if help_string == "":
                 help_string = err
-            out_f = f + ".txt"
+
+            doc_string = get_rst_string(f, help_string)
+            out_f = f + ".rst"
             output_file = open(pjoin(outdir, out_f), "w")
-            output_file.write(help_string)
+            output_file.write(doc_string)
             output_file.close()
+            command_list.append(out_f)
             print("Done")
+
+    # generate index.rst
+    print("Generating index.rst")
+    index = open(pjoin(outdir, "index.rst"), "w")
+    index.write("Command Line Utilities Reference\n")
+    index.write("================================\n\n")
+    index.write(".. toctree::\n\n")
+    for cmd in command_list:
+        index.write("   " + cmd)
+        index.write("\n")
+    index.close()
+    print("Done")
