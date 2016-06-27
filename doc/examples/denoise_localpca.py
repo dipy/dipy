@@ -19,6 +19,7 @@ import matplotlib.pyplot as plt
 from time import time
 from dipy.denoise.localpca import localpca
 from dipy.denoise.fast_lpca import fast_lpca
+from dipy.denoise.fast_noise_estimate import fast_noise_estimate
 from dipy.io import read_bvals_bvecs
 from dipy.core.gradients import gradient_table
 from dipy.denoise.noise_estimate_localpca import estimate_sigma_localpca
@@ -49,15 +50,14 @@ It takes both data and the gradient table object as inputs and returns an
 estimate of local noise standard deviation as a 3D array
 """
 t = time()
-sigma = estimate_sigma_localpca(data, gtab)
+sigma = np.array(fast_noise_estimate(data.astype(np.float64), gtab))
 print("Sigma estimation time", time() - t)
 # identify the b0 images from the dataset
 t = time()
 
 # perform the local PCA denoising
-denoised_arr = localpca(data,sigma,patch_radius=1)
+# denoised_arr = localpca(data,sigma,patch_radius=1)
 
-print("time taken slow", -t + time())
 
 """
 Simple remapping the sigma into a 4D array as the algorithm takes that as an input
@@ -75,8 +75,8 @@ denoised_arr_fast = fast_lpca(data.astype(np.float64),1,sigma)
 print("time taken fast", -t + time())
 
 # difference between fast and slow implementations
-dd = np.abs(denoised_arr_fast - denoised_arr)
-print("Max. difference: %e"%(dd.max(),))
+# dd = np.abs(denoised_arr_fast - denoised_arr)
+# print("Max. difference: %e"%(dd.max(),))
 orig = data[:, :,2, 10]
 rmse = np.sum(np.abs(denoised_arr_fast[:,:,:,:] - 
     den_data[:,:,:,:])) / np.sum(np.abs(den_data[:,:,:,:]))
