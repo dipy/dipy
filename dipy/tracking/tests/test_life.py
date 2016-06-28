@@ -110,7 +110,7 @@ def test_FiberModel_init():
     data_aff = data_ni.get_affine()
     bvals, bvecs = (np.load(f) for f in (bval_file, bvec_file))
     gtab = dpg.gradient_table(bvals, bvecs)
-    FM = life.FiberModel(gtab)
+    FM = life.FiberModel(gtab, evals=evals)
 
     streamline = [[[1, 2, 3], [4, 5, 3], [5, 6, 3], [6, 7, 3]],
                   [[1, 2, 3], [4, 5, 3], [5, 6, 3]]]
@@ -118,8 +118,7 @@ def test_FiberModel_init():
     affine = np.eye(4)
 
     for sphere in [None, False, dpd.get_sphere('symmetric362')]:
-        fiber_matrix, vox_coords = FM.setup(streamline, affine, evals,
-                                            sphere=sphere)
+        fiber_matrix, vox_coords = FM.setup(streamline, affine, sphere=sphere)
         npt.assert_array_equal(np.array(vox_coords),
                                np.array([[1, 2, 3], [4, 5, 3],
                                          [5, 6, 3], [6, 7, 3]]))
@@ -135,13 +134,13 @@ def test_FiberFit():
     data_aff = data_ni.get_affine()
     bvals, bvecs = (np.load(f) for f in (bval_file, bvec_file))
     gtab = dpg.gradient_table(bvals, bvecs)
-    FM = life.FiberModel(gtab)
     evals = [0.001, 0, 0]
+    FM = life.FiberModel(gtab, evals)
 
     streamline = [np.array([[1, 2, 3], [4, 5, 3], [5, 6, 3], [6, 7, 3]]),
                   np.array([[1, 2, 3], [4, 5, 3], [5, 6, 3]])]
 
-    fiber_matrix, vox_coords = FM.setup(streamline, None, evals)
+    fiber_matrix, vox_coords = FM.setup(streamline, None)
 
     w = np.array([0.5, 0.5])
     sig = opt.spdot(fiber_matrix, w) + 1.0  # Add some isotropic stuff

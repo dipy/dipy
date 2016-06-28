@@ -403,7 +403,7 @@ class FiberModel(ReconstModel):
                 vox_data)
 
 
-    def setup(self, streamline, affine, evals, sphere=None):
+    def setup(self, streamline, affine, sphere=None):
         """
         Set up the necessary components for the LiFE model: the matrix of
         fiber-contributions to the DWI signal, and the coordinates of voxels
@@ -427,7 +427,7 @@ class FiberModel(ReconstModel):
         """
         if sphere is not False:
             SignalMaker = LifeSignalMaker(self.gtab,
-                                          evals=evals,
+                                          evals=self.evals,
                                           sphere=sphere)
 
         if affine is None:
@@ -455,7 +455,9 @@ class FiberModel(ReconstModel):
             if sphere is not False:
                 fiber_signal.append(SignalMaker.streamline_signal(s))
             else:
-                fiber_signal.append(streamline_signal(s, self.gtab, evals))
+                fiber_signal.append(streamline_signal(s,
+                                                      self.gtab,
+                                                      self.evals))
 
         del streamline
         if sphere is not False:
@@ -520,7 +522,7 @@ class FiberModel(ReconstModel):
         if affine is None:
             affine = np.eye(4)
         life_matrix, vox_coords = \
-            self.setup(streamline, affine, evals=evals, sphere=sphere)
+            self.setup(streamline, affine, sphere=sphere)
         (to_fit, weighted_signal, b0_signal, relative_signal, mean_sig,
          vox_data) = self._fit_signals(data, vox_coords)
         beta = opt.sparse_nnls(to_fit, life_matrix)
@@ -754,8 +756,7 @@ class FiberFitSpeed(ReconstFit):
         else:
             _model = FiberModel(gtab)
             _matrix, _ = _model.setup(self.streamline,
-                                      self.affine,
-                                      self.evals)
+                                      self.affine)
 
         pred_weighted = np.reshape(opt.spdot(_matrix, self.beta),
                                    (self.vox_coords.shape[0],
