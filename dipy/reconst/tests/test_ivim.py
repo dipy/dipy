@@ -158,3 +158,34 @@ def test_predict():
     p = ivim_fit.predict(gtab)
     assert_array_equal(p.shape, data.shape)
     assert_array_almost_equal(p, data)
+
+
+def test_fit_with_jacobian():
+    """
+    Test the implementation of the fitting with minimize
+    """
+    bvals = np.array([0., 10., 20., 30., 40., 60., 80., 100.,
+                      120., 140., 160., 180., 200., 220., 240.,
+                      260., 280., 300., 350., 400., 500., 600.,
+                      700., 800., 900., 1000.])
+    N = len(bvals)
+    bvecs = generate_bvecs(N)
+    gtab = gradient_table(bvals, bvecs.T)
+
+    S0, f, D_star, D = 1.0, 0.132, 0.00885, 0.000921
+
+    mevals = np.array(([D_star, D_star, D_star], [D, D, D]))
+    # This gives an isotropic signal
+
+    signal = multi_tensor(gtab, mevals, snr=None, S0=S0, fractions=[
+                          f * 100, 100 * (1 - f)])
+    data = np.array([signal[0], ])
+
+    ivim_model = IvimModel(gtab)
+    ivim_fit = ivim_model.fit(data, routine="minimize", jac=True)
+
+    est_signal = np.array([ivim_function(ivim_fit.model_params[0], bvals), ])
+
+    assert_array_equal(est_signal.shape, data.shape)
+    assert_array_almost_equal(est_signal, data)
+    assert_array_almost_equal(ivim_fit.model_params[0], [S0, f, D_star, D])
