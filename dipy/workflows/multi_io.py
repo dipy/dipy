@@ -1,8 +1,10 @@
-import os
-import numpy as np
-from glob import glob
-import os.path as path
 import inspect
+import numpy as np
+import os
+import os.path as path
+from glob import glob
+
+from dipy.utils.six import string_types
 
 
 def common_start(sa, sb):
@@ -46,9 +48,9 @@ def connect_output_paths(inputs, out_dir, out_files, output_strategy='append',
         A list of output file paths.
     """
     outputs = []
-    if isinstance(inputs, basestring):
+    if isinstance(inputs, string_types):
         inputs = [inputs]
-    if isinstance(out_files, basestring):
+    if isinstance(out_files, string_types):
         out_files = [out_files]
 
     sizes_of_inputs = [len(inp) for inp in inputs]
