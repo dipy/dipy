@@ -133,7 +133,7 @@ def add_noise(signal, snr, S0, noise_type='rician'):
     return noise_adder[noise_type](signal, noise1, noise2)
 
 
-def sticks_and_ball(gtab, d=0.0015, S0=100, angles=[(0, 0), (90, 0)],
+def sticks_and_ball(gtab, d=0.0015, S0=1., angles=[(0, 0), (90, 0)],
                     fractions=[35, 35], snr=20):
     """ Simulate the signal for a Sticks & Ball model.
 
@@ -188,7 +188,7 @@ def sticks_and_ball(gtab, d=0.0015, S0=100, angles=[(0, 0), (90, 0)],
     return S, sticks
 
 
-def single_tensor(gtab, S0=100., evals=None, evecs=None, snr=None):
+def single_tensor(gtab, S0=1., evals=None, evecs=None, snr=None):
     """ Simulated Q-space signal with a single tensor.
 
     Parameters
@@ -244,7 +244,7 @@ def single_tensor(gtab, S0=100., evals=None, evecs=None, snr=None):
     return S.reshape(out_shape)
 
 
-def multi_tensor(gtab, mevals, S0=100, angles=[(0, 0), (90, 0)],
+def multi_tensor(gtab, mevals, S0=1., angles=[(0, 0), (90, 0)],
                  fractions=[50, 50], snr=20):
     r""" Simulate a Multi-Tensor signal.
 
@@ -305,7 +305,7 @@ def multi_tensor(gtab, mevals, S0=100, angles=[(0, 0), (90, 0)],
     return add_noise(S, snr, S0), sticks
 
 
-def multi_tensor_dki(gtab, mevals, S0=100, angles=[(90., 0.), (90., 0.)],
+def multi_tensor_dki(gtab, mevals, S0=1., angles=[(90., 0.), (90., 0.)],
                      fractions=[50, 50], snr=20):
     r""" Simulate the diffusion-weight signal, diffusion and kurtosis tensors
     based on the DKI model
@@ -481,7 +481,7 @@ def kurtosis_element(D_comps, frac, ind_i, ind_j, ind_k, ind_l, DT=None,
     return wijkl
 
 
-def DKI_signal(gtab, dt, kt, S0=100, snr=None):
+def DKI_signal(gtab, dt, kt, S0=1., snr=None):
     r""" Simulated signal based on the diffusion and diffusion kurtosis
     tensors of a single voxel. Simulations are preformed assuming the DKI
     model.

@@ -326,7 +326,7 @@ class MapmriFit(ReconstFit):
                     i, 2]) / 2.0) * self._mapmri_coef[i] * Bm[i]
         return const * rtop
 
-    def predict(self, gtab, S0=100.0):
+    def predict(self, gtab, S0=1.):
         """
         Predict a signal for this MapmriModel class instance given a gradient
         table.

@@ -180,7 +180,7 @@ class ConstrainedSphericalDeconvModel(SphHarmModel):
         return SphHarmFit(self, shm_coeff, None)
 
 
-    def predict(self, sh_coeff, gtab=None, S0=1):
+    def predict(self, sh_coeff, gtab=None, S0=1.):
         """Compute a signal prediction given spherical harmonic coefficients
         for the provided GradientTable class instance.
 
@@ -951,7 +951,7 @@ def recursive_response(gtab, data, mask=None, sh_order=8, peak_thr=0.01,
            the fiber response function for spherical deconvolution of
            diffusion MRI data.
     """
-    S0 = 1
+    S0 = 1.
     evals = fa_trace_to_lambdas(init_fa, init_trace)
     res_obj = (evals, S0)
 
