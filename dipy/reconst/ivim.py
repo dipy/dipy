@@ -253,11 +253,15 @@ def _minimize(flat_data, bvals, flat_x0, ivim_params,
         _ivim_error(params, bvals, signal)**2)
 
     result = []
+    if jac == True:
+        jacobian = _ivim_jacobian_func
+    else:
+        jacobian = None
     for vox in range(flat_data.shape[0]):
         res = Optimizer(sum_sq,
                         flat_x0[vox],
                         args=(bvals, flat_data[vox]), bounds=bounds,
-                        tol=tol, method=algorithm, jac=jac,
+                        tol=tol, method=algorithm, jac=jacobian,
                         options={'gtol': gtol, 'ftol': ftol, 'eps': eps, 'maxiter': maxiter})
         ivim_params[vox, :4] = res.xopt
         result += [res]
@@ -348,3 +352,32 @@ def get_S0_guess(data, gtab, split_b):
                      np.exp(-gtab.bvals[~gtab.b0s_mask] * ADC),
                      -1)
     return S0_hat
+
+
+def _ivim_jacobian_func(params, bvals, signal):
+    """The Jacobian is the first derivative of the error function.
+
+    Notes
+    -----
+    The worked out Jacobian can be found here :
+    http://mathb.in/64905?key=774f1d2b7c71358b4cf6dd0e6e4f5de3a5b5fbe3
+
+    References
+    ----------
+
+    """
+    S0, f, D_star, D = params
+
+    derv_S0 = f * np.exp(-bvals * D_star) + (1 - D) * np.exp(-bvals * D)
+    derv_f = S0 * (np.exp(-bvals * D_star) - np.exp(-bvals * D))
+    derv_D_star = S0 * (-bvals * f * np.exp(-bvals * D_star))
+    derv_D = S0 * (-bvals * (1 - f) * np.exp(-bvals * D))
+
+    jacobian = np.zeros((len(params)))
+
+    jacobian[0] = np.sum(2 * _ivim_error(params, bvals, signal) * derv_S0)
+    jacobian[1] = np.sum(2 * _ivim_error(params, bvals, signal) * derv_f)
+    jacobian[2] = np.sum(2 * _ivim_error(params, bvals, signal) * derv_D_star)
+    jacobian[3] = np.sum(2 * _ivim_error(params, bvals, signal) * derv_D)
+
+    return jacobian
