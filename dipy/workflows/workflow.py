@@ -24,7 +24,14 @@ class Workflow(object):
         previous frame(values of local variables and other contextuals) and the
         run method's docstring.
         """
-        io_it = io_iterator_(inspect.currentframe(1), self.run,
+
+        # To manage python 2/3
+        try:
+            frame = inspect.currentframe(1)
+        except:
+            frame = inspect.stack()[1].frame
+
+        io_it = io_iterator_(frame, self.run,
                              output_strategy=self._output_strategy,
                              mix_names=self._mix_names)
 
