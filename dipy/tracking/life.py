@@ -492,7 +492,7 @@ class FiberModel(ReconstModel):
         return life_matrix, vox_coords
 
 
-    def _fit_speed(self, data, streamline, evals, affine=None,
+    def _fit_speed(self, data, streamline, affine=None,
                    sphere=None):
         """
         Fit the LiFE FiberModel for data and a set of streamlines associated
@@ -506,9 +506,6 @@ class FiberModel(ReconstModel):
         affine: 4 by 4 array (optional)
            The affine to go from the streamline coordinates to the data
            coordinates. Defaults to use `np.eye(4)`
-        evals : list
-           The eigenvalues of the tensor response function used in constructing
-           the model signal.
         sphere: `dipy.core.Sphere` instance, or False
             Whether to approximate (and cache) the signal on a discrete
             sphere. This may confer a significant speed-up in setting up the
@@ -528,9 +525,10 @@ class FiberModel(ReconstModel):
         beta = opt.sparse_nnls(to_fit, life_matrix)
         return FiberFitSpeed(self, life_matrix, vox_coords, to_fit, beta,
                              weighted_signal, b0_signal, relative_signal,
-                             mean_sig, vox_data, streamline, affine, evals)
+                             mean_sig, vox_data, streamline, affine,
+                             self.evals)
 
-    def _fit_memory(self, data, streamline, evals, affine=None,
+    def _fit_memory(self, data, streamline, affine=None,
                     sphere=None, check_error_iter=5, converge_on_sse=0.8,
                     max_error_checks=5, step_size=0.01):
         """
@@ -698,7 +696,7 @@ class FiberModel(ReconstModel):
                                           to_fit,
                                           beta_best,
                                           affine,
-                                          evals,
+                                          self.evals,
                                           closest,
                                           s_in_vox)
 

@@ -154,7 +154,7 @@ def test_FiberFit():
     # Grab some realistic S0 values:
     this_data = np.concatenate([data[..., gtab.b0s_mask], this_data], -1)
 
-    fit = FM.fit(this_data, streamline, evals)
+    fit = FM.fit(this_data, streamline)
     npt.assert_almost_equal(fit.predict()[1],
                             fit.data[1], decimal=-1)
 
@@ -168,7 +168,7 @@ def test_FiberFit():
 
     FMM = life.FiberModel(gtab, conserve_memory=True)
 
-    fitm = FMM.fit(this_data, streamline, evals)
+    fitm = FMM.fit(this_data, streamline)
 
     npt.assert_almost_equal(fitm.predict(streamline)[1],
                             fitm.data[1], decimal=-1)
@@ -197,7 +197,7 @@ def test_fit_data():
                   odf_vertices=sphere.vertices, a_low=0)
     tensor_streamlines = [streamline for streamline in eu]
     life_model = life.FiberModel(gtab)
-    life_fit = life_model.fit(data, tensor_streamlines, evals)
+    life_fit = life_model.fit(data, tensor_streamlines)
     p_model = life_fit.predict()
     model_error = p_model - life_fit.data
     model_rmse = np.sqrt(np.mean(model_error ** 2, -1))
@@ -207,7 +207,7 @@ def test_fit_data():
     # And a moderate correlation with the Matlab implementation weights:
     npt.assert_(np.corrcoef(matlab_weights, life_fit.beta)[0, 1] > 0.6)
     life_model_memory = life.FiberModel(gtab, conserve_memory=True)
-    life_fit_memory = life_model_memory.fit(data, tensor_streamlines, evals)
+    life_fit_memory = life_model_memory.fit(data, tensor_streamlines)
     npt.assert_almost_equal(life_fit_memory.beta, life_fit.beta, decimal=1)
     p_model_mem = life_fit_memory.predict(tensor_streamlines)
     npt.assert_(np.corrcoef(p_model, p_model_mem)[0, 1] > 0.9999)
