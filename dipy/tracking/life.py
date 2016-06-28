@@ -225,10 +225,10 @@ class LifeSignalMaker(object):
             an instance of one of the symmetric spheres cached in
             `dps.get_sphere`. If a 'dipy.core.Sphere' class instance is
             provided, we will use this object. Default: the :mod:`dipy.data`
-            symmetric sphere with 724 vertices
+            symmetric sphere with 362 vertices
         """
         if sphere is None:
-            self.sphere = dpd.get_sphere('symmetric724')
+            self.sphere = dpd.get_sphere()
         else:
             self.sphere = sphere
 
@@ -422,7 +422,7 @@ class FiberModel(ReconstModel):
             sphere. This may confer a significant speed-up in setting up the
             problem, but is not as accurate. If `False`, we use the exact
             gradients along the streamlines to calculate the matrix, instead of
-            an approximation. Defaults to use the 724-vertex symmetric sphere
+            an approximation. Defaults to use the 362-vertex symmetric sphere
             from :mod:`dipy.data`
         """
         if sphere is not False:
@@ -566,7 +566,7 @@ class FiberModel(ReconstModel):
             parameters to perform in each round.
         """
         if sphere is None:
-            sphere = dpd.get_sphere('symmetric724')
+            sphere = dpd.get_sphere()
 
         signal_maker = self._signal_maker(evals=evals,
                                           sphere=sphere)
@@ -828,7 +828,7 @@ class FiberFitMemory(ReconstFit):
             gtab = self.model.gtab
 
         if sphere is None:
-            sphere = dpd.get_sphere('symmetric724')
+            sphere = dpd.get_sphere()
 
         signal_maker = self.model._signal_maker(evals=self.evals,
                                                 sphere=sphere)
