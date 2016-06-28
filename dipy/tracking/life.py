@@ -695,7 +695,6 @@ class FiberModel(ReconstModel):
                                           to_fit,
                                           beta_best,
                                           affine,
-                                          self.evals,
                                           closest,
                                           s_in_vox)
 
@@ -775,7 +774,7 @@ class FiberFitMemory(ReconstFit):
     A fit of the LiFE model to diffusion data
     """
     def __init__(self, fiber_model, vox_coords, data, to_fit, beta,
-                 affine, evals, closest, s_in_vox):
+                 affine, closest, s_in_vox):
         """
         Parameters
         ----------
@@ -796,7 +795,7 @@ class FiberFitMemory(ReconstFit):
         self.relative_signal = relative_signal
         self.mean_signal = mean_sig
         self.affine = affine
-        self.evals = evals
+        self.evals = fiber_model.evals
         self.closest = closest
         self.s_in_vox = s_in_vox
 
