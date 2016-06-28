@@ -284,6 +284,9 @@ def _orient_list(out, roi1, roi2):
 
     Performs the inner loop separately. This is needed, because functions with
     `yield` always return a generator.
+
+    Flips the streamlines in place (as needed) and returns a reference to the
+    updated list.
     """
     for idx, sl in enumerate(out):
         dist1 = cdist(sl, roi1, 'euclidean')
@@ -295,8 +298,8 @@ def _orient_list(out, roi1, roi2):
     return out
 
 
-def orient_by_rois(streamlines, roi1, roi2, out=None, as_generator=False,
-                   affine=None):
+def orient_by_rois(streamlines, roi1, roi2, in_place=False,
+                   as_generator=False, affine=None):
     """Orient a set of streamlines according to a pair of ROIs
 
     Parameters
@@ -307,11 +310,11 @@ def orient_by_rois(streamlines, roi1, roi2, out=None, as_generator=False,
     roi1, roi2 : ndarray
         Binary masks designating the location of the regions of interest, or
         coordinate arrays (n-by-3 array with ROI coordinate in each row).
-    out : list
-        A list to assign the output into (for example, this could be the
-        input `streamlines`, in which case the change will be made in-place).
-        If None (default), a copy of the original input is made and that copy
-        is returned, so that the input is retained
+    in_place : bool
+        Whether to make the change in-place in the original list
+        (and return a reference to the list), or to make a copy of the list
+        and return this copy, with the relevant streamlines reoriented.
+        Default: False.
     as_generator : bool
         Whether to return a generator as output. Default: False
     affine : ndarray
@@ -354,22 +357,23 @@ def orient_by_rois(streamlines, roi1, roi2, out=None, as_generator=False,
         roi2 = apply_affine(affine, roi2)
 
     if as_generator:
-        if out is not None:
-            w_s = "Cannot set output, when input is a generator"
+        if in_place:
+            w_s = "Cannot return a generator when in_place is set to True"
             raise ValueError(w_s)
         return _orient_generator(streamlines, roi1, roi2)
 
+    # If it's a generator on input, we may as well generate it
+    # here and now:
+    if isinstance(streamlines, types.GeneratorType):
+        out = list(streamlines)
+
+    elif in_place:
+        out = streamlines
     else:
-        # If it's a generator on input, we may as well generate it
-        # here and now:
-        if isinstance(streamlines, types.GeneratorType):
-            out = list(streamlines)
-        elif out is None:
-            # Make a copy, so you don't change the output in place:
-            out = deepcopy(streamlines)
-        else:
-            out = streamlines
-        return _orient_list(out, roi1, roi2)
+        # Make a copy, so you don't change the output in place:
+        out = deepcopy(streamlines)
+
+    return _orient_list(out, roi1, roi2)
 
 
 def _extract_vals(data, streamlines, affine=None, threedvec=False):

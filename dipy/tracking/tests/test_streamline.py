@@ -810,7 +810,7 @@ def test_orient_by_rois():
     new_streamlines = orient_by_rois(streamlines,
                                      mask1_vol,
                                      mask2_vol,
-                                     out=None,  # This should return a copy
+                                     in_place=False,
                                      affine=None,
                                      as_generator=False)
     npt.assert_equal(new_streamlines, flipped_sl)
@@ -821,7 +821,7 @@ def test_orient_by_rois():
     new_streamlines = orient_by_rois(x_streamlines,
                                      mask1_vol,
                                      mask2_vol,
-                                     out=None,  # This should return a copy
+                                     in_place=False,
                                      affine=affine,
                                      as_generator=False)
     npt.assert_equal(new_streamlines, x_flipped_sl)
@@ -831,7 +831,7 @@ def test_orient_by_rois():
     new_streamlines = orient_by_rois(x_streamlines,
                                      mask1_coords,
                                      mask2_coords,
-                                     out=None,  # This should return a copy
+                                     in_place=False,
                                      affine=affine,
                                      as_generator=False)
     npt.assert_equal(new_streamlines, x_flipped_sl)
@@ -840,7 +840,7 @@ def test_orient_by_rois():
     new_streamlines = orient_by_rois(streamlines,
                                      mask1_vol,
                                      mask2_vol,
-                                     out=None,
+                                     in_place=False,
                                      affine=None,
                                      as_generator=True)
 
@@ -852,7 +852,7 @@ def test_orient_by_rois():
     new_streamlines = orient_by_rois(x_streamlines,
                                      mask1_vol,
                                      mask2_vol,
-                                     out=None,
+                                     in_place=False,
                                      affine=affine,
                                      as_generator=True)
 
@@ -864,7 +864,7 @@ def test_orient_by_rois():
     new_streamlines = orient_by_rois(generate_sl(streamlines),
                                      mask1_vol,
                                      mask2_vol,
-                                     out=None,
+                                     in_place=False,
                                      affine=None,
                                      as_generator=True)
 
@@ -872,11 +872,11 @@ def test_orient_by_rois():
     ll = list(new_streamlines)
     npt.assert_equal(ll, flipped_sl)
 
-    # Generator input with an `out` set to something raises an error:
+    # Generator output cannot take a True `in_place` kwarg:
     npt.assert_raises(ValueError, orient_by_rois, *[generate_sl(streamlines),
                                                     mask1_vol,
                                                     mask2_vol],
-                                                   **dict(out=streamlines,
+                                                   **dict(in_place=True,
                                                           affine=None,
                                                           as_generator=True))
 
@@ -884,18 +884,18 @@ def test_orient_by_rois():
     new_streamlines = orient_by_rois(generate_sl(streamlines),
                                      mask1_vol,
                                      mask2_vol,
-                                     out=None,
+                                     in_place=False,
                                      affine=None,
                                      as_generator=False)
 
     npt.assert_(not isinstance(new_streamlines, types.GeneratorType))
     npt.assert_equal(new_streamlines, flipped_sl)
 
-    # Setting the `out` kwarg to the input should modify in-place:
+    # Modify in-place:
     new_streamlines = orient_by_rois(streamlines,
                                      mask1_vol,
                                      mask2_vol,
-                                     out=streamlines,
+                                     in_place=True,
                                      affine=None,
                                      as_generator=False)
 
