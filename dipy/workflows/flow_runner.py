@@ -2,6 +2,7 @@ from __future__ import division, print_function, absolute_import
 
 import logging
 
+from dipy.utils.six import iteritems
 from dipy.workflows.base import IntrospectiveArgumentParser
 
 
@@ -65,8 +66,8 @@ def run_flow(flow):
     del args['mix_names']
 
     # Remove subflows related params
-    for sub_flow, params_dict in sub_flows_dicts.iteritems():
-        for key, _ in params_dict.iteritems():
+    for sub_flow, params_dict in iteritems(sub_flows_dicts):
+        for key, _ in iteritems(params_dict):
             if key in args.keys():
                 params_dict[key] = args.pop(key)
 

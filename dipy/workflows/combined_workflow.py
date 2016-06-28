@@ -1,4 +1,7 @@
-from workflow import Workflow
+from __future__ import division, print_function, absolute_import
+
+from dipy.utils.six import iteritems
+from dipy.workflows.workflow import Workflow
 
 
 class CombinedWorkflow(Workflow):
@@ -33,9 +36,9 @@ class CombinedWorkflow(Workflow):
             that were passed in the commandline.
         """
         self._optionals = {}
-        for key, sub_dict in opts.iteritems():
+        for key, sub_dict in iteritems(opts): #opts.iteritems():
             self._optionals[key] = \
-                dict((k, v) for k, v in sub_dict.iteritems() if v is not None)
+                dict((k, v) for k, v in iteritems(sub_dict) if v is not None)
 
     def get_optionals(self, flow, **kwargs):
         """ Returns the sub flow's optional arguments merged with those passed
