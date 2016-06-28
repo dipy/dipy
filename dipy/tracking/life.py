@@ -525,8 +525,7 @@ class FiberModel(ReconstModel):
         beta = opt.sparse_nnls(to_fit, life_matrix)
         return FiberFitSpeed(self, life_matrix, vox_coords, to_fit, beta,
                              weighted_signal, b0_signal, relative_signal,
-                             mean_sig, vox_data, streamline, affine,
-                             self.evals)
+                             mean_sig, vox_data, streamline, affine)
 
     def _fit_memory(self, data, streamline, affine=None,
                     sphere=None, check_error_iter=5, converge_on_sse=0.8,
@@ -709,7 +708,7 @@ class FiberFitSpeed(ReconstFit):
     """
     def __init__(self, fiber_model, life_matrix, vox_coords, to_fit, beta,
                  weighted_signal, b0_signal, relative_signal, mean_sig,
-                 vox_data, streamline, affine, evals):
+                 vox_data, streamline, affine):
         """
         Parameters
         ----------
@@ -728,7 +727,7 @@ class FiberFitSpeed(ReconstFit):
         self.mean_signal = mean_sig
         self.streamline = streamline
         self.affine = affine
-        self.evals = evals
+        self.evals = fiber_model.evals
 
     def predict(self, gtab=None, S0=None):
         """
