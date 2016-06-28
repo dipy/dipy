@@ -68,7 +68,7 @@ class IvimModel(ReconstModel):
             raise ValueError(e_s)
 
     def fit(self, data, mask=None, x0=None, fit_method="one_stage", routine="minimize",
-            jac=False, bounds=((0, None), (0, 1.), (0, 1.), (0, 1.)), tol=1e-25, algorithm='L-BFGS-B',
+            jac=None, bounds=((0, None), (0, 1.), (0, 1.), (0, 1.)), tol=1e-25, algorithm='L-BFGS-B',
             gtol=1e-25, ftol=1e-25, eps=1e-15, maxiter=1000):
         """ Fit method of the Ivim model class
 
