@@ -375,9 +375,9 @@ def _ivim_jacobian_func(params, bvals, signal):
 
     jacobian = np.zeros((len(params)))
 
-    jacobian[0] = np.sum(2 * _ivim_error(params, bvals, signal) * derv_S0)
-    jacobian[1] = np.sum(2 * _ivim_error(params, bvals, signal) * derv_f)
-    jacobian[2] = np.sum(2 * _ivim_error(params, bvals, signal) * derv_D_star)
-    jacobian[3] = np.sum(2 * _ivim_error(params, bvals, signal) * derv_D)
+    jacobian[0] = np.sum(2 * _ivim_error(params, bvals, signal) * -derv_S0)
+    jacobian[1] = np.sum(2 * _ivim_error(params, bvals, signal) * -derv_f)
+    jacobian[2] = np.sum(2 * _ivim_error(params, bvals, signal) * -derv_D_star)
+    jacobian[3] = np.sum(2 * _ivim_error(params, bvals, signal) * -derv_D)
 
     return jacobian
