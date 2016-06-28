@@ -346,7 +346,7 @@ class FiberModel(ReconstModel):
         else:
             self.fit = self._fit_speed
 
-    def _signal_maker(self, evals, sphere=None):
+    def _signal_maker(self, sphere=None):
         """Make the signal portion of the LiFE matrix.
 
         Parameters
@@ -367,7 +367,7 @@ class FiberModel(ReconstModel):
 
         # Calculate for every direction on the sphere:
         for idx in range(sphere.vertices.shape[0]):
-            tensor = grad_tensor(sphere.vertices[idx], evals)
+            tensor = grad_tensor(sphere.vertices[idx], self.evals)
             ADC = np.diag(np.dot(np.dot(bvecs, tensor), bvecs.T))
             sig = np.exp(-bvals * ADC)
             sig = sig - np.mean(sig)
@@ -568,8 +568,7 @@ class FiberModel(ReconstModel):
         if sphere is None:
             sphere = dpd.get_sphere()
 
-        signal_maker = self._signal_maker(evals=evals,
-                                          sphere=sphere)
+        signal_maker = self._signal_maker(sphere=sphere)
 
         if affine is None:
             affine = np.eye(4)
@@ -676,7 +675,6 @@ class FiberModel(ReconstModel):
                 beta[beta < 0] = 0
                 delta[:] = 0
             else:
-                print(iteration)
                 sse = np.sum((to_fit - y_hat) ** 2)
                 # Did we do better this time around?
                 if sse < ss_residuals_min:
@@ -830,8 +828,7 @@ class FiberFitMemory(ReconstFit):
         if sphere is None:
             sphere = dpd.get_sphere()
 
-        signal_maker = self.model._signal_maker(evals=self.evals,
-                                                sphere=sphere)
+        signal_maker = self.model._signal_maker(sphere=sphere)
 
         n_bvecs = gtab.bvals[~gtab.b0s_mask].shape[0]
         f_matrix_shape = (self.fit_data.shape[0], len(streamline))
