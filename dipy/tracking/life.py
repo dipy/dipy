@@ -353,9 +353,6 @@ class FiberModel(ReconstModel):
         ----------
         gtab : GradientTable
             The gradient table on which the signal is calculated.
-        evals : list of 3 items
-            The eigenvalues of the canonical tensor to use in calculating the
-            signal.
         """
         if sphere is None:
             sphere = dpd.get_sphere()
@@ -414,9 +411,6 @@ class FiberModel(ReconstModel):
             Streamlines, each is an array of shape (n, 3)
         affine : 4 by 4 array
             Mapping from the streamline coordinates to the data
-        evals : list (3 items)
-            The eigenvalues of the canonical tensor used as a response
-            function.
         sphere: `dipy.core.Sphere` instance.
             Whether to approximate (and cache) the signal on a discrete
             sphere. This may confer a significant speed-up in setting up the
@@ -540,9 +534,6 @@ class FiberModel(ReconstModel):
             Streamlines, each is an array of shape (n, 3)
         affine : 4 by 4 array
             Mapping from the streamline coordinates to the data
-        evals : list (3 items)
-            The eigenvalues of the canonical tensor used as a response
-            function.
         sphere: `dipy.core.Sphere` instance.
             Whether to approximate (and cache) the signal on a discrete
             sphere. This may confer a significant speed-up in setting up the
