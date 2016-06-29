@@ -2,11 +2,11 @@
 """
 Script to generate documentation for command line utilities
 """
-import sys
-import re
 from os.path import join as pjoin
 from os import listdir
+import re
 from subprocess import Popen, PIPE, CalledProcessError
+import sys
 
 # version comparison
 from distutils.version import LooseVersion as V
@@ -27,7 +27,7 @@ def sh3(cmd):
 
 
 def abort(error):
-    print('*WARNING* API documentation not generated: %s' % error)
+    print('*WARNING* Command line API documentation not generated: %s' % error)
     exit()
 
 
@@ -57,7 +57,7 @@ if __name__ == '__main__':
     try:
         __import__(package)
     except ImportError as e:
-        abort("Can not import " + package)
+        abort("Cannot import " + package)
 
     module = sys.modules[package]
 
