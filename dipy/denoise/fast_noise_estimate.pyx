@@ -81,7 +81,7 @@ def fast_noise_estimate(data, gtab):
     X = X - np.array([M, ] * X.shape[0],
                                       dtype=np.float64)
     C = np.transpose(X).dot(X)
-    C = C / M.shape[0]
+    C = C / X.shape[0]
     # Do PCA and find the lowest principal component
     [d, W] = np.linalg.eigh(C)
     d[d < 0] = 0

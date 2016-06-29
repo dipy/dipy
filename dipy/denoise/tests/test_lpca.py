@@ -8,6 +8,7 @@ from dipy.denoise.localpca import localpca
 from dipy.sims.voxel import multi_tensor
 from dipy.core.gradients import gradient_table
 from dipy.core.sphere import disperse_charges, HemiSphere
+import matplotlib.pyplot as plt
 from dipy.sims.voxel import multi_tensor
 from time import time
 
@@ -118,14 +119,14 @@ def gen_gtab():
 
 def test_lpca_static():
     S0 = 100 * np.ones((20, 20, 20, 20), dtype='f8')
-    S0n = localpca(S0, sigma=np.ones((20, 20, 20)))
+    S0n = localpca(S0, sigma=np.ones((20, 20, 20, 20), dtype=np.float64))
     assert_array_almost_equal(S0, S0n)
 
 
 def test_lpca_random_noise():
     S0 = 100 + 2 * np.random.standard_normal((22, 23, 30, 20))
 
-    S0n = localpca(S0, sigma=np.ones((22, 23, 30, 20)) * np.std(S0))
+    S0n = localpca(S0, sigma= np.std(S0))
 
     print(S0.mean(), S0.min(), S0.max())
     print(S0n.mean(), S0n.min(), S0n.max())
@@ -140,7 +141,7 @@ def test_lpca_boundary_behaviour():
     S0 = 100 * np.ones((20, 20, 20, 20), dtype='f8')
     S0[:, :, 0, :] = S0[:, :, 0, :] + 2 * \
         np.random.standard_normal((20, 20, 20))
-    S0n = localpca(S0, sigma=np.ones((20, 20, 20, 20)) * np.std(S0))
+    S0n = localpca(S0, sigma= np.std(S0))
     S0_first = S0[:, :, 0, :]
     S0n_first = S0n[:, :, 0, :]
     rmse = np.sum(np.abs(S0n_first - S0_first)) / (100.0 * 20.0 * 20.0 * 20.0)
@@ -157,20 +158,19 @@ def test_lpca_boundary_behaviour():
 def test_lpca_rmse():
     S0 = 100 + 2 * np.random.standard_normal((22, 23, 30, 20))
 
-    S0n = localpca(S0, sigma=np.ones((22, 23, 30, 20)) * np.std(S0))
+    S0n = localpca(S0, sigma = np.std(S0))
     rmse = np.sum(np.abs(S0n - 100) / np.sum(100 * np.ones(S0.shape)))
-
     print(rmse)
     # error should be less than 5%
     assert_(rmse < 0.05)
 
 
 def test_lpca_sharpness():
-    S0 = np.ones((30, 30, 30, 20)) * 100
+    S0 = np.ones((30, 30, 30, 20), dtype=np.float64) * 100
     S0[10:20, 10:20, 10:20, :] = 50
     S0[20:30, 20:30, 20:30, :] = 0
     S0 = S0 + 20 * np.random.standard_normal((30, 30, 30, 20))
-    S0n = localpca(S0, sigma=400)
+    S0n = localpca(S0, sigma = 400.0)
 
     # check the edge gradient
     edg = np.abs(np.mean(S0n[8, 10:20, 10:20] - S0n[12, 10:20, 10:20]) - 50)
@@ -179,6 +179,15 @@ def test_lpca_sharpness():
 
     assert_(edg < 2)
 
+def test_lpca_dtype():
+
+    S0 = 200 * np.ones((20, 20, 20, 3), dtype='f4')
+    S0n = localpca(S0, sigma=1)
+    assert_equal(S0.dtype, S0n.dtype)
+
+    S0 = 200 * np.ones((20, 20, 20, 20), dtype=np.uint16)
+    S0n = localpca(S0, sigma=np.ones((20, 20, 20)))
+    assert_equal(S0.dtype, S0n.dtype)
 
 def test_phantom():
 
@@ -189,7 +198,16 @@ def test_phantom():
     temp = (DWI_clean / sigma)**2
     DWI_clean_wrc = sigma * np.sqrt(np.pi / 2) * np.exp(-0.5 * temp) * ((1 + 0.5 * temp) * sp.special.iv(
         0, 0.25 * temp) + 0.5 * temp * sp.special.iv(1, 0.25 * temp))**2
-    DWI_den = localpca(DWI, sigma)
+
+    if isinstance(sigma, np.ndarray) and sigma.ndim == 3:
+
+        sigma = (np.ones(DWI.shape, dtype=np.float64)
+                 * sigma[..., np.newaxis])
+    else:
+        sigma = np.ones(DWI.shape, dtype=np.float64) * sigma
+    # perform the local PCA denoising
+
+    DWI_den = localpca(DWI, sigma, patch_radius = 3)
     rmse_den = np.sum(np.abs(DWI_clean - DWI_den)) / np.sum(np.abs(DWI_clean))
     rmse_noisy = np.sum(np.abs(DWI_clean - DWI)) / np.sum(np.abs(DWI_clean))
 
@@ -198,16 +216,20 @@ def test_phantom():
     rmse_noisy_wrc = np.sum(np.abs(DWI_clean_wrc - DWI)) / \
         np.sum(np.abs(DWI_clean_wrc))
 
+    print("psnr noisy", np.max(DWI) / sigma[0, 0, 0, 0])
+    print("psnr clean", np.max(DWI_clean) / sigma[0, 0, 0, 0])
+    print("psnr denoised", np.max(DWI_den) / sigma[0, 0, 0, 0])
     print("rmse noisy", rmse_noisy)
     print("rmse den", rmse_den)
     print("rmse noisy", rmse_noisy_wrc)
     print("rmse den", rmse_den_wrc)
-    print("sigma", sigma)
-
+    print("sigma", DWI.shape)
+    sigma = sigma[0, 0, 0, 0]
+    assert_(np.max(DWI_clean) / sigma < np.max(DWI_den) / sigma)
+    assert_(np.max(DWI_den) / sigma < np.max(DWI) / sigma)
     assert_(rmse_den < rmse_noisy)
     assert_(rmse_den_wrc < rmse_noisy_wrc)
 
 if __name__ == '__main__':
 
     run_module_suite()
-    # test_phantom()

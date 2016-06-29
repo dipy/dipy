@@ -8,7 +8,7 @@ cimport numpy as cnp
 @cython.cdivision(True)
 cdef void fast_mat_mul(double[:, :] A, double[:, :] B, double[:, :] out) nogil:
     '''
-    Fast matrix multiplication 
+    Fast matrix multiplication
     out = AB
     '''
     cdef:
@@ -138,13 +138,13 @@ def fast_lpca(double[:, :, :, :] I, int radius, double[:, :, :, :] sigma):
     ----------
     [1] Diffusion Weighted Image Denoising Using Overcomplete Local PCA
         Manjon JV, Coupe P, Concha L, Buades A, Collins DL
-        
-    [2] On the computation of integrals over fixed-size rectangles of 
+
+    [2] On the computation of integrals over fixed-size rectangles of
         arbitrary dimension
-        Omar Ocegueda, Oscar Dalmau, Eleftherios Garyfallidis, 
+        Omar Ocegueda, Oscar Dalmau, Eleftherios Garyfallidis,
         Maxime Descoteaux, Mariano Rivera
 
-    '''     
+    '''
 
     cdef:
         cnp.npy_intp n0 = I.shape[0]
@@ -154,7 +154,7 @@ def fast_lpca(double[:, :, :, :] I, int radius, double[:, :, :, :] sigma):
         cnp.npy_intp m = 1 + (2 * radius)
         cnp.npy_intp nsamples = m * m * m
         cnp.npy_intp cur_i, prev_i, i, j, k, ii
-        cnp.npy_intp i0, j0, k0, p0, p, q, r, s
+        cnp.npy_intp i0, j0, k0, p, q, r, s
         double l0norm
         double[:, :, :, :, :] T = np.zeros((2, n1, n2, ndiff, ndiff))
         double[:, :, :, :] S = np.zeros((2, n1, n2, ndiff))
@@ -164,6 +164,7 @@ def fast_lpca(double[:, :, :, :] I, int radius, double[:, :, :, :] sigma):
         double[:, :, :, :] theta = np.zeros((n0, n1, n2, ndiff))
         double[:, :, :, :] thetax = np.zeros((n0, n1, n2, ndiff))
         double[:] temp = np.zeros(ndiff)
+        double[:] temp1 = np.zeros(ndiff)
         double[:, :] P = np.zeros((ndiff, ndiff))
         double[:] d = np.zeros(ndiff)
         double[:, :] W_hat = np.zeros((ndiff, ndiff))
@@ -282,7 +283,6 @@ def fast_lpca(double[:, :, :, :] I, int radius, double[:, :, :, :] sigma):
                                     W_hatt[p, q] = W_hat[q, p]
 
                         l0norm = 1.0 / (1 + l0norm)
-
                         # precompute the W_hat.W_hat_transpose for PCA
                         # projection plus reconstruct
                         fast_mat_mul(W_hat, W_hatt, P)
@@ -292,16 +292,15 @@ def fast_lpca(double[:, :, :, :] I, int radius, double[:, :, :, :] sigma):
                             for q in range(j0 - radius, j0 + radius + 1):
                                 for r in range(k0 - radius, k0 + radius + 1):
 
-                                    p0 = p + q * m + r * m
                                     for s in range(ndiff):
                                         temp[s] = I[p, q, r, s] - mu[s]
 
-                                    fast_vecmat_mul(temp, P, temp)
+                                    fast_vecmat_mul(temp, P, temp1)
 
                                     for s in range(ndiff):
-                                        temp[s] = temp[s] + mu[s]
+                                        temp1[s] += mu[s]
                                         theta[p, q, r, s] += l0norm
-                                        thetax[p, q, r, s] += temp[s] * l0norm
+                                        thetax[p, q, r, s] += temp1[s] * l0norm
 
     out = np.divide(thetax, theta)
 

@@ -18,11 +18,9 @@ import nibabel as nib
 import matplotlib.pyplot as plt
 from time import time
 from dipy.denoise.localpca import localpca
-from dipy.denoise.fast_lpca import fast_lpca
 from dipy.denoise.fast_noise_estimate import fast_noise_estimate
 from dipy.io import read_bvals_bvecs
 from dipy.core.gradients import gradient_table
-from dipy.denoise.noise_estimate_localpca import estimate_sigma_localpca
 
 """
 Load one of the datasets, it has 21 gradients and 1 b0 image
@@ -48,41 +46,38 @@ We use a special noise estimation method for getting the sigma
 to be used in local PCA algorithm. This is also proposed in [Manjon2013]_
 It takes both data and the gradient table object as inputs and returns an 
 estimate of local noise standard deviation as a 3D array
+
 """
 t = time()
+t1 = time()
 sigma = np.array(fast_noise_estimate(data.astype(np.float64), gtab))
 print("Sigma estimation time", time() - t)
 # identify the b0 images from the dataset
 t = time()
 
-# perform the local PCA denoising
-# denoised_arr = localpca(data,sigma,patch_radius=1)
-
-
 """
-Simple remapping the sigma into a 4D array as the algorithm takes that as an input
+Perform the localPCA using the function localpca.
+
+The localpca algorithm [Manjon2013]_ takes into account for the directional 
+information in the diffusion MR data. It performs PCA on local 4D patch and 
+then thresholds it using the local variance estimate done by noise estimation
+function, then performing PCA reconstruction on it gives us the deniosed 
+estimate.
 """
-t = time()
-if isinstance(sigma, np.ndarray) and sigma.ndim == 3:
-
-    sigma = (np.ones(data.shape, dtype=np.float64)
-                     * sigma[..., np.newaxis])
-else:
-    sigma = np.ones(data.shape, dtype=np.float64) * sigma
 # perform the local PCA denoising
-denoised_arr_fast = fast_lpca(data.astype(np.float64),1,sigma)
+denoised_arr_fast = localpca(data, sigma = sigma)
 
-print("time taken fast", -t + time())
+print("Time taken for local PCA", -t + time())
 
-# difference between fast and slow implementations
-# dd = np.abs(denoised_arr_fast - denoised_arr)
-# print("Max. difference: %e"%(dd.max(),))
+print("Total time", time() - t1)
+# print(np.array(eigenf))
 orig = data[:, :,2, 10]
 rmse = np.sum(np.abs(denoised_arr_fast[:,:,:,:] - 
     den_data[:,:,:,:])) / np.sum(np.abs(den_data[:,:,:,:]))
 print("RMSE between python and matlab output", rmse)
 den_matlab = den_data[:, :, 2, 10]
 den_python = denoised_arr_fast[:, :, 2, 10]
+
 """
 Let us plot the axial slice of the k= 10 direction, and the residuals
 """
