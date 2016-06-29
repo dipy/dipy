@@ -25,11 +25,12 @@ class Workflow(object):
         run method's docstring.
         """
 
-        # To manage python 2/3
-        try:
-            frame = inspect.currentframe(1)
-        except:
-            frame = inspect.stack()[1].frame
+        # To manage different python versions.
+        frame = inspect.stack()[1]
+        if isinstance(frame, tuple):
+            frame = frame[0]
+        else:
+            frame = frame.frame
 
         io_it = io_iterator_(frame, self.run,
                              output_strategy=self._output_strategy,
