@@ -8,9 +8,7 @@ from dipy.denoise.localpca import localpca
 from dipy.sims.voxel import multi_tensor
 from dipy.core.gradients import gradient_table
 from dipy.core.sphere import disperse_charges, HemiSphere
-import matplotlib.pyplot as plt
 from dipy.sims.voxel import multi_tensor
-from time import time
 
 
 def rfiw_phantom(gtab, snr=None):
