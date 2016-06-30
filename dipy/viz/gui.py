@@ -458,8 +458,8 @@ class TextBox(UI):
 
 
 class Slider(UI):
-    def __init__(self, start_point=(200, 20), end_point=(300, 20), line_width=5, inner_radius=5,
-                 outer_radius=15, position=(250, 20)):
+    def __init__(self, start_point=(350, 20), end_point=(550, 20), line_width=5, inner_radius=5,
+                 outer_radius=15, position=(450, 20)):
         """
 
         Parameters

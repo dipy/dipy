@@ -56,7 +56,9 @@ class CustomInteractorStyle(vtkInteractorStyleUser):
         click_pos = self.GetInteractor().GetEventPosition()
 
         self.picker.Pick(click_pos[0], click_pos[1], 0, self.renderer)
-        actor_2d = self.picker.GetViewProp()
+        co = self.picker.GetPickPosition()
+        print(co)
+        actor_2d = self.picker.GetActor2D()
         if actor_2d is not None:
             self.chosen_element = self.get_ui_item(actor_2d)
             print(self.chosen_element)
@@ -262,9 +264,8 @@ def disk_move_callback(*args, **kwargs):
         percentage = 100
     slider.text.set_message(str(int(percentage)) + "%")
 
-slider.slider_disk.add_callback("MouseMoveEvent", disk_move_callback)
-slider.slider_line.add_callback("LeftButtonPressEvent", line_click_callback)
-
+slider.add_callback("MouseMoveEvent", disk_move_callback, slider.slider_disk)
+slider.add_callback("LeftButtonPressEvent", line_click_callback, slider.slider_line)
 
 renderer = window.ren()
 iren_style = CustomInteractorStyle(renderer=renderer)
@@ -276,7 +277,7 @@ renderer.add(slider)
 
 # set_trace()
 
-showm = window.ShowManager(renderer, interactor_style=iren_style)
+showm = window.ShowManager(renderer, interactor_style=iren_style, size=(600, 600), title="Sci-Fi UI")
 
 showm.initialize()
 showm.render()
