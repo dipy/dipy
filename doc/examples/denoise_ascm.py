@@ -35,18 +35,18 @@ print("vol size", data.shape)
 t = time()
 
 """
-In order to call ``nlmeans`` first you need to estimate the standard deviation
+The ``ascm`` function takes two denoised inputs one more smooth than the other, for 
+generating these inputs we will use the ``non_local_means`` denoising.  
+In order to call ``non_local_means`` first you need to estimate the standard deviation
 of the noise. We use N=4 since the Sherbrooke dataset was acquired on a 1.5T
-Siemens scanner with a 4 array head coil. We will use the blockwise approach
-of nlmeans with two different sizes which is required for adaptive soft
-coeficient matching.
+Siemens scanner with a 4 array head coil.
 """
 
 sigma = estimate_sigma(data, N=4)
 
 # Smaller block denoising: More sharp less denoised
 """
-Non-local means with a smaller patch size => less smoothing, more sharpness
+Non-local means with a smaller patch size which implies less smoothing, more sharpness
 """
 den_small = non_local_means(
     data,
@@ -57,7 +57,7 @@ den_small = non_local_means(
     rician=True)
 # Larger block denoising: Less sharp and more denoised
 """
-Non-local means with larger patch size => more smoothing, less sharpness
+Non-local means with larger patch size which implies more smoothing, less sharpness
 """
 den_large = non_local_means(
     data,
@@ -98,6 +98,15 @@ for i in range(3):
     ax[i].set_axis_off()
 
 plt.show()
+plt.savefig('denoised_ascm.png', bbox_inches='tight')
+
+"""
+.. figure:: denoised_ascm.png
+   :align: center
+
+   **Showing the middle axial slice without (left) and with (middle) ASCM denoising**.
+"""
+
 
 nib.save(nib.Nifti1Image(den_final, affine), 'denoised_ascm.nii.gz')
 
