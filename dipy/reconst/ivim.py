@@ -1,8 +1,6 @@
 #!/usr/bin/python
 """ Classes and functions for fitting ivim model """
 from __future__ import division, print_function, absolute_import
-import warnings
-import functools
 import numpy as np
 from dipy.core.optimize import Optimizer
 
@@ -17,14 +15,39 @@ from dipy.core.sphere import Sphere
 
 
 def ivim_function(params, bvals):
-    """The ivim function
+    """The Intravoxel incoherent motion (IVIM) model function.
+
+    The IVIM model assumes that biological tissue includes a volume fraction
+    f of water flowing in perfused capillaries, with a perfusion 
+    coefficient D* and a fraction (1-f) of static (diffusion only), intra and
+    extracellular water, with a diffusion coefficient D. In this model the
+    echo attenuation of a signal in a single voxel can be written as 
+
+        .. math::
+
+        S(b) = S_0[f*e^{(-b*D\*)} + (1-f)e^{(-b*D)}]
+
+        Where:
+        .. math::
+
+        S_0, f, D\* and D are the IVIM parameters.
+
     Parameters
     ----------
     params : array
-             The IVIM parameters [S0, f, D_star, D]
+             An array of IVIM parameters - S0, f, D_star, D
 
     bvals  : array
              bvalues
+
+    References
+    ----------
+    .. [1] Le Bihan, Denis, et al. "Separation of diffusion
+               and perfusion in intravoxel incoherent motion MR
+               imaging." Radiology 168.2 (1988): 497-505.
+    .. [2] Federau, Christian, et al. "Quantitative measurement
+               of brain perfusion with intravoxel incoherent motion
+               MR imaging." Radiology 265.3 (2012): 874-881.
     """
     S0, f, D_star, D = params
     S = S0 * (f * np.exp(-bvals * D_star) + (1 - f) * np.exp(-bvals * D))
@@ -32,7 +55,7 @@ def ivim_function(params, bvals):
 
 
 def _ivim_error(params, bvals, signal):
-    """Error function to be used in fitting the model
+    """Error function to be used in fitting the IVIM model
     """
     return (signal - ivim_function(params, bvals))
 
@@ -43,21 +66,18 @@ class IvimModel(ReconstModel):
 
     def __init__(self, gtab, split_b=200.0, min_signal=None):
         """
-        An IVIM model
+        Initialize an IVIM model.
 
         Parameters
         ----------
         gtab : GradientTable class instance
-        split_b : split the data at this b-value for a two stage fit
+            Gradient directions and bvalues
 
-        References
-        ----------
-        .. [1] Le Bihan, Denis, et al. "Separation of diffusion
-                   and perfusion in intravoxel incoherent motion MR
-                   imaging." Radiology 168.2 (1988): 497-505.
-        .. [2] Federau, Christian, et al. "Quantitative measurement
-                   of brain perfusion with intravoxel incoherent motion
-                   MR imaging." Radiology 265.3 (2012): 874-881.
+        split_b : float
+            The b-value to split the data on for two-stage fit
+
+        min_signal : float
+            The minimum signal value in the data.
         """
         ReconstModel.__init__(self, gtab)
         self.split_b = split_b
@@ -68,37 +88,49 @@ class IvimModel(ReconstModel):
             raise ValueError(e_s)
 
     def fit(self, data, mask=None, x0=None, fit_method="one_stage", routine="minimize",
-            jac=None, bounds=((0, None), (0, 1.), (0, 1.), (0, 1.)), tol=1e-25, algorithm='L-BFGS-B',
+            jac=True, bounds=((0, None), (0, 1.), (0, 1.), (0, 1.)), tol=1e-25, algorithm='L-BFGS-B',
             gtol=1e-25, ftol=1e-25, eps=1e-15, maxiter=1000):
         """ Fit method of the Ivim model class
 
         Parameters
         ----------
         data : array
-            The measured signal from one voxel.
+            The measured signal from voxels.
         mask : array
             A boolean array used to mark the coordinates in the data that
             should be analyzed that has the shape data.shape[:-1]
-        x0 : array
+        x0 : array, optional
             Initial guesses for the parameters S0, f, D_star and D
-            Default x0 = [1.0, 0.10, 0.001, 0.0009]
-            These guess parameters are taken from the Federau paper
+            Default : [1.0, 0.10, 0.001, 0.0009]
+            These initial parameters are taken from [1]_
             Dimension can either be 1 or (N, 4) where N is the number of
             voxels in the data.
         fit_method: str
-            Use one-stage fitting or two-stage fitting.
-        jac : Boolean
-            Use the Jacobian
-        bounds : tuple
-            Bounds for the various parameters
-        tol : float
-            tolerance for convergence
-        method : str
-            Fitting algorithm to use from scipy.optimize
+            Use one-stage fitting or two-stage fitting. The two stage fitting
+            first fits a tensor model and uses the parameters from it to get
+            the initial guesses for the IVIM model.
+        jac : Boolean, optional
+            Default : True
+            Use the Jacobian. If true, use the Jacobian function defined in
+            `_ivim_jacobian_func` to calculate the Jacobian for minimization.
+        bounds : tuple, optional
+            Bounds for the various parameters,
+        tol : float, optional
+            Default : 1e-25
+            Tolerance for convergence of minimization
+        routine : str, optional
+            Default : minimize
+            Specify whether to use leastsq or minimize for fitting.
 
         Returns
         -------
         IvimFit object
+
+        References
+        ----------
+        .. [1] Federau, Christian, et al. "Quantitative measurement
+                   of brain perfusion with intravoxel incoherent motion
+                   MR imaging." Radiology 265.3 (2012): 874-881.
         """
         if mask is None:
             # Flatten it to 2D either way:
@@ -115,7 +147,7 @@ class IvimModel(ReconstModel):
         else:
             min_signal = self.min_signal
 
-        # Generate guess_parameters for all voxels
+        # Generate initial guess parameters for all voxels
         if x0 is None:
             x0 = np.ones(
                 (data.shape[:-1] + (4,))) * [1.0, 0.10, 0.001, 0.0009]
@@ -195,18 +227,6 @@ class IvimFit(object):
         ----------
         gtab : a GradientTable class instance
             This encodes the directions for which a prediction is made
-
-        Notes
-        -----
-        The predicted signal is given by:
-
-        .. math ::
-
-
-
-        Where:
-        .. math ::
-
         """
         return ivim_function(self.model_params, gtab.bvals)
 
