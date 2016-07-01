@@ -108,7 +108,8 @@ class MapmriModel(ReconstModel):
         >>> data, gtab = dsi_voxels()
         >>> sphere = get_sphere('symmetric724')
         >>> from dipy.sims.voxel import SticksAndBall
-        >>> data, golden_directions = SticksAndBall(gtab, d=0.0015, S0=100, angles=[(0, 0), (90, 0)], fractions=[50, 50], snr=None)
+        >>> data, golden_directions = SticksAndBall(gtab, d=0.0015, S0=100,
+        ... angles=[(0, 0), (90, 0)], fractions=[50, 50], snr=None)
         >>> from dipy.reconst.mapmri import MapmriModel
         >>> radial_order = 4
         >>> map_model = MapmriModel(gtab, radial_order=radial_order)
