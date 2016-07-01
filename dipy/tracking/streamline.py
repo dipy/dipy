@@ -275,15 +275,11 @@ def _orient_generator(out, roi1, roi2, clip=False):
         if min1[0] > min2[0]:
             out = sl[::-1]
             if clip:
-                # Exchange indices:
-                tmp = min2
-                min2 = min1
-                min1 = tmp
-
+                out = out[min2:min1]
         else:
             out = sl
-        if clip:
-            out = out[min1:min2]
+            if clip:
+                out = out[min1:min2]
         yield out
 
 
@@ -305,12 +301,10 @@ def _orient_list(out, roi1, roi2, clip=False):
         if min1[0] > min2[0]:
             out[idx] = sl[::-1]
             if clip:
-                # Exchange indices:
-                tmp = min2
-                min2 = min1
-                min1 = tmp
-        if clip:
-            out[idx] = out[idx][min1:min2]
+                out[idx] = out[idx][min2:min1]
+        else:
+            if clip:
+                out[idx] = out[idx][min1:min2]
 
     return out
 
