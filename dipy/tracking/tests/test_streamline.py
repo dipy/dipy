@@ -785,6 +785,7 @@ def test_select_by_rois():
 
 def test_orient_by_rois():
     streamlines = [np.array([[0, 0., 0],
+                             [0.5, 0, 0],
                              [1, 0., 0.],
                              [2, 0., 0.]]),
                    np.array([[2, 0., 0.],
@@ -815,6 +816,18 @@ def test_orient_by_rois():
                                      as_generator=False)
     npt.assert_equal(new_streamlines, flipped_sl)
     npt.assert_(new_streamlines is not streamlines)
+
+    # Clip to the ROIs:
+    new_streamlines = orient_by_rois(streamlines,
+                                     mask1_vol,
+                                     mask2_vol,
+                                     in_place=False,
+                                     affine=None,
+                                     as_generator=False,
+                                     clip=True)
+
+    expected = [streamlines[0][0:2], streamlines[1][::-1][0:1]]
+    npt.assert_equal(new_streamlines, expected)
 
     # Test with affine:
     x_flipped_sl = [s + affine[:3, 3] for s in flipped_sl]
