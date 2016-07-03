@@ -18,20 +18,27 @@ import nibabel as nib
 import matplotlib.pyplot as plt
 from time import time
 from dipy.denoise.localpca import localpca
+from dipy.denoise.localpca_slow import localpca_slow
 from dipy.denoise.fast_noise_estimate import fast_noise_estimate
 from dipy.io import read_bvals_bvecs
 from dipy.core.gradients import gradient_table
+
+from dipy.data import fetch_sherbrooke_3shell, read_sherbrooke_3shell
+
+
+fetch_sherbrooke_3shell()
+img, gtab = read_sherbrooke_3shell()
 
 """
 Load one of the datasets, it has 21 gradients and 1 b0 image
 """
 
-img = nib.load('/Users/Riddhish/Documents/GSOC/DIPY/data/test.nii')
+# img = nib.load('/Users/Riddhish/Documents/GSOC/DIPY/data/test.nii')
 den_img = nib.load(
     '/Users/Riddhish/Documents/GSOC/DIPY/data/test_denoised_rician.nii')
 b1, b2 = read_bvals_bvecs('/Users/Riddhish/Documents/GSOC/DIPY/data/test.bval',
                           '/Users/Riddhish/Documents/GSOC/DIPY/data/test.bvec')
-gtab = gradient_table(b1, b2)
+# gtab = gradient_table(b1, b2)
 data = np.array(img.get_data())
 den_data = np.array(den_img.get_data())
 affine = img.get_affine()
@@ -49,7 +56,7 @@ estimate of local noise standard deviation as a 3D array
 
 """
 t = time()
-t1 = time()
+
 sigma = np.array(fast_noise_estimate(data.astype(np.float64), gtab))
 print("Sigma estimation time", time() - t)
 # identify the b0 images from the dataset
@@ -63,20 +70,28 @@ information in the diffusion MR data. It performs PCA on local 4D patch and
 then thresholds it using the local variance estimate done by noise estimation
 function, then performing PCA reconstruction on it gives us the deniosed 
 estimate.
+
+We have a fast implementation ``localpca`` and a slower one (which has less 
+memory consumption) ``localpca_slow``
 """
 # perform the local PCA denoising
 denoised_arr_fast = localpca(data, sigma = sigma)
 
-print("Time taken for local PCA", -t + time())
+print("Time taken for local PCA (fast)", -t + time())
 
-print("Total time", time() - t1)
+t = time()
+
+denoised_arr = localpca_slow(data, sigma = sigma)
+
+print("Time taken for local PCA (slow)", -t + time())
+
 # print(np.array(eigenf))
 orig = data[:, :,2, 10]
 rmse = np.sum(np.abs(denoised_arr_fast[:,:,:,:] - 
     den_data[:,:,:,:])) / np.sum(np.abs(den_data[:,:,:,:]))
 print("RMSE between python and matlab output", rmse)
 den_matlab = den_data[:, :, 2, 10]
-den_python = denoised_arr_fast[:, :, 2, 10]
+den_python = denoised_arr[:, :, 2, 10]
 
 """
 Let us plot the axial slice of the k= 10 direction, and the residuals
