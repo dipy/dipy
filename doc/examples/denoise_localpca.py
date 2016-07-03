@@ -91,7 +91,7 @@ rmse = np.sum(np.abs(denoised_arr_fast[:,:,:,:] -
     den_data[:,:,:,:])) / np.sum(np.abs(den_data[:,:,:,:]))
 print("RMSE between python and matlab output", rmse)
 den_matlab = den_data[:, :, 2, 10]
-den_python = denoised_arr[:, :, 2, 10]
+den_python = denoised_arr_fast[:, :, 2, 10]
 
 """
 Let us plot the axial slice of the k= 10 direction, and the residuals

@@ -1,6 +1,5 @@
 import numpy as np
 import scipy as sp
-import dipy.denoise.fast_local_covariance as fcov
 
 
 def localpca_slow(arr, sigma, patch_radius=1, rician=True):
