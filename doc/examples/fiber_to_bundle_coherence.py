@@ -42,9 +42,11 @@ in DIPY.
 import numpy as np
 import os.path as op
 import nibabel as nib
-import dipy.core.optimize as opt
 from dipy.data import (read_stanford_labels, fetch_stanford_t1,
                        read_stanford_t1)
+
+# Fix seed
+np.random.seed(1)
 
 # Read data
 hardi_img, gtab, labels_img = read_stanford_labels()
@@ -136,8 +138,6 @@ direction getter along with the classifier and seeds as input.
 
 # Perform tracking using Local Tracking
 from dipy.tracking.local import LocalTracking
-from dipy.viz import fvtk
-from dipy.viz.colormap import line_colors
 
 streamlines = LocalTracking(prob_dg, classifier, seeds, affine, step_size=.5)
 
@@ -190,9 +190,7 @@ lookup tables as input.
 
 # Apply FBC measures
 from dipy.tracking.fbcmeasures import FBCMeasures
-from time import time
 
-a = time()
 fbc = FBCMeasures(streamlines, k)
 
 """
@@ -218,9 +216,7 @@ thresholding.
 """
 
 # Visualize the results
-from dipy.viz import fvtk
-from dipy.viz.colormap import line_colors
-from dipy.viz import window, actor
+from dipy.viz import fvtk, actor
 
 # Create renderer
 ren = fvtk.ren()
