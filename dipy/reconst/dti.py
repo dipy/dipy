@@ -13,12 +13,12 @@ import scipy.optimize as opt
 from dipy.utils.six.moves import range
 from dipy.utils.arrfuncs import pinv, eigh
 from dipy.data import get_sphere
-from ..core.gradients import gradient_table
-from ..core.geometry import vector_norm
-from ..core.sphere import Sphere
+from dipy.core.gradients import gradient_table
+from dipy.core.geometry import vector_norm
+from dipy.core.sphere import Sphere
 from .vec_val_sum import vec_val_vect
-from ..core.onetime import auto_attr
-from .base import ReconstModel
+from dipy.core.onetime import auto_attr
+from dipy.reconst.base import ReconstModel
 
 
 def _roll_evals(evals, axis=-1):
@@ -725,14 +725,17 @@ class TensorModel(ReconstModel):
 
         Note
         -----
-        In order to increase speed of processing, tensor fitting is done simultaneously
-        over many voxels. Many fit_methods use the 'step' parameter to set the number of
-        voxels that will be fit at once in each iteration. This is the chunk size as a 
-        number of voxels. A larger step value should speed things up, but it will also 
-        take up more memory. It is advisable to keep an eye on memory consumption as 
-        this value is increased.
 
-        Example : In :func:`iter_fit_tensor` we have a default step value of 1e4            
+        In order to increase speed of processing, tensor fitting is done
+        simultaneously over many voxels. Many fit_methods use the 'step'
+        parameter to set the number of voxels that will be fit at once in each
+        iteration. This is the chunk size as a number of voxels. A larger step
+        value should speed things up, but it will also take up more memory. It
+        is advisable to keep an eye on memory consumption as this value is
+        increased.
+
+        Example : In :func:`iter_fit_tensor` we have a default step value
+        of 1e4
 
         References
         ----------
@@ -805,7 +808,17 @@ class TensorModel(ReconstModel):
             dti_params = np.zeros(data.shape[:-1] + (12,))
             dti_params[mask, :] = params_in_mask
 
-        return TensorFit(self, dti_params)
+        evecs = dti_params[..., 3:12].reshape((dti_params.shape[:-1] + (3, 3)))
+        evals = dti_params[..., :3]
+        qform = vec_val_vect(evecs, evals)
+
+        sphere = Sphere(xyz=self.gtab.bvecs[~self.gtab.b0s_mask])
+        ADC = apparent_diffusion_coef(qform, sphere)
+
+        S0_hat = np.mean(data[..., ~self.gtab.b0s_mask] /
+                         np.exp(-self.gtab.bvals[~self.gtab.b0s_mask] * ADC),
+                         -1)
+        return TensorFit(self, dti_params, S0_hat=S0_hat)
 
     def predict(self, dti_params, S0=1):
         """
@@ -826,11 +839,12 @@ class TensorModel(ReconstModel):
 
 class TensorFit(object):
 
-    def __init__(self, model, model_params):
+    def __init__(self, model, model_params, S0_hat=None):
         """ Initialize a TensorFit class instance.
         """
         self.model = model
         self.model_params = model_params
+        self.S0_hat = S0_hat
 
     def __getitem__(self, index):
         model_params = self.model_params
@@ -1133,7 +1147,7 @@ class TensorFit(object):
         """
         return apparent_diffusion_coef(self.quadratic_form, sphere)
 
-    def predict(self, gtab, S0=1, step=None):
+    def predict(self, gtab, S0=None, step=None):
         r"""
         Given a model fit, predict the signal on the vertices of a sphere
 
@@ -1147,13 +1161,16 @@ class TensorFit(object):
            all voxels.
 
         step : int
-            The chunk size as a number of voxels. Optional parameter with default value 10,000.
 
-            In order to increase speed of processing, tensor fitting is done simultaneously
-            over many voxels. This parameter sets the number of voxels that will be fit at 
-            once in each iteration. A larger step value should speed things up, but it will 
-            also take up more memory. It is advisable to keep an eye on memory consumption 
-            as this value is increased.
+            The chunk size as a number of voxels. Optional parameter with
+            default value 10,000.
+
+            In order to increase speed of processing, tensor fitting is done
+            simultaneously over many voxels. This parameter sets the number of
+            voxels that will be fit at once in each iteration. A larger step
+            value should speed things up, but it will also take up more memory.
+            It is advisable to keep an eye on memory consumption as this value
+            is increased.
 
         Notes
         -----
@@ -1171,6 +1188,9 @@ class TensorFit(object):
         which a signal is to be predicted and $b$ is the b value provided in
         the GradientTable input for that direction
         """
+        if S0 is None:
+            S0 = self.S0_hat
+
         shape = self.model_params.shape[:-1]
         size = np.prod(shape)
         if step is None:
@@ -1204,13 +1224,17 @@ def iter_fit_tensor(step=1e4):
     Parameters
     ----------
     step : int
-        The chunk size as a number of voxels. Optional parameter with default value 10,000.
 
-        In order to increase speed of processing, tensor fitting is done simultaneously
-        over many voxels. This parameter sets the number of voxels that will be fit at 
-        once in each iteration. A larger step value should speed things up, but it will 
-        also take up more memory. It is advisable to keep an eye on memory consumption 
-        as this value is increased.
+        The chunk size as a number of voxels. Optional parameter with default
+        value 10,000.
+
+        In order to increase speed of processing, tensor fitting is done
+        simultaneously over many voxels. This parameter sets the number of
+        voxels that will be fit at once in each iteration. A larger step value
+        should speed things up, but it will also take up more memory. It is
+        advisable to keep an eye on memory consumption as this value is
+        increased.
+
     """
 
     def iter_decorator(fit_tensor):
@@ -1253,7 +1277,8 @@ def iter_fit_tensor(step=1e4):
             data = data.reshape(-1, data.shape[-1])
             dtiparams = np.empty((size, 12), dtype=np.float64)
             for i in range(0, size, step):
-                dtiparams[i:i + step] = fit_tensor(design_matrix, data[i:i + step],
+                dtiparams[i:i + step] = fit_tensor(design_matrix,
+                                                   data[i:i + step],
                                                    *args, **kwargs)
             return dtiparams.reshape(shape + (12, ))
 
