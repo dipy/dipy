@@ -1,5 +1,7 @@
 from __future__ import print_function
 
+import types
+
 import numpy as np
 from numpy.linalg import norm
 import numpy.testing as npt
@@ -673,6 +675,22 @@ def test_compress_streamlines_memory_leaks():
     # one since we kept the returned value.
     assert_equal(list_refcount_after, list_refcount_before+1)
 
+def generate_sl(streamlines):
+    """
+    Helper function that takes a sequence and returns a generator
+
+    Parameters
+    ----------
+    streamlines : sequence
+        Usually, this would be a list of 2D arrays, representing streamlines
+
+    Returns
+    -------
+    generator
+    """
+    for sl in streamlines:
+        yield sl
+
 
 def test_select_by_rois():
     streamlines = [np.array([[0, 0., 0.9],
@@ -759,10 +777,6 @@ def test_select_by_rois():
                                              streamlines[1]])
 
     # Test with generator input:
-    def generate_sl(streamlines):
-        for sl in streamlines:
-            yield sl
-
     selection = select_by_rois(generate_sl(streamlines), [mask1], [True],
                                tol=1.0)
     npt.assert_array_equal(list(selection), [streamlines[0],
@@ -791,25 +805,103 @@ def test_orient_by_rois():
     # Transform the streamlines:
     x_streamlines = [sl + affine[:3, 3] for sl in streamlines]
 
-    for copy in [True, False]:
-        for sl, affine in zip([streamlines, x_streamlines], [None, affine]):
-            for mask1, mask2 in \
-              zip([mask1_vol, mask1_coords], [mask2_vol, mask2_coords]):
-                new_streamlines = orient_by_rois(sl, mask1, mask2,
-                                                 affine=affine, copy=copy)
-                if copy:
-                    flipped_sl = [sl[0], sl[1][::-1]]
-                else:
-                    flipped_sl = [np.array([[0, 0., 0],
-                                            [1, 0., 0.],
-                                            [2, 0., 0.]]),
-                                  np.array([[0, 0., 0.],
-                                            [1, 0., 0],
-                                            [2, 0,  0.]])]
-                    if affine is not None:
-                        flipped_sl = [s + affine[:3, 3] for s in flipped_sl]
+    # After reorientation, this should be the answer:
+    flipped_sl = [streamlines[0], streamlines[1][::-1]]
+    new_streamlines = orient_by_rois(streamlines,
+                                     mask1_vol,
+                                     mask2_vol,
+                                     in_place=False,
+                                     affine=None,
+                                     as_generator=False)
+    npt.assert_equal(new_streamlines, flipped_sl)
+    npt.assert_(new_streamlines is not streamlines)
 
-                npt.assert_equal(new_streamlines, flipped_sl)
+    # Test with affine:
+    x_flipped_sl = [s + affine[:3, 3] for s in flipped_sl]
+    new_streamlines = orient_by_rois(x_streamlines,
+                                     mask1_vol,
+                                     mask2_vol,
+                                     in_place=False,
+                                     affine=affine,
+                                     as_generator=False)
+    npt.assert_equal(new_streamlines, x_flipped_sl)
+    npt.assert_(new_streamlines is not x_streamlines)
+
+    # Test providing coord ROIs instead of vol ROIs:
+    new_streamlines = orient_by_rois(x_streamlines,
+                                     mask1_coords,
+                                     mask2_coords,
+                                     in_place=False,
+                                     affine=affine,
+                                     as_generator=False)
+    npt.assert_equal(new_streamlines, x_flipped_sl)
+
+    # Test with as_generator set to True
+    new_streamlines = orient_by_rois(streamlines,
+                                     mask1_vol,
+                                     mask2_vol,
+                                     in_place=False,
+                                     affine=None,
+                                     as_generator=True)
+
+    npt.assert_(isinstance(new_streamlines, types.GeneratorType))
+    ll = list(new_streamlines)
+    npt.assert_equal(ll, flipped_sl)
+
+    # Test with as_generator set to True and with the affine
+    new_streamlines = orient_by_rois(x_streamlines,
+                                     mask1_vol,
+                                     mask2_vol,
+                                     in_place=False,
+                                     affine=affine,
+                                     as_generator=True)
+
+    npt.assert_(isinstance(new_streamlines, types.GeneratorType))
+    ll = list(new_streamlines)
+    npt.assert_equal(ll, x_flipped_sl)
+
+    # Test with generator input:
+    new_streamlines = orient_by_rois(generate_sl(streamlines),
+                                     mask1_vol,
+                                     mask2_vol,
+                                     in_place=False,
+                                     affine=None,
+                                     as_generator=True)
+
+    npt.assert_(isinstance(new_streamlines, types.GeneratorType))
+    ll = list(new_streamlines)
+    npt.assert_equal(ll, flipped_sl)
+
+    # Generator output cannot take a True `in_place` kwarg:
+    npt.assert_raises(ValueError, orient_by_rois, *[generate_sl(streamlines),
+                                                    mask1_vol,
+                                                    mask2_vol],
+                                                   **dict(in_place=True,
+                                                          affine=None,
+                                                          as_generator=True))
+
+    # But you can input a generator and get a non-generator as output:
+    new_streamlines = orient_by_rois(generate_sl(streamlines),
+                                     mask1_vol,
+                                     mask2_vol,
+                                     in_place=False,
+                                     affine=None,
+                                     as_generator=False)
+
+    npt.assert_(not isinstance(new_streamlines, types.GeneratorType))
+    npt.assert_equal(new_streamlines, flipped_sl)
+
+    # Modify in-place:
+    new_streamlines = orient_by_rois(streamlines,
+                                     mask1_vol,
+                                     mask2_vol,
+                                     in_place=True,
+                                     affine=None,
+                                     as_generator=False)
+
+    npt.assert_equal(new_streamlines, flipped_sl)
+    # The two objects are one and the same:
+    npt.assert_(new_streamlines is streamlines)
 
 
 def test_values_from_volume():
