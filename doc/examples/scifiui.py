@@ -57,11 +57,11 @@ class CustomInteractorStyle(vtkInteractorStyleUser):
 
         self.picker.Pick(click_pos[0], click_pos[1], 0, self.renderer)
         co = self.picker.GetPickPosition()
-        print(co)
+        # print(co)
         actor_2d = self.picker.GetActor2D()
         if actor_2d is not None:
             self.chosen_element = self.get_ui_item(actor_2d)
-            print(self.chosen_element)
+            # print(self.chosen_element)
             self.add_ui_param(gui.SliderLine, click_pos)
             actor_2d.InvokeEvent(evt)
         else:
@@ -250,6 +250,7 @@ def line_click_callback(*args, **kwargs):
     if percentage > 100:
         percentage = 100
     slider.text.set_message(str(int(percentage)) + "%")
+    showm.render()
 
 
 def disk_move_callback(*args, **kwargs):
@@ -263,6 +264,7 @@ def disk_move_callback(*args, **kwargs):
     if percentage > 100:
         percentage = 100
     slider.text.set_message(str(int(percentage)) + "%")
+    showm.render()
 
 slider.add_callback("MouseMoveEvent", disk_move_callback, slider.slider_disk)
 slider.add_callback("LeftButtonPressEvent", line_click_callback, slider.slider_line)

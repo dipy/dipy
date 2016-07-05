@@ -67,7 +67,7 @@ class Button(UI):
 
         return icons
 
-    def build_actor(self, icon, position=(0, 0), center=None):
+    def build_actor(self, icon, position=(100, 20), center=None):
         """ Return an image as a 2D actor with a specific position
 
         Parameters
