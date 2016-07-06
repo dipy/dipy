@@ -73,6 +73,7 @@ class IsotropicModel(ReconstModel):
     mean in each voxel as an estimate of the signal that does not depend on
     direction.
     """
+
     def __init__(self, gtab):
         """
         Initialize an IsotropicModel.
@@ -108,6 +109,7 @@ class IsotropicFit(ReconstFit):
     A fit object for representing the isotropic signal as the mean of the
     diffusion-weighted signal.
     """
+
     def __init__(self, model, params):
         """
         Initialize an IsotropicFit object.
@@ -149,6 +151,7 @@ class ExponentialIsotropicModel(IsotropicModel):
     Representing the isotropic signal as a fit to an exponential decay function
     with b-values
     """
+
     def fit(self, data):
         """
         Parameters
@@ -173,6 +176,7 @@ class ExponentialIsotropicFit(IsotropicFit):
     """
     A fit to the ExponentialIsotropicModel object, based on data.
     """
+
     def predict(self, gtab=None):
         """
         Predict the isotropic signal, based on a gradient table. In this case,
@@ -189,7 +193,7 @@ class ExponentialIsotropicFit(IsotropicFit):
             gtab = self.model.gtab
         return np.exp(-gtab.bvals[~gtab.b0s_mask] *
                       (np.zeros((self.params.shape[0],
-                       np.sum(~gtab.b0s_mask))) +
+                                 np.sum(~gtab.b0s_mask))) +
                        self.params[..., np.newaxis]))
 
 
@@ -292,6 +296,7 @@ def sfm_design_matrix(gtab, sphere, response, mode='signal'):
 
 
 class SparseFascicleModel(ReconstModel, Cache):
+
     def __init__(self, gtab, sphere=None, response=[0.0015, 0.0005, 0.0005],
                  solver='ElasticNet', l1_ratio=0.5, alpha=0.001, isotropic=None):
         """
@@ -356,7 +361,7 @@ class SparseFascicleModel(ReconstModel, Cache):
             self.solver = opt.NonNegativeLeastSquares()
 
         elif (isinstance(solver, opt.SKLearnLinearSolver) or
-            has_sklearn and isinstance(solver, lm.base.LinearModel)):
+              has_sklearn and isinstance(solver, lm.base.LinearModel)):
             self.solver = solver
 
         else:
@@ -440,6 +445,7 @@ class SparseFascicleModel(ReconstModel, Cache):
 
 
 class SparseFascicleFit(ReconstFit):
+
     def __init__(self, model, beta, S0, iso):
         """
         Initalize a SparseFascicleFit class instance
