@@ -258,10 +258,10 @@ def one_stage(data, gtab, x0, jac, bounds, tol, routine, algorithm,
     flat_x0[..., 0] = flat_data[..., 0]
 
     if routine == 'minimize':
-        result = _minimize(flat_data, bvals, flat_x0, ivim_params, bounds,
-                           tol, jac, algorithm, options)
+        _minimize(flat_data, bvals, flat_x0, ivim_params, bounds,
+                  tol, jac, algorithm, options)
     elif routine == "leastsq":
-        result = _leastsq(flat_data, bvals, flat_x0, ivim_params)
+        _leastsq(flat_data, bvals, flat_x0, ivim_params)
     ivim_params.shape = data.shape[:-1] + (4,)
     return ivim_params
 
@@ -272,31 +272,33 @@ def _minimize(flat_data, bvals, flat_x0, ivim_params,
     sum_sq = lambda params, bvals, signal: np.sum(
         _ivim_error(params, bvals, signal)**2)
 
-    result = []
+    num_voxels = flat_data.shape[0]
+    result = np.empty(num_voxels, dtype=object)
     if jac == True:
         jacobian = _ivim_jacobian_func
     else:
         jacobian = None
-    for vox in range(flat_data.shape[0]):
+    for vox in range(num_voxels):
         res = Optimizer(sum_sq,
                         flat_x0[vox],
                         args=(bvals, flat_data[vox]), bounds=bounds,
                         tol=tol, method=algorithm, jac=jacobian,
                         options=options)
         ivim_params[vox, :4] = res.xopt
-        result += [res]
+        result[vox] = res
     return result
 
 
 def _leastsq(flat_data, bvals, flat_x0, ivim_params):
     """Use minimize for finding ivim_params"""
-    result = []
-    for vox in range(flat_data.shape[0]):
+    num_voxels = flat_data.shape[0]
+    result = np.empty(flat_data.shape[0], dtype=object)
+    for vox in range(num_voxels):
         res = leastsq(_ivim_error,
                       flat_x0[vox],
                       args=(bvals, flat_data[vox]))
         ivim_params[vox, :4] = res[0]
-        result += [res]
+        result[vox] = res
     return result
 
 
@@ -335,10 +337,10 @@ def two_stage(data, gtab, x0,
     flat_x0[..., 3] = D_guess
 
     if routine == 'minimize':
-        result = _minimize(flat_data, bvals, flat_x0, ivim_params,
-                           bounds, tol, jac, algorithm, options)
+        _minimize(flat_data, bvals, flat_x0, ivim_params,
+                  bounds, tol, jac, algorithm, options)
     elif routine == "leastsq":
-        result = _leastsq(flat_data, bvals, flat_x0, ivim_params)
+        _leastsq(flat_data, bvals, flat_x0, ivim_params)
     ivim_params.shape = data.shape[:-1] + (4,)
     return ivim_params
 
