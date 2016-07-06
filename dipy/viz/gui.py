@@ -67,7 +67,7 @@ class Button(UI):
 
         return icons
 
-    def build_actor(self, icon, position=(100, 20), center=None):
+    def build_actor(self, icon, center=None):
         """ Return an image as a 2D actor with a specific position
 
         Parameters
@@ -89,7 +89,6 @@ class Button(UI):
 
         if center is not None:
             button.SetCenter(*center)
-        button.SetPosition(position[0], position[1])
 
         return button
 
@@ -174,38 +173,6 @@ class TextActor(vtk.vtkTextActor):
 
     def get_position(self):
         return self.GetDisplayPosition()
-
-
-class Text(UI):
-
-    def __init__(self, text, position):
-        super(Text, self).__init__()
-        self.actor = self.build_actor(text=text, position=position)
-
-        self.ui_list.append(self)
-
-    def build_actor(self, text, position):
-        """
-
-        Parameters
-        ----------
-        text
-        position
-
-        Returns
-        -------
-        actor
-
-        """
-        actor = TextActor()
-
-        actor.set_message(text)
-        actor.set_position(position)
-
-        return actor
-
-    def set_message(self, text):
-        self.actor.set_message(text)
 
 
 class TextBox(UI):
@@ -475,17 +442,13 @@ class Slider(UI):
         self.slider_line = SliderLine(start_point=start_point, end_point=end_point, line_width=line_width)
         self.slider_disk = SliderDisk(position=position, inner_radius=inner_radius, outer_radius=outer_radius,
                                       start_point=start_point, end_point=end_point)
-        self.text = self.make_text(position=start_point,
-                                   percentage=(position[0]-start_point[0])*100/(end_point[0]-start_point[0]))
+        self.text = SliderText(limits=(start_point, end_point),
+                               current_val=(start_point[0] + (end_point[0] - start_point[0])/2),
+                               position=(start_point[0]-40, start_point[1]-10))
 
         self.ui_list.append(self.slider_disk)
         self.ui_list.append(self.slider_line)
         self.ui_list.append(self.text)
-
-    def make_text(self, position, percentage):
-        text = Text(text=str(int(percentage))+"%", position=(position[0]-40, position[1]-10))
-
-        return text
 
     def add_callback(self, event_type, callback, component):
         """ Adds events to an actor
@@ -635,3 +598,50 @@ class SliderDisk(UI):
         callback: callback function
         """
         self.actor.AddObserver(event_type, callback)
+
+
+class SliderText(UI):
+
+    def __init__(self, limits, current_val, position):
+        super(SliderText, self).__init__()
+        self.y_position = (limits[0][1] + limits[1][1])/2
+        self.left_x_position = limits[0][0]
+        self.right_x_position = limits[1][0]
+
+        self.actor = self.build_actor(current_val=current_val, position=position)
+
+        self.ui_list.append(self)
+
+    def calculate_percentage(self, current_val):
+        percentage = ((current_val-self.left_x_position)*100)/(self.right_x_position-self.left_x_position)
+        if percentage < 0:
+            percentage = 0
+        if percentage > 100:
+            percentage = 100
+        return str(percentage) + "%"
+
+    def build_actor(self, current_val, position):
+        """
+
+        Parameters
+        ----------
+        current_val
+        position
+
+        Returns
+        -------
+        actor
+
+        """
+        actor = TextActor()
+
+        actor.set_position(position=position)
+        percentage = self.calculate_percentage(current_val=current_val)
+        actor.set_message(text=percentage)
+        actor.font_size(size=16)
+
+        return actor
+
+    def set_percentage(self, current_val):
+        percentage = self.calculate_percentage(current_val=current_val)
+        self.actor.set_message(text=percentage)

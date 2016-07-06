@@ -242,28 +242,14 @@ slider = gui.Slider()
 def line_click_callback(*args, **kwargs):
     position = slider.slider_line.ui_param
     slider.slider_disk.set_position(position)
-    length = slider.slider_line.end_point[0] - slider.slider_line.start_point[0]
-    pos = position[0] - slider.slider_line.start_point[0]
-    percentage = (pos/length)*100
-    if percentage < 0:
-        percentage = 0
-    if percentage > 100:
-        percentage = 100
-    slider.text.set_message(str(int(percentage)) + "%")
+    slider.text.set_percentage(position[0])
     showm.render()
 
 
 def disk_move_callback(*args, **kwargs):
     position = slider.slider_disk.ui_param
     slider.slider_disk.set_position(position)
-    length = slider.slider_line.end_point[0] - slider.slider_line.start_point[0]
-    pos = position[0] - slider.slider_line.start_point[0]
-    percentage = (pos/length)*100
-    if percentage < 0:
-        percentage = 0
-    if percentage > 100:
-        percentage = 100
-    slider.text.set_message(str(int(percentage)) + "%")
+    slider.text.set_percentage(position[0])
     showm.render()
 
 slider.add_callback("MouseMoveEvent", disk_move_callback, slider.slider_disk)
@@ -274,7 +260,7 @@ iren_style = CustomInteractorStyle(renderer=renderer)
 renderer.add(button)
 renderer.add(cube_actor_1)
 renderer.add(cube_actor_2)
-# renderer.add(text)
+renderer.add(text)
 renderer.add(slider)
 
 # set_trace()
