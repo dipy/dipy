@@ -424,6 +424,52 @@ class TextBox(UI):
         self.render_text()
 
 
+class Rectangle(UI):
+    def __init__(self, size):
+        super(Rectangle, self).__init__()
+        self.actor = self.build_actor(size=size)
+
+        self.ui_list.append(self)
+
+    def build_actor(self, size):
+        # Setup four points
+        points = vtk.vtkPoints()
+        points.InsertNextPoint(0, 0, 0)
+        points.InsertNextPoint(size[0], 0, 0)
+        points.InsertNextPoint(size[0], size[1], 0)
+        points.InsertNextPoint(0, size[1], 0)
+
+        # Create the polygon
+        polygon = vtk.vtkPolygon()
+        polygon.GetPointIds().SetNumberOfIds(4)  # make a quad
+        polygon.GetPointIds().SetId(0, 0)
+        polygon.GetPointIds().SetId(1, 1)
+        polygon.GetPointIds().SetId(2, 2)
+        polygon.GetPointIds().SetId(3, 3)
+
+        # Add the polygon to a list of polygons
+        polygons = vtk.vtkCellArray()
+        polygons.InsertNextCell(polygon)
+
+        # Create a PolyData
+        polygonPolyData = vtk.vtkPolyData()
+        polygonPolyData.SetPoints(points)
+        polygonPolyData.SetPolys(polygons)
+
+        # Create a mapper and actor
+        mapper = vtk.vtkPolyDataMapper2D()
+        if vtk.VTK_MAJOR_VERSION <= 5:
+            mapper.SetInput(polygonPolyData)
+        else:
+            mapper.SetInputData(polygonPolyData)
+
+        actor = vtk.vtkActor2D()
+        actor.SetMapper(mapper)
+        actor.GetProperty().SetColor(1, 1, 1)
+
+        return actor
+
+
 class Slider(UI):
     def __init__(self, start_point=(350, 20), end_point=(550, 20), line_width=5, inner_radius=5,
                  outer_radius=15, position=(450, 20)):
@@ -494,19 +540,9 @@ class SliderLine(UI):
         actor
 
         """
-        line = vtk.vtkLineSource()
-        line.SetPoint1(start_point[0], start_point[1], 0)
-        line.SetPoint2(end_point[0], end_point[1], 0)
+        actor = Rectangle(size=(end_point[0]-start_point[0], line_width)).actor
 
-        # mapper
-        mapper = vtk.vtkPolyDataMapper2D()
-        mapper.SetInputConnection(line.GetOutputPort())
-
-        # actor
-        actor = vtk.vtkActor2D()
-        actor.SetMapper(mapper)
-
-        actor.GetProperty().SetLineWidth(line_width)
+        actor.SetPosition(start_point[0], start_point[1]-line_width/2)
 
         return actor
 
