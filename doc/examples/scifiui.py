@@ -116,7 +116,8 @@ class CustomInteractorStyle(vtkInteractorStyleUser):
             self.add_ui_param(gui.SliderDisk, mouse_pos)
             self.add_ui_param(gui.DiskSliderDisk, mouse_pos)
             self.chosen_element.actor.InvokeEvent(evt)
-        self.trackball_interactor_style.OnMouseMove()
+        else:
+            self.trackball_interactor_style.OnMouseMove()
 
     def on_mouse_wheel_forward(self, obj, evt):
         self.trackball_interactor_style.OnMouseWheelForward()

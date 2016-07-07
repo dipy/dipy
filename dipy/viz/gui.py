@@ -563,6 +563,8 @@ class SliderLine(UI):
 
         actor.SetPosition(start_point[0], start_point[1]-line_width/2)
 
+        actor.GetProperty().SetColor(1, 0, 0)
+
         return actor
 
 
