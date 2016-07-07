@@ -1,4 +1,6 @@
 # Conditional import machinery for vtk.
+import math
+
 from dipy.utils.optpkg import optional_package
 
 from ipdb import set_trace
@@ -426,6 +428,12 @@ class TextBox(UI):
 
 class Rectangle(UI):
     def __init__(self, size):
+        """
+
+        Parameters
+        ----------
+        size
+        """
         super(Rectangle, self).__init__()
         self.actor = self.build_actor(size=size)
 
@@ -433,6 +441,17 @@ class Rectangle(UI):
 
     def build_actor(self, size):
         # Setup four points
+        """
+
+        Parameters
+        ----------
+        size
+
+        Returns
+        -------
+        actor
+
+        """
         points = vtk.vtkPoints()
         points.InsertNextPoint(0, 0, 0)
         points.InsertNextPoint(size[0], 0, 0)
@@ -471,8 +490,8 @@ class Rectangle(UI):
 
 
 class Slider(UI):
-    def __init__(self, start_point=(350, 20), end_point=(550, 20), line_width=5, inner_radius=5,
-                 outer_radius=15, position=(450, 20)):
+    def __init__(self, start_point=(350, 20), end_point=(550, 20), line_width=5, inner_radius=0,
+                 outer_radius=10, position=(450, 20)):
         """
 
         Parameters
@@ -546,16 +565,6 @@ class SliderLine(UI):
 
         return actor
 
-    def add_callback(self, event_type, callback):
-        """ Adds events to the actor
-
-        Parameters
-        ----------
-        event_type: event code
-        callback: callback function
-        """
-        self.actor.AddObserver(event_type, callback)
-
 
 class SliderDisk(UI):
 
@@ -578,7 +587,6 @@ class SliderDisk(UI):
         self.ui_list.append(self)
 
     def build_actor(self, position, inner_radius, outer_radius):
-        # create source
         """
 
         Parameters
@@ -592,6 +600,7 @@ class SliderDisk(UI):
         actor
 
         """
+        # create source
         disk = vtk.vtkDiskSource()
         disk.SetInnerRadius(inner_radius)
         disk.SetOuterRadius(outer_radius)
@@ -625,20 +634,18 @@ class SliderDisk(UI):
             x_position = self.end_point[0]
         self.actor.SetPosition(x_position, self.pos_height)
 
-    def add_callback(self, event_type, callback):
-        """ Adds events to the actor
-
-        Parameters
-        ----------
-        event_type: event code
-        callback: callback function
-        """
-        self.actor.AddObserver(event_type, callback)
-
 
 class SliderText(UI):
 
     def __init__(self, limits, current_val, position):
+        """
+
+        Parameters
+        ----------
+        limits
+        current_val
+        position
+        """
         super(SliderText, self).__init__()
         self.y_position = (limits[0][1] + limits[1][1])/2
         self.left_x_position = limits[0][0]
@@ -649,6 +656,16 @@ class SliderText(UI):
         self.ui_list.append(self)
 
     def calculate_percentage(self, current_val):
+        """
+
+        Parameters
+        ----------
+        current_val
+
+        Returns
+        -------
+
+        """
         percentage = ((current_val-self.left_x_position)*100)/(self.right_x_position-self.left_x_position)
         if percentage < 0:
             percentage = 0
@@ -679,5 +696,284 @@ class SliderText(UI):
         return actor
 
     def set_percentage(self, current_val):
+        """
+
+        Parameters
+        ----------
+        current_val
+        """
+        percentage = self.calculate_percentage(current_val=current_val)
+        self.actor.set_message(text=percentage)
+
+
+class DiskSlider(UI):
+    def __init__(self, outer_inner_radius=44, outer_outer_radius=50, outer_position=(450, 100), inner_outer_radius=10,
+                 inner_inner_radius=0):
+        """
+
+        Parameters
+        ----------
+        outer_inner_radius
+        outer_outer_radius
+        outer_position
+        inner_outer_radius
+        inner_inner_radius
+        """
+        super(DiskSlider, self).__init__()
+        self.outer_disk_radius = outer_inner_radius + (outer_outer_radius - outer_inner_radius) / 2
+        self.outer_disk_center = outer_position
+        self.slider_outer_disk = DiskSliderLine(inner_radius=outer_inner_radius, outer_radius=outer_outer_radius,
+                                                disk_position=outer_position)
+        self.slider_inner_disk = DiskSliderDisk(inner_radius=inner_inner_radius, outer_radius=inner_outer_radius,
+                                                disk_position=(outer_position[0] + self.outer_disk_radius,
+                                                               outer_position[1]))
+        self.slider_text = DiskSliderText(position=outer_position, current_val=0)
+
+        self.ui_list.append(self.slider_outer_disk)
+        self.ui_list.append(self.slider_inner_disk)
+        self.ui_list.append(self.slider_text)
+
+    def add_callback(self, event_type, callback, component):
+        """ Adds events to an actor
+
+        Parameters
+        ----------
+        event_type: event code
+        callback: callback function
+        component: component
+        """
+        component.actor.AddObserver(event_type, callback)
+
+    def get_poi(self, coordinates):
+        """
+
+        Parameters
+        ----------
+        coordinates
+
+        Returns
+        -------
+        x, y
+
+        """
+        radius = self.outer_disk_radius
+        center = self.outer_disk_center
+        point = coordinates
+
+        dx = point[0] - center[0]
+        dy = point[1] - center[1]
+
+        x1 = float(center[0]) + float(radius*dx)/float(math.sqrt(float(dx*dx) + float(dy*dy)))
+        x2 = float(center[0]) - float(radius*dx)/float(math.sqrt(float(dx*dx) + float(dy*dy)))
+
+        if x1 == x2:
+            y1 = center[1] + radius
+            y2 = center[1] - radius
+        else:
+            y1 = float(center[1]) + float(float(dy) / float(dx)) * float(x1 - center[0])
+            y2 = float(center[1]) + float(float(dy) / float(dx)) * float(x2 - center[0])
+
+        d1 = (x1 - point[0])*(x1 - point[0]) + (y1 - point[1])*(y1 - point[1])
+        d2 = (x2 - point[0])*(x2 - point[0]) + (y2 - point[1])*(y2 - point[1])
+
+        if d1 < d2:
+            return x1, y1
+        else:
+            return x2, y2
+
+    def get_angle(self, coordinates):
+        """
+
+        Parameters
+        ----------
+        coordinates
+
+        Returns
+        -------
+        angle
+
+        """
+        center = self.outer_disk_center
+
+        perpendicular = -center[1] + coordinates[1]
+        base = -center[0] + coordinates[0]
+
+        angle = math.degrees(math.atan2(float(perpendicular), float(base)))
+        if angle < 0:
+            angle += 360
+
+        return angle
+
+
+class DiskSliderLine(UI):
+    def __init__(self, inner_radius, outer_radius, disk_position):
+        """
+
+        Parameters
+        ----------
+        inner_radius
+        outer_radius
+        disk_position
+        """
+        super(DiskSliderLine, self).__init__()
+        self.actor = self.build_actor(inner_radius=inner_radius, outer_radius=outer_radius, disk_position=disk_position)
+
+        self.ui_list.append(self)
+
+    def build_actor(self, inner_radius, outer_radius, disk_position):
+        """
+
+        Parameters
+        ----------
+        inner_radius
+        outer_radius
+        disk_position
+
+        Returns
+        -------
+
+        """
+        # create source
+        disk = vtk.vtkDiskSource()
+        disk.SetInnerRadius(inner_radius)
+        disk.SetOuterRadius(outer_radius)
+        disk.SetRadialResolution(100)
+        disk.SetCircumferentialResolution(100)
+        disk.Update()
+
+        # mapper
+        mapper = vtk.vtkPolyDataMapper2D()
+        mapper.SetInputConnection(disk.GetOutputPort())
+
+        # actor
+        actor = vtk.vtkActor2D()
+        actor.SetMapper(mapper)
+
+        actor.SetPosition(disk_position[0], disk_position[1])
+
+        return actor
+
+
+class DiskSliderDisk(UI):
+    def __init__(self, inner_radius, outer_radius, disk_position):
+        """
+
+        Parameters
+        ----------
+        inner_radius
+        outer_radius
+        disk_position
+        """
+        super(DiskSliderDisk, self).__init__()
+        self.actor = self.build_actor(inner_radius=inner_radius, outer_radius=outer_radius, disk_position=disk_position)
+
+        self.ui_list.append(self)
+
+    def build_actor(self, inner_radius, outer_radius, disk_position):
+        # create source
+        """
+
+        Parameters
+        ----------
+        inner_radius
+        outer_radius
+        disk_position
+
+        Returns
+        -------
+
+        """
+        disk = vtk.vtkDiskSource()
+        disk.SetInnerRadius(inner_radius)
+        disk.SetOuterRadius(outer_radius)
+        disk.SetRadialResolution(100)
+        disk.SetCircumferentialResolution(100)
+        disk.Update()
+
+        # mapper
+        mapper = vtk.vtkPolyDataMapper2D()
+        mapper.SetInputConnection(disk.GetOutputPort())
+
+        # actor
+        actor = vtk.vtkActor2D()
+        actor.SetMapper(mapper)
+
+        actor.SetPosition(disk_position[0], disk_position[1])
+
+        return actor
+
+    def set_position(self, position):
+        """ Sets the disk's position
+
+        Parameters
+        ----------
+        position
+        """
+        self.actor.SetPosition(position)
+
+
+class DiskSliderText(UI):
+
+    def __init__(self, position, current_val):
+        """
+
+        Parameters
+        ----------
+        position
+        current_val
+        """
+        super(DiskSliderText, self).__init__()
+
+        self.actor = self.build_actor(current_val=current_val, position=position)
+
+        self.ui_list.append(self)
+
+    def calculate_percentage(self, current_val):
+        """
+
+        Parameters
+        ----------
+        current_val
+
+        Returns
+        -------
+
+        """
+        percentage = int((current_val/360)*100)
+        if len(str(percentage)) == 1:
+            percentage_string = "0" + str(percentage)
+        else:
+            percentage_string = str(percentage)
+        return percentage_string + "%"
+
+    def build_actor(self, current_val, position):
+        """
+
+        Parameters
+        ----------
+        current_val
+        position
+
+        Returns
+        -------
+        actor
+
+        """
+        actor = TextActor()
+
+        actor.set_position(position=(position[0]-16, position[1]-8))
+        percentage = self.calculate_percentage(current_val=current_val)
+        actor.set_message(text=percentage)
+        actor.font_size(size=16)
+
+        return actor
+
+    def set_percentage(self, current_val):
+        """
+
+        Parameters
+        ----------
+        current_val
+        """
         percentage = self.calculate_percentage(current_val=current_val)
         self.actor.set_message(text=percentage)

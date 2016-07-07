@@ -63,6 +63,7 @@ class CustomInteractorStyle(vtkInteractorStyleUser):
             self.chosen_element = self.get_ui_item(actor_2d)
             # print(self.chosen_element)
             self.add_ui_param(gui.SliderLine, click_pos)
+            self.add_ui_param(gui.DiskSliderLine, click_pos)
             actor_2d.InvokeEvent(evt)
         else:
             actor_3d = self.picker.GetProp3D()
@@ -76,7 +77,7 @@ class CustomInteractorStyle(vtkInteractorStyleUser):
 
     def on_left_button_released(self, obj, evt):
         if self.chosen_element is not None:
-            if isinstance(self.chosen_element, gui.SliderDisk):
+            if isinstance(self.chosen_element, gui.SliderDisk) or isinstance(self.chosen_element, gui.DiskSliderDisk):
                 self.chosen_element = None
 
         self.trackball_interactor_style.OnLeftButtonUp()
@@ -113,6 +114,7 @@ class CustomInteractorStyle(vtkInteractorStyleUser):
         if self.chosen_element is not None:
             mouse_pos = self.GetInteractor().GetEventPosition()
             self.add_ui_param(gui.SliderDisk, mouse_pos)
+            self.add_ui_param(gui.DiskSliderDisk, mouse_pos)
             self.chosen_element.actor.InvokeEvent(evt)
         self.trackball_interactor_style.OnMouseMove()
 
@@ -255,6 +257,29 @@ def disk_move_callback(*args, **kwargs):
 slider.add_callback("MouseMoveEvent", disk_move_callback, slider.slider_disk)
 slider.add_callback("LeftButtonPressEvent", line_click_callback, slider.slider_line)
 
+disk_slider = gui.DiskSlider()
+
+
+def outer_disk_click_callback(*args, **kwargs):
+    click_position = disk_slider.slider_outer_disk.ui_param
+    intersection_coordinate = disk_slider.get_poi(click_position)
+    disk_slider.slider_inner_disk.set_position(intersection_coordinate)
+    angle = disk_slider.get_angle(intersection_coordinate)
+    disk_slider.slider_text.set_percentage(angle)
+    showm.render()
+
+
+def inner_disk_move_callback(*args, **kwargs):
+    click_position = disk_slider.slider_inner_disk.ui_param
+    intersection_coordinate = disk_slider.get_poi(click_position)
+    disk_slider.slider_inner_disk.set_position(intersection_coordinate)
+    angle = disk_slider.get_angle(intersection_coordinate)
+    disk_slider.slider_text.set_percentage(angle)
+    showm.render()
+
+disk_slider.add_callback("MouseMoveEvent", inner_disk_move_callback, disk_slider.slider_inner_disk)
+disk_slider.add_callback("LeftButtonPressEvent", outer_disk_click_callback, disk_slider.slider_outer_disk)
+
 renderer = window.ren()
 iren_style = CustomInteractorStyle(renderer=renderer)
 renderer.add(button)
@@ -262,6 +287,7 @@ renderer.add(cube_actor_1)
 renderer.add(cube_actor_2)
 renderer.add(text)
 renderer.add(slider)
+renderer.add(disk_slider)
 
 # set_trace()
 
