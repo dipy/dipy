@@ -162,13 +162,18 @@ class IvimModel(ReconstModel):
         x0_mask = np.reshape(x0[mask], (-1, x0.shape[-1]))
 
         if fit_method == "one_stage":
-            params_in_mask = one_stage(data_in_mask, self.gtab, x0_mask,
-                                       jac, bounds, tol,
-                                       routine, algorithm, options)
+            params_in_mask, fit_stats_in_mask = one_stage(data_in_mask,
+                                                          self.gtab, x0_mask,
+                                                          jac, bounds, tol,
+                                                          routine, algorithm,
+                                                          options)
         elif fit_method == "two_stage":
-            params_in_mask = two_stage(data_in_mask, self.gtab, x0_mask,
-                                       self.split_b, jac, bounds, tol,
-                                       routine, algorithm, options)
+            params_in_mask, fit_stats_in_mask = two_stage(data_in_mask,
+                                                          self.gtab, x0_mask,
+                                                          self.split_b, jac,
+                                                          bounds, tol,
+                                                          routine, algorithm,
+                                                          options)
         else:
             e_s = "Fit method must be either "
             e_s += "'one_stage' or 'two_stage'"
@@ -177,11 +182,14 @@ class IvimModel(ReconstModel):
         if mask is None:
             out_shape = data.shape[:-1] + (-1, )
             ivim_params = params_in_mask.reshape(out_shape)
+            fit_stats = fit_stats_in_mask.reshape(out_shape)
         else:
             ivim_params = np.zeros(data.shape[:-1] + (4,))
             ivim_params[mask, :] = params_in_mask
+            fit_stats = np.zeros(data.shape[:-1] + (4,))
+            fit_stats[mask, :] = fit_stats_in_mask
 
-        return IvimFit(self, ivim_params)
+        return IvimFit(self, ivim_params, fit_stats)
 
     def predict(self, ivim_params):
         """
@@ -196,7 +204,7 @@ class IvimModel(ReconstModel):
 
 class IvimFit(object):
 
-    def __init__(self, model, model_params):
+    def __init__(self, model, model_params, fit_stats):
         """ Initialize a IvimFit class instance.
             Parameters
             ----------
@@ -204,6 +212,7 @@ class IvimFit(object):
         """
         self.model = model
         self.model_params = model_params
+        self.fit_stats = fit_stats
 
     def __getitem__(self, index):
         model_params = self.model_params
@@ -255,15 +264,16 @@ def one_stage(data, gtab, x0, jac, bounds, tol, routine, algorithm,
     # Flatten for the iteration over voxels:
     bvals = gtab.bvals
     ivim_params = np.empty((flat_data.shape[0], 4))
+    fit_stats = np.empty((flat_data.shape[0], 4))
     flat_x0[..., 0] = flat_data[..., 0]
 
     if routine == 'minimize':
-        _minimize(flat_data, bvals, flat_x0, ivim_params, bounds,
-                  tol, jac, algorithm, options)
+        fit_stats = _minimize(flat_data, bvals, flat_x0, ivim_params, bounds,
+                              tol, jac, algorithm, options)
     elif routine == "leastsq":
-        _leastsq(flat_data, bvals, flat_x0, ivim_params)
+        fit_stats = _leastsq(flat_data, bvals, flat_x0, ivim_params)
     ivim_params.shape = data.shape[:-1] + (4,)
-    return ivim_params
+    return ivim_params, fit_stats
 
 
 def _minimize(flat_data, bvals, flat_x0, ivim_params,
@@ -327,7 +337,7 @@ def two_stage(data, gtab, x0,
     # Flatten for the iteration over voxels:
     bvals = gtab.bvals
     ivim_params = np.empty((flat_data.shape[0], 4))
-
+    fit_stats = np.empty((flat_data.shape[0], 4))
     flat_x0[..., 0] = flat_data[..., 0]
     D_guess = get_D_guess(flat_data, gtab, split_b)
     S0_hat = get_S0_guess(flat_data, gtab, split_b)
@@ -337,12 +347,12 @@ def two_stage(data, gtab, x0,
     flat_x0[..., 3] = D_guess
 
     if routine == 'minimize':
-        _minimize(flat_data, bvals, flat_x0, ivim_params,
-                  bounds, tol, jac, algorithm, options)
+        fit_stats = _minimize(flat_data, bvals, flat_x0, ivim_params,
+                              bounds, tol, jac, algorithm, options)
     elif routine == "leastsq":
-        _leastsq(flat_data, bvals, flat_x0, ivim_params)
+        fit_stats = _leastsq(flat_data, bvals, flat_x0, ivim_params)
     ivim_params.shape = data.shape[:-1] + (4,)
-    return ivim_params
+    return ivim_params, fit_stats
 
 
 def get_D_guess(data, gtab, split_b):
