@@ -511,8 +511,8 @@ class Slider(UI):
                                current_val=(start_point[0] + (end_point[0] - start_point[0])/2),
                                position=(start_point[0]-40, start_point[1]-10))
 
-        self.ui_list.append(self.slider_disk)
         self.ui_list.append(self.slider_line)
+        self.ui_list.append(self.slider_disk)
         self.ui_list.append(self.text)
 
     def add_callback(self, event_type, callback, component):
