@@ -1,5 +1,6 @@
 #!/usr/bin/env python
-
+# Script to upload docs to gh-pages branch of dipy_web that will be
+# automatically detected by the dipy website.
 import os
 import re
 from os import chdir as cd
@@ -8,6 +9,9 @@ from subprocess import check_call
 
 def sh(cmd):
     """Execute command in a subshell, return status code."""
+    print("--------------------------------------------------")
+    print("Executing: %s" % (cmd, ))
+    print("--------------------------------------------------")
     return check_call(cmd, shell=True)
 
 # paths
@@ -56,19 +60,21 @@ if __name__ == '__main__':
         cd(startdir)
         # remove old html and doctree files
         try:
-            sh("rm -rf _build/html _build/doctrees")
+            sh("rm -rf _build/json _build/doctrees")
         except:
             pass
         # generate new doc and copy to docs_repo
-        sh("make html")
-        sh("cp -r _build/html %s/" % (docs_repo_path,))
+        sh("make api")
+        sh("make rstexamples")
+        sh("make json")
+        sh("cp -r _build/json %s/" % (docs_repo_path,))
         cd(docs_repo_path)
         if dev is True:
             try:
                 sh("rm -r %s" % (source_version,))
             except:
                 pass
-        sh("mv html %s" % (source_version,))
+        sh("mv json %s" % (source_version,))
         sh("git add .")
         sh("git commit -m \"Add docs for %s\"" % (source_version,))
         sh("git push origin gh-pages")
