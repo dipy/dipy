@@ -851,6 +851,8 @@ class DiskSliderLine(UI):
         actor = vtk.vtkActor2D()
         actor.SetMapper(mapper)
 
+        actor.GetProperty().SetColor(1, 0, 0)
+
         actor.SetPosition(disk_position[0], disk_position[1])
 
         return actor
