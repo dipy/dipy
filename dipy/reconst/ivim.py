@@ -2,7 +2,6 @@
 """ Classes and functions for fitting ivim model """
 from __future__ import division, print_function, absolute_import
 import numpy as np
-from dipy.core.optimize import Optimizer
 
 from scipy.optimize import leastsq
 
@@ -88,8 +87,8 @@ class IvimModel(ReconstModel):
             raise ValueError(e_s)
 
     def fit(self, data, mask=None, x0=None, fit_method="one_stage",
-            routine="minimize", jac=True, algorithm='TNC',
-            bounds=((0, None), (0, 1.), (0, 1.), (0, 1.)), tol=1e-25,
+            jac=True, bounds=((0, None), (0, 1.), (0, 1.), (0, 1.)),
+            tol=1e-7,
             options={'gtol': 1e-25, 'ftol': 1e-25,
                      'eps': 1e-15, 'maxiter': 1000}):
         """ Fit method of the Ivim model class
@@ -165,14 +164,12 @@ class IvimModel(ReconstModel):
             params_in_mask, fit_stats_in_mask = one_stage(data_in_mask,
                                                           self.gtab, x0_mask,
                                                           jac, bounds, tol,
-                                                          routine, algorithm,
                                                           options)
         elif fit_method == "two_stage":
             params_in_mask, fit_stats_in_mask = two_stage(data_in_mask,
                                                           self.gtab, x0_mask,
                                                           self.split_b, jac,
                                                           bounds, tol,
-                                                          routine, algorithm,
                                                           options)
         else:
             e_s = "Fit method must be either "
@@ -240,8 +237,7 @@ class IvimFit(object):
         return ivim_function(self.model_params, gtab.bvals)
 
 
-def one_stage(data, gtab, x0, jac, bounds, tol, routine, algorithm,
-              options):
+def one_stage(data, gtab, x0, jac, bounds, tol, options):
     """
     Fit the ivim params using minimize
 
@@ -267,46 +263,30 @@ def one_stage(data, gtab, x0, jac, bounds, tol, routine, algorithm,
     fit_stats = np.empty((flat_data.shape[0], 4))
     flat_x0[..., 0] = flat_data[..., 0]
 
-    if routine == 'minimize':
-        fit_stats = _minimize(flat_data, bvals, flat_x0, ivim_params, bounds,
-                              tol, jac, algorithm, options)
-    elif routine == "leastsq":
-        fit_stats = _leastsq(flat_data, bvals, flat_x0, ivim_params)
+    fit_stats = _leastsq(flat_data, bvals, flat_x0,
+                         ivim_params, options, tol)
     ivim_params.shape = data.shape[:-1] + (4,)
     return ivim_params, fit_stats
 
 
-def _minimize(flat_data, bvals, flat_x0, ivim_params,
-              bounds, tol, jac, algorithm, options):
-    """Use minimize for finding ivim_params"""
-    sum_sq = lambda params, bvals, signal: np.sum(
-        _ivim_error(params, bvals, signal)**2)
-
-    num_voxels = flat_data.shape[0]
-    result = np.empty(num_voxels, dtype=object)
-    if jac == True:
-        jacobian = _ivim_jacobian_func
-    else:
-        jacobian = None
-    for vox in range(num_voxels):
-        res = Optimizer(sum_sq,
-                        flat_x0[vox],
-                        args=(bvals, flat_data[vox]), bounds=bounds,
-                        tol=tol, method=algorithm, jac=jacobian,
-                        options=options)
-        ivim_params[vox, :4] = res.xopt
-        result[vox] = res
-    return result
-
-
-def _leastsq(flat_data, bvals, flat_x0, ivim_params):
-    """Use minimize for finding ivim_params"""
+def _leastsq(flat_data, bvals, flat_x0, ivim_params, options, tol):
+    """Use leastsq for finding ivim_params"""
     num_voxels = flat_data.shape[0]
     result = np.empty(flat_data.shape[0], dtype=object)
+    gtol = options["gtol"]
+    ftol = options["ftol"]
+    xtol = tol
+    epsfcn = options["eps"]
+    maxfev = options["maxiter"]
     for vox in range(num_voxels):
         res = leastsq(_ivim_error,
                       flat_x0[vox],
-                      args=(bvals, flat_data[vox]))
+                      args=(bvals, flat_data[vox]),
+                      gtol=gtol,
+                      xtol=xtol,
+                      ftol=ftol,
+                      epsfcn=epsfcn,
+                      maxfev=maxfev)
         ivim_params[vox, :4] = res[0]
         result[vox] = res
     return result
@@ -314,7 +294,7 @@ def _leastsq(flat_data, bvals, flat_x0, ivim_params):
 
 def two_stage(data, gtab, x0,
               split_b, jac, bounds, tol,
-              routine, algorithm, options):
+              options):
     """
     Fit the ivim params using a two stage fit
 
@@ -339,39 +319,26 @@ def two_stage(data, gtab, x0,
     ivim_params = np.empty((flat_data.shape[0], 4))
     fit_stats = np.empty((flat_data.shape[0], 4))
     flat_x0[..., 0] = flat_data[..., 0]
-    D_guess = get_D_guess(flat_data, gtab, split_b)
-    S0_hat = get_S0_guess(flat_data, gtab, split_b)
+
+    S0_hat, D_guess = get_S0_D_guess(flat_data, gtab, split_b)
     f_guess = 1 - S0_hat / flat_data[..., 0]
 
     flat_x0[..., 1] = f_guess
     flat_x0[..., 3] = D_guess
 
-    if routine == 'minimize':
-        fit_stats = _minimize(flat_data, bvals, flat_x0, ivim_params,
-                              bounds, tol, jac, algorithm, options)
-    elif routine == "leastsq":
-        fit_stats = _leastsq(flat_data, bvals, flat_x0, ivim_params)
+    fit_stats = _leastsq(flat_data, bvals, flat_x0,
+                         ivim_params, options, tol)
     ivim_params.shape = data.shape[:-1] + (4,)
     return ivim_params, fit_stats
 
 
-def get_D_guess(data, gtab, split_b):
+def get_S0_D_guess(data, gtab, split_b):
     bvals_ge_split = gtab.bvals[gtab.bvals > split_b]
     bvecs_ge_split = gtab.bvecs[gtab.bvals > split_b]
     gtab_ge_split = gradient_table(bvals_ge_split, bvecs_ge_split.T)
     tensor_model = TensorModel(gtab_ge_split)
     tenfit = tensor_model.fit(data[..., gtab.bvals > split_b])
     D_guess = mean_diffusivity(tenfit.evals)
-    return D_guess
-
-
-def get_S0_guess(data, gtab, split_b):
-    bvals_ge_split = gtab.bvals[gtab.bvals > split_b]
-    bvecs_ge_split = gtab.bvecs[gtab.bvals > split_b]
-    gtab_ge_split = gradient_table(bvals_ge_split, bvecs_ge_split.T)
-    tensor_model = TensorModel(gtab_ge_split)
-    tenfit = tensor_model.fit(data[..., gtab.bvals > split_b])
-
     dti_params = tenfit.model_params
     evecs = dti_params[..., 3:12].reshape((dti_params.shape[:-1] + (3, 3)))
     evals = dti_params[..., :3]
@@ -383,7 +350,7 @@ def get_S0_guess(data, gtab, split_b):
     S0_hat = np.mean(data[..., ~gtab.b0s_mask] /
                      np.exp(-gtab.bvals[~gtab.b0s_mask] * ADC),
                      -1)
-    return S0_hat
+    return S0_hat, D_guess
 
 
 def _ivim_jacobian_func(params, bvals, signal):
@@ -405,11 +372,12 @@ def _ivim_jacobian_func(params, bvals, signal):
     derv_D_star = S0 * (-bvals * f * np.exp(-bvals * D_star))
     derv_D = S0 * (-bvals * (1 - f) * np.exp(-bvals * D))
 
+    err = _ivim_error(params, bvals, signal)
     jacobian = np.zeros((len(params)))
 
-    jacobian[0] = np.sum(2 * _ivim_error(params, bvals, signal) * -derv_S0)
-    jacobian[1] = np.sum(2 * _ivim_error(params, bvals, signal) * -derv_f)
-    jacobian[2] = np.sum(2 * _ivim_error(params, bvals, signal) * -derv_D_star)
-    jacobian[3] = np.sum(2 * _ivim_error(params, bvals, signal) * -derv_D)
+    jacobian[0] = np.sum(2 * err * -derv_S0)
+    jacobian[1] = np.sum(2 * err * -derv_f)
+    jacobian[2] = np.sum(2 * err * -derv_D_star)
+    jacobian[3] = np.sum(2 * err * -derv_D)
 
     return jacobian
