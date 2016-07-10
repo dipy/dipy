@@ -6,30 +6,6 @@ cimport numpy as cnp
 @cython.boundscheck(False)
 @cython.wraparound(False)
 @cython.cdivision(True)
-cdef void fast_mat_mul(double[:, :] A, double[:, :] B, double[:, :] out) nogil:
-    '''
-    Fast matrix multiplication
-    out = AB
-    '''
-    cdef:
-        cnp.npy_intp i, j, k
-        double s
-        cnp.npy_intp An0 = A.shape[0]
-        cnp.npy_intp An1 = A.shape[1]
-        cnp.npy_intp Bn1 = B.shape[1]
-
-    for i in range(An0):
-        for j in range(Bn1):
-            s = 0
-            for k in range(An1):
-                s += A[i, k] * B[k, j]
-
-            out[i, j] = s
-
-
-@cython.boundscheck(False)
-@cython.wraparound(False)
-@cython.cdivision(True)
 cdef void fast_vecmat_mul(double[:] x, double[:, :] A, double[:] out) nogil:
     '''
     Fast vector multiplication with matrix
