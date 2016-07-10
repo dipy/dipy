@@ -1,5 +1,6 @@
 import numpy as np
 import scipy as sp
+from time import time
 
 
 def localpca_slow(arr, sigma, patch_radius=1, rician=True):
@@ -78,6 +79,7 @@ def localpca_slow(arr, sigma, patch_radius=1, rician=True):
                     # compute EVD of the covariance matrix of X get the matrices W and D, hence get matrix Y = XW
                     # Threshold matrix D and then compute X_est = YW_transpose
                     # D_est
+                    
                     [d, W] = np.linalg.eigh(C)
 
                     d[d < tou[i, j, k, :]] = 0
@@ -114,6 +116,7 @@ def localpca_slow(arr, sigma, patch_radius=1, rician=True):
                                        k - patch_radius: k + patch_radius + 1,
                                        :] + temp / (1 + np.linalg.norm(d,
                                                                        ord=0))
+                    
 
         # the final denoised without rician adaptation
         denoised_arr = thetax / theta
