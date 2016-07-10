@@ -5,6 +5,8 @@ from dipy.utils.optpkg import optional_package
 
 from ipdb import set_trace
 
+from dipy.viz.gui import UI, TextActor
+
 # Allow import, but disable doctests if we don't have vtk.
 vtk, have_vtk, setup_module = optional_package('vtk')
 
@@ -18,22 +20,13 @@ else:
 numpy_support, have_ns, _ = optional_package('vtk.util.numpy_support')
 
 
-class UI(object):
-    def __init__(self):
-        self.ui_param = None
-        self.ui_list = list()
-
-    def set_ui_param(self, ui_param):
-        self.ui_param = ui_param
-
-
-class Button(UI):
+class Button2D(UI):
     """ Currently implements a 2D overlay button and is of type vtkTexturedActor2D.
 
     """
 
     def __init__(self, icon_fnames):
-        super(Button, self).__init__()
+        super(Button2D, self).__init__()
         self.icons = self.build_icons(icon_fnames)
         self.icon_names = list(self.icons.keys())
         self.current_icon_id = 0
@@ -127,57 +120,7 @@ class Button(UI):
         self.set_icon(self.icons[self.current_icon_name])
 
 
-class TextActor(vtk.vtkTextActor):
-    def message(self, text):
-        self.SetInput(text)
-
-    def set_message(self, text):
-        self.SetInput(text)
-
-    def get_message(self):
-        return self.GetInput()
-
-    def font_size(self, size):
-        self.GetTextProperty().SetFontSize(size)
-
-    def font_family(self, family='Arial'):
-        self.GetTextProperty().SetFontFamilyToArial()
-
-    def justification(self, justification):
-        tprop = self.GetTextProperty()
-        if justification == 'left':
-            tprop.SetJustificationToLeft()
-        if justification == 'center':
-            tprop.SetJustificationToCentered()
-        if justification == 'right':
-            tprop.SetJustificationToRight()
-
-    def font_style(self, bold=False, italic=False, shadow=False):
-        tprop = self.GetTextProperty()
-        if bold:
-            tprop.BoldOn()
-        else:
-            tprop.BoldOff()
-        if italic:
-            tprop.ItalicOn()
-        else:
-            tprop.ItalicOff()
-        if shadow:
-            tprop.ShadowOn()
-        else:
-            tprop.ShadowOff()
-
-    def color(self, color):
-        self.GetTextProperty().SetColor(*color)
-
-    def set_position(self, position):
-        self.SetDisplayPosition(*position)
-
-    def get_position(self):
-        return self.GetDisplayPosition()
-
-
-class TextBox(UI):
+class TextBox2D(UI):
     def __init__(self, width, height, text="Enter Text"):
         """
 
@@ -187,7 +130,7 @@ class TextBox(UI):
         height
         text
         """
-        super(TextBox, self).__init__()
+        super(TextBox2D, self).__init__()
         self.text = text
         self.actor = self.build_actor(self.text)
         self.width = width
@@ -426,7 +369,7 @@ class TextBox(UI):
         self.render_text()
 
 
-class Rectangle(UI):
+class Rectangle2D(UI):
     def __init__(self, size):
         """
 
@@ -434,7 +377,7 @@ class Rectangle(UI):
         ----------
         size
         """
-        super(Rectangle, self).__init__()
+        super(Rectangle2D, self).__init__()
         self.actor = self.build_actor(size=size)
 
         self.ui_list.append(self)
@@ -489,7 +432,7 @@ class Rectangle(UI):
         return actor
 
 
-class Slider(UI):
+class LineSlider2D(UI):
     def __init__(self, start_point=(350, 20), end_point=(550, 20), line_width=5, inner_radius=0,
                  outer_radius=10, position=(450, 20)):
         """
@@ -503,11 +446,11 @@ class Slider(UI):
         end_point
         line_width
         """
-        super(Slider, self).__init__()
-        self.slider_line = SliderLine(start_point=start_point, end_point=end_point, line_width=line_width)
-        self.slider_disk = SliderDisk(position=position, inner_radius=inner_radius, outer_radius=outer_radius,
+        super(LineSlider2D, self).__init__()
+        self.slider_line = LineSlider2DBase(start_point=start_point, end_point=end_point, line_width=line_width)
+        self.slider_disk = LineSlider2DDisk(position=position, inner_radius=inner_radius, outer_radius=outer_radius,
                                       start_point=start_point, end_point=end_point)
-        self.text = SliderText(limits=(start_point, end_point),
+        self.text = LineSlider2DText(limits=(start_point, end_point),
                                current_val=(start_point[0] + (end_point[0] - start_point[0])/2),
                                position=(start_point[0]-40, start_point[1]-10))
 
@@ -527,7 +470,7 @@ class Slider(UI):
         component.actor.AddObserver(event_type, callback)
 
 
-class SliderLine(UI):
+class LineSlider2DBase(UI):
 
     def __init__(self, start_point, end_point, line_width):
         """
@@ -538,7 +481,7 @@ class SliderLine(UI):
         end_point
         line_width
         """
-        super(SliderLine, self).__init__()
+        super(LineSlider2DBase, self).__init__()
         self.start_point = start_point
         self.end_point = end_point
         self.actor = self.build_actor(start_point=start_point, end_point=end_point, line_width=line_width)
@@ -559,7 +502,7 @@ class SliderLine(UI):
         actor
 
         """
-        actor = Rectangle(size=(end_point[0]-start_point[0], line_width)).actor
+        actor = Rectangle2D(size=(end_point[0]-start_point[0], line_width)).actor
 
         actor.SetPosition(start_point[0], start_point[1]-line_width/2)
 
@@ -568,7 +511,7 @@ class SliderLine(UI):
         return actor
 
 
-class SliderDisk(UI):
+class LineSlider2DDisk(UI):
 
     def __init__(self, position, inner_radius, outer_radius, start_point, end_point):
         """
@@ -579,7 +522,7 @@ class SliderDisk(UI):
         inner_radius
         outer_radius
         """
-        super(SliderDisk, self).__init__()
+        super(LineSlider2DDisk, self).__init__()
         self.actor = self.build_actor(position=position, inner_radius=inner_radius, outer_radius=outer_radius)
         self.pos_height = position[1]
 
@@ -637,7 +580,7 @@ class SliderDisk(UI):
         self.actor.SetPosition(x_position, self.pos_height)
 
 
-class SliderText(UI):
+class LineSlider2DText(UI):
 
     def __init__(self, limits, current_val, position):
         """
@@ -648,7 +591,7 @@ class SliderText(UI):
         current_val
         position
         """
-        super(SliderText, self).__init__()
+        super(LineSlider2DText, self).__init__()
         self.y_position = (limits[0][1] + limits[1][1])/2
         self.left_x_position = limits[0][0]
         self.right_x_position = limits[1][0]
@@ -708,7 +651,7 @@ class SliderText(UI):
         self.actor.set_message(text=percentage)
 
 
-class DiskSlider(UI):
+class DiskSlider2D(UI):
     def __init__(self, outer_inner_radius=44, outer_outer_radius=50, outer_position=(450, 100), inner_outer_radius=10,
                  inner_inner_radius=0):
         """
@@ -721,15 +664,15 @@ class DiskSlider(UI):
         inner_outer_radius
         inner_inner_radius
         """
-        super(DiskSlider, self).__init__()
+        super(DiskSlider2D, self).__init__()
         self.outer_disk_radius = outer_inner_radius + (outer_outer_radius - outer_inner_radius) / 2
         self.outer_disk_center = outer_position
-        self.slider_outer_disk = DiskSliderLine(inner_radius=outer_inner_radius, outer_radius=outer_outer_radius,
+        self.slider_outer_disk = DiskSlider2DBase(inner_radius=outer_inner_radius, outer_radius=outer_outer_radius,
                                                 disk_position=outer_position)
-        self.slider_inner_disk = DiskSliderDisk(inner_radius=inner_inner_radius, outer_radius=inner_outer_radius,
+        self.slider_inner_disk = DiskSlider2DDisk(inner_radius=inner_inner_radius, outer_radius=inner_outer_radius,
                                                 disk_position=(outer_position[0] + self.outer_disk_radius,
                                                                outer_position[1]))
-        self.slider_text = DiskSliderText(position=outer_position, current_val=0)
+        self.slider_text = DiskSlider2DText(position=outer_position, current_val=0)
 
         self.ui_list.append(self.slider_outer_disk)
         self.ui_list.append(self.slider_inner_disk)
@@ -807,7 +750,7 @@ class DiskSlider(UI):
         return angle
 
 
-class DiskSliderLine(UI):
+class DiskSlider2DBase(UI):
     def __init__(self, inner_radius, outer_radius, disk_position):
         """
 
@@ -817,7 +760,7 @@ class DiskSliderLine(UI):
         outer_radius
         disk_position
         """
-        super(DiskSliderLine, self).__init__()
+        super(DiskSlider2DBase, self).__init__()
         self.actor = self.build_actor(inner_radius=inner_radius, outer_radius=outer_radius, disk_position=disk_position)
 
         self.ui_list.append(self)
@@ -858,7 +801,7 @@ class DiskSliderLine(UI):
         return actor
 
 
-class DiskSliderDisk(UI):
+class DiskSlider2DDisk(UI):
     def __init__(self, inner_radius, outer_radius, disk_position):
         """
 
@@ -868,7 +811,7 @@ class DiskSliderDisk(UI):
         outer_radius
         disk_position
         """
-        super(DiskSliderDisk, self).__init__()
+        super(DiskSlider2DDisk, self).__init__()
         self.actor = self.build_actor(inner_radius=inner_radius, outer_radius=outer_radius, disk_position=disk_position)
 
         self.ui_list.append(self)
@@ -916,7 +859,7 @@ class DiskSliderDisk(UI):
         self.actor.SetPosition(position)
 
 
-class DiskSliderText(UI):
+class DiskSlider2DText(UI):
 
     def __init__(self, position, current_val):
         """
@@ -926,7 +869,7 @@ class DiskSliderText(UI):
         position
         current_val
         """
-        super(DiskSliderText, self).__init__()
+        super(DiskSlider2DText, self).__init__()
 
         self.actor = self.build_actor(current_val=current_val, position=position)
 

@@ -5,7 +5,7 @@ from dipy.data import read_viz_icons
 # Conditional import machinery for vtk.
 from dipy.utils.optpkg import optional_package
 
-from dipy.viz import actor, window, gui2d
+from dipy.viz import actor, window, gui_2d
 from ipdb import set_trace
 
 # Allow import, but disable doctests if we don't have vtk.
@@ -62,8 +62,8 @@ class CustomInteractorStyle(vtkInteractorStyleUser):
         if actor_2d is not None:
             self.chosen_element = self.get_ui_item(actor_2d)
             # print(self.chosen_element)
-            self.add_ui_param(gui2d.SliderLine, click_pos)
-            self.add_ui_param(gui2d.DiskSliderLine, click_pos)
+            self.add_ui_param(gui_2d.LineSlider2DBase, click_pos)
+            self.add_ui_param(gui_2d.DiskSlider2DBase, click_pos)
             actor_2d.InvokeEvent(evt)
         else:
             actor_3d = self.picker.GetProp3D()
@@ -77,7 +77,7 @@ class CustomInteractorStyle(vtkInteractorStyleUser):
 
     def on_left_button_released(self, obj, evt):
         if self.chosen_element is not None:
-            if isinstance(self.chosen_element, gui2d.SliderDisk) or isinstance(self.chosen_element, gui2d.DiskSliderDisk):
+            if isinstance(self.chosen_element, gui_2d.LineSlider2DDisk) or isinstance(self.chosen_element, gui_2d.DiskSlider2DDisk):
                 self.chosen_element = None
 
         self.trackball_interactor_style.OnLeftButtonUp()
@@ -113,8 +113,8 @@ class CustomInteractorStyle(vtkInteractorStyleUser):
     def on_mouse_moved(self, obj, evt):
         if self.chosen_element is not None:
             mouse_pos = self.GetInteractor().GetEventPosition()
-            self.add_ui_param(gui2d.SliderDisk, mouse_pos)
-            self.add_ui_param(gui2d.DiskSliderDisk, mouse_pos)
+            self.add_ui_param(gui_2d.LineSlider2DDisk, mouse_pos)
+            self.add_ui_param(gui_2d.DiskSlider2DDisk, mouse_pos)
             self.chosen_element.actor.InvokeEvent(evt)
         else:
             self.trackball_interactor_style.OnMouseMove()
@@ -127,7 +127,7 @@ class CustomInteractorStyle(vtkInteractorStyleUser):
 
     def on_key_press(self, obj, evt):
         if self.chosen_element is not None:
-            self.add_ui_param(gui2d.TextBox, obj.GetKeySym())
+            self.add_ui_param(gui_2d.TextBox2D, obj.GetKeySym())
             self.chosen_element.actor.InvokeEvent(evt)
             if obj.GetKeySym().lower() == "return":
                 self.chosen_element = None
@@ -203,7 +203,7 @@ icon_files['play'] = read_viz_icons(fname='play3.png')
 icon_files['plus'] = read_viz_icons(fname='plus.png')
 icon_files['cross'] = read_viz_icons(fname='cross.png')
 
-button = gui2d.Button(icon_fnames=icon_files)
+button = gui_2d.Button2D(icon_fnames=icon_files)
 
 
 def move_button_callback(*args, **kwargs):
@@ -222,7 +222,7 @@ button.add_callback("RightButtonPressEvent", move_button_callback)
 button.add_callback("LeftButtonPressEvent", modify_button_callback)
 
 
-text = gui2d.TextBox(height=3, width=10)
+text = gui_2d.TextBox2D(height=3, width=10)
 
 
 def key_press_callback(*args, **kwargs):
@@ -239,7 +239,7 @@ text.add_callback("KeyPressEvent", key_press_callback)
 text.add_callback("LeftButtonPressEvent", select_text_callback)
 
 
-slider = gui2d.Slider()
+slider = gui_2d.LineSlider2D()
 
 
 def line_click_callback(*args, **kwargs):
@@ -258,7 +258,7 @@ def disk_move_callback(*args, **kwargs):
 slider.add_callback("MouseMoveEvent", disk_move_callback, slider.slider_disk)
 slider.add_callback("LeftButtonPressEvent", line_click_callback, slider.slider_line)
 
-disk_slider = gui2d.DiskSlider()
+disk_slider = gui_2d.DiskSlider2D()
 
 
 def outer_disk_click_callback(*args, **kwargs):
