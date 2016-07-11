@@ -45,7 +45,7 @@ def localpca(arr, sigma, patch_radius=1):
                              * sigma[..., np.newaxis])            
                 else:
                     sigma = np.ones(arr.shape, dtype=np.float64) * sigma
-                    
+                
                 denoised_arr = np.array(fast_lpca(arr.astype(np.float64), patch_radius, sigma))
                 denoised_arr = np.abs(denoised_arr)
                 # # phi = np.linspace(0,15,1000)

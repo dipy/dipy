@@ -250,6 +250,7 @@ def fast_lpca(double[:, :, :, :] I, int radius, double[:, :, :, :] sigma):
                         # projection plus reconstruct
 
                         # make the projection and reconstruct
+
                         for p in range(i0 - radius, i0 + radius + 1):
                             for q in range(j0 - radius, j0 + radius + 1):
                                 for r in range(k0 - radius, k0 + radius + 1):
@@ -258,9 +259,9 @@ def fast_lpca(double[:, :, :, :] I, int radius, double[:, :, :, :] sigma):
                                         temp[s] = I[p, q, r, s] - mu[s]
 
                                     fast_vecmat_mul(temp, P, temp1)
+                                    update_vector(temp1, mu, 1)
 
                                     for s in range(ndiff):
-                                        temp1[s] += mu[s]
                                         theta[p, q, r, s] += l0norm
                                         thetax[p, q, r, s] += temp1[s] * l0norm
                         
