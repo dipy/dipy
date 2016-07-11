@@ -5,6 +5,13 @@ from warnings import warn
 import numpy as np
 
 from dipy.reconst.dti import fractional_anisotropy, color_fa
+from dipy.align.imaffine import (transform_centers_of_mass,
+                                 AffineMap,
+                                 MutualInformationMetric,
+                                 AffineRegistration)
+from dipy.align.transforms import (TranslationTransform3D,
+                                   RigidTransform3D,
+                                   AffineTransform3D)
 
 from scipy.ndimage.filters import median_filter
 try:
@@ -297,3 +304,104 @@ def clean_cc_mask(mask):
     new_cc_mask[np.where(labels == biggest_vol)] = 1
 
     return new_cc_mask
+
+def brain_extraction(input_data, input_affine, template_data, template_affine, template_mask
+                    patch_radius = 1, block_radius = 2, parameter = 1):
+    """
+    A robust brain extraction which uses a template to reduce the skull intensities.
+    The affine information is required because we need to register the template to the 
+    input data
+
+    Parameters
+    ----------
+    input_data : 3D ndarray
+        The input data from which the brain has to be extracted
+    input_affine : ndarray
+        The input affine matrix
+    template_data : 3D ndarray
+        The template data
+    template_affine : ndarray
+        The template affine matrix
+    template_mask : 3D ndarray
+        The binary mask of the template data which in 1 where the brain is
+        and 0 otherwise (essentially the brain extracted from the template data)
+    patch_radius : integer
+        The patch size which has to be taken around the voxels for weight computation
+    block_radius : integer
+        Defining the neighbourhood around the voxel for patch wise similarity searching
+    parameter : Double
+        Adaptive parameter governing the weights for similar patches
+
+    Returns
+    -------
+    mask : 3D ndarray
+        The brain extraction from the input data
+
+    """
+
+    c_of_mass = transform_centers_of_mass(input_data, input_affine,
+                                      template_data, template_affine)
+
+    # register the template data to input using affine registeration
+
+    nbins = 32
+    sampling_prop = None
+    metric = MutualInformationMetric(nbins, sampling_prop)
+
+    level_iters = [10000, 1000, 100]
+    sigmas = [3.0, 1.0, 0.0]
+    factors = [4, 2, 1]
+    affreg = AffineRegistration(metric=metric,
+                                level_iters=level_iters,
+                                sigmas=sigmas,
+                                factors=factors)
+
+    transform = TranslationTransform3D()
+    params0 = None
+    starting_affine = c_of_mass.affine
+    translation = affreg.optimize(input_data, template_data, transform, params0,
+                                  input_affine, template_affine,
+                                  starting_affine=starting_affine)
+    transformed_data = translation.transform(template_data)
+    transformed_mask = translation.transform(template_mask)
+
+    # now do a patch based similarity weighing between the
+    # input data and the transformed template data
+    patch_size = 2*patch_radius + 1
+    block_size = 2*block_radius + 1
+    total_radius = block_radius + patch_radius 
+    h = parameter
+    avg_wt = 0
+    wt_sum = 0
+    output_data = np.zeros(input_data.shape)
+
+    for i in range(total_radius, input_data.shape[0] - total_radius ):
+        for j in range(total_radius, input_data.shape[1] - total_radius):
+            for k in range(total_radius, input_data.shape[2] - total_radius):
+                wt_sum = 0
+                avg_wt = 0
+                # find the patch centered around the voxel
+                patch = input_data[i - patch_radius : i + patch_radius,
+                                   j - patch_radius : j + patch_radius,
+                                   k - patch_radius : k + patch_radius]
+
+                for i0 in range(i - block_radius, i + block_radius):
+                    for j0 in range(j - block_radius, j + block_radius):
+                        for k0 in range(k - block_radius, k + block_radius):
+
+                            # now find a patch centered around each of the voxels in neighbourhood
+                            # from the transformed template
+
+                            patch_template = transformed_data[i - patch_radius : i + patch_radius,
+                                                         j - patch_radius : j + patch_radius,
+                                                         k - patch_radius : k + patch_radius]
+                            # compute the patch difference and the weight
+                            weight = np.exp(-np.sum((patch - patch_template)**2) / h*h)
+                            wt_sum += weight
+                            avg_wt += weight * transformed_mask[i0, j0, k0]
+
+                output_data = avg_wt / wt_sum
+
+    # now perform median otsu on the output_data
+    
+    return output_data
