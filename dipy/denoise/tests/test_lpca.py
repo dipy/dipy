@@ -118,8 +118,8 @@ def gen_gtab():
 
 def test_lpca_static():
     S0 = 100 * np.ones((20, 20, 20, 20), dtype='f8')
-    S0n = localpca(S0, sigma=np.ones((20, 20, 20, 20), dtype=np.float64))
-    S0ns = localpca_slow(S0, sigma=np.ones((20, 20, 20, 20), dtype=np.float64))
+    S0n = localpca(S0, sigma=np.ones((20, 20, 20), dtype=np.float64))
+    S0ns = localpca_slow(S0, sigma=np.ones((20, 20, 20), dtype=np.float64))
     assert_array_almost_equal(S0, S0n)
     assert_array_almost_equal(S0, S0ns)
 
@@ -217,12 +217,6 @@ def test_phantom():
     DWI_clean_wrc = sigma * np.sqrt(np.pi / 2) * np.exp(-0.5 * temp) * ((1 + 0.5 * temp) * sp.special.iv(
         0, 0.25 * temp) + 0.5 * temp * sp.special.iv(1, 0.25 * temp))**2
 
-    if isinstance(sigma, np.ndarray) and sigma.ndim == 3:
-
-        sigma = (np.ones(DWI.shape, dtype=np.float64)
-                 * sigma[..., np.newaxis])
-    else:
-        sigma = np.ones(DWI.shape, dtype=np.float64) * sigma
     # perform the local PCA denoising
 
     DWI_den = localpca(DWI, sigma, patch_radius = 3)
@@ -234,15 +228,14 @@ def test_phantom():
     rmse_noisy_wrc = np.sum(np.abs(DWI_clean_wrc - DWI)) / \
         np.sum(np.abs(DWI_clean_wrc))
 
-    print("psnr noisy", np.max(DWI) / sigma[0, 0, 0, 0])
-    print("psnr clean", np.max(DWI_clean) / sigma[0, 0, 0, 0])
-    print("psnr denoised", np.max(DWI_den) / sigma[0, 0, 0, 0])
+    print("psnr noisy", np.max(DWI) / sigma)
+    print("psnr clean", np.max(DWI_clean) / sigma)
+    print("psnr denoised", np.max(DWI_den) / sigma)
     print("rmse noisy", rmse_noisy)
     print("rmse den", rmse_den)
     print("rmse noisy", rmse_noisy_wrc)
     print("rmse den", rmse_den_wrc)
     print("sigma", DWI.shape)
-    sigma = sigma[0, 0, 0, 0]
     assert_(np.max(DWI_clean) / sigma < np.max(DWI_den) / sigma)
     assert_(np.max(DWI_den) / sigma < np.max(DWI) / sigma)
     assert_(rmse_den < rmse_noisy)
