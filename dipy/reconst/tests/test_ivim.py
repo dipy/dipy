@@ -83,7 +83,7 @@ def test_multivoxel():
 
     ivim_model = IvimModel(gtab)
 
-    ivim_fit = ivim_model.fit(data)
+    ivim_fit = ivim_model.fit(data, x0=[1, 0.02, 0.002, 0.0002])
     est_signal = np.empty((ivim_fit.model_params.shape[0], N))
     for i in range(len(ivim_fit.model_params)):
         est_signal[i] = ivim_function(ivim_fit.model_params[i], gtab.bvals)

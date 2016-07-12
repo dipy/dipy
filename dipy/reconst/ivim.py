@@ -152,6 +152,9 @@ class IvimModel(ReconstModel):
         if x0 is None:
             x0 = np.ones(
                 (data.shape[:-1] + (4,))) * [1.0, 0.10, 0.001, 0.0009]
+        elif len(x0) == 4:
+            x0 = np.ones(
+                (data.shape[:-1] + (4,))) * x0
         else:
             if x0.shape != (data.shape[0], 4):
                 raise ValueError(
@@ -247,7 +250,7 @@ def one_stage(data, gtab, x0, jac, bounds, tol, options):
         Data or response variables holding the data. Note that the last
         dimension should contain the data. It makes no copies of data.
 
-    jac : bool
+    jac : bool, optional
         Use the Jacobian? Default: False
 
     Returns
@@ -313,7 +316,7 @@ def two_stage(data, gtab, x0,
         Data or response variables holding the data. Note that the last
         dimension should contain the data. It makes no copies of data.
 
-    jac : bool
+    jac : bool, optional
         Use the Jacobian? Default: False
 
     Returns
@@ -332,7 +335,7 @@ def two_stage(data, gtab, x0,
     fit_stats = np.empty((flat_data.shape[0], 4))
     flat_x0[..., 0] = flat_data[..., 0]
 
-    S0_hat, D_guess = get_S0_D_guess(flat_data, gtab, split_b)
+    S0_hat, D_guess = _get_S0_D_guess(flat_data, gtab, split_b)
     f_guess = 1 - S0_hat / flat_data[..., 0]
 
     flat_x0[..., 1] = f_guess
@@ -346,7 +349,35 @@ def two_stage(data, gtab, x0,
     return ivim_params, fit_stats
 
 
-def get_S0_D_guess(data, gtab, split_b):
+def _get_S0_D_guess(data, gtab, split_b):
+    """
+    Obtain initial guess for S0 and D for two stage fitting.
+
+    Using TensorModel from reconst.dti, we fit an exponential
+    for those signals which are less than a particular bvalue
+    (split_b). The apparent diffusion coefficient gives us an
+    initial estimate for D.
+
+    Parameters
+    ----------
+    data : array ([X, Y, Z, ...], g)
+        Data or response variables holding the data. Note that the last
+        dimension should contain the data. It makes no copies of data.
+
+    gtab : GradientTable class instance
+            Gradient directions and bvalues
+
+    split_b : float
+        The b-value to split the data on for two-stage fit
+
+    Returns
+    -------
+    S0_hat : array ([S0_1, S0_2, ...])
+        An array which gives the guess for all the S0 values.
+
+    D_guess : array ([D_1, D_2, ...])
+        An array which gives the guess for all the D values.
+    """
     bvals_ge_split = gtab.bvals[gtab.bvals > split_b]
     bvecs_ge_split = gtab.bvecs[gtab.bvals > split_b]
     gtab_ge_split = gradient_table(bvals_ge_split, bvecs_ge_split.T)
@@ -370,6 +401,18 @@ def get_S0_D_guess(data, gtab, split_b):
 def _ivim_jacobian_func(params, bvals, signal):
     """The Jacobian is the first derivative of the error function.
 
+    Parameters
+    ----------
+    params : array (N, 4)
+             An array of IVIM parameters - S0, f, D_star, D
+
+    bvals  : array
+             bvalues
+
+    Returns
+    -------
+    jacobian : array (N, 4)
+        The Jacobian for the error function.
     Notes
     -----
     The worked out Jacobian can be found here :
