@@ -9,7 +9,7 @@ from dipy.core.gradients import gradient_table
 from dipy.reconst.base import ReconstModel
 from dipy.reconst.dti import _min_positive_signal, apparent_diffusion_coef
 from dipy.reconst.dti import TensorModel, mean_diffusivity
-from .vec_val_sum import vec_val_vect
+from dipy.reconst.vec_val_sum import vec_val_vect
 from dipy.core.sphere import Sphere
 
 
