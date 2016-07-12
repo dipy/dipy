@@ -28,22 +28,22 @@ cdef void fast_vecmat_mul(double[:] x, double[:, :] A, double[:] out) nogil:
 @cython.boundscheck(False)
 @cython.wraparound(False)
 @cython.cdivision(True)
-cdef void update_outer_prod(double[:,:] out, double[:] x, int utype)nogil:
+cdef void update_outer_prod(double[:, :] out, double[:] x, int utype)nogil:
     cdef:
         cnp.npy_intp i, j, n
     n = x.shape[0]
-    if utype==0:
+    if utype == 0:
         for i in range(n):
             for j in range(n):
-                out[i,j] = x[i] * x[j]
-    elif utype==1:
+                out[i, j] = x[i] * x[j]
+    elif utype == 1:
         for i in range(n):
             for j in range(n):
-                out[i,j] += x[i] * x[j]
-    elif utype==-1:
+                out[i, j] += x[i] * x[j]
+    elif utype == -1:
         for i in range(n):
             for j in range(n):
-                out[i,j] -= x[i] * x[j]
+                out[i, j] -= x[i] * x[j]
 
 
 @cython.boundscheck(False)
@@ -53,13 +53,13 @@ cdef void update_vector(double[:] out, double[:] x, int utype)nogil:
     cdef:
         cnp.npy_intp i, n
     n = x.shape[0]
-    if utype==0:
+    if utype == 0:
         for i in range(n):
             out[i] = x[i]
-    elif utype==1:
+    elif utype == 1:
         for i in range(n):
             out[i] += x[i]
-    elif utype==-1:
+    elif utype == -1:
         for i in range(n):
             out[i] -= x[i]
 
@@ -67,28 +67,28 @@ cdef void update_vector(double[:] out, double[:] x, int utype)nogil:
 @cython.boundscheck(False)
 @cython.wraparound(False)
 @cython.cdivision(True)
-cdef void update_matrix(double[:,:] out, double[:,:] cov, int utype)nogil:
+cdef void update_matrix(double[:, :] out, double[:, :] cov, int utype)nogil:
     cdef:
         cnp.npy_intp i, j, n
     n = cov.shape[0]
-    if utype==0:
+    if utype == 0:
         for i in range(n):
             for j in range(n):
-                out[i,j] = cov[i, j]
-    elif utype==1:
+                out[i, j] = cov[i, j]
+    elif utype == 1:
         for i in range(n):
             for j in range(n):
-                out[i,j] += cov[i, j]
-    elif utype==-1:
+                out[i, j] += cov[i, j]
+    elif utype == -1:
         for i in range(n):
             for j in range(n):
-                out[i,j] -= cov[i, j]
+                out[i, j] -= cov[i, j]
 
 
 @cython.boundscheck(False)
 @cython.wraparound(False)
 @cython.cdivision(True)
-def fast_lpca(double[:, :, :, :] I, int radius, double[:, :, :, :] sigma):
+def fast_lpca(double[:, :, :, :] I, int radius, double[:, :, :] sigma):
     '''
     Local PCA Based Denoising of Diffusion Datasets
 
@@ -137,9 +137,9 @@ def fast_lpca(double[:, :, :, :] I, int radius, double[:, :, :, :] sigma):
         double[:, :] cov = np.empty((ndiff, ndiff))
         double[:] mu = np.empty(ndiff)
         double[:] x
-        double[:, :, :, :] theta = np.zeros((n0, n1, n2, ndiff))
+        double[:, :, :] theta = np.zeros((n0, n1, n2))
         double[:, :, :, :] thetax = np.zeros((n0, n1, n2, ndiff))
-        double[:,:,:,:] out = np.zeros((n0, n1, n2, ndiff))
+        double[:, :, :, :] out = np.zeros((n0, n1, n2, ndiff))
         double[:] temp = np.zeros(ndiff)
         double[:] temp1 = np.zeros(ndiff)
         double[:, :] P = np.zeros((ndiff, ndiff))
@@ -148,7 +148,7 @@ def fast_lpca(double[:, :, :, :] I, int radius, double[:, :, :, :] sigma):
         double[:, :] W_hatt = np.zeros((ndiff, ndiff))
 
     tt = 0
-                        
+
     with nogil:
         cur_i = 1
         for i in range(n0):
@@ -156,61 +156,71 @@ def fast_lpca(double[:, :, :, :] I, int radius, double[:, :, :, :] sigma):
             prev_i = 1 - cur_i
             for j in range(n1):
                 for k in range(n2):
-                    x = I[i,j,k, :]
+                    x = I[i, j, k, :]
                     # Start with last corner
-                    update_outer_prod(cov, x, 0)# q=(0,0,0)
-                    update_vector(mu, x, 0)# q=(0,0,0)
+                    update_outer_prod(cov, x, 0)  # q=(0,0,0)
+                    update_vector(mu, x, 0)  # q=(0,0,0)
 
                     # Add signed rectangles
-                    if i>0:
-                        update_matrix(cov, T[prev_i,j,k], 1)# q=(1, 0, 0)
-                        update_vector(mu, S[prev_i,j,k], 1)# q=(1, 0, 0)
-                        if j>0:
-                            update_matrix(cov, T[prev_i,j-1,k], -1)# q=(1, 1, 0)
-                            update_vector(mu, S[prev_i,j-1,k], -1)# q=(1, 1, 0)
-                            if k>0:
-                                update_matrix(cov, T[prev_i,j-1,k-1], 1)# q=(1, 1, 1)
-                                update_vector(mu, S[prev_i,j-1,k-1], 1)# q=(1, 1, 1)
-                        if k>0:
-                            update_matrix(cov, T[prev_i,j,k-1], -1)# q=(1, 0, 1)
-                            update_vector(mu, S[prev_i,j,k-1], -1)# q=(1, 0, 1)
-                    if j>0:
-                        update_matrix(cov, T[cur_i,j-1,k], 1)# q=(0, 1, 0)
-                        update_vector(mu, S[cur_i,j-1,k], 1)# q=(0, 1, 0)
-                        if k>0:
-                            update_matrix(cov, T[cur_i,j-1,k-1], -1)# q=(0, 1, 1)
-                            update_vector(mu, S[cur_i,j-1,k-1], -1)# q=(0, 1, 1)
-                    if k>0:
-                        update_matrix(cov, T[cur_i,j,k-1], 1)# q=(0, 0, 1)
-                        update_vector(mu, S[cur_i,j,k-1], 1)# q=(0, 0, 1)
+                    if i > 0:
+                        update_matrix(cov, T[prev_i, j, k], 1)  # q=(1, 0, 0)
+                        update_vector(mu, S[prev_i, j, k], 1)  # q=(1, 0, 0)
+                        if j > 0:
+                            # q=(1, 1, 0)
+                            update_matrix(cov, T[prev_i, j - 1, k], -1)
+                            # q=(1, 1, 0)
+                            update_vector(mu, S[prev_i, j - 1, k], -1)
+                            if k > 0:
+                                # q=(1, 1, 1)
+                                update_matrix(cov, T[prev_i, j - 1, k - 1], 1)
+                                # q=(1, 1, 1)
+                                update_vector(mu, S[prev_i, j - 1, k - 1], 1)
+                        if k > 0:
+                            # q=(1, 0, 1)
+                            update_matrix(cov, T[prev_i, j, k - 1], -1)
+                            # q=(1, 0, 1)
+                            update_vector(mu, S[prev_i, j, k - 1], -1)
+                    if j > 0:
+                        # q=(0, 1, 0)
+                        update_matrix(cov, T[cur_i, j - 1, k], 1)
+                        update_vector(mu, S[cur_i, j - 1, k], 1)  # q=(0, 1, 0)
+                        if k > 0:
+                            # q=(0, 1, 1)
+                            update_matrix(cov, T[cur_i, j - 1, k - 1], -1)
+                            # q=(0, 1, 1)
+                            update_vector(mu, S[cur_i, j - 1, k - 1], -1)
+                    if k > 0:
+                        # q=(0, 0, 1)
+                        update_matrix(cov, T[cur_i, j, k - 1], 1)
+                        update_vector(mu, S[cur_i, j, k - 1], 1)  # q=(0, 0, 1)
 
                     # Add displaced signed corners
-                    if i>=m:
-                        x = I[i-m,j,k]# q=(1, 0, 0)
+                    if i >= m:
+                        x = I[i - m, j, k]  # q=(1, 0, 0)
                         update_outer_prod(cov, x, -1)
                         update_vector(mu, x, -1)
-                        if j>=m:
-                            x = I[i-m,j-m,k]# q=(1, 1, 0)
+                        if j >= m:
+                            x = I[i - m, j - m, k]  # q=(1, 1, 0)
                             update_outer_prod(cov, x, 1)
                             update_vector(mu, x, 1)
-                            if k>=m:
-                                x = I[i-m,j-m,k-m]# q=(1, 1, 1)
+                            if k >= m:
+                                x = I[i - m, j - m, k - m]  # q=(1, 1, 1)
                                 update_outer_prod(cov, x, -1)
                                 update_vector(mu, x, -1)
-                        if k>=m:
-                            x = I[i-m,j,k-m]# q=(1, 0, 1)
+                        if k >= m:
+                            x = I[i - m, j, k - m]  # q=(1, 0, 1)
                             update_outer_prod(cov, x, 1)
                             update_vector(mu, x, 1)
-                    if j>=m:
-                        x = I[i,j-m,k]# q=(0, 1, 0)
+                    if j >= m:
+                        x = I[i, j - m, k]  # q=(0, 1, 0)
                         update_outer_prod(cov, x, -1)
                         update_vector(mu, x, -1)
-                        if k>=m:
-                            x = I[i,j-m,k-m]# q=(0, 1, 1)
+                        if k >= m:
+                            x = I[i, j - m, k - m]  # q=(0, 1, 1)
                             update_outer_prod(cov, x, 1)
                             update_vector(mu, x, 1)
-                    if k>=m:
-                        x = I[i,j,k-m]# q=(0, 0, 1)
+                    if k >= m:
+                        x = I[i, j, k - m]  # q=(0, 0, 1)
                         update_outer_prod(cov, x, -1)
                         update_vector(mu, x, -1)
 
@@ -219,13 +229,14 @@ def fast_lpca(double[:, :, :, :] I, int radius, double[:, :, :, :] sigma):
                     update_vector(S[cur_i, j, k], mu, 0)
 
                     # Use integral of current rectangle
-                    # Last corner is (i, j, k) => center is (i-radius, j-radius, k-radius)
-                    if (i>=m-1) and (j>=m-1) and (k>=m-1):
+                    # Last corner is (i, j, k) => center is (i-radius,
+                    # j-radius, k-radius)
+                    if (i >= m - 1) and (j >= m - 1) and (k >= m - 1):
                         # Divide by the number of samples
                         for ii in range(ndiff):
-                            mu[ii]/= nsamples
+                            mu[ii] /= nsamples
                             for jj in range(ndiff):
-                                cov[ii,jj] /= nsamples
+                                cov[ii, jj] /= nsamples
                         # Subtract self-outer product of mu from cov
                         update_outer_prod(cov, mu, -1)
 
@@ -236,16 +247,16 @@ def fast_lpca(double[:, :, :, :] I, int radius, double[:, :, :, :] sigma):
                         with gil:
                             # eigen value decomposition
                             P[...] = 0
-                            d, W_hat = np.linalg.eigh(cov)     
-                            
+                            d, W_hat = np.linalg.eigh(cov)
+
                         l0norm = 0
                         for p in range(ndiff):
-                            if d[p] >= sigma[i0, j0, k0, p] * 2.3 * 2.3:
+                            if d[p] >= sigma[i0, j0, k0] * 2.3 * 2.3:
                                 l0norm += 1
-                                update_outer_prod(P, W_hat[:,p], 1)
-                            
+                                update_outer_prod(P, W_hat[:, p], 1)
+
                         l0norm = 1.0 / (1 + l0norm)
-                        
+
                         # precompute the W_hat.W_hat_transpose for PCA
                         # projection plus reconstruct
 
@@ -260,11 +271,16 @@ def fast_lpca(double[:, :, :, :] I, int radius, double[:, :, :, :] sigma):
 
                                     fast_vecmat_mul(temp, P, temp1)
                                     update_vector(temp1, mu, 1)
+                                    theta[p, q, r] += l0norm
 
                                     for s in range(ndiff):
-                                        theta[p, q, r, s] += l0norm
                                         thetax[p, q, r, s] += temp1[s] * l0norm
-                        
 
-    out = np.divide(thetax, theta)
+        for i in range(n0):
+            for j in range(n1):
+                for k in range(n2):
+                    for s in range(ndiff):
+                        out[i, j, k, s] = thetax[i, j, k, s] / theta[i, j, k]
+
+    out = np.array(out)
     return out

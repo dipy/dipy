@@ -2,8 +2,8 @@ import numpy as np
 import scipy as sp
 from dipy.denoise.fast_lpca import fast_lpca
 
-def localpca(arr, sigma, patch_radius=1):
 
+def localpca(arr, sigma, patch_radius=1):
     """
     Local PCA Based Denoising of Diffusion Datasets
 
@@ -27,7 +27,7 @@ def localpca(arr, sigma, patch_radius=1):
     [1] Manjon JV, Coupe P, Concha L, Buades A, Collins DL
         "Diffusion Weighted Image Denoising Using Overcomplete Local PCA"
         PLOS 2013
-    
+
     """
 
     if arr.ndim == 4:
@@ -35,18 +35,19 @@ def localpca(arr, sigma, patch_radius=1):
         size = 2 * arr.shape[1] * arr.shape[2] * arr.shape[3] * arr.shape[3]
         memory_use = 8.0 * size / (1024.0 * 1024.0)
         if memory_use > 2000:
-            print("Memory Usage", memory_use , "mb")
+            print("Memory Usage", memory_use, "mb")
             print("Use the slower version of local PCA to avoid problems")
             call = raw_input("Do you want to continue? y/n :")
             if call == 'y' or call == 'Y':
                 if isinstance(sigma, np.ndarray) and sigma.ndim == 3:
 
-                    sigma = (np.ones(arr.shape, dtype=np.float64)
-                             * sigma[..., np.newaxis])            
+                    sigma = np.array(sigma, dtype=np.float64)
                 else:
-                    sigma = np.ones(arr.shape, dtype=np.float64) * sigma
-                
-                denoised_arr = np.array(fast_lpca(arr.astype(np.float64), patch_radius, sigma))
+                    sigma = np.ones(
+                        (arr.shape[0], arr.shape[1], arr.shape[2]), dtype=np.float64) * sigma
+
+                denoised_arr = np.array(fast_lpca(arr.astype(np.float64),
+                            patch_radius,sigma))
                 denoised_arr = np.abs(denoised_arr)
                 # # phi = np.linspace(0,15,1000)
                 # # # # we need to find the index of the closest value of arr/sigma from the dataset
@@ -71,12 +72,16 @@ def localpca(arr, sigma, patch_radius=1):
         else:
             if isinstance(sigma, np.ndarray) and sigma.ndim == 3:
 
-                sigma = (np.ones(arr.shape, dtype=np.float64)
-                         * sigma[..., np.newaxis])            
+                sigma = np.array(sigma, dtype=np.float64)
             else:
-                sigma = np.ones(arr.shape, dtype=np.float64) * sigma
-                
-            denoised_arr = np.array(fast_lpca(arr.astype(np.float64), patch_radius, sigma))
+                sigma = np.ones(
+                    (arr.shape[0],
+                     arr.shape[1],
+                        arr.shape[2]),
+                    dtype=np.float64) * sigma
+
+            denoised_arr = np.array(fast_lpca(arr.astype(np.float64),
+                            patch_radius,sigma))
             denoised_arr = np.abs(denoised_arr)
             # # phi = np.linspace(0,15,1000)
             # # # # we need to find the index of the closest value of arr/sigma from the dataset
