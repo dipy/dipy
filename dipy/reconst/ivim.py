@@ -256,6 +256,8 @@ def one_stage(data, gtab, x0, jac, bounds, tol, options):
 
     """
     flat_data = data.reshape((-1, data.shape[-1]))
+    S_normalization = flat_data[:, 0]
+    flat_data = (flat_data.T / S_normalization).T
     flat_x0 = x0.reshape(-1, x0.shape[-1])
     # Flatten for the iteration over voxels:
     bvals = gtab.bvals
@@ -266,6 +268,7 @@ def one_stage(data, gtab, x0, jac, bounds, tol, options):
     fit_stats = _leastsq(flat_data, bvals, flat_x0,
                          ivim_params, options, tol)
     ivim_params.shape = data.shape[:-1] + (4,)
+    ivim_params[:, 0] = ivim_params[:, 0] * S_normalization
     return ivim_params, fit_stats
 
 
@@ -313,6 +316,9 @@ def two_stage(data, gtab, x0,
 
     """
     flat_data = data.reshape((-1, data.shape[-1]))
+    S_normalization = flat_data[:, 0]
+    flat_data = (flat_data.T / S_normalization).T
+
     flat_x0 = x0.reshape(-1, x0.shape[-1])
     # Flatten for the iteration over voxels:
     bvals = gtab.bvals
@@ -329,6 +335,8 @@ def two_stage(data, gtab, x0,
     fit_stats = _leastsq(flat_data, bvals, flat_x0,
                          ivim_params, options, tol)
     ivim_params.shape = data.shape[:-1] + (4,)
+    ivim_params[:, 0] = ivim_params[:, 0] * S_normalization
+
     return ivim_params, fit_stats
 
 
