@@ -305,8 +305,8 @@ def clean_cc_mask(mask):
 
     return new_cc_mask
 
-def brain_extraction(input_data, input_affine, template_data, template_affine, template_mask
-                    patch_radius = 1, block_radius = 2, parameter = 1):
+def brain_extraction(input_data, input_affine, template_data, template_affine, template_mask,
+                    patch_radius = 1, block_radius = 1, parameter = 1):
     """
     A robust brain extraction which uses a template to reduce the skull intensities.
     The affine information is required because we need to register the template to the 
@@ -384,6 +384,7 @@ def brain_extraction(input_data, input_affine, template_data, template_affine, t
                 patch = input_data[i - patch_radius : i + patch_radius,
                                    j - patch_radius : j + patch_radius,
                                    k - patch_radius : k + patch_radius]
+                patch = np.array(patch, dtype = np.float64)
 
                 for i0 in range(i - block_radius, i + block_radius):
                     for j0 in range(j - block_radius, j + block_radius):

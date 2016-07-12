@@ -16,30 +16,32 @@ from dipy.data import fetch_stanford_hardi, read_stanford_hardi
 
 # fetch_stanford_hardi()
 # read the test data
-img = nib.load('bundles_2_subjects/subj_1/t1_warped.nii.gz')
+img = nib.load('/Users/Riddhish/Documents/GSOC/DIPY/data/Brain Extraction/forElef_GSoC_brain_extraction/fancyt1/s1_t1.nii.gz')
 # img, gtab = read_stanford_hardi()
 input_data = img.get_data()
 input_affine = img.get_affine()
-
+input_data = input_data[30:210,20:220,30:140]
+# input_data = input_data[30:220, 30:220, 10:15]
+print(input_data.shape)
 # input_data = input_data[...,0]
 # read the template 
-img = nib.load('mni_icbm152_nlin_asym_09c_nifti/mni_icbm152_nlin_asym_09c/mni_icbm152_t1_tal_nlin_asym_09c.nii')
+img = nib.load('/Users/Riddhish/Documents/GSOC/DIPY/data/Brain Extraction/mni_icbm152_nlin_asym_09c_nifti/mni_icbm152_nlin_asym_09c/mni_icbm152_t1_tal_nlin_asym_09c.nii')
 template_data = img.get_data()
 template_affine = img.get_affine()
-img = nib.load('mni_icbm152_nlin_asym_09c_nifti/mni_icbm152_nlin_asym_09c/mni_icbm152_t1_tal_nlin_asym_09c_eye_mask.nii')
-template_data_eyemask = img.get_data()
-img = nib.load('mni_icbm152_nlin_asym_09c_nifti/mni_icbm152_nlin_asym_09c/mni_icbm152_t1_tal_nlin_asym_09c_face_mask.nii')
-template_data_facemask = img.get_data()
-img = nib.load('mni_icbm152_nlin_asym_09c_nifti/mni_icbm152_nlin_asym_09c/mni_icbm152_t1_tal_nlin_asym_09c_mask.nii')
+# img = nib.load('mni_icbm152_nlin_asym_09c_nifti/mni_icbm152_nlin_asym_09c/mni_icbm152_t1_tal_nlin_asym_09c_eye_mask.nii')
+# template_data_eyemask = img.get_data()
+# img = nib.load('mni_icbm152_nlin_asym_09c_nifti/mni_icbm152_nlin_asym_09c/mni_icbm152_t1_tal_nlin_asym_09c_face_mask.nii')
+# template_data_facemask = img.get_data()
+img = nib.load('/Users/Riddhish/Documents/GSOC/DIPY/data/Brain Extraction/mni_icbm152_nlin_asym_09c_nifti/mni_icbm152_nlin_asym_09c/mni_icbm152_t1_tal_nlin_asym_09c_mask.nii')
 template_data_mask = img.get_data()
-img = nib.load('mni_icbm152_nlin_asym_09c_nifti/mni_icbm152_nlin_asym_09c/mni_icbm152_csf_tal_nlin_asym_09c.nii')
-template_data_csf = img.get_data()
-img = nib.load('mni_icbm152_nlin_asym_09c_nifti/mni_icbm152_nlin_asym_09c/mni_icbm152_gm_tal_nlin_asym_09c.nii')
-template_data_gm = img.get_data()
-img = nib.load('mni_icbm152_nlin_asym_09c_nifti/mni_icbm152_nlin_asym_09c/mni_icbm152_wm_tal_nlin_asym_09c.nii')
-template_data_wm = img.get_data()
-img = nib.load('mni_icbm152_nlin_asym_09c_nifti/mni_icbm152_nlin_asym_09c/mni_icbm152_pd_tal_nlin_asym_09c.nii')
-template_data_pd = img.get_data()
+# img = nib.load('mni_icbm152_nlin_asym_09c_nifti/mni_icbm152_nlin_asym_09c/mni_icbm152_csf_tal_nlin_asym_09c.nii')
+# template_data_csf = img.get_data()
+# img = nib.load('mni_icbm152_nlin_asym_09c_nifti/mni_icbm152_nlin_asym_09c/mni_icbm152_gm_tal_nlin_asym_09c.nii')
+# template_data_gm = img.get_data()
+# img = nib.load('mni_icbm152_nlin_asym_09c_nifti/mni_icbm152_nlin_asym_09c/mni_icbm152_wm_tal_nlin_asym_09c.nii')
+# template_data_wm = img.get_data()
+# img = nib.load('mni_icbm152_nlin_asym_09c_nifti/mni_icbm152_nlin_asym_09c/mni_icbm152_pd_tal_nlin_asym_09c.nii')
+# template_data_pd = img.get_data()
 
 
 # first do the pure brain extraction for the data using
@@ -47,15 +49,15 @@ template_data_pd = img.get_data()
 
 b0_mask, mask = median_otsu(input_data, 2, 1)
 
-sli = input_data.shape[2] / 2 - 50 
+sli = input_data.shape[2] / 2 
 
 plt.figure('Brain segmentation')
-plt.subplot(1, 3, 1).set_axis_off()
+plt.subplot(1, 4, 1).set_axis_off()
 plt.imshow(input_data[:, :, sli].astype('float'),
            cmap='gray', origin='lower')
 plt.title("Input Data")
 
-plt.subplot(1, 3, 2).set_axis_off()
+plt.subplot(1, 4, 2).set_axis_off()
 plt.imshow(mask[:, :, sli].astype('float'),
            cmap='gray', origin='lower')
 plt.title("Median Otsu Output")
@@ -100,7 +102,7 @@ translation = affreg.optimize(input_data, template_data, transform, params0,
 transformed = translation.transform(template_data)
 transformed_mask = translation.transform(template_data_mask)
 
-plt.subplot(1, 3, 3).set_axis_off()
+plt.subplot(1, 4, 3).set_axis_off()
 plt.imshow(transformed[:, :, sli].astype('float'),
            cmap='gray', origin='lower')
 plt.title("Tranformed mask output")
@@ -131,19 +133,22 @@ patch_size = 2*patch_radius + 1
 block_size = 2*block_radius + 1
 total_radius = block_radius + patch_radius 
 h = 1
-avg_wt = 0
-wt_sum = 0
-output_data = np.zeros(input_data.shape)
+avg_wt = 0.0
+wt_sum = 0.0
+output_data = np.zeros(input_data.shape, dtype=np.float64)
 
 for i in range(total_radius, input_data.shape[0] - total_radius ):
+	print(i)
 	for j in range(total_radius, input_data.shape[1] - total_radius):
 		for k in range(total_radius, input_data.shape[2] - total_radius):
-			wt_sum = 0
-			avg_wt = 0
+			wt_sum = 0.0
+			avg_wt = 0.0
 			# find the patch centered around the voxel
 			patch = input_data[i - patch_radius : i + patch_radius,
 							   j - patch_radius : j + patch_radius,
 							   k - patch_radius : k + patch_radius]
+			patch = np.array(patch, dtype = np.float64)
+			patch = patch / np.sum(patch)
 
 			for i0 in range(i - block_radius, i + block_radius):
 				for j0 in range(j - block_radius, j + block_radius):
@@ -155,12 +160,18 @@ for i in range(total_radius, input_data.shape[0] - total_radius ):
 						patch_template = transformed[i - patch_radius : i + patch_radius,
 							   						 j - patch_radius : j + patch_radius,
 							   						 k - patch_radius : k + patch_radius]
+						patch_template = patch_template / np.sum(patch_template)
 						# compute the patch difference and the weight
 						weight = np.exp(-np.sum((patch - patch_template)**2) / h*h)
 						wt_sum += weight
 						avg_wt += weight * transformed_mask[i0, j0, k0]
 
-			output_data = avg_wt / wt_sum
+			output_data[i,j,k] = avg_wt / wt_sum
 
+
+plt.subplot(1, 4, 4).set_axis_off()
+plt.imshow(output_data[:, :, sli].astype('float'),
+           cmap='gray', origin='lower')
+plt.title("The patch averaging label output")
 plt.show()
 # Use the direct mapping for all the labels and then do the comparision for the data
