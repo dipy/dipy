@@ -299,7 +299,13 @@ def two_stage(data, gtab, x0,
               split_b, jac, bounds, tol,
               options):
     """
-    Fit the ivim params using a two stage fit
+    Fit the ivim params using a two stage fit.
+
+    In the two stage fitting routine, initially, we fit the signal
+    at bvals less than the specified split_b using the TensorModel
+    and get an intial guess for f and D. Then, using these parameters
+    we fit the entire data for all bvalues. The default split_b is
+    200.
 
     Parameters
     ----------
