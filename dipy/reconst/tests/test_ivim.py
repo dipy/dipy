@@ -14,7 +14,7 @@ References
 import numpy as np
 from numpy.testing import (assert_array_equal, assert_array_almost_equal)
 
-from dipy.reconst.ivim import ivim_function, IvimModel
+from dipy.reconst.ivim import ivim_function, IvimModel, _ivim_jacobian_func
 from dipy.core.gradients import gradient_table, generate_bvecs
 from dipy.sims.voxel import multi_tensor
 
@@ -47,8 +47,8 @@ def test_single_voxel_fit():
     mevals = np.array(([D_star, D_star, D_star], [D, D, D]))
     # This gives an isotropic signal
 
-    signal = multi_tensor(gtab, mevals, snr=None, S0=S0, fractions=[
-                          f * 100, 100 * (1 - f)])
+    signal = multi_tensor(gtab, mevals, snr=None, S0=S0,
+                          fractions=[f * 100, 100 * (1 - f)])
     data = signal[0]
     ivim_model = IvimModel(gtab)
     ivim_fit = ivim_model.fit(data)
@@ -115,8 +115,8 @@ def test_two_stage():
     mevals = np.array(([D_star, D_star, D_star], [D, D, D]))
     # This gives an isotropic signal
 
-    signal = multi_tensor(gtab, mevals, snr=None, S0=S0, fractions=[
-        f * 100, 100 * (1 - f)])
+    signal = multi_tensor(gtab, mevals, snr=None, S0=S0,
+                          fractions=[f * 100, 100 * (1 - f)])
     data = signal[0]
     ivim_model = IvimModel(gtab, split_b=200.)
 
@@ -151,8 +151,8 @@ def test_predict():
     mevals = np.array(([D_star, D_star, D_star], [D, D, D]))
     # This gives an isotropic signal
 
-    signal = multi_tensor(gtab, mevals, snr=None, S0=S0, fractions=[
-        f * 100, 100 * (1 - f)])
+    signal = multi_tensor(gtab, mevals, snr=None, S0=S0,
+                          fractions=[f * 100, 100 * (1 - f)])
     data = signal[0]
     ivim_model = IvimModel(gtab)
     ivim_fit = ivim_model.fit(data)
@@ -179,8 +179,8 @@ def test_fit_with_jacobian():
     mevals = np.array(([D_star, D_star, D_star], [D, D, D]))
     # This gives an isotropic signal
 
-    signal = multi_tensor(gtab, mevals, snr=None, S0=S0, fractions=[
-        f * 100, 100 * (1 - f)])
+    signal = multi_tensor(gtab, mevals, snr=None, S0=S0,
+                          fractions=[f * 100, 100 * (1 - f)])
     data = np.array([signal[0], ])
 
     ivim_model = IvimModel(gtab)
@@ -191,3 +191,31 @@ def test_fit_with_jacobian():
     assert_array_equal(est_signal.shape, data.shape)
     assert_array_almost_equal(est_signal, data)
     assert_array_almost_equal(ivim_fit.model_params[0], [S0, f, D_star, D])
+
+
+def test_jacobian():
+    """
+    Test the implementation of the Jacobian
+    """
+    bvals = np.array([0., 10., 20., 30., 40., 60., 80., 100.,
+                      120., 140., 160., 180., 200., 220., 240.,
+                      260., 280., 300., 350., 400., 500., 600.,
+                      700., 800., 900., 1000.])
+    N = len(bvals)
+    bvecs = generate_bvecs(N)
+    gtab = gradient_table(bvals, bvecs.T)
+
+    S0, f, D_star, D = 1.0, 0.1, 0.001, 0.0001
+
+    mevals = np.array(([D_star, D_star, D_star], [D, D, D]))
+    # This gives an isotropic signal
+
+    signal = multi_tensor(gtab, mevals, snr=None, S0=S0,
+                          fractions=[f * 100, 100 * (1 - f)])
+    data = np.array([signal[0], ])
+    params = np.array([S0, f, D_star, D])
+    jac = _ivim_jacobian_func(params, bvals, data)
+
+    assert_array_equal(jac.shape, params.shape)
+    # assert_array_almost_equal(jac, [])
+    
