@@ -216,6 +216,5 @@ def test_jacobian():
     params = np.array([S0, f, D_star, D])
     jac = _ivim_jacobian_func(params, bvals, data)
 
-    assert_array_equal(jac.shape, params.shape)
+    assert_array_equal(jac.shape, (data.shape[-1], params.shape[-1]))
     # assert_array_almost_equal(jac, [])
-    

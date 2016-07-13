@@ -3,14 +3,22 @@
 from __future__ import division, print_function, absolute_import
 import numpy as np
 
-from scipy.optimize import leastsq
-
 from dipy.core.gradients import gradient_table
 from dipy.reconst.base import ReconstModel
 from dipy.reconst.dti import _min_positive_signal, apparent_diffusion_coef
 from dipy.reconst.dti import TensorModel, mean_diffusivity
 from dipy.reconst.vec_val_sum import vec_val_vect
 from dipy.core.sphere import Sphere
+
+from distutils.version import LooseVersion
+import scipy
+
+SCIPY_LESS_0_17 = LooseVersion(scipy.version.short_version) < '0.17'
+
+if not SCIPY_LESS_0_17:
+    least_squares = scipy.optimize.least_squares
+else:
+    leastsq = scipy.optimize.leastsq
 
 
 def ivim_function(params, bvals):
@@ -87,10 +95,10 @@ class IvimModel(ReconstModel):
             raise ValueError(e_s)
 
     def fit(self, data, mask=None, x0=None, fit_method="one_stage",
-            jac=True, bounds=((0, None), (0, 1.), (0, 1.), (0, 1.)),
+            jac=True, bounds=([0., 0., 0., 0.], [np.inf, 1., 1., 1.]),
             tol=1e-7,
-            options={'gtol': 1e-25, 'ftol': 1e-25,
-                     'eps': 1e-15, 'maxiter': 1000}):
+            options={'gtol': 1e-12, 'ftol': 1e-12,
+                     'eps': 1e-12, 'maxiter': 1000}):
         """ Fit method of the Ivim model class
 
         Parameters
@@ -269,13 +277,13 @@ def one_stage(data, gtab, x0, jac, bounds, tol, options):
     flat_x0[..., 0] = flat_data[..., 0]
 
     fit_stats = _leastsq(flat_data, bvals, flat_x0,
-                         ivim_params, options, tol)
+                         ivim_params, options, tol, bounds)
     ivim_params.shape = data.shape[:-1] + (4,)
     ivim_params[:, 0] = ivim_params[:, 0] * S_normalization
     return ivim_params, fit_stats
 
 
-def _leastsq(flat_data, bvals, flat_x0, ivim_params, options, tol):
+def _leastsq(flat_data, bvals, flat_x0, ivim_params, options, tol, bounds):
     """Use leastsq for finding ivim_params"""
     num_voxels = flat_data.shape[0]
     result = np.empty(flat_data.shape[0], dtype=object)
@@ -284,17 +292,32 @@ def _leastsq(flat_data, bvals, flat_x0, ivim_params, options, tol):
     xtol = tol
     epsfcn = options["eps"]
     maxfev = options["maxiter"]
-    for vox in range(num_voxels):
-        res = leastsq(_ivim_error,
-                      flat_x0[vox],
-                      args=(bvals, flat_data[vox]),
-                      gtol=gtol,
-                      xtol=xtol,
-                      ftol=ftol,
-                      epsfcn=epsfcn,
-                      maxfev=maxfev)
-        ivim_params[vox, :4] = res[0]
-        result[vox] = res
+    if not SCIPY_LESS_0_17:
+        for vox in range(num_voxels):
+            res = least_squares(_ivim_error,
+                                flat_x0[vox],
+                                # jac=_ivim_jacobian_func,
+                                bounds=bounds,
+                                ftol=ftol,
+                                xtol=xtol,
+                                gtol=gtol,
+                                max_nfev=maxfev,
+                                args=(bvals, flat_data[vox]))
+            ivim_params[vox, :4] = res.x
+            result[vox] = res
+    else:
+        for vox in range(num_voxels):
+            res = leastsq(_ivim_error,
+                          flat_x0[vox],
+                          args=(bvals, flat_data[vox]),
+                          # Dfun=_ivim_jacobian_func,
+                          gtol=gtol,
+                          xtol=xtol,
+                          ftol=ftol,
+                          epsfcn=epsfcn,
+                          maxfev=maxfev)
+            ivim_params[vox, :4] = res[0]
+            result[vox] = res
     return result
 
 
@@ -342,7 +365,7 @@ def two_stage(data, gtab, x0,
     flat_x0[..., 3] = D_guess
 
     fit_stats = _leastsq(flat_data, bvals, flat_x0,
-                         ivim_params, options, tol)
+                         ivim_params, options, tol, bounds)
     ivim_params.shape = data.shape[:-1] + (4,)
     ivim_params[:, 0] = ivim_params[:, 0] * S_normalization
 
@@ -430,11 +453,12 @@ def _ivim_jacobian_func(params, bvals, signal):
     derv_D = S0 * (-bvals * (1 - f) * np.exp(-bvals * D))
 
     err = _ivim_error(params, bvals, signal)
-    jacobian = np.zeros((len(params)))
+    jacobian = np.zeros((len(bvals), len(params)))
 
-    jacobian[0] = np.sum(2 * err * -derv_S0)
-    jacobian[1] = np.sum(2 * err * -derv_f)
-    jacobian[2] = np.sum(2 * err * -derv_D_star)
-    jacobian[3] = np.sum(2 * err * -derv_D)
+    for i in range(len(bvals)):
+        jacobian[i][0] = np.sum(2 * err * -derv_S0)
+        jacobian[i][1] = np.sum(2 * err * -derv_f)
+        jacobian[i][2] = np.sum(2 * err * -derv_D_star)
+        jacobian[i][3] = np.sum(2 * err * -derv_D)
 
     return jacobian
