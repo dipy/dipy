@@ -5,7 +5,7 @@ from dipy.utils.optpkg import optional_package
 
 from ipdb import set_trace
 
-from dipy.viz.gui import UI, TextActor
+from dipy.viz.gui import UI, TextActor2D
 
 # Allow import, but disable doctests if we don't have vtk.
 vtk, have_vtk, setup_module = optional_package('vtk')
@@ -165,7 +165,7 @@ class TextBox2D(UI):
         text_actor
 
         """
-        text_actor = TextActor()
+        text_actor = TextActor2D()
         text_actor.set_position(position)
         text_actor.message(text)
         text_actor.font_size(font_size)
@@ -549,8 +549,8 @@ class LineSlider2DDisk(UI):
         disk = vtk.vtkDiskSource()
         disk.SetInnerRadius(inner_radius)
         disk.SetOuterRadius(outer_radius)
-        disk.SetRadialResolution(100)
-        disk.SetCircumferentialResolution(100)
+        disk.SetRadialResolution(10)
+        disk.SetCircumferentialResolution(50)
         disk.Update()
 
         # mapper
@@ -631,7 +631,7 @@ class LineSlider2DText(UI):
         actor
 
         """
-        actor = TextActor()
+        actor = TextActor2D()
 
         actor.set_position(position=position)
         percentage = self.calculate_percentage(current_val=current_val)
@@ -782,8 +782,8 @@ class DiskSlider2DBase(UI):
         disk = vtk.vtkDiskSource()
         disk.SetInnerRadius(inner_radius)
         disk.SetOuterRadius(outer_radius)
-        disk.SetRadialResolution(100)
-        disk.SetCircumferentialResolution(100)
+        disk.SetRadialResolution(10)
+        disk.SetCircumferentialResolution(50)
         disk.Update()
 
         # mapper
@@ -833,8 +833,8 @@ class DiskSlider2DDisk(UI):
         disk = vtk.vtkDiskSource()
         disk.SetInnerRadius(inner_radius)
         disk.SetOuterRadius(outer_radius)
-        disk.SetRadialResolution(100)
-        disk.SetCircumferentialResolution(100)
+        disk.SetRadialResolution(10)
+        disk.SetCircumferentialResolution(50)
         disk.Update()
 
         # mapper
@@ -906,7 +906,7 @@ class DiskSlider2DText(UI):
         actor
 
         """
-        actor = TextActor()
+        actor = TextActor2D()
 
         actor.set_position(position=(position[0]-16, position[1]-8))
         percentage = self.calculate_percentage(current_val=current_val)

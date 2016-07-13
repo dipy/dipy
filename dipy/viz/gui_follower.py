@@ -20,14 +20,52 @@ else:
 numpy_support, have_ns, _ = optional_package('vtk.util.numpy_support')
 
 
+class FollowerMenu(UI):
+    def __init__(self, position, diameter, camera, elements):
+        super(FollowerMenu, self).__init__()
+        self.orbit = FollowerMenuOrbit(position=position, diameter=diameter, camera=camera)
+
+        self.ui_list.append(self.orbit)
+
+
+class FollowerMenuOrbit(UI):
+    def __init__(self, position, diameter, camera):
+        super(FollowerMenuOrbit, self).__init__()
+        self.camera = camera
+        self.actor = self.build_actor(center=position, diameter=diameter)
+
+        self.ui_list.append(self)
+
+    def build_actor(self, center, diameter):
+        disk = vtk.vtkDiskSource()
+        disk.SetInnerRadius(diameter/2)
+        disk.SetOuterRadius(diameter/2 + 2)
+        disk.SetRadialResolution(10)
+        disk.SetCircumferentialResolution(50)
+        disk.Update()
+
+        # mapper
+        mapper = vtk.vtkPolyDataMapper()
+        mapper.SetInputConnection(disk.GetOutputPort())
+
+        # actor
+        actor = vtk.vtkFollower()
+        actor.SetMapper(mapper)
+        actor.SetCamera(self.camera)
+
+        actor.SetPosition(center[0], center[1], center[2])
+
+        return actor
+
+
 class ButtonFollower(UI):
     """ Currently implements a 2D overlay button and is of type vtkTexturedActor2D.
 
     """
 
-    def __init__(self, icon_fnames, renderer):
+    def __init__(self, icon_fnames, camera):
         super(ButtonFollower, self).__init__()
-        self.renderer = renderer
+        self.camera = camera
         self.icons = self.build_icons(icon_fnames)
         self.icon_names = list(self.icons.keys())
         self.current_icon_id = 0
@@ -81,7 +119,7 @@ class ButtonFollower(UI):
 
         button = vtk.vtkFollower()
         button.SetMapper(mapper)
-        button.SetCamera(self.renderer.GetActiveCamera())
+        button.SetCamera(self.camera)
 
         button.SetPosition((50, 50, 50))
 

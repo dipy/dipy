@@ -22,7 +22,7 @@ class UI(object):
         self.ui_param = ui_param
 
 
-class TextActor(vtk.vtkTextActor):
+class TextActor2D(vtk.vtkTextActor):
     def message(self, text):
         self.SetInput(text)
 

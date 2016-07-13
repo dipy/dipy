@@ -187,7 +187,7 @@ icon_files['play'] = read_viz_icons(fname='play3.png')
 icon_files['plus'] = read_viz_icons(fname='plus.png')
 icon_files['cross'] = read_viz_icons(fname='cross.png')
 
-button = gui_follower.ButtonFollower(icon_fnames=icon_files, renderer=renderer)
+button = gui_follower.ButtonFollower(icon_fnames=icon_files, camera=renderer.GetActiveCamera())
 
 
 def move_button_callback(*args, **kwargs):
@@ -206,10 +206,14 @@ button.add_callback("RightButtonPressEvent", move_button_callback)
 button.add_callback("LeftButtonPressEvent", modify_button_callback)
 
 
+follower_menu = gui_follower.FollowerMenu(position=(0, 0, 0), diameter=87, camera=renderer.GetActiveCamera(),
+                                          elements=[button])
+
 iren_style = CustomInteractorStyle(renderer=renderer)
 renderer.add(cube_actor_1)
 renderer.add(cube_actor_2)
-renderer.add(button)
+# renderer.add(button)
+renderer.add(follower_menu)
 
 showm = window.ShowManager(renderer, interactor_style=iren_style, size=(600, 600), title="Sci-Fi UI")
 
