@@ -42,7 +42,7 @@ def test_single_voxel_fit():
     bvecs = generate_bvecs(N)
     gtab = gradient_table(bvals, bvecs.T)
 
-    S0, f, D_star, D = 1000.0, 0.132, 0.00885, 0.000921
+    S0, f, D_star, D = 1.0, 0.132, 0.00885, 0.000921
 
     mevals = np.array(([D_star, D_star, D_star], [D, D, D]))
     # This gives an isotropic signal
@@ -217,4 +217,3 @@ def test_jacobian():
     jac = _ivim_jacobian_func(params, bvals, data)
 
     assert_array_equal(jac.shape, (data.shape[-1], params.shape[-1]))
-    # assert_array_almost_equal(jac, [])

@@ -171,6 +171,11 @@ class IvimModel(ReconstModel):
         # Get the x0 parameters for the masked data
         x0_mask = np.reshape(x0[mask], (-1, x0.shape[-1]))
 
+        if jac == True:
+            jac = _ivim_jacobian_func
+        else:
+            jac = None
+
         if fit_method == "one_stage":
             params_in_mask, fit_stats_in_mask = one_stage(data_in_mask,
                                                           self.gtab, x0_mask,
@@ -277,13 +282,13 @@ def one_stage(data, gtab, x0, jac, bounds, tol, options):
     flat_x0[..., 0] = flat_data[..., 0]
 
     fit_stats = _leastsq(flat_data, bvals, flat_x0,
-                         ivim_params, options, tol, bounds)
+                         ivim_params, options, tol, bounds, jac)
     ivim_params.shape = data.shape[:-1] + (4,)
     ivim_params[:, 0] = ivim_params[:, 0] * S_normalization
     return ivim_params, fit_stats
 
 
-def _leastsq(flat_data, bvals, flat_x0, ivim_params, options, tol, bounds):
+def _leastsq(flat_data, bvals, flat_x0, ivim_params, options, tol, bounds, jac):
     """Use leastsq for finding ivim_params"""
     num_voxels = flat_data.shape[0]
     result = np.empty(flat_data.shape[0], dtype=object)
@@ -296,7 +301,7 @@ def _leastsq(flat_data, bvals, flat_x0, ivim_params, options, tol, bounds):
         for vox in range(num_voxels):
             res = least_squares(_ivim_error,
                                 flat_x0[vox],
-                                # jac=_ivim_jacobian_func,
+                                jac=jac,
                                 bounds=bounds,
                                 ftol=ftol,
                                 xtol=xtol,
@@ -310,7 +315,7 @@ def _leastsq(flat_data, bvals, flat_x0, ivim_params, options, tol, bounds):
             res = leastsq(_ivim_error,
                           flat_x0[vox],
                           args=(bvals, flat_data[vox]),
-                          # Dfun=_ivim_jacobian_func,
+                          Dfun=jac,
                           gtol=gtol,
                           xtol=xtol,
                           ftol=ftol,
@@ -365,7 +370,7 @@ def two_stage(data, gtab, x0,
     flat_x0[..., 3] = D_guess
 
     fit_stats = _leastsq(flat_data, bvals, flat_x0,
-                         ivim_params, options, tol, bounds)
+                         ivim_params, options, tol, bounds, jac)
     ivim_params.shape = data.shape[:-1] + (4,)
     ivim_params[:, 0] = ivim_params[:, 0] * S_normalization
 
@@ -439,7 +444,7 @@ def _ivim_jacobian_func(params, bvals, signal):
     Notes
     -----
     The worked out Jacobian can be found here :
-    http://mathb.in/64905?key=774f1d2b7c71358b4cf6dd0e6e4f5de3a5b5fbe3
+    http://mathb.in/67206?key=6830dd1d2e4d8d881dddae4dbb8d380c4423dc99
 
     References
     ----------
@@ -452,13 +457,7 @@ def _ivim_jacobian_func(params, bvals, signal):
     derv_D_star = S0 * (-bvals * f * np.exp(-bvals * D_star))
     derv_D = S0 * (-bvals * (1 - f) * np.exp(-bvals * D))
 
-    err = _ivim_error(params, bvals, signal)
-    jacobian = np.zeros((len(bvals), len(params)))
-
-    for i in range(len(bvals)):
-        jacobian[i][0] = np.sum(2 * err * -derv_S0)
-        jacobian[i][1] = np.sum(2 * err * -derv_f)
-        jacobian[i][2] = np.sum(2 * err * -derv_D_star)
-        jacobian[i][3] = np.sum(2 * err * -derv_D)
-
-    return jacobian
+    return (np.array([-derv_S0,
+                      -derv_f,
+                      -derv_D_star,
+                      -derv_D])).T
