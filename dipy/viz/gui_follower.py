@@ -24,8 +24,16 @@ class FollowerMenu(UI):
     def __init__(self, position, diameter, camera, elements):
         super(FollowerMenu, self).__init__()
         self.orbit = FollowerMenuOrbit(position=position, diameter=diameter, camera=camera)
+        self.widgets = self.allot_positions(elements, position, diameter)
 
         self.ui_list.append(self.orbit)
+        self.ui_list += self.widgets
+
+    def allot_positions(self, elements, position, diameter):
+        # This is just a stub for now, position allotment is yet to be implemented
+        element = elements[0]
+        element.actor.SetPosition(position[0] + diameter/2, position[1], position[2])
+        return [element]
 
 
 class FollowerMenuOrbit(UI):
