@@ -313,7 +313,7 @@ def dsi_deconv_voxels():
             for iz in range(2):
                 data[ix, iy, iz], dirs = SticksAndBall(gtab,
                                                        d=0.0015,
-                                                       S0=100,
+                                                       S0=1.,
                                                        angles=[(0, 0),
                                                                (90, 0)],
                                                        fractions=[50, 50],
