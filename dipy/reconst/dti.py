@@ -1906,21 +1906,21 @@ def _quantize_evecs_parallel(data, odf_vertices, v, nbr_processes):
         
         pool = Pool(nbr_processes)
 
-        pam_res = pool.map(_quantize_evecs_parallel_sub,
+        peaks_res = pool.map(_quantize_evecs_parallel_sub,
                            zip(repeat(data_file_name),
                                indices,
-                               repeat(v),
-                               repeat(odf_vertices)))
+                               repeat(odf_vertices),
+                               repeat(v)))
         pool.close()
         
         
         peak_indices = np.memmap(path.join(tmpdir, 'peak_indices.npy'),
-                                     dtype=pam_res[0].dtype,
+                                     dtype=peaks_res[0].dtype,
                                      mode='w+',
                                      shape=data.shape[0])
         
         for i, (start_pos, end_pos) in enumerate(indices):
-            peak_indices[start_pos: end_pos] = pam_res[i]
+            peak_indices[start_pos: end_pos] = peaks_res[i]
 
         peak_indices = np.reshape(np.array(peak_indices), shape[:3])
 
@@ -1957,7 +1957,7 @@ def quantize_evecs(evecs, odf_vertices=None, v=0, parallel=False, nbr_processes=
     """
     
     if parallel:
-        return _quantize_evecs_parallel(evecs, odf_vertices, nbr_processes)
+        return _quantize_evecs_parallel(evecs, odf_vertices, v, nbr_processes)
     
     if odf_vertices is None:
         odf_vertices = get_sphere('symmetric362').vertices
