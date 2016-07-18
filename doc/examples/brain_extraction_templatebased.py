@@ -1,6 +1,6 @@
 import numpy as np
 import scipy as sp
-import nibabel as nib 
+import nibabel as nib
 import matplotlib.pyplot as plt
 from dipy.core.histeq import histeq
 from dipy.segment.mask import median_otsu
@@ -20,16 +20,17 @@ from dipy.data import fetch_stanford_hardi, read_stanford_hardi
 
 # fetch_stanford_hardi()
 # read the test data
-img = nib.load('/Users/Riddhish/Documents/GSOC/DIPY/data/Brain Extraction/IBSR_nifti_stripped/IBSR_02/IBSR_02_ana.nii.gz')
+img = nib.load(
+    '/Users/Riddhish/Documents/GSOC/DIPY/data/Brain Extraction/IBSR_nifti_stripped/IBSR_02/IBSR_02_ana.nii.gz')
 # img, gtab = read_stanford_hardi()
 input_data = img.get_data()
 input_affine = img.get_affine()
 # input_data = input_data[:,:,70:110]
 # input_data = input_data[30:220, 30:220, 10:15]
 print(input_data.shape)
-input_data = input_data[...,0]
-# input_data = input_data[:,:,70:110]
-# read the template 
+input_data = input_data[..., 0]
+# input_data = input_data[30:220,20:230,70:110]
+# read the template
 img = nib.load('/Users/Riddhish/Documents/GSOC/DIPY/data/Brain Extraction/mni_icbm152_nlin_asym_09c_nifti/mni_icbm152_nlin_asym_09c/mni_icbm152_t1_tal_nlin_asym_09c.nii')
 template_data = img.get_data()
 template_affine = img.get_affine()
@@ -57,12 +58,12 @@ b0_mask, mask = median_otsu(input_data, 2, 1)
 sli = input_data.shape[2] / 2 - 10
 
 plt.figure('Brain segmentation')
-plt.subplot(1, 3, 1).set_axis_off()
+plt.subplot(1, 4, 1).set_axis_off()
 plt.imshow(input_data[:, :, sli].astype('float'),
            cmap='gray', origin='lower')
 plt.title("Input Data")
 
-plt.subplot(1, 3, 2).set_axis_off()
+plt.subplot(1, 4, 2).set_axis_off()
 plt.imshow(mask[:, :, sli].astype('float'),
            cmap='gray', origin='lower')
 plt.title("Median Otsu Output")
@@ -85,9 +86,11 @@ plt.title("Median Otsu Output")
 
 # Use the template to align it to the data
 template_data_temp = np.zeros(template_data.shape)
-template_data_temp[template_data_mask > 0] = template_data[template_data_mask > 0]
-input_data = b0_mask
-template_data = template_data_temp
+template_data_temp[
+    template_data_mask > 0] = template_data[
+        template_data_mask > 0]
+# input_data = b0_mask
+# template_data = template_data_temp
 ########## AffineRegisteration #######################
 c_of_mass = transform_centers_of_mass(input_data, input_affine,
                                       template_data, template_affine)
@@ -112,32 +115,38 @@ translation = affreg.optimize(input_data, template_data, transform, params0,
 transformed = translation.transform(template_data)
 transformed_mask = translation.transform(template_data_mask)
 
-plt.subplot(1, 3, 3).set_axis_off()
-plt.imshow(transformed[:, :, sli].astype('float'),
-           cmap='gray', origin='lower')
-plt.title("Tranformed mask output")
-
+# plt.subplot(1, 2, 2).set_axis_off()
+# plt.imshow(transformed[:, :, sli].astype('float'),
+#            cmap='gray', origin='lower')
+# plt.title("Tranformed template output")
 
 
 ############# Non Linear Registeration ###################
 # Use the masked template
 
-# pre_align = np.array([[1.02783543e+00, -4.83019053e-02, -6.07735639e-02, -2.57654118e+00],
-#                       [4.34051706e-03, 9.41918267e-01, -2.66525861e-01, 3.23579799e+01],
-#                       [5.34288908e-02, 2.90262026e-01, 9.80820307e-01, -1.46216651e+01],
-#                       [0.00000000e+00, 0.00000000e+00, 0.00000000e+00, 1.00000000e+00]])
+# pre_align = np.array([[1,0,0,0],
+#                       [0,1,0,0],
+#                       [0,0,1,0],
+#                       [0,0,0,1]])
+pre_align = translation.affine
 
-# metric = EMMetric(3)
-# level_iters = [10, 10, 5]
-# sdr = SymmetricDiffeomorphicRegistration(metric, level_iters)
-# mapping = sdr.optimize(input_data, template_data, input_affine, template_affine, pre_align)
-# transformed = mapping.transform(template_data)
-# transformed_mask = mapping.transform(template_data_mask)
+metric = CCMetric(3)
+level_iters = [10, 10, 5]
+sdr = SymmetricDiffeomorphicRegistration(
+    metric, level_iters, ss_sigma_factor=1.7)
+mapping = sdr.optimize(
+    input_data,
+    template_data,
+    input_affine,
+    template_affine,
+    pre_align)
+transformed1 = mapping.transform(template_data)
+transformed_mask1 = mapping.transform(template_data_mask)
 
-# plt.subplot(1, 3, 3).set_axis_off()
-# plt.imshow(transformed[:, :, sli].astype('float'),
-#            cmap='gray', origin='lower')
-# plt.title("Tranformed mask output")
+plt.subplot(1, 4, 3).set_axis_off()
+plt.imshow(transformed1[:, :, sli].astype('float'),
+           cmap='gray', origin='lower')
+plt.title("Tranformed template output")
 
 # fig, ax = plt.subplots(2,3)
 # ax[0,0].imshow(template_data[...,sli], cmap='gray')
@@ -158,55 +167,70 @@ plt.title("Tranformed mask output")
 # transformed template image
 # Do weighted averaging using the labels
 # then perform median otsu
-regtools.overlay_slices(input_data, transformed, None, 1, 'input', 'Template whole', 'reg_exp2.png')
-# patch_radius = 1
-# block_radius = 2
-# patch_size = 2*patch_radius + 1
-# block_size = 2*block_radius + 1
-# total_radius = block_radius + patch_radius 
-# h = 1
-# avg_wt = 0.0
-# wt_sum = 0.0
-# output_data = np.zeros(input_data.shape, dtype=np.float64)
+# regtools.overlay_slices(input_data, transformed, None, 1, 'input', 'Template whole', 'reg_exp5.png')
+patch_radius = 1
+block_radius = 2
+patch_size = 2 * patch_radius + 1
+block_size = 2 * block_radius + 1
+total_radius = block_radius + patch_radius
+h = 1
+avg_wt = 0.0
+wt_sum = 0.0
+output_data = np.zeros(input_data.shape, dtype=np.float64)
 
-# for i in range(total_radius, input_data.shape[0] - total_radius ):
-# 	print(i)
-# 	for j in range(total_radius, input_data.shape[1] - total_radius):
-# 		for k in range(total_radius, input_data.shape[2] - total_radius):
-# 			wt_sum = 0.0
-# 			avg_wt = 0.0
-# 			# find the patch centered around the voxel
-# 			patch = input_data[i - patch_radius : i + patch_radius,
-# 							   j - patch_radius : j + patch_radius,
-# 							   k - patch_radius : k + patch_radius]
-# 			patch = np.array(patch, dtype = np.float64)
-# 			patch = patch / np.sum(patch)
+for i in range(total_radius, input_data.shape[0] - total_radius):
+    print(i)
+    for j in range(total_radius, input_data.shape[1] - total_radius):
+        for k in range(total_radius, input_data.shape[2] - total_radius):
+            wt_sum = 0.0
+            avg_wt = 0.0
+            # find the patch centered around the voxel
+            patch = input_data[i - patch_radius: i + patch_radius,
+                               j - patch_radius: j + patch_radius,
+                               k - patch_radius: k + patch_radius]
+            patch = np.array(patch, dtype=np.float64)
+            patch = patch / np.sum(patch)
 
-# 			for i0 in range(i - block_radius, i + block_radius):
-# 				for j0 in range(j - block_radius, j + block_radius):
-# 					for k0 in range(k - block_radius, k + block_radius):
+            for i0 in range(i - block_radius, i + block_radius):
+                for j0 in range(j - block_radius, j + block_radius):
+                    for k0 in range(k - block_radius, k + block_radius):
 
-# 						# now find a patch centered around each of the voxels in neighbourhood
-# 						# from the transformed template
+                        # now find a patch centered around each of the voxels in neighbourhood
+                        # from the transformed template
 
-# 						patch_template = transformed[i0 - patch_radius : i0 + patch_radius,
-# 							   						 j0 - patch_radius : j0 + patch_radius,
-# 							   						 k0 - patch_radius : k0 + patch_radius]
-# 						patch_template = patch_template / np.sum(patch_template)
-# 						# compute the patch difference and the weight
-# 						weight = np.exp(-np.sum((patch - patch_template)**2) / h*h)
-# 						wt_sum += weight
-# 						avg_wt += weight * transformed_mask[i0, j0, k0]
+                        patch_template = transformed1[
+                            i0 - patch_radius: i0 + patch_radius,
+                            j0 - patch_radius: j0 + patch_radius,
+                            k0 - patch_radius: k0 + patch_radius]
+                        patch_template = patch_template / \
+                            np.sum(patch_template)
+                        # compute the patch difference and the weight
+                        weight = np.exp(-np.sum((patch -
+                                                 patch_template)**2) / h * h)
+                        wt_sum += weight
+                        avg_wt += weight * transformed_mask1[i0, j0, k0]
 
-# 			output_data[i,j,k] = avg_wt / wt_sum
+            output_data[i, j, k] = avg_wt / wt_sum
 
-# out = np.zeros(input_data.shape, dtype=np.float64)
-# out[output_data > 0.5] = b0_mask[output_data > 0.5]
+output_data[np.isnan(output_data) == 1] = 0
+out = np.zeros(input_data.shape, dtype=np.float64)
+out[output_data > 0.9] = input_data[output_data > 0.9]
 
-# plt.subplot(1, 4, 4).set_axis_off()
-# plt.imshow(out[:, :, sli].astype('float'),
-#            cmap='gray', origin='lower')
-# plt.title("The patch averaging label output")
+output_data[output_data < 0.9] = 0
+plt.subplot(1, 4, 4).set_axis_off()
+plt.imshow(out[:, :, sli].astype('float'),
+           cmap='gray', origin='lower')
+plt.title("The patch averaging label output")
+
+plt.savefig('exp1.png', bbox_inches='tight')
 plt.show()
-# nib.save(nib.Nifti1Image(out, input_affine), '/Users/Riddhish/Documents/GSOC/DIPY/data/Brain Extraction/forElef_GSoC_brain_extraction/affine_withmo_fancyt1data.nii.gz')
-# # Use the direct mapping for all the labels and then do the comparision for the data
+nib.save(
+    nib.Nifti1Image(
+        output_data,
+        input_affine),
+    '/Users/Riddhish/Documents/GSOC/DIPY/data/Brain Extraction/forElef_GSoC_brain_extraction/brain_extracted_mask.nii.gz')
+nib.save(
+    nib.Nifti1Image(
+        out,
+        input_affine),
+    '/Users/Riddhish/Documents/GSOC/DIPY/data/Brain Extraction/forElef_GSoC_brain_extraction/brain_extracted.nii.gz')
