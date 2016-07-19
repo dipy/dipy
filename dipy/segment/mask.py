@@ -298,18 +298,20 @@ def clean_cc_mask(mask):
     # Flood fill algorithm to find contiguous regions.
     labels, numL = label(mask)
 
-    volumes = [len(labels[np.where(labels == l_idx+1)])
+    volumes = [len(labels[np.where(labels == l_idx + 1)])
                for l_idx in np.arange(numL)]
     biggest_vol = np.arange(numL)[np.where(volumes == np.max(volumes))] + 1
     new_cc_mask[np.where(labels == biggest_vol)] = 1
 
     return new_cc_mask
 
-def brain_extraction(input_data, input_affine, template_data, template_affine, template_mask,
-                    patch_radius = 1, block_radius = 1, parameter = 1):
+
+def brain_extraction(input_data, input_affine, template_data,
+                     template_affine, template_mask, patch_radius=1,
+                     block_radius=1, parameter=1, threshold=0.5):
     """
     A robust brain extraction which uses a template to reduce the skull intensities.
-    The affine information is required because we need to register the template to the 
+    The affine information is required because we need to register the template to the
     input data
 
     Parameters
@@ -331,6 +333,8 @@ def brain_extraction(input_data, input_affine, template_data, template_affine, t
         Defining the neighbourhood around the voxel for patch wise similarity searching
     parameter : Double
         Adaptive parameter governing the weights for similar patches
+    threshold : Double
+        The threshold between 0 to 1 which decides the erosion of the mask boundary
 
     Returns
     -------
@@ -340,7 +344,7 @@ def brain_extraction(input_data, input_affine, template_data, template_affine, t
     """
 
     c_of_mass = transform_centers_of_mass(input_data, input_affine,
-                                      template_data, template_affine)
+                                          template_data, template_affine)
 
     # register the template data to input using affine registeration
 
@@ -359,32 +363,54 @@ def brain_extraction(input_data, input_affine, template_data, template_affine, t
     transform = TranslationTransform3D()
     params0 = None
     starting_affine = c_of_mass.affine
-    translation = affreg.optimize(input_data, template_data, transform, params0,
-                                  input_affine, template_affine,
-                                  starting_affine=starting_affine)
-    transformed_data = translation.transform(template_data)
-    transformed_mask = translation.transform(template_mask)
+    translation = affreg.optimize(
+        input_data,
+        template_data,
+        transform,
+        params0,
+        input_affine,
+        template_affine,
+        starting_affine=starting_affine)
+
+    # Now perform the Non-linear Registration
+
+    pre_align = translation.affine
+
+    metric = CCMetric(3)
+    level_iters = [10, 10, 5]
+    sdr = SymmetricDiffeomorphicRegistration(
+        metric, level_iters, ss_sigma_factor=1.7)
+    mapping = sdr.optimize(
+        input_data,
+        template_data,
+        input_affine,
+        template_affine,
+        pre_align)\
+
+    transformed_data = mapping.transform(template_data)
+    transformed_mask = mapping.transform(template_mask)
 
     # now do a patch based similarity weighing between the
     # input data and the transformed template data
-    patch_size = 2*patch_radius + 1
-    block_size = 2*block_radius + 1
-    total_radius = block_radius + patch_radius 
+    patch_size = 2 * patch_radius + 1
+    block_size = 2 * block_radius + 1
+    total_radius = block_radius + patch_radius
     h = parameter
     avg_wt = 0
     wt_sum = 0
     output_data = np.zeros(input_data.shape)
+    output_data = np.zeros(input_data.shape, dtype=np.float64)
 
-    for i in range(total_radius, input_data.shape[0] - total_radius ):
+    for i in range(total_radius, input_data.shape[0] - total_radius):
         for j in range(total_radius, input_data.shape[1] - total_radius):
             for k in range(total_radius, input_data.shape[2] - total_radius):
                 wt_sum = 0
                 avg_wt = 0
                 # find the patch centered around the voxel
-                patch = input_data[i - patch_radius : i + patch_radius,
-                                   j - patch_radius : j + patch_radius,
-                                   k - patch_radius : k + patch_radius]
-                patch = np.array(patch, dtype = np.float64)
+                patch = input_data[i - patch_radius: i + patch_radius,
+                                   j - patch_radius: j + patch_radius,
+                                   k - patch_radius: k + patch_radius]
+                patch = np.array(patch, dtype=np.float64)
 
                 for i0 in range(i - block_radius, i + block_radius):
                     for j0 in range(j - block_radius, j + block_radius):
@@ -393,16 +419,21 @@ def brain_extraction(input_data, input_affine, template_data, template_affine, t
                             # now find a patch centered around each of the voxels in neighbourhood
                             # from the transformed template
 
-                            patch_template = transformed_data[i - patch_radius : i + patch_radius,
-                                                         j - patch_radius : j + patch_radius,
-                                                         k - patch_radius : k + patch_radius]
+                            patch_template = transformed_data[
+                                i - patch_radius: i + patch_radius,
+                                j - patch_radius: j + patch_radius,
+                                k - patch_radius: k + patch_radius]
                             # compute the patch difference and the weight
-                            weight = np.exp(-np.sum((patch - patch_template)**2) / h*h)
+                            weight = np.exp(-np.sum((patch - \
+                                            patch_template)**2) / h * h)
                             wt_sum += weight
                             avg_wt += weight * transformed_mask[i0, j0, k0]
 
-                output_data = avg_wt / wt_sum
+                output_mask = avg_wt / wt_sum
 
     # now perform median otsu on the output_data
-    
-    return output_data
+    output_mask[np.isnan(output_mask) == 1] = 0
+    output_mask[output_mask < threshold] = 0
+    output_data[output_mask > 0] = input_data[output_mask > 0]
+
+    return [output_data, output_mask]
