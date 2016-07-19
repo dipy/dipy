@@ -13,6 +13,9 @@ from dipy.align.transforms import (TranslationTransform3D,
                                    RigidTransform3D,
                                    AffineTransform3D)
 
+from dipy.align.imwarp import SymmetricDiffeomorphicRegistration
+from dipy.align.imwarp import DiffeomorphicMap
+from dipy.align.metrics import CCMetric, EMMetric
 from scipy.ndimage.filters import median_filter
 try:
     from skimage.filters import threshold_otsu as otsu
@@ -305,10 +308,84 @@ def clean_cc_mask(mask):
 
     return new_cc_mask
 
+def patch_averaging(input_data, transformed_data, transformed_mask,
+                    patch_radius=1, block_radius=1, parameter=1, 
+                    threshold=0.5):
+    """
+    input_data : 3D ndarray
+        The input data from which the brain has to be extracted
+    transformed_data : 3D ndarray
+        The template data which is registered to the input
+        (of the same size as that of the input data)
+    transformed_mask : 3D ndarray
+        The binary mask of the transformed template
+    patch_radius : integer
+        The patch size which has to be taken around the voxels for weight computation
+    block_radius : integer
+        Defining the neighbourhood around the voxel for patch wise similarity searching
+    parameter : Double
+        Adaptive parameter governing the weights for similar patches
+    threshold : Double
+        The threshold between 0 to 1 which decides the erosion of the mask boundary
+    """
+
+    # input data and the transformed template data
+    patch_size = 2 * patch_radius + 1
+    block_size = 2 * block_radius + 1
+    total_radius = block_radius + patch_radius
+    h = parameter
+    avg_wt = 0
+    wt_sum = 0
+    output_mask = np.zeros(input_data.shape, dtype = np.float64)
+    output_data = np.zeros(input_data.shape, dtype = np.float64)
+
+    for i in range(total_radius, input_data.shape[0] - total_radius):
+        print(i)
+        for j in range(total_radius, input_data.shape[1] - total_radius):
+            for k in range(total_radius, input_data.shape[2] - total_radius):
+                wt_sum = 0
+                avg_wt = 0
+                # find the patch centered around the voxel
+                patch = input_data[i - patch_radius: i + patch_radius,
+                                   j - patch_radius: j + patch_radius,
+                                   k - patch_radius: k + patch_radius]
+                patch = np.array(patch, dtype=np.float64)
+                patch = patch / np.sum(patch)
+
+                for i0 in range(i - block_radius, i + block_radius):
+                    for j0 in range(j - block_radius, j + block_radius):
+                        for k0 in range(k - block_radius, k + block_radius):
+
+                            # now find a patch centered around each of the voxels in neighbourhood
+                            # from the transformed template
+
+                            patch_template = transformed_data[
+                                i - patch_radius: i + patch_radius,
+                                j - patch_radius: j + patch_radius,
+                                k - patch_radius: k + patch_radius]
+
+                            patch_template = patch_template / \
+                                np.sum(patch_template)
+                            # compute the patch difference and the weight
+                            weight = np.exp(-np.sum((patch - \
+                                            patch_template)**2) / h * h)
+                            wt_sum += weight
+                            avg_wt += weight * transformed_mask[i0, j0, k0]
+
+                output_mask[i, j, k] = avg_wt / wt_sum
+
+    # now perform median otsu on the output_data
+    output_mask[np.isnan(output_mask) == 1] = 0
+    output_mask[output_mask < threshold] = 0
+    output_data[output_mask > 0] = input_data[output_mask > 0]
+
+    return [output_data, output_mask]
+
 
 def brain_extraction(input_data, input_affine, template_data,
-                     template_affine, template_mask, patch_radius=1,
-                     block_radius=1, parameter=1, threshold=0.5):
+                     template_affine, template_mask,
+                     patch_radius=1, block_radius=1, parameter=1, 
+                     threshold=0.5):
     """
     A robust brain extraction which uses a template to reduce the skull intensities.
     The affine information is required because we need to register the template to the
@@ -392,48 +469,52 @@ def brain_extraction(input_data, input_affine, template_data,
 
     # now do a patch based similarity weighing between the
     # input data and the transformed template data
-    patch_size = 2 * patch_radius + 1
-    block_size = 2 * block_radius + 1
-    total_radius = block_radius + patch_radius
-    h = parameter
-    avg_wt = 0
-    wt_sum = 0
-    output_data = np.zeros(input_data.shape)
-    output_data = np.zeros(input_data.shape, dtype=np.float64)
+    # patch_size = 2 * patch_radius + 1
+    # block_size = 2 * block_radius + 1
+    # total_radius = block_radius + patch_radius
+    # h = parameter
+    # avg_wt = 0
+    # wt_sum = 0
+    # output_data = np.zeros(input_data.shape)
+    # output_data = np.zeros(input_data.shape, dtype=np.float64)
 
-    for i in range(total_radius, input_data.shape[0] - total_radius):
-        for j in range(total_radius, input_data.shape[1] - total_radius):
-            for k in range(total_radius, input_data.shape[2] - total_radius):
-                wt_sum = 0
-                avg_wt = 0
-                # find the patch centered around the voxel
-                patch = input_data[i - patch_radius: i + patch_radius,
-                                   j - patch_radius: j + patch_radius,
-                                   k - patch_radius: k + patch_radius]
-                patch = np.array(patch, dtype=np.float64)
+    # for i in range(total_radius, input_data.shape[0] - total_radius):
+    #     print(i)
+    #     for j in range(total_radius, input_data.shape[1] - total_radius):
+    #         for k in range(total_radius, input_data.shape[2] - total_radius):
+    #             wt_sum = 0
+    #             avg_wt = 0
+    #             # find the patch centered around the voxel
+    #             patch = input_data[i - patch_radius: i + patch_radius,
+    #                                j - patch_radius: j + patch_radius,
+    #                                k - patch_radius: k + patch_radius]
+    #             patch = np.array(patch, dtype=np.float64)
 
-                for i0 in range(i - block_radius, i + block_radius):
-                    for j0 in range(j - block_radius, j + block_radius):
-                        for k0 in range(k - block_radius, k + block_radius):
+    #             for i0 in range(i - block_radius, i + block_radius):
+    #                 for j0 in range(j - block_radius, j + block_radius):
+    #                     for k0 in range(k - block_radius, k + block_radius):
 
-                            # now find a patch centered around each of the voxels in neighbourhood
-                            # from the transformed template
+    #                         # now find a patch centered around each of the voxels in neighbourhood
+    #                         # from the transformed template
 
-                            patch_template = transformed_data[
-                                i - patch_radius: i + patch_radius,
-                                j - patch_radius: j + patch_radius,
-                                k - patch_radius: k + patch_radius]
-                            # compute the patch difference and the weight
-                            weight = np.exp(-np.sum((patch - \
-                                            patch_template)**2) / h * h)
-                            wt_sum += weight
-                            avg_wt += weight * transformed_mask[i0, j0, k0]
+    #                         patch_template = transformed_data[
+    #                             i - patch_radius: i + patch_radius,
+    #                             j - patch_radius: j + patch_radius,
+    #                             k - patch_radius: k + patch_radius]
+    #                         # compute the patch difference and the weight
+    #                         weight = np.exp(-np.sum((patch - \
+    #                                         patch_template)**2) / h * h)
+    #                         wt_sum += weight
+    #                         avg_wt += weight * transformed_mask[i0, j0, k0]
 
-                output_mask = avg_wt / wt_sum
+    #             output_mask = avg_wt / wt_sum
 
-    # now perform median otsu on the output_data
-    output_mask[np.isnan(output_mask) == 1] = 0
-    output_mask[output_mask < threshold] = 0
-    output_data[output_mask > 0] = input_data[output_mask > 0]
+    # # now perform median otsu on the output_data
+    # output_mask[np.isnan(output_mask) == 1] = 0
+    # output_mask[output_mask < threshold] = 0
+    # output_data[output_mask > 0] = input_data[output_mask > 0]
+    [output_data, output_mask] = patch_averaging(input_data, transformed_data, transformed_mask,
+                                    patch_radius, block_radius,
+                                    parameter, threshold)
 
     return [output_data, output_mask]
