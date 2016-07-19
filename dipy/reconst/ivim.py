@@ -446,19 +446,45 @@ def _ivim_jacobian_func(params, bvals, signal):
         The Jacobian for the error function.
     Notes
     -----
-    The worked out Jacobian can be found here :
-    http://mathb.in/67206?key=6830dd1d2e4d8d881dddae4dbb8d380c4423dc99
+    The worked out Jacobian can be derived as follows.
+    Let `i` be the index which denotes the number of points to fit and `j` be
+    the number of parameters. In this case `i` is the number of bvalues.
+    Let :math:`x_i` be the independent parameter (bvalue) and :math:`\beta`
+    denote the vector of parameters with :math:`\beta_j = (S0, f, D*, D)`.
+    Thus we have `j = 0,1,2,3`.
 
-    References
-    ----------
+    The IVIM signal is:
+    .. math:: S(x_i, \beta) = \beta_0[\beta_1e^{(-x_i\beta_2)} + (1-\beta_1)e^{(-x_i\beta_3)}]
 
+    Here:
+    .. math:: \beta_0 = S0, \beta_1 = f, \beta_2 = D*, \beta_3 = D and x_i = b
+
+    The residual that we need to find the Jacobian for is: 
+    .. math:: r_i = [y_i - S(x_i, \beta)]
+
+    The Jacobian is defined as:
+    .. math:: - \frac{\partial r_i}{\partial \beta_j}
+
+    Thus we will have : 
+    .. math:: J_{i,j} = -\frac{\partial S}{\partial \beta_j}
+
+    The various terms in the Jacobian are thus:
+    .. math:: \frac{\partial S}{\partial \beta_0} =  [\beta_1e^{(-x_i\beta_2)} + (1-\beta_1)e^{(-x_i\beta_3)}]
+              \frac{\partial S}{\partial \beta_1} = \beta_0[e^{-x_i\beta_2} - e^{-x_i\beta_3}]
+              \frac{\partial S}{\partial \beta_2} = \beta_0[-x_i\beta_1e^{-x_i\beta_2}]
+              \frac{\partial S}{\partial \beta_3} = \beta_0[-x_i(1- \beta_1)e^{-x_i\beta_3}]
+
+    This should give us the Jacobian
     """
     S0, f, D_star, D = params
 
-    derv_S0 = f * np.exp(-bvals * D_star) + (1 - D) * np.exp(-bvals * D)
-    derv_f = S0 * (np.exp(-bvals * D_star) - np.exp(-bvals * D))
-    derv_D_star = S0 * (-bvals * f * np.exp(-bvals * D_star))
-    derv_D = S0 * (-bvals * (1 - f) * np.exp(-bvals * D))
+    bvals_D_star = np.exp(-bvals * D_star)
+    bvals_D = np.exp(-bvals * D)
+
+    derv_S0 = f * bvals_D_star + (1 - D) * bvals_D
+    derv_f = S0 * (bvals_D_star - bvals_D)
+    derv_D_star = S0 * (-bvals * f * bvals_D_star)
+    derv_D = S0 * (-bvals * (1 - f) * bvals_D)
 
     return (np.array([-derv_S0,
                       -derv_f,
