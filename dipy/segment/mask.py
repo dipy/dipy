@@ -308,8 +308,9 @@ def clean_cc_mask(mask):
 
     return new_cc_mask
 
+
 def patch_averaging(input_data, transformed_data, transformed_mask,
-                    patch_radius=1, block_radius=1, parameter=1, 
+                    patch_radius=1, block_radius=1, parameter=1,
                     threshold=0.5):
     """
     input_data : 3D ndarray
@@ -336,8 +337,8 @@ def patch_averaging(input_data, transformed_data, transformed_mask,
     h = parameter
     avg_wt = 0
     wt_sum = 0
-    output_mask = np.zeros(input_data.shape, dtype = np.float64)
-    output_data = np.zeros(input_data.shape, dtype = np.float64)
+    output_mask = np.zeros(input_data.shape, dtype=np.float64)
+    output_data = np.zeros(input_data.shape, dtype=np.float64)
 
     for i in range(total_radius, input_data.shape[0] - total_radius):
         print(i)
@@ -346,23 +347,23 @@ def patch_averaging(input_data, transformed_data, transformed_mask,
                 wt_sum = 0
                 avg_wt = 0
                 # find the patch centered around the voxel
-                patch = input_data[i - patch_radius: i + patch_radius,
-                                   j - patch_radius: j + patch_radius,
-                                   k - patch_radius: k + patch_radius]
+                patch = input_data[i - patch_radius: i + patch_radius + 1,
+                                   j - patch_radius: j + patch_radius + 1,
+                                   k - patch_radius: k + patch_radius + 1]
                 patch = np.array(patch, dtype=np.float64)
                 patch = patch / np.sum(patch)
 
-                for i0 in range(i - block_radius, i + block_radius):
-                    for j0 in range(j - block_radius, j + block_radius):
-                        for k0 in range(k - block_radius, k + block_radius):
+                for i0 in range(i - block_radius, i + block_radius + 1):
+                    for j0 in range(j - block_radius, j + block_radius + 1):
+                        for k0 in range(k - block_radius, k + block_radius+ 1):
 
                             # now find a patch centered around each of the voxels in neighbourhood
                             # from the transformed template
 
                             patch_template = transformed_data[
-                                i - patch_radius: i + patch_radius,
-                                j - patch_radius: j + patch_radius,
-                                k - patch_radius: k + patch_radius]
+                                i - patch_radius: i + patch_radius + 1,
+                                j - patch_radius: j + patch_radius + 1,
+                                k - patch_radius: k + patch_radius + 1]
 
                             patch_template = patch_template / \
                                 np.sum(patch_template)
@@ -377,6 +378,7 @@ def patch_averaging(input_data, transformed_data, transformed_mask,
     # now perform median otsu on the output_data
     output_mask[np.isnan(output_mask) == 1] = 0
     output_mask[output_mask < threshold] = 0
+    output_mask[output_mask > 0] = 1
     output_data[output_mask > 0] = input_data[output_mask > 0]
 
     return [output_data, output_mask]
@@ -384,7 +386,7 @@ def patch_averaging(input_data, transformed_data, transformed_mask,
 
 def brain_extraction(input_data, input_affine, template_data,
                      template_affine, template_mask,
-                     patch_radius=1, block_radius=1, parameter=1, 
+                     patch_radius=1, block_radius=1, parameter=1,
                      threshold=0.5):
     """
     A robust brain extraction which uses a template to reduce the skull intensities.
@@ -513,8 +515,13 @@ def brain_extraction(input_data, input_affine, template_data,
     # output_mask[np.isnan(output_mask) == 1] = 0
     # output_mask[output_mask < threshold] = 0
     # output_data[output_mask > 0] = input_data[output_mask > 0]
-    [output_data, output_mask] = patch_averaging(input_data, transformed_data, transformed_mask,
-                                    patch_radius, block_radius,
-                                    parameter, threshold)
+    [output_data,
+     output_mask] = patch_averaging(input_data,
+                                    transformed_data,
+                                    transformed_mask,
+                                    patch_radius,
+                                    block_radius,
+                                    parameter,
+                                    threshold)
 
     return [output_data, output_mask]
