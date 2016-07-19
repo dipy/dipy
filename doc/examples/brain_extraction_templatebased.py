@@ -16,12 +16,21 @@ from dipy.align.imwarp import DiffeomorphicMap
 from dipy.viz import regtools
 from dipy.align.metrics import CCMetric, EMMetric
 
-from dipy.data import fetch_stanford_hardi, read_stanford_hardi
+# The filepaths (and their corroesponding dropbox location)
+filename_isbr = '/Users/Riddhish/Documents/GSOC/DIPY/data/Brain Extraction/IBSR_nifti_stripped/IBSR_02/IBSR_02_ana.nii.gz'
+# filename_isbr = '../brain_extraction/First tests/input_data/IBSR_02_ana.nii.gz'
+filename_template = '/Users/Riddhish/Documents/GSOC/DIPY/data/Brain Extraction/mni_icbm152_nlin_asym_09c_nifti/mni_icbm152_nlin_asym_09c/mni_icbm152_t1_tal_nlin_asym_09c.nii'
+# filename_template = '../brain_extraction/First tests/template_data/mni_icbm152_t1_tal_nlin_asym_09c.nii'
+filename_template_mask = '/Users/Riddhish/Documents/GSOC/DIPY/data/Brain Extraction/mni_icbm152_nlin_asym_09c_nifti/mni_icbm152_nlin_asym_09c/mni_icbm152_t1_tal_nlin_asym_09c_mask.nii'
+# filename_template_mask = '../brain_extraction/First tests/template_data/mni_icbm152_t1_tal_nlin_asym_09c_mask.nii'
+filename_output = '/Users/Riddhish/Documents/GSOC/DIPY/data/Brain Extraction/forElef_GSoC_brain_extraction/brain_extracted.nii.gz'
+# filename_output = '../brain_extraction/First tests/output_data/brain_extracted.nii.gz'
+filename_output_mask = '/Users/Riddhish/Documents/GSOC/DIPY/data/Brain Extraction/forElef_GSoC_brain_extraction/brain_extracted_mask.nii.gz'
+# filename_output_mask = '../brain_extraction/First tests/output_data/brain_extracted_mask.nii.gz'
 
-# fetch_stanford_hardi()
-# read the test data
-img = nib.load(
-    '/Users/Riddhish/Documents/GSOC/DIPY/data/Brain Extraction/IBSR_nifti_stripped/IBSR_02/IBSR_02_ana.nii.gz')
+# img = nib.load(
+#     '/Users/Riddhish/Documents/GSOC/DIPY/data/Brain Extraction/IBSR_nifti_stripped/IBSR_02/IBSR_02_ana.nii.gz')
+img = nib.load(filename_isbr)
 # img, gtab = read_stanford_hardi()
 input_data = img.get_data()
 input_affine = img.get_affine()
@@ -29,16 +38,16 @@ input_affine = img.get_affine()
 # input_data = input_data[30:220, 30:220, 10:15]
 print(input_data.shape)
 input_data = input_data[..., 0]
-# input_data = input_data[30:220,20:230,70:110]
+# input_data = input_data[40:120,40:130,70:90]
 # read the template
-img = nib.load('/Users/Riddhish/Documents/GSOC/DIPY/data/Brain Extraction/mni_icbm152_nlin_asym_09c_nifti/mni_icbm152_nlin_asym_09c/mni_icbm152_t1_tal_nlin_asym_09c.nii')
+img = nib.load(filename_template)
 template_data = img.get_data()
 template_affine = img.get_affine()
 # img = nib.load('mni_icbm152_nlin_asym_09c_nifti/mni_icbm152_nlin_asym_09c/mni_icbm152_t1_tal_nlin_asym_09c_eye_mask.nii')
 # template_data_eyemask = img.get_data()
 # img = nib.load('mni_icbm152_nlin_asym_09c_nifti/mni_icbm152_nlin_asym_09c/mni_icbm152_t1_tal_nlin_asym_09c_face_mask.nii')
 # template_data_facemask = img.get_data()
-img = nib.load('/Users/Riddhish/Documents/GSOC/DIPY/data/Brain Extraction/mni_icbm152_nlin_asym_09c_nifti/mni_icbm152_nlin_asym_09c/mni_icbm152_t1_tal_nlin_asym_09c_mask.nii')
+img = nib.load(filename_template_mask)
 template_data_mask = img.get_data()
 # img = nib.load('mni_icbm152_nlin_asym_09c_nifti/mni_icbm152_nlin_asym_09c/mni_icbm152_csf_tal_nlin_asym_09c.nii')
 # template_data_csf = img.get_data()
@@ -122,12 +131,9 @@ transformed_mask = translation.transform(template_data_mask)
 
 
 ############# Non Linear Registeration ###################
+
 # Use the masked template
 
-# pre_align = np.array([[1,0,0,0],
-#                       [0,1,0,0],
-#                       [0,0,1,0],
-#                       [0,0,0,1]])
 pre_align = translation.affine
 
 metric = CCMetric(3)
@@ -224,13 +230,13 @@ plt.title("The patch averaging label output")
 
 plt.savefig('exp1.png', bbox_inches='tight')
 plt.show()
+
 nib.save(
     nib.Nifti1Image(
         output_data,
-        input_affine),
-    '/Users/Riddhish/Documents/GSOC/DIPY/data/Brain Extraction/forElef_GSoC_brain_extraction/brain_extracted_mask.nii.gz')
+        input_affine), filename_output)
+
 nib.save(
     nib.Nifti1Image(
         out,
-        input_affine),
-    '/Users/Riddhish/Documents/GSOC/DIPY/data/Brain Extraction/forElef_GSoC_brain_extraction/brain_extracted.nii.gz')
+        input_affine), filename_output_mask)
