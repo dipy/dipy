@@ -71,7 +71,11 @@ class IvimModel(ReconstModel):
     """Ivim model
     """
 
-    def __init__(self, gtab, split_b=200.0, min_signal=None):
+    def __init__(self, gtab, split_b=200.0, min_signal=None,
+                 x0=[1.0, 0.10, 0.001, 0.0009], fit_method="one_stage",
+                 jac=True, bounds=([0., 0., 0., 0.], [np.inf, 1., 1., 1.]),
+                 tol=1e-7, options={'gtol': 1e-12, 'ftol': 1e-12,
+                                    'eps': 1e-12, 'maxiter': 1000}):
         """
         Initialize an IVIM model.
 
@@ -89,16 +93,24 @@ class IvimModel(ReconstModel):
         ReconstModel.__init__(self, gtab)
         self.split_b = split_b
         self.min_signal = min_signal
+        self.x0 = x0
+        self.fit_method = fit_method
+        self.jac = jac
+        self.bounds = bounds
+        self.tol = tol
+        self.options = options
+
         if self.min_signal is not None and self.min_signal <= 0:
             e_s = "The `min_signal` key-word argument needs to be strictly"
             e_s += " positive."
             raise ValueError(e_s)
 
-    def fit(self, data, mask=None, x0=None, fit_method="one_stage",
-            jac=True, bounds=([0., 0., 0., 0.], [np.inf, 1., 1., 1.]),
-            tol=1e-7,
-            options={'gtol': 1e-12, 'ftol': 1e-12,
-                     'eps': 1e-12, 'maxiter': 1000}):
+        if self.jac == True:
+            self.jac = _ivim_jacobian_func
+        else:
+            self.jac = None
+
+    def fit(self, data, mask=None):
         """ Fit method of the Ivim model class
 
         Parameters
@@ -150,43 +162,34 @@ class IvimModel(ReconstModel):
                 raise ValueError("Mask is not the same shape as data.")
             mask = np.array(mask, dtype=bool, copy=False)
             data_in_mask = np.reshape(data[mask], (-1, data.shape[-1]))
-
         if self.min_signal is None:
             min_signal = _min_positive_signal(data)
         else:
             min_signal = self.min_signal
 
-        # Generate initial guess parameters for all voxels
-        if x0 is None:
+        if len(self.x0) == 4:
             x0 = np.ones(
-                (data.shape[:-1] + (4,))) * [1.0, 0.10, 0.001, 0.0009]
-        elif len(x0) == 4:
-            x0 = np.ones(
-                (data.shape[:-1] + (4,))) * x0
+                (data.shape[:-1] + (4,))) * self.x0
         else:
-            if x0.shape != (data.shape[0], 4):
+            if self.x0.shape != (data.shape[0], 4):
                 raise ValueError(
                     "Initial guess params should be of shape (num_voxels,4)")
+
         data_in_mask = np.maximum(data_in_mask, min_signal)
         # Get the x0 parameters for the masked data
         x0_mask = np.reshape(x0[mask], (-1, x0.shape[-1]))
 
-        if jac == True:
-            jac = _ivim_jacobian_func
-        else:
-            jac = None
-
-        if fit_method == "one_stage":
+        if self.fit_method == "one_stage":
             params_in_mask, fit_stats_in_mask = one_stage(data_in_mask,
                                                           self.gtab, x0_mask,
-                                                          jac, bounds, tol,
-                                                          options)
-        elif fit_method == "two_stage":
+                                                          self.jac, self.bounds, self.tol,
+                                                          self.options)
+        elif self.fit_method == "two_stage":
             params_in_mask, fit_stats_in_mask = two_stage(data_in_mask,
                                                           self.gtab, x0_mask,
-                                                          self.split_b, jac,
-                                                          bounds, tol,
-                                                          options)
+                                                          self.split_b, self.jac,
+                                                          self.bounds, self.tol,
+                                                          self.options)
         else:
             e_s = "Fit method must be either "
             e_s += "'one_stage' or 'two_stage'"

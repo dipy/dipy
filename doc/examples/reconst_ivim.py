@@ -92,20 +92,21 @@ plt.close()
 """
 Now that we have prepared the datasets we can go forward with
 the ivim fit. Instead of fitting the entire volume, we focus on a
-small section of the slice, to fit the IVIM model.
-First, we instantiate the Ivim model in the following way.
+small section of the slice, to fit the IVIM model. First, we instantiate
+the Ivim model. Here, we use a two-stage approach: first, a tensor
+is fit to the data, and then this tensor as the initial starting point
+for the non-linear fit of IVIM parameters. All initializations are
+passed with the `IvimModel` such as x0 or fit_method.
 """
 
-ivimmodel = IvimModel(gtab)
+ivimmodel = IvimModel(gtab, fit_method="two_stage",
+                      x0=[100., 0.1, 0.01, 0.01])
 
 """
-To fit the model, call the `fit_method`, specifying the fit_method.
-Here, we use a two-stage approach: first, a tensor is fit to the data,
-and then this tensor as the initial starting point for the non-linear
-fit of IVIM parameters.
+To fit the model, call the `fit_method` and pass the data for fitting.
 """
 
-ivimfit = ivimmodel.fit(data_slice, fit_method="two_stage")
+ivimfit = ivimmodel.fit(data_slice)
 
 """
 The fit method creates a IvimFit object which contains the
@@ -168,6 +169,7 @@ pseudo-diffusion constants are much smaller than 1. We pass an argument
 called "variable" to out plotting function which gives the label for
 the plot.
 """
+
 
 def plot_map(raw_data, variable, limits):
     lower, upper = limits

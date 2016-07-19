@@ -81,9 +81,9 @@ def test_multivoxel():
     for i in range(len(params)):
         data[i] = ivim_function(params[i], gtab.bvals)
 
-    ivim_model = IvimModel(gtab)
+    ivim_model = IvimModel(gtab, x0=[1, 0.02, 0.002, 0.0002])
 
-    ivim_fit = ivim_model.fit(data, x0=[1, 0.02, 0.002, 0.0002])
+    ivim_fit = ivim_model.fit(data)
     est_signal = np.empty((ivim_fit.model_params.shape[0], N))
     for i in range(len(ivim_fit.model_params)):
         est_signal[i] = ivim_function(ivim_fit.model_params[i], gtab.bvals)
@@ -118,9 +118,9 @@ def test_two_stage():
     signal = multi_tensor(gtab, mevals, snr=None, S0=S0,
                           fractions=[f * 100, 100 * (1 - f)])
     data = signal[0]
-    ivim_model = IvimModel(gtab, split_b=200.)
+    ivim_model = IvimModel(gtab, split_b=200., fit_method="two_stage")
 
-    ivim_fit = ivim_model.fit(data, fit_method="two_stage")
+    ivim_fit = ivim_model.fit(data)
 
     est_signal = ivim_function(ivim_fit.model_params, bvals)
 
@@ -183,8 +183,8 @@ def test_fit_with_jacobian():
                           fractions=[f * 100, 100 * (1 - f)])
     data = np.array([signal[0], ])
 
-    ivim_model = IvimModel(gtab)
-    ivim_fit = ivim_model.fit(data, jac=True)
+    ivim_model = IvimModel(gtab, jac=True)
+    ivim_fit = ivim_model.fit(data)
 
     est_signal = np.array([ivim_function(ivim_fit.model_params[0], bvals), ])
 
