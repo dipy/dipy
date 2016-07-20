@@ -40,8 +40,6 @@ The FBC measures are evaluated on the Stanford HARDI dataset
 in DIPY.
 """
 import numpy as np
-import os.path as op
-import nibabel as nib
 from dipy.data import (read_stanford_labels, fetch_stanford_t1,
                        read_stanford_t1)
 
