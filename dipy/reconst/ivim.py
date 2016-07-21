@@ -1,4 +1,3 @@
-#!/usr/bin/python
 """ Classes and functions for fitting ivim model """
 from __future__ import division, print_function, absolute_import
 import numpy as np
@@ -89,6 +88,34 @@ class IvimModel(ReconstModel):
 
         min_signal : float
             The minimum signal value in the data.
+
+        x0 : array, optional
+            Initial guesses for the parameters S0, f, D_star and D
+            Default : [1.0, 0.10, 0.001, 0.0009]
+            These initial parameters are taken from [1]_
+            Dimension can either be 1 or (N, 4) where N is the number of
+            voxels in the data.
+
+        fit_method: str
+            Use one-stage fitting or two-stage fitting. The two stage fitting
+            first fits a tensor model and uses the parameters from it to get
+            the initial guesses for the IVIM model.
+
+        jac : bool, optional
+            If True, the fitting will use the Jacobian defined in `_ivim_jacobian_func`.
+            If set to None, leastsq will numerically determine the Jacobian.
+
+        bounds : tuple, optional
+            Bounds for the various parameters,
+
+        tol : float, optional
+            Default : 1e-25
+            Tolerance for convergence of minimization
+
+        options : dict, optional
+            Dictionary containing gtol, ftol, eps and maxiter. This is passed
+            to leastsq. By default these values are set to
+            options={'gtol': 1e-7, 'ftol': 1e-7, 'eps': 1e-7, 'maxiter': 1000}
         """
         ReconstModel.__init__(self, gtab)
         self.split_b = split_b
@@ -129,31 +156,34 @@ class IvimModel(ReconstModel):
         ----------
         data : array
             The measured signal from voxels.
+
         mask : array
             A boolean array used to mark the coordinates in the data that
             should be analyzed that has the shape data.shape[:-1]
+
         x0 : array, optional
             Initial guesses for the parameters S0, f, D_star and D
             Default : [1.0, 0.10, 0.001, 0.0009]
             These initial parameters are taken from [1]_
             Dimension can either be 1 or (N, 4) where N is the number of
             voxels in the data.
+
         fit_method: str
             Use one-stage fitting or two-stage fitting. The two stage fitting
             first fits a tensor model and uses the parameters from it to get
             the initial guesses for the IVIM model.
+
         jac : Boolean, optional
             Default : True
             Use the Jacobian. If true, use the Jacobian function defined in
             `_ivim_jacobian_func` to calculate the Jacobian for minimization.
+
         bounds : tuple, optional
             Bounds for the various parameters,
+
         tol : float, optional
             Default : 1e-25
             Tolerance for convergence of minimization
-        routine : str, optional
-            Default : minimize
-            Specify whether to use leastsq or minimize for fitting.
 
         Returns
         -------
@@ -232,7 +262,8 @@ class IvimFit(object):
         """ Initialize a IvimFit class instance.
             Parameters
             ----------
-            The model parameters are S0, f, D_star, D
+
+
         """
         self.model = model
         self.model_params = model_params
@@ -252,14 +283,14 @@ class IvimFit(object):
     def shape(self):
         return self.model_params.shape[:-1]
 
-    def predict(self, gtab, step=None, S0=1.0):
+    def predict(self, gtab):
         r"""
         Given a model fit, predict the signal.
 
         Parameters
         ----------
-        gtab : a GradientTable class instance
-            This encodes the directions for which a prediction is made
+        gtab : GradientTable class instance
+               Gradient directions and bvalues
         """
         return ivim_function(self.model_params, gtab.bvals)
 
@@ -271,15 +302,32 @@ def one_stage(data, gtab, x0, jac, bounds, tol, options):
     Parameters
     ----------
     data : array ([X, Y, Z, ...], g)
-        Data or response variables holding the data. Note that the last
+        Data or signal values from a Nifti image. Note that the last
         dimension should contain the data. It makes no copies of data.
-
+    gtab : GradientTable class instance
+        Gradient directions and bvalues
+    x0 : array, optional
+        Array containing the initial guess parameters.
     jac : bool, optional
-        Use the Jacobian? Default: False
+        If True, the fitting will use the Jacobian defined. If set to
+        None, leastsq will numerically determine the Jacobian.
+    bounds : array, [(4,4)]
+        Bounds for the parameters. This is applicable only for Scipy
+        version > 0.17 as we use least_squares for the fitting which
+        supports bounds. For versions less than Scipy 0.17, this is
+        by default set to None. Setting a bound on a Scipy version less
+        than 0.17 will raise an error.
+    tol : float, optional
+        The tolerance for the fitting rountine which is passed to leastsq
+    options : dict, optional
+        Dictionary containing gtol, ftol, eps and maxiter. This is passed
+        to leastsq. By default these values are set to
+        options={'gtol': 1e-7, 'ftol': 1e-7, 'eps': 1e-7, 'maxiter': 1000}
 
     Returns
     -------
-    ivim_params: the S0, f, D_star, D value for each voxel.
+    ivim_params: array, (N,4)
+        the S0, f, D_star, D value for each voxel.
 
     """
     flat_data = data.reshape((-1, data.shape[-1]))
@@ -356,7 +404,23 @@ def two_stage(data, gtab, x0,
         dimension should contain the data. It makes no copies of data.
 
     jac : bool, optional
-        Use the Jacobian? Default: False
+        If True, the fitting will use the Jacobian defined in `_ivim_jacobian_func`.
+        If set to None, leastsq will numerically determine the Jacobian.
+
+    bounds : array, [(4,4)]
+        Bounds for the parameters. This is applicable only for Scipy
+        version > 0.17 as we use least_squares for the fitting which
+        supports bounds. For versions less than Scipy 0.17, this is
+        by default set to None. Setting a bound on a Scipy version less
+        than 0.17 will raise an error.
+
+    tol : float, optional
+        The tolerance for the fitting rountine which is passed to leastsq
+
+    options : dict, optional
+        Dictionary containing gtol, ftol, eps and maxiter. This is passed
+        to leastsq. By default these values are set to
+        options={'gtol': 1e-7, 'ftol': 1e-7, 'eps': 1e-7, 'maxiter': 1000}
 
     Returns
     -------
@@ -447,11 +511,15 @@ def _ivim_jacobian_func(params, bvals, signal):
 
     bvals  : array
              bvalues
+    
+    signal : array(N)
+             The actual signal values.
 
     Returns
     -------
     jacobian : array (N, 4)
         The Jacobian for the error function.
+
     Notes
     -----
     The worked out Jacobian can be derived as follows.
