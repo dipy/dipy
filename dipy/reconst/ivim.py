@@ -74,8 +74,8 @@ class IvimModel(ReconstModel):
     def __init__(self, gtab, split_b=200.0, min_signal=None,
                  x0=[1.0, 0.10, 0.001, 0.0009], fit_method="one_stage",
                  jac=True, bounds=None,
-                 tol=1e-7, options={'gtol': 1e-12, 'ftol': 1e-12,
-                                    'eps': 1e-12, 'maxiter': 1000}):
+                 tol=1e-7, options={'gtol': 1e-7, 'ftol': 1e-7,
+                                    'eps': 1e-7, 'maxiter': 1000}):
         """
         Initialize an IVIM model.
 
@@ -484,17 +484,16 @@ def _ivim_jacobian_func(params, bvals, signal):
 
     This should give us the Jacobian
     """
+    jacobian = np.empty((len(bvals), 4))
+
     S0, f, D_star, D = params
 
     bvals_D_star = np.exp(-bvals * D_star)
     bvals_D = np.exp(-bvals * D)
 
-    derv_S0 = f * bvals_D_star + (1 - D) * bvals_D
-    derv_f = S0 * (bvals_D_star - bvals_D)
-    derv_D_star = S0 * (-bvals * f * bvals_D_star)
-    derv_D = S0 * (-bvals * (1 - f) * bvals_D)
+    jacobian[..., 0] = -(f * bvals_D_star + (1 - D) * bvals_D)
+    jacobian[..., 1] = -(S0 * (bvals_D_star - bvals_D))
+    jacobian[..., 2] = -(S0 * (-bvals * f * bvals_D_star))
+    jacobian[..., 3] = -(S0 * (-bvals * (1 - f) * bvals_D))
 
-    return (np.array([-derv_S0,
-                      -derv_f,
-                      -derv_D_star,
-                      -derv_D])).T
+    return jacobian
