@@ -9,7 +9,7 @@ from dipy.viz import actor, window, gui_follower
 from ipdb import set_trace
 
 # Allow import, but disable doctests if we don't have vtk.
-from dipy.viz.gui_follower import CubeButton, ButtonFollower
+from dipy.viz.gui_follower import CubeButtonFollower, ButtonFollower, TextFollower
 
 vtk, have_vtk, setup_module = optional_package('vtk')
 
@@ -209,7 +209,9 @@ button_actor_2 = ButtonFollower(icon_fnames=icon_files)
 
 # button_actor_1 = CubeButton(size=(10, 10, 10), color=(0, 0, 1))
 # button_actor_2 = CubeButton(size=(10, 10, 10), color=(0, 1, 0))
-button_actor_3 = CubeButton(size=(10, 10, 10), color=(1, 0, 0))
+button_actor_3 = CubeButtonFollower(size=(10, 10, 10), color=(1, 0, 0))
+
+text_actor = TextFollower(font_size=16, position=(0, 0, 0), text="Hello!", color=(0, 1, 0))
 
 
 def modify_button_callback_1(*args, **kwargs):
@@ -229,7 +231,7 @@ button_actor_2.add_callback("LeftButtonPressEvent", modify_button_callback_2)
 button_actor_3.add_callback("LeftButtonPressEvent", modify_button_callback_3)
 
 follower_menu = gui_follower.FollowerMenu(position=(0, 0, 0), diameter=87, camera=renderer.GetActiveCamera(),
-                                          elements=[button_actor_1, button_actor_2, button_actor_3])
+                                          elements=[button_actor_1, button_actor_3, text_actor])
 
 iren_style = CustomInteractorStyle(renderer=renderer)
 

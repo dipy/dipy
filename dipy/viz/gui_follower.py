@@ -6,7 +6,7 @@ from dipy.utils.optpkg import optional_package
 from ipdb import set_trace
 
 # Allow import, but disable doctests if we don't have vtk.
-from dipy.viz.gui import UI
+from dipy.viz.gui import UI, TextActor2D
 
 vtk, have_vtk, setup_module = optional_package('vtk')
 
@@ -130,9 +130,9 @@ class FollowerMenuOrbit(UI):
         return actor
 
 
-class CubeButton(UI):
+class CubeButtonFollower(UI):
     def __init__(self, size, color):
-        super(CubeButton, self).__init__()
+        super(CubeButtonFollower, self).__init__()
         self.actor = self.build_actor(size=size, color=color)
         self.element_type = "cube"
 
@@ -263,3 +263,30 @@ class ButtonFollower(UI):
         """
         self.next_icon_name()
         self.set_icon(self.icons[self.current_icon_name])
+
+
+class TextFollower(UI):
+
+    def __init__(self, position, text, font_size, color):
+        super(TextFollower, self).__init__()
+
+        self.actor = self.build_actor(text=text, position=position, font_size=font_size, color=color)
+
+        self.ui_list.append(self)
+
+    def build_actor(self, text, position, font_size, color):
+        actor_text = vtk.vtkVectorText()
+        actor_text.SetText(text)
+
+        mapper = vtk.vtkPolyDataMapper()
+        mapper.SetInputConnection(actor_text.GetOutputPort())
+        actor = vtk.vtkFollower()
+        actor.SetMapper(mapper)
+
+        actor.SetScale(5, 5, 5)
+
+        actor.GetProperty().SetColor(color)
+
+        actor.SetPosition(position[0], position[1], position[2])
+
+        return actor
