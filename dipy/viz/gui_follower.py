@@ -61,6 +61,8 @@ class FollowerMenu(UI):
             else:
                 x = x2
                 y = y2
+            x -= 15
+            y -= 15
             allotted_coordinates.append((int(x), int(y)))
             parts[i].actor.SetPosition(x, y, self.position[2]+1)
             self.assembly.AddPart(parts[i].actor)
