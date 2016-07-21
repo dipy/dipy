@@ -61,11 +61,11 @@ class FollowerMenu(UI):
             else:
                 x = x2
                 y = y2
-            if parts[i].element_type == "button":
-                x -= 15
-                y -= 15
             allotted_coordinates.append((int(x), int(y)))
             parts[i].actor.SetPosition(x, y, self.position[2]+1)
+            element_center = parts[i].actor.GetCenter()
+            parts[i].actor.AddPosition(x-element_center[0], y-element_center[1],
+                                       self.position[2]+1-element_center[2])
             self.assembly.AddPart(parts[i].actor)
 
     def build_assembly(self):
