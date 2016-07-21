@@ -227,7 +227,7 @@ def modify_button_callback_3(*args, **kwargs):
     cube_actor_1.GetProperty().SetColor((1, 0, 0))
 
 button_actor_1.add_callback("LeftButtonPressEvent", modify_button_callback_1)
-button_actor_2.add_callback("LeftButtonPressEvent", modify_button_callback_2)
+text_actor.add_callback("LeftButtonPressEvent", modify_button_callback_2)
 button_actor_3.add_callback("LeftButtonPressEvent", modify_button_callback_3)
 
 follower_menu = gui_follower.FollowerMenu(position=(0, 0, 0), diameter=87, camera=renderer.GetActiveCamera(),

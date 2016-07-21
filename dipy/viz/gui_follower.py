@@ -290,3 +290,13 @@ class TextFollower(UI):
         actor.SetPosition(position[0], position[1], position[2])
 
         return actor
+
+    def add_callback(self, event_type, callback):
+        """ Adds events to the actor
+
+        Parameters
+        ----------
+        event_type: event code
+        callback: callback function
+        """
+        self.actor.AddObserver(event_type, callback)
