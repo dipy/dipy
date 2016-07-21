@@ -23,23 +23,84 @@ numpy_support, have_ns, _ = optional_package('vtk.util.numpy_support')
 class FollowerMenu(UI):
     def __init__(self, position, diameter, camera, elements):
         super(FollowerMenu, self).__init__()
-        self.orbit = FollowerMenuOrbit(position=position, diameter=diameter, camera=camera)
-        self.widgets = self.allot_positions(elements, position, diameter)
 
-        self.ui_list.append(self.orbit)
-        self.ui_list += self.widgets
+        self.diameter = diameter
+        self.position = position
+        self.camera = camera
+        self.assembly = self.build_assembly()
 
-    def allot_positions(self, elements, position, diameter):
-        # This is just a stub for now, position allotment is yet to be implemented
-        element = elements[0]
-        element.actor.SetPosition(position[0] + diameter/2, position[1], position[2])
-        return [element]
+        self.orbit = FollowerMenuOrbit(diameter=self.diameter, position=self.position)
+        self.assembly.AddPart(self.orbit.actor)
+
+        self.add_parts(parts=elements)
+
+        self.ui_list.append(self)
+
+    @staticmethod
+    def find_total_dist(coordinate, coordinate_list):
+        distance_aggregate = 0
+        for coordinate_element in coordinate_list:
+            distance_aggregate += math.sqrt((coordinate_element[0]-coordinate[0])**2 +
+                                            (coordinate_element[1]-coordinate[1])**2)
+        return distance_aggregate
+
+    def add_parts(self, parts):
+        number_of_parts = len(parts)
+        angular_difference = 360/number_of_parts
+        allotted_coordinates = []
+        for i in range(number_of_parts):
+            theta = math.radians(angular_difference*(i+1))
+            x1 = self.position[0] + ((self.diameter/2)/math.sqrt(1 + math.tan(theta)*math.tan(theta)))
+            y1 = self.position[1] + math.tan(theta)*(x1-self.position[0])
+            x2 = self.position[0] - ((self.diameter/2)/math.sqrt(1 + math.tan(theta)*math.tan(theta)))
+            y2 = self.position[1] + math.tan(theta)*(x2-self.position[0])
+            if (self.find_total_dist((x1, y1), allotted_coordinates) >
+                    self.find_total_dist((x2, y2), allotted_coordinates)):
+                x = x1
+                y = y2
+            else:
+                x = x2
+                y = y2
+            allotted_coordinates.append((int(x), int(y)))
+            parts[i].actor.SetPosition(x, y, self.position[2]+1)
+            self.assembly.AddPart(parts[i].actor)
+
+    def build_assembly(self):
+        assembly = vtk.vtkAssembly()
+        dummy_follower = vtk.vtkFollower()
+        assembly.AddPart(dummy_follower)
+        dummy_follower.SetCamera(self.camera)
+
+        # Get assembly transformation matrix.
+        M = vtk.vtkTransform()
+        M.SetMatrix(assembly.GetMatrix())
+
+        # Get the inverse of the assembly transformation matrix.
+        M_inv = vtk.vtkTransform()
+        M_inv.SetMatrix(assembly.GetMatrix())
+        M_inv.Inverse()
+
+        # Create a transform object that gets updated whenever the input matrix
+        # is updated, which is whenever the camera moves.
+        dummy_follower_transform = vtk.vtkMatrixToLinearTransform()
+        dummy_follower_transform.SetInput(dummy_follower.GetMatrix())
+
+        T = vtk.vtkTransform()
+        T.PostMultiply()
+        # Bring the assembly to the origin.
+        T.Concatenate(M_inv)
+        # Change orientation of the assembly.
+        T.Concatenate(dummy_follower_transform)
+        # Bring the assembly back where it was.
+        T.Concatenate(M)
+
+        assembly.SetUserTransform(T)
+        return assembly
 
 
 class FollowerMenuOrbit(UI):
-    def __init__(self, position, diameter, camera):
+    def __init__(self, position, diameter):
         super(FollowerMenuOrbit, self).__init__()
-        self.camera = camera
         self.actor = self.build_actor(center=position, diameter=diameter)
 
         self.ui_list.append(self)
@@ -47,7 +108,7 @@ class FollowerMenuOrbit(UI):
     def build_actor(self, center, diameter):
         disk = vtk.vtkDiskSource()
         disk.SetInnerRadius(diameter/2)
-        disk.SetOuterRadius(diameter/2 + 2)
+        disk.SetOuterRadius(diameter/2 + 1)
         disk.SetRadialResolution(10)
         disk.SetCircumferentialResolution(50)
         disk.Update()
@@ -57,13 +118,44 @@ class FollowerMenuOrbit(UI):
         mapper.SetInputConnection(disk.GetOutputPort())
 
         # actor
-        actor = vtk.vtkFollower()
+        actor = vtk.vtkActor()
         actor.SetMapper(mapper)
-        actor.SetCamera(self.camera)
+        # actor.SetCamera(self.camera)
 
         actor.SetPosition(center[0], center[1], center[2])
 
         return actor
+
+
+class CubeButton(UI):
+    def __init__(self, size, color):
+        super(CubeButton, self).__init__()
+        self.actor = self.build_actor(size=size, color=color)
+
+        self.ui_list.append(self)
+
+    def build_actor(self, size, color):
+        cube = vtk.vtkCubeSource()
+        cube.SetXLength(size[0])
+        cube.SetYLength(size[1])
+        cube.SetZLength(size[2])
+        cubeMapper = vtk.vtkPolyDataMapper()
+        cubeMapper.SetInputConnection(cube.GetOutputPort())
+        cubeActor = vtk.vtkActor()
+        cubeActor.SetMapper(cubeMapper)
+        if color is not None:
+            cubeActor.GetProperty().SetColor(color)
+        return cubeActor
+
+    def add_callback(self, event_type, callback):
+        """ Adds events to the actor
+
+        Parameters
+        ----------
+        event_type: event code
+        callback: callback function
+        """
+        self.actor.AddObserver(event_type, callback)
 
 
 class ButtonFollower(UI):
@@ -71,9 +163,8 @@ class ButtonFollower(UI):
 
     """
 
-    def __init__(self, icon_fnames, camera):
+    def __init__(self, icon_fnames):
         super(ButtonFollower, self).__init__()
-        self.camera = camera
         self.icons = self.build_icons(icon_fnames)
         self.icon_names = list(self.icons.keys())
         self.current_icon_id = 0
@@ -125,9 +216,9 @@ class ButtonFollower(UI):
         mapper = vtk.vtkPolyDataMapper()
         mapper.SetInputConnection(icon.GetOutputPort())
 
-        button = vtk.vtkFollower()
+        button = vtk.vtkActor()
         button.SetMapper(mapper)
-        button.SetCamera(self.camera)
+        # button.SetCamera(self.camera)
 
         button.SetPosition((50, 50, 50))
 
@@ -137,7 +228,7 @@ class ButtonFollower(UI):
         return button
 
     def add_callback(self, event_type, callback):
-        """ Adds events to button actor
+        """ Adds events to the actor
 
         Parameters
         ----------

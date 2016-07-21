@@ -18,6 +18,9 @@ class UI(object):
         self.ui_param = None
         self.ui_list = list()
 
+        self.actor = None
+        self.assembly = None
+
     def set_ui_param(self, ui_param):
         self.ui_param = ui_param
 

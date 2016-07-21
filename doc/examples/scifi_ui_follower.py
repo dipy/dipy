@@ -9,6 +9,8 @@ from dipy.viz import actor, window, gui_follower
 from ipdb import set_trace
 
 # Allow import, but disable doctests if we don't have vtk.
+from dipy.viz.gui_follower import CubeButton
+
 vtk, have_vtk, setup_module = optional_package('vtk')
 
 if have_vtk:
@@ -56,17 +58,24 @@ class CustomInteractorStyle(vtkInteractorStyleUser):
         click_pos = self.GetInteractor().GetEventPosition()
 
         self.picker.Pick(click_pos[0], click_pos[1], 0, self.renderer)
-        actor_2d = self.picker.GetActor2D()
-        if actor_2d is not None:
-            self.chosen_element = self.get_ui_item(actor_2d)
-            actor_2d.InvokeEvent(evt)
+
+        path = self.picker.GetPath()
+        if path is not None:
+            node = path.GetLastNode()
+            prop = node.GetViewProp()
+            prop.InvokeEvent(evt)
         else:
-            actor_3d = self.picker.GetProp3D()
-            if actor_3d is not None:
-                self.chosen_element = self.get_ui_item(actor_3d)
-                actor_3d.InvokeEvent(evt)
+            actor_2d = self.picker.GetActor2D()
+            if actor_2d is not None:
+                self.chosen_element = self.get_ui_item(actor_2d)
+                actor_2d.InvokeEvent(evt)
             else:
-                pass
+                actor_3d = self.picker.GetProp3D()
+                if actor_3d is not None:
+                    self.chosen_element = self.get_ui_item(actor_3d)
+                    actor_3d.InvokeEvent(evt)
+                else:
+                    pass
 
         self.trackball_interactor_style.OnLeftButtonDown()
 
@@ -78,17 +87,24 @@ class CustomInteractorStyle(vtkInteractorStyleUser):
         click_pos = self.GetInteractor().GetEventPosition()
 
         self.picker.Pick(click_pos[0], click_pos[1], 0, self.renderer)
-        actor_2d = self.picker.GetViewProp()
-        if actor_2d is not None:
-            self.chosen_element = self.get_ui_item(actor_2d)
-            actor_2d.InvokeEvent(evt)
+
+        path = self.picker.GetPath()
+        if path is not None:
+            node = path.GetLastNode()
+            prop = node.GetViewProp()
+            prop.InvokeEvent(evt)
         else:
-            actor_3d = self.picker.GetProp3D()
-            if actor_3d is not None:
-                self.chosen_element = self.get_ui_item(actor_3d)
-                actor_3d.InvokeEvent(evt)
+            actor_2d = self.picker.GetActor2D()
+            if actor_2d is not None:
+                self.chosen_element = self.get_ui_item(actor_2d)
+                actor_2d.InvokeEvent(evt)
             else:
-                pass
+                actor_3d = self.picker.GetProp3D()
+                if actor_3d is not None:
+                    self.chosen_element = self.get_ui_item(actor_3d)
+                    actor_3d.InvokeEvent(evt)
+                else:
+                    pass
 
         self.trackball_interactor_style.OnRightButtonDown()
 
@@ -178,41 +194,36 @@ def cube(color=None, size=(0.2, 0.2, 0.2), center=None):
     return cubeActor
 
 
-cube_actor_1 = cube((1, 0, 0), (50, 50, 50), center=(0, 0, 0))
-cube_actor_2 = cube((0, 1, 0), (10, 10, 10), center=(100, 0, 0))
+cube_actor_1 = cube((1, 1, 1), (50, 50, 50), center=(0, 0, 0))
+cube_actor_2 = cube((1, 0, 0), (25, 25, 25), center=(100, 0, 0))
 
-icon_files = dict()
-icon_files['stop'] = read_viz_icons(fname='stop2.png')
-icon_files['play'] = read_viz_icons(fname='play3.png')
-icon_files['plus'] = read_viz_icons(fname='plus.png')
-icon_files['cross'] = read_viz_icons(fname='cross.png')
-
-button = gui_follower.ButtonFollower(icon_fnames=icon_files, camera=renderer.GetActiveCamera())
+button_actor_1 = CubeButton(size=(10, 10, 10), color=(0, 0, 1))
+button_actor_2 = CubeButton(size=(10, 10, 10), color=(0, 1, 0))
+button_actor_3 = CubeButton(size=(10, 10, 10), color=(1, 0, 0))
 
 
-def move_button_callback(*args, **kwargs):
-    pos_1 = np.array(cube_actor_1.GetPosition())
-    pos_1[0] += 2
-    cube_actor_1.SetPosition(tuple(pos_1))
-    pos_2 = np.array(cube_actor_2.GetPosition())
-    pos_2[1] += 2
-    cube_actor_2.SetPosition(tuple(pos_2))
+def modify_button_callback_1(*args, **kwargs):
+    cube_actor_1.GetProperty().SetColor((0, 0, 1))
 
 
-def modify_button_callback(*args, **kwargs):
-    button.next_icon()
+def modify_button_callback_2(*args, **kwargs):
+    cube_actor_1.GetProperty().SetColor((0, 1, 0))
 
-button.add_callback("RightButtonPressEvent", move_button_callback)
-button.add_callback("LeftButtonPressEvent", modify_button_callback)
 
+def modify_button_callback_3(*args, **kwargs):
+    cube_actor_1.GetProperty().SetColor((1, 0, 0))
+
+button_actor_1.add_callback("LeftButtonPressEvent", modify_button_callback_1)
+button_actor_2.add_callback("LeftButtonPressEvent", modify_button_callback_2)
+button_actor_3.add_callback("LeftButtonPressEvent", modify_button_callback_3)
 
 follower_menu = gui_follower.FollowerMenu(position=(0, 0, 0), diameter=87, camera=renderer.GetActiveCamera(),
-                                          elements=[button])
+                                          elements=[button_actor_1, button_actor_2, button_actor_3])
 
 iren_style = CustomInteractorStyle(renderer=renderer)
+
 renderer.add(cube_actor_1)
 renderer.add(cube_actor_2)
-# renderer.add(button)
 renderer.add(follower_menu)
 
 showm = window.ShowManager(renderer, interactor_style=iren_style, size=(600, 600), title="Sci-Fi UI")
