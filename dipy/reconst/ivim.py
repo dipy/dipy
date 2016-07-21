@@ -117,6 +117,11 @@ class IvimModel(ReconstModel):
         else:
             self.bounds = ([0., 0., 0., 0.], [np.inf, 1., 1., 1.])
 
+        if self.fit_method is not "one_stage" and self.fit_method is not "two_stage":
+            e_s = "Fit method must be either "
+            e_s += "'one_stage' or 'two_stage'"
+            raise ValueError(e_s)
+
     def fit(self, data, mask=None):
         """ Fit method of the Ivim model class
 
@@ -197,10 +202,6 @@ class IvimModel(ReconstModel):
                                                           self.split_b, self.jac,
                                                           self.bounds, self.tol,
                                                           self.options)
-        else:
-            e_s = "Fit method must be either "
-            e_s += "'one_stage' or 'two_stage'"
-            raise ValueError(e_s)
 
         if mask is None:
             out_shape = data.shape[:-1] + (-1, )

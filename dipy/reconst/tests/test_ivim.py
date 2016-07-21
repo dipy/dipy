@@ -12,12 +12,12 @@ References
        MR imaging." Radiology 265.3 (2012): 874-881.
 """
 import numpy as np
-from numpy.testing import (assert_array_equal, assert_array_almost_equal)
+from numpy.testing import (assert_array_equal, assert_array_almost_equal,
+                           assert_raises)
 
 from dipy.reconst.ivim import ivim_function, IvimModel, _ivim_jacobian_func
 from dipy.core.gradients import gradient_table, generate_bvecs
 from dipy.sims.voxel import multi_tensor
-from nose.tools import assert_raises
 
 from distutils.version import LooseVersion
 import scipy
@@ -64,6 +64,9 @@ def test_single_voxel_fit():
     assert_array_equal(est_signal.shape, data.shape)
     assert_array_almost_equal(est_signal, data)
     assert_array_almost_equal(ivim_fit.model_params, [S0, f, D_star, D])
+    # Test mask
+    assert_raises(ValueError, ivim_model.fit,
+                  np.ones((10, 10, 3)), np.ones((3, 3)))
 
 
 def test_multivoxel():
@@ -248,3 +251,8 @@ def test_ivim_errors():
     else:
         ivim_model = IvimModel(gtab,
                                bounds=([0., 0., 0., 0.], [np.inf, 1., 1., 1.]))
+    # Check min signal
+    assert_raises(ValueError, IvimModel, gtab, min_signal=-1)
+
+    # Check valid fit method
+    assert_raises(ValueError, IvimModel, gtab, fit_method="Alpha")
