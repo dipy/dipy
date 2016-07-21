@@ -96,14 +96,15 @@ small section of the slice, to fit the IVIM model. First, we instantiate
 the Ivim model. Here, we use a two-stage approach: first, a tensor
 is fit to the data, and then this tensor as the initial starting point
 for the non-linear fit of IVIM parameters. All initializations are
-passed with the `IvimModel` such as x0 or fit_method. If you are using
+passed with the `IvimModel` such as `x0` or `split_b`. If you are using
 Scipy 0.17, you can also set bounds by setting
 `bounds=([0., 0., 0., 0.], [np.inf, 1., 1., 1.]))` while initializing
-the IvimModel.
+the IvimModel. It is recommeded that you upgrade to Scipy 0.17 since
+the fitting results might at times return values which do not make sense
+physically. (Negative f values or D*)
 """
 
-ivimmodel = IvimModel(gtab, fit_method="two_stage",
-                      x0=[100., 0.1, 0.01, 0.01])
+ivimmodel = IvimModel(gtab, x0=[100., 0.1, 0.01, 0.01])
 
 """
 To fit the model, call the `fit_method` and pass the data for fitting.

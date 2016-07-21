@@ -24,7 +24,7 @@ def ivim_function(params, bvals):
     """The Intravoxel incoherent motion (IVIM) model function.
 
     The IVIM model assumes that biological tissue includes a volume fraction
-    f of water flowing in perfused capillaries, with a perfusion
+    'f' of water flowing in perfused capillaries, with a perfusion
     coefficient D* and a fraction (1-f) of static (diffusion only), intra and
     extracellular water, with a diffusion coefficient D. In this model the
     echo attenuation of a signal in a single voxel can be written as
@@ -62,6 +62,15 @@ def ivim_function(params, bvals):
 
 def _ivim_error(params, bvals, signal):
     """Error function to be used in fitting the IVIM model
+
+    Parameters
+    ----------
+    params : array
+        An array of IVIM parameters. ([S0, f, D_star and D])
+
+    bvals : array
+        bvalues
+
     """
     return (signal - ivim_function(params, bvals))
 
@@ -71,8 +80,7 @@ class IvimModel(ReconstModel):
     """
 
     def __init__(self, gtab, split_b=200.0, min_signal=None,
-                 x0=[1.0, 0.10, 0.001, 0.0009], fit_method="one_stage",
-                 jac=True, bounds=None,
+                 x0=[1.0, 0.10, 0.001, 0.0009], bounds=None,
                  tol=1e-7, options={'gtol': 1e-7, 'ftol': 1e-7,
                                     'eps': 1e-7, 'maxiter': 1000}):
         """
@@ -96,21 +104,20 @@ class IvimModel(ReconstModel):
             Dimension can either be 1 or (N, 4) where N is the number of
             voxels in the data.
 
-        fit_method: str
-            Use one-stage fitting or two-stage fitting. The two stage fitting
-            first fits a tensor model and uses the parameters from it to get
-            the initial guesses for the IVIM model.
+        bounds : array, (4,4)
+            Bounds for the parameters. This is applicable only for Scipy
+            version > 0.17 as we use least_squares for the fitting which
+            supports bounds. For versions less than Scipy 0.17, this is
+            by default set to None. Setting a bound on a Scipy version less
+            than 0.17 will raise an error.
 
-        jac : bool, optional
-            If True, the fitting will use the Jacobian defined in `_ivim_jacobian_func`.
-            If set to None, leastsq will numerically determine the Jacobian.
-
-        bounds : tuple, optional
-            Bounds for the various parameters,
+            This can be supplied as a tuple for Scipy versions 0.17. It is
+            recommended to upgrade to Scipy 0.17 for bounded fitting. The default
+            bounds are set to ([0., 0., 0., 0.], [np.inf, 1., 1., 1.])
 
         tol : float, optional
-            Default : 1e-25
-            Tolerance for convergence of minimization
+            Default : 1e-7
+            Tolerance for convergence of minimization.
 
         options : dict, optional
             Dictionary containing gtol, ftol, eps and maxiter. This is passed
@@ -121,8 +128,6 @@ class IvimModel(ReconstModel):
         self.split_b = split_b
         self.min_signal = min_signal
         self.x0 = x0
-        self.fit_method = fit_method
-        self.jac = jac
         self.bounds = bounds
         self.tol = tol
         self.options = options
@@ -132,22 +137,12 @@ class IvimModel(ReconstModel):
             e_s += " positive."
             raise ValueError(e_s)
 
-        if self.jac == True:
-            self.jac = _ivim_jacobian_func
-        else:
-            self.jac = None
-
         if SCIPY_LESS_0_17 and self.bounds is not None:
             e_s = "Scipy versions less than 0.17 do not support "
             e_s += "bounds. Please update to Scipy 0.17 to use bounds"
             raise ValueError(e_s)
         else:
             self.bounds = ([0., 0., 0., 0.], [np.inf, 1., 1., 1.])
-
-        if self.fit_method is not "one_stage" and self.fit_method is not "two_stage":
-            e_s = "Fit method must be either "
-            e_s += "'one_stage' or 'two_stage'"
-            raise ValueError(e_s)
 
     def fit(self, data, mask=None):
         """ Fit method of the Ivim model class
@@ -160,30 +155,6 @@ class IvimModel(ReconstModel):
         mask : array
             A boolean array used to mark the coordinates in the data that
             should be analyzed that has the shape data.shape[:-1]
-
-        x0 : array, optional
-            Initial guesses for the parameters S0, f, D_star and D
-            Default : [1.0, 0.10, 0.001, 0.0009]
-            These initial parameters are taken from [1]_
-            Dimension can either be 1 or (N, 4) where N is the number of
-            voxels in the data.
-
-        fit_method: str
-            Use one-stage fitting or two-stage fitting. The two stage fitting
-            first fits a tensor model and uses the parameters from it to get
-            the initial guesses for the IVIM model.
-
-        jac : Boolean, optional
-            Default : True
-            Use the Jacobian. If true, use the Jacobian function defined in
-            `_ivim_jacobian_func` to calculate the Jacobian for minimization.
-
-        bounds : tuple, optional
-            Bounds for the various parameters,
-
-        tol : float, optional
-            Default : 1e-25
-            Tolerance for convergence of minimization
 
         Returns
         -------
@@ -215,35 +186,27 @@ class IvimModel(ReconstModel):
         else:
             if self.x0.shape != (data.shape[0], 4):
                 raise ValueError(
-                    "Initial guess params should be of shape (num_voxels,4)")
+                    "Initial guess params should be of shape (num_voxels, 4)")
 
         data_in_mask = np.maximum(data_in_mask, min_signal)
         # Get the x0 parameters for the masked data
         x0_mask = np.reshape(x0[mask], (-1, x0.shape[-1]))
 
-        if self.fit_method == "one_stage":
-            params_in_mask, fit_stats_in_mask = one_stage(data_in_mask,
-                                                          self.gtab, x0_mask,
-                                                          self.jac, self.bounds, self.tol,
-                                                          self.options)
-        elif self.fit_method == "two_stage":
-            params_in_mask, fit_stats_in_mask = two_stage(data_in_mask,
-                                                          self.gtab, x0_mask,
-                                                          self.split_b, self.jac,
-                                                          self.bounds, self.tol,
-                                                          self.options)
+        params_in_mask = two_stage(data_in_mask,
+                                   self.gtab, x0_mask,
+                                   self.split_b,
+                                   self.bounds, self.tol,
+                                   self.options)
 
         if mask is None:
             out_shape = data.shape[:-1] + (-1, )
             ivim_params = params_in_mask.reshape(out_shape)
-            fit_stats = fit_stats_in_mask.reshape(out_shape)
+
         else:
             ivim_params = np.zeros(data.shape[:-1] + (4,))
             ivim_params[mask, :] = params_in_mask
-            fit_stats = np.zeros(data.shape[:-1] + (4,))
-            fit_stats[mask, :] = fit_stats_in_mask
 
-        return IvimFit(self, ivim_params, fit_stats)
+        return IvimFit(self, ivim_params)
 
     def predict(self, ivim_params):
         """
@@ -258,16 +221,17 @@ class IvimModel(ReconstModel):
 
 class IvimFit(object):
 
-    def __init__(self, model, model_params, fit_stats):
+    def __init__(self, model, model_params):
         """ Initialize a IvimFit class instance.
             Parameters
             ----------
-
-
+            model : Model class
+            model_params : array
+                The parameters of the model. In this case it is an
+                array of ivim parameters.
         """
         self.model = model
         self.model_params = model_params
-        self.fit_stats = fit_stats
 
     def __getitem__(self, index):
         model_params = self.model_params
@@ -295,60 +259,50 @@ class IvimFit(object):
         return ivim_function(self.model_params, gtab.bvals)
 
 
-def one_stage(data, gtab, x0, jac, bounds, tol, options):
+def _leastsq(flat_data, bvals, flat_x0, ivim_params, options, tol, bounds):
     """
-    Fit the ivim params using minimize
+    Use leastsq for finding ivim_params
 
     Parameters
     ----------
-    data : array ([X, Y, Z, ...], g)
-        Data or signal values from a Nifti image. Note that the last
-        dimension should contain the data. It makes no copies of data.
-    gtab : GradientTable class instance
-        Gradient directions and bvalues
-    x0 : array, optional
-        Array containing the initial guess parameters.
-    jac : bool, optional
-        If True, the fitting will use the Jacobian defined. If set to
-        None, leastsq will numerically determine the Jacobian.
-    bounds : array, [(4,4)]
-        Bounds for the parameters. This is applicable only for Scipy
-        version > 0.17 as we use least_squares for the fitting which
-        supports bounds. For versions less than Scipy 0.17, this is
-        by default set to None. Setting a bound on a Scipy version less
-        than 0.17 will raise an error.
-    tol : float, optional
-        The tolerance for the fitting rountine which is passed to leastsq
+    flat_data : array, (N, len(bvals))
+        A flattened array containing the signal from all the voxels (N).
+        If the data was a 3D image of 10x10x10 grid with 21 bvalues,
+        flat_data will be an array of the shape (10000, 21). The leastsq
+        routine will be run on all the 1000 voxels to get the parameters
+        in ivim_params as a (1000, 4) array for this case.
+
+    bvals : array
+        The array of bvalues for the data. This is obtained from gtab.bvals.
+
+    flat_x0 : array (N, 4), optional
+        A flattened array containing the initial guess for the ivim parameters.
+        By default, this is set to [1., 0.1, 0.1, 0.1].
+
+    ivim_params : array (N, 4)
+        The ivim parameters for the flattened data. This array will hold the
+        ivim parameters from the fit.
+
     options : dict, optional
         Dictionary containing gtol, ftol, eps and maxiter. This is passed
         to leastsq. By default these values are set to
         options={'gtol': 1e-7, 'ftol': 1e-7, 'eps': 1e-7, 'maxiter': 1000}
 
-    Returns
-    -------
-    ivim_params: array, (N,4)
-        the S0, f, D_star, D value for each voxel.
+    bounds : array, (4,4)
+        Bounds for the parameters. This is applicable only for Scipy
+        version > 0.17 as we use least_squares for the fitting which
+        supports bounds. For versions less than Scipy 0.17, this is
+        by default set to None. Setting a bound on a Scipy version less
+        than 0.17 will raise an error.
 
+        This can be supplied as a tuple for Scipy versions 0.17. It is
+        recommended to upgrade to Scipy 0.17 for bounded fitting. The default
+        bounds are set to ([0., 0., 0., 0.], [np.inf, 1., 1., 1.])
+
+    tol : float, optional
+        Default : 1e-7. Tolerance for convergence of minimization.
     """
-    flat_data = data.reshape((-1, data.shape[-1]))
-    S_normalization = flat_data[:, 0]
-    flat_data = (flat_data.T / S_normalization).T
-    flat_x0 = x0.reshape(-1, x0.shape[-1])
-    # Flatten for the iteration over voxels:
-    bvals = gtab.bvals
-    ivim_params = np.empty((flat_data.shape[0], 4))
-    fit_stats = np.empty((flat_data.shape[0], 4))
-    flat_x0[..., 0] = flat_data[..., 0]
 
-    fit_stats = _leastsq(flat_data, bvals, flat_x0,
-                         ivim_params, options, tol, bounds, jac)
-    ivim_params.shape = data.shape[:-1] + (4,)
-    ivim_params[:, 0] = ivim_params[:, 0] * S_normalization
-    return ivim_params, fit_stats
-
-
-def _leastsq(flat_data, bvals, flat_x0, ivim_params, options, tol, bounds, jac):
-    """Use leastsq for finding ivim_params"""
     num_voxels = flat_data.shape[0]
     result = np.empty(flat_data.shape[0], dtype=object)
     gtol = options["gtol"]
@@ -360,7 +314,6 @@ def _leastsq(flat_data, bvals, flat_x0, ivim_params, options, tol, bounds, jac):
         for vox in range(num_voxels):
             res = least_squares(_ivim_error,
                                 flat_x0[vox],
-                                jac=jac,
                                 bounds=bounds,
                                 ftol=ftol,
                                 xtol=xtol,
@@ -374,7 +327,6 @@ def _leastsq(flat_data, bvals, flat_x0, ivim_params, options, tol, bounds, jac):
             res = leastsq(_ivim_error,
                           flat_x0[vox],
                           args=(bvals, flat_data[vox]),
-                          Dfun=jac,
                           gtol=gtol,
                           xtol=xtol,
                           ftol=ftol,
@@ -386,7 +338,7 @@ def _leastsq(flat_data, bvals, flat_x0, ivim_params, options, tol, bounds, jac):
 
 
 def two_stage(data, gtab, x0,
-              split_b, jac, bounds, tol,
+              split_b, bounds, tol,
               options):
     """
     Fit the ivim params using a two stage fit.
@@ -399,15 +351,11 @@ def two_stage(data, gtab, x0,
 
     Parameters
     ----------
-    data : array ([X, Y, Z, ...], g)
+    data : array ([X, Y, Z, ...], N)
         Data or response variables holding the data. Note that the last
         dimension should contain the data. It makes no copies of data.
 
-    jac : bool, optional
-        If True, the fitting will use the Jacobian defined in `_ivim_jacobian_func`.
-        If set to None, leastsq will numerically determine the Jacobian.
-
-    bounds : array, [(4,4)]
+    bounds : array, (4,4)
         Bounds for the parameters. This is applicable only for Scipy
         version > 0.17 as we use least_squares for the fitting which
         supports bounds. For versions less than Scipy 0.17, this is
@@ -424,8 +372,9 @@ def two_stage(data, gtab, x0,
 
     Returns
     -------
-    ivim_params: the S0, f, D_star, D value for each voxel.
-
+    ivim_params: array, (N, 4)
+        An array of the shape (N, 4) with the S0, f, D_star, D value for
+        each voxel.
     """
     flat_data = data.reshape((-1, data.shape[-1]))
     S_normalization = flat_data[:, 0]
@@ -435,7 +384,7 @@ def two_stage(data, gtab, x0,
     # Flatten for the iteration over voxels:
     bvals = gtab.bvals
     ivim_params = np.empty((flat_data.shape[0], 4))
-    fit_stats = np.empty((flat_data.shape[0], 4))
+
     flat_x0[..., 0] = flat_data[..., 0]
 
     S0_hat, D_guess = _get_S0_D_guess(flat_data, gtab, split_b)
@@ -444,12 +393,12 @@ def two_stage(data, gtab, x0,
     flat_x0[..., 1] = f_guess
     flat_x0[..., 3] = D_guess
 
-    fit_stats = _leastsq(flat_data, bvals, flat_x0,
-                         ivim_params, options, tol, bounds, jac)
+    _leastsq(flat_data, bvals, flat_x0,
+             ivim_params, options, tol, bounds)
     ivim_params.shape = data.shape[:-1] + (4,)
     ivim_params[:, 0] = ivim_params[:, 0] * S_normalization
 
-    return ivim_params, fit_stats
+    return ivim_params
 
 
 def _get_S0_D_guess(data, gtab, split_b):
@@ -499,69 +448,3 @@ def _get_S0_D_guess(data, gtab, split_b):
                      np.exp(-gtab.bvals[~gtab.b0s_mask] * ADC),
                      -1)
     return S0_hat, D_guess
-
-
-def _ivim_jacobian_func(params, bvals, signal):
-    """The Jacobian is the first derivative of the error function.
-
-    Parameters
-    ----------
-    params : array (N, 4)
-             An array of IVIM parameters - S0, f, D_star, D
-
-    bvals  : array
-             bvalues
-    
-    signal : array(N)
-             The actual signal values.
-
-    Returns
-    -------
-    jacobian : array (N, 4)
-        The Jacobian for the error function.
-
-    Notes
-    -----
-    The worked out Jacobian can be derived as follows.
-    Let `i` be the index which denotes the number of points to fit and `j` be
-    the number of parameters. In this case `i` is the number of bvalues.
-    Let :math:`x_i` be the independent parameter (bvalue) and :math:`\beta`
-    denote the vector of parameters with :math:`\beta_j = (S0, f, D*, D)`.
-    Thus we have `j = 0,1,2,3`.
-
-    The IVIM signal is:
-    .. math:: S(x_i, \beta) = \beta_0[\beta_1e^{(-x_i\beta_2)} + (1-\beta_1)e^{(-x_i\beta_3)}]
-
-    Here:
-    .. math:: \beta_0 = S0, \beta_1 = f, \beta_2 = D*, \beta_3 = D and x_i = b
-
-    The residual that we need to find the Jacobian for is: 
-    .. math:: r_i = [y_i - S(x_i, \beta)]
-
-    The Jacobian is defined as:
-    .. math:: - \frac{\partial r_i}{\partial \beta_j}
-
-    Thus we will have : 
-    .. math:: J_{i,j} = -\frac{\partial S}{\partial \beta_j}
-
-    The various terms in the Jacobian are thus:
-    .. math:: \frac{\partial S}{\partial \beta_0} =  [\beta_1e^{(-x_i\beta_2)} + (1-\beta_1)e^{(-x_i\beta_3)}]
-              \frac{\partial S}{\partial \beta_1} = \beta_0[e^{-x_i\beta_2} - e^{-x_i\beta_3}]
-              \frac{\partial S}{\partial \beta_2} = \beta_0[-x_i\beta_1e^{-x_i\beta_2}]
-              \frac{\partial S}{\partial \beta_3} = \beta_0[-x_i(1- \beta_1)e^{-x_i\beta_3}]
-
-    This should give us the Jacobian
-    """
-    jacobian = np.empty((len(bvals), 4))
-
-    S0, f, D_star, D = params
-
-    bvals_D_star = np.exp(-bvals * D_star)
-    bvals_D = np.exp(-bvals * D)
-
-    jacobian[..., 0] = -(f * bvals_D_star + (1 - D) * bvals_D)
-    jacobian[..., 1] = -(S0 * (bvals_D_star - bvals_D))
-    jacobian[..., 2] = -(S0 * (-bvals * f * bvals_D_star))
-    jacobian[..., 3] = -(S0 * (-bvals * (1 - f) * bvals_D))
-
-    return jacobian
