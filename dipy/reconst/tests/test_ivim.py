@@ -17,6 +17,12 @@ from numpy.testing import (assert_array_equal, assert_array_almost_equal)
 from dipy.reconst.ivim import ivim_function, IvimModel, _ivim_jacobian_func
 from dipy.core.gradients import gradient_table, generate_bvecs
 from dipy.sims.voxel import multi_tensor
+from nose.tools import assert_raises
+
+from distutils.version import LooseVersion
+import scipy
+
+SCIPY_VERSION = LooseVersion(scipy.version.short_version)
 
 
 def test_single_voxel_fit():
@@ -217,3 +223,28 @@ def test_jacobian():
     jac = _ivim_jacobian_func(params, bvals, data)
 
     assert_array_equal(jac.shape, (data.shape[-1], params.shape[-1]))
+
+
+def test_ivim_errors():
+    """
+    Test if errors raised in the module are working correctly.
+
+    Scipy introduced bounded least squares fitting in the version 0.17
+    and is not supported by the older versions. Initializing an IvimModel
+    with bounds for older Scipy versions should raise an error.
+    """
+    bvals = np.array([0., 10., 20., 30., 40., 60., 80., 100.,
+                      120., 140., 160., 180., 200., 220., 240.,
+                      260., 280., 300., 350., 400., 500., 600.,
+                      700., 800., 900., 1000.])
+    N = len(bvals)
+    bvecs = generate_bvecs(N)
+    gtab = gradient_table(bvals, bvecs.T)
+
+    # Run the test for Scipy versions less than 0.17
+    if SCIPY_VERSION < '0.17':
+        assert_raises(ValueError, IvimModel, gtab,
+                      bounds=([0., 0., 0., 0.], [np.inf, 1., 1., 1.]))
+    else:
+        ivim_model = IvimModel(gtab,
+                               bounds=([0., 0., 0., 0.], [np.inf, 1., 1., 1.]))

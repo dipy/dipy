@@ -73,7 +73,7 @@ class IvimModel(ReconstModel):
 
     def __init__(self, gtab, split_b=200.0, min_signal=None,
                  x0=[1.0, 0.10, 0.001, 0.0009], fit_method="one_stage",
-                 jac=True, bounds=([0., 0., 0., 0.], [np.inf, 1., 1., 1.]),
+                 jac=True, bounds=None,
                  tol=1e-7, options={'gtol': 1e-12, 'ftol': 1e-12,
                                     'eps': 1e-12, 'maxiter': 1000}):
         """
@@ -109,6 +109,13 @@ class IvimModel(ReconstModel):
             self.jac = _ivim_jacobian_func
         else:
             self.jac = None
+
+        if SCIPY_LESS_0_17 and self.bounds is not None:
+            e_s = "Scipy versions less than 0.17 do not support "
+            e_s += "bounds. Please update to Scipy 0.17 to use bounds"
+            raise ValueError(e_s)
+        else:
+            self.bounds = ([0., 0., 0., 0.], [np.inf, 1., 1., 1.])
 
     def fit(self, data, mask=None):
         """ Fit method of the Ivim model class
