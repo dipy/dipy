@@ -142,7 +142,8 @@ class IvimModel(ReconstModel):
             e_s += "bounds. Please update to Scipy 0.17 to use bounds"
             raise ValueError(e_s)
         else:
-            self.bounds = ([0., 0., 0., 0.], [np.inf, 1., 1., 1.])
+            self.bounds = (np.array([0., 0., 0., 0.]),
+                           np.array([np.inf, 1., 1., 1.]))
 
     def fit(self, data, mask=None):
         """ Fit method of the Ivim model class
