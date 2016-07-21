@@ -199,18 +199,22 @@ cube_actor_2 = cube((1, 0, 0), (25, 25, 25), center=(100, 0, 0))
 
 icon_files = dict()
 icon_files['stop'] = read_viz_icons(fname='stop2.png')
+icon_files['play'] = read_viz_icons(fname='play3.png')
+icon_files['plus'] = read_viz_icons(fname='plus.png')
+icon_files['cross'] = read_viz_icons(fname='cross.png')
 
 button_actor_1 = ButtonFollower(icon_fnames=icon_files)
 button_actor_2 = ButtonFollower(icon_fnames=icon_files)
-button_actor_3 = ButtonFollower(icon_fnames=icon_files)
+# button_actor_3 = ButtonFollower(icon_fnames=icon_files)
 
 # button_actor_1 = CubeButton(size=(10, 10, 10), color=(0, 0, 1))
 # button_actor_2 = CubeButton(size=(10, 10, 10), color=(0, 1, 0))
-# button_actor_3 = CubeButton(size=(10, 10, 10), color=(1, 0, 0))
+button_actor_3 = CubeButton(size=(10, 10, 10), color=(1, 0, 0))
 
 
 def modify_button_callback_1(*args, **kwargs):
     cube_actor_1.GetProperty().SetColor((0, 0, 1))
+    button_actor_1.next_icon()
 
 
 def modify_button_callback_2(*args, **kwargs):

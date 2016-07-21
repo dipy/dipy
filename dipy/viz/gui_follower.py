@@ -61,8 +61,9 @@ class FollowerMenu(UI):
             else:
                 x = x2
                 y = y2
-            x -= 15
-            y -= 15
+            if parts[i].element_type == "button":
+                x -= 15
+                y -= 15
             allotted_coordinates.append((int(x), int(y)))
             parts[i].actor.SetPosition(x, y, self.position[2]+1)
             self.assembly.AddPart(parts[i].actor)
@@ -133,6 +134,7 @@ class CubeButton(UI):
     def __init__(self, size, color):
         super(CubeButton, self).__init__()
         self.actor = self.build_actor(size=size, color=color)
+        self.element_type = "cube"
 
         self.ui_list.append(self)
 
@@ -172,6 +174,7 @@ class ButtonFollower(UI):
         self.current_icon_id = 0
         self.current_icon_name = self.icon_names[self.current_icon_id]
         self.actor = self.build_actor(self.icons[self.current_icon_name])
+        self.element_type = "button"
 
         self.ui_list.append(self)
 
