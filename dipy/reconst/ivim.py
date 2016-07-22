@@ -72,6 +72,9 @@ def _ivim_error(params, bvals, signal):
     bvals : array
         bvalues
 
+    signal : array
+        Array containing the actual signal values.
+
     """
     return (signal - ivim_function(params, bvals))
 
@@ -209,15 +212,7 @@ class IvimModel(ReconstModel):
         -------
         x0_guess : array
             An array with better initial values of S0, f, D_star, D each voxel.
-
-        S0_normalization : float
-            The multiplier for S0 to be used in getting the actual value of S0
-            from ivim_params. We normalize the S0 values by dividing the signal
-            with the highest signal which is usually the signal at bvalue = 0.
-
         """
-        # S_normalization = data[0]
-        # normalized_data = (data.T / S_normalization).T
 
         bvals = self.gtab.bvals
         x0[0] = data[0]
@@ -291,9 +286,10 @@ class IvimModel(ReconstModel):
         data : array, (len(bvals))
             An array containing the signal from a voxel.
             If the data was a 3D image of 10x10x10 grid with 21 bvalues,
-            this would be an array of the shape (10000, 21). The leastsq
-            routine will be run on all the 1000 voxels to get the parameters
-            in ivim_params as a (1000, 4) array for this case.
+            the multi_voxel decorator will run the single voxel fitting
+            on all the 1000 voxels to get the parameters in
+            IvimFit.model_paramters. The shape of the parameter array
+            will be (data[:-1], 4). 
 
         bvals : array
             The array of bvalues for the data. This is obtained from gtab.bvals.
@@ -343,7 +339,11 @@ class IvimFit(object):
             model : Model class
             model_params : array
                 The parameters of the model. In this case it is an
-                array of ivim parameters.
+                array of ivim parameters. If the fitting is done
+                for multi_voxel data, the multi_voxel decorator will
+                run the fitting on all the voxels and model_params
+                will be an array of the dimensions (data[:-1], 4),
+                i.e., there will be 4 parameters for each of the voxels.
         """
         self.model = model
         self.model_params = model_params
@@ -370,5 +370,10 @@ class IvimFit(object):
         ----------
         gtab : GradientTable class instance
                Gradient directions and bvalues
+        Returns
+        -------
+        signal : array
+            The signal values predicted for this model using
+            its parameters.
         """
         return ivim_function(self.model_params, gtab.bvals)
