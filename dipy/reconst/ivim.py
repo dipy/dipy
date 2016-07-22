@@ -163,13 +163,10 @@ class IvimModel(ReconstModel):
         x0_in_mask = self.x0
         data_in_mask = data
         # Call the two stage function to get better x0 guess
-        x0_two_stage, S_norm = two_stage(data_in_mask,
-                                         self.gtab, x0_in_mask,
-                                         self.split_b)
-
+        x0_two_stage, S_norm = self.two_stage(data_in_mask,
+                                              x0_in_mask)
         # Use leastsq to get ivim_params
-        params_in_mask = _leastsq(data, self.gtab.bvals, x0_two_stage,
-                                  self.tol, self.options, self.bounds)
+        params_in_mask = self._leastsq(data, x0_two_stage)
         # Multiply S0 with the multiplier used in scaling
         params_in_mask[0] = params_in_mask[0] * S_norm
         return IvimFit(self, params_in_mask)
@@ -189,6 +186,154 @@ class IvimModel(ReconstModel):
             The predicted IVIM signal using given parameters.
         """
         return ivim_function(ivim_params, self.gtab.bvals)
+
+    def two_stage(self, data, x0):
+        """
+        Fit the ivim params using a two stage fit.
+
+        In the two stage fitting routine, initially, we fit the signal
+        at bvals less than the specified split_b using the TensorModel
+        and get an intial guess for f and D. Then, using these parameters
+        we fit the entire data for all bvalues. The default split_b is
+        200.
+
+        Parameters
+        ----------
+        data : array
+            The measured signal from one voxel. A multi voxel decorator
+            will be applied to this fit method to scale it and apply it
+            to multiple voxels.
+
+        x0 : array
+            An array with initial values of S0, f, D_star, D for a voxel.
+
+        Returns
+        -------
+        x0_guess : array
+            An array with better initial values of S0, f, D_star, D each voxel.
+
+        S0_normalization : float
+            The multiplier for S0 to be used in getting the actual value of S0
+            from ivim_params. We normalize the S0 values by dividing the signal
+            with the highest signal which is usually the signal at bvalue = 0.
+
+        """
+        S_normalization = data[0]
+        normalized_data = (data.T / S_normalization).T
+
+        bvals = self.gtab.bvals
+        x0[0] = normalized_data[0]
+
+        S0_hat, D_guess = self._get_S0_D_guess(data)
+        f_guess = 1 - S0_hat / data[0]
+
+        x0[1] = f_guess
+        x0[3] = D_guess
+        x0[2] = 10 * D_guess
+
+        return (x0, S_normalization)
+
+    def _get_S0_D_guess(self, data):
+        """
+        Obtain initial guess for S0 and D for two stage fitting.
+
+        Using TensorModel from reconst.dti, we fit an exponential
+        for those signals which are less than a particular bvalue
+        (split_b). The apparent diffusion coefficient gives us an
+        initial estimate for D.
+
+        Parameters
+        ----------
+        data : array
+            The measured signal from one voxel. A multi voxel decorator
+            will be applied to this fit method to scale it and apply it
+            to multiple voxels.
+
+        gtab : GradientTable class instance
+                Gradient directions and bvalues
+
+        split_b : float
+            The b-value to split the data on for two-stage fit
+
+        Returns
+        -------
+        S0_hat : array ([S0_1, S0_2, ...])
+            An array which gives the guess for all the S0 values.
+
+        D_guess : array ([D_1, D_2, ...])
+            An array which gives the guess for all the D values.
+        """
+        gtab = self.gtab
+        split_b = self.split_b
+        bvals_ge_split = gtab.bvals[gtab.bvals > split_b]
+        bvecs_ge_split = gtab.bvecs[gtab.bvals > split_b]
+        gtab_ge_split = gradient_table(bvals_ge_split, bvecs_ge_split.T)
+        tensor_model = TensorModel(gtab_ge_split)
+        tenfit = tensor_model.fit(data[..., gtab.bvals > split_b])
+        D_guess = mean_diffusivity(tenfit.evals)
+        dti_params = tenfit.model_params
+        evecs = dti_params[..., 3:12].reshape((dti_params.shape[:-1] + (3, 3)))
+        evals = dti_params[..., :3]
+        qform = vec_val_vect(evecs, evals)
+
+        sphere = Sphere(xyz=gtab.bvecs[~gtab.b0s_mask])
+        ADC = apparent_diffusion_coef(qform, sphere)
+
+        S0_hat = np.mean(data[..., ~gtab.b0s_mask] /
+                         np.exp(-gtab.bvals[~gtab.b0s_mask] * ADC),
+                         -1)
+        return np.array([S0_hat, D_guess])
+
+    def _leastsq(self, data, x0):
+        """
+        Use leastsq for finding ivim_params
+
+        Parameters
+        ----------
+        data : array, (len(bvals))
+            An array containing the signal from a voxel.
+            If the data was a 3D image of 10x10x10 grid with 21 bvalues,
+            this would be an array of the shape (10000, 21). The leastsq
+            routine will be run on all the 1000 voxels to get the parameters
+            in ivim_params as a (1000, 4) array for this case.
+
+        bvals : array
+            The array of bvalues for the data. This is obtained from gtab.bvals.
+
+        x0 : array, optional
+                Initial guesses for the parameters S0, f, D_star and D
+                Default : [1.0, 0.10, 0.001, 0.0009]
+                These initial parameters are taken from [1]_
+        """
+        gtol = self.options["gtol"]
+        ftol = self.options["ftol"]
+        xtol = self.tol
+        epsfcn = self.options["eps"]
+        maxfev = self.options["maxiter"]
+        bounds = self.bounds
+        bvals = self.gtab.bvals
+        if not SCIPY_LESS_0_17:
+            res = least_squares(_ivim_error,
+                                x0,
+                                bounds=bounds,
+                                ftol=ftol,
+                                xtol=xtol,
+                                gtol=gtol,
+                                max_nfev=maxfev,
+                                args=(bvals, data))
+            ivim_params = res.x
+            return ivim_params
+        else:
+            res = leastsq(_ivim_error,
+                          x0,
+                          args=(bvals, data),
+                          gtol=gtol,
+                          xtol=xtol,
+                          ftol=ftol,
+                          epsfcn=epsfcn,
+                          maxfev=maxfev)
+            ivim_params = res[0]
+            return ivim_params
 
 
 class IvimFit(object):
@@ -229,150 +374,3 @@ class IvimFit(object):
                Gradient directions and bvalues
         """
         return ivim_function(self.model_params, gtab.bvals)
-
-
-def two_stage(data, gtab, x0, split_b):
-    """
-    Fit the ivim params using a two stage fit.
-
-    In the two stage fitting routine, initially, we fit the signal
-    at bvals less than the specified split_b using the TensorModel
-    and get an intial guess for f and D. Then, using these parameters
-    we fit the entire data for all bvalues. The default split_b is
-    200.
-
-    Parameters
-    ----------
-    data : array
-        The measured signal from one voxel. A multi voxel decorator
-        will be applied to this fit method to scale it and apply it
-        to multiple voxels.
-
-
-    Returns
-    -------
-    x0_guess : array
-        An array with better initial values of S0, f, D_star, D each voxel.
-
-    S0_normalization : float
-        The multiplier for S0 to be used in getting the actual value of S0
-        from ivim_params. We normalize the S0 values by dividing the signal
-        with the highest signal which is usually the signal at bvalue = 0.
-
-    """
-    S_normalization = data[0]
-    normalized_data = (data.T / S_normalization).T
-
-    bvals = gtab.bvals
-    x0[0] = normalized_data[0]
-
-    S0_hat, D_guess = _get_S0_D_guess(data, gtab, split_b)
-    f_guess = 1 - S0_hat / data[0]
-
-    x0[1] = f_guess
-    x0[3] = D_guess
-    x0[2] = 10 * D_guess
-
-    return (x0, S_normalization)
-
-
-def _get_S0_D_guess(data, gtab, split_b):
-    """
-    Obtain initial guess for S0 and D for two stage fitting.
-
-    Using TensorModel from reconst.dti, we fit an exponential
-    for those signals which are less than a particular bvalue
-    (split_b). The apparent diffusion coefficient gives us an
-    initial estimate for D.
-
-    Parameters
-    ----------
-    data : array
-        The measured signal from one voxel. A multi voxel decorator
-        will be applied to this fit method to scale it and apply it
-        to multiple voxels.
-
-    gtab : GradientTable class instance
-            Gradient directions and bvalues
-
-    split_b : float
-        The b-value to split the data on for two-stage fit
-
-    Returns
-    -------
-    S0_hat : array ([S0_1, S0_2, ...])
-        An array which gives the guess for all the S0 values.
-
-    D_guess : array ([D_1, D_2, ...])
-        An array which gives the guess for all the D values.
-    """
-    bvals_ge_split = gtab.bvals[gtab.bvals > split_b]
-    bvecs_ge_split = gtab.bvecs[gtab.bvals > split_b]
-    gtab_ge_split = gradient_table(bvals_ge_split, bvecs_ge_split.T)
-    tensor_model = TensorModel(gtab_ge_split)
-    tenfit = tensor_model.fit(data[..., gtab.bvals > split_b])
-    D_guess = mean_diffusivity(tenfit.evals)
-    dti_params = tenfit.model_params
-    evecs = dti_params[..., 3:12].reshape((dti_params.shape[:-1] + (3, 3)))
-    evals = dti_params[..., :3]
-    qform = vec_val_vect(evecs, evals)
-
-    sphere = Sphere(xyz=gtab.bvecs[~gtab.b0s_mask])
-    ADC = apparent_diffusion_coef(qform, sphere)
-
-    S0_hat = np.mean(data[..., ~gtab.b0s_mask] /
-                     np.exp(-gtab.bvals[~gtab.b0s_mask] * ADC),
-                     -1)
-    return np.array([S0_hat, D_guess])
-
-
-def _leastsq(data, bvals, x0, tol, options, bounds):
-    """
-    Use leastsq for finding ivim_params
-
-    Parameters
-    ----------
-    data : array, (len(bvals))
-        An array containing the signal from a voxel.
-        If the data was a 3D image of 10x10x10 grid with 21 bvalues,
-        this would be an array of the shape (10000, 21). The leastsq
-        routine will be run on all the 1000 voxels to get the parameters
-        in ivim_params as a (1000, 4) array for this case.
-
-    bvals : array
-        The array of bvalues for the data. This is obtained from gtab.bvals.
-
-    x0 : array, optional
-            Initial guesses for the parameters S0, f, D_star and D
-            Default : [1.0, 0.10, 0.001, 0.0009]
-            These initial parameters are taken from [1]_
-    """
-    gtol = options["gtol"]
-    ftol = options["ftol"]
-    xtol = tol
-    epsfcn = options["eps"]
-    maxfev = options["maxiter"]
-    bounds = bounds
-
-    if not SCIPY_LESS_0_17:
-        res = least_squares(_ivim_error,
-                            x0,
-                            bounds=bounds,
-                            ftol=ftol,
-                            xtol=xtol,
-                            gtol=gtol,
-                            max_nfev=maxfev,
-                            args=(bvals, data))
-        ivim_params = res.x
-        return ivim_params
-    else:
-        res = leastsq(_ivim_error,
-                      x0,
-                      args=(bvals, data),
-                      gtol=gtol,
-                      xtol=xtol,
-                      ftol=ftol,
-                      epsfcn=epsfcn,
-                      maxfev=maxfev)
-        ivim_params = res[0]
-        return ivim_params
