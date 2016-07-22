@@ -163,15 +163,13 @@ class IvimModel(ReconstModel):
         x0_in_mask = self.x0
         data_in_mask = data
         # Call the two stage function to get better x0 guess
-        x0_two_stage, S_norm = self.two_stage(data_in_mask,
-                                              x0_in_mask)
+        x0_two_stage = self.two_stage(data_in_mask,
+                                      x0_in_mask)
         # Use leastsq to get ivim_params
         params_in_mask = self._leastsq(data, x0_two_stage)
-        # Multiply S0 with the multiplier used in scaling
-        params_in_mask[0] = params_in_mask[0] * S_norm
         return IvimFit(self, params_in_mask)
 
-    def predict(self, ivim_params, S0=1.):
+    def predict(self, ivim_params):
         """
         Predict a signal for this IvimModel class instance given parameters.
 
@@ -218,11 +216,11 @@ class IvimModel(ReconstModel):
             with the highest signal which is usually the signal at bvalue = 0.
 
         """
-        S_normalization = data[0]
-        normalized_data = (data.T / S_normalization).T
+        # S_normalization = data[0]
+        # normalized_data = (data.T / S_normalization).T
 
         bvals = self.gtab.bvals
-        x0[0] = normalized_data[0]
+        x0[0] = data[0]
 
         S0_hat, D_guess = self._get_S0_D_guess(data)
         f_guess = 1 - S0_hat / data[0]
@@ -231,7 +229,7 @@ class IvimModel(ReconstModel):
         x0[3] = D_guess
         x0[2] = 10 * D_guess
 
-        return (x0, S_normalization)
+        return x0
 
     def _get_S0_D_guess(self, data):
         """

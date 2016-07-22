@@ -33,7 +33,7 @@ N = len(bvals)
 bvecs = generate_bvecs(N)
 gtab = gradient_table(bvals, bvecs.T)
 
-S0, f, D_star, D = 1.0, 0.132, 0.00885, 0.000921
+S0, f, D_star, D = 1000.0, 0.132, 0.00885, 0.000921
 # params for a single voxel
 params = np.array([S0, f, D_star, D])
 
@@ -132,3 +132,25 @@ def test_mask():
     fit = ivim_model.fit(data_multi, mask_correct)
     assert_raises(ValueError, ivim_model.fit, data_multi,
                   mask=mask_not_correct)
+
+def test_with_higher_S0():
+    """
+    Test whether fitting works for S0 > 1.
+    """
+    # params for a single voxel
+    S0_2 = 1000.
+    params2 = np.array([S0_2, f, D_star, D])
+    mevals2 = np.array(([D_star, D_star, D_star], [D, D, D]))
+    # This gives an isotropic signal.
+    signal2 = multi_tensor(gtab, mevals2, snr=None, S0=S0_2,
+                      fractions=[f * 100, 100 * (1 - f)])
+    # Single voxel data
+    data_single2 = signal2[0]
+
+    ivim_model = IvimModel(gtab)
+    ivim_fit = ivim_model.fit(data_single2)
+
+    est_signal = ivim_fit.predict(gtab)
+    assert_array_equal(est_signal.shape, data_single2.shape)
+    assert_array_almost_equal(est_signal, data_single2)
+    assert_array_almost_equal(ivim_fit.model_params, params2)
