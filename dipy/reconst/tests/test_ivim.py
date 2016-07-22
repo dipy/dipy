@@ -24,6 +24,34 @@ import scipy
 
 SCIPY_VERSION = LooseVersion(scipy.version.short_version)
 
+# Let us generate some data for testing.
+bvals = np.array([0., 10., 20., 30., 40., 60., 80., 100.,
+                  120., 140., 160., 180., 200., 220., 240.,
+                  260., 280., 300., 350., 400., 500., 600.,
+                  700., 800., 900., 1000.])
+N = len(bvals)
+bvecs = generate_bvecs(N)
+gtab = gradient_table(bvals, bvecs.T)
+
+S0, f, D_star, D = 1.0, 0.132, 0.00885, 0.000921
+# params for a single voxel
+params = np.array([S0, f, D_star, D])
+
+mevals = np.array(([D_star, D_star, D_star], [D, D, D]))
+# This gives an isotropic signal.
+signal = multi_tensor(gtab, mevals, snr=None, S0=S0,
+                      fractions=[f * 100, 100 * (1 - f)])
+# Single voxel data
+data_single = signal[0]
+
+data_multi = np.zeros((2, 2, 1, len(gtab.bvals)))
+data_multi[0, 0, 0] = data_multi[0, 1, 0] = data_multi[
+    1, 0, 0] = data_multi[1, 1, 0] = data_single
+
+ivim_params = np.zeros((2, 2, 1, 4))
+ivim_params[0, 0, 0] = ivim_params[0, 1, 0] = params
+ivim_params[1, 0, 0] = ivim_params[1, 1, 0] = params
+
 
 def test_single_voxel_fit():
     """
@@ -45,33 +73,19 @@ def test_single_voxel_fit():
     TensorModel and get an intial guess for f and D. Then, using
     these parameters we fit the entire data for all bvalues.
     """
-    bvals = np.array([0., 10., 20., 30., 40., 60., 80., 100.,
-                      120., 140., 160., 180., 200., 220., 240.,
-                      260., 280., 300., 350., 400., 500., 600.,
-                      700., 800., 900., 1000.])
-    N = len(bvals)
-    bvecs = generate_bvecs(N)
-    gtab = gradient_table(bvals, bvecs.T)
-
-    S0, f, D_star, D = 1.0, 0.132, 0.00885, 0.000921
-
-    mevals = np.array(([D_star, D_star, D_star], [D, D, D]))
-    # This gives an isotropic signal
-
-    signal = multi_tensor(gtab, mevals, snr=None, S0=S0,
-                          fractions=[f * 100, 100 * (1 - f)])
-    data = signal[0]
     ivim_model = IvimModel(gtab)
-    ivim_fit = ivim_model.fit(data)
+    ivim_fit = ivim_model.fit(data_single)
 
     est_signal = ivim_function(ivim_fit.model_params, bvals)
 
-    assert_array_equal(est_signal.shape, data.shape)
-    assert_array_almost_equal(est_signal, data)
-    assert_array_almost_equal(ivim_fit.model_params, [S0, f, D_star, D])
-    # Test mask
-    assert_raises(ValueError, ivim_model.fit,
-                  np.ones((10, 10, 3)), np.ones((3, 3)))
+    assert_array_equal(est_signal.shape, data_single.shape)
+    assert_array_almost_equal(est_signal, data_single)
+    assert_array_almost_equal(ivim_fit.model_params, params)
+
+    # Test predict function for single voxel
+    p = ivim_fit.predict(gtab)
+    assert_array_equal(p.shape, data_single.shape)
+    assert_array_almost_equal(p, data_single)
 
 
 def test_multivoxel():
@@ -81,63 +95,13 @@ def test_multivoxel():
     This is to ensure that the fitting routine takes care of signals packed as
     1D, 2D or 3D arrays.
     """
-    bvals = np.array([0., 10., 20., 30., 40., 60., 80., 100.,
-                      120., 140., 160., 180., 200., 220., 240.,
-                      260., 280., 300., 350., 400., 500., 600.,
-                      700., 800., 900., 1000.])
-    N = len(bvals)
-    bvecs = generate_bvecs(N)
-    gtab = gradient_table(bvals, bvecs.T)
-    params = np.array([[1.0, 0.2052, 0.00473, 0.00066],
-                       [101.0, 0.132, 0.00885, 0.000921]])
-
-    data = np.empty((params.shape[0], N))
-    for i in range(len(params)):
-        data[i] = ivim_function(params[i], gtab.bvals)
-
-    ivim_model = IvimModel(gtab, x0=[1, 0.02, 0.002, 0.0002])
-
-    ivim_fit = ivim_model.fit(data)
-    est_signal = np.empty((ivim_fit.model_params.shape[0], N))
-    for i in range(len(ivim_fit.model_params)):
-        est_signal[i] = ivim_function(ivim_fit.model_params[i], gtab.bvals)
-
-    assert_array_equal(est_signal.shape, data.shape)
-    assert_array_almost_equal(est_signal, data)
-    assert_array_almost_equal(ivim_fit.model_params, params)
-
-
-def test_predict():
-    """
-    Test model prediction API.
-
-    The fit class has a predict method which can be used to
-    generate the predicted signal from the parameters obtained
-    after a fit. This test ensures that the predict method gives
-    the required signal for simulated data.
-    """
-    bvals = np.array([0., 10., 20., 30., 40., 60., 80., 100.,
-                      120., 140., 160., 180., 200., 220., 240.,
-                      260., 280., 300., 350., 400., 500., 600.,
-                      700., 800., 900., 1000.])
-    N = len(bvals)
-    bvecs = generate_bvecs(N)
-    gtab = gradient_table(bvals, bvecs.T)
-
-    S0, f, D_star, D = 1.0, 0.132, 0.00885, 0.000921
-
-    mevals = np.array(([D_star, D_star, D_star], [D, D, D]))
-    # This gives an isotropic signal
-
-    signal = multi_tensor(gtab, mevals, snr=None, S0=S0,
-                          fractions=[f * 100, 100 * (1 - f)])
-    data = signal[0]
     ivim_model = IvimModel(gtab)
-    ivim_fit = ivim_model.fit(data)
+    ivim_fit = ivim_model.fit(data_multi)
 
-    p = ivim_fit.predict(gtab)
-    assert_array_equal(p.shape, data.shape)
-    assert_array_almost_equal(p, data)
+    est_signal = ivim_fit.predict(gtab, S0=1.)
+    assert_array_equal(est_signal.shape, data_multi.shape)
+    assert_array_almost_equal(est_signal, data_multi)
+    assert_array_almost_equal(ivim_fit.model_params, ivim_params)
 
 
 def test_ivim_errors():
@@ -148,14 +112,6 @@ def test_ivim_errors():
     and is not supported by the older versions. Initializing an IvimModel
     with bounds for older Scipy versions should raise an error.
     """
-    bvals = np.array([0., 10., 20., 30., 40., 60., 80., 100.,
-                      120., 140., 160., 180., 200., 220., 240.,
-                      260., 280., 300., 350., 400., 500., 600.,
-                      700., 800., 900., 1000.])
-    N = len(bvals)
-    bvecs = generate_bvecs(N)
-    gtab = gradient_table(bvals, bvecs.T)
-
     # Run the test for Scipy versions less than 0.17
     if SCIPY_VERSION < '0.17':
         assert_raises(ValueError, IvimModel, gtab,
@@ -163,5 +119,16 @@ def test_ivim_errors():
     else:
         ivim_model = IvimModel(gtab,
                                bounds=([0., 0., 0., 0.], [np.inf, 1., 1., 1.]))
-    # Check min signal
-    assert_raises(ValueError, IvimModel, gtab, min_signal=-1)
+
+
+def test_mask():
+    """
+    Test whether setting incorrect mask raises and error
+    """
+    ivim_model = IvimModel(gtab)
+    mask_correct = data_multi[...,0]>0.2
+    mask_not_correct = np.array([[False, True, False], [True, False]])
+
+    fit = ivim_model.fit(data_multi, mask_correct)
+    assert_raises(ValueError, ivim_model.fit, data_multi,
+                  mask=mask_not_correct)

@@ -6,6 +6,7 @@ from dipy.core.gradients import gradient_table
 from dipy.reconst.base import ReconstModel
 from dipy.reconst.dti import _min_positive_signal, apparent_diffusion_coef
 from dipy.reconst.dti import TensorModel, mean_diffusivity
+from dipy.reconst.multi_voxel import multi_voxel_fit
 from dipy.reconst.vec_val_sum import vec_val_vect
 from dipy.core.sphere import Sphere
 
@@ -66,7 +67,7 @@ def _ivim_error(params, bvals, signal):
     Parameters
     ----------
     params : array
-        An array of IVIM parameters. ([S0, f, D_star and D])
+        An array of IVIM parameters. [S0, f, D_star, D]
 
     bvals : array
         bvalues
@@ -79,10 +80,11 @@ class IvimModel(ReconstModel):
     """Ivim model
     """
 
-    def __init__(self, gtab, split_b=200.0, min_signal=None,
-                 x0=[1.0, 0.10, 0.001, 0.0009], bounds=None,
-                 tol=1e-7, options={'gtol': 1e-7, 'ftol': 1e-7,
-                                    'eps': 1e-7, 'maxiter': 1000}):
+    def __init__(self, gtab, split_b=200.0,
+                 x0=np.array([1.0, 0.10, 0.001, 0.0009]),
+                 bounds=None, tol=1e-7,
+                 options={'gtol': 1e-7, 'ftol': 1e-7,
+                          'eps': 1e-7, 'maxiter': 1000}):
         """
         Initialize an IVIM model.
 
@@ -94,15 +96,10 @@ class IvimModel(ReconstModel):
         split_b : float
             The b-value to split the data on for two-stage fit
 
-        min_signal : float
-            The minimum signal value in the data.
-
         x0 : array, optional
             Initial guesses for the parameters S0, f, D_star and D
             Default : [1.0, 0.10, 0.001, 0.0009]
             These initial parameters are taken from [1]_
-            Dimension can either be 1 or (N, 4) where N is the number of
-            voxels in the data.
 
         bounds : array, (4,4)
             Bounds for the parameters. This is applicable only for Scipy
@@ -126,32 +123,28 @@ class IvimModel(ReconstModel):
         """
         ReconstModel.__init__(self, gtab)
         self.split_b = split_b
-        self.min_signal = min_signal
         self.x0 = x0
         self.bounds = bounds
         self.tol = tol
         self.options = options
-
-        if self.min_signal is not None and self.min_signal <= 0:
-            e_s = "The `min_signal` key-word argument needs to be strictly"
-            e_s += " positive."
-            raise ValueError(e_s)
 
         if SCIPY_LESS_0_17 and self.bounds is not None:
             e_s = "Scipy versions less than 0.17 do not support "
             e_s += "bounds. Please update to Scipy 0.17 to use bounds"
             raise ValueError(e_s)
         else:
-            self.bounds = (np.array([0., 0., 0., 0.]),
-                           np.array([np.inf, 1., 1., 1.]))
+            self.bounds = (0., np.array([np.inf, 1., 0.1, 0.1]))
 
+    @multi_voxel_fit
     def fit(self, data, mask=None):
         """ Fit method of the Ivim model class
 
         Parameters
         ----------
         data : array
-            The measured signal from voxels.
+            The measured signal from one voxel. A multi voxel decorator
+            will be applied to this fit method to scale it and apply it
+            to multiple voxels.
 
         mask : array
             A boolean array used to mark the coordinates in the data that
@@ -167,55 +160,33 @@ class IvimModel(ReconstModel):
                    of brain perfusion with intravoxel incoherent motion
                    MR imaging." Radiology 265.3 (2012): 874-881.
         """
-        if mask is None:
-            # Flatten it to 2D either way:
-            data_in_mask = np.reshape(data, (-1, data.shape[-1]))
-        else:
-            # Check for valid shape of the mask
-            if mask.shape != data.shape[:-1]:
-                raise ValueError("Mask is not the same shape as data.")
-            mask = np.array(mask, dtype=bool, copy=False)
-            data_in_mask = np.reshape(data[mask], (-1, data.shape[-1]))
-        if self.min_signal is None:
-            min_signal = _min_positive_signal(data)
-        else:
-            min_signal = self.min_signal
+        x0_in_mask = self.x0
+        data_in_mask = data
+        # Call the two stage function to get better x0 guess
+        x0_two_stage, S_norm = two_stage(data_in_mask,
+                                         self.gtab, x0_in_mask,
+                                         self.split_b)
 
-        if len(self.x0) == 4:
-            x0 = np.ones(
-                (data.shape[:-1] + (4,))) * self.x0
-        else:
-            if self.x0.shape != (data.shape[0], 4):
-                raise ValueError(
-                    "Initial guess params should be of shape (num_voxels, 4)")
+        # Use leastsq to get ivim_params
+        params_in_mask = _leastsq(data, self.gtab.bvals, x0_two_stage,
+                                  self.tol, self.options, self.bounds)
+        # Multiply S0 with the multiplier used in scaling
+        params_in_mask[0] = params_in_mask[0] * S_norm
+        return IvimFit(self, params_in_mask)
 
-        data_in_mask = np.maximum(data_in_mask, min_signal)
-        # Get the x0 parameters for the masked data
-        x0_mask = np.reshape(x0[mask], (-1, x0.shape[-1]))
-
-        params_in_mask = two_stage(data_in_mask,
-                                   self.gtab, x0_mask,
-                                   self.split_b,
-                                   self.bounds, self.tol,
-                                   self.options)
-
-        if mask is None:
-            out_shape = data.shape[:-1] + (-1, )
-            ivim_params = params_in_mask.reshape(out_shape)
-
-        else:
-            ivim_params = np.zeros(data.shape[:-1] + (4,))
-            ivim_params[mask, :] = params_in_mask
-
-        return IvimFit(self, ivim_params)
-
-    def predict(self, ivim_params):
+    def predict(self, ivim_params, S0=1.):
         """
         Predict a signal for this IvimModel class instance given parameters.
+
         Parameters
         ----------
-        ivim_params : ndarray
-            The last dimension should have 4 parameters: S0, f, D_star and D
+        ivim_params : array
+            The ivim parameters as an array [S0, f, D_star and D]
+
+        Returns
+        -------
+        ivim_signal : array
+            The predicted IVIM signal using given parameters.
         """
         return ivim_function(ivim_params, self.gtab.bvals)
 
@@ -248,7 +219,7 @@ class IvimFit(object):
     def shape(self):
         return self.model_params.shape[:-1]
 
-    def predict(self, gtab):
+    def predict(self, gtab, S0=1.):
         r"""
         Given a model fit, predict the signal.
 
@@ -260,87 +231,7 @@ class IvimFit(object):
         return ivim_function(self.model_params, gtab.bvals)
 
 
-def _leastsq(flat_data, bvals, flat_x0, ivim_params, options, tol, bounds):
-    """
-    Use leastsq for finding ivim_params
-
-    Parameters
-    ----------
-    flat_data : array, (N, len(bvals))
-        A flattened array containing the signal from all the voxels (N).
-        If the data was a 3D image of 10x10x10 grid with 21 bvalues,
-        flat_data will be an array of the shape (10000, 21). The leastsq
-        routine will be run on all the 1000 voxels to get the parameters
-        in ivim_params as a (1000, 4) array for this case.
-
-    bvals : array
-        The array of bvalues for the data. This is obtained from gtab.bvals.
-
-    flat_x0 : array (N, 4), optional
-        A flattened array containing the initial guess for the ivim parameters.
-        By default, this is set to [1., 0.1, 0.1, 0.1].
-
-    ivim_params : array (N, 4)
-        The ivim parameters for the flattened data. This array will hold the
-        ivim parameters from the fit.
-
-    options : dict, optional
-        Dictionary containing gtol, ftol, eps and maxiter. This is passed
-        to leastsq. By default these values are set to
-        options={'gtol': 1e-7, 'ftol': 1e-7, 'eps': 1e-7, 'maxiter': 1000}
-
-    bounds : array, (4,4)
-        Bounds for the parameters. This is applicable only for Scipy
-        version > 0.17 as we use least_squares for the fitting which
-        supports bounds. For versions less than Scipy 0.17, this is
-        by default set to None. Setting a bound on a Scipy version less
-        than 0.17 will raise an error.
-
-        This can be supplied as a tuple for Scipy versions 0.17. It is
-        recommended to upgrade to Scipy 0.17 for bounded fitting. The default
-        bounds are set to ([0., 0., 0., 0.], [np.inf, 1., 1., 1.])
-
-    tol : float, optional
-        Default : 1e-7. Tolerance for convergence of minimization.
-    """
-
-    num_voxels = flat_data.shape[0]
-    result = np.empty(flat_data.shape[0], dtype=object)
-    gtol = options["gtol"]
-    ftol = options["ftol"]
-    xtol = tol
-    epsfcn = options["eps"]
-    maxfev = options["maxiter"]
-    if not SCIPY_LESS_0_17:
-        for vox in range(num_voxels):
-            res = least_squares(_ivim_error,
-                                flat_x0[vox],
-                                bounds=bounds,
-                                ftol=ftol,
-                                xtol=xtol,
-                                gtol=gtol,
-                                max_nfev=maxfev,
-                                args=(bvals, flat_data[vox]))
-            ivim_params[vox, :4] = res.x
-            result[vox] = res
-    else:
-        for vox in range(num_voxels):
-            res = leastsq(_ivim_error,
-                          flat_x0[vox],
-                          args=(bvals, flat_data[vox]),
-                          gtol=gtol,
-                          xtol=xtol,
-                          ftol=ftol,
-                          epsfcn=epsfcn,
-                          maxfev=maxfev)
-            ivim_params[vox, :4] = res[0]
-            result[vox] = res
-    return result
-
-
-def two_stage(data, gtab, x0,
-              split_b, bounds, tol,
-              options):
+def two_stage(data, gtab, x0, split_b):
     """
     Fit the ivim params using a two stage fit.
 
@@ -352,54 +243,37 @@ def two_stage(data, gtab, x0,
 
     Parameters
     ----------
-    data : array ([X, Y, Z, ...], N)
-        Data or response variables holding the data. Note that the last
-        dimension should contain the data. It makes no copies of data.
+    data : array
+        The measured signal from one voxel. A multi voxel decorator
+        will be applied to this fit method to scale it and apply it
+        to multiple voxels.
 
-    bounds : array, (4,4)
-        Bounds for the parameters. This is applicable only for Scipy
-        version > 0.17 as we use least_squares for the fitting which
-        supports bounds. For versions less than Scipy 0.17, this is
-        by default set to None. Setting a bound on a Scipy version less
-        than 0.17 will raise an error.
-
-    tol : float, optional
-        The tolerance for the fitting rountine which is passed to leastsq
-
-    options : dict, optional
-        Dictionary containing gtol, ftol, eps and maxiter. This is passed
-        to leastsq. By default these values are set to
-        options={'gtol': 1e-7, 'ftol': 1e-7, 'eps': 1e-7, 'maxiter': 1000}
 
     Returns
     -------
-    ivim_params: array, (N, 4)
-        An array of the shape (N, 4) with the S0, f, D_star, D value for
-        each voxel.
+    x0_guess : array
+        An array with better initial values of S0, f, D_star, D each voxel.
+
+    S0_normalization : float
+        The multiplier for S0 to be used in getting the actual value of S0
+        from ivim_params. We normalize the S0 values by dividing the signal
+        with the highest signal which is usually the signal at bvalue = 0.
+
     """
-    flat_data = data.reshape((-1, data.shape[-1]))
-    S_normalization = flat_data[:, 0]
-    flat_data = (flat_data.T / S_normalization).T
+    S_normalization = data[0]
+    normalized_data = (data.T / S_normalization).T
 
-    flat_x0 = x0.reshape(-1, x0.shape[-1])
-    # Flatten for the iteration over voxels:
     bvals = gtab.bvals
-    ivim_params = np.empty((flat_data.shape[0], 4))
+    x0[0] = normalized_data[0]
 
-    flat_x0[..., 0] = flat_data[..., 0]
+    S0_hat, D_guess = _get_S0_D_guess(data, gtab, split_b)
+    f_guess = 1 - S0_hat / data[0]
 
-    S0_hat, D_guess = _get_S0_D_guess(flat_data, gtab, split_b)
-    f_guess = 1 - S0_hat / flat_data[..., 0]
+    x0[1] = f_guess
+    x0[3] = D_guess
+    x0[2] = 10 * D_guess
 
-    flat_x0[..., 1] = f_guess
-    flat_x0[..., 3] = D_guess
-
-    _leastsq(flat_data, bvals, flat_x0,
-             ivim_params, options, tol, bounds)
-    ivim_params.shape = data.shape[:-1] + (4,)
-    ivim_params[:, 0] = ivim_params[:, 0] * S_normalization
-
-    return ivim_params
+    return (x0, S_normalization)
 
 
 def _get_S0_D_guess(data, gtab, split_b):
@@ -413,9 +287,10 @@ def _get_S0_D_guess(data, gtab, split_b):
 
     Parameters
     ----------
-    data : array ([X, Y, Z, ...], g)
-        Data or response variables holding the data. Note that the last
-        dimension should contain the data. It makes no copies of data.
+    data : array
+        The measured signal from one voxel. A multi voxel decorator
+        will be applied to this fit method to scale it and apply it
+        to multiple voxels.
 
     gtab : GradientTable class instance
             Gradient directions and bvalues
@@ -448,4 +323,56 @@ def _get_S0_D_guess(data, gtab, split_b):
     S0_hat = np.mean(data[..., ~gtab.b0s_mask] /
                      np.exp(-gtab.bvals[~gtab.b0s_mask] * ADC),
                      -1)
-    return S0_hat, D_guess
+    return np.array([S0_hat, D_guess])
+
+
+def _leastsq(data, bvals, x0, tol, options, bounds):
+    """
+    Use leastsq for finding ivim_params
+
+    Parameters
+    ----------
+    data : array, (len(bvals))
+        An array containing the signal from a voxel.
+        If the data was a 3D image of 10x10x10 grid with 21 bvalues,
+        this would be an array of the shape (10000, 21). The leastsq
+        routine will be run on all the 1000 voxels to get the parameters
+        in ivim_params as a (1000, 4) array for this case.
+
+    bvals : array
+        The array of bvalues for the data. This is obtained from gtab.bvals.
+
+    x0 : array, optional
+            Initial guesses for the parameters S0, f, D_star and D
+            Default : [1.0, 0.10, 0.001, 0.0009]
+            These initial parameters are taken from [1]_
+    """
+    gtol = options["gtol"]
+    ftol = options["ftol"]
+    xtol = tol
+    epsfcn = options["eps"]
+    maxfev = options["maxiter"]
+    bounds = bounds
+
+    if not SCIPY_LESS_0_17:
+        res = least_squares(_ivim_error,
+                            x0,
+                            bounds=bounds,
+                            ftol=ftol,
+                            xtol=xtol,
+                            gtol=gtol,
+                            max_nfev=maxfev,
+                            args=(bvals, data))
+        ivim_params = res.x
+        return ivim_params
+    else:
+        res = leastsq(_ivim_error,
+                      x0,
+                      args=(bvals, data),
+                      gtol=gtol,
+                      xtol=xtol,
+                      ftol=ftol,
+                      epsfcn=epsfcn,
+                      maxfev=maxfev)
+        ivim_params = res[0]
+        return ivim_params
