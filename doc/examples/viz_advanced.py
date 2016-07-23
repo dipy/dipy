@@ -164,9 +164,9 @@ Finally, please uncomment the following 3 lines so that you can interact with
 the available 3D and 2D objects.
 """
 
-# show_m.add_window_callback(win_callback)
-# show_m.render()
-# show_m.start()
+show_m.add_window_callback(win_callback)
+show_m.render()
+show_m.start()
 
 ren.zoom(1.5)
 ren.reset_clipping_range()
@@ -180,5 +180,3 @@ window.record(ren, out_path='bundles_and_a_slice.png', size=(1200, 900),
 
    **A few bundles with interactive slicing**.
 """
-
-del show_m

@@ -28,8 +28,8 @@ from dipy.utils.optpkg import optional_package
 from dipy import __version__ as dipy_version
 from dipy.utils.six import string_types
 
+from dipy.viz.interactor import CustomInteractorStyle
 
-# import vtk
 # Allow import, but disable doctests if we don't have vtk
 vtk, have_vtk, setup_module = optional_package('vtk')
 colors, have_vtk_colors, _ = optional_package('vtk.util.colors')
@@ -315,7 +315,7 @@ class ShowManager(object):
 
     def __init__(self, ren, title='DIPY', size=(300, 300),
                  png_magnify=1, reset_camera=True, order_transparent=False,
-                 interactor_style='trackball'):
+                 interactor_style='custom'):
 
         """ Manages the visualization pipeline
 
@@ -340,8 +340,9 @@ class ShowManager(object):
             the order of their addition to the Renderer().
         interactor_style : str or vtkInteractorStyle
             If str then if 'trackball' then vtkInteractorStyleTrackballCamera()
-            is used or if 'image' then vtkInteractorStyleImage() is used (no
-            rotation). Otherwise you can input your own interactor style.
+            is used, if 'image' then vtkInteractorStyleImage() is used (no
+            rotation) or if 'custom' then CustomInteractorStyle is used.
+            Otherwise you can input your own interactor style.
 
         Attributes
         ----------
@@ -422,40 +423,17 @@ class ShowManager(object):
             self.style = vtk.vtkInteractorStyleImage()
         elif self.interactor_style == 'trackball':
             self.style = vtk.vtkInteractorStyleTrackballCamera()
+        elif self.interactor_style == 'custom':
+            self.style = CustomInteractorStyle()
         else:
             self.style = interactor_style
 
         self.iren = vtk.vtkRenderWindowInteractor()
-        self.iren.SetRenderWindow(self.window)
-
-        def key_press_standard(obj, event):
-
-            key = obj.GetKeySym()
-            if key == 's' or key == 'S':
-                print('Saving image...')
-                renderLarge = vtk.vtkRenderLargeImage()
-                if major_version <= 5:
-                    renderLarge.SetInput(ren)
-                else:
-                    renderLarge.SetInput(ren)
-                renderLarge.SetMagnification(png_magnify)
-                renderLarge.Update()
-
-                file_types = (("PNG file", "*.png"), ("All Files", "*.*"))
-                filepath = save_file_dialog(initial_file='dipy.png',
-                                            default_ext='.png',
-                                            file_types=file_types)
-                if filepath == '':
-                    print('No file was provided in the dialog')
-                else:
-                    writer = vtk.vtkPNGWriter()
-                    writer.SetInputConnection(renderLarge.GetOutputPort())
-                    writer.SetFileName(filepath)
-                    writer.Write()
-                    print('File ' + filepath + ' is saved.')
-
-        self.iren.AddObserver('KeyPressEvent', key_press_standard)
+        self.style.SetCurrentRenderer(self.ren)
+        # Hack: below, we explicitly call the Python version of SetInteractor.
+        self.style.SetInteractor(self.iren)
         self.iren.SetInteractorStyle(self.style)
+        self.iren.SetRenderWindow(self.window)
 
     def initialize(self):
         """ Initialize interaction
