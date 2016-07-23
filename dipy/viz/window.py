@@ -65,13 +65,18 @@ class Renderer(vtkRenderer):
         """
         self.SetBackground(color)
 
-    def add(self, actor):
+    def add(self, *actors):
         """ Add an actor to the renderer
         """
-        if isinstance(actor, vtk.vtkVolume):
-            self.AddVolume(actor)
-        else:
-            self.AddActor(actor)
+        for actor in actors:
+            if isinstance(actor, vtk.vtkVolume):
+                self.AddVolume(actor)
+            elif isinstance(actor, vtk.vtkActor2D):
+                self.AddActor2D(actor)
+            elif hasattr(actor, 'add_to_renderer'):
+                actor.add_to_renderer(self)
+            else:
+                self.AddActor(actor)
 
     def rm(self, actor):
         """ Remove a specific actor
