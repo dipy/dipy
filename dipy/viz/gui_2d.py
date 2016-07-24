@@ -87,6 +87,9 @@ class Button2D(UI):
 
         return button
 
+    def add_to_renderer(self, ren):
+        ren.add(self.actor)
+
     def add_callback(self, event_type, callback):
         """ Adds events to button actor
 
@@ -95,7 +98,7 @@ class Button2D(UI):
         event_type: event code
         callback: callback function
         """
-        self.actor.AddObserver(event_type, callback)
+        super(Button2D, self).add_callback(self.actor, event_type, callback)
 
     def set_icon(self, icon):
         """ Modifies the icon used by the vtkTexturedActor2D
@@ -176,6 +179,9 @@ class TextBox2D(UI):
 
         return text_actor
 
+    def add_to_renderer(self, ren):
+        ren.add(self.actor)
+
     def add_callback(self, event_type, callback):
         """ Adds events to the text actor
 
@@ -184,7 +190,7 @@ class TextBox2D(UI):
         event_type: event code
         callback: callback function
         """
-        self.actor.AddObserver(event_type, callback)
+        super(TextBox2D, self).add_callback(self.actor, event_type, callback)
 
     def width_set_text(self, text):
         """ Adds newlines to text where necessary
@@ -214,16 +220,18 @@ class TextBox2D(UI):
         """
         if character.lower() == "return":
             self.render_text(False)
+            return True
+
+        if character.lower() == "backspace":
+            self.remove_character()
+        elif character.lower() == "left":
+            self.move_left()
+        elif character.lower() == "right":
+            self.move_right()
         else:
-            if character.lower() == "backspace":
-                self.remove_character()
-            elif character.lower() == "left":
-                self.move_left()
-            elif character.lower() == "right":
-                self.move_right()
-            else:
-                self.add_character(character)
-            self.render_text()
+            self.add_character(character)
+        self.render_text()
+        return False
 
     def move_caret_right(self):
         """ Moves the caret towards right
@@ -458,6 +466,11 @@ class LineSlider2D(UI):
         self.ui_list.append(self.slider_disk)
         self.ui_list.append(self.text)
 
+    def add_to_renderer(self, ren):
+        ren.add(self.slider_line.actor)
+        ren.add(self.slider_disk.actor)
+        ren.add(self.text.actor)
+
     def add_callback(self, event_type, callback, component):
         """ Adds events to an actor
 
@@ -467,7 +480,7 @@ class LineSlider2D(UI):
         callback: callback function
         component: component
         """
-        component.actor.AddObserver(event_type, callback)
+        super(LineSlider2D, self).add_callback(component.actor, event_type, callback)
 
 
 class LineSlider2DBase(UI):
@@ -678,6 +691,11 @@ class DiskSlider2D(UI):
         self.ui_list.append(self.slider_inner_disk)
         self.ui_list.append(self.slider_text)
 
+    def add_to_renderer(self, ren):
+        ren.add(self.slider_outer_disk.actor)
+        ren.add(self.slider_inner_disk.actor)
+        ren.add(self.slider_text.actor)
+
     def add_callback(self, event_type, callback, component):
         """ Adds events to an actor
 
@@ -687,7 +705,7 @@ class DiskSlider2D(UI):
         callback: callback function
         component: component
         """
-        component.actor.AddObserver(event_type, callback)
+        super(DiskSlider2D, self).add_callback(component.actor, event_type, callback)
 
     def get_poi(self, coordinates):
         """

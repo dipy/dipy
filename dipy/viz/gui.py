@@ -21,8 +21,32 @@ class UI(object):
         self.actor = None
         self.assembly = None
 
+    def add_to_renderer(self, ren):
+        """ Allows UI objects to add their own props to the renderer. """
+        pass
+
     def set_ui_param(self, ui_param):
         self.ui_param = ui_param
+
+    def add_callback(self, prop, event_type, callback, priority=0):
+        """ Adds a callback to a specific event for this UI compoenent.
+
+        Parameters
+        ----------
+        prop: vtkProp
+        event_type: event code
+        callback: function
+        priority: int
+        """
+        cmd_id = [None]  # Placeholder needed in the _callback closure.
+
+        def _callback(obj, event_type):
+            abort_flag = callback(self, event_type)
+            if abort_flag is not None:
+                cmd = obj.GetCommand(cmd_id[0])
+                cmd.SetAbortFlag(abort_flag)
+
+        cmd_id[0] = prop.AddObserver(event_type, _callback, priority)
 
 
 class TextActor2D(vtk.vtkTextActor):
