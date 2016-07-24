@@ -180,3 +180,5 @@ window.record(ren, out_path='bundles_and_a_slice.png', size=(1200, 900),
 
    **A few bundles with interactive slicing**.
 """
+
+del show_m

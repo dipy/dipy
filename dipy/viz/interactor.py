@@ -42,7 +42,13 @@ class CustomInteractorStyle(vtkInteractorStyleUser):
         self.left_button_down = False
         self.right_button_down = False
         self.middle_button_down = False
-        self.active_props = []
+        self.active_props = set()
+
+    def add_active_prop(self, prop):
+        self.active_props.add(prop)
+
+    def remove_active_prop(self, prop):
+        self.active_props.remove(prop)
 
     def get_prop_at_event_position(self):
         """ Returns the prop that lays at the event position. """
@@ -59,80 +65,95 @@ class CustomInteractorStyle(vtkInteractorStyleUser):
         prop = node.GetViewProp()
         return prop
 
-    def add_active_prop(self, prop):
-        self.active_props.append(prop)
+    def propagate_event(self, evt, *props):
+        abort_flag = False
 
-    def remove_active_prop(self, prop):
-        self.active_props.remove(prop)
+        for prop in props:
+            # Propagate event to the prop.
+            abort_flag = prop.InvokeEvent(evt)
+
+            if abort_flag:
+                break
+
+        return abort_flag
 
     def on_left_button_down(self, obj, evt):
-        self.active_prop = None
         self.left_button_down = True
-
+        abort_flag = False
         prop = self.get_prop_at_event_position()
         if prop is not None:
-            prop.InvokeEvent(evt)  # Propagate event to the prop.
+            abort_flag = self.propagate_event(evt, prop)
 
-        self.default_interactor.OnLeftButtonDown()
+        if not abort_flag:
+            self.default_interactor.OnLeftButtonDown()
 
     def on_left_button_up(self, obj, evt):
         self.left_button_down = False
-        self.default_interactor.OnLeftButtonUp()
+        abort_flag = self.propagate_event(evt, *self.active_props)
+
+        if not abort_flag:
+            self.default_interactor.OnLeftButtonUp()
 
     def on_right_button_down(self, obj, evt):
         self.right_button_down = True
-
+        abort_flag = False
         prop = self.get_prop_at_event_position()
         if prop is not None:
-            prop.InvokeEvent(evt)  # Propagate event to the prop.
+            abort_flag = self.propagate_event(evt, prop)
 
-        self.default_interactor.OnRightButtonDown()
+        if not abort_flag:
+            self.default_interactor.OnRightButtonDown()
 
     def on_right_button_up(self, obj, evt):
         self.right_button_down = False
-        self.default_interactor.OnRightButtonUp()
+        abort_flag = self.propagate_event(evt, *self.active_props)
+
+        if not abort_flag:
+            self.default_interactor.OnRightButtonUp()
 
     def on_middle_button_down(self, obj, evt):
         self.middle_button_down = True
-
+        abort_flag = False
         prop = self.get_prop_at_event_position()
         if prop is not None:
-            prop.InvokeEvent(evt)  # Propagate event to the prop.
+            abort_flag = self.propagate_event(evt, prop)
 
-        self.default_interactor.OnMiddleButtonDown()
+        if not abort_flag:
+            self.default_interactor.OnMiddleButtonDown()
 
     def on_middle_button_up(self, obj, evt):
         self.middle_button_down = False
-        self.default_interactor.OnMiddleButtonUp()
+        abort_flag = self.propagate_event(evt, *self.active_props)
+
+        if not abort_flag:
+            self.default_interactor.OnMiddleButtonUp()
 
     def on_mouse_moved(self, obj, evt):
-        # Propagate event to all active props.
-        for prop in self.active_props:
-            prop.InvokeEvent(evt)
+        abort_flag = self.propagate_event(evt, *self.active_props)
 
-        self.default_interactor.OnMouseMove()
+        if not abort_flag:
+            self.default_interactor.OnMouseMove()
 
     def on_mouse_wheel_forward(self, obj, evt):
-        # Propagate event to all active props.
-        for prop in self.active_props:
-            prop.InvokeEvent(evt)
+        abort_flag = self.propagate_event(evt, *self.active_props)
 
-        self.default_interactor.OnMouseWheelForward()
+        if not abort_flag:
+            self.default_interactor.OnMouseWheelForward()
 
     def on_mouse_wheel_backward(self, obj, evt):
-        # Propagate event to all active props.
-        for prop in self.active_props:
-            prop.InvokeEvent(evt)
+        abort_flag = self.propagate_event(evt, *self.active_props)
 
-        self.default_interactor.OnMouseWheelBackward()
+        if not abort_flag:
+            self.default_interactor.OnMouseWheelBackward()
 
     def on_key_press(self, obj, evt):
-        # Propagate event to all active props.
-        for prop in self.active_props:
-            prop.InvokeEvent(evt)
+        abort_flag = self.propagate_event(evt, *self.active_props)
+
+        if not abort_flag:
+            self.default_interactor.OnKeyPress()
 
     def SetInteractor(self, interactor):
-        # Internally, `InteractorStyle` objects need a handle to a
+        # Internally, `InteractorStyle` objects need a handle to aKeyD
         # `vtkWindowInteractor` object and this is done via `SetInteractor`.
         # However, this has the side effect of adding directly all their
         # observers to the `interactor`!
