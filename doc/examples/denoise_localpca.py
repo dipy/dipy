@@ -24,16 +24,19 @@ from dipy.io import read_bvals_bvecs
 from dipy.core.gradients import gradient_table
 from dipy.data import fetch_isbi2013_2shell, read_isbi2013_2shell
 from dipy.data import fetch_stanford_hardi, read_stanford_hardi
+from dipy.data import fetch_sherbrooke_3shell, read_sherbrooke_3shell
 
 """
 Load one of the datasets, it has 21 gradients and 1 b0 image
 """
 fetch_isbi2013_2shell()
 # fetch_stanford_hardi()
+# fetch_sherbrooke_3shell()
 # img = nib.load('/Users/Riddhish/Documents/GSOC/DIPY/data/test.nii')
 img, gtab = read_isbi2013_2shell()
 # img, gtab = read_stanford_hardi()
-# den_img = nib.load(
+# img, gtab = read_sherbrooke_3shell()
+# img = nib.load(
 #     '/Users/Riddhish/Documents/GSOC/DIPY/data/test_denoised_rician.nii')
 # b1, b2 = read_bvals_bvecs('/Users/Riddhish/Documents/GSOC/DIPY/data/test.bval',
 #                           '/Users/Riddhish/Documents/GSOC/DIPY/data/test.bvec')
@@ -44,7 +47,7 @@ affine = img.get_affine()
 
 # currently just taking the small patch of the data to preserv time
 
-data = np.array(data[20:50, 20:50, 20:30, :])
+# data = np.array(data[20:50, 20:50, 20:30, :])
 # den_data = np.array(den_data[20:100, 20:100, 10:15, :])
 
 """
@@ -90,7 +93,7 @@ orig = data[:, :,2, 10]
 #     den_data[:,:,:,:])) / np.sum(np.abs(den_data[:,:,:,:]))
 # print("RMSE between python and matlab output", rmse)
 # den_matlab = den_data[:, :, 2, 10]
-den_python = denoised_arr_fast[:, :, 2, 10]
+den_python = denoised_arr[:, :, 2, 10]
 
 """
 Let us plot the axial slice of the original and denoised data.
