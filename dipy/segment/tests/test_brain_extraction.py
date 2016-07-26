@@ -6,7 +6,8 @@ from numpy.testing import (run_module_suite,
                            assert_array_almost_equal)
 from dipy.align.imaffine import AffineMap
 
-from dipy.segment.mask import (brain_extraction, patch_averaging)
+from dipy.segment.mask import brain_extraction
+from dipy.segment.fast_patch_averaging import fast_patch_averaging
 
 
 def spherical_phantom():
@@ -34,23 +35,21 @@ def test_static():
     S0[5:30, 5:30, 5:30] = 50
     S0[10:25, 10:25, 10:25] = 100
     S0[15:20, 15:20, 15:20] = 150
-    mask = np.zeros([35, 35, 35])
-    mask[5:30, 5:30, 5:30] = 1
-    [S0avg, S0mask] = patch_averaging(
-        S0, S0, mask, patch_radius=0, block_radius=1, parameter=1, threshold=0)
+    mask = np.zeros([35, 35, 35], dtype = np.float64)
+    mask[5:30, 5:30, 5:30] = 1.0
+    [S0avg, S0mask] = fast_patch_averaging(
+        S0.astype(np.float64), S0.astype(np.float64), mask.astype(np.float64), 0, 1, 1.0, 0.0)
 
     assert_array_almost_equal(S0, S0avg)
-    assert_array_almost_equal(S0mask, mask)
 
     # Same test for spherical phantom
     S0s = spherical_phantom()
     masks = np.zeros(S0s.shape)
     masks[S0s > 0] = 1
-    [S0savg, S0smask] = patch_averaging(
-        S0s, S0s, masks, patch_radius=0, block_radius=1, threshold=0)
+    [S0savg, S0smask] = fast_patch_averaging(
+        S0s.astype(np.float64), S0s.astype(np.float64), masks.astype(np.float64), 0, 1, 1.0, 0.0)
 
     assert_array_almost_equal(S0s, S0savg)
-    assert_array_almost_equal(S0smask, masks)
 
 
 def test_with_transform():
@@ -112,4 +111,3 @@ def test_with_transform():
 
 if __name__ == '__main__':
     run_module_suite()
-    # plt.show()
