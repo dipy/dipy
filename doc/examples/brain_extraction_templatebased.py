@@ -1,6 +1,7 @@
 import numpy as np
 import scipy as sp
 import nibabel as nib
+from time import time
 import matplotlib.pyplot as plt
 from dipy.core.histeq import histeq
 from dipy.segment.mask import median_otsu
@@ -59,13 +60,13 @@ plt.imshow(input_data[:, :, sli].astype('float'),
            cmap='gray', origin='lower')
 plt.title("Input Data")
 
-plt.subplot(1, 3, 2).set_axis_off()
-plt.imshow(mask[:, :, sli].astype('float'),
-           cmap='gray', origin='lower')
-plt.title("Median Otsu Output")
+# plt.subplot(1, 3, 2).set_axis_off()
+# plt.imshow(mask[:, :, sli].astype('float'),
+#            cmap='gray', origin='lower')
+# plt.title("Median Otsu Output")
 
 # Now we do the template based brain extraction
-
+t = time()
 [output_data, output_mask] = brain_extraction(input_data,
                                               input_affine,
                                               template_data,
@@ -74,21 +75,25 @@ plt.title("Median Otsu Output")
                                               patch_radius=1,
                                               block_radius=2,
                                               threshold=0.9)
-
-plt.subplot(1, 3, 3).set_axis_off()
+print("Time taken", time() - t)
+plt.subplot(1, 3, 2).set_axis_off()
 plt.imshow(output_data[:, :, sli].astype('float'),
            cmap='gray', origin='lower')
 plt.title("The patch averaging label output")
 
-plt.savefig('exp1.png', bbox_inches='tight')
+plt.subplot(1, 3, 3).set_axis_off()
+plt.imshow(output_mask[:, :, sli].astype('float'),
+           cmap='gray', origin='lower')
+plt.title("The patch averaging mask output")
+# plt.savefig('exp1.png', bbox_inches='tight')
 plt.show()
 
-nib.save(
-    nib.Nifti1Image(
-        output_data,
-        input_affine), filename_output)
+# nib.save(
+#     nib.Nifti1Image(
+#         output_data,
+#         input_affine), filename_output)
 
-nib.save(
-    nib.Nifti1Image(
-        output_mask,
-        input_affine), filename_output_mask)
+# nib.save(
+#     nib.Nifti1Image(
+#         output_mask,
+#         input_affine), filename_output_mask)

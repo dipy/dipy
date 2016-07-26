@@ -8,51 +8,50 @@ cimport numpy as cnp
 @cython.boundscheck(False)
 @cython.wraparound(False)
 @cython.cdivision(True)
-cdef void _modify_patch(double[:, :, :] input_data, int c0, int c1, int c2,
-                        int patch_radius, double[:, :, :] out) nogil:
+cdef void _modify_patch(double[:, :, :] inp, int c0, int c1, int c2,
+                        int pr, double[:, :, :] out) nogil:
     """
     Normalize the patch with the sum of the patch
     """
-    cdef cnp.npy_intp i, j, k
-    cdef double patch_sum = 0.0
+    cdef:
+        cnp.npy_intp i, j, k
+        double patch_sum = 0.0
 
-    for i in range(c0 - patch_radius, c0 + patch_radius + 1):
-        for j in range(c1 - patch_radius, c1 + patch_radius + 1):
-            for k in range(c2 - patch_radius, c2 + patch_radius + 1):
-                patch_sum += input_data[i, j, k]
+    for i in range(c0 - pr, c0 + pr + 1):
+        for j in range(c1 - pr, c1 + pr + 1):
+            for k in range(c2 - pr, c2 + pr + 1):
+                patch_sum += inp[i, j, k]
 
-    for i in range(c0 - patch_radius, c0 + patch_radius + 1):
-        for j in range(c1 - patch_radius, c1 + patch_radius + 1):
-            for k in range(c2 - patch_radius, c2 + patch_radius + 1):
-                out[patch_radius - c0 + i, patch_radius - c1 + i,
-                    patch_radius - c2 + i] = input_data[i, j, k] / patch_sum
+    for i in range(c0 - pr, c0 + pr + 1):
+        for j in range(c1 - pr, c1 + pr + 1):
+            for k in range(c2 - pr, c2 + pr + 1):
+                if patch_sum != 0:
+                    out[pr - c0 + i, pr - c1 + j,
+                        pr - c2 + k] = inp[i, j, k] / patch_sum
+                else:
+                    out[pr - c0 + i, pr - c1 + j,
+                        pr - c2 + k] = 0.0
 
 
 @cython.boundscheck(False)
 @cython.wraparound(False)
 @cython.cdivision(True)
-cdef void _compute_weight(double[:, :, :] input_data, double[:, :, :] transformed_data,
-                          double parameter, double out) nogil:
+cdef double _compute_weight(double[:, :, :] p1, double[:, :, :] p2,
+                          double h) nogil:
     """
     Computing weight between two 3D patches
     """
     cdef cnp.npy_intp i, j, k
     cdef double temp = 0.0
+    cdef double out = 0.0
 
-    for i in range(input_data.shape[0]):
-        for j in range(input_data.shape[1]):
-            for k in range(input_data.shape[2]):
-                temp -= (input_data[i,
-                                    j,
-                                    k] - transformed_data[i,
-                                                          j,
-                                                          k]) * (input_data[i,
-                                                                            j,
-                                                                            k] - transformed_data[i,
-                                                                                                  j,
-                                                                                                  k])
+    for i in range(p1.shape[0]):
+        for j in range(p1.shape[1]):
+            for k in range(p1.shape[2]):
+                temp += (p1[i, j, k] - p2[i, j, k]) * (p1[i, j, k] - p2[i, j, k])
 
-    out = exp(temp / (parameter * parameter))
+    out = exp( -1 * temp / (h * h))
+    return out
 
 
 @cython.boundscheck(False)
@@ -84,23 +83,24 @@ def fast_patch_averaging(double[:, :, :] input_data, double[:, :, :] transformed
         cnp.npy_intp n1 = input_data.shape[1]
         cnp.npy_intp n2 = input_data.shape[2]
         cnp.npy_intp patch_size = 2 * patch_radius + 1
-        cnp.npy_intp block_size = 2 * block_radius + 1
         cnp.npy_intp total_radius = patch_radius + block_radius
         cnp.npy_intp i, j, k, i0, j0, k0
-        double wt
+        double wt = 0.0
         double wtsum, wtavg
         double[:, :, :] output_data = np.zeros((n0, n1, n2), dtype=np.float64)
         double[:, :, :] output_mask = np.zeros((n0, n1, n2), dtype=np.float64)
-        double[:, :, :] cen_patch = np.zeros((patch_radius, patch_radius, patch_radius), dtype=np.float64)
-        double[:, :, :] nl_patch = np.zeros((patch_radius, patch_radius, patch_radius), dtype=np.float64)
+        double[:, :, :] output_mask1 = np.zeros((n0, n1, n2), dtype=np.float64)
+        double[:, :, :] cen_patch = np.zeros((patch_size, patch_size, patch_size), dtype=np.float64)
+        double[:, :, :] nl_patch = np.zeros((patch_size, patch_size, patch_size), dtype=np.float64)
 
     with nogil:
-        wtsum = 0.0
-        wtavg = 0.0
-        for i in range(total_radius, n0 - total_radius, 2):
-            for j in range(total_radius, n1 - total_radius, 2):
-                for k in range(total_radius, n2 - total_radius, 2):
-
+        for i in range(total_radius, n0 - total_radius):
+            with gil:
+                print(i)
+            for j in range(total_radius, n1 - total_radius):
+                for k in range(total_radius, n2 - total_radius):
+                    wtsum = 0.0
+                    wtavg = 0.0
                     _modify_patch(input_data, i, j, k, patch_radius, cen_patch)
 
                     for i0 in range(i - block_radius, i + block_radius + 1):
@@ -111,22 +111,26 @@ def fast_patch_averaging(double[:, :, :] input_data, double[:, :, :] transformed
 
                                 _modify_patch(
                                     transformed_data, i0, j0, k0, patch_radius, nl_patch)
-                                _compute_weight(
-                                    cen_patch, nl_patch, parameter, wt)
+                                
+                                wt = _compute_weight(cen_patch, nl_patch, parameter)
+
+                                #with gil:
+                                #    wt = np.exp(-np.sum((np.array(cen_patch) - \
+                                #            np.array(nl_patch))**2) / parameter**2)
+                                    
                                 wtsum += wt
                                 wtavg += wt * transformed_mask[i0, j0, k0]
 
-                    output_mask[i, j, k] = wtavg / wtsum
+                    if wtsum == 0:
+                        output_mask[i, j, k] = 0
+                    else:
+                        output_mask[i, j, k] = wtavg / wtsum
 
         for i in range(n0):
             for j in range(n1):
                 for k in range(n2):
-
-                    if(output_mask[i, j, k] < threshold):
-                        output_mask[i, j, k] = 0
-
-                    if(output_mask[i, j, k] > 0):
-                        output_mask[i, j, k] = 1
+                    if(output_mask[i, j, k] > threshold):
+                        output_mask1[i, j, k] = 1
                         output_data[i, j, k] = input_data[i, j, k]
 
-    return [output_data, output_mask]
+    return [np.array(output_data), np.array(output_mask)]
