@@ -33,6 +33,8 @@ fetch_isbi2013_2shell()
 # fetch_stanford_hardi()
 # fetch_sherbrooke_3shell()
 # img = nib.load('/Users/Riddhish/Documents/GSOC/DIPY/data/test.nii')
+# img = nib.load('/Users/Riddhish/Documents/GSOC/DIPY/data/for_Riddhish/UCLA_0001_DWI.nii')
+# img = nib.load('/Users/Riddhish/Documents/GSOC/DIPY/data/for_Riddhish/GQAIMS84_DWI.nii.gz')
 img, gtab = read_isbi2013_2shell()
 # img, gtab = read_stanford_hardi()
 # img, gtab = read_sherbrooke_3shell()
@@ -40,13 +42,19 @@ img, gtab = read_isbi2013_2shell()
 #     '/Users/Riddhish/Documents/GSOC/DIPY/data/test_denoised_rician.nii')
 # b1, b2 = read_bvals_bvecs('/Users/Riddhish/Documents/GSOC/DIPY/data/test.bval',
 #                           '/Users/Riddhish/Documents/GSOC/DIPY/data/test.bvec')
+# b1, b2 = read_bvals_bvecs('/Users/Riddhish/Documents/GSOC/DIPY/data/for_Riddhish/UCLA_0001_BVAL.txt',
+#                           '/Users/Riddhish/Documents/GSOC/DIPY/data/for_Riddhish/UCLA_0001_BVec_Vertical.txt')
+
+# b1, b2 = read_bvals_bvecs('/Users/Riddhish/Documents/GSOC/DIPY/data/for_Riddhish/GQAIMS84_BVal_Vertical.txt',
+#                           '/Users/Riddhish/Documents/GSOC/DIPY/data/for_Riddhish/GQAIMS84_BVec_Vertical.txt')
+
 # gtab = gradient_table(b1, b2)
 data = np.array(img.get_data())
 # den_data = np.array(den_img.get_data())
 affine = img.get_affine()
 
 # currently just taking the small patch of the data to preserv time
-
+print(data.shape)
 # data = np.array(data[20:50, 20:50, 20:30, :])
 # den_data = np.array(den_data[20:100, 20:100, 10:15, :])
 
@@ -93,7 +101,7 @@ orig = data[:, :,2, 10]
 #     den_data[:,:,:,:])) / np.sum(np.abs(den_data[:,:,:,:]))
 # print("RMSE between python and matlab output", rmse)
 # den_matlab = den_data[:, :, 2, 10]
-den_python = denoised_arr[:, :, 2, 10]
+den_python = denoised_arr_fast[:, :, 2, 10]
 
 """
 Let us plot the axial slice of the original and denoised data.
@@ -165,7 +173,7 @@ ax[2].set_title('Python Residual')
 """
 Save the denoised output in nifty file format
 """
-nib.save(nib.Nifti1Image(denoised_arr_fast, affine), '/Users/Riddhish/Documents/GSOC/DIPY/data/final.nii')
+# nib.save(nib.Nifti1Image(denoised_arr_fast, affine), '/Users/Riddhish/Documents/GSOC/DIPY/data/final.nii')
 plt.show()
 
 """

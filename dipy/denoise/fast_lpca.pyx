@@ -1,7 +1,7 @@
 import numpy as np
 cimport cython
 cimport numpy as cnp
-
+from time import time
 
 @cython.boundscheck(False)
 @cython.wraparound(False)
@@ -14,7 +14,7 @@ cdef void fast_vecmat_mul(double[:] x, double[:, :] A, double[:] out) nogil:
     cdef:
         cnp.npy_intp i, j
         double s
-        cnp.npy_intp n0 = x.shape[0]
+        cnp.npy_intp n0 = A.shape[0]
         cnp.npy_intp An1 = A.shape[1]
 
     for i in range(An1):
@@ -147,8 +147,7 @@ def fast_lpca(double[:, :, :, :] I, int radius, double[:, :, :] sigma):
         double[:, :] W_hat = np.zeros((ndiff, ndiff))
         double[:, :] W_hatt = np.zeros((ndiff, ndiff))
 
-    tt = 0
-
+    
     with nogil:
         cur_i = 1
         for i in range(n0):
@@ -259,7 +258,7 @@ def fast_lpca(double[:, :, :, :] I, int radius, double[:, :, :] sigma):
 
                         # precompute the W_hat.W_hat_transpose for PCA
                         # projection plus reconstruct
-
+                        
                         # make the projection and reconstruct
 
                         for p in range(i0 - radius, i0 + radius + 1):
@@ -276,11 +275,11 @@ def fast_lpca(double[:, :, :, :] I, int radius, double[:, :, :] sigma):
                                     for s in range(ndiff):
                                         thetax[p, q, r, s] += temp1[s] * l0norm
 
+
         for i in range(n0):
             for j in range(n1):
                 for k in range(n2):
                     for s in range(ndiff):
                         out[i, j, k, s] = thetax[i, j, k, s] / theta[i, j, k]
 
-    out = np.array(out)
     return out
