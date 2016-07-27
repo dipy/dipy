@@ -91,6 +91,22 @@ class IvimModel(ReconstModel):
         """
         Initialize an IVIM model.
 
+        The IVIM model assumes that biological tissue includes a volume
+        fraction 'f' of water flowing in perfused capillaries, with a
+        perfusion coefficient D* and a fraction (1-f) of static (diffusion
+        only), intra and extracellular water, with a diffusion coefficient
+        D. In this model the echo attenuation of a signal in a single voxel
+        can be written as
+
+            .. math::
+
+            S(b) = S_0[f*e^{(-b*D\*)} + (1-f)e^{(-b*D)}]
+
+            Where:
+            .. math::
+
+            S_0, f, D\* and D are the IVIM parameters.
+
         Parameters
         ----------
         gtab : GradientTable class instance
@@ -123,6 +139,15 @@ class IvimModel(ReconstModel):
             Dictionary containing gtol, ftol, eps and maxiter. This is passed
             to leastsq. By default these values are set to
             options={'gtol': 1e-7, 'ftol': 1e-7, 'eps': 1e-7, 'maxiter': 1000}
+
+        References
+        ----------
+        .. [1] Le Bihan, Denis, et al. "Separation of diffusion
+                   and perfusion in intravoxel incoherent motion MR
+                   imaging." Radiology 168.2 (1988): 497-505.
+        .. [2] Federau, Christian, et al. "Quantitative measurement
+                   of brain perfusion with intravoxel incoherent motion
+                   MR imaging." Radiology 265.3 (2012): 874-881.
         """
         ReconstModel.__init__(self, gtab)
         self.split_b = split_b
