@@ -27,14 +27,18 @@ class FollowerMenu(UI):
         self.diameter = diameter
         self.position = position
         self.camera = camera
-        self.assembly = self.build_assembly()
+        self.actor = self.build_assembly()
 
-        self.orbit = FollowerMenuOrbit(diameter=self.diameter, position=self.position)
-        self.assembly.AddPart(self.orbit.actor)
+        self.menu_orbit = FollowerMenuOrbit(diameter=self.diameter, position=self.position)
+        self.orbit = self.menu_orbit
+        self.actor.AddPart(self.orbit.actor)
 
         self.add_parts(parts=elements)
 
         self.ui_list.append(self)
+
+    def add_to_renderer(self, ren):
+        ren.add(self.actor)
 
     @staticmethod
     def find_total_dist(coordinate, coordinate_list):
@@ -66,7 +70,7 @@ class FollowerMenu(UI):
             element_center = parts[i].actor.GetCenter()
             parts[i].actor.AddPosition(x-element_center[0], y-element_center[1],
                                        self.position[2]+1-element_center[2])
-            self.assembly.AddPart(parts[i].actor)
+            self.actor.AddPart(parts[i].actor)
 
     def build_assembly(self):
         assembly = vtk.vtkAssembly()
