@@ -21,7 +21,7 @@ numpy_support, have_ns, _ = optional_package('vtk.util.numpy_support')
 
 
 class Button3D(UI):
-    """ Currently implements a 2D overlay button and is of type vtkTexturedActor2D.
+    """ A 3D button
 
     """
 

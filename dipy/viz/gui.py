@@ -14,18 +14,35 @@ numpy_support, have_ns, _ = optional_package('vtk.util.numpy_support')
 
 
 class UI(object):
+    """ An umbrella class for all UI elements.
+
+    While adding UI elements to the renderer, we need to go over all the
+     sub-elements that come with it and add those to the renderer too
+    There are several features that are common to all the UI elements:
+    - ui_param: This is an attribute that can be passed to the UI object
+                by the interactor. Thanks to Python's dynamic type-setting
+                this parameter can be anything
+    - ui_list: This is used when there are more than one UI elements inside
+               a UI element. Inside the renderer, they're all iterated and added
+
+    """
     def __init__(self):
         self.ui_param = None
         self.ui_list = list()
 
         self.actor = None
-        self.assembly = None
 
     def add_to_renderer(self, ren):
         """ Allows UI objects to add their own props to the renderer. """
         pass
 
     def set_ui_param(self, ui_param):
+        """ Adds a UI Parameter. Can be anything.
+
+        Parameters
+        ----------
+        ui_param
+        """
         self.ui_param = ui_param
 
     def add_callback(self, prop, event_type, callback, priority=0):
@@ -50,6 +67,8 @@ class UI(object):
 
 
 class TextActor2D(vtk.vtkTextActor):
+    """ Inherits from the default vtkTextActor and helps setting the text
+    """
     def message(self, text):
         self.SetInput(text)
 

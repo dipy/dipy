@@ -211,7 +211,7 @@ button_actor_2 = ButtonFollower(icon_fnames=icon_files)
 # button_actor_2 = CubeButton(size=(10, 10, 10), color=(0, 1, 0))
 button_actor_3 = CubeButtonFollower(size=(10, 10, 10), color=(1, 0, 0))
 
-text_actor = TextFollower(font_size=16, position=(0, 0, 0), text="Hello!", color=(0, 1, 0))
+text_actor = TextFollower(text="Hello!", color=(0, 1, 0))
 
 
 def modify_button_callback_1(*args, **kwargs):

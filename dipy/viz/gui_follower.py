@@ -66,7 +66,7 @@ class FollowerMenu(UI):
                 x = x2
                 y = y2
             allotted_coordinates.append((int(x), int(y)))
-            parts[i].actor.SetPosition(x, y, self.position[2]+1)
+            parts[i].actor.AddPosition(x, y, self.position[2]+1)
             element_center = parts[i].actor.GetCenter()
             parts[i].actor.AddPosition(x-element_center[0], y-element_center[1],
                                        self.position[2]+1-element_center[2])
@@ -153,6 +153,7 @@ class CubeButtonFollower(UI):
         cubeActor.SetMapper(cubeMapper)
         if color is not None:
             cubeActor.GetProperty().SetColor(color)
+        cubeActor.SetPosition(0, 0, 0)
         return cubeActor
 
     def add_callback(self, event_type, callback):
@@ -219,7 +220,7 @@ class ButtonFollower(UI):
 
         Returns
         -------
-        button : vtkTexturedActor2D
+        button : vtkActor
         """
 
         mapper = vtk.vtkPolyDataMapper()
@@ -229,7 +230,7 @@ class ButtonFollower(UI):
         button.SetMapper(mapper)
         # button.SetCamera(self.camera)
 
-        button.SetPosition((50, 50, 50))
+        button.SetPosition((0, 0, 0))
 
         if center is not None:
             button.SetCenter(*center)
@@ -271,14 +272,14 @@ class ButtonFollower(UI):
 
 class TextFollower(UI):
 
-    def __init__(self, position, text, font_size, color):
+    def __init__(self, text, color):
         super(TextFollower, self).__init__()
 
-        self.actor = self.build_actor(text=text, position=position, font_size=font_size, color=color)
+        self.actor = self.build_actor(text=text, color=color)
 
         self.ui_list.append(self)
 
-    def build_actor(self, text, position, font_size, color):
+    def build_actor(self, text, color):
         actor_text = vtk.vtkVectorText()
         actor_text.SetText(text)
 
@@ -291,7 +292,7 @@ class TextFollower(UI):
 
         actor.GetProperty().SetColor(color)
 
-        actor.SetPosition(position[0], position[1], position[2])
+        actor.SetPosition(0, 0, 0)
 
         return actor
 

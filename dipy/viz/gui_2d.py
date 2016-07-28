@@ -21,11 +21,17 @@ numpy_support, have_ns, _ = optional_package('vtk.util.numpy_support')
 
 
 class Button2D(UI):
-    """ Currently implements a 2D overlay button and is of type vtkTexturedActor2D.
+    """A 2D overlay button and is of type vtkTexturedActor2D.
 
     """
 
     def __init__(self, icon_fnames):
+        """
+
+        Parameters
+        ----------
+        icon_fnames
+        """
         super(Button2D, self).__init__()
         self.icons = self.build_icons(icon_fnames)
         self.icon_names = list(self.icons.keys())
@@ -68,7 +74,6 @@ class Button2D(UI):
         Parameters
         ----------
         icon : imageDataGeometryFilter
-        position : a two tuple
         center : a two tuple
 
         Returns
@@ -110,6 +115,9 @@ class Button2D(UI):
         self.actor.GetMapper().SetInputConnection(icon.GetOutputPort())
 
     def next_icon_name(self):
+        """ Returns the next icon name while cycling through icons
+
+        """
         self.current_icon_id += 1
         if self.current_icon_id == len(self.icons):
             self.current_icon_id = 0
@@ -391,7 +399,6 @@ class Rectangle2D(UI):
         self.ui_list.append(self)
 
     def build_actor(self, size):
-        # Setup four points
         """
 
         Parameters
@@ -403,6 +410,7 @@ class Rectangle2D(UI):
         actor
 
         """
+        # Setup four points
         points = vtk.vtkPoints()
         points.InsertNextPoint(0, 0, 0)
         points.InsertNextPoint(size[0], 0, 0)
@@ -457,10 +465,10 @@ class LineSlider2D(UI):
         super(LineSlider2D, self).__init__()
         self.slider_line = LineSlider2DBase(start_point=start_point, end_point=end_point, line_width=line_width)
         self.slider_disk = LineSlider2DDisk(position=position, inner_radius=inner_radius, outer_radius=outer_radius,
-                                      start_point=start_point, end_point=end_point)
+                                            start_point=start_point, end_point=end_point)
         self.text = LineSlider2DText(limits=(start_point, end_point),
-                               current_val=(start_point[0] + (end_point[0] - start_point[0])/2),
-                               position=(start_point[0]-40, start_point[1]-10))
+                                     current_val=(start_point[0] + (end_point[0] - start_point[0])/2),
+                                     position=(start_point[0]-40, start_point[1]-10))
 
         self.ui_list.append(self.slider_line)
         self.ui_list.append(self.slider_disk)
@@ -518,7 +526,6 @@ class LineSlider2DBase(UI):
         actor = Rectangle2D(size=(end_point[0]-start_point[0], line_width)).actor
 
         actor.SetPosition(start_point[0], start_point[1]-line_width/2)
-
         actor.GetProperty().SetColor(1, 0, 0)
 
         return actor
