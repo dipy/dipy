@@ -67,7 +67,7 @@ class Dpy(object):
             self.streamlines = self.f.createGroup(self.f.root, 'streamlines')
             # create a version number
             self.version = self.f.createArray(self.f.root, 'version',
-                                              ['0.0.1'], 'Dpy Version Number')
+                                              [b"0.0.1"], 'Dpy Version Number')
 
             self.tracks = self.f.createEArray(self.f.root.streamlines,
                                               'tracks',
