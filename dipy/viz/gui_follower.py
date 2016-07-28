@@ -513,9 +513,4 @@ class LineSliderFollowerDisk(UI):
         ----------
         position
         """
-        x_position = position[0]
-        if x_position < self.start_point[0]:
-            x_position = self.start_point[0]
-        if x_position > self.end_point[0]:
-            x_position = self.end_point[0]
-        self.actor.AddPosition(x_position - self.actor.GetPosition()[0], 0, 0)
+        self.actor.SetPosition(position[0], position[1], position[2])

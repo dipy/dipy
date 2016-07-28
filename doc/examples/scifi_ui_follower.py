@@ -82,7 +82,8 @@ slider = gui_follower.LineSliderFollower()
 
 def line_click_callback(obj, evt):
     # obj: LineSlider
-    position = showm.iren.GetEventPosition()
+    # position = showm.iren.GetEventPosition()
+    position = showm.style.picker.GetPickPosition()
     obj.slider_disk.set_position(position)
     showm.iren.GetInteractorStyle().add_active_prop(obj.slider_disk.actor)
     showm.render()
@@ -102,7 +103,8 @@ def disk_release_callback(obj, evt):
 
 def disk_move_callback(obj, evt):
     # obj: LineSlider
-    position = showm.iren.GetEventPosition()
+    # position = showm.iren.GetEventPosition()
+    position = showm.style.picker.GetPickPosition()
     obj.slider_disk.set_position(position)
     showm.render()
     return True
