@@ -6,7 +6,7 @@ from scipy.ndimage import generate_binary_structure, binary_dilation
 from scipy.ndimage.filters import median_filter
 
 from dipy.segment.mask import (otsu, bounding_box, crop, applymask,
-                               multi_median, median_otsu)
+                               multi_median, median_otsu, jaccard_index)
 
 from numpy.testing import (assert_equal,
                            assert_almost_equal,
@@ -81,6 +81,18 @@ def test_bounding_box():
         assert_equal(mins, [0, 0])
         assert_equal(maxs, [0, 0])
 
+def test_jaccard():
+    S0 = np.zeros((10, 10, 10))
+    S0[2:8, 2:8, 2:8] = 1
+    o1 = jaccard_index(S0.astype(np.bool), S0.astype(np.bool))
+    assert_equal(o1, 1.0)
+    S0 = np.zeros((10, 10, 10))
+    S0[2:8, 2:8, 2:8] = 1
+    S01 = np.zeros((10, 10, 10))
+    S01[0:6, 0:6, 0:6] = 1
+    o2 = jaccard_index(S0.astype(np.bool), S01.astype(np.bool))
+    exp1 = (4**3) * 1.0 / (2 * 6**3 - 4**3)
+    assert_equal(o2, exp1)
 
 def test_median_otsu():
     fname = get_data('S0_10')
