@@ -37,7 +37,7 @@ def ivim_function(params, bvals):
         Where:
         .. math::
 
-        S_0, f, D\* and D are the IVIM parameters.
+        S_0, f, D* and D are the IVIM parameters.
 
     Parameters
     ----------
@@ -84,7 +84,6 @@ class IvimModel(ReconstModel):
     """
 
     def __init__(self, gtab, split_b=200.0,
-                 x0=np.array([1.0, 0.10, 0.001, 0.0009]),
                  bounds=None, tol=1e-7,
                  options={'gtol': 1e-7, 'ftol': 1e-7,
                           'eps': 1e-7, 'maxiter': 1000}):
@@ -114,11 +113,6 @@ class IvimModel(ReconstModel):
 
         split_b : float
             The b-value to split the data on for two-stage fit
-
-        x0 : array, optional
-            Initial guesses for the parameters S0, f, D_star and D
-            Default : [1.0, 0.10, 0.001, 0.0009]
-            These initial parameters are taken from [1]_
 
         bounds : array, (4,4)
             Bounds for the parameters. This is applicable only for Scipy
@@ -151,7 +145,6 @@ class IvimModel(ReconstModel):
         """
         ReconstModel.__init__(self, gtab)
         self.split_b = split_b
-        self.x0 = x0
         self.bounds = bounds
         self.tol = tol
         self.options = options
@@ -188,13 +181,11 @@ class IvimModel(ReconstModel):
                    of brain perfusion with intravoxel incoherent motion
                    MR imaging." Radiology 265.3 (2012): 874-881.
         """
-        x0_in_mask = self.x0
-        data_in_mask = data
         # Call the two stage function to get better x0 guess
-        x0_two_stage = self.two_stage(data_in_mask,
-                                      x0_in_mask)
+        x0 = self.estimate_x0(data)
+        #
         # Use leastsq to get ivim_params
-        params_in_mask = self._leastsq(data, x0_two_stage)
+        params_in_mask = self._leastsq(data, x0)
         return IvimFit(self, params_in_mask)
 
     def predict(self, ivim_params):
@@ -213,7 +204,7 @@ class IvimModel(ReconstModel):
         """
         return ivim_function(ivim_params, self.gtab.bvals)
 
-    def two_stage(self, data, x0):
+    def estimate_x0(self, data):
         """
         Fit the ivim params using a two stage fit.
 
@@ -230,28 +221,19 @@ class IvimModel(ReconstModel):
             will be applied to this fit method to scale it and apply it
             to multiple voxels.
 
-        x0 : array
-            An array with initial values of S0, f, D_star, D for a voxel.
-
         Returns
         -------
         x0_guess : array
-            An array with better initial values of S0, f, D_star, D each voxel.
+            An array with initial values of S0, f, D_star, D for each voxel.
         """
-
-        bvals = self.gtab.bvals
-        x0[0] = data[0]
-
-        S0_hat, D_guess = self._get_S0_D_guess(data)
+        S0_hat, D_guess = self._estimate_S0_D(data)
         f_guess = 1 - S0_hat / data[0]
+        # We set the S0 guess as the signal value at b=0
+        # The D* guess is roughly 10 times the D value
+        D_star_guess = 10 * D_guess
+        return np.array([data[0], f_guess, D_star_guess, D_guess])
 
-        x0[1] = f_guess
-        x0[3] = D_guess
-        x0[2] = 10 * D_guess
-
-        return x0
-
-    def _get_S0_D_guess(self, data):
+    def _estimate_S0_D(self, data):
         """
         Obtain initial guess for S0 and D for two stage fitting.
 
@@ -321,8 +303,6 @@ class IvimModel(ReconstModel):
 
         x0 : array, optional
                 Initial guesses for the parameters S0, f, D_star and D
-                Default : [1.0, 0.10, 0.001, 0.0009]
-                These initial parameters are taken from [1]_
         """
         gtol = self.options["gtol"]
         ftol = self.options["ftol"]
@@ -395,6 +375,7 @@ class IvimFit(object):
         ----------
         gtab : GradientTable class instance
                Gradient directions and bvalues
+        # Explain S0 doesn't matter here
         Returns
         -------
         signal : array
