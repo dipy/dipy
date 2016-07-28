@@ -7,6 +7,7 @@ from ipdb import set_trace
 
 # Allow import, but disable doctests if we don't have vtk.
 from dipy.viz.gui import UI, TextActor2D
+from dipy.viz.gui_2d import Rectangle2D
 
 vtk, have_vtk, setup_module = optional_package('vtk')
 
@@ -66,11 +67,12 @@ class FollowerMenu(UI):
                 x = x2
                 y = y2
             allotted_coordinates.append((int(x), int(y)))
-            parts[i].actor.AddPosition(x, y, self.position[2]+1)
-            element_center = parts[i].actor.GetCenter()
-            parts[i].actor.AddPosition(x-element_center[0], y-element_center[1],
-                                       self.position[2]+1-element_center[2])
-            self.actor.AddPart(parts[i].actor)
+            for ui_item in parts[i].ui_list:
+                ui_item.actor.AddPosition(x, y, self.position[2]+1)
+                element_center = ui_item.actor.GetCenter()
+                ui_item.actor.AddPosition(x-element_center[0], y-element_center[1],
+                                          self.position[2]+1-element_center[2])
+                self.actor.AddPart(ui_item.actor)
 
     def build_assembly(self):
         assembly = vtk.vtkAssembly()
@@ -305,3 +307,215 @@ class TextFollower(UI):
         callback: callback function
         """
         self.actor.AddObserver(event_type, callback)
+
+
+class Rectangle3D(UI):
+    def __init__(self, size):
+        """
+
+        Parameters
+        ----------
+        size
+        """
+        super(Rectangle3D, self).__init__()
+        self.actor = self.build_actor(size=size)
+
+        self.ui_list.append(self)
+
+    def build_actor(self, size):
+        """
+
+        Parameters
+        ----------
+        size
+
+        Returns
+        -------
+        actor
+
+        """
+        # Setup four points
+        points = vtk.vtkPoints()
+        points.InsertNextPoint(0, 0, 0)
+        points.InsertNextPoint(size[0], 0, 0)
+        points.InsertNextPoint(size[0], size[1], 0)
+        points.InsertNextPoint(0, size[1], 0)
+
+        # Create the polygon
+        polygon = vtk.vtkPolygon()
+        polygon.GetPointIds().SetNumberOfIds(4)  # make a quad
+        polygon.GetPointIds().SetId(0, 0)
+        polygon.GetPointIds().SetId(1, 1)
+        polygon.GetPointIds().SetId(2, 2)
+        polygon.GetPointIds().SetId(3, 3)
+
+        # Add the polygon to a list of polygons
+        polygons = vtk.vtkCellArray()
+        polygons.InsertNextCell(polygon)
+
+        # Create a PolyData
+        polygonPolyData = vtk.vtkPolyData()
+        polygonPolyData.SetPoints(points)
+        polygonPolyData.SetPolys(polygons)
+
+        # Create a mapper and actor
+        mapper = vtk.vtkPolyDataMapper()
+        if vtk.VTK_MAJOR_VERSION <= 5:
+            mapper.SetInput(polygonPolyData)
+        else:
+            mapper.SetInputData(polygonPolyData)
+
+        actor = vtk.vtkActor()
+        actor.SetMapper(mapper)
+        actor.GetProperty().SetColor(1, 1, 1)
+
+        return actor
+
+
+class LineSliderFollower(UI):
+    def __init__(self, start_point=(0, 0, 0), end_point=(100, 0, 0), line_width=2, inner_radius=0,
+                 outer_radius=5, position=(50, 0, 5)):
+        """
+
+        Parameters
+        ----------
+        inner_radius
+        outer_radius
+        position
+        start_point
+        end_point
+        line_width
+        """
+        super(LineSliderFollower, self).__init__()
+        self.slider_line = LineSliderFollowerBase(start_point=start_point, end_point=end_point, line_width=line_width)
+        self.slider_disk = LineSliderFollowerDisk(position=position, inner_radius=inner_radius,
+                                                  outer_radius=outer_radius,
+                                                  start_point=start_point, end_point=end_point)
+
+        self.ui_list.append(self.slider_line)
+        self.ui_list.append(self.slider_disk)
+
+    def add_to_renderer(self, ren):
+        ren.add(self.slider_line.actor)
+        ren.add(self.slider_disk.actor)
+
+    def add_callback(self, event_type, callback, component):
+        """ Adds events to an actor
+
+        Parameters
+        ----------
+        event_type: event code
+        callback: callback function
+        component: component
+        """
+        super(LineSliderFollower, self).add_callback(component.actor, event_type, callback)
+
+
+class LineSliderFollowerBase(UI):
+
+    def __init__(self, start_point, end_point, line_width):
+        """
+
+        Parameters
+        ----------
+        start_point
+        end_point
+        line_width
+        """
+        super(LineSliderFollowerBase, self).__init__()
+        self.start_point = start_point
+        self.end_point = end_point
+        self.actor = self.build_actor(start_point=start_point, end_point=end_point, line_width=line_width)
+
+        self.ui_list.append(self)
+
+    def build_actor(self, start_point, end_point, line_width):
+        """
+
+        Parameters
+        ----------
+        start_point
+        end_point
+        line_width
+
+        Returns
+        -------
+        actor
+
+        """
+        actor = Rectangle3D(size=(end_point[0]-start_point[0], line_width)).actor
+
+        actor.SetPosition(start_point[0], start_point[1]-line_width/2, start_point[2])
+        actor.GetProperty().SetColor(1, 0, 0)
+
+        return actor
+
+
+class LineSliderFollowerDisk(UI):
+
+    def __init__(self, position, inner_radius, outer_radius, start_point, end_point):
+        """
+
+        Parameters
+        ----------
+        position
+        inner_radius
+        outer_radius
+        """
+        super(LineSliderFollowerDisk, self).__init__()
+        self.actor = self.build_actor(position=position, inner_radius=inner_radius, outer_radius=outer_radius)
+        self.pos_height = position[1]
+
+        self.start_point = start_point
+        self.end_point = end_point
+        self.position = position
+
+        self.ui_list.append(self)
+
+    def build_actor(self, position, inner_radius, outer_radius):
+        """
+
+        Parameters
+        ----------
+        position
+        inner_radius
+        outer_radius
+
+        Returns
+        -------
+        actor
+
+        """
+        # create source
+        disk = vtk.vtkDiskSource()
+        disk.SetInnerRadius(inner_radius)
+        disk.SetOuterRadius(outer_radius)
+        disk.SetRadialResolution(10)
+        disk.SetCircumferentialResolution(50)
+        disk.Update()
+
+        # mapper
+        mapper = vtk.vtkPolyDataMapper()
+        mapper.SetInputConnection(disk.GetOutputPort())
+
+        # actor
+        actor = vtk.vtkActor()
+        actor.SetMapper(mapper)
+
+        actor.SetPosition(position[0], position[1], position[2])
+
+        return actor
+
+    def set_position(self, position):
+        """ Sets the disk's position
+
+        Parameters
+        ----------
+        position
+        """
+        x_position = position[0]
+        if x_position < self.start_point[0]:
+            x_position = self.start_point[0]
+        if x_position > self.end_point[0]:
+            x_position = self.end_point[0]
+        self.actor.AddPosition(x_position - self.actor.GetPosition()[0], 0, 0)
