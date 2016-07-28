@@ -126,12 +126,13 @@ def test_mask():
     Test whether setting incorrect mask raises and error
     """
     ivim_model = IvimModel(gtab)
-    mask_correct = data_multi[...,0]>0.2
+    mask_correct = data_multi[..., 0] > 0.2
     mask_not_correct = np.array([[False, True, False], [True, False]])
 
     fit = ivim_model.fit(data_multi, mask_correct)
     assert_raises(ValueError, ivim_model.fit, data_multi,
                   mask=mask_not_correct)
+
 
 def test_with_higher_S0():
     """
@@ -143,7 +144,7 @@ def test_with_higher_S0():
     mevals2 = np.array(([D_star, D_star, D_star], [D, D, D]))
     # This gives an isotropic signal.
     signal2 = multi_tensor(gtab, mevals2, snr=None, S0=S0_2,
-                      fractions=[f * 100, 100 * (1 - f)])
+                           fractions=[f * 100, 100 * (1 - f)])
     # Single voxel data
     data_single2 = signal2[0]
 
@@ -154,3 +155,21 @@ def test_with_higher_S0():
     assert_array_equal(est_signal.shape, data_single2.shape)
     assert_array_almost_equal(est_signal, data_single2)
     assert_array_almost_equal(ivim_fit.model_params, params2)
+
+
+def test_bounds_x0():
+    """
+    Test to check if setting bounds for signal where initial value is
+    higer than subsequent values works.
+    """
+    test_signal = np.array([4574.34814453, 4745.18164062,  4759.51806641, 4618.24951172, 4665.63623047,
+                            4568.046875,  4525.90478516, 4734.54785156, 4526.41357422, 4299.99414062,
+                            4256.61279297, 4254.50292969, 4098.74707031, 3776.10375977,  3614.0769043,
+                            3440.56445312, 3146.52294922, 3006.94287109, 2879.69580078, 2728.44018555,
+                            2600.09472656, 2570., 2440., 2400., 2380., 2370.])
+
+    ivim_model = IvimModel(gtab)
+    ivim_fit = ivim_model.fit(test_signal)
+
+    est_signal = ivim_fit.predict(gtab)
+    assert_array_equal(est_signal.shape, test_signal.shape)

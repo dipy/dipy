@@ -154,7 +154,8 @@ class IvimModel(ReconstModel):
             e_s += "bounds. Please update to Scipy 0.17 to use bounds"
             raise ValueError(e_s)
         else:
-            self.bounds = (0., np.array([np.inf, 1., 0.1, 0.1]))
+            self.bounds = (np.array([0., 0., 0., 0.]),
+                           np.array([np.inf, 1., 0.1, 0.1]))
 
     @multi_voxel_fit
     def fit(self, data, mask=None):
@@ -183,7 +184,6 @@ class IvimModel(ReconstModel):
         """
         # Call the two stage function to get better x0 guess
         x0 = self.estimate_x0(data)
-        #
         # Use leastsq to get ivim_params
         params_in_mask = self._leastsq(data, x0)
         return IvimFit(self, params_in_mask)
@@ -230,8 +230,17 @@ class IvimModel(ReconstModel):
         f_guess = 1 - S0_hat / data[0]
         # We set the S0 guess as the signal value at b=0
         # The D* guess is roughly 10 times the D value
-        D_star_guess = 10 * D_guess
-        return np.array([data[0], f_guess, D_star_guess, D_guess])
+        x0 = np.array([data[0], f_guess, 10 * D_guess, D_guess])
+
+        if self.bounds is None:
+            bounds_check = [np.inf, 1., 0.1, 0.1]
+        else:
+            bounds_check = self.bounds
+
+        x0 = np.where(x0 > bounds_check[0], x0, bounds_check[0])
+        x0 = np.where(x0 < bounds_check[1], x0, bounds_check[1])
+
+        return x0
 
     def _estimate_S0_D(self, data):
         """
