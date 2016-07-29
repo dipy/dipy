@@ -16,13 +16,13 @@ def cshift3D(x, m, d):
 
     Parameters
     ----------
-    x: N1 by N2 by N3 array
-    m: amount of shift
-    d: dimension of shift (d = 1,2,3)
+    x : N1 by N2 by N3 array
+    m : amount of shift
+    d : dimension of shift (d = 1,2,3)
 
     Returns
     -------
-    y: array x will be shifed by m samples down
+    y : array x will be shifed by m samples down
        along dimension d
 
     """
@@ -54,17 +54,17 @@ def afb3D_A(x, af, d):
 
     Parameters
     ----------
-    x:  N1xN2xN2 matrix, where min(N1,N2,N3) > 2*length(filter)
+    x :  N1xN2xN2 matrix, where min(N1,N2,N3) > 2*length(filter)
            (Ni are even)
-    af: analysis filter for the columns
+    af : analysis filter for the columns
         af[:, 1] - lowpass filter
         af[:, 2] - highpass filter
-    d:  dimension of filtering (d = 1, 2 or 3)
+    d :  dimension of filtering (d = 1, 2 or 3)
 
     Returns
     -------
-    lo: lowpass subbands
-    hi: highpass subbands
+    lo : lowpass subbands
+    hi : highpass subbands
 
     """
 
@@ -102,14 +102,14 @@ def sfb3D_A(lo, hi, sf, d):
 
      Parameters
      ----------
-     lo: lowpass subbands
-     hi: highpass subbands
-     sf: synthesis filters
-     d:  dimension of filtering
+     lo : lowpass subbands
+     hi : highpass subbands
+     sf : synthesis filters
+     d :  dimension of filtering
 
      Returns
      -------
-     y: The N1xN2xN3 matrix
+     y : The N1xN2xN3 matrix
 
     """
     lpf = sf[:, 0]
@@ -140,13 +140,13 @@ def sfb3D(lo, hi, sf1, sf2=None, sf3=None):
 
     Parameters
     ----------
-    lo:  lowpass subbands
-    hi:  highpass subbands
-    sfi: synthesis filters for dimension i
+    lo :  lowpass subbands
+    hi :  highpass subbands
+    sfi : synthesis filters for dimension i
 
     Returns
     -------
-    y:   output array
+    y : output array
 
     """
     if sf2 is None:
@@ -179,12 +179,13 @@ def afb3D(x, af1, af2=None, af3=None):
 
     Parameters
     ----------
-    x:  N1 by N2 by N3 array matrix, where
+    x :  N1 by N2 by N3 array matrix, where
         1) N1, N2, N3 all even
         2) N1 >= 2*len(af1)
         3) N2 >= 2*len(af2)
         4) N3 >= 2*len(af3)
-    afi: analysis filters for dimension i
+    afi : 2D ndarray
+        analysis filters for dimension i
         afi[:, 1] - lowpass filter
         afi[:, 2] - highpass filter
 
