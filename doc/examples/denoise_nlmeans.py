@@ -54,7 +54,7 @@ den = non_local_means(
     patch_radius=1,
     block_radius=1,
     rician=True)
-print("total time blockwise", time() - t)
+print("total time", time() - t)
 
 """
 We show the axial slice and how it has been denoised
@@ -73,9 +73,9 @@ fig, ax = plt.subplots(1, 3)
 ax[0].imshow(before, cmap='gray', origin='lower')
 ax[0].set_title('before')
 ax[1].imshow(after, cmap='gray', origin='lower')
-ax[1].set_title('after (blockwise)')
+ax[1].set_title('after')
 ax[2].imshow(difference, cmap='gray', origin='lower')
-ax[2].set_title('difference (blockwise)')
+ax[2].set_title('difference')
 
 plt.show()
 plt.savefig('denoised.png', bbox_inches='tight')
