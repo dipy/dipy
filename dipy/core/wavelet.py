@@ -16,13 +16,17 @@ def cshift3D(x, m, d):
 
     Parameters
     ----------
-    x : N1 by N2 by N3 array
-    m : amount of shift
-    d : dimension of shift (d = 1,2,3)
+    x : 3D ndarray 
+       N1 by N2 by N3 array
+    m : int
+       amount of shift
+    d : int 
+       dimension of shift (d = 1,2,3)
 
     Returns
     -------
-    y : array x will be shifed by m samples down
+    y : 3D ndarray 
+       array x will be shifed by m samples down
        along dimension d
 
     """
@@ -40,6 +44,15 @@ def cshift3D(x, m, d):
 def permutationinverse(perm):
     """
     Function generating inverse of the permutation
+
+    Parameters
+    ----------
+    perm : 1D array
+
+    Returns
+    -------
+    inverse : 1D array
+        permutation inverse of the input
     """
 
     inverse = [0] * len(perm)
@@ -54,17 +67,22 @@ def afb3D_A(x, af, d):
 
     Parameters
     ----------
-    x :  N1xN2xN2 matrix, where min(N1,N2,N3) > 2*length(filter)
+    x : 3D ndarray
+        N1xN2xN2 matrix, where min(N1,N2,N3) > 2*length(filter)
            (Ni are even)
-    af : analysis filter for the columns
+    af : 2D ndarray 
+        analysis filter for the columns
         af[:, 1] - lowpass filter
         af[:, 2] - highpass filter
-    d :  dimension of filtering (d = 1, 2 or 3)
+    d : int 
+        dimension of filtering (d = 1, 2 or 3)
 
     Returns
     -------
-    lo : lowpass subbands
-    hi : highpass subbands
+    lo : 1D array 
+        lowpass subbands
+    hi : 1D array
+        highpass subbands
 
     """
 
@@ -100,16 +118,21 @@ def sfb3D_A(lo, hi, sf, d):
     """3D Synthesis Filter Bank
      (along single dimension only)
 
-     Parameters
-     ----------
-     lo : lowpass subbands
-     hi : highpass subbands
-     sf : synthesis filters
-     d :  dimension of filtering
+    Parameters
+    ----------
+    lo : 1D array 
+        lowpass subbands
+    hi : 1D array 
+        highpass subbands
+    sf : 2D ndarray
+        synthesis filters
+    d : int
+        dimension of filtering
 
-     Returns
-     -------
-     y : The N1xN2xN3 matrix
+    Returns
+    -------
+    y : 3D ndarray
+        the N1xN2xN3 matrix
 
     """
     lpf = sf[:, 0]
@@ -140,13 +163,17 @@ def sfb3D(lo, hi, sf1, sf2=None, sf3=None):
 
     Parameters
     ----------
-    lo :  lowpass subbands
-    hi :  highpass subbands
-    sfi : synthesis filters for dimension i
+    lo : 1D array  
+       lowpass subbands
+    hi : 1D array 
+        highpass subbands
+    sfi : 2D ndarray
+        synthesis filters for dimension i
 
     Returns
     -------
-    y : output array
+    y : 3D ndarray
+        output array
 
     """
     if sf2 is None:
@@ -179,7 +206,8 @@ def afb3D(x, af1, af2=None, af3=None):
 
     Parameters
     ----------
-    x :  N1 by N2 by N3 array matrix, where
+    x : 3D ndarray  
+        N1 by N2 by N3 array matrix, where
         1) N1, N2, N3 all even
         2) N1 >= 2*len(af1)
         3) N2 >= 2*len(af2)
@@ -191,8 +219,10 @@ def afb3D(x, af1, af2=None, af3=None):
 
     Returns
     -------
-    lo: lowpass subband
-    hi: highpass subbands, h[d]- d = 1..7
+    lo : 1D array
+        lowpass subband
+    hi : 1D array
+        highpass subbands, h[d]- d = 1..7
 
     """
 
@@ -218,15 +248,19 @@ def dwt3D(x, J, af):
 
     Parameters
     ----------
-    x: N1 x N2 x N3 matrix
-       1) Ni all even
-       2) min(Ni) >= 2^(J-1)*length(af)
-    J: number of stages
-    af:analysis filters
+    x : 3D ndarray 
+        N1 x N2 x N3 matrix
+        1) Ni all even
+        2) min(Ni) >= 2^(J-1)*length(af)
+    J : int
+        number of stages
+    af : 2D ndarray
+        analysis filters
 
     Returns
     -------
-    w: cell array of wavelet coefficients
+    w : cell array 
+        wavelet coefficients
 
     """
 
@@ -243,13 +277,17 @@ def idwt3D(w, J, sf):
 
     Parameters
     ----------
-    w: wavelet coefficient
-    J: number of stages
-    sf:synthesis filters
+    w : cell array 
+        wavelet coefficient
+    J : int
+        number of stages
+    sf : 2D ndarray
+        synthesis filters
 
     Returns
     -------
-    y: output array
+    y : 3D ndarray
+        output array
 
     """
 

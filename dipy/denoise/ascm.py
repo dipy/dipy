@@ -11,14 +11,14 @@ def ascm(ima, fimau, fimao, h):
 
     Parameters
     ----------
-    ima: the original (not filtered) image
+    ima : the original (not filtered) image
     fimau : 3D double array,
         filtered image with optimized non-local means using a small block
         (suggested:3x3), which corresponds to a "high resolution" filter.
     fimao : 3D double array,
         filtered image with optimized non-local means using a small block
         (suggested:5x5), which corresponds to a "low resolution" filter.
-    h: the estimated standard deviation of the Gaussian random variables
+    h : the estimated standard deviation of the Gaussian random variables
         that explain the rician noise. Note: In P. Coupe et al. the
         rician noise was simulated as sqrt((f+x)^2 + (y)^2) where f is
         the pixel value and x and y are independent realizations of a
@@ -27,7 +27,7 @@ def ascm(ima, fimau, fimao, h):
 
     Returns
     -------
-    fima: 3D double array
+    fima : 3D double array
         output denoised array which is of the same shape as that of
         the input
 
