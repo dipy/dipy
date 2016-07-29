@@ -75,7 +75,23 @@ cdef void _average_block(double[:, :, :] ima, int x, int y, int z,
                          double[:, :, :] average, double weight) nogil:
     """
     Computes the weighted average of the patches in a blockwise manner
+
+    Parameters
+    ----------
+    ima : 3D double ndarray
+        input image
+    x : integer
+        x coordinate of the center voxel
+    y : integer
+        y coordinate of the center voxel
+    z : integer
+        z coordinate of the center voxel
+    average : 3D double ndarray
+        the image where averages are stored
+    weight : double
+        weight for the weighted averaging
     """
+
     cdef int a, b, c, x_pos, y_pos, z_pos
     cdef int is_outside
     cdef int count = 0
@@ -107,7 +123,29 @@ cdef void _value_block(double[:, :, :] estimate, double[:, :, :] Label, int x, i
 
     """
     Computes the final estimate of the denoised image
+
+    Parameters
+    ----------
+    estimate : 3D double ndarray
+        The denoised estimate array
+    Label : 3D double ndarray
+        The label map for block wise weighted averaging
+    x : integer
+        x coordinate of the center voxel
+    y : integer
+        y coordinate of the center voxel
+    z : integer
+        z coordinate of the center voxel
+    average : 3D double ndarray
+        weighted average image
+    global_sum : double
+        total weight sum
+    hh : double
+        weight parameter
+    rician_int : integer
+        0 or 1 as per the boolean value
     """
+
     cdef int is_outside, a, b, c, x_pos, y_pos, z_pos, count = 0
     cdef double value = 0.0
     cdef double denoised_value = 0.0
@@ -146,20 +184,40 @@ cdef void _value_block(double[:, :, :] estimate, double[:, :, :] Label, int x, i
 @cython.wraparound(False)
 @cython.cdivision(True)
 cdef double _distance(double[:, :, :] image, int x, int y, int z,
-                      int nx, int ny, int nz, int f) nogil:
+                      int nx, int ny, int nz, int block_radius) nogil:
     """
     Computes the distance between two square subpatches of image located at
     p and q, respectively. If the centered squares lie beyond the boundaries
     of image, they are mirrored.
+
+    Parameters
+    ----------
+    image : 3D double ndarray
+        the image whose voxels are taken
+    x : integer
+        x coordinate of first patch's center
+    y : integer
+        y coordinate of first patch's center
+    z : integer
+        z coordinate of first patch's center
+    nx : integer
+        nx coordinate of second patch's center
+    ny : integer
+        ny coordinate of second patch's center
+    nz : integer
+        nz coordinate of second patch's center
+    block_radius : integer
+        block radius for which the distince is computed for
     """
+
     cdef double acu, distancetotal
     cdef int i, j, k, ni1, nj1, ni2, nj2, nk1, nk2
     cdef int sx = image.shape[1], sy = image.shape[0], sz = image.shape[2]
     acu = 0
     distancetotal = 0
-    for i in range(-f, f + 1):
-        for j in range(-f, f + 1):
-            for k in range(-f, f + 1):
+    for i in range(-block_radius, block_radius + 1):
+        for j in range(-block_radius, block_radius + 1):
+            for k in range(-block_radius, block_radius + 1):
                 ni1 = x + i
                 nj1 = y + j
                 nk1 = z + k
@@ -284,28 +342,28 @@ cpdef upfir(double[:, :] image, double[:] h):
 @cython.boundscheck(False)
 @cython.wraparound(False)
 @cython.cdivision(True)
-def nlmeans_block(double[:, :, :]image, double[:, :, :] mask, int v, int f, double h, int rician):
+def nlmeans_block(double[:, :, :]image, double[:, :, :] mask, int patch_radius, int block_radius, double h, int rician):
     """Non-Local Means Denoising Using Blockwise Averaging
 
     Parameters
     ----------
-    image: 3D double ndarray
+    image : 3D double ndarray
         the input image, corrupted with rician noise
     mask : 3D double ndarray
         the input mask
-    v:  int
+    patch_radius :  int
         similar patches in the non-local means are searched for locally,
         inside a cube of side 2*v+1 centered at each voxel of interest.
-    f:  int
+    block_radius :  int
         the size of the block to be used (2*f+1)x(2*f+1)x(2*f+1) in the
         blockwise non-local means implementation (the Coupe's proposal).
-    h:  double
+    h :  double
         the estimated amount of rician noise in the input image: in P.
         Coupe et al. the rician noise was simulated as
         sqrt((f+x)^2 + (y)^2) where f is the pixel value and x and y are
         independent realizations of a random variable with Normal
         distribution, with mean=0 and standard deviation=h
-    rician: boolean
+    rician : boolean
         If True the noise is estimated as Rician, otherwise Gaussian noise
         is assumed.
 
@@ -332,9 +390,9 @@ def nlmeans_block(double[:, :, :]image, double[:, :, :] mask, int v, int f, doub
     dims[1] = image.shape[1]
     dims[2] = image.shape[2]
     cdef double hh = 2 * h * h
-    cdef int Ndims = (2 * f + 1)**3
+    cdef int Ndims = (2 * block_radius + 1)**3
     cdef int nvox = dims[0] * dims[1] * dims[2]
-    cdef double[:, :, :] average = np.zeros((2 * f + 1, 2 * f + 1, 2 * f + 1), dtype=np.float64)
+    cdef double[:, :, :] average = np.zeros((2 * block_radius + 1, 2 * block_radius + 1, 2 * block_radius + 1), dtype=np.float64)
     cdef double[:, :, :] fima = np.zeros_like(image)
     cdef double[:, :, :] means = np.zeros_like(image)
     cdef double[:, :, :] variances = np.zeros_like(image)
@@ -370,9 +428,9 @@ def nlmeans_block(double[:, :, :]image, double[:, :, :] mask, int v, int f, doub
                                      average, totalWeight, hh, rician)
                     else:
                         wmax = 0
-                        for nk in range(k - v, k + v + 1):
-                            for ni in range(i - v, i + v + 1):
-                                for nj in range(j - v, j + v + 1):
+                        for nk in range(k - patch_radius, k + patch_radius + 1):
+                            for ni in range(i - patch_radius, i + patch_radius + 1):
+                                for nj in range(j - patch_radius, j + patch_radius + 1):
                                     if((ni == i)and(nj == j)and(nk == k)):
                                         continue
                                     if ((ni < 0) or (nj < 0) or (nk < 0) or (
@@ -387,7 +445,7 @@ def nlmeans_block(double[:, :, :]image, double[:, :, :] mask, int v, int f, doub
                                     if ((t1 > mu1) and (t1 < (1 / mu1)) and
                                             (t2 > var1) and (t2 < (1 / var1))):
                                         d = _distance(
-                                            image, i, j, k, ni, nj, nk, f)
+                                            image, i, j, k, ni, nj, nk, block_radius)
                                         w = exp(-d / (h * h))
                                         if(w > wmax):
                                             wmax = w
