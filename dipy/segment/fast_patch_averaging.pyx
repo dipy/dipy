@@ -132,5 +132,7 @@ def fast_patch_averaging(double[:, :, :] input_data, double[:, :, :] transformed
                     if(output_mask[i, j, k] > threshold):
                         output_mask1[i, j, k] = 1
                         output_data[i, j, k] = input_data[i, j, k]
+                    else: 
+                        output_mask[i, j, k] = 0
 
     return [np.array(output_data), np.array(output_mask)]
