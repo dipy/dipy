@@ -94,7 +94,7 @@ class Dpy(object):
 
     def version(self):
         ver = self.f.root.version[:]
-        return ver[0]
+        return ver[0].decode()
 
     def write_track(self, track):
         ''' write on track each time
