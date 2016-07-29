@@ -362,7 +362,7 @@ def sph_harm_ind_list(sh_order):
     n_range = np.arange(0, sh_order + 1, 2, dtype=int)
     n_list = np.repeat(n_range, n_range * 2 + 1)
 
-    ncoef = (sh_order + 2) * (sh_order + 1) / 2
+    ncoef = (sh_order + 2) * (sh_order + 1) // 2
     offset = 0
     m_list = empty(ncoef, 'int')
     for ii in n_range:
