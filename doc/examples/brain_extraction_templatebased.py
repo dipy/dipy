@@ -6,6 +6,7 @@ import matplotlib.pyplot as plt
 from dipy.core.histeq import histeq
 from dipy.segment.mask import median_otsu
 from dipy.segment.mask import brain_extraction
+from dipy.segment.mask import jaccard_index
 from dipy.align.imaffine import (transform_centers_of_mass,
                                  AffineMap,
                                  MutualInformationMetric,
@@ -22,6 +23,8 @@ from dipy.align.metrics import CCMetric, EMMetric
 # The filepaths (and their corroesponding dropbox location)
 filename_isbr = '/Users/Riddhish/Documents/GSOC/DIPY/data/Brain Extraction/IBSR_nifti_stripped/IBSR_02/IBSR_02_ana.nii.gz'
 # filename_isbr = dname + '/brain_extraction/First tests/input_data/IBSR_02_ana.nii.gz'
+filename_isbr_mask = '/Users/Riddhish/Documents/GSOC/DIPY/data/Brain Extraction/IBSR_nifti_stripped/IBSR_02/IBSR_02_mask.nii.gz'
+# filename_isbr_mask = dname + '/brain_extraction/First tests/input_data/IBSR_02_mask.nii.gz'
 filename_template = '/Users/Riddhish/Documents/GSOC/DIPY/data/Brain Extraction/mni_icbm152_nlin_asym_09c_nifti/mni_icbm152_nlin_asym_09c/mni_icbm152_t1_tal_nlin_asym_09c.nii'
 # filename_template = dname + '../brain_extraction/First tests/template_data/mni_icbm152_t1_tal_nlin_asym_09c.nii'
 filename_template_mask = '/Users/Riddhish/Documents/GSOC/DIPY/data/Brain Extraction/mni_icbm152_nlin_asym_09c_nifti/mni_icbm152_nlin_asym_09c/mni_icbm152_t1_tal_nlin_asym_09c_mask.nii'
@@ -50,7 +53,6 @@ template_data_mask = img.get_data()
 # first do the pure brain extraction for the data using
 # median otsu
 
-b0_mask, mask = median_otsu(input_data, 2, 1)
 
 sli = input_data.shape[2] / 2
 
@@ -59,11 +61,6 @@ plt.subplot(1, 3, 1).set_axis_off()
 plt.imshow(input_data[:, :, sli].astype('float'),
            cmap='gray', origin='lower')
 plt.title("Input Data")
-
-# plt.subplot(1, 3, 2).set_axis_off()
-# plt.imshow(mask[:, :, sli].astype('float'),
-#            cmap='gray', origin='lower')
-# plt.title("Median Otsu Output")
 
 # Now we do the template based brain extraction
 t = time()
@@ -75,25 +72,36 @@ t = time()
                                               patch_radius=1,
                                               block_radius=2,
                                               threshold=0.9)
+
+b0_mask, mask = median_otsu(output_data, 2, 2)
+
 print("Time taken", time() - t)
+
+# we want a jaccard's measure between the two masks
+img = nib.load(filename_isbr_mask)
+input_manual_mask = img.get_data()
+
+mea = jaccard_index(mask.astype(np.bool), input_manual_mask.astype(np.bool))
+
+print("Jaccard Index", mea)
 plt.subplot(1, 3, 2).set_axis_off()
-plt.imshow(output_data[:, :, sli].astype('float'),
+plt.imshow(b0_mask[:, :, sli].astype('float'),
            cmap='gray', origin='lower')
 plt.title("The patch averaging label output")
 
 plt.subplot(1, 3, 3).set_axis_off()
-plt.imshow(output_mask[:, :, sli].astype('float'),
+plt.imshow(mask[:, :, sli].astype('float'),
            cmap='gray', origin='lower')
 plt.title("The patch averaging mask output")
 # plt.savefig('exp1.png', bbox_inches='tight')
 plt.show()
 
-# nib.save(
-#     nib.Nifti1Image(
-#         output_data,
-#         input_affine), filename_output)
+nib.save(
+    nib.Nifti1Image(
+        output_data,
+        input_affine), filename_output)
 
-# nib.save(
-#     nib.Nifti1Image(
-#         output_mask,
-#         input_affine), filename_output_mask)
+nib.save(
+    nib.Nifti1Image(
+        output_mask,
+        input_affine), filename_output_mask)
