@@ -344,7 +344,7 @@ def clean_cc_mask(mask):
 def brain_extraction(input_data, input_affine, template_data,
                      template_affine, template_mask,
                      patch_radius=1, block_radius=1, parameter=1,
-                     threshold=0.5):
+                     threshold=0.5, same_modality = True):
     """
     A robust brain extraction which uses a template to reduce the skull intensities.
     The affine information is required because we need to register the template to the
@@ -371,11 +371,29 @@ def brain_extraction(input_data, input_affine, template_data,
         Adaptive parameter governing the weights for similar patches
     threshold : Double
         The threshold between 0 to 1 which decides the erosion of the mask boundary
+    same_modality : boolean
+        The variable which governs the relation between types of modalities of the input 
+        and the template data. Set it to be true if the modalities are the same (like both
+        T1's) and false if not
 
     Returns
     -------
-    mask : 3D ndarray
-        The brain extraction from the input data
+    output_data : 3D ndarray
+        The extracted brain from the input data
+    output_mask : 3D ndarray
+        The brain extraction mask of the input data
+
+    Notes
+    -----
+    The implementation takes ideas from both the references given below
+
+    References
+    ----------
+    .. [Eskildsen11] Simon Fristed Eskildsen et al., BEaST : Brain extraction based on 
+                     nonlocal segmentation technique, NeuroImage, vol 59, 2011.
+
+    .. [Lutkenhoff14] Evan S. Lutkenhoff et al.,  “Optimized Brain Extraction for 
+                      Pathological Brains (OptiBET)”, PLOS, 2014
 
     """
 
