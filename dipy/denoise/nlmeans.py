@@ -33,10 +33,10 @@ def nlmeans(arr, sigma, mask=None, patch_radius=1, block_radius=5,
 
     References
     ----------
-    [1] Descoteaux, Maxim and Wiest-Daessle`, Nicolas and Prima, Sylvain and Barillot,
-        Christian and Deriche, Rachid
-        "Impact of Rician Adapted Non-Local Means Filtering on HARDI"
-        MICCAI 2008
+    .. [Descoteaux08] Descoteaux, Maxim and Wiest-Daessle`, Nicolas and Prima,
+                      Sylvain and Barillot, Christian and Deriche, Rachid
+                      Impact of Rician Adapted Non-Local Means Filtering on HARDI
+                      MICCAI 2008
 
     """
 

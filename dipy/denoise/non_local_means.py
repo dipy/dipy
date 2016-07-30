@@ -35,14 +35,14 @@ def non_local_means(arr, sigma, mask=None, patch_radius=1, block_radius=5,
     References
     ----------
 
-    [1] P. Coupe, P. Yger, S. Prima, P. Hellier, C. Kervrann, C. Barillot,
-        "An Optimized Blockwise Non Local Means Denoising Filter for 3D Magnetic
-        Resonance Images"
-        IEEE Transactions on Medical Imaging, 27(4):425-441, 2008
+    .. [Coupe08] P. Coupe, P. Yger, S. Prima, P. Hellier, C. Kervrann, C. Barillot,
+                An Optimized Blockwise Non Local Means Denoising Filter for 3D Magnetic
+                Resonance Images, IEEE Transactions on Medical Imaging,
+                27(4):425-441, 2008
 
-    [2] Pierrick Coupe, Jose Manjon, Montserrat Robles, Louis Collins.
-        "Adaptive Multiresolution Non-Local Means Filter for 3D MR Image Denoising"
-        IET Image Processing, Institution of Engineering and Technology, 2011
+    .. [Coupe11] Pierrick Coupe, Jose Manjon, Montserrat Robles, Louis Collins.
+                Adaptive Multiresolution Non-Local Means Filter for 3D MR Image Denoising
+                IET Image Processing, Institution of Engineering and Technology, 2011
 
     """
     if mask is None:
@@ -56,12 +56,12 @@ def non_local_means(arr, sigma, mask=None, patch_radius=1, block_radius=5,
     if arr.ndim == 3:
         sigma = np.ones(arr.shape, dtype=np.float64) * sigma
         return np.array(nlmeans_block(
-                np.double(arr),
-                mask,
-                patch_radius,
-                block_radius,
-                sigma[0,0,0],
-                np.int(rician))).astype(arr.dtype)
+            np.double(arr),
+            mask,
+            patch_radius,
+            block_radius,
+            sigma[0, 0, 0],
+            np.int(rician))).astype(arr.dtype)
     elif arr.ndim == 4:
         denoised_arr = np.zeros_like(arr)
 
