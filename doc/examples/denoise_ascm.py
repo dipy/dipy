@@ -21,6 +21,7 @@ from dipy.denoise.ascm import ascm
 """
 Choose one of the data from the datasets in DIPY
 """
+
 fetch_sherbrooke_3shell()
 img, gtab = read_sherbrooke_3shell()
 
@@ -44,10 +45,10 @@ Siemens scanner with a 4 array head coil.
 
 sigma = estimate_sigma(data, N=4)
 
-# Smaller block denoising: More sharp less denoised
 """
 Non-local means with a smaller patch size which implies less smoothing, more sharpness
 """
+
 den_small = non_local_means(
     data,
     sigma=sigma,
@@ -55,10 +56,11 @@ den_small = non_local_means(
     patch_radius=1,
     block_radius=1,
     rician=True)
-# Larger block denoising: Less sharp and more denoised
+
 """
 Non-local means with larger patch size which implies more smoothing, less sharpness
 """
+
 den_large = non_local_means(
     data,
     sigma=sigma,
@@ -69,10 +71,10 @@ den_large = non_local_means(
 
 # Now perform the adaptive soft coefficient matching
 """
-Now we perform the adaptive soft coefficient matching
-Empirically we set the parameter h in ascm to be the average of the local
-noise variance, sigma itself here in this case
+Now we perform the adaptive soft coefficient matching. Empirically we set the adaptive 
+parameter h in ascm to be the average of the local noise variance, in this case the sigma itself.
 """
+
 den_final = np.array(ascm(data, den_small, den_large, sigma[0]))
 
 print("total time", time() - t)
@@ -80,6 +82,7 @@ print("total time", time() - t)
 """
 Plot the axial slice of the data, it's denoised output and the residual
 """
+
 axial_middle = data.shape[2] / 2
 
 original = data[:, :, axial_middle].T

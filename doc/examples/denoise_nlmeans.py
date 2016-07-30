@@ -57,8 +57,9 @@ den = non_local_means(
 print("total time", time() - t)
 
 """
-We show the axial slice and how it has been denoised
+Let us plot the axial slice of the denoised output
 """
+
 axial_middle = data.shape[2] / 2
 
 before = data[:, :, axial_middle].T
@@ -79,6 +80,7 @@ ax[2].set_title('difference')
 
 plt.show()
 plt.savefig('denoised.png', bbox_inches='tight')
+
 
 """
 .. figure:: denoised.png
