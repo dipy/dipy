@@ -340,7 +340,32 @@ def clean_cc_mask(mask):
 
     return new_cc_mask
 
+def template_only_averaging(input_data, template_data, template_mask,
+                            patch_radius = 3, threshold):
+    
+    """
+    The averaging approach which only uses the registered template to extract
+    the brain.
 
+    Parameters
+    ----------
+    input_data : 3D ndarray
+        The input data from which the brain has to be extracted
+    template_data : 3D ndarray
+        The template data
+    template_mask : 3D ndarray
+        The binary mask of the template data which in 1 where the brain is
+        and 0 otherwise (essentially the brain extracted from the template data)
+    patch_radius : int
+        The patch radius of the
+    Returns
+    -------
+    output_data : 3D ndarray
+        The extracted brain from the input data
+    output_mask : 3D ndarray
+        The brain extraction mask of the input data
+   
+    """
 def brain_extraction(input_data, input_affine, template_data,
                      template_affine, template_mask,
                      patch_radius=1, block_radius=1, parameter=1,
@@ -444,12 +469,19 @@ def brain_extraction(input_data, input_affine, template_data,
     transformed_data = mapping.transform(template_data)
     transformed_mask = mapping.transform(template_mask)
 
-    [output_data, output_mask] = fast_patch_averaging(input_data.astype(np.float64),
-                                    transformed_data.astype(np.float64),
-                                    transformed_mask.astype(np.float64),
-                                    patch_radius,
-                                    block_radius,
-                                    parameter,
-                                    threshold)
+    if same_modality:
+        [output_data, output_mask] = fast_patch_averaging(input_data.astype(np.float64),
+                                        transformed_data.astype(np.float64),
+                                        transformed_mask.astype(np.float64),
+                                        patch_radius,
+                                        block_radius,
+                                        parameter,
+                                        threshold)
+    else:
+        [output_data, output_mask] = template_only_averaging(input_data.astype(np.float64),
+                                        transformed_data.astype(np.float64),
+                                        transformed_mask.astype(np.float64),
+                                        patch_radius,
+                                        threshold)
 
     return [output_data, output_mask]
