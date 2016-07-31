@@ -3,10 +3,10 @@ import scipy as sp
 import nibabel as nib
 from time import time
 import matplotlib.pyplot as plt
-from dipy.core.histeq import histeq
-from dipy.segment.mask import median_otsu
-from dipy.segment.mask import brain_extraction
-from dipy.segment.mask import jaccard_index
+from dipy.segment.mask import (median_otsu, 
+                              jaccard_index,
+                              brain_extraction)
+
 from dipy.align.imaffine import (transform_centers_of_mass,
                                  AffineMap,
                                  MutualInformationMetric,
@@ -34,15 +34,17 @@ filename_output = '/Users/Riddhish/Documents/GSOC/DIPY/data/Brain Extraction/for
 filename_output_mask = '/Users/Riddhish/Documents/GSOC/DIPY/data/Brain Extraction/forElef_GSoC_brain_extraction/brain_extracted_mask.nii.gz'
 # filename_output_mask = dname + '../brain_extraction/First tests/output_data/brain_extracted_mask.nii.gz'
 
+"""
+Read the input data and the template data from the DIPY datasets
+"""
 img = nib.load(filename_isbr)
 input_data = img.get_data()
 input_affine = img.get_affine()
 
 print(input_data.shape)
-input_data = input_data[..., 0]
-# input_data = input_data[40:210, 30:220, 70:90]
 
-# read the template
+input_data = input_data[..., 0]
+
 img = nib.load(filename_template)
 template_data = img.get_data()
 template_affine = img.get_affine()
@@ -50,20 +52,24 @@ template_affine = img.get_affine()
 img = nib.load(filename_template_mask)
 template_data_mask = img.get_data()
 
-# first do the pure brain extraction for the data using
-# median otsu
-
-
-sli = input_data.shape[2] / 2
-
-plt.figure('Brain segmentation')
-plt.subplot(1, 3, 1).set_axis_off()
-plt.imshow(input_data[:, :, sli].astype('float'),
-           cmap='gray', origin='lower')
-plt.title("Input Data")
-
-# Now we do the template based brain extraction
 t = time()
+
+"""
+Now we apply the ``brain extraction`` function which takes the input, template data and
+template mask as inputs, along with their affine information. There are five other 
+parameters which can be given to the function. 
+
+The same_modality takes boolean value true if the input and template are of same modality
+and false if they are not, when it takes value false the only useful parameters are the
+patch_radius and threshold, rest are only used when the modalities are same.
+
+The patch_radius and block_radius are the inputs for block wise local averaging which 
+is used after the registeration step in the ``brain extraction``. The parameter value 
+which is set to 1 as defaults governs the weighing, the threshold value governs the 
+eroded boundary coefficient of the extracted mask. For more info on how these parameters 
+works please look at the ``fast_patch_averaging`` function in dipy.segment.
+"""
+
 [output_data, output_mask] = brain_extraction(input_data,
                                               input_affine,
                                               template_data,
@@ -73,17 +79,38 @@ t = time()
                                               block_radius=2,
                                               threshold=0.9)
 
+"""
+Follow it up by a median otsu for added robustness
+"""
+
 b0_mask, mask = median_otsu(output_data, 2, 2)
 
 print("Time taken", time() - t)
 
-# we want a jaccard's measure between the two masks
 img = nib.load(filename_isbr_mask)
 input_manual_mask = img.get_data()
+
+"""
+The jaccard's index measures how similar are the two binary images, so we compare
+our generated mask with the manually extracted brain mask. Perfect match will corroespond 
+to the jaccard index of 1.
+"""
 
 mea = jaccard_index(mask.astype(np.bool), input_manual_mask.astype(np.bool))
 
 print("Jaccard Index", mea)
+
+"""
+Let us plot the axial slice of the extraction
+"""
+sli = input_data.shape[2] / 2
+
+plt.figure('Brain segmentation')
+plt.subplot(1, 3, 1).set_axis_off()
+plt.imshow(input_data[:, :, sli].astype('float'),
+           cmap='gray', origin='lower')
+plt.title("Input Data")
+
 plt.subplot(1, 3, 2).set_axis_off()
 plt.imshow(b0_mask[:, :, sli].astype('float'),
            cmap='gray', origin='lower')
@@ -93,7 +120,7 @@ plt.subplot(1, 3, 3).set_axis_off()
 plt.imshow(mask[:, :, sli].astype('float'),
            cmap='gray', origin='lower')
 plt.title("The patch averaging mask output")
-# plt.savefig('exp1.png', bbox_inches='tight')
+
 plt.show()
 
 nib.save(

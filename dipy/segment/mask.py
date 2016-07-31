@@ -341,7 +341,7 @@ def clean_cc_mask(mask):
     return new_cc_mask
 
 def template_only_averaging(input_data, template_data, template_mask,
-                            patch_radius = 3, threshold):
+                            patch_radius = 1, threshold = 0.5):
     
     """
     The averaging approach which only uses the registered template to extract
@@ -357,7 +357,11 @@ def template_only_averaging(input_data, template_data, template_mask,
         The binary mask of the template data which in 1 where the brain is
         and 0 otherwise (essentially the brain extracted from the template data)
     patch_radius : int
-        The patch radius of the
+        The patch radius of the windows that needs to be compared
+    threshold : double
+        Between 0 to 1 which decides the percentage of template mask patch which needs
+        to be filled so as judge weather the mask at center voxel of input image
+        is 1 or 0
     Returns
     -------
     output_data : 3D ndarray
@@ -366,6 +370,29 @@ def template_only_averaging(input_data, template_data, template_mask,
         The brain extraction mask of the input data
    
     """
+    n0 = template_data.shape[0]
+    n1 = template_data.shape[1]
+    n2 = template_data.shape[2]
+    patch_size = patch_radius**3
+    output_mask = np.zeros(input_data.shape)
+    output_data = np.ones(input_data.shape, dtype = np.float64) * input_data
+
+    for i in range(patch_radius, n0 - patch_radius):
+        for j in range(patch_radius, n1 - patch_radius):
+            for k in range(patch_radius, n2 - patch_radius):
+
+                mask_patch = template_mask[i - patch_radius, i + patch_radius + 1,
+                                        j - patch_radius, j + patch_radius + 1,
+                                        k - patch_radius, k + patch_radius + 1]
+
+                percent = np.double(np.sum(mask_patch)) / np.double(patch_size)
+
+                if percent >= threshold:
+                    output_mask[i, j, k] = 1
+
+    output_data[output_mask == 0] = 0
+    return [output_data, output_mask]
+
 def brain_extraction(input_data, input_affine, template_data,
                      template_affine, template_mask,
                      patch_radius=1, block_radius=1, parameter=1,
