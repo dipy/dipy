@@ -27,8 +27,6 @@ dataset, which we will corrupt by adding intermittent noise.
 We start by importing a few of the libraries we will use.
 """
 
-from imp import reload
-
 import numpy as np
 import nibabel as nib
 
@@ -38,7 +36,6 @@ including an implementation of the RESTORE algorithm.
 """
 
 import dipy.reconst.dti as dti
-reload(dti)
 
 """
 ``dipy.data`` is used for small datasets that we use in tests and examples.
