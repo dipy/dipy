@@ -27,6 +27,8 @@ dataset, which we will corrupt by adding intermittent noise.
 We start by importing a few of the libraries we will use.
 """
 
+from imp import reload
+
 import numpy as np
 import nibabel as nib
 
