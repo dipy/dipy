@@ -36,7 +36,6 @@ including an implementation of the RESTORE algorithm.
 """
 
 import dipy.reconst.dti as dti
-reload(dti)
 
 """
 ``dipy.data`` is used for small datasets that we use in tests and examples.
