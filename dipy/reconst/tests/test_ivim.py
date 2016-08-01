@@ -160,7 +160,16 @@ def test_with_higher_S0():
 def test_bounds_x0():
     """
     Test to check if setting bounds for signal where initial value is
-    higer than subsequent values works.
+    higer than subsequent values works. These values are from the
+    IVIM dataset which can be obtained by using the `read_ivim` function
+    from dipy.data.fetcher. These are values from the voxel [160, 98, 33]
+    which can be obtained by :
+    
+    >>> from dipy.data.fetcher import read_ivim
+    >>> img, gtab = read_ivim()
+    >>> data = img.get_data()
+    >>> signal = data[160, 98, 33, :]
+
     """
     test_signal = np.array([4574.34814453, 4745.18164062,  4759.51806641, 4618.24951172, 4665.63623047,
                             4568.046875,  4525.90478516, 4734.54785156, 4526.41357422, 4299.99414062,

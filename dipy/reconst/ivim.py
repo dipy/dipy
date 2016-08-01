@@ -42,10 +42,10 @@ def ivim_function(params, bvals):
     Parameters
     ----------
     params : array
-             An array of IVIM parameters - S0, f, D_star, D
+        An array of IVIM parameters - S0, f, D_star, D
 
-    bvals  : array
-             bvalues
+    bvals : array
+        bvalues
 
     References
     ----------
@@ -182,7 +182,7 @@ class IvimModel(ReconstModel):
                    of brain perfusion with intravoxel incoherent motion
                    MR imaging." Radiology 265.3 (2012): 874-881.
         """
-        # Call the two stage function to get better x0 guess
+        # Call the function _estimate_S0_D to get initial x0 guess.
         x0 = self.estimate_x0(data)
         # Use leastsq to get ivim_params
         params_in_mask = self._leastsq(data, x0)
@@ -247,30 +247,22 @@ class IvimModel(ReconstModel):
         Obtain initial guess for S0 and D for two stage fitting.
 
         Using TensorModel from reconst.dti, we fit an exponential
-        for those signals which are less than a particular bvalue
+        for those signals which are greater than a particular bvalue
         (split_b). The apparent diffusion coefficient gives us an
-        initial estimate for D.
+        initial estimate for D and S0.
 
         Parameters
         ----------
         data : array
-            The measured signal from one voxel. A multi voxel decorator
-            will be applied to this fit method to scale it and apply it
-            to multiple voxels.
-
-        gtab : GradientTable class instance
-                Gradient directions and bvalues
-
-        split_b : float
-            The b-value to split the data on for two-stage fit
+            The measured signal from one voxel.
 
         Returns
         -------
-        S0_hat : array ([S0_1, S0_2, ...])
-            An array which gives the guess for all the S0 values.
+        S0_hat : float
+            Initial S0 guess for this voxel.
 
-        D_guess : array ([D_1, D_2, ...])
-            An array which gives the guess for all the D values.
+        D_guess : float
+            Initial D_guess for this voxel.
         """
         gtab = self.gtab
         split_b = self.split_b
@@ -307,11 +299,9 @@ class IvimModel(ReconstModel):
             IvimFit.model_paramters. The shape of the parameter array
             will be (data[:-1], 4). 
 
-        bvals : array
-            The array of bvalues for the data. This is obtained from gtab.bvals.
-
-        x0 : array, optional
-                Initial guesses for the parameters S0, f, D_star and D
+        x0 : array
+            Initial guesses for the parameters S0, f, D_star and D
+            calculated using the function `_estimate_S0_D`
         """
         gtol = self.options["gtol"]
         ftol = self.options["ftol"]
@@ -384,7 +374,14 @@ class IvimFit(object):
         ----------
         gtab : GradientTable class instance
                Gradient directions and bvalues
-        # Explain S0 doesn't matter here
+
+        S0 : float
+            S0 value here is not necessary and will
+            not be used to predict the signal. It has
+            been added to conform to the structure
+            of the predict method in multi_voxel which
+            requires a keyword argument S0.
+
         Returns
         -------
         signal : array

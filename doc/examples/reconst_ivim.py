@@ -3,33 +3,33 @@
 Intravoxel incoherent motion
 ============================================================
 The intravoxel incoherent motion (IVIM) model describes diffusion
-and perfusion in the signal acquired with diffusion. The IVIM model
-can be understood as an adaptation of the work of Stejskals and Tanners
-[Stejskal65]_ in biologic tissue, and was proposed by Le Bihan [LeBihan84]_
+and perfusion in the signal acquired with a diffusion MRI sequence
+that contains multiple low b-values. The IVIM model can be understood
+as an adaptation of the work of Stejskal and Tanner [Stejskal65]_
+in biological tissue, and was proposed by Le Bihan [LeBihan84]_.
 The model posits that two compartments exist: a slow moving compartment,
 where particles diffuse in a Brownian fashion as a consequence of thermal
 energy, and a fast moving compartment (the vascular compartment), where
-blood moves as a consequence of pressure gradient. In this second
-compartment, a pseudo diffusion term (D* ) is introduced that describes
-the displacement of the blood elements in an assumed randomly laid out
-vascular network, at the macroscopic level. For the perfusion to have a
-physiological meaning, one expects that D* is greater than D.
+blood moves as a consequence of a pressure gradient. In this second
+compartment, a pseudo diffusion term $\mathbf{D^*}$ is introduced that
+describes the displacement of the blood elements in an assumed randomly
+laid out vascular network, at the macroscopic level. For the perfusion
+to have a physiological meaning, one expects that $\mathbf{D^*}$ is
+greater than $\mathbf{D}$.
 
-The IVIM model expresses the diffusion signal as follows:
+The IVIM model expresses the MRI signal as follows:
 
- .. math: :
-
-    S(b) = S_{0}[fe ^ {-b*D_star} + (1 - f)e^{-b*D}]
+ .. math::
+    S(b)=S_0(fe^{-bD^*}+(1-f)e^{-bD})
 
 where $\mathbf{b}$ is the gradient value (which is dependent on
-the measurement parameters), $S_0$ is the signal in the absence
+the measurement parameters), $\mathbf{S_{0}}$ is the signal in the absence
 of diffusion gradient sensitization, $\mathbf{f}$ is the perfusion
-fraction, $\mathbf{D}$ is the diffusion coefficient,
- $\mathbf{D * }$ is the pseudo-diffusion diffusion constant,
- due to vascular contributions
+fraction, $\mathbf{D}$ is the diffusion coefficient and $\mathbf{D^*}$ is
+the pseudo-diffusion constant, due to vascular contributions.
 
 In the following example we show how to fit the IVIM model
-on a diffusion weighted dataset and visualize the perfusion
+on a diffusion-weighted dataset and visualize perfusion
 and diffusion. First, we import all relevant modules:
 """
 
@@ -39,7 +39,7 @@ from dipy.reconst.ivim import IvimModel, ivim_function
 from dipy.data.fetcher import read_ivim
 
 """
-We get an IVIM dataset using Dipy's data fetcher `read_ivim`.
+We get an IVIM dataset using Dipy's data fetcher ``read_ivim``.
 This dataset was acquired with 21 b-values in 3 different directions.
 Volumes corresponding to different directions were registered to each
 other, and averaged across directions. Thus, this dataset has 4 dimensions,
@@ -50,10 +50,10 @@ of b-values.
 img, gtab = read_ivim()
 
 """
-img contains a nibabel Nifti1Image object(with the data)
+The variable ``img`` contains a ``nibabel`` NIfTI image object(with the data)
 and gtab contains a GradientTable object(information about
 the gradients e.g. b-values and b-vectors). We get the
-data from img using `read_data`.
+data from img using ``read_data``.
 """
 
 data = img.get_data()
@@ -62,10 +62,11 @@ print('data.shape (%d, %d, %d, %d)' % data.shape)
 """
 The data has 54 slices, with 256-by-256 voxels in each slice.
 The fourth dimension corresponds to the b-values in the gtab.
-Let us visualize the data by taking a slice midway(z=27) at bvalue = 0.
+Let us visualize the data by taking a slice midway(z=27) at
+$\mathbf{b} = 0$.
 """
 
-z = 33
+z = 27
 b = 20
 
 plt.imshow(data[:, :, z, b].T, origin='lower', cmap='gray')
@@ -75,10 +76,17 @@ plt.savefig("ivim_data_slice.png")
 plt.close()
 
 """
-The marked point in the image shows a section containing cerebral spinal fluid (CSF)
-so it should have a very high f and D*, the area between the right and left is white
-matter so that should be lower, and the region on the right is gray matter and CSF.
-That should give us some contrast to see the values varying across the regions.
+.. figure:: ivim_data_slice.png
+   :align: center
+
+   Heat map of a slice of data
+
+The marked point in the image shows a section containing cerebral spinal
+fluid (CSF) so it should have a very high $\mathbf{f}$ and $\mathbf{D^*}$,
+the area between the right and left is white matter so that should be lower,
+and the region on the right is gray matter and CSF. That should give us some
+contrast to see the values varying across the regions. We will consider the
+marked region for our example.
 """
 
 x1, x2 = 160, 180
@@ -90,47 +98,58 @@ plt.savefig("CSF_slice.png")
 plt.close()
 
 """
+.. figure:: CSF_slice.png
+   :align: center
+
+   Heat map of the CSF slice selected.
+
 Now that we have prepared the datasets we can go forward with
 the ivim fit. Instead of fitting the entire volume, we focus on a
-small section of the slice, to fit the IVIM model. First, we instantiate
-the Ivim model. Here, we use a two-stage approach: first, a tensor
-is fit to the data, and then this tensor as the initial starting point
-for the non-linear fit of IVIM parameters. All initializations are
-passed with the `IvimModel` such `split_b`. If you are using
-Scipy 0.17, you can also set bounds by setting
-`bounds=([0., 0., 0., 0.], [np.inf, 1., 1., 1.]))` while initializing
+small section of the slice as selected aboove, to fit the IVIM model.
+First, we instantiate the Ivim model. Using a two-stage approach: first,
+a tensor is fit to the data, and then initial guesses for the parameters
+$\mathbf{S_{0}}$ and $\mathbf{D}$ obtained from this this tensor by
+``_estimate_S0_D`` is used as the starting point for the non-linear fit
+of IVIM parameters using Scipy's ``leastsq`` or ``least_square`` function
+depending on which Scipy version you are using. All initializations for
+the model such as ``split_b`` are passed while creating the ``IvimModel``.
+If you are using Scipy 0.17, you can also set bounds by setting
+``bounds=([0., 0., 0., 0.], [np.inf, 1., 1., 1.]))`` while initializing
 the IvimModel. It is recommeded that you upgrade to Scipy 0.17 since
 the fitting results might at times return values which do not make sense
-physically. (Negative f values or D*)
+physically. (For example a negative $\mathbf{f}$)
 """
 
 ivimmodel = IvimModel(gtab)
 
 """
-To fit the model, call the `fit_method` and pass the data for fitting.
+To fit the model, call the `fit` method and pass the data for fitting.
 """
 
 ivimfit = ivimmodel.fit(data_slice)
 
 """
 The fit method creates a IvimFit object which contains the
-fitting parameters of the model the fit parameters of the model.
-These are accessible through the model_parameters attribute of the
-IvimFit object. Parameters are arranged as a 4D array, corresponding
-to the spatial dimensions of the data, and the last dimension (of length 4)
+parameters of the model obtained after fitting. These are accessible
+through the `model_params` attribute of the IvimFit object.
+The parameters are arranged as a 4D array, corresponding to the spatial
+dimensions of the data, and the last dimension (of length 4)
 corresponding to the model parameters according to the following
-order: S0, f, D* and D.
+order : $\mathbf{S_{0}, f, D^*, D}$.
 """
 
 ivimparams = ivimfit.model_params
 print("ivimparams.shape : {}".format(ivimparams.shape))
 
 """
-As we see, we have a 20x20 slice at the height z = 33. Thus we
-have 400 voxels. We will now plot the values of S0, f, D* and D
-for some voxels and also the various maps for the entire slice.
+As we see, we have a 20x20 slice at the height z = 27. Thus we
+have 400 voxels. We will now plot the parameters obtained from the
+fit for a voxel and also various maps for the entire slice.
 This will give us an idea about the diffusion and perfusion in
-the section. Let(i, j) denote the coordinate of the voxel.
+that section. Let(i, j) denote the coordinate of the voxel. We have
+already fixed the z component as 27 and hence we will get a slice
+which is 33 units avove.
+
 """
 
 i, j = 10, 10
@@ -138,17 +157,16 @@ estimated_params = ivimfit.model_params[i, j, :]
 print(estimated_params)
 
 """
-Let us define a plotting our results. For this we will use the
-ivim_function defined in the module ivim which takes bvalues
-and ivim parameters and returns the estimated signal.
+Next, we plot the results relative to the model fit.
+For this we will use the `predict` method of the IvimFit object
+to get the estimated signal.
 """
 
-estimated_signal = ivim_function(estimated_params, gtab.bvals)
+estimated_signal = ivimfit.predict(gtab)[i, j, :]
 
-plt.scatter(gtab.bvals, data_slice[i, j, :], color="green",
-            label="Actual signal")
-plt.scatter(gtab.bvals, estimated_signal,
-            color="red", label="Estimated Signal")
+plt.scatter(gtab.bvals, data_slice[i, j, :],
+            color="green", label="Actual signal")
+plt.plot(gtab.bvals, estimated_signal, color="red", label="Estimated Signal")
 plt.xlabel("bvalues")
 plt.ylabel("Signals")
 
@@ -158,11 +176,15 @@ text_fit = """Estimated \n S0={:06.3f} f={:06.4f}\n
 
 plt.text(0.65, 0.50, text_fit, horizontalalignment='center',
          verticalalignment='center', transform=plt.gca().transAxes)
-plt.legend(loc='upper left')
+plt.legend(loc='upper right')
 plt.savefig("ivim_voxel_plot.png")
 plt.close()
-
 """
+.. figure:: ivim_voxel_plot.png
+   :align: center
+
+   Plot of the signal from one voxel.
+
 Now we can map the perfusion and diffusion maps for the slice. We
 will plot a heatmap showing the values using a colormap. It will be
 useful to define a plotting function for the heatmap here since we
@@ -170,37 +192,61 @@ will use it to plot for all the IVIM parameters. We will need to specify
 the lower and upper limits for our data. For example, the perfusion
 fractions should be in the range (0,1). Similarly, the diffusion and
 pseudo-diffusion constants are much smaller than 1. We pass an argument
-called "variable" to out plotting function which gives the label for
+called ``variable`` to out plotting function which gives the label for
 the plot.
 """
 
 
-def plot_map(raw_data, variable, limits):
+def plot_map(raw_data, variable, limits, filename):
     lower, upper = limits
     plt.title('Map for {}'.format(variable))
     plt.imshow(raw_data.T, origin='lower', clim=(lower, upper), cmap="gray")
     plt.colorbar()
-    plt.savefig(variable + ".png")
+    plt.savefig(filename)
     plt.close()
 
 """
 Let us get the various plots so that we can visualize them in one page
 """
 
-plot_map(ivimparams[:, :, 0], "S0", (0, 10000))
-plot_map(data_slice[:, :, 0], "S at b = 0", (0, 10000))
-
-plot_map(ivimparams[:, :, 1], "f", (0, 1))
-plot_map(ivimparams[:, :, 2], "D*", (0, 0.01))
-plot_map(ivimparams[:, :, 3], "D", (0, 0.001))
+plot_map(ivimparams[:, :, 0], "S0", (0, 10000), "signal.png")
+plot_map(data_slice[:, :, 0], "S at b = 0", (0, 10000), "data.png")
+plot_map(ivimparams[:, :, 1], "f", (0, 1), "perfusion_fraction.png")
+plot_map(ivimparams[:, :, 2], "D*", (0, 0.01), "perfusion_coeff.png")
+plot_map(ivimparams[:, :, 3], "D", (0, 0.001), "diffusion_coeff.png")
 
 """
+.. figure:: signal.png
+   :align: center
+
+   Heatmap of S0 predicted from the fit
+
+.. figure:: data.png
+   :align: center
+
+   Heatmap of signal value at b = 0 predicted from the fit
+
+.. figure:: perfusion_fraction.png
+   :align: center
+
+   Heatmap of perfusion fraction values predicted from the fit
+
+.. figure:: perfusion_coeff.png
+   :align: center
+
+   Heatmap of perfusion coefficients predicted from the fit.
+
+.. figure:: diffusion_coeff.png
+   :align: center
+
+   Heatmap of diffusion coefficients predicted from the fit
+
 References:
 
 .. [Stejskal65] Stejskal, E. O.; Tanner, J. E. (1 January 1965).
                 "Spin Diffusion Measurements: Spin Echoes in the Presence
                 of a Time-Dependent Field Gradient". The Journal of Chemical
-                Physics 42 (1): 288. Bibcode:1965JChPh..42..288S.
+                Physics 42 (1): 288. Bibcode: 1965JChPh..42..288S.
                 doi:10.1063/1.1695690.
 
 .. [LeBihan84] Le Bihan, Denis, et al. "Separation of diffusion
