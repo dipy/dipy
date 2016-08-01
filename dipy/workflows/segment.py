@@ -1,6 +1,5 @@
 from __future__ import division, print_function, absolute_import
 
-import inspect
 import logging
 import numpy as np
 
@@ -35,13 +34,15 @@ class MedianOtsuFlow(Workflow):
         save_masked : bool
             Save mask
         median_radius : int, optional
-            Radius (in voxels) of the applied median filter(default 2)
+            Radius (in voxels) of the applied median filter (default 2)
         numpass : int, optional
             Number of pass of the median filter (default 5)
         autocrop : bool, optional
             If True, the masked input_volumes will also be cropped using the
-            bounding box defined by the masked data. Should be on if DWI is
-            upsampled to 1x1x1 resolution. (default False)
+            bounding box defined by the masked data. For example, if diffusion
+            images are of 1x1x1 (mm^3) or higher resolution auto-cropping could
+            reduce their size in memory and speed up some of the analysis.
+            (default False)
         vol_idx : string, optional
             1D array representing indices of ``axis=3`` of a 4D `input_volume`
             'None' (the default) corresponds to ``(0,)`` (assumes first volume

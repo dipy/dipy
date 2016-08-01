@@ -18,7 +18,7 @@ def test_iap():
     pos_results = ['test', 0, 10, 10.2]
     opt_results = ['opt_test', True, 20, 20.2]
 
-    inputs = inputs_from_results(opt_results, opt_keys, optionnal=True)
+    inputs = inputs_from_results(opt_results, opt_keys, optional=True)
     inputs.extend(inputs_from_results(pos_results))
 
     sys.argv.extend(inputs)
@@ -46,9 +46,9 @@ def test_flow_runner():
                 'mix_names']
 
     pos_results = ['dipy.txt']
-    opt_results = [30, 10, 20, True, 'aboslute', True]
+    opt_results = [30, 10, 20, True, 'absolute', True]
 
-    inputs = inputs_from_results(opt_results, opt_keys, optionnal=True)
+    inputs = inputs_from_results(opt_results, opt_keys, optional=True)
     inputs.extend(inputs_from_results(pos_results))
 
     sys.argv.extend(inputs)
@@ -58,7 +58,7 @@ def test_flow_runner():
 
     # generic flow params
     assert dcwf._force_overwrite
-    assert dcwf._output_strategy == 'aboslute'
+    assert dcwf._output_strategy == 'absolute'
     assert dcwf._mix_names
 
     # sub flow params
@@ -71,13 +71,13 @@ def test_flow_runner():
     sys.argv = old_argv
 
 
-def inputs_from_results(results, keys=None, optionnal=False):
+def inputs_from_results(results, keys=None, optional=False):
     prefix = '--'
     inputs = []
     for idx, result in enumerate(results):
         if keys is not None:
             inputs.append(prefix+keys[idx])
-        if optionnal and str(result) in ['True', 'False']:
+        if optional and str(result) in ['True', 'False']:
             continue
         inputs.append(str(result))
 

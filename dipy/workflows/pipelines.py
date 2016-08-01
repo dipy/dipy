@@ -20,12 +20,12 @@ class FODFPipeline(CombinedWorkflow):
 
     def run(self, input_files, bvalues, bvectors, out_dir=''):
         """ A simple dwi processing pipeline with the following steps:
-            -Denoising
-            -Masking
-            -DTI reconstruction
-            -HARDI recontruction
-            -Deterministic tracking
-            -Tracts metrics
+        -Denoising
+        -Masking
+        -DTI reconstruction
+        -HARDI recontruction
+        -Deterministic tracking
+        -Tracts metrics
 
         Parameters
         ----------

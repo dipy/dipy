@@ -8,6 +8,7 @@ class CombinedWorkflow(Workflow):
     def __init__(self, output_strategy='append', mix_names=False,
                  force=False, skip=False):
         """ Workflow that combines multiple workflows.
+        The workflow combined together are referred as sub flows in this class.
         """
 
         self._optionals = {}
@@ -15,8 +16,8 @@ class CombinedWorkflow(Workflow):
 
     def get_sub_runs(self):
         """ Returns a list of tuples
-            (sub flow name, sub flow run method, sub flow short name)
-            to be used in the sub flow parameters extraction.
+        (sub flow name, sub flow run method, sub flow short name)
+        to be used in the sub flow parameters extraction.
         """
         sub_runs = []
         for flow in self._get_sub_flows():
@@ -26,14 +27,14 @@ class CombinedWorkflow(Workflow):
 
     def _get_sub_flows(self):
         """ Returns a list of sub flows used in the combined_workflow. Needs to
-            be implemented in every new combined_workflow.
+        be implemented in every new combined_workflow.
         """
         raise AttributeError('Error: _get_sub_flows() has to be defined for {}'.
                              format(self.__class__))
 
     def set_sub_flows_optionals(self, opts):
         """ Sets the self._optionals variable with all sub flow arguments
-            that were passed in the commandline.
+        that were passed in the commandline.
         """
         self._optionals = {}
         for key, sub_dict in iteritems(opts): #opts.iteritems():
@@ -42,7 +43,7 @@ class CombinedWorkflow(Workflow):
 
     def get_optionals(self, flow, **kwargs):
         """ Returns the sub flow's optional arguments merged with those passed
-            as params in kwargs.
+        as params in kwargs.
         """
         opts = self._optionals[flow.__name__]
         opts.update(kwargs)
@@ -50,8 +51,8 @@ class CombinedWorkflow(Workflow):
         return opts
 
     def run_sub_flow(self, flow, *args, **kwargs):
-        """ Runs the subflow with the optional parameters passed via the
-            command line. This is a convinience method to make sub flow running
-            more intuitive on the concrete CombinedWorkflow side.
+        """ Runs the sub flow with the optional parameters passed via the
+        command line. This is a convenience method to make sub flow running
+        more intuitive on the concrete CombinedWorkflow side.
         """
         return flow.run(*args, **self.get_optionals(type(flow), **kwargs))

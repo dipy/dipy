@@ -61,15 +61,15 @@ class IntrospectiveArgumentParser(arg.ArgumentParser):
 
     def add_workflow(self, workflow):
         """ Take a workflow object and use introspection to extract the parameters,
-            types and docstrings of its run method. Then add these parameters
-            to the current arparser's own params to parse. If the workflow is of
-            type combined_workflow, the optional input parameters of its
-            sub workflows will also be added.
+        types and docstrings of its run method. Then add these parameters
+        to the current arparser's own params to parse. If the workflow is of
+        type combined_workflow, the optional input parameters of its
+        sub workflows will also be added.
 
-            Parameters
-            -----------
-            workflow : dipy.workflows.workflow.Workflow
-                Workflow from which to infer parameters.
+        Parameters
+        -----------
+        workflow : dipy.workflows.workflow.Workflow
+            Workflow from which to infer parameters.
         """
         specs = inspect.getargspec(workflow.run)
         doc = inspect.getdoc(workflow.run)
@@ -132,14 +132,14 @@ class IntrospectiveArgumentParser(arg.ArgumentParser):
 
     def add_sub_flow_args(self, sub_flows):
         """ Take a list workflow objects and use introspection to extract the
-            parameters, types and docstrings of their run method. Only the
-            optional input parameters are extracted for these as they are
-            treated as sub workflows.
+        parameters, types and docstrings of their run method. Only the
+        optional input parameters are extracted for these as they are
+        treated as sub workflows.
 
-            Parameters
-            -----------
-            sub_flows : array of dipy.workflows.workflow.Workflow
-                Workflows to inspect.
+        Parameters
+        -----------
+        sub_flows : array of dipy.workflows.workflow.Workflow
+            Workflows to inspect.
         """
 
         sub_flow_optionals = {}
@@ -172,7 +172,6 @@ class IntrospectiveArgumentParser(arg.ArgumentParser):
                 dtype, isnarg = self._select_dtype(typestr)
                 help_msg = ''.join(_doc[i][2])
 
-
                 _args = ['{0}{1}'.format(prefix, arg_name)]
                 _kwargs = {'help': help_msg,
                            'type': dtype,
@@ -202,12 +201,12 @@ class IntrospectiveArgumentParser(arg.ArgumentParser):
 
     def _select_dtype(self, text):
         """ Analyses a docstring parameter line and returns the good argparser
-            type.
+        type.
 
-            Parameters
-            -----------
-            text : string
-                Parameter text line to inspect.
+        Parameters
+        -----------
+        text : string
+            Parameter text line to inspect.
         """
         text = text.lower()
         nargs_str = 'variable'
@@ -229,7 +228,7 @@ class IntrospectiveArgumentParser(arg.ArgumentParser):
 
     def get_flow_args(self, args=None, namespace=None):
         """ Returns the parsed arguments as a dictionary directly passable to
-            the workflow.
+        the workflow.
         """
         ns_args = self.parse_args(args, namespace)
         dct = vars(ns_args)
