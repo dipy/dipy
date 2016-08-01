@@ -24,8 +24,6 @@ class MedianOtsuFlow(Workflow):
         ``input_files`` and saves the results in a directory specified by
         ``out_dir``.
 
-        For a quick brain segmentation, use --numpass 5 and --median_radius 2
-
         Parameters
         ----------
         input_files : string
