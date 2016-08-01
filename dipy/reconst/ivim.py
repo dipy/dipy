@@ -4,7 +4,7 @@ import numpy as np
 
 from dipy.core.gradients import gradient_table
 from dipy.reconst.base import ReconstModel
-from dipy.reconst.dti import _min_positive_signal, apparent_diffusion_coef
+from dipy.reconst.dti import apparent_diffusion_coef
 from dipy.reconst.dti import TensorModel, mean_diffusivity
 from dipy.reconst.multi_voxel import multi_voxel_fit
 from dipy.reconst.vec_val_sum import vec_val_vect
@@ -122,8 +122,8 @@ class IvimModel(ReconstModel):
             than 0.17 will raise an error.
 
             This can be supplied as a tuple for Scipy versions 0.17. It is
-            recommended to upgrade to Scipy 0.17 for bounded fitting. The default
-            bounds are set to ([0., 0., 0., 0.], [np.inf, 1., 1., 1.])
+            recommended to upgrade to Scipy 0.17 for bounded fitting. The
+            default bounds are set to ([0., 0., 0., 0.], [np.inf, 1., 1., 1.])
 
         tol : float, optional
             Default : 1e-7
@@ -297,7 +297,7 @@ class IvimModel(ReconstModel):
             the multi_voxel decorator will run the single voxel fitting
             on all the 1000 voxels to get the parameters in
             IvimFit.model_paramters. The shape of the parameter array
-            will be (data[:-1], 4). 
+            will be (data[:-1], 4).
 
         x0 : array
             Initial guesses for the parameters S0, f, D_star and D
