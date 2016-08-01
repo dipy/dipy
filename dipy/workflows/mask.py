@@ -41,4 +41,3 @@ class MaskFlow(Workflow):
             mask = np.bitwise_and(data > greater_than, data < less_than)
             save_nifti(out_mask_path, mask.astype(np.ubyte), affine)
             logging.info('Mask saved at {0}'.format(out_mask_path))
-
