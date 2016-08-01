@@ -1,12 +1,12 @@
 from __future__ import division, print_function, absolute_import
 
 import logging
-import numpy as np
 
-import nibabel as nib
+import numpy as np
 
 from dipy.segment.mask import median_otsu
 from dipy.workflows.workflow import Workflow
+from dipy.io.image import save_nifti, load_nifti
 
 
 class MedianOtsuFlow(Workflow):
@@ -60,24 +60,20 @@ class MedianOtsuFlow(Workflow):
             logging.info('Applying median_otsu segmentation on {0}'.
                          format(fpath))
 
-            img = nib.load(fpath)
-            volume = img.get_data()
+            data, affine, img = load_nifti(fpath, return_img=True)
 
-            masked_volume, mask_volume = median_otsu(volume, median_radius,
+            masked_volume, mask_volume = median_otsu(data, median_radius,
                                                      numpass, autocrop, vol_idx,
                                                      dilate)
 
-            mask_img = nib.Nifti1Image(mask_volume.astype(np.float32),
-                                       img.get_affine())
+            save_nifti(mask_out_path, mask_volume.astype(np.float32), affine)
 
-            mask_img.to_filename(mask_out_path)
             logging.info('Mask saved as {0}'.format(mask_out_path))
 
             if save_masked:
-                masked_img = nib.Nifti1Image(masked_volume, img.get_affine(),
-                                             img.get_header())
+                save_nifti(masked_out_path, masked_volume, affine,
+                           img.get_header())
 
-                masked_img.to_filename(masked_out_path)
                 logging.info('Masked volume saved as {0}'.
                              format(masked_out_path))
 
