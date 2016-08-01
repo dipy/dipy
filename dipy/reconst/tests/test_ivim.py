@@ -119,6 +119,11 @@ def test_ivim_errors():
     else:
         ivim_model = IvimModel(gtab,
                                bounds=([0., 0., 0., 0.], [np.inf, 1., 1., 1.]))
+        ivim_fit = ivim_model.fit(data_multi)
+        est_signal = ivim_fit.predict(gtab, S0=1.)
+        assert_array_equal(est_signal.shape, data_multi.shape)
+        assert_array_almost_equal(est_signal, data_multi)
+        assert_array_almost_equal(ivim_fit.model_params, ivim_params)
 
 
 def test_mask():
@@ -129,7 +134,11 @@ def test_mask():
     mask_correct = data_multi[..., 0] > 0.2
     mask_not_correct = np.array([[False, True, False], [True, False]])
 
-    fit = ivim_model.fit(data_multi, mask_correct)
+    ivim_fit = ivim_model.fit(data_multi, mask_correct)
+    est_signal = ivim_fit.predict(gtab, S0=1.)
+    assert_array_equal(est_signal.shape, data_multi.shape)
+    assert_array_almost_equal(est_signal, data_multi)
+    assert_array_almost_equal(ivim_fit.model_params, ivim_params)
     assert_raises(ValueError, ivim_model.fit, data_multi,
                   mask=mask_not_correct)
 
