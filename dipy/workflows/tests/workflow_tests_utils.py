@@ -11,16 +11,16 @@ class DummyWorkflow1(Workflow):
     def run(self, inputs, param1=1, out_dir='', output_1='out1.txt'):
         """ Workflow used to test combined workflows in general.
 
-            Parameters
-            ----------
-            inputs : string
-                fake input string param
-            param1 : int
-                fake positional param (default 1)
-            out_dir : string
-                fake output directory (default '')
-            out_combined : string
-                fake out file (default out_combined.txt)
+        Parameters
+        ----------
+        inputs : string
+            fake input string param
+        param1 : int
+            fake positional param (default 1)
+        out_dir : string
+            fake output directory (default '')
+        out_combined : string
+            fake out file (default out_combined.txt)
         """
         return param1
 
@@ -34,16 +34,16 @@ class DummyWorkflow2(Workflow):
     def run(self, inputs, param2=2, out_dir='', output_1='out2.txt'):
         """ Workflow used to test combined workflows in general.
 
-            Parameters
-            ----------
-            inputs : string
-                fake input string param
-            param2 : int
-                fake positional param (default 2)
-            out_dir : string
-                fake output directory (default '')
-            out_combined : string
-                fake out file (default out_combined.txt)
+        Parameters
+        ----------
+        inputs : string
+            fake input string param
+        param2 : int
+            fake positional param (default 2)
+        out_dir : string
+            fake output directory (default '')
+        out_combined : string
+            fake out file (default out_combined.txt)
         """
         return param2
 
@@ -56,16 +56,16 @@ class DummyCombinedWorkflow(CombinedWorkflow):
             out_combined='out_combined.txt'):
         """ Workflow used to test combined workflows in general.
 
-            Parameters
-            ----------
-            inputs : string
-                fake input string param
-            param_combined : int
-                fake positional param (default 3)
-            out_dir : string
-                fake output directory (default '')
-            out_combined : string
-                fake out file (default out_combined.txt)
+        Parameters
+        ----------
+        inputs : string
+            fake input string param
+        param_combined : int
+            fake positional param (default 3)
+        out_dir : string
+            fake output directory (default '')
+        out_combined : string
+            fake out file (default out_combined.txt)
         """
         dwf1 = DummyWorkflow1()
         param1 = self.run_sub_flow(dwf1, inputs)

@@ -25,10 +25,11 @@ def slash_to_under(dir_str):
 
 def connect_output_paths(inputs, out_dir, out_files, output_strategy='append',
                          mix_names=True):
-    """ Generates a list of output files paths absed on input files and
-        output strategies.
+    """ Generates a list of output files paths based on input files and
+    output strategies.
 
-    Parameters:
+    Parameters
+    ----------
         inputs : array
             List of input paths.
         out_dir : string
@@ -41,10 +42,11 @@ def connect_output_paths(inputs, out_dir, out_files, output_strategy='append',
                 'prepend': Add the input path directory tree to out_dir.
                 'absolute': Put directly in out_dir.
         mix_names : bool
-            Wheter or not prepend a string composed of a mix of the input names
+            Whether or not prepend a string composed of a mix of the input names
             to the final output name.
 
-    Returns:
+    Returns
+    -------
         A list of output file paths.
     """
     outputs = []
@@ -120,7 +122,8 @@ def io_iterator(inputs, out_dir, fnames, output_strategy='append',
                 mix_names=False):
     """ Creates an IOIterator from the parameters.
 
-    Parameters:
+    Parameters
+    ----------
         inputs : array
             List of input files.
         out_dir : string
@@ -131,7 +134,8 @@ def io_iterator(inputs, out_dir, fnames, output_strategy='append',
             Controls the behavior of the IOIterator for output paths.
         mix_names : bool
             Whether or not to append a mix of input names at the begining.
-    Returns:
+    Returns
+    -------
         Properly instanciated IOIterator object.
     """
     io_it = IOIterator(output_strategy=output_strategy, mix_names=mix_names)
@@ -146,17 +150,19 @@ def io_iterator(inputs, out_dir, fnames, output_strategy='append',
 def io_iterator_(frame, fnc, output_strategy='append', mix_names=False):
     """ Creates an IOIterator using introspection.
 
-        Parameters:
-            frame : frameobject
-                Contains the info about the current local variables values.
-            fnc : function
-                The function to inspect
-            output_strategy : string
-                Controls the behavior of the IOIterator for output paths.
-            mix_names : bool
-                Whether or not to append a mix of input names at the begining.
-        Returns:
-            Properly instanciated IOIterator object.
+    Parameters
+    ----------
+        frame : frameobject
+            Contains the info about the current local variables values.
+        fnc : function
+            The function to inspect
+        output_strategy : string
+            Controls the behavior of the IOIterator for output paths.
+        mix_names : bool
+            Whether or not to append a mix of input names at the begining.
+    Returns
+    -------
+        Properly instanciated IOIterator object.
     """
     args, _, _, values = inspect.getargvalues(frame)
     args.remove('self')

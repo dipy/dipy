@@ -8,7 +8,7 @@ from dipy.workflows.base import IntrospectiveArgumentParser
 
 def get_level(lvl):
     """ Transforms the loggin level passed on the commandline into a proper
-        logging level name.
+    logging level name.
     """
     try:
         return logging._levelNames[lvl]
@@ -18,9 +18,9 @@ def get_level(lvl):
 
 def run_flow(flow):
     """ Wraps the process of building an argparser that reflects the workflow
-        that we want to run along with some generic parameters like logging,
-        force and output strategies. The resulting parameters are then fed to
-        the workflow's run method.
+    that we want to run along with some generic parameters like logging,
+    force and output strategies. The resulting parameters are then fed to
+    the workflow's run method.
     """
     parser = IntrospectiveArgumentParser()
     sub_flows_dicts = parser.add_workflow(flow)
