@@ -165,10 +165,12 @@ def test_bounds_x0():
     from dipy.data.fetcher. These are values from the voxel [160, 98, 33]
     which can be obtained by :
     
-    # from dipy.data.fetcher import read_ivim
-    # img, gtab = read_ivim()
-    # data = img.get_data()
-    # signal = data[160, 98, 33, :]
+    .. code-block:: python
+    
+       from dipy.data.fetcher import read_ivim
+       img, gtab = read_ivim()
+       data = img.get_data()
+       signal = data[160, 98, 33, :]
 
     """
     test_signal = np.array([4574.34814453, 4745.18164062,  4759.51806641, 4618.24951172, 4665.63623047,

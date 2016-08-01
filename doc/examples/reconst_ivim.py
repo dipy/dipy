@@ -209,22 +209,22 @@ def plot_map(raw_data, variable, limits, filename):
 Let us get the various plots so that we can visualize them in one page
 """
 
-plot_map(ivimparams[:, :, 0], "S0", (0, 10000), "signal.png")
-plot_map(data_slice[:, :, 0], "S at b = 0", (0, 10000), "data.png")
+plot_map(ivimparams[:, :, 0], "Predicted S0", (0, 10000), "predicted_S0.png")
+plot_map(data_slice[:, :, 0], "Measured S0", (0, 10000), "measured_S0.png")
 plot_map(ivimparams[:, :, 1], "f", (0, 1), "perfusion_fraction.png")
 plot_map(ivimparams[:, :, 2], "D*", (0, 0.01), "perfusion_coeff.png")
 plot_map(ivimparams[:, :, 3], "D", (0, 0.001), "diffusion_coeff.png")
 
 """
-.. figure:: signal.png
+.. figure:: predicted_S0.png
    :align: center
 
    Heatmap of S0 predicted from the fit
 
-.. figure:: data.png
+.. figure:: measured_S0.png
    :align: center
 
-   Heatmap of signal value at b = 0 predicted from the fit
+   Heatmap of measured signal at bvalue = 0.
 
 .. figure:: perfusion_fraction.png
    :align: center
