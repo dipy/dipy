@@ -166,10 +166,10 @@ class IvimModel(ReconstModel):
             An array with initial values of S0, f, D_star, D for each voxel.
         """
         S0_hat, D_guess = self._estimate_S0_D(data)
-        f_guess = 1 - S0_hat / data[0]
+        f_guess = 1 - S0_hat / np.mean(data[self.gtab.b0s_mask])
         # We set the S0 guess as the signal value at b=0
         # The D* guess is roughly 10 times the D value
-        x0 = np.array([data[0], f_guess, 10 * D_guess, D_guess])
+        x0 = np.array([np.mean(data[self.gtab.b0s_mask]), f_guess, 10 * D_guess, D_guess])
         # The API does not allow bounds for Scipy < 0.17. While estimating x0,
         # if there is noise in the data the estimated x0 might not be feasible.
         # In such a case we will use the values for the parameters
