@@ -11,6 +11,7 @@
  reconst_dti.py
  reconst_gqi.py
  reconst_dsid.py
+ reconst_ivim.py
  kfold_xval.py
  reslice_datasets.py
  segment_quickbundles.py

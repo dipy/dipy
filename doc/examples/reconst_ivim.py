@@ -35,7 +35,7 @@ coefficients. First, we import all relevant modules:
 
 import matplotlib.pyplot as plt
 
-from dipy.reconst.ivim import IvimModel, ivim_function
+from dipy.reconst.ivim import IvimModel, ivim_prediction
 from dipy.data.fetcher import read_ivim
 
 """
@@ -69,7 +69,7 @@ $\mathbf{b} = 0$.
 z = 27
 b = 20
 
-plt.imshow(data[:, :, z, b].T, origin='lower', cmap='gray')
+plt.imshow(data[:, :, z, b].T, origin='lower', cmap='gray', interpolation=None)
 plt.axhline(y=100)
 plt.axvline(x=170)
 plt.savefig("ivim_data_slice.png")
@@ -93,7 +93,7 @@ x1, x2 = 160, 180
 y1, y2 = 90, 110
 data_slice = data[x1:x2, y1:y2, z, :]
 
-plt.imshow(data[x1:x2, y1:y2, z, b].T, origin='lower', cmap="gray")
+plt.imshow(data[x1:x2, y1:y2, z, b].T, origin='lower', cmap="gray", interpolation=None)
 plt.savefig("CSF_slice.png")
 plt.close()
 
@@ -200,7 +200,7 @@ the plot.
 def plot_map(raw_data, variable, limits, filename):
     lower, upper = limits
     plt.title('Map for {}'.format(variable))
-    plt.imshow(raw_data.T, origin='lower', clim=(lower, upper), cmap="gray")
+    plt.imshow(raw_data.T, origin='lower', clim=(lower, upper), cmap="gray", interpolation=None)
     plt.colorbar()
     plt.savefig(filename)
     plt.close()
