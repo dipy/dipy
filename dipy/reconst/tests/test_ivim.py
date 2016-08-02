@@ -53,7 +53,8 @@ ivim_params[0, 0, 0] = ivim_params[0, 1, 0] = params
 ivim_params[1, 0, 0] = ivim_params[1, 1, 0] = params
 
 ivim_model = IvimModel(gtab)
-
+ivim_fit_single = ivim_model.fit(data_single)
+ivim_fit_multi = ivim_model.fit(data_multi)
 
 def test_single_voxel_fit():
     """
@@ -75,16 +76,14 @@ def test_single_voxel_fit():
     TensorModel and get an intial guess for f and D. Then, using
     these parameters we fit the entire data for all bvalues.
     """
-
-    ivim_fit = ivim_model.fit(data_single)
-    est_signal = ivim_prediction(ivim_fit.model_params, gtab)
+    est_signal = ivim_prediction(ivim_fit_single.model_params, gtab)
 
     assert_array_equal(est_signal.shape, data_single.shape)
     assert_array_almost_equal(est_signal, data_single)
-    assert_array_almost_equal(ivim_fit.model_params, params)
+    assert_array_almost_equal(ivim_fit_single.model_params, params)
 
     # Test predict function for single voxel
-    p = ivim_fit.predict(gtab)
+    p = ivim_fit_single.predict(gtab)
     assert_array_equal(p.shape, data_single.shape)
     assert_array_almost_equal(p, data_single)
 
@@ -96,12 +95,12 @@ def test_multivoxel():
     This is to ensure that the fitting routine takes care of signals packed as
     1D, 2D or 3D arrays.
     """
-    ivim_fit = ivim_model.fit(data_multi)
+    ivim_fit_multi = ivim_model.fit(data_multi)
 
-    est_signal = ivim_fit.predict(gtab, S0=1.)
+    est_signal = ivim_fit_multi.predict(gtab, S0=1.)
     assert_array_equal(est_signal.shape, data_multi.shape)
     assert_array_almost_equal(est_signal, data_multi)
-    assert_array_almost_equal(ivim_fit.model_params, ivim_params)
+    assert_array_almost_equal(ivim_fit_multi.model_params, ivim_params)
 
 
 def test_ivim_errors():
@@ -203,7 +202,6 @@ def test_predict():
     The predict method is already used in previous tests for estimation of the
     signal. But here, we will test is separately.
     """
-    ivim_fit_single = ivim_model.fit(data_single)
     assert_array_almost_equal(ivim_fit_single.predict(gtab),
                               data_single)
     assert_array_almost_equal(ivim_model.predict(ivim_fit_single.model_params, gtab),
@@ -253,10 +251,9 @@ def test_fit_object():
     """
     Test the method of IvimFit class
     """
-    ivim_fit = ivim_model.fit(data_single)
-    assert_raises(IndexError, ivim_fit.__getitem__, (-.1, 0, 0))
+    assert_raises(IndexError, ivim_fit_single.__getitem__, (-.1, 0, 0))
     # Check if the S0 called is matching
-    assert_array_almost_equal(ivim_fit.__getitem__(0).model_params, 1000.)
+    assert_array_almost_equal(ivim_fit_single.__getitem__(0).model_params, 1000.)
 
     ivim_fit_multi = ivim_model.fit(data_multi)
     # Should raise a TypeError if the arguments are not passed as tuple
@@ -274,8 +271,7 @@ def test_shape():
     """
     Test if `shape` in `IvimFit` class gives the correct output.
     """
-    ivim_fit = ivim_model.fit(data_single)
-    assert_array_equal(ivim_fit.shape, ())
+    assert_array_equal(ivim_fit_single.shape, ())
     ivim_fit_multi = ivim_model.fit(data_multi)
     assert_array_equal(ivim_fit_multi.shape, (2, 2, 1))
 
@@ -284,8 +280,7 @@ def test_parameters():
     """
     Test the functions for returning individual parameters of the model
     """
-    ivim_fit = ivim_model.fit(data_single)
-    assert_array_almost_equal(S0, ivim_fit.S0_predicted)
-    assert_array_almost_equal(f, ivim_fit.perfusion_fraction)
-    assert_array_almost_equal(D_star, ivim_fit.D_star)
-    assert_array_almost_equal(D, ivim_fit.D)
+    assert_array_almost_equal(S0, ivim_fit_single.S0_predicted)
+    assert_array_almost_equal(f, ivim_fit_single.perfusion_fraction)
+    assert_array_almost_equal(D_star, ivim_fit_single.D_star)
+    assert_array_almost_equal(D, ivim_fit_single.D)
