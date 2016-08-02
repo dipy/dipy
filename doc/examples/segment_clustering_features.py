@@ -67,7 +67,7 @@ qb = QuickBundles(threshold=10., metric=metric)
 clusters = qb.cluster(streamlines)
 
 print("Nb. clusters:", len(clusters))
-print("Cluster sizes:", map(len, clusters))
+print("Cluster sizes:", list(map(len, clusters)))
 
 """
 
@@ -112,7 +112,7 @@ qb = QuickBundles(threshold=10., metric=metric)
 clusters = qb.cluster(streamlines)
 
 print("Nb. clusters:", len(clusters))
-print("Cluster sizes:", map(len, clusters))
+print("Cluster sizes:", list(map(len, clusters)))
 
 """
 
@@ -155,7 +155,7 @@ qb = QuickBundles(threshold=5., metric=metric)
 clusters = qb.cluster(streamlines)
 
 # Extract feature of every streamline.
-centers = np.asarray(map(feature.extract, streamlines))
+centers = np.asarray(list(map(feature.extract, streamlines)))
 
 # Color each center of mass according to the cluster they belong to.
 rng = np.random.RandomState(42)
@@ -208,7 +208,7 @@ qb = QuickBundles(threshold=5., metric=metric)
 clusters = qb.cluster(streamlines)
 
 # Extract feature of every streamline.
-midpoints = np.asarray(map(feature.extract, streamlines))
+midpoints = np.asarray(list(map(feature.extract, streamlines)))
 
 # Color each midpoint according to the cluster they belong to.
 rng = np.random.RandomState(42)
