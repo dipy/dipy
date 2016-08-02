@@ -343,22 +343,6 @@ fetch_syn_data = _make_fetcher(
     data_size="12MB",
     doc="Download t1 and b0 volumes from the same session")
 
-# fetch_mni_template = _make_fetcher(
-#     "fetch_mni_template",
-#     pjoin(dipy_home, 'mni_template'),
-#     'https://digital.lib.washington.edu/researchworks/bitstream/handle/1773/33312/',
-#     ['COPYING',
-#      'mni_icbm152_t2_tal_nlin_asym_09a.nii',
-#      'mni_icbm152_t1_tal_nlin_asym_09a.nii'],
-#     ['COPYING',
-#      'mni_icbm152_t2_tal_nlin_asym_09a.nii',
-#      'mni_icbm152_t1_tal_nlin_asym_09a.nii'],
-#     ['6e2168072e80aa4c0c20f1e6e52ec0c8',
-#      'f41f2e1516d880547fbf7d6a83884f0d',
-#      '1ea8f4f1e41bc17a94602e48141fdbc8'],
-#     doc="Fetch the MNI T2 and T1 template files",
-#     data_size="35MB")
-
 fetch_mni_template = _make_fetcher(
     "fetch_mni_template",
     pjoin(dipy_home, 'mni_template'),
@@ -611,16 +595,19 @@ mni_notes = \
 """
 
 
-def read_mni_template(contrast="T2"):
+def read_mni_template(version, contrast="T1"):
     """
     Read the MNI template from disk
 
     Parameters
     ----------
+    version: string
+        There are two MNI templates 2009a and 2009c, so options available are:
+        "a" and "c". 
     contrast : list or string, optional
-        Which of the contrast templates to read. Two contrasts are available:
-        "T1" and "T2", so you can either enter one of these strings as input,
-        or a list containing both of them.
+        Which of the contrast templates to read. For version "a" two contrasts
+        are available: "T1" and "T2". Similarly for version "c" there are two 
+        options, "T1" and "mask". You can input contrast as a string or a list
 
     Returns
     -------
@@ -629,20 +616,40 @@ def read_mni_template(contrast="T2"):
 
     Examples
     --------
-    Get only the T2 file:
-    >>> T2_nifti = read_mni_template("T2") # doctest: +SKIP
-    Get both files in this order:
-    >>> T1_nifti, T2_nifti = read_mni_template(["T1", "T2"]) # doctest: +SKIP
+    Get only the T1 file for version c:
+    >>> T1_nifti = read_mni_template("c", contrast = "T1") 
+    Get both files in this order for version a:
+    >>> T1_nifti, T2_nifti = read_mni_template("a", contrast = ["T1", "T2"]) 
     """
     files, folder = fetch_mni_template()
-    file_dict = {"T1": pjoin(folder, 'mni_icbm152_t1_tal_nlin_asym_09a.nii'),
-                 "T2": pjoin(folder, 'mni_icbm152_t2_tal_nlin_asym_09a.nii')}
-    if isinstance(contrast, str):
-        return nib.load(file_dict[contrast])
+    file_dict_a = {"T1": pjoin(folder, 'mni_icbm152_t1_tal_nlin_asym_09a.nii'),
+                   "T2": pjoin(folder, 'mni_icbm152_t2_tal_nlin_asym_09a.nii')}
+
+    file_dict_c = {"T1": pjoin(folder, 'mni_icbm152_t1_tal_nlin_asym_09c.nii'),
+                   "mask": pjoin(folder, 'mni_icbm152_t1_tal_nlin_asym_09c_mask.nii')}
+
+    if contrast=="T2" and version=="c":
+        raise ValueError("No T2 image for MNI template 2009c")
+
+    if contrast=="mask" and version=="a":
+        raise ValueError("No template mask available for MNI 2009a")
+
+    if version == "a":    
+        if isinstance(contrast, str):
+            return nib.load(file_dict_a[contrast])
+        else:
+            out_list = []
+            for k in contrast:
+                out_list.append(nib.load(file_dict_a[k]))
+    elif version == "c":
+        if isinstance(contrast, str):
+            return nib.load(file_dict_c[contrast])
+        else:
+            out_list = []
+            for k in contrast:
+                out_list.append(nib.load(file_dict_c[k]))
     else:
-        out_list = []
-        for k in contrast:
-            out_list.append(nib.load(file_dict[k]))
+        raise ValueError("Only 2009a and 2009c versions are available")
     return out_list
 
 
