@@ -209,11 +209,11 @@ def plot_map(raw_data, variable, limits, filename):
 Let us get the various plots so that we can visualize them in one page
 """
 
-plot_map(ivimparams[:, :, 0], "Predicted S0", (0, 10000), "predicted_S0.png")
+plot_map(ivimfit.S0_predicted, "Predicted S0", (0, 10000), "predicted_S0.png")
 plot_map(data_slice[:, :, 0], "Measured S0", (0, 10000), "measured_S0.png")
-plot_map(ivimparams[:, :, 1], "f", (0, 1), "perfusion_fraction.png")
-plot_map(ivimparams[:, :, 2], "D*", (0, 0.01), "perfusion_coeff.png")
-plot_map(ivimparams[:, :, 3], "D", (0, 0.001), "diffusion_coeff.png")
+plot_map(ivimfit.perfusion_fraction, "f", (0, 1), "perfusion_fraction.png")
+plot_map(ivimfit.D_star, "D*", (0, 0.01), "perfusion_coeff.png")
+plot_map(ivimfit.D, "D", (0, 0.001), "diffusion_coeff.png")
 
 """
 .. figure:: predicted_S0.png
