@@ -278,3 +278,14 @@ def test_shape():
     assert_array_equal(ivim_fit.shape, ())
     ivim_fit_multi = ivim_model.fit(data_multi)
     assert_array_equal(ivim_fit_multi.shape, (2, 2, 1))
+
+
+def test_parameters():
+    """
+    Test the functions for returning individual parameters of the model
+    """
+    ivim_fit = ivim_model.fit(data_single)
+    assert_array_almost_equal(S0, ivim_fit.S0_predicted)
+    assert_array_almost_equal(f, ivim_fit.perfusion_fraction)
+    assert_array_almost_equal(D_star, ivim_fit.D_star)
+    assert_array_almost_equal(D, ivim_fit.D)

@@ -169,7 +169,8 @@ class IvimModel(ReconstModel):
         f_guess = 1 - S0_hat / np.mean(data[self.gtab.b0s_mask])
         # We set the S0 guess as the signal value at b=0
         # The D* guess is roughly 10 times the D value
-        x0 = np.array([np.mean(data[self.gtab.b0s_mask]), f_guess, 10 * D_guess, D_guess])
+        x0 = np.array([np.mean(data[self.gtab.b0s_mask]),
+                       f_guess, 10 * D_guess, D_guess])
         # The API does not allow bounds for Scipy < 0.17. While estimating x0,
         # if there is noise in the data the estimated x0 might not be feasible.
         # In such a case we will use the values for the parameters
@@ -350,6 +351,22 @@ class IvimFit(object):
             raise IndexError("IndexError: invalid index")
         index = index + (slice(None),) * (N - len(index))
         return type(self)(self.model, model_params[index])
+
+    @property
+    def S0_predicted(self):
+        return self.model_params[..., 0]
+
+    @property
+    def perfusion_fraction(self):
+        return self.model_params[..., 1]
+
+    @property
+    def D_star(self):
+        return self.model_params[..., 2]
+
+    @property
+    def D(self):
+        return self.model_params[..., 3]
 
     @property
     def shape(self):
