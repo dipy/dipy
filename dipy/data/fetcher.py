@@ -343,21 +343,40 @@ fetch_syn_data = _make_fetcher(
     data_size="12MB",
     doc="Download t1 and b0 volumes from the same session")
 
+# fetch_mni_template = _make_fetcher(
+#     "fetch_mni_template",
+#     pjoin(dipy_home, 'mni_template'),
+#     'https://digital.lib.washington.edu/researchworks/bitstream/handle/1773/33312/',
+#     ['COPYING',
+#      'mni_icbm152_t2_tal_nlin_asym_09a.nii',
+#      'mni_icbm152_t1_tal_nlin_asym_09a.nii'],
+#     ['COPYING',
+#      'mni_icbm152_t2_tal_nlin_asym_09a.nii',
+#      'mni_icbm152_t1_tal_nlin_asym_09a.nii'],
+#     ['6e2168072e80aa4c0c20f1e6e52ec0c8',
+#      'f41f2e1516d880547fbf7d6a83884f0d',
+#      '1ea8f4f1e41bc17a94602e48141fdbc8'],
+#     doc="Fetch the MNI T2 and T1 template files",
+#     data_size="35MB")
+
 fetch_mni_template = _make_fetcher(
     "fetch_mni_template",
     pjoin(dipy_home, 'mni_template'),
-    'https://digital.lib.washington.edu/researchworks/bitstream/handle/1773/33312/',
-    ['COPYING',
-     'mni_icbm152_t2_tal_nlin_asym_09a.nii',
-     'mni_icbm152_t1_tal_nlin_asym_09a.nii'],
-    ['COPYING',
-     'mni_icbm152_t2_tal_nlin_asym_09a.nii',
-     'mni_icbm152_t1_tal_nlin_asym_09a.nii'],
-    ['6e2168072e80aa4c0c20f1e6e52ec0c8',
-     'f41f2e1516d880547fbf7d6a83884f0d',
-     '1ea8f4f1e41bc17a94602e48141fdbc8'],
-    doc="Fetch the MNI T2 and T1 template files",
-    data_size="35MB")
+    'https://ndownloader.figshare.com/files/',
+    ['5572676?private_link=4b8666116a0128560fb5',
+    '5572673?private_link=93216e750d5a7e568bda',
+    '5572670?private_link=33c92d54d1afb9aa7ed2',
+    '5572661?private_link=58cde83880e41dde495f'],
+    ['mni_icbm152_t2_tal_nlin_asym_09a.nii',
+    'mni_icbm152_t1_tal_nlin_asym_09a.nii',
+    'mni_icbm152_t1_tal_nlin_asym_09c.nii',
+    'mni_icbm152_t1_tal_nlin_asym_09c_mask.nii'],
+    ['f41f2e1516d880547fbf7d6a83884f0d',
+    '1ea8f4f1e41bc17a94602e48141fdbc8',
+    'a243e249cd01a23dc30f033b9656a786',
+    '3d5dd9b0cd727a17ceec610b782f66c1'],
+    doc="fetch the MNI 2009a T1 and T2, and 2009c T1 and T1 mask files",
+    data_size="70MB")
 
 fetch_scil_b0 = _make_fetcher(
     "fetch_scil_b0",
