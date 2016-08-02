@@ -7,30 +7,30 @@ and perfusion in the signal acquired with a diffusion MRI sequence
 that contains multiple low b-values. The IVIM model can be understood
 as an adaptation of the work of Stejskal and Tanner [Stejskal65]_
 in biological tissue, and was proposed by Le Bihan [LeBihan84]_.
-The model posits that two compartments exist: a slow moving compartment,
+The model assumes two compartments: a slow moving compartment,
 where particles diffuse in a Brownian fashion as a consequence of thermal
 energy, and a fast moving compartment (the vascular compartment), where
-blood moves as a consequence of a pressure gradient. In this second
-compartment, a pseudo diffusion term $\mathbf{D^*}$ is introduced that
-describes the displacement of the blood elements in an assumed randomly
-laid out vascular network, at the macroscopic level. For the perfusion
-to have a physiological meaning, one expects that $\mathbf{D^*}$ is
-greater than $\mathbf{D}$.
+blood moves as a consequence of a pressure gradient. In the first compartment,
+the diffusion coefficient is $\mathbf{D}$ while in the second compartment, a
+pseudo diffusion term $\mathbf{D^*}$ is introduced that describes the
+displacement of the blood elements in an assumed randomly laid out vascular
+network, at the macroscopic level. According to [LeBihan84]_,
+$\mathbf{D^*}$ is greater than $\mathbf{D}$.
 
 The IVIM model expresses the MRI signal as follows:
 
  .. math::
     S(b)=S_0(fe^{-bD^*}+(1-f)e^{-bD})
 
-where $\mathbf{b}$ is the gradient value (which is dependent on
+where $\mathbf{b}$ is the diffusion gradient weighing value (which is dependent on
 the measurement parameters), $\mathbf{S_{0}}$ is the signal in the absence
 of diffusion gradient sensitization, $\mathbf{f}$ is the perfusion
 fraction, $\mathbf{D}$ is the diffusion coefficient and $\mathbf{D^*}$ is
 the pseudo-diffusion constant, due to vascular contributions.
 
 In the following example we show how to fit the IVIM model
-on a diffusion-weighted dataset and visualize perfusion
-and diffusion. First, we import all relevant modules:
+on a diffusion-weighted dataset and visualize the diffusion and pseudo diffuion
+coefficients. First, we import all relevant modules:
 """
 
 import matplotlib.pyplot as plt

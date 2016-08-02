@@ -15,7 +15,7 @@ import numpy as np
 from numpy.testing import (assert_array_equal, assert_array_almost_equal,
                            assert_raises, assert_array_less)
 
-from dipy.reconst.ivim import ivim_function, IvimModel
+from dipy.reconst.ivim import ivim_prediction, IvimModel
 from dipy.core.gradients import gradient_table, generate_bvecs
 from dipy.sims.voxel import multi_tensor
 
@@ -77,7 +77,7 @@ def test_single_voxel_fit():
     """
 
     ivim_fit = ivim_model.fit(data_single)
-    est_signal = ivim_function(ivim_fit.model_params, bvals)
+    est_signal = ivim_prediction(ivim_fit.model_params, gtab)
 
     assert_array_equal(est_signal.shape, data_single.shape)
     assert_array_almost_equal(est_signal, data_single)
@@ -189,7 +189,7 @@ def test_bounds_x0():
                             2879.69580078, 2728.44018555, 2600.09472656,
                             2570., 2440., 2400., 2380., 2370.])
     x0_test = np.array([1., 0.2, -0.1, -0.001])
-    test_signal = ivim_function(x0_test, gtab.bvals)
+    test_signal = ivim_prediction(x0_test, gtab)
 
     ivim_fit = ivim_model.fit(test_signal)
 
@@ -206,7 +206,7 @@ def test_predict():
     ivim_fit_single = ivim_model.fit(data_single)
     assert_array_almost_equal(ivim_fit_single.predict(gtab),
                               data_single)
-    assert_array_almost_equal(ivim_model.predict(ivim_fit_single.model_params),
+    assert_array_almost_equal(ivim_model.predict(ivim_fit_single.model_params, gtab),
                               data_single)
 
     ivim_fit_multi = ivim_model.fit(data_multi)
@@ -228,7 +228,7 @@ def test_estimate_x0():
 
     ivim_model_bounds = IvimModel(gtab, bounds=None)
     x0_test = np.array([1., 0.2, -0.001, -0.0001])
-    test_signal = ivim_function(x0_test, gtab.bvals)
+    test_signal = ivim_prediction(x0_test, gtab)
 
     S0_hat, D_guess = ivim_model_bounds._estimate_S0_D(test_signal)
 
@@ -268,6 +268,8 @@ def test_fit_object():
     # Check if the get item returns the S0 value for voxel (1,0,0)
     assert_array_almost_equal(ivim_fit_multi.__getitem__((1, 0, 0)).model_params[0],
                               data_multi[1, 0, 0][0])
+
+
 def test_shape():
     """
     Test if `shape` in `IvimFit` class gives the correct output.

@@ -21,31 +21,21 @@ else:
     leastsq = scipy.optimize.leastsq
 
 
-def ivim_function(params, bvals):
+def ivim_prediction(params, gtab, S0=1.):
     """The Intravoxel incoherent motion (IVIM) model function.
-
-    The IVIM model assumes that biological tissue includes a volume fraction
-    'f' of water flowing in perfused capillaries, with a perfusion
-    coefficient D* and a fraction (1-f) of static (diffusion only), intra and
-    extracellular water, with a diffusion coefficient D. In this model the
-    echo attenuation of a signal in a single voxel can be written as
-
-        .. math::
-
-        S(b) = S_0[f*e^{(-b*D\*)} + (1-f)e^{(-b*D)}]
-
-        Where:
-        .. math::
-
-        S_0, f, D* and D are the IVIM parameters.
 
     Parameters
     ----------
     params : array
         An array of IVIM parameters - S0, f, D_star, D
 
-    bvals : array
-        bvalues
+    gtab : GradientTable class instance
+        Gradient directions and bvalues
+
+    S0 : float, optional
+        This has been added just for consistency with the existing
+        API. Unlike other models, IVIM predicts S0 and this is over written
+        by the S0 value in params.
 
     References
     ----------
@@ -57,11 +47,12 @@ def ivim_function(params, bvals):
                MR imaging." Radiology 265.3 (2012): 874-881.
     """
     S0, f, D_star, D = params
-    S = S0 * (f * np.exp(-bvals * D_star) + (1 - f) * np.exp(-bvals * D))
+    b = gtab.bvals
+    S = S0 * (f * np.exp(-b * D_star) + (1 - f) * np.exp(-b * D))
     return S
 
 
-def _ivim_error(params, bvals, signal):
+def _ivim_error(params, gtab, signal):
     """Error function to be used in fitting the IVIM model
 
     Parameters
@@ -69,14 +60,14 @@ def _ivim_error(params, bvals, signal):
     params : array
         An array of IVIM parameters. [S0, f, D_star, D]
 
-    bvals : array
-        bvalues
+    gtab : GradientTable class instance
+        Gradient directions and bvalues.
 
     signal : array
         Array containing the actual signal values.
 
     """
-    return (signal - ivim_function(params, bvals))
+    return (signal - ivim_prediction(params, gtab))
 
 
 class IvimModel(ReconstModel):
@@ -111,28 +102,24 @@ class IvimModel(ReconstModel):
         gtab : GradientTable class instance
             Gradient directions and bvalues
 
-        split_b : float
-            The b-value to split the data on for two-stage fit
+        split_b : float, optional
+            The b-value to split the data on for two-stage fit.
+            default : 200.
 
-        bounds : array, (4,4)
-            Bounds for the parameters. This is applicable only for Scipy
-            version > 0.17 as we use least_squares for the fitting which
-            supports bounds. For versions less than Scipy 0.17, this is
-            by default set to None. Setting a bound on a Scipy version less
-            than 0.17 will raise an error.
-
-            This can be supplied as a tuple for Scipy versions 0.17. It is
-            recommended to upgrade to Scipy 0.17 for bounded fitting. The
-            default bounds are set to ([0., 0., 0., 0.], [np.inf, 1., 1., 1.])
+        bounds : tuple of arrays with 4 elements, optional
+            Bounds to constrain the fitted model parameters. This is only supported for
+            Scipy version > 0.17. When using a older scipy version, this function will raise
+            an error if bounds are different from None.
+            default : ([0., 0., 0., 0.], [np.inf, 1., 1., 1.])
 
         tol : float, optional
-            Default : 1e-7
             Tolerance for convergence of minimization.
+            default : 1e-7
 
         options : dict, optional
             Dictionary containing gtol, ftol, eps and maxiter. This is passed
-            to leastsq. By default these values are set to
-            options={'gtol': 1e-7, 'ftol': 1e-7, 'eps': 1e-7, 'maxiter': 1000}
+            to leastsq.
+            default : options={'gtol': 1e-7, 'ftol': 1e-7, 'eps': 1e-7, 'maxiter': 1000}
 
         References
         ----------
@@ -157,62 +144,14 @@ class IvimModel(ReconstModel):
             self.bounds = (np.array([0., 0., 0., 0.]),
                            np.array([np.inf, 1., 0.1, 0.1]))
 
-    @multi_voxel_fit
-    def fit(self, data, mask=None):
-        """ Fit method of the Ivim model class
-
-        Parameters
-        ----------
-        data : array
-            The measured signal from one voxel. A multi voxel decorator
-            will be applied to this fit method to scale it and apply it
-            to multiple voxels.
-
-        mask : array
-            A boolean array used to mark the coordinates in the data that
-            should be analyzed that has the shape data.shape[:-1]
-
-        Returns
-        -------
-        IvimFit object
-
-        References
-        ----------
-        .. [1] Federau, Christian, et al. "Quantitative measurement
-                   of brain perfusion with intravoxel incoherent motion
-                   MR imaging." Radiology 265.3 (2012): 874-881.
-        """
-        # Call the function _estimate_S0_D to get initial x0 guess.
-        x0 = self.estimate_x0(data)
-        # Use leastsq to get ivim_params
-        params_in_mask = self._leastsq(data, x0)
-        return IvimFit(self, params_in_mask)
-
-    def predict(self, ivim_params):
-        """
-        Predict a signal for this IvimModel class instance given parameters.
-
-        Parameters
-        ----------
-        ivim_params : array
-            The ivim parameters as an array [S0, f, D_star and D]
-
-        Returns
-        -------
-        ivim_signal : array
-            The predicted IVIM signal using given parameters.
-        """
-        return ivim_function(ivim_params, self.gtab.bvals)
-
     def estimate_x0(self, data):
         """
         Fit the ivim params using a two stage fit.
 
         In the two stage fitting routine, initially, we fit the signal
-        at bvals less than the specified split_b using the TensorModel
+        at bvals higher than the specified `split_b` using `TensorModel`
         and get an intial guess for f and D. Then, using these parameters
-        we fit the entire data for all bvalues. The default split_b is
-        200.
+        we fit the entire data for all bvalues.
 
         Parameters
         ----------
@@ -245,27 +184,74 @@ class IvimModel(ReconstModel):
 
         return x0
 
+    @multi_voxel_fit
+    def fit(self, data, mask=None):
+        """ Fit method of the Ivim model class
+
+        Parameters
+        ----------
+        data : array
+            The measured signal from one voxel. A multi voxel decorator
+            will be applied to this fit method to scale it and apply it
+            to multiple voxels.
+
+        mask : array
+            A boolean array used to mark the coordinates in the data that
+            should be analyzed that has the shape data.shape[:-1]
+
+        Returns
+        -------
+        IvimFit object
+
+        References
+        ----------
+        .. [1] Federau, Christian, et al. "Quantitative measurement
+                   of brain perfusion with intravoxel incoherent motion
+                   MR imaging." Radiology 265.3 (2012): 874-881.
+        """
+        # Call the function estimate_S0_D to get initial x0 guess.
+        x0 = self.estimate_x0(data)
+        # Use leastsq to get ivim_params
+        params_in_mask = self._leastsq(data, x0)
+        return IvimFit(self, params_in_mask)
+
+    def predict(self, ivim_params, gtab, S0=1.):
+        """
+        Predict a signal for this IvimModel class instance given parameters.
+
+        Parameters
+        ----------
+        ivim_params : array
+            The ivim parameters as an array [S0, f, D_star and D]
+
+        Returns
+        -------
+        ivim_signal : array
+            The predicted IVIM signal using given parameters.
+        """
+        return ivim_prediction(ivim_params, gtab)
+
     def _estimate_S0_D(self, data):
         """
         Obtain initial guess for S0 and D for two stage fitting.
 
         Using TensorModel from reconst.dti, we fit an exponential
-        for those signals which are greater than a particular bvalue
+        for signal values which are greater than a particular bvalue
         (split_b). The apparent diffusion coefficient gives us an
         initial estimate for D and S0.
 
         Parameters
         ----------
         data : array
-            The measured signal from one voxel.
+            The measured signal.
 
         Returns
         -------
         S0_hat : float
-            Initial S0 guess for this voxel.
+            Initial S0 guess.
 
         D_guess : float
-            Initial D_guess for this voxel.
+            Initial D_guess.
         """
         gtab = self.gtab
         split_b = self.split_b
@@ -304,7 +290,7 @@ class IvimModel(ReconstModel):
 
         x0 : array
             Initial guesses for the parameters S0, f, D_star and D
-            calculated using the function `_estimate_S0_D`
+            calculated using the function `estimate_x0`
         """
         gtol = self.options["gtol"]
         ftol = self.options["ftol"]
@@ -312,8 +298,19 @@ class IvimModel(ReconstModel):
         epsfcn = self.options["eps"]
         maxfev = self.options["maxiter"]
         bounds = self.bounds
-        bvals = self.gtab.bvals
-        if not SCIPY_LESS_0_17:
+
+        if SCIPY_LESS_0_17:
+            res = leastsq(_ivim_error,
+                          x0,
+                          args=(self.gtab, data),
+                          gtol=gtol,
+                          xtol=xtol,
+                          ftol=ftol,
+                          epsfcn=epsfcn,
+                          maxfev=maxfev)
+            ivim_params = res[0]
+            return ivim_params
+        else:
             res = least_squares(_ivim_error,
                                 x0,
                                 bounds=bounds,
@@ -321,19 +318,8 @@ class IvimModel(ReconstModel):
                                 xtol=xtol,
                                 gtol=gtol,
                                 max_nfev=maxfev,
-                                args=(bvals, data))
+                                args=(self.gtab, data))
             ivim_params = res.x
-            return ivim_params
-        else:
-            res = leastsq(_ivim_error,
-                          x0,
-                          args=(bvals, data),
-                          gtol=gtol,
-                          xtol=xtol,
-                          ftol=ftol,
-                          epsfcn=epsfcn,
-                          maxfev=maxfev)
-            ivim_params = res[0]
             return ivim_params
 
 
@@ -391,4 +377,4 @@ class IvimFit(object):
             The signal values predicted for this model using
             its parameters.
         """
-        return ivim_function(self.model_params, gtab.bvals)
+        return ivim_prediction(self.model_params, gtab)
