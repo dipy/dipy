@@ -250,8 +250,13 @@ def test_estimate_x0():
 
 
 def test_fit_object():
+    """
+    Test the method of IvimFit class
+    """
     ivim_fit = ivim_model.fit(data_single)
     assert_raises(IndexError, ivim_fit.__getitem__, (-.1, 0, 0))
+    # Check if the S0 called is matching
+    assert_array_almost_equal(ivim_fit.__getitem__(0).model_params, 1000.)
 
     ivim_fit_multi = ivim_model.fit(data_multi)
     # Should raise a TypeError if the arguments are not passed as tuple
@@ -260,5 +265,14 @@ def test_fit_object():
     assert_raises(IndexError, ivim_fit_multi.__getitem__, (100, -0))
     assert_raises(IndexError, ivim_fit_multi.__getitem__, (100, -0, 2))
     assert_raises(IndexError, ivim_fit_multi.__getitem__, (-100, 0))
-    # Check for correct shape
+    # Check if the get item returns the S0 value for voxel (1,0,0)
+    assert_array_almost_equal(ivim_fit_multi.__getitem__((1, 0, 0)).model_params[0],
+                              data_multi[1, 0, 0][0])
+def test_shape():
+    """
+    Test if `shape` in `IvimFit` class gives the correct output.
+    """
+    ivim_fit = ivim_model.fit(data_single)
+    assert_array_equal(ivim_fit.shape, ())
+    ivim_fit_multi = ivim_model.fit(data_multi)
     assert_array_equal(ivim_fit_multi.shape, (2, 2, 1))

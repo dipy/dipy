@@ -236,7 +236,7 @@ class IvimModel(ReconstModel):
         # In such a case we will use the values for the parameters
         # from the bounds set with `bounds_check`.
         if self.bounds is None:
-            bounds_check = [(0., 0., 0., 0.), [np.inf, 1., 0.1, 0.1]]
+            bounds_check = [(0., 0., 0., 0.), (np.inf, 1., 0.1, 0.1)]
         else:
             bounds_check = self.bounds
 
