@@ -231,9 +231,12 @@ class IvimModel(ReconstModel):
         # We set the S0 guess as the signal value at b=0
         # The D* guess is roughly 10 times the D value
         x0 = np.array([data[0], f_guess, 10 * D_guess, D_guess])
-
+        # The API does not allow bounds for Scipy < 0.17. While estimating x0,
+        # if there is noise in the data the estimated x0 might not be feasible.
+        # In such a case we will use the values for the parameters
+        # from the bounds set with `bounds_check`.
         if self.bounds is None:
-            bounds_check = [np.inf, 1., 0.1, 0.1]
+            bounds_check = [(0., 0., 0., 0.), [np.inf, 1., 0.1, 0.1]]
         else:
             bounds_check = self.bounds
 
