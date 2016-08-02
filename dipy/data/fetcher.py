@@ -52,15 +52,15 @@ def update_progressbar(progress, total_length):
     except:
         # Default value if determination of console size fails
         bar_length = 20
-    block = int(round(bar_length*progress))
-    size_string = "{0:.2f} MB".format(float(total_length)/(1024*1024))
+    block = int(round(bar_length * progress))
+    size_string = "{0:.2f} MB".format(float(total_length) / (1024 * 1024))
     text = "\rDownload Progress: [{0}] {1:.2f}%  of {2}".format(
-        "#"*block + "-"*(bar_length-block), progress*100, size_string)
+        "#" * block + "-" * (bar_length - block), progress * 100, size_string)
     sys.stdout.write(text)
     sys.stdout.flush()
 
 
-def copyfileobj_withprogress(fsrc, fdst, total_length, length=16*1024):
+def copyfileobj_withprogress(fsrc, fdst, total_length, length=16 * 1024):
     copied = 0
     while True:
         buf = fsrc.read(length)
@@ -68,7 +68,7 @@ def copyfileobj_withprogress(fsrc, fdst, total_length, length=16*1024):
             break
         fdst.write(buf)
         copied += len(buf)
-        progress = float(copied)/float(total_length)
+        progress = float(copied) / float(total_length)
         update_progressbar(progress, total_length)
 
 
@@ -85,7 +85,7 @@ def _get_file_md5(filename):
     """Compute the md5 checksum of a file"""
     md5_data = md5()
     with open(filename, 'rb') as f:
-        for chunk in iter(lambda: f.read(128*md5_data.block_size), b''):
+        for chunk in iter(lambda: f.read(128 * md5_data.block_size), b''):
             md5_data.update(chunk)
     return md5_data.hexdigest()
 
@@ -348,17 +348,17 @@ fetch_mni_template = _make_fetcher(
     pjoin(dipy_home, 'mni_template'),
     'https://ndownloader.figshare.com/files/',
     ['5572676?private_link=4b8666116a0128560fb5',
-    '5572673?private_link=93216e750d5a7e568bda',
-    '5572670?private_link=33c92d54d1afb9aa7ed2',
-    '5572661?private_link=584319b23e7343fed707'],
+     '5572673?private_link=93216e750d5a7e568bda',
+     '5572670?private_link=33c92d54d1afb9aa7ed2',
+     '5572661?private_link=584319b23e7343fed707'],
     ['mni_icbm152_t2_tal_nlin_asym_09a.nii',
-    'mni_icbm152_t1_tal_nlin_asym_09a.nii',
-    'mni_icbm152_t1_tal_nlin_asym_09c_mask.nii',
-    'mni_icbm152_t1_tal_nlin_asym_09c.nii'],
+     'mni_icbm152_t1_tal_nlin_asym_09a.nii',
+     'mni_icbm152_t1_tal_nlin_asym_09c_mask.nii',
+     'mni_icbm152_t1_tal_nlin_asym_09c.nii'],
     ['f41f2e1516d880547fbf7d6a83884f0d',
-    '1ea8f4f1e41bc17a94602e48141fdbc8',
-    'a243e249cd01a23dc30f033b9656a786',
-    '3d5dd9b0cd727a17ceec610b782f66c1'],
+     '1ea8f4f1e41bc17a94602e48141fdbc8',
+     'a243e249cd01a23dc30f033b9656a786',
+     '3d5dd9b0cd727a17ceec610b782f66c1'],
     doc="fetch the MNI 2009a T1 and T2, and 2009c T1 and T1 mask files",
     data_size="70MB")
 
@@ -603,10 +603,10 @@ def read_mni_template(version, contrast="T1"):
     ----------
     version: string
         There are two MNI templates 2009a and 2009c, so options available are:
-        "a" and "c". 
+        "a" and "c".
     contrast : list or string, optional
         Which of the contrast templates to read. For version "a" two contrasts
-        are available: "T1" and "T2". Similarly for version "c" there are two 
+        are available: "T1" and "T2". Similarly for version "c" there are two
         options, "T1" and "mask". You can input contrast as a string or a list
 
     Returns
@@ -625,16 +625,18 @@ def read_mni_template(version, contrast="T1"):
     file_dict_a = {"T1": pjoin(folder, 'mni_icbm152_t1_tal_nlin_asym_09a.nii'),
                    "T2": pjoin(folder, 'mni_icbm152_t2_tal_nlin_asym_09a.nii')}
 
-    file_dict_c = {"T1": pjoin(folder, 'mni_icbm152_t1_tal_nlin_asym_09c.nii'),
-                   "mask": pjoin(folder, 'mni_icbm152_t1_tal_nlin_asym_09c_mask.nii')}
+    file_dict_c = {
+        "T1": pjoin(
+            folder, 'mni_icbm152_t1_tal_nlin_asym_09c.nii'), "mask": pjoin(
+            folder, 'mni_icbm152_t1_tal_nlin_asym_09c_mask.nii')}
 
-    if contrast=="T2" and version=="c":
+    if contrast == "T2" and version == "c":
         raise ValueError("No T2 image for MNI template 2009c")
 
-    if contrast=="mask" and version=="a":
+    if contrast == "mask" and version == "a":
         raise ValueError("No template mask available for MNI 2009a")
 
-    if version == "a":    
+    if version == "a":
         if isinstance(contrast, str):
             return nib.load(file_dict_a[contrast])
         else:
