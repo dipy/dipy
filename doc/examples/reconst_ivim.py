@@ -81,12 +81,11 @@ plt.close()
 
    Heat map of a slice of data
 
-The marked point in the image shows a section containing cerebral spinal
-fluid (CSF) so it should have a very high $\mathbf{f}$ and $\mathbf{D^*}$,
-the area between the right and left is white matter so that should be lower,
-and the region on the right is gray matter and CSF. That should give us some
-contrast to see the values varying across the regions. We will consider the
-marked region for our example.
+The region around the intersection of the cross-hairs in the figure
+contains cerebral spinal fluid (CSF), so it so it should have a very high $\mathbf{f}$
+and $\mathbf{D^*}$, the area between the right and left is white matter so that
+should be lower, and the region on the right is gray matter and CSF. That should
+give us some contrast to see the values varying across the regions.
 """
 
 x1, x2 = 160, 180
