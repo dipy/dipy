@@ -376,14 +376,14 @@ def template_only_averaging(input_data, template_data, template_mask,
     patch_size = patch_radius**3
     output_mask = np.zeros(input_data.shape)
     output_data = np.ones(input_data.shape, dtype = np.float64) * input_data
-
+    # print(template_mask.shape)
     for i in range(patch_radius, n0 - patch_radius):
         for j in range(patch_radius, n1 - patch_radius):
             for k in range(patch_radius, n2 - patch_radius):
 
-                mask_patch = template_mask[i - patch_radius, i + patch_radius + 1,
-                                        j - patch_radius, j + patch_radius + 1,
-                                        k - patch_radius, k + patch_radius + 1]
+                mask_patch = template_mask[i - patch_radius : i + patch_radius + 1,
+                                        j - patch_radius : j + patch_radius + 1,
+                                        k - patch_radius : k + patch_radius + 1]
 
                 percent = np.double(np.sum(mask_patch)) / np.double(patch_size)
 

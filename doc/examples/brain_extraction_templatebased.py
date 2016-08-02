@@ -7,7 +7,7 @@ from dipy.segment.mask import (median_otsu,
                               jaccard_index,
                               brain_extraction)
 
-from dipy.data import fetch_stanford_hardi, read_stanford_hardi
+from dipy.data import fetch_sherbrooke_3shell, read_sherbrooke_3shell
 
 
 # dname = '..'
@@ -43,23 +43,44 @@ template_affine = img.get_affine()
 img = nib.load(filename_template_mask)
 template_data_mask = img.get_data()
 
-# t = time()
+print("Template volume", template_data.shape)
 
-# """
-# Now we apply the ``brain extraction`` function which takes the input, template data and
-# template mask as inputs, along with their affine information. There are five other 
-# parameters which can be given to the function. 
+"""
+Let us see how the template data looks like
+"""
+sli = template_data.shape[2] / 2
 
-# The same_modality takes boolean value true if the input and template are of same modality
-# and false if they are not, when it takes value false the only useful parameters are the
-# patch_radius and threshold, rest are only used when the modalities are same.
+plt.figure("Template Data")
+plt.subplot(1, 2, 1).set_axis_off()
+plt.imshow(template_data[...,sli], cmap = 'gray', origin = 'lower')
+plt.subplot(1, 2, 2).set_axis_off()
+plt.imshow(template_mask[...,sli], cmap = 'gray', origin = 'lower')
+plt.savefig('template_data.png', bbox_inches='tight')
 
-# The patch_radius and block_radius are the inputs for block wise local averaging which 
-# is used after the registeration step in the ``brain extraction``. The parameter value 
-# which is set to 1 as defaults governs the weighing, the threshold value governs the 
-# eroded boundary coefficient of the extracted mask. For more info on how these parameters 
-# works please look at the ``fast_patch_averaging`` function in dipy.segment.
-# """
+"""
+.. figure:: template_data.png
+   :align: center
+
+   **Axial slice of template and it's corresponding mask**.
+"""
+
+"""
+Now we apply the ``brain extraction`` function which takes the input, template data and
+template mask as inputs, along with their affine information. There are five other 
+parameters which can be given to the function. 
+
+The same_modality takes boolean value true if the input and template are of same modality
+and false if they are not, when it takes value false the only useful parameters are the
+patch_radius and threshold, rest are only used when the modalities are same.
+
+The patch_radius and block_radius are the inputs for block wise local averaging which 
+is used after the registeration step in the ``brain extraction``. The parameter value 
+which is set to 1 as defaults governs the weighing, the threshold value governs the 
+eroded boundary coefficient of the extracted mask. For more info on how these parameters 
+works please look at the ``fast_patch_averaging`` function in dipy.segment.
+"""
+
+t = time()
 
 [output_data, output_mask] = brain_extraction(input_data,
                                               input_affine,
@@ -112,13 +133,21 @@ plt.subplot(1, 3, 3).set_axis_off()
 plt.imshow(mask[:, :, sli].astype('float'),
            cmap='gray', origin='lower')
 plt.title("The patch averaging mask output")
+plt.savefig('brain_extraction_same.png', bbox_inches='tight')
 
+"""
+.. figure:: brain_extraction_same.png
+   :align: center
+
+   **Input data (T1), the extracted brain and the corresponding mask (axial slice shown)**.
+"""
 
 """
 Now considering the input of b0 modality while the template remains the same T1 modality
 """
-fetch_stanford_hardi()
-img, gtab = read_stanford_hardi()
+
+fetch_sherbrooke_3shell()
+img, gtab = read_sherbrooke_3shell()
 input_data = img.get_data()
 input_affine = img.get_affine()
 input_data = input_data[...,0]
@@ -144,20 +173,27 @@ sli = input_data.shape[2]/ 2
 plt.figure('Brain segmentation 2')
 plt.subplot(1, 3, 1).set_axis_off()
 plt.imshow(input_data[:, :, sli].astype('float'),
-           cmap='gray', origin='lower')
+           cmap='gray', origin='lower', interpolation='none')
 plt.title("Input Data")
 
 plt.subplot(1, 3, 2).set_axis_off()
 plt.imshow(b0_mask[:, :, sli].astype('float'),
-           cmap='gray', origin='lower')
+           cmap='gray', origin='lower',interpolation='none')
 plt.title("The patch averaging label output")
 
 plt.subplot(1, 3, 3).set_axis_off()
 plt.imshow(mask[:, :, sli].astype('float'),
-           cmap='gray', origin='lower')
+           cmap='gray', origin='lower', interpolation='none')
 plt.title("The patch averaging mask output")
-
+plt.savefig('brain_extraction_diff.png', bbox_inches='tight')
 plt.show()
+
+"""
+.. figure:: brain_extraction_diff.png
+   :align: center
+
+   **Input data (B0), the extracted brain and the corresponding mask (axial slice shown)**.
+"""
 
 nib.save(
     nib.Nifti1Image(
