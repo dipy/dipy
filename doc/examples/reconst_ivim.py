@@ -22,20 +22,20 @@ The IVIM model expresses the MRI signal as follows:
  .. math::
     S(b)=S_0(fe^{-bD^*}+(1-f)e^{-bD})
 
-where $\mathbf{b}$ is the diffusion gradient weighing value (which is dependent on
-the measurement parameters), $\mathbf{S_{0}}$ is the signal in the absence
+where $\mathbf{b}$ is the diffusion gradient weighing value (which is dependent
+on the measurement parameters), $\mathbf{S_{0}}$ is the signal in the absence
 of diffusion gradient sensitization, $\mathbf{f}$ is the perfusion
 fraction, $\mathbf{D}$ is the diffusion coefficient and $\mathbf{D^*}$ is
 the pseudo-diffusion constant, due to vascular contributions.
 
-In the following example we show how to fit the IVIM model
-on a diffusion-weighted dataset and visualize the diffusion and pseudo diffuion
-coefficients. First, we import all relevant modules:
+In the following example we show how to fit the IVIM model on a
+diffusion-weighteddataset and visualize the diffusion and pseudo
+diffusion coefficients. First, we import all relevant modules:
 """
 
 import matplotlib.pyplot as plt
 
-from dipy.reconst.ivim import IvimModel, ivim_prediction
+from dipy.reconst.ivim import IvimModel
 from dipy.data.fetcher import read_ivim
 
 """
@@ -44,14 +44,15 @@ This dataset was acquired with 21 b-values in 3 different directions.
 Volumes corresponding to different directions were registered to each
 other, and averaged across directions. Thus, this dataset has 4 dimensions,
 with the length of the last dimension corresponding to the number
-of b-values.
+of b-values. In order to use this model the data should contain signals
+measured at 0 bvalue.
 """
 
 img, gtab = read_ivim()
 
 """
-The variable ``img`` contains a ``nibabel`` NIfTI image object(with the data)
-and gtab contains a GradientTable object(information about
+The variable ``img`` contains a ``nibabel`` NIfTI image object (with the data)
+and gtab contains a GradientTable object (information about
 the gradients e.g. b-values and b-vectors). We get the
 data from img using ``read_data``.
 """
@@ -60,16 +61,16 @@ data = img.get_data()
 print('data.shape (%d, %d, %d, %d)' % data.shape)
 
 """
-The data has 54 slices, with 256-by-256 voxels in each slice.
-The fourth dimension corresponds to the b-values in the gtab.
-Let us visualize the data by taking a slice midway(z=27) at
-$\mathbf{b} = 0$.
+The data has 54 slices, with 256-by-256 voxels in each slice. The fourth
+dimension corresponds to the b-values in the gtab. Let us visualize the data
+by taking a slice midway(z=27) at $\mathbf{b} = 0$.
 """
 
 z = 27
 b = 20
 
-plt.imshow(data[:, :, z, b].T, origin='lower', cmap='gray', interpolation=None)
+plt.imshow(data[:, :, z, b].T, origin='lower', cmap='gray',
+           interpolation='nearest')
 plt.axhline(y=100)
 plt.axvline(x=170)
 plt.savefig("ivim_data_slice.png")
@@ -82,17 +83,19 @@ plt.close()
    Heat map of a slice of data
 
 The region around the intersection of the cross-hairs in the figure
-contains cerebral spinal fluid (CSF), so it so it should have a very high $\mathbf{f}$
-and $\mathbf{D^*}$, the area between the right and left is white matter so that
-should be lower, and the region on the right is gray matter and CSF. That should
-give us some contrast to see the values varying across the regions.
+contains cerebral spinal fluid (CSF), so it so it should have a very high
+$\mathbf{f}$ and $\mathbf{D^*}$, the area between the right and left is white
+matter so that should be lower, and the region on the right is gray matter
+and CSF. That should give us some contrast to see the values varying across
+the regions.
 """
 
 x1, x2 = 160, 180
 y1, y2 = 90, 110
 data_slice = data[x1:x2, y1:y2, z, :]
 
-plt.imshow(data[x1:x2, y1:y2, z, b].T, origin='lower', cmap="gray", interpolation=None)
+plt.imshow(data[x1:x2, y1:y2, z, b].T, origin='lower',
+           cmap="gray", interpolation='nearest')
 plt.savefig("CSF_slice.png")
 plt.close()
 
@@ -147,7 +150,7 @@ fit for a voxel and also various maps for the entire slice.
 This will give us an idea about the diffusion and perfusion in
 that section. Let(i, j) denote the coordinate of the voxel. We have
 already fixed the z component as 27 and hence we will get a slice
-which is 33 units avove.
+which is 27 units above.
 
 """
 
@@ -199,7 +202,8 @@ the plot.
 def plot_map(raw_data, variable, limits, filename):
     lower, upper = limits
     plt.title('Map for {}'.format(variable))
-    plt.imshow(raw_data.T, origin='lower', clim=(lower, upper), cmap="gray", interpolation=None)
+    plt.imshow(raw_data.T, origin='lower', clim=(lower, upper),
+               cmap="gray", interpolation='nearest')
     plt.colorbar()
     plt.savefig(filename)
     plt.close()
