@@ -4,7 +4,7 @@ Denoise images using Local PCA
 ===============================
 
 Using the local PCA based denoising for diffusion
-images [Manjon2013]_ we can state of the art 
+images [Manjon2013]_ we can state of the art
 results. The advantage of local PCA over the other denoising
 methods is that it takes into the account the directional
 information of the diffusion data as well.
@@ -27,44 +27,24 @@ from dipy.data import fetch_stanford_hardi, read_stanford_hardi
 from dipy.data import fetch_sherbrooke_3shell, read_sherbrooke_3shell
 
 """
-Load one of the datasets, it has 21 gradients and 1 b0 image
+Load one of the datasets, it has 63 gradients and 1 b0 image
 """
+
 fetch_isbi2013_2shell()
-# fetch_stanford_hardi()
-# fetch_sherbrooke_3shell()
-# img = nib.load('/Users/Riddhish/Documents/GSOC/DIPY/data/test.nii')
-# img = nib.load('/Users/Riddhish/Documents/GSOC/DIPY/data/for_Riddhish/UCLA_0001_DWI.nii')
-# img = nib.load('/Users/Riddhish/Documents/GSOC/DIPY/data/for_Riddhish/GQAIMS84_DWI.nii.gz')
 img, gtab = read_isbi2013_2shell()
-# img, gtab = read_stanford_hardi()
-# img, gtab = read_sherbrooke_3shell()
-# img = nib.load(
-#     '/Users/Riddhish/Documents/GSOC/DIPY/data/test_denoised_rician.nii')
-# b1, b2 = read_bvals_bvecs('/Users/Riddhish/Documents/GSOC/DIPY/data/test.bval',
-#                           '/Users/Riddhish/Documents/GSOC/DIPY/data/test.bvec')
-# b1, b2 = read_bvals_bvecs('/Users/Riddhish/Documents/GSOC/DIPY/data/for_Riddhish/UCLA_0001_BVAL.txt',
-#                           '/Users/Riddhish/Documents/GSOC/DIPY/data/for_Riddhish/UCLA_0001_BVec_Vertical.txt')
 
-# b1, b2 = read_bvals_bvecs('/Users/Riddhish/Documents/GSOC/DIPY/data/for_Riddhish/GQAIMS84_BVal_Vertical.txt',
-#                           '/Users/Riddhish/Documents/GSOC/DIPY/data/for_Riddhish/GQAIMS84_BVec_Vertical.txt')
-
-# gtab = gradient_table(b1, b2)
 data = np.array(img.get_data())
-# den_data = np.array(den_img.get_data())
 affine = img.get_affine()
 
-# currently just taking the small patch of the data to preserv time
-print(data.shape)
-# data = np.array(data[20:50, 20:50, 20:30, :])
-# den_data = np.array(den_data[20:100, 20:100, 10:15, :])
+print("Input Volume", data.shape)
 
 """
 We use a special noise estimation method for getting the sigma
-to be used in local PCA algorithm. This is also proposed in [Manjon2013]_
-It takes both data and the gradient table object as inputs and returns an 
-estimate of local noise standard deviation as a 3D array
-
+to be used in local PCA algorithm. It takes both data and the gradient
+table object as inputs and returns an estimate of local noise standard
+deviation as a 3D array.
 """
+
 t = time()
 
 sigma = np.array(fast_noise_estimate(data.astype(np.float64), gtab))
@@ -73,114 +53,65 @@ print("Sigma estimation time", time() - t)
 """
 Perform the localPCA using the function localpca.
 
-The localpca algorithm [Manjon2013]_ takes into account for the directional 
-information in the diffusion MR data. It performs PCA on local 4D patch and 
+The localpca algorithm takes into account for the directional
+information in the diffusion MR data. It performs PCA on local 4D patch and
 then thresholds it using the local variance estimate done by noise estimation
-function, then performing PCA reconstruction on it gives us the deniosed 
+function, then performing PCA reconstruction on it gives us the deniosed
 estimate.
 
-We have a fast implementation ``localpca`` and a slower one (which has less 
+We have a fast implementation ``localpca`` and a slower one (which has less
 memory consumption) ``localpca_slow``
 """
-t = time() 
 
-# perform the local PCA denoising
-denoised_arr_fast = localpca(data, sigma = sigma, patch_radius = 2)
+t = time()
+
+denoised_arr_fast = localpca(data, sigma=sigma, patch_radius=2)
 
 print("Time taken for local PCA (fast)", -t + time())
 
 t = time()
 
-denoised_arr = localpca_slow(data, sigma = sigma, patch_radius = 2)
+denoised_arr = localpca_slow(data, sigma=sigma, patch_radius=2)
 
 print("Time taken for local PCA (slow)", -t + time())
-
-# print(np.array(eigenf))
-orig = data[:, :,2, 10]
-# rmse = np.sum(np.abs(denoised_arr_fast[:,:,:,:] - 
-#     den_data[:,:,:,:])) / np.sum(np.abs(den_data[:,:,:,:]))
-# print("RMSE between python and matlab output", rmse)
-# den_matlab = den_data[:, :, 2, 10]
-den_python = denoised_arr_fast[:, :, 2, 10]
 
 """
 Let us plot the axial slice of the original and denoised data.
 We visualize all the slices (22 in total)
 """
-# diff_matlab = np.abs(orig.astype('f8') - den_matlab.astype('f8'))
-diff_python = np.abs(orig.astype('f8') - den_python.astype('f8'))
-# slice_num = data.shape[2] / 2
-# fig = plt.figure(figsize=(24,10))
-# fig.suptitle("Original for axial slice 10 all gradient directions")
-# # plt.title()
-# ax = [plt.subplot(3,8,i+1) for i in range(data.shape[3])]
 
-# count = 0
-# for a in ax:
-#     a.set_xticklabels([])
-#     a.set_yticklabels([])
-#     a.imshow(data[:,:,slice_num,count], cmap = 'gray')
-#     a.set_title(count)
-#     count += 1
+sli = data.shape[2] / 2
+gra = data.shape[3] / 2
+orig = data[:, :, sli, gra]
+den = denoised_arr_fast[:, :, sli, gra]
+diff = np.abs(orig.astype('f8') - den.astype('f8'))
 
-# plt.subplots_adjust(wspace=0, hspace=0.12)
-# plt.savefig('original.png', bbox_inches='tight')
-
-# """
-# .. figure:: original.png
-#    :align: center
-
-#    **Showing the middle axial slice of the raw data**.
-# """
-
-# fig = plt.figure(figsize=(24,10))
-# fig.suptitle("Output for axial slice all gradient directions")
-# ax = [plt.subplot(3,8,i+1) for i in range(data.shape[3])]
-
-# count = 0
-# for a in ax:
-#     a.set_xticklabels([])
-#     a.set_yticklabels([])
-#     a.imshow(denoised_arr_fast[:,:,slice_num,count], cmap = 'gray')
-#     a.set_title(count)
-#     count += 1
-
-# plt.subplots_adjust(wspace=0, hspace=0.12)
-# plt.savefig('denoised.png', bbox_inches='tight')
-# plt.show()
+fig, ax = plt.subplots(1, 3)
+ax[0].imshow(orig, cmap='gray', origin='lower', interpolation='none')
+ax[0].set_title('Original')
+ax[0].set_axis_off()
+ax[1].imshow(den, cmap='gray', origin='lower', interpolation='none')
+ax[1].set_title('Denoised Output')
+ax[1].set_axis_off()
+ax[2].imshow(diff, cmap='gray', origin='lower', interpolation='none')
+ax[2].set_title('Residual')
+ax[2].set_axis_off()
+plt.show()
+plt.savefig('denoised_localpca.png', bbox_inches='tight')
 
 """
-.. figure:: denoised.png
+.. figure:: denoised_localpca.png
    :align: center
 
    **Showing the middle axial slice of the local PCA denoised output**.
 """
-fig, ax = plt.subplots(1, 3)
-# ax[0, 0].imshow(orig, cmap='gray', origin='lower' , interpolation='none')
-# ax[0, 0].set_title('Original')
-# ax[0, 1].imshow(den_matlab, cmap='gray', origin='lower',interpolation='none')
-# ax[0, 1].set_title('Matlab Output')
-# ax[0, 2].imshow(diff_matlab, cmap='gray', origin='lower', interpolation='none')
-# ax[0, 2].set_title('Matlab Residual')
-ax[0].imshow(orig, cmap='gray', origin='lower', interpolation='none')
-ax[0].set_title('Original')
-ax[1].imshow(den_python, cmap='gray', origin='lower', interpolation='none')
-ax[1].set_title('Python Output')
-ax[2].imshow(diff_python, cmap='gray', origin='lower', interpolation='none')
-ax[2].set_title('Python Residual')
 
-
-"""
-Save the denoised output in nifty file format
-"""
-# nib.save(nib.Nifti1Image(denoised_arr_fast, affine), '/Users/Riddhish/Documents/GSOC/DIPY/data/final.nii')
-plt.show()
+nib.save(nib.Nifti1Image(denoised_arr_fast,
+        affine), 'denoised_localpca.nii.gz')
 
 """
 .. [Manjon2013] Manjon JV, Coupe P, Concha L, Buades A, Collins DL
-        "Diffusion Weighted Image Denoising Using Overcomplete
-         Local PCA" 2013
+   "Diffusion Weighted Image Denoising Using Overcomplete Local PCA" PLOS 2013
 
 .. include:: ../links_names.inc
-
 """
