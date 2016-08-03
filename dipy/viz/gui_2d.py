@@ -508,9 +508,8 @@ class LineSlider2D(UI):
         self.slider_line = LineSlider2DBase(line_width=line_width, center=center, length=length)
         self.slider_disk = LineSlider2DDisk(inner_radius=inner_radius, outer_radius=outer_radius, center=center,
                                             length=length)
-        self.text = LineSlider2DText(limits=(start_point, end_point),
-                                     current_val=(start_point[0] + (end_point[0] - start_point[0])/2),
-                                     position=(start_point[0]-40, start_point[1]-10))
+        self.text = LineSlider2DText(center=center, length=length,
+                                     current_val=(start_point[0] + (end_point[0] - start_point[0])/2))
 
         self.ui_list.append(self.slider_line)
         self.ui_list.append(self.slider_disk)
@@ -535,6 +534,7 @@ class LineSlider2D(UI):
     def set_center(self, position):
         self.slider_disk.set_center(position)
         self.slider_line.set_center(position)
+        self.text.set_center(position)
 
 
 class LineSlider2DBase(UI):
@@ -649,21 +649,22 @@ class LineSlider2DDisk(UI):
 
 class LineSlider2DText(UI):
 
-    def __init__(self, limits, current_val, position):
+    def __init__(self, center, length, current_val):
         """
 
         Parameters
         ----------
         limits
         current_val
-        position
+        center
+        length
         """
         super(LineSlider2DText, self).__init__()
-        self.y_position = (limits[0][1] + limits[1][1])/2
-        self.left_x_position = limits[0][0]
-        self.right_x_position = limits[1][0]
+        self.left_x_position = center[0] - length/2
+        self.right_x_position = center[0] + length/2
+        self.length = length
 
-        self.actor = self.build_actor(current_val=current_val, position=position)
+        self.actor = self.build_actor(current_val=current_val, position=(self.left_x_position-50, center[1]))
 
         self.ui_list.append(self)
 
@@ -716,6 +717,9 @@ class LineSlider2DText(UI):
         """
         percentage = self.calculate_percentage(current_val=current_val)
         self.actor.set_message(text=percentage)
+
+    def set_center(self, position):
+        self.actor.SetPosition(position[0]-self.length/2-40, position[1]-10)
 
 
 class DiskSlider2D(UI):

@@ -130,8 +130,6 @@ slider.add_callback("LeftButtonReleaseEvent", disk_release_callback, slider.slid
 
 disk_slider = gui_2d.DiskSlider2D()
 
-# panel = gui_2d.Panel2D(center=(0, 0), size=(1000, 1000))
-
 
 def outer_disk_click_callback(obj, evt):
     # obj: DiskSlider2D
@@ -172,17 +170,18 @@ disk_slider.add_callback("MouseMoveEvent", inner_disk_move_callback, disk_slider
 disk_slider.add_callback("LeftButtonPressEvent", inner_disk_press_callback, disk_slider.slider_inner_disk)
 disk_slider.add_callback("LeftButtonReleaseEvent", inner_disk_release_callback, disk_slider.slider_inner_disk)
 
-panel = gui_2d.Panel2D(center=(400, 400), size=(200, 100), color=(1, 1, 1))
-panel.add_element(button, (0.01, 0.01))
-panel.add_element(text, (0.4, 0.01))
+panel = gui_2d.Panel2D(center=(440, 90), size=(300, 150), color=(1, 1, 1))
+panel.add_element(button, (0.9, 0.8))
+panel.add_element(text, (0.1, 0.2))
+panel.add_element(slider, (0.5, 0.9))
 
 renderer = window.ren()
 renderer.add(panel)
 renderer.add(cube_actor_1)
 renderer.add(cube_actor_2)
-renderer.add(text)
-renderer.add(slider)
-renderer.add(disk_slider)
+# renderer.add(text)
+# renderer.add(slider)
+# renderer.add(disk_slider)
 
 showm = window.ShowManager(renderer, size=(600, 600), title="Sci-Fi UI")
 showm.initialize()
