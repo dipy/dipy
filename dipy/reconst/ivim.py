@@ -146,12 +146,13 @@ class IvimModel(ReconstModel):
 
     def estimate_x0(self, data):
         """
-        Fit the ivim params using a two stage fit.
+        Estimate initial guess for x0 using a linear fit.
 
-        In the two stage fitting routine, initially, we fit the signal
-        at bvals higher than the specified `split_b` using `TensorModel`
-        and get an intial guess for f and D. Then, using these parameters
-        we fit the entire data for all bvalues.
+        We fit an exponential for signal values which are greater than a
+        particular bvalue (`split_b`) by taking the log of the signal and
+        using a linear fit. The perfusion fraction is considered to be
+        negligible above `split_b` and hence we consider only the diffusion
+        modeled by an exponentially decaying signal.
 
         Parameters
         ----------
@@ -165,10 +166,14 @@ class IvimModel(ReconstModel):
         x0_guess : array
             An array with initial values of S0, f, D_star, D for each voxel.
         """
-        S0_hat, D_guess = self._estimate_S0_D(data)
+        bvals_ge_split = self.gtab.bvals[self.gtab.bvals > self.split_b]
+        bvecs_ge_split = self.gtab.bvecs[self.gtab.bvals > self.split_b]
+        gtab_ge_split = gradient_table(bvals_ge_split, bvecs_ge_split.T)
+
+        D_guess, neg_log_S0 = np.polyfit(gtab_ge_split.bvals,
+                                         -np.log(data[self.gtab.bvals > self.split_b]), 1)
+        S0_hat = np.exp(-neg_log_S0)
         f_guess = 1 - S0_hat / np.mean(data[self.gtab.b0s_mask])
-        # We set the S0 guess as the signal value at b=0
-        # The D* guess is roughly 10 times the D value
         x0 = np.array([np.mean(data[self.gtab.b0s_mask]),
                        f_guess, 10 * D_guess, D_guess])
         # The API does not allow bounds for Scipy < 0.17. While estimating x0,
@@ -231,49 +236,6 @@ class IvimModel(ReconstModel):
             The predicted IVIM signal using given parameters.
         """
         return ivim_prediction(ivim_params, gtab)
-
-    def _estimate_S0_D(self, data):
-        """
-        Obtain initial guess for S0 and D for two stage fitting.
-
-        Using TensorModel from reconst.dti, we fit an exponential
-        for signal values which are greater than a particular bvalue
-        (split_b). The apparent diffusion coefficient gives us an
-        initial estimate for D and S0.
-
-        Parameters
-        ----------
-        data : array
-            The measured signal.
-
-        Returns
-        -------
-        S0_hat : float
-            Initial S0 guess.
-
-        D_guess : float
-            Initial D_guess.
-        """
-        gtab = self.gtab
-        split_b = self.split_b
-        bvals_ge_split = gtab.bvals[gtab.bvals > split_b]
-        bvecs_ge_split = gtab.bvecs[gtab.bvals > split_b]
-        gtab_ge_split = gradient_table(bvals_ge_split, bvecs_ge_split.T)
-        tensor_model = TensorModel(gtab_ge_split)
-        tenfit = tensor_model.fit(data[..., gtab.bvals > split_b])
-        D_guess = mean_diffusivity(tenfit.evals)
-        dti_params = tenfit.model_params
-        evecs = dti_params[..., 3:12].reshape((dti_params.shape[:-1] + (3, 3)))
-        evals = dti_params[..., :3]
-        qform = vec_val_vect(evecs, evals)
-
-        sphere = Sphere(xyz=gtab.bvecs[~gtab.b0s_mask])
-        ADC = apparent_diffusion_coef(qform, sphere)
-
-        S0_hat = np.mean(data[..., ~gtab.b0s_mask] /
-                         np.exp(-gtab.bvals[~gtab.b0s_mask] * ADC),
-                         -1)
-        return np.array([S0_hat, D_guess])
 
     def _leastsq(self, data, x0):
         """

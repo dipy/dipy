@@ -228,23 +228,15 @@ def test_estimate_x0():
     x0_test = np.array([1., 0.2, -0.001, -0.0001])
     test_signal = ivim_prediction(x0_test, gtab)
 
-    S0_hat, D_guess = ivim_model_bounds._estimate_S0_D(test_signal)
-
-    f_guess = 1 - S0_hat / test_signal[0]
-    x0_unfeasible = np.array([test_signal[0], f_guess, 10 * D_guess, D_guess])
-
-    # Using this test signal the value for initial `f` in the estimate for
-    # x0 comes out to be negative which is not feasible. The function
-    # replaces the negative value of `f` to 0. according to the lower
+    # Using this test signal the the estimate for x0 gives negative
+    # values for D and D_star, which is not feasible. The function
+    # replaces the negative values of by 0. according to the lower
     # bounds supplied in `bounds_check`.
 
     x0_estimated = ivim_model_bounds.estimate_x0(test_signal)
     # Test if all signals are positive
     assert_array_equal((np.any(x0_estimated) >= 0), True)
-    assert_array_equal(x0_estimated, [x0_unfeasible[0],
-                                      0.,
-                                      x0_unfeasible[2],
-                                      x0_unfeasible[3]])
+    assert_array_almost_equal(x0_estimated, [1.,  0.020789,  0.,  0.])
 
 
 def test_fit_object():
