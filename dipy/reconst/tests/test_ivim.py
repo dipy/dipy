@@ -56,12 +56,17 @@ ivim_model = IvimModel(gtab)
 ivim_fit_single = ivim_model.fit(data_single)
 ivim_fit_multi = ivim_model.fit(data_multi)
 
-# Generate a signal with multiple b0
+bvals_no_b0 = np.array([5., 10., 20., 30., 40., 60., 80., 100.,
+                        120., 140., 160., 180., 200., 220., 240.,
+                        260., 280., 300., 350., 400., 500., 600.,
+                        700., 800., 900., 1000.])
+bvecs_no_b0 = generate_bvecs(N)
+gtab_no_b0 = gradient_table(bvals_no_b0, bvecs.T)
+
 bvals_with_multiple_b0 = np.array([0., 0., 0., 30., 40., 60., 80., 100.,
                                    120., 140., 160., 180., 200., 220., 240.,
                                    260., 280., 300., 350., 400., 500., 600.,
                                    700., 800., 900., 1000.])
-N = len(bvals_with_multiple_b0)
 bvecs_with_multiple_b0 = generate_bvecs(N)
 gtab_with_multiple_b0 = gradient_table(bvals_with_multiple_b0,
                                        bvecs_with_multiple_b0.T)
@@ -291,31 +296,22 @@ def test_parameters():
 
 
 def test_multiple_b0():
-    S0, f, D_star, D = 1000.0, 0.132, 0.00885, 0.000921
-    # params for a single voxel
-    params = np.array([S0, f, D_star, D])
+    # Generate a signal with multiple b0
 
-    mevals = np.array(([D_star, D_star, D_star], [D, D, D]))
     # This gives an isotropic signal.
     signal = multi_tensor(gtab_with_multiple_b0, mevals, snr=None, S0=S0,
                           fractions=[f * 100, 100 * (1 - f)])
     # Single voxel data
     data_single = signal[0]
 
-    data_multi = np.zeros((2, 2, 1, len(gtab_with_multiple_b0.bvals)))
-    data_multi[0, 0, 0] = data_multi[0, 1, 0] = data_multi[
-        1, 0, 0] = data_multi[1, 1, 0] = data_single
-
-    ivim_params = np.zeros((2, 2, 1, 4))
-    ivim_params[0, 0, 0] = ivim_params[0, 1, 0] = params
-    ivim_params[1, 0, 0] = ivim_params[1, 1, 0] = params
-
     ivim_model_multiple_b0 = IvimModel(gtab_with_multiple_b0)
-    ivim_fit_single = ivim_model.fit(data_single)
-    ivim_fit_multi = ivim_model.fit(data_multi)
 
     x0_estimated = ivim_model_multiple_b0.estimate_x0(data_single)
     # Test if all signals are positive
     assert_array_equal((np.any(x0_estimated) >= 0), True)
     assert_array_almost_equal(x0_estimated, [1000., .1106353,
                                              0.009510603, 0.0009510603])
+
+
+def test_no_b0():
+    assert_raises(ValueError, IvimModel, gtab_no_b0)
