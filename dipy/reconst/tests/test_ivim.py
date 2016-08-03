@@ -56,6 +56,17 @@ ivim_model = IvimModel(gtab)
 ivim_fit_single = ivim_model.fit(data_single)
 ivim_fit_multi = ivim_model.fit(data_multi)
 
+# Generate a signal with multiple b0
+bvals_with_multiple_b0 = np.array([0., 0., 0., 30., 40., 60., 80., 100.,
+                                   120., 140., 160., 180., 200., 220., 240.,
+                                   260., 280., 300., 350., 400., 500., 600.,
+                                   700., 800., 900., 1000.])
+N = len(bvals_with_multiple_b0)
+bvecs_with_multiple_b0 = generate_bvecs(N)
+gtab_with_multiple_b0 = gradient_table(bvals_with_multiple_b0,
+                                       bvecs_with_multiple_b0.T)
+
+
 def test_single_voxel_fit():
     """
     Test the implementation of the fitting for a single voxel.
@@ -219,7 +230,7 @@ def test_estimate_x0():
     While estimating x0, if there is noise in the data the estimated x0
     might not be feasible and turn out to be negative. This will be checked
     using the bounds in the model. In case of Scipy < 0.17, where bounded
-    least_squares is not implemented, we use the default 
+    least_squares is not implemented, we use the default
     `bounds_check = [(0, 0., 0.0, 0.0), (0, 1., 0.1, 0.1)]`
     which gives the lower and upper bounds to limit x0.
     """
@@ -245,7 +256,8 @@ def test_fit_object():
     """
     assert_raises(IndexError, ivim_fit_single.__getitem__, (-.1, 0, 0))
     # Check if the S0 called is matching
-    assert_array_almost_equal(ivim_fit_single.__getitem__(0).model_params, 1000.)
+    assert_array_almost_equal(
+        ivim_fit_single.__getitem__(0).model_params, 1000.)
 
     ivim_fit_multi = ivim_model.fit(data_multi)
     # Should raise a TypeError if the arguments are not passed as tuple
@@ -276,3 +288,34 @@ def test_parameters():
     assert_array_almost_equal(f, ivim_fit_single.perfusion_fraction)
     assert_array_almost_equal(D_star, ivim_fit_single.D_star)
     assert_array_almost_equal(D, ivim_fit_single.D)
+
+
+def test_multiple_b0():
+    S0, f, D_star, D = 1000.0, 0.132, 0.00885, 0.000921
+    # params for a single voxel
+    params = np.array([S0, f, D_star, D])
+
+    mevals = np.array(([D_star, D_star, D_star], [D, D, D]))
+    # This gives an isotropic signal.
+    signal = multi_tensor(gtab_with_multiple_b0, mevals, snr=None, S0=S0,
+                          fractions=[f * 100, 100 * (1 - f)])
+    # Single voxel data
+    data_single = signal[0]
+
+    data_multi = np.zeros((2, 2, 1, len(gtab_with_multiple_b0.bvals)))
+    data_multi[0, 0, 0] = data_multi[0, 1, 0] = data_multi[
+        1, 0, 0] = data_multi[1, 1, 0] = data_single
+
+    ivim_params = np.zeros((2, 2, 1, 4))
+    ivim_params[0, 0, 0] = ivim_params[0, 1, 0] = params
+    ivim_params[1, 0, 0] = ivim_params[1, 1, 0] = params
+
+    ivim_model_multiple_b0 = IvimModel(gtab_with_multiple_b0)
+    ivim_fit_single = ivim_model.fit(data_single)
+    ivim_fit_multi = ivim_model.fit(data_multi)
+
+    x0_estimated = ivim_model_multiple_b0.estimate_x0(data_single)
+    # Test if all signals are positive
+    assert_array_equal((np.any(x0_estimated) >= 0), True)
+    assert_array_almost_equal(x0_estimated, [1000., .1106353,
+                                             0.009510603, 0.0009510603])
