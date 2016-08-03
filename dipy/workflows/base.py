@@ -70,6 +70,10 @@ class IntrospectiveArgumentParser(arg.ArgumentParser):
         -----------
         workflow : dipy.workflows.workflow.Workflow
             Workflow from which to infer parameters.
+
+        Returns
+        -------
+        sub_flow_optionals : dictionary of all sub workflow optional parameters
         """
         specs = inspect.getargspec(workflow.run)
         doc = inspect.getdoc(workflow.run)
@@ -108,7 +112,7 @@ class IntrospectiveArgumentParser(arg.ArgumentParser):
                 _kwargs['metavar'] = dtype.__name__
                 if dtype is bool:
                     _kwargs['action'] = 'store_true'
-                    default_ = {}
+                    default_ = dict()
                     default_[arg] = False
                     self.set_defaults(**default_)
                     del _kwargs['type']
@@ -131,18 +135,22 @@ class IntrospectiveArgumentParser(arg.ArgumentParser):
         return self.add_sub_flow_args(workflow.get_sub_runs())
 
     def add_sub_flow_args(self, sub_flows):
-        """ Take a list workflow objects and use introspection to extract the
-        parameters, types and docstrings of their run method. Only the
-        optional input parameters are extracted for these as they are
-        treated as sub workflows.
+        """ Take an array of workflow objects and use introspection to extract
+        the parameters, types and docstrings of their run method. Only the
+        optional input parameters are extracted for these as they are treated as
+        sub workflows.
 
         Parameters
         -----------
         sub_flows : array of dipy.workflows.workflow.Workflow
             Workflows to inspect.
+
+        Returns
+        -------
+        sub_flow_optionals : dictionary of all sub workflow optional parameters
         """
 
-        sub_flow_optionals = {}
+        sub_flow_optionals = dict()
         for name, flow, short_name in sub_flows:
             sub_flow_optionals[name] = {}
             specs = inspect.getargspec(flow)
@@ -180,7 +188,7 @@ class IntrospectiveArgumentParser(arg.ArgumentParser):
                 _kwargs['metavar'] = dtype.__name__
                 if dtype is bool:
                     _kwargs['action'] = 'store_true'
-                    default_ = {}
+                    default_ = dict()
                     default_[arg_name] = False
                     self.set_defaults(**default_)
                     del _kwargs['type']
@@ -207,6 +215,13 @@ class IntrospectiveArgumentParser(arg.ArgumentParser):
         -----------
         text : string
             Parameter text line to inspect.
+
+        Returns
+        -------
+        arg_type : The type found by inspecting the text line.
+
+        is_nargs : Whether or not this argument is nargs
+        (arparse's multiple values argument)
         """
         text = text.lower()
         nargs_str = 'variable'
@@ -227,8 +242,8 @@ class IntrospectiveArgumentParser(arg.ArgumentParser):
         return arg_type, is_nargs
 
     def get_flow_args(self, args=None, namespace=None):
-        """ Returns the parsed arguments as a dictionary directly passable to
-        the workflow.
+        """ Returns the parsed arguments as a dictionary that will be used
+        as a workflow's run method arguments.
         """
         ns_args = self.parse_args(args, namespace)
         dct = vars(ns_args)
