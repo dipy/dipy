@@ -29,3 +29,5 @@ __config__.py
 .coverage
 .buildbot.patch
 .eggs/
+
+.idea/

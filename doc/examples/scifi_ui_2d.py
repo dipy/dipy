@@ -130,6 +130,8 @@ slider.add_callback("LeftButtonReleaseEvent", disk_release_callback, slider.slid
 
 disk_slider = gui_2d.DiskSlider2D()
 
+# panel = gui_2d.Panel2D(center=(0, 0), size=(1000, 1000))
+
 
 def outer_disk_click_callback(obj, evt):
     # obj: DiskSlider2D
@@ -170,8 +172,12 @@ disk_slider.add_callback("MouseMoveEvent", inner_disk_move_callback, disk_slider
 disk_slider.add_callback("LeftButtonPressEvent", inner_disk_press_callback, disk_slider.slider_inner_disk)
 disk_slider.add_callback("LeftButtonReleaseEvent", inner_disk_release_callback, disk_slider.slider_inner_disk)
 
+panel = gui_2d.Panel2D(center=(400, 400), size=(200, 100), color=(1, 1, 1))
+panel.add_element(button, (0.01, 0.01))
+panel.add_element(text, (0.4, 0.01))
+
 renderer = window.ren()
-renderer.add(button)
+renderer.add(panel)
 renderer.add(cube_actor_1)
 renderer.add(cube_actor_2)
 renderer.add(text)

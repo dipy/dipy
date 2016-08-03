@@ -20,6 +20,29 @@ else:
 numpy_support, have_ns, _ = optional_package('vtk.util.numpy_support')
 
 
+class Panel2D(UI):
+
+    def __init__(self, center, size, color=(0.1, 0.1, 0.1), opacity=0.7):
+        super(Panel2D, self).__init__()
+        self.center = center
+        self.size = size
+        self.panel = Rectangle2D(size=size, center=center, color=color, opacity=opacity)
+        self.lower_limits = (self.center[0] - self.size[0]/2, self.center[1] - self.size[1]/2)
+
+        self.ui_list.append(self.panel)
+
+    def add_to_renderer(self, ren):
+        # Should be a recursive function, but we never go more than 2 levels down (by design)
+        for ui_item_list in self.ui_list:
+            for ui_item in ui_item_list.ui_list:
+                ren.add(ui_item.actor)
+
+    def add_element(self, element, relative_position):
+        self.ui_list.append(element)
+        element.set_center((self.lower_limits[0] + relative_position[0]*self.size[0],
+                            self.lower_limits[1] + relative_position[1]*self.size[1]))
+
+
 class Button2D(UI):
     """A 2D overlay button and is of type vtkTexturedActor2D.
 
@@ -58,6 +81,8 @@ class Button2D(UI):
             png = vtk.vtkPNGReader()
             png.SetFileName(icon_fname)
             png.Update()
+
+            # print png.GetOutput().GetExtent()
 
             # Convert the image to a polydata
             imageDataGeometryFilter = vtk.vtkImageDataGeometryFilter()
@@ -129,6 +154,9 @@ class Button2D(UI):
         """
         self.next_icon_name()
         self.set_icon(self.icons[self.current_icon_name])
+
+    def set_center(self, position):
+        self.actor.SetPosition(position)
 
 
 class TextBox2D(UI):
@@ -384,9 +412,12 @@ class TextBox2D(UI):
             self.caret_pos = 0
         self.render_text()
 
+    def set_center(self, position):
+        self.actor.SetPosition(position)
+
 
 class Rectangle2D(UI):
-    def __init__(self, size):
+    def __init__(self, size, center=(0, 0), color=(1, 1, 1), opacity=1.0):
         """
 
         Parameters
@@ -394,16 +425,23 @@ class Rectangle2D(UI):
         size
         """
         super(Rectangle2D, self).__init__()
-        self.actor = self.build_actor(size=size)
+        self.size = size
+        self.actor = self.build_actor(size=size, center=center, color=color, opacity=opacity)
 
         self.ui_list.append(self)
 
-    def build_actor(self, size):
+    def add_to_renderer(self, ren):
+        ren.add(self.actor)
+
+    def build_actor(self, size, center, color, opacity):
         """
 
         Parameters
         ----------
         size
+        center
+        color
+        opacity
 
         Returns
         -------
@@ -443,29 +481,33 @@ class Rectangle2D(UI):
 
         actor = vtk.vtkActor2D()
         actor.SetMapper(mapper)
-        actor.GetProperty().SetColor(1, 1, 1)
+        actor.GetProperty().SetColor(color)
+        actor.GetProperty().SetOpacity(opacity)
+        actor.SetPosition(center[0] - self.size[0] / 2, center[1] - self.size[1] / 2)
 
         return actor
+
+    def set_center(self, position):
+        self.actor.SetPosition(position[0] - self.size[0]/2, position[1] - self.size[1]/2)
 
 
 class LineSlider2D(UI):
     def __init__(self, start_point=(350, 20), end_point=(550, 20), line_width=5, inner_radius=0,
-                 outer_radius=10, position=(450, 20)):
+                 outer_radius=10, center=(450, 20), length=200):
         """
 
         Parameters
         ----------
         inner_radius
         outer_radius
-        position
         start_point
         end_point
         line_width
         """
         super(LineSlider2D, self).__init__()
-        self.slider_line = LineSlider2DBase(start_point=start_point, end_point=end_point, line_width=line_width)
-        self.slider_disk = LineSlider2DDisk(position=position, inner_radius=inner_radius, outer_radius=outer_radius,
-                                            start_point=start_point, end_point=end_point)
+        self.slider_line = LineSlider2DBase(line_width=line_width, center=center, length=length)
+        self.slider_disk = LineSlider2DDisk(inner_radius=inner_radius, outer_radius=outer_radius, center=center,
+                                            length=length)
         self.text = LineSlider2DText(limits=(start_point, end_point),
                                      current_val=(start_point[0] + (end_point[0] - start_point[0])/2),
                                      position=(start_point[0]-40, start_point[1]-10))
@@ -490,32 +532,35 @@ class LineSlider2D(UI):
         """
         super(LineSlider2D, self).add_callback(component.actor, event_type, callback)
 
+    def set_center(self, position):
+        self.slider_disk.set_center(position)
+        self.slider_line.set_center(position)
+
 
 class LineSlider2DBase(UI):
 
-    def __init__(self, start_point, end_point, line_width):
+    def __init__(self, line_width, center, length):
         """
 
         Parameters
         ----------
-        start_point
-        end_point
+        center
+        length
         line_width
         """
         super(LineSlider2DBase, self).__init__()
-        self.start_point = start_point
-        self.end_point = end_point
-        self.actor = self.build_actor(start_point=start_point, end_point=end_point, line_width=line_width)
-
+        self.actor = self.build_actor(line_width=line_width, center=center, length=length)
+        self.length = length
+        self.line_width = line_width
         self.ui_list.append(self)
 
-    def build_actor(self, start_point, end_point, line_width):
+    def build_actor(self, line_width, center, length):
         """
 
         Parameters
         ----------
-        start_point
-        end_point
+        center
+        length
         line_width
 
         Returns
@@ -523,40 +568,38 @@ class LineSlider2DBase(UI):
         actor
 
         """
-        actor = Rectangle2D(size=(end_point[0]-start_point[0], line_width)).actor
-
-        actor.SetPosition(start_point[0], start_point[1]-line_width/2)
+        actor = Rectangle2D(size=(length, line_width), center=center).actor
         actor.GetProperty().SetColor(1, 0, 0)
-
         return actor
+
+    def set_center(self, position):
+        self.actor.SetPosition(position[0] - self.length/2, position[1] - self.line_width/2)
 
 
 class LineSlider2DDisk(UI):
 
-    def __init__(self, position, inner_radius, outer_radius, start_point, end_point):
+    def __init__(self, inner_radius, outer_radius, center, length):
         """
 
         Parameters
         ----------
-        position
+        center
+        length
         inner_radius
         outer_radius
         """
         super(LineSlider2DDisk, self).__init__()
-        self.actor = self.build_actor(position=position, inner_radius=inner_radius, outer_radius=outer_radius)
-        self.pos_height = position[1]
-
-        self.start_point = start_point
-        self.end_point = end_point
+        self.center = center
+        self.length = length
+        self.actor = self.build_actor(inner_radius=inner_radius, outer_radius=outer_radius)
 
         self.ui_list.append(self)
 
-    def build_actor(self, position, inner_radius, outer_radius):
+    def build_actor(self, inner_radius, outer_radius):
         """
 
         Parameters
         ----------
-        position
         inner_radius
         outer_radius
 
@@ -581,7 +624,7 @@ class LineSlider2DDisk(UI):
         actor = vtk.vtkActor2D()
         actor.SetMapper(mapper)
 
-        actor.SetPosition(position[0], position[1])
+        actor.SetPosition(self.center[0], self.center[1])
 
         return actor
 
@@ -593,11 +636,15 @@ class LineSlider2DDisk(UI):
         position
         """
         x_position = position[0]
-        if x_position < self.start_point[0]:
-            x_position = self.start_point[0]
-        if x_position > self.end_point[0]:
-            x_position = self.end_point[0]
-        self.actor.SetPosition(x_position, self.pos_height)
+        if x_position < self.center[0] - self.length/2:
+            x_position = self.center[0] - self.length/2
+        if x_position > self.center[0] + self.length/2:
+            x_position = self.center[0] + self.length/2
+        self.actor.SetPosition(x_position, self.center[1])
+
+    def set_center(self, position):
+        self.center = position
+        self.set_position(position)
 
 
 class LineSlider2DText(UI):
@@ -688,10 +735,10 @@ class DiskSlider2D(UI):
         self.outer_disk_radius = outer_inner_radius + (outer_outer_radius - outer_inner_radius) / 2
         self.outer_disk_center = outer_position
         self.slider_outer_disk = DiskSlider2DBase(inner_radius=outer_inner_radius, outer_radius=outer_outer_radius,
-                                                disk_position=outer_position)
+                                                  disk_position=outer_position)
         self.slider_inner_disk = DiskSlider2DDisk(inner_radius=inner_inner_radius, outer_radius=inner_outer_radius,
-                                                disk_position=(outer_position[0] + self.outer_disk_radius,
-                                                               outer_position[1]))
+                                                  disk_position=(outer_position[0] + self.outer_disk_radius,
+                                                                 outer_position[1]))
         self.slider_text = DiskSlider2DText(position=outer_position, current_val=0)
 
         self.ui_list.append(self.slider_outer_disk)
