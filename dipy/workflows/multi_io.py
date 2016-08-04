@@ -84,6 +84,7 @@ def connect_output_paths(inputs, out_dir, out_files, output_strategy='append',
         elif output_strategy == 'append':
             dname = path.join(inp_dirname, out_dir)
 
+
         else:
             dname = out_dir
 
@@ -119,7 +120,7 @@ def basename_without_extension(fname):
 
 
 def io_iterator(inputs, out_dir, fnames, output_strategy='append',
-                mix_names=False):
+                mix_names=False, out_keys=None):
     """ Creates an IOIterator from the parameters.
 
     Parameters
@@ -143,6 +144,8 @@ def io_iterator(inputs, out_dir, fnames, output_strategy='append',
     io_it.set_out_dir(out_dir)
     io_it.set_out_fnames(*fnames)
     io_it.create_outputs()
+    if out_keys:
+        io_it.set_output_keys(*out_keys)
 
     return io_it
 
@@ -186,13 +189,16 @@ def io_iterator_(frame, fnc, output_strategy='append', mix_names=False):
         inputs.append(values[arv])
 
     # defaults
+    out_keys = []
     for arv in args[split_at:]:
         if arv == 'out_dir':
             out_dir = values[arv]
         elif 'out_' in arv:
+            out_keys.append(arv)
             outputs.append(values[arv])
 
-    return io_iterator(inputs, out_dir, outputs, output_strategy, mix_names)
+    return io_iterator(inputs, out_dir, outputs, output_strategy, mix_names,
+                       out_keys=out_keys)
 
 
 class IOIterator(object):
@@ -207,6 +213,8 @@ class IOIterator(object):
         self.output_strategy = output_strategy
         self.mix_names = mix_names
         self.inputs = []
+        self.out_keys = None
+
 
     def set_inputs(self, *args):
         self.input_args = list(args)
@@ -217,6 +225,9 @@ class IOIterator(object):
 
     def set_out_fnames(self, *args):
         self.out_fnames = list(args)
+
+    def set_output_keys(self, *args):
+        self.out_keys = list(args)
 
     def create_outputs(self):
         if len(self.inputs) >= 1:
