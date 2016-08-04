@@ -4,7 +4,7 @@ from dipy.core import wavelet
 
 
 def ascm(ima, fimau, fimao, h):
-    """Adaptive Soft Coefficient Matching
+    r"""Adaptive Soft Coefficient Matching
 
     Combines two filtered 3D-images at different resolutions and the orginal
     image. Returns the resulting combined image.
@@ -33,10 +33,10 @@ def ascm(ima, fimau, fimao, h):
 
     References
     ----------
-    [1] Pierrick Coupe, Jose Manjon, Montserrat Robles, Louis Collins.
-        "Multiresolution Non-Local Means Filter for 3D MR Image Denoising"
-        IET Image Processing, Institution of Engineering and Technology,
-        2011
+    .. [Coupe11] Pierrick Coupe, Jose Manjon, Montserrat Robles, Louis Collins.
+                 "Multiresolution Non-Local Means Filter for 3D MR Image Denoising"
+                 IET Image Processing, Institution of Engineering and Technology,
+                 2011
 
     """
 
