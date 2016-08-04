@@ -109,8 +109,8 @@ file located in ../dipy/bin/.
 
 from dipy.workflows.flow_runner import run_flow
 """
-This is the method that will wrap everything that is need to make a flow
-command line ready then run it.
+This is the method that will wrap everything that is needed to make a workflow
+ready then run it.
 """
 
 if __name__ == "__main__":
