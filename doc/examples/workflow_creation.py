@@ -4,7 +4,7 @@ Creating a new workflow.
 ============================================================
 
 A workflow is a series of dipy operations with fixed inputs and outputs
-that is callable via commandline.
+that is callable via command line or another interface.
 
 For example, after installing dipy, you can call anywhere from your command line:
 $ dipy_nlmeans t1.nii.gz t1_denoised.nii.gz
@@ -78,7 +78,7 @@ Use self.get_io_iterator() in every workflow you create. This creates
 an ``IOIterator`` object that create output file names and directory structure
 based on the inputs and some other advanced output strategy parameters.
 
-Iterating on the ``IOIterator`` object you created previously you
+By iterating on the ``IOIterator`` object you created previously you
 conveniently get all input and output paths for every input file
 found when globbin the input parameters.
 
