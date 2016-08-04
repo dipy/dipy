@@ -70,6 +70,15 @@ class UI(object):
 
         cmd_id[0] = prop.AddObserver(event_type, _callback, priority)
 
+    def set_center(self, position):
+        """ Sets the center of the UI component
+
+        Parameters
+        ----------
+        position: (float, float)
+        """
+        pass
+
 
 class TextActor2D(vtk.vtkTextActor):
     """ Inherits from the default vtkTextActor and helps setting the text.
@@ -169,8 +178,8 @@ class TextActor2D(vtk.vtkTextActor):
 
         Parameters
         ----------
-        color: 3-Tuple
-            (0-1, 0-1, 0-1)
+        color: (float, float, float)
+            Values must be between 0-1
         """
         self.GetTextProperty().SetColor(*color)
 
@@ -179,7 +188,7 @@ class TextActor2D(vtk.vtkTextActor):
 
         Parameters
         ----------
-        position: 3-Tuple of floats
+        position: (float, float, float)
         """
         self.SetDisplayPosition(*position)
 
@@ -188,6 +197,6 @@ class TextActor2D(vtk.vtkTextActor):
 
         Returns
         -------
-        position: 3-Tuple of floats
+        position: (float, float, float)
         """
         return self.GetDisplayPosition()

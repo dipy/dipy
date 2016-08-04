@@ -21,8 +21,21 @@ numpy_support, have_ns, _ = optional_package('vtk.util.numpy_support')
 
 
 class Panel2D(UI):
+    """ A 2D UI Panel.
+    Can contain one or more UI elements.
+    """
 
     def __init__(self, center, size, color=(0.1, 0.1, 0.1), opacity=0.7):
+        """
+
+        Parameters
+        ----------
+        center: (float, float)
+        size: (float, float)
+        color: (float, float, float)
+            Values must be between 0-1
+        opacity: float
+        """
         super(Panel2D, self).__init__()
         self.center = center
         self.size = size
@@ -33,11 +46,25 @@ class Panel2D(UI):
 
     def add_to_renderer(self, ren):
         # Should be a recursive function, but we never go more than 2 levels down (by design)
+        """ Add props to renderer
+
+        Parameters
+        ----------
+        ren: renderer
+        """
         for ui_item_list in self.ui_list:
             for ui_item in ui_item_list.ui_list:
                 ren.add(ui_item.actor)
 
     def add_element(self, element, relative_position):
+        """ Adds an elements to the panel.
+
+        Parameters
+        ----------
+        element: UI
+            The UI item to be added.
+        relative_position: (float, float)
+        """
         self.ui_list.append(element)
         element.set_center((self.lower_limits[0] + relative_position[0]*self.size[0],
                             self.lower_limits[1] + relative_position[1]*self.size[1]))
@@ -45,7 +72,9 @@ class Panel2D(UI):
 
 class Button2D(UI):
     """A 2D overlay button and is of type vtkTexturedActor2D.
-
+    Currently supports:
+    - Multiple icons.
+    - Switching between icons.
     """
 
     def __init__(self, icon_fnames):
@@ -53,7 +82,8 @@ class Button2D(UI):
 
         Parameters
         ----------
-        icon_fnames
+        icon_fnames: dict
+            {iconname: filename, iconname: filename, ...}
         """
         super(Button2D, self).__init__()
         self.icons = self.build_icons(icon_fnames)
@@ -65,16 +95,18 @@ class Button2D(UI):
         self.ui_list.append(self)
 
     def build_icons(self, icon_fnames):
-        """ Converts filenames to vtkImageDataGeometryFilters
-        A peprocessing step to prevent re-read of filenames during every state change
+        """ Converts file names to vtkImageDataGeometryFilters.
+        A pre-processing step to prevent re-read of file names during every state change.
 
         Parameters
         ----------
-        icon_fnames : A list of filenames
+        icon_fnames: dict
+            {iconname: filename, iconname: filename, ...}
 
         Returns
         -------
-        icons : A list of corresponding vtkImageDataGeometryFilters
+        icons: dict
+            A dictionary of corresponding vtkImageDataGeometryFilters
         """
         icons = {}
         for icon_name, icon_fname in icon_fnames.items():
@@ -85,21 +117,21 @@ class Button2D(UI):
             # print png.GetOutput().GetExtent()
 
             # Convert the image to a polydata
-            imageDataGeometryFilter = vtk.vtkImageDataGeometryFilter()
-            imageDataGeometryFilter.SetInputConnection(png.GetOutputPort())
-            imageDataGeometryFilter.Update()
+            image_data_geometry_filter = vtk.vtkImageDataGeometryFilter()
+            image_data_geometry_filter.SetInputConnection(png.GetOutputPort())
+            image_data_geometry_filter.Update()
 
-            icons[icon_name] = imageDataGeometryFilter
+            icons[icon_name] = image_data_geometry_filter
 
         return icons
 
     def build_actor(self, icon, center=None):
-        """ Return an image as a 2D actor with a specific position
+        """ Return an image as a 2D actor with a specific position.
 
         Parameters
         ----------
         icon : imageDataGeometryFilter
-        center : a two tuple
+        center : (float, float)
 
         Returns
         -------
@@ -118,20 +150,28 @@ class Button2D(UI):
         return button
 
     def add_to_renderer(self, ren):
-        ren.add(self.actor)
-
-    def add_callback(self, event_type, callback):
-        """ Adds events to button actor
+        """ Adds the button actor to renderer.
 
         Parameters
         ----------
-        event_type: event code
-        callback: callback function
+        ren: renderer
+        """
+        ren.add(self.actor)
+
+    def add_callback(self, event_type, callback):
+        """ Adds events to button actor.
+
+        Parameters
+        ----------
+        event_type: string
+            event code
+        callback: function
+            callback function
         """
         super(Button2D, self).add_callback(self.actor, event_type, callback)
 
     def set_icon(self, icon):
-        """ Modifies the icon used by the vtkTexturedActor2D
+        """ Modifies the icon used by the vtkTexturedActor2D.
 
         Parameters
         ----------
@@ -140,7 +180,7 @@ class Button2D(UI):
         self.actor.GetMapper().SetInputConnection(icon.GetOutputPort())
 
     def next_icon_name(self):
-        """ Returns the next icon name while cycling through icons
+        """ Returns the next icon name while cycling through icons.
 
         """
         self.current_icon_id += 1
@@ -149,25 +189,40 @@ class Button2D(UI):
         self.current_icon_name = self.icon_names[self.current_icon_id]
 
     def next_icon(self):
-        """ Increments the state of the Button
-            Also changes the icon
+        """ Increments the state of the Button.
+            Also changes the icon.
         """
         self.next_icon_name()
         self.set_icon(self.icons[self.current_icon_name])
 
     def set_center(self, position):
+        """ Sets the icon center to position.
+        Currently, the lower left point of the icon is the center.
+
+        Parameters
+        ----------
+        position: (float, float)
+        """
         self.actor.SetPosition(position)
 
 
 class TextBox2D(UI):
     def __init__(self, width, height, text="Enter Text"):
-        """
+        """ An editable 2D text box that behaves as a UI component.
+        Currently supports:
+        - Basic text editing.
+        - Cursor movements.
+        - Single and multi-line text boxes.
+        - Pre text formatting (text needs to be formatted beforehand).
 
         Parameters
         ----------
-        width
-        height
-        text
+        width: int
+            The number of characters in a single line of text.
+        height: int
+            The number of lines in the textbox.
+        text: string
+            Initial text while placing the element.
         """
         super(TextBox2D, self).__init__()
         self.text = text
@@ -185,23 +240,27 @@ class TextBox2D(UI):
                     font_size=18, font_family='Arial', justification='left',
                     bold=False, italic=False, shadow=False):
 
-        """ Builds a text actor
+        """ Builds a text actor.
 
         Parameters
         ----------
-        text
-        position
-        color
-        font_size
-        font_family
-        justification
-        bold
-        italic
-        shadow
+        text: string
+            The initial text while building the actor.
+        position: (float, float)
+        color: (float, float, float)
+            Values must be between 0-1.
+        font_size: int
+        font_family: string
+            Currently only supports Ariel.
+        justification: string
+            left, right or center.
+        bold: bool
+        italic: bool
+        shadow: bool
 
         Returns
         -------
-        text_actor
+        text_actor: actor2d
 
         """
         text_actor = TextActor2D()
@@ -216,28 +275,38 @@ class TextBox2D(UI):
         return text_actor
 
     def add_to_renderer(self, ren):
-        ren.add(self.actor)
-
-    def add_callback(self, event_type, callback):
-        """ Adds events to the text actor
+        """ Adds the text actor to the renderer.
 
         Parameters
         ----------
-        event_type: event code
-        callback: callback function
+        ren: renderer
+        """
+        ren.add(self.actor)
+
+    def add_callback(self, event_type, callback):
+        """ Adds events to the text actor.
+
+        Parameters
+        ----------
+        event_type: string
+            event code
+        callback: string
+            callback function
         """
         super(TextBox2D, self).add_callback(self.actor, event_type, callback)
 
     def width_set_text(self, text):
-        """ Adds newlines to text where necessary
+        """ Adds newlines to text where necessary.
+        This is needed for multi-line text boxes.
 
         Parameters
         ----------
-        text
+        text: string
+            The final text to be formatted.
 
         Returns
         -------
-        multi_line_text
+        multi_line_text: string
 
         """
         multi_line_text = ""
@@ -248,16 +317,16 @@ class TextBox2D(UI):
         return multi_line_text.rstrip("\n")
 
     def handle_character(self, character):
-        """ Main driving function that handles button events
+        """ Main driving function that handles button events.
+        # TODO: Need to handle all kinds of characters like !, +, etc.
 
         Parameters
         ----------
-        character
+        character: string
         """
         if character.lower() == "return":
             self.render_text(False)
             return True
-
         if character.lower() == "backspace":
             self.remove_character()
         elif character.lower() == "left":
@@ -270,7 +339,7 @@ class TextBox2D(UI):
         return False
 
     def move_caret_right(self):
-        """ Moves the caret towards right
+        """ Moves the caret towards right.
 
         """
         self.caret_pos += 1
@@ -278,7 +347,7 @@ class TextBox2D(UI):
             self.caret_pos = len(self.text)
 
     def move_caret_left(self):
-        """ Moves the caret towards left
+        """ Moves the caret towards left.
 
         """
         self.caret_pos -= 1
@@ -286,43 +355,39 @@ class TextBox2D(UI):
             self.caret_pos = 0
 
     def right_move_right(self):
-        """ Moves right window right
+        """ Moves right window right.
 
         """
         if self.window_right <= len(self.text):
             self.window_right += 1
 
     def right_move_left(self):
-        """ Moves right window left
+        """ Moves right window left.
 
         """
         if self.window_right > 0:
             self.window_right -= 1
 
     def left_move_right(self):
-        """ Moves left window right
+        """ Moves left window right.
 
         """
         if self.window_left <= len(self.text):
             self.window_left += 1
 
     def left_move_left(self):
-        """ Moves left window left
+        """ Moves left window left.
 
         """
         if self.window_left > 0:
             self.window_left -= 1
 
     def add_character(self, character):
-        """ Inserts a character into the text and moves window and caret accordingly
+        """ Inserts a character into the text and moves window and caret accordingly.
 
         Parameters
         ----------
-        character
-
-        Returns
-        -------
-
+        character: string
         """
         if len(character) > 1 and character.lower() != "space":
             return
@@ -335,10 +400,7 @@ class TextBox2D(UI):
         self.right_move_right()
 
     def remove_character(self):
-        """ Removes a character from the text and moves window and caret accordingly
-
-        Returns
-        -------
+        """ Removes a character from the text and moves window and caret accordingly.
 
         """
         if self.caret_pos == 0:
@@ -353,7 +415,7 @@ class TextBox2D(UI):
                 self.right_move_left()
 
     def move_left(self):
-        """ Handles left button press
+        """ Handles left button press.
 
         """
         self.move_caret_left()
@@ -363,7 +425,7 @@ class TextBox2D(UI):
                 self.right_move_left()
 
     def move_right(self):
-        """ Handles right button press
+        """ Handles right button press.
 
         """
         self.move_caret_right()
@@ -373,14 +435,12 @@ class TextBox2D(UI):
                 self.right_move_right()
 
     def showable_text(self, show_caret):
-        """ Chops out text to be shown on the screen
+        """ Chops out text to be shown on the screen.
 
         Parameters
         ----------
-        show_caret
-
-        Returns
-        -------
+        show_caret: bool
+            Whether or not to show the caret.
 
         """
         if show_caret:
@@ -391,11 +451,12 @@ class TextBox2D(UI):
         return ret_text
 
     def render_text(self, show_caret=True):
-        """ Renders text
+        """ Finally renders text.
 
         Parameters
         ----------
-        show_caret
+        show_caret: bool
+            Whether or not to show the caret.
         """
         text = self.showable_text(show_caret)
         if text == "":
@@ -403,7 +464,7 @@ class TextBox2D(UI):
         self.actor.set_message(self.width_set_text(text))
 
     def edit_mode(self):
-        """ Turns on edit mode
+        """ Turns on edit mode.
 
         """
         if self.init:
@@ -413,6 +474,12 @@ class TextBox2D(UI):
         self.render_text()
 
     def set_center(self, position):
+        """ Sets the text center to position.
+
+        Parameters
+        ----------
+        position: (float, float)
+        """
         self.actor.SetPosition(position)
 
 
