@@ -25,7 +25,7 @@ def test_logging_consistency():
         mo_flow = MedianOtsuFlow()
         mo_flow.run(data_path, out_dir=tmpdir)
 
-        mask_path, _ = mo_flow.last_generated_outputs[0]
+        mask_path = mo_flow.last_generated_outputs['out_mask']
         os.remove(mask_path)
 
         cmd_log = os.path.join(tmpdir, 'cmd_log.txt')
