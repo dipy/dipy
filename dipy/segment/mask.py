@@ -25,6 +25,7 @@ except:
 
 from scipy.ndimage import binary_dilation, generate_binary_structure
 
+
 def jaccard_index(mask1, mask2):
     """ Computes Jaccard's measure between two binary 3D data
 
@@ -37,13 +38,16 @@ def jaccard_index(mask1, mask2):
 
     Returns
     -------
-    mea : double 
+    mea : double
         The output of jaccard's measure
     """
 
     # check if the images are boolean
     if(not(mask1.dtype == bool and mask2.dtype == bool)):
-        raise ValueError("Only 3D boolean arrays supported", mask1.dtype, mask2.dtype)
+        raise ValueError(
+            "Only 3D boolean arrays supported",
+            mask1.dtype,
+            mask2.dtype)
 
     if(mask1.shape != mask2.shape):
         raise ValueError("Dimension mismatch", mask1.shape, mask2.shape)
@@ -56,6 +60,7 @@ def jaccard_index(mask1, mask2):
 
     mea = np.double(np.sum(intsec)) / np.double(np.sum(union))
     return mea
+
 
 def multi_median(input, median_radius, numpass):
     """ Applies median filter multiple times on input data.
@@ -340,9 +345,9 @@ def clean_cc_mask(mask):
 
     return new_cc_mask
 
+
 def template_only_averaging(input_data, template_data, template_mask,
-                            patch_radius = 1, threshold = 0.5):
-    
+                            patch_radius=1, threshold=0.5):
     """
     The averaging approach which only uses the registered template to extract
     the brain.
@@ -368,22 +373,22 @@ def template_only_averaging(input_data, template_data, template_mask,
         The extracted brain from the input data
     output_mask : 3D ndarray
         The brain extraction mask of the input data
-   
+
     """
     n0 = template_data.shape[0]
     n1 = template_data.shape[1]
     n2 = template_data.shape[2]
     patch_size = patch_radius**3
     output_mask = np.zeros(input_data.shape)
-    output_data = np.ones(input_data.shape, dtype = np.float64) * input_data
+    output_data = np.ones(input_data.shape, dtype=np.float64) * input_data
     # print(template_mask.shape)
     for i in range(patch_radius, n0 - patch_radius):
         for j in range(patch_radius, n1 - patch_radius):
             for k in range(patch_radius, n2 - patch_radius):
 
-                mask_patch = template_mask[i - patch_radius : i + patch_radius + 1,
-                                        j - patch_radius : j + patch_radius + 1,
-                                        k - patch_radius : k + patch_radius + 1]
+                mask_patch = template_mask[i - patch_radius: i + patch_radius + 1,
+                                           j - patch_radius: j + patch_radius + 1,
+                                           k - patch_radius: k + patch_radius + 1]
 
                 percent = np.double(np.sum(mask_patch)) / np.double(patch_size)
 
@@ -393,11 +398,12 @@ def template_only_averaging(input_data, template_data, template_mask,
     output_data[output_mask == 0] = 0
     return [output_data, output_mask]
 
+
 def brain_extraction(input_data, input_affine, template_data,
                      template_affine, template_mask,
                      patch_radius=1, block_radius=1, parameter=1,
-                     threshold=0.5, same_modality = True):
-    """
+                     threshold=0.5, same_modality=True):
+    r"""
     A robust brain extraction which uses a template to reduce the skull intensities.
     The affine information is required because we need to register the template to the
     input data
@@ -424,7 +430,7 @@ def brain_extraction(input_data, input_affine, template_data,
     threshold : Double
         The threshold between 0 to 1 which decides the erosion of the mask boundary
     same_modality : boolean
-        The variable which governs the relation between types of modalities of the input 
+        The variable which governs the relation between types of modalities of the input
         and the template data. Set it to be true if the modalities are the same (like both
         T1's) and false if not
 
@@ -441,10 +447,10 @@ def brain_extraction(input_data, input_affine, template_data,
 
     References
     ----------
-    .. [Eskildsen11] Simon Fristed Eskildsen et al., BEaST : Brain extraction based on 
+    .. [Eskildsen11] Simon Fristed Eskildsen et al., BEaST : Brain extraction based on
                      nonlocal segmentation technique, NeuroImage, vol 59, 2011.
 
-    .. [Lutkenhoff14] Evan S. Lutkenhoff et al.,  “Optimized Brain Extraction for 
+    .. [Lutkenhoff14] Evan S. Lutkenhoff et al.,  “Optimized Brain Extraction for
                       Pathological Brains (OptiBET)”, PLOS, 2014
 
     """
@@ -498,17 +504,21 @@ def brain_extraction(input_data, input_affine, template_data,
 
     if same_modality:
         [output_data, output_mask] = fast_patch_averaging(input_data.astype(np.float64),
-                                        transformed_data.astype(np.float64),
-                                        transformed_mask.astype(np.float64),
-                                        patch_radius,
-                                        block_radius,
-                                        parameter,
-                                        threshold)
+                                                          transformed_data.astype(
+                                                              np.float64),
+                                                          transformed_mask.astype(
+                                                              np.float64),
+                                                          patch_radius,
+                                                          block_radius,
+                                                          parameter,
+                                                          threshold)
     else:
         [output_data, output_mask] = template_only_averaging(input_data.astype(np.float64),
-                                        transformed_data.astype(np.float64),
-                                        transformed_mask.astype(np.float64),
-                                        patch_radius,
-                                        threshold)
+                                                             transformed_data.astype(
+                                                                 np.float64),
+                                                             transformed_mask.astype(
+                                                                 np.float64),
+                                                             patch_radius,
+                                                             threshold)
 
     return [output_data, output_mask]
