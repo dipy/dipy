@@ -4,7 +4,7 @@ from dipy.denoise.fast_lpca import fast_lpca
 
 
 def localpca(arr, sigma, patch_radius=1):
-    """
+    r"""
     Local PCA Based Denoising of Diffusion Datasets
 
     Parameters
@@ -24,9 +24,9 @@ def localpca(arr, sigma, patch_radius=1):
 
     References
     ----------
-    [1] Manjon JV, Coupe P, Concha L, Buades A, Collins DL
-        "Diffusion Weighted Image Denoising Using Overcomplete Local PCA"
-        PLOS 2013
+    .. [Manjon13] Manjon JV, Coupe P, Concha L, Buades A, Collins DL
+                  "Diffusion Weighted Image Denoising Using Overcomplete Local PCA"
+                  PLOS 2013
 
     """
 

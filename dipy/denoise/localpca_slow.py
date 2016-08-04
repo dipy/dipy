@@ -1,10 +1,8 @@
 import numpy as np
 import scipy as sp
-from time import time
-
 
 def localpca_slow(arr, sigma, patch_radius=1, rician=True):
-    """Local PCA Based Denoising of Diffusion Datasets
+    r"""Local PCA Based Denoising of Diffusion Datasets
 
     Parameters
     ----------
@@ -26,8 +24,8 @@ def localpca_slow(arr, sigma, patch_radius=1, rician=True):
 
     References
     ----------
-    Diffusion Weighted Image Denoising Using Overcomplete Local PCA
-    Manjon JV, Coupe P, Concha L, Buades A, Collins DL
+    .. [Manjon13] Diffusion Weighted Image Denoising Using Overcomplete Local PCA
+                  Manjon JV, Coupe P, Concha L, Buades A, Collins DL
 
     """
 
@@ -118,24 +116,8 @@ def localpca_slow(arr, sigma, patch_radius=1, rician=True):
                                                                        ord=0))
                     
 
-        # the final denoised without rician adaptation
         denoised_arr = thetax / theta
-        # phi = np.linspace(0,15,1000)
-        # # # we need to find the index of the closest value of arr/sigma from the dataset
-        # eta_phi = np.sqrt(np.pi/2) * np.exp(-0.5 * phi**2) * (((1 + 0.5 * phi**2) * sp.special.iv(0,0.25 * phi**2) + (0.5 * phi**2) * sp.special.iv(1,0.25 * phi**2))**2)
-        # # # eta_phi = eta_phi[1:200]
-        # corrected_arr = np.zeros_like(denoised_arr)
-        # phi = np.abs(denoised_arr / np.sqrt(sigma))
-        # phi[np.isnan(phi)] = 0
-        # opt_diff = np.abs(phi - eta_phi[0])
-        # for i in range(eta_phi.size):
-        #     print(i)
-        #     if(i!=0):
-        #         new_diff = np.abs(phi - eta_phi[i])
-        #         corrected_arr[new_diff < opt_diff] = i
-        #         opt_diff[new_diff<opt_diff] = new_diff[new_diff<opt_diff]
-
-        # corrected_arr = np.sqrt(sigma) * corrected_arr * 15.0/1000.0
+        
         return denoised_arr.astype(arr.dtype)
 
     else:
