@@ -36,7 +36,14 @@ class Workflow(object):
                              output_strategy=self._output_strategy,
                              mix_names=self._mix_names)
 
-        self.last_generated_outputs = io_it.outputs
+        # Make a list out of a list of lists
+        flat_outputs = [item for sublist in io_it.outputs for item in sublist]
+
+        if io_it.out_keys:
+            self.last_generated_outputs = dict(zip(io_it.out_keys, flat_outputs))
+        else:
+            self.last_generated_outputs = flat_outputs
+
         if self.manage_output_overwrite():
             return io_it
         else:

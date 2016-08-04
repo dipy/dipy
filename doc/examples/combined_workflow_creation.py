@@ -77,7 +77,7 @@ class DenoiseAndSegment(CombinedWorkflow):
         for in_file, out_file in io_it:
             nl_flow = NLMeansFlow()
             self.run_sub_flow(nl_flow, in_file, out_dir=out_dir)
-            denoised = nl_flow.last_generated_outputs[0][0]
+            denoised = nl_flow.last_generated_outputs['out_denoised']
 
             me_flow = MedianOtsuFlow()
             self.run_sub_flow(me_flow, denoised, out_dir=out_dir)
