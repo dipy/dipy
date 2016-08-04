@@ -27,7 +27,7 @@ def test_median_otsu_flow():
                              median_radius=median_radius, numpass=numpass,
                              autocrop=autocrop, vol_idx=vol_idx, dilate=dilate)
 
-        mask_name, masked_name = mo_flow.last_generated_outputs[0]
+        masked_name, mask_name = mo_flow.last_generated_outputs.values()
 
         masked, mask = median_otsu(volume, median_radius,
                                    numpass, autocrop,
