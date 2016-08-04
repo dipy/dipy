@@ -7,7 +7,6 @@ from ast import literal_eval
 
 import nibabel as nib
 
-from dipy.workflows.workflow import Workflow
 from dipy.core.gradients import gradient_table
 from dipy.data import get_sphere
 from dipy.io.gradients import read_bvals_bvecs

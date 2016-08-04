@@ -37,10 +37,6 @@ class NLMeansFlow(Workflow):
             Name of the resuting denoised volume (default: dwi_nlmeans.nii.gz)
         """
         io_it = self.get_io_iterator()
-<<<<<<< HEAD
-        print('sigma ', sigma)
-=======
->>>>>>> 93afccb... Changed last_generated_outputs management to a more user friendly version
         for fpath, odenoised in io_it:
             if self._skip:
                 shutil.copy(fpath, odenoised)

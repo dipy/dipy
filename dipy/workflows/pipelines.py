@@ -53,7 +53,7 @@ class FODFPipeline(CombinedWorkflow):
             # Masking
             mo_flow = MedianOtsuFlow(**flow_base_params)
             self.run_sub_flow(mo_flow, dwi, out_dir=out_dir)
-            dwi_mask, _ = mo_flow.last_generated_outputs[0]
+            dwi_mask = mo_flow.last_generated_outputs['out_mask']
 
             # Denoising
             skip_denoise = True
@@ -63,7 +63,7 @@ class FODFPipeline(CombinedWorkflow):
                                   skip=skip_denoise)
 
             self.run_sub_flow(nl_flow, dwi, out_dir=out_dir)
-            denoised = nl_flow.last_generated_outputs[0][0]
+            denoised = nl_flow.last_generated_outputs['out_denoised']
 
             # DTI reconstruction
             dti_flow = ReconstDtiFlow(output_strategy='append',
