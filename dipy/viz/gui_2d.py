@@ -723,7 +723,7 @@ class LineSlider2DText(UI):
 
 
 class DiskSlider2D(UI):
-    def __init__(self, outer_inner_radius=44, outer_outer_radius=50, outer_position=(450, 100), inner_outer_radius=10,
+    def __init__(self, outer_inner_radius=40, outer_outer_radius=44, outer_position=(450, 100), inner_outer_radius=10,
                  inner_inner_radius=0):
         """
 
@@ -825,6 +825,12 @@ class DiskSlider2D(UI):
 
         return angle
 
+    def set_center(self, position):
+        self.slider_outer_disk.set_center(position)
+        self.slider_text.set_center(position)
+        self.outer_disk_center = position
+        self.slider_inner_disk.set_position((position[0]+self.outer_disk_radius, position[1]))
+
 
 class DiskSlider2DBase(UI):
     def __init__(self, inner_radius, outer_radius, disk_position):
@@ -875,6 +881,9 @@ class DiskSlider2DBase(UI):
         actor.SetPosition(disk_position[0], disk_position[1])
 
         return actor
+
+    def set_center(self, position):
+        self.actor.SetPosition(position)
 
 
 class DiskSlider2DDisk(UI):
@@ -1000,3 +1009,6 @@ class DiskSlider2DText(UI):
         """
         percentage = self.calculate_percentage(current_val=current_val)
         self.actor.set_message(text=percentage)
+
+    def set_center(self, position):
+        self.actor.SetPosition(position[0]-16, position[1]-8)
