@@ -37,12 +37,12 @@ class Workflow(object):
                              mix_names=self._mix_names)
 
         # Make a list out of a list of lists
-        flat_outputs = [item for sublist in io_it.outputs for item in sublist]
+        self.flat_outputs = [item for sublist in io_it.outputs for item in sublist]
 
         if io_it.out_keys:
-            self.last_generated_outputs = dict(zip(io_it.out_keys, flat_outputs))
+            self.last_generated_outputs = dict(zip(io_it.out_keys, self.flat_outputs))
         else:
-            self.last_generated_outputs = flat_outputs
+            self.last_generated_outputs = self.flat_outputs
 
         if self.manage_output_overwrite():
             return io_it
@@ -56,10 +56,9 @@ class Workflow(object):
         output independently of the outcome to tell the user something happened.
         """
         duplicates = []
-        for output_list in self.last_generated_outputs:
-            for output in output_list:
-                if os.path.isfile(output):
-                    duplicates.append(output)
+        for output in self.flat_outputs:
+            if os.path.isfile(output):
+                duplicates.append(output)
 
         if len(duplicates) > 0:
             if self._force_overwrite:
