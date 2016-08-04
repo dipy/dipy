@@ -17,13 +17,13 @@ class UI(object):
     """ An umbrella class for all UI elements.
 
     While adding UI elements to the renderer, we need to go over all the
-     sub-elements that come with it and add those to the renderer too
+     sub-elements that come with it and add those to the renderer too.
     There are several features that are common to all the UI elements:
     - ui_param: This is an attribute that can be passed to the UI object
                 by the interactor. Thanks to Python's dynamic type-setting
-                this parameter can be anything
+                this parameter can be anything.
     - ui_list: This is used when there are more than one UI elements inside
-               a UI element. Inside the renderer, they're all iterated and added
+               a UI element. Inside the renderer, they're all iterated and added.
 
     """
     def __init__(self):
@@ -33,7 +33,12 @@ class UI(object):
         self.actor = None
 
     def add_to_renderer(self, ren):
-        """ Allows UI objects to add their own props to the renderer. """
+        """ Allows UI objects to add their own props to the renderer.
+
+        Parameters
+        ----------
+        ren: renderer
+        """
         pass
 
     def set_ui_param(self, ui_param):
@@ -41,12 +46,12 @@ class UI(object):
 
         Parameters
         ----------
-        ui_param
+        ui_param:
         """
         self.ui_param = ui_param
 
     def add_callback(self, prop, event_type, callback, priority=0):
-        """ Adds a callback to a specific event for this UI compoenent.
+        """ Adds a callback to a specific event for this UI component.
 
         Parameters
         ----------
@@ -67,24 +72,67 @@ class UI(object):
 
 
 class TextActor2D(vtk.vtkTextActor):
-    """ Inherits from the default vtkTextActor and helps setting the text
+    """ Inherits from the default vtkTextActor and helps setting the text.
+
+    Contains member functions for text formatting.
     """
     def message(self, text):
+        """ Set message after initialization.
+
+        Parameters
+        ----------
+        text: string
+
+        """
         self.SetInput(text)
 
     def set_message(self, text):
+        """ Modify text message.
+
+        Parameters
+        ----------
+        text: string
+        """
         self.SetInput(text)
 
     def get_message(self):
+        """ Gets message from the text.
+
+        Returns
+        -------
+        message: string
+
+        """
         return self.GetInput()
 
     def font_size(self, size):
+        """ Sets font size.
+
+        Parameters
+        ----------
+        size: int
+        """
         self.GetTextProperty().SetFontSize(size)
 
     def font_family(self, family='Arial'):
+        """ Sets font family.
+        Currently defaults to Ariel.
+        # TODO: Add other font families.
+
+        Parameters
+        ----------
+        family: string
+        """
         self.GetTextProperty().SetFontFamilyToArial()
 
     def justification(self, justification):
+        """ Justifies text.
+
+        Parameters
+        ----------
+        justification: string
+            Possible values: left, right, center
+        """
         tprop = self.GetTextProperty()
         if justification == 'left':
             tprop.SetJustificationToLeft()
@@ -94,6 +142,14 @@ class TextActor2D(vtk.vtkTextActor):
             tprop.SetJustificationToRight()
 
     def font_style(self, bold=False, italic=False, shadow=False):
+        """ Style font.
+
+        Parameters
+        ----------
+        bold: bool
+        italic: bool
+        shadow: bool
+        """
         tprop = self.GetTextProperty()
         if bold:
             tprop.BoldOn()
@@ -109,10 +165,29 @@ class TextActor2D(vtk.vtkTextActor):
             tprop.ShadowOff()
 
     def color(self, color):
+        """ Set text color.
+
+        Parameters
+        ----------
+        color: 3-Tuple
+            (0-1, 0-1, 0-1)
+        """
         self.GetTextProperty().SetColor(*color)
 
     def set_position(self, position):
+        """ Set text actor position.
+
+        Parameters
+        ----------
+        position: 3-Tuple of floats
+        """
         self.SetDisplayPosition(*position)
 
     def get_position(self):
+        """ Gets text actor position.
+
+        Returns
+        -------
+        position: 3-Tuple of floats
+        """
         return self.GetDisplayPosition()
