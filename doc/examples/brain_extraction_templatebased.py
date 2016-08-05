@@ -13,6 +13,7 @@ from dipy.data import fetch_sherbrooke_3shell, read_sherbrooke_3shell
 # dname = '..'
 # The filepaths (and their corroesponding dropbox location)
 filename_isbr = '/Users/Riddhish/Documents/GSOC/DIPY/data/Brain Extraction/IBSR_nifti_stripped/IBSR_02/IBSR_02_ana.nii.gz'
+# filename_isbr = '/Users/Riddhish/Documents/GSOC/DIPY/data/Brain Extraction/forElef_GSoC_brain_extraction/tumor_case/t1_0.nii.gz'
 # filename_isbr = dname + '/brain_extraction/First tests/input_data/IBSR_02_ana.nii.gz'
 filename_isbr_mask = '/Users/Riddhish/Documents/GSOC/DIPY/data/Brain Extraction/IBSR_nifti_stripped/IBSR_02/IBSR_02_mask.nii.gz'
 # filename_isbr_mask = dname + '/brain_extraction/First tests/input_data/IBSR_02_mask.nii.gz'
@@ -32,7 +33,7 @@ Read the input data and the template data from the DIPY datasets
 img = nib.load(filename_isbr)
 input_data = img.get_data()
 input_affine = img.get_affine()
-input_data = input_data[..., 0]
+# input_data = input_data[..., 0]
 
 print("Input T1 volume", input_data.shape)
 
@@ -54,7 +55,7 @@ plt.figure("Template Data")
 plt.subplot(1, 2, 1).set_axis_off()
 plt.imshow(template_data[...,sli], cmap = 'gray', origin = 'lower')
 plt.subplot(1, 2, 2).set_axis_off()
-plt.imshow(template_mask[...,sli], cmap = 'gray', origin = 'lower')
+plt.imshow(template_data_mask[...,sli], cmap = 'gray', origin = 'lower')
 plt.savefig('template_data.png', bbox_inches='tight')
 
 """
@@ -125,12 +126,12 @@ plt.imshow(input_data[:, :, sli].astype('float'),
 plt.title("Input Data")
 
 plt.subplot(1, 3, 2).set_axis_off()
-plt.imshow(b0_mask[:, :, sli].astype('float'),
+plt.imshow(output_data[:, :, sli].astype('float'),
            cmap='gray', origin='lower')
 plt.title("The patch averaging label output")
 
 plt.subplot(1, 3, 3).set_axis_off()
-plt.imshow(mask[:, :, sli].astype('float'),
+plt.imshow(output_mask[:, :, sli].astype('float'),
            cmap='gray', origin='lower')
 plt.title("The patch averaging mask output")
 plt.savefig('brain_extraction_same.png', bbox_inches='tight')
@@ -195,12 +196,3 @@ plt.show()
    **Input data (B0), the extracted brain and the corresponding mask (axial slice shown)**.
 """
 
-nib.save(
-    nib.Nifti1Image(
-        output_data,
-        input_affine), filename_output)
-
-nib.save(
-    nib.Nifti1Image(
-        output_mask,
-        input_affine), filename_output_mask)

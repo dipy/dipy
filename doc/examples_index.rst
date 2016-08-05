@@ -33,6 +33,7 @@ Brain Extraction
 ~~~~~~~~~~~~~~~~
 
 - :ref:`example_brain_extraction_dwi`
+- :ref:`example_brain_extraction_templatebased`
 
 Basic SNR estimation
 ~~~~~~~~~~~~~~~~~~~~
