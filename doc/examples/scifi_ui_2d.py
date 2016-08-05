@@ -181,7 +181,7 @@ disk_slider.add_callback("LeftButtonReleaseEvent", inner_disk_release_callback, 
 # Panel
 panel = gui_2d.Panel2D(center=(440, 90), size=(300, 150), color=(1, 1, 1))
 
-panel.add_element(button, (0.9, 0.8))
+panel.add_element(button, (0.95, 0.9))
 panel.add_element(text, (0.1, 0.2))
 panel.add_element(slider, (0.5, 0.9))
 panel.add_element(disk_slider, (0.7, 0.3))

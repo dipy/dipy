@@ -30,11 +30,11 @@ class Panel2D(UI):
 
         Parameters
         ----------
-        center: (float, float)
-        size: (float, float)
-        color: (float, float, float)
+        center : (float, float)
+        size : (float, float)
+        color : (float, float, float)
             Values must be between 0-1
-        opacity: float
+        opacity : float
         """
         super(Panel2D, self).__init__()
         self.center = center
@@ -50,7 +50,7 @@ class Panel2D(UI):
 
         Parameters
         ----------
-        ren: renderer
+        ren : renderer
         """
         for ui_item_list in self.ui_list:
             for ui_item in ui_item_list.ui_list:
@@ -61,9 +61,9 @@ class Panel2D(UI):
 
         Parameters
         ----------
-        element: UI
+        element : UI
             The UI item to be added.
-        relative_position: (float, float)
+        relative_position : (float, float)
         """
         self.ui_list.append(element)
         element.set_center((self.lower_limits[0] + relative_position[0]*self.size[0],
@@ -82,10 +82,11 @@ class Button2D(UI):
 
         Parameters
         ----------
-        icon_fnames: dict
-            {iconname: filename, iconname: filename, ...}
+        icon_fnames : dict
+            {iconname : filename, iconname : filename, ...}
         """
         super(Button2D, self).__init__()
+        self.icon_extents = dict()
         self.icons = self.build_icons(icon_fnames)
         self.icon_names = list(self.icons.keys())
         self.current_icon_id = 0
@@ -100,12 +101,12 @@ class Button2D(UI):
 
         Parameters
         ----------
-        icon_fnames: dict
+        icon_fnames : dict
             {iconname: filename, iconname: filename, ...}
 
         Returns
         -------
-        icons: dict
+        icons : dict
             A dictionary of corresponding vtkImageDataGeometryFilters
         """
         icons = {}
@@ -114,8 +115,7 @@ class Button2D(UI):
             png.SetFileName(icon_fname)
             png.Update()
 
-            # print png.GetOutput().GetExtent()
-
+            self.icon_extents[icon_name] = png.GetOutput().GetExtent()
             # Convert the image to a polydata
             image_data_geometry_filter = vtk.vtkImageDataGeometryFilter()
             image_data_geometry_filter.SetInputConnection(png.GetOutputPort())
@@ -154,7 +154,7 @@ class Button2D(UI):
 
         Parameters
         ----------
-        ren: renderer
+        ren : renderer
         """
         ren.add(self.actor)
 
@@ -163,9 +163,9 @@ class Button2D(UI):
 
         Parameters
         ----------
-        event_type: string
+        event_type : string
             event code
-        callback: function
+        callback : function
             callback function
         """
         super(Button2D, self).add_callback(self.actor, event_type, callback)
@@ -201,9 +201,10 @@ class Button2D(UI):
 
         Parameters
         ----------
-        position: (float, float)
+        position : (float, float)
         """
-        self.actor.SetPosition(position)
+        extent = self.icon_extents[self.current_icon_name]
+        self.actor.SetPosition(position[0] - (extent[1] - extent[0])/2, position[1] - (extent[3] - extent[2])/2)
 
 
 class TextBox2D(UI):
@@ -220,11 +221,11 @@ class TextBox2D(UI):
 
         Parameters
         ----------
-        width: int
+        width : int
             The number of characters in a single line of text.
-        height: int
+        height : int
             The number of lines in the textbox.
-        text: string
+        text : string
             Initial text while placing the element.
         """
         super(TextBox2D, self).__init__()
@@ -247,23 +248,23 @@ class TextBox2D(UI):
 
         Parameters
         ----------
-        text: string
+        text : string
             The initial text while building the actor.
-        position: (float, float)
-        color: (float, float, float)
+        position : (float, float)
+        color : (float, float, float)
             Values must be between 0-1.
-        font_size: int
-        font_family: string
+        font_size : int
+        font_family : string
             Currently only supports Ariel.
-        justification: string
+        justification : string
             left, right or center.
-        bold: bool
-        italic: bool
-        shadow: bool
+        bold : bool
+        italic : bool
+        shadow : bool
 
         Returns
         -------
-        text_actor: actor2d
+        text_actor : actor2d
 
         """
         text_actor = TextActor2D()
@@ -282,7 +283,7 @@ class TextBox2D(UI):
 
         Parameters
         ----------
-        ren: renderer
+        ren : renderer
         """
         ren.add(self.actor)
 
@@ -291,9 +292,9 @@ class TextBox2D(UI):
 
         Parameters
         ----------
-        event_type: string
+        event_type : string
             event code
-        callback: string
+        callback : string
             callback function
         """
         super(TextBox2D, self).add_callback(self.actor, event_type, callback)
@@ -304,12 +305,12 @@ class TextBox2D(UI):
 
         Parameters
         ----------
-        text: string
+        text : string
             The final text to be formatted.
 
         Returns
         -------
-        multi_line_text: string
+        multi_line_text : string
 
         """
         multi_line_text = ""
@@ -325,7 +326,7 @@ class TextBox2D(UI):
 
         Parameters
         ----------
-        character: string
+        character : string
         """
         if character.lower() == "return":
             self.render_text(False)
@@ -390,7 +391,7 @@ class TextBox2D(UI):
 
         Parameters
         ----------
-        character: string
+        character : string
         """
         if len(character) > 1 and character.lower() != "space":
             return
@@ -442,7 +443,7 @@ class TextBox2D(UI):
 
         Parameters
         ----------
-        show_caret: bool
+        show_caret : bool
             Whether or not to show the caret.
 
         """
@@ -458,7 +459,7 @@ class TextBox2D(UI):
 
         Parameters
         ----------
-        show_caret: bool
+        show_caret : bool
             Whether or not to show the caret.
         """
         text = self.showable_text(show_caret)
@@ -481,7 +482,7 @@ class TextBox2D(UI):
 
         Parameters
         ----------
-        position: (float, float)
+        position : (float, float)
         """
         self.actor.SetPosition(position)
 
@@ -496,11 +497,11 @@ class Rectangle2D(UI):
 
         Parameters
         ----------
-        size: (float, float)
-        center: (float, float)
-        color: (float, float, float)
+        size : (float, float)
+        center : (float, float)
+        color : (float, float, float)
             Must take values between 0-1.
-        opacity: float
+        opacity : float
         """
         super(Rectangle2D, self).__init__()
         self.size = size
@@ -513,7 +514,7 @@ class Rectangle2D(UI):
 
         Parameters
         ----------
-        ren: renderer
+        ren : renderer
         """
         ren.add(self.actor)
 
@@ -522,15 +523,15 @@ class Rectangle2D(UI):
 
         Parameters
         ----------
-        size: (float, float)
-        center: (float, float)
-        color: (float, float, float)
+        size : (float, float)
+        center : (float, float)
+        color : (float, float, float)
             Must be between 0-1
-        opacity: float
+        opacity : float
 
         Returns
         -------
-        actor: vtkActor2D
+        actor : vtkActor2D
 
         """
         # Setup four points
@@ -577,7 +578,7 @@ class Rectangle2D(UI):
 
         Parameters
         ----------
-        position: (float, float)
+        position : (float, float)
         """
         self.actor.SetPosition(position[0] - self.size[0]/2, position[1] - self.size[1]/2)
 
@@ -594,15 +595,15 @@ class LineSlider2D(UI):
 
         Parameters
         ----------
-        line_width: int
+        line_width : int
             Width of the line on which the disk will slide.
-        inner_radius: int
+        inner_radius : int
             Inner radius of the disk (ring).
-        outer_radius: int
+        outer_radius : int
             Outer radius of the disk.
-        center: (float, float)
+        center : (float, float)
             Center of the slider.
-        length: int
+        length : int
             Length of the slider.
         """
         super(LineSlider2D, self).__init__()
@@ -620,7 +621,7 @@ class LineSlider2D(UI):
 
         Parameters
         ----------
-        ren: renderer
+        ren : renderer
         """
         ren.add(self.slider_line.actor)
         ren.add(self.slider_disk.actor)
@@ -631,11 +632,11 @@ class LineSlider2D(UI):
 
         Parameters
         ----------
-        event_type: string
+        event_type : string
             event code
-        callback: function
+        callback : function
             callback function
-        component: UI
+        component : UI
             component
         """
         super(LineSlider2D, self).add_callback(component.actor, event_type, callback)
@@ -645,7 +646,7 @@ class LineSlider2D(UI):
 
         Parameters
         ----------
-        position: (float, float)
+        position : (float, float)
         """
         self.slider_disk.set_center(position)
         self.slider_line.set_center(position)
@@ -662,9 +663,9 @@ class LineSlider2DBase(UI):
 
         Parameters
         ----------
-        center: (float, float)
-        length: int
-        line_width: int
+        center : (float, float)
+        length : int
+        line_width : int
         """
         super(LineSlider2DBase, self).__init__()
         self.actor = self.build_actor(line_width=line_width, center=center, length=length)
@@ -677,13 +678,13 @@ class LineSlider2DBase(UI):
 
         Parameters
         ----------
-        center: (float, float)
-        length: int
-        line_width: int
+        center : (float, float)
+        length : int
+        line_width : int
 
         Returns
         -------
-        actor: vtkActor2D
+        actor : vtkActor2D
 
         """
         actor = Rectangle2D(size=(length, line_width), center=center).actor
@@ -695,7 +696,7 @@ class LineSlider2DBase(UI):
 
         Parameters
         ----------
-        position: (float, float)
+        position : (float, float)
         """
         self.actor.SetPosition(position[0] - self.length/2, position[1] - self.line_width/2)
 
@@ -710,10 +711,10 @@ class LineSlider2DDisk(UI):
 
         Parameters
         ----------
-        center: (float, float)
-        length: int
-        inner_radius: int
-        outer_radius: int
+        center : (float, float)
+        length : int
+        inner_radius : int
+        outer_radius : int
         """
         super(LineSlider2DDisk, self).__init__()
         self.center = center
@@ -727,12 +728,12 @@ class LineSlider2DDisk(UI):
 
         Parameters
         ----------
-        inner_radius: int
-        outer_radius: int
+        inner_radius : int
+        outer_radius : int
 
         Returns
         -------
-        actor: vtkActor2D
+        actor : vtkActor2D
 
         """
         # create source
@@ -760,7 +761,7 @@ class LineSlider2DDisk(UI):
 
         Parameters
         ----------
-        position: (float, float)
+        position : (float, float)
         """
         x_position = position[0]
         if x_position < self.center[0] - self.length/2:
@@ -774,7 +775,7 @@ class LineSlider2DDisk(UI):
 
         Parameters
         ----------
-        position: (float, float)
+        position : (float, float)
         """
         self.center = position
         self.set_position(position)
@@ -790,9 +791,9 @@ class LineSlider2DText(UI):
 
         Parameters
         ----------
-        current_val: int
-        center: (float, float)
-        length: int
+        current_val : int
+        center : (float, float)
+        length : int
         """
         super(LineSlider2DText, self).__init__()
         self.left_x_position = center[0] - length/2
@@ -808,7 +809,7 @@ class LineSlider2DText(UI):
 
         Parameters
         ----------
-        current_val: int
+        current_val : int
         """
         percentage = ((current_val-self.left_x_position)*100)/(self.right_x_position-self.left_x_position)
         if percentage < 0:
@@ -822,12 +823,12 @@ class LineSlider2DText(UI):
 
         Parameters
         ----------
-        current_val: int
-        position: (float, float)
+        current_val : int
+        position : (float, float)
 
         Returns
         -------
-        actor: vtkActor2D
+        actor : vtkActor2D
 
         """
         actor = TextActor2D()
@@ -844,7 +845,7 @@ class LineSlider2DText(UI):
 
         Parameters
         ----------
-        current_val: int
+        current_val : int
         """
         percentage = self.calculate_percentage(current_val=current_val)
         self.actor.set_message(text=percentage)
@@ -854,7 +855,7 @@ class LineSlider2DText(UI):
 
         Parameters
         ----------
-        position: (float, float)
+        position : (float, float)
         """
         self.actor.SetPosition(position[0]-self.length/2-40, position[1]-10)
 
@@ -871,15 +872,15 @@ class DiskSlider2D(UI):
 
         Parameters
         ----------
-        outer_inner_radius: int
+        outer_inner_radius : int
             Inner radius of the base disk.
-        outer_outer_radius: int
+        outer_outer_radius : int
             Outer radius of the base disk.
-        outer_position: (float, float)
+        outer_position : (float, float)
             Position of the system.
-        inner_outer_radius: int
+        inner_outer_radius : int
             Outer radius of the moving disk.
-        inner_inner_radius: int
+        inner_inner_radius : int
             Inner radius of the moving disk.
         """
         super(DiskSlider2D, self).__init__()
@@ -901,7 +902,7 @@ class DiskSlider2D(UI):
 
         Parameters
         ----------
-        ren: renderer
+        ren : renderer
         """
         ren.add(self.slider_outer_disk.actor)
         ren.add(self.slider_inner_disk.actor)
@@ -912,11 +913,11 @@ class DiskSlider2D(UI):
 
         Parameters
         ----------
-        event_type: string
+        event_type : string
             event code
-        callback: function
+        callback : function
             callback function
-        component: UI
+        component : UI
             component
         """
         super(DiskSlider2D, self).add_callback(component.actor, event_type, callback)
@@ -927,11 +928,11 @@ class DiskSlider2D(UI):
 
         Parameters
         ----------
-        coordinates: (float, float)
+        coordinates : (float, float)
 
         Returns
         -------
-        x, y: int, int
+        x, y : int, int
 
         """
         radius = self.outer_disk_radius
@@ -965,11 +966,11 @@ class DiskSlider2D(UI):
 
         Parameters
         ----------
-        coordinates: (float, float)
+        coordinates : (float, float)
 
         Returns
         -------
-        angle: float
+        angle : float
 
         """
         center = self.outer_disk_center
@@ -988,7 +989,7 @@ class DiskSlider2D(UI):
 
         Parameters
         ----------
-        position: (float, float)
+        position : (float, float)
         """
         self.slider_outer_disk.set_center(position)
         self.slider_text.set_center(position)
@@ -1005,9 +1006,9 @@ class DiskSlider2DBase(UI):
 
         Parameters
         ----------
-        inner_radius: int
-        outer_radius: int
-        disk_position: (float, float)
+        inner_radius : int
+        outer_radius : int
+        disk_position : (float, float)
         """
         super(DiskSlider2DBase, self).__init__()
         self.actor = self.build_actor(inner_radius=inner_radius, outer_radius=outer_radius, disk_position=disk_position)
@@ -1019,9 +1020,9 @@ class DiskSlider2DBase(UI):
 
         Parameters
         ----------
-        inner_radius: int
-        outer_radius: int
-        disk_position: (float, float)
+        inner_radius : int
+        outer_radius : int
+        disk_position : (float, float)
 
         Returns
         -------
@@ -1054,7 +1055,7 @@ class DiskSlider2DBase(UI):
 
         Parameters
         ----------
-        position: (float, float)
+        position : (float, float)
         """
         self.actor.SetPosition(position)
 
@@ -1068,9 +1069,9 @@ class DiskSlider2DDisk(UI):
 
         Parameters
         ----------
-        inner_radius: int
-        outer_radius: int
-        disk_position: (float, float)
+        inner_radius : int
+        outer_radius : int
+        disk_position : (float, float)
         """
         super(DiskSlider2DDisk, self).__init__()
         self.actor = self.build_actor(inner_radius=inner_radius, outer_radius=outer_radius, disk_position=disk_position)
@@ -1082,9 +1083,9 @@ class DiskSlider2DDisk(UI):
 
         Parameters
         ----------
-        inner_radius: int
-        outer_radius: int
-        disk_position: (float, float)
+        inner_radius : int
+        outer_radius : int
+        disk_position : (float, float)
         """
         # create source
         disk = vtk.vtkDiskSource()
@@ -1111,7 +1112,7 @@ class DiskSlider2DDisk(UI):
 
         Parameters
         ----------
-        position: (float, float)
+        position : (float, float)
         """
         self.actor.SetPosition(position)
 
@@ -1127,8 +1128,8 @@ class DiskSlider2DText(UI):
 
         Parameters
         ----------
-        position: (float, float)
-        current_val: float
+        position : (float, float)
+        current_val : float
             The angle made with the X-Axis.
         """
         super(DiskSlider2DText, self).__init__()
@@ -1142,7 +1143,7 @@ class DiskSlider2DText(UI):
 
         Parameters
         ----------
-        current_val: float
+        current_val : float
         """
         percentage = int((current_val/360)*100)
         if len(str(percentage)) == 1:
@@ -1156,12 +1157,12 @@ class DiskSlider2DText(UI):
 
         Parameters
         ----------
-        current_val: float
-        position: (float, float)
+        current_val : float
+        position : (float, float)
 
         Returns
         -------
-        actor: vtkActor2D
+        actor : vtkActor2D
 
         """
         actor = TextActor2D()
@@ -1178,7 +1179,7 @@ class DiskSlider2DText(UI):
 
         Parameters
         ----------
-        current_val: float
+        current_val : float
         """
         percentage = self.calculate_percentage(current_val=current_val)
         self.actor.set_message(text=percentage)
@@ -1188,6 +1189,6 @@ class DiskSlider2DText(UI):
 
         Parameters
         ----------
-        position: (float, float)
+        position : (float, float)
         """
         self.actor.SetPosition(position[0]-16, position[1]-8)

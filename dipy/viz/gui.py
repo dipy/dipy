@@ -19,10 +19,10 @@ class UI(object):
     While adding UI elements to the renderer, we need to go over all the
      sub-elements that come with it and add those to the renderer too.
     There are several features that are common to all the UI elements:
-    - ui_param: This is an attribute that can be passed to the UI object
+    - ui_param : This is an attribute that can be passed to the UI object
                 by the interactor. Thanks to Python's dynamic type-setting
                 this parameter can be anything.
-    - ui_list: This is used when there are more than one UI elements inside
+    - ui_list : This is used when there are more than one UI elements inside
                a UI element. Inside the renderer, they're all iterated and added.
 
     """
@@ -37,7 +37,7 @@ class UI(object):
 
         Parameters
         ----------
-        ren: renderer
+        ren : renderer
         """
         pass
 
@@ -46,7 +46,7 @@ class UI(object):
 
         Parameters
         ----------
-        ui_param:
+        ui_param :
         """
         self.ui_param = ui_param
 
@@ -55,10 +55,10 @@ class UI(object):
 
         Parameters
         ----------
-        prop: vtkProp
-        event_type: event code
-        callback: function
-        priority: int
+        prop : vtkProp
+        event_type : event code
+        callback : function
+        priority : int
         """
         cmd_id = [None]  # Placeholder needed in the _callback closure.
 
@@ -75,7 +75,7 @@ class UI(object):
 
         Parameters
         ----------
-        position: (float, float)
+        position : (float, float)
         """
         pass
 
@@ -90,7 +90,7 @@ class TextActor2D(vtk.vtkTextActor):
 
         Parameters
         ----------
-        text: string
+        text : string
 
         """
         self.SetInput(text)
@@ -100,7 +100,7 @@ class TextActor2D(vtk.vtkTextActor):
 
         Parameters
         ----------
-        text: string
+        text : string
         """
         self.SetInput(text)
 
@@ -109,7 +109,7 @@ class TextActor2D(vtk.vtkTextActor):
 
         Returns
         -------
-        message: string
+        message : string
 
         """
         return self.GetInput()
@@ -119,7 +119,7 @@ class TextActor2D(vtk.vtkTextActor):
 
         Parameters
         ----------
-        size: int
+        size : int
         """
         self.GetTextProperty().SetFontSize(size)
 
@@ -130,7 +130,7 @@ class TextActor2D(vtk.vtkTextActor):
 
         Parameters
         ----------
-        family: string
+        family : string
         """
         self.GetTextProperty().SetFontFamilyToArial()
 
@@ -139,8 +139,8 @@ class TextActor2D(vtk.vtkTextActor):
 
         Parameters
         ----------
-        justification: string
-            Possible values: left, right, center
+        justification : string
+            Possible values : left, right, center
         """
         tprop = self.GetTextProperty()
         if justification == 'left':
@@ -155,9 +155,9 @@ class TextActor2D(vtk.vtkTextActor):
 
         Parameters
         ----------
-        bold: bool
-        italic: bool
-        shadow: bool
+        bold : bool
+        italic : bool
+        shadow : bool
         """
         tprop = self.GetTextProperty()
         if bold:
@@ -178,7 +178,7 @@ class TextActor2D(vtk.vtkTextActor):
 
         Parameters
         ----------
-        color: (float, float, float)
+        color : (float, float, float)
             Values must be between 0-1
         """
         self.GetTextProperty().SetColor(*color)
@@ -188,7 +188,7 @@ class TextActor2D(vtk.vtkTextActor):
 
         Parameters
         ----------
-        position: (float, float, float)
+        position : (float, float, float)
         """
         self.SetDisplayPosition(*position)
 
@@ -197,6 +197,6 @@ class TextActor2D(vtk.vtkTextActor):
 
         Returns
         -------
-        position: (float, float, float)
+        position : (float, float, float)
         """
         return self.GetDisplayPosition()
