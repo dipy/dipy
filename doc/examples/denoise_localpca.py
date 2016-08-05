@@ -4,10 +4,17 @@ Denoise images using Local PCA
 ===============================
 
 Using the local PCA based denoising for diffusion
-images [Manjon2013]_ we can state of the art
-results. The advantage of local PCA over the other denoising
-methods is that it takes into the account the directional
-information of the diffusion data as well.
+images [Manjon2013]_ we can denoise diffusion images significantly. This algorithm is
+popular as it takes into account the directional information in diffusion data.
+
+The basic idea behind local PCA based diffusion denoising can
+be explained in three basic steps
+
+* First we estimate the local noise variance at each voxel
+
+* Then we apply PCA at local patches around each voxels over the gradient directions
+
+* Threshold the eigenvalues based on the local estimate of sigma and then do the PCA reconstruction
 
 Let's load the necessary modules
 """
@@ -20,11 +27,7 @@ from time import time
 from dipy.denoise.localpca import localpca
 from dipy.denoise.localpca_slow import localpca_slow
 from dipy.denoise.fast_noise_estimate import fast_noise_estimate
-from dipy.io import read_bvals_bvecs
-from dipy.core.gradients import gradient_table
 from dipy.data import fetch_isbi2013_2shell, read_isbi2013_2shell
-from dipy.data import fetch_stanford_hardi, read_stanford_hardi
-from dipy.data import fetch_sherbrooke_3shell, read_sherbrooke_3shell
 
 """
 Load one of the datasets, it has 63 gradients and 1 b0 image
@@ -107,7 +110,7 @@ plt.savefig('denoised_localpca.png', bbox_inches='tight')
 """
 
 nib.save(nib.Nifti1Image(denoised_arr_fast,
-        affine), 'denoised_localpca.nii.gz')
+                         affine), 'denoised_localpca.nii.gz')
 
 """
 .. [Manjon2013] Manjon JV, Coupe P, Concha L, Buades A, Collins DL
