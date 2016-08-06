@@ -1,3 +1,21 @@
+"""
+====================================
+Brain extraction using template data
+====================================
+
+We show how to extract the brain from data with different modalities
+with the help of a template T1 data which already has it's brain
+extracted. The method uses inputs from [Eskildsen11]_ and [Lutkenhoff14]_
+to get a robust brain extraction. The major ideas which are being used in 
+the algorithm are as follows
+
+* Affine and non-linear registeration
+
+* Patch based averaging for similar modality and voting for dissimilar modalities
+
+First let us load the necessary modules
+"""
+
 import numpy as np
 import scipy as sp
 import nibabel as nib
@@ -6,9 +24,6 @@ import matplotlib.pyplot as plt
 from dipy.segment.mask import (median_otsu, 
                               jaccard_index,
                               brain_extraction)
-
-from dipy.data import fetch_sherbrooke_3shell, read_sherbrooke_3shell
-
 
 # dname = '..'
 # The filepaths (and their corroesponding dropbox location)
@@ -33,7 +48,7 @@ Read the input data and the template data from the DIPY datasets
 img = nib.load(filename_isbr)
 input_data = img.get_data()
 input_affine = img.get_affine()
-# input_data = input_data[..., 0]
+input_data = input_data[..., 0]
 
 print("Input T1 volume", input_data.shape)
 
@@ -49,6 +64,7 @@ print("Template volume", template_data.shape)
 """
 Let us see how the template data looks like
 """
+
 sli = template_data.shape[2] / 2
 
 plt.figure("Template Data")
@@ -128,12 +144,12 @@ plt.title("Input Data")
 plt.subplot(1, 3, 2).set_axis_off()
 plt.imshow(output_data[:, :, sli].astype('float'),
            cmap='gray', origin='lower')
-plt.title("The patch averaging label output")
+plt.title("Extraction output")
 
 plt.subplot(1, 3, 3).set_axis_off()
 plt.imshow(output_mask[:, :, sli].astype('float'),
            cmap='gray', origin='lower')
-plt.title("The patch averaging mask output")
+plt.title("Extracted mask")
 plt.savefig('brain_extraction_same.png', bbox_inches='tight')
 
 """
@@ -143,9 +159,13 @@ plt.savefig('brain_extraction_same.png', bbox_inches='tight')
    **Input data (T1), the extracted brain and the corresponding mask (axial slice shown)**.
 """
 
+nib.save(nib.Nifti1Image(b0_mask, input_affine), 'brain_extraction_diff.nii.gz')
+
 """
 Now considering the input of b0 modality while the template remains the same T1 modality
 """
+
+from dipy.data import fetch_sherbrooke_3shell, read_sherbrooke_3shell
 
 fetch_sherbrooke_3shell()
 img, gtab = read_sherbrooke_3shell()
@@ -180,12 +200,12 @@ plt.title("Input Data")
 plt.subplot(1, 3, 2).set_axis_off()
 plt.imshow(b0_mask[:, :, sli].astype('float'),
            cmap='gray', origin='lower',interpolation='none')
-plt.title("The patch averaging label output")
+plt.title("Extraction output")
 
 plt.subplot(1, 3, 3).set_axis_off()
 plt.imshow(mask[:, :, sli].astype('float'),
            cmap='gray', origin='lower', interpolation='none')
-plt.title("The patch averaging mask output")
+plt.title("Extracted mask")
 plt.savefig('brain_extraction_diff.png', bbox_inches='tight')
 plt.show()
 
@@ -196,3 +216,16 @@ plt.show()
    **Input data (B0), the extracted brain and the corresponding mask (axial slice shown)**.
 """
 
+nib.save(nib.Nifti1Image(b0_mask, input_affine), 'brain_extraction_diff.nii.gz')
+
+"""
+
+.. [Lutkenhoff14] Evan S. Lutkenhoff et al., Optimized Brain Extraction for
+   Pathological Brains (OptiBET), PLOS, 2014
+
+.. [Eskildsen11]  Simon Fristed Eskildsen et al., BEaST : Brain extraction based on
+                  nonlocal segmentation technique, NeuroImage, vol 59, 2011.
+
+.. include:: ../links_names.inc
+
+"""
