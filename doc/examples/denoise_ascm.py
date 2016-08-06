@@ -36,7 +36,7 @@ print("vol size", data.shape)
 t = time()
 
 """
-The ``ascm`` function takes two denoised inputs one more smooth than the other,
+The ``ascm`` function takes two denoised inputs, one more smooth than the other,
 for generating these inputs we will use the ``non_local_means`` denoising.
 In order to call ``non_local_means`` first you need to estimate the standard
 deviation of the noise. We use N=4 since the Sherbrooke dataset was acquired
@@ -103,7 +103,6 @@ ax[2].set_title('Residual')
 for i in range(3):
     ax[i].set_axis_off()
 
-plt.show()
 plt.savefig('denoised_ascm.png', bbox_inches='tight')
 
 """
@@ -113,8 +112,40 @@ plt.savefig('denoised_ascm.png', bbox_inches='tight')
    **Showing the axial slice without (left) and with (middle) ASCM denoising**.
 """
 
-
 nib.save(nib.Nifti1Image(den_final, affine), 'denoised_ascm.nii.gz')
+
+"""
+The comparision between the ascm output and the non-local-means.
+
+We see in the figure below that the NLMEANS large (the non-local-means with
+larger patch radius) is little oversmoothed, wheres the NLMEAS small (one
+with) leaves some granularity. In comparision the ASCM output is properly
+smooth with very little granularity and while preserving the sharpness of
+the edges.
+"""
+
+fig, ax = plt.subplots(1, 4)
+ax[0].imshow(original, cmap='gray', origin='lower')
+ax[0].set_title('Original')
+ax[1].imshow(den_small[..., axial_middle].T, cmap='gray', origin='lower',
+             interpolation='none')
+ax[1].set_title('NLMEANS small')
+ax[2].imshow(den_large[..., axial_middle].T, cmap='gray', origin='lower',
+             interpolation='none')
+ax[2].set_title('NLMEANS large')
+ax[3].imshow(final_output, cmap='gray', origin='lower', interpolation='none')
+ax[3].set_title('ASCM ')
+for i in range(4):
+    ax[i].set_axis_off()
+
+plt.savefig('ascm_comparision.png', bbox_inches='tight')
+
+"""
+.. figure:: ascm_comparision.png
+   :align: center
+
+   **Comparing outputs of the NLMEANS and ASCM**.
+"""
 
 """
 References

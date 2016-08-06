@@ -34,8 +34,9 @@ def ascm(ima, fimau, fimao, h):
     References
     ----------
     .. [Coupe11] Pierrick Coupe, Jose Manjon, Montserrat Robles, Louis Collins.
-                 "Multiresolution Non-Local Means Filter for 3D MR Image Denoising"
-                 IET Image Processing, Institution of Engineering and Technology,
+                 "Multiresolution Non-Local Means Filter for 3D MR Image
+                 Denoising" IET Image Processing, Institution of Engineering
+                 and Technology,
                  2011
 
     """
