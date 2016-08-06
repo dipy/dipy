@@ -95,8 +95,6 @@ def fast_patch_averaging(double[:, :, :] input_data, double[:, :, :] transformed
 
     with nogil:
         for i in range(total_radius, n0 - total_radius):
-            with gil:
-                print(i)
             for j in range(total_radius, n1 - total_radius):
                 for k in range(total_radius, n2 - total_radius):
                     wtsum = 0.0
