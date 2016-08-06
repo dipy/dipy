@@ -447,11 +447,11 @@ def brain_extraction(input_data, input_affine, template_data,
 
     References
     ----------
-    .. [Eskildsen11] Simon Fristed Eskildsen et al., BEaST : Brain extraction based on
-                     nonlocal segmentation technique, NeuroImage, vol 59, 2011.
+    .. [Eskildsen11]  Simon Fristed Eskildsen et al., BEaST : Brain extraction based on
+                      nonlocal segmentation technique, NeuroImage, vol 59, 2011.
 
-    .. [Lutkenhoff14] Evan S. Lutkenhoff et al.,  “Optimized Brain Extraction for
-                      Pathological Brains (OptiBET)”, PLOS, 2014
+    .. [Lutkenhoff14] Evan S. Lutkenhoff et al., Optimized Brain Extraction for
+                      Pathological Brains (OptiBET), PLOS, 2014
 
     """
 
