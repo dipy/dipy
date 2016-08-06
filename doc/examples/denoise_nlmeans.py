@@ -3,9 +3,9 @@
 Denoise images using Non-Local Means (NLMEANS)
 ==============================================
 
-Using the non-local means filter [Coupe08]_ and [Coupe11]_ and  you can denoise 3D or 4D images and
-boost the SNR of your datasets. You can also decide between modeling the noise
-as Gaussian or Rician (default).
+Using the non-local means filter [Coupe08]_ and [Coupe11]_ and  you can denoise
+3D or 4D images and boost the SNR of your datasets. You can also decide between
+modeling the noise as Gaussian or Rician (default).
 
 """
 
@@ -34,9 +34,9 @@ print("vol size", data.shape)
 # lets create a noisy data with gaussian data
 
 """
-In order to call ``non_local_means`` first you need to estimate the standard deviation
-of the noise. We use N=4 since the Sherbrooke dataset was acquired on a 1.5T
-Siemens scanner with a 4 array head coil.
+In order to call ``non_local_means`` first you need to estimate the standard
+deviation of the noise. We use N=4 since the Sherbrooke dataset was acquired
+on a 1.5T Siemens scanner with a 4 array head coil.
 """
 
 sigma = estimate_sigma(data, N=4)
@@ -86,7 +86,7 @@ plt.savefig('denoised.png', bbox_inches='tight')
 .. figure:: denoised.png
    :align: center
 
-   **Showing the middle axial slice without (left) and with (right) NLMEANS denoising**.
+   **Showing axial slice before (left) and after (right) NLMEANS denoising**
 """
 
 nib.save(nib.Nifti1Image(den, affine), 'denoised.nii.gz')
@@ -98,7 +98,7 @@ References
 
 .. [Coupe08] P. Coupe, P. Yger, S. Prima, P. Hellier, C. Kervrann, C. Barillot,
    "An Optimized Blockwise Non Local Means Denoising Filter for 3D Magnetic
-   Resonance Images", IEEE Transactions on Medical Imaging, 27(4):425-441, 2008.
+   Resonance Images", IEEE Transactions on Medical Imaging, 27(4):425-441, 2008
 
 .. [Coupe11] Pierrick Coupe, Jose Manjon, Montserrat Robles, Louis Collins.
     "Adaptive Multiresolution Non-Local Means Filter for 3D MR Image Denoising"

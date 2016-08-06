@@ -3,8 +3,8 @@
 Denoise images using Adaptive Soft Coefficient Matching (ASCM)
 ==============================================================
 
-Using the non-local means based adaptive denoising [Coupe11]_ you can denoise 3D or
-4D images and boost the SNR of your datasets.
+Using the non-local means based adaptive denoising [Coupe11]_ you can denoise
+3D or 4D images and boost the SNR of your datasets.
 
 """
 
@@ -36,17 +36,18 @@ print("vol size", data.shape)
 t = time()
 
 """
-The ``ascm`` function takes two denoised inputs one more smooth than the other, for 
-generating these inputs we will use the ``non_local_means`` denoising.  
-In order to call ``non_local_means`` first you need to estimate the standard deviation
-of the noise. We use N=4 since the Sherbrooke dataset was acquired on a 1.5T
-Siemens scanner with a 4 array head coil.
+The ``ascm`` function takes two denoised inputs one more smooth than the other,
+for generating these inputs we will use the ``non_local_means`` denoising.
+In order to call ``non_local_means`` first you need to estimate the standard
+deviation of the noise. We use N=4 since the Sherbrooke dataset was acquired
+on a 1.5T Siemens scanner with a 4 array head coil.
 """
 
 sigma = estimate_sigma(data, N=4)
 
 """
-Non-local means with a smaller patch size which implies less smoothing, more sharpness
+Non-local means with a smaller patch size which implies less smoothing, more
+sharpness
 """
 
 den_small = non_local_means(
@@ -58,7 +59,8 @@ den_small = non_local_means(
     rician=True)
 
 """
-Non-local means with larger patch size which implies more smoothing, less sharpness
+Non-local means with larger patch size which implies more smoothing, less
+sharpness
 """
 
 den_large = non_local_means(
@@ -71,8 +73,9 @@ den_large = non_local_means(
 
 # Now perform the adaptive soft coefficient matching
 """
-Now we perform the adaptive soft coefficient matching. Empirically we set the adaptive 
-parameter h in ascm to be the average of the local noise variance, in this case the sigma itself.
+Now we perform the adaptive soft coefficient matching. Empirically we set the
+adaptive parameter h in ascm to be the average of the local noise variance, in
+this case the sigma itself.
 """
 
 den_final = np.array(ascm(data, den_small, den_large, sigma[0]))
@@ -107,7 +110,7 @@ plt.savefig('denoised_ascm.png', bbox_inches='tight')
 .. figure:: denoised_ascm.png
    :align: center
 
-   **Showing the middle axial slice without (left) and with (middle) ASCM denoising**.
+   **Showing the axial slice without (left) and with (middle) ASCM denoising**.
 """
 
 

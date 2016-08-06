@@ -35,20 +35,22 @@ def nlmeans(arr, sigma, mask=None, patch_radius=1, block_radius=5,
     ----------
     .. [Descoteaux08] Descoteaux, Maxim and Wiest-Daessle`, Nicolas and Prima,
                       Sylvain and Barillot, Christian and Deriche, Rachid
-                      Impact of Rician Adapted Non-Local Means Filtering on HARDI
-                      MICCAI 2008
+                      Impact of Rician Adapted Non-Local Means Filtering on
+                      HARDI, MICCAI 2008
 
     """
 
     if arr.ndim == 3:
-        print("WARNING: This version of nlmeans has been deprecated, use non_local_means")
+        print("WARNING: This version of nlmeans has been deprecated")
+        print("use non_local_means.py instead")
         sigma = np.ones(arr.shape, dtype=np.float64) * sigma
         return nlmeans_3d(arr, mask, sigma,
                           patch_radius, block_radius,
                           rician, num_threads).astype(arr.dtype)
 
     elif arr.ndim == 4:
-        print("WARNING: This version of nlmeans has been deprecated, use non_local_means")
+        print("WARNING: This version of nlmeans has been deprecated")
+        print("use non_local_means.py instead")
         denoised_arr = np.zeros_like(arr)
 
         if isinstance(sigma, np.ndarray) and sigma.ndim == 3:

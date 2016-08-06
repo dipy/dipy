@@ -16,16 +16,16 @@ def cshift3D(x, m, d):
 
     Parameters
     ----------
-    x : 3D ndarray 
+    x : 3D ndarray
        N1 by N2 by N3 array
     m : int
        amount of shift
-    d : int 
+    d : int
        dimension of shift (d = 1,2,3)
 
     Returns
     -------
-    y : 3D ndarray 
+    y : 3D ndarray
        array x will be shifed by m samples down
        along dimension d
 
@@ -70,16 +70,16 @@ def afb3D_A(x, af, d):
     x : 3D ndarray
         N1xN2xN2 matrix, where min(N1,N2,N3) > 2*length(filter)
            (Ni are even)
-    af : 2D ndarray 
+    af : 2D ndarray
         analysis filter for the columns
         af[:, 1] - lowpass filter
         af[:, 2] - highpass filter
-    d : int 
+    d : int
         dimension of filtering (d = 1, 2 or 3)
 
     Returns
     -------
-    lo : 1D array 
+    lo : 1D array
         lowpass subbands
     hi : 1D array
         highpass subbands
@@ -120,9 +120,9 @@ def sfb3D_A(lo, hi, sf, d):
 
     Parameters
     ----------
-    lo : 1D array 
+    lo : 1D array
         lowpass subbands
-    hi : 1D array 
+    hi : 1D array
         highpass subbands
     sf : 2D ndarray
         synthesis filters
@@ -163,9 +163,9 @@ def sfb3D(lo, hi, sf1, sf2=None, sf3=None):
 
     Parameters
     ----------
-    lo : 1D array  
+    lo : 1D array
        lowpass subbands
-    hi : 1D array 
+    hi : 1D array
         highpass subbands
     sfi : 2D ndarray
         synthesis filters for dimension i
@@ -206,7 +206,7 @@ def afb3D(x, af1, af2=None, af3=None):
 
     Parameters
     ----------
-    x : 3D ndarray  
+    x : 3D ndarray
         N1 by N2 by N3 array matrix, where
         1) N1, N2, N3 all even
         2) N1 >= 2*len(af1)
@@ -248,7 +248,7 @@ def dwt3D(x, J, af):
 
     Parameters
     ----------
-    x : 3D ndarray 
+    x : 3D ndarray
         N1 x N2 x N3 matrix
         1) Ni all even
         2) min(Ni) >= 2^(J-1)*length(af)
@@ -259,7 +259,7 @@ def dwt3D(x, J, af):
 
     Returns
     -------
-    w : cell array 
+    w : cell array
         wavelet coefficients
 
     """
@@ -277,7 +277,7 @@ def idwt3D(w, J, sf):
 
     Parameters
     ----------
-    w : cell array 
+    w : cell array
         wavelet coefficient
     J : int
         number of stages
