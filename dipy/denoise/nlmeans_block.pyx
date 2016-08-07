@@ -78,7 +78,7 @@ cdef void _average_block(double[:, :, :] ima, int x, int y, int z,
 
     Parameters
     ----------
-    ima : 3D double ndarray
+    ima : 3D array of doubles
         input image
     x : integer
         x coordinate of the center voxel
@@ -86,7 +86,7 @@ cdef void _average_block(double[:, :, :] ima, int x, int y, int z,
         y coordinate of the center voxel
     z : integer
         z coordinate of the center voxel
-    average : 3D double ndarray
+    average : 3D array of doubles
         the image where averages are stored
     weight : double
         weight for the weighted averaging
@@ -126,9 +126,9 @@ cdef void _value_block(double[:, :, :] estimate, double[:, :, :] Label, int x, i
 
     Parameters
     ----------
-    estimate : 3D double ndarray
+    estimate : 3D array of doubles
         The denoised estimate array
-    Label : 3D double ndarray
+    Label : 3D array of doubles
         The label map for block wise weighted averaging
     x : integer
         x coordinate of the center voxel
@@ -136,7 +136,7 @@ cdef void _value_block(double[:, :, :] estimate, double[:, :, :] Label, int x, i
         y coordinate of the center voxel
     z : integer
         z coordinate of the center voxel
-    average : 3D double ndarray
+    average : 3D array of doubles
         weighted average image
     global_sum : double
         total weight sum
@@ -192,7 +192,7 @@ cdef double _distance(double[:, :, :] image, int x, int y, int z,
 
     Parameters
     ----------
-    image : 3D double ndarray
+    image : 3D array of doubles
         the image whose voxels are taken
     x : integer
         x coordinate of first patch's center
@@ -310,7 +310,7 @@ cpdef firdn(double[:, :] image, double[:] h):
 
     Parameters
     ----------
-    image: 2D double array
+    image: 2D array of doubles
         the input image to be filtered
     h: double array
         the convolution kernel
@@ -330,7 +330,7 @@ cpdef upfir(double[:, :] image, double[:] h):
 
     Parameters
     ----------
-    image: 2D double array
+    image: 2D array of doubles
         the input image to be filtered
     h: double array
         the convolution kernel
@@ -351,9 +351,9 @@ def nlmeans_block(double[:, :, :]image, double[:, :, :] mask, int patch_radius, 
 
     Parameters
     ----------
-    image : 3D double ndarray
+    image : 3D array of doubles
         the input image, corrupted with rician noise
-    mask : 3D double ndarray
+    mask : 3D array of doubles
         the input mask
     patch_radius :  int
         similar patches in the non-local means are searched for locally,
