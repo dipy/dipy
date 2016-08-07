@@ -11,7 +11,8 @@ the algorithm are as follows
 
 * Affine and non-linear registeration
 
-* Patch based averaging for similar modality and voting for dissimilar modalities
+* Patch based average for similar modality and voting average for different
+modalities
 
 First let us load the necessary modules
 """
@@ -82,19 +83,21 @@ plt.savefig('template_data.png', bbox_inches='tight')
 """
 
 """
-Now we apply the ``brain extraction`` function which takes the input, template data and
-template mask as inputs, along with their affine information. There are five other 
-parameters which can be given to the function. 
+Now we apply the ``brain extraction`` function which takes the input, template
+data and template mask as inputs, along with their affine information. There
+are five other parameters which can be given to the function. 
 
-The same_modality takes boolean value true if the input and template are of same modality
-and false if they are not, when it takes value false the only useful parameters are the
-patch_radius and threshold, rest are only used when the modalities are same.
+The same_modality takes boolean value true if the input and template are of
+same modality and false if they are not, when it takes value false the only
+useful parameters are the patch_radius and threshold, rest are only used when
+the modalities are same.
 
-The patch_radius and block_radius are the inputs for block wise local averaging which 
-is used after the registeration step in the ``brain extraction``. The parameter value 
-which is set to 1 as defaults governs the weighing, the threshold value governs the 
-eroded boundary coefficient of the extracted mask. For more info on how these parameters 
-works please look at the ``fast_patch_averaging`` function in dipy.segment.
+The patch_radius and block_radius are the inputs for block wise local averaging
+which  is used after the registeration step in the ``brain extraction``. The
+parameter value which is set to 1 as defaults governs the weighing, the
+threshold value governs the eroded boundary coefficient of the extracted mask.
+For more info on how these parameters works please look at the
+``fast_patch_averaging`` function in dipy.segment.
 """
 
 t = time()
@@ -120,9 +123,9 @@ img = nib.load(filename_isbr_mask)
 input_manual_mask = img.get_data()
 
 """
-The jaccard's index measures how similar are the two binary images, so we compare
-our generated mask with the manually extracted brain mask. Perfect match will corroespond 
-to the jaccard index of 1.
+The jaccard's index measures how similar are the two binary images, so we
+compare our generated mask with the manually extracted brain mask. Perfect
+match will corroespond to the jaccard index of 1.
 """
 
 mea = jaccard_index(mask.astype(np.bool), input_manual_mask.astype(np.bool))
@@ -156,13 +159,15 @@ plt.savefig('brain_extraction_same.png', bbox_inches='tight')
 .. figure:: brain_extraction_same.png
    :align: center
 
-   **Input data (T1), the extracted brain and the corresponding mask (axial slice shown)**.
+   **Input data (T1), the extracted brain and the corresponding mask
+   (axial slice shown)**.
 """
 
 nib.save(nib.Nifti1Image(b0_mask, input_affine), 'brain_extraction_diff.nii.gz')
 
 """
-Now considering the input of b0 modality while the template remains the same T1 modality
+Now considering the input of b0 modality while the template remains the same T1
+modality
 """
 
 from dipy.data import fetch_sherbrooke_3shell, read_sherbrooke_3shell
@@ -213,18 +218,22 @@ plt.show()
 .. figure:: brain_extraction_diff.png
    :align: center
 
-   **Input data (B0), the extracted brain and the corresponding mask (axial slice shown)**.
+   **Input data (B0), the extracted brain and the corresponding mask
+   (axial slice shown)**.
 """
 
 nib.save(nib.Nifti1Image(b0_mask, input_affine), 'brain_extraction_diff.nii.gz')
 
 """
+References
+----------
 
 .. [Lutkenhoff14] Evan S. Lutkenhoff et al., Optimized Brain Extraction for
    Pathological Brains (OptiBET), PLOS, 2014
 
-.. [Eskildsen11]  Simon Fristed Eskildsen et al., BEaST : Brain extraction based on
-                  nonlocal segmentation technique, NeuroImage, vol 59, 2011.
+.. [Eskildsen11]  Simon Fristed Eskildsen et al., BEaST : Brain extraction
+                  based on nonlocal segmentation technique, NeuroImage,
+                  vol 59, 2011.
 
 .. include:: ../links_names.inc
 
