@@ -93,7 +93,7 @@ useful parameters are the patch_radius and threshold, rest are only used when
 the modalities are same.
 
 The patch_radius and block_radius are the inputs for block wise local averaging
-which  is used after the registeration step in the ``brain extraction``. The
+which is used after the registration step in the ``brain extraction``. The
 parameter value which is set to 1 as defaults governs the weighing, the
 threshold value governs the eroded boundary coefficient of the extracted mask.
 For more info on how these parameters works please look at the
