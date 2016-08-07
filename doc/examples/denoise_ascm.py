@@ -122,7 +122,7 @@ The comparision between the ascm output and the non-local-means.
 
 We see in the figure below that the NLMEANS large (the non-local-means with
 larger patch radius) is little oversmoothed, while the NLMEAS small (one
-with) leaves some granularity. In comparision the ASCM output is properly
+with) leaves some granularity. In comparison the ASCM output is properly
 smooth with very little granularity and while preserving the sharpness of
 the edges.
 """
@@ -141,9 +141,9 @@ ax[3].set_title('ASCM ')
 for i in range(4):
     ax[i].set_axis_off()
 
-plt.savefig('ascm_comparision.png', bbox_inches='tight')
+plt.savefig('ascm_comparison.png', bbox_inches='tight')
 
-print("The result saved in ascm_comparision.png")
+print("The result saved in ascm_comparison.png")
 
 """
 .. figure:: ascm_comparision.png

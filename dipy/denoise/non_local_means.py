@@ -23,9 +23,6 @@ def non_local_means(arr, sigma, mask=None, patch_radius=1, block_radius=5,
     rician : boolean
         If True the noise is estimated as Rician, otherwise Gaussian noise
         is assumed.
-    num_threads : int
-        Number of threads. If None (default) then all available threads
-        will be used (all CPU cores).
 
     Returns
     -------

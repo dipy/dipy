@@ -14,6 +14,7 @@ import nibabel as nib
 import matplotlib.pyplot as plt
 from time import time
 from dipy.denoise.non_local_means import non_local_means
+from dipy.denoise.nlmeans import nlmeans
 from dipy.denoise.noise_estimate import estimate_sigma
 from dipy.data import fetch_sherbrooke_3shell, read_sherbrooke_3shell
 
@@ -56,6 +57,11 @@ den = non_local_means(
     rician=True)
 print("total time", time() - t)
 
+t = time()
+
+den = nlmeans(data, sigma=sigma, mask=mask, patch_radius= 1, block_radius = 1, rician= True)
+
+print("total time", time() - t)
 """
 Let us plot the axial slice of the denoised output
 """
