@@ -41,8 +41,8 @@ on a 1.5T Siemens scanner with a 4 array head coil.
 
 sigma = estimate_sigma(data, N=4)
 
-
 t = time()
+
 """
 Calling the main function ``non_local_means``
 """
@@ -78,7 +78,6 @@ ax[1].set_title('after')
 ax[2].imshow(difference, cmap='gray', origin='lower')
 ax[2].set_title('difference')
 
-plt.show()
 plt.savefig('denoised.png', bbox_inches='tight')
 
 
