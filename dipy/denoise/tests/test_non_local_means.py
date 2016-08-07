@@ -2,14 +2,14 @@ import numpy as np
 from numpy.testing import (run_module_suite,
                            assert_,
                            assert_equal,
-                           assert_array_almost_equal)
+                           assert_array_almost_equal,
+                           assert_raises)
 from dipy.denoise.non_local_means import non_local_means
-from time import time
 
 
 def test_nlmeans_static():
     S0 = 100 * np.ones((20, 20, 20), dtype='f8')
-    S0nb = non_local_means(S0, sigma=np.ones((20, 20, 20)),
+    S0nb = non_local_means(S0, sigma=1.0,
                            rician=False)
     assert_array_almost_equal(S0, S0nb)
 
@@ -49,13 +49,22 @@ def test_nlmeans_boundary():
     assert_(S0[10, 10, 10] < 110)
 
 
+def test_nlmeans_wrong():
+    S0 = 100 + np.zeros((10, 10, 10, 10, 10))
+    assert_raises(ValueError, non_local_means, S0, 1.0)
+    S0 = 100 + np.zeros((20, 20, 20))
+    mask = np.ones((10, 10))
+    assert_raises(ValueError, non_local_means, S0, 1.0, mask)
+
+
 def test_nlmeans_4D_and_mask():
     S0 = 200 * np.ones((20, 20, 20, 3), dtype='f8')
 
     mask = np.zeros((20, 20, 20))
     mask[10, 10, 10] = 1
 
-    S0n = non_local_means(S0, sigma=1, mask=mask, rician=True)
+    S0n = non_local_means(S0, sigma=np.ones((20, 20, 20)),
+                          mask=mask, rician=True)
     assert_equal(S0.shape, S0n.shape)
     assert_equal(np.round(S0n[10, 10, 10]), 200)
     assert_equal(S0n[8, 8, 8], 0)

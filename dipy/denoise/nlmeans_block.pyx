@@ -310,8 +310,10 @@ cpdef firdn(double[:, :] image, double[:] h):
 
     Parameters
     ----------
-        image:  the input image to be filtered
-        h:      the convolution kernel
+    image: 2D double array
+        the input image to be filtered
+    h: double array
+        the convolution kernel
     """
     nrows = image.shape[0]
     ncols = image.shape[1]
@@ -328,8 +330,10 @@ cpdef upfir(double[:, :] image, double[:] h):
 
     Parameters
     ----------
-        image:  the input image to be filtered
-        h:      the convolution kernel
+    image: 2D double array
+        the input image to be filtered
+    h: double array
+        the convolution kernel
     """
     nrows = image.shape[0]
     ncols = image.shape[1]
