@@ -105,6 +105,8 @@ for i in range(3):
 
 plt.savefig('denoised_ascm.png', bbox_inches='tight')
 
+print("The result saved in denoised_ascm.png")
+
 """
 .. figure:: denoised_ascm.png
    :align: center
@@ -114,11 +116,12 @@ plt.savefig('denoised_ascm.png', bbox_inches='tight')
 
 nib.save(nib.Nifti1Image(den_final, affine), 'denoised_ascm.nii.gz')
 
+print("Saving the entire denoised output in denoised_ascm.nii.gz")
 """
 The comparision between the ascm output and the non-local-means.
 
 We see in the figure below that the NLMEANS large (the non-local-means with
-larger patch radius) is little oversmoothed, wheres the NLMEAS small (one
+larger patch radius) is little oversmoothed, while the NLMEAS small (one
 with) leaves some granularity. In comparision the ASCM output is properly
 smooth with very little granularity and while preserving the sharpness of
 the edges.
@@ -139,6 +142,8 @@ for i in range(4):
     ax[i].set_axis_off()
 
 plt.savefig('ascm_comparision.png', bbox_inches='tight')
+
+print("The result saved in ascm_comparision.png")
 
 """
 .. figure:: ascm_comparision.png
