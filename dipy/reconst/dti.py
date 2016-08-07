@@ -1882,14 +1882,13 @@ def design_matrix(gtab, dtype=None):
 
 
 def _quantize_evecs_parallel(data, odf_vertices, v, nbr_processes):
-
-    if nbr_processes is None:
+    if nbr_processes is -1:
         try:
             nbr_processes = cpu_count()
         except NotImplementedError:
             warn("Cannot determine number of cpus. \
-                 returns quantize_evecs(..., parallel=False).")
-            return quantize_evecs(data, odf_vertices, v, parallel=False)
+                 returns quantize_evecs(..., nbr_processes=1).")
+            return quantize_evecs(data, odf_vertices, v, nbr_processes=1)
             
     data = data[...,:,v]
     shape = list(data.shape)
@@ -1938,9 +1937,9 @@ def _quantize_evecs_parallel_sub(args):
     
     data = np.load(data_file_name, mmap_mode='r')[start_pos:end_pos]
 
-    return quantize_evecs(data, odf_vertices, v, parallel=False, nbr_processes=None)
+    return quantize_evecs(data, odf_vertices, v, nbr_processes=1)
         
-def quantize_evecs(evecs, odf_vertices=None, v=0, parallel=False, nbr_processes=None):
+def quantize_evecs(evecs, odf_vertices=None, v=0, nbr_processes=1):
     """ Find the closest orientation of an evenly distributed sphere
 
     Parameters
@@ -1951,12 +1950,15 @@ def quantize_evecs(evecs, odf_vertices=None, v=0, parallel=False, nbr_processes=
     v : int
         Use v-th eigenvector as the primary eigenvector for fiber tracking. 
         If 0, uses the largest eigenvalue.
+    nbr_processes : int
+        Number of processes to use. If > 1, divides data into nbr_processes for multiprocessing.
+        If -1, uses as many processes as possible.
     Returns
     -------
     IN : ndarray
     """
     
-    if parallel:
+    if nbr_processes != 1:
         return _quantize_evecs_parallel(evecs, odf_vertices, v, nbr_processes)
     
     if odf_vertices is None:
