@@ -97,6 +97,8 @@ plt.savefig('denoised.png', bbox_inches='tight')
 nib.save(nib.Nifti1Image(den, affine), 'denoised.nii.gz')
 
 """
+An improved version of non-local means denoising is adaptive soft coefficient
+matching, please refer to :ref:`example_denoise_ascm` for more details.
 
 References
 ----------

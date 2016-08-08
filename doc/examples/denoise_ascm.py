@@ -6,7 +6,8 @@ Denoise images using Adaptive Soft Coefficient Matching (ASCM)
 Using the non-local means based adaptive denoising [Coupe11]_ you can denoise
 3D or 4D images and boost the SNR of your datasets.
 
-The adaptive soft coefficient matching (ASCM) takes in the noisy input image
+The adaptive soft coefficient matching (ASCM) is a improved extension of
+non-local means (NLMEANS) denoising. ASCM takes in the noisy input image
 and two denoised versions of the noisy input, and gives a better denoised
 image as the output. Here, one denoised input is more "smooth" than the other
 (the easiest way to achieve this denoising is use ``non_local_means`` with
@@ -175,5 +176,7 @@ References
     Adaptive Multiresolution Non-Local Means Filter for 3D MR Image Denoising.
     IET Image Processing, Institution of Engineering and Technology,
     2011. <00645538>
+
+.. include:: ../links_names.inc
 
 """
