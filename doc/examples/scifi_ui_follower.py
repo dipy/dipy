@@ -115,7 +115,7 @@ slider.add_callback("LeftButtonPressEvent", disk_press_callback, slider.slider_d
 slider.add_callback("LeftButtonReleaseEvent", disk_release_callback, slider.slider_disk)
 
 follower_menu = gui_follower.FollowerMenu(position=(0, 0, 0), diameter=87, camera=renderer.GetActiveCamera(),
-                                          elements=[button_actor_1, slider, button_actor_3])
+                                          elements=[button_actor_1, button_actor_3, text_actor])
 
 renderer.add(follower_menu)
 renderer.add(cube_actor_1)

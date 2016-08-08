@@ -43,6 +43,8 @@ class Panel2D(UI):
         self.lower_limits = (self.center[0] - self.size[0]/2, self.center[1] - self.size[1]/2)
 
         self.ui_list.append(self.panel)
+        self.element_positions = []
+        self.element_positions.append((self.panel, 0.5, 0.5))
 
     def add_to_renderer(self, ren):
         # Should be a recursive function, but we never go more than 2 levels down (by design)
@@ -66,8 +68,35 @@ class Panel2D(UI):
         relative_position : (float, float)
         """
         self.ui_list.append(element)
+        self.element_positions.append((element, relative_position[0], relative_position[1]))
         element.set_center((self.lower_limits[0] + relative_position[0]*self.size[0],
                             self.lower_limits[1] + relative_position[1]*self.size[1]))
+
+    def add_callback(self, event_type, callback, component):
+        """ Adds events to an actor.
+
+        Parameters
+        ----------
+        event_type : string
+            event code
+        callback : function
+            callback function
+        component : UI
+            component
+        """
+        super(Panel2D, self).add_callback(component.actor, event_type, callback)
+
+    def set_center(self, position):
+        """ Sets the panel center to position.
+
+        Parameters
+        ----------
+        position : (float, float)
+        """
+        self.lower_limits = (position[0] - self.size[0] / 2, position[1] - self.size[1] / 2)
+        for ui_element in self.element_positions:
+            ui_element[0].set_center((self.lower_limits[0] + ui_element[1]*self.size[0],
+                                      self.lower_limits[1] + ui_element[2]*self.size[1]))
 
 
 class Button2D(UI):
@@ -197,7 +226,6 @@ class Button2D(UI):
 
     def set_center(self, position):
         """ Sets the icon center to position.
-        Currently, the lower left point of the icon is the center.
 
         Parameters
         ----------
