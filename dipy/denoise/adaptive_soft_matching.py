@@ -3,7 +3,7 @@ import numpy as np
 from dipy.core import wavelet
 
 
-def ascm(ima, fimau, fimao, h):
+def adaptive_soft_matching(ima, fimau, fimao, sigma):
     r"""Adaptive Soft Coefficient Matching
 
     Combines two filtered 3D-images at different resolutions and the orginal
@@ -18,7 +18,7 @@ def ascm(ima, fimau, fimao, h):
     fimao : 3D double array,
         filtered image with optimized non-local means using a small block
         (suggested:5x5), which corresponds to a "low resolution" filter.
-    h : the estimated standard deviation of the Gaussian random variables
+    sigma : the estimated standard deviation of the Gaussian random variables
         that explain the rician noise. Note: In P. Coupe et al. the
         rician noise was simulated as sqrt((f+x)^2 + (y)^2) where f is
         the pixel value and x and y are independent realizations of a
@@ -70,11 +70,11 @@ def ascm(ima, fimau, fimao, h):
         tmp = np.array(w3[0][i])
         tmp = tmp[:(s[0] // 2), :(s[1] // 2), :(s[2] // 2)]
         sigY = np.std(tmp, ddof=1)
-        sigX = (sigY * sigY) - h * h
+        sigX = (sigY * sigY) - sigma * sigma
         if sigX < 0:
             T = abs(w3[0][i]).max()
         else:
-            T = (h * h) / (sigX**0.5)
+            T = (sigma * sigma) / (sigX**0.5)
         w3[0][i] = abs(w3[0][i])
         dist = np.array(w3[0][i]) - T
         dist = np.exp(-0.01 * dist)
