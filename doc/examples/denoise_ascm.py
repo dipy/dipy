@@ -166,7 +166,7 @@ print("The comparison result saved in ascm_comparison.png")
 
 """
 In this tutorial we saw the use of adaptive soft coefficient matching (ASCM) 
-and how the corroesponding DIPY function ``adaptive_soft_matching``. We observe
+and how the corresponding DIPY function ``adaptive_soft_matching``. We observe
 that combining the information of two pre-denoised versions of the raw data,
 ASCM outperforms standard non-local means in supressing noise and preserving
 feature sharpness
