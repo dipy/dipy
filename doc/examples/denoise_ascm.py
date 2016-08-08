@@ -3,15 +3,12 @@
 Denoise images using Adaptive Soft Coefficient Matching (ASCM)
 ==============================================================
 
-Using the non-local means based adaptive denoising [Coupe11]_ you can denoise
-3D or 4D images and boost the SNR of your datasets.
-
-The adaptive soft coefficient matching (ASCM) is a improved extension of
-non-local means (NLMEANS) denoising. ASCM takes in the noisy input image
-and two denoised versions of the noisy input, and gives a better denoised
-image as the output. Here, one denoised input is more "smooth" than the other
-(the easiest way to achieve this denoising is use ``non_local_means`` with
-two different patch radii).
+The adaptive soft coefficient matching (ASCM) as described in [Coupe11]_ is a
+improved extension of non-local means (NLMEANS) denoising. ASCM gives a better
+denoised images from two standard non-local means denoised versions of the
+original data with different degrees sharp feature preserved. Here, one
+denoised input is more "smooth" than the other (the easiest way to achieve this
+denoising is use ``non_local_means`` with two different patch radii).
 
 ASCM involves these basic steps
 
@@ -56,11 +53,10 @@ print("vol size", data.shape)
 t = time()
 
 """
-The ``ascm`` function takes two denoised inputs, one more smooth than the
-other, for generating these inputs we will use the ``non_local_means``
-denoising. In order to call ``non_local_means`` first you need to estimate
-the standard deviation of the noise. We use N=4 since the Sherbrooke dataset
-was acquired on a 1.5T Siemens scanner with a 4 array head coil.
+In order to generate the two pre-denoised versions of the data we will use the
+``non_local_means`` denoising. For ``non_local_means`` first we need to
+estimate the standard deviation of the noise. We use N=4 since the Sherbrooke
+dataset was acquired on a 1.5T Siemens scanner with a 4 array head coil.
 """
 
 sigma = estimate_sigma(data, N=4)
@@ -169,6 +165,12 @@ print("The comparison result saved in ascm_comparison.png")
 """
 
 """
+In this tutorial we saw the use of adaptive soft coefficient matching (ASCM) 
+and how the corroesponding DIPY function ``adaptive_soft_matching``. We observe
+that combining the information of two pre-denoised versions of the raw data,
+ASCM outperforms standard non-local means in supressing noise and preserving
+feature sharpness
+
 References
 ----------
 
