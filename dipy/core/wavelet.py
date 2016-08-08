@@ -28,8 +28,8 @@ def cshift3D(x, m, d):
     y : 3D ndarray
        array x will be shifed by m samples down
        along dimension d
-
     """
+
     s = x.shape
     idx = (np.array(range(s[d])) + (s[d] - m % s[d])) % s[d]
     idx = np.array(idx, dtype=np.int64)
@@ -83,7 +83,6 @@ def afb3D_A(x, af, d):
         lowpass subbands
     hi : 1D array
         highpass subbands
-
     """
 
     lpf = af[:, 0]
@@ -133,8 +132,8 @@ def sfb3D_A(lo, hi, sf, d):
     -------
     y : 3D ndarray
         the N1xN2xN3 matrix
-
     """
+
     lpf = sf[:, 0]
     hpf = sf[:, 1]
     # permute dimensions of lo and hi so that dimension d is first.
@@ -174,8 +173,8 @@ def sfb3D(lo, hi, sf1, sf2=None, sf3=None):
     -------
     y : 3D ndarray
         output array
-
     """
+
     if sf2 is None:
         sf2 = sf1
     if sf3 is None:
@@ -223,7 +222,6 @@ def afb3D(x, af1, af2=None, af3=None):
         lowpass subband
     hi : 1D array
         highpass subbands, h[d]- d = 1..7
-
     """
 
     if af2 is None:
@@ -261,7 +259,6 @@ def dwt3D(x, J, af):
     -------
     w : cell array
         wavelet coefficients
-
     """
 
     w = [None] * (J + 1)
@@ -288,7 +285,6 @@ def idwt3D(w, J, sf):
     -------
     y : 3D ndarray
         output array
-
     """
 
     y = w[J]

@@ -8,7 +8,7 @@ from numpy.testing import (run_module_suite,
 from dipy.denoise.non_local_means import non_local_means
 from dipy.denoise.noise_estimate import estimate_sigma
 from dipy.data import fetch_stanford_t1, read_stanford_t1
-from dipy.denoise.ascm import ascm
+from dipy.denoise.adaptive_soft_matching import adaptive_soft_matching
 
 
 def test_ascm_static():
@@ -17,7 +17,7 @@ def test_ascm_static():
                            patch_radius=1, block_radius=1)
     S0n2 = non_local_means(S0, sigma=np.zeros((20, 20, 20)), rician=False,
                            patch_radius=2, block_radius=1)
-    S0n = ascm(S0, S0n1, S0n2, 0)
+    S0n = adaptive_soft_matching(S0, S0n1, S0n2, 0)
     assert_array_almost_equal(S0, S0n)
 
 
@@ -27,7 +27,7 @@ def test_ascm_random_noise():
                            patch_radius=1, block_radius=1)
     S0n2 = non_local_means(S0, sigma=np.ones((22, 23, 30)), rician=False,
                            patch_radius=2, block_radius=1)
-    S0n = ascm(S0, S0n1, S0n2, 1)
+    S0n = adaptive_soft_matching(S0, S0n1, S0n2, 1)
 
     print(S0.mean(), S0.min(), S0.max())
     print(S0n.mean(), S0n.min(), S0n.max())
@@ -59,7 +59,7 @@ def test_ascm_rmse_with_nlmeans():
         patch_radius=2,
         block_radius=2)
     print("Larger patch RMSE", np.sum(np.abs(S0 - S0n2)) / np.sum(S0))
-    S0n = ascm(S0, S0n1, S0n2, 400)
+    S0n = adaptive_soft_matching(S0, S0n1, S0n2, 400)
     print("ASCM RMSE", np.sum(np.abs(S0 - S0n)) / np.sum(S0))
 
     assert_(np.sum(np.abs(S0 - S0n)) / np.sum(S0) <
@@ -91,7 +91,7 @@ def test_sharpness():
         block_radius=2)
     edg2 = np.abs(np.mean(S0n2[8, 10:20, 10:20] - S0n2[12, 10:20, 10:20]) - 50)
     print("Edge gradient larger patch", edg2)
-    S0n = ascm(S0, S0n1, S0n2, 400)
+    S0n = adaptive_soft_matching(S0, S0n1, S0n2, 400)
     edg = np.abs(np.mean(S0n[8, 10:20, 10:20] - S0n[12, 10:20, 10:20]) - 50)
     print("Edge gradient ASCM", edg)
 
@@ -124,7 +124,8 @@ def test_ascm_accuracy():
         block_radius=1,
         rician=True)
 
-    S0n = np.array(ascm(test_data, den_small, den_large, sigma[0]))
+    S0n = np.array(adaptive_soft_matching(test_data,
+                                          den_small, den_large, sigma[0]))
 
     assert_array_almost_equal(S0n, test_ascm_data_ref)
 
