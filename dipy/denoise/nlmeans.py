@@ -6,8 +6,8 @@ from warnings import warn
 import warnings
 
 warnings.simplefilter('always', DeprecationWarning)
-warn(DeprecationWarning("Module 'dipy.segment.nlmeans' is deprecated,"
-                        " use module 'dipy.segment.non_local_means' instead"))
+warn(DeprecationWarning("Module 'dipy.denoise.nlmeans' is deprecated,"
+                        " use module 'dipy.denoise.non_local_means' instead"))
 
 
 def nlmeans(arr, sigma, mask=None, patch_radius=1, block_radius=5,
@@ -48,7 +48,7 @@ def nlmeans(arr, sigma, mask=None, patch_radius=1, block_radius=5,
 
     warn(DeprecationWarning("function 'dipy.denoise.nlmeans'"
                             " is deprecated, use module "
-                            "'dipy.segment.non_local_means'"
+                            "'dipy.denoise.non_local_means'"
                             " instead"))
 
     if arr.ndim == 3:
