@@ -27,7 +27,7 @@ import scipy as sp
 import nibabel as nib
 import matplotlib.pyplot as plt
 from time import time
-from dipy.denoise.localpca_slow import localpca_slow
+from dipy.denoise.localpca import localpca
 from dipy.denoise.fast_noise_estimate import fast_noise_estimate
 from dipy.data import fetch_isbi2013_2shell, read_isbi2013_2shell
 
@@ -67,7 +67,7 @@ estimate.
 
 t = time()
 
-denoised_arr = localpca_slow(data, sigma=sigma, patch_radius=2)
+denoised_arr = localpca(data, sigma=sigma, patch_radius=2)
 
 print("Time taken for local PCA (slow)", -t + time())
 

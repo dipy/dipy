@@ -2,7 +2,7 @@ import numpy as np
 import scipy as sp
 
 
-def localpca_slow(arr, sigma, patch_radius=1, rician=True):
+def localpca(arr, sigma, patch_radius=1, rician=True):
     r"""Local PCA Based Denoising of Diffusion Datasets
 
     Parameters
