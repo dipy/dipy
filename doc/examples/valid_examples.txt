@@ -1,3 +1,4 @@
+<<<<<<< HEAD
  quick_start.py
  tracking_quick_start.py
  brain_extraction_dwi.py
