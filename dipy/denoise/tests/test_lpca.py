@@ -124,7 +124,7 @@ def test_lpca_static():
 
 def test_lpca_random_noise():
     S0 = 100 + 2 * np.random.standard_normal((22, 23, 30, 20))
-    S0ns = localpca_slow(S0, sigma = np.std(S0))
+    S0ns = localpca_slow(S0, sigma=np.std(S0))
 
     assert_(S0ns.min() > S0.min())
     assert_(S0ns.max() < S0.max())
@@ -137,10 +137,10 @@ def test_lpca_boundary_behaviour():
     S0[:, :, 0, :] = S0[:, :, 0, :] + 2 * \
         np.random.standard_normal((20, 20, 20))
     S0_first = S0[:, :, 0, :]
-    S0ns = localpca_slow(S0, sigma = np.std(S0))
+    S0ns = localpca_slow(S0, sigma=np.std(S0))
     S0ns_first = S0ns[:, :, 0, :]
-    rmses = np.sum(np.abs(S0ns_first - S0_first)) / (100.0 * 20.0 * 20.0 * 20.0)
-
+    rmses = np.sum(np.abs(S0ns_first - S0_first)) / \
+        (100.0 * 20.0 * 20.0 * 20.0)
 
     # shows that S0n_first is not very close to S0_first
     assert_(rmses > 0.0001)
@@ -149,7 +149,7 @@ def test_lpca_boundary_behaviour():
 
 def test_lpca_rmse():
     S0 = 100 + 2 * np.random.standard_normal((22, 23, 30, 20))
-    S0ns = localpca_slow(S0, sigma = np.std(S0))
+    S0ns = localpca_slow(S0, sigma=np.std(S0))
     rmses = np.sum(np.abs(S0ns - 100) / np.sum(100 * np.ones(S0.shape)))
     # error should be less than 5%
     assert_(rmses < 0.05)
@@ -160,10 +160,11 @@ def test_lpca_sharpness():
     S0[10:20, 10:20, 10:20, :] = 50
     S0[20:30, 20:30, 20:30, :] = 0
     S0 = S0 + 20 * np.random.standard_normal((30, 30, 30, 20))
-    S0ns = localpca_slow(S0, sigma = 400.0)
+    S0ns = localpca_slow(S0, sigma=400.0)
     # check the edge gradient
     edgs = np.abs(np.mean(S0ns[8, 10:20, 10:20] - S0ns[12, 10:20, 10:20]) - 50)
     assert_(edgs < 2)
+
 
 def test_lpca_dtype():
 
@@ -175,10 +176,12 @@ def test_lpca_dtype():
     S0ns = localpca_slow(S0, sigma=np.ones((20, 20, 20)))
     assert_equal(S0.dtype, S0ns.dtype)
 
+
 def test_lpca_wrong():
 
-    S0 = np.ones((20,20))
+    S0 = np.ones((20, 20))
     assert_raises(ValueError, localpca_slow, S0, sigma=1)
+
 
 def test_phantom():
 
@@ -187,10 +190,11 @@ def test_phantom():
     [DWI, sigma] = rfiw_phantom(gtab, snr=30)
     # To test without rician correction
     temp = (DWI_clean / sigma)**2
-    DWI_clean_wrc = sigma * np.sqrt(np.pi / 2) * np.exp(-0.5 * temp) * ((1 + 0.5 * temp) * sp.special.iv(
-        0, 0.25 * temp) + 0.5 * temp * sp.special.iv(1, 0.25 * temp))**2
+    DWI_clean_wrc = sigma * np.sqrt(np.pi / 2) * np.exp(-0.5 * temp) * (
+        (1 + 0.5 * temp) * sp.special.iv(
+            0, 0.25 * temp) + 0.5 * temp * sp.special.iv(1, 0.25 * temp))**2
 
-    DWI_den = localpca_slow(DWI, sigma, patch_radius = 3)
+    DWI_den = localpca_slow(DWI, sigma, patch_radius=3)
     rmse_den = np.sum(np.abs(DWI_clean - DWI_den)) / np.sum(np.abs(DWI_clean))
     rmse_noisy = np.sum(np.abs(DWI_clean - DWI)) / np.sum(np.abs(DWI_clean))
 
@@ -198,7 +202,7 @@ def test_phantom():
                           ) / np.sum(np.abs(DWI_clean_wrc))
     rmse_noisy_wrc = np.sum(np.abs(DWI_clean_wrc - DWI)) / \
         np.sum(np.abs(DWI_clean_wrc))
-        
+
     assert_(np.max(DWI_clean) / sigma < np.max(DWI_den) / sigma)
     assert_(np.max(DWI_den) / sigma < np.max(DWI) / sigma)
     assert_(rmse_den < rmse_noisy)

@@ -1,6 +1,7 @@
 import numpy as np
 import scipy as sp
 
+
 def localpca_slow(arr, sigma, patch_radius=1, rician=True):
     r"""Local PCA Based Denoising of Diffusion Datasets
 
@@ -24,8 +25,9 @@ def localpca_slow(arr, sigma, patch_radius=1, rician=True):
 
     References
     ----------
-    .. [Manjon13] Diffusion Weighted Image Denoising Using Overcomplete Local PCA
-                  Manjon JV, Coupe P, Concha L, Buades A, Collins DL
+    .. [Manjon13] Manjon JV, Coupe P, Concha L, Buades A, Collins DL
+                  Diffusion Weighted Image Denoising Using Overcomplete Local
+                  PCA, PLOS 2013
 
     """
 
@@ -74,11 +76,11 @@ def localpca_slow(arr, sigma, patch_radius=1, rician=True):
                     # Compute the covariance matrix C = X_transpose X
                     C = np.transpose(X).dot(X)
                     C = C / X.shape[0]
-                    
+
                     [d, W] = np.linalg.eigh(C)
 
                     d[d < tou[i, j, k, :]] = 0
-                    
+
                     W_hat = W * 0
                     W_hat[:, d > 0] = W[:, d > 0]
                     Y = X.dot(W_hat)
@@ -98,7 +100,7 @@ def localpca_slow(arr, sigma, patch_radius=1, rician=True):
                                      j - patch_radius: j + patch_radius + 1,
                                      k - patch_radius: k + patch_radius + 1,
                                      :] + 1.0 / (1.0 + np.linalg.norm(d,
-                                                                  ord=0))
+                                                                      ord=0))
 
                     thetax[i - patch_radius: i + patch_radius + 1,
                            j - patch_radius: j + patch_radius + 1,
@@ -108,10 +110,9 @@ def localpca_slow(arr, sigma, patch_radius=1, rician=True):
                                        k - patch_radius: k + patch_radius + 1,
                                        :] + temp / (1 + np.linalg.norm(d,
                                                                        ord=0))
-                    
 
         denoised_arr = thetax / theta
-        
+
         return denoised_arr.astype(arr.dtype)
 
     else:
