@@ -179,7 +179,7 @@ disk_slider.add_callback("LeftButtonReleaseEvent", inner_disk_release_callback, 
 # /Disk Slider
 
 # Panel
-panel = gui_2d.Panel2D(center=(440, 90), size=(300, 150), color=(1, 1, 1))
+panel = gui_2d.Panel2D(center=(440, 90), size=(300, 150), color=(1, 1, 1), align="right")
 
 panel.add_element(button, (0.95, 0.9))
 panel.add_element(text, (0.1, 0.2))
@@ -219,7 +219,18 @@ renderer.add(cube_actor_2)
 # /Renderer
 
 # Show Manager
-showm = window.ShowManager(renderer, size=(600, 600), title="Sci-Fi UI")
+current_size = [600, 600]
+
+showm = window.ShowManager(renderer, size=current_size, title="Sci-Fi UI")
+
+
+def window_callback(obj, evt):
+    size_change = (renderer.size()[0] - current_size[0], renderer.size()[1] - current_size[1])
+    current_size[0] = renderer.size()[0]
+    current_size[1] = renderer.size()[1]
+    panel.re_align(size_change)
+
+showm.add_window_callback(window_callback)
 
 showm.initialize()
 showm.render()

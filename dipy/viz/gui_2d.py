@@ -25,7 +25,7 @@ class Panel2D(UI):
     Can contain one or more UI elements.
     """
 
-    def __init__(self, center, size, color=(0.1, 0.1, 0.1), opacity=0.7):
+    def __init__(self, center, size, color=(0.1, 0.1, 0.1), opacity=0.7, align="left"):
         """
 
         Parameters
@@ -35,6 +35,7 @@ class Panel2D(UI):
         color : (float, float, float)
             Values must be between 0-1
         opacity : float
+        align : [left, right]
         """
         super(Panel2D, self).__init__()
         self.center = center
@@ -45,6 +46,7 @@ class Panel2D(UI):
         self.ui_list.append(self.panel)
         self.element_positions = []
         self.element_positions.append((self.panel, 0.5, 0.5))
+        self.alignment = align
 
     def add_to_renderer(self, ren):
         # Should be a recursive function, but we never go more than 2 levels down (by design)
@@ -60,6 +62,7 @@ class Panel2D(UI):
 
     def add_element(self, element, relative_position):
         """ Adds an elements to the panel.
+        The center of the rectangular panel is its bottom lower position.
 
         Parameters
         ----------
@@ -88,15 +91,33 @@ class Panel2D(UI):
 
     def set_center(self, position):
         """ Sets the panel center to position.
+        The center of the rectangular panel is its bottom lower position.
 
         Parameters
         ----------
         position : (float, float)
         """
+        self.center = position
         self.lower_limits = (position[0] - self.size[0] / 2, position[1] - self.size[1] / 2)
         for ui_element in self.element_positions:
+            # ui_element: (UI, float, float)
             ui_element[0].set_center((self.lower_limits[0] + ui_element[1]*self.size[0],
                                       self.lower_limits[1] + ui_element[2]*self.size[1]))
+
+    def re_align(self, window_size_change):
+        """ Re-organises the elements in case the
+        window size is changed
+
+        Parameters
+        ----------
+        window_size: (int, int)
+        """
+        if self.alignment == "left":
+            pass
+        elif self.alignment == "right":
+            self.set_center((self.center[0] + window_size_change[0], self.center[1] + window_size_change[1]))
+        else:
+            pass
 
 
 class Button2D(UI):
@@ -839,7 +860,7 @@ class LineSlider2DText(UI):
         ----------
         current_val : int
         """
-        percentage = ((current_val-self.left_x_position)*100)/(self.right_x_position-self.left_x_position)
+        percentage = int(((current_val-self.left_x_position)*100)/(self.right_x_position-self.left_x_position))
         if percentage < 0:
             percentage = 0
         if percentage > 100:
@@ -885,7 +906,10 @@ class LineSlider2DText(UI):
         ----------
         position : (float, float)
         """
+        self.left_x_position = position[0] - self.length/2
+        self.right_x_position = position[0] + self.length/2
         self.actor.SetPosition(position[0]-self.length/2-40, position[1]-10)
+        self.set_percentage(position[0])
 
 
 class DiskSlider2D(UI):
