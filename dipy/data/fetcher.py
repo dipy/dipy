@@ -392,7 +392,6 @@ fetch_bundles_2_subjects = _make_fetcher(
     doc="Download 2 subjects from the SNAIL dataset with their bundles",
     unzip=True)
 
-
 def read_scil_b0():
     """ Load GE 3T b0 image form the scil b0 dataset.
 
