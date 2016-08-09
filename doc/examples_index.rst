@@ -44,6 +44,7 @@ Denoising
 ~~~~~~~~~
 
 - :ref:`example_denoise_nlmeans`
+- :ref:`example_denoise_localpca`
 
 Reslice
 ~~~~~~~

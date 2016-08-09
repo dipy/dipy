@@ -92,8 +92,9 @@ ax[1].set_axis_off()
 ax[2].imshow(diff, cmap='gray', origin='lower', interpolation='none')
 ax[2].set_title('Residual')
 ax[2].set_axis_off()
-plt.show()
 plt.savefig('denoised_localpca.png', bbox_inches='tight')
+
+print("The result saved in denoised_localpca.png")
 
 """
 .. figure:: denoised_localpca.png
@@ -104,6 +105,8 @@ plt.savefig('denoised_localpca.png', bbox_inches='tight')
 
 nib.save(nib.Nifti1Image(denoised_arr,
                          affine), 'denoised_localpca.nii.gz')
+
+print("Entire denoised data saved in denoised_localpca.nii.gz")
 
 """
 .. [Manjon2013] Manjon JV, Coupe P, Concha L, Buades A, Collins DL
