@@ -3,6 +3,7 @@ import scipy as sp
 from numpy.testing import (run_module_suite,
                            assert_,
                            assert_equal,
+                           assert_raises,
                            assert_array_almost_equal)
 from dipy.denoise.localpca_slow import localpca_slow
 from dipy.sims.voxel import multi_tensor
@@ -173,6 +174,11 @@ def test_lpca_dtype():
     S0 = 200 * np.ones((20, 20, 20, 20), dtype=np.uint16)
     S0ns = localpca_slow(S0, sigma=np.ones((20, 20, 20)))
     assert_equal(S0.dtype, S0ns.dtype)
+
+def test_lpca_wrong():
+
+    S0 = np.ones((20,20))
+    assert_raises(ValueError, localpca_slow, S0, sigma=1)
 
 def test_phantom():
 
