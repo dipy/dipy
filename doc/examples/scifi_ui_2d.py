@@ -141,10 +141,7 @@ disk_slider = gui_2d.DiskSlider2D()
 def outer_disk_click_callback(obj, evt):
     # obj: DiskSlider2D
     click_position = showm.iren.GetEventPosition()
-    intersection_coordinate = disk_slider.get_poi(click_position)
-    disk_slider.slider_inner_disk.set_position(intersection_coordinate)
-    angle = disk_slider.get_angle(intersection_coordinate)
-    disk_slider.slider_text.set_percentage(angle)
+    disk_slider.move_disk(click_position=click_position)
     showm.iren.GetInteractorStyle().add_active_prop(obj.slider_inner_disk.actor)
     showm.render()
     return True
@@ -153,10 +150,7 @@ def outer_disk_click_callback(obj, evt):
 def inner_disk_move_callback(obj, evt):
     # obj: DiskSlider2D
     click_position = showm.iren.GetEventPosition()
-    intersection_coordinate = disk_slider.get_poi(click_position)
-    disk_slider.slider_inner_disk.set_position(intersection_coordinate)
-    angle = disk_slider.get_angle(intersection_coordinate)
-    disk_slider.slider_text.set_percentage(angle)
+    disk_slider.move_disk(click_position=click_position)
     showm.render()
     return True
 

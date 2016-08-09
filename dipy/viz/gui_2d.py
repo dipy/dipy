@@ -1051,6 +1051,13 @@ class DiskSlider2D(UI):
 
         return angle
 
+    def move_disk(self, click_position):
+        intersection_coordinate = self.get_poi(click_position)
+        self.slider_inner_disk.set_position(intersection_coordinate)
+        angle = self.get_angle(intersection_coordinate)
+        self.slider_text.set_percentage(angle)
+        self.slider_inner_disk.angle_state = angle
+
     def set_center(self, position):
         """ Sets the center of the slider to position.
 
@@ -1061,7 +1068,7 @@ class DiskSlider2D(UI):
         self.slider_outer_disk.set_center(position)
         self.slider_text.set_center(position)
         self.outer_disk_center = position
-        self.slider_inner_disk.set_position((position[0]+self.outer_disk_radius, position[1]))
+        self.slider_inner_disk.set_center(position, self.outer_disk_radius)
 
 
 class DiskSlider2DBase(UI):
@@ -1143,6 +1150,8 @@ class DiskSlider2DDisk(UI):
         super(DiskSlider2DDisk, self).__init__()
         self.actor = self.build_actor(inner_radius=inner_radius, outer_radius=outer_radius, disk_position=disk_position)
 
+        self.angle_state = 0
+
         self.ui_list.append(self)
 
     def build_actor(self, inner_radius, outer_radius, disk_position):
@@ -1182,6 +1191,19 @@ class DiskSlider2DDisk(UI):
         position : (float, float)
         """
         self.actor.SetPosition(position)
+
+    def set_center(self, position, circle_radius):
+        """ Sets the disk center retaining the angle
+
+        Parameters
+        ----------
+        position
+        circle_radius
+        """
+        if self.angle_state > 180:
+            self.angle_state -= 360
+        self.set_position((position[0] + circle_radius * math.cos(math.radians(self.angle_state)),
+                           position[1] + circle_radius * math.sin(math.radians(self.angle_state))))
 
 
 class DiskSlider2DText(UI):
