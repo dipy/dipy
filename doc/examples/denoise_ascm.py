@@ -132,8 +132,8 @@ print("The ascm result saved in denoised_ascm.png")
 
 """
 From the above figure we can see that the residual is really uniform in nature
-which dictates that the images is denoise while preserving the sharpness of the
-features.
+which dictates that ASCM denoises the data while preserving the sharpness of
+the features.
 """
 
 nib.save(nib.Nifti1Image(den_final, affine), 'denoised_ascm.nii.gz')
