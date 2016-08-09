@@ -6,9 +6,9 @@ Denoise images using Adaptive Soft Coefficient Matching (ASCM)
 The adaptive soft coefficient matching (ASCM) as described in [Coupe11]_ is a
 improved extension of non-local means (NLMEANS) denoising. ASCM gives a better
 denoised images from two standard non-local means denoised versions of the
-original data with different degrees sharp feature preserved. Here, one
-denoised input is more "smooth" than the other (the easiest way to achieve this
-denoising is use ``non_local_means`` with two different patch radii).
+original data with different degrees sharpness. Here, one denoised input is
+more "smooth" than the other (the easiest way to achieve this denoising is use
+``non_local_means`` with two different patch radii).
 
 ASCM involves these basic steps
 
@@ -20,7 +20,7 @@ ASCM involves these basic steps
   less smoothing.
 
 This way ASCM gives us a well denoised output while preserving the sharpness
-of the image features, which is the primary goal in any denoising algorithm.
+of the image features.
 
 Let us load the necessary modules
 """
@@ -62,8 +62,8 @@ dataset was acquired on a 1.5T Siemens scanner with a 4 array head coil.
 sigma = estimate_sigma(data, N=4)
 
 """
-Non-local means with a smaller patch size which implies less smoothing, more
-sharpness
+For the denoised version of the original data which preserves sharper features,
+we perform non-local means with smaller patch size.
 """
 
 den_small = non_local_means(
@@ -75,8 +75,8 @@ den_small = non_local_means(
     rician=True)
 
 """
-Non-local means with larger patch size which implies more smoothing, less
-sharpness
+For the denoised version of the original data that implies more smoothing, we
+perform non-local means with larger patch size.
 """
 
 den_large = non_local_means(
@@ -93,13 +93,13 @@ adaptive parameter in ascm to be the average of the local noise variance,
 in this case the sigma itself.
 """
 
-den_final = np.array(adaptive_soft_matching(data, den_small, den_large,
-                                            sigma[0]))
+den_final = adaptive_soft_matching(data, den_small, den_large, sigma[0])
 
 print("total time", time() - t)
 
 """
-Plot the axial slice of the data, it's denoised output and the residual
+To access the quality of this denoising procedure, we plot the an axial slice
+of the original data, it's denoised output and residuals.
 """
 
 axial_middle = data.shape[2] / 2
@@ -130,13 +130,20 @@ print("The ascm result saved in denoised_ascm.png")
    **Showing the axial slice without (left) and with (middle) ASCM denoising**.
 """
 
+"""
+From the above figure we can see that the residual is really uniform in nature
+which dictates that the images is denoise while preserving the sharpness of the
+features.
+"""
+
 nib.save(nib.Nifti1Image(den_final, affine), 'denoised_ascm.nii.gz')
 
 print("Saving the entire denoised output in denoised_ascm.nii.gz")
 
 """
-We would like to compare the outputs of the ``non_local_means`` (both with the
-larger as well as with the smaller patch radius) with the ASCM output.
+For comparison propose we also plot the outputs of the ``non_local_means``
+(both with the larger as well as with the smaller patch radius) with the ASCM
+output.
 """
 
 fig, ax = plt.subplots(1, 4)
@@ -165,11 +172,9 @@ print("The comparison result saved in ascm_comparison.png")
 """
 
 """
-In this tutorial we saw the use of adaptive soft coefficient matching (ASCM) 
-and how the corresponding DIPY function ``adaptive_soft_matching``. We observe
-that combining the information of two pre-denoised versions of the raw data,
-ASCM outperforms standard non-local means in supressing noise and preserving
-feature sharpness
+From the above figure, we can observe that the information of two pre-denoised
+versions of the raw data, ASCM outperforms standard non-local means in
+supressing noise and preserving feature sharpness.
 
 References
 ----------
