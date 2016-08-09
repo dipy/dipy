@@ -595,7 +595,7 @@ mni_notes = \
 """
 
 
-def read_mni_template(version, contrast="T1"):
+def read_mni_template(version="a", contrast="T1"):
     """
     Read the MNI template from disk
 
@@ -635,6 +635,11 @@ def read_mni_template(version, contrast="T1"):
 
     if contrast == "mask" and version == "a":
         raise ValueError("No template mask available for MNI 2009a")
+
+    if not(isinstance(contrast,str)) and version == "c":
+        for k in contrast:
+            if k == "T2":
+                raise ValueError("No T2 image for MNI template 2009c")
 
     if version == "a":
         if isinstance(contrast, str):
