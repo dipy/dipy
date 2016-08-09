@@ -74,9 +74,6 @@ def localpca_slow(arr, sigma, patch_radius=1, rician=True):
                     # Compute the covariance matrix C = X_transpose X
                     C = np.transpose(X).dot(X)
                     C = C / X.shape[0]
-                    # compute EVD of the covariance matrix of X get the matrices W and D, hence get matrix Y = XW
-                    # Threshold matrix D and then compute X_est = YW_transpose
-                    # D_est
                     
                     [d, W] = np.linalg.eigh(C)
 
@@ -86,10 +83,7 @@ def localpca_slow(arr, sigma, patch_radius=1, rician=True):
                     W_hat[:, d > 0] = W[:, d > 0]
                     Y = X.dot(W_hat)
                     X_est = Y.dot(np.transpose(W_hat))
-                    # When the block covers each pixel identify it into the
-                    # label matrix theta
 
-                    # generate a theta matrix for patch around i,j,k and store it's
                     # theta value
                     temp = X_est + \
                         np.array([M, ] * X_est.shape[0], dtype=np.float64)
