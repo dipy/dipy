@@ -110,7 +110,7 @@ class Panel2D(UI):
 
         Parameters
         ----------
-        window_size: (int, int)
+        window_size_change : (int, int)
         """
         if self.alignment == "left":
             pass
@@ -769,6 +769,7 @@ class LineSlider2DDisk(UI):
         self.center = center
         self.length = length
         self.actor = self.build_actor(inner_radius=inner_radius, outer_radius=outer_radius)
+        self.current_state = center[0]
 
         self.ui_list.append(self)
 
@@ -818,6 +819,7 @@ class LineSlider2DDisk(UI):
         if x_position > self.center[0] + self.length/2:
             x_position = self.center[0] + self.length/2
         self.actor.SetPosition(x_position, self.center[1])
+        self.current_state = x_position
 
     def set_center(self, position):
         """ Sets the center of the disk to position.
@@ -826,8 +828,10 @@ class LineSlider2DDisk(UI):
         ----------
         position : (float, float)
         """
+        x_change = position[0] - self.center[0]
+        self.current_state += x_change
         self.center = position
-        self.set_position(position)
+        self.set_position((self.current_state, self.center[1]))
 
 
 class LineSlider2DText(UI):
@@ -848,6 +852,8 @@ class LineSlider2DText(UI):
         self.left_x_position = center[0] - length/2
         self.right_x_position = center[0] + length/2
         self.length = length
+        self.center = center
+        self.current_state = center[0]
 
         self.actor = self.build_actor(current_val=current_val, position=(self.left_x_position-50, center[1]))
 
@@ -895,7 +901,10 @@ class LineSlider2DText(UI):
         Parameters
         ----------
         current_val : int
+            This is the x-position of the slider in the 2D coordinate space
+            and not the percentage on the base scale.
         """
+        self.current_state = current_val
         percentage = self.calculate_percentage(current_val=current_val)
         self.actor.set_message(text=percentage)
 
@@ -909,7 +918,13 @@ class LineSlider2DText(UI):
         self.left_x_position = position[0] - self.length/2
         self.right_x_position = position[0] + self.length/2
         self.actor.SetPosition(position[0]-self.length/2-40, position[1]-10)
-        self.set_percentage(position[0])
+
+        x_change = position[0] - self.center[0]
+        self.current_state += x_change
+
+        self.center = position
+
+        self.set_percentage(int(self.current_state))
 
 
 class DiskSlider2D(UI):
