@@ -20,14 +20,13 @@ def test_median_otsu_flow():
         vol_idx = [0]
         dilate = 0
 
-        mask_name = 'mask.nii.gz'
-        masked_name = 'masked.nii.gz'
         mo_flow = MedianOtsuFlow()
         mo_flow.run(data_path, out_dir=out_dir, save_masked=save_masked,
                              median_radius=median_radius, numpass=numpass,
                              autocrop=autocrop, vol_idx=vol_idx, dilate=dilate)
 
-        masked_name, mask_name = mo_flow.last_generated_outputs.values()
+        mask_name = mo_flow.last_generated_outputs['out_mask']
+        masked_name = mo_flow.last_generated_outputs['out_masked']
 
         masked, mask = median_otsu(volume, median_radius,
                                    numpass, autocrop,
