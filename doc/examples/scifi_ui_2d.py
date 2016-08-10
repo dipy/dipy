@@ -186,6 +186,7 @@ def panel_click_callback(obj, evt):
     panel.ui_param = (showm.iren.GetEventPosition()[0] - obj.panel.actor.GetPosition()[0] - obj.size[0]/2,
                       showm.iren.GetEventPosition()[1] - obj.panel.actor.GetPosition()[1] - obj.size[1]/2)
     showm.iren.GetInteractorStyle().add_active_prop(obj.panel.actor)
+    return True
 
 
 def panel_release_callback(obj, evt):
@@ -197,6 +198,7 @@ def panel_move_callback(obj, evt):
     # obj: Panel2D
     click_position = showm.iren.GetEventPosition()
     panel.set_center((click_position[0] - panel.ui_param[0], click_position[1] - panel.ui_param[1]))
+    showm.render()
 
 panel.add_callback("LeftButtonPressEvent", panel_click_callback, panel.panel)
 panel.add_callback("LeftButtonReleaseEvent", panel_release_callback, panel.panel)
