@@ -2,7 +2,7 @@ import numpy as np
 import scipy as sp
 
 
-def localpca(arr, sigma, patch_radius=1, rician=True):
+def localpca(arr, sigma, patch_radius=1):
     r"""Local PCA Based Denoising of Diffusion Datasets
 
     Parameters
@@ -12,9 +12,6 @@ def localpca(arr, sigma, patch_radius=1, rician=True):
         standard deviation of the noise estimated from the data
     patch_radius : The radius of the local patch to
                 be taken around each voxel
-    rician : boolean
-        If True the noise is estimated as Rician, otherwise Gaussian noise
-        is assumed.
 
     Returns
     -------
