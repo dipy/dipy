@@ -252,7 +252,7 @@ def test_estimate_x0():
     x0_estimated = ivim_model_bounds.estimate_x0(test_signal)
     # Test if all signals are positive
     assert_array_equal((np.any(x0_estimated) >= 0), True)
-    assert_array_almost_equal(x0_estimated, [1.,  0.020789,  0.,  0.])
+    assert_array_almost_equal(x0_estimated, [9.804648e-01,   2.752386e-04,  0.,  0.])
 
 
 def test_fit_object():
@@ -309,8 +309,7 @@ def test_multiple_b0():
     x0_estimated = ivim_model_multiple_b0.estimate_x0(data_single)
     # Test if all signals are positive
     assert_array_equal((np.any(x0_estimated) >= 0), True)
-    assert_array_almost_equal(x0_estimated, [1000., .1106353,
-                                             0.009510603, 0.0009510603])
+    assert_array_almost_equal(x0_estimated, [ 8.917113e+02,   6.877630e-03,   1.530790e-03,   9.546938e-04])
 
 
 def test_no_b0():

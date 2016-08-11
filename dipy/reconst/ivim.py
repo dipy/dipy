@@ -170,28 +170,38 @@ class IvimModel(ReconstModel):
         x0_guess : array
             An array with initial values of S0, f, D_star, D for each voxel.
         """
-        bvals_ge_split = self.gtab.bvals[self.gtab.bvals > self.split_b]
-        bvecs_ge_split = self.gtab.bvecs[self.gtab.bvals > self.split_b]
+        bvals_ge_split = self.gtab.bvals[self.gtab.bvals >= self.split_b]
+        bvecs_ge_split = self.gtab.bvecs[self.gtab.bvals >= self.split_b]
         gtab_ge_split = gradient_table(bvals_ge_split, bvecs_ge_split.T)
 
         D_guess, neg_log_S0 = np.polyfit(gtab_ge_split.bvals,
-                                         -np.log(data[self.gtab.bvals > self.split_b]), 1)
+                                         -np.log(data[self.gtab.bvals >= self.split_b]), 1)
         S0_hat = np.exp(-neg_log_S0)
-        f_guess = 1 - S0_hat / np.mean(data[self.gtab.b0s_mask])
-        x0 = np.array([np.mean(data[self.gtab.b0s_mask]),
-                       f_guess, 10 * D_guess, D_guess])
+        # f_guess = 1 - S0_hat / np.mean(data[self.gtab.b0s_mask])
+        # x0 = np.array([np.mean(data[self.gtab.b0s_mask]),
+        #                f_guess, 10 * D_guess, D_guess])
         # The API does not allow bounds for Scipy < 0.17. While estimating x0,
         # if there is noise in the data the estimated x0 might not be feasible.
         # In such a case we will use the values for the parameters
         # from the bounds set with `bounds_check`.
+
+        bvals_le_split = self.gtab.bvals[self.gtab.bvals < self.split_b]
+        bvecs_le_split = self.gtab.bvecs[self.gtab.bvals < self.split_b]
+        gtab_le_split = gradient_table(bvals_le_split, bvecs_le_split.T)
+
+        D_prime_guess, neg_log_S0_prime = np.polyfit(gtab_le_split.bvals,
+                                         -np.log(data[self.gtab.bvals < self.split_b]), 1)
+        S0_hat_prime = np.exp(-neg_log_S0_prime)
+        f = 1 - S0_hat_prime/np.mean(data[self.gtab.b0s_mask])
+
         if self.bounds is None:
-            bounds_check = [(0., 0., 0., 0.), (np.inf, 1., 0.1, 0.1)]
+            bounds_check = [(0., 0., 0., 0.), (np.inf, 1., 0.01, 0.01)]
         else:
             bounds_check = self.bounds
 
+        x0 = np.array([S0_hat, f, D_prime_guess, D_guess])
         x0 = np.where(x0 > bounds_check[0], x0, bounds_check[0])
         x0 = np.where(x0 < bounds_check[1], x0, bounds_check[1])
-
         return x0
 
     @multi_voxel_fit
