@@ -69,6 +69,43 @@ def _ivim_error(params, gtab, signal):
     """
     return (signal - ivim_prediction(params, gtab))
 
+def D_star_prediction(D_star, gtab, other_params):
+    """Function used to predict D_star when S0, f and D are known
+
+    Parameters
+    ----------
+    D_star : float
+        The value of D_star that needs to be fit
+
+    gtab : GradientTable class instance
+        Gradient directions and bvalues.
+
+    other_params : array, dtype=float
+        The parameters S0, f and D which are fixed
+    """
+    S0, f, D = other_params
+    b = gtab.bvals
+    S = S0 * (f * np.exp(-b * D_star) + (1 - f) * np.exp(-b * D))
+    return S
+
+def D_star_error(D_star, gtab, signal, other_params):
+    """Error function used to fit D_star kepping S0, f and D fixed
+        Parameters
+    ----------
+    D_star : float
+        The value of D_star that needs to be fit
+
+    gtab : GradientTable class instance
+        Gradient directions and bvalues.
+    
+    signal : array
+        Array containing the actual signal values.
+
+    other_params : array, dtype=float
+        The parameters S0, f and D which are fixed
+    """
+    S0, f, D = other_params
+    return (signal - D_star_prediction(D_star, gtab, other_params))
 
 class IvimModel(ReconstModel):
     """Ivim model
@@ -195,7 +232,7 @@ class IvimModel(ReconstModel):
         f = 1 - S0_hat_prime/np.mean(data[self.gtab.b0s_mask])
 
         if self.bounds is None:
-            bounds_check = [(0., 0., 0., 0.), (np.inf, 1., 0.01, 0.01)]
+            bounds_check = [(0., 0., 0., 0.), (np.inf, 1., 1., 1.)]
         else:
             bounds_check = self.bounds
 
@@ -230,10 +267,71 @@ class IvimModel(ReconstModel):
                    MR imaging." Radiology 265.3 (2012): 874-881.
         """
         # Call the function estimate_S0_D to get initial x0 guess.
-        x0 = self.estimate_x0(data)
+        S0_prime, D = self.estimate_S0_prime_D(data)
+        S0, D_star_prime = self.estimate_S0_D_star_prime(data)
+        f = 1 - S0_prime/S0
+        D_star = self.estimate_D_star(data, [S0, f, D])
         # Use leastsq to get ivim_params
-        params_in_mask = self._leastsq(data, x0)
-        return IvimFit(self, params_in_mask)
+        x0 = np.array([S0, f, D_star, D])
+        # params_in_mask = self._leastsq(data, x0)
+        return IvimFit(self, x0)
+
+    def estimate_S0_prime_D(self, data):
+        """Estimate S0_prime and D for bvals > split_b
+        """
+        bvals_ge_split = self.gtab.bvals[self.gtab.bvals >= self.split_b]
+        bvecs_ge_split = self.gtab.bvecs[self.gtab.bvals >= self.split_b]
+        gtab_ge_split = gradient_table(bvals_ge_split, bvecs_ge_split.T)
+
+        D, neg_log_S0 = np.polyfit(gtab_ge_split.bvals,
+                                         -np.log(data[self.gtab.bvals >= self.split_b]), 1)
+        S0_prime = np.exp(-neg_log_S0)
+        return S0_prime, D
+
+    def estimate_S0_D_star_prime(self, data):
+        """Estimate S0 and D_star_prime for bvals < 200
+        """
+        bvals_le_split = self.gtab.bvals[self.gtab.bvals < self.split_b]
+        bvecs_le_split = self.gtab.bvecs[self.gtab.bvals < self.split_b]
+        gtab_le_split = gradient_table(bvals_le_split, bvecs_le_split.T)
+
+        D_star_prime, neg_log_S0 = np.polyfit(gtab_le_split.bvals,
+                                         -np.log(data[self.gtab.bvals < self.split_b]), 1)
+
+        S0 = np.exp(-neg_log_S0)
+        return S0, D_star_prime
+
+    def estimate_D_star(self, data, other_params):
+        """Estimate D_star using the values of all the other parameters obtained before
+        """
+        gtol = self.options["gtol"]
+        ftol = self.options["ftol"]
+        xtol = self.tol
+        epsfcn = self.options["eps"]
+        maxfev = self.options["maxiter"]
+        bounds = self.bounds
+
+        if SCIPY_LESS_0_17:
+            res = leastsq(D_star_error,
+                          10*other_params[2],
+                          args=(self.gtab, data, other_params),
+                          gtol=gtol,
+                          xtol=xtol,
+                          ftol=ftol,
+                          epsfcn=epsfcn,
+                          maxfev=maxfev)
+            D_star = res[0]
+            return D_star
+        else:
+            res = least_squares(D_star_error,
+                                10*other_params[2],
+                                ftol=ftol,
+                                xtol=xtol,
+                                gtol=gtol,
+                                max_nfev=maxfev,
+                                args=(self.gtab, data, other_params))
+            D_star = res.x
+            return D_star
 
     def predict(self, ivim_params, gtab, S0=1.):
         """
