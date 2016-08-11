@@ -15,13 +15,13 @@ def localpca(arr, sigma, patch_radius=1):
     sigma : float or 3D array
         Standard deviation of the noise estimated from the data.
     patch_radius : int
-        The radius of the local patch to be taken around each voxel (in voxels)
+        The radius of the local patch to be taken around each voxel (in
+        voxels).
 
     Returns
     -------
     denoised_arr : 4D array
-        This is the denoised array of the same size as that of
-        the input data.
+        This is the denoised array of the same size as that of the input data.
 
     References
     ----------
