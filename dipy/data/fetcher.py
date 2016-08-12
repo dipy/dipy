@@ -595,7 +595,7 @@ mni_notes = \
 """
 
 
-def read_mni_template(version="a", contrast="T1"):
+def read_mni_template(version="a", contrast="T2"):
     """
     Read the MNI template from disk
 
@@ -619,7 +619,7 @@ def read_mni_template(version="a", contrast="T1"):
     Get only the T1 file for version c:
     >>> T1_nifti = read_mni_template("c", contrast = "T1") # doctest: +SKIP
     Get both files in this order for version a:
-    >>> T1_nifti, T2_nifti = read_mni_template("a", contrast = ["T1", "T2"]) # doctest: +SKIP
+    >>> T1_nifti, T2_nifti = read_mni_template(contrast = ["T1", "T2"]) # doctest: +SKIP
     """
     files, folder = fetch_mni_template()
     file_dict_a = {"T1": pjoin(folder, 'mni_icbm152_t1_tal_nlin_asym_09a.nii'),
