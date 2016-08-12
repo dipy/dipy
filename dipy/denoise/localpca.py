@@ -15,7 +15,6 @@ def localpca(arr, sigma, patch_radius=1):
 
     Returns
     -------
-
     denoised_arr : 4D array
         this is the denoised array of the same size as that of
         arr (input data)
@@ -25,7 +24,6 @@ def localpca(arr, sigma, patch_radius=1):
     .. [Manjon13] Manjon JV, Coupe P, Concha L, Buades A, Collins DL
                   Diffusion Weighted Image Denoising Using Overcomplete Local
                   PCA, PLOS 2013
-
     """
 
     if arr.ndim == 4:
