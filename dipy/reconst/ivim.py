@@ -9,7 +9,7 @@ from dipy.reconst.dti import TensorModel, mean_diffusivity
 from dipy.reconst.multi_voxel import multi_voxel_fit
 from dipy.reconst.vec_val_sum import vec_val_vect
 from dipy.core.sphere import Sphere
-
+from dipy.core.optimize import Optimizer
 from distutils.version import LooseVersion
 import scipy
 
@@ -111,10 +111,10 @@ class IvimModel(ReconstModel):
     """Ivim model
     """
 
-    def __init__(self, gtab, split_b=200.0,
-                 bounds=None, tol=1e-7,
-                 options={'gtol': 1e-7, 'ftol': 1e-7,
-                          'eps': 1e-7, 'maxiter': 1000}):
+    def __init__(self, gtab, split_b=200.0, method="two_stage",
+                 bounds=None, tol=1e-10,
+                 options={'gtol': 1e-10, 'ftol': 1e-10,
+                          'eps': 1e-10, 'maxiter': 1000}):
         """
         Initialize an IVIM model.
 
@@ -142,6 +142,26 @@ class IvimModel(ReconstModel):
         split_b : float, optional
             The b-value to split the data on for two-stage fit.
             default : 200.
+
+        method : str, optional
+            One of either 'two_stage' or 'one_stage'.
+
+            'one_stage' fits using the following method : 
+                Linear fitting for D (bvals > 200) and store S0_prime.
+                Another linear fit for S0 (bvals < 200).
+                Estimate f using 1 - S0_prime/S0.
+                Use least squares to fit only D_star. 
+            
+            'two_stage' performs another fitting using the parameters obtained
+            in 'one_stage'. This method gives a roboust fit.
+
+            These two methods were adopted since a straight forward fitting
+            gives solutions which are not physical (negative values of f, D_star, D).
+            For some regions the solution jumps to either D=0 or D_star=0
+            giving unreasonable values for f. In Federau's paper, f values > 0.3
+            and D_star values > 0.05 are discarded.
+
+            default : 'two_stage'
 
         bounds : tuple of arrays with 4 elements, optional
             Bounds to constrain the fitted model parameters. This is only supported for
@@ -176,6 +196,7 @@ class IvimModel(ReconstModel):
         self.bounds = bounds
         self.tol = tol
         self.options = options
+        self.method = method
 
         if SCIPY_LESS_0_17 and self.bounds is not None:
             e_s = "Scipy versions less than 0.17 do not support "
@@ -183,63 +204,9 @@ class IvimModel(ReconstModel):
             raise ValueError(e_s)
         else:
             self.bounds = (np.array([0., 0., 0., 0.]),
-                           np.array([np.inf, 1., 0.1, 0.1]))
+                           np.array([np.inf, 1., 0.05, 0.005]))
 
-    def estimate_x0(self, data):
-        """
-        Estimate initial guess for x0 using a linear fit.
-
-        We fit an exponential for signal values which are greater than a
-        particular bvalue (`split_b`) by taking the log of the signal and
-        using a linear fit. The perfusion fraction is considered to be
-        negligible above `split_b` and hence we consider only the diffusion
-        modeled by an exponentially decaying signal.
-
-        Parameters
-        ----------
-        data : array
-            The measured signal from one voxel. A multi voxel decorator
-            will be applied to this fit method to scale it and apply it
-            to multiple voxels.
-
-        Returns
-        -------
-        x0_guess : array
-            An array with initial values of S0, f, D_star, D for each voxel.
-        """
-        bvals_ge_split = self.gtab.bvals[self.gtab.bvals >= self.split_b]
-        bvecs_ge_split = self.gtab.bvecs[self.gtab.bvals >= self.split_b]
-        gtab_ge_split = gradient_table(bvals_ge_split, bvecs_ge_split.T)
-
-        D_guess, neg_log_S0 = np.polyfit(gtab_ge_split.bvals,
-                                         -np.log(data[self.gtab.bvals >= self.split_b]), 1)
-        S0_hat = np.exp(-neg_log_S0)
-        # f_guess = 1 - S0_hat / np.mean(data[self.gtab.b0s_mask])
-        # x0 = np.array([np.mean(data[self.gtab.b0s_mask]),
-        #                f_guess, 10 * D_guess, D_guess])
-        # The API does not allow bounds for Scipy < 0.17. While estimating x0,
-        # if there is noise in the data the estimated x0 might not be feasible.
-        # In such a case we will use the values for the parameters
-        # from the bounds set with `bounds_check`.
-
-        bvals_le_split = self.gtab.bvals[self.gtab.bvals < self.split_b]
-        bvecs_le_split = self.gtab.bvecs[self.gtab.bvals < self.split_b]
-        gtab_le_split = gradient_table(bvals_le_split, bvecs_le_split.T)
-
-        D_prime_guess, neg_log_S0_prime = np.polyfit(gtab_le_split.bvals,
-                                         -np.log(data[self.gtab.bvals < self.split_b]), 1)
-        S0_hat_prime = np.exp(-neg_log_S0_prime)
-        f = 1 - S0_hat_prime/np.mean(data[self.gtab.b0s_mask])
-
-        if self.bounds is None:
-            bounds_check = [(0., 0., 0., 0.), (np.inf, 1., 1., 1.)]
-        else:
-            bounds_check = self.bounds
-
-        x0 = np.array([S0_hat, f, D_prime_guess, D_guess])
-        x0 = np.where(x0 > bounds_check[0], x0, bounds_check[0])
-        x0 = np.where(x0 < bounds_check[1], x0, bounds_check[1])
-        return x0
+    
 
     @multi_voxel_fit
     def fit(self, data, mask=None):
@@ -267,14 +234,29 @@ class IvimModel(ReconstModel):
                    MR imaging." Radiology 265.3 (2012): 874-881.
         """
         # Call the function estimate_S0_D to get initial x0 guess.
+        # x0 = self.estimate_x0(data)
+        # Use leastsq to get ivim_params
         S0_prime, D = self.estimate_S0_prime_D(data)
         S0, D_star_prime = self.estimate_S0_D_star_prime(data)
         f = 1 - S0_prime/S0
         D_star = self.estimate_D_star(data, [S0, f, D])
         # Use leastsq to get ivim_params
         x0 = np.array([S0, f, D_star, D])
-        # params_in_mask = self._leastsq(data, x0)
-        return IvimFit(self, x0)
+        if self.method == 'one_stage':
+            return IvimFit(self, x0)
+
+        else:
+            if self.bounds is None:
+                bounds_check = [(0., 0., 0., 0.), (np.inf, 1., 0.01, 0.001)]
+            else:
+                bounds_check = self.bounds
+
+            x0 = np.where(x0 > bounds_check[0], x0, bounds_check[0])
+            x0 = np.where(x0 < bounds_check[1], x0, bounds_check[1])
+            
+            params_in_mask = self._leastsq(data, x0)
+            return IvimFit(self, params_in_mask)
+
 
     def estimate_S0_prime_D(self, data):
         """Estimate S0_prime and D for bvals > split_b
@@ -309,11 +291,10 @@ class IvimModel(ReconstModel):
         xtol = self.tol
         epsfcn = self.options["eps"]
         maxfev = self.options["maxiter"]
-        bounds = self.bounds
 
         if SCIPY_LESS_0_17:
             res = leastsq(D_star_error,
-                          10*other_params[2],
+                          0.0005,
                           args=(self.gtab, data, other_params),
                           gtol=gtol,
                           xtol=xtol,
@@ -324,14 +305,18 @@ class IvimModel(ReconstModel):
             return D_star
         else:
             res = least_squares(D_star_error,
-                                10*other_params[2],
+                                0.0005,
                                 ftol=ftol,
                                 xtol=xtol,
                                 gtol=gtol,
+                                bounds= ((0., 0.01)),
                                 max_nfev=maxfev,
                                 args=(self.gtab, data, other_params))
             D_star = res.x
             return D_star
+
+        params_in_mask = self._leastsq(data, x0)
+        return IvimFit(self, params_in_mask)
 
     def predict(self, ivim_params, gtab, S0=1.):
         """
