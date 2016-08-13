@@ -38,3 +38,4 @@ def otsu(image, nbins=256):
     idx = np.argmax(variance12)
     threshold = bin_centers[:-1][idx]
     return threshold
+
