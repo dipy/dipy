@@ -13,7 +13,7 @@ References
 """
 import numpy as np
 from numpy.testing import (assert_array_equal, assert_array_almost_equal,
-                           assert_raises)
+                           assert_raises, run_module_suite)
 
 from dipy.reconst.ivim import ivim_prediction, IvimModel
 from dipy.core.gradients import gradient_table, generate_bvecs
@@ -53,8 +53,12 @@ ivim_params[0, 0, 0] = ivim_params[0, 1, 0] = params
 ivim_params[1, 0, 0] = ivim_params[1, 1, 0] = params
 
 ivim_model = IvimModel(gtab)
+ivim_model_one_stage = IvimModel(gtab, method='one_stage')
 ivim_fit_single = ivim_model.fit(data_single)
 ivim_fit_multi = ivim_model.fit(data_multi)
+
+ivim_fit_single_one_stage = ivim_model_one_stage.fit(data_single)
+ivim_fit_multi_one_stage = ivim_model_one_stage.fit(data_multi)
 
 bvals_no_b0 = np.array([5., 10., 20., 30., 40., 60., 80., 100.,
                         120., 140., 160., 180., 200., 220., 240.,
@@ -72,12 +76,40 @@ gtab_with_multiple_b0 = gradient_table(bvals_with_multiple_b0,
                                        bvecs_with_multiple_b0.T)
 
 
+def test_fit_S0():
+    """
+    Test if the fit returns the correct S0 value using 'one_stage' fitting.
+    """
+    assert_array_almost_equal(S0, ivim_fit_single_one_stage.S0_predicted)
+
+
+def test_fit_f():
+    """
+    Test if the fit returns the correct f value using 'one_stage' fitting.
+    """
+    assert_array_almost_equal(f, ivim_fit_single_one_stage.perfusion_fraction)
+
+
+def test_fit_D_star():
+    """
+    Test if the fit returns the correct D_star value using 'one_stage' fitting.
+    """
+    assert_array_almost_equal(D_star, ivim_fit_single_one_stage.D_star)
+
+
+def test_fit_D():
+    """
+    Test if the fit returns the correct D value using 'one_stage' fitting.
+    """
+    assert_array_almost_equal(D, ivim_fit_single_one_stage.D)
+
+
 def test_single_voxel_fit():
     """
     Test the implementation of the fitting for a single voxel.
 
     Here, we will use the multi_tensor function to generate a
-    biexponential signal. The multi_tensor generates a multi
+    bi-exponential signal. The multi_tensor generates a multi
     tensor signal and expects eigenvalues of each tensor in mevals.
     Our basic test requires a scalar signal isotropic signal and
     hence we set the same eigenvalue in all three directions to
@@ -95,9 +127,8 @@ def test_single_voxel_fit():
     est_signal = ivim_prediction(ivim_fit_single.model_params, gtab)
 
     assert_array_equal(est_signal.shape, data_single.shape)
-    
-    assert_array_almost_equal(est_signal, data_single)
 
+    assert_array_almost_equal(est_signal, data_single)
 
     # Test predict function for single voxel
     p = ivim_fit_single.predict(gtab)
@@ -120,7 +151,6 @@ def test_multivoxel():
     assert_array_almost_equal(est_signal, data_multi)
 
 
-
 def test_ivim_errors():
     """
     Test if errors raised in the module are working correctly.
@@ -141,7 +171,6 @@ def test_ivim_errors():
         assert_array_equal(est_signal.shape, data_multi.shape)
         assert_array_almost_equal(ivim_fit.model_params, ivim_params)
         assert_array_almost_equal(est_signal, data_multi)
-
 
 
 def test_mask():
@@ -182,37 +211,38 @@ def test_with_higher_S0():
     assert_array_almost_equal(ivim_fit.model_params, params2)
 
 
-# def test_bounds_x0():
-#     """
-#     Test to check if setting bounds for signal where initial value is
-#     higer than subsequent values works. These values are from the
-#     IVIM dataset which can be obtained by using the `read_ivim` function
-#     from dipy.data.fetcher. These are values from the voxel [160, 98, 33]
-#     which can be obtained by :
+def test_bounds_x0():
+    """
+    Test to check if setting bounds for signal where initial value is
+    higher than subsequent values works.
 
-#     .. code-block:: python
+    These values are from the IVIM dataset which can be obtained by using
+    the `read_ivim` function from dipy.data.fetcher. These are values from
+    the voxel [160, 98, 33] which can be obtained by :
 
-#        from dipy.data.fetcher import read_ivim
-#        img, gtab = read_ivim()
-#        data = img.get_data()
-#        signal = data[160, 98, 33, :]
+    .. code-block:: python
 
-#     """
-#     test_signal = np.array([4574.34814453, 4745.18164062,  4759.51806641,
-#                             4618.24951172, 4665.63623047, 4568.046875,
-#                             4525.90478516, 4734.54785156, 4526.41357422,
-#                             4299.99414062, 4256.61279297, 4254.50292969,
-#                             4098.74707031, 3776.10375977,  3614.0769043,
-#                             3440.56445312, 3146.52294922, 3006.94287109,
-#                             2879.69580078, 2728.44018555, 2600.09472656,
-#                             2570., 2440., 2400., 2380., 2370.])
-#     x0_test = np.array([1., 0.2, -0.1, -0.001])
-#     test_signal = ivim_prediction(x0_test, gtab)
+       from dipy.data.fetcher import read_ivim
+       img, gtab = read_ivim()
+       data = img.get_data()
+       signal = data[160, 98, 33, :]
 
-#     ivim_fit = ivim_model.fit(test_signal)
+    """
+    test_signal = np.array([4574.34814453, 4745.18164062, 4759.51806641,
+                            4618.24951172, 4665.63623047, 4568.046875,
+                            4525.90478516, 4734.54785156, 4526.41357422,
+                            4299.99414062, 4256.61279297, 4254.50292969,
+                            4098.74707031, 3776.10375977, 3614.0769043,
+                            3440.56445312, 3146.52294922, 3006.94287109,
+                            2879.69580078, 2728.44018555, 2600.09472656,
+                            2570., 2440., 2400., 2380., 2370.])
+    x0_test = np.array([1., 0.13, 0.001, 0.0001])
+    test_signal = ivim_prediction(x0_test, gtab)
 
-#     est_signal = ivim_fit.predict(gtab)
-#     assert_array_equal(est_signal.shape, test_signal.shape)
+    ivim_fit = ivim_model.fit(test_signal)
+
+    est_signal = ivim_fit.predict(gtab)
+    assert_array_equal(est_signal.shape, test_signal.shape)
 
 
 def test_predict():
@@ -261,16 +291,6 @@ def test_shape():
     assert_array_equal(ivim_fit_multi.shape, (2, 2, 1))
 
 
-def test_parameters():
-    """
-    Test the functions for returning individual parameters of the model
-    """
-    assert_array_almost_equal(S0, ivim_fit_single.S0_predicted)
-    assert_array_almost_equal(f, ivim_fit_single.perfusion_fraction)
-    assert_array_almost_equal(D_star, ivim_fit_single.D_star)
-    assert_array_almost_equal(D, ivim_fit_single.D)
-
-
 def test_multiple_b0():
     # Generate a signal with multiple b0
 
@@ -288,3 +308,7 @@ def test_multiple_b0():
 
 def test_no_b0():
     assert_raises(ValueError, IvimModel, gtab_no_b0)
+
+
+if __name__ == '__main__':
+    run_module_suite()

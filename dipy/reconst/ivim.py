@@ -1,24 +1,20 @@
 """ Classes and functions for fitting ivim model """
 from __future__ import division, print_function, absolute_import
-import numpy as np
 
+from distutils.version import LooseVersion
+
+import numpy as np
+import scipy
 from dipy.core.gradients import gradient_table
 from dipy.reconst.base import ReconstModel
-from dipy.reconst.dti import apparent_diffusion_coef
-from dipy.reconst.dti import TensorModel, mean_diffusivity
 from dipy.reconst.multi_voxel import multi_voxel_fit
-from dipy.reconst.vec_val_sum import vec_val_vect
-from dipy.core.sphere import Sphere
-from dipy.core.optimize import Optimizer
-from distutils.version import LooseVersion
-import scipy
 
 SCIPY_LESS_0_17 = LooseVersion(scipy.version.short_version) < '0.17'
 
-if not SCIPY_LESS_0_17:
-    least_squares = scipy.optimize.least_squares
-else:
+if SCIPY_LESS_0_17:
     leastsq = scipy.optimize.leastsq
+else:
+    least_squares = scipy.optimize.least_squares
 
 
 def ivim_prediction(params, gtab, S0=1.):
@@ -27,7 +23,7 @@ def ivim_prediction(params, gtab, S0=1.):
     Parameters
     ----------
     params : array
-        An array of IVIM parameters - S0, f, D_star, D
+        An array of IVIM parameters - [S0, f, D_star, D]
 
     gtab : GradientTable class instance
         Gradient directions and bvalues
@@ -53,7 +49,7 @@ def ivim_prediction(params, gtab, S0=1.):
 
 
 def _ivim_error(params, gtab, signal):
-    """Error function to be used in fitting the IVIM model
+    """Error function to be used in fitting the IVIM model.
 
     Parameters
     ----------
@@ -67,54 +63,65 @@ def _ivim_error(params, gtab, signal):
         Array containing the actual signal values.
 
     """
-    return (signal - ivim_prediction(params, gtab))
+    return signal - ivim_prediction(params, gtab)
 
-def D_star_prediction(D_star, gtab, other_params):
-    """Function used to predict D_star when S0, f and D are known
+
+def f_D_star_prediction(params, gtab, x0):
+    """Function used to predict f and D_star when S0 and D are known.
+
+    This restricts the value of 'f' and 'D_star' to physically feasible
+    solutions since a direct fitting leads to 'f' jumping to very high
+    values and 'D_star' vanishing.
 
     Parameters
     ----------
-    D_star : float
-        The value of D_star that needs to be fit
+    params : array, dtype=float
+        An array containg the values of f and D_star.
 
     gtab : GradientTable class instance
         Gradient directions and bvalues.
 
     other_params : array, dtype=float
-        The parameters S0, f and D which are fixed
+        The parameters S0 and D which are obtained from a linear fit.
     """
-    S0, f, D = other_params
+    f, D_star = params
+    S0, D = x0[0], x0[3]
     b = gtab.bvals
     S = S0 * (f * np.exp(-b * D_star) + (1 - f) * np.exp(-b * D))
     return S
 
-def D_star_error(D_star, gtab, signal, other_params):
-    """Error function used to fit D_star kepping S0, f and D fixed
-        Parameters
+
+def f_D_star_error(params, gtab, signal, x0):
+    """Error function used to fit f and D_star keeping S0 and D fixed
+
+    Parameters
     ----------
-    D_star : float
-        The value of D_star that needs to be fit
+    params : array
+        The value of f and D_star.
 
     gtab : GradientTable class instance
         Gradient directions and bvalues.
-    
+
     signal : array
         Array containing the actual signal values.
 
-    other_params : array, dtype=float
-        The parameters S0, f and D which are fixed
+    other_params : array
+        The parameters S0 and D which are fixed and obtained from a linear fit.
     """
-    S0, f, D = other_params
-    return (signal - D_star_prediction(D_star, gtab, other_params))
+    f, D_star = params
+    S0, D = x0[0], x0[3]
+
+    return signal - f_D_star_prediction([f, D_star], gtab, x0)
+
 
 class IvimModel(ReconstModel):
     """Ivim model
     """
 
     def __init__(self, gtab, split_b=200.0, method="two_stage",
-                 bounds=None, tol=1e-10,
-                 options={'gtol': 1e-10, 'ftol': 1e-10,
-                          'eps': 1e-10, 'maxiter': 1000}):
+                 bounds=None, tol=1e-15,
+                 options={'gtol': 1e-15, 'ftol': 1e-15,
+                          'eps': 1e-15, 'maxiter': 1000}):
         """
         Initialize an IVIM model.
 
@@ -151,7 +158,7 @@ class IvimModel(ReconstModel):
                 Another linear fit for S0 (bvals < 200).
                 Estimate f using 1 - S0_prime/S0.
                 Use least squares to fit only D_star. 
-            
+
             'two_stage' performs another fitting using the parameters obtained
             in 'one_stage'. This method gives a roboust fit.
 
@@ -191,6 +198,7 @@ class IvimModel(ReconstModel):
             e_s = "No measured signal at bvalue == 0."
             e_s += "The IVIM model requires signal measured at 0 bvalue"
             raise ValueError(e_s)
+
         ReconstModel.__init__(self, gtab)
         self.split_b = split_b
         self.bounds = bounds
@@ -203,14 +211,11 @@ class IvimModel(ReconstModel):
             e_s += "bounds. Please update to Scipy 0.17 to use bounds"
             raise ValueError(e_s)
         else:
-            self.bounds = (np.array([0., 0., 0., 0.]),
-                           np.array([np.inf, 1., 0.05, 0.005]))
-
-    
+            self.bounds = ((0., 0., 0., 0.), (np.inf, .6, 0.1, 0.1))
 
     @multi_voxel_fit
     def fit(self, data, mask=None):
-        """ Fit method of the Ivim model class
+        """ Fit method of the Ivim model class.
 
         Parameters
         ----------
@@ -233,13 +238,12 @@ class IvimModel(ReconstModel):
                    of brain perfusion with intravoxel incoherent motion
                    MR imaging." Radiology 265.3 (2012): 874-881.
         """
-        # Call the function estimate_S0_D to get initial x0 guess.
-        # x0 = self.estimate_x0(data)
-        # Use leastsq to get ivim_params
+        # Use the function estimate_S0_prime_D to get S0_prime and D.
         S0_prime, D = self.estimate_S0_prime_D(data)
         S0, D_star_prime = self.estimate_S0_D_star_prime(data)
-        f = 1 - S0_prime/S0
-        D_star = self.estimate_D_star(data, [S0, f, D])
+        f_guess = 1 - S0_prime / S0
+        x0_guess = np.array([S0, f_guess, D_star_prime, D])
+        f, D_star = self.estimate_f_D_star(data, x0_guess)
         # Use leastsq to get ivim_params
         x0 = np.array([S0, f, D_star, D])
         if self.method == 'one_stage':
@@ -247,16 +251,18 @@ class IvimModel(ReconstModel):
 
         else:
             if self.bounds is None:
-                bounds_check = [(0., 0., 0., 0.), (np.inf, 1., 0.01, 0.001)]
+                bounds_check = [(0., 0., 0., 0.), (np.inf, 1., 1., 1.)]
             else:
                 bounds_check = self.bounds
 
-            x0 = np.where(x0 > bounds_check[0], x0, bounds_check[0])
-            x0 = np.where(x0 < bounds_check[1], x0, bounds_check[1])
-            
+            x0 = np.where(x0 > bounds_check[0],
+                          x0, bounds_check[0])
+
+            x0 = np.where(x0 < bounds_check[1],
+                          x0, bounds_check[1])
+
             params_in_mask = self._leastsq(data, x0)
             return IvimFit(self, params_in_mask)
-
 
     def estimate_S0_prime_D(self, data):
         """Estimate S0_prime and D for bvals > split_b
@@ -266,7 +272,7 @@ class IvimModel(ReconstModel):
         gtab_ge_split = gradient_table(bvals_ge_split, bvecs_ge_split.T)
 
         D, neg_log_S0 = np.polyfit(gtab_ge_split.bvals,
-                                         -np.log(data[self.gtab.bvals >= self.split_b]), 1)
+                                   -np.log(data[self.gtab.bvals >= self.split_b]), 1)
         S0_prime = np.exp(-neg_log_S0)
         return S0_prime, D
 
@@ -278,12 +284,12 @@ class IvimModel(ReconstModel):
         gtab_le_split = gradient_table(bvals_le_split, bvecs_le_split.T)
 
         D_star_prime, neg_log_S0 = np.polyfit(gtab_le_split.bvals,
-                                         -np.log(data[self.gtab.bvals < self.split_b]), 1)
+                                              -np.log(data[self.gtab.bvals < self.split_b]), 1)
 
         S0 = np.exp(-neg_log_S0)
         return S0, D_star_prime
 
-    def estimate_D_star(self, data, other_params):
+    def estimate_f_D_star(self, data, x0):
         """Estimate D_star using the values of all the other parameters obtained before
         """
         gtol = self.options["gtol"]
@@ -293,30 +299,27 @@ class IvimModel(ReconstModel):
         maxfev = self.options["maxiter"]
 
         if SCIPY_LESS_0_17:
-            res = leastsq(D_star_error,
-                          0.0005,
-                          args=(self.gtab, data, other_params),
+            res = leastsq(f_D_star_error,
+                          [x0[2], 10 * x0[3]],
+                          args=(self.gtab, data, x0),
                           gtol=gtol,
                           xtol=xtol,
                           ftol=ftol,
                           epsfcn=epsfcn,
                           maxfev=maxfev)
-            D_star = res[0]
-            return D_star
+            f, D_star = res[0]
+            return f, D_star
         else:
-            res = least_squares(D_star_error,
-                                0.0005,
+            res = least_squares(f_D_star_error,
+                                [x0[2], 10 * x0[3]],
+                                args=(self.gtab, data, x0),
                                 ftol=ftol,
                                 xtol=xtol,
                                 gtol=gtol,
-                                bounds= ((0., 0.01)),
-                                max_nfev=maxfev,
-                                args=(self.gtab, data, other_params))
-            D_star = res.x
-            return D_star
-
-        params_in_mask = self._leastsq(data, x0)
-        return IvimFit(self, params_in_mask)
+                                bounds=((0., 0.), (1., 1.)),
+                                max_nfev=maxfev, )
+            f, D_star = res.x
+            return f, D_star
 
     def predict(self, ivim_params, gtab, S0=1.):
         """
@@ -384,7 +387,6 @@ class IvimModel(ReconstModel):
 
 
 class IvimFit(object):
-
     def __init__(self, model, model_params):
         """ Initialize a IvimFit class instance.
             Parameters
