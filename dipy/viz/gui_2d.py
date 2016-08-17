@@ -1,5 +1,7 @@
 # Conditional import machinery for vtk.
+import glob
 import math
+import os
 
 from dipy.utils.optpkg import optional_package
 
@@ -1293,7 +1295,10 @@ class FileSelect2D(UI):
         super(FileSelect2D, self).__init__()
         self.size = size
         self.font_size = font_size
-        self.menu = self.build_actor(position)
+
+        self.text_actor_list = []
+
+        self.menu = self.build_actors(position)
 
     def add_to_renderer(self, ren):
         # Should be a recursive function, but we never go more than 2 levels down (by design)
@@ -1303,14 +1308,50 @@ class FileSelect2D(UI):
         ----------
         ren : renderer
         """
-        for ui_element in self.ui_list:
-            if isinstance(ui_element, Panel2D):
-                ren.add(ui_element.panel.actor)
-            else:
-                ren.add(ui_element)
+        ren.add(self.menu.panel)
+        for text_actor in self.text_actor_list:
+            ren.add(text_actor.actor)
 
-    def generate_text_actor(self, position, text="TestText", color=(0, 0, 0), font_family='Arial', justification='left',
-                            bold=False, italic=False, shadow=False):
+    def build_actors(self, position):
+        line_spacing = 1.5  # Later, we'll have the user set it
+
+        n_text_actors = int(self.size[1]/(self.font_size*line_spacing))
+
+        panel = Panel2D(center=position, size=self.size)
+
+        for i in range(n_text_actors):  # Initialisation of empty text actors
+            text = FileSelectText2D(position=(0, 0), font_size=self.font_size)
+            self.ui_list.append(text)
+            self.text_actor_list.append(text)
+            panel.add_element(text.actor, (0.1, float(i)/float(n_text_actors)))
+
+        return panel
+
+    def allot_file_names(self):
+        file_names = ["../"]
+        file_names += glob.glob("*/")
+        for text_actor in self.text_actor_list:
+            text_actor.actor.set_message("")
+        i = len(file_names)
+        for file_name in file_names:
+            if i < 0:
+                break
+            if self.text_actor_list[i] is None:
+                i -= 1
+            else:
+                self.text_actor_list[i].actor.set_message(file_name)
+            i -= 1
+
+
+class FileSelectText2D(UI):
+
+    def __init__(self, font_size, position):
+        super(FileSelectText2D, self).__init__()
+        self.actor = self.build_actor(position=position, font_size=font_size)
+        self.add_callback("LeftButtonPressEvent", self.click_callback)
+
+    def build_actor(self, position, text="Text", color=(1, 1, 1), font_family='Arial', justification='left',
+                            bold=False, italic=False, shadow=False, font_size='14'):
         """ Builds a text actor.
 
         Parameters
@@ -1327,6 +1368,7 @@ class FileSelect2D(UI):
         bold : bool
         italic : bool
         shadow : bool
+        font_size: int
 
         Returns
         -------
@@ -1336,23 +1378,40 @@ class FileSelect2D(UI):
         text_actor = TextActor2D()
         text_actor.set_position(position)
         text_actor.message(text)
-        text_actor.font_size(self.font_size)
+        text_actor.font_size(font_size)
         text_actor.font_family(font_family)
         text_actor.justification(justification)
         text_actor.font_style(bold, italic, shadow)
         text_actor.color(color)
-        text_actor.GetTextProperty().SetBackgroundColor(1, 1, 1)
-        text_actor.GetTextProperty().SetBackgroundOpacity(1.0)
+        # text_actor.GetTextProperty().SetBackgroundColor(1, 1, 1)
+        # text_actor.GetTextProperty().SetBackgroundOpacity(1.0)
 
         return text_actor
 
-    def build_actor(self, position):
-        line_spacing = 1.5
-        n_text_actors = int(self.size[1]/(self.font_size*line_spacing))
-        panel = Panel2D(center=position, size=self.size)
-        self.ui_list.append(panel)
-        for i in range(n_text_actors):
-            text_actor = self.generate_text_actor(position=(0, 0))
-            self.ui_list.append(text_actor)
-            panel.add_element(text_actor, (0.1, float(i)/float(n_text_actors)))
-        return panel
+    def add_to_renderer(self, ren):
+        """ Adds the actor to renderer.
+
+        Parameters
+        ----------
+        ren : renderer
+        """
+        ren.add(self.actor)
+
+    def add_callback(self, event_type, callback):
+        """ Adds events to button actor.
+
+        Parameters
+        ----------
+        event_type : string
+            event code
+        callback : function
+            callback function
+        """
+        super(FileSelectText2D, self).add_callback(self.actor, event_type, callback)
+
+    def click_callback(self, obj, evt):
+        self.actor.GetTextProperty().SetBackgroundColor(1, 1, 1)
+        self.actor.GetTextProperty().SetBackgroundOpacity(1.0)
+        self.actor.GetTextProperty().SetColor(0, 0, 0)
+
+        return False
