@@ -8,6 +8,7 @@ import scipy
 from dipy.core.gradients import gradient_table
 from dipy.reconst.base import ReconstModel
 from dipy.reconst.multi_voxel import multi_voxel_fit
+from dipy.core.optimize import Optimizer
 
 SCIPY_LESS_0_17 = LooseVersion(scipy.version.short_version) < '0.17'
 
@@ -64,6 +65,28 @@ def _ivim_error(params, gtab, signal):
 
     """
     return signal - ivim_prediction(params, gtab)
+
+
+def _ivim_error_regularized(params, gtab, signal, reg=[1., .20, 0.001, 0.0001]):
+    """
+    Regularized error function to be used in fitting the IVIM model.
+
+    Parameters
+    ----------
+    params : array
+        An array of IVIM parameters. [S0, f, D_star, D]
+
+    gtab : GradientTable class instance
+        Gradient directions and bvalues.
+
+    signal : array
+        Array containing the actual signal values.
+
+    reg : array
+        Array containing regularization parameters.
+        Default : [1000., .20, 0.001, 0.0001]
+    """
+    return np.sum((signal - ivim_prediction(params, gtab) ** 2)) + np.sum((params - reg) ** 2)
 
 
 def f_D_star_prediction(params, gtab, x0):
@@ -244,10 +267,16 @@ class IvimModel(ReconstModel):
         f_guess = 1 - S0_prime / S0
         x0_guess = np.array([S0, f_guess, D_star_prime, D])
         f, D_star = self.estimate_f_D_star(data, x0_guess)
-        # Use leastsq to get ivim_params
+        # Use Optimize to get ivim_params
         x0 = np.array([S0, f, D_star, D])
         if self.method == 'one_stage':
-            return IvimFit(self, x0)
+            data_normalized = data/np.mean(data[self.gtab.b0s_mask])
+            x0_guess = x0
+            x0_guess[0] = x0[0]/np.mean(data[self.gtab.b0s_mask])
+            res = Optimizer(_ivim_error_regularized, x0_guess, args=(self.gtab, data_normalized, x0_guess))
+            params_in_mask = res.xopt
+            params_in_mask[0] = params_in_mask[0]*np.mean(data[self.gtab.b0s_mask])
+            return IvimFit(self, params_in_mask)
 
         else:
             if self.bounds is None:
