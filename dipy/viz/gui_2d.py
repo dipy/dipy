@@ -40,7 +40,7 @@ class Panel2D(UI):
         super(Panel2D, self).__init__()
         self.center = center
         self.size = size
-        self.panel = Rectangle2D(size=size, center=center, color=color, opacity=opacity)
+        self.panel = Rectangle2D(size=size, center=center, color=color, opacity=opacity)  # type: Rectangle2D
         self.lower_limits = (self.center[0] - self.size[0]/2, self.center[1] - self.size[1]/2)
 
         self.ui_list.append(self.panel)
@@ -100,7 +100,6 @@ class Panel2D(UI):
         self.center = position
         self.lower_limits = (position[0] - self.size[0] / 2, position[1] - self.size[1] / 2)
         for ui_element in self.element_positions:
-            # ui_element: (UI, float, float)
             ui_element[0].set_center((self.lower_limits[0] + ui_element[1]*self.size[0],
                                       self.lower_limits[1] + ui_element[2]*self.size[1]))
 
@@ -289,7 +288,7 @@ class TextBox2D(UI):
 
         self.ui_list.append(self)
 
-    def build_actor(self, text, position=(100, 10), color=(1, 1, 1),
+    def build_actor(self, text, position=(100, 10), color=(0, 0, 0),
                     font_size=18, font_family='Arial', justification='left',
                     bold=False, italic=False, shadow=False):
 
@@ -324,6 +323,8 @@ class TextBox2D(UI):
         text_actor.justification(justification)
         text_actor.font_style(bold, italic, shadow)
         text_actor.color(color)
+        text_actor.GetTextProperty().SetBackgroundColor(1, 1, 1)
+        text_actor.GetTextProperty().SetBackgroundOpacity(1.0)
 
         return text_actor
 
@@ -1281,3 +1282,77 @@ class DiskSlider2DText(UI):
         position : (float, float)
         """
         self.actor.SetPosition(position[0]-16, position[1]-8)
+
+
+class FileSelect2D(UI):
+    """ A menu to select files in the current folder.
+    Can go to new folder, previous folder and select a file and keep in a variable.
+    """
+
+    def __init__(self, size, font_size, position):
+        super(FileSelect2D, self).__init__()
+        self.size = size
+        self.font_size = font_size
+        self.menu = self.build_actor(position)
+
+    def add_to_renderer(self, ren):
+        # Should be a recursive function, but we never go more than 2 levels down (by design)
+        """ Add props to renderer
+
+        Parameters
+        ----------
+        ren : renderer
+        """
+        for ui_element in self.ui_list:
+            if isinstance(ui_element, Panel2D):
+                ren.add(ui_element.panel.actor)
+            else:
+                ren.add(ui_element)
+
+    def generate_text_actor(self, position, text="TestText", color=(0, 0, 0), font_family='Arial', justification='left',
+                            bold=False, italic=False, shadow=False):
+        """ Builds a text actor.
+
+        Parameters
+        ----------
+        text : string
+            The initial text while building the actor.
+        position : (float, float)
+        color : (float, float, float)
+            Values must be between 0-1.
+        font_family : string
+            Currently only supports Ariel.
+        justification : string
+            left, right or center.
+        bold : bool
+        italic : bool
+        shadow : bool
+
+        Returns
+        -------
+        text_actor : actor2d
+
+        """
+        text_actor = TextActor2D()
+        text_actor.set_position(position)
+        text_actor.message(text)
+        text_actor.font_size(self.font_size)
+        text_actor.font_family(font_family)
+        text_actor.justification(justification)
+        text_actor.font_style(bold, italic, shadow)
+        text_actor.color(color)
+        text_actor.GetTextProperty().SetBackgroundColor(1, 1, 1)
+        text_actor.GetTextProperty().SetBackgroundOpacity(1.0)
+
+        return text_actor
+
+    def build_actor(self, position):
+        line_spacing = 1.5
+        n_text_actors = int(self.size[1]/(self.font_size*line_spacing))
+        panel = Panel2D(center=position, size=self.size)
+        self.ui_list.append(panel)
+        for i in range(n_text_actors):
+            text_actor = self.generate_text_actor(position=(0, 0))
+            self.ui_list.append(text_actor)
+            panel.add_element(text_actor, (0.1, float(i)/float(n_text_actors)))
+        return panel

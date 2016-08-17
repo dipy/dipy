@@ -9,6 +9,8 @@ from dipy.viz import actor, window, gui_2d
 from ipdb import set_trace
 
 # Allow import, but disable doctests if we don't have vtk.
+from dipy.viz.gui_2d import FileSelect2D
+
 vtk, have_vtk, setup_module = optional_package('vtk')
 
 if have_vtk:
@@ -206,12 +208,19 @@ panel.add_callback("MouseMoveEvent", panel_move_callback, panel.panel)
 
 # /Panel
 
+# File Menu
+
+file_menu = FileSelect2D(size=(200, 200), font_size=15, position=(200, 400))
+
+# /File Menu
+
 # Initialize and add to renderer
 renderer = window.ren()
 
 renderer.add(panel)
 renderer.add(cube_actor_1)
 renderer.add(cube_actor_2)
+renderer.add(file_menu)
 # /Renderer
 
 # Show Manager

@@ -200,3 +200,12 @@ class TextActor2D(vtk.vtkTextActor):
         position : (float, float, float)
         """
         return self.GetDisplayPosition()
+
+    def set_center(self, position):
+        """ Set text actor position.
+
+        Parameters
+        ----------
+        position : (float, float)
+        """
+        self.SetPosition(position)
