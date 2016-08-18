@@ -67,7 +67,8 @@ def _ivim_error(params, gtab, signal):
     return signal - ivim_prediction(params, gtab)
 
 
-def _ivim_error_regularized(params, gtab, signal, reg=[1., .20, 0.001, 0.0001]):
+def _ivim_error_regularized(params, gtab, signal, reg=[1., .20, 0.001, 0.0001],
+                            scaling=np.array([1., 100., 1000., 10000.])):
     """
     Regularized error function to be used in fitting the IVIM model.
 
@@ -86,7 +87,7 @@ def _ivim_error_regularized(params, gtab, signal, reg=[1., .20, 0.001, 0.0001]):
         Array containing regularization parameters.
         Default : [1000., .20, 0.001, 0.0001]
     """
-    return np.sum((signal - ivim_prediction(params, gtab) ** 2)) + np.sum((params - reg) ** 2)
+    return np.sum((signal - ivim_prediction(params, gtab)) ** 2) + np.sum(((params - reg)*scaling) ** 2)
 
 
 def f_D_star_prediction(params, gtab, x0):
@@ -142,7 +143,7 @@ class IvimModel(ReconstModel):
     """
 
     def __init__(self, gtab, split_b_D=400.0, split_b_S0=200., method="two_stage",
-                 bounds=None, tol=1e-15,
+                 bounds=None, tol=1e-15, scaling = np.array([1e-4, 100., 1000., 10000.]),
                  options={'gtol': 1e-15, 'ftol': 1e-15,
                           'eps': 1e-15, 'maxiter': 1000}):
         """
@@ -185,11 +186,11 @@ class IvimModel(ReconstModel):
         method : str, optional
             One of either 'two_stage' or 'one_stage'.
 
-            'one_stage' fits using the following method : 
+            'one_stage' fits using the following method :
                 Linear fitting for D (bvals > 200) and store S0_prime.
                 Another linear fit for S0 (bvals < 200).
                 Estimate f using 1 - S0_prime/S0.
-                Use least squares to fit only D_star. 
+                Use least squares to fit only D_star.
 
             'two_stage' performs another fitting using the parameters obtained
             in 'one_stage'. This method gives a roboust fit.
@@ -211,6 +212,11 @@ class IvimModel(ReconstModel):
         tol : float, optional
             Tolerance for convergence of minimization.
             default : 1e-7
+
+        scaling : array, optional
+            Scaling for the parameters. This is used to control the regularization for each
+            parameter in `_ivim_error_regularized`
+            default: [1e-4, 100., 1000., 10000.]
 
         options : dict, optional
             Dictionary containing gtol, ftol, eps and maxiter. This is passed
@@ -238,6 +244,7 @@ class IvimModel(ReconstModel):
         self.tol = tol
         self.options = options
         self.method = method
+        self.scaling = scaling
 
         if SCIPY_LESS_0_17 and self.bounds is not None:
             e_s = "Scipy versions less than 0.17 do not support "
@@ -280,12 +287,8 @@ class IvimModel(ReconstModel):
         # Use Optimize to get ivim_params
         x0 = np.array([S0, f, D_star, D])
         if self.method == 'one_stage':
-            data_normalized = data/np.mean(data[self.gtab.b0s_mask])
-            x0_guess = x0
-            x0_guess[0] = x0[0]/np.mean(data[self.gtab.b0s_mask])
-            res = Optimizer(_ivim_error_regularized, x0_guess, args=(self.gtab, data_normalized, x0_guess))
+            res = Optimizer(_ivim_error_regularized, x0, args=(self.gtab, data, x0, self.scaling))
             params_in_mask = res.xopt
-            params_in_mask[0] = params_in_mask[0]*np.mean(data[self.gtab.b0s_mask])
             return IvimFit(self, params_in_mask)
 
         else:
