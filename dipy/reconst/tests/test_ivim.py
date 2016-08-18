@@ -74,11 +74,13 @@ bvecs_with_multiple_b0 = generate_bvecs(N)
 gtab_with_multiple_b0 = gradient_table(bvals_with_multiple_b0,
                                        bvecs_with_multiple_b0.T)
 
-noisy_signal = np.array([4039.98461914, 3967.88574219, 4192.35644531, 3909.28857422, 3916.56469727,
-                         3875.01293945, 3946.50634766, 3663.37792969, 3614.78369141, 3713.06665039,
-                         3524.47973633, 3346.48144531, 3526.36865234, 3192.51074219, 2902.75268555,
-                         2735.64648438, 2567.65356445, 2307.39135742, 2215.7043457, 2144.99829102,
-                         2069.71655273])
+noisy_signal = np.array([4039.98461914, 3967.88574219, 4192.35644531,
+                         3909.28857422, 3916.56469727, 3875.01293945,
+                         3946.50634766, 3663.37792969, 3614.78369141,
+                         3713.06665039, 3524.47973633, 3346.48144531,
+                         3526.36865234, 3192.51074219, 2902.75268555,
+                         2735.64648438, 2567.65356445, 2307.39135742,
+                         2215.7043457, 2144.99829102, 2069.71655273])
 
 
 def test_single_voxel_fit():
@@ -229,7 +231,8 @@ def test_predict():
     """
     assert_array_almost_equal(ivim_fit_single.predict(gtab),
                               data_single)
-    assert_array_almost_equal(ivim_model.predict(ivim_fit_single.model_params, gtab),
+    assert_array_almost_equal(ivim_model.predict(ivim_fit_single.model_params,
+                                                 gtab),
                               data_single)
 
     ivim_fit_multi = ivim_model.fit(data_multi)

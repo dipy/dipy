@@ -13,9 +13,9 @@ from dipy.reconst.multi_voxel import multi_voxel_fit
 SCIPY_LESS_0_17 = LooseVersion(scipy.version.short_version) < '0.17'
 
 if SCIPY_LESS_0_17:
-    leastsq = scipy.optimize.leastsq
+    from scipy.optimize import leastsq
 else:
-    least_squares = scipy.optimize.least_squares
+    from scipy.optimize import least_squares
 
 
 def ivim_prediction(params, gtab, S0=1.):
@@ -34,14 +34,6 @@ def ivim_prediction(params, gtab, S0=1.):
         API. Unlike other models, IVIM predicts S0 and this is over written
         by the S0 value in params.
 
-    References
-    ----------
-    .. [1] Le Bihan, Denis, et al. "Separation of diffusion
-               and perfusion in intravoxel incoherent motion MR
-               imaging." Radiology 168.2 (1988): 497-505.
-    .. [2] Federau, Christian, et al. "Quantitative measurement
-               of brain perfusion with intravoxel incoherent motion
-               MR imaging." Radiology 265.3 (2012): 874-881.
     """
     S0, f, D_star, D = params
     b = gtab.bvals
@@ -165,33 +157,34 @@ class IvimModel(ReconstModel):
             default : 200.
 
         bounds : tuple of arrays with 4 elements, optional
-            Bounds to constrain the fitted model parameters. This is only supported for
-            Scipy version > 0.17. When using a older scipy version, this function will raise
-            an error if bounds are different from None.
-            default : ([0., 0., 0., 0.], [np.inf, 1., 1., 1.])
+            Bounds to constrain the fitted model parameters. This is only
+            supported for Scipy version > 0.17. When using a older scipy
+            version, this function will raise an error if bounds are different
+            from None. default : ([0., 0., 0., 0.], [np.inf, 1., 1., 1.])
 
         tol : float, optional
             Tolerance for convergence of minimization.
             default : 1e-7
 
         scaling : array, optional
-            Scaling for the parameters. This is passed to `_ivim_error` to normalize the signal
-            and scale the parameters appropiately.
+            Scaling for the parameters. This is passed to `_ivim_error` to
+            normalize the signal and scale the parameters appropriately.
             default: [1e-4, 100., 1000., 10000.]
 
         options : dict, optional
             Dictionary containing gtol, ftol, eps and maxiter. This is passed
             to leastsq.
-            default : options={'gtol': 1e-7, 'ftol': 1e-7, 'eps': 1e-7, 'maxiter': 1000}
+            default : options={'gtol': 1e-7, 'ftol': 1e-7, 'eps': 1e-7,
+                      'maxiter': 1000}
 
         References
         ----------
-        .. [1] Le Bihan, Denis, et al. "Separation of diffusion
-                   and perfusion in intravoxel incoherent motion MR
-                   imaging." Radiology 168.2 (1988): 497-505.
-        .. [2] Federau, Christian, et al. "Quantitative measurement
-                   of brain perfusion with intravoxel incoherent motion
-                   MR imaging." Radiology 265.3 (2012): 874-881.
+        .. [1] Le Bihan, Denis, et al. "Separation of diffusion and perfusion
+               in intravoxel incoherent motion MR imaging." Radiology 168.2
+               (1988): 497-505.
+        .. [2] Federau, Christian, et al. "Quantitative measurement of brain
+               perfusion with intravoxel incoherent motion MR imaging."
+               Radiology 265.3 (2012): 874-881.
         """
         if not np.any(gtab.b0s_mask):
             e_s = "No measured signal at bvalue == 0."
@@ -217,18 +210,16 @@ class IvimModel(ReconstModel):
     def fit(self, data, mask=None):
         """ Fit method of the Ivim model class.
 
-        The fitting takes place in the following steps:
-            Linear fitting for D (bvals > 200) and store S0_prime.
-            Another linear fit for S0 (bvals < 200).
-            Estimate f using 1 - S0_prime/S0.
-            Use least squares to fit D_star and f.
+        The fitting takes place in the following steps: Linear fitting for D
+        (bvals > 200) and store S0_prime. Another linear fit for S0 (bvals <
+        200).Estimate f using 1 - S0_prime/S0. Use least squares to fit D_star
+        and f.
 
-            We do a final fitting of all four parameters after
-            scaling the parameters and select the set of parameters
-            which make sense physically. The criteria for selecting a
-            particular set of parameters is checking the perfusion
-            fraction. If the fraction is more than 30%, we will reject
-            the solution obtained without scaling.
+        We do a final fitting of all four parameters after scaling the
+        parameters and select the set of parameters which make sense physically.
+        The criteria for selecting a particular set of parameters is checking
+        the perfusion fraction. If the fraction is more than 30%, we will reject
+        the solution obtained without scaling.
 
 
         Parameters
@@ -245,12 +236,6 @@ class IvimModel(ReconstModel):
         Returns
         -------
         IvimFit object
-
-        References
-        ----------
-        .. [1] Federau, Christian, et al. "Quantitative measurement
-                   of brain perfusion with intravoxel incoherent motion
-                   MR imaging." Radiology 265.3 (2012): 874-881.
         """
         # Use the function estimate_S0_prime_D to get S0_prime and D.
         S0_prime, D = self.estimate_S0_prime_D(data)
@@ -271,7 +256,8 @@ class IvimModel(ReconstModel):
         # Fit parameters without scaling
         params_no_scaling = self._leastsq(data, x0)
 
-        params_in_mask = np.where(params_no_scaling[1] <= .5, params_no_scaling, params_with_scaling)
+        params_in_mask = np.where(params_no_scaling[1] <= .5,
+                                  params_no_scaling, params_with_scaling)
         return IvimFit(self, params_in_mask)
 
     def estimate_S0_prime_D(self, data):
@@ -282,7 +268,8 @@ class IvimModel(ReconstModel):
         gtab_ge_split = gradient_table(bvals_ge_split, bvecs_ge_split.T)
 
         D, neg_log_S0 = np.polyfit(gtab_ge_split.bvals,
-                                   -np.log(data[self.gtab.bvals >= self.split_b_D]), 1)
+                                   -np.log(data[self.gtab.bvals >=
+                                           self.split_b_D]), 1)
         S0_prime = np.exp(-neg_log_S0)
         return S0_prime, D
 
@@ -294,7 +281,8 @@ class IvimModel(ReconstModel):
         gtab_le_split = gradient_table(bvals_le_split, bvecs_le_split.T)
 
         D_star_prime, neg_log_S0 = np.polyfit(gtab_le_split.bvals,
-                                              -np.log(data[self.gtab.bvals < self.split_b_S0]), 1)
+                                              -np.log(data[self.gtab.bvals <
+                                                      self.split_b_S0]), 1)
 
         S0 = np.exp(-neg_log_S0)
         return S0, D_star_prime
@@ -362,8 +350,7 @@ class IvimModel(ReconstModel):
         return ivim_prediction(ivim_params, gtab)
 
     def _leastsq(self, data, x0, scaling=np.array([1., 1., 1., 1.])):
-        """
-        Use leastsq for finding ivim_params
+        """Use leastsq to find ivim_params
 
         Parameters
         ----------
@@ -470,8 +457,7 @@ class IvimFit(object):
         return self.model_params.shape[:-1]
 
     def predict(self, gtab, S0=1.):
-        r"""
-        Given a model fit, predict the signal.
+        """Given a model fit, predict the signal.
 
         Parameters
         ----------
@@ -479,16 +465,14 @@ class IvimFit(object):
                Gradient directions and bvalues
 
         S0 : float
-            S0 value here is not necessary and will
-            not be used to predict the signal. It has
-            been added to conform to the structure
-            of the predict method in multi_voxel which
-            requires a keyword argument S0.
+            S0 value here is not necessary and will not be used to predict the
+            signal. It has been added to conform to the structure of the
+            predict method in multi_voxel which requires a keyword argument S0.
 
         Returns
         -------
         signal : array
-            The signal values predicted for this model using
-            its parameters.
+            The signal values predicted for this model using its parameters.
+
         """
         return ivim_prediction(self.model_params, gtab)
