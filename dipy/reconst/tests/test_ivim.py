@@ -107,6 +107,7 @@ def test_single_voxel_fit():
 
     assert_array_equal(est_signal.shape, data_single.shape)
 
+    assert_array_almost_equal(ivim_fit_single.model_params, params)
     assert_array_almost_equal(est_signal, data_single)
 
     # Test predict function for single voxel

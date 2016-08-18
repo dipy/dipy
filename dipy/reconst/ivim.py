@@ -6,7 +6,6 @@ from distutils.version import LooseVersion
 import numpy as np
 import scipy
 import warnings
-from dipy.core.gradients import gradient_table
 from dipy.reconst.base import ReconstModel
 from dipy.reconst.multi_voxel import multi_voxel_fit
 
@@ -33,7 +32,6 @@ def ivim_prediction(params, gtab, S0=1.):
         This has been added just for consistency with the existing
         API. Unlike other models, IVIM predicts S0 and this is over written
         by the S0 value in params.
-
     """
     S0, f, D_star, D = params
     b = gtab.bvals
@@ -41,7 +39,7 @@ def ivim_prediction(params, gtab, S0=1.):
     return S
 
 
-def _ivim_error(params, gtab, signal, scaling=np.array([1., 1., 1., 1.])):
+def _ivim_error(params, gtab, signal):
     """Error function to be used in fitting the IVIM model.
 
     Parameters
@@ -54,13 +52,8 @@ def _ivim_error(params, gtab, signal, scaling=np.array([1., 1., 1., 1.])):
 
     signal : array
         Array containing the actual signal values.
-
-    scaling : array
-        An array to scale the various parameters.
-        default : [1., 1., 1., 1.]
-
     """
-    return (signal * scaling[0]) - ivim_prediction(params * scaling, gtab)
+    return signal - ivim_prediction(params, gtab)
 
 
 def f_D_star_prediction(params, gtab, x0):
@@ -116,7 +109,7 @@ class IvimModel(ReconstModel):
     """
 
     def __init__(self, gtab, split_b_D=400.0, split_b_S0=200., bounds=None,
-                 tol=1e-15, scaling=np.array([10e-4, 10e2, 1000., 10000.]),
+                 tol=1e-15, f_threshold = 0.25, x_scale=np.array([1e03, 1e-01, 1e-03, 1e-4]),
                  options={'gtol': 1e-15, 'ftol': 1e-15,
                           'eps': 1e-15, 'maxiter': 1000}):
         """
@@ -147,7 +140,7 @@ class IvimModel(ReconstModel):
             The b-value to split the data on for two-stage fit. This will be
             used while estimating the value of D. The assumption is that at
             higher b values the effects of perfusion is less and hence the
-            signal can be approximated as a mono-exponenetial decay.
+            signal can be approximated as a mono-exponential decay.
             default : 400.
 
         split_b_S0 : float, optional
@@ -158,18 +151,23 @@ class IvimModel(ReconstModel):
 
         bounds : tuple of arrays with 4 elements, optional
             Bounds to constrain the fitted model parameters. This is only
-            supported for Scipy version > 0.17. When using a older scipy
+            supported for Scipy version > 0.17. When using a older Scipy
             version, this function will raise an error if bounds are different
-            from None. default : ([0., 0., 0., 0.], [np.inf, 1., 1., 1.])
+            from None. default : ([0., 0., 0., 0.], [np.inf, .3, 1., 1.])
 
         tol : float, optional
             Tolerance for convergence of minimization.
-            default : 1e-7
+            default : 1e-15
 
-        scaling : array, optional
-            Scaling for the parameters. This is passed to `_ivim_error` to
-            normalize the signal and scale the parameters appropriately.
-            default: [1e-4, 100., 1000., 10000.]
+        f_threshold : float, optional
+            Threshold value to consider for f being erroneous after leastsq
+            fitting. If the value of f obtained crosses this threshold the
+            parameters will be taken from the linear fits.
+            default : .25
+        x_scale : array, optional
+            Scaling for the parameters. This is passed to `least_squares` which is
+            only available for Scipy version > 0.17.
+            default: [1e03, 1e-01, 1e-03, 1e-4]
 
         options : dict, optional
             Dictionary containing gtol, ftol, eps and maxiter. This is passed
@@ -196,15 +194,18 @@ class IvimModel(ReconstModel):
         self.split_b_S0 = split_b_S0
         self.bounds = bounds
         self.tol = tol
+        self.f_threshold = f_threshold
         self.options = options
-        self.scaling = scaling
+        self.x_scale = x_scale
 
         if SCIPY_LESS_0_17 and self.bounds is not None:
             e_s = "Scipy versions less than 0.17 do not support "
             e_s += "bounds. Please update to Scipy 0.17 to use bounds"
             raise ValueError(e_s)
-        else:
+        elif self.bounds is None:
             self.bounds = ((0., 0., 0., 0.), (np.inf, 1., 1., 1.))
+        else:
+            self.bounds = bounds
 
     @multi_voxel_fit
     def fit(self, data, mask=None):
@@ -237,39 +238,33 @@ class IvimModel(ReconstModel):
         -------
         IvimFit object
         """
-        # Use the function estimate_S0_prime_D to get S0_prime and D.
+        # Get S0_prime and D.
         S0_prime, D = self.estimate_S0_prime_D(data)
+        # Get S0 and D_star_prime.
         S0, D_star_prime = self.estimate_S0_D_star_prime(data)
+        # Estimate f
         f_guess = 1 - S0_prime / S0
         x0_guess = np.array([S0, f_guess, D_star_prime, D])
-        try:
-            f, D_star = self.estimate_f_D_star(data, x0_guess)
-        except:
-            warningMsg = "x0 obtained from linear fitting is unfeasibile."
-            warningMsg += "Using parameters from the linear fitting"
-            warnings.warn(warningMsg, UserWarning)
-            f, D_star = f_guess, D_star_prime
+        # Fit f and D_star using leastsq.
+        f, D_star = self.estimate_f_D_star(data, x0_guess)
 
         x0 = np.array([S0, f, D_star, D])
         # Fit parameters again with scaling
-        params_with_scaling = self._leastsq(data, x0, scaling=self.scaling)
-        # Fit parameters without scaling
-        params_no_scaling = self._leastsq(data, x0)
+        params = self._leastsq(data, x0)
 
-        params_in_mask = np.where(params_no_scaling[1] <= .5,
-                                  params_no_scaling, params_with_scaling)
-        return IvimFit(self, params_in_mask)
+        if params[1] > self.f_threshold:
+            params = x0
+
+        return IvimFit(self, params)
 
     def estimate_S0_prime_D(self, data):
         """Estimate S0_prime and D for bvals > split_b_D
         """
         bvals_ge_split = self.gtab.bvals[self.gtab.bvals >= self.split_b_D]
-        bvecs_ge_split = self.gtab.bvecs[self.gtab.bvals >= self.split_b_D]
-        gtab_ge_split = gradient_table(bvals_ge_split, bvecs_ge_split.T)
 
-        D, neg_log_S0 = np.polyfit(gtab_ge_split.bvals,
+        D, neg_log_S0 = np.polyfit(bvals_ge_split,
                                    -np.log(data[self.gtab.bvals >=
-                                           self.split_b_D]), 1)
+                                                self.split_b_D]), 1)
         S0_prime = np.exp(-neg_log_S0)
         return S0_prime, D
 
@@ -277,12 +272,10 @@ class IvimModel(ReconstModel):
         """Estimate S0 and D_star_prime for bvals < split_b_S0
         """
         bvals_le_split = self.gtab.bvals[self.gtab.bvals < self.split_b_S0]
-        bvecs_le_split = self.gtab.bvecs[self.gtab.bvals < self.split_b_S0]
-        gtab_le_split = gradient_table(bvals_le_split, bvecs_le_split.T)
 
-        D_star_prime, neg_log_S0 = np.polyfit(gtab_le_split.bvals,
+        D_star_prime, neg_log_S0 = np.polyfit(bvals_le_split,
                                               -np.log(data[self.gtab.bvals <
-                                                      self.split_b_S0]), 1)
+                                                           self.split_b_S0]), 1)
 
         S0 = np.exp(-neg_log_S0)
         return S0, D_star_prime
@@ -309,8 +302,9 @@ class IvimModel(ReconstModel):
                 f, D_star = res[0]
                 return f, D_star
             except:
-                warningMsg = "x0 obtained from linear fitting is unfeasibile."
-                warningMsg += "Using parameters from the linear fitting"
+                warningMsg = "x0 obtained from linear fitting is unfeasibile as "
+                warningMsg += "initial guess for leastsq. Using parameters from "
+                warningMsg += "the linear fit."
                 warnings.warn(warningMsg, UserWarning)
                 f, D_star = x0[1], x0[2]
                 return f, D_star
@@ -318,7 +312,7 @@ class IvimModel(ReconstModel):
             try:
                 res = least_squares(f_D_star_error,
                                     [x0[2], 10 * x0[3]],
-                                    bounds=((0., 0.), (.5, 0.01)),
+                                    bounds=((0., 0.), (self.bounds[1][1], self.bounds[1][2])),
                                     args=(self.gtab, data, x0),
                                     ftol=ftol,
                                     xtol=xtol,
@@ -327,8 +321,10 @@ class IvimModel(ReconstModel):
                 f, D_star = res.x
                 return f, D_star
             except:
-                warningMsg = "x0 obtained from linear fitting is unfeasibile."
-                warningMsg += "Using parameters from the linear fitting"
+                warningMsg = "x0 obtained from linear fitting is unfeasibile "
+                warningMsg += "as initial guess for leastsq while estimating "
+                warningMsg += "f and D_star. Using parameters from the "
+                warningMsg += "linear fit."
                 warnings.warn(warningMsg, UserWarning)
                 f, D_star = x0[1], x0[2]
                 return f, D_star
@@ -349,7 +345,7 @@ class IvimModel(ReconstModel):
         """
         return ivim_prediction(ivim_params, gtab)
 
-    def _leastsq(self, data, x0, scaling=np.array([1., 1., 1., 1.])):
+    def _leastsq(self, data, x0):
         """Use leastsq to find ivim_params
 
         Parameters
@@ -377,7 +373,7 @@ class IvimModel(ReconstModel):
             try:
                 res = leastsq(_ivim_error,
                               x0,
-                              args=(self.gtab, data, scaling),
+                              args=(self.gtab, data),
                               gtol=gtol,
                               xtol=xtol,
                               ftol=ftol,
@@ -386,8 +382,9 @@ class IvimModel(ReconstModel):
                 ivim_params = res[0]
                 return ivim_params
             except:
-                warningMsg = "x0 obtained from linear fitting is unfeasibile."
-                warningMsg += "Using parameters from the linear fitting"
+                warningMsg = "x0 obtained from linear fitting is unfeasibile as "
+                warningMsg += "initial guess for leastsq. Using parameters from "
+                warningMsg += "the linear fit."
                 warnings.warn(warningMsg, UserWarning)
                 return x0
         else:
@@ -399,12 +396,14 @@ class IvimModel(ReconstModel):
                                     xtol=xtol,
                                     gtol=gtol,
                                     max_nfev=maxfev,
-                                    args=(self.gtab, data, scaling))
+                                    args=(self.gtab, data),
+                                    x_scale=self.x_scale)
                 ivim_params = res.x
                 return ivim_params
             except:
-                warningMsg = "x0 obtained from linear fitting is unfeasibile."
-                warningMsg += "Using parameters from the linear fitting"
+                warningMsg = "x0 obtained from linear fitting is unfeasibile as "
+                warningMsg += "initial guess for leastsq. Using parameters from "
+                warningMsg += "the linear fit."
                 warnings.warn(warningMsg, UserWarning)
                 return x0
 
