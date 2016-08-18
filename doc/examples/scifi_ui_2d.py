@@ -9,7 +9,6 @@ from dipy.viz import actor, window, gui_2d
 from ipdb import set_trace
 
 # Allow import, but disable doctests if we don't have vtk.
-from dipy.viz.gui_2d import FileSelect2D
 from dipy.viz.gui_menus import FileSaveMenu
 
 vtk, have_vtk, setup_module = optional_package('vtk')

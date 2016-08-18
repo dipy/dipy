@@ -30,6 +30,7 @@ class UI(object):
         self.ui_param = None
         self.ui_list = list()
 
+        self.parent_UI = None
         self.actor = None
 
     def add_to_renderer(self, ren):
