@@ -210,7 +210,7 @@ panel.add_callback("MouseMoveEvent", panel_move_callback, panel.panel)
 
 # File Menu
 
-file_menu = FileSelect2D(size=(200, 200), font_size=15, position=(200, 400))
+file_menu = FileSelect2D(size=(200, 400), font_size=15, position=(200, 400))
 file_menu.allot_file_names()
 
 # /File Menu

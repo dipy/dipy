@@ -1295,58 +1295,87 @@ class FileSelect2D(UI):
         super(FileSelect2D, self).__init__()
         self.size = size
         self.font_size = font_size
+        self.n_text_actors = 0  # Initialisation Value
 
         self.text_actor_list = []
 
         self.menu = self.build_actors(position)
 
     def add_to_renderer(self, ren):
-        # Should be a recursive function, but we never go more than 2 levels down (by design)
         """ Add props to renderer
 
         Parameters
         ----------
         ren : renderer
         """
-        ren.add(self.menu.panel)
         for text_actor in self.text_actor_list:
             ren.add(text_actor.actor)
 
     def build_actors(self, position):
-        line_spacing = 1.5  # Later, we'll have the user set it
+        """ Builds the number of text actors that will fit in the given size.
+        Allots them positions in the panel, which is only there to allot positions,
+        otherwise the panel itself is invisible.
 
-        n_text_actors = int(self.size[1]/(self.font_size*line_spacing))
+        Parameters
+        ----------
+        position: (float, float)
+        """
+        line_spacing = 1.1  # Later, we'll have the user set it
 
-        panel = Panel2D(center=position, size=self.size)
+        self.n_text_actors = int(self.size[1]/(self.font_size*line_spacing))  # The number of text actors.
 
-        for i in range(n_text_actors):  # Initialisation of empty text actors
-            text = FileSelectText2D(position=(0, 0), font_size=self.font_size)
+        # This panel is just to facilitate the addition of actors at the right positions
+        panel = Panel2D(center=position, size=self.size, opacity=0)
+
+        # Initialisation of empty text actors
+        for i in range(self.n_text_actors):
+            text = FolderSelectText2D(position=(0, 0), font_size=self.font_size, file_select=self)
             self.ui_list.append(text)
             self.text_actor_list.append(text)
-            panel.add_element(text.actor, (0.1, float(i)/float(n_text_actors)))
+            panel.add_element(text.actor, (0.1, float(i)/float(self.n_text_actors)))
 
         return panel
 
     def allot_file_names(self):
+        """ Re-allots file names to the text actors.
+        Uses FileSelectText2D and FolderSelectText2D for selecting files and folders.
+        """
+        # A list of file names in the current directory
         file_names = ["../"]
         file_names += glob.glob("*/")
+
+        # Flush all the text actors
         for text_actor in self.text_actor_list:
             text_actor.actor.set_message("")
-        i = len(file_names)
+
+        # Allot file names as in the above list
+        i = len(file_names) - 1
         for file_name in file_names:
             if i < 0:
                 break
-            if self.text_actor_list[i] is None:
+            if i >= self.n_text_actors:
                 i -= 1
             else:
                 self.text_actor_list[i].actor.set_message(file_name)
             i -= 1
 
 
-class FileSelectText2D(UI):
+class FolderSelectText2D(UI):
+    """ The text to select folder in a file select menu.
+    Provides a callback to change the directory.
+    """
 
-    def __init__(self, font_size, position):
-        super(FileSelectText2D, self).__init__()
+    def __init__(self, font_size, position, file_select):
+        """
+
+        Parameters
+        ----------
+        font_size: int
+        position: (float, float)
+        file_select: FileSelect2D
+        """
+        super(FolderSelectText2D, self).__init__()
+        self.file_select = file_select
         self.actor = self.build_actor(position=position, font_size=font_size)
         self.add_callback("LeftButtonPressEvent", self.click_callback)
 
@@ -1383,8 +1412,9 @@ class FileSelectText2D(UI):
         text_actor.justification(justification)
         text_actor.font_style(bold, italic, shadow)
         text_actor.color(color)
-        # text_actor.GetTextProperty().SetBackgroundColor(1, 1, 1)
-        # text_actor.GetTextProperty().SetBackgroundOpacity(1.0)
+        text_actor.GetTextProperty().SetBackgroundColor(1, 1, 1)
+        text_actor.GetTextProperty().SetBackgroundOpacity(1.0)
+        text_actor.GetTextProperty().SetColor(0, 0, 0)
 
         return text_actor
 
@@ -1407,11 +1437,21 @@ class FileSelectText2D(UI):
         callback : function
             callback function
         """
-        super(FileSelectText2D, self).add_callback(self.actor, event_type, callback)
+        super(FolderSelectText2D, self).add_callback(self.actor, event_type, callback)
 
     def click_callback(self, obj, evt):
-        self.actor.GetTextProperty().SetBackgroundColor(1, 1, 1)
-        self.actor.GetTextProperty().SetBackgroundOpacity(1.0)
-        self.actor.GetTextProperty().SetColor(0, 0, 0)
+        """ A callback to handle click for this UI element
+
+        Parameters
+        ----------
+        obj
+        evt
+
+        Returns
+        -------
+
+        """
+        os.chdir(self.actor.get_message())
+        self.file_select.allot_file_names()
 
         return False
