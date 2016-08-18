@@ -250,10 +250,10 @@ class FolderSelectText2D(UI):
         text_actor.justification(justification)
         text_actor.font_style(bold, italic, shadow)
         text_actor.color(color)
-        text_actor.GetTextProperty().SetBackgroundColor(1, 1, 1)
+        # text_actor.GetTextProperty().SetBackgroundColor(1, 1, 1)
         # text_actor.GetTextProperty().SetBackgroundOpacity(1.0)
         text_actor.GetTextProperty().SetColor(0, 0, 0)
-        # text_actor.GetTextProperty().SetLineSpacing(1)
+        text_actor.GetTextProperty().SetLineSpacing(1)
 
         return text_actor
 
