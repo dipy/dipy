@@ -299,7 +299,7 @@ class TextBox2D(UI):
         """
         self.actor.set_message(message)
 
-    def build_actor(self, text, position=(100, 10), color=(0, 0, 0),
+    def build_actor(self, text, position=(100, 10), color=(1, 1, 1),
                     font_size=18, font_family='Arial', justification='left',
                     bold=False, italic=False, shadow=False):
 
@@ -334,8 +334,8 @@ class TextBox2D(UI):
         text_actor.justification(justification)
         text_actor.font_style(bold, italic, shadow)
         text_actor.color(color)
-        text_actor.GetTextProperty().SetBackgroundColor(1, 1, 1)
-        text_actor.GetTextProperty().SetBackgroundOpacity(1.0)
+        # text_actor.GetTextProperty().SetBackgroundColor(1, 1, 1)
+        # text_actor.GetTextProperty().SetBackgroundOpacity(1.0)
 
         return text_actor
 

@@ -251,9 +251,9 @@ class FolderSelectText2D(UI):
         text_actor.font_style(bold, italic, shadow)
         text_actor.color(color)
         text_actor.GetTextProperty().SetBackgroundColor(1, 1, 1)
-        text_actor.GetTextProperty().SetBackgroundOpacity(1.0)
+        # text_actor.GetTextProperty().SetBackgroundOpacity(1.0)
         text_actor.GetTextProperty().SetColor(0, 0, 0)
-        text_actor.GetTextProperty().SetLineSpacing(1)
+        # text_actor.GetTextProperty().SetLineSpacing(1)
 
         return text_actor
 
@@ -282,12 +282,12 @@ class FolderSelectText2D(UI):
         self.file_name = file_name
         self.file_type = file_type
         self.actor.set_message(file_name)
-        if file_type == "file":
-            self.actor.GetTextProperty().SetBackgroundColor(0, 0, 0)
-            self.actor.GetTextProperty().SetColor(1, 1, 1)
-        else:
-            self.actor.GetTextProperty().SetBackgroundColor(1, 1, 1)
-            self.actor.GetTextProperty().SetColor(0, 0, 0)
+        # if file_type == "file":
+        #     self.actor.GetTextProperty().SetBackgroundColor(0, 0, 0)
+        #     self.actor.GetTextProperty().SetColor(1, 1, 1)
+        # else:
+        #     self.actor.GetTextProperty().SetBackgroundColor(1, 1, 1)
+        #     self.actor.GetTextProperty().SetColor(0, 0, 0)
 
     def click_callback(self, obj, evt):
         """ A callback to handle click for this UI element.
