@@ -142,6 +142,7 @@ class FileSelect2D(UI):
         # Flush all the text actors
         for text_actor in self.text_actor_list:
             text_actor.actor.set_message("")
+            text_actor.actor.SetVisibility(False)
 
         all_file_names = []
 
@@ -158,6 +159,7 @@ class FileSelect2D(UI):
         # Allot file names as in the above list
         i = 0
         for file_name in clipped_file_names:
+            self.text_actor_list[i].actor.SetVisibility(True)
             self.text_actor_list[i].set_attributes(file_name[0], file_name[1])
             i += 1
 
