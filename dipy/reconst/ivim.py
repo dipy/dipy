@@ -141,7 +141,7 @@ class IvimModel(ReconstModel):
     """Ivim model
     """
 
-    def __init__(self, gtab, split_b=200.0, method="two_stage",
+    def __init__(self, gtab, split_b_D=400.0, split_b_S0=200., method="two_stage",
                  bounds=None, tol=1e-15,
                  options={'gtol': 1e-15, 'ftol': 1e-15,
                           'eps': 1e-15, 'maxiter': 1000}):
@@ -169,8 +169,17 @@ class IvimModel(ReconstModel):
         gtab : GradientTable class instance
             Gradient directions and bvalues
 
-        split_b : float, optional
-            The b-value to split the data on for two-stage fit.
+        split_b_D : float, optional
+            The b-value to split the data on for two-stage fit. This will be
+            used while estimating the value of D. The assumption is that at
+            higher b values the effects of perfusion is less and hence the
+            signal can be approximated as a mono-exponenetial decay.
+            default : 400.
+
+        split_b_S0 : float, optional
+            The b-value to split the data on for two-stage fit for estimation
+            of S0 and initial guess for D_star. The assumption here is that
+            at low bvalues the effects of perfusion are more.
             default : 200.
 
         method : str, optional
@@ -223,7 +232,8 @@ class IvimModel(ReconstModel):
             raise ValueError(e_s)
 
         ReconstModel.__init__(self, gtab)
-        self.split_b = split_b
+        self.split_b_D = split_b_D
+        self.split_b_S0 = split_b_S0
         self.bounds = bounds
         self.tol = tol
         self.options = options
@@ -294,26 +304,26 @@ class IvimModel(ReconstModel):
             return IvimFit(self, params_in_mask)
 
     def estimate_S0_prime_D(self, data):
-        """Estimate S0_prime and D for bvals > split_b
+        """Estimate S0_prime and D for bvals > split_b_D
         """
-        bvals_ge_split = self.gtab.bvals[self.gtab.bvals >= self.split_b]
-        bvecs_ge_split = self.gtab.bvecs[self.gtab.bvals >= self.split_b]
+        bvals_ge_split = self.gtab.bvals[self.gtab.bvals >= self.split_b_D]
+        bvecs_ge_split = self.gtab.bvecs[self.gtab.bvals >= self.split_b_D]
         gtab_ge_split = gradient_table(bvals_ge_split, bvecs_ge_split.T)
 
         D, neg_log_S0 = np.polyfit(gtab_ge_split.bvals,
-                                   -np.log(data[self.gtab.bvals >= self.split_b]), 1)
+                                   -np.log(data[self.gtab.bvals >= self.split_b_D]), 1)
         S0_prime = np.exp(-neg_log_S0)
         return S0_prime, D
 
     def estimate_S0_D_star_prime(self, data):
-        """Estimate S0 and D_star_prime for bvals < 200
+        """Estimate S0 and D_star_prime for bvals < split_b_S0
         """
-        bvals_le_split = self.gtab.bvals[self.gtab.bvals < self.split_b]
-        bvecs_le_split = self.gtab.bvecs[self.gtab.bvals < self.split_b]
+        bvals_le_split = self.gtab.bvals[self.gtab.bvals < self.split_b_S0]
+        bvecs_le_split = self.gtab.bvecs[self.gtab.bvals < self.split_b_S0]
         gtab_le_split = gradient_table(bvals_le_split, bvecs_le_split.T)
 
         D_star_prime, neg_log_S0 = np.polyfit(gtab_le_split.bvals,
-                                              -np.log(data[self.gtab.bvals < self.split_b]), 1)
+                                              -np.log(data[self.gtab.bvals < self.split_b_S0]), 1)
 
         S0 = np.exp(-neg_log_S0)
         return S0, D_star_prime
