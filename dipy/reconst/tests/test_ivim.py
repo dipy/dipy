@@ -13,7 +13,7 @@ References
 """
 import numpy as np
 from numpy.testing import (assert_array_equal, assert_array_almost_equal,
-                           assert_raises, run_module_suite)
+                           assert_raises, assert_array_less, run_module_suite)
 
 from dipy.reconst.ivim import ivim_prediction, IvimModel
 from dipy.core.gradients import gradient_table, generate_bvecs
@@ -26,9 +26,8 @@ SCIPY_VERSION = LooseVersion(scipy.version.short_version)
 
 # Let us generate some data for testing.
 bvals = np.array([0., 10., 20., 30., 40., 60., 80., 100.,
-                  120., 140., 160., 180., 200., 220., 240.,
-                  260., 280., 300., 350., 400., 500., 600.,
-                  700., 800., 900., 1000.])
+                  120., 140., 160., 180., 200., 300., 400.,
+                  500., 600., 700., 800., 900., 1000.])
 N = len(bvals)
 bvecs = generate_bvecs(N)
 gtab = gradient_table(bvals, bvecs.T)
@@ -53,7 +52,7 @@ ivim_params[0, 0, 0] = ivim_params[0, 1, 0] = params
 ivim_params[1, 0, 0] = ivim_params[1, 1, 0] = params
 
 ivim_model = IvimModel(gtab)
-ivim_model_one_stage = IvimModel(gtab, method='one_stage')
+ivim_model_one_stage = IvimModel(gtab)
 ivim_fit_single = ivim_model.fit(data_single)
 ivim_fit_multi = ivim_model.fit(data_multi)
 
@@ -61,47 +60,25 @@ ivim_fit_single_one_stage = ivim_model_one_stage.fit(data_single)
 ivim_fit_multi_one_stage = ivim_model_one_stage.fit(data_multi)
 
 bvals_no_b0 = np.array([5., 10., 20., 30., 40., 60., 80., 100.,
-                        120., 140., 160., 180., 200., 220., 240.,
-                        260., 280., 300., 350., 400., 500., 600.,
-                        700., 800., 900., 1000.])
+                        120., 140., 160., 180., 200., 300., 400.,
+                        500., 600., 700., 800., 900., 1000.])
+
 bvecs_no_b0 = generate_bvecs(N)
 gtab_no_b0 = gradient_table(bvals_no_b0, bvecs.T)
 
-bvals_with_multiple_b0 = np.array([0., 0., 0., 30., 40., 60., 80., 100.,
-                                   120., 140., 160., 180., 200., 220., 240.,
-                                   260., 280., 300., 350., 400., 500., 600.,
-                                   700., 800., 900., 1000.])
+bvals_with_multiple_b0 = np.array([0., 0., 0., 0., 40., 60., 80., 100.,
+                                   120., 140., 160., 180., 200., 300., 400.,
+                                   500., 600., 700., 800., 900., 1000.])
+
 bvecs_with_multiple_b0 = generate_bvecs(N)
 gtab_with_multiple_b0 = gradient_table(bvals_with_multiple_b0,
                                        bvecs_with_multiple_b0.T)
 
-
-def test_fit_S0():
-    """
-    Test if the fit returns the correct S0 value using 'one_stage' fitting.
-    """
-    assert_array_almost_equal(S0, ivim_fit_single_one_stage.S0_predicted)
-
-
-def test_fit_f():
-    """
-    Test if the fit returns the correct f value using 'one_stage' fitting.
-    """
-    assert_array_almost_equal(f, ivim_fit_single_one_stage.perfusion_fraction)
-
-
-def test_fit_D_star():
-    """
-    Test if the fit returns the correct D_star value using 'one_stage' fitting.
-    """
-    assert_array_almost_equal(D_star, ivim_fit_single_one_stage.D_star)
-
-
-def test_fit_D():
-    """
-    Test if the fit returns the correct D value using 'one_stage' fitting.
-    """
-    assert_array_almost_equal(D, ivim_fit_single_one_stage.D)
+noisy_signal = np.array([4039.98461914, 3967.88574219, 4192.35644531, 3909.28857422, 3916.56469727,
+                         3875.01293945, 3946.50634766, 3663.37792969, 3614.78369141, 3713.06665039,
+                         3524.47973633, 3346.48144531, 3526.36865234, 3192.51074219, 2902.75268555,
+                         2735.64648438, 2567.65356445, 2307.39135742, 2215.7043457, 2144.99829102,
+                         2069.71655273])
 
 
 def test_single_voxel_fit():
@@ -234,8 +211,7 @@ def test_bounds_x0():
                             4299.99414062, 4256.61279297, 4254.50292969,
                             4098.74707031, 3776.10375977, 3614.0769043,
                             3440.56445312, 3146.52294922, 3006.94287109,
-                            2879.69580078, 2728.44018555, 2600.09472656,
-                            2570., 2440., 2400., 2380., 2370.])
+                            2879.69580078, 2728.44018555, 2600.09472656])
     x0_test = np.array([1., 0.13, 0.001, 0.0001])
     test_signal = ivim_prediction(x0_test, gtab)
 
@@ -308,6 +284,16 @@ def test_multiple_b0():
 
 def test_no_b0():
     assert_raises(ValueError, IvimModel, gtab_no_b0)
+
+
+def test_noisy_fit():
+    """
+    Test fitting for noisy signals
+    """
+    model_one_stage = IvimModel(gtab)
+    fit_one_stage = model_one_stage.fit(noisy_signal)
+
+    assert_array_less(fit_one_stage.model_params, [10000., 0.3, .01, 0.001])
 
 
 if __name__ == '__main__':
