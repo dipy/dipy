@@ -1311,6 +1311,7 @@ class FileSelect2D(UI):
         ----------
         ren : renderer
         """
+        ren.add(self.menu.panel)
         for text_actor in self.text_actor_list:
             ren.add(text_actor.actor)
 
@@ -1328,14 +1329,14 @@ class FileSelect2D(UI):
         self.n_text_actors = int(self.size[1]/(self.font_size*line_spacing))  # The number of text actors.
 
         # This panel is just to facilitate the addition of actors at the right positions
-        panel = Panel2D(center=position, size=self.size, opacity=0)
+        panel = Panel2D(center=position, size=self.size)
 
         # Initialisation of empty text actors
         for i in range(self.n_text_actors):
             text = FolderSelectText2D(position=(0, 0), font_size=self.font_size, file_select=self)
             self.ui_list.append(text)
             self.text_actor_list.append(text)
-            panel.add_element(text.actor, (0.1, float(i)/float(self.n_text_actors)))
+            panel.add_element(text.actor, (0.1, float(self.n_text_actors-i - 1)/float(self.n_text_actors)))
 
         return panel
 
@@ -1355,7 +1356,6 @@ class FileSelect2D(UI):
             all_file_names.append((file_name, "file"))
 
         clipped_file_names = all_file_names[:self.n_text_actors]
-        clipped_file_names = clipped_file_names[::-1]
 
         # Allot file names as in the above list
         i = 0
@@ -1391,7 +1391,6 @@ class FileSelect2D(UI):
 
     def select_file(self, file_name):
         self.selected_file = file_name
-        print file_name
 
 
 class FolderSelectText2D(UI):
