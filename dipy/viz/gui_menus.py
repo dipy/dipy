@@ -303,6 +303,7 @@ class FolderSelectText2D(UI):
             self.file_select.select_file(file_name="")
             if isinstance(self.parent_UI, FileSaveMenu):
                 self.parent_UI.handle_folder_change()
+                self.parent_UI.handle_file_click(file_name="FileName")
         else:
             self.file_select.select_file(file_name=self.file_name)
             if isinstance(self.parent_UI, FileSaveMenu):
