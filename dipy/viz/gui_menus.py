@@ -1,11 +1,12 @@
 import glob
 import os
 
+from dipy.data import read_viz_icons
 from dipy.utils.optpkg import optional_package
 
 # Allow import, but disable doctests if we don't have vtk.
 from dipy.viz.gui import UI, TextActor2D
-from dipy.viz.gui_2d import Panel2D, Text2D, TextBox2D
+from dipy.viz.gui_2d import Panel2D, Text2D, TextBox2D, Button2D
 
 vtk, have_vtk, setup_module = optional_package('vtk')
 
@@ -37,6 +38,8 @@ class FileSaveMenu(UI):
         self.file_select = FileSelect2D(size=(self.size[0] * 0.9, self.size[1] * 0.6), font_size=12, position=(0, 0),
                                         parent=self)
         self.text_box = TextBox2D(width=20, height=1, text="FileName")
+        self.save_button = Button2D({"save": read_viz_icons(fname="floppy-disk.png")})
+        self.cancel_button = Button2D({"cancel": read_viz_icons(fname="cross.png")})
 
         self.build()
 
@@ -49,13 +52,26 @@ class FileSaveMenu(UI):
         """
         self.panel.add_to_renderer(ren)
 
-    def build(self):
-        # Needs the following
-        # 2 buttons for save and close
+    def add_callback(self, event_type, callback, component):
+        """ Adds events to an actor.
 
+        Parameters
+        ----------
+        event_type : string
+            event code
+        callback : function
+            callback function
+        component : UI
+            component
+        """
+        super(FileSaveMenu, self).add_callback(component.actor, event_type, callback)
+
+    def build(self):
         self.panel.add_element(element=self.title, relative_position=(0.05, 0.9))
         self.panel.add_element(element=self.file_select, relative_position=(0.5, 0.5))
-        self.panel.add_element(element=self.text_box, relative_position=(0.05, 0.05))
+        self.panel.add_element(element=self.text_box, relative_position=(0.05, 0.075))
+        self.panel.add_element(element=self.save_button, relative_position=(0.75, 0.1))
+        self.panel.add_element(element=self.cancel_button, relative_position=(0.9, 0.1))
 
     def handle_folder_change(self):
         self.title.set_message(os.getcwd())
