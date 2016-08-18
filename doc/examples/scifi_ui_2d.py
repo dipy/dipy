@@ -10,6 +10,7 @@ from ipdb import set_trace
 
 # Allow import, but disable doctests if we don't have vtk.
 from dipy.viz.gui_2d import FileSelect2D
+from dipy.viz.gui_menus import FileSaveMenu
 
 vtk, have_vtk, setup_module = optional_package('vtk')
 
@@ -208,19 +209,20 @@ panel.add_callback("MouseMoveEvent", panel_move_callback, panel.panel)
 
 # /Panel
 
-# File Menu
+# File Dialog
 
-file_menu = FileSelect2D(size=(200, 300), font_size=12, position=(200, 300))
+# file_menu = FileSelect2D(size=(200, 300), font_size=12, position=(200, 300))
+file_dialog = FileSaveMenu(size=(300, 300), position=(300, 300))
 
-# /File Menu
+# /File Dialog
 
 # Initialize and add to renderer
 renderer = window.ren()
 
-renderer.add(panel)
+# renderer.add(panel)
 renderer.add(cube_actor_1)
 renderer.add(cube_actor_2)
-renderer.add(file_menu)
+renderer.add(file_dialog)
 # /Renderer
 
 # Show Manager

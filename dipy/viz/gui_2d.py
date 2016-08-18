@@ -1286,6 +1286,87 @@ class DiskSlider2DText(UI):
         self.actor.SetPosition(position[0]-16, position[1]-8)
 
 
+class Text2D(UI):
+    def __init__(self, message):
+        super(Text2D, self).__init__()
+        self.actor = self.build_actor(text=message)
+
+        self.ui_list.append(self)
+
+    def build_actor(self, text, position=(100, 10), color=(1, 1, 1),
+                    font_size=12, font_family='Arial', justification='left',
+                    bold=False, italic=False, shadow=False):
+
+        """ Builds a text actor.
+
+        Parameters
+        ----------
+        text : string
+            The initial text while building the actor.
+        position : (float, float)
+        color : (float, float, float)
+            Values must be between 0-1.
+        font_size : int
+        font_family : string
+            Currently only supports Ariel.
+        justification : string
+            left, right or center.
+        bold : bool
+        italic : bool
+        shadow : bool
+
+        Returns
+        -------
+        text_actor : actor2d
+
+        """
+        text_actor = TextActor2D()
+        text_actor.set_position(position)
+        text_actor.message(text)
+        text_actor.font_size(font_size)
+        text_actor.font_family(font_family)
+        text_actor.justification(justification)
+        text_actor.font_style(bold, italic, shadow)
+        text_actor.color(color)
+        # text_actor.GetTextProperty().SetBackgroundColor(0, 1, 1)
+        # text_actor.GetTextProperty().SetBackgroundOpacity(1.0)
+
+        return text_actor
+
+    def set_message(self, message):
+        self.actor.set_message(message)
+
+    def add_to_renderer(self, ren):
+        """ Adds the actor to renderer.
+
+        Parameters
+        ----------
+        ren : renderer
+        """
+        ren.add(self.actor)
+
+    def add_callback(self, event_type, callback):
+        """ Adds events to actor.
+
+        Parameters
+        ----------
+        event_type : string
+            event code
+        callback : function
+            callback function
+        """
+        super(Text2D, self).add_callback(self.actor, event_type, callback)
+
+    def set_center(self, position):
+        """ Sets the text center to position.
+
+        Parameters
+        ----------
+        position : (float, float)
+        """
+        self.actor.SetPosition(position)
+
+
 class FileSelect2D(UI):
     """ A menu to select files in the current folder.
     Can go to new folder, previous folder and select a file and keep in a variable.
@@ -1311,6 +1392,7 @@ class FileSelect2D(UI):
         ----------
         ren : renderer
         """
+        # TODO: Fix this, use self.ui_list
         ren.add(self.menu.panel)
         for text_actor in self.text_actor_list:
             ren.add(text_actor.actor)
@@ -1329,7 +1411,8 @@ class FileSelect2D(UI):
         self.n_text_actors = int(self.size[1]/(self.font_size*line_spacing))  # The number of text actors.
 
         # This panel is just to facilitate the addition of actors at the right positions
-        panel = Panel2D(center=position, size=self.size)
+        panel = Panel2D(center=position, size=self.size, color=(1, 1, 1))  # TODO: Somehow add to self.ui_list
+        self.ui_list.append(panel.panel)
 
         # Initialisation of empty text actors
         for i in range(self.n_text_actors):
@@ -1391,6 +1474,9 @@ class FileSelect2D(UI):
 
     def select_file(self, file_name):
         self.selected_file = file_name
+
+    def set_center(self, position):
+        self.menu.set_center(position=position)
 
 
 class FolderSelectText2D(UI):
@@ -1466,7 +1552,7 @@ class FolderSelectText2D(UI):
         ren.add(self.actor)
 
     def add_callback(self, event_type, callback):
-        """ Adds events to button actor.
+        """ Adds events to actor.
 
         Parameters
         ----------
