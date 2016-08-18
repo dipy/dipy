@@ -1295,11 +1295,14 @@ class FileSelect2D(UI):
         super(FileSelect2D, self).__init__()
         self.size = size
         self.font_size = font_size
-        self.n_text_actors = 0  # Initialisation Value
 
+        self.n_text_actors = 0  # Initialisation Value
         self.text_actor_list = []
+        self.selected_file = ""
 
         self.menu = self.build_actors(position)
+
+        self.fill_text_actors()
 
     def add_to_renderer(self, ren):
         """ Add props to renderer
@@ -1320,7 +1323,7 @@ class FileSelect2D(UI):
         ----------
         position: (float, float)
         """
-        line_spacing = 1.1  # Later, we'll have the user set it
+        line_spacing = 1.4  # Later, we'll have the user set it
 
         self.n_text_actors = int(self.size[1]/(self.font_size*line_spacing))  # The number of text actors.
 
@@ -1336,28 +1339,59 @@ class FileSelect2D(UI):
 
         return panel
 
-    def allot_file_names(self):
-        """ Re-allots file names to the text actors.
-        Uses FileSelectText2D and FolderSelectText2D for selecting files and folders.
-        """
-        # A list of file names in the current directory
-        file_names = ["../"]
-        file_names += glob.glob("*/")
-
+    def fill_text_actors(self):
         # Flush all the text actors
         for text_actor in self.text_actor_list:
             text_actor.actor.set_message("")
 
-        # Allot file names as in the above list
-        i = len(file_names) - 1
+        all_file_names = []
+
+        directory_names = self.get_directory_names()
+        for directory_name in directory_names:
+            all_file_names.append((directory_name, "directory"))
+
+        file_names = self.get_file_names("png")
         for file_name in file_names:
-            if i < 0:
-                break
-            if i >= self.n_text_actors:
-                i -= 1
-            else:
-                self.text_actor_list[i].actor.set_message(file_name)
-            i -= 1
+            all_file_names.append((file_name, "file"))
+
+        clipped_file_names = all_file_names[:self.n_text_actors]
+        clipped_file_names = clipped_file_names[::-1]
+
+        # Allot file names as in the above list
+        i = 0
+        for file_name in clipped_file_names:
+            self.text_actor_list[i].set_attributes(file_name[0], file_name[1])
+            i += 1
+
+    @staticmethod
+    def get_directory_names():
+        """ Re-allots file names to the text actors.
+        Uses FileSelectText2D and FolderSelectText2D for selecting files and folders.
+        """
+        # A list of directory names in the current directory
+        directory_names = ["../"]
+        directory_names += glob.glob("*/")
+
+        return directory_names
+
+    @staticmethod
+    def get_file_names(extension):
+        """ Re-allots file names to the text actors.
+        Uses FileSelectText2D and FolderSelectText2D for selecting files and folders.
+
+        Parameters
+        ----------
+        extension: string
+            Examples: png, jpg, etc.
+        """
+        # A list of file names with extension in the current directory
+        file_names = glob.glob("*." + extension)
+
+        return file_names
+
+    def select_file(self, file_name):
+        self.selected_file = file_name
+        print file_name
 
 
 class FolderSelectText2D(UI):
@@ -1375,6 +1409,10 @@ class FolderSelectText2D(UI):
         file_select: FileSelect2D
         """
         super(FolderSelectText2D, self).__init__()
+
+        self.file_name = ""
+        self.file_type = ""
+
         self.file_select = file_select
         self.actor = self.build_actor(position=position, font_size=font_size)
         self.add_callback("LeftButtonPressEvent", self.click_callback)
@@ -1415,6 +1453,7 @@ class FolderSelectText2D(UI):
         text_actor.GetTextProperty().SetBackgroundColor(1, 1, 1)
         text_actor.GetTextProperty().SetBackgroundOpacity(1.0)
         text_actor.GetTextProperty().SetColor(0, 0, 0)
+        text_actor.GetTextProperty().SetLineSpacing(1)
 
         return text_actor
 
@@ -1439,6 +1478,17 @@ class FolderSelectText2D(UI):
         """
         super(FolderSelectText2D, self).add_callback(self.actor, event_type, callback)
 
+    def set_attributes(self, file_name, file_type):
+        self.file_name = file_name
+        self.file_type = file_type
+        self.actor.set_message(file_name)
+        if file_type == "file":
+            self.actor.GetTextProperty().SetBackgroundColor(0, 0, 0)
+            self.actor.GetTextProperty().SetColor(1, 1, 1)
+        else:
+            self.actor.GetTextProperty().SetBackgroundColor(1, 1, 1)
+            self.actor.GetTextProperty().SetColor(0, 0, 0)
+
     def click_callback(self, obj, evt):
         """ A callback to handle click for this UI element
 
@@ -1451,7 +1501,11 @@ class FolderSelectText2D(UI):
         -------
 
         """
-        os.chdir(self.actor.get_message())
-        self.file_select.allot_file_names()
+        if self.file_type == "directory":
+            os.chdir(self.actor.get_message())
+            self.file_select.fill_text_actors()
+            self.file_select.select_file(file_name="")
+        else:
+            self.file_select.select_file(file_name=self.file_name)
 
         return False
