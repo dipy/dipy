@@ -324,7 +324,7 @@ class IvimModel(ReconstModel):
                 warningMsg = "x0 obtained from linear fitting is unfeasibile."
                 warningMsg += "Using parameters from the linear fitting"
                 warnings.warn(warningMsg, UserWarning)
-                f, D_star = f_guess, D_star_prime
+                f, D_star = x0[1], x0[2]
                 return f, D_star
         else:
             try:
@@ -342,7 +342,7 @@ class IvimModel(ReconstModel):
                 warningMsg = "x0 obtained from linear fitting is unfeasibile."
                 warningMsg += "Using parameters from the linear fitting"
                 warnings.warn(warningMsg, UserWarning)
-                f, D_star = f_guess, D_star_prime
+                f, D_star = x0[1], x0[2]
                 return f, D_star
 
     def predict(self, ivim_params, gtab, S0=1.):
