@@ -222,6 +222,8 @@ def cancel_callback(obj, evt):
 
 file_dialog.add_callback("LeftButtonPressEvent", save_callback, file_dialog.save_button)
 file_dialog.add_callback("LeftButtonPressEvent", cancel_callback, file_dialog.cancel_button)
+file_dialog.text_box.add_callback("KeyPressEvent", key_press_callback)
+file_dialog.text_box.add_callback("LeftButtonPressEvent", select_text_callback)
 
 # /File Dialog
 
