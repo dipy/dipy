@@ -23,10 +23,10 @@ def ivim_prediction(params, gtab, S0=1.):
     Parameters
     ----------
     params : array
-        An array of IVIM parameters - [S0, f, D_star, D]
+        An array of IVIM parameters - [S0, f, D_star, D].
 
     gtab : GradientTable class instance
-        Gradient directions and bvalues
+        Gradient directions and bvalues.
 
     S0 : float, optional
         This has been added just for consistency with the existing
@@ -45,7 +45,7 @@ def _ivim_error(params, gtab, signal):
     Parameters
     ----------
     params : array
-        An array of IVIM parameters. [S0, f, D_star, D]
+        An array of IVIM parameters - [S0, f, D_star, D]
 
     gtab : GradientTable class instance
         Gradient directions and bvalues.
@@ -57,22 +57,19 @@ def _ivim_error(params, gtab, signal):
 
 
 def f_D_star_prediction(params, gtab, x0):
-    """Function used to predict f and D_star when S0 and D are known.
-
-    This restricts the value of 'f' and 'D_star' to physically feasible
-    solutions since a direct fitting leads to 'f' jumping to very high
-    values and 'D_star' vanishing.
+    """Function used to predict IVIM signal when S0 and D are known
+    by considering f and D_star as the unknown parameters.
 
     Parameters
     ----------
     params : array, dtype=float
-        An array containg the values of f and D_star.
+        An array containing the values of f and D_star.
 
     gtab : GradientTable class instance
         Gradient directions and bvalues.
 
-    other_params : array, dtype=float
-        The parameters S0 and D which are obtained from a linear fit.
+    x0 : array, dtype=float
+        The parameters - [S0, f, D_star, D] obtained by a linear fit.
     """
     f, D_star = params
     S0, D = x0[0], x0[3]
@@ -95,12 +92,10 @@ def f_D_star_error(params, gtab, signal, x0):
     signal : array
         Array containing the actual signal values.
 
-    other_params : array
-        The parameters S0 and D which are fixed and obtained from a linear fit.
+    x0 : array, dtype=float
+        The parameters - [S0, f, D_star, D] obtained by a linear fit.
     """
     f, D_star = params
-    S0, D = x0[0], x0[3]
-
     return signal - f_D_star_prediction([f, D_star], gtab, x0)
 
 
@@ -109,7 +104,7 @@ class IvimModel(ReconstModel):
     """
 
     def __init__(self, gtab, split_b_D=400.0, split_b_S0=200., bounds=None,
-                 tol=1e-15, f_threshold = 0.25, x_scale=np.array([1e03, 1e-01, 1e-03, 1e-4]),
+                 tol=1e-15, f_threshold=0.25, x_scale=np.array([1e03, 1e-01, 1e-03, 1e-4]),
                  options={'gtol': 1e-15, 'ftol': 1e-15,
                           'eps': 1e-15, 'maxiter': 1000}):
         """
@@ -164,6 +159,7 @@ class IvimModel(ReconstModel):
             fitting. If the value of f obtained crosses this threshold the
             parameters will be taken from the linear fits.
             default : .25
+
         x_scale : array, optional
             Scaling for the parameters. This is passed to `least_squares` which is
             only available for Scipy version > 0.17.
@@ -239,9 +235,10 @@ class IvimModel(ReconstModel):
         IvimFit object
         """
         # Get S0_prime and D.
-        S0_prime, D = self.estimate_S0_prime_D(data)
+        S0_prime, D = self.estimate_linear_fit(data, self.split_b_D, lesser=False)
         # Get S0 and D_star_prime.
-        S0, D_star_prime = self.estimate_S0_D_star_prime(data)
+        S0, D_star_prime = self.estimate_linear_fit(data, self.split_b_S0,
+                                                    lesser=True)
         # Estimate f
         f_guess = 1 - S0_prime / S0
         x0_guess = np.array([S0, f_guess, D_star_prime, D])
@@ -257,28 +254,41 @@ class IvimModel(ReconstModel):
 
         return IvimFit(self, params)
 
-    def estimate_S0_prime_D(self, data):
-        """Estimate S0_prime and D for bvals > split_b_D
+    def estimate_linear_fit(self, data, split_b, lesser=True):
+        """Estimate a linear fit by taking log of data.
+
+        Parameters
+        ----------
+        data : array
+            An array containing the data to be fit
+
+        split_b : float
+            The b value to split the data
+
+        lesser : bool
+            If True, splitting occurs for bvalues less than split_b
+
+        Returns
+        -------
+        S0 : float
+            The estimated S0 value. (intercept)
+
+        D : float
+            The estimated value of D.
         """
-        bvals_ge_split = self.gtab.bvals[self.gtab.bvals >= self.split_b_D]
-
-        D, neg_log_S0 = np.polyfit(bvals_ge_split,
-                                   -np.log(data[self.gtab.bvals >=
-                                                self.split_b_D]), 1)
-        S0_prime = np.exp(-neg_log_S0)
-        return S0_prime, D
-
-    def estimate_S0_D_star_prime(self, data):
-        """Estimate S0 and D_star_prime for bvals < split_b_S0
-        """
-        bvals_le_split = self.gtab.bvals[self.gtab.bvals < self.split_b_S0]
-
-        D_star_prime, neg_log_S0 = np.polyfit(bvals_le_split,
-                                              -np.log(data[self.gtab.bvals <
-                                                           self.split_b_S0]), 1)
+        if lesser:
+            bvals_split = self.gtab.bvals[self.gtab.bvals <= split_b]
+            D, neg_log_S0 = np.polyfit(bvals_split,
+                                       -np.log(data[self.gtab.bvals <=
+                                                    split_b]), 1)
+        else:
+            bvals_split = self.gtab.bvals[self.gtab.bvals >= split_b]
+            D, neg_log_S0 = np.polyfit(bvals_split,
+                                       -np.log(data[self.gtab.bvals >=
+                                                    split_b]), 1)
 
         S0 = np.exp(-neg_log_S0)
-        return S0, D_star_prime
+        return S0, D
 
     def estimate_f_D_star(self, data, x0):
         """Estimate D_star using the values of all the other parameters obtained before
