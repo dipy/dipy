@@ -154,7 +154,8 @@ class FileSelect2D(UI):
         for file_name in file_names:
             all_file_names.append((file_name, "file"))
 
-        clipped_file_names = all_file_names[:self.n_text_actors]
+        window = 0
+        clipped_file_names = all_file_names[window:self.n_text_actors+window]
 
         # Allot file names as in the above list
         i = 0

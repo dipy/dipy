@@ -297,7 +297,12 @@ class TextBox2D(UI):
         ----------
         message: string
         """
+        self.text = message
         self.actor.set_message(message)
+        self.init = False
+        self.window_right = len(self.text)
+        self.window_left = 0
+        self.caret_pos = self.window_right
 
     def build_actor(self, text, position=(100, 10), color=(1, 1, 1),
                     font_size=18, font_family='Arial', justification='left',
