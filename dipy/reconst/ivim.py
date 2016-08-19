@@ -137,11 +137,10 @@ class IvimModel(ReconstModel):
         Initialize an IVIM model.
 
         The IVIM model assumes that biological tissue includes a volume
-        fraction 'f' of water flowing in perfused capillaries, with a
-        perfusion coefficient D* and a fraction (1-f) of static (diffusion
-        only), intra and extracellular water, with a diffusion coefficient
-        D. In this model the echo attenuation of a signal in a single voxel
-        can be written as
+        fraction 'f' of water flowing with a pseudo-perfusion coefficient
+        D* and a fraction (1-f) of static (diffusion only), intra and
+        extracellular water, with a diffusion coefficient D. In this model
+        the echo attenuation of a signal in a single voxel can be written as
 
             .. math::
 
@@ -181,7 +180,7 @@ class IvimModel(ReconstModel):
             default : 1e-15
 
         f_threshold : float, optional
-            Threshold value to consider for f being erroneous after leastsq
+            Threshold value to consider for f being erroneous after non-linear
             fitting. If the value of f obtained crosses this threshold the
             parameters will be taken from the linear fits.
             default : 0.25
@@ -234,16 +233,16 @@ class IvimModel(ReconstModel):
         """ Fit method of the Ivim model class.
 
         The fitting takes place in the following steps: Linear fitting for D
-        (bvals > 200) and store S0_prime. Another linear fit for S0 (bvals <
-        200).Estimate f using 1 - S0_prime/S0. Use least squares to fit D_star
-        and f.
+        (bvals > `split_b_D` (default: 400)) and store S0_prime. Another linear
+        fit for S0 (bvals < split_b_S0 (default: 200)). Estimate f using
+        1 - S0_prime/S0. Use non-linear least squares to fit D_star and f.
 
-        We do a final fitting of all four parameters and select the set of
-        parameters which make sense physically. The criteria for selecting a
-        particular set of parameters is checking the perfusion fraction.
+        We do a final non-linear fitting of all four parameters and select the
+        set of parameters which make sense physically. The criteria for selecting a
+        particular set of parameters is checking the pseudo-perfusion fraction.
         If the fraction is more than `f_threshold` (default: 25%), we will
-        reject the solution obtained from least squares fitting and consider
-        only the linear fit.
+        reject the solution obtained from non-linear least squares fitting and
+        consider only the linear fit.
 
 
         Parameters
@@ -261,9 +260,11 @@ class IvimModel(ReconstModel):
         -------
         IvimFit object
         """
-        # Get S0_prime and D.
+        # Get S0_prime and D - paramters assuming a single exponential decay for
+        # for signals for bvals greater than `split_b_D`
         S0_prime, D = self.estimate_linear_fit(data, self.split_b_D, less_than=False)
-        # Get S0 and D_star_prime.
+        # Get S0 and D_star_prime - paramters assuming a single exponential decay for
+        # for signals for bvals greater than `split_b_S0`.
         S0, D_star_prime = self.estimate_linear_fit(data, self.split_b_S0,
                                                     less_than=True)
         # Estimate f
@@ -319,7 +320,8 @@ class IvimModel(ReconstModel):
         return S0, D
 
     def estimate_f_D_star(self, params_f_D, data, S0, D):
-        """Estimate D_star using the values of all the other parameters obtained before
+        """Estimate f and D_star using the values of all the other parameters
+        obtained from a linear fit.
 
         Parameters
         ----------
@@ -396,6 +398,14 @@ class IvimModel(ReconstModel):
         ----------
         ivim_params : array
             The ivim parameters as an array [S0, f, D_star and D]
+
+        gtab : GradientTable class instance
+            Gradient directions and bvalues.
+
+        S0 : float, optional
+            This has been added just for consistency with the existing
+            API. Unlike other models, IVIM predicts S0 and this is over written
+            by the S0 value in params.
 
         Returns
         -------
