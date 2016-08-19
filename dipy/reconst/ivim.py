@@ -32,6 +32,11 @@ def ivim_prediction(params, gtab, S0=1.):
         This has been added just for consistency with the existing
         API. Unlike other models, IVIM predicts S0 and this is over written
         by the S0 value in params.
+
+    Returns
+    -------
+    S : array
+        An array containing the IVIM signal estimated using given parameters.
     """
     S0, f, D_star, D = params
     b = gtab.bvals
@@ -52,33 +57,46 @@ def _ivim_error(params, gtab, signal):
 
     signal : array
         Array containing the actual signal values.
+
+    Returns
+    -------
+    residual : array
+        An array containing the difference between actual and estimated signal.
     """
-    return signal - ivim_prediction(params, gtab)
+    residual = signal - ivim_prediction(params, gtab)
+    return residual
 
 
-def f_D_star_prediction(params, gtab, x0):
+def f_D_star_prediction(params, gtab, S0, D):
     """Function used to predict IVIM signal when S0 and D are known
     by considering f and D_star as the unknown parameters.
 
     Parameters
     ----------
-    params : array, dtype=float
-        An array containing the values of f and D_star.
+    params : array
+        The value of f and D_star.
 
     gtab : GradientTable class instance
         Gradient directions and bvalues.
 
-    x0 : array, dtype=float
-        The parameters - [S0, f, D_star, D] obtained by a linear fit.
+    S0 : float
+        The parameters S0 obtained from a linear fit.
+
+    D : float
+        The parameters D obtained from a linear fit.
+
+    Returns
+    -------
+    S : array
+        An array containing the IVIM signal estimated using given parameters.
     """
     f, D_star = params
-    S0, D = x0[0], x0[3]
     b = gtab.bvals
     S = S0 * (f * np.exp(-b * D_star) + (1 - f) * np.exp(-b * D))
     return S
 
 
-def f_D_star_error(params, gtab, signal, x0):
+def f_D_star_error(params, gtab, signal, S0, D):
     """Error function used to fit f and D_star keeping S0 and D fixed
 
     Parameters
@@ -92,11 +110,19 @@ def f_D_star_error(params, gtab, signal, x0):
     signal : array
         Array containing the actual signal values.
 
-    x0 : array, dtype=float
-        The parameters - [S0, f, D_star, D] obtained by a linear fit.
+    S0 : float
+        The parameters S0 obtained from a linear fit.
+
+    D : float
+        The parameters D obtained from a linear fit.
+
+    Returns
+    -------
+    residual : array
+        An array containing the difference of actual and estimated signal.
     """
     f, D_star = params
-    return signal - f_D_star_prediction([f, D_star], gtab, x0)
+    return signal - f_D_star_prediction([f, D_star], gtab, S0, D)
 
 
 class IvimModel(ReconstModel):
@@ -104,7 +130,7 @@ class IvimModel(ReconstModel):
     """
 
     def __init__(self, gtab, split_b_D=400.0, split_b_S0=200., bounds=None,
-                 tol=1e-15, f_threshold=0.25, x_scale=np.array([1e03, 1e-01, 1e-03, 1e-4]),
+                 tol=1e-15, f_threshold=0.25, x_scale=[1000., 0.1, 0.001, 0.0001],
                  options={'gtol': 1e-15, 'ftol': 1e-15,
                           'eps': 1e-15, 'maxiter': 1000}):
         """
@@ -158,17 +184,17 @@ class IvimModel(ReconstModel):
             Threshold value to consider for f being erroneous after leastsq
             fitting. If the value of f obtained crosses this threshold the
             parameters will be taken from the linear fits.
-            default : .25
+            default : 0.25
 
         x_scale : array, optional
             Scaling for the parameters. This is passed to `least_squares` which is
             only available for Scipy version > 0.17.
-            default: [1e03, 1e-01, 1e-03, 1e-4]
+            default: [1000, 0.01, 0.001, 0.0001]
 
         options : dict, optional
             Dictionary containing gtol, ftol, eps and maxiter. This is passed
             to leastsq.
-            default : options={'gtol': 1e-7, 'ftol': 1e-7, 'eps': 1e-7,
+            default : options={'gtol': 1e-15, 'ftol': 1e-15, 'eps': 1e-15,
                       'maxiter': 1000}
 
         References
@@ -235,15 +261,16 @@ class IvimModel(ReconstModel):
         IvimFit object
         """
         # Get S0_prime and D.
-        S0_prime, D = self.estimate_linear_fit(data, self.split_b_D, lesser=False)
+        S0_prime, D = self.estimate_linear_fit(data, self.split_b_D, less_than=False)
         # Get S0 and D_star_prime.
         S0, D_star_prime = self.estimate_linear_fit(data, self.split_b_S0,
-                                                    lesser=True)
+                                                    less_than=True)
         # Estimate f
         f_guess = 1 - S0_prime / S0
-        x0_guess = np.array([S0, f_guess, D_star_prime, D])
+
         # Fit f and D_star using leastsq.
-        f, D_star = self.estimate_f_D_star(data, x0_guess)
+        params_f_D = [f_guess, D_star_prime]
+        f, D_star = self.estimate_f_D_star(params_f_D, data, S0, D)
 
         x0 = np.array([S0, f, D_star, D])
         # Fit parameters again with scaling
@@ -254,7 +281,7 @@ class IvimModel(ReconstModel):
 
         return IvimFit(self, params)
 
-    def estimate_linear_fit(self, data, split_b, lesser=True):
+    def estimate_linear_fit(self, data, split_b, less_than=True):
         """Estimate a linear fit by taking log of data.
 
         Parameters
@@ -265,7 +292,7 @@ class IvimModel(ReconstModel):
         split_b : float
             The b value to split the data
 
-        lesser : bool
+        less_than : bool
             If True, splitting occurs for bvalues less than split_b
 
         Returns
@@ -276,7 +303,7 @@ class IvimModel(ReconstModel):
         D : float
             The estimated value of D.
         """
-        if lesser:
+        if less_than:
             bvals_split = self.gtab.bvals[self.gtab.bvals <= split_b]
             D, neg_log_S0 = np.polyfit(bvals_split,
                                        -np.log(data[self.gtab.bvals <=
@@ -290,8 +317,29 @@ class IvimModel(ReconstModel):
         S0 = np.exp(-neg_log_S0)
         return S0, D
 
-    def estimate_f_D_star(self, data, x0):
+    def estimate_f_D_star(self, params_f_D, data, S0, D):
         """Estimate D_star using the values of all the other parameters obtained before
+
+        Parameters
+        ----------
+        params_f_D : array
+            An array containing the value of f and D_star.
+
+        data : array
+            Array containing the actual signal values.
+
+        S0 : float
+            The parameters S0 obtained from a linear fit.
+
+        D : float
+            The parameters D obtained from a linear fit.
+
+        Returns
+        -------
+        f : float
+           Perfusion fraction estimated from the fit.
+        D_star :
+            The value of D_star estimated from the fit.
         """
         gtol = self.options["gtol"]
         ftol = self.options["ftol"]
@@ -302,8 +350,8 @@ class IvimModel(ReconstModel):
         if SCIPY_LESS_0_17:
             try:
                 res = leastsq(f_D_star_error,
-                              [x0[2], 10 * x0[3]],
-                              args=(self.gtab, data, x0),
+                              params_f_D,
+                              args=(self.gtab, data, S0, D),
                               gtol=gtol,
                               xtol=xtol,
                               ftol=ftol,
@@ -316,14 +364,14 @@ class IvimModel(ReconstModel):
                 warningMsg += "initial guess for leastsq. Using parameters from "
                 warningMsg += "the linear fit."
                 warnings.warn(warningMsg, UserWarning)
-                f, D_star = x0[1], x0[2]
+                f, D_star = params_f_D
                 return f, D_star
         else:
             try:
                 res = least_squares(f_D_star_error,
-                                    [x0[2], 10 * x0[3]],
+                                    params_f_D,
                                     bounds=((0., 0.), (self.bounds[1][1], self.bounds[1][2])),
-                                    args=(self.gtab, data, x0),
+                                    args=(self.gtab, data, S0, D),
                                     ftol=ftol,
                                     xtol=xtol,
                                     gtol=gtol,
@@ -336,7 +384,7 @@ class IvimModel(ReconstModel):
                 warningMsg += "f and D_star. Using parameters from the "
                 warningMsg += "linear fit."
                 warnings.warn(warningMsg, UserWarning)
-                f, D_star = x0[1], x0[2]
+                f, D_star = params_f_D
                 return f, D_star
 
     def predict(self, ivim_params, gtab, S0=1.):
@@ -370,7 +418,12 @@ class IvimModel(ReconstModel):
 
         x0 : array
             Initial guesses for the parameters S0, f, D_star and D
-            calculated using the function `estimate_x0`
+            calculated using a linear fitting.
+
+        Returns
+        -------
+        x0 : array
+            Estimates of the parameters S0, f, D_star and D.
         """
         gtol = self.options["gtol"]
         ftol = self.options["ftol"]
