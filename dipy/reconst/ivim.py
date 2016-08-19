@@ -238,11 +238,11 @@ class IvimModel(ReconstModel):
         200).Estimate f using 1 - S0_prime/S0. Use least squares to fit D_star
         and f.
 
-        We do a final fitting of all four parameters after scaling the
-        parameters and select the set of parameters which make sense physically.
-        The criteria for selecting a particular set of parameters is checking
-        the perfusion fraction. If the fraction is more than 30%, we will reject
-        the solution obtained without scaling.
+        We do a final fitting of all four parameters and select the set of
+        parameters which make sense physically. The criteria for selecting a
+        particular set of parameters is checking the perfusion fraction.
+        If the fraction is more than 25%, we will reject the solution obtained
+        from least squares fitting and consider only the linear fit.
 
 
         Parameters
