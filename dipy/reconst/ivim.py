@@ -241,8 +241,9 @@ class IvimModel(ReconstModel):
         We do a final fitting of all four parameters and select the set of
         parameters which make sense physically. The criteria for selecting a
         particular set of parameters is checking the perfusion fraction.
-        If the fraction is more than 25%, we will reject the solution obtained
-        from least squares fitting and consider only the linear fit.
+        If the fraction is more than `f_threshold` (default: 25%), we will
+        reject the solution obtained from least squares fitting and consider
+        only the linear fit.
 
 
         Parameters
