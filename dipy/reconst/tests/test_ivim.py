@@ -82,6 +82,8 @@ noisy_signal = np.array([4039.98461914, 3967.88574219, 4192.35644531,
                          2735.64648438, 2567.65356445, 2307.39135742,
                          2215.7043457, 2144.99829102, 2069.71655273])
 
+single_exponential = lambda S0, D, bvals: S0 * np.exp(-bvals * D)
+
 
 def test_single_voxel_fit():
     """
@@ -292,12 +294,86 @@ def test_no_b0():
 
 def test_noisy_fit():
     """
-    Test fitting for noisy signals
+    Test fitting for noisy signals. This tests whether the threshold condition
+    applies correctly and returns the linear fitting parameters.
     """
     model_one_stage = IvimModel(gtab)
     fit_one_stage = model_one_stage.fit(noisy_signal)
 
     assert_array_less(fit_one_stage.model_params, [10000., 0.3, .01, 0.001])
+
+
+def test_S0():
+    """
+    Test if the `IvimFit` class returns the correct S0
+    """
+    assert_array_almost_equal(ivim_fit_single.S0_predicted, S0)
+    assert_array_almost_equal(ivim_fit_multi.S0_predicted, ivim_params[..., 0])
+
+
+def test_perfusion_fraction():
+    """
+    Test if the `IvimFit` class returns the correct f
+    """
+    assert_array_almost_equal(ivim_fit_single.perfusion_fraction, f)
+    assert_array_almost_equal(ivim_fit_multi.perfusion_fraction, ivim_params[..., 1])
+
+
+def test_D_star():
+    """
+    Test if the `IvimFit` class returns the correct D_star
+    """
+    assert_array_almost_equal(ivim_fit_single.D_star, D_star)
+    assert_array_almost_equal(ivim_fit_multi.D_star, ivim_params[..., 2])
+
+
+def test_D():
+    """
+    Test if the `IvimFit` class returns the correct D
+    """
+    assert_array_almost_equal(ivim_fit_single.D, D)
+    assert_array_almost_equal(ivim_fit_multi.D, ivim_params[..., 3])
+
+
+def test_estimate_linear_fit():
+    """
+    Test the linear estimates considering a single exponential fit.
+    """
+    data_single_exponential_D = single_exponential(S0, D, gtab.bvals)
+    assert_array_almost_equal(ivim_model.estimate_linear_fit(data_single_exponential_D,
+                                                             split_b=500.,
+                                                             less_than=False),
+                              (S0, D))
+    data_single_exponential_D_star = single_exponential(S0, D_star, gtab.bvals)
+    assert_array_almost_equal(ivim_model.estimate_linear_fit(data_single_exponential_D_star,
+                                                             split_b=100.,
+                                                             less_than=True),
+                              (S0, D_star))
+
+
+def test_estimate_f_D_star():
+    """
+    Test if the `estimate_f_D_star` returns the correct parameters after a non-linear fit.
+    """
+    params_f_D = f + 0.001, D + 0.0001
+    assert_array_almost_equal(ivim_model.estimate_f_D_star(params_f_D,
+                                                           data_single, S0, D),
+                              (f, D_star))
+
+
+def test_x0_unfeasible():
+    """
+    Test to make sure that for unfeasible x0 values, results from the linear
+    fit is returned.
+    """
+    noisy = np.array([4243.71728516, 4317.81298828, 4244.35693359, 4439.36816406, 4420.06201172,
+                      4152.30078125, 4114.34912109, 4104.59375, 4151.61914062, 4003.58374023,
+                      4013.68408203, 3906.39428711, 3909.06079102, 3495.27197266, 3402.57006836,
+                      3163.10180664, 2896.04003906, 2663.7253418, 2614.87695312, 2316.55371094,
+                      2267.7722168])
+    # assert_raises(UserWarning, ivim_model.fit, data_noisy)
+    fit = ivim_model.fit(noisy)
+    pass
 
 
 if __name__ == '__main__':

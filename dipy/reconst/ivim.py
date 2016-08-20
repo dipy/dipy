@@ -271,15 +271,15 @@ class IvimModel(ReconstModel):
         f_guess = 1 - S0_prime / S0
 
         # Fit f and D_star using leastsq.
-        params_f_D = [f_guess, D_star_prime]
-        f, D_star = self.estimate_f_D_star(params_f_D, data, S0, D)
-
+        params_f_D_star = [f_guess, D_star_prime]
+        f, D_star = self.estimate_f_D_star(params_f_D_star, data, S0, D)
         x0 = np.array([S0, f, D_star, D])
         # Fit parameters again with scaling
         params = self._leastsq(data, x0)
-
         if params[1] > self.f_threshold:
             params = x0
+        elif params[1] < 0.:
+            params[1] = 0.
 
         return IvimFit(self, params)
 
@@ -319,13 +319,13 @@ class IvimModel(ReconstModel):
         S0 = np.exp(-neg_log_S0)
         return S0, D
 
-    def estimate_f_D_star(self, params_f_D, data, S0, D):
+    def estimate_f_D_star(self, params_f_D_star, data, S0, D):
         """Estimate f and D_star using the values of all the other parameters
         obtained from a linear fit.
 
         Parameters
         ----------
-        params_f_D : array
+        params_f_D_star: array
             An array containing the value of f and D_star.
 
         data : array
@@ -353,7 +353,7 @@ class IvimModel(ReconstModel):
         if SCIPY_LESS_0_17:
             try:
                 res = leastsq(f_D_star_error,
-                              params_f_D,
+                              params_f_D_star,
                               args=(self.gtab, data, S0, D),
                               gtol=gtol,
                               xtol=xtol,
@@ -372,7 +372,7 @@ class IvimModel(ReconstModel):
         else:
             try:
                 res = least_squares(f_D_star_error,
-                                    params_f_D,
+                                    params_f_D_star,
                                     bounds=((0., 0.), (self.bounds[1][1], self.bounds[1][2])),
                                     args=(self.gtab, data, S0, D),
                                     ftol=ftol,
@@ -387,7 +387,7 @@ class IvimModel(ReconstModel):
                 warningMsg += "f and D_star. Using parameters from the "
                 warningMsg += "linear fit."
                 warnings.warn(warningMsg, UserWarning)
-                f, D_star = params_f_D
+                f, D_star = params_f_D_star
                 return f, D_star
 
     def predict(self, ivim_params, gtab, S0=1.):
@@ -456,10 +456,6 @@ class IvimModel(ReconstModel):
                 ivim_params = res[0]
                 return ivim_params
             except:
-                warningMsg = "x0 obtained from linear fitting is unfeasibile as "
-                warningMsg += "initial guess for leastsq. Using parameters from "
-                warningMsg += "the linear fit."
-                warnings.warn(warningMsg, UserWarning)
                 return x0
         else:
             try:
@@ -475,10 +471,6 @@ class IvimModel(ReconstModel):
                 ivim_params = res.x
                 return ivim_params
             except:
-                warningMsg = "x0 obtained from linear fitting is unfeasibile as "
-                warningMsg += "initial guess for leastsq. Using parameters from "
-                warningMsg += "the linear fit."
-                warnings.warn(warningMsg, UserWarning)
                 return x0
 
 
