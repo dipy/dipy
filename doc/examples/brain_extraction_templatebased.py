@@ -70,9 +70,9 @@ sli = template_data.shape[2] / 2
 
 plt.figure("Template Data")
 plt.subplot(1, 2, 1).set_axis_off()
-plt.imshow(template_data[...,sli], cmap = 'gray', origin = 'lower')
+plt.imshow(template_data[...,sli].T, cmap = 'gray', origin = 'lower')
 plt.subplot(1, 2, 2).set_axis_off()
-plt.imshow(template_data_mask[...,sli], cmap = 'gray', origin = 'lower')
+plt.imshow(template_data_mask[...,sli].T, cmap = 'gray', origin = 'lower')
 plt.savefig('template_data.png', bbox_inches='tight')
 
 """
@@ -140,17 +140,17 @@ sli = input_data.shape[2] / 2
 
 plt.figure('Brain segmentation')
 plt.subplot(1, 3, 1).set_axis_off()
-plt.imshow(input_data[:, :, sli].astype('float'),
+plt.imshow(input_data[:, :, sli].astype('float').T,
            cmap='gray', origin='lower')
 plt.title("Input Data")
 
 plt.subplot(1, 3, 2).set_axis_off()
-plt.imshow(output_data[:, :, sli].astype('float'),
+plt.imshow(output_data[:, :, sli].astype('float').T,
            cmap='gray', origin='lower')
 plt.title("Extraction output")
 
 plt.subplot(1, 3, 3).set_axis_off()
-plt.imshow(output_mask[:, :, sli].astype('float'),
+plt.imshow(output_mask[:, :, sli].astype('float').T,
            cmap='gray', origin='lower')
 plt.title("Extracted mask")
 plt.savefig('brain_extraction_same.png', bbox_inches='tight')
@@ -198,17 +198,17 @@ sli = input_data.shape[2]/ 2
 
 plt.figure('Brain segmentation 2')
 plt.subplot(1, 3, 1).set_axis_off()
-plt.imshow(input_data[:, :, sli].astype('float'),
+plt.imshow(input_data[:, :, sli].astype('float').T,
            cmap='gray', origin='lower', interpolation='none')
 plt.title("Input Data")
 
 plt.subplot(1, 3, 2).set_axis_off()
-plt.imshow(b0_mask[:, :, sli].astype('float'),
+plt.imshow(b0_mask[:, :, sli].astype('float').T,
            cmap='gray', origin='lower',interpolation='none')
 plt.title("Extraction output")
 
 plt.subplot(1, 3, 3).set_axis_off()
-plt.imshow(mask[:, :, sli].astype('float'),
+plt.imshow(mask[:, :, sli].astype('float').T,
            cmap='gray', origin='lower', interpolation='none')
 plt.title("Extracted mask")
 plt.savefig('brain_extraction_diff.png', bbox_inches='tight')
