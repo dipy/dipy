@@ -32,6 +32,7 @@ class FileSaveMenu(UI):
         super(FileSaveMenu, self).__init__()
         self.center = position
         self.size = size
+
         self.panel = Panel2D(center=self.center, size=self.size, color=(1, 1, 1), opacity=0.7)  # type: Panel2D
 
         self.title = Text2D(message=os.getcwd())
@@ -53,7 +54,7 @@ class FileSaveMenu(UI):
         self.panel.add_to_renderer(ren)
 
     def add_callback(self, event_type, callback, component):
-        """ Adds events to an actor.
+        """ Adds events to a component.
 
         Parameters
         ----------
@@ -64,7 +65,23 @@ class FileSaveMenu(UI):
         component : UI
             component
         """
-        super(FileSaveMenu, self).add_callback(component.actor, event_type, callback)
+        component.add_callback(event_type, callback)
+
+    def add_callback_to_sub_component(self, event_type, callback, component, sub_component):
+        """ Adds events to a component.
+
+        Parameters
+        ----------
+        event_type : string
+            event code
+        callback : function
+            callback function
+        component : UI
+            component
+        sub_component: vtkActor
+            sub component of a UI
+        """
+        component.add_callback(event_type, callback, sub_component)
 
     def build(self):
         self.panel.add_element(element=self.title, relative_position=(0.05, 0.9))
@@ -112,10 +129,7 @@ class FileSelect2D(UI):
         ----------
         ren : renderer
         """
-        # TODO: Fix this, use self.ui_list
-        ren.add(self.menu.panel)
-        for text_actor in self.text_actor_list:
-            ren.add(text_actor.actor)
+        self.menu.add_to_renderer(ren)
 
     def build_actors(self, position):
         """ Builds the number of text actors that will fit in the given size.
@@ -131,16 +145,18 @@ class FileSelect2D(UI):
         self.n_text_actors = int(self.size[1]/(self.font_size*line_spacing))  # The number of text actors.
 
         # This panel is just to facilitate the addition of actors at the right positions
-        panel = Panel2D(center=position, size=self.size, color=(1, 1, 1))  # TODO: Somehow add to self.ui_list
+        panel = Panel2D(center=position, size=self.size, color=(1, 1, 1))
         self.ui_list.append(panel.panel)
 
         # Initialisation of empty text actors
         for i in range(self.n_text_actors):
-            text = FolderSelectText2D(position=(0, 0), font_size=self.font_size, file_select=self)
+
+            text = FileSelectText2D(position=(0, 0), font_size=self.font_size, file_select=self)
             text.parent_UI = self.parent_UI
             self.ui_list.append(text)
             self.text_actor_list.append(text)
-            panel.add_element(text.actor, (0.1, float(self.n_text_actors-i - 1)/float(self.n_text_actors)))
+
+            panel.add_element(text, (0.1, float(self.n_text_actors-i - 1)/float(self.n_text_actors)))
 
         return panel
 
@@ -219,7 +235,7 @@ class FileSelect2D(UI):
         self.menu.set_center(position=position)
 
 
-class FolderSelectText2D(UI):
+class FileSelectText2D(UI):
     """ The text to select folder in a file select menu.
     Provides a callback to change the directory.
     """
@@ -233,7 +249,7 @@ class FolderSelectText2D(UI):
         position: (float, float)
         file_select: FileSelect2D
         """
-        super(FolderSelectText2D, self).__init__()
+        super(FileSelectText2D, self).__init__()
 
         self.file_name = ""
         self.file_type = ""
@@ -275,8 +291,11 @@ class FolderSelectText2D(UI):
         text_actor.justification(justification)
         text_actor.font_style(bold, italic, shadow)
         text_actor.color(color)
-        # text_actor.GetTextProperty().SetBackgroundColor(1, 1, 1)
-        # text_actor.GetTextProperty().SetBackgroundOpacity(1.0)
+        if vtk.vtkVersion.GetVTKSourceVersion().split(' ')[-1] <= "6.2.0":
+            pass
+        else:
+            text_actor.GetTextProperty().SetBackgroundColor(1, 1, 1)
+            text_actor.GetTextProperty().SetBackgroundOpacity(1.0)
         text_actor.GetTextProperty().SetColor(0, 0, 0)
         text_actor.GetTextProperty().SetLineSpacing(1)
 
@@ -301,18 +320,21 @@ class FolderSelectText2D(UI):
         callback : function
             callback function
         """
-        super(FolderSelectText2D, self).add_callback(self.actor, event_type, callback)
+        super(FileSelectText2D, self).add_callback(self.actor, event_type, callback)
 
     def set_attributes(self, file_name, file_type):
         self.file_name = file_name
         self.file_type = file_type
         self.actor.set_message(file_name)
-        # if file_type == "file":
-        #     self.actor.GetTextProperty().SetBackgroundColor(0, 0, 0)
-        #     self.actor.GetTextProperty().SetColor(1, 1, 1)
-        # else:
-        #     self.actor.GetTextProperty().SetBackgroundColor(1, 1, 1)
-        #     self.actor.GetTextProperty().SetColor(0, 0, 0)
+        if vtk.vtkVersion.GetVTKSourceVersion().split(' ')[-1] <= "6.2.0":
+            pass
+        else:
+            if file_type == "file":
+                self.actor.GetTextProperty().SetBackgroundColor(0, 0, 0)
+                self.actor.GetTextProperty().SetColor(1, 1, 1)
+            else:
+                self.actor.GetTextProperty().SetBackgroundColor(1, 1, 1)
+                self.actor.GetTextProperty().SetColor(0, 0, 0)
 
     def click_callback(self, obj, evt):
         """ A callback to handle click for this UI element.
@@ -335,3 +357,12 @@ class FolderSelectText2D(UI):
                 self.parent_UI.handle_file_click(file_name=self.file_name)
 
         return False
+
+    def set_center(self, position):
+        """ Sets the text center to position.
+
+        Parameters
+        ----------
+        position : (float, float)
+        """
+        self.actor.SetPosition(position)

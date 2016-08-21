@@ -210,7 +210,7 @@ panel.add_callback("MouseMoveEvent", panel_move_callback, panel.panel)
 
 # File Dialog
 
-file_dialog = FileSaveMenu(size=(300, 300), position=(300, 300))
+file_dialog = FileSaveMenu(size=(500, 500), position=(300, 300))
 
 
 def save_callback(obj, evt):
@@ -230,10 +230,10 @@ file_dialog.text_box.add_callback("LeftButtonPressEvent", select_text_callback)
 # Initialize and add to renderer
 renderer = window.ren()
 
-renderer.add(panel)
+# renderer.add(panel)
 renderer.add(cube_actor_1)
 renderer.add(cube_actor_2)
-# renderer.add(file_dialog)
+renderer.add(file_dialog)
 # renderer.add(disk_slider)
 # /Renderer
 
@@ -247,7 +247,7 @@ def window_callback(obj, evt):
     size_change = (renderer.size()[0] - current_size[0], renderer.size()[1] - current_size[1])
     current_size[0] = renderer.size()[0]
     current_size[1] = renderer.size()[1]
-    # panel.re_align(size_change)
+    panel.re_align(size_change)
 
 showm.add_window_callback(window_callback)
 

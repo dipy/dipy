@@ -24,6 +24,8 @@ class UI(object):
                 this parameter can be anything.
     - ui_list : This is used when there are more than one UI elements inside
                a UI element. Inside the renderer, they're all iterated and added.
+    - parent_UI: This is useful of there is a parent UI element and its reference
+                needs to be passed down to the child.
 
     """
     def __init__(self):
@@ -31,7 +33,6 @@ class UI(object):
         self.ui_list = list()
 
         self.parent_UI = None
-        self.actor = None
 
     def add_to_renderer(self, ren):
         """ Allows UI objects to add their own props to the renderer.
@@ -41,15 +42,6 @@ class UI(object):
         ren : renderer
         """
         pass
-
-    def set_ui_param(self, ui_param):
-        """ Adds a UI Parameter. Can be anything.
-
-        Parameters
-        ----------
-        ui_param :
-        """
-        self.ui_param = ui_param
 
     def add_callback(self, prop, event_type, callback, priority=0):
         """ Adds a callback to a specific event for this UI component.
@@ -174,7 +166,7 @@ class TextActor2D(vtk.vtkTextActor):
         else:
             tprop.ShadowOff()
 
-    def color(self, color):
+    def color(self, color=(1, 0, 0)):
         """ Set text color.
 
         Parameters

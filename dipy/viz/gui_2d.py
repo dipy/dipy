@@ -1,7 +1,5 @@
 # Conditional import machinery for vtk.
-import glob
 import math
-import os
 
 from dipy.utils.optpkg import optional_package
 
@@ -143,8 +141,6 @@ class Button2D(UI):
         self.current_icon_id = 0
         self.current_icon_name = self.icon_names[self.current_icon_id]
         self.actor = self.build_actor(self.icons[self.current_icon_name])
-
-        # self.ui_list.append(self)
 
     def build_icons(self, icon_fnames):
         """ Converts file names to vtkImageDataGeometryFilters.
@@ -288,8 +284,6 @@ class TextBox2D(UI):
         self.caret_pos = 0
         self.init = True
 
-        # self.ui_list.append(self)
-
     def set_message(self, message):
         """ Set custom text to textbox.
 
@@ -304,7 +298,7 @@ class TextBox2D(UI):
         self.window_left = 0
         self.caret_pos = self.window_right
 
-    def build_actor(self, text, position=(100, 10), color=(1, 1, 1),
+    def build_actor(self, text, position=(100, 10), color=(0, 0, 0),
                     font_size=18, font_family='Arial', justification='left',
                     bold=False, italic=False, shadow=False):
 
@@ -338,9 +332,12 @@ class TextBox2D(UI):
         text_actor.font_family(font_family)
         text_actor.justification(justification)
         text_actor.font_style(bold, italic, shadow)
-        text_actor.color(color)
-        # text_actor.GetTextProperty().SetBackgroundColor(1, 1, 1)
-        # text_actor.GetTextProperty().SetBackgroundOpacity(1.0)
+        if vtk.vtkVersion.GetVTKSourceVersion().split(' ')[-1] <= "6.2.0":
+            pass
+        else:
+            text_actor.GetTextProperty().SetBackgroundColor(1, 1, 1)
+            text_actor.GetTextProperty().SetBackgroundOpacity(1.0)
+            text_actor.color(color)
 
         return text_actor
 
@@ -572,8 +569,6 @@ class Rectangle2D(UI):
         super(Rectangle2D, self).__init__()
         self.size = size
         self.actor = self.build_actor(size=size, center=center, color=color, opacity=opacity)
-
-        # self.ui_list.append(self)
 
     def add_to_renderer(self, ren):
         """ Adds the actor to the renderer.
@@ -1053,10 +1048,8 @@ class Text2D(UI):
         super(Text2D, self).__init__()
         self.actor = self.build_actor(text=message)
 
-        # self.ui_list.append(self)
-
     def build_actor(self, text, position=(100, 10), color=(1, 1, 1),
-                    font_size=12, font_family='Arial', justification='left',
+                    font_size=14, font_family='Arial', justification='left',
                     bold=False, italic=False, shadow=False):
 
         """ Builds a text actor.
@@ -1089,9 +1082,12 @@ class Text2D(UI):
         text_actor.font_family(font_family)
         text_actor.justification(justification)
         text_actor.font_style(bold, italic, shadow)
-        text_actor.color(color)
-        # text_actor.GetTextProperty().SetBackgroundColor(0, 1, 1)
-        # text_actor.GetTextProperty().SetBackgroundOpacity(1.0)
+        if vtk.vtkVersion.GetVTKSourceVersion().split(' ')[-1] <= "6.2.0":
+            pass
+        else:
+            text_actor.color(color)
+            text_actor.GetTextProperty().SetBackgroundColor(0, 0, 0)
+            text_actor.GetTextProperty().SetBackgroundOpacity(1.0)
 
         return text_actor
 
