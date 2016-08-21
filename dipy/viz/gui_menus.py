@@ -32,7 +32,7 @@ class FileSaveMenu(UI):
         super(FileSaveMenu, self).__init__()
         self.center = position
         self.size = size
-        self.panel = Panel2D(center=self.center, size=self.size, color=(0, 0, 0.9), opacity=0.9)  # type: Panel2D
+        self.panel = Panel2D(center=self.center, size=self.size, color=(1, 1, 1), opacity=0.7)  # type: Panel2D
 
         self.title = Text2D(message=os.getcwd())
         self.file_select = FileSelect2D(size=(self.size[0] * 0.9, self.size[1] * 0.6), font_size=12, position=(0, 0),
@@ -74,9 +74,15 @@ class FileSaveMenu(UI):
         self.panel.add_element(element=self.cancel_button, relative_position=(0.9, 0.1))
 
     def handle_folder_change(self):
+        """ Effect of folder change on overall FileDialog.
+        This function can be called from any of the children.
+        """
         self.title.set_message(os.getcwd())
 
     def handle_file_click(self, file_name):
+        """ Effect of file change on overall FileDialog.
+        This function can be called from any of the children.
+        """
         self.text_box.set_message(file_name)
 
 
@@ -139,6 +145,10 @@ class FileSelect2D(UI):
         return panel
 
     def fill_text_actors(self):
+        """ Fills file/folder names to text actors.
+        The list is truncated if the number of file/folder names is greater than
+        the available number of text actors.
+        """
         # Flush all the text actors
         for text_actor in self.text_actor_list:
             text_actor.actor.set_message("")
@@ -191,9 +201,21 @@ class FileSelect2D(UI):
         return file_names
 
     def select_file(self, file_name):
+        """ Changes the selected file name for the FileSelect menu.
+
+        Parameters
+        ----------
+        file_name: string
+        """
         self.selected_file = file_name
 
     def set_center(self, position):
+        """ Sets the elements center.
+
+        Parameters
+        ----------
+        position: (float, float)
+        """
         self.menu.set_center(position=position)
 
 

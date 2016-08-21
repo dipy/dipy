@@ -104,29 +104,29 @@ slider = gui_2d.LineSlider2D()
 def line_click_callback(obj, evt):
     # obj: LineSlider2D
     position = showm.iren.GetEventPosition()
-    obj.slider_disk.set_position(position)
-    obj.text.set_percentage(position[0])
-    showm.iren.GetInteractorStyle().add_active_prop(obj.slider_disk.actor)
+    obj.set_position(position)
+    obj.set_percentage(position[0])
+    showm.iren.GetInteractorStyle().add_active_prop(obj.slider_disk)
     showm.render()
     return True
 
 
 def disk_press_callback(obj, evt):
     # obj: LineSlider2D
-    showm.iren.GetInteractorStyle().add_active_prop(obj.slider_disk.actor)
+    showm.iren.GetInteractorStyle().add_active_prop(obj.slider_disk)
     return True
 
 
 def disk_release_callback(obj, evt):
     # obj: LineSlider2D
-    showm.iren.GetInteractorStyle().remove_active_prop(obj.slider_disk.actor)
+    showm.iren.GetInteractorStyle().remove_active_prop(obj.slider_disk)
 
 
 def disk_move_callback(obj, evt):
     # obj: LineSlider2D
     position = showm.iren.GetEventPosition()
-    obj.slider_disk.set_position(position)
-    obj.text.set_percentage(position[0])
+    obj.set_position(position)
+    obj.set_percentage(position[0])
     showm.render()
     return True
 
@@ -143,8 +143,8 @@ disk_slider = gui_2d.DiskSlider2D()
 def outer_disk_click_callback(obj, evt):
     # obj: DiskSlider2D
     click_position = showm.iren.GetEventPosition()
-    disk_slider.move_disk(click_position=click_position)
-    showm.iren.GetInteractorStyle().add_active_prop(obj.slider_inner_disk.actor)
+    disk_slider.move_move_disk(click_position=click_position)
+    showm.iren.GetInteractorStyle().add_active_prop(obj.move_disk)
     showm.render()
     return True
 
@@ -152,59 +152,59 @@ def outer_disk_click_callback(obj, evt):
 def inner_disk_move_callback(obj, evt):
     # obj: DiskSlider2D
     click_position = showm.iren.GetEventPosition()
-    disk_slider.move_disk(click_position=click_position)
+    disk_slider.move_move_disk(click_position=click_position)
     showm.render()
     return True
 
 
 def inner_disk_press_callback(obj, evt):
     # obj: DiskSlider2D
-    showm.iren.GetInteractorStyle().add_active_prop(obj.slider_inner_disk.actor)
+    showm.iren.GetInteractorStyle().add_active_prop(obj.move_disk)
     return True
 
 
 def inner_disk_release_callback(obj, evt):
     # obj: DiskSlider2D
-    showm.iren.GetInteractorStyle().remove_active_prop(obj.slider_inner_disk.actor)
+    showm.iren.GetInteractorStyle().remove_active_prop(obj.move_disk)
 
 
-disk_slider.add_callback("LeftButtonPressEvent", outer_disk_click_callback, disk_slider.slider_outer_disk)
-disk_slider.add_callback("MouseMoveEvent", inner_disk_move_callback, disk_slider.slider_inner_disk)
-disk_slider.add_callback("LeftButtonPressEvent", inner_disk_press_callback, disk_slider.slider_inner_disk)
-disk_slider.add_callback("LeftButtonReleaseEvent", inner_disk_release_callback, disk_slider.slider_inner_disk)
+disk_slider.add_callback("LeftButtonPressEvent", outer_disk_click_callback, disk_slider.base_disk)
+disk_slider.add_callback("MouseMoveEvent", inner_disk_move_callback, disk_slider.move_disk)
+disk_slider.add_callback("LeftButtonPressEvent", inner_disk_press_callback, disk_slider.move_disk)
+disk_slider.add_callback("LeftButtonReleaseEvent", inner_disk_release_callback, disk_slider.move_disk)
 # /Disk Slider
 
 # Panel
-panel = gui_2d.Panel2D(center=(440, 90), size=(300, 150), color=(1, 1, 1), align="right")
-
-panel.add_element(button, (0.95, 0.9))
-panel.add_element(text, (0.1, 0.2))
-panel.add_element(slider, (0.5, 0.9))
-panel.add_element(disk_slider, (0.7, 0.3))
-
-
-def panel_click_callback(obj, evt):
-    # obj: Panel2D
-    panel.ui_param = (showm.iren.GetEventPosition()[0] - obj.panel.actor.GetPosition()[0] - obj.size[0]/2,
-                      showm.iren.GetEventPosition()[1] - obj.panel.actor.GetPosition()[1] - obj.size[1]/2)
-    showm.iren.GetInteractorStyle().add_active_prop(obj.panel.actor)
-    return True
-
-
-def panel_release_callback(obj, evt):
-    # obj: Panel2D
-    showm.iren.GetInteractorStyle().remove_active_prop(obj.panel.actor)
-
-
-def panel_move_callback(obj, evt):
-    # obj: Panel2D
-    click_position = showm.iren.GetEventPosition()
-    panel.set_center((click_position[0] - panel.ui_param[0], click_position[1] - panel.ui_param[1]))
-    showm.render()
-
-panel.add_callback("LeftButtonPressEvent", panel_click_callback, panel.panel)
-panel.add_callback("LeftButtonReleaseEvent", panel_release_callback, panel.panel)
-panel.add_callback("MouseMoveEvent", panel_move_callback, panel.panel)
+# panel = gui_2d.Panel2D(center=(440, 90), size=(300, 150), color=(1, 1, 1), align="right")
+#
+# panel.add_element(button, (0.95, 0.9))
+# panel.add_element(text, (0.1, 0.2))
+# panel.add_element(slider, (0.5, 0.9))
+# panel.add_element(disk_slider, (0.7, 0.3))
+#
+#
+# def panel_click_callback(obj, evt):
+#     # obj: Panel2D
+#     panel.ui_param = (showm.iren.GetEventPosition()[0] - obj.panel.actor.GetPosition()[0] - obj.size[0]/2,
+#                       showm.iren.GetEventPosition()[1] - obj.panel.actor.GetPosition()[1] - obj.size[1]/2)
+#     showm.iren.GetInteractorStyle().add_active_prop(obj.panel.actor)
+#     return True
+#
+#
+# def panel_release_callback(obj, evt):
+#     # obj: Panel2D
+#     showm.iren.GetInteractorStyle().remove_active_prop(obj.panel.actor)
+#
+#
+# def panel_move_callback(obj, evt):
+#     # obj: Panel2D
+#     click_position = showm.iren.GetEventPosition()
+#     panel.set_center((click_position[0] - panel.ui_param[0], click_position[1] - panel.ui_param[1]))
+#     showm.render()
+#
+# panel.add_callback("LeftButtonPressEvent", panel_click_callback, panel.panel)
+# panel.add_callback("LeftButtonReleaseEvent", panel_release_callback, panel.panel)
+# panel.add_callback("MouseMoveEvent", panel_move_callback, panel.panel)
 
 # /Panel
 
@@ -233,7 +233,8 @@ renderer = window.ren()
 # renderer.add(panel)
 renderer.add(cube_actor_1)
 renderer.add(cube_actor_2)
-renderer.add(file_dialog)
+# renderer.add(file_dialog)
+renderer.add(disk_slider)
 # /Renderer
 
 # Show Manager
@@ -246,7 +247,7 @@ def window_callback(obj, evt):
     size_change = (renderer.size()[0] - current_size[0], renderer.size()[1] - current_size[1])
     current_size[0] = renderer.size()[0]
     current_size[1] = renderer.size()[1]
-    panel.re_align(size_change)
+    # panel.re_align(size_change)
 
 showm.add_window_callback(window_callback)
 

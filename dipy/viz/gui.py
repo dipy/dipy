@@ -189,7 +189,7 @@ class TextActor2D(vtk.vtkTextActor):
 
         Parameters
         ----------
-        position : (float, float, float)
+        position : (float, float)
         """
         self.SetDisplayPosition(*position)
 
@@ -198,7 +198,7 @@ class TextActor2D(vtk.vtkTextActor):
 
         Returns
         -------
-        position : (float, float, float)
+        position : (float, float)
         """
         return self.GetDisplayPosition()
 
