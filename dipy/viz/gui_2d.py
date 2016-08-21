@@ -42,10 +42,11 @@ class Panel2D(UI):
         super(Panel2D, self).__init__()
         self.center = center
         self.size = size
-        self.panel = Rectangle2D(size=size, center=center, color=color, opacity=opacity)  # type: Rectangle2D
-        self.lower_limits = (self.center[0] - self.size[0]/2, self.center[1] - self.size[1]/2)
+        self.lower_limits = (self.center[0] - self.size[0] / 2, self.center[1] - self.size[1] / 2)
 
+        self.panel = Rectangle2D(size=size, center=center, color=color, opacity=opacity)  # type: Rectangle2D
         self.ui_list.append(self.panel)
+
         self.element_positions = []
         self.element_positions.append((self.panel, 0.5, 0.5))
         self.alignment = align
@@ -58,9 +59,8 @@ class Panel2D(UI):
         ----------
         ren : renderer
         """
-        for ui_item_list in self.ui_list:
-            for ui_item in ui_item_list.ui_list:
-                ren.add(ui_item.actor)
+        for ui_item in self.ui_list:
+            ui_item.add_to_renderer(ren=ren)
 
     def add_element(self, element, relative_position):
         """ Adds an elements to the panel.

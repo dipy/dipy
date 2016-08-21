@@ -175,36 +175,36 @@ disk_slider.add_callback("LeftButtonReleaseEvent", inner_disk_release_callback, 
 # /Disk Slider
 
 # Panel
-# panel = gui_2d.Panel2D(center=(440, 90), size=(300, 150), color=(1, 1, 1), align="right")
-#
-# panel.add_element(button, (0.95, 0.9))
-# panel.add_element(text, (0.1, 0.2))
-# panel.add_element(slider, (0.5, 0.9))
-# panel.add_element(disk_slider, (0.7, 0.3))
-#
-#
-# def panel_click_callback(obj, evt):
-#     # obj: Panel2D
-#     panel.ui_param = (showm.iren.GetEventPosition()[0] - obj.panel.actor.GetPosition()[0] - obj.size[0]/2,
-#                       showm.iren.GetEventPosition()[1] - obj.panel.actor.GetPosition()[1] - obj.size[1]/2)
-#     showm.iren.GetInteractorStyle().add_active_prop(obj.panel.actor)
-#     return True
-#
-#
-# def panel_release_callback(obj, evt):
-#     # obj: Panel2D
-#     showm.iren.GetInteractorStyle().remove_active_prop(obj.panel.actor)
-#
-#
-# def panel_move_callback(obj, evt):
-#     # obj: Panel2D
-#     click_position = showm.iren.GetEventPosition()
-#     panel.set_center((click_position[0] - panel.ui_param[0], click_position[1] - panel.ui_param[1]))
-#     showm.render()
-#
-# panel.add_callback("LeftButtonPressEvent", panel_click_callback, panel.panel)
-# panel.add_callback("LeftButtonReleaseEvent", panel_release_callback, panel.panel)
-# panel.add_callback("MouseMoveEvent", panel_move_callback, panel.panel)
+panel = gui_2d.Panel2D(center=(440, 90), size=(300, 150), color=(1, 1, 1), align="right")
+
+panel.add_element(button, (0.95, 0.9))
+panel.add_element(text, (0.1, 0.2))
+panel.add_element(slider, (0.5, 0.9))
+panel.add_element(disk_slider, (0.7, 0.3))
+
+
+def panel_click_callback(obj, evt):
+    # obj: Panel2D
+    panel.ui_param = (showm.iren.GetEventPosition()[0] - obj.panel.actor.GetPosition()[0] - obj.size[0]/2,
+                      showm.iren.GetEventPosition()[1] - obj.panel.actor.GetPosition()[1] - obj.size[1]/2)
+    showm.iren.GetInteractorStyle().add_active_prop(obj.panel.actor)
+    return True
+
+
+def panel_release_callback(obj, evt):
+    # obj: Panel2D
+    showm.iren.GetInteractorStyle().remove_active_prop(obj.panel.actor)
+
+
+def panel_move_callback(obj, evt):
+    # obj: Panel2D
+    click_position = showm.iren.GetEventPosition()
+    panel.set_center((click_position[0] - panel.ui_param[0], click_position[1] - panel.ui_param[1]))
+    showm.render()
+
+panel.add_callback("LeftButtonPressEvent", panel_click_callback, panel.panel)
+panel.add_callback("LeftButtonReleaseEvent", panel_release_callback, panel.panel)
+panel.add_callback("MouseMoveEvent", panel_move_callback, panel.panel)
 
 # /Panel
 
@@ -230,11 +230,11 @@ file_dialog.text_box.add_callback("LeftButtonPressEvent", select_text_callback)
 # Initialize and add to renderer
 renderer = window.ren()
 
-# renderer.add(panel)
+renderer.add(panel)
 renderer.add(cube_actor_1)
 renderer.add(cube_actor_2)
 # renderer.add(file_dialog)
-renderer.add(disk_slider)
+# renderer.add(disk_slider)
 # /Renderer
 
 # Show Manager
