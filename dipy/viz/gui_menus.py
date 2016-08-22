@@ -376,6 +376,7 @@ class FileSelectText2D(UI):
         """
         if self.file_type == "directory":
             os.chdir(self.actor.get_message())
+            self.file_select.window = 0
             self.file_select.fill_text_actors()
             self.file_select.select_file(file_name="")
             if isinstance(self.parent_UI, FileSaveMenu):
