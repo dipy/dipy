@@ -63,11 +63,11 @@ print('data.shape (%d, %d, %d, %d)' % data.shape)
 """
 The data has 54 slices, with 256-by-256 voxels in each slice. The fourth
 dimension corresponds to the b-values in the gtab. Let us visualize the data
-by taking a slice midway(z=27) at $\mathbf{b} = 0$.
+by taking a slice midway(z=33) at $\mathbf{b} = 0$.
 """
 
-z = 27
-b = 20
+z = 33
+b = 0
 
 plt.imshow(data[:, :, z, b].T, origin='lower', cmap='gray',
            interpolation='nearest')
@@ -90,8 +90,8 @@ and CSF. That should give us some contrast to see the values varying across
 the regions.
 """
 
-x1, x2 = 160, 180
-y1, y2 = 90, 110
+x1, x2 = 90, 155
+y1, y2 = 90, 170
 data_slice = data[x1:x2, y1:y2, z, :]
 
 plt.imshow(data[x1:x2, y1:y2, z, b].T, origin='lower',
@@ -109,13 +109,19 @@ Now that we have prepared the datasets we can go forward with
 the ivim fit. Instead of fitting the entire volume, we focus on a
 small section of the slice as selected aboove, to fit the IVIM model.
 First, we instantiate the Ivim model. Using a two-stage approach: first,
-a tensor is fit to the data, and then initial guesses for the parameters
-$\mathbf{S_{0}}$ and $\mathbf{D}$ obtained from this this tensor by
-``_estimate_S0_D`` is used as the starting point for the non-linear fit
-of IVIM parameters using Scipy's ``leastsq`` or ``least_square`` function
-depending on which Scipy version you are using. All initializations for
-the model such as ``split_b`` are passed while creating the ``IvimModel``.
-If you are using Scipy 0.17, you can also set bounds by setting
+a linear fit used to get quick initial guesses for the parameters
+$\mathbf{S_{0}}$ and $\mathbf{D}$ by considering b-values greater than
+``split_b_D`` (default: 400))and assuming a mono-exponential signal. This is
+based on the assumption that at high b-values the signal can be approximated
+as a mono exponential decay and by taking the logarithm of the signal values
+a linear fit can be obtained. Another linear fit for ``S0`` (bvals < ``split_b_S0``
+(default: 200)) follows and ``f`` is estimated using 1 - S0_prime/S0.
+Then a non-linear least squares fitting is performed to fit D_star and f.
+If the `two_stage` flag is set to `True` while initializing the model, a final
+non-linear least squares fitting is performed for all the parameters using Scipy's
+``leastsq`` or ``least_square`` function depending on which Scipy version you are
+using. All initializations for the model such as ``split_b_D`` are passed while
+creating the ``IvimModel``. If you are using Scipy 0.17, you can also set bounds by setting
 ``bounds=([0., 0., 0., 0.], [np.inf, 1., 1., 1.]))`` while initializing
 the IvimModel. It is recommeded that you upgrade to Scipy 0.17 since
 the fitting results might at times return values which do not make sense
@@ -144,13 +150,13 @@ ivimparams = ivimfit.model_params
 print("ivimparams.shape : {}".format(ivimparams.shape))
 
 """
-As we see, we have a 20x20 slice at the height z = 27. Thus we
+As we see, we have a 20x20 slice at the height z = 33. Thus we
 have 400 voxels. We will now plot the parameters obtained from the
 fit for a voxel and also various maps for the entire slice.
 This will give us an idea about the diffusion and perfusion in
 that section. Let(i, j) denote the coordinate of the voxel. We have
-already fixed the z component as 27 and hence we will get a slice
-which is 27 units above.
+already fixed the z component as 33 and hence we will get a slice
+which is 33 units above.
 
 """
 
