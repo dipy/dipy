@@ -117,6 +117,7 @@ class FileSelect2D(UI):
         self.n_text_actors = 0  # Initialisation Value
         self.text_actor_list = []
         self.selected_file = ""
+        self.window = 0
 
         self.menu = self.build_actors(position)
 
@@ -158,7 +159,32 @@ class FileSelect2D(UI):
 
             panel.add_element(text, (0.1, float(self.n_text_actors-i - 1)/float(self.n_text_actors)))
 
+        up_button = Button2D({"up": read_viz_icons(fname="arrow-up.png")})
+        up_button.add_callback("LeftButtonPressEvent", self.up_button_callback)
+        panel.add_element(up_button, (0.95, 0.9))
+
+        down_button = Button2D({"down": read_viz_icons(fname="arrow-down.png")})
+        down_button.add_callback("LeftButtonPressEvent", self.down_button_callback)
+        panel.add_element(down_button, (0.95, 0.1))
+
         return panel
+
+    def up_button_callback(self, obj, evt):
+        all_file_names = self.get_all_file_names()
+        if self.n_text_actors + self.window <= len(all_file_names):
+            if self.window > 0:
+                self.window -= 1
+                self.fill_text_actors()
+
+        return False
+
+    def down_button_callback(self, obj, evt):
+        all_file_names = self.get_all_file_names()
+        if self.n_text_actors + self.window < len(all_file_names):
+            self.window += 1
+            self.fill_text_actors()
+
+        return False
 
     def fill_text_actors(self):
         """ Fills file/folder names to text actors.
@@ -170,6 +196,18 @@ class FileSelect2D(UI):
             text_actor.actor.set_message("")
             text_actor.actor.SetVisibility(False)
 
+        all_file_names = self.get_all_file_names()
+
+        clipped_file_names = all_file_names[self.window:self.n_text_actors+self.window]
+
+        # Allot file names as in the above list
+        i = 0
+        for file_name in clipped_file_names:
+            self.text_actor_list[i].actor.SetVisibility(True)
+            self.text_actor_list[i].set_attributes(file_name[0], file_name[1])
+            i += 1
+
+    def get_all_file_names(self):
         all_file_names = []
 
         directory_names = self.get_directory_names()
@@ -180,15 +218,7 @@ class FileSelect2D(UI):
         for file_name in file_names:
             all_file_names.append((file_name, "file"))
 
-        window = 0
-        clipped_file_names = all_file_names[window:self.n_text_actors+window]
-
-        # Allot file names as in the above list
-        i = 0
-        for file_name in clipped_file_names:
-            self.text_actor_list[i].actor.SetVisibility(True)
-            self.text_actor_list[i].set_attributes(file_name[0], file_name[1])
-            i += 1
+        return all_file_names
 
     @staticmethod
     def get_directory_names():

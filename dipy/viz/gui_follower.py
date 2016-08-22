@@ -6,8 +6,7 @@ from dipy.utils.optpkg import optional_package
 from ipdb import set_trace
 
 # Allow import, but disable doctests if we don't have vtk.
-from dipy.viz.gui import UI, TextActor2D
-from dipy.viz.gui_2d import Rectangle2D
+from dipy.viz.gui import UI
 
 vtk, have_vtk, setup_module = optional_package('vtk')
 
