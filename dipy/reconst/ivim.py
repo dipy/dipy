@@ -130,7 +130,8 @@ class IvimModel(ReconstModel):
     """
 
     def __init__(self, gtab, split_b_D=400.0, split_b_S0=200., bounds=None,
-                 tol=1e-15, f_threshold=0.25, x_scale=[1000., 0.1, 0.001, 0.0001],
+                 two_stage=True, tol=1e-15,
+                 x_scale=[1000., 0.1, 0.001, 0.0001],
                  options={'gtol': 1e-15, 'ftol': 1e-15,
                           'eps': 1e-15, 'maxiter': 1000}):
         """
@@ -173,17 +174,20 @@ class IvimModel(ReconstModel):
             Bounds to constrain the fitted model parameters. This is only
             supported for Scipy version > 0.17. When using a older Scipy
             version, this function will raise an error if bounds are different
-            from None. default : ([0., 0., 0., 0.], [np.inf, .3, 1., 1.])
+            from None. This parameter is also used to fill nan values for out
+            of bounds parameters in the `IvimFit` class using the method fill_na.
+            default : ([0., 0., 0., 0.], [np.inf, .3, 1., 1.])
+		
+		two_stage : bool
+		    Argument to specify whether to perform a non-linear fitting of all
+		    parameters after the linear fitting by splitting the data based on bvalues.
+		    This gives more accurate parameters but takes more time. The linear fit can
+		    be used to get a quick estimation of the parameters.
+		    default : False
 
         tol : float, optional
             Tolerance for convergence of minimization.
             default : 1e-15
-
-        f_threshold : float, optional
-            Threshold value to consider for f being erroneous after non-linear
-            fitting. If the value of f obtained crosses this threshold the
-            parameters will be taken from the linear fits.
-            default : 0.25
 
         x_scale : array, optional
             Scaling for the parameters. This is passed to `least_squares` which is
@@ -214,8 +218,8 @@ class IvimModel(ReconstModel):
         self.split_b_D = split_b_D
         self.split_b_S0 = split_b_S0
         self.bounds = bounds
+        self.two_stage = two_stage
         self.tol = tol
-        self.f_threshold = f_threshold
         self.options = options
         self.x_scale = x_scale
 
@@ -223,8 +227,8 @@ class IvimModel(ReconstModel):
             e_s = "Scipy versions less than 0.17 do not support "
             e_s += "bounds. Please update to Scipy 0.17 to use bounds"
             raise ValueError(e_s)
-        elif self.bounds is None:
-            self.bounds = ((0., 0., 0., 0.), (np.inf, 1., 1., 1.))
+        elif not SCIPY_LESS_0_17 and self.bounds is None:
+            self.bounds = ((0., 0., 0., 0.), (np.inf, .3, 1., 1.))
         else:
             self.bounds = bounds
 
@@ -273,15 +277,13 @@ class IvimModel(ReconstModel):
         # Fit f and D_star using leastsq.
         params_f_D_star = [f_guess, D_star_prime]
         f, D_star = self.estimate_f_D_star(params_f_D_star, data, S0, D)
-        x0 = np.array([S0, f, D_star, D])
-        # Fit parameters again with scaling
-        params = self._leastsq(data, x0)
-        if params[1] > self.f_threshold:
-            params = x0
-        elif params[1] < 0.:
-            params[1] = 0.
-
-        return IvimFit(self, params)
+        params = np.array([S0, f, D_star, D])
+        # Fit parameters again if two_stage flag is set.
+        if self.two_stage:
+            params_two_stage = self._leastsq(data, params)
+            return IvimFit(self, params_two_stage)
+        else:
+            return IvimFit(self, params)
 
     def estimate_linear_fit(self, data, split_b, less_than=True):
         """Estimate a linear fit by taking log of data.
@@ -541,3 +543,26 @@ class IvimFit(object):
 
         """
         return ivim_prediction(self.model_params, gtab)
+
+    def fill_na(self, bounds=((0., 0., 0., 0), (np.inf, 0.30, 0.01, 0.001))):
+        """
+        Function to fill nan values for parameters which are not within the bounds.
+        This function will check if `f `is within bounds and set D_star and f to nan
+        if `f` is out of bounds.
+
+        Parameters
+        ----------
+        bounds : tuple
+            A tuple of two elements specifying the bounds.
+            default : ((0., 0., 0., 0),(np.inf, 0.30, 0.01, 0.001))
+
+        Returns
+        -------
+        IvimFit : IvimFit object
+        """
+        model = self.model
+        params = self.model_params
+        if not (params[1] >= bounds[0][1] and params[1] <= bounds[1][1]):
+            params[1] = np.nan
+            params[2] = np.nan
+        return IvimFit(model, params)

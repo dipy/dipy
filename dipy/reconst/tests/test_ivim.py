@@ -371,9 +371,27 @@ def test_x0_unfeasible():
                       4013.68408203, 3906.39428711, 3909.06079102, 3495.27197266, 3402.57006836,
                       3163.10180664, 2896.04003906, 2663.7253418, 2614.87695312, 2316.55371094,
                       2267.7722168])
-    # assert_raises(UserWarning, ivim_model.fit, data_noisy)
     fit = ivim_model.fit(noisy)
-    pass
+    filtered_fit = fit.fill_na()
+    assert_array_equal(filtered_fit.perfusion_fraction, np.nan)
+    assert_array_equal(filtered_fit.D_star, np.nan)
+
+
+def test_fit_one_stage():
+    model = IvimModel(gtab, two_stage=False)
+    fit = model.fit(data_single)
+    # assert_array_almost_equal()
+    linear_fit_params = [9.88834140e+02, 1.19707191e-01, 7.91176970e-03,
+                         9.30095210e-04]
+
+    linear_fit_signal = [988.83414044, 971.77122546, 955.46786293, 939.87125905, 924.93258982,
+                         896.85182201, 870.90346447, 846.81187693, 824.34108781, 803.28900104,
+                         783.48245048, 764.77297789, 747.03322866, 669.54798887, 605.03328304,
+                         549.00852235, 499.21077611, 454.40299244, 413.83192296, 376.98072773,
+                         343.45531017]
+
+    assert_array_almost_equal(fit.model_params, linear_fit_params)
+    assert_array_almost_equal(fit.predict(gtab), linear_fit_signal)
 
 
 if __name__ == '__main__':
