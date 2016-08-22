@@ -214,11 +214,11 @@ file_dialog = FileSaveMenu(size=(500, 500), position=(300, 300))
 
 
 def save_callback(obj, evt):
-    print "Saved!"
+    print("Saved!")
 
 
 def cancel_callback(obj, evt):
-    print "Cancelled!"
+    print("Cancelled!")
 
 file_dialog.add_callback("LeftButtonPressEvent", save_callback, file_dialog.save_button)
 file_dialog.add_callback("LeftButtonPressEvent", cancel_callback, file_dialog.cancel_button)
