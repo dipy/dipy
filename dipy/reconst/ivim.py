@@ -177,13 +177,13 @@ class IvimModel(ReconstModel):
             from None. This parameter is also used to fill nan values for out
             of bounds parameters in the `IvimFit` class using the method fill_na.
             default : ([0., 0., 0., 0.], [np.inf, .3, 1., 1.])
-		
-		two_stage : bool
-		    Argument to specify whether to perform a non-linear fitting of all
-		    parameters after the linear fitting by splitting the data based on bvalues.
-		    This gives more accurate parameters but takes more time. The linear fit can
-		    be used to get a quick estimation of the parameters.
-		    default : False
+
+        two_stage : bool
+            Argument to specify whether to perform a non-linear fitting of all
+            parameters after the linear fitting by splitting the data based on bvalues.
+            This gives more accurate parameters but takes more time. The linear fit can
+            be used to get a quick estimation of the parameters.
+            default : False
 
         tol : float, optional
             Tolerance for convergence of minimization.
@@ -266,7 +266,8 @@ class IvimModel(ReconstModel):
         """
         # Get S0_prime and D - paramters assuming a single exponential decay for
         # for signals for bvals greater than `split_b_D`
-        S0_prime, D = self.estimate_linear_fit(data, self.split_b_D, less_than=False)
+        S0_prime, D = self.estimate_linear_fit(
+            data, self.split_b_D, less_than=False)
         # Get S0 and D_star_prime - paramters assuming a single exponential decay for
         # for signals for bvals greater than `split_b_S0`.
         S0, D_star_prime = self.estimate_linear_fit(data, self.split_b_S0,
@@ -375,7 +376,8 @@ class IvimModel(ReconstModel):
             try:
                 res = least_squares(f_D_star_error,
                                     params_f_D_star,
-                                    bounds=((0., 0.), (self.bounds[1][1], self.bounds[1][2])),
+                                    bounds=((0., 0.), (self.bounds[1][
+                                            1], self.bounds[1][2])),
                                     args=(self.gtab, data, S0, D),
                                     ftol=ftol,
                                     xtol=xtol,
@@ -477,6 +479,7 @@ class IvimModel(ReconstModel):
 
 
 class IvimFit(object):
+
     def __init__(self, model, model_params):
         """ Initialize a IvimFit class instance.
             Parameters
@@ -544,7 +547,8 @@ class IvimFit(object):
         """
         return ivim_prediction(self.model_params, gtab)
 
-    def fill_na(self, bounds=((0., 0., 0., 0), (np.inf, 0.30, 0.01, 0.001))):
+    def fill_na(self, bounds=((0., 0., 0., 0), (np.inf, 0.30, 0.01, 0.001)),
+                fill=(np.nan, np.nan, np.nan, np.nan)):
         """
         Function to fill nan values for parameters which are not within the bounds.
         This function will check if `f `is within bounds and set D_star and f to nan
@@ -553,16 +557,29 @@ class IvimFit(object):
         Parameters
         ----------
         bounds : tuple
-            A tuple of two elements specifying the bounds.
+            A tuple of two elements specifying the bounds. To check only for a
+            particular parameter (say `f`) set the other bounds to
+            (-np.inf, np.inf).
             default : ((0., 0., 0., 0),(np.inf, 0.30, 0.01, 0.001))
+
+        fill : tuple
+            A tuple which specifies what should be replaced for the parameters
+            if bounds is violated. If a particular parameter should not be
+            changed then set the value as True. For example, in order to get
+            the S0 and D values and fill `nan` for others use
+            `fill=(True, np.nan, np.nan, True). Similarly, to set `f` and
+            `D_star` as 0. and leave S0 and D unchanged, use
+            `fill=(True, 0., 0., True)`. Using `False` for any fill will set
+            it to 0.
+            default : (np.nan, np.nan, np.nan, np.nan)
 
         Returns
         -------
         IvimFit : IvimFit object
         """
-        model = self.model
         params = self.model_params
-        if not (params[1] >= bounds[0][1] and params[1] <= bounds[1][1]):
-            params[1] = np.nan
-            params[2] = np.nan
-        return IvimFit(model, params)
+        bounds_violated = ~(np.all(params[..., :] >= bounds[
+                            0]) and np.all(params[..., :] <= bounds[1]))
+        filled_params = np.multiply(np.array(fill), params)
+        params = np.where(bounds_violated, filled_params, params)
+        return IvimFit(self.model, params)

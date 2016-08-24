@@ -74,13 +74,15 @@ bvecs_with_multiple_b0 = generate_bvecs(N)
 gtab_with_multiple_b0 = gradient_table(bvals_with_multiple_b0,
                                        bvecs_with_multiple_b0.T)
 
-noisy_signal = np.array([4039.98461914, 3967.88574219, 4192.35644531,
-                         3909.28857422, 3916.56469727, 3875.01293945,
-                         3946.50634766, 3663.37792969, 3614.78369141,
-                         3713.06665039, 3524.47973633, 3346.48144531,
-                         3526.36865234, 3192.51074219, 2902.75268555,
-                         2735.64648438, 2567.65356445, 2307.39135742,
-                         2215.7043457, 2144.99829102, 2069.71655273])
+noisy_single = np.array([4243.71728516, 4317.81298828, 4244.35693359, 4439.36816406, 4420.06201172,
+                         4152.30078125, 4114.34912109, 4104.59375, 4151.61914062, 4003.58374023,
+                         4013.68408203, 3906.39428711, 3909.06079102, 3495.27197266, 3402.57006836,
+                         3163.10180664, 2896.04003906, 2663.7253418, 2614.87695312, 2316.55371094,
+                         2267.7722168])
+
+noisy_multi = np.zeros((2, 2, 1, len(gtab.bvals)))
+noisy_multi[0, 0, 0] = noisy_multi[0, 1, 0] = noisy_multi[
+    1, 0, 0] = noisy_multi[1, 1, 0] = noisy_single
 
 single_exponential = lambda S0, D, bvals: S0 * np.exp(-bvals * D)
 
@@ -298,8 +300,7 @@ def test_noisy_fit():
     applies correctly and returns the linear fitting parameters.
     """
     model_one_stage = IvimModel(gtab)
-    fit_one_stage = model_one_stage.fit(noisy_signal)
-
+    fit_one_stage = model_one_stage.fit(noisy_single)
     assert_array_less(fit_one_stage.model_params, [10000., 0.3, .01, 0.001])
 
 
@@ -316,7 +317,8 @@ def test_perfusion_fraction():
     Test if the `IvimFit` class returns the correct f
     """
     assert_array_almost_equal(ivim_fit_single.perfusion_fraction, f)
-    assert_array_almost_equal(ivim_fit_multi.perfusion_fraction, ivim_params[..., 1])
+    assert_array_almost_equal(
+        ivim_fit_multi.perfusion_fraction, ivim_params[..., 1])
 
 
 def test_D_star():
@@ -340,20 +342,23 @@ def test_estimate_linear_fit():
     Test the linear estimates considering a single exponential fit.
     """
     data_single_exponential_D = single_exponential(S0, D, gtab.bvals)
-    assert_array_almost_equal(ivim_model.estimate_linear_fit(data_single_exponential_D,
-                                                             split_b=500.,
-                                                             less_than=False),
-                              (S0, D))
+    assert_array_almost_equal(ivim_model.estimate_linear_fit(
+        data_single_exponential_D,
+        split_b=500.,
+        less_than=False),
+        (S0, D))
     data_single_exponential_D_star = single_exponential(S0, D_star, gtab.bvals)
-    assert_array_almost_equal(ivim_model.estimate_linear_fit(data_single_exponential_D_star,
-                                                             split_b=100.,
-                                                             less_than=True),
-                              (S0, D_star))
+    assert_array_almost_equal(ivim_model.estimate_linear_fit(
+        data_single_exponential_D_star,
+        split_b=100.,
+        less_than=True),
+        (S0, D_star))
 
 
 def test_estimate_f_D_star():
     """
-    Test if the `estimate_f_D_star` returns the correct parameters after a non-linear fit.
+    Test if the `estimate_f_D_star` returns the correct parameters after a
+    non-linear fit.
     """
     params_f_D = f + 0.001, D + 0.0001
     assert_array_almost_equal(ivim_model.estimate_f_D_star(params_f_D,
@@ -361,23 +366,46 @@ def test_estimate_f_D_star():
                               (f, D_star))
 
 
-def test_x0_unfeasible():
+def test_fill_na():
     """
-    Test to make sure that for unfeasible x0 values, results from the linear
-    fit is returned.
+    Test to check the function `fill_na`.
     """
-    noisy = np.array([4243.71728516, 4317.81298828, 4244.35693359, 4439.36816406, 4420.06201172,
-                      4152.30078125, 4114.34912109, 4104.59375, 4151.61914062, 4003.58374023,
-                      4013.68408203, 3906.39428711, 3909.06079102, 3495.27197266, 3402.57006836,
-                      3163.10180664, 2896.04003906, 2663.7253418, 2614.87695312, 2316.55371094,
-                      2267.7722168])
-    fit = ivim_model.fit(noisy)
-    filtered_fit = fit.fill_na()
-    assert_array_equal(filtered_fit.perfusion_fraction, np.nan)
-    assert_array_equal(filtered_fit.D_star, np.nan)
+    # This signal gives negative values for the parameters
+    fit_single = ivim_model.fit(noisy_single)
+    params_from_fit = fit_single.model_params
+    filled_single = fit_single.fill_na()
+    assert_array_equal(filled_single.model_params,
+                       [np.nan, np.nan, np.nan, np.nan])
+
+    fit_multi = ivim_model.fit(noisy_multi)
+    filled_multi = fit_multi.fill_na()
+
+    assert_array_equal(filled_multi[0, 0, 0].model_params, [
+                       np.nan, np.nan, np.nan, np.nan])
+    assert_array_equal(filled_multi[0, 1, 0].model_params, [
+                       np.nan, np.nan, np.nan, np.nan])
+    assert_array_equal(filled_multi[1, 0, 0].model_params, [
+                       np.nan, np.nan, np.nan, np.nan])
+
+    # Check for combinations of fill
+    filled1 = fit_single.fill_na(fill=(True, np.nan, np.nan, True))
+    filled2 = fit_single.fill_na(fill=(np.nan, True, True, np.nan))
+    filled3 = fit_single.fill_na(fill=(True, True, True, True))
+
+    assert_array_almost_equal(filled1.model_params, [params_from_fit[0],
+                                                     np.nan, np.nan,
+                                                     params_from_fit[3]])
+    assert_array_almost_equal(filled2.model_params, [np.nan,
+                                                     params_from_fit[
+                                                         1], params_from_fit[2],
+                                                     np.nan])
+    assert_array_almost_equal(filled3.model_params, params_from_fit)
 
 
 def test_fit_one_stage():
+    """
+    Test to check the results for the one_stage linear fit.
+    """
     model = IvimModel(gtab, two_stage=False)
     fit = model.fit(data_single)
     # assert_array_almost_equal()
