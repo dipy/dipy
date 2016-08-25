@@ -960,14 +960,17 @@ def reduce_rois(rois, include):
     return include_roi, exclude_roi
 
 def flexi_tvis_affine(sl_vox_order, grid_affine, dim, voxel_size):
-    """ Computes the grid space to trackvis space affine, reconciling streamlines and grids with different voxel orders
+    """ Computes the mapping from voxel indices to streamline points,
+        reconciling streamlines and grids with different voxel orders
 
     Parameters
     ----------
-    sl_vox_order: string of length 3 that describes the voxel order of the streamlines (ex: LPS)
+    sl_vox_order: string of length 3
+        a string that describes the voxel order of the streamlines (ex: LPS)
     grid_affine: nii_aff: array (4, 4),
         An affine matrix describing the current space of the grid in relation to RAS+ scanner space
-    dim: dimension of the grid
+    dim: array (3,0)
+        dimension of the grid
     voxel_size: voxel size of the grid
 
     Returns
@@ -986,13 +989,21 @@ def flexi_tvis_affine(sl_vox_order, grid_affine, dim, voxel_size):
     return flexi_tvis_aff
 
 def get_flexi_tvis_affine(tvis_hdr, nii_aff, nii_data):
-    """ Computes the grid space to trackvis space affine, reconciling streamlines and grids with different voxel orders
-    :param tvis_hdr: header from a trackvis file
-    :param nii_aff: array (4, 4),
+    """ Computes the mapping from voxel indices to streamline points,
+        reconciling streamlines and grids with different voxel orders
+
+    Parameters
+    ----------
+    tvis_hdr: header from a trackvis file
+    nii_aff: array (4, 4),
         An affine matrix describing the current space of the grid in relation to RAS+ scanner space
-    :param nii_data: nd array
+    nii_data: nd array
         3D array, each with shape (x, y, z) corresponding to the shape of the brain volume,
-    :return flexi_tvis_aff: this affine maps between a grid and a trackvis space
+
+    Returns
+    -------
+    flexi_tvis_aff: array (4,4)
+        this affine maps between a grid and a trackvis space
     """
 
     sl_vox_order = tvis_hdr['voxel_order']
@@ -1002,3 +1013,117 @@ def get_flexi_tvis_affine(tvis_hdr, nii_aff, nii_data):
     flexi_tvis_aff = flexi_tvis_affine(sl_vox_order, nii_aff, dim, voxel_size)
 
     return flexi_tvis_aff
+
+def path_length(streamlines, aoi, affine, fill_value=-1):
+    """ Computes the shortest path, along any streamline, between aoi and
+    each voxel.
+
+    Parameters
+    ----------
+    streamlines : seq of (N, 3) arrays
+        A sequence of streamlines, path length is given in mm along the curve
+        of the streamline.
+    aoi : array, 3d
+        A mask (binary array) of voxels from which to start computing distance.
+    affine : array (4, 4)
+        The mapping from voxel indices to streamline points.
+    fill_value : float
+        The value of voxel in the path length map that are not connected to the
+        aoi.
+
+    Returns
+    -------
+    plm : array
+        Same shape as aoi. The minimum distance between every point and aoi
+        along the path of a streamline.
+    """
+    aoi = np.asarray(aoi, dtype=bool)
+
+    # path length map
+    plm = np.empty(aoi.shape, dtype=float)
+    plm[:] = np.inf
+    lin_T, offset = _mapping_to_voxel(affine, None)
+    for sl in streamlines:
+        seg_ind = _to_voxel_coordinates(sl, lin_T, offset)
+        i, j, k = seg_ind.T
+        # Get where streamlines passes through aoi
+        breaks = aoi[i, j, k]
+        # Where streamline passes aoi, dist is zero
+        i, j, k = seg_ind[breaks].T
+        plm[i, j, k] = 0
+
+        # If a streamline crosses aoi >1, re-start counting distance for each
+        for seg in as_segments(sl, breaks):
+            i, j, k = _to_voxel_coordinates(seg[1:], lin_T, offset).T
+            # Get the distance, in mm, between streamline points
+            segment_length = np.sqrt(((seg[1:] - seg[:-1]) ** 2).sum(1))
+            dist = segment_length.cumsum()
+            # Updates path length map with shorter distances
+            np.minimum.at(plm, (i, j, k), dist)
+    if fill_value != np.inf:
+        plm = np.where(plm == np.inf, fill_value, plm)
+    return plm
+
+def part_segments(streamline, break_points):
+    segments = np.split(streamline, break_points.nonzero()[0])
+    # Skip first segment, all points before first break
+    # first segment is empty when break_points[0] == 0
+    segments = segments[1:]
+    for each in segments:
+        if len(each) > 1:
+            yield each
+
+def as_segments(streamline, break_points):
+    for seg in part_segments(streamline, break_points):
+        yield seg
+    for seg in part_segments(streamline[::-1], break_points[::-1]):
+        yield seg
+
+if __name__ == "__main__":
+    # Run tests
+    import numpy.testing as npt
+
+    aoi = np.zeros((20, 20, 20), dtype=bool)
+    aoi[0, 0, 0] = 1
+
+    # A few tests for basic usage
+    x = np.arange(20)
+    streamlines = [np.array([x, x, x]).T]
+    pl = path_length(streamlines, aoi, affine=np.eye(4))
+    expected = x.copy() * np.sqrt(3)
+    # expected[0] = np.inf
+    npt.assert_array_almost_equal(pl[x, x, x], expected)
+
+    aoi[19, 19, 19] = 1
+    pl = path_length(streamlines, aoi, affine=np.eye(4))
+    expected = np.minimum(expected, expected[::-1])
+    npt.assert_array_almost_equal(pl[x, x, x], expected)
+
+    aoi[19, 19, 19] = 0
+    aoi[1, 1, 1] = 1
+    pl = path_length(streamlines, aoi, affine=np.eye(4))
+    expected = (x - 1) * np.sqrt(3)
+    expected[0] = 0
+    npt.assert_array_almost_equal(pl[x, x, x], expected)
+
+    z = np.zeros(x.shape, x.dtype)
+    streamlines.append(np.array([x, z, z]).T)
+    pl = path_length(streamlines, aoi, affine=np.eye(4))
+    npt.assert_array_almost_equal(pl[x, x, x], expected)
+    npt.assert_array_almost_equal(pl[x, 0, 0], x)
+
+    # Only streamlines that pass through aoi contribute to path length so if
+    # all streamlines are duds, plm will be all inf.
+    aoi[:] = 0
+    aoi[0, 0, 0] = 1
+    streamlines = []
+    for i in range(1000):
+        rando = np.random.random(size=(100, 3)) * 19 + .5
+        assert (rando > .5).all()
+        assert (rando < 19.5).all()
+        streamlines.append(rando)
+    pl = path_length(streamlines, aoi, affine=np.eye(4))
+    npt.assert_array_almost_equal(pl, np.inf)
+
+    pl = path_length(streamlines, aoi, affine=np.eye(4), fill_value=-12.)
+    npt.assert_array_almost_equal(pl, -12.)
