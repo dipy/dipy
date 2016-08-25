@@ -960,7 +960,7 @@ def reduce_rois(rois, include):
     return include_roi, exclude_roi
 
 def flexi_tvis_affine(sl_vox_order, grid_affine, dim, voxel_size):
-    """ Computes the grid space to trackvis space affine, regardless of streamline voxel order
+    """ Computes the grid space to trackvis space affine, reconciling streamlines and grids with different voxel orders
 
     Parameters
     ----------
@@ -986,7 +986,7 @@ def flexi_tvis_affine(sl_vox_order, grid_affine, dim, voxel_size):
     return flexi_tvis_aff
 
 def get_flexi_tvis_affine(tvis_hdr, nii_aff, nii_data):
-    """
+    """ Computes the grid space to trackvis space affine, reconciling streamlines and grids with different voxel orders
     :param tvis_hdr: header from a trackvis file
     :param nii_aff: array (4, 4),
         An affine matrix describing the current space of the grid in relation to RAS+ scanner space
