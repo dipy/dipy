@@ -13,7 +13,7 @@ from dipy.tracking.utils import (affine_for_trackvis, connectivity_matrix,
                                  reorder_voxels_affine, seeds_from_mask,
                                  random_seeds_from_mask, target,
                                  _rmi, unique_rows, near_roi,
-                                 reduce_rois)
+                                 reduce_rois, path_length)
 from dipy.tracking._utils import _to_voxel_coordinates
 
 import dipy.tracking.metrics as metrix
@@ -608,3 +608,49 @@ def test_reduce_rois():
                                            [True, True])
     npt.assert_equal(include_roi, roi1 + roi2)
     npt.assert_equal(exclude_roi, np.zeros((4, 4, 4)))
+
+def test_path_length():
+    aoi = np.zeros((20, 20, 20), dtype=bool)
+    aoi[0, 0, 0] = 1
+
+    # A few tests for basic usage
+    x = np.arange(20)
+    streamlines = [np.array([x, x, x]).T]
+    pl = path_length(streamlines, aoi, affine=np.eye(4))
+    expected = x.copy() * np.sqrt(3)
+    # expected[0] = np.inf
+    npt.assert_array_almost_equal(pl[x, x, x], expected)
+
+    aoi[19, 19, 19] = 1
+    pl = path_length(streamlines, aoi, affine=np.eye(4))
+    expected = np.minimum(expected, expected[::-1])
+    npt.assert_array_almost_equal(pl[x, x, x], expected)
+
+    aoi[19, 19, 19] = 0
+    aoi[1, 1, 1] = 1
+    pl = path_length(streamlines, aoi, affine=np.eye(4))
+    expected = (x - 1) * np.sqrt(3)
+    expected[0] = 0
+    npt.assert_array_almost_equal(pl[x, x, x], expected)
+
+    z = np.zeros(x.shape, x.dtype)
+    streamlines.append(np.array([x, z, z]).T)
+    pl = path_length(streamlines, aoi, affine=np.eye(4))
+    npt.assert_array_almost_equal(pl[x, x, x], expected)
+    npt.assert_array_almost_equal(pl[x, 0, 0], x)
+
+    # Only streamlines that pass through aoi contribute to path length so if
+    # all streamlines are duds, plm will be all inf.
+    aoi[:] = 0
+    aoi[0, 0, 0] = 1
+    streamlines = []
+    for i in range(1000):
+        rando = np.random.random(size=(100, 3)) * 19 + .5
+        assert (rando > .5).all()
+        assert (rando < 19.5).all()
+        streamlines.append(rando)
+    pl = path_length(streamlines, aoi, affine=np.eye(4))
+    npt.assert_array_almost_equal(pl, np.inf)
+
+    pl = path_length(streamlines, aoi, affine=np.eye(4), fill_value=-12.)
+    npt.assert_array_almost_equal(pl, -12.)
