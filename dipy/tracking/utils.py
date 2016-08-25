@@ -66,6 +66,8 @@ from dipy.tracking import metrics
 
 # Import helper functions shared with vox2track
 from ._utils import (_mapping_to_voxel, _to_voxel_coordinates)
+from dipy.io.bvectxt import orientation_from_string
+import nibabel as nib
 
 
 def _rmi(index, dims):
@@ -956,3 +958,47 @@ def reduce_rois(rois, include):
             exclude_roi |= rois[i]
 
     return include_roi, exclude_roi
+
+def flexi_tvis_affine(sl_vox_order, grid_affine, dim, voxel_size):
+    """ Computes the grid space to trackvis space affine, regardless of streamline voxel order
+
+    Parameters
+    ----------
+    sl_vox_order: string of length 3 that describes the voxel order of the streamlines (ex: LPS)
+    grid_affine: nii_aff: array (4, 4),
+        An affine matrix describing the current space of the grid in relation to RAS+ scanner space
+    dim: dimension of the grid
+    voxel_size: voxel size of the grid
+
+    Returns
+    -------
+    flexi_tvis_aff: this affine maps between a grid and a trackvis space
+    """
+
+    sl_ornt = orientation_from_string(sl_vox_order)
+    grid_ornt = nib.io_orientation(grid_affine)
+    grid2sl_aff = reorder_voxels_affine(grid_ornt, sl_ornt, dim, voxel_size)
+
+    tvis_aff = affine_for_trackvis(voxel_size)
+
+    flexi_tvis_aff = np.dot(grid2sl_aff, tvis_aff)
+
+    return flexi_tvis_aff
+
+def get_flexi_tvis_affine(tvis_hdr, nii_aff, nii_data):
+    """
+    :param tvis_hdr: header from a trackvis file
+    :param nii_aff: array (4, 4),
+        An affine matrix describing the current space of the grid in relation to RAS+ scanner space
+    :param nii_data: nd array
+        3D array, each with shape (x, y, z) corresponding to the shape of the brain volume,
+    :return flexi_tvis_aff: this affine maps between a grid and a trackvis space
+    """
+
+    sl_vox_order = tvis_hdr['voxel_order']
+    voxel_size = tvis_hdr['voxel_size']
+    dim = nii_data.shape
+
+    flexi_tvis_aff = flexi_tvis_affine(sl_vox_order, nii_aff, dim, voxel_size)
+
+    return flexi_tvis_aff
