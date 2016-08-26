@@ -1,6 +1,9 @@
 import os
 import numpy as np
+from os.path import join as pjoin
+
 from dipy.viz import actor, window, widget, fvtk
+from dipy.data import DATA_DIR
 from dipy.data import fetch_viz_icons, read_viz_icons
 import numpy.testing as npt
 from dipy.testing.decorators import xvfb_it
@@ -17,7 +20,7 @@ else:
 def test_button_and_slider_widgets():
 
     recording = False
-    recording_filename = "test_button_and_slider_widgets.log"
+    recording_filename = pjoin(DATA_DIR, "test_button_and_slider_widgets.log")
     renderer = window.Renderer()
 
     # create some minimalistic streamlines
