@@ -979,17 +979,17 @@ def flexi_tvis_affine(sl_vox_order, grid_affine, dim, voxel_size):
     flexi_tvis_aff: this affine maps between a grid and a trackvis space
     """
 
-    sl_ornt = orientation_from_string(sl_vox_order)
+    sl_ornt = orientation_from_string(str(sl_vox_order))
     grid_ornt = nib.io_orientation(grid_affine)
-    grid2sl_aff = reorder_voxels_affine(grid_ornt, sl_ornt, dim, voxel_size)
+    reorder_grid = reorder_voxels_affine(grid_ornt, sl_ornt, np.array(dim)-1, np.array([1,1,1]))
 
     tvis_aff = affine_for_trackvis(voxel_size)
 
-    flexi_tvis_aff = np.dot(grid2sl_aff, tvis_aff)
+    flexi_tvis_aff = np.dot(tvis_aff, reorder_grid)
 
     return flexi_tvis_aff
 
-def get_flexi_tvis_affine(tvis_hdr, nii_aff, nii_data):
+def get_flexi_tvis_affine(tvis_hdr, nii_aff):
     """ Computes the mapping from voxel indices to streamline points,
         reconciling streamlines and grids with different voxel orders
 
@@ -1009,7 +1009,7 @@ def get_flexi_tvis_affine(tvis_hdr, nii_aff, nii_data):
 
     sl_vox_order = tvis_hdr['voxel_order']
     voxel_size = tvis_hdr['voxel_size']
-    dim = nii_data.shape
+    dim = tvis_hdr['dim']
 
     flexi_tvis_aff = flexi_tvis_affine(sl_vox_order, nii_aff, dim, voxel_size)
 
@@ -1054,7 +1054,7 @@ def path_length(streamlines, aoi, affine, fill_value=-1):
         plm[i, j, k] = 0
 
         # If a streamline crosses aoi >1, re-start counting distance for each
-        for seg in as_segments(sl, breaks):
+        for seg in _as_segments(sl, breaks):
             i, j, k = _to_voxel_coordinates(seg[1:], lin_T, offset).T
             # Get the distance, in mm, between streamline points
             segment_length = np.sqrt(((seg[1:] - seg[:-1]) ** 2).sum(1))
@@ -1065,7 +1065,7 @@ def path_length(streamlines, aoi, affine, fill_value=-1):
         plm = np.where(plm == np.inf, fill_value, plm)
     return plm
 
-def part_segments(streamline, break_points):
+def _part_segments(streamline, break_points):
     segments = np.split(streamline, break_points.nonzero()[0])
     # Skip first segment, all points before first break
     # first segment is empty when break_points[0] == 0
@@ -1074,8 +1074,8 @@ def part_segments(streamline, break_points):
         if len(each) > 1:
             yield each
 
-def as_segments(streamline, break_points):
-    for seg in part_segments(streamline, break_points):
+def _as_segments(streamline, break_points):
+    for seg in _part_segments(streamline, break_points):
         yield seg
-    for seg in part_segments(streamline[::-1], break_points[::-1]):
+    for seg in _part_segments(streamline[::-1], break_points[::-1]):
         yield seg
