@@ -16,7 +16,8 @@ else:
 @xvfb_it
 def test_button_and_slider_widgets():
 
-    interactive = False
+    recording = False
+    recording_filename = "test_button_and_slider_widgets.log"
     renderer = window.Renderer()
 
     # create some minimalistic streamlines
@@ -25,24 +26,33 @@ def test_button_and_slider_widgets():
     colors = np.array([[1., 0., 0.], [0.3, 0.7, 0.]])
     stream_actor = actor.streamtube(lines, colors)
 
+    states = {'camera_button_count': 0,
+              'plus_button_count': 0,
+              'minus_button_count': 0,
+              'slider_moved_count': 0,
+              }
+
     renderer.add(stream_actor)
 
     # the show manager allows to break the rendering process
     # in steps so that the widgets can be added properly
     show_manager = window.ShowManager(renderer, size=(800, 800))
 
-    if interactive:
+    if recording:
         show_manager.initialize()
         show_manager.render()
 
     def button_callback(obj, event):
         print('Camera pressed')
+        states['camera_button_count'] += 1
 
     def button_plus_callback(obj, event):
         print('+ pressed')
+        states['plus_button_count'] += 1
 
     def button_minus_callback(obj, event):
         print('- pressed')
+        states['minus_button_count'] += 1
 
     fetch_viz_icons()
     button_png = read_viz_icons(fname='camera.png')
@@ -67,6 +77,7 @@ def test_button_and_slider_widgets():
     def print_status(obj, event):
         rep = obj.GetRepresentation()
         stream_actor.SetPosition((rep.GetValue(), 0, 0))
+        states['slider_moved_count'] += 1
 
     slider = widget.slider(show_manager.iren, show_manager.ren,
                            callback=print_status,
@@ -94,16 +105,22 @@ def test_button_and_slider_widgets():
             slider.place(renderer)
             size = obj.GetSize()
 
-    if interactive:
+    if recording:
         # show_manager.add_window_callback(win_callback)
         # you can also register any callback in a vtk way like this
         # show_manager.window.AddObserver(vtk.vtkCommand.ModifiedEvent,
         #                                 win_callback)
 
-        show_manager.render()
-        show_manager.start()
+        show_manager.record(recording_filename)
+        print(states)
+    else:
+        show_manager.play(recording_filename)
+        npt.assert_equal(states["camera_button_count"], 7)
+        npt.assert_equal(states["plus_button_count"], 3)
+        npt.assert_equal(states["minus_button_count"], 4)
+        npt.assert_equal(states["slider_moved_count"], 116)
 
-    if not interactive:
+    if not recording:
         button.Off()
         slider.Off()
         # Uncomment below to test the slider and button with analyze
@@ -112,8 +129,10 @@ def test_button_and_slider_widgets():
 
         arr = window.snapshot(renderer, size=(800, 800))
         report = window.analyze_snapshot(arr)
-        npt.assert_equal(report.objects, 2)
-        # imshow(report.labels, origin='lower')
+        # import pylab as plt
+        # plt.imshow(report.labels, origin='lower')
+        # plt.show()
+        npt.assert_equal(report.objects, 4)
 
     report = window.analyze_renderer(renderer)
     npt.assert_equal(report.actors, 1)
