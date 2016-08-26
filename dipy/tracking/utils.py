@@ -969,9 +969,10 @@ def flexi_tvis_affine(sl_vox_order, grid_affine, dim, voxel_size):
         a string that describes the voxel order of the streamlines (ex: LPS)
     grid_affine: nii_aff: array (4, 4),
         An affine matrix describing the current space of the grid in relation to RAS+ scanner space
-    dim: array (3,0)
+    dim: tuple of length 3
         dimension of the grid
-    voxel_size: voxel size of the grid
+    voxel_size: array (3,0)
+        voxel size of the grid
 
     Returns
     -------
