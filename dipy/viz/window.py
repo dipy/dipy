@@ -469,6 +469,52 @@ class ShowManager(object):
         del self.iren
         del self.window
 
+    def record(self, filename="record.log"):
+        """ Records interaction.
+
+        The recording is represented as a list of VTK events
+        that happened during the interaction. The recording is
+        going to be saved into `filename`.
+
+        Parameters
+        ----------
+        filename : str
+            Name of the file that will contain the recording.
+        """
+        recorder = vtk.vtkInteractorEventRecorder()
+        recorder.SetInteractor(self.iren)
+        recorder.SetFileName(filename)
+
+        def _stop_recording_and_close(obj, evt):
+            recorder.Stop()
+            self.iren.TerminateApp()
+
+        self.iren.AddObserver("ExitEvent", _stop_recording_and_close)
+
+        self.iren.Initialize()
+        recorder.EnabledOn()
+        recorder.Record()
+
+        self.iren.Start()
+
+    def play(self, filename):
+        """ Plays a recorded interaction.
+
+        The VTK events that happened during the recorded interaction will be
+        played back from `filename`.
+
+        Parameters
+        ----------
+        filename : str
+            Name of the file containing the recorded events.
+        """
+        recorder = vtk.vtkInteractorEventRecorder()
+        recorder.SetInteractor(self.iren)
+        recorder.SetFileName(filename)
+
+        self.iren.Initialize()
+        recorder.Play()
+
     def add_window_callback(self, win_callback):
         """ Add window callbacks
         """
