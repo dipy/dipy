@@ -624,8 +624,7 @@ def test_flexi_tvis_affine():
     assert_array_almost_equal(origin[:3], np.multiply(dim,voxel_size)-voxel_size/2)
 
 def test_get_flexi_tvis_affine():
-    #sl_vox_order = 'RPI'
-    tvis_hdr = {'voxel_order':sl_vox_order,'dim',(256,256,86), 'voxel_size':[ 1.09379995,1.09379995,1.99947774]}
+    tvis_hdr = {'voxel_order':'RPI','dim':(256,256,86), 'voxel_size':[1.09379995,1.09379995,1.99947774]}
     grid_affine = np.array([[ -1.08566022e+00,   1.42664334e-03,   2.43463114e-01,   1.34783203e+02],
     [2.43251352e-03,   1.09376717e+00,   1.48301506e-02,  -1.07367630e+02],
     [1.33170187e-01,  -8.34854878e-03,   1.98454463e+00,  -9.98151169e+01],
@@ -634,7 +633,7 @@ def test_get_flexi_tvis_affine():
     affine = get_flexi_tvis_affine(tvis_hdr, grid_affine)
 
     origin = np.dot(affine, [0, 0, 0, 1])
-    assert_array_almost_equal(origin[:3], np.multiply(dim,voxel_size) - voxel_size / 2)
+    assert_array_almost_equal(origin[:3], np.multiply(tvis_hdr['dim'],tvis_hdr['voxel_size']) - tvis_hdr['voxel_size'] / 2)
 
 def test_path_length():
     aoi = np.zeros((20, 20, 20), dtype=bool)
