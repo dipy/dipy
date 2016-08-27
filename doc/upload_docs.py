@@ -3,6 +3,7 @@
 # automatically detected by the dipy website.
 import os
 import re
+import sys
 from os import chdir as cd
 from subprocess import check_call
 
@@ -45,7 +46,25 @@ if __name__ == '__main__':
         sh("git clone %s %s" % (docs_repo_url, docs_repo_path))
     cd(docs_repo_path)
     print("Moved to " + os.getcwd())
-    sh("git checkout gh-pages")
+    try:
+        sh("git checkout gh-pages")
+    except:
+        while(1):
+            print("\nLooks like gh-pages branch does not exist!")
+            print("Do you want to create a new one? (y/n)")
+            choice = str(input()).lower()
+            if choice == 'y':
+                sh("git checkout -b gh-pages")
+                sh("rm -rf *")
+                sh("git add .")
+                sh("git commit -m 'cleaning gh-pages branch'")
+                sh("git push origin gh-pages")
+                break
+            if choice == 'n':
+                print("Please manually create a new gh-pages branch and try again.")
+                sys.exit(0)
+            else:
+                print("Please enter valid choice ..")
     sh("git pull origin gh-pages")
 
     # check if docs for current version exists
