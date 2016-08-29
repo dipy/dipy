@@ -1,9 +1,21 @@
 """
-=====================================================================
-Title
-=====================================================================
+==========================================================================
+Using the free water elimination model to remove free water contaminations
+==========================================================================
 
-Some background
+As shown previously (see :ref:`example_reconst_dti`), the diffusion tensor
+model is a simple way to characterize the diffusion anisotropy. However, this
+model is not specific to particular type of tissue. For example, diffusion
+anisotropy in regions near the cerebral ventricle and parenchyma can be
+underestimated by partial volume effects of the cerebral spinal fluid (CSF).
+This free water contamination can particularly corrupt diffusion tensor imaging
+analysis of microstructural changes when different groups of subject show
+different brain morphology (e.g. brain ventricle enlargement associated with
+brain tissue atrophy that occurs in pathology or aging).
+
+A way to remove this free water influences is to expand the DTI model to take
+into account two compartments representing the diffusion contributions from
+the tissue and from the CSF.
 
 """
 
