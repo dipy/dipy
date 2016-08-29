@@ -508,7 +508,6 @@ def _nls_err_func(tensor_elements, design_matrix, data, Diso=3e-3,
         ft = arcsin(2*f - 1) + pi/2
     design_matrix : array
         The design matrix
-
     data : array
         The voxel signal in all gradient directions
     Diso : float, optional
@@ -518,7 +517,6 @@ def _nls_err_func(tensor_elements, design_matrix, data, Diso=3e-3,
     weighting : str (optional).
          Whether to use the Geman McClure weighting criterion (see [1]_
          for details)
-
     sigma : float or float array (optional)
         If 'sigma' weighting is used, we will weight the error function
         according to the background noise estimated either in aggregate over
@@ -530,7 +528,6 @@ def _nls_err_func(tensor_elements, design_matrix, data, Diso=3e-3,
         If true, the diffusion tensor elements were decomposed using cholesky
         decomposition. See fwdti.nls_fit_tensor
         Default: False
-
     f_transform : bool, optional
         If true, the water volume fraction was converted to
         ft = arcsin(2*f - 1) + pi/2, insuring f estimates between 0 and 1.
@@ -657,7 +654,6 @@ def nls_fit_tensor(design_matrix, data, fw_params=None, S0=None, Diso=3e-3,
         Value of the free water isotropic diffusion. Default is set to 3e-3
         $mm^{2}.s^{-1}$. Please ajust this value if you are assuming different
         units of diffusion.
-
     weighting: str, optional
         the weighting scheme to use in considering the
         squared-error. Default behavior is to use uniform weighting. Other
@@ -671,7 +667,6 @@ def nls_fit_tensor(design_matrix, data, fw_params=None, S0=None, Diso=3e-3,
         If true it uses cholesky decomposition to insure that diffusion tensor
         is positive define.
         Default: False
-
     f_transform : bool, optional
         If true, the water volume fractions is converted during the convergence
         procedure to ft = arcsin(2*f - 1) + pi/2, insuring f estimates between

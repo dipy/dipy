@@ -230,7 +230,7 @@ def test_fwdti_restore():
     assert_array_almost_equal(fwdtiF.fa, FAdti)
     assert_array_almost_equal(fwdtiF.f, gtf)
     # Weighting seem to need a better initial guess
-    fwdm2 = fwdti.FreeWaterTensorModel(gtab_2s, 'NLS', weighting='gmm', 
+    fwdm2 = fwdti.FreeWaterTensorModel(gtab_2s, 'NLS', weighting='gmm',
                                        fw_params=fwdfit_ini.model_params)
     fwdtiF2 = fwdm2.fit(S_conta)
     assert_array_almost_equal(fwdtiF2.fa, FAdti)
@@ -259,7 +259,7 @@ def test_fwdti_jac_multi_voxel():
     fwefit = fwdm.fit(DWI[0, :, :])
     Ffwe = fwefit.f
     assert_array_almost_equal(Ffwe, GTF[0, :])
-    
+
     # with f transform
     fwdm = fwdti.FreeWaterTensorModel(gtab_2s, 'NLS',
                                       fw_params=fw_params_initial,
@@ -268,4 +268,3 @@ def test_fwdti_jac_multi_voxel():
     fwefit = fwdm.fit(DWI[0, :, :])
     Ffwe = fwefit.f
     assert_array_almost_equal(Ffwe, GTF[0, :])
-
