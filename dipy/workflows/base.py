@@ -1,7 +1,23 @@
+import sys
 import inspect
 
 from dipy.fixes import argparse as arg
 from dipy.workflows.docstring_parser import NumpyDocString
+
+
+def get_args_default(func):
+    if sys.version_info[0] >= 3:
+        sig_object = inspect.signature(func)
+        params = sig_object.parameters.values()
+        names = [param.name for param in params if param.name is not 'self']
+        defaults = [param.default for param in params
+                    if param.default is not inspect._empty]
+    else:
+        specs = inspect.getargspec(func)
+        names = specs.args[1:]
+        defaults = specs.defaults
+
+    return names, defaults
 
 
 class IntrospectiveArgumentParser(arg.ArgumentParser):
@@ -75,7 +91,7 @@ class IntrospectiveArgumentParser(arg.ArgumentParser):
         -------
         sub_flow_optionals : dictionary of all sub workflow optional parameters
         """
-        specs = inspect.getargspec(workflow.run)
+
         doc = inspect.getdoc(workflow.run)
         npds = NumpyDocString(doc)
         self.doc = npds['Parameters']
@@ -84,8 +100,7 @@ class IntrospectiveArgumentParser(arg.ArgumentParser):
         self.outputs = [param for param in npds['Parameters'] if
                         'out_' in param[0]]
 
-        args = specs.args[1:]
-        defaults = specs.defaults
+        args, defaults = get_args_default(workflow.run)
 
         len_args = len(args)
         len_defaults = len(defaults)
@@ -153,13 +168,11 @@ class IntrospectiveArgumentParser(arg.ArgumentParser):
         sub_flow_optionals = dict()
         for name, flow, short_name in sub_flows:
             sub_flow_optionals[name] = {}
-            specs = inspect.getargspec(flow)
             doc = inspect.getdoc(flow)
             npds = NumpyDocString(doc)
             _doc = npds['Parameters']
 
-            args = specs.args[1:]
-            defaults = specs.defaults
+            args, defaults = get_args_default(flow)
 
             len_args = len(args)
             len_defaults = len(defaults)
