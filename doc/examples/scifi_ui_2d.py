@@ -9,6 +9,7 @@ from dipy.viz import actor, window, gui_2d
 from ipdb import set_trace
 
 # Allow import, but disable doctests if we don't have vtk.
+from dipy.viz import gui_mod
 from dipy.viz.gui_menus import FileSaveMenu
 
 vtk, have_vtk, setup_module = optional_package('vtk')
@@ -137,7 +138,7 @@ slider.add_callback("LeftButtonReleaseEvent", disk_release_callback, slider.slid
 # /Line Slider
 
 # Disk Slider
-disk_slider = gui_2d.DiskSlider2D()
+disk_slider = gui_mod.DiskSlider2DMod()
 
 
 def outer_disk_click_callback(obj, evt):
@@ -180,7 +181,7 @@ panel = gui_2d.Panel2D(center=(440, 90), size=(300, 150), color=(1, 1, 1), align
 panel.add_element(button, (0.95, 0.9))
 panel.add_element(text, (0.1, 0.2))
 panel.add_element(slider, (0.5, 0.9))
-panel.add_element(disk_slider, (0.7, 0.3))
+panel.add_element(disk_slider, (0.7, 0.4))
 
 
 def panel_click_callback(obj, evt):
@@ -230,10 +231,10 @@ file_dialog.text_box.add_callback("LeftButtonPressEvent", select_text_callback)
 # Initialize and add to renderer
 renderer = window.ren()
 
-# renderer.add(panel)
+renderer.add(panel)
 renderer.add(cube_actor_1)
 renderer.add(cube_actor_2)
-renderer.add(file_dialog)
+# renderer.add(file_dialog)
 # renderer.add(disk_slider)
 # /Renderer
 
