@@ -47,18 +47,16 @@ from dipy.data import read_cenir_multib
 from dipy.segment.mask import median_otsu
 
 """
-Without 
-Free water elimination DTI model requires multi-shell data, i.e. data acquired
-from more than one non-zero b-value. Here, we use fetch to download a
-multi-shell dataset with parameters.
+Without spatial constrains the free water elimination model cannot be solved
+in data acquired from one non-zero b-value _[Hoy2014]. Therefore, here we
+download a dataset that was required from multi b-values.
 """
 
 fetch_cenir_multib(with_raw=False)
 
 """
-Next, we read the saved dataset. To decrease the influence of non-Gaussain
-diffusion signal components, we only select the b-values up to 2000 $s.mm^{-2}$
-(_[Hoy2014]):
+From the downloaded data, we read only the data acquired with b-values up to
+2000 $s.mm^{-2} to decrease the influence of non-Gaussain (_[Hoy2014]).
 """
 
 bvals = [200, 400, 1000, 2000]
@@ -70,14 +68,16 @@ data = img.get_data()
 affine = img.get_affine()
 
 """
-Before fitting the data, we perform some data pre-processing. We first compute
-a brain mask to avoid unnecessary calculations on the background of the image.
+The free water DTI model can take some minutes to process the full data set.
+Thus, we remove the background of the image to avoid unnecessary calculations.
+Moreover, for illustration purposes we process only an axial slice of the
+data.
 """
 
 maskdata, mask = median_otsu(data, 4, 2, False, vol_idx=[0, 1], dilate=1)
 
 """
-Test only an axial slice
+Moreover, for illustration purposes we select an axial slice of the data.
 """
 
 axial_slice = 40
@@ -86,30 +86,26 @@ mask_roi = np.zeros(data.shape[:-1], dtype=bool)
 mask_roi[:, :, axial_slice] = mask[:, :, axial_slice]
 
 """
-Now that we have loaded and prepared the voxels to process we can go forward
-with the voxel reconstruction. This can be done by first instantiating the
-FreeWaterTensorModel in the following way:
+The free water elimantion model fit can then be initialized by instantiating
+a FreeWaterTensorModel class object:
 """
 
 fwdtimodel = fwdti.FreeWaterTensorModel(gtab, 'NLS', cholesky=False)
 
 """
-To fit the data using the defined model object, we call the ``fit`` function of
-this object:
+The data can then be fitted using the ``fit`` function of the defined model
+object:
 """
-
-from time import time
-t0 = time()
 
 fwdtifit = fwdtimodel.fit(data, mask=mask_roi)
 
-print (time() - t0), ' sec'
 
 """
-The fit method creates a FreeWaterTensorFit object which contains the diffusion
-tensor free of the water contamination. Below we extract the fractional
-anisotropy (FA), the mean diffusivity (MD), the axial diffusivity (AD) and 
-the radial diffusivity (RD) of the free water diffusion tensor."""
+This 2-steps procedure will create a FreeWaterTensorFit object which contains
+all the diffusion tensor statistics free for free water contaminations. Below
+we extract the fractional anisotropy (FA), the mean diffusivity (MD), the
+axial diffusivity (AD) and  the radial diffusivity (RD) of the free water
+diffusion tensor."""
 
 FA = fwdtifit.fa
 MD = fwdtifit.md
@@ -117,8 +113,8 @@ AD = fwdtifit.ad
 RD = fwdtifit.rd
 
 """
-From comparison we also compute the standard measures using the standard DTI
-model
+From comparison we also compute the same standard measures processed by the
+standard DTI model
 """
 dtimodel = dti.TensorModel(gtab)
 
@@ -130,9 +126,9 @@ dti_AD = dtifit.ad
 dti_RD = dtifit.rd
 
 """
-The DT based measures can be easly visualized using matplotlib. For example,
-the FA, MD, AD, and RD obtain from the diffusion kurtosis model (upper panels)
-and the tensor model (lower panels) are plotted for the selected axial slice.
+Below the FA, MD, AD, and RD maps of the selected slice are ploted (upper
+panels) and compared to the FA, MD, AD and RD maps obtain from the standard
+DTI model (lower panels).
 """
 
 fig1, ax = plt.subplots(2, 4, figsize=(12, 6),
