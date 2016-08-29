@@ -15,8 +15,27 @@ brain tissue atrophy that occurs in pathology or aging).
 
 A way to remove this free water influences is to expand the DTI model to take
 into account two compartments representing the diffusion contributions from
-the tissue and from the CSF.
+the tissue and from the CSF. The expressing of the expanded free water 
+elimination DTI model is shown below:
 
+
+.. math::
+
+    S(\mathbf{g}, b) = S_0(1-f)e^{-b\mathbf{g}^T \mathbf{D}
+    \mathbf{g}}+S_0fe^{-b D_{iso}}
+    
+where $\mathbf{g}$ and $b$ are diffusion grandient direction and weighted
+(more information see :ref:`example_reconst_dti`), $S(\mathbf{g}, b)$ is the
+diffusion-weighted signal measured, $S_0$ is the signal conducted in a
+measurement with no diffusion weighting, $\mathbf{D}$ is the diffusion tensor,
+$f$ the volume fraction of the free water component, and $D_iso$ is the
+isotropic value of the free water diffusion (normally set to $3.0 \times
+10^{-3} mm^{2}s^{-1}$).
+
+In this example, we show how to process a diffusion weighted dataset using the
+free water elimantion.
+
+Let's start by importing the relevant modules:
 """
 
 import numpy as np
@@ -28,6 +47,7 @@ from dipy.data import read_cenir_multib
 from dipy.segment.mask import median_otsu
 
 """
+Without 
 Free water elimination DTI model requires multi-shell data, i.e. data acquired
 from more than one non-zero b-value. Here, we use fetch to download a
 multi-shell dataset with parameters.
