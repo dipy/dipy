@@ -214,7 +214,8 @@ def main(**extra_args):
                           ]},
           data_files=[('share/doc/dipy/examples',
                        glob(pjoin('doc','examples','*.py')))],
-          scripts      = [pjoin('bin', 'dipy_median_otsu')],
+          scripts      = [pjoin('bin', 'dipy_median_otsu'),
+                          pjoin('bin', 'dipy_nlmeans')],
           cmdclass = cmdclass,
           **extra_args
         )
