@@ -15,7 +15,7 @@ import numpy as np
 from numpy.testing import (assert_array_equal, assert_array_almost_equal,
                            assert_raises, assert_array_less, run_module_suite)
 
-from dipy.reconst.ivim import ivim_prediction, IvimModel
+from dipy.reconst.ivim import ivim_prediction, IvimModel, fill_na
 from dipy.core.gradients import gradient_table, generate_bvecs
 from dipy.sims.voxel import multi_tensor
 
@@ -373,24 +373,27 @@ def test_fill_na():
     # This signal gives negative values for the parameters
     fit_single = ivim_model.fit(noisy_single)
     params_from_fit = fit_single.model_params
-    filled_single = fit_single.fill_na()
+    filled_single = fill_na(ivim_model, params_from_fit)
     assert_array_equal(filled_single.model_params,
                        [np.nan, np.nan, np.nan, np.nan])
 
     fit_multi = ivim_model.fit(noisy_multi)
-    filled_multi = fit_multi.fill_na()
+    filled_multi = fill_na(ivim_model, fit_multi.model_params)
 
-    assert_array_equal(filled_multi[0, 0, 0].model_params, [
-                       np.nan, np.nan, np.nan, np.nan])
-    assert_array_equal(filled_multi[0, 1, 0].model_params, [
-                       np.nan, np.nan, np.nan, np.nan])
-    assert_array_equal(filled_multi[1, 0, 0].model_params, [
-                       np.nan, np.nan, np.nan, np.nan])
+    assert_array_equal(filled_multi.model_params[0, 0, 0], [
+        np.nan, np.nan, np.nan, np.nan])
+    assert_array_equal(filled_multi.model_params[0, 1, 0], [
+        np.nan, np.nan, np.nan, np.nan])
+    assert_array_equal(filled_multi.model_params[1, 0, 0], [
+        np.nan, np.nan, np.nan, np.nan])
 
     # Check for combinations of fill
-    filled1 = fit_single.fill_na(fill=(True, np.nan, np.nan, True))
-    filled2 = fit_single.fill_na(fill=(np.nan, True, True, np.nan))
-    filled3 = fit_single.fill_na(fill=(True, True, True, True))
+    filled1 = fill_na(ivim_model, fit_single.model_params,
+                      fill=(True, np.nan, np.nan, True))
+    filled2 = fill_na(ivim_model, fit_single.model_params,
+                      fill=(np.nan, True, True, np.nan))
+    filled3 = fill_na(ivim_model, fit_single.model_params,
+                      fill=(True, True, True, True))
 
     assert_array_almost_equal(filled1.model_params, [params_from_fit[0],
                                                      np.nan, np.nan,
