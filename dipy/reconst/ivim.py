@@ -551,8 +551,8 @@ def fill_na(model, model_params, bounds=((0., 0., 0., 0), (np.inf, 0.30, 0.1, 0.
             fill=(np.nan, np.nan, np.nan, np.nan)):
     """
     Function to fill nan values for parameters which are not within the bounds.
-    This function will check if `f `is within bounds and set D_star and f to nan
-    if `f` is out of bounds.
+    This function will check if any parameter is within bounds and set its value to 
+    `np.nan` or what is specified in `fill`.
 
     Parameters
     ----------
@@ -589,6 +589,7 @@ def fill_na(model, model_params, bounds=((0., 0., 0., 0), (np.inf, 0.30, 0.1, 0.
 
     bounds_violated = ~np.multiply(lower_bound_respected, upper_bound_respected)
     filled_params = params * np.array(fill)
-
-    params_filled = np.where(np.any(bounds_violated, axis=-1), filled_params, params)
+    # Values are filled only for the parameters where the bounds are violated
+    # Needs discussion on whether to fill for all values if any bound is violated
+    params_filled = np.where(bounds_violated, filled_params, params)
     return IvimFit(model, params_filled)

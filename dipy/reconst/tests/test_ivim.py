@@ -378,11 +378,15 @@ def test_fill_na():
     fit_no_noise = ivim_model.fit(data_single)
     filled_no_noise = fill_na(ivim_model, fit_no_noise.model_params)
 
+    params_from_fit = fit_single_noisy.model_params
+
     assert_array_equal(filled_no_noise.shape, fit_no_noise.shape)
     assert_array_almost_equal(filled_no_noise.model_params, fit_no_noise.model_params)
 
     assert_array_equal(filled_single_noisy.shape, fit_no_noise.shape)
-    assert_array_almost_equal(filled_single_noisy.model_params, (np.nan, np.nan, np.nan, np.nan))
+    assert_array_almost_equal(filled_single_noisy.model_params,
+                             (params_from_fit[0], np.nan, params_from_fit[2],
+                              params_from_fit[3]))
 
     # Check for combinations of fill
     filled1 = fill_na(ivim_model, fit_single_noisy.model_params,
@@ -392,14 +396,13 @@ def test_fill_na():
     filled3 = fill_na(ivim_model, fit_single_noisy.model_params,
                       fill=(True, True, True, True))
 
-    params_from_fit = fit_single_noisy.model_params
     assert_array_almost_equal(filled1.model_params, [params_from_fit[0],
-                                                     np.nan, np.nan,
+                                                     np.nan, params_from_fit[2],
                                                      params_from_fit[3]])
-    assert_array_almost_equal(filled2.model_params, [np.nan,
-                                                     params_from_fit[
-                                                         1], params_from_fit[2],
-                                                     np.nan])
+    assert_array_almost_equal(filled2.model_params, [params_from_fit[0],
+                                                     params_from_fit[1],
+                                                     params_from_fit[2],
+                                                     params_from_fit[3]])
     assert_array_almost_equal(filled3.model_params, params_from_fit)
 
     fit_multi = ivim_model.fit(noisy_multi)
@@ -408,9 +411,9 @@ def test_fill_na():
     assert_array_equal(filled_multi.model_params[0, 0, 0],
                        fit_no_noise.model_params)
     assert_array_equal(filled_multi.model_params[0, 1, 0], [
-        np.nan, np.nan, np.nan, np.nan])
+        params_from_fit[0], np.nan, params_from_fit[2], params_from_fit[3]])
     assert_array_equal(filled_multi.model_params[1, 1, 0], [
-        np.nan, np.nan, np.nan, np.nan])
+        params_from_fit[0], np.nan, params_from_fit[2], params_from_fit[3]])
 
 
 def test_fit_one_stage():
