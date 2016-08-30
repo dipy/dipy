@@ -218,7 +218,10 @@ def main(**extra_args):
                           pjoin('bin', 'dipy_reconst_csd'),
                           pjoin('bin', 'dipy_reconst_csa'),
                           pjoin('bin', 'dipy_median_otsu'),
-                          pjoin('bin', 'dipy_nlmeans')],
+                          pjoin('bin', 'dipy_nlmeans'),
+                          pjoin('bin', 'dipy_mask')
+                          ],
+
           cmdclass = cmdclass,
           **extra_args
         )
