@@ -366,9 +366,9 @@ class IvimModel(ReconstModel):
                 f, D_star = res[0]
                 return f, D_star
             except:
-                warningMsg = "x0 obtained from linear fitting is unfeasibile as "
-                warningMsg += "initial guess for leastsq. Using parameters from "
-                warningMsg += "the linear fit."
+                warningMsg = "x0 obtained from linear fitting is not feasibile as "
+                warningMsg += "initial guess for leastsq. Parameters are returned only "
+                warningMsg += "from the linear fit."
                 warnings.warn(warningMsg, UserWarning)
                 f, D_star = params_f_D
                 return f, D_star
@@ -386,7 +386,7 @@ class IvimModel(ReconstModel):
                 f, D_star = res.x
                 return f, D_star
             except:
-                warningMsg = "x0 obtained from linear fitting is unfeasibile "
+                warningMsg = "x0 obtained from linear fitting is not feasibile "
                 warningMsg += "as initial guess for leastsq while estimating "
                 warningMsg += "f and D_star. Using parameters from the "
                 warningMsg += "linear fit."

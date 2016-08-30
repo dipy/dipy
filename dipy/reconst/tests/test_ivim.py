@@ -13,7 +13,8 @@ References
 """
 import numpy as np
 from numpy.testing import (assert_array_equal, assert_array_almost_equal,
-                           assert_raises, assert_array_less, run_module_suite)
+                           assert_raises, assert_array_less, run_module_suite,
+                           assert_warns)
 
 from dipy.reconst.ivim import ivim_prediction, IvimModel, fill_na
 from dipy.core.gradients import gradient_table, generate_bvecs
@@ -424,6 +425,23 @@ def test_fit_one_stage():
     assert_array_almost_equal(fit.model_params, linear_fit_params)
     assert_array_almost_equal(fit.predict(gtab), linear_fit_signal)
 
+
+def test_warning():
+    """
+    Test for warning when linear fit gives parameters which are not feasible.
+    """
+    # This signal gives negative values for the parameters
+    assert_warns(UserWarning, ivim_model.fit, noisy_single)
+
+
+def test_leastsq_failing():
+    """
+    Test for cases where leastsq fitting fails and the results from a linear fit is returned.
+    """
+    fit_single = ivim_model.fit(noisy_single)
+    # Test for the S0 and D values
+    assert_array_almost_equal(fit_single.S0_predicted, 4356.268901117833)
+    assert_array_almost_equal(fit_single.D, 6.936684e-04)
 
 if __name__ == '__main__':
     run_module_suite()
