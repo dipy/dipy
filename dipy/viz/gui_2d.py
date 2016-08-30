@@ -683,7 +683,7 @@ class LineSlider2D(UI):
         self.build_actors(inner_radius=inner_radius, outer_radius=outer_radius)
 
     def build_actors(self, inner_radius, outer_radius):
-        """
+        """ Builds required actors.
 
         Parameters
         ----------
@@ -845,6 +845,8 @@ class DiskSlider2D(UI):
         self.build_actors()
 
     def build_actors(self):
+        """ Build actors.
+        """
         # Base Disk
         base_disk = vtk.vtkDiskSource()
         base_disk.SetInnerRadius(self.base_disk_inner_radius)
@@ -1000,6 +1002,12 @@ class DiskSlider2D(UI):
         return angle
 
     def move_move_disk(self, click_position):
+        """Moves the move-disk.
+
+        Parameters
+        ----------
+        click_position: (float, float)
+        """
         intersection_coordinate = self.get_poi(click_position)
         self.set_position(intersection_coordinate)
         angle = self.get_angle(intersection_coordinate)
@@ -1092,6 +1100,12 @@ class Text2D(UI):
         return text_actor
 
     def set_message(self, message):
+        """ Sets the message.
+
+        Parameters
+        ----------
+        message: string
+        """
         self.actor.set_message(message)
 
     def add_to_renderer(self, ren):

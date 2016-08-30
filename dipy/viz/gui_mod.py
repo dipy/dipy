@@ -14,6 +14,10 @@ else:
 
 numpy_support, have_ns, _ = optional_package('vtk.util.numpy_support')
 
+# --------------------------------------------------------------------
+#                                  W I P
+# --------------------------------------------------------------------
+
 
 class DiskSlider2DMod(DiskSlider2D):
 

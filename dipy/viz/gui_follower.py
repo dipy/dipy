@@ -21,7 +21,20 @@ numpy_support, have_ns, _ = optional_package('vtk.util.numpy_support')
 
 
 class FollowerMenu(UI):
+    """ A 3D follower menu.
+    Typically follows an object in 3D, always facing the camera. Elements can be added to the menu
+    and they are allotted positions in an orbit.
+    """
     def __init__(self, position, diameter, camera, elements):
+        """
+
+        Parameters
+        ----------
+        position: (float, float, float)
+        diameter: float
+        camera: vtkCamera
+        elements: list(UI)
+        """
         super(FollowerMenu, self).__init__()
 
         self.diameter = diameter
@@ -38,10 +51,24 @@ class FollowerMenu(UI):
         self.ui_list.append(self)
 
     def add_to_renderer(self, ren):
+        """ Add the orbit to renderer
+
+        Parameters
+        ----------
+        ren : renderer
+        """
         ren.add(self.actor)
 
     @staticmethod
     def find_total_dist(coordinate, coordinate_list):
+        """ A function to find the total "cost" of allocating elements.
+        We want the elements to be as further apart from each other as possible.
+
+        Parameters
+        ----------
+        coordinate: (float, float, float)
+        coordinate_list: list((float, float, float))
+        """
         distance_aggregate = 0
         for coordinate_element in coordinate_list:
             distance_aggregate += math.sqrt((coordinate_element[0]-coordinate[0])**2 +
@@ -49,6 +76,12 @@ class FollowerMenu(UI):
         return distance_aggregate
 
     def add_parts(self, parts):
+        """ Adds parts to the orbit.
+
+        Parameters
+        ----------
+        parts: list(UI)
+        """
         number_of_parts = len(parts)
         angular_difference = 360/number_of_parts
         allotted_coordinates = []
@@ -74,6 +107,8 @@ class FollowerMenu(UI):
                 self.actor.AddPart(ui_item.actor)
 
     def build_assembly(self):
+        """ Builds the initial assembly.
+        """
         assembly = vtk.vtkAssembly()
         dummy_follower = vtk.vtkFollower()
         assembly.AddPart(dummy_follower)
@@ -107,13 +142,28 @@ class FollowerMenu(UI):
 
 
 class FollowerMenuOrbit(UI):
+    """ The circular orbit for the follower menu.
+    """
     def __init__(self, position, diameter):
+        """
+
+        Parameters
+        ----------
+        position: (float, float, float)
+        diameter: float
+        """
         super(FollowerMenuOrbit, self).__init__()
         self.actor = self.build_actor(center=position, diameter=diameter)
 
         self.ui_list.append(self)
 
     def build_actor(self, center, diameter):
+        """
+
+        Parameters
+        ----------
+        center(float, float, float)
+        """
         disk = vtk.vtkDiskSource()
         disk.SetInnerRadius(diameter/2)
         disk.SetOuterRadius(diameter/2 + 1)
@@ -136,7 +186,16 @@ class FollowerMenuOrbit(UI):
 
 
 class CubeButtonFollower(UI):
+    """A 3D cube that can be added to the follower menu.
+    """
     def __init__(self, size, color):
+        """
+
+        Parameters
+        ----------
+        size: (float, float, float)
+        color: (float, float, float)
+        """
         super(CubeButtonFollower, self).__init__()
         self.actor = self.build_actor(size=size, color=color)
         self.element_type = "cube"
@@ -144,6 +203,13 @@ class CubeButtonFollower(UI):
         self.ui_list.append(self)
 
     def build_actor(self, size, color):
+        """
+
+        Parameters
+        ----------
+        size: (float, float, float)
+        color: (float, float, float)
+        """
         cube = vtk.vtkCubeSource()
         cube.SetXLength(size[0])
         cube.SetYLength(size[1])
@@ -169,7 +235,7 @@ class CubeButtonFollower(UI):
 
 
 class ButtonFollower(UI):
-    """ Currently implements a 2D overlay button and is of type vtkTexturedActor2D.
+    """ Implements a 3D button and is of type vtkTexturedActor.
 
     """
 
@@ -212,7 +278,7 @@ class ButtonFollower(UI):
         return icons
 
     def build_actor(self, icon, center=None):
-        """ Return an image as a 2D actor with a specific position
+        """ Return an image as an actor with a specific position
 
         Parameters
         ----------
@@ -258,6 +324,8 @@ class ButtonFollower(UI):
         self.actor.GetMapper().SetInputConnection(icon.GetOutputPort())
 
     def next_icon_name(self):
+        """ Set current icon name to next icon in the list.
+        """
         self.current_icon_id += 1
         if self.current_icon_id == len(self.icons):
             self.current_icon_id = 0
@@ -272,8 +340,16 @@ class ButtonFollower(UI):
 
 
 class TextFollower(UI):
-
+    """ 3D text that follows the camera.
+    """
     def __init__(self, text, color):
+        """
+
+        Parameters
+        ----------
+        text: string
+        color: (float, float, float)
+        """
         super(TextFollower, self).__init__()
 
         self.actor = self.build_actor(text=text, color=color)
@@ -281,6 +357,13 @@ class TextFollower(UI):
         self.ui_list.append(self)
 
     def build_actor(self, text, color):
+        """
+
+        Parameters
+        ----------
+        text: string
+        color: (float, float, float)
+        """
         actor_text = vtk.vtkVectorText()
         actor_text.SetText(text)
 
@@ -314,7 +397,7 @@ class Rectangle3D(UI):
 
         Parameters
         ----------
-        size
+        size: (float, float, float)
         """
         super(Rectangle3D, self).__init__()
         self.actor = self.build_actor(size=size)
@@ -326,11 +409,11 @@ class Rectangle3D(UI):
 
         Parameters
         ----------
-        size
+        size: (float, float, float)
 
         Returns
         -------
-        actor
+        actor: vtkActor
 
         """
         # Setup four points
@@ -369,147 +452,3 @@ class Rectangle3D(UI):
         actor.GetProperty().SetColor(1, 1, 1)
 
         return actor
-
-
-class LineSliderFollower(UI):
-    def __init__(self, start_point=(0, 0, 0), end_point=(100, 0, 0), line_width=2, inner_radius=0,
-                 outer_radius=5, position=(50, 0, 5)):
-        """
-
-        Parameters
-        ----------
-        inner_radius
-        outer_radius
-        position
-        start_point
-        end_point
-        line_width
-        """
-        super(LineSliderFollower, self).__init__()
-        self.slider_line = LineSliderFollowerBase(start_point=start_point, end_point=end_point, line_width=line_width)
-        self.slider_disk = LineSliderFollowerDisk(position=position, inner_radius=inner_radius,
-                                                  outer_radius=outer_radius,
-                                                  start_point=start_point, end_point=end_point)
-
-        self.ui_list.append(self.slider_line)
-        self.ui_list.append(self.slider_disk)
-
-    def add_to_renderer(self, ren):
-        ren.add(self.slider_line.actor)
-        ren.add(self.slider_disk.actor)
-
-    def add_callback(self, event_type, callback, component):
-        """ Adds events to an actor
-
-        Parameters
-        ----------
-        event_type: event code
-        callback: callback function
-        component: component
-        """
-        super(LineSliderFollower, self).add_callback(component.actor, event_type, callback)
-
-
-class LineSliderFollowerBase(UI):
-
-    def __init__(self, start_point, end_point, line_width):
-        """
-
-        Parameters
-        ----------
-        start_point
-        end_point
-        line_width
-        """
-        super(LineSliderFollowerBase, self).__init__()
-        self.start_point = start_point
-        self.end_point = end_point
-        self.actor = self.build_actor(start_point=start_point, end_point=end_point, line_width=line_width)
-
-        self.ui_list.append(self)
-
-    def build_actor(self, start_point, end_point, line_width):
-        """
-
-        Parameters
-        ----------
-        start_point
-        end_point
-        line_width
-
-        Returns
-        -------
-        actor
-
-        """
-        actor = Rectangle3D(size=(end_point[0]-start_point[0], line_width)).actor
-
-        actor.SetPosition(start_point[0], start_point[1]-line_width/2, start_point[2])
-        actor.GetProperty().SetColor(1, 0, 0)
-
-        return actor
-
-
-class LineSliderFollowerDisk(UI):
-
-    def __init__(self, position, inner_radius, outer_radius, start_point, end_point):
-        """
-
-        Parameters
-        ----------
-        position
-        inner_radius
-        outer_radius
-        """
-        super(LineSliderFollowerDisk, self).__init__()
-        self.actor = self.build_actor(position=position, inner_radius=inner_radius, outer_radius=outer_radius)
-        self.pos_height = position[1]
-
-        self.start_point = start_point
-        self.end_point = end_point
-        self.position = position
-
-        self.ui_list.append(self)
-
-    def build_actor(self, position, inner_radius, outer_radius):
-        """
-
-        Parameters
-        ----------
-        position
-        inner_radius
-        outer_radius
-
-        Returns
-        -------
-        actor
-
-        """
-        # create source
-        disk = vtk.vtkDiskSource()
-        disk.SetInnerRadius(inner_radius)
-        disk.SetOuterRadius(outer_radius)
-        disk.SetRadialResolution(10)
-        disk.SetCircumferentialResolution(50)
-        disk.Update()
-
-        # mapper
-        mapper = vtk.vtkPolyDataMapper()
-        mapper.SetInputConnection(disk.GetOutputPort())
-
-        # actor
-        actor = vtk.vtkActor()
-        actor.SetMapper(mapper)
-
-        actor.SetPosition(position[0], position[1], position[2])
-
-        return actor
-
-    def set_position(self, position):
-        """ Sets the disk's position
-
-        Parameters
-        ----------
-        position
-        """
-        self.actor.SetPosition(position[0], position[1], position[2])

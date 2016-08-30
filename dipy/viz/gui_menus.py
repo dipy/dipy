@@ -68,7 +68,7 @@ class FileSaveMenu(UI):
         component.add_callback(event_type, callback)
 
     def add_callback_to_sub_component(self, event_type, callback, component, sub_component):
-        """ Adds events to a component.
+        """ Adds events to a sub-component of a component.
 
         Parameters
         ----------
@@ -84,6 +84,8 @@ class FileSaveMenu(UI):
         component.add_callback(event_type, callback, sub_component)
 
     def build(self):
+        """ Builds elements for the file menu.
+        """
         self.panel.add_element(element=self.title, relative_position=(0.05, 0.9))
         self.panel.add_element(element=self.file_select, relative_position=(0.5, 0.5))
         self.panel.add_element(element=self.text_box, relative_position=(0.05, 0.075))
@@ -109,6 +111,19 @@ class FileSelect2D(UI):
     """
 
     def __init__(self, size, font_size, position, parent):
+        """ Conatins some initialisation parameters.
+        - n_text_actors: The number of text actors. Calculated dynamically.
+        - selected_file: Current selected file.
+        - text_actor_list: List of text actors.
+        - window: Used for scrolling.
+
+        Parameters
+        ----------
+        size: (float, float)
+        font_size: int
+        position: (float, float
+        parent: UI
+        """
         super(FileSelect2D, self).__init__()
         self.size = size
         self.font_size = font_size
@@ -170,6 +185,8 @@ class FileSelect2D(UI):
         return panel
 
     def up_button_callback(self, obj, evt):
+        """ Pressing up button scrolls up in the menu.
+        """
         all_file_names = self.get_all_file_names()
         if self.n_text_actors + self.window <= len(all_file_names):
             if self.window > 0:
@@ -179,6 +196,8 @@ class FileSelect2D(UI):
         return False
 
     def down_button_callback(self, obj, evt):
+        """ Pressing down button scrolls down in the menu.
+        """
         all_file_names = self.get_all_file_names()
         if self.n_text_actors + self.window < len(all_file_names):
             self.window += 1
@@ -208,6 +227,8 @@ class FileSelect2D(UI):
             i += 1
 
     def get_all_file_names(self):
+        """Gets file+directory names.
+        """
         all_file_names = []
 
         directory_names = self.get_directory_names()
@@ -368,11 +389,6 @@ class FileSelectText2D(UI):
 
     def click_callback(self, obj, evt):
         """ A callback to handle click for this UI element.
-
-        Parameters
-        ----------
-        obj
-        evt
         """
         if self.file_type == "directory":
             os.chdir(self.actor.get_message())
