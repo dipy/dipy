@@ -82,9 +82,9 @@ noisy_single = np.array([4243.71728516, 4317.81298828, 4244.35693359, 4439.36816
                          2267.7722168])
 
 noisy_multi = np.zeros((2, 2, 1, len(gtab.bvals)))
-noisy_multi[0, 0, 0] = noisy_multi[0, 1, 0] = noisy_multi[
+noisy_multi[0, 1, 0] = noisy_multi[
     1, 0, 0] = noisy_multi[1, 1, 0] = noisy_single
-
+noisy_multi[0, 0, 0] = data_single
 single_exponential = lambda S0, D, bvals: S0 * np.exp(-bvals * D)
 
 
@@ -372,30 +372,27 @@ def test_fill_na():
     Test to check the function `fill_na`.
     """
     # This signal gives negative values for the parameters
-    fit_single = ivim_model.fit(noisy_single)
-    params_from_fit = fit_single.model_params
-    filled_single = fill_na(ivim_model, params_from_fit)
-    assert_array_equal(filled_single.model_params,
-                       [np.nan, np.nan, np.nan, np.nan])
+    fit_single_noisy = ivim_model.fit(noisy_single)
+    filled_single_noisy = fill_na(ivim_model, fit_single_noisy.model_params)
 
-    fit_multi = ivim_model.fit(noisy_multi)
-    filled_multi = fill_na(ivim_model, fit_multi.model_params)
+    fit_no_noise = ivim_model.fit(data_single)
+    filled_no_noise = fill_na(ivim_model, fit_no_noise.model_params)
 
-    assert_array_equal(filled_multi.model_params[0, 0, 0], [
-        np.nan, np.nan, np.nan, np.nan])
-    assert_array_equal(filled_multi.model_params[0, 1, 0], [
-        np.nan, np.nan, np.nan, np.nan])
-    assert_array_equal(filled_multi.model_params[1, 0, 0], [
-        np.nan, np.nan, np.nan, np.nan])
+    assert_array_equal(filled_no_noise.shape, fit_no_noise.shape)
+    assert_array_almost_equal(filled_no_noise.model_params, fit_no_noise.model_params)
+
+    assert_array_equal(filled_single_noisy.shape, fit_no_noise.shape)
+    assert_array_almost_equal(filled_single_noisy.model_params, (np.nan, np.nan, np.nan, np.nan))
 
     # Check for combinations of fill
-    filled1 = fill_na(ivim_model, fit_single.model_params,
+    filled1 = fill_na(ivim_model, fit_single_noisy.model_params,
                       fill=(True, np.nan, np.nan, True))
-    filled2 = fill_na(ivim_model, fit_single.model_params,
+    filled2 = fill_na(ivim_model, fit_single_noisy.model_params,
                       fill=(np.nan, True, True, np.nan))
-    filled3 = fill_na(ivim_model, fit_single.model_params,
+    filled3 = fill_na(ivim_model, fit_single_noisy.model_params,
                       fill=(True, True, True, True))
 
+    params_from_fit = fit_single_noisy.model_params
     assert_array_almost_equal(filled1.model_params, [params_from_fit[0],
                                                      np.nan, np.nan,
                                                      params_from_fit[3]])
@@ -404,6 +401,16 @@ def test_fill_na():
                                                          1], params_from_fit[2],
                                                      np.nan])
     assert_array_almost_equal(filled3.model_params, params_from_fit)
+
+    fit_multi = ivim_model.fit(noisy_multi)
+    filled_multi = fill_na(ivim_model, fit_multi.model_params)
+
+    assert_array_equal(filled_multi.model_params[0, 0, 0],
+                       fit_no_noise.model_params)
+    assert_array_equal(filled_multi.model_params[0, 1, 0], [
+        np.nan, np.nan, np.nan, np.nan])
+    assert_array_equal(filled_multi.model_params[1, 1, 0], [
+        np.nan, np.nan, np.nan, np.nan])
 
 
 def test_fit_one_stage():
@@ -442,6 +449,7 @@ def test_leastsq_failing():
     # Test for the S0 and D values
     assert_array_almost_equal(fit_single.S0_predicted, 4356.268901117833)
     assert_array_almost_equal(fit_single.D, 6.936684e-04)
+
 
 if __name__ == '__main__':
     run_module_suite()
