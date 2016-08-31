@@ -329,53 +329,40 @@ def _wls_iter(design_matrix, sig, min_diffusivity, min_signal, Diso=3e-3,
     fhig = 1  # higher f evaluated
     ns = 9  # initial number of samples per iteration
     nvol = len(sig)
-    if S0 is not None:
-        for p in range(piterations):
-            df = df * 0.1
-            fs = np.linspace(flow+df, fhig-df, num=ns)  # sampling f
-            SFW = np.array([fwsig, ]*ns)  # repeat contributions for all values
-            FS, SI = np.meshgrid(fs, sig)
+    for p in range(piterations):
+        df = df * 0.1
+        fs = np.linspace(flow+df, fhig-df, num=ns)  # sampling f
+        SFW = np.array([fwsig, ]*ns)  # repeat contributions for all values
+        FS, SI = np.meshgrid(fs, sig)
+        if S0 is not None:
             SA = SI - FS*S0*SFW.T
-            # SA < 0 means that the signal components from the free water
-            # component is larger than the total fiber. This cases are present
-            # for inapropriate large volume fractions (given the current S0
-            # value estimated). To overcome this issue negative SA are replaced
-            # by data's min positive signal.
-            SA[SA <= 0] = min_signal
-            y = np.log(SA / (1-FS))
-            all_new_params = np.dot(invWTS2W_WTS2, y)
+        else:
+            SA = SI - FS*np.exp(-params[6])*SFW.T
 
-            # Select params for lower F2
+        # SA < 0 means that the signal components from the free water
+        # component is larger than the total fiber. This cases are present
+        # for inapropriate large volume fractions (given the current S0
+        # value estimated). To overcome this issue negative SA are replaced
+        # by data's min positive signal.
+        SA[SA <= 0] = min_signal
+        y = np.log(SA / (1-FS))
+        all_new_params = np.dot(invWTS2W_WTS2, y)
+
+        # Select params for lower F2
+        if S0 is not None:
             SIpred = (1-FS)*np.exp(np.dot(W, all_new_params)) + FS*S0*SFW.T
-            F2 = np.sum(np.square(SI - SIpred), axis=0)
-            Mind = np.argmin(F2)
-            params = all_new_params[:, Mind]
-            f = fs[Mind]  # Updated f
-            flow = f - df  # refining precision
-            fhig = f + df
-            ns = 19
-    else:
-        for p in range(piterations):
-            df = df * 0.1
-            fs = np.linspace(flow+df, fhig-df, num=ns)  # sampling f
-            SFW = np.array([fwsig, ]*ns)  # repeat contributions for all values
-            FS, SI = np.meshgrid(fs, sig)
-            S0 = np.exp(-params[6])  # S0 is now taken as a model parameter
-            SA = SI - FS*S0*SFW.T
-            SA[SA <= 0] = min_signal  # Overcaming issue of negative SA
-            y = np.log(SA / (1-FS))
-            all_new_params = np.dot(invWTS2W_WTS2, y)
-
-            # Select params for lower F2
+        else:
             S0r = np.exp(-np.array([all_new_params[6], ]*nvol))
             SIpred = (1-FS)*np.exp(np.dot(W, all_new_params)) + FS*S0r*SFW.T
-            F2 = np.sum(np.square(SI - SIpred), axis=0)
-            Mind = np.argmin(F2)
-            params = all_new_params[:, Mind]
-            f = fs[Mind]  # Updated f
-            flow = f - df  # refining precision
-            fhig = f + df
-            ns = 19
+        F2 = np.sum(np.square(SI - SIpred), axis=0)
+        Mind = np.argmin(F2)
+        params = all_new_params[:, Mind]
+        f = fs[Mind]  # Updated f
+        flow = f - df  # refining precision
+        fhig = f + df
+        ns = 19
+
+    if S0 is None:
         S0 = np.exp(-params[6])
 
     evals, evecs = decompose_tensor(from_lower_triangular(params),
