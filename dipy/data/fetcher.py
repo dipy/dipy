@@ -52,15 +52,15 @@ def update_progressbar(progress, total_length):
     except:
         # Default value if determination of console size fails
         bar_length = 20
-    block = int(round(bar_length*progress))
-    size_string = "{0:.2f} MB".format(float(total_length)/(1024*1024))
+    block = int(round(bar_length * progress))
+    size_string = "{0:.2f} MB".format(float(total_length) / (1024 * 1024))
     text = "\rDownload Progress: [{0}] {1:.2f}%  of {2}".format(
-        "#"*block + "-"*(bar_length-block), progress*100, size_string)
+        "#" * block + "-" * (bar_length - block), progress * 100, size_string)
     sys.stdout.write(text)
     sys.stdout.flush()
 
 
-def copyfileobj_withprogress(fsrc, fdst, total_length, length=16*1024):
+def copyfileobj_withprogress(fsrc, fdst, total_length, length=16 * 1024):
     copied = 0
     while True:
         buf = fsrc.read(length)
@@ -68,7 +68,7 @@ def copyfileobj_withprogress(fsrc, fdst, total_length, length=16*1024):
             break
         fdst.write(buf)
         copied += len(buf)
-        progress = float(copied)/float(total_length)
+        progress = float(copied) / float(total_length)
         update_progressbar(progress, total_length)
 
 
@@ -85,7 +85,7 @@ def _get_file_md5(filename):
     """Compute the md5 checksum of a file"""
     md5_data = md5()
     with open(filename, 'rb') as f:
-        for chunk in iter(lambda: f.read(128*md5_data.block_size), b''):
+        for chunk in iter(lambda: f.read(128 * md5_data.block_size), b''):
             md5_data.update(chunk)
     return md5_data.hexdigest()
 
@@ -346,18 +346,21 @@ fetch_syn_data = _make_fetcher(
 fetch_mni_template = _make_fetcher(
     "fetch_mni_template",
     pjoin(dipy_home, 'mni_template'),
-    'https://digital.lib.washington.edu/researchworks/bitstream/handle/1773/33312/',
-    ['COPYING',
-     'mni_icbm152_t2_tal_nlin_asym_09a.nii',
-     'mni_icbm152_t1_tal_nlin_asym_09a.nii'],
-    ['COPYING',
-     'mni_icbm152_t2_tal_nlin_asym_09a.nii',
-     'mni_icbm152_t1_tal_nlin_asym_09a.nii'],
-    ['6e2168072e80aa4c0c20f1e6e52ec0c8',
-     'f41f2e1516d880547fbf7d6a83884f0d',
-     '1ea8f4f1e41bc17a94602e48141fdbc8'],
-    doc="Fetch the MNI T2 and T1 template files",
-    data_size="35MB")
+    'https://ndownloader.figshare.com/files/',
+    ['5572676?private_link=4b8666116a0128560fb5',
+     '5572673?private_link=93216e750d5a7e568bda',
+     '5572670?private_link=33c92d54d1afb9aa7ed2',
+     '5572661?private_link=584319b23e7343fed707'],
+    ['mni_icbm152_t2_tal_nlin_asym_09a.nii',
+     'mni_icbm152_t1_tal_nlin_asym_09a.nii',
+     'mni_icbm152_t1_tal_nlin_asym_09c_mask.nii',
+     'mni_icbm152_t1_tal_nlin_asym_09c.nii'],
+    ['f41f2e1516d880547fbf7d6a83884f0d',
+     '1ea8f4f1e41bc17a94602e48141fdbc8',
+     'a243e249cd01a23dc30f033b9656a786',
+     '3d5dd9b0cd727a17ceec610b782f66c1'],
+    doc="fetch the MNI 2009a T1 and T2, and 2009c T1 and T1 mask files",
+    data_size="70MB")
 
 fetch_scil_b0 = _make_fetcher(
     "fetch_scil_b0",
@@ -592,16 +595,19 @@ mni_notes = \
 """
 
 
-def read_mni_template(contrast="T2"):
+def read_mni_template(version="a", contrast="T2"):
     """
     Read the MNI template from disk
 
     Parameters
     ----------
+    version: string
+        There are two MNI templates 2009a and 2009c, so options available are:
+        "a" and "c".
     contrast : list or string, optional
-        Which of the contrast templates to read. Two contrasts are available:
-        "T1" and "T2", so you can either enter one of these strings as input,
-        or a list containing both of them.
+        Which of the contrast templates to read. For version "a" two contrasts
+        are available: "T1" and "T2". Similarly for version "c" there are two
+        options, "T1" and "mask". You can input contrast as a string or a list
 
     Returns
     -------
@@ -610,20 +616,47 @@ def read_mni_template(contrast="T2"):
 
     Examples
     --------
-    Get only the T2 file:
-    >>> T2_nifti = read_mni_template("T2") # doctest: +SKIP
-    Get both files in this order:
-    >>> T1_nifti, T2_nifti = read_mni_template(["T1", "T2"]) # doctest: +SKIP
+    Get only the T1 file for version c:
+    >>> T1_nifti = read_mni_template("c", contrast = "T1") # doctest: +SKIP
+    Get both files in this order for version a:
+    >>> T1_nifti, T2_nifti = read_mni_template(contrast = ["T1", "T2"]) # doctest: +SKIP
     """
     files, folder = fetch_mni_template()
-    file_dict = {"T1": pjoin(folder, 'mni_icbm152_t1_tal_nlin_asym_09a.nii'),
-                 "T2": pjoin(folder, 'mni_icbm152_t2_tal_nlin_asym_09a.nii')}
-    if isinstance(contrast, str):
-        return nib.load(file_dict[contrast])
-    else:
-        out_list = []
+    file_dict_a = {"T1": pjoin(folder, 'mni_icbm152_t1_tal_nlin_asym_09a.nii'),
+                   "T2": pjoin(folder, 'mni_icbm152_t2_tal_nlin_asym_09a.nii')}
+
+    file_dict_c = {
+        "T1": pjoin(
+            folder, 'mni_icbm152_t1_tal_nlin_asym_09c.nii'), "mask": pjoin(
+            folder, 'mni_icbm152_t1_tal_nlin_asym_09c_mask.nii')}
+
+    if contrast == "T2" and version == "c":
+        raise ValueError("No T2 image for MNI template 2009c")
+
+    if contrast == "mask" and version == "a":
+        raise ValueError("No template mask available for MNI 2009a")
+
+    if not(isinstance(contrast, str)) and version == "c":
         for k in contrast:
-            out_list.append(nib.load(file_dict[k]))
+            if k == "T2":
+                raise ValueError("No T2 image for MNI template 2009c")
+
+    if version == "a":
+        if isinstance(contrast, str):
+            return nib.load(file_dict_a[contrast])
+        else:
+            out_list = []
+            for k in contrast:
+                out_list.append(nib.load(file_dict_a[k]))
+    elif version == "c":
+        if isinstance(contrast, str):
+            return nib.load(file_dict_c[contrast])
+        else:
+            out_list = []
+            for k in contrast:
+                out_list.append(nib.load(file_dict_c[k]))
+    else:
+        raise ValueError("Only 2009a and 2009c versions are available")
     return out_list
 
 

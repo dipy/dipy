@@ -807,7 +807,7 @@ class TensorModel(ReconstModel):
 
         return TensorFit(self, dti_params)
 
-    def predict(self, dti_params, S0=1):
+    def predict(self, dti_params, S0=1.):
         """
         Predict a signal for this TensorModel class instance given parameters.
 
@@ -1133,7 +1133,7 @@ class TensorFit(object):
         """
         return apparent_diffusion_coef(self.quadratic_form, sphere)
 
-    def predict(self, gtab, S0=1, step=None):
+    def predict(self, gtab, S0=1., step=None):
         r"""
         Given a model fit, predict the signal on the vertices of a sphere
 

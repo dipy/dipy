@@ -21,7 +21,8 @@ class GradientTable(object):
     Parameters
     ----------
     gradients : array_like (N, 3)
-        N diffusion gradients
+        Diffusion gradients. The direction of each of these vectors corresponds
+        to the b-vector, and the length corresponds to the b-value.
     b0_threshold : float
         Gradients with b-value less than or equal to `b0_threshold` are
         considered as b0s i.e. without diffusion weighting.
@@ -47,6 +48,12 @@ class GradientTable(object):
     See Also
     --------
     gradient_table
+
+    Notes
+    --------
+    The GradientTable object is immutable. Do NOT assign attributes.
+    If you have your gradient table in a bval & bvec format, we recommend
+    using the factory function gradient_table
 
     """
 

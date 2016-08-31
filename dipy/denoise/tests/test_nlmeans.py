@@ -2,7 +2,8 @@ import numpy as np
 from numpy.testing import (run_module_suite,
                            assert_,
                            assert_equal,
-                           assert_array_almost_equal)
+                           assert_array_almost_equal,
+                           assert_raises)
 from dipy.denoise.nlmeans import nlmeans
 from dipy.denoise.denspeed import (add_padding_reflection, remove_padding,
                                    cpu_count)
@@ -21,6 +22,11 @@ def test_nlmeans_static():
     S0 = 100 * np.ones((20, 20, 20), dtype='f8')
     S0n = nlmeans(S0, sigma=np.ones((20, 20, 20)), rician=False)
     assert_array_almost_equal(S0, S0n)
+
+
+def test_nlmeans_wrong():
+    S0 = np.ones((2, 2, 2, 2, 2))
+    assert_raises(ValueError, nlmeans, S0, 1.0)
 
 
 def test_nlmeans_random_noise():
@@ -128,5 +134,4 @@ def test_nlmeans_4d_3dsigma_and_threads():
 
 if __name__ == '__main__':
 
-    # test_nlmeans_4d_3dsigma_and_threads()
     run_module_suite()

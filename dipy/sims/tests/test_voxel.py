@@ -307,7 +307,7 @@ def test_DKI_crossing_fibers_simulations():
     assert_array_almost_equal(dt, dt_ref)
     assert_array_almost_equal(kt, kt_ref)
     assert_array_almost_equal(signal,
-                              DKI_signal(gtab_2s, dt_ref, kt_ref, S0=100,
+                              DKI_signal(gtab_2s, dt_ref, kt_ref, S0=1.,
                                          snr=None),
                               decimal=5)
 
