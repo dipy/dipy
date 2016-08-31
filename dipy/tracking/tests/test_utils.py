@@ -230,7 +230,8 @@ def test_target_lb():
     streamlines = [np.array([[0., 1., 1.],
                              [3., 1., 1.]]),
                    np.array([[0., 0., 0.],
-                             [2., 2., 2.]])]
+                             [2., 2., 2.]]),
+                   np.array([[1., 1., 1.]])]  # Single-point streamline
     _target(target_line_based, streamlines, (1, 1, 1), (2, 1, 1), False)
 
 
@@ -276,7 +277,7 @@ def _target(target_f, streamlines, voxel_both_true, voxel_one_true,
     assert_equal(len(new), 1)
     assert_true(new[0] is streamlines[1])
 
-    # Test that changing mask and affine do not break target_line_based
+    # Test that changing mask or affine does not break target/target_line_based
     include = target_f(streamlines, mask, affine=affine)
     exclude = target_f(streamlines, mask, affine=affine, include=False)
     affine[:] = np.eye(4)

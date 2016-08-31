@@ -181,11 +181,14 @@ cdef inline void c_get_closest_edge(double p_x, double p_y, double p_z,
 @cython.boundscheck(False)
 @cython.wraparound(False)
 @cython.cdivision(True)
-def streamlines_in_mask(list streamlines,
-                        cnp.uint8_t[:,:,:] mask,
-                        lin, offset):
-    """Filters streamlines based on whether or not they pass through an ROI,
-    using a line-based algorithm for compressed tract.
+def _streamlines_in_mask(list streamlines,
+                         cnp.uint8_t[:,:,:] mask,
+                         lin_T, offset):
+    """Filters streamlines based on whether or not they pass through a ROI,
+    using a line-based algorithm for compressed streamlines.
+
+    This function is private because it's supposed to be called only by
+    tracking.utils.target_line_based.
 
     Parameters
     ----------
@@ -194,18 +197,17 @@ def streamlines_in_mask(list streamlines,
     mask : array-like (uint8)
         A mask used as a target. Non-zero values are considered to be within
         the target region.
-    lin : array (3, 3)
-        Transpose of the linear part of the mapping to voxel space, (ie
-        ``inv(affine)[:3, :3].T``)
-    offset : array or scaler
-        Offset part of the mapping (ie, ``inv(affine)[:3, 3]``) + ``.5``. The
-        half voxel shift is so that truncating the result of this mapping
-        will give the correct integer voxel coordinate.
+    lin_T : array (3, 3)
+        Transpose of the linear part of the mapping to voxel space. Obtained
+        with `_mapping_to_voxel`.
+    offset : array or scalar
+        Mapping to voxel space. Obtained with `_mapping_to_voxel`.
 
     Returns
     -------
-    in_mask : array of bool
-        0 if passing in mask, 1 otherwise
+    in_mask : 1D array of bool (uint8), one for each streamline.
+        0 if passing through mask, 1 otherwise
+        (2 for single-point streamline)
     """
     cdef cnp.double_t[:,:] voxel_indices
 
@@ -218,15 +220,14 @@ def streamlines_in_mask(list streamlines,
 
     cdef int nb_streamlines = len(streamlines)
     cdef cnp.uint8_t[:] in_mask = np.zeros(nb_streamlines, dtype=np.uint8)
-    cdef int track_idx
+    cdef int streamline_idx
 
-    for track_idx in range(nb_streamlines):
+    for streamline_idx in range(nb_streamlines):
         # Can't call _to_voxel_coordinates because it casts to int
-        voxel_indices = np.dot(streamlines[track_idx], lin) + offset
+        voxel_indices = np.dot(streamlines[streamline_idx], lin_T) + offset
 
-        if streamline_in_mask(voxel_indices, mask,
-                              current_pt, next_pt, direction, current_edge):
-            in_mask[track_idx] = 1
+        in_mask[streamline_idx] = _streamline_in_mask(
+            voxel_indices, mask, current_pt, next_pt, direction, current_edge)
 
     return np.asarray(in_mask)
 
@@ -234,20 +235,23 @@ def streamlines_in_mask(list streamlines,
 @cython.boundscheck(False)
 @cython.wraparound(False)
 @cython.cdivision(True)
-cdef int streamline_in_mask(cnp.double_t[:,:] streamline,
-                            cnp.uint8_t[:,:,:] mask,
-                            cnp.double_t[:] current_pt,
-                            cnp.double_t[:] next_pt,
-                            cnp.double_t[:] direction,
-                            cnp.double_t[:] current_edge) nogil:
+cdef int _streamline_in_mask(cnp.double_t[:,:] streamline,
+                             cnp.uint8_t[:,:,:] mask,
+                             cnp.double_t[:] current_pt,
+                             cnp.double_t[:] next_pt,
+                             cnp.double_t[:] direction,
+                             cnp.double_t[:] current_edge) nogil:
     """
-    Check if a single streamline is passing by a mask. This ia a utility
-    function of streamlines_in_mask() to be more readable.
+    Check if a single streamline is passing through a mask. This ia an utility
+    function to make streamlines_in_mask() more readable.
     """
     cdef cnp.double_t direction_norm, remaining_distance
     cdef cnp.double_t length_ratio, half_ratio
     cdef int point_idx, dim_idx
     cdef int x, y, z
+
+    if streamline.shape[0] <= 1:
+        return 2  # Single-point streamline
 
     # This loop is time-critical
     # Changed to -1 because we get the next point in the loop
