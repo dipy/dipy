@@ -4,14 +4,13 @@ Using the free water elimination model to remove free water contamination
 ==========================================================================
 
 As shown previously (see :ref:`example_reconst_dti`), the diffusion tensor
-model is a simple way to characterize the diffusion anisotropy. However, this
-model is not specific to particular type of tissue. For example, diffusion
-anisotropy in regions near the cerebral ventricle and parenchyma can be
-underestimated by partial volume effects of the cerebral spinal fluid (CSF).
-This free water contamination can particularly corrupt diffusion tensor imaging
-analysis of microstructural changes when different groups of subject show
-different brain morphology (e.g. brain ventricle enlargement associated with
-brain tissue atrophy that occurs in several brain pathologies and ageing).
+model is a simple way to characterize diffusion anisotropy. However, in regions
+near the cerebral ventricle and parenchyma can be underestimated by partial
+volume effects of the cerebral spinal fluid (CSF). This free water
+contamination can particularly corrupt diffusion tensor imaging analysis of
+microstructural changes when different groups of subject show different brain
+morphology (e.g. brain ventricle enlargement associated with brain tissue
+atrophy that occurs in several brain pathologies and ageing).
 
 A way to remove this free water influences is to expand the DTI model to take
 into account an extra compartment representing the contributions of free water
@@ -22,16 +21,15 @@ diffusion. The expression of the expanded DTI model is shown below:
     S(\mathbf{g}, b) = S_0(1-f)e^{-b\mathbf{g}^T \mathbf{D}
     \mathbf{g}}+S_0fe^{-b D_{iso}}
 
-where $\mathbf{g}$ and $b$ are diffusion grandient direction and weighted
+where $\mathbf{g}$ and $b$ are diffusion gradient direction and weighted
 (more information see :ref:`example_reconst_dti`), $S(\mathbf{g}, b)$ is the
-diffusion-weighted signal measured, $S_0$ is the signal conducted in a
-measurement with no diffusion weighting, $\mathbf{D}$ is the diffusion tensor,
-$f$ the volume fraction of the free water component, and $D_iso$ is the
-isotropic value of the free water diffusion (normally set to $3.0 \times
-10^{-3} mm^{2}s^{-1}$).
+diffusion-weighted signal measured, $S_0$ is the signal in a measurement with
+no diffusion weighting, $\mathbf{D}$ is the diffusion tensor, $f$ the volume
+fraction of the free water component, and $D_iso$ is the isotropic value of the
+free water diffusion (normally set to $3.0 \times 10^{-3} mm^{2}s^{-1}$).
 
-In this example, we show how to process a diffusion weighted dataset using the
-free water elimantion.
+In this example, we show how to process a diffusion weighting dataset using the
+free water elimination.
 
 Let's start by importing the relevant modules:
 """
@@ -54,7 +52,9 @@ fetch_cenir_multib(with_raw=False)
 
 """
 From the downloaded data, we read only the data acquired with b-values up to
-2000 $s.mm^{-2} to decrease the influence of non-Gaussain _[Hoy2014].
+2000 $s.mm^{-2} to decrease the influence of non-Gaussian diffusion effects
+of the tisse which are not taken into account by the free water elimination
+model _[Hoy2014].
 """
 
 bvals = [200, 400, 1000, 2000]
@@ -83,11 +83,11 @@ mask_roi = np.zeros(data.shape[:-1], dtype=bool)
 mask_roi[:, :, axial_slice] = mask[:, :, axial_slice]
 
 """
-The free water elimantion model fit can then be initialized by instantiating
+The free water elimination model fit can then be initialized by instantiating
 a FreeWaterTensorModel class object:
 """
 
-fwdtimodel = fwdti.FreeWaterTensorModel(gtab, 'NLS', cholesky=False)
+fwdtimodel = fwdti.FreeWaterTensorModel(gtab)
 
 """
 The data can then be fitted using the ``fit`` function of the defined model
@@ -122,8 +122,8 @@ dti_MD = dtifit.md
 
 """
 Below the FA values for both free water elimnantion DTI model and standard DTI
-model are ploted in panels A and B, while the repective MD values are ploted in
-panels D and E. For a better visualization of the effect of the free water
+model are plotted in panels A and B, while the repective MD values are ploted
+in panels D and E. For a better visualization of the effect of the free water
 correction, the differences between these two metrics are shown in panels C and
 E. In addition to the standard diffusion statistics, the estimated volume
 fraction of the free water contamination is shown on panel G.
