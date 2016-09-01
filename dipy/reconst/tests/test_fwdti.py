@@ -3,7 +3,6 @@
 from __future__ import division, print_function, absolute_import
 
 import numpy as np
-import random
 import dipy.reconst.dti as dti
 import dipy.reconst.fwdti as fwdti
 from dipy.reconst.fwdti import fwdti_prediction
@@ -111,7 +110,7 @@ def test_fwdti_precision():
     S_conta, peaks = multi_tensor(gtab_2s, mevals, S0=100,
                                   angles=[(90, 0), (90, 0)],
                                   fractions=[(1-gtf) * 100, gtf*100], snr=None)
-    fwdm = fwdti.FreeWaterTensorModel(gtab_2s, 'WLS', piterations=5, S0=S0)
+    fwdm = fwdti.FreeWaterTensorModel(gtab_2s, 'WLS', piterations=5)
     fwefit = fwdm.fit(S_conta)
     FAfwe = fwefit.fa
     Ffwe = fwefit.f
@@ -135,7 +134,7 @@ def test_fwdti_multi_voxel():
     assert_array_almost_equal(Ffwe, GTF)
 
     # Test multi voxels with initial guess
-    fwdm_wlls = fwdti.FreeWaterTensorModel(gtab_2s, 'WLS', S0=S0m)
+    fwdm_wlls = fwdti.FreeWaterTensorModel(gtab_2s, 'WLS')
     fwefit_wlls = fwdm_wlls.fit(DWI)
     fwe_initial = fwefit_wlls.model_params
     fwdm = fwdti.FreeWaterTensorModel(gtab_2s, fw_params=fwe_initial)
@@ -186,15 +185,12 @@ def test_fwdti_errors():
     # 1st error - if a unknown fit method is given to the FWTM
     assert_raises(ValueError, fwdti.FreeWaterTensorModel, gtab_2s,
                   fit_method="pKT")
-    # 2nd error - if min_signal is negative
-    assert_raises(ValueError, fwdti.FreeWaterTensorModel, gtab_2s,
-                  min_signal=-1)
-    # 3rd error - if incorrect mask is given
+    # 2nd error - if incorrect mask is given
     fwdtiM = fwdti.FreeWaterTensorModel(gtab_2s)
     incorrect_mask = np.array([[True, True, False], [True, False, False]])
     assert_raises(ValueError, fwdtiM.fit, DWI, mask=incorrect_mask)
 
-    # 4rd error - if data with only one non zero b-value is given
+    # 3rd error - if data with only one non zero b-value is given
     assert_raises(ValueError, fwdti.FreeWaterTensorModel, gtab)
 
     # Testing the correct usage
@@ -219,17 +215,12 @@ def test_fwdti_restore():
     S_conta, peaks = multi_tensor(gtab_2s, mevals, S0=100,
                                   angles=[(90, 0), (90, 0)],
                                   fractions=[(1-gtf) * 100, gtf*100], snr=None)
-    # initial guess
-    fwdm_ini = fwdti.FreeWaterTensorModel(gtab_2s, 'WLS', S0=S0)
-    fwdfit_ini = fwdm_ini.fit(S_conta)
     fwdm = fwdti.FreeWaterTensorModel(gtab_2s, 'NLS', weighting='sigma',
                                       sigma=4)
     fwdtiF = fwdm.fit(S_conta)
     assert_array_almost_equal(fwdtiF.fa, FAdti)
     assert_array_almost_equal(fwdtiF.f, gtf)
-    # Weighting seem to need a better initial guess
-    fwdm2 = fwdti.FreeWaterTensorModel(gtab_2s, 'NLS', weighting='gmm',
-                                       fw_params=fwdfit_ini.model_params)
+    fwdm2 = fwdti.FreeWaterTensorModel(gtab_2s, 'NLS', weighting='gmm')
     fwdtiF2 = fwdm2.fit(S_conta)
     assert_array_almost_equal(fwdtiF2.fa, FAdti)
     assert_array_almost_equal(fwdtiF2.f, gtf)
@@ -245,24 +236,19 @@ def test_cholesky_functions():
 
 
 def test_fwdti_jac_multi_voxel():
-    fwdm = fwdti.FreeWaterTensorModel(gtab_2s, 'WLS', S0=S0m[0, :])
+    fwdm = fwdti.FreeWaterTensorModel(gtab_2s, 'WLS')
     fwefit = fwdm.fit(DWI[0, :, :])
-    fw_params_initial = fwefit.model_params
 
     # no f transform
-    fwdm = fwdti.FreeWaterTensorModel(gtab_2s, 'NLS',
-                                      fw_params=fw_params_initial,
-                                      S0=S0m[0, :],
-                                      f_transform=False, jac=True)
+    fwdm = fwdti.FreeWaterTensorModel(gtab_2s, 'NLS', f_transform=False,
+                                      jac=True)
     fwefit = fwdm.fit(DWI[0, :, :])
     Ffwe = fwefit.f
     assert_array_almost_equal(Ffwe, GTF[0, :])
 
     # with f transform
-    fwdm = fwdti.FreeWaterTensorModel(gtab_2s, 'NLS',
-                                      fw_params=fw_params_initial,
-                                      S0=S0m[0, :],
-                                      f_transform=True, jac=True)
+    fwdm = fwdti.FreeWaterTensorModel(gtab_2s, 'NLS', f_transform=True,
+                                      jac=True)
     fwefit = fwdm.fit(DWI[0, :, :])
     Ffwe = fwefit.f
     assert_array_almost_equal(Ffwe, GTF[0, :])
