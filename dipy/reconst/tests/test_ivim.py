@@ -263,6 +263,7 @@ def test_fit_object():
     assert_raises(IndexError, ivim_fit_multi.__getitem__, (100, -0, 2))
     assert_raises(IndexError, ivim_fit_multi.__getitem__, (-100, 0))
     assert_raises(IndexError, ivim_fit_multi.__getitem__, [-100, 0])
+    assert_raises(IndexError, ivim_fit_multi.__getitem__, (1, 0, 0, 3, 4))
     # Check if the get item returns the S0 value for voxel (1,0,0)
     assert_array_almost_equal(ivim_fit_multi.__getitem__((1, 0, 0)).model_params[0],
                               data_multi[1, 0, 0][0])
@@ -393,7 +394,9 @@ def test_warning():
     Test for warning when linear fit gives parameters which are not feasible.
     """
     # This signal gives negative values for the parameters
-    assert_warns(UserWarning, ivim_model.fit, noisy_single)
+    if SCIPY_VERSION > '0.17':
+        assert_warns(UserWarning, ivim_model.fit, noisy_single)
+
 
 
 def test_leastsq_failing():
