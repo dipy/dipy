@@ -409,5 +409,15 @@ def test_leastsq_failing():
     assert_array_almost_equal(fit_single.D, 6.936684e-04)
 
 
+def test_leastsq_error():
+    """
+     Test error handling of the `_leastsq` method works when unfeasible x0 is passed.
+     If an unfeasible x0 value is passed using which leastsq fails, the x0 value is
+     returned with a warning.
+    """
+    assert_warns(UserWarning, ivim_model._leastsq, data_single, [-1, -1, -1, -1])
+    fit = ivim_model._leastsq(data_single, [-1, -1, -1, -1])
+    assert_array_almost_equal(fit, [-1, -1, -1, -1])
+
 if __name__ == '__main__':
     run_module_suite()

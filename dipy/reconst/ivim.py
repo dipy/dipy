@@ -467,7 +467,10 @@ class IvimModel(ReconstModel):
                               maxfev=maxfev)
                 ivim_params = res[0]
                 return ivim_params
-            except:
+            except ValueError:
+                warningMsg = "x0 is unfeasible for leastsq fitting."
+                warningMsg += " Returning x0 values from the linear fit."
+                warnings.warn(warningMsg, UserWarning)
                 return x0
         else:
             try:
@@ -482,7 +485,10 @@ class IvimModel(ReconstModel):
                                     x_scale=self.x_scale)
                 ivim_params = res.x
                 return ivim_params
-            except:
+            except ValueError:
+                warningMsg = "x0 is unfeasible for leastsq fitting."
+                warningMsg += " Returning x0 values from the linear fit."
+                warnings.warn(warningMsg, UserWarning)
                 return x0
 
 
