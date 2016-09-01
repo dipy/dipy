@@ -18,6 +18,7 @@ from dipy.reconst.dki import _positive_evals
 
 from dipy.reconst.vec_val_sum import vec_val_vect
 from dipy.core.ndindex import ndindex
+from dipy.reconst.multi_voxel import multi_voxel_fit
 
 
 def fwdti_prediction(params, gtab, S0=1, Diso=3.0e-3):
@@ -130,6 +131,15 @@ class FreeWaterTensorModel(ReconstModel):
             e_s += " positive."
             raise ValueError(e_s)
 
+        # Check if at least three b-values are given
+        bmag = int(np.log10(self.gtab.bvals.max()))
+        b = self.gtab.bvals.copy() / (10 ** (bmag-1))  # normalize b units
+        b = b.round()
+        uniqueb = np.unique(b)
+        if len(uniqueb) < 3:
+            mes = "fwdti fit requires data for at least 2 non zero b-values"
+            raise ValueError(mes)
+
     def fit(self, data, mask=None):
         """ Fit method of the free water elimination DTI model class
 
@@ -150,15 +160,6 @@ class FreeWaterTensorModel(ReconstModel):
                 raise ValueError("Mask is not the same shape as data.")
             mask = np.array(mask, dtype=bool, copy=False)
             data_in_mask = np.reshape(data[mask], (-1, data.shape[-1]))
-
-        # Check if at least three b-values are given
-        bmag = int(np.log10(self.gtab.bvals.max()))
-        b = self.gtab.bvals.copy() / (10 ** (bmag-1))  # normalize b units
-        b = b.round()
-        uniqueb = np.unique(b)
-        if len(uniqueb) < 3:
-            mes = "fwdti fit requires data for at least 2 non zero b-values"
-            raise ValueError(mes)
 
         if self.min_signal is None:
             min_signal = _min_positive_signal(data)
