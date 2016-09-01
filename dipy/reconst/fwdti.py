@@ -241,22 +241,8 @@ class FreeWaterTensorFit(TensorFit):
         S0 : float array
            The mean non-diffusion weighted signal in each voxel. Default: 1 in
            all voxels.
-
-        step : int, optional
-            Number of voxels to be processed simultaneously
         """
-        shape = self.model_params.shape[:-1]
-        size = np.prod(shape)
-        if step is None:
-            step = self.model.kwargs.get('step', size)
-        if step >= size:
-            return fwdti_prediction(self.model_params, gtab, S0=S0)
-        params = np.reshape(self.model_params,
-                            (-1, self.model_params.shape[-1]))
-        predict = np.empty((size, gtab.bvals.shape[0]))
-        for i in range(0, size, step):
-            predict[i:i+step] = fwdti_prediction(params[i:i+step], gtab, S0=S0)
-        return predict.reshape(shape + (gtab.bvals.shape[0],))
+        return fwdti_prediction(self.model_params, gtab, S0=S0)
 
 
 def _wls_iter(design_matrix, sig, min_diffusivity, min_signal, Diso=3e-3,
