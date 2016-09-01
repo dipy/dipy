@@ -278,13 +278,21 @@ class IvimModel(ReconstModel):
         # Fit f and D_star using leastsq.
         params_f_D_star = [f_guess, D_star_prime]
         f, D_star = self.estimate_f_D_star(params_f_D_star, data, S0, D)
-        params = np.array([S0, f, D_star, D])
+        params_linear = np.array([S0, f, D_star, D])
         # Fit parameters again if two_stage flag is set.
         if self.two_stage:
-            params_two_stage = self._leastsq(data, params)
-            return IvimFit(self, params_two_stage)
+            params_two_stage = self._leastsq(data, params_linear)
+            bounds_violated = ~(np.all(params_two_stage >= self.bounds[0]) and
+                                (np.all(params_two_stage <= self.bounds[1])))
+            if bounds_violated:
+                warningMsg = "Bounds are violated for leastsq fitting. "
+                warningMsg += "Returning parameters from linear fit"
+                warnings.warn(warningMsg, UserWarning)
+                return IvimFit(self, params_linear)
+            else:
+                return IvimFit(self, params_two_stage)
         else:
-            return IvimFit(self, params)
+            return IvimFit(self, params_linear)
 
     def estimate_linear_fit(self, data, split_b, less_than=True):
         """Estimate a linear fit by taking log of data.
@@ -365,7 +373,7 @@ class IvimModel(ReconstModel):
                               maxfev=maxfev)
                 f, D_star = res[0]
                 return f, D_star
-            except:
+            except ValueError:
                 warningMsg = "x0 obtained from linear fitting is not feasibile as "
                 warningMsg += "initial guess for leastsq. Parameters are returned only "
                 warningMsg += "from the linear fit."
@@ -385,7 +393,7 @@ class IvimModel(ReconstModel):
                                     max_nfev=maxfev)
                 f, D_star = res.x
                 return f, D_star
-            except:
+            except ValueError:
                 warningMsg = "x0 obtained from linear fitting is not feasibile "
                 warningMsg += "as initial guess for leastsq while estimating "
                 warningMsg += "f and D_star. Using parameters from the "
@@ -547,49 +555,3 @@ class IvimFit(object):
         return ivim_prediction(self.model_params, gtab)
 
 
-def fill_na(model, model_params, bounds=((0., 0., 0., 0), (np.inf, 0.30, 0.1, 0.1)),
-            fill=(np.nan, np.nan, np.nan, np.nan)):
-    """
-    Function to fill nan values for parameters which are not within the bounds.
-    This function will check if any parameter is within bounds and set its value to 
-    `np.nan` or what is specified in `fill`.
-
-    Parameters
-    ----------
-    model : ReconstModel
-        The IvimFit Model.
-
-    model_params: array
-        An array having the parameters from the fit.
-
-    bounds : tuple
-        A tuple of two elements specifying the bounds. To check only for a
-        particular parameter (say `f`) set the other bounds to
-        (-np.inf, np.inf).
-        default : ((0., 0., 0., 0),(np.inf, 0.30, 0.01, 0.001))
-
-    fill : tuple
-        A tuple which specifies what should be replaced for the parameters
-        if bounds is violated. If a particular parameter should not be
-        changed then set the value as True. For example, in order to get
-        the S0 and D values and fill `nan` for others use
-        `fill=(True, np.nan, np.nan, True). Similarly, to set `f` and
-        `D_star` as 0. and leave S0 and D unchanged, use
-        `fill=(True, 0., 0., True)`. Using `False` for any fill will set
-        it to 0.
-        default : (np.nan, np.nan, np.nan, np.nan)
-
-    Returns
-    -------
-    IvimFit : IvimFit object
-    """
-    params = model_params
-    lower_bound_respected = (params[..., :] >= bounds[0])
-    upper_bound_respected = (params[..., :] <= bounds[1])
-
-    bounds_violated = ~np.multiply(lower_bound_respected, upper_bound_respected)
-    filled_params = params * np.array(fill)
-    # Values are filled only for the parameters where the bounds are violated
-    # Needs discussion on whether to fill for all values if any bound is violated
-    params_filled = np.where(bounds_violated, filled_params, params)
-    return IvimFit(model, params_filled)

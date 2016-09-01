@@ -16,7 +16,7 @@ from numpy.testing import (assert_array_equal, assert_array_almost_equal,
                            assert_raises, assert_array_less, run_module_suite,
                            assert_warns)
 
-from dipy.reconst.ivim import ivim_prediction, IvimModel, fill_na
+from dipy.reconst.ivim import ivim_prediction, IvimModel
 from dipy.core.gradients import gradient_table, generate_bvecs
 from dipy.sims.voxel import multi_tensor
 
@@ -262,6 +262,7 @@ def test_fit_object():
     assert_raises(IndexError, ivim_fit_multi.__getitem__, (100, -0))
     assert_raises(IndexError, ivim_fit_multi.__getitem__, (100, -0, 2))
     assert_raises(IndexError, ivim_fit_multi.__getitem__, (-100, 0))
+    assert_raises(IndexError, ivim_fit_multi.__getitem__, [-100, 0])
     # Check if the get item returns the S0 value for voxel (1,0,0)
     assert_array_almost_equal(ivim_fit_multi.__getitem__((1, 0, 0)).model_params[0],
                               data_multi[1, 0, 0][0])
@@ -365,55 +366,6 @@ def test_estimate_f_D_star():
     assert_array_almost_equal(ivim_model.estimate_f_D_star(params_f_D,
                                                            data_single, S0, D),
                               (f, D_star))
-
-
-def test_fill_na():
-    """
-    Test to check the function `fill_na`.
-    """
-    # This signal gives negative values for the parameters
-    fit_single_noisy = ivim_model.fit(noisy_single)
-    filled_single_noisy = fill_na(ivim_model, fit_single_noisy.model_params)
-
-    fit_no_noise = ivim_model.fit(data_single)
-    filled_no_noise = fill_na(ivim_model, fit_no_noise.model_params)
-
-    params_from_fit = fit_single_noisy.model_params
-
-    assert_array_equal(filled_no_noise.shape, fit_no_noise.shape)
-    assert_array_almost_equal(filled_no_noise.model_params, fit_no_noise.model_params)
-
-    assert_array_equal(filled_single_noisy.shape, fit_no_noise.shape)
-    assert_array_almost_equal(filled_single_noisy.model_params,
-                             (params_from_fit[0], np.nan, params_from_fit[2],
-                              params_from_fit[3]))
-
-    # Check for combinations of fill
-    filled1 = fill_na(ivim_model, fit_single_noisy.model_params,
-                      fill=(True, np.nan, np.nan, True))
-    filled2 = fill_na(ivim_model, fit_single_noisy.model_params,
-                      fill=(np.nan, True, True, np.nan))
-    filled3 = fill_na(ivim_model, fit_single_noisy.model_params,
-                      fill=(True, True, True, True))
-
-    assert_array_almost_equal(filled1.model_params, [params_from_fit[0],
-                                                     np.nan, params_from_fit[2],
-                                                     params_from_fit[3]])
-    assert_array_almost_equal(filled2.model_params, [params_from_fit[0],
-                                                     params_from_fit[1],
-                                                     params_from_fit[2],
-                                                     params_from_fit[3]])
-    assert_array_almost_equal(filled3.model_params, params_from_fit)
-
-    fit_multi = ivim_model.fit(noisy_multi)
-    filled_multi = fill_na(ivim_model, fit_multi.model_params)
-
-    assert_array_equal(filled_multi.model_params[0, 0, 0],
-                       fit_no_noise.model_params)
-    assert_array_equal(filled_multi.model_params[0, 1, 0], [
-        params_from_fit[0], np.nan, params_from_fit[2], params_from_fit[3]])
-    assert_array_equal(filled_multi.model_params[1, 1, 0], [
-        params_from_fit[0], np.nan, params_from_fit[2], params_from_fit[3]])
 
 
 def test_fit_one_stage():
