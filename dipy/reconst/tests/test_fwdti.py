@@ -69,38 +69,31 @@ def test_fwdti_singlevoxel():
     S_conta, peaks = multi_tensor(gtab_2s, mevals, S0=100,
                                   angles=[(90, 0), (90, 0)],
                                   fractions=[(1-gtf) * 100, gtf*100], snr=None)
-    fwdm = fwdti.FreeWaterTensorModel(gtab_2s, 'WLS', S0=S0)
+    fwdm = fwdti.FreeWaterTensorModel(gtab_2s, 'WLS')
     fwefit = fwdm.fit(S_conta)
     FAfwe = fwefit.fa
     Ffwe = fwefit.f
-    S0fwe = fwefit.S0
 
     assert_almost_equal(FAdti, FAfwe, decimal=3)
     assert_almost_equal(Ffwe, gtf, decimal=3)
-    assert_almost_equal(S0fwe, S0, decimal=3)
 
     # Test non-linear fit
     fwdm = fwdti.FreeWaterTensorModel(gtab_2s, 'NLS', cholesky=False)
     fwefit = fwdm.fit(S_conta)
     FAfwe = fwefit.fa
     Ffwe = fwefit.f
-    S0fwe = fwefit.S0
 
     assert_almost_equal(FAdti, FAfwe)
     assert_almost_equal(Ffwe, gtf)
-    assert_almost_equal(S0fwe, S0, decimal=3)
 
-    # Test non-linear fit, when no first guess is given
-    fwdm = fwdti.FreeWaterTensorModel(gtab_2s, 'NLS', fw_params=None,
-                                      cholesky=False)
+    # Test cholesky
+    fwdm = fwdti.FreeWaterTensorModel(gtab_2s, 'NLS', cholesky=True)
     fwefit = fwdm.fit(S_conta)
     FAfwe = fwefit.fa
     Ffwe = fwefit.f
-    S0fwe = fwefit.S0
 
     assert_almost_equal(FAdti, FAfwe)
     assert_almost_equal(Ffwe, gtf)
-    assert_almost_equal(S0fwe, 100)
 
 
 def test_fwdti_precision():
@@ -128,16 +121,6 @@ def test_fwdti_multi_voxel():
 
     # Test cholesky
     fwdm = fwdti.FreeWaterTensorModel(gtab_2s, 'NLS', cholesky=True)
-    fwefit = fwdm.fit(DWI)
-    Ffwe = fwefit.f
-
-    assert_array_almost_equal(Ffwe, GTF)
-
-    # Test multi voxels with initial guess
-    fwdm_wlls = fwdti.FreeWaterTensorModel(gtab_2s, 'WLS')
-    fwefit_wlls = fwdm_wlls.fit(DWI)
-    fwe_initial = fwefit_wlls.model_params
-    fwdm = fwdti.FreeWaterTensorModel(gtab_2s, fw_params=fwe_initial)
     fwefit = fwdm.fit(DWI)
     Ffwe = fwefit.f
 
@@ -177,8 +160,6 @@ def test_fwdti_predictions():
     fwefit = fwdm.fit(DWI)  # Fit class
     S_pred3 = fwefit.predict(gtab_2s, S0=100)
     assert_array_almost_equal(S_pred3, DWI)
-    S_pred4 = fwefit.predict(gtab_2s, S0=100, step=2)  # Assign smaller step
-    assert_array_almost_equal(S_pred4, DWI)
 
 
 def test_fwdti_errors():

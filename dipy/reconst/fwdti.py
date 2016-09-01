@@ -258,10 +258,8 @@ def wls_iter(design_matrix, sig, S0, min_signal=1.0e-6, Diso=3e-3,
     params = np.dot(invWTS2W_WTS2, log_s)
 
     md = mean_diffusivity(params[..., :3])
-    if md > mdreg:
-        fw_params = np.zeros(13)
-        fw_params[12] = 1.0
-    else:
+    # Process voxel if it has significant signal from tissue
+    if md < mdreg and np.mean(sig) > min_signal:
         # General free-water signal contribution
         fwsig = np.exp(np.dot(design_matrix,
                               np.array([Diso, 0, Diso, 0, 0, Diso, 0])))
@@ -297,6 +295,10 @@ def wls_iter(design_matrix, sig, S0, min_signal=1.0e-6, Diso=3e-3,
         evals, evecs = decompose_tensor(from_lower_triangular(params))
         fw_params = np.concatenate((evals, evecs[0], evecs[1], evecs[2],
                                     np.array([f])), axis=0)
+    else:
+        fw_params = np.zeros(13)
+        if md > mdreg:
+            fw_params[12] = 1.0
 
     return fw_params
 
@@ -587,15 +589,12 @@ def nls_iter(design_matrix, sig, S0, min_signal=1.0e-6, Diso=3e-3,
            first, second and third coordinates of the eigenvector
         3) The volume fraction of the free water compartment.
     """
-
     # Initial guess
-    params = wls_iter(design_matrix, sig, S0, mdreg=mdreg)
+    params = wls_iter(design_matrix, sig, S0,
+                      min_signal=min_signal, Diso=Diso, mdreg=mdreg)
 
-    # Regularization threshold - thresholded value has an f-value = 1
-    if params[12] > 0.99:
-        fw_params = np.zeros(13)
-        fw_params[12] = 1.0
-    else:
+    # Process voxel if it has significant signal from tissue
+    if params[12] < 0.99 and np.mean(sig) > min_signal:
         # converting evals and evecs to diffusion tensor elements
         evals = params[:3]
         evecs = params[3:12].reshape((3, 3))
@@ -635,9 +634,9 @@ def nls_iter(design_matrix, sig, S0, min_signal=1.0e-6, Diso=3e-3,
 
         # The parameters are the evals and the evecs:
         evals, evecs = decompose_tensor(from_lower_triangular(this_tensor[:6]))
-        fw_params = np.concatenate((evals, evecs[0], evecs[1], evecs[2],
-                                    np.array([f])), axis=0)
-    return fw_params
+        params = np.concatenate((evals, evecs[0], evecs[1], evecs[2],
+                                 np.array([this_tensor[7]])), axis=0)
+    return params
 
 
 def nls_fit_tensor(design_matrix, data, fw_params=None, S0=None, Diso=3e-3,
