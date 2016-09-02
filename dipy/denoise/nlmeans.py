@@ -2,11 +2,17 @@ from __future__ import division, print_function
 
 import numpy as np
 from dipy.denoise.denspeed import nlmeans_3d
+from warnings import warn
+import warnings
+
+warnings.simplefilter('always', DeprecationWarning)
+warn(DeprecationWarning("Module 'dipy.denoise.nlmeans' is deprecated,"
+                        " use module 'dipy.denoise.non_local_means' instead"))
 
 
 def nlmeans(arr, sigma, mask=None, patch_radius=1, block_radius=5,
             rician=True, num_threads=None):
-    """ Non-local means for denoising 3D and 4D images
+    r""" Non-local means for denoising 3D and 4D images
 
     Parameters
     ----------
@@ -30,7 +36,20 @@ def nlmeans(arr, sigma, mask=None, patch_radius=1, block_radius=5,
     -------
     denoised_arr : ndarray
         the denoised ``arr`` which has the same shape as ``arr``.
+
+    References
+    ----------
+    .. [Descoteaux08] Descoteaux, Maxim and Wiest-Daessle`, Nicolas and Prima,
+                      Sylvain and Barillot, Christian and Deriche, Rachid
+                      Impact of Rician Adapted Non-Local Means Filtering on
+                      HARDI, MICCAI 2008
+
     """
+
+    warn(DeprecationWarning("function 'dipy.denoise.nlmeans'"
+                            " is deprecated, use module "
+                            "'dipy.denoise.non_local_means'"
+                            " instead"))
 
     if arr.ndim == 3:
         sigma = np.ones(arr.shape, dtype=np.float64) * sigma
