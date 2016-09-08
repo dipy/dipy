@@ -371,9 +371,9 @@ def wls_fit_tensor(gtab, data, Diso=3e-3, mask=None, min_signal=None,
     if min_signal is None:
         data = data.ravel()
         if np.all(data == 0):
-            return 1.0e-6
+            min_signal = 1.0e-6
         else:
-            return data[data > 0].min()
+            min_signal = data[data > 0].min()
 
     # Prepare S0
     S0 = np.mean(data[:, :, :, gtab.b0s_mask], axis=-1)
@@ -710,9 +710,9 @@ def nls_fit_tensor(gtab, data, Diso=3e-3, min_signal=None, weighting=None,
     if min_signal is None:
         data = data.ravel()
         if np.all(data == 0):
-            return 1.0e-6
+            min_signal = 1.0e-6
         else:
-            return data[data > 0].min()
+            min_signal = data[data > 0].min()
 
     # Prepare S0
     S0 = np.mean(data[:, :, :, gtab.b0s_mask], axis=-1)
