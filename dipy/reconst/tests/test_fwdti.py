@@ -8,7 +8,8 @@ import dipy.reconst.fwdti as fwdti
 from dipy.reconst.fwdti import fwdti_prediction
 from numpy.testing import (assert_array_almost_equal, assert_almost_equal)
 from nose.tools import assert_raises
-from dipy.reconst.dti import (from_lower_triangular, decompose_tensor)
+from dipy.reconst.dti import (from_lower_triangular, decompose_tensor,
+                              fractional_anisotropy)
 from dipy.reconst.fwdti import (lower_triangular_to_cholesky,
                                 cholesky_to_lower_triangular,
                                 nls_fit_tensor, wls_fit_tensor)
@@ -36,10 +37,13 @@ S_tissue = single_tensor(gtab_2s, S0=100, evals=evals, evecs=evecs,
 dm = dti.TensorModel(gtab_2s, 'WLS')
 dtifit = dm.fit(S_tissue)
 FAdti = dtifit.fa
+MDdti = dtifit.md
+dtiparams = dtifit.model_params
 
 # Simulation of 8 voxels tested
 DWI = np.zeros((2, 2, 2, len(gtab_2s.bvals)))
 FAref = np.zeros((2, 2, 2))
+MDref = np.zeros((2, 2, 2))
 # Diffusion of tissue and water compartments are constant for all voxel
 mevals = np.array([[0.0017, 0.0003, 0.0003], [0.003, 0.003, 0.003]])
 # volume fractions
@@ -57,6 +61,7 @@ for i in range(2):
                             fractions=[(1-gtf) * 100, gtf*100], snr=None)
         DWI[0, i, j] = S
         FAref[0, i, j] = FAdti
+        MDref[0, i, j] = MDdti
         R = all_tensor_evecs(p[0])
         R = R.reshape((9))
         model_params_mv[0, i, j] = np.concatenate(([0.0017, 0.0003, 0.0003],
@@ -65,7 +70,7 @@ for i in range(2):
 
 def test_fwdti_singlevoxel():
     # Simulation when water contamination is added
-    gtf = 0.50  # ground truth volume fraction
+    gtf = 0.44444  # ground truth volume fraction
     mevals = np.array([[0.0017, 0.0003, 0.0003], [0.003, 0.003, 0.003]])
     S_conta, peaks = multi_tensor(gtab_2s, mevals, S0=100,
                                   angles=[(90, 0), (90, 0)],
@@ -74,27 +79,33 @@ def test_fwdti_singlevoxel():
     fwefit = fwdm.fit(S_conta)
     FAfwe = fwefit.fa
     Ffwe = fwefit.f
+    MDfwe = fwefit.md
 
     assert_almost_equal(FAdti, FAfwe, decimal=3)
     assert_almost_equal(Ffwe, gtf, decimal=3)
+    assert_almost_equal(MDfwe, MDdti, decimal=3)
 
     # Test non-linear fit
     fwdm = fwdti.FreeWaterTensorModel(gtab_2s, 'NLS', cholesky=False)
     fwefit = fwdm.fit(S_conta)
     FAfwe = fwefit.fa
     Ffwe = fwefit.f
+    MDfwe = fwefit.md
 
     assert_almost_equal(FAdti, FAfwe)
     assert_almost_equal(Ffwe, gtf)
+    assert_almost_equal(MDfwe, MDdti)
 
     # Test cholesky
     fwdm = fwdti.FreeWaterTensorModel(gtab_2s, 'NLS', cholesky=True)
     fwefit = fwdm.fit(S_conta)
     FAfwe = fwefit.fa
     Ffwe = fwefit.f
+    MDfwe = fwefit.md
 
     assert_almost_equal(FAdti, FAfwe)
     assert_almost_equal(Ffwe, gtf)
+    assert_almost_equal(MDfwe, MDfwe)
 
 
 def test_fwdti_precision():
@@ -108,24 +119,34 @@ def test_fwdti_precision():
     fwefit = fwdm.fit(S_conta)
     FAfwe = fwefit.fa
     Ffwe = fwefit.f
+    MDfwe = fwefit.md
 
-    assert_almost_equal(Ffwe, gtf, decimal=5)
     assert_almost_equal(FAdti, FAfwe, decimal=5)
+    assert_almost_equal(Ffwe, gtf, decimal=5)
+    assert_almost_equal(MDfwe, MDdti, decimal=5)
 
 
 def test_fwdti_multi_voxel():
     fwdm = fwdti.FreeWaterTensorModel(gtab_2s, 'NLS', cholesky=False)
     fwefit = fwdm.fit(DWI)
+    FAfwe = fwefit.fa
     Ffwe = fwefit.f
+    MDfwe = fwefit.md
 
-    assert_array_almost_equal(Ffwe, GTF)
+    assert_almost_equal(FAfwe, FAref)
+    assert_almost_equal(Ffwe, GTF)
+    assert_almost_equal(MDfwe, MDref)
 
     # Test cholesky
     fwdm = fwdti.FreeWaterTensorModel(gtab_2s, 'NLS', cholesky=True)
     fwefit = fwdm.fit(DWI)
+    FAfwe = fwefit.fa
     Ffwe = fwefit.f
+    MDfwe = fwefit.md
 
-    assert_array_almost_equal(Ffwe, GTF)
+    assert_almost_equal(FAfwe, FAref)
+    assert_almost_equal(Ffwe, GTF)
+    assert_almost_equal(MDfwe, MDref)
 
 
 def test_fwdti_predictions():
@@ -237,3 +258,14 @@ def test_fwdti_jac_multi_voxel():
 
 
 def test_standalone_functions():
+    # WLS procedure
+    params = wls_fit_tensor(gtab_2s, DWI)
+    assert_array_almost_equal(params[..., 12], GTF)
+    fa = fractional_anisotropy(params[..., :3])
+    assert_array_almost_equal(fa, FAref)
+
+    # NLS procedure
+    params = nls_fit_tensor(gtab_2s, DWI)
+    assert_array_almost_equal(params[..., 12], GTF)
+    fa = fractional_anisotropy(params[..., :3])
+    assert_array_almost_equal(fa, FAref)
