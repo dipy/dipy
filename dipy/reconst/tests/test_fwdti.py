@@ -257,6 +257,21 @@ def test_fwdti_jac_multi_voxel():
     assert_array_almost_equal(Ffwe, GTF[0, :])
 
 
+def test_md_regularization():
+    # single voxel
+    gtf = 0.97  # for this ground truth value, md is larger than 2.7e-3
+    mevals = np.array([[0.0017, 0.0003, 0.0003], [0.003, 0.003, 0.003]])
+    S_conta, peaks = multi_tensor(gtab_2s, mevals, S0=100,
+                                  angles=[(90, 0), (90, 0)],
+                                  fractions=[(1-gtf) * 100, gtf*100], snr=None)
+    fwdm = fwdti.FreeWaterTensorModel(gtab_2s, 'NLS')
+    fwefit = fwdm.fit(S_conta)
+
+    assert_array_almost_equal(fwefit.fa, 0.0)
+    assert_array_almost_equal(fwefit.md, 0.0)
+    assert_array_almost_equal(fwefit.f, 1.0)
+
+
 def test_standalone_functions():
     # WLS procedure
     params = wls_fit_tensor(gtab_2s, DWI)

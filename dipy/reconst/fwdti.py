@@ -256,7 +256,7 @@ def wls_iter(design_matrix, sig, S0, min_signal=1.0e-6, Diso=3e-3,
     invWTS2W_WTS2 = np.dot(inv_WT_S2_W, WTS2)
     params = np.dot(invWTS2W_WTS2, log_s)
 
-    md = mean_diffusivity(params[..., :3])
+    md = (params[0] + params[2] + params[5]) / 3
     # Process voxel if it has significant signal from tissue
     if md < mdreg and np.mean(sig) > min_signal:
         # General free-water signal contribution
