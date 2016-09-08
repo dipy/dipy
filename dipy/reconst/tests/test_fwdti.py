@@ -10,7 +10,8 @@ from numpy.testing import (assert_array_almost_equal, assert_almost_equal)
 from nose.tools import assert_raises
 from dipy.reconst.dti import (from_lower_triangular, decompose_tensor)
 from dipy.reconst.fwdti import (lower_triangular_to_cholesky,
-                                cholesky_to_lower_triangular)
+                                cholesky_to_lower_triangular,
+                                nls_fit_tensor, wls_fit_tensor)
 from dipy.sims.voxel import (multi_tensor, single_tensor,
                              all_tensor_evecs, multi_tensor_dki)
 from dipy.io.gradients import read_bvals_bvecs
@@ -233,3 +234,6 @@ def test_fwdti_jac_multi_voxel():
     fwefit = fwdm.fit(DWI[0, :, :])
     Ffwe = fwefit.f
     assert_array_almost_equal(Ffwe, GTF[0, :])
+
+
+def test_standalone_functions():
