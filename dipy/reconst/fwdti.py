@@ -302,7 +302,7 @@ def wls_iter(design_matrix, sig, S0, min_signal=1.0e-6, Diso=3e-3,
     return fw_params
 
 
-def wls_fit_tensor(gtab, data, Diso=3e-3, mask=None, min_signal=None,
+def wls_fit_tensor(gtab, data, Diso=3e-3, mask=None, min_signal=1.0e-6,
                    piterations=3, mdreg=2.7e-3):
     r""" Computes weighted least squares (WLS) fit to calculate self-diffusion
     tensor using a linear regression model [1]_.
@@ -327,7 +327,7 @@ def wls_fit_tensor(gtab, data, Diso=3e-3, mask=None, min_signal=None,
         Default: False
     min_signal : float
         The minimum signal value. Needs to be a strictly positive
-        number. Default: minimal signal in the data provided to `fit`.
+        number. Default: 1.0e-6.
     piterations : inter, optional
         Number of iterations used to refine the precision of f. Default is set
         to 3 corresponding to a precision of 0.01.
@@ -364,16 +364,8 @@ def wls_fit_tensor(gtab, data, Diso=3e-3, mask=None, min_signal=None,
         mask = np.ones(data.shape[:-1], dtype=bool)
     else:
         if mask.shape != data.shape[:-1]:
-                raise ValueError("Mask is not the same shape as data.")
+            raise ValueError("Mask is not the same shape as data.")
         mask = np.array(mask, dtype=bool, copy=False)
-
-    # Prepare min_signal
-    if min_signal is None:
-        data = data.ravel()
-        if np.all(data == 0):
-            min_signal = 1.0e-6
-        else:
-            min_signal = data[data > 0].min()
 
     # Prepare S0
     S0 = np.mean(data[:, :, :, gtab.b0s_mask], axis=-1)
@@ -632,7 +624,7 @@ def nls_iter(design_matrix, sig, S0, min_signal=1.0e-6, Diso=3e-3,
     return params
 
 
-def nls_fit_tensor(gtab, data, Diso=3e-3, min_signal=None, weighting=None,
+def nls_fit_tensor(gtab, data, Diso=3e-3, min_signal=1.0e-6, weighting=None,
                    sigma=None, cholesky=False, f_transform=True, jac=False,
                    mdreg=2.7e-3, mask=None):
     """
@@ -658,7 +650,7 @@ def nls_fit_tensor(gtab, data, Diso=3e-3, min_signal=None, weighting=None,
         Default: False
     min_signal : float
         The minimum signal value. Needs to be a strictly positive
-        number. Default: minimal signal in the data provided to `fit`.
+        number. Default: 1.0e-6.
     f_transform : bool, optional
         If true, the water volume fractions is converted during the convergence
         procedure to ft = arcsin(2*f - 1) + pi/2, insuring f estimates between
@@ -703,16 +695,8 @@ def nls_fit_tensor(gtab, data, Diso=3e-3, min_signal=None, weighting=None,
         mask = np.ones(data.shape[:-1], dtype=bool)
     else:
         if mask.shape != data.shape[:-1]:
-                raise ValueError("Mask is not the same shape as data.")
+            raise ValueError("Mask is not the same shape as data.")
         mask = np.array(mask, dtype=bool, copy=False)
-
-    # Prepare min_signal
-    if min_signal is None:
-        data = data.ravel()
-        if np.all(data == 0):
-            min_signal = 1.0e-6
-        else:
-            min_signal = data[data > 0].min()
 
     # Prepare S0
     S0 = np.mean(data[:, :, :, gtab.b0s_mask], axis=-1)
