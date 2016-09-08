@@ -105,8 +105,6 @@ free water diffusion tensor."""
 
 FA = fwdtifit.fa
 MD = fwdtifit.md
-AD = fwdtifit.ad
-RD = fwdtifit.rd
 
 """
 For comparison we also compute the same standard measures processed by the
@@ -175,6 +173,51 @@ fig1.savefig('In_vivo_free_water_DTI_and_standard_DTI_measures.png')
    while respective MD values are shown in the lower panels (D-F). In addition
    the free water volume fraction estimated from the fwDTI model is shown in
    panel G**.
+
+From the figure, one can observe that the free water elimination model
+produces in general higher values of FA and lower values of MD than the
+standard DTI model. These differences in FA and MD estimation are expected
+due to the suppression of the free water isotropic diffusion components.
+Unexpected high amplitudes of FA are however observed in the periventricular
+gray mater. This is a known artefact of regions associated to voxels with high
+water volume fraction (i.e. voxels containing basically CSF). We are able to
+remove this problematic voxels by excluding all FA values associated with
+measured volume fractions above a reasonable threshold of 0.7:
+"""
+
+FA[F > 0.7] = 0
+dti_FA[F > 0.7] = 0
+
+"""
+Above we reproduce the plots of the in vivo FA from the two DTI fits and where
+we can see that the inflated FA values were practically removed:
+"""
+
+fig1, ax = plt.subplots(1, 3, figsize=(9, 3),
+                        subplot_kw={'xticks': [], 'yticks': []})
+
+fig1.subplots_adjust(hspace=0.3, wspace=0.05)
+ax.flat[0].imshow(FA[:, :, axial_slice].T, origin='lower',
+                  cmap='gray', vmin=0, vmax=1)
+ax.flat[0].set_title('A) fwDTI FA')
+ax.flat[1].imshow(dti_FA[:, :, axial_slice].T, origin='lower',
+                  cmap='gray', vmin=0, vmax=1)
+ax.flat[1].set_title('B) standard DTI FA')
+
+FAdiff = abs(FA[:, :, axial_slice] - dti_FA[:, :, axial_slice])
+ax.flat[2].imshow(FAdiff.T, cmap='gray', origin='lower', vmin=0, vmax=1)
+ax.flat[2].set_title('C) FA difference')
+
+plt.show()
+fig1.savefig('In_vivo_free_water_DTI_and_standard_DTI_corrected.png')
+
+"""
+.. figure:: In_vivo_free_water_DTI_and_standard_DTI_corrected.png
+   :align: center
+   ** In vivo FA measures obtain from the free water DTI (A) and standard
+   DTI (B) and their difference (C). Problematic inflated FA values of the
+   images were removed by dismissing voxels above a volume fraction threshold
+   of 0.7 **.
 
 References:
 
