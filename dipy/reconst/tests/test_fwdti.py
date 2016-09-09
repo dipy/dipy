@@ -257,6 +257,20 @@ def test_fwdti_jac_multi_voxel():
     assert_array_almost_equal(Ffwe, GTF[0, :])
 
 
+def test_standalone_functions():
+    # WLS procedure
+    params = wls_fit_tensor(gtab_2s, DWI)
+    assert_array_almost_equal(params[..., 12], GTF)
+    fa = fractional_anisotropy(params[..., :3])
+    assert_array_almost_equal(fa, FAref)
+
+    # NLS procedure
+    params = nls_fit_tensor(gtab_2s, DWI)
+    assert_array_almost_equal(params[..., 12], GTF)
+    fa = fractional_anisotropy(params[..., :3])
+    assert_array_almost_equal(fa, FAref)
+
+
 def test_md_regularization():
     # single voxel
     gtf = 0.97  # for this ground truth value, md is larger than 2.7e-3
@@ -271,16 +285,13 @@ def test_md_regularization():
     assert_array_almost_equal(fwefit.md, 0.0)
     assert_array_almost_equal(fwefit.f, 1.0)
 
+    # multi voxel
+    DWI[0, 1, 1] = S_conta
+    GTF[0, 1, 1] = 1
+    FAref[0, 1, 1] = 0
+    MDref[0, 1, 1] = 0
 
-def test_standalone_functions():
-    # WLS procedure
-    params = wls_fit_tensor(gtab_2s, DWI)
-    assert_array_almost_equal(params[..., 12], GTF)
-    fa = fractional_anisotropy(params[..., :3])
-    assert_array_almost_equal(fa, FAref)
-
-    # NLS procedure
-    params = nls_fit_tensor(gtab_2s, DWI)
-    assert_array_almost_equal(params[..., 12], GTF)
-    fa = fractional_anisotropy(params[..., :3])
-    assert_array_almost_equal(fa, FAref)
+    fwefit = fwdm.fit(DWI)
+    assert_array_almost_equal(fwefit.fa, FAref)
+    assert_array_almost_equal(fwefit.md, MDref)
+    assert_array_almost_equal(fwefit.f, GTF)
