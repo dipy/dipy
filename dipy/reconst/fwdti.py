@@ -24,7 +24,7 @@ def fwdti_prediction(params, gtab, S0=1, Diso=3.0e-3):
 
     Parameters
     ----------
-    params : ndarray
+    params : (..., 13) ndarray
         Model parameters. The last dimension should have the 12 tensor
         parameters (3 eigenvalues, followed by the 3 corresponding
         eigenvectors) and the volume fraction of the free water compartment.
@@ -37,6 +37,11 @@ def fwdti_prediction(params, gtab, S0=1, Diso=3.0e-3):
         Value of the free water isotropic diffusion. Default is set to 3e-3
         $mm^{2}.s^{-1}$. Please adjust this value if you are assuming different
         units of diffusion.
+
+    Returns
+    --------
+    S : (..., N) ndarray
+        Simulated signal based on the free water DTI model
 
     Notes
     -----
@@ -154,13 +159,18 @@ class FreeWaterTensorModel(ReconstModel):
 
         Parameters
         ----------
-        fwdti_params : ndarray
+        fwdti_params : (..., 13) ndarray
             The last dimension should have 13 parameters: the 12 tensor
             parameters (3 eigenvalues, followed by the 3 corresponding
             eigenvectors) and the free water volume fraction.
         S0 : float or ndarray
             The non diffusion-weighted signal in every voxel, or across all
             voxels. Default: 1
+
+        Returns
+        --------
+        S : (..., N) ndarray
+            Simulated signal based on the free water DTI model
         """
         return fwdti_prediction(fwdti_params, self.gtab, S0=S0)
 
@@ -203,6 +213,11 @@ class FreeWaterTensorFit(TensorFit):
         S0 : float array
            The mean non-diffusion weighted signal in each voxel. Default: 1 in
            all voxels.
+
+        Returns
+        --------
+        S : (..., N) ndarray
+            Simulated signal based on the free water DTI model
         """
         return fwdti_prediction(self.model_params, gtab, S0=S0)
 
