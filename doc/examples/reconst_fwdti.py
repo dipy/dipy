@@ -45,7 +45,7 @@ from dipy.segment.mask import median_otsu
 """
 Without spatial constrains the free water elimination model cannot be solved
 in data acquired from one non-zero b-value _[Hoy2014]. Therefore, here we
-download a dataset that was required from multi b-values.
+download a dataset that was required from multiple b-values.
 """
 
 fetch_cenir_multib(with_raw=False)
