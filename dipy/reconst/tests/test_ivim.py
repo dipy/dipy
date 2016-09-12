@@ -389,14 +389,6 @@ def test_fit_one_stage():
     assert_array_almost_equal(fit.predict(gtab), linear_fit_signal)
 
 
-def test_warning():
-    """
-    Test for warning when linear fit gives parameters which are not feasible.
-    """
-    if SCIPY_VERSION > LooseVersion('0.17'):
-        assert_warns(UserWarning, ivim_model._leastsq, data_single, [-1, -1, -1, -1])
-
-
 def test_leastsq_failing():
     """
     Test for cases where leastsq fitting fails and the results from a linear fit is returned.

@@ -9,7 +9,8 @@ import warnings
 from dipy.reconst.base import ReconstModel
 from dipy.reconst.multi_voxel import multi_voxel_fit
 
-SCIPY_LESS_0_17 = LooseVersion(scipy.version.short_version) < '0.17'
+SCIPY_LESS_0_17 = (LooseVersion(scipy.version.short_version) <
+                   LooseVersion('0.17'))
 
 if SCIPY_LESS_0_17:
     from scipy.optimize import leastsq
@@ -227,9 +228,9 @@ class IvimModel(ReconstModel):
             e_s = "Scipy versions less than 0.17 do not support "
             e_s += "bounds. Please update to Scipy 0.17 to use bounds"
             raise ValueError(e_s)
-        elif not SCIPY_LESS_0_17 and self.bounds is None:
+        elif self.bounds is None :
             self.bounds = ((0., 0., 0., 0.), (np.inf, .3, 1., 1.))
-        else:
+        else :
             self.bounds = bounds
 
     @multi_voxel_fit
@@ -493,6 +494,7 @@ class IvimModel(ReconstModel):
 
 
 class IvimFit(object):
+
     def __init__(self, model, model_params):
         """ Initialize a IvimFit class instance.
             Parameters
@@ -559,5 +561,3 @@ class IvimFit(object):
 
         """
         return ivim_prediction(self.model_params, gtab)
-
-
