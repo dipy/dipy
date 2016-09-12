@@ -145,7 +145,7 @@ def test_ivim_errors():
     with bounds for older Scipy versions should raise an error.
     """
     # Run the test for Scipy versions less than 0.17
-    if SCIPY_VERSION < '0.17':
+    if SCIPY_VERSION < LooseVersion('0.17'):
         assert_raises(ValueError, IvimModel, gtab,
                       bounds=([0., 0., 0., 0.], [np.inf, 1., 1., 1.]))
     else:
@@ -393,10 +393,8 @@ def test_warning():
     """
     Test for warning when linear fit gives parameters which are not feasible.
     """
-    # This signal gives negative values for the parameters
-    if SCIPY_VERSION > '0.17':
-        assert_warns(UserWarning, ivim_model.fit, noisy_single)
-
+    if SCIPY_VERSION > LooseVersion('0.17'):
+        assert_warns(UserWarning, ivim_model._leastsq, data_single, [-1, -1, -1, -1])
 
 
 def test_leastsq_failing():
@@ -412,10 +410,9 @@ def test_leastsq_failing():
 def test_leastsq_error():
     """
      Test error handling of the `_leastsq` method works when unfeasible x0 is passed.
-     If an unfeasible x0 value is passed using which leastsq fails, the x0 value is
-     returned with a warning.
+     If an unfeasible x0 value is passed using which leastsq fails, the x0 value is returned
+     as it is.
     """
-    assert_warns(UserWarning, ivim_model._leastsq, data_single, [-1, -1, -1, -1])
     fit = ivim_model._leastsq(data_single, [-1, -1, -1, -1])
     assert_array_almost_equal(fit, [-1, -1, -1, -1])
 
