@@ -14,7 +14,7 @@ References
 import numpy as np
 from numpy.testing import (assert_array_equal, assert_array_almost_equal,
                            assert_raises, assert_array_less, run_module_suite,
-                           assert_warns)
+                           assert_warns, dec)
 
 from dipy.reconst.ivim import ivim_prediction, IvimModel
 from dipy.core.gradients import gradient_table, generate_bvecs
@@ -297,10 +297,15 @@ def test_no_b0():
     assert_raises(ValueError, IvimModel, gtab_no_b0)
 
 
+@dec.skipif(SCIPY_VERSION < LooseVersion('0.17'),
+            "Gives wrong value for f")
 def test_noisy_fit():
     """
     Test fitting for noisy signals. This tests whether the threshold condition
     applies correctly and returns the linear fitting parameters.
+
+    For older scipy versions, the returned value of `f` from a linear fit is around 135
+    and D and D_star values are equal. Hence doing a test based on Scipy version.
     """
     model_one_stage = IvimModel(gtab)
     fit_one_stage = model_one_stage.fit(noisy_single)
@@ -407,6 +412,7 @@ def test_leastsq_error():
     """
     fit = ivim_model._leastsq(data_single, [-1, -1, -1, -1])
     assert_array_almost_equal(fit, [-1, -1, -1, -1])
+
 
 if __name__ == '__main__':
     run_module_suite()
