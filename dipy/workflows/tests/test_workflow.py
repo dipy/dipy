@@ -37,9 +37,6 @@ def test_force_overwrite():
         assert third_time != second_time
 
 
-def test_set_sub_flows_optionals():
-    wf = Workflow()
-    assert_raises(Exception, wf.set_sub_flows_optionals, None)
 
 
 def test_get_sub_runs():
