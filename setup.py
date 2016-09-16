@@ -221,7 +221,7 @@ def main(**extra_args):
                           pjoin('bin', 'dipy_nlmeans'),
                           pjoin('bin', 'dipy_mask')
                           ],
-
+          
           cmdclass = cmdclass,
           **extra_args
         )
