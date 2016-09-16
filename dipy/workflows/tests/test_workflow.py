@@ -28,6 +28,8 @@ def test_force_overwrite():
 
         # re-run with force overwrite, modified time should change
         mo_flow = MedianOtsuFlow(output_strategy='absolute', force=True)
+        # Make sure that at least one second elapsed, so that time-stamp is
+        # different (sometimes measured in whole seconds)
         time.sleep(1)
         mo_flow.run(data_path, out_dir=out_dir)
         mask_file = mo_flow.last_generated_outputs['out_mask']
