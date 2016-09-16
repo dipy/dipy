@@ -59,18 +59,31 @@ class AppendTextFlow(Workflow):
         output. Lastly, all out_ params needs to be at the end of the params
         list.
 
+<<<<<<< HEAD
         The ``run`` docstring is very important, you need to document every
         parameter as they will be used with inspection to build the command line
         argument parser.
+=======
+<<<<<<< HEAD
+        The ``run`` docstring is very important, you need to document every
+        parameter as they will be used with inspection to build the command line
+        argument parser.
+=======
+        The class docstring part is very important, you need to document
+        every parameter as they will be used with inspection to build the
+        command line argument parser.
+>>>>>>> master
+>>>>>>> enhanced_workflows
         """
 
         io_it = self.get_io_iterator()
 
-        for in_file, out_path in io_it:
+        for in_file, out_file in io_it:
 
-            shutil.copy(in_file, out_path)
+            shutil.copy(in_file, out_file)
 
-            with open(out_path, 'a') as myfile:
+            with open(out_file, 'a') as myfile:
+
                 myfile.write(text_to_append)
 
 """
@@ -80,7 +93,15 @@ based on the inputs and some other advanced output strategy parameters.
 
 By iterating on the ``IOIterator`` object you created previously you
 conveniently get all input and output paths for every input file
+<<<<<<< HEAD
 found when globbing the input parameters.
+=======
+<<<<<<< HEAD
+found when globbing the input parameters.
+=======
+found when globbin the input parameters.
+>>>>>>> master
+>>>>>>> enhanced_workflows
 
 The code in the loop is the actual workflow processing code. It can be anything.
 For the example, it just appends text to an input file.
@@ -89,13 +110,30 @@ For the example, it just appends text to an input file.
 """
 
 This is it for the workflow! Now to be able to call it easily via command
+<<<<<<< HEAD
 line, you need to add this bit of code. Usually this is in a separate
+=======
+<<<<<<< HEAD
+<<<<<<< HEAD
+line, you need to add this bit of code. Usually this is in a separate
+=======
+line, you need to add this bit of code. Usually this is in a sperate
+>>>>>>> master
+>>>>>>> enhanced_workflows
 executable file located in ../dipy/bin/.
 """
 
 from dipy.workflows.flow_runner import run_flow
 """
+<<<<<<< HEAD
 This is the method that will wrap everything that is needed to make a flow
+=======
+<<<<<<< HEAD
+This is the method that will wrap everything that is needed to make a flow
+=======
+This is the method that will wrap everything that is need to make a flow
+>>>>>>> master
+>>>>>>> enhanced_workflows
 command line ready then run it.
 """
 

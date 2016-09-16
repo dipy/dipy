@@ -124,7 +124,6 @@ extbuilder = add_flag_checking(
 # Use ext builder to add np.get_include() at build time, not during setup.py
 # execution.
 extbuilder = make_np_ext_builder(extbuilder)
-
 if need_cython:
     SetupDependency('Cython', info.CYTHON_MIN_VERSION,
                     req_type='install_requires',
