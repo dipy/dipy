@@ -153,7 +153,7 @@ class CustomInteractorStyle(vtkInteractorStyleUser):
             self.default_interactor.OnKeyPress()
 
     def SetInteractor(self, interactor):
-        # Internally, `InteractorStyle` objects need a handle to aKeyD
+        # Internally, `InteractorStyle` objects need a handle to a
         # `vtkWindowInteractor` object and this is done via `SetInteractor`.
         # However, this has the side effect of adding directly all their
         # observers to the `interactor`!
@@ -164,7 +164,7 @@ class CustomInteractorStyle(vtkInteractorStyleUser):
         #
         # Note: Be sure that no observer has been manually added to the
         #       `interactor` before setting the InteractorStyle.
-        interactor.RemoveAllObservers()
+        # interactor.RemoveAllObservers()
 
         # This class is a `vtkClass` (instead of `object`), so `super()`
         # cannot be used. Also the method `SetInteractor` is not overridden in
