@@ -96,8 +96,6 @@ class Workflow(object):
 
     def get_sub_runs(self):
         """No sub runs since this is a simple workflow.
-
-        XXX Needs to be overloaded by derived classes?
         """
         return []
 
