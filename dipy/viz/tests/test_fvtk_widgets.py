@@ -114,10 +114,10 @@ def test_button_and_slider_widgets():
         # show_manager.window.AddObserver(vtk.vtkCommand.ModifiedEvent,
         #                                 win_callback)
 
-        show_manager.record(recording_filename)
+        show_manager.record_events(recording_filename)
         print(states)
     else:
-        show_manager.play(recording_filename)
+        show_manager.play_events(recording_filename)
         npt.assert_equal(states["camera_button_count"], 7)
         npt.assert_equal(states["plus_button_count"], 3)
         npt.assert_equal(states["minus_button_count"], 4)

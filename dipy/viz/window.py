@@ -439,7 +439,6 @@ class ShowManager(object):
         """ Initialize interaction
         """
         self.iren.Initialize()
-        # picker.Pick(85, 126, 0, ren)
 
     def render(self):
         """ Renders only once
@@ -461,16 +460,13 @@ class ShowManager(object):
             self.render()
             self.iren.Start()
 
-        # window.RemoveAllObservers()
-        # ren.SetRenderWindow(None)
-
         self.window.RemoveRenderer(self.ren)
         self.ren.SetRenderWindow(None)
         del self.iren
         del self.window
 
-    def record(self, filename="record.log"):
-        """ Records interaction.
+    def record_events(self, filename="record.log"):
+        """ Records events during the interaction.
 
         The recording is represented as a list of VTK events
         that happened during the interaction. The recording is
@@ -497,8 +493,8 @@ class ShowManager(object):
 
         self.iren.Start()
 
-    def play(self, filename):
-        """ Plays a recorded interaction.
+    def play_events(self, filename):
+        """ Plays recorded events of a past interaction.
 
         The VTK events that happened during the recorded interaction will be
         played back from `filename`.
