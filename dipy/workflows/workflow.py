@@ -101,13 +101,6 @@ class Workflow(object):
         """
         return []
 
-    def set_sub_flows_optionals(self, opts):
-        """XXX This is what exactly?
-
-        This code shouldnt be reached. Raise exception.
-        """
-        raise Exception('Error: {} does not have subworkflows.'.
-                        format(self.__class__))
 
     @classmethod
     def get_short_name(cls):
