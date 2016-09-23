@@ -59,9 +59,9 @@ class AppendTextFlow(Workflow):
         output. Lastly, all out_ params needs to be at the end of the params
         list.
 
-        The class docstring part is very important, you need to document
-        every parameter as they will be used with inspection to build the
-        command line argument parser.
+        The ``run`` docstring is very important, you need to document every
+        parameter as they will be used with inspection to build the command line
+        argument parser.
         """
 
         io_it = self.get_io_iterator()
@@ -71,6 +71,7 @@ class AppendTextFlow(Workflow):
             shutil.copy(in_file, out_file)
 
             with open(out_file, 'a') as myfile:
+
                 myfile.write(text_to_append)
 
 """
@@ -80,7 +81,7 @@ based on the inputs and some other advanced output strategy parameters.
 
 By iterating on the ``IOIterator`` object you created previously you
 conveniently get all input and output paths for every input file
-found when globbin the input parameters.
+found when globbing the input parameters.
 
 The code in the loop is the actual workflow processing code. It can be anything.
 For the example, it just appends text to an input file.
@@ -89,13 +90,13 @@ For the example, it just appends text to an input file.
 """
 
 This is it for the workflow! Now to be able to call it easily via command
-line, you need to add this bit of code. Usually this is in a sperate
+line, you need to add this bit of code. Usually this is in a separate
 executable file located in ../dipy/bin/.
 """
 
 from dipy.workflows.flow_runner import run_flow
 """
-This is the method that will wrap everything that is need to make a flow
+This is the method that will wrap everything that is needed to make a flow
 command line ready then run it.
 """
 
