@@ -18,7 +18,7 @@ from dipy.viz import fvtk
 
 """
 For the purpose of this example, we will use the Stanford HARDI dataset (150
-directions, single b-value of 2000 s/mm$^2$) that can be automatically
+directions, single b-value of 2000 $s/mm^2$) that can be automatically
 downloaded. If you have not yet downloaded this data-set in one of the other
 examples, you will need to be connected to the internet the first time you run
 this example. The data will be stored for subsequent runs, and for use with
