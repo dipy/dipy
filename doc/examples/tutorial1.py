@@ -1,29 +1,7 @@
 import numpy as np
 from dipy.viz import actor, window, widget
-from skimage import exposure
-from skimage.morphology import disk
-from skimage.filters import rank
 
-def histogram_normalization(data):
-
-    g,h = np.histogram(data)
-    m = np.zeros((10,3))
-    for i in np.array(range(10)):
-        m[i,0] = g[i]
-        m[i,1] = h[i]
-        m[i,2] = h[i+1]
-
-
-    return m[0,1], m[2,2]
-
-
-
-def interact_volumes(data, affine, world_coords=True):
-
-    shape = data.shape
-
-    ren = window.Renderer()
-    ren.background((0, 0, .6))
+def histogram_normalization(data,Rate):
 
     g,h = np.histogram(data)
     m = np.zeros((10,3))
@@ -34,23 +12,50 @@ def interact_volumes(data, affine, world_coords=True):
         m[i,1] = h[i]
         m[i,2] = h[i+1]
 
-    g = np.sort(g)
+    g = sorted(g,reverse = True)
+    S = np.size(g)
+#    Rate = 0.05
+    Index = 0
+
+    for i in np.array(range(S)):
+        if g[i]/g[0] > Rate:
+            Index = Index + 1
 
     for i in np.array(range(10)):
-        if g[9] == m[i,0]:
-            low = m[i,1]
-        if g[7] == m[i,0]:
-            high = m[i,2]
+        for j in np.array(range(Index)):
+            if g[j] == m[i,0]:
+                high = m[i,2]
+    print(high)
+
+
+    return high
+
+
+
+def interact_volumes(data, affine, world_coords=True):
+
+    shape = data.shape
+
+    ren = window.Renderer()
+    ren.background((0, 0, .6))
+    Rate = 0.05
+    high = histogram_normalization(data,Rate)
 
     #l,h = histogram_normalization(data)
     if not world_coords:
-        image_actor = actor.slicer(data, affine=np.eye(4))#, value_range=(50,h[7]))
+        image_actor = actor.slicer(data, affine=np.eye(4), value_range=(0,high))
+        image_actor1 = actor.slicer(data, affine=np.eye(4))#, value_range=(0))
     else:
-        image_actor = actor.slicer(data, affine)#, value_range=(50,h[7]))
+        image_actor = actor.slicer(data, affine, value_range=(0,high))
+        image_actor1 = actor.slicer(data, affine)#, value_range=(0,high))
 
     slicer_opacity = 1.
     image_actor.opacity(slicer_opacity)
     ren.add(image_actor)
+    ren.add(image_actor1)
+
+    image_actor1.SetPosition(300, 0, 0)
+    image_actor.SetPosition(0,0,0)
 
     ren.add(actor.axes((100, 100, 100)))
 
@@ -61,6 +66,8 @@ def interact_volumes(data, affine, world_coords=True):
         z = int(np.round(obj.get_value()))
         image_actor.display_extent(0, shape[0] - 1,
                                    0, shape[1] - 1, z, z)
+        image_actor1.display_extent(0, shape[0] - 1,
+                                    0, shape[1] - 1, z, z)
 
     slider = widget.slider(show_m.iren, show_m.ren,
                            callback=change_slice,
@@ -139,8 +146,8 @@ for i in range(176):
     t1[:,:,i] = rank.equalize(t1[:,:,i],selem = selem)
 """
 
-plt.hist(t1.ravel(), 100)
+#plt.hist(t1.ravel(), 100)
 
 
-# m = interact_volumes(data[..., 0], affine, False)
-# n = interact_volumes(t1, affine_t1, True)
+#m = interact_volumes(data[..., 0], affine, False)
+n = interact_volumes(t1, affine_t1, True)
