@@ -295,3 +295,18 @@ def test_md_regularization():
     assert_array_almost_equal(fwefit.fa, FAref)
     assert_array_almost_equal(fwefit.md, MDref)
     assert_array_almost_equal(fwefit.f, GTF)
+
+
+def test_zero_s0():
+    # single voxel
+    gtf = 0.55
+    mevals = np.array([[0.0017, 0.0003, 0.0003], [0.003, 0.003, 0.003]])
+    S_conta, peaks = multi_tensor(gtab_2s, mevals, S0=100,
+                                  angles=[(90, 0), (90, 0)],
+                                  fractions=[(1-gtf) * 100, gtf*100], snr=None)
+    S_conta[gtab_2s.bvals == 0] = -100
+    fwdm = fwdti.FreeWaterTensorModel(gtab_2s, 'NLS')
+    fwefit = fwdm.fit(S_conta)
+    assert_array_almost_equal(fwefit.fa, 0.0)
+    assert_array_almost_equal(fwefit.md, 0.0)
+    assert_array_almost_equal(fwefit.f, 0.0)
