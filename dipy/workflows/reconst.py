@@ -26,9 +26,10 @@ class ReconstDtiFlow(Workflow):
             out_ad='ad.nii.gz', out_rd='rd.nii.gz', out_mode='mode.nii.gz',
             out_evec='evecs.nii.gz', out_eval='evals.nii.gz'):
 
-        """ Workflow for tensor reconstruction and DTI metrics computing.
-        It a tensor recontruction on the files by 'globing' ``input_files`` and
-        saves the dti metrics in a directory specified by ``out_dir``.
+        """ Workflow for tensor reconstruction and for computing DTI metrics.
+        Performs a tensor reconstruction on the files by 'globing'
+        ``input_files`` and saves the DTI metrics in a directory specified by
+        ``out_dir``.
 
         Parameters
         ----------
@@ -51,7 +52,7 @@ class ReconstDtiFlow(Workflow):
         out_tensor : string, optional
             Name of the tensors volume to be saved (default 'tensors.nii.gz')
         out_fa : string, optional
-            Name of the fractionnal anisotropy volume to be saved
+            Name of the fractional anisotropy volume to be saved
             (default 'fa.nii.gz')
         out_ga : string, optional
             Name of the geodesic anisotropy volume to be saved
@@ -70,18 +71,18 @@ class ReconstDtiFlow(Workflow):
         out_mode : string, optional
             Name of the mode volume to be saved (default 'mode.nii.gz')
         out_evec : string, optional
-            Name of the eigen vectors volume to be saved
+            Name of the eigenvectors volume to be saved
             (default 'evecs.nii.gz')
         out_eval : string, optional
-            Name of the eigen vvalues to be saved (default 'evals.nii.gz')
+            Name of the eigenvalues to be saved (default 'evals.nii.gz')
         """
 
         io_it = self.get_io_iterator()
 
-        for dwi, bval, bvec, mask, otensor, ofa, oga, orgb, omd, oad, ord, \
+        for dwi, bval, bvec, mask, otensor, ofa, oga, orgb, omd, oad, orad, \
             omode, oevecs, oevals in io_it:
 
-            logging.info('Computing dti metrics for {0}'.format(dwi))
+            logging.info('Computing DTI metrics for {0}'.format(dwi))
             img = nib.load(dwi)
             data = img.get_data()
             affine = img.get_affine()
@@ -125,7 +126,7 @@ class ReconstDtiFlow(Workflow):
 
             RD = radial_diffusivity(tenfit.evals)
             rd_img = nib.Nifti1Image(RD.astype(np.float32), affine)
-            nib.save(rd_img, ord)
+            nib.save(rd_img, orad)
 
             MODE = get_mode(tenfit.quadratic_form)
             mode_img = nib.Nifti1Image(MODE.astype(np.float32), affine)
