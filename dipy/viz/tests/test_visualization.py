@@ -4,7 +4,35 @@ from numpy import zeros
 
 imga = zeros([128,128])
 
-def histogram_normalization(data,rate):
+
+def intensity_adjustment(data,rate):
+    r""" This function enables changing the MRI image contrast.
+
+    It first read the data, must be a 2D image (a specific slice image in MRI),
+    then calaulate the image intensity histogram, and based on the rate value to
+    decide what is the upperbound value for intensity normalization, the lowerbound
+    is 0.
+
+    Parameters
+    -----------
+    data : a two dimensional array representing one MRI slice image
+    rate : a float point value representing the threshold whether a spicific
+           histogram bin should be count in the normalization range
+
+    Returns
+    -------
+    high : the upper_bound value for normalization
+
+    References
+    ----------
+
+    Notes
+    -----
+
+    See also
+    --------
+    dipy.viz.utils.upper_bound
+    """
 
     g,h = np.histogram(data)
     m = np.zeros((10,3))
@@ -40,7 +68,7 @@ for y in range(128):
             imga[x,y] = 255
 
 rate = 0.1
-high = histogram_normalization(imga,rate)
+high = intensity_adjustment(imga,rate)
 vol = np.interp(imga, xp=[imga.min(), high], fp=[0, 255])
 
 plt.imshow(imga,"gray")
