@@ -14,11 +14,10 @@ class MedianOtsuFlow(Workflow):
     def get_short_name(cls):
         return 'medotsu'
 
-
     def run(self, input_files, save_masked=False, median_radius=2, numpass=5,
             autocrop=False, vol_idx=None, dilate=None, out_dir='',
             out_mask='brain_mask.nii.gz', out_masked='dwi_masked.nii.gz'):
-        """ Workflow wrapping the median_otsu segmentation method.
+        """Workflow wrapping the median_otsu segmentation method.
 
         Applies median_otsu segmentation on each file found by 'globing'
         ``input_files`` and saves the results in a directory specified by
@@ -63,8 +62,8 @@ class MedianOtsuFlow(Workflow):
             data, affine, img = load_nifti(fpath, return_img=True)
 
             masked_volume, mask_volume = median_otsu(data, median_radius,
-                                                     numpass, autocrop, vol_idx,
-                                                     dilate)
+                                                     numpass, autocrop,
+                                                     vol_idx, dilate)
 
             save_nifti(mask_out_path, mask_volume.astype(np.float32), affine)
 
