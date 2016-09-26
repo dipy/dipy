@@ -297,7 +297,7 @@ def test_md_regularization():
     assert_array_almost_equal(fwefit.f, GTF)
 
 
-def test_zero_s0():
+def test_negative_s0():
     # single voxel
     gtf = 0.55
     mevals = np.array([[0.0017, 0.0003, 0.0003], [0.003, 0.003, 0.003]])
@@ -310,3 +310,13 @@ def test_zero_s0():
     assert_array_almost_equal(fwefit.fa, 0.0)
     assert_array_almost_equal(fwefit.md, 0.0)
     assert_array_almost_equal(fwefit.f, 0.0)
+
+    # multi voxel
+    DWI[0, 0, 1, gtab_2s.bvals == 0] = -100
+    GTF[0, 0, 1] = 0
+    FAref[0, 0, 1] = 0
+    MDref[0, 0, 1] = 0
+    fwefit = fwdm.fit(DWI)
+    assert_array_almost_equal(fwefit.fa, FAref)
+    assert_array_almost_equal(fwefit.md, MDref)
+    assert_array_almost_equal(fwefit.f, GTF)
