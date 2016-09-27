@@ -39,7 +39,9 @@ from dipy.data.fetcher import (fetch_scil_b0,
                                fetch_cenir_multib,
                                read_cenir_multib,
                                fetch_mni_template,
-                               read_mni_template)
+                               read_mni_template,
+                               fetch_ivim,
+                               read_ivim)
 
 from ..utils.arrfuncs import as_native_array
 from dipy.tracking.streamline import relist_streamlines
