@@ -279,7 +279,7 @@ def wls_iter(design_matrix, sig, S0, Diso=3e-3, mdreg=2.7e-3,
 
     md = (params[0] + params[2] + params[5]) / 3
     # Process voxel if it has significant signal from tissue
-    if md < mdreg and np.mean(sig) > min_signal:
+    if md < mdreg and np.mean(sig) > min_signal and S0 > min_signal:
         # General free-water signal contribution
         fwsig = np.exp(np.dot(design_matrix,
                               np.array([Diso, 0, Diso, 0, 0, Diso, 0])))
@@ -596,7 +596,7 @@ def nls_iter(design_matrix, sig, S0, Diso=3e-3, mdreg=2.7e-3,
                       min_signal=min_signal, Diso=Diso, mdreg=mdreg)
 
     # Process voxel if it has significant signal from tissue
-    if params[12] < 0.99 and np.mean(sig) > min_signal:
+    if params[12] < 0.99 and np.mean(sig) > min_signal and S0 > min_signal:
         # converting evals and evecs to diffusion tensor elements
         evals = params[:3]
         evecs = params[3:12].reshape((3, 3))
