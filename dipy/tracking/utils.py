@@ -1046,7 +1046,7 @@ def path_length(streamlines, aoi, affine, fill_value=-1):
     # path length map
     plm = np.empty(aoi.shape, dtype=float)
     plm[:] = np.inf
-    lin_T, offset = _mapping_to_voxel(affine, None)
+    lin_T, offset = _mapping_to_voxel(affine, None)
     for sl in streamlines:
         seg_ind = _to_voxel_coordinates(sl, lin_T, offset)
         i, j, k = seg_ind.T
@@ -1063,7 +1063,7 @@ def path_length(streamlines, aoi, affine, fill_value=-1):
             segment_length = np.sqrt(((seg[1:] - seg[:-1]) ** 2).sum(1))
             dist = segment_length.cumsum()
             # Updates path length map with shorter distances
-            np.minimum.at(plm, (i, j, k), dist)
+            plm[i, j, k] = np.minimum(plm[i, j, k], dist)
     if fill_value != np.inf:
         plm = np.where(plm == np.inf, fill_value, plm)
     return plm
