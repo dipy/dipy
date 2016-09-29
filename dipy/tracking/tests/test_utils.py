@@ -624,16 +624,33 @@ def test_flexi_tvis_affine():
     assert_array_almost_equal(origin[:3], np.multiply(dim,voxel_size)-voxel_size/2)
 
 def test_get_flexi_tvis_affine():
-    tvis_hdr = {'voxel_order':'RPI','dim':(256,256,86), 'voxel_size':[1.09379995,1.09379995,1.99947774]}
-    grid_affine = np.array([[ -1.08566022e+00,   1.42664334e-03,   2.43463114e-01,   1.34783203e+02],
+    tvis_hdr = {'voxel_order':'RPI','dim':(30,40,50), 'voxel_size':[2,3,4]}
+    '''#grid_affine = np.array([[ -1.08566022e+00,   1.42664334e-03,   2.43463114e-01,   1.34783203e+02],
     [2.43251352e-03,   1.09376717e+00,   1.48301506e-02,  -1.07367630e+02],
     [1.33170187e-01,  -8.34854878e-03,   1.98454463e+00,  -9.98151169e+01],
-    [0.00000000e+00,   0.00000000e+00,   0.00000000e+00,   1.00000000e+00]])
+    [0.00000000e+00,   0.00000000e+00,   0.00000000e+00,   1.00000000e+00]])'''
+
+    grid_affine = np.array([[-2, 0, 0, 0],
+                            [0, 3, 0, 0],
+                            [0, 0, 4, 0],
+                            [0, 0, 0, 1.]])
 
     affine = get_flexi_tvis_affine(tvis_hdr, grid_affine)
 
     origin = np.dot(affine, [0, 0, 0, 1])
-    assert_array_almost_equal(origin[:3], np.multiply(tvis_hdr['dim'],tvis_hdr['voxel_size']) - tvis_hdr['voxel_size'] / 2)
+    vsz = np.array(tvis_hdr['voxel_size'])
+    assert_array_almost_equal(origin[:3], np.multiply(tvis_hdr['dim'], vsz) - vsz / 2)
+
+
+    #grid_affine =
+    tvis_hdr['voxel_order'] = 'ASL'
+    vsz = tvis_hdr['voxel_size'] = np.array([3, 4, 2.])
+    affine = get_flexi_tvis_affine(tvis_hdr, grid_affine)
+
+    vox_point = np.array([9, 8, 7])
+    trk_point = np.dot(affine, np.append(vox_point, 1))
+
+    assert_array_almost_equal(trk_point[:3],  (vox_point[[1, 2, 0]] + 0.5) * vsz)
 
 def test_path_length():
     aoi = np.zeros((20, 20, 20), dtype=bool)
@@ -676,7 +693,7 @@ def test_path_length():
         assert (rando < 19.5).all()
         streamlines.append(rando)
     pl = path_length(streamlines, aoi, affine=np.eye(4))
-    npt.assert_array_almost_equal(pl, np.inf)
+    npt.assert_array_almost_equal(pl, -1)
 
     pl = path_length(streamlines, aoi, affine=np.eye(4), fill_value=-12.)
     npt.assert_array_almost_equal(pl, -12.)
