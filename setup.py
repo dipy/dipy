@@ -83,6 +83,7 @@ for modulename, other_sources, language in (
     ('dipy.segment.clustering_algorithms', [], 'c'),
     ('dipy.denoise.denspeed', [], 'c'),
     ('dipy.denoise.fast_noise_estimate', [], 'c'),
+    ('dipy.denoise.nlmeans_block', [], 'c'),
     ('dipy.denoise.enhancement_kernel', [], 'c'),
     ('dipy.denoise.shift_twist_convolution', [], 'c'),
     ('dipy.align.vector_fields', [], 'c'),
