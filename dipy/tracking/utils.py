@@ -959,24 +959,25 @@ def reduce_rois(rois, include):
 
     return include_roi, exclude_roi
 
+
 def flexi_tvis_affine(sl_vox_order, grid_affine, dim, voxel_size):
     """ Computes the mapping from voxel indices to streamline points,
         reconciling streamlines and grids with different voxel orders
 
     Parameters
     ----------
-    sl_vox_order: string of length 3
+    sl_vox_order : string of length 3
         a string that describes the voxel order of the streamlines (ex: LPS)
-    grid_affine: nii_aff: array (4, 4),
+    grid_affine : array (4, 4),
         An affine matrix describing the current space of the grid in relation to RAS+ scanner space
-    dim: tuple of length 3
+    dim : tuple of length 3
         dimension of the grid
-    voxel_size: array (3,0)
+    voxel_size : array (3,0)
         voxel size of the grid
 
     Returns
     -------
-    flexi_tvis_aff: this affine maps between a grid and a trackvis space
+    flexi_tvis_aff : this affine maps between a grid and a trackvis space
     """
 
     sl_ornt = orientation_from_string(str(sl_vox_order))
@@ -989,21 +990,22 @@ def flexi_tvis_affine(sl_vox_order, grid_affine, dim, voxel_size):
 
     return flexi_tvis_aff
 
+
 def get_flexi_tvis_affine(tvis_hdr, nii_aff):
     """ Computes the mapping from voxel indices to streamline points,
         reconciling streamlines and grids with different voxel orders
 
     Parameters
     ----------
-    tvis_hdr: header from a trackvis file
-    nii_aff: array (4, 4),
+    tvis_hdr : header from a trackvis file
+    nii_aff : array (4, 4),
         An affine matrix describing the current space of the grid in relation to RAS+ scanner space
-    nii_data: nd array
+    nii_data : nd array
         3D array, each with shape (x, y, z) corresponding to the shape of the brain volume,
 
     Returns
     -------
-    flexi_tvis_aff: array (4,4)
+    flexi_tvis_aff : array (4,4)
         this affine maps between a grid and a trackvis space
     """
 
@@ -1014,6 +1016,7 @@ def get_flexi_tvis_affine(tvis_hdr, nii_aff):
     flexi_tvis_aff = flexi_tvis_affine(sl_vox_order, nii_aff, dim, voxel_size)
 
     return flexi_tvis_aff
+
 
 def path_length(streamlines, aoi, affine, fill_value=-1):
     """ Computes the shortest path, along any streamline, between aoi and
@@ -1065,6 +1068,7 @@ def path_length(streamlines, aoi, affine, fill_value=-1):
         plm = np.where(plm == np.inf, fill_value, plm)
     return plm
 
+
 def _part_segments(streamline, break_points):
     segments = np.split(streamline, break_points.nonzero()[0])
     # Skip first segment, all points before first break
@@ -1073,6 +1077,7 @@ def _part_segments(streamline, break_points):
     for each in segments:
         if len(each) > 1:
             yield each
+
 
 def _as_segments(streamline, break_points):
     for seg in _part_segments(streamline, break_points):
