@@ -81,7 +81,6 @@ class ReconstDtiFlow(Workflow):
         out_eval : string, optional
             Name of the eigenvalues to be saved (default 'evals.nii.gz')
         """
-
         io_it = self.get_io_iterator()
 
         for dwi, bval, bvec, mask, otensor, ofa, oga, orgb, omd, oad, orad, \
@@ -98,7 +97,8 @@ class ReconstDtiFlow(Workflow):
             else:
                 mask = nib.load(mask).get_data().astype(np.bool)
 
-            tenfit, _ = get_fitted_tensor(data, mask, bval, bvec, b0_threshold)
+            tenfit, _ = self.get_fitted_tensor(data, mask, bval, bvec,
+                                               b0_threshold)
 
             if not save_metrics:
                 save_metrics = ['fa', 'md', 'rd', 'ad', 'ga', 'rgb', 'mode',
@@ -161,13 +161,101 @@ class ReconstDtiFlow(Workflow):
             logging.info('DTI metrics saved in {0}'.
                          format(os.path.dirname(oevals)))
 
+    def get_tensor_model(self, gtab):
+        return TensorModel(gtab, fit_method="WLS")
 
-def get_fitted_tensor(data, mask, bval, bvec, b0_threshold=0):
-    logging.info('Tensor estimation...')
-    bvals, bvecs = read_bvals_bvecs(bval, bvec)
-    gtab = gradient_table(bvals, bvecs, b0_threshold=b0_threshold)
+    def get_fitted_tensor(self, data, mask, bval, bvec, b0_threshold=0):
 
-    tenmodel = TensorModel(gtab)
-    tenfit = tenmodel.fit(data, mask)
+        logging.info('Tensor estimation...')
+        bvals, bvecs = read_bvals_bvecs(bval, bvec)
+        gtab = gradient_table(bvals, bvecs, b0_threshold=b0_threshold)
 
-    return tenfit, gtab
+        tenmodel = self.get_tensor_model(gtab)
+        tenfit = tenmodel.fit(data, mask)
+
+        return tenfit, gtab
+
+
+class ReconstDtiRestoreFlow(ReconstDtiFlow):
+    @classmethod
+    def get_short_name(cls):
+        return 'dti_restore'
+
+    def run(self, input_files, bvalues, bvectors, mask_files, b0_threshold=0.0,
+            save_metrics=[], sigma=None, jacobian=True,
+            out_dir='', out_tensor='tensors.nii.gz', out_fa='fa.nii.gz',
+            out_ga='ga.nii.gz', out_rgb='rgb.nii.gz', out_md='md.nii.gz',
+            out_ad='ad.nii.gz', out_rd='rd.nii.gz', out_mode='mode.nii.gz',
+            out_evec='evecs.nii.gz', out_eval='evals.nii.gz'):
+
+        """ Workflow for tensor reconstruction and for computing DTI metrics.
+            Performs a tensor reconstruction on the files by 'globing'
+            ``input_files`` and saves the DTI metrics in a directory specified by
+            ``out_dir``.
+
+            Parameters
+            ----------
+            input_files : string
+                Path to the input volumes. This path may contain wildcards to
+                process multiple inputs at once.
+            bvalues : string
+                Path to the bvalues files. This path may contain wildcards to use
+                multiple bvalues files at once.
+            bvectors : string
+                Path to the bvalues files. This path may contain wildcards to use
+                multiple bvalues files at once.
+            mask_files : string
+                Path to the input masks. This path may contain wildcards to use
+                multiple masks at once. (default: No mask used)
+            b0_threshold : float, optional
+                Threshold used to find b=0 directions (default 0.0)
+            save_metrics : variable string, optional
+                List of metrics to save.
+                Possible values: fa, ga, rgb, md, ad, rd, mode, tensor, evec, eval
+                (default [] (all))
+            sigma : float, optional
+                An estimate of the variance. (default None)
+            jacobian : bool, optional
+                Whether to use the Jacobian of the tensor to speed the
+                non-linear optimization procedure used to fit the tensor
+                paramters (default 0.0)
+            out_dir : string, optional
+                Output directory (default input file directory)
+            out_tensor : string, optional
+                Name of the tensors volume to be saved (default 'tensors.nii.gz')
+            out_fa : string, optional
+                Name of the fractional anisotropy volume to be saved
+                (default 'fa.nii.gz')
+            out_ga : string, optional
+                Name of the geodesic anisotropy volume to be saved
+                (default 'ga.nii.gz')
+            out_rgb : string, optional
+                Name of the color fa volume to be saved (default 'rgb.nii.gz')
+            out_md : string, optional
+                Name of the mean diffusivity volume to be saved
+                (default 'md.nii.gz')
+            out_ad : string, optional
+                Name of the axial diffusivity volume to be saved
+                (default 'ad.nii.gz')
+            out_rd : string, optional
+                Name of the radial diffusivity volume to be saved
+                (default 'rd.nii.gz')
+            out_mode : string, optional
+                Name of the mode volume to be saved (default 'mode.nii.gz')
+            out_evec : string, optional
+                Name of the eigenvectors volume to be saved
+                (default 'evecs.nii.gz')
+            out_eval : string, optional
+                Name of the eigenvalues to be saved (default 'evals.nii.gz')
+            """
+        self.sigma = sigma
+        self.jacobian = jacobian
+
+        super(ReconstDtiRestoreFlow, self).\
+            run(input_files, bvalues, bvectors, mask_files, b0_threshold,
+                save_metrics, out_dir, out_tensor, out_fa, out_ga, out_rgb,
+                out_md, out_ad, out_rd, out_mode, out_evec, out_eval)
+
+    def get_tensor_model(self, gtab):
+        return TensorModel(gtab, fit_method="RT", sigma=self.sigma,
+                           jac=self.jacobian)
