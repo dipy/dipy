@@ -181,8 +181,8 @@ class ReconstDtiRestoreFlow(ReconstDtiFlow):
     def get_short_name(cls):
         return 'dti_restore'
 
-    def run(self, input_files, bvalues, bvectors, mask_files, b0_threshold=0.0,
-            save_metrics=[], sigma=None, jacobian=True,
+    def run(self, input_files, bvalues, bvectors, mask_files, sigma,
+            b0_threshold=0.0, save_metrics=[], jacobian=True,
             out_dir='', out_tensor='tensors.nii.gz', out_fa='fa.nii.gz',
             out_ga='ga.nii.gz', out_rgb='rgb.nii.gz', out_md='md.nii.gz',
             out_ad='ad.nii.gz', out_rd='rd.nii.gz', out_mode='mode.nii.gz',
@@ -207,18 +207,18 @@ class ReconstDtiRestoreFlow(ReconstDtiFlow):
             mask_files : string
                 Path to the input masks. This path may contain wildcards to use
                 multiple masks at once. (default: No mask used)
+            sigma : float
+                An estimate of the variance.
             b0_threshold : float, optional
                 Threshold used to find b=0 directions (default 0.0)
             save_metrics : variable string, optional
                 List of metrics to save.
                 Possible values: fa, ga, rgb, md, ad, rd, mode, tensor, evec, eval
                 (default [] (all))
-            sigma : float, optional
-                An estimate of the variance. (default None)
             jacobian : bool, optional
                 Whether to use the Jacobian of the tensor to speed the
                 non-linear optimization procedure used to fit the tensor
-                paramters (default 0.0)
+                parameters (default True)
             out_dir : string, optional
                 Output directory (default input file directory)
             out_tensor : string, optional
