@@ -1018,6 +1018,25 @@ def get_flexi_tvis_affine(tvis_hdr, nii_aff):
     return flexi_tvis_aff
 
 
+def _min_at(a, index, value):
+    index = np.array(index)
+    order = np.lexsort(value, *index)
+    index = index[:, order]
+    value = value[order]
+    uniq = np.ones(index.shape[1], dtype=bool)
+    uniq[1:] = index[:, 1:] != index[:, :-1]
+
+    index = index[:, uniq]
+    value = value[uniq]
+
+    a[tuple(index)] = np.minimum(a[tuple(index)], value)
+
+try:
+    minimum_at = np.minimum.at
+except AttributeError:
+    minimum_at = _min_at
+
+
 def path_length(streamlines, aoi, affine, fill_value=-1):
     """ Computes the shortest path, along any streamline, between aoi and
     each voxel.
@@ -1063,7 +1082,7 @@ def path_length(streamlines, aoi, affine, fill_value=-1):
             segment_length = np.sqrt(((seg[1:] - seg[:-1]) ** 2).sum(1))
             dist = segment_length.cumsum()
             # Updates path length map with shorter distances
-            plm[i, j, k] = np.minimum(plm[i, j, k], dist)
+            minimum_at(plm, (i, j, k), dist)
     if fill_value != np.inf:
         plm = np.where(plm == np.inf, fill_value, plm)
     return plm
