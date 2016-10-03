@@ -633,7 +633,8 @@ def target_line_based(streamlines, target_mask, affine=None, include=True):
 
     See Also
     --------
-    density_map
+    dipy.tracking.utils.density_map
+    dipy.tracking.streamline.compress_streamlines
     """
     target_mask = np.array(target_mask, dtype=np.uint8, copy=True)
     lin_T, offset = _mapping_to_voxel(affine, voxel_size=None)
