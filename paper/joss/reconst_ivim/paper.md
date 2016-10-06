@@ -13,7 +13,7 @@ authors:
    orcid: 0000-0003-1145-7279
    affiliation: 1
  - name: Ariel Rokem
-   orcid: 0000-0000-0000-1234
+   orcid: 0000-0003-0679-1985
    affiliation: 2
  - name: Eric Peterson
    orcid: 0000-0000-0000-1234
@@ -24,7 +24,7 @@ authors:
 affiliations:
  - name: Birla Institute of Technology and Science Pilani
    index: 1
- - name: Washington e-Science Institute
+ - name: The University of Washington eScience Institute
    index: 2
  - name: SRI International
    index: 3
@@ -36,6 +36,19 @@ bibliography: paper.bib
 
 # Summary
 
-The intra­-voxel incoherent motion (IVIM) model describes diffusion and perfusion in the signal acquired with diffusion (Le Bihan et al. 1986). MRI.​ Recently, the interest has expanded and applications have emerged throughout the body (Le Bihan 2008) including kidneys, ​liver, and even the heart (Powers, Lorenz, Holburn, Price 1991; Tsuda, Murakami, Sakurai, Harada, Kim, Takahashi, Tomoda, Narumi, Nakamura, Izumi, Tsukamoto 1997;  Callot, Bennett, Decking, Ulrich, Balaban, Wen, Han 2003). ​Many more applications are now under investigation such as imaging for cancer (prostate, liver, kidney, pancreas, etc.) (Koh, Collins, Orton 2011) and human placenta (Moore, Strachan, Tyler, Duncan, Baker, Worthington, Johnson, Gowland 2000; Moore Issa, Tokarczuk, Duncan, Boulby, Baker, Bowtell, Worthington, Johnson, Gowland 2000). ​One of its largest uses is in brain mapping​ and neuroscience research (Federau, Maeder, O'Brien, Browaeys, Meuli, Hagmann 2012) such as Parkinson’s disease (Cruz, Nie & Wang 2014) ​where it is used to study aging and ​structural degeneration of fibre pathways in the ​brain.
+The intra­-voxel incoherent motion (IVIM) is a model that describes diffusion
+and perfusion in the signal acquired with pulsed-gradient spin echo MRI
+experiments [@le1986mr]. This method was originally developed to study the
+motion of water molecules in the human brain -- an indication of brain
+microstructure, and brain health more generally. But more recently, interest in
+this model has expanded and applications have emerged throughout the body
+[@LeBihan2008] including kidneys, liver, and heart [@Powers1991, @PMID:9038058,
+@Callot2003, ]. Many more applications are now under investigation such as
+imaging for cancer (prostate, liver, kidney, pancreas, etc.) [@Koh2011] and
+imaging of human placenta [@Moore2000, @moore2000vivo]. Still, one of its mort
+common applications is in brain mapping neuroscience research
+[@Federau2012]. For example in research on Parkinson’s disease, where it is
+used to study aging and structural degeneration of fibre pathways in the brain
+[@CRUZ2014].
 
 # References
