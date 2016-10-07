@@ -45,7 +45,7 @@ this model has expanded and applications have emerged throughout the body
 [@LeBihan2008] including kidneys, liver, and heart [@Powers1991, @PMID:9038058,
 @Callot2003, ]. Many more applications are now under investigation such as
 imaging for cancer (prostate, liver, kidney, pancreas, etc.) [@Koh2011] and
-imaging of human placenta [@Moore2000, @moore2000vivo]. Still, one of its mort
+imaging of human placenta [@Moore2000, @moore2000vivo]. Still, one of its most
 common applications is in brain mapping neuroscience research
 [@Federau2012]. For example in research on Parkinson’s disease, where it is
 used to study aging and structural degeneration of fibre pathways in the brain
