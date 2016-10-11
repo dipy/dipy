@@ -469,6 +469,8 @@ class IvimModel(ReconstModel):
                               epsfcn=epsfcn,
                               maxfev=maxfev)
                 ivim_params = res[0]
+                if np.all(np.isnan(ivim_params)):
+                    return np.array([-1, -1, -1, -1])
                 return ivim_params
             except ValueError:
                 warningMsg = "x0 is unfeasible for leastsq fitting."
