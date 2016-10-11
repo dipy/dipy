@@ -54,11 +54,11 @@ ivim_params[1, 0, 0] = ivim_params[1, 1, 0] = params
 
 ivim_model = IvimModel(gtab)
 ivim_model_one_stage = IvimModel(gtab)
-#ivim_fit_single = ivim_model.fit(data_single)
-#ivim_fit_multi = ivim_model.fit(data_multi)
+ivim_fit_single = ivim_model.fit(data_single)
+ivim_fit_multi = ivim_model.fit(data_multi)
 
-#ivim_fit_single_one_stage = ivim_model_one_stage.fit(data_single)
-#ivim_fit_multi_one_stage = ivim_model_one_stage.fit(data_multi)
+ivim_fit_single_one_stage = ivim_model_one_stage.fit(data_single)
+ivim_fit_multi_one_stage = ivim_model_one_stage.fit(data_multi)
 
 bvals_no_b0 = np.array([5., 10., 20., 30., 40., 60., 80., 100.,
                         120., 140., 160., 180., 200., 300., 400.,
