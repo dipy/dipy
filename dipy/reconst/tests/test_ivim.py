@@ -75,17 +75,21 @@ bvecs_with_multiple_b0 = generate_bvecs(N)
 gtab_with_multiple_b0 = gradient_table(bvals_with_multiple_b0,
                                        bvecs_with_multiple_b0.T)
 
-noisy_single = np.array([4243.71728516, 4317.81298828, 4244.35693359, 4439.36816406, 4420.06201172,
-                         4152.30078125, 4114.34912109, 4104.59375, 4151.61914062, 4003.58374023,
-                         4013.68408203, 3906.39428711, 3909.06079102, 3495.27197266, 3402.57006836,
-                         3163.10180664, 2896.04003906, 2663.7253418, 2614.87695312, 2316.55371094,
-                         2267.7722168])
+noisy_single = np.array([4243.71728516, 4317.81298828, 4244.35693359,
+                         4439.36816406, 4420.06201172, 4152.30078125, 4114.34912109, 4104.59375, 4151.61914062,
+                         4003.58374023, 4013.68408203, 3906.39428711,
+                         3909.06079102, 3495.27197266, 3402.57006836,
+                         3163.10180664, 2896.04003906, 2663.7253418,
+                         2614.87695312, 2316.55371094, 2267.7722168])
 
 noisy_multi = np.zeros((2, 2, 1, len(gtab.bvals)))
 noisy_multi[0, 1, 0] = noisy_multi[
     1, 0, 0] = noisy_multi[1, 1, 0] = noisy_single
 noisy_multi[0, 0, 0] = data_single
-single_exponential = lambda S0, D, bvals: S0 * np.exp(-bvals * D)
+
+
+def single_exponential(S0, D, bvals):
+    return S0 * np.exp(-bvals * D)
 
 
 def test_single_voxel_fit():
@@ -265,8 +269,9 @@ def test_fit_object():
     assert_raises(IndexError, ivim_fit_multi.__getitem__, [-100, 0])
     assert_raises(IndexError, ivim_fit_multi.__getitem__, (1, 0, 0, 3, 4))
     # Check if the get item returns the S0 value for voxel (1,0,0)
-    assert_array_almost_equal(ivim_fit_multi.__getitem__((1, 0, 0)).model_params[0],
-                              data_multi[1, 0, 0][0])
+    assert_array_almost_equal(
+        ivim_fit_multi.__getitem__((1, 0, 0)).model_params[0],
+        data_multi[1, 0, 0][0])
 
 
 def test_shape():
@@ -384,11 +389,13 @@ def test_fit_one_stage():
     linear_fit_params = [9.88834140e+02, 1.19707191e-01, 7.91176970e-03,
                          9.30095210e-04]
 
-    linear_fit_signal = [988.83414044, 971.77122546, 955.46786293, 939.87125905, 924.93258982,
-                         896.85182201, 870.90346447, 846.81187693, 824.34108781, 803.28900104,
-                         783.48245048, 764.77297789, 747.03322866, 669.54798887, 605.03328304,
-                         549.00852235, 499.21077611, 454.40299244, 413.83192296, 376.98072773,
-                         343.45531017]
+    linear_fit_signal = [988.83414044, 971.77122546, 955.46786293,
+                         939.87125905, 924.93258982, 896.85182201,
+                         870.90346447, 846.81187693, 824.34108781,
+                         803.28900104, 783.48245048, 764.77297789,
+                         747.03322866, 669.54798887, 605.03328304,
+                         549.00852235, 499.21077611, 454.40299244,
+                         413.83192296, 376.98072773, 343.45531017]
 
     assert_array_almost_equal(fit.model_params, linear_fit_params)
     assert_array_almost_equal(fit.predict(gtab), linear_fit_signal)
@@ -396,7 +403,8 @@ def test_fit_one_stage():
 
 def test_leastsq_failing():
     """
-    Test for cases where leastsq fitting fails and the results from a linear fit is returned.
+    Test for cases where leastsq fitting fails and the results from a linear
+    fit is returned.
     """
     fit_single = ivim_model.fit(noisy_single)
     # Test for the S0 and D values
@@ -406,9 +414,9 @@ def test_leastsq_failing():
 
 def test_leastsq_error():
     """
-     Test error handling of the `_leastsq` method works when unfeasible x0 is passed.
-     If an unfeasible x0 value is passed using which leastsq fails, the x0 value is returned
-     as it is.
+    Test error handling of the `_leastsq` method works when unfeasible x0 is
+    passed. If an unfeasible x0 value is passed using which leastsq fails, the
+    x0 value is returned as it is.
     """
     fit = ivim_model._leastsq(data_single, [-1, -1, -1, -1])
     assert_array_almost_equal(fit, [-1, -1, -1, -1])
