@@ -16,7 +16,7 @@ authors:
    orcid: 0000-0003-0679-1985
    affiliation: 2
  - name: Eric Peterson
-   orcid: 0000-0000-0000-1234
+   orcid: 0000-0002-3530-9652
    affiliation: 3
  - name: Rafael Neto Henriques
    orcid: 0000-0000-0000-1234
@@ -36,18 +36,18 @@ bibliography: paper.bib
 
 # Summary
 
-The intra­-voxel incoherent motion (IVIM) is a model that describes diffusion
-and perfusion in the signal acquired with pulsed-gradient spin echo MRI
-experiments [@le1986mr]. This method was originally developed to study the
-motion of water molecules in the human brain -- an indication of brain
+Intra-voxel incoherent motion (IVIM) is a biophysical model that describes diffusion
+and perfusion in the signal acquired with a multi-diffusion value MRI
+acquisition [@le1986mr]. This method was originally developed to study the
+fast and slow motion of water molecules in the human brain -- an indication of brain
 microstructure, and brain health more generally. But more recently, interest in
 this model has expanded and applications have emerged throughout the body
 [@LeBihan2008] including kidneys, liver, and heart [@Powers1991, @PMID:9038058,
 @Callot2003, ]. Many more applications are now under investigation such as
-imaging for cancer (prostate, liver, kidney, pancreas, etc.) [@Koh2011] and
-imaging of human placenta [@Moore2000, @moore2000vivo]. Still, one of its most
-common applications is in brain mapping neuroscience research
-[@Federau2012]. For example in research on Parkinson’s disease, where it is
+cancer imaging (prostate, liver, kidney, pancreas, etc.) [@Koh2011] and
+imaging of the human placenta [@Moore2000, @moore2000vivo]. One of its most
+common applications still remains brain mapping for neuroscience research
+[@Federau2012]. An example of this is Parkinson’s disease, where it is
 used to study aging and structural degeneration of fibre pathways in the brain
 [@CRUZ2014].
 
