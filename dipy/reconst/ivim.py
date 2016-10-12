@@ -489,6 +489,8 @@ class IvimModel(ReconstModel):
                                     args=(self.gtab, data),
                                     x_scale=self.x_scale)
                 ivim_params = res.x
+                if np.all(np.isnan(ivim_params)):
+                    return np.array([-1, -1, -1, -1])
                 return ivim_params
             except ValueError:
                 warningMsg = "x0 is unfeasible for leastsq fitting."
