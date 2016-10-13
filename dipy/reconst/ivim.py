@@ -176,23 +176,23 @@ class IvimModel(ReconstModel):
             supported for Scipy version > 0.17. When using a older Scipy
             version, this function will raise an error if bounds are different
             from None. This parameter is also used to fill nan values for out
-            of bounds parameters in the `IvimFit` class using the method fill_na.
-            default : ([0., 0., 0., 0.], [np.inf, .3, 1., 1.])
+            of bounds parameters in the `IvimFit` class using the method
+            fill_na. default : ([0., 0., 0., 0.], [np.inf, .3, 1., 1.])
 
         two_stage : bool
             Argument to specify whether to perform a non-linear fitting of all
-            parameters after the linear fitting by splitting the data based on bvalues.
-            This gives more accurate parameters but takes more time. The linear fit can
-            be used to get a quick estimation of the parameters.
-            default : False
+            parameters after the linear fitting by splitting the data based on
+            bvalues. This gives more accurate parameters but takes more time.
+            The linear fit can be used to get a quick estimation of the
+            parameters. default : False
 
         tol : float, optional
             Tolerance for convergence of minimization.
             default : 1e-15
 
         x_scale : array, optional
-            Scaling for the parameters. This is passed to `least_squares` which is
-            only available for Scipy version > 0.17.
+            Scaling for the parameters. This is passed to `least_squares` which
+            is only available for Scipy version > 0.17.
             default: [1000, 0.01, 0.001, 0.0001]
 
         options : dict, optional
@@ -228,9 +228,9 @@ class IvimModel(ReconstModel):
             e_s = "Scipy versions less than 0.17 do not support "
             e_s += "bounds. Please update to Scipy 0.17 to use bounds"
             raise ValueError(e_s)
-        elif self.bounds is None :
+        elif self.bounds is None:
             self.bounds = ((0., 0., 0., 0.), (np.inf, .3, 1., 1.))
-        else :
+        else:
             self.bounds = bounds
 
     @multi_voxel_fit
@@ -243,11 +243,11 @@ class IvimModel(ReconstModel):
         1 - S0_prime/S0. Use non-linear least squares to fit D_star and f.
 
         We do a final non-linear fitting of all four parameters and select the
-        set of parameters which make sense physically. The criteria for selecting a
-        particular set of parameters is checking the pseudo-perfusion fraction.
-        If the fraction is more than `f_threshold` (default: 25%), we will
-        reject the solution obtained from non-linear least squares fitting and
-        consider only the linear fit.
+        set of parameters which make sense physically. The criteria for
+        selecting a particular set of parameters is checking the
+        pseudo-perfusion fraction. If the fraction is more than `f_threshold`
+        (default: 25%), we will reject the solution obtained from non-linear
+        least squares fitting and consider only the linear fit.
 
 
         Parameters
@@ -265,12 +265,14 @@ class IvimModel(ReconstModel):
         -------
         IvimFit object
         """
-        # Get S0_prime and D - paramters assuming a single exponential decay for
+        # Get S0_prime and D - paramters assuming a single exponential decay
         # for signals for bvals greater than `split_b_D`
         S0_prime, D = self.estimate_linear_fit(
             data, self.split_b_D, less_than=False)
-        # Get S0 and D_star_prime - paramters assuming a single exponential decay for
-        # for signals for bvals greater than `split_b_S0`.
+
+        # Get S0 and D_star_prime - paramters assuming a single exponential
+        # decay for for signals for bvals greater than `split_b_S0`.
+
         S0, D_star_prime = self.estimate_linear_fit(data, self.split_b_S0,
                                                     less_than=True)
         # Estimate f
@@ -375,9 +377,9 @@ class IvimModel(ReconstModel):
                 f, D_star = res[0]
                 return f, D_star
             except ValueError:
-                warningMsg = "x0 obtained from linear fitting is not feasibile as "
-                warningMsg += "initial guess for leastsq. Parameters are returned only "
-                warningMsg += "from the linear fit."
+                warningMsg = "x0 obtained from linear fitting is not feasibile"
+                warningMsg += " as initial guess for leastsq. Parameters are"
+                warningMsg += " returned only from the linear fit."
                 warnings.warn(warningMsg, UserWarning)
                 f, D_star = params_f_D
                 return f, D_star
@@ -395,8 +397,8 @@ class IvimModel(ReconstModel):
                 f, D_star = res.x
                 return f, D_star
             except ValueError:
-                warningMsg = "x0 obtained from linear fitting is not feasibile "
-                warningMsg += "as initial guess for leastsq while estimating "
+                warningMsg = "x0 obtained from linear fitting is not feasibile"
+                warningMsg += " as initial guess for leastsq while estimating "
                 warningMsg += "f and D_star. Using parameters from the "
                 warningMsg += "linear fit."
                 warnings.warn(warningMsg, UserWarning)
@@ -467,6 +469,8 @@ class IvimModel(ReconstModel):
                               epsfcn=epsfcn,
                               maxfev=maxfev)
                 ivim_params = res[0]
+                if np.all(np.isnan(ivim_params)):
+                    return np.array([-1, -1, -1, -1])
                 return ivim_params
             except ValueError:
                 warningMsg = "x0 is unfeasible for leastsq fitting."
@@ -485,6 +489,8 @@ class IvimModel(ReconstModel):
                                     args=(self.gtab, data),
                                     x_scale=self.x_scale)
                 ivim_params = res.x
+                if np.all(np.isnan(ivim_params)):
+                    return np.array([-1, -1, -1, -1])
                 return ivim_params
             except ValueError:
                 warningMsg = "x0 is unfeasible for leastsq fitting."
