@@ -1,14 +1,20 @@
 """
-========================================
-Visualize surfaces; load/save, get/set and update vtkPolyData.
-========================================
+==================
+Visualize surfaces
+==================
 
-import usefull functions and dipy utils
-"""
-from __future__ import division, print_function, absolute_import
+Here is a simple tutorial that shows how to visualize surfaces using DIPY. It shows as well how to load/save, get/set and update vtkPolyData and show
+surfaces.
+
+vtkPolyData is a structure used by VTK to represent surfaces and other data structures. Here we show how to visualize a simple cube but the same idea should apply for any surface.
+""""
+
 import numpy as np
 
-# and dipy tools
+"""
+Import usefull functions from dipy.viz.utils
+"""
+
 import dipy.io.vtk as io_vtk
 import dipy.viz.utils as ut_vtk
 from dipy.viz import window
@@ -19,13 +25,15 @@ from dipy.utils.optpkg import optional_package
 vtk, have_vtk, setup_module = optional_package('vtk')
 
 """
-generate a empty vtkPolyData
+Create an empty vtkPolyData
 """
+
 my_polydata = vtk.vtkPolyData()
 
 """
-generate a cube with vertices and triangles numpy array
+Create a cube with vertices and triangles numpy array
 """
+
 my_vetices = np.array([[0.0,  0.0,  0.0],
                        [0.0,  0.0,  1.0],
                        [0.0,  1.0,  0.0],
@@ -50,26 +58,29 @@ my_triangles = np.array([[0,  6,  4],
 
 
 """
-set vertices and triangles in poly data
+Set vertices and triangles in poly data
 """
 ut_vtk.set_polydata_vertices(my_polydata, my_vetices)
 ut_vtk.set_polydata_triangles(my_polydata, my_triangles)
 
 """
-save polydata
+Save polydata
 """
+
 file_name = "my_cube.vtk"
 io_vtk.save_polydata(my_polydata, file_name)
-print("save surface :", file_name)
+print("Surface saved in " + file_name)
 
 """
-load polydata
+Load polydata
 """
+
 cube_polydata = io_vtk.load_polydata(file_name)
 
 """
 add color based on vertices position
 """
+
 cube_vertices = ut_vtk.get_polydata_vertices(cube_polydata)
 colors = cube_vertices * 255
 ut_vtk.set_polydata_colors(cube_polydata, colors)
@@ -80,6 +91,7 @@ print(ut_vtk.get_polydata_colors(cube_polydata))
 """
 Visualize surfaces
 """
+
 # get vtkActor
 cube_actor = ut_vtk.get_actor_from_polydata(cube_polydata)
 
