@@ -38,3 +38,73 @@ def otsu(image, nbins=256):
     idx = np.argmax(variance12)
     threshold = bin_centers[:-1][idx]
     return threshold
+
+
+def intensity_adjustment(data,rate=0.05):
+    r""" This function enables changing the MRI image contrast.
+
+    It first read the data, must be a 2D image (a specific slice image in MRI),
+    then calaulate the image intensity histogram, and based on the rate value to
+    decide what is the upperbound value for intensity normalization, the lowerbound
+    is 0.
+
+    Parameters
+    -----------
+    data : float
+        Input intensity value data
+    rate : float
+        representing the threshold whether a spicific histogram bin that should be count in the normalization range
+
+    Returns
+    -------
+    high : float
+        the upper_bound value for normalization
+
+    """
+
+    g,h = np.histogram(data)
+    m = np.zeros((10,3))
+    low = data.min()
+    high = data.max()
+    for i in np.array(range(10)):
+        m[i,0] = g[i]
+        m[i,1] = h[i]
+        m[i,2] = h[i+1]
+
+    g = sorted(g,reverse = True)
+    S = np.size(g)
+#    Rate = 0.05
+    Index = 0
+
+    for i in np.array(range(S)):
+        if g[i]/g[0] > rate:
+            Index = Index + 1
+
+    for i in np.array(range(10)):
+        for j in np.array(range(Index)):
+            if g[j] == m[i,0]:
+                high = m[i,2]
+    return high
+
+
+    def upper_bound_by_vox_count_percentage(data, percent=0.01):
+    """ Find the upper bound for visualization of medical images
+    Calculate the histogram of the image and go right to left until you find
+    the bound that contains more than a percentage of the image.
+    Parameters
+    ----------
+    data : ndarray
+    percent : float
+    Returns
+    -------
+    upper_bound : float
+    """
+
+    values, bounds = np.histogram(data, 20)
+    total_voxels = np.prod(data.shape)
+    agg = 0
+
+    for i in range(len(values) - 1, 0, -1):
+        agg += values[i]
+        if agg/float(total_voxels) > percent:
+            return bounds[i]
