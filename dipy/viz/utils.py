@@ -239,7 +239,8 @@ def get_polydata_lines(line_polydata):
 
     Returns
     -------
-    lines : list of N curves represented as 2D ndarrays
+    lines : list
+        List of N curves represented as 2D ndarrays
     """
     lines_vertices = ns.vtk_to_numpy(line_polydata.GetPoints().GetData())
     lines_idx = ns.vtk_to_numpy(line_polydata.GetLines().GetData())
@@ -266,7 +267,8 @@ def get_polydata_triangles(polydata):
 
     Returns
     -------
-    output : triangles, represented as 2D ndarrays (Nx3)
+    output : array (N, 3)
+        triangles
     """
     vtk_polys = ns.vtk_to_numpy(polydata.GetPolys().GetData())
     assert((vtk_polys[::4] == 3).all())  # test if its really triangles
@@ -282,7 +284,8 @@ def get_polydata_vertices(polydata):
 
     Returns
     -------
-    output : points, represented as 2D ndarrays (Nx3)
+    output : array (N, 3)
+        points, represented as 2D ndarrays
     """
     return ns.vtk_to_numpy(polydata.GetPoints().GetData())
 
@@ -296,8 +299,9 @@ def get_polydata_normals(polydata):
 
     Returns
     -------
-    output : normals, represented as 2D ndarrays (Nx3)
-             None (if no normals in the vtk polydata)
+    output : array (N, 3)
+        Normals, represented as 2D ndarrays (Nx3). None if there are no normals
+        in the vtk polydata.
     """
     vtk_normals = polydata.GetPointData().GetNormals()
     if vtk_normals is None:
@@ -315,8 +319,8 @@ def get_polydata_colors(polydata):
 
     Returns
     -------
-    output : colors, represented as 2D ndarrays (Nx3)
-             None (if no normals in the vtk polydata)
+    output : array (N, 3)
+        Colors. None if no normals in the vtk polydata.
     """
     vtk_colors = polydata.GetPointData().GetScalars()
     if vtk_colors is None:
@@ -325,16 +329,14 @@ def get_polydata_colors(polydata):
         return ns.vtk_to_numpy(vtk_colors)
 
 
-##########################################
-# Set PolyData properties with Numpy array
-##########################################
 def set_polydata_triangles(polydata, triangles):
     """ set polydata triangles with a numpy array (ndarrays Nx3 int)
 
     Parameters
     ----------
     polydata : vtkPolyData
-    triangles : triangles, represented as 2D ndarrays (Nx3)
+    triangles : array (N, 3)
+        triangles, represented as 2D ndarrays (Nx3)
     """
     vtk_triangles = np.hstack(np.c_[np.ones(len(triangles)).astype(np.int) * 3,
                                     triangles])
@@ -379,7 +381,7 @@ def set_polydata_colors(polydata, colors):
     ----------
     polydata : vtkPolyData
     colors : colors, represented as 2D ndarrays (Nx3)
-                colors are uint8 [0,255] RGB for each points
+        colors are uint8 [0,255] RGB for each points
     """
     vtk_colors = ns.numpy_to_vtk(colors, deep=True,
                                  array_type=vtk.VTK_UNSIGNED_CHAR)
@@ -390,7 +392,7 @@ def set_polydata_colors(polydata, colors):
 
 
 def update_polydata_normals(polydata):
-    """ generate and update polydata normal
+    """ generate and update polydata normals
 
     Parameters
     ----------
@@ -408,10 +410,6 @@ def update_polydata_normals(polydata):
     vtk_normals = normals_gen.GetOutput().GetPointData().GetNormals()
     polydata.GetPointData().SetNormals(vtk_normals)
 
-
-##########################################
-# Transform vtkPolyData : vtkPolyDataMapper, vtkActor
-##########################################
 
 def get_polymapper_from_polydata(polydata):
     """ get vtkPolyDataMapper from a vtkPolyData
