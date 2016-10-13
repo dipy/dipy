@@ -230,32 +230,28 @@ def lines_to_vtk_polydata(lines, colors=None):
     return poly_data, is_colormap
 
 
-##########################################
-# Get PolyData properties in Numpy array
-##########################################
 def get_polydata_lines(line_polydata):
     """ vtk polydata to a list of lines ndarrays
 
     Parameters
     ----------
     line_polydata : vtkPolyData
-    
-    
+
     Returns
     -------
     lines : list of N curves represented as 2D ndarrays
     """
     lines_vertices = ns.vtk_to_numpy(line_polydata.GetPoints().GetData())
     lines_idx = ns.vtk_to_numpy(line_polydata.GetLines().GetData())
-    
+
     lines = []
     current_idx = 0
     while current_idx < len(lines_idx):
         line_len = lines_idx[current_idx]
-        #print line_len
-        next_idx = current_idx + line_len + 1 
+
+        next_idx = current_idx + line_len + 1
         line_range = lines_idx[current_idx + 1: next_idx]
-        #print line_range
+
         lines += [lines_vertices[line_range]]
         current_idx = next_idx
     return lines
@@ -267,8 +263,7 @@ def get_polydata_triangles(polydata):
     Parameters
     ----------
     polydata : vtkPolyData
-    
-    
+
     Returns
     -------
     output : triangles, represented as 2D ndarrays (Nx3)
@@ -277,14 +272,14 @@ def get_polydata_triangles(polydata):
     assert((vtk_polys[::4] == 3).all())  # test if its really triangles
     return np.vstack([vtk_polys[1::4], vtk_polys[2::4], vtk_polys[3::4]]).T
 
+
 def get_polydata_vertices(polydata):
     """ get vertices (ndarrays Nx3 int) from a vtk polydata
 
     Parameters
     ----------
     polydata : vtkPolyData
-    
-    
+
     Returns
     -------
     output : points, represented as 2D ndarrays (Nx3)
@@ -298,8 +293,7 @@ def get_polydata_normals(polydata):
     Parameters
     ----------
     polydata : vtkPolyData
-    
-    
+
     Returns
     -------
     output : normals, represented as 2D ndarrays (Nx3)
@@ -318,8 +312,7 @@ def get_polydata_colors(polydata):
     Parameters
     ----------
     polydata : vtkPolyData
-    
-    
+
     Returns
     -------
     output : colors, represented as 2D ndarrays (Nx3)
@@ -336,22 +329,24 @@ def get_polydata_colors(polydata):
 # Set PolyData properties with Numpy array
 ##########################################
 def set_polydata_triangles(polydata, triangles):
-    """ set polydata triangles with a numpy array (ndarrays Nx3 int) 
+    """ set polydata triangles with a numpy array (ndarrays Nx3 int)
 
     Parameters
     ----------
     polydata : vtkPolyData
     triangles : triangles, represented as 2D ndarrays (Nx3)
     """
-    vtk_triangles = np.hstack(np.c_[np.ones(len(triangles)).astype(np.int) * 3, triangles])
+    vtk_triangles = np.hstack(np.c_[np.ones(len(triangles)).astype(np.int) * 3,
+                                    triangles])
     vtk_triangles = ns.numpy_to_vtkIdTypeArray(vtk_triangles, deep=True)
     vtk_cells = vtk.vtkCellArray()
     vtk_cells.SetCells(len(triangles), vtk_triangles)
     polydata.SetPolys(vtk_cells)
     return polydata
 
+
 def set_polydata_vertices(polydata, vertices):
-    """ set polydata vertices with a numpy array (ndarrays Nx3 int) 
+    """ set polydata vertices with a numpy array (ndarrays Nx3 int)
 
     Parameters
     ----------
@@ -363,8 +358,9 @@ def set_polydata_vertices(polydata, vertices):
     polydata.SetPoints(vtk_points)
     return polydata
 
+
 def set_polydata_normals(polydata, normals):
-    """ set polydata normals with a numpy array (ndarrays Nx3 int) 
+    """ set polydata normals with a numpy array (ndarrays Nx3 int)
 
     Parameters
     ----------
@@ -375,25 +371,24 @@ def set_polydata_normals(polydata, normals):
     polydata.GetPointData().SetNormals(vtk_normals)
     return polydata
 
+
 def set_polydata_colors(polydata, colors):
-    """ set polydata colors with a numpy array (ndarrays Nx3 int) 
+    """ set polydata colors with a numpy array (ndarrays Nx3 int)
 
     Parameters
     ----------
     polydata : vtkPolyData
-    colors : colors, represented as 2D ndarrays (Nx3) 
+    colors : colors, represented as 2D ndarrays (Nx3)
                 colors are uint8 [0,255] RGB for each points
     """
-    vtk_colors = ns.numpy_to_vtk(colors, deep=True, array_type=vtk.VTK_UNSIGNED_CHAR)
+    vtk_colors = ns.numpy_to_vtk(colors, deep=True,
+                                 array_type=vtk.VTK_UNSIGNED_CHAR)
     vtk_colors.SetNumberOfComponents(3)
     vtk_colors.SetName("RGB")
     polydata.GetPointData().SetScalars(vtk_colors)
     return polydata
 
 
-##########################################
-# Update/Refresh PolyData
-##########################################
 def update_polydata_normals(polydata):
     """ generate and update polydata normal
 
@@ -405,9 +400,9 @@ def update_polydata_normals(polydata):
     normals_gen.ComputePointNormalsOn()
     normals_gen.ComputeCellNormalsOn()
     normals_gen.SplittingOff()
-    #normals_gen.FlipNormalsOn()
-    #normals_gen.ConsistencyOn()
-    #normals_gen.AutoOrientNormalsOn()
+    # normals_gen.FlipNormalsOn()
+    # normals_gen.ConsistencyOn()
+    # normals_gen.AutoOrientNormalsOn()
     normals_gen.Update()
 
     vtk_normals = normals_gen.GetOutput().GetPointData().GetNormals()
@@ -424,8 +419,7 @@ def get_polymapper_from_polydata(polydata):
     Parameters
     ----------
     polydata : vtkPolyData
-    
-    
+
     Returns
     -------
     poly_mapper : vtkPolyDataMapper
@@ -437,14 +431,14 @@ def get_polymapper_from_polydata(polydata):
     poly_mapper.StaticOn()
     return poly_mapper
 
+
 def get_actor_from_polymapper(poly_mapper, light=(0.1, 0.15, 0.05)):
     """ get vtkActor from a vtkPolyDataMapper
 
     Parameters
     ----------
     poly_mapper : vtkPolyDataMapper
-    
-    
+
     Returns
     -------
     actor : vtkActor
@@ -461,18 +455,17 @@ def get_actor_from_polymapper(poly_mapper, light=(0.1, 0.15, 0.05)):
     actor.GetProperty().SetSpecular(light[2])  # .3
     return actor
 
+
 def get_actor_from_polydata(polydata):
     """ get vtkActor from a vtkPolyData
 
     Parameters
     ----------
     polydata : vtkPolyData
-    
-    
+
     Returns
     -------
     actor : vtkActor
     """
     poly_mapper = get_polymapper_from_polydata(polydata)
     return get_actor_from_polymapper(poly_mapper)
-

@@ -15,7 +15,6 @@ if have_vtk:
     major_version = vtk.vtkVersion.GetVTKMajorVersion()
 
 
-
 # Input functions (load)
 def load_polydata(file_name):
     """ Load a vtk polydata to a supported format file
@@ -23,8 +22,7 @@ def load_polydata(file_name):
     Parameters
     ----------
     file_name : string
-    
-    
+
     Returns
     -------
     output : vtkPolyData
@@ -52,7 +50,7 @@ def load_polydata(file_name):
 
     reader.SetFileName(file_name)
     reader.Update()
-    #print(file_name + " Mesh " + file_extension + " Loaded")
+    # print(file_name + " Mesh " + file_extension + " Loaded")
     return reader.GetOutput()
 
 
@@ -65,7 +63,6 @@ def save_polydata(polydata, file_name, binary=False, color_array_name=None):
     polydata : vtkPolyData
     file_name : string
     """
-    
     # get file extension (type)
     file_extension = file_name.split(".")[-1].lower()
 
@@ -86,10 +83,9 @@ def save_polydata(polydata, file_name, binary=False, color_array_name=None):
     writer.SetFileName(file_name)
     writer = set_input(writer, polydata)
     if color_array_name is not None:
-        writer.SetArrayName(color_array_name);
-    
-    if binary :
+        writer.SetArrayName(color_array_name)
+
+    if binary:
         writer.SetFileTypeToBinary()
     writer.Update()
     writer.Write()
-

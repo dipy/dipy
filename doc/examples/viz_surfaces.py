@@ -3,7 +3,7 @@
 Visualize surfaces; load/save, get/set and update vtkPolyData.
 ========================================
 
-import usefull functions and dipy utils 
+import usefull functions and dipy utils
 """
 from __future__ import division, print_function, absolute_import
 import numpy as np
@@ -18,12 +18,10 @@ from dipy.viz import window
 from dipy.utils.optpkg import optional_package
 vtk, have_vtk, setup_module = optional_package('vtk')
 
-
 """
 generate a empty vtkPolyData
 """
 my_polydata = vtk.vtkPolyData()
-
 
 """
 generate a cube with vertices and triangles numpy array
@@ -57,7 +55,6 @@ set vertices and triangles in poly data
 ut_vtk.set_polydata_vertices(my_polydata, my_vetices)
 ut_vtk.set_polydata_triangles(my_polydata, my_triangles)
 
-
 """
 save polydata
 """
@@ -70,7 +67,6 @@ load polydata
 """
 cube_polydata = io_vtk.load_polydata(file_name)
 
-
 """
 add color based on vertices position
 """
@@ -80,7 +76,6 @@ ut_vtk.set_polydata_colors(cube_polydata, colors)
 
 print("new surface colors")
 print(ut_vtk.get_polydata_colors(cube_polydata))
-
 
 """
 Visualise surfaces
@@ -95,5 +90,5 @@ renderer.set_camera(position=(10, 5, 7), focal_point=(0.5, 0.5, 0.5))
 renderer.zoom(3)
 
 # display
-#window.show(renderer, size=(600, 600), reset_camera=False)
+# window.show(renderer, size=(600, 600), reset_camera=False)
 window.record(renderer, out_path='cube.png', size=(600, 600))
