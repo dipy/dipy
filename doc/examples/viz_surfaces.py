@@ -78,7 +78,7 @@ print("new surface colors")
 print(ut_vtk.get_polydata_colors(cube_polydata))
 
 """
-Visualise surfaces
+Visualize surfaces
 """
 # get vtkActor
 cube_actor = ut_vtk.get_actor_from_polydata(cube_polydata)
