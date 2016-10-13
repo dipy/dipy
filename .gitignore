@@ -4,6 +4,7 @@
 *.c
 *.cpp
 *.png
+*.vtk
 *.gz
 *.dpy
 *.npy
