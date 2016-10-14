@@ -15,9 +15,10 @@ if have_vtk:
     major_version = vtk.vtkVersion.GetVTKMajorVersion()
 
 
-# Input functions (load)
 def load_polydata(file_name):
     """ Load a vtk polydata to a supported format file
+
+    Supported file formats are OBJ, VTK, FIB, PLY, STL and XML
 
     Parameters
     ----------
@@ -54,9 +55,10 @@ def load_polydata(file_name):
     return reader.GetOutput()
 
 
-# Output functions (save)
 def save_polydata(polydata, file_name, binary=False, color_array_name=None):
     """ Save a vtk polydata to a supported format file
+
+    Save formats can be VTK, FIB, PLY, STL and XML.
 
     Parameters
     ----------

@@ -209,6 +209,7 @@ Visualization (NEW)
 - :ref:`example_viz_slice`
 - :ref:`example_viz_bundles`
 - :ref:`example_viz_widgets`
+- :ref:`example_viz_surfaces`
 
 ---------------
 Workflows (NEW)
