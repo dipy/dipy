@@ -24,50 +24,47 @@ def test_adjustment():
     vol2 = np.interp(imga, xp=[imga.min(), high_2], fp=[0, 255])
     count2 = (88 - 40) * (88 - 40)
     count1 = (114 - 10) * (114 - 10)
-    count3 = (69 - 60) * (69 - 60)
+#    count3 = (69 - 60) * (69 - 60)
     count1_test = 0
     count2_test = 0
-    count3_test = 0
+#    count3_test = 0
 
     count2_upper = (88 - 40) * (88 - 40)
     count1_upper = (114 - 10) * (114 - 10)
-    count3_upper = (69 - 60) * (69 - 60)
+#    count3_upper = (69 - 60) * (69 - 60)
     count1_upper_test = 0
     count2_upper_test = 0
-    count3_upper_test = 0
+#    count3_upper_test = 0
 
-    if high_1 < 150:
-        count3 = count2
-
-    if high_2 < 150:
-        count3_upper = count2_upper
+    value1 = np.unique(vol1)
+    value2 = np.unique(vol2)
 
     for i in range(128):
         for j in range(128):
-            if vol1[i][j] == 255:
-                count3_test = count3_test + 1
-            if vol1[i][j] > 220:
+#            if vol1[i][j] == 255:
+#                count3_test = count3_test + 1
+            if vol1[i][j] > value1[1]:
                 count2_test = count2_test + 1
             if vol1[i][j] > 0:
                 count1_test = count1_test + 1
 
     for i in range(128):
         for j in range(128):
-            if vol2[i][j] == 255:
-                count3_upper_test = count3_upper_test + 1
-            if vol2[i][j] > 220:
+#            if vol2[i][j] == 255:
+#                count3_upper_test = count3_upper_test + 1
+            if vol2[i][j] > value2[1]:
                 count2_upper_test = count2_upper_test + 1
             if vol2[i][j] > 0:
                 count1_upper_test = count1_upper_test + 1
 
+
     assert_equal(count2, count2_test)
     assert_equal(count1, count1_test)
-    assert_equal(count3, count3_test)
+#    assert_equal(count3, count3_test)
 
     assert_equal(count2_upper, count2_upper_test)
     assert_equal(count1_upper, count1_upper_test)
-    assert_equal(count3_upper, count3_upper_test)
-
+#    assert_equal(count3_upper, count3_upper_test)
 
 if __name__ == '__main__':
     run_module_suite()
