@@ -3,16 +3,19 @@
 Visualize surfaces
 ==================
 
-Here is a simple tutorial that shows how to visualize surfaces using DIPY. It shows as well how to load/save, get/set and update vtkPolyData and show
+Here is a simple tutorial that shows how to visualize surfaces using DIPY. It
+also shows how to load/save, get/set and update vtkPolyData and show
 surfaces.
 
-vtkPolyData is a structure used by VTK to represent surfaces and other data structures. Here we show how to visualize a simple cube but the same idea should apply for any surface.
+vtkPolyData is a structure used by VTK to represent surfaces and other data
+structures. Here we show how to visualize a simple cube but the same idea
+should apply for any surface.
 """
 
 import numpy as np
 
 """
-Import usefull functions from dipy.viz.utils
+Import useful functions from dipy.viz.utils
 """
 
 import dipy.io.vtk as io_vtk
