@@ -1,8 +1,11 @@
 from __future__ import division, print_function, absolute_import
 
+import gzip
 import numpy as np
 from scipy import ndimage
 from copy import copy
+
+from nibabel.tmpdirs import InTemporaryDirectory
 
 try:
     import Tkinter as tkinter
@@ -465,7 +468,46 @@ class ShowManager(object):
         del self.iren
         del self.window
 
-    def record_events(self, filename="record.log"):
+    def record_events(self):
+        """ Records events during the interaction.
+
+        The recording is represented as a list of VTK events that happened
+        during the interaction. The recorded events are then returned.
+
+        Returns
+        -------
+        events : str
+            Recorded events (one per line).
+
+        Notes
+        -----
+        Since VTK only allows recording events to a file, we use a
+        temporary file from which we then read the events.
+        """
+        with InTemporaryDirectory():
+            filename = "recorded_events.log"
+            recorder = vtk.vtkInteractorEventRecorder()
+            recorder.SetInteractor(self.iren)
+            recorder.SetFileName(filename)
+
+            def _stop_recording_and_close(obj, evt):
+                recorder.Stop()
+                self.iren.TerminateApp()
+
+            self.iren.AddObserver("ExitEvent", _stop_recording_and_close)
+
+            self.iren.Initialize()
+            recorder.EnabledOn()
+            recorder.Record()
+
+            self.iren.Start()
+
+            # Retrieved recorded events.
+            events = open(filename).read()
+
+        return events
+
+    def record_events_to_file(self, filename="record.log"):
         """ Records events during the interaction.
 
         The recording is represented as a list of VTK events
@@ -475,25 +517,37 @@ class ShowManager(object):
         Parameters
         ----------
         filename : str
-            Name of the file that will contain the recording.
+            Name of the file that will contain the recording (.log|.log.gz).
+        """
+        events = self.record_events()
+
+        # Compress file if needed
+        if filename.endswith(".gz"):
+            gzip.open(filename, 'w').write(events)
+        else:
+            open(filename, 'w').write(events)
+
+    def play_events(self, events):
+        """ Plays recorded events of a past interaction.
+
+        The VTK events that happened during the recorded interaction will be
+        played back.
+
+        Parameters
+        ----------
+        events : str
+            Recorded events (one per line).
         """
         recorder = vtk.vtkInteractorEventRecorder()
         recorder.SetInteractor(self.iren)
-        recorder.SetFileName(filename)
 
-        def _stop_recording_and_close(obj, evt):
-            recorder.Stop()
-            self.iren.TerminateApp()
-
-        self.iren.AddObserver("ExitEvent", _stop_recording_and_close)
+        recorder.SetInputString(events)
+        recorder.ReadFromInputStringOn()
 
         self.iren.Initialize()
-        recorder.EnabledOn()
-        recorder.Record()
+        recorder.Play()
 
-        self.iren.Start()
-
-    def play_events(self, filename):
+    def play_events_from_file(self, filename):
         """ Plays recorded events of a past interaction.
 
         The VTK events that happened during the recorded interaction will be
@@ -502,14 +556,15 @@ class ShowManager(object):
         Parameters
         ----------
         filename : str
-            Name of the file containing the recorded events.
+            Name of the file containing the recorded events (.log|.log.gz).
         """
-        recorder = vtk.vtkInteractorEventRecorder()
-        recorder.SetInteractor(self.iren)
-        recorder.SetFileName(filename)
+        # Uncompress file if needed.
+        if filename.endswith(".gz"):
+            events = gzip.open(filename, 'r').read()
+        else:
+            events = open(filename).read()
 
-        self.iren.Initialize()
-        recorder.Play()
+        self.play_events(events)
 
     def add_window_callback(self, win_callback):
         """ Add window callbacks
