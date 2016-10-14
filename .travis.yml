@@ -37,6 +37,7 @@ matrix:
     - python: 2.7
       sudo: true   # This is set to true for apt-get
       env:
+        - COVERAGE=1
         - VTK=1
         - VTK_VER="python-vtk"
         - LIBGL_ALWAYS_INDIRECT=y
