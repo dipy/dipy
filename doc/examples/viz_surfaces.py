@@ -7,7 +7,7 @@ Here is a simple tutorial that shows how to visualize surfaces using DIPY. It sh
 surfaces.
 
 vtkPolyData is a structure used by VTK to represent surfaces and other data structures. Here we show how to visualize a simple cube but the same idea should apply for any surface.
-""""
+"""
 
 import numpy as np
 
@@ -31,7 +31,7 @@ Create an empty vtkPolyData
 my_polydata = vtk.vtkPolyData()
 
 """
-Create a cube with vertices and triangles numpy array
+Create a cube with vertices and triangles as numpy arrays
 """
 
 my_vetices = np.array([[0.0,  0.0,  0.0],
@@ -60,6 +60,7 @@ my_triangles = np.array([[0,  6,  4],
 """
 Set vertices and triangles in poly data
 """
+
 ut_vtk.set_polydata_vertices(my_polydata, my_vetices)
 ut_vtk.set_polydata_triangles(my_polydata, my_triangles)
 
@@ -104,3 +105,10 @@ renderer.zoom(3)
 # display
 # window.show(renderer, size=(600, 600), reset_camera=False)
 window.record(renderer, out_path='cube.png', size=(600, 600))
+
+"""
+.. figure:: cube.png
+   :align: center
+
+   **An example of a simple surface visualized with DIPY**.
+"""
