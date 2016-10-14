@@ -63,6 +63,7 @@ import numpy as np
 from numpy import (asarray, ceil, dot, empty, eye, sqrt)
 from dipy.io.bvectxt import ornt_mapping
 from dipy.tracking import metrics
+from .vox2track import _streamlines_in_mask
 
 # Import helper functions shared with vox2track
 from ._utils import (_mapping_to_voxel, _to_voxel_coordinates)
@@ -571,7 +572,7 @@ def target(streamlines, target_mask, affine, include=True):
 
     Raises
     ------
-    IndexError
+    ValueError
         When the points of the streamlines lie outside of the `target_mask`.
 
     See Also
@@ -593,6 +594,57 @@ def target(streamlines, target_mask, affine, include=True):
             raise ValueError("streamlines points are outside of target_mask")
         if state.any() == include:
             yield sl
+
+
+@_with_initialize
+def target_line_based(streamlines, target_mask, affine=None, include=True):
+    """Filters streamlines based on whether or not they pass through a ROI,
+    using a line-based algorithm. Mostly used as a remplacement of `target`
+    for compressed streamlines.
+
+    This function never returns single-point streamlines, wathever the
+    value of `include`.
+
+    Parameters
+    ----------
+    streamlines : iterable
+        A sequence of streamlines. Each streamline should be a (N, 3) array,
+        where N is the length of the streamline.
+    target_mask : array-like
+        A mask used as a target. Non-zero values are considered to be within
+        the target region.
+    affine : array (4, 4)
+        The affine transform from voxel indices to streamline points.
+    include : bool, default True
+        If True, streamlines passing through `target_mask` are kept. If False,
+        the streamlines not passing through `target_mask` are kept.
+
+    Returns
+    -------
+    streamlines : generator
+        A sequence of streamlines that pass through `target_mask`.
+
+    References
+    ----------
+    [Bresenham5] Bresenham, Jack Elton. "Algorithm for computer control of a
+                 digital plotter", IBM Systems Journal, vol 4, no. 1, 1965.
+    [Houde15] Houde et al. How to avoid biased streamlines-based metrics for
+              streamlines with variable step sizes, ISMRM 2015.
+
+    See Also
+    --------
+    dipy.tracking.utils.density_map
+    dipy.tracking.streamline.compress_streamlines
+    """
+    target_mask = np.array(target_mask, dtype=np.uint8, copy=True)
+    lin_T, offset = _mapping_to_voxel(affine, voxel_size=None)
+    streamline_index = _streamlines_in_mask(
+        streamlines, target_mask, lin_T, offset)
+    yield
+    # End of initialization
+
+    for idx in np.where(streamline_index == [0, 1][include])[0]:
+        yield streamlines[idx]
 
 
 def streamline_near_roi(streamline, roi_coords, tol, mode='any'):
