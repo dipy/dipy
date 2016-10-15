@@ -17,9 +17,7 @@ else:
 
 @npt.dec.skipif(not actor.have_vtk or not actor.have_vtk_colors or skip_it)
 @xvfb_it
-def test_custom_interactor_style_events():
-
-    recording = False
+def test_custom_interactor_style_events(recording=False):
     recording_filename = pjoin(DATA_DIR, "test_custom_interactor_style_events.log.gz")
     renderer = window.Renderer()
 
@@ -85,15 +83,23 @@ def test_custom_interactor_style_events():
         print(list(states.items()))
     else:
         show_manager.play_events_from_file(recording_filename)
-        npt.assert_equal(states['CharEvent'], 2)
-        npt.assert_equal(states['KeyPressEvent'], 2)
-        npt.assert_equal(states['KeyReleaseEvent'], 2)
-        npt.assert_equal(states['MouseMoveEvent'], 1014)
-        npt.assert_equal(states['LeftButtonPressEvent'], 1)
-        npt.assert_equal(states['RightButtonPressEvent'], 1)
-        npt.assert_equal(states['MiddleButtonPressEvent'], 1)
-        npt.assert_equal(states['LeftButtonReleaseEvent'], 1)
-        npt.assert_equal(states['RightButtonReleaseEvent'], 1)
-        npt.assert_equal(states['MiddleButtonReleaseEvent'], 1)
-        npt.assert_equal(states['MouseWheelForwardEvent'], 17)
-        npt.assert_equal(states['MouseWheelBackwardEvent'], 20)
+        print(list(states.items()))
+
+        msg = ("Warning: VTK seems to handle events differently when"
+               " LIBGL_ALWAYS_SOFTWARE=1. It is off by default.")
+        npt.assert_equal(states['CharEvent'], 3, err_msg=msg)
+        npt.assert_equal(states['KeyPressEvent'], 3, err_msg=msg)
+        npt.assert_equal(states['KeyReleaseEvent'], 3, err_msg=msg)
+        npt.assert_equal(states['LeftButtonPressEvent'], 1, err_msg=msg)
+        npt.assert_equal(states['RightButtonPressEvent'], 2, err_msg=msg)
+        npt.assert_equal(states['MiddleButtonPressEvent'], 1, err_msg=msg)
+        npt.assert_equal(states['LeftButtonReleaseEvent'], 1, err_msg=msg)
+        npt.assert_equal(states['RightButtonReleaseEvent'], 2, err_msg=msg)
+        npt.assert_equal(states['MiddleButtonReleaseEvent'], 1, err_msg=msg)
+        npt.assert_equal(states['MouseWheelForwardEvent'], 6, err_msg=msg)
+        npt.assert_equal(states['MouseWheelBackwardEvent'], 15, err_msg=msg)
+        npt.assert_equal(states['MouseMoveEvent'], 1464, err_msg=msg)
+
+
+if __name__ == '__main__':
+    test_custom_interactor_style_events(recording=True)

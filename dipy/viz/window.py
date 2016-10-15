@@ -6,6 +6,7 @@ from scipy import ndimage
 from copy import copy
 
 from nibabel.tmpdirs import InTemporaryDirectory
+from nibabel.py3k import asbytes
 
 try:
     import Tkinter as tkinter
@@ -524,7 +525,7 @@ class ShowManager(object):
 
         # Compress file if needed
         if filename.endswith(".gz"):
-            gzip.open(filename, 'w').write(events)
+            gzip.open(filename, 'wb').write(asbytes(events))
         else:
             open(filename, 'w').write(events)
 
