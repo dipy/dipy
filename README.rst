@@ -2,8 +2,6 @@
  DIPY
 ======
 
-.. image:: https://coveralls.io/repos/github/nipy/dipy/badge.svg?branch=master :target: https://coveralls.io/github/nipy/dipy?branch=master 
-
 .. image:: https://codecov.io/gh/nipy/dipy/branch/master/graph/badge.svg
   :target: https://codecov.io/gh/nipy/dipy
 
