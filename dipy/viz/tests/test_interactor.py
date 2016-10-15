@@ -71,6 +71,7 @@ def test_custom_interactor_style_events(recording=False):
 
     # Define some counter callback.
     states = defaultdict(lambda: 0)
+
     def counter(obj, event):
         states[event] += 1
 
@@ -136,7 +137,9 @@ def test_custom_interactor_style_events(recording=False):
         # Useful loop for debugging.
         for event, count in expected:
             if states[event] != count:
-                print("{}: {} vs. {} (expected)".format(event, states[event], count))
+                print("{}: {} vs. {} (expected)".format(event,
+                                                        states[event],
+                                                        count))
 
         for event, count in expected:
             npt.assert_equal(states[event], count, err_msg=msg.format(event))

@@ -18,9 +18,9 @@ else:
 @npt.dec.skipif(not actor.have_vtk or not actor.have_vtk_colors or skip_it)
 @xvfb_it
 def test_button_and_slider_widgets():
-
     recording = False
-    recording_filename = pjoin(DATA_DIR, "test_button_and_slider_widgets.log.gz")
+    filename = "test_button_and_slider_widgets.log.gz"
+    recording_filename = pjoin(DATA_DIR, filename)
     renderer = window.Renderer()
 
     # create some minimalistic streamlines

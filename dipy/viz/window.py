@@ -563,9 +563,11 @@ class ShowManager(object):
         """
         # Uncompress file if needed.
         if filename.endswith(".gz"):
-            events = gzip.open(filename, 'r').read()
+            with gzip.open(filename, 'r') as f:
+                events = f.read()
         else:
-            events = open(filename).read()
+            with open(filename) as f:
+                events = f.read()
 
         self.play_events(events)
 

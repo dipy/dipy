@@ -12,6 +12,7 @@ if have_vtk:
 else:
     vtkInteractorStyleUser = object
 
+
 class CustomInteractorStyle(vtkInteractorStyleUser):
     """ Manipulate the camera and interact with objects in the scene.
 
@@ -240,8 +241,8 @@ class CustomInteractorStyle(vtkInteractorStyleUser):
         # self.AddObserver("ConfigureEvent", self.on_configure)
 
         # These observers need to be added directly to the interactor because
-        # `vtkInteractorStyleUser` does not support wheel events prior 7.1.
-        # See https://github.com/Kitware/VTK/commit/373258ed21f0915c425eddb996ce6ac13404be28
+        # `vtkInteractorStyleUser` does not support wheel events prior 7.1. See
+        # https://github.com/Kitware/VTK/commit/373258ed21f0915c425eddb996ce6ac13404be28
         interactor.AddObserver("MouseWheelForwardEvent",
                                self.on_mouse_wheel_forward)
         interactor.AddObserver("MouseWheelBackwardEvent",
@@ -259,6 +260,7 @@ def add_callback(prop, event_type, callback, priority=0):
     priority : int
     """
     cmd_id = [None]  # Placeholder accessible in the _callback closure.
+
     def _callback(obj, event_type):
         abort_flag = callback(prop, event_type)
         if abort_flag is not None:
