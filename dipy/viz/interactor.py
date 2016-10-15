@@ -12,7 +12,6 @@ if have_vtk:
 else:
     vtkInteractorStyleUser = object
 
-
 class CustomInteractorStyle(vtkInteractorStyleUser):
     """ Manipulate the camera and interact with objects in the scene.
 
@@ -43,6 +42,10 @@ class CustomInteractorStyle(vtkInteractorStyleUser):
         self.right_button_down = False
         self.middle_button_down = False
         self.active_props = set()
+
+        self.selected_props = {"left_button": set(),
+                               "right_button": set(),
+                               "middle_button": set()}
 
     def add_active_prop(self, prop):
         self.active_props.add(prop)
@@ -82,6 +85,7 @@ class CustomInteractorStyle(vtkInteractorStyleUser):
         abort_flag = False
         prop = self.get_prop_at_event_position()
         if prop is not None:
+            self.selected_props["left_button"].add(prop)
             abort_flag = self.propagate_event(evt, prop)
 
         if not abort_flag:
@@ -89,16 +93,16 @@ class CustomInteractorStyle(vtkInteractorStyleUser):
 
     def on_left_button_up(self, obj, evt):
         self.left_button_down = False
-        abort_flag = self.propagate_event(evt, *self.active_props)
-
-        if not abort_flag:
-            self.default_interactor.OnLeftButtonUp()
+        self.propagate_event(evt, *self.selected_props["left_button"])
+        self.selected_props["left_button"].clear()
+        self.default_interactor.OnLeftButtonUp()
 
     def on_right_button_down(self, obj, evt):
         self.right_button_down = True
         abort_flag = False
         prop = self.get_prop_at_event_position()
         if prop is not None:
+            self.selected_props["right_button"].add(prop)
             abort_flag = self.propagate_event(evt, prop)
 
         if not abort_flag:
@@ -106,16 +110,16 @@ class CustomInteractorStyle(vtkInteractorStyleUser):
 
     def on_right_button_up(self, obj, evt):
         self.right_button_down = False
-        abort_flag = self.propagate_event(evt, *self.active_props)
-
-        if not abort_flag:
-            self.default_interactor.OnRightButtonUp()
+        self.propagate_event(evt, *self.selected_props["right_button"])
+        self.selected_props["right_button"].clear()
+        self.default_interactor.OnRightButtonUp()
 
     def on_middle_button_down(self, obj, evt):
         self.middle_button_down = True
         abort_flag = False
         prop = self.get_prop_at_event_position()
         if prop is not None:
+            self.selected_props["middle_button"].add(prop)
             abort_flag = self.propagate_event(evt, prop)
 
         if not abort_flag:
@@ -123,34 +127,56 @@ class CustomInteractorStyle(vtkInteractorStyleUser):
 
     def on_middle_button_up(self, obj, evt):
         self.middle_button_down = False
-        abort_flag = self.propagate_event(evt, *self.active_props)
+        self.propagate_event(evt, *self.selected_props["middle_button"])
+        self.selected_props["middle_button"].clear()
+        self.default_interactor.OnMiddleButtonUp()
 
-        if not abort_flag:
-            self.default_interactor.OnMiddleButtonUp()
-
-    def on_mouse_moved(self, obj, evt):
-        abort_flag = self.propagate_event(evt, *self.active_props)
-
-        if not abort_flag:
-            self.default_interactor.OnMouseMove()
+    def on_mouse_move(self, obj, evt):
+        # Only propagate events to active or selected props.
+        self.propagate_event(evt, *self.active_props)
+        self.propagate_event(evt, *self.selected_props["left_button"])
+        self.propagate_event(evt, *self.selected_props["right_button"])
+        self.propagate_event(evt, *self.selected_props["middle_button"])
+        self.default_interactor.OnMouseMove()
 
     def on_mouse_wheel_forward(self, obj, evt):
-        abort_flag = self.propagate_event(evt, *self.active_props)
+        # First, propagate mouse wheel event to underneath prop.
+        abort_flag = False
+        prop = self.get_prop_at_event_position()
+        if prop is not None:
+            abort_flag = self.propagate_event(evt, prop)
 
+        # Then, to the active props.
+        if not abort_flag:
+            abort_flag = self.propagate_event(evt, *self.active_props)
+
+        # Finally, to the default interactor.
         if not abort_flag:
             self.default_interactor.OnMouseWheelForward()
 
     def on_mouse_wheel_backward(self, obj, evt):
-        abort_flag = self.propagate_event(evt, *self.active_props)
+        # First, propagate mouse wheel event to underneath prop.
+        abort_flag = False
+        prop = self.get_prop_at_event_position()
+        if prop is not None:
+            abort_flag = self.propagate_event(evt, prop)
 
+        # Then, to the active props.
+        if not abort_flag:
+            abort_flag = self.propagate_event(evt, *self.active_props)
+
+        # Finally, to the default interactor.
         if not abort_flag:
             self.default_interactor.OnMouseWheelBackward()
 
-    def on_key_press(self, obj, evt):
-        abort_flag = self.propagate_event(evt, *self.active_props)
+    def on_char(self, obj, evt):
+        self.propagate_event(evt, *self.active_props)
 
-        if not abort_flag:
-            self.default_interactor.OnKeyPress()
+    def on_key_press(self, obj, evt):
+        self.propagate_event(evt, *self.active_props)
+
+    def on_key_release(self, obj, evt):
+        self.propagate_event(evt, *self.active_props)
 
     def SetInteractor(self, interactor):
         # Internally, `InteractorStyle` objects need a handle to a
@@ -159,12 +185,29 @@ class CustomInteractorStyle(vtkInteractorStyleUser):
         # observers to the `interactor`!
         self.default_interactor.SetInteractor(interactor)
 
-        # Remove all observers previously set. Those were *most likely* set by
+        # Remove all observers *most likely* (cannot guarantee that the
+        # interactor didn't already have these observers) added by
         # `vtkInteractorStyleTrackballCamera`, i.e. our `default_interactor`.
         #
         # Note: Be sure that no observer has been manually added to the
-        #       `interactor` before setting the InteractorStyle.
-        # interactor.RemoveAllObservers()
+        # `interactor` before setting the InteractorStyle.
+        interactor.RemoveObservers("TimerEvent")
+        interactor.RemoveObservers("EnterEvent")
+        interactor.RemoveObservers("LeaveEvent")
+        interactor.RemoveObservers("ExposeEvent")
+        interactor.RemoveObservers("ConfigureEvent")
+        interactor.RemoveObservers("CharEvent")
+        interactor.RemoveObservers("KeyPressEvent")
+        interactor.RemoveObservers("KeyReleaseEvent")
+        interactor.RemoveObservers("MouseMoveEvent")
+        interactor.RemoveObservers("LeftButtonPressEvent")
+        interactor.RemoveObservers("RightButtonPressEvent")
+        interactor.RemoveObservers("MiddleButtonPressEvent")
+        interactor.RemoveObservers("LeftButtonReleaseEvent")
+        interactor.RemoveObservers("RightButtonReleaseEvent")
+        interactor.RemoveObservers("MiddleButtonReleaseEvent")
+        interactor.RemoveObservers("MouseWheelForwardEvent")
+        interactor.RemoveObservers("MouseWheelBackwardEvent")
 
         # This class is a `vtkClass` (instead of `object`), so `super()`
         # cannot be used. Also the method `SetInteractor` is not overridden in
@@ -174,21 +217,53 @@ class CustomInteractorStyle(vtkInteractorStyleUser):
         # observers.
         vtk.vtkInteractorStyle.SetInteractor(self, interactor)
 
-        # We do not want `default_interactor` to process `CharEvent`s.
-        interactor.RemoveObservers(vtk.vtkCommand.CharEvent)
+        # Keyboard events.
+        self.AddObserver("CharEvent", self.on_char)
+        self.AddObserver("KeyPressEvent", self.on_key_press)
+        self.AddObserver("KeyReleaseEvent", self.on_key_release)
 
+        # Mouse events.
+        self.AddObserver("MouseMoveEvent", self.on_mouse_move)
         self.AddObserver("LeftButtonPressEvent", self.on_left_button_down)
         self.AddObserver("LeftButtonReleaseEvent", self.on_left_button_up)
         self.AddObserver("RightButtonPressEvent", self.on_right_button_down)
         self.AddObserver("RightButtonReleaseEvent", self.on_right_button_up)
         self.AddObserver("MiddleButtonPressEvent", self.on_middle_button_down)
         self.AddObserver("MiddleButtonReleaseEvent", self.on_middle_button_up)
-        self.AddObserver("MouseMoveEvent", self.on_mouse_moved)
-        self.AddObserver("KeyPressEvent", self.on_key_press)
+
+        # Windows and special events.
+        # TODO: we ever find them useful we could support them.
+        # self.AddObserver("TimerEvent", self.on_timer)
+        # self.AddObserver("EnterEvent", self.on_enter)
+        # self.AddObserver("LeaveEvent", self.on_leave)
+        # self.AddObserver("ExposeEvent", self.on_expose)
+        # self.AddObserver("ConfigureEvent", self.on_configure)
 
         # These observers need to be added directly to the interactor because
-        # `vtkInteractorStyleUser` does not forward these events.
+        # `vtkInteractorStyleUser` does not support wheel events prior 7.1.
+        # See https://github.com/Kitware/VTK/commit/373258ed21f0915c425eddb996ce6ac13404be28
         interactor.AddObserver("MouseWheelForwardEvent",
                                self.on_mouse_wheel_forward)
         interactor.AddObserver("MouseWheelBackwardEvent",
                                self.on_mouse_wheel_backward)
+
+
+def add_callback(prop, event_type, callback, priority=0):
+    """ Adds a callback associated to a specific event for a VTK prop.
+
+    Parameters
+    ----------
+    prop : vtkProp
+    event_type : event code
+    callback : function
+    priority : int
+    """
+    cmd_id = [None]  # Placeholder accessible in the _callback closure.
+    def _callback(obj, event_type):
+        abort_flag = callback(prop, event_type)
+        if abort_flag is not None:
+            cmd = obj.GetCommand(cmd_id[0])
+            cmd.SetAbortFlag(abort_flag)
+
+    # Fill the placeholder with the command ID returned by VTK.
+    cmd_id[0] = prop.AddObserver(event_type, _callback, priority)

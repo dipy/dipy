@@ -496,10 +496,11 @@ class ShowManager(object):
 
             self.iren.AddObserver("ExitEvent", _stop_recording_and_close)
 
-            self.iren.Initialize()
             recorder.EnabledOn()
             recorder.Record()
 
+            self.initialize()
+            self.render()
             self.iren.Start()
 
             # Retrieved recorded events.
@@ -544,7 +545,8 @@ class ShowManager(object):
         recorder.SetInputString(events)
         recorder.ReadFromInputStringOn()
 
-        self.iren.Initialize()
+        self.initialize()
+        self.render()
         recorder.Play()
 
     def play_events_from_file(self, filename):
