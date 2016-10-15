@@ -222,7 +222,7 @@ plt.show()
    (axial slice shown)**.
 """
 
-nib.save(nib.Nifti1Image(b0_mask, input_affine), 'brain_extraction_diff.nii.gz')
+# nib.save(nib.Nifti1Image(b0_mask, input_affine), 'brain_extraction_diff.nii.gz')
 
 """
 References
