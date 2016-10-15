@@ -133,10 +133,10 @@ class CustomInteractorStyle(vtkInteractorStyleUser):
 
     def on_mouse_move(self, obj, evt):
         # Only propagate events to active or selected props.
-        self.propagate_event(evt, *self.active_props)
-        self.propagate_event(evt, *self.selected_props["left_button"])
-        self.propagate_event(evt, *self.selected_props["right_button"])
-        self.propagate_event(evt, *self.selected_props["middle_button"])
+        self.propagate_event(evt, *(self.active_props |
+                                    self.selected_props["left_button"] |
+                                    self.selected_props["right_button"] |
+                                    self.selected_props["middle_button"]))
         self.default_interactor.OnMouseMove()
 
     def on_mouse_wheel_forward(self, obj, evt):
