@@ -1,7 +1,7 @@
 """
-===========================================
-Estimate Noise Levels for LocalPCA Datasets
-===========================================
+================================
+PCA Based Local Noise Estimation
+================================
 
 """
 
@@ -15,8 +15,8 @@ cimport numpy as cnp
 @cython.boundscheck(False)
 @cython.wraparound(False)
 @cython.cdivision(True)
-def fast_noise_estimate(data, gtab):
-    """ Noise estimation for local PCA denoising
+def pca_noise_estimate(data, gtab):
+    """ PCA based local noise estimation
 
     Parameters
     ----------
@@ -32,7 +32,7 @@ def fast_noise_estimate(data, gtab):
     Returns
     -------
     sigma_corr: 3D array
-        The local noise variance estimate
+        The local noise standard deviation estimate
 
     References
     ----------
@@ -131,4 +131,4 @@ def fast_noise_estimate(data, gtab):
     # smoothing by lpf
     sigma_corr[np.isnan(sigma_corr)] = 0
     sigma_corrr = ndimage.gaussian_filter(sigma_corr, 3)
-    return sigma_corrr
+    return np.sqrt(sigma_corrr)

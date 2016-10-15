@@ -160,7 +160,7 @@ def test_lpca_sharpness():
     S0[10:20, 10:20, 10:20, :] = 50
     S0[20:30, 20:30, 20:30, :] = 0
     S0 = S0 + 20 * np.random.standard_normal((30, 30, 30, 20))
-    S0ns = localpca(S0, sigma=400.0)
+    S0ns = localpca(S0, sigma=20.0)
     # check the edge gradient
     edgs = np.abs(np.mean(S0ns[8, 10:20, 10:20] - S0ns[12, 10:20, 10:20]) - 50)
     assert_(edgs < 2)

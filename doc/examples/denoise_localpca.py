@@ -3,13 +3,12 @@
 Denoise images using Local PCA
 ===============================
 
-Using the local PCA based denoising for diffusion
-images [Manjon2013]_ we can denoise diffusion images significantly. This
-algorithm is effective as it takes into account the directional information in
-diffusion data.
+Here we show how one can use the PCA to denoise diffusion images 
+[Manjon2013]_. This approach might be advantageous for diffusion-weighted
+data as it takes into account the diffusion directional information.
 
-The basic idea behind local PCA based diffusion denoising can
-be explained in the following three basic steps
+The basic idea behind the local PCA denoising strategy consists of
+three basic steps:
 
 * First we estimate the local noise variance at each voxel
 
@@ -19,7 +18,7 @@ be explained in the following three basic steps
 * Threshold the eigenvalues based on the local estimate of sigma and then do
   the PCA reconstruction
 
-Let's load the necessary modules
+Let's start by loading necessary modules
 """
 
 import numpy as np
@@ -28,7 +27,7 @@ import nibabel as nib
 import matplotlib.pyplot as plt
 from time import time
 from dipy.denoise.localpca import localpca
-from dipy.denoise.fast_noise_estimate import fast_noise_estimate
+from dipy.denoise.pca_noise_estimate import pca_noise_estimate
 from dipy.data import fetch_isbi2013_2shell, read_isbi2013_2shell
 
 """
@@ -44,7 +43,7 @@ affine = img.get_affine()
 print("Input Volume", data.shape)
 
 """
-We use a special noise estimation method ``fast_noise_estimate`` for getting
+We use a special noise estimation method ``pca_noise_estimate`` for getting
 the sigma to be used in local PCA algorithm. It takes both data and the
 gradient table object as input and returns an estimate of local noise standard
 deviation as a 3D array.
@@ -52,7 +51,7 @@ deviation as a 3D array.
 
 t = time()
 
-sigma = np.array(fast_noise_estimate(data.astype(np.float64), gtab))
+sigma = np.array(pca_noise_estimate(data.astype(np.float64), gtab))
 print("Sigma estimation time", time() - t)
 
 """
@@ -69,7 +68,7 @@ t = time()
 
 denoised_arr = localpca(data, sigma=sigma, patch_radius=2)
 
-print("Time taken for local PCA (slow)", -t + time())
+print("Time taken for local PCA (slow)", time() - t)
 
 """
 Let us plot the axial slice of the original and denoised data.

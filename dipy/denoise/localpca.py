@@ -1,5 +1,6 @@
 import numpy as np
 import scipy as sp
+from warnings import warn
 
 
 def localpca(arr, sigma, patch_radius=1):
@@ -28,7 +29,9 @@ def localpca(arr, sigma, patch_radius=1):
 
     if arr.ndim == 4:
 
-        tou = 2.3 * 2.3 * sigma
+        patch_size = 2 * patch_radius + 1
+
+        tou = 2.3 * 2.3 * sigma * sigma
 
         if isinstance(sigma, np.ndarray) and sigma.ndim == 3:
 
@@ -44,8 +47,6 @@ def localpca(arr, sigma, patch_radius=1):
         # declare arrays for theta and thetax
         theta = np.zeros(arr.shape, dtype=np.float64)
         thetax = np.zeros(arr.shape, dtype=np.float64)
-
-        patch_size = 2 * patch_radius + 1
 
         for k in range(patch_radius, arr.shape[2] - patch_radius, 1):
             for j in range(patch_radius, arr.shape[1] - patch_radius, 1):
