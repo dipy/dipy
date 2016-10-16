@@ -125,18 +125,18 @@ def test_custom_interactor_style_events(recording=False):
                "Warning: VTK seems to handle events differently when"
                " LIBGL_ALWAYS_SOFTWARE=1. It is off by default.")
 
-        expected = [('CharEvent', 5),
-                    ('KeyPressEvent', 5),
-                    ('KeyReleaseEvent', 5),
-                    ('MouseMoveEvent', 1398),
+        expected = [('CharEvent', 6),
+                    ('KeyPressEvent', 6),
+                    ('KeyReleaseEvent', 6),
+                    ('MouseMoveEvent', 1652),
                     ('LeftButtonPressEvent', 1),
                     ('RightButtonPressEvent', 1),
-                    ('MiddleButtonPressEvent', 1),
-                    ('MouseWheelForwardEvent', 3),
+                    ('MiddleButtonPressEvent', 2),
                     ('LeftButtonReleaseEvent', 1),
-                    ('RightButtonReleaseEvent', 1),
-                    ('MouseWheelBackwardEvent', 4),
-                    ('MiddleButtonReleaseEvent', 1)]
+                    ('MouseWheelForwardEvent', 3),
+                    ('MouseWheelBackwardEvent', 1),
+                    ('MiddleButtonReleaseEvent', 2),
+                    ('RightButtonReleaseEvent', 1)]
 
         # Useful loop for debugging.
         for event, count in expected:
