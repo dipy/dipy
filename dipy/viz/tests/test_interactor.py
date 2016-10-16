@@ -1,4 +1,5 @@
 import os
+import time
 import numpy as np
 from os.path import join as pjoin
 from collections import defaultdict
@@ -56,6 +57,7 @@ def test_custom_interactor_style_events(recording=False):
         event_pos = show_manager.iren.GetEventPosition()
         obj.SetPosition(*event_pos)
         show_manager.render()
+        time.sleep(0.001)
 
     show_manager.iren.GetInteractorStyle().add_active_prop(cursor)
     interactor.add_callback(cursor, "MouseMoveEvent", follow_mouse)
@@ -64,8 +66,8 @@ def test_custom_interactor_style_events(recording=False):
     lines = [np.array([[-1, 0, 0.], [1, 0, 0.]]),
              np.array([[-1, 1, 0.], [1, 1, 0.]])]
     colors = np.array([[1., 0., 0.], [0.3, 0.7, 0.]])
-    tube1 = actor.streamtube([lines[0]], colors[0], linewidth=0.09)
-    tube2 = actor.streamtube([lines[1]], colors[1], linewidth=0.09)
+    tube1 = actor.streamtube([lines[0]], colors[0])
+    tube2 = actor.streamtube([lines[1]], colors[1])
     # renderer.add(stream_actor)
     renderer.add(tube1)
     renderer.add(tube2)
