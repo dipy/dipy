@@ -19,12 +19,22 @@ class Event(object):
         self.position = None
         self.name = None
         self.key = None
+        self._abort_flag = None
+
+    @property
+    def abort_flag(self):
+        return self._abort_flag
 
     def update(self, event_name, interactor):
         """ Updates current event information. """
         self.name = event_name
         self.position = np.asarray(interactor.GetEventPosition())
         self.key = interactor.GetKeySym()
+        self._abort_flag = False  # Reset abort flag
+
+    def abort(self):
+        """ Aborts the event i.e. do not propagate it any further. """
+        self._abort_flag = True
 
 
 class CustomInteractorStyle(vtkInteractorStyleUser):
@@ -85,26 +95,21 @@ class CustomInteractorStyle(vtkInteractorStyleUser):
         return prop
 
     def propagate_event(self, evt, *props):
-        abort_flag = False
-
         for prop in props:
             # Propagate event to the prop.
-            abort_flag = prop.InvokeEvent(evt)
+            prop.InvokeEvent(evt)
 
-            if abort_flag:
-                break
-
-        return abort_flag
+            if self.event.abort_flag:
+                return
 
     def on_left_button_down(self, obj, evt):
         self.left_button_down = True
-        abort_flag = False
         prop = self.get_prop_at_event_position()
         if prop is not None:
             self.selected_props["left_button"].add(prop)
-            abort_flag = self.propagate_event(evt, prop)
+            self.propagate_event(evt, prop)
 
-        if not abort_flag:
+        if not self.event.abort_flag:
             self.default_interactor.OnLeftButtonDown()
 
     def on_left_button_up(self, obj, evt):
@@ -115,13 +120,12 @@ class CustomInteractorStyle(vtkInteractorStyleUser):
 
     def on_right_button_down(self, obj, evt):
         self.right_button_down = True
-        abort_flag = False
         prop = self.get_prop_at_event_position()
         if prop is not None:
             self.selected_props["right_button"].add(prop)
-            abort_flag = self.propagate_event(evt, prop)
+            self.propagate_event(evt, prop)
 
-        if not abort_flag:
+        if not self.event.abort_flag:
             self.default_interactor.OnRightButtonDown()
 
     def on_right_button_up(self, obj, evt):
@@ -132,13 +136,12 @@ class CustomInteractorStyle(vtkInteractorStyleUser):
 
     def on_middle_button_down(self, obj, evt):
         self.middle_button_down = True
-        abort_flag = False
         prop = self.get_prop_at_event_position()
         if prop is not None:
             self.selected_props["middle_button"].add(prop)
-            abort_flag = self.propagate_event(evt, prop)
+            self.propagate_event(evt, prop)
 
-        if not abort_flag:
+        if not self.event.abort_flag:
             self.default_interactor.OnMiddleButtonDown()
 
     def on_middle_button_up(self, obj, evt):
@@ -157,32 +160,30 @@ class CustomInteractorStyle(vtkInteractorStyleUser):
 
     def on_mouse_wheel_forward(self, obj, evt):
         # First, propagate mouse wheel event to underneath prop.
-        abort_flag = False
         prop = self.get_prop_at_event_position()
         if prop is not None:
-            abort_flag = self.propagate_event(evt, prop)
+            self.propagate_event(evt, prop)
 
         # Then, to the active props.
-        if not abort_flag:
-            abort_flag = self.propagate_event(evt, *self.active_props)
+        if not self.event.abort_flag:
+            self.propagate_event(evt, *self.active_props)
 
         # Finally, to the default interactor.
-        if not abort_flag:
+        if not self.event.abort_flag:
             self.default_interactor.OnMouseWheelForward()
 
     def on_mouse_wheel_backward(self, obj, evt):
         # First, propagate mouse wheel event to underneath prop.
-        abort_flag = False
         prop = self.get_prop_at_event_position()
         if prop is not None:
-            abort_flag = self.propagate_event(evt, prop)
+            self.propagate_event(evt, prop)
 
         # Then, to the active props.
-        if not abort_flag:
-            abort_flag = self.propagate_event(evt, *self.active_props)
+        if not self.event.abort_flag:
+            self.propagate_event(evt, *self.active_props)
 
         # Finally, to the default interactor.
-        if not abort_flag:
+        if not self.event.abort_flag:
             self.default_interactor.OnMouseWheelBackward()
 
     def on_char(self, obj, evt):
@@ -282,11 +283,7 @@ class CustomInteractorStyle(vtkInteractorStyleUser):
         def _callback(obj, event_name):
             # Update event information.
             self.event.update(event_name, self.GetInteractor())
-
-            abort_flag = callback(self, prop)
-            if abort_flag is not None:
-                cmd = obj.GetCommand(cmd_id[0])
-                cmd.SetAbortFlag(abort_flag)
+            callback(self, prop)
 
         # Fill the placeholder with the command ID returned by VTK.
         cmd_id[0] = prop.AddObserver(event_type, _callback, priority)

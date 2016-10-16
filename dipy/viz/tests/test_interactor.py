@@ -25,6 +25,7 @@ else:
 @npt.dec.skipif(not have_vtk or not actor.have_vtk_colors or skip_it)
 @xvfb_it
 def test_custom_interactor_style_events(recording=False):
+    print("Using VTK {}".format(vtk.vtkVersion.GetVTKVersion()))
     filename = "test_custom_interactor_style_events.log.gz"
     recording_filename = pjoin(DATA_DIR, filename)
     renderer = window.Renderer()
@@ -65,7 +66,6 @@ def test_custom_interactor_style_events(recording=False):
     colors = np.array([[1., 0., 0.], [0.3, 0.7, 0.]])
     tube1 = actor.streamtube([lines[0]], colors[0])
     tube2 = actor.streamtube([lines[1]], colors[1])
-    # renderer.add(stream_actor)
     renderer.add(tube1)
     renderer.add(tube2)
 
@@ -89,17 +89,19 @@ def test_custom_interactor_style_events(recording=False):
         scale = np.asarray(obj.GetScale()) + 0.1
         obj.SetScale(*scale)
         iren.force_render()
-        return True  # Stop propagating the event.
+        iren.event.abort()  # Stop propagating the event.
 
     def scale_down_obj(iren, obj):
         counter(iren, obj)
         scale = np.array(obj.GetScale()) - 0.1
         obj.SetScale(*scale)
         iren.force_render()
-        return True  # Stop propagating the event.
+        iren.event.abort()  # Stop propagating the event.
 
-    interactor_style.add_callback(tube2, "MouseWheelForwardEvent", scale_up_obj)
-    interactor_style.add_callback(tube2, "MouseWheelBackwardEvent", scale_down_obj)
+    interactor_style.add_callback(tube2, "MouseWheelForwardEvent",
+                                  scale_up_obj)
+    interactor_style.add_callback(tube2, "MouseWheelBackwardEvent",
+                                  scale_down_obj)
 
     # Add callback to hide/show tube1.
     def toggle_visibility(iren, obj):
@@ -127,8 +129,8 @@ def test_custom_interactor_style_events(recording=False):
                     ('RightButtonPressEvent', 1),
                     ('MiddleButtonPressEvent', 2),
                     ('LeftButtonReleaseEvent', 1),
-                    # ('MouseWheelForwardEvent', 3),
-                    # ('MouseWheelBackwardEvent', 1),
+                    ('MouseWheelForwardEvent', 3),
+                    ('MouseWheelBackwardEvent', 1),
                     ('MiddleButtonReleaseEvent', 2),
                     ('RightButtonReleaseEvent', 1)]
 
