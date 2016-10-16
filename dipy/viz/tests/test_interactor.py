@@ -33,6 +33,7 @@ def test_custom_interactor_style_events(recording=False):
     # in steps so that the widgets can be added properly
     interactor_style = interactor.CustomInteractorStyle()
     show_manager = window.ShowManager(renderer, size=(800, 800),
+                                      reset_camera=False,
                                       interactor_style=interactor_style)
 
     # Create a cursor, a circle that will follow the mouse.
