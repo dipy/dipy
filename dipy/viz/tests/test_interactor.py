@@ -127,8 +127,8 @@ def test_custom_interactor_style_events(recording=False):
                     ('RightButtonPressEvent', 1),
                     ('MiddleButtonPressEvent', 2),
                     ('LeftButtonReleaseEvent', 1),
-                    ('MouseWheelForwardEvent', 3),
-                    ('MouseWheelBackwardEvent', 1),
+                    # ('MouseWheelForwardEvent', 3),
+                    # ('MouseWheelBackwardEvent', 1),
                     ('MiddleButtonReleaseEvent', 2),
                     ('RightButtonReleaseEvent', 1)]
 
