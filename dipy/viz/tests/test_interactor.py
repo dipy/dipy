@@ -64,8 +64,8 @@ def test_custom_interactor_style_events(recording=False):
     lines = [np.array([[-1, 0, 0.], [1, 0, 0.]]),
              np.array([[-1, 1, 0.], [1, 1, 0.]])]
     colors = np.array([[1., 0., 0.], [0.3, 0.7, 0.]])
-    tube1 = actor.streamtube([lines[0]], colors[0])
-    tube2 = actor.streamtube([lines[1]], colors[1])
+    tube1 = actor.streamtube([lines[0]], colors[0], linewidth=0.09)
+    tube2 = actor.streamtube([lines[1]], colors[1], linewidth=0.09)
     # renderer.add(stream_actor)
     renderer.add(tube1)
     renderer.add(tube2)
@@ -81,18 +81,19 @@ def test_custom_interactor_style_events(recording=False):
                   "KeyPressEvent", "KeyReleaseEvent",
                   "LeftButtonPressEvent", "LeftButtonReleaseEvent",
                   "RightButtonPressEvent", "RightButtonReleaseEvent",
-                  "MiddleButtonPressEvent", "MiddleButtonReleaseEvent",
-                  "MouseWheelForwardEvent", "MouseWheelBackwardEvent"]:
+                  "MiddleButtonPressEvent", "MiddleButtonReleaseEvent"]:
         interactor.add_callback(tube1, event, counter)
 
     # Add callback to scale up/down tube1.
     def scale_up_obj(obj, event):
+        counter(obj, event)
         scale = np.array(obj.GetScale()) + 0.1
         obj.SetScale(*scale)
         show_manager.render()
         return True  # Stop propagating the event.
 
     def scale_down_obj(obj, event):
+        counter(obj, event)
         scale = np.array(obj.GetScale()) - 0.1
         obj.SetScale(*scale)
         show_manager.render()
@@ -129,10 +130,10 @@ def test_custom_interactor_style_events(recording=False):
                     ('LeftButtonPressEvent', 1),
                     ('RightButtonPressEvent', 1),
                     ('MiddleButtonPressEvent', 1),
-                    ('MouseWheelForwardEvent', 1),
+                    ('MouseWheelForwardEvent', 3),
                     ('LeftButtonReleaseEvent', 1),
                     ('RightButtonReleaseEvent', 1),
-                    ('MouseWheelBackwardEvent', 2),
+                    ('MouseWheelBackwardEvent', 4),
                     ('MiddleButtonReleaseEvent', 1)]
 
         # Useful loop for debugging.
