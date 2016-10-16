@@ -52,13 +52,12 @@ def test_custom_interactor_style_events(recording=False):
     cursor.GetProperty().SetColor(1, 0.5, 0)
     renderer.add(cursor)
 
-    def follow_mouse(obj, event):
-        event_pos = show_manager.iren.GetEventPosition()
-        obj.SetPosition(*event_pos)
-        show_manager.render()
+    def follow_mouse(iren, obj):
+        obj.SetPosition(*iren.event.position)
+        iren.force_render()
 
-    show_manager.iren.GetInteractorStyle().add_active_prop(cursor)
-    interactor.add_callback(cursor, "MouseMoveEvent", follow_mouse)
+    interactor_style.add_active_prop(cursor)
+    interactor_style.add_callback(cursor, "MouseMoveEvent", follow_mouse)
 
     # create some minimalistic streamlines
     lines = [np.array([[-1, 0, 0.], [1, 0, 0.]]),
@@ -73,8 +72,8 @@ def test_custom_interactor_style_events(recording=False):
     # Define some counter callback.
     states = defaultdict(lambda: 0)
 
-    def counter(obj, event):
-        states[event] += 1
+    def counter(iren, obj):
+        states[iren.event.name] += 1
 
     # Assign the counter callback to every possible event.
     for event in ["CharEvent", "MouseMoveEvent",
@@ -82,37 +81,37 @@ def test_custom_interactor_style_events(recording=False):
                   "LeftButtonPressEvent", "LeftButtonReleaseEvent",
                   "RightButtonPressEvent", "RightButtonReleaseEvent",
                   "MiddleButtonPressEvent", "MiddleButtonReleaseEvent"]:
-        interactor.add_callback(tube1, event, counter)
+        interactor_style.add_callback(tube1, event, counter)
 
     # Add callback to scale up/down tube1.
-    def scale_up_obj(obj, event):
-        counter(obj, event)
-        scale = np.array(obj.GetScale()) + 0.1
+    def scale_up_obj(iren, obj):
+        counter(iren, obj)
+        scale = np.asarray(obj.GetScale()) + 0.1
         obj.SetScale(*scale)
-        show_manager.render()
+        iren.force_render()
         return True  # Stop propagating the event.
 
-    def scale_down_obj(obj, event):
-        counter(obj, event)
+    def scale_down_obj(iren, obj):
+        counter(iren, obj)
         scale = np.array(obj.GetScale()) - 0.1
         obj.SetScale(*scale)
-        show_manager.render()
+        iren.force_render()
         return True  # Stop propagating the event.
 
-    interactor.add_callback(tube2, "MouseWheelForwardEvent", scale_up_obj)
-    interactor.add_callback(tube2, "MouseWheelBackwardEvent", scale_down_obj)
+    interactor_style.add_callback(tube2, "MouseWheelForwardEvent", scale_up_obj)
+    interactor_style.add_callback(tube2, "MouseWheelBackwardEvent", scale_down_obj)
 
     # Add callback to hide/show tube1.
-    def toggle_visibility(obj, event):
-        key = show_manager.iren.GetInteractorStyle().GetKeySym()
+    def toggle_visibility(iren, obj):
+        key = iren.event.key
         if key.lower() == "v":
             obj.SetVisibility(not obj.GetVisibility())
-            show_manager.render()
+            iren.force_render()
 
-    show_manager.iren.GetInteractorStyle().add_active_prop(tube1)
-    show_manager.iren.GetInteractorStyle().add_active_prop(tube2)
-    show_manager.iren.GetInteractorStyle().remove_active_prop(tube2)
-    interactor.add_callback(tube1, "CharEvent", toggle_visibility)
+    interactor_style.add_active_prop(tube1)
+    interactor_style.add_active_prop(tube2)
+    interactor_style.remove_active_prop(tube2)
+    interactor_style.add_callback(tube1, "CharEvent", toggle_visibility)
 
     if recording:
         show_manager.record_events_to_file(recording_filename)
@@ -128,8 +127,8 @@ def test_custom_interactor_style_events(recording=False):
                     ('RightButtonPressEvent', 1),
                     ('MiddleButtonPressEvent', 2),
                     ('LeftButtonReleaseEvent', 1),
-                    # ('MouseWheelForwardEvent', 3),
-                    # ('MouseWheelBackwardEvent', 1),
+                    ('MouseWheelForwardEvent', 3),
+                    ('MouseWheelBackwardEvent', 1),
                     ('MiddleButtonReleaseEvent', 2),
                     ('RightButtonReleaseEvent', 1)]
 

@@ -1,3 +1,4 @@
+import numpy as np
 
 # Conditional import machinery for vtk
 from dipy.utils.optpkg import optional_package
@@ -11,6 +12,19 @@ if have_vtk:
     # major_version = vtk.vtkVersion.GetVTKMajorVersion()
 else:
     vtkInteractorStyleUser = object
+
+
+class Event(object):
+    def __init__(self):
+        self.position = None
+        self.name = None
+        self.key = None
+
+    def update(self, event_name, interactor):
+        """ Updates current event information. """
+        self.name = event_name
+        self.position = np.asarray(interactor.GetEventPosition())
+        self.key = interactor.GetKeySym()
 
 
 class CustomInteractorStyle(vtkInteractorStyleUser):
@@ -37,6 +51,7 @@ class CustomInteractorStyle(vtkInteractorStyleUser):
         # The picker allows us to know which object/actor is under the mouse.
         self.picker = vtk.vtkPropPicker()
         self.chosen_element = None
+        self.event = Event()
 
         # Define some interaction states
         self.left_button_down = False
@@ -248,24 +263,30 @@ class CustomInteractorStyle(vtkInteractorStyleUser):
         interactor.AddObserver("MouseWheelBackwardEvent",
                                self.on_mouse_wheel_backward)
 
+    def force_render(self):
+        """ Causes the renderer to refresh. """
+        self.GetInteractor().GetRenderWindow().Render()
 
-def add_callback(prop, event_type, callback, priority=0):
-    """ Adds a callback associated to a specific event for a VTK prop.
+    def add_callback(self, prop, event_type, callback, priority=0):
+        """ Adds a callback associated to a specific event for a VTK prop.
 
-    Parameters
-    ----------
-    prop : vtkProp
-    event_type : event code
-    callback : function
-    priority : int
-    """
-    cmd_id = [None]  # Placeholder accessible in the _callback closure.
+        Parameters
+        ----------
+        prop : vtkProp
+        event_type : event code
+        callback : function
+        priority : int
+        """
+        cmd_id = [None]  # Placeholder accessible in the _callback closure.
 
-    def _callback(obj, event_type):
-        abort_flag = callback(prop, event_type)
-        if abort_flag is not None:
-            cmd = obj.GetCommand(cmd_id[0])
-            cmd.SetAbortFlag(abort_flag)
+        def _callback(obj, event_name):
+            # Update event information.
+            self.event.update(event_name, self.GetInteractor())
 
-    # Fill the placeholder with the command ID returned by VTK.
-    cmd_id[0] = prop.AddObserver(event_type, _callback, priority)
+            abort_flag = callback(self, prop)
+            if abort_flag is not None:
+                cmd = obj.GetCommand(cmd_id[0])
+                cmd.SetAbortFlag(abort_flag)
+
+        # Fill the placeholder with the command ID returned by VTK.
+        cmd_id[0] = prop.AddObserver(event_type, _callback, priority)
