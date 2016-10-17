@@ -28,7 +28,7 @@ affiliations:
    index: 2
  - name: SRI International
    index: 3
- - name: Cognition and Brain Sciences Unit (CBU)
+ - name: MRC Cognition and Brain Sciences Unit, Cambridge, UK
    index: 4
 date: 6 October 2016
 bibliography: paper.bib
@@ -36,19 +36,7 @@ bibliography: paper.bib
 
 # Summary
 
-Intra-voxel incoherent motion (IVIM) is a biophysical model that describes diffusion
-and perfusion in the signal acquired with a multi-diffusion value MRI
-acquisition [@le1986mr]. This method was originally developed to study the
-fast and slow motion of water molecules in the human brain -- an indication of brain
-microstructure, and brain health more generally. But more recently, interest in
-this model has expanded and applications have emerged throughout the body
-[@LeBihan2008] including kidneys, liver, and heart [@Powers1991, @PMID:9038058,
-@Callot2003, ]. Many more applications are now under investigation such as
-cancer imaging (prostate, liver, kidney, pancreas, etc.) [@Koh2011] and
-imaging of the human placenta [@Moore2000, @moore2000vivo]. One of its most
-common applications still remains brain mapping for neuroscience research
-[@Federau2012]. An example of this is Parkinson’s disease, where it is
-used to study aging and structural degeneration of fibre pathways in the brain
-[@CRUZ2014].
+Intra-voxel incoherent motion (IVIM) is a technique that aims to separate effects of perfusion (microcirculation of blood in the capillary network) from the effects of molecular diffusion [@le1986mr, @le1988ra] in the signal acquired with a multi-diffusion value MRI acquisition [@le1986mr]. This method was originally developed to study the perfusion and diffusion in the human brain [@le1986mr], but more recently, interest in this technique has expanded and applications have emerged throughout the body [@LeBihan2008] including kidneys, liver, and heart [@Powers1991, @PMID:9038058, @Callot2003, ]. Many more applications are now under investigation such as cancer imaging (prostate, liver, kidney, pancreas, etc.) [@Koh2011] and imaging of the human placenta [@Moore2000, @moore2000vivo]. One of its most common applications still remains brain mapping for neuroscience research
+[@Federau2012]. An example of this is Parkinson’s disease, where it is used to study aging and structural degeneration of fibre pathways in the brain [@CRUZ2014].
 
 # References
