@@ -1,16 +1,15 @@
+from dipy.viz.interactor import CustomInteractorStyle
+
 from dipy.utils.optpkg import optional_package
 
 # Allow import, but disable doctests if we don't have vtk.
 vtk, have_vtk, setup_module = optional_package('vtk')
 
 if have_vtk:
-    vtkInteractorStyleUser = vtk.vtkInteractorStyleUser
     version = vtk.vtkVersion.GetVTKSourceVersion().split(' ')[-1]
     major_version = vtk.vtkVersion.GetVTKMajorVersion()
 else:
     vtkInteractorStyleUser = object
-
-numpy_support, have_ns, _ = optional_package('vtk.util.numpy_support')
 
 
 class UI(object):
@@ -33,6 +32,12 @@ class UI(object):
         self.ui_list = list()
 
         self.parent_UI = None
+        self._callbacks = []
+
+    def get_actors(self):
+        """ Returns the actors that compose this UI component. """
+        msg = "Subclasses of UI must implement `get_actors(self)`."
+        raise NotImplementedError(msg)
 
     def add_to_renderer(self, ren):
         """ Allows UI objects to add their own props to the renderer.
@@ -41,7 +46,18 @@ class UI(object):
         ----------
         ren : renderer
         """
-        pass
+        ren.add(*self.get_actors())
+
+        # Get a hold on the current interactor style.
+        iren = ren.GetRenderWindow().GetInteractor().GetInteractorStyle()
+
+        for callback in self._callbacks:
+            if not isinstance(iren, CustomInteractorStyle):
+                msg = ("The ShowManager requires `CustomInteractorStyle` in"
+                       " order to use callbacks.")
+                raise TypeError(msg)
+
+            iren.add_callback(*callback, args=[self])
 
     def add_callback(self, prop, event_type, callback, priority=0):
         """ Adds a callback to a specific event for this UI component.
@@ -53,15 +69,9 @@ class UI(object):
         callback : function
         priority : int
         """
-        cmd_id = [None]  # Placeholder needed in the _callback closure.
-
-        def _callback(obj, event_type):
-            abort_flag = callback(self, event_type)
-            if abort_flag is not None:
-                cmd = obj.GetCommand(cmd_id[0])
-                cmd.SetAbortFlag(abort_flag)
-
-        cmd_id[0] = prop.AddObserver(event_type, _callback, priority)
+        # Actually since we need an interactor style we will add the callback
+        # only when this UI component is added to the renderer.
+        self._callbacks.append((prop, event_type, callback, priority))
 
     def set_center(self, position):
         """ Sets the center of the UI component

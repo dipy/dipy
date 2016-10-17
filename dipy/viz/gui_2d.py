@@ -43,22 +43,25 @@ class Panel2D(UI):
         self.lower_limits = (self.center[0] - self.size[0] / 2, self.center[1] - self.size[1] / 2)
 
         self.panel = Rectangle2D(size=size, center=center, color=color, opacity=opacity)  # type: Rectangle2D
-        self.ui_list.append(self.panel)
 
         self.element_positions = []
         self.element_positions.append((self.panel, 0.5, 0.5))
         self.alignment = align
 
     def add_to_renderer(self, ren):
-        # Should be a recursive function, but we never go more than 2 levels down (by design)
-        """ Add props to renderer
+        """ Allows UI objects to add their own props to the renderer.
 
         Parameters
         ----------
         ren : renderer
         """
+        super(Panel2D, self).add_to_renderer(ren)
         for ui_item in self.ui_list:
-            ui_item.add_to_renderer(ren=ren)
+            ui_item.add_to_renderer(ren)
+
+    def get_actors(self):
+        """ Returns the actors that compose this UI component. """
+        return [self.panel]
 
     def add_element(self, element, relative_position):
         """ Adds an elements to the panel.
@@ -196,14 +199,9 @@ class Button2D(UI):
 
         return button
 
-    def add_to_renderer(self, ren):
-        """ Adds the button actor to renderer.
-
-        Parameters
-        ----------
-        ren : renderer
-        """
-        ren.add(self.actor)
+    def get_actors(self):
+        """ Returns the actors that compose this UI component. """
+        return [self.actor]
 
     def add_callback(self, event_type, callback):
         """ Adds events to button actor.
@@ -341,14 +339,9 @@ class TextBox2D(UI):
 
         return text_actor
 
-    def add_to_renderer(self, ren):
-        """ Adds the text actor to the renderer.
-
-        Parameters
-        ----------
-        ren : renderer
-        """
-        ren.add(self.actor)
+    def get_actors(self):
+        """ Returns the actors that compose this UI component. """
+        return [self.actor]
 
     def add_callback(self, event_type, callback):
         """ Adds events to the text actor.
@@ -570,14 +563,9 @@ class Rectangle2D(UI):
         self.size = size
         self.actor = self.build_actor(size=size, center=center, color=color, opacity=opacity)
 
-    def add_to_renderer(self, ren):
-        """ Adds the actor to the renderer.
-
-        Parameters
-        ----------
-        ren : renderer
-        """
-        ren.add(self.actor)
+    def get_actors(self):
+        """ Returns the actors that compose this UI component. """
+        return [self.actor]
 
     def build_actor(self, size, center, color, opacity):
         """ Builds the text actor.
@@ -718,16 +706,9 @@ class LineSlider2D(UI):
         self.text.set_message(text=percentage)
         self.text.font_size(size=16)
 
-    def add_to_renderer(self, ren):
-        """ Adds the actors to the renderer.
-
-        Parameters
-        ----------
-        ren : renderer
-        """
-        ren.add(self.slider_line)
-        ren.add(self.slider_disk)
-        ren.add(self.text)
+    def get_actors(self):
+        """ Returns the actors that compose this UI component. """
+        return [self.slider_line, self.slider_disk, self.text]
 
     def add_callback(self, event_type, callback, component):
         """ Adds events to an actor.
@@ -914,16 +895,9 @@ class DiskSlider2D(UI):
             percentage_string = str(percentage)
         return percentage_string + "%"
 
-    def add_to_renderer(self, ren):
-        """ Adds the actors to the renderer.
-
-        Parameters
-        ----------
-        ren : renderer
-        """
-        ren.add(self.base_disk)
-        ren.add(self.move_disk)
-        ren.add(self.text)
+    def get_actors(self):
+        """ Returns the actors that compose this UI component. """
+        return [self.base_disk, self.move_disk, self.text]
 
     def add_callback(self, event_type, callback, component):
         """ Adds events to an actor
@@ -1108,14 +1082,9 @@ class Text2D(UI):
         """
         self.actor.set_message(message)
 
-    def add_to_renderer(self, ren):
-        """ Adds the actor to renderer.
-
-        Parameters
-        ----------
-        ren : renderer
-        """
-        ren.add(self.actor)
+    def get_actors(self):
+        """ Returns the actors that compose this UI component. """
+        return [self.actor]
 
     def add_callback(self, event_type, callback):
         """ Adds events to actor.
