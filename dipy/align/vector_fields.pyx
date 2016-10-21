@@ -465,7 +465,7 @@ def interpolate_scalar_3d(floating[:, :, :] image, locations):
         cnp.npy_intp i, n = locations.shape[0]
         floating[:] out = np.zeros(shape=(n,), dtype=ftype)
         int[:] inside = np.empty(shape=(n,), dtype=np.int32)
-        double[:,:] _locations = np.array(locations, dtype=np.float64)
+        double[:, :] _locations = np.array(locations, dtype=np.float64)
     with nogil:
         for i in range(n):
             inside[i] = _interpolate_scalar_3d[floating](image,
@@ -646,7 +646,7 @@ cdef inline int _interpolate_vector_3d(floating[:, :, :, :] field, double dkk,
         out[1] = 0
         out[2] = 0
         return 0
-    #---top-left
+    # ---top-left
     kk = <int>floor(dkk)
     ii = <int>floor(dii)
     jj = <int>floor(djj)
@@ -1874,11 +1874,11 @@ def warp_coordinates_3d(points,  floating[:, :, :, :] d1,
         cnp.npy_intp n = points.shape[0]
         cnp.npy_intp i
         double x, y, z, wx, wy, wz, gx, gy, gz
-        double[:,:] out = np.zeros(shape=(n, 3), dtype=np.float64)
-        double[:,:] _points = np.array(points, dtype=np.float64)
-        double[:,:] in2grid
+        double[:, :] out = np.zeros(shape=(n, 3), dtype=np.float64)
+        double[:, :] _points = np.array(points, dtype=np.float64)
+        double[:, :] in2grid
         int inside
-        floating[:] tmp = np.zeros(shape=(3,), dtype = np.asarray(d1).dtype)
+        floating[:] tmp = np.zeros(shape=(3,), dtype=np.asarray(d1).dtype)
     # in2grid maps points to displacement's grid
     if in2world is None:  # then points are already in world coordinates
         in2grid = field_world2grid
@@ -1914,7 +1914,7 @@ def warp_coordinates_3d(points,  floating[:, :, :, :] d1,
                 gz = z
 
             # Interpolate deformation field at (gx, gy, gz)
-            inside = _interpolate_vector_3d[floating](d1, gx, gy, gz, tmp)
+            inside = _interpolate_vector_3d[floating](d1, gx, gy, gz, &tmp[0])
 
             # Warp input point
             wx += tmp[0]
@@ -1950,11 +1950,11 @@ def warp_coordinates_2d(points,  floating[:, :, :] d1,
         cnp.npy_intp n = points.shape[0]
         cnp.npy_intp i
         double x, y, wx, wy, gx, gy
-        double[:,:] out = np.zeros(shape=(n, 2), dtype=np.float64)
-        double[:,:] _points = np.array(points, dtype=np.float64)
-        double[:,:] in2grid
+        double[:, :] out = np.zeros(shape=(n, 2), dtype=np.float64)
+        double[:, :] _points = np.array(points, dtype=np.float64)
+        double[:, :] in2grid
         int inside
-        floating[:] tmp = np.zeros(shape=(2,), dtype = np.asarray(d1).dtype)
+        floating[:] tmp = np.zeros(shape=(2,), dtype=np.asarray(d1).dtype)
     # in2grid maps points to displacement's grid
     if in2world is None:  # then points are already in world coordinates
         in2grid = field_world2grid
@@ -1984,7 +1984,7 @@ def warp_coordinates_2d(points,  floating[:, :, :] d1,
                 gy = y
 
             # Interpolate deformation field at (gx, gy, gz)
-            inside = _interpolate_vector_2d[floating](d1, gx, gy, tmp)
+            inside = _interpolate_vector_2d[floating](d1, gx, gy, &tmp[0])
 
             # Warp input point
             wx += tmp[0]
@@ -2077,7 +2077,7 @@ def warp_3d(floating[:, :, :] volume, floating[:, :, :, :] d1,
 
     cdef floating[:, :, :] warped = np.zeros(shape=(nslices, nrows, ncols),
                                              dtype=np.asarray(volume).dtype)
-    cdef floating[:] tmp = np.zeros(shape=(3,), dtype = np.asarray(d1).dtype)
+    cdef floating[:] tmp = np.zeros(shape=(3,), dtype=np.asarray(d1).dtype)
 
     with nogil:
 
@@ -2127,7 +2127,7 @@ def warp_3d(floating[:, :, :] volume, floating[:, :, :, :] d1,
 
                     inside = _interpolate_scalar_3d[floating](volume, dkk,
                                                               dii, djj,
-                                                              &warped[k,i,j])
+                                                              &warped[k, i, j])
     return np.asarray(warped)
 
 
@@ -2193,7 +2193,7 @@ def transform_3d_affine(floating[:, :, :] volume, int[:] ref_shape,
                         dii = i
                         djj = j
                     inside = _interpolate_scalar_3d[floating](volume, dkk,
-                        dii, djj, &out[k,i,j])
+                        dii, djj, &out[k, i, j])
     return np.asarray(out)
 
 
@@ -2322,8 +2322,8 @@ def warp_3d_nn(number[:, :, :] volume, floating[:, :, :, :] d1,
                         dii = di + i
                         djj = dj + j
 
-                    inside = _interpolate_scalar_nn_3d[number](volume, dkk, dii, djj,
-                                                       &warped[k,i,j])
+                    inside = _interpolate_scalar_nn_3d[number](volume,
+                                        dkk, dii, djj, &warped[k, i, j])
     return np.asarray(warped)
 
 
@@ -2388,7 +2388,7 @@ def transform_3d_affine_nn(number[:, :, :] volume, int[:] ref_shape,
                         dii = i
                         djj = j
                     _interpolate_scalar_nn_3d[number](volume, dkk, dii, djj,
-                                                      &out[k,i,j])
+                                                      &out[k, i, j])
     return np.asarray(out)
 
 
@@ -2835,11 +2835,11 @@ def create_random_displacement_2d(int[:] from_shape,
     Creates a random 2D displacement field mapping points of an input discrete
     domain (with dimensions given by from_shape) to points of an output
     discrete domain (with shape given by to_shape). The affine matrices
-    bringing discrete coordinates to physical space are given by from_grid2world
-    (for the displacement field discretization) and to_grid2world (for the target
-    discretization). Since this function is intended to be used for testing,
-    voxels in the input domain will never be assigned to boundary voxels on the
-    output domain.
+    bringing discrete coordinates to physical space are given by
+    from_grid2world (for the displacement field discretization) and
+    to_grid2world (for the target discretization). Since this function is
+    intended to be used for testing, voxels in the input domain will never be
+    assigned to boundary voxels on the output domain.
 
     Parameters
     ----------
@@ -2863,7 +2863,7 @@ def create_random_displacement_2d(int[:] from_shape,
         cnp.npy_intp i, j, ri, rj
         double di, dj, dii, djj
         int[:, :, :] int_field = np.empty(tuple(from_shape) + (2,),
-                                            dtype=np.int32)
+                                          dtype=np.int32)
         double[:, :, :] output = np.zeros(tuple(from_shape) + (2,),
                                           dtype=np.float64)
         cnp.npy_intp dom_size = from_shape[0]*from_shape[1]
@@ -2908,18 +2908,20 @@ def create_random_displacement_2d(int[:] from_shape,
     return np.asarray(output), np.asarray(int_field)
 
 
-def create_random_displacement_3d(int[:] from_shape, double[:, :] from_grid2world,
-                                  int[:] to_shape, double[:, :] to_grid2world):
+def create_random_displacement_3d(int[:] from_shape,
+                                  double[:, :] from_grid2world,
+                                  int[:] to_shape,
+                                  double[:, :] to_grid2world):
     r"""Creates a random 3D displacement 'exactly' mapping points of two grids
 
     Creates a random 3D displacement field mapping points of an input discrete
     domain (with dimensions given by from_shape) to points of an output
     discrete domain (with shape given by to_shape). The affine matrices
-    bringing discrete coordinates to physical space are given by from_grid2world
-    (for the displacement field discretization) and to_grid2world (for the target
-    discretization). Since this function is intended to be used for testing,
-    voxels in the input domain will never be assigned to boundary voxels on the
-    output domain.
+    bringing discrete coordinates to physical space are given by
+    from_grid2world (for the displacement field discretization) and
+    to_grid2world (for the target discretization). Since this function is
+    intended to be used for testing, voxels in the input domain will never be
+    assigned to boundary voxels on the output domain.
 
     Parameters
     ----------
@@ -2943,7 +2945,7 @@ def create_random_displacement_3d(int[:] from_shape, double[:, :] from_grid2worl
         cnp.npy_intp i, j, k, ri, rj, rk
         double di, dj, dk, dii, djj, dkk
         int[:, :, :, :] int_field = np.empty(tuple(from_shape) + (3,),
-                                               dtype=np.int32)
+                                             dtype=np.int32)
         double[:, :, :, :] output = np.zeros(tuple(from_shape) + (3,),
                                              dtype=np.float64)
         cnp.npy_intp dom_size = from_shape[0]*from_shape[1]*from_shape[2]
@@ -2985,8 +2987,8 @@ def create_random_displacement_3d(int[:] from_shape, double[:, :] from_grid2worl
                     dii = ri
                     djj = rj
 
-                # the displacement vector at (i,j) must be the target point minus
-                # the original point, both in physical space
+                # the displacement vector at (i,j) must be the target point
+                # minus the original point, both in physical space
 
                 output[k, i, j, 0] = dkk - dk
                 output[k, i, j, 1] = dii - di
@@ -3272,12 +3274,13 @@ def _gradient_3d(floating[:, :, :] img, double[:, :] img_world2grid,
                                                    img_world2grid)
                         # Interpolate img at q
                         in_flag = _interpolate_scalar_3d[floating](img, q[0],
-                            q[1], q[2], &out[k, i, j, p])
+                                                q[1], q[2], &out[k, i, j, p])
                         if in_flag == 0:
                             out[k, i, j, p] = 0
                             inside[k, i, j] = 0
                             continue
-                        out[k, i, j, p] = (out[k, i, j, p] - tmp) / img_spacing[p]
+                        out[k, i, j, p] = ((out[k, i, j, p] - tmp) /
+                                           img_spacing[p])
                         dx[p] = x[p]
 
 
@@ -3341,7 +3344,7 @@ def _sparse_gradient_3d(floating[:, :, :] img,
                                            img_world2grid)
                 # Interpolate img at q
                 in_flag = _interpolate_scalar_3d[floating](img, q[0], q[1],
-                    q[2], &out[i, p])
+                                                           q[2], &out[i, p])
                 if in_flag == 0:
                     out[i, p] = 0
                     inside[i] = 0
@@ -3356,8 +3359,8 @@ def _sparse_gradient_3d(floating[:, :, :] img,
                 q[2] = _apply_affine_3d_x2(dx[0], dx[1], dx[2], 1,
                                            img_world2grid)
                 # Interpolate img at q
-                in_flag = _interpolate_scalar_3d[floating](img, q[0], q[1], q[2],
-                                                 &out[i, p])
+                in_flag = _interpolate_scalar_3d[floating](img,
+                                                q[0], q[1], q[2], &out[i, p])
                 if in_flag == 0:
                     out[i, p] = 0
                     inside[i] = 0
@@ -3428,7 +3431,7 @@ def _gradient_2d(floating[:, :] img, double[:, :] img_world2grid,
                     q[1] = _apply_affine_2d_x1(dx[0], dx[1], 1, img_world2grid)
                     # Interpolate img at q
                     in_flag = _interpolate_scalar_2d[floating](img, q[0],
-                        q[1], &out[i, j, p])
+                                                    q[1], &out[i, j, p])
                     if in_flag == 0:
                         out[i, j, p] = 0
                         inside[i, j] = 0
@@ -3440,7 +3443,7 @@ def _gradient_2d(floating[:, :] img, double[:, :] img_world2grid,
                     q[1] = _apply_affine_2d_x1(dx[0], dx[1], 1, img_world2grid)
                     # Interpolate img at q
                     in_flag = _interpolate_scalar_2d[floating](img, q[0],
-                        q[1], &out[i, j, p])
+                                                    q[1], &out[i, j, p])
                     if in_flag == 0:
                         out[i, j, p] = 0
                         inside[i, j] = 0
