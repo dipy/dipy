@@ -437,7 +437,7 @@ def test_anisotropic_power():
             assert_array_almost_equal(apvals, answers)
             # Test that this works for single voxel arrays as well:
             assert_array_almost_equal(
-                anisotropic_power(coeffs[1], norm_factor=norm_factor),
+                anisotropic_power(np.asarray(coeffs[1]), norm_factor=norm_factor),
                 answers[1])
 
 
