@@ -1021,7 +1021,8 @@ def flexi_tvis_affine(sl_vox_order, grid_affine, dim, voxel_size):
     sl_vox_order : string of length 3
         a string that describes the voxel order of the streamlines (ex: LPS)
     grid_affine : array (4, 4),
-        An affine matrix describing the current space of the grid in relation to RAS+ scanner space
+        An affine matrix describing the current space of the grid in relation
+        to RAS+ scanner space
     dim : tuple of length 3
         dimension of the grid
     voxel_size : array (3,0)
@@ -1034,7 +1035,8 @@ def flexi_tvis_affine(sl_vox_order, grid_affine, dim, voxel_size):
 
     sl_ornt = orientation_from_string(str(sl_vox_order))
     grid_ornt = nib.io_orientation(grid_affine)
-    reorder_grid = reorder_voxels_affine(grid_ornt, sl_ornt, np.array(dim)-1, np.array([1,1,1]))
+    reorder_grid = reorder_voxels_affine(
+        grid_ornt, sl_ornt, np.array(dim)-1, np.array([1,1,1]))
 
     tvis_aff = affine_for_trackvis(voxel_size)
 
@@ -1053,7 +1055,7 @@ def get_flexi_tvis_affine(tvis_hdr, nii_aff):
     nii_aff : array (4, 4),
         An affine matrix describing the current space of the grid in relation to RAS+ scanner space
     nii_data : nd array
-        3D array, each with shape (x, y, z) corresponding to the shape of the brain volume,
+        3D array, each with shape (x, y, z) corresponding to the shape of the brain volume.
 
     Returns
     -------
@@ -1068,6 +1070,26 @@ def get_flexi_tvis_affine(tvis_hdr, nii_aff):
     flexi_tvis_aff = flexi_tvis_affine(sl_vox_order, nii_aff, dim, voxel_size)
 
     return flexi_tvis_aff
+
+
+def _min_at(a, index, value):
+    index = np.asarray(index)
+    sort_keys = [value] + list(index)
+    order = np.lexsort(sort_keys)
+    index = index[:, order]
+    value = value[order]
+    uniq = np.ones(index.shape[1], dtype=bool)
+    uniq[1:] = (index[:, 1:] != index[:, :-1]).any(axis=0)
+
+    index = index[:, uniq]
+    value = value[uniq]
+
+    a[tuple(index)] = np.minimum(a[tuple(index)], value)
+
+try:
+    minimum_at = np.minimum.at
+except AttributeError:
+    minimum_at = _min_at
 
 
 def path_length(streamlines, aoi, affine, fill_value=-1):
@@ -1115,7 +1137,7 @@ def path_length(streamlines, aoi, affine, fill_value=-1):
             segment_length = np.sqrt(((seg[1:] - seg[:-1]) ** 2).sum(1))
             dist = segment_length.cumsum()
             # Updates path length map with shorter distances
-            np.minimum.at(plm, (i, j, k), dist)
+            minimum_at(plm, (i, j, k), dist)
     if fill_value != np.inf:
         plm = np.where(plm == np.inf, fill_value, plm)
     return plm
