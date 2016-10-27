@@ -50,3 +50,4 @@
  contextual_enhancement.py
  workflow_creation.py
  combined_workflow_creation.py
+ viz_surfaces.py
