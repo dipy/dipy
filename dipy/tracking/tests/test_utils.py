@@ -39,7 +39,7 @@ def make_streamlines():
 
 def test_density_map():
     # One streamline diagonal in volume
-    streamlines = [np.array([np.arange(10)]*3).T]
+    streamlines = [np.array([np.arange(10)] * 3).T]
     shape = (10, 10, 10)
     x = np.arange(10)
     expected = np.zeros(shape)
@@ -153,6 +153,7 @@ def test_ndbincount():
         assert_equal(bc[0, 1], expected[1])
         assert_equal(bc[1, 0], expected[2])
         assert_equal(bc[2, 2], expected[3])
+
     x = np.array([[0, 0], [0, 0], [0, 1], [0, 1], [1, 0], [2, 2]]).T
     expected = [2, 2, 1, 1]
     # count occurrences in x
@@ -176,10 +177,10 @@ def test_ndbincount():
 def test_reduce_labels():
     shape = (4, 5, 6)
     # labels from 100 to 220
-    labels = np.arange(100, np.prod(shape)+100).reshape(shape)
+    labels = np.arange(100, np.prod(shape) + 100).reshape(shape)
     # new labels form 0 to 120, and lookup maps range(0,120) to range(100, 220)
     new_labels, lookup = reduce_labels(labels)
-    assert_array_equal(new_labels, labels-100)
+    assert_array_equal(new_labels, labels - 100)
     assert_array_equal(lookup, labels.ravel())
 
 
@@ -193,7 +194,7 @@ def test_move_streamlines():
     affine[:3, 3] += (4, 5, 6)
     new_streamlines = move_streamlines(streamlines, affine)
     for i, test_sl in enumerate(new_streamlines):
-        assert_array_equal(test_sl, streamlines[i]+(4, 5, 6))
+        assert_array_equal(test_sl, streamlines[i] + (4, 5, 6))
 
     affine = np.eye(4)
     affine = affine[[2, 1, 0, 3]]
@@ -373,7 +374,7 @@ def test_voxel_ornt():
     assert_array_equal(affine, I4)
 
     streamlines = make_streamlines()
-    box = np.array(sh)*sz
+    box = np.array(sh) * sz
 
     sra_affine = reorder_voxels_affine(ras, sra, sh, sz)
     toras_affine = reorder_voxels_affine(sra, ras, sh, sz)
@@ -428,7 +429,7 @@ def test_streamline_mapping():
     # Make the voxel size smaller
     affine = np.diag([.5, .5, .5, 1.])
     affine[:3, 3] = .25
-    expected = dict((tuple(i*2 for i in key), value)
+    expected = dict((tuple(i * 2 for i in key), value)
                     for key, value in expected.items())
     mapping = streamline_mapping(streamlines, affine=affine,
                                  mapping_as_streamlines=True)
@@ -452,8 +453,8 @@ def test_rmi():
     I1 = _rmi([A, B], dims=[1000, 1000])
     I2 = ravel_multi_index([A, B], dims=[1000, 1000])
     assert_array_equal(I1, I2)
-    I1 = _rmi([A, B, C, D], dims=[1000]*4)
-    I2 = ravel_multi_index([A, B, C, D], dims=[1000]*4)
+    I1 = _rmi([A, B, C, D], dims=[1000] * 4)
+    I2 = ravel_multi_index([A, B, C, D], dims=[1000] * 4)
     assert_array_equal(I1, I2)
     # Check for overflow with small int types
     indices = np.random.randint(0, 255, size=(2, 100))
@@ -464,7 +465,6 @@ def test_rmi():
 
 
 def test_affine_for_trackvis():
-
     voxel_size = np.array([1., 2, 3.])
     affine = affine_for_trackvis(voxel_size)
     origin = np.dot(affine, [0, 0, 0, 1])
@@ -479,7 +479,7 @@ def test_length():
 
     bundle = []
     for i in np.linspace(3, 5, n_streamlines):
-        pts = np.vstack((np.cos(2 * t/np.pi), np.zeros(t.shape) + i, t)).T
+        pts = np.vstack((np.cos(2 * t / np.pi), np.zeros(t.shape) + i, t)).T
         bundle.append(pts)
 
     start = np.random.randint(10, 30, n_streamlines)
@@ -494,7 +494,6 @@ def test_length():
 
 
 def test_seeds_from_mask():
-
     mask = np.random.random_integers(0, 1, size=(10, 10, 10))
     seeds = seeds_from_mask(mask, density=1)
     assert_equal(mask.sum(), len(seeds))
@@ -517,7 +516,6 @@ def test_seeds_from_mask():
 
 
 def test_random_seeds_from_mask():
-
     mask = np.random.random_integers(0, 1, size=(4, 6, 3))
     seeds = random_seeds_from_mask(mask,
                                    seeds_count=24,
@@ -555,7 +553,6 @@ def test_random_seeds_from_mask():
 
 
 def test_connectivity_matrix_shape():
-
     # Labels: z-planes have labels 0,1,2
     labels = np.zeros((3, 3, 3), dtype=int)
     labels[:, :, 1] = 1
@@ -610,21 +607,26 @@ def test_reduce_rois():
     npt.assert_equal(include_roi, roi1 + roi2)
     npt.assert_equal(exclude_roi, np.zeros((4, 4, 4)))
 
+
 def test_flexi_tvis_affine():
     sl_vox_order = 'RPI'
-    grid_affine = np.array([[ -1.08566022e+00,   1.42664334e-03,   2.43463114e-01,   1.34783203e+02],
-    [2.43251352e-03,   1.09376717e+00,   1.48301506e-02,  -1.07367630e+02],
-    [1.33170187e-01,  -8.34854878e-03,   1.98454463e+00,  -9.98151169e+01],
-    [0.00000000e+00,   0.00000000e+00,   0.00000000e+00,   1.00000000e+00]])
-    dim = (256,256,86)
-    voxel_size = np.array([ 1.09379995,1.09379995,1.99947774])
+    grid_affine = np.array(
+        [[-1.08566022e+00, 1.42664334e-03, 2.43463114e-01, 1.34783203e+02],
+         [2.43251352e-03, 1.09376717e+00, 1.48301506e-02, -1.07367630e+02],
+         [1.33170187e-01, -8.34854878e-03, 1.98454463e+00, -9.98151169e+01],
+         [0.00000000e+00, 0.00000000e+00, 0.00000000e+00, 1.00000000e+00]])
+    dim = (256, 256, 86)
+    voxel_size = np.array([1.09379995, 1.09379995, 1.99947774])
     affine = flexi_tvis_affine(sl_vox_order, grid_affine, dim, voxel_size)
 
     origin = np.dot(affine, [0, 0, 0, 1])
-    assert_array_almost_equal(origin[:3], np.multiply(dim,voxel_size)-voxel_size/2)
+    assert_array_almost_equal(origin[:3],
+                              np.multiply(dim, voxel_size) - voxel_size / 2)
+
 
 def test_get_flexi_tvis_affine():
-    tvis_hdr = {'voxel_order':'RPI','dim':(30,40,50), 'voxel_size':[2,3,4]}
+    tvis_hdr = {'voxel_order': 'RPI', 'dim': (30, 40, 50),
+                'voxel_size': [2, 3, 4]}
 
     grid_affine = np.array([[-2, 0, 0, 0],
                             [0, 3, 0, 0],
@@ -635,10 +637,11 @@ def test_get_flexi_tvis_affine():
 
     origin = np.dot(affine, [0, 0, 0, 1])
     vsz = np.array(tvis_hdr['voxel_size'])
-    assert_array_almost_equal(origin[:3], np.multiply(tvis_hdr['dim'], vsz) - vsz / 2)
+    assert_array_almost_equal(origin[:3],
+                              np.multiply(tvis_hdr['dim'], vsz) - vsz / 2)
 
 
-    #grid_affine =
+    # grid_affine =
     tvis_hdr['voxel_order'] = 'ASL'
     vsz = tvis_hdr['voxel_size'] = np.array([3, 4, 2.])
     affine = get_flexi_tvis_affine(tvis_hdr, grid_affine)
@@ -646,7 +649,9 @@ def test_get_flexi_tvis_affine():
     vox_point = np.array([9, 8, 7])
     trk_point = np.dot(affine, np.append(vox_point, 1))
 
-    assert_array_almost_equal(trk_point[:3],  (vox_point[[1, 2, 0]] + 0.5) * vsz)
+    assert_array_almost_equal(trk_point[:3],
+                              (vox_point[[1, 2, 0]] + 0.5) * vsz)
+
 
 def test_path_length():
     aoi = np.zeros((20, 20, 20), dtype=bool)
