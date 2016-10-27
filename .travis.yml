@@ -21,7 +21,6 @@ env:
         - VENV_ARGS="--python=python"
         - INSTALL_TYPE="setup"
 python:
-    - 2.6
     - 3.3
     - 3.4
     - 3.5

@@ -4,7 +4,6 @@ from ...utils.six.moves import xrange
 
 import numpy as np
 import nose
-import nibabel as nib
 
 from dipy.io.bvectxt import orientation_from_string
 from dipy.tracking.utils import (affine_for_trackvis, connectivity_matrix,
@@ -12,9 +11,10 @@ from dipy.tracking.utils import (affine_for_trackvis, connectivity_matrix,
                                  ndbincount, reduce_labels,
                                  reorder_voxels_affine, seeds_from_mask,
                                  random_seeds_from_mask, target,
-                                 _rmi, unique_rows, near_roi,
+                                 target_line_based, _rmi, unique_rows, near_roi,
                                  reduce_rois, path_length, flexi_tvis_affine,
                                  get_flexi_tvis_affine)
+
 from dipy.tracking._utils import _to_voxel_coordinates
 
 import dipy.tracking.metrics as metrix
@@ -225,48 +225,63 @@ def test_target():
                    np.array([[0., 0., 0],
                              [0, 1., 1.],
                              [0, 2., 2.]])]
+    _target(target, streamlines, (0, 0, 0), (1, 0, 0), True)
+
+
+def test_target_lb():
+    streamlines = [np.array([[0., 1., 1.],
+                             [3., 1., 1.]]),
+                   np.array([[0., 0., 0.],
+                             [2., 2., 2.]]),
+                   np.array([[1., 1., 1.]])]  # Single-point streamline
+    _target(target_line_based, streamlines, (1, 1, 1), (2, 1, 1), False)
+
+
+def _target(target_f, streamlines, voxel_both_true, voxel_one_true,
+            test_bad_points):
     affine = np.eye(4)
     mask = np.zeros((4, 4, 4), dtype=bool)
-    mask[0, 0, 0] = True
 
     # Both pass though
-    new = list(target(streamlines, mask, affine=affine))
+    mask[voxel_both_true] = True
+    new = list(target_f(streamlines, mask, affine=affine))
     assert_equal(len(new), 2)
-    new = list(target(streamlines, mask, affine=affine, include=False))
+    new = list(target_f(streamlines, mask, affine=affine, include=False))
     assert_equal(len(new), 0)
 
     # only first
     mask[:] = False
-    mask[1, 0, 0] = True
-    new = list(target(streamlines, mask, affine=affine))
+    mask[voxel_one_true] = True
+    new = list(target_f(streamlines, mask, affine=affine))
     assert_equal(len(new), 1)
     assert_true(new[0] is streamlines[0])
-    new = list(target(streamlines, mask, affine=affine, include=False))
+    new = list(target_f(streamlines, mask, affine=affine, include=False))
     assert_equal(len(new), 1)
     assert_true(new[0] is streamlines[1])
 
     # Test that bad points raise a value error
-    bad_sl = [np.array([[10., 10., 10.]])]
-    new = target(bad_sl, mask, affine=affine)
-    assert_raises(ValueError, list, new)
-    bad_sl = [-np.array([[10., 10., 10.]])]
-    new = target(bad_sl, mask, affine=affine)
-    assert_raises(ValueError, list, new)
+    if test_bad_points:
+        bad_sl = streamlines + [np.array([[10.0, 10.0, 10.0]])]
+        new = target_f(bad_sl, mask, affine=affine)
+        assert_raises(ValueError, list, new)
+        bad_sl = streamlines + [-np.array([[10.0, 10.0, 10.0]])]
+        new = target_f(bad_sl, mask, affine=affine)
+        assert_raises(ValueError, list, new)
 
     # Test smaller voxels
     affine = np.random.random((4, 4)) - .5
     affine[3] = [0, 0, 0, 1]
     streamlines = list(move_streamlines(streamlines, affine))
-    new = list(target(streamlines, mask, affine=affine))
+    new = list(target_f(streamlines, mask, affine=affine))
     assert_equal(len(new), 1)
     assert_true(new[0] is streamlines[0])
-    new = list(target(streamlines, mask, affine=affine, include=False))
+    new = list(target_f(streamlines, mask, affine=affine, include=False))
     assert_equal(len(new), 1)
     assert_true(new[0] is streamlines[1])
 
-    # Test that changing mask and affine do not break target
-    include = target(streamlines, mask, affine=affine)
-    exclude = target(streamlines, mask, affine=affine, include=False)
+    # Test that changing mask or affine does not break target/target_line_based
+    include = target_f(streamlines, mask, affine=affine)
+    exclude = target_f(streamlines, mask, affine=affine, include=False)
     affine[:] = np.eye(4)
     mask[:] = False
     include = list(include)
