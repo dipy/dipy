@@ -13,7 +13,7 @@ from dipy.tracking.utils import (affine_for_trackvis, connectivity_matrix,
                                  random_seeds_from_mask, target,
                                  target_line_based, _rmi, unique_rows, near_roi,
                                  reduce_rois, path_length, flexi_tvis_affine,
-                                 get_flexi_tvis_affine)
+                                 get_flexi_tvis_affine, _min_at)
 
 from dipy.tracking._utils import _to_voxel_coordinates
 
@@ -713,3 +713,14 @@ def test_path_length():
 
     pl = path_length(streamlines, aoi, affine=np.eye(4), fill_value=-12.)
     npt.assert_array_almost_equal(pl, -12.)
+
+
+def test_min_at():
+    k = np.array([3, 2, 2, 2, 1, 1, 1])
+    values = np.array([10., 1, 2, 3, 31, 21, 11])
+    i = np.zeros(k.shape, int)
+    j = np.zeros(k.shape, int)
+    a = np.zeros([1, 1, 4]) + 100.
+
+    _min_at(a, (i, j, k), values)
+    npt.assert_array_equal(a, [[[100, 11, 1, 10]]])

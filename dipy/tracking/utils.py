@@ -1073,12 +1073,13 @@ def get_flexi_tvis_affine(tvis_hdr, nii_aff):
 
 
 def _min_at(a, index, value):
-    index = np.array(index)
-    order = np.lexsort(value, *index)
+    index = np.asarray(index)
+    sort_keys = [value] + list(index)
+    order = np.lexsort(sort_keys)
     index = index[:, order]
     value = value[order]
     uniq = np.ones(index.shape[1], dtype=bool)
-    uniq[1:] = index[:, 1:] != index[:, :-1]
+    uniq[1:] = (index[:, 1:] != index[:, :-1]).any(axis=0)
 
     index = index[:, uniq]
     value = value[uniq]
