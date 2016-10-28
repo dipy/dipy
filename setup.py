@@ -124,7 +124,6 @@ extbuilder = add_flag_checking(
 # Use ext builder to add np.get_include() at build time, not during setup.py
 # execution.
 extbuilder = make_np_ext_builder(extbuilder)
-
 if need_cython:
     SetupDependency('Cython', info.CYTHON_MIN_VERSION,
                     req_type='install_requires',
@@ -213,9 +212,12 @@ def main(**extra_args):
                           [pjoin('data', 'files', '*')
                           ]},
           data_files=[('share/doc/dipy/examples',
-                       glob(pjoin('doc','examples','*.py')))],
-          scripts      = [pjoin('bin', 'dipy_median_otsu'),
-                          pjoin('bin', 'dipy_nlmeans')],
+                       glob(pjoin('doc', 'examples','*.py')))],
+          scripts      = [pjoin('bin', 'dipy_reconst_dti'),
+                          pjoin('bin', 'dipy_median_otsu'),
+                          pjoin('bin', 'dipy_nlmeans'),
+                          ],
+
           cmdclass = cmdclass,
           **extra_args
         )

@@ -218,7 +218,7 @@ class IOIterator(object):
 
     def set_inputs(self, *args):
         self.input_args = list(args)
-        self.inputs = [sorted(glob(inp)) for inp in self.input_args]
+        self.inputs = [sorted(glob(inp)) for inp in self.input_args if type(inp) == str]
 
     def set_out_dir(self, out_dir):
         self.out_dir = out_dir
