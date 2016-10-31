@@ -1508,6 +1508,52 @@ def _nlls_jacobian_func(tensor, design_matrix, data, *arg, **kwargs):
     return -pred[:, None] * design_matrix
 
 
+def _decompose_tensor_nan(tensor, tensor_alternative, min_diffusivity=0):
+    """ Helper function that expandes the function decompose_tensor to deal
+    with tensor with nan elements.
+
+    Computes tensor eigen decomposition to calculate eigenvalues and
+    eigenvectors (Basser et al., 1994a). Some fit approaches can produce nan
+    tensor elements in background voxels (particularly non-linear approachs).
+    This function avoids the eigen decomposition errors of nan tensor elements
+    by replacing tinsor with nan elements by a given alternative tensor
+    estimate.
+
+    Parameters
+    ----------
+    tensor : array (3, 3)
+        Hermitian matrix representing a diffusion tensor.
+    tensor_alternative : array (3, 3)
+        Hermitian matrix representing a diffusion tensor obtain from an
+        approach that does not produce nan tensor elements
+    min_diffusivity : float
+        Because negative eigenvalues are not physical and small eigenvalues,
+        much smaller than the diffusion weighting, cause quite a lot of noise
+        in metrics such as fa, diffusivity values smaller than
+        `min_diffusivity` are replaced with `min_diffusivity`.
+
+    Returns
+    -------
+    eigvals : array (3)
+        Eigenvalues from eigen decomposition of the tensor. Negative
+        eigenvalues are replaced by zero. Sorted from largest to smallest.
+    eigvecs : array (3, 3)
+        Associated eigenvectors from eigen decomposition of the tensor.
+        Eigenvectors are columnar (e.g. eigvecs[..., :, j] is associated with
+        eigvals[..., j])
+
+    """
+    try:
+        evals, evecs = decompose_tensor(
+            from_lower_triangular(tensor[:6]))
+
+    except np.linalg.LinAlgError:
+        evals, evecs = decompose_tensor(
+            from_lower_triangular(tensor_alternative[:6]))
+    return evals, evecs
+ 
+
+
 def nlls_fit_tensor(design_matrix, data, weighting=None,
                     sigma=None, jac=True):
     """
