@@ -15,7 +15,6 @@ from dipy.utils.arrfuncs import pinv, eigh
 from dipy.data import get_sphere
 from ..core.gradients import gradient_table
 from ..core.geometry import vector_norm
-from ..core.sphere import Sphere
 from .vec_val_sum import vec_val_vect
 from ..core.onetime import auto_attr
 from .base import ReconstModel
@@ -1545,13 +1544,13 @@ def _decompose_tensor_nan(tensor, tensor_alternative, min_diffusivity=0):
     """
     try:
         evals, evecs = decompose_tensor(
-            from_lower_triangular(tensor[:6]))
+            from_lower_triangular(tensor[:6]), min_diffusivity=min_diffusivity)
 
     except np.linalg.LinAlgError:
         evals, evecs = decompose_tensor(
-            from_lower_triangular(tensor_alternative[:6]))
+            from_lower_triangular(tensor_alternative[:6]),
+            min_diffusivity=min_diffusivity)
     return evals, evecs
- 
 
 
 def nlls_fit_tensor(design_matrix, data, weighting=None,
@@ -1754,18 +1753,11 @@ def restore_fit_tensor(design_matrix, data, sigma=None, jac=True):
                                                             this_sigma))
 
         # The parameters are the evals and the evecs:
-        try:
-            evals, evecs = decompose_tensor(
-                from_lower_triangular(this_tensor[:6]))
-            dti_params[vox, :3] = evals
-            dti_params[vox, 3:] = evecs.ravel()
-        # If leastsq failed to converge and produced nans, we'll resort to the
-        # OLS solution in this voxel:
-        except np.linalg.LinAlgError:
-            evals, evecs = decompose_tensor(
-                from_lower_triangular(start_params[:6]))
-            dti_params[vox, :3] = evals
-            dti_params[vox, 3:] = evecs.ravel()
+        evals, evecs = _decompose_tensor_nan(
+            from_lower_triangular(this_tensor[:6]),
+            from_lower_triangular(start_params[:6]))
+        dti_params[vox, :3] = evals
+        dti_params[vox, 3:] = evecs.ravel()
 
     dti_params.shape = data.shape[:-1] + (12,)
     restore_params = dti_params
