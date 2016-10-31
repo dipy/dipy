@@ -747,4 +747,3 @@ def test_decompose_tensor_nan():
                                          from_lower_triangular(D_alter))
     assert_array_almost_equal(lalter, np.array(1.6e-3, 0.4e-3, 0.3e-3))
     assert_array_almost_equal(valter, vref)
-
