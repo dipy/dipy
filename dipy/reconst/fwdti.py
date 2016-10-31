@@ -626,18 +626,26 @@ def nls_iter(design_matrix, sig, S0, Diso=3e-3, mdreg=2.7e-3,
                                                     weighting, sigma, cholesky,
                                                     f_transform))
 
-        # Invert the cholesky decomposition if this was requested
+        # Process tissue diffusion tensor
         if cholesky:
             this_tensor[:6] = cholesky_to_lower_triangular(this_tensor[:6])
 
-        # Invert f transformation if this was requested
-        if f_transform:
-            this_tensor[7] = 0.5 * (1 + np.sin(this_tensor[7] - np.pi/2))
+        try:
+            evals, evecs = decompose_tensor(
+                from_lower_triangular(this_tensor[:6]))
+            f = this_tensor[7]
+        # If leastsq failed to converge and produced nans, we'll resort to the
+        # WLS solution in this voxel:
+        except np.linalg.LinAlgError:
+            evals, evecs = decompose_tensor(
+                from_lower_triangular(start_params[:6]))
 
-        # The parameters are the evals and the evecs:
-        evals, evecs = decompose_tensor(from_lower_triangular(this_tensor[:6]))
+        # Process water volume fraction f
+        if f_transform:
+            f = 0.5 * (1 + np.sin(f - np.pi/2))        
+        
         params = np.concatenate((evals, evecs[0], evecs[1], evecs[2],
-                                 np.array([this_tensor[7]])), axis=0)
+                                 np.array([f])), axis=0)
     return params
 
 
