@@ -21,6 +21,9 @@ from ..core.onetime import auto_attr
 from .base import ReconstModel
 
 
+MIN_POSITIVE_SIGNAL = 0.0001
+
+
 def _roll_evals(evals, axis=-1):
     """
     Helper function to check that the evals provided to functions calculating
@@ -47,28 +50,6 @@ def _roll_evals(evals, axis=-1):
     evals = np.rollaxis(evals, axis)
 
     return evals
-
-
-def _min_positive_signal(data):
-    """ Helper function to establish the minimum positive signal of a given
-    data
-
-    Parameters
-    ----------
-    data: array ([X, Y, Z, ...], g)
-        Data or response variables holding the data. Note that the last
-        dimension should contain the data.
-
-    Returns
-    -------
-    min_signal : float
-        Minimum positive signal of the given data
-    """
-    data = data.ravel()
-    if np.all(data == 0):
-        return 0.0001
-    else:
-        return data[data > 0].min()
 
 
 def fractional_anisotropy(evals, axis=-1):
@@ -725,7 +706,6 @@ class TensorModel(ReconstModel):
 
         Note
         -----
-
         In order to increase speed of processing, tensor fitting is done
         simultaneously over many voxels. Many fit_methods use the 'step'
         parameter to set the number of voxels that will be fit at once in each
@@ -793,7 +773,7 @@ class TensorModel(ReconstModel):
             data_in_mask = np.reshape(data[mask], (-1, data.shape[-1]))
 
         if self.min_signal is None:
-            min_signal = _min_positive_signal(data)
+            min_signal = MIN_POSITIVE_SIGNAL
         else:
             min_signal = self.min_signal
 
@@ -1157,7 +1137,6 @@ class TensorFit(object):
            all voxels.
 
         step : int
-
             The chunk size as a number of voxels. Optional parameter with
             default value 10,000.
 

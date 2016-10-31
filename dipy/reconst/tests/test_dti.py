@@ -718,3 +718,15 @@ def test_eig_from_lo_tri():
 
     lo_tri = lower_triangular(dmfit.quadratic_form)
     assert_array_almost_equal(dti.eig_from_lo_tri(lo_tri), dmfit.model_params)
+
+
+def test_min_signal_alone():
+    fdata, fbvals, fbvecs = get_data()
+    data = nib.load(fdata).get_data()
+    gtab = grad.gradient_table(fbvals, fbvecs)
+
+    idx = tuple(np.array(np.where(data == np.min(data)))[:-1, 0])
+    ten_model = dti.TensorModel(gtab)
+    fit_alone = ten_model.fit(data[idx])
+    fit_together = ten_model.fit(data)
+    npt.assert_equal(fit_together.model_params[idx], fit_alone.model_params)
