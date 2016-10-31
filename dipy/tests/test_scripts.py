@@ -28,7 +28,7 @@ try:
 except ImportError:
     no_mpl = True
 
-from .scriptrunner import ScriptRunner
+from dipy.tests.scriptrunner import ScriptRunner
 
 runner = ScriptRunner(
     script_sdir='bin',
