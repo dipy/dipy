@@ -52,6 +52,18 @@ def test_tensor_algebra():
         assert_almost_equal(np.linalg.norm(x), t_norm[i])
 
 
+def test_odf_with_zeros():
+    fdata, fbval, fbvec = get_data('small_25')
+    gtab = grad.gradient_table(fbval, fbvec)
+    data = nib.load(fdata).get_data()
+    dm = dti.TensorModel(gtab)
+    df = dm.fit(data)
+    df.evals[0, 0, 0] = np.array([0, 0, 0])
+    sphere = create_unit_sphere(4)
+    odf = df.odf(sphere)
+    npt.assert_equal(odf[0, 0, 0], np.zeros(sphere.vertices.shape[0]))
+
+
 def test_tensor_model():
     fdata, fbval, fbvec = get_data('small_25')
     data1 = nib.load(fdata).get_data()
