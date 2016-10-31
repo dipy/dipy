@@ -1543,13 +1543,12 @@ def _decompose_tensor_nan(tensor, tensor_alternative, min_diffusivity=0):
 
     """
     try:
-        evals, evecs = decompose_tensor(
-            from_lower_triangular(tensor[:6]), min_diffusivity=min_diffusivity)
+        evals, evecs = decompose_tensor(tensor[:6],
+                                        min_diffusivity=min_diffusivity)
 
     except np.linalg.LinAlgError:
-        evals, evecs = decompose_tensor(
-            from_lower_triangular(tensor_alternative[:6]),
-            min_diffusivity=min_diffusivity)
+        evals, evecs = decompose_tensor(tensor_alternative[:6],
+                                        min_diffusivity=min_diffusivity)
     return evals, evecs
 
 
