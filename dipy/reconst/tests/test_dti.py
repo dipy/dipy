@@ -61,7 +61,7 @@ def test_odf_with_zeros():
     df.evals[0, 0, 0] = np.array([0, 0, 0])
     sphere = create_unit_sphere(4)
     odf = df.odf(sphere)
-    odf[0, 0, 0] = np.zeros(sphere.vertices.shape[0])
+    npt.assert_equal(odf[0, 0, 0], np.zeros(sphere.vertices.shape[0]))
 
 
 def test_tensor_model():
