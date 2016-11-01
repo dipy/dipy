@@ -63,7 +63,7 @@ img, gtab = read_cenir_multib(bvals)
 
 data = img.get_data()
 
-affine = img.get_affine()
+affine = img.affine
 
 """
 The free water DTI model can take some minutes to process the full data set.

@@ -29,7 +29,7 @@ from dipy.data import read_stanford_labels
 hardi_img, gtab, labels_img = read_stanford_labels()
 data = hardi_img.get_data()
 labels = labels_img.get_data()
-affine = hardi_img.get_affine()
+affine = hardi_img.affine
 
 """
 This dataset provides a label map in which all white matter tissues are

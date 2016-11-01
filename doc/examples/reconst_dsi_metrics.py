@@ -31,7 +31,7 @@ Load the raw diffusion data and the affine.
 """
 
 data = img.get_data()
-affine = img.get_affine()
+affine = img.affine
 print('data.shape (%d, %d, %d, %d)' % data.shape)
 
 """
