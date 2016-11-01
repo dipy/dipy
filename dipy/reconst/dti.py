@@ -1508,14 +1508,14 @@ def _nlls_jacobian_func(tensor, design_matrix, data, *arg, **kwargs):
 
 
 def _decompose_tensor_nan(tensor, tensor_alternative, min_diffusivity=0):
-    """ Helper function that expandes the function decompose_tensor to deal
+    """ Helper function that expands the function decompose_tensor to deal
     with tensor with nan elements.
 
     Computes tensor eigen decomposition to calculate eigenvalues and
     eigenvectors (Basser et al., 1994a). Some fit approaches can produce nan
     tensor elements in background voxels (particularly non-linear approachs).
     This function avoids the eigen decomposition errors of nan tensor elements
-    by replacing tinsor with nan elements by a given alternative tensor
+    by replacing tensor with nan elements by a given alternative tensor
     estimate.
 
     Parameters
