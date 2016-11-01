@@ -1,6 +1,7 @@
 from __future__ import division, print_function, absolute_import
 
 import numpy as np
+from nibabel.affines import apply_affine
 
 from dipy.viz.colormap import colormap_lookup_table
 from dipy.viz.utils import lines_to_vtk_polydata
@@ -539,3 +540,127 @@ def axes(scale=(1, 1, 1), colorx=(1, 0, 0), colory=(0, 1, 0), colorz=(0, 0, 1),
     ass.AddPart(arrowz)
 
     return ass
+
+
+def odf_slicer(odfs, affine=None, mask=None, sphere=None, scale=2.2,
+               norm=True, radial_scale=True, opacity=1.,
+               colormap=None):
+    """ Slice spherical fields
+    """
+
+    if mask is None:
+        mask = np.ones(odfs.shape[:3], dtype=np.bool)
+    else:
+        mask = mask.astype(np.bool)
+
+    class OdfSlicerActor(vtk.vtkLODActor):
+
+        def display_extent(self, x1, x2, y1, y2, z1, z2):
+
+            tmp_mask = np.zeros(odfs.shape[:3], dtype=np.bool)
+            tmp_mask[x1:x2, y1:y2, z1:z2] = True
+
+            tmp_mask = np.bitwise_and(tmp_mask, mask)
+
+            self.mapper = _odf_slicer_mapper(odfs=odfs,
+                                             affine=affine,
+                                             mask=tmp_mask,
+                                             sphere=sphere,
+                                             scale=scale,
+                                             norm=norm,
+                                             radial_scale=radial_scale,
+                                             opacity=opacity,
+                                             colormap=colormap)
+            self.SetMapper(self.mapper)
+
+    odf_actor = OdfSlicerActor()
+    I, J, K = odfs.shape[:3]
+    odf_actor.display_extent(0, I, 0, J, K/2, K/2 + 1)
+
+    return odf_actor
+
+
+def _odf_slicer_mapper(odfs, affine=None, mask=None, sphere=None, scale=2.2,
+                       norm=True, radial_scale=True, opacity=1.,
+                       colormap=None):
+
+    if mask is None:
+        mask = np.ones(odfs.shape[:3])
+
+    ijk = np.ascontiguousarray(np.array(np.nonzero(mask)).T)
+
+    if affine is not None:
+        ijk = np.ascontiguousarray(apply_affine(affine, ijk))
+
+    faces = np.asarray(sphere.faces, dtype=int)
+    vertices = sphere.vertices
+
+    all_xyz = []
+    all_faces = []
+    all_ms = []
+    for (k, center) in enumerate(ijk):
+        m = odfs[tuple(center)].copy()
+
+        if norm:
+            m /= abs(m).max()
+
+        if radial_scale:
+            xyz = vertices * m[:, None]
+        else:
+            xyz = vertices.copy()
+
+        all_xyz.append(scale * xyz + center)
+        all_faces.append(faces + k * xyz.shape[0])
+        all_ms.append(m)
+
+    all_xyz = np.ascontiguousarray(np.concatenate(all_xyz))
+    all_xyz_vtk = numpy_support.numpy_to_vtk(all_xyz, deep=True)
+
+    all_faces = np.concatenate(all_faces)
+    all_faces = np.hstack((3 * np.ones((len(all_faces), 1)),
+                           all_faces))
+    ncells = len(all_faces)
+
+    all_faces = np.ascontiguousarray(all_faces.ravel(), dtype='i8')
+    all_faces_vtk = numpy_support.numpy_to_vtkIdTypeArray(all_faces,
+                                                          deep=True)
+
+    all_ms = np.ascontiguousarray(np.concatenate(all_ms), dtype='f4')
+
+    points = vtk.vtkPoints()
+    points.SetData(all_xyz_vtk)
+
+    cells = vtk.vtkCellArray()
+    cells.SetCells(ncells, all_faces_vtk)
+
+    if colormap is not None:
+        from dipy.viz.fvtk import create_colormap
+        cols = create_colormap(all_ms.ravel(), colormap)
+        # cols = np.interp(cols, [0, 1], [0, 255]).astype('ubyte')
+
+        # vtk_colors = numpy_to_vtk_colors(255 * cols)
+
+        vtk_colors = numpy_support.numpy_to_vtk(
+            np.asarray(255 * cols),
+            deep=True,
+            array_type=vtk.VTK_UNSIGNED_CHAR)
+
+        vtk_colors.SetName("Colors")
+
+    polydata = vtk.vtkPolyData()
+    polydata.SetPoints(points)
+    polydata.SetPolys(cells)
+
+    if colormap is not None:
+        polydata.GetPointData().SetScalars(vtk_colors)
+
+    mapper = vtk.vtkPolyDataMapper()
+    if major_version <= 5:
+        mapper.SetInput(polydata)
+    else:
+        mapper.SetInputData(polydata)
+
+    # actor = vtk.vtkActor()
+    # actor.SetMapper(mapper)
+
+    return mapper
