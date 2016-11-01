@@ -739,11 +739,11 @@ def test_decompose_tensor_nan():
     lref, vref = decompose_tensor(from_lower_triangular(D_fine))
     lfine, vfine = _decompose_tensor_nan(from_lower_triangular(D_fine),
                                          from_lower_triangular(D_alter))
-    assert_array_almost_equal(lfine, np.array(1.7e-3, 0.3e-3, 0.2e-3))
+    assert_array_almost_equal(lfine, np.array([1.7e-3, 0.3e-3, 0.2e-3]))
     assert_array_almost_equal(vfine, vref)
     
     lref, vref = decompose_tensor(from_lower_triangular(D_alter))
     lalter, valter = _decompose_tensor_nan(from_lower_triangular(D_nan),
-                                         from_lower_triangular(D_alter))
-    assert_array_almost_equal(lalter, np.array(1.6e-3, 0.4e-3, 0.3e-3))
+                                           from_lower_triangular(D_alter))
+    assert_array_almost_equal(lalter, np.array([1.6e-3, 0.4e-3, 0.3e-3]))
     assert_array_almost_equal(valter, vref)
