@@ -8,6 +8,7 @@ from nibabel.tmpdirs import TemporaryDirectory
 from dipy.tracking.streamline import center_streamlines, transform_streamlines
 from dipy.align.tests.test_streamlinear import fornix_streamlines
 from dipy.testing.decorators import xvfb_it
+from dipy.data import get_sphere
 
 use_xvfb = os.environ.get('TEST_WITH_XVFB', False)
 if use_xvfb == 'skip':
@@ -274,6 +275,58 @@ def test_bundle_maps():
     actor.line(bundle)
     colors = [np.random.rand(*b.shape) for b in bundle]
     actor.line(bundle, colors=colors)
+
+
+@npt.dec.skipif(not actor.have_vtk)
+@npt.dec.skipif(not actor.have_vtk_colors)
+@npt.dec.skipif(not window.have_imread)
+def test_odf_slicer():
+
+    sphere = get_sphere('symmetric362')
+
+    # use memory maps
+    # odfs = np.ones((10, 10, 10, sphere.vertices.shape[0]))
+
+    shape = (11, 11, 11, sphere.vertices.shape[0])
+
+    odfs = np.memmap('test.mmap', dtype='float64', mode='w+',
+                     shape=shape)
+
+    odfs[:] = 1
+    # odfs = np.random.rand(10, 10, 10, sphere.vertices.shape[0])
+
+    affine = np.eye(4)
+    renderer = window.renderer()
+
+    mask = np.ones(odfs.shape[:3])
+    mask[:4, :4, :4] = 0
+
+    odf_actor = actor.odf_slicer(odfs, affine,
+                                 mask=mask, sphere=sphere, scale=.25,
+                                 colormap='jet')
+
+    fa = 0. * np.random.rand(*odfs.shape[:3])
+    fa[:, 0, :] = 1.
+    fa[:, -1, :] = 1.
+    fa[0, :, :] = 1.
+    fa[-1, :, :] = 1.
+    fa[5, 5, 5] = 1
+
+    fa_actor = actor.slicer(fa, affine)
+    fa_actor.display(None, None, 5)
+
+    renderer.add(fa_actor)
+    renderer.add(odf_actor)
+    renderer.reset_camera()
+    renderer.reset_clipping_range()
+
+    #for k in range(0, 5):
+    k = 5
+    I, J, K = odfs.shape[:3]
+
+    odf_actor.display_extent(0, I, 0, J, k, k + 1)
+    odf_actor.GetProperty().SetOpacity(0.6)
+    window.show(renderer, reset_camera=False)
 
 
 if __name__ == "__main__":
