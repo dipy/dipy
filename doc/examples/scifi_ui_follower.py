@@ -72,6 +72,8 @@ text_actor = TextFollower(text="Hello!", color=(0, 1, 0))
 # button_actor_3.add_callback("LeftButtonPressEvent", modify_button_callback_3)
 
 renderer = window.ren()
+current_size = [600, 600]
+showm = window.ShowManager(renderer, size=current_size, title="Sci-Fi UI")
 
 follower_menu = gui_follower.FollowerMenu(position=(0, 0, 0), diameter=87, camera=renderer.GetActiveCamera(),
                                           elements=[button_actor_1, button_actor_3, text_actor])
@@ -81,6 +83,4 @@ renderer.add(cube_actor_1)
 renderer.add(cube_actor_2)
 
 # Show Manager
-current_size = [600, 600]
-showm = window.ShowManager(renderer, size=current_size, title="Sci-Fi UI")
 showm.start()

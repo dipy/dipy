@@ -251,11 +251,10 @@ renderer = window.ren()
 current_size = [600, 600]
 showm = window.ShowManager(renderer, size=current_size, title="Sci-Fi UI")
 
-renderer.add(panel)
+# renderer.add(panel)
 renderer.add(cube_actor_1)
 renderer.add(cube_actor_2)
-# renderer.add(file_dialog)
-# renderer.add(disk_slider)
+renderer.add(file_dialog)
 
 
 def window_callback(obj, evt):
