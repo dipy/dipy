@@ -25,6 +25,7 @@ class FollowerMenu(UI):
     Typically follows an object in 3D, always facing the camera. Elements can be added to the menu
     and they are allotted positions in an orbit.
     """
+
     def __init__(self, position, diameter, camera, elements):
         """
 
@@ -40,6 +41,7 @@ class FollowerMenu(UI):
         self.diameter = diameter
         self.position = position
         self.camera = camera
+        self.elements = elements
         self.actor = self.build_assembly()
 
         self.menu_orbit = FollowerMenuOrbit(diameter=self.diameter, position=self.position)
@@ -48,16 +50,8 @@ class FollowerMenu(UI):
 
         self.add_parts(parts=elements)
 
-        self.ui_list.append(self)
-
-    def add_to_renderer(self, ren):
-        """ Add the orbit to renderer
-
-        Parameters
-        ----------
-        ren : renderer
-        """
-        ren.add(self.actor)
+    def get_actors(self):
+        return [self.actor]
 
     @staticmethod
     def find_total_dist(coordinate, coordinate_list):
@@ -86,6 +80,7 @@ class FollowerMenu(UI):
         angular_difference = 360/number_of_parts
         allotted_coordinates = []
         for i in range(number_of_parts):
+            self.ui_list.append(parts[i])
             theta = math.radians(angular_difference*(i+1))
             x1 = self.position[0] + ((self.diameter/2)/math.sqrt(1 + math.tan(theta)*math.tan(theta)))
             y1 = self.position[1] + math.tan(theta)*(x1-self.position[0])
@@ -144,6 +139,7 @@ class FollowerMenu(UI):
 class FollowerMenuOrbit(UI):
     """ The circular orbit for the follower menu.
     """
+
     def __init__(self, position, diameter):
         """
 
@@ -155,7 +151,8 @@ class FollowerMenuOrbit(UI):
         super(FollowerMenuOrbit, self).__init__()
         self.actor = self.build_actor(center=position, diameter=diameter)
 
-        self.ui_list.append(self)
+    def get_actors(self):
+        return [self.actor]
 
     def build_actor(self, center, diameter):
         """
@@ -188,6 +185,7 @@ class FollowerMenuOrbit(UI):
 class CubeButtonFollower(UI):
     """A 3D cube that can be added to the follower menu.
     """
+
     def __init__(self, size, color):
         """
 
@@ -200,7 +198,8 @@ class CubeButtonFollower(UI):
         self.actor = self.build_actor(size=size, color=color)
         self.element_type = "cube"
 
-        self.ui_list.append(self)
+    def get_actors(self):
+        return [self.actor]
 
     def build_actor(self, size, color):
         """
@@ -223,16 +222,6 @@ class CubeButtonFollower(UI):
         cubeActor.SetPosition(0, 0, 0)
         return cubeActor
 
-    def add_callback(self, event_type, callback):
-        """ Adds events to the actor
-
-        Parameters
-        ----------
-        event_type: event code
-        callback: callback function
-        """
-        self.actor.AddObserver(event_type, callback)
-
 
 class ButtonFollower(UI):
     """ Implements a 3D button and is of type vtkTexturedActor.
@@ -248,7 +237,8 @@ class ButtonFollower(UI):
         self.actor = self.build_actor(self.icons[self.current_icon_name])
         self.element_type = "button"
 
-        self.ui_list.append(self)
+    def get_actors(self):
+        return [self.actor]
 
     def build_icons(self, icon_fnames):
         """ Converts filenames to vtkImageDataGeometryFilters
@@ -304,16 +294,6 @@ class ButtonFollower(UI):
 
         return button
 
-    def add_callback(self, event_type, callback):
-        """ Adds events to the actor
-
-        Parameters
-        ----------
-        event_type: event code
-        callback: callback function
-        """
-        self.actor.AddObserver(event_type, callback)
-
     def set_icon(self, icon):
         """ Modifies the icon used by the vtkTexturedActor2D
 
@@ -342,6 +322,7 @@ class ButtonFollower(UI):
 class TextFollower(UI):
     """ 3D text that follows the camera.
     """
+
     def __init__(self, text, color):
         """
 
@@ -354,7 +335,8 @@ class TextFollower(UI):
 
         self.actor = self.build_actor(text=text, color=color)
 
-        self.ui_list.append(self)
+    def get_actors(self):
+        return [self.actor]
 
     def build_actor(self, text, color):
         """
@@ -380,18 +362,9 @@ class TextFollower(UI):
 
         return actor
 
-    def add_callback(self, event_type, callback):
-        """ Adds events to the actor
-
-        Parameters
-        ----------
-        event_type: event code
-        callback: callback function
-        """
-        self.actor.AddObserver(event_type, callback)
-
 
 class Rectangle3D(UI):
+
     def __init__(self, size):
         """
 
@@ -402,7 +375,8 @@ class Rectangle3D(UI):
         super(Rectangle3D, self).__init__()
         self.actor = self.build_actor(size=size)
 
-        self.ui_list.append(self)
+    def get_actors(self):
+        return [self.actor]
 
     def build_actor(self, size):
         """

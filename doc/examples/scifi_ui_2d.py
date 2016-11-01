@@ -257,6 +257,7 @@ renderer.add(cube_actor_2)
 # renderer.add(file_dialog)
 # renderer.add(disk_slider)
 
+
 def window_callback(obj, evt):
     size_change = (renderer.size()[0] - current_size[0], renderer.size()[1] - current_size[1])
     current_size[0] = renderer.size()[0]
