@@ -3,7 +3,7 @@ from __future__ import division, print_function, absolute_import
 import numpy as np
 from nibabel.affines import apply_affine
 
-from dipy.viz.colormap import colormap_lookup_table
+from dipy.viz.colormap import colormap_lookup_table, create_colormap
 from dipy.viz.utils import lines_to_vtk_polydata
 from dipy.viz.utils import set_input
 
@@ -544,7 +544,7 @@ def axes(scale=(1, 1, 1), colorx=(1, 0, 0), colory=(0, 1, 0), colorz=(0, 0, 1),
 
 def odf_slicer(odfs, affine=None, mask=None, sphere=None, scale=2.2,
                norm=True, radial_scale=True, opacity=1.,
-               colormap=None):
+               colormap=None, global_cm=False):
     """ Slice spherical fields in native or wold coordinates
 
     Parameters
@@ -567,6 +567,9 @@ def odf_slicer(odfs, affine=None, mask=None, sphere=None, scale=2.2,
         Takes values from 0 (fully transparent) to 1 (non-transparent)
     colormap : None or str
         If None then no color is used.
+    global_cm : bool
+        If True the colormap will be applied in all ODFs. If False
+        it will be applied individually at each voxel (default False).
     """
 
     if mask is None:
@@ -591,19 +594,21 @@ def odf_slicer(odfs, affine=None, mask=None, sphere=None, scale=2.2,
                                              norm=norm,
                                              radial_scale=radial_scale,
                                              opacity=opacity,
-                                             colormap=colormap)
+                                             colormap=colormap,
+                                             global_cm=global_cm)
             self.SetMapper(self.mapper)
 
     odf_actor = OdfSlicerActor()
     I, J, K = odfs.shape[:3]
-    odf_actor.display_extent(0, I, 0, J, K/2, K/2 + 1)
+    odf_actor.display_extent(0, I, 0, J,
+                             int(np.floor(K/2)), int(np.floor(K/2 + 1)))
 
     return odf_actor
 
 
 def _odf_slicer_mapper(odfs, affine=None, mask=None, sphere=None, scale=2.2,
                        norm=True, radial_scale=True, opacity=1.,
-                       colormap=None):
+                       colormap=None, global_cm=False):
 
     if mask is None:
         mask = np.ones(odfs.shape[:3])
@@ -620,7 +625,8 @@ def _odf_slicer_mapper(odfs, affine=None, mask=None, sphere=None, scale=2.2,
     all_faces = []
     all_ms = []
     for (k, center) in enumerate(ijk):
-        m = odfs[tuple(center)].copy()
+
+        m = odfs[tuple(center.astype(np.int))].copy()
 
         if norm:
             m /= abs(m).max()
@@ -645,8 +651,9 @@ def _odf_slicer_mapper(odfs, affine=None, mask=None, sphere=None, scale=2.2,
     all_faces = np.ascontiguousarray(all_faces.ravel(), dtype='i8')
     all_faces_vtk = numpy_support.numpy_to_vtkIdTypeArray(all_faces,
                                                           deep=True)
-
-    all_ms = np.ascontiguousarray(np.concatenate(all_ms), dtype='f4')
+    if global_cm:
+        all_ms = np.ascontiguousarray(
+            np.concatenate(all_ms), dtype='f4')
 
     points = vtk.vtkPoints()
     points.SetData(all_xyz_vtk)
@@ -655,8 +662,22 @@ def _odf_slicer_mapper(odfs, affine=None, mask=None, sphere=None, scale=2.2,
     cells.SetCells(ncells, all_faces_vtk)
 
     if colormap is not None:
-        from dipy.viz.fvtk import create_colormap
-        cols = create_colormap(all_ms.ravel(), colormap)
+        # from dipy.viz.fvtk import create_colormap
+        if global_cm:
+            cols = create_colormap(all_ms.ravel(), colormap)
+        else:
+            from ipdb import set_trace
+            # set_trace()
+            cols = np.zeros((ijk.shape[0],) + sphere.vertices.shape,
+                            dtype='f4')
+            for k in range(ijk.shape[0]):
+                # set_trace()
+                tmp = create_colormap(all_ms[k].ravel(), colormap)
+                cols[k] = tmp.copy()
+
+            cols = np.ascontiguousarray(
+                np.reshape(cols, (cols.shape[0] * cols.shape[1],
+                           cols.shape[2])), dtype='f4')
         # cols = np.interp(cols, [0, 1], [0, 255]).astype('ubyte')
         # vtk_colors = numpy_to_vtk_colors(255 * cols)
 
@@ -679,8 +700,5 @@ def _odf_slicer_mapper(odfs, affine=None, mask=None, sphere=None, scale=2.2,
         mapper.SetInput(polydata)
     else:
         mapper.SetInputData(polydata)
-
-    # actor = vtk.vtkActor()
-    # actor.SetMapper(mapper)
 
     return mapper
