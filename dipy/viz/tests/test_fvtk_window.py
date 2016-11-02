@@ -148,11 +148,11 @@ def test_parallel_projection():
 
     ren = window.Renderer()
     axes = actor.axes()
-    ren.add(axes)
-
     axes2 = actor.axes()
     axes2.SetPosition((2, 0, 0))
-    ren.add(axes2)
+
+    # Add both axes.
+    ren.add(axes, axes2)
 
     # Put the camera on a angle so that the
     # camera can show the difference between perspective
