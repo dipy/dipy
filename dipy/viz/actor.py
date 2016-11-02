@@ -545,7 +545,28 @@ def axes(scale=(1, 1, 1), colorx=(1, 0, 0), colory=(0, 1, 0), colorz=(0, 0, 1),
 def odf_slicer(odfs, affine=None, mask=None, sphere=None, scale=2.2,
                norm=True, radial_scale=True, opacity=1.,
                colormap=None):
-    """ Slice spherical fields
+    """ Slice spherical fields in native or wold coordinates
+
+    Parameters
+    ----------
+    odfs : ndarray
+        4D array of spherical functions
+    affine : array
+        4x4 transformation array from native coordinates to world coordinates
+    mask : ndarray
+        3D mask
+    sphere : Sphere
+        a sphere
+    scale : float
+        Distance between spheres.
+    norm : bool
+        Normalize `sphere_values`.
+    radial_scale : bool
+        Scale sphere points according to odf values.
+    opacity : float
+        Takes values from 0 (fully transparent) to 1 (non-transparent)
+    colormap : None or str
+        If None then no color is used.
     """
 
     if mask is None:
@@ -637,7 +658,6 @@ def _odf_slicer_mapper(odfs, affine=None, mask=None, sphere=None, scale=2.2,
         from dipy.viz.fvtk import create_colormap
         cols = create_colormap(all_ms.ravel(), colormap)
         # cols = np.interp(cols, [0, 1], [0, 255]).astype('ubyte')
-
         # vtk_colors = numpy_to_vtk_colors(255 * cols)
 
         vtk_colors = numpy_support.numpy_to_vtk(
