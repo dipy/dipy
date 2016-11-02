@@ -301,7 +301,7 @@ def test_odf_slicer():
     mask = np.ones(odfs.shape[:3])
     mask[:4, :4, :4] = 0
 
-    odfs[..., 0] = 2
+    odfs[..., 0] = 1
 
     odf_actor = actor.odf_slicer(odfs, affine,
                                  mask=mask, sphere=sphere, scale=.25,
@@ -317,7 +317,7 @@ def test_odf_slicer():
     fa_actor = actor.slicer(fa, affine)
     fa_actor.display(None, None, 5)
 
-    renderer.add(fa_actor)
+    # renderer.add(fa_actor)
     renderer.add(odf_actor)
     renderer.reset_camera()
     renderer.reset_clipping_range()
@@ -327,8 +327,11 @@ def test_odf_slicer():
     I, J, K = odfs.shape[:3]
 
     odf_actor.display_extent(0, I, 0, J, k, k + 1)
-    odf_actor.GetProperty().SetOpacity(0.6)
+    odf_actor.GetProperty().SetOpacity(1.0)
     # window.show(renderer, reset_camera=False)
+    arr = window.snapshot(renderer)
+    report = window.analyze_snapshot(arr, find_objects=True)
+    npt.assert_equal(report.objects, 11 * 11)
 
 
 if __name__ == "__main__":
