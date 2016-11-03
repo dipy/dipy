@@ -134,6 +134,8 @@ def lines_to_vtk_polydata(lines, colors=None):
         Then every line is coloured with a different RGB color.
         If a list of RGB arrays is given then every point of every line takes
         a different color.
+        If an array (K, 3) is given, where K is the number of points of all
+        lines then every point is colored with a different RGB color.
         If an array (K,) is given, where K is the number of points of all
         lines then these are considered as the values to be used by the
         colormap.
@@ -196,8 +198,11 @@ def lines_to_vtk_polydata(lines, colors=None):
             vtk_colors = numpy_to_vtk_colors(255 * np.vstack(colors))
         else:
             if len(cols_arr) == nb_points:
-                vtk_colors = ns.numpy_to_vtk(cols_arr, deep=True)
-                is_colormap = True
+                if cols_arr.ndim == 1:  # values for every point
+                    vtk_colors = ns.numpy_to_vtk(cols_arr, deep=True)
+                    is_colormap = True
+                elif cols_arr.ndim == 2:  # map color to each point
+                    vtk_colors = numpy_to_vtk_colors(255 * cols_arr)
 
             elif cols_arr.ndim == 1:
                 if len(cols_arr) == nb_lines:  # values for every streamline
