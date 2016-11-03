@@ -30,7 +30,7 @@ On all platforms, you can use Anaconda_ to install Dipy. To do so issue the foll
     conda config --add channels conda-forge
     conda install dipy
 
-#. Some of the visualization methods require the VTK_ library and this can be installed separately (but only on Python 2)::
+Some of the visualization methods require the VTK_ library and this can be installed separately::
 
     conda install vtk
 
@@ -47,7 +47,8 @@ Windows
 
         pip install nibabel
 
-#. Finally, we are ready to install 'dipy` itself. Same as with `nibabel` above, we will type at the terminal shell command line ::
+#. Finally, we are ready to install 'dipy` itself. Same as with `nibabel` above,
+#we will type at the terminal shell command line ::
 
 		pip install dipy
 
