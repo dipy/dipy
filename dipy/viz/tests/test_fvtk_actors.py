@@ -283,17 +283,12 @@ def test_odf_slicer():
 
     sphere = get_sphere('symmetric362')
 
-    # use memory maps
-    # odfs = np.ones((10, 10, 10, sphere.vertices.shape[0]))
-
     shape = (11, 11, 11, sphere.vertices.shape[0])
 
     with TemporaryDirectory() as tmpdir:
-        print(tmpdir)
         fname = os.path.join(tmpdir, 'odf_slicer.mmap')
         odfs = np.memmap(fname, dtype='float64', mode='w+',
                          shape=shape)
-
         odfs[:] = 1
         # odfs = np.random.rand(10, 10, 10, sphere.vertices.shape[0])
 
