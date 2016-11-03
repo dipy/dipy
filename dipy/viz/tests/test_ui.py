@@ -30,7 +30,7 @@ else:
 @xvfb_it
 def test_button(recording=False):
     print("Using VTK {}".format(vtk.vtkVersion.GetVTKVersion()))
-    filename = "test_custom_interactor_style_events.log.gz"
+    filename = "test_ui.log.gz"
     recording_filename = pjoin(DATA_DIR, filename)
     renderer = window.ren()
 
@@ -42,34 +42,24 @@ def test_button(recording=False):
 
     icon_files = dict()
     icon_files['stop'] = read_viz_icons(fname='stop2.png')
-    icon_files['play'] = read_viz_icons(fname='play3.png')
-    icon_files['plus'] = read_viz_icons(fname='plus.png')
-    icon_files['cross'] = read_viz_icons(fname='cross.png')
 
-    button = ui.Button2D(icon_fnames=icon_files)
+    button_test = ui.Button2D(icon_fnames=icon_files)
 
-    def move_button_callback(i_ren, obj, button):
-        # i_ren: CustomInteractorStyle
-        # obj: vtkActor picked
-        # button: Button2D
-        pass
+    def counter(iren, obj, button):
+        states[iren.event.name] += 1
 
-    def modify_button_callback(i_ren, obj, button):
-        # i_ren: CustomInteractorStyle
-        # obj: vtkActor picked
-        # button: Button2D
-        button.next_icon()
-        i_ren.force_render()
-        i_ren.event.abort()  # Stop propagating the event.
-
-    button.add_callback("RightButtonPressEvent", move_button_callback)
-    button.add_callback("LeftButtonPressEvent", modify_button_callback)
-    # /Buttons
+    # Assign the counter callback to every possible event.
+    for event in ["CharEvent", "MouseMoveEvent",
+                  "KeyPressEvent", "KeyReleaseEvent",
+                  "LeftButtonPressEvent", "LeftButtonReleaseEvent",
+                  "RightButtonPressEvent", "RightButtonReleaseEvent",
+                  "MiddleButtonPressEvent", "MiddleButtonReleaseEvent"]:
+        button_test.add_callback(event, counter)
 
     current_size = (600, 600)
     show_manager = window.ShowManager(renderer, size=current_size, title="DIPY UI Example")
 
-    renderer.add(button)
+    renderer.add(button_test)
 
     if recording:
         show_manager.record_events_to_file(recording_filename)
@@ -77,18 +67,18 @@ def test_button(recording=False):
     else:
         show_manager.play_events_from_file(recording_filename)
         msg = "Wrong count for '{}'."
-        expected = [('CharEvent', 6),
-                    ('KeyPressEvent', 6),
-                    ('KeyReleaseEvent', 6),
-                    ('MouseMoveEvent', 1652),
-                    ('LeftButtonPressEvent', 1),
-                    ('RightButtonPressEvent', 1),
-                    ('MiddleButtonPressEvent', 2),
-                    ('LeftButtonReleaseEvent', 1),
-                    ('MouseWheelForwardEvent', 3),
-                    ('MouseWheelBackwardEvent', 1),
-                    ('MiddleButtonReleaseEvent', 2),
-                    ('RightButtonReleaseEvent', 1)]
+        expected = [('CharEvent', 0),
+                    ('KeyPressEvent', 0),
+                    ('KeyReleaseEvent', 0),
+                    ('MouseMoveEvent', 20),
+                    ('LeftButtonPressEvent', 8),
+                    ('RightButtonPressEvent', 7),
+                    ('MiddleButtonPressEvent', 0),
+                    ('LeftButtonReleaseEvent', 8),
+                    ('MouseWheelForwardEvent', 0),
+                    ('MouseWheelBackwardEvent', 0),
+                    ('MiddleButtonReleaseEvent', 0),
+                    ('RightButtonReleaseEvent', 7)]
 
         # Useful loop for debugging.
         for event, count in expected:

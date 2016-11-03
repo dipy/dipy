@@ -47,7 +47,7 @@ icon_files['play'] = read_viz_icons(fname='play3.png')
 icon_files['plus'] = read_viz_icons(fname='plus.png')
 icon_files['cross'] = read_viz_icons(fname='cross.png')
 
-button = ui.Button2D(icon_fnames=icon_files)
+button_example = ui.Button2D(icon_fnames=icon_files)
 
 
 def move_button_callback(i_ren, obj, button):
@@ -61,7 +61,6 @@ def move_button_callback(i_ren, obj, button):
     pos_2[1] += 2
     cube_actor_2.SetPosition(tuple(pos_2))
     i_ren.force_render()
-    i_ren.event.abort()  # Stop propagating the event.
 
 
 def modify_button_callback(i_ren, obj, button):
@@ -70,10 +69,9 @@ def modify_button_callback(i_ren, obj, button):
     # button: Button2D
     button.next_icon()
     i_ren.force_render()
-    i_ren.event.abort()  # Stop propagating the event.
 
-button.add_callback("RightButtonPressEvent", move_button_callback)
-button.add_callback("LeftButtonPressEvent", modify_button_callback)
+button_example.add_callback("RightButtonPressEvent", move_button_callback)
+button_example.add_callback("LeftButtonPressEvent", modify_button_callback)
 # /Buttons
 
 # Initialize and add to renderer
@@ -83,6 +81,8 @@ renderer = window.ren()
 current_size = (600, 600)
 show_manager = window.ShowManager(renderer, size=current_size, title="DIPY UI Example")
 
-renderer.add(button)
+renderer.add(cube_actor_1)
+renderer.add(cube_actor_2)
+renderer.add(button_example)
 
 show_manager.start()
