@@ -186,13 +186,10 @@ csd_odf = csd_fit.odf(sphere)
 Here we visualize only a 30x30 region.
 """
 
-# fodf_spheres = fvtk.sphere_funcs(csd_odf, sphere, scale=1.3, norm=False)
-from dipy.viz.actor import odf_slicer
-fodf_spheres = odf_slicer(csd_odf, sphere=sphere, scale=1.3, norm=False,
-                          colormap='jet', global_cm=False)
+fodf_spheres = fvtk.sphere_funcs(csd_odf, sphere, scale=1.3, norm=False)
+
 fvtk.add(ren, fodf_spheres)
 
-fvtk.show(ren)
 print('Saving illustration as csd_odfs.png')
 fvtk.record(ren, out_path='csd_odfs.png', size=(600, 600))
 
