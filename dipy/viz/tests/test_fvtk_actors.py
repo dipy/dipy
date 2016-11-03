@@ -290,7 +290,6 @@ def test_odf_slicer():
         odfs = np.memmap(fname, dtype='float64', mode='w+',
                          shape=shape)
         odfs[:] = 1
-        # odfs = np.random.rand(10, 10, 10, sphere.vertices.shape[0])
 
         affine = np.eye(4)
         renderer = window.renderer()
@@ -304,7 +303,7 @@ def test_odf_slicer():
                                      mask=mask, sphere=sphere, scale=.25,
                                      colormap='jet')
 
-        fa = 0. * np.random.rand(*odfs.shape[:3])
+        fa = 0. * np.zeros(odfs.shape[:3])
         fa[:, 0, :] = 1.
         fa[:, -1, :] = 1.
         fa[0, :, :] = 1.
@@ -313,8 +312,6 @@ def test_odf_slicer():
 
         fa_actor = actor.slicer(fa, affine)
         fa_actor.display(None, None, 5)
-
-        # renderer.add(fa_actor)
         renderer.add(odf_actor)
         renderer.reset_camera()
         renderer.reset_clipping_range()
@@ -328,6 +325,27 @@ def test_odf_slicer():
         arr = window.snapshot(renderer)
         report = window.analyze_snapshot(arr, find_objects=True)
         npt.assert_equal(report.objects, 11 * 11)
+        renderer.clear()
+        renderer.add(fa_actor)
+        arr = window.snapshot(renderer)
+        report = window.analyze_snapshot(arr, find_objects=True)
+        npt.assert_equal(report.objects, 2)
+
+        mask[:] = 0
+        mask[5, 5, 5] = 1
+        fa[5, 5, 5] = 0
+        fa_actor = actor.slicer(fa, None)
+        fa_actor.display(None, None, 5)
+        odf_actor = actor.odf_slicer(odfs, None, mask=mask,
+                                     sphere=sphere, scale=.25,
+                                     colormap='jet',
+                                     norm=False, global_cm=True)
+        renderer.clear()
+        renderer.add(fa_actor)
+        renderer.add(odf_actor)
+        arr = window.snapshot(renderer)
+        report = window.analyze_snapshot(arr, find_objects=True)
+        npt.assert_equal(report.objects, 2)
 
 
 if __name__ == "__main__":
