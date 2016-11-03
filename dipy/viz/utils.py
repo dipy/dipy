@@ -134,6 +134,8 @@ def lines_to_vtk_polydata(lines, colors=None):
         Then every line is coloured with a different RGB color.
         If a list of RGB arrays is given then every point of every line takes
         a different color.
+        If an array (K, 3) is given, where K is the number of points of all
+        lines then every point is colored with a different RGB color.
         If an array (K,) is given, where K is the number of points of all
         lines then these are considered as the values to be used by the
         colormap.
