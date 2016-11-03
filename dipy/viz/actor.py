@@ -544,7 +544,7 @@ def axes(scale=(1, 1, 1), colorx=(1, 0, 0), colory=(0, 1, 0), colorz=(0, 0, 1),
 
 def odf_slicer(odfs, affine=None, mask=None, sphere=None, scale=2.2,
                norm=True, radial_scale=True, opacity=1.,
-               colormap=None, global_cm=False):
+               colormap='inferno', global_cm=False):
     """ Slice spherical fields in native or wold coordinates
 
     Parameters
@@ -564,9 +564,10 @@ def odf_slicer(odfs, affine=None, mask=None, sphere=None, scale=2.2,
     radial_scale : bool
         Scale sphere points according to odf values.
     opacity : float
-        Takes values from 0 (fully transparent) to 1 (non-transparent)
+        Takes values from 0 (fully transparent) to 1 (opaque)
     colormap : None or str
-        If None then no color is used.
+        If None then white color is used. Otherwise the name of colormap is
+        given. Matplotlib colormaps are also supported. Try 'inferno' :).
     global_cm : bool
         If True the colormap will be applied in all ODFs. If False
         it will be applied individually at each voxel (default False).
@@ -608,7 +609,7 @@ def odf_slicer(odfs, affine=None, mask=None, sphere=None, scale=2.2,
 
 def _odf_slicer_mapper(odfs, affine=None, mask=None, sphere=None, scale=2.2,
                        norm=True, radial_scale=True, opacity=1.,
-                       colormap=None, global_cm=False):
+                       colormap='inferno', global_cm=False):
     """ Helper function for slicing spherical fields
 
     Parameters
@@ -628,9 +629,10 @@ def _odf_slicer_mapper(odfs, affine=None, mask=None, sphere=None, scale=2.2,
     radial_scale : bool
         Scale sphere points according to odf values.
     opacity : float
-        Takes values from 0 (fully transparent) to 1 (non-transparent)
+        Takes values from 0 (fully transparent) to 1 (opaque)
     colormap : None or str
-        If None then no color is used.
+        If None then white color is used. Otherwise the name of colormap is
+        given. Matplotlib colormaps are also supported. Try 'inferno' :).
     global_cm : bool
         If True the colormap will be applied in all ODFs. If False
         it will be applied individually at each voxel (default False).
