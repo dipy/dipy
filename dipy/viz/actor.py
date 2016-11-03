@@ -609,7 +609,32 @@ def odf_slicer(odfs, affine=None, mask=None, sphere=None, scale=2.2,
 def _odf_slicer_mapper(odfs, affine=None, mask=None, sphere=None, scale=2.2,
                        norm=True, radial_scale=True, opacity=1.,
                        colormap=None, global_cm=False):
+    """ Helper function for slicing spherical fields
 
+    Parameters
+    ----------
+    odfs : ndarray
+        4D array of spherical functions
+    affine : array
+        4x4 transformation array from native coordinates to world coordinates
+    mask : ndarray
+        3D mask
+    sphere : Sphere
+        a sphere
+    scale : float
+        Distance between spheres.
+    norm : bool
+        Normalize `sphere_values`.
+    radial_scale : bool
+        Scale sphere points according to odf values.
+    opacity : float
+        Takes values from 0 (fully transparent) to 1 (non-transparent)
+    colormap : None or str
+        If None then no color is used.
+    global_cm : bool
+        If True the colormap will be applied in all ODFs. If False
+        it will be applied individually at each voxel (default False).
+    """
     if mask is None:
         mask = np.ones(odfs.shape[:3])
 
@@ -662,16 +687,12 @@ def _odf_slicer_mapper(odfs, affine=None, mask=None, sphere=None, scale=2.2,
     cells.SetCells(ncells, all_faces_vtk)
 
     if colormap is not None:
-        # from dipy.viz.fvtk import create_colormap
         if global_cm:
             cols = create_colormap(all_ms.ravel(), colormap)
         else:
-            from ipdb import set_trace
-            # set_trace()
             cols = np.zeros((ijk.shape[0],) + sphere.vertices.shape,
                             dtype='f4')
             for k in range(ijk.shape[0]):
-                # set_trace()
                 tmp = create_colormap(all_ms[k].ravel(), colormap)
                 cols[k] = tmp.copy()
 
