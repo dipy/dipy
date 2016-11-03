@@ -269,7 +269,7 @@ lowercase_cm_name = {'blues': 'Blues', 'accent': 'Accent'}
 def create_colormap(v, name='jet', auto=True):
     """Create colors from a specific colormap and return it
     as an array of shape (N,3) where every row gives the corresponding
-    r,g,b value. The colormaps we use are similar with those of pylab.
+    r,g,b value. The colormaps we use are similar with those of matplotlib.
 
     Parameters
     ----------
@@ -278,7 +278,8 @@ def create_colormap(v, name='jet', auto=True):
     name : str.
         Name of the colormap. Currently implemented: 'jet', 'blues',
         'accent', 'bone' and matplotlib colormaps if you have matplotlib
-        installed.
+        installed. For example, we suggest using 'viridis' or 'inferno'. 'jet'
+        is popular but can be often misleading.
     auto : bool,
         if auto is True then v is interpolated to [0, 10] from v.min()
         to v.max()
@@ -286,8 +287,7 @@ def create_colormap(v, name='jet', auto=True):
     Notes
     -----
     Dipy supports a few colormaps for those who do not use Matplotlib, for
-    more colormaps consider downloading Matplotlib.
-
+    more colormaps consider downloading Matplotlib (see matplotlib.org).
     """
 
     if v.ndim > 1:
@@ -304,7 +304,7 @@ def create_colormap(v, name='jet', auto=True):
 
     colormap = get_cmap(newname)
     if colormap is None:
-        e_s = "Colormap '%s' is not yet implemented " % name
+        e_s = "Colormap {} is not yet implemented ".format(name)
         raise ValueError(e_s)
 
     rgba = colormap(v)
