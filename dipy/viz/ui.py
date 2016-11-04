@@ -34,6 +34,8 @@ class UI(object):
         self.parent_UI = None
         self._callbacks = []
 
+        self.window = None
+
     def get_actors(self):
         """ Returns the actors that compose this UI component. """
         msg = "Subclasses of UI must implement `get_actors(self)`."
@@ -49,6 +51,7 @@ class UI(object):
 
         # Get a hold on the current interactor style.
         iren = ren.GetRenderWindow().GetInteractor().GetInteractorStyle()
+        self.window = ren.GetRenderWindow()
 
         for callback in self._callbacks:
             if not isinstance(iren, CustomInteractorStyle):
@@ -247,6 +250,7 @@ class Button2D(UI):
         ----------
         icon : imageDataGeometryFilter
         """
+        self.actor.ReleaseGraphicsResources(self.window)
         self.actor.SetTexture(icon[0])
 
     def next_icon_name(self):
