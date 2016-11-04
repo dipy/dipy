@@ -544,7 +544,7 @@ def axes(scale=(1, 1, 1), colorx=(1, 0, 0), colory=(0, 1, 0), colorz=(0, 0, 1),
 
 def odf_slicer(odfs, affine=None, mask=None, sphere=None, scale=2.2,
                norm=True, radial_scale=True, opacity=1.,
-               colormap='inferno', global_cm=False):
+               colormap='plasma', global_cm=False):
     """ Slice spherical fields in native or wold coordinates
 
     Parameters
@@ -609,7 +609,7 @@ def odf_slicer(odfs, affine=None, mask=None, sphere=None, scale=2.2,
 
 def _odf_slicer_mapper(odfs, affine=None, mask=None, sphere=None, scale=2.2,
                        norm=True, radial_scale=True, opacity=1.,
-                       colormap='inferno', global_cm=False):
+                       colormap='plasma', global_cm=False):
     """ Helper function for slicing spherical fields
 
     Parameters
