@@ -278,8 +278,9 @@ def create_colormap(v, name='jet', auto=True):
     name : str.
         Name of the colormap. Currently implemented: 'jet', 'blues',
         'accent', 'bone' and matplotlib colormaps if you have matplotlib
-        installed. For example, we suggest using 'viridis' or 'inferno'. 'jet'
-        is popular but can be often misleading.
+        installed. For example, we suggest using 'plasma', 'viridis' or
+        'inferno'. 'jet' is popular but can be often misleading and we will
+        deprecate it the future.
     auto : bool,
         if auto is True then v is interpolated to [0, 10] from v.min()
         to v.max()
@@ -289,6 +290,12 @@ def create_colormap(v, name='jet', auto=True):
     Dipy supports a few colormaps for those who do not use Matplotlib, for
     more colormaps consider downloading Matplotlib (see matplotlib.org).
     """
+
+    if name == 'jet':
+        msg = 'Jet is a popular colormap but can often be misleading and'
+        msg += 'we will remove it from being the default in the near future.'
+        msg += 'Try for example plasma, viridis, hot or inferno.'
+        print(msg)
 
     if v.ndim > 1:
         msg = 'This function works only with 1d arrays. Use ravel()'
