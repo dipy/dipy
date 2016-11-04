@@ -87,6 +87,7 @@ def test_button(recording=False):
 
     button_test.add_callback("RightButtonPressEvent", make_invisible)
     button_test.add_callback("LeftButtonPressEvent", modify_button_callback)
+    button_test.scale((2, 2))
     # /Button
 
     # Dummy Show Manager
