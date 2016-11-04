@@ -135,12 +135,11 @@ class Button2D(UI):
 
         return icons
 
-    def build_actor(self, icon, center=None):
+    def build_actor(self, icon):
         """ Return an image as a 2D actor with a specific position.
         Parameters
         ----------
         icon : imageDataGeometryFilter
-        center : (float, float)
         Returns
         -------
         button : vtkTexturedActor2D
@@ -151,9 +150,6 @@ class Button2D(UI):
 
         button = vtk.vtkTexturedActor2D()
         button.SetMapper(mapper)
-
-        if center is not None:
-            button.SetCenter(*center)
 
         return button
 

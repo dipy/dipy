@@ -44,9 +44,10 @@ def test_button(recording=False):
     icon_files['stop'] = read_viz_icons(fname='stop2.png')
 
     button_test = ui.Button2D(icon_fnames=icon_files)
+    button_test.set_center((20, 20))
 
-    def counter(iren, obj, button):
-        states[iren.event.name] += 1
+    def counter(i_ren, obj, button):
+        states[i_ren.event.name] += 1
 
     # Assign the counter callback to every possible event.
     for event in ["CharEvent", "MouseMoveEvent",
@@ -55,6 +56,25 @@ def test_button(recording=False):
                   "RightButtonPressEvent", "RightButtonReleaseEvent",
                   "MiddleButtonPressEvent", "MiddleButtonReleaseEvent"]:
         button_test.add_callback(event, counter)
+
+    def make_invisible(i_ren, obj, button):
+        # i_ren: CustomInteractorStyle
+        # obj: vtkActor picked
+        # button: Button2D
+        button.set_visibility(False)
+        i_ren.force_render()
+
+    def make_visible(i_ren, obj, button):
+        # i_ren: CustomInteractorStyle
+        # obj: vtkActor picked
+        # button: Button2D
+        key = i_ren.event.key
+        if key.lower() == "v":
+            button.set_visibility(True)
+            i_ren.force_render()
+
+    button_test.add_callback("LeftButtonPressEvent", make_invisible)
+    button_test.add_callback("CharEvent", make_visible)
 
     current_size = (600, 600)
     show_manager = window.ShowManager(renderer, size=current_size, title="DIPY UI Example")
@@ -70,15 +90,15 @@ def test_button(recording=False):
         expected = [('CharEvent', 0),
                     ('KeyPressEvent', 0),
                     ('KeyReleaseEvent', 0),
-                    ('MouseMoveEvent', 20),
-                    ('LeftButtonPressEvent', 8),
-                    ('RightButtonPressEvent', 7),
-                    ('MiddleButtonPressEvent', 0),
-                    ('LeftButtonReleaseEvent', 8),
+                    ('MouseMoveEvent', 266),
+                    ('LeftButtonPressEvent', 1),
+                    ('RightButtonPressEvent', 4),
+                    ('MiddleButtonPressEvent', 3),
+                    ('LeftButtonReleaseEvent', 1),
                     ('MouseWheelForwardEvent', 0),
                     ('MouseWheelBackwardEvent', 0),
-                    ('MiddleButtonReleaseEvent', 0),
-                    ('RightButtonReleaseEvent', 7)]
+                    ('MiddleButtonReleaseEvent', 3),
+                    ('RightButtonReleaseEvent', 4)]
 
         # Useful loop for debugging.
         for event, count in expected:
