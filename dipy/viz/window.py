@@ -317,7 +317,7 @@ class ShowManager(object):
     interactor.
     """
 
-    def __init__(self, ren, title='DIPY', size=(300, 300),
+    def __init__(self, ren=ren(), title='DIPY', size=(300, 300),
                  png_magnify=1, reset_camera=True, order_transparent=False,
                  interactor_style='custom'):
 

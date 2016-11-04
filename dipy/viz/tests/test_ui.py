@@ -6,7 +6,6 @@ from os.path import join as pjoin
 import numpy.testing as npt
 
 from dipy.data import read_viz_icons, fetch_viz_icons
-from dipy.viz import interactor
 from dipy.viz import ui
 from dipy.viz import window
 from dipy.data import DATA_DIR
@@ -100,7 +99,7 @@ def test_button(recording=False):
     current_size = (600, 600)
     show_manager = window.ShowManager(renderer, size=current_size, title="DIPY UI Example")
 
-    renderer.add(button_test)
+    show_manager.ren.add(button_test)
 
     if recording:
         show_manager.record_events_to_file(recording_filename)

@@ -74,15 +74,12 @@ button_example.add_callback("RightButtonPressEvent", move_button_callback)
 button_example.add_callback("LeftButtonPressEvent", modify_button_callback)
 # /Buttons
 
-# Initialize and add to renderer
-renderer = window.ren()
-
 # Show Manager
 current_size = (600, 600)
-show_manager = window.ShowManager(renderer, size=current_size, title="DIPY UI Example")
+show_manager = window.ShowManager(size=current_size, title="DIPY UI Example")
 
-renderer.add(cube_actor_1)
-renderer.add(cube_actor_2)
-renderer.add(button_example)
+show_manager.ren.add(cube_actor_1)
+show_manager.ren.add(cube_actor_2)
+show_manager.ren.add(button_example)
 
 show_manager.start()
