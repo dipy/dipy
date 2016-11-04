@@ -77,7 +77,8 @@ class UI(object):
         ----------
         position : (float, float)
         """
-        pass
+        msg = "Subclasses of UI must implement `set_center(self, position)`."
+        raise NotImplementedError(msg)
 
     def set_visibility(self, visibility):
         """ Sets visibility of this UI component. """
