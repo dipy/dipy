@@ -317,7 +317,7 @@ class ShowManager(object):
     interactor.
     """
 
-    def __init__(self, ren=ren(), title='DIPY', size=(300, 300),
+    def __init__(self, ren=None, title='DIPY', size=(300, 300),
                  png_magnify=1, reset_camera=True, order_transparent=False,
                  interactor_style='custom'):
 
@@ -381,8 +381,10 @@ class ShowManager(object):
         >>> # showm.render()
         >>> # showm.start()
         """
-
-        self.ren = ren
+        if ren is None:
+            self.ren = ren()
+        else:
+            self.ren = ren
         self.title = title
         self.size = size
         self.png_magnify = png_magnify
