@@ -217,7 +217,10 @@ class Button2D(UI):
         self.texture_polydata.GetPointData().SetTCoords(tc)
 
         texture_mapper = vtk.vtkPolyDataMapper2D()
-        texture_mapper.SetInputData(self.texture_polydata)
+        if major_version <= 5:
+            texture_mapper.SetInput(self.texture_polydata)
+        else:
+            texture_mapper.SetInputData(self.texture_polydata)
 
         button = vtk.vtkTexturedActor2D()
         button.SetMapper(texture_mapper)
