@@ -45,15 +45,9 @@ def test_button(recording=False):
         def __init__(self):
             super(BrokenUI, self).__init__()
 
-        def get_actors(self):
-            pass
-
-        def set_center(self, position):
-            pass
-
     broken_ui = BrokenUI()
-    npt.assert_raises(NotImplementedError, broken_ui.get_actors())
-    npt.assert_raises(NotImplementedError, broken_ui.set_center((1, 2)))
+    npt.assert_raises(NotImplementedError, broken_ui.get_actors)
+    npt.assert_raises(NotImplementedError, broken_ui.set_center, (1, 2))
     # /Broken UI Element
 
     # Button
@@ -95,6 +89,13 @@ def test_button(recording=False):
     button_test.add_callback("RightButtonPressEvent", make_invisible)
     button_test.add_callback("LeftButtonPressEvent", modify_button_callback)
     # /Button
+
+    # Dummy Show Manager
+    dummy_renderer = window.Renderer()
+    dummy_show_manager = window.ShowManager(dummy_renderer, size=(800, 800), reset_camera=False,
+                                            interactor_style='trackball')
+    npt.assert_raises(TypeError, button_test.add_to_renderer, dummy_renderer)
+    # /Dummy Show Manager
 
     current_size = (600, 600)
     show_manager = window.ShowManager(renderer, size=current_size, title="DIPY UI Example")
