@@ -16,6 +16,10 @@ from dipy.utils.optpkg import optional_package
 # Allow import, but disable doctests, if we don't have pytables
 tables, have_tables, setup_module = optional_package('tables')
 
+# Useful variable for backward compatibility.
+PY_TABLE2 = tables.__version__[0] == "2"
+PY_TABLE3 = tables.__version__[0] == "3"
+
 # Make sure not to carry across setup module from * import
 __all__ = ['Dpy']
 
@@ -59,30 +63,38 @@ class Dpy(object):
         '''
 
         self.mode = mode
-        self.f = tables.openFile(fname, mode=self.mode)
+        self.f = tables.openFile(fname, mode=self.mode) if PY_TABLE2 else tables.open_file(fname, mode=self.mode)
         self.N = 5 * 10**9
         self.compression = compression
 
         if self.mode == 'w':
-            self.streamlines = self.f.createGroup(self.f.root, 'streamlines')
-            # create a version number
-            self.version = self.f.createArray(self.f.root, 'version',
-                                              [b"0.0.1"], 'Dpy Version Number')
+            if PY_TABLE2:
+                func_create_group = self.f.createGroup
+                func_create_array = self.f.createArray
+                func_create_earray = self.f.createEArray
+            else:
+                func_create_group = self.f.create_group
+                func_create_array = self.f.create_array
+                func_create_earray = self.f.create_earray
 
-            self.tracks = self.f.createEArray(self.f.root.streamlines,
-                                              'tracks',
-                                              tables.Float32Atom(),
-                                              (0, 3),
-                                              "scalar Float32 earray",
+            self.streamlines = func_create_group(self.f.root, 'streamlines')
+            # create a version number
+            self.version = func_create_array(self.f.root, 'version',
+                                             [b"0.0.1"], 'Dpy Version Number')
+
+            self.tracks = func_create_earray(self.f.root.streamlines,
+                                             'tracks',
+                                             tables.Float32Atom(),
+                                             (0, 3),
+                                             "scalar Float32 earray",
+                                             tables.Filters(self.compression),
+                                             expectedrows=self.N)
+            self.offsets = func_create_earray(self.f.root.streamlines,
+                                              'offsets',
+                                              tables.Int64Atom(), (0,),
+                                              "scalar Int64 earray",
                                               tables.Filters(self.compression),
-                                              expectedrows=self.N)
-            self.offsets = self.f.createEArray(self.f.root.streamlines,
-                                               'offsets',
-                                               tables.Int64Atom(), (0,),
-                                               "scalar Int64 earray",
-                                               tables.Filters(
-                                                self.compression),
-                                               expectedrows=self.N + 1)
+                                              expectedrows=self.N + 1)
             self.curr_pos = 0
             self.offsets.append(np.array([self.curr_pos]).astype(np.int64))
 
