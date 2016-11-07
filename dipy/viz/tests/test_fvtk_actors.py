@@ -310,16 +310,16 @@ def test_odf_slicer():
         fa[-1, :, :] = 1.
         fa[5, 5, 5] = 1
 
+        k = 5
+        I, J, K = odfs.shape[:3]
+
         fa_actor = actor.slicer(fa, affine)
-        fa_actor.display(None, None, 5)
+        fa_actor.display_extent(0, I, 0, J, k, k)
         renderer.add(odf_actor)
         renderer.reset_camera()
         renderer.reset_clipping_range()
 
-        k = 5
-        I, J, K = odfs.shape[:3]
-
-        odf_actor.display_extent(0, I, 0, J, k, k + 1)
+        odf_actor.display_extent(0, I, 0, J, k, k)
         odf_actor.GetProperty().SetOpacity(1.0)
         # window.show(renderer, reset_camera=False)
         arr = window.snapshot(renderer)

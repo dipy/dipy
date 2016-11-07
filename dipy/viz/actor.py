@@ -578,13 +578,13 @@ def odf_slicer(odfs, affine=None, mask=None, sphere=None, scale=2.2,
     else:
         mask = mask.astype(np.bool)
 
+    I, J, K = odfs.shape[:3]
+
     class OdfSlicerActor(vtk.vtkLODActor):
 
         def display_extent(self, x1, x2, y1, y2, z1, z2):
-
             tmp_mask = np.zeros(odfs.shape[:3], dtype=np.bool)
-            tmp_mask[x1:x2, y1:y2, z1:z2] = True
-
+            tmp_mask[x1:x2 + 1, y1:y2 + 1, z1:z2 + 1] = True
             tmp_mask = np.bitwise_and(tmp_mask, mask)
 
             self.mapper = _odf_slicer_mapper(odfs=odfs,
@@ -599,10 +599,20 @@ def odf_slicer(odfs, affine=None, mask=None, sphere=None, scale=2.2,
                                              global_cm=global_cm)
             self.SetMapper(self.mapper)
 
+        def display(self, x=None, y=None, z=None):
+            if x is None and y is None and z is None:
+                self.display_extent(0, I - 1, 0, J - 1,
+                                    int(np.floor(K/2)), int(np.floor(K/2)))
+            if x is not None:
+                self.display_extent(x, x, 0, J - 1, 0, K - 1)
+            if y is not None:
+                self.display_extent(0, I - 1, y, y, 0, K - 1)
+            if z is not None:
+                self.display_extent(0, I - 1, 0, J - 1, z, z)
+
     odf_actor = OdfSlicerActor()
-    I, J, K = odfs.shape[:3]
-    odf_actor.display_extent(0, I, 0, J,
-                             int(np.floor(K/2)), int(np.floor(K/2 + 1)))
+    odf_actor.display_extent(0, I - 1, 0, J - 1,
+                             int(np.floor(K/2)), int(np.floor(K/2)))
 
     return odf_actor
 
