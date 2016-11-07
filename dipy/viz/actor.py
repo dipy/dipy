@@ -177,6 +177,12 @@ def slicer(data, affine=None, value_range=None, opacity=1.,
             im_actor.input_connection(self.output)
             im_actor.SetDisplayExtent(*self.GetDisplayExtent())
             im_actor.opacity(opacity)
+            if interpolation == 'nearest':
+                im_actor.SetInterpolate(False)
+            else:
+                im_actor.SetInterpolate(True)
+            if major_version >= 6:
+                im_actor.GetMapper().BorderOn()
             return im_actor
 
     image_actor = ImageActor()
@@ -545,7 +551,7 @@ def axes(scale=(1, 1, 1), colorx=(1, 0, 0), colory=(0, 1, 0), colorz=(0, 0, 1),
 def odf_slicer(odfs, affine=None, mask=None, sphere=None, scale=2.2,
                norm=True, radial_scale=True, opacity=1.,
                colormap='plasma', global_cm=False):
-    """ Slice spherical fields in native or wold coordinates
+    """ Slice spherical fields in native or world coordinates
 
     Parameters
     ----------
@@ -677,6 +683,8 @@ def _odf_slicer_mapper(odfs, affine=None, mask=None, sphere=None, scale=2.2,
         all_faces.append(faces + k * xyz.shape[0])
         all_ms.append(m)
 
+    # from ipdb import set_trace
+    # set_trace()
     all_xyz = np.ascontiguousarray(np.concatenate(all_xyz))
     all_xyz_vtk = numpy_support.numpy_to_vtk(all_xyz, deep=True)
 
