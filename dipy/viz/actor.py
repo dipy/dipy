@@ -658,6 +658,12 @@ def _odf_slicer_mapper(odfs, affine=None, mask=None, sphere=None, scale=2.2,
 
     ijk = np.ascontiguousarray(np.array(np.nonzero(mask)).T)
 
+    # from ipdb import set_trace
+    # set_trace()
+
+    if len(ijk) == 0:
+        return None
+
     if affine is not None:
         ijk = np.ascontiguousarray(apply_affine(affine, ijk))
 
