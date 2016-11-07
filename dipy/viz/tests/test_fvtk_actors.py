@@ -354,7 +354,7 @@ def test_odf_slicer(interactive=False):
         mask = np.ones(odfs.shape[:3])
         odf_actor = actor.odf_slicer(odfs, None, mask=mask,
                                      sphere=sphere, scale=.25,
-                                     colormap='plasma',
+                                     colormap='jet',
                                      norm=False, global_cm=True)
 
         renderer.clear()
@@ -387,5 +387,5 @@ def test_odf_slicer(interactive=False):
 
 
 if __name__ == "__main__":
-
-    npt.run_module_suite()
+    test_odf_slicer()
+    #npt.run_module_suite()
