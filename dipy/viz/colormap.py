@@ -293,10 +293,9 @@ def create_colormap(v, name='jet', auto=True):
     """
 
     if name == 'jet':
-        msg = 'Jet is a popular colormap but can often be misleading and'
-        msg += 'we will remove it from being the default in the near future.'
-        msg += 'Try for example plasma, viridis, hot or inferno.'
-        warn(DeprecationWarning(msg))
+        msg = 'Jet is a popular colormap but can often be misleading'
+        msg += 'Use instead plasma, viridis, hot or inferno.'
+        warn(msg, DeprecationWarning)
 
     if v.ndim > 1:
         msg = 'This function works only with 1d arrays. Use ravel()'
