@@ -279,7 +279,7 @@ def test_bundle_maps():
 
 @npt.dec.skipif(not run_test)
 @xvfb_it
-def test_odf_slicer():
+def test_odf_slicer(interactive=False):
 
     sphere = get_sphere('symmetric362')
 
@@ -346,6 +346,44 @@ def test_odf_slicer():
         arr = window.snapshot(renderer)
         report = window.analyze_snapshot(arr, find_objects=True)
         npt.assert_equal(report.objects, 2)
+
+        renderer.clear()
+        renderer.add(odf_actor)
+        renderer.add(fa_actor)
+        odfs[:, :, :] = 1
+        mask = np.ones(odfs.shape[:3])
+        odf_actor = actor.odf_slicer(odfs, None, mask=mask,
+                                     sphere=sphere, scale=.25,
+                                     colormap='plasma',
+                                     norm=False, global_cm=True)
+
+        renderer.clear()
+        renderer.add(odf_actor)
+        renderer.add(fa_actor)
+        renderer.add(actor.axes((11, 11, 11)))
+        for i in range(11):
+            odf_actor.display(i, None, None)
+            fa_actor.display(i, None, None)
+            if interactive:
+                window.show(renderer)
+        for j in range(11):
+            odf_actor.display(None, j, None)
+            fa_actor.display(None, j, None)
+            if interactive:
+                window.show(renderer)
+        # with mask equal to zero everything should be black
+        mask = np.zeros(odfs.shape[:3])
+        odf_actor = actor.odf_slicer(odfs, None, mask=mask,
+                                     sphere=sphere, scale=.25,
+                                     colormap='plasma',
+                                     norm=False, global_cm=True)
+        renderer.clear()
+        renderer.add(odf_actor)
+        arr = window.snapshot(renderer)
+        report = window.analyze_snapshot(arr, colors=(0, 0, 0),
+                                         find_objects=True)
+        npt.assert_equal(report.objects, 0)
+        npt.assert_equal(report.colors_found[0], True)
 
 
 if __name__ == "__main__":

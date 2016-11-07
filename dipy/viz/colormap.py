@@ -291,11 +291,11 @@ def create_colormap(v, name='jet', auto=True):
     more colormaps consider downloading Matplotlib (see matplotlib.org).
     """
 
-    if name == 'jet':
-        msg = 'Jet is a popular colormap but can often be misleading and'
-        msg += 'we will remove it from being the default in the near future.'
-        msg += 'Try for example plasma, viridis, hot or inferno.'
-        print(msg)
+    # if name == 'jet':
+    #     msg = 'Jet is a popular colormap but can often be misleading and'
+    #     msg += 'we will remove it from being the default in the near future.'
+    #     msg += 'Try for example plasma, viridis, hot or inferno.'
+    #     print(msg)
 
     if v.ndim > 1:
         msg = 'This function works only with 1d arrays. Use ravel()'
