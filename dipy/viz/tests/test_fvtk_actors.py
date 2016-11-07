@@ -387,5 +387,4 @@ def test_odf_slicer(interactive=False):
 
 
 if __name__ == "__main__":
-    test_odf_slicer()
-    #npt.run_module_suite()
+    npt.run_module_suite()
