@@ -1147,12 +1147,17 @@ def diffusion_components(dki_params, sphere, awf=None, mask=None):
             raise ValueError("awf array is not the same shape as dki_params.")
 
     # Compute directional extra and intra-cellular diffusion samples
-    evals, evecs, kt = split_dki_param(dki_params)
+    mask = np.array(mask, dtype=bool, copy=False)
+    EDT = np.zeros(shape + (12,))
+    IDT = np.zeros(shape + (12,))
+    awff = awf[mask].ravel()
+    params = np.reshape(dki_params[mask], (-1, dki_params[mask].shape[-1]))
+    evals, evecs, kt = split_dki_param(params)
     di = apparent_diffusion_coef(vec_val_vect(evecs, evals), sphere)
-    ki = apparent_kurtosis_coef(dki_params, sphere)
-    awf = np.expand_dims(awf, axis=3)
-    EDi = di * (1 + np.sqrt(ki*awf / (3.0-3.0*awf)))
-    IDi = di * (1 - np.sqrt(ki * (1.0-awf) / (3.0*awf)))
+    ki = apparent_kurtosis_coef(params, sphere)
+    awff = np.expand_dims(awff, axis=3)
+    EDi = di * (1 + np.sqrt(ki*awff / (3.0-3.0*awff)))
+    IDi = di * (1 - np.sqrt(ki * (1.0-awff) / (3.0*awff)))
 
     # Reconstruct the extra and intra-cellular diffusion tensors
     B = np.zeros((sphere.x.size, 6))
@@ -1163,8 +1168,10 @@ def diffusion_components(dki_params, sphere, awf=None, mask=None):
     B[:, 4] = sphere.y * sphere.z * 2.  # Byz
     B[:, 5] = sphere.z * sphere.z  # Bzz
     pinvB = np.linalg.pinv(B)
-    EDT = eig_from_lo_tri(np.einsum('...ij,...j', pinvB, EDi))
-    IDT = eig_from_lo_tri(np.einsum('...ij,...j', pinvB, IDi))
+    edt = eig_from_lo_tri(np.einsum('...ij,...j', pinvB, EDi))
+    idt = eig_from_lo_tri(np.einsum('...ij,...j', pinvB, IDi))
+    EDT[mask, :] = edt
+    IDT[mask, :] = idt
 
     return EDT, IDT
 
