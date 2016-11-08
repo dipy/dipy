@@ -735,13 +735,39 @@ def test_wmti_model_multi_voxel():
     dkiF = dkiM.fit(DWIsim)
 
     # Axonal Water Fraction
-    sphere = get_sphere('symmetric724')
+    sphere = get_sphere()
     AWF = dki.axonal_water_fraction(dkiF.model_params, sphere, mask=None,
                                     gtol=1e-5)
     assert_almost_equal(AWF, FIE)
 
     # Extra-cellular and intra-cellular components
     EDT, IDT = dki.diffusion_components(dkiF.model_params, sphere)
+    # check eigenvalues
+    assert_array_almost_equal(EDT[..., 0], ADE)
+    assert_array_almost_equal(EDT[..., 1], RDE)
+    assert_array_almost_equal(EDT[..., 2], RDE)
+    assert_array_almost_equal(IDT[..., 0], ADI)
+    assert_array_almost_equal(IDT[..., 1], RDI)
+    assert_array_almost_equal(IDT[..., 2], RDI)
+
+    # Test methods performance when a signal with all zeros is present    
+    FIE[0, 0, 0] = 0
+    RDI[0, 0, 0] = 0
+    ADI[0, 0, 0] = 0
+    ADE[0, 0, 0] = 0
+    Tor[0, 0, 0] = 0
+    RDE[0, 0, 0] = 0
+    DWIsim[0, 0, 0, :] = 0
+    mask = np.ones((2., 2., 2.))
+    mask[0, 0, 0] = 0
+
+    dkiF = dkiM.fit(DWIsim)
+    AWF = dki.axonal_water_fraction(dkiF.model_params, sphere, mask=mask,
+                                    gtol=1e-5)
+    assert_almost_equal(AWF, FIE)
+
+    # Extra-cellular and intra-cellular components
+    EDT, IDT = dki.diffusion_components(dkiF.model_params, sphere, mask=mask)
     # check eigenvalues
     assert_array_almost_equal(EDT[..., 0], ADE)
     assert_array_almost_equal(EDT[..., 1], RDE)
