@@ -34,8 +34,6 @@ class UI(object):
         self.parent_UI = None
         self._callbacks = []
 
-        self.window = None
-
     def get_actors(self):
         """ Returns the actors that compose this UI component. """
         msg = "Subclasses of UI must implement `get_actors(self)`."
@@ -51,7 +49,6 @@ class UI(object):
 
         # Get a hold on the current interactor style.
         iren = ren.GetRenderWindow().GetInteractor().GetInteractorStyle()
-        self.window = ren.GetRenderWindow()
 
         for callback in self._callbacks:
             if not isinstance(iren, CustomInteractorStyle):
@@ -131,10 +128,7 @@ class Button2D(UI):
             png = vtk.vtkPNGReader()
             png.SetFileName(icon_fname)
             png.Update()
-
-            texture = vtk.vtkTexture()
-            texture.SetInputConnection(png.GetOutputPort())
-            icons[icon_name] = texture, png.GetOutput().GetExtent()
+            icons[icon_name] = png.GetOutput()
 
         return icons
 
@@ -186,7 +180,7 @@ class Button2D(UI):
         """ Return an image as a 2D actor with a specific position.
         Parameters
         ----------
-        icon : imageDataGeometryFilter
+        icon : vtkImageData
         Returns
         -------
         button : vtkTexturedActor2D
@@ -197,7 +191,7 @@ class Button2D(UI):
         self.texture_polydata = vtk.vtkPolyData()
         self.texture_points = vtk.vtkPoints()
         self.texture_points.SetNumberOfPoints(4)
-        self.size = icon[1]
+        self.size = icon.GetExtent()
 
         polys = vtk.vtkCellArray()
         polys.InsertNextCell(4)
@@ -224,12 +218,15 @@ class Button2D(UI):
 
         button = vtk.vtkTexturedActor2D()
         button.SetMapper(texture_mapper)
-        button.SetTexture(icon[0])
+
+        self.texture = vtk.vtkTexture()
+        button.SetTexture(self.texture)
 
         button_property = vtk.vtkProperty2D()
         button_property.SetOpacity(1.0)
         button.SetProperty(button_property)
 
+        self.set_icon(icon)
         return button
 
     def get_actors(self):
@@ -253,8 +250,10 @@ class Button2D(UI):
         ----------
         icon : imageDataGeometryFilter
         """
-        self.actor.ReleaseGraphicsResources(self.window)
-        self.actor.SetTexture(icon[0])
+        if major_version <= 5:
+            self.texture.SetInput(icon)
+        else:
+            self.texture.SetInputData(icon)
 
     def next_icon_name(self):
         """ Returns the next icon name while cycling through icons.
