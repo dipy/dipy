@@ -70,8 +70,10 @@ def modify_button_callback(i_ren, obj, button):
     button.next_icon()
     i_ren.force_render()
 
+button_example.on_left_mouse_button_click(modify_button_callback)
+
 button_example.add_callback("RightButtonPressEvent", move_button_callback)
-button_example.add_callback("LeftButtonPressEvent", modify_button_callback)
+# button_example.add_callback("LeftButtonPressEvent", modify_button_callback)
 # /Buttons
 
 # Show Manager

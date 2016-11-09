@@ -85,6 +85,9 @@ class UI(object):
         for actor in self.get_actors():
             actor.SetVisibility(visibility)
 
+    def on_left_mouse_button_click(self, callback):
+        self.add_callback("LeftButtonPressEvent", callback)
+
 
 class Button2D(UI):
     """A 2D overlay button and is of type vtkTexturedActor2D.
