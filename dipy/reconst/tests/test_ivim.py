@@ -400,6 +400,26 @@ def test_fit_one_stage():
     assert_array_almost_equal(fit.model_params, linear_fit_params)
     assert_array_almost_equal(fit.predict(gtab), linear_fit_signal)
 
+def test_fit_one_stage_fast():
+    """
+    Test to check the results for the fast one_stage linear fit.
+    """
+    model = IvimModel(gtab, two_stage=False, fast_linear_fit=True)
+    fit = model.fit(data_single)
+    # assert_array_almost_equal()
+    linear_fit_params = [9.88834140e+02, 1.19707191e-01, 7.91176970e-03,
+                         9.30095210e-04]
+
+    linear_fit_signal = [988.83414044, 971.77122546, 955.46786293,
+                         939.87125905, 924.93258982, 896.85182201,
+                         870.90346447, 846.81187693, 824.34108781,
+                         803.28900104, 783.48245048, 764.77297789,
+                         747.03322866, 669.54798887, 605.03328304,
+                         549.00852235, 499.21077611, 454.40299244,
+                         413.83192296, 376.98072773, 343.45531017]
+
+    assert_array_almost_equal(fit.model_params, linear_fit_params)
+    assert_array_almost_equal(fit.predict(gtab), linear_fit_signal)
 
 def test_leastsq_failing():
     """

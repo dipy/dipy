@@ -67,6 +67,26 @@ def _ivim_error(params, gtab, signal):
     residual = signal - ivim_prediction(params, gtab)
     return residual
 
+def _AIC(rss, k, n):
+    """
+    Calculates the AIC of a regression
+
+    Parameters
+    ----------
+    rss : float
+        Residual sum of squares of the data and the fit
+    k : float
+        Number of parameters in the fit
+    n : float
+        Number of points in the data
+
+    Returns
+    -------
+    AIC : float
+        The AIC value of the fit
+    """
+    return 2 * k + n * np.log(rss / n)
+
 
 def f_D_star_prediction(params, gtab, S0, D):
     """Function used to predict IVIM signal when S0 and D are known
@@ -131,7 +151,7 @@ class IvimModel(ReconstModel):
     """
 
     def __init__(self, gtab, split_b_D=400.0, split_b_S0=200., bounds=None,
-                 two_stage=True, tol=1e-15,
+                 two_stage=True, fast_linear_fit=False, tol=1e-15,
                  x_scale=[1000., 0.1, 0.001, 0.0001],
                  options={'gtol': 1e-15, 'ftol': 1e-15,
                           'eps': 1e-15, 'maxiter': 1000}):
@@ -186,6 +206,10 @@ class IvimModel(ReconstModel):
             The linear fit can be used to get a quick estimation of the
             parameters. default : False
 
+        fast_linear_fit : bool
+            A boolean to select the fast, linear-only fitting for the first stage fit.
+            This replaces a slower non-linear fitting of S0 and D*.
+
         tol : float, optional
             Tolerance for convergence of minimization.
             default : 1e-15
@@ -220,6 +244,7 @@ class IvimModel(ReconstModel):
         self.split_b_S0 = split_b_S0
         self.bounds = bounds
         self.two_stage = two_stage
+        self.fast_linear_fit = fast_linear_fit
         self.tol = tol
         self.options = options
         self.x_scale = x_scale
@@ -265,23 +290,27 @@ class IvimModel(ReconstModel):
         -------
         IvimFit object
         """
-        # Get S0_prime and D - paramters assuming a single exponential decay
-        # for signals for bvals greater than `split_b_D`
-        S0_prime, D = self.estimate_linear_fit(
-            data, self.split_b_D, less_than=False)
+        if self.fast_linear_fit:
+            params_linear = self.fit_linear(data, mask)
+        else:
+            # Get S0_prime and D - paramters assuming a single exponential decay
+            # for signals for bvals greater than `split_b_D`
+            S0_prime, D = self.estimate_linear_fit(
+                data, self.split_b_D, less_than=False)
 
-        # Get S0 and D_star_prime - paramters assuming a single exponential
-        # decay for for signals for bvals greater than `split_b_S0`.
+            # Get S0 and D_star_prime - paramters assuming a single exponential
+            # decay for for signals for bvals greater than `split_b_S0`.
 
-        S0, D_star_prime = self.estimate_linear_fit(data, self.split_b_S0,
-                                                    less_than=True)
-        # Estimate f
-        f_guess = 1 - S0_prime / S0
+            S0, D_star_prime = self.estimate_linear_fit(data, self.split_b_S0,
+                                                        less_than=True)
+            # Estimate f
+            f_guess = 1 - S0_prime / S0
 
-        # Fit f and D_star using leastsq.
-        params_f_D_star = [f_guess, D_star_prime]
-        f, D_star = self.estimate_f_D_star(params_f_D_star, data, S0, D)
-        params_linear = np.array([S0, f, D_star, D])
+            # Fit f and D_star using leastsq.
+            params_f_D_star = [f_guess, D_star_prime]
+            f, D_star = self.estimate_f_D_star(params_f_D_star, data, S0, D)
+            params_linear = np.array([S0, f, D_star, D])
+
         # Fit parameters again if two_stage flag is set.
         if self.two_stage:
             params_two_stage = self._leastsq(data, params_linear)
@@ -297,7 +326,64 @@ class IvimModel(ReconstModel):
         else:
             return IvimFit(self, params_linear)
 
-    def estimate_linear_fit(self, data, split_b, less_than=True):
+    def fit_linear(self, data, mask=None):
+        """ Linear fit method of the Ivim model class.
+
+        The fitting takes place in the following steps:
+        1. Linear fit for D (bvals > `split_b_D` (default: 400)) and store S0_prime.
+            Assuming we have a single exponential decay for bvals greater than split_b_D
+        2. Calculate the residuals for bvals <= split_b_S0
+        3. Linear fit for D_star on the residuals in step 2 for bvals < `split_b_S0` (default: 400) and store S0_resid.
+            Assuming the remaining signal is from a single exponential decay for bvals less than split_b_S0
+        4. Calculate S0 = S0_prime + S0_resid
+        5. Calculate f = S0_resid / S0
+
+
+        Parameters
+        ----------
+        data : array
+            The measured signal from one voxel. A multi voxel decorator
+            will be applied to this fit method to scale it and apply it
+            to multiple voxels.
+
+        mask : array
+            A boolean array used to mark the coordinates in the data that
+            should be analyzed that has the shape data.shape[:-1]
+
+        Returns
+        -------
+        params : array
+            An array of the model parameters
+        """
+
+        # setup
+        high_bvals = self.gtab.bvals > self.split_b_D
+        low_bvals = self.gtab.bvals <= self.split_b_S0
+
+        # step 1
+        S0_prime, D = self.estimate_linear_fit(data, b_selection=high_bvals)
+        params_high_b = np.array([S0_prime, 0, 0, D])
+
+        # step 2
+        resid = _ivim_error(params_high_b, self.gtab, data)  # params=[S0, f, D*, D]
+        resid_shift = np.min(resid[low_bvals])-1  # prevent values less than 0 in the log
+
+        # step 3
+        S0_resid, D_star = self.estimate_linear_fit(resid - resid_shift, b_selection=low_bvals)
+        S0_resid += resid_shift  # remove the shift
+
+        # step 4
+        S0 = S0_resid + S0_prime
+
+        # step 5
+        f = S0_resid / S0
+
+        # return the values
+        params = np.array([S0, f, D_star, D])
+        return params
+
+
+    def estimate_linear_fit(self, data, split_b=None, less_than=True, b_selection=None):
         """Estimate a linear fit by taking log of data.
 
         Parameters
@@ -307,9 +393,14 @@ class IvimModel(ReconstModel):
 
         split_b : float
             The b value to split the data
+            split_b or b_selection is required, if both exist b_selection takes precedence
 
         less_than : bool
             If True, splitting occurs for bvalues less than split_b
+
+        b_selection : True/False array
+            The array which selects the desired data
+            split_b or b_selection is required, if both exist b_selection takes precedence
 
         Returns
         -------
@@ -319,19 +410,48 @@ class IvimModel(ReconstModel):
         D : float
             The estimated value of D.
         """
-        if less_than:
-            bvals_split = self.gtab.bvals[self.gtab.bvals <= split_b]
-            D, neg_log_S0 = np.polyfit(bvals_split,
-                                       -np.log(data[self.gtab.bvals <=
-                                                    split_b]), 1)
-        else:
-            bvals_split = self.gtab.bvals[self.gtab.bvals >= split_b]
-            D, neg_log_S0 = np.polyfit(bvals_split,
-                                       -np.log(data[self.gtab.bvals >=
-                                                    split_b]), 1)
+        if b_selection is None:
+            if split_b is not None:
+                if less_than:
+                    b_selection = self.gtab.bvals <= split_b
+                else:
+                    b_selection = self.gtab.bvals >= split_b
+            else:
+                warningMsg = "In estimate_linear_fit, either split_b or b_selection is required!"
+                warnings.warn(warningMsg, UserWarning)
+
+        D, neg_log_S0 = np.polyfit(self.gtab.bvals[b_selection],
+                                       -np.log(data[b_selection]), 1)
 
         S0 = np.exp(-neg_log_S0)
         return S0, D
+
+    def aic_fit_compare(self, data, param_iter):
+        """
+        Parameters
+        ----------
+        data : array
+            Array containing the actual signal values.
+
+        param_iter : iterable (tuple/list) of arrays
+            An iterable containing the parameters of all the curves to fit
+
+        Returns
+        -------
+        aic_arr : array
+            Array of AIC values for the given models, smaller is a better model
+        """
+        aic_arr = np.array([])
+        n = data.size
+        for param in param_iter:
+            k = np.sum(param != 0)  # number of nonzero elements is the number of parameters
+            rss = np.sum(np.square(_ivim_error(param, self.gtab, data)))
+            aic = _AIC(rss, k, n)
+            aic_arr = np.append(aic_arr, aic)  # maybe should pre-allocate for speed
+        return aic_arr
+
+
+
 
     def estimate_f_D_star(self, params_f_D_star, data, S0, D):
         """Estimate f and D_star using the values of all the other parameters
@@ -528,11 +648,15 @@ class IvimFit(object):
         return type(self)(self.model, model_params[index])
 
     @property
-    def S0_predicted(self):
+    def S0(self):
         return self.model_params[..., 0]
 
     @property
     def perfusion_fraction(self):
+        return self.model_params[..., 1]
+
+    @property
+    def f(self):
         return self.model_params[..., 1]
 
     @property
@@ -546,6 +670,14 @@ class IvimFit(object):
     @property
     def shape(self):
         return self.model_params.shape[:-1]
+
+    @property
+    def S0_resid(self):
+        return self.model_params[..., 0] * self.model_params[..., 1]
+
+    @property
+    def S0_prime(self):
+        return self.model_params[..., 0] - self.S0_resid
 
     def predict(self, gtab, S0=1.):
         """Given a model fit, predict the signal.
