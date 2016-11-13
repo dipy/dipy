@@ -321,8 +321,8 @@ def test_S0():
     """
     Test if the `IvimFit` class returns the correct S0
     """
-    assert_array_almost_equal(ivim_fit_single.S0_predicted, S0)
-    assert_array_almost_equal(ivim_fit_multi.S0_predicted, ivim_params[..., 0])
+    assert_array_almost_equal(ivim_fit_single.S0, S0)
+    assert_array_almost_equal(ivim_fit_multi.S0, ivim_params[..., 0])
 
 
 def test_perfusion_fraction():
@@ -418,8 +418,8 @@ def test_fit_one_stage_fast():
                          549.00852235, 499.21077611, 454.40299244,
                          413.83192296, 376.98072773, 343.45531017]
 
-    assert_array_almost_equal(fit.model_params, linear_fit_params)
-    assert_array_almost_equal(fit.predict(gtab), linear_fit_signal)
+    assert_array_almost_equal(fit.model_params, linear_fit_params, 3)
+    assert_array_almost_equal(fit.predict(gtab), linear_fit_signal, 3)
 
 def test_leastsq_failing():
     """
@@ -428,7 +428,7 @@ def test_leastsq_failing():
     """
     fit_single = ivim_model.fit(noisy_single)
     # Test for the S0 and D values
-    assert_array_almost_equal(fit_single.S0_predicted, 4356.268901117833)
+    assert_array_almost_equal(fit_single.S0, 4356.268901117833)
     assert_array_almost_equal(fit_single.D, 6.936684e-04)
 
 
