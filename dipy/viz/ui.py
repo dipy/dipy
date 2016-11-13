@@ -34,6 +34,10 @@ class UI(object):
         self.parent_UI = None
         self._callbacks = []
 
+        self.left_button_state = "released"
+        self.right_button_state = "released"
+        self.handle_events()
+
     def get_actors(self):
         """ Returns the actors that compose this UI component. """
         msg = "Subclasses of UI must implement `get_actors(self)`."
@@ -85,8 +89,60 @@ class UI(object):
         for actor in self.get_actors():
             actor.SetVisibility(visibility)
 
-    def on_left_mouse_button_click(self, callback):
-        self.add_callback("LeftButtonPressEvent", callback)
+    def handle_events(self):
+        self.add_callback("LeftButtonPressEvent", self.left_button_click_callback)
+        self.add_callback("LeftButtonReleaseEvent", self.left_button_release_callback)
+        self.add_callback("RightButtonPressEvent", self.right_button_click_callback)
+        self.add_callback("RightButtonReleaseEvent", self.right_button_release_callback)
+        self.add_callback("MouseMoveEvent", self.mouse_move_callback)
+
+    def on_left_mouse_button_pressed(self, i_ren):
+        pass
+
+    def on_left_mouse_button_drag(self, i_ren):
+        pass
+
+    def on_right_mouse_button_pressed(self, i_ren):
+        pass
+
+    def on_right_mouse_button_drag(self, i_ren):
+        pass
+
+    def on_mouse_hover(self, i_ren):
+        pass
+
+    @staticmethod
+    def left_button_click_callback(i_ren, obj, self):
+        self.left_button_state = "clicked"
+        i_ren.event.abort()
+
+    @staticmethod
+    def left_button_release_callback(i_ren, obj, self):
+        if self.left_button_state == "clicked":
+            self.on_left_mouse_button_pressed(i_ren)
+        self.left_button_state = "released"
+
+    @staticmethod
+    def right_button_click_callback(i_ren, obj, self):
+        self.right_button_state = "clicked"
+        i_ren.event.abort()
+
+    @staticmethod
+    def right_button_release_callback(i_ren, obj, self):
+        if self.right_button_state == "clicked":
+            self.on_right_mouse_button_pressed(i_ren)
+        self.right_button_state = "released"
+
+    @staticmethod
+    def mouse_move_callback(i_ren, obj, self):
+        if self.left_button_state == "clicked" or self.left_button_state == "dragging":
+            self.left_button_state = "dragging"
+            self.on_left_mouse_button_drag(i_ren)
+        elif self.right_button_state == "clicked" or self.right_button_state == "dragging":
+            self.right_button_state = "dragging"
+            self.on_right_mouse_button_drag(i_ren)
+        else:
+            self.on_mouse_hover(i_ren)
 
 
 class Button2D(UI):
@@ -105,7 +161,6 @@ class Button2D(UI):
         icon_fnames : dict
             {iconname : filename, iconname : filename, ...}
         """
-        super(Button2D, self).__init__()
         self.icon_extents = dict()
         self.icons = self.build_icons(icon_fnames)
         self.icon_names = list(self.icons.keys())
@@ -113,6 +168,7 @@ class Button2D(UI):
         self.current_icon_name = self.icon_names[self.current_icon_id]
         self.actor = self.build_actor(self.icons[self.current_icon_name])
         self.size = size
+        super(Button2D, self).__init__()
 
     def build_icons(self, icon_fnames):
         """ Converts file names to vtkImageDataGeometryFilters.
@@ -281,3 +337,207 @@ class Button2D(UI):
         """
         new_position = np.asarray(position) - self.size / 2.
         self.actor.SetPosition(*new_position)
+
+
+class Rectangle2D(UI):
+    """A 2D rectangle sub-classed from UI.
+    Uses vtkPolygon.
+    """
+
+    def __init__(self, size, center=(0, 0), color=(1, 1, 1), opacity=1.0):
+        """
+        Parameters
+        ----------
+        size : (float, float)
+        center : (float, float)
+        color : (float, float, float)
+            Must take values between 0-1.
+        opacity : float
+        """
+        self.size = size
+        self.actor = self.build_actor(size=size, center=center, color=color, opacity=opacity)
+        super(Rectangle2D, self).__init__()
+
+    def get_actors(self):
+        """ Returns the actors that compose this UI component. """
+        return [self.actor]
+
+    def add_callback(self, event_type, callback):
+        """ Adds events to rectangle actor.
+        Parameters
+        ----------
+        event_type : string
+            event code
+        callback : function
+            callback function
+        """
+        super(Rectangle2D, self).add_callback(self.actor, event_type, callback)
+
+    def build_actor(self, size, center, color, opacity):
+        """ Builds the text actor.
+        Parameters
+        ----------
+        size : (float, float)
+        center : (float, float)
+        color : (float, float, float)
+            Must be between 0-1
+        opacity : float
+        Returns
+        -------
+        actor : vtkActor2D
+        """
+        # Setup four points
+        points = vtk.vtkPoints()
+        points.InsertNextPoint(0, 0, 0)
+        points.InsertNextPoint(size[0], 0, 0)
+        points.InsertNextPoint(size[0], size[1], 0)
+        points.InsertNextPoint(0, size[1], 0)
+
+        # Create the polygon
+        polygon = vtk.vtkPolygon()
+        polygon.GetPointIds().SetNumberOfIds(4)  # make a quad
+        polygon.GetPointIds().SetId(0, 0)
+        polygon.GetPointIds().SetId(1, 1)
+        polygon.GetPointIds().SetId(2, 2)
+        polygon.GetPointIds().SetId(3, 3)
+
+        # Add the polygon to a list of polygons
+        polygons = vtk.vtkCellArray()
+        polygons.InsertNextCell(polygon)
+
+        # Create a PolyData
+        polygonPolyData = vtk.vtkPolyData()
+        polygonPolyData.SetPoints(points)
+        polygonPolyData.SetPolys(polygons)
+
+        # Create a mapper and actor
+        mapper = vtk.vtkPolyDataMapper2D()
+        if vtk.VTK_MAJOR_VERSION <= 5:
+            mapper.SetInput(polygonPolyData)
+        else:
+            mapper.SetInputData(polygonPolyData)
+
+        actor = vtk.vtkActor2D()
+        actor.SetMapper(mapper)
+        actor.GetProperty().SetColor(color)
+        actor.GetProperty().SetOpacity(opacity)
+        actor.SetPosition(center[0] - self.size[0] / 2, center[1] - self.size[1] / 2)
+
+        return actor
+
+    def set_center(self, position):
+        """ Sets the center to position.
+        Parameters
+        ----------
+        position : (float, float)
+        """
+        self.actor.SetPosition(position[0] - self.size[0]/2, position[1] - self.size[1]/2)
+
+
+class Panel2D(UI):
+    """ A 2D UI Panel.
+    Can contain one or more UI elements.
+    """
+
+    def __init__(self, center, size, color=(0.1, 0.1, 0.1), opacity=0.7, align="left"):
+        """
+        Parameters
+        ----------
+        center : (float, float)
+        size : (float, float)
+        color : (float, float, float)
+            Values must be between 0-1
+        opacity : float
+        align : [left, right]
+        """
+        self.center = center
+        self.size = size
+        self.lower_limits = (self.center[0] - self.size[0] / 2,
+                             self.center[1] - self.size[1] / 2)
+
+        self.panel = Rectangle2D(size=size, center=center, color=color,
+                                 opacity=opacity)  # type: Rectangle2D
+
+        self.element_positions = []
+        self.element_positions.append((self.panel, 0.5, 0.5))
+        self.alignment = align
+        super(Panel2D, self).__init__()
+
+    def add_to_renderer(self, ren):
+        """ Allows UI objects to add their own props to the renderer.
+        Here, we add only call add_to_renderer for the additional components.
+        Parameters
+        ----------
+        ren : renderer
+        """
+        super(Panel2D, self).add_to_renderer(ren)
+        for ui_item in self.ui_list:
+            ui_item.add_to_renderer(ren)
+
+    def get_actors(self):
+        """ Returns the panel actor. """
+        return [self.panel.actor]
+
+    def add_callback(self, event_type, callback):
+        """ Adds events to an actor.
+        Parameters
+        ----------
+        event_type : string
+            event code
+        callback : function
+            callback function
+        """
+        super(Panel2D, self).add_callback(self.panel.actor, event_type, callback)
+
+    def add_element(self, element, relative_position):
+        """ Adds an elements to the panel.
+        The center of the rectangular panel is its bottom lower position.
+        Parameters
+        ----------
+        element : UI
+            The UI item to be added.
+        relative_position : (float, float)
+        """
+        self.ui_list.append(element)
+        self.element_positions.append((element, relative_position[0], relative_position[1]))
+        element.set_center((self.lower_limits[0] + relative_position[0]*self.size[0],
+                            self.lower_limits[1] + relative_position[1]*self.size[1]))
+
+    def set_center(self, position):
+        """ Sets the panel center to position.
+        The center of the rectangular panel is its bottom lower position.
+        Parameters
+        ----------
+        position : (float, float)
+        """
+        self.center = position
+        self.lower_limits = (position[0] - self.size[0] / 2, position[1] - self.size[1] / 2)
+        for ui_element in self.element_positions:
+            ui_element[0].set_center((self.lower_limits[0] + ui_element[1]*self.size[0],
+                                      self.lower_limits[1] + ui_element[2]*self.size[1]))
+
+    def on_left_mouse_button_pressed(self, i_ren):
+        click_position = i_ren.event.position
+        self.ui_param = (click_position[0] - self.panel.actor.GetPosition()[0] - self.panel.size[0] / 2,
+                         click_position[1] - self.panel.actor.GetPosition()[1] - self.panel.size[1] / 2)
+        i_ren.event.abort()  # Stop propagating the event.
+
+    def on_left_mouse_button_drag(self, i_ren):
+        click_position = i_ren.event.position
+        if self.ui_param is not None:
+            self.set_center((click_position[0] - self.ui_param[0], click_position[1] - self.ui_param[1]))
+        i_ren.force_render()
+
+    def re_align(self, window_size_change):
+        """ Re-organises the elements in case the
+        window size is changed
+        Parameters
+        ----------
+        window_size_change : (int, int)
+        """
+        if self.alignment == "left":
+            pass
+        elif self.alignment == "right":
+            self.set_center((self.center[0] + window_size_change[0], self.center[1] + window_size_change[1]))
+        else:
+            pass

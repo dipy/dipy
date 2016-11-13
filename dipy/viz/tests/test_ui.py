@@ -33,7 +33,6 @@ def test_button(recording=False):
     print("Using VTK {}".format(vtk.vtkVersion.GetVTKVersion()))
     filename = "test_ui.log.gz"
     recording_filename = pjoin(DATA_DIR, filename)
-    renderer = window.ren()
 
     # Define some counter callback.
     states = defaultdict(lambda: 0)
@@ -42,7 +41,19 @@ def test_button(recording=False):
     class BrokenUI(UI):
 
         def __init__(self):
+            self.actor = vtk.vtkActor()
             super(BrokenUI, self).__init__()
+
+        def add_callback(self, event_type, callback):
+            """ Adds events to an actor.
+            Parameters
+            ----------
+            event_type : string
+                event code
+            callback : function
+                callback function
+            """
+            super(BrokenUI, self).add_callback(self.actor, event_type, callback)
 
     broken_ui = BrokenUI()
     npt.assert_raises(NotImplementedError, broken_ui.get_actors)
@@ -92,17 +103,15 @@ def test_button(recording=False):
     button_test.color = button_color
     # /Button
 
-    # Dummy Show Manager
-    dummy_renderer = window.Renderer()
-    dummy_show_manager = window.ShowManager(dummy_renderer, size=(800, 800), reset_camera=False,
-                                            interactor_style='trackball')
-    npt.assert_raises(TypeError, button_test.add_to_renderer, dummy_renderer)
-    # /Dummy Show Manager
+    # Panel
+    panel = ui.Panel2D(center=(440, 90), size=(300, 150), color=(1, 1, 1), align="right")
+    panel.add_element(button_test, (0.2, 0.2))
+    # /Panel
 
     current_size = (600, 600)
-    show_manager = window.ShowManager(renderer, size=current_size, title="DIPY UI Example")
+    show_manager = window.ShowManager(size=current_size, title="DIPY UI Example")
 
-    show_manager.ren.add(button_test)
+    show_manager.ren.add(panel)
 
     if recording:
         show_manager.record_events_to_file(recording_filename)
@@ -113,14 +122,14 @@ def test_button(recording=False):
         expected = [('CharEvent', 0),
                     ('KeyPressEvent', 0),
                     ('KeyReleaseEvent', 0),
-                    ('MouseMoveEvent', 0),
-                    ('LeftButtonPressEvent', 15),
+                    ('MouseMoveEvent', 30),
+                    ('LeftButtonPressEvent', 7),
                     ('RightButtonPressEvent', 1),
-                    ('MiddleButtonPressEvent', 7),
-                    ('LeftButtonReleaseEvent', 15),
+                    ('MiddleButtonPressEvent', 0),
+                    ('LeftButtonReleaseEvent', 7),
                     ('MouseWheelForwardEvent', 0),
                     ('MouseWheelBackwardEvent', 0),
-                    ('MiddleButtonReleaseEvent', 7),
+                    ('MiddleButtonReleaseEvent', 0),
                     ('RightButtonReleaseEvent', 1)]
 
         # Useful loop for debugging.
@@ -132,3 +141,11 @@ def test_button(recording=False):
 
         for event, count in expected:
             npt.assert_equal(states[event], count, err_msg=msg.format(event))
+
+            # Dummy Show Manager
+        dummy_renderer = window.Renderer()
+        dummy_show_manager = window.ShowManager(dummy_renderer, size=(800, 800), reset_camera=False,
+                                                interactor_style='trackball')
+        npt.assert_raises(TypeError, button_test.add_to_renderer, dummy_renderer)
+        # /Dummy Show Manager
+
