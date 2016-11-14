@@ -19,7 +19,8 @@ from dipy.reconst.dti import (axial_diffusivity, color_fa,
                               geodesic_anisotropy, lower_triangular,
                               mean_diffusivity, radial_diffusivity,
                               TensorModel, trace, linearity, planarity,
-                              sphericity)
+                              sphericity, decompose_tensor,
+                              _decompose_tensor_nan)
 
 from dipy.io.bvectxt import read_bvec_file
 from dipy.data import get_data, dsi_voxels, get_sphere
@@ -719,7 +720,6 @@ def test_eig_from_lo_tri():
     lo_tri = lower_triangular(dmfit.quadratic_form)
     assert_array_almost_equal(dti.eig_from_lo_tri(lo_tri), dmfit.model_params)
 
-
 def test_min_signal_alone():
     fdata, fbvals, fbvecs = get_data()
     data = nib.load(fdata).get_data()
@@ -730,3 +730,20 @@ def test_min_signal_alone():
     fit_alone = ten_model.fit(data[idx])
     fit_together = ten_model.fit(data)
     npt.assert_equal(fit_together.model_params[idx], fit_alone.model_params)
+
+def test_decompose_tensor_nan():
+    D_fine = np.array([1.7e-3, 0.0, 0.3e-3, 0.0, 0.0, 0.2e-3])
+    D_alter = np.array([1.6e-3, 0.0, 0.4e-3, 0.0, 0.0, 0.3e-3])
+    D_nan = np.nan * np.ones(6)
+
+    lref, vref = decompose_tensor(from_lower_triangular(D_fine))
+    lfine, vfine = _decompose_tensor_nan(from_lower_triangular(D_fine),
+                                         from_lower_triangular(D_alter))
+    assert_array_almost_equal(lfine, np.array([1.7e-3, 0.3e-3, 0.2e-3]))
+    assert_array_almost_equal(vfine, vref)
+    
+    lref, vref = decompose_tensor(from_lower_triangular(D_alter))
+    lalter, valter = _decompose_tensor_nan(from_lower_triangular(D_nan),
+                                           from_lower_triangular(D_alter))
+    assert_array_almost_equal(lalter, np.array([1.6e-3, 0.4e-3, 0.3e-3]))
+    assert_array_almost_equal(valter, vref)
