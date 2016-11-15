@@ -410,7 +410,7 @@ def multi_tensor_dki(gtab, mevals, S0=1., angles=[(90., 0.), (90., 0.)],
     kt[14] = kurtosis_element(D_comps, fractions, 0, 1, 2, 2, DT, MD)
 
     # compute S based on the DT and KT
-    S = DKI_signal(gtab, dt, kt, S0, snr)
+    S = dki_signal(gtab, dt, kt, S0, snr)
 
     return S, dt, kt
 
@@ -481,7 +481,7 @@ def kurtosis_element(D_comps, frac, ind_i, ind_j, ind_k, ind_l, DT=None,
     return wijkl
 
 
-def DKI_signal(gtab, dt, kt, S0=1., snr=None):
+def dki_signal(gtab, dt, kt, S0=1., snr=None):
     r""" Simulated signal based on the diffusion and diffusion kurtosis
     tensors of a single voxel. Simulations are preformed assuming the DKI
     model.
