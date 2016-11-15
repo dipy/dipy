@@ -30,3 +30,4 @@ __config__.py
 .coverage
 .buildbot.patch
 .eggs/
+dipy/.idea/
