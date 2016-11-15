@@ -29,8 +29,8 @@
       <file leaf-file-name="ivim.py" pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/reconst/ivim.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state vertical-scroll-proportion="0.29934925">
-              <caret line="380" column="105" selection-start-line="380" selection-start-column="105" selection-end-line="380" selection-end-column="105" />
+            <state vertical-scroll-proportion="0.8199566">
+              <caret line="396" column="0" selection-start-line="396" selection-start-column="0" selection-end-line="396" selection-end-column="0" />
               <folding>
                 <element signature="e#53#117#0" expanded="true" />
               </folding>
@@ -63,8 +63,8 @@
       <file leaf-file-name="dti.py" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/reconst/dti.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state vertical-scroll-proportion="-87.22222">
-              <caret line="1378" column="60" selection-start-line="1378" selection-start-column="47" selection-end-line="1378" selection-end-column="60" />
+            <state vertical-scroll-proportion="-88.333336">
+              <caret line="1377" column="60" selection-start-line="1377" selection-start-column="60" selection-end-line="1377" selection-end-column="60" />
               <folding />
             </state>
           </provider>
@@ -675,8 +675,8 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/reconst/dti.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state vertical-scroll-proportion="-87.22222">
-          <caret line="1378" column="60" selection-start-line="1378" selection-start-column="47" selection-end-line="1378" selection-end-column="60" />
+        <state vertical-scroll-proportion="-88.333336">
+          <caret line="1377" column="60" selection-start-line="1377" selection-start-column="60" selection-end-line="1377" selection-end-column="60" />
           <folding />
         </state>
       </provider>
@@ -763,8 +763,8 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/reconst/ivim.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state vertical-scroll-proportion="0.29934925">
-          <caret line="380" column="105" selection-start-line="380" selection-start-column="105" selection-end-line="380" selection-end-column="105" />
+        <state vertical-scroll-proportion="0.8199566">
+          <caret line="396" column="0" selection-start-line="396" selection-start-column="0" selection-end-line="396" selection-end-column="0" />
           <folding>
             <element signature="e#53#117#0" expanded="true" />
           </folding>
