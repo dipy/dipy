@@ -152,6 +152,7 @@ class IvimModel(ReconstModel):
 
     def __init__(self, gtab, split_b_D=400.0, split_b_S0=200., bounds=None,
                  two_stage=True, fast_linear_fit=False, tol=1e-15,
+                 noneg_exp=2.0,
                  x_scale=[1000., 0.1, 0.001, 0.0001],
                  options={'gtol': 1e-15, 'ftol': 1e-15,
                           'eps': 1e-15, 'maxiter': 1000}):
@@ -214,6 +215,11 @@ class IvimModel(ReconstModel):
             Tolerance for convergence of minimization.
             default : 1e-15
 
+        noneg_exp : float
+            A value of 2 is used to prevent negative values in the residual fitting. (preferred)
+            This works because (x*e^a)^b = x^b*e^(a*b)
+            A value of 1 is a standard log linear fitting with negative values removed.
+
         x_scale : array, optional
             Scaling for the parameters. This is passed to `least_squares` which
             is only available for Scipy version > 0.17.
@@ -246,6 +252,7 @@ class IvimModel(ReconstModel):
         self.two_stage = two_stage
         self.fast_linear_fit = fast_linear_fit
         self.tol = tol
+        self.noneg_exp = noneg_exp
         self.options = options
         self.x_scale = x_scale
 
@@ -326,7 +333,7 @@ class IvimModel(ReconstModel):
         else:
             return IvimFit(self, params_linear)
 
-    def fit_linear(self, data, mask=None):
+    def fit_linear(self, data, mask=None, noneg_exp=2.0):
         """ Linear fit method of the Ivim model class.
 
         The fitting takes place in the following steps:
@@ -365,12 +372,13 @@ class IvimModel(ReconstModel):
         params_high_b = np.array([S0_prime, 0, 0, D])
 
         # step 2
-        resid = _ivim_error(params_high_b, self.gtab, data)  # params=[S0, f, D*, D]
-        resid_shift = np.min(resid[low_bvals])-1  # prevent values less than 0 in the log
+        resid = _ivim_error(params_high_b, self.gtab, data) ** self.noneg_exp  # params=[S0, f, D*, D]
+        low_and_positive = np.logical_and(resid > 0, low_bvals)
 
         # step 3
-        S0_resid, D_star = self.estimate_linear_fit(resid - resid_shift, b_selection=low_bvals)
-        S0_resid += resid_shift  # remove the shift
+        S0_resid, D_star = self.estimate_linear_fit(resid, b_selection=low_and_positive)
+        S0_resid **= 1.0 / self.noneg_exp
+        D_star /= self.noneg_exp
 
         # step 4
         S0 = S0_resid + S0_prime

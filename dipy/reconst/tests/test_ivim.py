@@ -404,7 +404,7 @@ def test_fit_one_stage_fast():
     """
     Test to check the results for the fast one_stage linear fit.
     """
-    model = IvimModel(gtab, two_stage=False, fast_linear_fit=True)
+    model = IvimModel(gtab, two_stage=False, fast_linear_fit=True, split_b_D=200, split_b_S0=200)
     fit = model.fit(data_single)
     # assert_array_almost_equal()
     linear_fit_params = [9.88834140e+02, 1.19707191e-01, 7.91176970e-03,
