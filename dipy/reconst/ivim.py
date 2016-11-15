@@ -216,9 +216,12 @@ class IvimModel(ReconstModel):
             default : 1e-15
 
         noneg_exp : float
-            A value of 2 is used to prevent negative values in the residual fitting. (preferred)
-            This works because (x*e^a)^b = x^b*e^(a*b)
+            Only for fast linear fitting.
+            A value of 2 is used to prevent negative values in the residual fitting.
+            This works because (x*e^a)^b = x^b*e^(a*b), but of course is only approximate because of noise.
             A value of 1 is a standard log linear fitting with negative values removed.
+            So if you have noisy data it may be better to retain points and use 2, but if your data aren't noisy
+            then use 1 and a few points may be dropped but it's better than not.
 
         x_scale : array, optional
             Scaling for the parameters. This is passed to `least_squares` which
@@ -333,7 +336,7 @@ class IvimModel(ReconstModel):
         else:
             return IvimFit(self, params_linear)
 
-    def fit_linear(self, data, mask=None, noneg_exp=2.0):
+    def fit_linear(self, data, mask=None):
         """ Linear fit method of the Ivim model class.
 
         The fitting takes place in the following steps:
@@ -375,10 +378,24 @@ class IvimModel(ReconstModel):
         resid = _ivim_error(params_high_b, self.gtab, data) ** self.noneg_exp  # params=[S0, f, D*, D]
         low_and_positive = np.logical_and(resid > 0, low_bvals)
 
+        #I'm leaving shifted and pure and complex fitting in here for now in case I want to compare later
+        #resid_shifted = _ivim_error(params_high_b, self.gtab, data) # params=[S0, f, D*, D]
+        #resid_shift = np.min(resid_shifted) - 1
+        #resid_shifted -= resid_shift
+
+        #resid_pure = _ivim_error(params_high_b, self.gtab, data)   # params=[S0, f, D*, D]
+        #low_and_positive_pure = np.logical_and(resid_pure > 0, low_bvals)
+
         # step 3
         S0_resid, D_star = self.estimate_linear_fit(resid, b_selection=low_and_positive)
         S0_resid **= 1.0 / self.noneg_exp
         D_star /= self.noneg_exp
+
+        #S0_resid_shifed, D_star_shifted = self.estimate_linear_fit(resid_shifted, b_selection=low_bvals)
+
+        #S0_resid_pure, D_star_pure = self.estimate_linear_fit(resid_pure, b_selection=low_and_positive_pure)
+
+        #S0_resid_pure_cplx, D_star_pure_cplx = self.estimate_linear_fit(resid_pure+0j, b_selection=low_bvals)
 
         # step 4
         S0 = S0_resid + S0_prime
