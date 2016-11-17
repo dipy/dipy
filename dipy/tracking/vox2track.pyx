@@ -3,8 +3,10 @@
 implemented in cython.
 """
 import cython
+from cython.operator cimport dereference
 
 from libc.math cimport ceil, fmin, floor, fabs, sqrt
+from libcpp.vector cimport vector
 
 import numpy as np
 cimport numpy as cnp
@@ -183,15 +185,64 @@ cdef inline void c_get_closest_edge(cnp.double_t* p,
 @cython.boundscheck(False)
 @cython.wraparound(False)
 @cython.cdivision(True)
+def streamline_mapping_line_based(
+        streamlines, voxel_size=None, affine=None,
+        mapping_as_streamlines=False):
+    """
+    Line-based algorithm (for compressed streamlines) of streamline_mapping()
+
+    See streamline_mapping's documentation.
+    """
+    cdef cnp.npy_intp nb_streamlines = len(streamlines)
+    cdef cnp.npy_intp streamline_idx, i
+    cdef tuple position
+    cdef vector[cnp.npy_intp] positions_3 = vector[cnp.npy_intp]()
+    positions_3.reserve(300)
+
+    lin_T, offset = _mapping_to_voxel(affine, voxel_size)
+
+    cdef dict mapping = {}
+    cdef set uniq_points
+    for streamline_idx in range(nb_streamlines):
+        # Can't call _to_voxel_coordinates because it casts to int
+        voxel_indices = np.dot(streamlines[streamline_idx], lin_T) + offset
+
+        _streamline_info(voxel_indices, None, positions_3, 1)
+
+        # Get the unique voxels every streamline passes through
+        uniq_points = set()
+        for i in range(0, positions_3.size(), 3):
+            position = (positions_3[i],
+                        positions_3[i + 1],
+                        positions_3[i + 2])
+            uniq_points.add(position)
+
+        for position in uniq_points:
+            if position in mapping:
+                mapping[position].append(streamline_idx)
+            else:
+                mapping[position] = [streamline_idx]
+
+        positions_3.clear()
+
+    # If mapping_as_streamlines replace ids with streamlines
+    if mapping_as_streamlines:
+        for key in mapping:
+            mapping[key] = [streamlines[i] for i in mapping[key]]
+
+    return mapping
+
+
+@cython.boundscheck(False)
+@cython.wraparound(False)
+@cython.cdivision(True)
 def _streamlines_in_mask(list streamlines,
                          cnp.uint8_t[:,:,:] mask,
                          lin_T, offset):
     """Filters streamlines based on whether or not they pass through a ROI,
     using a line-based algorithm for compressed streamlines.
-
     This function is private because it's supposed to be called only by
     tracking.utils.target_line_based.
-
     Parameters
     ----------
     streamlines : sequence
@@ -204,7 +255,6 @@ def _streamlines_in_mask(list streamlines,
         with `_mapping_to_voxel`.
     offset : array or scalar
         Mapping to voxel space. Obtained with `_mapping_to_voxel`.
-
     Returns
     -------
     in_mask : 1D array of bool (uint8), one for each streamline.
@@ -216,12 +266,14 @@ def _streamlines_in_mask(list streamlines,
     cdef cnp.npy_intp nb_streamlines = len(streamlines)
     cdef cnp.uint8_t[:] in_mask = np.zeros(nb_streamlines, dtype=np.uint8)
     cdef cnp.npy_intp streamline_idx
+    cdef vector[cnp.npy_intp] useless = vector[cnp.npy_intp]()
 
     for streamline_idx in range(nb_streamlines):
         # Can't call _to_voxel_coordinates because it casts to int
         voxel_indices = np.dot(streamlines[streamline_idx], lin_T) + offset
 
-        in_mask[streamline_idx] = _streamline_in_mask(voxel_indices, mask)
+        in_mask[streamline_idx] = _streamline_info(
+            voxel_indices, mask, useless, 0)
 
     return np.asarray(in_mask)
 
@@ -229,12 +281,14 @@ def _streamlines_in_mask(list streamlines,
 @cython.boundscheck(False)
 @cython.wraparound(False)
 @cython.cdivision(True)
-cdef cnp.npy_intp _streamline_in_mask(
+cdef cnp.npy_intp _streamline_info(
         cnp.double_t[:,:] streamline,
-        cnp.uint8_t[:,:,:] mask) nogil:
+        cnp.uint8_t[:,:,:] mask,
+        vector[cnp.npy_intp]& positions,
+        cnp.npy_intp fill_positions) nogil:
     """
     Check if a single streamline is passing through a mask. This ia an utility
-    function to make streamlines_in_mask() more readable.
+    function for streamline_mapping() and streamlines_in_mask().
     """
     cdef cnp.double_t *current_pt = [0.0, 0.0, 0.0]
     cdef cnp.double_t *next_pt = [0.0, 0.0, 0.0]
@@ -244,7 +298,8 @@ cdef cnp.npy_intp _streamline_in_mask(
     cdef cnp.double_t direction_norm, remaining_distance
     cdef cnp.double_t length_ratio, half_ratio
     cdef cnp.npy_intp point_idx, dim_idx
-    cdef cnp.npy_intp x, y, z
+    cdef cnp.npy_intp x = 0, y = 0, z = 0
+    cdef cnp.npy_intp last_x, last_y, last_z
 
     if streamline.shape[0] <= 1:
         return 2  # Single-point streamline
@@ -297,7 +352,11 @@ cdef cnp.npy_intp _streamline_in_mask(
             x = <cnp.npy_intp>(current_pt[0] + half_ratio * direction[0])
             y = <cnp.npy_intp>(current_pt[1] + half_ratio * direction[1])
             z = <cnp.npy_intp>(current_pt[2] + half_ratio * direction[2])
-            if mask[x, y, z]:
+            if fill_positions:
+                positions.push_back(x)
+                positions.push_back(y)
+                positions.push_back(z)
+            elif mask[x, y, z]:
                 return 1
 
             # current_pt is moved to the closest edge
@@ -312,10 +371,17 @@ cdef cnp.npy_intp _streamline_in_mask(
             c_get_closest_edge(current_pt, direction, current_edge)
 
     # Check last point
-    x = <cnp.npy_intp>next_pt[0]
-    y = <cnp.npy_intp>next_pt[1]
-    z = <cnp.npy_intp>next_pt[2]
-    return mask[x, y, z]
+    last_x = <cnp.npy_intp>next_pt[0]
+    last_y = <cnp.npy_intp>next_pt[1]
+    last_z = <cnp.npy_intp>next_pt[2]
+    if fill_positions:
+        if x != last_x or y != last_y or z != last_z:
+            positions.push_back(last_x)
+            positions.push_back(last_y)
+            positions.push_back(last_z)
+        return 0
+
+    return mask[last_x, last_y, last_z]
 
 
 @cython.boundscheck(False)
