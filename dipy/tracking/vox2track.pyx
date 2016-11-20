@@ -4,7 +4,9 @@ implemented in cython.
 """
 import cython
 
-from libc.math cimport ceil, fmin, floor, fabs, sqrt
+cdef extern from "dpy_math.h" nogil:
+    double fmin(double x, double y)
+from libc.math cimport ceil, floor, fabs, sqrt
 
 import numpy as np
 cimport numpy as cnp
