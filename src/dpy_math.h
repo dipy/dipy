@@ -18,7 +18,7 @@ double dpy_log2(double x)
 #endif
 }
 
-#if (defined(WIN32) || defined(_WIN64)) && !defined(__GNUC__)
+#if (defined(_WIN32) || defined(_WIN64)) && !defined(__GNUC__)
 #define fmin min
 #endif
 
