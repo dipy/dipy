@@ -5,7 +5,9 @@ implemented in cython.
 import cython
 from cython.operator cimport dereference
 
-from libc.math cimport ceil, fmin, floor, fabs, sqrt
+cdef extern from "dpy_math.h" nogil:
+    double fmin(double x, double y)
+from libc.math cimport ceil, floor, fabs, sqrt
 from libcpp.vector cimport vector
 
 import numpy as np
