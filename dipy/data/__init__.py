@@ -40,6 +40,8 @@ from dipy.data.fetcher import (fetch_scil_b0,
                                read_cenir_multib,
                                fetch_mni_template,
                                read_mni_template,
+                               fetch_ivim,
+                               read_ivim,
                                fetch_tissue_data,
                                read_tissue_data)
 
