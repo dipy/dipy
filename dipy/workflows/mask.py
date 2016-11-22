@@ -14,7 +14,7 @@ class MaskFlow(Workflow):
     def get_short_name(cls):
         return 'mask'
 
-    def run(self, input_files, greater_than=0.2, less_than=np.inf, out_dir='',
+    def run(self, input_files, greater_than, less_than=np.inf, out_dir='',
             out_mask='mask.nii.gz'):
 
         """ Workflow for creating a binary mask
@@ -24,9 +24,9 @@ class MaskFlow(Workflow):
         input_files : string
            Path to image to be masked.
         greater_than : float
-            Default is 0.2.
+            Lower threshold value.
         less_than : float
-            Default is Inf.
+            Upper threshold value (default Inf)
         out_dir : string, optional
            Output directory (default input file directory)
         out_mask : string, optional
