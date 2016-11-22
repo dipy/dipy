@@ -17,7 +17,7 @@ def test_mask():
 
         mask_flow = MaskFlow()
 
-        mask_flow.run(data_path, 10, out_dir=out_dir, less_than=9)
+        mask_flow.run(data_path, 10, out_dir=out_dir, ub=9)
         assert_false(mask_flow.last_generated_outputs)
 
         mask_flow.run(data_path, 10, out_dir=out_dir)
