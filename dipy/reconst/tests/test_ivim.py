@@ -381,7 +381,7 @@ def test_estimate_f_D_star():
 
 def test_fit_one_stage():
     """
-    Test to check the results for the one_stage linear fit.
+    Test to check the results for the one stage linear fit.
     """
     model = IvimModel(gtab, two_stage=False)
     fit = model.fit(data_single)
@@ -402,13 +402,13 @@ def test_fit_one_stage():
 
 def test_fit_one_stage_fast():
     """
-    Test to check the results for the fast one_stage linear fit.
+    Test to check the results for the fast one stage linear fit.
     """
     model = IvimModel(gtab, two_stage=False, fast_linear_fit=True, split_b_D=200, split_b_S0=200)
     fit = model.fit(data_single)
     # assert_array_almost_equal()
-    linear_fit_params = [9.88834140e+02, 1.19707191e-01, 7.91176970e-03,
-                         9.30095210e-04]
+    linear_fit_params = [1.003e+03, 1.226e-01, 1.036e-02,
+                         9.373e-04]
 
     linear_fit_signal = [988.83414044, 971.77122546, 955.46786293,
                          939.87125905, 924.93258982, 896.85182201,
@@ -441,6 +441,7 @@ def test_leastsq_error():
     fit = ivim_model._leastsq(data_single, [-1, -1, -1, -1])
     assert_array_almost_equal(fit, [-1, -1, -1, -1])
 
+
 def test_check_fit_bounds():
     """
     Test that the bound check detects fits that are out of range.
@@ -456,6 +457,7 @@ def test_check_fit_bounds():
     ivim_fit_bounds.model_params = [2, 2, 2, 2]
     bndchk = ivim_fit_bounds.check_fit_bounds()
     assert_array_equal(bndchk, False)
+
 
 def test_enforce_fit_bounds():
     """

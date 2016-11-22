@@ -764,7 +764,7 @@ class IvimFit(object):
 
         Returns
         -------
-        bound_violation : array
+        in_bounds : array
             The parameter array of [S0, f, D*, D] with True indicating
             it is in bounds, False if it exceeds the bounds in
             either positive or negative direction.
@@ -773,8 +773,12 @@ class IvimFit(object):
             internal_bounds = bounds
         else:
             internal_bounds = self.model.bounds
-        bound_violation = internal_bounds[0] <= self.model_params <= internal_bounds[1]
-        return bound_violation
+        in_bounds = np.ones(self.model_params.shape, dtype=bool)
+        in_bounds[..., 0] = internal_bounds[0, 0] <= self.model_params[..., 0] <= internal_bounds[1, 0]
+        in_bounds[..., 1] = internal_bounds[0, 1] <= self.model_params[..., 1] <= internal_bounds[1, 1]
+        in_bounds[..., 2] = internal_bounds[0, 2] <= self.model_params[..., 2] <= internal_bounds[1, 2]
+        in_bounds[..., 3] = internal_bounds[0, 3] <= self.model_params[..., 3] <= internal_bounds[1, 3]
+        return in_bounds
 
     def enforce_fit_bounds(self, bounds=None):
         """Enforce (clamp/clip) the fit parameters to the bounds
@@ -790,7 +794,7 @@ class IvimFit(object):
             internal_bounds = bounds
         else:
             internal_bounds = self.model.bounds
-        self.model_params[..., 0] = np.clip(self.model_params[..., 0], internal_bounds[0][0], internal_bounds[1][0])
-        self.model_params[..., 1] = np.clip(self.model_params[..., 1], internal_bounds[0][1], internal_bounds[1][1])
-        self.model_params[..., 2] = np.clip(self.model_params[..., 2], internal_bounds[0][2], internal_bounds[1][2])
-        self.model_params[..., 3] = np.clip(self.model_params[..., 3], internal_bounds[0][3], internal_bounds[1][3])
+        self.model_params[..., 0] = np.clip(self.model_params[..., 0], internal_bounds[0, 0], internal_bounds[1, 0])
+        self.model_params[..., 1] = np.clip(self.model_params[..., 1], internal_bounds[0, 1], internal_bounds[1, 1])
+        self.model_params[..., 2] = np.clip(self.model_params[..., 2], internal_bounds[0, 2], internal_bounds[1, 2])
+        self.model_params[..., 3] = np.clip(self.model_params[..., 3], internal_bounds[0, 3], internal_bounds[1, 3])
