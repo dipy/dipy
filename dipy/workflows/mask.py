@@ -32,9 +32,15 @@ class MaskFlow(Workflow):
         out_mask : string, optional
            Name of the masked file (default 'mask.nii.gz')
         """
+        if greater_than >= less_than:
+            logging.error('The upper bound(less than) should be greater'
+                          ' than the lower bound (greather_than).')
+            return
+
         io_it = self.get_io_iterator()
 
         for input_path, out_mask_path in io_it:
+
             logging.info('Creating mask of {0}'
                          .format(input_path))
             data, affine = load_nifti(input_path)
