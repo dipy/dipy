@@ -441,6 +441,41 @@ def test_leastsq_error():
     fit = ivim_model._leastsq(data_single, [-1, -1, -1, -1])
     assert_array_almost_equal(fit, [-1, -1, -1, -1])
 
+def test_check_fit_bounds():
+    """
+    Test that the bound check detects fits that are out of range.
+    """
+    ivim_fit_bounds = ivim_model.fit(data_single)
+    bndchk = ivim_fit_bounds.check_fit_bounds()
+    assert_array_equal(bndchk, True)
+
+    ivim_fit_bounds.model_params = [-1, -1, -1, -1]
+    bndchk = ivim_fit_bounds.check_fit_bounds()
+    assert_array_equal(bndchk, False)
+
+    ivim_fit_bounds.model_params = [2, 2, 2, 2]
+    bndchk = ivim_fit_bounds.check_fit_bounds()
+    assert_array_equal(bndchk, False)
+
+def test_enforce_fit_bounds():
+    """
+    Test that the bound check detects fits that are out of range.
+    """
+    ivim_fit_bounds = ivim_model.fit(data_single)
+    mp = np.copy(ivim_fit_bounds.model_params)
+    ivim_fit_bounds.enforce_fit_bounds()
+    assert_array_equal(mp, ivim_fit_bounds.model_params)
+
+    ivim_fit_bounds.model_params = [-1, -1, -1, -1]
+    mp = np.copy(ivim_fit_bounds.model_params)
+    ivim_fit_bounds.enforce_fit_bounds()
+    assert_array_equal(mp, ivim_fit_bounds.model_params)
+
+    ivim_fit_bounds.model_params = [2, 2, 2, 2]
+    mp = np.copy(ivim_fit_bounds.model_params)
+    ivim_fit_bounds.enforce_fit_bounds()
+    assert_array_equal(mp, ivim_fit_bounds.model_params)
+
 
 if __name__ == '__main__':
     run_module_suite()

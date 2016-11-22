@@ -31,3 +31,4 @@ __config__.py
 .buildbot.patch
 .eggs/
 dipy/.idea/
+.idea/

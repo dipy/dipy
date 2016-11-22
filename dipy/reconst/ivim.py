@@ -8,6 +8,7 @@ import scipy
 import warnings
 from dipy.reconst.base import ReconstModel
 from dipy.reconst.multi_voxel import multi_voxel_fit
+import itertools as it
 
 SCIPY_LESS_0_17 = (LooseVersion(scipy.version.short_version) <
                    LooseVersion('0.17'))
@@ -407,7 +408,6 @@ class IvimModel(ReconstModel):
         params = np.array([S0, f, D_star, D])
         return params
 
-
     def estimate_linear_fit(self, data, split_b=None, less_than=True, b_selection=None):
         """Estimate a linear fit by taking log of data.
 
@@ -474,6 +474,29 @@ class IvimModel(ReconstModel):
             aic = _AIC(rss, k, n)
             aic_arr = np.append(aic_arr, aic)  # maybe should pre-allocate for speed
         return aic_arr
+
+    def aic_relative_likelihood(self, aic_iter):
+        """
+        Parameters
+        ----------
+        aic_iter : iterable (tuple/list)
+            An iterable containing the AIC values to compare
+
+        Returns
+        -------
+            A numpy array will all possible relatively likelihood permutations
+        """
+        aic_iter_combos = list(it.combinations(aic_iter, 2))
+        rlike = np.zeros(len(aic_iter_combos))
+        idx = 0
+        for combo in aic_iter_combos:
+            d = combo[1] - combo[0] # traditonal: combo[0] - combo[1]  # note: combo[0] must be less than combo[1] for the traditional definition
+            if d == 0:  # have to do this to avoid np.sign(0)=0, which would give 0 rather than 1
+                rlike[idx] = 1.
+            else:
+                rlike[idx] = np.sign(d)*np.exp(-np.abs(d)/2)
+            idx += 1
+        return rlike
 
 
 
@@ -693,6 +716,10 @@ class IvimFit(object):
         return self.model_params[..., 3]
 
     @property
+    def S0_f_Dstar_D(self):
+        return self.model_params
+
+    @property
     def shape(self):
         return self.model_params.shape[:-1]
 
@@ -724,3 +751,46 @@ class IvimFit(object):
 
         """
         return ivim_prediction(self.model_params, gtab)
+
+    def check_fit_bounds(self, bounds=None):
+        """Check the fit parameter bounds
+
+        Parameters
+        ----------
+        bounds : tuple of arrays with 4 elements, optional
+            Note that this defaults to what was supplied IvimModel.
+            Bounds to constrain the fitted model parameters.
+            default : ([0., 0., 0., 0.], [np.inf, .3, 1., 1.])
+
+        Returns
+        -------
+        bound_violation : array
+            The parameter array of [S0, f, D*, D] with True indicating
+            it is in bounds, False if it exceeds the bounds in
+            either positive or negative direction.
+        """
+        if bounds is not None:
+            internal_bounds = bounds
+        else:
+            internal_bounds = self.model.bounds
+        bound_violation = internal_bounds[0] <= self.model_params <= internal_bounds[1]
+        return bound_violation
+
+    def enforce_fit_bounds(self, bounds=None):
+        """Enforce (clamp/clip) the fit parameters to the bounds
+
+        Parameters
+        ----------
+        bounds : tuple of arrays with 4 elements, optional
+            Note that this defaults to what was supplied IvimModel.
+            Bounds to constrain the fitted model parameters.
+            default : ([0., 0., 0., 0.], [np.inf, .3, 1., 1.])
+        """
+        if bounds is not None:
+            internal_bounds = bounds
+        else:
+            internal_bounds = self.model.bounds
+        self.model_params[..., 0] = np.clip(self.model_params[..., 0], internal_bounds[0][0], internal_bounds[1][0])
+        self.model_params[..., 1] = np.clip(self.model_params[..., 1], internal_bounds[0][1], internal_bounds[1][1])
+        self.model_params[..., 2] = np.clip(self.model_params[..., 2], internal_bounds[0][2], internal_bounds[1][2])
+        self.model_params[..., 3] = np.clip(self.model_params[..., 3], internal_bounds[0][3], internal_bounds[1][3])
