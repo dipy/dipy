@@ -1,6 +1,6 @@
 import numpy as np
 import numpy.testing as nt
-from nose.tools import assert_true
+from nose.tools import assert_true, assert_false
 
 import nibabel as nib
 from nibabel.tmpdirs import TemporaryDirectory
@@ -17,8 +17,10 @@ def test_mask():
 
         mask_flow = MaskFlow()
 
-        mask_flow.run(data_path, out_dir=out_dir)
+        mask_flow.run(data_path, 10, out_dir=out_dir, less_than=9)
+        assert_false(mask_flow.last_generated_outputs)
 
+        mask_flow.run(data_path, 10, out_dir=out_dir)
         mask_path = mask_flow.last_generated_outputs['out_mask']
         mask_img = nib.load(mask_path)
         mask_data = mask_img.get_data()
