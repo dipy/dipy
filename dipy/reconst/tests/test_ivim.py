@@ -418,7 +418,7 @@ def test_fit_one_stage_fast():
                          549.00852235, 499.21077611, 454.40299244,
                          413.83192296, 376.98072773, 343.45531017]
 
-    assert_array_almost_equal(fit.model_params, linear_fit_params, 3)
+    assert_array_almost_equal(fit.model_params, linear_fit_params, 2)
     assert_array_almost_equal(fit.predict(gtab), linear_fit_signal, 3)
 
 def test_leastsq_failing():

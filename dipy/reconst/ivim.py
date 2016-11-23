@@ -773,11 +773,8 @@ class IvimFit(object):
             internal_bounds = bounds
         else:
             internal_bounds = self.model.bounds
-        in_bounds = np.ones(self.model_params.shape, dtype=bool)
-        in_bounds[..., 0] = internal_bounds[0, 0] <= self.model_params[..., 0] <= internal_bounds[1, 0]
-        in_bounds[..., 1] = internal_bounds[0, 1] <= self.model_params[..., 1] <= internal_bounds[1, 1]
-        in_bounds[..., 2] = internal_bounds[0, 2] <= self.model_params[..., 2] <= internal_bounds[1, 2]
-        in_bounds[..., 3] = internal_bounds[0, 3] <= self.model_params[..., 3] <= internal_bounds[1, 3]
+        # note that this works because it's multi voxel decorated here!
+        in_bounds = np.logical_and(np.greater_equal(self.model_params,internal_bounds[0]),np.less_equal(self.model_params,internal_bounds[1]))
         return in_bounds
 
     def enforce_fit_bounds(self, bounds=None):
@@ -794,7 +791,5 @@ class IvimFit(object):
             internal_bounds = bounds
         else:
             internal_bounds = self.model.bounds
-        self.model_params[..., 0] = np.clip(self.model_params[..., 0], internal_bounds[0, 0], internal_bounds[1, 0])
-        self.model_params[..., 1] = np.clip(self.model_params[..., 1], internal_bounds[0, 1], internal_bounds[1, 1])
-        self.model_params[..., 2] = np.clip(self.model_params[..., 2], internal_bounds[0, 2], internal_bounds[1, 2])
-        self.model_params[..., 3] = np.clip(self.model_params[..., 3], internal_bounds[0, 3], internal_bounds[1, 3])
+        # note that this works because it's multi voxel decorated here!
+        self.model_params = np.clip(self.model_params, internal_bounds[0], internal_bounds[1])
