@@ -410,13 +410,13 @@ def test_fit_one_stage_fast():
     linear_fit_params = [1.003e+03, 1.226e-01, 1.036e-02,
                          9.373e-04]
 
-    linear_fit_signal = [988.83414044, 971.77122546, 955.46786293,
-                         939.87125905, 924.93258982, 896.85182201,
-                         870.90346447, 846.81187693, 824.34108781,
-                         803.28900104, 783.48245048, 764.77297789,
-                         747.03322866, 669.54798887, 605.03328304,
-                         549.00852235, 499.21077611, 454.40299244,
-                         413.83192296, 376.98072773, 343.45531017]
+    linear_fit_signal = [1003.1, 982.8, 963.7,
+                         945.8, 929.0, 898.0,
+                         870.2, 845.0, 821.9,
+                         800.7, 781.0, 762.5,
+                         745.1, 669.8, 606.9,
+                         551.5, 501.7, 456.7,
+                         415.8, 378.6, 334.7]
 
     assert_array_almost_equal(fit.model_params, linear_fit_params, 1)
     assert_array_almost_equal(fit.predict(gtab), linear_fit_signal, 1)
@@ -474,7 +474,7 @@ def test_enforce_fit_bounds():
 
     ivim_fit_bounds.model_params = np.array([2, 2, 2, 2])
     ivim_fit_bounds.enforce_fit_bounds()
-    assert_array_equal(np.array([2, 1, 1, 1]), ivim_fit_bounds.model_params)
+    assert_array_equal(np.array([2, 0.3, 1, 1]), ivim_fit_bounds.model_params)
 
 
 if __name__ == '__main__':

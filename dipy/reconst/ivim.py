@@ -484,7 +484,7 @@ class IvimModel(ReconstModel):
 
         Returns
         -------
-            A numpy array will all possible relatively likelihood permutations
+            A numpy array with all possible relatively likelihood permutations
         """
         aic_iter_combos = list(it.combinations(aic_iter, 2))
         rlike = np.zeros(len(aic_iter_combos))
@@ -498,8 +498,23 @@ class IvimModel(ReconstModel):
             idx += 1
         return rlike
 
+    def aic_weights(self, aic_iter):
+        """
+        Parameters
+        ----------
+        aic_iter : iterable (tuple/list)
+            An iterable containing the AIC values to compare
 
-
+        Returns
+        -------
+            A numpy array with the Akaike weights
+        """
+        aic_iter = np.array(aic_iter)
+        minAIC = np.min(aic_iter)
+        dAIC = aic_iter - minAIC
+        wAIC = np.sum(np.exp(-dAIC/2.))
+        wiAIC = np.exp(-dAIC/2.)/wAIC
+        return wiAIC
 
     def estimate_f_D_star(self, params_f_D_star, data, S0, D):
         """Estimate f and D_star using the values of all the other parameters
