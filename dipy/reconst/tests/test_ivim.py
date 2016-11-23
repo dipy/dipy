@@ -416,7 +416,7 @@ def test_fit_one_stage_fast():
                          800.7, 781.0, 762.5,
                          745.1, 669.8, 606.9,
                          551.5, 501.7, 456.7,
-                         415.8, 378.6, 334.7]
+                         415.8, 378.6, 344.7]
 
     assert_array_almost_equal(fit.model_params, linear_fit_params, 1)
     assert_array_almost_equal(fit.predict(gtab), linear_fit_signal, 1)
