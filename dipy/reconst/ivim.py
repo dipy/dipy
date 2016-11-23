@@ -484,6 +484,7 @@ class IvimModel(ReconstModel):
 
         Returns
         -------
+        rlike : array
             A numpy array with all possible relatively likelihood permutations
         """
         aic_iter_combos = list(it.combinations(aic_iter, 2))
@@ -507,6 +508,7 @@ class IvimModel(ReconstModel):
 
         Returns
         -------
+        wiAIC : array
             A numpy array with the Akaike weights
         """
         aic_iter = np.array(aic_iter)
