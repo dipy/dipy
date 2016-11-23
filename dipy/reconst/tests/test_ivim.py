@@ -418,8 +418,8 @@ def test_fit_one_stage_fast():
                          549.00852235, 499.21077611, 454.40299244,
                          413.83192296, 376.98072773, 343.45531017]
 
-    assert_array_almost_equal(fit.model_params, linear_fit_params, 2)
-    assert_array_almost_equal(fit.predict(gtab), linear_fit_signal, 3)
+    assert_array_almost_equal(fit.model_params, linear_fit_params, 1)
+    assert_array_almost_equal(fit.predict(gtab), linear_fit_signal, 1)
 
 def test_leastsq_failing():
     """
@@ -448,15 +448,15 @@ def test_check_fit_bounds():
     """
     ivim_fit_bounds = ivim_model.fit(data_single)
     bndchk = ivim_fit_bounds.check_fit_bounds()
-    assert_array_equal(bndchk, True)
+    assert_array_equal(bndchk, [True, True, True, True])
 
     ivim_fit_bounds.model_params = [-1, -1, -1, -1]
     bndchk = ivim_fit_bounds.check_fit_bounds()
-    assert_array_equal(bndchk, False)
+    assert_array_equal(bndchk, [False, False, False, False])
 
     ivim_fit_bounds.model_params = [2, 2, 2, 2]
     bndchk = ivim_fit_bounds.check_fit_bounds()
-    assert_array_equal(bndchk, False)
+    assert_array_equal(bndchk, [True, False, False, False])
 
 
 def test_enforce_fit_bounds():
@@ -468,15 +468,13 @@ def test_enforce_fit_bounds():
     ivim_fit_bounds.enforce_fit_bounds()
     assert_array_equal(mp, ivim_fit_bounds.model_params)
 
-    ivim_fit_bounds.model_params = [-1, -1, -1, -1]
-    mp = np.copy(ivim_fit_bounds.model_params)
+    ivim_fit_bounds.model_params = np.array([-1, -1, -1, -1])
     ivim_fit_bounds.enforce_fit_bounds()
-    assert_array_equal(mp, ivim_fit_bounds.model_params)
+    assert_array_equal(np.array([0, 0, 0, 0]), ivim_fit_bounds.model_params)
 
-    ivim_fit_bounds.model_params = [2, 2, 2, 2]
-    mp = np.copy(ivim_fit_bounds.model_params)
+    ivim_fit_bounds.model_params = np.array([2, 2, 2, 2])
     ivim_fit_bounds.enforce_fit_bounds()
-    assert_array_equal(mp, ivim_fit_bounds.model_params)
+    assert_array_equal(np.array([2, 1, 1, 1]), ivim_fit_bounds.model_params)
 
 
 if __name__ == '__main__':
