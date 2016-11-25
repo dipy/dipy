@@ -133,6 +133,16 @@ def test_mapmri_initialize_gcv():
     assert_raises(ValueError, MapmriModel, gtab, laplacian_weighting="notGCV")
 
 
+def test_mapmri_initialize_pos_radius():
+    gtab = get_gtab_taiwan_dsi()
+    # When string is provided it has to be "adaptive"
+    assert_raises(ValueError, MapmriModel, gtab, positivity_constraint=True,
+                  pos_radius="notadaptive")
+    # When a number is provided it has to be positive
+    assert_raises(ValueError, MapmriModel, gtab, positivity_constraint=True,
+                  pos_radius=-1)
+
+
 def test_mapmri_signal_fitting(radial_order=6):
     gtab = get_gtab_taiwan_dsi()
     l1, l2, l3 = [0.0015, 0.0003, 0.0003]
