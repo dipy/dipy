@@ -187,9 +187,8 @@ class MapmriModel(ReconstModel, Cache):
         with respect to the SHORE basis and compute the real and analytical
         ODF.
 
-        >>> from dipy.data import get_sphere, read_isbi2013_2shell
-        >>> img, gtab = read_isbi2013_2shell() # doctest:+ELLIPSIS
-        [...]
+        >>> from dipy.data import dsi_voxels, get_sphere
+        >>> data, gtab = dsi_voxels()
         >>> from dipy.sims.voxel import SticksAndBall
         >>> data, golden_directions = SticksAndBall(
         ...                                     gtab, d=0.0015,
