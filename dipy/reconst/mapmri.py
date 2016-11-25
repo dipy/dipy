@@ -329,14 +329,16 @@ class MapmriModel(Cache):
                 laplacian_matrix = self.laplacian_matrix * mu[0]
             if self.laplacian_weighting is 'GCV':
                 try:
-                    lopt = generalized_crossvalidation(data, M, laplacian_matrix)
+                    lopt = generalized_crossvalidation(data, M,
+                                                       laplacian_matrix)
                 except np.linalg.linalg.LinAlgError:
                     lopt = 0.05
                     errorcode = 1
             elif np.isscalar(self.laplacian_weighting):
                 lopt = self.laplacian_weighting
             elif type(self.laplacian_weighting) == np.ndarray:
-                lopt = generalized_crossvalidation_array(data, M,
+                lopt = generalized_crossvalidation_array(
+                                    data, M,
                                     laplacian_matrix, self.laplacian_weighting)
         else:
             lopt = 0.
@@ -405,7 +407,8 @@ class MapmriModel(Cache):
         else:
             try:
                 pseudoInv = np.dot(
-                    np.linalg.inv(np.dot(M.T, M) + lopt * laplacian_matrix), M.T)
+                    np.linalg.inv(np.dot(M.T, M) + lopt * laplacian_matrix),
+                                  M.T)
                 coef = np.dot(pseudoInv, data)
             except np.linalg.linalg.LinAlgError:
                 errorcode = 1
@@ -1837,19 +1840,12 @@ def map_laplace_s(n, m):
     """
 
     k = 2 * np.pi ** (7 / 2.) * (-1) ** (n)
-
     a0 = 3 * (2 * n ** 2 + 2 * n + 1) * delta(n, m)
-
     sqmn = np.sqrt(gamma(m + 1) / gamma(n + 1))
-
     sqnm = 1 / sqmn
-
     an2 = 2 * (2 * n + 3) * sqmn * delta(m, n + 2)
-
     an4 = sqmn * delta(m, n + 4)
-
     am2 = 2 * (2 * m + 3) * sqnm * delta(m + 2, n)
-
     am4 = sqnm * delta(m + 4, n)
 
     return k * (a0 + an2 + an4 + am2 + am4)
@@ -1918,11 +1914,8 @@ def mapmri_laplacian_reg_matrix(ind_mat, mu, S_mat, T_mat, U_mat):
     NeuroImage (2016).
     """
     ux, uy, uz = mu
-
     x, y, z = ind_mat.T
-
     n_elem = ind_mat.shape[0]
-
     LR = np.zeros((n_elem, n_elem))
 
     for i in range(n_elem):
@@ -1933,18 +1926,18 @@ def mapmri_laplacian_reg_matrix(ind_mat, mu, S_mat, T_mat, U_mat):
                (z[i] - z[j]) % 2 == 0
                ):
                 LR[i, j] = LR[j, i] = \
-                    (ux ** 3 / (uy * uz)) *\
-                    S_mat[x[i], x[j]] * U_mat[y[i], y[j]] * U_mat[z[i], z[j]] +\
-                    (uy ** 3 / (ux * uz)) *\
-                    S_mat[y[i], y[j]] * U_mat[z[i], z[j]] * U_mat[x[i], x[j]] +\
-                    (uz ** 3 / (ux * uy)) *\
-                    S_mat[z[i], z[j]] * U_mat[x[i], x[j]] * U_mat[y[i], y[j]] +\
-                    2 * ((ux * uy) / uz) *\
-                    T_mat[x[i], x[j]] * T_mat[y[i], y[j]] * U_mat[z[i], z[j]] +\
-                    2 * ((ux * uz) / uy) *\
-                    T_mat[x[i], x[j]] * T_mat[z[i], z[j]] * U_mat[y[i], y[j]] +\
-                    2 * ((uz * uy) / ux) *\
-                    T_mat[z[i], z[j]] * T_mat[y[i], y[j]] * U_mat[x[i], x[j]]
+                  (ux ** 3 / (uy * uz)) *\
+                  S_mat[x[i], x[j]] * U_mat[y[i], y[j]] * U_mat[z[i], z[j]] +\
+                  (uy ** 3 / (ux * uz)) *\
+                  S_mat[y[i], y[j]] * U_mat[z[i], z[j]] * U_mat[x[i], x[j]] +\
+                  (uz ** 3 / (ux * uy)) *\
+                  S_mat[z[i], z[j]] * U_mat[x[i], x[j]] * U_mat[y[i], y[j]] +\
+                  2 * ((ux * uy) / uz) *\
+                  T_mat[x[i], x[j]] * T_mat[y[i], y[j]] * U_mat[z[i], z[j]] +\
+                  2 * ((ux * uz) / uy) *\
+                  T_mat[x[i], x[j]] * T_mat[z[i], z[j]] * U_mat[y[i], y[j]] +\
+                  2 * ((uz * uy) / ux) *\
+                  T_mat[z[i], z[j]] * T_mat[y[i], y[j]] * U_mat[x[i], x[j]]
 
     return LR
 
@@ -2019,7 +2012,7 @@ def generalized_crossvalidation(data, M, LR, gcv_startpoint=5e-2):
     bounds = ((1e-5, 10),)
     solver = Optimizer(fun=gcv_cost_function,
                        x0=(gcv_startpoint,),
-                       args = ((data, M, MMt, K, LR),),
+                       args=((data, M, MMt, K, LR),),
                        bounds=bounds)
 
     optimal_lambda = solver.xopt
