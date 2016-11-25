@@ -66,10 +66,6 @@ class MultiVoxelFit(ReconstFit):
         Predict for the multi-voxel object using each single-object's
         prediction API, with S0 provided from an array.
         """
-        if not hasattr(self.model, 'predict'):
-            msg = "This model does not have prediction implemented yet"
-            raise NotImplementedError(msg)
-
         S0 = kwargs.get('S0', np.ones(self.fit_array.shape))
         idx = ndindex(self.fit_array.shape)
         ijk = next(idx)
@@ -84,6 +80,10 @@ class MultiVoxelFit(ReconstFit):
         # If we have a mask, we might have some Nones up front, skip those:
         while self.fit_array[ijk] is None:
             ijk = next(idx)
+
+        if not hasattr(self.fit_array[ijk], 'predict'):
+            msg = "This model does not have prediction implemented yet"
+            raise NotImplementedError(msg)
 
         first_pred = self.fit_array[ijk].predict(*args, **kwargs)
         result = np.zeros(self.fit_array.shape + (first_pred.shape[-1],))

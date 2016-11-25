@@ -164,6 +164,20 @@ def test_mapmri_signal_fitting(radial_order=6):
     nmse_signal = np.sqrt(np.sum((S - S_reconst) ** 2)) / (S.sum())
     assert_almost_equal(nmse_signal, 0.0, 3)
 
+    # Test with multidimensional signals:
+    mapm = MapmriModel(gtab, radial_order=radial_order,
+                       laplacian_weighting=0.02)
+    # Each voxel is identical:
+    mapfit = mapm.fit(S[:, None, None].T * np.ones((3, 3, 3, S.shape[0])))
+
+    # Predict back with an array of ones or a single value:
+    for S0 in [S[0], np.ones((3, 3, 3, 203))]:
+        S_reconst = mapfit.predict(gtab, S0=S0)
+        # test the signal reconstruction for one voxel:
+        nmse_signal = (np.sqrt(np.sum((S - S_reconst[0, 0, 0]) ** 2)) /
+                       (S.sum()))
+        assert_almost_equal(nmse_signal, 0.0, 3)
+
     # do the same for isotropic implementation
     mapm = MapmriModel(gtab, radial_order=radial_order,
                        laplacian_weighting=0.0001,
@@ -288,7 +302,7 @@ def test_mapmri_signal_fitting_over_radial_order(order_max=8):
     S, _ = generate_signal_crossing(gtab, l1, l2, l3, angle2=60)
 
     # take radial order 0, 4 and 8
-    orders = np.arange(0, 9, 4)
+    orders = [0, 4, 8]
     error_array = np.zeros(len(orders))
 
     for i, order in enumerate(orders):
@@ -810,6 +824,7 @@ def test_mapmri_odf(radial_order=6):
     odf_sh = mapfit.odf_sh()
     odf_from_sh = sh_to_sf(odf_sh, sphere, radial_order, basis_type=None)
     assert_almost_equal(odf, odf_from_sh, 10)
+
 
 if __name__ == '__main__':
     run_module_suite()

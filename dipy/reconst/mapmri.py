@@ -891,7 +891,7 @@ class MapmriFit(ReconstFit):
     def fitted_signal(self, gtab=None):
         """
         Recovers the fitted signal for the given gradient table. If no gradient
-        table is given it recovers the signal for the gtab of the data.
+        table is given it recovers the signal for the gtab of the model object.
         """
         if gtab is None:
             E = self.predict(self.model.gtab, S0=1.)
@@ -900,9 +900,9 @@ class MapmriFit(ReconstFit):
         return E
 
     def predict(self, qvals_or_gtab, S0=100.):
-        r'''Recovers the reconstructed signal for any qvalue array or
+        r"""Recovers the reconstructed signal for any qvalue array or
         gradient table.
-        '''
+        """
         if isinstance(qvals_or_gtab, np.ndarray):
             q = qvals_or_gtab
             qvals = np.linalg.norm(q, axis=1)
@@ -919,6 +919,7 @@ class MapmriFit(ReconstFit):
 
         E = S0 * np.dot(M, self._mapmri_coef)
         return E
+
 
     def pdf(self, r_points):
         """ Diffusion propagator on a given set of real points.
@@ -1671,9 +1672,7 @@ def mapmri_isotropic_laplacian_reg_matrix(radial_order, mu):
     NeuroImage (2016).
     '''
     ind_mat = mapmri_isotropic_index_matrix(radial_order)
-
     n_elem = ind_mat.shape[0]
-
     LR = np.zeros((n_elem, n_elem))
 
     for i in range(n_elem):
