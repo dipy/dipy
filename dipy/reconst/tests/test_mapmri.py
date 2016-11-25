@@ -27,6 +27,9 @@ from dipy.reconst.shm import sh_to_sf
 import time
 
 
+cvxopt, have_cvxopt, _ = optional_package("cvxopt")
+
+
 def int_func(n):
     f = np.sqrt(2) * factorial(n) / float(((gamma(1 + n / 2.0)) *
                                           np.sqrt(2**(n + 1) * factorial(n))))
@@ -220,35 +223,36 @@ def test_mapmri_signal_fitting(radial_order=6):
     nmse_signal = np.sqrt(np.sum((S - S_reconst) ** 2)) / (S.sum())
     assert_almost_equal(nmse_signal, 0.0, 3)
 
-    # Positivity constraint and anisotropic scaling:
-    mapm = MapmriModel(gtab, radial_order=radial_order,
-                       laplacian_weighting=0.0001,
-                       positivity_constraint=True,
-                       anisotropic_scaling=False,
-                       pos_radius=2)
+    if have_cvxopt:
+        # Positivity constraint and anisotropic scaling:
+        mapm = MapmriModel(gtab, radial_order=radial_order,
+                           laplacian_weighting=0.0001,
+                           positivity_constraint=True,
+                           anisotropic_scaling=False,
+                           pos_radius=2)
 
-    mapfit = mapm.fit(S)
-    S_reconst = mapfit.predict(gtab, 1.0)
+        mapfit = mapm.fit(S)
+        S_reconst = mapfit.predict(gtab, 1.0)
 
-    # test the signal reconstruction
-    S = S / S[0]
-    nmse_signal = np.sqrt(np.sum((S - S_reconst) ** 2)) / (S.sum())
-    assert_almost_equal(nmse_signal, 0.0, 3)
+        # test the signal reconstruction
+        S = S / S[0]
+        nmse_signal = np.sqrt(np.sum((S - S_reconst) ** 2)) / (S.sum())
+        assert_almost_equal(nmse_signal, 0.0, 3)
 
-    # Positivity constraint and anisotropic scaling:
-    mapm = MapmriModel(gtab, radial_order=radial_order,
-                       laplacian_weighting=None,
-                       positivity_constraint=True,
-                       anisotropic_scaling=False,
-                       pos_radius=2)
+        # Positivity constraint and anisotropic scaling:
+        mapm = MapmriModel(gtab, radial_order=radial_order,
+                           laplacian_weighting=None,
+                           positivity_constraint=True,
+                           anisotropic_scaling=False,
+                           pos_radius=2)
 
-    mapfit = mapm.fit(S)
-    S_reconst = mapfit.predict(gtab, 1.0)
+        mapfit = mapm.fit(S)
+        S_reconst = mapfit.predict(gtab, 1.0)
 
-    # test the signal reconstruction
-    S = S / S[0]
-    nmse_signal = np.sqrt(np.sum((S - S_reconst) ** 2)) / (S.sum())
-    assert_almost_equal(nmse_signal, 0.0, 2)
+        # test the signal reconstruction
+        S = S / S[0]
+        nmse_signal = np.sqrt(np.sum((S - S_reconst) ** 2)) / (S.sum())
+        assert_almost_equal(nmse_signal, 0.0, 2)
 
 
 
