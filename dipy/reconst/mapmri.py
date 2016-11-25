@@ -184,20 +184,23 @@ class MapmriModel(Cache):
         --------
         In this example, where the data, gradient table and sphere tessellation
         used for reconstruction are provided, we model the diffusion signal
-        with respect to the MAPMRI model and compute the analytical ODF.
+        with respect to the SHORE basis and compute the real and analytical
+        ODF.
 
-        >>> from dipy.core.gradients import gradient_table
-        >>> from dipy.data import dsi_voxels, get_sphere
-        >>> data, gtab = dsi_voxels()
-        >>> sphere = get_sphere('symmetric724')
-        >>> from dipy.sims.voxel import SticksAndBall
-        >>> data, golden_directions = SticksAndBall(gtab, d=0.0015, S0=100,
-        ... angles=[(0, 0), (90, 0)], fractions=[50, 50], snr=None)
-        >>> from dipy.reconst.mapmri import MapmriModel
-        >>> radial_order = 4
-        >>> map_model = MapmriModel(gtab, radial_order=radial_order)
-        >>> mapfit = map_model.fit(data)
-        >>> odf= mapfit.odf(sphere)
+        from dipy.data import get_data,get_sphere
+        sphere = get_sphere('symmetric724')
+        fimg, fbvals, fbvecs = get_data('ISBI_testing_2shells_table')
+        bvals, bvecs = read_bvals_bvecs(fbvals, fbvecs)
+        gtab = gradient_table(bvals, bvecs)
+        from dipy.sims.voxel import SticksAndBall
+        data, golden_directions = SticksAndBall(gtab, d=0.0015,
+                                                S0=1, angles=[(0, 0), (90, 0)],
+                                                fractions=[50, 50], snr=None)
+        from dipy.reconst.mapmri import MapmriModel
+        radial_order = 4
+        map_model = MapmriModel(gtab, radial_order=radial_order)
+        mapfit = map_model.fit(data)
+        odf= mapfit.odf(sphere)
         """
 
         self.bvals = gtab.bvals
@@ -651,20 +654,274 @@ class MapmriFit(ReconstFit):
         NeuroImage (2016).
         """
         Bm = self.model.Bm
-        rtop = 0
-        const = 1 / \
-            np.sqrt(
-                8 * np.pi ** 3 * (self.mu[0] ** 2 * self.mu[1] ** 2 *
-                                  self.mu[2] ** 2))
-        for i in range(self.ind_mat.shape[0]):
-            if Bm[i] > 0.0:
-                rtop += (-1.0) ** (
-                    (self.ind_mat[i, 0] + self.ind_mat[i, 1] +
-                     self.ind_mat[i, 2])
-                    / 2.0) * self._mapmri_coef[i] * Bm[i]
-        return const * rtop
 
-    def predict(self, gtab, S0=1.):
+        if self.model.anisotropic_scaling:
+            const = 1 / (np.sqrt(8 * np.pi ** 3) * np.prod(self.mu))
+            ind_sum = (-1.0) ** (np.sum(self.model.ind_mat, axis=1) / 2)
+            rtop_vec = const * ind_sum * Bm * self._mapmri_coef
+            rtop = rtop_vec.sum()
+        else:
+            const = 1 / (2 * np.sqrt(2.0) * np.pi ** (3 / 2.0))
+            rtop_vec = const * (-1.0) ** (self.model.ind_mat[:, 0] - 1) * Bm
+            rtop = (1 / self.mu[0] ** 3) * rtop_vec * self._mapmri_coef
+            rtop = rtop.sum()
+        return rtop
+
+    def msd(self):
+        r""" Calculates the analytical Mean Squared Displacement (MSD).
+        It is defined as the Laplacian of the origin of the estimated signal
+        [1]_. The analytical formula for the MAP-MRI basis was derived in [2]_
+        eq. (C13, D1).
+
+        References
+        ----------
+        .. [1] Cheng, J., 2014. Estimation and Processing of Ensemble Average
+        Propagator and Its Features in Diffusion MRI. Ph.D. Thesis.
+
+        .. [2]_ Fick, Rutger HJ, et al. "MAPL: Tissue microstructure estimation
+        using Laplacian-regularized MAP-MRI and its application to HCP data."
+        NeuroImage (2016).
+        """
+
+        mu = self.mu
+        ind_mat = self.model.ind_mat
+        Bm = self.model.Bm
+        sel = self.model.Bm > 0.  # select only relevant coefficients
+        mapmri_coef = self._mapmri_coef[sel]
+        if self.model.anisotropic_scaling:
+            ind_sum = np.sum(ind_mat[sel], axis=1)
+            nx, ny, nz = ind_mat[sel].T
+
+            numerator = (-1) ** (0.5 * (-ind_sum)) * np.pi ** (3 / 2.0) *\
+                ((1 + 2 * nx) * mu[0] ** 2 + (1 + 2 * ny) *
+                 mu[1] ** 2 + (1 + 2 * nz) * mu[2] ** 2)
+
+            denominator = np.sqrt(2. ** (-ind_sum) * factorial(nx) *
+                                  factorial(ny) * factorial(nz)) *\
+                gamma(0.5 - 0.5 * nx) * gamma(0.5 - 0.5 * ny) *\
+                gamma(0.5 - 0.5 * nz)
+
+            msd_vec = self._mapmri_coef[sel] * (numerator / denominator)
+            msd = msd_vec.sum()
+        else:
+            msd_vec = (4 * ind_mat[sel, 0] - 1) * Bm[sel]
+            msd = self.mu[0] ** 2 * msd_vec * mapmri_coef
+            msd = msd.sum()
+        return msd
+
+    def qiv(self):
+        r""" Calculates the analytical Q-space Inverse Variance (QIV).
+        It is defined as the inverse of the Laplacian of the origin of the
+        estimated propagator [1]_ eq. (22). The analytical formula for the
+        MAP-MRI basis was derived in [2]_ eq. (C14, D2).
+
+        References
+        ----------
+        .. [1] Hosseinbor et al. "Bessel fourier orientation reconstruction
+        (bfor): An analytical diffusion propagator reconstruction for hybrid
+        diffusion imaging and computation of q-space indices. NeuroImage 64,
+        2013, 650–670.
+
+        .. [2]_ Fick, Rutger HJ, et al. "MAPL: Tissue microstructure estimation
+        using Laplacian-regularized MAP-MRI and its application to HCP data."
+        NeuroImage (2016).
+        """
+        ux, uy, uz = self.mu
+        ind_mat = self.model.ind_mat
+        if self.model.anisotropic_scaling:
+            sel = self.model.Bm > 0  # select only relevant coefficients
+            nx, ny, nz = ind_mat[sel].T
+
+            numerator = 8 * np.pi ** 2 * (ux * uy * uz) ** 3 *\
+                np.sqrt(factorial(nx) * factorial(ny) * factorial(nz)) *\
+                gamma(0.5 - 0.5 * nx) * gamma(0.5 - 0.5 * ny) * \
+                gamma(0.5 - 0.5 * nz)
+
+            denominator = np.sqrt(2. ** (-1 + nx + ny + nz)) *\
+                ((1 + 2 * nx) * uy ** 2 * uz ** 2 + ux ** 2 *
+                 ((1 + 2 * nz) * uy ** 2 + (1 + 2 * ny) * uz ** 2))
+
+            qiv_vec = self._mapmri_coef[sel] * (numerator / denominator)
+            qiv = qiv_vec.sum()
+        else:
+            sel = self.model.Bm > 0.  # select only relevant coefficients
+            j = ind_mat[sel, 0]
+            qiv_vec = ((8 * (-1) ** (1 - j) *
+                        np.sqrt(2) * np.pi ** (7 / 2.)) / ((4 * j - 1) *
+                                                           self.model.Bm[sel]))
+            qiv = ux ** 5 * qiv_vec * self._mapmri_coef[sel]
+            qiv = qiv.sum()
+        return qiv
+
+    def ng(self):
+        r""" Calculates the analytical non-Gaussiannity (NG) [1]_.
+        For the NG to be meaningful the mapmri scale factors must be
+        estimated only on data representing Gaussian diffusion of spins, i.e.,
+        bvals smaller than about 2000 s/mm^2 [2]_.
+
+        References
+        ----------
+        .. [1] Ozarslan E. et. al, "Mean apparent propagator (MAP) MRI: A novel
+        diffusion imaging method for mapping tissue microstructure",
+        NeuroImage, 2013.
+
+        .. [2] Avram et al. "Clinical feasibility of using mean apparent
+        propagator (MAP) MRI to characterize brain tissue microstructure".
+        NeuroImage 2015, in press.
+        """
+        if self.model.bval_threshold > 2000.:
+            msg = 'model bval_threshold must be lower than 2000 for the '
+            msg += 'non_Gaussianity to be physically meaningful [2].'
+            warn(msg)
+        if not self.model.anisotropic_scaling:
+            msg = 'Parallel non-Gaussianity is not defined using '
+            msg += 'isotropic scaling.'
+            raise ValueError(msg)
+
+        coef = self._mapmri_coef
+        return np.sqrt(1 - coef[0] ** 2 / np.sum(coef ** 2))
+
+    def ng_parallel(self):
+        r""" Calculates the analytical parallel non-Gaussiannity (NG) [1]_.
+        For the NG to be meaningful the mapmri scale factors must be
+        estimated only on data representing Gaussian diffusion of spins, i.e.,
+        bvals smaller than about 2000 s/mm^2 [2]_.
+
+        References
+        ----------
+        .. [1] Ozarslan E. et. al, "Mean apparent propagator (MAP) MRI: A novel
+        diffusion imaging method for mapping tissue microstructure",
+        NeuroImage, 2013.
+
+        .. [2] Avram et al. "Clinical feasibility of using mean apparent
+        propagator (MAP) MRI to characterize brain tissue microstructure".
+        NeuroImage 2015, in press.
+        """
+        if self.model.bval_threshold > 2000.:
+            msg = 'Model bval_threshold must be lower than 2000 for the '
+            msg += 'non_Gaussianity to be physically meaningful [2].'
+            warn(msg)
+        if not self.model.anisotropic_scaling:
+            msg = 'Parallel non-Gaussianity is not defined using '
+            msg += 'isotropic scaling.'
+            raise ValueError(msg)
+
+        ind_mat = self.model.ind_mat
+        coef = self._mapmri_coef
+        a_par = np.zeros_like(coef)
+        a0 = np.zeros_like(coef)
+
+        for i in range(coef.shape[0]):
+            n1, n2, n3 = ind_mat[i]
+            if (n2 % 2 + n3 % 2) == 0:
+                a_par[i] = coef[i] * (-1) ** ((n2 + n3) / 2) *\
+                    np.sqrt(factorial(n2) * factorial(n3)) /\
+                    (factorial2(n2) * factorial2(n3))
+                if n1 == 0:
+                    a0[i] = a_par[i]
+        return np.sqrt(1 - np.sum(a0 ** 2) / np.sum(a_par ** 2))
+
+    def ng_perpendicular(self):
+        r""" Calculates the analytical perpendicular non-Gaussiannity (NG)
+        [1]_. For the NG to be meaningful the mapmri scale factors must be
+        estimated only on data representing Gaussian diffusion of spins, i.e.,
+        bvals smaller than about 2000 s/mm^2 [2]_.
+
+        References
+        ----------
+        .. [1] Ozarslan E. et. al, "Mean apparent propagator (MAP) MRI: A novel
+        diffusion imaging method for mapping tissue microstructure",
+        NeuroImage, 2013.
+
+        .. [2] Avram et al. "Clinical feasibility of using mean apparent
+        propagator (MAP) MRI to characterize brain tissue microstructure".
+        NeuroImage 2015, in press.
+        """
+        if self.model.bval_threshold > 2000.:
+            msg = 'model bval_threshold must be lower than 2000 for the '
+            msg += 'non_Gaussianity to be physically meaningful [2].'
+            warn(msg)
+        if not self.model.anisotropic_scaling:
+            msg = 'Parallel non-Gaussianity is not defined using '
+            msg += 'isotropic scaling.'
+            raise ValueError(msg)
+
+        ind_mat = self.model.ind_mat
+        coef = self._mapmri_coef
+        a_perp = np.zeros_like(coef)
+        a00 = np.zeros_like(coef)
+
+        for i in range(coef.shape[0]):
+            n1, n2, n3 = ind_mat[i]
+            if n1 % 2 == 0:
+                if n2 % 2 == 0 and n3 % 2 == 0:
+                    a_perp[i] = coef[i] * (-1) ** (n1 / 2) *\
+                        np.sqrt(factorial(n1)) / factorial2(n1)
+                    if n2 == 0 and n3 == 0:
+                        a00[i] = a_perp[i]
+        return np.sqrt(1 - np.sum(a00 ** 2) / np.sum(a_perp ** 2))
+
+    def norm_of_laplacian_signal(self):
+        """ Calculates the norm of the laplacian of the fitted signal [1]_.
+        This information could be useful to assess if the extrapolation of the
+        fitted signal contains spurious oscillations. A high laplacian may
+        indicate that these are present, and any q-space indices that
+        use integrals of the signal may be corrupted (e.g. RTOP, RTAP, RTPP,
+        QIV).
+
+        References
+        ----------
+        .. [1]_ Fick, Rutger HJ, et al. "MAPL: Tissue microstructure estimation
+        using Laplacian-regularized MAP-MRI and its application to HCP data."
+        NeuroImage (2016).
+        """
+        if self.model.anisotropic_scaling:
+            laplacian_matrix = mapmri_laplacian_reg_matrix(
+                    self.model.ind_mat, self.mu,
+                    self.model.S_mat, self.model.T_mat, self.model.U_mat)
+        else:
+            laplacian_matrix = self.mu[0] * self.model.laplacian_matrix
+
+        norm_of_laplacian = np.dot(np.dot(self._mapmri_coef, laplacian_matrix),
+                                   self._mapmri_coef)
+        return norm_of_laplacian
+
+    def fitted_signal(self, gtab=None):
+        """
+        Recovers the fitted signal for the given gradient table. If no gradient
+        table is given it recovers the signal for the gtab of the data.
+        """
+        if gtab is None:
+            E = self.predict(self.model.gtab, S0=1.)
+        else:
+            E = self.predict(gtab, S0=1.)
+        return E
+
+    def predict(self, qvals_or_gtab, S0=100.):
+        r'''Recovers the reconstructed signal for any qvalue array or
+        gradient table.
+        '''
+        if isinstance(qvals_or_gtab, np.ndarray):
+            q = qvals_or_gtab
+            qvals = np.linalg.norm(q, axis=1)
+        else:
+            gtab = qvals_or_gtab
+            qvals = np.sqrt(gtab.bvals / self.model.tau) / (2 * np.pi)
+            q = qvals[:, None] * gtab.bvecs
+
+        if self.model.anisotropic_scaling:
+            q_rot = np.dot(q, self.R)
+            M = mapmri_phi_matrix(self.radial_order, self.mu, q_rot)
+        else:
+            M = mapmri_isotropic_phi_matrix(self.radial_order, self.mu[0], q)
+
+        E = S0 * np.dot(M, self._mapmri_coef)
+        return E
+
+    def pdf(self, r_points):
+        """ Diffusion propagator on a given set of real points.
+        if the array r_points is non writeable, then intermediate
+        results are cached for faster recalculation
         """
         if self.model.anisotropic_scaling:
             r_point_rotated = np.dot(r_points, self.R)
