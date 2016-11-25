@@ -135,7 +135,7 @@ def add_noise(signal, snr, S0, noise_type='rician'):
     return noise_adder[noise_type](signal, noise1, noise2)
 
 
-def sticks_and_ball(gtab, d=0.0015, S0=100, angles=[(0, 0), (90, 0)],
+def sticks_and_ball(gtab, d=0.0015, S0=1., angles=[(0, 0), (90, 0)],
                     fractions=[35, 35], snr=20):
     """ Simulate the signal for a Sticks & Ball model.
 
@@ -241,7 +241,7 @@ def gaussian_parallel(q, tau, D=0.7e-3):
 
 
 def cylinders_and_ball_soderman(gtab, tau, radii=[5e-3, 5e-3], D=0.7e-3,
-                                S0=100, angles=[(0, 0), (90, 0)],
+                                S0=1., angles=[(0, 0), (90, 0)],
                                 fractions=[35, 35], snr=20):
     r""" Calculates the three-dimensional signal attenuation E(q) originating
     from within a cylinder of radius R using the Soderman approximation [1]_.
@@ -369,7 +369,7 @@ def single_tensor(gtab, S0=1, evals=None, evecs=None, snr=None):
     return S.reshape(out_shape)
 
 
-def multi_tensor(gtab, mevals, S0=100, angles=[(0, 0), (90, 0)],
+def multi_tensor(gtab, mevals, S0=1., angles=[(0, 0), (90, 0)],
                  fractions=[50, 50], snr=20):
     r""" Simulate a Multi-Tensor signal.
 
@@ -535,7 +535,7 @@ def multi_tensor_dki(gtab, mevals, S0=100, angles=[(90., 0.), (90., 0.)],
     kt[14] = kurtosis_element(D_comps, fractions, 0, 1, 2, 2, DT, MD)
 
     # compute S based on the DT and KT
-    S = DKI_signal(gtab, dt, kt, S0, snr)
+    S = dki_signal(gtab, dt, kt, S0, snr)
 
     return S, dt, kt
 
@@ -606,7 +606,7 @@ def kurtosis_element(D_comps, frac, ind_i, ind_j, ind_k, ind_l, DT=None,
     return wijkl
 
 
-def DKI_signal(gtab, dt, kt, S0=150, snr=None):
+def dki_signal(gtab, dt, kt, S0=150, snr=None):
     r""" Simulated signal based on the diffusion and diffusion kurtosis
     tensors of a single voxel. Simulations are preformed assuming the DKI
     model.
