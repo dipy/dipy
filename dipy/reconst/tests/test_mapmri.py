@@ -174,6 +174,17 @@ def test_mapmri_signal_fitting(radial_order=6):
     mapfit = mapm.fit(S)
     S_reconst = mapfit.predict(gtab, 1.0)
 
+    # Repeat with a gtab with big_delta and small_delta:
+    gtab.big_delta = 5
+    gtab.small_delta = 3
+    mapm = MapmriModel(gtab, radial_order=radial_order,
+                       laplacian_weighting=0.0001,
+                       positivity_constraint=False,
+                       anisotropic_scaling=False)
+
+    mapfit = mapm.fit(S)
+    S_reconst = mapfit.predict(gtab, 1.0)
+
 
     # test the signal reconstruction
     S = S / S[0]
