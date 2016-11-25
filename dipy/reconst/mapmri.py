@@ -16,7 +16,7 @@ from dipy.core.optimize import Optimizer
 cvxopt, have_cvxopt, _ = optional_package("cvxopt")
 
 
-class MapmriModel(Cache):
+class MapmriModel(ReconstModel, Cache):
 
     r"""Mean Apparent Propagator MRI (MAPMRI) [1]_ of the diffusion signal.
 
