@@ -188,7 +188,8 @@ class MapmriModel(Cache):
         ODF.
 
         >>> from dipy.data import get_sphere, read_isbi2013_2shell
-        >>> img, gtab = read_isbi2013_2shell()
+        >>> img, gtab = read_isbi2013_2shell() # doctest:+ELLIPSIS
+        ...
         >>> from dipy.sims.voxel import SticksAndBall
         >>> data, golden_directions = SticksAndBall(
         ...                                     gtab, d=0.0015,
