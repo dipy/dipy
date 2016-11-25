@@ -199,7 +199,7 @@ class MapmriModel(Cache):
         >>> map_model = MapmriModel(gtab, radial_order=radial_order)
         >>> mapfit = map_model.fit(data)
         >>> sphere = get_sphere('symmetric724')
-        >>> odf= mapfit.odf(sphere)
+        >>> odf = mapfit.odf(sphere)
         """
 
         self.bvals = gtab.bvals
