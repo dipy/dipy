@@ -178,10 +178,10 @@ def test_mapmri_isotropic_static_scale_factor(radial_order=6):
 
     # test if indeed the scale factor is fixed now
     assert_equal(np.all(mapf_scale_stat_reg_stat.mu == mu),
-                True)
+                 True)
     # test if computation time is shorter
     assert_equal(time_scale_stat_reg_stat < time_scale_adapt_reg_stat,
-                True)
+                 True)
     # check if the fitted signal is the same
     assert_almost_equal(mapf_scale_stat_reg_stat.fitted_signal(),
                         mapf_scale_adapt_reg_stat.fitted_signal())
