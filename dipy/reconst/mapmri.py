@@ -332,6 +332,7 @@ class MapmriModel(Cache):
                     lopt = generalized_crossvalidation(data, M,
                                                        laplacian_matrix)
                 except np.linalg.linalg.LinAlgError:
+                    1/0.
                     lopt = 0.05
                     errorcode = 1
             elif np.isscalar(self.laplacian_weighting):

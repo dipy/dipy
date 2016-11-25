@@ -165,6 +165,11 @@ def test_mapmri_signal_fitting(radial_order=6):
     mapfit = mapm.fit(S)
     S_reconst = mapfit.predict(gtab, 1.0)
 
+    # test the signal reconstruction
+    S = S / S[0]
+    nmse_signal = np.sqrt(np.sum((S - S_reconst) ** 2)) / (S.sum())
+    assert_almost_equal(nmse_signal, 0.0, 3)
+
     # do the same without the positivity constraint:
     mapm = MapmriModel(gtab, radial_order=radial_order,
                        laplacian_weighting=0.0001,
@@ -173,6 +178,11 @@ def test_mapmri_signal_fitting(radial_order=6):
 
     mapfit = mapm.fit(S)
     S_reconst = mapfit.predict(gtab, 1.0)
+
+    # test the signal reconstruction
+    S = S / S[0]
+    nmse_signal = np.sqrt(np.sum((S - S_reconst) ** 2)) / (S.sum())
+    assert_almost_equal(nmse_signal, 0.0, 3)
 
     # Repeat with a gtab with big_delta and small_delta:
     gtab.big_delta = 5
@@ -184,7 +194,6 @@ def test_mapmri_signal_fitting(radial_order=6):
 
     mapfit = mapm.fit(S)
     S_reconst = mapfit.predict(gtab, 1.0)
-
 
     # test the signal reconstruction
     S = S / S[0]
