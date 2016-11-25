@@ -27,9 +27,6 @@ from dipy.reconst.shm import sh_to_sf
 import time
 
 
-cvxopt, have_cvxopt, _ = optional_package("cvxopt")
-
-
 def int_func(n):
     f = np.sqrt(2) * factorial(n) / float(((gamma(1 + n / 2.0)) *
                                           np.sqrt(2**(n + 1) * factorial(n))))
@@ -223,7 +220,7 @@ def test_mapmri_signal_fitting(radial_order=6):
     nmse_signal = np.sqrt(np.sum((S - S_reconst) ** 2)) / (S.sum())
     assert_almost_equal(nmse_signal, 0.0, 3)
 
-    if have_cvxopt:
+    mapmri.have_cvxopt:
         # Positivity constraint and anisotropic scaling:
         mapm = MapmriModel(gtab, radial_order=radial_order,
                            laplacian_weighting=0.0001,
