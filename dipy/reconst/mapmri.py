@@ -308,7 +308,7 @@ class MapmriModel(Cache):
                 lopt = self.laplacian_weighting
                 coef = np.dot(self.MMt_inv_Mt, data)
                 coef = coef / sum(coef * self.Bm)
-                return MapmriFit(self, coef, self.mu, R, lopt)
+                return MapmriFit(self, coef, self.mu, R, lopt, errorcode)
             except AttributeError:
                 try:
                     M = self.M
@@ -408,7 +408,7 @@ class MapmriModel(Cache):
             try:
                 pseudoInv = np.dot(
                     np.linalg.inv(np.dot(M.T, M) + lopt * laplacian_matrix),
-                                  M.T)
+                    M.T)
                 coef = np.dot(pseudoInv, data)
             except np.linalg.linalg.LinAlgError:
                 errorcode = 1
@@ -422,7 +422,7 @@ class MapmriModel(Cache):
 
 class MapmriFit(ReconstFit):
 
-    def __init__(self, model, mapmri_coef, mu, R, lopt, errorcode):
+    def __init__(self, model, mapmri_coef, mu, R, lopt, errorcode=0):
         """ Calculates diffusion properties for a single voxel
 
         Parameters
