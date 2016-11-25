@@ -235,7 +235,7 @@ class MapmriModel(Cache):
             if isinstance(pos_radius, str):
                 if pos_radius != 'adaptive':
                     raise ValueError(msg)
-            elif isinstance(pos_radius, float):
+            elif isinstance(pos_radius, float) or isinstance(pos_radius, int):
                 if pos_radius <= 0:
                     raise ValueError(msg)
                 self.constraint_grid = create_rspace(pos_grid, pos_radius)
