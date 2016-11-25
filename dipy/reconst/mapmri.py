@@ -218,10 +218,8 @@ class MapmriModel(Cache):
             if isinstance(laplacian_weighting, str):
                 if laplacian_weighting is not 'GCV':
                     raise ValueError(msg)
-            elif (
-                isinstance(laplacian_weighting, float) or
-                isinstance(laplacian_weighting, np.ndarray)
-            ):
+            elif (isinstance(laplacian_weighting, float) or
+                    isinstance(laplacian_weighting, np.ndarray)):
                 if np.sum(laplacian_weighting < 0) > 0:
                     raise ValueError(msg)
             self.laplacian_weighting = laplacian_weighting
@@ -337,10 +335,13 @@ class MapmriModel(Cache):
                     errorcode = 1
             elif np.isscalar(self.laplacian_weighting):
                 lopt = self.laplacian_weighting
-            elif type(self.laplacian_weighting) == np.ndarray:
+            else:
                 lopt = generalized_crossvalidation_array(
-                                    data, M,
-                                    laplacian_matrix, self.laplacian_weighting)
+                                    data,
+                                    M,
+                                    laplacian_matrix,
+                                    self.laplacian_weighting)
+
         else:
             lopt = 0.
             laplacian_matrix = np.ones((self.ind_mat.shape[0],
@@ -385,8 +386,7 @@ class MapmriModel(Cache):
             data_single_b0 = np.r_[
                 data_b0, data[~self.gtab.b0s_mask]] / data_b0
             p = cvxopt.matrix(np.ascontiguousarray(
-                -1 * np.dot(Mprime.T, data_single_b0))
-            )
+                -1 * np.dot(Mprime.T, data_single_b0)))
             G = cvxopt.matrix(-1 * K)
             h = cvxopt.matrix((1e-10) * np.ones((K.shape[0])), (K.shape[0], 1))
             A = cvxopt.matrix(np.ascontiguousarray(M0_mean))
@@ -1961,7 +1961,6 @@ def generalized_crossvalidation_array(data, M, LR, weights_array=None):
     weights_array : array (N_of_weights)
         array of optional regularization weights
     """
-
     if weights_array is None:
         lrange = np.linspace(0.05, 1, 20)  # reasonably fast standard range
     else:
