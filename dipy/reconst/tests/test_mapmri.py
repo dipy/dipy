@@ -220,7 +220,7 @@ def test_mapmri_signal_fitting(radial_order=6):
     nmse_signal = np.sqrt(np.sum((S - S_reconst) ** 2)) / (S.sum())
     assert_almost_equal(nmse_signal, 0.0, 3)
 
-    mapmri.have_cvxopt:
+    if mapmri.have_cvxopt:
         # Positivity constraint and anisotropic scaling:
         mapm = MapmriModel(gtab, radial_order=radial_order,
                            laplacian_weighting=0.0001,
