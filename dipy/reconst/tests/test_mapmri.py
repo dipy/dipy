@@ -126,6 +126,13 @@ def test_mapmri_initialize_radial_error():
     # No odd radial order allowed:
     assert_raises(ValueError, MapmriModel, gtab, radial_order=3)
 
+
+def test_mapmri_initialize_gcv():
+    gtab = get_gtab_taiwan_dsi()
+    # When string is provided it has to be "GCV"
+    assert_raises(ValueError, MapmriModel, gtab, laplacian_weighting="notGCV")
+
+
 def test_mapmri_signal_fitting(radial_order=6):
     gtab = get_gtab_taiwan_dsi()
     l1, l2, l3 = [0.0015, 0.0003, 0.0003]
