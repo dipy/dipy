@@ -430,7 +430,7 @@ def multi_tensor(gtab, mevals, S0=1., angles=[(0, 0), (90, 0)],
     return add_noise(S, snr, S0), sticks
 
 
-def multi_tensor_dki(gtab, mevals, S0=100, angles=[(90., 0.), (90., 0.)],
+def multi_tensor_dki(gtab, mevals, S0=1., angles=[(90., 0.), (90., 0.)],
                      fractions=[50, 50], snr=20):
     r""" Simulate the diffusion-weight signal, diffusion and kurtosis tensors
     based on the DKI model
