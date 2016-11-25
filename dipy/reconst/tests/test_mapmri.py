@@ -3,7 +3,8 @@ from dipy.data import get_gtab_taiwan_dsi
 from numpy.testing import (assert_almost_equal,
                            assert_array_almost_equal,
                            assert_equal,
-                           run_module_suite)
+                           run_module_suite,
+                           assert_raises)
 from dipy.reconst.mapmri import MapmriModel, mapmri_index_matrix
 from dipy.reconst import dti, mapmri
 from dipy.sims.voxel import (MultiTensor,
@@ -114,6 +115,16 @@ def test_mapmri_number_of_coefficients(radial_order=6):
     n_gt = np.round(1 / 6.0 * (F + 1) * (F + 2) * (4 * F + 3))
     assert_equal(n_c, n_gt)
 
+
+def test_mapmri_initialize_radial_error():
+    """
+    Test initialization conditions
+    """
+    gtab = get_gtab_taiwan_dsi()
+    # No negative radial_order allowed
+    assert_raises(ValueError, MapmriModel, gtab, radial_order=-1)
+    # No odd radial order allowed:
+    assert_raises(ValueError, MapmriModel, gtab, radial_order=3)
 
 def test_mapmri_signal_fitting(radial_order=6):
     gtab = get_gtab_taiwan_dsi()
