@@ -187,20 +187,18 @@ class MapmriModel(Cache):
         with respect to the SHORE basis and compute the real and analytical
         ODF.
 
-        from dipy.data import get_data,get_sphere
-        sphere = get_sphere('symmetric724')
-        fimg, fbvals, fbvecs = get_data('ISBI_testing_2shells_table')
-        bvals, bvecs = read_bvals_bvecs(fbvals, fbvecs)
-        gtab = gradient_table(bvals, bvecs)
-        from dipy.sims.voxel import SticksAndBall
-        data, golden_directions = SticksAndBall(gtab, d=0.0015,
-                                                S0=1, angles=[(0, 0), (90, 0)],
-                                                fractions=[50, 50], snr=None)
-        from dipy.reconst.mapmri import MapmriModel
-        radial_order = 4
-        map_model = MapmriModel(gtab, radial_order=radial_order)
-        mapfit = map_model.fit(data)
-        odf= mapfit.odf(sphere)
+        >>> from dipy.data import get_sphere, read_isbi2013_2shell
+        >>> img, gtab = read_isbi2013_2shell()
+        >>> from dipy.sims.voxel import SticksAndBall
+        >>> data, golden_directions = SticksAndBall(
+        ...                                     gtab, d=0.0015,
+        ...                                     S0=1, angles=[(0, 0), (90, 0)],
+        ...                                     fractions=[50, 50], snr=None)
+        >>> from dipy.reconst.mapmri import MapmriModel
+        >>> radial_order = 4
+        >>> map_model = MapmriModel(gtab, radial_order=radial_order)
+        >>> mapfit = map_model.fit(data)
+        >>> odf= mapfit.odf(sphere)
         """
 
         self.bvals = gtab.bvals
