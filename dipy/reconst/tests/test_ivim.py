@@ -493,7 +493,7 @@ def test_aic_relative_likelihood():
     """
     aic = [100.0, 102.0, 105.0]
     rlike_aic = ivim_model.aic_relative_likelihood(aic)
-    assert_array_almost_equal(rlike_aic, [np.exp((aic[0]-aic[1])/2), np.exp((aic[1]-aic[2])/2), np.exp((aic[0]-aic[2])/2)], 3)
+    assert_array_almost_equal(rlike_aic, [np.exp((aic[0]-aic[1])/2), np.exp((aic[0]-aic[2])/2), np.exp((aic[1]-aic[2])/2)], 3)
 
 def test_aic_weights():
     """
