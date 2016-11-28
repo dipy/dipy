@@ -16,7 +16,7 @@ from numpy.testing import (assert_array_equal, assert_array_almost_equal,
                            assert_raises, assert_array_less, run_module_suite,
                            assert_warns, dec)
 
-from dipy.reconst.ivim import ivim_prediction, IvimModel
+from dipy.reconst.ivim import ivim_prediction, IvimModel, AIC_relative_likelihood, AIC_weights
 from dipy.core.gradients import gradient_table, generate_bvecs
 from dipy.sims.voxel import multi_tensor
 
@@ -484,7 +484,7 @@ def test_aic_fit_compare():
                          9.30095210e-04]
     linear_fit_params2 = [1.003e+03, 1.226e-01, 1.036e-02,
                          9.373e-04]
-    ivim_aic = ivim_model.aic_fit_compare(data_single, [linear_fit_params1, linear_fit_params2])
+    ivim_aic = ivim_model.AIC_IVIM(data_single, [linear_fit_params1, linear_fit_params2])
     assert_array_almost_equal(ivim_aic, [61.669198, 14.770808], 3)
 
 def test_aic_relative_likelihood():
@@ -492,7 +492,7 @@ def test_aic_relative_likelihood():
     Test the aic_relative_likelihood function
     """
     aic = [100.0, 102.0, 105.0]
-    rlike_aic = ivim_model.aic_relative_likelihood(aic)
+    rlike_aic = AIC_relative_likelihood(aic)
     assert_array_almost_equal(rlike_aic, [np.exp((aic[0]-aic[1])/2), np.exp((aic[0]-aic[2])/2), np.exp((aic[1]-aic[2])/2)], 3)
 
 def test_aic_weights():
@@ -503,7 +503,7 @@ def test_aic_weights():
     daic = [0.0, 2.0, 5.0]  # aic - 100
     waic = 1.449964  # sum(exp(-daic/2))
     faic = [0.6896721, 0.2537162, 0.05661173]  # exp(-daic/2)/waic
-    w_aic = ivim_model.aic_weights(aic)
+    w_aic = AIC_weights(aic)
     assert_array_almost_equal(w_aic, faic, 3)
 
 

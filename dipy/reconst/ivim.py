@@ -68,6 +68,7 @@ def _ivim_error(params, gtab, signal):
     residual = signal - ivim_prediction(params, gtab)
     return residual
 
+
 def _AIC(rss, k, n):
     """
     Calculates the AIC of a regression
@@ -88,6 +89,50 @@ def _AIC(rss, k, n):
     """
     return 2 * k + n * np.log(rss / n)
 
+
+def AIC_relative_likelihood(aic_iter):
+    """
+    Parameters
+    ----------
+    aic_iter : iterable (tuple/list)
+        An iterable containing the AIC values to compare
+
+    Returns
+    -------
+    rlike : array
+        A numpy array with all possible relatively likelihood permutations
+    """
+    aic_iter_combos = list(it.combinations(aic_iter, 2))
+    rlike = np.zeros(len(aic_iter_combos))
+    idx = 0
+    for combo in aic_iter_combos:
+        d = combo[1] - combo[0] # traditonal: combo[0] - combo[1]  # note: combo[0] must be less than combo[1] for the traditional definition
+        if d == 0:  # have to do this to avoid np.sign(0)=0, which would give 0 rather than 1
+            rlike[idx] = 1.
+        else:
+            rlike[idx] = np.sign(d)*np.exp(-np.abs(d)/2)
+        idx += 1
+    return rlike
+
+
+def AIC_weights(aic_iter):
+    """
+    Parameters
+    ----------
+    aic_iter : iterable (tuple/list)
+        An iterable containing the AIC values to compare
+
+    Returns
+    -------
+    wiAIC : array
+        A numpy array with the Akaike weights
+    """
+    aic_iter = np.array(aic_iter)
+    minAIC = np.min(aic_iter)
+    dAIC = aic_iter - minAIC
+    wAIC = np.sum(np.exp(-dAIC/2.))
+    wiAIC = np.exp(-dAIC/2.)/wAIC
+    return wiAIC
 
 def f_D_star_prediction(params, gtab, S0, D):
     """Function used to predict IVIM signal when S0 and D are known
@@ -451,7 +496,7 @@ class IvimModel(ReconstModel):
         S0 = np.exp(-neg_log_S0)
         return S0, D
 
-    def aic_fit_compare(self, data, param_iter):
+    def AIC_IVIM(self, data, param_iter):
         """
         Parameters
         ----------
@@ -474,49 +519,6 @@ class IvimModel(ReconstModel):
             aic = _AIC(rss, k, n)
             aic_arr = np.append(aic_arr, aic)  # maybe should pre-allocate for speed
         return aic_arr
-
-    def aic_relative_likelihood(self, aic_iter):
-        """
-        Parameters
-        ----------
-        aic_iter : iterable (tuple/list)
-            An iterable containing the AIC values to compare
-
-        Returns
-        -------
-        rlike : array
-            A numpy array with all possible relatively likelihood permutations
-        """
-        aic_iter_combos = list(it.combinations(aic_iter, 2))
-        rlike = np.zeros(len(aic_iter_combos))
-        idx = 0
-        for combo in aic_iter_combos:
-            d = combo[1] - combo[0] # traditonal: combo[0] - combo[1]  # note: combo[0] must be less than combo[1] for the traditional definition
-            if d == 0:  # have to do this to avoid np.sign(0)=0, which would give 0 rather than 1
-                rlike[idx] = 1.
-            else:
-                rlike[idx] = np.sign(d)*np.exp(-np.abs(d)/2)
-            idx += 1
-        return rlike
-
-    def aic_weights(self, aic_iter):
-        """
-        Parameters
-        ----------
-        aic_iter : iterable (tuple/list)
-            An iterable containing the AIC values to compare
-
-        Returns
-        -------
-        wiAIC : array
-            A numpy array with the Akaike weights
-        """
-        aic_iter = np.array(aic_iter)
-        minAIC = np.min(aic_iter)
-        dAIC = aic_iter - minAIC
-        wAIC = np.sum(np.exp(-dAIC/2.))
-        wiAIC = np.exp(-dAIC/2.)/wAIC
-        return wiAIC
 
     def estimate_f_D_star(self, params_f_D_star, data, S0, D):
         """Estimate f and D_star using the values of all the other parameters
