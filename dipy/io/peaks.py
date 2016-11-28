@@ -4,7 +4,8 @@ import os
 import numpy as np
 
 from dipy.core.sphere import Sphere
-from dipy.direction.peaks import PeaksAndMetrics
+from dipy.direction.peaks import (PeaksAndMetrics,
+                                  reshape_peaks_for_visualization)
 from distutils.version import LooseVersion
 
 # Conditional import machinery for pytables
@@ -240,3 +241,57 @@ def save_peaks(fname, pam, affine=None, verbose=False):
         print(pam.ang_thr)
         print('Sphere vertices shape')
         print(pam.sphere.vertices.shape)
+
+    return pam
+
+
+def save_peaks(fname, pam, compressed=True):
+    """ Save NPZ file with all important attributes of object PeaksAndMetrics
+    """
+
+    if compressed:
+        save_func = np.savez_compressed
+    else:
+        save_func = np.savez
+
+    save_func(fname,
+              affine=pam.affine,
+              peak_dirs=pam.peak_dirs,
+              peak_values=pam.peak_values,
+              peak_indices=pam.peak_indices,
+              shm_coeff=pam.shm_coeff,
+              sphere_vertices=pam.sphere.vertices,
+              B=pam.B,
+              total_weight=pam.total_weight,
+              ang_thr=pam.ang_thr,
+              gfa=pam.gfa,
+              qa=pam.qa,
+              odf=pam.odf)
+
+
+def peaks_to_niftis(pam,
+                    fname_shm,
+                    fname_dirs,
+                    fname_values,
+                    fname_indices,
+                    fname_gfa,
+                    reshape_dirs=False):
+        """ Save SH, directions, indices and values of peaks to Nifti.
+        """
+
+        save_nifti(fname_shm, pam.shm_coeff.astype(np.float32), pam.affine)
+
+        if reshape_dirs:
+            pam_dirs = reshape_peaks_for_visualization(pam)
+        else:
+            pam_dirs = pam.peak_dirs.astype(np.float32)
+
+        save_nifti(fname_dirs, pam_dirs, pam.affine)
+
+        save_nifti(fname_values, pam.peak_values.astype(np.float32),
+                   pam.affine)
+
+        save_nifti(fname_indices, pam.peak_indices, pam.affine)
+
+        save_nifti(fname_gfa, pam.gfa, pam.affine)
+
