@@ -14,11 +14,12 @@ import numpy as np
 from dipy.utils.optpkg import optional_package
 
 # Allow import, but disable doctests, if we don't have pytables
-tables, have_tables, setup_module = optional_package('tables')
+tables, have_tables, _ = optional_package('tables')
 
 # Useful variable for backward compatibility.
-PY_TABLE2 = tables.__version__[0] == "2"
-PY_TABLE3 = tables.__version__[0] == "3"
+if have_tables:
+    PY_TABLE2 = tables.__version__[0] == "2"
+    PY_TABLE3 = tables.__version__[0] == "3"
 
 # Make sure not to carry across setup module from * import
 __all__ = ['Dpy']
