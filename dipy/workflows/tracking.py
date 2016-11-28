@@ -6,19 +6,20 @@ import logging
 from dipy.direction import DeterministicMaximumDirectionGetter
 from dipy.io.image import load_nifti
 from dipy.io.peaks import load_peaks
-from dipy.io.trackvis import save_trk
 from dipy.tracking import utils
 from dipy.tracking.local import (ThresholdTissueClassifier,
                                  LocalTracking)
 from dipy.workflows.workflow import Workflow
 
+import numpy as np
+from nibabel.streamlines import save, Tractogram
 
 class DetTrackFlow(Workflow):
     @classmethod
     def get_short_name(cls):
         return 'tracking'
 
-    def run(self, peaks_files, stopping_files, seeding_files,
+    def run(self, pam_files, stopping_files, seeding_files,
             stopping_thr=0.2,
             seed_density=1,
             use_sh=False,
@@ -29,7 +30,7 @@ class DetTrackFlow(Workflow):
 
         Parameters
         ----------
-        peaks_files : string
+        pam_files : string
            Path to the peaks values files. This path may contain
            wildcards to use multiple masks at once.
         stopping_files : string
@@ -52,20 +53,21 @@ class DetTrackFlow(Workflow):
         """
         io_it = self.get_io_iterator()
 
-        for peaks_path, stopping_path, seeding_path, \
-                out_tract in io_it:
+        for pams_path, stopping_path, seeding_path, out_tract in io_it:
+
             logging.info('Deterministic tracking on {0}'
-                         .format(peaks_path))
-            pam = load_peaks(peaks_path)
+                         .format(pams_path))
+
+            pam = load_peaks(pams_path)
             stop, affine = load_nifti(stopping_path)
             classifier = ThresholdTissueClassifier(stop, stopping_thr)
 
-            # seed_mask = stop > .2
             seed_mask, _ = load_nifti(seeding_path)
-            seeds = utils.seeds_from_mask(
-                seed_mask,
-                density=[seed_density, seed_density, seed_density],
-                affine=affine)
+            seeds =\
+                utils.seeds_from_mask(
+                    seed_mask,
+                    density=[seed_density, seed_density, seed_density],
+                    affine=affine)
 
             if use_sh:
                 detmax_dg = \
@@ -82,9 +84,7 @@ class DetTrackFlow(Workflow):
                 streamlines = LocalTracking(pam, classifier,
                                             seeds, affine, step_size=.5)
 
-            # Compute streamlines and store as a list.
-            streamlines = list(streamlines)
+            tractogram = Tractogram(streamlines, affine_to_rasmm=np.eye(4))
+            save(tractogram, out_tract)
 
-            # Currently not working with 2x2x2 vols.
-            save_trk(out_tract, streamlines, affine, stop.shape)
             logging.info('Saved {0}'.format(out_tract))
