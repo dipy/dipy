@@ -14,7 +14,43 @@ from dipy.workflows.workflow import Workflow
 import numpy as np
 from nibabel.streamlines import save, Tractogram
 
-class DetTrackFlow(Workflow):
+
+class GenericTrackFlow(Workflow):
+
+    def _core_run(self, stopping_path, stopping_thr, seeding_path, seed_density,
+                  use_sh, shm_coeff, sphere, out_tract):
+        stop, affine = load_nifti(stopping_path)
+        classifier = ThresholdTissueClassifier(stop, stopping_thr)
+
+        seed_mask, _ = load_nifti(seeding_path)
+        seeds = \
+            utils.seeds_from_mask(
+                seed_mask,
+                density=[seed_density, seed_density, seed_density],
+                affine=affine)
+
+        if use_sh:
+            detmax_dg = \
+                DeterministicMaximumDirectionGetter.from_shcoeff(
+                    pam.shm_coeff,
+                    max_angle=30.,
+                    sphere=pam.sphere)
+
+            streamlines = \
+                LocalTracking(detmax_dg, classifier, seeds, affine,
+                              step_size=.5)
+
+        else:
+            streamlines = LocalTracking(pam, classifier,
+                                        seeds, affine, step_size=.5)
+
+        tractogram = Tractogram(streamlines, affine_to_rasmm=np.eye(4))
+        save(tractogram, out_tract)
+
+        logging.info('Saved {0}'.format(out_tract))
+
+
+class DetTrackFlow(GenericTrackFlow):
     @classmethod
     def get_short_name(cls):
         return 'tracking'
@@ -59,11 +95,12 @@ class DetTrackFlow(Workflow):
                          .format(pams_path))
 
             pam = load_peaks(pams_path)
+
             stop, affine = load_nifti(stopping_path)
             classifier = ThresholdTissueClassifier(stop, stopping_thr)
 
             seed_mask, _ = load_nifti(seeding_path)
-            seeds =\
+            seeds = \
                 utils.seeds_from_mask(
                     seed_mask,
                     density=[seed_density, seed_density, seed_density],
@@ -88,3 +125,4 @@ class DetTrackFlow(Workflow):
             save(tractogram, out_tract)
 
             logging.info('Saved {0}'.format(out_tract))
+
