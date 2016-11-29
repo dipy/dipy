@@ -48,53 +48,6 @@ class GenericTrackFlow(Workflow):
 
         logging.info('Saved {0}'.format(out_tract))
 
-'''
-def _core_run_sh(self, stopping_path, stopping_thr, seeding_path,
-                     seed_density, pam, out_tract):
-        stop, affine = load_nifti(stopping_path)
-        classifier = ThresholdTissueClassifier(stop, stopping_thr)
-
-        return classifier, affine
-
-        dg = \
-            DeterministicMaximumDirectionGetter.from_shcoeff(
-                pam.shm_coeff,
-                max_angle=30.,
-                sphere=pam.sphere)
-
-    @staticmethod
-    def _core_run_peaks(self, stopping_path, stopping_thr, seeding_path,
-                        seed_density, pam, out_tract):
-
-        logging.info('Saved {0}'.format(out_tract))
-
-    @staticmethod
-    def _get_classifier(self, stopping_path, stopping_thr):
-        stop, affine = load_nifti(stopping_path)
-        classifier = ThresholdTissueClassifier(stop, stopping_thr)
-
-        return classifier, affine
-
-    @staticmethod
-    def _get_seeds(self, seeding_path, seed_density, affine):
-        seed_mask, _ = load_nifti(seeding_path)
-        seeds = \
-            utils.seeds_from_mask(
-                seed_mask,
-                density=[seed_density, seed_density, seed_density],
-                affine=affine)
-
-    def _core_run(self, direction_getter, classifier, seeds, affine, out_tract):
-
-        streamlines = \
-            LocalTracking(direction_getter, classifier, seeds, affine,
-                          step_size=.5)
-
-        tractogram = Tractogram(streamlines, affine_to_rasmm=np.eye(4))
-        save(tractogram, out_tract)
-
-        logging.info('Saved {0}'.format(out_tract))
-'''
 
 class DetTrackPAMFlow(GenericTrackFlow):
     @classmethod
@@ -198,7 +151,7 @@ class DetTrackPeaksFlow(GenericTrackFlow):
             pam.peak_dirs = nib.load(peaks_dirs_path).get_data()
             pam.peak_values = nib.load(peaks_vals_path).get_data()
             pam.peak_indices = nib.load(peaks_idx_path).get_data()
-            self._core_run_peaks(stopping_path, stopping_thr, seeding_path,
+            self._core_run(stopping_path, stopping_thr, seeding_path,
                                  seed_density, False, pam, out_tract)
 
 
@@ -244,5 +197,5 @@ class DetTrackSHFlow(GenericTrackFlow):
             pam.sphere = sphere
             pam.shm_coeff = nib.load(sh_path).get_data()
 
-            self._core_run_peaks(stopping_path, stopping_thr, seeding_path,
-                                 seed_density, True, pam, out_tract)
+            self._core_run(stopping_path, stopping_thr, seeding_path,
+                           seed_density, True, pam, out_tract)
