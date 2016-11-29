@@ -3,7 +3,7 @@
 from __future__ import division, print_function
 
 from dipy.workflows.flow_runner import run_flow
-from dipy.workflows.tracking import DetTrackFlowPAM
+from dipy.workflows.tracking import DetTrackPAMFlow
 
 if __name__ == "__main__":
-    run_flow(DetTrackFlowPAM())
+    run_flow(DetTrackPAMFlow())
