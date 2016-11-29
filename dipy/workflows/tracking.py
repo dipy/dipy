@@ -3,7 +3,7 @@ from __future__ import division
 
 import logging
 
-from dipy.direction import DeterministicMaximumDirectionGetter
+from dipy.direction import DeterministicMaximumDirectionGetter, PeaksAndMetrics
 from dipy.io.image import load_nifti
 from dipy.io.peaks import load_peaks
 from dipy.tracking import utils
@@ -18,7 +18,9 @@ from nibabel.streamlines import save, Tractogram
 class GenericTrackFlow(Workflow):
 
     def _core_run(self, stopping_path, stopping_thr, seeding_path, seed_density,
-                  use_sh, shm_coeff, sphere, out_tract):
+                  use_sh, pam, out_tract):
+
+
         stop, affine = load_nifti(stopping_path)
         classifier = ThresholdTissueClassifier(stop, stopping_thr)
 
@@ -41,6 +43,7 @@ class GenericTrackFlow(Workflow):
                               step_size=.5)
 
         else:
+
             streamlines = LocalTracking(pam, classifier,
                                         seeds, affine, step_size=.5)
 
@@ -50,7 +53,7 @@ class GenericTrackFlow(Workflow):
         logging.info('Saved {0}'.format(out_tract))
 
 
-class DetTrackFlow(GenericTrackFlow):
+class DetTrackFlowPAM(GenericTrackFlow):
     @classmethod
     def get_short_name(cls):
         return 'tracking'
@@ -96,33 +99,7 @@ class DetTrackFlow(GenericTrackFlow):
 
             pam = load_peaks(pams_path)
 
-            stop, affine = load_nifti(stopping_path)
-            classifier = ThresholdTissueClassifier(stop, stopping_thr)
+            self._core_run(stopping_path, stopping_thr, seeding_path,
+                           seed_density, use_sh, pam, out_tract)
 
-            seed_mask, _ = load_nifti(seeding_path)
-            seeds = \
-                utils.seeds_from_mask(
-                    seed_mask,
-                    density=[seed_density, seed_density, seed_density],
-                    affine=affine)
-
-            if use_sh:
-                detmax_dg = \
-                    DeterministicMaximumDirectionGetter.from_shcoeff(
-                        pam.shm_coeff,
-                        max_angle=30.,
-                        sphere=pam.sphere)
-
-                streamlines = \
-                    LocalTracking(detmax_dg, classifier, seeds, affine,
-                                  step_size=.5)
-
-            else:
-                streamlines = LocalTracking(pam, classifier,
-                                            seeds, affine, step_size=.5)
-
-            tractogram = Tractogram(streamlines, affine_to_rasmm=np.eye(4))
-            save(tractogram, out_tract)
-
-            logging.info('Saved {0}'.format(out_tract))
 
