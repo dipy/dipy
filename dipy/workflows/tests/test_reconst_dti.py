@@ -25,7 +25,7 @@ def reconst_flow_core(flow, extra_args=[]):
         vol_img = nib.load(data_path)
         volume = vol_img.get_data()
         mask = np.ones_like(volume[:, :, :, 0])
-        mask_img = nib.Nifti1Image(mask.astype(np.uint8), vol_img.get_affine())
+        mask_img = nib.Nifti1Image(mask.astype(np.uint8), vol_img.affine)
         mask_path = join(out_dir, 'tmp_mask.nii.gz')
         nib.save(mask_img, mask_path)
 

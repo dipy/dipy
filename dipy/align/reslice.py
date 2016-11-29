@@ -55,8 +55,8 @@ def reslice(data, affine, zooms, new_zooms, order=1, mode='constant', cval=0,
     >>> data = img.get_data()
     >>> data.shape == (58, 58, 24)
     True
-    >>> affine = img.get_affine()
-    >>> zooms = img.get_header().get_zooms()[:3]
+    >>> affine = img.affine
+    >>> zooms = img.header.get_zooms()[:3]
     >>> zooms
     (4.0, 4.0, 5.0)
     >>> new_zooms = (3.,3.,3.)

@@ -53,7 +53,7 @@ class NLMeansFlow(Workflow):
 
                 denoised_data = nlmeans(data, sigma)
                 denoised_image = nib.Nifti1Image(
-                    denoised_data, image.get_affine(), image.get_header())
+                    denoised_data, image.affine, image.header)
 
                 denoised_image.to_filename(odenoised)
                 logging.info('Denoised volume saved as {0}'.format(odenoised))
