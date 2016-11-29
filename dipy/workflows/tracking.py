@@ -95,7 +95,7 @@ class DetTrackPAMFlow(GenericTrackFlow):
             logging.info('Deterministic tracking on {0}'
                          .format(pams_path))
 
-            pam = load_peaks(pams_path)
+            pam = load_peaks(pams_path, verbose=False)
 
             self._core_run(stopping_path, stopping_thr, seeding_path,
                            seed_density, use_sh, pam, out_tract)
