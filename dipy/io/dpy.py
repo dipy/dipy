@@ -10,6 +10,8 @@
 
 import numpy as np
 
+from distutils.version import LooseVersion
+
 # Conditional import machinery for pytables
 from dipy.utils.optpkg import optional_package
 
@@ -17,9 +19,7 @@ from dipy.utils.optpkg import optional_package
 tables, have_tables, _ = optional_package('tables')
 
 # Useful variable for backward compatibility.
-if have_tables:
-    PY_TABLE2 = tables.__version__[0] == "2"
-    PY_TABLE3 = tables.__version__[0] == "3"
+TABLES_LESS_3_0 = LooseVersion(tables.__version__) < "3.0"
 
 # Make sure not to carry across setup module from * import
 __all__ = ['Dpy']
@@ -64,12 +64,12 @@ class Dpy(object):
         '''
 
         self.mode = mode
-        self.f = tables.openFile(fname, mode=self.mode) if PY_TABLE2 else tables.open_file(fname, mode=self.mode)
+        self.f = tables.openFile(fname, mode=self.mode) if TABLES_LESS_3_0 else tables.open_file(fname, mode=self.mode)
         self.N = 5 * 10**9
         self.compression = compression
 
         if self.mode == 'w':
-            if PY_TABLE2:
+            if TABLES_LESS_3_0:
                 func_create_group = self.f.createGroup
                 func_create_array = self.f.createArray
                 func_create_earray = self.f.createEArray
