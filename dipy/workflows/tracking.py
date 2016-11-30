@@ -39,7 +39,6 @@ class GenericTrackFlow(Workflow):
                     pam.shm_coeff,
                     max_angle=30.,
                     sphere=pam.sphere)
-            print direction_getter
 
         streamlines = LocalTracking(direction_getter, classifier,
                                     seeds, affine, step_size=.5)
