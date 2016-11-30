@@ -1,6 +1,9 @@
 import numpy as np
 import numpy.testing as npt
 
+import nibabel as nib
+import dipy.data as dpd
+
 from dipy.core.sphere import HemiSphere, unit_octahedron
 from dipy.core.gradients import gradient_table
 from dipy.tracking.local import (LocalTracking, ThresholdTissueClassifier,
@@ -10,6 +13,7 @@ from dipy.direction import (ProbabilisticDirectionGetter,
 from dipy.tracking.local.interpolation import trilinear_interpolate4d
 
 from dipy.tracking.local.localtracking import TissueTypes
+import dipy.tracking.utils as dtu
 
 
 def test_stop_conditions():
@@ -157,6 +161,27 @@ def test_stop_conditions():
     bad_affine = np.eye(4)
     bad_affine[0, 1] = 1.
     npt.assert_raises(ValueError, LocalTracking, dg, tc, seeds, bad_affine, 1.)
+
+    # Sometimes data have affines with tiny shear components.
+    # For example, the small_101D data-set has some of that:
+    fdata, fbval, fbvec = dpd.get_data('small_101D')
+    funky_affine = nib.load(fdata).get_affine()
+
+    # We still want to be able to track with this kind of data:
+    streamlines_funky = LocalTracking(direction_getter=dg,
+                                      tissue_classifier=tc,
+                                      seeds=seeds,
+                                      affine=funky_affine,
+                                      step_size=1.,
+                                      return_all=True)
+
+    streamlines_funky = iter(streamlines_funky)
+    # We do the same checks here:
+    y = 0
+    sl = next(streamlines_funky)
+    npt.assert_equal(sl[0], [0, y, 0])
+    npt.assert_equal(sl[-1], [0, y, 3])
+    npt.assert_equal(len(sl), 4)
 
 
 def test_trilinear_interpolate():
