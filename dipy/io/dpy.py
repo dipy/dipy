@@ -19,10 +19,10 @@ from dipy.testing import doctest_skip_parser
 from dipy.utils.optpkg import optional_package
 
 # Allow import, but disable doctests, if we don't have pytables
-tables, has_tables, _ = optional_package('tables')
+tables, have_tables, _ = optional_package('tables')
 
 # Useful variable for backward compatibility.
-if has_tables:
+if have_tables:
     TABLES_LESS_3_0 = LooseVersion(tables.__version__) < "3.0"
 
 # Make sure not to carry across setup module from * import
@@ -65,7 +65,7 @@ class Dpy(object):
         >>>     T=dpr.read_tracksi([0,1,2,0,0,2])
         >>>     dpr.close()
         >>>     os.remove(fname) #delete file from disk
-        >>> dpy_example()  # skip if not has_tables
+        >>> dpy_example()  # skip if not have_tables
 
         '''
 
