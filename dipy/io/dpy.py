@@ -12,21 +12,25 @@ import numpy as np
 
 from distutils.version import LooseVersion
 
+# Conditional testing machinery for pytables
+from dipy.testing import doctest_skip_parser
+
 # Conditional import machinery for pytables
 from dipy.utils.optpkg import optional_package
 
 # Allow import, but disable doctests, if we don't have pytables
-tables, have_tables, _ = optional_package('tables')
+tables, has_tables, _ = optional_package('tables')
 
 # Useful variable for backward compatibility.
-TABLES_LESS_3_0 = LooseVersion(tables.__version__) < "3.0"
+if has_tables:
+    TABLES_LESS_3_0 = LooseVersion(tables.__version__) < "3.0"
 
 # Make sure not to carry across setup module from * import
 __all__ = ['Dpy']
 
 
 class Dpy(object):
-
+    @doctest_skip_parser
     def __init__(self, fname, mode='r', compression=0):
         ''' Advanced storage system for tractography based on HDF5
 
@@ -44,22 +48,24 @@ class Dpy(object):
         >>> import os
         >>> from tempfile import mkstemp #temp file
         >>> from dipy.io.dpy import Dpy
-        >>> fd,fname = mkstemp()
-        >>> fname = fname + '.dpy' #add correct extension
-        >>> dpw = Dpy(fname,'w')
-        >>> A=np.ones((5,3))
-        >>> B=2*A.copy()
-        >>> C=3*A.copy()
-        >>> dpw.write_track(A)
-        >>> dpw.write_track(B)
-        >>> dpw.write_track(C)
-        >>> dpw.close()
-        >>> dpr = Dpy(fname,'r')
-        >>> A=dpr.read_track()
-        >>> B=dpr.read_track()
-        >>> T=dpr.read_tracksi([0,1,2,0,0,2])
-        >>> dpr.close()
-        >>> os.remove(fname) #delete file from disk
+        >>> def dpy_example():
+        >>>     fd,fname = mkstemp()
+        >>>     fname = fname + '.dpy' #add correct extension
+        >>>     dpw = Dpy(fname,'w')
+        >>>     A=np.ones((5,3))
+        >>>     B=2*A.copy()
+        >>>     C=3*A.copy()
+        >>>     dpw.write_track(A)
+        >>>     dpw.write_track(B)
+        >>>     dpw.write_track(C)
+        >>>     dpw.close()
+        >>>     dpr = Dpy(fname,'r')
+        >>>     A=dpr.read_track()
+        >>>     B=dpr.read_track()
+        >>>     T=dpr.read_tracksi([0,1,2,0,0,2])
+        >>>     dpr.close()
+        >>>     os.remove(fname) #delete file from disk
+        >>> dpy_example()  # skip if not has_tables
 
         '''
 
