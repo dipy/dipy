@@ -327,6 +327,8 @@ def test_odf_slicer(interactive=False):
         npt.assert_equal(report.objects, 11 * 11)
         renderer.clear()
         renderer.add(fa_actor)
+        renderer.reset_camera()
+        # window.show(renderer)
         arr = window.snapshot(renderer)
         report = window.analyze_snapshot(arr, find_objects=True)
         npt.assert_equal(report.objects, 2)
