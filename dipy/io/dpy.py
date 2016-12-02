@@ -49,22 +49,22 @@ class Dpy(object):
         >>> from tempfile import mkstemp #temp file
         >>> from dipy.io.dpy import Dpy
         >>> def dpy_example():
-        >>>     fd,fname = mkstemp()
-        >>>     fname = fname + '.dpy' #add correct extension
-        >>>     dpw = Dpy(fname,'w')
-        >>>     A=np.ones((5,3))
-        >>>     B=2*A.copy()
-        >>>     C=3*A.copy()
-        >>>     dpw.write_track(A)
-        >>>     dpw.write_track(B)
-        >>>     dpw.write_track(C)
-        >>>     dpw.close()
-        >>>     dpr = Dpy(fname,'r')
-        >>>     A=dpr.read_track()
-        >>>     B=dpr.read_track()
-        >>>     T=dpr.read_tracksi([0,1,2,0,0,2])
-        >>>     dpr.close()
-        >>>     os.remove(fname) #delete file from disk
+        ...  fd,fname = mkstemp()
+        ...  fname = fname + '.dpy' #add correct extension
+        ...  dpw = Dpy(fname,'w')
+        ...  A=np.ones((5,3))
+        ...  B=2*A.copy()
+        ...  C=3*A.copy()
+        ...  dpw.write_track(A)
+        ...  dpw.write_track(B)
+        ...  dpw.write_track(C)
+        ...  dpw.close()
+        ...  dpr = Dpy(fname,'r')
+        ...  A=dpr.read_track()
+        ...  B=dpr.read_track()
+        ...  T=dpr.read_tracksi([0,1,2,0,0,2])
+        ...  dpr.close()
+        ...  os.remove(fname) #delete file from disk
         >>> dpy_example()  # skip if not have_tables
 
         '''
