@@ -395,6 +395,17 @@ fetch_bundles_2_subjects = _make_fetcher(
     doc="Download 2 subjects from the SNAIL dataset with their bundles",
     unzip=True)
 
+fetch_ivim = _make_fetcher(
+    "fetch_ivim",
+    pjoin(dipy_home, 'ivim'),
+    'https://ndownloader.figshare.com/files/',
+    ['5305243', '5305246', '5305249'],
+    ['ivim.nii.gz', 'ivim.bval', 'ivim.bvec'],
+    ['cda596f89dc2676af7d9bf1cabccf600',
+     'f03d89f84aa9a9397103a400e43af43a',
+     'fb633a06b02807355e49ccd85cb92565'],
+    doc="Download IVIM dataset")
+
 
 def read_scil_b0():
     """ Load GE 3T b0 image form the scil b0 dataset.
@@ -563,10 +574,10 @@ def read_syn_data():
 def fetch_tissue_data():
     """ Download images to be used for tissue classification
     """
-    url = 'https://dl.dropboxusercontent.com/u/2481924/tissue_data/'
-    t1 = url + 't1_brain.nii.gz'
-    t1d = url + 't1_brain_denoised.nii.gz'
-    ap = url + 'power_map.nii.gz'
+
+    t1 = 'https://ndownloader.figshare.com/files/6965969'
+    t1d = 'https://ndownloader.figshare.com/files/6965981'
+    ap = 'https://ndownloader.figshare.com/files/6965984'
 
     folder = pjoin(dipy_home, 'tissue_data')
 
@@ -942,3 +953,23 @@ def read_bundles_2_subjects(subj_id='subj_1', metrics=['fa'],
         res[bun] = streamlines
 
     return res
+
+
+def read_ivim():
+    """ Load IVIM dataset
+
+    Returns
+    -------
+    img : obj,
+        Nifti1Image
+    gtab : obj,
+        GradientTable
+    """
+    files, folder = fetch_ivim()
+    fraw = pjoin(folder, 'ivim.nii.gz')
+    fbval = pjoin(folder, 'ivim.bval')
+    fbvec = pjoin(folder, 'ivim.bvec')
+    bvals, bvecs = read_bvals_bvecs(fbval, fbvec)
+    gtab = gradient_table(bvals, bvecs)
+    img = nib.load(fraw)
+    return img, gtab
