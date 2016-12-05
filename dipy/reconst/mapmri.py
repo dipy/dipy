@@ -230,6 +230,8 @@ class MapmriModel(ReconstModel, Cache):
             if not have_cvxopt:
                 raise ValueError(
                     'CVXOPT package needed to enforce constraints')
+            if not hasattr(cvxopt, 'solvers'):
+                raise ValueError("CVXOPT version 1.1.7 or higher required")
             msg = "pos_radius must be 'adaptive' or a positive float"
             if isinstance(pos_radius, str):
                 if pos_radius != 'adaptive':
