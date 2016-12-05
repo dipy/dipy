@@ -209,9 +209,9 @@ def callaghan_perpendicular(q, radius):
 
     References
     ----------
-    .. [1]_ Söderman, Olle, and Bengt Jönsson. "Restricted diffusion in
-            cylindrical geometry." Journal of Magnetic Resonance, Series A
-            117.1 (1995): 94-97.
+    .. [1] Söderman, Olle, and Bengt Jönsson. "Restricted diffusion in
+           cylindrical geometry." Journal of Magnetic Resonance, Series A
+           117.1 (1995): 94-97.
     """
     # Eq. [6] in the paper
     E = ((2 * jn(1, 2 * np.pi * q * radius)) ** 2 /
@@ -281,12 +281,12 @@ def cylinders_and_ball_soderman(gtab, tau, radii=[5e-3, 5e-3], D=0.7e-3,
 
     References
     ----------
-    .. [1]_ Söderman, Olle, and Bengt Jönsson. "Restricted diffusion in
-            cylindrical geometry." Journal of Magnetic Resonance, Series A
-            117.1 (1995): 94-97.
-    .. [2]_ Assaf, Yaniv, et al. "New modeling and experimental framework to
-            characterize hindered and restricted water diffusion in brain white
-            matter." Magnetic Resonance in Medicine 52.5 (2004): 965-978.
+    .. [1] Söderman, Olle, and Bengt Jönsson. "Restricted diffusion in
+           cylindrical geometry." Journal of Magnetic Resonance, Series A
+           117.1 (1995): 94-97.
+    .. [2] Assaf, Yaniv, et al. "New modeling and experimental framework to
+           characterize hindered and restricted water diffusion in brain white
+           matter." Magnetic Resonance in Medicine 52.5 (2004): 965-978.
     """
     qvals = np.sqrt(gtab.bvals / tau) / (2 * np.pi)
     qvecs = qvals[:, None] * gtab.bvecs
