@@ -390,25 +390,32 @@ def test_affine_transformations():
                                                       pmf_threshold=0.1)
     streamlines = LocalTracking(dg, tc, seeds, np.eye(4), 1.)
 
-    # test invalid affines
+    # TST- bad affine wrong shape
     bad_affine = np.eye(3)
     npt.assert_raises(ValueError, LocalTracking, dg, tc, seeds, bad_affine, 1.)
 
+    # TST - bad affine with shearing
     bad_affine = np.eye(4)
     bad_affine[0, 1] = 1.
     npt.assert_raises(ValueError, LocalTracking, dg, tc, seeds, bad_affine, 1.)
 
+    # TST - identity
     a0 = np.eye(4)
+    # TST - affines with positive/negative offsets
     a1 = np.eye(4)
     a1[:3, 3] = [1, 2, 3]
     a2 = np.eye(4)
     a2[:3, 3] = [-2, 0, -1]
+    # TST - affine with scaling
     a3 = np.eye(4)
     a3[0, 0] = a3[1, 1] = a3[2, 2] = 8
+    # TST - affine with axes inverting (negative value)
     a4 = np.eye(4)
-    a4[0, 0] = a4[1, 1] = a4[2, 2] = -5
+    a4[1, 1] = a4[2, 2] = -1
+    # TST - combined affines
     a5 = a1 + a2 + a3
     a5[3, 3] = 1
+    # TST - in vivo affine exemple
     # Sometimes data have affines with tiny shear components.
     # For example, the small_101D data-set has some of that:
     fdata, _, _ = get_data('small_101D')
@@ -429,6 +436,9 @@ def test_affine_transformations():
                                     step_size=voxel_size,
                                     return_all=True)
 
+        # We apply the inverse affine transformation to the generated
+        # streamlines. It should be equals to the expected streamlines
+        # (generated with the identity affine matrix).
         affine_inv = np.linalg.inv(affine)
         lin = affine_inv[:3, :3]
         offset = affine_inv[:3, 3]
