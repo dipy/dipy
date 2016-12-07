@@ -887,7 +887,10 @@ class TensorFit(object):
         """
         Returns the S0_hat value of the fit
         """
-        return self.S0_hat.reshape(self.shape)
+        if self.S0_hat is None:
+            return None
+        else:
+            return self.S0_hat.reshape(self.shape)
 
     def lower_triangular(self, b0=None):
         return lower_triangular(self.quadratic_form, b0)

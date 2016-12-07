@@ -139,7 +139,7 @@ def test_tensor_model():
     # Test fitting with different methods:
     for fit_method in ['OLS', 'WLS', 'NLLS']:
         tensor_model = dti.TensorModel(gtab,
-                                       fit_method=fit_method)
+                                       fit_method=fit_method, return_S0_hat=True)
 
         tensor_fit = tensor_model.fit(Y)
         assert_true(tensor_fit.model is tensor_model)
@@ -353,7 +353,7 @@ def test_wls_and_ls_fit():
                       min_signal=-1)
 
     # Estimate tensor from test signals
-    model = TensorModel(gtab, fit_method='WLS')
+    model = TensorModel(gtab, fit_method='WLS', return_S0_hat=True)
     tensor_est = model.fit(Y)
     assert_equal(tensor_est.shape, Y.shape[:-1])
     assert_array_almost_equal(tensor_est.evals[0], evals)
@@ -673,7 +673,7 @@ def test_predict():
               np.array([[0, 0, 1], [0, 1, 0], [1, 0, 0]])]
     S = single_tensor(gtab, 100, mevals[0], mevecs[0], snr=None)
 
-    dm = dti.TensorModel(gtab, 'LS')
+    dm = dti.TensorModel(gtab, 'LS', return_S0_hat=True)
     dmfit = dm.fit(S)
     assert_array_almost_equal(dmfit.predict(gtab, S0=100), S)
     assert_array_almost_equal(dmfit.predict(gtab), S)
