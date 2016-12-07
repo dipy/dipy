@@ -735,10 +735,6 @@ class TensorModel(ReconstModel):
         ReconstModel.__init__(self, gtab)
 
         if not callable(fit_method):
-            if return_S0_hat and fit_method not in fit_methods_with_S0_hat:
-                e_s = 'Can only return S0_hat with fit methods: '
-                e_s += str(fit_methods_with_S0_hat)
-                raise ValueError(e_s)
             try:
                 fit_method = common_fit_methods[fit_method]
             except KeyError:
@@ -1611,7 +1607,7 @@ def _decompose_tensor_nan(tensor, tensor_alternative, min_diffusivity=0):
 
 
 def nlls_fit_tensor(design_matrix, data, weighting=None,
-                    sigma=None, jac=True):
+                    sigma=None, jac=True, return_S0_hat=False):
     """
     Fit the tensor params using non-linear least-squares.
 
@@ -1656,6 +1652,8 @@ def nlls_fit_tensor(design_matrix, data, weighting=None,
     ols_params = np.reshape(D, (-1, D.shape[-1]))
     # 12 parameters per voxel (evals + evecs):
     dti_params = np.empty((flat_data.shape[0], 12))
+    if return_S0_hat:
+        S0_hat = np.empty((flat_data.shape[0], 1))
     for vox in range(flat_data.shape[0]):
         if np.all(flat_data[vox] == 0):
             raise ValueError("The data in this voxel contains only zeros")
@@ -1682,6 +1680,8 @@ def nlls_fit_tensor(design_matrix, data, weighting=None,
                 from_lower_triangular(this_tensor[:6]))
             dti_params[vox, :3] = evals
             dti_params[vox, 3:] = evecs.ravel()
+            if return_S0_hat:
+                S0_hat[vox] = np.exp(-this_tensor[6])
         # If leastsq failed to converge and produced nans, we'll resort to the
         # OLS solution in this voxel:
         except np.linalg.LinAlgError:
@@ -1689,12 +1689,18 @@ def nlls_fit_tensor(design_matrix, data, weighting=None,
                 from_lower_triangular(start_params[:6]))
             dti_params[vox, :3] = evals
             dti_params[vox, 3:] = evecs.ravel()
+            if return_S0_hat:
+                S0_hat[vox] = np.exp(-start_params[6])
 
     dti_params.shape = data.shape[:-1] + (12,)
-    return dti_params
+    if return_S0_hat:
+        S0_hat.shape = data.shape[:-1] + (1,)
+        return (dti_params, S0_hat)
+    else:
+        return dti_params
 
 
-def restore_fit_tensor(design_matrix, data, sigma=None, jac=True):
+def restore_fit_tensor(design_matrix, data, sigma=None, jac=True, return_S0_hat=False,):
     """
     Use the RESTORE algorithm [Chang2005]_ to calculate a robust tensor fit
 
@@ -1739,6 +1745,8 @@ def restore_fit_tensor(design_matrix, data, sigma=None, jac=True):
     ols_params = np.reshape(D, (-1, D.shape[-1]))
     # 12 parameters per voxel (evals + evecs):
     dti_params = np.empty((flat_data.shape[0], 12))
+    if return_S0_hat:
+        S0_hat = np.empty((flat_data.shape[0], 1))
     for vox in range(flat_data.shape[0]):
         if np.all(flat_data[vox] == 0):
             raise ValueError("The data in this voxel contains only zeros")
@@ -1815,10 +1823,16 @@ def restore_fit_tensor(design_matrix, data, sigma=None, jac=True):
             from_lower_triangular(start_params[:6]))
         dti_params[vox, :3] = evals
         dti_params[vox, 3:] = evecs.ravel()
+        if return_S0_hat:
+            S0_hat[vox] = np.exp(-this_tensor[6])
 
     dti_params.shape = data.shape[:-1] + (12,)
     restore_params = dti_params
-    return restore_params
+    if return_S0_hat:
+        S0_hat.shape = data.shape[:-1] + (1,)
+        return (restore_params, S0_hat)
+    else:
+        return restore_params
 
 
 _lt_indices = np.array([[0, 1, 3],
@@ -2019,5 +2033,3 @@ common_fit_methods = {'WLS': wls_fit_tensor,
                       'restore': restore_fit_tensor,
                       'RESTORE': restore_fit_tensor
                       }
-
-fit_methods_with_S0_hat = ['WLS', 'LS', 'OLS']
