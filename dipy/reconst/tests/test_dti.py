@@ -690,7 +690,11 @@ def test_predict():
     p = dtif.predict(gtab, S0)
     assert_equal(p.shape, data.shape)
     # Predict using S0_hat:
+    dtim = dti.TensorModel(gtab, return_S0_hat=True)
+    dtif = dtim.fit(data)
     p = dtif.predict(gtab)
+    assert_equal(p.shape, data.shape)
+    p = dtif.predict(gtab, S0)
     assert_equal(p.shape, data.shape)
 
     # Use a smaller step in predicting:
