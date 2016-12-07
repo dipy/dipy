@@ -145,6 +145,7 @@ def test_tensor_model():
         assert_true(tensor_fit.model is tensor_model)
         assert_equal(tensor_fit.shape, Y.shape[:-1])
         assert_array_almost_equal(tensor_fit.evals[0], evals)
+        assert_array_almost_equal(tensor_fit.S0, b0, decimal=3)
         # Test that the eigenvectors are correct, one-by-one:
         for i in range(3):
             # Eigenvectors have intrinsic sign ambiguity
@@ -360,6 +361,7 @@ def test_wls_and_ls_fit():
                               err_msg="Calculation of tensor from Y does not "
                                       "compare to analytical solution")
     assert_almost_equal(tensor_est.md[0], md)
+    assert_array_almost_equal(tensor_est.S0[0], b0, decimal=3)
 
     # Test that we can fit a single voxel's worth of data (a 1d array)
     y = Y[0]
@@ -674,6 +676,7 @@ def test_predict():
     dm = dti.TensorModel(gtab, 'LS')
     dmfit = dm.fit(S)
     assert_array_almost_equal(dmfit.predict(gtab, S0=100), S)
+    assert_array_almost_equal(dmfit.predict(gtab), S)
     assert_array_almost_equal(dm.predict(dmfit.model_params, S0=100), S)
 
     fdata, fbvals, fbvecs = get_data()
@@ -685,6 +688,9 @@ def test_predict():
     dtif = dtim.fit(data)
     S0 = np.mean(data[..., gtab.b0s_mask], -1)
     p = dtif.predict(gtab, S0)
+    assert_equal(p.shape, data.shape)
+    # Predict using S0_hat:
+    p = dtif.predict(gtab)
     assert_equal(p.shape, data.shape)
 
     # Use a smaller step in predicting:
@@ -700,6 +706,9 @@ def test_predict():
     assert_equal(p.shape, data.shape)
     # Assign the step through kwarg:
     p = dtif.predict(gtab, S0, step=1)
+    assert_equal(p.shape, data.shape)
+    # And without S0:
+    p = dtif.predict(gtab, step=1)
     assert_equal(p.shape, data.shape)
 
 def test_eig_from_lo_tri():

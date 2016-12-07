@@ -673,7 +673,7 @@ class TensorModel(ReconstModel):
     """ Diffusion Tensor
     """
 
-    def __init__(self, gtab, fit_method="WLS", *args, **kwargs):
+    def __init__(self, gtab, fit_method="WLS", return_S0_hat=False, *args, **kwargs):
         """ A Diffusion Tensor Model [1]_, [2]_.
 
         Parameters
@@ -695,6 +695,10 @@ class TensorModel(ReconstModel):
 
             callable has to have the signature:
               fit_method(design_matrix, data, *args, **kwargs)
+
+        return_S0_hat : bool
+            Boolean to return (True) or not (False) the S0 values for the fit.
+            Note that at the moment only OLS and WLS are supported.
 
         args, kwargs : arguments and key-word arguments passed to the
            fit_method. See dti.wls_fit_tensor, dti.ols_fit_tensor for details
@@ -731,6 +735,10 @@ class TensorModel(ReconstModel):
         ReconstModel.__init__(self, gtab)
 
         if not callable(fit_method):
+            if return_S0_hat and fit_method not in fit_methods_with_S0_hat:
+                e_s = 'Can only return S0_hat with fit methods: '
+                e_s += str(fit_methods_with_S0_hat)
+                raise ValueError(e_s)
             try:
                 fit_method = common_fit_methods[fit_method]
             except KeyError:
@@ -739,6 +747,7 @@ class TensorModel(ReconstModel):
                 e_s += 'function or one of the common fit methods'
                 raise ValueError(e_s)
         self.fit_method = fit_method
+        self.return_S0_hat = return_S0_hat
         self.design_matrix = design_matrix(self.gtab)
         self.args = args
         self.kwargs = kwargs
@@ -777,17 +786,31 @@ class TensorModel(ReconstModel):
             min_signal = self.min_signal
 
         data_in_mask = np.maximum(data_in_mask, min_signal)
-        params_in_mask = self.fit_method(self.design_matrix, data_in_mask,
-                                         *self.args, **self.kwargs)
+
+        if self.return_S0_hat:
+            params_in_mask, S0 = self.fit_method(self.design_matrix,
+                                             data_in_mask, return_S0_hat=self.return_S0_hat,
+                                             *self.args, **self.kwargs)
+        else:
+            params_in_mask = self.fit_method(self.design_matrix,
+                                             data_in_mask, *self.args, **self.kwargs)
 
         if mask is None:
             out_shape = data.shape[:-1] + (-1, )
             dti_params = params_in_mask.reshape(out_shape)
+            if self.return_S0_hat:
+                S0_params = S0.reshape(out_shape)
         else:
             dti_params = np.zeros(data.shape[:-1] + (12,))
             dti_params[mask, :] = params_in_mask
+            if self.return_S0_hat:
+                S0_params = np.zeros(data.shape[:-1] + (1,))
+                S0_params[mask] = S0
 
-        return TensorFit(self, dti_params)
+        if self.return_S0_hat:
+            return TensorFit(self, dti_params, S0_hat=S0_params)
+        else:
+            return TensorFit(self, dti_params)
 
     def predict(self, dti_params, S0=1.):
         """
@@ -808,11 +831,12 @@ class TensorModel(ReconstModel):
 
 class TensorFit(object):
 
-    def __init__(self, model, model_params):
+    def __init__(self, model, model_params, S0_hat=None):
         """ Initialize a TensorFit class instance.
         """
         self.model = model
         self.model_params = model_params
+        self.S0_hat = S0_hat
 
     def __getitem__(self, index):
         model_params = self.model_params
@@ -857,6 +881,13 @@ class TensorFit(object):
         # einsum does this with:
         # np.einsum('...ij,...j,...kj->...ik', evecs, evals, evecs)
         return vec_val_vect(self.evecs, self.evals)
+
+    @property
+    def S0(self):
+        """
+        Returns the S0_hat value of the fit
+        """
+        return self.S0_hat.reshape(self.shape)
 
     def lower_triangular(self, b0=None):
         return lower_triangular(self.quadratic_form, b0)
@@ -1122,7 +1153,7 @@ class TensorFit(object):
         """
         return apparent_diffusion_coef(self.quadratic_form, sphere)
 
-    def predict(self, gtab, S0=1., step=None):
+    def predict(self, gtab, S0=None, step=None):
         r"""
         Given a model fit, predict the signal on the vertices of a sphere
 
@@ -1162,6 +1193,8 @@ class TensorFit(object):
         which a signal is to be predicted and $b$ is the b value provided in
         the GradientTable input for that direction
         """
+        if S0 is None:
+            S0 = self.S0_hat
         shape = self.model_params.shape[:-1]
         size = np.prod(shape)
         if step is None:
@@ -1218,8 +1251,8 @@ def iter_fit_tensor(step=1e4):
         """
 
         @functools.wraps(fit_tensor)
-        def wrapped_fit_tensor(design_matrix, data, step=step,
-                               *args, **kwargs):
+        def wrapped_fit_tensor(design_matrix, data, return_S0_hat=False,
+                               step=step, *args, **kwargs):
             """Iterate fit_tensor function over the data chunks
 
             Parameters
@@ -1242,14 +1275,30 @@ def iter_fit_tensor(step=1e4):
             size = np.prod(shape)
             step = int(step) or size
             if step >= size:
-                return fit_tensor(design_matrix, data, *args, **kwargs)
+                if return_S0_hat:
+                    return fit_tensor(design_matrix, data,
+                                      return_S0_hat=return_S0_hat, *args, **kwargs)
+                else:
+                    return fit_tensor(design_matrix, data, *args, **kwargs)
             data = data.reshape(-1, data.shape[-1])
             dtiparams = np.empty((size, 12), dtype=np.float64)
+            if return_S0_hat:
+                S0params = np.empty(size, dtype=np.float64)
             for i in range(0, size, step):
-                dtiparams[i:i + step] = fit_tensor(design_matrix,
+                if return_S0_hat:
+                    fit_output = fit_tensor(design_matrix,
                                                    data[i:i + step],
+                                                   return_S0_hat=return_S0_hat,
                                                    *args, **kwargs)
-            return dtiparams.reshape(shape + (12, ))
+                    dtiparams[i:i + step] = fit_output[0]
+                    S0params[i:i + step] = fit_output[1]
+                else:
+                    dtiparams[i:i + step] = fit_tensor(design_matrix,
+                                                   data[i:i + step], *args, **kwargs)
+            if return_S0_hat:
+                return (dtiparams.reshape(shape + (12, )), S0params.reshape(shape + (1, )))
+            else:
+                return dtiparams.reshape(shape + (12, ))
 
         return wrapped_fit_tensor
 
@@ -1257,7 +1306,7 @@ def iter_fit_tensor(step=1e4):
 
 
 @iter_fit_tensor()
-def wls_fit_tensor(design_matrix, data):
+def wls_fit_tensor(design_matrix, data, return_S0_hat=False):
     r"""
     Computes weighted least squares (WLS) fit to calculate self-diffusion
     tensor using a linear regression model [1]_.
@@ -1320,16 +1369,20 @@ def wls_fit_tensor(design_matrix, data):
     ols_fit = _ols_fit_matrix(design_matrix)
     log_s = np.log(data)
     w = np.exp(np.einsum('...ij,...j', ols_fit, log_s))
-    return eig_from_lo_tri(
-        np.einsum('...ij,...j',
+    fit_result = np.einsum('...ij,...j',
                   pinv(design_matrix * w[..., None]),
-                  w * log_s),
-        min_diffusivity=tol / -design_matrix.min(),
-    )
+                  w * log_s)
+    if return_S0_hat:
+        return (eig_from_lo_tri(fit_result,
+                                min_diffusivity=tol / -design_matrix.min()),
+                                np.exp(-fit_result[:, -1]))
+    else:
+        return eig_from_lo_tri(fit_result,
+                               min_diffusivity=tol / -design_matrix.min())
 
 
 @iter_fit_tensor()
-def ols_fit_tensor(design_matrix, data):
+def ols_fit_tensor(design_matrix, data, return_S0_hat=False):
     r"""
     Computes ordinary least squares (OLS) fit to calculate self-diffusion
     tensor using a linear regression model [1]_.
@@ -1374,10 +1427,12 @@ def ols_fit_tensor(design_matrix, data):
     """
     tol = 1e-6
     data = np.asarray(data)
-    return eig_from_lo_tri(
-        np.einsum('...ij,...j', np.linalg.pinv(design_matrix), np.log(data)),
-        min_diffusivity=tol / -design_matrix.min(),
-    )
+    fit_result = np.einsum('...ij,...j', np.linalg.pinv(design_matrix), np.log(data))
+    if return_S0_hat:
+        return (eig_from_lo_tri(fit_result, min_diffusivity=tol / -design_matrix.min()),
+                np.exp(-fit_result[:, -1]))
+    else:
+        return eig_from_lo_tri(fit_result, min_diffusivity=tol / -design_matrix.min())
 
 
 def _ols_fit_matrix(design_matrix):
@@ -1961,3 +2016,5 @@ common_fit_methods = {'WLS': wls_fit_tensor,
                       'restore': restore_fit_tensor,
                       'RESTORE': restore_fit_tensor
                       }
+
+fit_methods_with_S0_hat = ['WLS', 'LS', 'OLS']
