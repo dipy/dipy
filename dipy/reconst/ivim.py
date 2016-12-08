@@ -479,6 +479,8 @@ class IvimModel(ReconstModel):
 
         D : float
             The estimated value of D.
+
+        TODO: change this to use the S0 DTI fits!
         """
         if b_selection is None:
             if split_b is not None:
