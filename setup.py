@@ -232,7 +232,8 @@ def main(**extra_args):
                           pjoin('bin', 'dipy_sh_estimate'),
                           pjoin('bin', 'dipy_quickbundles'),
                           pjoin('bin', 'dipy_recognize_bundles'),
-                          pjoin('bin', 'dipy_whole_brain_slr')],
+                          pjoin('bin', 'dipy_whole_brain_slr'),
+                          pjoin('bin', 'dipy_horizon')],
           cmdclass = cmdclass,
           **extra_args
         )

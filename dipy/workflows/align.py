@@ -88,7 +88,8 @@ def whole_brain_slr_flow(moving_streamlines_files,
             out_dir,
             moving_basename + '__to__' + static_basename + '_affine.txt')
 
-        save_trk(moved_streamlines_file, moved_streamlines, hdr=hdr_static)
+        save_trk(moved_streamlines_file, moved_streamlines,
+                 np.eye(4), hdr=hdr_static)
         np.savetxt(mat_file, mat)
 
         if debug:
@@ -100,9 +101,12 @@ def whole_brain_slr_flow(moving_streamlines_files,
                 static_basename + '_' + '_static_centroids' + ext)
             moved_centroids_file = path.join(
                 out_dir, moving_basename + '_moved_centroids' + ext)
-            save_trk(static_centroids_file, static_centroids, hdr=hdr_static)
-            save_trk(moving_centroids_file, moving_centroids, hdr=hdr)
-            save_trk(moved_centroids_file, moved_centroids, hdr=hdr_static)
+            save_trk(static_centroids_file, static_centroids,
+                     np.eye(4), hdr=hdr_static)
+            save_trk(moving_centroids_file, moving_centroids,
+                     np.eye(4), hdr=hdr)
+            save_trk(moved_centroids_file, moved_centroids,
+                     np.eye(4), hdr=hdr_static)
             print('\n Saved debugging results at:')
             print(static_centroids_file)
             print(moving_centroids_file)

@@ -12,7 +12,7 @@ def load_trk(fname):
     return trkfile.streamlines, trkfile.header
 
 
-def save_trk(fname, streamlines, hdr=None):
+def save_trk(fname, streamlines, affine, hdr=None):
 #    import nibabel.trackvis as tv
 #    streams = ((s, None, None) for s in streamlines)
 #    if hdr is not None:
@@ -22,6 +22,7 @@ def save_trk(fname, streamlines, hdr=None):
 #        tv.write(fname, streams, points_space='rasmm')
 
     tractogram = nib.streamlines.Tractogram(streamlines)
+    tractogram.affine_to_rasmm = affine
     trkfile = nib.streamlines.TrkFile(tractogram, header=hdr)
     nib.streamlines.save(trkfile, fname)
 
@@ -52,4 +53,3 @@ def save_trk(fname, streamlines, hdr=None):
 #    hdr['voxel_size'] = zooms[:3]
 #
 #    nib.trackvis.write(filename, data, hdr)
-

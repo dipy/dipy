@@ -70,7 +70,8 @@ def horizon(tractograms, data, affine, cluster=False, cluster_thr=15.,
                         visible_cluster_id.append(i)
         else:
             ren.add(actor.line(streamlines, colors,
-                               opacity=1., lod_points=10 ** 5))
+                               opacity=1.,
+                               linewidth=4, lod_points=10 ** 5))
 
     class SimpleTrackBallNoBB(window.vtk.vtkInteractorStyleTrackballCamera):
         def HighlightProp(self, p):
