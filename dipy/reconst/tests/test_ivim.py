@@ -16,7 +16,7 @@ from numpy.testing import (assert_array_equal, assert_array_almost_equal,
                            assert_raises, assert_array_less, run_module_suite,
                            assert_warns, dec)
 
-from dipy.reconst.ivim import ivim_prediction, IvimModel, AIC_relative_likelihood, AIC_weights
+from dipy.reconst.ivim import ivim_prediction, IvimModel
 from dipy.core.gradients import gradient_table, generate_bvecs
 from dipy.sims.voxel import multi_tensor
 
@@ -321,8 +321,8 @@ def test_S0():
     """
     Test if the `IvimFit` class returns the correct S0
     """
-    assert_array_almost_equal(ivim_fit_single.S0, S0)
-    assert_array_almost_equal(ivim_fit_multi.S0, ivim_params[..., 0])
+    assert_array_almost_equal(ivim_fit_single.S0_predicted, S0)
+    assert_array_almost_equal(ivim_fit_multi.S0_predicted, ivim_params[..., 0])
 
 
 def test_perfusion_fraction():
@@ -381,7 +381,7 @@ def test_estimate_f_D_star():
 
 def test_fit_one_stage():
     """
-    Test to check the results for the one stage linear fit.
+    Test to check the results for the one_stage linear fit.
     """
     model = IvimModel(gtab, two_stage=False)
     fit = model.fit(data_single)
@@ -400,26 +400,6 @@ def test_fit_one_stage():
     assert_array_almost_equal(fit.model_params, linear_fit_params)
     assert_array_almost_equal(fit.predict(gtab), linear_fit_signal)
 
-def test_fit_one_stage_fast():
-    """
-    Test to check the results for the fast one stage linear fit.
-    """
-    model = IvimModel(gtab, two_stage=False, fast_linear_fit=True, split_b_D=200, split_b_S0=200)
-    fit = model.fit(data_single)
-    # assert_array_almost_equal()
-    linear_fit_params = [1.003e+03, 1.226e-01, 1.036e-02,
-                         9.373e-04]
-
-    linear_fit_signal = [1003.1, 982.8, 963.7,
-                         945.8, 929.0, 898.0,
-                         870.2, 845.0, 821.9,
-                         800.7, 781.0, 762.5,
-                         745.1, 669.8, 606.9,
-                         551.5, 501.7, 456.7,
-                         415.8, 378.6, 344.7]
-
-    assert_array_almost_equal(fit.model_params, linear_fit_params, 1)
-    assert_array_almost_equal(fit.predict(gtab), linear_fit_signal, 1)
 
 def test_leastsq_failing():
     """
@@ -428,7 +408,7 @@ def test_leastsq_failing():
     """
     fit_single = ivim_model.fit(noisy_single)
     # Test for the S0 and D values
-    assert_array_almost_equal(fit_single.S0, 4356.268901117833)
+    assert_array_almost_equal(fit_single.S0_predicted, 4356.268901117833)
     assert_array_almost_equal(fit_single.D, 6.936684e-04)
 
 
@@ -440,73 +420,6 @@ def test_leastsq_error():
     """
     fit = ivim_model._leastsq(data_single, [-1, -1, -1, -1])
     assert_array_almost_equal(fit, [-1, -1, -1, -1])
-
-
-def test_check_fit_bounds():
-    """
-    Test that the bound check detects fits that are out of range.
-    """
-    ivim_fit_bounds = ivim_model.fit(data_single)
-    bndchk = ivim_fit_bounds.check_fit_bounds()
-    assert_array_equal(bndchk, [True, True, True, True])
-
-    ivim_fit_bounds.model_params = [-1, -1, -1, -1]
-    bndchk = ivim_fit_bounds.check_fit_bounds()
-    assert_array_equal(bndchk, [False, False, False, False])
-
-    ivim_fit_bounds.model_params = [2, 2, 2, 2]
-    bndchk = ivim_fit_bounds.check_fit_bounds()
-    assert_array_equal(bndchk, [True, False, False, False])
-
-
-def test_enforce_fit_bounds():
-    """
-    Test that the bound check detects fits that are out of range.
-    """
-    ivim_fit_bounds = ivim_model.fit(data_single)
-    mp = np.copy(ivim_fit_bounds.model_params)
-    ivim_fit_bounds.enforce_fit_bounds()
-    assert_array_equal(mp, ivim_fit_bounds.model_params)
-
-    ivim_fit_bounds.model_params = np.array([-1, -1, -1, -1])
-    ivim_fit_bounds.enforce_fit_bounds()
-    assert_array_equal(np.array([0, 0, 0, 0]), ivim_fit_bounds.model_params)
-
-    ivim_fit_bounds.model_params = np.array([2, 2, 2, 2])
-    ivim_fit_bounds.enforce_fit_bounds()
-    assert_array_equal(np.array([2, 0.3, 1, 1]), ivim_fit_bounds.model_params)
-
-def test_aic_fit_compare():
-    """
-    Test the aic_fit_compare function, which also tests the _AIC function
-    """
-    linear_fit_params1 = [9.88834140e+02, 1.19707191e-01, 7.91176970e-03,
-                         9.30095210e-04]
-    linear_fit_params2 = [1.003e+03, 1.226e-01, 1.036e-02,
-                         9.373e-04]
-    ivim_aic = ivim_model.AIC_IVIM(data_single, [linear_fit_params1, linear_fit_params2])
-    assert_array_almost_equal(ivim_aic, [61.669198, 14.770808], 3)
-
-def test_aic_relative_likelihood():
-    """
-    Test the aic_relative_likelihood function
-    """
-    aic = [100.0, 102.0, 105.0]
-    rlike_aic = AIC_relative_likelihood(aic)
-    assert_array_almost_equal(rlike_aic, [np.exp((aic[0]-aic[1])/2), np.exp((aic[0]-aic[2])/2), np.exp((aic[1]-aic[2])/2)], 3)
-
-def test_aic_weights():
-    """
-    Test the aic_weights function
-    """
-    aic = [100.0, 102.0, 105.0]
-    daic = [0.0, 2.0, 5.0]  # aic - 100
-    waic = 1.449964  # sum(exp(-daic/2))
-    faic = [0.6896721, 0.2537162, 0.05661173]  # exp(-daic/2)/waic
-    w_aic = AIC_weights(aic)
-    assert_array_almost_equal(w_aic, faic, 3)
-
-
 
 
 if __name__ == '__main__':
