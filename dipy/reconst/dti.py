@@ -698,7 +698,6 @@ class TensorModel(ReconstModel):
 
         return_S0_hat : bool
             Boolean to return (True) or not (False) the S0 values for the fit.
-            Note that at the moment only OLS and WLS are supported.
 
         args, kwargs : arguments and key-word arguments passed to the
            fit_method. See dti.wls_fit_tensor, dti.ols_fit_tensor for details
