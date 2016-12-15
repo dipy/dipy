@@ -47,6 +47,26 @@ def sim_response(sh_order, bvals, evals=evals_d, csf_md=3e-3, gm_md=.76e-3):
 
     return MultiShellResponse(response, sh_order, bvals)
 
+
+def multi_tissue_basis(gtab, sh_order, iso_comp):
+    """Builds a basis for multi-shell CSD model"""
+    r, theta, phi = cart2sphere(*gtab.gradients.T)
+    m, n = shm.sph_harm_ind_list(sh_order)
+    B = shm.real_sph_harm(m, n, theta[:, None], phi[:, None])
+
+    if iso_comp == 0:
+        B[gtab.b0s_mask, :] = 0.
+        return B
+    else:
+        B[np.ix_(gtab.b0s_mask, n > 0)] = 0.
+
+    iso = np.empty([B.shape[0], iso_comp])
+    iso[:] = shm.real_sph_harm(0, 0, 0, 0)
+
+    B = np.concatenate([iso, B], axis=1)
+    return B, m, n
+
+
 class MultiShellResponse(object):
 
     def __init__(self, response, sh_order, shells):
@@ -89,7 +109,7 @@ class MultiShellDeconvModel(shm.SphHarmModel):
         """
         sh_order = response.sh_order
         super(MultiShellDeconvModel, self).__init__(gtab)
-        B, m, n = csd.multi_tissue_basis(gtab, sh_order, iso)
+        B, m, n = multi_tissue_basis(gtab, sh_order, iso)
         multiplier_matrix = _inflate_response(response, gtab, n)
 
         r, theta, phi = cart2sphere(reg_sphere.x, reg_sphere.y, reg_sphere.z)
@@ -112,7 +132,7 @@ class MultiShellDeconvModel(shm.SphHarmModel):
             X = self._X
         else:
             iso = self.response.iso
-            B, m, n = csd.multi_tissue_basis(gtab, self.sh_order, iso)
+            B, m, n = multi_tissue_basis(gtab, self.sh_order, iso)
             multiplier_matrix = _inflate_response(self.response, gtab, n)
             X = B * multiplier_matrix
         return np.dot(params, X.T)
