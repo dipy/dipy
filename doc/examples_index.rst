@@ -76,9 +76,10 @@ Diffusion Tensor Imaging
 
 - :ref:`example_reconst_dti`
 - :ref:`example_restore_dti`
+- :ref:`example_reconst_fwdti`
 
 
-Diffusion Kurtosis Imaging (NEW)
+Diffusion Kurtosis Imaging
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 - :ref:`example_reconst_dki`
 
@@ -110,6 +111,14 @@ Sparse Fascicle Model
 ~~~~~~~~~~~~~~~~~~~~~~
 
 - :ref:`example_sfm_reconst`
+
+Intravoxel incoherent motion (IVIM)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+- :ref:`example_reconst_ivim`
+
+
+
 
 Statistical evaluation
 ~~~~~~~~~~~~~~~~~~~~~~
