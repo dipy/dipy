@@ -202,7 +202,7 @@ def slicer(data, affine=None, value_range=None, opacity=1.,
 
 
 def contour_actor(data, affine=None, levels=[50],
-            colors=[np.array([1.0, 0.0, 0.0])], opacities=[1]):
+                  colors=[np.array([1.0, 0.0, 0.0])], opacities=[1]):
     """Take a volume and draw surface contours for any any number of
     thresholds (levels) where every contour has its own color and opacity
 
@@ -228,6 +228,7 @@ def contour_actor(data, affine=None, levels=[50],
         coordinates as calculated by the affine parameter.
 
     """
+
     if data.ndim != 3:
         if data.ndim == 4:
             if data.shape[3] != 3:
@@ -245,8 +246,8 @@ def contour_actor(data, affine=None, levels=[50],
     im = vtk.vtkImageData()
     if major_version <= 5:
         im.SetScalarTypeToUnsignedChar()
-    I, J, K = vol.shape[:3]
-    im.SetDimensions(I, J, K)
+    di, dj, dk = vol.shape[:3]
+    im.SetDimensions(di, dj, dk)
     voxsz = (1., 1., 1.)
     # im.SetOrigin(0,0,0)
     im.SetSpacing(voxsz[2], voxsz[0], voxsz[1])
@@ -295,44 +296,46 @@ def contour_actor(data, affine=None, levels=[50],
     # Adding this will allow to support anisotropic voxels
     # and also gives the opportunity to slice per voxel coordinates
 
-    RZS = affine[:3, :3]
-    zooms = np.sqrt(np.sum(RZS * RZS, axis=0))
+    rzs = affine[:3, :3]
+    zooms = np.sqrt(np.sum(rzs * rzs, axis=0))
     image_resliced.SetOutputSpacing(*zooms)
 
     image_resliced.SetInterpolationModeToLinear()
     image_resliced.Update()
 
-    #code from fvtk contour function
+    # code from fvtk contour function
     skin_assembly = vtk.vtkAssembly()
 
     for (i, l) in enumerate(levels):
-        skinExtractor = vtk.vtkContourFilter()
+        skin_extractor = vtk.vtkContourFilter()
         if major_version <= 5:
-            skinExtractor.SetInput(image_resliced)
+            skin_extractor.SetInput(image_resliced)
         else:
-            skinExtractor.SetInputData(image_resliced.GetOutput())
-        skinExtractor.SetValue(0, l)
+            skin_extractor.SetInputData(image_resliced.GetOutput())
+        skin_extractor.SetValue(0, l)
 
-        skinNormals = vtk.vtkPolyDataNormals()
-        skinNormals.SetInputConnection(skinExtractor.GetOutputPort())
-        skinNormals.SetFeatureAngle(60.0)
+        skin_normals = vtk.vtkPolyDataNormals()
+        skin_normals.SetInputConnection(skin_extractor.GetOutputPort())
+        skin_normals.SetFeatureAngle(60.0)
 
-        skinMapper = vtk.vtkPolyDataMapper()
-        skinMapper.SetInputConnection(skinNormals.GetOutputPort())
-        skinMapper.ScalarVisibilityOff()
+        skin_mapper = vtk.vtkPolyDataMapper()
+        skin_mapper.SetInputConnection(skin_normals.GetOutputPort())
+        skin_mapper.ScalarVisibilityOff()
 
         skin_actor = vtk.vtkActor()
 
-        skin_actor.SetMapper(skinMapper)
+        skin_actor.SetMapper(skin_mapper)
         skin_actor.GetProperty().SetOpacity(opacities[i])
 
         skin_actor.GetProperty().SetColor(colors[i][0], colors[i][1], colors[i][2])
         skin_assembly.AddPart(skin_actor)
+
         del skin_actor
-        del skinMapper
-        del skinExtractor
+        del skin_mapper
+        del skin_extractor
 
     return skin_assembly
+
 
 def streamtube(lines, colors=None, opacity=1, linewidth=0.1, tube_sides=9,
                lod=True, lod_points=10 ** 4, lod_points_size=3,
