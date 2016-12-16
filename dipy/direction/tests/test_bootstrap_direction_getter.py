@@ -1,7 +1,6 @@
 import numpy as np
 import numpy.testing as npt
 import dipy
-print(dipy)
 from dipy.sims.voxel import (multi_tensor,
                              multi_tensor_odf,
                              single_tensor_odf,
