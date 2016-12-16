@@ -66,8 +66,7 @@ def test_num_sls():
 
     toydict = uniform_toy_data()
     csd_model = ConstrainedSphericalDeconvModel(toydict['gtab'], None, sh_order=6)
-    csd_fit = csd_model.fit(toydict['toy_data'])
-
+    csd_fit = csd_model.fit(toydict['toy_data'])    
     sltest_list = [('toy_roi_long_plane', 121), 
                    ('toy_roi_radial_plane', 121), 
                    ('toy_roi_center_vox', 1)]
