@@ -14,7 +14,7 @@ from dipy.reconst.dti import (axial_diffusivity, color_fa,
                               geodesic_anisotropy, lower_triangular,
                               mean_diffusivity, radial_diffusivity,
                               TensorModel, trace, linearity, planarity,
-                              sphericity, decompose_tensor,
+                              sphericity, decompose_tensor, quantize_evecs,
                               _decompose_tensor_nan)
 
 from dipy.io.bvectxt import read_bvec_file
