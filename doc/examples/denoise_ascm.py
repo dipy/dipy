@@ -43,7 +43,7 @@ fetch_sherbrooke_3shell()
 img, gtab = read_sherbrooke_3shell()
 
 data = img.get_data()
-affine = img.get_affine()
+affine = img.affine
 
 mask = data[..., 0] > 80
 data = data[..., 1]

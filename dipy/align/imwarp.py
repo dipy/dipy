@@ -93,7 +93,7 @@ def get_direction_and_spacings(affine, dim):
     affine4x4[:dim, :dim] = affine[:dim, :dim]
     affine4x4[:dim, 3] = affine[:dim, dim-1]
     nib_nifti = nib.Nifti1Image(empty_volume, affine4x4)
-    scalings = np.asarray(nib_nifti.get_header().get_zooms())
+    scalings = np.asarray(nib_nifti.header.get_zooms())
     scalings = np.asarray(scalings[:dim], dtype=np.float64)
     A = affine[:dim, :dim]
     return A.dot(np.diag(1.0/scalings)), scalings

@@ -29,7 +29,7 @@ def nifti1_symmat(image_data, *args, **kwargs):
         raise ValueError("input_data does not seem to have matrix elements")
 
     image = Nifti1Image(image_data, *args, **kwargs)
-    hdr = image.get_header()
+    hdr = image.header
     hdr.set_intent('symmetric matrix', (n,))
     return image
 
