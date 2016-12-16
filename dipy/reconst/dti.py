@@ -1243,12 +1243,13 @@ def iter_fit_tensor(step=1e4):
         The chunk size as a number of voxels. Optional parameter with default
         value 10,000.
 
-        In order to increase speed of processing, tensor fitting is done
-        simultaneously over many voxels. This parameter sets the number of
-        voxels that will be fit at once in each iteration. A larger step value
-        should speed things up, but it will also take up more memory. It is
-        advisable to keep an eye on memory consumption as this value is
-        increased.
+    Notes
+    -----
+    In order to increase speed of processing, tensor fitting is done
+    simultaneously over many voxels. This parameter sets the number of voxels
+    that will be fit at once in each iteration. A larger step value should
+    speed things up, but it will also take up more memory. It is advisable to
+    keep an eye on memory consumption as this value is increased.
     """
 
     def iter_decorator(fit_tensor):
@@ -2017,7 +2018,7 @@ def _quantize_evecs_parallel(data, odf_vertices, v, nbr_processes):
                  returns quantize_evecs(..., nbr_processes=1).")
             return quantize_evecs(data, odf_vertices, v, nbr_processes=1)
 
-    data = data[...,:,v]
+    data = data[..., :, v]
     shape = list(data.shape)
     data = np.reshape(data, (-1, shape[-1]))
     n = data.shape[0]
@@ -2033,17 +2034,16 @@ def _quantize_evecs_parallel(data, odf_vertices, v, nbr_processes):
         pool = Pool(nbr_processes)
 
         peaks_res = pool.map(_quantize_evecs_parallel_sub,
-                           zip(repeat(data_file_name),
-                               indices,
-                               repeat(odf_vertices),
-                               repeat(v)))
+                             zip(repeat(data_file_name),
+                                 indices,
+                                 repeat(odf_vertices),
+                                 repeat(v)))
         pool.close()
 
-
         peak_indices = np.memmap(path.join(tmpdir, 'peak_indices.npy'),
-                                     dtype=peaks_res[0].dtype,
-                                     mode='w+',
-                                     shape=data.shape[0])
+                                 dtype=peaks_res[0].dtype,
+                                 mode='w+',
+                                 shape=data.shape[0])
 
         for i, (start_pos, end_pos) in enumerate(indices):
             peak_indices[start_pos: end_pos] = peaks_res[i]
@@ -2055,6 +2055,7 @@ def _quantize_evecs_parallel(data, odf_vertices, v, nbr_processes):
         pool.join()
 
     return peak_indices
+
 
 def _quantize_evecs_parallel_sub(args):
     data_file_name = args[0]
@@ -2073,13 +2074,15 @@ def quantize_evecs(evecs, odf_vertices=None, v=0, nbr_processes=1):
     ----------
     evecs : ndarray
     odf_vertices : None or ndarray
-        If None, then set vertices from symmetric362 sphere.  Otherwise use passed ndarray as vertices
+        If None, then set vertices from symmetric362 sphere.  Otherwise use
+        passed ndarray as vertices
     v : int
         Use v-th eigenvector as the primary eigenvector for fiber tracking.
         If 0, uses the largest eigenvalue.
     nbr_processes : int
-        Number of processes to use. If > 1, divides data into nbr_processes for multiprocessing.
-        If -1, uses as many processes as possible.
+        Number of processes to use. If > 1, divides data into nbr_processes for
+        multiprocessing. If -1, uses as many processes as possible.
+
     Returns
     -------
     IN : ndarray
