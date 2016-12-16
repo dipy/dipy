@@ -2,8 +2,6 @@ import numpy as np
 import numpy.testing as npt
 import dipy
 print(dipy)
-
-#import things
 from dipy.sims.voxel import (multi_tensor,
                              multi_tensor_odf,
                              single_tensor_odf,
@@ -14,16 +12,16 @@ import dipy.reconst.dti as dti
 from dipy.data import get_sphere
 from dipy.core.gradients import gradient_table
 from dipy.sims.phantom import SingleTensor
-
 from dipy.direction import peaks_from_model
 from dipy.direction import DeterministicMaximumDirectionGetter
 from dipy.tracking.local import LocalTracking, ThresholdTissueClassifier
 from dipy.data import default_sphere
 from dipy.tracking import utils
-
 from dipy.reconst.csdeconv import ConstrainedSphericalDeconvModel
 
-#Set up the toy example
+# Set up the toy example
+
+
 def uniform_toy_data():
     toydict = {}
     n_pts = 64
@@ -44,19 +42,19 @@ def uniform_toy_data():
     gtab = gradient_table(bvals, bvecs)
 
     toy_voxel = SingleTensor(gtab)
-    toy_data = np.tile(toy_voxel, (11,11,11,1))
+    toy_data = np.tile(toy_voxel, (11, 11, 11, 1))
     toy_tissue_classifier = np.ones(toy_data.shape[:-1])
     toy_affine = np.eye(4)
 
-    #make a slice roi that should track in-plane only
+    # make a slice roi that should track in-plane only
     toy_roi_long_plane = np.zeros(toy_data.shape[:-1])
-    toy_roi_long_plane[:,:,0]=1
-    #make a slice roi that should track directly across the whole volume
+    toy_roi_long_plane[:, :, 0]=1
+    # make a slice roi that should track directly across the whole volume
     toy_roi_radial_plane = np.zeros(toy_data.shape[:-1])
-    toy_roi_radial_plane[0,:,:] = 1
-    #make an roi that contains the center voxel only
+    toy_roi_radial_plane[0, :, :] = 1
+    # make an roi that contains the center voxel only
     toy_roi_center_vox = np.zeros(toy_data.shape[:-1])
-    toy_roi_center_vox[5,5,5] = 1
+    toy_roi_center_vox[5, 5, 5] = 1
 
     toydict['gtab'] = gtab
     toydict['toy_data'] = toy_data
@@ -68,6 +66,7 @@ def uniform_toy_data():
 
     return toydict
 
+
 def test_num_sls():
 
     toydict = uniform_toy_data()
@@ -75,10 +74,8 @@ def test_num_sls():
     csd_fit = csd_model.fit(toydict['toy_data'])
 
     classifier = ThresholdTissueClassifier(toydict['toy_tissue_classifier'], .1)
-    detmax_dg = DeterministicMaximumDirectionGetter.from_shcoeff(csd_fit.shm_coeff,
-                                                             max_angle=30.,
-                                                             sphere=default_sphere)
-
+    detmax_dg = DeterministicMaximumDirectionGetter.from_shcoeff(csd_fit.shm_coeff, max_angle=30.,
+                                                                 sphere=default_sphere)
 
     sltest_list = [('toy_roi_long_plane', 121), 
                    ('toy_roi_radial_plane', 121), 
