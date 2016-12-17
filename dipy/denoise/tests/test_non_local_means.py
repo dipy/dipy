@@ -17,15 +17,22 @@ def test_nlmeans_static():
 def test_nlmeans_random_noise():
     S0 = 100 + 2 * np.random.standard_normal((22, 23, 30))
 
-    S0nb = non_local_means(S0, sigma=np.ones((22, 23, 30)) *
-                           np.std(S0), rician=False)
+    masker = np.zeros(S0.shape[:3]).astype(bool)
+    masker[8:15, 8:15, 8:15] = 1
+    for mask in [None, masker]:
+        S0nb = non_local_means(S0, sigma=np.ones((22, 23, 30)) *
+                               np.std(S0), rician=False, mask=mask)
 
-    print(S0.mean(), S0.min(), S0.max())
-    print(S0nb.mean(), S0nb.min(), S0nb.max())
+        assert_(S0nb[mask].min() > S0[mask].min())
+        assert_(S0nb[mask].max() < S0[mask].max())
+        assert_equal(np.round(S0nb[mask].mean()), 100)
 
-    assert_(S0nb.min() > S0.min())
-    assert_(S0nb.max() < S0.max())
-    assert_equal(np.round(S0nb.mean()), 100)
+        S0nb = non_local_means(S0, sigma=np.std(S0), rician=False,
+                               mask=mask)
+
+        assert_(S0nb[mask].min() > S0[mask].min())
+        assert_(S0nb[mask].max() < S0[mask].max())
+        assert_equal(np.round(S0nb[mask].mean()), 100)
 
 
 def test_nlmeans_boundary():
