@@ -180,6 +180,15 @@ class MapmriModel(ReconstModel):
 
             Q = cvxopt.matrix(np.dot(M.T, M) + self.lambd * I)
             p = cvxopt.matrix(-1 * np.dot(M.T, data))
+            # impose the constraint on the integral of the probability Eq (55)
+            #w = -1*np.ones((len(K),1))
+            #for i in xrange(len(w)):
+            #if (rgrad[i][2] == 0):
+            #w[i] = -0.5
+            #wK = np.dot(w.T,K)
+            #G = np.concatenate((-K, wK), axis=0)
+            #h1 = ((1e-10) * np.ones((K.shape[0])))
+            #h = np.insert(h1,len(K),0.5)
             G = cvxopt.matrix(-1 * K)
             h = cvxopt.matrix(np.zeros((K.shape[0])), (K.shape[0], 1))
             cvxopt.solvers.options['show_progress'] = False
