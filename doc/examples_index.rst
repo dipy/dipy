@@ -70,6 +70,10 @@ Simple Harmonic Oscillator based Reconstruction and Estimation
 - :ref:`example_reconst_shore`
 - :ref:`example_reconst_shore_metrics`
 
+Mean Apparent Propagator (MAP)-MRI (NEW)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+- :ref:`example_reconst_mapmri`
 
 Diffusion Tensor Imaging
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
