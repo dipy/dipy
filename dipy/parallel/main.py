@@ -100,7 +100,8 @@ def _array_split_points(mask, num_chunks):
 
     split_points = cumsum.searchsorted(even_spacing, 'left')
     split_points[-1] += 1
-    assert cumsum[split_points[-1]] == cumsum[-1]
+    assert (split_points[-1] == len(cumsum) or
+            cumsum[split_points[-1]] == cumsum[-1])
     return split_points
 
 
@@ -119,7 +120,6 @@ class ParallelFunction(MultiVoxelFunction):
         # Flatten the inputs
         data = data.reshape((-1,) + data.shape[ndim:])
         mask = mask.ravel()
-        size = mask.size
         outputs = self._setup_outputs(data, mask, *args, **kwargs)
 
         num_cpu = dipy.parallel.config._dipy_num_cpu
