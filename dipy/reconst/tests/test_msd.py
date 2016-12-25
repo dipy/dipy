@@ -4,29 +4,15 @@ import numpy.testing as npt
 
 from dipy.sims.voxel import (multi_tensor, single_tensor)
 from dipy.reconst import shm
-from dipy.sims import voxel as voxSim
 from dipy.data import default_sphere, get_3shell_gtab
 from dipy.core.gradients import GradientTable
 
-import dipy.viz.fvtk as fvtk
-
-def show_response(r, m, n):
-    sphere = default_sphere.mirror().subdivide()
-    theta, phi = sphere.theta, sphere.phi
-    B = shm.real_sph_harm(m, n, theta[:, None], phi[:, None])
-    sp_func = np.dot(r, B.T)
-    print(sp_func[:, :5])
-
-    act = fvtk.sphere_funcs(sp_func, sphere, norm=False)
-    ren = fvtk.ren()
-    fvtk.add(ren, act)
-    fvtk.show(ren)
 
 csf_md=3e-3
 gm_md=.76e-3
 evals_d = np.array([.992, .254, .254]) * 1e-3
 
-def sim_response(sh_order, bvals, evals=evals_d, csf_md=3e-3, gm_md=.76e-3):
+def sim_response(sh_order, bvals, evals=evals_d, csf_md=csf_md, gm_md=gm_md):
     bvals = np.array(bvals, copy=True)
     evecs = np.zeros((3, 3))
     z = np.array([0, 0, 1.])
@@ -54,6 +40,45 @@ def sim_response(sh_order, bvals, evals=evals_d, csf_md=3e-3, gm_md=.76e-3):
     return MultiShellResponse(response, sh_order, bvals)
 
 
+def _expand(m, iso, coeff):
+    params = np.zeros(len(m))
+    params[m == 0] = coeff[iso:]
+    params = np.concatenate([coeff[:iso], params])
+    return params
+
+
+def test_msd_model_delta():
+    sh_order = 8
+    gtab = get_3shell_gtab()
+    shells = np.unique(gtab.bvals // 100.) * 100.
+    response = sim_response(sh_order, shells, evals_d)
+    model = MultiShellDeconvModel(gtab, response, delta_form='positivity_constrained')
+    iso = response.iso
+
+    theta, phi = default_sphere.theta, default_sphere.phi
+    B = shm.real_sph_harm(response.m, response.n, theta[:, None], phi[:, None])
+
+    wm_delta = model.delta.copy()
+    # set isotropic components to zero
+    wm_delta[:iso] = 0.
+    wm_delta = _expand(model.m, iso, wm_delta)
+
+    for i, s in enumerate(shells):
+        g = GradientTable(default_sphere.vertices * s)
+        signal = model.predict(wm_delta, g)
+        expected = np.dot(response.response[i, iso:], B.T)
+        npt.assert_array_almost_equal(signal, expected)
+
+    signal = model.predict(wm_delta, gtab)
+    fit = model.fit(signal)
+    m = model.m
+    npt.assert_array_almost_equal(fit.shm_coeff[m != 0], 0., 2)
+
+    expected = model.delta[2:]
+    npt.assert_array_almost_equal(fit.shm_coeff[m == 0], expected, 2)
+
+
+
 def test_MultiShellDeconvModel():
 
     gtab = get_3shell_gtab()
@@ -64,20 +89,20 @@ def test_MultiShellDeconvModel():
     angles = [(0, 0), (60, 0)]
 
     S_wm, sticks = multi_tensor(gtab, mevals, S0, angles=angles,
-                                fractions=[50., 50.], snr=None)
+                                fractions=[30., 70.], snr=None)
     S_gm = np.exp(-gtab.bvals * gm_md)
     S_csf = np.exp(-gtab.bvals * csf_md)
 
     sh_order = 8
     response = sim_response(sh_order, [0, 1000, 2000, 3500])
-    model = MultiShellDeconvModel(gtab, response)
-    signal = S_wm + 2 * S_gm + .5 * S_csf
+    model = MultiShellDeconvModel(gtab, response,
+                                  delta_form='positivity_constrained')
+    vf = [1.3, .8, 1.9]
+    signal = sum(i * j for i, j in zip(vf, [S_csf, S_gm, S_wm]))
     fit = model.fit(signal)
-    q = model.predict(fit._shm_coef)
 
-    S = fit.predict()
-    refit = model.fit(S)
-    npt.assert_array_almost_equal(refit._shm_coef, fit._shm_coef)
+    npt.assert_array_almost_equal(fit.volume_fractions, vf, 4)
 
+    S_pred = fit.predict()
+    npt.assert_array_almost_equal(S_pred, signal, 3)
 
-test_MultiShellDeconvModel()
