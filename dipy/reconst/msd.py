@@ -7,10 +7,12 @@ from dipy.reconst import shm
 from dipy.reconst import csdeconv as csd
 from dipy.reconst.multi_voxel import multi_voxel_fit
 
-from cvxopt.solvers import lp, qp
-from cvxopt import matrix, solvers
+from ..utils.optpkg import optional_package
 
-solvers.options['show_progress'] = False
+cvx, have_cvxopt, _ = optional_package("cvxopt")
+if have_cvxopt:
+    cvx.solvers.options['show_progress'] = False
+
 sh_const = .5 / np.sqrt(np.pi)
 
 def multi_tissue_basis(gtab, sh_order, iso_comp):
@@ -90,14 +92,14 @@ def _pos_constrained_delta(iso, m, n, theta, phi, reg_sphere=default_sphere):
     c = G[0]
     a, b = G.shape
 
-    c = matrix(-c)
-    G = matrix(-G)
-    h = matrix(sh_const**2, (a, 1))
+    c = cvx.matrix(-c)
+    G = cvx.matrix(-G)
+    h = cvx.matrix(sh_const**2, (a, 1))
 
     # n == 0 is set to sh_const to ensure a normalized delta function.
     # n > 0 values are optimized so that delta > 0 on all points of the sphere
     # and delta(theta, phi) is maximized.
-    r = lp(c, G, h)
+    r = cvx.solvers.lp(c, G, h)
     x = np.asarray(r['x'])[:, 0]
     out = np.zeros(B.shape[1])
     out[n == 0] = sh_const
@@ -188,8 +190,8 @@ class QpFitter(object):
     def _lstsq_initial(self, z):
         fodf_sh = csd._solve_cholesky(self._P, z)
         s = np.dot(self._reg, fodf_sh)
-        init = {'x':matrix(fodf_sh),
-                's':matrix(s.clip(1e-10))}
+        init = {'x':cvx.matrix(fodf_sh),
+                's':cvx.matrix(s.clip(1e-10))}
         return init
 
     def __init__(self, X, reg):
@@ -203,15 +205,16 @@ class QpFitter(object):
         # self._P_init = np.dot(X[:, :N].T, X[:, :N])
 
         # Make cvxopt matrix types for later re-use.
-        self._P_mat = matrix(P)
-        self._reg_mat = matrix(-reg)
-        self._h_mat = matrix(0., (reg.shape[0], 1))
+        self._P_mat = cvx.matrix(P)
+        self._reg_mat = cvx.matrix(-reg)
+        self._h_mat = cvx.matrix(0., (reg.shape[0], 1))
 
     def __call__(self, signal):
         z = np.dot(self._X.T, signal)
         init = self._lstsq_initial(z)
 
-        z_mat = matrix(-z)
+        z_mat = cvx.matrix(-z)
+        qp = cvx.solvers.qp
         r = qp(self._P_mat, z_mat, self._reg_mat, self._h_mat, initvals=init)
         fodf_sh = r['x']
         fodf_sh = np.array(fodf_sh)[:, 0]

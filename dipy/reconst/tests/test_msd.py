@@ -1,4 +1,5 @@
 from dipy.reconst.msd import MultiShellDeconvModel, MultiShellResponse
+from dipy.reconst import msd
 import numpy as np
 import numpy.testing as npt
 
@@ -47,6 +48,7 @@ def _expand(m, iso, coeff):
     return params
 
 
+@npt.dec.skipif(not msd.have_cvxopt)
 def test_msd_model_delta():
     sh_order = 8
     gtab = get_3shell_gtab()
@@ -78,7 +80,7 @@ def test_msd_model_delta():
     npt.assert_array_almost_equal(fit.shm_coeff[m == 0], expected, 2)
 
 
-
+@npt.dec.skipif(not msd.have_cvxopt)
 def test_MultiShellDeconvModel():
 
     gtab = get_3shell_gtab()
