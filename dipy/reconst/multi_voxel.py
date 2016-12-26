@@ -60,6 +60,8 @@ def multi_voxel_fit(single_voxel_fit):
             return single_voxel_fit(model, data)
         if mask is None:
             mask = np.ones(data.shape[:-1], bool)
+        elif mask.shape != data.shape[:-1]:
+            raise ValueError("mask and data shape do not match")
         fit = parallel_fit(data, mask, model=model)
         return MultiVoxelFit(model, fit["fit_array"], mask)
 
