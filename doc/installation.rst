@@ -279,12 +279,12 @@ From here follow the :ref:`install-source-nix` instructions.
 
 OpenMP with OSX
 ---------------
-OpenMP_ is a standard library for efficient multithreaded applications. This 
-is used in Dipy for speeding up many different parts of the library (e.g., denoising 
-and bundle registration). If you do not have an OpenMP-enabled compiler, you can 
-still compile Dipy from source using the above instructions, but it might not take 
-advantage of the multithreaded parts of the code. To be able to compile 
-Dipy from source with OpenMP on Mac OSX, you will have to do a few more things. First 
+OpenMP_ is a standard library for efficient multithreaded applications. This
+is used in Dipy for speeding up many different parts of the library (e.g., denoising
+and bundle registration). If you do not have an OpenMP-enabled compiler, you can
+still compile Dipy from source using the above instructions, but it might not take
+advantage of the multithreaded parts of the code. To be able to compile
+Dipy from source with OpenMP on Mac OSX, you will have to do a few more things. First
 of all, you will need to install the Homebrew_ package manager. Next you will need
 to install and configure the compiler. You have two options: using the GCC compiler
 or the CLANG compiler. This depends on your python installation:
@@ -293,10 +293,10 @@ Under Anaconda
 ~~~~~~~~~~~~~~~~
 
 If you are using Anaconda, you will need to use GCC. Run the following::
-    
+
 	brew reinstall gcc --without-multilib
-	
-This should take about 45 minutes to complete. Then add to your bash 
+
+This should take about 45 minutes to complete. Then add to your bash
 configuration (usually in ``~/.bash_profile``), the following::
 
 	export PATH="/usr/local/Cellar/gcc/5.2.0/bin/gcc-5:$PATH
@@ -305,9 +305,9 @@ configuration (usually in ``~/.bash_profile``), the following::
 Under Homebrew Python or python.org Python
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-If you are already using the Homebrew Python, or the standard python.org Python, 
+If you are already using the Homebrew Python, or the standard python.org Python,
 you will need to use the CLANG compiler with OMP. Run::
-	
+
 	brew install clang-omp
 
 And then edit the ``setup.py`` file to include the following line (e.g., on line 14,
@@ -319,7 +319,7 @@ at the top of the file, but after the initial imports)::
 Building and installing
 ~~~~~~~~~~~~~~~~~~~~~~~
 Whether you are using Anaconda or Hombrew/python.org Python, you will need to then
-run ``python setup.py install``. When you do that, it should now 
+run ``python setup.py install``. When you do that, it should now
 compile the code with this OpenMP-enabled compiler, and things should go faster!
 
 

@@ -95,10 +95,10 @@ transform instead of a voxel sizes array. Please update all code using
 ``target`` in a way similar to this ::
 
     img = nib.load(anat)
-    voxel_dim = img.get_header()['pixdim'][1:4]
+    voxel_dim = img.header['pixdim'][1:4]
     streamlines = utils.target(streamlines, img.get_data(), voxel_dim)
 
 to something similar to ::
 
     img = nib.load(anat)
-    streamlines = utils.target(streamlines, img.get_data(), img.get_affine())
+    streamlines = utils.target(streamlines, img.get_data(), img.affine)
