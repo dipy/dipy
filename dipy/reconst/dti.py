@@ -673,7 +673,8 @@ class TensorModel(ReconstModel):
     """ Diffusion Tensor
     """
 
-    def __init__(self, gtab, fit_method="WLS", return_S0_hat=False, *args, **kwargs):
+    def __init__(self, gtab, fit_method="WLS", return_S0_hat=False, *args,
+                 **kwargs):
         """ A Diffusion Tensor Model [1]_, [2]_.
 
         Parameters
@@ -783,12 +784,16 @@ class TensorModel(ReconstModel):
         data_in_mask = np.maximum(data_in_mask, min_signal)
 
         if self.return_S0_hat:
-            params_in_mask, S0 = self.fit_method(self.design_matrix,
-                                             data_in_mask, return_S0_hat=self.return_S0_hat,
-                                             *self.args, **self.kwargs)
+            params_in_mask, S0 = self.fit_method(
+                self.design_matrix,
+                data_in_mask,
+                return_S0_hat=self.return_S0_hat,
+                *self.args,
+                **self.kwargs)
         else:
             params_in_mask = self.fit_method(self.design_matrix,
-                                             data_in_mask, *self.args, **self.kwargs)
+                                             data_in_mask,
+                                             *self.args, **self.kwargs)
 
         if mask is None:
             out_shape = data.shape[:-1] + (-1, )
@@ -1277,7 +1282,8 @@ def iter_fit_tensor(step=1e4):
             if step >= size:
                 if return_S0_hat:
                     return fit_tensor(design_matrix, data,
-                                      return_S0_hat=return_S0_hat, *args, **kwargs)
+                                      return_S0_hat=return_S0_hat,
+                                      *args, **kwargs)
                 else:
                     return fit_tensor(design_matrix, data, *args, **kwargs)
             data = data.reshape(-1, data.shape[-1])
@@ -1287,16 +1293,18 @@ def iter_fit_tensor(step=1e4):
             for i in range(0, size, step):
                 if return_S0_hat:
                     fit_output = fit_tensor(design_matrix,
-                                                   data[i:i + step],
-                                                   return_S0_hat=return_S0_hat,
-                                                   *args, **kwargs)
+                                            data[i:i + step],
+                                            return_S0_hat=return_S0_hat,
+                                            *args, **kwargs)
                     dtiparams[i:i + step] = fit_output[0]
                     S0params[i:i + step] = fit_output[1]
                 else:
                     dtiparams[i:i + step] = fit_tensor(design_matrix,
-                                                   data[i:i + step], *args, **kwargs)
+                                                       data[i:i + step],
+                                                       *args, **kwargs)
             if return_S0_hat:
-                return (dtiparams.reshape(shape + (12, )), S0params.reshape(shape + (1, )))
+                return (dtiparams.reshape(shape + (12, )),
+                        S0params.reshape(shape + (1, )))
             else:
                 return dtiparams.reshape(shape + (12, ))
 
@@ -1427,12 +1435,15 @@ def ols_fit_tensor(design_matrix, data, return_S0_hat=False):
     """
     tol = 1e-6
     data = np.asarray(data)
-    fit_result = np.einsum('...ij,...j', np.linalg.pinv(design_matrix), np.log(data))
+    fit_result = np.einsum('...ij,...j', np.linalg.pinv(design_matrix),
+                           np.log(data))
     if return_S0_hat:
-        return (eig_from_lo_tri(fit_result, min_diffusivity=tol / -design_matrix.min()),
-                np.exp(-fit_result[:, -1]))
+        return (eig_from_lo_tri(fit_result,
+                                min_diffusivity=tol / -design_matrix.min()),
+                                np.exp(-fit_result[:, -1]))
     else:
-        return eig_from_lo_tri(fit_result, min_diffusivity=tol / -design_matrix.min())
+        return eig_from_lo_tri(fit_result,
+                               min_diffusivity=tol / -design_matrix.min())
 
 
 def _ols_fit_matrix(design_matrix):
@@ -1701,7 +1712,8 @@ def nlls_fit_tensor(design_matrix, data, weighting=None,
         return dti_params
 
 
-def restore_fit_tensor(design_matrix, data, sigma=None, jac=True, return_S0_hat=False,):
+def restore_fit_tensor(design_matrix, data, sigma=None, jac=True,
+                       return_S0_hat=False):
     """
     Use the RESTORE algorithm [Chang2005]_ to calculate a robust tensor fit
 

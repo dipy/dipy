@@ -139,7 +139,8 @@ def test_tensor_model():
     # Test fitting with different methods:
     for fit_method in ['OLS', 'WLS', 'NLLS']:
         tensor_model = dti.TensorModel(gtab,
-                                       fit_method=fit_method, return_S0_hat=True)
+                                       fit_method=fit_method,
+                                       return_S0_hat=True)
 
         tensor_fit = tensor_model.fit(Y)
         assert_true(tensor_fit.model is tensor_model)
