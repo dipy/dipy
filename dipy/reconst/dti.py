@@ -1197,7 +1197,7 @@ class TensorFit(object):
         the GradientTable input for that direction
         """
         if S0 is None:
-            S0 = self.S0  # note it's S0, not S0_hat because the shapes aren't the same
+            S0 = self.S0  # it's S0, not S0_hat b/c the shapes aren't the same
             if S0 is None:  # if we didn't run with S0
                 S0 = 1.
         shape = self.model_params.shape[:-1]
