@@ -90,7 +90,7 @@ class ReconstDtiFlow(Workflow):
 
             img = nib.load(dwi)
             data = img.get_data()
-            affine = img.get_affine()
+            affine = img.affine
 
             if mask is None:
                 mask = None
