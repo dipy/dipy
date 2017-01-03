@@ -882,16 +882,6 @@ class TensorFit(object):
         # np.einsum('...ij,...j,...kj->...ik', evecs, evals, evecs)
         return vec_val_vect(self.evecs, self.evals)
 
-    '''@property
-    def S0_hat(self):
-        """
-        Returns the S0_hat value of the fit
-        """
-        if self.S0_hat is None:
-            return None
-        else:
-            return self.S0_hat.reshape(self.shape)'''
-
     def lower_triangular(self, b0=None):
         return lower_triangular(self.quadratic_form, b0)
 
