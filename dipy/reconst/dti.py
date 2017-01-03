@@ -784,7 +784,7 @@ class TensorModel(ReconstModel):
         data_in_mask = np.maximum(data_in_mask, min_signal)
 
         if self.return_S0_hat:
-            params_in_mask, S0 = self.fit_method(
+            params_in_mask, S0_hat = self.fit_method(
                 self.design_matrix,
                 data_in_mask,
                 return_S0_hat=self.return_S0_hat,
@@ -796,16 +796,16 @@ class TensorModel(ReconstModel):
                                              *self.args, **self.kwargs)
 
         if mask is None:
-            out_shape = data.shape[:-1] + (-1, )
+            out_shape = data.shape[:-1]  + (-1, )
             dti_params = params_in_mask.reshape(out_shape)
             if self.return_S0_hat:
-                S0_params = S0.reshape(out_shape)
+                S0_params = S0_hat.reshape(out_shape[:-1])
         else:
             dti_params = np.zeros(data.shape[:-1] + (12,))
             dti_params[mask, :] = params_in_mask
             if self.return_S0_hat:
                 S0_params = np.zeros(data.shape[:-1] + (1,))
-                S0_params[mask] = S0
+                S0_params[mask] = S0_hat
 
         if self.return_S0_hat:
             return TensorFit(self, dti_params, S0_hat=S0_params)
@@ -882,15 +882,15 @@ class TensorFit(object):
         # np.einsum('...ij,...j,...kj->...ik', evecs, evals, evecs)
         return vec_val_vect(self.evecs, self.evals)
 
-    @property
-    def S0(self):
+    '''@property
+    def S0_hat(self):
         """
         Returns the S0_hat value of the fit
         """
         if self.S0_hat is None:
             return None
         else:
-            return self.S0_hat.reshape(self.shape)
+            return self.S0_hat.reshape(self.shape)'''
 
     def lower_triangular(self, b0=None):
         return lower_triangular(self.quadratic_form, b0)
@@ -1197,7 +1197,7 @@ class TensorFit(object):
         the GradientTable input for that direction
         """
         if S0 is None:
-            S0 = self.S0  # it's S0, not S0_hat b/c the shapes aren't the same
+            S0 = self.S0_hat  # it's S0, not S0_hat b/c the shapes aren't the same
             if S0 is None:  # if we didn't run with S0
                 S0 = 1.
         shape = self.model_params.shape[:-1]
