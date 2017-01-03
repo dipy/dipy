@@ -146,7 +146,7 @@ def test_tensor_model():
         assert_true(tensor_fit.model is tensor_model)
         assert_equal(tensor_fit.shape, Y.shape[:-1])
         assert_array_almost_equal(tensor_fit.evals[0], evals)
-        assert_array_almost_equal(tensor_fit.S0, b0, decimal=3)
+        assert_array_almost_equal(tensor_fit.S0_hat, b0, decimal=3)
         # Test that the eigenvectors are correct, one-by-one:
         for i in range(3):
             # Eigenvectors have intrinsic sign ambiguity
@@ -362,7 +362,7 @@ def test_wls_and_ls_fit():
                               err_msg="Calculation of tensor from Y does not "
                                       "compare to analytical solution")
     assert_almost_equal(tensor_est.md[0], md)
-    assert_array_almost_equal(tensor_est.S0[0], b0, decimal=3)
+    assert_array_almost_equal(tensor_est.S0_hat[0], b0, decimal=3)
 
     # Test that we can fit a single voxel's worth of data (a 1d array)
     y = Y[0]
