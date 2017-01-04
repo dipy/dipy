@@ -796,7 +796,7 @@ class TensorModel(ReconstModel):
                                              *self.args, **self.kwargs)
 
         if mask is None:
-            out_shape = data.shape[:-1]  + (-1, )
+            out_shape = data.shape[:-1] + (-1, )
             dti_params = params_in_mask.reshape(out_shape)
             if self.return_S0_hat:
                 S0_params = model_S0.reshape(out_shape[:-1])
@@ -1197,8 +1197,8 @@ class TensorFit(object):
         the GradientTable input for that direction
         """
         if S0 is None:
-            S0 = self.model_S0  # it's S0, not model_S0 b/c the shapes aren't the same
-            if S0 is None:  # if we didn't run with S0
+            S0 = self.model_S0
+            if S0 is None:  # if we didn't input or estimate S0 just use 1
                 S0 = 1.
         shape = self.model_params.shape[:-1]
         size = np.prod(shape)
