@@ -200,7 +200,7 @@ def test_tensor_model():
     assert_array_almost_equal(fit[0].evals, evals)
 
     # Return S0_test
-    tensor_model = dti.TensorModel(gtab,return_S0_hat=True)
+    tensor_model = dti.TensorModel(gtab, return_S0_hat=True)
     fit = tensor_model.fit(data)
     assert_array_almost_equal(fit[0].evals, evals)
     assert_array_almost_equal(fit[0].S0_hat, b0)
@@ -514,7 +514,7 @@ def test_mask():
     assert_array_equal(dtifit_w_mask.evals[~mask], 0)
     assert_array_equal(dtifit_w_mask.evecs[~mask], 0)
     assert_array_equal(dtifit_w_mask.fa[~mask], 0)
-    assert_almost_equal(dtifit_w_mask.S0_hat[~mask], 0)
+    assert_array_equal(dtifit_w_mask.S0_hat[~mask], 0)
     # Except for the one voxel that was selected by the mask:
     assert_almost_equal(dtifit_w_mask.fa[0, 0, 0], dtifit.fa[0, 0, 0])
     assert_almost_equal(dtifit_w_mask.S0_hat[0, 0, 0], dtifit.S0_hat[0, 0, 0])
