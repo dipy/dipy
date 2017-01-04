@@ -850,11 +850,13 @@ class TensorFit(object):
         if model_S0 is None:
             return type(self)(self.model, model_params[index])
         else:
-            return type(self)(self.model, model_params[index], model_S0[index])
+            index_S0 = index[:-1]  # model_S0 has a trailing 1 size
+            return type(self)(self.model, model_params[index],
+                              model_S0=model_S0[index_S0])
 
     @property
     def S0_hat(self):
-        return self.model_S0
+        return self.model_S0[:-1]
 
     @property
     def shape(self):
