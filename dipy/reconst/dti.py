@@ -1268,6 +1268,9 @@ def iter_fit_tensor(step=1e4):
             data : array ([X, Y, Z, ...], g)
                 Data or response variables holding the data. Note that the last
                 dimension should contain the data. It makes no copies of data.
+            return_S0_hat : bool
+                Boolean to return (True) or not (False) the S0 values for the
+                fit.
             step : int
                 The chunk size as a number of voxels. Overrides `step` value
                 of `iter_fit_tensor`.
@@ -1327,6 +1330,8 @@ def wls_fit_tensor(design_matrix, data, return_S0_hat=False):
     data : array ([X, Y, Z, ...], g)
         Data or response variables holding the data. Note that the last
         dimension should contain the data. It makes no copies of data.
+    return_S0_hat : bool
+        Boolean to return (True) or not (False) the S0 values for the fit.
 
     Returns
     -------
@@ -1403,6 +1408,8 @@ def ols_fit_tensor(design_matrix, data, return_S0_hat=False):
     data : array ([X, Y, Z, ...], g)
         Data or response variables holding the data. Note that the last
         dimension should contain the data. It makes no copies of data.
+    return_S0_hat : bool
+        Boolean to return (True) or not (False) the S0 values for the fit.
 
     Returns
     -------
@@ -1647,6 +1654,9 @@ def nlls_fit_tensor(design_matrix, data, weighting=None,
     jac : bool
         Use the Jacobian? Default: True
 
+    return_S0_hat : bool
+        Boolean to return (True) or not (False) the S0 values for the fit.
+
     Returns
     -------
     nlls_params: the eigen-values and eigen-vectors of the tensor in each
@@ -1737,6 +1747,9 @@ def restore_fit_tensor(design_matrix, data, sigma=None, jac=True,
         Whether to use the Jacobian of the tensor to speed the non-linear
         optimization procedure used to fit the tensor paramters (see also
         :func:`nlls_fit_tensor`). Default: True
+
+    return_S0_hat : bool
+        Boolean to return (True) or not (False) the S0 values for the fit.
 
 
     Returns
