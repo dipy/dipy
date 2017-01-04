@@ -199,6 +199,12 @@ def test_tensor_model():
     fit = tensor_model.fit(data)
     assert_array_almost_equal(fit[0].evals, evals)
 
+    # Return S0_test
+    tensor_model = dti.TensorModel(gtab,return_S0_hat=True)
+    fit = tensor_model.fit(data)
+    assert_array_almost_equal(fit[0].evals, evals)
+    assert_array_almost_equal(fit[0].S0_hat, b0)
+
     # Evals should be high for high diffusion voxel
     assert_(all(fit[1].evals > evals[0] * .9))
 
@@ -496,6 +502,23 @@ def test_mask():
     # Except for the one voxel that was selected by the mask:
     assert_almost_equal(dtifit_w_mask.fa[0, 0, 0], dtifit.fa[0, 0, 0])
 
+    # Test with returning S0_hat
+    dm = dti.TensorModel(gtab, 'LS', return_S0_hat=True)
+    mask = np.zeros(data.shape[:-1], dtype=bool)
+    mask[0, 0, 0] = True
+    dtifit = dm.fit(data)
+    dtifit_w_mask = dm.fit(data, mask=mask)
+    # Without a mask it has some value
+    assert_(not np.isnan(dtifit.fa[0, 0, 0]))
+    # Where mask is False, evals, evecs and fa should all be 0
+    assert_array_equal(dtifit_w_mask.evals[~mask], 0)
+    assert_array_equal(dtifit_w_mask.evecs[~mask], 0)
+    assert_array_equal(dtifit_w_mask.fa[~mask], 0)
+    assert_almost_equal(dtifit_w_mask.S0_hat[~mask], 0)
+    # Except for the one voxel that was selected by the mask:
+    assert_almost_equal(dtifit_w_mask.fa[0, 0, 0], dtifit.fa[0, 0, 0])
+    assert_almost_equal(dtifit_w_mask.S0_hat[0, 0, 0], dtifit.S0_hat[0, 0, 0])
+
 
 def test_nnls_jacobian_fucn():
     b0 = 1000.
@@ -633,6 +656,11 @@ def test_restore():
     # If sigma is very small, it still needs to work:
     tensor_model = dti.TensorModel(gtab, fit_method='restore', sigma=0.0001)
     tensor_model.fit(Y.copy())
+
+    # Test return_S0_hat
+    tensor_model = dti.TensorModel(gtab, fit_method='restore', sigma=0.0001, return_S0_hat=True)
+    tmf = tensor_model.fit(Y.copy())
+    assert_almost_equal(tmf[0].S0_hat, 1.)
 
 
 def test_adc():
