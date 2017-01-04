@@ -784,7 +784,7 @@ class TensorModel(ReconstModel):
         data_in_mask = np.maximum(data_in_mask, min_signal)
 
         if self.return_S0_hat:
-            params_in_mask, S0_hat = self.fit_method(
+            params_in_mask, model_S0 = self.fit_method(
                 self.design_matrix,
                 data_in_mask,
                 return_S0_hat=self.return_S0_hat,
@@ -799,16 +799,16 @@ class TensorModel(ReconstModel):
             out_shape = data.shape[:-1]  + (-1, )
             dti_params = params_in_mask.reshape(out_shape)
             if self.return_S0_hat:
-                S0_params = S0_hat.reshape(out_shape[:-1])
+                S0_params = model_S0.reshape(out_shape[:-1])
         else:
             dti_params = np.zeros(data.shape[:-1] + (12,))
             dti_params[mask, :] = params_in_mask
             if self.return_S0_hat:
                 S0_params = np.zeros(data.shape[:-1] + (1,))
-                S0_params[mask] = S0_hat
+                S0_params[mask] = model_S0
 
         if self.return_S0_hat:
-            return TensorFit(self, dti_params, S0_hat=S0_params)
+            return TensorFit(self, dti_params, model_S0=S0_params)
         else:
             return TensorFit(self, dti_params)
 
@@ -831,22 +831,30 @@ class TensorModel(ReconstModel):
 
 class TensorFit(object):
 
-    def __init__(self, model, model_params, S0_hat=None):
+    def __init__(self, model, model_params, model_S0=None):
         """ Initialize a TensorFit class instance.
         """
         self.model = model
         self.model_params = model_params
-        self.S0_hat = S0_hat
+        self.model_S0 = model_S0
 
     def __getitem__(self, index):
         model_params = self.model_params
+        model_S0 = self.model_S0
         N = model_params.ndim
         if type(index) is not tuple:
             index = (index,)
         elif len(index) >= model_params.ndim:
             raise IndexError("IndexError: invalid index")
         index = index + (slice(None),) * (N - len(index))
-        return type(self)(self.model, model_params[index])
+        if model_S0 is None:
+            return type(self)(self.model, model_params[index])
+        else:
+            return type(self)(self.model, model_params[index], model_S0[index])
+
+    @property
+    def S0_hat(self):
+        return self.model_S0
 
     @property
     def shape(self):
@@ -1187,7 +1195,7 @@ class TensorFit(object):
         the GradientTable input for that direction
         """
         if S0 is None:
-            S0 = self.S0_hat  # it's S0, not S0_hat b/c the shapes aren't the same
+            S0 = self.model_S0  # it's S0, not model_S0 b/c the shapes aren't the same
             if S0 is None:  # if we didn't run with S0
                 S0 = 1.
         shape = self.model_params.shape[:-1]
@@ -1655,7 +1663,7 @@ def nlls_fit_tensor(design_matrix, data, weighting=None,
     # 12 parameters per voxel (evals + evecs):
     dti_params = np.empty((flat_data.shape[0], 12))
     if return_S0_hat:
-        S0_hat = np.empty((flat_data.shape[0], 1))
+        model_S0 = np.empty((flat_data.shape[0], 1))
     for vox in range(flat_data.shape[0]):
         if np.all(flat_data[vox] == 0):
             raise ValueError("The data in this voxel contains only zeros")
@@ -1683,7 +1691,7 @@ def nlls_fit_tensor(design_matrix, data, weighting=None,
             dti_params[vox, :3] = evals
             dti_params[vox, 3:] = evecs.ravel()
             if return_S0_hat:
-                S0_hat[vox] = np.exp(-this_tensor[6])
+                model_S0[vox] = np.exp(-this_tensor[6])
         # If leastsq failed to converge and produced nans, we'll resort to the
         # OLS solution in this voxel:
         except np.linalg.LinAlgError:
@@ -1692,12 +1700,12 @@ def nlls_fit_tensor(design_matrix, data, weighting=None,
             dti_params[vox, :3] = evals
             dti_params[vox, 3:] = evecs.ravel()
             if return_S0_hat:
-                S0_hat[vox] = np.exp(-start_params[6])
+                model_S0[vox] = np.exp(-start_params[6])
 
     dti_params.shape = data.shape[:-1] + (12,)
     if return_S0_hat:
-        S0_hat.shape = data.shape[:-1] + (1,)
-        return (dti_params, S0_hat)
+        model_S0.shape = data.shape[:-1] + (1,)
+        return (dti_params, model_S0)
     else:
         return dti_params
 
@@ -1749,7 +1757,7 @@ def restore_fit_tensor(design_matrix, data, sigma=None, jac=True,
     # 12 parameters per voxel (evals + evecs):
     dti_params = np.empty((flat_data.shape[0], 12))
     if return_S0_hat:
-        S0_hat = np.empty((flat_data.shape[0], 1))
+        model_S0 = np.empty((flat_data.shape[0], 1))
     for vox in range(flat_data.shape[0]):
         if np.all(flat_data[vox] == 0):
             raise ValueError("The data in this voxel contains only zeros")
@@ -1827,13 +1835,13 @@ def restore_fit_tensor(design_matrix, data, sigma=None, jac=True,
         dti_params[vox, :3] = evals
         dti_params[vox, 3:] = evecs.ravel()
         if return_S0_hat:
-            S0_hat[vox] = np.exp(-this_tensor[6])
+            model_S0[vox] = np.exp(-this_tensor[6])
 
     dti_params.shape = data.shape[:-1] + (12,)
     restore_params = dti_params
     if return_S0_hat:
-        S0_hat.shape = data.shape[:-1] + (1,)
-        return (restore_params, S0_hat)
+        model_S0.shape = data.shape[:-1] + (1,)
+        return (restore_params, model_S0)
     else:
         return restore_params
 
