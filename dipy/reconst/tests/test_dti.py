@@ -660,7 +660,7 @@ def test_restore():
     # Test return_S0_hat
     tensor_model = dti.TensorModel(gtab, fit_method='restore', sigma=0.0001, return_S0_hat=True)
     tmf = tensor_model.fit(Y.copy())
-    assert_almost_equal(tmf[0].S0_hat, 1.)
+    assert_almost_equal(tmf[0].S0_hat, b0)
 
 
 def test_adc():
