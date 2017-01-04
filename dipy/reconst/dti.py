@@ -856,7 +856,7 @@ class TensorFit(object):
 
     @property
     def S0_hat(self):
-        return self.model_S0[:-1]
+        return self.model_S0
 
     @property
     def shape(self):
