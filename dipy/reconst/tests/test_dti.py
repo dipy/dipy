@@ -726,6 +726,13 @@ def test_predict():
     p = dtif.predict(gtab, S0)
     assert_equal(p.shape, data.shape)
 
+    # Test iter_fit_tensor with S0_hat
+    dtim = dti.TensorModel(gtab, step=2, return_S0_hat=True)
+    dtif = dtim.fit(data)
+    S0 = np.mean(data[..., gtab.b0s_mask], -1)
+    p = dtif.predict(gtab, S0)
+    assert_equal(p.shape, data.shape)
+
     # Use a smaller step in predicting:
 
     dtim = dti.TensorModel(gtab, step=2)
