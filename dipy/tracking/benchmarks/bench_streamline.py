@@ -28,8 +28,7 @@ from dipy.tracking.tests.test_streamline import (set_number_of_points_python,
                                                  length_python,
                                                  compress_streamlines_python)
 
-if not NIBABEL_LESS_2_1:
-    from dipy.tracking import Streamlines
+from dipy.tracking import Streamlines
 
 DATA = {}
 
@@ -99,15 +98,14 @@ def bench_length():
     assert_array_equal([length_python(s) for s in DATA["streamlines"]],
                        length(DATA["streamlines"]))
 
-    if not NIBABEL_LESS_2_1:
-        streamlines = DATA['streamlines_arrseq']
-        cython_time_arrseq = measure("length(streamlines)", repeat)
-        print("Cython time (ArrSeq): {0:.3}sec".format(cython_time_arrseq))
-        print("Speed up of {0:.2f}x".format(python_time/cython_time_arrseq))
+    streamlines = DATA['streamlines_arrseq']
+    cython_time_arrseq = measure("length(streamlines)", repeat)
+    print("Cython time (ArrSeq): {0:.3}sec".format(cython_time_arrseq))
+    print("Speed up of {0:.2f}x".format(python_time/cython_time_arrseq))
 
-        # Make sure it produces the same results.
-        assert_array_equal(length(DATA["streamlines"]),
-                           length(DATA["streamlines_arrseq"]))
+    # Make sure it produces the same results.
+    assert_array_equal(length(DATA["streamlines"]),
+                       length(DATA["streamlines_arrseq"]))
 
 
 def bench_compress_streamlines():
