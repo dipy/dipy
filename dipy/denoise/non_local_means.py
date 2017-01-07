@@ -4,6 +4,19 @@ import numpy as np
 from dipy.denoise.nlmeans_block import nlmeans_block
 
 
+def _nanmean(arr):
+    """
+    Deal with older versions of numpy that don't have nanmean implemented yet
+    """
+    marr = np.ma.masked_array(arr, np.isnan(arr))
+    return np.mean(marr)
+
+try:
+    from numpy import nanmean
+except ImportError:
+    nanmean = _nanmean
+
+
 def non_local_means(arr, sigma, mask=None, patch_radius=1, block_radius=5,
                     rician=True):
     r""" Non-local means for denoising 3D and 4D images, using
@@ -58,7 +71,7 @@ def non_local_means(arr, sigma, mask=None, patch_radius=1, block_radius=5,
             mask,
             patch_radius,
             block_radius,
-            np.nanmean(sigma[mask.astype(bool)]),
+            nanmean(sigma[mask.astype(bool)]),
             np.int(rician))).astype(arr.dtype)
     elif arr.ndim == 4:
         denoised_arr = np.zeros_like(arr)
@@ -72,7 +85,7 @@ def non_local_means(arr, sigma, mask=None, patch_radius=1, block_radius=5,
         for i in range(arr.shape[-1]):
             denoised_arr[..., i] = np.array(nlmeans_block(np.double(
                 arr[..., i]), mask, patch_radius, block_radius,
-                np.nanmean(sigma[mask.astype(bool)]),
+                nanmean(sigma[mask.astype(bool)]),
                 np.int(rician))).astype(arr.dtype)
 
         return denoised_arr
