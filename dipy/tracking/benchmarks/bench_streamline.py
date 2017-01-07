@@ -20,7 +20,6 @@ from numpy.testing import assert_array_equal
 from dipy.data import get_data
 from nibabel import trackvis as tv
 
-from dipy.tracking import NIBABEL_LESS_2_1
 from dipy.tracking.streamline import (set_number_of_points,
                                       length,
                                       compress_streamlines)
@@ -45,8 +44,7 @@ def setup():
     DATA['streamlines'] = generate_streamlines(nb_streamlines,
                                                min_nb_points, max_nb_points,
                                                rng=rng)
-    if not NIBABEL_LESS_2_1:
-        DATA['streamlines_arrseq'] = Streamlines(DATA['streamlines'])
+    DATA['streamlines_arrseq'] = Streamlines(DATA['streamlines'])
 
 
 def generate_streamlines(nb_streamlines, min_nb_points, max_nb_points, rng):
