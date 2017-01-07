@@ -5,11 +5,10 @@ import cython
 import numpy as np
 from libc.math cimport sqrt
 
-from dipy.tracking import NIBABEL_LESS_2_1
-if not NIBABEL_LESS_2_1:
-    from dipy.tracking import Streamlines
-
 cimport numpy as np
+
+from dipy.tracking import Streamlines
+
 
 cdef extern from "dpy_math.h" nogil:
     bint dpy_isnan(double x)
@@ -99,7 +98,7 @@ def length(streamlines):
     0.0
 
     '''
-    if not NIBABEL_LESS_2_1 and isinstance(streamlines, Streamlines):
+    if isinstance(streamlines, Streamlines):
         if len(streamlines) == 0:
             return 0.0
 
