@@ -11,9 +11,10 @@ from nose.tools import assert_true, assert_equal, assert_almost_equal
 from numpy.testing import (assert_array_equal, assert_array_almost_equal,
                            assert_raises, run_module_suite)
 
+from dipy.tracking import Streamlines
 import dipy.tracking.utils as ut
 from dipy.tracking.streamline import (set_number_of_points,
-                                      length as ds_length,
+                                      length,
                                       relist_streamlines,
                                       unlist_streamlines,
                                       center_streamlines,
@@ -343,41 +344,72 @@ def test_set_number_of_points_memory_leaks():
 
 def test_length():
     # Test length of only one streamline
-    length_streamline_cython = ds_length(streamline)
+    length_streamline_cython = length(streamline)
     length_streamline_python = length_python(streamline)
     assert_almost_equal(length_streamline_cython, length_streamline_python)
 
-    length_streamline_cython = ds_length(streamline_64bit)
+    length_streamline_cython = length(streamline_64bit)
     length_streamline_python = length_python(streamline_64bit)
     assert_almost_equal(length_streamline_cython, length_streamline_python)
 
     # Test computing length of multiple streamlines of different nb_points
-    length_streamlines_cython = ds_length(streamlines)
+    length_streamlines_cython = length(streamlines)
 
     for i, s in enumerate(streamlines):
         length_streamline_python = length_python(s)
         assert_array_almost_equal(length_streamlines_cython[i],
                                   length_streamline_python)
 
-    length_streamlines_cython = ds_length(streamlines_64bit)
+    length_streamlines_cython = length(streamlines_64bit)
 
     for i, s in enumerate(streamlines_64bit):
         length_streamline_python = length_python(s)
         assert_array_almost_equal(length_streamlines_cython[i],
                                   length_streamline_python)
 
+    # ArraySequence
+    # Test length of only one streamline
+    length_streamline_cython = length(streamline_64bit)
+    length_streamline_arrseq = length(Streamlines([streamline]))
+    assert_almost_equal(length_streamline_arrseq, length_streamline_cython)
+
+    length_streamline_cython = length(streamline_64bit)
+    length_streamline_arrseq = length(Streamlines([streamline_64bit]))
+    assert_almost_equal(length_streamline_arrseq, length_streamline_cython)
+
+    # Test computing length of multiple streamlines of different nb_points
+    length_streamlines_cython = length(streamlines)
+    length_streamlines_arrseq = length(Streamlines(streamlines))
+    assert_array_almost_equal(length_streamlines_arrseq,
+                              length_streamlines_cython)
+
+    length_streamlines_cython = length(streamlines_64bit)
+    length_streamlines_arrseq = length(Streamlines(streamlines_64bit))
+    assert_array_almost_equal(length_streamlines_arrseq,
+                              length_streamlines_cython)
+
+    # Test on a sliced ArraySequence
+    length_streamlines_cython = length(streamlines_64bit[::2])
+    length_streamlines_arrseq = length(Streamlines(streamlines_64bit)[::2])
+    assert_array_almost_equal(length_streamlines_arrseq,
+                              length_streamlines_cython)
+    length_streamlines_cython = length(streamlines[::-1])
+    length_streamlines_arrseq = length(Streamlines(streamlines)[::-1])
+    assert_array_almost_equal(length_streamlines_arrseq,
+                              length_streamlines_cython)
+
     # Test streamlines having mixed dtype
     streamlines_mixed_dtype = [streamline,
                                streamline.astype(np.float64),
                                streamline.astype(np.int32),
                                streamline.astype(np.int64)]
-    lengths_mixed_dtype = [ds_length(s)
+    lengths_mixed_dtype = [length(s)
                            for s in streamlines_mixed_dtype]
-    assert_array_equal(ds_length(streamlines_mixed_dtype),
+    assert_array_equal(length(streamlines_mixed_dtype),
                        lengths_mixed_dtype)
 
     # Test streamlines with different shape
-    length_streamlines_cython = ds_length(
+    length_streamlines_cython = length(
         heterogeneous_streamlines)
 
     for i, s in enumerate(heterogeneous_streamlines):
@@ -386,18 +418,18 @@ def test_length():
                                   length_streamline_python)
 
     # Test streamline having integer dtype
-    length_streamline = ds_length(streamline.astype('int'))
+    length_streamline = length(streamline.astype('int'))
     assert_true(length_streamline.dtype == np.float64)
 
     # Test empty list
-    assert_equal(ds_length([]), 0.0)
+    assert_equal(length([]), 0.0)
 
     # Test streamline having only one point
-    assert_equal(ds_length(np.array([[1, 2, 3]])), 0.0)
+    assert_equal(length(np.array([[1, 2, 3]])), 0.0)
 
     # We do not support list of lists, it should be numpy ndarray.
     streamline_unsupported = [[1, 2, 3], [4, 5, 5], [2, 1, 3], [4, 2, 1]]
-    assert_raises(AttributeError, ds_length,
+    assert_raises(AttributeError, length,
                   streamline_unsupported)
 
     # Test setting computing length of a numpy with flag WRITABLE=False
@@ -406,14 +438,14 @@ def test_length():
         streamlines_readonly.append(s.copy())
         streamlines_readonly[-1].setflags(write=False)
 
-    assert_array_almost_equal(ds_length(streamlines_readonly),
+    assert_array_almost_equal(length(streamlines_readonly),
                               [length_python(s) for s in streamlines_readonly])
     streamlines_readonly = []
     for s in streamlines_64bit:
         streamlines_readonly.append(s.copy())
         streamlines_readonly[-1].setflags(write=False)
 
-    assert_array_almost_equal(ds_length(streamlines_readonly),
+    assert_array_almost_equal(length(streamlines_readonly),
                               [length_python(s) for s in streamlines_readonly])
 
 
@@ -428,10 +460,10 @@ def test_length_memory_leaks():
 
         list_refcount_before = get_type_refcount()["list"]
 
-        lengths = ds_length(streamlines)
+        lengths = length(streamlines)
         list_refcount_after = get_type_refcount()["list"]
 
-        # Calling `ds_length` shouldn't increase the refcount of `list`
+        # Calling `length` shouldn't increase the refcount of `list`
         # since the return value is a numpy array.
         assert_equal(list_refcount_after, list_refcount_before)
 
@@ -445,10 +477,10 @@ def test_length_memory_leaks():
 
     list_refcount_before = get_type_refcount()["list"]
 
-    lengths = ds_length(streamlines)
+    lengths = length(streamlines)
     list_refcount_after = get_type_refcount()["list"]
 
-    # Calling `ds_length` shouldn't increase the refcount of `list`
+    # Calling `length` shouldn't increase the refcount of `list`
     # since the return value is a numpy array.
     assert_equal(list_refcount_after, list_refcount_before)
 
