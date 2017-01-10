@@ -766,6 +766,8 @@ class TensorModel(ReconstModel):
             should be analyzed that has the shape data.shape[:-1]
 
         """
+        S0_params = None
+
         if mask is None:
             # Flatten it to 2D either way:
             data_in_mask = np.reshape(data, (-1, data.shape[-1]))
@@ -783,7 +785,7 @@ class TensorModel(ReconstModel):
 
         data_in_mask = np.maximum(data_in_mask, min_signal)
 
-        if self.return_S0_hat:
+        if self.return_S0_hat:  #TODO ETP clean up here?
             params_in_mask, model_S0 = self.fit_method(
                 self.design_matrix,
                 data_in_mask,
@@ -795,7 +797,7 @@ class TensorModel(ReconstModel):
                                              data_in_mask,
                                              *self.args, **self.kwargs)
 
-        if mask is None:
+        if mask is None:  #TODO ETP clean up here?
             out_shape = data.shape[:-1] + (-1, )
             dti_params = params_in_mask.reshape(out_shape)
             if self.return_S0_hat:
@@ -807,10 +809,7 @@ class TensorModel(ReconstModel):
                 S0_params = np.zeros(data.shape[:-1] + (1,))
                 S0_params[mask] = model_S0
 
-        if self.return_S0_hat:
-            return TensorFit(self, dti_params, model_S0=S0_params)
-        else:
-            return TensorFit(self, dti_params)
+        return TensorFit(self, dti_params, model_S0=S0_params)
 
     def predict(self, dti_params, S0=1.):
         """
@@ -847,7 +846,7 @@ class TensorFit(object):
         elif len(index) >= model_params.ndim:
             raise IndexError("IndexError: invalid index")
         index = index + (slice(None),) * (N - len(index))
-        if model_S0 is None:
+        if model_S0 is None:  #TODO ETP clean up?
             return type(self)(self.model, model_params[index])
         else:
             index_S0 = index[:-1]  # model_S0 has a trailing 1 size
@@ -1166,7 +1165,8 @@ class TensorFit(object):
             This encodes the directions for which a prediction is made
 
         S0 : float array
-           The mean non-diffusion weighted signal in each voxel. Default: 1 in
+           The mean non-diffusion weighted signal in each voxel. Default:
+           The fitted S0 value in all voxels if it was fitted. Otherwise 1 in
            all voxels.
 
         step : int
@@ -1283,24 +1283,20 @@ def iter_fit_tensor(step=1e4):
             size = np.prod(shape)
             step = int(step) or size
             if step >= size:
-                if return_S0_hat:
-                    return fit_tensor(design_matrix, data,
-                                      return_S0_hat=return_S0_hat,
-                                      *args, **kwargs)
-                else:
-                    return fit_tensor(design_matrix, data, *args, **kwargs)
+                return fit_tensor(design_matrix, data,
+                                  return_S0_hat=return_S0_hat,
+                                  *args, **kwargs)
             data = data.reshape(-1, data.shape[-1])
             dtiparams = np.empty((size, 12), dtype=np.float64)
             if return_S0_hat:
                 S0params = np.empty(size, dtype=np.float64)
             for i in range(0, size, step):
                 if return_S0_hat:
-                    fit_output = fit_tensor(design_matrix,
-                                            data[i:i + step],
-                                            return_S0_hat=return_S0_hat,
-                                            *args, **kwargs)
-                    dtiparams[i:i + step] = fit_output[0]
-                    S0params[i:i + step] = fit_output[1]
+                    dtiparams[i:i + step], S0params[i:i + step] \
+                        = fit_tensor(design_matrix,
+                                     data[i:i + step],
+                                     return_S0_hat=return_S0_hat,
+                                     *args, **kwargs)
                 else:
                     dtiparams[i:i + step] = fit_tensor(design_matrix,
                                                        data[i:i + step],
