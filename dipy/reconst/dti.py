@@ -785,19 +785,16 @@ class TensorModel(ReconstModel):
 
         data_in_mask = np.maximum(data_in_mask, min_signal)
 
-        if self.return_S0_hat:  #TODO ETP clean up here?
-            params_in_mask, model_S0 = self.fit_method(
+        params_in_mask = self.fit_method(
                 self.design_matrix,
                 data_in_mask,
                 return_S0_hat=self.return_S0_hat,
                 *self.args,
                 **self.kwargs)
-        else:
-            params_in_mask = self.fit_method(self.design_matrix,
-                                             data_in_mask,
-                                             *self.args, **self.kwargs)
+        if self.return_S0_hat:
+            params_in_mask, model_S0 = params_in_mask
 
-        if mask is None:  #TODO ETP clean up here?
+        if mask is None:
             out_shape = data.shape[:-1] + (-1, )
             dti_params = params_in_mask.reshape(out_shape)
             if self.return_S0_hat:
@@ -846,12 +843,9 @@ class TensorFit(object):
         elif len(index) >= model_params.ndim:
             raise IndexError("IndexError: invalid index")
         index = index + (slice(None),) * (N - len(index))
-        if model_S0 is None:  #TODO ETP clean up?
-            return type(self)(self.model, model_params[index])
-        else:
-            index_S0 = index[:-1]  # model_S0 has a trailing 1 size
-            return type(self)(self.model, model_params[index],
-                              model_S0=model_S0[index_S0])
+        if model_S0 is not None:
+            model_S0 = model_S0[index[:-1]]
+        return type(self)(self.model, model_params[index], model_S0=model_S0)
 
     @property
     def S0_hat(self):
