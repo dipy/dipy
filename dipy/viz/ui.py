@@ -36,7 +36,14 @@ class UI(object):
 
         self.left_button_state = "released"
         self.right_button_state = "released"
+
         self.handle_events()
+
+        self.on_left_mouse_button_pressed = lambda i_ren, obj, element: None
+        self.on_left_mouse_button_drag = lambda i_ren, obj, element: None
+        self.on_right_mouse_button_pressed = lambda i_ren, obj, element: None
+        self.on_right_mouse_button_drag = lambda i_ren, obj, element: None
+        self.on_mouse_hover = lambda i_ren, obj, element: None
 
     def get_actors(self):
         """ Returns the actors that compose this UI component. """
@@ -96,21 +103,6 @@ class UI(object):
         self.add_callback("RightButtonReleaseEvent", self.right_button_release_callback)
         self.add_callback("MouseMoveEvent", self.mouse_move_callback)
 
-    def on_left_mouse_button_pressed(self, i_ren):
-        pass
-
-    def on_left_mouse_button_drag(self, i_ren):
-        pass
-
-    def on_right_mouse_button_pressed(self, i_ren):
-        pass
-
-    def on_right_mouse_button_drag(self, i_ren):
-        pass
-
-    def on_mouse_hover(self, i_ren):
-        pass
-
     @staticmethod
     def left_button_click_callback(i_ren, obj, self):
         self.left_button_state = "clicked"
@@ -119,7 +111,7 @@ class UI(object):
     @staticmethod
     def left_button_release_callback(i_ren, obj, self):
         if self.left_button_state == "clicked":
-            self.on_left_mouse_button_pressed(i_ren)
+            self.on_left_mouse_button_pressed(i_ren, obj, self)
         self.left_button_state = "released"
 
     @staticmethod
@@ -130,19 +122,19 @@ class UI(object):
     @staticmethod
     def right_button_release_callback(i_ren, obj, self):
         if self.right_button_state == "clicked":
-            self.on_right_mouse_button_pressed(i_ren)
+            self.on_right_mouse_button_pressed(i_ren, obj, self)
         self.right_button_state = "released"
 
     @staticmethod
     def mouse_move_callback(i_ren, obj, self):
         if self.left_button_state == "clicked" or self.left_button_state == "dragging":
             self.left_button_state = "dragging"
-            self.on_left_mouse_button_drag(i_ren)
+            self.on_left_mouse_button_drag(i_ren, obj, self)
         elif self.right_button_state == "clicked" or self.right_button_state == "dragging":
             self.right_button_state = "dragging"
-            self.on_right_mouse_button_drag(i_ren)
+            self.on_right_mouse_button_drag(i_ren, obj, self)
         else:
-            self.on_mouse_hover(i_ren)
+            self.on_mouse_hover(i_ren, obj, self)
 
 
 class Button2D(UI):
@@ -459,9 +451,11 @@ class Panel2D(UI):
                                  opacity=opacity)  # type: Rectangle2D
 
         self.element_positions = []
-        self.element_positions.append((self.panel, 0.5, 0.5))
+        self.element_positions.append([self.panel, 'relative', 0.5, 0.5])
         self.alignment = align
         super(Panel2D, self).__init__()
+        self.on_left_mouse_button_pressed = self.left_button_press
+        self.on_left_mouse_button_drag = self.left_button_drag
 
     def add_to_renderer(self, ren):
         """ Allows UI objects to add their own props to the renderer.
@@ -489,19 +483,28 @@ class Panel2D(UI):
         """
         super(Panel2D, self).add_callback(self.panel.actor, event_type, callback)
 
-    def add_element(self, element, relative_position):
+    def add_element(self, element, position_type, position):
         """ Adds an elements to the panel.
         The center of the rectangular panel is its bottom lower position.
         Parameters
         ----------
         element : UI
             The UI item to be added.
-        relative_position : (float, float)
+        position_type: string
+            'absolute' or 'relative'
+        position : (float, float)
+            Absolute for absolute and relative for relative
         """
         self.ui_list.append(element)
-        self.element_positions.append((element, relative_position[0], relative_position[1]))
-        element.set_center((self.lower_limits[0] + relative_position[0]*self.size[0],
-                            self.lower_limits[1] + relative_position[1]*self.size[1]))
+        if position_type == 'relative':
+            self.element_positions.append([element, position_type, position[0], position[1]])
+            element.set_center((self.lower_limits[0] + position[0]*self.size[0],
+                                self.lower_limits[1] + position[1]*self.size[1]))
+        elif position_type == 'absolute':
+            self.element_positions.append([element, position_type, position[0], position[1]])
+            element.set_center((position[0], position[1]))
+        else:
+            NameError("Position can only be absolute or relative")
 
     def set_center(self, position):
         """ Sets the panel center to position.
@@ -510,22 +513,30 @@ class Panel2D(UI):
         ----------
         position : (float, float)
         """
+        shift = [position[0] - self.center[0], position[1] - self.center[1]]
         self.center = position
         self.lower_limits = (position[0] - self.size[0] / 2, position[1] - self.size[1] / 2)
         for ui_element in self.element_positions:
-            ui_element[0].set_center((self.lower_limits[0] + ui_element[1]*self.size[0],
-                                      self.lower_limits[1] + ui_element[2]*self.size[1]))
+            if ui_element[1] == 'relative':
+                ui_element[0].set_center((self.lower_limits[0] + ui_element[2]*self.size[0],
+                                          self.lower_limits[1] + ui_element[3]*self.size[1]))
+            elif ui_element[1] == 'absolute':
+                ui_element[2] += shift[0]
+                ui_element[3] += shift[1]
+                ui_element[0].set_center((ui_element[2], ui_element[3]))
 
-    def on_left_mouse_button_pressed(self, i_ren):
+    @staticmethod
+    def left_button_press(i_ren, obj, element):
         click_position = i_ren.event.position
-        self.ui_param = (click_position[0] - self.panel.actor.GetPosition()[0] - self.panel.size[0] / 2,
-                         click_position[1] - self.panel.actor.GetPosition()[1] - self.panel.size[1] / 2)
+        element.ui_param = (click_position[0] - element.panel.actor.GetPosition()[0] - element.panel.size[0] / 2,
+                         click_position[1] - element.panel.actor.GetPosition()[1] - element.panel.size[1] / 2)
         i_ren.event.abort()  # Stop propagating the event.
 
-    def on_left_mouse_button_drag(self, i_ren):
+    @staticmethod
+    def left_button_drag(i_ren, obj, element):
         click_position = i_ren.event.position
-        if self.ui_param is not None:
-            self.set_center((click_position[0] - self.ui_param[0], click_position[1] - self.ui_param[1]))
+        if element.ui_param is not None:
+            element.set_center((click_position[0] - element.ui_param[0], click_position[1] - element.ui_param[1]))
         i_ren.force_render()
 
     def re_align(self, window_size_change):

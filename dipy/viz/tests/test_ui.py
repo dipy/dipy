@@ -96,8 +96,9 @@ def test_button(recording=False):
         button.next_icon()
         i_ren.force_render()
 
-    button_test.add_callback("RightButtonPressEvent", make_invisible)
-    button_test.add_callback("LeftButtonPressEvent", modify_button_callback)
+    button_test.on_right_mouse_button_pressed = make_invisible
+    button_test.on_left_mouse_button_pressed = modify_button_callback
+
     button_test.scale((2, 2))
     button_color = button_test.color
     button_test.color = button_color
@@ -105,7 +106,7 @@ def test_button(recording=False):
 
     # Panel
     panel = ui.Panel2D(center=(440, 90), size=(300, 150), color=(1, 1, 1), align="right")
-    panel.add_element(button_test, (0.2, 0.2))
+    panel.add_element(button_test, 'relative', (0.2, 0.2))
     # /Panel
 
     current_size = (600, 600)
@@ -122,15 +123,15 @@ def test_button(recording=False):
         expected = [('CharEvent', 0),
                     ('KeyPressEvent', 0),
                     ('KeyReleaseEvent', 0),
-                    ('MouseMoveEvent', 30),
-                    ('LeftButtonPressEvent', 7),
-                    ('RightButtonPressEvent', 1),
+                    ('MouseMoveEvent', 161),
+                    ('LeftButtonPressEvent', 12),
+                    ('RightButtonPressEvent', 3),
                     ('MiddleButtonPressEvent', 0),
-                    ('LeftButtonReleaseEvent', 7),
+                    ('LeftButtonReleaseEvent', 12),
                     ('MouseWheelForwardEvent', 0),
                     ('MouseWheelBackwardEvent', 0),
                     ('MiddleButtonReleaseEvent', 0),
-                    ('RightButtonReleaseEvent', 1)]
+                    ('RightButtonReleaseEvent', 3)]
 
         # Useful loop for debugging.
         for event, count in expected:
