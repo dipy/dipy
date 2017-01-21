@@ -60,6 +60,12 @@ def test_button(recording=False):
     npt.assert_raises(NotImplementedError, broken_ui.set_center, (1, 2))
     # /Broken UI Element
 
+    # Rectangle
+    rectangle_test = ui.Rectangle2D(size=(10, 10))
+    rectangle_test.get_actors()
+    another_rectangle_test = ui.Rectangle2D(size=(1,1))
+    # /Rectangle
+
     # Button
     fetch_viz_icons()
 
@@ -106,7 +112,9 @@ def test_button(recording=False):
 
     # Panel
     panel = ui.Panel2D(center=(440, 90), size=(300, 150), color=(1, 1, 1), align="right")
+    panel.add_element(rectangle_test, 'absolute', (580, 150))
     panel.add_element(button_test, 'relative', (0.2, 0.2))
+    npt.assert_raises(ValueError, panel.add_element, another_rectangle_test, 'error_string', (1, 2))
     # /Panel
 
     current_size = (600, 600)

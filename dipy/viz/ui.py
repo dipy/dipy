@@ -27,6 +27,7 @@ class UI(object):
     - parent_UI: This is useful of there is a parent UI element and its reference
                 needs to be passed down to the child.
     """
+
     def __init__(self):
         self.ui_param = None
         self.ui_list = list()
@@ -176,10 +177,13 @@ class Button2D(UI):
         """
         icons = {}
         for icon_name, icon_fname in icon_fnames.items():
-            png = vtk.vtkPNGReader()
-            png.SetFileName(icon_fname)
-            png.Update()
-            icons[icon_name] = png.GetOutput()
+            if icon_fname.split(".")[-1] not in ["png", "PNG"]:
+                print("Warning: A specified icon file is not in the PNG format. SKIPPING.")
+            else:
+                png = vtk.vtkPNGReader()
+                png.SetFileName(icon_fname)
+                png.Update()
+                icons[icon_name] = png.GetOutput()
 
         return icons
 
@@ -255,10 +259,14 @@ class Button2D(UI):
         tc = vtk.vtkFloatArray()
         tc.SetNumberOfComponents(2)
         tc.SetNumberOfTuples(4)
-        tc.InsertComponent(0,0, 0.0);  tc.InsertComponent(0,1, 0.0)
-        tc.InsertComponent(1,0, 1.0);  tc.InsertComponent(1,1, 0.0)
-        tc.InsertComponent(2,0, 1.0);  tc.InsertComponent(2,1, 1.0)
-        tc.InsertComponent(3,0, 0.0);  tc.InsertComponent(3,1, 1.0)
+        tc.InsertComponent(0, 0, 0.0)
+        tc.InsertComponent(0, 1, 0.0)
+        tc.InsertComponent(1, 0, 1.0)
+        tc.InsertComponent(1, 1, 0.0)
+        tc.InsertComponent(2, 0, 1.0)
+        tc.InsertComponent(2, 1, 1.0)
+        tc.InsertComponent(3, 0, 0.0)
+        tc.InsertComponent(3, 1, 1.0)
         self.texture_polydata.GetPointData().SetTCoords(tc)
 
         texture_mapper = vtk.vtkPolyDataMapper2D()
@@ -423,7 +431,7 @@ class Rectangle2D(UI):
         ----------
         position : (float, float)
         """
-        self.actor.SetPosition(position[0] - self.size[0]/2, position[1] - self.size[1]/2)
+        self.actor.SetPosition(position[0] - self.size[0] / 2, position[1] - self.size[1] / 2)
 
 
 class Panel2D(UI):
@@ -498,13 +506,13 @@ class Panel2D(UI):
         self.ui_list.append(element)
         if position_type == 'relative':
             self.element_positions.append([element, position_type, position[0], position[1]])
-            element.set_center((self.lower_limits[0] + position[0]*self.size[0],
-                                self.lower_limits[1] + position[1]*self.size[1]))
+            element.set_center((self.lower_limits[0] + position[0] * self.size[0],
+                                self.lower_limits[1] + position[1] * self.size[1]))
         elif position_type == 'absolute':
             self.element_positions.append([element, position_type, position[0], position[1]])
             element.set_center((position[0], position[1]))
         else:
-            NameError("Position can only be absolute or relative")
+            raise ValueError("Position can only be absolute or relative")
 
     def set_center(self, position):
         """ Sets the panel center to position.
@@ -518,8 +526,8 @@ class Panel2D(UI):
         self.lower_limits = (position[0] - self.size[0] / 2, position[1] - self.size[1] / 2)
         for ui_element in self.element_positions:
             if ui_element[1] == 'relative':
-                ui_element[0].set_center((self.lower_limits[0] + ui_element[2]*self.size[0],
-                                          self.lower_limits[1] + ui_element[3]*self.size[1]))
+                ui_element[0].set_center((self.lower_limits[0] + ui_element[2] * self.size[0],
+                                          self.lower_limits[1] + ui_element[3] * self.size[1]))
             elif ui_element[1] == 'absolute':
                 ui_element[2] += shift[0]
                 ui_element[3] += shift[1]
@@ -529,7 +537,7 @@ class Panel2D(UI):
     def left_button_press(i_ren, obj, element):
         click_position = i_ren.event.position
         element.ui_param = (click_position[0] - element.panel.actor.GetPosition()[0] - element.panel.size[0] / 2,
-                         click_position[1] - element.panel.actor.GetPosition()[1] - element.panel.size[1] / 2)
+                            click_position[1] - element.panel.actor.GetPosition()[1] - element.panel.size[1] / 2)
         i_ren.event.abort()  # Stop propagating the event.
 
     @staticmethod
