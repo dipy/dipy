@@ -44,7 +44,6 @@ class UI(object):
         self.on_left_mouse_button_drag = lambda i_ren, obj, element: None
         self.on_right_mouse_button_pressed = lambda i_ren, obj, element: None
         self.on_right_mouse_button_drag = lambda i_ren, obj, element: None
-        self.on_mouse_hover = lambda i_ren, obj, element: None
 
     def get_actors(self):
         """ Returns the actors that compose this UI component. """
@@ -135,7 +134,8 @@ class UI(object):
             self.right_button_state = "dragging"
             self.on_right_mouse_button_drag(i_ren, obj, self)
         else:
-            self.on_mouse_hover(i_ren, obj, self)
+            # the mouse is hovering over the object
+            pass
 
 
 class Button2D(UI):

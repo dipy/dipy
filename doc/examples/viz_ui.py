@@ -72,12 +72,6 @@ button_example.on_right_mouse_button_drag = right_mouse_button_drag
 button_example.on_right_mouse_button_pressed = right_mouse_button_click
 
 
-def hover(i_ren, obj, button):
-    print ("Hovered")
-
-button_example.on_mouse_hover = hover
-
-
 second_button_example = ui.Button2D(icon_fnames=icon_files)
 
 
