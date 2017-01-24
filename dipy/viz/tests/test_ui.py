@@ -29,7 +29,7 @@ else:
 
 @npt.dec.skipif(not have_vtk or skip_it)
 @xvfb_it
-def test_button(recording=False):
+def test_ui(recording=False):
     print("Using VTK {}".format(vtk.vtkVersion.GetVTKVersion()))
     filename = "test_ui.log.gz"
     recording_filename = pjoin(DATA_DIR, filename)

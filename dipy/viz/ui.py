@@ -19,13 +19,15 @@ class UI(object):
     While adding UI elements to the renderer, we need to go over all the
      sub-elements that come with it and add those to the renderer too.
     There are several features that are common to all the UI elements:
-    - ui_param : This is an attribute that can be passed to the UI object
-                by the interactor. Thanks to Python's dynamic type-setting
-                this parameter can be anything.
-    - ui_list : This is used when there are more than one UI elements inside
-               a UI element. Inside the renderer, they're all iterated and added.
-    - parent_UI: This is useful of there is a parent UI element and its reference
-                needs to be passed down to the child.
+    - ui_param : object
+        This is an attribute that can be passed to the UI object by the interactor.
+    - ui_list : list(UI)
+        This is used when there are more than one UI elements inside
+        a UI element. They're all automatically added to the renderer at the same time
+        as this one.
+    - parent_UI: UI
+        Reference to the parent UI element. This is useful of there is a parent
+        UI element and its reference needs to be passed down to the child.
     """
 
     def __init__(self):
@@ -52,6 +54,7 @@ class UI(object):
 
     def add_to_renderer(self, ren):
         """ Allows UI objects to add their own props to the renderer.
+
         Parameters
         ----------
         ren : renderer
@@ -71,11 +74,15 @@ class UI(object):
 
     def add_callback(self, prop, event_type, callback, priority=0):
         """ Adds a callback to a specific event for this UI component.
+
         Parameters
         ----------
         prop : vtkProp
-        event_type : event code
+            The prop on which is callback is to be added.
+        event_type : string
+            The event code.
         callback : function
+            The callback function.
         priority : int
         """
         # Actually since we need an interactor style we will add the callback
@@ -84,6 +91,7 @@ class UI(object):
 
     def set_center(self, position):
         """ Sets the center of the UI component
+
         Parameters
         ----------
         position : (float, float)
@@ -92,7 +100,7 @@ class UI(object):
         raise NotImplementedError(msg)
 
     def set_visibility(self, visibility):
-        """ Sets visibility of this UI component. """
+        """ Sets visibility of this UI component and all its sub-components. """
         for actor in self.get_actors():
             actor.SetVisibility(visibility)
 
@@ -134,7 +142,6 @@ class UI(object):
             self.right_button_state = "dragging"
             self.on_right_mouse_button_drag(i_ren, obj, self)
         else:
-            # the mouse is hovering over the object
             pass
 
 
@@ -166,10 +173,12 @@ class Button2D(UI):
     def build_icons(self, icon_fnames):
         """ Converts file names to vtkImageDataGeometryFilters.
         A pre-processing step to prevent re-read of file names during every state change.
+
         Parameters
         ----------
         icon_fnames : dict
             {iconname: filename, iconname: filename, ...}
+
         Returns
         -------
         icons : dict
@@ -195,6 +204,7 @@ class Button2D(UI):
     @size.setter
     def size(self, size):
         """Sets the button size.
+
         Parameters
         ----------
         size : (float, float)
@@ -217,6 +227,7 @@ class Button2D(UI):
     @color.setter
     def color(self, color):
         """Sets the button's color.
+
         Parameters
         ----------
         color : (float, float, float)
@@ -225,6 +236,7 @@ class Button2D(UI):
 
     def scale(self, size):
         """Scales the button.
+
         Parameters
         ----------
         size : (float, float)
@@ -233,6 +245,7 @@ class Button2D(UI):
 
     def build_actor(self, icon):
         """ Return an image as a 2D actor with a specific position.
+
         Parameters
         ----------
         icon : vtkImageData
@@ -294,6 +307,7 @@ class Button2D(UI):
 
     def add_callback(self, event_type, callback):
         """ Adds events to button actor.
+
         Parameters
         ----------
         event_type : string
@@ -305,6 +319,7 @@ class Button2D(UI):
 
     def set_icon(self, icon):
         """ Modifies the icon used by the vtkTexturedActor2D.
+
         Parameters
         ----------
         icon : imageDataGeometryFilter
@@ -331,6 +346,7 @@ class Button2D(UI):
 
     def set_center(self, position):
         """ Sets the icon center to position.
+
         Parameters
         ----------
         position : (float, float)
@@ -346,6 +362,8 @@ class Rectangle2D(UI):
 
     def __init__(self, size, center=(0, 0), color=(1, 1, 1), opacity=1.0):
         """
+        Initializes a rectangle.
+
         Parameters
         ----------
         size : (float, float)
@@ -364,6 +382,7 @@ class Rectangle2D(UI):
 
     def add_callback(self, event_type, callback):
         """ Adds events to rectangle actor.
+
         Parameters
         ----------
         event_type : string
@@ -375,6 +394,7 @@ class Rectangle2D(UI):
 
     def build_actor(self, size, center, color, opacity):
         """ Builds the text actor.
+
         Parameters
         ----------
         size : (float, float)
@@ -382,6 +402,7 @@ class Rectangle2D(UI):
         color : (float, float, float)
             Must be between 0-1
         opacity : float
+
         Returns
         -------
         actor : vtkActor2D
@@ -427,6 +448,7 @@ class Rectangle2D(UI):
 
     def set_center(self, position):
         """ Sets the center to position.
+
         Parameters
         ----------
         position : (float, float)
@@ -456,7 +478,7 @@ class Panel2D(UI):
                              self.center[1] - self.size[1] / 2)
 
         self.panel = Rectangle2D(size=size, center=center, color=color,
-                                 opacity=opacity)  # type: Rectangle2D
+                                 opacity=opacity)
 
         self.element_positions = []
         self.element_positions.append([self.panel, 'relative', 0.5, 0.5])
@@ -468,6 +490,7 @@ class Panel2D(UI):
     def add_to_renderer(self, ren):
         """ Allows UI objects to add their own props to the renderer.
         Here, we add only call add_to_renderer for the additional components.
+
         Parameters
         ----------
         ren : renderer
@@ -482,6 +505,7 @@ class Panel2D(UI):
 
     def add_callback(self, event_type, callback):
         """ Adds events to an actor.
+
         Parameters
         ----------
         event_type : string
@@ -492,8 +516,9 @@ class Panel2D(UI):
         super(Panel2D, self).add_callback(self.panel.actor, event_type, callback)
 
     def add_element(self, element, position_type, position):
-        """ Adds an elements to the panel.
+        """ Adds an element to the panel.
         The center of the rectangular panel is its bottom lower position.
+
         Parameters
         ----------
         element : UI
@@ -517,6 +542,7 @@ class Panel2D(UI):
     def set_center(self, position):
         """ Sets the panel center to position.
         The center of the rectangular panel is its bottom lower position.
+
         Parameters
         ----------
         position : (float, float)
@@ -550,6 +576,7 @@ class Panel2D(UI):
     def re_align(self, window_size_change):
         """ Re-organises the elements in case the
         window size is changed
+
         Parameters
         ----------
         window_size_change : (int, int)
@@ -559,4 +586,4 @@ class Panel2D(UI):
         elif self.alignment == "right":
             self.set_center((self.center[0] + window_size_change[0], self.center[1] + window_size_change[1]))
         else:
-            pass
+            raise ValueError("You can only left-align or right-align objects in a panel.")
