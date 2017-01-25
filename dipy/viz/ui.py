@@ -16,18 +16,24 @@ else:
 
 class UI(object):
     """ An umbrella class for all UI elements.
-    While adding UI elements to the renderer, we need to go over all the
-     sub-elements that come with it and add those to the renderer too.
-    There are several features that are common to all the UI elements:
-    - ui_param : object
+    While adding UI elements to the renderer, we go over all the sub-elements
+    that come with it and add those to the renderer automatically.
+
+    Attributes
+    ----------
+    ui_param : object
         This is an attribute that can be passed to the UI object by the interactor.
-    - ui_list : list(UI)
+    ui_list : list(UI)
         This is used when there are more than one UI elements inside
         a UI element. They're all automatically added to the renderer at the same time
         as this one.
-    - parent_UI: UI
+    parent_UI: UI
         Reference to the parent UI element. This is useful of there is a parent
         UI element and its reference needs to be passed down to the child.
+    on_left_mouse_button_pressed: function
+    on_left_mouse_button_drag: function
+    on_right_mouse_button_pressed: function
+    on_right_mouse_button_drag: function
     """
 
     def __init__(self):
@@ -150,6 +156,11 @@ class Button2D(UI):
     Currently supports:
     - Multiple icons.
     - Switching between icons.
+
+    Attributes
+    ----------
+    size: (float, float)
+        Button Size.
     """
 
     def __init__(self, icon_fnames, size=(30, 30)):
@@ -182,7 +193,7 @@ class Button2D(UI):
         Returns
         -------
         icons : dict
-            A dictionary of corresponding vtkImageDataGeometryFilters
+            A dictionary of corresponding vtkImageDataGeometryFilters.
         """
         icons = {}
         for icon_name, icon_fname in icon_fnames.items():
@@ -358,6 +369,11 @@ class Button2D(UI):
 class Rectangle2D(UI):
     """A 2D rectangle sub-classed from UI.
     Uses vtkPolygon.
+
+    Attributes
+    ----------
+    size : (float, float)
+        The size of the rectangle.
     """
 
     def __init__(self, size, center=(0, 0), color=(1, 1, 1), opacity=1.0):
@@ -459,6 +475,13 @@ class Rectangle2D(UI):
 class Panel2D(UI):
     """ A 2D UI Panel.
     Can contain one or more UI elements.
+
+    Attributes
+    ----------
+    center : (float, float)
+    size : (float, float)
+    alignment : [left, right]
+        Alignment of the panel with respect to the overall screen.
     """
 
     def __init__(self, center, size, color=(0.1, 0.1, 0.1), opacity=0.7, align="left"):
