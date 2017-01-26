@@ -24,6 +24,8 @@ python:
     - 3.3
     - 3.4
     - 3.5
+    - 3.6
+
 matrix:
   include:
     - python: 2.7
@@ -36,6 +38,9 @@ matrix:
       env:
         - DEPENDS="cython numpy scipy matplotlib h5py nibabel cvxopt scikit_learn tables"
     - python: 3.5
+      env:
+        - DEPENDS="cython numpy scipy matplotlib h5py nibabel cvxopt scikit_learn tables"
+    - python: 3.6
       env:
         - DEPENDS="cython numpy scipy matplotlib h5py nibabel cvxopt scikit_learn tables"
     # To test vtk functionality
