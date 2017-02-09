@@ -151,7 +151,7 @@ def test_ui(recording=False):
         for event, count in expected:
             npt.assert_equal(states[event], count, err_msg=msg.format(event))
 
-            # Dummy Show Manager
+        # Dummy Show Manager
         dummy_renderer = window.Renderer()
         dummy_show_manager = window.ShowManager(dummy_renderer, size=(800, 800), reset_camera=False,
                                                 interactor_style='trackball')
