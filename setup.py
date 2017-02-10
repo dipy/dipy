@@ -215,6 +215,8 @@ def main(**extra_args):
           data_files=[('share/doc/dipy/examples',
                        glob(pjoin('doc', 'examples','*.py')))],
           scripts      = [pjoin('bin', 'dipy_reconst_dti'),
+                          pjoin('bin', 'dipy_reconst_csa'),
+                          pjoin('bin', 'dipy_reconst_csd'),
                           pjoin('bin', 'dipy_median_otsu'),
                           pjoin('bin', 'dipy_nlmeans'),
                           ],
