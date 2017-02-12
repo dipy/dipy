@@ -1,3 +1,5 @@
+from _warnings import warn
+
 import numpy as np
 
 from dipy.viz.interactor import CustomInteractorStyle
@@ -16,6 +18,7 @@ else:
 
 class UI(object):
     """ An umbrella class for all UI elements.
+
     While adding UI elements to the renderer, we go over all the sub-elements
     that come with it and add those to the renderer automatically.
 
@@ -27,20 +30,24 @@ class UI(object):
         This is used when there are more than one UI elements inside
         a UI element. They're all automatically added to the renderer at the same time
         as this one.
-    parent_UI: UI
+    parent_ui: UI
         Reference to the parent UI element. This is useful of there is a parent
         UI element and its reference needs to be passed down to the child.
     on_left_mouse_button_pressed: function
+        Callback function for when the left mouse button is pressed.
     on_left_mouse_button_drag: function
+        Callback function for when the left mouse button is dragged.
     on_right_mouse_button_pressed: function
+        Callback function for when the right mouse button is pressed.
     on_right_mouse_button_drag: function
+        Callback function for when the right mouse button is dragged.
     """
 
     def __init__(self):
         self.ui_param = None
         self.ui_list = list()
 
-        self.parent_UI = None
+        self.parent_ui = None
         self._callbacks = []
 
         self.left_button_state = "released"
@@ -90,6 +97,7 @@ class UI(object):
         callback : function
             The callback function.
         priority : int
+            Higher number is higher priority.
         """
         # Actually since we need an interactor style we will add the callback
         # only when this UI component is added to the renderer.
@@ -101,6 +109,8 @@ class UI(object):
         Parameters
         ----------
         position : (float, float)
+            These are the x and y coordinates respectively, with the
+            origin at the bottom left.
         """
         msg = "Subclasses of UI must implement `set_center(self, position)`."
         raise NotImplementedError(msg)
@@ -152,7 +162,7 @@ class UI(object):
 
 
 class Button2D(UI):
-    """A 2D overlay button and is of type vtkTexturedActor2D.
+    """ A 2D overlay button and is of type vtkTexturedActor2D.
     Currently supports:
     - Multiple icons.
     - Switching between icons.
@@ -160,7 +170,7 @@ class Button2D(UI):
     Attributes
     ----------
     size: (float, float)
-        Button Size.
+        Button size (width, height) in pixels.
     """
 
     def __init__(self, icon_fnames, size=(30, 30)):
@@ -183,6 +193,7 @@ class Button2D(UI):
 
     def build_icons(self, icon_fnames):
         """ Converts file names to vtkImageDataGeometryFilters.
+
         A pre-processing step to prevent re-read of file names during every state change.
 
         Parameters
@@ -198,7 +209,8 @@ class Button2D(UI):
         icons = {}
         for icon_name, icon_fname in icon_fnames.items():
             if icon_fname.split(".")[-1] not in ["png", "PNG"]:
-                print("Warning: A specified icon file is not in the PNG format. SKIPPING.")
+                error_msg = "A specified icon file is not in the PNG format. SKIPPING."
+                warn(Warning(error_msg))
             else:
                 png = vtk.vtkPNGReader()
                 png.SetFileName(icon_fname)
@@ -209,16 +221,17 @@ class Button2D(UI):
 
     @property
     def size(self):
-        """Gets the button size."""
+        """ Gets the button size. """
         return self._size
 
     @size.setter
     def size(self, size):
-        """Sets the button size.
+        """ Sets the button size.
 
         Parameters
         ----------
         size : (float, float)
+        Button size (width, height) in pixels.
         """
         self._size = np.asarray(size)
 
@@ -231,26 +244,28 @@ class Button2D(UI):
 
     @property
     def color(self):
-        """Gets the button's color."""
+        """ Gets the button's color. """
         color = self.actor.GetProperty().GetColor()
         return np.asarray(color)
 
     @color.setter
     def color(self, color):
-        """Sets the button's color.
+        """ Sets the button's color.
 
         Parameters
         ----------
         color : (float, float, float)
+            RGB. Must take values in [0, 1].
         """
         self.actor.GetProperty().SetColor(*color)
 
     def scale(self, size):
-        """Scales the button.
+        """ Scales the button.
 
         Parameters
         ----------
         size : (float, float)
+            Scaling factor (width, height) in pixels.
         """
         self.size *= size
 
@@ -260,6 +275,7 @@ class Button2D(UI):
         Parameters
         ----------
         icon : vtkImageData
+
         Returns
         -------
         button : vtkTexturedActor2D
@@ -350,6 +366,7 @@ class Button2D(UI):
 
     def next_icon(self):
         """ Increments the state of the Button.
+
             Also changes the icon.
         """
         self.next_icon_name()
@@ -367,26 +384,28 @@ class Button2D(UI):
 
 
 class Rectangle2D(UI):
-    """A 2D rectangle sub-classed from UI.
+    """ A 2D rectangle sub-classed from UI.
     Uses vtkPolygon.
 
     Attributes
     ----------
     size : (float, float)
-        The size of the rectangle.
+        The size of the rectangle (height, width) in pixels.
     """
 
     def __init__(self, size, center=(0, 0), color=(1, 1, 1), opacity=1.0):
-        """
-        Initializes a rectangle.
+        """ Initializes a rectangle.
 
         Parameters
         ----------
         size : (float, float)
+            The size of the rectangle (height, width) in pixels.
         center : (float, float)
+            The center of the rectangle (x, y).
         color : (float, float, float)
-            Must take values between 0-1.
+            Must take values in [0, 1].
         opacity : float
+            Must take values in [0, 1].
         """
         self.size = size
         self.actor = self.build_actor(size=size, center=center, color=color, opacity=opacity)
@@ -414,10 +433,13 @@ class Rectangle2D(UI):
         Parameters
         ----------
         size : (float, float)
+            The size of the rectangle (height, width) in pixels.
         center : (float, float)
+            The center of the rectangle (x, y).
         color : (float, float, float)
-            Must be between 0-1
+            Must take values in [0, 1].
         opacity : float
+            Must take values in [0, 1].
 
         Returns
         -------
@@ -468,18 +490,22 @@ class Rectangle2D(UI):
         Parameters
         ----------
         position : (float, float)
+            The new center of the rectangle (x, y).
         """
         self.actor.SetPosition(position[0] - self.size[0] / 2, position[1] - self.size[1] / 2)
 
 
 class Panel2D(UI):
     """ A 2D UI Panel.
+
     Can contain one or more UI elements.
 
     Attributes
     ----------
     center : (float, float)
+        The center of the panel (x, y).
     size : (float, float)
+        The size of the panel (width, height) in pixels.
     alignment : [left, right]
         Alignment of the panel with respect to the overall screen.
     """
@@ -489,11 +515,15 @@ class Panel2D(UI):
         Parameters
         ----------
         center : (float, float)
+            The center of the panel (x, y).
         size : (float, float)
+            The size of the panel (width, height) in pixels.
         color : (float, float, float)
-            Values must be between 0-1
+            Must take values in [0, 1].
         opacity : float
+            Must take values in [0, 1].
         align : [left, right]
+            Alignment of the panel with respect to the overall screen.
         """
         self.center = center
         self.size = size
@@ -512,6 +542,7 @@ class Panel2D(UI):
 
     def add_to_renderer(self, ren):
         """ Allows UI objects to add their own props to the renderer.
+
         Here, we add only call add_to_renderer for the additional components.
 
         Parameters
@@ -540,6 +571,7 @@ class Panel2D(UI):
 
     def add_element(self, element, position_type, position):
         """ Adds an element to the panel.
+
         The center of the rectangular panel is its bottom lower position.
 
         Parameters
@@ -564,11 +596,13 @@ class Panel2D(UI):
 
     def set_center(self, position):
         """ Sets the panel center to position.
+
         The center of the rectangular panel is its bottom lower position.
 
         Parameters
         ----------
         position : (float, float)
+            The new center of the panel (x, y).
         """
         shift = [position[0] - self.center[0], position[1] - self.center[1]]
         self.center = position
@@ -583,26 +617,26 @@ class Panel2D(UI):
                 ui_element[0].set_center((ui_element[2], ui_element[3]))
 
     @staticmethod
-    def left_button_press(i_ren, obj, element):
+    def left_button_press(i_ren, obj, panel2d_object):
         click_position = i_ren.event.position
-        element.ui_param = (click_position[0] - element.panel.actor.GetPosition()[0] - element.panel.size[0] / 2,
-                            click_position[1] - element.panel.actor.GetPosition()[1] - element.panel.size[1] / 2)
+        panel2d_object.ui_param = (click_position[0] - panel2d_object.panel.actor.GetPosition()[0] - panel2d_object.panel.size[0] / 2,
+                                   click_position[1] - panel2d_object.panel.actor.GetPosition()[1] - panel2d_object.panel.size[1] / 2)
         i_ren.event.abort()  # Stop propagating the event.
 
     @staticmethod
-    def left_button_drag(i_ren, obj, element):
+    def left_button_drag(i_ren, obj, panel2d_object):
         click_position = i_ren.event.position
-        if element.ui_param is not None:
-            element.set_center((click_position[0] - element.ui_param[0], click_position[1] - element.ui_param[1]))
+        if panel2d_object.ui_param is not None:
+            panel2d_object.set_center((click_position[0] - panel2d_object.ui_param[0], click_position[1] - panel2d_object.ui_param[1]))
         i_ren.force_render()
 
     def re_align(self, window_size_change):
-        """ Re-organises the elements in case the
-        window size is changed
+        """ Re-organises the elements in case the window size is changed.
 
         Parameters
         ----------
         window_size_change : (int, int)
+            New window size (width, height) in pixels.
         """
         if self.alignment == "left":
             pass

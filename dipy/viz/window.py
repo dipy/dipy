@@ -234,7 +234,8 @@ def renderer(background=None):
     >>> #fvtk.show(r)
     """
 
-    deprecation_msg = "Method 'dipy.viz.window.renderer' is deprecated, instead use class 'dipy.viz.window.Renderer'."
+    deprecation_msg = ("Method 'dipy.viz.window.renderer' is deprecated, instead"
+                       " use class 'dipy.viz.window.Renderer'.")
     warn(DeprecationWarning(deprecation_msg))
 
     ren = Renderer()

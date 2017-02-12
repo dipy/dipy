@@ -46,6 +46,7 @@ def test_ui(recording=False):
 
         def add_callback(self, event_type, callback):
             """ Adds events to an actor.
+
             Parameters
             ----------
             event_type : string
@@ -63,7 +64,7 @@ def test_ui(recording=False):
     # Rectangle
     rectangle_test = ui.Rectangle2D(size=(10, 10))
     rectangle_test.get_actors()
-    another_rectangle_test = ui.Rectangle2D(size=(1,1))
+    another_rectangle_test = ui.Rectangle2D(size=(1, 1))
     # /Rectangle
 
     # Button
