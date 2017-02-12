@@ -26,7 +26,7 @@ class UI(object):
     ----------
     ui_param : object
         This is an attribute that can be passed to the UI object by the interactor.
-    ui_list : list(UI)
+    ui_list : list of :class:`UI`
         This is used when there are more than one UI elements inside
         a UI element. They're all automatically added to the renderer at the same time
         as this one.
@@ -183,7 +183,7 @@ class Button2D(UI):
             {iconname : filename, iconname : filename, ...}
         """
         self.icon_extents = dict()
-        self.icons = self.build_icons(icon_fnames)
+        self.icons = self.__build_icons(icon_fnames)
         self.icon_names = list(self.icons.keys())
         self.current_icon_id = 0
         self.current_icon_name = self.icon_names[self.current_icon_id]
@@ -191,7 +191,7 @@ class Button2D(UI):
         self.size = size
         super(Button2D, self).__init__()
 
-    def build_icons(self, icon_fnames):
+    def __build_icons(self, icon_fnames):
         """ Converts file names to vtkImageDataGeometryFilters.
 
         A pre-processing step to prevent re-read of file names during every state change.
@@ -231,7 +231,7 @@ class Button2D(UI):
         Parameters
         ----------
         size : (float, float)
-        Button size (width, height) in pixels.
+            Button size (width, height) in pixels.
         """
         self._size = np.asarray(size)
 
@@ -378,6 +378,7 @@ class Button2D(UI):
         Parameters
         ----------
         position : (float, float)
+            The new center of the button (x, y).
         """
         new_position = np.asarray(position) - self.size / 2.
         self.actor.SetPosition(*new_position)
