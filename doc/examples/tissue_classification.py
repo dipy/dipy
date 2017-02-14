@@ -1,12 +1,17 @@
 # -*- coding: utf-8 -*-
 """
 =======================================================
-Tissue Classification of a T1-weighted Strutural Image
+Tissue Classification of a T1-weighted Structural Image
 =======================================================
-This example explains how to segment a T1-weighted structural image using a MRF
-approach. Similar algorithms have been proposed by Zhang et al. [Zhang2001]_,
-and Avants et al. [Avants2011]_ available in FAST-FSL and ANTS-Artropos,
-respectively.
+
+This example explains how to segment a T1-weighted structural image by using a 
+Bayesian formulation. The observation model (likelihood term) is defined as a 
+Gaussian distribution and a Markov Random Field (MRF) is used to model the a 
+priori probability of the context-dependent patterns of the different tissue 
+types of the brain. Expectation Maximization and Iterated Conditional 
+Modes are used to find the optimal solution. Similar algorithms have been 
+proposed by Zhang et al. [Zhang2001]_ and Avants et al. [Avants2011]_ available
+in FAST-FSL and ANTS-atropos, respectively.
 
 Here we will use a T1-weighted image, that has been previously skull-stripped
 and bias field corrected.
@@ -18,7 +23,7 @@ from dipy.data import fetch_tissue_data, read_tissue_data
 from dipy.segment.tissue import TissueClassifierHMRF
 
 """
-First we fetch the T1 volume from the Syn dataset and will determine its shape.
+First we fetch the T1 volume from the Syn dataset and determine its shape.
 """
 
 fetch_tissue_data()
@@ -58,7 +63,7 @@ We will segment three classes, namely corticospinal fluid (CSF), white matter
 nclass = 3
 
 """
-Then, the smoothnes factor of the segmentation. Good performance is achieved
+Then, the smoothness factor of the segmentation. Good performance is achieved
 with values between 0 and 0.5.
 """
 
@@ -69,8 +74,8 @@ We could also set the number of iterations. By default this parameter is set to
 100 iterations, but most of the times the the ICM (Iterated Conditional Modes)
 loop will converge before reaching the 100th iteration.
 After setting the necessary parameters we can now call an instance of the class
-TissueClassifierHMRF and its method called classify and input the parameters
-defined above to perform the segmentation task.
+"TissueClassifierHMRF" and its method called "classify" and input the
+parameters defined above to perform the segmentation task.
 """
 
 import time
@@ -102,7 +107,8 @@ Now we plot the resulting segmentation.
 .. figure:: final_seg.png
    :align: center
 
-   **Each tissue class is color coded separately, red for the WM, yellow for the GM and light blue for the CSF**.
+   **Each tissue class is color coded separately, red for the WM, yellow for
+   the GM and light blue for the CSF**.
 
 And we will also have a look at the probability maps for each tissue class.
 """

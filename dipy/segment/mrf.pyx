@@ -26,7 +26,7 @@ class ConstantObservationModel(object):
     intensity at voxel $x$ is given by $I(x) = \mu_{k} + \eta_{k}$ where $k$ 
     is the tissue class of voxel $x$, and $\eta_{k}$ is a Gaussian random
     variable with zero mean and variance $\sigma_{k}^{2}$. The observation
-    model is responsible of computing the negative log-likelihood of observing
+    model is responsible for computing the negative log-likelihood of observing
     any given intensity $z$ at each voxel $x$ assuming the voxel belongs to
     each class $k$. It also provides a default parameter initialization.
     """
@@ -50,15 +50,15 @@ class ConstantObservationModel(object):
         image : array,
                 3D structural image
         nclasses : int,
-                    number of desired classes
+                number of desired classes
 
         Returns
         -------
         mu : array, 
                 1 x nclasses, mean for each class
         sigma : array, 
-                    1 x nclasses, standard deviation for each class.
-                    Set up to 1.0 for all classes.
+                1 x nclasses, standard deviation for each class.
+                Set up to 1.0 for all classes.
         """
 
         cdef:
@@ -77,19 +77,19 @@ class ConstantObservationModel(object):
         Parameters
         ----------
         input_image : ndarray,
-                        3D structural image
+                 3D structural image
         seg_image : ndarray,
-                        3D segmented image
+                 3D segmented image
         nclass : int,
-                    number of classes (3 in most cases)
+                 number of classes (3 in most cases)
 
         Returns
         -------
         mu, std: ndarrays,
-                    1 x nclasses dimension
-                    Mean and standard deviation for each class
-
+                 1 x nclasses dimension
+                 Mean and standard deviation for each class
         """
+        
         mu = np.zeros(nclass)
         std = np.zeros(nclass)
         num_vox = np.zeros(nclass)
@@ -103,10 +103,10 @@ class ConstantObservationModel(object):
             
                 if s == i:
                     mu[i] += v
-                    std[i] += v*v
+                    std[i] += v * v
                     num_vox[i] += 1
          
-        mu = mu/num_vox
+        mu = mu / num_vox
         std = np.sqrt(std/num_vox - mu**2)
 
         return mu, std
@@ -127,15 +127,14 @@ class ConstantObservationModel(object):
         mu : ndarray, 
                 mean of each class
         sigmasq : ndarray, 
-                    variance of each class
+                variance of each class
         nclasses : int
-                    number of classes
+                number of classes
         
         Returns
         -------
         nloglike : ndarray,
-                    4D negloglikelihood for each class in each volume  
-
+                4D negloglikelihood for each class in each volume  
         """
 
         nloglike = np.zeros(image.shape + (nclasses,), dtype=np.float64)
@@ -153,23 +152,23 @@ class ConstantObservationModel(object):
         Parameters
         -----------
         img : ndarray, 
-                3D structural gray-scale image
+            3D structural gray-scale image
         nclasses : int,
-                    number of tissue classes
+            number of tissue classes
         mu : ndarray, 
-                1 x nclasses, current estimate of the mean of each tissue class
+            1 x nclasses, current estimate of the mean of each tissue class
         sigmasq : ndarray,
-                    1 x nclasses, current estimate of the variance of each 
-                    tissue class
+            1 x nclasses, current estimate of the variance of each 
+            tissue class
         P_L_N : ndarray, 
-                4D probability map of the label given the neighborhood. 
-                Previously computed by function prob_neighborhood
+            4D probability map of the label given the neighborhood. 
+   
+        Previously computed by function prob_neighborhood
 
         Returns
         --------
         P_L_Y : ndarray,
-                4D probability of the label given the input image
-
+            4D probability of the label given the input image
         """
 
         P_L_Y = np.zeros_like(P_L_N)
@@ -191,7 +190,8 @@ class ConstantObservationModel(object):
     def update_param(self, image, P_L_Y, mu, nclasses):
         
         r""" Updates the means and the variances in each iteration for all the
-        labels. This is for equations 25 and 26 of the Zhang et al. paper
+        labels. This is for equations 25 and 26 of Zhang et. al.,
+        IEEE Trans. Med. Imag, Vol. 20, No. 1, Jan 2001.
 
         Parameters
         -----------
@@ -203,15 +203,14 @@ class ConstantObservationModel(object):
         mu : ndarray,
                 1 x nclasses, current estimate of the mean of each tissue class
         nclasses : int, 
-                    number of tissue classes
+                number of tissue classes
 
         Returns
         --------
         mu_upd : ndarray, 
-                    1 x nclasses, updated mean of each tissue class
+                1 x nclasses, updated mean of each tissue class
         var_upd : ndarray,
-                    1 x nclasses, updated variance of each tissue class
-        
+                1 x nclasses, updated variance of each tissue class
         """
 
         mu_upd = np.zeros(nclasses, dtype=np.float64)
@@ -244,16 +243,15 @@ class ConstantObservationModel(object):
         mu : ndarray,
                 1 x nclasses, current estimate of the mean of each tissue class
         nclasses : int, 
-                    number of tissue classes
+                number of tissue classes
 
         Returns
         --------
         
         mu_upd : ndarray,
-                    1 x nclasses, updated mean of each tissue class
+                1 x nclasses, updated mean of each tissue class
         var_upd : ndarray,
-                    1 x nclasses, updated variance of each tissue class
-
+                1 x nclasses, updated variance of each tissue class
         """
 
         mu_upd = np.zeros(nclasses, dtype=np.float64)
@@ -288,11 +286,11 @@ cdef void _initialize_param_uniform(double[:,:,:] image, double[:] mu, double[:]
     Returns
     -------
     mu : array, 
-            1 x nclasses, mean of each class
+        1 x nclasses, mean of each class
     sigma : array, 
-            1 x nclasses, standard deviation of each class
-    
+        1 x nclasses, standard deviation of each class
     """
+
     cdef:
         cnp.npy_intp nx = image.shape[0]
         cnp.npy_intp ny = image.shape[1]
@@ -332,16 +330,15 @@ cdef void _negloglikelihood(double[:, :, :] image, double[:] mu,
     mu : array, 
             mean of each class
     sigmasq : array,
-                variance of each class
+            variance of each class
     classid : int,
-                class identifier
+            class identifier
     neglogl : buffer for the neg-loglikelihood
     
     Returns
     -------
     neglogl : array, 
-                neg-loglikelihood for the class (l = classid)
-
+            neg-loglikelihood for the class (l = classid)
     """
 
     cdef:
@@ -381,15 +378,15 @@ cdef void _prob_image(double[:, :, :] image, double[:, :, :] gaussian,
     image : array, 
             3D structural gray-scale image
     gaussian : array
-                3D buffer for the gaussian distribution that is multiplied by
-                P_L_N to make P_L_Y
+            3D buffer for the gaussian distribution that is multiplied by
+            P_L_N to make P_L_Y
     mu : array,
             current estimate of the mean of each tissue class
     sigmasq : array, 
-                current estimate of the variance of each tissue 
-                class
+            current estimate of the variance of each tissue 
+            class
     classid : int,
-                tissue class identifier
+            tissue class identifier
     P_L_N : array,
             4D probability map of the label given the neighborhood. 
             Previously computed by function prob_neighborhood
@@ -400,7 +397,6 @@ cdef void _prob_image(double[:, :, :] image, double[:, :, :] gaussian,
     --------
     P_L_Y : array,
             4D probability of the label given the input image P(L|Y)
-
     """
 
     cdef:
@@ -447,8 +443,8 @@ class IteratedConditionalModes(object):
         Parameters
         ----------
         nloglike : ndarray,
-                    4D shape, nloglike[x,y,z,k] is the likelihhood of class k 
-                    for voxel (x, y, z)
+                4D shape, nloglike[x,y,z,k] is the likelihhood of class k 
+                for voxel (x, y, z)
 
         Returns
         --------
@@ -474,8 +470,8 @@ class IteratedConditionalModes(object):
         Parameters
         ----------
         nloglike : ndarray, 
-                    4D shape, nloglike[x,y,z,k] is the negative log likelihood
-                    of class k at voxel (x,y,z)
+                4D shape, nloglike[x,y,z,k] is the negative log likelihood
+                of class k at voxel (x,y,z)
         beta : float,
                 positive scalar, it is the parameter of the Potts/Ising model. 
                 Determines the smoothness of the output segmentation 
@@ -486,9 +482,9 @@ class IteratedConditionalModes(object):
         Returns
         -------
         new_seg : ndarray,
-                    3D final segmentation
+                3D final segmentation
         energy : ndarray, 
-                    3D final energy
+                3D final energy
         """
 
         energy = np.zeros(nloglike.shape[:3]).astype(np.float64)
@@ -503,24 +499,25 @@ class IteratedConditionalModes(object):
     def prob_neighborhood(self, seg, beta, nclasses):
         
         r""" Conditional probability of the label given the neighborhood
-        Equation 2.18 of the Stan Z. Li book.
+        Equation 2.18 of the Stan Z. Li book (Stan Z. Li, Markov Random Field
+        Modeling in Image Analysis, 3rd ed., Advances in Pattern Recognition
+        Series, Springer Verlag 2009.)
 
         Parameters
         -----------
         seg : ndarray, 
-                3D tissue segmentation derived from the ICM model
+            3D tissue segmentation derived from the ICM model
         beta : float, 
-                scalar that determines the importance of the neighborhood and 
-                the spatial smoothness of the segmentation. 
-                Usually between 0 to 0.5
+            scalar that determines the importance of the neighborhood and 
+            the spatial smoothness of the segmentation. 
+            Usually between 0 to 0.5
         nclasses : int, 
-                    number of tissue classes
+            number of tissue classes
 
         Returns
         --------
         PLN : ndarray, 
-                4D probability map of the label given the neighborhood of
-                the voxel
+            4D probability map of the label given the neighborhood of the voxel
         """
 
         cdef:
@@ -563,7 +560,7 @@ cdef void _initialize_maximum_likelihood(double[:,:,:,:] nloglike,
         
     Returns : 
     seg : array,
-            3D initial segmentation
+        3D initial segmentation
     """
     
     cdef:
@@ -582,7 +579,6 @@ cdef void _initialize_maximum_likelihood(double[:,:,:,:] nloglike,
                 best_class = -1
                 for k in range(nclasses):
                     if (best_class == -1) or (nloglike[x,y,z,k] < min_energy):
-#                    if (nloglike[x,y,z,k] < min_energy):
                         best_class = k
                         min_energy = nloglike[x,y,z,k]
                 seg[x,y,z] = best_class
@@ -601,8 +597,8 @@ cdef void _icm_ising(double[:,:,:,:] nloglike, double beta,
     Parameters
     ----------
     nloglike : array,
-                4D nloglike[x,y,z,k] is the negative log likelihood of class k 
-                at voxel (x,y,z)
+            4D nloglike[x,y,z,k] is the negative log likelihood of class k 
+            at voxel (x,y,z)
     beta : float,
             positive scalar, it is the parameter of the Potts/Ising model.
             Determines the smoothness of the output segmentation 
@@ -610,17 +606,16 @@ cdef void _icm_ising(double[:,:,:,:] nloglike, double beta,
             3D initial segmentation. 
             This segmentation will change by one iteration of the ICM algorithm
     energy : array,
-                3D buffer for the energy
+            3D buffer for the energy
     new_seg : array, 
-                3D buffer for the final segmentation
+            3D buffer for the final segmentation
 
     Returns
     -------
     energy : array,
-                3D map of the energy for every voxel
+            3D map of the energy for every voxel
     new_seg : array, 
-                3D new final segmentation (there is a new one after each 
-                iteration)
+            3D new final segmentation (there is a new one after each iteration)
     """
 
     cdef:
@@ -688,7 +683,7 @@ cdef void _prob_class_given_neighb(cnp.npy_short[:, :, :] seg, double beta,
             scalar that determines the importance of the neighborhood and the
             spatial smoothness of the segmentation. Usually between 0 to 0.5
     classid : int,
-                tissue class identifier
+            tissue class identifier
     P_L_N : buffer array for P(L|N)
 
     Returns
@@ -733,12 +728,3 @@ cdef void _prob_class_given_neighb(cnp.npy_short[:, :, :] seg, double beta,
                         vox_prob += beta
 
                 P_L_N[x, y, z] = vox_prob
-
-
-#if __name__ == "__main__":
-#
-#    image = nib.load('my_image.nii.gz')
-#    nclasses = 3
-#
-#    segmenter = ImageSegmenter(model)
-#    segmented = segmenter.segment_HMRF(image, nclasses)

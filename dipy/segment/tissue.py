@@ -19,8 +19,6 @@ class TissueClassifierHMRF(object):
         self.energies_sum = []
         self.verbose = verbose
 
-        pass
-
     def classify(self, image, nclasses, beta, tolerance=None, max_iter=None):
         r"""
         This method uses the Maximum a posteriori - Markov Random Field
@@ -32,27 +30,27 @@ class TissueClassifierHMRF(object):
         image : ndarray,
                 3D structural image.
         nclasses : int,
-                    number of desired classes.
+                number of desired classes.
         beta : float,
                 smoothing parameter, the higher this number the smoother the
                 output will be.
         tolerance: float,
-                    value that defines the percentage of change tolerated to
-                    prevent the ICM loop to stop. Default is 1e-05.
+                value that defines the percentage of change tolerated to
+                prevent the ICM loop to stop. Default is 1e-05.
         max_iter : float,
-                    fixed number of desired iterations. Default is 100.
-                    If the user only specifies this parameter, the tolerance
-                    value will not be considered. If none of these two
-                    parameters
+                fixed number of desired iterations. Default is 100.
+                If the user only specifies this parameter, the tolerance
+                value will not be considered. If none of these two
+                parameters
 
         Returns
         -------
         initial_segmentation : ndarray,
-                                3D segmented image with all tissue types
-                                specified in nclasses.
+                3D segmented image with all tissue types
+                specified in nclasses.
         final_segmentation : ndarray,
-                                3D final refined segmentation containing all
-                                tissue types.
+                3D final refined segmentation containing all
+                tissue types.
         PVE : ndarray,
                 3D probability map of each tissue type.
         """

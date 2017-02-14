@@ -68,22 +68,19 @@ def test_greyscale_image():
     npt.assert_array_almost_equal(sigmasq, np.array([1.0, 1.0, 1.0, 1.0]))
 
     neglogl = com.negloglikelihood(image, mu, sigmasq, nclasses)
-    npt.assert_equal((neglogl[100, 100, 1, 0] != neglogl[100, 100, 1, 1]),
-                     True)
-    npt.assert_equal((neglogl[100, 100, 1, 1] != neglogl[100, 100, 1, 2]),
-                     True)
-    npt.assert_equal((neglogl[100, 100, 1, 2] != neglogl[100, 100, 1, 3]),
-                     True)
-    npt.assert_equal((neglogl[100, 100, 1, 1] != neglogl[100, 100, 1, 3]),
-                     True)
+    npt.assert_(neglogl[100, 100, 1, 0] != neglogl[100, 100, 1, 1])
+    npt.assert_(neglogl[100, 100, 1, 1] != neglogl[100, 100, 1, 2])
+    npt.assert_(neglogl[100, 100, 1, 2] != neglogl[100, 100, 1, 3])
+    npt.assert_(neglogl[100, 100, 1, 1] != neglogl[100, 100, 1, 3])
 
     initial_segmentation = icm.initialize_maximum_likelihood(neglogl)
-    npt.assert_equal(initial_segmentation.max(), nclasses - 1)
-    npt.assert_equal(initial_segmentation.min(), 0)
+    npt.assert_(initial_segmentation.max() == nclasses - 1)
+    npt.assert_(initial_segmentation.min() == 0)
 
     PLN = icm.prob_neighborhood(initial_segmentation, beta, nclasses)
-    npt.assert_equal(PLN.all() >= 0.0, True)
-    npt.assert_equal(PLN.all() <= 1.0, True)
+    print(PLN.shape)
+    npt.assert_(PLN >= 0.0)
+    npt.assert_(PLN <= 1.0)
 
     if beta == 0.0:
         npt.assert_almost_equal(PLN[50, 50, 1, 0], 0.25, True)
@@ -104,18 +101,29 @@ def test_greyscale_image():
         npt.assert_almost_equal(PLN[100, 100, 1, 3], 0.25, True)
 
     PLY = com.prob_image(image, nclasses, mu, sigmasq, PLN)
-    npt.assert_equal(PLY.all() >= 0.0, True)
-    npt.assert_equal(PLY.all() <= 1.0, True)
+    print(PLY)
+    npt.assert_(PLY >= 0.0)
+    npt.assert_(PLY <= 1.0)
 
     mu_upd, sigmasq_upd = com.update_param(image, PLY, mu, nclasses)
-    npt.assert_equal(mu_upd != mu, True)
-    npt.assert_equal(sigmasq_upd != sigmasq, True)
+    print(mu)
+    print(mu_upd)
+    npt.assert_(mu_upd[0] != mu[0])
+    npt.assert_(mu_upd[1] != mu[1])
+    npt.assert_(mu_upd[2] != mu[2])
+    npt.assert_(mu_upd[3] != mu[3])
+    print(sigmasq)
+    print(sigmasq_upd)
+    npt.assert_(sigmasq_upd[0] != sigmasq[0])
+    npt.assert_(sigmasq_upd[1] != sigmasq[1])
+    npt.assert_(sigmasq_upd[2] != sigmasq[2])
+    npt.assert_(sigmasq_upd[3] != sigmasq[3])
 
     icm_segmentation, energy = icm.icm_ising(neglogl, beta,
                                              initial_segmentation)
-    npt.assert_equal(np.abs(np.sum(icm_segmentation)) != 0, True)
-    npt.assert_equal(icm_segmentation.max(), nclasses - 1)
-    npt.assert_equal(icm_segmentation.min(), 0)
+    npt.assert_(np.abs(np.sum(icm_segmentation)) != 0)
+    npt.assert_(icm_segmentation.max() == nclasses - 1)
+    npt.assert_(icm_segmentation.min() == 0)
 
 
 def test_greyscale_iter():
@@ -130,13 +138,19 @@ def test_greyscale_iter():
     sigmasq = sigma ** 2
     neglogl = com.negloglikelihood(image, mu, sigmasq, nclasses)
     initial_segmentation = icm.initialize_maximum_likelihood(neglogl)
-    npt.assert_equal(initial_segmentation.max(), nclasses - 1)
-    npt.assert_equal(initial_segmentation.min(), 0)
+    npt.assert_(initial_segmentation.max() == nclasses - 1)
+    npt.assert_(initial_segmentation.min() == 0)
 
     mu, sigma = com.seg_stats(image, initial_segmentation, nclasses)
     sigmasq = sigma ** 2
-    npt.assert_equal(mu.all() >= 0, True)
-    npt.assert_equal(sigmasq.all() >= 0, True)
+    npt.assert_(mu[0] >= 0.0)
+    npt.assert_(mu[1] >= 0.0)
+    npt.assert_(mu[2] >= 0.0)
+    npt.assert_(mu[3] >= 0.0)
+    npt.assert_(sigmasq[0] >= 0.0)
+    npt.assert_(sigmasq[1] >= 0.0)
+    npt.assert_(sigmasq[2] >= 0.0)
+    npt.assert_(sigmasq[3] >= 0.0)
 
     if background_noise:
         zero = np.zeros_like(image) + 0.001
@@ -153,7 +167,7 @@ def test_greyscale_iter():
 
         PLN = icm.prob_neighborhood(initial_segmentation, beta,
                                     nclasses)
-        npt.assert_equal(PLN.all() >= 0.0, True)
+        npt.assert_(PLN >= 0.0)
 
         if beta == 0.0:
 
@@ -175,26 +189,32 @@ def test_greyscale_iter():
             npt.assert_almost_equal(PLN[100, 100, 1, 3], 0.25, True)
 
         PLY = com.prob_image(image_gauss, nclasses, mu, sigmasq, PLN)
-        npt.assert_equal(PLY.all() >= 0.0, True)
-        npt.assert_equal(PLY[50, 50, 1, 0] > PLY[50, 50, 1, 1], True)
-        npt.assert_equal(PLY[50, 50, 1, 0] > PLY[50, 50, 1, 2], True)
-        npt.assert_equal(PLY[50, 50, 1, 0] > PLY[50, 50, 1, 3], True)
-        npt.assert_equal(PLY[100, 100, 1, 3] > PLY[100, 100, 1, 0], True)
-        npt.assert_equal(PLY[100, 100, 1, 3] > PLY[100, 100, 1, 1], True)
-        npt.assert_equal(PLY[100, 100, 1, 3] > PLY[100, 100, 1, 2], True)
+        npt.assert_(PLY >= 0.0)
+        npt.assert_(PLY[50, 50, 1, 0] > PLY[50, 50, 1, 1])
+        npt.assert_(PLY[50, 50, 1, 0] > PLY[50, 50, 1, 2])
+        npt.assert_(PLY[50, 50, 1, 0] > PLY[50, 50, 1, 3])
+        npt.assert_(PLY[100, 100, 1, 3] > PLY[100, 100, 1, 0])
+        npt.assert_(PLY[100, 100, 1, 3] > PLY[100, 100, 1, 1])
+        npt.assert_(PLY[100, 100, 1, 3] > PLY[100, 100, 1, 2])
 
-        mu_upd, sigmasq_upd = com.update_param(image_gauss, PLY, mu, nclasses)
-        npt.assert_equal(mu_upd.all() >= 0.0, True)
-        npt.assert_equal(sigmasq_upd.all() >= 0.0, True)
+        mu_upd, sigmasq_upd = com.update_param(image_gauss, PLY, mu, nclasses)        
+        npt.assert_(mu_upd[0] >= 0.0)
+        npt.assert_(mu_upd[1] >= 0.0)
+        npt.assert_(mu_upd[2] >= 0.0)
+        npt.assert_(mu_upd[3] >= 0.0)    
+        npt.assert_(sigmasq_upd[0] >= 0.0)
+        npt.assert_(sigmasq_upd[1] >= 0.0)
+        npt.assert_(sigmasq_upd[2] >= 0.0)
+        npt.assert_(sigmasq_upd[3] >= 0.0)
 
         negll = com.negloglikelihood(image_gauss,
                                      mu_upd, sigmasq_upd, nclasses)
-        npt.assert_equal(negll[50, 50, 1, 0] < negll[50, 50, 1, 1], True)
-        npt.assert_equal(negll[50, 50, 1, 0] < negll[50, 50, 1, 2], True)
-        npt.assert_equal(negll[50, 50, 1, 0] < negll[50, 50, 1, 3], True)
-        npt.assert_equal(negll[100, 100, 1, 3] < negll[100, 100, 1, 0], True)
-        npt.assert_equal(negll[100, 100, 1, 3] < negll[100, 100, 1, 1], True)
-        npt.assert_equal(negll[100, 100, 1, 3] < negll[100, 100, 1, 2], True)
+        npt.assert_(negll[50, 50, 1, 0] < negll[50, 50, 1, 1])
+        npt.assert_(negll[50, 50, 1, 0] < negll[50, 50, 1, 2])
+        npt.assert_(negll[50, 50, 1, 0] < negll[50, 50, 1, 3])
+        npt.assert_(negll[100, 100, 1, 3] < negll[100, 100, 1, 0])
+        npt.assert_(negll[100, 100, 1, 3] < negll[100, 100, 1, 1])
+        npt.assert_(negll[100, 100, 1, 3] < negll[100, 100, 1, 2])
 
         final_segmentation, energy = icm.icm_ising(negll, beta,
                                                    initial_segmentation)
@@ -205,11 +225,10 @@ def test_greyscale_iter():
         mu = mu_upd.copy()
         sigmasq = sigmasq_upd.copy()
 
-    npt.assert_equal(energies[-1] < energies[0], True)
-#    npt.assert_equal(energies[-1] < energies[-50], True)
+    npt.assert_(energies[-1] < energies[0])
 
     difference_map = np.abs(seg_init - final_segmentation)
-    npt.assert_equal(np.abs(np.sum(difference_map)) != 0, True)
+    npt.assert_(np.abs(np.sum(difference_map)) != 0)
 
 
 def test_square_iter():
@@ -222,8 +241,14 @@ def test_square_iter():
     mu, sigma = com.seg_stats(square_gauss, initial_segmentation,
                               nclasses)
     sigmasq = sigma ** 2
-    npt.assert_equal(mu.all() >= 0, True)
-    npt.assert_equal(sigmasq.all() >= 0, True)
+    npt.assert_(mu[0] >= 0.0)
+    npt.assert_(mu[1] >= 0.0)
+    npt.assert_(mu[2] >= 0.0)
+    npt.assert_(mu[3] >= 0.0)
+    npt.assert_(sigmasq[0] >= 0.0)
+    npt.assert_(sigmasq[1] >= 0.0)
+    npt.assert_(sigmasq[2] >= 0.0)
+    npt.assert_(sigmasq[3] >= 0.0)
 
     final_segmentation = np.empty_like(square_gauss)
     seg_init = initial_segmentation.copy()
@@ -237,48 +262,54 @@ def test_square_iter():
 
         PLN = icm.prob_neighborhood(initial_segmentation, beta,
                                     nclasses)
-        npt.assert_equal(PLN.all() >= 0.0, True)
+        npt.assert_(PLN >= 0.0)
 
         if beta == 0.0:
 
-            npt.assert_equal((PLN[25, 25, 1, 0] == 0.25), True)
-            npt.assert_equal((PLN[25, 25, 1, 1] == 0.25), True)
-            npt.assert_equal((PLN[25, 25, 1, 2] == 0.25), True)
-            npt.assert_equal((PLN[25, 25, 1, 3] == 0.25), True)
-            npt.assert_equal((PLN[50, 50, 1, 0] == 0.25), True)
-            npt.assert_equal((PLN[50, 50, 1, 1] == 0.25), True)
-            npt.assert_equal((PLN[50, 50, 1, 2] == 0.25), True)
-            npt.assert_equal((PLN[50, 50, 1, 3] == 0.25), True)
-            npt.assert_equal((PLN[90, 90, 1, 0] == 0.25), True)
-            npt.assert_equal((PLN[90, 90, 1, 1] == 0.25), True)
-            npt.assert_equal((PLN[90, 90, 1, 2] == 0.25), True)
-            npt.assert_equal((PLN[90, 90, 1, 3] == 0.25), True)
-            npt.assert_equal((PLN[125, 125, 1, 0] == 0.25), True)
-            npt.assert_equal((PLN[125, 125, 1, 1] == 0.25), True)
-            npt.assert_equal((PLN[125, 125, 1, 2] == 0.25), True)
-            npt.assert_equal((PLN[125, 125, 1, 3] == 0.25), True)
+            npt.assert_(PLN[25, 25, 1, 0] == 0.25)
+            npt.assert_(PLN[25, 25, 1, 1] == 0.25)
+            npt.assert_(PLN[25, 25, 1, 2] == 0.25)
+            npt.assert_(PLN[25, 25, 1, 3] == 0.25)
+            npt.assert_(PLN[50, 50, 1, 0] == 0.25)
+            npt.assert_(PLN[50, 50, 1, 1] == 0.25)
+            npt.assert_(PLN[50, 50, 1, 2] == 0.25)
+            npt.assert_(PLN[50, 50, 1, 3] == 0.25)
+            npt.assert_(PLN[90, 90, 1, 0] == 0.25)
+            npt.assert_(PLN[90, 90, 1, 1] == 0.25)
+            npt.assert_(PLN[90, 90, 1, 2] == 0.25)
+            npt.assert_(PLN[90, 90, 1, 3] == 0.25)
+            npt.assert_(PLN[125, 125, 1, 0] == 0.25)
+            npt.assert_(PLN[125, 125, 1, 1] == 0.25)
+            npt.assert_(PLN[125, 125, 1, 2] == 0.25)
+            npt.assert_(PLN[125, 125, 1, 3] == 0.25)
 
         PLY = com.prob_image(square_gauss, nclasses, mu, sigmasq, PLN)
-        npt.assert_equal(PLY.all() >= 0.0, True)
-        npt.assert_equal(PLY[25, 25, 1, 0] > PLY[25, 25, 1, 1], True)
-        npt.assert_equal(PLY[25, 25, 1, 0] > PLY[25, 25, 1, 2], True)
-        npt.assert_equal(PLY[25, 25, 1, 0] > PLY[25, 25, 1, 3], True)
-        npt.assert_equal(PLY[125, 125, 1, 3] > PLY[125, 125, 1, 0], True)
-        npt.assert_equal(PLY[125, 125, 1, 3] > PLY[125, 125, 1, 1], True)
-        npt.assert_equal(PLY[125, 125, 1, 3] > PLY[125, 125, 1, 2], True)
+        npt.assert_(PLY >= 0.0)
+        npt.assert_(PLY[25, 25, 1, 0] > PLY[25, 25, 1, 1])
+        npt.assert_(PLY[25, 25, 1, 0] > PLY[25, 25, 1, 2])
+        npt.assert_(PLY[25, 25, 1, 0] > PLY[25, 25, 1, 3])
+        npt.assert_(PLY[125, 125, 1, 3] > PLY[125, 125, 1, 0])
+        npt.assert_(PLY[125, 125, 1, 3] > PLY[125, 125, 1, 1])
+        npt.assert_(PLY[125, 125, 1, 3] > PLY[125, 125, 1, 2])
 
         mu_upd, sigmasq_upd = com.update_param(square_gauss, PLY, mu, nclasses)
-        npt.assert_equal(mu_upd.all() >= 0.0, True)
-        npt.assert_equal(sigmasq_upd.all() >= 0.0, True)
+        npt.assert_(mu_upd[0] >= 0.0)
+        npt.assert_(mu_upd[1] >= 0.0)
+        npt.assert_(mu_upd[2] >= 0.0)
+        npt.assert_(mu_upd[3] >= 0.0)    
+        npt.assert_(sigmasq_upd[0] >= 0.0)
+        npt.assert_(sigmasq_upd[1] >= 0.0)
+        npt.assert_(sigmasq_upd[2] >= 0.0)
+        npt.assert_(sigmasq_upd[3] >= 0.0)
 
         negll = com.negloglikelihood(square_gauss,
                                      mu_upd, sigmasq_upd, nclasses)
-        npt.assert_equal(negll[25, 25, 1, 0] < negll[25, 25, 1, 1], True)
-        npt.assert_equal(negll[25, 25, 1, 0] < negll[25, 25, 1, 2], True)
-        npt.assert_equal(negll[25, 25, 1, 0] < negll[25, 25, 1, 3], True)
-        npt.assert_equal(negll[100, 100, 1, 3] < negll[125, 125, 1, 0], True)
-        npt.assert_equal(negll[100, 100, 1, 3] < negll[125, 125, 1, 1], True)
-        npt.assert_equal(negll[100, 100, 1, 3] < negll[125, 125, 1, 2], True)
+        npt.assert_(negll[25, 25, 1, 0] < negll[25, 25, 1, 1])
+        npt.assert_(negll[25, 25, 1, 0] < negll[25, 25, 1, 2])
+        npt.assert_(negll[25, 25, 1, 0] < negll[25, 25, 1, 3])
+        npt.assert_(negll[100, 100, 1, 3] < negll[125, 125, 1, 0])
+        npt.assert_(negll[100, 100, 1, 3] < negll[125, 125, 1, 1])
+        npt.assert_(negll[100, 100, 1, 3] < negll[125, 125, 1, 2])
 
         final_segmentation, energy = icm.icm_ising(negll, beta,
                                                    initial_segmentation)
@@ -290,7 +321,7 @@ def test_square_iter():
         sigmasq = sigmasq_upd.copy()
 
     difference_map = np.abs(seg_init - final_segmentation)
-    npt.assert_equal(np.abs(np.sum(difference_map)) == 0, True)
+    npt.assert_(np.abs(np.sum(difference_map)) == 0.0)
 
 
 def test_icm_square():
@@ -303,8 +334,14 @@ def test_icm_square():
     mu, sigma = com.seg_stats(square_1, initial_segmentation,
                               nclasses)
     sigmasq = sigma ** 2
-    npt.assert_equal(mu.all() >= 0, True)
-    npt.assert_equal(sigmasq.all() >= 0, True)
+    npt.assert_(mu[0] >= 0.0)
+    npt.assert_(mu[1] >= 0.0)
+    npt.assert_(mu[2] >= 0.0)
+    npt.assert_(mu[3] >= 0.0)
+    npt.assert_(sigmasq[0] >= 0.0)
+    npt.assert_(sigmasq[1] >= 0.0)
+    npt.assert_(sigmasq[2] >= 0.0)
+    npt.assert_(sigmasq[3] >= 0.0)
 
     negll = com.negloglikelihood(square_1, mu, sigmasq, nclasses)
 
@@ -337,7 +374,7 @@ def test_icm_square():
         initial_segmentation = final_segmentation_2.copy()
 
     difference_map = np.abs(final_segmentation_1 - final_segmentation_2)
-    npt.assert_equal(np.abs(np.sum(difference_map)) != 0, True)
+    npt.assert_(np.abs(np.sum(difference_map)) != 0)
 
 
 def test_classify():
@@ -348,27 +385,27 @@ def test_classify():
     tolerance = 0.0001
     max_iter = 10
 
-    npt.assert_equal(image.max(), 1)
-    npt.assert_equal(image.min(), 0)
+    npt.assert_(image.max() == 1.0)
+    npt.assert_(image.min() == 0.0)
 
     # First we test without setting iterations and tolerance
     seg_init, seg_final, PVE = imgseg.classify(image, nclasses, beta)
 
-    npt.assert_equal(seg_final.max(), nclasses)
-    npt.assert_equal(seg_final.min(), 0)
+    npt.assert_(seg_final.max() == nclasses)
+    npt.assert_(seg_final.min() == 0.0)
 
     # Second we test it with just changing the tolerance
     seg_init, seg_final, PVE = imgseg.classify(image, nclasses, beta,
                                                tolerance)
 
-    npt.assert_equal(seg_final.max(), nclasses)
-    npt.assert_equal(seg_final.min(), 0)
+    npt.assert_(seg_final.max() == nclasses)
+    npt.assert_(seg_final.min() == 0.0)
 
     # Third we test it with just the iterations
     seg_init, seg_final, PVE = imgseg.classify(image, nclasses, beta, max_iter)
 
-    npt.assert_equal(seg_final.max(), nclasses)
-    npt.assert_equal(seg_final.min(), 0)
+    npt.assert_(seg_final.max() == nclasses)
+    npt.assert_(seg_final.min() == 0.0)
 
     # Next we test saving the history of accumulated energies from ICM
     imgseg = TissueClassifierHMRF(save_history=True)
@@ -376,10 +413,10 @@ def test_classify():
     seg_init, seg_final, PVE = imgseg.classify(200 * image, nclasses,
                                                beta, tolerance)
 
-    npt.assert_equal(seg_final.max(), nclasses)
-    npt.assert_equal(seg_final.min(), 0)
+    npt.assert_(seg_final.max() == nclasses)
+    npt.assert_(seg_final.min() == 0.0)
 
-    npt.assert_equal(imgseg.energies_sum[0] > imgseg.energies_sum[-1], True)
+    npt.assert_(imgseg.energies_sum[0] > imgseg.energies_sum[-1])
 
 if __name__ == '__main__':
 

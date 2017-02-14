@@ -41,12 +41,12 @@ def otsu(image, nbins=256):
 
 
 def upper_bound_by_rate(data, rate=0.05):
-    r""" Adjusts upper intensity boundary using rates
+    r""" Adjusts upper intensity bound using rates.
 
     It calculates the image intensity histogram, and based on the rate value it
-    decide what is the upperbound value for intensity normalization, usually
+    decides what is the upperbound value for intensity normalization, usually
     lower bound is 0. The rate is the ratio between the amount of pixels in
-    every bins and the bins with highest pixel amount
+    every bin and the bin with highest pixel amount.
 
     Parameters
     -----------
@@ -59,7 +59,7 @@ def upper_bound_by_rate(data, rate=0.05):
     Returns
     -------
     high : float
-        the upper_bound value for normalization
+        The upper bound value for normalization.
     """
 
     g, h = np.histogram(data)
@@ -71,7 +71,7 @@ def upper_bound_by_rate(data, rate=0.05):
         m[i, 1] = h[i]
         m[i, 2] = h[i + 1]
 
-    g = sorted(g,reverse = True)
+    g = sorted(g, reverse=True)
     sz = np.size(g)
 
     Index = 0
