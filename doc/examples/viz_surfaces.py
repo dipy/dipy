@@ -37,7 +37,7 @@ my_polydata = vtk.vtkPolyData()
 Create a cube with vertices and triangles as numpy arrays
 """
 
-my_vetices = np.array([[0.0,  0.0,  0.0],
+my_vertices = np.array([[0.0,  0.0,  0.0],
                        [0.0,  0.0,  1.0],
                        [0.0,  1.0,  0.0],
                        [0.0,  1.0,  1.0],
@@ -45,7 +45,7 @@ my_vetices = np.array([[0.0,  0.0,  0.0],
                        [1.0,  0.0,  1.0],
                        [1.0,  1.0,  0.0],
                        [1.0,  1.0,  1.0]])
-
+# the data type for vtk is needed to mention here, numpy.int64
 my_triangles = np.array([[0,  6,  4],
                          [0,  2,  6],
                          [0,  3,  2],
@@ -57,14 +57,14 @@ my_triangles = np.array([[0,  6,  4],
                          [0,  4,  5],
                          [0,  5,  1],
                          [1,  5,  7],
-                         [1,  7,  3]])
+                         [1,  7,  3]],dtype='i8')
 
 
 """
 Set vertices and triangles in poly data
 """
 
-ut_vtk.set_polydata_vertices(my_polydata, my_vetices)
+ut_vtk.set_polydata_vertices(my_polydata, my_vertices)
 ut_vtk.set_polydata_triangles(my_polydata, my_triangles)
 
 """
