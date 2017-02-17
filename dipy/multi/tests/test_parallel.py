@@ -1,8 +1,8 @@
 import numpy as np
 import numpy.testing as npt
 
-from dipy.multi.parallel import (ParallelFunction, activate_multiprocessing,
-                                 deactivate_multiprocessing, parallel_voxel_fit)
+from dipy.multi.parallel import (ParallelFunction, parallel_voxel_fit)
+from dipy.multi.config import activate_multiprocessing, deactivate_multiprocessing
 from dipy.reconst.base import ReconstModel, ReconstFit
 
 
