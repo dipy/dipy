@@ -376,21 +376,18 @@ class MapmriModel(ReconstModel, Cache):
             data_b0 = data[self.gtab.b0s_mask].mean()
             data_single_b0 = np.r_[
                 data_b0, data[~self.gtab.b0s_mask]] / data_b0
-            Q = np.ascontiguousarray(
-                np.dot(Mprime.T, Mprime) + lopt * laplacian_matrix)
-            p = np.ascontiguousarray(
-                -1 * np.dot(Mprime.T, data_single_b0))
+            Q = np.dot(Mprime.T, Mprime) + lopt * laplacian_matrix
+            p = -1 * np.dot(Mprime.T, data_single_b0)
             G = -1 * K
             h = 1e-10 * np.ones((K.shape[0]))
-            A = np.ascontiguousarray(M0_mean)
-            b = np.array([1.])
+            A = M0_mean
+            b = 1.
             x = cvxpy.Variable(p.size)
             objective = cvxpy.Minimize(cvxpy.quad_form(x, Q) + p * x)
-            constraints = [G * x <= b]
-            constraints.append(A * x == b)
+            constraints = [G * x <= b, A * x == b]
             try:
                 problem = cvxpy.Problem(objective, constraints)
-                problem.solve(solver=cvxpy.ECOS, verbose=True)
+                problem.solve(solver=cvxpy.ECOS, verbose=False)
                 coef = np.array(x.primal_value).squeeze()
             except ValueError:
                 errorcode = 2
