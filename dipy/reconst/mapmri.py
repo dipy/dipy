@@ -387,7 +387,7 @@ class MapmriModel(ReconstModel, Cache):
             constraints = [G * x <= b, A * x == b]
             try:
                 problem = cvxpy.Problem(objective, constraints)
-                problem.solve(solver=cvxpy.ECOS, verbose=False)
+                problem.solve(solver=cvxpy.SCS, verbose=False)
                 coef = np.array(x.primal_value).squeeze()
             except ValueError:
                 errorcode = 2
