@@ -281,7 +281,8 @@ class Button2D(UI):
         button : vtkTexturedActor2D
         """
         # This is highly inspired by
-        # https://github.com/Kitware/VTK/blob/c3ec2495b183e3327820e927af7f8f90d34c3474/Interaction/Widgets/vtkBalloonRepresentation.cxx#L47
+        # https://github.com/Kitware/VTK/blob/c3ec2495b183e3327820e927af7f8f90d34c3474\
+        # /Interaction/Widgets/vtkBalloonRepresentation.cxx#L47
 
         self.texture_polydata = vtk.vtkPolyData()
         self.texture_points = vtk.vtkPoints()
@@ -409,7 +410,8 @@ class Rectangle2D(UI):
             Must take values in [0, 1].
         """
         self.size = size
-        self.actor = self.build_actor(size=size, center=center, color=color, opacity=opacity)
+        self.actor = self.build_actor(size=size, center=center,
+                                      color=color, opacity=opacity)
         super(Rectangle2D, self).__init__()
 
     def get_actors(self):
@@ -620,15 +622,18 @@ class Panel2D(UI):
     @staticmethod
     def left_button_press(i_ren, obj, panel2d_object):
         click_position = i_ren.event.position
-        panel2d_object.ui_param = (click_position[0] - panel2d_object.panel.actor.GetPosition()[0] - panel2d_object.panel.size[0] / 2,
-                                   click_position[1] - panel2d_object.panel.actor.GetPosition()[1] - panel2d_object.panel.size[1] / 2)
+        panel2d_object.ui_param = (click_position[0] - panel2d_object.panel.actor.GetPosition()[0]
+                                   - panel2d_object.panel.size[0] / 2,
+                                   click_position[1] - panel2d_object.panel.actor.GetPosition()[1]
+                                   - panel2d_object.panel.size[1] / 2)
         i_ren.event.abort()  # Stop propagating the event.
 
     @staticmethod
     def left_button_drag(i_ren, obj, panel2d_object):
         click_position = i_ren.event.position
         if panel2d_object.ui_param is not None:
-            panel2d_object.set_center((click_position[0] - panel2d_object.ui_param[0], click_position[1] - panel2d_object.ui_param[1]))
+            panel2d_object.set_center((click_position[0] - panel2d_object.ui_param[0],
+                                       click_position[1] - panel2d_object.ui_param[1]))
         i_ren.force_render()
 
     def re_align(self, window_size_change):
@@ -642,6 +647,7 @@ class Panel2D(UI):
         if self.alignment == "left":
             pass
         elif self.alignment == "right":
-            self.set_center((self.center[0] + window_size_change[0], self.center[1] + window_size_change[1]))
+            self.set_center((self.center[0] + window_size_change[0],
+                             self.center[1] + window_size_change[1]))
         else:
             raise ValueError("You can only left-align or right-align objects in a panel.")
