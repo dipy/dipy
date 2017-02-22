@@ -2,7 +2,7 @@ import numpy as np
 import numpy.testing as npt
 
 from dipy.multi.parallel import (ParallelFunction, parallel_voxel_fit)
-from dipy.multi.config import activate_multiprocessing, deactivate_multiprocessing
+from dipy.multi.config import activate_multithreading, deactivate_multithreading
 from dipy.reconst.base import ReconstModel, ReconstFit
 
 
@@ -56,9 +56,9 @@ def test_parallelFunction():
     data[0, 0, 0] = 0.
     weights = np.random.random(5)
     a = maxcumsum(data, mask, weights, return_cumsum=True)
-    activate_multiprocessing()
+    activate_multithreading()
     b = maxcumsum(data, mask, weights, return_cumsum=True)
-
+    deactivate_multithreading()
     cumsum = (data * mask[..., None] * weights).cumsum(-1)
     max = data.max(-1)
     argmax = data.argmax(-1)
@@ -80,7 +80,7 @@ def test_error_in_function():
     data = np.random.random((3, 4, 5)) - .5
     mask = np.random.random((3, 4)) > .25
     npt.assert_raises(ValueError, brokenfunction, data, mask)
-    deactivate_multiprocessing()
+    deactivate_multithreading()
     npt.assert_raises(ValueError, brokenfunction, data, mask)
 
 

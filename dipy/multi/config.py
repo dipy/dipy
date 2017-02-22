@@ -10,7 +10,7 @@ _dipy_num_cpu = 1
 manager = None
 
 
-def activate_multiprocessing(num_cpu=None):
+def activate_multithreading(num_cpu=None):
     """
     Function to activate multiprocessing.
 
@@ -30,15 +30,15 @@ def activate_multiprocessing(num_cpu=None):
         _dipy_num_cpu = num_cpu
 
     if manager is not None:
-        # manager.shut_down()
-        raise NotImplemented()
+        manager.shut_down()
+        # raise NotImplemented()
     if _dipy_num_cpu > 1:
         manager = PoolMananger(_dipy_num_cpu)
     else:
         manager = None
 
 
-def deactivate_multiprocessing():
+def deactivate_multithreading():
     """
     Function to deactivate multiprocessing.
     """
