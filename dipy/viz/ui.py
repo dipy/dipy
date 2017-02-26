@@ -41,6 +41,7 @@ class UI(object):
         Callback function for when the right mouse button is pressed.
     on_right_mouse_button_drag: function
         Callback function for when the right mouse button is dragged.
+
     """
 
     def __init__(self):
@@ -61,7 +62,9 @@ class UI(object):
         self.on_right_mouse_button_drag = lambda i_ren, obj, element: None
 
     def get_actors(self):
-        """ Returns the actors that compose this UI component. """
+        """ Returns the actors that compose this UI component.
+
+        """
         msg = "Subclasses of UI must implement `get_actors(self)`."
         raise NotImplementedError(msg)
 
@@ -71,6 +74,7 @@ class UI(object):
         Parameters
         ----------
         ren : renderer
+
         """
         ren.add(*self.get_actors())
 
@@ -98,6 +102,7 @@ class UI(object):
             The callback function.
         priority : int
             Higher number is higher priority.
+
         """
         # Actually since we need an interactor style we will add the callback
         # only when this UI component is added to the renderer.
@@ -111,12 +116,15 @@ class UI(object):
         position : (float, float)
             These are the x and y coordinates respectively, with the
             origin at the bottom left.
+
         """
         msg = "Subclasses of UI must implement `set_center(self, position)`."
         raise NotImplementedError(msg)
 
     def set_visibility(self, visibility):
-        """ Sets visibility of this UI component and all its sub-components. """
+        """ Sets visibility of this UI component and all its sub-components.
+
+        """
         for actor in self.get_actors():
             actor.SetVisibility(visibility)
 
@@ -171,6 +179,7 @@ class Button2D(UI):
     ----------
     size: (float, float)
         Button size (width, height) in pixels.
+
     """
 
     def __init__(self, icon_fnames, size=(30, 30)):
@@ -181,6 +190,7 @@ class Button2D(UI):
             Button size.
         icon_fnames : dict
             {iconname : filename, iconname : filename, ...}
+
         """
         self.icon_extents = dict()
         self.icons = self.__build_icons(icon_fnames)
@@ -205,6 +215,7 @@ class Button2D(UI):
         -------
         icons : dict
             A dictionary of corresponding vtkImageDataGeometryFilters.
+
         """
         icons = {}
         for icon_name, icon_fname in icon_fnames.items():
@@ -221,7 +232,9 @@ class Button2D(UI):
 
     @property
     def size(self):
-        """ Gets the button size. """
+        """ Gets the button size.
+
+        """
         return self._size
 
     @size.setter
@@ -232,6 +245,7 @@ class Button2D(UI):
         ----------
         size : (float, float)
             Button size (width, height) in pixels.
+
         """
         self._size = np.asarray(size)
 
@@ -244,7 +258,9 @@ class Button2D(UI):
 
     @property
     def color(self):
-        """ Gets the button's color. """
+        """ Gets the button's color.
+
+        """
         color = self.actor.GetProperty().GetColor()
         return np.asarray(color)
 
@@ -256,6 +272,7 @@ class Button2D(UI):
         ----------
         color : (float, float, float)
             RGB. Must take values in [0, 1].
+
         """
         self.actor.GetProperty().SetColor(*color)
 
@@ -266,6 +283,7 @@ class Button2D(UI):
         ----------
         size : (float, float)
             Scaling factor (width, height) in pixels.
+
         """
         self.size *= size
 
@@ -279,6 +297,7 @@ class Button2D(UI):
         Returns
         -------
         button : vtkTexturedActor2D
+
         """
         # This is highly inspired by
         # https://github.com/Kitware/VTK/blob/c3ec2495b183e3327820e927af7f8f90d34c3474\
@@ -330,7 +349,9 @@ class Button2D(UI):
         return button
 
     def get_actors(self):
-        """ Returns the actors that compose this UI component. """
+        """ Returns the actors that compose this UI component.
+
+        """
         return [self.actor]
 
     def add_callback(self, event_type, callback):
@@ -342,6 +363,7 @@ class Button2D(UI):
             event code
         callback : function
             callback function
+
         """
         super(Button2D, self).add_callback(self.actor, event_type, callback)
 
@@ -351,6 +373,7 @@ class Button2D(UI):
         Parameters
         ----------
         icon : imageDataGeometryFilter
+
         """
         if major_version <= 5:
             self.texture.SetInput(icon)
@@ -359,6 +382,7 @@ class Button2D(UI):
 
     def next_icon_name(self):
         """ Returns the next icon name while cycling through icons.
+
         """
         self.current_icon_id += 1
         if self.current_icon_id == len(self.icons):
@@ -369,6 +393,7 @@ class Button2D(UI):
         """ Increments the state of the Button.
 
             Also changes the icon.
+
         """
         self.next_icon_name()
         self.set_icon(self.icons[self.current_icon_name])
@@ -380,6 +405,7 @@ class Button2D(UI):
         ----------
         position : (float, float)
             The new center of the button (x, y).
+
         """
         new_position = np.asarray(position) - self.size / 2.
         self.actor.SetPosition(*new_position)
@@ -393,6 +419,7 @@ class Rectangle2D(UI):
     ----------
     size : (float, float)
         The size of the rectangle (height, width) in pixels.
+
     """
 
     def __init__(self, size, center=(0, 0), color=(1, 1, 1), opacity=1.0):
@@ -408,6 +435,7 @@ class Rectangle2D(UI):
             Must take values in [0, 1].
         opacity : float
             Must take values in [0, 1].
+
         """
         self.size = size
         self.actor = self.build_actor(size=size, center=center,
@@ -415,7 +443,9 @@ class Rectangle2D(UI):
         super(Rectangle2D, self).__init__()
 
     def get_actors(self):
-        """ Returns the actors that compose this UI component. """
+        """ Returns the actors that compose this UI component.
+
+        """
         return [self.actor]
 
     def add_callback(self, event_type, callback):
@@ -427,6 +457,7 @@ class Rectangle2D(UI):
             event code
         callback : function
             callback function
+
         """
         super(Rectangle2D, self).add_callback(self.actor, event_type, callback)
 
@@ -447,6 +478,7 @@ class Rectangle2D(UI):
         Returns
         -------
         actor : vtkActor2D
+
         """
         # Setup four points
         points = vtk.vtkPoints()
@@ -494,6 +526,7 @@ class Rectangle2D(UI):
         ----------
         position : (float, float)
             The new center of the rectangle (x, y).
+
         """
         self.actor.SetPosition(position[0] - self.size[0] / 2, position[1] - self.size[1] / 2)
 
@@ -511,6 +544,7 @@ class Panel2D(UI):
         The size of the panel (width, height) in pixels.
     alignment : [left, right]
         Alignment of the panel with respect to the overall screen.
+
     """
 
     def __init__(self, center, size, color=(0.1, 0.1, 0.1), opacity=0.7, align="left"):
@@ -527,6 +561,7 @@ class Panel2D(UI):
             Must take values in [0, 1].
         align : [left, right]
             Alignment of the panel with respect to the overall screen.
+
         """
         self.center = center
         self.size = size
@@ -551,13 +586,16 @@ class Panel2D(UI):
         Parameters
         ----------
         ren : renderer
+
         """
         super(Panel2D, self).add_to_renderer(ren)
         for ui_item in self.ui_list:
             ui_item.add_to_renderer(ren)
 
     def get_actors(self):
-        """ Returns the panel actor. """
+        """ Returns the panel actor.
+
+        """
         return [self.panel.actor]
 
     def add_callback(self, event_type, callback):
@@ -569,6 +607,7 @@ class Panel2D(UI):
             event code
         callback : function
             callback function
+
         """
         super(Panel2D, self).add_callback(self.panel.actor, event_type, callback)
 
@@ -585,6 +624,7 @@ class Panel2D(UI):
             'absolute' or 'relative'
         position : (float, float)
             Absolute for absolute and relative for relative
+
         """
         self.ui_list.append(element)
         if position_type == 'relative':
@@ -606,6 +646,7 @@ class Panel2D(UI):
         ----------
         position : (float, float)
             The new center of the panel (x, y).
+
         """
         shift = [position[0] - self.center[0], position[1] - self.center[1]]
         self.center = position
@@ -643,6 +684,7 @@ class Panel2D(UI):
         ----------
         window_size_change : (int, int)
             New window size (width, height) in pixels.
+
         """
         if self.alignment == "left":
             pass
