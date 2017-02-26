@@ -268,7 +268,7 @@ class CustomInteractorStyle(vtkInteractorStyleUser):
         """ Causes the renderer to refresh. """
         self.GetInteractor().GetRenderWindow().Render()
 
-    def add_callback(self, prop, event_type, callback, priority=0):
+    def add_callback(self, prop, event_type, callback, priority=0, args=[]):
         """ Adds a callback associated to a specific event for a VTK prop.
 
         Parameters
@@ -283,7 +283,7 @@ class CustomInteractorStyle(vtkInteractorStyleUser):
         def _callback(obj, event_name):
             # Update event information.
             self.event.update(event_name, self.GetInteractor())
-            callback(self, prop)
+            callback(self, prop, *args)
 
         # Fill the placeholder with the command ID returned by VTK.
         cmd_id[0] = prop.AddObserver(event_type, _callback, priority)
