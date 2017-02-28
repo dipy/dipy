@@ -1163,3 +1163,9 @@ class TextBox2D(UI):
 
         """
         self.actor.SetPosition(position)
+
+    @staticmethod
+    def left_button_press(i_ren, obj, textbox_object):
+        i_ren.add_active_prop(textbox_object.actor)
+        textbox_object.edit_mode()
+        i_ren.force_render()
