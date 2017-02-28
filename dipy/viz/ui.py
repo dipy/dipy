@@ -693,3 +693,154 @@ class Panel2D(UI):
                              self.center[1] + window_size_change[1]))
         else:
             raise ValueError("You can only left-align or right-align objects in a panel.")
+
+
+class TextActor2D(vtk.vtkTextActor):
+    """ Inherits from the default vtkTextActor and helps setting the text.
+
+    Contains member functions for text formatting.
+
+    """
+    def message(self, text):
+        """ Set message after initialization.
+
+        Parameters
+        ----------
+        text : string
+            The message to be set.
+
+        """
+        self.SetInput(text)
+
+    def set_message(self, text):
+        """ Modify text message.
+
+        Parameters
+        ----------
+        text : string
+            The new message.
+
+        """
+        self.SetInput(text)
+
+    def get_message(self):
+        """ Gets message from the text.
+
+        Returns
+        -------
+        message : string
+            The current text message.
+
+        """
+        return self.GetInput()
+
+    def font_size(self, size):
+        """ Sets font size.
+
+        Parameters
+        ----------
+        size : int
+            Input font size.
+
+        """
+        self.GetTextProperty().SetFontSize(size)
+
+    def font_family(self, family='Arial'):
+        """ Sets font family.
+
+        Currently defaults to Ariel.
+
+        Parameters
+        ----------
+        family : string
+            The font family.
+
+        """
+        if family == 'Arial':
+            self.GetTextProperty().SetFontFamilyToArial()
+        # ToDo: Add other font families.
+
+    def justification(self, justification):
+        """ Justifies text.
+
+        Parameters
+        ----------
+        justification : string
+            Possible values are left, right, center
+
+        """
+        text_property = self.GetTextProperty()
+        if justification == 'left':
+            text_property.SetJustificationToLeft()
+        if justification == 'center':
+            text_property.SetJustificationToCentered()
+        if justification == 'right':
+            text_property.SetJustificationToRight()
+
+    def font_style(self, bold=False, italic=False, shadow=False):
+        """ Style font.
+
+        Parameters
+        ----------
+        bold : bool
+        italic : bool
+        shadow : bool
+
+        """
+        text_property = self.GetTextProperty()
+        if bold:
+            text_property.BoldOn()
+        else:
+            text_property.BoldOff()
+        if italic:
+            text_property.ItalicOn()
+        else:
+            text_property.ItalicOff()
+        if shadow:
+            text_property.ShadowOn()
+        else:
+            text_property.ShadowOff()
+
+    def color(self, color=(1, 0, 0)):
+        """ Set text color.
+
+        Parameters
+        ----------
+        color : (float, float, float)
+            Values must be between 0-1
+
+        """
+        self.GetTextProperty().SetColor(*color)
+
+    def set_position(self, position):
+        """ Set text actor position.
+
+        Parameters
+        ----------
+        position : (float, float)
+            The new position.
+
+        """
+        self.SetDisplayPosition(*position)
+
+    def get_position(self):
+        """ Gets text actor position.
+
+        Returns
+        -------
+        position : (float, float)
+            The current actor position.
+
+        """
+        return self.GetDisplayPosition()
+
+    def set_center(self, position):
+        """ Set text actor position.
+
+        Parameters
+        ----------
+        position : (float, float)
+            New actor position.
+
+        """
+        self.SetPosition(position)
