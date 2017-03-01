@@ -16,7 +16,7 @@ from dipy.testing.decorators import xvfb_it
 from dipy.utils.optpkg import optional_package
 
 # Allow import, but disable doctests if we don't have vtk
-from dipy.viz.ui import UI
+from dipy.viz.ui import UI, TextBox2D
 
 vtk, have_vtk, setup_module = optional_package('vtk')
 
@@ -111,6 +111,24 @@ def test_ui(recording=False):
     button_test.color = button_color
     # /Button
 
+    # TextBox
+    textbox_test = TextBox2D(height=3, width=10, text="Text")
+    textbox_test.set_message("Enter Text")
+    textbox_test.set_center((10, 100))
+
+    # TextActor2D Functions
+    textbox_test.actor.get_message()
+    textbox_test.actor.justification('center')
+    textbox_test.actor.justification('right')
+    textbox_test.actor.justification('left')
+    textbox_test.actor.font_family('Verdana')
+    textbox_test.actor.font_style(True, True, True)
+    textbox_test.actor.font_style(False, False, False)
+    textbox_test.actor.get_position()
+    # /TextActor2D Functions
+
+    # /TextBox
+
     # Panel
     panel = ui.Panel2D(center=(440, 90), size=(300, 150), color=(1, 1, 1), align="right")
     panel.add_element(rectangle_test, 'absolute', (580, 150))
@@ -122,6 +140,7 @@ def test_ui(recording=False):
     show_manager = window.ShowManager(size=current_size, title="DIPY UI Example")
 
     show_manager.ren.add(panel)
+    show_manager.ren.add(textbox_test)
 
     if recording:
         show_manager.record_events_to_file(recording_filename)
