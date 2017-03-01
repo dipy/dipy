@@ -12,8 +12,9 @@ vtk, have_vtk, setup_module = optional_package('vtk')
 if have_vtk:
     version = vtk.vtkVersion.GetVTKSourceVersion().split(' ')[-1]
     major_version = vtk.vtkVersion.GetVTKMajorVersion()
+    vtkTextActor = vtk.vtkTextActor
 else:
-    vtkInteractorStyleUser = object
+    vtkTextActor = object
 
 
 class UI(object):
