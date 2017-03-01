@@ -833,7 +833,7 @@ class TextActor2D(vtkTextActor):
             The current actor position.
 
         """
-        return self.GetDisplayPosition()
+        return self.GetPosition()
 
     def set_center(self, position):
         """ Set text actor position.
@@ -875,7 +875,10 @@ class TextBox2D(UI):
             Flag which says whether the textbox has just been initialized.
 
     """
-    def __init__(self, width, height, text="Enter Text"):
+    def __init__(self, width, height, text="Enter Text", position=(100, 10),
+                 color=(0, 0, 0), font_size=18, font_family='Arial',
+                 justification='left', bold=False,
+                 italic=False, shadow=False):
         """
         Parameters
         ----------
@@ -885,10 +888,22 @@ class TextBox2D(UI):
             The number of lines in the textbox.
         text : string
             Initial text while placing the element.
+        position : (float, float)
+        color : (float, float, float)
+            Values must be between 0-1.
+        font_size : int
+        font_family : string
+            Currently only supports Ariel.
+        justification : string
+            left, right or center.
+        bold : bool
+        italic : bool
+        shadow : bool
 
         """
         self.text = text
-        self.actor = self.build_actor(self.text)
+        self.actor = self.build_actor(self.text, position, color, font_size,
+                                      font_family, justification, bold, italic, shadow)
         self.width = width
         self.height = height
         self.window_left = 0
@@ -898,9 +913,8 @@ class TextBox2D(UI):
         super(TextBox2D, self).__init__()
         self.on_left_mouse_button_pressed = self.left_button_press
 
-    def build_actor(self, text, position=(100, 10), color=(0, 0, 0),
-                    font_size=18, font_family='Arial', justification='left',
-                    bold=False, italic=False, shadow=False):
+    def build_actor(self, text, position, color, font_size,
+                    font_family, justification, bold, italic, shadow):
 
         """ Builds a text actor.
 
@@ -1163,7 +1177,7 @@ class TextBox2D(UI):
         position : (float, float)
 
         """
-        self.actor.SetPosition(position)
+        self.actor.set_center(position)
 
     @staticmethod
     def left_button_press(i_ren, obj, textbox_object):
