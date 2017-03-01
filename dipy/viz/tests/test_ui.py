@@ -127,6 +127,8 @@ def test_ui(recording=False):
     textbox_test.actor.get_position()
     # /TextActor2D Functions
 
+    another_textbox_test = TextBox2D(height=3, width=10, text="Enter Text")
+
     # /TextBox
 
     # Panel
@@ -140,7 +142,7 @@ def test_ui(recording=False):
     show_manager = window.ShowManager(size=current_size, title="DIPY UI Example")
 
     show_manager.ren.add(panel)
-    show_manager.ren.add(textbox_test)
+    show_manager.ren.add(another_textbox_test)
 
     if recording:
         show_manager.record_events_to_file(recording_filename)
@@ -151,15 +153,15 @@ def test_ui(recording=False):
         expected = [('CharEvent', 0),
                     ('KeyPressEvent', 0),
                     ('KeyReleaseEvent', 0),
-                    ('MouseMoveEvent', 97),
-                    ('LeftButtonPressEvent', 8),
-                    ('RightButtonPressEvent', 2),
+                    ('MouseMoveEvent', 451),
+                    ('LeftButtonPressEvent', 21),
+                    ('RightButtonPressEvent', 4),
                     ('MiddleButtonPressEvent', 0),
-                    ('LeftButtonReleaseEvent', 8),
+                    ('LeftButtonReleaseEvent', 21),
                     ('MouseWheelForwardEvent', 0),
                     ('MouseWheelBackwardEvent', 0),
                     ('MiddleButtonReleaseEvent', 0),
-                    ('RightButtonReleaseEvent', 2)]
+                    ('RightButtonReleaseEvent', 4)]
 
         # Useful loop for debugging.
         for event, count in expected:
