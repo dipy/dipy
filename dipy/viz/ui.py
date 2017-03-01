@@ -61,6 +61,7 @@ class UI(object):
         self.on_left_mouse_button_drag = lambda i_ren, obj, element: None
         self.on_right_mouse_button_pressed = lambda i_ren, obj, element: None
         self.on_right_mouse_button_drag = lambda i_ren, obj, element: None
+        self.on_key_press = lambda i_ren, obj, element: None
 
     def get_actors(self):
         """ Returns the actors that compose this UI component.
@@ -135,6 +136,7 @@ class UI(object):
         self.add_callback("RightButtonPressEvent", self.right_button_click_callback)
         self.add_callback("RightButtonReleaseEvent", self.right_button_release_callback)
         self.add_callback("MouseMoveEvent", self.mouse_move_callback)
+        self.add_callback("KeyPressEvent", self.key_press_callback)
 
     @staticmethod
     def left_button_click_callback(i_ren, obj, self):
@@ -168,6 +170,10 @@ class UI(object):
             self.on_right_mouse_button_drag(i_ren, obj, self)
         else:
             pass
+
+    @staticmethod
+    def key_press_callback(i_ren, obj, self):
+        self.on_key_press(i_ren, obj, self)
 
 
 class Button2D(UI):
@@ -912,6 +918,7 @@ class TextBox2D(UI):
         self.init = True
         super(TextBox2D, self).__init__()
         self.on_left_mouse_button_pressed = self.left_button_press
+        self.on_key_press = self.key_press
 
     def build_actor(self, text, position, color, font_size,
                     font_family, justification, bold, italic, shadow):
@@ -1181,6 +1188,35 @@ class TextBox2D(UI):
 
     @staticmethod
     def left_button_press(i_ren, obj, textbox_object):
+        """ Left button press handler for textbox
+
+        Parameters
+        ----------
+        i_ren: :class:`CustomInteractorStyle`
+        obj: :class:`vtkActor`
+            The picked actor
+        textbox_object: :class:`TextBox2D`
+
+        """
         i_ren.add_active_prop(textbox_object.actor)
         textbox_object.edit_mode()
+        i_ren.force_render()
+
+    @staticmethod
+    def key_press(i_ren, obj, textbox_object):
+        """ Key press handler for textbox
+
+        Parameters
+        ----------
+        i_ren: :class:`CustomInteractorStyle`
+        obj: :class:`vtkActor`
+            The picked actor
+        textbox_object: :class:`TextBox2D`
+
+        """
+        key = i_ren.event.key
+        is_done = textbox_object.handle_character(key)
+        if is_done:
+            i_ren.remove_active_prop(textbox_object.actor)
+
         i_ren.force_render()

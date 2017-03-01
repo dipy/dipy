@@ -10,14 +10,14 @@ from dipy.viz import ui
 from dipy.viz import window
 from dipy.data import DATA_DIR
 
+from dipy.viz.ui import UI, TextBox2D
+
 from dipy.testing.decorators import xvfb_it
 
 # Conditional import machinery for vtk
 from dipy.utils.optpkg import optional_package
 
 # Allow import, but disable doctests if we don't have vtk
-from dipy.viz.ui import UI, TextBox2D
-
 vtk, have_vtk, setup_module = optional_package('vtk')
 
 use_xvfb = os.environ.get('TEST_WITH_XVFB', False)
@@ -117,7 +117,7 @@ def test_ui(recording=False):
     textbox_test.set_center((10, 100))
 
     # TextActor2D Functions
-    textbox_test.actor.get_message()
+    npt.assert_equal(textbox_test.actor.get_message(), "Enter Text")
     textbox_test.actor.justification('center')
     textbox_test.actor.justification('right')
     textbox_test.actor.justification('left')
@@ -151,15 +151,15 @@ def test_ui(recording=False):
         expected = [('CharEvent', 0),
                     ('KeyPressEvent', 0),
                     ('KeyReleaseEvent', 0),
-                    ('MouseMoveEvent', 161),
-                    ('LeftButtonPressEvent', 12),
-                    ('RightButtonPressEvent', 3),
+                    ('MouseMoveEvent', 97),
+                    ('LeftButtonPressEvent', 8),
+                    ('RightButtonPressEvent', 2),
                     ('MiddleButtonPressEvent', 0),
-                    ('LeftButtonReleaseEvent', 12),
+                    ('LeftButtonReleaseEvent', 8),
                     ('MouseWheelForwardEvent', 0),
                     ('MouseWheelBackwardEvent', 0),
                     ('MiddleButtonReleaseEvent', 0),
-                    ('RightButtonReleaseEvent', 3)]
+                    ('RightButtonReleaseEvent', 2)]
 
         # Useful loop for debugging.
         for event, count in expected:
