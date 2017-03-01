@@ -696,7 +696,7 @@ class Panel2D(UI):
             raise ValueError("You can only left-align or right-align objects in a panel.")
 
 
-class TextActor2D(vtk.vtkTextActor):
+class TextActor2D(vtkTextActor):
     """ Inherits from the default vtkTextActor and helps setting the text.
 
     Contains member functions for text formatting.
