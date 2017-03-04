@@ -800,17 +800,17 @@ class TextActor2D(vtkTextActor):
         """
         text_property = self.GetTextProperty()
         if bold:
-            text_property.BoldOn()
+            text_property.SetBold(True)
         else:
-            text_property.BoldOff()
+            text_property.SetBold(False)
         if italic:
-            text_property.ItalicOn()
+            text_property.SetItalic(True)
         else:
-            text_property.ItalicOff()
+            text_property.SetItalic(False)
         if shadow:
-            text_property.ShadowOn()
+            text_property.SetShadow(True)
         else:
-            text_property.ShadowOff()
+            text_property.SetShadow(False)
 
     def color(self, color=(1, 0, 0)):
         """ Set text color.
