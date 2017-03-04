@@ -10,7 +10,7 @@ from dipy.viz import ui
 from dipy.viz import window
 from dipy.data import DATA_DIR
 
-from dipy.viz.ui import UI, TextBox2D
+from dipy.viz.ui import UI
 
 from dipy.testing.decorators import xvfb_it
 
@@ -112,7 +112,7 @@ def test_ui(recording=False):
     # /Button
 
     # TextBox
-    textbox_test = TextBox2D(height=3, width=10, text="Text")
+    textbox_test = ui.TextBox2D(height=3, width=10, text="Text")
     textbox_test.set_message("Enter Text")
     textbox_test.set_center((10, 100))
 
@@ -127,7 +127,7 @@ def test_ui(recording=False):
     textbox_test.actor.get_position()
     # /TextActor2D Functions
 
-    another_textbox_test = TextBox2D(height=3, width=10, text="Enter Text")
+    another_textbox_test = ui.TextBox2D(height=3, width=10, text="Enter Text")
 
     # /TextBox
 
