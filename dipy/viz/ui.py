@@ -299,11 +299,11 @@ class Button2D(UI):
 
         Parameters
         ----------
-        icon : vtkImageData
+        icon : :class:`vtkImageData`
 
         Returns
         -------
-        button : vtkTexturedActor2D
+        :class:`vtkTexturedActor2D`
 
         """
         # This is highly inspired by
@@ -484,7 +484,7 @@ class Rectangle2D(UI):
 
         Returns
         -------
-        actor : vtkActor2D
+        :class:`vtkActor2D`
 
         """
         # Setup four points
@@ -713,7 +713,7 @@ class TextActor2D(vtkTextActor):
 
         Parameters
         ----------
-        text : string
+        text : str
             The message to be set.
 
         """
@@ -724,7 +724,7 @@ class TextActor2D(vtkTextActor):
 
         Parameters
         ----------
-        text : string
+        text : str
             The new message.
 
         """
@@ -735,7 +735,7 @@ class TextActor2D(vtkTextActor):
 
         Returns
         -------
-        message : string
+        str
             The current text message.
 
         """
@@ -747,7 +747,7 @@ class TextActor2D(vtkTextActor):
         Parameters
         ----------
         size : int
-            Input font size.
+            Text font size.
 
         """
         self.GetTextProperty().SetFontSize(size)
@@ -755,34 +755,38 @@ class TextActor2D(vtkTextActor):
     def font_family(self, family='Arial'):
         """ Sets font family.
 
-        Currently defaults to Ariel.
+        Currently defaults to Arial.
+        # ToDo: Add other font families.
 
         Parameters
         ----------
-        family : string
+        family : str
             The font family.
 
         """
         if family == 'Arial':
             self.GetTextProperty().SetFontFamilyToArial()
-        # ToDo: Add other font families.
+        else:
+            raise ValueError("Font not supported yet: {}.".format(family))
 
     def justification(self, justification):
         """ Justifies text.
 
         Parameters
         ----------
-        justification : string
-            Possible values are left, right, center
+        justification : str
+            Possible values are left, right, center.
 
         """
         text_property = self.GetTextProperty()
         if justification == 'left':
             text_property.SetJustificationToLeft()
-        if justification == 'center':
+        elif justification == 'center':
             text_property.SetJustificationToCentered()
-        if justification == 'right':
+        elif justification == 'right':
             text_property.SetJustificationToRight()
+        else:
+            raise ValueError("Text can only be justified left, right and center.")
 
     def font_style(self, bold=False, italic=False, shadow=False):
         """ Style font.
@@ -814,7 +818,7 @@ class TextActor2D(vtkTextActor):
         Parameters
         ----------
         color : (float, float, float)
-            Values must be between 0-1
+            RGB: Values must be between 0-1.
 
         """
         self.GetTextProperty().SetColor(*color)
@@ -825,7 +829,7 @@ class TextActor2D(vtkTextActor):
         Parameters
         ----------
         position : (float, float)
-            The new position.
+            The new position. (x, y) in pixels.
 
         """
         self.SetDisplayPosition(*position)
@@ -835,8 +839,8 @@ class TextActor2D(vtkTextActor):
 
         Returns
         -------
-        position : (float, float)
-            The current actor position.
+        (float, float)
+            The current actor position. (x, y) in pixels.
 
         """
         return self.GetPosition()
@@ -847,7 +851,7 @@ class TextActor2D(vtkTextActor):
         Parameters
         ----------
         position : (float, float)
-            New actor position.
+            New actor position. (x, y) in pixels.
 
         """
         self.SetPosition(position)
@@ -855,6 +859,7 @@ class TextActor2D(vtkTextActor):
 
 class TextBox2D(UI):
     """ An editable 2D text box that behaves as a UI component.
+
         Currently supports:
         - Basic text editing.
         - Cursor movements.
@@ -863,21 +868,21 @@ class TextBox2D(UI):
 
         Attributes
         ----------
-        text: string
+        text : str
             The current text state.
-        actor: actor2d
+        actor : :class:`vtkActor2d`
             The text actor.
-        width: int
+        width : int
             The number of characters in a single line of text.
         height : int
             The number of lines in the textbox.
-        window_left: int
+        window_left : int
             Left limit of visible text in the textbox.
-        window_right: int
+        window_right : int
             Right limit of visible text in the textbox.
-        caret_pos: int
+        caret_pos : int
             Position of the caret in the text.
-        init: bool
+        init : bool
             Flag which says whether the textbox has just been initialized.
 
     """
@@ -892,19 +897,24 @@ class TextBox2D(UI):
             The number of characters in a single line of text.
         height : int
             The number of lines in the textbox.
-        text : string
-            Initial text while placing the element.
+        text : str
+            The initial text while building the actor.
         position : (float, float)
+            (x, y) in pixels.
         color : (float, float, float)
-            Values must be between 0-1.
+            RGB: Values must be between 0-1.
         font_size : int
-        font_family : string
-            Currently only supports Ariel.
-        justification : string
+            Size of the text font.
+        font_family : str
+            Currently only supports Arial.
+        justification : str
             left, right or center.
         bold : bool
+            Makes text bold.
         italic : bool
+            Makes text italicised.
         shadow : bool
+            Adds text shadow.
 
         """
         self.text = text
@@ -927,23 +937,28 @@ class TextBox2D(UI):
 
         Parameters
         ----------
-        text : string
+        text : str
             The initial text while building the actor.
         position : (float, float)
+            (x, y) in pixels.
         color : (float, float, float)
-            Values must be between 0-1.
+            RGB: Values must be between 0-1.
         font_size : int
-        font_family : string
-            Currently only supports Ariel.
-        justification : string
+            Size of the text font.
+        font_family : str
+            Currently only supports Arial.
+        justification : str
             left, right or center.
         bold : bool
+            Makes text bold.
         italic : bool
+            Makes text italicised.
         shadow : bool
+            Adds text shadow.
 
         Returns
         -------
-        text_actor : actor2d
+        :class:`vtkActor2d`
 
         """
         text_actor = TextActor2D()
@@ -967,7 +982,7 @@ class TextBox2D(UI):
 
         Parameters
         ----------
-        message: string
+        message: str
             The custom message to be set.
 
         """
@@ -979,7 +994,9 @@ class TextBox2D(UI):
         self.caret_pos = self.window_right
 
     def get_actors(self):
-        """ Returns the actors that compose this UI component. """
+        """ Returns the actors that compose this UI component.
+
+        """
         return [self.actor]
 
     def add_callback(self, event_type, callback):
@@ -987,9 +1004,9 @@ class TextBox2D(UI):
 
         Parameters
         ----------
-        event_type : string
+        event_type : str
             event code
-        callback : string
+        callback : function
             callback function
 
         """
@@ -997,16 +1014,18 @@ class TextBox2D(UI):
 
     def width_set_text(self, text):
         """ Adds newlines to text where necessary.
+
         This is needed for multi-line text boxes.
 
         Parameters
         ----------
-        text : string
+        text : str
             The final text to be formatted.
 
         Returns
         -------
-        multi_line_text : string
+        str
+            A multi line formatted text.
 
         """
         multi_line_text = ""
@@ -1018,11 +1037,12 @@ class TextBox2D(UI):
 
     def handle_character(self, character):
         """ Main driving function that handles button events.
+
         # TODO: Need to handle all kinds of characters like !, +, etc.
 
         Parameters
         ----------
-        character : string
+        character : str
 
         """
         if character.lower() == "return":
@@ -1043,41 +1063,37 @@ class TextBox2D(UI):
         """ Moves the caret towards right.
 
         """
-        self.caret_pos += 1
-        if self.caret_pos > len(self.text):
-            self.caret_pos = len(self.text)
+        self.caret_pos = min(self.caret_pos + 1, len(self.text))
 
     def move_caret_left(self):
         """ Moves the caret towards left.
 
         """
-        self.caret_pos -= 1
-        if self.caret_pos < 0:
-            self.caret_pos = 0
+        self.caret_pos = max(self.caret_pos - 1, 0)
 
     def right_move_right(self):
-        """ Moves right window right.
+        """ Moves right boundary of the text window right-wards.
 
         """
         if self.window_right <= len(self.text):
             self.window_right += 1
 
     def right_move_left(self):
-        """ Moves right window left.
+        """ Moves right boundary of the text window left-wards.
 
         """
         if self.window_right > 0:
             self.window_right -= 1
 
     def left_move_right(self):
-        """ Moves left window right.
+        """ Moves left boundary of the text window right-wards.
 
         """
         if self.window_left <= len(self.text):
             self.window_left += 1
 
     def left_move_left(self):
-        """ Moves left window left.
+        """ Moves left boundary of the text window left-wards.
 
         """
         if self.window_left > 0:
@@ -1088,7 +1104,7 @@ class TextBox2D(UI):
 
         Parameters
         ----------
-        character : string
+        character : str
 
         """
         if len(character) > 1 and character.lower() != "space":
@@ -1153,7 +1169,7 @@ class TextBox2D(UI):
         return ret_text
 
     def render_text(self, show_caret=True):
-        """ Finally renders text.
+        """ Renders text after processing.
 
         Parameters
         ----------
