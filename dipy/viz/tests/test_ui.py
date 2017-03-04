@@ -116,18 +116,6 @@ def test_ui(recording=False):
     textbox_test.set_message("Enter Text")
     textbox_test.set_center((10, 100))
 
-    # TextActor2D Functions
-    npt.assert_equal(textbox_test.actor.get_message(), "Enter Text")
-    textbox_test.actor.justification('center')
-    textbox_test.actor.justification('right')
-    textbox_test.actor.justification('left')
-    npt.assert_raises(ValueError, textbox_test.actor.justification, 'bottom')
-    npt.assert_raises(ValueError, textbox_test.actor.font_family, 'Verdana')
-    textbox_test.actor.font_style(True, True, True)
-    textbox_test.actor.font_style(False, False, False)
-    textbox_test.actor.get_position()
-    # /TextActor2D Functions
-
     another_textbox_test = ui.TextBox2D(height=3, width=10, text="Enter Text")
 
     # /TextBox
@@ -181,3 +169,37 @@ def test_ui(recording=False):
         npt.assert_raises(TypeError, button_test.add_to_renderer, dummy_renderer)
         # /Dummy Show Manager
 
+
+@npt.dec.skipif(not have_vtk or skip_it)
+@xvfb_it
+def test_text_actor_2d():
+    # TextActor2D
+    text_actor = ui.TextActor2D()
+    text_actor.message = "Hello World!"
+    npt.assert_equal("Hello World!", text_actor.message)
+    text_actor.font_size = 18
+    npt.assert_equal("18", str(text_actor.font_size))
+    text_actor.font_family = "Arial"
+    npt.assert_equal("Arial", text_actor.font_family)
+    with npt.assert_raises(ValueError):
+        text_actor.font_family = "Verdana"
+    text_actor.justification = "left"
+    text_actor.justification = "right"
+    text_actor.justification = "center"
+    npt.assert_equal("Centered", text_actor.justification)
+    with npt.assert_raises(ValueError):
+        text_actor.justification = "bottom"
+    text_actor.bold = True
+    text_actor.bold = False
+    npt.assert_equal(False, text_actor.bold)
+    text_actor.italics = True
+    text_actor.italics = False
+    npt.assert_equal(False, text_actor.italics)
+    text_actor.shadow = True
+    text_actor.shadow = False
+    npt.assert_equal(False, text_actor.shadow)
+    text_actor.color = (1, 0, 0)
+    npt.assert_equal((1, 0, 0), text_actor.color)
+    text_actor.position = (2, 3)
+    npt.assert_equal((2, 3), text_actor.position)
+    # /TextActor2D

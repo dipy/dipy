@@ -702,35 +702,32 @@ class Panel2D(UI):
             raise ValueError("You can only left-align or right-align objects in a panel.")
 
 
-class TextActor2D(vtkTextActor):
-    """ Inherits from the default vtkTextActor and helps setting the text.
+class TextActor2D(object):
+    """ Wraps over the default vtkTextActor and helps setting the text.
 
     Contains member functions for text formatting.
 
+    Attributes
+    ----------
+    actor : :class:`vtkTextActor`
+
     """
-    def message(self, text):
-        """ Set message after initialization.
 
-        Parameters
-        ----------
-        text : str
-            The message to be set.
+    def __init__(self):
+        self.actor = vtkTextActor()
 
+    def get_actor(self):
+        """ Returns the actor composing this element.
+
+        Returns
+        -------
+        :class:`vtkTextActor`
+            The actor composing this class.
         """
-        self.SetInput(text)
+        return self.actor
 
-    def set_message(self, text):
-        """ Modify text message.
-
-        Parameters
-        ----------
-        text : str
-            The new message.
-
-        """
-        self.SetInput(text)
-
-    def get_message(self):
+    @property
+    def message(self):
         """ Gets message from the text.
 
         Returns
@@ -739,8 +736,33 @@ class TextActor2D(vtkTextActor):
             The current text message.
 
         """
-        return self.GetInput()
+        return self.actor.GetInput()
 
+    @message.setter
+    def message(self, text):
+        """ Sets the text message.
+
+        Parameters
+        ----------
+        text : str
+            The message to be set.
+
+        """
+        self.actor.SetInput(text)
+
+    @property
+    def font_size(self):
+        """ Gets text font size.
+
+        Returns
+        ----------
+        int
+            Text font size.
+
+        """
+        return self.actor.GetTextProperty().GetFontSize()
+
+    @font_size.setter
     def font_size(self, size):
         """ Sets font size.
 
@@ -750,8 +772,21 @@ class TextActor2D(vtkTextActor):
             Text font size.
 
         """
-        self.GetTextProperty().SetFontSize(size)
+        self.actor.GetTextProperty().SetFontSize(size)
 
+    @property
+    def font_family(self):
+        """ Gets font family.
+
+        Returns
+        ----------
+        str
+            Text font family.
+
+        """
+        return self.actor.GetTextProperty().GetFontFamilyAsString()
+
+    @font_family.setter
     def font_family(self, family='Arial'):
         """ Sets font family.
 
@@ -765,10 +800,23 @@ class TextActor2D(vtkTextActor):
 
         """
         if family == 'Arial':
-            self.GetTextProperty().SetFontFamilyToArial()
+            self.actor.GetTextProperty().SetFontFamilyToArial()
         else:
             raise ValueError("Font not supported yet: {}.".format(family))
 
+    @property
+    def justification(self):
+        """ Gets text justification.
+
+        Returns
+        -------
+        str
+            Text justification.
+
+        """
+        return self.actor.GetTextProperty().GetJustificationAsString()
+
+    @justification.setter
     def justification(self, justification):
         """ Justifies text.
 
@@ -778,7 +826,7 @@ class TextActor2D(vtkTextActor):
             Possible values are left, right, center.
 
         """
-        text_property = self.GetTextProperty()
+        text_property = self.actor.GetTextProperty()
         if justification == 'left':
             text_property.SetJustificationToLeft()
         elif justification == 'center':
@@ -788,30 +836,91 @@ class TextActor2D(vtkTextActor):
         else:
             raise ValueError("Text can only be justified left, right and center.")
 
-    def font_style(self, bold=False, italic=False, shadow=False):
-        """ Style font.
+    @property
+    def bold(self):
+        """ Returns whether the text is bold.
+
+        Returns
+        -------
+        bool
+            Text is bold if True.
+
+        """
+        return self.actor.GetTextProperty().GetBold()
+
+    @bold.setter
+    def bold(self, flag):
+        """ Bolds/un-bolds text.
 
         Parameters
         ----------
-        bold : bool
-        italic : bool
-        shadow : bool
+        flag : bool
+            Sets text bold if True.
 
         """
-        text_property = self.GetTextProperty()
-        if bold:
-            text_property.SetBold(True)
-        else:
-            text_property.SetBold(False)
-        if italic:
-            text_property.SetItalic(True)
-        else:
-            text_property.SetItalic(False)
-        if shadow:
-            text_property.SetShadow(True)
-        else:
-            text_property.SetShadow(False)
+        self.actor.GetTextProperty().SetBold(flag)
 
+    @property
+    def italics(self):
+        """ Returns whether the text is italicised.
+
+        Returns
+        -------
+        bool
+            Text is italicised if True.
+
+        """
+        return self.actor.GetTextProperty().GetItalic()
+
+    @italics.setter
+    def italics(self, flag):
+        """ Italicises/un-italicises text.
+
+        Parameters
+        ----------
+        flag : bool
+            Italicises text if True.
+
+        """
+        self.actor.GetTextProperty().SetItalic(flag)
+
+    @property
+    def shadow(self):
+        """ Returns whether the text has shadow.
+
+        Returns
+        -------
+        bool
+            Text is shadowed if True.
+
+        """
+        return self.actor.GetTextProperty().GetShadow()
+
+    @shadow.setter
+    def shadow(self, flag):
+        """ Adds/removes text shadow.
+
+        Parameters
+        ----------
+        flag : bool
+            Shadows text if True.
+
+        """
+        self.actor.GetTextProperty().SetShadow(flag)
+
+    @property
+    def color(self):
+        """ Gets text color.
+
+        Returns
+        -------
+        (float, float, float)
+            Returns text color in RGB.
+
+        """
+        return self.actor.GetTextProperty().GetColor()
+
+    @color.setter
     def color(self, color=(1, 0, 0)):
         """ Set text color.
 
@@ -821,20 +930,10 @@ class TextActor2D(vtkTextActor):
             RGB: Values must be between 0-1.
 
         """
-        self.GetTextProperty().SetColor(*color)
+        self.actor.GetTextProperty().SetColor(*color)
 
-    def set_position(self, position):
-        """ Set text actor position.
-
-        Parameters
-        ----------
-        position : (float, float)
-            The new position. (x, y) in pixels.
-
-        """
-        self.SetDisplayPosition(*position)
-
-    def get_position(self):
+    @property
+    def position(self):
         """ Gets text actor position.
 
         Returns
@@ -843,18 +942,19 @@ class TextActor2D(vtkTextActor):
             The current actor position. (x, y) in pixels.
 
         """
-        return self.GetPosition()
+        return self.actor.GetPosition()
 
-    def set_center(self, position):
+    @position.setter
+    def position(self, position):
         """ Set text actor position.
 
         Parameters
         ----------
         position : (float, float)
-            New actor position. (x, y) in pixels.
+            The new position. (x, y) in pixels.
 
         """
-        self.SetPosition(position)
+        self.actor.SetDisplayPosition(*position)
 
 
 class TextBox2D(UI):
@@ -962,18 +1062,20 @@ class TextBox2D(UI):
 
         """
         text_actor = TextActor2D()
-        text_actor.set_position(position)
-        text_actor.message(text)
-        text_actor.font_size(font_size)
-        text_actor.font_family(font_family)
-        text_actor.justification(justification)
-        text_actor.font_style(bold, italic, shadow)
+        text_actor.position = position
+        text_actor.message = text
+        text_actor.font_size = font_size
+        text_actor.font_family = font_family
+        text_actor.justification = justification
+        text_actor.bold = bold
+        text_actor.italics = italic
+        text_actor.shadow = shadow
         if vtk.vtkVersion.GetVTKSourceVersion().split(' ')[-1] <= "6.2.0":
             pass
         else:
-            text_actor.GetTextProperty().SetBackgroundColor(1, 1, 1)
-            text_actor.GetTextProperty().SetBackgroundOpacity(1.0)
-            text_actor.color(color)
+            text_actor.actor.GetTextProperty().SetBackgroundColor(1, 1, 1)
+            text_actor.actor.GetTextProperty().SetBackgroundOpacity(1.0)
+            text_actor.color = color
 
         return text_actor
 
@@ -987,7 +1089,7 @@ class TextBox2D(UI):
 
         """
         self.text = message
-        self.actor.set_message(message)
+        self.actor.message = message
         self.init = False
         self.window_right = len(self.text)
         self.window_left = 0
@@ -997,7 +1099,7 @@ class TextBox2D(UI):
         """ Returns the actors that compose this UI component.
 
         """
-        return [self.actor]
+        return [self.actor.get_actor()]
 
     def add_callback(self, event_type, callback):
         """ Adds events to the text actor.
@@ -1010,7 +1112,7 @@ class TextBox2D(UI):
             callback function
 
         """
-        super(TextBox2D, self).add_callback(self.actor, event_type, callback)
+        super(TextBox2D, self).add_callback(self.actor.get_actor(), event_type, callback)
 
     def width_set_text(self, text):
         """ Adds newlines to text where necessary.
@@ -1180,7 +1282,7 @@ class TextBox2D(UI):
         text = self.showable_text(show_caret)
         if text == "":
             text = "Enter Text"
-        self.actor.set_message(self.width_set_text(text))
+        self.actor.message = self.width_set_text(text)
 
     def edit_mode(self):
         """ Turns on edit mode.
@@ -1200,7 +1302,7 @@ class TextBox2D(UI):
         position : (float, float)
 
         """
-        self.actor.set_center(position)
+        self.actor.position = position
 
     @staticmethod
     def left_button_press(i_ren, obj, textbox_object):
@@ -1214,7 +1316,7 @@ class TextBox2D(UI):
         textbox_object: :class:`TextBox2D`
 
         """
-        i_ren.add_active_prop(textbox_object.actor)
+        i_ren.add_active_prop(textbox_object.actor.get_actor())
         textbox_object.edit_mode()
         i_ren.force_render()
 
@@ -1233,6 +1335,6 @@ class TextBox2D(UI):
         key = i_ren.event.key
         is_done = textbox_object.handle_character(key)
         if is_done:
-            i_ren.remove_active_prop(textbox_object.actor)
+            i_ren.remove_active_prop(textbox_object.actor.get_actor())
 
         i_ren.force_render()
