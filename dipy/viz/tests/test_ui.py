@@ -192,9 +192,9 @@ def test_text_actor_2d():
     text_actor.bold = True
     text_actor.bold = False
     npt.assert_equal(False, text_actor.bold)
-    text_actor.italics = True
-    text_actor.italics = False
-    npt.assert_equal(False, text_actor.italics)
+    text_actor.italic = True
+    text_actor.italic = False
+    npt.assert_equal(False, text_actor.italic)
     text_actor.shadow = True
     text_actor.shadow = False
     npt.assert_equal(False, text_actor.shadow)
