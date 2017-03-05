@@ -861,7 +861,7 @@ class TextActor2D(object):
         self.actor.GetTextProperty().SetBold(flag)
 
     @property
-    def italics(self):
+    def italic(self):
         """ Returns whether the text is italicised.
 
         Returns
@@ -872,8 +872,8 @@ class TextActor2D(object):
         """
         return self.actor.GetTextProperty().GetItalic()
 
-    @italics.setter
-    def italics(self, flag):
+    @italic.setter
+    def italic(self, flag):
         """ Italicises/un-italicises text.
 
         Parameters
@@ -1068,7 +1068,7 @@ class TextBox2D(UI):
         text_actor.font_family = font_family
         text_actor.justification = justification
         text_actor.bold = bold
-        text_actor.italics = italic
+        text_actor.italic = italic
         text_actor.shadow = shadow
         if vtk.vtkVersion.GetVTKSourceVersion().split(' ')[-1] <= "6.2.0":
             pass
