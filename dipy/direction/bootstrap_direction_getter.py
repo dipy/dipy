@@ -43,13 +43,15 @@ class BootOdfGen(object):
 
     def get_pmf(self, point):
         """Produces an ODF from a SH bootstrap sample"""
-        where_dwi = self.where_dwi
-        bootdata = trilinear_interpolate4d(self.data, point)
-        dwidata = bootdata[where_dwi]
-        dwidata = shm.bootstrap_data_voxel(dwidata, self.H, self.R)
-        bootdata[where_dwi] = dwidata
-        fit = self.model.fit(bootdata)
-        return fit.odf(self.sphere)
+        single_vox_data = trilinear_interpolate4d(self.data, point)
+
+        non_b0_data = self.where_dwi
+        dwidata = single_vox_data[non_b0_data]
+        bootdata = shm.bootstrap_data_voxel(dwidata, self.H, self.R)
+        single_vox_data[non_b0_data] = bootdata
+        fit = self.model.fit(single_vox_data)
+        pmf = fit.odf(self.sphere)
+        return pmf
 
     def pmf_no_boot(self, point):
         data = trilinear_interpolate4d(self.data, point)
@@ -59,11 +61,15 @@ class BootOdfGen(object):
 
 class BootDirectionGetter(BaseDirectionGetter):
 
-    max_attempts = 3
+    def __init__(self, pmfgen, maxangle, sphere=default_sphere,
+                 max_attempts=5, **kwargs):
+        self.max_attempts = max_attempts
+        super(BootDirectionGetter, self).__init__(pmfgen, maxangle, sphere,
+                                                  **kwargs)
 
     @classmethod
-    def from_data(cls, data, model, max_angle, sphere=default_sphere, sh_order=None,
-                  max_attempts=None, **kwargs):
+    def from_data(cls, data, model, max_angle, sphere=default_sphere,
+                  sh_order=None, max_attempts=5, **kwargs):
         """Create a BootDirectionGetter using HARDI data and an ODF type model
         
         Parameters
@@ -91,9 +97,7 @@ class BootDirectionGetter(BaseDirectionGetter):
             Angular threshold for excluding ODF peaks.
         
         """
-        boot_gen = BootOdfGen(data, model, sphere, sh_order=None)
-        if max_attempts is not None:
-            max_attempts = max_attempts
+        boot_gen = BootOdfGen(data, model, sphere, sh_order=sh_order)
         return cls(boot_gen, max_angle, sphere, **kwargs)
 
     def initial_direction(self, point):
@@ -116,11 +120,11 @@ class BootDirectionGetter(BaseDirectionGetter):
 
     def get_direction(self, point, direction):
         """Attempt direction getting on a few bootstrap samples.
+        """
         count = 0
-        r = 1
-        while r and count < self.max_attempts:
+        no_valid_direction = True
+        super_get_direction = super(BootDirectionGetter, self).get_direction
+        while no_valid_direction and count < self.max_attempts:
             count += 1
-            super_get_direction = super(BootDirectionGetter, self)
-            r = super_get_direction(point, direction)
-        return r
-
+            no_valid_direction = super_get_direction(point, direction)
+        return no_valid_direction
