@@ -69,7 +69,6 @@ class SHCoeffPmfGen(PmfGen):
     def get_pmf(self, point):
         coeff = trilinear_interpolate4d(self.shcoeff, point)
         pmf = np.dot(self._B, coeff)
-        pmf.clip(0, out=pmf)
         return pmf
 
 
@@ -80,6 +79,8 @@ class BaseDirectionGetter(DirectionGetter):
         self.sphere = sphere
         self._pf_kwargs = kwargs
         self.pmf_gen = pmf_gen
+        if pmf_threshold < 0:
+            raise ValueError("pmf threshould must be >= 0.")
         self.pmf_threshold = pmf_threshold
         self.cos_similarity = np.cos(np.deg2rad(max_angle))
 
@@ -107,6 +108,7 @@ class BaseDirectionGetter(DirectionGetter):
 
         """
         pmf = self.pmf_gen.get_pmf(point)
+        pmf.clip(min=self.pmf_threshold, out=pmf)
         return self._peak_directions(pmf)
 
     def get_direction(self, point, direction):
