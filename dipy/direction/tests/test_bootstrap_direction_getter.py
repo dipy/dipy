@@ -1,29 +1,24 @@
 import numpy as np
 import numpy.testing as npt
-import dipy
-from dipy.sims.voxel import (multi_tensor,
-                             multi_tensor_odf,
-                             single_tensor_odf,
-                             all_tensor_evecs)
-from dipy.core.sphere import disperse_charges, Sphere, HemiSphere
-import dipy.reconst.dti as dti
-import dipy.reconst.csdeconv as csd
-from dipy.core.gradients import gradient_table
-from dipy.sims.phantom import single_tensor
-from dipy.direction import peaks_from_model
-from dipy.direction import DeterministicMaximumDirectionGetter
-from dipy.tracking.local import LocalTracking, ThresholdTissueClassifier
-from dipy.data import default_sphere
-from dipy.tracking import utils
-from dipy.reconst.csdeconv import ConstrainedSphericalDeconvModel
-from dipy.core.sphere import unit_icosahedron
-import dipy.direction.bootstrap_direction_getter as bdg
-from dipy.reconst import shm
+
 from dipy.core.geometry import cart2sphere
+from dipy.core.gradients import gradient_table
+from dipy.core.sphere import HemiSphere, unit_icosahedron
+
+from dipy.reconst import shm
+from dipy.reconst import dti
+import dipy.reconst.csdeconv as csd
+
+from dipy.sims.voxel import single_tensor, multi_tensor
+
+from dipy.tracking import utils
+from dipy.tracking.local import LocalTracking, ThresholdTissueClassifier
+from dipy.direction import DeterministicMaximumDirectionGetter
+
+import dipy.direction.bootstrap_direction_getter as bdg
+
 
 # Set up the toy example
-
-
 def uniform_toy_data():
     toydict = {}
 
@@ -63,6 +58,7 @@ def uniform_toy_data():
     toydict['toy_tissue_classifier'] = toy_tissue_classifier
 
     return toydict
+
 
 def test_bdg_initial_direction():
     # test that we get one direction when we have a single tensor
@@ -105,6 +101,7 @@ def test_bdg_initial_direction():
     print(initial_direction)
     npt.assert_equal(len(initial_direction), 2)
     npt.assert_allclose(initial_direction, primary_evecs, atol=0.1)
+
 
 def test_bdg_get_direction():
     ''' test if direction getter goes 5 tries if '''
@@ -159,6 +156,7 @@ def test_bdg_get_direction():
     npt.assert_equal(no_valid_direction, 0)
     npt.assert_equal(direction1, myprev_direction)
     npt.assert_equal(myfakepmf.count, 1)
+
 
 def test_bdg_bog_pmfnoboot():
     # does it return the right size of the sphere we give it?
@@ -218,7 +216,7 @@ def test_bdg_bog_pmfboot():
     toy_voxel = np.concatenate((np.zeros(1), sphere_func))
     toy_data = np.tile(toy_voxel, (3, 3, 3, 1))
 
-    csd_model = ConstrainedSphericalDeconvModel(gtab,
+    csd_model = csd.ConstrainedSphericalDeconvModel(gtab,
                                                 None, sh_order=6)
 
     mybog = bdg.BootOdfGen(toy_data, model=csd_model, sphere=hsph_updated,
@@ -242,7 +240,7 @@ def test_bdg_bog_pmfboot():
     bvals[-1] = 2000
     gtab = gradient_table(bvals, bvecs)
 
-    csd_model = ConstrainedSphericalDeconvModel(gtab,
+    csd_model = csd.ConstrainedSphericalDeconvModel(gtab,
                                                 None, sh_order=6)
     npt.assert_raises(ValueError, bdg.BootOdfGen, toy_data, csd_model, hsph_updated,6)
 
@@ -250,7 +248,7 @@ def test_bdg_bog_pmfboot():
 def test_num_sls():
 
     toydict = uniform_toy_data()
-    csd_model = ConstrainedSphericalDeconvModel(toydict['gtab'],
+    csd_model = csd.ConstrainedSphericalDeconvModel(toydict['gtab'],
                                                 None, sh_order=6)
     csd_fit = csd_model.fit(toydict['toy_data'])
 
@@ -260,7 +258,7 @@ def test_num_sls():
 
     classifier = ThresholdTissueClassifier(toydict['toy_tissue_classifier'], .1)
     detmax_dg = DeterministicMaximumDirectionGetter.from_shcoeff(
-        csd_fit.shm_coeff,max_angle=30.,sphere=default_sphere)
+        csd_fit.shm_coeff,max_angle=30.)
 
     expected_sl_length = 11
     for roi, num_sl in sltest_list:
@@ -271,6 +269,3 @@ def test_num_sls():
         npt.assert_equal(len(streamlines), num_sl)
         for sl in streamlines:
             npt.assert_equal(len(sl), expected_sl_length)
-
-if __name__ == '__main__':
-    npt.run_module_suite()
