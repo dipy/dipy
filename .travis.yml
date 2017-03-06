@@ -20,8 +20,9 @@ env:
         - DEPENDS="cython numpy scipy matplotlib h5py nibabel cvxopt"
         - VENV_ARGS="--python=python"
         - INSTALL_TYPE="setup"
+        - EXTRA_WHEELS="https://5cf40426d9f06eb7461d-6fe47d9331aba7cd62fc36c7196769e4.ssl.cf2.rackcdn.com"
+        - EXTRA_PIP_FLAGS="--timeout=60 --find-links=$EXTRA_WHEELS"
 python:
-    - 3.3
     - 3.4
     - 3.5
 matrix:
@@ -64,14 +65,14 @@ matrix:
         - INSTALL_TYPE=requirements
         - DEPENDS=""
 before_install:
-    - source tools/travis_tools.sh
+    - PIPI="pip install $EXTRA_PIP_FLAGS"
     - virtualenv $VENV_ARGS venv
     - source venv/bin/activate
     - python --version # just to check
     # Needed for Python 3.5 wheel fetching
-    - pip install -U pip
-    - retry pip install nose;
-    - if [ -n "$DEPENDS" ]; then wheelhouse_pip_install $DEPENDS; fi
+    - $PIPI --upgrade pip setuptools
+    - $PIPI nose;
+    - if [ -n "$DEPENDS" ]; then $PIPI $DEPENDS; fi
     - if [ "${COVERAGE}" == "1" ]; then pip install coverage coveralls codecov; fi
     - if [ "${VTK}" == "1" ]; then
           sudo apt-get update;
@@ -79,24 +80,24 @@ before_install:
           sudo apt-get install -y xvfb;
           sudo apt-get install -y python-tk;
           sudo apt-get install -y python-imaging;
-          retry pip install xvfbwrapper;
+          $PIPI xvfbwrapper;
       fi
 install:
     - |
       if [ "$INSTALL_TYPE" == "setup" ]; then
           python setup.py install
       elif [ "$INSTALL_TYPE" == "pip" ]; then
-          wheelhouse_pip_install .
+          $PIPI .
       elif [ "$INSTALL_TYPE" == "sdist" ]; then
         python setup_egg.py egg_info  # check egg_info while we're here
         python setup_egg.py sdist
-        wheelhouse_pip_install dist/*.tar.gz
+        $PIPI dist/*.tar.gz
       elif [ "$INSTALL_TYPE" == "wheel" ]; then
         pip install wheel
         python setup_egg.py bdist_wheel
-        wheelhouse_pip_install dist/*.whl
+        $PIPI dist/*.whl
       elif [ "$INSTALL_TYPE" == "requirements" ]; then
-        wheelhouse_pip_install -r requirements.txt
+        $PIPI -r requirements.txt
         python setup.py install
       fi
 # command to run tests, e.g. python setup.py test
