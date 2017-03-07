@@ -4,14 +4,15 @@ implemented in cython.
 """
 import cython
 
+cdef extern from "dpy_math.h" nogil:
+    double fmin(double x, double y)
+from libc.math cimport ceil, floor, fabs, sqrt
+
 import numpy as np
 cimport numpy as cnp
 from ._utils import _mapping_to_voxel, _to_voxel_coordinates
 
 from ..utils.six.moves import xrange
-
-cdef extern from "dpy_math.h":
-    double floor(double x)
 
 
 @cython.boundscheck(False)
@@ -158,6 +159,165 @@ def streamline_mapping(streamlines, voxel_size=None, affine=None,
             mapping[key] = [streamlines[i] for i in mapping[key]]
 
     return mapping
+
+
+@cython.boundscheck(False)
+@cython.wraparound(False)
+cdef inline cnp.double_t norm(cnp.double_t x,
+                              cnp.double_t y,
+                              cnp.double_t z) nogil:
+    cdef cnp.double_t val = sqrt(x*x + y*y + z*z)
+    return val
+
+
+# Changing this to a memview was slower.
+@cython.boundscheck(False)
+@cython.wraparound(False)
+cdef inline void c_get_closest_edge(cnp.double_t* p,
+                                    cnp.double_t* direction,
+                                    cnp.double_t* edge,
+                                    double eps=1.) nogil:
+     edge[0] = floor(p[0] + eps) if direction[0] >= 0.0 else ceil(p[0] - eps)
+     edge[1] = floor(p[1] + eps) if direction[1] >= 0.0 else ceil(p[1] - eps)
+     edge[2] = floor(p[2] + eps) if direction[2] >= 0.0 else ceil(p[2] - eps)
+
+
+@cython.boundscheck(False)
+@cython.wraparound(False)
+@cython.cdivision(True)
+def _streamlines_in_mask(list streamlines,
+                         cnp.uint8_t[:,:,:] mask,
+                         lin_T, offset):
+    """Filters streamlines based on whether or not they pass through a ROI,
+    using a line-based algorithm for compressed streamlines.
+
+    This function is private because it's supposed to be called only by
+    tracking.utils.target_line_based.
+
+    Parameters
+    ----------
+    streamlines : sequence
+        A sequence of streamlines.
+    mask : array-like (uint8)
+        A mask used as a target. Non-zero values are considered to be within
+        the target region.
+    lin_T : array (3, 3)
+        Transpose of the linear part of the mapping to voxel space. Obtained
+        with `_mapping_to_voxel`.
+    offset : array or scalar
+        Mapping to voxel space. Obtained with `_mapping_to_voxel`.
+
+    Returns
+    -------
+    in_mask : 1D array of bool (uint8), one for each streamline.
+        0 if passing through mask, 1 otherwise
+        (2 for single-point streamline)
+    """
+    cdef cnp.double_t[:,:] voxel_indices
+
+    cdef cnp.npy_intp nb_streamlines = len(streamlines)
+    cdef cnp.uint8_t[:] in_mask = np.zeros(nb_streamlines, dtype=np.uint8)
+    cdef cnp.npy_intp streamline_idx
+
+    for streamline_idx in range(nb_streamlines):
+        # Can't call _to_voxel_coordinates because it casts to int
+        voxel_indices = np.dot(streamlines[streamline_idx], lin_T) + offset
+
+        in_mask[streamline_idx] = _streamline_in_mask(voxel_indices, mask)
+
+    return np.asarray(in_mask)
+
+
+@cython.boundscheck(False)
+@cython.wraparound(False)
+@cython.cdivision(True)
+cdef cnp.npy_intp _streamline_in_mask(
+        cnp.double_t[:,:] streamline,
+        cnp.uint8_t[:,:,:] mask) nogil:
+    """
+    Check if a single streamline is passing through a mask. This ia an utility
+    function to make streamlines_in_mask() more readable.
+    """
+    cdef cnp.double_t *current_pt = [0.0, 0.0, 0.0]
+    cdef cnp.double_t *next_pt = [0.0, 0.0, 0.0]
+    cdef cnp.double_t *direction = [0.0, 0.0, 0.0]
+    cdef cnp.double_t *current_edge = [0.0, 0.0, 0.0]
+
+    cdef cnp.double_t direction_norm, remaining_distance
+    cdef cnp.double_t length_ratio, half_ratio
+    cdef cnp.npy_intp point_idx, dim_idx
+    cdef cnp.npy_intp x, y, z
+
+    if streamline.shape[0] <= 1:
+        return 2  # Single-point streamline
+
+    # This loop is time-critical
+    # Changed to -1 because we get the next point in the loop
+    for point_idx in range(streamline.shape[0] - 1):
+        # Assign current and next point, find vector between both,
+        # and use the current point as nearest edge for testing.
+        for dim_idx in range(3):
+            current_pt[dim_idx] = streamline[point_idx, dim_idx]
+            next_pt[dim_idx] = streamline[point_idx + 1, dim_idx]
+            direction[dim_idx] = next_pt[dim_idx] - current_pt[dim_idx]
+            current_edge[dim_idx] = current_pt[dim_idx]
+
+        # Set the "remaining_distance" var to compute remaining length of
+        # vector to process
+        direction_norm = norm(direction[0], direction[1], direction[2])
+        remaining_distance = direction_norm
+
+        # Check if it's already a real edge. If not, find the closest edge.
+        if floor(current_edge[0]) != current_edge[0] and \
+           floor(current_edge[1]) != current_edge[1] and \
+           floor(current_edge[2]) != current_edge[2]:
+            # All coordinates are not "integers", and therefore, not on the
+            # edge. Fetch the closest edge.
+            c_get_closest_edge(current_pt, direction, current_edge)
+
+        while True:
+            # Compute the smallest ratio of direction's length to get to an
+            # edge. This effectively means we find the first edge
+            # encountered
+            # Set large value for length_ratio
+            length_ratio = 10000
+            for dim_idx in range(3):
+                if direction[dim_idx] != 0:
+                    length_ratio = fmin(
+                        fabs((current_edge[dim_idx] - current_pt[dim_idx])
+                            / direction[dim_idx]),
+                        length_ratio)
+
+            # Check if last point is already on an edge
+            remaining_distance -= length_ratio * direction_norm
+            if remaining_distance < 0 and not fabs(remaining_distance) < 1e-8:
+                break
+
+            # Find the coordinates of voxel containing current point, to
+            # tag it in the map
+            half_ratio = 0.5 * length_ratio
+            x = <cnp.npy_intp>(current_pt[0] + half_ratio * direction[0])
+            y = <cnp.npy_intp>(current_pt[1] + half_ratio * direction[1])
+            z = <cnp.npy_intp>(current_pt[2] + half_ratio * direction[2])
+            if mask[x, y, z]:
+                return 1
+
+            # current_pt is moved to the closest edge
+            for dim_idx in range(3):
+                current_pt[dim_idx] = \
+                    length_ratio * direction[dim_idx] + current_pt[dim_idx]
+
+                # Snap really small values to 0.
+                if fabs(current_pt[dim_idx]) <= 1e-16:
+                    current_pt[dim_idx] = 0.0
+
+            c_get_closest_edge(current_pt, direction, current_edge)
+
+    # Check last point
+    x = <cnp.npy_intp>next_pt[0]
+    y = <cnp.npy_intp>next_pt[1]
+    z = <cnp.npy_intp>next_pt[2]
+    return mask[x, y, z]
 
 
 @cython.boundscheck(False)

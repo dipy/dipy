@@ -92,7 +92,8 @@ for modulename, other_sources, language in (
     ('dipy.align.crosscorr', [], 'c'),
     ('dipy.align.bundlemin', [], 'c'),
     ('dipy.align.transforms', [], 'c'),
-    ('dipy.align.parzenhist', [], 'c')):
+    ('dipy.align.parzenhist', [], 'c'),
+    ('dipy.utils.omp', [], 'c')):
 
     pyx_src = pjoin(*modulename.split('.')) + '.pyx'
     EXTS.append(Extension(modulename, [pyx_src] + other_sources,
@@ -125,7 +126,6 @@ extbuilder = add_flag_checking(
 # Use ext builder to add np.get_include() at build time, not during setup.py
 # execution.
 extbuilder = make_np_ext_builder(extbuilder)
-
 if need_cython:
     SetupDependency('Cython', info.CYTHON_MIN_VERSION,
                     req_type='install_requires',
@@ -214,11 +214,14 @@ def main(**extra_args):
                           [pjoin('data', 'files', '*')
                           ]},
           data_files=[('share/doc/dipy/examples',
-                       glob(pjoin('doc','examples','*.py')))],
-          scripts      = [pjoin('bin', 'dipy_peak_extraction'),
-                          pjoin('bin', 'dipy_fit_tensor'),
-                          pjoin('bin', 'dipy_sh_estimate'),
-                          pjoin('bin', 'dipy_quickbundles')],
+                       glob(pjoin('doc', 'examples','*.py')))],
+          scripts      = [pjoin('bin', 'dipy_reconst_dti'),
+                          pjoin('bin', 'dipy_reconst_dti_restore'),
+                          pjoin('bin', 'dipy_mask'),
+                          pjoin('bin', 'dipy_median_otsu'),
+                          pjoin('bin', 'dipy_nlmeans'),
+                          ],
+
           cmdclass = cmdclass,
           **extra_args
         )

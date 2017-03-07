@@ -46,9 +46,9 @@ stanford_b0_masked, stanford_b0_mask = median_otsu(stanford_b0, 4, 4)
 syn_b0_masked, syn_b0_mask = median_otsu(syn_b0, 4, 4)
 
 static = stanford_b0_masked
-static_affine = nib_stanford.get_affine()
+static_affine = nib_stanford.affine
 moving = syn_b0_masked
-moving_affine = nib_syn_b0.get_affine()
+moving_affine = nib_syn_b0.affine
 
 """
 Suppose we have already done a linear registration to roughly align the two

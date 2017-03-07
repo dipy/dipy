@@ -27,7 +27,7 @@ HARDI dataset
 fetch_stanford_hardi()
 nib_stanford, gtab_stanford = read_stanford_hardi()
 static = np.squeeze(nib_stanford.get_data())[..., 0]
-static_grid2world = nib_stanford.get_affine()
+static_grid2world = nib_stanford.affine
 
 """
 Now the moving image
@@ -36,7 +36,7 @@ Now the moving image
 fetch_syn_data()
 nib_syn_t1, nib_syn_b0 = read_syn_data()
 moving = np.array(nib_syn_b0.get_data())
-moving_grid2world = nib_syn_b0.get_affine()
+moving_grid2world = nib_syn_b0.affine
 
 """
 We can see that the images are far from aligned by drawing one on top of

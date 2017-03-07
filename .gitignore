@@ -4,6 +4,7 @@
 *.c
 *.cpp
 *.png
+*.vtk
 *.gz
 *.dpy
 *.npy
@@ -29,3 +30,5 @@ __config__.py
 .coverage
 .buildbot.patch
 .eggs/
+dipy/.idea/
+.idea/

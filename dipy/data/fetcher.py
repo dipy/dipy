@@ -401,9 +401,9 @@ fetch_ivim = _make_fetcher(
     'https://ndownloader.figshare.com/files/',
     ['5305243', '5305246', '5305249'],
     ['ivim.nii.gz', 'ivim.bval', 'ivim.bvec'],
-    ['cda596f89dc2676af7d9bf1cabccf600',
-     'f03d89f84aa9a9397103a400e43af43a',
-     'fb633a06b02807355e49ccd85cb92565'],
+    ['cda596f89dc2676af7d9bf1cabccf600', 
+    'f03d89f84aa9a9397103a400e43af43a',
+    'fb633a06b02807355e49ccd85cb92565'],
     doc="Download IVIM dataset")
 
 
@@ -848,7 +848,7 @@ def read_cenir_multib(bvals=None):
         bvec_list.append(np.loadtxt(file_dict[bval]['bvecs']))
 
     # All affines are the same, so grab the last one:
-    aff = nib.load(file_dict[bval]['DWI']).get_affine()
+    aff = nib.load(file_dict[bval]['DWI']).affine
     return (nib.Nifti1Image(np.concatenate(data, -1), aff),
             gradient_table(bval_list, np.concatenate(bvec_list, -1)))
 
@@ -933,13 +933,13 @@ def read_bundles_2_subjects(subj_id='subj_1', metrics=['fa'],
     if 't1' in metrics:
         img = nib.load(pjoin(dname, subj_id, 't1_warped.nii.gz'))
         data = img.get_data()
-        affine = img.get_affine()
+        affine = img.affine
         res['t1'] = data
 
     if 'fa' in metrics:
         img_fa = nib.load(pjoin(dname, subj_id, 'fa_1x1x1.nii.gz'))
         fa = img_fa.get_data()
-        affine = img_fa.get_affine()
+        affine = img_fa.affine
         res['fa'] = fa
 
     res['affine'] = affine

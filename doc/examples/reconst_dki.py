@@ -94,7 +94,7 @@ img, gtab = read_cenir_multib(bvals)
 
 data = img.get_data()
 
-affine = img.get_affine()
+affine = img.affine
 
 """
 Function ``read_cenir_multib`` return img and gtab which contains respectively
