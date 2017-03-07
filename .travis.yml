@@ -75,7 +75,8 @@ matrix:
   allow_failures:
     # Allow pre-release checks to fail
     - python: 3.5
-      env: USE_PRE=1
+      env:
+        - USE_PRE=1
 
 before_install:
     - PIPI="pip install $EXTRA_PIP_FLAGS"
