@@ -81,7 +81,7 @@ print(data.shape)
 We can also check the dimensions of each voxel in the following way:
 """
 
-print(img.get_header().get_zooms()[:3])
+print(img.header.get_zooms()[:3])
 
 """
 ``(2.0, 2.0, 2.0)``
@@ -206,7 +206,7 @@ print(S0s.shape)
 Just, for fun let's save this in a new Nifti file.
 """
 
-nib.save(nib.Nifti1Image(S0s, img.get_affine()), 'HARDI193_S0.nii.gz')
+nib.save(nib.Nifti1Image(S0s, img.affine), 'HARDI193_S0.nii.gz')
 
 """
 Now, that we learned how to load dMRI datasets we can start the analysis. 

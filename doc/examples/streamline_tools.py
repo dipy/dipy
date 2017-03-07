@@ -214,11 +214,11 @@ To do that, we will use tools available in [nibabel](http://nipy.org/nibabel)
 import nibabel as nib
 
 # Save density map
-dm_img = nib.Nifti1Image(dm.astype("int16"), hardi_img.get_affine())
+dm_img = nib.Nifti1Image(dm.astype("int16"), hardi_img.affine)
 dm_img.to_filename("lr-superiorfrontal-dm.nii.gz")
 
 # Make a trackvis header so we can save streamlines
-voxel_size = labels_img.get_header().get_zooms()
+voxel_size = labels_img.header.get_zooms()
 trackvis_header = nib.trackvis.empty_header()
 trackvis_header['voxel_size'] = voxel_size
 trackvis_header['dim'] = shape

@@ -17,7 +17,7 @@ from dipy.data import read_stanford_labels
 hardi_img, gtab, labels_img = read_stanford_labels()
 data = hardi_img.get_data()
 labels = labels_img.get_data()
-affine = hardi_img.get_affine()
+affine = hardi_img.affine
 
 """
 This dataset provides a label map (generated using Freesurfer), in which the
@@ -112,7 +112,7 @@ from dipy.tracking.utils import move_streamlines
 from numpy.linalg import inv
 t1 = read_stanford_t1()
 t1_data = t1.get_data()
-t1_aff = t1.get_affine()
+t1_aff = t1.affine
 color = line_colors(streamlines)
 
 """

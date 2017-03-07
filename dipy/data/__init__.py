@@ -67,7 +67,8 @@ SPHERE_FILES = {
     'symmetric642': pjoin(DATA_DIR, 'evenly_distributed_sphere_642.npz'),
     'symmetric724': pjoin(DATA_DIR, 'evenly_distributed_sphere_724.npz'),
     'repulsion724': pjoin(DATA_DIR, 'repulsion724.npz'),
-    'repulsion100': pjoin(DATA_DIR, 'repulsion100.npz')
+    'repulsion100': pjoin(DATA_DIR, 'repulsion100.npz'),
+    'repulsion200': pjoin(DATA_DIR, 'repulsion200.npz')
 }
 
 
@@ -161,6 +162,7 @@ def get_sphere(name='symmetric362'):
         * 'symmetric724'
         * 'repulsion724'
         * 'repulsion100'
+        * 'repulsion200'
 
     Returns
     -------

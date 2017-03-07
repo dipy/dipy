@@ -21,21 +21,17 @@ env:
         - VENV_ARGS="--python=python"
         - INSTALL_TYPE="setup"
 python:
-    - 2.6
     - 3.3
     - 3.4
     - 3.5
 matrix:
   include:
     - python: 2.7
-      env:
-        - COVERAGE=1
     # To test minimum dependencies
     - python: 2.7
       env:
-        - COVERAGE=1
         # Check these values against requirements.txt and dipy/info.py
-        - DEPENDS="cython==0.18 numpy==1.7.1 scipy==0.9.0 nibabel==1.2.0"
+        - DEPENDS="cython==0.18 numpy==1.7.1 scipy==0.9.0 nibabel==2.1.0"
     - python: 2.7
       env:
         - DEPENDS="cython numpy scipy matplotlib h5py nibabel cvxopt scikit_learn tables"
@@ -46,16 +42,9 @@ matrix:
     - python: 2.7
       sudo: true   # This is set to true for apt-get
       env:
+        - COVERAGE=1
         - VTK=1
         - VTK_VER="python-vtk"
-        - LIBGL_ALWAYS_INDIRECT=y
-        - VENV_ARGS="--system-site-packages --python=/usr/bin/python2.7"
-        - TEST_WITH_XVFB=true
-    - python: 2.7
-      sudo: true   # This is set to true for apt-get
-      env:
-        - VTK=1
-        - VTK_VER="python-vtk6"
         - LIBGL_ALWAYS_INDIRECT=y
         - VENV_ARGS="--system-site-packages --python=/usr/bin/python2.7"
         - TEST_WITH_XVFB=true
