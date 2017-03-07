@@ -81,7 +81,7 @@ TrackVis format (``*.trk``). First, we need to create a header.
 """
 
 hdr = nib.trackvis.empty_header()
-hdr['voxel_size'] = fa_img.get_header().get_zooms()[:3]
+hdr['voxel_size'] = fa_img.header.get_zooms()[:3]
 hdr['voxel_order'] = 'LAS'
 hdr['dim'] = FA.shape
 

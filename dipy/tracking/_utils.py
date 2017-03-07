@@ -29,7 +29,7 @@ def _mapping_to_voxel(affine, voxel_size):
     lin_T : array (3, 3)
         Transpose of the linear part of the mapping to voxel space, (ie
         ``inv(affine)[:3, :3].T``)
-    offset : array or scaler
+    offset : array or scalar
         Offset part of the mapping (ie, ``inv(affine)[:3, 3]``) + ``.5``. The
         half voxel shift is so that truncating the result of this mapping
         will give the correct integer voxel coordinate.

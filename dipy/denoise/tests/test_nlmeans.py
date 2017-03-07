@@ -5,8 +5,8 @@ from numpy.testing import (run_module_suite,
                            assert_array_almost_equal,
                            assert_raises)
 from dipy.denoise.nlmeans import nlmeans
-from dipy.denoise.denspeed import (add_padding_reflection, remove_padding,
-                                   cpu_count)
+from dipy.denoise.denspeed import (add_padding_reflection, remove_padding)
+from dipy.utils.omp import cpu_count
 from time import time
 
 

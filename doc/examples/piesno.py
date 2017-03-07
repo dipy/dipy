@@ -80,7 +80,7 @@ plt.savefig('piesno.png', bbox_inches='tight')
    background voxels (right) used to estimate the noise standard deviation**.
 """
 
-nib.save(nib.Nifti1Image(mask, img.get_affine(), img.get_header()),
+nib.save(nib.Nifti1Image(mask, img.affine, img.header),
          'mask_piesno.nii.gz')
 
 print('The noise standard deviation is sigma= ', sigma)

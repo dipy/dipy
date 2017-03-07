@@ -43,7 +43,7 @@ hardi_img, gtab, labels_img = read_stanford_labels()
 _, _, img_pve_wm = read_stanford_pve_maps()
 data = hardi_img.get_data()
 labels = labels_img.get_data()
-affine = hardi_img.get_affine()
+affine = hardi_img.affine
 white_matter = img_pve_wm.get_data()
 
 seed_mask = np.logical_and(labels == 2, white_matter == 1)
