@@ -4,3 +4,4 @@ source = dipy
 include = */dipy/*
 omit =
     */setup.py
+    */benchmarks/*

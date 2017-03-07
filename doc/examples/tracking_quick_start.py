@@ -163,7 +163,7 @@ Finally, let's save the streamlines as a (.trk) file and FA as a Nifti image.
 import nibabel as nib
 
 hdr = nib.trackvis.empty_header()
-hdr['voxel_size'] = img.get_header().get_zooms()[:3]
+hdr['voxel_size'] = img.header.get_zooms()[:3]
 hdr['voxel_order'] = 'LAS'
 hdr['dim'] = FA.shape[:3]
 
@@ -173,7 +173,7 @@ csd_sl_fname = 'csd_streamline.trk'
 
 nib.trackvis.write(csd_sl_fname, csd_streamlines_trk, hdr, points_space='voxel')
 
-nib.save(nib.Nifti1Image(FA, img.get_affine()), 'FA_map.nii.gz')
+nib.save(nib.Nifti1Image(FA, img.affine), 'FA_map.nii.gz')
 
 """
 

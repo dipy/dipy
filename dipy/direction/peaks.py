@@ -170,14 +170,23 @@ def _peaks_from_model_parallel(model, data, sphere, relative_peak_threshold,
         try:
             nbr_processes = cpu_count()
         except NotImplementedError:
-            warn("Cannot determine number of cpus. \
-                 returns peaks_from_model(..., parallel=False).")
+            warn("Cannot determine number of cpus. "
+                 "returns peaks_from_model(..., parallel=False).")
             return peaks_from_model(model, data, sphere,
                                     relative_peak_threshold,
                                     min_separation_angle, mask, return_odf,
                                     return_sh, gfa_thr, normalize_peaks,
                                     sh_order, sh_basis_type, npeaks,
                                     parallel=False)
+    elif nbr_processes <= 0:
+        warn("Invalid number of processes (%d). "
+             "returns peaks_from_model(..., parallel=False)." % nbr_processes)
+        return peaks_from_model(model, data, sphere,
+                                relative_peak_threshold,
+                                min_separation_angle, mask, return_odf,
+                                return_sh, gfa_thr, normalize_peaks,
+                                sh_order, sh_basis_type, npeaks,
+                                parallel=False)
 
     shape = list(data.shape)
     data = np.reshape(data, (-1, shape[-1]))

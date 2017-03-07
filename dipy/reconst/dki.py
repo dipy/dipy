@@ -6,7 +6,7 @@ import numpy as np
 from dipy.reconst.dti import (TensorFit, mean_diffusivity, axial_diffusivity,
                               radial_diffusivity, from_lower_triangular,
                               lower_triangular, decompose_tensor,
-                              _min_positive_signal)
+                              MIN_POSITIVE_SIGNAL)
 
 from dipy.reconst.utils import dki_design_matrix as design_matrix
 from dipy.utils.six.moves import range
@@ -1021,7 +1021,7 @@ class DiffusionKurtosisModel(ReconstModel):
             data_in_mask = np.reshape(data[mask], (-1, data.shape[-1]))
 
         if self.min_signal is None:
-            min_signal = _min_positive_signal(data)
+            min_signal = MIN_POSITIVE_SIGNAL
         else:
             min_signal = self.min_signal
 

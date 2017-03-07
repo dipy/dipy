@@ -7,27 +7,18 @@ lprun -f dti.restore_fit_tensor -f p.tm.fit_method p.func()
 
 """
 
-import nibabel as nib
 import dipy.core.gradients as grad
 import dipy.data as dpd
 import dipy.reconst.dti as dti
 
-data, bvals, bvecs = dpd.get_data('small_25')
-dd = nib.load(data).get_data()
-gtab = grad.gradient_table(bvals, bvecs)
+img, gtab = dpd.read_stanford_hardi()
+dd = img.get_data()
 
-
-fit_method = 'restore' # 'NLLS'
-jac = True # False
-
-# To profile RESTORE, set some of the signals to be outliers (otherwise comment
-# out the following line):
-dd[..., 5] = 1.0
-
-tm = dti.TensorModel(gtab, fit_method=fit_method, jac=True, sigma=10)
+tm = dti.TensorModel(gtab)
+tf = tm.fit(dd)
 
 def func():
-    tf = tm.fit(dd)
+    tf.odf(dpd.default_sphere)
 
 if __name__=="__main__":
     func()
