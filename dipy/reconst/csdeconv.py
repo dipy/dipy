@@ -631,8 +631,12 @@ def odf_deconv(odf_sh, R, B_reg, lambda_=1., tau=0.1, r2_term=False):
         return np.zeros_like(odf_sh), 0
 
     # Generate initial fODF estimate, which is the ODF truncated at SH order 4
-    fodf_sh = np.linalg.lstsq(R, odf_sh)[0]
-    fodf_sh[15:] = 0
+    try:
+        fodf_sh = np.linalg.lstsq(R, odf_sh)[0]
+        fodf_sh[15:] = 0
+    except ValueError as vae:
+        warnings.warn('ValueError: Computation of initial fODF did not converge')
+        return np.zeros_like(odf_sh), 0 
 
     fodf = np.dot(B_reg, fodf_sh)
 
@@ -670,6 +674,11 @@ def odf_deconv(odf_sh, R, B_reg, lambda_=1., tau=0.1, r2_term=False):
         except np.linalg.LinAlgError as lae:
             # SVD did not converge in Linear Least Squares in current
             # voxel. Proceeding with initial SH estimate for this voxel.
+            pass
+        except ValueError as vae:
+            # SVD did not converge in Linear Least Squares in current
+            # voxel. Proceeding with initial SH estimate for this voxel.
+	          warnings.warn('ValueError: Computation of fODF did not converge')
             pass
 
     warnings.warn('maximum number of iterations exceeded - failed to converge')
