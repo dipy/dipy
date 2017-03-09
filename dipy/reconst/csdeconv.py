@@ -678,7 +678,7 @@ def odf_deconv(odf_sh, R, B_reg, lambda_=1., tau=0.1, r2_term=False):
         except ValueError as vae:
             # SVD did not converge in Linear Least Squares in current
             # voxel. Proceeding with initial SH estimate for this voxel.
-	    warnings.warn('ValueError: Computation of fODF did not converge.')
+            warnings.warn('ValueError: Computation of fODF did not converge.')
             pass
 
     warnings.warn('maximum number of iterations exceeded - failed to converge')
