@@ -122,7 +122,7 @@ def test_colormaps_matplotlib():
     with warnings.catch_warnings(record=True) as w:
         accent_cm = data.get_cmap("Accent")
         # Test that the deprecation warning was raised:
-        npt.assert_equal(len(w) > 0, True)
+        npt.assert_(len(w) > 0)
 
     names = ['jet', 'Blues', 'bone']
 
@@ -130,12 +130,18 @@ def test_colormaps_matplotlib():
         names.append('Accent')
 
     for name in names:
-        # Matplotlib version of get_cmap
-        rgba1 = fvtk.get_cmap(name)(v)
-        # Dipy version of get_cmap
-        rgba2 = data.get_cmap(name)(v)
-        # dipy's colormaps are close to matplotlibs colormaps, but not perfect
-        npt.assert_array_almost_equal(rgba1, rgba2, 1)
+        with warnings.catch_warnings(record=True) as w:
+            # Matplotlib version of get_cmap
+            rgba1 = fvtk.get_cmap(name)(v)
+            # Dipy version of get_cmap
+            rgba2 = data.get_cmap(name)(v)
+            # dipy's colormaps are close to matplotlibs colormaps, but not
+            # perfect:
+            npt.assert_array_almost_equal(rgba1, rgba2, 1)
+            if name == "Accent":
+                npt.assert_(len(w) > 0, True)
+            else:
+                npt.assert_(len(w) == 0, True)
 
 
 
