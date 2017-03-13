@@ -362,6 +362,9 @@ dipy_cmaps = None
 
 def get_cmap(name):
     """Makes a callable, similar to maptlotlib.pyplot.get_cmap"""
+    if name.lower() == "accent":
+        raise ValueError("The `Accent` colormap is deprecated as of version",
+                         " 0.12 of Dipy. Please use another colormap")
     global dipy_cmaps
     if dipy_cmaps is None:
         filename = pjoin(DATA_DIR, "dipy_colormaps.json")
