@@ -1,11 +1,11 @@
 """
 Read test or example data
 """
-
 from __future__ import division, print_function, absolute_import
 
 import sys
 import json
+import warnings
 
 from nibabel import load
 from os.path import join as pjoin, dirname
@@ -363,8 +363,9 @@ dipy_cmaps = None
 def get_cmap(name):
     """Makes a callable, similar to maptlotlib.pyplot.get_cmap"""
     if name.lower() == "accent":
-        raise ValueError("The `Accent` colormap is deprecated as of version",
-                         " 0.12 of Dipy. Please use another colormap")
+        warnings.warn("The `Accent` colormap is deprecated as of version" +
+                      " 0.12 of Dipy and will be removed in a future " +
+                      "version. Please use another colormap")
     global dipy_cmaps
     if dipy_cmaps is None:
         filename = pjoin(DATA_DIR, "dipy_colormaps.json")

@@ -1,5 +1,6 @@
 """Testing visualization with fvtk."""
 import os
+import warnings
 import numpy as np
 
 from dipy.viz import fvtk
@@ -109,7 +110,14 @@ def test_colormap():
 @npt.dec.skipif(not fvtk.have_matplotlib)
 def test_colormaps_matplotlib():
     v = np.random.random(1000)
-    for name in 'jet', 'Blues', 'bone':
+    # The "Accent" colormap is deprecated as of 0.12:
+    with warnings.catch_warnings(record=True) as w:
+        accent_cm = data.get_cmap("Accent")
+        # Test that the deprecation warning was raised:
+        npt.assert_equal(len(w) > 0, True)
+
+    names = ['jet', 'Blues', 'bone']
+    for name in names:
         # Matplotlib version of get_cmap
         rgba1 = fvtk.get_cmap(name)(v)
         # Dipy version of get_cmap
@@ -117,8 +125,6 @@ def test_colormaps_matplotlib():
         # dipy's colormaps are close to matplotlibs colormaps, but not perfect
         npt.assert_array_almost_equal(rgba1, rgba2, 1)
 
-    # The "Accent" colormap is deprecated as of 0.12:
-    npt.assert_raises(ValueError, data.get_cmap, 'Accent')
 
 
 if __name__ == "__main__":
