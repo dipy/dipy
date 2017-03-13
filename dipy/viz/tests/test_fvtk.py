@@ -2,18 +2,26 @@
 import os
 import warnings
 import numpy as np
+from distutils.version import LooseVersion
 
 from dipy.viz import fvtk
 from dipy import data
 
 import numpy.testing as npt
 from dipy.testing.decorators import xvfb_it
+from dipy.utils.optpkg import optional_package
 
 use_xvfb = os.environ.get('TEST_WITH_XVFB', False)
 if use_xvfb == 'skip':
     skip_it = True
 else:
     skip_it = False
+
+cm, have_matplotlib, _ = optional_package('matplotlib.cm')
+
+if have_matplotlib:
+    import matplotlib
+    mpl_version = LooseVersion(matplotlib.__version__)
 
 
 @npt.dec.skipif(not fvtk.have_vtk or not fvtk.have_vtk_colors or skip_it)
@@ -117,6 +125,10 @@ def test_colormaps_matplotlib():
         npt.assert_equal(len(w) > 0, True)
 
     names = ['jet', 'Blues', 'bone']
+
+    if have_matplotlib and mpl_version < "2":
+        names.append('Accent')
+
     for name in names:
         # Matplotlib version of get_cmap
         rgba1 = fvtk.get_cmap(name)(v)

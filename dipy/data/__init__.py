@@ -365,7 +365,8 @@ def get_cmap(name):
     if name.lower() == "accent":
         warnings.warn("The `Accent` colormap is deprecated as of version" +
                       " 0.12 of Dipy and will be removed in a future " +
-                      "version. Please use another colormap")
+                      "version. Please use another colormap",
+                      DeprecationWarning)
     global dipy_cmaps
     if dipy_cmaps is None:
         filename = pjoin(DATA_DIR, "dipy_colormaps.json")
