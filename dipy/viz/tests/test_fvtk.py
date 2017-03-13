@@ -109,13 +109,16 @@ def test_colormap():
 @npt.dec.skipif(not fvtk.have_matplotlib)
 def test_colormaps_matplotlib():
     v = np.random.random(1000)
-    for name in 'jet', 'Blues', 'Accent', 'bone':
+    for name in 'jet', 'Blues', 'bone':
         # Matplotlib version of get_cmap
         rgba1 = fvtk.get_cmap(name)(v)
         # Dipy version of get_cmap
         rgba2 = data.get_cmap(name)(v)
         # dipy's colormaps are close to matplotlibs colormaps, but not perfect
         npt.assert_array_almost_equal(rgba1, rgba2, 1)
+
+    # The "Accent" colormap is deprecated as of 0.12:
+    npt.assert_raises(ValueError, data.get_cmap, 'Accent')
 
 
 if __name__ == "__main__":
