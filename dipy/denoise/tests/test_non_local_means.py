@@ -20,8 +20,7 @@ def test_nlmeans_random_noise():
     masker = np.zeros(S0.shape[:3]).astype(bool)
     masker[8:15, 8:15, 8:15] = 1
     for mask in [None, masker]:
-        S0nb = non_local_means(S0, sigma=np.ones((22, 23, 30)) *
-                               np.std(S0), rician=False, mask=mask)
+        S0nb = non_local_means(S0, sigma=np.std(S0), rician=False, mask=mask)
 
         assert_(S0nb[mask].min() > S0[mask].min())
         assert_(S0nb[mask].max() < S0[mask].max())
@@ -46,7 +45,7 @@ def test_nlmeans_boundary():
 
     S0[:10, :10, :10] = 300 + noise[:10, :10, :10]
 
-    S0n = non_local_means(S0, sigma=np.ones((20, 20, 20)) * np.std(noise),
+    S0n = non_local_means(S0, sigma=np.std(noise),
                           rician=False)
 
     print(S0[9, 9, 9])
@@ -70,8 +69,7 @@ def test_nlmeans_4D_and_mask():
     mask = np.zeros((20, 20, 20))
     mask[10, 10, 10] = 1
 
-    S0n = non_local_means(S0, sigma=np.ones((20, 20, 20)),
-                          mask=mask, rician=True)
+    S0n = non_local_means(S0, sigma=1, mask=mask, rician=True)
     assert_equal(S0.shape, S0n.shape)
     assert_equal(np.round(S0n[10, 10, 10]), 200)
     assert_equal(S0n[8, 8, 8], 0)
@@ -88,7 +86,7 @@ def test_nlmeans_dtype():
     S0 = 200 * np.ones((20, 20, 20), dtype=np.uint16)
     mask = np.zeros((20, 20, 20))
     mask[10:14, 10:14, 10:14] = 1
-    S0n = non_local_means(S0, sigma=np.ones((20, 20, 20)), mask=mask,
+    S0n = non_local_means(S0, sigma=1, mask=mask,
                           rician=True)
     assert_equal(S0.dtype, S0n.dtype)
 
