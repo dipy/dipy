@@ -27,7 +27,7 @@ def non_local_means(arr, sigma, mask=None, patch_radius=1, block_radius=5,
     arr : 3D or 4D ndarray
         The array to be denoised
     mask : 3D ndarray
-    sigma : float or 3D array
+    sigma : float
         standard deviation of the noise estimated from the data
     patch_radius : int
         patch size is ``2 x patch_radius + 1``. Default is 1.
@@ -65,27 +65,18 @@ def non_local_means(arr, sigma, mask=None, patch_radius=1, block_radius=5,
         raise ValueError('mask needs to be a 3D ndarray', mask.shape)
 
     if arr.ndim == 3:
-        sigma = np.ones(arr.shape, dtype=np.float64) * sigma
         return np.array(nlmeans_block(
             np.double(arr),
             mask,
             patch_radius,
             block_radius,
-            nanmean(sigma[mask.astype(bool)]),
+            sigma,
             np.int(rician))).astype(arr.dtype)
     elif arr.ndim == 4:
         denoised_arr = np.zeros_like(arr)
-
-        if isinstance(sigma, np.ndarray) and sigma.ndim == 3:
-            sigma = (np.ones(arr.shape, dtype=np.float64) *
-                     sigma[..., np.newaxis])
-        else:
-            sigma = np.ones(arr.shape, dtype=np.float64) * sigma
-
         for i in range(arr.shape[-1]):
             denoised_arr[..., i] = np.array(nlmeans_block(np.double(
-                arr[..., i]), mask, patch_radius, block_radius,
-                nanmean(sigma[mask.astype(bool)]),
+                arr[..., i]), mask, patch_radius, block_radius, sigma,
                 np.int(rician))).astype(arr.dtype)
 
         return denoised_arr
