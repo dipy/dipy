@@ -138,10 +138,7 @@ def test_colormaps_matplotlib():
             # dipy's colormaps are close to matplotlibs colormaps, but not
             # perfect:
             npt.assert_array_almost_equal(rgba1, rgba2, 1)
-            if name == "Accent":
-                npt.assert_(len(w) > 0, True)
-            else:
-                npt.assert_(len(w) == 0, True)
+            npt.assert_(len(w) == (1 if name == 'Accent' else 0))
 
 
 
