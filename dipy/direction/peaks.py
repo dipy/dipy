@@ -157,8 +157,31 @@ def peak_directions(odf, sphere, relative_peak_threshold=.5,
     return directions, values, indices
 
 
+def _rebuild_pam(sphere, peak_indices, peak_values, peak_dirs,
+                 gfa, qa, shm_coeff, B, odf):
+    this_pam = PeaksAndMetrics()
+    this_pam.sphere = sphere
+    this_pam.peak_dirs = peak_dirs
+    this_pam.peak_values = peak_values
+    this_pam.peak_indices = peak_indices
+    this_pam.gfa = gfa
+    this_pam.qa = qa
+    this_pam.shm_coeff = shm_coeff
+    this_pam.B = B
+    this_pam.odf = odf
+    return this_pam
+
+
 class PeaksAndMetrics(PeaksAndMetricsDirectionGetter):
-    pass
+    def __reduce__(self): return _rebuild_pam, (self.sphere,
+                                                self.peak_indices,
+                                                self.peak_values,
+                                                self.peak_dirs,
+                                                self.gfa,
+                                                self.qa,
+                                                self.shm_coeff,
+                                                self.B,
+                                                self.odf)
 
 
 def _peaks_from_model_parallel(model, data, sphere, relative_peak_threshold,
