@@ -490,17 +490,26 @@ def test_peaksFromModel():
     assert_array_equal(pam.peak_indices[mask, 1:], -1)
 
     # Test serialization and deserialization:
-    b = BytesIO()
-    pickle.dump(pam, b)
-    b.seek(0)
-    new_pam = pickle.load(b)
-    b.close()
+    for normalize_peaks in [True, False]:
+        for return_odf in [True, False]:
+            for return_sh in [True, False]:
+                pam = peaks_from_model(model, data, _sphere, .5, 45,
+                                       normalize_peaks=normalize_peaks,
+                                       return_odf=return_odf,
+                                       return_sh=return_sh)
 
-    for attr in ['peak_dirs', 'peak_values', 'peak_indices', 'gfa', 'qa',
-                 'shm_coeff', 'B', 'odf']:
-        assert_array_equal(getattr(pam, attr), getattr(new_pam, attr))
+                b = BytesIO()
+                pickle.dump(pam, b)
+                b.seek(0)
+                new_pam = pickle.load(b)
+                b.close()
 
-    assert_array_equal(pam.sphere.vertices, new_pam.sphere.vertices)
+                for attr in ['peak_dirs', 'peak_values', 'peak_indices',
+                             'gfa', 'qa', 'shm_coeff', 'B', 'odf']:
+                    assert_array_equal(getattr(pam, attr),
+                                       getattr(new_pam, attr))
+                    assert_array_equal(pam.sphere.vertices,
+                                       new_pam.sphere.vertices)
 
 
 def test_peaksFromModelParallel():

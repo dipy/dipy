@@ -159,6 +159,38 @@ def peak_directions(odf, sphere, relative_peak_threshold=.5,
 
 def _rebuild_pam(sphere, peak_indices, peak_values, peak_dirs,
                  gfa, qa, shm_coeff, B, odf):
+    """
+    Helper function to create a PAM object out of its attributes.
+
+    This is useful both for pickling/unpickling of these objects, as well as their initial construction.
+
+    Parameters
+    ----------
+    sphere :  `Sphere` class instance.
+        Sphere for discretization.
+    peak_indices : ndarray
+        Indices (in sphere vertices) of the peaks in each voxel.
+    peak_values : ndarray
+        The value of the peaks.
+    peak_dirs : ndarray
+        The direction of each peak.
+    gfa : ndarray
+        The Generalized Fractional Anisotropy in each voxel.
+    qa : ndarray
+        Quantitative Anisotropy in each voxel.
+    shm_coeff : ndarray
+        The coefficients of the spherical harmonic basis for the ODF in each.
+        voxel
+    B : ndarray
+        The spherical harmonic matrix, for multiplication with the
+        coefficients.
+    odf : ndarray
+        The orientation distribution function on the sphere in each voxel.
+
+    Returns
+    -------
+    PeaksAndMetrics class instance.
+    """
     this_pam = PeaksAndMetrics()
     this_pam.sphere = sphere
     this_pam.peak_dirs = peak_dirs
