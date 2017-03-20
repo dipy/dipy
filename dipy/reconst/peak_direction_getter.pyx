@@ -40,8 +40,6 @@ cdef class PeaksAndMetricsDirectionGetter(DirectionGetter):
 
     def __getstate__(self): return self.__dict__
 
-    def __setstate__(self, d): self.__dict__.update(d)
-
     def _initialize(self):
         """First time that a PAM instance is used as a direction getter,
         initialize all the memoryviews.
