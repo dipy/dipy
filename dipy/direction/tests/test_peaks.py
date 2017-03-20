@@ -502,6 +502,7 @@ def test_peaksFromModel():
 
     assert_array_equal(pam.sphere.vertices, new_pam.sphere.vertices)
 
+
 def test_peaksFromModelParallel():
     SNR = 100
     S0 = 100
