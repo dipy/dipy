@@ -1,4 +1,8 @@
 import numpy as np
+
+import pickle
+from io import BytesIO
+
 from numpy.testing import (assert_array_equal, assert_array_almost_equal,
                            assert_almost_equal, run_module_suite,
                            assert_equal, assert_)
@@ -485,6 +489,18 @@ def test_peaksFromModel():
     assert_array_equal(pam.peak_indices[mask, 0], odf_argmax)
     assert_array_equal(pam.peak_indices[mask, 1:], -1)
 
+    # Test serialization and deserialization:
+    b = BytesIO()
+    pickle.dump(pam, b)
+    b.seek(0)
+    new_pam = pickle.load(b)
+    b.close()
+
+    for attr in ['peak_dirs', 'peak_values', 'peak_indices', 'gfa', 'qa',
+                 'shm_coeff', 'B', 'odf']:
+        assert_array_equal(getattr(pam, attr), getattr(new_pam, attr))
+
+    assert_array_equal(pam.sphere.vertices, new_pam.sphere.vertices)
 
 def test_peaksFromModelParallel():
     SNR = 100
