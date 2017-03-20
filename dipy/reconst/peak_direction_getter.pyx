@@ -38,6 +38,10 @@ cdef class PeaksAndMetricsDirectionGetter(DirectionGetter):
         self.ang_thr = 60
         self.total_weight = .5
 
+    def __getstate__(self): return self.__dict__
+
+    def __setstate__(self, d): self.__dict__.update(d)
+
     def _initialize(self):
         """First time that a PAM instance is used as a direction getter,
         initialize all the memoryviews.
@@ -125,4 +129,3 @@ cdef class PeaksAndMetricsDirectionGetter(DirectionGetter):
             return 0
         else:
             return 1
-
