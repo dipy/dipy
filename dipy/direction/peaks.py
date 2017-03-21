@@ -157,16 +157,17 @@ def peak_directions(odf, sphere, relative_peak_threshold=.5,
     return directions, values, indices
 
 
-def _rebuild_pam(sphere, peak_indices, peak_values, peak_dirs,
-                 gfa, qa, shm_coeff, B, odf):
+def _pam_from_attrs(sphere, peak_indices, peak_values, peak_dirs,
+                    gfa, qa, shm_coeff, B, odf):
     """
     Helper function to create a PAM object out of its attributes.
 
-    This is useful both for pickling/unpickling of these objects, as well as their initial construction.
+    This is useful both for pickling/unpickling of these objects, as well as
+    their initial construction.
 
     Parameters
     ----------
-    sphere :  `Sphere` class instance.
+    sphere : `Sphere` class instance.
         Sphere for discretization.
     peak_indices : ndarray
         Indices (in sphere vertices) of the peaks in each voxel.
@@ -205,15 +206,15 @@ def _rebuild_pam(sphere, peak_indices, peak_values, peak_dirs,
 
 
 class PeaksAndMetrics(PeaksAndMetricsDirectionGetter):
-    def __reduce__(self): return _rebuild_pam, (self.sphere,
-                                                self.peak_indices,
-                                                self.peak_values,
-                                                self.peak_dirs,
-                                                self.gfa,
-                                                self.qa,
-                                                self.shm_coeff,
-                                                self.B,
-                                                self.odf)
+    def __reduce__(self): return _pam_from_attrs, (self.sphere,
+                                                   self.peak_indices,
+                                                   self.peak_values,
+                                                   self.peak_dirs,
+                                                   self.gfa,
+                                                   self.qa,
+                                                   self.shm_coeff,
+                                                   self.B,
+                                                   self.odf)
 
 
 def _peaks_from_model_parallel(model, data, sphere, relative_peak_threshold,
@@ -535,27 +536,15 @@ def peaks_from_model(model, data, sphere, relative_peak_threshold,
 
     qa_array /= global_max
 
-    pam = PeaksAndMetrics()
-    pam.sphere = sphere
-    pam.peak_dirs = peak_dirs
-    pam.peak_values = peak_values
-    pam.peak_indices = peak_indices
-    pam.gfa = gfa_array
-    pam.qa = qa_array
+    if not return_sh:
+        shm_coeff = None
+        B = None
 
-    if return_sh:
-        pam.shm_coeff = shm_coeff
-        pam.B = B
-    else:
-        pam.shm_coeff = None
-        pam.B = None
+    if not return_odf:
+        odf_array = None
 
-    if return_odf:
-        pam.odf = odf_array
-    else:
-        pam.odf = None
-
-    return pam
+    return _pam_from_attrs(sphere, peak_indices, peak_values, peak_dirs,
+                           gfa_array, qa_array, shm_coeff, B, odf_array)
 
 
 def gfa(samples):
