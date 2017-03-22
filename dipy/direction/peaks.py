@@ -540,13 +540,6 @@ def peaks_from_model(model, data, sphere, relative_peak_threshold,
 
     qa_array /= global_max
 
-    if not return_sh:
-        shm_coeff = None
-        B = None
-
-    if not return_odf:
-        odf_array = None
-
     return _pam_from_attrs(PeaksAndMetrics,
                            sphere,
                            peak_indices,
@@ -554,9 +547,9 @@ def peaks_from_model(model, data, sphere, relative_peak_threshold,
                            peak_dirs,
                            gfa_array,
                            qa_array,
-                           shm_coeff,
-                           B,
-                           odf_array)
+                           shm_coeff if return_sh else None,
+                           B if return_sh else None,
+                           odf_array if return_odf else None)
 
 
 def gfa(samples):
