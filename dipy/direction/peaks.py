@@ -548,7 +548,8 @@ def peaks_from_model(model, data, sphere, relative_peak_threshold,
         odf_array = None
 
     return _pam_from_attrs(PeaksAndMetrics, sphere, peak_indices, peak_values,
-                           peak_dirs, gfa_array, qa_array, shm_coeff, B, odf_array)
+                           peak_dirs, gfa_array, qa_array, shm_coeff, B,
+                           odf_array)
 
 
 def gfa(samples):
