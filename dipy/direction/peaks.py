@@ -157,56 +157,56 @@ def peak_directions(odf, sphere, relative_peak_threshold=.5,
     return directions, values, indices
 
 
+def _pam_from_attrs(sphere, peak_indices, peak_values, peak_dirs,
+                    gfa, qa, shm_coeff, B, odf):
+    """
+    Construct a PeaksAndMetrics object from its attributes.
+
+    This is also useful for pickling/unpickling of these object (see also
+    :func:`__reduce__` below).
+
+    Parameters
+    ----------
+    sphere : `Sphere` class instance.
+        Sphere for discretization.
+    peak_indices : ndarray
+        Indices (in sphere vertices) of the peaks in each voxel.
+    peak_values : ndarray
+        The value of the peaks.
+    peak_dirs : ndarray
+        The direction of each peak.
+    gfa : ndarray
+        The Generalized Fractional Anisotropy in each voxel.
+    qa : ndarray
+        Quantitative Anisotropy in each voxel.
+    shm_coeff : ndarray
+        The coefficients of the spherical harmonic basis for the ODF in
+        each voxel.
+    B : ndarray
+        The spherical harmonic matrix, for multiplication with the
+        coefficients.
+    odf : ndarray
+        The orientation distribution function on the sphere in each voxel.
+
+    Returns
+    -------
+    PeaksAndMetrics class instance.
+    """
+    this_pam = PeaksAndMetrics()
+    this_pam.sphere = sphere
+    this_pam.peak_dirs = peak_dirs
+    this_pam.peak_values = peak_values
+    this_pam.peak_indices = peak_indices
+    this_pam.gfa = gfa
+    this_pam.qa = qa
+    this_pam.shm_coeff = shm_coeff
+    this_pam.B = B
+    this_pam.odf = odf
+    return this_pam
+
+
 class PeaksAndMetrics(PeaksAndMetricsDirectionGetter):
-    @classmethod
-    def from_attrs(cls, sphere, peak_indices, peak_values, peak_dirs,
-                   gfa, qa, shm_coeff, B, odf):
-        """
-        Alternative construction of PAM objects from attributes.
-
-        This is also useful for pickling/unpickling of these object (see also
-        :func:`__reduce__` below).
-
-        Parameters
-        ----------
-        sphere : `Sphere` class instance.
-            Sphere for discretization.
-        peak_indices : ndarray
-            Indices (in sphere vertices) of the peaks in each voxel.
-        peak_values : ndarray
-            The value of the peaks.
-        peak_dirs : ndarray
-            The direction of each peak.
-        gfa : ndarray
-            The Generalized Fractional Anisotropy in each voxel.
-        qa : ndarray
-            Quantitative Anisotropy in each voxel.
-        shm_coeff : ndarray
-            The coefficients of the spherical harmonic basis for the ODF in
-            each voxel.
-        B : ndarray
-            The spherical harmonic matrix, for multiplication with the
-            coefficients.
-        odf : ndarray
-            The orientation distribution function on the sphere in each voxel.
-
-        Returns
-        -------
-        PeaksAndMetrics class instance.
-        """
-        this_pam = cls()
-        this_pam.sphere = sphere
-        this_pam.peak_dirs = peak_dirs
-        this_pam.peak_values = peak_values
-        this_pam.peak_indices = peak_indices
-        this_pam.gfa = gfa
-        this_pam.qa = qa
-        this_pam.shm_coeff = shm_coeff
-        this_pam.B = B
-        this_pam.odf = odf
-        return this_pam
-
-    def __reduce__(self): return self.from_attrs, (self.sphere,
+    def __reduce__(self): return _pam_from_attrs, (self.sphere,
                                                    self.peak_indices,
                                                    self.peak_values,
                                                    self.peak_dirs,
@@ -543,9 +543,9 @@ def peaks_from_model(model, data, sphere, relative_peak_threshold,
     if not return_odf:
         odf_array = None
 
-    return PeaksAndMetrics.from_attrs(sphere, peak_indices, peak_values,
-                                      peak_dirs, gfa_array, qa_array,
-                                      shm_coeff, B, odf_array)
+    return _pam_from_attrs(sphere, peak_indices, peak_values,
+                           peak_dirs, gfa_array, qa_array,
+                           shm_coeff, B, odf_array)
 
 
 def gfa(samples):
