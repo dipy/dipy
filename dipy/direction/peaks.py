@@ -168,7 +168,7 @@ def _pam_from_attrs(klass, sphere, peak_indices, peak_values, peak_dirs,
 
     Parameters
     ----------
-    klass : class, optional
+    klass : class
         The class of object to be created.
     sphere : `Sphere` class instance.
         Sphere for discretization.
