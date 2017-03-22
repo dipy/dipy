@@ -157,8 +157,20 @@ def peak_directions(odf, sphere, relative_peak_threshold=.5,
     return directions, values, indices
 
 
+class PeaksAndMetrics(PeaksAndMetricsDirectionGetter):
+    def __reduce__(self): return _pam_from_attrs, (self.sphere,
+                                                   self.peak_indices,
+                                                   self.peak_values,
+                                                   self.peak_dirs,
+                                                   self.gfa,
+                                                   self.qa,
+                                                   self.shm_coeff,
+                                                   self.B,
+                                                   self.odf)
+
+
 def _pam_from_attrs(sphere, peak_indices, peak_values, peak_dirs,
-                    gfa, qa, shm_coeff, B, odf):
+                    gfa, qa, shm_coeff, B, odf, klass=PeaksAndMetrics):
     """
     Construct a PeaksAndMetrics object from its attributes.
 
@@ -187,12 +199,14 @@ def _pam_from_attrs(sphere, peak_indices, peak_values, peak_dirs,
         coefficients.
     odf : ndarray
         The orientation distribution function on the sphere in each voxel.
+    klass : class, optional
+        The class of object to be created. Default: PeaksAndMetrics
 
     Returns
     -------
-    PeaksAndMetrics class instance.
+    pam : Instance of the class `klass`.
     """
-    this_pam = PeaksAndMetrics()
+    this_pam = klass()
     this_pam.sphere = sphere
     this_pam.peak_dirs = peak_dirs
     this_pam.peak_values = peak_values
@@ -203,18 +217,6 @@ def _pam_from_attrs(sphere, peak_indices, peak_values, peak_dirs,
     this_pam.B = B
     this_pam.odf = odf
     return this_pam
-
-
-class PeaksAndMetrics(PeaksAndMetricsDirectionGetter):
-    def __reduce__(self): return _pam_from_attrs, (self.sphere,
-                                                   self.peak_indices,
-                                                   self.peak_values,
-                                                   self.peak_dirs,
-                                                   self.gfa,
-                                                   self.qa,
-                                                   self.shm_coeff,
-                                                   self.B,
-                                                   self.odf)
 
 
 def _peaks_from_model_parallel(model, data, sphere, relative_peak_threshold,
