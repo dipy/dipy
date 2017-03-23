@@ -121,14 +121,15 @@ def test_response_from_mask():
     radius = 3
 
     for fa_thr in np.arange(0, 1, 0.1):
-        response_auto, ratio_auto, nvoxels = auto_response(gtab,
-                                                           data,
-                                                           roi_center=None,
-                                                           roi_radius=radius,
-                                                           fa_thr=fa_thr,
-                                                           return_number_of_voxels=True)
+        response_auto, ratio_auto, nvoxels = auto_response(
+            gtab,
+            data,
+            roi_center=None,
+            roi_radius=radius,
+            fa_thr=fa_thr,
+            return_number_of_voxels=True)
 
-        ci, cj, ck = np.array(data.shape[:3]) / 2
+        ci, cj, ck = np.array(data.shape[:3]) // 2
         mask = np.zeros(data.shape[:3])
         mask[ci - radius: ci + radius,
              cj - radius: cj + radius,
