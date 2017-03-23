@@ -401,8 +401,8 @@ def smooth_pinv(B, L):
     Notes
     -----
     In the literature this inverse is often written $(B^{T}B+L^{2})^{-1}B^{T}$.
-    However here this inverse is implemented using the pseudo-inverse because it
-    is more numerically stable than the direct implementation of the matrix
+    However here this inverse is implemented using the pseudo-inverse because
+    it is more numerically stable than the direct implementation of the matrix
     product.
 
     """
@@ -1066,6 +1066,10 @@ def anisotropic_power(sh_coeffs, norm_factor=0.00001, power=2,
     # to avoid getting numpy warnings on log(0).
     # It is impossible to get ap values smaller than 0.
     # Also avoids getting voxels with -inf when non_negative=False.
+
+    if len(ap.shape) < 1:
+        # For the off chance we have a scalar on our hands
+        ap = np.reshape(ap, (1,))
     log_ap = np.zeros_like(ap)
     log_ap[ap > 0] = np.log(ap[ap > 0]) - np.log(norm_factor)
 
