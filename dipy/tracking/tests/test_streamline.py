@@ -6,6 +6,7 @@ import numpy as np
 from numpy.linalg import norm
 import numpy.testing as npt
 from dipy.testing.memory import get_type_refcount
+from dipy.testing import assert_arrays_equal
 
 from nose.tools import assert_true, assert_equal, assert_almost_equal
 from numpy.testing import (assert_array_equal, assert_array_almost_equal,
@@ -742,8 +743,8 @@ def test_select_by_rois():
     selection = select_by_rois(streamlines, [mask1], [True],
                                tol=1)
 
-    npt.assert_array_equal(list(selection), [streamlines[0],
-                           streamlines[1]])
+    assert_arrays_equal(list(selection), [streamlines[0],
+                        streamlines[1]])
 
     selection = select_by_rois(streamlines, [mask1, mask2], [True, True],
                                tol=1)
