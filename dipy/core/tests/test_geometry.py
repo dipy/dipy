@@ -69,9 +69,9 @@ def test_sphere_cart():
     xyz = sphere2cart(r, theta, phi)
     yield assert_array_almost_equal, xyz, pt
 
-    # Test full circle on x=0, y=0, z=0
-    x, y, z = sphere2cart(*cart2sphere(0., 0., 0.))
-    yield assert_array_equal, (x, y, z), (0., 0., 0.)
+    # Test full circle on x=1, y=1, z=1
+    x, y, z = sphere2cart(*cart2sphere(1.0, 1.0, 1.0))
+    yield assert_array_almost_equal, (x, y, z), (1.0, 1.0, 1.0)
 
 
 def test_invert_transform():
@@ -123,7 +123,7 @@ def test_sphere_distance():
     # make a circle, go around...
     radius = 3.2
     n = 5000
-    n2 = n / 2
+    n2 = n // 2
     # pi at point n2 in array
     angles = np.linspace(0, np.pi*2, n, endpoint=False)
     x = np.sin(angles) * radius

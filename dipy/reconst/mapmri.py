@@ -751,8 +751,8 @@ class MapmriFit(ReconstFit):
         else:
             sel = self.model.Bm > 0.  # select only relevant coefficients
             j = ind_mat[sel, 0]
-            qiv_vec = ((8 * (-1) ** (1 - j) *
-                        np.sqrt(2) * np.pi ** (7 / 2.)) / ((4 * j - 1) *
+            qiv_vec = ((8 * (-1.0) ** (1 - j) *
+                        np.sqrt(2) * np.pi ** (7 / 2.)) / ((4.0 * j - 1) *
                                                            self.model.Bm[sel]))
             qiv = ux ** 5 * qiv_vec * self._mapmri_coef[sel]
             qiv = qiv.sum()
@@ -1686,23 +1686,23 @@ def mapmri_isotropic_laplacian_reg_matrix(radial_order, mu):
                 jk = ind_mat[k, 0]
                 l = ind_mat[i, 1]
                 if ji == (jk + 2):
-                    LR[i, k] = LR[k, i] = 2 ** (2 - l) * np.pi ** 2 * mu *\
+                    LR[i, k] = LR[k, i] = 2.0 ** (2 - l) * np.pi ** 2 * mu *\
                         gamma(5 / 2.0 + jk + l) / gamma(jk)
                 elif ji == (jk + 1):
-                    LR[i, k] = LR[k, i] = 2 ** (2 - l) * np.pi ** 2 * mu *\
+                    LR[i, k] = LR[k, i] = 2.0 ** (2 - l) * np.pi ** 2 * mu *\
                         (-3 + 4 * ji + 2 * l) * gamma(3 / 2.0 + jk + l) /\
                         gamma(jk)
                 elif ji == jk:
-                    LR[i, k] = 2 ** (-l) * np.pi ** 2 * mu *\
+                    LR[i, k] = 2.0 ** (-l) * np.pi ** 2 * mu *\
                         (3 + 24 * ji ** 2 + 4 * (-2 + l) *
                          l + 12 * ji * (-1 + 2 * l)) *\
                         gamma(1 / 2.0 + ji + l) / gamma(ji)
                 elif ji == (jk - 1):
-                    LR[i, k] = LR[k, i] = 2 ** (2 - l) * np.pi ** 2 * mu *\
+                    LR[i, k] = LR[k, i] = 2.0 ** (2 - l) * np.pi ** 2 * mu *\
                         (-3 + 4 * jk + 2 * l) * gamma(3 / 2.0 + ji + l) /\
                         gamma(ji)
                 elif ji == (jk - 2):
-                    LR[i, k] = LR[k, i] = 2 ** (2 - l) * np.pi ** 2 * mu *\
+                    LR[i, k] = LR[k, i] = 2.0 ** (2 - l) * np.pi ** 2 * mu *\
                         gamma(5 / 2.0 + ji + l) / gamma(ji)
 
     return LR
