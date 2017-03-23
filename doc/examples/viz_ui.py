@@ -94,6 +94,10 @@ panel.add_element(second_button_example, 'absolute', (480, 100))
 
 # /Panel
 
+# TextBox
+text = ui.TextBox2D(height=3, width=10)
+# /TextBox
+
 # Show Manager
 current_size = (600, 600)
 show_manager = window.ShowManager(size=current_size, title="DIPY UI Example")
@@ -101,5 +105,6 @@ show_manager = window.ShowManager(size=current_size, title="DIPY UI Example")
 show_manager.ren.add(cube_actor_1)
 show_manager.ren.add(cube_actor_2)
 show_manager.ren.add(panel)
+show_manager.ren.add(text)
 
 show_manager.start()
