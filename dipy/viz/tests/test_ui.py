@@ -10,14 +10,14 @@ from dipy.viz import ui
 from dipy.viz import window
 from dipy.data import DATA_DIR
 
+from dipy.viz.ui import UI
+
 from dipy.testing.decorators import xvfb_it
 
 # Conditional import machinery for vtk
 from dipy.utils.optpkg import optional_package
 
 # Allow import, but disable doctests if we don't have vtk
-from dipy.viz.ui import UI
-
 vtk, have_vtk, setup_module = optional_package('vtk')
 
 use_xvfb = os.environ.get('TEST_WITH_XVFB', False)
@@ -111,6 +111,15 @@ def test_ui(recording=False):
     button_test.color = button_color
     # /Button
 
+    # TextBox
+    textbox_test = ui.TextBox2D(height=3, width=10, text="Text")
+    textbox_test.set_message("Enter Text")
+    textbox_test.set_center((10, 100))
+
+    another_textbox_test = ui.TextBox2D(height=3, width=10, text="Enter Text")
+
+    # /TextBox
+
     # Panel
     panel = ui.Panel2D(center=(440, 90), size=(300, 150), color=(1, 1, 1), align="right")
     panel.add_element(rectangle_test, 'absolute', (580, 150))
@@ -122,6 +131,7 @@ def test_ui(recording=False):
     show_manager = window.ShowManager(size=current_size, title="DIPY UI Example")
 
     show_manager.ren.add(panel)
+    show_manager.ren.add(another_textbox_test)
 
     if recording:
         show_manager.record_events_to_file(recording_filename)
@@ -132,15 +142,15 @@ def test_ui(recording=False):
         expected = [('CharEvent', 0),
                     ('KeyPressEvent', 0),
                     ('KeyReleaseEvent', 0),
-                    ('MouseMoveEvent', 161),
-                    ('LeftButtonPressEvent', 12),
-                    ('RightButtonPressEvent', 3),
+                    ('MouseMoveEvent', 451),
+                    ('LeftButtonPressEvent', 21),
+                    ('RightButtonPressEvent', 4),
                     ('MiddleButtonPressEvent', 0),
-                    ('LeftButtonReleaseEvent', 12),
+                    ('LeftButtonReleaseEvent', 21),
                     ('MouseWheelForwardEvent', 0),
                     ('MouseWheelBackwardEvent', 0),
                     ('MiddleButtonReleaseEvent', 0),
-                    ('RightButtonReleaseEvent', 3)]
+                    ('RightButtonReleaseEvent', 4)]
 
         # Useful loop for debugging.
         for event, count in expected:
@@ -159,3 +169,37 @@ def test_ui(recording=False):
         npt.assert_raises(TypeError, button_test.add_to_renderer, dummy_renderer)
         # /Dummy Show Manager
 
+
+@npt.dec.skipif(not have_vtk or skip_it)
+@xvfb_it
+def test_text_actor_2d():
+    # TextActor2D
+    text_actor = ui.TextActor2D()
+    text_actor.message = "Hello World!"
+    npt.assert_equal("Hello World!", text_actor.message)
+    text_actor.font_size = 18
+    npt.assert_equal("18", str(text_actor.font_size))
+    text_actor.font_family = "Arial"
+    npt.assert_equal("Arial", text_actor.font_family)
+    with npt.assert_raises(ValueError):
+        text_actor.font_family = "Verdana"
+    text_actor.justification = "left"
+    text_actor.justification = "right"
+    text_actor.justification = "center"
+    npt.assert_equal("Centered", text_actor.justification)
+    with npt.assert_raises(ValueError):
+        text_actor.justification = "bottom"
+    text_actor.bold = True
+    text_actor.bold = False
+    npt.assert_equal(False, text_actor.bold)
+    text_actor.italic = True
+    text_actor.italic = False
+    npt.assert_equal(False, text_actor.italic)
+    text_actor.shadow = True
+    text_actor.shadow = False
+    npt.assert_equal(False, text_actor.shadow)
+    text_actor.color = (1, 0, 0)
+    npt.assert_equal((1, 0, 0), text_actor.color)
+    text_actor.position = (2, 3)
+    npt.assert_equal((2, 3), text_actor.position)
+    # /TextActor2D
