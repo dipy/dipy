@@ -21,19 +21,36 @@ If you are on Debian or Ubuntu Linux we recommend you try
 
 .. _install-packages:
 
+
+Using Anaconda:
+===============
+
+On all platforms, you can use Anaconda_ to install Dipy. To do so issue the following command in a terminal::
+
+    conda install dipy -c conda-forge
+
+Some of the visualization methods require the VTK_ library and this can be installed separately (for the time being only on Python 2.7)::
+
+    conda install vtk
+
+
 Using packages:
 ===============
 
 Windows
 -------
 
-#. First, install the python library dependencies. One easy way to do that is to use the Anaconda_ distribution (see below for :ref:`alternatives`).
+#. First, install the python library dependencies. One easy way to do that is to
+use the Anaconda_ distribution (see below for :ref:`alternatives`).
 
-#. Even with Anaconda installed, you will still need to install the nibabel_ library, which supports reading and writing of neuroimaging data formats. Open a terminal and type ::
+#. Even with Anaconda installed, you will still need to install the nibabel_
+library, which supports reading and writing of neuroimaging data formats. Open
+a terminal and type ::
 
         pip install nibabel
 
-#. Finally, we are ready to install 'dipy` itself. Same as with `nibabel` above, we will type at the terminal shell command line ::
+#. Finally, we are ready to install 'dipy` itself. Same as with `nibabel` above,
+we will type at the terminal shell command line ::
 
 		pip install dipy
 
@@ -244,6 +261,8 @@ Windows
 -------
 
 Anaconda_ is probably the easiest way to install the dependencies that you need.
+To build from source, you will also need to install a compiler. The easiest way
+to do that is to install a current version of Visual Studio.
 
 Start a command shell like ``cmd`` or Powershell_ and change directory into the
 *dipy source root directory*.
