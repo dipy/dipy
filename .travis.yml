@@ -90,6 +90,7 @@ before_install:
     # Needed for Python 3.5 wheel fetching
     - $PIPI --upgrade pip setuptools
     - $PIPI nose;
+    # cvxpy dependencies will not install unless numpy installed first:
     - $PIPI numpy;
     - if [ -n "$DEPENDS" ]; then $PIPI $DEPENDS; fi
     - if [ "${COVERAGE}" == "1" ]; then pip install coverage coveralls codecov; fi
