@@ -25,9 +25,9 @@ def test_mask():
         mask_img = nib.load(mask_path)
         mask_data = mask_img.get_data()
         assert_true(mask_data.shape == volume.shape)
-        nt.assert_array_almost_equal(mask_img.get_affine(),
-                                     vol_img.get_affine())
+        nt.assert_array_almost_equal(mask_img.affine, vol_img.affine)
         assert_true(mask_data.dtype == np.uint8)
+
 
 if __name__ == '__main__':
     test_mask()
