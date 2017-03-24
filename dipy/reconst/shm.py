@@ -1067,9 +1067,9 @@ def anisotropic_power(sh_coeffs, norm_factor=0.00001, power=2,
     # It is impossible to get ap values smaller than 0.
     # Also avoids getting voxels with -inf when non_negative=False.
 
-    if len(ap.shape) < 1:
+    if ap.ndim < 1:
         # For the off chance we have a scalar on our hands
-        ap = np.reshape(ap, (1,))
+        ap = np.reshape(ap, (1, ))
     log_ap = np.zeros_like(ap)
     log_ap[ap > 0] = np.log(ap[ap > 0]) - np.log(norm_factor)
 
