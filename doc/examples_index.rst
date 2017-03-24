@@ -194,6 +194,11 @@ Brain Segmentation
 
 - :ref:`example_brain_extraction_dwi`
 
+Tissue Classification
+~~~~~~~~~~~~~~~~~~~~~
+
+- :ref:`example_tissue_classification`
+
 -----------
 Simulations
 -----------
