@@ -59,6 +59,7 @@ def upper_bound_by_rate(data, rate=0.05):
     Returns
     -------
     high : float
+
         the upper_bound value for normalization
     """
 
