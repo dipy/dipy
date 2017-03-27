@@ -44,18 +44,6 @@ def test_ui(recording=False):
             self.actor = vtk.vtkActor()
             super(BrokenUI, self).__init__()
 
-        def add_callback(self, event_type, callback):
-            """ Adds events to an actor.
-
-            Parameters
-            ----------
-            event_type : string
-                event code
-            callback : function
-                callback function
-            """
-            super(BrokenUI, self).add_callback(self.actor, event_type, callback)
-
     broken_ui = BrokenUI()
     npt.assert_raises(NotImplementedError, broken_ui.get_actors)
     npt.assert_raises(NotImplementedError, broken_ui.set_center, (1, 2))
