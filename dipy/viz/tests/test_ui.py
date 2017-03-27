@@ -86,7 +86,7 @@ def test_ui(recording=False):
                   "LeftButtonPressEvent", "LeftButtonReleaseEvent",
                   "RightButtonPressEvent", "RightButtonReleaseEvent",
                   "MiddleButtonPressEvent", "MiddleButtonReleaseEvent"]:
-        button_test.add_callback(event, counter)
+        button_test.add_callback(button_test.actor, event, counter)
 
     def make_invisible(i_ren, obj, button):
         # i_ren: CustomInteractorStyle
