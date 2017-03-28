@@ -1,4 +1,5 @@
 """Test spherical harmonic models and the tools associated with those models"""
+import warnings
 import numpy as np
 import numpy.linalg as npl
 
@@ -447,6 +448,12 @@ def test_anisotropic_power():
                 anisotropic_power(coeffs[1],
                                   norm_factor=norm_factor),
                 answers[1])
+
+    # Test that even when we look at an all-zeros voxel, this
+    # avoids a log-of-zero warning:
+    with warnings.catch_warnings(record=True) as w:
+        anisotropic_power(np.zeros(6))
+        assert len(w) == 0
 
 
 def test_calculate_max_order():
