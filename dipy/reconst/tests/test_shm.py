@@ -452,7 +452,7 @@ def test_anisotropic_power():
     # Test that even when we look at an all-zeros voxel, this
     # avoids a log-of-zero warning:
     with warnings.catch_warnings(record=True) as w:
-        anisotropic_power(np.zeros(6))
+        assert_equal(anisotropic_power(np.zeros(6)), 0)
         assert len(w) == 0
 
 
