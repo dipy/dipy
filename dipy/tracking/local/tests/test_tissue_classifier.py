@@ -48,7 +48,7 @@ def test_binary_tissue_classifier():
 
     # test outside points
     outside_pts = [[100, 100, 100], [0, -1, 1], [0, 10, 2],
-                   [0, 0.5, -0.51], [0, -0.51, 0.1]]
+                   [0, 0.5, -0.51], [0, -0.51, 0.1], [4, 0, 0]]
     for pts in outside_pts:
         pts = np.array(pts, dtype='float64')
         state_boolean = btc_boolean.check_point(pts)
