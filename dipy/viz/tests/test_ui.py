@@ -29,9 +29,9 @@ else:
 
 @npt.dec.skipif(not have_vtk or skip_it)
 @xvfb_it
-def test_ui(recording=False):
+def test_ui_button_panel(recording=False):
     print("Using VTK {}".format(vtk.vtkVersion.GetVTKVersion()))
-    filename = "test_ui.log.gz"
+    filename = "test_ui_button_panel.log.gz"
     recording_filename = pjoin(DATA_DIR, filename)
 
     # Define some counter callback.
@@ -65,16 +65,8 @@ def test_ui(recording=False):
     button_test = ui.Button2D(icon_fnames=icon_files)
     button_test.set_center((20, 20))
 
-    def counter(i_ren, obj, button):
+    def counter(i_ren, obj, element):
         states[i_ren.event.name] += 1
-
-    # Assign the counter callback to every possible event.
-    for event in ["CharEvent", "MouseMoveEvent",
-                  "KeyPressEvent", "KeyReleaseEvent",
-                  "LeftButtonPressEvent", "LeftButtonReleaseEvent",
-                  "RightButtonPressEvent", "RightButtonReleaseEvent",
-                  "MiddleButtonPressEvent", "MiddleButtonReleaseEvent"]:
-        button_test.add_callback(button_test.actor, event, counter)
 
     def make_invisible(i_ren, obj, button):
         # i_ren: CustomInteractorStyle
@@ -99,15 +91,6 @@ def test_ui(recording=False):
     button_test.color = button_color
     # /Button
 
-    # TextBox
-    textbox_test = ui.TextBox2D(height=3, width=10, text="Text")
-    textbox_test.set_message("Enter Text")
-    textbox_test.set_center((10, 100))
-
-    another_textbox_test = ui.TextBox2D(height=3, width=10, text="Enter Text")
-
-    # /TextBox
-
     # Panel
     panel = ui.Panel2D(center=(440, 90), size=(300, 150), color=(1, 1, 1), align="right")
     panel.add_element(rectangle_test, 'absolute', (580, 150))
@@ -115,11 +98,19 @@ def test_ui(recording=False):
     npt.assert_raises(ValueError, panel.add_element, another_rectangle_test, 'error_string', (1, 2))
     # /Panel
 
+    # Assign the counter callback to every possible event.
+    for event in ["CharEvent", "MouseMoveEvent",
+                  "KeyPressEvent", "KeyReleaseEvent",
+                  "LeftButtonPressEvent", "LeftButtonReleaseEvent",
+                  "RightButtonPressEvent", "RightButtonReleaseEvent",
+                  "MiddleButtonPressEvent", "MiddleButtonReleaseEvent"]:
+        button_test.add_callback(button_test.actor, event, counter)
+        panel.add_callback(panel.panel.actor, event, counter)
+
     current_size = (600, 600)
     show_manager = window.ShowManager(size=current_size, title="DIPY UI Example")
 
     show_manager.ren.add(panel)
-    show_manager.ren.add(another_textbox_test)
 
     if recording:
         show_manager.record_events_to_file(recording_filename)
@@ -130,15 +121,15 @@ def test_ui(recording=False):
         expected = [('CharEvent', 0),
                     ('KeyPressEvent', 0),
                     ('KeyReleaseEvent', 0),
-                    ('MouseMoveEvent', 451),
-                    ('LeftButtonPressEvent', 21),
-                    ('RightButtonPressEvent', 4),
+                    ('MouseMoveEvent', 186),
+                    ('LeftButtonPressEvent', 22),
+                    ('RightButtonPressEvent', 3),
                     ('MiddleButtonPressEvent', 0),
-                    ('LeftButtonReleaseEvent', 21),
+                    ('LeftButtonReleaseEvent', 22),
                     ('MouseWheelForwardEvent', 0),
                     ('MouseWheelBackwardEvent', 0),
                     ('MiddleButtonReleaseEvent', 0),
-                    ('RightButtonReleaseEvent', 4)]
+                    ('RightButtonReleaseEvent', 3)]
 
         # Useful loop for debugging.
         for event, count in expected:
@@ -156,6 +147,70 @@ def test_ui(recording=False):
                                                 interactor_style='trackball')
         npt.assert_raises(TypeError, button_test.add_to_renderer, dummy_renderer)
         # /Dummy Show Manager
+
+
+@npt.dec.skipif(not have_vtk or skip_it)
+@xvfb_it
+def test_ui_textbox(recording=False):
+    print("Using VTK {}".format(vtk.vtkVersion.GetVTKVersion()))
+    filename = "test_ui_textbox.log.gz"
+    recording_filename = pjoin(DATA_DIR, filename)
+
+    # Define some counter callback.
+    states = defaultdict(lambda: 0)
+
+    def counter(i_ren, obj, textbox):
+        states[i_ren.event.name] += 1
+
+    # TextBox
+    textbox_test = ui.TextBox2D(height=3, width=10, text="Text")
+
+    another_textbox_test = ui.TextBox2D(height=3, width=10, text="Enter Text")
+    another_textbox_test.set_message("Enter Text")
+    another_textbox_test.set_center((10, 100))
+    # /TextBox
+
+    # Assign the counter callback to every possible event.
+    for event in ["CharEvent", "MouseMoveEvent",
+                  "KeyPressEvent", "KeyReleaseEvent",
+                  "LeftButtonPressEvent", "LeftButtonReleaseEvent",
+                  "RightButtonPressEvent", "RightButtonReleaseEvent",
+                  "MiddleButtonPressEvent", "MiddleButtonReleaseEvent"]:
+        textbox_test.add_callback(textbox_test.actor.get_actor(), event, counter)
+
+    current_size = (600, 600)
+    show_manager = window.ShowManager(size=current_size, title="DIPY TextBox Test")
+
+    show_manager.ren.add(textbox_test)
+
+    if recording:
+        show_manager.record_events_to_file(recording_filename)
+        print(list(states.items()))
+    else:
+        show_manager.play_events_from_file(recording_filename)
+        msg = "Wrong count for '{}'."
+        expected = [('CharEvent', 109),
+                    ('KeyPressEvent', 113),
+                    ('KeyReleaseEvent', 33),
+                    ('MouseMoveEvent', 182),
+                    ('LeftButtonPressEvent', 8),
+                    ('RightButtonPressEvent', 8),
+                    ('MiddleButtonPressEvent', 0),
+                    ('LeftButtonReleaseEvent', 8),
+                    ('MouseWheelForwardEvent', 0),
+                    ('MouseWheelBackwardEvent', 0),
+                    ('MiddleButtonReleaseEvent', 0),
+                    ('RightButtonReleaseEvent', 8)]
+
+        # Useful loop for debugging.
+        for event, count in expected:
+            if states[event] != count:
+                print("{}: {} vs. {} (expected)".format(event,
+                                                        states[event],
+                                                        count))
+
+        for event, count in expected:
+            npt.assert_equal(states[event], count, err_msg=msg.format(event))
 
 
 @npt.dec.skipif(not have_vtk or skip_it)
