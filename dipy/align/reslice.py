@@ -103,4 +103,6 @@ def reslice(data, affine, zooms, new_zooms, order=1, mode='constant', cval=0,
     Rx = np.eye(4)
     Rx[:3, :3] = np.diag(R)
     affine2 = np.dot(affine, Rx)
+    # Turn warnings back on:
+    warnings.filterwarnings('always')
     return data2, affine2
