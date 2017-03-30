@@ -1292,3 +1292,137 @@ class TextBox2D(UI):
             i_ren.remove_active_prop(textbox_object.actor.get_actor())
 
         i_ren.force_render()
+
+
+class LineSlider2D(UI):
+    """ A 2D Line Slider.
+    Currently supports:
+    - A disk on a line (a thin rectangle).
+    - Setting disk position.
+    """
+    def __init__(self, line_width=5, inner_radius=0, outer_radius=10, center=(450, 300), length=200):
+
+        """
+        Parameters
+        ----------
+        line_width : int
+            Width of the line on which the disk will slide.
+        inner_radius : int
+            Inner radius of the disk (ring).
+        outer_radius : int
+            Outer radius of the disk.
+        center : (float, float)
+            Center of the slider.
+        length : int
+            Length of the slider.
+        """
+        super(LineSlider2D, self).__init__()
+
+        self.length = length
+        self.line_width = line_width
+        self.center = center
+        self.current_state = center[0]
+        self.left_x_position = center[0] - length / 2
+        self.right_x_position = center[0] + length / 2
+
+        self.slider_line = None
+        self.slider_disk = None
+        self.text = None
+
+        self.build_actors(inner_radius=inner_radius, outer_radius=outer_radius)
+
+    def build_actors(self, inner_radius, outer_radius):
+        """ Builds required actors.
+        Parameters
+        ----------
+        inner_radius: int
+        outer_radius: int
+        """
+        self.slider_line = Rectangle2D(size=(self.length, self.line_width), center=self.center).actor
+        self.slider_line.GetProperty().SetColor(1, 0, 0)
+
+        # create source
+        disk = vtk.vtkDiskSource()
+        disk.SetInnerRadius(inner_radius)
+        disk.SetOuterRadius(outer_radius)
+        disk.SetRadialResolution(10)
+        disk.SetCircumferentialResolution(50)
+        disk.Update()
+
+        # mapper
+        mapper = vtk.vtkPolyDataMapper2D()
+        mapper.SetInputConnection(disk.GetOutputPort())
+
+        # actor
+        self.slider_disk = vtk.vtkActor2D()
+        self.slider_disk.SetMapper(mapper)
+
+        self.slider_disk.SetPosition(self.center[0], self.center[1])
+
+        self.text = TextActor2D()
+
+        self.text.position = (self.left_x_position-50, self.center[1]-10)
+        percentage = self.calculate_percentage(current_val=int(self.current_state))
+        self.text.message = percentage
+        self.text.font_size = 16
+
+    def get_actors(self):
+        """ Returns the actors that compose this UI component. """
+        return [self.slider_line, self.slider_disk, self.text.get_actor()]
+
+    def set_position(self, position):
+        """ Sets the disk's position.
+        Parameters
+        ----------
+        position : (float, float)
+        """
+        x_position = position[0]
+        if x_position < self.center[0] - self.length/2:
+            x_position = self.center[0] - self.length/2
+        if x_position > self.center[0] + self.length/2:
+            x_position = self.center[0] + self.length/2
+        self.slider_disk.SetPosition(x_position, self.center[1])
+        self.current_state = x_position
+
+    def calculate_percentage(self, current_val):
+        """ Calculates the percentage to be displayed.
+        Parameters
+        ----------
+        current_val : int
+        """
+        percentage = int(((current_val-self.left_x_position)*100)/(self.right_x_position-self.left_x_position))
+        if percentage < 0:
+            percentage = 0
+        if percentage > 100:
+            percentage = 100
+        return str(percentage) + "%"
+
+    def set_percentage(self, current_val):
+        """ Sets text percentage.
+        Parameters
+        ----------
+        current_val : int
+            This is the x-position of the slider in the 2D coordinate space
+            and not the percentage on the base scale.
+        """
+        self.current_state = current_val
+        percentage = self.calculate_percentage(current_val=current_val)
+        self.text.message = percentage
+
+    def set_center(self, position):
+        """ Sets the center of the slider to position.
+        Parameters
+        ----------
+        position : (float, float)
+        """
+        self.slider_line.SetPosition(position[0] - self.length / 2, position[1] - self.line_width / 2)
+
+        x_change = position[0] - self.center[0]
+        self.current_state += x_change
+        self.center = position
+        self.set_position((self.current_state, self.center[1]))
+
+        self.left_x_position = position[0] - self.length / 2
+        self.right_x_position = position[0] + self.length / 2
+        self.text.position = (position[0] - self.length / 2 - 40, position[1] - 10)
+        self.set_percentage(int(self.current_state))
