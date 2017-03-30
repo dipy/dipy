@@ -1295,7 +1295,8 @@ class TextBox2D(UI):
 
 
 class LineSlider2D(UI):
-    """ A 2D Line Slider.
+    """ A 2D Line Slider. 
+    A sliding ring on a line with a percentage indicator.
     
     Currently supports:
     - A disk on a line (a thin rectangle).
@@ -1313,9 +1314,15 @@ class LineSlider2D(UI):
         Center of the slider.
     length : int
         Length of the slider.
+    slider_line : :class:`vtkActor`
+        The line on which the slider disk moves.
+    slider_disk : :class:`vtkActor`
+        The moving slider disk.
+    text : :class:`TextActor2D`
+        The text that shows percentage.
         
     """
-    def __init__(self, line_width=5, inner_radius=0, outer_radius=10, center=(450, 300), length=200):
+    def __init__(self, line_width=5, inner_radius=0, outer_radius=10, center=(450, 300), length=200, text_size=16):
 
         """
         Parameters
@@ -1345,21 +1352,31 @@ class LineSlider2D(UI):
         self.slider_disk = None
         self.text = None
 
-        self.build_actors(inner_radius=inner_radius, outer_radius=outer_radius)
+        self.build_actors(inner_radius=inner_radius, outer_radius=outer_radius, text_size=text_size)
 
-    def build_actors(self, inner_radius, outer_radius):
+        self.handle_events(None)
+
+    def build_actors(self, inner_radius, outer_radius, text_size):
         """ Builds required actors.
         
         Parameters
         ----------
         inner_radius: int
+            The inner radius of the sliding disk.
         outer_radius: int
+            The outer radius of the sliding disk.
+        text_size: int
+            Size of the text that displays percentage.
         
         """
+        # Slider Line
         self.slider_line = Rectangle2D(size=(self.length, self.line_width), center=self.center).actor
         self.slider_line.GetProperty().SetColor(1, 0, 0)
 
-        # create source
+        # /Slider Line
+
+        # Slider Disk
+        # Create source
         disk = vtk.vtkDiskSource()
         disk.SetInnerRadius(inner_radius)
         disk.SetOuterRadius(outer_radius)
@@ -1367,22 +1384,26 @@ class LineSlider2D(UI):
         disk.SetCircumferentialResolution(50)
         disk.Update()
 
-        # mapper
+        # Mapper
         mapper = vtk.vtkPolyDataMapper2D()
         mapper.SetInputConnection(disk.GetOutputPort())
 
-        # actor
+        # Actor
         self.slider_disk = vtk.vtkActor2D()
         self.slider_disk.SetMapper(mapper)
 
         self.slider_disk.SetPosition(self.center[0], self.center[1])
 
+        # /Slider Disk
+
+        # Slider Text
         self.text = TextActor2D()
 
         self.text.position = (self.left_x_position-50, self.center[1]-10)
         percentage = self.calculate_percentage(current_val=int(self.current_state))
         self.text.message = percentage
-        self.text.font_size = 16
+        self.text.font_size = text_size
+        # /Slider Text
 
     def get_actors(self):
         """ Returns the actors that compose this UI component. 
@@ -1396,6 +1417,7 @@ class LineSlider2D(UI):
         Parameters
         ----------
         position : (float, float)
+            The absolute position of the disk (x, y).
         
         """
         x_position = position[0]
@@ -1412,6 +1434,7 @@ class LineSlider2D(UI):
         Parameters
         ----------
         current_val : int
+            Absolute value of the disk's x position.
         
         """
         percentage = int(((current_val-self.left_x_position)*100)/(self.right_x_position-self.left_x_position))
@@ -1441,6 +1464,7 @@ class LineSlider2D(UI):
         Parameters
         ----------
         position : (float, float)
+            The new center of the whole slider (x, y).
         
         """
         self.slider_line.SetPosition(position[0] - self.length / 2, position[1] - self.line_width / 2)
@@ -1454,3 +1478,31 @@ class LineSlider2D(UI):
         self.right_x_position = position[0] + self.length / 2
         self.text.position = (position[0] - self.length / 2 - 40, position[1] - 10)
         self.set_percentage(int(self.current_state))
+
+    @staticmethod
+    def line_click_callback(i_ren, obj, slider):
+        # Update disk position and grab the focus.
+        position = i_ren.event.position
+        slider.set_position(position)
+        slider.set_percentage(position[0])
+        i_ren.force_render()
+        i_ren.event.abort()  # Stop propagating the event.
+
+    @staticmethod
+    def disk_press_callback(i_ren, obj, slider):
+        # Only need to grab the focus.
+        i_ren.event.abort()  # Stop propagating the event.
+
+    @staticmethod
+    def disk_move_callback(i_ren, obj, slider):
+        position = i_ren.event.position
+        slider.set_position(position)
+        slider.set_percentage(position[0])
+        i_ren.force_render()
+        i_ren.event.abort()  # Stop propagating the event.
+
+    def handle_events(self, actor):
+        self.add_callback(self.slider_line, "LeftButtonPressEvent", self.line_click_callback)
+        self.add_callback(self.slider_disk, "LeftButtonPressEvent", self.disk_press_callback)
+        self.add_callback(self.slider_disk, "MouseMoveEvent", self.disk_move_callback)
+        self.add_callback(self.slider_line, "MouseMoveEvent", self.disk_move_callback)
