@@ -55,8 +55,6 @@ class UI(object):
         self.left_button_state = "released"
         self.right_button_state = "released"
 
-        self.handle_events()
-
         self.on_left_mouse_button_pressed = lambda i_ren, obj, element: None
         self.on_left_mouse_button_drag = lambda i_ren, obj, element: None
         self.on_right_mouse_button_pressed = lambda i_ren, obj, element: None
@@ -130,13 +128,13 @@ class UI(object):
         for actor in self.get_actors():
             actor.SetVisibility(visibility)
 
-    def handle_events(self):
-        self.add_callback("LeftButtonPressEvent", self.left_button_click_callback)
-        self.add_callback("LeftButtonReleaseEvent", self.left_button_release_callback)
-        self.add_callback("RightButtonPressEvent", self.right_button_click_callback)
-        self.add_callback("RightButtonReleaseEvent", self.right_button_release_callback)
-        self.add_callback("MouseMoveEvent", self.mouse_move_callback)
-        self.add_callback("KeyPressEvent", self.key_press_callback)
+    def handle_events(self, actor):
+        self.add_callback(actor, "LeftButtonPressEvent", self.left_button_click_callback)
+        self.add_callback(actor, "LeftButtonReleaseEvent", self.left_button_release_callback)
+        self.add_callback(actor, "RightButtonPressEvent", self.right_button_click_callback)
+        self.add_callback(actor, "RightButtonReleaseEvent", self.right_button_release_callback)
+        self.add_callback(actor, "MouseMoveEvent", self.mouse_move_callback)
+        self.add_callback(actor, "KeyPressEvent", self.key_press_callback)
 
     @staticmethod
     def left_button_click_callback(i_ren, obj, self):
@@ -199,6 +197,7 @@ class Button2D(UI):
             {iconname : filename, iconname : filename, ...}
 
         """
+        super(Button2D, self).__init__()
         self.icon_extents = dict()
         self.icons = self.__build_icons(icon_fnames)
         self.icon_names = list(self.icons.keys())
@@ -206,7 +205,7 @@ class Button2D(UI):
         self.current_icon_name = self.icon_names[self.current_icon_id]
         self.actor = self.build_actor(self.icons[self.current_icon_name])
         self.size = size
-        super(Button2D, self).__init__()
+        self.handle_events(self.actor)
 
     def __build_icons(self, icon_fnames):
         """ Converts file names to vtkImageDataGeometryFilters.
@@ -361,19 +360,6 @@ class Button2D(UI):
         """
         return [self.actor]
 
-    def add_callback(self, event_type, callback):
-        """ Adds events to button actor.
-
-        Parameters
-        ----------
-        event_type : string
-            event code
-        callback : function
-            callback function
-
-        """
-        super(Button2D, self).add_callback(self.actor, event_type, callback)
-
     def set_icon(self, icon):
         """ Modifies the icon used by the vtkTexturedActor2D.
 
@@ -444,29 +430,17 @@ class Rectangle2D(UI):
             Must take values in [0, 1].
 
         """
+        super(Rectangle2D, self).__init__()
         self.size = size
         self.actor = self.build_actor(size=size, center=center,
                                       color=color, opacity=opacity)
-        super(Rectangle2D, self).__init__()
+        self.handle_events(self.actor)
 
     def get_actors(self):
         """ Returns the actors that compose this UI component.
 
         """
         return [self.actor]
-
-    def add_callback(self, event_type, callback):
-        """ Adds events to rectangle actor.
-
-        Parameters
-        ----------
-        event_type : string
-            event code
-        callback : function
-            callback function
-
-        """
-        super(Rectangle2D, self).add_callback(self.actor, event_type, callback)
 
     def build_actor(self, size, center, color, opacity):
         """ Builds the text actor.
@@ -570,6 +544,7 @@ class Panel2D(UI):
             Alignment of the panel with respect to the overall screen.
 
         """
+        super(Panel2D, self).__init__()
         self.center = center
         self.size = size
         self.lower_limits = (self.center[0] - self.size[0] / 2,
@@ -581,7 +556,9 @@ class Panel2D(UI):
         self.element_positions = []
         self.element_positions.append([self.panel, 'relative', 0.5, 0.5])
         self.alignment = align
-        super(Panel2D, self).__init__()
+
+        self.handle_events(self.panel.actor)
+
         self.on_left_mouse_button_pressed = self.left_button_press
         self.on_left_mouse_button_drag = self.left_button_drag
 
@@ -604,19 +581,6 @@ class Panel2D(UI):
 
         """
         return [self.panel.actor]
-
-    def add_callback(self, event_type, callback):
-        """ Adds events to an actor.
-
-        Parameters
-        ----------
-        event_type : string
-            event code
-        callback : function
-            callback function
-
-        """
-        super(Panel2D, self).add_callback(self.panel.actor, event_type, callback)
 
     def add_element(self, element, position_type, position):
         """ Adds an element to the panel.
@@ -1017,6 +981,7 @@ class TextBox2D(UI):
             Adds text shadow.
 
         """
+        super(TextBox2D, self).__init__()
         self.text = text
         self.actor = self.build_actor(self.text, position, color, font_size,
                                       font_family, justification, bold, italic, shadow)
@@ -1026,7 +991,9 @@ class TextBox2D(UI):
         self.window_right = 0
         self.caret_pos = 0
         self.init = True
-        super(TextBox2D, self).__init__()
+
+        self.handle_events(self.actor.get_actor())
+
         self.on_left_mouse_button_pressed = self.left_button_press
         self.on_key_press = self.key_press
 
@@ -1100,19 +1067,6 @@ class TextBox2D(UI):
 
         """
         return [self.actor.get_actor()]
-
-    def add_callback(self, event_type, callback):
-        """ Adds events to the text actor.
-
-        Parameters
-        ----------
-        event_type : str
-            event code
-        callback : function
-            callback function
-
-        """
-        super(TextBox2D, self).add_callback(self.actor.get_actor(), event_type, callback)
 
     def width_set_text(self, text):
         """ Adds newlines to text where necessary.
