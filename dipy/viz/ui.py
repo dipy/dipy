@@ -1481,7 +1481,16 @@ class LineSlider2D(UI):
 
     @staticmethod
     def line_click_callback(i_ren, obj, slider):
-        # Update disk position and grab the focus.
+        """ Update disk position and grab the focus.
+        
+        Parameters
+        ----------
+        i_ren : :class:`CustomInteractorStyle`
+        obj : :class:`vtkActor`
+            The picked actor
+        slider : :class:`LineSlider2D`
+         
+        """
         position = i_ren.event.position
         slider.set_position(position)
         slider.set_percentage(position[0])
@@ -1490,11 +1499,30 @@ class LineSlider2D(UI):
 
     @staticmethod
     def disk_press_callback(i_ren, obj, slider):
-        # Only need to grab the focus.
+        """ Only need to grab the focus.
+        
+        Parameters
+        ----------
+        i_ren : :class:`CustomInteractorStyle`
+        obj : :class:`vtkActor`
+            The picked actor
+        slider : :class:`LineSlider2D`
+        
+        """
         i_ren.event.abort()  # Stop propagating the event.
 
     @staticmethod
     def disk_move_callback(i_ren, obj, slider):
+        """ Actual disk movement.
+        
+        Parameters
+        ----------
+        i_ren : :class:`CustomInteractorStyle`
+        obj : :class:`vtkActor`
+            The picked actor
+        slider : :class:`LineSlider2D`
+        
+        """
         position = i_ren.event.position
         slider.set_position(position)
         slider.set_percentage(position[0])
@@ -1502,6 +1530,10 @@ class LineSlider2D(UI):
         i_ren.event.abort()  # Stop propagating the event.
 
     def handle_events(self, actor):
+        """ Handle all events for the LineSlider.
+        Base method needs to be overridden due to multiple actors. 
+         
+        """
         self.add_callback(self.slider_line, "LeftButtonPressEvent", self.line_click_callback)
         self.add_callback(self.slider_disk, "LeftButtonPressEvent", self.disk_press_callback)
         self.add_callback(self.slider_disk, "MouseMoveEvent", self.disk_move_callback)
