@@ -1,5 +1,6 @@
 import numpy as np
 
+
 def dki_design_matrix(gtab):
     r""" Constructs B design matrix for DKI
 
