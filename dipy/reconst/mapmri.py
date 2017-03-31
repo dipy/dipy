@@ -282,8 +282,8 @@ class MapmriModel(ReconstModel, Cache):
                 self.mu = np.array([mumean, mumean, mumean])
                 self.M = mapmri_isotropic_phi_matrix(radial_order, mumean, q)
                 if (self.laplacian_regularization and
-                   isinstance(laplacian_weighting, float) and
-                   not positivity_constraint):
+                        isinstance(laplacian_weighting, float) and
+                        not positivity_constraint):
                     MMt = (np.dot(self.M.T, self.M) +
                            laplacian_weighting * mumean *
                            self.laplacian_matrix)
@@ -333,17 +333,17 @@ class MapmriModel(ReconstModel, Cache):
                     lopt = generalized_crossvalidation(data, M,
                                                        laplacian_matrix)
                 except np.linalg.linalg.LinAlgError:
-                    1/0.
+                    1 / 0.
                     lopt = 0.05
                     errorcode = 1
             elif np.isscalar(self.laplacian_weighting):
                 lopt = self.laplacian_weighting
             else:
                 lopt = generalized_crossvalidation_array(
-                                    data,
-                                    M,
-                                    laplacian_matrix,
-                                    self.laplacian_weighting)
+                    data,
+                    M,
+                    laplacian_matrix,
+                    self.laplacian_weighting)
 
         else:
             lopt = 0.
@@ -569,18 +569,18 @@ class MapmriFit(ReconstFit):
             rtpp_vec = np.zeros((ind_mat.shape[0]))
             count = 0
             for n in range(0, self.model.radial_order + 1, 2):
-                    for j in range(1, 2 + n // 2):
-                        l = n + 2 - 2 * j
-                        const = (-1/2.0) ** (l/2) / np.sqrt(np.pi)
-                        matsum = 0
-                        for k in range(0, j):
-                            matsum += (-1) ** k * \
-                                binomialfloat(j + l - 0.5, j - k - 1) *\
-                                gamma(l / 2 + k + 1 / 2.0) /\
-                                (factorial(k) * 0.5 ** (l / 2 + 1 / 2.0 + k))
-                        for m in range(-l, l + 1):
-                            rtpp_vec[count] = const * matsum
-                            count += 1
+                for j in range(1, 2 + n // 2):
+                    l = n + 2 - 2 * j
+                    const = (-1 / 2.0) ** (l / 2) / np.sqrt(np.pi)
+                    matsum = 0
+                    for k in range(0, j):
+                        matsum += (-1) ** k * \
+                            binomialfloat(j + l - 0.5, j - k - 1) *\
+                            gamma(l / 2 + k + 1 / 2.0) /\
+                            (factorial(k) * 0.5 ** (l / 2 + 1 / 2.0 + k))
+                    for m in range(-l, l + 1):
+                        rtpp_vec[count] = const * matsum
+                        count += 1
 
             direction = np.array(self.R[:, 0], ndmin=2)
             r, theta, phi = cart2sphere(direction[:, 0], direction[:, 1],
@@ -882,8 +882,8 @@ class MapmriFit(ReconstFit):
         """
         if self.model.anisotropic_scaling:
             laplacian_matrix = mapmri_laplacian_reg_matrix(
-                    self.model.ind_mat, self.mu,
-                    self.model.S_mat, self.model.T_mat, self.model.U_mat)
+                self.model.ind_mat, self.mu,
+                self.model.S_mat, self.model.T_mat, self.model.U_mat)
         else:
             laplacian_matrix = self.mu[0] * self.model.laplacian_matrix
 
@@ -922,7 +922,6 @@ class MapmriFit(ReconstFit):
 
         E = S0 * np.dot(M, self._mapmri_coef)
         return E
-
 
     def pdf(self, r_points):
         """ Diffusion propagator on a given set of real points.
@@ -1035,7 +1034,7 @@ def b_mat(index_matrix):
         B[i] = (
             K * np.sqrt(factorial(n1) * factorial(n2) * factorial(n3)) /
             (factorial2(n1) * factorial2(n2) * factorial2(n3))
-            )
+        )
 
     return B
 
@@ -1141,7 +1140,7 @@ def mapmri_phi_matrix(radial_order, mu, q_gradients):
     for nx, ny, nz in ind_mat:
         M[:, counter] = (
             np.real(Mx_storage[:, nx] * My_storage[:, ny] * Mz_storage[:, nz])
-            )
+        )
         counter += 1
 
     return M
@@ -1213,7 +1212,7 @@ def mapmri_psi_matrix(radial_order, mu, rgrad):
     for nx, ny, nz in ind_mat:
         K[:, counter] = (
             Kx_storage[:, nx] * Ky_storage[:, ny] * Kz_storage[:, nz]
-            )
+        )
         counter += 1
 
     return K
@@ -1331,7 +1330,7 @@ def mapmri_isotropic_phi_matrix(radial_order, mu, q):
         for j in range(1, 2 + n // 2):
             l = n + 2 - 2 * j
             const = mapmri_isotropic_radial_signal_basis(j, l, mu, qval)
-            for m in range(-l, l+1):
+            for m in range(-l, l + 1):
                 M[:, counter] = const * real_sph_harm(m, l, theta, phi)
                 counter += 1
     return M
@@ -1362,7 +1361,7 @@ def mapmri_isotropic_radial_signal_basis(j, l, mu, qval):
         (-1) ** (l / 2) * np.sqrt(4.0 * np.pi) *
         (pi2_mu2_q2) ** (l / 2) * np.exp(-pi2_mu2_q2) *
         genlaguerre(j - 1, l + 0.5)(2 * pi2_mu2_q2)
-        )
+    )
     return const
 
 
@@ -1479,7 +1478,7 @@ def mapmri_isotropic_radial_pdf_basis(j, l, mu, r):
     const = (
         (-1) ** (j - 1) / (np.sqrt(2) * np.pi * mu ** 3) *
         r2u2 ** (l / 2) * np.exp(-r2u2) * genlaguerre(j - 1, l + 0.5)(2 * r2u2)
-        )
+    )
     return const
 
 
@@ -1503,7 +1502,7 @@ def mapmri_isotropic_K_mu_independent(radial_order, rgrad):
             const = (-1) ** (j - 1) *\
                 (np.sqrt(2) * np.pi) ** (-1) *\
                 (r ** 2 / 2) ** (l / 2)
-            for m in range(-l, l+1):
+            for m in range(-l, l + 1):
                 K[:, counter] = const * real_sph_harm(m, l, theta, phi)
                 counter += 1
     return K
@@ -1929,18 +1928,18 @@ def mapmri_laplacian_reg_matrix(ind_mat, mu, S_mat, T_mat, U_mat):
                (z[i] - z[j]) % 2 == 0
                ):
                 LR[i, j] = LR[j, i] = \
-                  (ux ** 3 / (uy * uz)) *\
-                  S_mat[x[i], x[j]] * U_mat[y[i], y[j]] * U_mat[z[i], z[j]] +\
-                  (uy ** 3 / (ux * uz)) *\
-                  S_mat[y[i], y[j]] * U_mat[z[i], z[j]] * U_mat[x[i], x[j]] +\
-                  (uz ** 3 / (ux * uy)) *\
-                  S_mat[z[i], z[j]] * U_mat[x[i], x[j]] * U_mat[y[i], y[j]] +\
-                  2 * ((ux * uy) / uz) *\
-                  T_mat[x[i], x[j]] * T_mat[y[i], y[j]] * U_mat[z[i], z[j]] +\
-                  2 * ((ux * uz) / uy) *\
-                  T_mat[x[i], x[j]] * T_mat[z[i], z[j]] * U_mat[y[i], y[j]] +\
-                  2 * ((uz * uy) / ux) *\
-                  T_mat[z[i], z[j]] * T_mat[y[i], y[j]] * U_mat[x[i], x[j]]
+                    (ux ** 3 / (uy * uz)) * S_mat[x[i], x[j]] * \
+                    U_mat[y[i], y[j]] * U_mat[z[i], z[j]] +\
+                    (uy ** 3 / (ux * uz)) * S_mat[y[i], y[j]] * \
+                    U_mat[z[i], z[j]] * U_mat[x[i], x[j]] +\
+                    (uz ** 3 / (ux * uy)) * S_mat[z[i], z[j]] * \
+                    U_mat[x[i], x[j]] * U_mat[y[i], y[j]] +\
+                    2 * ((ux * uy) / uz) * T_mat[x[i], x[j]] * \
+                    T_mat[y[i], y[j]] * U_mat[z[i], z[j]] +\
+                    2 * ((ux * uz) / uy) * T_mat[x[i], x[j]] * \
+                    T_mat[z[i], z[j]] * U_mat[y[i], y[j]] +\
+                    2 * ((uz * uy) / ux) * T_mat[z[i], z[j]] * \
+                    T_mat[y[i], y[j]] * U_mat[x[i], x[j]]
 
     return LR
 
