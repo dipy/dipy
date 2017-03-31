@@ -86,8 +86,8 @@ def test_tensor_model():
         # Check that it works on signal that has already been normalized to S0:
         dm_to_relative = dti.TensorModel(gtab)
         if np.any(gtab.b0s_mask):
-            relative_data = (data[0, 0, 0]/np.mean(data[0, 0, 0,
-                                                        gtab.b0s_mask]))
+            relative_data = (data[0, 0, 0] / np.mean(data[0, 0, 0,
+                                                          gtab.b0s_mask]))
 
             dtifit_to_relative = dm_to_relative.fit(relative_data)
             npt.assert_almost_equal(dtifit.fa[0, 0, 0], dtifit_to_relative.fa,
@@ -120,7 +120,7 @@ def test_tensor_model():
     tensor = from_lower_triangular(D)
     A_squiggle = tensor - (1 / 3.0) * np.trace(tensor) * np.eye(3)
     mode = (3 * np.sqrt(6) * np.linalg.det(A_squiggle /
-            np.linalg.norm(A_squiggle)))
+                                           np.linalg.norm(A_squiggle)))
     evals_eigh, evecs_eigh = np.linalg.eigh(tensor)
     # Sort according to eigen-value from large to small:
     evecs = evecs_eigh[:, np.argsort(evals_eigh)[::-1]]
@@ -155,10 +155,10 @@ def test_tensor_model():
             # so we need to allow for sign flips. One of the following should
             # always be true:
             assert_(
-                    np.all(np.abs(tensor_fit.evecs[0][:, i] -
-                                  evecs[:, i]) < 10e-6) or
-                    np.all(np.abs(-tensor_fit.evecs[0][:, i] -
-                                  evecs[:, i]) < 10e-6))
+                np.all(np.abs(tensor_fit.evecs[0][:, i] -
+                              evecs[:, i]) < 10e-6) or
+                np.all(np.abs(-tensor_fit.evecs[0][:, i] -
+                              evecs[:, i]) < 10e-6))
             # We set a fixed tolerance of 10e-6, similar to array_almost_equal
 
         err_msg = "Calculation of tensor from Y does not compare to "
@@ -270,9 +270,9 @@ def test_diffusivities():
     assert_almost_equal(Trace, (0.0015 + 0.0003 + 0.0001))
     assert_almost_equal(ad, 0.0015)
     assert_almost_equal(rd, (0.0003 + 0.0001) / 2)
-    assert_almost_equal(lin, (0.0015 - 0.0003)/Trace)
-    assert_almost_equal(plan, 2 * (0.0003 - 0.0001)/Trace)
-    assert_almost_equal(spher, (3 * 0.0001)/Trace)
+    assert_almost_equal(lin, (0.0015 - 0.0003) / Trace)
+    assert_almost_equal(plan, 2 * (0.0003 - 0.0001) / Trace)
+    assert_almost_equal(spher, (3 * 0.0001) / Trace)
 
 
 def test_color_fa():
@@ -752,6 +752,7 @@ def test_predict():
     p = dtif.predict(gtab, step=1)
     assert_equal(p.shape, data.shape)
 
+
 def test_eig_from_lo_tri():
     psphere = get_sphere('symmetric362')
     bvecs = np.concatenate(([[0, 0, 0]], psphere.vertices))
@@ -770,6 +771,7 @@ def test_eig_from_lo_tri():
     lo_tri = lower_triangular(dmfit.quadratic_form)
     assert_array_almost_equal(dti.eig_from_lo_tri(lo_tri), dmfit.model_params)
 
+
 def test_min_signal_alone():
     fdata, fbvals, fbvecs = get_data()
     data = nib.load(fdata).get_data()
@@ -781,6 +783,7 @@ def test_min_signal_alone():
     fit_together = ten_model.fit(data)
     npt.assert_equal(fit_together.model_params[idx], fit_alone.model_params)
 
+
 def test_decompose_tensor_nan():
     D_fine = np.array([1.7e-3, 0.0, 0.3e-3, 0.0, 0.0, 0.2e-3])
     D_alter = np.array([1.6e-3, 0.0, 0.4e-3, 0.0, 0.0, 0.3e-3])
@@ -791,7 +794,7 @@ def test_decompose_tensor_nan():
                                          from_lower_triangular(D_alter))
     assert_array_almost_equal(lfine, np.array([1.7e-3, 0.3e-3, 0.2e-3]))
     assert_array_almost_equal(vfine, vref)
-    
+
     lref, vref = decompose_tensor(from_lower_triangular(D_alter))
     lalter, valter = _decompose_tensor_nan(from_lower_triangular(D_nan),
                                            from_lower_triangular(D_alter))
