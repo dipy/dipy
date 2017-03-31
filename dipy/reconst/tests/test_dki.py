@@ -13,7 +13,7 @@ from dipy.io.gradients import read_bvals_bvecs
 from dipy.core.gradients import gradient_table
 from dipy.data import get_data
 from dipy.reconst.dti import (from_lower_triangular, decompose_tensor)
-from dipy.reconst.dki import (mean_kurtosis, carlson_rf,  carlson_rd,
+from dipy.reconst.dki import (mean_kurtosis, carlson_rf, carlson_rd,
                               axial_kurtosis, radial_kurtosis, _positive_evals)
 
 from dipy.core.sphere import Sphere
@@ -34,7 +34,7 @@ mevals_cross = np.array([[0.00099, 0, 0], [0.00226, 0.00087, 0.00087],
                          [0.00099, 0, 0], [0.00226, 0.00087, 0.00087]])
 angles_cross = [(80, 10), (80, 10), (20, 30), (20, 30)]
 fie = 0.49
-frac_cross = [fie*50, (1-fie) * 50, fie*50, (1-fie) * 50]
+frac_cross = [fie * 50, (1 - fie) * 50, fie * 50, (1 - fie) * 50]
 # Noise free simulates
 signal_cross, dt_cross, kt_cross = multi_tensor_dki(gtab_2s, mevals_cross,
                                                     S0=100,
@@ -63,8 +63,8 @@ params_sph = np.concatenate((evals_sph, evecs_sph[0], evecs_sph[1],
 # Compute ground truth - since KT is spherical, appparent kurtosic coeficient
 # for all gradient directions and mean kurtosis have to be equal to Kref_sph.
 f = 0.5
-Dg = f*Di + (1-f)*De
-Kref_sphere = 3 * f * (1-f) * ((Di-De) / Dg) ** 2
+Dg = f * Di + (1 - f) * De
+Kref_sphere = 3 * f * (1 - f) * ((Di - De) / Dg) ** 2
 
 # Simulation 3. Multi-voxel simulations - dataset of four voxels is simulated.
 # Since the objective of this simulation is to see if procedures are able to
@@ -149,7 +149,7 @@ def test_dki_predict():
     # Check that it works with more than one voxel, and with a different S0
     # in each voxel:
     pred_multi = dkiM.predict(multi_params,
-                              S0=100*np.ones(pred_multi.shape[:3]))
+                              S0=100 * np.ones(pred_multi.shape[:3]))
     assert_array_almost_equal(pred_multi, DWI)
 
     # check the function predict of the DiffusionKurtosisFit object
@@ -228,7 +228,7 @@ def test_carlson_rd():
 
     # Complex values (testing in 2D format)
     x = np.array([[1j, 0.0], [0.0, -2 - 1j]])
-    y = np.array([[-1j, 1j], [1j-1, -1j]])
+    y = np.array([[-1j, 1j], [1j - 1, -1j]])
     z = np.array([[2.0, -1j], [1j, -1 + 1j]])
 
     # Defene reference outputs
@@ -251,7 +251,7 @@ def test_Wrotate_single_fiber():
     # Define single fiber simulate
     mevals = np.array([[0.00099, 0, 0], [0.00226, 0.00087, 0.00087]])
     fie = 0.49
-    frac = [fie*100, (1 - fie)*100]
+    frac = [fie * 100, (1 - fie) * 100]
 
     # simulate single fiber not aligned to the x-axis
     theta = random.uniform(0, 180)
@@ -287,7 +287,7 @@ def test_Wrotate_crossing_fibers():
     # Simulate the crossing fiber
     angles = [(90, 30), (90, 30), (20, 30), (20, 30)]
     fie = 0.49
-    frac = [fie*50, (1-fie) * 50, fie*50, (1-fie) * 50]
+    frac = [fie * 50, (1 - fie) * 50, fie * 50, (1 - fie) * 50]
     mevals = np.array([[0.00099, 0, 0], [0.00226, 0.00087, 0.00087],
                        [0.00099, 0, 0], [0.00226, 0.00087, 0.00087]])
 
@@ -442,10 +442,10 @@ def test_single_voxel_DKI_stats():
     RDi = 0
     RDe = 0.00087
     # Reference values
-    AD = fie*ADi + (1-fie)*ADe
-    AK = 3 * fie * (1-fie) * ((ADi-ADe) / AD) ** 2
-    RD = fie*RDi + (1-fie)*RDe
-    RK = 3 * fie * (1-fie) * ((RDi-RDe) / RD) ** 2
+    AD = fie * ADi + (1 - fie) * ADe
+    AK = 3 * fie * (1 - fie) * ((ADi - ADe) / AD) ** 2
+    RD = fie * RDi + (1 - fie) * RDe
+    RK = 3 * fie * (1 - fie) * ((RDi - RDe) / RD) ** 2
     ref_vals = np.array([AD, AK, RD, RK])
 
     # simulate fiber randomly oriented
@@ -453,7 +453,7 @@ def test_single_voxel_DKI_stats():
     phi = random.uniform(0, 320)
     angles = [(theta, phi), (theta, phi)]
     mevals = np.array([[ADi, RDi, RDi], [ADe, RDe, RDe]])
-    frac = [fie*100, (1-fie)*100]
+    frac = [fie * 100, (1 - fie) * 100]
     signal, dt, kt = multi_tensor_dki(gtab_2s, mevals, S0=100, angles=angles,
                                       fractions=frac, snr=None)
     evals, evecs = decompose_tensor(from_lower_triangular(dt))
