@@ -29,7 +29,7 @@ import time
 
 def int_func(n):
     f = np.sqrt(2) * factorial(n) / float(((gamma(1 + n / 2.0)) *
-                                          np.sqrt(2**(n + 1) * factorial(n))))
+                                           np.sqrt(2**(n + 1) * factorial(n))))
     return f
 
 
@@ -252,7 +252,6 @@ def test_mapmri_signal_fitting(radial_order=6):
         assert_almost_equal(nmse_signal, 0.0, 2)
 
 
-
 def test_mapmri_isotropic_static_scale_factor(radial_order=6):
     gtab = get_gtab_taiwan_dsi()
     D = 0.7e-3
@@ -473,7 +472,7 @@ def test_mapmri_laplacian_anisotropic(radial_order=6):
         (3 * (l1 ** 2 + l2 ** 2 + l3 ** 2) +
          2 * l2 * l3 + 2 * l1 * (l2 + l3)) * (np.pi ** (5 / 2.) * tau) /
         (np.sqrt(2 * l1 * l2 * l3 * tau))
-        )
+    )
 
     # check if estimated laplacian corresponds with ground truth
     laplacian_matrix = mapmri.mapmri_laplacian_reg_matrix(
@@ -502,7 +501,7 @@ def test_mapmri_laplacian_isotropic(radial_order=6):
         (3 * (l1 ** 2 + l2 ** 2 + l3 ** 2) +
          2 * l2 * l3 + 2 * l1 * (l2 + l3)) * (np.pi ** (5 / 2.) * tau) /
         (np.sqrt(2 * l1 * l2 * l3 * tau))
-        )
+    )
 
     # check if estimated laplacian corresponds with ground truth
     laplacian_matrix = mapmri.mapmri_isotropic_laplacian_reg_matrix(
@@ -568,7 +567,7 @@ def test_signal_fitting_equality_anisotropic_isotropic(radial_order=6):
 
     # test if norm of signal laplacians are the same
     laplacian_matrix_iso = mapmri.mapmri_isotropic_laplacian_reg_matrix(
-                           radial_order, mu[0])
+        radial_order, mu[0])
     ind_mat = mapmri.mapmri_index_matrix(radial_order)
     S_mat, T_mat, U_mat = mapmri.mapmri_STU_reg_matrices(radial_order)
     laplacian_matrix_aniso = mapmri.mapmri_laplacian_reg_matrix(
