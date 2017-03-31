@@ -58,7 +58,7 @@ for i in range(2):
         gtf = GTF[0, i, j]
         S, p = multi_tensor(gtab_2s, mevals, S0=100,
                             angles=[(90, 0), (90, 0)],
-                            fractions=[(1-gtf) * 100, gtf*100], snr=None)
+                            fractions=[(1 - gtf) * 100, gtf * 100], snr=None)
         DWI[0, i, j] = S
         FAref[0, i, j] = FAdti
         MDref[0, i, j] = MDdti
@@ -74,7 +74,8 @@ def test_fwdti_singlevoxel():
     mevals = np.array([[0.0017, 0.0003, 0.0003], [0.003, 0.003, 0.003]])
     S_conta, peaks = multi_tensor(gtab_2s, mevals, S0=100,
                                   angles=[(90, 0), (90, 0)],
-                                  fractions=[(1-gtf) * 100, gtf*100], snr=None)
+                                  fractions=[(1 - gtf) * 100, gtf * 100],
+                                  snr=None)
     fwdm = fwdti.FreeWaterTensorModel(gtab_2s, 'WLS')
     fwefit = fwdm.fit(S_conta)
     FAfwe = fwefit.fa
@@ -114,7 +115,8 @@ def test_fwdti_precision():
     mevals = np.array([[0.0017, 0.0003, 0.0003], [0.003, 0.003, 0.003]])
     S_conta, peaks = multi_tensor(gtab_2s, mevals, S0=100,
                                   angles=[(90, 0), (90, 0)],
-                                  fractions=[(1-gtf) * 100, gtf*100], snr=None)
+                                  fractions=[(1 - gtf) * 100, gtf * 100],
+                                  snr=None)
     fwdm = fwdti.FreeWaterTensorModel(gtab_2s, 'WLS', piterations=5)
     fwefit = fwdm.fit(S_conta)
     FAfwe = fwefit.fa
@@ -156,7 +158,8 @@ def test_fwdti_predictions():
     mevals = np.array([[0.0017, 0.0003, 0.0003], [0.003, 0.003, 0.003]])
     S_conta, peaks = multi_tensor(gtab_2s, mevals, S0=100,
                                   angles=angles,
-                                  fractions=[(1-gtf) * 100, gtf*100], snr=None)
+                                  fractions=[(1 - gtf) * 100, gtf * 100],
+                                  snr=None)
     R = all_tensor_evecs(peaks[0])
     R = R.reshape((9))
     model_params = np.concatenate(([0.0017, 0.0003, 0.0003], R, [gtf]),
@@ -217,7 +220,8 @@ def test_fwdti_restore():
     mevals = np.array([[0.0017, 0.0003, 0.0003], [0.003, 0.003, 0.003]])
     S_conta, peaks = multi_tensor(gtab_2s, mevals, S0=100,
                                   angles=[(90, 0), (90, 0)],
-                                  fractions=[(1-gtf) * 100, gtf*100], snr=None)
+                                  fractions=[(1 - gtf) * 100, gtf * 100],
+                                  snr=None)
     fwdm = fwdti.FreeWaterTensorModel(gtab_2s, 'NLS', weighting='sigma',
                                       sigma=4)
     fwdtiF = fwdm.fit(S_conta)
@@ -277,7 +281,8 @@ def test_md_regularization():
     mevals = np.array([[0.0017, 0.0003, 0.0003], [0.003, 0.003, 0.003]])
     S_conta, peaks = multi_tensor(gtab_2s, mevals, S0=100,
                                   angles=[(90, 0), (90, 0)],
-                                  fractions=[(1-gtf) * 100, gtf*100], snr=None)
+                                  fractions=[(1 - gtf) * 100, gtf * 100],
+                                  snr=None)
     fwdm = fwdti.FreeWaterTensorModel(gtab_2s, 'NLS')
     fwefit = fwdm.fit(S_conta)
 
@@ -303,7 +308,8 @@ def test_negative_s0():
     mevals = np.array([[0.0017, 0.0003, 0.0003], [0.003, 0.003, 0.003]])
     S_conta, peaks = multi_tensor(gtab_2s, mevals, S0=100,
                                   angles=[(90, 0), (90, 0)],
-                                  fractions=[(1-gtf) * 100, gtf*100], snr=None)
+                                  fractions=[(1 - gtf) * 100, gtf * 100],
+                                  snr=None)
     S_conta[gtab_2s.bvals == 0] = -100
     fwdm = fwdti.FreeWaterTensorModel(gtab_2s, 'NLS')
     fwefit = fwdm.fit(S_conta)
