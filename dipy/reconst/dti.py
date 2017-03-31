@@ -786,11 +786,11 @@ class TensorModel(ReconstModel):
         data_in_mask = np.maximum(data_in_mask, min_signal)
 
         params_in_mask = self.fit_method(
-                self.design_matrix,
-                data_in_mask,
-                return_S0_hat=self.return_S0_hat,
-                *self.args,
-                **self.kwargs)
+            self.design_matrix,
+            data_in_mask,
+            return_S0_hat=self.return_S0_hat,
+            *self.args,
+            **self.kwargs)
         if self.return_S0_hat:
             params_in_mask, model_S0 = params_in_mask
 
@@ -1373,12 +1373,12 @@ def wls_fit_tensor(design_matrix, data, return_S0_hat=False):
     log_s = np.log(data)
     w = np.exp(np.einsum('...ij,...j', ols_fit, log_s))
     fit_result = np.einsum('...ij,...j',
-                  pinv(design_matrix * w[..., None]),
-                  w * log_s)
+                           pinv(design_matrix * w[..., None]),
+                           w * log_s)
     if return_S0_hat:
         return (eig_from_lo_tri(fit_result,
                                 min_diffusivity=tol / -design_matrix.min()),
-                                np.exp(-fit_result[:, -1]))
+                np.exp(-fit_result[:, -1]))
     else:
         return eig_from_lo_tri(fit_result,
                                min_diffusivity=tol / -design_matrix.min())
@@ -1437,7 +1437,7 @@ def ols_fit_tensor(design_matrix, data, return_S0_hat=False):
     if return_S0_hat:
         return (eig_from_lo_tri(fit_result,
                                 min_diffusivity=tol / -design_matrix.min()),
-                                np.exp(-fit_result[:, -1]))
+                np.exp(-fit_result[:, -1]))
     else:
         return eig_from_lo_tri(fit_result,
                                min_diffusivity=tol / -design_matrix.min())
