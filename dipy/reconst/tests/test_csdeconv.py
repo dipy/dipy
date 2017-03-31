@@ -364,7 +364,7 @@ def test_r2_term_odf_sharp():
     assert_equal(directions.shape[0], 2)
 
     # This should pass as well
-    sdt_model = ConstrainedSDTModel(gtab, ratio=3/15., sh_order=8)
+    sdt_model = ConstrainedSDTModel(gtab, ratio=3 / 15., sh_order=8)
     sdt_fit = sdt_model.fit(S)
     fodf = sdt_fit.odf(sphere)
 
@@ -479,6 +479,7 @@ def test_sphere_scaling_csdmodel():
     csd_fit_hemi = model_hemi.fit(S)
 
     assert_array_almost_equal(csd_fit_full.shm_coeff, csd_fit_hemi.shm_coeff)
+
 
 expected_lambda = {4: 27.5230088, 8: 82.5713865, 16: 216.0843135}
 
