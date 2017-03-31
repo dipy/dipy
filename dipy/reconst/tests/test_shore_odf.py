@@ -51,7 +51,7 @@ def test_shore_odf():
         data, golden_directions = sb_dummies[sbd]
         asmfit = asm.fit(data)
         odf = asmfit.odf(sphere2)
-        directions, _ , _ = peak_directions(odf, sphere2, .35, 25)
+        directions, _, _ = peak_directions(odf, sphere2, .35, 25)
         if len(directions) <= 3:
             assert_equal(len(directions), len(golden_directions))
         if len(directions) > 3:
