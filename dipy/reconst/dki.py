@@ -80,8 +80,8 @@ def carlson_rf(x, y, z, errtol=3e-4):
     yn = y.copy()
     zn = z.copy()
     An = (xn + yn + zn) / 3.0
-    Q = (3.*errtol) ** (-1/6.) * np.max(np.abs([An - xn, An - yn, An - zn]),
-                                        axis=0)
+    Q = (3. * errtol) ** (-1 / 6.) * \
+        np.max(np.abs([An - xn, An - yn, An - zn]), axis=0)
     # Convergence has to be done voxel by voxel
     index = ndindex(x.shape)
     for v in index:
@@ -91,20 +91,21 @@ def carlson_rf(x, y, z, errtol=3e-4):
             xnroot = np.sqrt(xn[v])
             ynroot = np.sqrt(yn[v])
             znroot = np.sqrt(zn[v])
-            lamda = xnroot*(ynroot + znroot) + ynroot*znroot
+            lamda = xnroot * (ynroot + znroot) + ynroot * znroot
             n = n + 1
-            xn[v] = (xn[v]+lamda) * 0.250
-            yn[v] = (yn[v]+lamda) * 0.250
-            zn[v] = (zn[v]+lamda) * 0.250
-            An[v] = (An[v]+lamda) * 0.250
+            xn[v] = (xn[v] + lamda) * 0.250
+            yn[v] = (yn[v] + lamda) * 0.250
+            zn[v] = (zn[v] + lamda) * 0.250
+            An[v] = (An[v] + lamda) * 0.250
 
     # post convergence calculation
-    X = 1. - xn/An
-    Y = 1. - yn/An
+    X = 1. - xn / An
+    Y = 1. - yn / An
     Z = - X - Y
-    E2 = X*Y - Z*Z
+    E2 = X * Y - Z * Z
     E3 = X * Y * Z
-    RF = An**(-1/2.) * (1 - E2/10. + E3/14. + (E2**2)/24. - 3/44.*E2*E3)
+    RF = An**(-1 / 2.) * \
+        (1 - E2 / 10. + E3 / 14. + (E2**2) / 24. - 3 / 44. * E2 * E3)
 
     return RF
 
@@ -141,10 +142,10 @@ def carlson_rd(x, y, z, errtol=1e-4):
     xn = x.copy()
     yn = y.copy()
     zn = z.copy()
-    A0 = (xn + yn + 3.*zn) / 5.0
+    A0 = (xn + yn + 3. * zn) / 5.0
     An = A0.copy()
-    Q = (errtol/4.) ** (-1/6.) * np.max(np.abs([An - xn, An - yn, An - zn]),
-                                        axis=0)
+    Q = (errtol / 4.) ** (-1 / 6.) * \
+        np.max(np.abs([An - xn, An - yn, An - zn]), axis=0)
     sum_term = np.zeros(x.shape, dtype=x.dtype)
     n = np.zeros(x.shape)
 
@@ -156,26 +157,28 @@ def carlson_rd(x, y, z, errtol=1e-4):
             xnroot = np.sqrt(xn[v])
             ynroot = np.sqrt(yn[v])
             znroot = np.sqrt(zn[v])
-            lamda = xnroot*(ynroot + znroot) + ynroot*znroot
-            sum_term[v] = sum_term[v] + 4.**(-n[v]) / (znroot * (zn[v]+lamda))
+            lamda = xnroot * (ynroot + znroot) + ynroot * znroot
+            sum_term[v] = sum_term[v] + \
+                4.**(-n[v]) / (znroot * (zn[v] + lamda))
             n[v] = n[v] + 1
-            xn[v] = (xn[v]+lamda) * 0.250
-            yn[v] = (yn[v]+lamda) * 0.250
-            zn[v] = (zn[v]+lamda) * 0.250
-            An[v] = (An[v]+lamda) * 0.250
+            xn[v] = (xn[v] + lamda) * 0.250
+            yn[v] = (yn[v] + lamda) * 0.250
+            zn[v] = (zn[v] + lamda) * 0.250
+            An[v] = (An[v] + lamda) * 0.250
 
     # post convergence calculation
     X = (A0 - x) / (4.**(n) * An)
     Y = (A0 - y) / (4.**(n) * An)
-    Z = - (X+Y) / 3.
-    E2 = X*Y - 6.*Z*Z
-    E3 = (3.*X*Y - 8.*Z*Z) * Z
-    E4 = 3. * (X*Y - Z*Z) * Z**2.
+    Z = - (X + Y) / 3.
+    E2 = X * Y - 6. * Z * Z
+    E3 = (3. * X * Y - 8. * Z * Z) * Z
+    E4 = 3. * (X * Y - Z * Z) * Z**2.
     E5 = X * Y * Z**3.
     RD = \
-        4**(-n) * An**(-3/2.) * \
-        (1 - 3/14.*E2 + 1/6.*E3 + 9/88.*(E2**2) - 3/22.*E4 - 9/52.*E2*E3 +
-         3/26.*E5) + 3*sum_term
+        4**(-n) * An**(-3 / 2.) * \
+        (1 - 3 / 14. * E2 + 1 / 6. * E3 +
+         9 / 88. * (E2**2) - 3 / 22. * E4 - 9 / 52. * E2 * E3 +
+         3 / 26. * E5) + 3 * sum_term
 
     return RD
 
@@ -238,18 +241,18 @@ def _F1m(a, b, c):
         L1 = a[cond1]
         L2 = b[cond1]
         L3 = c[cond1]
-        RFm = carlson_rf(L1/L2, L1/L3, np.ones(len(L1)))
-        RDm = carlson_rd(L1/L2, L1/L3, np.ones(len(L1)))
-        F1[cond1] = ((L1+L2+L3) ** 2) / (18 * (L1-L2) * (L1-L3)) * \
-                    (np.sqrt(L2*L3) / L1 * RFm +
-                     (3 * L1**2 - L1*L2 - L1*L3 - L2*L3) /
-                     (3 * L1 * np.sqrt(L2*L3)) * RDm - 1)
+        RFm = carlson_rf(L1 / L2, L1 / L3, np.ones(len(L1)))
+        RDm = carlson_rd(L1 / L2, L1 / L3, np.ones(len(L1)))
+        F1[cond1] = ((L1 + L2 + L3) ** 2) / (18 * (L1 - L2) * (L1 - L3)) * \
+                    (np.sqrt(L2 * L3) / L1 * RFm +
+                     (3 * L1**2 - L1 * L2 - L1 * L3 - L2 * L3) /
+                     (3 * L1 * np.sqrt(L2 * L3)) * RDm - 1)
 
     # Resolve possible sigularity a==b
     cond2 = np.logical_and(cond0, np.logical_and(abs(a - b) < a * er,
                                                  abs(a - c) > a * er))
     if np.sum(cond2) != 0:
-        L1 = (a[cond2]+b[cond2]) / 2.
+        L1 = (a[cond2] + b[cond2]) / 2.
         L3 = c[cond2]
         F1[cond2] = _F2m(L3, L1, L1) / 2.
 
@@ -257,7 +260,7 @@ def _F1m(a, b, c):
     cond3 = np.logical_and(cond0, np.logical_and(abs(a - c) < a * er,
                                                  abs(a - b) > a * er))
     if np.sum(cond3) != 0:
-        L1 = (a[cond3]+c[cond3]) / 2.
+        L1 = (a[cond3] + c[cond3]) / 2.
         L2 = b[cond3]
         F1[cond3] = _F2m(L2, L1, L1) / 2
 
@@ -265,7 +268,7 @@ def _F1m(a, b, c):
     cond4 = np.logical_and(cond0, np.logical_and(abs(a - c) < a * er,
                                                  abs(a - b) < a * er))
     if np.sum(cond4) != 0:
-        F1[cond4] = 1/5.
+        F1[cond4] = 1 / 5.
 
     return F1
 
@@ -324,37 +327,37 @@ def _F2m(a, b, c):
         L1 = a[cond1]
         L2 = b[cond1]
         L3 = c[cond1]
-        RF = carlson_rf(L1/L2, L1/L3, np.ones(len(L1)))
-        RD = carlson_rd(L1/L2, L1/L3, np.ones(len(L1)))
-        F2[cond1] = (((L1+L2+L3) ** 2) / (3. * (L2-L3) ** 2)) * \
-                    (((L2+L3) / (np.sqrt(L2*L3))) * RF +
-                     ((2.*L1-L2-L3) / (3.*np.sqrt(L2*L3))) * RD - 2.)
+        RF = carlson_rf(L1 / L2, L1 / L3, np.ones(len(L1)))
+        RD = carlson_rd(L1 / L2, L1 / L3, np.ones(len(L1)))
+        F2[cond1] = (((L1 + L2 + L3) ** 2) / (3. * (L2 - L3) ** 2)) * \
+                    (((L2 + L3) / (np.sqrt(L2 * L3))) * RF +
+                     ((2. * L1 - L2 - L3) / (3. * np.sqrt(L2 * L3))) * RD - 2.)
 
     # Resolve possible sigularity b==c
     cond2 = np.logical_and(cond0, np.logical_and(abs(b - c) < b * er,
                                                  abs(a - b) > b * er))
     if np.sum(cond2) != 0:
         L1 = a[cond2]
-        L3 = (c[cond2]+b[cond2]) / 2.
+        L3 = (c[cond2] + b[cond2]) / 2.
 
         # Cumpute alfa [1]_
-        x = 1. - (L1/L3)
+        x = 1. - (L1 / L3)
         alpha = np.zeros(len(L1))
         for i in range(len(x)):
             if x[i] > 0:
-                alpha[i] = 1./np.sqrt(x[i]) * np.arctanh(np.sqrt(x[i]))
+                alpha[i] = 1. / np.sqrt(x[i]) * np.arctanh(np.sqrt(x[i]))
             else:
-                alpha[i] = 1./np.sqrt(-x[i]) * np.arctan(np.sqrt(-x[i]))
+                alpha[i] = 1. / np.sqrt(-x[i]) * np.arctan(np.sqrt(-x[i]))
 
         F2[cond2] = \
-            6. * ((L1 + 2.*L3)**2) / (144. * L3**2 * (L1-L3)**2) * \
-            (L3 * (L1 + 2.*L3) + L1 * (L1 - 4.*L3) * alpha)
+            6. * ((L1 + 2. * L3)**2) / (144. * L3**2 * (L1 - L3)**2) * \
+            (L3 * (L1 + 2. * L3) + L1 * (L1 - 4. * L3) * alpha)
 
     # Resolve possible sigularity a==b and a==c
     cond3 = np.logical_and(cond0, np.logical_and(abs(b - c) < b * er,
                                                  abs(a - b) < b * er))
     if np.sum(cond3) != 0:
-        F2[cond3] = 6/15.
+        F2[cond3] = 6 / 15.
 
     return F2
 
@@ -510,7 +513,7 @@ def _directional_kurtosis(dt, MD, kt, V, min_diffusivity=0, min_kurtosis=-1):
     if min_kurtosis is not None:
         AKC = AKC.clip(min=min_kurtosis)
 
-    return (MD/ADC) ** 2 * AKC
+    return (MD / ADC) ** 2 * AKC
 
 
 def mean_kurtosis(dki_params, min_kurtosis=0, max_kurtosis=3):
@@ -602,12 +605,12 @@ def mean_kurtosis(dki_params, min_kurtosis=0, max_kurtosis=3):
 
     # Compute MK
     MK = \
-        _F1m(evals[..., 0], evals[..., 1], evals[..., 2])*Wxxxx + \
-        _F1m(evals[..., 1], evals[..., 0], evals[..., 2])*Wyyyy + \
-        _F1m(evals[..., 2], evals[..., 1], evals[..., 0])*Wzzzz + \
-        _F2m(evals[..., 0], evals[..., 1], evals[..., 2])*Wyyzz + \
-        _F2m(evals[..., 1], evals[..., 0], evals[..., 2])*Wxxzz + \
-        _F2m(evals[..., 2], evals[..., 1], evals[..., 0])*Wxxyy
+        _F1m(evals[..., 0], evals[..., 1], evals[..., 2]) * Wxxxx + \
+        _F1m(evals[..., 1], evals[..., 0], evals[..., 2]) * Wyyyy + \
+        _F1m(evals[..., 2], evals[..., 1], evals[..., 0]) * Wzzzz + \
+        _F2m(evals[..., 0], evals[..., 1], evals[..., 2]) * Wyyzz + \
+        _F2m(evals[..., 1], evals[..., 0], evals[..., 2]) * Wxxzz + \
+        _F2m(evals[..., 2], evals[..., 1], evals[..., 0]) * Wxxyy
 
     if min_kurtosis is not None:
         MK = MK.clip(min=min_kurtosis)
@@ -670,15 +673,15 @@ def _G1m(a, b, c):
         L2 = b[cond1]
         L3 = c[cond1]
         G1[cond1] = \
-            (L1+L2+L3)**2 / (18 * L2 * (L2-L3)**2) * \
-            (2.*L2 + (L3**2 - 3*L2*L3) / np.sqrt(L2*L3))
+            (L1 + L2 + L3)**2 / (18 * L2 * (L2 - L3)**2) * \
+            (2. * L2 + (L3**2 - 3 * L2 * L3) / np.sqrt(L2 * L3))
 
     # Resolve possible sigularity b==c
     cond2 = np.logical_and(cond0, abs(b - c) < er)
     if np.sum(cond2) != 0:
         L1 = a[cond2]
         L2 = b[cond2]
-        G1[cond2] = (L1 + 2.*L2)**2 / (24.*L2**2)
+        G1[cond2] = (L1 + 2. * L2)**2 / (24. * L2**2)
 
     return G1
 
@@ -732,14 +735,15 @@ def _G2m(a, b, c):
         L2 = b[cond1]
         L3 = c[cond1]
         G2[cond1] = \
-            (L1+L2+L3)**2 / (3 * (L2-L3)**2) * ((L2+L3) / np.sqrt(L2*L3) - 2)
+            (L1 + L2 + L3)**2 / (3 * (L2 - L3)**2) * \
+            ((L2 + L3) / np.sqrt(L2 * L3) - 2)
 
     # Resolve possible sigularity b==c
     cond2 = np.logical_and(cond0, abs(b - c) < er)
     if np.sum(cond2) != 0:
         L1 = a[cond2]
         L2 = b[cond2]
-        G2[cond2] = (L1 + 2.*L2)**2 / (12.*L2**2)
+        G2[cond2] = (L1 + 2. * L2)**2 / (12. * L2**2)
 
     return G2
 
@@ -939,7 +943,7 @@ def dki_prediction(dki_params, gtab, S0=1.):
             this_S0 = S0_vol[v]
         else:
             this_S0 = S0_vol
-        X = np.concatenate((dt, fkt[v]*MD*MD,
+        X = np.concatenate((dt, fkt[v] * MD * MD,
                             np.array([np.log(this_S0)])),
                            axis=0)
         pred_sig[v] = np.exp(np.dot(A, X))
@@ -953,6 +957,7 @@ def dki_prediction(dki_params, gtab, S0=1.):
 class DiffusionKurtosisModel(ReconstModel):
     """ Class for the Diffusion Kurtosis Model
     """
+
     def __init__(self, gtab, fit_method="OLS", *args, **kwargs):
         """ Diffusion Kurtosis Tensor Model [1]
 
@@ -1060,6 +1065,7 @@ class DiffusionKurtosisModel(ReconstModel):
 
 class DiffusionKurtosisFit(TensorFit):
     """ Class for fitting the Diffusion Kurtosis Model"""
+
     def __init__(self, model, model_params):
         """ Initialize a DiffusionKurtosisFit class instance.
 
@@ -1587,6 +1593,7 @@ def Wrotate(kt, Basis):
 
     return Wrot
 
+
 # Defining keys to select a kurtosis tensor element with indexes (i, j, k, l)
 # on a kt vector that contains only the 15 independent elements of the kurtosis
 # tensor: Considering y defined by (i+1) * (j+1) * (k+1) * (l+1). Two elements
@@ -1642,7 +1649,7 @@ def Wrotate_element(kt, indi, indj, indk, indl, B):
         for jl in xyz:
             for kl in xyz:
                 for ll in xyz:
-                    key = (il+1) * (jl+1) * (kl+1) * (ll+1)
+                    key = (il + 1) * (jl + 1) * (kl + 1) * (ll + 1)
                     multiplyB = \
                         B[..., il, indi] * B[..., jl, indj] * \
                         B[..., kl, indk] * B[..., ll, indl]
@@ -1680,7 +1687,7 @@ def Wcons(k_elements):
         for ind_j in xyz:
             for ind_k in xyz:
                 for ind_l in xyz:
-                    key = (ind_i+1) * (ind_j+1) * (ind_k+1) * (ind_l+1)
+                    key = (ind_i + 1) * (ind_j + 1) * (ind_k + 1) * (ind_l + 1)
                     W[ind_i][ind_j][ind_k][ind_l] = k_elements[ind_ele[key]]
 
     return W
@@ -1717,6 +1724,7 @@ def split_dki_param(dki_params):
     kt = dki_params[..., 12:]
 
     return evals, evecs, kt
+
 
 common_fit_methods = {'WLS': wls_fit_dki,
                       'OLS': ols_fit_dki,
