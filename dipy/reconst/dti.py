@@ -2010,7 +2010,7 @@ def design_matrix(gtab, dtype=None):
 
 
 def _quantize_evecs_parallel(data, odf_vertices, v, nbr_processes):
-    if nbr_processes is -1:
+    if nbr_processes == -1:
         try:
             nbr_processes = cpu_count()
         except NotImplementedError:
