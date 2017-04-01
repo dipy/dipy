@@ -124,7 +124,7 @@ class ConstrainedSphericalDeconvModel(SphHarmModel):
 
         no_params = ((sh_order + 1) * (sh_order + 2)) / 2
 
-        if no_params > np.sum(gtab.b0s_mask is False):
+        if no_params > np.sum(~gtab.b0s_mask):
             msg = "Number of parameters required for the fit are more "
             msg += "than the actual data points"
             warnings.warn(msg, UserWarning)
@@ -279,7 +279,7 @@ class ConstrainedSDTModel(SphHarmModel):
 
         no_params = ((sh_order + 1) * (sh_order + 2)) / 2
 
-        if no_params > np.sum(gtab.b0s_mask is False):
+        if no_params > np.sum(~gtab.b0s_mask):
             msg = "Number of parameters required for the fit are more "
             msg += "than the actual data points"
             warnings.warn(msg, UserWarning)
