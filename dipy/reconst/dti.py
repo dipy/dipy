@@ -2014,9 +2014,14 @@ def _quantize_evecs_parallel(data, odf_vertices, v, nbr_processes):
         try:
             nbr_processes = cpu_count()
         except NotImplementedError:
-            warn("Cannot determine number of cpus. \
-                 returns quantize_evecs(..., nbr_processes=1).")
-            return quantize_evecs(data, odf_vertices, v, nbr_processes=1)
+            try:
+                import psutil
+                psutil.cpu_count()
+            except:
+                warnings.warn("Cannot determine number of cpus.",
+                              "returns quantize_evecs(...,",
+                              "nbr_processes=1).")
+                return quantize_evecs(data, odf_vertices, v, nbr_processes=1)
 
     data = data[..., :, v]
     shape = list(data.shape)
