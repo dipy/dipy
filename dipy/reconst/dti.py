@@ -2069,8 +2069,8 @@ def _quantize_evecs_parallel_sub(args):
     v = args[3]
 
     data = np.load(data_file_name, mmap_mode='r')[start_pos:end_pos]
-
     return quantize_evecs(data, odf_vertices, v, nbr_processes=1)
+
 
 def quantize_evecs(evecs, odf_vertices=None, v=0, nbr_processes=1):
     """ Find the closest orientation of an evenly distributed sphere
