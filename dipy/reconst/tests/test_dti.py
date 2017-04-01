@@ -750,6 +750,7 @@ def test_predict():
     npt.assert_equal(p.shape, data.shape)
 
 
+
 def test_eig_from_lo_tri():
     psphere = get_sphere('symmetric362')
     bvecs = np.concatenate(([[0, 0, 0]], psphere.vertices))
@@ -771,6 +772,7 @@ def test_eig_from_lo_tri():
 
 
 
+
 def test_min_signal_alone():
     fdata, fbvals, fbvecs = get_fnames()
     data = nib.load(fdata).get_data()
@@ -782,6 +784,7 @@ def test_min_signal_alone():
     fit_together = ten_model.fit(data)
     npt.assert_array_almost_equal(fit_together.model_params[idx],
                                   fit_alone.model_params, decimal=12)
+
 
 
 def test_decompose_tensor_nan():
@@ -800,6 +803,7 @@ def test_decompose_tensor_nan():
                                            from_lower_triangular(D_alter))
     npt.assert_array_almost_equal(lalter, np.array([1.6e-3, 0.4e-3, 0.3e-3]))
     npt.assert_array_almost_equal(valter, vref)
+
 
 # Test eigen-vector quantization:
 def _normalize(evec):
