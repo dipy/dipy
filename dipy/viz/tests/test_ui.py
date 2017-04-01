@@ -257,7 +257,8 @@ def test_ui_line_slider_2d(recording=False):
     recording_filename = pjoin(DATA_DIR, filename + ".log.gz")
     expected_events_counts_filename = pjoin(DATA_DIR, filename + ".pkl")
 
-    line_slider_2d_test = ui.LineSlider2D()
+    line_slider_2d_test = ui.LineSlider2D(initial_value=-2,
+                                          min_value=-5, max_value=5)
     line_slider_2d_test.set_center((300, 300))
 
     # Assign the counter callback to every possible event.
@@ -265,7 +266,8 @@ def test_ui_line_slider_2d(recording=False):
     event_counter.monitor(line_slider_2d_test)
 
     current_size = (600, 600)
-    show_manager = window.ShowManager(size=current_size, title="DIPY Line Slider")
+    show_manager = window.ShowManager(size=current_size,
+                                      title="DIPY Line Slider")
 
     show_manager.ren.add(line_slider_2d_test)
 

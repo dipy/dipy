@@ -1,3 +1,4 @@
+from __future__ import division
 from _warnings import warn
 
 import numpy as np
@@ -1296,6 +1297,7 @@ class TextBox2D(UI):
 
 class LineSlider2D(UI):
     """ A 2D Line Slider.
+
     A sliding ring on a line with a percentage indicator.
 
     Currently supports:
@@ -1322,10 +1324,10 @@ class LineSlider2D(UI):
         The text that shows percentage.
 
     """
-    def __init__(self, line_width=5, inner_radius=0,
-                 outer_radius=10, center=(450, 300),
-                 length=200, text_size=16):
-
+    def __init__(self, line_width=5, inner_radius=0, outer_radius=10,
+                 center=(450, 300), length=200, initial_value=50,
+                 min_value=0, max_value=100, text_size=16,
+                 text_template="{value:.1f} ({ratio:.0%})"):
         """
         Parameters
         ----------
@@ -1339,16 +1341,35 @@ class LineSlider2D(UI):
             Center of the slider.
         length : int
             Length of the slider.
+        initial_value : float
+            Initial value of the slider.
+        min_value : float
+            Minimum value of the slider.
+        max_value : float
+            Maximum value of the slider.
+        text_size : int
+            Size of the text to display alongside the slider (pt).
+        text_template : str, callable
+            If str, text template can contain one or multiple of the
+            replacement fields: `{value:}`, `{ratio:}`.
+            If callable, this instance of `:class:LineSlider2D` will be
+            passed as argument to the text template function.
 
         """
         super(LineSlider2D, self).__init__()
 
         self.length = length
+        self.min_value = min_value
+        self.max_value = max_value
+
+        self.text_template = text_template
+
         self.line_width = line_width
         self.center = center
         self.current_state = center[0]
         self.left_x_position = center[0] - length / 2
         self.right_x_position = center[0] + length / 2
+        self._ratio = (self.current_state - self.left_x_position) / length
 
         self.slider_line = None
         self.slider_disk = None
@@ -1356,6 +1377,10 @@ class LineSlider2D(UI):
 
         self.build_actors(inner_radius=inner_radius,
                           outer_radius=outer_radius, text_size=text_size)
+
+        # Setting the disk position will also update everything.
+        self.value = initial_value
+        # self.update()
 
         self.handle_events(None)
 
@@ -1394,15 +1419,11 @@ class LineSlider2D(UI):
         # Actor
         self.slider_disk = vtk.vtkActor2D()
         self.slider_disk.SetMapper(mapper)
-        self.slider_disk.SetPosition(self.center[0], self.center[1])
         # /Slider Disk
 
         # Slider Text
         self.text = TextActor2D()
-
-        self.text.position = (self.left_x_position-50, self.center[1]-10)
-        percentage = self.calculate_percentage(current_val=int(self.current_state))
-        self.text.message = percentage
+        self.text.position = (self.left_x_position - 50, self.center[1] - 10)
         self.text.font_size = text_size
         # /Slider Text
 
@@ -1422,44 +1443,63 @@ class LineSlider2D(UI):
 
         """
         x_position = position[0]
+
         if x_position < self.center[0] - self.length/2:
             x_position = self.center[0] - self.length/2
+
         if x_position > self.center[0] + self.length/2:
             x_position = self.center[0] + self.length/2
-        self.slider_disk.SetPosition(x_position, self.center[1])
+
         self.current_state = x_position
+        self.update()
 
-    def calculate_percentage(self, current_val):
-        """ Calculates the percentage to be displayed.
+    @property
+    def value(self):
+        return self._value
 
-        Parameters
-        ----------
-        current_val : int
-            Absolute value of the disk's x position.
+    @value.setter
+    def value(self, value):
+        value_range = self.max_value - self.min_value
+        self.ratio = (value - self.min_value) / value_range
 
-        """
-        percentage = int(((current_val-self.left_x_position)*100
-                          )/(self.right_x_position-self.left_x_position))
-        if percentage < 0:
-            percentage = 0
-        if percentage > 100:
-            percentage = 100
+    @property
+    def ratio(self):
+        return self._ratio
 
-        return str(percentage) + "%"
+    @ratio.setter
+    def ratio(self, ratio):
+        position_x = self.left_x_position + ratio*self.length
+        self.set_position((position_x, None))
 
-    def set_percentage(self, current_val):
-        """ Sets text percentage.
+    def format_text(self):
+        """ Returns formatted text to display along the slider. """
+        if callable(self.text_template):
+            return self.text_template(self)
 
-        Parameters
-        ----------
-        current_val : int
-            This is the x-position of the slider in the 2D coordinate space
-            and not the percentage on the base scale.
+        return self.text_template.format(ratio=self.ratio, value=self.value)
 
-        """
-        self.current_state = current_val
-        percentage = self.calculate_percentage(current_val=current_val)
-        self.text.message = percentage
+    def update(self):
+        """ Updates the slider. """
+
+        # Compute the ratio determined by the position of the slider disk.
+        length = float(self.right_x_position - self.left_x_position)
+        assert length == self.length
+        self._ratio = (self.current_state - self.left_x_position) / length
+
+        # Compute the selected value considering min_value and max_value.
+        value_range = self.max_value - self.min_value
+        self._value = self.min_value + self.ratio*value_range
+
+        # Update text disk actor.
+        self.slider_disk.SetPosition(self.current_state, self.center[1])
+
+        # Update text.
+        text = self.format_text()
+        self.text.message = text
+        offset_x = 8 * len(text) / 2.
+        offset_y = 30
+        self.text.position = (self.current_state - offset_x,
+                              self.center[1] - offset_y)
 
     def set_center(self, position):
         """ Sets the center of the slider to position.
@@ -1476,12 +1516,9 @@ class LineSlider2D(UI):
         x_change = position[0] - self.center[0]
         self.current_state += x_change
         self.center = position
-        self.set_position((self.current_state, self.center[1]))
-
         self.left_x_position = position[0] - self.length / 2
         self.right_x_position = position[0] + self.length / 2
-        self.text.position = (position[0] - self.length / 2 - 40, position[1] - 10)
-        self.set_percentage(int(self.current_state))
+        self.set_position((self.current_state, self.center[1]))
 
     @staticmethod
     def line_click_callback(i_ren, obj, slider):
@@ -1497,7 +1534,6 @@ class LineSlider2D(UI):
         """
         position = i_ren.event.position
         slider.set_position(position)
-        slider.set_percentage(position[0])
         i_ren.force_render()
         i_ren.event.abort()  # Stop propagating the event.
 
@@ -1529,7 +1565,6 @@ class LineSlider2D(UI):
         """
         position = i_ren.event.position
         slider.set_position(position)
-        slider.set_percentage(position[0])
         i_ren.force_render()
         i_ren.event.abort()  # Stop propagating the event.
 
