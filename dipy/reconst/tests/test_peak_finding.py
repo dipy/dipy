@@ -84,8 +84,8 @@ def test_remove_similar_peaks():
                          [0., 2., 1.],
                          [2., 1., 0.],
                          [1., 0., 0.]])
-    norms = np.sqrt((vertices*vertices).sum(-1))
-    vertices = vertices/norms[:, None]
+    norms = np.sqrt((vertices * vertices).sum(-1))
+    vertices = vertices / norms[:, None]
 
     # Return unique vertices
     uv = remove_similar_vertices(vertices, .01)

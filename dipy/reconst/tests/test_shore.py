@@ -23,6 +23,8 @@ needs_cvxopt = dec.skipif(not have_cvxopt)
 # Object to hold module global data
 class _C(object):
     pass
+
+
 data = _C()
 
 
@@ -78,10 +80,19 @@ def compute_e0(shorefit):
     signal_0 = 0
 
     for n in range(int(shorefit.model.radial_order / 2) + 1):
-        signal_0 += (shorefit.shore_coeff[n] * (genlaguerre(n, 0.5)(0) *
-                     ((factorial(n)) / (2 * np.pi *
-                      (shorefit.model.zeta ** 1.5) *
-                      gamma(n + 1.5))) ** 0.5))
+        signal_0 += (
+            shorefit.shore_coeff[n] * (
+                genlaguerre(n, 0.5)(0) *
+                (
+                    (factorial(n)) /
+                    (
+                        2 * np.pi *
+                        (shorefit.model.zeta ** 1.5) *
+                        gamma(n + 1.5)
+                    )
+                ) ** 0.5
+            )
+        )
 
     return signal_0
 

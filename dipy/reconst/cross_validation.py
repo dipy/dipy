@@ -54,7 +54,7 @@ def coeff_of_determination(data, model, axis=-1):
     if np.all(ss_tot == 0.0):
         return np.nan
 
-    return 100 * (1 - (ss_err/ss_tot))
+    return 100 * (1 - (ss_err / ss_tot))
 
 
 def kfold_xval(model, data, folds, *model_args, **model_kwargs):

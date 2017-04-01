@@ -51,5 +51,6 @@ def bench_csdeconv(center=(50, 40, 40), width=12):
     time = npt.measure(cmd)
     print(msg % (sh_order, num_grad(gtab), time))
 
+
 if __name__ == "__main__":
     bench_csdeconv()

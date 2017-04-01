@@ -33,5 +33,6 @@ def bench_bounding_box():
     time = measure("bounding_box(vol)", times) / times
     print("Bounding_box on a dense volume: {}".format(time))
 
+
 if __name__ == "__main__":
     bench_bounding_box()

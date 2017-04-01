@@ -7,7 +7,7 @@ from dipy.reconst.recspeed import (adj_to_countarrs,
                                    argmax_from_countarrs)
 
 from nose.tools import assert_true, assert_false, \
-     assert_equal, assert_raises
+    assert_equal, assert_raises
 
 from numpy.testing import assert_array_equal, assert_array_almost_equal
 

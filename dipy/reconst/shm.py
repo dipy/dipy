@@ -165,6 +165,7 @@ def spherical_harmonics(m, n, theta, phi):
     val = val * np.exp(1j * m * theta)
     return val
 
+
 if SCIPY_15_PLUS:
     def spherical_harmonics(m, n, theta, phi):
         return sps.sph_harm(m, n, theta, phi, dtype=complex)
@@ -379,7 +380,7 @@ def order_from_ncoef(ncoef):
     """
     # Solve the quadratic equation derived from :
     # ncoef = (sh_order + 2) * (sh_order + 1) / 2
-    return int(-3 + np.sqrt(9 - 4 * (2-2*ncoef)))/2
+    return int(-3 + np.sqrt(9 - 4 * (2 - 2 * ncoef))) / 2
 
 
 def smooth_pinv(B, L):
@@ -491,6 +492,7 @@ class SphHarmModel(OdfModel, Cache):
 
 class QballBaseModel(SphHarmModel):
     """To be subclassed by Qball type models."""
+
     def __init__(self, gtab, sh_order, smooth=0.006, min_signal=1.,
                  assume_normed=False):
         """Creates a model that can be used to fit or sample diffusion data
@@ -678,6 +680,7 @@ class OpdtModel(QballBaseModel):
            probability density functions in high angular resolution diffusion
            imaging.
     """
+
     def _set_fit_matrix(self, B, L, F, smooth):
         invB = smooth_pinv(B, sqrt(smooth) * L)
         L = L[:, None]
@@ -809,6 +812,7 @@ class ResidualBootstrapWrapper(object):
     There wrapper than samples the residual boostrap distribution of signal and
     returns that sample.
     """
+
     def __init__(self, signal_object, B, where_dwi, min_signal=1.):
         """Builds a ResidualBootstrapWapper
 
@@ -969,37 +973,37 @@ def sh_to_sf_matrix(sphere, sh_order, basis_type=None, return_inv=True,
 
 
 def calculate_max_order(n_coeffs):
-        """Calculate the maximal harmonic order, given that you know the
-        number of parameters that were estimated.
+    """Calculate the maximal harmonic order, given that you know the
+    number of parameters that were estimated.
 
-        Parameters
-        ----------
-        n_coeffs : int
-            The number of SH coefficients
+    Parameters
+    ----------
+    n_coeffs : int
+        The number of SH coefficients
 
-        Returns
-        -------
-        L : int
-            The maximal SH order, given the number of coefficients
+    Returns
+    -------
+    L : int
+        The maximal SH order, given the number of coefficients
 
-        Notes
-        -----
-        The calculation in this function proceeds according to the following
-        logic:
-        .. math::
-           n = \frac{1}{2} (L+1) (L+2)
-           \rarrow 2n = L^2 + 3L + 2
-           \rarrow L^2 + 3L + 2 - 2n = 0
-           \rarrow L^2 + 3L + 2(1-n) = 0
-           \rarrow L_{1,2} = \frac{-3 \pm \sqrt{9 - 8 (1-n)}}{2}
-           \rarrow L{1,2} = \frac{-3 \pm \sqrt{1 + 8n}}{2}
+    Notes
+    -----
+    The calculation in this function proceeds according to the following
+    logic:
+    .. math::
+       n = \frac{1}{2} (L+1) (L+2)
+       \rarrow 2n = L^2 + 3L + 2
+       \rarrow L^2 + 3L + 2 - 2n = 0
+       \rarrow L^2 + 3L + 2(1-n) = 0
+       \rarrow L_{1,2} = \frac{-3 \pm \sqrt{9 - 8 (1-n)}}{2}
+       \rarrow L{1,2} = \frac{-3 \pm \sqrt{1 + 8n}}{2}
 
-        Finally, the positive value is chosen between the two options.
-        """
+    Finally, the positive value is chosen between the two options.
+    """
 
-        L1 = (-3 + np.sqrt(1 + 8 * n_coeffs)) / 2
-        L2 = (-3 - np.sqrt(1 + 8 * n_coeffs)) / 2
-        return np.int(max([L1, L2]))
+    L1 = (-3 + np.sqrt(1 + 8 * n_coeffs)) / 2
+    L2 = (-3 - np.sqrt(1 + 8 * n_coeffs)) / 2
+    return np.int(max([L1, L2]))
 
 
 def anisotropic_power(sh_coeffs, norm_factor=0.00001, power=2,

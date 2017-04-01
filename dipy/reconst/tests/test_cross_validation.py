@@ -118,6 +118,7 @@ def test_no_predict():
     method, you get something reasonable.
     """
     class NoPredictModel(base.ReconstModel):
+
         def __init__(self, gtab):
             base.ReconstModel.__init__(self, gtab)
 
@@ -125,6 +126,7 @@ def test_no_predict():
             return NoPredictFit(self, data, mask=mask)
 
     class NoPredictFit(base.ReconstFit):
+
         def __init__(self, model, data, mask=None):
             base.ReconstFit.__init__(self, model, data)
 
@@ -132,4 +134,4 @@ def test_no_predict():
     my_model = NoPredictModel(gtab)
     data = nib.load(fdata).get_data()[1:3, 1:3, 1:3]  # Whatever
 
-    npt.assert_raises(ValueError,  xval.kfold_xval, my_model, data, 2)
+    npt.assert_raises(ValueError, xval.kfold_xval, my_model, data, 2)

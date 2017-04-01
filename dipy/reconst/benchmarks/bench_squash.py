@@ -72,7 +72,7 @@ def old_squash(arr, mask=None, fill=0):
     dtype('float64')
     """
     if mask is None:
-        mask = np.vectorize(lambda x : x is not None)(arr)
+        mask = np.vectorize(lambda x: x is not None)(arr)
     not_none = arr[mask]
     # all None, just return arr
     if not_none.size == 0:

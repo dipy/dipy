@@ -76,7 +76,8 @@ gtab_with_multiple_b0 = gradient_table(bvals_with_multiple_b0,
                                        bvecs_with_multiple_b0.T)
 
 noisy_single = np.array([4243.71728516, 4317.81298828, 4244.35693359,
-                         4439.36816406, 4420.06201172, 4152.30078125, 4114.34912109, 4104.59375, 4151.61914062,
+                         4439.36816406, 4420.06201172, 4152.30078125,
+                         4114.34912109, 4104.59375, 4151.61914062,
                          4003.58374023, 4013.68408203, 3906.39428711,
                          3909.06079102, 3495.27197266, 3402.57006836,
                          3163.10180664, 2896.04003906, 2663.7253418,
@@ -309,8 +310,9 @@ def test_noisy_fit():
     Test fitting for noisy signals. This tests whether the threshold condition
     applies correctly and returns the linear fitting parameters.
 
-    For older scipy versions, the returned value of `f` from a linear fit is around 135
-    and D and D_star values are equal. Hence doing a test based on Scipy version.
+    For older scipy versions, the returned value of `f` from a linear fit is
+    around 135 and D and D_star values are equal. Hence doing a test based on
+    Scipy version.
     """
     model_one_stage = IvimModel(gtab)
     fit_one_stage = model_one_stage.fit(noisy_single)

@@ -21,7 +21,8 @@ try:
 except AttributeError:
     with_einsum = dec.skipif(True, "Need einsum for benchmark")
 else:
-    def with_einsum(f): return f
+    def with_einsum(f):
+        return f
 
 
 @with_einsum

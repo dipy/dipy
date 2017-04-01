@@ -60,7 +60,7 @@ def test_shore_metrics():
 
     # test if the analytical integral of the pdf is equal to one
     integral = 0
-    for n in range(int((radial_order)/2 + 1)):
+    for n in range(int((radial_order) / 2 + 1)):
         integral += c_shore[n] * (np.pi**(-1.5) * zeta ** (-1.5) *
                                   genlaguerre(n, 0.5)(0)) ** 0.5
 
@@ -96,6 +96,7 @@ def test_shore_metrics():
     msd_mt = multi_tensor_msd([.5, .5], mevals=mevals)
     msd_shore = asmfit.msd()
     assert_equal(msd_mt / msd_shore < 1.05 and msd_mt / msd_shore > 0.95, True)
+
 
 if __name__ == '__main__':
     run_module_suite()

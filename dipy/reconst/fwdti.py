@@ -78,13 +78,14 @@ def fwdti_prediction(params, gtab, S0=1, Diso=3.0e-3):
     for v in index:
         if mask[v]:
             pred_sig[v] = (1 - f[v]) * np.exp(np.dot(lower_dt[v], D.T)) + \
-                          f[v] * np.exp(np.dot(lower_diso[v], D.T))
+                f[v] * np.exp(np.dot(lower_diso[v], D.T))
 
     return pred_sig
 
 
 class FreeWaterTensorModel(ReconstModel):
     """ Class for the Free Water Elimination Diffusion Tensor Model """
+
     def __init__(self, gtab, fit_method="NLS", *args, **kwargs):
         """ Free Water Diffusion Tensor Model [1]_.
 
@@ -129,7 +130,7 @@ class FreeWaterTensorModel(ReconstModel):
 
         # Check if at least three b-values are given
         bmag = int(np.log10(self.gtab.bvals.max()))
-        b = self.gtab.bvals.copy() / (10 ** (bmag-1))  # normalize b units
+        b = self.gtab.bvals.copy() / (10 ** (bmag - 1))  # normalize b units
         b = b.round()
         uniqueb = np.unique(b)
         if len(uniqueb) < 3:
@@ -178,6 +179,7 @@ class FreeWaterTensorModel(ReconstModel):
 
 class FreeWaterTensorFit(TensorFit):
     """ Class for fitting the Free Water Tensor Model """
+
     def __init__(self, model, model_params):
         """ Initialize a FreeWaterTensorFit class instance.
         Since the free water tensor model is an extension of DTI, class
@@ -291,20 +293,22 @@ def wls_iter(design_matrix, sig, S0, Diso=3e-3, mdreg=2.7e-3,
         ns = 9  # initial number of samples per iteration
         for p in range(piterations):
             df = df * 0.1
-            fs = np.linspace(flow+df, fhig-df, num=ns)  # sampling f
-            SFW = np.array([fwsig, ]*ns)  # repeat contributions for all values
+            fs = np.linspace(flow + df, fhig - df, num=ns)  # sampling f
+            # repeat contributions for all values
+            SFW = np.array([fwsig, ] * ns)
             FS, SI = np.meshgrid(fs, sig)
-            SA = SI - FS*S0*SFW.T
+            SA = SI - FS * S0 * SFW.T
             # SA < 0 means that the signal components from the free water
             # component is larger than the total fiber. This cases are present
             # for inapropriate large volume fractions (given the current S0
             # value estimated). To overcome this issue negative SA are replaced
             # by data's min positive signal.
             SA[SA <= 0] = min_signal
-            y = np.log(SA / (1-FS))
+            y = np.log(SA / (1 - FS))
             all_new_params = np.dot(invWTS2W_WTS2, y)
             # Select params for lower F2
-            SIpred = (1-FS)*np.exp(np.dot(W, all_new_params)) + FS*S0*SFW.T
+            SIpred = (1 - FS) * np.exp(np.dot(W, all_new_params)) + \
+                FS * S0 * SFW.T
             F2 = np.sum(np.square(SI - SIpred), axis=0)
             Mind = np.argmin(F2)
             params = all_new_params[:, Mind]
@@ -446,12 +450,12 @@ def _nls_err_func(tensor_elements, design_matrix, data, Diso=3e-3,
         tensor[:6] = cholesky_to_lower_triangular(tensor[:6])
 
     if f_transform:
-        f = 0.5 * (1 + np.sin(tensor[7] - np.pi/2))
+        f = 0.5 * (1 + np.sin(tensor[7] - np.pi / 2))
     else:
         f = tensor[7]
 
     # This is the predicted signal given the params:
-    y = (1-f) * np.exp(np.dot(design_matrix, tensor[:7])) + \
+    y = (1 - f) * np.exp(np.dot(design_matrix, tensor[:7])) + \
         f * np.exp(np.dot(design_matrix,
                           np.array([Diso, 0, Diso, 0, 0, Diso, tensor[6]])))
 
@@ -470,7 +474,7 @@ def _nls_err_func(tensor_elements, design_matrix, data, Diso=3e-3,
             e_s = "Must provide sigma value as input to use this weighting"
             e_s += " method"
             raise ValueError(e_s)
-        w = 1/(sigma**2)
+        w = 1 / (sigma**2)
 
     elif weighting == 'gmm':
         # We use the Geman McClure M-estimator to compute the weights on the
@@ -478,9 +482,9 @@ def _nls_err_func(tensor_elements, design_matrix, data, Diso=3e-3,
         C = 1.4826 * np.median(np.abs(residuals - np.median(residuals)))
         with warnings.catch_warnings():
             warnings.simplefilter("ignore")
-            w = 1/(se + C**2)
+            w = 1 / (se + C**2)
             # The weights are normalized to the mean weight (see p. 1089):
-            w = w/np.mean(w)
+            w = w / np.mean(w)
 
     # Return the weighted residuals:
     with warnings.catch_warnings():
@@ -515,21 +519,21 @@ def _nls_jacobian_func(tensor_elements, design_matrix, data, Diso=3e-3,
     """
     tensor = np.copy(tensor_elements)
     if f_transform:
-        f = 0.5 * (1 + np.sin(tensor[7] - np.pi/2))
+        f = 0.5 * (1 + np.sin(tensor[7] - np.pi / 2))
     else:
         f = tensor[7]
 
     t = np.exp(np.dot(design_matrix, tensor[:7]))
     s = np.exp(np.dot(design_matrix,
                       np.array([Diso, 0, Diso, 0, 0, Diso, tensor[6]])))
-    T = (f-1.0) * t[:, None] * design_matrix
+    T = (f - 1.0) * t[:, None] * design_matrix
     S = np.zeros(design_matrix.shape)
     S[:, 6] = f * s
 
     if f_transform:
-        df = (t-s) * (0.5*np.cos(tensor[7]-np.pi/2))
+        df = (t - s) * (0.5 * np.cos(tensor[7] - np.pi / 2))
     else:
-        df = (t-s)
+        df = (t - s)
     return np.concatenate((T - S, df[:, None]), axis=1)
 
 
@@ -609,7 +613,7 @@ def nls_iter(design_matrix, sig, S0, Diso=3e-3, mdreg=2.7e-3,
 
         # f transformation if requested
         if f_transform:
-            f = np.arcsin(2*params[12] - 1) + np.pi/2
+            f = np.arcsin(2 * params[12] - 1) + np.pi / 2
         else:
             f = params[12]
 
@@ -638,8 +642,8 @@ def nls_iter(design_matrix, sig, S0, Diso=3e-3, mdreg=2.7e-3,
         # Process water volume fraction f
         f = this_tensor[7]
         if f_transform:
-            f = 0.5 * (1 + np.sin(f - np.pi/2))        
-        
+            f = 0.5 * (1 + np.sin(f - np.pi / 2))
+
         params = np.concatenate((evals, evecs[0], evecs[1], evecs[2],
                                  np.array([f])), axis=0)
     return params
@@ -758,7 +762,7 @@ def lower_triangular_to_cholesky(tensor_elements):
     R3 = tensor_elements[1] / R0
     R1 = np.sqrt(tensor_elements[2] - R3**2)
     R5 = tensor_elements[3] / R0
-    R4 = (tensor_elements[4] - R3*R5) / R1
+    R4 = (tensor_elements[4] - R3 * R5) / R1
     R2 = np.sqrt(tensor_elements[5] - R4**2 - R5**2)
 
     return np.array([R0, R1, R2, R3, R4, R5])
@@ -787,10 +791,10 @@ def cholesky_to_lower_triangular(R):
            Resonance in Medicine, 55(4), 930-936. doi:10.1002/mrm.20832
     """
     Dxx = R[0]**2
-    Dxy = R[0]*R[3]
+    Dxy = R[0] * R[3]
     Dyy = R[1]**2 + R[3]**2
-    Dxz = R[0]*R[5]
-    Dyz = R[1]*R[4] + R[3]*R[5]
+    Dxz = R[0] * R[5]
+    Dyz = R[1] * R[4] + R[3] * R[5]
     Dzz = R[2]**2 + R[4]**2 + R[5]**2
     return np.array([Dxx, Dxy, Dyy, Dxz, Dyz, Dzz])
 

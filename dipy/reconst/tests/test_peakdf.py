@@ -7,6 +7,7 @@ from dipy.direction.peaks import default_sphere, peaks_from_model
 def test_PeaksAndMetricsDirectionGetter():
 
     class SillyModel(object):
+
         def fit(self, data, mask=None):
             return SillyFit(self)
 
@@ -36,9 +37,9 @@ def test_PeaksAndMetricsDirectionGetter():
     up[2] = 1.
     down = -up
 
-    for i in range(3-1):
-        for j in range(4-1):
-            for k in range(5-1):
+    for i in range(3 - 1):
+        for j in range(4 - 1):
+            for k in range(5 - 1):
                 point = np.array([i, j, k], dtype=float)
 
                 # Test that the angle threshold rejects points
