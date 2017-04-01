@@ -2090,7 +2090,7 @@ def quantize_evecs(evecs, odf_vertices=None, v=0, nbr_processes=1):
 
     Returns
     -------
-    IN : ndarray
+    closest : ndarray
     """
 
     if nbr_processes != 1:
@@ -2100,15 +2100,17 @@ def quantize_evecs(evecs, odf_vertices=None, v=0, nbr_processes=1):
         odf_vertices = get_sphere('symmetric362').vertices
 
     if len(evecs.shape) == 2:
-        inp = np.array([np.argmin(np.dot(odf_vertices, m)) for m in evecs])
+        closest = np.array([np.argmin(np.dot(odf_vertices, m)) for m in
+                            evecs])
     else:
         max_evecs = evecs[..., :, v]
         tup = max_evecs.shape[:-1]
         mec = max_evecs.reshape(np.prod(np.array(tup)), 3)
-        inp = np.array([np.argmin(np.dot(odf_vertices, m)) for m in mec])
-        inp = inp.reshape(tup)
+        closest = np.array([np.argmin(np.dot(odf_vertices, m)) for m in
+                            mec])
+        closest = closest.reshape(tup)
 
-    return inp
+    return closest
 
 
 def eig_from_lo_tri(data, min_diffusivity=0):
