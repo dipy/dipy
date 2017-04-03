@@ -34,6 +34,16 @@ def test_nlmeans_random_noise():
         assert_equal(np.round(S0nb[mask].mean()), 100)
 
 
+def test_scalar_sigma():
+    S0 = 100 + np.zeros((20, 20, 20))
+    noise = 2 * np.random.standard_normal((20, 20, 20))
+    S0 += noise
+    S0[:10, :10, :10] = 300 + noise[:10, :10, :10]
+
+    S0n = assert_raises(
+        ValueError, non_local_means, S0, sigma=noise, rician=False)
+
+
 def test_nlmeans_boundary():
     # nlmeans preserves boundaries
 
