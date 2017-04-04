@@ -43,7 +43,7 @@ def non_local_means(arr, sigma, mask=None, patch_radius=1, block_radius=5,
                 Technology, 2011
 
     """
-    if not np.isscalar(sigma):
+    if not np.isscalar(sigma) and not sigma.shape == (1, ):
         raise ValueError("Sigma input needs to be of type float", sigma)
     if mask is None and arr.ndim > 2:
         mask = np.ones((arr.shape[0], arr.shape[1], arr.shape[2]), dtype='f8')
