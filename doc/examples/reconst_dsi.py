@@ -54,7 +54,7 @@ dsmodel = DiffusionSpectrumModel(gtab)
 Lets just use one slice only from the data.
 """
 
-dataslice = data[:, :, data.shape[2] / 2]
+dataslice = data[:, :, data.shape[2] // 2]
 
 dsfit = dsmodel.fit(dataslice)
 
