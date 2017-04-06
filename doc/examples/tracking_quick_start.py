@@ -96,7 +96,7 @@ which we will use as the basis to perform the tracking.
 
 ren = fvtk.ren()
 
-slice_no = data.shape[2] / 2
+slice_no = data.shape[2] // 2
 
 fvtk.add(ren, fvtk.peaks(csd_peaks.peak_dirs[:, :, slice_no:slice_no + 1],
                          stopping_values[:, :, slice_no:slice_no + 1]))
