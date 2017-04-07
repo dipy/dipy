@@ -99,7 +99,8 @@ text = ui.TextBox2D(height=3, width=10)
 # /TextBox
 
 # Line Slider
-line_slider = ui.LineSlider2D()
+line_slider = ui.LineSlider2D(initial_value=-2,
+                              min_value=-5, max_value=5)
 # /Line Slider
 
 # Show Manager
