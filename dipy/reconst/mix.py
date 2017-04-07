@@ -640,6 +640,38 @@ def activax_exvivo_model2(x_fe, bvals, bvecs, G, small_delta, big_delta,
 
     return np.exp(-phi)
 
+def dif_evol(signal, bvals, bvecs, G, small_delta, big_delta):
+    
+        """
+    differential evolution algorithm instead of genetic algorithm in MIX paper
+
+    Parameters
+    ----------
+    signal:
+        signal.shape = number of data points x 1   
+    
+    bvals
+    bvecs
+    G: gradient strength 
+    small_delta
+    big_delta
+    gamma: gyromagnetic ratio (2.675987 * 10 ** 8 )
+    D_intra= intrinsic free diffusivity (0.6 * 10 ** 3 mircometer^2/sec)
+    D_iso= isotropic diffusivity, (2 * 10 ** 3 mircometer^2/sec)
+    
+    Returns
+    -------
+    res_one.x(0) theta (radian)
+    res_one.x(1) phi (radian)
+    res_one.x(2) R (micrometers)
+    res_one.x(3) v=f1/(f1+f2) (0.1 - 0.8)        
+            
+    """ 
+    
+    bounds = [(0.01,np.pi), (0.01,np.pi), (0.1,11), (0.1,0.8)]
+    res_one = differential_evolution(cost_one, bounds, args=(signal1, bvals, bvecs, G, small_delta, big_delta))
+return res_one.x
+
 bounds = [(0.01,np.pi), (0.01,np.pi), (0.1,11), (0.1,0.8)]
 result = np.zeros([10,10,7])
 #for i in range(0 , 10):
