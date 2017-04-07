@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """
-Created on Thu Mar 02 15:37:46 2017
-@author: elef
+Created on Thu Apr 07 15:37:46 2017
+@author: Maryam
 """
 import numpy as np
 import nibabel as nib
@@ -9,9 +9,9 @@ from dipy.core.gradients import gradient_table
 from numpy.testing import assert_equal, assert_almost_equal
 from scipy.optimize import  least_squares
 import cvxpy as cvx
+from dipy.data import get_data
 
-fname = 'Aax_synth_data.nii'
-fscanner = 'ActiveAx_xdata.txt'
+fname, fscanner = get_data('ActiveAx_synth_2d')
 params = np.loadtxt(fscanner)
 img = nib.load(fname)
 data = img.get_data()
@@ -138,51 +138,6 @@ def activax_exvivo_params(x, bvals, bvecs, G, small_delta, big_delta,
     return yhat_cylinder, yhat_zeppelin, yhat_ball, yhat_dot
 
     
-def test_activax_exvivo_model():
-
-    x = np.array([0.5, 0.5, 10, 0.8])
-#    sigma = 0.05
-    L1, summ, summ_rows, gper, L2, yhat_cylinder, \
-        yhat_zeppelin, yhat_ball, yhat_one = activax_exvivo_params(
-            data, x, bvals, bvecs, G, small_delta, big_delta,
-            gamma=gamma, D_intra=0.6 * 10 ** 3, D_iso=2 * 10 ** 3,
-            debug=True)
-
-    assert_almost_equal(L1[3], 3.96735278865)
-    assert_almost_equal(L1[5], 5.54561445859)
-
-    assert_equal(summ.shape, (372, 60))
-    assert_almost_equal(summ[3, 3], 2.15633236279e-07)
-    assert_almost_equal(summ[20, 2], 1.3498305300e-06)
-
-    assert_equal(summ_rows.shape, (372,))
-
-    print(summ[3, 3])
-
-    assert_equal(gper.shape, (372,))
-    assert_almost_equal(gper[39], 0.004856614915350943)
-    assert_almost_equal(gper[45], 0.60240287122917402)
-
-    print(L2.shape)
-    print(L2[5])
-
-    assert_equal(L2.shape, (372,))
-    assert_almost_equal(L2[5], 1.33006433687)
-
-    print(yhat_zeppelin.shape)
-    assert_equal(yhat_zeppelin.shape, (372,))
-    assert_almost_equal(yhat_zeppelin[6], 2.23215830075)
-
-    assert_almost_equal(yhat_ball[25], 26.3995293508)
-
-#    sigma = 0.05 # offset gaussian constant (not really needed)
-    phi = activax_exvivo_model(x, bvals, bvecs, G,
-                               small_delta, big_delta)
-    print(phi.shape)
-    assert_equal(phi.shape, (372, 4))
-    error_one =  activeax_cost_one(phi, data[0, 0, 0])
-
-    assert_almost_equal(error_one, 2.5070277363920468)
 
     
 def activax_exvivo_model(x, bvals, bvecs, G, small_delta, big_delta,
@@ -240,21 +195,7 @@ def estimate_f(signal, phi):
     return np.array(fe.value)
 
     
-def test_activax_exvivo_estimate():
-    x = np.array([0.5, 0.5, 10, 0.8])
-#    sigma = 0.05 # offset gaussian constant (not really needed)
-    phi = activax_exvivo_model(x, bvals, bvecs, G,
-                               small_delta, big_delta)
-    fe = estimate_f(np.array(data[0, 0, 0]), phi)
 
-    """
-    assert_array_equal()
-    [[ 0.04266318]
-     [ 0.58784575]
-     [ 0.21049456]
-     [ 0.15899651]]
-    """
-    return fe  
 
    
 def estimate_x_and_f(x_fe, signal):
@@ -266,14 +207,6 @@ def estimate_x_and_f(x_fe, signal):
                                D_intra=0.6 * 10 ** 3, D_iso=2 * 10 ** 3,
                                debug=False)
     return np.sum((np.squeeze(np.dot(phi, fe)) - signal) ** 2)
-def test_estimate_x_and_f():
-    x_fe = np.array([ 0.44623926,  0.2855913 ,  0.15918695,  2.68329756,  2.89085876, 3.40398589,  0.10898249])
-    cost = estimate_x_and_f(x_fe, signal)
-    """
-    assert_array_equal()
-    [0.00039828375771280502]
-    """
-    return cost
 
 def final(signal, x, fe):
     x_fe = np.zeros([7])
@@ -399,8 +332,8 @@ bounds = [(0.01,np.pi), (0.01,np.pi), (0.1,11), (0.1,0.8)]
 result = np.zeros([10,10,7])
 #for i in range(0 , 10):
 #    for j in range(0 , 10):
-for i in range(0 , 1):
-    for j in range(0 , 1):
+for i in range(0 , 10):
+    for j in range(0 , 10):
         signal1 = np.array(data[i,j,0])
         res_one = differential_evolution(cost_one, bounds, args=(signal1, bvals, bvecs, G, small_delta, big_delta))
         x1 = res_one.x    
@@ -419,3 +352,74 @@ for i in range(0 , 1):
         result[i,j,:] = res2.x
         
 #print(res2)
+
+def test_activax_exvivo_model():
+
+    x = np.array([0.5, 0.5, 10, 0.8])
+#    sigma = 0.05
+    L1, summ, summ_rows, gper, L2, yhat_cylinder, \
+        yhat_zeppelin, yhat_ball, yhat_one = activax_exvivo_params(
+            data, x, bvals, bvecs, G, small_delta, big_delta,
+            gamma=gamma, D_intra=0.6 * 10 ** 3, D_iso=2 * 10 ** 3,
+            debug=True)
+
+    assert_almost_equal(L1[3], 3.96735278865)
+    assert_almost_equal(L1[5], 5.54561445859)
+
+    assert_equal(summ.shape, (372, 60))
+    assert_almost_equal(summ[3, 3], 2.15633236279e-07)
+    assert_almost_equal(summ[20, 2], 1.3498305300e-06)
+
+    assert_equal(summ_rows.shape, (372,))
+
+    print(summ[3, 3])
+
+    assert_equal(gper.shape, (372,))
+    assert_almost_equal(gper[39], 0.004856614915350943)
+    assert_almost_equal(gper[45], 0.60240287122917402)
+
+    print(L2.shape)
+    print(L2[5])
+
+    assert_equal(L2.shape, (372,))
+    assert_almost_equal(L2[5], 1.33006433687)
+
+    print(yhat_zeppelin.shape)
+    assert_equal(yhat_zeppelin.shape, (372,))
+    assert_almost_equal(yhat_zeppelin[6], 2.23215830075)
+
+    assert_almost_equal(yhat_ball[25], 26.3995293508)
+
+#    sigma = 0.05 # offset gaussian constant (not really needed)
+    phi = activax_exvivo_model(x, bvals, bvecs, G,
+                               small_delta, big_delta)
+    print(phi.shape)
+    assert_equal(phi.shape, (372, 4))
+    error_one =  activeax_cost_one(phi, data[0, 0, 0])
+
+    assert_almost_equal(error_one, 2.5070277363920468)
+    
+def test_estimate_x_and_f():
+    x_fe = np.array([ 0.44623926,  0.2855913 ,  0.15918695,  2.68329756,  2.89085876, 3.40398589,  0.10898249])
+    cost = estimate_x_and_f(x_fe, signal)
+    """
+    assert_array_equal()
+    [0.00039828375771280502]
+    """
+    return cost
+
+def test_activax_exvivo_estimate():
+    x = np.array([0.5, 0.5, 10, 0.8])
+#    sigma = 0.05 # offset gaussian constant (not really needed)
+    phi = activax_exvivo_model(x, bvals, bvecs, G,
+                               small_delta, big_delta)
+    fe = estimate_f(np.array(data[0, 0, 0]), phi)
+
+    """
+    assert_array_equal()
+    [[ 0.04266318]
+     [ 0.58784575]
+     [ 0.21049456]
+     [ 0.15899651]]
+    """
+    return fe  
