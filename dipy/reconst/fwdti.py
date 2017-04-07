@@ -638,8 +638,8 @@ def nls_iter(design_matrix, sig, S0, Diso=3e-3, mdreg=2.7e-3,
         # Process water volume fraction f
         f = this_tensor[7]
         if f_transform:
-            f = 0.5 * (1 + np.sin(f - np.pi/2))        
-        
+            f = 0.5 * (1 + np.sin(f - np.pi/2))
+
         params = np.concatenate((evals, evecs[0], evecs[1], evecs[2],
                                  np.array([f])), axis=0)
     return params
