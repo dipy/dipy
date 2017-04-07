@@ -1,6 +1,6 @@
 import numpy as np
 
-from dipy.data import read_viz_icons
+from dipy.data import read_viz_icons, fetch_viz_icons
 
 # Conditional import machinery for vtk.
 from dipy.utils.optpkg import optional_package
@@ -41,6 +41,8 @@ cube_actor_2 = cube_maker((0, 1, 0), (10, 10, 10), center=(100, 0, 0))
 # /Cube Actors
 
 # Buttons
+fetch_viz_icons()
+
 icon_files = dict()
 icon_files['stop'] = read_viz_icons(fname='stop2.png')
 icon_files['play'] = read_viz_icons(fname='play3.png')
