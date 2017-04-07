@@ -919,7 +919,7 @@ class TextActor2D(object):
             The new position. (x, y) in pixels.
 
         """
-        self.actor.SetDisplayPosition(*position)
+        self.actor.SetPosition(*position)
 
 
 class TextBox2D(UI):
