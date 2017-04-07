@@ -1,4 +1,5 @@
-"""Interpolators wrap arrays to allow the array to be indexed in continuous coordinates
+"""Interpolators wrap arrays to allow the array to be indexed in
+continuous coordinates
 
 This module uses the trackvis coordinate system, for more information about
 this coordinate system please see dipy.tracking.utils
@@ -10,14 +11,17 @@ dipy.reconst.interpolate
 from numpy import array
 from dipy.reconst.recspeed import trilinear_interp
 
+
 class OutsideImage(Exception):
     pass
+
 
 class Interpolator(object):
     """Class to be subclassed by different interpolator types"""
     def __init__(self, data, voxel_size):
         self.data = data
         self.voxel_size = array(voxel_size, dtype=float, copy=True)
+
 
 class NearestNeighborInterpolator(Interpolator):
     """Interpolates data using nearest neighbor interpolation"""
@@ -30,6 +34,7 @@ class NearestNeighborInterpolator(Interpolator):
             return self.data[tuple(array(index).astype(int))]
         except IndexError:
             raise OutsideImage
+
 
 class TriLinearInterpolator(Interpolator):
     """Interpolates data using trilinear interpolation
