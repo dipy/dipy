@@ -64,7 +64,7 @@ def activax_exvivo_params(x, bvals, bvecs, G, small_delta, big_delta,
         x(0) theta (radian)
         x(1) phi (radian)
         x(2) R (micrometers)
-        x(3) v=f1/(f1+f2) (0.1 - 0.8)      
+        x(3) v=f1/(f1+f2) (ranges from 0.1 to 0.8)      
     
     bvals
     bvecs
