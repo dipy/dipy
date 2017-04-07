@@ -6,12 +6,12 @@ Created on Thu Mar 02 15:37:46 2017
 import numpy as np
 import nibabel as nib
 from dipy.core.gradients import gradient_table
-from numpy.testing import assert_equal, assert_almost_equal
 from scipy.optimize import  least_squares
 import cvxpy as cvx
+from dipy.data import get_data
+from scipy.optimize import differential_evolution
 
-fname = 'Aax_synth_data.nii'
-fscanner = 'ActiveAx_xdata.txt'
+fname, fscanner = get_data('ActiveAx_synth_2d')
 params = np.loadtxt(fscanner)
 img = nib.load(fname)
 data = img.get_data()
@@ -30,10 +30,11 @@ gtab = gradient_table(bvals, bvecs, big_delta=big_delta,
                       b0_threshold=0, atol=1e-2)
 signal = np.array(data[0, 0, 0])
 
-"""
-normalizing the signal based on the b0 values of each shell
-"""
 def norm_meas_Aax(signal):
+    
+    """
+    normalizing the signal based on the b0 values of each shell
+    """
     y = signal
     y01=(y[0]+y[1]+y[2])/3
     y02=(y[93]+y[94]+y[95])/3
@@ -52,7 +53,46 @@ def activax_exvivo_params(x, bvals, bvecs, G, small_delta, big_delta,
                           gamma=gamma,
                           D_intra=0.6 * 10 ** 3, D_iso=2 * 10 ** 3,
                           debug=False):
-    """ Aax_exvivo_nlin
+
+    """
+    Aax_exvivo_nlin
+
+    Parameters
+    ----------
+    x: 
+        x.shape = 4x1  
+        x(0) theta (radian)
+        x(1) phi (radian)
+        x(2) R (micrometers)
+        x(3) v=f1/(f1+f2) (0.1 - 0.8)      
+    
+    bvals
+    bvecs
+    G: gradient strength 
+    small_delta
+    big_delta
+    gamma: gyromagnetic ratio (2.675987 * 10 ** 8 )
+    D_intra= intrinsic free diffusivity (0.6 * 10 ** 3 mircometer^2/sec)
+    D_iso= isotropic diffusivity, (2 * 10 ** 3 mircometer^2/sec)
+    
+    Returns
+    -------
+    yhat_cylinder, yhat_zeppelin, yhat_ball, yhat_dot    
+
+    Notes
+    --------
+    The estimated dMRI normalized signal Ŝ𝐴𝑐𝑡𝑖𝑣𝑒𝐴𝑥 is assumed to be coming from
+    the following four compartments:
+
+    .. math::
+
+        Ŝ𝐴𝑐𝑡𝑖𝑣𝑒𝐴𝑥 = {f1}{exp(-yhat_cylinder)}+
+                    {f2}{exp(-yhat_zeppelin)}+
+                    {f3}{exp(-yhat_ball)}+
+                    {f4}{exp(-yhat_dot)}
+        
+        where d_perp=D_intra*(1-v)
+                
     """
 
     sinT = np.sin(x[0])
@@ -135,61 +175,58 @@ def activax_exvivo_params(x, bvals, bvecs, G, small_delta, big_delta,
     if debug:
         return L1, summ, summ_rows, g_per, L2, yhat_cylinder, yhat_zeppelin, \
             yhat_ball, yhat_dot
-    return yhat_cylinder, yhat_zeppelin, yhat_ball, yhat_dot
-
-    
-def test_activax_exvivo_model():
-
-    x = np.array([0.5, 0.5, 10, 0.8])
-#    sigma = 0.05
-    L1, summ, summ_rows, gper, L2, yhat_cylinder, \
-        yhat_zeppelin, yhat_ball, yhat_one = activax_exvivo_params(
-            data, x, bvals, bvecs, G, small_delta, big_delta,
-            gamma=gamma, D_intra=0.6 * 10 ** 3, D_iso=2 * 10 ** 3,
-            debug=True)
-
-    assert_almost_equal(L1[3], 3.96735278865)
-    assert_almost_equal(L1[5], 5.54561445859)
-
-    assert_equal(summ.shape, (372, 60))
-    assert_almost_equal(summ[3, 3], 2.15633236279e-07)
-    assert_almost_equal(summ[20, 2], 1.3498305300e-06)
-
-    assert_equal(summ_rows.shape, (372,))
-
-    print(summ[3, 3])
-
-    assert_equal(gper.shape, (372,))
-    assert_almost_equal(gper[39], 0.004856614915350943)
-    assert_almost_equal(gper[45], 0.60240287122917402)
-
-    print(L2.shape)
-    print(L2[5])
-
-    assert_equal(L2.shape, (372,))
-    assert_almost_equal(L2[5], 1.33006433687)
-
-    print(yhat_zeppelin.shape)
-    assert_equal(yhat_zeppelin.shape, (372,))
-    assert_almost_equal(yhat_zeppelin[6], 2.23215830075)
-
-    assert_almost_equal(yhat_ball[25], 26.3995293508)
-
-#    sigma = 0.05 # offset gaussian constant (not really needed)
-    phi = activax_exvivo_model(x, bvals, bvecs, G,
-                               small_delta, big_delta)
-    print(phi.shape)
-    assert_equal(phi.shape, (372, 4))
-    error_one =  activeax_cost_one(phi, data[0, 0, 0])
-
-    assert_almost_equal(error_one, 2.5070277363920468)
-
+    return yhat_cylinder, yhat_zeppelin, yhat_ball, yhat_dot  
     
 def activax_exvivo_model(x, bvals, bvecs, G, small_delta, big_delta,
                          gamma=gamma,
                          D_intra=0.6 * 10 ** 3, D_iso=2 * 10 ** 3,
                          debug=False):
 
+      """
+    Aax_exvivo_nlin
+
+    Parameters
+    ----------
+    x: 
+        x.shape = 4x1  
+        x(0) theta (radian)
+        x(1) phi (radian)
+        x(2) R (micrometers)
+        x(3) v=f1/(f1+f2) (0.1 - 0.8)      
+    
+    bvals
+    bvecs
+    G: gradient strength 
+    small_delta
+    big_delta
+    gamma: gyromagnetic ratio (2.675987 * 10 ** 8 )
+    D_intra= intrinsic free diffusivity (0.6 * 10 ** 3 mircometer^2/sec)
+    D_iso= isotropic diffusivity, (2 * 10 ** 3 mircometer^2/sec)
+    
+    Returns
+    -------
+    exp(-yhat_cylinder), exp(-yhat_zeppelin), exp(-yhat_ball), exp(-yhat_dot)    
+
+    Notes
+    --------
+    The estimated dMRI normalized signal Ŝ𝐴𝑐𝑡𝑖𝑣𝑒𝐴𝑥 is assumed to be coming from
+    the following four compartments:
+
+    .. math::
+
+        Ŝ𝐴𝑐𝑡𝑖𝑣𝑒𝐴𝑥 = {f1}{Ŝ_cylinder(R,theta,phi)}+
+                    {f2}{Ŝ_zeppelin(d_perp,theta,phi)}+
+                    {f3}{Ŝ_ball}+
+                    {f4}{Ŝ_dot}
+        
+        where d_perp=D_intra*(1-v)
+        Ŝ_cylinder = exp(-yhat_cylinder)
+        Ŝ_zeppelin = exp(-yhat_zeppelin)
+        Ŝ_ball = exp(-yhat_ball)
+        Ŝ_dot = exp(-yhat_dot)
+                
+    """ 
+    
     res = activax_exvivo_params(x, bvals, bvecs, G, small_delta, big_delta,
                                 gamma=gamma,
                                 D_intra=0.6 * 10 ** 3, D_iso=2 * 10 ** 3,
@@ -204,26 +241,114 @@ def activax_exvivo_model(x, bvals, bvecs, G, small_delta, big_delta,
     
 
 def activeax_cost_one(phi, signal): # sigma
+                     
+      """
+    Aax_exvivo_nlin
+    
+    to make cost function for genetic algorithm
+
+    Parameters
+    ----------
+    phi: 
+        phi.shape = number of data points x 4  
+    signal:
+        signal.shape = number of data points x 1          
+       
+    Returns
+    -------
+    (signal -  Ŝ)^T(signal -  Ŝ)   
+
+    Notes
+    --------
+    to make cost function for genetic algorithm:
+
+    .. math::
+
+        (signal -  Ŝ)^T(signal -  Ŝ)
+                
+    """ 
 
     phi_mp = np.dot(np.linalg.inv(np.dot(phi.T, phi)), phi.T) # moore-penrose
     f = np.dot(phi_mp, signal)
     yhat = np.dot(phi, f) # - sigma
     return np.dot((signal - yhat).T, signal - yhat)
- 
     
 def cost_one(x, signal, bvals, bvecs, G, small_delta, big_delta):
     phi = activax_exvivo_model(x, bvals, bvecs, G,
                                small_delta, big_delta)
     
+          """
+    Aax_exvivo_nlin
+    
+    Cost function for genetic algorithm
+
+    Parameters
+    ----------
+    x: 
+        x.shape = 4x1  
+        x(0) theta (radian)
+        x(1) phi (radian)
+        x(2) R (micrometers)
+        x(3) v=f1/(f1+f2) (0.1 - 0.8)      
+    
+    bvals
+    bvecs
+    G: gradient strength 
+    small_delta
+    big_delta
+    gamma: gyromagnetic ratio (2.675987 * 10 ** 8 )
+    D_intra= intrinsic free diffusivity (0.6 * 10 ** 3 mircometer^2/sec)
+    D_iso= isotropic diffusivity, (2 * 10 ** 3 mircometer^2/sec)
+    
+    Returns
+    -------
+    (signal -  Ŝ)^T(signal -  Ŝ)   
+
+    Notes
+    --------
+    cost function for genetic algorithm:
+
+    .. math::
+
+        (signal -  Ŝ)^T(signal -  Ŝ)                
+    """ 
+
     error_one =  activeax_cost_one(phi, signal)
     return error_one
 
 
 def estimate_f(signal, phi):
     
-    # Create two scalar optimization variables.
+    """
+    Linear parameters fit using cvx
+    
+    Parameters
+    ----------
+    phi: 
+        phi.shape = number of data points x 4  
+    signal:
+        signal.shape = number of data points x 1    
+    
+    Returns
+    -------
+    f1, f2, f3, f4 (volume fractions)   
+    f1 = fe[0]
+    f2 = fe[1]
+    f3 = fe[2]
+    f4 = fe[3]
+
+    Notes
+    --------
+    cost function for genetic algorithm:
+
+    .. math::
+
+        minimize(norm((signal)- (phi*fe)))                
+    """
+    
+    # Create four scalar optimization variables.
     fe = cvx.Variable(4)
-    # Create two constraints.
+    # Create four constraints.
     constraints = [cvx.sum_entries(fe) == 1,
                    fe[0] >= 0,
                    fe[1] >= 0,
@@ -238,27 +363,38 @@ def estimate_f(signal, phi):
     prob.solve()  # Returns the optimal value.
     
     return np.array(fe.value)
-
-    
-def test_activax_exvivo_estimate():
-    x = np.array([0.5, 0.5, 10, 0.8])
-#    sigma = 0.05 # offset gaussian constant (not really needed)
-    phi = activax_exvivo_model(x, bvals, bvecs, G,
-                               small_delta, big_delta)
-    fe = estimate_f(np.array(data[0, 0, 0]), phi)
-
-    """
-    assert_array_equal()
-    [[ 0.04266318]
-     [ 0.58784575]
-     [ 0.21049456]
-     [ 0.15899651]]
-    """
-    return fe  
-
    
 def estimate_x_and_f(x_fe, signal):
-    x =x_fe[3:6] 
+    
+    """
+    Aax_exvivo_eval
+    
+    cost function for the least square problem
+    
+    Parameters
+    ----------
+    x_fe(0) x_fe(1) x_fe(2)  are f1 f2 f3
+    x_fe(3) theta
+    x_fe(4) phi
+    x_fe(5) R 
+    x_fe(6) as f4     
+    
+    signal:
+        signal.shape = number of data points x 1    
+    
+    Returns
+    -------
+    sum{(signal -  phi*fe)^2}   
+
+    Notes
+    --------
+    cost function for the least square problem
+
+    .. math::
+
+        sum{(signal -  phi*fe)^2}                   
+    """
+    
     fe[0:3] = x_fe[0:3]
     fe[3] = x_fe[6] 
     phi = activax_exvivo_model2(x_fe, bvals, bvecs, G, small_delta, big_delta,
@@ -266,16 +402,40 @@ def estimate_x_and_f(x_fe, signal):
                                D_intra=0.6 * 10 ** 3, D_iso=2 * 10 ** 3,
                                debug=False)
     return np.sum((np.squeeze(np.dot(phi, fe)) - signal) ** 2)
-def test_estimate_x_and_f():
-    x_fe = np.array([ 0.44623926,  0.2855913 ,  0.15918695,  2.68329756,  2.89085876, 3.40398589,  0.10898249])
-    cost = estimate_x_and_f(x_fe, signal)
-    """
-    assert_array_equal()
-    [0.00039828375771280502]
-    """
-    return cost
 
 def final(signal, x, fe):
+    
+    """
+    lease square fitting    
+    
+    Parameters
+    ----------
+    fe(0) fe(1) fe(2) fe(3)  are f1 f2 f3 f4
+    x(0) theta
+    x(1) phi
+    x(2) R 
+    
+    signal:
+        signal.shape = number of data points x 1    
+    
+    Returns
+    -------
+    volume fractions (f1, f2, f3, f4), theta, phi, R
+    
+    res.x(0) res.x(1) res.x(2)  are f1 f2 f3
+    res.x(3) theta
+    res.x(4) phi
+    res.x(5) R 
+    res.x(6) as f4
+    
+    Notes
+    --------
+    in this step we take the estimated volume fractions from convex optimization
+    and theta, phi and R from genetic algorithm to find all 7 unknown parameters 
+    using bounded non-linear least square fitting  
+                 
+    """
+    
     x_fe = np.zeros([7])
     x_fe[:3] = fe[:3]
     x_fe[3:6] = x[:3]
@@ -288,7 +448,48 @@ def activax_exvivo_params2(x_fe, bvals, bvecs, G, small_delta, big_delta,
                           gamma=gamma,
                           D_intra=0.6 * 10 ** 3, D_iso=2 * 10 ** 3,
                           debug=False):
-    """ Aax_exvivo_nlin
+    
+    
+    """
+    Aax_exvivo_eval
+
+    Parameters
+    ----------
+    x_fe: 
+        x_fe.shape = 7x1  
+        x_fe(0) x_fe(1) x_fe(2)  are f1 f2 f3
+        x_fe(3) theta
+        x_fe(4) phi
+        x_fe(5) R 
+        x_fe(6) as f4         
+    
+    bvals
+    bvecs
+    G: gradient strength 
+    small_delta
+    big_delta
+    gamma: gyromagnetic ratio (2.675987 * 10 ** 8 )
+    D_intra= intrinsic free diffusivity (0.6 * 10 ** 3 mircometer^2/sec)
+    D_iso= isotropic diffusivity, (2 * 10 ** 3 mircometer^2/sec)
+    
+    Returns
+    -------
+    yhat_cylinder, yhat_zeppelin, yhat_ball, yhat_dot    
+
+    Notes
+    --------
+    The estimated dMRI normalized signal Ŝ𝐴𝑐𝑡𝑖𝑣𝑒𝐴𝑥 is assumed to be coming from
+    the following four compartments:
+
+    .. math::
+
+        Ŝ𝐴𝑐𝑡𝑖𝑣𝑒𝐴𝑥 = {f1}{exp(-yhat_cylinder)}+
+                    {f2}{exp(-yhat_zeppelin)}+
+                    {f3}{exp(-yhat_ball)}+
+                    {f4}{exp(-yhat_dot)}
+        
+        where d_perp=D_intra*(1-v)
+                
     """
 
     sinT = np.sin(x_fe[3])
@@ -380,6 +581,52 @@ def activax_exvivo_model2(x_fe, bvals, bvecs, G, small_delta, big_delta,
                          gamma=gamma,
                          D_intra=0.6 * 10 ** 3, D_iso=2 * 10 ** 3,
                          debug=False):
+    
+    """
+    Aax_exvivo_eval
+
+    Parameters
+    ----------
+    x_fe: 
+        x_fe.shape = 7x1  
+        x_fe(0) x_fe(1) x_fe(2)  are f1 f2 f3
+        x_fe(3) theta
+        x_fe(4) phi
+        x_fe(5) R 
+        x_fe(6) as f4      
+    
+    bvals
+    bvecs
+    G: gradient strength 
+    small_delta
+    big_delta
+    gamma: gyromagnetic ratio (2.675987 * 10 ** 8 )
+    D_intra= intrinsic free diffusivity (0.6 * 10 ** 3 mircometer^2/sec)
+    D_iso= isotropic diffusivity, (2 * 10 ** 3 mircometer^2/sec)
+    
+    Returns
+    -------
+    exp(-yhat_cylinder), exp(-yhat_zeppelin), exp(-yhat_ball), exp(-yhat_dot)    
+
+    Notes
+    --------
+    The estimated dMRI normalized signal Ŝ𝐴𝑐𝑡𝑖𝑣𝑒𝐴𝑥 is assumed to be coming from
+    the following four compartments:
+
+    .. math::
+
+        Ŝ𝐴𝑐𝑡𝑖𝑣𝑒𝐴𝑥 = {f1}{Ŝ_cylinder(R,theta,phi)}+
+                    {f2}{Ŝ_zeppelin(d_perp,theta,phi)}+
+                    {f3}{Ŝ_ball}+
+                    {f4}{Ŝ_dot}
+        
+        where d_perp=D_intra*(1-v)
+        Ŝ_cylinder = exp(-yhat_cylinder)
+        Ŝ_zeppelin = exp(-yhat_zeppelin)
+        Ŝ_ball = exp(-yhat_ball)
+        Ŝ_dot = exp(-yhat_dot)
+                
+    """ 
 
     res = activax_exvivo_params2(x_fe, bvals, bvecs, G, small_delta, big_delta,
                                 gamma=gamma,
@@ -393,14 +640,12 @@ def activax_exvivo_model2(x_fe, bvals, bvecs, G, small_delta, big_delta,
 
     return np.exp(-phi)
 
-from scipy.optimize import differential_evolution
-
 bounds = [(0.01,np.pi), (0.01,np.pi), (0.1,11), (0.1,0.8)]
 result = np.zeros([10,10,7])
 #for i in range(0 , 10):
 #    for j in range(0 , 10):
-for i in range(0 , 1):
-    for j in range(0 , 1):
+for i in range(0 , 10):
+    for j in range(0 , 10):
         signal1 = np.array(data[i,j,0])
         res_one = differential_evolution(cost_one, bounds, args=(signal1, bvals, bvecs, G, small_delta, big_delta))
         x1 = res_one.x    
