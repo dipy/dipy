@@ -1,3 +1,4 @@
+from __future__ import division
 from _warnings import warn
 
 import numpy as np
@@ -918,7 +919,7 @@ class TextActor2D(object):
             The new position. (x, y) in pixels.
 
         """
-        self.actor.SetDisplayPosition(*position)
+        self.actor.SetPosition(*position)
 
 
 class TextBox2D(UI):
@@ -1292,3 +1293,287 @@ class TextBox2D(UI):
             i_ren.remove_active_prop(textbox_object.actor.get_actor())
 
         i_ren.force_render()
+
+
+class LineSlider2D(UI):
+    """ A 2D Line Slider.
+
+    A sliding ring on a line with a percentage indicator.
+
+    Currently supports:
+    - A disk on a line (a thin rectangle).
+    - Setting disk position.
+
+    Attributes
+    ----------
+    line_width : int
+        Width of the line on which the disk will slide.
+    inner_radius : int
+        Inner radius of the disk (ring).
+    outer_radius : int
+        Outer radius of the disk.
+    center : (float, float)
+        Center of the slider.
+    length : int
+        Length of the slider.
+    slider_line : :class:`vtkActor`
+        The line on which the slider disk moves.
+    slider_disk : :class:`vtkActor`
+        The moving slider disk.
+    text : :class:`TextActor2D`
+        The text that shows percentage.
+
+    """
+    def __init__(self, line_width=5, inner_radius=0, outer_radius=10,
+                 center=(450, 300), length=200, initial_value=50,
+                 min_value=0, max_value=100, text_size=16,
+                 text_template="{value:.1f} ({ratio:.0%})"):
+        """
+        Parameters
+        ----------
+        line_width : int
+            Width of the line on which the disk will slide.
+        inner_radius : int
+            Inner radius of the disk (ring).
+        outer_radius : int
+            Outer radius of the disk.
+        center : (float, float)
+            Center of the slider.
+        length : int
+            Length of the slider.
+        initial_value : float
+            Initial value of the slider.
+        min_value : float
+            Minimum value of the slider.
+        max_value : float
+            Maximum value of the slider.
+        text_size : int
+            Size of the text to display alongside the slider (pt).
+        text_template : str, callable
+            If str, text template can contain one or multiple of the
+            replacement fields: `{value:}`, `{ratio:}`.
+            If callable, this instance of `:class:LineSlider2D` will be
+            passed as argument to the text template function.
+
+        """
+        super(LineSlider2D, self).__init__()
+
+        self.length = length
+        self.min_value = min_value
+        self.max_value = max_value
+
+        self.text_template = text_template
+
+        self.line_width = line_width
+        self.center = center
+        self.current_state = center[0]
+        self.left_x_position = center[0] - length / 2
+        self.right_x_position = center[0] + length / 2
+        self._ratio = (self.current_state - self.left_x_position) / length
+
+        self.slider_line = None
+        self.slider_disk = None
+        self.text = None
+
+        self.build_actors(inner_radius=inner_radius,
+                          outer_radius=outer_radius, text_size=text_size)
+
+        # Setting the disk position will also update everything.
+        self.value = initial_value
+        # self.update()
+
+        self.handle_events(None)
+
+    def build_actors(self, inner_radius, outer_radius, text_size):
+        """ Builds required actors.
+
+        Parameters
+        ----------
+        inner_radius: int
+            The inner radius of the sliding disk.
+        outer_radius: int
+            The outer radius of the sliding disk.
+        text_size: int
+            Size of the text that displays percentage.
+
+        """
+        # Slider Line
+        self.slider_line = Rectangle2D(size=(self.length, self.line_width),
+                                       center=self.center).actor
+        self.slider_line.GetProperty().SetColor(1, 0, 0)
+        # /Slider Line
+
+        # Slider Disk
+        # Create source
+        disk = vtk.vtkDiskSource()
+        disk.SetInnerRadius(inner_radius)
+        disk.SetOuterRadius(outer_radius)
+        disk.SetRadialResolution(10)
+        disk.SetCircumferentialResolution(50)
+        disk.Update()
+
+        # Mapper
+        mapper = vtk.vtkPolyDataMapper2D()
+        mapper.SetInputConnection(disk.GetOutputPort())
+
+        # Actor
+        self.slider_disk = vtk.vtkActor2D()
+        self.slider_disk.SetMapper(mapper)
+        # /Slider Disk
+
+        # Slider Text
+        self.text = TextActor2D()
+        self.text.position = (self.left_x_position - 50, self.center[1] - 10)
+        self.text.font_size = text_size
+        # /Slider Text
+
+    def get_actors(self):
+        """ Returns the actors that compose this UI component.
+
+        """
+        return [self.slider_line, self.slider_disk, self.text.get_actor()]
+
+    def set_position(self, position):
+        """ Sets the disk's position.
+
+        Parameters
+        ----------
+        position : (float, float)
+            The absolute position of the disk (x, y).
+
+        """
+        x_position = position[0]
+
+        if x_position < self.center[0] - self.length/2:
+            x_position = self.center[0] - self.length/2
+
+        if x_position > self.center[0] + self.length/2:
+            x_position = self.center[0] + self.length/2
+
+        self.current_state = x_position
+        self.update()
+
+    @property
+    def value(self):
+        return self._value
+
+    @value.setter
+    def value(self, value):
+        value_range = self.max_value - self.min_value
+        self.ratio = (value - self.min_value) / value_range
+
+    @property
+    def ratio(self):
+        return self._ratio
+
+    @ratio.setter
+    def ratio(self, ratio):
+        position_x = self.left_x_position + ratio*self.length
+        self.set_position((position_x, None))
+
+    def format_text(self):
+        """ Returns formatted text to display along the slider. """
+        if callable(self.text_template):
+            return self.text_template(self)
+
+        return self.text_template.format(ratio=self.ratio, value=self.value)
+
+    def update(self):
+        """ Updates the slider. """
+
+        # Compute the ratio determined by the position of the slider disk.
+        length = float(self.right_x_position - self.left_x_position)
+        assert length == self.length
+        self._ratio = (self.current_state - self.left_x_position) / length
+
+        # Compute the selected value considering min_value and max_value.
+        value_range = self.max_value - self.min_value
+        self._value = self.min_value + self.ratio*value_range
+
+        # Update text disk actor.
+        self.slider_disk.SetPosition(self.current_state, self.center[1])
+
+        # Update text.
+        text = self.format_text()
+        self.text.message = text
+        offset_x = 8 * len(text) / 2.
+        offset_y = 30
+        self.text.position = (self.current_state - offset_x,
+                              self.center[1] - offset_y)
+
+    def set_center(self, position):
+        """ Sets the center of the slider to position.
+
+        Parameters
+        ----------
+        position : (float, float)
+            The new center of the whole slider (x, y).
+
+        """
+        self.slider_line.SetPosition(position[0] - self.length / 2,
+                                     position[1] - self.line_width / 2)
+
+        x_change = position[0] - self.center[0]
+        self.current_state += x_change
+        self.center = position
+        self.left_x_position = position[0] - self.length / 2
+        self.right_x_position = position[0] + self.length / 2
+        self.set_position((self.current_state, self.center[1]))
+
+    @staticmethod
+    def line_click_callback(i_ren, obj, slider):
+        """ Update disk position and grab the focus.
+
+        Parameters
+        ----------
+        i_ren : :class:`CustomInteractorStyle`
+        obj : :class:`vtkActor`
+            The picked actor
+        slider : :class:`LineSlider2D`
+
+        """
+        position = i_ren.event.position
+        slider.set_position(position)
+        i_ren.force_render()
+        i_ren.event.abort()  # Stop propagating the event.
+
+    @staticmethod
+    def disk_press_callback(i_ren, obj, slider):
+        """ Only need to grab the focus.
+
+        Parameters
+        ----------
+        i_ren : :class:`CustomInteractorStyle`
+        obj : :class:`vtkActor`
+            The picked actor
+        slider : :class:`LineSlider2D`
+
+        """
+        i_ren.event.abort()  # Stop propagating the event.
+
+    @staticmethod
+    def disk_move_callback(i_ren, obj, slider):
+        """ Actual disk movement.
+
+        Parameters
+        ----------
+        i_ren : :class:`CustomInteractorStyle`
+        obj : :class:`vtkActor`
+            The picked actor
+        slider : :class:`LineSlider2D`
+
+        """
+        position = i_ren.event.position
+        slider.set_position(position)
+        i_ren.force_render()
+        i_ren.event.abort()  # Stop propagating the event.
+
+    def handle_events(self, actor):
+        """ Handle all events for the LineSlider.
+        Base method needs to be overridden due to multiple actors.
+
+        """
+        self.add_callback(self.slider_line, "LeftButtonPressEvent", self.line_click_callback)
+        self.add_callback(self.slider_disk, "LeftButtonPressEvent", self.disk_press_callback)
+        self.add_callback(self.slider_disk, "MouseMoveEvent", self.disk_move_callback)
+        self.add_callback(self.slider_line, "MouseMoveEvent", self.disk_move_callback)
