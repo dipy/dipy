@@ -20,15 +20,6 @@ from dipy.viz import ui, window
 
 vtk, have_vtk, setup_module = optional_package('vtk')
 
-if have_vtk:
-    vtkInteractorStyleUser = vtk.vtkInteractorStyleUser
-    version = vtk.vtkVersion.GetVTKSourceVersion().split(' ')[-1]
-    major_version = vtk.vtkVersion.GetVTKMajorVersion()
-else:
-    vtkInteractorStyleUser = object
-
-numpy_support, have_ns, _ = optional_package('vtk.util.numpy_support')
-
 """
 3D Elements 
 ===========
@@ -170,4 +161,5 @@ show_manager.ren.add(panel)
 show_manager.ren.add(text)
 show_manager.ren.add(line_slider)
 
-show_manager.start()
+# Uncomment this to start the visualisation
+# show_manager.start()
