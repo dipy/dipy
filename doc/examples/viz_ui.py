@@ -12,13 +12,8 @@ First, a bunch of imports.
 
 from dipy.data import read_viz_icons, fetch_viz_icons
 
-# Conditional import machinery for vtk.
-from dipy.utils.optpkg import optional_package
-
-# Allow import, but disable doctests if we don't have vtk.
 from dipy.viz import ui, window
 
-vtk, have_vtk, setup_module = optional_package('vtk')
 
 """
 3D Elements 
@@ -29,15 +24,15 @@ Let's have some cubes in 3D.
 
 
 def cube_maker(color=None, size=(0.2, 0.2, 0.2), center=None):
-    cube = vtk.vtkCubeSource()
+    cube = window.vtk.vtkCubeSource()
     cube.SetXLength(size[0])
     cube.SetYLength(size[1])
     cube.SetZLength(size[2])
     if center is not None:
         cube.SetCenter(*center)
-    cube_mapper = vtk.vtkPolyDataMapper()
+    cube_mapper = window.vtk.vtkPolyDataMapper()
     cube_mapper.SetInputConnection(cube.GetOutputPort())
-    cube_actor = vtk.vtkActor()
+    cube_actor = window.vtk.vtkActor()
     cube_actor.SetMapper(cube_mapper)
     if color is not None:
         cube_actor.GetProperty().SetColor(color)
