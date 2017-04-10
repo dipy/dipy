@@ -208,7 +208,7 @@ class DiffusionSpectrumFit(OdfFit):
         ----------
         normalized : boolean
             default true, normalize the propagator by its sum in order
-            to obtain a pdf
+            to obtain a pdf. Default: True.
 
         Returns
         -------
@@ -252,7 +252,7 @@ class DiffusionSpectrumFit(OdfFit):
         ----------
         normalized : boolean
             default true, normalize the propagator by its sum in order
-            to obtain a pdf
+            to obtain a pdf. Default: True.
 
         Returns
         -------
