@@ -483,7 +483,7 @@ def apparent_kurtosis_coef(dki_params, sphere, min_diffusivity=0,
         ADC(n)=\sum_{i=1}^{3}\sum_{j=1}^{3}n_{i}n_{j}D_{ij}
 
     where $D_{ij}$ are the elements of the diffusion tensor.
-    
+
     See Also
     --------
     dipy.reconst.dki.radial_kurtosis
@@ -776,7 +776,7 @@ def radial_kurtosis(dki_params, min_kurtosis=-3./7, max_kurtosis=3):
         To keep kurtosis values within a plausible biophysical range, radial
         kurtosis values that are smaller than `min_kurtosis` are replaced with
         `min_kurtosis`. defaut = -3./7 (theoretical kurtosis limit for regions
-        that consist of water confined to spherical pores [2]_) 
+        that consist of water confined to spherical pores [2]_)
     max_kurtosis : float (optional)
         To keep kurtosis values within a plausible biophysical range, radial
         kurtosis values that are larger than `max_kurtosis` are replaced with
@@ -809,7 +809,7 @@ def radial_kurtosis(dki_params, min_kurtosis=-3./7, max_kurtosis=3):
         G_2(\lambda_1,\lambda_2,\lambda_3)=
         \frac{(\lambda_1+\lambda_2+\lambda_3)^2}{(\lambda_2-\lambda_3)^2}
         \left ( \frac{\lambda_2+\lambda_3}{\sqrt{\lambda_2\lambda_3}}-2\right )
-    
+
     References
     ----------
     .. [1] Tabesh, A., Jensen, J.H., Ardekani, B.A., Helpern, J.A., 2011.
@@ -879,7 +879,7 @@ def axial_kurtosis(dki_params, min_kurtosis=-3./7, max_kurtosis=3):
     -------
     ak : array
         Calculated AK.
-    
+
     See also
     --------
     dipy.reconst.dki.radial_kurtosis
@@ -946,7 +946,7 @@ def _kt_maxima_converge(ang, dt, MD, kt):
     Notes
     -----
     This function is used to refine the kurtosis maxima estimate
-    
+
     See also
     --------
     dipy.reconst.dki.kurtosis_maximum
@@ -975,13 +975,13 @@ def kurtosis_maximum(dt, MD, kt, sphere, gtol=1e-5):
         convergence procedure must be less than gtol before successful
         termination. If gtol is None, fiber direction is directly taken from 
         the initial sampled directions of the given sphere object
-    
+
     Returns
     --------
     max_value : float
         kurtosis tensor maxima value
     max_dir : array (3,)
-        Cartesian coordinates of the direction of the maximal kurtosis value 
+        Cartesian coordinates of the direction of the maximal kurtosis value
     """
     # Estimation of maxima kurtosis candidates
     AKC = _directional_kurtosis(dt, MD, kt, sphere.vertices)
@@ -1034,7 +1034,7 @@ def axonal_water_fraction(dki_params, sphere, mask=None, gtol=1e-5):
     mask : ndarray
         A boolean array used to mark the coordinates in the data that should be
         analyzed that has the shape dki_params.shape[:-1]
-    
+
     Returns
     --------
     AWF : ndarray (x, y, z) or (n)
@@ -1069,7 +1069,7 @@ def axonal_water_fraction(dki_params, sphere, mask=None, gtol=1e-5):
     pos_evals = _positive_evals(evals[..., 0], evals[..., 1], evals[..., 2])
     mask = np.logical_and(mask, pos_evals)
 
-    kt_max = np.zeros(mask.shape) 
+    kt_max = np.zeros(mask.shape)
 
     for idx in ndindex(shape):
         if not mask[idx]:
@@ -1115,7 +1115,7 @@ def diffusion_components(dki_params, sphere, awf=None, mask=None):
         Parameters of the extra-cellular diffusion tensor.
     IDT : ndarray (x, y, z, 12) or (n, 12)
         Parameters of the intra-cellular diffusion tensor.
-        
+
     Notes
     -----
     The parameters of both extra-cellular and intra-cellular diffusion tensors
@@ -1141,7 +1141,7 @@ def diffusion_components(dki_params, sphere, awf=None, mask=None):
 
     # check or compute awf values
     if awf is None:
-        awf = axonal_water_fraction(dki_params, sphere, mask=mask) 
+        awf = axonal_water_fraction(dki_params, sphere, mask=mask)
     else:
         if awf.shape != shape:
             raise ValueError("awf array is not the same shape as dki_params.")
@@ -1162,7 +1162,7 @@ def diffusion_components(dki_params, sphere, awf=None, mask=None):
     # Reconstruct the extra and intra-cellular diffusion tensors
     B = np.zeros((sphere.x.size, 6))
     B[:, 0] = sphere.x * sphere.x  # Bxx
-    B[:, 1] = sphere.x * sphere.y * 2. # Bxy
+    B[:, 1] = sphere.x * sphere.y * 2.  # Bxy
     B[:, 2] = sphere.y * sphere.y   # Byy
     B[:, 3] = sphere.x * sphere.z * 2.  # Bxz
     B[:, 4] = sphere.y * sphere.z * 2.  # Byz
@@ -2014,6 +2014,8 @@ def split_dki_param(dki_params):
 
 common_fit_methods = {'WLS': wls_fit_dki,
                       'OLS': ols_fit_dki,
+                      'WLLS': wls_fit_dki,
+                      'OLLS': wls_fit_dki,
                       'UWLLS': wls_fit_dki,
                       'ULLS': ols_fit_dki,
                       }
