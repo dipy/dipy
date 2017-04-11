@@ -485,7 +485,7 @@ def apparent_kurtosis_coef(dki_params, sphere, min_diffusivity=0,
         ADC(n)=\sum_{i=1}^{3}\sum_{j=1}^{3}n_{i}n_{j}D_{ij}
 
     where $D_{ij}$ are the elements of the diffusion tensor.
-    
+
     See Also
     --------
     dipy.reconst.dki.radial_kurtosis
@@ -935,7 +935,7 @@ def radial_kurtosis(dki_params, min_kurtosis=-3./7, max_kurtosis=3):
         To keep kurtosis values within a plausible biophysical range, radial
         kurtosis values that are smaller than `min_kurtosis` are replaced with
         `min_kurtosis`. defaut = -3./7 (theoretical kurtosis limit for regions
-        that consist of water confined to spherical pores [2]_) 
+        that consist of water confined to spherical pores [2]_)
     max_kurtosis : float (optional)
         To keep kurtosis values within a plausible biophysical range, radial
         kurtosis values that are larger than `max_kurtosis` are replaced with
@@ -968,7 +968,7 @@ def radial_kurtosis(dki_params, min_kurtosis=-3./7, max_kurtosis=3):
         G_2(\lambda_1,\lambda_2,\lambda_3)=
         \frac{(\lambda_1+\lambda_2+\lambda_3)^2}{(\lambda_2-\lambda_3)^2}
         \left ( \frac{\lambda_2+\lambda_3}{\sqrt{\lambda_2\lambda_3}}-2\right )
-    
+
     References
     ----------
     .. [1] Tabesh, A., Jensen, J.H., Ardekani, B.A., Helpern, J.A., 2011.
@@ -1038,7 +1038,7 @@ def axial_kurtosis(dki_params, min_kurtosis=-3./7, max_kurtosis=3):
     -------
     ak : array
         Calculated AK.
-    
+
     See also
     --------
     dipy.reconst.dki.radial_kurtosis
@@ -1933,6 +1933,8 @@ def split_dki_param(dki_params):
 
 common_fit_methods = {'WLS': wls_fit_dki,
                       'OLS': ols_fit_dki,
+                      'WLLS': wls_fit_dki,
+                      'OLLS': wls_fit_dki,
                       'UWLLS': wls_fit_dki,
                       'ULLS': ols_fit_dki,
                       }
