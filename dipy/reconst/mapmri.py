@@ -923,7 +923,6 @@ class MapmriFit(ReconstFit):
         E = S0 * np.dot(M, self._mapmri_coef)
         return E
 
-
     def pdf(self, r_points):
         """ Diffusion propagator on a given set of real points.
         if the array r_points is non writeable, then intermediate

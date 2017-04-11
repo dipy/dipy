@@ -6,6 +6,7 @@ import numpy as np
 from numpy.linalg import norm
 import numpy.testing as npt
 from dipy.testing.memory import get_type_refcount
+from dipy.testing import assert_arrays_equal
 
 from nose.tools import assert_true, assert_equal, assert_almost_equal
 from numpy.testing import (assert_array_equal, assert_array_almost_equal,
@@ -742,62 +743,62 @@ def test_select_by_rois():
     selection = select_by_rois(streamlines, [mask1], [True],
                                tol=1)
 
-    npt.assert_array_equal(list(selection), [streamlines[0],
-                           streamlines[1]])
+    assert_arrays_equal(list(selection), [streamlines[0],
+                        streamlines[1]])
 
     selection = select_by_rois(streamlines, [mask1, mask2], [True, True],
                                tol=1)
 
-    npt.assert_array_equal(list(selection), [streamlines[0],
-                           streamlines[1]])
+    assert_arrays_equal(list(selection), [streamlines[0],
+                        streamlines[1]])
 
     selection = select_by_rois(streamlines, [mask1, mask2], [True, False])
 
-    npt.assert_array_equal(list(selection), [streamlines[1]])
+    assert_arrays_equal(list(selection), [streamlines[1]])
 
     # Setting tolerance too low gets overridden:
     selection = select_by_rois(streamlines, [mask1, mask2], [True, False],
                                tol=0.1)
-    npt.assert_array_equal(list(selection), [streamlines[1]])
+    assert_arrays_equal(list(selection), [streamlines[1]])
 
     selection = select_by_rois(streamlines, [mask1, mask2], [True, True],
                                tol=0.87)
 
-    npt.assert_array_equal(list(selection), [streamlines[1]])
+    assert_arrays_equal(list(selection), [streamlines[1]])
 
     mask3 = np.zeros_like(mask1)
     mask3[0, 2, 2] = 1
     selection = select_by_rois(streamlines, [mask1, mask2, mask3],
                                [True, True, False], tol=1.0)
 
-    npt.assert_array_equal(list(selection), [streamlines[0]])
+    assert_arrays_equal(list(selection), [streamlines[0]])
 
     # Select using only one ROI
     selection = select_by_rois(streamlines, [mask1], [True], tol=0.87)
-    npt.assert_array_equal(list(selection), [streamlines[1]])
+    assert_arrays_equal(list(selection), [streamlines[1]])
 
     selection = select_by_rois(streamlines, [mask1], [True], tol=1.0)
-    npt.assert_array_equal(list(selection), [streamlines[0],
-                           streamlines[1]])
+    assert_arrays_equal(list(selection), [streamlines[0],
+                        streamlines[1]])
 
     # Use different modes:
     selection = select_by_rois(streamlines, [mask1, mask2, mask3],
                                [True, True, False],
                                mode="all",
                                tol=1.0)
-    npt.assert_array_equal(list(selection), [streamlines[0]])
+    assert_arrays_equal(list(selection), [streamlines[0]])
 
     selection = select_by_rois(streamlines, [mask1, mask2, mask3],
                                [True, True, False],
                                mode="either_end",
                                tol=1.0)
-    npt.assert_array_equal(list(selection), [streamlines[0]])
+    assert_arrays_equal(list(selection), [streamlines[0]])
 
     selection = select_by_rois(streamlines, [mask1, mask2, mask3],
                                [True, True, False],
                                mode="both_end",
                                tol=1.0)
-    npt.assert_array_equal(list(selection), [streamlines[0]])
+    assert_arrays_equal(list(selection), [streamlines[0]])
 
     mask2[0, 2, 2] = True
     selection = select_by_rois(streamlines, [mask1, mask2, mask3],
@@ -805,14 +806,14 @@ def test_select_by_rois():
                                mode="both_end",
                                tol=1.0)
 
-    npt.assert_array_equal(list(selection), [streamlines[0],
-                                             streamlines[1]])
+    assert_arrays_equal(list(selection), [streamlines[0],
+                                          streamlines[1]])
 
     # Test with generator input:
     selection = select_by_rois(generate_sl(streamlines), [mask1], [True],
                                tol=1.0)
-    npt.assert_array_equal(list(selection), [streamlines[0],
-                           streamlines[1]])
+    assert_arrays_equal(list(selection), [streamlines[0],
+                        streamlines[1]])
 
 
 def test_orient_by_rois():
