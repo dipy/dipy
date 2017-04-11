@@ -180,8 +180,8 @@ class DiffusionSpectrumFit(OdfFit):
 
         Parameters
         ----------
-        filtering : boolean
-            default true, perform the hanning filtering
+        filtering : boolean, optional
+            Whether to perform Hanning filtering. Default: True
 
         Returns
         -------
@@ -200,13 +200,15 @@ class DiffusionSpectrumFit(OdfFit):
 
     def rtop_pdf(self, normalized=True):
         r""" Calculates the return to origin probability from the propagator, which is
-        the propagator evaluated at zero (see Descoteaux et Al. [1]_, Tuch [2]_, Wu et al. [3]_)
+        the propagator evaluated at zero (see Descoteaux et Al. [1]_,
+        Tuch [2]_, Wu et al. [3]_)
         rtop = P(0)
 
         Parameters
         ----------
-        normalized : boolean
-            default true, normalize the propagator by its sum in order to obtain a pdf
+        normalized : boolean, optional
+            Whether to normalize the propagator by its sum in order to obtain a
+            pdf. Default: True.
 
         Returns
         -------
@@ -243,12 +245,14 @@ class DiffusionSpectrumFit(OdfFit):
                     MSD:{DSI}=\int_{-\infty}^{\infty}\int_{-\infty}^{\infty}\int_{-\infty}^{\infty} P(\hat{\mathbf{r}}) \cdot \hat{\mathbf{r}}^{2} \ dr_x \ dr_y \ dr_z
                 \end{equation}
 
-        where $\hat{\mathbf{r}}$ is a point in the 3D Propagator space (see Wu et. al [1]_).
+        where $\hat{\mathbf{r}}$ is a point in the 3D Propagator space
+        (see Wu et. al [1]_).
 
         Parameters
         ----------
-        normalized : boolean
-            default true, normalize the propagator by its sum in order to obtain a pdf
+        normalized : boolean, optional
+            Whether to normalize the propagator by its sum in order to obtain a
+            pdf. Default: True
 
         Returns
         -------
