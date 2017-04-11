@@ -180,8 +180,8 @@ class DiffusionSpectrumFit(OdfFit):
 
         Parameters
         ----------
-        filtering : boolean
-            default true, perform the hanning filtering
+        filtering : boolean, optional
+            Whether to perform Hanning filtering. Default: True
 
         Returns
         -------
@@ -206,9 +206,9 @@ class DiffusionSpectrumFit(OdfFit):
 
         Parameters
         ----------
-        normalized : boolean
-            default true, normalize the propagator by its sum in order
-            to obtain a pdf. Default: True.
+        normalized : boolean, optional
+            Whether to normalize the propagator by its sum in order to obtain a
+            pdf. Default: True.
 
         Returns
         -------
@@ -250,9 +250,9 @@ class DiffusionSpectrumFit(OdfFit):
 
         Parameters
         ----------
-        normalized : boolean
-            default true, normalize the propagator by its sum in order
-            to obtain a pdf. Default: True.
+        normalized : boolean, optional
+            Whether to normalize the propagator by its sum in order to obtain a
+            pdf. Default: True
 
         Returns
         -------
