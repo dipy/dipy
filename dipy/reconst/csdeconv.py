@@ -38,6 +38,7 @@ class AxSymShResponse(object):
         spherical harmonic.
 
     """
+
     def __init__(self, S0, dwi_response, bvalue=None):
         self.S0 = S0
         self.dwi_response = dwi_response
@@ -91,8 +92,8 @@ class ConstrainedSphericalDeconvModel(SphHarmModel):
         sh_order : int (optional)
             maximal spherical harmonics order. Default: 8
         lambda_ : float (optional)
-            weight given to the constrained-positivity regularization part of the
-            deconvolution equation (see [1]_). Default: 1
+            weight given to the constrained-positivity regularization part of
+            the deconvolution equation (see [1]_). Default: 1
         tau : float (optional)
             threshold controlling the amplitude below which the corresponding
             fODF is assumed to be zero.  Ideally, tau should be set to
@@ -123,7 +124,7 @@ class ConstrainedSphericalDeconvModel(SphHarmModel):
 
         no_params = ((sh_order + 1) * (sh_order + 2)) / 2
 
-        if no_params > np.sum(gtab.b0s_mask == False):
+        if no_params > np.sum(~gtab.b0s_mask):
             msg = "Number of parameters required for the fit are more "
             msg += "than the actual data points"
             warnings.warn(msg, UserWarning)
@@ -139,7 +140,11 @@ class ConstrainedSphericalDeconvModel(SphHarmModel):
         else:
             self.sphere = reg_sphere
 
-        r, theta, phi = cart2sphere(self.sphere.x, self.sphere.y, self.sphere.z)
+        r, theta, phi = cart2sphere(
+            self.sphere.x,
+            self.sphere.y,
+            self.sphere.z
+        )
         self.B_reg = real_sph_harm(m, n, theta[:, None], phi[:, None])
 
         if response is None:
@@ -164,7 +169,7 @@ class ConstrainedSphericalDeconvModel(SphHarmModel):
         # scale lambda_ to account for differences in the number of
         # SH coefficients and number of mapped directions
         # This is exactly what is done in [4]_
-        lambda_ = (lambda_  * self.R.shape[0] * r_rh[0] /
+        lambda_ = (lambda_ * self.R.shape[0] * r_rh[0] /
                    (np.sqrt(self.B_reg.shape[0]) * np.sqrt(362.)))
         self.B_reg *= lambda_
         self.sh_order = sh_order
@@ -179,8 +184,7 @@ class ConstrainedSphericalDeconvModel(SphHarmModel):
                                 P=self._P)
         return SphHarmFit(self, shm_coeff, None)
 
-
-    def predict(self, sh_coeff, gtab=None, S0=1):
+    def predict(self, sh_coeff, gtab=None, S0=1.):
         """Compute a signal prediction given spherical harmonic coefficients
         for the provided GradientTable class instance.
 
@@ -214,7 +218,7 @@ class ConstrainedSphericalDeconvModel(SphHarmModel):
         S0 = np.asarray(S0)[..., None]
         scaling = S0 / self.response_scaling
         # This is the key operation: convolve and multiply by S0:
-        pre_pred_sig = scaling * np.dot(predict_matrix, sh_coeff)
+        pre_pred_sig = scaling * np.dot(sh_coeff, predict_matrix.T)
 
         # Now put everything in its right place:
         pred_sig = np.zeros(pre_pred_sig.shape[:-1] + (gtab.bvals.shape[0],))
@@ -254,8 +258,8 @@ class ConstrainedSDTModel(SphHarmModel):
         sh_order : int
             maximal spherical harmonics order
         lambda_ : float
-            weight given to the constrained-positivity regularization part of the
-            deconvolution equation
+            weight given to the constrained-positivity regularization part of
+            the deconvolution equation
         tau : float
             threshold (tau *mean(fODF)) controlling the amplitude below
             which the corresponding fODF is assumed to be zero.
@@ -275,7 +279,7 @@ class ConstrainedSDTModel(SphHarmModel):
 
         no_params = ((sh_order + 1) * (sh_order + 2)) / 2
 
-        if no_params > np.sum(gtab.b0s_mask == False):
+        if no_params > np.sum(~gtab.b0s_mask):
             msg = "Number of parameters required for the fit are more "
             msg += "than the actual data points"
             warnings.warn(msg, UserWarning)
@@ -291,7 +295,11 @@ class ConstrainedSDTModel(SphHarmModel):
         else:
             self.sphere = reg_sphere
 
-        r, theta, phi = cart2sphere(self.sphere.x, self.sphere.y, self.sphere.z)
+        r, theta, phi = cart2sphere(
+            self.sphere.x,
+            self.sphere.y,
+            self.sphere.z
+        )
         self.B_reg = real_sph_harm(m, n, theta[:, None], phi[:, None])
 
         self.R, self.P = forward_sdt_deconv_mat(ratio, n)
@@ -376,7 +384,7 @@ def forward_sdt_deconv_mat(ratio, n, r2_term=False):
     sdt = np.zeros(n_degrees)  # SDT matrix
     frt = np.zeros(n_degrees)  # FRT (Funk-Radon transform) q-ball matrix
 
-    for l in np.arange(0, n_degrees*2, 2):
+    for l in np.arange(0, n_degrees * 2, 2):
         if r2_term:
             sharp = quad(lambda z: lpn(l, z)[0][-1] * gamma(1.5) *
                          np.sqrt(ratio / (4 * np.pi ** 3)) /
@@ -395,6 +403,7 @@ def forward_sdt_deconv_mat(ratio, n, r2_term=False):
 
 
 potrf, potrs = ll.get_lapack_funcs(('potrf', 'potrs'))
+
 
 def _solve_cholesky(Q, z):
     L, info = potrf(Q, lower=False, overwrite_a=False, clean=False)
@@ -461,10 +470,10 @@ def csdeconv(dwsignal, X, B_reg, tau=0.1, convergence=50, P=None):
     $F(f_n) = ||Xf_n - S||^2 + \lambda^2 ||H_{n-1} f_n||^2$
 
     Where $X$ maps current FOD SH coefficients $f_n$ to DW signals $s$ and
-    $H_{n-1}$ maps FOD SH coefficients $f_n$ to amplitudes along set of negative
-    directions identified in previous iteration, i.e. the matrix formed by the
-    rows of $B_{reg}$ for which $Hf_{n-1}<0$ where $B_{reg}$ maps $f_n$ to FOD
-    amplitude on a sphere.
+    $H_{n-1}$ maps FOD SH coefficients $f_n$ to amplitudes along set of
+    negative directions identified in previous iteration, i.e. the matrix
+    formed by the rows of $B_{reg}$ for which $Hf_{n-1}<0$ where $B_{reg}$
+    maps $f_n$ to FOD amplitude on a sphere.
 
     Solve by differentiating and setting to zero:
 
@@ -569,7 +578,7 @@ def csdeconv(dwsignal, X, B_reg, tau=0.1, convergence=50, P=None):
         where_fodf_small = (fodf < threshold).nonzero()[0]
 
         if (len(where_fodf_small) == len(where_fodf_small_last) and
-            (where_fodf_small == where_fodf_small_last).all()):
+                (where_fodf_small == where_fodf_small_last).all()):
             break
     else:
         msg = 'maximum number of iterations exceeded - failed to converge'
@@ -625,8 +634,8 @@ def odf_deconv(odf_sh, R, B_reg, lambda_=1., tau=0.1, r2_term=False):
            Distributions
     .. [3] Descoteaux, M, PhD thesis, INRIA Sophia-Antipolis, 2008.
     """
-    # In ConstrainedSDTModel.fit, odf_sh is divided by its norm (Z) and sometimes
-    # the norm is 0 which creates NaNs.
+    # In ConstrainedSDTModel.fit, odf_sh is divided by its norm (Z) and
+    # sometimes the norm is 0 which creates NaNs.
     if np.any(np.isnan(odf_sh)):
         return np.zeros_like(odf_sh), 0
 
@@ -639,13 +648,13 @@ def odf_deconv(odf_sh, R, B_reg, lambda_=1., tau=0.1, r2_term=False):
     # if sharpening a q-ball odf (it is NOT properly normalized), we need to
     # force normalization otherwise, for DSI, CSA, SHORE, Tensor odfs, they are
     # normalized by construction
-    if ~r2_term :
+    if ~r2_term:
         Z = np.linalg.norm(fodf)
         fodf_sh /= Z
 
     fodf = np.dot(B_reg, fodf_sh)
     threshold = tau * np.max(np.dot(B_reg, fodf_sh))
-    #print(np.min(fodf), np.max(fodf), np.mean(fodf), threshold, tau)
+    # print(np.min(fodf), np.max(fodf), np.mean(fodf), threshold, tau)
 
     k = []
     convergence = 50
@@ -655,7 +664,7 @@ def odf_deconv(odf_sh, R, B_reg, lambda_=1., tau=0.1, r2_term=False):
 
         if (k2.shape[0] + R.shape[0]) < B_reg.shape[1]:
             warnings.warn(
-            'too few negative directions identified - failed to converge')
+                'too few negative directions identified - failed to converge')
             return fodf_sh, num_it
 
         if num_it > 1 and k.shape[0] == k2.shape[0]:
@@ -702,7 +711,8 @@ def odf_sh_to_sharp(odfs_sh, sphere, basis=None, ratio=3 / 15., sh_order=8,
     lambda_ : float
         lambda parameter (see odfdeconv) (default 1.0)
     tau : float
-        tau parameter in the L matrix construction (see odfdeconv) (default 0.1)
+        tau parameter in the L matrix construction (see odfdeconv)
+        (default 0.1)
     r2_term : bool
          True if ODF is computed from model that uses the $r^2$ term in the
          integral.  Recall that Tuch's ODF (used in Q-ball Imaging [1]_) and
@@ -815,7 +825,9 @@ def auto_response(gtab, data, roi_center=None, roi_radius=10, fa_thr=0.7,
     else:
         ci, cj, ck = roi_center
     w = roi_radius
-    roi = data[int(ci - w): int(ci + w), int(cj - w): int(cj + w), int(ck - w): int(ck + w)]
+    roi = data[int(ci - w): int(ci + w),
+               int(cj - w): int(cj + w),
+               int(ck - w): int(ck + w)]
     tenfit = ten.fit(roi)
     FA = fractional_anisotropy(tenfit.evals)
     FA[np.isnan(FA)] = 0
@@ -951,7 +963,7 @@ def recursive_response(gtab, data, mask=None, sh_order=8, peak_thr=0.01,
            the fiber response function for spherical deconvolution of
            diffusion MRI data.
     """
-    S0 = 1
+    S0 = 1.
     evals = fa_trace_to_lambdas(init_fa, init_trace)
     res_obj = (evals, S0)
 

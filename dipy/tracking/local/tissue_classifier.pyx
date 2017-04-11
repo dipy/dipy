@@ -40,9 +40,9 @@ cdef class BinaryTissueClassifier(TissueClassifier):
         voxel[1] = int(dpy_rint(point[1]))
         voxel[2] = int(dpy_rint(point[2]))
 
-        if (voxel[0] < 0 or voxel[0] > self.mask.shape[0]
-                or voxel[1] < 0 or voxel[1] > self.mask.shape[1]
-                or voxel[2] < 0 or voxel[2] > self.mask.shape[2]):
+        if (voxel[0] < 0 or voxel[0] >= self.mask.shape[0]
+                or voxel[1] < 0 or voxel[1] >= self.mask.shape[1]
+                or voxel[2] < 0 or voxel[2] >= self.mask.shape[2]):
             return OUTSIDEIMAGE
 
         result = self.mask[voxel[0], voxel[1], voxel[2]]

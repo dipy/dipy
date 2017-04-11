@@ -48,6 +48,7 @@ Denoising
 ~~~~~~~~~
 
 - :ref:`example_denoise_nlmeans`
+- :ref:`example_denoise_ascm`
 
 Reslice
 ~~~~~~~
@@ -69,15 +70,20 @@ Simple Harmonic Oscillator based Reconstruction and Estimation
 - :ref:`example_reconst_shore`
 - :ref:`example_reconst_shore_metrics`
 
+Mean Apparent Propagator (MAP)-MRI (NEW)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+- :ref:`example_reconst_mapmri`
 
 Diffusion Tensor Imaging
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 - :ref:`example_reconst_dti`
 - :ref:`example_restore_dti`
+- :ref:`example_reconst_fwdti`
 
 
-Diffusion Kurtosis Imaging (NEW)
+Diffusion Kurtosis Imaging
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 - :ref:`example_reconst_dki`
 
@@ -109,6 +115,14 @@ Sparse Fascicle Model
 ~~~~~~~~~~~~~~~~~~~~~~
 
 - :ref:`example_sfm_reconst`
+
+Intravoxel incoherent motion (IVIM)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+- :ref:`example_reconst_ivim`
+
+
+
 
 Statistical evaluation
 ~~~~~~~~~~~~~~~~~~~~~~
@@ -180,6 +194,11 @@ Brain Segmentation
 
 - :ref:`example_brain_extraction_dwi`
 
+Tissue Classification
+~~~~~~~~~~~~~~~~~~~~~
+
+- :ref:`example_tissue_classification`
+
 -----------
 Simulations
 -----------
@@ -208,6 +227,14 @@ Visualization (NEW)
 - :ref:`example_viz_slice`
 - :ref:`example_viz_bundles`
 - :ref:`example_viz_widgets`
+- :ref:`example_viz_surfaces`
+- :ref:`example_viz_ui`
+
+---------------
+Workflows (NEW)
+---------------
+- :ref:`example_workflow_creation`
+- :ref:`example_combined_workflow_creation`
 
 .. In order to build the examples, you'll need (on Debian)
     sudo apt-get install python-tables python-matplotib python-vtk

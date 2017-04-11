@@ -1,11 +1,11 @@
 """
 Read test or example data
 """
-
 from __future__ import division, print_function, absolute_import
 
 import sys
 import json
+import warnings
 
 from nibabel import load
 from os.path import join as pjoin, dirname
@@ -39,7 +39,11 @@ from dipy.data.fetcher import (fetch_scil_b0,
                                fetch_cenir_multib,
                                read_cenir_multib,
                                fetch_mni_template,
-                               read_mni_template)
+                               read_mni_template,
+                               fetch_ivim,
+                               read_ivim,
+                               fetch_tissue_data,
+                               read_tissue_data)
 
 from ..utils.arrfuncs import as_native_array
 from dipy.tracking.streamline import relist_streamlines
@@ -63,7 +67,8 @@ SPHERE_FILES = {
     'symmetric642': pjoin(DATA_DIR, 'evenly_distributed_sphere_642.npz'),
     'symmetric724': pjoin(DATA_DIR, 'evenly_distributed_sphere_724.npz'),
     'repulsion724': pjoin(DATA_DIR, 'repulsion724.npz'),
-    'repulsion100': pjoin(DATA_DIR, 'repulsion100.npz')
+    'repulsion100': pjoin(DATA_DIR, 'repulsion100.npz'),
+    'repulsion200': pjoin(DATA_DIR, 'repulsion200.npz')
 }
 
 
@@ -157,6 +162,7 @@ def get_sphere(name='symmetric362'):
         * 'symmetric724'
         * 'repulsion724'
         * 'repulsion100'
+        * 'repulsion200'
 
     Returns
     -------
@@ -248,6 +254,8 @@ def get_data(name='small_64D'):
         return fimg, fbvals, fbvecs
     if name == 'aniso_vox':
         return pjoin(DATA_DIR, 'aniso_vox.nii.gz')
+    if name == 'ascm_test':
+        return pjoin(DATA_DIR, 'ascm_out_test.nii.gz')
     if name == 'fornix':
         return pjoin(DATA_DIR, 'tracks300.trk')
     if name == 'gqi_vectors':
@@ -313,7 +321,7 @@ def dsi_deconv_voxels():
             for iz in range(2):
                 data[ix, iy, iz], dirs = SticksAndBall(gtab,
                                                        d=0.0015,
-                                                       S0=100,
+                                                       S0=1.,
                                                        angles=[(0, 0),
                                                                (90, 0)],
                                                        fractions=[50, 50],
@@ -356,6 +364,11 @@ dipy_cmaps = None
 
 def get_cmap(name):
     """Makes a callable, similar to maptlotlib.pyplot.get_cmap"""
+    if name.lower() == "accent":
+        warnings.warn("The `Accent` colormap is deprecated as of version" +
+                      " 0.12 of Dipy and will be removed in a future " +
+                      "version. Please use another colormap",
+                      DeprecationWarning)
     global dipy_cmaps
     if dipy_cmaps is None:
         filename = pjoin(DATA_DIR, "dipy_colormaps.json")

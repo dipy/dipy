@@ -147,6 +147,12 @@ def test_dki_predict():
     pred_multi = dkiM.predict(multi_params, S0=100)
     assert_array_almost_equal(pred_multi, DWI)
 
+    # Check that it works with more than one voxel, and with a different S0
+    # in each voxel:
+    pred_multi = dkiM.predict(multi_params,
+                              S0=100*np.ones(pred_multi.shape[:3]))
+    assert_array_almost_equal(pred_multi, DWI)
+
     # check the function predict of the DiffusionKurtosisFit object
     dkiF = dkiM.fit(DWI)
     pred_multi = dkiF.predict(gtab_2s, S0=100)
@@ -155,6 +161,15 @@ def test_dki_predict():
     dkiF = dkiM.fit(pred_multi)
     pred_from_fit = dkiF.predict(dkiM.gtab, S0=100)
     assert_array_almost_equal(pred_from_fit, DWI)
+
+    # Test the module function:
+    pred = dki.dki_prediction(crossing_ref, gtab_2s, S0=100)
+    assert_array_almost_equal(pred, signal_cross)
+
+    # Test the module function with S0 volume:
+    pred = dki.dki_prediction(multi_params, gtab_2s,
+                              S0=100 * np.ones(multi_params.shape[:3]))
+    assert_array_almost_equal(pred, DWI)
 
 
 def test_carlson_rf():

@@ -79,10 +79,10 @@ under the GPL license.
 
 # versions for dependencies
 # Check these versions against .travis.yml and requirements.txt
+CYTHON_MIN_VERSION='0.18'
 NUMPY_MIN_VERSION='1.7.1'
 SCIPY_MIN_VERSION='0.9'
-CYTHON_MIN_VERSION='0.18'
-NIBABEL_MIN_VERSION='1.2.0'
+NIBABEL_MIN_VERSION='2.1.0'
 
 # Main setup parameters
 NAME                = 'dipy'

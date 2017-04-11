@@ -157,7 +157,7 @@ class ShoreModel(Cache):
         gtab = gradient_table(bvals, bvecs)
         from dipy.sims.voxel import SticksAndBall
         data, golden_directions = SticksAndBall(gtab, d=0.0015,
-                                                S0=1, angles=[(0, 0), (90, 0)],
+                                                S0=1., angles=[(0, 0), (90, 0)],
                                                 fractions=[50, 50], snr=None)
         from dipy.reconst.canal import ShoreModel
         radial_order = 4

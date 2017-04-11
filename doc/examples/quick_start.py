@@ -29,7 +29,7 @@ home = expanduser('~')
 ``dname`` holds the directory name where the 3 files are in.
 """
 
-dname = join(home, '.dipy', 'sherbrooke_3shell') 
+dname = join(home, '.dipy', 'sherbrooke_3shell')
 
 """
 Here, we show the complete filenames of the 3 files
@@ -56,8 +56,8 @@ print(fbvec)
 
 Now, that we have their filenames we can start checking what these look like.
 
-Let's start first by loading the dMRI datasets. For this purpose, we 
-use a python library called nibabel_ which enables us to read and write 
+Let's start first by loading the dMRI datasets. For this purpose, we
+use a python library called nibabel_ which enables us to read and write
 neuroimaging-specific file formats.
 """
 
@@ -81,7 +81,7 @@ print(data.shape)
 We can also check the dimensions of each voxel in the following way:
 """
 
-print(img.get_header().get_zooms()[:3])
+print(img.header.get_zooms()[:3])
 
 """
 ``(2.0, 2.0, 2.0)``
@@ -92,7 +92,7 @@ let's show here the middle axial slices of volume 0 and volume 10.
 
 import matplotlib.pyplot as plt
 
-axial_middle = data.shape[2] / 2
+axial_middle = data.shape[2] // 2
 plt.figure('Showing the datasets')
 plt.subplot(1, 2, 1).set_axis_off()
 plt.imshow(data[:, :, axial_middle, 0].T, cmap='gray', origin='lower')
@@ -107,7 +107,7 @@ plt.savefig('data.png', bbox_inches='tight')
 
    **Showing the middle axial slice without (left) and with (right) diffusion weighting**.
 
-The next step is to load the b-values and b-vectors from the disk using 
+The next step is to load the b-values and b-vectors from the disk using
 the function ``read_bvals_bvecs``.
 """
 
@@ -115,8 +115,8 @@ from dipy.io import read_bvals_bvecs
 bvals, bvecs = read_bvals_bvecs(fbval, fbvec)
 
 """
-In Dipy, we use an object called ``GradientTable`` which holds all the acquision 
-specific parameters, e.g. b-values, b-vectors, timings and others. To create this 
+In Dipy, we use an object called ``GradientTable`` which holds all the acquision
+specific parameters, e.g. b-values, b-vectors, timings and others. To create this
 object you can use the function ``gradient_table``.
 """
 
@@ -132,11 +132,11 @@ print(gtab.info)
 
 """
 B-values shape (193,)
-         min 0.000000 
-         max 3500.000000 
+         min 0.000000
+         max 3500.000000
 B-vectors shape (193, 3)
-         min -0.964050 
-         max 0.999992 
+         min -0.964050
+         max 0.999992
 
 You, can also see the b-values using:
 """
@@ -188,7 +188,7 @@ print(gtab.bvecs[:10, :])
            [ 0.232937  ,  0.931884  , -0.278087  ],
            [ 0.93672   ,  0.144139  , -0.31903   ]])
 
-``gtab``  can be used to tell what part of the data is the S0 volumes 
+``gtab``  can be used to tell what part of the data is the S0 volumes
 (volumes which correspond to b-values of 0).
 """
 
@@ -206,10 +206,10 @@ print(S0s.shape)
 Just, for fun let's save this in a new Nifti file.
 """
 
-nib.save(nib.Nifti1Image(S0s, img.get_affine()), 'HARDI193_S0.nii.gz')
+nib.save(nib.Nifti1Image(S0s, img.affine), 'HARDI193_S0.nii.gz')
 
 """
-Now, that we learned how to load dMRI datasets we can start the analysis. 
+Now, that we learned how to load dMRI datasets we can start the analysis.
 See example :ref:`example_reconst_dti` to learn how to create FA maps.
 
 .. include:: ../links_names.inc

@@ -7,9 +7,13 @@ import numpy as np
 cimport numpy as cnp
 cimport cython
 from .fused_types cimport floating, number
+
+
 cdef extern from "dpy_math.h" nogil:
     double floor(double)
     double sqrt(double)
+    double cos(double)
+    double atan2(double, double)
 
 
 def is_valid_affine(double[:, :] M, int dim):
@@ -49,18 +53,18 @@ def interpolate_vector_2d(floating[:, :, :] field, double[:, :] locations):
     """
     ftype = np.asarray(field).dtype
     cdef:
-        cnp.npy_intp n = locations.shape[0]
+        cnp.npy_intp i, n = locations.shape[0]
         floating[:, :] out = np.zeros(shape=(n, 2), dtype=ftype)
         int[:] inside = np.empty(shape=(n,), dtype=np.int32)
     with nogil:
         for i in range(n):
             inside[i] = _interpolate_vector_2d[floating](field,
-                locations[i, 0], locations[i, 1], out[i])
+                locations[i, 0], locations[i, 1], &out[i, 0])
     return np.asarray(out), np.asarray(inside)
 
 
 cdef inline int _interpolate_vector_2d(floating[:, :, :] field, double dii,
-                                       double djj, floating[:] out) nogil:
+                                       double djj, floating *out) nogil:
     r"""Bilinear interpolation of a 2D vector field
 
     Interpolates the 2D displacement field at (dii, djj) and stores the
@@ -159,7 +163,7 @@ def interpolate_scalar_2d(floating[:, :] image, double[:, :] locations):
     """
     ftype = np.asarray(image).dtype
     cdef:
-        cnp.npy_intp n = locations.shape[0]
+        cnp.npy_intp i, n = locations.shape[0]
         floating[:] out = np.zeros(shape=(n,), dtype=ftype)
         int[:] inside = np.empty(shape=(n,), dtype=np.int32)
     with nogil:
@@ -263,7 +267,7 @@ def interpolate_scalar_nn_2d(number[:, :] image, double[:, :] locations):
     """
     ftype = np.asarray(image).dtype
     cdef:
-        cnp.npy_intp n = locations.shape[0]
+        cnp.npy_intp i, n = locations.shape[0]
         number[:] out = np.zeros(shape=(n,), dtype=ftype)
         int[:] inside = np.empty(shape=(n,), dtype=np.int32)
     with nogil:
@@ -356,7 +360,7 @@ def interpolate_scalar_nn_3d(number[:, :, :] image, double[:, :] locations):
     """
     ftype = np.asarray(image).dtype
     cdef:
-        cnp.npy_intp n = locations.shape[0]
+        cnp.npy_intp i, n = locations.shape[0]
         number[:] out = np.zeros(shape=(n,), dtype=ftype)
         int[:] inside = np.empty(shape=(n,), dtype=np.int32)
     with nogil:
@@ -458,7 +462,7 @@ def interpolate_scalar_3d(floating[:, :, :] image, locations):
     """
     ftype = np.asarray(image).dtype
     cdef:
-        cnp.npy_intp n = locations.shape[0]
+        cnp.npy_intp i, n = locations.shape[0]
         floating[:] out = np.zeros(shape=(n,), dtype=ftype)
         int[:] inside = np.empty(shape=(n,), dtype=np.int32)
         double[:,:] _locations = np.array(locations, dtype=np.float64)
@@ -592,19 +596,19 @@ def interpolate_vector_3d(floating[:, :, :, :] field, double[:, :] locations):
     """
     ftype = np.asarray(field).dtype
     cdef:
-        cnp.npy_intp n = locations.shape[0]
+        cnp.npy_intp i, n = locations.shape[0]
         floating[:, :] out = np.zeros(shape=(n, 3), dtype=ftype)
         int[:] inside = np.empty(shape=(n,), dtype=np.int32)
     with nogil:
         for i in range(n):
             inside[i] = _interpolate_vector_3d[floating](field,
-                locations[i, 0], locations[i, 1], locations[i, 2], out[i])
+                locations[i, 0], locations[i, 1], locations[i, 2], &out[i, 0])
     return np.asarray(out), np.asarray(inside)
 
 
 cdef inline int _interpolate_vector_3d(floating[:, :, :, :] field, double dkk,
                                        double dii, double djj,
-                                       floating[:] out) nogil:
+                                       floating* out) nogil:
     r"""Trilinear interpolation of a 3D vector field
 
     Interpolates the 3D displacement field at (dkk, dii, djj) and stores the
@@ -826,7 +830,7 @@ cdef void _compose_vector_fields_2d(floating[:, :, :] d1, floating[:, :, :] d2,
             # in the neighborhood of a previously updated vector from d2,
             # which may be problematic
             inside = _interpolate_vector_2d[floating](d2, diii, djjj,
-                                                      comp[i, j])
+                                                      &comp[i, j, 0])
 
             if inside == 1:
                 comp[i, j, 0] = time_scaling * comp[i, j, 0] + dii
@@ -838,7 +842,9 @@ cdef void _compose_vector_fields_2d(floating[:, :, :] d1, floating[:, :, :] d2,
                 if(maxNorm < nn):
                     maxNorm = nn
             else:
-                comp[i, j, :] = 0
+                comp[i, j, 0] = 0
+                comp[i, j, 1] = 0
+
     meanNorm /= cnt
     stats[0] = sqrt(maxNorm)
     stats[1] = sqrt(meanNorm)
@@ -1030,8 +1036,8 @@ cdef void _compose_vector_fields_3d(floating[:, :, :, :] d1,
                 # If d2 and comp are the same array, then (dkkk, diii, djjj)
                 # may be in the neighborhood of a previously updated vector
                 # from d2, which may be problematic
-                inside = _interpolate_vector_3d[floating](d2, dkkk, diii,
-                                                          djjj, comp[k, i, j])
+                inside = _interpolate_vector_3d[floating](d2, dkkk, diii, djjj,
+                                                          &comp[k, i, j, 0])
 
                 if inside == 1:
                     comp[k, i, j, 0] = t * comp[k, i, j, 0] + dkk
@@ -1045,7 +1051,9 @@ cdef void _compose_vector_fields_3d(floating[:, :, :, :] d1,
                     if(maxNorm < nn):
                         maxNorm = nn
                 else:
-                    comp[k, i, j, :] = 0
+                    comp[k, i, j, 0] = 0
+                    comp[k, i, j, 1] = 0
+                    comp[k, i, j, 2] = 0
     meanNorm /= cnt
     stats[0] = sqrt(maxNorm)
     stats[1] = sqrt(meanNorm)
@@ -1361,6 +1369,28 @@ def simplify_warp_function_2d(floating[:, :, :] d,
     (1) T[i] = W * d[U * i] + V * i
 
     Where U = affine_idx_in, V = affine_idx_out, W = affine_disp.
+
+    Parameters
+    ----------
+    d : array, shape (R', C', 2)
+        the non-linear part of the transformation (displacement field)
+    affine_idx_in : array, shape (3, 3)
+        the matrix U in eq. (1) above
+    affine_idx_out : array, shape (3, 3)
+        the matrix V in eq. (1) above
+    affine_disp : array, shape (3, 3)
+        the matrix W in eq. (1) above
+    out_shape : array, shape (2,)
+        the number of rows and columns of the sampling grid
+
+    Returns
+    -------
+    out : array, shape = out_shape
+        the deformation field `out` associated with `T` in eq. (1) such that:
+        T[i] = i + out[i]
+
+    Notes
+    -----
     Both the direct and inverse transforms of a DiffeomorphicMap can be written
     in this form:
 
@@ -1385,24 +1415,6 @@ def simplify_warp_function_2d(floating[:, :, :] d,
              (3) Tinv[j] = Dinv * Pinv * d[Rinv * C * j] + Dinv * Pinv * C * j
 
              and we identify U = Rinv * C, V = Dinv * Pinv * C, W = Dinv * Pinv
-
-    Parameters
-    ----------
-    d : array, shape (R', C', 2)
-        the non-linear part of the transformation (displacement field)
-    affine_idx_in : array, shape (3, 3)
-        the matrix U in eq. (1) above
-    affine_idx_out : array, shape (3, 3)
-        the matrix V in eq. (1) above
-    affine_disp : array, shape (3, 3)
-        the matrix W in eq. (1) above
-    out_shape : array, shape (2,)
-        the number of rows and columns of the sampling grid
-
-    Returns
-    -------
-    out : array, shape = out_shape
-        the simplified transformation given by one single displacement field
     """
     cdef:
         cnp.npy_intp nrows = out_shape[0]
@@ -1433,7 +1445,7 @@ def simplify_warp_function_2d(floating[:, :, :] d,
                         i, j, 1, affine_idx_in)
                     dj = _apply_affine_2d_x1(
                         i, j, 1, affine_idx_in)
-                    _interpolate_vector_2d[floating](d, di, dj, tmp)
+                    _interpolate_vector_2d[floating](d, di, dj, &tmp[0])
                     dii = tmp[0]
                     djj = tmp[1]
 
@@ -1467,9 +1479,10 @@ def simplify_warp_function_3d(floating[:, :, :, :] d,
     r"""
     Simplifies a nonlinear warping function combined with an affine transform
 
-    Modifies the given deformation field by incorporating into it a
-    an affine transformation and voxel-to-space transforms associated to
+    Modifies the given deformation field by incorporating into it
+    an affine transformation and voxel-to-space transforms associated with
     the discretization of its domain and codomain.
+
     The resulting transformation may be regarded as operating on the
     image spaces given by the domain and codomain discretization.
     More precisely, the resulting transform is of the form:
@@ -1477,6 +1490,28 @@ def simplify_warp_function_3d(floating[:, :, :, :] d,
     (1) T[i] = W * d[U * i] + V * i
 
     Where U = affine_idx_in, V = affine_idx_out, W = affine_disp.
+
+    Parameters
+    ----------
+    d : array, shape (S', R', C', 3)
+        the non-linear part of the transformation (displacement field)
+    affine_idx_in : array, shape (4, 4)
+        the matrix U in eq. (1) above
+    affine_idx_out : array, shape (4, 4)
+        the matrix V in eq. (1) above
+    affine_disp : array, shape (4, 4)
+        the matrix W in eq. (1) above
+    out_shape : array, shape (3,)
+        the number of slices, rows and columns of the sampling grid
+
+    Returns
+    -------
+    out : array, shape = out_shape
+        the deformation field `out` associated with `T` in eq. (1) such that:
+        T[i] = i + out[i]
+
+    Notes
+    -----
     Both the direct and inverse transforms of a DiffeomorphicMap can be written
     in this form:
 
@@ -1501,24 +1536,6 @@ def simplify_warp_function_3d(floating[:, :, :, :] d,
              (3) Tinv[j] = Dinv * Pinv * d[Rinv * C * j] + Dinv * Pinv * C * j
 
              and we identify U = Rinv * C, V = Dinv * Pinv * C, W = Dinv * Pinv
-
-    Parameters
-    ----------
-    d : array, shape (S', R', C', 3)
-        the non-linear part of the transformation (displacement field)
-    affine_idx_in : array, shape (4, 4)
-        the matrix U in eq. (1) above
-    affine_idx_out : array, shape (4, 4)
-        the matrix V in eq. (1) above
-    affine_disp : array, shape (4, 4)
-        the matrix W in eq. (1) above
-    out_shape : array, shape (3,)
-        the number of slices, rows and columns of the sampling grid
-
-    Returns
-    -------
-    out : array, shape = out_shape
-        the simplified transformation given by one single displacement field
 
     """
     cdef:
@@ -1555,7 +1572,7 @@ def simplify_warp_function_3d(floating[:, :, :, :] d,
                         dj = _apply_affine_3d_x2(
                             k, i, j, 1, affine_idx_in)
                         inside = _interpolate_vector_3d[floating](d, dk, di,
-                                                                  dj, tmp)
+                                                                  dj, &tmp[0])
                         dkk = tmp[0]
                         dii = tmp[1]
                         djj = tmp[2]
@@ -1863,19 +1880,7 @@ def warp_3d(floating[:, :, :] volume, floating[:, :, :, :] d1,
 
     where A = affine_idx_in, B = affine_idx_out, C = affine_disp and i denotes
     the discrete coordinates of a voxel in the sampling grid of
-    shape = out_shape. To illustrate the use of this function, consider a
-    displacement field d1 with grid-to-space transformation R, a volume with
-    grid-to-space transformation T and let's say we want to sample the warped
-    volume on a grid with grid-to-space transformation S (sampling grid). For
-    each voxel in the sampling grid with discrete coordinates i, the warped
-    volume is given by:
-
-    (2) warped[i] = volume[Tinv * ( d1[Rinv * S * i] + S * i ) ]
-
-    where Tinv = T^{-1} and Rinv = R^{-1}. By identifying A = Rinv * S,
-    B = Tinv * S, C = Tinv we can use this function to efficiently warp the
-    input image.
-
+    shape = out_shape.
 
     Parameters
     ----------
@@ -1896,6 +1901,21 @@ def warp_3d(floating[:, :, :] volume, floating[:, :, :, :] d1,
     -------
     warped : array, shape = out_shape
         the transformed volume
+
+    Notes
+    -----
+    To illustrate the use of this function, consider a displacement field d1
+    with grid-to-space transformation R, a volume with grid-to-space
+    transformation T and let's say we want to sample the warped volume on a
+    grid with grid-to-space transformation S (sampling grid). For each voxel
+    in the sampling grid with discrete coordinates i, the warped volume is
+    given by:
+
+    (2) warped[i] = volume[Tinv * ( d1[Rinv * S * i] + S * i ) ]
+
+    where Tinv = T^{-1} and Rinv = R^{-1}. By identifying A = Rinv * S,
+    B = Tinv * S, C = Tinv we can use this function to efficiently warp the
+    input image.
     """
     cdef:
         cnp.npy_intp nslices = volume.shape[0]
@@ -1945,7 +1965,7 @@ def warp_3d(floating[:, :, :] volume, floating[:, :, :, :] d1,
                         dj = _apply_affine_3d_x2(
                             k, i, j, 1, affine_idx_in)
                         inside = _interpolate_vector_3d[floating](d1, dk, di,
-                                                                  dj, tmp)
+                                                                  dj, &tmp[0])
                         dkk = tmp[0]
                         dii = tmp[1]
                         djj = tmp[2]
@@ -2060,19 +2080,7 @@ def warp_3d_nn(number[:, :, :] volume, floating[:, :, :, :] d1,
 
     where A = affine_idx_in, B = affine_idx_out, C = affine_disp and i denotes
     the discrete coordinates of a voxel in the sampling grid of
-    shape = out_shape. To illustrate the use of this function, consider a
-    displacement field d1 with grid-to-space transformation R, a volume with
-    grid-to-space transformation T and let's say we want to sample the warped
-    volume on a grid with grid-to-space transformation S (sampling grid). For
-    each voxel in the sampling grid with discrete coordinates i, the warped
-    volume is given by:
-
-    (2) warped[i] = volume[Tinv * ( d1[Rinv * S * i] + S * i ) ]
-
-    where Tinv = T^{-1} and Rinv = R^{-1}. By identifying A = Rinv * S,
-    B = Tinv * S, C = Tinv we can use this function to efficiently warp the
-    input image.
-
+    shape = out_shape.
 
     Parameters
     ----------
@@ -2093,6 +2101,21 @@ def warp_3d_nn(number[:, :, :] volume, floating[:, :, :, :] d1,
     -------
     warped : array, shape = out_shape
         the transformed volume
+
+    Notes
+    -----
+    To illustrate the use of this function, consider a displacement field d1
+    with grid-to-space transformation R, a volume with grid-to-space
+    transformation T and let's say we want to sample the warped volume on a
+    grid with grid-to-space transformation S (sampling grid). For each voxel
+    in the sampling grid with discrete coordinates i, the warped volume is
+    given by:
+
+    (2) warped[i] = volume[Tinv * ( d1[Rinv * S * i] + S * i ) ]
+
+    where Tinv = T^{-1} and Rinv = R^{-1}. By identifying A = Rinv * S,
+    B = Tinv * S, C = Tinv we can use this function to efficiently warp the
+    input image.
     """
     cdef:
         cnp.npy_intp nslices = volume.shape[0]
@@ -2142,7 +2165,7 @@ def warp_3d_nn(number[:, :, :] volume, floating[:, :, :, :] d1,
                         dj = _apply_affine_3d_x2(
                             k, i, j, 1, affine_idx_in)
                         inside = _interpolate_vector_3d[floating](d1, dk, di,
-                                                                  dj, tmp)
+                                                                  dj, &tmp[0])
                         dkk = tmp[0]
                         dii = tmp[1]
                         djj = tmp[2]
@@ -2255,19 +2278,7 @@ def warp_2d(floating[:, :] image, floating[:, :, :] d1,
 
     where A = affine_idx_in, B = affine_idx_out, C = affine_disp and i denotes
     the discrete coordinates of a voxel in the sampling grid of
-    shape = out_shape. To illustrate the use of this function, consider a
-    displacement field d1 with grid-to-space transformation R, an image with
-    grid-to-space transformation T and let's say we want to sample the warped
-    image on a grid with grid-to-space transformation S (sampling grid). For
-    each voxel in the sampling grid with discrete coordinates i, the warped
-    image is given by:
-
-    (2) warped[i] = image[Tinv * ( d1[Rinv * S * i] + S * i ) ]
-
-    where Tinv = T^{-1} and Rinv = R^{-1}. By identifying A = Rinv * S,
-    B = Tinv * S, C = Tinv we can use this function to efficiently warp the
-    input image.
-
+    shape = out_shape.
 
     Parameters
     ----------
@@ -2288,6 +2299,21 @@ def warp_2d(floating[:, :] image, floating[:, :, :] d1,
     -------
     warped : array, shape = out_shape
         the transformed image
+
+    Notes
+    -----
+    To illustrate the use of this function, consider a displacement field d1
+    with grid-to-space transformation R, an image with grid-to-space
+    transformation T and let's say we want to sample the warped image on a
+    grid with grid-to-space transformation S (sampling grid). For each voxel
+    in the sampling grid with discrete coordinates i, the warped image is
+    given by:
+
+    (2) warped[i] = image[Tinv * ( d1[Rinv * S * i] + S * i ) ]
+
+    where Tinv = T^{-1} and Rinv = R^{-1}. By identifying A = Rinv * S,
+    B = Tinv * S, C = Tinv we can use this function to efficiently warp the
+    input image.
     """
     cdef:
         cnp.npy_intp nrows = image.shape[0]
@@ -2327,7 +2353,7 @@ def warp_2d(floating[:, :] image, floating[:, :, :] d1,
                         i, j, 1, affine_idx_in)
                     dj = _apply_affine_2d_x1(
                         i, j, 1, affine_idx_in)
-                    _interpolate_vector_2d[floating](d1, di, dj, tmp)
+                    _interpolate_vector_2d[floating](d1, di, dj, &tmp[0])
                     dii = tmp[0]
                     djj = tmp[1]
 
@@ -2429,19 +2455,7 @@ def warp_2d_nn(number[:, :] image, floating[:, :, :] d1,
 
     where A = affine_idx_in, B = affine_idx_out, C = affine_disp and i denotes
     the discrete coordinates of a voxel in the sampling grid of
-    shape = out_shape. To illustrate the use of this function, consider a
-    displacement field d1 with grid-to-space transformation R, an image with
-    grid-to-space transformation T and let's say we want to sample the warped
-    image on a grid with grid-to-space transformation S (sampling grid). For
-    each voxel in the sampling grid with discrete coordinates i, the warped
-    image is given by:
-
-    (2) warped[i] = image[Tinv * ( d1[Rinv * S * i] + S * i ) ]
-
-    where Tinv = T^{-1} and Rinv = R^{-1}. By identifying A = Rinv * S,
-    B = Tinv * S, C = Tinv we can use this function to efficiently warp the
-    input image.
-
+    shape = out_shape.
 
     Parameters
     ----------
@@ -2462,6 +2476,21 @@ def warp_2d_nn(number[:, :] image, floating[:, :, :] d1,
     -------
     warped : array, shape = out_shape
         the transformed image
+
+    Notes
+    -----
+    To illustrate the use of this function, consider a displacement field d1
+    with grid-to-space transformation R, an image with grid-to-space
+    transformation T and let's say we want to sample the warped image on a
+    grid with grid-to-space transformation S (sampling grid). For each voxel
+    in the sampling grid with discrete coordinates i, the warped image is
+    given by:
+
+    (2) warped[i] = image[Tinv * ( d1[Rinv * S * i] + S * i ) ]
+
+    where Tinv = T^{-1} and Rinv = R^{-1}. By identifying A = Rinv * S,
+    B = Tinv * S, C = Tinv we can use this function to efficiently warp the
+    input image.
     """
     cdef:
         cnp.npy_intp nrows = image.shape[0]
@@ -2501,7 +2530,7 @@ def warp_2d_nn(number[:, :] image, floating[:, :, :] d1,
                         i, j, 1, affine_idx_in)
                     dj = _apply_affine_2d_x1(
                         i, j, 1, affine_idx_in)
-                    _interpolate_vector_2d[floating](d1, di, dj, tmp)
+                    _interpolate_vector_2d[floating](d1, di, dj, &tmp[0])
                     dii = tmp[0]
                     djj = tmp[1]
 
@@ -2630,7 +2659,7 @@ def resample_displacement_field_3d(floating[:, :, :, :] field,
                 dii = <double> i * factors[1]
                 djj = <double> j * factors[2]
                 _interpolate_vector_3d[floating](field, dkk, dii, djj,
-                                                 expanded[k, i, j])
+                                                 &expanded[k, i, j, 0])
     return np.asarray(expanded)
 
 
@@ -2671,7 +2700,7 @@ def resample_displacement_field_2d(floating[:, :, :] field, double[:] factors,
             dii = i*factors[0]
             djj = j*factors[1]
             inside = _interpolate_vector_2d[floating](field, dii, djj,
-                                                      expanded[i, j])
+                                                      &expanded[i, j, 0])
     return np.asarray(expanded)
 
 
@@ -2790,7 +2819,7 @@ def create_random_displacement_3d(int[:] from_shape, double[:, :] from_grid2worl
     """
     cdef:
         cnp.npy_intp i, j, k, ri, rj, rk
-        double di, dj, dii, djj
+        double di, dj, dk, dii, djj, dkk
         int[:, :, :, :] int_field = np.empty(tuple(from_shape) + (3,),
                                                dtype=np.int32)
         double[:, :, :, :] output = np.zeros(tuple(from_shape) + (3,),
@@ -2885,11 +2914,11 @@ def create_harmonic_fields_2d(cnp.npy_intp nrows, cnp.npy_intp ncols,
         for j in range(ncols):
             ii = i - mid_row
             jj = j - mid_col
-            theta = np.arctan2(ii, jj)
-            d[i, j, 0] = ii * (1.0 / (1 + b * np.cos(m * theta)) - 1.0)
-            d[i, j, 1] = jj * (1.0 / (1 + b * np.cos(m * theta)) - 1.0)
-            inv[i, j, 0] = b * np.cos(m * theta) * ii
-            inv[i, j, 1] = b * np.cos(m * theta) * jj
+            theta = atan2(ii, jj)
+            d[i, j, 0] = ii * (1.0 / (1 + b * cos(m * theta)) - 1.0)
+            d[i, j, 1] = jj * (1.0 / (1 + b * cos(m * theta)) - 1.0)
+            inv[i, j, 0] = b * cos(m * theta) * ii
+            inv[i, j, 1] = b * cos(m * theta) * jj
 
     return np.asarray(d), np.asarray(inv)
 
@@ -2942,13 +2971,13 @@ def create_harmonic_fields_3d(int nslices, cnp.npy_intp nrows,
                 kk = k - mid_slice
                 ii = i - mid_row
                 jj = j - mid_col
-                theta = np.arctan2(ii, jj)
-                d[k, i, j, 0] = kk * (1.0 / (1 + b * np.cos(m * theta)) - 1.0)
-                d[k, i, j, 1] = ii * (1.0 / (1 + b * np.cos(m * theta)) - 1.0)
-                d[k, i, j, 2] = jj * (1.0 / (1 + b * np.cos(m * theta)) - 1.0)
-                inv[k, i, j, 0] = b * np.cos(m * theta) * kk
-                inv[k, i, j, 1] = b * np.cos(m * theta) * ii
-                inv[k, i, j, 2] = b * np.cos(m * theta) * jj
+                theta = atan2(ii, jj)
+                d[k, i, j, 0] = kk * (1.0 / (1 + b * cos(m * theta)) - 1.0)
+                d[k, i, j, 1] = ii * (1.0 / (1 + b * cos(m * theta)) - 1.0)
+                d[k, i, j, 2] = jj * (1.0 / (1 + b * cos(m * theta)) - 1.0)
+                inv[k, i, j, 0] = b * cos(m * theta) * kk
+                inv[k, i, j, 1] = b * cos(m * theta) * ii
+                inv[k, i, j, 2] = b * cos(m * theta) * jj
 
     return np.asarray(d), np.asarray(inv)
 
@@ -2982,7 +3011,7 @@ def create_circle(cnp.npy_intp nrows, cnp.npy_intp ncols, cnp.npy_intp radius):
         for j in range(ncols):
             ii = i - mid_row
             jj = j - mid_col
-            r = np.sqrt(ii*ii + jj*jj)
+            r = sqrt(ii*ii + jj*jj)
             if r <= radius:
                 c[i, j] = 1
             else:
@@ -3026,7 +3055,7 @@ def create_sphere(cnp.npy_intp nslices, cnp.npy_intp nrows,
                 kk = k - mid_slice
                 ii = i - mid_row
                 jj = j - mid_col
-                r = np.sqrt(ii*ii + jj*jj + kk*kk)
+                r = sqrt(ii*ii + jj*jj + kk*kk)
                 if r <= radius:
                     s[k, i, j] = 1
                 else:
@@ -3176,7 +3205,9 @@ def _sparse_gradient_3d(floating[:, :, :] img,
         h[2] = 0.5 * img_spacing[2]
         for i in range(n):
             inside[i] = 1
-            dx[:] = sample_points[i, :3]
+            dx[0] = sample_points[i, 0]
+            dx[1] = sample_points[i, 1]
+            dx[2] = sample_points[i, 2]
             for p in range(3):
                 # Compute coordinates of point dx on img's grid
                 dx[p] = sample_points[i, p] - h[p]
@@ -3342,7 +3373,8 @@ def _sparse_gradient_2d(floating[:, :] img, double[:, :] img_world2grid,
         h[1] = 0.5 * img_spacing[1]
         for i in range(n):
             inside[i] = 1
-            dx[:] = sample_points[i, :2]
+            dx[0] = sample_points[i, 0]
+            dx[1] = sample_points[i, 1]
             for p in range(2):
                 # Compute coordinates of point dx on img's grid
                 dx[p] = sample_points[i, p] - h[p]
@@ -3412,9 +3444,13 @@ def gradient(img, img_world2grid, img_spacing, out_shape,
         jd_grad = _gradient_3d
     else:
         raise ValueError('Undefined gradient for image dimension %d' % (dim,))
-    jd_grad(img, img_world2grid.astype(np.float64),
-            img_spacing.astype(np.float64),
-            out_grid2world.astype(np.float64), out, inside)
+    if img_world2grid.dtype != np.float64:
+        img_world2grid = img_world2grid.astype(np.float64)
+    if img_spacing.dtype != np.float64:
+        img_spacing = img_spacing.astype(np.float64)
+    if out_grid2world.dtype != np.float64:
+        out_grid2world = out_grid2world.astype(np.float64)
+    jd_grad(img, img_world2grid, img_spacing, out_grid2world, out, inside)
     return np.asarray(out), np.asarray(inside)
 
 
@@ -3454,6 +3490,9 @@ def sparse_gradient(img, img_world2grid, img_spacing, sample_points):
         jd_grad = _sparse_gradient_2d
     else:
         jd_grad = _sparse_gradient_3d
-    jd_grad(img, img_world2grid.astype(np.float64),
-            img_spacing.astype(np.float64), sample_points, out, inside)
+    if img_world2grid.dtype != np.float64:
+        img_world2grid = img_world2grid.astype(np.float64)
+    if img_spacing.dtype != np.float64:
+        img_spacing = img_spacing.astype(np.float64)
+    jd_grad(img, img_world2grid, img_spacing, sample_points, out, inside)
     return np.asarray(out), np.asarray(inside)

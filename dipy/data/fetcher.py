@@ -52,15 +52,15 @@ def update_progressbar(progress, total_length):
     except:
         # Default value if determination of console size fails
         bar_length = 20
-    block = int(round(bar_length*progress))
-    size_string = "{0:.2f} MB".format(float(total_length)/(1024*1024))
+    block = int(round(bar_length * progress))
+    size_string = "{0:.2f} MB".format(float(total_length) / (1024 * 1024))
     text = "\rDownload Progress: [{0}] {1:.2f}%  of {2}".format(
-        "#"*block + "-"*(bar_length-block), progress*100, size_string)
+        "#" * block + "-" * (bar_length - block), progress * 100, size_string)
     sys.stdout.write(text)
     sys.stdout.flush()
 
 
-def copyfileobj_withprogress(fsrc, fdst, total_length, length=16*1024):
+def copyfileobj_withprogress(fsrc, fdst, total_length, length=16 * 1024):
     copied = 0
     while True:
         buf = fsrc.read(length)
@@ -68,7 +68,7 @@ def copyfileobj_withprogress(fsrc, fdst, total_length, length=16*1024):
             break
         fdst.write(buf)
         copied += len(buf)
-        progress = float(copied)/float(total_length)
+        progress = float(copied) / float(total_length)
         update_progressbar(progress, total_length)
 
 
@@ -85,7 +85,7 @@ def _get_file_md5(filename):
     """Compute the md5 checksum of a file"""
     md5_data = md5()
     with open(filename, 'rb') as f:
-        for chunk in iter(lambda: f.read(128*md5_data.block_size), b''):
+        for chunk in iter(lambda: f.read(128 * md5_data.block_size), b''):
             md5_data.update(chunk)
     return md5_data.hexdigest()
 
@@ -346,18 +346,21 @@ fetch_syn_data = _make_fetcher(
 fetch_mni_template = _make_fetcher(
     "fetch_mni_template",
     pjoin(dipy_home, 'mni_template'),
-    'https://digital.lib.washington.edu/researchworks/bitstream/handle/1773/33312/',
-    ['COPYING',
-     'mni_icbm152_t2_tal_nlin_asym_09a.nii',
-     'mni_icbm152_t1_tal_nlin_asym_09a.nii'],
-    ['COPYING',
-     'mni_icbm152_t2_tal_nlin_asym_09a.nii',
-     'mni_icbm152_t1_tal_nlin_asym_09a.nii'],
-    ['6e2168072e80aa4c0c20f1e6e52ec0c8',
-     'f41f2e1516d880547fbf7d6a83884f0d',
-     '1ea8f4f1e41bc17a94602e48141fdbc8'],
-    doc="Fetch the MNI T2 and T1 template files",
-    data_size="35MB")
+    'https://ndownloader.figshare.com/files/',
+    ['5572676?private_link=4b8666116a0128560fb5',
+     '5572673?private_link=93216e750d5a7e568bda',
+     '5572670?private_link=33c92d54d1afb9aa7ed2',
+     '5572661?private_link=584319b23e7343fed707'],
+    ['mni_icbm152_t2_tal_nlin_asym_09a.nii',
+     'mni_icbm152_t1_tal_nlin_asym_09a.nii',
+     'mni_icbm152_t1_tal_nlin_asym_09c_mask.nii',
+     'mni_icbm152_t1_tal_nlin_asym_09c.nii'],
+    ['f41f2e1516d880547fbf7d6a83884f0d',
+     '1ea8f4f1e41bc17a94602e48141fdbc8',
+     'a243e249cd01a23dc30f033b9656a786',
+     '3d5dd9b0cd727a17ceec610b782f66c1'],
+    doc="fetch the MNI 2009a T1 and T2, and 2009c T1 and T1 mask files",
+    data_size="70MB")
 
 fetch_scil_b0 = _make_fetcher(
     "fetch_scil_b0",
@@ -391,6 +394,17 @@ fetch_bundles_2_subjects = _make_fetcher(
     data_size="234MB",
     doc="Download 2 subjects from the SNAIL dataset with their bundles",
     unzip=True)
+
+fetch_ivim = _make_fetcher(
+    "fetch_ivim",
+    pjoin(dipy_home, 'ivim'),
+    'https://ndownloader.figshare.com/files/',
+    ['5305243', '5305246', '5305249'],
+    ['ivim.nii.gz', 'ivim.bval', 'ivim.bvec'],
+    ['cda596f89dc2676af7d9bf1cabccf600', 
+    'f03d89f84aa9a9397103a400e43af43a',
+    'fb633a06b02807355e49ccd85cb92565'],
+    doc="Download IVIM dataset")
 
 
 def read_scil_b0():
@@ -556,6 +570,76 @@ def read_syn_data():
     b0 = nib.load(b0_name)
     return t1, b0
 
+
+def fetch_tissue_data():
+    """ Download images to be used for tissue classification
+    """
+
+    t1 = 'https://ndownloader.figshare.com/files/6965969'
+    t1d = 'https://ndownloader.figshare.com/files/6965981'
+    ap = 'https://ndownloader.figshare.com/files/6965984'
+
+    folder = pjoin(dipy_home, 'tissue_data')
+
+    md5_list = ['99c4b77267a6855cbfd96716d5d65b70',  # t1
+                '4b87e1b02b19994fbd462490cc784fa3',  # t1d
+                'c0ea00ed7f2ff8b28740f18aa74bff6a']  # ap
+
+    url_list = [t1, t1d, ap]
+    fname_list = ['t1_brain.nii.gz', 't1_brain_denoised.nii.gz',
+                  'power_map.nii.gz']
+
+    if not os.path.exists(folder):
+        print('Creating new directory %s' % folder)
+        os.makedirs(folder)
+        msg = 'Downloading 3 Nifti1 images (9.3MB)...'
+        print(msg)
+
+        for i in range(len(md5_list)):
+            _get_file_data(pjoin(folder, fname_list[i]), url_list[i])
+            check_md5(pjoin(folder, fname_list[i]), md5_list[i])
+
+        print('Done.')
+        print('Files copied in folder %s' % folder)
+    else:
+        _already_there_msg(folder)
+
+
+def read_tissue_data(contrast='T1'):
+    """ Load images to be used for tissue classification
+
+    Parameters
+    ----------
+    constrast : str
+        'T1', 'T1 denoised' or 'Anisotropic Power'
+
+    Returns
+    -------
+    image : obj,
+        Nifti1Image
+
+    """
+    folder = pjoin(dipy_home, 'tissue_data')
+    t1_name = pjoin(folder, 't1_brain.nii.gz')
+    t1d_name = pjoin(folder, 't1_brain_denoised.nii.gz')
+    ap_name = pjoin(folder, 'power_map.nii.gz')
+
+    md5_dict = {'t1': '99c4b77267a6855cbfd96716d5d65b70',
+                't1d': '4b87e1b02b19994fbd462490cc784fa3',
+                'ap': 'c0ea00ed7f2ff8b28740f18aa74bff6a'}
+
+    check_md5(t1_name, md5_dict['t1'])
+    check_md5(t1d_name, md5_dict['t1d'])
+    check_md5(ap_name, md5_dict['ap'])
+
+    if contrast == 'T1 denoised':
+        return nib.load(t1d_name)
+    elif contrast == 'Anisotropic Power':
+        return nib.load(ap_name)
+    else:
+        return nib.load(t1_name)
+
+
 mni_notes = \
     """
     Notes
@@ -592,16 +676,19 @@ mni_notes = \
 """
 
 
-def read_mni_template(contrast="T2"):
+def read_mni_template(version="a", contrast="T2"):
     """
     Read the MNI template from disk
 
     Parameters
     ----------
+    version: string
+        There are two MNI templates 2009a and 2009c, so options available are:
+        "a" and "c".
     contrast : list or string, optional
-        Which of the contrast templates to read. Two contrasts are available:
-        "T1" and "T2", so you can either enter one of these strings as input,
-        or a list containing both of them.
+        Which of the contrast templates to read. For version "a" two contrasts
+        are available: "T1" and "T2". Similarly for version "c" there are two
+        options, "T1" and "mask". You can input contrast as a string or a list
 
     Returns
     -------
@@ -610,20 +697,47 @@ def read_mni_template(contrast="T2"):
 
     Examples
     --------
-    Get only the T2 file:
-    >>> T2_nifti = read_mni_template("T2") # doctest: +SKIP
-    Get both files in this order:
-    >>> T1_nifti, T2_nifti = read_mni_template(["T1", "T2"]) # doctest: +SKIP
+    Get only the T1 file for version c:
+    >>> T1_nifti = read_mni_template("c", contrast = "T1") # doctest: +SKIP
+    Get both files in this order for version a:
+    >>> T1_nifti, T2_nifti = read_mni_template(contrast = ["T1", "T2"]) # doctest: +SKIP
     """
     files, folder = fetch_mni_template()
-    file_dict = {"T1": pjoin(folder, 'mni_icbm152_t1_tal_nlin_asym_09a.nii'),
-                 "T2": pjoin(folder, 'mni_icbm152_t2_tal_nlin_asym_09a.nii')}
-    if isinstance(contrast, str):
-        return nib.load(file_dict[contrast])
-    else:
-        out_list = []
+    file_dict_a = {"T1": pjoin(folder, 'mni_icbm152_t1_tal_nlin_asym_09a.nii'),
+                   "T2": pjoin(folder, 'mni_icbm152_t2_tal_nlin_asym_09a.nii')}
+
+    file_dict_c = {
+        "T1": pjoin(
+            folder, 'mni_icbm152_t1_tal_nlin_asym_09c.nii'), "mask": pjoin(
+            folder, 'mni_icbm152_t1_tal_nlin_asym_09c_mask.nii')}
+
+    if contrast == "T2" and version == "c":
+        raise ValueError("No T2 image for MNI template 2009c")
+
+    if contrast == "mask" and version == "a":
+        raise ValueError("No template mask available for MNI 2009a")
+
+    if not(isinstance(contrast, str)) and version == "c":
         for k in contrast:
-            out_list.append(nib.load(file_dict[k]))
+            if k == "T2":
+                raise ValueError("No T2 image for MNI template 2009c")
+
+    if version == "a":
+        if isinstance(contrast, str):
+            return nib.load(file_dict_a[contrast])
+        else:
+            out_list = []
+            for k in contrast:
+                out_list.append(nib.load(file_dict_a[k]))
+    elif version == "c":
+        if isinstance(contrast, str):
+            return nib.load(file_dict_c[contrast])
+        else:
+            out_list = []
+            for k in contrast:
+                out_list.append(nib.load(file_dict_c[k]))
+    else:
+        raise ValueError("Only 2009a and 2009c versions are available")
     return out_list
 
 
@@ -734,7 +848,7 @@ def read_cenir_multib(bvals=None):
         bvec_list.append(np.loadtxt(file_dict[bval]['bvecs']))
 
     # All affines are the same, so grab the last one:
-    aff = nib.load(file_dict[bval]['DWI']).get_affine()
+    aff = nib.load(file_dict[bval]['DWI']).affine
     return (nib.Nifti1Image(np.concatenate(data, -1), aff),
             gradient_table(bval_list, np.concatenate(bvec_list, -1)))
 
@@ -819,13 +933,13 @@ def read_bundles_2_subjects(subj_id='subj_1', metrics=['fa'],
     if 't1' in metrics:
         img = nib.load(pjoin(dname, subj_id, 't1_warped.nii.gz'))
         data = img.get_data()
-        affine = img.get_affine()
+        affine = img.affine
         res['t1'] = data
 
     if 'fa' in metrics:
         img_fa = nib.load(pjoin(dname, subj_id, 'fa_1x1x1.nii.gz'))
         fa = img_fa.get_data()
-        affine = img_fa.get_affine()
+        affine = img_fa.affine
         res['fa'] = fa
 
     res['affine'] = affine
@@ -839,3 +953,23 @@ def read_bundles_2_subjects(subj_id='subj_1', metrics=['fa'],
         res[bun] = streamlines
 
     return res
+
+
+def read_ivim():
+    """ Load IVIM dataset
+
+    Returns
+    -------
+    img : obj,
+        Nifti1Image
+    gtab : obj,
+        GradientTable
+    """
+    files, folder = fetch_ivim()
+    fraw = pjoin(folder, 'ivim.nii.gz')
+    fbval = pjoin(folder, 'ivim.bval')
+    fbvec = pjoin(folder, 'ivim.bvec')
+    bvals, bvecs = read_bvals_bvecs(fbval, fbvec)
+    gtab = gradient_table(bvals, bvecs)
+    img = nib.load(fraw)
+    return img, gtab

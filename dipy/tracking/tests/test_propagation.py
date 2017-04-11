@@ -71,7 +71,7 @@ def test_eudx_further():
     fimg, fbvals, fbvecs = get_data('small_101D')
 
     img = ni.load(fimg)
-    affine = img.get_affine()
+    affine = img.affine
     data = img.get_data()
     gtab = gradient_table(fbvals, fbvecs)
     tensor_model = TensorModel(gtab)
@@ -127,7 +127,7 @@ def test_eudx_bad_seed():
     fimg, fbvals, fbvecs = get_data('small_101D')
 
     img = ni.load(fimg)
-    affine = img.get_affine()
+    affine = img.affine
     data = img.get_data()
     gtab = gradient_table(fbvals, fbvecs)
     tensor_model = TensorModel(gtab)

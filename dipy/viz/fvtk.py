@@ -75,6 +75,10 @@ if have_vtk:
     except:
         have_vtk_texture_mapper2D = False
 
+else:
+    msg = "Python VTK is not installed"
+    warn(msg)
+
 
 def dots(points, color=(1, 0, 0), opacity=1, dot_size=5):
     """ Create one or more 3d points

@@ -7,6 +7,7 @@ Simple volume slicing
 Here we present an example for visualizing slices from 3D images.
 
 """
+
 from __future__ import division
 
 import os
@@ -27,7 +28,7 @@ fname_t1 = os.path.join(os.path.expanduser('~'), '.dipy',
 
 img = nib.load(fname_t1)
 data = img.get_data()
-affine = img.get_affine()
+affine = img.affine
 
 """
 Create a Renderer object which holds all the actors which we want to visualize.

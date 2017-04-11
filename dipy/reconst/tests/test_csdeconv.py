@@ -121,14 +121,15 @@ def test_response_from_mask():
     radius = 3
 
     for fa_thr in np.arange(0, 1, 0.1):
-        response_auto, ratio_auto, nvoxels = auto_response(gtab,
-                                                           data,
-                                                           roi_center=None,
-                                                           roi_radius=radius,
-                                                           fa_thr=fa_thr,
-                                                           return_number_of_voxels=True)
+        response_auto, ratio_auto, nvoxels = auto_response(
+            gtab,
+            data,
+            roi_center=None,
+            roi_radius=radius,
+            fa_thr=fa_thr,
+            return_number_of_voxels=True)
 
-        ci, cj, ck = np.array(data.shape[:3]) / 2
+        ci, cj, ck = np.array(data.shape[:3]) // 2
         mask = np.zeros(data.shape[:3])
         mask[ci - radius: ci + radius,
              cj - radius: cj + radius,
@@ -416,6 +417,14 @@ def test_csd_predict():
     S = csd.predict(coeff)
     csd_fit = csd.fit(S)
     npt.assert_array_almost_equal(coeff, csd_fit.shm_coeff)
+
+    # Test predict on nd-data set
+    S_nd = np.zeros((2, 3, 4, S.size))
+    S_nd[:] = S
+    fit = csd.fit(S_nd)
+    predict1 = fit.predict()
+    predict2 = csd.predict(fit.shm_coeff)
+    npt.assert_array_almost_equal(predict1, predict2)
 
 
 def test_csd_predict_multi():

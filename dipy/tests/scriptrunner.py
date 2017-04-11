@@ -3,7 +3,7 @@
 Provides class to be instantiated in tests that check scripts.  Usually works
 something like this in a test module::
 
-    from .scriptrunner import ScriptRunner
+    from dipy.tests.scriptrunner import ScriptRunner
     runner = ScriptRunner()
 
 Then, in the tests, something like::
