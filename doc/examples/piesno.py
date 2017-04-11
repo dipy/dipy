@@ -58,8 +58,8 @@ SENSE reconstruction, which has a Rician noise nature and thus N is always 1.
 
 sigma, mask = piesno(data, N=4, return_mask=True)
 
-axial = data[:, :, data.shape[2] / 2, 0].T
-axial_piesno = mask[:, :, data.shape[2] / 2].T
+axial = data[:, :, data.shape[2] // 2, 0].T
+axial_piesno = mask[:, :, data.shape[2] // 2].T
 
 import matplotlib.pyplot as plt
 fig, ax = plt.subplots(1, 2)
