@@ -66,7 +66,7 @@ print("total time", time() - t)
 Let us plot the axial slice of the denoised output
 """
 
-axial_middle = data.shape[2] / 2
+axial_middle = data.shape[2] // 2
 
 before = data[:, :, axial_middle].T
 after = den[:, :, axial_middle].T

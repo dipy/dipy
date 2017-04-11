@@ -97,7 +97,7 @@ mask_fa = FA.copy()
 mask_fa[mask_fa < 0.2] = 0
 plt.xticks([])
 plt.yticks([])
-plt.imshow(mask_fa[:, :, data.shape[2] / 2].T, cmap='gray', origin='lower',
+plt.imshow(mask_fa[:, :, data.shape[2] // 2].T, cmap='gray', origin='lower',
            interpolation='nearest')
 fig.tight_layout()
 fig.savefig('threshold_fa.png')
@@ -165,7 +165,7 @@ fig = plt.figure()
 plt.xticks([])
 plt.yticks([])
 fig.tight_layout()
-plt.imshow(white_matter[:, :, data.shape[2] / 2].T, cmap='gray', origin='lower',
+plt.imshow(white_matter[:, :, data.shape[2] // 2].T, cmap='gray', origin='lower',
            interpolation='nearest')
 fig.savefig('white_matter_mask.png')
 
@@ -246,12 +246,12 @@ fig = plt.figure()
 plt.subplot(121)
 plt.xticks([])
 plt.yticks([])
-plt.imshow(include_map[:, :, data.shape[2] / 2].T, cmap='gray', origin='lower',
+plt.imshow(include_map[:, :, data.shape[2] // 2].T, cmap='gray', origin='lower',
            interpolation='nearest')
 plt.subplot(122)
 plt.xticks([])
 plt.yticks([])
-plt.imshow(exclude_map[:, :, data.shape[2] / 2].T, cmap='gray', origin='lower',
+plt.imshow(exclude_map[:, :, data.shape[2] // 2].T, cmap='gray', origin='lower',
            interpolation='nearest')
 fig.tight_layout()
 fig.savefig('act_maps.png')
