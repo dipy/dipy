@@ -1142,6 +1142,8 @@ def diffusion_components(dki_params, sphere, awf=None, mask=None):
     else:
         if mask.shape != shape:
             raise ValueError("Mask is not the same shape as dki_params.")
+        else:
+            mask = np.array(mask, dtype=bool, copy=False)
 
     # check or compute awf values
     if awf is None:
@@ -1150,20 +1152,11 @@ def diffusion_components(dki_params, sphere, awf=None, mask=None):
         if awf.shape != shape:
             raise ValueError("awf array is not the same shape as dki_params.")
 
-    # Compute directional extra and intra-cellular diffusion samples
-    mask = np.array(mask, dtype=bool, copy=False)
+    # Initialize hindered and restricted diffusion tensors
     EDT = np.zeros(shape + (12,))
     IDT = np.zeros(shape + (12,))
-    awff = awf[mask].ravel()
-    params = np.reshape(dki_params[mask], (-1, dki_params[mask].shape[-1]))
-    evals, evecs, kt = split_dki_param(params)
-    di = apparent_diffusion_coef(vec_val_vect(evecs, evals), sphere)
-    ki = apparent_kurtosis_coef(params, sphere)
-    awff = np.expand_dims(awff, axis=3)
-    EDi = di * (1 + np.sqrt(ki*awff / (3.0-3.0*awff)))
-    IDi = di * (1 - np.sqrt(ki * (1.0-awff) / (3.0*awff)))
 
-    # Reconstruct the extra and intra-cellular diffusion tensors
+    # Generate matrix that converts apparant diffusion coefficients to tensors
     B = np.zeros((sphere.x.size, 6))
     B[:, 0] = sphere.x * sphere.x  # Bxx
     B[:, 1] = sphere.x * sphere.y * 2.  # Bxy
@@ -1172,10 +1165,27 @@ def diffusion_components(dki_params, sphere, awf=None, mask=None):
     B[:, 4] = sphere.y * sphere.z * 2.  # Byz
     B[:, 5] = sphere.z * sphere.z  # Bzz
     pinvB = np.linalg.pinv(B)
-    edt = eig_from_lo_tri(np.einsum('...ij,...j', pinvB, EDi))
-    idt = eig_from_lo_tri(np.einsum('...ij,...j', pinvB, IDi))
-    EDT[mask, :] = edt
-    IDT[mask, :] = idt
+
+    # Compute hindered and restricted diffusion tensors for all voxels
+    evals, evecs, kt = split_dki_param(dki_params)
+    for idx in ndindex(shape):
+        if not mask[idx]:
+            continue
+        # sample apparent diffusion and kurtosis values
+        di = apparent_diffusion_coef(vec_val_vect(evecs[idx], evals[idx]),
+                                     sphere)
+        ki = apparent_kurtosis_coef(dki_params[idx], sphere)
+
+        # Convert apparent diffusion and kurtosis values to apparent diffusion
+        # values of the hindered and restricted diffusion
+        edi = di * (1 + np.sqrt(ki*awf[idx] / (3.0-3.0*awf[idx])))
+        idi = di * (1 - np.sqrt(ki * (1.0-awf[idx]) / (3.0*awf[idx])))
+
+        # generate hindered and restricted diffusion tensors
+        edt = eig_from_lo_tri(np.dot(pinvB, edi))
+        idt = eig_from_lo_tri(np.dot(pinvB, idi))
+        EDT[idx] = edt
+        IDT[idx] = idt
 
     return EDT, IDT
 
