@@ -5,6 +5,7 @@ from __future__ import division, print_function, absolute_import
 import numpy as np
 import random
 import dipy.reconst.dki as dki
+import dipy.reconst.dti as dti
 from numpy.testing import (assert_array_almost_equal, assert_array_equal,
                            assert_almost_equal)
 from nose.tools import assert_raises
@@ -461,8 +462,8 @@ def test_single_voxel_DKI_stats():
     dki_par = np.concatenate((evals, evecs[0], evecs[1], evecs[2], kt), axis=0)
 
     # Estimates using dki functions
-    ADe1 = dki.axial_diffusivity(evals)
-    RDe1 = dki.radial_diffusivity(evals)
+    ADe1 = dti.axial_diffusivity(evals)
+    RDe1 = dti.radial_diffusivity(evals)
     AKe1 = axial_kurtosis(dki_par)
     RKe1 = radial_kurtosis(dki_par)
     e1_vals = np.array([ADe1, AKe1, RDe1, RKe1])
@@ -602,11 +603,11 @@ def test_kurtosis_maximum():
 
     # compute maxima
     k_max_cross, max_dir = dki.kurtosis_maximum(dt, MD, kt, sphere, gtol=1e-5)
-    
+
     yaxis = np.array([0., 1., 0.])
     cos_angle = np.abs(np.dot(max_dir[0], yaxis))
     assert_almost_equal(cos_angle, 1.)
-    
+
     # TEST 2
     # test the function on cases of well aligned fibers oriented in a random
     # defined direction. According to Neto Henriques et al, 2015 (NeuroImage
@@ -646,10 +647,10 @@ def test_kurtosis_maximum():
     fdir = np.array([sphere2cart(1., np.deg2rad(theta), np.deg2rad(phi))])
     cos_angle = np.abs(np.dot(max_dir[0], fdir[0]))
     assert_almost_equal(cos_angle, 0., decimal=5)
-    
+
     # check if max direction is equal to expected value
     assert_almost_equal(k_max, RK)
-    
+
     # According to Neto Henriques et al., 2015 (NeuroImage 111: 85-99),
     # e.g. see figure 1 of this article, kurtosis maxima for the first test is
     # also equal to the maxima kurtosis value of well-aligned fibers, since
@@ -750,7 +751,7 @@ def test_wmti_model_multi_voxel():
     assert_array_almost_equal(IDT[..., 1], RDI)
     assert_array_almost_equal(IDT[..., 2], RDI)
 
-    # Test methods performance when a signal with all zeros is present    
+    # Test methods performance when a signal with all zeros is present
     FIE[0, 0, 0] = 0
     RDI[0, 0, 0] = 0
     ADI[0, 0, 0] = 0
