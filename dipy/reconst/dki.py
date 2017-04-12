@@ -4,10 +4,10 @@ from __future__ import division, print_function, absolute_import
 
 import numpy as np
 import scipy.optimize as opt
-from dipy.reconst.dti import (TensorFit, mean_diffusivity, axial_diffusivity,
-                              radial_diffusivity, from_lower_triangular,
+from dipy.reconst.dti import (TensorFit, mean_diffusivity,
+                              apparent_diffusion_coef, from_lower_triangular,
                               lower_triangular, decompose_tensor,
-                              MIN_POSITIVE_SIGNAL)
+                              eig_from_lo_tri, MIN_POSITIVE_SIGNAL)
 
 from dipy.reconst.utils import dki_design_matrix as design_matrix
 from dipy.utils.six.moves import range
@@ -16,6 +16,7 @@ from dipy.core.geometry import (sphere2cart, cart2sphere)
 from dipy.reconst.recspeed import local_maxima
 from dipy.core.ndindex import ndindex
 from dipy.reconst.vec_val_sum import vec_val_vect
+
 
 def _positive_evals(L1, L2, L3, er=2e-7):
     """ Helper function that indentifies which voxels in a array have all
